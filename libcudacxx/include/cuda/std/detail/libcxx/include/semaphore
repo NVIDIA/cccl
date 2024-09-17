@@ -55,39 +55,15 @@ using binary_semaphore = counting_semaphore<1>;
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__semaphore/atomic_semaphore.h>
-#include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/atomic>
-#include <cuda/std/type_traits>
-
-_CCCL_PUSH_MACROS
-
 #ifdef _LIBCUDACXX_HAS_NO_THREADS
 #  error <semaphore> is not supported on this single threaded system
-#endif
+#endif // _LIBCUDACXX_HAS_NO_THREADS
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+#include <cuda/std/__semaphore/atomic_semaphore.h>
+#include <cuda/std/__semaphore/counting_semaphore.h>
+#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 
-template <ptrdiff_t __least_max_value = INT_MAX>
-class counting_semaphore : public __atomic_semaphore<thread_scope_system, __least_max_value>
-{
-  static_assert(__least_max_value <= __atomic_semaphore<thread_scope_system, __least_max_value>::max(), "");
-
-public:
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr counting_semaphore(ptrdiff_t __count = 0)
-      : __atomic_semaphore<thread_scope_system, __least_max_value>(__count)
-  {}
-  _CCCL_HIDE_FROM_ABI ~counting_semaphore() = default;
-
-  counting_semaphore(const counting_semaphore&)            = delete;
-  counting_semaphore& operator=(const counting_semaphore&) = delete;
-};
-
-using binary_semaphore = counting_semaphore<1>;
-
-_LIBCUDACXX_END_NAMESPACE_STD
-
+// comes last
 #include <cuda/std/__cuda/semaphore.h>
-_CCCL_POP_MACROS
 
 #endif //_LIBCUDACXX_SEMAPHORE
