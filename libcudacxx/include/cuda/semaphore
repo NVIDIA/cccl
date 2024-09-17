@@ -11,6 +11,7 @@
 #ifndef _CUDA_SEMAPHORE
 #define _CUDA_SEMAPHORE
 
+#include <cuda/__semaphore/counting_semaphore.h>
 #include <cuda/std/semaphore>
 
 #endif // _CUDA_SEMAPHORE

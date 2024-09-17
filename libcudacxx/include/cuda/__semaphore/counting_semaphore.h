@@ -21,6 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__semaphore/atomic_semaphore.h>
+#include <cuda/std/cstdint>
+
+_CCCL_PUSH_MACROS
+
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <thread_scope _Sco, ptrdiff_t __least_max_value = INT_MAX>
@@ -42,5 +47,7 @@ template <thread_scope _Sco>
 using binary_semaphore = counting_semaphore<_Sco, 1>;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
+
+_CCCL_POP_MACROS
 
 #endif // _LIBCUDACXX___CUDA_SEMAPHORE_H
