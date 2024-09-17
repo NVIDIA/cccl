@@ -7,9 +7,13 @@
   ],
   "hostRequirements": {"gpu": "optional"},
   "features": {
+    "ghcr.io/rapidsai/devcontainers/features/sccache:24.10": {
+      "version": "0.8.1"
+    },
     "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils:24.10": {}
   },
   "overrideFeatureInstallOrder": [
+    "ghcr.io/rapidsai/devcontainers/features/sccache",
     "ghcr.io/rapidsai/devcontainers/features/rapids-build-utils"
   ],
   "containerEnv": {
