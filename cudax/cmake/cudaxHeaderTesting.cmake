@@ -7,35 +7,27 @@
 # Meta target for all configs' header builds:
 add_custom_target(cudax.all.headers)
 
-file(GLOB_RECURSE headers
-  RELATIVE "${cudax_SOURCE_DIR}/include"
-  CONFIGURE_DEPENDS1
-  "${cudax_SOURCE_DIR}/include/*.cuh"
-  "${cudax_SOURCE_DIR}/include/*.h"
-)
-
-# The following internal headers are not required to compile independently:
-list(REMOVE_ITEM headers
-  "cuda/experimental/__async/prologue.cuh"
-  "cuda/experimental/__async/epilogue.cuh"
-)
-
-set(headertest_srcs)
-foreach (header IN LISTS headers)
-  set(headertest_src "headers/${header}.cu")
-  configure_file("${cudax_SOURCE_DIR}/cmake/header_test.in.cu" "${headertest_src}")
-  list(APPEND headertest_srcs "${headertest_src}")
-endforeach()
-
 function(cudax_add_header_test label definitions)
   foreach(cn_target IN LISTS cudax_TARGETS)
+    cudax_get_target_property(config_dialect ${cn_target} DIALECT)
     cudax_get_target_property(config_prefix ${cn_target} PREFIX)
 
     set(headertest_target ${config_prefix}.headers.${label})
-    add_library(${headertest_target} OBJECT ${headertest_srcs})
+    cccl_generate_header_tests(${headertest_target} cudax/include
+      DIALECT ${config_dialect}
+      # The cudax header template removes the check for the `small` macro.
+      HEADER_TEMPLATE "${cudax_SOURCE_DIR}/cmake/header_test.in.cu"
+      GLOBS "cuda/experimental/*.cuh"
+      EXCLUDES
+        # The following internal headers are not required to compile independently:
+        "cuda/experimental/__async/prologue.cuh"
+        "cuda/experimental/__async/epilogue.cuh"
+    )
     target_link_libraries(${headertest_target} PUBLIC ${cn_target})
-    target_compile_definitions(${headertest_target} PRIVATE ${definitions}
-                               "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE")
+    target_compile_definitions(${headertest_target} PRIVATE
+      ${definitions}
+      "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
+    )
     cudax_clone_target_properties(${headertest_target} ${cn_target})
 
     add_dependencies(cudax.all.headers ${headertest_target})

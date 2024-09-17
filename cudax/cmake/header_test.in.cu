@@ -1,6 +1,7 @@
 // This source file checks that:
-// 1) Header <${header}> compiles without error.
+// 1) Header <@header@> compiles without error.
 // 2) Common macro collisions with platform/system headers are avoided.
+// 3) half/bf16 aren't included when these are explicitly disabled.
 
 // Define CUDAX_MACRO_CHECK(macro, header), which emits a diagnostic indicating
 // a potential macro collision and halts.
@@ -47,4 +48,19 @@
 // termios.h conflicts (NVIDIA/thrust#1547)
 #define B0 CUDAX_MACRO_CHECK("B0", termios.h)
 
-#include <${header}>
+#include <@header@>
+
+#if defined(CCCL_DISABLE_BF16_SUPPORT)
+#  if defined(__CUDA_BF16_TYPES_EXIST__)
+#    error We should not include cuda_bf16.h when BF16 support is disabled
+#  endif // __CUDA_BF16_TYPES_EXIST__
+#endif // CCCL_DISABLE_BF16_SUPPORT
+
+#if defined(CCCL_DISABLE_FP16_SUPPORT)
+#  if defined(__CUDA_FP16_TYPES_EXIST__)
+#    error We should not include cuda_fp16.h when half support is disabled
+#  endif // __CUDA_FP16_TYPES_EXIST__
+#  if defined(__CUDA_BF16_TYPES_EXIST__)
+#    error We should not include cuda_bf16.h when half support is disabled
+#  endif // __CUDA_BF16_TYPES_EXIST__
+#endif // CCCL_DISABLE_FP16_SUPPORT
