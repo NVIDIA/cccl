@@ -25,6 +25,7 @@
 #include <cuda/std/__concepts/_One_of.h>
 #include <cuda/std/__memory/align.h>
 #include <cuda/std/__new/launder.h>
+#include <cuda/std/__utility/exchange.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/span>
@@ -128,12 +129,9 @@ public:
   //! @param __other Another \c uninitialized_buffer
   uninitialized_buffer(uninitialized_buffer&& __other) noexcept
       : __mr_(_CUDA_VSTD::move(__other.__mr_))
-      , __count_(__other.__count_)
-      , __buf_(__other.__buf_)
-  {
-    __other.__count_ = 0;
-    __other.__buf_   = nullptr;
-  }
+      , __count_(_CUDA_VSTD::exchange(__other.__count_, 0))
+      , __buf_(_CUDA_VSTD::exchange(__other.__buf_, nullptr))
+  {}
 
   //! @brief Move assignment
   //! @param __other Another \c uninitialized_buffer
@@ -148,11 +146,9 @@ public:
     {
       __mr_.deallocate(__buf_, __get_allocation_size(__count_));
     }
-    __mr_            = _CUDA_VSTD::move(__other.__mr_);
-    __count_         = __other.__count_;
-    __buf_           = __other.__buf_;
-    __other.__count_ = 0;
-    __other.__buf_   = nullptr;
+    __mr_    = _CUDA_VSTD::move(__other.__mr_);
+    __count_ = _CUDA_VSTD::exchange(__other.__count_, 0);
+    __buf_   = _CUDA_VSTD::exchange(__other.__buf_, nullptr);
     return *this;
   }
 
@@ -196,7 +192,7 @@ public:
   //! allocate the buffer
   //! @endrst
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE _CUDA_VMR::resource_ref<_Properties...> resource() const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE _CUDA_VMR::resource_ref<_Properties...> get_resource() const noexcept
   {
     return _CUDA_VMR::resource_ref<_Properties...>{const_cast<uninitialized_buffer*>(this)->__mr_};
   }
