@@ -28,7 +28,7 @@ struct do_not_construct
 {
   do_not_construct()
   {
-    CUDAX_CHECK(false);
+    CHECK(false);
   }
 };
 
