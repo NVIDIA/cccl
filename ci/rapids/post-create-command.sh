@@ -21,6 +21,9 @@ _apply_manifest_modifications() {
     # Print the entire manifest.yaml after modifications
     cat "${PROJECT_MANIFEST_YML}";
     # Regenerate the RAPIDS build scripts from the new manifest.yaml
+    sed -i 's@sccache --stop-server >/dev/null 2>&1 || true;@@' /opt/rapids-build-utils/bin/tmpl/cpp.build.tmpl.sh
+    sed -i 's@sccache --stop-server >/dev/null 2>&1 || true;@@' /opt/rapids-build-utils/bin/tmpl/python.build.wheel.tmpl.sh
+    sed -i 's@sccache --stop-server >/dev/null 2>&1 || true;@@' /opt/rapids-build-utils/bin/tmpl/python.install.tmpl.sh
     rapids-generate-scripts;
 }
 

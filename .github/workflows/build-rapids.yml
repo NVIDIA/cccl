@@ -125,9 +125,7 @@ jobs:
           for RAPIDS_ENABLE_TESTS in OFF ON; do
             _apply_manifest_modifications;
             for lib in ${RAPIDS_LIBS}; do
-              ls -l ~/.aws
               sccache -z
-              sccache -s
               if ! configure-${lib}-cpp || ! build-${lib}-cpp; then
                 if ! test -v failures_map["${lib}"]; then
                   failures+=("${lib}")
