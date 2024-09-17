@@ -224,7 +224,10 @@ public:
   //! @note Always synchronizes with the old stream
   constexpr void change_stream(::cuda::stream_ref __new_stream)
   {
-    __stream_.wait(__new_stream);
+    if (__new_stream != __stream_)
+    {
+      __stream_.wait();
+    }
     __stream_ = __new_stream;
   }
 
