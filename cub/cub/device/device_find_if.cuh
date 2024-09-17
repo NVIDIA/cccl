@@ -60,6 +60,12 @@ __global__ void find_if(IterBegin begin, IterEnd end, Pred pred, int* result, st
   // int elements_per_thread = 32;
   auto tile_size = blockDim.x * elements_per_thread;
   __shared__ int sresult;
+  __shared__ int block_result;
+
+  if (threadIdx.x == 0)
+  {
+    block_result = num_items;
+  }
 
   for (int tile_offset = blockIdx.x * tile_size; tile_offset < num_items; tile_offset += tile_size * gridDim.x)
   {
@@ -71,22 +77,34 @@ __global__ void find_if(IterBegin begin, IterEnd end, Pred pred, int* result, st
     }
     __syncthreads();
 
+    // early exit
+    if (sresult < tile_offset)
+    {
+      return;
+    }
+
+    bool found = false;
     for (int i = 0; i < elements_per_thread; ++i)
     {
       auto index = tile_offset + threadIdx.x + i * blockDim.x;
 
       if (index < num_items)
       {
-        // early exit
-        if (sresult < index)
-        {
-          return;
-        }
-
         if (pred(*(begin + index)))
         {
-          atomicMin(result, index);
-          return;
+          found = true;
+          atomicMin(&block_result, index);
+          break;
+        }
+      }
+    }
+    if (syncthreads_or(found))
+    {
+      if (threadIdx.x == 0)
+      {
+        if (block_result < num_items)
+        {
+          atomicMin(result, block_result);
         }
       }
     }
