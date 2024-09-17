@@ -58,6 +58,7 @@ if (CCCL_TOPLEVEL_PROJECT)
   include(cmake/CCCLBuildCompilerTargets.cmake)
   include(cmake/CCCLClangdCompileInfo.cmake)
   include(cmake/CCCLConfigureTarget.cmake)
+  include(cmake/CCCLGenerateHeaderTests.cmake)
   include(cmake/CCCLGetDependencies.cmake)
 
   cccl_build_compiler_targets()
