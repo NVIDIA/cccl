@@ -33,13 +33,6 @@ if (libcudacxx_ENABLE_CODEGEN)
   add_subdirectory(codegen)
 endif()
 
-# Note that this currently returns and skips the rest of the build
-# system.
-option(libcudacxx_ENABLE_CMAKE_TESTS "Enable ctest-based testing." ON)
-if (libcudacxx_ENABLE_CMAKE_TESTS)
-  add_subdirectory(cmake/test)
-endif()
-
 set(CMAKE_MODULE_PATH "${libcudacxx_SOURCE_DIR}/cmake")
 set(LLVM_PATH "${libcudacxx_SOURCE_DIR}" CACHE STRING "" FORCE)
 
