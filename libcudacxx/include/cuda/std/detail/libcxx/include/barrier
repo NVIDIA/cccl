@@ -71,146 +71,11 @@ struct __empty_completion
   _LIBCUDACXX_HIDE_FROM_ABI void operator()() noexcept {}
 };
 
-#ifndef _LIBCUDACXX_HAS_NO_TREE_BARRIER
-
-template <class _CompletionF = __empty_completion, int _Sco = 0>
-class alignas(64) __barrier_base
-{
-  ptrdiff_t __expected;
-  __atomic_impl<ptrdiff_t, _Sco> __expected_adjustment;
-  _CompletionF __completion;
-
-  using __phase_t = uint8_t;
-  __atomic_impl<__phase_t, _Sco> __phase;
-
-  struct alignas(64) __state_t
-  {
-    struct
-    {
-      __atomic_impl<__phase_t, _Sco> __phase = LIBCUDACXX_ATOMIC_VAR_INIT(0);
-    } __tickets[64];
-  };
-  ::std::vector<__state_t> __state;
-
-  _LIBCUDACXX_HIDE_FROM_ABI bool __arrive(__phase_t const __old_phase)
-  {
-    __phase_t const __half_step = __old_phase + 1, __full_step = __old_phase + 2;
-#  ifndef _LIBCUDACXX_HAS_NO_THREAD_FAVORITE_BARRIER_INDEX
-    ptrdiff_t __current = __libcpp_thread_favorite_barrier_index,
-#  else
-    ptrdiff_t __current = 0,
-#  endif
-              __current_expected = __expected, __last_node = (__current_expected >> 1);
-    for (size_t __round = 0;; ++__round)
-    {
-      _CCCL_ASSERT(__round <= 63, "");
-      if (__current_expected == 1)
-      {
-        return true;
-      }
-      for (;; ++__current)
-      {
-#  ifndef _LIBCUDACXX_HAS_NO_THREAD_FAVORITE_BARRIER_INDEX
-        if (0 == __round)
-        {
-          if (__current >= __current_expected)
-          {
-            __current = 0;
-          }
-          __libcpp_thread_favorite_barrier_index = __current;
-        }
-#  endif
-        _CCCL_ASSERT(__current <= __last_node, "");
-        __phase_t expect = __old_phase;
-        if (__current == __last_node && (__current_expected & 1))
-        {
-          if (__state[__current].__tickets[__round].__phase.compare_exchange_strong(
-                expect, __full_step, memory_order_acq_rel))
-          {
-            break; // I'm 1 in 1, go to next __round
-          }
-          _CCCL_ASSERT(expect == __full_step, "");
-        }
-        else if (__state[__current].__tickets[__round].__phase.compare_exchange_strong(
-                   expect, __half_step, memory_order_acq_rel))
-        {
-          return false; // I'm 1 in 2, done with arrival
-        }
-        else if (expect == __half_step)
-        {
-          if (__state[__current].__tickets[__round].__phase.compare_exchange_strong(
-                expect, __full_step, memory_order_acq_rel))
-          {
-            break; // I'm 2 in 2, go to next __round
-          }
-          _CCCL_ASSERT(expect == __full_step, "");
-        }
-        _CCCL_ASSERT(__round == 0 && expect == __full_step, "");
-      }
-      __current_expected = (__current_expected >> 1) + (__current_expected & 1);
-      __current &= ~(1 << __round);
-      __last_node &= ~(1 << __round);
-    }
-  }
-
-public:
-  using arrival_token = __phase_t;
-
-  _LIBCUDACXX_HIDE_FROM_ABI __barrier_base(ptrdiff_t __expected, _CompletionF __completion = _CompletionF())
-      : __expected(__expected)
-      , __expected_adjustment(0)
-      , __completion(__completion)
-      , __phase(0)
-      , __state((__expected + 1) >> 1)
-  {
-    _CCCL_ASSERT(__expected >= 0, "");
-  }
-
-  _CCCL_HIDE_FROM_ABI ~__barrier_base() = default;
-
-  __barrier_base(__barrier_base const&)            = delete;
-  __barrier_base& operator=(__barrier_base const&) = delete;
-
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI arrival_token arrive(ptrdiff_t update = 1)
-  {
-    _CCCL_ASSERT(update > 0, "");
-    auto __old_phase = __phase.load(memory_order_relaxed);
-    for (; update; --update)
-    {
-      if (__arrive(__old_phase))
-      {
-        __completion();
-        __expected += __expected_adjustment.load(memory_order_relaxed);
-        __expected_adjustment.store(0, memory_order_relaxed);
-        __phase.store(__old_phase + 2, memory_order_release);
-      }
-    }
-    return __old_phase;
-  }
-  _LIBCUDACXX_HIDE_FROM_ABI void wait(arrival_token&& __old_phase) const
-  {
-    __libcpp_thread_poll_with_backoff([=]() -> bool {
-      return __phase.load(memory_order_acquire) != __old_phase;
-    });
-  }
-  _LIBCUDACXX_HIDE_FROM_ABI void arrive_and_wait()
-  {
-    wait(arrive());
-  }
-  _LIBCUDACXX_HIDE_FROM_ABI void arrive_and_drop()
-  {
-    __expected_adjustment.fetch_sub(1, memory_order_relaxed);
-    (void) arrive();
-  }
-};
-
+#if _LIBCUDACXX_CUDA_ABI_VERSION < 3
+#  define _LIBCUDACXX_BARRIER_ALIGNMENTS alignas(64)
 #else
-
-#  if _LIBCUDACXX_CUDA_ABI_VERSION < 3
-#    define _LIBCUDACXX_BARRIER_ALIGNMENTS alignas(64)
-#  else
-#    define _LIBCUDACXX_BARRIER_ALIGNMENTS
-#  endif
+#  define _LIBCUDACXX_BARRIER_ALIGNMENTS
+#endif
 
 template <class _Barrier>
 class __barrier_poll_tester_phase
@@ -368,12 +233,11 @@ private:
 
   static _LIBCUDACXX_HIDE_FROM_ABI constexpr uint64_t __init(ptrdiff_t __count) noexcept
   {
-#  if _CCCL_STD_VER > 2011
+#if _CCCL_STD_VER >= 2014
     // This debug assert is not supported in C++11 due to resulting in a
     // multi-statement constexpr function.
     _CCCL_ASSERT(__count >= 0, "Count must be non-negative.");
-#  endif // _CCCL_STD_VER > 2011
-    return (((1u << 31) - __count) << 32) | ((1u << 31) - __count);
+#endif // _CCCL_STD_VER >= 2014
   }
   _LIBCUDACXX_HIDE_FROM_ABI bool __try_wait_phase(uint64_t __phase) const
   {
@@ -438,8 +302,6 @@ public:
     return numeric_limits<int32_t>::max();
   }
 };
-
-#endif //_LIBCUDACXX_HAS_NO_TREE_BARRIER
 
 template <class _CompletionF = __empty_completion>
 class barrier : public __barrier_base<_CompletionF>
