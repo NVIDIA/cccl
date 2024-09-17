@@ -29,7 +29,6 @@
 #include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/underlying_type.h>
-#include <cuda/std/cstdlib>
 #include <cuda/std/detail/libcxx/include/__debug>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
@@ -69,10 +68,11 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp ceil_div(con
   return static_cast<_Tp>((static_cast<_UCommon>(__a) + static_cast<_UCommon>(__b) - 1) / static_cast<_UCommon>(__b));
 }
 
-//! @brief Divides two numbers \p __a and \p __b, rounding up if there is a remainder
+//! @brief Divides two numbers \p __a and \p __b, rounding up if there is a remainder, \p __b is an enum
 //! @param __a The dividend
 //! @param __b The divisor
 //! @pre \p __a must be non-negative
+//! @pre \p __b must be positive
 template <class _Tp,
           class _Up,
           _CUDA_VSTD::__enable_if_t<_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Tp), int> = 0,
