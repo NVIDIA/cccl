@@ -22,6 +22,7 @@
 #include <cuda/experimental/buffer.cuh>
 #include <cuda/experimental/memory_resource.cuh>
 
+#include "testing.cuh"
 #include <catch2/catch.hpp>
 
 struct do_not_construct
