@@ -68,14 +68,14 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct __empty_completion
 {
-  _LIBCUDACXX_HIDE_FROM_ABI void operator()() noexcept {}
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()() noexcept {}
 };
 
 #if _LIBCUDACXX_CUDA_ABI_VERSION < 3
 #  define _LIBCUDACXX_BARRIER_ALIGNMENTS alignas(64)
-#else
+#else // ^^^ _LIBCUDACXX_CUDA_ABI_VERSION < 3 ^^^ / vvv _LIBCUDACXX_CUDA_ABI_VERSION >= 3 vvv
 #  define _LIBCUDACXX_BARRIER_ALIGNMENTS
-#endif
+#endif // _LIBCUDACXX_CUDA_ABI_VERSION >= 3
 
 template <class _Barrier>
 class __barrier_poll_tester_phase
@@ -90,7 +90,7 @@ public:
       , __phase(_CUDA_VSTD::move(__phase_))
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI bool operator()() const
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool operator()() const
   {
     return __this->__try_wait(__phase);
   }
@@ -108,20 +108,21 @@ public:
       , __parity(__parity_)
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI bool operator()() const
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool operator()() const
   {
     return __this->__try_wait_parity(__parity);
   }
 };
 
 template <class _Barrier>
-_LIBCUDACXX_HIDE_FROM_ABI bool __call_try_wait(const _Barrier& __b, typename _Barrier::arrival_token&& __phase)
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool
+__call_try_wait(const _Barrier& __b, typename _Barrier::arrival_token&& __phase)
 {
   return __b.__try_wait(_CUDA_VSTD::move(__phase));
 }
 
 template <class _Barrier>
-_LIBCUDACXX_HIDE_FROM_ABI bool __call_try_wait_parity(const _Barrier& __b, bool __parity)
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool __call_try_wait_parity(const _Barrier& __b, bool __parity)
 {
   return __b.__try_wait_parity(__parity);
 }
@@ -142,15 +143,16 @@ private:
   template <typename _Barrier>
   friend class __barrier_poll_tester_parity;
   template <typename _Barrier>
-  _LIBCUDACXX_HIDE_FROM_ABI friend bool __call_try_wait(const _Barrier& __b, typename _Barrier::arrival_token&& __phase);
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI friend bool
+  __call_try_wait(const _Barrier& __b, typename _Barrier::arrival_token&& __phase);
   template <typename _Barrier>
-  _LIBCUDACXX_HIDE_FROM_ABI friend bool __call_try_wait_parity(const _Barrier& __b, bool __parity);
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI friend bool __call_try_wait_parity(const _Barrier& __b, bool __parity);
 
-  _LIBCUDACXX_HIDE_FROM_ABI bool __try_wait(arrival_token __old) const
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool __try_wait(arrival_token __old) const
   {
     return __phase.load(memory_order_acquire) != __old;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI bool __try_wait_parity(bool __parity) const
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool __try_wait_parity(bool __parity) const
   {
     return __try_wait(__parity);
   }
@@ -201,7 +203,7 @@ public:
     (void) arrive();
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr ptrdiff_t max() noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr ptrdiff_t max() noexcept
   {
     return numeric_limits<ptrdiff_t>::max();
   }
@@ -227,9 +229,10 @@ private:
   template <typename _Barrier>
   friend class __barrier_poll_tester_parity;
   template <typename _Barrier>
-  _LIBCUDACXX_HIDE_FROM_ABI friend bool __call_try_wait(const _Barrier& __b, typename _Barrier::arrival_token&& __phase);
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI friend bool
+  __call_try_wait(const _Barrier& __b, typename _Barrier::arrival_token&& __phase);
   template <typename _Barrier>
-  _LIBCUDACXX_HIDE_FROM_ABI friend bool __call_try_wait_parity(const _Barrier& __b, bool __parity);
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI friend bool __call_try_wait_parity(const _Barrier& __b, bool __parity);
 
   static _LIBCUDACXX_HIDE_FROM_ABI constexpr uint64_t __init(ptrdiff_t __count) noexcept
   {
@@ -238,17 +241,18 @@ private:
     // multi-statement constexpr function.
     _CCCL_ASSERT(__count >= 0, "Count must be non-negative.");
 #endif // _CCCL_STD_VER >= 2014
+    return (((1u << 31) - __count) << 32) | ((1u << 31) - __count);
   }
-  _LIBCUDACXX_HIDE_FROM_ABI bool __try_wait_phase(uint64_t __phase) const
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool __try_wait_phase(uint64_t __phase) const
   {
     uint64_t const __current = __phase_arrived_expected.load(memory_order_acquire);
     return ((__current & __phase_bit) != __phase);
   }
-  _LIBCUDACXX_HIDE_FROM_ABI bool __try_wait(arrival_token __old) const
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool __try_wait(arrival_token __old) const
   {
     return __try_wait_phase(__old & __phase_bit);
   }
-  _LIBCUDACXX_HIDE_FROM_ABI bool __try_wait_parity(bool __parity) const
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool __try_wait_parity(bool __parity) const
   {
     return __try_wait_phase(__parity ? __phase_bit : 0);
   }
@@ -297,7 +301,7 @@ public:
     (void) arrive();
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr ptrdiff_t max() noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr ptrdiff_t max() noexcept
   {
     return numeric_limits<int32_t>::max();
   }
