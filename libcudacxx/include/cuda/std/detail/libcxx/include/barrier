@@ -53,6 +53,7 @@ namespace std
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__barrier/poll_tester.h>
 #include <cuda/std/__new_>
 #include <cuda/std/atomic>
 #include <cuda/std/chrono>
@@ -76,56 +77,6 @@ struct __empty_completion
 #else // ^^^ _LIBCUDACXX_CUDA_ABI_VERSION < 3 ^^^ / vvv _LIBCUDACXX_CUDA_ABI_VERSION >= 3 vvv
 #  define _LIBCUDACXX_BARRIER_ALIGNMENTS
 #endif // _LIBCUDACXX_CUDA_ABI_VERSION >= 3
-
-template <class _Barrier>
-class __barrier_poll_tester_phase
-{
-  _Barrier const* __this;
-  typename _Barrier::arrival_token __phase;
-
-public:
-  _LIBCUDACXX_HIDE_FROM_ABI
-  __barrier_poll_tester_phase(_Barrier const* __this_, typename _Barrier::arrival_token&& __phase_)
-      : __this(__this_)
-      , __phase(_CUDA_VSTD::move(__phase_))
-  {}
-
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool operator()() const
-  {
-    return __this->__try_wait(__phase);
-  }
-};
-
-template <class _Barrier>
-class __barrier_poll_tester_parity
-{
-  _Barrier const* __this;
-  bool __parity;
-
-public:
-  _LIBCUDACXX_HIDE_FROM_ABI __barrier_poll_tester_parity(_Barrier const* __this_, bool __parity_)
-      : __this(__this_)
-      , __parity(__parity_)
-  {}
-
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool operator()() const
-  {
-    return __this->__try_wait_parity(__parity);
-  }
-};
-
-template <class _Barrier>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool
-__call_try_wait(const _Barrier& __b, typename _Barrier::arrival_token&& __phase)
-{
-  return __b.__try_wait(_CUDA_VSTD::move(__phase));
-}
-
-template <class _Barrier>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool __call_try_wait_parity(const _Barrier& __b, bool __parity)
-{
-  return __b.__try_wait_parity(__parity);
-}
 
 template <class _CompletionF, thread_scope _Sco = thread_scope_system>
 class __barrier_base
