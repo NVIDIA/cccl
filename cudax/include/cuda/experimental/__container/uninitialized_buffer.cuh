@@ -192,7 +192,7 @@ public:
   //! allocate the buffer
   //! @endrst
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE _CUDA_VMR::resource_ref<_Properties...> resource() const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE _CUDA_VMR::resource_ref<_Properties...> get_resource() const noexcept
   {
     return _CUDA_VMR::resource_ref<_Properties...>{const_cast<uninitialized_buffer*>(this)->__mr_};
   }

@@ -28,7 +28,7 @@ struct do_not_construct
 {
   do_not_construct()
   {
-    CHECK(false);
+    CUDAX_CHECK(false);
   }
 };
 
@@ -56,8 +56,8 @@ TEMPLATE_TEST_CASE(
   {
     {
       uninitialized_async_buffer from_stream_count{resource, stream, 42};
-      CHECK(from_stream_count.data() != nullptr);
-      CHECK(from_stream_count.size() == 42);
+      CUDAX_CHECK(from_stream_count.data() != nullptr);
+      CUDAX_CHECK(from_stream_count.size() == 42);
     }
 
     {
@@ -65,14 +65,14 @@ TEMPLATE_TEST_CASE(
       const TestType* ptr = input.data();
 
       uninitialized_async_buffer from_rvalue{cuda::std::move(input)};
-      CHECK(from_rvalue.data() == ptr);
-      CHECK(from_rvalue.size() == 42);
-      CHECK(from_rvalue.get_stream() == stream);
+      CUDAX_CHECK(from_rvalue.data() == ptr);
+      CUDAX_CHECK(from_rvalue.size() == 42);
+      CUDAX_CHECK(from_rvalue.get_stream() == stream);
 
       // Ensure that we properly reset the input buffer
-      CHECK(input.data() == nullptr);
-      CHECK(input.size() == 0);
-      CHECK(input.get_stream() == cuda::stream_ref{});
+      CUDAX_CHECK(input.data() == nullptr);
+      CUDAX_CHECK(input.size() == 0);
+      CUDAX_CHECK(input.get_stream() == cuda::stream_ref{});
     }
   }
 
@@ -87,14 +87,14 @@ TEMPLATE_TEST_CASE(
 
       uninitialized_async_buffer assign_rvalue{resource, stream, 1337};
       assign_rvalue = cuda::std::move(input);
-      CHECK(assign_rvalue.data() == ptr);
-      CHECK(assign_rvalue.size() == 42);
-      CHECK(assign_rvalue.get_stream() == other_stream);
+      CUDAX_CHECK(assign_rvalue.data() == ptr);
+      CUDAX_CHECK(assign_rvalue.size() == 42);
+      CUDAX_CHECK(assign_rvalue.get_stream() == other_stream);
 
       // Ensure that we properly reset the input buffer
-      CHECK(input.data() == nullptr);
-      CHECK(input.size() == 0);
-      CHECK(input.get_stream() == cuda::stream_ref{});
+      CUDAX_CHECK(input.data() == nullptr);
+      CUDAX_CHECK(input.size() == 0);
+      CUDAX_CHECK(input.get_stream() == cuda::stream_ref{});
     }
 
     { // Ensure self move assignment doesnt do anything
@@ -102,26 +102,28 @@ TEMPLATE_TEST_CASE(
       const auto* old_ptr = buf.data();
 
       buf = cuda::std::move(buf);
-      CHECK(buf.data() == old_ptr);
-      CHECK(buf.get_stream() == stream);
-      CHECK(buf.size() == 42);
+      CUDAX_CHECK(buf.data() == old_ptr);
+      CUDAX_CHECK(buf.get_stream() == stream);
+      CUDAX_CHECK(buf.size() == 42);
     }
   }
 
   SECTION("access")
   {
     uninitialized_async_buffer buf{resource, stream, 42};
-    CHECK(buf.data() != nullptr);
-    CHECK(buf.size() == 42);
-    CHECK(buf.begin() == buf.data());
-    CHECK(buf.end() == buf.begin() + buf.size());
-    CHECK(buf.get_stream() == stream);
+    CUDAX_CHECK(buf.data() != nullptr);
+    CUDAX_CHECK(buf.size() == 42);
+    CUDAX_CHECK(buf.begin() == buf.data());
+    CUDAX_CHECK(buf.end() == buf.begin() + buf.size());
+    CUDAX_CHECK(buf.get_stream() == stream);
+    CUDAX_CHECK(buf.get_resource() == resource);
 
-    CHECK(cuda::std::as_const(buf).data() != nullptr);
-    CHECK(cuda::std::as_const(buf).size() == 42);
-    CHECK(cuda::std::as_const(buf).begin() == buf.data());
-    CHECK(cuda::std::as_const(buf).end() == buf.begin() + buf.size());
-    CHECK(cuda::std::as_const(buf).get_stream() == stream);
+    CUDAX_CHECK(cuda::std::as_const(buf).data() != nullptr);
+    CUDAX_CHECK(cuda::std::as_const(buf).size() == 42);
+    CUDAX_CHECK(cuda::std::as_const(buf).begin() == buf.data());
+    CUDAX_CHECK(cuda::std::as_const(buf).end() == buf.begin() + buf.size());
+    CUDAX_CHECK(cuda::std::as_const(buf).get_stream() == stream);
+    CUDAX_CHECK(cuda::std::as_const(buf).get_resource() == resource);
   }
 
   SECTION("properties")
@@ -137,8 +139,8 @@ TEMPLATE_TEST_CASE(
   {
     uninitialized_async_buffer buf{resource, stream, 42};
     const cuda::std::span<TestType> as_span{buf};
-    CHECK(as_span.data() == buf.data());
-    CHECK(as_span.size() == 42);
+    CUDAX_CHECK(as_span.data() == buf.data());
+    CUDAX_CHECK(as_span.size() == 42);
   }
 
   SECTION("Actually use memory")
@@ -149,7 +151,7 @@ TEMPLATE_TEST_CASE(
       stream.wait();
       thrust::fill(thrust::device, buf.begin(), buf.end(), TestType{2});
       const auto res = thrust::reduce(thrust::device, buf.begin(), buf.end(), TestType{0}, thrust::plus<int>());
-      CHECK(res == TestType{84});
+      CUDAX_CHECK(res == TestType{84});
     }
   }
 }

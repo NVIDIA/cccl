@@ -208,7 +208,7 @@ public:
   //! Returns an :ref:`asnyc_resource_ref <libcudacxx-extended-api-memory-resources-resource-ref>` to the resource used
   //! to allocate the buffer
   //! @endrst
-  _CCCL_NODISCARD _CUDA_VMR::async_resource_ref<_Properties...> resource() const noexcept
+  _CCCL_NODISCARD _CUDA_VMR::async_resource_ref<_Properties...> get_resource() const noexcept
   {
     return _CUDA_VMR::async_resource_ref<_Properties...>{const_cast<uninitialized_async_buffer*>(this)->__mr_};
   }
