@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___SEMAPHORE_ATOMIC_SEMAPHORE_H
-#define _LIBCUDACXX___SEMAPHORE_ATOMIC_SEMAPHORE_H
+#ifndef _LIBCUDACXX___SEMAPHORE_COUNTING_SEMAPHORE_H
+#define _LIBCUDACXX___SEMAPHORE_COUNTING_SEMAPHORE_H
 
 #include <cuda/std/detail/__config>
 
@@ -48,4 +48,4 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 _CCCL_POP_MACROS
 
-#endif // _LIBCUDACXX___SEMAPHORE_ATOMIC_SEMAPHORE_H
+#endif // _LIBCUDACXX___SEMAPHORE_COUNTING_SEMAPHORE_H

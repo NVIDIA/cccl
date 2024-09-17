@@ -25,7 +25,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__semaphore/counting_semaphore.h> // backward compatability
 #include <cuda/std/__semaphore/counting_semaphore.h>
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 
 #endif // _CUDA_STD_SEMAPHORE
