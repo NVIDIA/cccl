@@ -90,8 +90,6 @@ jobs:
           #! /usr/bin/env bash
           set -eo pipefail
 
-          set -x
-
           declare -a failures
           declare -A failures_map
 
