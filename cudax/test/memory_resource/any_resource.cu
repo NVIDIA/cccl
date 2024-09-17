@@ -13,7 +13,6 @@
 #include <cstddef>
 #include <cstdint>
 
-#include "cuda/std/detail/libcxx/include/cstddef"
 #include <catch2/catch.hpp>
 #include <testing.cuh>
 

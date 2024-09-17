@@ -106,7 +106,7 @@ public:
   }
 
   //! @brief Conversion from a \c basic_any_resource with the same set of properties but in a different order.
-  //! This constructor also handles conversion from \c async_any_resource to \c any_resource
+  //! This constructor also handles conversion from \c any_async_resource to \c any_resource
   //! @param __other The other \c basic_any_resource.
   _LIBCUDACXX_TEMPLATE(_CUDA_VMR::_AllocType _OtherAllocType, class... _OtherProperties)
   _LIBCUDACXX_REQUIRES(
@@ -260,19 +260,19 @@ template <class... _Properties>
 using any_resource = basic_any_resource<_CUDA_VMR::_AllocType::_Default, _Properties...>;
 
 //! @rst
-//! .. _cudax-memory-resource-async-any-resource:
+//! .. _cudax-memory-resource-any-async-resource:
 //!
 //! Type erased wrapper around an `async_resource`
 //! -----------------------------------------------
 //!
-//! ``async_any_resource`` wraps any given :ref:`async resource <libcudacxx-extended-api-memory-resources-resource>`
+//! ``any_async_resource`` wraps any given :ref:`async resource <libcudacxx-extended-api-memory-resources-resource>`
 //! that satisfies the required properties. It owns the contained resource, taking care of construction / destruction.
 //! This makes it especially suited for use in e.g. container types that need to ensure that the lifetime of the
 //! container exceeds the lifetime of the memory resource used to allocate the storage
 //!
 //! @endrst
 template <class... _Properties>
-using async_any_resource = basic_any_resource<_CUDA_VMR::_AllocType::_Async, _Properties...>;
+using any_async_resource = basic_any_resource<_CUDA_VMR::_AllocType::_Async, _Properties...>;
 
 } // namespace cuda::experimental::mr
 
