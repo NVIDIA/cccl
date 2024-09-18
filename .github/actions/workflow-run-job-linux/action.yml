@@ -149,6 +149,7 @@ runs:
           --env "CI=$CI" \
           --env "VAULT_HOST=" \
           --env "COMMAND=$COMMAND" \
+          --env "SCCACHE_IDLE_TIMEOUT=0" \
           --env "GITHUB_ENV=$GITHUB_ENV" \
           --env "GITHUB_SHA=$GITHUB_SHA" \
           --env "GITHUB_PATH=$GITHUB_PATH" \
