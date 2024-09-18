@@ -477,7 +477,7 @@ struct AgentSelectIf
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
     Int2Type<USE_DISCONTINUITY> /*select_method*/)
   {
-    if (IS_FIRST_TILE)
+    if (IS_FIRST_TILE && streaming_context.is_first_partition())
     {
       CTA_SYNC();
 
@@ -489,7 +489,7 @@ struct AgentSelectIf
       InputT tile_predecessor;
       if (threadIdx.x == 0)
       {
-        tile_predecessor = d_in[tile_offset - 1];
+        tile_predecessor = d_in[tile_offset + streaming_context.input_offset() - 1];
       }
 
       CTA_SYNC();

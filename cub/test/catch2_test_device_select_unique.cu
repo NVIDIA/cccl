@@ -30,11 +30,14 @@
 
 #include <cub/device/device_select.cuh>
 
+#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
+#include <thrust/iterator/tabulate_output_iterator.h>
 
 #include <algorithm>
 
+#include "catch2_test_device_select_common.cuh"
 #include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
 
@@ -96,6 +99,9 @@ using all_types =
                  c2h::custom_type_t<c2h::equal_comparable_t>>;
 
 using types = c2h::type_list<std::uint8_t, std::uint32_t>;
+
+// List of offset types to be used for testing large number of items
+using offset_types = c2h::type_list<std::int32_t, std::uint32_t, std::uint64_t>;
 
 CUB_TEST("DeviceSelect::Unique can run with empty input", "[device][select_unique]", types)
 {
@@ -263,4 +269,99 @@ CUB_TEST("DeviceSelect::Unique works with a different output type", "[device][se
   out.resize(num_selected_out[0]);
   reference.resize(num_selected_out[0]);
   REQUIRE(reference == out);
+}
+
+CUB_TEST("DeviceSelect::Unique works for very large number of items", "[device][select_unique]", offset_types)
+try
+{
+  using type     = std::int64_t;
+  using offset_t = typename c2h::get<0, TestType>;
+
+  auto num_items_max_ull =
+    std::min(static_cast<std::size_t>(::cuda::std::numeric_limits<offset_t>::max()),
+             ::cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
+  offset_t num_items_max = static_cast<offset_t>(num_items_max_ull);
+  offset_t num_items_min =
+    num_items_max_ull > 10000 ? static_cast<offset_t>(num_items_max_ull - 10000ULL) : offset_t{0};
+  offset_t num_items = GENERATE_COPY(
+    values(
+      {num_items_max, static_cast<offset_t>(num_items_max - 1), static_cast<offset_t>(1), static_cast<offset_t>(3)}),
+    take(2, random(num_items_min, num_items_max)));
+
+  // All unique
+  SECTION("AllUnique")
+  {
+    auto in = thrust::make_counting_iterator(offset_t{0});
+
+    // Prepare tabulate output iterator to verify results in a memory-efficient way:
+    // We use a tabulate iterator that checks whenever the algorithm writes an output whether that item
+    // corresponds to the expected value at that index and, if correct, sets a boolean flag at that index.
+    static constexpr auto bits_per_element = 8 * sizeof(std::uint32_t);
+    c2h::device_vector<std::uint32_t> correctness_flags(cub::DivideAndRoundUp(num_items, bits_per_element));
+    auto expected_result_it = in;
+    auto check_result_op =
+      make_checking_write_op(expected_result_it, thrust::raw_pointer_cast(correctness_flags.data()));
+    auto check_result_it = thrust::make_tabulate_output_iterator(check_result_op);
+
+    // Needs to be device accessible
+    c2h::device_vector<offset_t> num_selected_out(1, 0);
+    offset_t* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+
+    // Run test
+    select_unique(in, check_result_it, d_first_num_selected_out, num_items);
+
+    // Ensure that we created the correct output
+    REQUIRE(num_selected_out[0] == num_items);
+    bool all_results_correct = thrust::equal(
+      correctness_flags.cbegin(),
+      correctness_flags.cbegin() + (num_items / bits_per_element),
+      thrust::make_constant_iterator(0xFFFFFFFFU));
+    REQUIRE(all_results_correct == true);
+    if (num_items % bits_per_element != 0)
+    {
+      std::uint32_t last_element_flags = (0x00000001U << (num_items % bits_per_element)) - 0x01U;
+      REQUIRE(correctness_flags[correctness_flags.size() - 1] == last_element_flags);
+    }
+  }
+
+  // All the same -> single unique
+  SECTION("AllSame")
+  {
+    auto in = thrust::make_constant_iterator(offset_t{0});
+    constexpr offset_t expected_num_unique{1};
+
+    // Prepare tabulate output iterator to verify results in a memory-efficient way:
+    // We use a tabulate iterator that checks whenever the algorithm writes an output whether that item
+    // corresponds to the expected value at that index and, if correct, sets a boolean flag at that index.
+    static constexpr auto bits_per_element = 8 * sizeof(std::uint32_t);
+    c2h::device_vector<std::uint32_t> correctness_flags(cub::DivideAndRoundUp(expected_num_unique, bits_per_element));
+    auto expected_result_it = in;
+    auto check_result_op =
+      make_checking_write_op(expected_result_it, thrust::raw_pointer_cast(correctness_flags.data()));
+    auto check_result_it = thrust::make_tabulate_output_iterator(check_result_op);
+
+    // Needs to be device accessible
+    c2h::device_vector<offset_t> num_selected_out(1, 0);
+    offset_t* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+
+    // Run test
+    select_unique(in, check_result_it, d_first_num_selected_out, num_items);
+
+    // Ensure that we created the correct output
+    REQUIRE(num_selected_out[0] == expected_num_unique);
+    bool all_results_correct = thrust::equal(
+      correctness_flags.cbegin(),
+      correctness_flags.cbegin() + (expected_num_unique / bits_per_element),
+      thrust::make_constant_iterator(0xFFFFFFFFU));
+    REQUIRE(all_results_correct == true);
+    if (expected_num_unique % bits_per_element != 0)
+    {
+      std::uint32_t last_element_flags = (0x00000001U << (expected_num_unique % bits_per_element)) - 0x01U;
+      REQUIRE(correctness_flags[correctness_flags.size() - 1] == last_element_flags);
+    }
+  }
+}
+catch (std::bad_alloc&)
+{
+  // Exceeding memory is not a failure.
 }

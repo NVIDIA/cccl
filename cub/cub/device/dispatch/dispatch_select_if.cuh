@@ -111,6 +111,11 @@ public:
     return first_partition ? TotalNumItemsT{0} : total_previous_num_items;
   };
 
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT is_first_partition() const
+  {
+    return first_partition;
+  };
+
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_selected() const
   {
     return first_partition ? TotalNumItemsT{0} : *d_num_selected_in;
@@ -160,6 +165,11 @@ public:
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT input_offset() const
   {
     return TotalNumItemsT{0};
+  };
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT is_first_partition() const
+  {
+    return true;
   };
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_selected() const

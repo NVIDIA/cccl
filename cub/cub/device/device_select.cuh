@@ -950,6 +950,9 @@ struct DeviceSelect
   //! @tparam NumSelectedIteratorT
   //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
   //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
@@ -974,22 +977,31 @@ struct DeviceSelect
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT>
+  template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT,
+            typename NumItemsT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Unique(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
     NumSelectedIteratorT d_num_selected_out,
-    ::cuda::std::int64_t num_items,
+    NumItemsT num_items,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Unique");
 
-    using OffsetT      = ::cuda::std::int64_t; // Signed integer type for global offsets
+    using ChooseOffsetT = detail::choose_signed_offset<NumItemsT>;
+    using OffsetT       = typename ChooseOffsetT::type; // Signed integer type for global offsets
     using FlagIterator = NullType*; // FlagT iterator type (not used)
     using SelectOp     = NullType; // Selection op (not used)
     using EqualityOp   = Equality; // Default == operator
+
+    // Check if the number of items exceeds the range covered by the selected signed offset type
+    cudaError_t error = ChooseOffsetT::is_exceeding_offset_type(num_items);
+    if (error)
+    {
+      return error;
+    }
 
     return DispatchSelectIf<
       InputIteratorT,
@@ -1012,20 +1024,21 @@ struct DeviceSelect
   }
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-  template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT>
+  template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT,
+            typename NumItemsT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Unique(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
     NumSelectedIteratorT d_num_selected_out,
-    ::cuda::std::int64_t num_items,
+    NumItemsT num_items,
     cudaStream_t stream,
     bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return Unique<InputIteratorT, OutputIteratorT, NumSelectedIteratorT>(
+    return Unique<InputIteratorT, OutputIteratorT, NumSelectedIteratorT, NumItemsT>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, stream);
   }
 #endif // DOXYGEN_SHOULD_SKIP_THIS
