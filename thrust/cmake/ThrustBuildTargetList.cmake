@@ -52,6 +52,8 @@ define_property(TARGET PROPERTY _THRUST_PREFIX
 )
 
 function(thrust_set_target_properties target_name host device dialect prefix)
+  cccl_configure_target(${target_name} DIALECT ${dialect})
+
   set_target_properties(${target_name}
     PROPERTIES
       _THRUST_HOST ${host}
@@ -59,42 +61,6 @@ function(thrust_set_target_properties target_name host device dialect prefix)
       _THRUST_DIALECT ${dialect}
       _THRUST_PREFIX ${prefix}
   )
-
-  get_property(langs GLOBAL PROPERTY ENABLED_LANGUAGES)
-  set(standard_features)
-  if (CUDA IN_LIST langs)
-    list(APPEND standard_features cuda_std_${dialect})
-  endif()
-  if (CXX IN_LIST langs)
-    list(APPEND standard_features cxx_std_${dialect})
-  endif()
-
-  get_target_property(type ${target_name} TYPE)
-  if (${type} STREQUAL "INTERFACE_LIBRARY")
-    target_compile_features(${target_name} INTERFACE
-      ${standard_features}
-    )
-  else()
-    target_compile_features(${target_name} PUBLIC
-      ${standard_features}
-    )
-    set_target_properties(${target_name}
-      PROPERTIES
-        CXX_STANDARD ${dialect}
-        CUDA_STANDARD ${dialect}
-        # Must manually request that the standards above are actually respected
-        # or else CMake will silently fail to configure the targets correctly...
-        # Note that this doesn't actually work as of CMake 3.16:
-        # https://gitlab.kitware.com/cmake/cmake/-/issues/20953
-        # We'll leave these properties enabled in hopes that they will someday
-        # work.
-        CXX_STANDARD_REQUIRED ON
-        CUDA_STANDARD_REQUIRED ON
-        ARCHIVE_OUTPUT_DIRECTORY "${THRUST_LIBRARY_OUTPUT_DIR}"
-        LIBRARY_OUTPUT_DIRECTORY "${THRUST_LIBRARY_OUTPUT_DIR}"
-        RUNTIME_OUTPUT_DIRECTORY "${THRUST_EXECUTABLE_OUTPUT_DIR}"
-    )
-  endif()
 endfunction()
 
 # Get a thrust property from a target and store it in var_name
