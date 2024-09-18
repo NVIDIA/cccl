@@ -71,7 +71,7 @@ namespace select
 // Offset type used to instantiate the stream compaction-kernel and agent to index the items within one partition
 using per_partition_offset_t = ::cuda::std::int32_t;
 
-template <typename TotalNumItemsT>
+template <typename TotalNumItemsT, bool IsStreamingInvocation>
 class streaming_context_t
 {
 private:
@@ -138,6 +138,50 @@ public:
     {
       *d_num_selected_out = num_previously_selected() + static_cast<TotalNumItemsT>(num_selections);
     }
+  }
+};
+
+template <typename TotalNumItemsT>
+class streaming_context_t<TotalNumItemsT, false>
+{
+private:
+  TotalNumItemsT total_num_items{};
+
+public:
+  using total_num_items_t = TotalNumItemsT;
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
+  streaming_context_t(TotalNumItemsT*, TotalNumItemsT*, TotalNumItemsT total_num_items, bool)
+      : total_num_items(total_num_items)
+  {}
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void advance(TotalNumItemsT, bool) {};
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT input_offset() const
+  {
+    return TotalNumItemsT{0};
+  };
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_selected() const
+  {
+    return TotalNumItemsT{0};
+  };
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_rejected() const
+  {
+    return TotalNumItemsT{0};
+  };
+
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_total_items() const
+  {
+    return total_num_items;
+  };
+
+  template <typename NumSelectedIteratorT, typename OffsetT>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void
+  update_num_selected(NumSelectedIteratorT user_num_selected_out_it, OffsetT num_selections) const
+  {
+    *user_num_selected_out_it = num_selections;
   }
 };
 
@@ -400,7 +444,16 @@ struct DispatchSelectIf : SelectedPolicy
   using num_total_items_t = OffsetT;
 
   // Type used to provide streaming information about each partition's context
-  using streaming_context_t = detail::select::streaming_context_t<num_total_items_t>;
+  static constexpr per_partition_offset_t const partition_size =
+    cuda::std::numeric_limits<per_partition_offset_t>::max();
+
+  // If the values representable by OffsetT exceed the partition_size, we use a kernel template specialization that
+  // supports streaming (i.e., splitting the input into partitions of up to partition_size number of items)
+  static constexpr bool may_require_streaming =
+    (static_cast<::cuda::std::uint64_t>(partition_size)
+     < static_cast<::cuda::std::uint64_t>(cuda::std::numeric_limits<OffsetT>::max()));
+
+  using streaming_context_t = detail::select::streaming_context_t<num_total_items_t, may_require_streaming>;
 
   using ScanTileStateT = ScanTileState<per_partition_offset_t>;
 
@@ -542,9 +595,11 @@ struct DispatchSelectIf : SelectedPolicy
     constexpr auto tile_size        = static_cast<OffsetT>(block_threads * items_per_thread);
 
     // The maximum number of items for which we will ever invoke the kernel (i.e. largest partition size)
+    // The extra check of may_require_streaming ensures that OffsetT is larger than per_partition_offset_t to avoid
+    // truncation of partition_size
     auto const max_partition_size =
-      num_items > static_cast<OffsetT>(cuda::std::numeric_limits<per_partition_offset_t>::max())
-        ? static_cast<OffsetT>(cuda::std::numeric_limits<per_partition_offset_t>::max())
+      (may_require_streaming && num_items > static_cast<OffsetT>(partition_size))
+        ? static_cast<OffsetT>(partition_size)
         : num_items;
 
     // The number of partitions required to "iterate" over the total input
