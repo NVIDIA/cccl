@@ -213,6 +213,7 @@ class _Reduce:
 
     def __call__(self, temp_storage, d_in, d_out, init):
         # TODO Assert that types match the ones used in the constructor
+        assert False
         bindings = _get_bindings()
         if temp_storage is None:
             temp_storage_bytes = ctypes.c_size_t()
