@@ -517,7 +517,7 @@ struct AgentSelectIf
   /**
    * Scatter flagged items to output offsets (specialized for direct scattering).
    */
-  template <bool IS_LAST_TILE, bool IS_FIRST_TILE>
+  template <bool IS_LAST_TILE>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterSelectedDirect(
     InputT (&items)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
@@ -556,7 +556,7 @@ struct AgentSelectIf
    * @param is_keep_rejects
    *   Marker type indicating whether to keep rejected items in the second partition
    */
-  template <bool IS_LAST_TILE, bool IS_FIRST_TILE>
+  template <bool IS_LAST_TILE>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterSelectedTwoPhase(
     InputT (&items)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
@@ -604,7 +604,7 @@ struct AgentSelectIf
    * @param num_selections
    *   Total number of selections including this tile
    */
-  template <bool IS_LAST_TILE, bool IS_FIRST_TILE>
+  template <bool IS_LAST_TILE>
   _CCCL_DEVICE _CCCL_FORCEINLINE void Scatter(
     InputT (&items)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
@@ -620,12 +620,12 @@ struct AgentSelectIf
     // greater than one
     if (TWO_PHASE_SCATTER && (num_tile_selections > BLOCK_THREADS))
     {
-      ScatterSelectedTwoPhase<IS_LAST_TILE, IS_FIRST_TILE>(
+      ScatterSelectedTwoPhase<IS_LAST_TILE>(
         items, selection_flags, selection_indices, num_tile_selections, num_selections_prefix);
     }
     else
     {
-      ScatterSelectedDirect<IS_LAST_TILE, IS_FIRST_TILE>(items, selection_flags, selection_indices, num_selections);
+      ScatterSelectedDirect<IS_LAST_TILE>(items, selection_flags, selection_indices, num_selections);
     }
   }
 
@@ -648,7 +648,7 @@ struct AgentSelectIf
    * @param is_keep_rejects
    *   Marker type indicating whether to keep rejected items in the second partition
    */
-  template <bool IS_LAST_TILE, bool IS_FIRST_TILE>
+  template <bool IS_LAST_TILE>
   _CCCL_DEVICE _CCCL_FORCEINLINE void Scatter(
     InputT (&items)[ITEMS_PER_THREAD],
     OffsetT (&selection_flags)[ITEMS_PER_THREAD],
@@ -833,7 +833,7 @@ struct AgentSelectIf
     }
 
     // Scatter flagged items
-    Scatter<IS_LAST_TILE, true>(
+    Scatter<IS_LAST_TILE>(
       items,
       selection_flags,
       selection_indices,
@@ -915,7 +915,7 @@ struct AgentSelectIf
     // previous tiles' input items, in case of in-place compaction), because this is implicitly ensured through
     // execution dependency: The scatter stage requires the offset from the prefix-sum and it can only know the
     // prefix-sum after having read that from the decoupled look-back. Scatter flagged items
-    Scatter<IS_LAST_TILE, false>(
+    Scatter<IS_LAST_TILE>(
       items,
       selection_flags,
       selection_indices,
