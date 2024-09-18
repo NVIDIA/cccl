@@ -19,6 +19,7 @@ jobs:
       id-token: write
       contents: read
     strategy:
+      max-parallel: 4
       fail-fast: false
       matrix:
         include: ${{ fromJSON(inputs.pc-array) }}

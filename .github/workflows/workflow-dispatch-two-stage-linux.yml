@@ -56,6 +56,7 @@ jobs:
       env:
         NVIDIA_VISIBLE_DEVICES: ${{env.NVIDIA_VISIBLE_DEVICES}}
     strategy:
+      max-parallel: 4
       fail-fast: false
       matrix:
         include: ${{ fromJSON(inputs.consumers) }}

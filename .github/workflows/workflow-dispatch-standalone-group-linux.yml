@@ -16,6 +16,7 @@ jobs:
   run-jobs:
     name: "${{ matrix.name }}"
     strategy:
+      max-parallel: 4
       fail-fast: false
       matrix:
         include: ${{ fromJSON(inputs.job-array) }}

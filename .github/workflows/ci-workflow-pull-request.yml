@@ -78,6 +78,7 @@ jobs:
       id-token: write
       contents: read
     strategy:
+      max-parallel: 4
       fail-fast: false
       matrix:
         name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['linux_two_stage']['keys'] }}
@@ -112,6 +113,7 @@ jobs:
       id-token: write
       contents: read
     strategy:
+      max-parallel: 4
       fail-fast: false
       matrix:
         name: ${{ fromJSON(needs.build-workflow.outputs.workflow)['linux_standalone']['keys'] }}
