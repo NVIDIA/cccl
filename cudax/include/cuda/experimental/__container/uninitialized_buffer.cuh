@@ -188,13 +188,14 @@ public:
   }
 
   //! @rst
-  //! Returns a :ref:`resource_ref <libcudacxx-extended-api-memory-resources-resource-ref>` to the resource used to
-  //! allocate the buffer
+  //! Returns a \c const reference to the :ref:`any_resource <cudax-memory-resource-any-resource>`
+  //! that holds the memory resource used to allocate the buffer
   //! @endrst
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE _CUDA_VMR::resource_ref<_Properties...> get_resource() const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE const ::cuda::experimental::mr::any_resource<_Properties...>&
+  get_resource() const noexcept
   {
-    return _CUDA_VMR::resource_ref<_Properties...>{const_cast<uninitialized_buffer*>(this)->__mr_};
+    return __mr_;
   }
 
   //! @brief Swaps the contents with those of another \c uninitialized_buffer
