@@ -38,7 +38,6 @@
 
 #include <cuda/__memory_resource/resource.h>
 #include <cuda/std/__type_traits/is_swappable.h>
-#include <cuda/std/__type_traits/type_set.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/atomic>
 
