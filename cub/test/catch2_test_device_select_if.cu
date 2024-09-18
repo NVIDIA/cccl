@@ -343,8 +343,8 @@ try
   offset_t* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   // Run test
-  constexpr offset_t match_every_nth     = 1000000;
-  offset_t expected_num_copied = (num_items + match_every_nth - offset_t{1}) / match_every_nth;
+  constexpr offset_t match_every_nth = 1000000;
+  offset_t expected_num_copied       = (num_items + match_every_nth - offset_t{1}) / match_every_nth;
   c2h::device_vector<type> out(expected_num_copied);
   select_if(
     in, out.begin(), d_first_num_selected_out, num_items, mod_n<offset_t>{static_cast<offset_t>(match_every_nth)});

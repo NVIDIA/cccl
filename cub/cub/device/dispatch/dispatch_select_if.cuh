@@ -130,7 +130,7 @@ public:
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_total_items(OffsetT) const
   {
     return total_num_items;
-  };
+  }
 
   template <typename NumSelectedIteratorT, typename OffsetT>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void
@@ -181,7 +181,7 @@ public:
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_total_items(OffsetT num_partition_items) const
   {
     return num_partition_items;
-  };
+  }
 
   template <typename NumSelectedIteratorT, typename OffsetT>
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void

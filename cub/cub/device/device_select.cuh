@@ -977,8 +977,7 @@ struct DeviceSelect
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT,
-            typename NumItemsT>
+  template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT, typename NumItemsT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Unique(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -992,9 +991,9 @@ struct DeviceSelect
 
     using ChooseOffsetT = detail::choose_signed_offset<NumItemsT>;
     using OffsetT       = typename ChooseOffsetT::type; // Signed integer type for global offsets
-    using FlagIterator = NullType*; // FlagT iterator type (not used)
-    using SelectOp     = NullType; // Selection op (not used)
-    using EqualityOp   = Equality; // Default == operator
+    using FlagIterator  = NullType*; // FlagT iterator type (not used)
+    using SelectOp      = NullType; // Selection op (not used)
+    using EqualityOp    = Equality; // Default == operator
 
     // Check if the number of items exceeds the range covered by the selected signed offset type
     cudaError_t error = ChooseOffsetT::is_exceeding_offset_type(num_items);
@@ -1024,8 +1023,7 @@ struct DeviceSelect
   }
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-  template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT,
-            typename NumItemsT>
+  template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT, typename NumItemsT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Unique(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
