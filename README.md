@@ -5,7 +5,7 @@
 
 # CUDA Core Compute Libraries (CCCL)
 
-Welcome to the CUDA Core Compute Libraries (CCCL) where our mission is to make CUDA C++ more delightful.
+Welcome to the CUDA Core Compute Libraries (CCCL) where our mission is to make CUDA more delightful.
 
 This repository unifies three essential CUDA C++ libraries into a single, convenient repository:
 
@@ -413,7 +413,7 @@ For a detailed overview of the CI pipeline, see [ci-overview.md](ci-overview.md)
 
 ## Related Projects
 
-Projects that are related to CCCL's mission to make CUDA C++ more delightful:
+Projects that are related to CCCL's mission to make CUDA more delightful:
 - [cuCollections](https://github.com/NVIDIA/cuCollections) - GPU accelerated data structures like hash tables
 - [NVBench](https://github.com/NVIDIA/nvbench) - Benchmarking library tailored for CUDA applications
 - [stdexec](https://github.com/nvidia/stdexec) - Reference implementation for Senders asynchronous programming model
