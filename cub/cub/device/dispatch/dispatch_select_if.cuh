@@ -126,7 +126,8 @@ public:
     return first_partition ? TotalNumItemsT{0} : (total_previous_num_items - num_previously_selected());
   };
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_total_items() const
+  template <typename OffsetT>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_total_items(OffsetT) const
   {
     return total_num_items;
   };
@@ -149,16 +150,10 @@ public:
 template <typename TotalNumItemsT>
 class streaming_context_t<TotalNumItemsT, false>
 {
-private:
-  TotalNumItemsT total_num_items{};
-
 public:
   using total_num_items_t = TotalNumItemsT;
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE
-  streaming_context_t(TotalNumItemsT*, TotalNumItemsT*, TotalNumItemsT total_num_items, bool)
-      : total_num_items(total_num_items)
-  {}
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE streaming_context_t(TotalNumItemsT*, TotalNumItemsT*, TotalNumItemsT, bool) {}
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void advance(TotalNumItemsT, bool) {};
 
@@ -182,9 +177,10 @@ public:
     return TotalNumItemsT{0};
   };
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_total_items() const
+  template <typename OffsetT>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_total_items(OffsetT num_partition_items) const
   {
-    return total_num_items;
+    return num_partition_items;
   };
 
   template <typename NumSelectedIteratorT, typename OffsetT>
