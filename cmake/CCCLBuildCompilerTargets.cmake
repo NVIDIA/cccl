@@ -50,9 +50,6 @@ function(cccl_build_compiler_targets)
   list(APPEND cuda_compile_definitions "-Xcudafe=--promote_warnings")
   list(APPEND cuda_compile_definitions "-Wno-deprecated-gpu-targets")
 
-  # Ensure that we build our tests without treating ourself as system header
-  list(APPEND cxx_compile_definitions "_CCCL_NO_SYSTEM_HEADER")
-
   if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
     list(APPEND cuda_compile_options "--use-local-env")
     list(APPEND cxx_compile_options "/bigobj")
