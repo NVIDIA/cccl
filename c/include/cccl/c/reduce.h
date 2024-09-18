@@ -16,7 +16,7 @@
 
 #  include <cuda.h>
 
-#  include <cccl/types.h>
+#  include <cccl/c/types.h>
 
 struct cccl_device_reduce_build_result_t
 {
