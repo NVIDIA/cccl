@@ -18,3 +18,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wsubobject-linkage")
 _CCCL_DIAG_SUPPRESS_MSVC(4848) // [[no_unique_address]] prior to C++20 as a vendor extension
+
+_CCCL_DIAG_SUPPRESS_GCC("-Wmissing-braces")
+_CCCL_DIAG_SUPPRESS_CLANG("-Wmissing-braces")
+_CCCL_DIAG_SUPPRESS_MSVC(5246) // missing braces around initializer

@@ -9,11 +9,11 @@ void TestAllOf()
 {
   using T = typename Vector::value_type;
 
-  Vector v(3, 1);
+  Vector v(3, T{1});
 
   ASSERT_EQUAL(thrust::all_of(v.begin(), v.end(), thrust::identity<T>()), true);
 
-  v[1] = 0;
+  v[1] = T{0};
 
   ASSERT_EQUAL(thrust::all_of(v.begin(), v.end(), thrust::identity<T>()), false);
 
@@ -64,7 +64,7 @@ void TestAnyOf()
 {
   using T = typename Vector::value_type;
 
-  Vector v(3, 1);
+  Vector v(3, T{1});
 
   ASSERT_EQUAL(thrust::any_of(v.begin(), v.end(), thrust::identity<T>()), true);
 
@@ -119,7 +119,7 @@ void TestNoneOf()
 {
   using T = typename Vector::value_type;
 
-  Vector v(3, 1);
+  Vector v(3, T{1});
 
   ASSERT_EQUAL(thrust::none_of(v.begin(), v.end(), thrust::identity<T>()), false);
 

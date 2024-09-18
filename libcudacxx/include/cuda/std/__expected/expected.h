@@ -60,7 +60,6 @@
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
-#include <cuda/std/cstdlib>
 #include <cuda/std/detail/libcxx/include/__assert>
 #include <cuda/std/initializer_list>
 

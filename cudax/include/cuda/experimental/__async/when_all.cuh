@@ -40,7 +40,7 @@
 
 _CCCL_DIAG_PUSH
 _CCCL_NV_DIAG_SUPPRESS(expr_has_no_effect)
-_CCCL_DIAG_SUPPRESS_GCC("-Wunused-__value")
+_CCCL_DIAG_SUPPRESS_GCC("-Wunused-value")
 
 namespace cuda::experimental::__async
 {
