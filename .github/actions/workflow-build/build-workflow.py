@@ -864,8 +864,20 @@ def set_derived_tags(matrix_job):
         gpu = get_gpu(matrix_job['gpu'])
         matrix_job['sm'] = gpu['sm']
 
-    if 'std' in matrix_job and matrix_job['std'] == 'all':
-        matrix_job['std'] = lookup_supported_stds(matrix_job)
+    if 'std' in matrix_job:
+        if matrix_job['std'] == 'all':
+            matrix_job['std'] = lookup_supported_stds(matrix_job)
+        elif matrix_job['std'] == 'min':
+            matrix_job['std'] = min(lookup_supported_stds(matrix_job))
+        elif matrix_job['std'] == 'max':
+            matrix_job['std'] = max(lookup_supported_stds(matrix_job))
+        elif matrix_job['std'] == 'minmax':
+            stds = lookup_supported_stds(matrix_job)
+            if len(stds) == 1:
+                matrix_job['std'] = stds[0]
+            else:
+                matrix_job['std'] = [min(stds), max(stds)]
+
 
     # Add all deps before applying project job maps:
     for job in matrix_job['jobs']:
