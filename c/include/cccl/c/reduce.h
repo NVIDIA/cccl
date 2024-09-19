@@ -11,12 +11,12 @@
 #pragma once
 
 #ifndef CCCL_C_EXPERIMENTAL
-#  warning "C exposure is experimental and subject to change. Define CCCL_C_EXPERIMENTAL to acknowledge this warning."
-#else // ^^^ !CCCL_C_EXPERIMENTAL ^^^ / vvv CCCL_C_EXPERIMENTAL vvv
+#  error "C exposure is experimental and subject to change. Define CCCL_C_EXPERIMENTAL to acknowledge this notice."
+#endif // !CCCL_C_EXPERIMENTAL
 
-#  include <cuda.h>
+#include <cuda.h>
 
-#  include <cccl/types.h>
+#include <cccl/c/types.h>
 
 struct cccl_device_reduce_build_result_t
 {
@@ -55,5 +55,3 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce(
   CUstream stream) noexcept;
 
 extern "C" CCCL_C_API CUresult cccl_device_reduce_cleanup(cccl_device_reduce_build_result_t* bld_ptr);
-
-#endif // CCCL_C_EXPERIMENTAL
