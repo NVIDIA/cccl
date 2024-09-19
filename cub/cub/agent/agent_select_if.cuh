@@ -732,14 +732,14 @@ struct AgentSelectIf
    */
   template <bool IS_LAST_TILE,
             typename PartitionedOutputItT,
-            typename _InputT                                                 = InputT,
-            typename ::cuda::std::enable_if<sizeof(_InputT) == 1, int>::type = 0>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterPartitionsToGlobal(
-    int num_tile_items,
-    int tile_num_rejections,
-    OffsetT num_selections_prefix,
-    OffsetT num_rejected_prefix,
-    PartitionedOutputItT partitioned_out_it)
+            typename _InputT = InputT,
+            typename ::cuda::std::enable_if < sizeof(_InputT) > 1,
+            int > ::type = 0 > _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterPartitionsToGlobal(
+                             int num_tile_items,
+                             int tile_num_rejections,
+                             OffsetT num_selections_prefix,
+                             OffsetT num_rejected_prefix,
+                             PartitionedOutputItT partitioned_out_it)
   {
     using total_offset_t = typename StreamingContextT::total_num_items_t;
 
@@ -769,8 +769,8 @@ struct AgentSelectIf
 
   template <bool IS_LAST_TILE,
             typename PartitionedOutputItT,
-            typename _InputT                                                  = InputT,
-            typename ::cuda::std::enable_if<(sizeof(_InputT) > 1), int>::type = 0>
+            typename _InputT                                                   = InputT,
+            typename ::cuda::std::enable_if<(sizeof(_InputT) == 1), int>::type = 0>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterPartitionsToGlobal(
     int num_tile_items,
     int tile_num_rejections,
