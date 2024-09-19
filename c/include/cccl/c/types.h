@@ -16,9 +16,9 @@
 
 #if defined(_WIN32)
 #  define CCCL_C_API __declspec(dllexport)
-#else
+#else // ^^^ _WIN32 ^^^ / vvv !_WIN32 vvv
 #  define CCCL_C_API __attribute__((visibility("default")))
-#endif
+#endif // !_WIN32
 
 enum class cccl_type_enum
 {
