@@ -37,7 +37,10 @@
 #endif
 
 #include <cuda/__memory_resource/resource.h>
+#include <cuda/std/__new_>
 #include <cuda/std/__type_traits/is_swappable.h>
+#include <cuda/std/__utility/exchange.h>
+#include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/atomic>
 
@@ -53,6 +56,8 @@ namespace cuda::experimental::mr
 //! ``shared_resource`` holds a reference counted instance of a memory resource. This allows
 //! the user to pass a resource around with reference semantics while avoiding lifetime issues.
 //!
+//! @note ``shared_resource`` satisfies the ``cuda::mr::async_resource`` concept iff \tparam _Resource satisfies it.
+//! @tparam _Resource The resource type to hold.
 //! @endrst
 template <class _Resource>
 struct shared_resource
@@ -242,6 +247,26 @@ private:
 
   _Control_block* __control_block;
 };
+
+//! @rst
+//! .. _cudax-memory-resource-make-shared-resource:
+//!
+//! Factory function for `shared_resource` objects
+//! -----------------------------------------------
+//!
+//! ``make_any_resource`` constructs an :ref:`shared_resource <cudax-memory-resource-shared-resource>` object that wraps
+//! a newly constructed instance of the given resource type. The resource type must satisfy the ``cuda::mr::resource``
+//! concept and provide all of the properties specified in the template parameter pack.
+//!
+//! @param __args The arguments used to construct the instance of the resource type.
+//!
+//! @endrst
+template <class _Resource, class... _Args>
+auto make_shared_resource(_Args&&... __args) -> shared_resource<_Resource>
+{
+  static_assert(_CUDA_VMR::resource<_Resource>, "_Resource does not satisfy the cuda::mr::resource concept");
+  return shared_resource<_Resource>{_CUDA_VSTD::forward<_Args>(__args)...};
+}
 
 } // namespace cuda::experimental::mr
 
