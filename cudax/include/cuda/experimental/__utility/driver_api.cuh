@@ -14,20 +14,24 @@
 #include <cuda.h>
 
 #include <cuda/std/__exception/cuda_error.h>
+#include <cuda/std/variant>
 
 // Get the driver function by name using this macro
 #define CUDAX_GET_DRIVER_FUNCTION(function_name) \
   reinterpret_cast<decltype(function_name)*>(get_driver_entry_point(#function_name))
 
+#define CUDAX_GET_DRIVER_FUNCTION_VERSIONED(function_name, versioned_fn_name, version) \
+  reinterpret_cast<decltype(versioned_fn_name)*>(get_driver_entry_point(#function_name, version))
+
 namespace cuda::experimental::detail::driver
 {
-inline void* get_driver_entry_point(const char* name)
+// For minor version compatibility request the 12.0 version of everything for now, unless requested otherwise
+inline void* get_driver_entry_point(const char* name, [[maybe_unused]] int version = 12000)
 {
   void* fn;
   cudaDriverEntryPointQueryResult result;
 #if CUDART_VERSION >= 12050
-  // For minor version compatibility request the 12.0 version of everything for now
-  cudaGetDriverEntryPointByVersion(name, &fn, 12000, cudaEnableDefault, &result);
+  cudaGetDriverEntryPointByVersion(name, &fn, version, cudaEnableDefault, &result);
 #else
   // Versioned get entry point not available before 12.5, but we don't need anything versioned before that
   cudaGetDriverEntryPoint(name, &fn, cudaEnableDefault, &result);
@@ -118,6 +122,24 @@ inline CUcontext streamGetCtx(CUstream stream)
   return result;
 }
 
+#if CUDART_VERSION >= 12050
+inline cuda::std::variant<CUcontext, CUgreenCtx> streamGetCtx_v2(CUstream stream)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION_VERSIONED(cuStreamGetCtx, cuStreamGetCtx_v2, 12050);
+  CUcontext ctx;
+  CUgreenCtx gctx;
+  call_driver_fn(driver_fn, "Failed to get context from a stream", stream, &ctx, &gctx);
+  if (gctx)
+  {
+    return gctx;
+  }
+  else
+  {
+    return ctx;
+  }
+}
+#endif
+
 inline void streamWaitEvent(CUstream stream, CUevent event)
 {
   static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuStreamWaitEvent);
@@ -142,6 +164,30 @@ inline cudaError_t eventDestroy(CUevent event)
   static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuEventDestroy);
   return static_cast<cudaError_t>(driver_fn(event));
 }
+
+#if CUDART_VERSION >= 12050
+inline CUgreenCtx greenCtxCreate(CUdevice dev)
+{
+  CUgreenCtx result;
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION_VERSIONED(cuGreenCtxCreate, cuGreenCtxCreate, 12050);
+  call_driver_fn(driver_fn, "Failed to create a green context", &result, nullptr, dev, CU_GREEN_CTX_DEFAULT_STREAM);
+  return result;
+}
+
+inline cudaError_t greenCtxDestroy(CUgreenCtx green_ctx)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION_VERSIONED(cuGreenCtxDestroy, cuGreenCtxDestroy, 12050);
+  return static_cast<cudaError_t>(driver_fn(green_ctx));
+}
+
+inline CUcontext ctxFromGreenCtx(CUgreenCtx green_ctx)
+{
+  CUcontext result;
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION_VERSIONED(cuCtxFromGreenCtx, cuCtxFromGreenCtx, 12050);
+  call_driver_fn(driver_fn, "Failed to convert a green context", &result, green_ctx);
+  return result;
+}
+#endif
 } // namespace cuda::experimental::detail::driver
 
 #undef CUDAX_GET_DRIVER_FUNCTION

@@ -25,7 +25,8 @@
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/stream_ref>
 
-#include <cuda/experimental/__device/device_ref.cuh>
+#include <cuda/experimental/__device/all_devices.cuh>
+#include <cuda/experimental/__device/device_ref_v2.cuh>
 #include <cuda/experimental/__event/timed_event.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
 
@@ -95,17 +96,36 @@ struct stream_ref : ::cuda::stream_ref
     wait(__tmp);
   }
 
+  device_ref_v2 get_device_ref_v2() const
+  {
+    CUcontext __stream_ctx;
+#if CUDART_VERSION >= 12050
+    auto __ctx = detail::driver::streamGetCtx_v2(__stream);
+    if (cuda::std::holds_alternative<CUgreenCtx>(__ctx))
+    {
+      __stream_ctx = detail::driver::ctxFromGreenCtx(cuda::std::get<CUgreenCtx>(__ctx));
+    }
+    else
+    {
+      __stream_ctx = cuda::std::get<CUcontext>(__ctx);
+    }
+#else
+    __stream_ctx = detail::driver::streamGetCtx(__stream);
+#endif
+    // Because the stream can come from_native_handle, we can't just loop over devices comparing contexts,
+    // lower to CUDART for this instead
+    __ensure_current_device __setter(__stream_ctx);
+    int __id;
+    _CCCL_TRY_CUDA_API(cudaGetDevice, "Could not get device from a stream", &__id);
+    return device_ref_v2(__id, __stream_ctx);
+  }
+
   //! @brief Get device under which this stream was created.
   //!
   //! @throws cuda_error if device check fails
   device_ref device() const
   {
-    // Because the stream can come from_native_handle, we can't just loop over devices comparing contexts,
-    // lower to CUDART for this instead
-    __ensure_current_device __dev_setter(*this);
-    int result;
-    _CCCL_TRY_CUDA_API(cudaGetDevice, "Could not get device from a stream", &result);
-    return result;
+    return get_device_ref_v2().__dev_id;
   }
 };
 
