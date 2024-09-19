@@ -732,8 +732,8 @@ struct AgentSelectIf
    */
   template <bool IS_LAST_TILE,
             typename PartitionedOutputItT,
-            typename _InputT                                                 = InputT,
-            typename ::cuda::std::enable_if<(sizeof(_InputT) > 1), int>::type = 0>
+            typename _InputT = InputT,
+            typename ::cuda::std::enable_if<!(sizeof(_InputT) == 1 && SELECT_METHOD == USE_SELECT_OP), int>::type = 0>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterPartitionsToGlobal(
     int num_tile_items,
     int tile_num_rejections,
@@ -769,8 +769,8 @@ struct AgentSelectIf
 
   template <bool IS_LAST_TILE,
             typename PartitionedOutputItT,
-            typename _InputT                                                  = InputT,
-            typename ::cuda::std::enable_if<(sizeof(_InputT) == 1), int>::type = 0>
+            typename _InputT = InputT,
+            typename ::cuda::std::enable_if<(sizeof(_InputT) == 1 && SELECT_METHOD == USE_SELECT_OP), int>::type = 0>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScatterPartitionsToGlobal(
     int num_tile_items,
     int tile_num_rejections,
