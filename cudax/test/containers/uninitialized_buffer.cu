@@ -23,6 +23,7 @@
 #include <cuda/experimental/stream.cuh>
 
 #include "testing.cuh"
+#include <catch2/catch.hpp>
 
 struct do_not_construct
 {
@@ -101,7 +102,7 @@ TEMPLATE_TEST_CASE(
       CUDAX_CHECK(buf.data() != old_ptr);
       CUDAX_CHECK(buf.data() == old_input_ptr);
       CUDAX_CHECK(buf.size() == 42);
-      CUDAX_CHECK(buf.resource() == other_resource);
+      CUDAX_CHECK(buf.get_resource() == other_resource);
 
       CUDAX_CHECK(input.data() == nullptr);
       CUDAX_CHECK(input.size() == 0);
@@ -124,13 +125,13 @@ TEMPLATE_TEST_CASE(
     CUDAX_CHECK(buf.size() == 42);
     CUDAX_CHECK(buf.begin() == buf.data());
     CUDAX_CHECK(buf.end() == buf.begin() + buf.size());
-    CUDAX_CHECK(buf.resource() == resource);
+    CUDAX_CHECK(buf.get_resource() == resource);
 
     CUDAX_CHECK(cuda::std::as_const(buf).data() != nullptr);
     CUDAX_CHECK(cuda::std::as_const(buf).size() == 42);
     CUDAX_CHECK(cuda::std::as_const(buf).begin() == buf.data());
     CUDAX_CHECK(cuda::std::as_const(buf).end() == buf.begin() + buf.size());
-    CUDAX_CHECK(cuda::std::as_const(buf).resource() == resource);
+    CUDAX_CHECK(cuda::std::as_const(buf).get_resource() == resource);
   }
 
   SECTION("properties")
