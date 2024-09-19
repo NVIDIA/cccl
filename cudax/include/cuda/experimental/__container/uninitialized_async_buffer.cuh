@@ -204,8 +204,8 @@ public:
   }
 
   //! @rst
-  //! Returns an :ref:`asnyc_resource_ref <libcudacxx-extended-api-memory-resources-resource-ref>` to the resource used
-  //! to allocate the buffer
+  //! Returns a \c const reference to the :ref:`any_async_resource <cudax-memory-resource-async-any-resource>`
+  //! that holds the memory resource used to allocate the buffer
   //! @endrst
   _CCCL_NODISCARD const __async_resource& get_resource() const noexcept
   {
