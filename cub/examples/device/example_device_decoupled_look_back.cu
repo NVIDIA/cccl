@@ -105,7 +105,7 @@ void decoupled_look_back_example(int blocks_in_grid)
   scan_tile_state_t tile_status;
   tile_status.Init(blocks_in_grid, d_temp_storage, temp_storage_bytes);
   constexpr unsigned int threads_in_init_block = 256;
-  const unsigned int blocks_in_init_grid       = cub::DivideAndRoundUp(blocks_in_grid, threads_in_init_block);
+  const unsigned int blocks_in_init_grid       = ::cuda::ceil_div(blocks_in_grid, threads_in_init_block);
   init_kernel<<<blocks_in_init_grid, threads_in_init_block>>>(tile_status, blocks_in_grid);
 
   // Launch decoupled look-back
