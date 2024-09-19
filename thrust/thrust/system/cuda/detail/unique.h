@@ -509,7 +509,7 @@ static cudaError_t THRUST_RUNTIME_FUNCTION doit_step(
   typename get_plan<unique_agent>::type unique_plan = unique_agent::get_plan(stream);
 
   int tile_size    = unique_plan.items_per_tile;
-  size_t num_tiles = cub::DivideAndRoundUp(num_items, tile_size);
+  size_t num_tiles = ::cuda::ceil_div(num_items, tile_size);
 
   size_t vshmem_size = core::vshmem_size(unique_plan.shared_memory_size, num_tiles);
 
