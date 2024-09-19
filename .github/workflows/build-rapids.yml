@@ -90,10 +90,36 @@ jobs:
           #! /usr/bin/env bash
           set -eo pipefail
 
-          . ~/cccl/ci/rapids/post-create-command.sh;
-
           declare -a failures
           declare -A failures_map
+
+          _print_err_exit_msg() {
+            local code=$?
+            if test $code -ne 0; then
+              echo "::error:: Failures: ${failures[*]}"
+              echo -e "::group::️❗ \e[1;31mInstructions to Reproduce CI Failure Locally\e[0m"
+              echo "::error:: To replicate this failure locally, follow the steps below:"
+              echo "1. Clone the repository, and navigate to the correct branch and commit:"
+              echo "   git clone --branch $GITHUB_REF_NAME --single-branch https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
+              echo ""
+              echo "2. Run the failed command inside the same Docker container used by this CI job:"
+              cat <<____EOF
+             RAPIDS_LIBS='${RAPIDS_LIBS}'$(for lib in cmake ${RAPIDS_LIBS}; do var=RAPIDS_${lib//-/_}_GIT_REPO; if test -v "$var" && test -n "${!var}"; then echo -n " $var='${!var}'"; fi; done) \\
+               .devcontainer/launch.sh -d -c ${{matrix.cuda}} -H rapids-conda -- ./ci/rapids/rapids-entrypoint.sh \\
+               /bin/bash -li -c 'uninstall-all -j -qqq && clean-all -j && build-all -j -v || exec /bin/bash -li'
+          ____EOF
+              echo ""
+              echo "For additional information, see:"
+              echo "   - DevContainer Documentation: https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md"
+              echo "   - Continuous Integration (CI) Overview: https://github.com/NVIDIA/cccl/blob/main/ci-overview.md"
+            fi
+            exit $code
+          }
+
+          # Print failures and exit
+          trap '_print_err_exit_msg' EXIT;
+
+          . ~/cccl/ci/rapids/post-create-command.sh;
 
           # Configure and build each lib with -DBUILD_TESTS=OFF, then again with -DBUILD_TESTS=ON
           for RAPIDS_ENABLE_TESTS in OFF ON; do
@@ -109,54 +135,20 @@ jobs:
               sccache --show-adv-stats
             done
           done
-
-          # Print failures and exit
-          if test ${#failures[@]} -gt 0; then
-            echo "::error:: Failures: ${failures[*]}"
-            echo -e "::group::️❗ \e[1;31mInstructions to Reproduce CI Failure Locally\e[0m"
-            echo "::error:: To replicate this failure locally, follow the steps below:"
-            echo "1. Clone the repository, and navigate to the correct branch and commit:"
-            echo "   git clone --branch $GITHUB_REF_NAME --single-branch https://github.com/$GITHUB_REPOSITORY.git && cd $(echo $GITHUB_REPOSITORY | cut -d'/' -f2) && git checkout $GITHUB_SHA"
-            echo ""
-            echo "2. Run the failed command inside the same Docker container used by this CI job:"
-            cat <<__EOF
-             RAPIDS_LIBS='${RAPIDS_LIBS}'$(for lib in cmake ${RAPIDS_LIBS}; do var=RAPIDS_${lib//-/_}_GIT_REPO; if test -v "$var" && test -n "${!var}"; then echo -n " $var='${!var}'"; fi; done) \\
-               .devcontainer/launch.sh -d -c ${{matrix.cuda}} -H rapids-conda -- ./ci/rapids/rapids-entrypoint.sh \\
-               /bin/bash -li -c 'uninstall-all -j -qqq && clean-all -j && build-all -j -v || exec /bin/bash -li'
-          __EOF
-            echo ""
-            echo "For additional information, see:"
-            echo "   - DevContainer Documentation: https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md"
-            echo "   - Continuous Integration (CI) Overview: https://github.com/NVIDIA/cccl/blob/main/ci-overview.md"
-            exit 1
-          fi
           EOF
 
           chmod +x "$RUNNER_TEMP"/ci{,-entrypoint}.sh
-
-          mkdir -p .aws
-
-          cat <<EOF > .aws/config
-          [default]
-          bucket=rapids-sccache-devs
-          region=us-east-2
-          EOF
-
-          cat <<EOF > .aws/credentials
-          [default]
-          aws_access_key_id=$AWS_ACCESS_KEY_ID
-          aws_session_token=$AWS_SESSION_TOKEN
-          aws_secret_access_key=$AWS_SECRET_ACCESS_KEY
-          EOF
-
-          chmod 0600 .aws/credentials
-          chmod 0664 .aws/config
 
           .devcontainer/launch.sh \
             --docker \
             --cuda ${{matrix.cuda}} \
             --host rapids-conda \
-            --env VAULT_HOST= \
+            --env "VAULT_HOST=" \
+            --env "AWS_REGION=$AWS_REGION" \
+            --env "SCCACHE_REGION=$AWS_REGION" \
+            --env "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" \
+            --env "AWS_SESSION_TOKEN=$AWS_SESSION_TOKEN" \
+            --env "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" \
             --env "GITHUB_SHA=$GITHUB_SHA" \
             --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
             --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
