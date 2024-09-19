@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__DEVICE_DEVICE_REF_V2
-#define _CUDAX__DEVICE_DEVICE_REF_V2
+#ifndef _CUDAX__DEVICE_LOGICAL_DEVICE
+#define _CUDAX__DEVICE_LOGICAL_DEVICE
 
 #include <cuda/__cccl_config>
 
@@ -28,7 +28,7 @@ namespace cuda::experimental
 {
 
 //! @brief A non-owning representation of a CUDA device
-class device_ref_v2
+class logical_device
 {
   friend struct stream_ref;
   // This might be a CUdevice as well
@@ -49,22 +49,22 @@ public:
     return __dev_id;
   }
 
-  explicit device_ref_v2(int __id)
+  explicit logical_device(int __id)
       : __dev_id(__id)
       , __ctx(devices[__id].primary_context())
   {}
 
-  device_ref_v2(device_ref __dev)
-      : device_ref_v2(__dev.get())
+  logical_device(device_ref __dev)
+      : logical_device(__dev.get())
   {}
 
-  device_ref_v2(const ::cuda::experimental::device& __dev)
+  logical_device(const ::cuda::experimental::device& __dev)
       : __dev_id(__dev.get())
       , __ctx(__dev.primary_context())
   {}
 
 #if CUDART_VERSION >= 12050
-  device_ref_v2(const green_context& __gctx)
+  logical_device(const green_context& __gctx)
       : __dev_id(__gctx.__dev_id)
       , __ctx(__gctx.__transformed)
   {}
@@ -78,7 +78,7 @@ public:
   //! @param __lhs The first `device_ref` to compare
   //! @param __rhs The second `device_ref` to compare
   //! @return true if `lhs` and `rhs` refer to the same device ordinal
-  _CCCL_NODISCARD_FRIEND bool operator==(device_ref_v2 __lhs, device_ref_v2 __rhs) noexcept
+  _CCCL_NODISCARD_FRIEND bool operator==(logical_device __lhs, logical_device __rhs) noexcept
   {
     return __lhs.__dev_id == __rhs.__dev_id && __lhs.__ctx == __rhs.__ctx;
   }
@@ -92,7 +92,7 @@ public:
   //! @param __lhs The first `device_ref` to compare
   //! @param __rhs The second `device_ref` to compare
   //! @return true if `lhs` and `rhs` refer to different device ordinal
-  _CCCL_NODISCARD_FRIEND bool operator!=(device_ref_v2 __lhs, device_ref_v2 __rhs) noexcept
+  _CCCL_NODISCARD_FRIEND bool operator!=(logical_device __lhs, logical_device __rhs) noexcept
   {
     return __lhs.__dev_id != __rhs.__dev_id || __lhs.__ctx != __rhs.__ctx;
   }
@@ -123,7 +123,7 @@ public:
     const arch_traits_t& arch_traits() const;*/
 
 private:
-  device_ref_v2(int __id, CUcontext __context)
+  logical_device(int __id, CUcontext __context)
       : __dev_id(__id)
       , __ctx(__context)
   {}

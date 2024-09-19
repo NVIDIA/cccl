@@ -33,7 +33,7 @@ TEST_CASE("Can create a green context", "[green_context]")
     cudax::green_context green_ctx_dev1(cudax::devices[1]);
     cudax::stream stream_dev1(green_ctx_dev1);
     CUDAX_REQUIRE(stream_dev1.device() == 1);
-    auto dev_ref_v2 = stream_dev1.get_device_ref_v2();
+    auto dev_ref_v2 = stream_dev1.logical_device();
     cudax::stream another_stream_dev1(dev_ref_v2);
     CUDAX_REQUIRE(another_stream_dev1.device() == 1);
   }

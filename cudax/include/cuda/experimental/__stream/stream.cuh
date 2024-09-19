@@ -25,7 +25,7 @@
 #include <cuda/std/__cuda/api_wrapper.h>
 
 #include <cuda/experimental/__device/device_ref.cuh>
-#include <cuda/experimental/__device/device_ref_v2.cuh>
+#include <cuda/experimental/__device/logical_device.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
 
@@ -51,7 +51,7 @@ struct stream : stream_ref
       ::cudaStreamCreateWithPriority, "Failed to create a stream", &__stream, cudaStreamDefault, __priority);
   }
 
-  explicit stream(device_ref_v2 __dev, int __priority = default_priority)
+  explicit stream(::cuda::experimental::logical_device __dev, int __priority = default_priority)
       : stream_ref(detail::__invalid_stream)
   {
     [[maybe_unused]] __ensure_current_device __dev_setter(__dev);

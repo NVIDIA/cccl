@@ -24,7 +24,7 @@
 #include <cuda/stream_ref>
 
 #include <cuda/experimental/__device/all_devices.cuh>
-#include <cuda/experimental/__device/device_ref_v2.cuh>
+#include <cuda/experimental/__device/logical_device.cuh>
 #include <cuda/experimental/__utility/driver_api.cuh>
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
@@ -48,7 +48,7 @@ struct [[maybe_unused]] __ensure_current_device
     detail::driver::ctxPush(ctx);
   }
 
-  explicit __ensure_current_device(device_ref_v2 new_device)
+  explicit __ensure_current_device(logical_device new_device)
   {
     detail::driver::ctxPush(new_device.context());
   }

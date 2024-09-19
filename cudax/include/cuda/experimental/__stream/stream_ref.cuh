@@ -26,7 +26,7 @@
 #include <cuda/stream_ref>
 
 #include <cuda/experimental/__device/all_devices.cuh>
-#include <cuda/experimental/__device/device_ref_v2.cuh>
+#include <cuda/experimental/__device/logical_device.cuh>
 #include <cuda/experimental/__event/timed_event.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
 
@@ -96,7 +96,7 @@ struct stream_ref : ::cuda::stream_ref
     wait(__tmp);
   }
 
-  device_ref_v2 get_device_ref_v2() const
+  logical_device logical_device() const
   {
     CUcontext __stream_ctx;
 #if CUDART_VERSION >= 12050
@@ -117,7 +117,7 @@ struct stream_ref : ::cuda::stream_ref
     __ensure_current_device __setter(__stream_ctx);
     int __id;
     _CCCL_TRY_CUDA_API(cudaGetDevice, "Could not get device from a stream", &__id);
-    return device_ref_v2(__id, __stream_ctx);
+    return ::cuda::experimental::logical_device(__id, __stream_ctx);
   }
 
   //! @brief Get device under which this stream was created.
@@ -125,7 +125,7 @@ struct stream_ref : ::cuda::stream_ref
   //! @throws cuda_error if device check fails
   device_ref device() const
   {
-    return get_device_ref_v2().__dev_id;
+    return logical_device().__dev_id;
   }
 };
 
