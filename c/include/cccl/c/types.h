@@ -11,14 +11,14 @@
 #pragma once
 
 #ifndef CCCL_C_EXPERIMENTAL
-#  warning "C exposure is experimental and subject to change. Define CCCL_C_EXPERIMENTAL to acknowledge this warning."
-#else // ^^^ !CCCL_C_EXPERIMENTAL ^^^ / vvv CCCL_C_EXPERIMENTAL vvv
+#  error "C exposure is experimental and subject to change. Define CCCL_C_EXPERIMENTAL to acknowledge this notice."
+#endif // !CCCL_C_EXPERIMENTAL
 
-#  if defined(_WIN32)
-#    define CCCL_C_API __declspec(dllexport)
-#  else
-#    define CCCL_C_API __attribute__((visibility("default")))
-#  endif
+#if defined(_WIN32)
+#  define CCCL_C_API __declspec(dllexport)
+#else // ^^^ _WIN32 ^^^ / vvv !_WIN32 vvv
+#  define CCCL_C_API __attribute__((visibility("default")))
+#endif // !_WIN32
 
 enum class cccl_type_enum
 {
@@ -81,5 +81,3 @@ struct cccl_iterator_t
   cccl_type_info value_type;
   void* state;
 };
-
-#endif // CCCL_C_EXPERIMENTAL
