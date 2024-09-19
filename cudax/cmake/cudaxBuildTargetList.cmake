@@ -33,10 +33,6 @@
 #     to ensure that dialect information is updated correctly, e.g.
 #     `_cn_clone_target_properties(${my_cudax_test} ${some_cudax_target})`
 
-# Place build outputs in the root project dir:
-set(cudax_LIBRARY_OUTPUT_DIR "${CMAKE_BINARY_DIR}/lib")
-set(cudax_EXECUTABLE_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin")
-
 # Define available dialects:
 set(cudax_CPP_DIALECT_OPTIONS
   17 20
@@ -66,23 +62,13 @@ define_property(TARGET PROPERTY _cudax_PREFIX
 )
 
 function(cudax_set_target_properties target_name dialect prefix)
+  cccl_configure_target(${target_name} DIALECT ${dialect})
+
   set_target_properties(${target_name}
     PROPERTIES
       _cudax_DIALECT ${dialect}
       _cudax_PREFIX ${prefix}
   )
-
-  get_target_property(type ${target_name} TYPE)
-  if (NOT ${type} STREQUAL "INTERFACE_LIBRARY")
-    set_target_properties(${target_name}
-      PROPERTIES
-        CXX_STANDARD ${dialect}
-        CUDA_STANDARD ${dialect}
-        ARCHIVE_OUTPUT_DIRECTORY "${cudax_LIBRARY_OUTPUT_DIR}"
-        LIBRARY_OUTPUT_DIRECTORY "${cudax_LIBRARY_OUTPUT_DIR}"
-        RUNTIME_OUTPUT_DIRECTORY "${cudax_EXECUTABLE_OUTPUT_DIR}"
-    )
-  endif()
 endfunction()
 
 # Get a cudax property from a target and store it in var_name

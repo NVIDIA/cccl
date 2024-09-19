@@ -49,23 +49,13 @@ define_property(TARGET PROPERTY _CUB_PREFIX
 )
 
 function(cub_set_target_properties target_name dialect prefix)
+  cccl_configure_target(${target_name} DIALECT ${dialect})
+
   set_target_properties(${target_name}
     PROPERTIES
       _CUB_DIALECT ${dialect}
       _CUB_PREFIX ${prefix}
   )
-
-  get_target_property(type ${target_name} TYPE)
-  if (NOT ${type} STREQUAL "INTERFACE_LIBRARY")
-    set_target_properties(${target_name}
-      PROPERTIES
-        CXX_STANDARD ${dialect}
-        CUDA_STANDARD ${dialect}
-        ARCHIVE_OUTPUT_DIRECTORY "${CUB_LIBRARY_OUTPUT_DIR}"
-        LIBRARY_OUTPUT_DIRECTORY "${CUB_LIBRARY_OUTPUT_DIR}"
-        RUNTIME_OUTPUT_DIRECTORY "${CUB_EXECUTABLE_OUTPUT_DIR}"
-    )
-  endif()
 endfunction()
 
 # Get a cub property from a target and store it in var_name

@@ -78,11 +78,6 @@ endif ()
 
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Where to put build outputs. Use CMAKE_BINARY_DIR so they'll show up alongside
-# Thrust targets when building as part of Thrust.
-set(CUB_LIBRARY_OUTPUT_DIR "${CMAKE_BINARY_DIR}/lib")
-set(CUB_EXECUTABLE_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin")
-
 cub_build_compiler_targets()
 cub_build_target_list()
 
