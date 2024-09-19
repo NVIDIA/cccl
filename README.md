@@ -3,9 +3,9 @@
 |[Contributor Guide](https://github.com/NVIDIA/cccl/blob/main/CONTRIBUTING.md)|[Dev Containers](https://github.com/NVIDIA/cccl/blob/main/.devcontainer/README.md)|[Discord](https://discord.gg/nvidiadeveloper)|[Godbolt](https://godbolt.org/z/x4G73af9a)|[GitHub Project](https://github.com/orgs/NVIDIA/projects/6)|[Documentation](https://nvidia.github.io/cccl)|
 |-|-|-|-|-|-|
 
-# CUDA C++ Core Libraries (CCCL)
+# CUDA Core Compute Libraries (CCCL)
 
-Welcome to the CUDA C++ Core Libraries (CCCL) where our mission is to make CUDA C++ more delightful.
+Welcome to the CUDA Core Compute Libraries (CCCL) where our mission is to make CUDA more delightful.
 
 This repository unifies three essential CUDA C++ libraries into a single, convenient repository:
 
@@ -19,7 +19,7 @@ For more information about the decision to unify these projects, see the [announ
 
 ## Overview
 
-The concept for the CUDA C++ Core Libraries (CCCL) grew organically out of the Thrust, CUB, and libcudacxx projects that were developed independently over the years with a similar goal: to provide high-quality, high-performance, and easy-to-use C++ abstractions for CUDA developers.
+The concept for the CUDA Core Compute Libraries (CCCL) grew organically out of the Thrust, CUB, and libcudacxx projects that were developed independently over the years with a similar goal: to provide high-quality, high-performance, and easy-to-use C++ abstractions for CUDA developers.
 Naturally, there was a lot of overlap among the three projects, and it became clear the community would be better served by unifying them into a single repository.
 
 - **Thrust** is the C++ parallel algorithms library which inspired the introduction of parallel algorithms to the C++ Standard Library. Thrust's high-level interface greatly enhances programmer productivity while enabling performance portability between GPUs and multicore CPUs via configurable backends that allow using multiple parallel programming frameworks (such as CUDA, TBB, and OpenMP).
@@ -413,7 +413,7 @@ For a detailed overview of the CI pipeline, see [ci-overview.md](ci-overview.md)
 
 ## Related Projects
 
-Projects that are related to CCCL's mission to make CUDA C++ more delightful:
+Projects that are related to CCCL's mission to make CUDA more delightful:
 - [cuCollections](https://github.com/NVIDIA/cuCollections) - GPU accelerated data structures like hash tables
 - [NVBench](https://github.com/NVIDIA/nvbench) - Benchmarking library tailored for CUDA applications
 - [stdexec](https://github.com/nvidia/stdexec) - Reference implementation for Senders asynchronous programming model

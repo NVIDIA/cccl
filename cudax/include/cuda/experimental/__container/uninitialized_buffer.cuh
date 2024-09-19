@@ -63,7 +63,8 @@ template <class _Tp, class... _Properties>
 class uninitialized_buffer
 {
 private:
-  ::cuda::experimental::mr::any_resource<_Properties...> __mr_;
+  using __resource = ::cuda::experimental::mr::any_resource<_Properties...>;
+  __resource __mr_;
   size_t __count_ = 0;
   void* __buf_    = nullptr;
 
@@ -116,7 +117,7 @@ public:
   //! @note Depending on the alignment requirements of `T` the size of the underlying allocation might be larger
   //! than `count * sizeof(T)`.
   //! @note Only allocates memory when \p __count > 0
-  uninitialized_buffer(::cuda::experimental::mr::any_resource<_Properties...> __mr, const size_t __count)
+  uninitialized_buffer(__resource __mr, const size_t __count)
       : __mr_(_CUDA_VSTD::move(__mr))
       , __count_(__count)
       , __buf_(__count_ == 0 ? nullptr : __mr_.allocate(__get_allocation_size(__count_)))
@@ -188,13 +189,13 @@ public:
   }
 
   //! @rst
-  //! Returns a :ref:`resource_ref <libcudacxx-extended-api-memory-resources-resource-ref>` to the resource used to
-  //! allocate the buffer
+  //! Returns a \c const reference to the :ref:`any_resource <cudax-memory-resource-any-resource>`
+  //! that holds the memory resource used to allocate the buffer
   //! @endrst
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE _CUDA_VMR::resource_ref<_Properties...> get_resource() const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE const __resource& get_resource() const noexcept
   {
-    return _CUDA_VMR::resource_ref<_Properties...>{const_cast<uninitialized_buffer*>(this)->__mr_};
+    return __mr_;
   }
 
   //! @brief Swaps the contents with those of another \c uninitialized_buffer

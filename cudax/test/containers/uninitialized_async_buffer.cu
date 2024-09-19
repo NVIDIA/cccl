@@ -156,3 +156,53 @@ TEMPLATE_TEST_CASE(
     }
   }
 }
+
+// A test resource that keeps track of the number of resources are
+// currently alive.
+struct test_async_memory_resource : cudax::mr::async_memory_resource
+{
+  static int count;
+
+  test_async_memory_resource()
+  {
+    ++count;
+  }
+
+  test_async_memory_resource(const test_async_memory_resource& other)
+      : cudax::mr::async_memory_resource{other}
+  {
+    ++count;
+  }
+
+  ~test_async_memory_resource()
+  {
+    --count;
+  }
+};
+
+int test_async_memory_resource::count = 0;
+
+TEST_CASE("uninitialized_async_buffer's memory resource does not dangle", "[container]")
+{
+  cuda::experimental::stream stream{};
+  cudax::uninitialized_async_buffer<int, ::cuda::mr::device_accessible> buffer{
+    cudax::mr::async_memory_resource{}, stream, 0};
+
+  {
+    CHECK(test_async_memory_resource::count == 0);
+
+    cudax::uninitialized_async_buffer<int, ::cuda::mr::device_accessible> src_buffer{
+      test_async_memory_resource{}, stream, 1024};
+
+    CHECK(test_async_memory_resource::count == 1);
+
+    cudax::uninitialized_async_buffer<int, ::cuda::mr::device_accessible> dst_buffer{
+      src_buffer.get_resource(), stream, 1024};
+
+    CHECK(test_async_memory_resource::count == 2);
+
+    buffer = ::cuda::std::move(dst_buffer);
+  }
+
+  CHECK(test_async_memory_resource::count == 1);
+}

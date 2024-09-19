@@ -200,3 +200,49 @@ TEST_CASE("uninitialized_buffer is usable with cudax::launch", "[container]")
     cudax::launch(stream, dimensions, const_kernel, buffer);
   }
 }
+
+// A test resource that keeps track of the number of resources are
+// currently alive.
+struct test_device_memory_resource : cuda::mr::device_memory_resource
+{
+  static int count;
+
+  test_device_memory_resource()
+  {
+    ++count;
+  }
+
+  test_device_memory_resource(const test_device_memory_resource& other)
+      : cuda::mr::device_memory_resource{other}
+  {
+    ++count;
+  }
+
+  ~test_device_memory_resource()
+  {
+    --count;
+  }
+};
+
+int test_device_memory_resource::count = 0;
+
+TEST_CASE("uninitialized_buffer's memory resource does not dangle", "[container]")
+{
+  cudax::uninitialized_buffer<int, ::cuda::mr::device_accessible> buffer{cuda::mr::device_memory_resource{}, 0};
+
+  {
+    CHECK(test_device_memory_resource::count == 0);
+
+    cudax::uninitialized_buffer<int, ::cuda::mr::device_accessible> src_buffer{test_device_memory_resource{}, 1024};
+
+    CHECK(test_device_memory_resource::count == 1);
+
+    cudax::uninitialized_buffer<int, ::cuda::mr::device_accessible> dst_buffer{src_buffer.get_resource(), 1024};
+
+    CHECK(test_device_memory_resource::count == 2);
+
+    buffer = ::cuda::std::move(dst_buffer);
+  }
+
+  CHECK(test_device_memory_resource::count == 1);
+}
