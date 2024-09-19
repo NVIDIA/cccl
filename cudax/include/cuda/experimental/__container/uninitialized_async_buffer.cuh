@@ -72,7 +72,7 @@ template <class _Tp, class... _Properties>
 class uninitialized_async_buffer
 {
 private:
-  using __async_resource = ::cuda::experimental::mr::async_any_resource<_Properties...>;
+  using __async_resource = ::cuda::experimental::mr::any_async_resource<_Properties...>;
   __async_resource __mr_;
   ::cuda::stream_ref __stream_ = {};
   size_t __count_              = 0;
