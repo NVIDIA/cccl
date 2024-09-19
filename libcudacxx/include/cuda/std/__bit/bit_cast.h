@@ -33,6 +33,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #  define _LIBCUDACXX_CONSTEXPR_BIT_CAST constexpr
 #else // ^^^ _LIBCUDACXX_BIT_CAST ^^^ / vvv !_LIBCUDACXX_BIT_CAST vvv
 #  define _LIBCUDACXX_CONSTEXPR_BIT_CAST
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wclass-memaccess") // our extended floating point types have protected data members
 #endif // !_LIBCUDACXX_BIT_CAST
 
 template <
@@ -54,6 +56,10 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST _To bit
   return __temp;
 #endif // !_LIBCUDACXX_BIT_CAST
 }
+
+#if !defined(_LIBCUDACXX_BIT_CAST)
+_CCCL_DIAG_POP
+#endif // !_LIBCUDACXX_BIT_CAST
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
