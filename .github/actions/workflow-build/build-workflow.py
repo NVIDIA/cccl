@@ -626,18 +626,18 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
                 matching_consumers = merged_consumers[producer_index]
 
                 producer_name = producer['name']
-                print(f"::notice file=ci/matrix.yaml::Merging consumers for duplicate producer '{producer_name}' in '{group_name}'",
+                print(f"::notice::Merging consumers for duplicate producer '{producer_name}' in '{group_name}'",
                       file=sys.stderr)
                 consumer_names = ", ".join([consumer['name'] for consumer in matching_consumers])
-                print(f"::notice file=ci/matrix.yaml::Original consumers: {consumer_names}", file=sys.stderr)
+                print(f"::notice::Original consumers: {consumer_names}", file=sys.stderr)
                 consumer_names = ", ".join([consumer['name'] for consumer in consumers])
-                print(f"::notice file=ci/matrix.yaml::Duplicate consumers: {consumer_names}", file=sys.stderr)
+                print(f"::notice::Duplicate consumers: {consumer_names}", file=sys.stderr)
                 # Merge if unique:
                 for consumer in consumers:
                     if not dispatch_job_in_container(consumer, matching_consumers):
                         matching_consumers.append(consumer)
                 consumer_names = ", ".join([consumer['name'] for consumer in matching_consumers])
-                print(f"::notice file=ci/matrix.yaml::Merged consumers: {consumer_names}", file=sys.stderr)
+                print(f"::notice::Merged consumers: {consumer_names}", file=sys.stderr)
             else:
                 merged_producers.append(producer)
                 merged_consumers.append(consumers)
@@ -653,7 +653,7 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
         unique_standalone_jobs = []
         for job_json in standalone_jobs:
             if dispatch_job_in_container(job_json, unique_standalone_jobs):
-                print(f"::notice file=ci/matrix.yaml::Removing duplicate standalone job '{job_json['name']}' in '{group_name}'",
+                print(f"::notice::Removing duplicate standalone job '{job_json['name']}' in '{group_name}'",
                       file=sys.stderr)
             else:
                 unique_standalone_jobs.append(job_json)
@@ -663,12 +663,12 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
         for two_stage_job in two_stage_jobs:
             for producer in two_stage_job['producers']:
                 if remove_dispatch_job_from_container(producer, unique_standalone_jobs):
-                    print(f"::notice file=ci/matrix.yaml::Removing standalone job '{producer['name']}' " +
+                    print(f"::notice::Removing standalone job '{producer['name']}' " +
                           f"as it appears as a producer in '{group_name}'",
                           file=sys.stderr)
             for consumer in two_stage_job['consumers']:
                 if remove_dispatch_job_from_container(producer, unique_standalone_jobs):
-                    print(f"::notice file=ci/matrix.yaml::Removing standalone job '{consumer['name']}' " +
+                    print(f"::notice::Removing standalone job '{consumer['name']}' " +
                           f"as it appears as a consumer in '{group_name}'",
                           file=sys.stderr)
         standalone_jobs = list(unique_standalone_jobs)
