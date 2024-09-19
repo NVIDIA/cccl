@@ -334,6 +334,8 @@ def lookup_supported_stds(matrix_job):
     if 'project' in matrix_job:
         project = get_project(matrix_job['project'])
         stds = stds & set(project['stds'])
+    if len(stds) == 0:
+        raise Exception(error_message_with_matrix_job(matrix_job, "No supported stds found."))
     return sorted(list(stds))
 
 
