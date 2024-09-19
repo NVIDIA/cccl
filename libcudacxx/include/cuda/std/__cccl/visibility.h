@@ -59,15 +59,15 @@
 #endif // !_CCCL_COMPILER_NVRTC
 
 #if defined(_CCCL_COMPILER_MSVC)
-#  define _CCCL_ALWAYS_INLINE __forceinline
+#  define _CCCL_FORCEINLINE __forceinline
 #else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv _CCCL_COMPILER_MSVC vvv
-#  define _CCCL_ALWAYS_INLINE __attribute__((__always_inline__))
+#  define _CCCL_FORCEINLINE __inline__ __attribute__((__always_inline__))
 #endif // !_CCCL_COMPILER_MSVC
 
 #if __has_attribute(exclude_from_explicit_instantiation)
 #  define _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION __attribute__((exclude_from_explicit_instantiation))
 #else // ^^^ exclude_from_explicit_instantiation ^^^ / vvv !exclude_from_explicit_instantiation vvv
-// NVCC complains mightily about being unable to inline functions if we use _CCCL_ALWAYS_INLINE here
+// NVCC complains mightily about being unable to inline functions if we use _CCCL_FORCEINLINE here
 #  define _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
 #endif // !exclude_from_explicit_instantiation
 

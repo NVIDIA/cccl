@@ -34,7 +34,7 @@ namespace cuda::experimental::__async
 #  define _CUDAX_ARTIFICIAL
 #endif
 
-#define _CUDAX_ALWAYS_INLINE _CCCL_ALWAYS_INLINE _CUDAX_ARTIFICIAL _LIBCUDACXX_NODEBUG inline
+#define _CUDAX_ALWAYS_INLINE _CCCL_FORCEINLINE _CUDAX_ARTIFICIAL _LIBCUDACXX_NODEBUG
 
 // GCC struggles with guaranteed copy elision of immovable types.
 #if defined(_CCCL_COMPILER_GCC)
