@@ -12,7 +12,7 @@
 
 #ifndef CCCL_C_EXPERIMENTAL
 #  error "C exposure is experimental and subject to change. Define CCCL_C_EXPERIMENTAL to acknowledge this notice."
-#endif
+#endif // !CCCL_C_EXPERIMENTAL
 
 #include <cuda.h>
 
