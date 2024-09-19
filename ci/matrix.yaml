@@ -13,11 +13,17 @@ workflows:
     # Old CTK
     - {jobs: ['build'], std: 'all', ctk: '11.1', cxx: ['gcc6', 'gcc7', 'gcc8', 'gcc9', 'clang9', 'msvc2017']}
     - {jobs: ['build'], std: 'all', ctk: '11.8', cxx: ['gcc11'], sm: '60;70;80;90'}
-    # Current CTK
+    # Current CTK build-only
     - {jobs: ['build'], std: 'all', cxx: ['gcc7', 'gcc8', 'gcc9', 'gcc10', 'gcc11', 'gcc12']}
     - {jobs: ['build'], std: 'all', cxx: ['clang9', 'clang10', 'clang11', 'clang12', 'clang13', 'clang14', 'clang15', 'clang16', 'clang17']}
     - {jobs: ['build'], std: 'all', cxx: ['intel', 'msvc2019']}
-    - {jobs: ['test'],  std: 'all', cxx: ['gcc13', 'clang18', 'msvc2022']}
+    # Current CTK testing:
+    - {jobs: ['test'],  project: ['libcudacxx', 'thrust'], std: 'minmax', cxx: ['gcc']}
+    - {jobs: ['test'],  project: ['libcudacxx', 'thrust'], std: 'max',    cxx: ['clang', 'msvc']}
+    # Split up cub tests:
+    - {jobs: ['test_nolid', 'test_lid0'], project: ['cub'], std: 'minmax', cxx: ['gcc']}
+    - {jobs: ['test_lid1',  'test_lid2'], project: ['cub'], std: 'max',    cxx: ['gcc']}
+    - {jobs: ['test_nolid', 'test_lid0'], project: ['cub'], std: 'max',    cxx: ['clang', 'msvc']}
     # Modded builds:
     - {jobs: ['build'], std: 'all', cxx: ['gcc', 'clang'], cpu: 'arm64'}
     - {jobs: ['build'], std: 'all', cxx: ['gcc'], sm: '90a'}
@@ -36,33 +42,41 @@ workflows:
     - {jobs: ['build'], project: 'cudax', ctk: ['12.0'        ], std: 17,    cxx: ['gcc12'], sm: "90"}
     - {jobs: ['build'], project: 'cudax', ctk: [        'curr'], std: 17,    cxx: ['gcc13'], sm: "90a"}
     - {jobs: ['build'], project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['gcc13', 'clang16'], cpu: 'arm64'}
-    - {jobs: ['test'],  project: 'cudax', ctk: ['12.0', 'curr'], std: 'all', cxx: ['gcc12']}
-    - {jobs: ['test'],  project: 'cudax', ctk: ['12.0'        ], std: 'all', cxx: ['clang14']}
-    - {jobs: ['test'],  project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['clang18']}
+    - {jobs: ['test'],  project: 'cudax', ctk: ['12.0'        ], std: 'min', cxx: ['gcc12']}
+    - {jobs: ['test'],  project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['gcc12']}
+    - {jobs: ['test'],  project: 'cudax', ctk: ['12.0'        ], std: 'max', cxx: ['clang14']}
+    - {jobs: ['test'],  project: 'cudax', ctk: [        'curr'], std: 'max', cxx: ['clang18']}
     # Python jobs:
     - {jobs: ['test'], project: 'pycuda', ctk: ['12.5']}
     # cccl-infra:
     - {jobs: ['infra'], project: 'cccl', ctk: '11.1', cxx: ['gcc6', 'clang9']}
     - {jobs: ['infra'], project: 'cccl', ctk: 'curr', cxx: ['gcc',  'clang']}
+
+  nightly:
+    # Increased test coverage compared to nightlies:
+    - {jobs: ['test'],  std: 'all', cxx: ['gcc13', 'clang18', 'msvc2022']}
+    - {jobs: ['test'],  project: 'cudax', ctk: ['12.0', 'curr'], std: 'all', cxx: ['gcc12']}
+    - {jobs: ['test'],  project: 'cudax', ctk: ['12.0'        ], std: 'all', cxx: ['clang14']}
+    - {jobs: ['test'],  project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['clang18']}
     # Edge-case jobs
     - {jobs: ['limited'], project: 'cub', std: 17}
 
-  nightly:
-    - {jobs: ['test'],  ctk: '11.1', gpu: 'v100',     sm: 'gpu', cxx: 'gcc6',    std: [11]}
-    - {jobs: ['test'],  ctk: '11.1', gpu: 't4',       sm: 'gpu', cxx: 'clang9',  std: [17]}
-    - {jobs: ['test'],  ctk: '11.8', gpu: 'rtx2080',  sm: 'gpu', cxx: 'gcc11',   std: [17]}
-    - {jobs: ['test'],  ctk: 'curr', gpu: 'rtxa6000', sm: 'gpu', cxx: 'gcc7',    std: [14]}
-    - {jobs: ['test'],  ctk: 'curr', gpu: 'l4',       sm: 'gpu', cxx: 'gcc13',   std: 'all'}
-    - {jobs: ['test'],  ctk: 'curr', gpu: 'rtx4090',  sm: 'gpu', cxx: 'clang9',  std: [11]}
-    # H100 runners are currently flakey, only build since those use CPU-only runners:
-    - {jobs: ['build'], ctk: 'curr', gpu: 'h100',     sm: 'gpu', cxx: 'gcc12',   std: [11, 20]}
-    - {jobs: ['build'], ctk: 'curr', gpu: 'h100',     sm: 'gpu', cxx: 'clang18', std: [17]}
-
-   # nvrtc:
-    - {jobs: ['nvrtc'], ctk: 'curr', gpu: 't4',       sm: 'gpu', cxx: 'gcc13',  std: [20],     project: ['libcudacxx']}
-    - {jobs: ['nvrtc'], ctk: 'curr', gpu: 'rtxa6000', sm: 'gpu', cxx: 'gcc13',  std: [20],     project: ['libcudacxx']}
-    - {jobs: ['nvrtc'], ctk: 'curr', gpu: 'l4',       sm: 'gpu', cxx: 'gcc13',  std: 'all',    project: ['libcudacxx']}
-    - {jobs: ['nvrtc'], ctk: 'curr', gpu: 'h100',     sm: 'gpu', cxx: 'gcc13',  std: [11, 20], project: ['libcudacxx']}
+#  # These are waiting on the NVKS nodes:
+#    - {jobs: ['test'],  ctk: '11.1', gpu: 'v100',     sm: 'gpu', cxx: 'gcc6',    std: [11]}
+#    - {jobs: ['test'],  ctk: '11.1', gpu: 't4',       sm: 'gpu', cxx: 'clang9',  std: [17]}
+#    - {jobs: ['test'],  ctk: '11.8', gpu: 'rtx2080',  sm: 'gpu', cxx: 'gcc11',   std: [17]}
+#    - {jobs: ['test'],  ctk: 'curr', gpu: 'rtxa6000', sm: 'gpu', cxx: 'gcc7',    std: [14]}
+#    - {jobs: ['test'],  ctk: 'curr', gpu: 'l4',       sm: 'gpu', cxx: 'gcc13',   std: 'all'}
+#    - {jobs: ['test'],  ctk: 'curr', gpu: 'rtx4090',  sm: 'gpu', cxx: 'clang9',  std: [11]}
+#    # H100 runners are currently flakey, only build since those use CPU-only runners:
+#    - {jobs: ['build'], ctk: 'curr', gpu: 'h100',     sm: 'gpu', cxx: 'gcc12',   std: [11, 20]}
+#    - {jobs: ['build'], ctk: 'curr', gpu: 'h100',     sm: 'gpu', cxx: 'clang18', std: [17]}
+#
+#   # nvrtc:
+#    - {jobs: ['nvrtc'], ctk: 'curr', gpu: 't4',       sm: 'gpu', cxx: 'gcc13',  std: [20],     project: ['libcudacxx']}
+#    - {jobs: ['nvrtc'], ctk: 'curr', gpu: 'rtxa6000', sm: 'gpu', cxx: 'gcc13',  std: [20],     project: ['libcudacxx']}
+#    - {jobs: ['nvrtc'], ctk: 'curr', gpu: 'l4',       sm: 'gpu', cxx: 'gcc13',  std: 'all',    project: ['libcudacxx']}
+#    - {jobs: ['nvrtc'], ctk: 'curr', gpu: 'h100',     sm: 'gpu', cxx: 'gcc13',  std: [11, 20], project: ['libcudacxx']}
 
   # Any generated jobs that match the entries in `exclude` will be removed from the final matrix for all workflows.
   exclude:
@@ -256,6 +270,7 @@ tags:
   project: { default: ['libcudacxx', 'cub', 'thrust'] }
   # C++ standard
   # If set to 'all', all stds supported by the ctk/compilers/project are used.
+  # If set to 'min', 'max', or 'minmax', the minimum, maximum, or both stds are used.
   # If set, will be passed to script with `-std <std>`.
   std: { required: false }
   # GPU architecture
