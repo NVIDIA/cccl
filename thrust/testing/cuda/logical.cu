@@ -87,7 +87,7 @@ void TestAllOfCudaStreams()
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
 
-  Vector v(3, 1);
+  Vector v(3, T{1});
 
   cudaStream_t s;
   cudaStreamCreate(&s);
@@ -191,7 +191,7 @@ void TestAnyOfCudaStreams()
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
 
-  Vector v(3, 1);
+  Vector v(3, T{1});
 
   cudaStream_t s;
   cudaStreamCreate(&s);
@@ -295,7 +295,7 @@ void TestNoneOfCudaStreams()
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
 
-  Vector v(3, 1);
+  Vector v(3, T{1});
 
   cudaStream_t s;
   cudaStreamCreate(&s);

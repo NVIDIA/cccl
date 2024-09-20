@@ -1410,6 +1410,10 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 #    define _LIBCUDACXX_FUNCTION_TYPE_NOEXCEPT
 #  endif
 
+#  if !defined(__cpp_fold_expressions) || __cpp_fold_expressions < 201603L
+#    define _LIBCUDACXX_HAS_NO_FOLD_EXPRESSIONS
+#  endif
+
 #endif // __cplusplus
 
 #endif // _LIBCUDACXX_CONFIG

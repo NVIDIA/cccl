@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_extended_floating_point.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__type_traits/is_trivially_default_constructible.h>
 #include <cuda/std/detail/libcxx/include/cstring>
@@ -32,13 +33,19 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #  define _LIBCUDACXX_CONSTEXPR_BIT_CAST constexpr
 #else // ^^^ _LIBCUDACXX_BIT_CAST ^^^ / vvv !_LIBCUDACXX_BIT_CAST vvv
 #  define _LIBCUDACXX_CONSTEXPR_BIT_CAST
+#  if defined(_CCCL_COMPILER_GCC) && __GNUC__ >= 8
+// GCC starting with GCC8 warns about our extended floating point types having protected data members
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wclass-memaccess")
+#  endif // _CCCL_COMPILER_GCC >= 8
 #endif // !_LIBCUDACXX_BIT_CAST
 
-template <class _To,
-          class _From,
-          __enable_if_t<(sizeof(_To) == sizeof(_From)), int>            = 0,
-          __enable_if_t<_CCCL_TRAIT(is_trivially_copyable, _To), int>   = 0,
-          __enable_if_t<_CCCL_TRAIT(is_trivially_copyable, _From), int> = 0>
+template <
+  class _To,
+  class _From,
+  __enable_if_t<(sizeof(_To) == sizeof(_From)), int>                                                                = 0,
+  __enable_if_t<_CCCL_TRAIT(is_trivially_copyable, _To) || _CCCL_TRAIT(__is_extended_floating_point, _To), int>     = 0,
+  __enable_if_t<_CCCL_TRAIT(is_trivially_copyable, _From) || _CCCL_TRAIT(__is_extended_floating_point, _From), int> = 0>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST _To bit_cast(const _From& __from) noexcept
 {
 #if defined(_LIBCUDACXX_BIT_CAST)
@@ -52,6 +59,12 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST _To bit
   return __temp;
 #endif // !_LIBCUDACXX_BIT_CAST
 }
+
+#if !defined(_LIBCUDACXX_BIT_CAST)
+#  if defined(_CCCL_COMPILER_GCC) && __GNUC__ >= 8
+_CCCL_DIAG_POP
+#  endif // _CCCL_COMPILER_GCC >= 8
+#endif // !_LIBCUDACXX_BIT_CAST
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -154,7 +154,7 @@ private:
 
     if (is_aligned<typename wrapped_op_t::vector_t>(unwrapped_first))
     { // Vectorize loads
-      const OffsetT num_vec_items = cub::DivideAndRoundUp(num_items, wrapped_op_t::vec_size);
+      const OffsetT num_vec_items = ::cuda::ceil_div(num_items, wrapped_op_t::vec_size);
 
       return detail::for_each::dispatch_t<OffsetT, wrapped_op_t>::dispatch(
         num_vec_items,

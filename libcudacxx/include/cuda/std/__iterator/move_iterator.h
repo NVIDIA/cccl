@@ -41,7 +41,6 @@
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/cstdlib>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -127,7 +126,7 @@ private:
     {
       return input_iterator_tag{};
     }
-    _LIBCUDACXX_UNREACHABLE();
+    _CCCL_UNREACHABLE();
   }
 #  endif // !_CCCL_COMPILER_MSVC_2017
 #endif // _CCCL_STD_VER >= 2017

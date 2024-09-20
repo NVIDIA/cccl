@@ -70,14 +70,8 @@ function(add_bench target_name bench_name bench_src)
   set(${target_name} ${bench_target} PARENT_SCOPE)
 
   add_executable(${bench_target} "${bench_src}")
+  cccl_configure_target(${bench_target} DIALECT 17)
   target_link_libraries(${bench_target} PRIVATE nvbench_helper nvbench::main)
-  set_target_properties(${bench_target}
-    PROPERTIES
-      ARCHIVE_OUTPUT_DIRECTORY "${CUB_LIBRARY_OUTPUT_DIR}"
-      LIBRARY_OUTPUT_DIRECTORY "${CUB_LIBRARY_OUTPUT_DIR}"
-      RUNTIME_OUTPUT_DIRECTORY "${CUB_EXECUTABLE_OUTPUT_DIR}"
-      CUDA_STANDARD 17
-      CXX_STANDARD 17)
 endfunction()
 
 function(add_bench_dir bench_dir)

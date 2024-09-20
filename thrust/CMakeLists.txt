@@ -73,7 +73,6 @@ if (NOT (THRUST_ENABLE_HEADER_TESTING OR
   return()
 endif()
 
-include(cmake/AppendOptionIfAvailable.cmake)
 include(cmake/ThrustBuildCompilerTargets.cmake)
 include(cmake/ThrustBuildTargetList.cmake)
 include(cmake/ThrustFindThrust.cmake)
@@ -92,11 +91,6 @@ endif ()
 
 # Disable compiler extensions:
 set(CMAKE_CXX_EXTENSIONS OFF)
-
-# Where to put build outputs. Use CMAKE_BINARY_DIR so they'll show up in the
-# top-level project's dir when building Thrust via add_subdirectory.
-set(THRUST_LIBRARY_OUTPUT_DIR "${CMAKE_BINARY_DIR}/lib")
-set(THRUST_EXECUTABLE_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin")
 
 thrust_configure_multiconfig()
 thrust_find_thrust()

@@ -18,9 +18,11 @@
 #include <cuda/std/__cccl/exceptions.h> // IWYU pragma: export
 #include <cuda/std/__cccl/execution_space.h> // IWYU pragma: export
 #include <cuda/std/__cccl/extended_floating_point.h> // IWYU pragma: export
+#include <cuda/std/__cccl/preprocessor.h> // IWYU pragma: export
 #include <cuda/std/__cccl/ptx_isa.h> // IWYU pragma: export
 #include <cuda/std/__cccl/sequence_access.h> // IWYU pragma: export
 #include <cuda/std/__cccl/system_header.h> // IWYU pragma: export
+#include <cuda/std/__cccl/unreachable.h> // IWYU pragma: export
 #include <cuda/std/__cccl/version.h> // IWYU pragma: export
 #include <cuda/std/__cccl/visibility.h> // IWYU pragma: export
 

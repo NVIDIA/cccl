@@ -9,7 +9,8 @@
 
 #include <unittest/unittest.h>
 
-THRUST_DISABLE_MSVC_POSSIBLE_LOSS_OF_DATA_WARNING_BEGIN
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
 
 template <typename T>
 class mark_present_for_each
@@ -354,7 +355,7 @@ void TestForEachNWithLargeTypes()
 }
 DECLARE_UNITTEST(TestForEachNWithLargeTypes);
 
-THRUST_DISABLE_MSVC_POSSIBLE_LOSS_OF_DATA_WARNING_END
+_CCCL_DIAG_POP
 
 struct only_set_when_expected
 {

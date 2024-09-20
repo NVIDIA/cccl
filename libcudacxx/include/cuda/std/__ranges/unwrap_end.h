@@ -43,7 +43,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator_t<_Range> __unwrap_
     _CUDA_VRANGES::advance(__ret, _CUDA_VRANGES::end(__range));
     return __ret;
   }
-  _LIBCUDACXX_UNREACHABLE();
+  _CCCL_UNREACHABLE();
 }
 
 #endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER_MSVC_2017

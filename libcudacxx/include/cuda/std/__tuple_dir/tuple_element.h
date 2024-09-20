@@ -25,6 +25,7 @@
 #include <cuda/std/__type_traits/add_const.h>
 #include <cuda/std/__type_traits/add_cv.h>
 #include <cuda/std/__type_traits/add_volatile.h>
+#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/cstddef>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -53,72 +54,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, const volatile _Tp>
   typedef _LIBCUDACXX_NODEBUG_TYPE typename add_cv<__tuple_element_t<_Ip, _Tp>>::type type;
 };
 
-#ifdef _CCCL_COMPILER_MSVC
-
-namespace __indexer_detail
-{
-
-template <size_t _Idx, class... _Types>
-struct _nth_of;
-
-template <class _Head, class... _Tail>
-struct _nth_of<0, _Head, _Tail...>
-{
-  using type = _Head;
-};
-
-template <size_t _Idx, class _Head, class... _Tail>
-struct _nth_of<_Idx, _Head, _Tail...>
-{
-  using type = typename _nth_of<_Idx - 1, _Tail...>::type;
-};
-
-template <size_t _Idx, class... _Types>
-struct nth_of
-{
-  static_assert(_Idx < sizeof...(_Types), "");
-  using _impl = _nth_of<_Idx, _Types...>;
-  using type  = typename _impl::type;
-};
-
-} // namespace __indexer_detail
-
-template <size_t _Idx, class... _Types>
-using __type_pack_element _LIBCUDACXX_NODEBUG_TYPE = typename __indexer_detail::nth_of<_Idx, _Types...>::type;
-
-#elif !__has_builtin(__type_pack_element)
-
-namespace __indexer_detail
-{
-
-template <size_t _Idx, class _Tp>
-struct __indexed
-{
-  using type _LIBCUDACXX_NODEBUG_TYPE = _Tp;
-};
-
-template <class _Types, class _Indexes>
-struct __indexer;
-
-template <class... _Types, size_t... _Idx>
-struct __indexer<__tuple_types<_Types...>, __tuple_indices<_Idx...>> : __indexed<_Idx, _Types>...
-{};
-
-template <size_t _Idx, class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI __indexed<_Idx, _Tp> __at_index(__indexed<_Idx, _Tp> const&);
-
-} // namespace __indexer_detail
-
-template <size_t _Idx, class... _Types>
-using __type_pack_element _LIBCUDACXX_NODEBUG_TYPE = typename decltype(__indexer_detail::__at_index<_Idx>(
-  __indexer_detail::__indexer<__tuple_types<_Types...>, __make_tuple_indices_t<sizeof...(_Types)>>{}))::type;
-#endif
-
 template <size_t _Ip, class... _Types>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, __tuple_types<_Types...>>
 {
   static_assert(_Ip < sizeof...(_Types), "tuple_element index out of range");
-  typedef _LIBCUDACXX_NODEBUG_TYPE __type_pack_element<_Ip, _Types...> type;
+  typedef _LIBCUDACXX_NODEBUG_TYPE __type_index_c<_Ip, _Types...> type;
 };
 
 #if _CCCL_STD_VER > 2011

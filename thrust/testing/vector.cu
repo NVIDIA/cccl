@@ -272,7 +272,10 @@ void TestVectorToAndFromHostVector()
 
   ASSERT_EQUAL(v, h);
 
-  THRUST_DISABLE_CLANG_SELF_ASSIGNMENT_WARNING(v = v);
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_CLANG("-Wself-assign")
+  v = v;
+  _CCCL_DIAG_POP
 
   ASSERT_EQUAL(v, h);
 
@@ -330,7 +333,10 @@ void TestVectorToAndFromDeviceVector()
 
   ASSERT_EQUAL(v, h);
 
-  THRUST_DISABLE_CLANG_SELF_ASSIGNMENT_WARNING(v = v);
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_CLANG("-Wself-assign")
+  v = v;
+  _CCCL_DIAG_POP
 
   ASSERT_EQUAL(v, h);
 

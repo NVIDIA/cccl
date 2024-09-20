@@ -29,6 +29,7 @@
 #include <cuda/std/__tuple_dir/tuple_types.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/cstddef>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -44,10 +45,12 @@ struct __make_tuple_types_flat;
 template <template <class...> class _Tuple, class... _Types, size_t... _Idx>
 struct __make_tuple_types_flat<_Tuple<_Types...>, __tuple_indices<_Idx...>>
 {
+  using __tuple_types_list = __type_list<_Types...>;
+
   // Specialization for pair, tuple, and __tuple_types
   template <class _Tp, class _ApplyFn = __apply_cv_t<_Tp>>
   using __apply_quals _LIBCUDACXX_NODEBUG_TYPE =
-    __tuple_types<typename _ApplyFn::template __apply<__type_pack_element<_Idx, _Types...>>...>;
+    __tuple_types<typename _ApplyFn::template __apply<__type_at_c<_Idx, __tuple_types_list>>...>;
 };
 
 template <class _Vt, size_t _Np, size_t... _Idx>

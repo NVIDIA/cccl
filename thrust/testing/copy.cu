@@ -143,6 +143,9 @@ void TestCopyMatchingTypes()
 }
 DECLARE_VECTOR_UNITTEST(TestCopyMatchingTypes);
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4244) // '=': conversion from 'int' to '_Ty', possible loss of data
+
 template <class Vector>
 void TestCopyMixedTypes()
 {
@@ -175,6 +178,8 @@ void TestCopyMixedTypes()
   ASSERT_EQUAL_QUIET(d_result, d.end());
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestCopyMixedTypes);
+
+_CCCL_DIAG_POP
 
 void TestCopyVectorBool()
 {
@@ -517,7 +522,7 @@ void TestCopyIfNonTrivial()
 
     // Fill buffer with 0s to prevent warnings about uninitialized reads while
     // ensure that the 'magic number' mechanism works as intended:
-    std::fill(buffer.begin(), buffer.end(), 0);
+    std::fill(buffer.begin(), buffer.end(), static_cast<unsigned char>(0));
 
     object_with_non_trivial_ctor initialized;
     object_with_non_trivial_ctor* uninitialized = reinterpret_cast<object_with_non_trivial_ctor*>(buffer.data());
