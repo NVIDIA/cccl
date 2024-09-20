@@ -22,7 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__barrier/completion_mechanism.h>
+#include <cuda/__memcpy_async/completion_mechanism.h>
 #include <cuda/__memcpy_async/cp_async_bulk_shared_global.h>
 #include <cuda/__memcpy_async/cp_async_fallback.h>
 #include <cuda/__memcpy_async/cp_async_shared_global.h>
