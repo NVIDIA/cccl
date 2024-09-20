@@ -297,6 +297,40 @@ __host__ __device__ bool tests()
     test_roundtrip_through<long long>(i);
   }
 
+#ifdef _LIBCUDACXX_HAS_NVFP16
+  // Extended floating point type __half
+  for (__half i :
+       {__float2half(0.0f),
+        __float2half(1.0f),
+        __float2half(-1.0f),
+        __float2half(10.0f),
+        __float2half(-10.0f),
+        __float2half(2.71828f),
+        __float2half(3.14159f)})
+  {
+    test_roundtrip_through_nested_T(i);
+    test_roundtrip_through_buffer(i);
+    test_roundtrip_through<cuda::std::int16_t>(i);
+  }
+#endif // _LIBCUDACXX_HAS_NVFP16
+
+#ifdef _LIBCUDACXX_HAS_NVBF16
+  // Extended floating point type __half
+  for (__nv_bfloat16 i :
+       {__float2bfloat16(0.0f),
+        __float2bfloat16(1.0f),
+        __float2bfloat16(-1.0f),
+        __float2bfloat16(10.0f),
+        __float2bfloat16(-10.0f),
+        __float2bfloat16(2.71828f),
+        __float2bfloat16(3.14159f)})
+  {
+    test_roundtrip_through_nested_T(i);
+    test_roundtrip_through_buffer(i);
+    test_roundtrip_through<cuda::std::int16_t>(i);
+  }
+#endif // _LIBCUDACXX_HAS_NVBF16
+
   // Test pointers
   {
     {
