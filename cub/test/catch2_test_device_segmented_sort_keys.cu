@@ -325,9 +325,12 @@ try
       thrust::raw_pointer_cast(offsets.data()),
       offsets.cbegin() + 1);
   }
-  if (out_keys_ptr != thrust::raw_pointer_cast(out_keys.data()))
+  if (is_overwrite)
   {
-    std::swap(out_keys, in_keys);
+    if(*selector_ptr){
+      std::swap(out_keys, in_keys);
+    }
+    REQUIRE(cudaSuccess == cudaFreeHost(selector_ptr));
   }
   REQUIRE((ref_keys == out_keys) == true);
 }
