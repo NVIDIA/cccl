@@ -34,66 +34,13 @@
 #include <cuda/__barrier/barrier_thread_scope_block.h>
 #include <cuda/__barrier/completion_mechanism.h>
 #include <cuda/__fwd/pipeline.h>
+#include <cuda/__memcpy_async/memcpy_async_tx.h>
 #include <cuda/std/__atomic/api/owned.h>
 #include <cuda/std/__type_traits/void_t.h> // _CUDA_VSTD::void_t
 
 #if defined(_CCCL_CUDA_COMPILER)
 #  include <cuda/ptx> // cuda::ptx::*
 #endif // _CCCL_CUDA_COMPILER
-
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
-
-#if defined(_CCCL_CUDA_COMPILER)
-
-#  if __cccl_ptx_isa >= 800
-
-extern "C" _CCCL_DEVICE void __cuda_ptx_memcpy_async_tx_is_not_supported_before_SM_90__();
-template <typename _Tp, _CUDA_VSTD::size_t _Alignment>
-_CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
-  _Tp* __dest,
-  const _Tp* __src,
-  ::cuda::aligned_size_t<_Alignment> __size,
-  ::cuda::barrier<::cuda::thread_scope_block>& __b)
-{
-  // When compiling with NVCC and GCC 4.8, certain user defined types that _are_ trivially copyable are
-  // incorrectly classified as not trivially copyable. Remove this assertion to allow for their usage with
-  // memcpy_async when compiling with GCC 4.8.
-  // FIXME: remove the #if once GCC 4.8 is no longer supported.
-#    if !defined(_CCCL_COMPILER_GCC) || _GNUC_VER > 408
-  static_assert(_CUDA_VSTD::is_trivially_copyable<_Tp>::value, "memcpy_async_tx requires a trivially copyable type");
-#    endif
-  static_assert(16 <= _Alignment, "mempcy_async_tx expects arguments to be at least 16 byte aligned.");
-
-  _CCCL_ASSERT(__isShared(barrier_native_handle(__b)), "Barrier must be located in local shared memory.");
-  _CCCL_ASSERT(__isShared(__dest), "dest must point to shared memory.");
-  _CCCL_ASSERT(__isGlobal(__src), "src must point to global memory.");
-
-  NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_90,
-    (
-      if (__isShared(__dest) && __isGlobal(__src)) {
-        _CUDA_VPTX::cp_async_bulk(
-          _CUDA_VPTX::space_cluster,
-          _CUDA_VPTX::space_global,
-          __dest,
-          __src,
-          static_cast<uint32_t>(__size),
-          barrier_native_handle(__b));
-      } else {
-        // memcpy_async_tx only supports copying from global to shared
-        // or from shared to remote cluster dsmem. To copy to remote
-        // dsmem, we need to arrive on a cluster-scoped barrier, which
-        // is not yet implemented. So we trap in this case as well.
-        _CCCL_UNREACHABLE();
-      }),
-    (__cuda_ptx_memcpy_async_tx_is_not_supported_before_SM_90__();));
-
-  return async_contract_fulfillment::async;
-}
-#  endif // __cccl_ptx_isa >= 800
-#endif // _CCCL_CUDA_COMPILER
-
-_LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
 
 #if defined(_CCCL_CUDA_COMPILER)
 
