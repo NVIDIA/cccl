@@ -950,9 +950,6 @@ struct DeviceSelect
   //! @tparam NumSelectedIteratorT
   //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
   //!
-  //! @tparam NumItemsT
-  //!   **[inferred]** Type of num_items
-  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
@@ -977,30 +974,22 @@ struct DeviceSelect
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT, typename NumItemsT>
+  template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Unique(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
     NumSelectedIteratorT d_num_selected_out,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Unique");
 
-    using ChooseOffsetT = detail::choose_signed_offset<NumItemsT>;
-    using OffsetT       = typename ChooseOffsetT::type; // Signed integer type for global offsets
-    using FlagIterator  = NullType*; // FlagT iterator type (not used)
-    using SelectOp      = NullType; // Selection op (not used)
-    using EqualityOp    = Equality; // Default == operator
-
-    // Check if the number of items exceeds the range covered by the selected signed offset type
-    cudaError_t error = ChooseOffsetT::is_exceeding_offset_type(num_items);
-    if (error)
-    {
-      return error;
-    }
+    using OffsetT      = ::cuda::std::int64_t;
+    using FlagIterator = NullType*; // FlagT iterator type (not used)
+    using SelectOp     = NullType; // Selection op (not used)
+    using EqualityOp   = Equality; // Default == operator
 
     return DispatchSelectIf<
       InputIteratorT,

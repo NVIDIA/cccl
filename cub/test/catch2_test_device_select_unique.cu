@@ -100,9 +100,6 @@ using all_types =
 
 using types = c2h::type_list<std::uint8_t, std::uint32_t>;
 
-// List of offset types to be used for testing large number of items
-using offset_types = c2h::type_list<std::int32_t, std::uint32_t, std::uint64_t>;
-
 CUB_TEST("DeviceSelect::Unique can run with empty input", "[device][select_unique]", types)
 {
   using type = typename c2h::get<0, TestType>;
@@ -271,22 +268,24 @@ CUB_TEST("DeviceSelect::Unique works with a different output type", "[device][se
   REQUIRE(reference == out);
 }
 
-CUB_TEST("DeviceSelect::Unique works for very large number of items", "[device][select_unique]", offset_types)
+CUB_TEST("DeviceSelect::Unique works for very large number of items", "[device][select_unique]")
 try
 {
   using type     = std::int64_t;
-  using offset_t = typename c2h::get<0, TestType>;
+  using offset_t = std::int64_t;
 
-  auto num_items_max_ull =
-    std::min(static_cast<std::size_t>(::cuda::std::numeric_limits<offset_t>::max()),
-             ::cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
-  offset_t num_items_max = static_cast<offset_t>(num_items_max_ull);
-  offset_t num_items_min =
-    num_items_max_ull > 10000 ? static_cast<offset_t>(num_items_max_ull - 10000ULL) : offset_t{0};
+  // The partition size (the maximum number of items processed by a single kernel invocation) is an important boundary
+  constexpr auto max_partition_size = static_cast<offset_t>(::cuda::std::numeric_limits<std::int32_t>::max());
+
   offset_t num_items = GENERATE_COPY(
-    values(
-      {num_items_max, static_cast<offset_t>(num_items_max - 1), static_cast<offset_t>(1), static_cast<offset_t>(3)}),
-    take(2, random(num_items_min, num_items_max)));
+    values({
+      offset_t{2} * max_partition_size + offset_t{20000000}, // 3 partitions
+      offset_t{2} * max_partition_size, // 2 partitions
+      max_partition_size + offset_t{1}, // 2 partitions
+      max_partition_size, // 1 partitions
+      max_partition_size - offset_t{1} // 1 partitions
+    }),
+    take(2, random(max_partition_size - offset_t{1000000}, max_partition_size + offset_t{1000000})));
 
   // All unique
   SECTION("AllUnique")
