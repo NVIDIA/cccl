@@ -68,9 +68,9 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_sor
   {
     return status;
   }
-  if (d_keys.Current() != d_keys_out)
-  {
-    d_keys_out = d_keys.Current();
+  // Only write to selector in the DoubleBuffer invocation
+  if(selector && is_overwrite){
+    *selector = (d_keys.Current() != d_keys_out) ? 1 : 0;
   }
   return cudaSuccess;
 }
