@@ -39,6 +39,8 @@
 #include <thrust/partition.h>
 #include <thrust/reverse.h>
 
+#include <cuda/cmath>
+
 #include <algorithm>
 
 #include "catch2_test_device_select_common.cuh"
@@ -409,7 +411,7 @@ try
   // We use a tabulate iterator that checks whenever the partition algorithm writes an output whether that item
   // corresponds to the expected value at that index and, if correct, sets a boolean flag at that index.
   static constexpr auto bits_per_element = 8 * sizeof(std::uint32_t);
-  c2h::device_vector<std::uint32_t> correctness_flags(cub::DivideAndRoundUp(num_items, bits_per_element));
+  c2h::device_vector<std::uint32_t> correctness_flags(::cuda::ceil_div(num_items, bits_per_element));
   auto expected_selected_it = thrust::make_counting_iterator(offset_t{0});
   auto expected_rejected_it = thrust::make_reverse_iterator(
     thrust::make_counting_iterator(offset_t{cut_off_index}) + (num_items - cut_off_index));

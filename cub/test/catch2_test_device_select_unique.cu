@@ -35,6 +35,8 @@
 #include <thrust/iterator/discard_iterator.h>
 #include <thrust/iterator/tabulate_output_iterator.h>
 
+#include <cuda/cmath>
+
 #include <algorithm>
 
 #include "catch2_test_device_select_common.cuh"
@@ -296,7 +298,7 @@ try
     // We use a tabulate iterator that checks whenever the algorithm writes an output whether that item
     // corresponds to the expected value at that index and, if correct, sets a boolean flag at that index.
     static constexpr auto bits_per_element = 8 * sizeof(std::uint32_t);
-    c2h::device_vector<std::uint32_t> correctness_flags(cub::DivideAndRoundUp(num_items, bits_per_element));
+    c2h::device_vector<std::uint32_t> correctness_flags(::cuda::ceil_div(num_items, bits_per_element));
     auto expected_result_it = in;
     auto check_result_op =
       make_checking_write_op(expected_result_it, thrust::raw_pointer_cast(correctness_flags.data()));
@@ -333,7 +335,7 @@ try
     // We use a tabulate iterator that checks whenever the algorithm writes an output whether that item
     // corresponds to the expected value at that index and, if correct, sets a boolean flag at that index.
     static constexpr auto bits_per_element = 8 * sizeof(std::uint32_t);
-    c2h::device_vector<std::uint32_t> correctness_flags(cub::DivideAndRoundUp(expected_num_unique, bits_per_element));
+    c2h::device_vector<std::uint32_t> correctness_flags(::cuda::ceil_div(expected_num_unique, bits_per_element));
     auto expected_result_it = in;
     auto check_result_op =
       make_checking_write_op(expected_result_it, thrust::raw_pointer_cast(correctness_flags.data()));
