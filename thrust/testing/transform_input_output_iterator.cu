@@ -7,16 +7,8 @@
 
 #include <unittest/unittest.h>
 
-// There is a unfortunate miscompilation of the gcc-11 vectorizer leading to OOB writes
-// Adding this attribute suffices that this miscompilation does not appear anymore
-#if defined(_CCCL_COMPILER_GCC) && __GNUC__ >= 11
-#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER __attribute__((optimize("no-tree-vectorize")))
-#else
-#  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
-#endif
-
 template <class Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformInputOutputIterator()
+void TestTransformInputOutputIterator()
 {
   using T = typename Vector::value_type;
 
@@ -60,7 +52,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformInputOutputIterator()
 DECLARE_VECTOR_UNITTEST(TestTransformInputOutputIterator);
 
 template <class Vector>
-THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestMakeTransformInputOutputIterator()
+void TestMakeTransformInputOutputIterator()
 {
   using T = typename Vector::value_type;
 
