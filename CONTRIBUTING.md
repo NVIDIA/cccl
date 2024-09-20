@@ -1,7 +1,7 @@
 
 # Contributing to CCCL
 
-Thank you for your interest in contributing to the CUDA C++ Core Libraries (CCCL)!
+Thank you for your interest in contributing to the CUDA Core Compute Libraries (CCCL)!
 
 Looking for ideas for your first contribution? Check out: ![GitHub Issues or Pull Requests by label](https://img.shields.io/github/issues/nvidia/cccl/good%20first%20issue)
 

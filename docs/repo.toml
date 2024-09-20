@@ -4,7 +4,7 @@
 
 [repo_docs]
 enabled = true
-name = "CUDA C++ Core Libraries"
+name = "CUDA Core Compute Libraries"
 project = "cccl"
 logo = "img/logo.png"
 
