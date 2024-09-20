@@ -27,6 +27,7 @@
 
 #include <cuda/__barrier/aligned_size.h>
 #include <cuda/__barrier/async_contract_fulfillment.h>
+#include <cuda/__barrier/barrier.h>
 #include <cuda/__barrier/completion_mechanism.h>
 #include <cuda/__fwd/pipeline.h>
 #include <cuda/std/__atomic/api/owned.h>
@@ -43,33 +44,6 @@
 #endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
-
-template <thread_scope _Sco, class _CompletionF = _CUDA_VSTD::__empty_completion>
-class barrier : public _CUDA_VSTD::__barrier_base<_CompletionF, _Sco>
-{
-public:
-  _CCCL_HIDE_FROM_ABI barrier() = default;
-
-  barrier(const barrier&)            = delete;
-  barrier& operator=(const barrier&) = delete;
-
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr barrier(_CUDA_VSTD::ptrdiff_t __expected,
-                                              _CompletionF __completion = _CompletionF())
-      : _CUDA_VSTD::__barrier_base<_CompletionF, _Sco>(__expected, __completion)
-  {}
-
-  _LIBCUDACXX_HIDE_FROM_ABI friend void init(barrier* __b, _CUDA_VSTD::ptrdiff_t __expected)
-  {
-    _CCCL_ASSERT(__expected >= 0, "Cannot initialize barrier with negative arrival count");
-    new (__b) barrier(__expected);
-  }
-
-  _LIBCUDACXX_HIDE_FROM_ABI friend void init(barrier* __b, _CUDA_VSTD::ptrdiff_t __expected, _CompletionF __completion)
-  {
-    _CCCL_ASSERT(__expected >= 0, "Cannot initialize barrier with negative arrival count");
-    new (__b) barrier(__expected, __completion);
-  }
-};
 
 struct __block_scope_barrier_base
 {};
