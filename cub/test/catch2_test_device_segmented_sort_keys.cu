@@ -290,6 +290,7 @@ try
   constexpr std::size_t uint32_max = ::cuda::std::numeric_limits<std::uint32_t>::max();
   constexpr int num_key_seeds      = 1;
   const bool is_descending         = GENERATE(false, true);
+  const bool is_overwrite          = GENERATE(false, true);
   constexpr std::size_t num_items =
     (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : ::cuda::std::numeric_limits<offset_t>::max();
   const std::size_t num_segments = 2;
