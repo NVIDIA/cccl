@@ -38,6 +38,7 @@
 #include <cuda/__barrier/try_get_barrier_handle.h>
 #include <cuda/__fwd/pipeline.h>
 #include <cuda/__memcpy_async/cp_async_bulk_shared_global.h>
+#include <cuda/__memcpy_async/cp_async_fallback.h>
 #include <cuda/__memcpy_async/cp_async_shared_global.h>
 #include <cuda/__memcpy_async/memcpy_async_tx.h>
 #include <cuda/__memcpy_async/memcpy_completion.h>
@@ -109,40 +110,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
  * 4. cp.async:      shared  <- global
  * 5. normal synchronous copy (fallback)
  ***********************************************************************/
-
-template <size_t _Copy_size>
-struct __copy_chunk
-{
-  _CCCL_ALIGNAS(_Copy_size) char data[_Copy_size];
-};
-
-template <size_t _Alignment, typename _Group>
-inline __host__ __device__ void
-__cp_async_fallback_mechanism(_Group __g, char* __dest, const char* __src, _CUDA_VSTD::size_t __size)
-{
-  // Maximal copy size is 16 bytes
-  constexpr _CUDA_VSTD::size_t __copy_size = (_Alignment > 16) ? 16 : _Alignment;
-  using __chunk_t                          = __copy_chunk<__copy_size>;
-
-  // "Group"-strided loop over memory
-  const size_t __stride = __g.size() * __copy_size;
-
-  // An unroll factor of 64 ought to be enough for anybody. This unroll pragma
-  // is mainly intended to place an upper bound on loop unrolling. The number
-  // is more than high enough for the intended use case: an unroll factor of
-  // 64 allows moving 4 * 64 * 256 = 64kb in one unrolled loop with 256
-  // threads (copying ints). On the other hand, in the unfortunate case that
-  // we have to move 1024 bytes / thread with char width, then we prevent
-  // fully unrolling the loop to 1024 copy instructions. This prevents the
-  // compile times from increasing unreasonably, and also has neglibible
-  // impact on runtime performance.
-  _LIBCUDACXX_PRAGMA_UNROLL(64)
-  for (_CUDA_VSTD::size_t __offset = __g.thread_rank() * __copy_size; __offset < __size; __offset += __stride)
-  {
-    __chunk_t tmp                                    = *reinterpret_cast<const __chunk_t*>(__src + __offset);
-    *reinterpret_cast<__chunk_t*>(__dest + __offset) = tmp;
-  }
-}
 
 /***********************************************************************
  * cuda::memcpy_async dispatch helper functions
