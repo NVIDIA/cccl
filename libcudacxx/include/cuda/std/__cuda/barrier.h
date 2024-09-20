@@ -26,6 +26,7 @@
 #endif // no system header
 
 #include <cuda/__barrier/aligned_size.h>
+#include <cuda/__fwd/pipeline.h>
 #include <cuda/std/__atomic/api/owned.h>
 #include <cuda/std/__type_traits/void_t.h> // _CUDA_VSTD::void_t
 
@@ -40,10 +41,6 @@
 #endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
-
-// foward declaration required for memcpy_async, pipeline "sync" defined here
-template <thread_scope _Scope>
-class pipeline;
 
 // Type only used for logging purpose
 enum async_contract_fulfillment
