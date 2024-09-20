@@ -32,6 +32,7 @@
 #include <cuda/__barrier/barrier_expect_tx.h>
 #include <cuda/__barrier/barrier_native_handle.h>
 #include <cuda/__barrier/barrier_thread_scope_block.h>
+#include <cuda/__barrier/barrier_thread_scope_thread.h>
 #include <cuda/__barrier/completion_mechanism.h>
 #include <cuda/__fwd/pipeline.h>
 #include <cuda/__memcpy_async/memcpy_async_tx.h>
@@ -45,29 +46,6 @@
 #if defined(_CCCL_CUDA_COMPILER)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
-
-template <>
-class barrier<thread_scope_thread, _CUDA_VSTD::__empty_completion> : private barrier<thread_scope_block>
-{
-  using __base = barrier<thread_scope_block>;
-
-public:
-  using __base::__base;
-
-  _LIBCUDACXX_HIDE_FROM_ABI friend void
-  init(barrier* __b,
-       _CUDA_VSTD::ptrdiff_t __expected,
-       _CUDA_VSTD::__empty_completion __completion = _CUDA_VSTD::__empty_completion())
-  {
-    init(static_cast<__base*>(__b), __expected, __completion);
-  }
-
-  using __base::arrive;
-  using __base::arrive_and_drop;
-  using __base::arrive_and_wait;
-  using __base::max;
-  using __base::wait;
-};
 
 template <typename... _Ty>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __unused(_Ty...)
