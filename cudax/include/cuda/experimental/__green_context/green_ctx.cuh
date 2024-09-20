@@ -46,6 +46,9 @@ struct green_context
     __transformed     = detail::driver::ctxFromGreenCtx(__green_ctx);
   }
 
+  green_context(const device&)            = delete;
+  green_context& operator=(const device&) = delete;
+
   // TODO this probably should be the runtime equivalent once available
   _CCCL_NODISCARD static green_context from_native_handle(CUgreenCtx __gctx)
   {

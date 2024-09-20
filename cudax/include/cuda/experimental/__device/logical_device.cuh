@@ -100,9 +100,6 @@ struct logical_device
 #if _CCCL_STD_VER <= 2017
   //! @brief Compares two logical_devices for inequality
   //!
-  //! @note Allows comparison with `int` due to implicit conversion to
-  //! `device_ref`.
-  //!
   //! @param __lhs The first `logical_device` to compare
   //! @param __rhs The second `logical_device` to compare
   //! @return true if `lhs` and `rhs` refer to the different logical device
