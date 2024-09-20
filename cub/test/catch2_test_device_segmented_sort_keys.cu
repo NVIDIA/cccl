@@ -293,7 +293,7 @@ try
   constexpr std::size_t num_items =
     (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : ::cuda::std::numeric_limits<offset_t>::max();
   const std::size_t num_segments = 2;
-  CAPTURE(c2h::type_name<offset_t>(), num_items, is_descending);
+  CAPTURE(c2h::type_name<offset_t>(), num_items, is_descending, is_overwrite);
 
   c2h::device_vector<key_t> in_keys(num_items);
   c2h::device_vector<key_t> out_keys(num_items);
