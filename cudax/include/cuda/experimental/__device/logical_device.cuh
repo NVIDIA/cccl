@@ -26,6 +26,10 @@
 
 namespace cuda::experimental
 {
+namespace detail
+{
+struct logical_device_access;
+}
 
 //! @brief A non-owning representation of a CUDA device or a green context
 struct logical_device
@@ -110,7 +114,7 @@ struct logical_device
 #endif // _CCCL_STD_VER <= 2017
 
 private:
-  friend struct ::cuda::experimental::stream_ref;
+  friend detail::logical_device_access;
   // This might be a CUdevice as well
   int __dev_id    = 0;
   CUcontext __ctx = nullptr;
@@ -123,6 +127,17 @@ private:
       , __kind(__k)
   {}
 };
+
+namespace detail
+{
+struct logical_device_access
+{
+  static logical_device make_logical_device(int __id, CUcontext __context, logical_device::kinds __k)
+  {
+    return logical_device(__id, __context, __k);
+  }
+};
+} // namespace detail
 
 } // namespace cuda::experimental
 

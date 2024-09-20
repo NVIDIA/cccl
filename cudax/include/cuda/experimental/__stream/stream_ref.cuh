@@ -123,7 +123,7 @@ struct stream_ref : ::cuda::stream_ref
     __ensure_current_device __setter(__stream_ctx);
     int __id;
     _CCCL_TRY_CUDA_API(cudaGetDevice, "Could not get device from a stream", &__id);
-    return ::cuda::experimental::logical_device(__id, __stream_ctx, __ctx_kind);
+    return detail::logical_device_access::make_logical_device(__id, __stream_ctx, __ctx_kind);
   }
 
   //! @brief Get device under which this stream was created.
@@ -134,7 +134,7 @@ struct stream_ref : ::cuda::stream_ref
   //! @throws cuda_error if device check fails
   device_ref device() const
   {
-    return logical_device().__dev_id;
+    return logical_device().underlying_device();
   }
 };
 
