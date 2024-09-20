@@ -110,7 +110,7 @@ struct logical_device
 #endif // _CCCL_STD_VER <= 2017
 
 private:
-  friend struct stream_ref;
+  friend struct ::cuda::experimental::stream_ref;
   // This might be a CUdevice as well
   int __dev_id    = 0;
   CUcontext __ctx = nullptr;
