@@ -326,7 +326,7 @@ try
 }
 catch (std::bad_alloc& e)
 {
-  std::cerr << "Skipping segmented radix sort test, unsufficient GPU memory. " << e.what() << "\n";
+  std::cerr << "Skipping segmented sort test, unsufficient GPU memory. " << e.what() << "\n";
 }
 
 CUB_TEST("DeviceSegmentedSort::SortPairs: very large segments", "[pairs][segmented][sort][device]", all_offset_types)
