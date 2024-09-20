@@ -114,7 +114,7 @@ void TestCountDispatchImplicit()
 {
   thrust::device_vector<int> vec(1);
 
-  int result = thrust::count(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), 13);
+  auto result = thrust::count(thrust::retag<my_tag>(vec.begin()), thrust::retag<my_tag>(vec.end()), 13);
 
   ASSERT_EQUAL(13, result);
 }

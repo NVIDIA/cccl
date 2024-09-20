@@ -1374,7 +1374,7 @@ inline c2h::device_vector<int>
 generate_random_offsets(c2h::seed_t seed, int max_items, int max_segment, int num_segments)
 {
   C2H_TIME_SCOPE("generate_random_offsets");
-  const int expected_segment_length = cub::DivideAndRoundUp(max_items, num_segments);
+  const int expected_segment_length = ::cuda::ceil_div(max_items, num_segments);
   const int max_segment_length      = CUB_MIN(max_segment, (expected_segment_length * 2) + 1);
 
   c2h::device_vector<int> offsets(num_segments + 1);

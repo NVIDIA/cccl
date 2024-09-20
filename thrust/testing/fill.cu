@@ -7,7 +7,8 @@
 
 #include <unittest/unittest.h>
 
-THRUST_DISABLE_MSVC_POSSIBLE_LOSS_OF_DATA_WARNING_BEGIN
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
 
 template <class Vector>
 void TestFillSimple()
@@ -446,4 +447,4 @@ void TestFillNDispatchImplicit()
 }
 DECLARE_UNITTEST(TestFillNDispatchImplicit);
 
-THRUST_DISABLE_MSVC_POSSIBLE_LOSS_OF_DATA_WARNING_END
+_CCCL_DIAG_POP

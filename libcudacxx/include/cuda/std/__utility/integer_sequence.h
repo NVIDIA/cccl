@@ -33,13 +33,26 @@ template <class _IdxType, _IdxType... _Values>
 struct __integer_sequence
 {
   template <template <class _OIdxType, _OIdxType...> class _ToIndexSeq, class _ToIndexType>
-  using __convert = _ToIndexSeq<_ToIndexType, _Values...>;
+  using __convert _LIBCUDACXX_NODEBUG_TYPE = _ToIndexSeq<_ToIndexType, _Values...>;
 
   template <size_t _Sp>
-  using __to_tuple_indices = __tuple_indices<(_Values + _Sp)...>;
+  using __to_tuple_indices _LIBCUDACXX_NODEBUG_TYPE = __tuple_indices<(_Values + _Sp)...>;
 };
 
-#ifndef _LIBCUDACXX_HAS_MAKE_INTEGER_SEQ
+#if defined(_LIBCUDACXX_HAS_MAKE_INTEGER_SEQ)
+
+template <size_t _Ep, size_t _Sp>
+using __make_indices_imp _LIBCUDACXX_NODEBUG_TYPE =
+  typename __make_integer_seq<__integer_sequence, size_t, _Ep - _Sp>::template __to_tuple_indices<_Sp>;
+
+#elif defined(_LIBCUDACXX_HAS_INTEGER_PACK) // ^^^ _LIBCUDACXX_HAS_MAKE_INTEGER_SEQ ^^^
+                                            // vvv _LIBCUDACXX_HAS_INTEGER_PACK vvv
+
+template <size_t _Ep, size_t _Sp>
+using __make_indices_imp _LIBCUDACXX_NODEBUG_TYPE =
+  typename __integer_sequence<size_t, __integer_pack(_Ep - _Sp)...>::template __to_tuple_indices<_Sp>;
+
+#else // ^^^ _LIBCUDACXX_HAS_INTEGER_PACK ^^^ / vvv !_LIBCUDACXX_HAS_INTEGER_PACK vvv
 
 namespace __detail
 {
@@ -65,6 +78,7 @@ struct __repeat<__integer_sequence<_Tp, _Np...>, _Extra...>
 
 template <size_t _Np>
 struct __parity;
+
 template <size_t _Np>
 struct __make : __parity<_Np % 8>::template __pmake<_Np>
 {};
@@ -170,15 +184,9 @@ struct __parity<7>
 
 } // namespace __detail
 
-#endif // !_LIBCUDACXX_HAS_MAKE_INTEGER_SEQ
-
-#ifdef _LIBCUDACXX_HAS_MAKE_INTEGER_SEQ
 template <size_t _Ep, size_t _Sp>
-using __make_indices_imp =
-  typename __make_integer_seq<__integer_sequence, size_t, _Ep - _Sp>::template __to_tuple_indices<_Sp>;
-#else
-template <size_t _Ep, size_t _Sp>
-using __make_indices_imp = typename __detail::__make<_Ep - _Sp>::type::template __to_tuple_indices<_Sp>;
+using __make_indices_imp _LIBCUDACXX_NODEBUG_TYPE =
+  typename __detail::__make<_Ep - _Sp>::type::template __to_tuple_indices<_Sp>;
 
 #endif
 
@@ -201,7 +209,13 @@ using index_sequence = integer_sequence<size_t, _Ip...>;
 template <class _Tp, _Tp _Ep>
 using __make_integer_sequence _LIBCUDACXX_NODEBUG_TYPE = __make_integer_seq<integer_sequence, _Tp, _Ep>;
 
-#else // _LIBCUDACXX_HAS_MAKE_INTEGER_SEQ
+#elif defined(_LIBCUDACXX_HAS_INTEGER_PACK) // ^^^ _LIBCUDACXX_HAS_MAKE_INTEGER_SEQ ^^^
+                                            // vvv _LIBCUDACXX_HAS_INTEGER_PACK vvv
+
+template <class _Tp, _Tp _Ep>
+using __make_integer_sequence _LIBCUDACXX_NODEBUG_TYPE = integer_sequence<_Tp, __integer_pack(_Ep)...>;
+
+#else // ^^^ _LIBCUDACXX_HAS_INTEGER_PACK ^^^ / vvv !_LIBCUDACXX_HAS_INTEGER_PACK vvv
 
 template <typename _Tp, _Tp _Np>
 using __make_integer_sequence_unchecked _LIBCUDACXX_NODEBUG_TYPE =

@@ -59,7 +59,7 @@
 #include <cuda/std/__mdspan/macros.h>
 #include <cuda/std/__mdspan/maybe_static_value.h>
 #include <cuda/std/__mdspan/standard_layout_static_array.h>
-#include <cuda/std/__mdspan/type_list.h>
+#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef>
@@ -123,9 +123,8 @@ class __partially_static_array_impl<
 {
 private:
   template <size_t _Np>
-  using __base_n = typename __type_at<
-    _Np,
-    __type_list<__maybe_static_value<_Tp, _static_t, __values_or_sentinals, __sentinal, _Idxs>...>>::type;
+  using __base_n =
+    __type_index_c<_Np, __maybe_static_value<_Tp, _static_t, __values_or_sentinals, __sentinal, _Idxs>...>;
 
 public:
   static constexpr auto __size = sizeof...(_Idxs);

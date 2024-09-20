@@ -618,11 +618,17 @@ endmacro()
 # Wrap the OpenMP flags for CUDA targets
 function(thrust_fixup_omp_target omp_target)
   get_target_property(opts ${omp_target} INTERFACE_COMPILE_OPTIONS)
-  if (opts MATCHES "\\$<\\$<COMPILE_LANGUAGE:CXX>:([^>]*)>")
-    target_compile_options(${omp_target} INTERFACE
-      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=${CMAKE_MATCH_1}>
-    )
-  endif()
+  foreach (opt IN LISTS opts)
+    if (opts MATCHES "\\$<\\$<COMPILE_LANGUAGE:CXX>:SHELL:([^>]*)>")
+      target_compile_options(${omp_target} INTERFACE
+        $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:SHELL:-Xcompiler=${CMAKE_MATCH_1}>
+      )
+    elseif (opts MATCHES "\\$<\\$<COMPILE_LANGUAGE:CXX>:([^>]*)>")
+      target_compile_options(${omp_target} INTERFACE
+        $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:-Xcompiler=${CMAKE_MATCH_1}>
+      )
+    endif()
+  endforeach()
 endfunction()
 
 # This must be a macro instead of a function to ensure that backends passed to

@@ -110,7 +110,7 @@ _run_post_create_command() {
     gh config set git_protocol ssh;
     gh config set git_protocol ssh --host github.com;
 
-    clone-all -j "$(nproc --all)" -v -q --clone-upstream --single-branch --shallow-submodules;
+    clone-all -j "$(nproc --all)" -v -q --clone-upstream --single-branch --shallow-submodules --no-update-env;
 }
 
 if [ "$(basename "${BASH_SOURCE[${#BASH_SOURCE[@]}-1]}")" = post-create-command.sh ]; then

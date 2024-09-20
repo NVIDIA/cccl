@@ -609,11 +609,11 @@ struct DispatchSelectIf : SelectedPolicy
         : num_items;
 
     // The number of partitions required to "iterate" over the total input
-    auto const num_partitions = cub::DivideAndRoundUp(num_items, max_partition_size);
+    auto const num_partitions = ::cuda::ceil_div(num_items, max_partition_size);
 
     // The maximum number of tiles for which we will ever invoke the kernel
     auto const max_num_tiles_per_invocation =
-      static_cast<OffsetT>(cub::DivideAndRoundUp(max_partition_size, tile_size));
+      static_cast<OffsetT>(::cuda::ceil_div(max_partition_size, tile_size));
 
     // The amount of virtual shared memory to allocate
     const auto vsmem_size = max_num_tiles_per_invocation * VsmemHelperT::vsmem_per_block;
@@ -670,7 +670,7 @@ struct DispatchSelectIf : SelectedPolicy
           (partition_idx + 1 == num_partitions) ? (num_items - current_partition_offset) : max_partition_size;
 
         // Construct the tile status interface
-        const auto current_num_tiles = static_cast<int>(cub::DivideAndRoundUp(current_num_items, tile_size));
+        const auto current_num_tiles = static_cast<int>(::cuda::ceil_div(current_num_items, tile_size));
         ScanTileStateT tile_status;
         error = CubDebug(tile_status.Init(current_num_tiles, allocations[0], allocation_sizes[0]));
         if (cudaSuccess != error)
@@ -679,7 +679,7 @@ struct DispatchSelectIf : SelectedPolicy
         }
 
         // Log scan_init_kernel configuration
-        int init_grid_size = CUB_MAX(1, cub::DivideAndRoundUp(current_num_tiles, INIT_KERNEL_THREADS));
+        int init_grid_size = CUB_MAX(1, ::cuda::ceil_div(current_num_tiles, INIT_KERNEL_THREADS));
 
 #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
         _CubLog("Invoking scan_init_kernel<<<%d, %d, 0, %lld>>>()\n",

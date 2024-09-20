@@ -92,7 +92,7 @@ struct __fn
     {
       return __last - decay_t<_Ip>(__first);
     }
-    _LIBCUDACXX_UNREACHABLE();
+    _CCCL_UNREACHABLE();
   }
 
   _LIBCUDACXX_TEMPLATE(class _Rp)
@@ -107,7 +107,7 @@ struct __fn
     {
       return operator()(_CUDA_VRANGES::begin(__r), _CUDA_VRANGES::end(__r));
     }
-    _LIBCUDACXX_UNREACHABLE();
+    _CCCL_UNREACHABLE();
   }
 };
 _LIBCUDACXX_END_NAMESPACE_CPO
