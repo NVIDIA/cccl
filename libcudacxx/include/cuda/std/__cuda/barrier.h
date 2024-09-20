@@ -37,6 +37,7 @@
 #include <cuda/__barrier/is_local_smem_barrier.h>
 #include <cuda/__barrier/try_get_barrier_handle.h>
 #include <cuda/__fwd/pipeline.h>
+#include <cuda/__memcpy_async/cp_async_bulk_shared_global.h>
 #include <cuda/__memcpy_async/memcpy_async_tx.h>
 #include <cuda/__memcpy_async/memcpy_completion.h>
 #include <cuda/std/__atomic/api/owned.h>
@@ -107,22 +108,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
  * 4. cp.async:      shared  <- global
  * 5. normal synchronous copy (fallback)
  ***********************************************************************/
-
-#  if __cccl_ptx_isa >= 800
-extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_shared_global_is_not_supported_before_SM_90__();
-template <typename _Group>
-inline __device__ void
-__cp_async_bulk_shared_global(const _Group& __g, char* __dest, const char* __src, size_t __size, uint64_t* __bar_handle)
-{
-  // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
-                    (if (__g.thread_rank() == 0) {
-                      _CUDA_VPTX::cp_async_bulk(
-                        _CUDA_VPTX::space_cluster, _CUDA_VPTX::space_global, __dest, __src, __size, __bar_handle);
-                    }),
-                    (__cuda_ptx_cp_async_bulk_shared_global_is_not_supported_before_SM_90__();));
-}
-#  endif // __cccl_ptx_isa >= 800
 
 extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_shared_global_is_not_supported_before_SM_80__();
 template <size_t _Copy_size>
