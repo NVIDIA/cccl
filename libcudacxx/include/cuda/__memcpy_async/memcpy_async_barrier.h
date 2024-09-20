@@ -23,8 +23,8 @@
 #endif // no system header
 
 #include <cuda/__barrier/barrier.h>
-#include <cuda/__barrier/barrier_thread_scope_block.h>
-#include <cuda/__barrier/barrier_thread_scope_thread.h>
+#include <cuda/__barrier/barrier_block_scope.h>
+#include <cuda/__barrier/barrier_thread_scope.h>
 #include <cuda/__memcpy_async/completion_mechanism.h>
 #include <cuda/__memcpy_async/dispatch_memcpy_async.h>
 #include <cuda/__memcpy_async/is_local_smem_barrier.h>

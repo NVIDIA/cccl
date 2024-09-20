@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___BARRIER_BARRIER_THREAD_SCOPE_THREAD_H
-#define _CUDA___BARRIER_BARRIER_THREAD_SCOPE_THREAD_H
+#ifndef _CUDA___BARRIER_BARRIER_THREAD_SCOPE_H
+#define _CUDA___BARRIER_BARRIER_THREAD_SCOPE_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__barrier/barrier_thread_scope_block.h>
+#include <cuda/__barrier/barrier_block_scope.h>
 #include <cuda/__fwd/barrier.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__barrier/empty_completion.h>
@@ -54,4 +54,4 @@ public:
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#endif // _CUDA___BARRIER_BARRIER_THREAD_SCOPE_THREAD_H
+#endif // _CUDA___BARRIER_BARRIER_THREAD_SCOPE_H

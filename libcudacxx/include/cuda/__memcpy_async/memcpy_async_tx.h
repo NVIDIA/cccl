@@ -27,8 +27,8 @@
 
 #    include <cuda/__barrier/aligned_size.h>
 #    include <cuda/__barrier/async_contract_fulfillment.h>
+#    include <cuda/__barrier/barrier_block_scope.h>
 #    include <cuda/__barrier/barrier_native_handle.h>
-#    include <cuda/__barrier/barrier_thread_scope_block.h>
 #    include <cuda/__ptx/ptx_dot_variants.h>
 #    include <cuda/__ptx/ptx_helper_functions.h>
 #    include <cuda/std/__atomic/scopes.h>

@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___BARRIER_BARRIER_THREAD_SCOPE_BLOCK_H
-#define _CUDA___BARRIER_BARRIER_THREAD_SCOPE_BLOCK_H
+#ifndef _CUDA___BARRIER_BARRIER_BLOCK_SCOPE_H
+#define _CUDA___BARRIER_BARRIER_BLOCK_SCOPE_H
 
 #include <cuda/std/detail/__config>
 
@@ -462,4 +462,4 @@ public:
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#endif // _CUDA___BARRIER_BARRIER_THREAD_SCOPE_BLOCK_H
+#endif // _CUDA___BARRIER_BARRIER_BLOCK_SCOPE_H

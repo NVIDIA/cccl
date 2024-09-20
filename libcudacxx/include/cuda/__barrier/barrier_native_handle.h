@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__barrier/barrier_thread_scope_block.h>
+#include <cuda/__barrier/barrier_block_scope.h>
 #include <cuda/__fwd/barrier.h>
 #include <cuda/std/cstdint>
 

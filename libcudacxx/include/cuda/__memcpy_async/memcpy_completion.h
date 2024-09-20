@@ -22,8 +22,8 @@
 #endif // no system header
 
 #include <cuda/__barrier/async_contract_fulfillment.h>
+#include <cuda/__barrier/barrier_block_scope.h>
 #include <cuda/__barrier/barrier_expect_tx.h>
-#include <cuda/__barrier/barrier_thread_scope_block.h>
 #include <cuda/__fwd/pipeline.h>
 #include <cuda/__memcpy_async/completion_mechanism.h>
 #include <cuda/__memcpy_async/is_local_smem_barrier.h>

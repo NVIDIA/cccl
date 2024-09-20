@@ -25,8 +25,8 @@
 #if defined(_CCCL_CUDA_COMPILER)
 #  if __cccl_ptx_isa >= 800
 
+#    include <cuda/__barrier/barrier_block_scope.h>
 #    include <cuda/__barrier/barrier_native_handle.h>
-#    include <cuda/__barrier/barrier_thread_scope_block.h>
 #    include <cuda/__ptx/instructions/mbarrier_arrive.h>
 #    include <cuda/__ptx/ptx_dot_variants.h>
 #    include <cuda/__ptx/ptx_helper_functions.h>
