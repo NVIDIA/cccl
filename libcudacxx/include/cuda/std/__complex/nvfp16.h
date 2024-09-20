@@ -30,6 +30,7 @@
 #  include <cuda/std/__type_traits/enable_if.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
 #  include <cuda/std/__type_traits/is_constructible.h>
+#  include <cuda/std/__type_traits/is_extended_floating_point.h>
 #  include <cuda/std/cmath>
 #  include <cuda/std/complex>
 
@@ -38,10 +39,6 @@
 #  endif // !_CCCL_COMPILER_NVRTC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
-
-template <>
-struct __is_nvfp16<__half> : true_type
-{};
 
 template <>
 struct __complex_alignment<__half> : integral_constant<size_t, alignof(__half2)>
