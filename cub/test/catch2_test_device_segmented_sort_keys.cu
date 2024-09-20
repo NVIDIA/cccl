@@ -303,6 +303,11 @@ try
   offsets[1] = static_cast<offset_t>(num_items);
   offsets[2] = static_cast<offset_t>(num_items);
 
+  // Allocate host/device-accessible memory to communicate the selected output buffer
+  int *selector_ptr = nullptr;
+  if(is_overwrite){
+    REQUIRE(cudaSuccess == cudaMallocHost(&selector_ptr, sizeof(int)));
+  }
   auto ref_keys     = segmented_radix_sort_reference(in_keys, is_descending, offsets);
   auto out_keys_ptr = thrust::raw_pointer_cast(out_keys.data());
   if (is_descending)
