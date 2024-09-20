@@ -29,6 +29,7 @@
 #include <cuda/__barrier/async_contract_fulfillment.h>
 #include <cuda/__barrier/barrier.h>
 #include <cuda/__barrier/completion_mechanism.h>
+#include <cuda/__fwd/barrier_native_handle.h>
 #include <cuda/__fwd/pipeline.h>
 #include <cuda/std/__atomic/api/owned.h>
 #include <cuda/std/__type_traits/void_t.h> // _CUDA_VSTD::void_t
@@ -47,16 +48,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 struct __block_scope_barrier_base
 {};
-
-_LIBCUDACXX_END_NAMESPACE_CUDA
-
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
-
-_CCCL_DEVICE inline _CUDA_VSTD::uint64_t* barrier_native_handle(barrier<thread_scope_block>& b);
-
-_LIBCUDACXX_END_NAMESPACE_CUDA_DEVICE
-
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 template <>
 class barrier<thread_scope_block, _CUDA_VSTD::__empty_completion> : public __block_scope_barrier_base

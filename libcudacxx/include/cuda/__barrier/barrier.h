@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__fwd/barrier.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__barrier/barrier.h>
 #include <cuda/std/__barrier/empty_completion.h>
@@ -29,7 +30,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-template <thread_scope _Sco, class _CompletionF = _CUDA_VSTD::__empty_completion>
+template <thread_scope _Sco, class _CompletionF>
 class barrier : public _CUDA_VSTD::__barrier_base<_CompletionF, _Sco>
 {
 public:
