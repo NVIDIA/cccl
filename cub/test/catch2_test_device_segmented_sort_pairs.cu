@@ -372,7 +372,8 @@ try
       static_cast<offset_t>(num_items),
       static_cast<offset_t>(num_segments),
       thrust::raw_pointer_cast(offsets.data()),
-      offsets.cbegin() + 1);
+      offsets.cbegin() + 1,
+      is_overwrite);
   }
   else
   {
