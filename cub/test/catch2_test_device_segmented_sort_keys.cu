@@ -40,11 +40,12 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_sor
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   const KeyT* d_keys_in,
-  KeyT*& d_keys_out,
+  KeyT* d_keys_out,
   NumItemsT num_items,
   NumItemsT num_segments,
   BeginOffsetIteratorT d_begin_offsets,
   EndOffsetIteratorT d_end_offsets,
+  int *selector,
   bool is_overwrite   = false,
   cudaStream_t stream = 0)
 {
