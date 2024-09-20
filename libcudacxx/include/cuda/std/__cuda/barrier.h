@@ -25,6 +25,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__barrier/aligned_size.h>
 #include <cuda/std/__atomic/api/owned.h>
 #include <cuda/std/__type_traits/void_t.h> // _CUDA_VSTD::void_t
 
@@ -43,20 +44,6 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 // foward declaration required for memcpy_async, pipeline "sync" defined here
 template <thread_scope _Scope>
 class pipeline;
-
-template <_CUDA_VSTD::size_t _Alignment>
-struct aligned_size_t
-{
-  static constexpr _CUDA_VSTD::size_t align = _Alignment;
-  _CUDA_VSTD::size_t value;
-  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr aligned_size_t(size_t __s)
-      : value(__s)
-  {}
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator size_t() const
-  {
-    return value;
-  }
-};
 
 // Type only used for logging purpose
 enum async_contract_fulfillment
