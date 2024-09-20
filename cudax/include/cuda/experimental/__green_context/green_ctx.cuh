@@ -41,8 +41,9 @@ struct green_context
       : __dev_id(__device.get())
   {
     // TODO get CUdevice from device
-    __green_ctx   = detail::driver::greenCtxCreate((CUdevice) __dev_id);
-    __transformed = detail::driver::ctxFromGreenCtx(__green_ctx);
+    auto __dev_handle = detail::driver::deviceGet(__dev_id);
+    __green_ctx       = detail::driver::greenCtxCreate(__dev_handle);
+    __transformed     = detail::driver::ctxFromGreenCtx(__green_ctx);
   }
 
   // TODO this probably should be the runtime equivalent once available

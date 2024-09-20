@@ -99,15 +99,18 @@ struct stream_ref : ::cuda::stream_ref
   logical_device logical_device() const
   {
     CUcontext __stream_ctx;
+    ::cuda::experimental::logical_device::kinds __ctx_kind = ::cuda::experimental::logical_device::kinds::device;
 #if CUDART_VERSION >= 12050
     auto __ctx = detail::driver::streamGetCtx_v2(__stream);
     if (cuda::std::holds_alternative<CUgreenCtx>(__ctx))
     {
       __stream_ctx = detail::driver::ctxFromGreenCtx(cuda::std::get<CUgreenCtx>(__ctx));
+      __ctx_kind   = ::cuda::experimental::logical_device::kinds::green_context;
     }
     else
     {
       __stream_ctx = cuda::std::get<CUcontext>(__ctx);
+      __ctx_kind   = ::cuda::experimental::logical_device::kinds::device;
     }
 #else
     __stream_ctx = detail::driver::streamGetCtx(__stream);
@@ -117,7 +120,7 @@ struct stream_ref : ::cuda::stream_ref
     __ensure_current_device __setter(__stream_ctx);
     int __id;
     _CCCL_TRY_CUDA_API(cudaGetDevice, "Could not get device from a stream", &__id);
-    return ::cuda::experimental::logical_device(__id, __stream_ctx);
+    return ::cuda::experimental::logical_device(__id, __stream_ctx, __ctx_kind);
   }
 
   //! @brief Get device under which this stream was created.

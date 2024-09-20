@@ -146,6 +146,13 @@ inline void empty_driver_stack()
   }
 }
 
+inline int cuda_driver_version()
+{
+  int version;
+  CUDART(cudaDriverGetVersion(&version));
+  return version;
+}
+
 } // namespace test
 } // namespace
 #endif // __COMMON_UTILITY_H__

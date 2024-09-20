@@ -27,15 +27,15 @@
 namespace cuda::experimental
 {
 
-//! @brief A non-owning representation of a CUDA device
-class logical_device
+//! @brief A non-owning representation of a CUDA device or a green context
+struct logical_device
 {
-  friend struct stream_ref;
-  // This might be a CUdevice as well
-  int __dev_id    = 0;
-  CUcontext __ctx = nullptr;
+  enum class kinds
+  {
+    device,
+    green_context
+  };
 
-public:
   //! @brief Retrieve the native ordinal of the `device_ref`
   //!
   //! @return int The native device ordinal held by the `device_ref` object
@@ -44,29 +44,37 @@ public:
     return __ctx;
   }
 
-  _CCCL_NODISCARD constexpr device_ref device() const noexcept
+  _CCCL_NODISCARD constexpr device_ref underlying_device() const noexcept
   {
     return __dev_id;
+  }
+
+  _CCCL_NODISCARD constexpr kinds kind() const noexcept
+  {
+    return __kind;
   }
 
   explicit logical_device(int __id)
       : __dev_id(__id)
       , __ctx(devices[__id].primary_context())
+      , __kind(kinds::device)
   {}
 
-  logical_device(device_ref __dev)
+  explicit logical_device(device_ref __dev)
       : logical_device(__dev.get())
   {}
 
   logical_device(const ::cuda::experimental::device& __dev)
       : __dev_id(__dev.get())
       , __ctx(__dev.primary_context())
+      , __kind(kinds::device)
   {}
 
 #if CUDART_VERSION >= 12050
   logical_device(const green_context& __gctx)
       : __dev_id(__gctx.__dev_id)
       , __ctx(__gctx.__transformed)
+      , __kind(kinds::green_context)
   {}
 #endif
 
@@ -80,7 +88,7 @@ public:
   //! @return true if `lhs` and `rhs` refer to the same device ordinal
   _CCCL_NODISCARD_FRIEND bool operator==(logical_device __lhs, logical_device __rhs) noexcept
   {
-    return __lhs.__dev_id == __rhs.__dev_id && __lhs.__ctx == __rhs.__ctx;
+    return __lhs.__ctx == __rhs.__ctx;
   }
 
 #if _CCCL_STD_VER <= 2017
@@ -94,38 +102,22 @@ public:
   //! @return true if `lhs` and `rhs` refer to different device ordinal
   _CCCL_NODISCARD_FRIEND bool operator!=(logical_device __lhs, logical_device __rhs) noexcept
   {
-    return __lhs.__dev_id != __rhs.__dev_id || __lhs.__ctx != __rhs.__ctx;
+    return __lhs.__ctx != __rhs.__ctx;
   }
 #endif // _CCCL_STD_VER <= 2017
 
-  /*
-    //! @brief Retrieve the specified attribute for the device
-    //!
-    //! @param __attr The attribute to query. See `device::attrs` for the available
-    //!        attributes.
-    //!
-    //! @throws cuda_error if the attribute query fails
-    //!
-    //! @sa device::attrs
-    template <typename _Attr>
-    _CCCL_NODISCARD auto attr(_Attr __attr) const
-    {
-      return __attr(*this);
-    }
-
-    //! @overload
-    template <::cudaDeviceAttr _Attr>
-    _CCCL_NODISCARD auto attr() const
-    {
-      return attr(detail::__dev_attr<_Attr>());
-    }
-
-    const arch_traits_t& arch_traits() const;*/
-
 private:
-  logical_device(int __id, CUcontext __context)
+  friend struct stream_ref;
+  // This might be a CUdevice as well
+  int __dev_id    = 0;
+  CUcontext __ctx = nullptr;
+  // If we ever move to a variant instead of CUcontext we can probably remove the kind member
+  kinds __kind;
+
+  logical_device(int __id, CUcontext __context, kinds __k)
       : __dev_id(__id)
       , __ctx(__context)
+      , __kind(__k)
   {}
 };
 
