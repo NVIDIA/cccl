@@ -35,6 +35,7 @@
 #include <cuda/__barrier/barrier_thread_scope_thread.h>
 #include <cuda/__barrier/completion_mechanism.h>
 #include <cuda/__barrier/is_local_smem_barrier.h>
+#include <cuda/__barrier/try_get_barrier_handle.h>
 #include <cuda/__fwd/pipeline.h>
 #include <cuda/__memcpy_async/memcpy_async_tx.h>
 #include <cuda/std/__atomic/api/owned.h>
@@ -58,23 +59,6 @@ template <typename _Ty>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __unused(_Ty&)
 {
   return true;
-}
-
-// __try_get_barrier_handle returns barrier handle of block-scoped barriers and a nullptr otherwise.
-template <thread_scope _Sco, typename _CompF>
-_LIBCUDACXX_HIDE_FROM_ABI _CUDA_VSTD::uint64_t* __try_get_barrier_handle(barrier<_Sco, _CompF>& __barrier)
-{
-  return nullptr;
-}
-
-template <>
-_LIBCUDACXX_HIDE_FROM_ABI _CUDA_VSTD::uint64_t*
-__try_get_barrier_handle<::cuda::thread_scope_block, _CUDA_VSTD::__empty_completion>(
-  barrier<::cuda::thread_scope_block>& __barrier)
-{
-  (void) __barrier;
-  NV_DISPATCH_TARGET(
-    NV_IS_DEVICE, (return ::cuda::device::barrier_native_handle(__barrier);), NV_ANY_TARGET, (return nullptr;));
 }
 
 // This struct contains functions to defer the completion of a barrier phase
