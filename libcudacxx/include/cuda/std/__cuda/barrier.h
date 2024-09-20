@@ -27,6 +27,7 @@
 
 #include <cuda/__barrier/aligned_size.h>
 #include <cuda/__barrier/async_contract_fulfillment.h>
+#include <cuda/__barrier/completion_mechanism.h>
 #include <cuda/__fwd/pipeline.h>
 #include <cuda/std/__atomic/api/owned.h>
 #include <cuda/std/__type_traits/void_t.h> // _CUDA_VSTD::void_t
@@ -42,21 +43,6 @@
 #endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
-
-// __completion_mechanism allows memcpy_async to report back what completion
-// mechanism it used. This is necessary to determine in which way to synchronize
-// the memcpy_async with a sync object (barrier or pipeline).
-//
-// In addition, we use this enum to create bit flags so that calling functions
-// can specify which completion mechanisms can be used (__sync is always
-// allowed).
-enum class __completion_mechanism
-{
-  __sync                 = 0,
-  __mbarrier_complete_tx = 1 << 0, // Use powers of two here to support the
-  __async_group          = 1 << 1, // bit flag use case
-  __async_bulk_group     = 1 << 2,
-};
 
 template <thread_scope _Sco, class _CompletionF = _CUDA_VSTD::__empty_completion>
 class barrier : public _CUDA_VSTD::__barrier_base<_CompletionF, _Sco>
