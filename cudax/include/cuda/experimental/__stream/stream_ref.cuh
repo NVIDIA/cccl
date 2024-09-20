@@ -96,6 +96,9 @@ struct stream_ref : ::cuda::stream_ref
     wait(__tmp);
   }
 
+  //! @brief Get the logical device under which this stream was created
+  //! Compared to `device()` member function the returned logical_device will hold a green context for streams
+  //! created under one.
   logical_device logical_device() const
   {
     CUcontext __stream_ctx;
@@ -104,12 +107,12 @@ struct stream_ref : ::cuda::stream_ref
     auto __ctx = detail::driver::streamGetCtx_v2(__stream);
     if (cuda::std::holds_alternative<CUgreenCtx>(__ctx))
     {
-      __stream_ctx = detail::driver::ctxFromGreenCtx(cuda::std::get<CUgreenCtx>(__ctx));
+      __stream_ctx = detail::driver::ctxFromGreenCtx(::cuda::std::get<CUgreenCtx>(__ctx));
       __ctx_kind   = ::cuda::experimental::logical_device::kinds::green_context;
     }
     else
     {
-      __stream_ctx = cuda::std::get<CUcontext>(__ctx);
+      __stream_ctx = ::cuda::std::get<CUcontext>(__ctx);
       __ctx_kind   = ::cuda::experimental::logical_device::kinds::device;
     }
 #else
@@ -124,6 +127,9 @@ struct stream_ref : ::cuda::stream_ref
   }
 
   //! @brief Get device under which this stream was created.
+  //!
+  //! Note: In case of a stream created under a `green_context` the device on which that `green_context` was created is
+  //! returned
   //!
   //! @throws cuda_error if device check fails
   device_ref device() const

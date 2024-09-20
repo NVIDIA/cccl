@@ -166,6 +166,7 @@ inline cudaError_t eventDestroy(CUevent event)
 }
 
 #if CUDART_VERSION >= 12050
+// Add actual resource description input once exposure is ready
 inline CUgreenCtx greenCtxCreate(CUdevice dev)
 {
   CUgreenCtx result;

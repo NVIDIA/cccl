@@ -30,40 +30,48 @@ namespace cuda::experimental
 //! @brief A non-owning representation of a CUDA device or a green context
 struct logical_device
 {
+  // Enum to indicate kind of logical device stored
   enum class kinds
   {
+    // Indicates logical device is a full device
     device,
+    // Indicated logical device is a green context
     green_context
   };
 
-  //! @brief Retrieve the native ordinal of the `device_ref`
-  //!
-  //! @return int The native device ordinal held by the `device_ref` object
+  // We might want to make this private depending on how this type ends up looking like long term,
+  // not documenting it for now
   _CCCL_NODISCARD constexpr CUcontext context() const noexcept
   {
     return __ctx;
   }
 
+  //! @brief Retrieve the device on which this logical device resides
   _CCCL_NODISCARD constexpr device_ref underlying_device() const noexcept
   {
     return __dev_id;
   }
 
+  //! @brief Retrieve the kind of logical device stored in this object
+  //! The kind indicates if this logical_device holds a device or green_context
   _CCCL_NODISCARD constexpr kinds kind() const noexcept
   {
     return __kind;
   }
 
+  //! @brief Construct logical_device from a device ordinal
   explicit logical_device(int __id)
       : __dev_id(__id)
       , __ctx(devices[__id].primary_context())
       , __kind(kinds::device)
   {}
 
+  //! @brief Construct logical_device from a device_ref
   explicit logical_device(device_ref __dev)
       : logical_device(__dev.get())
   {}
 
+  // More of a micro-optimization, we can also remove this (depending if we keep device_ref)
   logical_device(const ::cuda::experimental::device& __dev)
       : __dev_id(__dev.get())
       , __ctx(__dev.primary_context())
@@ -71,6 +79,7 @@ struct logical_device
   {}
 
 #if CUDART_VERSION >= 12050
+  //! @brief Construct logical_device from a green_context
   logical_device(const green_context& __gctx)
       : __dev_id(__gctx.__dev_id)
       , __ctx(__gctx.__transformed)
@@ -78,28 +87,25 @@ struct logical_device
   {}
 #endif
 
-  //! @brief Compares two `device_ref`s for equality
+  //! @brief Compares two logical_devices for equality
   //!
-  //! @note Allows comparison with `int` due to implicit conversion to
-  //! `device_ref`.
-  //!
-  //! @param __lhs The first `device_ref` to compare
-  //! @param __rhs The second `device_ref` to compare
-  //! @return true if `lhs` and `rhs` refer to the same device ordinal
+  //! @param __lhs The first `logical_device` to compare
+  //! @param __rhs The second `logical_device` to compare
+  //! @return true if `lhs` and `rhs` refer to the same logical device
   _CCCL_NODISCARD_FRIEND bool operator==(logical_device __lhs, logical_device __rhs) noexcept
   {
     return __lhs.__ctx == __rhs.__ctx;
   }
 
 #if _CCCL_STD_VER <= 2017
-  //! @brief Compares two `device_ref`s for inequality
+  //! @brief Compares two logical_devices for inequality
   //!
   //! @note Allows comparison with `int` due to implicit conversion to
   //! `device_ref`.
   //!
-  //! @param __lhs The first `device_ref` to compare
-  //! @param __rhs The second `device_ref` to compare
-  //! @return true if `lhs` and `rhs` refer to different device ordinal
+  //! @param __lhs The first `logical_device` to compare
+  //! @param __rhs The second `logical_device` to compare
+  //! @return true if `lhs` and `rhs` refer to the different logical device
   _CCCL_NODISCARD_FRIEND bool operator!=(logical_device __lhs, logical_device __rhs) noexcept
   {
     return __lhs.__ctx != __rhs.__ctx;

@@ -51,6 +51,11 @@ struct stream : stream_ref
       ::cudaStreamCreateWithPriority, "Failed to create a stream", &__stream, cudaStreamDefault, __priority);
   }
 
+  //! @brief Constructs a stream on a specified logical device and with specified priority
+  //!
+  //! Priority is defaulted to stream::default_priority
+  //!
+  //! @throws cuda_error if stream creation fails
   explicit stream(::cuda::experimental::logical_device __dev, int __priority = default_priority)
       : stream_ref(detail::__invalid_stream)
   {
