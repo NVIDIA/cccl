@@ -51,6 +51,8 @@
 #include <cub/thread/thread_operators.cuh>
 #include <cub/util_deprecated.cuh>
 
+#include <cassert>
+
 static constexpr int elements_per_thread = 16;
 static constexpr int _VECTOR_LOAD_LENGTH = 4;
 static constexpr int block_threads       = 128;
@@ -129,6 +131,7 @@ __global__ void find_if(IterBegin begin, IterEnd end, Pred pred, int* result, st
         }
       }
     }
+
     if (syncthreads_or(found))
     {
       if (threadIdx.x == 0)
@@ -166,6 +169,8 @@ struct DeviceFind
     NumItemsT num_items,
     cudaStream_t stream = 0)
   {
+    static_assert(elements_per_thread % _VECTOR_LOAD_LENGTH == 0, "No full tile at the end");
+
     // int items_per_thread = 2;
     int tile_size = block_threads * elements_per_thread;
     int num_tiles = static_cast<int>(cub::DivideAndRoundUp(num_items, tile_size));
