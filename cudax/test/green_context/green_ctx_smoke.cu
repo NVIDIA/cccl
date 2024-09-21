@@ -17,7 +17,7 @@
 #if CUDART_VERSION >= 12050
 TEST_CASE("Green context", "[green_context]")
 {
-  if (test::cuda_driver_version() <= 12050)
+  if (test::cuda_driver_version() < 12050)
   {
     SUCCEED("Driver is too old for green context tests");
   }
