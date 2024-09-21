@@ -63,6 +63,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_rad
   NumItemsT num_segments,
   BeginOffsetIteratorT d_begin_offsets,
   EndOffsetIteratorT d_end_offsets,
+  bool* selector,
   int begin_bit       = 0,
   int end_bit         = sizeof(KeyT) * 8,
   bool is_overwrite   = true,
@@ -92,11 +93,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_rad
   {
     return status;
   }
-  if (d_keys.Current() != d_keys_out)
-  {
-    d_keys_out   = d_keys.Current();
-    d_values_out = d_values.Current();
-  }
+  // Only write to selector in the DoubleBuffer invocation
+  *selector = is_overwrite && (d_keys.Current() != d_keys_out);
   return cudaSuccess;
 }
 
@@ -368,6 +366,12 @@ try
   auto offsets =
     thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{0}), segment_iterator_t{num_items});
   auto offsets_plus_1 = offsets + 1;
+  // Allocate host/device-accessible memory to communicate the selected output buffer
+  bool* selector_ptr = nullptr;
+  if (is_overwrite)
+  {
+    REQUIRE(cudaSuccess == cudaMallocHost(&selector_ptr, sizeof(int)));
+  }
 
   auto refs = segmented_radix_sort_reference(in_keys, in_values, is_descending, num_segments, offsets, offsets_plus_1);
   auto& ref_keys      = refs.first;
@@ -385,6 +389,7 @@ try
       static_cast<offset_t>(num_segments),
       offsets,
       offsets_plus_1,
+      selector_ptr,
       begin_bit<key_t>(),
       end_bit<key_t>(),
       is_overwrite);
@@ -401,14 +406,19 @@ try
       // Mix pointers/iterators for segment info to test using different iterable types:
       offsets,
       offsets_plus_1,
+      selector_ptr,
       begin_bit<key_t>(),
       end_bit<key_t>(),
       is_overwrite);
   }
-  if (out_keys_ptr != thrust::raw_pointer_cast(out_keys.data()))
+  if (is_overwrite)
   {
-    std::swap(out_keys, in_keys);
-    std::swap(out_values, in_values);
+    if (*selector_ptr)
+    {
+      std::swap(out_keys, in_keys);
+      std::swap(out_values, in_values);
+    }
+    REQUIRE(cudaSuccess == cudaFreeHost(selector_ptr));
   }
   REQUIRE(ref_keys == out_keys);
   REQUIRE(ref_values == out_values);
@@ -430,9 +440,10 @@ try
   constexpr int num_key_seeds      = 1;
   constexpr int num_value_seeds    = 1;
   const bool is_descending         = GENERATE(false, true);
+  const bool is_overwrite          = GENERATE(false, true);
   constexpr std::size_t num_items = (sizeof(offset_t) == 8) ? uint32_max : ::cuda::std::numeric_limits<offset_t>::max();
   constexpr std::size_t num_segments = 2;
-  CAPTURE(c2h::type_name<offset_t>(), num_items, is_descending);
+  CAPTURE(c2h::type_name<offset_t>(), num_items, is_descending, is_overwrite);
 
   c2h::device_vector<key_t> in_keys(num_items);
   c2h::device_vector<value_t> in_values(num_items);
@@ -444,6 +455,12 @@ try
   offsets[0] = 0;
   offsets[1] = static_cast<offset_t>(num_items);
   offsets[2] = static_cast<offset_t>(num_items);
+  // Allocate host/device-accessible memory to communicate the selected output buffer
+  bool* selector_ptr = nullptr;
+  if (is_overwrite)
+  {
+    REQUIRE(cudaSuccess == cudaMallocHost(&selector_ptr, sizeof(int)));
+  }
 
   auto refs = segmented_radix_sort_reference(
     in_keys, in_values, is_descending, num_segments, offsets.cbegin(), offsets.cbegin() + 1);
@@ -462,8 +479,10 @@ try
       static_cast<offset_t>(num_segments),
       thrust::raw_pointer_cast(offsets.data()),
       offsets.cbegin() + 1,
+      selector_ptr,
       begin_bit<key_t>(),
-      end_bit<key_t>());
+      end_bit<key_t>(),
+      is_overwrite);
   }
   else
   {
@@ -476,13 +495,24 @@ try
       static_cast<offset_t>(num_segments),
       thrust::raw_pointer_cast(offsets.data()),
       offsets.cbegin() + 1,
+      selector_ptr,
       begin_bit<key_t>(),
-      end_bit<key_t>());
+      end_bit<key_t>(),
+      is_overwrite);
   }
   if (out_keys_ptr != thrust::raw_pointer_cast(out_keys.data()))
   {
     std::swap(out_keys, in_keys);
     std::swap(out_values, in_values);
+  }
+  if (is_overwrite)
+  {
+    if (*selector_ptr)
+    {
+      std::swap(out_keys, in_keys);
+      std::swap(out_values, in_values);
+    }
+    REQUIRE(cudaSuccess == cudaFreeHost(selector_ptr));
   }
   REQUIRE(ref_keys == out_keys);
   REQUIRE(ref_values == out_values);

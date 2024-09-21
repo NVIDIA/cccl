@@ -45,7 +45,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_sor
   NumItemsT num_segments,
   BeginOffsetIteratorT d_begin_offsets,
   EndOffsetIteratorT d_end_offsets,
-  int *selector,
+  bool* selector,
   bool is_overwrite   = false,
   cudaStream_t stream = 0)
 {
@@ -69,9 +69,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_sor
     return status;
   }
   // Only write to selector in the DoubleBuffer invocation
-  if(selector && is_overwrite){
-    *selector = (d_keys.Current() != d_keys_out) ? 1 : 0;
-  }
+  *selector = is_overwrite && (d_keys.Current() != d_keys_out);
   return cudaSuccess;
 }
 
@@ -246,6 +244,12 @@ try
   auto offsets =
     thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{0}), segment_iterator_t{num_items});
   auto offsets_plus_1 = offsets + 1;
+  // Allocate host/device-accessible memory to communicate the selected output buffer
+  bool* selector_ptr = nullptr;
+  if (is_overwrite)
+  {
+    REQUIRE(cudaMallocHost(&selector_ptr, sizeof(int)) == cudaSuccess);
+  }
 
   auto ref_keys     = segmented_radix_sort_reference(in_keys, is_descending, num_segments, offsets, offsets_plus_1);
   auto out_keys_ptr = thrust::raw_pointer_cast(out_keys.data());
@@ -258,6 +262,7 @@ try
       static_cast<offset_t>(num_segments),
       offsets,
       offsets_plus_1,
+      selector_ptr,
       is_overwrite);
   }
   else
@@ -269,11 +274,16 @@ try
       static_cast<offset_t>(num_segments),
       offsets,
       offsets_plus_1,
+      selector_ptr,
       is_overwrite);
   }
-  if (out_keys_ptr != thrust::raw_pointer_cast(out_keys.data()))
+  if (is_overwrite)
   {
-    std::swap(out_keys, in_keys);
+    if (*selector_ptr)
+    {
+      std::swap(out_keys, in_keys);
+    }
+    REQUIRE(cudaFreeHost(selector_ptr) == cudaSuccess);
   }
   REQUIRE((ref_keys == out_keys) == true);
 }
@@ -305,8 +315,9 @@ try
   offsets[2] = static_cast<offset_t>(num_items);
 
   // Allocate host/device-accessible memory to communicate the selected output buffer
-  int *selector_ptr = nullptr;
-  if(is_overwrite){
+  bool* selector_ptr = nullptr;
+  if (is_overwrite)
+  {
     REQUIRE(cudaSuccess == cudaMallocHost(&selector_ptr, sizeof(int)));
   }
   auto ref_keys     = segmented_radix_sort_reference(in_keys, is_descending, offsets);
@@ -337,7 +348,8 @@ try
   }
   if (is_overwrite)
   {
-    if(*selector_ptr){
+    if (*selector_ptr)
+    {
       std::swap(out_keys, in_keys);
     }
     REQUIRE(cudaSuccess == cudaFreeHost(selector_ptr));
