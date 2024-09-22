@@ -66,11 +66,11 @@ void TestReverseCopySimple()
   using Iterator = typename Vector::iterator;
 
   Vector input{1, 2, 3, 4, 5};
-  Vector output(5);
+  Vector output(8); // arm GCC is complaining about destination size
 
-  // arm gcc is complaining here
   Iterator iter = thrust::reverse_copy(input.begin(), input.end(), output.begin());
 
+  output.resize(5);
   Vector ref{5, 4, 3, 2, 1};
   ASSERT_EQUAL(5, iter - output.begin());
   ASSERT_EQUAL(ref, output);
