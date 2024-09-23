@@ -60,6 +60,17 @@ inline void call_driver_fn(Fn fn, const char* err_msg, Args... args)
   }
 }
 
+inline int getVersion()
+{
+  static int version = []() {
+    int v;
+    auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuDriverGetVersion);
+    call_driver_fn(driver_fn, "Failed to check CUDA driver version", &v);
+    return v;
+  }();
+  return version;
+}
+
 inline void ctxPush(CUcontext ctx)
 {
   static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuCtxPushCurrent);

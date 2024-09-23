@@ -104,20 +104,24 @@ struct stream_ref : ::cuda::stream_ref
     CUcontext __stream_ctx;
     ::cuda::experimental::logical_device::kinds __ctx_kind = ::cuda::experimental::logical_device::kinds::device;
 #if CUDART_VERSION >= 12050
-    auto __ctx = detail::driver::streamGetCtx_v2(__stream);
-    if (cuda::std::holds_alternative<CUgreenCtx>(__ctx))
+    if (detail::driver::getVersion() >= 12050)
     {
-      __stream_ctx = detail::driver::ctxFromGreenCtx(::cuda::std::get<CUgreenCtx>(__ctx));
-      __ctx_kind   = ::cuda::experimental::logical_device::kinds::green_context;
+      auto __ctx = detail::driver::streamGetCtx_v2(__stream);
+      if (cuda::std::holds_alternative<CUgreenCtx>(__ctx))
+      {
+        __stream_ctx = detail::driver::ctxFromGreenCtx(::cuda::std::get<CUgreenCtx>(__ctx));
+        __ctx_kind   = ::cuda::experimental::logical_device::kinds::green_context;
+      }
+      else
+      {
+        __stream_ctx = ::cuda::std::get<CUcontext>(__ctx);
+      }
     }
     else
+#endif // CUDART_VERSION >= 12050
     {
-      __stream_ctx = ::cuda::std::get<CUcontext>(__ctx);
-      __ctx_kind   = ::cuda::experimental::logical_device::kinds::device;
+      __stream_ctx = detail::driver::streamGetCtx(__stream);
     }
-#else
-    __stream_ctx = detail::driver::streamGetCtx(__stream);
-#endif
     // Because the stream can come from_native_handle, we can't just loop over devices comparing contexts,
     // lower to CUDART for this instead
     __ensure_current_device __setter(__stream_ctx);
