@@ -740,21 +740,19 @@ struct AgentSelectIf
   {
     using total_offset_t = typename StreamingContextT::total_num_items_t;
 
-    total_offset_t total_rejected_prefix =
-      streaming_context.num_total_items(num_items) - streaming_context.num_previously_rejected() - num_rejected_prefix;
-    total_offset_t total_selected_prefix =
-      streaming_context.num_previously_selected() + static_cast<total_offset_t>(num_selections_prefix);
-
 #pragma unroll
     for (int ITEM = 0; ITEM < ITEMS_PER_THREAD; ++ITEM)
     {
-      int item_idx                          = (ITEM * BLOCK_THREADS) + threadIdx.x;
-      int rejection_idx                     = item_idx;
-      int selection_idx                     = item_idx - tile_num_rejections;
-      total_offset_t scatter_rejected_index = total_rejected_prefix - rejection_idx - 1;
-      total_offset_t scatter_selected_index = total_selected_prefix + selection_idx;
+      int item_idx      = (ITEM * BLOCK_THREADS) + threadIdx.x;
+      int rejection_idx = item_idx;
+      int selection_idx = item_idx - tile_num_rejections;
       total_offset_t scatter_offset =
-        (item_idx < tile_num_rejections) ? scatter_rejected_index : scatter_selected_index;
+        (item_idx < tile_num_rejections)
+          ? (streaming_context.num_total_items(num_items) - streaming_context.num_previously_rejected()
+             - static_cast<total_offset_t>(num_rejected_prefix) - static_cast<total_offset_t>(rejection_idx)
+             - total_offset_t{1})
+          : (streaming_context.num_previously_selected() + static_cast<total_offset_t>(num_selections_prefix)
+             + static_cast<total_offset_t>(selection_idx));
 
       InputT item = temp_storage.raw_exchange.Alias()[item_idx];
       if (!IS_LAST_TILE || (item_idx < num_tile_items))
