@@ -149,7 +149,7 @@ inline cuda::std::variant<CUcontext, CUgreenCtx> streamGetCtx_v2(CUstream stream
     return ctx;
   }
 }
-#endif
+#endif // CUDART_VERSION >= 12050
 
 inline void streamWaitEvent(CUstream stream, CUevent event)
 {
@@ -199,7 +199,7 @@ inline CUcontext ctxFromGreenCtx(CUgreenCtx green_ctx)
   call_driver_fn(driver_fn, "Failed to convert a green context", &result, green_ctx);
   return result;
 }
-#endif
+#endif // CUDART_VERSION >= 12050
 } // namespace cuda::experimental::detail::driver
 
 #undef CUDAX_GET_DRIVER_FUNCTION

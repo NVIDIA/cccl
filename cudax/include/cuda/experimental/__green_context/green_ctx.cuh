@@ -37,7 +37,7 @@ struct green_context
   CUgreenCtx __green_ctx;
   CUcontext __transformed;
 
-  green_context(const device& __device)
+  explicit green_context(const device& __device)
       : __dev_id(__device.get())
   {
     // TODO get CUdevice from device
@@ -60,7 +60,7 @@ struct green_context
     return green_context(__id, __gctx, __transformed);
   }
 
-  CUgreenCtx release()
+  _CCCL_NODISCARD CUgreenCtx release() noexcept
   {
     __transformed = nullptr;
     __dev_id      = -1;
@@ -76,12 +76,12 @@ struct green_context
   }
 
 private:
-  green_context(int __id, CUgreenCtx __gctx, CUcontext __ctx)
+  explicit green_context(int __id, CUgreenCtx __gctx, CUcontext __ctx)
       : __dev_id(__id)
       , __green_ctx(__gctx)
       , __transformed(__ctx)
   {}
 };
 } // namespace cuda::experimental
-#endif
-#endif
+#endif // CUDART_VERSION >= 12050
+#endif // _CUDAX__GREEN_CONTEXT_GREEN_CTX

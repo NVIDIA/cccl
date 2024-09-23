@@ -32,9 +32,9 @@ struct logical_device_access;
 }
 
 //! @brief A non-owning representation of a CUDA device or a green context
-struct logical_device
+class logical_device
 {
-  // Enum to indicate kind of logical device stored
+  //! @brief Enum to indicate the kind of logical device stored
   enum class kinds
   {
     // Indicates logical device is a full device
@@ -58,7 +58,7 @@ struct logical_device
 
   //! @brief Retrieve the kind of logical device stored in this object
   //! The kind indicates if this logical_device holds a device or green_context
-  _CCCL_NODISCARD constexpr kinds kind() const noexcept
+  _CCCL_NODISCARD constexpr kinds get_kind() const noexcept
   {
     return __kind;
   }
@@ -89,7 +89,7 @@ struct logical_device
       , __ctx(__gctx.__transformed)
       , __kind(kinds::green_context)
   {}
-#endif
+#endif // CUDART_VERSION >= 12050
 
   //! @brief Compares two logical_devices for equality
   //!
@@ -117,9 +117,8 @@ private:
   friend detail::logical_device_access;
   // This might be a CUdevice as well
   int __dev_id    = 0;
-  CUcontext __ctx = nullptr;
-  // If we ever move to a variant instead of CUcontext we can probably remove the kind member
   kinds __kind;
+  CUcontext __ctx = nullptr;
 
   logical_device(int __id, CUcontext __context, kinds __k)
       : __dev_id(__id)

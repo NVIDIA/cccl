@@ -60,4 +60,4 @@ TEST_CASE("Green context", "[green_context]")
     }
   }
 }
-#endif
+#endif // CUDART_VERSION >= 12050
