@@ -366,6 +366,8 @@ struct SmVersionCacheTag
  */
 _CCCL_HOST inline cudaError_t PtxVersion(int& ptx_version, int device)
 {
+  // Note: the ChainedPolicy pruning (i.e., invoke_static) requites that there's an exact match between one of the
+  // architectures in __CUDA_ARCH__ and the runtime queried ptx version.
   auto const payload = GetPerDeviceAttributeCache<PtxVersionCacheTag>()(
     // If this call fails, then we get the error code back in the payload, which we check with `CubDebug` below.
     [=](int& pv) {
@@ -389,6 +391,8 @@ _CCCL_HOST inline cudaError_t PtxVersion(int& ptx_version, int device)
  */
 CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersion(int& ptx_version)
 {
+  // Note: the ChainedPolicy pruning (i.e., invoke_static) requites that there's an exact match between one of the
+  // architectures in __CUDA_ARCH__ and the runtime queried ptx version.
   cudaError_t result = cudaErrorUnknown;
   NV_IF_TARGET(NV_IS_HOST,
                (result = PtxVersion(ptx_version, CurrentDevice());),
