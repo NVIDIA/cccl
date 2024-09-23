@@ -612,8 +612,7 @@ struct DispatchSelectIf : SelectedPolicy
     auto const num_partitions = ::cuda::ceil_div(num_items, max_partition_size);
 
     // The maximum number of tiles for which we will ever invoke the kernel
-    auto const max_num_tiles_per_invocation =
-      static_cast<OffsetT>(::cuda::ceil_div(max_partition_size, tile_size));
+    auto const max_num_tiles_per_invocation = static_cast<OffsetT>(::cuda::ceil_div(max_partition_size, tile_size));
 
     // The amount of virtual shared memory to allocate
     const auto vsmem_size = max_num_tiles_per_invocation * VsmemHelperT::vsmem_per_block;
@@ -888,7 +887,7 @@ struct DispatchSelectIf : SelectedPolicy
       num_items,
       stream);
   }
-};
 #endif // DOXYGEN_SHOULD_SKIP_THIS
+};
 
 CUB_NAMESPACE_END
