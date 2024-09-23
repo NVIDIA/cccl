@@ -655,8 +655,12 @@ private:
   template <int... CudaArches, typename FunctorT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t runtime_to_compiletime(int device_ptx_version, FunctorT& op)
   {
-    // we instantiate invoke_static for each CudaArches, but only call the one matching device_ptx_version
-    cudaError_t e             = cudaSuccess;
+    // We instantiate invoke_static for each CudaArches, but only call the one matching device_ptx_version.
+    // If there's no exact match of any of the architectures in __CUDA_ARCH_LIST__ and the runtime
+    // queried ptx version (i.e., the closest ptx version to the current device's architecture that the EmptyKernel was
+    // compiled for), we return cudaErrorInvalidDeviceFunction. Such a scenario may arise if CUB_DISABLE_NAMESPACE_MAGIC
+    // is set and different TUs are compiled for different sets of architecture.
+    cudaError_t e             = cudaErrorInvalidDeviceFunction;
     const cudaError_t dummy[] = {
       (device_ptx_version == CudaArches ? (e = invoke_static<CudaArches>(op, ::cuda::std::true_type{}))
                                         : cudaSuccess)...};
