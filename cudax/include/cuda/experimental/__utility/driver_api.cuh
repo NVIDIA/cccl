@@ -132,6 +132,7 @@ inline CUcontext streamGetCtx(CUstream stream)
   return result;
 }
 
+#if CUDART_VERSION >= 12050
 struct __ctx_from_stream
 {
   enum class __kind
@@ -148,7 +149,6 @@ struct __ctx_from_stream
   } __ctx_ptr;
 };
 
-#if CUDART_VERSION >= 12050
 inline __ctx_from_stream streamGetCtx_v2(CUstream stream)
 {
   static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION_VERSIONED(cuStreamGetCtx, cuStreamGetCtx_v2, 12050);
