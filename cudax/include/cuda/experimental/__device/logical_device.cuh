@@ -62,6 +62,8 @@ public:
   }
 
   //! @brief Construct logical_device from a device ordinal
+  //!
+  //! Constructing a logical_device for a given device ordinal has a side effect of initializing that device
   explicit logical_device(int __id)
       : __dev_id(__id)
       , __kind(kinds::device)
@@ -69,11 +71,15 @@ public:
   {}
 
   //! @brief Construct logical_device from a device_ref
+  //!
+  //! Constructing a logical_device for a given device_ref has a side effect of initializing that device
   explicit logical_device(device_ref __dev)
       : logical_device(__dev.get())
   {}
 
   // More of a micro-optimization, we can also remove this (depending if we keep device_ref)
+  //!
+  //! Constructing a logical_device for a given device has a side effect of initializing that device
   logical_device(const ::cuda::experimental::device& __dev)
       : __dev_id(__dev.get())
       , __kind(kinds::device)

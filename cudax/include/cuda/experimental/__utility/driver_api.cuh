@@ -24,7 +24,9 @@
 
 namespace cuda::experimental::detail::driver
 {
-// For minor version compatibility request the 12.0 version of everything for now, unless requested otherwise
+//! @brief Get a driver function pointer for a given API name and optionally specific CUDA version
+//!
+//! For minor version compatibility request the 12.0 version of everything for now, unless requested otherwise
 inline void* get_driver_entry_point(const char* name, [[maybe_unused]] int version = 12000)
 {
   void* fn;
