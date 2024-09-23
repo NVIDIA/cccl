@@ -26,14 +26,12 @@
 
 namespace cuda::experimental
 {
-namespace detail
-{
-struct logical_device_access;
-}
+struct __logical_device_access;
 
 //! @brief A non-owning representation of a CUDA device or a green context
 class logical_device
 {
+public:
   //! @brief Enum to indicate the kind of logical device stored
   enum class kinds
   {
@@ -51,7 +49,7 @@ class logical_device
   }
 
   //! @brief Retrieve the device on which this logical device resides
-  _CCCL_NODISCARD constexpr device_ref underlying_device() const noexcept
+  _CCCL_NODISCARD constexpr device_ref get_underlying_device() const noexcept
   {
     return __dev_id;
   }
@@ -66,8 +64,8 @@ class logical_device
   //! @brief Construct logical_device from a device ordinal
   explicit logical_device(int __id)
       : __dev_id(__id)
-      , __ctx(devices[__id].primary_context())
       , __kind(kinds::device)
+      , __ctx(devices[__id].primary_context())
   {}
 
   //! @brief Construct logical_device from a device_ref
@@ -78,16 +76,16 @@ class logical_device
   // More of a micro-optimization, we can also remove this (depending if we keep device_ref)
   logical_device(const ::cuda::experimental::device& __dev)
       : __dev_id(__dev.get())
-      , __ctx(__dev.primary_context())
       , __kind(kinds::device)
+      , __ctx(__dev.primary_context())
   {}
 
 #if CUDART_VERSION >= 12050
   //! @brief Construct logical_device from a green_context
   logical_device(const green_context& __gctx)
       : __dev_id(__gctx.__dev_id)
-      , __ctx(__gctx.__transformed)
       , __kind(kinds::green_context)
+      , __ctx(__gctx.__transformed)
   {}
 #endif // CUDART_VERSION >= 12050
 
@@ -114,29 +112,26 @@ class logical_device
 #endif // _CCCL_STD_VER <= 2017
 
 private:
-  friend detail::logical_device_access;
+  friend __logical_device_access;
   // This might be a CUdevice as well
-  int __dev_id    = 0;
+  int __dev_id = 0;
   kinds __kind;
   CUcontext __ctx = nullptr;
 
   logical_device(int __id, CUcontext __context, kinds __k)
       : __dev_id(__id)
-      , __ctx(__context)
       , __kind(__k)
+      , __ctx(__context)
   {}
 };
 
-namespace detail
-{
-struct logical_device_access
+struct __logical_device_access
 {
   static logical_device make_logical_device(int __id, CUcontext __context, logical_device::kinds __k)
   {
     return logical_device(__id, __context, __k);
   }
 };
-} // namespace detail
 
 } // namespace cuda::experimental
 

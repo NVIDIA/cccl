@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__cuda/api_wrapper.h>
+#include <cuda/std/utility>
 
 #include <cuda/experimental/__device/all_devices.cuh>
 #include <cuda/experimental/__utility/driver_api.cuh>
@@ -33,9 +34,9 @@ struct device_ref;
 
 struct green_context
 {
-  int __dev_id;
-  CUgreenCtx __green_ctx;
-  CUcontext __transformed;
+  int __dev_id            = -1;
+  CUgreenCtx __green_ctx  = nullptr;
+  CUcontext __transformed = nullptr;
 
   explicit green_context(const device& __device)
       : __dev_id(__device.get())

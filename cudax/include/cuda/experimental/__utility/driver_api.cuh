@@ -14,7 +14,6 @@
 #include <cuda.h>
 
 #include <cuda/std/__exception/cuda_error.h>
-#include <cuda/std/variant>
 
 // Get the driver function by name using this macro
 #define CUDAX_GET_DRIVER_FUNCTION(function_name) \
@@ -133,21 +132,41 @@ inline CUcontext streamGetCtx(CUstream stream)
   return result;
 }
 
+struct __ctx_from_stream
+{
+  enum class __kind
+  {
+    __device,
+    __green
+  };
+
+  __kind __ctx_kind;
+  union
+  {
+    CUcontext __device;
+    CUgreenCtx __green;
+  } __ctx_ptr;
+};
+
 #if CUDART_VERSION >= 12050
-inline cuda::std::variant<CUcontext, CUgreenCtx> streamGetCtx_v2(CUstream stream)
+inline __ctx_from_stream streamGetCtx_v2(CUstream stream)
 {
   static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION_VERSIONED(cuStreamGetCtx, cuStreamGetCtx_v2, 12050);
   CUcontext ctx;
   CUgreenCtx gctx;
+  __ctx_from_stream __result;
   call_driver_fn(driver_fn, "Failed to get context from a stream", stream, &ctx, &gctx);
   if (gctx)
   {
-    return gctx;
+    __result.__ctx_kind        = __ctx_from_stream::__kind::__green;
+    __result.__ctx_ptr.__green = gctx;
   }
   else
   {
-    return ctx;
+    __result.__ctx_kind         = __ctx_from_stream::__kind::__device;
+    __result.__ctx_ptr.__device = ctx;
   }
+  return __result;
 }
 #endif // CUDART_VERSION >= 12050
 

@@ -50,11 +50,11 @@ TEST_CASE("Green context", "[green_context]")
       INFO("Can create a side stream")
       {
         auto ldev1 = stream_under_green_ctx.logical_device();
-        CUDAX_REQUIRE(ldev1.kind() == cudax::logical_device::kinds::green_context);
+        CUDAX_REQUIRE(ldev1.get_kind() == cudax::logical_device::kinds::green_context);
         cudax::stream side_stream(ldev1);
         CUDAX_REQUIRE(side_stream.device() == 0);
         auto ldev2 = side_stream.logical_device();
-        CUDAX_REQUIRE(ldev2.kind() == cudax::logical_device::kinds::green_context);
+        CUDAX_REQUIRE(ldev2.get_kind() == cudax::logical_device::kinds::green_context);
         CUDAX_REQUIRE(ldev1 == ldev2);
       }
     }

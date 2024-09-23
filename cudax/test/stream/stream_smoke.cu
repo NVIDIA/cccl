@@ -127,7 +127,7 @@ TEST_CASE("Stream get device", "[stream]")
     if (test::cuda_driver_version() >= 12050)
     {
       auto ldev = dev0_stream.logical_device();
-      CUDAX_REQUIRE(ldev.kind() == cudax::logical_device::kinds::device);
+      CUDAX_REQUIRE(ldev.get_kind() == cudax::logical_device::kinds::device);
       cudax::stream side_stream(ldev);
       CUDAX_REQUIRE(side_stream.device() == dev0_stream.device());
     }
