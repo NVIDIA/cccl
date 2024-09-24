@@ -32,20 +32,10 @@ void TestSetIntersectionByKeyDevice(ExecutionPolicy exec)
   using Vector   = thrust::device_vector<int>;
   using Iterator = typename Vector::iterator;
 
-  // clang-format off
-  Vector a_key(3), b_key(4);
-  Vector a_val(3);
+  Vector a_key{0, 2, 4}, b_key{0, 3, 3, 4};
+  Vector a_val(3, 0);
 
-  a_key[0] = 0; a_key[1] = 2; a_key[2] = 4;
-  a_val[0] = 0; a_val[1] = 0; a_val[2] = 0;
-
-  b_key[0] = 0; b_key[1] = 3; b_key[2] = 3; b_key[3] = 4;
-
-  Vector ref_key(2), ref_val(2);
-  ref_key[0] = 0; ref_key[1] = 4;
-  ref_val[0] = 0; ref_val[1] = 0;
-  // clang-format on
-
+  Vector ref_key{0, 4}, ref_val{0, 0};
   Vector result_key(2), result_val(2);
 
   using iter_pair = thrust::pair<Iterator, Iterator>;
@@ -97,20 +87,10 @@ void TestSetIntersectionByKeyCudaStreams(ExecutionPolicy policy)
   using Vector   = thrust::device_vector<int>;
   using Iterator = Vector::iterator;
 
-  // clang-format off
-  Vector a_key(3), b_key(4);
-  Vector a_val(3);
+  Vector a_key{0, 2, 4}, b_key{0, 3, 3, 4};
+  Vector a_val(3, 0);
 
-  a_key[0] = 0; a_key[1] = 2; a_key[2] = 4;
-  a_val[0] = 0; a_val[1] = 0; a_val[2] = 0;
-
-  b_key[0] = 0; b_key[1] = 3; b_key[2] = 3; b_key[3] = 4;
-
-  Vector ref_key(2), ref_val(2);
-  ref_key[0] = 0; ref_key[1] = 4;
-  ref_val[0] = 0; ref_val[1] = 0;
-  // clang-format on
-
+  Vector ref_key{0, 4}, ref_val{0, 0};
   Vector result_key(2), result_val(2);
 
   cudaStream_t s;

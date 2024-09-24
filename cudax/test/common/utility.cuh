@@ -146,6 +146,11 @@ inline void empty_driver_stack()
   }
 }
 
+inline int cuda_driver_version()
+{
+  return cudax::detail::driver::getVersion();
+}
+
 } // namespace test
 } // namespace
 #endif // __COMMON_UTILITY_H__
