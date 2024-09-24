@@ -3,7 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -17,70 +17,25 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/type_traits>
 
-template <class T>
-struct property_with_value
-{
-  using value_type = T;
-};
-
-template <class T>
-struct property_without_value
-{};
-
-template <class... Properties>
-struct async_resource
-{
-  void* allocate(std::size_t, std::size_t)
-  {
-    return nullptr;
-  }
-
-  void deallocate(void* ptr, std::size_t, std::size_t) noexcept {}
-
-  void* allocate_async(std::size_t, std::size_t, cuda::stream_ref)
-  {
-    return &_val;
-  }
-
-  void deallocate_async(void* ptr, std::size_t, std::size_t, cuda::stream_ref)
-  {
-    // ensure that we did get the right inputs forwarded
-    _val = *static_cast<int*>(ptr);
-  }
-
-  bool operator==(const async_resource& other) const
-  {
-    return _val == other._val;
-  }
-  bool operator!=(const async_resource& other) const
-  {
-    return _val != other._val;
-  }
-
-  int _val = 0;
-
-  _LIBCUDACXX_TEMPLATE(class Property)
-  _LIBCUDACXX_REQUIRES((!cuda::property_with_value<Property>) && _CUDA_VSTD::_One_of<Property, Properties...>) //
-  friend void get_property(const async_resource&, Property) noexcept {}
-
-  _LIBCUDACXX_TEMPLATE(class Property)
-  _LIBCUDACXX_REQUIRES(cuda::property_with_value<Property>&& _CUDA_VSTD::_One_of<Property, Properties...>) //
-  friend typename Property::value_type get_property(const async_resource& res, Property) noexcept
-  {
-    return res._val;
-  }
-};
+#include "types.h"
 
 namespace constructible
 {
-using ref = cuda::mr::
-  async_resource_ref<property_with_value<int>, property_with_value<double>, property_without_value<std::size_t>>;
+using ref = cuda::mr::async_resource_ref<cuda::mr::host_accessible,
+                                         property_with_value<int>,
+                                         property_with_value<double>,
+                                         property_without_value<std::size_t>>;
 
 using matching_properties =
-  async_resource<property_with_value<double>, property_without_value<std::size_t>, property_with_value<int>>;
+  async_resource<cuda::mr::host_accessible,
+                 property_with_value<double>,
+                 property_without_value<std::size_t>,
+                 property_with_value<int>>;
 
-using missing_stateful_property  = async_resource<property_with_value<int>, property_without_value<std::size_t>>;
-using missing_stateless_property = async_resource<property_with_value<int>, property_with_value<double>>;
+using missing_stateful_property =
+  async_resource<cuda::mr::host_accessible, property_with_value<int>, property_without_value<std::size_t>>;
+using missing_stateless_property =
+  async_resource<cuda::mr::host_accessible, property_with_value<int>, property_with_value<double>>;
 
 using cuda::std::is_constructible;
 static_assert(is_constructible<ref, matching_properties&>::value, "");
@@ -104,13 +59,19 @@ static_assert(cuda::std::is_move_constructible<ref>::value, "");
 
 namespace assignable
 {
-using ref = cuda::mr::
-  async_resource_ref<property_with_value<int>, property_with_value<double>, property_without_value<std::size_t>>;
+using ref = cuda::mr::async_resource_ref<cuda::mr::host_accessible,
+                                         property_with_value<int>,
+                                         property_with_value<double>,
+                                         property_without_value<std::size_t>>;
 
-using res = async_resource<property_with_value<int>, property_with_value<double>, property_without_value<std::size_t>>;
+using res = async_resource<cuda::mr::host_accessible,
+                           property_with_value<int>,
+                           property_with_value<double>,
+                           property_without_value<std::size_t>>;
 
 using other_res =
-  async_resource<property_without_value<int>,
+  async_resource<cuda::mr::host_accessible,
+                 property_without_value<int>,
                  property_with_value<int>,
                  property_with_value<double>,
                  property_without_value<std::size_t>>;
