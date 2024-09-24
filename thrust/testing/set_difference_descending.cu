@@ -10,17 +10,9 @@ void TestSetDifferenceDescendingSimple()
   using T        = typename Vector::value_type;
   using Iterator = typename Vector::iterator;
 
-  Vector a(4), b(5);
+  Vector a{5, 4, 2, 0}, b{6, 4, 3, 3, 0};
 
-  // clang-format off
-  a[0] = 5; a[1] = 4; a[2] = 2; a[3] = 0;
-  b[0] = 6; b[1] = 4; b[2] = 3; b[3] = 3; b[4] = 0;
-  // clang-format on
-
-  Vector ref(2);
-  ref[0] = 5;
-  ref[1] = 2;
-
+  Vector ref{5, 2};
   Vector result(2);
 
   Iterator end = thrust::set_difference(a.begin(), a.end(), b.begin(), b.end(), result.begin(), thrust::greater<T>());

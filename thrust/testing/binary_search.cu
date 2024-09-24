@@ -15,13 +15,7 @@ _CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
 template <class Vector>
 void TestScalarLowerBoundSimple()
 {
-  Vector vec(5);
-
-  vec[0] = 0;
-  vec[1] = 2;
-  vec[2] = 5;
-  vec[3] = 7;
-  vec[4] = 8;
+  Vector vec{0, 2, 5, 7, 8};
 
   ASSERT_EQUAL(thrust::lower_bound(vec.begin(), vec.end(), 0) - vec.begin(), 0);
   ASSERT_EQUAL(thrust::lower_bound(vec.begin(), vec.end(), 1) - vec.begin(), 1);
@@ -75,13 +69,7 @@ DECLARE_UNITTEST(TestScalarLowerBoundDispatchImplicit);
 template <class Vector>
 void TestScalarUpperBoundSimple()
 {
-  Vector vec(5);
-
-  vec[0] = 0;
-  vec[1] = 2;
-  vec[2] = 5;
-  vec[3] = 7;
-  vec[4] = 8;
+  Vector vec{0, 2, 5, 7, 8};
 
   ASSERT_EQUAL(thrust::upper_bound(vec.begin(), vec.end(), 0) - vec.begin(), 1);
   ASSERT_EQUAL(thrust::upper_bound(vec.begin(), vec.end(), 1) - vec.begin(), 1);
@@ -135,13 +123,7 @@ DECLARE_UNITTEST(TestScalarUpperBoundDispatchImplicit);
 template <class Vector>
 void TestScalarBinarySearchSimple()
 {
-  Vector vec(5);
-
-  vec[0] = 0;
-  vec[1] = 2;
-  vec[2] = 5;
-  vec[3] = 7;
-  vec[4] = 8;
+  Vector vec{0, 2, 5, 7, 8};
 
   ASSERT_EQUAL(thrust::binary_search(vec.begin(), vec.end(), 0), true);
   ASSERT_EQUAL(thrust::binary_search(vec.begin(), vec.end(), 1), false);
@@ -195,13 +177,7 @@ DECLARE_UNITTEST(TestScalarBinarySearchDispatchImplicit);
 template <class Vector>
 void TestScalarEqualRangeSimple()
 {
-  Vector vec(5);
-
-  vec[0] = 0;
-  vec[1] = 2;
-  vec[2] = 5;
-  vec[3] = 7;
-  vec[4] = 8;
+  Vector vec{0, 2, 5, 7, 8};
 
   ASSERT_EQUAL(thrust::equal_range(vec.begin(), vec.end(), 0).first - vec.begin(), 0);
   ASSERT_EQUAL(thrust::equal_range(vec.begin(), vec.end(), 1).first - vec.begin(), 1);

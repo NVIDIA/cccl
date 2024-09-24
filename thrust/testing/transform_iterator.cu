@@ -29,10 +29,8 @@ void TestTransformIterator()
 
   thrust::copy(iter, iter + 4, output.begin());
 
-  ASSERT_EQUAL(output[0], -1);
-  ASSERT_EQUAL(output[1], -2);
-  ASSERT_EQUAL(output[2], -3);
-  ASSERT_EQUAL(output[3], -4);
+  Vector ref{-1, -2, -3, -4};
+  ASSERT_EQUAL(output, ref);
 }
 DECLARE_VECTOR_UNITTEST(TestTransformIterator);
 
@@ -57,10 +55,8 @@ void TestMakeTransformIterator()
                thrust::make_transform_iterator(input.end(), UnaryFunction()),
                output.begin());
 
-  ASSERT_EQUAL(output[0], -1);
-  ASSERT_EQUAL(output[1], -2);
-  ASSERT_EQUAL(output[2], -3);
-  ASSERT_EQUAL(output[3], -4);
+  Vector ref{-1, -2, -3, -4};
+  ASSERT_EQUAL(output, ref);
 }
 DECLARE_VECTOR_UNITTEST(TestMakeTransformIterator);
 

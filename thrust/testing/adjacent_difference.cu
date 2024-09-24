@@ -11,39 +11,28 @@ void TestAdjacentDifferenceSimple()
 {
   using T = typename Vector::value_type;
 
-  Vector input(4);
+  Vector input{1, 4, 6, 7};
   Vector output(4);
-  input[0] = 1;
-  input[1] = 4;
-  input[2] = 6;
-  input[3] = 7;
-
   typename Vector::iterator result;
 
   result = thrust::adjacent_difference(input.begin(), input.end(), output.begin());
 
   ASSERT_EQUAL(result - output.begin(), 4);
-  ASSERT_EQUAL(output[0], T(1));
-  ASSERT_EQUAL(output[1], T(3));
-  ASSERT_EQUAL(output[2], T(2));
-  ASSERT_EQUAL(output[3], T(1));
+  Vector ref{1, 3, 2, 1};
+  ASSERT_EQUAL(output, ref);
 
   result = thrust::adjacent_difference(input.begin(), input.end(), output.begin(), thrust::plus<T>());
 
   ASSERT_EQUAL(result - output.begin(), 4);
-  ASSERT_EQUAL(output[0], T(1));
-  ASSERT_EQUAL(output[1], T(5));
-  ASSERT_EQUAL(output[2], T(10));
-  ASSERT_EQUAL(output[3], T(13));
+  ref = {1, 5, 10, 13};
+  ASSERT_EQUAL(output, ref);
 
   // test in-place operation, result and first are permitted to be the same
   result = thrust::adjacent_difference(input.begin(), input.end(), input.begin());
 
   ASSERT_EQUAL(result - input.begin(), 4);
-  ASSERT_EQUAL(input[0], T(1));
-  ASSERT_EQUAL(input[1], T(3));
-  ASSERT_EQUAL(input[2], T(2));
-  ASSERT_EQUAL(input[3], T(1));
+  ref = {1, 3, 2, 1};
+  ASSERT_EQUAL(input, ref);
 }
 DECLARE_VECTOR_UNITTEST(TestAdjacentDifferenceSimple);
 
