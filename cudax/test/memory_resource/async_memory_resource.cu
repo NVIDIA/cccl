@@ -434,12 +434,12 @@ TEST_CASE("async_memory_resource comparison", "[memory_resource]")
     CHECK(!(second_ref != first));
   }
 
-  { // comparison against a async_memory_resource wrapped inside a resource_ref<>
+  { // comparison against a async_memory_resource wrapped inside a resource_ref<> is always false
     cuda::experimental::mr::async_memory_resource second{};
-    CHECK(first == cuda::mr::resource_ref<>{second});
-    CHECK(!(first != cuda::mr::resource_ref<>{second}));
-    CHECK(cuda::mr::resource_ref<>{second} == first);
-    CHECK(!(cuda::mr::resource_ref<>{second} != first));
+    CHECK(first != cuda::mr::resource_ref<>{second});
+    CHECK(!(first == cuda::mr::resource_ref<>{second}));
+    CHECK(cuda::mr::resource_ref<>{second} != first);
+    CHECK(!(cuda::mr::resource_ref<>{second} == first));
   }
 
   { // comparison against a async_memory_resource wrapped inside a async_resource_ref
@@ -454,10 +454,10 @@ TEST_CASE("async_memory_resource comparison", "[memory_resource]")
 
   { // comparison against a async_memory_resource wrapped inside a async_resource_ref<>
     cuda::experimental::mr::async_memory_resource second{};
-    CHECK(first == cuda::mr::async_resource_ref<>{second});
-    CHECK(!(first != cuda::mr::async_resource_ref<>{second}));
-    CHECK(cuda::mr::async_resource_ref<>{second} == first);
-    CHECK(!(cuda::mr::async_resource_ref<>{second} != first));
+    CHECK(first != cuda::mr::async_resource_ref<>{second});
+    CHECK(!(first == cuda::mr::async_resource_ref<>{second}));
+    CHECK(cuda::mr::async_resource_ref<>{second} != first);
+    CHECK(!(cuda::mr::async_resource_ref<>{second} == first));
   }
 
   { // comparison against a different resource through resource_ref

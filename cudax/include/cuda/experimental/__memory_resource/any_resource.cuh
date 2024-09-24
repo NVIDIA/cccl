@@ -37,6 +37,7 @@
 #endif
 
 #include <cuda/__memory_resource/get_property.h>
+#include <cuda/__memory_resource/properties.h>
 #include <cuda/__memory_resource/resource.h>
 #include <cuda/__memory_resource/resource_ref.h>
 #include <cuda/std/__concepts/__concept_macros.h>
@@ -84,7 +85,7 @@ private:
   //! @brief Validates that a set of \c _OtherProperties... is a superset of \c _Properties... .
   template <class... _OtherProperties>
   static constexpr bool __properties_match =
-    _CUDA_VSTD::__type_set_contains<_CUDA_VSTD::__make_type_set<_OtherProperties...>, _Properties...>;
+    _CUDA_VMR::__is_valid_subset_v<_CUDA_VSTD::__make_type_set<_Properties...>, _OtherProperties...>;
 
   //! @brief Validates that a passed in \c _Resource satisfies the \c resource or \c async_resource concept respectively
   //! as well as all properties in \c _Properties... .

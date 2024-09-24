@@ -24,6 +24,7 @@
 #if !defined(_CCCL_COMPILER_MSVC_2017) && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
 #  include <cuda/__memory_resource/get_property.h>
+#  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__memory_resource/resource.h>
 #  include <cuda/std/__concepts/__concept_macros.h>
 #  include <cuda/std/__concepts/_One_of.h>
@@ -502,9 +503,10 @@ private:
 
   using __vtable = _Filtered_vtable<_Properties...>;
 
+  //! @brief Checks whether \c _OtherProperties is a true superset of \c _Properties, accounting for host_accessible
   template <class... _OtherProperties>
   static constexpr bool __properties_match =
-    _CUDA_VSTD::__type_set_contains<_CUDA_VSTD::__make_type_set<_OtherProperties...>, _Properties...>;
+    __is_valid_subset_v<_CUDA_VSTD::__make_type_set<_Properties...>, _OtherProperties...>;
 
   //! @brief Constructs a \c basic_resource_ref from a void*, a resource vtable ptr, and a vtable
   //! for the properties. This is used to create a \c basic_resource_ref from a \c basic_any_resource.

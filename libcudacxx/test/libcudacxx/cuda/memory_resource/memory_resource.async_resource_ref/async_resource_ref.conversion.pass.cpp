@@ -122,6 +122,26 @@ void test_conversion_from_async_resource_ref()
     ref.deallocate_async(static_cast<void*>(&expected_after_deallocate), 0, 0, {});
     assert(input._val == expected_after_deallocate);
   }
+
+  { // Ensure that we treat `cuda::mr::host_accessible` differently, because a resource without execution space
+    // properties is implicitly `cuda::mr::host_accessible`.
+
+    using with_host_accessible    = cuda::mr::async_resource_ref<cuda::mr::host_accessible, PropA, PropB>;
+    using without_host_accessible = cuda::mr::async_resource_ref<PropA, PropB>;
+
+    static_assert(cuda::std::is_constructible<with_host_accessible, without_host_accessible>::value, "");
+    static_assert(cuda::std::is_constructible<without_host_accessible, with_host_accessible>::value, "");
+  }
+
+  { // Ensure that a resource without execution space properties is not constructible from a device accessible one
+    using no_execution_space_property = cuda::mr::async_resource_ref<PropA, PropB>;
+    using with_device_accessible      = cuda::mr::async_resource_ref<cuda::mr::device_accessible, PropA, PropB>;
+    using with_host_device_accessible =
+      cuda::mr::async_resource_ref<cuda::mr::host_accessible, cuda::mr::device_accessible, PropA, PropB>;
+
+    static_assert(!cuda::std::is_constructible<no_execution_space_property, with_device_accessible>::value, "");
+    static_assert(!cuda::std::is_constructible<no_execution_space_property, with_host_device_accessible>::value, "");
+  }
 }
 
 int main(int, char**)
