@@ -30,7 +30,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_NO_CFI _Tp* addressof(_Tp& __x) noexcept
 {
-  return __builtin_addressof(__x);
+  return _CCCL_BUILTIN_ADDRESSOF(__x);
 }
 
 #else

@@ -404,13 +404,6 @@ typedef __char32_t char32_t;
 
 #  elif defined(_CCCL_COMPILER_GCC)
 
-#    ifndef _LIBCUDACXX_USE_IS_ASSIGNABLE_FALLBACK
-// FIXME: GCC 8.0 supports this trait, but it has a bug.
-// https://gcc.gnu.org/bugzilla/show_bug.cgi?id=91592
-// https://godbolt.org/z/IljfIw
-#      define _LIBCUDACXX_USE_IS_ASSIGNABLE_FALLBACK
-#    endif // _LIBCUDACXX_USE_IS_ASSIGNABLE_FALLBACK
-
 // GCC 5 supports variable templates
 #    if !defined(__cpp_variable_templates) || __cpp_variable_templates < 201304L
 #      define _LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES
@@ -657,23 +650,6 @@ typedef unsigned int char32_t;
 #    define _LIBCUDACXX_EXPLICIT explicit
 #  else
 #    define _LIBCUDACXX_EXPLICIT
-#  endif
-
-#  if !__has_builtin(__builtin_operator_new) || !__has_builtin(__builtin_operator_delete)
-#    define _LIBCUDACXX_HAS_NO_BUILTIN_OPERATOR_NEW_DELETE
-#  endif
-
-#  if !defined(_LIBCUDACXX_TESTING_FALLBACK_MAKE_INTEGER_SEQUENCE)
-#    if __check_builtin(make_integer_seq)
-#      define _LIBCUDACXX_HAS_MAKE_INTEGER_SEQ
-#    elif defined(_CCCL_COMPILER_MSVC)
-#      if _CCCL_MSVC_VERSION_FULL >= 190023918
-#        define _LIBCUDACXX_HAS_MAKE_INTEGER_SEQ
-#      endif
-#    endif
-#    if __check_builtin(integer_pack)
-#      define _LIBCUDACXX_HAS_INTEGER_PACK
-#    endif
 #  endif
 
 #  ifdef _LIBCUDACXX_DEBUG

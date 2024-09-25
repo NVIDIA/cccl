@@ -626,12 +626,12 @@ __constexpr_isnan(_A1 __lcpp_x) noexcept
 {
 #if defined(_CCCL_CUDACC_BELOW_11_8)
   return __isnan(__lcpp_x);
-#elif __has_builtin(__builtin_isnan)
+#elif defined(_CCCL_BUILTIN_ISNAN)
   // nvcc at times has issues determining the type of __lcpp_x
-  return __builtin_isnan(static_cast<double>(__lcpp_x));
-#else
+  return _CCCL_BUILTIN_ISNAN(static_cast<double>(__lcpp_x));
+#else // ^^^ _CCCL_BUILTIN_ISNAN ^^^ / vvv !_CCCL_BUILTIN_ISNAN vvv
   return ::isnan(__lcpp_x);
-#endif
+#endif // !_CCCL_BUILTIN_ISNAN
 }
 
 template <class _A1>
@@ -647,12 +647,12 @@ __constexpr_isinf(_A1 __lcpp_x) noexcept
 {
 #if defined(_CCCL_CUDACC_BELOW_11_8)
   return __isinf(__lcpp_x);
-#elif __has_builtin(__builtin_isinf)
+#elif defined(_CCCL_BUILTIN_ISINF)
   // nvcc at times has issues determining the type of __lcpp_x
   return __builtin_isinf(static_cast<double>(__lcpp_x));
-#else
+#else // ^^^ _CCCL_BUILTIN_ISINF ^^^ / vvv !_CCCL_BUILTIN_ISINF vvv
   return ::isinf(__lcpp_x);
-#endif
+#endif // !_CCCL_BUILTIN_ISINF
 }
 
 template <class _A1>
@@ -668,12 +668,12 @@ __constexpr_isfinite(_A1 __lcpp_x) noexcept
 {
 #if defined(_CCCL_CUDACC_BELOW_11_8)
   return !__isinf(__lcpp_x) && !__isnan(__lcpp_x);
-#elif __has_builtin(__builtin_isfinite)
+#elif defined(_CCCL_BUILTIN_ISFINITE)
   // nvcc at times has issues determining the type of __lcpp_x
   return __builtin_isfinite(static_cast<double>(__lcpp_x));
-#else
+#else // ^^^ _CCCL_BUILTIN_ISFINITE ^^^ / vvv !_CCCL_BUILTIN_ISFINITE vvv
   return ::isfinite(__lcpp_x);
-#endif
+#endif // !_CCCL_BUILTIN_ISFINITE
 }
 
 template <class _A1>

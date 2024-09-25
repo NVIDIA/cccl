@@ -534,13 +534,13 @@ using __m_at = _Ts...[__v<_Np>];
 template <size_t _Np, class... _Ts>
 using __m_at_c = _Ts...[_Np];
 
-#elif __has_builtin(__type_pack_element)
+#elif defined(_CCCL_BUILTIN_TYPE_PACK_ELEMENT)
 
 template <bool>
 struct __m_at_
 {
   template <class _Np, class... _Ts>
-  using __f = __type_pack_element<__v<_Np>, _Ts...>;
+  using __f = _CCCL_BUILTIN_TYPE_PACK_ELEMENT(__v<_Np>, _Ts...);
 };
 
 template <class _Np, class... _Ts>

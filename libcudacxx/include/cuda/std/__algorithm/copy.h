@@ -91,13 +91,13 @@ template <class _Tp, class _Up>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool __constexpr_tail_overlap(_Tp* __first, _Up* __needle, _Tp* __last)
 {
   _LIBCUDACXX_UNUSED_VAR(__last);
-#if __has_builtin(__builtin_constant_p) || defined(_CCCL_COMPILER_GCC)
+#if defined(_CCCL_BUILTIN_CONSTANT_P)
   NV_IF_ELSE_TARGET(NV_IS_HOST,
-                    (return __builtin_constant_p(__first < __needle) && __first < __needle;),
+                    (return _CCCL_BUILTIN_CONSTANT_P(__first < __needle) && __first < __needle;),
                     (return __constexpr_tail_overlap_fallback(__first, __needle, __last);))
-#else
+#else // ^^^ _CCCL_BUILTIN_CONSTANT_P ^^^ / vvv !_CCCL_BUILTIN_CONSTANT_P vvv
   return __constexpr_tail_overlap_fallback(__first, __needle, __last);
-#endif
+#endif // !_CCCL_BUILTIN_CONSTANT_P
 }
 
 template <class _AlgPolicy,

@@ -95,10 +95,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX17 bool test()
     opt = 1;
     opt.or_else([] {
 #if defined(TEST_COMPILER_GCC) && __GNUC__ < 9
-      // This is an awful hack around: `error: call to non-'constexpr' function 'void __assert_fail(...)'`
-      // Verified experimentally that __builtin_unreachable is treated the way we want, i.e. compiles
-      // fine within the context of a constexpr expression if unevaluated, but generates an error when evaluated.
-      NV_IF_TARGET(NV_IS_HOST, (__builtin_unreachable();), (__trap();))
+      _CCCL_UNREACHABLE();
 #else
       assert(false);
 #endif
