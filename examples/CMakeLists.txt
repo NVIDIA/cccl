@@ -34,7 +34,15 @@ set(cmake_cpm_opts
 
 cccl_add_compile_test(test_name
   cccl.example
-  example_project
+  basic
+  "default"
+  ${cmake_opts}
+  ${cmake_cpm_opts}
+)
+
+cccl_add_compile_test(test_name
+  cccl.example
+  cudax
   "default"
   ${cmake_opts}
   ${cmake_cpm_opts}
