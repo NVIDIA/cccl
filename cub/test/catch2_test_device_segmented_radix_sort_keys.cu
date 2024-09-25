@@ -54,7 +54,7 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_rad
   void* d_temp_storage,
   size_t& temp_storage_bytes,
   const KeyT* d_keys_in,
-  KeyT*& d_keys_out,
+  KeyT* d_keys_out,
   NumItemsT num_items,
   NumItemsT num_segments,
   BeginOffsetIteratorT d_begin_offsets,
@@ -89,8 +89,11 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_rad
   {
     return status;
   }
-  // Only write to selector in the DoubleBuffer invocation
-  *selector = is_overwrite && (d_keys.Current() != d_keys_out);
+  if (is_overwrite)
+  {
+    // Only write to selector in the DoubleBuffer invocation
+    *selector = d_keys.Current() != d_keys_out;
+  }
   return cudaSuccess;
 }
 
@@ -541,7 +544,7 @@ try
   bool* selector_ptr = nullptr;
   if (is_overwrite)
   {
-    REQUIRE(cudaSuccess == cudaMallocHost(&selector_ptr, sizeof(int)));
+    REQUIRE(cudaSuccess == cudaMallocHost(&selector_ptr, sizeof(*selector_ptr)));
   }
 
   auto ref_keys     = segmented_radix_sort_reference(in_keys, is_descending, num_segments, offsets, offsets_plus_1);
@@ -616,7 +619,7 @@ try
   bool* selector_ptr = nullptr;
   if (is_overwrite)
   {
-    REQUIRE(cudaSuccess == cudaMallocHost(&selector_ptr, sizeof(int)));
+    REQUIRE(cudaSuccess == cudaMallocHost(&selector_ptr, sizeof(*selector_ptr)));
   }
   auto ref_keys     = segmented_radix_sort_reference(in_keys, is_descending, offsets);
   auto out_keys_ptr = thrust::raw_pointer_cast(out_keys.data());
