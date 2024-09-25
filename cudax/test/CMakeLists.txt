@@ -109,4 +109,8 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
   target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>)
 
+  cudax_add_catch2_test(test_target green_context ${cn_target}
+    green_context/green_ctx_smoke.cu
+  )
+
 endforeach()

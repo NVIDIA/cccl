@@ -28,27 +28,16 @@ void TestForEachSimple()
 {
   using T = typename Vector::value_type;
 
-  Vector input(5);
+  Vector input{3, 2, 3, 4, 6};
   Vector output(7, (T) 0);
-
-  input[0] = 3;
-  input[1] = 2;
-  input[2] = 3;
-  input[3] = 4;
-  input[4] = 6;
 
   mark_present_for_each<T> f;
   f.ptr = thrust::raw_pointer_cast(output.data());
 
   typename Vector::iterator result = thrust::for_each(input.begin(), input.end(), f);
 
-  ASSERT_EQUAL(output[0], 0);
-  ASSERT_EQUAL(output[1], 0);
-  ASSERT_EQUAL(output[2], 1);
-  ASSERT_EQUAL(output[3], 1);
-  ASSERT_EQUAL(output[4], 1);
-  ASSERT_EQUAL(output[5], 0);
-  ASSERT_EQUAL(output[6], 1);
+  Vector ref{0, 0, 1, 1, 1, 0, 1};
+  ASSERT_EQUAL(output, ref);
   ASSERT_EQUAL_QUIET(result, input.end());
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestForEachSimple);
@@ -93,27 +82,16 @@ void TestForEachNSimple()
 {
   using T = typename Vector::value_type;
 
-  Vector input(5);
+  Vector input{3, 2, 3, 4, 6};
   Vector output(7, (T) 0);
-
-  input[0] = 3;
-  input[1] = 2;
-  input[2] = 3;
-  input[3] = 4;
-  input[4] = 6;
 
   mark_present_for_each<T> f;
   f.ptr = thrust::raw_pointer_cast(output.data());
 
   typename Vector::iterator result = thrust::for_each_n(input.begin(), input.size(), f);
 
-  ASSERT_EQUAL(output[0], 0);
-  ASSERT_EQUAL(output[1], 0);
-  ASSERT_EQUAL(output[2], 1);
-  ASSERT_EQUAL(output[3], 1);
-  ASSERT_EQUAL(output[4], 1);
-  ASSERT_EQUAL(output[5], 0);
-  ASSERT_EQUAL(output[6], 1);
+  Vector ref{0, 0, 1, 1, 1, 0, 1};
+  ASSERT_EQUAL(output, ref);
   ASSERT_EQUAL_QUIET(result, input.end());
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestForEachNSimple);
@@ -163,13 +141,8 @@ void TestForEachSimpleAnySystem()
   thrust::counting_iterator<int> result =
     thrust::for_each(thrust::make_counting_iterator(0), thrust::make_counting_iterator(5), f);
 
-  ASSERT_EQUAL(output[0], 1);
-  ASSERT_EQUAL(output[1], 1);
-  ASSERT_EQUAL(output[2], 1);
-  ASSERT_EQUAL(output[3], 1);
-  ASSERT_EQUAL(output[4], 1);
-  ASSERT_EQUAL(output[5], 0);
-  ASSERT_EQUAL(output[6], 0);
+  thrust::device_vector<int> ref{1, 1, 1, 1, 1, 0, 0};
+  ASSERT_EQUAL(output, ref);
   ASSERT_EQUAL_QUIET(result, thrust::make_counting_iterator(5));
 }
 DECLARE_UNITTEST(TestForEachSimpleAnySystem);
@@ -183,13 +156,8 @@ void TestForEachNSimpleAnySystem()
 
   thrust::counting_iterator<int> result = thrust::for_each_n(thrust::make_counting_iterator(0), 5, f);
 
-  ASSERT_EQUAL(output[0], 1);
-  ASSERT_EQUAL(output[1], 1);
-  ASSERT_EQUAL(output[2], 1);
-  ASSERT_EQUAL(output[3], 1);
-  ASSERT_EQUAL(output[4], 1);
-  ASSERT_EQUAL(output[5], 0);
-  ASSERT_EQUAL(output[6], 0);
+  thrust::device_vector<int> ref{1, 1, 1, 1, 1, 0, 0};
+  ASSERT_EQUAL(output, ref);
   ASSERT_EQUAL_QUIET(result, thrust::make_counting_iterator(5));
 }
 DECLARE_UNITTEST(TestForEachNSimpleAnySystem);
