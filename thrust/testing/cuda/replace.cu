@@ -264,12 +264,7 @@ void TestReplaceCudaStreams()
   using Vector = thrust::device_vector<int>;
   using T      = Vector::value_type;
 
-  Vector data(5);
-  data[0] = 1;
-  data[1] = 2;
-  data[2] = 1;
-  data[3] = 3;
-  data[4] = 2;
+  Vector data{1, 2, 1, 3, 2};
 
   cudaStream_t s;
   cudaStreamCreate(&s);
@@ -279,12 +274,7 @@ void TestReplaceCudaStreams()
 
   cudaStreamSynchronize(s);
 
-  Vector result(5);
-  result[0] = 4;
-  result[1] = 5;
-  result[2] = 4;
-  result[3] = 3;
-  result[4] = 5;
+  Vector result{4, 5, 4, 3, 5};
 
   ASSERT_EQUAL(data, result);
 

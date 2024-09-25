@@ -26,17 +26,9 @@ void TestSetIntersectionDevice(ExecutionPolicy exec)
   using Vector   = thrust::device_vector<int>;
   using Iterator = Vector::iterator;
 
-  Vector a(3), b(4);
+  Vector a{0, 2, 4}, b{0, 3, 3, 4};
 
-  // clang-format off
-  a[0] = 0; a[1] = 2; a[2] = 4;
-  b[0] = 0; b[1] = 3; b[2] = 3; b[3] = 4;
-  // clang-format on
-
-  Vector ref(2);
-  ref[0] = 0;
-  ref[1] = 4;
-
+  Vector ref{0, 4};
   Vector result(2);
   thrust::device_vector<Iterator> end_vec(1);
 
@@ -75,17 +67,9 @@ void TestSetIntersectionCudaStreams(ExecutionPolicy policy)
   using Vector   = thrust::device_vector<int>;
   using Iterator = Vector::iterator;
 
-  Vector a(3), b(4);
+  Vector a{0, 2, 4}, b{0, 3, 3, 4};
 
-  // clang-format off
-  a[0] = 0; a[1] = 2; a[2] = 4;
-  b[0] = 0; b[1] = 3; b[2] = 3; b[3] = 4;
-  // clang-format on
-
-  Vector ref(2);
-  ref[0] = 0;
-  ref[1] = 4;
-
+  Vector ref{0, 4};
   Vector result(2);
 
   cudaStream_t s;

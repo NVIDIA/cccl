@@ -46,10 +46,7 @@ void TestTransformReduceSimple()
 {
   using T = typename Vector::value_type;
 
-  Vector data(3);
-  data[0] = 1;
-  data[1] = -2;
-  data[2] = 3;
+  Vector data{1, -2, 3};
 
   T init   = 10;
   T result = thrust::transform_reduce(data.begin(), data.end(), thrust::negate<T>(), init, thrust::plus<T>());

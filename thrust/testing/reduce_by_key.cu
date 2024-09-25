@@ -18,30 +18,14 @@ template <typename Vector>
 void initialize_keys(Vector& keys)
 {
   keys.resize(9);
-  keys[0] = 11;
-  keys[1] = 11;
-  keys[2] = 21;
-  keys[3] = 20;
-  keys[4] = 21;
-  keys[5] = 21;
-  keys[6] = 21;
-  keys[7] = 37;
-  keys[8] = 37;
+  keys = {11, 11, 21, 20, 21, 21, 21, 37, 37};
 }
 
 template <typename Vector>
 void initialize_values(Vector& values)
 {
   values.resize(9);
-  values[0] = 0;
-  values[1] = 1;
-  values[2] = 2;
-  values[3] = 3;
-  values[4] = 4;
-  values[5] = 5;
-  values[6] = 6;
-  values[7] = 7;
-  values[8] = 8;
+  values = {0, 1, 2, 3, 4, 5, 6, 7, 8};
 }
 
 template <typename Vector>
@@ -65,18 +49,14 @@ void TestReduceByKeySimple()
     thrust::reduce_by_key(keys.begin(), keys.end(), values.begin(), output_keys.begin(), output_values.begin());
 
   ASSERT_EQUAL(new_last.first - output_keys.begin(), 5);
+  output_keys.resize(new_last.first - output_keys.begin());
   ASSERT_EQUAL(new_last.second - output_values.begin(), 5);
-  ASSERT_EQUAL(output_keys[0], 11);
-  ASSERT_EQUAL(output_keys[1], 21);
-  ASSERT_EQUAL(output_keys[2], 20);
-  ASSERT_EQUAL(output_keys[3], 21);
-  ASSERT_EQUAL(output_keys[4], 37);
+  output_values.resize(new_last.second - output_values.begin());
+  Vector ref_keys{11, 21, 20, 21, 37};
+  ASSERT_EQUAL(output_keys, ref_keys);
 
-  ASSERT_EQUAL(output_values[0], 1);
-  ASSERT_EQUAL(output_values[1], 2);
-  ASSERT_EQUAL(output_values[2], 3);
-  ASSERT_EQUAL(output_values[3], 15);
-  ASSERT_EQUAL(output_values[4], 15);
+  Vector ref_values{1, 2, 3, 15, 15};
+  ASSERT_EQUAL(output_values, ref_values);
 
   // test BinaryPredicate
   initialize_keys(keys);
@@ -86,18 +66,22 @@ void TestReduceByKeySimple()
     keys.begin(), keys.end(), values.begin(), output_keys.begin(), output_values.begin(), is_equal_div_10_reduce<T>());
 
   ASSERT_EQUAL(new_last.first - output_keys.begin(), 3);
+  output_keys.resize(new_last.first - output_keys.begin());
   ASSERT_EQUAL(new_last.second - output_values.begin(), 3);
-  ASSERT_EQUAL(output_keys[0], 11);
-  ASSERT_EQUAL(output_keys[1], 21);
-  ASSERT_EQUAL(output_keys[2], 37);
+  output_values.resize(new_last.second - output_values.begin());
 
-  ASSERT_EQUAL(output_values[0], 1);
-  ASSERT_EQUAL(output_values[1], 20);
-  ASSERT_EQUAL(output_values[2], 15);
+  ref_keys = {11, 21, 37};
+  ASSERT_EQUAL(output_keys, ref_keys);
+
+  ref_values = {1, 20, 15};
+  ASSERT_EQUAL(output_values, ref_values);
 
   // test BinaryFunction
   initialize_keys(keys);
   initialize_values(values);
+
+  output_keys.resize(keys.size());
+  output_values.resize(values.size());
 
   new_last = thrust::reduce_by_key(
     keys.begin(),
@@ -109,18 +93,15 @@ void TestReduceByKeySimple()
     thrust::plus<T>());
 
   ASSERT_EQUAL(new_last.first - output_keys.begin(), 5);
+  output_keys.resize(new_last.first - output_keys.begin());
   ASSERT_EQUAL(new_last.second - output_values.begin(), 5);
-  ASSERT_EQUAL(output_keys[0], 11);
-  ASSERT_EQUAL(output_keys[1], 21);
-  ASSERT_EQUAL(output_keys[2], 20);
-  ASSERT_EQUAL(output_keys[3], 21);
-  ASSERT_EQUAL(output_keys[4], 37);
+  output_values.resize(new_last.second - output_values.begin());
 
-  ASSERT_EQUAL(output_values[0], 1);
-  ASSERT_EQUAL(output_values[1], 2);
-  ASSERT_EQUAL(output_values[2], 3);
-  ASSERT_EQUAL(output_values[3], 15);
-  ASSERT_EQUAL(output_values[4], 15);
+  ref_keys = {11, 21, 20, 21, 37};
+  ASSERT_EQUAL(output_keys, ref_keys);
+
+  ref_values = {1, 2, 3, 15, 15};
+  ASSERT_EQUAL(output_values, ref_values);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestReduceByKeySimple);
 

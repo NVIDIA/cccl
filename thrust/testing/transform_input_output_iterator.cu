@@ -30,22 +30,14 @@ void TestTransformInputOutputIterator()
   // transform_iter writes squared value
   thrust::copy(input.begin(), input.end(), transform_iter);
 
-  Vector gold_squared(4);
-  gold_squared[0] = 1;
-  gold_squared[1] = 4;
-  gold_squared[2] = 9;
-  gold_squared[3] = 16;
+  Vector gold_squared{1, 4, 9, 16};
 
   ASSERT_EQUAL(squared, gold_squared);
 
   // negated value read from transform_iter
   thrust::copy_n(transform_iter, squared.size(), negated.begin());
 
-  Vector gold_negated(4);
-  gold_negated[0] = -1;
-  gold_negated[1] = -4;
-  gold_negated[2] = -9;
-  gold_negated[3] = -16;
+  Vector gold_negated{-1, -4, -9, -16};
 
   ASSERT_EQUAL(negated, gold_negated);
 }
@@ -71,11 +63,7 @@ void TestMakeTransformInputOutputIterator()
                  input.size(),
                  negated.begin());
 
-  Vector gold_negated(4);
-  gold_negated[0] = -1;
-  gold_negated[1] = -2;
-  gold_negated[2] = -3;
-  gold_negated[3] = -4;
+  Vector gold_negated{-1, -2, -3, -4};
 
   ASSERT_EQUAL(negated, gold_negated);
 
@@ -84,11 +72,7 @@ void TestMakeTransformInputOutputIterator()
                negated.end(),
                thrust::make_transform_input_output_iterator(squared.begin(), InputFunction(), OutputFunction()));
 
-  Vector gold_squared(4);
-  gold_squared[0] = 1;
-  gold_squared[1] = 4;
-  gold_squared[2] = 9;
-  gold_squared[3] = 16;
+  Vector gold_squared{1, 4, 9, 16};
 
   ASSERT_EQUAL(squared, gold_squared);
 }

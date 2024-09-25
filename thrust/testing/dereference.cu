@@ -80,11 +80,8 @@ void TestDeviceDereferenceCountingIterator()
 
   simple_copy(first, last, output.begin());
 
-  ASSERT_EQUAL(output[0], 1);
-  ASSERT_EQUAL(output[1], 2);
-  ASSERT_EQUAL(output[2], 3);
-  ASSERT_EQUAL(output[3], 4);
-  ASSERT_EQUAL(output[4], 5);
+  thrust::device_vector<int> ref{1, 2, 3, 4, 5};
+  ASSERT_EQUAL(output, ref);
 }
 DECLARE_UNITTEST(TestDeviceDereferenceCountingIterator);
 
@@ -99,11 +96,8 @@ void TestDeviceDereferenceTransformedCountingIterator()
               thrust::make_transform_iterator(last, thrust::negate<int>()),
               output.begin());
 
-  ASSERT_EQUAL(output[0], -1);
-  ASSERT_EQUAL(output[1], -2);
-  ASSERT_EQUAL(output[2], -3);
-  ASSERT_EQUAL(output[3], -4);
-  ASSERT_EQUAL(output[4], -5);
+  thrust::device_vector<int> ref{-1, -2, -3, -4, -5};
+  ASSERT_EQUAL(output, ref);
 }
 DECLARE_UNITTEST(TestDeviceDereferenceTransformedCountingIterator);
 
