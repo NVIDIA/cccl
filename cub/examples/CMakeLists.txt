@@ -49,6 +49,5 @@ function(cub_add_example target_name_var example_name example_src cub_target)
   )
 endfunction()
 
-add_subdirectory(cmake)
 add_subdirectory(block)
 add_subdirectory(device)

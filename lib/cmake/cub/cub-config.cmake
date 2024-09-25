@@ -64,9 +64,7 @@ if (NOT TARGET CUB::libcudacxx)
       find_package(libcudacxx ${cub_libcudacxx_version} CONFIG
         ${_CUB_QUIET_FLAG}
         NO_DEFAULT_PATH # Only check the explicit HINTS below:
-        HINTS
-          "${_CUB_INCLUDE_DIR}/../libcudacxx"           # Source layout
-          "${_CUB_CMAKE_DIR}/.."                        # Install layout
+        HINTS "${CMAKE_CURRENT_LIST_DIR}/../libcudacxx/"
       )
 
       # A second required search allows externally packaged to be used and fails if

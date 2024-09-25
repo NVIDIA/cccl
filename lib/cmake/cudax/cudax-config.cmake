@@ -13,7 +13,13 @@ endif()
 
 set(cn_cmake_dir "${CMAKE_CURRENT_LIST_DIR}")
 set(cn_prefix_dir "${cn_cmake_dir}/../../..")
-set(cn_include_dir "${cn_prefix_dir}/include")
+find_path(cn_include_dir "cuda/experimental/version.cuh"
+  REQUIRED
+  NO_DEFAULT_PATH NO_CACHE REQUIRED
+  HINTS
+    "${cn_prefix_dir}/cudax/include" # Source
+    "${cn_prefix_dir}/include"       # Install
+)
 
 if (NOT TARGET cudax::libcudacxx)
   if (NOT TARGET libcudacxx::libcudacxx)
@@ -22,9 +28,7 @@ if (NOT TARGET cudax::libcudacxx)
     find_package(libcudacxx ${cudax_VERSION} CONFIG
       ${cn_quiet_flag}
       NO_DEFAULT_PATH # Only check the explicit HINTS below:
-      HINTS
-        "${cn_prefix_dir}/../libcudacxx" # Source layout
-        "${cn_cmake_dir}/.."             # Install layout
+      HINTS "${cn_cmake_dir}/../libcudacxx"
     )
 
     # A second required search allows externally packaged to be used and fails if
