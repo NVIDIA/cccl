@@ -16,13 +16,10 @@ endif()
 # Enable CXX so CMake can configure install paths
 project(CCCL LANGUAGES CXX)
 
-# Optionally include installation rules for non-top-level builds:
-option(CCCL_ENABLE_INSTALL_RULES "Enable installation of CCCL." ${CCCL_TOPLEVEL_PROJECT})
-if (CCCL_ENABLE_INSTALL_RULES)
-  include(cmake/CCCLInstallRules.cmake)
-endif()
+include(cmake/CCCLInstallRules.cmake)
 
 # Support adding CCCL to a parent project via add_subdirectory.
+include(cmake/CCCLAddSubdirHelper.cmake) # Always include, this is used by subprojects as well.
 if (NOT CCCL_TOPLEVEL_PROJECT)
   include(cmake/CCCLAddSubdir.cmake)
 endif()

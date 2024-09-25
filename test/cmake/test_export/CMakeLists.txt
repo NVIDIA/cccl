@@ -2,8 +2,6 @@
 #
 # Parameters:
 # - CCCL_ROOT [Path] Root of the CCCL repo, or an installation root.
-# - ROOT_TYPE [String] {SOURCE | INSTALL} Whether CCCL_ROOT is an
-#   installation prefix or the source root.
 # - COMPONENTS [StringList] {Thrust CUB libcudacxx} Which CCCL subprojects
 #   should be found.
 # - PACKAGE_TYPE [String] {CCCL | NATIVE | SUBDIR}:
@@ -11,7 +9,6 @@
 #   - NATIVE -> `find_package(<subproject>)`
 #   - SUBDIR -> `set(CCCL_REQUIRED_COMPONENTS <subproject>)`
 #               `add_subdirectory(${cccl_root})`
-
 
 cmake_minimum_required(VERSION 3.21)
 project(CCCLTestExport LANGUAGES CXX)
@@ -21,9 +18,6 @@ enable_testing()
 
 set(CCCL_ROOT "" CACHE PATH
   "Root of the CCCL repo, or an installation root.")
-set(ROOT_TYPE "" CACHE STRING
-  "{SOURCE | INSTALL} Whether CCCL_ROOT is an install prefix or source root.")
-set_property(CACHE ROOT_TYPE PROPERTY STRINGS SOURCE INSTALL)
 set(COMPONENTS "" CACHE STRING
   "DEFAULT for no components, or semi-colon delimited list of Thrust, CUB, and/or libcudacxx.")
 set(PACKAGE_TYPE "" CACHE STRING
@@ -31,30 +25,8 @@ set(PACKAGE_TYPE "" CACHE STRING
 set_property(CACHE PACKAGE_TYPE PROPERTY STRINGS CCCL NATIVE SUBDIR)
 
 message(STATUS "CCCL_ROOT=${CCCL_ROOT}")
-message(STATUS "ROOT_TYPE=${ROOT_TYPE}")
 message(STATUS "COMPONENTS=${COMPONENTS}")
 message(STATUS "PACKAGE_TYPE=${PACKAGE_TYPE}")
-
-# TODO `ROOT_TYPE` probably won't be needed after the configs are all moved
-# to the CCCL repo.
-if (ROOT_TYPE STREQUAL "SOURCE")
-  cmake_path(APPEND CCCL_ROOT thrust OUTPUT_VARIABLE Thrust_ROOT)
-  cmake_path(APPEND CCCL_ROOT cub OUTPUT_VARIABLE CUB_ROOT)
-  cmake_path(APPEND CCCL_ROOT libcudacxx OUTPUT_VARIABLE libcudacxx_ROOT)
-  cmake_path(APPEND CCCL_ROOT cudax OUTPUT_VARIABLE cudax_ROOT)
-elseif (ROOT_TYPE STREQUAL "INSTALL")
-  set(Thrust_ROOT "${CCCL_ROOT}")
-  set(CUB_ROOT "${CCCL_ROOT}")
-  set(libcudacxx_ROOT "${CCCL_ROOT}")
-  set(cudax_ROOT "${CCCL_ROOT}")
-else()
-  message(FATAL_ERROR "Invalid ROOT_TYPE: ${ROOT_TYPE}")
-endif()
-
-message(STATUS "Thrust_ROOT=${Thrust_ROOT}")
-message(STATUS "CUB_ROOT=${CUB_ROOT}")
-message(STATUS "libcudacxx_ROOT=${libcudacxx_ROOT}")
-message(STATUS "cudax_ROOT=${cudax_ROOT}")
 
 function(do_find_package pkg_name pkg_prefix)
   list(APPEND arg_list
@@ -85,7 +57,7 @@ elseif(PACKAGE_TYPE STREQUAL "NATIVE")
     message(FATAL_ERROR "COMPONENTS=DEFAULT incompatible with PACKAGE_TYPE=NATIVE")
   endif()
   foreach (component IN LISTS COMPONENTS)
-    do_find_package(${component} "${${component}_ROOT}")
+    do_find_package(${component} "${CCCL_ROOT}")
   endforeach()
 elseif(PACKAGE_TYPE STREQUAL "SUBDIR")
   if (COMPONENTS STREQUAL "DEFAULT")
