@@ -95,8 +95,8 @@ CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_rad
   }
   if (is_overwrite)
   {
-  // Only write to selector in the DoubleBuffer invocation
-  *selector = d_keys.Current() != d_keys_out;
+    // Only write to selector in the DoubleBuffer invocation
+    *selector = d_keys.Current() != d_keys_out;
   }
   return cudaSuccess;
 }
