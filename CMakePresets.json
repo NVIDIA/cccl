@@ -21,6 +21,7 @@
         "CCCL_ENABLE_CUDAX": false,
         "CCCL_ENABLE_TESTING": false,
         "CCCL_ENABLE_EXAMPLES": false,
+        "CCCL_ENABLE_C": false,
         "libcudacxx_ENABLE_INSTALL_RULES": true,
         "CUB_ENABLE_INSTALL_RULES": true,
         "Thrust_ENABLE_INSTALL_RULES": true,
@@ -315,6 +316,15 @@
       }
     },
     {
+      "name": "cccl-c-parallel",
+      "displayName" : "CCCL C Parallel Library",
+      "inherits": "base",
+      "cacheVariables": {
+        "CCCL_ENABLE_C": true,
+        "CCCL_C_Parallel_ENABLE_TESTING": true
+      }
+    },
+    {
       "name": "cccl-infra",
       "displayName": "CCCL Infrastructure",
       "inherits": "base",
@@ -442,6 +452,10 @@
     {
       "name": "cudax-cpp20",
       "configurePreset": "cudax-cpp20"
+    },
+    {
+      "name": "cccl-c-parallel",
+      "configurePreset": "cccl-c-parallel"
     },
     {
       "name": "cccl-infra",
@@ -807,6 +821,11 @@
       "name": "cudax-cpp20",
       "configurePreset": "cudax-cpp20",
       "inherits": "cudax-base"
+    },
+    {
+      "name": "cccl-c-parallel",
+      "configurePreset": "cccl-c-parallel",
+      "inherits": "base"
     },
     {
       "name": "cccl-infra",
