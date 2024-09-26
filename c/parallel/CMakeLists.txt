@@ -1,20 +1,21 @@
 cmake_minimum_required(VERSION 3.30)
 
-project(cccl.c LANGUAGES CUDA CXX)
+project(CCCL_C_Parallel LANGUAGES CUDA CXX)
 
-add_library(cccl.c SHARED src/reduce.cu)
-set_property(TARGET cccl.c PROPERTY POSITION_INDEPENDENT_CODE ON)
-set_property(TARGET cccl.c PROPERTY CXX_STANDARD 20)
-set_property(TARGET cccl.c PROPERTY CUDA_STANDARD 20)
+add_library(cccl.c.parallel SHARED src/reduce.cu)
+cccl_configure_target(cccl.c.parallel DIALECT 20)
+set_property(TARGET cccl.c.parallel PROPERTY POSITION_INDEPENDENT_CODE ON)
+
+
 
 find_package(CUDAToolkit REQUIRED)
 
 # TODO Use static versions of cudart, nvrtc, and nvJitLink
-target_link_libraries(cccl.c PRIVATE CUDA::cudart
+target_link_libraries(cccl.c.parallel PRIVATE CUDA::cudart
                                      CUDA::nvrtc
                                      CUDA::nvJitLink
                                      CUDA::cuda_driver)
-target_compile_definitions(cccl.c PRIVATE NVRTC_GET_TYPE_NAME=1 CCCL_C_EXPERIMENTAL=1)
-target_include_directories(cccl.c PUBLIC "include")
+target_compile_definitions(cccl.c.parallel PRIVATE NVRTC_GET_TYPE_NAME=1 CCCL_C_EXPERIMENTAL=1)
+target_include_directories(cccl.c.parallel PUBLIC "include")
 
 add_subdirectory(test)
