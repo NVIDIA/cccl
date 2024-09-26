@@ -56,7 +56,7 @@ function(cccl_build_compiler_targets)
   # Ensure that we build our tests without treating ourself as system header
   list(APPEND cxx_compile_definitions "_CCCL_NO_SYSTEM_HEADER")
 
-  if (CCCL_DISABLE_EXCEPTIONS)
+  if (NOT CCCL_ENABLE_EXCEPTIONS)
     list(APPEND cxx_compile_definitions "CCCL_DISABLE_EXCEPTIONS")
   endif()
 
