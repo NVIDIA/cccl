@@ -2,35 +2,12 @@
 # 3.21 is the minimum for the developer build.
 cmake_minimum_required(VERSION 3.15)
 
-project(Thrust LANGUAGES NONE)
-
-# Determine whether Thrust is the top-level project or included into
-# another project via add_subdirectory()
-if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
-  set(THRUST_TOPLEVEL_PROJECT ON)
-endif()
-
-## thrust_fix_clang_nvcc_build_for
-#
-# Modifies the given target to include a fix for the clang host compiler case.
-# The fix consists of force-including a header into each compilation unit.
-#
-function(thrust_fix_clang_nvcc_build_for target)
-  if (UNIX)
-    # Path to the header containing the fix for clang + nvcc < 11.6. For more info,
-    # check the content of this header.
-    set(clang_fix_header_path "${CMAKE_CURRENT_FUNCTION_LIST_DIR}/testing/fix_clang_nvcc_11.5.h")
-
-    # Only affects host compiler
-    target_compile_options(${target} PRIVATE
-        "$<$<COMPILE_LANGUAGE:CUDA>:-include${clang_fix_header_path}>")
-  endif()
-endfunction()
-
 # This must be done before any languages are enabled:
-if (THRUST_TOPLEVEL_PROJECT)
+if (CCCL_ENABLE_THRUST)
   cmake_minimum_required(VERSION 3.21)
 endif()
+
+project(Thrust LANGUAGES NONE)
 
 # This must appear after our Compiler Hacks or else CMake will delete the cache
 # and reconfigure from scratch.
@@ -40,7 +17,7 @@ enable_language(CXX)
 
 # Support adding Thrust to a parent project via add_subdirectory.
 # See examples/cmake/add_subdir/CMakeLists.txt for details.
-if (NOT THRUST_TOPLEVEL_PROJECT)
+if (NOT CCCL_ENABLE_THRUST)
   include(cmake/ThrustAddSubdir.cmake)
   return()
 endif()
@@ -67,11 +44,13 @@ if (NOT (THRUST_ENABLE_HEADER_TESTING OR
   return()
 endif()
 
+#include first:
+include(cmake/ThrustUtilities.cmake)
+
 include(cmake/ThrustBuildCompilerTargets.cmake)
 include(cmake/ThrustBuildTargetList.cmake)
 include(cmake/ThrustFindThrust.cmake)
 include(cmake/ThrustMultiConfig.cmake)
-include(cmake/ThrustUtilities.cmake)
 
 # Add cache string options for CMAKE_BUILD_TYPE and default to RelWithDebInfo.
 if ("" STREQUAL "${CMAKE_BUILD_TYPE}")

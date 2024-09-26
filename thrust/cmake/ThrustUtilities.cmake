@@ -41,3 +41,20 @@ function(thrust_configure_cuda_target target_name)
       CUDA_SEPARABLE_COMPILATION OFF)
   endif()
 endfunction()
+
+## thrust_fix_clang_nvcc_build_for
+#
+# Modifies the given target to include a fix for the clang host compiler case.
+# The fix consists of force-including a header into each compilation unit.
+#
+function(thrust_fix_clang_nvcc_build_for target)
+  if (UNIX)
+    # Path to the header containing the fix for clang + nvcc < 11.6. For more info,
+    # check the content of this header.
+    set(clang_fix_header_path "${Thrust_SOURCE_DIR}/testing/fix_clang_nvcc_11.5.h")
+
+    # Only affects host compiler
+    target_compile_options(${target} PRIVATE
+        "$<$<COMPILE_LANGUAGE:CUDA>:-include${clang_fix_header_path}>")
+  endif()
+endfunction()

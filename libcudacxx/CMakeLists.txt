@@ -3,13 +3,7 @@
 # 3.21 is the minimum for the developer build.
 cmake_minimum_required(VERSION 3.15)
 
-# Determine whether libcudacxx is the top-level project or included into
-# another project via add_subdirectory().
-if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
-  set(LIBCUDACXX_TOPLEVEL_PROJECT ON)
-endif()
-
-if (LIBCUDACXX_TOPLEVEL_PROJECT)
+if (CCCL_ENABLE_LIBCUDACXX)
   cmake_minimum_required(VERSION 3.21)
 endif()
 
@@ -18,7 +12,7 @@ set(PACKAGE_VERSION 11.0)
 set(PACKAGE_STRING "${PACKAGE_NAME} ${PACKAGE_VERSION}")
 project(libcudacxx LANGUAGES CXX)
 
-if (NOT LIBCUDACXX_TOPLEVEL_PROJECT)
+if (NOT CCCL_ENABLE_LIBCUDACXX)
   include(cmake/libcudacxxAddSubdir.cmake)
   return()
 endif()

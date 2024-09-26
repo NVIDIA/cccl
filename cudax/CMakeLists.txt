@@ -2,18 +2,14 @@
 # 3.21 is the minimum for the developer build.
 cmake_minimum_required(VERSION 3.15)
 
-if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
-  set(cudax_TOPLEVEL_PROJECT ON)
-endif()
-
 # This must be done before any languages are enabled:
-if (cudax_TOPLEVEL_PROJECT)
+if (CCCL_ENABLE_CUDAX)
   cmake_minimum_required(VERSION 3.21)
 endif()
 
 project(cudax LANGUAGES CUDA CXX)
 
-if (NOT cudax_TOPLEVEL_PROJECT)
+if (NOT CCCL_ENABLE_CUDAX)
   include(cmake/cudaxAddSubdir.cmake)
   return()
 endif()

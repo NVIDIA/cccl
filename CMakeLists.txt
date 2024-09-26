@@ -57,22 +57,6 @@ if (CCCL_TOPLEVEL_PROJECT)
   cccl_build_compiler_targets()
 endif()
 
-if (CCCL_ENABLE_LIBCUDACXX)
-  set(LIBCUDACXX_TOPLEVEL_PROJECT ${CCCL_TOPLEVEL_PROJECT})
-endif()
-
-if (CCCL_ENABLE_CUB)
-  set(CUB_TOPLEVEL_PROJECT ${CCCL_TOPLEVEL_PROJECT})
-endif()
-
-if (CCCL_ENABLE_THRUST)
-  set(THRUST_TOPLEVEL_PROJECT ${CCCL_TOPLEVEL_PROJECT})
-endif()
-
-if (CCCL_ENABLE_CUDAX)
-  set(cudax_TOPLEVEL_PROJECT ${CCCL_TOPLEVEL_PROJECT})
-endif()
-
 add_subdirectory(libcudacxx)
 add_subdirectory(cub)
 add_subdirectory(thrust)
