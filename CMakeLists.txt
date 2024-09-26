@@ -43,11 +43,6 @@ if (CCCL_ENABLE_UNSTABLE)
   option(CCCL_ENABLE_CUDAX "Enable the CUDA Experimental developer build." ON)
 endif()
 
-option(CCCL_DISABLE_EXCEPTIONS "Disable use of exceptions within CCCL libraries." OFF)
-if (CCCL_DISABLE_EXCEPTIONS)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCCCL_DISABLE_EXCEPTIONS")
-endif()
-
 include(CTest)
 enable_testing()
 
