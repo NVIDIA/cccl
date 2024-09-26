@@ -2,11 +2,11 @@ cmake_minimum_required(VERSION 3.30)
 
 project(CCCL_C_Parallel LANGUAGES CUDA CXX)
 
+option(CCCL_C_Parallel_ENABLE_TESTING "Build CUDA Experimental's tests." OFF)
+
 add_library(cccl.c.parallel SHARED src/reduce.cu)
 cccl_configure_target(cccl.c.parallel DIALECT 20)
 set_property(TARGET cccl.c.parallel PROPERTY POSITION_INDEPENDENT_CODE ON)
-
-
 
 find_package(CUDAToolkit REQUIRED)
 
@@ -18,4 +18,6 @@ target_link_libraries(cccl.c.parallel PRIVATE CUDA::cudart
 target_compile_definitions(cccl.c.parallel PRIVATE NVRTC_GET_TYPE_NAME=1 CCCL_C_EXPERIMENTAL=1)
 target_include_directories(cccl.c.parallel PUBLIC "include")
 
-add_subdirectory(test)
+if (CCCL_C_Parallel_ENABLE_TESTING)
+  add_subdirectory(test)
+endif()
