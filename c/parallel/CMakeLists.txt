@@ -11,6 +11,7 @@ set_property(TARGET cccl.c.parallel PROPERTY POSITION_INDEPENDENT_CODE ON)
 find_package(CUDAToolkit REQUIRED)
 
 # TODO Use static versions of cudart, nvrtc, and nvJitLink
+# TODO Link CCCL libs of dependencies
 target_link_libraries(cccl.c.parallel PRIVATE CUDA::cudart
                                      CUDA::nvrtc
                                      CUDA::nvJitLink
