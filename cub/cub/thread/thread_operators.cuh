@@ -354,6 +354,64 @@ struct ReduceBySegmentOp
   }
 };
 
+template <typename ReductionOpT>
+struct ScanBySegmentOp
+{
+  /// Wrapped reduction operator
+  ReductionOpT op;
+
+  /// Constructor
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScanBySegmentOp() {}
+
+  /// Constructor
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScanBySegmentOp(ReductionOpT op)
+      : op(op)
+  {}
+
+  /**
+   * @brief Scan operator
+   *
+   * @tparam KeyValuePairT
+   *   KeyValuePair pairing of T (value) and OffsetT (head flag)
+   *
+   * @param[in] first
+   *   First partial reduction
+   *
+   * @param[in] second
+   *   Second partial reduction
+   */
+  template <typename KeyValuePairT>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePairT operator()(const KeyValuePairT& first, const KeyValuePairT& second)
+  {
+    KeyValuePairT retval;
+    retval.key = first.key | second.key;
+#ifdef _NVHPC_CUDA // WAR bug on nvc++
+    if (second.key)
+    {
+      retval.value = second.value;
+    }
+    else
+    {
+      // If second.value isn't copied into a temporary here, nvc++ will
+      // crash while compiling the TestScanByKeyWithLargeTypes test in
+      // thrust/testing/scan_by_key.cu:
+      auto v2      = second.value;
+      retval.value = op(first.value, v2);
+    }
+#else // not nvc++:
+    // if (second.key) {
+    //   The second partial reduction spans a segment reset, so it's value
+    //   aggregate becomes the running aggregate
+    // else {
+    //   The second partial reduction does not span a reset, so accumulate both
+    //   into the running aggregate
+    // }
+    retval.value = (second.key) ? second.value : op(first.value, second.value);
+#endif
+    return retval;
+  }
+};
+
 /**
  * @tparam ReductionOpT Binary reduction operator to apply to values
  */

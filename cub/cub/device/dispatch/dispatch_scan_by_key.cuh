@@ -248,6 +248,9 @@ struct DispatchScanByKey : SelectedPolicy
   // The input value type
   using InputT = cub::detail::value_t<ValuesInputIteratorT>;
 
+  // Tile state used for the decoupled look-back
+  using ScanByKeyTileStateT = ReduceByKeyScanTileState<AccumT, bool>;
+
   /// Device-accessible allocation of temporary storage. When `nullptr`, the
   /// required allocation size is written to `temp_storage_bytes` and no work
   /// is done.
@@ -374,7 +377,6 @@ struct DispatchScanByKey : SelectedPolicy
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(InitKernel init_kernel, ScanKernel scan_kernel)
   {
     using Policy              = typename ActivePolicyT::ScanByKeyPolicyT;
-    using ScanByKeyTileStateT = ReduceByKeyScanTileState<AccumT, OffsetT>;
 
     cudaError error = cudaSuccess;
     do
@@ -530,7 +532,6 @@ struct DispatchScanByKey : SelectedPolicy
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke()
   {
     using MaxPolicyT          = typename DispatchScanByKey::MaxPolicy;
-    using ScanByKeyTileStateT = ReduceByKeyScanTileState<AccumT, OffsetT>;
 
     // Ensure kernels are instantiated.
     return Invoke<ActivePolicyT>(
