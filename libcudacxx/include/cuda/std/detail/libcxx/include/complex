@@ -296,15 +296,15 @@ public:
       , __im_(__im)
   {}
 
-  template <class _Up, __enable_if_t<__complex_can_implicitly_construct<_Tp, _Up>::value, int> = 0>
+  template <class _Up, __enable_if_t<__cccl_internal::__is_non_narrowing_convertible<_Tp, _Up>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr complex(const complex<_Up>& __c)
       : __re_(static_cast<_Tp>(__c.real()))
       , __im_(static_cast<_Tp>(__c.imag()))
   {}
 
   template <class _Up,
-            __enable_if_t<!__complex_can_implicitly_construct<_Tp, _Up>::value, int> = 0,
-            __enable_if_t<_CCCL_TRAIT(is_constructible, _Tp, _Up), int>              = 0>
+            __enable_if_t<!__cccl_internal::__is_non_narrowing_convertible<_Tp, _Up>::value, int> = 0,
+            __enable_if_t<_CCCL_TRAIT(is_constructible, _Tp, _Up), int>                           = 0>
   _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr complex(const complex<_Up>& __c)
       : __re_(static_cast<_Tp>(__c.real()))
       , __im_(static_cast<_Tp>(__c.imag()))

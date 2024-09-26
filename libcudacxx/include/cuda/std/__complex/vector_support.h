@@ -54,15 +54,6 @@ struct __complex_alignment : integral_constant<size_t, 2 * sizeof(_Tp)>
 #  define _LIBCUDACXX_COMPLEX_ALIGNAS
 #endif
 
-template <class _Dest, class _Source, class = void>
-struct __complex_can_implicitly_construct : false_type
-{};
-
-template <class _Dest, class _Source>
-struct __complex_can_implicitly_construct<_Dest, _Source, void_t<decltype(_Dest{_CUDA_VSTD::declval<_Source>()})>>
-    : true_type
-{};
-
 template <class _Tp>
 struct __type_to_vector;
 
