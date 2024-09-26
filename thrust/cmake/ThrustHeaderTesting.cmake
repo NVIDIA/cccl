@@ -136,7 +136,7 @@ function(thrust_add_header_test thrust_target label definitions)
   # Disable macro checks on TBB; the TBB atomic implementation uses `I` and
   # our checks will issue false errors.
   if ("TBB" IN_LIST config_systems)
-    target_compile_definitions(${headertest_target} PRIVATE CCCL_IGNORE_MACRO_CHECKS)
+    target_compile_definitions(${headertest_target} PRIVATE CCCL_IGNORE_HEADER_MACRO_CHECKS)
   endif()
 
   thrust_fix_clang_nvcc_build_for(${headertest_target})
