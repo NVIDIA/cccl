@@ -12,10 +12,13 @@ find_package(CUDAToolkit REQUIRED)
 
 # TODO Use static versions of cudart, nvrtc, and nvJitLink
 # TODO Link CCCL libs of dependencies
-target_link_libraries(cccl.c.parallel PRIVATE CUDA::cudart
-                                     CUDA::nvrtc
-                                     CUDA::nvJitLink
-                                     CUDA::cuda_driver)
+target_link_libraries(cccl.c.parallel PRIVATE
+  CUDA::cudart
+  CUDA::nvrtc
+  CUDA::nvJitLink
+  CUDA::cuda_driver
+  cccl.compiler_interface_cpp20
+)
 target_compile_definitions(cccl.c.parallel PRIVATE NVRTC_GET_TYPE_NAME=1 CCCL_C_EXPERIMENTAL=1)
 target_include_directories(cccl.c.parallel PUBLIC "include")
 
