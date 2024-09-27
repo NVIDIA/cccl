@@ -55,6 +55,7 @@ endif()
 
 if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
   string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
+    " ${CMAKE_CUDA_FLAGS}"
     " -Xclang -fcuda-allow-variadic-functions"
     " -Xclang -Wno-unused-parameter"
     " -Wno-unknown-cuda-version"
@@ -63,6 +64,7 @@ if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
     " ${LIBCUDACXX_WARNING_LEVEL}")
 
   string(APPEND LIBCUDACXX_TEST_LINKER_FLAGS
+    " ${CMAKE_CUDA_FLAGS}"
     " -L${CUDAToolkit_LIBRARY_DIR}"
     " -lcuda"
     " -lcudart")
