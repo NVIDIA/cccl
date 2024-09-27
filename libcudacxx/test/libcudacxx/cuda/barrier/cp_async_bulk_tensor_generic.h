@@ -200,7 +200,7 @@ test(cuda::std::array<uint32_t, num_dims> smem_coord,
   bar->wait(cuda::std::move(token));
 
   // Check smem
-  for (int i = threadIdx.x; i < smem_len; i += blockDim.x)
+  for (int i = threadIdx.x; i < static_cast<int>(smem_len); i += blockDim.x)
   {
     int gmem_lin_idx = smem_lin_idx_to_gmem_lin_idx(i, smem_coord, smem_dims, gmem_dims);
     assert(smem_buffer[i] == gmem_lin_idx);
@@ -209,7 +209,7 @@ test(cuda::std::array<uint32_t, num_dims> smem_coord,
   __syncthreads();
 
   // Update smem
-  for (int i = threadIdx.x; i < smem_len; i += blockDim.x)
+  for (int i = threadIdx.x; i < static_cast<int>(smem_len); i += blockDim.x)
   {
     smem_buffer[i] = 2 * smem_buffer[i] + 1;
   }
@@ -227,7 +227,7 @@ test(cuda::std::array<uint32_t, num_dims> smem_coord,
   __syncthreads();
 
   // // TEAR-DOWN: check that global memory is correct
-  for (int i = threadIdx.x; i < smem_len; i += blockDim.x)
+  for (int i = threadIdx.x; i < static_cast<int>(smem_len); i += blockDim.x)
   {
     int gmem_lin_idx = smem_lin_idx_to_gmem_lin_idx(i, smem_coord, smem_dims, gmem_dims);
 
