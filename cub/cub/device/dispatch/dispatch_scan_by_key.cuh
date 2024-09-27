@@ -249,7 +249,7 @@ struct DispatchScanByKey : SelectedPolicy
   using InputT = cub::detail::value_t<ValuesInputIteratorT>;
 
   // Tile state used for the decoupled look-back
-  using ScanByKeyTileStateT = ReduceByKeyScanTileState<AccumT, bool>;
+  using ScanByKeyTileStateT = ReduceByKeyScanTileState<AccumT, int>;
 
   /// Device-accessible allocation of temporary storage. When `nullptr`, the
   /// required allocation size is written to `temp_storage_bytes` and no work

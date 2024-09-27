@@ -142,10 +142,10 @@ struct AgentScanByKey
 
   using KeyT               = cub::detail::value_t<KeysInputIteratorT>;
   using InputT             = cub::detail::value_t<ValuesInputIteratorT>;
-  using FlagValuePairT     = KeyValuePair<bool, AccumT>;
+  using FlagValuePairT     = KeyValuePair<int, AccumT>;
   using ReduceBySegmentOpT = ScanBySegmentOp<ScanOpT>;
 
-  using ScanTileStateT = ReduceByKeyScanTileState<AccumT, bool>;
+  using ScanTileStateT = ReduceByKeyScanTileState<AccumT, int>;
 
   // Constants
   // Inclusive scan if no init_value type is provided
