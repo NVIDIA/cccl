@@ -28,9 +28,9 @@ workflows:
     - {jobs: ['build'], std: 'all', cxx: ['gcc', 'clang'], cpu: 'arm64'}
     - {jobs: ['build'], std: 'all', cxx: ['gcc'], sm: '90a'}
     # default_projects: clang-cuda
-    - {jobs: ['build'], std: [17, 20], cudacxx: 'clang', cxx: 'clang'}
-    - {jobs: ['build'], std: [17, 20], cudacxx: 'clang', cxx: 'clang', sm: '90'}
-    - {jobs: ['build'], std: [17, 20], cudacxx: 'clang', cxx: 'clang', sm: '90a'}
+    - {jobs: ['build'], std: 'all', cudacxx: 'clang', cxx: 'clang'}
+    - {jobs: ['build'], std: 'all', cudacxx: 'clang', cxx: 'clang', sm: '90'}
+    - {jobs: ['build'], std: 'all', cudacxx: 'clang', cxx: 'clang', sm: '90a'}
     # nvrtc:
     - {jobs: ['nvrtc'], project: 'libcudacxx', std: 'all'}
     # verify-codegen:
