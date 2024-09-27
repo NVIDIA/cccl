@@ -20,11 +20,6 @@ endif()
 # GNUInstallDirs CMake module.
 enable_language(CXX)
 
-option(CUB_ENABLE_INSTALL_RULES "Enable installation of CUB" ${CUB_TOPLEVEL_PROJECT})
-if (CUB_ENABLE_INSTALL_RULES)
-  include(cmake/CubInstallRules.cmake)
-endif()
-
 # Support adding CUB to a parent project via add_subdirectory.
 # See examples/cmake/add_subdir/CMakeLists.txt for details.
 if (NOT CUB_TOPLEVEL_PROJECT)
