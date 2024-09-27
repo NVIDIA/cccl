@@ -31,11 +31,15 @@
  * https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#release-notes
  */
 
-// PTX ISA 8.3 is available from CUDA 12.3, driver r545
+// PTX ISA 8.5 is available from CUDA 12.5
 // The first define is for future major versions of CUDACC.
 // We make sure that these get the highest known PTX ISA version.
 #if (defined(_CCCL_CUDACC) && (_CCCL_CUDACC_VER_MAJOR > 12))
-#  define __cccl_ptx_isa 830ULL
+#  define __cccl_ptx_isa 850ULL
+#elif (defined(_CCCL_CUDACC) && (_CCCL_CUDACC_VER_MAJOR >= 12 && _CCCL_CUDACC_VER_MINOR >= 5))
+#  define __cccl_ptx_isa 850ULL
+#elif (defined(_CCCL_CUDACC) && (_CCCL_CUDACC_VER_MAJOR >= 12 && _CCCL_CUDACC_VER_MINOR >= 4))
+#  define __cccl_ptx_isa 840ULL
 #elif (defined(_CCCL_CUDACC) && (_CCCL_CUDACC_VER_MAJOR >= 12 && _CCCL_CUDACC_VER_MINOR >= 3))
 #  define __cccl_ptx_isa 830ULL
 // PTX ISA 8.2 is available from CUDA 12.2, driver r535
