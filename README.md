@@ -41,13 +41,14 @@ The sum of each block is then reduced to a single value using an atomic add via 
 
 It then shows how the same reduction can be done using Thrust's `reduce` algorithm and compares the results.
 
-[Try it live on Godbolt!](https://godbolt.org/z/x5vref488)
+[Try it live on Godbolt!](https://godbolt.org/z/aMx4j9f4T)
 
 ```cpp
 #include <thrust/execution_policy.h>
 #include <thrust/device_vector.h>
 #include <cub/block/block_reduce.cuh>
 #include <cuda/atomic>
+#include <cuda/cmath>
 #include <cuda/std/span>
 #include <cstdio>
 
@@ -64,7 +65,7 @@ __global__ void reduce(cuda::std::span<int const> data, cuda::std::span<int> res
   sum = BlockReduce(temp_storage).Sum(sum);
 
   if (threadIdx.x == 0) {
-    cuda::atomic_ref<int, cuda::thread_scope_device> atomic_result(*result.data());
+    cuda::atomic_ref<int, cuda::thread_scope_device> atomic_result(result.front());
     atomic_result.fetch_add(sum, cuda::memory_order_relaxed);
   }
 }
@@ -81,7 +82,7 @@ int main() {
 
   // Compute the sum reduction of `data` using a custom kernel
   constexpr int block_size = 256;
-  int const num_blocks = (N + block_size - 1) / block_size;
+  int const num_blocks = cuda::ceil_div(N, block_size);
   reduce<block_size><<<num_blocks, block_size>>>(cuda::std::span<int const>(thrust::raw_pointer_cast(data.data()), data.size()),
                                                  cuda::std::span<int>(thrust::raw_pointer_cast(kernel_result.data()), 1));
 
