@@ -33,7 +33,7 @@ struct barrier_and_token
   {}
 };
 
-template <template <typename> typename Barrier>
+template <template <typename> class Barrier>
 struct barrier_and_token_with_completion
 {
   struct completion_t
