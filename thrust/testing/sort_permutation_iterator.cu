@@ -61,32 +61,14 @@ void TestSortPermutationIterator()
 {
   using Iterator = typename Vector::iterator;
 
-  Vector A(10);
-  A[0] = 2;
-  A[1] = 9;
-  A[2] = 0;
-  A[3] = 1;
-  A[4] = 5;
-  A[5] = 3;
-  A[6] = 8;
-  A[7] = 6;
-  A[8] = 7;
-  A[9] = 4;
+  Vector A{2, 9, 0, 1, 5, 3, 8, 6, 7, 4};
 
   strided_range<Iterator> S(A.begin(), A.end(), 2);
 
   thrust::sort(S.begin(), S.end());
 
-  ASSERT_EQUAL(A[0], 0);
-  ASSERT_EQUAL(A[1], 9);
-  ASSERT_EQUAL(A[2], 2);
-  ASSERT_EQUAL(A[3], 1);
-  ASSERT_EQUAL(A[4], 5);
-  ASSERT_EQUAL(A[5], 3);
-  ASSERT_EQUAL(A[6], 7);
-  ASSERT_EQUAL(A[7], 6);
-  ASSERT_EQUAL(A[8], 8);
-  ASSERT_EQUAL(A[9], 4);
+  Vector ref{0, 9, 2, 1, 5, 3, 7, 6, 8, 4};
+  ASSERT_EQUAL(A, ref);
 }
 DECLARE_VECTOR_UNITTEST(TestSortPermutationIterator);
 
@@ -95,32 +77,14 @@ void TestStableSortPermutationIterator()
 {
   using Iterator = typename Vector::iterator;
 
-  Vector A(10);
-  A[0] = 2;
-  A[1] = 9;
-  A[2] = 0;
-  A[3] = 1;
-  A[4] = 5;
-  A[5] = 3;
-  A[6] = 8;
-  A[7] = 6;
-  A[8] = 7;
-  A[9] = 4;
+  Vector A{2, 9, 0, 1, 5, 3, 8, 6, 7, 4};
 
   strided_range<Iterator> S(A.begin(), A.end(), 2);
 
   thrust::stable_sort(S.begin(), S.end());
 
-  ASSERT_EQUAL(A[0], 0);
-  ASSERT_EQUAL(A[1], 9);
-  ASSERT_EQUAL(A[2], 2);
-  ASSERT_EQUAL(A[3], 1);
-  ASSERT_EQUAL(A[4], 5);
-  ASSERT_EQUAL(A[5], 3);
-  ASSERT_EQUAL(A[6], 7);
-  ASSERT_EQUAL(A[7], 6);
-  ASSERT_EQUAL(A[8], 8);
-  ASSERT_EQUAL(A[9], 4);
+  Vector ref{0, 9, 2, 1, 5, 3, 7, 6, 8, 4};
+  ASSERT_EQUAL(A, ref);
 }
 DECLARE_VECTOR_UNITTEST(TestStableSortPermutationIterator);
 
@@ -129,46 +93,19 @@ void TestSortByKeyPermutationIterator()
 {
   using Iterator = typename Vector::iterator;
 
-  // clang-format off
-  Vector A(10), B(10);
-  A[0] = 2; B[0] = 0;
-  A[1] = 9; B[1] = 1;
-  A[2] = 0; B[2] = 2;
-  A[3] = 1; B[3] = 3;
-  A[4] = 5; B[4] = 4;
-  A[5] = 3; B[5] = 5;
-  A[6] = 8; B[6] = 6;
-  A[7] = 6; B[7] = 7;
-  A[8] = 7; B[8] = 8;
-  A[9] = 4; B[9] = 9;
-  // clang-format on
+  Vector A{2, 9, 0, 1, 5, 3, 8, 6, 7, 4};
+  Vector B{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
   strided_range<Iterator> S(A.begin(), A.end(), 2);
   strided_range<Iterator> T(B.begin(), B.end(), 2);
 
   thrust::sort_by_key(S.begin(), S.end(), T.begin());
 
-  ASSERT_EQUAL(A[0], 0);
-  ASSERT_EQUAL(A[1], 9);
-  ASSERT_EQUAL(A[2], 2);
-  ASSERT_EQUAL(A[3], 1);
-  ASSERT_EQUAL(A[4], 5);
-  ASSERT_EQUAL(A[5], 3);
-  ASSERT_EQUAL(A[6], 7);
-  ASSERT_EQUAL(A[7], 6);
-  ASSERT_EQUAL(A[8], 8);
-  ASSERT_EQUAL(A[9], 4);
+  Vector ref_A{0, 9, 2, 1, 5, 3, 7, 6, 8, 4};
+  ASSERT_EQUAL(A, ref_A);
 
-  ASSERT_EQUAL(B[0], 2);
-  ASSERT_EQUAL(B[1], 1);
-  ASSERT_EQUAL(B[2], 0);
-  ASSERT_EQUAL(B[3], 3);
-  ASSERT_EQUAL(B[4], 4);
-  ASSERT_EQUAL(B[5], 5);
-  ASSERT_EQUAL(B[6], 8);
-  ASSERT_EQUAL(B[7], 7);
-  ASSERT_EQUAL(B[8], 6);
-  ASSERT_EQUAL(B[9], 9);
+  Vector ref_B{2, 1, 0, 3, 4, 5, 8, 7, 6, 9};
+  ASSERT_EQUAL(B, ref_B);
 }
 DECLARE_VECTOR_UNITTEST(TestSortByKeyPermutationIterator);
 
@@ -177,45 +114,18 @@ void TestStableSortByKeyPermutationIterator()
 {
   using Iterator = typename Vector::iterator;
 
-  // clang-format off
-  Vector A(10), B(10);
-  A[0] = 2; B[0] = 0;
-  A[1] = 9; B[1] = 1;
-  A[2] = 0; B[2] = 2;
-  A[3] = 1; B[3] = 3;
-  A[4] = 5; B[4] = 4;
-  A[5] = 3; B[5] = 5;
-  A[6] = 8; B[6] = 6;
-  A[7] = 6; B[7] = 7;
-  A[8] = 7; B[8] = 8;
-  A[9] = 4; B[9] = 9;
-  // clang-format on
+  Vector A{2, 9, 0, 1, 5, 3, 8, 6, 7, 4};
+  Vector B{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
   strided_range<Iterator> S(A.begin(), A.end(), 2);
   strided_range<Iterator> T(B.begin(), B.end(), 2);
 
   thrust::stable_sort_by_key(S.begin(), S.end(), T.begin());
 
-  ASSERT_EQUAL(A[0], 0);
-  ASSERT_EQUAL(A[1], 9);
-  ASSERT_EQUAL(A[2], 2);
-  ASSERT_EQUAL(A[3], 1);
-  ASSERT_EQUAL(A[4], 5);
-  ASSERT_EQUAL(A[5], 3);
-  ASSERT_EQUAL(A[6], 7);
-  ASSERT_EQUAL(A[7], 6);
-  ASSERT_EQUAL(A[8], 8);
-  ASSERT_EQUAL(A[9], 4);
+  Vector ref_A{0, 9, 2, 1, 5, 3, 7, 6, 8, 4};
+  ASSERT_EQUAL(A, ref_A);
 
-  ASSERT_EQUAL(B[0], 2);
-  ASSERT_EQUAL(B[1], 1);
-  ASSERT_EQUAL(B[2], 0);
-  ASSERT_EQUAL(B[3], 3);
-  ASSERT_EQUAL(B[4], 4);
-  ASSERT_EQUAL(B[5], 5);
-  ASSERT_EQUAL(B[6], 8);
-  ASSERT_EQUAL(B[7], 7);
-  ASSERT_EQUAL(B[8], 6);
-  ASSERT_EQUAL(B[9], 9);
+  Vector ref_B{2, 1, 0, 3, 4, 5, 8, 7, 6, 9};
+  ASSERT_EQUAL(B, ref_B);
 }
 DECLARE_VECTOR_UNITTEST(TestStableSortByKeyPermutationIterator);

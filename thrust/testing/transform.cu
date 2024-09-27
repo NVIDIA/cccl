@@ -23,15 +23,9 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformUnarySimple()
 
   typename Vector::iterator iter;
 
-  Vector input(3);
+  Vector input{1, -2, 3};
   Vector output(3);
-  Vector result(3);
-  input[0]  = 1;
-  input[1]  = -2;
-  input[2]  = 3;
-  result[0] = -1;
-  result[1] = 2;
-  result[2] = -3;
+  Vector result{-1, 2, -3};
 
   iter = thrust::transform(input.begin(), input.end(), output.begin(), thrust::negate<T>());
 
@@ -83,15 +77,9 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfUnaryNoStencilSimple()
 
   typename Vector::iterator iter;
 
-  Vector input(3);
-  Vector output(3);
-  Vector result(3);
-
-  // clang-format off
-  input[0]   =  0; input[1]   = -2; input[2]   =  0;
-  output[0]  = -1; output[1]  = -2; output[2]  = -3;
-  result[0]  = -1; result[1]  =  2; result[2]  = -3;
-  // clang-format on
+  Vector input{0, -2, 0};
+  Vector output{-1, -2, -3};
+  Vector result{-1, 2, -3};
 
   iter = thrust::transform_if(input.begin(), input.end(), output.begin(), thrust::negate<T>(), thrust::identity<T>());
 
@@ -148,17 +136,10 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfUnarySimple()
 
   typename Vector::iterator iter;
 
-  Vector input(3);
-  Vector stencil(3);
-  Vector output(3);
-  Vector result(3);
-
-  // clang-format off
-  input[0]   =  1; input[1]   = -2; input[2]   =  3;
-  output[0]  =  1; output[1]  =  2; output[2]  =  3;
-  stencil[0] =  1; stencil[1] =  0; stencil[2] =  1;
-  result[0]  = -1; result[1]  =  2; result[2]  = -3;
-  // clang-format on
+  Vector input{1, -2, 3};
+  Vector stencil{1, 0, 1};
+  Vector output{1, 2, 3};
+  Vector result{-1, 2, -3};
 
   iter = thrust::transform_if(
     input.begin(), input.end(), stencil.begin(), output.begin(), thrust::negate<T>(), thrust::identity<T>());
@@ -223,16 +204,10 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformBinarySimple()
   // There is a strange gcc bug here where it belives we would write out of bounds.
   // It seems to go away if we add one more element that we leave untouched. Luckily 0 - 0 = 0 so all is fine.
   // Note that we still write the element, so it does not hide a functional thrust bug
-  Vector input1(4);
-  Vector input2(4);
-  Vector output(4);
-  Vector result(4);
-
-  // clang-format off
-  input1[0] =  1; input1[1] = -2; input1[2] =  3;
-  input2[0] = -4; input2[1] =  5; input2[2] =  6;
-  result[0] =  5; result[1] = -7; result[2] = -3;
-  // clang-format on
+  Vector input1{1, -2, 3};
+  Vector input2{-4, 5, 6};
+  Vector output(3);
+  Vector result{5, -7, -3};
 
   iter = thrust::transform(input1.begin(), input1.end(), input2.begin(), output.begin(), thrust::minus<T>());
 
@@ -289,19 +264,11 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformIfBinarySimple()
 
   typename Vector::iterator iter;
 
-  Vector input1(3);
-  Vector input2(3);
-  Vector stencil(3);
-  Vector output(3);
-  Vector result(3);
-
-  // clang-format off
-  input1[0]  =  1; input1[1]  = -2; input1[2]  =  3;
-  input2[0]  = -4; input2[1]  =  5; input2[2]  =  6;
-  stencil[0] =  0; stencil[1] =  1; stencil[2] =  0;
-  output[0]  =  1; output[1]  =  2; output[2]  =  3;
-  result[0]  =  5; result[1]  =  2; result[2]  = -3;
-  // clang-format on
+  Vector input1{1, -2, 3};
+  Vector input2{-4, 5, 6};
+  Vector stencil{0, 1, 0};
+  Vector output{1, 2, 3};
+  Vector result{5, 2, -3};
 
   thrust::identity<T> identity;
 
@@ -768,37 +735,16 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformWithIndirection()
   // add numbers modulo 3 with external lookup table
   using T = typename Vector::value_type;
 
-  Vector input1(7);
-  Vector input2(7);
+  Vector input1{0, 1, 2, 1, 2, 0, 1};
+  Vector input2{2, 2, 2, 0, 2, 1, 0};
   Vector output(7, 0);
 
-  // clang-format off
-  input1[0] = 0;  input2[0] = 2;
-  input1[1] = 1;  input2[1] = 2;
-  input1[2] = 2;  input2[2] = 2;
-  input1[3] = 1;  input2[3] = 0;
-  input1[4] = 2;  input2[4] = 2;
-  input1[5] = 0;  input2[5] = 1;
-  input1[6] = 1;  input2[6] = 0;
-  // clang-format on
-
-  Vector table(6);
-  table[0] = 0;
-  table[1] = 1;
-  table[2] = 2;
-  table[3] = 0;
-  table[4] = 1;
-  table[5] = 2;
+  Vector table{0, 1, 2, 0, 1, 2};
 
   thrust::transform(
     input1.begin(), input1.end(), input2.begin(), output.begin(), plus_mod3<T>(thrust::raw_pointer_cast(&table[0])));
 
-  ASSERT_EQUAL(output[0], T(2));
-  ASSERT_EQUAL(output[1], T(0));
-  ASSERT_EQUAL(output[2], T(1));
-  ASSERT_EQUAL(output[3], T(1));
-  ASSERT_EQUAL(output[4], T(1));
-  ASSERT_EQUAL(output[5], T(1));
-  ASSERT_EQUAL(output[6], T(1));
+  Vector ref{2, 0, 1, 1, 1, 1, 1};
+  ASSERT_EQUAL(output, ref);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestTransformWithIndirection);

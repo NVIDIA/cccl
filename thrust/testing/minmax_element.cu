@@ -6,13 +6,7 @@
 template <class Vector>
 void TestMinMaxElementSimple()
 {
-  Vector data(6);
-  data[0] = 3;
-  data[1] = 5;
-  data[2] = 1;
-  data[3] = 2;
-  data[4] = 5;
-  data[5] = 1;
+  Vector data{3, 5, 1, 2, 5, 1};
 
   ASSERT_EQUAL(*thrust::minmax_element(data.begin(), data.end()).first, 1);
   ASSERT_EQUAL(*thrust::minmax_element(data.begin(), data.end()).second, 5);
@@ -26,13 +20,7 @@ void TestMinMaxElementWithTransform()
 {
   using T = typename Vector::value_type;
 
-  Vector data(6);
-  data[0] = 3;
-  data[1] = 5;
-  data[2] = 1;
-  data[3] = 2;
-  data[4] = 5;
-  data[5] = 1;
+  Vector data{3, 5, 1, 2, 5, 1};
 
   ASSERT_EQUAL(*thrust::minmax_element(thrust::make_transform_iterator(data.begin(), thrust::negate<T>()),
                                        thrust::make_transform_iterator(data.end(), thrust::negate<T>()))

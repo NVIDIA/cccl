@@ -72,7 +72,8 @@ template <class _Tp, class... _Properties>
 class uninitialized_async_buffer
 {
 private:
-  ::cuda::experimental::mr::async_any_resource<_Properties...> __mr_;
+  using __async_resource = ::cuda::experimental::mr::any_async_resource<_Properties...>;
+  __async_resource __mr_;
   ::cuda::stream_ref __stream_ = {};
   size_t __count_              = 0;
   void* __buf_                 = nullptr;
@@ -127,9 +128,7 @@ public:
   //! @param __count The desired size of the buffer.
   //! @note Depending on the alignment requirements of `T` the size of the underlying allocation might be larger
   //! than `count * sizeof(T)`. Only allocates memory when \p __count > 0
-  uninitialized_async_buffer(::cuda::experimental::mr::async_any_resource<_Properties...> __mr,
-                             const ::cuda::stream_ref __stream,
-                             const size_t __count)
+  uninitialized_async_buffer(__async_resource __mr, const ::cuda::stream_ref __stream, const size_t __count)
       : __mr_(_CUDA_VSTD::move(__mr))
       , __stream_(__stream)
       , __count_(__count)
@@ -205,12 +204,12 @@ public:
   }
 
   //! @rst
-  //! Returns an :ref:`asnyc_resource_ref <libcudacxx-extended-api-memory-resources-resource-ref>` to the resource used
-  //! to allocate the buffer
+  //! Returns a \c const reference to the :ref:`any_async_resource <cudax-memory-resource-any-async-resource>`
+  //! that holds the memory resource used to allocate the buffer
   //! @endrst
-  _CCCL_NODISCARD _CUDA_VMR::async_resource_ref<_Properties...> get_resource() const noexcept
+  _CCCL_NODISCARD const __async_resource& get_resource() const noexcept
   {
-    return _CUDA_VMR::async_resource_ref<_Properties...>{const_cast<uninitialized_async_buffer*>(this)->__mr_};
+    return __mr_;
   }
 
   //! @brief Returns the stored stream

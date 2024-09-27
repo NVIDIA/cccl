@@ -99,7 +99,7 @@ struct dispatch_t : PolicyHubT
     constexpr int items_per_thread = ActivePolicyT::for_policy_t::items_per_thread;
 
     const auto tile_size = static_cast<OffsetT>(block_threads * items_per_thread);
-    const auto num_tiles = cub::DivideAndRoundUp(num_items, tile_size);
+    const auto num_tiles = ::cuda::ceil_div(num_items, tile_size);
 
 #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
     _CubLog("Invoking detail::for_each::dynamic_kernel<<<%d, %d, 0, %lld>>>(), "
@@ -144,7 +144,7 @@ struct dispatch_t : PolicyHubT
     constexpr int items_per_thread = ActivePolicyT::for_policy_t::items_per_thread;
 
     const auto tile_size = static_cast<OffsetT>(block_threads * items_per_thread);
-    const auto num_tiles = cub::DivideAndRoundUp(num_items, tile_size);
+    const auto num_tiles = ::cuda::ceil_div(num_items, tile_size);
 
 #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
     _CubLog("Invoking detail::for_each::static_kernel<<<%d, %d, 0, %lld>>>(), "

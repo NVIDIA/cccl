@@ -78,19 +78,16 @@ void TestAdjacentDifferenceCudaStreams()
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  thrust::device_vector<int> input(3);
-  thrust::device_vector<int> output(3);
-  input[0] = 1;
-  input[1] = 4;
-  input[2] = 6;
+  thrust::device_vector<int> input{1, 4, 6};
+  thrust::device_vector<int> output(input.size());
 
   thrust::adjacent_difference(thrust::cuda::par.on(s), input.begin(), input.end(), output.begin());
 
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(output[0], 1);
-  ASSERT_EQUAL(output[1], 3);
-  ASSERT_EQUAL(output[2], 2);
+  thrust::device_vector<int> ref{1, 3, 2};
+
+  ASSERT_EQUAL(output, ref);
 
   cudaStreamDestroy(s);
 }

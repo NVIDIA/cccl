@@ -44,33 +44,16 @@ DECLARE_UNITTEST(TestSwapRangesDispatchImplicit);
 template <class Vector>
 void TestSwapRangesSimple()
 {
-  Vector v1(5);
-  v1[0] = 0;
-  v1[1] = 1;
-  v1[2] = 2;
-  v1[3] = 3;
-  v1[4] = 4;
-
-  Vector v2(5);
-  v2[0] = 5;
-  v2[1] = 6;
-  v2[2] = 7;
-  v2[3] = 8;
-  v2[4] = 9;
+  Vector v1{0, 1, 2, 3, 4};
+  Vector v2{5, 6, 7, 8, 9};
 
   thrust::swap_ranges(v1.begin(), v1.end(), v2.begin());
 
-  ASSERT_EQUAL(v1[0], 5);
-  ASSERT_EQUAL(v1[1], 6);
-  ASSERT_EQUAL(v1[2], 7);
-  ASSERT_EQUAL(v1[3], 8);
-  ASSERT_EQUAL(v1[4], 9);
+  Vector ref1{5, 6, 7, 8, 9};
+  ASSERT_EQUAL(v1, ref1);
 
-  ASSERT_EQUAL(v2[0], 0);
-  ASSERT_EQUAL(v2[1], 1);
-  ASSERT_EQUAL(v2[2], 2);
-  ASSERT_EQUAL(v2[3], 3);
-  ASSERT_EQUAL(v2[4], 4);
+  Vector ref2{0, 1, 2, 3, 4};
+  ASSERT_EQUAL(v2, ref2);
 }
 DECLARE_VECTOR_UNITTEST(TestSwapRangesSimple);
 

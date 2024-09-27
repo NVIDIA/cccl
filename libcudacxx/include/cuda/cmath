@@ -21,22 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_integral.h>
+#include <cuda/__cmath/ceil_div.h>
 #include <cuda/std/cmath>
-#include <cuda/std/detail/libcxx/include/__debug>
-
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
-
-template <class _Tp, _CUDA_VSTD::__enable_if_t<_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Tp), int> = 0>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp ceil_div(const _Tp __a, const _Tp __b) noexcept
-{
-  _LIBCUDACXX_DEBUG_ASSERT(__a >= _Tp(0), "cuda::ceil_div: a must be non negative");
-  _LIBCUDACXX_DEBUG_ASSERT(__b > _Tp(0), "cuda::ceil_div: b must be positive");
-  const _Tp __res = static_cast<_Tp>(__a / __b);
-  return static_cast<_Tp>(__res + (__res * __b != __a));
-}
-
-_LIBCUDACXX_END_NAMESPACE_CUDA
 
 #endif // _CUDA_CMATH

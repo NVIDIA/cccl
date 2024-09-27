@@ -389,7 +389,7 @@ struct DispatchScanByKey : SelectedPolicy
 
       // Number of input tiles
       int tile_size = Policy::BLOCK_THREADS * Policy::ITEMS_PER_THREAD;
-      int num_tiles = static_cast<int>(cub::DivideAndRoundUp(num_items, tile_size));
+      int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
 
       // Specify temporary storage allocation requirements
       size_t allocation_sizes[2];
@@ -435,7 +435,7 @@ struct DispatchScanByKey : SelectedPolicy
       }
 
       // Log init_kernel configuration
-      int init_grid_size = cub::DivideAndRoundUp(num_tiles, INIT_KERNEL_THREADS);
+      int init_grid_size = ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS);
 #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
       _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
 #endif // CUB_DETAIL_DEBUG_ENABLE_LOG
