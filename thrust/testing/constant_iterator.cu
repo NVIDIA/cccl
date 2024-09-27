@@ -121,10 +121,8 @@ void TestConstantIteratorCopy()
   ConstIter last  = first + result.size();
   thrust::copy(first, last, result.begin());
 
-  ASSERT_EQUAL(7, result[0]);
-  ASSERT_EQUAL(7, result[1]);
-  ASSERT_EQUAL(7, result[2]);
-  ASSERT_EQUAL(7, result[3]);
+  Vector ref(4, 7);
+  ASSERT_EQUAL(ref, result);
 };
 DECLARE_VECTOR_UNITTEST(TestConstantIteratorCopy);
 
@@ -144,17 +142,13 @@ void TestConstantIteratorTransform()
 
   thrust::transform(first1, last1, result.begin(), thrust::negate<T>());
 
-  ASSERT_EQUAL(-7, result[0]);
-  ASSERT_EQUAL(-7, result[1]);
-  ASSERT_EQUAL(-7, result[2]);
-  ASSERT_EQUAL(-7, result[3]);
+  Vector ref(4, -7);
+  ASSERT_EQUAL(ref, result);
 
   thrust::transform(first1, last1, first2, result.begin(), thrust::plus<T>());
 
-  ASSERT_EQUAL(10, result[0]);
-  ASSERT_EQUAL(10, result[1]);
-  ASSERT_EQUAL(10, result[2]);
-  ASSERT_EQUAL(10, result[3]);
+  ref = Vector(4, 10);
+  ASSERT_EQUAL(ref, result);
 };
 DECLARE_VECTOR_UNITTEST(TestConstantIteratorTransform);
 

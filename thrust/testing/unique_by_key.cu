@@ -120,30 +120,14 @@ template <typename Vector>
 void initialize_keys(Vector& keys)
 {
   keys.resize(9);
-  keys[0] = 11;
-  keys[1] = 11;
-  keys[2] = 21;
-  keys[3] = 20;
-  keys[4] = 21;
-  keys[5] = 21;
-  keys[6] = 21;
-  keys[7] = 37;
-  keys[8] = 37;
+  keys = {11, 11, 21, 20, 21, 21, 21, 37, 37};
 }
 
 template <typename Vector>
 void initialize_values(Vector& values)
 {
   values.resize(9);
-  values[0] = 0;
-  values[1] = 1;
-  values[2] = 2;
-  values[3] = 3;
-  values[4] = 4;
-  values[5] = 5;
-  values[6] = 6;
-  values[7] = 7;
-  values[8] = 8;
+  values = {0, 1, 2, 3, 4, 5, 6, 7, 8};
 }
 
 template <typename Vector>
@@ -164,17 +148,13 @@ void TestUniqueByKeySimple()
 
   ASSERT_EQUAL(new_last.first - keys.begin(), 5);
   ASSERT_EQUAL(new_last.second - values.begin(), 5);
-  ASSERT_EQUAL(keys[0], 11);
-  ASSERT_EQUAL(keys[1], 21);
-  ASSERT_EQUAL(keys[2], 20);
-  ASSERT_EQUAL(keys[3], 21);
-  ASSERT_EQUAL(keys[4], 37);
+  keys.resize(5);
+  values.resize(5);
+  Vector keys_ref{11, 21, 20, 21, 37};
+  ASSERT_EQUAL(keys, keys_ref);
 
-  ASSERT_EQUAL(values[0], 0);
-  ASSERT_EQUAL(values[1], 2);
-  ASSERT_EQUAL(values[2], 3);
-  ASSERT_EQUAL(values[3], 4);
-  ASSERT_EQUAL(values[4], 7);
+  Vector values_ref{0, 2, 3, 4, 7};
+  ASSERT_EQUAL(values, values_ref);
 
   // test BinaryPredicate
   initialize_keys(keys);
@@ -184,13 +164,15 @@ void TestUniqueByKeySimple()
 
   ASSERT_EQUAL(new_last.first - keys.begin(), 3);
   ASSERT_EQUAL(new_last.second - values.begin(), 3);
-  ASSERT_EQUAL(keys[0], 11);
-  ASSERT_EQUAL(keys[1], 21);
-  ASSERT_EQUAL(keys[2], 37);
+  keys_ref.resize(3);
+  keys.resize(3);
+  keys_ref = {11, 21, 37};
+  ASSERT_EQUAL(keys, keys_ref);
 
-  ASSERT_EQUAL(values[0], 0);
-  ASSERT_EQUAL(values[1], 2);
-  ASSERT_EQUAL(values[2], 7);
+  values.resize(3);
+  values_ref.resize(3);
+  values_ref = {0, 2, 7};
+  ASSERT_EQUAL(values, values_ref);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestUniqueByKeySimple);
 
@@ -216,17 +198,13 @@ void TestUniqueCopyByKeySimple()
 
   ASSERT_EQUAL(new_last.first - output_keys.begin(), 5);
   ASSERT_EQUAL(new_last.second - output_values.begin(), 5);
-  ASSERT_EQUAL(output_keys[0], 11);
-  ASSERT_EQUAL(output_keys[1], 21);
-  ASSERT_EQUAL(output_keys[2], 20);
-  ASSERT_EQUAL(output_keys[3], 21);
-  ASSERT_EQUAL(output_keys[4], 37);
+  output_keys.resize(5);
+  output_values.resize(5);
+  Vector keys_ref{11, 21, 20, 21, 37};
+  ASSERT_EQUAL(output_keys, keys_ref);
 
-  ASSERT_EQUAL(output_values[0], 0);
-  ASSERT_EQUAL(output_values[1], 2);
-  ASSERT_EQUAL(output_values[2], 3);
-  ASSERT_EQUAL(output_values[3], 4);
-  ASSERT_EQUAL(output_values[4], 7);
+  Vector values_ref{0, 2, 3, 4, 7};
+  ASSERT_EQUAL(output_values, values_ref);
 
   // test BinaryPredicate
   initialize_keys(keys);
@@ -237,13 +215,14 @@ void TestUniqueCopyByKeySimple()
 
   ASSERT_EQUAL(new_last.first - output_keys.begin(), 3);
   ASSERT_EQUAL(new_last.second - output_values.begin(), 3);
-  ASSERT_EQUAL(output_keys[0], 11);
-  ASSERT_EQUAL(output_keys[1], 21);
-  ASSERT_EQUAL(output_keys[2], 37);
+  output_keys.resize(3);
+  output_values.resize(3);
+  keys_ref = {11, 21, 37};
+  ASSERT_EQUAL(output_keys, keys_ref);
 
-  ASSERT_EQUAL(output_values[0], 0);
-  ASSERT_EQUAL(output_values[1], 2);
-  ASSERT_EQUAL(output_values[2], 7);
+  values_ref.resize(3);
+  values_ref = {0, 2, 7};
+  ASSERT_EQUAL(output_values, values_ref);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestUniqueCopyByKeySimple);
 

@@ -28,22 +28,12 @@ void TestReplaceSimple()
 {
   using T = typename Vector::value_type;
 
-  Vector data(5);
-  data[0] = 1;
-  data[1] = 2;
-  data[2] = 1;
-  data[3] = 3;
-  data[4] = 2;
+  Vector data{1, 2, 1, 3, 2};
 
   thrust::replace(data.begin(), data.end(), (T) 1, (T) 4);
   thrust::replace(data.begin(), data.end(), (T) 2, (T) 5);
 
-  Vector result(5);
-  result[0] = 4;
-  result[1] = 5;
-  result[2] = 4;
-  result[3] = 3;
-  result[4] = 5;
+  Vector result{4, 5, 4, 3, 5};
 
   ASSERT_EQUAL(data, result);
 }
@@ -101,29 +91,18 @@ DECLARE_VARIABLE_UNITTEST(TestReplace);
 #ifndef THRUST_GCC13_TBB_MISCOMPILE
 #  ifndef THRUST_GCC12_OMP_MISCOMPILE
 template <class Vector>
-void TestReplaceCopySimple()
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopySimple()
 {
   using T = typename Vector::value_type;
 
-  Vector data(5);
-  data[0] = 1;
-  data[1] = 2;
-  data[2] = 1;
-  data[3] = 3;
-  data[4] = 2;
+  Vector data{1, 2, 1, 3, 2};
 
   Vector dest(5);
 
   thrust::replace_copy(data.begin(), data.end(), dest.begin(), (T) 1, (T) 4);
   thrust::replace_copy(dest.begin(), dest.end(), dest.begin(), (T) 2, (T) 5);
 
-  Vector result(5);
-  result[0] = 4;
-  result[1] = 5;
-  result[2] = 4;
-  result[3] = 3;
-  result[4] = 5;
-
+  Vector result{4, 5, 4, 3, 5};
   ASSERT_EQUAL(dest, result);
 }
 DECLARE_VECTOR_UNITTEST(TestReplaceCopySimple);
@@ -222,21 +201,11 @@ void TestReplaceIfSimple()
 {
   using T = typename Vector::value_type;
 
-  Vector data(5);
-  data[0] = 1;
-  data[1] = 3;
-  data[2] = 4;
-  data[3] = 6;
-  data[4] = 5;
+  Vector data{1, 3, 4, 6, 5};
 
   thrust::replace_if(data.begin(), data.end(), less_than_five<T>(), (T) 0);
 
-  Vector result(5);
-  result[0] = 0;
-  result[1] = 0;
-  result[2] = 0;
-  result[3] = 6;
-  result[4] = 5;
+  Vector result{0, 0, 0, 6, 5};
 
   ASSERT_EQUAL(data, result);
 }
@@ -280,28 +249,12 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceIfStencilSimple()
 {
   using T = typename Vector::value_type;
 
-  Vector data(5);
-  data[0] = 1;
-  data[1] = 3;
-  data[2] = 4;
-  data[3] = 6;
-  data[4] = 5;
+  Vector data{1, 3, 4, 6, 5};
 
-  Vector stencil(5);
-  stencil[0] = 5;
-  stencil[1] = 4;
-  stencil[2] = 6;
-  stencil[3] = 3;
-  stencil[4] = 7;
-
+  Vector stencil{5, 4, 6, 3, 7};
   thrust::replace_if(data.begin(), data.end(), stencil.begin(), less_than_five<T>(), (T) 0);
 
-  Vector result(5);
-  result[0] = 1;
-  result[1] = 0;
-  result[2] = 4;
-  result[3] = 0;
-  result[4] = 5;
+  Vector result{1, 0, 4, 0, 5};
 
   ASSERT_EQUAL(data, result);
 }
@@ -375,24 +328,13 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopyIfSimple()
 {
   using T = typename Vector::value_type;
 
-  Vector data(5);
-  data[0] = 1;
-  data[1] = 3;
-  data[2] = 4;
-  data[3] = 6;
-  data[4] = 5;
+  Vector data{1, 3, 4, 6, 5};
 
   Vector dest(5);
 
   thrust::replace_copy_if(data.begin(), data.end(), dest.begin(), less_than_five<T>(), (T) 0);
 
-  Vector result(5);
-  result[0] = 0;
-  result[1] = 0;
-  result[2] = 0;
-  result[3] = 6;
-  result[4] = 5;
-
+  Vector result{0, 0, 0, 6, 5};
   ASSERT_EQUAL(dest, result);
 }
 DECLARE_VECTOR_UNITTEST(TestReplaceCopyIfSimple);
@@ -439,30 +381,14 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestReplaceCopyIfStencilSimple()
 {
   using T = typename Vector::value_type;
 
-  Vector data(5);
-  data[0] = 1;
-  data[1] = 3;
-  data[2] = 4;
-  data[3] = 6;
-  data[4] = 5;
-
-  Vector stencil(5);
-  stencil[0] = 1;
-  stencil[1] = 5;
-  stencil[2] = 4;
-  stencil[3] = 7;
-  stencil[4] = 8;
+  Vector data{1, 3, 4, 6, 5};
+  Vector stencil{1, 5, 4, 7, 8};
 
   Vector dest(5);
 
   thrust::replace_copy_if(data.begin(), data.end(), stencil.begin(), dest.begin(), less_than_five<T>(), (T) 0);
 
-  Vector result(5);
-  result[0] = 0;
-  result[1] = 3;
-  result[2] = 0;
-  result[3] = 6;
-  result[4] = 5;
+  Vector result{0, 3, 0, 6, 5};
 
   ASSERT_EQUAL(dest, result);
 }

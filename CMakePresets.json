@@ -82,7 +82,6 @@
       "cacheVariables": {
         "CCCL_ENABLE_LIBCUDACXX": true,
         "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": false,
-        "libcudacxx_ENABLE_CMAKE_TESTS": false,
         "libcudacxx_ENABLE_CODEGEN": true,
         "LIBCUDACXX_ENABLE_CUDA": false
       }
@@ -472,18 +471,6 @@
       "inherits": "all-dev"
     },
     {
-      "name": "libcudacxx-ctest-base",
-      "hidden": true,
-      "inherits": [
-        "base"
-      ],
-      "filter": {
-        "exclude": {
-          "name": "^libcudacxx\\.test\\.(lit|atomics\\.codegen\\.diff)$"
-        }
-      }
-    },
-    {
       "name": "libcudacxx-codegen",
       "configurePreset": "libcudacxx-codegen",
       "filter": {
@@ -491,34 +478,6 @@
           "name": "^libcudacxx\\.test\\.atomics\\.codegen.*$"
         }
       }
-    },
-    {
-      "name": "libcudacxx-ctest-cpp11",
-      "configurePreset": "libcudacxx-cpp11",
-      "inherits": [
-        "libcudacxx-ctest-base"
-      ]
-    },
-    {
-      "name": "libcudacxx-ctest-cpp14",
-      "configurePreset": "libcudacxx-cpp14",
-      "inherits": [
-        "libcudacxx-ctest-base"
-      ]
-    },
-    {
-      "name": "libcudacxx-ctest-cpp17",
-      "configurePreset": "libcudacxx-cpp17",
-      "inherits": [
-        "libcudacxx-ctest-base"
-      ]
-    },
-    {
-      "name": "libcudacxx-ctest-cpp20",
-      "configurePreset": "libcudacxx-cpp20",
-      "inherits": [
-        "libcudacxx-ctest-base"
-      ]
     },
     {
       "name": "libcudacxx-lit-base",

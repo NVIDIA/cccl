@@ -38,12 +38,6 @@ endif()
 # GNUInstallDirs CMake module.
 enable_language(CXX)
 
-# Optionally include installation rules for non-top-level builds:
-option(THRUST_ENABLE_INSTALL_RULES "Enable installation of Thrust" ${THRUST_TOPLEVEL_PROJECT})
-if (THRUST_ENABLE_INSTALL_RULES)
-  include(cmake/ThrustInstallRules.cmake)
-endif()
-
 # Support adding Thrust to a parent project via add_subdirectory.
 # See examples/cmake/add_subdir/CMakeLists.txt for details.
 if (NOT THRUST_TOPLEVEL_PROJECT)

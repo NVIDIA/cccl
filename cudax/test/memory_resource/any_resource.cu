@@ -129,4 +129,21 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
 
   // Reset the counters:
   this->counts = Counts();
+
+  SECTION("make_any_resource")
+  {
+    Counts expected{};
+    CHECK(this->counts == expected);
+    {
+      cudax::mr::any_resource<> mr = cudax::mr::make_any_resource<TestResource>(42, this);
+      expected.new_count += is_big;
+      ++expected.object_count;
+      CHECK(this->counts == expected);
+    }
+    expected.delete_count += is_big;
+    --expected.object_count;
+    CHECK(this->counts == expected);
+  }
+  // Reset the counters:
+  this->counts = Counts();
 }

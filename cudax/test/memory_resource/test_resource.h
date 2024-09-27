@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cuda_runtime_api.h>
+
 #include <cstddef>
 #include <cstdint>
 
@@ -11,14 +13,16 @@ using std::uintptr_t;
 
 struct Counts
 {
-  int object_count     = 0;
-  int move_count       = 0;
-  int copy_count       = 0;
-  int allocate_count   = 0;
-  int deallocate_count = 0;
-  int equal_to_count   = 0;
-  int new_count        = 0;
-  int delete_count     = 0;
+  int object_count           = 0;
+  int move_count             = 0;
+  int copy_count             = 0;
+  int allocate_count         = 0;
+  int deallocate_count       = 0;
+  int allocate_async_count   = 0;
+  int deallocate_async_count = 0;
+  int equal_to_count         = 0;
+  int new_count              = 0;
+  int delete_count           = 0;
 
   friend std::ostream& operator<<(std::ostream& os, const Counts& counts)
   {
@@ -28,6 +32,8 @@ struct Counts
         << "copy: " << counts.copy_count << ", " //
         << "allocate: " << counts.allocate_count << ", " //
         << "deallocate: " << counts.deallocate_count << ", " //
+        << "allocate_async: " << counts.allocate_async_count << ", " //
+        << "deallocate_async: " << counts.deallocate_async_count << ", " //
         << "equal_to: " << counts.equal_to_count << ", " //
         << "new: " << counts.new_count << ", " //
         << "delete: " << counts.delete_count;
@@ -40,6 +46,8 @@ struct Counts
            lhs.copy_count == rhs.copy_count && //
            lhs.allocate_count == rhs.allocate_count && //
            lhs.deallocate_count == rhs.deallocate_count && //
+           lhs.allocate_async_count == rhs.allocate_async_count && //
+           lhs.deallocate_async_count == rhs.deallocate_async_count && //
            lhs.equal_to_count == rhs.equal_to_count && //
            lhs.new_count == rhs.new_count && //
            lhs.delete_count == rhs.delete_count; //
@@ -136,6 +144,25 @@ struct test_resource
     CHECK(bytes == fixture->bytes_);
     CHECK(align == fixture->align_);
     ++fixture->counts.deallocate_count;
+    return;
+  }
+
+  void* allocate_async(std::size_t bytes, std::size_t align, ::cuda::stream_ref)
+  {
+    _assert_valid();
+    CHECK(bytes == fixture->bytes_);
+    CHECK(align == fixture->align_);
+    ++fixture->counts.allocate_async_count;
+    return fixture;
+  }
+
+  void deallocate_async(void* ptr, std::size_t bytes, std::size_t align, ::cuda::stream_ref) noexcept
+  {
+    _assert_valid();
+    CHECK(ptr == fixture);
+    CHECK(bytes == fixture->bytes_);
+    CHECK(align == fixture->align_);
+    ++fixture->counts.deallocate_async_count;
     return;
   }
 

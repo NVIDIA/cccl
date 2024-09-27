@@ -21,12 +21,7 @@ void TestCopyFromConstIterator()
 {
   using T = int;
 
-  std::vector<T> v(5);
-  v[0] = 0;
-  v[1] = 1;
-  v[2] = 2;
-  v[3] = 3;
-  v[4] = 4;
+  std::vector<T> v{0, 1, 2, 3, 4};
 
   std::vector<int>::const_iterator begin = v.begin();
   std::vector<int>::const_iterator end   = v.end();
@@ -34,21 +29,16 @@ void TestCopyFromConstIterator()
   // copy to host_vector
   thrust::host_vector<T> h(5, (T) 10);
   thrust::host_vector<T>::iterator h_result = thrust::copy(begin, end, h.begin());
-  ASSERT_EQUAL(h[0], 0);
-  ASSERT_EQUAL(h[1], 1);
-  ASSERT_EQUAL(h[2], 2);
-  ASSERT_EQUAL(h[3], 3);
-  ASSERT_EQUAL(h[4], 4);
+
+  thrust::host_vector<T> href{0, 1, 2, 3, 4};
+  ASSERT_EQUAL(h, href);
   ASSERT_EQUAL_QUIET(h_result, h.end());
 
   // copy to device_vector
   thrust::device_vector<T> d(5, (T) 10);
   thrust::device_vector<T>::iterator d_result = thrust::copy(begin, end, d.begin());
-  ASSERT_EQUAL(d[0], 0);
-  ASSERT_EQUAL(d[1], 1);
-  ASSERT_EQUAL(d[2], 2);
-  ASSERT_EQUAL(d[3], 3);
-  ASSERT_EQUAL(d[4], 4);
+  thrust::device_vector<T> dref{0, 1, 2, 3, 4};
+  ASSERT_EQUAL(d, dref);
   ASSERT_EQUAL_QUIET(d_result, d.end());
 }
 DECLARE_UNITTEST(TestCopyFromConstIterator);
@@ -114,31 +104,21 @@ void TestCopyMatchingTypes()
 {
   using T = typename Vector::value_type;
 
-  Vector v(5);
-  v[0] = 0;
-  v[1] = 1;
-  v[2] = 2;
-  v[3] = 3;
-  v[4] = 4;
+  Vector v{0, 1, 2, 3, 4};
 
   // copy to host_vector
   thrust::host_vector<T> h(5, (T) 10);
   typename thrust::host_vector<T>::iterator h_result = thrust::copy(v.begin(), v.end(), h.begin());
-  ASSERT_EQUAL(h[0], 0);
-  ASSERT_EQUAL(h[1], 1);
-  ASSERT_EQUAL(h[2], 2);
-  ASSERT_EQUAL(h[3], 3);
-  ASSERT_EQUAL(h[4], 4);
+  thrust::host_vector<T> href{0, 1, 2, 3, 4};
+  ASSERT_EQUAL(h, href);
   ASSERT_EQUAL_QUIET(h_result, h.end());
 
   // copy to device_vector
   thrust::device_vector<T> d(5, (T) 10);
   typename thrust::device_vector<T>::iterator d_result = thrust::copy(v.begin(), v.end(), d.begin());
-  ASSERT_EQUAL(d[0], 0);
-  ASSERT_EQUAL(d[1], 1);
-  ASSERT_EQUAL(d[2], 2);
-  ASSERT_EQUAL(d[3], 3);
-  ASSERT_EQUAL(d[4], 4);
+
+  thrust::device_vector<T> dref{0, 1, 2, 3, 4};
+  ASSERT_EQUAL(d, dref);
   ASSERT_EQUAL_QUIET(d_result, d.end());
 }
 DECLARE_VECTOR_UNITTEST(TestCopyMatchingTypes);
@@ -149,32 +129,20 @@ _CCCL_DIAG_SUPPRESS_MSVC(4244) // '=': conversion from 'int' to '_Ty', possible 
 template <class Vector>
 void TestCopyMixedTypes()
 {
-  Vector v(5);
-  v[0] = 0;
-  v[1] = 1;
-  v[2] = 2;
-  v[3] = 3;
-  v[4] = 4;
+  Vector v{0, 1, 2, 3, 4};
 
   // copy to host_vector with different type
   thrust::host_vector<float> h(5, (float) 10);
   typename thrust::host_vector<float>::iterator h_result = thrust::copy(v.begin(), v.end(), h.begin());
-
-  ASSERT_EQUAL(h[0], 0);
-  ASSERT_EQUAL(h[1], 1);
-  ASSERT_EQUAL(h[2], 2);
-  ASSERT_EQUAL(h[3], 3);
-  ASSERT_EQUAL(h[4], 4);
+  thrust::host_vector<float> href{0, 1, 2, 3, 4};
+  ASSERT_EQUAL(h, href);
   ASSERT_EQUAL_QUIET(h_result, h.end());
 
   // copy to device_vector with different type
   thrust::device_vector<float> d(5, (float) 10);
   typename thrust::device_vector<float>::iterator d_result = thrust::copy(v.begin(), v.end(), d.begin());
-  ASSERT_EQUAL(d[0], 0);
-  ASSERT_EQUAL(d[1], 1);
-  ASSERT_EQUAL(d[2], 2);
-  ASSERT_EQUAL(d[3], 3);
-  ASSERT_EQUAL(d[4], 4);
+  thrust::device_vector<float> dref{0, 1, 2, 3, 4};
+  ASSERT_EQUAL(d, dref);
   ASSERT_EQUAL_QUIET(d_result, d.end());
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestCopyMixedTypes);
@@ -183,10 +151,7 @@ _CCCL_DIAG_POP
 
 void TestCopyVectorBool()
 {
-  std::vector<bool> v(3);
-  v[0] = true;
-  v[1] = false;
-  v[2] = true;
+  std::vector<bool> v{true, false, true};
 
   thrust::host_vector<bool> h(3);
   thrust::device_vector<bool> d(3);
@@ -194,13 +159,11 @@ void TestCopyVectorBool()
   thrust::copy(v.begin(), v.end(), h.begin());
   thrust::copy(v.begin(), v.end(), d.begin());
 
-  ASSERT_EQUAL(h[0], true);
-  ASSERT_EQUAL(h[1], false);
-  ASSERT_EQUAL(h[2], true);
+  thrust::host_vector<bool> href{true, false, true};
+  ASSERT_EQUAL(h, href);
 
-  ASSERT_EQUAL(d[0], true);
-  ASSERT_EQUAL(d[1], false);
-  ASSERT_EQUAL(d[2], true);
+  thrust::device_vector<bool> dref{true, false, true};
+  ASSERT_EQUAL(d, dref);
 }
 DECLARE_UNITTEST(TestCopyVectorBool);
 
@@ -210,22 +173,14 @@ void TestCopyListTo()
   using T = typename Vector::value_type;
 
   // copy from list to Vector
-  std::list<T> l;
-  l.push_back(0);
-  l.push_back(1);
-  l.push_back(2);
-  l.push_back(3);
-  l.push_back(4);
+  std::list<T> l{0, 1, 2, 3, 4};
 
   Vector v(l.size());
 
   typename Vector::iterator v_result = thrust::copy(l.begin(), l.end(), v.begin());
 
-  ASSERT_EQUAL(v[0], T(0));
-  ASSERT_EQUAL(v[1], T(1));
-  ASSERT_EQUAL(v[2], T(2));
-  ASSERT_EQUAL(v[3], T(3));
-  ASSERT_EQUAL(v[4], T(4));
+  Vector ref{0, 1, 2, 3, 4};
+  ASSERT_EQUAL(v, ref);
   ASSERT_EQUAL_QUIET(v_result, v.end());
 
   l.clear();
@@ -280,21 +235,14 @@ void TestCopyIfSimple()
 {
   using T = typename Vector::value_type;
 
-  Vector v(5);
-  v[0] = 0;
-  v[1] = 1;
-  v[2] = 2;
-  v[3] = 3;
-  v[4] = 4;
+  Vector v{0, 1, 2, 3, 4};
 
   Vector dest(4);
 
   typename Vector::iterator dest_end = thrust::copy_if(v.begin(), v.end(), dest.begin(), is_true<T>());
 
-  ASSERT_EQUAL(1, dest[0]);
-  ASSERT_EQUAL(2, dest[1]);
-  ASSERT_EQUAL(3, dest[2]);
-  ASSERT_EQUAL(4, dest[3]);
+  Vector ref{1, 2, 3, 4};
+  ASSERT_EQUAL(ref, dest);
   ASSERT_EQUAL_QUIET(dest.end(), dest_end);
 }
 DECLARE_VECTOR_UNITTEST(TestCopyIfSimple);
@@ -408,27 +356,15 @@ void TestCopyIfStencilSimple()
 {
   using T = typename Vector::value_type;
 
-  Vector v(5);
-  v[0] = 0;
-  v[1] = 1;
-  v[2] = 2;
-  v[3] = 3;
-  v[4] = 4;
-
-  Vector s(5);
-  s[0] = 1;
-  s[1] = 1;
-  s[2] = 0;
-  s[3] = 1;
-  s[4] = 0;
+  Vector v{0, 1, 2, 3, 4};
+  Vector s{1, 1, 0, 1, 0};
 
   Vector dest(3);
 
   typename Vector::iterator dest_end = thrust::copy_if(v.begin(), v.end(), s.begin(), dest.begin(), is_true<T>());
 
-  ASSERT_EQUAL(0, dest[0]);
-  ASSERT_EQUAL(1, dest[1]);
-  ASSERT_EQUAL(3, dest[2]);
+  Vector ref{0, 1, 3};
+  ASSERT_EQUAL(ref, dest);
   ASSERT_EQUAL_QUIET(dest.end(), dest_end);
 }
 DECLARE_VECTOR_UNITTEST(TestCopyIfStencilSimple);
@@ -577,6 +513,10 @@ void TestCopyZipIterator()
 {
   using T = typename Vector::value_type;
 
+  // initializer list doesn't work with GCC when
+  // Vector = thrust::host_vector<signed char>
+  // Vector v1{1, 2, 3};
+
   Vector v1(3);
   v1[0] = 1;
   v1[1] = 2;
@@ -609,12 +549,10 @@ void TestCopyConstantIteratorToZipIterator()
                thrust::make_constant_iterator(thrust::tuple<T, T>(4, 7)) + v1.size(),
                thrust::make_zip_iterator(thrust::make_tuple(v1.begin(), v2.begin())));
 
-  ASSERT_EQUAL(v1[0], 4);
-  ASSERT_EQUAL(v1[1], 4);
-  ASSERT_EQUAL(v1[2], 4);
-  ASSERT_EQUAL(v2[0], 7);
-  ASSERT_EQUAL(v2[1], 7);
-  ASSERT_EQUAL(v2[2], 7);
+  Vector ref1{4, 4, 4};
+  Vector ref2{7, 7, 7};
+  ASSERT_EQUAL(v1, ref1);
+  ASSERT_EQUAL(v2, ref2);
 };
 DECLARE_VECTOR_UNITTEST(TestCopyConstantIteratorToZipIterator);
 
