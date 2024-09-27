@@ -629,12 +629,6 @@ class Configuration(object):
             self.config.available_features.add('libcudacxx_gdb')
             self.cxx.libcudacxx_gdb = libcudacxx_gdb
 
-        # Support Objective-C++ only on MacOS and if the compiler supports it.
-        if self.target_info.platform() == "darwin" and \
-           self.target_info.is_host_macosx() and \
-           self.cxx.hasCompileFlag(["-x", "objective-c++", "-fobjc-arc"]):
-            self.config.available_features.add("objective-c++")
-
     def configure_compile_flags(self):
         self.configure_default_compile_flags()
         # Configure extra flags
