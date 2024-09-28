@@ -733,15 +733,6 @@ typedef __char32_t char32_t;
 #      define _LIBCUDACXX_HAS_NO_GENERALIZED_INITIALIZERS
 #    endif
 
-// Objective-C++ features (opt-in)
-#    if __has_feature(objc_arc)
-#      define _LIBCUDACXX_HAS_OBJC_ARC
-#    endif
-
-#    if __has_feature(objc_arc_weak)
-#      define _LIBCUDACXX_HAS_OBJC_ARC_WEAK
-#    endif
-
 #    if !(__has_feature(cxx_variable_templates))
 #      define _LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES
 #    endif
