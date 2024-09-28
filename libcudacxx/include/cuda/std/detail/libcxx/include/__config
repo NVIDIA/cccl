@@ -21,43 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_CCCL_COMPILER_ICC)
-#  define _LIBCUDACXX_COMPILER_ICC
-#elif defined(_CCCL_COMPILER_NVHPC)
-#  define _LIBCUDACXX_COMPILER_NVHPC
-#elif defined(_CCCL_COMPILER_CLANG)
-#  define _LIBCUDACXX_COMPILER_CLANG
-#  ifndef __apple_build_version__
-#    define _LIBCUDACXX_CLANG_VER (__clang_major__ * 100 + __clang_minor__)
-#  endif
-#elif defined(_CCCL_COMPILER_GCC)
-#  define _LIBCUDACXX_COMPILER_GCC
-#elif defined(_CCCL_COMPILER_MSVC)
-#  define _LIBCUDACXX_COMPILER_MSVC
-#elif defined(_CCCL_COMPILER_NVRTC)
-#  define _LIBCUDACXX_COMPILER_NVRTC
-#endif
-
-#if defined(_CCCL_COMPILER_MSVC)
-#  if _MSC_VER < 1917
-#    define _LIBCUDACXX_COMPILER_MSVC_2017
-#  elif _MSC_VER < 1930
-#    define _LIBCUDACXX_COMPILER_MSVC_2019
-#  else
-#    define _LIBCUDACXX_COMPILER_MSVC_2022
-#  endif
-#endif // defined(_LIBCUDACXX_COMPILER_MSVC)
-
-#if defined(_CCCL_CUDA_COMPILER_NVCC)
-// This is not mutually exclusive with other compilers, as NVCC uses a host
-// compiler.
-#  define _LIBCUDACXX_COMPILER_NVCC
-#elif defined(_CCCL_CUDA_COMPILER_NVHPC)
-#  define _LIBCUDACXX_COMPILER_NVHPC_CUDA
-#elif defined(_CCCL_CUDA_COMPILER_CLANG)
-#  define _LIBCUDACXX_COMPILER_CLANG_CUDA
-#endif
-
 #ifdef __cplusplus
 
 // __config may be included in `extern "C"` contexts, switch back to include <nv/target>
