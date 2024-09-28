@@ -354,17 +354,17 @@ struct ReduceBySegmentOp
   }
 };
 
-template <typename ReductionOpT>
+template <typename ScanOpT>
 struct ScanBySegmentOp
 {
-  /// Wrapped reduction operator
-  ReductionOpT op;
+  /// Wrapped operator
+  ScanOpT op;
 
   /// Constructor
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScanBySegmentOp() {}
 
   /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScanBySegmentOp(ReductionOpT op)
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScanBySegmentOp(ScanOpT op)
       : op(op)
   {}
 
@@ -372,7 +372,7 @@ struct ScanBySegmentOp
    * @brief Scan operator
    *
    * @tparam KeyValuePairT
-   *   KeyValuePair pairing of T (value) and OffsetT (head flag)
+   *   KeyValuePair pairing of T (value) and int (head flag)
    *
    * @param[in] first
    *   First partial reduction
