@@ -6,12 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// <algorithm>
-
-// template<InputIterator InIter, OutputIterator<auto, InIter::reference> OutIter>
-//   constexpr OutIter   // constexpr after C++17
-//   copy(InIter first, InIter last, OutIter result);
-
 #include <cuda/std/__algorithm_>
 #include <cuda/std/cassert>
 
@@ -141,58 +135,4 @@ TEST_CONSTEXPR_CXX20 __host__ __device__ void test()
       assert(ic[i] == 6);
     }
   }
-}
-
-TEST_CONSTEXPR_CXX20 __host__ __device__ bool test()
-{
-  test<cpp17_input_iterator<const int*>, cpp17_output_iterator<int*>>();
-  test<cpp17_input_iterator<const int*>, cpp17_input_iterator<int*>>();
-  test<cpp17_input_iterator<const int*>, forward_iterator<int*>>();
-  test<cpp17_input_iterator<const int*>, bidirectional_iterator<int*>>();
-  test<cpp17_input_iterator<const int*>, random_access_iterator<int*>>();
-  test<cpp17_input_iterator<const int*>, int*>();
-
-  test<forward_iterator<const int*>, cpp17_output_iterator<int*>>();
-  test<forward_iterator<const int*>, cpp17_input_iterator<int*>>();
-  test<forward_iterator<const int*>, forward_iterator<int*>>();
-  test<forward_iterator<const int*>, bidirectional_iterator<int*>>();
-  test<forward_iterator<const int*>, random_access_iterator<int*>>();
-  test<forward_iterator<const int*>, int*>();
-
-  test<bidirectional_iterator<const int*>, cpp17_output_iterator<int*>>();
-  test<bidirectional_iterator<const int*>, cpp17_input_iterator<int*>>();
-  test<bidirectional_iterator<const int*>, forward_iterator<int*>>();
-  test<bidirectional_iterator<const int*>, bidirectional_iterator<int*>>();
-  test<bidirectional_iterator<const int*>, random_access_iterator<int*>>();
-  test<bidirectional_iterator<const int*>, int*>();
-
-  test<random_access_iterator<const int*>, cpp17_output_iterator<int*>>();
-  test<random_access_iterator<const int*>, cpp17_input_iterator<int*>>();
-  test<random_access_iterator<const int*>, forward_iterator<int*>>();
-  test<random_access_iterator<const int*>, bidirectional_iterator<int*>>();
-  test<random_access_iterator<const int*>, random_access_iterator<int*>>();
-  test<random_access_iterator<const int*>, int*>();
-
-  test<const int*, cpp17_output_iterator<int*>>();
-  test<const int*, cpp17_input_iterator<int*>>();
-  test<const int*, forward_iterator<int*>>();
-  test<const int*, bidirectional_iterator<int*>>();
-  test<const int*, random_access_iterator<int*>>();
-  test<const int*, int*>();
-
-  test<const NonTrivialCopy*, NonTrivialCopy*>();
-  test<const NonTrivialDestructor*, NonTrivialDestructor*>();
-
-  return true;
-}
-
-int main(int, char**)
-{
-  test();
-
-#if TEST_STD_VER >= 2020
-  static_assert(test());
-#endif // TEST_STD_VER >= 2020
-
-  return 0;
 }
