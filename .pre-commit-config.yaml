@@ -36,5 +36,13 @@ repos:
           )
         args: ["-fallback-style=none", "-style=file", "-i"]
 
+  # Ruff, the Python auto-correcting linter/formatter written in Rust
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.3
+    hooks:
+    - id: ruff
+      args: ["--fix", "--show-fixes"]
+    - id: ruff-format
+
 default_language_version:
   python: python3
