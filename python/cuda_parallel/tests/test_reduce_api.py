@@ -23,7 +23,7 @@ def test_device_reduce():
     d_input = cuda.to_device(h_input)
 
     # Instantiate reduction for the given operator and initial value
-    reduce_into = cudax.reduce_into(d_output, d_output, op, h_init)
+    reduce_into = cudax.reduce_into(d_input, d_output, op, h_init)
 
     # Deterrmine temporary device storage requirements
     temp_storage_size = reduce_into(None, d_input, d_output, h_init)

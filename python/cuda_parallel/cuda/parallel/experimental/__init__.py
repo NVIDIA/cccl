@@ -184,8 +184,18 @@ class _CCCLDeviceReduceBuildResult(ctypes.Structure):
                 ("reduction_kernel", ctypes.c_void_p)]
 
 
+def _dtype_validation(arr1, arr2):
+    if arr1.dtype is None:
+        return arr2
+    assert arr1.dtype == arr2.dtype, (str(arr1.dtype), str(arr2.dtype))
+    return arr1
+
+
 class _Reduce:
     def __init__(self, d_in, d_out, op, init):
+        self._ctor_d_in = d_in
+        self._ctor_d_out = d_out
+        self._ctor_init = init
         cc_major, cc_minor = cuda.get_current_device().compute_capability
         cub_path, thrust_path, libcudacxx_path, cuda_include_path = _get_paths()
         bindings = _get_bindings()
@@ -211,9 +221,10 @@ class _Reduce:
         if error != enums.CUDA_SUCCESS:
             raise ValueError('Error building reduce')
 
-    def __call__(self, temp_storage, d_in, d_out, init):
-        # TODO Assert that types match the ones used in the constructor
-        assert False
+    def __call__(self, temp_storage, d_in=None, d_out=None, init=None):
+        d_in = _dtype_validation(d_in, self._ctor_d_in)
+        d_out = _dtype_validation(d_out, self._ctor_d_out)
+        init = _dtype_validation(init, self._ctor_init)
         bindings = _get_bindings()
         if temp_storage is None:
             temp_storage_bytes = ctypes.c_size_t()
