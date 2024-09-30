@@ -39,21 +39,11 @@ void TestPartitionSimple()
   }
 #endif
 
-  Vector data(5);
-  data[0] = 1;
-  data[1] = 2;
-  data[2] = 1;
-  data[3] = 1;
-  data[4] = 2;
+  Vector data{1, 2, 1, 1, 2};
 
   Iterator iter = thrust::partition(data.begin(), data.end(), is_even<T>());
 
-  Vector ref(5);
-  ref[0] = 2;
-  ref[1] = 2;
-  ref[2] = 1;
-  ref[3] = 1;
-  ref[4] = 1;
+  Vector ref{2, 2, 1, 1, 1};
 
   ASSERT_EQUAL(iter - data.begin(), 2);
   ASSERT_EQUAL(data, ref);
@@ -66,28 +56,13 @@ void TestPartitionStencilSimple()
   using T        = typename Vector::value_type;
   using Iterator = typename Vector::iterator;
 
-  Vector data(5);
-  data[0] = 0;
-  data[1] = 1;
-  data[2] = 0;
-  data[3] = 0;
-  data[4] = 1;
+  Vector data{0, 1, 0, 0, 1};
 
-  Vector stencil(5);
-  stencil[0] = 1;
-  stencil[1] = 2;
-  stencil[2] = 1;
-  stencil[3] = 1;
-  stencil[4] = 2;
+  Vector stencil{1, 2, 1, 1, 2};
 
   Iterator iter = thrust::partition(data.begin(), data.end(), stencil.begin(), is_even<T>());
 
-  Vector ref(5);
-  ref[0] = 1;
-  ref[1] = 1;
-  ref[2] = 0;
-  ref[3] = 0;
-  ref[4] = 0;
+  Vector ref{1, 1, 0, 0, 0};
 
   ASSERT_EQUAL(iter - data.begin(), 2);
   ASSERT_EQUAL(data, ref);
@@ -99,12 +74,7 @@ void TestPartitionCopySimple()
 {
   using T = typename Vector::value_type;
 
-  Vector data(5);
-  data[0] = 1;
-  data[1] = 2;
-  data[2] = 1;
-  data[3] = 1;
-  data[4] = 2;
+  Vector data{1, 2, 1, 1, 2};
 
   Vector true_results(2);
   Vector false_results(3);
@@ -112,14 +82,9 @@ void TestPartitionCopySimple()
   thrust::pair<typename Vector::iterator, typename Vector::iterator> ends =
     thrust::partition_copy(data.begin(), data.end(), true_results.begin(), false_results.begin(), is_even<T>());
 
-  Vector true_ref(2);
-  true_ref[0] = 2;
-  true_ref[1] = 2;
+  Vector true_ref(2, 2);
 
-  Vector false_ref(3);
-  false_ref[0] = 1;
-  false_ref[1] = 1;
-  false_ref[2] = 1;
+  Vector false_ref(3, 1);
 
   ASSERT_EQUAL(2, ends.first - true_results.begin());
   ASSERT_EQUAL(3, ends.second - false_results.begin());
@@ -133,19 +98,9 @@ void TestPartitionCopyStencilSimple()
 {
   using T = typename Vector::value_type;
 
-  Vector data(5);
-  data[0] = 0;
-  data[1] = 1;
-  data[2] = 0;
-  data[3] = 0;
-  data[4] = 1;
+  Vector data{0, 1, 0, 0, 1};
 
-  Vector stencil(5);
-  stencil[0] = 1;
-  stencil[1] = 2;
-  stencil[2] = 1;
-  stencil[3] = 1;
-  stencil[4] = 2;
+  Vector stencil{1, 2, 1, 1, 2};
 
   Vector true_results(2);
   Vector false_results(3);
@@ -153,14 +108,9 @@ void TestPartitionCopyStencilSimple()
   thrust::pair<typename Vector::iterator, typename Vector::iterator> ends = thrust::partition_copy(
     data.begin(), data.end(), stencil.begin(), true_results.begin(), false_results.begin(), is_even<T>());
 
-  Vector true_ref(2);
-  true_ref[0] = 1;
-  true_ref[1] = 1;
+  Vector true_ref(2, 1);
 
-  Vector false_ref(3);
-  false_ref[0] = 0;
-  false_ref[1] = 0;
-  false_ref[2] = 0;
+  Vector false_ref(3, 0);
 
   ASSERT_EQUAL(2, ends.first - true_results.begin());
   ASSERT_EQUAL(3, ends.second - false_results.begin());
@@ -175,21 +125,11 @@ void TestStablePartitionSimple()
   using T        = typename Vector::value_type;
   using Iterator = typename Vector::iterator;
 
-  Vector data(5);
-  data[0] = 1;
-  data[1] = 2;
-  data[2] = 1;
-  data[3] = 3;
-  data[4] = 2;
+  Vector data{1, 2, 1, 3, 2};
 
   Iterator iter = thrust::stable_partition(data.begin(), data.end(), is_even<T>());
 
-  Vector ref(5);
-  ref[0] = 2;
-  ref[1] = 2;
-  ref[2] = 1;
-  ref[3] = 1;
-  ref[4] = 3;
+  Vector ref{2, 2, 1, 1, 3};
 
   ASSERT_EQUAL(iter - data.begin(), 2);
   ASSERT_EQUAL(data, ref);
@@ -202,28 +142,13 @@ void TestStablePartitionStencilSimple()
   using T        = typename Vector::value_type;
   using Iterator = typename Vector::iterator;
 
-  Vector data(5);
-  data[0] = 1;
-  data[1] = 2;
-  data[2] = 1;
-  data[3] = 3;
-  data[4] = 2;
+  Vector data{1, 2, 1, 3, 2};
 
-  Vector stencil(5);
-  stencil[0] = 0;
-  stencil[1] = 1;
-  stencil[2] = 0;
-  stencil[3] = 0;
-  stencil[4] = 1;
+  Vector stencil{0, 1, 0, 0, 1};
 
   Iterator iter = thrust::stable_partition(data.begin(), data.end(), stencil.begin(), thrust::identity<T>());
 
-  Vector ref(5);
-  ref[0] = 2;
-  ref[1] = 2;
-  ref[2] = 1;
-  ref[3] = 1;
-  ref[4] = 3;
+  Vector ref{2, 2, 1, 1, 3};
 
   ASSERT_EQUAL(iter - data.begin(), 2);
   ASSERT_EQUAL(data, ref);
@@ -235,12 +160,7 @@ void TestStablePartitionCopySimple()
 {
   using T = typename Vector::value_type;
 
-  Vector data(5);
-  data[0] = 1;
-  data[1] = 2;
-  data[2] = 1;
-  data[3] = 1;
-  data[4] = 2;
+  Vector data{1, 2, 1, 1, 2};
 
   Vector true_results(2);
   Vector false_results(3);
@@ -248,14 +168,9 @@ void TestStablePartitionCopySimple()
   thrust::pair<typename Vector::iterator, typename Vector::iterator> ends =
     thrust::stable_partition_copy(data.begin(), data.end(), true_results.begin(), false_results.begin(), is_even<T>());
 
-  Vector true_ref(2);
-  true_ref[0] = 2;
-  true_ref[1] = 2;
+  Vector true_ref(2, 2);
 
-  Vector false_ref(3);
-  false_ref[0] = 1;
-  false_ref[1] = 1;
-  false_ref[2] = 1;
+  Vector false_ref(3, 1);
 
   ASSERT_EQUAL(2, ends.first - true_results.begin());
   ASSERT_EQUAL(3, ends.second - false_results.begin());
@@ -269,19 +184,9 @@ void TestStablePartitionCopyStencilSimple()
 {
   using T = typename Vector::value_type;
 
-  Vector data(5);
-  data[0] = 1;
-  data[1] = 2;
-  data[2] = 1;
-  data[3] = 1;
-  data[4] = 2;
+  Vector data{1, 2, 1, 1, 2};
 
-  Vector stencil(5);
-  stencil[0] = false;
-  stencil[1] = true;
-  stencil[2] = false;
-  stencil[3] = false;
-  stencil[4] = true;
+  Vector stencil{false, true, false, false, true};
 
   Vector true_results(2);
   Vector false_results(3);
@@ -289,14 +194,9 @@ void TestStablePartitionCopyStencilSimple()
   thrust::pair<typename Vector::iterator, typename Vector::iterator> ends = thrust::stable_partition_copy(
     data.begin(), data.end(), stencil.begin(), true_results.begin(), false_results.begin(), thrust::identity<T>());
 
-  Vector true_ref(2);
-  true_ref[0] = 2;
-  true_ref[1] = 2;
+  Vector true_ref(2, 2);
 
-  Vector false_ref(3);
-  false_ref[0] = 1;
-  false_ref[1] = 1;
-  false_ref[2] = 1;
+  Vector false_ref(3, 1);
 
   ASSERT_EQUAL(2, ends.first - true_results.begin());
   ASSERT_EQUAL(3, ends.second - false_results.begin());
@@ -937,19 +837,8 @@ struct is_ordered
 template <typename Vector>
 void TestPartitionZipIterator()
 {
-  Vector data1(5);
-  Vector data2(5);
-
-  data1[0] = 1;
-  data2[0] = 2;
-  data1[1] = 2;
-  data2[1] = 1;
-  data1[2] = 1;
-  data2[2] = 2;
-  data1[3] = 1;
-  data2[3] = 2;
-  data1[4] = 2;
-  data2[4] = 1;
+  Vector data1{1, 2, 1, 1, 2};
+  Vector data2{2, 1, 2, 2, 1};
 
   using Iterator      = typename Vector::iterator;
   using IteratorTuple = thrust::tuple<Iterator, Iterator>;
@@ -960,19 +849,8 @@ void TestPartitionZipIterator()
 
   ZipIterator iter = thrust::partition(begin, end, is_ordered());
 
-  Vector ref1(5);
-  Vector ref2(5);
-
-  ref1[0] = 1;
-  ref2[0] = 2;
-  ref1[1] = 1;
-  ref2[1] = 2;
-  ref1[2] = 1;
-  ref2[2] = 2;
-  ref1[3] = 2;
-  ref2[3] = 1;
-  ref1[4] = 2;
-  ref2[4] = 1;
+  Vector ref1{1, 1, 1, 2, 2};
+  Vector ref2{2, 2, 2, 1, 1};
 
   ASSERT_EQUAL(iter - begin, 3);
   ASSERT_EQUAL(data1, ref1);
@@ -983,26 +861,10 @@ DECLARE_VECTOR_UNITTEST(TestPartitionZipIterator);
 template <typename Vector>
 void TestPartitionStencilZipIterator()
 {
-  Vector data(5);
-  data[0] = 1;
-  data[1] = 0;
-  data[2] = 1;
-  data[3] = 1;
-  data[4] = 0;
+  Vector data{1, 0, 1, 1, 0};
 
-  Vector stencil1(5);
-  Vector stencil2(5);
-
-  stencil1[0] = 1;
-  stencil2[0] = 2;
-  stencil1[1] = 2;
-  stencil2[1] = 1;
-  stencil1[2] = 1;
-  stencil2[2] = 2;
-  stencil1[3] = 1;
-  stencil2[3] = 2;
-  stencil1[4] = 2;
-  stencil2[4] = 1;
+  Vector stencil1{1, 2, 1, 1, 2};
+  Vector stencil2{2, 1, 2, 2, 1};
 
   using Iterator      = typename Vector::iterator;
   using IteratorTuple = thrust::tuple<Iterator, Iterator>;
@@ -1012,13 +874,7 @@ void TestPartitionStencilZipIterator()
 
   Iterator iter = thrust::partition(data.begin(), data.end(), stencil_begin, is_ordered());
 
-  Vector ref(5);
-
-  ref[0] = 1;
-  ref[1] = 1;
-  ref[2] = 1;
-  ref[3] = 0;
-  ref[4] = 0;
+  Vector ref{1, 1, 1, 0, 0};
 
   ASSERT_EQUAL(iter - data.begin(), 3);
   ASSERT_EQUAL(data, ref);
@@ -1028,19 +884,8 @@ DECLARE_VECTOR_UNITTEST(TestPartitionStencilZipIterator);
 template <typename Vector>
 void TestStablePartitionZipIterator()
 {
-  Vector data1(5);
-  Vector data2(5);
-
-  data1[0] = 1;
-  data2[0] = 2;
-  data1[1] = 2;
-  data2[1] = 0;
-  data1[2] = 1;
-  data2[2] = 3;
-  data1[3] = 1;
-  data2[3] = 2;
-  data1[4] = 2;
-  data2[4] = 1;
+  Vector data1{1, 2, 1, 1, 2};
+  Vector data2{2, 0, 3, 2, 1};
 
   using Iterator      = typename Vector::iterator;
   using IteratorTuple = thrust::tuple<Iterator, Iterator>;
@@ -1051,19 +896,8 @@ void TestStablePartitionZipIterator()
 
   ZipIterator iter = thrust::stable_partition(begin, end, is_ordered());
 
-  Vector ref1(5);
-  Vector ref2(5);
-
-  ref1[0] = 1;
-  ref2[0] = 2;
-  ref1[1] = 1;
-  ref2[1] = 3;
-  ref1[2] = 1;
-  ref2[2] = 2;
-  ref1[3] = 2;
-  ref2[3] = 0;
-  ref1[4] = 2;
-  ref2[4] = 1;
+  Vector ref1{1, 1, 1, 2, 2};
+  Vector ref2{2, 3, 2, 0, 1};
 
   ASSERT_EQUAL(data1, ref1);
   ASSERT_EQUAL(data2, ref2);
@@ -1074,26 +908,10 @@ DECLARE_VECTOR_UNITTEST(TestStablePartitionZipIterator);
 template <typename Vector>
 void TestStablePartitionStencilZipIterator()
 {
-  Vector data(5);
-  data[0] = 1;
-  data[1] = 0;
-  data[2] = 1;
-  data[3] = 1;
-  data[4] = 0;
+  Vector data{1, 0, 1, 1, 0};
 
-  Vector stencil1(5);
-  Vector stencil2(5);
-
-  stencil1[0] = 1;
-  stencil2[0] = 2;
-  stencil1[1] = 2;
-  stencil2[1] = 0;
-  stencil1[2] = 1;
-  stencil2[2] = 3;
-  stencil1[3] = 1;
-  stencil2[3] = 2;
-  stencil1[4] = 2;
-  stencil2[4] = 1;
+  Vector stencil1{1, 2, 1, 1, 2};
+  Vector stencil2{2, 0, 3, 2, 1};
 
   using Iterator      = typename Vector::iterator;
   using IteratorTuple = thrust::tuple<Iterator, Iterator>;
@@ -1103,13 +921,7 @@ void TestStablePartitionStencilZipIterator()
 
   Iterator mid = thrust::stable_partition(data.begin(), data.end(), stencil_begin, is_ordered());
 
-  Vector ref(5);
-
-  ref[0] = 1;
-  ref[1] = 1;
-  ref[2] = 1;
-  ref[3] = 0;
-  ref[4] = 0;
+  Vector ref{1, 1, 1, 0, 0};
 
   ASSERT_EQUAL(ref, data);
   ASSERT_EQUAL(mid - data.begin(), 3);

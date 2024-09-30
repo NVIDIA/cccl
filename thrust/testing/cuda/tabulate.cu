@@ -26,11 +26,8 @@ void TestTabulateDevice(ExecutionPolicy exec)
     ASSERT_EQUAL(cudaSuccess, err);
   }
 
-  ASSERT_EQUAL(v[0], 0);
-  ASSERT_EQUAL(v[1], 1);
-  ASSERT_EQUAL(v[2], 2);
-  ASSERT_EQUAL(v[3], 3);
-  ASSERT_EQUAL(v[4], 4);
+  Vector ref{0, 1, 2, 3, 4};
+  ASSERT_EQUAL(v, ref);
 
   tabulate_kernel<<<1, 1>>>(exec, v.begin(), v.end(), -_1);
   {
@@ -38,11 +35,8 @@ void TestTabulateDevice(ExecutionPolicy exec)
     ASSERT_EQUAL(cudaSuccess, err);
   }
 
-  ASSERT_EQUAL(v[0], 0);
-  ASSERT_EQUAL(v[1], -1);
-  ASSERT_EQUAL(v[2], -2);
-  ASSERT_EQUAL(v[3], -3);
-  ASSERT_EQUAL(v[4], -4);
+  ref = {0, -1, -2, -3, -4};
+  ASSERT_EQUAL(v, ref);
 
   tabulate_kernel<<<1, 1>>>(exec, v.begin(), v.end(), _1 * _1 * _1);
   {
@@ -50,11 +44,8 @@ void TestTabulateDevice(ExecutionPolicy exec)
     ASSERT_EQUAL(cudaSuccess, err);
   }
 
-  ASSERT_EQUAL(v[0], 0);
-  ASSERT_EQUAL(v[1], 1);
-  ASSERT_EQUAL(v[2], 8);
-  ASSERT_EQUAL(v[3], 27);
-  ASSERT_EQUAL(v[4], 64);
+  ref = {0, 1, 8, 27, 64};
+  ASSERT_EQUAL(v, ref);
 }
 
 void TestTabulateDeviceSeq()
@@ -84,29 +75,20 @@ void TestTabulateCudaStreams()
   thrust::tabulate(thrust::cuda::par.on(s), v.begin(), v.end(), thrust::identity<T>());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(v[0], 0);
-  ASSERT_EQUAL(v[1], 1);
-  ASSERT_EQUAL(v[2], 2);
-  ASSERT_EQUAL(v[3], 3);
-  ASSERT_EQUAL(v[4], 4);
+  Vector ref{0, 1, 2, 3, 4};
+  ASSERT_EQUAL(v, ref);
 
   thrust::tabulate(thrust::cuda::par.on(s), v.begin(), v.end(), -_1);
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(v[0], 0);
-  ASSERT_EQUAL(v[1], -1);
-  ASSERT_EQUAL(v[2], -2);
-  ASSERT_EQUAL(v[3], -3);
-  ASSERT_EQUAL(v[4], -4);
+  ref = {0, -1, -2, -3, -4};
+  ASSERT_EQUAL(v, ref);
 
   thrust::tabulate(thrust::cuda::par.on(s), v.begin(), v.end(), _1 * _1 * _1);
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(v[0], 0);
-  ASSERT_EQUAL(v[1], 1);
-  ASSERT_EQUAL(v[2], 8);
-  ASSERT_EQUAL(v[3], 27);
-  ASSERT_EQUAL(v[4], 64);
+  ref = {0, 1, 8, 27, 64};
+  ASSERT_EQUAL(v, ref);
 
   cudaStreamSynchronize(s);
 }

@@ -508,7 +508,7 @@ struct DispatchMergeSort : SelectedPolicy
     do
     {
       constexpr auto tile_size = merge_sort_helper_t::policy_t::ITEMS_PER_TILE;
-      const auto num_tiles     = cub::DivideAndRoundUp(num_items, tile_size);
+      const auto num_tiles     = ::cuda::ceil_div(num_items, tile_size);
 
       const auto merge_partitions_size         = static_cast<std::size_t>(1 + num_tiles) * sizeof(OffsetT);
       const auto temporary_keys_storage_size   = static_cast<std::size_t>(num_items * sizeof(KeyT));
@@ -597,8 +597,7 @@ struct DispatchMergeSort : SelectedPolicy
 
       const OffsetT num_partitions              = num_tiles + 1;
       constexpr int threads_per_partition_block = 256;
-      const int partition_grid_size =
-        static_cast<int>(cub::DivideAndRoundUp(num_partitions, threads_per_partition_block));
+      const int partition_grid_size = static_cast<int>(::cuda::ceil_div(num_partitions, threads_per_partition_block));
 
       error = CubDebug(detail::DebugSyncStream(stream));
       if (cudaSuccess != error)

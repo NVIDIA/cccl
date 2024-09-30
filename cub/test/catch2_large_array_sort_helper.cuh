@@ -398,7 +398,7 @@ private:
     using summary_t = detail::summary<KeyType>;
 
     const std::size_t max_summary_mem = num_items * (sizeof(KeyType) + sizeof(ValueType));
-    const std::size_t max_summaries   = cub::DivideAndRoundUp(max_summary_mem, sizeof(summary_t));
+    const std::size_t max_summaries   = ::cuda::ceil_div(max_summary_mem, sizeof(summary_t));
     return max_summaries;
   }
 

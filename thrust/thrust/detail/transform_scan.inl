@@ -60,6 +60,27 @@ template <typename DerivedPolicy,
           typename UnaryFunction,
           typename T,
           typename AssociativeOperator>
+_CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
+  const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator result,
+  UnaryFunction unary_op,
+  T init,
+  AssociativeOperator binary_op)
+{
+  using thrust::system::detail::generic::transform_inclusive_scan;
+  return transform_inclusive_scan(
+    thrust::detail::derived_cast(thrust::detail::strip_const(exec)), first, last, result, unary_op, init, binary_op);
+}
+
+_CCCL_EXEC_CHECK_DISABLE
+template <typename DerivedPolicy,
+          typename InputIterator,
+          typename OutputIterator,
+          typename UnaryFunction,
+          typename T,
+          typename AssociativeOperator>
 _CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
   const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
   InputIterator first,
@@ -87,6 +108,27 @@ OutputIterator transform_inclusive_scan(
   System2 system2;
 
   return thrust::transform_inclusive_scan(select_system(system1, system2), first, last, result, unary_op, binary_op);
+} // end transform_inclusive_scan()
+
+template <typename InputIterator, typename OutputIterator, typename UnaryFunction, typename T, typename AssociativeOperator>
+OutputIterator transform_inclusive_scan(
+  InputIterator first,
+  InputIterator last,
+  OutputIterator result,
+  UnaryFunction unary_op,
+  T init,
+  AssociativeOperator binary_op)
+{
+  using thrust::system::detail::generic::select_system;
+
+  using System1 = typename thrust::iterator_system<InputIterator>::type;
+  using System2 = typename thrust::iterator_system<OutputIterator>::type;
+
+  System1 system1;
+  System2 system2;
+
+  return thrust::transform_inclusive_scan(
+    select_system(system1, system2), first, last, result, unary_op, init, binary_op);
 } // end transform_inclusive_scan()
 
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction, typename T, typename AssociativeOperator>

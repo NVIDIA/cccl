@@ -248,6 +248,7 @@ C++20
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/type_identity.h>
+#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
@@ -257,7 +258,6 @@ C++20
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/__variant/monostate.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/cstdlib>
 #include <cuda/std/initializer_list>
 #include <cuda/std/tuple>
 #include <cuda/std/version>
@@ -359,7 +359,7 @@ template <size_t _Ip, class... _Types>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT variant_alternative<_Ip, variant<_Types...>>
 {
   static_assert(_Ip < sizeof...(_Types), "Index out of bounds in _CUDA_VSTD::variant_alternative<>");
-  using type = __type_pack_element<_Ip, _Types...>;
+  using type = __type_index_c<_Ip, _Types...>;
 };
 
 _LIBCUDACXX_INLINE_VAR constexpr size_t variant_npos = static_cast<size_t>(-1);
@@ -653,7 +653,7 @@ struct __variant
         _CUDA_VSTD::forward<_Visitor>(__visitor),
         _CUDA_VSTD::forward<_Vs>(__vs)...);
     }
-    _LIBCUDACXX_UNREACHABLE();
+    _CCCL_UNREACHABLE();
   }
   _CCCL_NV_DIAG_DEFAULT(940) // End suppression of no return at end of function
 
@@ -961,7 +961,7 @@ private:
       return;
     }
     // We already checked that every variant has a value, so we should never reach this line
-    _LIBCUDACXX_UNREACHABLE();
+    _CCCL_UNREACHABLE();
   }
 };
 
@@ -1010,7 +1010,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __ctor : public __dtor<_Traits>
       return;
     }
     // We already checked that every variant has a value, so we should never reach this line
-    _LIBCUDACXX_UNREACHABLE();
+    _CCCL_UNREACHABLE();
   }
 
 public:
@@ -1135,7 +1135,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __assignment : public __copy_constructor<_Tr
       return;
     }
     // We already checked that every variant has a value, so we should never reach this line
-    _LIBCUDACXX_UNREACHABLE();
+    _CCCL_UNREACHABLE();
   }
 
 public:
@@ -1311,7 +1311,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __impl : public __copy_assignment<__traits<_
       return;
     }
     // We already checked that every variant has a value, so we should never reach this line
-    _LIBCUDACXX_UNREACHABLE();
+    _CCCL_UNREACHABLE();
   }
 
 public:
@@ -1908,7 +1908,7 @@ private:
       return __op(_CUDA_VSTD::get<0>(__lhs), _CUDA_VSTD::get<0>(__rhs));
     }
     // We already checked that every variant has a value, so we should never reach this line
-    _LIBCUDACXX_UNREACHABLE();
+    _CCCL_UNREACHABLE();
   }
 };
 
@@ -2115,7 +2115,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__enable_hash_helper<variant<_Types...
   {
     if (__index == _CurrentIndex)
     {
-      using __value_type = remove_const_t<__type_pack_element<_CurrentIndex, _Types...>>;
+      using __value_type = remove_const_t<__type_index_c<_CurrentIndex, _Types...>>;
       return hash<__value_type>{}(__access::__base::__get_alt<_CurrentIndex>(this->__as_base()).__value);
     }
     __hash(integral_constant<size_t, _CurrentIndex - 1>{}, __index, __v);
@@ -2125,11 +2125,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__enable_hash_helper<variant<_Types...
   {
     if (__index == 0)
     {
-      using __value_type = remove_const_t<__type_pack_element<0, _Types...>>;
+      using __value_type = remove_const_t<__type_index_c<0, _Types...>>;
       return hash<__value_type>{}(__access::__base::__get_alt<0>(this->__as_base()).__value);
     }
     // We already checked that every variant has a value, so we should never reach this line
-    _LIBCUDACXX_UNREACHABLE();
+    _CCCL_UNREACHABLE();
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_VISIBILITY_HIDDEN result_type operator()(const argument_type& __v) const

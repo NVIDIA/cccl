@@ -194,6 +194,10 @@ _CCCL_PUSH_MACROS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+template <class>
+struct __is_tuple_of_iterator_references : _CUDA_VSTD::false_type
+{};
+
 // __tuple_leaf
 struct __tuple_leaf_default_constructor_tag
 {};
@@ -267,6 +271,9 @@ public:
   template <class _Tp>
   using __can_forward = _And<_IsNotSame<__remove_cvref_t<_Tp>, __tuple_leaf>, is_constructible<_Hp, _Tp>>;
 
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4244) // conversion from '_Tp' to '_Hp', possible loss of data
+
   template <class _Tp, __enable_if_t<__can_forward<_Tp>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI
   _CCCL_CONSTEXPR_CXX14 explicit __tuple_leaf(_Tp&& __t) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Hp, _Tp))
@@ -294,6 +301,8 @@ public:
     __value_ = _CUDA_VSTD::forward<_Tp>(__t);
     return *this;
   }
+
+  _CCCL_DIAG_POP
 
   _LIBCUDACXX_HIDE_FROM_ABI int swap(__tuple_leaf& __t) noexcept(__is_nothrow_swappable<__tuple_leaf>::value)
   {
@@ -336,6 +345,9 @@ public:
   template <class _Tp>
   using __can_forward = _And<_IsNotSame<__remove_cvref_t<_Tp>, __tuple_leaf>, is_constructible<_Hp, _Tp>>;
 
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4244) // conversion from '_Tp' to '_Hp', possible loss of data
+
   template <class _Tp, __enable_if_t<__can_forward<_Tp>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI
   _CCCL_CONSTEXPR_CXX14 explicit __tuple_leaf(_Tp&& __t) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Hp, _Tp))
@@ -375,6 +387,8 @@ public:
     __value_ = _CUDA_VSTD::forward<_Tp>(__t);
     return *this;
   }
+
+  _CCCL_DIAG_POP
 
   _LIBCUDACXX_HIDE_FROM_ABI int swap(__tuple_leaf& __t) noexcept(__is_nothrow_swappable<__tuple_leaf>::value)
   {
@@ -853,6 +867,15 @@ public:
     _If<__tuple_like_with_size<_Tuple, sizeof...(_Tp)>::value,
         typename __tuple_constraints<_Tp...>::template __tuple_like_constraints<_Tuple>,
         __invalid_tuple_constraints>;
+
+  // Horrible hack to make tuple_of_iterator_references work
+  template <class _TupleOfIteratorReferences,
+            __enable_if_t<__is_tuple_of_iterator_references<_TupleOfIteratorReferences>::value, int> = 0,
+            __enable_if_t<(tuple_size<_TupleOfIteratorReferences>::value == sizeof...(_Tp)), int>    = 0>
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 tuple(_TupleOfIteratorReferences&& __t)
+      : tuple(_CUDA_VSTD::forward<_TupleOfIteratorReferences>(__t).template __to_tuple<_Tp...>(
+          __make_tuple_indices_t<sizeof...(_Tp)>()))
+  {}
 
   template <class _Tuple,
             class _Constraints                                            = __tuple_like_constraints<_Tuple>,

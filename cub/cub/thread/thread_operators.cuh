@@ -47,14 +47,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/type_traits.cuh> // always_false
 #include <cub/util_cpp_dialect.cuh>
 #include <cub/util_type.cuh>
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-#include <cuda/std/functional>
-_CCCL_SUPPRESS_DEPRECATED_POP
-#include <cuda/std/type_traits>
-#include <cuda/std/utility>
+#include <cuda/std/functional> // cuda::std::plus
+#include <cuda/std/type_traits> // cuda::std::common_type
+#include <cuda/std/utility> // cuda::std::forward
+
+// #include <functional> // std::plus
 
 CUB_NAMESPACE_BEGIN
 
@@ -412,5 +413,122 @@ _CCCL_HOST_DEVICE BinaryFlip<BinaryOpT> MakeBinaryFlip(BinaryOpT binary_op)
 {
   return BinaryFlip<BinaryOpT>(binary_op);
 }
+
+namespace internal
+{
+// TODO: Remove DPX specilization when nvbug 4823237 is fixed
+
+template <typename T>
+struct DpxMin
+{
+  static_assert(detail::always_false<T>(), "DpxMin is not supported for this type");
+};
+
+template <>
+struct DpxMin<::cuda::std::int16_t>
+{
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
+  {
+    return __vmins2(a, b);
+  }
+};
+
+template <>
+struct DpxMin<::cuda::std::uint16_t>
+{
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
+  {
+    return __vminu2(a, b);
+  }
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+
+template <typename T>
+struct DpxMax
+{
+  static_assert(detail::always_false<T>(), "DpxMax is not supported for this type");
+};
+
+template <>
+struct DpxMax<::cuda::std::int16_t>
+{
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
+  {
+    return __vmaxs2(a, b);
+  }
+};
+
+template <>
+struct DpxMax<::cuda::std::uint16_t>
+{
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
+  {
+    return __vmaxu2(a, b);
+  }
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+
+template <typename T>
+struct DpxSum
+{
+  static_assert(detail::always_false<T>(), "DpxSum is not supported for this type");
+};
+
+template <>
+struct DpxSum<::cuda::std::int16_t>
+{
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
+  {
+    return __vadd2(a, b);
+  }
+};
+
+template <>
+struct DpxSum<::cuda::std::uint16_t>
+{
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
+  {
+    return __vadd2(a, b);
+  }
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+
+template <typename ReduceOp, typename T>
+struct CubOperatorToDpx
+{
+  static_assert(detail::always_false<T>(), "Dpx is not supported for this operator");
+};
+
+template <typename T>
+struct CubOperatorToDpx<cub::Min, T>
+{
+  using type = DpxMin<T>;
+};
+
+template <typename T>
+struct CubOperatorToDpx<cub::Max, T>
+{
+  using type = DpxMax<T>;
+};
+
+template <typename T>
+struct CubOperatorToDpx<cub::Sum, T>
+{
+  using type = DpxSum<T>;
+};
+
+// template <typename T>
+// struct CubOperatorToDpx<std::plus<T>, T>
+//{
+//   using type = DpxSum<T>;
+// };
+
+template <typename ReduceOp, typename T>
+using cub_operator_to_dpx_t = CubOperatorToDpx<ReduceOp, T>;
+
+} // namespace internal
 
 CUB_NAMESPACE_END

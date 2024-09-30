@@ -46,36 +46,7 @@ struct __libcpp_is_pointer<_Tp*> : public true_type
 {};
 
 template <class _Tp>
-struct __libcpp_remove_objc_qualifiers
-{
-  typedef _Tp type;
-};
-#  if defined(_LIBCUDACXX_HAS_OBJC_ARC)
-template <class _Tp>
-struct __libcpp_remove_objc_qualifiers<_Tp __strong>
-{
-  typedef _Tp type;
-};
-template <class _Tp>
-struct __libcpp_remove_objc_qualifiers<_Tp __weak>
-{
-  typedef _Tp type;
-};
-template <class _Tp>
-struct __libcpp_remove_objc_qualifiers<_Tp __autoreleasing>
-{
-  typedef _Tp type;
-};
-template <class _Tp>
-struct __libcpp_remove_objc_qualifiers<_Tp __unsafe_unretained>
-{
-  typedef _Tp type;
-};
-#  endif
-
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_pointer
-    : public __libcpp_is_pointer<typename __libcpp_remove_objc_qualifiers<__remove_cv_t<_Tp>>::type>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_pointer : public __libcpp_is_pointer<__remove_cv_t<_Tp>>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)

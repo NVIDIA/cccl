@@ -16,13 +16,10 @@ endif()
 # Enable CXX so CMake can configure install paths
 project(CCCL LANGUAGES CXX)
 
-# Optionally include installation rules for non-top-level builds:
-option(CCCL_ENABLE_INSTALL_RULES "Enable installation of CCCL." ${CCCL_TOPLEVEL_PROJECT})
-if (CCCL_ENABLE_INSTALL_RULES)
-  include(cmake/CCCLInstallRules.cmake)
-endif()
+include(cmake/CCCLInstallRules.cmake)
 
 # Support adding CCCL to a parent project via add_subdirectory.
+include(cmake/CCCLAddSubdirHelper.cmake) # Always include, this is used by subprojects as well.
 if (NOT CCCL_TOPLEVEL_PROJECT)
   include(cmake/CCCLAddSubdir.cmake)
 endif()
@@ -46,17 +43,18 @@ if (CCCL_ENABLE_UNSTABLE)
   option(CCCL_ENABLE_CUDAX "Enable the CUDA Experimental developer build." ON)
 endif()
 
-option(CCCL_DISABLE_EXCEPTIONS "Disable use of exceptions within CCCL libraries." OFF)
-if (CCCL_DISABLE_EXCEPTIONS)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DCCCL_DISABLE_EXCEPTIONS")
-endif()
-
 include(CTest)
 enable_testing()
 
 if (CCCL_TOPLEVEL_PROJECT)
-  include(cmake/CCCLUtilities.cmake) # include this first
+  include(cmake/AppendOptionIfAvailable.cmake)
+  include(cmake/CCCLUtilities.cmake) # include this before other CCCL helpers
+
+  include(cmake/CCCLBuildCompilerTargets.cmake)
   include(cmake/CCCLClangdCompileInfo.cmake)
+  include(cmake/CCCLConfigureTarget.cmake)
+
+  cccl_build_compiler_targets()
 endif()
 
 if (CCCL_ENABLE_LIBCUDACXX)

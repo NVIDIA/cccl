@@ -43,6 +43,9 @@ template <class _Tp>
 struct underlying_type : __underlying_type_impl<_Tp, is_enum<_Tp>::value>
 {};
 
+template <class _Tp>
+using __underlying_type_t = typename underlying_type<_Tp>::type;
+
 #  if _CCCL_STD_VER > 2011
 template <class _Tp>
 using underlying_type_t = typename underlying_type<_Tp>::type;

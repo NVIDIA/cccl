@@ -15,15 +15,10 @@ void TestPermutationIteratorSimple()
   using Iterator = typename Vector::iterator;
 
   Vector source(8);
-  Vector indices(4);
+  Vector indices{3, 0, 5, 7};
 
   // initialize input
   thrust::sequence(source.begin(), source.end(), 1);
-
-  indices[0] = 3;
-  indices[1] = 0;
-  indices[2] = 5;
-  indices[3] = 7;
 
   thrust::permutation_iterator<Iterator, Iterator> begin(source.begin(), indices.begin());
   thrust::permutation_iterator<Iterator, Iterator> end(source.begin(), indices.end());
@@ -45,14 +40,8 @@ void TestPermutationIteratorSimple()
   *begin = 10;
   *end   = 20;
 
-  ASSERT_EQUAL(source[0], 10);
-  ASSERT_EQUAL(source[1], 2);
-  ASSERT_EQUAL(source[2], 3);
-  ASSERT_EQUAL(source[3], 4);
-  ASSERT_EQUAL(source[4], 5);
-  ASSERT_EQUAL(source[5], 20);
-  ASSERT_EQUAL(source[6], 7);
-  ASSERT_EQUAL(source[7], 8);
+  Vector ref{10, 2, 3, 4, 5, 20, 7, 8};
+  ASSERT_EQUAL(source, ref);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPermutationIteratorSimple);
 static_assert(cuda::std::is_trivially_copy_constructible<thrust::permutation_iterator<int*, int*>>::value, "");
@@ -64,25 +53,18 @@ void TestPermutationIteratorGather()
   using Iterator = typename Vector::iterator;
 
   Vector source(8);
-  Vector indices(4);
+  Vector indices{3, 0, 5, 7};
   Vector output(4, 10);
 
   // initialize input
   thrust::sequence(source.begin(), source.end(), 1);
 
-  indices[0] = 3;
-  indices[1] = 0;
-  indices[2] = 5;
-  indices[3] = 7;
-
   thrust::permutation_iterator<Iterator, Iterator> p_source(source.begin(), indices.begin());
 
   thrust::copy(p_source, p_source + 4, output.begin());
 
-  ASSERT_EQUAL(output[0], 4);
-  ASSERT_EQUAL(output[1], 1);
-  ASSERT_EQUAL(output[2], 6);
-  ASSERT_EQUAL(output[3], 8);
+  Vector ref{4, 1, 6, 8};
+  ASSERT_EQUAL(output, ref);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPermutationIteratorGather);
 
@@ -92,30 +74,19 @@ void TestPermutationIteratorScatter()
   using Iterator = typename Vector::iterator;
 
   Vector source(4, 10);
-  Vector indices(4);
+  Vector indices{3, 0, 5, 7};
   Vector output(8);
 
   // initialize output
   thrust::sequence(output.begin(), output.end(), 1);
-
-  indices[0] = 3;
-  indices[1] = 0;
-  indices[2] = 5;
-  indices[3] = 7;
 
   // construct transform_iterator
   thrust::permutation_iterator<Iterator, Iterator> p_output(output.begin(), indices.begin());
 
   thrust::copy(source.begin(), source.end(), p_output);
 
-  ASSERT_EQUAL(output[0], 10);
-  ASSERT_EQUAL(output[1], 2);
-  ASSERT_EQUAL(output[2], 3);
-  ASSERT_EQUAL(output[3], 10);
-  ASSERT_EQUAL(output[4], 5);
-  ASSERT_EQUAL(output[5], 10);
-  ASSERT_EQUAL(output[6], 7);
-  ASSERT_EQUAL(output[7], 10);
+  Vector ref{10, 2, 3, 10, 5, 10, 7, 10};
+  ASSERT_EQUAL(output, ref);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPermutationIteratorScatter);
 
@@ -123,25 +94,18 @@ template <class Vector>
 void TestMakePermutationIterator()
 {
   Vector source(8);
-  Vector indices(4);
+  Vector indices{3, 0, 5, 7};
   Vector output(4, 10);
 
   // initialize input
   thrust::sequence(source.begin(), source.end(), 1);
 
-  indices[0] = 3;
-  indices[1] = 0;
-  indices[2] = 5;
-  indices[3] = 7;
-
   thrust::copy(thrust::make_permutation_iterator(source.begin(), indices.begin()),
                thrust::make_permutation_iterator(source.begin(), indices.begin()) + 4,
                output.begin());
 
-  ASSERT_EQUAL(output[0], 4);
-  ASSERT_EQUAL(output[1], 1);
-  ASSERT_EQUAL(output[2], 6);
-  ASSERT_EQUAL(output[3], 8);
+  Vector ref{4, 1, 6, 8};
+  ASSERT_EQUAL(output, ref);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestMakePermutationIterator);
 
@@ -152,16 +116,11 @@ void TestPermutationIteratorReduce()
   using Iterator = typename Vector::iterator;
 
   Vector source(8);
-  Vector indices(4);
+  Vector indices{3, 0, 5, 7};
   Vector output(4, 10);
 
   // initialize input
   thrust::sequence(source.begin(), source.end(), 1);
-
-  indices[0] = 3;
-  indices[1] = 0;
-  indices[2] = 5;
-  indices[3] = 7;
 
   // construct transform_iterator
   thrust::permutation_iterator<Iterator, Iterator> iter(source.begin(), indices.begin());
@@ -190,21 +149,16 @@ void TestPermutationIteratorHostDeviceGather()
   using DeviceIterator = DeviceVector::iterator;
 
   HostVector h_source(8);
-  HostVector h_indices(4);
+  HostVector h_indices{3, 0, 5, 7};
   HostVector h_output(4, 10);
 
   DeviceVector d_source(8);
-  DeviceVector d_indices(4);
+  DeviceVector d_indices(h_indices);
   DeviceVector d_output(4, 10);
 
   // initialize source
   thrust::sequence(h_source.begin(), h_source.end(), 1);
   thrust::sequence(d_source.begin(), d_source.end(), 1);
-
-  h_indices[0] = d_indices[0] = 3;
-  h_indices[1] = d_indices[1] = 0;
-  h_indices[2] = d_indices[2] = 5;
-  h_indices[3] = d_indices[3] = 7;
 
   thrust::permutation_iterator<HostIterator, HostIterator> p_h_source(h_source.begin(), h_indices.begin());
   thrust::permutation_iterator<DeviceIterator, DeviceIterator> p_d_source(d_source.begin(), d_indices.begin());
@@ -212,18 +166,14 @@ void TestPermutationIteratorHostDeviceGather()
   // gather host->device
   thrust::copy(p_h_source, p_h_source + 4, d_output.begin());
 
-  ASSERT_EQUAL(d_output[0], 4);
-  ASSERT_EQUAL(d_output[1], 1);
-  ASSERT_EQUAL(d_output[2], 6);
-  ASSERT_EQUAL(d_output[3], 8);
+  DeviceVector dref{4, 1, 6, 8};
+  ASSERT_EQUAL(d_output, dref);
 
   // gather device->host
   thrust::copy(p_d_source, p_d_source + 4, h_output.begin());
 
-  ASSERT_EQUAL(h_output[0], 4);
-  ASSERT_EQUAL(h_output[1], 1);
-  ASSERT_EQUAL(h_output[2], 6);
-  ASSERT_EQUAL(h_output[3], 8);
+  HostVector href{4, 1, 6, 8};
+  ASSERT_EQUAL(h_output, href);
 }
 DECLARE_UNITTEST(TestPermutationIteratorHostDeviceGather);
 
@@ -236,21 +186,16 @@ void TestPermutationIteratorHostDeviceScatter()
   using DeviceIterator = DeviceVector::iterator;
 
   HostVector h_source(4, 10);
-  HostVector h_indices(4);
+  HostVector h_indices{3, 0, 5, 7};
   HostVector h_output(8);
 
   DeviceVector d_source(4, 10);
-  DeviceVector d_indices(4);
+  DeviceVector d_indices(h_indices);
   DeviceVector d_output(8);
 
   // initialize source
   thrust::sequence(h_output.begin(), h_output.end(), 1);
   thrust::sequence(d_output.begin(), d_output.end(), 1);
-
-  h_indices[0] = d_indices[0] = 3;
-  h_indices[1] = d_indices[1] = 0;
-  h_indices[2] = d_indices[2] = 5;
-  h_indices[3] = d_indices[3] = 7;
 
   thrust::permutation_iterator<HostIterator, HostIterator> p_h_output(h_output.begin(), h_indices.begin());
   thrust::permutation_iterator<DeviceIterator, DeviceIterator> p_d_output(d_output.begin(), d_indices.begin());
@@ -258,26 +203,14 @@ void TestPermutationIteratorHostDeviceScatter()
   // scatter host->device
   thrust::copy(h_source.begin(), h_source.end(), p_d_output);
 
-  ASSERT_EQUAL(d_output[0], 10);
-  ASSERT_EQUAL(d_output[1], 2);
-  ASSERT_EQUAL(d_output[2], 3);
-  ASSERT_EQUAL(d_output[3], 10);
-  ASSERT_EQUAL(d_output[4], 5);
-  ASSERT_EQUAL(d_output[5], 10);
-  ASSERT_EQUAL(d_output[6], 7);
-  ASSERT_EQUAL(d_output[7], 10);
+  DeviceVector dref{10, 2, 3, 10, 5, 10, 7, 10};
+  ASSERT_EQUAL(d_output, dref);
 
   // scatter device->host
   thrust::copy(d_source.begin(), d_source.end(), p_h_output);
 
-  ASSERT_EQUAL(h_output[0], 10);
-  ASSERT_EQUAL(h_output[1], 2);
-  ASSERT_EQUAL(h_output[2], 3);
-  ASSERT_EQUAL(h_output[3], 10);
-  ASSERT_EQUAL(h_output[4], 5);
-  ASSERT_EQUAL(h_output[5], 10);
-  ASSERT_EQUAL(h_output[6], 7);
-  ASSERT_EQUAL(h_output[7], 10);
+  HostVector href(dref);
+  ASSERT_EQUAL(h_output, href);
 }
 DECLARE_UNITTEST(TestPermutationIteratorHostDeviceScatter);
 
@@ -298,10 +231,8 @@ void TestPermutationIteratorWithCountingIterator()
 
     thrust::copy(first, last, output.begin());
 
-    ASSERT_EQUAL(output[0], 0);
-    ASSERT_EQUAL(output[1], 1);
-    ASSERT_EQUAL(output[2], 2);
-    ASSERT_EQUAL(output[3], 3);
+    Vector ref{0, 1, 2, 3};
+    ASSERT_EQUAL(output, ref);
   }
 
   // test copy()
@@ -313,10 +244,8 @@ void TestPermutationIteratorWithCountingIterator()
                       output.begin(),
                       thrust::identity<T>());
 
-    ASSERT_EQUAL(output[0], 0);
-    ASSERT_EQUAL(output[1], 1);
-    ASSERT_EQUAL(output[2], 2);
-    ASSERT_EQUAL(output[3], 3);
+    Vector ref{0, 1, 2, 3};
+    ASSERT_EQUAL(output, ref);
   }
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestPermutationIteratorWithCountingIterator);

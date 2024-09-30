@@ -34,6 +34,7 @@
 #include <cub/block/block_store.cuh>
 #include <cub/block/radix_rank_sort_operations.cuh>
 #include <cub/util_allocator.cuh>
+#include <cub/util_vsmem.cuh>
 
 #include <algorithm>
 #include <iostream>
@@ -240,7 +241,7 @@ void Test()
     cub::detail::block_radix_rank_t<RankAlgorithm, BlockThreads, RadixBits, Descending, ScanAlgorithm>;
   using storage_t = typename block_radix_rank::TempStorage;
 
-  cub::Int2Type<(sizeof(storage_t) <= 48 * 1024)> fits_smem_capacity;
+  cub::Int2Type<(sizeof(storage_t) <= cub::detail::max_smem_per_block)> fits_smem_capacity;
 
   TestValid<RankAlgorithm, BlockThreads, ItemsPerThread, RadixBits, ScanAlgorithm, Descending, Key>(fits_smem_capacity);
 }

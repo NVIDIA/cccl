@@ -22,7 +22,7 @@
 #include "util/context.h"
 #include "util/errors.h"
 #include "util/types.h"
-#include <cccl/reduce.h>
+#include <cccl/c/reduce.h>
 #include <nvJitLink.h>
 #include <nvrtc.h>
 

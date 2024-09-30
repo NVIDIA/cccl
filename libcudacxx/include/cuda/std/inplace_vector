@@ -670,7 +670,7 @@ struct __inplace_vector_base<_Tp, 0, __inplace_vector_specialization::__empty>
   template <class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp& unchecked_emplace_back(_Args&&...) noexcept
   {
-    _LIBCUDACXX_UNREACHABLE();
+    _CCCL_UNREACHABLE();
 #  if defined(_CCCL_COMPILER_MSVC)
     return *begin();
 #  endif // _CCCL_COMPILER_MSVC
@@ -679,25 +679,25 @@ struct __inplace_vector_base<_Tp, 0, __inplace_vector_specialization::__empty>
 protected:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void __destroy(iterator, iterator) noexcept
   {
-    _LIBCUDACXX_UNREACHABLE();
+    _CCCL_UNREACHABLE();
   }
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void __uninitialized_value_construct(iterator, iterator) noexcept
   {
-    _LIBCUDACXX_UNREACHABLE();
+    _CCCL_UNREACHABLE();
   }
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void __uninitialized_fill(iterator, iterator, const _Tp&) noexcept
   {
-    _LIBCUDACXX_UNREACHABLE();
+    _CCCL_UNREACHABLE();
   }
   template <class _Iter>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void __uninitialized_copy(_Iter, _Iter, iterator) noexcept
   {
-    _LIBCUDACXX_UNREACHABLE();
+    _CCCL_UNREACHABLE();
   }
   template <class _Iter>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void __uninitialized_move(_Iter, _Iter, iterator) noexcept
   {
-    _LIBCUDACXX_UNREACHABLE();
+    _CCCL_UNREACHABLE();
   }
 };
 

@@ -20,7 +20,12 @@
 #include <catch2/catch.hpp>
 #include <nv/target>
 
-namespace cudax = cuda::experimental; // NOLINT: misc-unused-alias-decls
+namespace cuda::experimental::__async
+{
+}
+
+namespace cudax       = cuda::experimental; // NOLINT: misc-unused-alias-decls
+namespace cudax_async = cuda::experimental::__async; // NOLINT: misc-unused-alias-decls
 
 #define CUDART(call) REQUIRE((call) == cudaSuccess)
 

@@ -24,6 +24,7 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/is_extended_floating_point.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
@@ -32,18 +33,9 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-struct __is_nvfp16 : false_type
-{};
-
-template <class _Tp>
-struct __is_nvbf16 : false_type
-{};
-
-template <class _Tp>
 struct __is_complex_float
 {
-  static constexpr auto value =
-    _CCCL_TRAIT(is_floating_point, _Tp) || __is_nvfp16<_Tp>::value || __is_nvbf16<_Tp>::value;
+  static constexpr auto value = _CCCL_TRAIT(is_floating_point, _Tp) || _CCCL_TRAIT(__is_extended_floating_point, _Tp);
 };
 
 template <class _Tp>
