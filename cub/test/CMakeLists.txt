@@ -21,11 +21,6 @@ endif()
 include("${CUB_SOURCE_DIR}/cmake/CPM.cmake")
 CPMAddPackage("gh:catchorg/Catch2@2.13.9")
 
-option(METAL_BUILD_DOC OFF)
-option(METAL_BUILD_EXAMPLES OFF)
-option(METAL_BUILD_TESTS OFF)
-CPMAddPackage("gh:brunocodutra/metal@2.1.4")
-
 CPMAddPackage(
   NAME NVTX
   GITHUB_REPOSITORY NVIDIA/NVTX
@@ -224,7 +219,6 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
         target_link_libraries(${config_c2run_target} PRIVATE
           ${cub_target}
           ${config_c2h_target}
-          Metal
           Catch2::Catch2)
         cub_clone_target_properties(${config_c2run_target} ${cub_target})
         cub_configure_cuda_target(${config_c2run_target} RDC ${cdp_val})
@@ -269,7 +263,6 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
     target_link_libraries(${test_target} PRIVATE
       ${cub_target}
       ${config_c2h_target}
-      Metal
       Catch2::Catch2
     )
     cub_clone_target_properties(${test_target} ${cub_target})

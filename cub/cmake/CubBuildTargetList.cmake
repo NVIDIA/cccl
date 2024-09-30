@@ -49,23 +49,13 @@ define_property(TARGET PROPERTY _CUB_PREFIX
 )
 
 function(cub_set_target_properties target_name dialect prefix)
+  cccl_configure_target(${target_name} DIALECT ${dialect})
+
   set_target_properties(${target_name}
     PROPERTIES
       _CUB_DIALECT ${dialect}
       _CUB_PREFIX ${prefix}
   )
-
-  get_target_property(type ${target_name} TYPE)
-  if (NOT ${type} STREQUAL "INTERFACE_LIBRARY")
-    set_target_properties(${target_name}
-      PROPERTIES
-        CXX_STANDARD ${dialect}
-        CUDA_STANDARD ${dialect}
-        ARCHIVE_OUTPUT_DIRECTORY "${CUB_LIBRARY_OUTPUT_DIR}"
-        LIBRARY_OUTPUT_DIRECTORY "${CUB_LIBRARY_OUTPUT_DIR}"
-        RUNTIME_OUTPUT_DIRECTORY "${CUB_EXECUTABLE_OUTPUT_DIR}"
-    )
-  endif()
 endfunction()
 
 # Get a cub property from a target and store it in var_name
@@ -109,7 +99,7 @@ function(_cub_add_target_to_target_list target_name dialect prefix)
 
   target_link_libraries(${target_name} INTERFACE
     CUB::CUB
-    cub.compiler_interface
+    cub.compiler_interface_cpp${dialect}
   )
 
   if (TARGET cub.thrust)
@@ -181,21 +171,18 @@ function(cub_build_target_list)
   add_flag_option(IGNORE_DEPRECATED_CPP_14 "Don't warn about deprecated C++14." OFF)
   add_flag_option(IGNORE_DEPRECATED_COMPILER "Don't warn about deprecated compilers." OFF)
 
-  # Build cub.compiler_interface with warning flags, etc
-  # This must be called before _cub_add_target_to_target_list.
-  cub_build_compiler_targets()
-
   # Set up the CUB target while testing out our find_package scripts.
   find_package(CUB REQUIRED CONFIG
     NO_DEFAULT_PATH # Only check the explicit path in HINTS:
-    HINTS "${CUB_SOURCE_DIR}"
+    HINTS "${CCCL_SOURCE_DIR}/lib/cmake/cub/"
   )
 
   # TODO
   # Some of the iterators and unittests depend on thrust. We should break the
   # cyclical dependency by migrating CUB's Thrust bits into Thrust.
   find_package(Thrust ${CUB_VERSION} EXACT CONFIG
-    HINTS "../thrust" # Monorepo path
+    NO_DEFAULT_PATH # Only check the explicit path in HINTS:
+    HINTS "${CCCL_SOURCE_DIR}/lib/cmake/thrust/"
   )
 
   if (Thrust_FOUND)

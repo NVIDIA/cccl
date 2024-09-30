@@ -35,7 +35,6 @@ foreach (root_type IN ITEMS SOURCE INSTALL)
         "${suffix}"
         ${cmake_opts}
         -D "CCCL_ROOT=${cccl_root}"
-        -D "ROOT_TYPE=${root_type}"
         -D "COMPONENTS=${components}"
         -D "PACKAGE_TYPE=${package_type}"
         -D "CCCL_ENABLE_UNSTABLE=${CCCL_ENABLE_UNSTABLE}"

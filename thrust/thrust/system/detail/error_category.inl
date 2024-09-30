@@ -92,9 +92,10 @@ public:
 
     // XXX strerror is not thread-safe:
     //     prefer strerror_r (which is not provided on windows)
-    THRUST_DISABLE_MSVC_WARNING_BEGIN(4996)
+    _CCCL_DIAG_PUSH
+    _CCCL_DIAG_SUPPRESS_MSVC(4996)
     const char* c_str = std::strerror(ev);
-    THRUST_DISABLE_MSVC_WARNING_END(4996)
+    _CCCL_DIAG_POP
     return c_str ? std::string(c_str) : unknown_err;
   }
 }; // end generic_category_result

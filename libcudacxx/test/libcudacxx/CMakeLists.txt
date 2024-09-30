@@ -55,6 +55,7 @@ endif()
 
 if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
   string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
+    " ${CMAKE_CUDA_FLAGS}"
     " -Xclang -fcuda-allow-variadic-functions"
     " -Xclang -Wno-unused-parameter"
     " -Wno-unknown-cuda-version"
@@ -63,6 +64,7 @@ if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
     " ${LIBCUDACXX_WARNING_LEVEL}")
 
   string(APPEND LIBCUDACXX_TEST_LINKER_FLAGS
+    " ${CMAKE_CUDA_FLAGS}"
     " -L${CUDAToolkit_LIBRARY_DIR}"
     " -lcuda"
     " -lcudart")
@@ -112,7 +114,8 @@ if (NOT LIBCUDACXX_TEST_WITH_NVRTC)
   add_custom_target(libcudacxx.test.lit.precompile
     DEPENDS libcudacxx.test.public_headers libcudacxx.test.internal_headers libcudacxx.test.public_headers_host_only
     COMMAND "${CMAKE_COMMAND}" -E env "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
-    "${libcudacxx_LIT}" -vv --no-progress-bar ${libcudacxx_LIT_FLAGS} "-Dexecutor=\"NoopExecutor()\"" "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
+    "${libcudacxx_LIT}" -vv --no-progress-bar --time-tests ${libcudacxx_LIT_FLAGS}
+    "-Dexecutor=\"NoopExecutor()\"" "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
   )
 
 endif()
@@ -125,12 +128,11 @@ set(libcudacxx_LIT_PARALLEL_LEVEL 8 CACHE STRING
 add_test(NAME libcudacxx.test.lit COMMAND
   "${CMAKE_COMMAND}" -E env
     "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
-  "${libcudacxx_LIT}" -vv --no-progress-bar ${libcudacxx_LIT_FLAGS}
-    -j "${libcudacxx_LIT_PARALLEL_LEVEL}"
-      "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
+  "${libcudacxx_LIT}" -vv --no-progress-bar --time-tests ${libcudacxx_LIT_FLAGS}
+    -j "${libcudacxx_LIT_PARALLEL_LEVEL}" "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
 )
 
 set_tests_properties(libcudacxx.test.lit PROPERTIES
-  TIMEOUT 4800
+  TIMEOUT 5000
   RUN_SERIAL TRUE
 )

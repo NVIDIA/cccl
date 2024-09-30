@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_BUFFER
-#define __CUDAX_BUFFER
+#ifndef __CUDAX_BUFFER__
+#define __CUDAX_BUFFER__
 
 #include <cuda/std/detail/__config>
 
@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/experimental/__container/uninitialized_async_buffer.cuh>
 #include <cuda/experimental/__container/uninitialized_buffer.cuh>
 
 #endif // __CUDAX_BUFFER

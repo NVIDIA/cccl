@@ -33,10 +33,6 @@
 #     to ensure that dialect information is updated correctly, e.g.
 #     `_cn_clone_target_properties(${my_cudax_test} ${some_cudax_target})`
 
-# Place build outputs in the root project dir:
-set(cudax_LIBRARY_OUTPUT_DIR "${CMAKE_BINARY_DIR}/lib")
-set(cudax_EXECUTABLE_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin")
-
 # Define available dialects:
 set(cudax_CPP_DIALECT_OPTIONS
   17 20
@@ -66,23 +62,13 @@ define_property(TARGET PROPERTY _cudax_PREFIX
 )
 
 function(cudax_set_target_properties target_name dialect prefix)
+  cccl_configure_target(${target_name} DIALECT ${dialect})
+
   set_target_properties(${target_name}
     PROPERTIES
       _cudax_DIALECT ${dialect}
       _cudax_PREFIX ${prefix}
   )
-
-  get_target_property(type ${target_name} TYPE)
-  if (NOT ${type} STREQUAL "INTERFACE_LIBRARY")
-    set_target_properties(${target_name}
-      PROPERTIES
-        CXX_STANDARD ${dialect}
-        CUDA_STANDARD ${dialect}
-        ARCHIVE_OUTPUT_DIRECTORY "${cudax_LIBRARY_OUTPUT_DIR}"
-        LIBRARY_OUTPUT_DIRECTORY "${cudax_LIBRARY_OUTPUT_DIR}"
-        RUNTIME_OUTPUT_DIRECTORY "${cudax_EXECUTABLE_OUTPUT_DIR}"
-    )
-  endif()
 endfunction()
 
 # Get a cudax property from a target and store it in var_name
@@ -121,6 +107,13 @@ function(_cn_init_target_list)
   set(cudax_TARGETS "" CACHE INTERNAL "" FORCE)
 endfunction()
 
+# Bring in thrust as a dev dependency, only used in tests:
+find_package(Thrust ${cudax_VERSION} EXACT CONFIG
+  NO_DEFAULT_PATH # Only check the explicit path in HINTS:
+  HINTS "${CCCL_SOURCE_DIR}/lib/cmake/thrust/"
+)
+thrust_create_target(cudax::Thrust)
+
 function(_cn_add_target_to_target_list target_name dialect prefix)
   add_library(${target_name} INTERFACE)
 
@@ -128,7 +121,8 @@ function(_cn_add_target_to_target_list target_name dialect prefix)
 
   target_link_libraries(${target_name} INTERFACE
     cudax::cudax
-    cudax.compiler_interface
+    cudax::Thrust
+    cudax.compiler_interface_cpp${dialect}
   )
 
   set(cudax_TARGETS ${cudax_TARGETS} ${target_name} CACHE INTERNAL "" FORCE)
@@ -155,7 +149,7 @@ function(cudax_build_target_list)
   # Set up the cudax::cudax target while testing out our find_package scripts.
   find_package(cudax REQUIRED CONFIG
     NO_DEFAULT_PATH # Only check the explicit path in HINTS:
-    HINTS "${cudax_SOURCE_DIR}"
+    HINTS "${CCCL_SOURCE_DIR}/lib/cmake/cudax/"
   )
 
   # Build cudax_TARGETS

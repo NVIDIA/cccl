@@ -216,7 +216,6 @@ C++20
 #endif // no system header
 
 #include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
-#include <cuda/std/detail/libcxx/include/__availability>
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 #  include <cuda/std/__compare/common_comparison_category.h>
 #  include <cuda/std/__compare/compare_three_way_result.h>
@@ -248,6 +247,7 @@ C++20
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/type_identity.h>
+#include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
@@ -257,7 +257,6 @@ C++20
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/__variant/monostate.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/cstdlib>
 #include <cuda/std/initializer_list>
 #include <cuda/std/tuple>
 #include <cuda/std/version>
@@ -281,8 +280,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION
 using ::std::bad_variant_access;
 
 #  else // ^^^ __cpp_lib_variant ^^^ / vvv !__cpp_lib_variant vvv
-class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_AVAILABILITY_BAD_VARIANT_ACCESS bad_variant_access
-    : public ::std::exception
+class _CCCL_TYPE_VISIBILITY_DEFAULT bad_variant_access : public ::std::exception
 {
 public:
   const char* what() const noexcept override
@@ -359,7 +357,7 @@ template <size_t _Ip, class... _Types>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT variant_alternative<_Ip, variant<_Types...>>
 {
   static_assert(_Ip < sizeof...(_Types), "Index out of bounds in _CUDA_VSTD::variant_alternative<>");
-  using type = __type_pack_element<_Ip, _Types...>;
+  using type = __type_index_c<_Ip, _Types...>;
 };
 
 _LIBCUDACXX_INLINE_VAR constexpr size_t variant_npos = static_cast<size_t>(-1);
@@ -653,7 +651,7 @@ struct __variant
         _CUDA_VSTD::forward<_Visitor>(__visitor),
         _CUDA_VSTD::forward<_Vs>(__vs)...);
     }
-    _LIBCUDACXX_UNREACHABLE();
+    _CCCL_UNREACHABLE();
   }
   _CCCL_NV_DIAG_DEFAULT(940) // End suppression of no return at end of function
 
@@ -961,7 +959,7 @@ private:
       return;
     }
     // We already checked that every variant has a value, so we should never reach this line
-    _LIBCUDACXX_UNREACHABLE();
+    _CCCL_UNREACHABLE();
   }
 };
 
@@ -1010,7 +1008,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __ctor : public __dtor<_Traits>
       return;
     }
     // We already checked that every variant has a value, so we should never reach this line
-    _LIBCUDACXX_UNREACHABLE();
+    _CCCL_UNREACHABLE();
   }
 
 public:
@@ -1135,7 +1133,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __assignment : public __copy_constructor<_Tr
       return;
     }
     // We already checked that every variant has a value, so we should never reach this line
-    _LIBCUDACXX_UNREACHABLE();
+    _CCCL_UNREACHABLE();
   }
 
 public:
@@ -1311,7 +1309,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __impl : public __copy_assignment<__traits<_
       return;
     }
     // We already checked that every variant has a value, so we should never reach this line
-    _LIBCUDACXX_UNREACHABLE();
+    _CCCL_UNREACHABLE();
   }
 
 public:
@@ -1729,7 +1727,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool holds_alternative(const variant<_Types.
 }
 
 template <size_t _Ip, class _Vp>
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr auto&& __generic_get(_Vp&& __v)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr auto&& __generic_get(_Vp&& __v)
 {
   using __variant_detail::__access::__variant;
   if (!_CUDA_VSTD::__holds_alternative<_Ip>(__v))
@@ -1740,9 +1738,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS cons
 }
 
 template <size_t _Ip, class... _Types>
-_LIBCUDACXX_HIDE_FROM_ABI
-_LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr variant_alternative_t<_Ip, variant<_Types...>>&
-get(variant<_Types...>& __v)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr variant_alternative_t<_Ip, variant<_Types...>>& get(variant<_Types...>& __v)
 {
   static_assert(_Ip < sizeof...(_Types), "");
   static_assert(!_CCCL_TRAIT(is_void, variant_alternative_t<_Ip, variant<_Types...>>), "");
@@ -1750,9 +1746,7 @@ get(variant<_Types...>& __v)
 }
 
 template <size_t _Ip, class... _Types>
-_LIBCUDACXX_HIDE_FROM_ABI
-_LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr variant_alternative_t<_Ip, variant<_Types...>>&&
-get(variant<_Types...>&& __v)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr variant_alternative_t<_Ip, variant<_Types...>>&& get(variant<_Types...>&& __v)
 {
   static_assert(_Ip < sizeof...(_Types), "");
   static_assert(!_CCCL_TRAIT(is_void, variant_alternative_t<_Ip, variant<_Types...>>), "");
@@ -1760,8 +1754,7 @@ get(variant<_Types...>&& __v)
 }
 
 template <size_t _Ip, class... _Types>
-_LIBCUDACXX_HIDE_FROM_ABI
-_LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr const variant_alternative_t<_Ip, variant<_Types...>>&
+_LIBCUDACXX_HIDE_FROM_ABI constexpr const variant_alternative_t<_Ip, variant<_Types...>>&
 get(const variant<_Types...>& __v)
 {
   static_assert(_Ip < sizeof...(_Types), "");
@@ -1770,8 +1763,7 @@ get(const variant<_Types...>& __v)
 }
 
 template <size_t _Ip, class... _Types>
-_LIBCUDACXX_HIDE_FROM_ABI
-_LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr const variant_alternative_t<_Ip, variant<_Types...>>&&
+_LIBCUDACXX_HIDE_FROM_ABI constexpr const variant_alternative_t<_Ip, variant<_Types...>>&&
 get(const variant<_Types...>&& __v)
 {
   static_assert(_Ip < sizeof...(_Types), "");
@@ -1780,30 +1772,28 @@ get(const variant<_Types...>&& __v)
 }
 
 template <class _Tp, class... _Types>
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr _Tp& get(variant<_Types...>& __v)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp& get(variant<_Types...>& __v)
 {
   static_assert(!_CCCL_TRAIT(is_void, _Tp), "");
   return _CUDA_VSTD::get<__find_exactly_one_t<_Tp, _Types...>::value>(__v);
 }
 
 template <class _Tp, class... _Types>
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr _Tp&& get(variant<_Types...>&& __v)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp&& get(variant<_Types...>&& __v)
 {
   static_assert(!_CCCL_TRAIT(is_void, _Tp), "");
   return _CUDA_VSTD::get<__find_exactly_one_t<_Tp, _Types...>::value>(_CUDA_VSTD::move(__v));
 }
 
 template <class _Tp, class... _Types>
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr const _Tp&
-get(const variant<_Types...>& __v)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& get(const variant<_Types...>& __v)
 {
   static_assert(!_CCCL_TRAIT(is_void, _Tp), "");
   return _CUDA_VSTD::get<__find_exactly_one_t<_Tp, _Types...>::value>(__v);
 }
 
 template <class _Tp, class... _Types>
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr const _Tp&&
-get(const variant<_Types...>&& __v)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp&& get(const variant<_Types...>&& __v)
 {
   static_assert(!_CCCL_TRAIT(is_void, _Tp), "");
   return _CUDA_VSTD::get<__find_exactly_one_t<_Tp, _Types...>::value>(_CUDA_VSTD::move(__v));
@@ -1908,7 +1898,7 @@ private:
       return __op(_CUDA_VSTD::get<0>(__lhs), _CUDA_VSTD::get<0>(__rhs));
     }
     // We already checked that every variant has a value, so we should never reach this line
-    _LIBCUDACXX_UNREACHABLE();
+    _CCCL_UNREACHABLE();
   }
 };
 
@@ -2063,8 +2053,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator>=(const variant<_Types...>& __
 }
 
 template <class... _Vs>
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr void
-__throw_if_valueless(_Vs&&... __vs)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr void __throw_if_valueless(_Vs&&... __vs)
 {
   int __unused[] = {
     (_CUDA_VSTD::__as_variant(__vs).valueless_by_exception() ? _CUDA_VSTD::__throw_bad_variant_access() : void(), 0)...,
@@ -2075,8 +2064,7 @@ __throw_if_valueless(_Vs&&... __vs)
 template <class _Visitor,
           class... _Vs,
           typename = void_t<decltype(_CUDA_VSTD::__as_variant(_CUDA_VSTD::declval<_Vs>()))...>>
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr decltype(auto)
-visit(_Visitor&& __visitor, _Vs&&... __vs)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) visit(_Visitor&& __visitor, _Vs&&... __vs)
 {
   using __variant_detail::__visitation::__variant;
   _CUDA_VSTD::__throw_if_valueless(_CUDA_VSTD::forward<_Vs>(__vs)...);
@@ -2087,8 +2075,7 @@ template <class _Rp,
           class _Visitor,
           class... _Vs,
           typename = void_t<decltype(_CUDA_VSTD::__as_variant(_CUDA_VSTD::declval<_Vs>()))...>>
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr _Rp
-visit(_Visitor&& __visitor, _Vs&&... __vs)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _Rp visit(_Visitor&& __visitor, _Vs&&... __vs)
 {
   using __variant_detail::__visitation::__variant;
   _CUDA_VSTD::__throw_if_valueless(_CUDA_VSTD::forward<_Vs>(__vs)...);
@@ -2115,7 +2102,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__enable_hash_helper<variant<_Types...
   {
     if (__index == _CurrentIndex)
     {
-      using __value_type = remove_const_t<__type_pack_element<_CurrentIndex, _Types...>>;
+      using __value_type = remove_const_t<__type_index_c<_CurrentIndex, _Types...>>;
       return hash<__value_type>{}(__access::__base::__get_alt<_CurrentIndex>(this->__as_base()).__value);
     }
     __hash(integral_constant<size_t, _CurrentIndex - 1>{}, __index, __v);
@@ -2125,11 +2112,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__enable_hash_helper<variant<_Types...
   {
     if (__index == 0)
     {
-      using __value_type = remove_const_t<__type_pack_element<0, _Types...>>;
+      using __value_type = remove_const_t<__type_index_c<0, _Types...>>;
       return hash<__value_type>{}(__access::__base::__get_alt<0>(this->__as_base()).__value);
     }
     // We already checked that every variant has a value, so we should never reach this line
-    _LIBCUDACXX_UNREACHABLE();
+    _CCCL_UNREACHABLE();
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_VISIBILITY_HIDDEN result_type operator()(const argument_type& __v) const

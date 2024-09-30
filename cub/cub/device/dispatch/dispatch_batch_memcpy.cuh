@@ -453,7 +453,7 @@ struct DispatchBatchMemcpy : SelectedPolicy
                                  * ActivePolicyT::AgentSmallBufferPolicyT::BUFFERS_PER_THREAD;
 
     // The number of thread blocks (or tiles) required to process all of the given buffers
-    BlockOffsetT num_tiles = DivideAndRoundUp(num_buffers, TILE_SIZE);
+    BlockOffsetT num_tiles = ::cuda::ceil_div(num_buffers, TILE_SIZE);
 
     using BlevBufferSrcsOutT          = ::cuda::std::_If<IsMemcpy, void*, cub::detail::value_t<InputBufferIt>>;
     using BlevBufferDstOutT           = ::cuda::std::_If<IsMemcpy, void*, cub::detail::value_t<OutputBufferIt>>;
@@ -528,7 +528,7 @@ struct DispatchBatchMemcpy : SelectedPolicy
     BlevBufferTileOffsetsOutItT d_blev_block_offsets = blev_buffer_block_alloc.get();
 
     // Kernels' grid sizes
-    BlockOffsetT init_grid_size         = DivideAndRoundUp(num_tiles, INIT_KERNEL_THREADS);
+    BlockOffsetT init_grid_size         = ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS);
     BlockOffsetT batch_memcpy_grid_size = num_tiles;
 
     // Kernels

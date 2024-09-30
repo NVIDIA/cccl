@@ -8,13 +8,7 @@ void TestMinElementSimple()
 {
   using T = typename Vector::value_type;
 
-  Vector data(6);
-  data[0] = 3;
-  data[1] = 5;
-  data[2] = 1;
-  data[3] = 2;
-  data[4] = 5;
-  data[5] = 1;
+  Vector data{3, 5, 1, 2, 5, 1};
 
   ASSERT_EQUAL(*thrust::min_element(data.begin(), data.end()), 1);
   ASSERT_EQUAL(thrust::min_element(data.begin(), data.end()) - data.begin(), 2);
@@ -29,13 +23,7 @@ void TestMinElementWithTransform()
 {
   using T = typename Vector::value_type;
 
-  Vector data(6);
-  data[0] = 3;
-  data[1] = 5;
-  data[2] = 1;
-  data[3] = 2;
-  data[4] = 5;
-  data[5] = 1;
+  Vector data{3, 5, 1, 2, 5, 1};
 
   ASSERT_EQUAL(*thrust::min_element(thrust::make_transform_iterator(data.begin(), thrust::negate<T>()),
                                     thrust::make_transform_iterator(data.end(), thrust::negate<T>())),

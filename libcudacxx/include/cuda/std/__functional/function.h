@@ -920,21 +920,13 @@ class __func<_Rp1 (^)(_ArgTypes1...), _Alloc, _Rp(_ArgTypes...)> : public __base
 
 public:
   _LIBCUDACXX_HIDE_FROM_ABI explicit __func(__block_type const& __f)
-#    ifdef _LIBCUDACXX_HAS_OBJC_ARC
-      : __f_(__f)
-#    else
       : __f_(reinterpret_cast<__block_type>(__f ? _Block_copy(__f) : nullptr))
-#    endif
   {}
 
   // [TODO] add && to save on a retain
 
   _LIBCUDACXX_HIDE_FROM_ABI explicit __func(__block_type __f, const _Alloc& /* unused */)
-#    ifdef _LIBCUDACXX_HAS_OBJC_ARC
-      : __f_(__f)
-#    else
       : __f_(reinterpret_cast<__block_type>(__f ? _Block_copy(__f) : nullptr))
-#    endif
   {}
 
   virtual __base<_Rp(_ArgTypes...)>* __clone() const
@@ -953,12 +945,10 @@ public:
 
   virtual void destroy() noexcept
   {
-#    ifndef _LIBCUDACXX_HAS_OBJC_ARC
     if (__f_)
     {
       _Block_release(__f_);
     }
-#    endif
     __f_ = 0;
   }
 

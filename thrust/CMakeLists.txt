@@ -38,12 +38,6 @@ endif()
 # GNUInstallDirs CMake module.
 enable_language(CXX)
 
-# Optionally include installation rules for non-top-level builds:
-option(THRUST_ENABLE_INSTALL_RULES "Enable installation of Thrust" ${THRUST_TOPLEVEL_PROJECT})
-if (THRUST_ENABLE_INSTALL_RULES)
-  include(cmake/ThrustInstallRules.cmake)
-endif()
-
 # Support adding Thrust to a parent project via add_subdirectory.
 # See examples/cmake/add_subdir/CMakeLists.txt for details.
 if (NOT THRUST_TOPLEVEL_PROJECT)
@@ -73,7 +67,6 @@ if (NOT (THRUST_ENABLE_HEADER_TESTING OR
   return()
 endif()
 
-include(cmake/AppendOptionIfAvailable.cmake)
 include(cmake/ThrustBuildCompilerTargets.cmake)
 include(cmake/ThrustBuildTargetList.cmake)
 include(cmake/ThrustFindThrust.cmake)
@@ -92,11 +85,6 @@ endif ()
 
 # Disable compiler extensions:
 set(CMAKE_CXX_EXTENSIONS OFF)
-
-# Where to put build outputs. Use CMAKE_BINARY_DIR so they'll show up in the
-# top-level project's dir when building Thrust via add_subdirectory.
-set(THRUST_LIBRARY_OUTPUT_DIR "${CMAKE_BINARY_DIR}/lib")
-set(THRUST_EXECUTABLE_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin")
 
 thrust_configure_multiconfig()
 thrust_find_thrust()

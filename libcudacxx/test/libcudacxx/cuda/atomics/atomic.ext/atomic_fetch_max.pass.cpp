@@ -21,7 +21,7 @@
 
 template <class T,
           template <typename, typename>
-          typename Selector,
+          class Selector,
           cuda::thread_scope ThreadScope,
           bool Signed = cuda::std::is_signed<T>::value>
 struct TestFn
@@ -65,7 +65,7 @@ struct TestFn
   }
 };
 
-template <class T, template <typename, typename> typename Selector, cuda::thread_scope ThreadScope>
+template <class T, template <typename, typename> class Selector, cuda::thread_scope ThreadScope>
 struct TestFn<T, Selector, ThreadScope, true>
 {
   __host__ __device__ void operator()() const
@@ -109,7 +109,7 @@ struct TestFn<T, Selector, ThreadScope, true>
   }
 };
 
-template <class T, template <typename, typename> typename Selector, cuda::thread_scope ThreadScope>
+template <class T, template <typename, typename> class Selector, cuda::thread_scope ThreadScope>
 struct TestFnDispatch
 {
   __host__ __device__ void operator()() const
