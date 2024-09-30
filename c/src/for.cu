@@ -15,17 +15,10 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
 
-#include <algorithm>
-#include <format>
-#include <iostream>
-#include <memory>
-
-#include "cccl/types.h"
-#include "util/context.h"
 #include "util/errors.h"
 #include "util/small_storage.h"
-#include "util/types.h"
-#include <cccl/for.h>
+#include <cccl/c/for.h>
+#include <cccl/c/types.h>
 #include <nvJitLink.h>
 #include <nvrtc.h>
 
@@ -67,7 +60,7 @@ Invoke(cccl_iterator_t d_in, size_t num_items, cccl_op_t op, int cc, CUfunction 
 
   small_aligned_storage<for_each_kernel_params> op_params =
     (op.type == cccl_op_kind_t::stateful)
-      ? small_aligned_storage<for_each_kernel_params>({d_in.state}, op.state, op.size, op.alignment)
+      ? small_aligned_storage<for_each_kernel_params>({d_in.state}, op.state, op.alignment, op.size)
       : small_aligned_storage<for_each_kernel_params>({d_in.state});
 
   void* args[] = {&num_items, op_params.get()};

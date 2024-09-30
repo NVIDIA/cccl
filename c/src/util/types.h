@@ -12,7 +12,7 @@
 
 #include <string>
 
-#include <cccl/types.h>
+#include <cccl/c/types.h>
 
 struct storage_t;
 

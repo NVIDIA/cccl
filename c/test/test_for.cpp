@@ -11,7 +11,7 @@
 #include <cuda_runtime.h>
 
 #include "c2h.h"
-#include <cccl/for.h>
+#include <cccl/c/for.h>
 
 void for_each(cccl_iterator_t input, unsigned long long num_items, cccl_op_t op)
 {
