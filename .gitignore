@@ -6,7 +6,6 @@ build*/
 _deps/catch2-src/
 .vscode/
 _site/
-/python/devenv/
 compile_commands.json
 CMakeUserPresets.json
 /ci/rapids/.conda
