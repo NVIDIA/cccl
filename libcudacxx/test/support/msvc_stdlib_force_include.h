@@ -92,6 +92,4 @@ const AssertionDialogAvoider assertion_dialog_avoider{};
 #  define TEST_STD_VER 14
 #endif
 
-#define _LIBCUDACXX_AVAILABILITY_THROW_BAD_ANY_CAST
-
 #endif // SUPPORT_MSVC_STDLIB_FORCE_INCLUDE_H
