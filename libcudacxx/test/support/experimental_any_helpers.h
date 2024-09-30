@@ -53,7 +53,7 @@ void assertEmpty(std::experimental::any const& a)
 
 // Assert that an 'any' object stores the specified 'Type' and 'value'.
 template <class Type>
-_LIBCUDACXX_AVAILABILITY_THROW_BAD_ANY_CAST void assertContains(std::experimental::any const& a, int value = 1)
+void assertContains(std::experimental::any const& a, int value = 1)
 {
   assert(!a.empty());
   RTTI_ASSERT(a.type() == typeid(Type));
@@ -63,7 +63,7 @@ _LIBCUDACXX_AVAILABILITY_THROW_BAD_ANY_CAST void assertContains(std::experimenta
 // Modify the value of a "test type" stored within an any to the specified
 // 'value'.
 template <class Type>
-_LIBCUDACXX_AVAILABILITY_THROW_BAD_ANY_CAST void modifyValue(std::experimental::any& a, int value)
+void modifyValue(std::experimental::any& a, int value)
 {
   assert(!a.empty());
   RTTI_ASSERT(a.type() == typeid(Type));
