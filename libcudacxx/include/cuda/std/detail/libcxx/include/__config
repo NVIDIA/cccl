@@ -1288,8 +1288,6 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 // implementation.
 #  define _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 
-#  define _LIBCUDACXX_HAS_NO_VENDOR_AVAILABILITY_ANNOTATIONS
-
 #  define _LIBCUDACXX_UNUSED_VAR(x) ((void) (x))
 
 #  if __has_attribute(__format__)

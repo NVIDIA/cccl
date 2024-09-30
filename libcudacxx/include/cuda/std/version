@@ -132,21 +132,19 @@
 #  define __cccl_lib_atomic_lock_free_type_aliases 201907L
 #  ifndef _LIBCUDACXX_HAS_NO_THREADS
 #    define __cccl_lib_atomic_ref 201806L
-#  endif // _LIBCUDACXX_HAS_NO_THREADS
+#  endif // !_LIBCUDACXX_HAS_NO_THREADS
 // # define __cccl_lib_atomic_shared_ptr                    201711L
 #  define __cccl_lib_atomic_value_initialization 201911L
-#  ifndef _LIBCUDACXX_AVAILABILITY_DISABLE_FTM___cpp_lib_atomic_wait
-#    define __cccl_lib_atomic_wait 201907L
-#  endif // _LIBCUDACXX_AVAILABILITY_DISABLE_FTM___cpp_lib_atomic_wait
-#  if !defined(_LIBCUDACXX_HAS_NO_THREADS) && !defined(_LIBCUDACXX_AVAILABILITY_DISABLE_FTM___cpp_lib_barrier)
+#  define __cccl_lib_atomic_wait                 201907L
+#  ifndef _LIBCUDACXX_HAS_NO_THREADS
 #    define __cccl_lib_barrier 201907L
-#  endif
+#  endif // !_LIBCUDACXX_HAS_NO_THREADS
 #  define __cccl_lib_bit_cast             201806L
 #  define __cccl_lib_bitops               201907L
 #  define __cccl_lib_bounded_array_traits 201902L
 #  ifndef _LIBCUDACXX_NO_HAS_CHAR8_T
 #    define __cccl_lib_char8_t 201811L
-#  endif // _LIBCUDACXX_NO_HAS_CHAR8_T
+#  endif // !_LIBCUDACXX_NO_HAS_CHAR8_T
 // # define __cccl_lib_constexpr_algorithms                 201806L
 // # define __cccl_lib_constexpr_dynamic_alloc              201907L
 #  define __cccl_lib_constexpr_functional 201907L
@@ -169,9 +167,7 @@
 // # define __cccl_lib_erase_if                             201811L
 // # undef  __cccl_lib_execution
 // # define __cccl_lib_execution                            201902L
-#  if !defined(_LIBCUDACXX_AVAILABILITY_DISABLE_FTM___cpp_lib_format) && !defined(_LIBCUDACXX_HAS_NO_INCOMPLETE_FORMAT)
 // #   define __cccl_lib_format                             202106L
-#  endif
 // # define __cccl_lib_generic_unordered_lookup             201811L
 // # define __cccl_lib_int_pow2                             202002L
 // # define __cccl_lib_integer_comparison_functions         202002L
@@ -185,17 +181,17 @@
 #  if !defined(_LIBCUDACXX_HAS_NO_THREADS)
 // #   define __cccl_lib_jthread                            201911L
 #  endif
-#  if !defined(_LIBCUDACXX_HAS_NO_THREADS) && !defined(_LIBCUDACXX_AVAILABILITY_DISABLE_FTM___cpp_lib_latch)
+#  ifndef _LIBCUDACXX_HAS_NO_THREADS
 // #   define __cccl_lib_latch                              201907L
-#  endif
+#  endif // !_LIBCUDACXX_HAS_NO_THREADS
 // # define __cccl_lib_list_remove_return_type              201806L
 // # define __cccl_lib_math_constants                       201907L
 // # define __cccl_lib_polymorphic_allocator                201902L
 // # define __cccl_lib_ranges                               201811L
 // # define __cccl_lib_remove_cvref                         201711L
-#  if !defined(_LIBCUDACXX_HAS_NO_THREADS) && !defined(_LIBCUDACXX_AVAILABILITY_DISABLE_FTM___cpp_lib_semaphore)
+#  ifndef _LIBCUDACXX_HAS_NO_THREADS
 // #   define __cccl_lib_semaphore                          201907L
-#  endif
+#  endif // !_LIBCUDACXX_HAS_NO_THREADS
 // # undef  __cccl_lib_shared_ptr_arrays
 // # define __cccl_lib_shared_ptr_arrays                    201707L
 // # define __cccl_lib_shift                                201806L
