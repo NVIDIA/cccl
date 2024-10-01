@@ -21,43 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_CCCL_COMPILER_ICC)
-#  define _LIBCUDACXX_COMPILER_ICC
-#elif defined(_CCCL_COMPILER_NVHPC)
-#  define _LIBCUDACXX_COMPILER_NVHPC
-#elif defined(_CCCL_COMPILER_CLANG)
-#  define _LIBCUDACXX_COMPILER_CLANG
-#  ifndef __apple_build_version__
-#    define _LIBCUDACXX_CLANG_VER (__clang_major__ * 100 + __clang_minor__)
-#  endif
-#elif defined(_CCCL_COMPILER_GCC)
-#  define _LIBCUDACXX_COMPILER_GCC
-#elif defined(_CCCL_COMPILER_MSVC)
-#  define _LIBCUDACXX_COMPILER_MSVC
-#elif defined(_CCCL_COMPILER_NVRTC)
-#  define _LIBCUDACXX_COMPILER_NVRTC
-#endif
-
-#if defined(_CCCL_COMPILER_MSVC)
-#  if _MSC_VER < 1917
-#    define _LIBCUDACXX_COMPILER_MSVC_2017
-#  elif _MSC_VER < 1930
-#    define _LIBCUDACXX_COMPILER_MSVC_2019
-#  else
-#    define _LIBCUDACXX_COMPILER_MSVC_2022
-#  endif
-#endif // defined(_LIBCUDACXX_COMPILER_MSVC)
-
-#if defined(_CCCL_CUDA_COMPILER_NVCC)
-// This is not mutually exclusive with other compilers, as NVCC uses a host
-// compiler.
-#  define _LIBCUDACXX_COMPILER_NVCC
-#elif defined(_CCCL_CUDA_COMPILER_NVHPC)
-#  define _LIBCUDACXX_COMPILER_NVHPC_CUDA
-#elif defined(_CCCL_CUDA_COMPILER_CLANG)
-#  define _LIBCUDACXX_COMPILER_CLANG_CUDA
-#endif
-
 #ifdef __cplusplus
 
 // __config may be included in `extern "C"` contexts, switch back to include <nv/target>
@@ -770,15 +733,6 @@ typedef __char32_t char32_t;
 #      define _LIBCUDACXX_HAS_NO_GENERALIZED_INITIALIZERS
 #    endif
 
-// Objective-C++ features (opt-in)
-#    if __has_feature(objc_arc)
-#      define _LIBCUDACXX_HAS_OBJC_ARC
-#    endif
-
-#    if __has_feature(objc_arc_weak)
-#      define _LIBCUDACXX_HAS_OBJC_ARC_WEAK
-#    endif
-
 #    if !(__has_feature(cxx_variable_templates))
 #      define _LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES
 #    endif
@@ -1333,8 +1287,6 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 // spaceship operator is provided, or (B) a compiler provides a complete
 // implementation.
 #  define _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-
-#  define _LIBCUDACXX_HAS_NO_VENDOR_AVAILABILITY_ANNOTATIONS
 
 #  define _LIBCUDACXX_UNUSED_VAR(x) ((void) (x))
 
