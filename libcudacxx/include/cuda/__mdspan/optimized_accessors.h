@@ -30,7 +30,7 @@
 #  include <cuda/std/__cccl/compiler.h>
 #  include <cuda/std/__cccl/dialect.h>
 #  include <cuda/std/__cccl/execution_space.h>
-#  include <cuda/std/type_traits>
+#  include <cuda/std/__type_traits/enable_if_t>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
