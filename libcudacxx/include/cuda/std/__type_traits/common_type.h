@@ -20,7 +20,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/is_extended_floating_point.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__type_traits/void_t.h>
@@ -38,30 +41,65 @@ using __common_type_t = typename common_type<_Tp...>::type;
 template <class _Tp, class _Up>
 using __cond_type = decltype(false ? declval<_Tp>() : declval<_Up>());
 
-#if _CCCL_STD_VER > 2017
+// We need to ensure that extended floating point types like __half and __nv bfloat16 have a common type with real
+// floating point types
 template <class _Tp, class _Up, class = void>
-struct __common_type3
+struct __common_type_extended_floating_point
 {};
 
+#if !defined(__CUDA_NO_HALF_CONVERSIONS__) && !defined(__CUDA_NO_HALF_OPERATORS__) \
+  && !defined(__CUDA_NO_BFLOAT16_CONVERSIONS__) && !defined(__CUDA_NO_BFLOAT16_OPERATORS__)
+template <class _Tp, class _Up>
+struct __common_type_extended_floating_point<
+  _Tp,
+  _Up,
+  __enable_if_t<_CCCL_TRAIT(__is_extended_floating_point, __remove_cvref_t<_Tp>)
+                && _CCCL_TRAIT(is_arithmetic, __remove_cvref_t<_Up>)>>
+{
+  using type = __common_type_t<__copy_cvref_t<_Tp, float>, _Up>;
+};
+
+template <class _Tp, class _Up>
+struct __common_type_extended_floating_point<
+  _Tp,
+  _Up,
+  __enable_if_t<_CCCL_TRAIT(is_arithmetic, __remove_cvref_t<_Tp>)
+                && _CCCL_TRAIT(__is_extended_floating_point, __remove_cvref_t<_Up>)>>
+{
+  using type = __common_type_t<_Tp, __copy_cvref_t<_Up, float>>;
+};
+#endif // extended floating point as arithmetic type
+
+template <class _Tp, class _Up, class = void>
+struct __common_type3 : __common_type_extended_floating_point<_Tp, _Up>
+{};
+
+#if _CCCL_STD_VER >= 2020
 // sub-bullet 4 - "if COND_RES(CREF(D1), CREF(D2)) denotes a type..."
 template <class _Tp, class _Up>
 struct __common_type3<_Tp, _Up, void_t<__cond_type<const _Tp&, const _Up&>>>
 {
   using type = remove_cvref_t<__cond_type<const _Tp&, const _Up&>>;
 };
+#endif // _CCCL_STD_VER >= 2020
 
 template <class _Tp, class _Up, class = void>
 struct __common_type2_imp : __common_type3<_Tp, _Up>
 {};
-#else
-template <class _Tp, class _Up, class = void>
-struct __common_type2_imp
-{};
-#endif
+
+// MSVC has a bug in its declval handling, where it happily accepts __cond_type<_Tp, _Up>, even though both
+// branches have diverging return types, this happens for extended floating point types
+template <class _Tp, class _Up>
+using __msvc_declval_workaround =
+#if defined(_CCCL_COMPILER_MSVC)
+  __enable_if_t<_CCCL_TRAIT(is_same, __cond_type<_Tp, _Up>, __cond_type<_Up, _Tp>)>;
+#else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
+  void;
+#endif // !_CCCL_COMPILER_MSVC
 
 // sub-bullet 3 - "if decay_t<decltype(false ? declval<D1>() : declval<D2>())> ..."
 template <class _Tp, class _Up>
-struct __common_type2_imp<_Tp, _Up, void_t<__cond_type<_Tp, _Up>>>
+struct __common_type2_imp<_Tp, _Up, void_t<__cond_type<_Tp, _Up>, __msvc_declval_workaround<_Tp, _Up>>>
 {
   typedef _LIBCUDACXX_NODEBUG_TYPE __decay_t<__cond_type<_Tp, _Up>> type;
 };
@@ -128,43 +166,6 @@ _LIBCUDACXX_INLINE_VAR constexpr bool __has_common_type = false;
 template <class _Tp, class _Up>
 _LIBCUDACXX_INLINE_VAR constexpr bool __has_common_type<_Tp, _Up, void_t<common_type_t<_Tp, _Up>>> = true;
 #endif // _CCCL_STD_VER >= 2014
-
-#if defined(_LIBCUDACXX_HAS_NVFP16) && !defined(__CUDA_NO_HALF_CONVERSIONS__) && !defined(__CUDA_NO_HALF_OPERATORS__)
-template <>
-struct common_type<__half, __half>
-{
-  using type = __half;
-};
-template <class T>
-struct common_type<__half, T> : common_type<float, T>
-{};
-template <class T>
-struct common_type<T, __half> : common_type<T, float>
-{};
-#endif // _LIBCUDACXX_HAS_NVFP16 && !__CUDA_NO_HALF_CONVERSIONS__ && !__CUDA_NO_HALF_OPERATORS__
-
-#if defined(_LIBCUDACXX_HAS_NVBF16) && !defined(__CUDA_NO_BFLOAT16_CONVERSIONS__) \
-  && !defined(__CUDA_NO_BFLOAT16_OPERATORS__)
-template <>
-struct common_type<__nv_bfloat16, __nv_bfloat16>
-{
-  using type = __nv_bfloat16;
-};
-template <class T>
-struct common_type<__nv_bfloat16, T> : common_type<float, T>
-{};
-template <class T>
-struct common_type<T, __nv_bfloat16> : common_type<T, float>
-{};
-
-// __half and __nvbfloat16 have unordered conversion rank
-template <>
-struct common_type<__half, __nv_bfloat16>
-{};
-template <>
-struct common_type<__nv_bfloat16, __half>
-{};
-#endif // _LIBCUDACXX_HAS_NVBF16 && !__CUDA_NO_BFLOAT16_CONVERSIONS__ && !__CUDA_NO_BFLOAT16_OPERATORS__
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
