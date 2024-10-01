@@ -40,10 +40,14 @@ cccl_add_compile_test(test_name
   ${cmake_cpm_opts}
 )
 
-cccl_add_compile_test(test_name
-  cccl.example
-  cudax
-  "default"
-  ${cmake_opts}
-  ${cmake_cpm_opts}
-)
+find_package(CUDAToolkit REQUIRED)
+
+if (CUDAToolkit_VERSION_MAJOR VERSION_GREATER_EQUAL 12)
+  cccl_add_compile_test(test_name
+    cccl.example
+    cudax
+    "default"
+    ${cmake_opts}
+    ${cmake_cpm_opts}
+  )
+endif()
