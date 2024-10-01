@@ -20,7 +20,6 @@ endif()
 
 option(cudax_ENABLE_HEADER_TESTING "Test that CUDA Experimental's public headers compile." ON)
 option(cudax_ENABLE_TESTING "Build CUDA Experimental's tests." ON)
-option(cudax_ENABLE_SAMPLES "Build CUDA Experimental's samples." ON)
 
 include(cmake/cudaxBuildCompilerTargets.cmake)
 include(cmake/cudaxBuildTargetList.cmake)
@@ -36,14 +35,4 @@ if (cudax_ENABLE_TESTING)
   include(CTest)
   enable_testing() # Must be in root directory
   add_subdirectory(test)
-endif()
-
-if (cudax_ENABLE_SAMPLES)
-  include(ExternalProject)
-  ExternalProject_Add(cudax_samples
-    PREFIX samples
-    SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/samples"
-    BUILD_ALWAYS ON
-    INSTALL_COMMAND cmake -E echo "Skipping install step.")
-  add_dependencies(cudax.all cudax_samples)
 endif()
