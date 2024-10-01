@@ -122,8 +122,8 @@ struct cache_policy_accessor<_ElementType,
 
   constexpr cache_policy_accessor() noexcept = default;
 
-  template <typename _OtherElementType,
-            ::cuda::std::__enable_if_t<::cuda::std::is_convertible<_OtherElementType (*)[], _ElementType (*)[]>::value>>
+  _LIBCUDACXX_TEMPLATE(typename _OtherElementType)
+  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _OtherElementType (*)[], _ElementType (*)[])
   _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _CCCL_FORCEINLINE constexpr cache_policy_accessor(
     cache_policy_accessor<_OtherElementType>) noexcept
   {}
