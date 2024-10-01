@@ -3,8 +3,6 @@
 The Continuous Integration (CI) process for CCCL ensures code quality and compatibility across various environments. This document provides an in-depth overview of the CI setup and workflows, enabling contributors to understand, debug, and reproduce CI checks locally.
 
 
-
-
 ## CI Environment and Configuration
 
 ### Development Containers
