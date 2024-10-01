@@ -36,6 +36,7 @@ repos:
           )
         args: ["-fallback-style=none", "-style=file", "-i"]
 
+  # TODO/REMINDER: add the Ruff vscode extension to the devcontainers
   # Ruff, the Python auto-correcting linter/formatter written in Rust
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.6.3
