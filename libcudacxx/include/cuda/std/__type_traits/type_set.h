@@ -83,6 +83,10 @@ using __type_set_insert = decltype(__set::__bulk_insert::__call<_Ts...>(static_c
 template <class... _Ts>
 using __make_type_set = __type_set_insert<__type_set<>, _Ts...>;
 
+template <class _Ty, class... _Ts>
+_LIBCUDACXX_INLINE_VAR constexpr bool __is_contained_in =
+  _CCCL_TRAIT(_CUDA_VSTD::is_base_of, __type_identity<_Ty>, _CUDA_VSTD::__make_type_set<_Ts...>);
+
 _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif // _CCCL_STD_VER >= 2014

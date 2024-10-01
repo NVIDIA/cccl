@@ -27,8 +27,6 @@
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__memory_resource/resource.h>
 #  include <cuda/std/__concepts/__concept_macros.h>
-#  include <cuda/std/__concepts/_One_of.h>
-#  include <cuda/std/__concepts/all_of.h>
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__type_traits/is_base_of.h>
 #  include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
@@ -349,9 +347,9 @@ struct _Property_filter<false>
 template <class _Property, class... _Properties>
 struct _Filtered<_Property, _Properties...>
 {
-  using _Filtered_vtable =
-    typename _Property_filter<property_with_value<_Property> && !_CUDA_VSTD::_One_of<_Property, _Properties...>>::
-      template _Filtered_properties<_Property, _Properties...>;
+  using _Filtered_vtable = typename _Property_filter<
+    property_with_value<_Property> && !_CUDA_VSTD::__is_contained_in<_Property, _Properties...>>::
+    template _Filtered_properties<_Property, _Properties...>;
 
   template <class _OtherPropery>
   using _Append_property = _Filtered<_OtherPropery, _Property, _Properties...>;
@@ -616,12 +614,14 @@ public:
 
   //! @brief Forwards the stateless properties
   _LIBCUDACXX_TEMPLATE(class _Property)
-  _LIBCUDACXX_REQUIRES((!property_with_value<_Property>) _LIBCUDACXX_AND _CUDA_VSTD::_One_of<_Property, _Properties...>)
+  _LIBCUDACXX_REQUIRES(
+    (!property_with_value<_Property>) _LIBCUDACXX_AND _CUDA_VSTD::__is_contained_in<_Property, _Properties...>)
   friend void get_property(const basic_resource_ref&, _Property) noexcept {}
 
   //! @brief Forwards the stateful properties
   _LIBCUDACXX_TEMPLATE(class _Property)
-  _LIBCUDACXX_REQUIRES(property_with_value<_Property> _LIBCUDACXX_AND _CUDA_VSTD::_One_of<_Property, _Properties...>)
+  _LIBCUDACXX_REQUIRES(
+    property_with_value<_Property> _LIBCUDACXX_AND _CUDA_VSTD::__is_contained_in<_Property, _Properties...>)
   _CCCL_NODISCARD_FRIEND __property_value_t<_Property> get_property(const basic_resource_ref& __res, _Property) noexcept
   {
     return __res._Property_vtable<_Property>::__property_fn(__res.__object);
