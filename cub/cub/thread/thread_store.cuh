@@ -305,7 +305,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStoreVolatilePtr(T* ptr, T val, Int2Ty
     reinterpret_cast<ShuffleWord*>(words)[i] = reinterpret_cast<ShuffleWord*>(&val)[i];
   }
 
-  IterateThreadStore<0, VOLATILE_MULTIPLE>::template Dereference(reinterpret_cast<volatile VolatileWord*>(ptr), words);
+  IterateThreadStore<0, VOLATILE_MULTIPLE>::Dereference(reinterpret_cast<volatile VolatileWord*>(ptr), words);
 }
 
 /**

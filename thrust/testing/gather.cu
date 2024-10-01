@@ -15,23 +15,14 @@ _CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
 template <class Vector>
 void TestGatherSimple()
 {
-  Vector map(5); // gather indices
-  Vector src(8); // source vector
-  Vector dst(5); // destination vector
-
-  // clang-format off
-  map[0] = 6; map[1] = 2; map[2] = 1; map[3] = 7; map[4] = 2;
-  src[0] = 0; src[1] = 1; src[2] = 2; src[3] = 3; src[4] = 4; src[5] = 5; src[6] = 6; src[7] = 7;
-  dst[0] = 0; dst[1] = 0; dst[2] = 0; dst[3] = 0; dst[4] = 0;
-  // clang-format on
+  Vector map{6, 2, 1, 7, 2}; // gather indices
+  Vector src{0, 1, 2, 3, 4, 5, 6, 7}; // source vector
+  Vector dst(5, 0); // destination vector
 
   thrust::gather(map.begin(), map.end(), src.begin(), dst.begin());
 
-  ASSERT_EQUAL(dst[0], 6);
-  ASSERT_EQUAL(dst[1], 2);
-  ASSERT_EQUAL(dst[2], 1);
-  ASSERT_EQUAL(dst[3], 7);
-  ASSERT_EQUAL(dst[4], 2);
+  Vector ref{6, 2, 1, 7, 2};
+  ASSERT_EQUAL(dst, ref);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestGatherSimple);
 
@@ -138,25 +129,15 @@ DECLARE_VARIABLE_UNITTEST(TestGatherToDiscardIterator);
 template <class Vector>
 void TestGatherIfSimple()
 {
-  Vector flg(5); // predicate array
-  Vector map(5); // gather indices
-  Vector src(8); // source vector
-  Vector dst(5); // destination vector
-
-  // clang-format off
-  flg[0] = 0; flg[1] = 1; flg[2] = 0; flg[3] = 1; flg[4] = 0;
-  map[0] = 6; map[1] = 2; map[2] = 1; map[3] = 7; map[4] = 2;
-  src[0] = 0; src[1] = 1; src[2] = 2; src[3] = 3; src[4] = 4; src[5] = 5; src[6] = 6; src[7] = 7;
-  dst[0] = 0; dst[1] = 0; dst[2] = 0; dst[3] = 0; dst[4] = 0;
-  // clang-format on
+  Vector flg{0, 1, 0, 1, 0}; // predicate array
+  Vector map{6, 2, 1, 7, 2}; // gather indices
+  Vector src{0, 1, 2, 3, 4, 5, 6, 7}; // source vector
+  Vector dst(5, 0); // destination vector
 
   thrust::gather_if(map.begin(), map.end(), flg.begin(), src.begin(), dst.begin());
 
-  ASSERT_EQUAL(dst[0], 0);
-  ASSERT_EQUAL(dst[1], 2);
-  ASSERT_EQUAL(dst[2], 0);
-  ASSERT_EQUAL(dst[3], 7);
-  ASSERT_EQUAL(dst[4], 0);
+  Vector ref{0, 2, 0, 7, 0};
+  ASSERT_EQUAL(dst, ref);
 }
 DECLARE_INTEGRAL_VECTOR_UNITTEST(TestGatherIfSimple);
 

@@ -43,38 +43,6 @@ _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_NO_CFI _Tp* addressof(_Tp& __x) noexcept
 
 #endif // defined(_LIBCUDACXX_ADDRESSOF)
 
-#if defined(_LIBCUDACXX_HAS_OBJC_ARC) && !defined(_LIBCUDACXX_PREDEFINED_OBJC_ARC_ADDRESSOF)
-// Objective-C++ Automatic Reference Counting uses qualified pointers
-// that require special addressof() signatures. When
-// _LIBCUDACXX_PREDEFINED_OBJC_ARC_ADDRESSOF is defined, the compiler
-// itself is providing these definitions. Otherwise, we provide them.
-template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI __strong _Tp* addressof(__strong _Tp& __x) noexcept
-{
-  return &__x;
-}
-
-#  ifdef _LIBCUDACXX_HAS_OBJC_ARC_WEAK
-template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI __weak _Tp* addressof(__weak _Tp& __x) noexcept
-{
-  return &__x;
-}
-#  endif
-
-template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI __autoreleasing _Tp* addressof(__autoreleasing _Tp& __x) noexcept
-{
-  return &__x;
-}
-
-template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI __unsafe_unretained _Tp* addressof(__unsafe_unretained _Tp& __x) noexcept
-{
-  return &__x;
-}
-#endif
-
 template <class _Tp>
 _Tp* addressof(const _Tp&&) noexcept = delete;
 

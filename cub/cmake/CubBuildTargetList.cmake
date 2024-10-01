@@ -174,14 +174,15 @@ function(cub_build_target_list)
   # Set up the CUB target while testing out our find_package scripts.
   find_package(CUB REQUIRED CONFIG
     NO_DEFAULT_PATH # Only check the explicit path in HINTS:
-    HINTS "${CUB_SOURCE_DIR}"
+    HINTS "${CCCL_SOURCE_DIR}/lib/cmake/cub/"
   )
 
   # TODO
   # Some of the iterators and unittests depend on thrust. We should break the
   # cyclical dependency by migrating CUB's Thrust bits into Thrust.
   find_package(Thrust ${CUB_VERSION} EXACT CONFIG
-    HINTS "../thrust" # Monorepo path
+    NO_DEFAULT_PATH # Only check the explicit path in HINTS:
+    HINTS "${CCCL_SOURCE_DIR}/lib/cmake/thrust/"
   )
 
   if (Thrust_FOUND)

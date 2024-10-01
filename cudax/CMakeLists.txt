@@ -13,11 +13,6 @@ endif()
 
 project(cudax LANGUAGES CUDA CXX)
 
-option(cudax_ENABLE_INSTALL_RULES "Enable installation of CUDA Experimental." ${cudax_TOPLEVEL_PROJECT})
-if (cudax_ENABLE_INSTALL_RULES)
-  include(cmake/cudaxInstallRules.cmake)
-endif()
-
 if (NOT cudax_TOPLEVEL_PROJECT)
   include(cmake/cudaxAddSubdir.cmake)
   return()

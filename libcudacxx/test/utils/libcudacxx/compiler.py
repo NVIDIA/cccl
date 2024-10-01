@@ -24,7 +24,7 @@ class CXXCompiler(object):
                  verify_flags=None, use_verify=False,
                  modules_flags=None, use_modules=False,
                  use_ccache=False, use_warnings=False, compile_env=None,
-                 cxx_type=None, cxx_version=None):
+                 cxx_type=None, cxx_version=None, cuda_path=None):
         self.source_lang = 'c++'
         self.path = path
         self.first_arg = first_arg or ''
@@ -48,6 +48,7 @@ class CXXCompiler(object):
             self.compile_env = None
         self.type = cxx_type
         self.version = cxx_version
+        self.cuda_path = cuda_path
         if self.type is None or self.version is None:
             self._initTypeAndVersion()
 
@@ -225,6 +226,8 @@ class CXXCompiler(object):
             cmd += ['-o', out]
         if input_is_cxx:
             cmd += ['-x', self.source_lang]
+        if self.type == "clang"  and self.source_lang == 'cu' and self.cuda_path is not None:
+            cmd += ['--cuda-path=' + self.cuda_path]
         if isinstance(source_files, list):
             cmd += source_files
         elif isinstance(source_files, str):
@@ -395,6 +398,9 @@ class CXXCompiler(object):
         # exit code. -Werror is supported on all known non-nvcc compiler types.
         if self.type is not None and self.type != 'nvcc' and self.type != 'msvc':
             flags += ['-Werror', '-fsyntax-only']
+        if self.type == 'clang' and self.source_lang == 'cu':
+            flags += ['-Wno-unused-command-line-argument']
+
         empty_cpp = os.path.join(os.path.dirname(os.path.abspath(__file__)), "empty.cpp")
         cmd, out, err, rc = self.checkCompileFlag(empty_cpp, out=os.devnull, flags=flags)
         if out.find('flag is not supported with the configured host compiler') != -1:

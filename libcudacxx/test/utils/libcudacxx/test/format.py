@@ -95,19 +95,12 @@ class LibcxxTestFormat(object):
         is_pass_test = name.endswith('.pass.cpp') or name.endswith('.pass.mm')
         is_fail_test = name.endswith('.fail.cpp') or name.endswith('.fail.mm')
         is_runfail_test = name.endswith('.runfail.cpp') or name.endswith('.runfail.mm')
-        is_objcxx_test = name.endswith('.mm')
-        is_objcxx_arc_test = name.endswith('.arc.pass.mm') or \
-                             name.endswith('.arc.fail.mm')
         assert is_sh_test or name_ext == '.cpp' or name_ext == '.mm', \
             'non-cpp file must be sh test'
 
         if test.config.unsupported:
             return (lit.Test.UNSUPPORTED,
                     "A lit.local.cfg marked this unsupported")
-
-        if is_objcxx_test and not \
-           'objective-c++' in test.config.available_features:
-            return (lit.Test.UNSUPPORTED, "Objective-C++ is not supported")
 
         parsers = self._make_custom_parsers()
         script = lit.TestRunner.parseIntegratedTestScript(
@@ -149,14 +142,6 @@ class LibcxxTestFormat(object):
                     contents = f.read()
                 if b'#define _LIBCUDACXX_ASSERT' in contents:
                     test_cxx.useModules(False)
-
-        if is_objcxx_test:
-            test_cxx.source_lang = 'objective-c++'
-            if is_objcxx_arc_test:
-                test_cxx.compile_flags += ['-fobjc-arc']
-            else:
-                test_cxx.compile_flags += ['-fno-objc-arc']
-            test_cxx.link_flags += ['-framework', 'Foundation']
 
         # Dispatch the test based on its suffix.
         if is_sh_test:

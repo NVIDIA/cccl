@@ -18,10 +18,7 @@
 #include "cuda_space_selector.h"
 #include "test_macros.h"
 
-template <typename Semaphore,
-          template <typename, typename>
-          typename Selector,
-          typename Initializer = constructor_initializer>
+template <typename Semaphore, template <typename, typename> class Selector, typename Initializer = constructor_initializer>
 __host__ __device__ void test()
 {
   Selector<Semaphore, Initializer> sel;
