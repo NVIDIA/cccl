@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/assert.h>
 #include <cuda/std/__concepts/assignable.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__iterator/concepts.h>
@@ -28,7 +29,6 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__utility/convert_to_integral.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/detail/libcxx/include/__assert>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -77,8 +77,8 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void advance(_InputIter& __i, _D
 {
   typedef typename iterator_traits<_InputIter>::difference_type _Difference;
   _Difference __n = static_cast<_Difference>(_CUDA_VSTD::__convert_to_integral(__orig_n));
-  _LIBCUDACXX_ASSERT(__n >= 0 || __is_cpp17_bidirectional_iterator<_InputIter>::value,
-                     "Attempt to advance(it, n) with negative n on a non-bidirectional iterator");
+  _CCCL_ASSERT(__n >= 0 || __is_cpp17_bidirectional_iterator<_InputIter>::value,
+               "Attempt to advance(it, n) with negative n on a non-bidirectional iterator");
   _CUDA_VSTD::__advance(__i, __n, typename iterator_traits<_InputIter>::iterator_category());
 }
 
@@ -128,8 +128,7 @@ public:
   _LIBCUDACXX_REQUIRES(input_or_output_iterator<_Ip>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_Ip& __i, iter_difference_t<_Ip> __n) const
   {
-    _LIBCUDACXX_ASSERT(__n >= 0 || bidirectional_iterator<_Ip>,
-                       "If `n < 0`, then `bidirectional_iterator<I>` must be true.");
+    _CCCL_ASSERT(__n >= 0 || bidirectional_iterator<_Ip>, "If `n < 0`, then `bidirectional_iterator<I>` must be true.");
 
     // If `I` models `random_access_iterator`, equivalent to `i += n`.
     if constexpr (random_access_iterator<_Ip>)
@@ -189,8 +188,8 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr iter_difference_t<_Ip>
   operator()(_Ip& __i, iter_difference_t<_Ip> __n, _Sp __bound_sentinel) const
   {
-    _LIBCUDACXX_ASSERT((__n >= 0) || (bidirectional_iterator<_Ip> && same_as<_Ip, _Sp>),
-                       "If `n < 0`, then `bidirectional_iterator<I> && same_as<I, S>` must be true.");
+    _CCCL_ASSERT((__n >= 0) || (bidirectional_iterator<_Ip> && same_as<_Ip, _Sp>),
+                 "If `n < 0`, then `bidirectional_iterator<I> && same_as<I, S>` must be true.");
     // If `S` and `I` model `sized_sentinel_for<S, I>`:
     if constexpr (sized_sentinel_for<_Sp, _Ip>)
     {

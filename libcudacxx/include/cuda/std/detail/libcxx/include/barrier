@@ -53,12 +53,11 @@ namespace std
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/assert.h> // all public C++ headers provide the assertion handler
 #include <cuda/std/__new_>
 #include <cuda/std/atomic>
 #include <cuda/std/chrono>
 #include <cuda/std/cstddef>
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
-#include <cuda/std/detail/libcxx/include/__debug>
 
 _CCCL_PUSH_MACROS
 
@@ -105,7 +104,7 @@ class alignas(64) __barrier_base
               __current_expected = __expected, __last_node = (__current_expected >> 1);
     for (size_t __round = 0;; ++__round)
     {
-      _LIBCUDACXX_ASSERT(__round <= 63, "");
+      _CCCL_ASSERT(__round <= 63, "");
       if (__current_expected == 1)
       {
         return true;
@@ -122,7 +121,7 @@ class alignas(64) __barrier_base
           __libcpp_thread_favorite_barrier_index = __current;
         }
 #  endif
-        _LIBCUDACXX_ASSERT(__current <= __last_node, "");
+        _CCCL_ASSERT(__current <= __last_node, "");
         __phase_t expect = __old_phase;
         if (__current == __last_node && (__current_expected & 1))
         {
@@ -131,7 +130,7 @@ class alignas(64) __barrier_base
           {
             break; // I'm 1 in 1, go to next __round
           }
-          _LIBCUDACXX_ASSERT(expect == __full_step, "");
+          _CCCL_ASSERT(expect == __full_step, "");
         }
         else if (__state[__current].__tickets[__round].__phase.compare_exchange_strong(
                    expect, __half_step, memory_order_acq_rel))
@@ -145,9 +144,9 @@ class alignas(64) __barrier_base
           {
             break; // I'm 2 in 2, go to next __round
           }
-          _LIBCUDACXX_ASSERT(expect == __full_step, "");
+          _CCCL_ASSERT(expect == __full_step, "");
         }
-        _LIBCUDACXX_ASSERT(__round == 0 && expect == __full_step, "");
+        _CCCL_ASSERT(__round == 0 && expect == __full_step, "");
       }
       __current_expected = (__current_expected >> 1) + (__current_expected & 1);
       __current &= ~(1 << __round);
@@ -165,7 +164,7 @@ public:
       , __phase(0)
       , __state((__expected + 1) >> 1)
   {
-    _LIBCUDACXX_ASSERT(__expected >= 0, "");
+    _CCCL_ASSERT(__expected >= 0, "");
   }
 
   _CCCL_HIDE_FROM_ABI ~__barrier_base() = default;
@@ -175,7 +174,7 @@ public:
 
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI arrival_token arrive(ptrdiff_t update = 1)
   {
-    _LIBCUDACXX_ASSERT(update > 0, "");
+    _CCCL_ASSERT(update > 0, "");
     auto __old_phase = __phase.load(memory_order_relaxed);
     for (; update; --update)
     {
@@ -313,7 +312,7 @@ public:
     auto const __result       = __arrived.fetch_sub(__update, memory_order_acq_rel) - __update;
     auto const __new_expected = __expected.load(memory_order_relaxed);
 
-    _LIBCUDACXX_DEBUG_ASSERT(__result >= 0, "");
+    _CCCL_ASSERT(__result >= 0, "");
 
     if (0 == __result)
     {
@@ -373,7 +372,7 @@ private:
 #  if _CCCL_STD_VER > 2011
     // This debug assert is not supported in C++11 due to resulting in a
     // multi-statement constexpr function.
-    _LIBCUDACXX_DEBUG_ASSERT(__count >= 0, "Count must be non-negative.");
+    _CCCL_ASSERT(__count >= 0, "Count must be non-negative.");
 #  endif // _CCCL_STD_VER > 2011
     return (((1u << 31) - __count) << 32) | ((1u << 31) - __count);
   }
@@ -398,7 +397,7 @@ public:
   __barrier_base(ptrdiff_t __count, __empty_completion = __empty_completion())
       : __phase_arrived_expected(__init(__count))
   {
-    _LIBCUDACXX_DEBUG_ASSERT(__count >= 0, "");
+    _CCCL_ASSERT(__count >= 0, "");
   }
 
   _CCCL_HIDE_FROM_ABI ~__barrier_base() = default;

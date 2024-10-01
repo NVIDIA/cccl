@@ -391,12 +391,12 @@ inline bool ExpectDeath(const char* stmt, Func&& func)
     },                                     \
     Matcher)))
 
-#define TEST_LIBCUDACXX_ASSERT_FAILURE(expr, message) \
-  assert((ExpectDeath(                                \
-    #expr,                                            \
-    [&]() {                                           \
-      (void) (expr);                                  \
-    },                                                \
+#define TEST_CCCL_ASSERT_FAILURE(expr, message) \
+  assert((ExpectDeath(                          \
+    #expr,                                      \
+    [&]() {                                     \
+      (void) (expr);                            \
+    },                                          \
     AssertionInfoMatcher(message))))
 
 #endif // TEST_SUPPORT_CHECK_ASSERTION_H

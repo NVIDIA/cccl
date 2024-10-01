@@ -156,7 +156,7 @@ public:
           nullptr, _CUDA_VSTD::exchange(__other.__static_vtable, nullptr))
       , __vtable(__other)
   {
-    _LIBCUDACXX_ASSERT(this->__static_vtable != nullptr, "copying from a moved-from object");
+    _CCCL_ASSERT(this->__static_vtable != nullptr, "copying from a moved-from object");
     this->__static_vtable->__move_fn(&this->__object, &__other.__object);
   }
 
@@ -167,7 +167,7 @@ public:
           nullptr, _CUDA_VSTD::exchange(__other.__static_vtable, nullptr))
       , __vtable(__other)
   {
-    _LIBCUDACXX_ASSERT(this->__static_vtable != nullptr, "copying from a moved-from object");
+    _CCCL_ASSERT(this->__static_vtable != nullptr, "copying from a moved-from object");
     this->__static_vtable->__move_fn(&this->__object, &__other.__object);
   }
 
@@ -196,7 +196,7 @@ public:
       : _CUDA_VMR::_Resource_base<_Alloc_type, _CUDA_VMR::_WrapperType::_Owning>(nullptr, __other.__static_vtable)
       , __vtable(__other)
   {
-    _LIBCUDACXX_ASSERT(this->__static_vtable != nullptr, "copying from a moved-from object");
+    _CCCL_ASSERT(this->__static_vtable != nullptr, "copying from a moved-from object");
     this->__static_vtable->__copy_fn(&this->__object, &__other.__object);
   }
 

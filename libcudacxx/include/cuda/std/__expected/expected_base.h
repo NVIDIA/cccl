@@ -19,6 +19,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/assert.h>
 #include <cuda/std/__concepts/__concept_macros.h>
 #include <cuda/std/__concepts/invocable.h>
 #include <cuda/std/__expected/unexpect.h>
@@ -49,7 +50,6 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/detail/libcxx/include/__assert>
 
 #if _CCCL_STD_VER > 2011
 

@@ -27,4 +27,6 @@
 #  include <assert.h>
 #endif //_CCCL_COMPILER_NVRTC
 
+#include <cuda/std/__cccl/assert.h>
+
 #endif // _CUDA_STD_CASSERT

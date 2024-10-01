@@ -155,6 +155,7 @@ template <class... Types>
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/assert.h> // all public C++ headers provide the assertion handler
 #include <cuda/std/__functional/unwrap_ref.h>
 #include <cuda/std/__fwd/array.h>
 #include <cuda/std/__memory/allocator_arg_t.h>
@@ -178,7 +179,6 @@ template <class... Types>
 #include <cuda/std/climits>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 

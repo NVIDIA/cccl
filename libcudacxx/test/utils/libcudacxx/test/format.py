@@ -134,13 +134,13 @@ class LibcxxTestFormat(object):
             test_cxx.compile_flags += [('-D%s' % mdef.strip()) for
                                        mdef in extra_modules_defines]
             test_cxx.addWarningFlagIfSupported('-Wno-macro-redefined')
-            # FIXME: libc++ debug tests #define _LIBCUDACXX_ASSERT to override it
+            # FIXME: libc++ debug tests #define _CCCL_ASSERT to override it
             # If we see this we need to build the test against uniquely built
             # modules.
             if is_libcxx_test:
                 with open(test.getSourcePath(), 'rb') as f:
                     contents = f.read()
-                if b'#define _LIBCUDACXX_ASSERT' in contents:
+                if b'#define _CCCL_ASSERT' in contents:
                     test_cxx.useModules(False)
 
         # Dispatch the test based on its suffix.

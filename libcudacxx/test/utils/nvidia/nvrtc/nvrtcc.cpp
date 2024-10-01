@@ -268,6 +268,7 @@ int main(int argc, char** argv)
   // Write any needed kernel launch data to file for later
   RunConfig runConfig = parse_run_config(testCu);
 
+  nvrtcArguments.emplace_back("-DCCCL_ENABLE_ASSERTIONS");
   if (!skipOutput)
   {
     std::ofstream ostr(outputTemplate + ".build.yml");

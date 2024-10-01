@@ -20,10 +20,10 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/assert.h>
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__utility/exchange.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/detail/libcxx/include/__assert>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -132,7 +132,7 @@ struct __exception_guard_noexceptions
 
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _LIBCUDACXX_NODEBUG_TYPE ~__exception_guard_noexceptions()
   {
-    _LIBCUDACXX_ASSERT(__completed_, "__exception_guard not completed with exceptions disabled");
+    _CCCL_ASSERT(__completed_, "__exception_guard not completed with exceptions disabled");
   }
 
 private:

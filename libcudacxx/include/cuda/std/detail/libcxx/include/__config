@@ -919,15 +919,6 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 
 #  define _LIBCUDACXX_UNUSED_VAR(x) ((void) (x))
 
-#  if __has_attribute(__format__)
-// The attribute uses 1-based indices for ordinary and static member functions.
-// The attribute uses 2-based indices for non-static member functions.
-#    define _LIBCUDACXX_ATTRIBUTE_FORMAT(archetype, format_string_index, first_format_arg_index) \
-      __attribute__((__format__(archetype, format_string_index, first_format_arg_index)))
-#  else
-#    define _LIBCUDACXX_ATTRIBUTE_FORMAT(archetype, format_string_index, first_format_arg_index) /* nothing */
-#  endif
-
 #  ifndef _LIBCUDACXX_SYS_CLOCK_DURATION
 #    define _LIBCUDACXX_SYS_CLOCK_DURATION nanoseconds
 #  endif // _LIBCUDACXX_SYS_CLOCK_DURATION

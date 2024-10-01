@@ -54,6 +54,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/assert.h>
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/__mdspan/layout_stride.h>
 #include <cuda/std/__mdspan/macros.h>
@@ -62,7 +63,6 @@
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/detail/libcxx/include/__assert>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

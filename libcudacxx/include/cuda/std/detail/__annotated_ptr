@@ -140,10 +140,10 @@ _CCCL_DEVICE void* __associate_address_space(void* __ptr, _Property __prop)
   if (std::is_same<_Property, access_property::shared>::value == true)
   {
     bool __b = __isShared(__ptr);
-    _LIBCUDACXX_ASSERT(__b, "");
-#if defined(_CCCL_BUILTIN_ASSUME)
+    _CCCL_ASSERT(__b, "");
+#if !defined(_CCCL_CUDACC_BELOW_11_2)
     _CCCL_BUILTIN_ASSUME(__b);
-#else // ^^^ _CCCL_BUILTIN_ASSUME ^^^ / vvv !_CCCL_BUILTIN_ASSUME vvv
+#else // ^^^ !_CCCL_CUDACC_BELOW_11_2 ^^^ / vvv _CCCL_CUDACC_BELOW_11_2 vvv
     (void) __b;
 #endif // !_CCCL_BUILTIN_ASSUME
   }
@@ -154,10 +154,10 @@ _CCCL_DEVICE void* __associate_address_space(void* __ptr, _Property __prop)
            || std::is_same<_Property, access_property>::value)
   {
     bool __b = __isGlobal(__ptr);
-    _LIBCUDACXX_ASSERT(__b, "");
-#if defined(_CCCL_BUILTIN_ASSUME)
+    _CCCL_ASSERT(__b, "");
+#if !defined(_CCCL_CUDACC_BELOW_11_2)
     _CCCL_BUILTIN_ASSUME(__b);
-#else // ^^^ _CCCL_BUILTIN_ASSUME ^^^ / vvv !_CCCL_BUILTIN_ASSUME vvv
+#else // ^^^ !_CCCL_CUDACC_BELOW_11_2 ^^^ / vvv _CCCL_CUDACC_BELOW_11_2 vvv
     (void) __b;
 #endif // !_CCCL_BUILTIN_ASSUME
   }
