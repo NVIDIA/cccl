@@ -315,13 +315,13 @@ extern "C++" {
 #  if defined(_CCCL_COMPILER_MSVC)
 #    define _CCCL_ALIGNAS_TYPE(x) alignas(x)
 #    define _CCCL_ALIGNAS(x)      __declspec(align(x))
-#  elif __has_feature(cxx_alignas)
+#  elif _CCCL_HAS_FEATURE(cxx_alignas)
 #    define _CCCL_ALIGNAS_TYPE(x) alignas(x)
 #    define _CCCL_ALIGNAS(x)      alignas(x)
 #  else
 #    define _CCCL_ALIGNAS_TYPE(x) __attribute__((__aligned__(_LIBCUDACXX_ALIGNOF(x))))
 #    define _CCCL_ALIGNAS(x)      __attribute__((__aligned__(x)))
-#  endif // !_CCCL_COMPILER_MSVC && !__has_feature(cxx_alignas)
+#  endif // !_CCCL_COMPILER_MSVC && !_CCCL_HAS_FEATURE(cxx_alignas)
 
 #  define _LIBCUDACXX_TOSTRING2(_STR) #_STR
 #  define _LIBCUDACXX_TOSTRING(_STR)  _LIBCUDACXX_TOSTRING2(_STR)
@@ -357,12 +357,12 @@ typedef __char16_t char16_t;
 typedef __char32_t char32_t;
 #    endif
 
-#    if !(__has_feature(cxx_lambdas))
+#    if !(_CCCL_HAS_FEATURE(cxx_lambdas))
 #      define _LIBCUDACXX_HAS_NO_LAMBDAS
 #    endif
 
-#    if !(__has_feature(cxx_nullptr))
-#      if (__has_extension(cxx_nullptr) || __has_keyword(__nullptr)) \
+#    if !(_CCCL_HAS_FEATURE(cxx_nullptr))
+#      if (__has_extension(cxx_nullptr) || _CCCL_HAS_KEYWORD(__nullptr)) \
         && defined(_LIBCUDACXX_ABI_ALWAYS_USE_CXX11_NULLPTR)
 #        define nullptr __nullptr
 #      else
@@ -370,27 +370,27 @@ typedef __char32_t char32_t;
 #      endif
 #    endif
 
-#    if !(__has_feature(cxx_rvalue_references))
+#    if !(_CCCL_HAS_FEATURE(cxx_rvalue_references))
 #      define _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
 #    endif
 
-#    if !(__has_feature(cxx_auto_type))
+#    if !(_CCCL_HAS_FEATURE(cxx_auto_type))
 #      define _LIBCUDACXX_HAS_NO_AUTO_TYPE
 #    endif
 
-#    if !(__has_feature(cxx_variadic_templates))
+#    if !(_CCCL_HAS_FEATURE(cxx_variadic_templates))
 #      define _LIBCUDACXX_HAS_NO_VARIADICS
 #    endif
 
-#    if !(__has_feature(cxx_generalized_initializers))
+#    if !(_CCCL_HAS_FEATURE(cxx_generalized_initializers))
 #      define _LIBCUDACXX_HAS_NO_GENERALIZED_INITIALIZERS
 #    endif
 
-#    if !(__has_feature(cxx_variable_templates))
+#    if !(_CCCL_HAS_FEATURE(cxx_variable_templates))
 #      define _LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES
 #    endif
 
-#    if !(__has_feature(cxx_noexcept))
+#    if !(_CCCL_HAS_FEATURE(cxx_noexcept))
 #      define _LIBCUDACXX_HAS_NO_NOEXCEPT
 #    endif
 
@@ -490,9 +490,9 @@ typedef __char32_t char32_t;
 #        define _LIBCUDACXX_HAS_NO_ASAN
 #      endif // !__SANITIZE_ADDRESS__
 #    elif defined(_CCCL_COMPILER_CLANG)
-#      if !__has_feature(address_sanitizer)
+#      if !_CCCL_HAS_FEATURE(address_sanitizer)
 #        define _LIBCUDACXX_HAS_NO_ASAN
-#      endif // !__has_feature(address_sanitizer)
+#      endif // !_CCCL_HAS_FEATURE(address_sanitizer)
 #    else
 #      define _LIBCUDACXX_HAS_NO_ASAN
 #    endif // _CCCL_COMPILER[MSVC|NVHPC|NVRTC]
@@ -646,7 +646,7 @@ typedef unsigned int char32_t;
 #    define _LIBCUDACXX_NOALIAS
 #  endif
 
-#  if __has_feature(cxx_explicit_conversions) || defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_CLANG)
+#  if _CCCL_HAS_FEATURE(cxx_explicit_conversions) || defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_CLANG)
 #    define _LIBCUDACXX_EXPLICIT explicit
 #  else
 #    define _LIBCUDACXX_EXPLICIT
@@ -815,7 +815,7 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 #  endif
 
 // TODO: Support C11 Atomics?
-// #if __has_feature(cxx_atomic) || __has_extension(c_atomic) || __has_keyword(_Atomic)
+// #if _CCCL_HAS_FEATURE(cxx_atomic) || __has_extension(c_atomic) || _CCCL_HAS_KEYWORD(_Atomic)
 // #  define _LIBCUDACXX_HAS_C_ATOMIC_IMP
 #  if defined(_CCCL_COMPILER_ICC)
 #    define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
