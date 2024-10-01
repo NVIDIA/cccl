@@ -32,7 +32,6 @@
 #  include <cuda/std/__algorithm/remove_if.h>
 #  include <cuda/std/__algorithm/rotate.h>
 #  include <cuda/std/__algorithm/swap_ranges.h>
-#  include <cuda/std/__cccl/assert.h> // all public C++ headers provide the assertion handler
 #  include <cuda/std/__exception/terminate.h>
 #  include <cuda/std/__iterator/advance.h>
 #  include <cuda/std/__iterator/concepts.h>

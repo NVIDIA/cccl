@@ -53,7 +53,6 @@ namespace std
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cccl/assert.h> // all public C++ headers provide the assertion handler
 #include <cuda/std/__new_>
 #include <cuda/std/atomic>
 #include <cuda/std/chrono>

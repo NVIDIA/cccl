@@ -21,7 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cccl/assert.h>
 #include <cuda/std/__exception/terminate.h>
 #include <cuda/std/__functional/binary_function.h>
 #include <cuda/std/__functional/invoke.h>

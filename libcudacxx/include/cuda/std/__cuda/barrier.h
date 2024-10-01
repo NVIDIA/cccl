@@ -26,7 +26,6 @@
 #endif // no system header
 
 #include <cuda/std/__atomic/api/owned.h>
-#include <cuda/std/__cccl/assert.h> // all public C++ headers provide the assertion handler
 #include <cuda/std/__type_traits/void_t.h> // _CUDA_VSTD::void_t
 
 #if defined(_CCCL_CUDA_COMPILER)

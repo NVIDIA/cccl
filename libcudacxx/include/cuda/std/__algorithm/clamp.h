@@ -21,7 +21,6 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/comp.h>
-#include <cuda/std/__cccl/assert.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

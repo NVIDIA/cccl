@@ -138,7 +138,6 @@ template<class R>
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cccl/assert.h> // all public C++ headers provide the assertion handler
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__fwd/array.h>

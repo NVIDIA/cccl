@@ -144,7 +144,6 @@
 
 #include <cuda/barrier>
 #include <cuda/discard_memory>
-#include <cuda/std/__cccl/assert.h> // all public C++ headers provide the assertion handler
 #include <cuda/std/cstdint>
 #include <cuda/std/detail/__access_property>
 

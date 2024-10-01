@@ -23,7 +23,10 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/builtin.h>
-#include <cuda/std/__cccl/diagnostic.h>
+
+#if !defined(_CCCL_COMPILER_NVRTC)
+#  include <assert.h>
+#endif // !_CCCL_COMPILER_NVRTC
 
 #include <nv/target>
 
@@ -61,26 +64,19 @@
 #elif __has_include(<yvals_core.h>) // MSVC uses _STL_VERIFY from <yvals.h>
 #  include <yvals.h>
 #  define _CCCL_ASSERT_IMPL_HOST(expression, message) _STL_VERIFY(expression, message)
-#elif __has_include(<__assert>) // libc++ uses _LIBCPP_ASSERT from <__assert>
-#  include <__assert>
-#  define _CCCL_ASSERT_IMPL_HOST(expression, message) _LIBCPP_ASSERT(expression, message)
-#elif __has_include(<bits/c++config.h>) // libstdc++ uses __glibcxx_assert from <bits/c++config.h>
-#  include <bits/c++config.h>
-#  if defined(_GLIBCXX_RELEASE) && _GLIBCXX_RELEASE >= 12
-// libstdc++ does not fully qualify its use of `__is_constant_evaluated`, so we need to pull it into cuda::std
-// It was introduced in the assert handling in 5e8a30d
-// libstdc++ : Redefine __glibcxx_assert to work in C++ 23 constexpr
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
-using ::std::__is_constant_evaluated;
-_LIBCUDACXX_END_NAMESPACE_STD
-#  endif // _GLIBCXX_RELEASE >= 12
-//! libstdc++ uses `is_constant_evaluated` in its assert definition which triggers a warning in non constexpr functions
-#  define _CCCL_ASSERT_IMPL_HOST(expression, message)                                                        \
-    _CCCL_DIAG_PUSH _CCCL_DIAG_SUPPRESS_ICC(4190) _CCCL_NV_DIAG_SUPPRESS(3060) __glibcxx_assert(expression); \
-    _CCCL_NV_DIAG_DEFAULT(3060) _CCCL_DIAG_POP
-#else // ^^^ libstdc++ ^^^ / vvv Unknown standard library vvv
-#  error "Unknown host standard library used."
-#endif // Unknown standard library
+#else // ^^^ MSVC STL ^^^ / vvv !MSVC STL vvv
+#  ifdef NDEBUG
+// Reintroduce the __assert_fail declaration
+extern void
+__assert_fail(const char* __assertion, const char* __file, unsigned int __line, const char* __function) __THROW
+  __attribute__((__noreturn__));
+#  endif // NDEBUG
+
+#  define _CCCL_ASSERT_IMPL_HOST(expression, message)      \
+    _CCCL_BUILTIN_EXPECT(static_cast<bool>(expression), 1) \
+      ? (void) 0                                           \
+      : __assert_fail(message, __FILE__, __LINE__, __func__)
+#endif // !MSVC STL
 
 //! Use custom implementations with nvcc on device and the host ones with clang-cuda and nvhpc
 //! _CCCL_ASSERT_IMPL_DEVICE should never be used directly
@@ -89,7 +85,6 @@ _LIBCUDACXX_END_NAMESPACE_STD
     _CCCL_BUILTIN_EXPECT(static_cast<bool>(expression), 1) \
     ? (void) 0 : __assertfail(message, __FILE__, __LINE__, __func__, sizeof(char))
 #elif defined(_CCCL_CUDA_COMPILER_NVCC) //! Use __assert_fail to implement device side asserts
-#  include <assert.h>
 #  if defined(_CCCL_COMPILER_MSVC)
 #    define _CCCL_ASSERT_IMPL_DEVICE(expression, message)    \
       _CCCL_BUILTIN_EXPECT(static_cast<bool>(expression), 1) \

@@ -25,7 +25,6 @@
 #include <cuda/std/__algorithm/iterator_operations.h>
 #include <cuda/std/__algorithm/push_heap.h>
 #include <cuda/std/__algorithm/sift_down.h>
-#include <cuda/std/__cccl/assert.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/is_copy_assignable.h>
 #include <cuda/std/__type_traits/is_copy_constructible.h>

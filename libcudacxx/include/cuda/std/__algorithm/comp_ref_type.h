@@ -20,7 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cccl/assert.h> // all public C++ headers provide the assertion handler
 #include <cuda/std/__utility/declval.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD

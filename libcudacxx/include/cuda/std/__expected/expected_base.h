@@ -19,7 +19,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cccl/assert.h>
 #include <cuda/std/__concepts/__concept_macros.h>
 #include <cuda/std/__concepts/invocable.h>
 #include <cuda/std/__expected/unexpect.h>

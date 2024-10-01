@@ -20,7 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cccl/assert.h>
 #include <cuda/std/__concepts/derived_from.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__iterator/concepts.h>
