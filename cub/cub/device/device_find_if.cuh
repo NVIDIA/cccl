@@ -34,6 +34,9 @@
 #include <cub/config.cuh>
 
 #include "cub/util_type.cuh"
+#include "cuda/std/__cccl/dialect.h"
+#include "cuda/std/__memory/pointer_traits.h"
+#include "cuda/std/__utility/declval.h"
 #include "device_launch_parameters.h"
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -59,25 +62,158 @@ static constexpr int block_threads       = 128;
 
 CUB_NAMESPACE_BEGIN
 
-template <typename IterBegin, typename IterEnd, typename Pred>
-__global__ void find_if(IterBegin begin, IterEnd end, Pred pred, int* result, std::size_t num_items)
+template <typename Iterator>
+static _CCCL_DEVICE _CCCL_FORCEINLINE bool IsAlignedAndFullTile(
+  Iterator d_in, int tile_offset, int tile_size, std::size_t num_items, Int2Type<true> /*CAN_VECTORIZE*/)
 {
-  using InputT  = cub::detail::value_t<IterBegin>;
+  /// Create an AgentFindIf and extract these two as type member in the encapsulating struct
+  using InputT  = cub::detail::value_t<Iterator>;
   using VectorT = typename CubVector<InputT, _VECTOR_LOAD_LENGTH>::Type;
-  enum
-  {
-    WORDS = elements_per_thread / _VECTOR_LOAD_LENGTH
-  };
+  ///
+  bool full_tile  = (tile_offset + tile_size) <= num_items;
+  bool is_aligned = (size_t(d_in) & (sizeof(VectorT) - 1)) == 0;
+  return full_tile && is_aligned;
+}
 
-  // int elements_per_thread = 32;
-  auto tile_size = blockDim.x * elements_per_thread;
-  __shared__ int sresult;
+template <typename Iterator>
+static _CCCL_DEVICE _CCCL_FORCEINLINE bool IsAlignedAndFullTile(
+  Iterator /*d_in*/,
+  int /*tile_offset*/,
+  int /*tile_size*/,
+  std::size_t /*num_items*/,
+  Int2Type<false> /*CAN_VECTORIZE*/)
+{
+  return false;
+}
+
+template <typename IterBegin, typename Pred>
+__device__ void ConsumeRange(
+  IterBegin begin, int tile_offset, Pred pred, int* result, std::size_t num_items, Int2Type<true> /*CAN_VECTORIZE*/)
+{
   __shared__ int block_result;
 
   if (threadIdx.x == 0)
   {
     block_result = num_items;
   }
+
+  using InputT  = cub::detail::value_t<IterBegin>;
+  using VectorT = typename CubVector<InputT, _VECTOR_LOAD_LENGTH>::Type;
+
+  enum
+  {
+    WORDS = elements_per_thread / _VECTOR_LOAD_LENGTH
+  };
+  //// vectorized loads begin
+  InputT* d_in_unqualified = const_cast<InputT*>(begin) + tile_offset + (threadIdx.x * _VECTOR_LOAD_LENGTH);
+
+  cub::CacheModifiedInputIterator<cub::CacheLoadModifier::LOAD_LDG, VectorT> d_vec_in(
+    reinterpret_cast<VectorT*>(d_in_unqualified));
+
+  InputT input_items[elements_per_thread];
+  VectorT* vec_items = reinterpret_cast<VectorT*>(input_items);
+
+#pragma unroll
+  for (int i = 0; i < WORDS; ++i)
+  {
+    vec_items[i] = d_vec_in[block_threads * i];
+  }
+  //// vectorized loads end
+
+  bool found = false;
+  for (int i = 0; i < elements_per_thread; ++i)
+  {
+    int index = i % WORDS + (i / WORDS) * block_threads * WORDS + threadIdx.x * WORDS + tile_offset;
+    // i % WORDS                            = + 0 1 2 3, 0 1 2 3, 0 1 2 3, ... (static)
+    // (i / WORDS) * block_threads * WORDS  = + 0      , 64     , 128,     ... (static)
+    // threadIdx.x * WORDS                  = + 0, 4, 8, ... offset of the thread within working tile
+    // tile_offset                          = + just start at the beginning of the block
+
+    if (index < num_items)
+    {
+      if (pred(input_items[i]))
+      {
+        found = true;
+        atomicMin(&block_result, index);
+        break; // every thread goes over multiple elements per thread
+               // for every tile. If a thread finds a local minimum it doesn't
+               // need to proceed further (inner early exit).
+      }
+    }
+  }
+
+  if (syncthreads_or(found))
+  {
+    if (threadIdx.x == 0)
+    {
+      if (block_result < num_items)
+      {
+        atomicMin(result, block_result);
+      }
+    }
+  }
+}
+
+template <typename IterBegin, typename Pred>
+__device__ void ConsumeRange(
+  IterBegin begin, int tile_offset, Pred pred, int* result, std::size_t num_items, Int2Type<false> /*CAN_VECTORIZE*/)
+{
+  __shared__ int block_result;
+
+  if (threadIdx.x == 0)
+  {
+    block_result = num_items;
+  }
+
+  bool found = false;
+  for (int i = 0; i < elements_per_thread; ++i)
+  {
+    auto index = tile_offset + threadIdx.x + i * blockDim.x;
+
+    if (index < num_items)
+    {
+      if (pred(*(begin + index)))
+      {
+        found = true;
+        atomicMin(&block_result, index);
+        break;
+      }
+    }
+  }
+  if (syncthreads_or(found))
+  {
+    if (threadIdx.x == 0)
+    {
+      if (block_result < num_items)
+      {
+        atomicMin(result, block_result);
+      }
+    }
+  }
+}
+
+template <typename IterBegin, typename IterEnd, typename Pred>
+__global__ void find_if(IterBegin begin, IterEnd end, Pred pred, int* result, std::size_t num_items)
+{
+  using InputT = cub::detail::value_t<IterBegin>;
+
+  // 1. _VECTOR_LOAD_LENGTH > 1: number of items per vectorized load should have been determined to be more than 1.
+  //    Now it's hardcoded but it will be determined at compile time according to the GPU architecture (Policy) later
+  //    on.
+  // 2. elements_per_thread % _VECTOR_LOAD_LENGTH == 0: elements_per_thread is also defined at compile time after tuning
+  //    for specific architectures. There is not point in doing vectorization if a thread cannot vectorize load all the
+  //    elmenets it is going to be working on, on a single tile.
+  // 3. ::cuda::std::is_pointer<IterBegin>::value: is contiguous iterator. If memory is not contiguous loading
+  //    vectorized memory makes no sense. Defined at compile time.
+  // 4. Traits<cub::detail::value_t<IterBegin>>::PRIMITIVE: InputT cannot be an arbitrary type, that could be layed out
+  //    in memory in any way. Needs to be known. Compile time.
+
+  static constexpr bool ATTEMPT_VECTORIZATION =
+    (_VECTOR_LOAD_LENGTH > 1) && (elements_per_thread % _VECTOR_LOAD_LENGTH == 0)
+    && (::cuda::std::is_pointer<IterBegin>::value) && Traits<InputT>::PRIMITIVE;
+
+  auto tile_size = blockDim.x * elements_per_thread;
+  __shared__ int sresult;
 
   for (int tile_offset = blockIdx.x * tile_size; tile_offset < num_items; tile_offset += tile_size * gridDim.x)
   {
@@ -95,53 +231,9 @@ __global__ void find_if(IterBegin begin, IterEnd end, Pred pred, int* result, st
       return;
     }
 
-    //// vectorized loads begin
-    InputT* d_in_unqualified = const_cast<InputT*>(begin) + tile_offset + (threadIdx.x * _VECTOR_LOAD_LENGTH);
-
-    cub::CacheModifiedInputIterator<cub::CacheLoadModifier::LOAD_DEFAULT, VectorT> d_vec_in(
-      reinterpret_cast<VectorT*>(d_in_unqualified));
-
-    InputT input_items[elements_per_thread];
-    VectorT* vec_items = reinterpret_cast<VectorT*>(input_items);
-
-#pragma unroll
-    for (int i = 0; i < WORDS; ++i)
-    {
-      vec_items[i] = d_vec_in[block_threads * i];
-    }
-    //// vectorized loads end
-    // what about when input is not devisible by _VECTOR_LOAD_LENGTH? --> case for not full tile to be added
-
-    bool found = false;
-    for (int i = 0; i < elements_per_thread; ++i)
-    {
-      int index = i % WORDS + (i / WORDS) * block_threads * WORDS + threadIdx.x * WORDS + tile_offset;
-      // i % WORDS                            = + 0 1 2 3, 0 1 2 3, 0 1 2 3, ... (static)
-      // (i / WORDS) * block_threads * WORDS  = + 0      , 64     , 128,     ... (static)
-      // threadIdx.x * WORDS                  = + 0, 4, 8, ... offset of the thread within working tile
-      // tile_offset                          = + just start at the beginning of the block
-
-      if (index < num_items)
-      {
-        if (pred(input_items[i]))
-        {
-          found = true;
-          atomicMin(&block_result, index);
-          break;
-        }
-      }
-    }
-
-    if (syncthreads_or(found))
-    {
-      if (threadIdx.x == 0)
-      {
-        if (block_result < num_items)
-        {
-          atomicMin(result, block_result);
-        }
-      }
-    }
+    IsAlignedAndFullTile(begin, tile_offset, tile_size, num_items, Int2Type<ATTEMPT_VECTORIZATION>())
+      ? ConsumeRange(begin, tile_offset, pred, result, num_items, Int2Type < true && ATTEMPT_VECTORIZATION > ())
+      : ConsumeRange(begin, tile_offset, pred, result, num_items, Int2Type < false && ATTEMPT_VECTORIZATION > ());
   }
 }
 
@@ -169,9 +261,6 @@ struct DeviceFind
     NumItemsT num_items,
     cudaStream_t stream = 0)
   {
-    static_assert(elements_per_thread % _VECTOR_LOAD_LENGTH == 0, "No full tile at the end");
-
-    // int items_per_thread = 2;
     int tile_size = block_threads * elements_per_thread;
     int num_tiles = static_cast<int>(cub::DivideAndRoundUp(num_items, tile_size));
 
