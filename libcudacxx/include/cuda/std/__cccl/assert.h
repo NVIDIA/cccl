@@ -22,6 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/attributes.h>
 #include <cuda/std/__cccl/builtin.h>
 
 #if !defined(_CCCL_COMPILER_NVRTC)
