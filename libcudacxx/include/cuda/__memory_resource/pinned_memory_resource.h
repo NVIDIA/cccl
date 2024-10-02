@@ -115,35 +115,67 @@ public:
   _LIBCUDACXX_REQUIRES(__different_resource<pinned_memory_resource, _Resource>)
   _CCCL_NODISCARD bool operator==(_Resource const& __rhs) const noexcept
   {
-    return resource_ref<>{const_cast<pinned_memory_resource*>(this)} == resource_ref<>{const_cast<_Resource&>(__rhs)};
+    if constexpr (has_property<_Resource, host_accessible>)
+    {
+      return resource_ref<host_accessible>{const_cast<pinned_memory_resource*>(this)}
+          == resource_ref<host_accessible>{const_cast<_Resource&>(__rhs)};
+    }
+    else if constexpr (has_property<_Resource, device_accessible>)
+    {
+      return resource_ref<device_accessible>{const_cast<pinned_memory_resource*>(this)}
+          == resource_ref<device_accessible>{const_cast<_Resource&>(__rhs)};
+    }
+    else
+    {
+      return false;
+    }
   }
 #    else // ^^^ C++20 ^^^ / vvv C++17
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator==(pinned_memory_resource const& __lhs, _Resource const& __rhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<pinned_memory_resource, _Resource>)
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(
+      __different_resource<pinned_memory_resource, _Resource>&& has_property<_Resource, host_accessible>)
   {
-    return resource_ref<>{const_cast<pinned_memory_resource&>(__lhs)} == resource_ref<>{const_cast<_Resource&>(__rhs)};
+    return resource_ref<host_accessible>{const_cast<pinned_memory_resource&>(__lhs)}
+        == resource_ref<host_accessible>{const_cast<_Resource&>(__rhs)};
+  }
+  template <class _Resource>
+  _CCCL_NODISCARD_FRIEND auto operator==(pinned_memory_resource const& __lhs, _Resource const& __rhs) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(
+      __different_resource<pinned_memory_resource, _Resource> && !has_property<_Resource, host_accessible>
+      && has_property<_Resource, device_accessible>)
+  {
+    return resource_ref<device_accessible>{const_cast<pinned_memory_resource&>(__lhs)}
+        == resource_ref<device_accessible>{const_cast<_Resource&>(__rhs)};
+  }
+  template <class _Resource>
+  _CCCL_NODISCARD_FRIEND auto operator==(pinned_memory_resource const& __lhs, _Resource const& __rhs) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(
+      __different_resource<pinned_memory_resource, _Resource> && !has_property<_Resource, host_accessible>
+      && !has_property<_Resource, device_accessible>)
+  {
+    return false;
   }
 
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator==(_Resource const& __rhs, pinned_memory_resource const& __lhs) noexcept
+  _CCCL_NODISCARD_FRIEND auto operator==(_Resource const& __lhs, pinned_memory_resource const& __rhs) noexcept
     _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<pinned_memory_resource, _Resource>)
   {
-    return resource_ref<>{const_cast<pinned_memory_resource&>(__lhs)} == resource_ref<>{const_cast<_Resource&>(__rhs)};
+    return __rhs == __lhs;
   }
 
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator!=(pinned_memory_resource const& __lhs, _Resource const& __rhs) noexcept
     _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<pinned_memory_resource, _Resource>)
   {
-    return resource_ref<>{const_cast<pinned_memory_resource&>(__lhs)} != resource_ref<>{const_cast<_Resource&>(__rhs)};
+    return !(__lhs == __rhs);
   }
 
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator!=(_Resource const& __rhs, pinned_memory_resource const& __lhs) noexcept
     _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<pinned_memory_resource, _Resource>)
   {
-    return resource_ref<>{const_cast<pinned_memory_resource&>(__lhs)} != resource_ref<>{const_cast<_Resource&>(__rhs)};
+    return !(__rhs == __lhs);
   }
 #    endif // _CCCL_STD_VER <= 2017
 

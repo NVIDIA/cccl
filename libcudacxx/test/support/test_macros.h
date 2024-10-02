@@ -34,8 +34,8 @@
 #define TEST_CONCAT1(X, Y) X##Y
 #define TEST_CONCAT(X, Y)  TEST_CONCAT1(X, Y)
 
-#ifdef __has_feature
-#  define TEST_HAS_FEATURE(X) __has_feature(X)
+#ifdef _CCCL_HAS_FEATURE
+#  define TEST_HAS_FEATURE(X) _CCCL_HAS_FEATURE(X)
 #else
 #  define TEST_HAS_FEATURE(X) 0
 #endif

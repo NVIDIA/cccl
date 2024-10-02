@@ -24,6 +24,7 @@
 #if !defined(_CCCL_COMPILER_MSVC_2017) && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
 #  include <cuda/__memory_resource/get_property.h>
+#  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__memory_resource/resource.h>
 #  include <cuda/std/__concepts/__concept_macros.h>
 #  include <cuda/std/__concepts/_One_of.h>
@@ -492,6 +493,9 @@ class basic_resource_ref
     , private _Filtered_vtable<_Properties...>
 {
 private:
+  static_assert(__contains_execution_space_property<_Properties...>,
+                "The properties of cuda::mr::basic_resource_ref must contain at least one execution space property!");
+
   template <_AllocType, class...>
   friend class basic_resource_ref;
 
@@ -502,6 +506,7 @@ private:
 
   using __vtable = _Filtered_vtable<_Properties...>;
 
+  //! @brief Checks whether \c _OtherProperties is a true superset of \c _Properties, accounting for host_accessible
   template <class... _OtherProperties>
   static constexpr bool __properties_match =
     _CUDA_VSTD::__type_set_contains<_CUDA_VSTD::__make_type_set<_OtherProperties...>, _Properties...>;

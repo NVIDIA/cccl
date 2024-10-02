@@ -41,7 +41,7 @@ struct __nat
 } // namespace __is_construct
 
 // FIXME: This logic isn't awesome.
-#if (!defined(_LIBCUDACXX_IS_CONSTRUCTIBLE) || defined(_LIBCUDACXX_TESTING_FALLBACK_IS_CONSTRUCTIBLE) \
+#if (!defined(_CCCL_BUILTIN_IS_CONSTRUCTIBLE) || defined(_LIBCUDACXX_TESTING_FALLBACK_IS_CONSTRUCTIBLE) \
      || defined(_LIBCUDACXX_USE_IS_CONSTRUCTIBLE_FALLBACK))
 
 template <class _Tp, class... _Args>
@@ -147,15 +147,15 @@ struct __libcpp_is_constructible<_Tp&&, _A0> : public decltype(__is_constructibl
 
 #endif
 
-#if defined(_LIBCUDACXX_IS_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_CONSTRUCTIBLE_FALLBACK)
+#if defined(_CCCL_BUILTIN_IS_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_CONSTRUCTIBLE_FALLBACK)
 template <class _Tp, class... _Args>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_constructible
-    : public integral_constant<bool, _LIBCUDACXX_IS_CONSTRUCTIBLE(_Tp, _Args...)>
+    : public integral_constant<bool, _CCCL_BUILTIN_IS_CONSTRUCTIBLE(_Tp, _Args...)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class... _Args>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_constructible_v = _LIBCUDACXX_IS_CONSTRUCTIBLE(_Tp, _Args...);
+_LIBCUDACXX_INLINE_VAR constexpr bool is_constructible_v = _CCCL_BUILTIN_IS_CONSTRUCTIBLE(_Tp, _Args...);
 #  endif
 
 #else
@@ -168,7 +168,7 @@ template <class _Tp, class... _Args>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_constructible_v = is_constructible<_Tp, _Args...>::value;
 #  endif
 
-#endif // defined(_LIBCUDACXX_IS_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_CONSTRUCTIBLE_FALLBACK)
+#endif // defined(_CCCL_BUILTIN_IS_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_CONSTRUCTIBLE_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

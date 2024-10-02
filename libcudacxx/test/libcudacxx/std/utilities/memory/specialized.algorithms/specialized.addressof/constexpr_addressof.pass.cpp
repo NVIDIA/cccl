@@ -18,7 +18,7 @@
 
 #include "test_macros.h"
 
-#if defined(_LIBCUDACXX_ADDRESSOF) || defined(__NVCOMPILER)
+#if defined(_CCCL_BUILTIN_ADDRESSOF) || defined(__NVCOMPILER)
 struct Pointer
 {
   __host__ __device__ constexpr Pointer(void* v)

@@ -3,7 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -17,15 +17,7 @@
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
-template <class T>
-struct property_with_value
-{
-  using value_type = T;
-};
-
-template <class T>
-struct property_without_value
-{};
+#include "types.h"
 
 template <class... Properties>
 struct async_resource_base
@@ -95,7 +87,7 @@ struct async_resource_derived_first : public async_resource_base<Properties...>
 
   int _val = 0;
 };
-static_assert(cuda::mr::async_resource<async_resource_derived_first<>>, "");
+static_assert(cuda::mr::async_resource<async_resource_derived_first<cuda::mr::host_accessible>>, "");
 
 struct some_data
 {
@@ -141,11 +133,11 @@ template <class... Properties>
 void test_async_resource_ref()
 {
   some_data input{1337};
-  async_resource_derived_first<Properties...> first{42};
-  async_resource_derived_second<Properties...> second{&input};
+  async_resource_derived_first<cuda::mr::host_accessible, Properties...> first{42};
+  async_resource_derived_second<cuda::mr::host_accessible, Properties...> second{&input};
 
-  cuda::mr::async_resource_ref<Properties...> ref_first{first};
-  cuda::mr::async_resource_ref<Properties...> ref_second{second};
+  cuda::mr::async_resource_ref<cuda::mr::host_accessible, Properties...> ref_first{first};
+  cuda::mr::async_resource_ref<cuda::mr::host_accessible, Properties...> ref_second{second};
 
   // Ensure that we properly pass on the allocate function
   assert(ref_first.allocate_async(0, 0, {}) == first.allocate_async(0, 0, {}));
@@ -157,7 +149,8 @@ void test_async_resource_ref()
 }
 
 template <class... Properties>
-cuda::mr::async_resource_ref<Properties...> indirection(async_resource_base<Properties...>* res)
+cuda::mr::async_resource_ref<cuda::mr::host_accessible, Properties...>
+indirection(async_resource_base<cuda::mr::host_accessible, Properties...>* res)
 {
   return {res};
 }
@@ -166,11 +159,11 @@ template <class... Properties>
 void test_async_resource_ref_from_pointer()
 {
   some_data input{1337};
-  async_resource_derived_first<Properties...> first{42};
-  async_resource_derived_second<Properties...> second{&input};
+  async_resource_derived_first<cuda::mr::host_accessible, Properties...> first{42};
+  async_resource_derived_second<cuda::mr::host_accessible, Properties...> second{&input};
 
-  cuda::mr::async_resource_ref<Properties...> ref_first  = indirection(&first);
-  cuda::mr::async_resource_ref<Properties...> ref_second = indirection(&second);
+  cuda::mr::async_resource_ref<cuda::mr::host_accessible, Properties...> ref_first  = indirection(&first);
+  cuda::mr::async_resource_ref<cuda::mr::host_accessible, Properties...> ref_second = indirection(&second);
 
   // Ensure that we properly pass on the allocate function
   assert(ref_first.allocate_async(0, 0, {}) == first.allocate_async(0, 0, {}));

@@ -22,15 +22,15 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_REMOVE_CONST) && !defined(_LIBCUDACXX_USE_REMOVE_CONST_FALLBACK)
+#if defined(_CCCL_BUILTIN_REMOVE_CONST) && !defined(_LIBCUDACXX_USE_REMOVE_CONST_FALLBACK)
 template <class _Tp>
 struct remove_const
 {
-  using type _LIBCUDACXX_NODEBUG_TYPE = _LIBCUDACXX_REMOVE_CONST(_Tp);
+  using type _LIBCUDACXX_NODEBUG_TYPE = _CCCL_BUILTIN_REMOVE_CONST(_Tp);
 };
 
 template <class _Tp>
-using __remove_const_t = _LIBCUDACXX_REMOVE_CONST(_Tp);
+using __remove_const_t = _CCCL_BUILTIN_REMOVE_CONST(_Tp);
 
 #else
 
@@ -48,7 +48,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_const<const _Tp>
 template <class _Tp>
 using __remove_const_t = typename remove_const<_Tp>::type;
 
-#endif // defined(_LIBCUDACXX_REMOVE_CONST) && !defined(_LIBCUDACXX_USE_REMOVE_CONST_FALLBACK)
+#endif // defined(_CCCL_BUILTIN_REMOVE_CONST) && !defined(_LIBCUDACXX_USE_REMOVE_CONST_FALLBACK)
 
 #if _CCCL_STD_VER > 2011
 template <class _Tp>

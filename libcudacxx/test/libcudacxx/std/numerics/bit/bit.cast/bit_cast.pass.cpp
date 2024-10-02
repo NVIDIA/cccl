@@ -356,7 +356,7 @@ __host__ __device__ bool tests()
   return true;
 }
 
-#if defined(_LIBCUDACXX_BIT_CAST)
+#if defined(_CCCL_BUILTIN_BIT_CAST)
 __host__ __device__ constexpr bool basic_constexpr_test()
 {
 #  if TEST_STD_VER >= 2014
@@ -373,13 +373,13 @@ __host__ __device__ constexpr bool basic_constexpr_test()
   return (3 == cuda::std::bit_cast<unsigned>(3u));
 #  endif // TEST_STD_VER >= 2014
 }
-#endif // _LIBCUDACXX_BIT_CAST
+#endif // _CCCL_BUILTIN_BIT_CAST
 
 int main(int, char**)
 {
   tests();
-#if defined(_LIBCUDACXX_BIT_CAST)
+#if defined(_CCCL_BUILTIN_BIT_CAST)
   static_assert(basic_constexpr_test(), "");
-#endif // _LIBCUDACXX_BIT_CAST
+#endif // _CCCL_BUILTIN_BIT_CAST
   return 0;
 }

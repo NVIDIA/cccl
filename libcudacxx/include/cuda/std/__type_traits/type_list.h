@@ -269,7 +269,7 @@ using __type_index = _Ts...[_Ip::value];
 // Versions of nvcc prior to 12.0 have trouble with pack expansion into
 // __type_pack_element in an alias template, so we use the fall-back
 // implementation instead.
-#  elif __has_builtin(__type_pack_element) && !defined(_CCCL_CUDACC_BELOW_12_0)
+#  elif defined(_CCCL_BUILTIN_TYPE_PACK_ELEMENT)
 
 namespace __detail
 {
@@ -279,7 +279,7 @@ template <size_t _Ip>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_index_fn
 {
   template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = __type_pack_element<_Ip, _Ts...>;
+  using __call _LIBCUDACXX_NODEBUG_TYPE = _CCCL_BUILTIN_TYPE_PACK_ELEMENT(_Ip, _Ts...);
 };
 } // namespace __detail
 
@@ -289,7 +289,7 @@ using __type_index_c = __type_call<__detail::__type_index_fn<_Ip>, _Ts...>;
 template <class _Ip, class... _Ts>
 using __type_index = __type_call<__detail::__type_index_fn<_Ip::value>, _Ts...>;
 
-#  else // ^^^ __has_builtin(__type_pack_element) ^^^ / vvv !__has_builtin(__type_pack_element) vvv
+#  else // ^^^ _CCCL_BUILTIN_TYPE_PACK_ELEMENT ^^^ / vvv !_CCCL_BUILTIN_TYPE_PACK_ELEMENT vvv
 
 // Fallback implementation for __type_index uses multiple inheritance. See:
 // https://ldionne.com/2015/11/29/efficient-parameter-pack-indexing/
@@ -360,7 +360,7 @@ using __type_index = __type_call<__detail::__type_index_select_fn<(_Ip::value < 
 template <size_t _Ip, class... _Ts>
 using __type_index_c = __type_index<integral_constant<size_t, _Ip>, _Ts...>;
 
-#  endif // !__has_builtin(__type_pack_element)
+#  endif // !_CCCL_BUILTIN_TYPE_PACK_ELEMENT
 
 namespace __detail
 {

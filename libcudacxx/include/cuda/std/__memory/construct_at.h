@@ -56,7 +56,7 @@ template <class _Tp,
           class = decltype(::new(_CUDA_VSTD::declval<void*>()) _Tp(_CUDA_VSTD::declval<_Args>()...))>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* construct_at(_Tp* __location, _Args&&... __args)
 {
-#    if defined(_LIBCUDACXX_ADDRESSOF)
+#    if defined(_CCCL_BUILTIN_ADDRESSOF)
   return ::new (_CUDA_VSTD::__voidify(*__location)) _Tp(_CUDA_VSTD::forward<_Args>(__args)...);
 #    else
   return ::new (const_cast<void*>(static_cast<const volatile void*>(__location)))
