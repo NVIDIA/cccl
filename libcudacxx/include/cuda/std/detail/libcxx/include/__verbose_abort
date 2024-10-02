@@ -37,7 +37,7 @@ _CCCL_NORETURN _LIBCUDACXX_ATTRIBUTE_FORMAT(__printf__, 1, 2)
   _LIBCUDACXX_HIDE_FROM_ABI void __libcpp_verbose_abort(const char*, ...)
 {
   ::abort();
-  __builtin_unreachable(); // never reached, but needed to tell the compiler that the function never returns
+  _CCCL_UNREACHABLE(); // never reached, but needed to tell the compiler that the function never returns
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD

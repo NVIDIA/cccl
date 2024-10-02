@@ -502,7 +502,7 @@ operator*(const complex<_Tp>& __z, const complex<_Tp>& __w)
   _Tp __c = __w.real();
   _Tp __d = __w.imag();
 
-#if _CCCL_STD_VER > 2011 && defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+#if _CCCL_STD_VER > 2011 && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   // Avoid floating point operations that are invalid during constant evaluation
   if (__libcpp_is_constant_evaluated())
   {
@@ -539,7 +539,7 @@ operator*(const complex<_Tp>& __z, const complex<_Tp>& __w)
       return complex<_Tp>(_Tp(numeric_limits<_Tp>::quiet_NaN()), _Tp(0));
     }
   }
-#endif // _CCCL_STD_VER > 2011 && defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+#endif // _CCCL_STD_VER > 2011 && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
 
   __abcd_results<_Tp> __partials = __complex_calculate_partials(__a, __b, __c, __d);
 
@@ -645,7 +645,7 @@ operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
     __d      = _CUDA_VSTD::__constexpr_scalbn(__d, -__ilogbw);
   }
 
-#if _CCCL_STD_VER > 2011 && defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+#if _CCCL_STD_VER > 2011 && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   // Avoid floating point operations that are invalid during constant evaluation
   if (__libcpp_is_constant_evaluated())
   {
@@ -694,7 +694,7 @@ operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
       return complex<_Tp>(_Tp(numeric_limits<_Tp>::infinity()), _Tp(numeric_limits<_Tp>::infinity()));
     }
   }
-#endif // _CCCL_STD_VER > 2011 && defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED
+#endif // _CCCL_STD_VER > 2011 && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
   __abcd_results<_Tp> __partials = __complex_calculate_partials(__a, __b, __c, __d);
   __ab_results<_Tp> __denom_vec  = __complex_piecewise_mul(__c, __d, __c, __d);

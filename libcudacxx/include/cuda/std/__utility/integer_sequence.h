@@ -39,20 +39,19 @@ struct __integer_sequence
   using __to_tuple_indices _LIBCUDACXX_NODEBUG_TYPE = __tuple_indices<(_Values + _Sp)...>;
 };
 
-#if defined(_LIBCUDACXX_HAS_MAKE_INTEGER_SEQ)
+#if defined(_CCCL_BUILTIN_MAKE_INTEGER_SEQ)
 
 template <size_t _Ep, size_t _Sp>
 using __make_indices_imp _LIBCUDACXX_NODEBUG_TYPE =
-  typename __make_integer_seq<__integer_sequence, size_t, _Ep - _Sp>::template __to_tuple_indices<_Sp>;
+  typename _CCCL_BUILTIN_MAKE_INTEGER_SEQ(__integer_sequence, size_t, _Ep - _Sp)::template __to_tuple_indices<_Sp>;
 
-#elif defined(_LIBCUDACXX_HAS_INTEGER_PACK) // ^^^ _LIBCUDACXX_HAS_MAKE_INTEGER_SEQ ^^^
-                                            // vvv _LIBCUDACXX_HAS_INTEGER_PACK vvv
+#elif defined(_CCCL_BUILTIN_INTEGER_PACK)
 
 template <size_t _Ep, size_t _Sp>
 using __make_indices_imp _LIBCUDACXX_NODEBUG_TYPE =
-  typename __integer_sequence<size_t, __integer_pack(_Ep - _Sp)...>::template __to_tuple_indices<_Sp>;
+  typename __integer_sequence<size_t, _CCCL_BUILTIN_INTEGER_PACK(_Ep - _Sp)...>::template __to_tuple_indices<_Sp>;
 
-#else // ^^^ _LIBCUDACXX_HAS_INTEGER_PACK ^^^ / vvv !_LIBCUDACXX_HAS_INTEGER_PACK vvv
+#else // ^^^ _CCCL_BUILTIN_INTEGER_PACK ^^^ / vvv !_CCCL_BUILTIN_INTEGER_PACK vvv
 
 namespace __detail
 {
@@ -188,7 +187,7 @@ template <size_t _Ep, size_t _Sp>
 using __make_indices_imp _LIBCUDACXX_NODEBUG_TYPE =
   typename __detail::__make<_Ep - _Sp>::type::template __to_tuple_indices<_Sp>;
 
-#endif
+#endif // !_CCCL_BUILTIN_INTEGER_PACK
 
 template <class _Tp, _Tp... _Ip>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT integer_sequence
@@ -204,18 +203,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT integer_sequence
 template <size_t... _Ip>
 using index_sequence = integer_sequence<size_t, _Ip...>;
 
-#ifdef _LIBCUDACXX_HAS_MAKE_INTEGER_SEQ
+#if defined(_CCCL_BUILTIN_MAKE_INTEGER_SEQ)
 
 template <class _Tp, _Tp _Ep>
-using __make_integer_sequence _LIBCUDACXX_NODEBUG_TYPE = __make_integer_seq<integer_sequence, _Tp, _Ep>;
+using __make_integer_sequence _LIBCUDACXX_NODEBUG_TYPE = _CCCL_BUILTIN_MAKE_INTEGER_SEQ(integer_sequence, _Tp, _Ep);
 
-#elif defined(_LIBCUDACXX_HAS_INTEGER_PACK) // ^^^ _LIBCUDACXX_HAS_MAKE_INTEGER_SEQ ^^^
-                                            // vvv _LIBCUDACXX_HAS_INTEGER_PACK vvv
+#elif defined(_CCCL_BUILTIN_INTEGER_PACK)
 
 template <class _Tp, _Tp _Ep>
 using __make_integer_sequence _LIBCUDACXX_NODEBUG_TYPE = integer_sequence<_Tp, __integer_pack(_Ep)...>;
 
-#else // ^^^ _LIBCUDACXX_HAS_INTEGER_PACK ^^^ / vvv !_LIBCUDACXX_HAS_INTEGER_PACK vvv
+#else // ^^^ _CCCL_BUILTIN_INTEGER_PACK ^^^ / vvv !_CCCL_BUILTIN_INTEGER_PACK vvv
 
 template <typename _Tp, _Tp _Np>
 using __make_integer_sequence_unchecked _LIBCUDACXX_NODEBUG_TYPE =
@@ -234,7 +232,7 @@ struct __make_integer_sequence_checked
 template <class _Tp, _Tp _Ep>
 using __make_integer_sequence _LIBCUDACXX_NODEBUG_TYPE = typename __make_integer_sequence_checked<_Tp, _Ep>::type;
 
-#endif // _LIBCUDACXX_HAS_MAKE_INTEGER_SEQ
+#endif // !_CCCL_BUILTIN_INTEGER_PACK
 
 template <class _Tp, _Tp _Np>
 using make_integer_sequence = __make_integer_sequence<_Tp, _Np>;

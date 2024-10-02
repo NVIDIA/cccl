@@ -266,10 +266,10 @@ int main(int, char**)
 {
   tests();
 #ifndef TEST_COMPILER_ICC
-#  if TEST_STD_VER >= 2014 && defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) \
+#  if TEST_STD_VER >= 2014 && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) \
     && (!defined(TEST_COMPILER_GCC) || __GNUC__ > 8)
   static_assert(tests(), "");
-#  endif // TEST_STD_VER >= 2014 && defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+#  endif // TEST_STD_VER >= 2014 && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
 #endif // TEST_COMPILER_ICC
   return 0;
 }

@@ -534,13 +534,13 @@ using __m_at = _Ts...[__v<_Np>];
 template <size_t _Np, class... _Ts>
 using __m_at_c = _Ts...[_Np];
 
-#elif __has_builtin(__type_pack_element)
+#elif defined(_CCCL_BUILTIN_TYPE_PACK_ELEMENT)
 
 template <bool>
 struct __m_at_
 {
   template <class _Np, class... _Ts>
-  using __f = __type_pack_element<__v<_Np>, _Ts...>;
+  using __f = _CCCL_BUILTIN_TYPE_PACK_ELEMENT(__v<_Np>, _Ts...);
 };
 
 template <class _Np, class... _Ts>
@@ -675,17 +675,8 @@ struct __mconcat_into_q
 };
 
 // The following must be super-fast to compile, so use an intrinsic directly if it is available
-#if defined(_LIBCUDACXX_IS_BASE_OF) && !defined(_LIBCUDACXX_USE_IS_BASE_OF_FALLBACK)
-
-template <class _Set, class... _Ty>
-_CCCL_INLINE_VAR constexpr bool __mset_contains = (_LIBCUDACXX_IS_BASE_OF(__mtype<_Ty>, _Set) && ...);
-
-#else
-
 template <class _Set, class... _Ty>
 _CCCL_INLINE_VAR constexpr bool __mset_contains = (_CUDA_VSTD::is_base_of_v<__mtype<_Ty>, _Set> && ...);
-
-#endif
 
 namespace __set
 {

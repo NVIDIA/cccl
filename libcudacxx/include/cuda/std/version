@@ -33,9 +33,9 @@
 #  define __cccl_lib_bit_cast     201806L
 #  define __cccl_lib_chrono_udls  201304L
 #  define __cccl_lib_complex_udls 201309L
-#  ifdef _LIBCUDACXX_IS_CONSTANT_EVALUATED
+#  ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #    define __cccl_lib_constexpr_complex 201711L
-#  endif // _LIBCUDACXX_IS_CONSTANT_EVALUATED
+#  endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #  define __cccl_lib_concepts          202002L
 #  define __cccl_lib_exchange_function 201304L
 #  define __cccl_lib_expected          202211L
@@ -63,9 +63,9 @@
 #endif // _CCCL_STD_VER >= 2014
 
 #if _CCCL_STD_VER >= 2017
-#  ifdef _LIBCUDACXX_ADDRESSOF
+#  ifdef _CCCL_BUILTIN_ADDRESSOF
 #    define __cccl_lib_addressof_constexpr 201603L
-#  endif // _LIBCUDACXX_ADDRESSOF
+#  endif // _CCCL_BUILTIN_ADDRESSOF
 // # define __cccl_lib_allocator_traits_is_always_equal     201411L
 // # define __cccl_lib_any                                  201606L
 #  define __cccl_lib_apply           201603L
@@ -85,9 +85,9 @@
 // # define __cccl_lib_filesystem                           201703L
 #  define __cccl_lib_gcd_lcm                    201606L
 #  define __cccl_lib_hardware_interference_size 201703L
-#  ifdef _LIBCUDACXX_HAS_UNIQUE_OBJECT_REPRESENTATIONS
+#  ifdef _CCCL_BUILTIN_HAS_UNIQUE_OBJECT_REPRESENTATIONS
 #    define __cccl_lib_has_unique_object_representations 201606L
-#  endif // _LIBCUDACXX_HAS_UNIQUE_OBJECT_REPRESENTATIONS
+#  endif // _CCCL_BUILTIN_HAS_UNIQUE_OBJECT_REPRESENTATIONS
 #  define __cccl_lib_hypot 201603L
 // # define __cccl_lib_incomplete_container_elements        201505L
 #  define __cccl_lib_invoke 201411L
@@ -172,9 +172,9 @@
 // # define __cccl_lib_int_pow2                             202002L
 // # define __cccl_lib_integer_comparison_functions         202002L
 // # define __cccl_lib_interpolate                          201902L
-#  ifdef _LIBCUDACXX_IS_CONSTANT_EVALUATED
+#  ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #    define __cccl_lib_is_constant_evaluated 201811L
-#  endif // _LIBCUDACXX_IS_CONSTANT_EVALUATED
+#  endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 // # define __cccl_lib_is_layout_compatible                 201907L
 #  define __cccl_lib_is_nothrow_convertible 201806L
 // # define __cccl_lib_is_pointer_interconvertible          201907L

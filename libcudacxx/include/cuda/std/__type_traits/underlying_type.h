@@ -24,7 +24,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_UNDERLYING_TYPE) && !defined(_LIBCUDACXX_USE_UNDERLYING_TYPE_FALLBACK)
+#if defined(_CCCL_BUILTIN_UNDERLYING_TYPE) && !defined(_LIBCUDACXX_USE_UNDERLYING_TYPE_FALLBACK)
 
 template <class _Tp, bool = is_enum<_Tp>::value>
 struct __underlying_type_impl;
@@ -36,7 +36,7 @@ struct __underlying_type_impl<_Tp, false>
 template <class _Tp>
 struct __underlying_type_impl<_Tp, true>
 {
-  typedef _LIBCUDACXX_UNDERLYING_TYPE(_Tp) type;
+  typedef _CCCL_BUILTIN_UNDERLYING_TYPE(_Tp) type;
 };
 
 template <class _Tp>
@@ -62,7 +62,7 @@ struct underlying_type
                 "libc++ does not know how to use it.");
 };
 
-#endif // defined(_LIBCUDACXX_UNDERLYING_TYPE) && !defined(_LIBCUDACXX_USE_UNDERLYING_TYPE_FALLBACK)
+#endif // defined(_CCCL_BUILTIN_UNDERLYING_TYPE) && !defined(_LIBCUDACXX_USE_UNDERLYING_TYPE_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

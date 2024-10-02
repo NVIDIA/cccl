@@ -146,7 +146,7 @@ int main(int, char**)
   test_all<int, short>();
   test_all<X, int>();
   test_all<Y, int>();
-#if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
+#if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
   static_assert(test_all<int, short>());
   static_assert(test_all<X, int>());
   static_assert(test_all<Y, int>());

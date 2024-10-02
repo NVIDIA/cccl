@@ -32,10 +32,10 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_MAKE_UNSIGNED) && !defined(_LIBCUDACXX_USE_MAKE_UNSIGNED_FALLBACK)
+#if defined(_CCCL_BUILTIN_MAKE_UNSIGNED) && !defined(_LIBCUDACXX_USE_MAKE_UNSIGNED_FALLBACK)
 
 template <class _Tp>
-using __make_unsigned_t = _LIBCUDACXX_MAKE_UNSIGNED(_Tp);
+using __make_unsigned_t = _CCCL_BUILTIN_MAKE_UNSIGNED(_Tp);
 
 #else
 typedef __type_list<unsigned char,
@@ -125,7 +125,7 @@ struct __make_unsigned_impl<__uint128_t, true>
 template <class _Tp>
 using __make_unsigned_t = typename __apply_cv<_Tp, typename __make_unsigned_impl<__remove_cv_t<_Tp>>::type>::type;
 
-#endif // defined(_LIBCUDACXX_MAKE_UNSIGNED) && !defined(_LIBCUDACXX_USE_MAKE_UNSIGNED_FALLBACK)
+#endif // defined(_CCCL_BUILTIN_MAKE_UNSIGNED) && !defined(_LIBCUDACXX_USE_MAKE_UNSIGNED_FALLBACK)
 
 template <class _Tp>
 struct make_unsigned

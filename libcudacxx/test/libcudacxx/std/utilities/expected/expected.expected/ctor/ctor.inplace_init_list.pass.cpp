@@ -165,11 +165,11 @@ void test_exceptions()
 int main(int, char**)
 {
   test();
-#if defined(_LIBCUDACXX_ADDRESSOF)
+#if defined(_CCCL_BUILTIN_ADDRESSOF)
 #  if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
   static_assert(test(), "");
 #  endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-#endif // defined(_LIBCUDACXX_ADDRESSOF)
+#endif // defined(_CCCL_BUILTIN_ADDRESSOF)
 #ifndef TEST_HAS_NO_EXCEPTIONS
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
 #endif // !TEST_HAS_NO_EXCEPTIONS

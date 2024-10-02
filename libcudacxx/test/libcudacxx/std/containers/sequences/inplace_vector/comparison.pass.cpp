@@ -85,9 +85,9 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   static_assert(test(), "");
-#endif // _LIBCUDACXX_IS_CONSTANT_EVALUATED
+#endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
   return 0;
 }
