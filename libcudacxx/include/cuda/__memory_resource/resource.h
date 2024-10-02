@@ -25,10 +25,10 @@
 
 #  include <cuda/__memory_resource/get_property.h>
 #  include <cuda/std/__concepts/__concept_macros.h>
-#  include <cuda/std/__concepts/all_of.h>
 #  include <cuda/std/__concepts/convertible_to.h>
 #  include <cuda/std/__concepts/equality_comparable.h>
 #  include <cuda/std/__concepts/same_as.h>
+#  include <cuda/std/__type_traits/all_of.h>
 #  include <cuda/std/__type_traits/decay.h>
 #  include <cuda/stream_ref>
 

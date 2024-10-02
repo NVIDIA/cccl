@@ -21,7 +21,6 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/__concept_macros.h>
-#include <cuda/std/__concepts/all_of.h>
 #include <cuda/std/__concepts/arithmetic.h>
 #include <cuda/std/__concepts/assignable.h>
 #include <cuda/std/__concepts/boolean_testable.h>
