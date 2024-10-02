@@ -43,7 +43,7 @@ template <class _Tp,
           _CUDA_VSTD::__enable_if_t<_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Up), int> = 0>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp ceil_div(const _Tp __a, const _Up __b) noexcept
 {
-  _CCCL_ASSERT(__b > _Tp(0), "cuda::ceil_div: b must be positive");
+  _CCCL_ASSERT(__b > _Up(0), "cuda::ceil_div: b must be positive");
   using _UCommon   = _CUDA_VSTD::__make_unsigned_t<_CUDA_VSTD::__common_type_t<_Tp, _Up>>;
   const auto __res = static_cast<_UCommon>(__a) / static_cast<_UCommon>(__b);
   return static_cast<_Tp>(__res + (__res * static_cast<_UCommon>(__b) != static_cast<_UCommon>(__a)));
@@ -61,7 +61,7 @@ template <class _Tp,
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp ceil_div(const _Tp __a, const _Up __b) noexcept
 {
   _CCCL_ASSERT(__a >= _Tp(0), "cuda::ceil_div: a must be non negative");
-  _CCCL_ASSERT(__b > _Tp(0), "cuda::ceil_div: b must be positive");
+  _CCCL_ASSERT(__b > _Up(0), "cuda::ceil_div: b must be positive");
   using _UCommon = _CUDA_VSTD::__make_unsigned_t<_CUDA_VSTD::__common_type_t<_Tp, _Up>>;
   // Due to the precondition `__a >= 0` we can safely cast to unsigned without danger of overflowing
   return static_cast<_Tp>((static_cast<_UCommon>(__a) + static_cast<_UCommon>(__b) - 1) / static_cast<_UCommon>(__b));
