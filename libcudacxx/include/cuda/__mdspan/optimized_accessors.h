@@ -23,14 +23,16 @@
 
 #if _CCCL_STD_VER >= 2014
 
+#  include <cuda/std/detail/__config>
+
 #  include <cub/thread/thread_load.cuh>
 #  include <cub/thread/thread_store.cuh>
 
-#  include <cuda/std/__cccl/attributes.h>
-#  include <cuda/std/__cccl/compiler.h>
-#  include <cuda/std/__cccl/dialect.h>
-#  include <cuda/std/__cccl/execution_space.h>
-#  include <cuda/std/__type_traits/enable_if_t>
+#  include <cuda/std/__concepts/__concept_macros.h>
+#  include <cuda/std/__type_traits/enable_if.h>
+#  include <cuda/std/__type_traits/is_abstract.h>
+#  include <cuda/std/__type_traits/is_array.h>
+#  include <cuda/std/__type_traits/is_convertible.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -76,11 +78,14 @@ public:
 
   accessor_reference(accessor_reference&&) = delete;
 
+  accessor_reference& operator=(accessor_reference&&) = delete;
+
   _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _CCCL_FORCEINLINE accessor_reference(const accessor_reference&) = default;
 
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE operator _ElementType() const noexcept
+  _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _CCCL_FORCEINLINE accessor_reference&
+  operator=(const accessor_reference& __x) noexcept
   {
-    return cub::ThreadLoad<_Eviction, _Prefetch>(__p);
+    return operator=(static_cast<_ElementType>(__x));
   }
 
   _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _CCCL_FORCEINLINE accessor_reference& operator=(_ElementType __x) noexcept
@@ -88,10 +93,9 @@ public:
     return cub::ThreadStore<_Eviction>(__p, __x);
   }
 
-  _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _CCCL_FORCEINLINE accessor_reference&
-  operator=(const accessor_reference& __x) noexcept
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE operator _ElementType() const noexcept
   {
-    return operator=(static_cast<_ElementType>(__x));
+    return cub::ThreadLoad<_Eviction, _Prefetch>(__p);
   }
 
 private:
@@ -108,11 +112,11 @@ template <class _ElementType, EvictionPolicy _Eviction, PrefetchSize _Prefetch>
 struct cache_policy_accessor<_ElementType,
                              _Eviction,
                              _Prefetch,
-                             ::cuda::std::__enable_if_t<!::cuda::std::is_const<_ElementType>::value>>
+                             _CUDA_VSTD::__enable_if_t<!_CUDA_VSTD::is_const<_ElementType>::value>>
 {
-  static_assert(!::cuda::std::is_array<_ElementType>::value,
+  static_assert(!_CUDA_VSTD::is_array<_ElementType>::value,
                 "cache_policy_accessor: template argument may not be an array type");
-  static_assert(!::cuda::std::is_abstract<_ElementType>::value,
+  static_assert(!_CUDA_VSTD::is_abstract<_ElementType>::value,
                 "cache_policy_accessor: template argument may not be an abstract class");
 
   using offset_policy    = cache_policy_accessor;
@@ -122,10 +126,10 @@ struct cache_policy_accessor<_ElementType,
 
   constexpr cache_policy_accessor() noexcept = default;
 
-  _LIBCUDACXX_TEMPLATE(typename _OtherElementType)
-  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _OtherElementType (*)[], _ElementType (*)[])
-  _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _CCCL_FORCEINLINE constexpr cache_policy_accessor(
-    cache_policy_accessor<_OtherElementType>) noexcept
+  _LIBCUDACXX_TEMPLATE(class _OtherElementType)
+  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _OtherElementType (*)[], element_type (*)[]))
+  _CCCL_HIDE_FROM_ABI _CCCL_DEVICE
+  _CCCL_FORCEINLINE constexpr cache_policy_accessor(cache_policy_accessor<_OtherElementType>) noexcept
   {}
 
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE reference access(data_handle_type __p, size_t __i) const noexcept
@@ -147,11 +151,11 @@ template <class _ElementType, EvictionPolicy _Eviction, PrefetchSize _Prefetch>
 struct cache_policy_accessor<_ElementType,
                              _Eviction,
                              _Prefetch,
-                             ::cuda::std::__enable_if_t<::cuda::std::is_const<_ElementType>::value>>
+                             _CUDA_VSTD::__enable_if_t<_CUDA_VSTD::is_const<_ElementType>::value>>
 {
-  static_assert(!::cuda::std::is_array<_ElementType>::value,
+  static_assert(!_CUDA_VSTD::is_array<_ElementType>::value,
                 "cache_policy_accessor: template argument may not be an array type");
-  static_assert(!::cuda::std::is_abstract<_ElementType>::value,
+  static_assert(!_CUDA_VSTD::is_abstract<_ElementType>::value,
                 "cache_policy_accessor: template argument may not be an abstract class");
 
   using offset_policy    = cache_policy_accessor;
@@ -162,9 +166,9 @@ struct cache_policy_accessor<_ElementType,
   explicit cache_policy_accessor() noexcept = default;
 
   template <typename _OtherElementType,
-            ::cuda::std::__enable_if_t<::cuda::std::is_convertible<_OtherElementType (*)[], _ElementType (*)[]>::value>>
-  _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _CCCL_FORCEINLINE constexpr cache_policy_accessor(
-    cache_policy_accessor<_OtherElementType>) noexcept
+            _CUDA_VSTD::__enable_if_t<_CUDA_VSTD::is_convertible<_OtherElementType (*)[], _ElementType (*)[]>::value>>
+  _CCCL_HIDE_FROM_ABI _CCCL_DEVICE
+  _CCCL_FORCEINLINE constexpr cache_policy_accessor(cache_policy_accessor<_OtherElementType>) noexcept
   {}
 
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE element_type access(data_handle_type __p, size_t __i) const noexcept
