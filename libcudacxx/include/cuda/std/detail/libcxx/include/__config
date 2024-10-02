@@ -90,16 +90,12 @@ extern "C++" {
 #    define _LIBCUDACXX_ABI_REGEX_CONSTANTS_NONZERO
 #  endif
 
-#  ifndef __has_attribute
-#    define __has_attribute(__x) 0
+#  ifndef _CCCL_HAS_ATTRIBUTE
+#    define _CCCL_HAS_ATTRIBUTE(__x) 0
 #  endif
 
 #  ifndef __has_extension
 #    define __has_extension(__x) 0
-#  endif
-
-#  ifndef __has_cpp_attribute
-#    define __has_cpp_attribute(__x) 0
 #  endif
 
 #  ifndef __has_declspec_attribute
@@ -270,7 +266,7 @@ extern "C++" {
 #    endif
 #  endif // !defined(_LIBCUDACXX_LITTLE_ENDIAN) && !defined(_LIBCUDACXX_BIG_ENDIAN)
 
-#  if __has_attribute(__no_sanitize__) && !defined(_CCCL_COMPILER_GCC)
+#  if _CCCL_HAS_ATTRIBUTE(__no_sanitize__) && !defined(_CCCL_COMPILER_GCC)
 #    define _LIBCUDACXX_NO_CFI __attribute__((__no_sanitize__("cfi")))
 #  else
 #    define _LIBCUDACXX_NO_CFI
@@ -395,7 +391,7 @@ typedef __char32_t char32_t;
 #    endif
 
 // Allow for build-time disabling of unsigned integer sanitization
-#    if !defined(_LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK) && __has_attribute(no_sanitize)
+#    if !defined(_LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK) && _CCCL_HAS_ATTRIBUTE(no_sanitize)
 #      define _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK \
         __attribute__((__no_sanitize__("unsigned-integer-overflow")))
 #    endif
@@ -559,7 +555,7 @@ typedef __char32_t char32_t;
 #  ifndef _LIBCUDACXX_NODEBUG_TYPE
 #    if defined(__cuda_std__)
 #      define _LIBCUDACXX_NODEBUG_TYPE
-#    elif __has_attribute(__nodebug__) && (defined(_CCCL_COMPILER_CLANG) && _LIBCUDACXX_CLANG_VER >= 1210)
+#    elif _CCCL_HAS_ATTRIBUTE(__nodebug__) && (defined(_CCCL_COMPILER_CLANG) && _LIBCUDACXX_CLANG_VER >= 1210)
 #      define _LIBCUDACXX_NODEBUG_TYPE __attribute__((nodebug))
 #    else
 #      define _LIBCUDACXX_NODEBUG_TYPE
@@ -630,7 +626,7 @@ typedef __char32_t char32_t;
 // clang-format on
 
 #  ifndef _LIBCUDACXX_PREFERRED_OVERLOAD
-#    if __has_attribute(__enable_if__)
+#    if _CCCL_HAS_ATTRIBUTE(__enable_if__)
 #      define _LIBCUDACXX_PREFERRED_OVERLOAD __attribute__((__enable_if__(true, "")))
 #    endif
 #  endif
@@ -700,7 +696,7 @@ typedef unsigned int char32_t;
 // by defining _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS.
 // NVCC 11.1 and 11.2 are broken with the deprecated attribute, so disable it
 #  if !defined(_LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS) && !defined(_CCCL_CUDACC_BELOW_11_3)
-#    if __has_attribute(deprecated)
+#    if _CCCL_HAS_ATTRIBUTE(deprecated)
 #      define _LIBCUDACXX_DEPRECATED __attribute__((deprecated))
 #    elif _CCCL_STD_VER > 2011
 #      define _LIBCUDACXX_DEPRECATED [[deprecated]]
@@ -856,13 +852,13 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 #    define _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK
 #  endif
 
-#  if __has_attribute(require_constant_initialization)
+#  if _CCCL_HAS_ATTRIBUTE(require_constant_initialization)
 #    define _LIBCUDACXX_SAFE_STATIC __attribute__((__require_constant_initialization__))
 #  else
 #    define _LIBCUDACXX_SAFE_STATIC
 #  endif
 
-#  if __has_attribute(diagnose_if) && !defined(_LIBCUDACXX_DISABLE_ADDITIONAL_DIAGNOSTICS)
+#  if _CCCL_HAS_ATTRIBUTE(diagnose_if) && !defined(_LIBCUDACXX_DISABLE_ADDITIONAL_DIAGNOSTICS)
 #    define _LIBCUDACXX_DIAGNOSE_WARNING(...) __attribute__((diagnose_if(__VA_ARGS__, "warning")))
 #    define _LIBCUDACXX_DIAGNOSE_ERROR(...)   __attribute__((diagnose_if(__VA_ARGS__, "error")))
 #  else
@@ -870,13 +866,13 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 #    define _LIBCUDACXX_DIAGNOSE_ERROR(...)
 #  endif
 
-#  if __has_attribute(__nodebug__)
+#  if _CCCL_HAS_ATTRIBUTE(__nodebug__)
 #    define _LIBCUDACXX_NODEBUG __attribute__((__nodebug__))
 #  else
 #    define _LIBCUDACXX_NODEBUG
 #  endif
 
-#  if __has_attribute(__preferred_name__)
+#  if _CCCL_HAS_ATTRIBUTE(__preferred_name__)
 #    define _LIBCUDACXX_PREFERRED_NAME(x) __attribute__((__preferred_name__(x)))
 #  else
 #    define _LIBCUDACXX_PREFERRED_NAME(x)

@@ -54,7 +54,7 @@ const AssertionDialogAvoider assertion_dialog_avoider{};
 #  define _MSVC_HAS_FEATURE_memory_sanitizer  0
 #  define _MSVC_HAS_FEATURE_thread_sanitizer  0
 
-#  define __has_attribute(X)              _MSVC_HAS_ATTRIBUTE_##X
+#  define _CCCL_HAS_ATTRIBUTE(X)          _MSVC_HAS_ATTRIBUTE_##X
 #  define _MSVC_HAS_ATTRIBUTE_vector_size 0
 
 // Silence compiler warnings.

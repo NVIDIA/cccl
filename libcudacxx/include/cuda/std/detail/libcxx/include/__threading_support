@@ -60,7 +60,7 @@ _CCCL_PUSH_MACROS
 #    define _LIBCUDACXX_THREAD_ABI_VISIBILITY _LIBCUDACXX_HIDE_FROM_ABI
 #  endif
 
-#  if defined(__FreeBSD__) && defined(_CCCL_COMPILER_CLANG) && __has_attribute(no_thread_safety_analysis)
+#  if defined(__FreeBSD__) && defined(_CCCL_COMPILER_CLANG) && _CCCL_HAS_ATTRIBUTE(no_thread_safety_analysis)
 #    define _LIBCUDACXX_NO_THREAD_SAFETY_ANALYSIS __attribute__((no_thread_safety_analysis))
 #  else
 #    define _LIBCUDACXX_NO_THREAD_SAFETY_ANALYSIS
