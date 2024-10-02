@@ -1,5 +1,4 @@
-include("${cudax_SOURCE_DIR}/cmake/CPM.cmake")
-CPMAddPackage("gh:catchorg/Catch2@2.13.9")
+cccl_get_catch2()
 
 add_library(catch2_main STATIC catch2_helpers/catch2_main.cpp)
 target_link_libraries(catch2_main PUBLIC Catch2::Catch2)
