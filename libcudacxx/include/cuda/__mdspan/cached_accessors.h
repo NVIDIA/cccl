@@ -23,8 +23,6 @@
 
 #if _CCCL_STD_VER >= 2014
 
-#  include <cuda/std/detail/__config>
-
 #  include <cub/thread/thread_load.cuh>
 #  include <cub/thread/thread_store.cuh>
 
