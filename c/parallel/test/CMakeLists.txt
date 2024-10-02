@@ -1,3 +1,5 @@
+cccl_get_catch2()
+
 add_executable(cccl.c.parallel.test.reduce test_reduce.cpp test_main.cpp)
 cccl_configure_target(cccl.c.parallel.test.reduce DIALECT 20)
 
