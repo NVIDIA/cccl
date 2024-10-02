@@ -30,10 +30,10 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_MAKE_SIGNED) && !defined(_LIBCUDACXX_USE_MAKE_SIGNED_FALLBACK)
+#if defined(_CCCL_BUILTIN_MAKE_SIGNED) && !defined(_LIBCUDACXX_USE_MAKE_SIGNED_FALLBACK)
 
 template <class _Tp>
-using __make_signed_t = _LIBCUDACXX_MAKE_SIGNED(_Tp);
+using __make_signed_t = _CCCL_BUILTIN_MAKE_SIGNED(_Tp);
 
 #else
 typedef __type_list<signed char,
@@ -123,7 +123,7 @@ struct __make_signed_impl<__uint128_t, true>
 template <class _Tp>
 using __make_signed_t = typename __apply_cv<_Tp, typename __make_signed_impl<__remove_cv_t<_Tp>>::type>::type;
 
-#endif // defined(_LIBCUDACXX_MAKE_SIGNED) && !defined(_LIBCUDACXX_USE_MAKE_SIGNED_FALLBACK)
+#endif // defined(_CCCL_BUILTIN_MAKE_SIGNED) && !defined(_LIBCUDACXX_USE_MAKE_SIGNED_FALLBACK)
 
 template <class _Tp>
 struct make_signed

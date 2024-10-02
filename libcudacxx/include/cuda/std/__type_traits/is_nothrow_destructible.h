@@ -32,10 +32,10 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // is_nothrow_destructible
 
-#if defined(_LIBCUDACXX_IS_NOTHROW_DESTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_NOTHROW_DESTRUCTIBLE_FALLBACK)
+#if defined(_CCCL_BUILTIN_IS_NOTHROW_DESTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_NOTHROW_DESTRUCTIBLE_FALLBACK)
 
 template <class _Tp>
-struct is_nothrow_destructible : public integral_constant<bool, _LIBCUDACXX_IS_NOTHROW_DESTRUCTIBLE(_Tp)>
+struct is_nothrow_destructible : public integral_constant<bool, _CCCL_BUILTIN_IS_NOTHROW_DESTRUCTIBLE(_Tp)>
 {};
 
 #elif !defined(_LIBCUDACXX_HAS_NO_NOEXCEPT)
@@ -80,7 +80,7 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_destructible<_Tp[]> : public false_type
 {};
 
-#endif // defined(_LIBCUDACXX_IS_NOTHROW_DESTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_NOTHROW_DESTRUCTIBLE_FALLBACK)
+#endif // defined(_CCCL_BUILTIN_IS_NOTHROW_DESTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_NOTHROW_DESTRUCTIBLE_FALLBACK)
 
 #if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>

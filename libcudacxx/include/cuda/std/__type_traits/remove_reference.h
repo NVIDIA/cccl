@@ -24,17 +24,23 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_REMOVE_REFERENCE_T) && !defined(_LIBCUDACXX_USE_REMOVE_REFERENCE_T_FALLBACK)
+#if defined(_CCCL_BUILTIN_REMOVE_REFERENCE_T) && !defined(_LIBCUDACXX_USE_REMOVE_REFERENCE_T_FALLBACK)
 template <class _Tp>
 struct remove_reference
 {
-  using type _LIBCUDACXX_NODEBUG_TYPE = _LIBCUDACXX_REMOVE_REFERENCE_T(_Tp);
+  using type _LIBCUDACXX_NODEBUG_TYPE = _CCCL_BUILTIN_REMOVE_REFERENCE_T(_Tp);
 };
 
+#  if defined(_CCCL_COMPILER_GCC)
+// error: use of built-in trait in function signature; use library traits instead
 template <class _Tp>
-using __libcpp_remove_reference_t = _LIBCUDACXX_REMOVE_REFERENCE_T(_Tp);
+using __libcpp_remove_reference_t = typename remove_reference<_Tp>::type;
+#  else // ^^^ _CCCL_COMPILER_GCC ^^^^/  vvv !_CCCL_COMPILER_GCC
+template <class _Tp>
+using __libcpp_remove_reference_t = _CCCL_BUILTIN_REMOVE_REFERENCE_T(_Tp);
+#  endif // !_CCCL_COMPILER_GCC
 
-#else
+#else // ^^^ _CCCL_BUILTIN_REMOVE_REFERENCE_T ^^^ / vvv !_CCCL_BUILTIN_REMOVE_REFERENCE_T vvv
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_reference
@@ -55,7 +61,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_reference<_Tp&&>
 template <class _Tp>
 using __libcpp_remove_reference_t = typename remove_reference<_Tp>::type;
 
-#endif // defined(_LIBCUDACXX_REMOVE_REFERENCE_T) && !defined(_LIBCUDACXX_USE_REMOVE_REFERENCE_T_FALLBACK)
+#endif // !_CCCL_BUILTIN_REMOVE_REFERENCE_T
 
 #if _CCCL_STD_VER > 2011
 template <class _Tp>

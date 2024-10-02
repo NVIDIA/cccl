@@ -30,26 +30,13 @@
 
 namespace cuda::experimental::__async
 {
-#if __has_builtin(__remove_reference)
 
 template <class _Ty>
-using __remove_ref_t = __remove_reference(_Ty);
-
-#elif __has_builtin(__remove_reference_t)
-
-template <class _Ty>
-using __remove_ref_t = __remove_reference_t(_Ty);
-
-#else
-
-template <class _Ty>
-using __remove_ref_t = _CUDA_VSTD::remove_reference_t<_Ty>;
-
-#endif
+using __remove_ref_t = _CUDA_VSTD::__libcpp_remove_reference_t<_Ty>;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // __decay_t: An efficient implementation for ::std::decay
-#if __has_builtin(__decay)
+#if defined(_CCCL_BUILTIN_DECAY)
 
 template <class _Ty>
 using __decay_t = __decay(_Ty);
@@ -59,7 +46,7 @@ using __decay_t = __decay(_Ty);
 //   template <class _Ty>
 //   using __decay_t = _CUDA_VSTD::decay_t<_Ty>;
 
-#else
+#else // ^^^ _CCCL_BUILTIN_DECAY ^^^ / vvv !_CCCL_BUILTIN_DECAY vvv
 
 struct __decay_object
 {
@@ -141,7 +128,7 @@ inline __decay_void __mdecay<void const>;
 template <class _Ty>
 using __decay_t = typename decltype(__mdecay<_Ty>)::template __f<_Ty>;
 
-#endif
+#endif // _CCCL_BUILTIN_DECAY
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // __copy_cvref_t: For copying cvref from one type to another
