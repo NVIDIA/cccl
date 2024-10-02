@@ -208,7 +208,7 @@ reduce_tuning_t find_tuning(int cc, const reduce_tuning_t (&tunings)[N])
   return tunings[N - 1];
 }
 
-runtime_tuning_policy get_policy(int cc, cccl_type_info accumulator_type, cccl_type_info input_type)
+runtime_tuning_policy get_policy(int cc, cccl_type_info accumulator_type, cccl_type_info /*input_type*/)
 {
   reduce_tuning_t chain[] = {{60, 256, 16, 4}, {35, 256, 20, 4}};
 
@@ -221,7 +221,7 @@ runtime_tuning_policy get_policy(int cc, cccl_type_info accumulator_type, cccl_t
   return {block_size, items_per_thread, vector_load_length};
 }
 
-cccl_type_info get_accumulator_type(cccl_op_t op, cccl_iterator_t input_it, cccl_value_t init)
+cccl_type_info get_accumulator_type(cccl_op_t /*op*/, cccl_iterator_t /*input_it*/, cccl_value_t init)
 {
   // TODO Should be decltype(op(init, *input_it)) but haven't implemented type arithmetic yet
   //      so switching back to the old accumulator type logic for now
@@ -398,7 +398,7 @@ cudaError_t Invoke(
   runtime_tuning_policy policy = get_policy(cc, accum_t, d_in.value_type);
 
   // Force kernel code-generation in all compiler passes
-  if (num_items <= (policy.block_size * policy.items_per_thread))
+  if (num_items <= static_cast<OffsetT>(policy.block_size * policy.items_per_thread))
   {
     // Small, single tile size
     return InvokeSingleTile(
