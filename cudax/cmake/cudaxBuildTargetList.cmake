@@ -107,13 +107,6 @@ function(_cn_init_target_list)
   set(cudax_TARGETS "" CACHE INTERNAL "" FORCE)
 endfunction()
 
-# Bring in thrust as a dev dependency, only used in tests:
-find_package(Thrust ${cudax_VERSION} EXACT CONFIG
-  NO_DEFAULT_PATH # Only check the explicit path in HINTS:
-  HINTS "${CCCL_SOURCE_DIR}/lib/cmake/thrust/"
-)
-thrust_create_target(cudax::Thrust)
-
 function(_cn_add_target_to_target_list target_name dialect prefix)
   add_library(${target_name} INTERFACE)
 
@@ -121,7 +114,6 @@ function(_cn_add_target_to_target_list target_name dialect prefix)
 
   target_link_libraries(${target_name} INTERFACE
     cudax::cudax
-    cudax::Thrust
     cudax.compiler_interface_cpp${dialect}
   )
 
