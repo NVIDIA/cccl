@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.21)
 project(CCCL_C_Parallel LANGUAGES CUDA CXX)
 
 option(CCCL_C_Parallel_ENABLE_TESTING "Build CUDA Experimental's tests." OFF)
+option(CCCL_C_Parallel_ENABLE_HEADER_TESTING "Build CUDA Experimental's standalone headers." OFF)
 
 add_library(cccl.c.parallel SHARED src/reduce.cu)
 cccl_configure_target(cccl.c.parallel DIALECT 20)
@@ -23,4 +24,8 @@ target_include_directories(cccl.c.parallel PUBLIC "include")
 
 if (CCCL_C_Parallel_ENABLE_TESTING)
   add_subdirectory(test)
+endif()
+
+if (CCCL_C_Parallel_ENABLE_HEADER_TESTING)
+  include(cmake/CParallelHeaderTesting.cmake)
 endif()
