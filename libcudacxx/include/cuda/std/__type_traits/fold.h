@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CONCEPTS_ALL_OF_H
-#define _LIBCUDACXX___CONCEPTS_ALL_OF_H
+#ifndef _LIBCUDACXX___TYPE_TRAITS_FOLD_H
+#define _LIBCUDACXX___TYPE_TRAITS_FOLD_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,22 +20,30 @@
 #  pragma system_header
 #endif // no system header
 
-#include "../__concepts/__concept_macros.h"
-#include "../__type_traits/is_same.h" // IWYU pragma: keep
+#include <cuda/std/__type_traits/is_same.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER >= 2017
 template <bool... _Preds>
-_LIBCUDACXX_CONCEPT __all_of = (_Preds && ...);
-#elif _CCCL_STD_VER >= 2014
-template <bool... _Preds>
-struct __all_of_helper;
+_LIBCUDACXX_INLINE_VAR constexpr bool __fold_and = (_Preds && ...);
 
 template <bool... _Preds>
-_LIBCUDACXX_CONCEPT __all_of = _IsSame<__all_of_helper<true, _Preds...>, __all_of_helper<_Preds..., true>>::value;
-#endif // _CCCL_STD_VER > 2011
+_LIBCUDACXX_INLINE_VAR constexpr bool __fold_or = (_Preds || ...);
+
+#elif _CCCL_STD_VER >= 2014
+template <bool... _Preds>
+struct __fold_helper;
+
+template <bool... _Preds>
+_LIBCUDACXX_INLINE_VAR constexpr bool __fold_and =
+  _IsSame<__fold_helper<true, _Preds...>, __fold_helper<_Preds..., true>>::value;
+
+template <bool... _Preds>
+_LIBCUDACXX_INLINE_VAR constexpr bool __fold_or =
+  !_IsSame<__fold_helper<false, _Preds...>, __fold_helper<_Preds..., false>>::value;
+#endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _LIBCUDACXX___CONCEPTS_ALL_OF_H
+#endif // _LIBCUDACXX___TYPE_TRAITS_FOLD_H

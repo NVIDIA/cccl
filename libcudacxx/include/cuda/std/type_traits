@@ -49,6 +49,7 @@
 #include <cuda/std/__type_traits/disjunction.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/extent.h>
+#include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/has_unique_object_representation.h>
 #include <cuda/std/__type_traits/has_virtual_destructor.h>
 #include <cuda/std/__type_traits/integral_constant.h>
