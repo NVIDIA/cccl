@@ -37,6 +37,7 @@
 #endif
 
 #include <cuda/__memory_resource/get_property.h>
+#include <cuda/__memory_resource/properties.h>
 #include <cuda/__memory_resource/resource.h>
 #include <cuda/__memory_resource/resource_ref.h>
 #include <cuda/std/__concepts/__concept_macros.h>
@@ -73,6 +74,10 @@ class basic_any_resource
     , private _CUDA_VMR::_Filtered_vtable<_Properties...>
 {
 private:
+  static_assert(_CUDA_VMR::__contains_execution_space_property<_Properties...>,
+                "The properties of cuda::experimental::mr::basic_any_resource must contain at least one execution "
+                "space property!");
+
   template <_CUDA_VMR::_AllocType, class...>
   friend class basic_any_resource;
 

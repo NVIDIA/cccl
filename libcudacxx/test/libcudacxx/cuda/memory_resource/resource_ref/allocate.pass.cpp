@@ -3,7 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -17,36 +17,13 @@
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
-struct resource
-{
-  void* allocate(std::size_t, std::size_t)
-  {
-    return &_val;
-  }
-
-  void deallocate(void* ptr, std::size_t, std::size_t) noexcept
-  {
-    // ensure that we did get the right inputs forwarded
-    _val = *static_cast<int*>(ptr);
-  }
-
-  bool operator==(const resource& other) const
-  {
-    return _val == other._val;
-  }
-  bool operator!=(const resource& other) const
-  {
-    return _val != other._val;
-  }
-
-  int _val = 0;
-};
+#include "types.h"
 
 void test_allocate()
 {
   { // allocate(size)
-    resource input{42};
-    cuda::mr::resource_ref<> ref{input};
+    resource<cuda::mr::host_accessible> input{42};
+    cuda::mr::resource_ref<cuda::mr::host_accessible> ref{input};
 
     // Ensure that we properly pass on the allocate function
     assert(input.allocate(0, 0) == ref.allocate(0));
@@ -57,8 +34,8 @@ void test_allocate()
   }
 
   { // allocate(size, alignment)
-    resource input{42};
-    cuda::mr::resource_ref<> ref{input};
+    resource<cuda::mr::host_accessible> input{42};
+    cuda::mr::resource_ref<cuda::mr::host_accessible> ref{input};
 
     // Ensure that we properly pass on the allocate function
     assert(input.allocate(0, 0) == ref.allocate(0, 0));

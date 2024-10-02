@@ -3,7 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -17,15 +17,7 @@
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
-template <class T>
-struct property_with_value
-{
-  using value_type = T;
-};
-
-template <class T>
-struct property_without_value
-{};
+#include "types.h"
 
 struct Fake_alloc_base
 {
@@ -33,64 +25,16 @@ struct Fake_alloc_base
   const cuda::mr::_Async_alloc_vtable* static_vtable = nullptr;
 };
 
-template <class... Properties>
-struct resource
-{
-  void* allocate(std::size_t, std::size_t)
-  {
-    return &_val;
-  }
-
-  void deallocate(void* ptr, std::size_t, std::size_t) noexcept
-  {
-    // ensure that we did get the right inputs forwarded
-    _val = *static_cast<int*>(ptr);
-  }
-
-  void* allocate_async(std::size_t, std::size_t, cuda::stream_ref)
-  {
-    return &_val;
-  }
-
-  void deallocate_async(void* ptr, std::size_t, std::size_t, cuda::stream_ref)
-  {
-    // ensure that we did get the right inputs forwarded
-    _val = *static_cast<int*>(ptr);
-  }
-
-  bool operator==(const resource& other) const
-  {
-    return _val == other._val;
-  }
-  bool operator!=(const resource& other) const
-  {
-    return _val != other._val;
-  }
-
-  int _val = 0;
-
-  _LIBCUDACXX_TEMPLATE(class Property)
-  _LIBCUDACXX_REQUIRES((!cuda::property_with_value<Property>) && _CUDA_VSTD::_One_of<Property, Properties...>) //
-  friend void get_property(const resource&, Property) noexcept {}
-
-  _LIBCUDACXX_TEMPLATE(class Property)
-  _LIBCUDACXX_REQUIRES(cuda::property_with_value<Property>&& _CUDA_VSTD::_One_of<Property, Properties...>) //
-  friend typename Property::value_type get_property(const resource& res, Property) noexcept
-  {
-    return static_cast<typename Property::value_type>(res._val);
-  }
-};
-
 template <class PropA, class PropB>
 void test_conversion_from_async_resource_ref()
 {
-  resource<PropA, PropB> input{42};
-  cuda::mr::async_resource_ref<PropA, PropB> ref_input{input};
+  async_resource<cuda::mr::host_accessible, PropA, PropB> input{42};
+  cuda::mr::async_resource_ref<cuda::mr::host_accessible, PropA, PropB> ref_input{input};
 
   { // lvalue
-    cuda::mr::async_resource_ref<PropB> ref{ref_input};
+    cuda::mr::async_resource_ref<cuda::mr::host_accessible, PropB> ref{ref_input};
 
-    // Ensure that we properly "punch through" the resource ref
+    // Ensure that we properly "punch through" the resource_ref
     const auto fake_orig = reinterpret_cast<Fake_alloc_base*>(&ref_input);
     const auto fake_conv = reinterpret_cast<Fake_alloc_base*>(&ref);
     assert(fake_orig->object == fake_conv->object);
@@ -106,9 +50,10 @@ void test_conversion_from_async_resource_ref()
   }
 
   { // prvalue
-    cuda::mr::async_resource_ref<PropB> ref{cuda::mr::async_resource_ref<PropA, PropB>{input}};
+    cuda::mr::async_resource_ref<cuda::mr::host_accessible, PropB> ref{
+      cuda::mr::async_resource_ref<cuda::mr::host_accessible, PropA, PropB>{input}};
 
-    // Ensure that we properly "punch through" the resource ref
+    // Ensure that we properly "punch through" the resource_ref
     const auto fake_orig = reinterpret_cast<Fake_alloc_base*>(&ref_input);
     const auto fake_conv = reinterpret_cast<Fake_alloc_base*>(&ref);
     assert(fake_orig->object == fake_conv->object);
