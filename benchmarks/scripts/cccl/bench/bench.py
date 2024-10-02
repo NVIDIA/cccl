@@ -167,6 +167,7 @@ def parse_bw(state):
 
 class SubBenchState:
     def __init__(self, state, axes_names, axes_values):
+        # TODO Also ingest json file into db
         self.samples = parse_samples(state)
         self.bw = parse_bw(state)
 
@@ -335,6 +336,7 @@ class BenchCache:
 
 
     def push_bench_centers(self, bench, result, estimator):
+        logger = Logger()
         config = Config()
         ctk = config.ctk
         cccl = config.cccl
@@ -342,6 +344,9 @@ class BenchCache:
         conn = Storage().connection()
 
         self.create_table_if_not_exists(conn, bench)
+
+        input_sample_size = 0
+        compressed_sample_size = 0
 
         centers = {}
         with conn:
@@ -360,10 +365,19 @@ class BenchCache:
                         values.append(value)
 
                     values = tuple(values)
-                    samples = fpzip.compress(state.samples)
+                    compressed_samples = fpzip.compress(state.samples)
+
+                    logger.info("Compressing samples: {:.2f}% | {} -> {} bytes | {:+}".format(
+                        100 * len(compressed_samples) / len(state.samples),
+                        len(state.samples),
+                        len(compressed_samples),
+                        len(compressed_samples) - len(state.samples)))
+                    input_sample_size += len(state.samples)
+                    compressed_sample_size += len(compressed_samples)
+
                     center = estimator(state.samples)
                     to_insert = (ctk, cccl, gpu, bench.variant_name(),
-                                 result.elapsed, center, state.bw, samples) + values
+                                 result.elapsed, center, state.bw, compressed_samples) + values
 
                     query = """
                     INSERT INTO "{0}" (ctk, cccl, gpu, variant, elapsed, center, bw, samples {1})
@@ -373,6 +387,12 @@ class BenchCache:
 
                     conn.execute(query, to_insert)
                     centers[subbench][state.name()] = center
+
+        logger.info("Compression total: {:.2f}% | {} -> {} bytes | {:+}".format(
+            100 * compressed_sample_size / input_sample_size,
+            input_sample_size,
+            compressed_sample_size,
+            compressed_sample_size - input_sample_size))
 
         return centers
 
@@ -629,6 +649,7 @@ class Bench:
             cmd.append("--stopping-criterion")
             cmd.append("entropy")
 
+            # TODO Make sure there's a bug for this:
             # NVBench is currently broken for multiple GPUs, use `CUDA_VISIBLE_DEVICES`
             cmd.append("-d")
             cmd.append("0")
