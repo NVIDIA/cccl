@@ -72,10 +72,15 @@ extern void
 __assert_fail(const char* __assertion, const char* __file, unsigned int __line, const char* __function) __THROW
   __attribute__((__noreturn__));
 #  endif // NDEBUG
-
-#  define _CCCL_ASSERT_IMPL_HOST(expression, message)      \
-    _CCCL_BUILTIN_EXPECT(static_cast<bool>(expression), 1) \
-    ? (void) 0 : __assert_fail(message, __FILE__, __LINE__, __func__)
+// ICC cannot deal with `__builtin_expect` in the constexpr evaluator, so just drop it
+#  if defined(_CCCL_COMPILER_ICC)
+#    define _CCCL_ASSERT_IMPL_HOST(expression, message) \
+      static_cast<bool>(expression) ? (void) 0 : __assert_fail(message, __FILE__, __LINE__, __func__);
+#  else // ^^^ _CCCL_COMPILER_ICC ^^^ / vvv !_CCCL_COMPILER_ICC vvv
+#    define _CCCL_ASSERT_IMPL_HOST(expression, message)      \
+      _CCCL_BUILTIN_EXPECT(static_cast<bool>(expression), 1) \
+      ? (void) 0 : __assert_fail(message, __FILE__, __LINE__, __func__)
+#  endif // !_CCCL_COMPILER_ICC
 #endif // !MSVC STL
 
 //! Use custom implementations with nvcc on device and the host ones with clang-cuda and nvhpc
