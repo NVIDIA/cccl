@@ -180,6 +180,7 @@ struct cache_policy_accessor<_ElementType,
   }
 };
 
+
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
 #endif // _CCCL_STD_VER >= 2014
