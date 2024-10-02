@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA__MDSPAN_OPTIMIZED_ACCESSORS_H
-#define _CUDA__MDSPAN_OPTIMIZED_ACCESSORS_H
+#ifndef _CUDA__MDSPAN_CACHED_ACCESSORS_H
+#define _CUDA__MDSPAN_CACHED_ACCESSORS_H
 
 #include <cuda/std/detail/__config>
 
@@ -185,4 +185,4 @@ struct cache_policy_accessor<_ElementType,
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
 #endif // _CCCL_STD_VER >= 2014
-#endif // _CUDA__MDSPAN_OPTIMIZED_ACCESSORS_H
+#endif // _CUDA__MDSPAN_CACHED_ACCESSORS_H
