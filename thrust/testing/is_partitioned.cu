@@ -18,11 +18,7 @@ void TestIsPartitionedSimple()
 {
   using T = typename Vector::value_type;
 
-  Vector v(4);
-  v[0] = 1;
-  v[1] = 1;
-  v[2] = 1;
-  v[3] = 0;
+  Vector v{1, 1, 1, 0};
 
   // empty partition
   ASSERT_EQUAL_QUIET(true, thrust::is_partitioned(v.begin(), v.begin(), thrust::identity<T>()));
@@ -39,10 +35,7 @@ void TestIsPartitionedSimple()
   // one element false partition
   ASSERT_EQUAL_QUIET(true, thrust::is_partitioned(v.begin() + 3, v.end(), thrust::identity<T>()));
 
-  v[0] = 1;
-  v[1] = 0;
-  v[2] = 1;
-  v[3] = 1;
+  v = {1, 0, 1, 1};
 
   // not partitioned
   ASSERT_EQUAL_QUIET(false, thrust::is_partitioned(v.begin(), v.end(), thrust::identity<T>()));

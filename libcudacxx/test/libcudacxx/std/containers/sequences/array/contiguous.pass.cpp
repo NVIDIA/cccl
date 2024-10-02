@@ -45,8 +45,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
 int main(int, char**)
 {
   tests();
-#if TEST_STD_VER >= 2014 && defined(_LIBCUDACXX_ADDRESSOF) // begin() & friends are constexpr in >= C++17 only
+#if TEST_STD_VER >= 2014 && defined(_CCCL_BUILTIN_ADDRESSOF) // begin() & friends are constexpr in >= C++17 only
   static_assert(tests(), "");
-#endif // TEST_STD_VER >= 2014 && defined(_LIBCUDACXX_ADDRESSOF)
+#endif // TEST_STD_VER >= 2014 && defined(_CCCL_BUILTIN_ADDRESSOF)
   return 0;
 }

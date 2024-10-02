@@ -28,15 +28,15 @@ _CCCL_DIAG_SUPPRESS_MSVC(4197) //  top-level volatile in cast is ignored
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_IS_SIGNED) && !defined(_LIBCUDACXX_USE_IS_SIGNED_FALLBACK)
+#if defined(_CCCL_BUILTIN_IS_SIGNED) && !defined(_LIBCUDACXX_USE_IS_SIGNED_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_signed : public integral_constant<bool, _LIBCUDACXX_IS_SIGNED(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_signed : public integral_constant<bool, _CCCL_BUILTIN_IS_SIGNED(_Tp)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_signed_v = _LIBCUDACXX_IS_SIGNED(_Tp);
+_LIBCUDACXX_INLINE_VAR constexpr bool is_signed_v = _CCCL_BUILTIN_IS_SIGNED(_Tp);
 #  endif
 
 #else
@@ -66,7 +66,7 @@ template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_signed_v = is_signed<_Tp>::value;
 #  endif
 
-#endif // defined(_LIBCUDACXX_IS_SIGNED) && !defined(_LIBCUDACXX_USE_IS_SIGNED_FALLBACK)
+#endif // defined(_CCCL_BUILTIN_IS_SIGNED) && !defined(_LIBCUDACXX_USE_IS_SIGNED_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

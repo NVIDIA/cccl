@@ -72,6 +72,10 @@ template <class _Tp, class... _Properties>
 class uninitialized_async_buffer
 {
 private:
+  static_assert(_CUDA_VMR::__contains_execution_space_property<_Properties...>,
+                "The properties of cuda::experimental::mr::uninitialized_async_buffer must contain at least one "
+                "execution space property!");
+
   using __async_resource = ::cuda::experimental::mr::any_async_resource<_Properties...>;
   __async_resource __mr_;
   ::cuda::stream_ref __stream_ = {};

@@ -63,6 +63,10 @@ template <class _Tp, class... _Properties>
 class uninitialized_buffer
 {
 private:
+  static_assert(_CUDA_VMR::__contains_execution_space_property<_Properties...>,
+                "The properties of cuda::experimental::mr::uninitialized_buffer must contain at least one execution "
+                "space property!");
+
   using __resource = ::cuda::experimental::mr::any_resource<_Properties...>;
   __resource __mr_;
   size_t __count_ = 0;

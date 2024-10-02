@@ -63,7 +63,7 @@ int main(int, char**)
 #if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
   {
     constexpr optional<X> opt(X{});
-#  if defined(_LIBCUDACXX_ADDRESSOF)
+#  if defined(_CCCL_BUILTIN_ADDRESSOF)
     static_assert(opt->test() == 3, "");
 #  else
     unused(opt);
@@ -75,7 +75,7 @@ int main(int, char**)
   }
   {
     constexpr optional<Z> opt(Z{});
-#  if defined(_LIBCUDACXX_ADDRESSOF)
+#  if defined(_CCCL_BUILTIN_ADDRESSOF)
     static_assert(opt->test() == 1, "");
 #  else
     unused(opt);
