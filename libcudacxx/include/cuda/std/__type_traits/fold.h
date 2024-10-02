@@ -31,7 +31,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool __fold_and = (_Preds && ...);
 template <bool... _Preds>
 _LIBCUDACXX_INLINE_VAR constexpr bool __fold_or = (_Preds || ...);
 
-#else // ^^^ C++17 ^^^ / vvv C++14 vvv
+#elif _CCCL_STD_VER >= 2014
 template <bool... _Preds>
 struct __fold_helper;
 
@@ -42,7 +42,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool __fold_and =
 template <bool... _Preds>
 _LIBCUDACXX_INLINE_VAR constexpr bool __fold_or =
   !_IsSame<__fold_helper<false, _Preds...>, __fold_helper<_Preds..., false>>::value;
-#endif // _CCCL_STD_VER <= 2014
+#endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
