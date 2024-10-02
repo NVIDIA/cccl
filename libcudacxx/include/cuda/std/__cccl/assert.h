@@ -74,8 +74,7 @@ __assert_fail(const char* __assertion, const char* __file, unsigned int __line, 
 
 #  define _CCCL_ASSERT_IMPL_HOST(expression, message)      \
     _CCCL_BUILTIN_EXPECT(static_cast<bool>(expression), 1) \
-      ? (void) 0                                           \
-      : __assert_fail(message, __FILE__, __LINE__, __func__)
+    ? (void) 0 : __assert_fail(message, __FILE__, __LINE__, __func__)
 #endif // !MSVC STL
 
 //! Use custom implementations with nvcc on device and the host ones with clang-cuda and nvhpc
