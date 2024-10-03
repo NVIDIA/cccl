@@ -44,7 +44,8 @@ function(cub_add_example target_name_var example_name example_src cub_target)
   endif()
   add_dependencies(${example_meta_target} ${example_target})
 
-  add_test(NAME ${example_target}
+  cccl_add_ctest(${example_target}
+    LABEL_MARKER example
     COMMAND "$<TARGET_FILE:${example_target}>"
   )
 endfunction()

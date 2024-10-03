@@ -32,9 +32,11 @@ add_custom_target(
     BYPRODUCTS "${atomic_install_location}/cuda_ptx_generated.h"
 )
 
-add_test(
-    NAME libcudacxx.test.atomics.codegen.diff
-    COMMAND ${CMAKE_COMMAND} -E compare_files "${atomic_install_location}/cuda_ptx_generated.h" "${atomic_generated_output}"
+cccl_add_ctest(libcudacxx.test.atomics.codegen.diff
+  LABEL_NAME
+  COMMAND
+    ${CMAKE_COMMAND} -E compare_files
+      "${atomic_install_location}/cuda_ptx_generated.h" "${atomic_generated_output}"
 )
 
 set_tests_properties(

@@ -201,7 +201,10 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
       target_link_libraries(${test_target} PRIVATE ${catch2_main_objects})
       add_dependencies(${config_meta_target} ${test_target})
 
-      add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>")
+      cccl_add_ctest(${test_target}
+        LABEL_MARKER test
+        COMMAND "$<TARGET_FILE:${test_target}>"
+      )
     else() # Not CUB_SEPARATE_CATCH2
       # Per config catch2 runner
       set(config_c2run_target ${config_prefix}.catch2_test.lid_${launcher_id})
@@ -221,7 +224,8 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
           target_link_options(${config_c2run_target} PRIVATE "-cuda")
         endif()
 
-        add_test(NAME ${config_c2run_target}
+        cccl_add_ctest(NAME ${config_c2run_target}
+          LABEL_NAME
           COMMAND "$<TARGET_FILE:${config_c2run_target}>"
         )
       endif() # per config catch2 runner
@@ -279,10 +283,10 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
     if (is_fail_test)
       set_target_properties(${test_target} PROPERTIES EXCLUDE_FROM_ALL true
                                            EXCLUDE_FROM_DEFAULT_BUILD true)
-      add_test(NAME ${test_target}
-               COMMAND ${CMAKE_COMMAND} --build "${CMAKE_BINARY_DIR}"
-                                        --target ${test_target}
-                                        --config $<CONFIGURATION>)
+      cccl_add_ctest(${test_target}
+        COMMAND ${CMAKE_COMMAND} --build "${CMAKE_BINARY_DIR}"
+                                 --target ${test_target}
+                                 --config $<CONFIGURATION>)
       string(REGEX MATCH "err_([0-9]+)" MATCH_RESULT "${test_name}")
       file(READ ${test_src} test_content)
       if(MATCH_RESULT)
@@ -312,7 +316,10 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
       endif()
       add_dependencies(${test_meta_target} ${test_target})
 
-      add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>")
+      cccl_add_ctest(${test_target}
+        LABEL_MARKER test
+        COMMAND "$<TARGET_FILE:${test_target}>"
+      )
     endif()
   endif() # Not catch2 test
 endfunction()

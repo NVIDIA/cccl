@@ -113,7 +113,8 @@ function(thrust_add_example target_name_var example_name example_src thrust_targ
     "${example_target}.filecheck"
   )
 
-  add_test(NAME ${example_target}
+  cccl_add_ctest(${example_target}
+    LABEL_MARKER example
     COMMAND "${CMAKE_COMMAND}"
     "-DEXAMPLE_EXECUTABLE=$<TARGET_FILE:${example_target}>"
     "-DFILECHECK_ENABLED=${THRUST_ENABLE_EXAMPLE_FILECHECK}"

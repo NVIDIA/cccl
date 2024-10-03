@@ -1,6 +1,6 @@
 # Check source code for issues that can be found by pattern matching:
-add_test(
-  NAME thrust.test.cmake.check_source_files
+cccl_add_ctest(thrust.test.cmake.check_source_files
+  LABEL_NAME
   COMMAND
     "${CMAKE_COMMAND}"
       -D "Thrust_SOURCE_DIR=${Thrust_SOURCE_DIR}"

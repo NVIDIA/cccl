@@ -90,7 +90,8 @@ function(thrust_add_test target_name_var test_name test_src thrust_target)
   endif()
   add_dependencies(${test_meta_target} ${test_target})
 
-  add_test(NAME ${test_target}
+  cccl_add_ctest(${test_target}
+    LABEL_MARKER test
     COMMAND "${CMAKE_COMMAND}"
     "-DTHRUST_BINARY=$<TARGET_FILE:${test_target}>"
     "-DTHRUST_SOURCE=${Thrust_SOURCE_DIR}"

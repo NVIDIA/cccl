@@ -49,7 +49,8 @@ endforeach() # root_type
 
 ################################################################################
 # Install tree fixtures
-add_test(NAME cccl.test.cmake.install_tree.install
+cccl_add_ctest(cccl.test.cmake.install_tree.install
+  LABEL_NAME
   COMMAND "${CMAKE_COMMAND}"
     --install "${CCCL_BINARY_DIR}"
     --prefix "${tmp_install_prefix}"
@@ -58,7 +59,8 @@ set_tests_properties(cccl.test.cmake.install_tree.install PROPERTIES
   FIXTURES_SETUP install_tree
 )
 
-add_test(NAME cccl.test.cmake.install_tree.cleanup
+cccl_add_ctest(cccl.test.cmake.install_tree.cleanup
+  LABEL_NAME
   COMMAND "${CMAKE_COMMAND}" -E rm -rf "${tmp_install_prefix}"
 )
 set_tests_properties(cccl.test.cmake.install_tree.cleanup PROPERTIES

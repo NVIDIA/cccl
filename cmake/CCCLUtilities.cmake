@@ -55,7 +55,7 @@ function(cccl_add_compile_test full_test_name_var name_prefix subdir test_id)
   set(test_name ${name_prefix}.${subdir}.${test_id})
   set(src_dir "${CMAKE_CURRENT_SOURCE_DIR}/${subdir}")
   set(build_dir "${CMAKE_CURRENT_BINARY_DIR}/${subdir}/${test_id}")
-  add_test(NAME ${test_name}
+  cccl_add_ctest(${test_name}
     COMMAND "${CMAKE_CTEST_COMMAND}"
       --build-and-test "${src_dir}" "${build_dir}"
       --build-generator "${CMAKE_GENERATOR}"

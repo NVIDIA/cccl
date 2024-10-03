@@ -128,11 +128,13 @@ set(libcudacxx_LIT_PARALLEL_LEVEL 8 CACHE STRING
 "Parallelism used to run libcudacxx's lit test suite."
 )
 
-add_test(NAME libcudacxx.test.lit COMMAND
-  "${CMAKE_COMMAND}" -E env
-    "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
-  "${libcudacxx_LIT}" -vv --no-progress-bar --time-tests ${libcudacxx_LIT_FLAGS}
-    -j "${libcudacxx_LIT_PARALLEL_LEVEL}" "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
+cccl_add_ctest(libcudacxx.test.lit
+  LABEL_NAME
+  COMMAND
+    "${CMAKE_COMMAND}" -E env
+      "LIBCUDACXX_SITE_CONFIG=${lit_site_cfg_path}"
+    "${libcudacxx_LIT}" -vv --no-progress-bar --time-tests ${libcudacxx_LIT_FLAGS}
+      -j "${libcudacxx_LIT_PARALLEL_LEVEL}" "${libcudacxx_SOURCE_DIR}/test/libcudacxx"
 )
 
 set_tests_properties(libcudacxx.test.lit PROPERTIES
