@@ -20,12 +20,12 @@
     (__NVCOMPILER_MAJOR__ * 10000 + __NVCOMPILER_MINOR__ * 100 + __NVCOMPILER_PATCHLEVEL__)
 #elif defined(__clang__)
 #  define _CCCL_COMPILER_CLANG 1
-#  define _CCCL_CLANG_VERSION (__clang_major__ * 10000 + __clang_minor__ * 100 + __clang_patchlevel__)
+#  define _CCCL_CLANG_VERSION  (__clang_major__ * 10000 + __clang_minor__ * 100 + __clang_patchlevel__)
 #elif defined(__GNUC__)
 #  define _CCCL_COMPILER_GCC 1
-#  define _CCCL_GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
+#  define _CCCL_GCC_VERSION  (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
 #elif defined(_MSC_VER)
-#  define _CCCL_COMPILER_MSVC 1
+#  define _CCCL_COMPILER_MSVC     1
 #  define _CCCL_MSVC_VERSION      _MSC_VER
 #  define _CCCL_MSVC_VERSION_FULL _MSC_FULL_VER
 #elif defined(__CUDACC_RTC__)
@@ -61,13 +61,13 @@
 // clang-cuda does not define __CUDACC_VER_MAJOR__ and friends. They are instead retrieved from the CUDA_VERSION macro
 // defined in "cuda.h". clang-cuda automatically pre-includes "__clang_cuda_runtime_wrapper.h" which includes "cuda.h"
 #if defined(_CCCL_CUDA_COMPILER_CLANG)
-#  define _CCCL_CUDACC 1
+#  define _CCCL_CUDACC           1
 #  define _CCCL_CUDACC_VER_MAJOR CUDA_VERSION / 1000
 #  define _CCCL_CUDACC_VER_MINOR (CUDA_VERSION % 1000) / 10
 #  define _CCCL_CUDACC_VER_BUILD 0
 #  define _CCCL_CUDACC_VER       CUDA_VERSION * 100
 #elif defined(_CCCL_CUDA_COMPILER)
-#  define _CCCL_CUDACC 1
+#  define _CCCL_CUDACC           1
 #  define _CCCL_CUDACC_VER_MAJOR __CUDACC_VER_MAJOR__
 #  define _CCCL_CUDACC_VER_MINOR __CUDACC_VER_MINOR__
 #  define _CCCL_CUDACC_VER_BUILD __CUDACC_VER_BUILD__
