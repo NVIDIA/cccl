@@ -11,13 +11,11 @@ import cuda.parallel.experimental as cudax
 # example-end imports
 
 
-# example-begin reduce-min
-def min_op(a, b):
-    return a if a < b else b
-# example-end reduce-min
-
-
 def test_device_reduce_success():
+    # example-begin reduce-min
+    def min_op(a, b):
+        return a if a < b else b
+
     dtype = numpy.int32
     h_init = numpy.array([42], dtype)
     h_input = numpy.array([8, 6, 7, 5, 3, 0, 9], dtype)
@@ -27,7 +25,7 @@ def test_device_reduce_success():
     # Instantiate reduction for the given operator and initial value
     reduce_into = cudax.reduce_into(d_output, d_output, min_op, h_init)
 
-    # Deterrmine temporary device storage requirements
+    # Determine temporary device storage requirements
     temp_storage_size = reduce_into(None, d_input, d_output, h_init)
 
     # Allocate temporary storage
@@ -43,6 +41,9 @@ def test_device_reduce_success():
 
 
 def test_device_reduce_dtype_mismatch():
+    def min_op(a, b):
+        return a if a < b else b
+
     dtypes = [numpy.int32, numpy.int64]
     h_inits = [numpy.array([], dt) for dt in dtypes]
     h_inputs = [numpy.array([], dt) for dt in dtypes]
