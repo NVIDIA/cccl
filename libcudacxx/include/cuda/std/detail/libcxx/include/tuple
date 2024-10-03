@@ -178,7 +178,6 @@ template <class... Types>
 #include <cuda/std/climits>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 

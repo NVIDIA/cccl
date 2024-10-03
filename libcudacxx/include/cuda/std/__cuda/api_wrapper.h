@@ -43,7 +43,7 @@
 #define _CCCL_ASSERT_CUDA_API(_NAME, _MSG, ...)        \
   {                                                    \
     const ::cudaError_t __status = _NAME(__VA_ARGS__); \
-    _LIBCUDACXX_ASSERT(__status == cudaSuccess, _MSG); \
+    _CCCL_ASSERT(__status == cudaSuccess, _MSG);       \
     (void) __status;                                   \
   }
 

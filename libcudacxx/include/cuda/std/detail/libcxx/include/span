@@ -171,7 +171,6 @@ template<class R>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef> // for ptrdiff_t
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 
 // standard-mandated includes
 #include <cuda/std/version>
@@ -335,7 +334,7 @@ public:
       : __data_{_CUDA_VSTD::to_address(__first)}
   {
     (void) __count;
-    _LIBCUDACXX_ASSERT(_Extent == __count, "size mismatch in span's constructor (iterator, len)");
+    _CCCL_ASSERT(_Extent == __count, "size mismatch in span's constructor (iterator, len)");
   }
 
   _LIBCUDACXX_TEMPLATE(class _It, class _End)
@@ -345,22 +344,22 @@ public:
       : __data_{_CUDA_VSTD::to_address(__first)}
   {
     (void) __last;
-    _LIBCUDACXX_ASSERT((__last - __first >= 0), "invalid range in span's constructor (iterator, sentinel)");
-    _LIBCUDACXX_ASSERT(__last - __first == _Extent,
-                       "invalid range in span's constructor (iterator, sentinel): last - first != extent");
+    _CCCL_ASSERT((__last - __first >= 0), "invalid range in span's constructor (iterator, sentinel)");
+    _CCCL_ASSERT(__last - __first == _Extent,
+                 "invalid range in span's constructor (iterator, sentinel): last - first != extent");
   }
 #  else // ^^^ C++17 ^^^ / vvv C++14 vvv
   _LIBCUDACXX_HIDE_FROM_ABI constexpr span(pointer __ptr, size_type __count)
       : __data_{__ptr}
   {
     (void) __count;
-    _LIBCUDACXX_ASSERT(_Extent == __count, "size mismatch in span's constructor (ptr, len)");
+    _CCCL_ASSERT(_Extent == __count, "size mismatch in span's constructor (ptr, len)");
   }
   _LIBCUDACXX_HIDE_FROM_ABI constexpr span(pointer __f, pointer __l)
       : __data_{__f}
   {
     (void) __l;
-    _LIBCUDACXX_ASSERT(_Extent == distance(__f, __l), "size mismatch in span's constructor (ptr, ptr)");
+    _CCCL_ASSERT(_Extent == distance(__f, __l), "size mismatch in span's constructor (ptr, ptr)");
   }
 #  endif // _CCCL_STD_VER <= 2014 || _CCCL_COMPILER_MSVC_2017
 
@@ -393,7 +392,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit span(_Range&& __r)
       : __data_{_CUDA_VRANGES::data(__r)}
   {
-    _LIBCUDACXX_ASSERT(_CUDA_VRANGES::size(__r) == _Extent, "size mismatch in span's constructor (range)");
+    _CCCL_ASSERT(_CUDA_VRANGES::size(__r) == _Extent, "size mismatch in span's constructor (range)");
   }
 #  else // ^^^ C++17 ^^^ / vvv C++14 vvv
   _LIBCUDACXX_TEMPLATE(class _Container)
@@ -401,7 +400,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr span(_Container& __c) noexcept(noexcept(_CUDA_VSTD::data(__c)))
       : __data_{_CUDA_VSTD::data(__c)}
   {
-    _LIBCUDACXX_ASSERT(_Extent == _CUDA::VSTD::size(__c), "size mismatch in span's constructor (other span)");
+    _CCCL_ASSERT(_Extent == _CUDA_VSTD::size(__c), "size mismatch in span's constructor (other span)");
   }
 
   _LIBCUDACXX_TEMPLATE(class _Container)
@@ -409,7 +408,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr span(const _Container& __c) noexcept(noexcept(_CUDA_VSTD::data(__c)))
       : __data_{_CUDA_VSTD::data(__c)}
   {
-    _LIBCUDACXX_ASSERT(_Extent == _CUDA::VSTD::size(__c), "size mismatch in span's constructor (other span)");
+    _CCCL_ASSERT(_Extent == _CUDA_VSTD::size(__c), "size mismatch in span's constructor (other span)");
   }
 #  endif // _CCCL_STD_VER <= 2014 || _CCCL_COMPILER_MSVC_2017
 
@@ -425,7 +424,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit span(const span<_OtherElementType, dynamic_extent>& __other) noexcept
       : __data_{__other.data()}
   {
-    _LIBCUDACXX_ASSERT(_Extent == __other.size(), "size mismatch in span's constructor (other span)");
+    _CCCL_ASSERT(_Extent == __other.size(), "size mismatch in span's constructor (other span)");
   }
 
   //  ~span() noexcept = default;
@@ -446,13 +445,13 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr span<element_type, dynamic_extent> first(size_type __count) const noexcept
   {
-    _LIBCUDACXX_ASSERT(__count <= size(), "span<T, N>::first(count): count out of range");
+    _CCCL_ASSERT(__count <= size(), "span<T, N>::first(count): count out of range");
     return {data(), __count};
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr span<element_type, dynamic_extent> last(size_type __count) const noexcept
   {
-    _LIBCUDACXX_ASSERT(__count <= size(), "span<T, N>::last(count): count out of range");
+    _CCCL_ASSERT(__count <= size(), "span<T, N>::last(count): count out of range");
     return {data() + size() - __count, __count};
   }
 
@@ -471,14 +470,14 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr span<element_type, dynamic_extent>
   subspan(size_type __offset, size_type __count = dynamic_extent) const noexcept
   {
-    _LIBCUDACXX_ASSERT(__offset <= size(), "span<T, N>::subspan(offset, count): offset out of range");
-    _LIBCUDACXX_ASSERT(__count <= size() || __count == dynamic_extent,
-                       "span<T, N>::subspan(offset, count): count out of range");
+    _CCCL_ASSERT(__offset <= size(), "span<T, N>::subspan(offset, count): offset out of range");
+    _CCCL_ASSERT(__count <= size() || __count == dynamic_extent,
+                 "span<T, N>::subspan(offset, count): count out of range");
     if (__count == dynamic_extent)
     {
       return {data() + __offset, size() - __offset};
     }
-    _LIBCUDACXX_ASSERT(__count <= size() - __offset, "span<T, N>::subspan(offset, count): offset + count out of range");
+    _CCCL_ASSERT(__count <= size() - __offset, "span<T, N>::subspan(offset, count): offset + count out of range");
     return {data() + __offset, __count};
   }
 
@@ -497,19 +496,19 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator[](size_type __idx) const noexcept
   {
-    _LIBCUDACXX_ASSERT(__idx < size(), "span<T, N>::operator[](index): index out of range");
+    _CCCL_ASSERT(__idx < size(), "span<T, N>::operator[](index): index out of range");
     return __data_[__idx];
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr reference front() const noexcept
   {
-    _LIBCUDACXX_ASSERT(!empty(), "span<T, N>::front() on empty span");
+    _CCCL_ASSERT(!empty(), "span<T, N>::front() on empty span");
     return __data_[0];
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr reference back() const noexcept
   {
-    _LIBCUDACXX_ASSERT(!empty(), "span<T, N>::back() on empty span");
+    _CCCL_ASSERT(!empty(), "span<T, N>::back() on empty span");
     return __data_[size() - 1];
   }
 
@@ -591,7 +590,7 @@ public:
       : __data_(_CUDA_VSTD::to_address(__first))
       , __size_(__last - __first)
   {
-    _LIBCUDACXX_ASSERT(__last - __first >= 0, "invalid range in span's constructor (iterator, sentinel)");
+    _CCCL_ASSERT(__last - __first >= 0, "invalid range in span's constructor (iterator, sentinel)");
   }
 
 #  else // ^^^ C++17 ^^^ / vvv C++14 vvv
@@ -660,26 +659,28 @@ public:
   template <size_t _Count>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr span<element_type, _Count> first() const noexcept
   {
-    _LIBCUDACXX_ASSERT(_Count <= size(), "span<T>::first<Count>(): Count out of range");
+    // ternary avoids "pointless comparison of unsigned integer with zero" warning
+    _CCCL_ASSERT(_Count == 0 ? true : _Count <= size(), "span<T>::first<Count>(): Count out of range");
     return span<element_type, _Count>{data(), _Count};
   }
 
   template <size_t _Count>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr span<element_type, _Count> last() const noexcept
   {
-    _LIBCUDACXX_ASSERT(_Count <= size(), "span<T>::last<Count>(): Count out of range");
+    // ternary avoids "pointless comparison of unsigned integer with zero" warning
+    _CCCL_ASSERT(_Count == 0 ? true : _Count <= size(), "span<T>::last<Count>(): Count out of range");
     return span<element_type, _Count>{data() + size() - _Count, _Count};
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr span<element_type, dynamic_extent> first(size_type __count) const noexcept
   {
-    _LIBCUDACXX_ASSERT(__count <= size(), "span<T>::first(count): count out of range");
+    _CCCL_ASSERT(__count <= size(), "span<T>::first(count): count out of range");
     return {data(), __count};
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr span<element_type, dynamic_extent> last(size_type __count) const noexcept
   {
-    _LIBCUDACXX_ASSERT(__count <= size(), "span<T>::last(count): count out of range");
+    _CCCL_ASSERT(__count <= size(), "span<T>::last(count): count out of range");
     return {data() + size() - __count, __count};
   }
 
@@ -689,23 +690,23 @@ public:
   template <size_t _Offset, size_t _Count = dynamic_extent>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __subspan_t<_Offset, _Count> subspan() const noexcept
   {
-    _LIBCUDACXX_ASSERT(_Offset <= size(), "span<T>::subspan<Offset, Count>(): Offset out of range");
-    _LIBCUDACXX_ASSERT(_Count == dynamic_extent || _Count <= size() - _Offset,
-                       "span<T>::subspan<Offset, Count>(): Offset + Count out of range");
+    // ternary avoids "pointless comparison of unsigned integer with zero" warning
+    _CCCL_ASSERT(_Offset == 0 ? true : _Offset <= size(), "span<T>::subspan<Offset, Count>(): Offset out of range");
+    _CCCL_ASSERT(_Count == dynamic_extent || _Count == 0 ? true : _Count <= size() - _Offset,
+                 "span<T>::subspan<Offset, Count>(): Offset + Count out of range");
     return __subspan_t<_Offset, _Count>{data() + _Offset, _Count == dynamic_extent ? size() - _Offset : _Count};
   }
 
   constexpr span<element_type, dynamic_extent> _LIBCUDACXX_HIDE_FROM_ABI
   subspan(size_type __offset, size_type __count = dynamic_extent) const noexcept
   {
-    _LIBCUDACXX_ASSERT(__offset <= size(), "span<T>::subspan(offset, count): offset out of range");
-    _LIBCUDACXX_ASSERT(__count <= size() || __count == dynamic_extent,
-                       "span<T>::subspan(offset, count): count out of range");
+    _CCCL_ASSERT(__offset <= size(), "span<T>::subspan(offset, count): offset out of range");
+    _CCCL_ASSERT(__count <= size() || __count == dynamic_extent, "span<T>::subspan(offset, count): count out of range");
     if (__count == dynamic_extent)
     {
       return {data() + __offset, size() - __offset};
     }
-    _LIBCUDACXX_ASSERT(__count <= size() - __offset, "span<T>::subspan(offset, count): offset + count out of range");
+    _CCCL_ASSERT(__count <= size() - __offset, "span<T>::subspan(offset, count): offset + count out of range");
     return {data() + __offset, __count};
   }
 
@@ -724,19 +725,19 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator[](size_type __idx) const noexcept
   {
-    _LIBCUDACXX_ASSERT(__idx < size(), "span<T>::operator[](index): index out of range");
+    _CCCL_ASSERT(__idx < size(), "span<T>::operator[](index): index out of range");
     return __data_[__idx];
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr reference front() const noexcept
   {
-    _LIBCUDACXX_ASSERT(!empty(), "span<T>::front() on empty span");
+    _CCCL_ASSERT(!empty(), "span<T>::front() on empty span");
     return __data_[0];
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr reference back() const noexcept
   {
-    _LIBCUDACXX_ASSERT(!empty(), "span<T>::back() on empty span");
+    _CCCL_ASSERT(!empty(), "span<T>::back() on empty span");
     return __data_[size() - 1];
   }
 

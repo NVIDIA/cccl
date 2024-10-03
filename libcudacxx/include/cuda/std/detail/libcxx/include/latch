@@ -50,8 +50,6 @@ namespace std
 
 #include <cuda/std/__atomic/api/owned.h>
 #include <cuda/std/atomic>
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
-#include <cuda/std/detail/libcxx/include/__debug>
 #include <cuda/std/limits>
 
 _CCCL_PUSH_MACROS
@@ -84,9 +82,9 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI void count_down(ptrdiff_t __update = 1)
   {
-    _LIBCUDACXX_ASSERT(__update > 0, "");
+    _CCCL_ASSERT(__update > 0, "");
     auto const __old = __counter.fetch_sub(__update, memory_order_release);
-    _LIBCUDACXX_ASSERT(__old >= __update, "");
+    _CCCL_ASSERT(__old >= __update, "");
     if (__old == __update)
     {
       __counter.notify_all();

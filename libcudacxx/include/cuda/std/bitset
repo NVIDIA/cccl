@@ -31,7 +31,6 @@
 #include <cuda/std/__type_traits/is_char_like_type.h>
 #include <cuda/std/climits>
 #include <cuda/std/cstddef>
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/detail/libcxx/include/__string>
 #include <cuda/std/detail/libcxx/include/stdexcept>
 #if defined(_LIBCUDACXX_HAS_STRING_VIEW)

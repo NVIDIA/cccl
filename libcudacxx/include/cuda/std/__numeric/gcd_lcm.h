@@ -100,7 +100,7 @@ _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI __common_type_t<_Tp, _Up> lcm(_T
   using _Rp  = __common_type_t<_Tp, _Up>;
   _Rp __val1 = __ct_abs<_Rp, _Tp>()(__m) / _CUDA_VSTD::gcd(__m, __n);
   _Rp __val2 = __ct_abs<_Rp, _Up>()(__n);
-  _LIBCUDACXX_ASSERT((numeric_limits<_Rp>::max() / __val1 > __val2), "Overflow in lcm");
+  _CCCL_ASSERT((numeric_limits<_Rp>::max() / __val1 > __val2), "Overflow in lcm");
   return __val1 * __val2;
 }
 

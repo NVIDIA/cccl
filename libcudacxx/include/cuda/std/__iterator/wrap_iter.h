@@ -27,15 +27,6 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_trivially_copy_assignable.h>
-#include <cuda/std/detail/libcxx/include/__debug>
-
-#ifndef _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
-#  if defined(_LIBCUDACXX_DEBUG)
-#    define _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
-#  else
-#    define _LIBCUDACXX_CONSTEXPR_IF_NODEBUG constexpr
-#  endif
-#endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -59,67 +50,23 @@ private:
 public:
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __wrap_iter() noexcept
       : __i_()
-  {
-    _CUDA_VSTD::__debug_db_insert_i(this);
-  }
+  {}
   template <class _Up>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14
   __wrap_iter(const __wrap_iter<_Up>& __u,
               typename enable_if<is_convertible<_Up, iterator_type>::value>::type* = nullptr) noexcept
       : __i_(__u.base())
-  {
-#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
-    if (!__libcpp_is_constant_evaluated())
-    {
-      __get_db()->__iterator_copy(this, _CUDA_VSTD::addressof(__u));
-    }
-#endif
-  }
-#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __wrap_iter(const __wrap_iter& __x)
-      : __i_(__x.base())
-  {
-    if (!__libcpp_is_constant_evaluated())
-    {
-      __get_db()->__iterator_copy(this, _CUDA_VSTD::addressof(__x));
-    }
-  }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __wrap_iter& operator=(const __wrap_iter& __x)
-  {
-    if (this != _CUDA_VSTD::addressof(__x))
-    {
-      if (!__libcpp_is_constant_evaluated())
-      {
-        __get_db()->__iterator_copy(this, _CUDA_VSTD::addressof(__x));
-      }
-      __i_ = __x.__i_;
-    }
-    return *this;
-  }
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 ~__wrap_iter()
-  {
-    if (!__libcpp_is_constant_evaluated())
-    {
-      __get_db()->__erase_i(this);
-    }
-  }
-#endif
+  {}
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reference operator*() const noexcept
   {
-    _LIBCUDACXX_DEBUG_ASSERT(__get_const_db()->__dereferenceable(this),
-                             "Attempted to dereference a non-dereferenceable iterator");
     return *__i_;
   }
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pointer operator->() const noexcept
   {
-    _LIBCUDACXX_DEBUG_ASSERT(__get_const_db()->__dereferenceable(this),
-                             "Attempted to dereference a non-dereferenceable iterator");
     return _CUDA_VSTD::__to_address(__i_);
   }
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __wrap_iter& operator++() noexcept
   {
-    _LIBCUDACXX_DEBUG_ASSERT(__get_const_db()->__dereferenceable(this),
-                             "Attempted to increment a non-incrementable iterator");
     ++__i_;
     return *this;
   }
@@ -132,8 +79,6 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __wrap_iter& operator--() noexcept
   {
-    _LIBCUDACXX_DEBUG_ASSERT(__get_const_db()->__decrementable(this),
-                             "Attempted to decrement a non-decrementable iterator");
     --__i_;
     return *this;
   }
@@ -151,8 +96,6 @@ public:
   }
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __wrap_iter& operator+=(difference_type __n) noexcept
   {
-    _LIBCUDACXX_DEBUG_ASSERT(__get_const_db()->__addable(this, __n),
-                             "Attempted to add/subtract an iterator outside its valid range");
     __i_ += __n;
     return *this;
   }
@@ -167,8 +110,6 @@ public:
   }
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reference operator[](difference_type __n) const noexcept
   {
-    _LIBCUDACXX_DEBUG_ASSERT(__get_const_db()->__subscriptable(this, __n),
-                             "Attempted to subscript an iterator outside its valid range");
     return __i_[__n];
   }
 
@@ -177,21 +118,10 @@ public:
     return __i_;
   }
 
-// private:
-#if _LIBCUDACXX_DEBUG_LEVEL >= 2
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter(const void* __p, iterator_type __x)
-      : __i_(__x)
-  {
-    if (!__libcpp_is_constant_evaluated())
-    {
-      __get_db()->__insert_ic(this, __p);
-    }
-  }
-#else
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_IF_NODEBUG __wrap_iter(iterator_type __x) noexcept
+private:
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __wrap_iter(iterator_type __x) noexcept
       : __i_(__x)
   {}
-#endif
 
   template <class _Up>
   friend class __wrap_iter;
@@ -221,9 +151,6 @@ template <class _Iter1>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 operator<(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter1>& __y) noexcept
 {
-  _LIBCUDACXX_DEBUG_ASSERT(
-    __get_const_db()->__less_than_comparable(_CUDA_VSTD::addressof(__x), _CUDA_VSTD::addressof(__y)),
-    "Attempted to compare incomparable iterators");
   return __x.base() < __y.base();
 }
 
@@ -231,8 +158,6 @@ template <class _Iter1, class _Iter2>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 operator<(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept
 {
-  _LIBCUDACXX_DEBUG_ASSERT(__get_const_db()->__less_than_comparable(&__x, &__y),
-                           "Attempted to compare incomparable iterators");
   return __x.base() < __y.base();
 }
 
@@ -296,9 +221,6 @@ template <class _Iter1, class _Iter2>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 auto
 operator-(const __wrap_iter<_Iter1>& __x, const __wrap_iter<_Iter2>& __y) noexcept -> decltype(__x.base() - __y.base())
 {
-  _LIBCUDACXX_DEBUG_ASSERT(
-    __get_const_db()->__less_than_comparable(_CUDA_VSTD::addressof(__x), _CUDA_VSTD::addressof(__y)),
-    "Attempted to subtract incompatible iterators");
   return __x.base() - __y.base();
 }
 
@@ -330,7 +252,5 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pointer_traits<__wrap_iter<_It>>
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
-
-#undef _LIBCUDACXX_CONSTEXPR_IF_NODEBUG
 
 #endif // _LIBCUDACXX___ITERATOR_WRAP_ITER_H

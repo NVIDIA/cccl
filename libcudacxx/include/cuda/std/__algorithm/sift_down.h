@@ -23,7 +23,6 @@
 #include <cuda/std/__algorithm/iterator_operations.h>
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/detail/libcxx/include/__assert>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -99,7 +98,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator __floyd_si
   typename iterator_traits<_RandomAccessIterator>::difference_type __len)
 {
   using difference_type = typename iterator_traits<_RandomAccessIterator>::difference_type;
-  _LIBCUDACXX_ASSERT(__len >= 2, "shouldn't be called unless __len >= 2");
+  _CCCL_ASSERT(__len >= 2, "shouldn't be called unless __len >= 2");
 
   _RandomAccessIterator __hole    = __first;
   _RandomAccessIterator __child_i = __first;

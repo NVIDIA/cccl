@@ -85,8 +85,7 @@ public:
   void deallocate(void* __ptr, const size_t, const size_t __alignment = default_cuda_malloc_alignment) const noexcept
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
-    _LIBCUDACXX_ASSERT(__is_valid_alignment(__alignment),
-                       "Invalid alignment passed to device_memory_resource::deallocate.");
+    _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to device_memory_resource::deallocate.");
     _CCCL_ASSERT_CUDA_API(::cudaFree, "device_memory_resource::deallocate failed", __ptr);
     (void) __alignment;
   }

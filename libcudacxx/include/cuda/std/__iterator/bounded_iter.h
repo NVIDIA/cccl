@@ -26,7 +26,6 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/detail/libcxx/include/__assert>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -88,7 +87,7 @@ private:
       , __begin_(__begin)
       , __end_(__end)
   {
-    _LIBCUDACXX_ASSERT(__begin <= __end, "__bounded_iter(current, begin, end): [begin, end) is not a valid range");
+    _CCCL_ASSERT(__begin <= __end, "__bounded_iter(current, begin, end): [begin, end) is not a valid range");
   }
 
   template <class _It>
@@ -100,22 +99,21 @@ public:
   // These operations check that the iterator is dereferenceable, that is within [begin, end).
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reference operator*() const noexcept
   {
-    _LIBCUDACXX_ASSERT(__in_bounds(__current_),
-                       "__bounded_iter::operator*: Attempt to dereference an out-of-range iterator");
+    _CCCL_ASSERT(__in_bounds(__current_), "__bounded_iter::operator*: Attempt to dereference an out-of-range iterator");
     return *__current_;
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pointer operator->() const noexcept
   {
-    _LIBCUDACXX_ASSERT(__in_bounds(__current_),
-                       "__bounded_iter::operator->: Attempt to dereference an out-of-range iterator");
+    _CCCL_ASSERT(__in_bounds(__current_),
+                 "__bounded_iter::operator->: Attempt to dereference an out-of-range iterator");
     return _CUDA_VSTD::__to_address(__current_);
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reference operator[](difference_type __n) const noexcept
   {
-    _LIBCUDACXX_ASSERT(__in_bounds(__current_ + __n),
-                       "__bounded_iter::operator[]: Attempt to index an iterator out-of-range");
+    _CCCL_ASSERT(__in_bounds(__current_ + __n),
+                 "__bounded_iter::operator[]: Attempt to index an iterator out-of-range");
     return __current_[__n];
   }
 

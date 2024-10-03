@@ -113,7 +113,6 @@ template<> class numeric_limits<cv long double>;
 #endif // no system header
 
 #include <cuda/std/climits>
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/type_traits>
 #include <cuda/std/version>
 

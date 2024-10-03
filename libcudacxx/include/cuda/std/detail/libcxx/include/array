@@ -139,7 +139,6 @@ template <size_t I, class T, size_t N> const T&& get(const array<T, N>&&) noexce
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/unreachable.h>
 #include <cuda/std/cstdint>
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/detail/libcxx/include/stdexcept>
 #include <cuda/std/limits>
 
@@ -264,12 +263,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT array
   // element access:
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reference operator[](size_type __n) noexcept
   {
-    _LIBCUDACXX_ASSERT(__n < _Size, "out-of-bounds access in std::array<T, N>");
+    _CCCL_ASSERT(__n < _Size, "out-of-bounds access in std::array<T, N>");
     return __elems_[__n];
   }
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const_reference operator[](size_type __n) const noexcept
   {
-    _LIBCUDACXX_ASSERT(__n < _Size, "out-of-bounds access in std::array<T, N>");
+    _CCCL_ASSERT(__n < _Size, "out-of-bounds access in std::array<T, N>");
     return __elems_[__n];
   }
 
@@ -434,14 +433,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT array<_Tp, 0>
   // element access:
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reference operator[](size_type) noexcept
   {
-    _LIBCUDACXX_ASSERT(false, "cannot call array<T, 0>::operator[] on a zero-sized array");
+    _CCCL_ASSERT(false, "cannot call array<T, 0>::operator[] on a zero-sized array");
     _CCCL_UNREACHABLE();
     return *data();
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const_reference operator[](size_type) const noexcept
   {
-    _LIBCUDACXX_ASSERT(false, "cannot call array<T, 0>::operator[] on a zero-sized array");
+    _CCCL_ASSERT(false, "cannot call array<T, 0>::operator[] on a zero-sized array");
     _CCCL_UNREACHABLE();
     return *data();
   }
@@ -460,28 +459,28 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT array<_Tp, 0>
 
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reference front() noexcept
   {
-    _LIBCUDACXX_ASSERT(false, "cannot call array<T, 0>::front() on a zero-sized array");
+    _CCCL_ASSERT(false, "cannot call array<T, 0>::front() on a zero-sized array");
     _CCCL_UNREACHABLE();
     return *data();
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const_reference front() const noexcept
   {
-    _LIBCUDACXX_ASSERT(false, "cannot call array<T, 0>::front() on a zero-sized array");
+    _CCCL_ASSERT(false, "cannot call array<T, 0>::front() on a zero-sized array");
     _CCCL_UNREACHABLE();
     return *data();
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reference back() noexcept
   {
-    _LIBCUDACXX_ASSERT(false, "cannot call array<T, 0>::back() on a zero-sized array");
+    _CCCL_ASSERT(false, "cannot call array<T, 0>::back() on a zero-sized array");
     _CCCL_UNREACHABLE();
     return *data();
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const_reference back() const noexcept
   {
-    _LIBCUDACXX_ASSERT(false, "cannot call array<T, 0>::back() on a zero-sized array");
+    _CCCL_ASSERT(false, "cannot call array<T, 0>::back() on a zero-sized array");
     _CCCL_UNREACHABLE();
     return *data();
   }

@@ -116,10 +116,6 @@ static_assert(__MDSPAN_CPLUSPLUS >= __MDSPAN_CXX_STD_14, "mdspan requires C++14 
 #    endif
 #  endif
 
-#  ifndef __has_cpp_attribute
-#    define __has_cpp_attribute(x) 0
-#  endif
-
 #  ifndef __MDSPAN_PRESERVE_STANDARD_LAYOUT
 // Preserve standard layout by default, but we're not removing the old version
 // that turns this off until we're sure this doesn't have an unreasonable cost

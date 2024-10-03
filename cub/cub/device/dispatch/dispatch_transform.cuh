@@ -168,7 +168,7 @@ template <typename Integral>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto round_up_to_po2_multiple(Integral x, Integral mult) -> Integral
 {
 #if _CCCL_STD_VER > 2011
-  _LIBCUDACXX_ASSERT(::cuda::std::has_single_bit(static_cast<::cuda::std::__make_unsigned_t<Integral>>(mult)), "");
+  _CCCL_ASSERT(::cuda::std::has_single_bit(static_cast<::cuda::std::__make_unsigned_t<Integral>>(mult)), "");
 #endif // _CCCL_STD_VER > 2011
   return (x + mult - 1) & ~(mult - 1);
 }
@@ -177,7 +177,7 @@ template <typename T>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE const char* round_down_ptr(const T* ptr, unsigned alignment)
 {
 #if _CCCL_STD_VER > 2011
-  _LIBCUDACXX_ASSERT(::cuda::std::has_single_bit(alignment), "");
+  _CCCL_ASSERT(::cuda::std::has_single_bit(alignment), "");
 #endif // _CCCL_STD_VER > 2011
   return reinterpret_cast<const char*>(
     reinterpret_cast<::cuda::std::uintptr_t>(ptr) & ~::cuda::std::uintptr_t{alignment - 1});
@@ -278,8 +278,8 @@ _CCCL_DEVICE void bulk_copy_tile(
 
   const char* src = aligned_ptr.ptr + global_offset * sizeof(T);
   char* dst       = smem + smem_offset;
-  _LIBCUDACXX_ASSERT(reinterpret_cast<uintptr_t>(src) % bulk_copy_alignment == 0, "");
-  _LIBCUDACXX_ASSERT(reinterpret_cast<uintptr_t>(dst) % bulk_copy_alignment == 0, "");
+  _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % bulk_copy_alignment == 0, "");
+  _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % bulk_copy_alignment == 0, "");
 
   // TODO(bgruber): we could precompute bytes_to_copy on the host
   const int bytes_to_copy = round_up_to_po2_multiple(
@@ -303,8 +303,8 @@ _CCCL_DEVICE void bulk_copy_tile_fallback(
 {
   const T* src = aligned_ptr.ptr_to_elements() + global_offset;
   T* dst       = reinterpret_cast<T*>(smem + smem_offset + aligned_ptr.head_padding);
-  _LIBCUDACXX_ASSERT(reinterpret_cast<uintptr_t>(src) % alignof(T) == 0, "");
-  _LIBCUDACXX_ASSERT(reinterpret_cast<uintptr_t>(dst) % alignof(T) == 0, "");
+  _CCCL_ASSERT(reinterpret_cast<uintptr_t>(src) % alignof(T) == 0, "");
+  _CCCL_ASSERT(reinterpret_cast<uintptr_t>(dst) % alignof(T) == 0, "");
 
   const int bytes_to_copy = static_cast<int>(sizeof(T)) * tile_size;
   cooperative_groups::memcpy_async(cooperative_groups::this_thread_block(), dst, src, bytes_to_copy);

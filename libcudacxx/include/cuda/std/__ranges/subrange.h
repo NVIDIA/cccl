@@ -50,7 +50,6 @@
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/detail/libcxx/include/__assert>
 
 #if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
 
@@ -275,8 +274,8 @@ public:
   {
     if constexpr (sized_sentinel_for<_Sent, _Iter>)
     {
-      _LIBCUDACXX_ASSERT((__end_ - __begin_) == static_cast<iter_difference_t<_Iter>>(__n),
-                         "_CUDA_VSTD::_CUDA_VRANGES::subrange was passed an invalid size hint");
+      _CCCL_ASSERT((__end_ - __begin_) == static_cast<iter_difference_t<_Iter>>(__n),
+                   "_CUDA_VSTD::_CUDA_VRANGES::subrange was passed an invalid size hint");
     }
   }
 

@@ -845,7 +845,6 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/ctime>
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/limits>
 #include <cuda/std/ratio>
 

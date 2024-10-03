@@ -65,7 +65,7 @@ TEST_CONSTEXPR_CXX20 bool test()
 
   return true;
 }
-#endif
+#endif // _LIBCUDACXX_HAS_STRING
 
 int main(int, char**)
 {

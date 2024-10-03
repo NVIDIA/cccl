@@ -257,14 +257,6 @@
 #  define TEST_HAS_SANITIZERS
 #endif
 
-#if defined(TEST_COMPILER_MSVC)
-#  define TEST_NORETURN __declspec(noreturn)
-#elif __has_cpp_attribute(noreturn)
-#  define TEST_NORETURN [[noreturn]]
-#else
-#  define TEST_NORETURN __attribute__((noreturn))
-#endif
-
 #if defined(_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION) \
   || (!(TEST_STD_VER > 2014 || (defined(__cpp_aligned_new) && __cpp_aligned_new >= 201606L)))
 #  define TEST_HAS_NO_ALIGNED_ALLOCATION
@@ -313,6 +305,14 @@
 #  define TEST_NODISCARD [[nodiscard]]
 #else
 #  define TEST_NODISCARD
+#endif
+
+#if defined(TEST_COMPILER_MSVC)
+#  define TEST_NORETURN __declspec(noreturn)
+#elif __has_cpp_attribute(noreturn)
+#  define TEST_NORETURN [[noreturn]]
+#else
+#  define TEST_NORETURN __attribute__((noreturn))
 #endif
 
 #define TEST_IGNORE_NODISCARD (void)
