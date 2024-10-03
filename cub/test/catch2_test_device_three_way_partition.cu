@@ -30,6 +30,10 @@
 
 #include <cub/device/device_partition.cuh>
 
+#include <thrust/iterator/constant_iterator.h>
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/tabulate_output_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
 #include <thrust/partition.h>
 #include <thrust/random.h>
 #include <thrust/reduce.h>
@@ -38,6 +42,7 @@
 
 #include <cuda/std/utility>
 
+#include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub/util_type.cuh"
 #include <c2h/catch2_test_helper.h>
@@ -48,20 +53,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DevicePartition::If, partition);
 
 using types = c2h::type_list<std::int32_t, std::int64_t>;
 
-template <typename T>
-struct less_than_t
-{
-  T compare;
-
-  explicit __host__ less_than_t(T compare)
-      : compare(compare)
-  {}
-
-  __device__ bool operator()(const T& a) const
-  {
-    return a < compare;
-  }
-};
+// List of offset types to be used for testing large number of items
+using offset_types = c2h::type_list<std::int32_t, std::uint32_t, std::uint64_t>;
 
 template <typename T>
 struct equal_to_t
@@ -100,6 +93,29 @@ struct count_to_pair_t
   __device__ __host__ cuda::std::pair<ValueT, std::uint32_t> operator()(OffsetT id)
   {
     return cuda::std::make_pair(static_cast<ValueT>(id), id);
+  }
+};
+
+template <typename T>
+struct mod_equal_to
+{
+  T mod;
+  T val;
+  __host__ __device__ bool operator()(T x)
+  {
+    return (x % mod == val) ? true : false;
+  }
+};
+
+template <typename T>
+struct multiply_and_add
+{
+  T mul;
+  T add;
+
+  __host__ __device__ T operator()(T x)
+  {
+    return x * mul + add;
   }
 };
 
@@ -439,4 +455,72 @@ C2H_TEST("Device three-way partition handles single output", "[partition][device
     output.begin() + num_items_in_first_part + num_items_in_second_part,
     second_part_val);
   REQUIRE(actual_num_items_in_second_part == num_items_in_second_part);
+}
+
+C2H_TEST("Device three-way partition works for very large number of items", "[device][partition]", offset_types)
+try
+{
+  using offset_t = typename c2h::get<0, TestType>;
+
+  auto num_items_max_ull =
+    std::min(static_cast<std::size_t>(::cuda::std::numeric_limits<offset_t>::max()),
+             ::cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
+  offset_t num_items_max = static_cast<offset_t>(num_items_max_ull);
+  offset_t num_items_min =
+    num_items_max_ull > 10000 ? static_cast<offset_t>(num_items_max_ull - 10000ULL) : offset_t{0};
+  offset_t num_items = GENERATE_COPY(
+    values(
+      {num_items_max, static_cast<offset_t>(num_items_max - 1), static_cast<offset_t>(1), static_cast<offset_t>(3)}),
+    take(2, random(num_items_min, num_items_max)));
+
+  auto in = thrust::make_counting_iterator(offset_t{0});
+
+  auto first_selector  = mod_equal_to<offset_t>{3, 0};
+  auto second_selector = mod_equal_to<offset_t>{3, 1};
+
+  offset_t expected_first  = num_items / offset_t{3} + (num_items % offset_t{3} >= 1);
+  offset_t expected_second = num_items / offset_t{3} + (num_items % offset_t{3} >= 2);
+  offset_t expected_third  = num_items / offset_t{3};
+
+  // Prepare tabulate output iterator to verify results in a memory-efficient way:
+  // We use a tabulate iterator that checks whenever the partition algorithm writes an output whether that item
+  // corresponds to the expected value at that index and, if correct, sets a boolean flag at that index.
+  static constexpr auto bits_per_element = 8 * sizeof(std::uint32_t);
+  c2h::device_vector<std::uint32_t> correctness_flags_first(::cuda::ceil_div(expected_first, bits_per_element));
+  c2h::device_vector<std::uint32_t> correctness_flags_second(::cuda::ceil_div(expected_second, bits_per_element));
+  c2h::device_vector<std::uint32_t> correctness_flags_third(::cuda::ceil_div(expected_third, bits_per_element));
+  auto expected_first_it  = thrust::make_transform_iterator(in, multiply_and_add<offset_t>{3, 0});
+  auto expected_second_it = thrust::make_transform_iterator(in, multiply_and_add<offset_t>{3, 1});
+  auto expected_third_it  = thrust::make_transform_iterator(in, multiply_and_add<offset_t>{3, 2});
+  auto check_first_op =
+    make_checking_write_op(expected_first_it, thrust::raw_pointer_cast(correctness_flags_first.data()));
+  auto check_second_op =
+    make_checking_write_op(expected_second_it, thrust::raw_pointer_cast(correctness_flags_second.data()));
+  auto check_third_op =
+    make_checking_write_op(expected_third_it, thrust::raw_pointer_cast(correctness_flags_third.data()));
+  auto check_first_it  = thrust::make_tabulate_output_iterator(check_first_op);
+  auto check_second_it = thrust::make_tabulate_output_iterator(check_second_op);
+  auto check_third_it  = thrust::make_tabulate_output_iterator(check_third_op);
+
+  // Needs to be device accessible
+  c2h::device_vector<offset_t> num_selected_out(2, 0);
+  offset_t* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+
+  // Run test
+  partition(
+    in, check_first_it, check_second_it, check_third_it, d_num_selected_out, num_items, first_selector, second_selector);
+
+  // Ensure that we created the correct output
+  REQUIRE(num_selected_out[0] == expected_first);
+  REQUIRE(num_selected_out[1] == expected_second);
+  bool first_correct = are_all_flags_set(correctness_flags_first, expected_first);
+  REQUIRE(first_correct == true);
+  bool second_correct = are_all_flags_set(correctness_flags_second, expected_second);
+  REQUIRE(second_correct == true);
+  bool third_correct = are_all_flags_set(correctness_flags_third, expected_third);
+  REQUIRE(third_correct == true);
+}
+catch (std::bad_alloc&)
+{
+  // Exceeding memory is not a failure.
 }
