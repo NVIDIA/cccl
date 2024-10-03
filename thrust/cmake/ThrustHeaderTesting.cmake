@@ -17,7 +17,7 @@ function(thrust_add_header_test thrust_target label definitions)
   string(TOLOWER "${config_host}" host_lower)
   string(TOLOWER "${config_device}" device_lower)
 
-  if (${config_device} STREQUAL "CUDA")
+  if (config_device STREQUAL "CUDA")
     set(lang CUDA)
   else()
     set(lang CXX)
