@@ -22,7 +22,8 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_CCCL_COMPILER_MSVC) && __has_include(<memory>)
+// MSVC provides __builtin_assume_aligned only for version >= 1923 and needs <memory> header
+#if defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION >= 1923 && __has_include(<memory>)
 #  include <memory>
 #endif
 
@@ -48,7 +49,7 @@ assume_aligned(_Tp* __ptr) noexcept
 #if defined(_CCCL_COMPILER_ICC)
     __assume_aligned(x, _Align);
     return __ptr;
-#elif !defined(_CCCL_COMPILER_MSVC) || __has_include(<memory>)
+#elif !defined(_CCCL_COMPILER_MSVC) || (_CCCL_MSVC_VERSION >= 1923 && __has_include(<memory>))
     return static_cast<_Tp*>(__builtin_assume_aligned(__ptr, _Align));
 #else
     return __ptr;
