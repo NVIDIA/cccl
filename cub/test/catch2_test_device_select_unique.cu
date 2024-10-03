@@ -313,16 +313,8 @@ try
 
     // Ensure that we created the correct output
     REQUIRE(num_selected_out[0] == num_items);
-    bool all_results_correct = thrust::equal(
-      correctness_flags.cbegin(),
-      correctness_flags.cbegin() + (num_items / bits_per_element),
-      thrust::make_constant_iterator(0xFFFFFFFFU));
+    bool all_results_correct = are_all_flags_set(correctness_flags, num_items);
     REQUIRE(all_results_correct == true);
-    if (num_items % bits_per_element != 0)
-    {
-      std::uint32_t last_element_flags = (0x00000001U << (num_items % bits_per_element)) - 0x01U;
-      REQUIRE(correctness_flags[correctness_flags.size() - 1] == last_element_flags);
-    }
   }
 
   // All the same -> single unique
@@ -350,19 +342,8 @@ try
 
     // Ensure that we created the correct output
     REQUIRE(num_selected_out[0] == expected_num_unique);
-    bool all_results_correct = thrust::equal(
-      correctness_flags.cbegin(),
-      correctness_flags.cbegin() + (expected_num_unique / bits_per_element),
-      thrust::make_constant_iterator(0xFFFFFFFFU));
+    bool all_results_correct = are_all_flags_set(correctness_flags, expected_num_unique);
     REQUIRE(all_results_correct == true);
-    _CCCL_DIAG_PUSH
-    _CCCL_DIAG_SUPPRESS_MSVC(4127) /* conditional expression is constant */
-    _CCCL_IF_CONSTEXPR (expected_num_unique % bits_per_element != 0)
-    {
-      std::uint32_t last_element_flags = (0x00000001U << (expected_num_unique % bits_per_element)) - 0x01U;
-      REQUIRE(correctness_flags[correctness_flags.size() - 1] == last_element_flags);
-    }
-    _CCCL_DIAG_POP
   }
 }
 catch (std::bad_alloc&)

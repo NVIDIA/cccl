@@ -457,7 +457,7 @@ struct DispatchSelectIf : SelectedPolicy
   // supports streaming (i.e., splitting the input into partitions of up to partition_size number of items)
   static constexpr bool may_require_streaming =
     (static_cast<::cuda::std::uint64_t>(partition_size)
-     < static_cast<::cuda::std::uint64_t>(cuda::std::numeric_limits<OffsetT>::max()));
+     < static_cast<::cuda::std::uint64_t>(::cuda::std::numeric_limits<OffsetT>::max()));
 
   using streaming_context_t = detail::select::streaming_context_t<num_total_items_t, may_require_streaming>;
 
@@ -674,7 +674,7 @@ struct DispatchSelectIf : SelectedPolicy
         error = CubDebug(tile_status.Init(current_num_tiles, allocations[0], allocation_sizes[0]));
         if (cudaSuccess != error)
         {
-          break;
+          return error;
         }
 
         // Log scan_init_kernel configuration
@@ -695,14 +695,14 @@ struct DispatchSelectIf : SelectedPolicy
         error = CubDebug(cudaPeekAtLastError());
         if (cudaSuccess != error)
         {
-          break;
+          return error;
         }
 
         // Sync the stream if specified to flush runtime errors
         error = CubDebug(detail::DebugSyncStream(stream));
         if (cudaSuccess != error)
         {
-          break;
+          return error;
         }
 
 // Log select_if_kernel configuration
@@ -715,7 +715,7 @@ struct DispatchSelectIf : SelectedPolicy
                                           block_threads));
           if (cudaSuccess != error)
           {
-            break;
+            return error;
           }
 
           _CubLog("Invoking select_if_kernel<<<%d, %d, 0, "
@@ -747,14 +747,14 @@ struct DispatchSelectIf : SelectedPolicy
         error = CubDebug(cudaPeekAtLastError());
         if (cudaSuccess != error)
         {
-          break;
+          return error;
         }
 
         // Sync the stream if specified to flush runtime errors
         error = CubDebug(detail::DebugSyncStream(stream));
         if (cudaSuccess != error)
         {
-          break;
+          return error;
         }
 
         // Prepare streaming context for next partition (swap double buffers, advance number of processed items, etc.)

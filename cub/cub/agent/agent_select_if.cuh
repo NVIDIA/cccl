@@ -342,6 +342,9 @@ struct AgentSelectIf
    *
    * @param num_items
    *   Total number of input items
+   *
+   * @param streaming_context
+   *   Context for the current partition
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE AgentSelectIf(
     TempStorage& temp_storage,
