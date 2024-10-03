@@ -25,7 +25,7 @@
 #   - @header@: The path to the target header, relative to <project_include_path>.
 function(cccl_generate_header_tests target_name project_include_path)
   set(options)
-  set(oneValueArgs HEADER_TEMPLATE)
+  set(oneValueArgs LANGUAGE HEADER_TEMPLATE)
   set(multiValueArgs GLOBS EXCLUDES HEADERS DEFINES)
   cmake_parse_arguments(CGHT "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
@@ -99,7 +99,7 @@ function(cccl_generate_header_tests target_name project_include_path)
   # Configure header templates:
   set(header_srcs)
   foreach (header IN LISTS headers)
-    set(header_src "${CMAKE_CURRENT_BINARY_DIR}/headers/${target_name}/${header}.cu")
+    set(header_src "${CMAKE_CURRENT_BINARY_DIR}/headers/${target_name}/${header}.${extension}")
     configure_file(${CGHT_HEADER_TEMPLATE} ${header_src} @ONLY)
     list(APPEND header_srcs ${header_src})
   endforeach()
