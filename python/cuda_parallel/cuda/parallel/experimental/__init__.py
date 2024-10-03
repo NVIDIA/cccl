@@ -220,6 +220,7 @@ class _Reduce:
             raise ValueError('Error building reduce')
 
     def __call__(self, temp_storage, d_in, d_out, init):
+        # TODO validate POINTER vs ITERATOR when iterator support is added
         _dtype_validation(self._ctor_d_in_dtype, d_in.dtype)
         _dtype_validation(self._ctor_d_out_dtype, d_out.dtype)
         _dtype_validation(self._ctor_init_dtype, init.dtype)
