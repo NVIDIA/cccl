@@ -26,6 +26,7 @@
 #  include <cub/thread/thread_load.cuh>
 #  include <cub/thread/thread_store.cuh>
 
+#  include <cuda/annotated_ptr>
 #  include <cuda/std/__concepts/__concept_macros.h>
 #  include <cuda/std/__type_traits/enable_if.h>
 #  include <cuda/std/__type_traits/is_abstract.h>
@@ -55,6 +56,7 @@ enum class PrefetchSize
 template <class _ElementType,
           EvictionPolicy _Eviction = EvictionPolicy::Default,
           PrefetchSize _Prefetch   = PrefetchSize::NoPrefetch,
+          typename _CacheHint      = ::cuda::access_property::normal,
           typename _Enable         = void>
 struct cache_policy_accessor;
 
@@ -62,23 +64,23 @@ struct cache_policy_accessor;
  * accessor_reference
  **********************************************************************************************************************/
 
-template <class _ElementType, EvictionPolicy _Eviction, PrefetchSize _Prefetch>
+template <class _ElementType, EvictionPolicy _Eviction, PrefetchSize _Prefetch, typename _CacheHint>
 class accessor_reference
 {
-  using pointer_type = _ElementType*;
+  using __pointer_type = _ElementType*;
 
-  pointer_type __p;
+  __pointer_type __p;
 
-  friend class cache_policy_accessor<_ElementType, _Eviction, _Prefetch>;
+  friend class cache_policy_accessor<_ElementType, _Eviction, _Prefetch, _CacheHint>;
 
 public:
-  accessor_reference() = delete;
+  explicit constexpr accessor_reference() noexcept = default;
 
   accessor_reference(accessor_reference&&) = delete;
 
   accessor_reference& operator=(accessor_reference&&) = delete;
 
-  _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _CCCL_FORCEINLINE accessor_reference(const accessor_reference&) = default;
+  _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr accessor_reference(const accessor_reference&) = default;
 
   _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _CCCL_FORCEINLINE accessor_reference&
   operator=(const accessor_reference& __x) noexcept
@@ -93,11 +95,11 @@ public:
 
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE operator _ElementType() const noexcept
   {
-    return cub::ThreadLoad<_Eviction, _Prefetch>(__p);
+    return cub::ThreadLoad<_Eviction>(__p);
   }
 
 private:
-  _CCCL_HIDE_FROM_ABI _CCCL_DEVICE _CCCL_FORCEINLINE explicit accessor_reference(pointer_type __p_) noexcept
+  _CCCL_HIDE_FROM_ABI _CCCL_DEVICE explicit accessor_reference(__pointer_type __p_) noexcept
       : __p{__p_}
   {}
 };
@@ -106,10 +108,11 @@ private:
  * load/store cache_policy_accessor
  **********************************************************************************************************************/
 
-template <class _ElementType, EvictionPolicy _Eviction, PrefetchSize _Prefetch>
+template <class _ElementType, EvictionPolicy _Eviction, PrefetchSize _Prefetch, typename _CacheHint>
 struct cache_policy_accessor<_ElementType,
                              _Eviction,
                              _Prefetch,
+                             _CacheHint,
                              _CUDA_VSTD::__enable_if_t<!_CUDA_VSTD::is_const<_ElementType>::value>>
 {
   static_assert(!_CUDA_VSTD::is_array<_ElementType>::value,
@@ -117,18 +120,17 @@ struct cache_policy_accessor<_ElementType,
   static_assert(!_CUDA_VSTD::is_abstract<_ElementType>::value,
                 "cache_policy_accessor: template argument may not be an abstract class");
 
-  using offset_policy    = cache_policy_accessor;
-  using element_type     = _ElementType;
-  using reference        = ::cuda::accessor_reference<_ElementType, _Eviction, _Prefetch>;
-  using data_handle_type = _ElementType*;
+  using offset_policy = cache_policy_accessor;
+  using element_type  = _ElementType;
+  using reference     = ::cuda::accessor_reference<_ElementType, _Eviction, _Prefetch, _CacheHint>;
+  using data_handle_type =
+    typename _CUDA_VSTD::conditional<RestrictProperty, _ElementType*, _ElementType* _CCCL_RESTRICT>::type;
 
-  constexpr cache_policy_accessor() noexcept = default;
+  explicit constexpr cache_policy_accessor() noexcept = default;
 
   _LIBCUDACXX_TEMPLATE(class _OtherElementType)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _OtherElementType (*)[], element_type (*)[]))
-  _CCCL_HIDE_FROM_ABI _CCCL_DEVICE
-  _CCCL_FORCEINLINE constexpr cache_policy_accessor(cache_policy_accessor<_OtherElementType>) noexcept
-  {}
+  _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr cache_policy_accessor(cache_policy_accessor<_OtherElementType>) noexcept {}
 
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE reference access(data_handle_type __p, size_t __i) const noexcept
   {
@@ -145,10 +147,11 @@ struct cache_policy_accessor<_ElementType,
  * load-only cache_policy_accessor
  **********************************************************************************************************************/
 
-template <class _ElementType, EvictionPolicy _Eviction, PrefetchSize _Prefetch>
+template <class _ElementType, EvictionPolicy _Eviction, PrefetchSize _Prefetch, typename _CacheHint>
 struct cache_policy_accessor<_ElementType,
                              _Eviction,
                              _Prefetch,
+                             _CacheHint,
                              _CUDA_VSTD::__enable_if_t<_CUDA_VSTD::is_const<_ElementType>::value>>
 {
   static_assert(!_CUDA_VSTD::is_array<_ElementType>::value,
@@ -165,13 +168,12 @@ struct cache_policy_accessor<_ElementType,
 
   template <typename _OtherElementType,
             _CUDA_VSTD::__enable_if_t<_CUDA_VSTD::is_convertible<_OtherElementType (*)[], _ElementType (*)[]>::value>>
-  _CCCL_HIDE_FROM_ABI _CCCL_DEVICE
-  _CCCL_FORCEINLINE constexpr cache_policy_accessor(cache_policy_accessor<_OtherElementType>) noexcept
+  _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr cache_policy_accessor(cache_policy_accessor<_OtherElementType>) noexcept
   {}
 
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE element_type access(data_handle_type __p, size_t __i) const noexcept
   {
-    return cub::ThreadLoad<_Eviction, _Prefetch>(__p + __i);
+    return cub::ThreadLoad<_Eviction>(__p + __i);
   }
 
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE data_handle_type offset(data_handle_type __p, size_t __i) const noexcept
