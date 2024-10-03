@@ -1,5 +1,4 @@
-include("${cudax_SOURCE_DIR}/cmake/CPM.cmake")
-CPMAddPackage("gh:catchorg/Catch2@2.13.9")
+cccl_get_catch2()
 
 find_package(Thrust ${cudax_VERSION} EXACT CONFIG
   NO_DEFAULT_PATH # Only check the explicit path in HINTS:
