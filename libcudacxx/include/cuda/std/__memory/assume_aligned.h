@@ -35,7 +35,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <_CUDA_VSTD::size_t _Align, class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr _Tp*
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr _Tp*
 assume_aligned(_Tp* __ptr) noexcept
 {
   static_assert(_CUDA_VSTD::has_single_bit(_Align));
