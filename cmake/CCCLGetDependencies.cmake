@@ -2,7 +2,7 @@ set(_cccl_cpm_file "${CMAKE_CURRENT_LIST_DIR}/CPM.cmake")
 
 macro(cccl_get_boost)
   include("${_cccl_cpm_file}")
-  CPMAddPackage("gh:boostorg/boost@boost-1.83.0")
+  CPMAddPackage("gh:boostorg/boost#boost-1.83.0")
 endmacro()
 
 macro(cccl_get_catch2)
@@ -12,7 +12,7 @@ endmacro()
 
 macro(cccl_get_fmt)
   include("${_cccl_cpm_file}")
-  CPMAddPackage("gh:fmtlib/fmt@11.0.1")
+  CPMAddPackage("gh:fmtlib/fmt#11.0.1")
 endmacro()
 
 macro(cccl_get_nvbench)
