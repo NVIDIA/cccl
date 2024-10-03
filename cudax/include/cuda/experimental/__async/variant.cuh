@@ -139,7 +139,7 @@ public:
   {
     // make this local in case destroying the sub-object destroys *this
     const auto index = __self.__index_;
-    _LIBCUDACXX_ASSERT(index != __npos, "");
+    _CCCL_ASSERT(index != __npos, "");
     ((_Idx == index
         ? static_cast<_Fn&&>(__fn)(static_cast<_As&&>(__as)..., static_cast<_Self&&>(__self).template __get<_Idx>())
         : void()),
@@ -149,21 +149,21 @@ public:
   template <size_t _Ny>
   _CCCL_HOST_DEVICE __at<_Ny>&& __get() && noexcept
   {
-    _LIBCUDACXX_ASSERT(_Ny == __index_, "");
+    _CCCL_ASSERT(_Ny == __index_, "");
     return static_cast<__at<_Ny>&&>(*static_cast<__at<_Ny>*>(__ptr()));
   }
 
   template <size_t _Ny>
   _CCCL_HOST_DEVICE __at<_Ny>& __get() & noexcept
   {
-    _LIBCUDACXX_ASSERT(_Ny == __index_, "");
+    _CCCL_ASSERT(_Ny == __index_, "");
     return *static_cast<__at<_Ny>*>(__ptr());
   }
 
   template <size_t _Ny>
   _CCCL_HOST_DEVICE const __at<_Ny>& __get() const& noexcept
   {
-    _LIBCUDACXX_ASSERT(_Ny == __index_, "");
+    _CCCL_ASSERT(_Ny == __index_, "");
     return *static_cast<const __at<_Ny>*>(__ptr());
   }
 };

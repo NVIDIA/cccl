@@ -21,8 +21,6 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/__concept_macros.h>
-#include <cuda/std/__concepts/_One_of.h>
-#include <cuda/std/__concepts/all_of.h>
 #include <cuda/std/__concepts/arithmetic.h>
 #include <cuda/std/__concepts/assignable.h>
 #include <cuda/std/__concepts/boolean_testable.h>
@@ -45,7 +43,6 @@
 #include <cuda/std/__concepts/semiregular.h>
 #include <cuda/std/__concepts/swappable.h>
 #include <cuda/std/__concepts/totally_ordered.h>
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/version>
 
 #endif // _CUDA_STD_CONCEPTS

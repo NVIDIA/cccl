@@ -24,18 +24,18 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2011 && defined(_LIBCUDACXX_IS_AGGREGATE)
+#if _CCCL_STD_VER > 2011 && defined(_CCCL_BUILTIN_IS_AGGREGATE)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_aggregate : public integral_constant<bool, _LIBCUDACXX_IS_AGGREGATE(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_aggregate : public integral_constant<bool, _CCCL_BUILTIN_IS_AGGREGATE(_Tp)>
 {};
 
 #  if !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_aggregate_v = _LIBCUDACXX_IS_AGGREGATE(_Tp);
+_LIBCUDACXX_INLINE_VAR constexpr bool is_aggregate_v = _CCCL_BUILTIN_IS_AGGREGATE(_Tp);
 #  endif
 
-#endif // _CCCL_STD_VER > 2011 && defined(_LIBCUDACXX_IS_AGGREGATE)
+#endif // _CCCL_STD_VER > 2011 && defined(_CCCL_BUILTIN_IS_AGGREGATE)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

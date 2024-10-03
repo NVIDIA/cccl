@@ -52,8 +52,6 @@ struct __unwrap_iter_impl
   }
 };
 
-#ifndef _LIBCUDACXX_ENABLE_DEBUG_MODE
-
 // It's a contiguous iterator, so we can use a raw pointer instead
 template <class _Iter>
 struct __unwrap_iter_impl<_Iter, true>
@@ -70,8 +68,6 @@ struct __unwrap_iter_impl<_Iter, true>
     return _CUDA_VSTD::__to_address(__i);
   }
 };
-
-#endif // !_LIBCUDACXX_ENABLE_DEBUG_MODE
 
 template <class _Iter,
           class _Impl                                             = __unwrap_iter_impl<_Iter>,

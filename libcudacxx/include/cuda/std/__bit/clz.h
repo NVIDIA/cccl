@@ -112,7 +112,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __libcpp_clz(uint32_t __x)
     }
     return 32; // Undefined Behavior.
   }
-#  endif // _LIBCUDACXX_IS_CONSTANT_EVALUATED && !defined(__CUDA_ARCH__)
+#  endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED && !defined(__CUDA_ARCH__)
 
   return __binary_clz32(static_cast<uint64_t>(__x), 0);
 }
@@ -141,7 +141,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __libcpp_clz(uint64_t __x)
 #    endif
     return 64; // Undefined Behavior.
   }
-#  endif // _LIBCUDACXX_IS_CONSTANT_EVALUATED && !defined(__CUDA_ARCH__)
+#  endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED && !defined(__CUDA_ARCH__)
 
   return __binary_clz64(static_cast<uint64_t>(__x));
 }

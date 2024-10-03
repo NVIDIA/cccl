@@ -30,10 +30,6 @@
 
 #include <cuda/std/cstddef>
 
-#ifndef __has_cpp_attribute
-#  define __has_cpp_attribute(X) 0
-#endif
-
 #define THRUST_NODISCARD _CCCL_NODISCARD
 
 // FIXME: Combine THRUST_INLINE_CONSTANT and

@@ -39,9 +39,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2014 && defined(_LIBCUDACXX_LAUNDER)
+#if TEST_STD_VER >= 2014 && defined(_CCCL_BUILTIN_LAUNDER)
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014 && _LIBCUDACXX_LAUNDER
+#endif // TEST_STD_VER >= 2014 && _CCCL_BUILTIN_LAUNDER
 
   return 0;
 }

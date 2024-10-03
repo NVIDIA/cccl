@@ -37,7 +37,8 @@ struct my_property
 {
   using value_type = int;
 };
-constexpr int get_property(const cuda::experimental::uninitialized_async_buffer<int, my_property>&, my_property)
+constexpr int get_property(
+  const cuda::experimental::uninitialized_async_buffer<int, cuda::mr::device_accessible, my_property>&, my_property)
 {
   return 42;
 }
@@ -45,7 +46,8 @@ constexpr int get_property(const cuda::experimental::uninitialized_async_buffer<
 TEMPLATE_TEST_CASE(
   "uninitialized_async_buffer", "[container]", char, short, int, long, long long, float, double, do_not_construct)
 {
-  using uninitialized_async_buffer = cuda::experimental::uninitialized_async_buffer<TestType>;
+  using uninitialized_async_buffer =
+    cuda::experimental::uninitialized_async_buffer<TestType, cuda::mr::device_accessible>;
   static_assert(!cuda::std::is_default_constructible<uninitialized_async_buffer>::value, "");
   static_assert(!cuda::std::is_copy_constructible<uninitialized_async_buffer>::value, "");
   static_assert(!cuda::std::is_copy_assignable<uninitialized_async_buffer>::value, "");
@@ -132,8 +134,10 @@ TEMPLATE_TEST_CASE(
     static_assert(cuda::has_property<cuda::experimental::uninitialized_async_buffer<int, cuda::mr::device_accessible>,
                                      cuda::mr::device_accessible>,
                   "");
-    static_assert(cuda::has_property<cuda::experimental::uninitialized_async_buffer<int, my_property>, my_property>,
-                  "");
+    static_assert(
+      cuda::has_property<cuda::experimental::uninitialized_async_buffer<int, cuda::mr::device_accessible, my_property>,
+                         my_property>,
+      "");
   }
 
   SECTION("conversion to span")

@@ -49,7 +49,6 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/detail/libcxx/include/__assert>
 
 #if _CCCL_STD_VER > 2011
 

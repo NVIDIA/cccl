@@ -51,7 +51,8 @@ struct my_property
 {
   using value_type = int;
 };
-constexpr int get_property(const cuda::experimental::uninitialized_buffer<int, my_property>&, my_property)
+constexpr int get_property(
+  const cuda::experimental::uninitialized_buffer<int, cuda::mr::device_accessible, my_property>&, my_property)
 {
   return 42;
 }
@@ -139,7 +140,10 @@ TEMPLATE_TEST_CASE(
     static_assert(cuda::has_property<cuda::experimental::uninitialized_buffer<int, cuda::mr::device_accessible>,
                                      cuda::mr::device_accessible>,
                   "");
-    static_assert(cuda::has_property<cuda::experimental::uninitialized_buffer<int, my_property>, my_property>, "");
+    static_assert(
+      cuda::has_property<cuda::experimental::uninitialized_buffer<int, cuda::mr::device_accessible, my_property>,
+                         my_property>,
+      "");
   }
 
   SECTION("convertion to span")

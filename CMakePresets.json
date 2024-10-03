@@ -23,7 +23,7 @@
         "CCCL_ENABLE_EXAMPLES": false,
         "libcudacxx_ENABLE_INSTALL_RULES": true,
         "CUB_ENABLE_INSTALL_RULES": true,
-        "THRUST_ENABLE_INSTALL_RULES": true,
+        "Thrust_ENABLE_INSTALL_RULES": true,
         "cudax_ENABLE_INSTALL_RULES": true
       }
     },
