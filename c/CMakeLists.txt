@@ -19,5 +19,6 @@ target_link_libraries(cccl.c PRIVATE CUDA::cudart
                                      CUDA::cuda_driver)
 target_compile_definitions(cccl.c PRIVATE NVRTC_GET_TYPE_NAME=1 CCCL_C_EXPERIMENTAL=1)
 target_include_directories(cccl.c PUBLIC "include")
+target_include_directories(cccl.c PRIVATE "src")
 
 add_subdirectory(test)

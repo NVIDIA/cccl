@@ -10,6 +10,9 @@
 
 #pragma once
 
+#include <memory>
+#include <variant>
+
 void* copy_or_allocate_into_aligned_storage(
   void* space, // Pointer to buffer in which to copy memory
   size_t space_size, // Space available in this buffer (number of bytes available after offset)
@@ -20,44 +23,27 @@ void* copy_or_allocate_into_aligned_storage(
 );
 
 template <typename T, size_t Extra>
-struct small_aligned_storage_stack
+struct small_vector_stack
 {
   T stored_obj;
   char space[Extra];
 };
 
-template <typename T>
-struct small_aligned_storage_allocated
+template <typename T, size_t Extra = sizeof(T)>
+struct small_vector
 {
-  T* stored_obj;
-};
+  std::variant<std::unique_ptr<void*>, small_vector_stack<T, Extra>> storage;
 
-// small_aligned_storage<T> manages objects that 'may' hold more data than initially sized for.
-// it implements in C++ a managed variable length member located at the end of T.
-// This allows packing together unrelated data as sometimes used for kernel parameters.
-// This is maybe a dumb idea.
-template <typename T, size_t Extra = 8>
-struct small_aligned_storage
-{
-  union
-  {
-    small_aligned_storage_allocated<T> allocated;
-    small_aligned_storage_stack<T, Extra> local;
-  };
+  constexpr inline small_vector(T t)
+      : storage(small_vector_stack<T, Extra>{T})
+  {}
 
-  bool is_allocated = false;
+  const small_vector& operator=(const small_vector&) = delete;
+  const small_vector& operator=(small_vector&&)      = delete;
+  small_vector(const small_vector&)                  = delete;
+  small_vector(small_vector&&)                       = delete;
 
-  constexpr inline small_aligned_storage(T t)
-  {
-    local.stored_obj = t;
-  }
-
-  const small_aligned_storage& operator=(const small_aligned_storage&) = delete;
-  const small_aligned_storage& operator=(small_aligned_storage&&)      = delete;
-  small_aligned_storage(const small_aligned_storage&)                  = delete;
-  small_aligned_storage(small_aligned_storage&&)                       = delete;
-
-  inline small_aligned_storage(T t, void* source, size_t alignment, size_t size)
+  inline small_vector(T t, void* source, size_t alignment, size_t size)
   {
     auto allocated_space = copy_or_allocate_into_aligned_storage(
       &local, sizeof(local.space), sizeof(local.stored_obj), source, alignment, size);
@@ -65,7 +51,7 @@ struct small_aligned_storage
     if (allocated_space)
     {
       is_allocated          = true;
-      allocated             = small_aligned_storage_allocated<T>{(T*) allocated_space};
+      allocated             = small_vector_allocated<T>{(T*) allocated_space};
       *allocated.stored_obj = t;
     }
     else
@@ -74,7 +60,7 @@ struct small_aligned_storage
     }
   }
 
-  inline ~small_aligned_storage()
+  inline ~small_vector()
   {
     if (is_allocated)
     {

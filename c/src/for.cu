@@ -15,10 +15,13 @@
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
 
+#include <format>
+#include <type_traits>
+
 #include "util/errors.h"
-#include "util/small_storage.h"
 #include <cccl/c/for.h>
 #include <cccl/c/types.h>
+#include <for/for_op_helper.h>
 #include <nvJitLink.h>
 #include <nvrtc.h>
 
@@ -43,11 +46,6 @@ struct reduce_tuning_t
   int vector_load_length;
 };
 
-struct for_each_kernel_params
-{
-  void* data;
-};
-
 inline cudaError_t
 Invoke(cccl_iterator_t d_in, size_t num_items, cccl_op_t op, int cc, CUfunction static_kernel, CUstream stream)
 {
@@ -58,12 +56,9 @@ Invoke(cccl_iterator_t d_in, size_t num_items, cccl_op_t op, int cc, CUfunction 
     return error;
   }
 
-  small_aligned_storage<for_each_kernel_params> op_params =
-    (op.type == cccl_op_kind_t::stateful)
-      ? small_aligned_storage<for_each_kernel_params>({d_in.state}, op.state, op.alignment, op.size)
-      : small_aligned_storage<for_each_kernel_params>({d_in.state});
+  auto for_kernel_state = package_for_kernel_state(op, d_in);
 
-  void* args[] = {&num_items, op_params.get()};
+  void* args[] = {&num_items, for_kernel_state.get()};
 
   int thread_count = 256;
   int block_count  = (num_items + 511) / 512;
@@ -90,27 +85,8 @@ format_device_for_kernel(cccl_op_t op, cccl_iterator_t d_data, std::string diff_
 #include <cub/agent/agent_for.cuh>
 #include <cub/device/dispatch/kernels/for_each.cuh>
 
-#if {5} // enable stateful op dispatch
-extern "C" __device__ void {4}(void* state, void* data);
-struct __align__({7}) storage_t {{
-  char state[{6}];
-}};
-#else
-extern "C" __device__ void {4}(void* data);
-struct storage_t {{}};
-#endif
-
 struct op_iter_wrapper
 {{
-  using iterator_category        = cuda::std::random_access_iterator_tag;
-  using value_type               = {0};
-  using difference_type          = {2};
-  using pointer                  = value_type*;
-  using reference                = value_type&;
-  static constexpr difference_type size = {3};
-  value_type* data;
-  storage_t state;
-
   __device__ void operator()(difference_type idx)
   {{
 #if {5} // enable stateful op dispatch
