@@ -96,6 +96,11 @@
 #  define _CCCL_BUILTIN_ASSUME(...) __builtin_assume(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_assume)
 
+// NVCC prior to 11.2 cannot handle __builtin_assume
+#if defined(_CCCL_CUDACC_BELOW_11_2)
+#  undef _CCCL_BUILTIN_ASSUME
+#endif // _CCCL_CUDACC_BELOW_11_2
+
 // NVCC prior to 11.2 does not understand __builtin_assume
 #if defined(_CCCL_CUDACC_BELOW_11_2)
 #  undef _CCCL_BUILTIN_ASSUME
@@ -115,6 +120,10 @@
 #if _CCCL_CHECK_BUILTIN(builtin_contant_p) || defined(_CCCL_COMPILER_GCC)
 #  define _CCCL_BUILTIN_CONSTANT_P(...) __builtin_constant_p(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_contant_p)
+
+#if _CCCL_CHECK_BUILTIN(builtin_expect) || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_GCC)
+#  define _CCCL_BUILTIN_EXPECT(...) __builtin_expect(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_expect)
 
 #if _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 90000) \
   || (defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION > 1924 && !defined(_CCCL_CUDACC_BELOW_11_3))

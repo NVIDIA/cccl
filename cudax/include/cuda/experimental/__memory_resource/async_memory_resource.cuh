@@ -164,8 +164,7 @@ public:
   //! properly synchronize all relevant streams before calling `deallocate`.
   void deallocate(void* __ptr, const size_t, const size_t __alignment = _CUDA_VMR::default_cuda_malloc_alignment)
   {
-    _LIBCUDACXX_ASSERT(__is_valid_alignment(__alignment),
-                       "Invalid alignment passed to async_memory_resource::deallocate.");
+    _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to async_memory_resource::deallocate.");
     _CCCL_ASSERT_CUDA_API(
       ::cudaFreeAsync, "async_memory_resource::deallocate failed", __ptr, __async_memory_resource_sync_stream().get());
     __async_memory_resource_sync_stream().wait();
@@ -221,8 +220,7 @@ public:
   void deallocate_async(void* __ptr, const size_t __bytes, const size_t __alignment, const ::cuda::stream_ref __stream)
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
-    _LIBCUDACXX_ASSERT(__is_valid_alignment(__alignment),
-                       "Invalid alignment passed to async_memory_resource::deallocate.");
+    _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to async_memory_resource::deallocate.");
     deallocate_async(__ptr, __bytes, __stream);
     (void) __alignment;
   }
