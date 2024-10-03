@@ -51,7 +51,7 @@ struct reduce_tuning_t
 };
 
 template <int N>
-inline reduce_tuning_t find_tuning(int cc, const reduce_tuning_t (&tunings)[N])
+static reduce_tuning_t find_tuning(int cc, const reduce_tuning_t (&tunings)[N])
 {
   for (const reduce_tuning_t& tuning : tunings)
   {
@@ -64,7 +64,7 @@ inline reduce_tuning_t find_tuning(int cc, const reduce_tuning_t (&tunings)[N])
   return tunings[N - 1];
 }
 
-inline runtime_tuning_policy get_policy(int cc, cccl_type_info accumulator_type, cccl_type_info input_type)
+static runtime_tuning_policy get_policy(int cc, cccl_type_info accumulator_type, cccl_type_info input_type)
 {
   reduce_tuning_t chain[] = {{60, 256, 16, 4}, {35, 256, 20, 4}};
 
@@ -77,14 +77,14 @@ inline runtime_tuning_policy get_policy(int cc, cccl_type_info accumulator_type,
   return {block_size, items_per_thread, vector_load_length};
 }
 
-inline cccl_type_info get_accumulator_type(cccl_op_t op, cccl_iterator_t input_it, cccl_value_t init)
+static cccl_type_info get_accumulator_type(cccl_op_t op, cccl_iterator_t input_it, cccl_value_t init)
 {
   // TODO Should be decltype(op(init, *input_it)) but haven't implemented type arithmetic yet
   //      so switching back to the old accumulator type logic for now
   return init.type;
 }
 
-inline cudaError_t InvokeSingleTile(
+static cudaError_t InvokeSingleTile(
   void* d_temp_storage,
   std::size_t& temp_storage_bytes,
   cccl_iterator_t d_in,
@@ -127,7 +127,7 @@ inline cudaError_t InvokeSingleTile(
   return error;
 }
 
-inline cudaError_t InvokePasses(
+static cudaError_t InvokePasses(
   void* d_temp_storage,
   std::size_t& temp_storage_bytes,
   cccl_iterator_t d_in,
@@ -235,7 +235,7 @@ inline cudaError_t InvokePasses(
   return error;
 }
 
-inline cudaError_t Invoke(
+static cudaError_t Invoke(
   void* d_temp_storage,
   std::size_t& temp_storage_bytes,
   cccl_iterator_t d_in,
