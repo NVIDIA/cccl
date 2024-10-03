@@ -12,6 +12,7 @@
 #define __CCCL_SYSTEM_HEADER_H
 
 #include <cuda/std/__cccl/compiler.h>
+#include <cuda/std/__cccl/is_non_narrowing_convertible.h> // IWYU pragma: export
 
 // Enforce that cccl headers are treated as system headers
 #if defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_NVHPC) || defined(_CCCL_COMPILER_ICC)

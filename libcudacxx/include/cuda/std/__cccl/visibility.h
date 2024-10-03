@@ -27,6 +27,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/attributes.h>
 #include <cuda/std/__cccl/execution_space.h>
 
 // For unknown reasons, nvc++ need to selectively disable this warning
@@ -52,22 +53,22 @@
 
 #if defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
 #  define _CCCL_TYPE_VISIBILITY_DEFAULT
-#elif __has_attribute(__type_visibility__)
+#elif _CCCL_HAS_ATTRIBUTE(__type_visibility__)
 #  define _CCCL_TYPE_VISIBILITY_DEFAULT __attribute__((__type_visibility__("default")))
-#else // ^^^ __has_attribute(__type_visibility__) ^^^ / vvv !__has_attribute(__type_visibility__) vvv
+#else // ^^^ _CCCL_HAS_ATTRIBUTE(__type_visibility__) ^^^ / vvv !_CCCL_HAS_ATTRIBUTE(__type_visibility__) vvv
 #  define _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_VISIBILITY_DEFAULT
 #endif // !_CCCL_COMPILER_NVRTC
 
 #if defined(_CCCL_COMPILER_MSVC)
-#  define _CCCL_ALWAYS_INLINE __forceinline
+#  define _CCCL_FORCEINLINE __forceinline
 #else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv _CCCL_COMPILER_MSVC vvv
-#  define _CCCL_ALWAYS_INLINE __attribute__((__always_inline__))
+#  define _CCCL_FORCEINLINE __inline__ __attribute__((__always_inline__))
 #endif // !_CCCL_COMPILER_MSVC
 
-#if __has_attribute(exclude_from_explicit_instantiation)
+#if _CCCL_HAS_ATTRIBUTE(exclude_from_explicit_instantiation)
 #  define _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION __attribute__((exclude_from_explicit_instantiation))
 #else // ^^^ exclude_from_explicit_instantiation ^^^ / vvv !exclude_from_explicit_instantiation vvv
-// NVCC complains mightily about being unable to inline functions if we use _CCCL_ALWAYS_INLINE here
+// NVCC complains mightily about being unable to inline functions if we use _CCCL_FORCEINLINE here
 #  define _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
 #endif // !exclude_from_explicit_instantiation
 

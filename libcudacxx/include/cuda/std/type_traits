@@ -49,6 +49,7 @@
 #include <cuda/std/__type_traits/disjunction.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/extent.h>
+#include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/has_unique_object_representation.h>
 #include <cuda/std/__type_traits/has_virtual_destructor.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -161,7 +162,6 @@
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/version>
 
 #endif // _CUDA_STD_TYPE_TRAITS

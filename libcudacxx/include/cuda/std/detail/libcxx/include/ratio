@@ -90,7 +90,6 @@ typedef ratio<1000000000000000000000000, 1> yotta;  // not supported
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/climits>
 #include <cuda/std/cstdint>
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/type_traits>
 
 _CCCL_PUSH_MACROS

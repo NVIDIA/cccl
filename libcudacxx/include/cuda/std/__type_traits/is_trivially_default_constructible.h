@@ -24,17 +24,17 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_CONSTRUCTIBLE_FALLBACK)
+#if defined(_CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_CONSTRUCTIBLE_FALLBACK)
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_default_constructible
-    : public integral_constant<bool, _LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp)>
+    : public integral_constant<bool, _CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_trivially_default_constructible_v =
-  _LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp);
+  _CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp);
 #  endif
 
 #else
@@ -49,7 +49,7 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_trivially_default_constructible_v =
   is_trivially_default_constructible<_Tp>::value;
 #  endif
 
-#endif // defined(_LIBCUDACXX_IS_TRIVIALLY_CONSTRUCTIBLE) &&
+#endif // defined(_CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE) &&
        // !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_CONSTRUCTIBLE_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD

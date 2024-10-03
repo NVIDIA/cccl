@@ -29,16 +29,16 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_BIT_CAST)
+#if defined(_CCCL_BUILTIN_BIT_CAST)
 #  define _LIBCUDACXX_CONSTEXPR_BIT_CAST constexpr
-#else // ^^^ _LIBCUDACXX_BIT_CAST ^^^ / vvv !_LIBCUDACXX_BIT_CAST vvv
+#else // ^^^ _CCCL_BUILTIN_BIT_CAST ^^^ / vvv !_CCCL_BUILTIN_BIT_CAST vvv
 #  define _LIBCUDACXX_CONSTEXPR_BIT_CAST
 #  if defined(_CCCL_COMPILER_GCC) && __GNUC__ >= 8
 // GCC starting with GCC8 warns about our extended floating point types having protected data members
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wclass-memaccess")
 #  endif // _CCCL_COMPILER_GCC >= 8
-#endif // !_LIBCUDACXX_BIT_CAST
+#endif // !_CCCL_BUILTIN_BIT_CAST
 
 template <
   class _To,
@@ -48,23 +48,23 @@ template <
   __enable_if_t<_CCCL_TRAIT(is_trivially_copyable, _From) || _CCCL_TRAIT(__is_extended_floating_point, _From), int> = 0>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST _To bit_cast(const _From& __from) noexcept
 {
-#if defined(_LIBCUDACXX_BIT_CAST)
-  return _LIBCUDACXX_BIT_CAST(_To, __from);
-#else // ^^^ _LIBCUDACXX_BIT_CAST ^^^ / vvv !_LIBCUDACXX_BIT_CAST vvv
+#if defined(_CCCL_BUILTIN_BIT_CAST)
+  return _CCCL_BUILTIN_BIT_CAST(_To, __from);
+#else // ^^^ _CCCL_BUILTIN_BIT_CAST ^^^ / vvv !_CCCL_BUILTIN_BIT_CAST vvv
   static_assert(_CCCL_TRAIT(is_trivially_default_constructible, _To),
                 "The compiler does not support __builtin_bit_cast, so bit_cast additionally requires the destination "
                 "type to be trivially constructible");
   _To __temp;
   _CUDA_VSTD::memcpy(&__temp, &__from, sizeof(_To));
   return __temp;
-#endif // !_LIBCUDACXX_BIT_CAST
+#endif // !_CCCL_BUILTIN_BIT_CAST
 }
 
-#if !defined(_LIBCUDACXX_BIT_CAST)
+#if !defined(_CCCL_BUILTIN_BIT_CAST)
 #  if defined(_CCCL_COMPILER_GCC) && __GNUC__ >= 8
 _CCCL_DIAG_POP
 #  endif // _CCCL_COMPILER_GCC >= 8
-#endif // !_LIBCUDACXX_BIT_CAST
+#endif // !_CCCL_BUILTIN_BIT_CAST
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

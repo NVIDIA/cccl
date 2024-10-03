@@ -62,7 +62,7 @@ int main(int, char**)
     assert(opt->test() == 3);
   }
   {
-#if defined(_LIBCUDACXX_ADDRESSOF)
+#if defined(_CCCL_BUILTIN_ADDRESSOF)
 #  if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
     static_assert(test() == 3, "");
 #  endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))

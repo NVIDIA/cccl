@@ -47,14 +47,14 @@ const AssertionDialogAvoider assertion_dialog_avoider{};
 // MSVC frontend only configurations
 #if !defined(__clang__)
 // Simulate feature-test macros.
-#  define __has_feature(X)                    _MSVC_HAS_FEATURE_##X
+#  define _CCCL_HAS_FEATURE(X)                _MSVC_HAS_FEATURE_##X
 #  define _MSVC_HAS_FEATURE_cxx_exceptions    1
 #  define _MSVC_HAS_FEATURE_cxx_rtti          1
 #  define _MSVC_HAS_FEATURE_address_sanitizer 0
 #  define _MSVC_HAS_FEATURE_memory_sanitizer  0
 #  define _MSVC_HAS_FEATURE_thread_sanitizer  0
 
-#  define __has_attribute(X)              _MSVC_HAS_ATTRIBUTE_##X
+#  define _CCCL_HAS_ATTRIBUTE(X)          _MSVC_HAS_ATTRIBUTE_##X
 #  define _MSVC_HAS_ATTRIBUTE_vector_size 0
 
 // Silence compiler warnings.

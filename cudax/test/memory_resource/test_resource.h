@@ -197,6 +197,8 @@ struct test_resource
     ++test_fixture_::counts_->delete_count;
     return ::operator delete(pv);
   }
+
+  friend constexpr void get_property(const test_resource&, cuda::mr::host_accessible) noexcept {}
 };
 
 using big_resource   = test_resource<uintptr_t>;
