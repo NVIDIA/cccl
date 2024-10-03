@@ -12,9 +12,8 @@
 # LABEL_PATH: A set of heirarchical labels delimited by periods. Each label will include all
 #   previous labels. For example, `LABEL_PATH thrust.cpp_cuda.cpp17.test` will add the labels
 #   `thrust`, `thrust.cpp_cuda`, `thrust.cpp_cuda.cpp17`, and `thrust.cpp_cuda.cpp17.test`.
-# LABEL_MARKER: The last label before the test name. Defaults to "test". See cccl_get_label_path
-#   for more information.
-# LABEL_NAME: If set, the test name will be directly used as the label.
+# LABEL_MARKER: See cccl_get_label_path docs for usage and examples.
+# LABEL_NAME: If set, the test name will be directly used as the label_path.
 function(cccl_add_ctest test_name)
   set(options LABEL_NAME)
   set(oneValueArgs LABEL_PATH LABEL_MARKER)
