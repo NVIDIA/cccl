@@ -51,12 +51,12 @@ endfunction()
 # will set`label_path` to `cub.cpp17.test.reduce`.
 #
 # If `lid_[0-9]` appears after the test name, it will be appended to the label path:
-# cccl_get_label_path_with_launcher_id(label_path cub.cpp17.test.reduce.foo.bar.lid_2.baz "test")
+# cccl_get_label_path(label_path cub.cpp17.test.reduce.foo.bar.lid_2.baz "test")
 # will set `label_path` to `cub.cpp17.test.reduce.lid_2`.
 #
 # If the target name starts with `thrust.<host>.<device>.cpp<dialect>....`, the host/device
 # strings will be combined to form a single "<host>_<device>" label:
-# cccl_get_label_path_with_launcher_id(label_path thrust.cpp.cuda.cpp17.test.reduce.foo.bar.lid_2.baz "test")
+# cccl_get_label_path(label_path thrust.cpp.cuda.cpp17.test.reduce.foo.bar.lid_2.baz "test")
 # will set `label_path` to `thrust.cpp_cuda.cpp17.test.reduce.lid_2`.
 function(cccl_get_label_path label_path_var test_name marker)
   # Combine thrust host/device to a single label, if present:
