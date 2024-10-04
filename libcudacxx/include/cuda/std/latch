@@ -25,10 +25,7 @@
 #  pragma system_header
 #endif // no system header
 
-_CCCL_PUSH_MACROS
-
-#include <cuda/std/detail/libcxx/include/latch>
-
-_CCCL_POP_MACROS
+#include <cuda/std/__latch/latch.h>
+#include <cuda/std/version>
 
 #endif // _CUDA_STD_LATCH
