@@ -18,6 +18,10 @@
 
 #include "test_macros.h"
 
+#if defined(TEST_COMPILER_MSVC)
+#  pragma warning(disable : 4324) // structure was padded due to alignment specifier
+#endif // TEST_COMPILER_MSVC
+
 template <typename T>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void check(T* p)
 {
