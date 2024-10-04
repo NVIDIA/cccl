@@ -91,7 +91,11 @@ _LIBCUDACXX_CONCEPT async_resource = _LIBCUDACXX_FRAGMENT(__async_resource_, _Re
 //! @tparam _Properties
 template <class _Resource, class... _Properties>
 _LIBCUDACXX_CONCEPT resource_with =
+#    if defined(_CCCL_COMPILER_NVHPC)
+  resource<_Resource> && _CUDA_VSTD::__fold_and<__has_property_impl<_Resource, _Properties>::value...>;
+#    else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
   resource<_Resource> && _CUDA_VSTD::__fold_and<has_property<_Resource, _Properties>...>;
+#    endif // !_CCCL_COMPILER_NVHPC
 
 //! @brief The \c async_resource_with concept verifies that a type Resource satisfies the `async_resource`
 //! concept and also satisfies all the provided Properties
@@ -99,7 +103,11 @@ _LIBCUDACXX_CONCEPT resource_with =
 //! @tparam _Properties
 template <class _Resource, class... _Properties>
 _LIBCUDACXX_CONCEPT async_resource_with =
+#    if defined(_CCCL_COMPILER_NVHPC)
+  async_resource<_Resource> && _CUDA_VSTD::__fold_and<__has_property_impl<_Resource, _Properties>::value...>;
+#    else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
   async_resource<_Resource> && _CUDA_VSTD::__fold_and<has_property<_Resource, _Properties>...>;
+#    endif // !_CCCL_COMPILER_NVHPC
 
 template <bool _Convertible>
 struct __different_resource__
