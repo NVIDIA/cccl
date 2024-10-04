@@ -12,6 +12,9 @@
 // template<size_t N, class T>
 // [[nodiscard]] constexpr T* assume_aligned(T* ptr);
 
+// UNSUPPORTED: nvrtc
+// nvrtc currently compiles the test with a warning
+
 #include <cuda/std/memory>
 
 __host__ __device__ void f()
