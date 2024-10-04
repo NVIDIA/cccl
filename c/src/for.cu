@@ -98,7 +98,7 @@ extern "C" CCCL_C_API CUresult cccl_device_for_build(
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
     constexpr int num_args = 7;
-    const char* args[] = {arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto", "-G"};
+    const char* args[]     = {arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto"};
 
     std::size_t log_size{};
     nvrtcResult compile_result = nvrtcCompileProgram(prog, num_args, args);
