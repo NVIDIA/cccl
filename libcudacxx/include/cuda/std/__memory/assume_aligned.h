@@ -33,19 +33,17 @@ template <size_t _Align, class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp* assume_aligned(_Tp* __ptr) noexcept
 {
   static_assert(_CUDA_VSTD::has_single_bit(_Align), "std::assume_aligned requires the alignment to be a power of 2!");
-  if (_CUDA_VSTD::__libcpp_is_constant_evaluated())
+  if (!_CUDA_VSTD::__libcpp_is_constant_evaluated())
   {
-    return __ptr;
-  }
-  else
-  {
+// old gcc cannot handle the cast to uintptr_t and MSVC checks within the builtin
+#if (!defined(_CCCL_COMPILER_GCC) || _CCCL_GCC_VERSION >= 90000) && !defined(_CCCL_COMPILER_MSVC)
     _CCCL_ASSERT(reinterpret_cast<uintptr_t>(__ptr) % _Align == 0, "Alignment assumption is violated");
+#endif // gcc >= 9
 #if defined(_CCCL_BUILTIN_ASSUME_ALIGNED)
     return static_cast<_Tp*>(__builtin_assume_aligned(__ptr, _Align));
-#else // ^^^ _CCCL_BUILTIN_ASSUME_ALIGNED ^^^ / vvv !_CCCL_BUILTIN_ASSUME_ALIGNED vvv
-    return __ptr;
-#endif // !_CCCL_BUILTIN_ASSUME_ALIGNED
+#endif // _CCCL_BUILTIN_ASSUME_ALIGNED
   }
+  return __ptr;
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
