@@ -12,18 +12,17 @@
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/util_device.cuh>
 
-#include <cuda/std/cstdint>
-#include <cuda/std/functional>
-
 #include <format>
+#include <iostream>
 #include <type_traits>
 
-#include "util/errors.h"
 #include <cccl/c/for.h>
 #include <cccl/c/types.h>
 #include <for/for_op_helper.h>
 #include <nvJitLink.h>
 #include <nvrtc.h>
+#include <util/errors.h>
+#include <util/types.h>
 
 struct op_wrapper;
 struct device_reduce_policy;
@@ -31,22 +30,7 @@ struct device_reduce_policy;
 using OffsetT = unsigned long long;
 static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "OffsetT must be size_t");
 
-struct runtime_tuning_policy
-{
-  int block_size;
-  int items_per_thread;
-  int vector_load_length;
-};
-
-struct reduce_tuning_t
-{
-  int cc;
-  int block_size;
-  int items_per_thread;
-  int vector_load_length;
-};
-
-inline cudaError_t
+static cudaError_t
 Invoke(cccl_iterator_t d_in, size_t num_items, cccl_op_t op, int cc, CUfunction static_kernel, CUstream stream)
 {
   cudaError error = cudaSuccess;
@@ -56,7 +40,7 @@ Invoke(cccl_iterator_t d_in, size_t num_items, cccl_op_t op, int cc, CUfunction 
     return error;
   }
 
-  auto for_kernel_state = package_for_kernel_state(op, d_in);
+  auto for_kernel_state = make_for_kernel_state(op, d_in);
 
   void* args[] = {&num_items, for_kernel_state.get()};
 
@@ -70,56 +54,16 @@ Invoke(cccl_iterator_t d_in, size_t num_items, cccl_op_t op, int cc, CUfunction 
   return error;
 }
 
-inline std::string get_device_for_kernel_name(std::string diff_type)
+struct for_each_wrapper;
+
+static std::string get_device_for_kernel_name()
 {
-  return std::format("cub::detail::for_each::static_kernel<device_for_policy, {0}, op_iter_wrapper>", diff_type);
-}
+  std::string offset_t;
+  std::string function_op_t;
+  check(nvrtcGetTypeName<for_each_wrapper>(&function_op_t));
+  check(nvrtcGetTypeName<OffsetT>(&offset_t));
 
-inline std::string
-format_device_for_kernel(cccl_op_t op, cccl_iterator_t d_data, std::string diff_type, std::string for_kernel)
-{
-  // TODO: Maybe break out the iter wrapper
-  return std::format(
-    R"XXX(
-#include <cuda/std/iterator>
-#include <cub/agent/agent_for.cuh>
-#include <cub/device/dispatch/kernels/for_each.cuh>
-
-struct op_iter_wrapper
-{{
-  __device__ void operator()(difference_type idx)
-  {{
-#if {5} // enable stateful op dispatch
-    {4}(&state, data + (idx*size));
-#else
-    {4}(data + (idx*size));
-#endif
-  }}
-}};
-
-using policy_dim_t = cub::detail::for_each::policy_t<256, 2>;
-
-struct device_for_policy
-{{
-  struct ActivePolicy
-  {{
-    using for_policy_t = policy_dim_t;
-  }};
-}};
-
-// Instantiate device kernel
-template
-__global__ void {1}({2} num_items, op_iter_wrapper op);
-)XXX",
-    "uint8_t", // 0 - value type
-    for_kernel, // 1 - Kernel name
-    diff_type, // 2 - difference type
-    d_data.value_type.size, // 3 - value_type size
-    op.name, // 4 - Operator name
-    op.type == cccl_op_kind_t::stateful ? 1 : 0, // 5 - Enable use of state
-    op.size, // 6 - Operator state size
-    op.alignment // 7 - Operator alignment
-  );
+  return std::format("cub::detail::for_each::static_kernel<device_for_policy, {0}, {1}>", offset_t, function_op_t);
 }
 
 extern "C" CCCL_C_API CUresult cccl_device_for_build(
@@ -144,8 +88,8 @@ extern "C" CCCL_C_API CUresult cccl_device_for_build(
     const std::string d_data_value_t = cccl_type_enum_to_string(d_data.value_type.type);
     const std::string offset_t       = cccl_type_enum_to_string(cccl_type_enum::UINT64);
 
-    const std::string for_kernel_name   = get_device_for_kernel_name("size_t");
-    const std::string device_for_kernel = format_device_for_kernel(op, d_data, "size_t", for_kernel_name);
+    const std::string for_kernel_name   = get_device_for_kernel_name();
+    const std::string device_for_kernel = get_for_kernel(op, d_data);
 
     check(nvrtcCreateProgram(&prog, device_for_kernel.c_str(), name, 0, nullptr, nullptr));
 
@@ -160,7 +104,6 @@ extern "C" CCCL_C_API CUresult cccl_device_for_build(
     nvrtcResult compile_result = nvrtcCompileProgram(prog, num_args, args);
 
     check(nvrtcGetProgramLogSize(prog, &log_size));
-
     std::unique_ptr<char[]> log{new char[log_size]};
     check(nvrtcGetProgramLog(prog, log.get()));
 
@@ -186,12 +129,29 @@ extern "C" CCCL_C_API CUresult cccl_device_for_build(
 
     nvJitLinkHandle handle;
     const char* lopts[] = {"-lto", arch.c_str()};
-    check(nvJitLinkCreate(&handle, 2, lopts));
 
+    check(nvJitLinkCreate(&handle, 2, lopts));
     check(nvJitLinkAddData(handle, NVJITLINK_INPUT_LTOIR, ltoir.get(), ltoir_size, name));
     check(nvJitLinkAddData(handle, NVJITLINK_INPUT_LTOIR, op.ltoir, op.ltoir_size, name));
+    if (cccl_iterator_kind_t::iterator == d_data.type)
+    {
+      check(nvJitLinkAddData(handle, NVJITLINK_INPUT_LTOIR, d_data.advance.ltoir, d_data.advance.ltoir_size, name));
+      check(
+        nvJitLinkAddData(handle, NVJITLINK_INPUT_LTOIR, d_data.dereference.ltoir, d_data.dereference.ltoir_size, name));
+    }
 
-    check(nvJitLinkComplete(handle));
+    auto jitlink_error = nvJitLinkComplete(handle);
+
+    check(nvJitLinkGetErrorLogSize(handle, &log_size));
+    std::unique_ptr<char[]> jitlinklog{new char[log_size]};
+    check(nvJitLinkGetErrorLog(handle, jitlinklog.get()));
+
+    if (log_size > 1)
+    {
+      std::cerr << jitlinklog.get() << std::endl;
+    }
+
+    check(jitlink_error);
 
     std::size_t cubin_size{};
     check(nvJitLinkGetLinkedCubinSize(handle, &cubin_size));
@@ -221,26 +181,15 @@ extern "C" CCCL_C_API CUresult cccl_device_for(
   cccl_op_t op,
   CUstream stream) noexcept
 {
-  bool pushed    = false;
   CUresult error = CUDA_SUCCESS;
+
   try
   {
-    pushed = try_push_context();
-
-    CUdevice cu_device;
-    check(cuCtxGetDevice(&cu_device));
-
     Invoke(d_data, num_items, op, build.cc, (CUfunction) build.static_kernel, stream);
   }
   catch (...)
   {
     error = CUDA_ERROR_UNKNOWN;
-  }
-
-  if (pushed)
-  {
-    CUcontext dummy;
-    cuCtxPopCurrent(&dummy);
   }
 
   return error;
