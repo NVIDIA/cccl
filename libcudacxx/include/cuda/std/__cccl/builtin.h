@@ -87,8 +87,7 @@
 #endif // _CCCL_HAS_BUILTIN(__array_extent)
 
 #if _CCCL_HAS_BUILTIN(__builtin_assume_aligned) || (defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION >= 1923) \
-  || defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_NVHPC) || defined(_CCCL_COMPILER_CLANG)              \
-  || defined(_CCCL_CUDA_COMPILER_NVCC)
+  || defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_NVHPC) || defined(_CCCL_COMPILER_CLANG)
 #  define _CCCL_BUILTIN_ASSUME_ALIGNED(...) __builtin_assume_aligned(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__builtin_assume_aligned)
 
@@ -138,7 +137,7 @@
 
 #if _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 90000) \
   || (defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION > 1924 && !defined(_CCCL_CUDACC_BELOW_11_3))                 \
-  || defined(_CCCL_COMPILER_CLANG) || defined(_CCCL_CUDA_COMPILER_NVCC) || defined(_CCCL_COMPILER_NVHPC)
+  || defined(_CCCL_COMPILER_CLANG) || defined(_CCCL_COMPILER_NVHPC)
 #  define _CCCL_BUILTIN_IS_CONSTANT_EVALUATED(...) __builtin_is_constant_evaluated(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated)
 
