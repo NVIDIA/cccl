@@ -1,17 +1,15 @@
 .. _libcudacxx-standard-api-utility-memory:
 
 <cuda/std/memory>
-======================
+===================
 
 Provided functionalities
 ------------------------
 
-- ``cuda::std::addressof``. See the C++ documentation of `std::assume_aligned()<https://en.cppreference.com/w/cpp/memory/addressof>`_
-- ``cuda::std::align``. See the C++ documentation of `std::assume_aligned()<https://en.cppreference.com/w/cpp/memory/align>`_
-- ``cuda::std::assume_aligned``. See the C++ documentation of `std::assume_aligned()<https://en.cppreference.com/w/cpp/memory/assume_aligned>`_
-- ``cuda::std::destroy_n``. See the C++ documentation of `std::assume_aligned()<https://en.cppreference.com/w/cpp/memory/destroy_n>`_
-- ``cuda::std::destroy``. See the C++ documentation of `std::assume_aligned()<https://en.cppreference.com/w/cpp/memory/destroy>`_
-- Uninitialized memory algorithms. See the C++ documentation of `std::assume_aligned()<https://en.cppreference.com/w/cpp/memory>`_
+- ``cuda::std::addressof``. See the C++ documentation of `std::addressof <https://en.cppreference.com/w/cpp/memory/addressof>`_
+- ``cuda::std::align``. See the C++ documentation of `std::align <https://en.cppreference.com/w/cpp/memory/align>`_
+- ``cuda::std::assume_aligned``. See the C++ documentation of `std::assume_aligned <https://en.cppreference.com/w/cpp/memory/assume_aligned>`_
+- Uninitialized memory algorithms. See the C++ documentation `<https://en.cppreference.com/w/cpp/memory>`_
 
 Extensions
 ----------
