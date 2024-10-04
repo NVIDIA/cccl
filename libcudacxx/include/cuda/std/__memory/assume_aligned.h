@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ASSUME_ALIGNED_H
-#define _LIBCUDACXX___ASSUME_ALIGNED_H
+#ifndef _LIBCUDACXX___MEMORY_ASSUME_ALIGNED_H
+#define _LIBCUDACXX___MEMORY_ASSUME_ALIGNED_H
 
 #include <cuda/std/detail/__config>
 
@@ -60,4 +60,4 @@ assume_aligned(_Tp* __ptr) noexcept
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _LIBCUDACXX___ASSUME_ALIGNED_H
+#endif // _LIBCUDACXX___MEMORY_ASSUME_ALIGNED_H
