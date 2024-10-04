@@ -28,4 +28,7 @@
 #include <cuda/std/__latch/latch.h>
 #include <cuda/std/version>
 
+// TODO: drop transitive cuda only include
+#include <cuda/__latch/latch.h>
+
 #endif // _CUDA_STD_LATCH

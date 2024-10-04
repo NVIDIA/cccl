@@ -93,8 +93,6 @@ using latch = __latch_base<>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cuda/latch.h>
-
 _CCCL_POP_MACROS
 
 #endif //_LIBCUDACXX___LATCH_LATCH_H
