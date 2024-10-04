@@ -111,7 +111,7 @@ class __atomic_semaphore_base
 
   _LIBCUDACXX_HIDE_FROM_ABI bool __acquire_slow_timed(chrono::nanoseconds const& __rel_time)
   {
-    return __libcpp_thread_poll_with_backoff(
+    return _CUDA_VSTD::__libcpp_thread_poll_with_backoff(
       [this]() {
         ptrdiff_t const __old = __count.load(memory_order_acquire);
         return __old != 0 && __fetch_sub_if_slow(__old);
@@ -195,7 +195,7 @@ class __atomic_semaphore_base<_Sco, 1>
 {
   _LIBCUDACXX_HIDE_FROM_ABI bool __acquire_slow_timed(chrono::nanoseconds const& __rel_time)
   {
-    return __libcpp_thread_poll_with_backoff(
+    return _CUDA_VSTD::__libcpp_thread_poll_with_backoff(
       [this]() {
         return try_acquire();
       },
@@ -298,7 +298,7 @@ __try_acquire_fast()
 #  ifndef _LIBCUDACXX_HAS_NO_SEMAPHORE_FRONT_BUFFER
 
   ptrdiff_t __old;
-  __libcpp_thread_poll_with_backoff(
+  _CUDA_VSTD::__libcpp_thread_poll_with_backoff(
     [&]() {
       __old = __frontbuffer.load(memory_order_relaxed);
       return 0 != (__old >> 32);
