@@ -45,27 +45,27 @@ function(cccl_add_ctest test_name)
   set_property(TEST ${test_name} PROPERTY LABELS "${labels}")
 endfunction()
 
-# Extract a label path from a target name. `marker` is the last label before the test name.
+# Extract a label path from a target name. `marker` is the last label used.
 #
 # cccl_get_label_path(label_path cub.cpp17.test.reduce.foo.bar.baz "test")
-# will set`label_path` to `cub.cpp17.test.reduce`.
+# will set`label_path` to `cub.cpp17.test`.
 #
 # If `lid_[0-9]` appears after the test name, it will be appended to the label path:
 # cccl_get_label_path(label_path cub.cpp17.test.reduce.foo.bar.lid_2.baz "test")
-# will set `label_path` to `cub.cpp17.test.reduce.lid_2`.
+# will set `label_path` to `cub.cpp17.test.lid_2`.
 #
 # If the target name starts with `thrust.<host>.<device>.cpp<dialect>....`, the host/device
 # strings will be combined to form a single "<host>_<device>" label:
 # cccl_get_label_path(label_path thrust.cpp.cuda.cpp17.test.reduce.foo.bar.lid_2.baz "test")
-# will set `label_path` to `thrust.cpp_cuda.cpp17.test.reduce.lid_2`.
+# will set `label_path` to `thrust.cpp_cuda.cpp17.test.lid_2`.
 function(cccl_get_label_path label_path_var test_name marker)
   # Combine thrust host/device to a single label, if present:
-  if (test_name MATCHES "^thrust\.[^\.]+\.[^\.]+\.cpp.+$")
-    string(REGEX REPLACE "^(thrust\.[^\.]+)\.(.+)$" "\\1_\\2" test_name ${test_name})
+  if (test_name MATCHES "^thrust\\.[^.]+\\.[^.]+\\.cpp.+$")
+    string(REGEX REPLACE "^(thrust\\.[^.]+)\\.(.+)$" "\\1_\\2" test_name ${test_name})
   endif()
 
   # Truncate the label path to only include a single label after 'test.':
-  string(REGEX MATCH ".+\.${marker}\.[^.]+" label_path ${test_name})
+  string(REGEX MATCH ".+\\.${marker}" label_path ${test_name})
 
   # Append any `lid_X` options:
   string(REGEX MATCH "lid_[0-9]+" launcher_id_str ${test_name})
