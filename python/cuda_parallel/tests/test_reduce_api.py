@@ -13,19 +13,19 @@ import cuda.parallel.experimental as cudax
 
 def test_device_reduce():
     # example-begin reduce-min
-    def op(a, b):
+    def min_op(a, b):
         return a if a < b else b
 
     dtype = numpy.int32
     h_init = numpy.array([42], dtype)
-    h_input = numpy.array([8, 6, 7, 5, 3, 0, 9])
+    h_input = numpy.array([8, 6, 7, 5, 3, 0, 9], dtype)
     d_output = cuda.device_array(1, dtype)
     d_input = cuda.to_device(h_input)
 
     # Instantiate reduction for the given operator and initial value
-    reduce_into = cudax.reduce_into(d_output, d_output, op, h_init)
+    reduce_into = cudax.reduce_into(d_output, d_output, min_op, h_init)
 
-    # Deterrmine temporary device storage requirements
+    # Determine temporary device storage requirements
     temp_storage_size = reduce_into(None, d_input, d_output, h_init)
 
     # Allocate temporary storage
