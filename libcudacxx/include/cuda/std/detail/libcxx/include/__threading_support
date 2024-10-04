@@ -35,18 +35,16 @@ _CCCL_PUSH_MACROS
 #    include <semaphore.h>
 #    if defined(__APPLE__)
 #      include <dispatch/dispatch.h>
-#    endif
+#    endif // __APPLE__
 #    if defined(__linux__)
 #      include <linux/futex.h>
 #      include <sys/syscall.h>
 #      include <unistd.h>
-#    endif
-#  endif
-
-#  if defined(_LIBCUDACXX_HAS_THREAD_API_WIN32)
+#    endif // __linux__
+#  elif defined(_LIBCUDACXX_HAS_THREAD_API_WIN32)
 #    include <process.h>
 #    include <windows.h>
-#  endif
+#  endif // _LIBCUDACXX_HAS_THREAD_API_WIN32
 
 typedef ::timespec __libcpp_timespec_t;
 #endif // !defined(_LIBCUDACXX_HAS_NO_THREADS)
@@ -57,14 +55,15 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #  define _LIBCUDACXX_POLLING_COUNT 16
 
-_LIBCUDACXX_HIDE_FROM_ABI void __libcpp_thread_yield_processor(){
 #  if defined(__aarch64__)
 #    define __LIBCUDACXX_ASM_THREAD_YIELD (asm volatile("yield" :::);)
 #  elif defined(__x86_64__)
 #    define __LIBCUDACXX_ASM_THREAD_YIELD (asm volatile("pause" :::);)
-#  else
+#  else // ^^^ __x86_64__ ^^^ / vvv !__x86_64__ vvv
 #    define __LIBCUDACXX_ASM_THREAD_YIELD (;)
-#  endif
+#  endif // !__x86_64__
+
+_LIBCUDACXX_HIDE_FROM_ABI void __libcpp_thread_yield_processor(){
   NV_IF_TARGET(NV_IS_HOST, __LIBCUDACXX_ASM_THREAD_YIELD)}
 
 _LIBCUDACXX_HIDE_FROM_ABI void __libcpp_thread_yield();
