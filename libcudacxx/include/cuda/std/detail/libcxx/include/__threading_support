@@ -587,24 +587,6 @@ _LIBCUDACXX_HIDE_FROM_ABI bool __libcpp_thread_poll_with_backoff(_Fn&& __f, chro
   }
 }
 
-#  ifndef _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
-
-struct alignas(64) __libcpp_contention_t
-{
-#    if defined(_LIBCUDACXX_HAS_PLATFORM_WAIT)
-  ptrdiff_t __waiters                = 0;
-  __libcpp_platform_wait_t __version = 0;
-#    else
-  ptrdiff_t __credit           = 0;
-  __libcpp_mutex_t __mutex     = _LIBCUDACXX_MUTEX_INITIALIZER;
-  __libcpp_condvar_t __condvar = _LIBCUDACXX_CONDVAR_INITIALIZER;
-#    endif
-};
-
-_LIBCUDACXX_HIDE_FROM_ABI __libcpp_contention_t* __libcpp_contention_state(void const volatile* p) noexcept;
-
-#  endif // _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
-
 #endif // !_LIBCUDACXX_HAS_NO_THREADS
 
 _LIBCUDACXX_END_NAMESPACE_STD
