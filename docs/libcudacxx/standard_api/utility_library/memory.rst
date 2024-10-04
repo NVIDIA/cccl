@@ -17,10 +17,11 @@ Extensions
 ----------
 
 -  Most features are available from C++11 onwards.
--  All features are available at compile time if compiler support is sufficient.
+-  ``cuda::std::addressof`` is constexpr from C++11 on if compiler support is available
+-  ``cuda::std::assume_aligned`` is constexpr from C++14 on
 
 Restrictions
 ------------
 
-- The features that are explicitly named in the standard `construct_at` and `destroy_at` are only available in C++20
+- `construct_at` and is only available in C++20 as that is explicitly mentioned in the standard
 - The specialized memory algorithms are not parallel

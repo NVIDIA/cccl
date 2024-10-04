@@ -19,40 +19,40 @@
 #include "test_macros.h"
 
 template <typename T>
-__host__ __device__ constexpr void check(T* p)
+__host__ __device__ TEST_CONSTEXPR_CXX14 void check(T* p)
 {
   ASSERT_SAME_TYPE(T*, decltype(cuda::std::assume_aligned<1>(p)));
   constexpr cuda::std::size_t alignment = alignof(T);
 
-  if constexpr (alignment >= 1)
+  _CCCL_IF_CONSTEXPR (alignment >= 1)
   {
     assert(p == cuda::std::assume_aligned<1>(p));
   }
-  if constexpr (alignment >= 2)
+  _CCCL_IF_CONSTEXPR (alignment >= 2)
   {
     assert(p == cuda::std::assume_aligned<2>(p));
   }
-  if constexpr (alignment >= 4)
+  _CCCL_IF_CONSTEXPR (alignment >= 4)
   {
     assert(p == cuda::std::assume_aligned<4>(p));
   }
-  if constexpr (alignment >= 8)
+  _CCCL_IF_CONSTEXPR (alignment >= 8)
   {
     assert(p == cuda::std::assume_aligned<8>(p));
   }
-  if constexpr (alignment >= 16)
+  _CCCL_IF_CONSTEXPR (alignment >= 16)
   {
     assert(p == cuda::std::assume_aligned<16>(p));
   }
-  if constexpr (alignment >= 32)
+  _CCCL_IF_CONSTEXPR (alignment >= 32)
   {
     assert(p == cuda::std::assume_aligned<32>(p));
   }
-  if constexpr (alignment >= 64)
+  _CCCL_IF_CONSTEXPR (alignment >= 64)
   {
     assert(p == cuda::std::assume_aligned<64>(p));
   }
-  if constexpr (alignment >= 128)
+  _CCCL_IF_CONSTEXPR (alignment >= 128)
   {
     assert(p == cuda::std::assume_aligned<128>(p));
   }
@@ -73,7 +73,7 @@ struct alignas(64) S64
 struct alignas(128) S128
 {};
 
-__host__ __device__ constexpr bool tests()
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
 {
   char c{};
   int i{};
@@ -105,7 +105,9 @@ __host__ __device__ constexpr bool tests()
 int main(int, char**)
 {
   tests();
+#if TEST_STD_VER >= 2014
   static_assert(tests());
+#endif // TEST_STD_VER >= 2014
 
   return 0;
 }
