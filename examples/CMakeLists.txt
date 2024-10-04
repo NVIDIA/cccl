@@ -32,6 +32,8 @@ set(cmake_cpm_opts
   -D "CCCL_TAG=${CCCL_EXAMPLE_CPM_TAG}"
 )
 
+message(STATUS "Example options:\n${cmake_opts}\n${cmake_cpm_opts}")
+
 cccl_add_compile_test(test_name
   cccl.example
   basic

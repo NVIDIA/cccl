@@ -8,6 +8,10 @@ workflows:
   #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'llvm16']}
   #
   override:
+    - {jobs: ['infra'], project: 'cccl', ctk: '11.1', cxx: ['gcc6',  'clang9']}
+    - {jobs: ['infra'], project: 'cccl', ctk: '12.0', cxx: ['gcc12', 'clang14']}
+    - {jobs: ['infra'], project: 'cccl', ctk: 'curr', cxx: ['gcc',   'clang']}
+    - {jobs: ['test'], project: 'pycuda', ctk: ['12.5']}
 
   pull_request:
     # Old CTK
