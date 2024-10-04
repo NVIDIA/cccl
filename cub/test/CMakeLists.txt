@@ -278,12 +278,16 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
       target_link_libraries(${test_target} nvtx3-cpp)
     endif()
 
-
     _cub_is_fail_test(is_fail_test "${test_src}")
     if (is_fail_test)
       set_target_properties(${test_target} PROPERTIES EXCLUDE_FROM_ALL true
                                            EXCLUDE_FROM_DEFAULT_BUILD true)
+
+      # The name of the test without the config_prefix or .err_X suffix:
+      string(REGEX REPLACE ".+\\.([^.]+)\\.err_[0-9]+" "\\1" base_name ${test_target})
+
       cccl_add_ctest(${test_target}
+        LABEL_MARKER ${base_name}
         COMMAND ${CMAKE_COMMAND} --build "${CMAKE_BINARY_DIR}"
                                  --target ${test_target}
                                  --config $<CONFIGURATION>)
