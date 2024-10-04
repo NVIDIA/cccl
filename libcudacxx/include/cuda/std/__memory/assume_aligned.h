@@ -40,18 +40,18 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_HOST_DEVICE _CCCL_FORCEINLINE co
 assume_aligned(_Tp* __ptr) noexcept
 {
   static_assert(_CUDA_VSTD::has_single_bit(_Align));
-  if (_CUDA_VSTD::is_constant_evaluated())
+  if (_CUDA_VSTD::__libcpp_is_constant_evaluated())
   {
     return __ptr;
   }
   else
   {
     _CCCL_ASSERT(reinterpret_cast<_CUDA_VSTD::uintptr_t>(__ptr) % _Align == 0, "Alignment assumption is violated");
-#if defined(_CCCL_BUILTIN_ASSUME_ALIGNED) || (_CCCL_MSVC_VERSION >= 1923 && __has_include(<memory>))
+#if defined(_CCCL_BUILTIN_ASSUME_ALIGNED)
     return static_cast<_Tp*>(__builtin_assume_aligned(__ptr, _Align));
-#else
+#else // ^^^ _CCCL_BUILTIN_ASSUME_ALIGNED ^^^ / vvv !_CCCL_BUILTIN_ASSUME_ALIGNED vvv
     return __ptr;
-#endif
+#endif // !_CCCL_BUILTIN_ASSUME_ALIGNED
   }
 }
 
