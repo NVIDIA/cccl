@@ -12,9 +12,9 @@
 // template<size_t N, class T>
 // [[nodiscard]] constexpr T* assume_aligned(T* ptr);
 
-#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/cstddef>
+#include <cuda/std/memory>
 
 #include "test_macros.h"
 

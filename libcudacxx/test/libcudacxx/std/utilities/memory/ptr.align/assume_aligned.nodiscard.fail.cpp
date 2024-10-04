@@ -12,7 +12,7 @@
 // template<size_t N, class T>
 // [[nodiscard]] constexpr T* assume_aligned(T* ptr);
 
-#include <cuda/std/__memory_>
+#include <cuda/std/memory>
 
 __host__ __device__ void f()
 {
