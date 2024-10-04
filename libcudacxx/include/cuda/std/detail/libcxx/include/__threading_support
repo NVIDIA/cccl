@@ -499,35 +499,6 @@ _LIBCUDACXX_HIDE_FROM_ABI void __libcpp_thread_sleep_for(chrono::nanoseconds __n
     ;
 }
 
-#      if defined(__linux__) && !defined(_LIBCUDACXX_HAS_NO_PLATFORM_WAIT)
-
-#        define _LIBCUDACXX_HAS_PLATFORM_WAIT
-
-typedef int __libcpp_platform_wait_t;
-
-template <typename _Tp>
-struct __libcpp_platform_wait_uses_type
-{
-  enum
-  {
-    __value = is_same<__remove_cv_t<_Tp>, __libcpp_platform_wait_t>::value
-  };
-};
-
-template <class _Tp, typename enable_if<__libcpp_platform_wait_uses_type<_Tp>::__value, int>::type = 1>
-void __libcpp_platform_wait(_Tp const* ptr, _Tp val, void const* timeout)
-{
-  syscall(SYS_futex, ptr, FUTEX_WAIT_PRIVATE, val, timeout, 0, 0);
-}
-
-template <class _Tp, typename enable_if<__libcpp_platform_wait_uses_type<_Tp>::__value, int>::type = 1>
-void __libcpp_platform_wake(_Tp const* ptr, bool all)
-{
-  syscall(SYS_futex, ptr, FUTEX_WAKE_PRIVATE, all ? INT_MAX : 1, 0, 0, 0);
-}
-
-#      endif // defined(__linux__) && !defined(_LIBCUDACXX_HAS_NO_PLATFORM_WAIT)
-
 #    elif defined(_LIBCUDACXX_HAS_THREAD_API_WIN32)
 
 void __libcpp_thread_yield()
