@@ -84,13 +84,13 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool tests()
   check(&l);
   check(&d);
 
-  S s;
-  S4 s4;
-  S8 s8;
-  S16 s16;
-  S32 s32;
-  S64 s64;
-  S128 s128;
+  S s{};
+  S4 s4{};
+  S8 s8{};
+  S16 s16{};
+  S32 s32{};
+  S64 s64{};
+  S128 s128{};
   check(&s);
   check(&s4);
   check(&s8);
