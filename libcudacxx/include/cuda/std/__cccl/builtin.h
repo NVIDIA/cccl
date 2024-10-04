@@ -91,6 +91,11 @@
 #  define _CCCL_BUILTIN_ASSUME_ALIGNED(...) __builtin_assume_aligned(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__builtin_assume_aligned)
 
+// NVCC below 11.2 treats this as a host only function
+#if defined(_CCCL_CUDACC_BELOW_11_2)
+#  undef _CCCL_BUILTIN_ASSUME_ALIGNED
+#endif // _CCCL_CUDACC_BELOW_11_2
+
 // nvhpc has a bug where it supports __builtin_addressof but does not mark it via _CCCL_CHECK_BUILTIN
 #if _CCCL_CHECK_BUILTIN(builtin_addressof) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 70000) \
   || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVHPC)
