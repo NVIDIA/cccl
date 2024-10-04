@@ -84,7 +84,12 @@
 
 #if _CCCL_HAS_BUILTIN(__array_extent)
 #  define _CCCL_BUILTIN_ARRAY_EXTENT(...) __array_extent(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(array_extent)
+#endif // _CCCL_HAS_BUILTIN(__array_extent)
+
+#if _CCCL_HAS_BUILTIN(__builtin_assume_aligned) || (defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION >= 1923) \
+  || defined(_CCCL_COMPILER_GCC)
+#  define _CCCL_BUILTIN_ASSUME_ALIGNED(...) __builtin_assume_aligned(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__builtin_assume_aligned)
 
 // nvhpc has a bug where it supports __builtin_addressof but does not mark it via _CCCL_CHECK_BUILTIN
 #if _CCCL_CHECK_BUILTIN(builtin_addressof) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 70000) \

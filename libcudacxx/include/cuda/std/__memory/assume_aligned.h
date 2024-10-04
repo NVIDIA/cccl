@@ -47,10 +47,7 @@ assume_aligned(_Tp* __ptr) noexcept
   else
   {
     _CCCL_ASSERT(reinterpret_cast<_CUDA_VSTD::uintptr_t>(__ptr) % _Align == 0, "Alignment assumption is violated");
-#if defined(_CCCL_COMPILER_ICC)
-    __assume_aligned(x, _Align);
-    return __ptr;
-#elif !defined(_CCCL_COMPILER_MSVC) || (_CCCL_MSVC_VERSION >= 1923 && __has_include(<memory>))
+#if defined(_CCCL_BUILTIN_ASSUME_ALIGNED) || (_CCCL_MSVC_VERSION >= 1923 && __has_include(<memory>))
     return static_cast<_Tp*>(__builtin_assume_aligned(__ptr, _Align));
 #else
     return __ptr;
