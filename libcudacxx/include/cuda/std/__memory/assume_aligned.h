@@ -30,7 +30,8 @@
 #include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/__cccl/assert.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
-#include <cuda/std/cstddef>
+#include <cuda/std/cstddef> // size_t
+#include <cuda/std/cstdint> // uintptr_t
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
