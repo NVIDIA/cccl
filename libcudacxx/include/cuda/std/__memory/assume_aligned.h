@@ -22,11 +22,6 @@
 #  pragma system_header
 #endif // no system header
 
-// MSVC provides __builtin_assume_aligned only for version >= 1923 and needs <memory> header
-#if defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION >= 1923 && __has_include(<memory>)
-#  include <memory>
-#endif
-
 #include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/__cccl/assert.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
