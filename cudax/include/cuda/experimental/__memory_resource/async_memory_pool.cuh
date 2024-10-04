@@ -228,6 +228,58 @@ public:
     _CCCL_ASSERT_CUDA_API(::cudaMemPoolDestroy, "~async_memory_pool() failed to destroy pool", __pool_handle_);
   }
 
+  //! @brief Tries to release memory.
+  //! @param __min_bytes_to_keep the minimal guaranteed size of the pool.
+  //! @note If the pool has less than \p __minBytesToKeep reserved, the trim_to operation is a no-op. Otherwise the pool
+  //! will be guaranteed to have at least \p __minBytesToKeep bytes reserved after the operation.
+  void trim_to(const size_t __min_bytes_to_keep)
+  {
+    _CCCL_TRY_CUDA_API(::cudaMemPoolTrimTo,
+                       "Failed to call cudaMemPoolTrimTo in async_memory_pool::trim_to",
+                       __pool_handle_,
+                       __min_bytes_to_keep);
+  }
+
+  //! @brief Gets the value of an attribute of the pool.
+  //! @param __attribute the attribute to be set.
+  //! @return The value of the attribute. For boolean attributes any value not equal to 0 equates to true.
+  size_t get_attribute(::cudaMemPoolAttr __attr) const
+  {
+    size_t __value = 0;
+    _CCCL_TRY_CUDA_API(
+      ::cudaMemPoolGetAttribute,
+      "Failed to call cudaMemPoolSetAttribute in async_memory_pool::get_attribute",
+      __pool_handle_,
+      __attr,
+      static_cast<void*>(&__value));
+    return __value;
+  }
+
+  //! @brief Sets an attribute of the pool to a given value.
+  //! @param __attribute the attribute to be set.
+  //! @param __value the new value of that attribute.
+  //! @note For boolean attributes any non-zero value equates to true.
+  void set_attribute(::cudaMemPoolAttr __attr, size_t __value)
+  {
+    if (__attr == ::cudaMemPoolAttrReservedMemCurrent || __attr == cudaMemPoolAttrUsedMemCurrent)
+    {
+      _CUDA_VSTD_NOVERSION::__throw_invalid_argument("Invalid attribute passed to async_memory_pool::set_attribute.");
+    }
+    else if ((__attr == ::cudaMemPoolAttrReservedMemHigh || __attr == cudaMemPoolAttrUsedMemHigh) && __value != 0)
+    {
+      _CUDA_VSTD_NOVERSION::__throw_invalid_argument(
+        "async_memory_pool::set_attribute: It is illegal to set this "
+        "attribute to a non-zero value.");
+    }
+
+    _CCCL_TRY_CUDA_API(
+      ::cudaMemPoolSetAttribute,
+      "Failed to call cudaMemPoolSetAttribute in async_memory_pool::set_attribute",
+      __pool_handle_,
+      __attr,
+      static_cast<void*>(&__value));
+  }
+
   //! @brief Equality comparison with another \c async_memory_pool.
   //! @returns true if the stored ``cudaMemPool_t`` are equal.
   _CCCL_NODISCARD constexpr bool operator==(async_memory_pool const& __rhs) const noexcept

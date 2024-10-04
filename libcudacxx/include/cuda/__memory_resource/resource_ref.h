@@ -24,10 +24,9 @@
 #if !defined(_CCCL_COMPILER_MSVC_2017) && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
 #  include <cuda/__memory_resource/get_property.h>
+#  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__memory_resource/resource.h>
 #  include <cuda/std/__concepts/__concept_macros.h>
-#  include <cuda/std/__concepts/_One_of.h>
-#  include <cuda/std/__concepts/all_of.h>
 #  include <cuda/std/__memory/addressof.h>
 #  include <cuda/std/__type_traits/is_base_of.h>
 #  include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
@@ -348,9 +347,9 @@ struct _Property_filter<false>
 template <class _Property, class... _Properties>
 struct _Filtered<_Property, _Properties...>
 {
-  using _Filtered_vtable =
-    typename _Property_filter<property_with_value<_Property> && !_CUDA_VSTD::_One_of<_Property, _Properties...>>::
-      template _Filtered_properties<_Property, _Properties...>;
+  using _Filtered_vtable = typename _Property_filter<
+    property_with_value<_Property> && !_CUDA_VSTD::__is_included_in<_Property, _Properties...>>::
+    template _Filtered_properties<_Property, _Properties...>;
 
   template <class _OtherPropery>
   using _Append_property = _Filtered<_OtherPropery, _Property, _Properties...>;
@@ -492,6 +491,9 @@ class basic_resource_ref
     , private _Filtered_vtable<_Properties...>
 {
 private:
+  static_assert(__contains_execution_space_property<_Properties...>,
+                "The properties of cuda::mr::basic_resource_ref must contain at least one execution space property!");
+
   template <_AllocType, class...>
   friend class basic_resource_ref;
 
@@ -502,6 +504,7 @@ private:
 
   using __vtable = _Filtered_vtable<_Properties...>;
 
+  //! @brief Checks whether \c _OtherProperties is a true superset of \c _Properties, accounting for host_accessible
   template <class... _OtherProperties>
   static constexpr bool __properties_match =
     _CUDA_VSTD::__type_set_contains<_CUDA_VSTD::__make_type_set<_OtherProperties...>, _Properties...>;
@@ -611,12 +614,14 @@ public:
 
   //! @brief Forwards the stateless properties
   _LIBCUDACXX_TEMPLATE(class _Property)
-  _LIBCUDACXX_REQUIRES((!property_with_value<_Property>) _LIBCUDACXX_AND _CUDA_VSTD::_One_of<_Property, _Properties...>)
+  _LIBCUDACXX_REQUIRES(
+    (!property_with_value<_Property>) _LIBCUDACXX_AND _CUDA_VSTD::__is_included_in<_Property, _Properties...>)
   friend void get_property(const basic_resource_ref&, _Property) noexcept {}
 
   //! @brief Forwards the stateful properties
   _LIBCUDACXX_TEMPLATE(class _Property)
-  _LIBCUDACXX_REQUIRES(property_with_value<_Property> _LIBCUDACXX_AND _CUDA_VSTD::_One_of<_Property, _Properties...>)
+  _LIBCUDACXX_REQUIRES(
+    property_with_value<_Property> _LIBCUDACXX_AND _CUDA_VSTD::__is_included_in<_Property, _Properties...>)
   _CCCL_NODISCARD_FRIEND __property_value_t<_Property> get_property(const basic_resource_ref& __res, _Property) noexcept
   {
     return __res._Property_vtable<_Property>::__property_fn(__res.__object);

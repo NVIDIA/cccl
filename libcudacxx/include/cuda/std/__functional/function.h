@@ -47,8 +47,6 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/piecewise_construct.h>
 #include <cuda/std/__utility/swap.h>
-#include <cuda/std/detail/libcxx/include/__assert>
-#include <cuda/std/detail/libcxx/include/__debug>
 #include <cuda/std/tuple>
 
 #ifndef __cuda_std__
@@ -931,10 +929,10 @@ public:
 
   virtual __base<_Rp(_ArgTypes...)>* __clone() const
   {
-    _LIBCUDACXX_ASSERT(false,
-                       "Block pointers are just pointers, so they should always fit into "
-                       "std::function's small buffer optimization. This function should "
-                       "never be invoked.");
+    _CCCL_ASSERT(false,
+                 "Block pointers are just pointers, so they should always fit into "
+                 "std::function's small buffer optimization. This function should "
+                 "never be invoked.");
     return nullptr;
   }
 
@@ -954,10 +952,10 @@ public:
 
   virtual void destroy_deallocate() noexcept
   {
-    _LIBCUDACXX_ASSERT(false,
-                       "Block pointers are just pointers, so they should always fit into "
-                       "std::function's small buffer optimization. This function should "
-                       "never be invoked.");
+    _CCCL_ASSERT(false,
+                 "Block pointers are just pointers, so they should always fit into "
+                 "std::function's small buffer optimization. This function should "
+                 "never be invoked.");
   }
 
   virtual _Rp operator()(_ArgTypes&&... __arg)

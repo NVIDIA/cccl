@@ -25,15 +25,15 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_ARRAY_RANK) && !defined(_LIBCUDACXX_USE_ARRAY_RANK_FALLBACK) && 0
+#if defined(_CCCL_BUILTIN_ARRAY_RANK) && !defined(_LIBCUDACXX_USE_ARRAY_RANK_FALLBACK) && 0
 
 template <class _Tp>
-struct rank : integral_constant<size_t, _LIBCUDACXX_ARRAY_RANK(_Tp)>
+struct rank : integral_constant<size_t, _CCCL_BUILTIN_ARRAY_RANK(_Tp)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr size_t rank_v = _LIBCUDACXX_ARRAY_RANK(_Tp);
+_LIBCUDACXX_INLINE_VAR constexpr size_t rank_v = _CCCL_BUILTIN_ARRAY_RANK(_Tp);
 #  endif
 
 #else
@@ -53,7 +53,7 @@ template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr size_t rank_v = rank<_Tp>::value;
 #  endif
 
-#endif // defined(_LIBCUDACXX_ARRAY_RANK) && !defined(_LIBCUDACXX_USE_ARRAY_RANK_FALLBACK)
+#endif // defined(_CCCL_BUILTIN_ARRAY_RANK) && !defined(_LIBCUDACXX_USE_ARRAY_RANK_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

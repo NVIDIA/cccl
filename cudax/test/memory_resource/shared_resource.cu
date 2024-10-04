@@ -104,7 +104,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
       ++expected.object_count;
       CHECK(this->counts == expected);
 
-      cuda::mr::resource_ref<> ref = mr;
+      cuda::mr::resource_ref<cuda::mr::host_accessible> ref = mr;
 
       CHECK(this->counts == expected);
       auto* ptr = ref.allocate(bytes(100), align(8));
@@ -128,7 +128,8 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
     align(alignof(int) * 4);
     {
       bytes(42 * sizeof(int));
-      cudax::uninitialized_buffer<int> buffer{cudax::mr::shared_resource<TestResource>(42, this), 42};
+      cudax::uninitialized_buffer<int, cuda::mr::host_accessible> buffer{
+        cudax::mr::shared_resource<TestResource>(42, this), 42};
       ++expected.object_count;
       ++expected.allocate_count;
       CHECK(this->counts == expected);
@@ -137,7 +138,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
       {
         // accounting for new storage
         bytes(1337 * sizeof(int));
-        cudax::uninitialized_buffer<int> other_buffer{buffer.get_resource(), 1337};
+        cudax::uninitialized_buffer<int, cuda::mr::host_accessible> other_buffer{buffer.get_resource(), 1337};
         ++expected.allocate_count;
         CHECK(this->counts == expected);
       }
@@ -149,7 +150,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
 
       {
         // Moving the resource should not do anything
-        cudax::uninitialized_buffer<int> third_buffer = ::cuda::std::move(buffer);
+        cudax::uninitialized_buffer<int, cuda::mr::host_accessible> third_buffer = ::cuda::std::move(buffer);
         CHECK(this->counts == expected);
       }
 

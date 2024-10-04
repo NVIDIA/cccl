@@ -252,7 +252,6 @@ template<class T> complex<T> tanh (const complex<T>&);
 #include <cuda/std/climits>
 #include <cuda/std/cmath>
 #include <cuda/std/cstdint>
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/type_traits>
 #include <cuda/std/version>
 
@@ -296,15 +295,15 @@ public:
       , __im_(__im)
   {}
 
-  template <class _Up, __enable_if_t<__complex_can_implicitly_construct<_Tp, _Up>::value, int> = 0>
+  template <class _Up, __enable_if_t<__cccl_internal::__is_non_narrowing_convertible<_Tp, _Up>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr complex(const complex<_Up>& __c)
       : __re_(static_cast<_Tp>(__c.real()))
       , __im_(static_cast<_Tp>(__c.imag()))
   {}
 
   template <class _Up,
-            __enable_if_t<!__complex_can_implicitly_construct<_Tp, _Up>::value, int> = 0,
-            __enable_if_t<_CCCL_TRAIT(is_constructible, _Tp, _Up), int>              = 0>
+            __enable_if_t<!__cccl_internal::__is_non_narrowing_convertible<_Tp, _Up>::value, int> = 0,
+            __enable_if_t<_CCCL_TRAIT(is_constructible, _Tp, _Up), int>                           = 0>
   _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr complex(const complex<_Up>& __c)
       : __re_(static_cast<_Tp>(__c.real()))
       , __im_(static_cast<_Tp>(__c.imag()))
@@ -502,7 +501,7 @@ operator*(const complex<_Tp>& __z, const complex<_Tp>& __w)
   _Tp __c = __w.real();
   _Tp __d = __w.imag();
 
-#if _CCCL_STD_VER > 2011 && defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+#if _CCCL_STD_VER > 2011 && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   // Avoid floating point operations that are invalid during constant evaluation
   if (__libcpp_is_constant_evaluated())
   {
@@ -539,7 +538,7 @@ operator*(const complex<_Tp>& __z, const complex<_Tp>& __w)
       return complex<_Tp>(_Tp(numeric_limits<_Tp>::quiet_NaN()), _Tp(0));
     }
   }
-#endif // _CCCL_STD_VER > 2011 && defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+#endif // _CCCL_STD_VER > 2011 && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
 
   __abcd_results<_Tp> __partials = __complex_calculate_partials(__a, __b, __c, __d);
 
@@ -645,7 +644,7 @@ operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
     __d      = _CUDA_VSTD::__constexpr_scalbn(__d, -__ilogbw);
   }
 
-#if _CCCL_STD_VER > 2011 && defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+#if _CCCL_STD_VER > 2011 && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   // Avoid floating point operations that are invalid during constant evaluation
   if (__libcpp_is_constant_evaluated())
   {
@@ -694,7 +693,7 @@ operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
       return complex<_Tp>(_Tp(numeric_limits<_Tp>::infinity()), _Tp(numeric_limits<_Tp>::infinity()));
     }
   }
-#endif // _CCCL_STD_VER > 2011 && defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED
+#endif // _CCCL_STD_VER > 2011 && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
   __abcd_results<_Tp> __partials = __complex_calculate_partials(__a, __b, __c, __d);
   __ab_results<_Tp> __denom_vec  = __complex_piecewise_mul(__c, __d, __c, __d);

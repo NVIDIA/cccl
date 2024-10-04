@@ -52,13 +52,12 @@ struct __tupl<__mindices<_Idx...>, _Ts...> : __box<_Idx, _Ts>...
 {
   template <class _Fn, class _Self, class... _Us>
   _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) //
-    noexcept(noexcept(static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)...,
-                                               static_cast<_Self&&>(__self).__box<_Idx, _Ts>::__value_...)))
-      -> decltype(static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)...,
-                                           static_cast<_Self&&>(__self).__box<_Idx, _Ts>::__value_...))
+    noexcept(__nothrow_callable<_Fn, _Us..., __copy_cvref_t<_Self, _Ts>...>)
+      -> __call_result_t<_Fn, _Us..., __copy_cvref_t<_Self, _Ts>...>
   {
-    return static_cast<_Fn&&>(
-      __fn)(static_cast<_Us&&>(__us)..., static_cast<_Self&&>(__self).__box<_Idx, _Ts>::__value_...);
+    return static_cast<_Fn&&>(__fn)( //
+      static_cast<_Us&&>(__us)...,
+      static_cast<_Self&&>(__self).__box<_Idx, _Ts>::__value_...);
   }
 
   template <class _Fn, class _Self, class... _Us>

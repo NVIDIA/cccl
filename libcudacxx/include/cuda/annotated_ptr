@@ -359,9 +359,10 @@ public:
   _CCCL_HOST_DEVICE explicit annotated_ptr(pointer __p)
       : __repr(__p)
   {
-    NV_IF_TARGET(
-      NV_IS_DEVICE,
-      (_LIBCUDACXX_DEBUG_ASSERT((std::is_same<_Property, shared>::value && __isShared(__p) || __isGlobal(__p)), "");))
+    NV_IF_TARGET(NV_IS_DEVICE,
+                 (_CCCL_ASSERT((std::is_same<_Property, access_property::shared>::value && __isShared((void*) __p))
+                                 || __isGlobal((void*) __p),
+                               "");))
   }
 
   template <typename _RuntimeProperty>
@@ -378,7 +379,7 @@ public:
         || std::is_same<_RuntimeProperty, access_property::persisting>::value
         || std::is_same<_RuntimeProperty, access_property>::value,
       "This method requires RuntimeProperty=global|normal|streaming|persisting|access_property");
-    NV_IF_TARGET(NV_IS_DEVICE, (_LIBCUDACXX_DEBUG_ASSERT((__isGlobal(__p) == true), "");))
+    NV_IF_TARGET(NV_IS_DEVICE, (_CCCL_ASSERT((__isGlobal((void*) __p) == true), "");))
   }
 
   template <class _TTp, class _Prop>

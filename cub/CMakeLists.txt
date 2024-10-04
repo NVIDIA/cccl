@@ -3,18 +3,12 @@
 # 3.27.5 is the minimum for MSVC build with RDC=true.
 cmake_minimum_required(VERSION 3.15)
 
-project(CUB LANGUAGES NONE)
-
-# Determine whether CUB is the top-level project or included into
-# another project via add_subdirectory().
-if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
-  set(CUB_TOPLEVEL_PROJECT ON)
-endif ()
-
 # This must be done before any languages are enabled:
-if (CUB_TOPLEVEL_PROJECT)
+if (CCCL_ENABLE_CUB)
   cmake_minimum_required(VERSION 3.21)
 endif()
+
+project(CUB LANGUAGES NONE)
 
 # This must appear before the installation rules, as it is required by the
 # GNUInstallDirs CMake module.
@@ -22,7 +16,7 @@ enable_language(CXX)
 
 # Support adding CUB to a parent project via add_subdirectory.
 # See examples/cmake/add_subdir/CMakeLists.txt for details.
-if (NOT CUB_TOPLEVEL_PROJECT)
+if (NOT CCCL_ENABLE_CUB)
   include(cmake/CubAddSubdir.cmake)
   return()
 endif()
