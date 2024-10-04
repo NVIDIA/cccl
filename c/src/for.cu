@@ -79,6 +79,11 @@ extern "C" CCCL_C_API CUresult cccl_device_for_build(
 {
   CUresult error = CUDA_SUCCESS;
 
+  if (d_data.type == cccl_iterator_kind_t::iterator)
+  {
+    throw std::runtime_error(std::string("Iterators are unsupported in for_each currently"));
+  }
+
   try
   {
     nvrtcProgram prog{};

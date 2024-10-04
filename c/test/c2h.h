@@ -183,15 +183,15 @@ static std::string get_for_op(cccl_type_enum t)
   switch (t)
   {
     case cccl_type_enum::INT8:
-      return "extern \"C\" __device__ void op(char a) {}";
+      return "extern \"C\" __device__ void op(char* a) {(*a)++;}";
     case cccl_type_enum::INT32:
-      return "extern \"C\" __device__ void op(int a) {}";
+      return "extern \"C\" __device__ void op(int* a) {(*a)++;}";
     case cccl_type_enum::UINT32:
-      return "extern \"C\" __device__ void op(unsigned int a) {}";
+      return "extern \"C\" __device__ void op(unsigned int* a) {(*a)++;}";
     case cccl_type_enum::INT64:
-      return "extern \"C\" __device__ void op(long long a) {}";
+      return "extern \"C\" __device__ void op(long long* a) {(*a)++;}";
     case cccl_type_enum::UINT64:
-      return "extern \"C\" __device__ void op(unsigned long long a) {}";
+      return "extern \"C\" __device__ void op(unsigned long long* a) {(*a)++;}";
     default:
       throw std::runtime_error("Unsupported type");
   }
