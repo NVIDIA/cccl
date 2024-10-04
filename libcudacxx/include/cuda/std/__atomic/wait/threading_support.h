@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX_THREADING_SUPPORT
-#define _LIBCUDACXX_THREADING_SUPPORT
+#ifndef _LIBCUDACXX___ATOMIC_WAIT_THREADING_SUPPORT_H
+#define _LIBCUDACXX___ATOMIC_WAIT_THREADING_SUPPORT_H
 
 #include <cuda/std/detail/__config>
 
@@ -563,4 +563,4 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 _CCCL_POP_MACROS
 
-#endif // _LIBCUDACXX_THREADING_SUPPORT
+#endif // _LIBCUDACXX___ATOMIC_WAIT_THREADING_SUPPORT_H
