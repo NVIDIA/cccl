@@ -38,7 +38,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <_CUDA_VSTD::size_t _Align, class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* assume_aligned(_Tp* __ptr) noexcept
 {
-  static_assert(_CUDA_VSTD::has_single_bit(_Align));
+  static_assert(_CUDA_VSTD::has_single_bit(_Align), "std::assume_aligned requires the alignment to be a power of 2!");
   if (_CUDA_VSTD::__libcpp_is_constant_evaluated())
   {
     return __ptr;
