@@ -15,6 +15,9 @@ GLOBAL_CMAKE_OPTIONS=()
 DISABLE_CUB_BENCHMARKS= # Enable to force-disable building CUB benchmarks.
 CONFIGURE_ONLY=false
 
+GLOBAL_CMAKE_OPTIONS+=("-DCMAKE_CUDA_FLAGS=-DCCCL_SUPPRESS_ICC_DEPRECATION_WARNING")
+GLOBAL_CMAKE_OPTIONS+=("-DCMAKE_CXX_FLAGS=-DCCCL_SUPPRESS_ICC_DEPRECATION_WARNING")
+
 # Check if the correct number of arguments has been provided
 function usage {
     echo "Usage: $0 [OPTIONS]"
