@@ -41,9 +41,9 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 // #  if 0
 // template <class _ElementType,
-//           EvictionPolicy _Eviction = EvictionPolicy::Default,
-//           PrefetchSize _Prefetch   = PrefetchSize::NoPrefetch,
-//           typename _CacheHint      = ::cuda::access_property::normal,
+//           eviction_policy _Eviction = eviction_policy::Default,
+//           prefetch_size _Prefetch   = prefetch_size::no_prefetch,
+//           typename _CacheHint      = access_property::normal,
 //           typename _Enable         = void>
 // struct accessor_with_properties;
 //
@@ -51,7 +51,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 // * accessor_reference
 // **********************************************************************************************************************/
 //
-// template <class _ElementType, EvictionPolicy _Eviction, PrefetchSize _Prefetch, typename _CacheHint>
+// template <class _ElementType, eviction_policy _Eviction, prefetch_size _Prefetch, typename _CacheHint>
 // class accessor_reference
 //{
 //  using __pointer_type = _ElementType*;
@@ -95,7 +95,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 // * load/store accessor_with_properties
 // **********************************************************************************************************************/
 //
-// template <class _ElementType, EvictionPolicy _Eviction, PrefetchSize _Prefetch, typename _CacheHint>
+// template <class _ElementType, eviction_policy _Eviction, prefetch_size _Prefetch, typename _CacheHint>
 // struct accessor_with_properties<_ElementType,
 //                             _Eviction,
 //                             _Prefetch,
@@ -109,7 +109,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 //
 //  using offset_policy = accessor_with_properties;
 //  using element_type  = _ElementType;
-//  using reference     = ::cuda::accessor_reference<_ElementType, _Eviction, _Prefetch, _CacheHint>;
+//  using reference     = accessor_reference<_ElementType, _Eviction, _Prefetch, _CacheHint>;
 //  using data_handle_type =
 //    typename _CUDA_VSTD::conditional<RestrictProperty, _ElementType*, _ElementType * _CCCL_RESTRICT>::type;
 //
@@ -157,27 +157,30 @@ enum class _EvictionPolicyEnum
 };
 
 template <_EvictionPolicyEnum _Value>
-constexpr auto __eviction_policy_constant = _CUDA_VSTD::integral_constant<_EvictionPolicyEnum, _Value>{};
+using __eviction_policy_constant_t = _CUDA_VSTD::integral_constant<_EvictionPolicyEnum, _Value>;
+
+template <_EvictionPolicyEnum _Value>
+constexpr auto __eviction_policy_constant = __eviction_policy_constant_t<_Value>{};
 
 template <typename>
 struct __is_eviction_policy : _CUDA_VSTD::false_type
 {};
 
 template <_EvictionPolicyEnum _Value>
-struct __is_eviction_policy<_CUDA_VSTD::integral_constant<_EvictionPolicyEnum, _Value>> : _CUDA_VSTD::true_type
+struct __is_eviction_policy<__eviction_policy_constant_t<_Value>> : _CUDA_VSTD::true_type
 {};
 
-namespace EvictionPolicy
+namespace eviction_policy
 {
 
-constexpr auto Default      = __eviction_policy_constant<_EvictionPolicyEnum::_Default>;
-constexpr auto First        = __eviction_policy_constant<_EvictionPolicyEnum::_First>;
-constexpr auto Normal       = __eviction_policy_constant<_EvictionPolicyEnum::_Normal>;
-constexpr auto Last         = __eviction_policy_constant<_EvictionPolicyEnum::_Last>;
-constexpr auto LastUse      = __eviction_policy_constant<_EvictionPolicyEnum::_LastUse>;
-constexpr auto NoAllocation = __eviction_policy_constant<_EvictionPolicyEnum::_NoAllocation>;
+constexpr auto Default       = __eviction_policy_constant<_EvictionPolicyEnum::_Default>;
+constexpr auto first         = __eviction_policy_constant<_EvictionPolicyEnum::_First>;
+constexpr auto normal        = __eviction_policy_constant<_EvictionPolicyEnum::_Normal>;
+constexpr auto last          = __eviction_policy_constant<_EvictionPolicyEnum::_Last>;
+constexpr auto last_use      = __eviction_policy_constant<_EvictionPolicyEnum::_LastUse>;
+constexpr auto no_allocation = __eviction_policy_constant<_EvictionPolicyEnum::_NoAllocation>;
 
-}; // namespace EvictionPolicy
+}; // namespace eviction_policy
 
 /***********************************************************************************************************************
  * Prefetch Size
@@ -202,15 +205,15 @@ template <_PrefetchSizeEnum _Value>
 struct __is_prefetch_policy<_CUDA_VSTD::integral_constant<_PrefetchSizeEnum, _Value>> : _CUDA_VSTD::true_type
 {};
 
-namespace PrefetchSize
+namespace prefetch_size
 {
 
-constexpr auto NoPrefetch = __prefetch_constant<_PrefetchSizeEnum::_NoPrefetch>;
-constexpr auto Bytes64    = __prefetch_constant<_PrefetchSizeEnum::_Bytes64>;
-constexpr auto Bytes128   = __prefetch_constant<_PrefetchSizeEnum::_Bytes128>;
-constexpr auto Bytes256   = __prefetch_constant<_PrefetchSizeEnum::_Bytes256>;
+constexpr auto no_prefetch = __prefetch_constant<_PrefetchSizeEnum::_NoPrefetch>;
+constexpr auto bytes_64    = __prefetch_constant<_PrefetchSizeEnum::_Bytes64>;
+constexpr auto bytes_128   = __prefetch_constant<_PrefetchSizeEnum::_Bytes128>;
+constexpr auto bytes_256   = __prefetch_constant<_PrefetchSizeEnum::_Bytes256>;
 
-}; // namespace PrefetchSize
+}; // namespace prefetch_size
 
 /***********************************************************************************************************************
  * Aliasing Policies
@@ -233,13 +236,13 @@ template <_AliasingPolicyEnum _Value>
 struct __is_aliasing_policy<_CUDA_VSTD::integral_constant<_AliasingPolicyEnum, _Value>> : _CUDA_VSTD::true_type
 {};
 
-namespace AliasingPolicy
+namespace aliasing_policy
 {
 
-constexpr auto Restrict = __aliasing_constant<_AliasingPolicyEnum::_Restrict>;
-constexpr auto MayAlias = __aliasing_constant<_AliasingPolicyEnum::_MayAlias>;
+constexpr auto restrict  = __aliasing_constant<_AliasingPolicyEnum::_Restrict>;
+constexpr auto may_alias = __aliasing_constant<_AliasingPolicyEnum::_MayAlias>;
 
-}; // namespace AliasingPolicy
+}; // namespace aliasing_policy
 
 /***********************************************************************************************************************
  * Alignment
@@ -250,11 +253,24 @@ struct __is_alignment : _CUDA_VSTD::false_type
 {};
 
 template <size_t __AlignBytes>
-struct __is_alignment<::cuda::aligned_size_t<__AlignBytes>> : _CUDA_VSTD::true_type
+struct __is_alignment<aligned_size_t<__AlignBytes>> : _CUDA_VSTD::true_type
 {};
 
 /***********************************************************************************************************************
- * Find Duplicates
+ * Cache Hints
+ **********************************************************************************************************************/
+
+template <typename T>
+struct __is_cache_hint
+    : _CUDA_VSTD::bool_constant<_CUDA_VSTD::is_same<T, access_property::streaming>::value
+                                || _CUDA_VSTD::is_same<T, access_property::persisting>::value
+                                || _CUDA_VSTD::is_same<T, access_property::normal>::value
+                                || _CUDA_VSTD::is_same<T, access_property::global>::value
+                                || _CUDA_VSTD::is_same<T, access_property::shared>::value>
+{};
+
+/***********************************************************************************************************************
+ * Find Duplicate Utilities
  **********************************************************************************************************************/
 
 template <template <typename> class _Predicate>
@@ -277,92 +293,44 @@ template <class... _Ts>
 using __type_count_aliasing = _CUDA_VSTD::__type_call<__type_count_if<__is_aliasing_policy>, _Ts...>;
 
 template <class... _Ts>
-using __type_count_cache_hints = _CUDA_VSTD::__type_call<__type_count_if<__is_cache_hints>, _Ts...>;
+using __type_count_cache_hint = _CUDA_VSTD::__type_call<__type_count_if<__is_cache_hint>, _Ts...>;
 
 /***********************************************************************************************************************
- * Find Duplicates
+ * Find Properties
  **********************************************************************************************************************/
 
-struct __is_alignment_call
-{
-  template <typename _T>
-  using __call = _CUDA_VSTD::bool_constant<__is_alignment_impl<_T>::value>;
-};
-
-template <typename... _Ts>
-struct __find_type
+template <template <typename> class _Predicate>
+struct __predicate_call
 {
   template <typename _Property>
-  using __call = _CUDA_VSTD::bool_constant<(_CUDA_VSTD::is_same_v<_Property, _Ts> || ...)>;
+  using __call = _CUDA_VSTD::bool_constant<_Predicate<_Property>::value>;
 };
 
-template <typename _TypeList, typename... _UserProperties>
-struct __find_property;
-
-template <typename... _Ts, typename... _UserProperties>
-struct __find_property<_CUDA_VSTD::__type_list<_Ts...>, _UserProperties...>
+template <template <typename> class _Predicate, typename DefaultValue, typename... _UserProperties>
+struct __find_property
 {
-  using type1 = _CUDA_VSTD::__type_find_if<_CUDA_VSTD::__type_list<_UserProperties...>, __find_type<_Ts...>>;
+  using __ret = _CUDA_VSTD::__type_find_if<_CUDA_VSTD::__type_list<_UserProperties...>, __predicate_call<_Predicate>>;
 
-  using type = _CUDA_VSTD::__type_front<_CUDA_VSTD::__type_concat<type1, _CUDA_VSTD::__type_list<void>>>;
+  using __type = _CUDA_VSTD::__type_front<_CUDA_VSTD::__type_concat<__ret, _CUDA_VSTD::__type_list<DefaultValue>>>;
 };
 
 template <typename... _UserProperties>
-struct __find_eviction_policy
-{
-  using __find_result =
-    __find_property<_CUDA_VSTD::__type_list<EvictionPolicy::Default,
-                                            EvictionPolicy::First,
-                                            EvictionPolicy::Normal,
-                                            EvictionPolicy::Last,
-                                            EvictionPolicy::LastUse,
-                                            EvictionPolicy::NoAllocation>,
-                    _UserProperties...>;
-
-  using type = _CUDA_VSTD::_If<_CUDA_VSTD::is_void_v<__find_result>, EvictionPolicy::Default, __find_result>;
-};
+using __find_eviction_policy =
+  __find_property<__is_eviction_policy, decltype(eviction_policy::Default), _UserProperties...>;
 
 template <typename... _UserProperties>
-struct __find_prefetch_size
-{
-  using __find_result = __find_property<
-    _CUDA_VSTD::
-      __type_list<PrefetchSize::NoPrefetch, PrefetchSize::Bytes64, PrefetchSize::Bytes128, PrefetchSize::Bytes256>,
-    _UserProperties...>;
+using __find_prefetch_size =
+  __find_property<__is_prefetch_policy, decltype(prefetch_size::no_prefetch), _UserProperties...>;
 
-  using type = _CUDA_VSTD::_If<_CUDA_VSTD::is_void_v<__find_result>, PrefetchSize::NoPrefetch, __find_result>;
-};
+template <_CUDA_VSTD::size_t DefaultAlignment, typename... _UserProperties>
+using __find_aligment = __find_property<__is_alignment, aligned_size_t<DefaultAlignment>, _UserProperties...>;
 
 template <typename... _UserProperties>
-struct __find_cache_hint_policy
-{
-  using __find_result =
-    typename __find_property<_CUDA_VSTD::__type_list<access_property::shared,
-                                                     access_property::global,
-                                                     access_property::persisting,
-                                                     access_property::streaming,
-                                                     access_property::normal>,
-                             _UserProperties...>::type;
-  using type = _CUDA_VSTD::_If<_CUDA_VSTD::is_void_v<__find_result>, access_property::global, __find_result>;
-};
+using __find_aliasing_policy =
+  __find_property<__is_aliasing_policy, decltype(aliasing_policy::restrict), _UserProperties...>;
 
 template <typename... _UserProperties>
-struct __find_aliasing_policy
-{
-  using __find_result =
-    __find_property<_CUDA_VSTD::__type_list<AliasingPolicy::Restrict, AliasingPolicy::MayAlias>, _UserProperties...>;
-
-  using type = _CUDA_VSTD::_If<_CUDA_VSTD::is_void_v<__find_result>, AliasingPolicy::Restrict, __find_result>;
-};
-
-template <typename DefaultAlignment, typename... _UserProperties>
-struct __find_aligment
-{
-  using __find_result = _CUDA_VSTD::__type_front<
-    _CUDA_VSTD::__type_find_if<_CUDA_VSTD::__type_list<_UserProperties...>, __is_alignment_call>>;
-
-  using type = _CUDA_VSTD::_If<_CUDA_VSTD::is_void_v<__find_result>, DefaultAlignment, __find_result>;
-};
+using __find_cache_hint_policy = __find_property<__is_cache_hint, access_property::global, _UserProperties...>;
 
 /***********************************************************************************************************************
  * accessor_with_properties implementation
@@ -382,19 +350,19 @@ struct accessor_with_properties
                 "accessor_with_properties: template argument may not be an abstract class");
 
   static constexpr bool _IsConst    = _CUDA_VSTD::is_const_v<_ElementType>;
-  static constexpr bool _IsRestrict = _CUDA_VSTD::is_same_v<_Restrict, AliasingPolicy::Restrict>;
+  static constexpr bool _IsRestrict = _CUDA_VSTD::is_same_v<_Restrict, decltype(aliasing_policy::restrict)>;
 
   using offset_policy = accessor_with_properties;
   using element_type  = _ElementType;
   using reference     = _CUDA_VSTD::_If<_IsConst, _ElementType, accessor_reference<_ElementType, _Eviction, _Prefetch>>;
-  using data_handle_type = _CUDA_VSTD::_If<_IsRestrict, _ElementType * _CCCL_RESTRICT, _ElementType*>;
+  using data_handle_type = _CUDA_VSTD::_If<_IsRestrict, _ElementType* __restrict__, _ElementType*>;
 
-  access_property _prop;
+  access_property __prop;
 
   explicit accessor_with_properties() noexcept = default;
 
-  explicit accessor_with_properties(access_property _prop) noexcept
-      : _prop(_prop)
+  explicit accessor_with_properties(access_property __prop) noexcept
+      : __prop(__prop)
   {}
 
   // template <typename _OtherElementType,
@@ -418,25 +386,38 @@ struct accessor_with_properties
   }
 };
 
-template <typename _ElementType, typename... _UserProperties>
-auto make_accessor_with_properties(_UserProperties... properties) noexcept
-{
-  using _Restrict  = __find_aliasing_policy<_UserProperties...>;
-  using _Alignment = __find_aligment<cuda::aligned_size_t<alignof(_ElementType)>, _UserProperties...>;
-  using _Eviction  = __find_eviction_policy<_UserProperties...>;
-  using _Prefetch  = __find_prefetch_size<_UserProperties...>;
-  using _CacheHint = typename __find_cache_hint_policy<_UserProperties...>::type;
-  static_assert(__type_count_eviction<_UserProperties...>::value <= 1, "");
+/***********************************************************************************************************************
+ * make_accessor_with_properties
+ **********************************************************************************************************************/
 
-  if constexpr (std::is_same_v<_CacheHint, cuda::access_property::global>)
+template <typename _P, typename... _Ps>
+auto __filter_access_properties(_P __prop, _Ps... __properties)
+{
+  if constexpr (__is_cache_hint<_P>::value)
   {
-    return accessor_with_properties<_ElementType, _Restrict, _Alignment, _Eviction, _Prefetch, _CacheHint>();
+    return __prop;
   }
   else
   {
-    return 3; // accessor_with_properties<_ElementType, _Restrict, _Alignment, _Eviction, _Prefetch,
+    return __filter_access_properties(__properties...);
   }
-  //    _CacheHint>(get_cache_hint(properties...));
+}
+
+template <typename _ElementType, typename... _UserProperties>
+auto make_accessor_with_properties(_UserProperties... __properties) noexcept
+{
+  using _Restrict  = typename __find_aliasing_policy<_UserProperties...>::__type;
+  using _Alignment = typename __find_aligment<alignof(_ElementType), _UserProperties...>::__type;
+  using _Eviction  = typename __find_eviction_policy<_UserProperties...>::__type;
+  using _Prefetch  = typename __find_prefetch_size<_UserProperties...>::__type;
+  using _CacheHint = typename __find_cache_hint_policy<_UserProperties...>::__type;
+  static_assert(__type_count_eviction<_UserProperties...>::value <= 1, "Duplicate eviction policy found");
+  static_assert(__type_count_aliasing<_UserProperties...>::value <= 1, "Duplicate eviction aliasing policy found");
+  static_assert(__type_count_alignment<_UserProperties...>::value <= 1, "Duplicate aligment found");
+  static_assert(__type_count_prefetch<_UserProperties...>::value <= 1, "Duplicate prefetch policy found");
+  static_assert(__type_count_cache_hint<_UserProperties...>::value <= 1, "Duplicate cache hint policy found");
+  return accessor_with_properties<_ElementType, _Restrict, _Alignment, _Eviction, _Prefetch, _CacheHint>(
+    __filter_access_properties(__properties..., _CacheHint{}));
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
