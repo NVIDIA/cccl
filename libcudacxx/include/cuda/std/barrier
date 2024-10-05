@@ -11,10 +11,6 @@
 #ifndef _CUDA_STD_BARRIER
 #define _CUDA_STD_BARRIER
 
-#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 700
-#  error "CUDA synchronization primitives are only supported for sm_70 and up."
-#endif
-
 #include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -25,10 +21,27 @@
 #  pragma system_header
 #endif // no system header
 
-_CCCL_PUSH_MACROS
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 700
+#  error "CUDA synchronization primitives are only supported for sm_70 and up."
+#endif // __CUDA_ARCH__ < 700
 
-#include <cuda/std/detail/libcxx/include/barrier>
+#ifdef _LIBCUDACXX_HAS_NO_THREADS
+#  error <cuda/std/barrier> is not supported on this single threaded system
+#endif // _LIBCUDACXX_HAS_NO_THREADS
 
-_CCCL_POP_MACROS
+#include <cuda/std/__barrier/barrier.h>
+#include <cuda/std/__barrier/empty_completion.h>
+#include <cuda/std/__barrier/poll_tester.h>
+
+//! TODO: Drop cuda only features
+#include <cuda/__barrier/aligned_size.h>
+#include <cuda/__barrier/barrier.h>
+#include <cuda/__barrier/barrier_arrive_tx.h>
+#include <cuda/__barrier/barrier_block_scope.h>
+#include <cuda/__barrier/barrier_expect_tx.h>
+#include <cuda/__barrier/barrier_thread_scope.h>
+#include <cuda/__fwd/pipeline.h>
+#include <cuda/__memcpy_async/memcpy_async.h>
+#include <cuda/__memcpy_async/memcpy_async_tx.h>
 
 #endif // _CUDA_STD_BARRIER
