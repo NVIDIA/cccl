@@ -11,11 +11,11 @@
 #pragma once
 
 #include <cstdlib>
-#include <memory>
 #include <string>
 #include <variant>
 
 #include <cccl/c/types.h>
+#include <util/memory.h>
 
 // For each kernel accepts a user operator that contains both iterator and user operator state
 // This declaration is used as blueprint for aligned_storage, but is only *valid* in the generated NVRTC program.
@@ -25,19 +25,6 @@ struct for_each_default
   void* iterator; // A pointer for iterator
   void* user_op; // A pointer for user data
 };
-
-struct unique_free_void
-{
-  inline void operator()(void* p)
-  {
-    if (p)
-    {
-      free(p);
-    }
-  }
-};
-
-using unique_void = std::unique_ptr<void, unique_free_void>;
 
 struct for_each_kernel_state
 {
