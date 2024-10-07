@@ -5,9 +5,22 @@ project(CCCL_C_Parallel LANGUAGES CUDA CXX)
 option(CCCL_C_Parallel_ENABLE_TESTING "Build CUDA Experimental's tests." OFF)
 option(CCCL_C_Parallel_ENABLE_HEADER_TESTING "Build CUDA Experimental's standalone headers." OFF)
 
+# FIXME Ideally this would be handled by presets and install rules, but for now
+# consumers may override this to control the target location of cccl.c.parallel.
+set(CCCL_C_PARALLEL_LIBRARY_OUTPUT_DIRECTORY "" CACHE PATH "Override output directory for the cccl.c.parallel library")
+mark_as_advanced(CCCL_C_PARALLEL_LIBRARY_OUTPUT_DIRECTORY)
+
 add_library(cccl.c.parallel SHARED src/reduce.cu)
-cccl_configure_target(cccl.c.parallel DIALECT 20)
 set_property(TARGET cccl.c.parallel PROPERTY POSITION_INDEPENDENT_CODE ON)
+cccl_configure_target(cccl.c.parallel DIALECT 20)
+
+# Override the properties set by cccl_configure_target:
+if (CCCL_C_PARALLEL_LIBRARY_OUTPUT_DIRECTORY)
+  set_target_properties(cccl.c.parallel PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY "${CCCL_C_PARALLEL_LIBRARY_OUTPUT_DIRECTORY}"
+    ARCHIVE_OUTPUT_DIRECTORY "${CCCL_C_PARALLEL_LIBRARY_OUTPUT_DIRECTORY}"
+  )
+endif()
 
 find_package(CUDAToolkit REQUIRED)
 
