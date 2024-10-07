@@ -243,7 +243,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_fetch_min(_Type* __ptr, _Type& __d
   __dst = __cuda_atomic_fetch_update(
     __ptr,
     [__op](_Type __old) {
-      return __old < __op ? __old : __op;
+      return __op < __old ? __op : __old;
     },
     _Order{},
     __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, _Operand::__size>{},
@@ -255,7 +255,7 @@ static inline _CCCL_DEVICE void __cuda_atomic_fetch_max(_Type* __ptr, _Type& __d
   __dst = __cuda_atomic_fetch_update(
     __ptr,
     [__op](_Type __old) {
-      return __op < __old ? __old : __op;
+      return __old < __op ? __op : __old;
     },
     _Order{},
     __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, _Operand::__size>{},
@@ -345,7 +345,7 @@ _CCCL_DEVICE _Tp __atomic_fetch_min_cuda(_Tp* __ptr, _Up __val, int __memorder, 
   return __atomic_fetch_update_cuda(
     __ptr,
     [__val](_Tp __old) {
-      return __old < __val ? __old : __val;
+      return __val < __old ? __val : __old;
     },
     __memorder,
     _Sco{});
@@ -356,7 +356,7 @@ _CCCL_DEVICE _Tp __atomic_fetch_min_cuda(volatile _Tp* __ptr, _Up __val, int __m
   return __atomic_fetch_update_cuda(
     __ptr,
     [__val](_Tp __old) {
-      return __old < __val ? __old : __val;
+      return __val < __old ? __val : __old;
     },
     __memorder,
     _Sco{});
@@ -368,7 +368,7 @@ _CCCL_DEVICE _Tp __atomic_fetch_max_cuda(_Tp* __ptr, _Up __val, int __memorder, 
   return __atomic_fetch_update_cuda(
     __ptr,
     [__val](_Tp __old) {
-      return __old > __val ? __old : __val;
+      return __old < __val ? __val : __old;
     },
     __memorder,
     _Sco{});
@@ -379,7 +379,7 @@ _CCCL_DEVICE _Tp __atomic_fetch_max_cuda(volatile _Tp* __ptr, _Up __val, int __m
   return __atomic_fetch_update_cuda(
     __ptr,
     [__val](_Tp __old) {
-      return __old > __val ? __old : __val;
+      return __old < __val ? __val : __old;
     },
     __memorder,
     _Sco{});
