@@ -845,7 +845,6 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/ctime>
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/limits>
 #include <cuda/std/ratio>
 
@@ -3663,7 +3662,7 @@ struct _FilesystemClock
 
   _CCCL_VISIBILITY_DEFAULT static _CCCL_CONSTEXPR_CXX14 const bool is_steady = false;
 
-  _LIBCUDACXX_AVAILABILITY_FILESYSTEM _LIBCUDACXX_HIDE_FROM_ABI static time_point now() noexcept;
+  _LIBCUDACXX_HIDE_FROM_ABI static time_point now() noexcept;
 
   _LIBCUDACXX_HIDE_FROM_ABI static time_t to_time_t(const time_point& __t) noexcept
   {

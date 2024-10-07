@@ -36,7 +36,6 @@
 
 #include "cuda/std/__cccl/diagnostic.h"
 #include "test_util_vec.h"
-#include <metal.hpp>
 
 #if __CUDACC_VER_MAJOR__ == 11
 _CCCL_NV_DIAG_SUPPRESS(177) // catch2 may contain unused variableds
@@ -44,6 +43,7 @@ _CCCL_NV_DIAG_SUPPRESS(177) // catch2 may contain unused variableds
 
 #include <cuda/std/bit>
 #include <cuda/std/cmath>
+#include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
 #include "catch2_main.cuh"
@@ -60,31 +60,34 @@ namespace c2h
 {
 
 template <typename... Ts>
-using type_list = metal::list<Ts...>;
+using type_list = ::cuda::std::__type_list<Ts...>;
 
 template <typename TypeList>
-using size = metal::size<TypeList>;
+using size = ::cuda::std::__type_list_size<TypeList>;
 
 template <std::size_t Index, typename TypeList>
-using get = metal::at<TypeList, metal::number<Index>>;
+using get = ::cuda::std::__type_at_c<Index, TypeList>;
 
 template <class... TypeLists>
-using cartesian_product = metal::cartesian<TypeLists...>;
+using cartesian_product = ::cuda::std::__type_cartesian_product<TypeLists...>;
 
 template <typename T, T... Ts>
-using enum_type_list = c2h::type_list<std::integral_constant<T, Ts>...>;
+using enum_type_list = ::cuda::std::__type_value_list<T, Ts...>;
 
 template <typename T0, typename T1>
-using pair = metal::pair<T0, T1>;
+using pair = ::cuda::std::__type_pair<T0, T1>;
 
 template <typename P>
-using first = metal::first<P>;
+using first = ::cuda::std::__type_pair_first<P>;
 
 template <typename P>
-using second = metal::second<P>;
+using second = ::cuda::std::__type_pair_second<P>;
 
-template <std::size_t start, std::size_t size, std::size_t stride = 1>
-using iota = metal::iota<metal::number<start>, metal::number<size>, metal::number<stride>>;
+template <std::size_t Start, std::size_t Size, std::size_t Stride = 1>
+using iota = ::cuda::std::__type_iota<std::size_t, Start, Size, Stride>;
+
+template <typename TypeList, typename T>
+using remove = ::cuda::std::__type_remove<TypeList, T>;
 
 } // namespace c2h
 

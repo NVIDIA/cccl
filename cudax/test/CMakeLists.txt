@@ -1,11 +1,13 @@
-include("${cudax_SOURCE_DIR}/cmake/CPM.cmake")
-CPMAddPackage("gh:catchorg/Catch2@2.13.9")
+cccl_get_catch2()
+
+find_package(Thrust ${cudax_VERSION} EXACT CONFIG
+  NO_DEFAULT_PATH # Only check the explicit path in HINTS:
+  HINTS "${CCCL_SOURCE_DIR}/lib/cmake/thrust/"
+)
+thrust_create_target(cudax.test.thrust)
 
 add_library(catch2_main STATIC catch2_helpers/catch2_main.cpp)
 target_link_libraries(catch2_main PUBLIC Catch2::Catch2)
-
-find_package(Thrust REQUIRED CONFIG)
-thrust_create_target(cudax::Thrust)
 
 ## cudax_add_test
 #
@@ -27,10 +29,16 @@ function(cudax_add_catch2_test target_name_var test_name cn_target) # ARGN=test 
 
   add_executable(${test_target} ${test_sources})
   target_include_directories(${test_target} PRIVATE "common")
-  target_link_libraries(${test_target} PRIVATE ${cn_target} Catch2::Catch2 catch2_main)
-  target_link_libraries(${test_target} PRIVATE ${cn_target} cudax::Thrust)
-  target_compile_options(${test_target} PRIVATE "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE")
-  target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
+  target_link_libraries(${test_target} PRIVATE
+    ${cn_target}
+    cudax.test.thrust
+    Catch2::Catch2
+    catch2_main
+  )
+  target_compile_options(${test_target} PRIVATE
+    "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
+    $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
+  )
   cudax_clone_target_properties(${test_target} ${cn_target})
   set_target_properties(${test_target} PROPERTIES
     CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
@@ -88,12 +96,15 @@ foreach(cn_target IN LISTS cudax_TARGETS)
 
   cudax_add_catch2_test(test_target containers ${cn_target}
     containers/uninitialized_buffer.cu
+    containers/uninitialized_async_buffer.cu
   )
 
   cudax_add_catch2_test(test_target memory_resource ${cn_target}
+    memory_resource/any_async_resource.cu
     memory_resource/any_resource.cu
     memory_resource/async_memory_pool.cu
     memory_resource/async_memory_resource.cu
+    memory_resource/shared_resource.cu
   )
 
   cudax_add_catch2_test(test_target async_tests ${cn_target}
@@ -105,5 +116,9 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   )
   target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
   target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>)
+
+  cudax_add_catch2_test(test_target green_context ${cn_target}
+    green_context/green_ctx_smoke.cu
+  )
 
 endforeach()

@@ -30,6 +30,7 @@
 #  include <cuda/std/__type_traits/enable_if.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
 #  include <cuda/std/__type_traits/is_constructible.h>
+#  include <cuda/std/__type_traits/is_extended_floating_point.h>
 #  include <cuda/std/cmath>
 #  include <cuda/std/complex>
 
@@ -37,11 +38,35 @@
 #    include <sstream> // for std::basic_ostringstream
 #  endif // !_CCCL_COMPILER_NVRTC
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+// This is a workaround against the user defining macros __CUDA_NO_HALF_CONVERSIONS__ __CUDA_NO_HALF_OPERATORS__
+namespace __cccl_internal
+{
+template <>
+struct __is_non_narrowing_convertible<__half, float>
+{
+  static constexpr bool value = true;
+};
 
 template <>
-struct __is_nvfp16<__half> : true_type
-{};
+struct __is_non_narrowing_convertible<__half, double>
+{
+  static constexpr bool value = true;
+};
+
+template <>
+struct __is_non_narrowing_convertible<float, __half>
+{
+  static constexpr bool value = true;
+};
+
+template <>
+struct __is_non_narrowing_convertible<double, __half>
+{
+  static constexpr bool value = true;
+};
+} // namespace __cccl_internal
+
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <>
 struct __complex_alignment<__half> : integral_constant<size_t, alignof(__half2)>
@@ -59,23 +84,6 @@ struct __libcpp_complex_overload_traits<__half, false, false>
   typedef __half _ValueType;
   typedef complex<__half> _ComplexType;
 };
-
-// This is a workaround against the user defining macros __CUDA_NO_HALF_CONVERSIONS__ __CUDA_NO_HALF_OPERATORS__
-template <>
-struct __complex_can_implicitly_construct<__half, float> : true_type
-{};
-
-template <>
-struct __complex_can_implicitly_construct<__half, double> : true_type
-{};
-
-template <>
-struct __complex_can_implicitly_construct<float, __half> : true_type
-{};
-
-template <>
-struct __complex_can_implicitly_construct<double, __half> : true_type
-{};
 
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI __half __convert_to_half(const _Tp& __value) noexcept
@@ -108,14 +116,14 @@ public:
       : __repr_(__re, __im)
   {}
 
-  template <class _Up, __enable_if_t<__complex_can_implicitly_construct<value_type, _Up>::value, int> = 0>
+  template <class _Up, __enable_if_t<__cccl_internal::__is_non_narrowing_convertible<value_type, _Up>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI complex(const complex<_Up>& __c)
       : __repr_(__convert_to_half(__c.real()), __convert_to_half(__c.imag()))
   {}
 
   template <class _Up,
-            __enable_if_t<!__complex_can_implicitly_construct<value_type, _Up>::value, int> = 0,
-            __enable_if_t<_CCCL_TRAIT(is_constructible, value_type, _Up), int>              = 0>
+            __enable_if_t<!__cccl_internal::__is_non_narrowing_convertible<value_type, _Up>::value, int> = 0,
+            __enable_if_t<_CCCL_TRAIT(is_constructible, value_type, _Up), int>                           = 0>
   _LIBCUDACXX_HIDE_FROM_ABI explicit complex(const complex<_Up>& __c)
       : __repr_(__convert_to_half(__c.real()), __convert_to_half(__c.imag()))
   {}

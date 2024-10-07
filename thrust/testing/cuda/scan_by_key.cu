@@ -135,20 +135,10 @@ void TestInclusiveScanByKeyCudaStreams()
   using T        = Vector::value_type;
   using Iterator = Vector::iterator;
 
-  Vector keys(7);
-  Vector vals(7);
+  Vector keys{0, 1, 1, 1, 2, 3, 3};
+  Vector vals{1, 2, 3, 4, 5, 6, 7};
 
   Vector output(7, 0);
-
-  // clang-format off
-  keys[0] = 0; vals[0] = 1;
-  keys[1] = 1; vals[1] = 2;
-  keys[2] = 1; vals[2] = 3;
-  keys[3] = 1; vals[3] = 4;
-  keys[4] = 2; vals[4] = 5;
-  keys[5] = 3; vals[5] = 6;
-  keys[6] = 3; vals[6] = 7;
-  // clang-format on
 
   cudaStream_t s;
   cudaStreamCreate(&s);
@@ -159,13 +149,8 @@ void TestInclusiveScanByKeyCudaStreams()
 
   ASSERT_EQUAL_QUIET(iter, output.end());
 
-  ASSERT_EQUAL(output[0], 1);
-  ASSERT_EQUAL(output[1], 2);
-  ASSERT_EQUAL(output[2], 5);
-  ASSERT_EQUAL(output[3], 9);
-  ASSERT_EQUAL(output[4], 5);
-  ASSERT_EQUAL(output[5], 6);
-  ASSERT_EQUAL(output[6], 13);
+  Vector ref{1, 2, 5, 9, 5, 6, 13};
+  ASSERT_EQUAL(output, ref);
 
   thrust::inclusive_scan_by_key(
     thrust::cuda::par.on(s),
@@ -177,25 +162,15 @@ void TestInclusiveScanByKeyCudaStreams()
     thrust::multiplies<T>());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(output[0], 1);
-  ASSERT_EQUAL(output[1], 2);
-  ASSERT_EQUAL(output[2], 6);
-  ASSERT_EQUAL(output[3], 24);
-  ASSERT_EQUAL(output[4], 5);
-  ASSERT_EQUAL(output[5], 6);
-  ASSERT_EQUAL(output[6], 42);
+  ref = {1, 2, 6, 24, 5, 6, 42};
+  ASSERT_EQUAL(output, ref);
 
   thrust::inclusive_scan_by_key(
     thrust::cuda::par.on(s), keys.begin(), keys.end(), vals.begin(), output.begin(), thrust::equal_to<T>());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(output[0], 1);
-  ASSERT_EQUAL(output[1], 2);
-  ASSERT_EQUAL(output[2], 5);
-  ASSERT_EQUAL(output[3], 9);
-  ASSERT_EQUAL(output[4], 5);
-  ASSERT_EQUAL(output[5], 6);
-  ASSERT_EQUAL(output[6], 13);
+  ref = {1, 2, 5, 9, 5, 6, 13};
+  ASSERT_EQUAL(output, ref);
 
   cudaStreamDestroy(s);
 }
@@ -207,20 +182,10 @@ void TestExclusiveScanByKeyCudaStreams()
   using T        = Vector::value_type;
   using Iterator = Vector::iterator;
 
-  Vector keys(7);
-  Vector vals(7);
+  Vector keys{0, 1, 1, 1, 2, 3, 3};
+  Vector vals{1, 2, 3, 4, 5, 6, 7};
 
   Vector output(7, 0);
-
-  // clang-format off
-  keys[0] = 0; vals[0] = 1;
-  keys[1] = 1; vals[1] = 2;
-  keys[2] = 1; vals[2] = 3;
-  keys[3] = 1; vals[3] = 4;
-  keys[4] = 2; vals[4] = 5;
-  keys[5] = 3; vals[5] = 6;
-  keys[6] = 3; vals[6] = 7;
-  // clang-format on
 
   cudaStream_t s;
   cudaStreamCreate(&s);
@@ -231,24 +196,14 @@ void TestExclusiveScanByKeyCudaStreams()
 
   ASSERT_EQUAL_QUIET(iter, output.end());
 
-  ASSERT_EQUAL(output[0], 0);
-  ASSERT_EQUAL(output[1], 0);
-  ASSERT_EQUAL(output[2], 2);
-  ASSERT_EQUAL(output[3], 5);
-  ASSERT_EQUAL(output[4], 0);
-  ASSERT_EQUAL(output[5], 0);
-  ASSERT_EQUAL(output[6], 6);
+  Vector ref{0, 0, 2, 5, 0, 0, 6};
+  ASSERT_EQUAL(output, ref);
 
   thrust::exclusive_scan_by_key(thrust::cuda::par.on(s), keys.begin(), keys.end(), vals.begin(), output.begin(), T(10));
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(output[0], 10);
-  ASSERT_EQUAL(output[1], 10);
-  ASSERT_EQUAL(output[2], 12);
-  ASSERT_EQUAL(output[3], 15);
-  ASSERT_EQUAL(output[4], 10);
-  ASSERT_EQUAL(output[5], 10);
-  ASSERT_EQUAL(output[6], 16);
+  ref = {10, 10, 12, 15, 10, 10, 16};
+  ASSERT_EQUAL(output, ref);
 
   thrust::exclusive_scan_by_key(
     thrust::cuda::par.on(s),
@@ -261,24 +216,14 @@ void TestExclusiveScanByKeyCudaStreams()
     thrust::multiplies<T>());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(output[0], 10);
-  ASSERT_EQUAL(output[1], 10);
-  ASSERT_EQUAL(output[2], 20);
-  ASSERT_EQUAL(output[3], 60);
-  ASSERT_EQUAL(output[4], 10);
-  ASSERT_EQUAL(output[5], 10);
-  ASSERT_EQUAL(output[6], 60);
+  ref = {10, 10, 20, 60, 10, 10, 60};
+  ASSERT_EQUAL(output, ref);
 
   thrust::exclusive_scan_by_key(
     thrust::cuda::par.on(s), keys.begin(), keys.end(), vals.begin(), output.begin(), T(10), thrust::equal_to<T>());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(output[0], 10);
-  ASSERT_EQUAL(output[1], 10);
-  ASSERT_EQUAL(output[2], 12);
-  ASSERT_EQUAL(output[3], 15);
-  ASSERT_EQUAL(output[4], 10);
-  ASSERT_EQUAL(output[5], 10);
-  ASSERT_EQUAL(output[6], 16);
+  ref = {10, 10, 12, 15, 10, 10, 16};
+  ASSERT_EQUAL(output, ref);
 }
 DECLARE_UNITTEST(TestExclusiveScanByKeyCudaStreams);

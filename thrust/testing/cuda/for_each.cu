@@ -3,6 +3,7 @@
 
 #include <algorithm>
 
+#include "thrust/device_vector.h"
 #include <unittest/unittest.h>
 
 static const size_t NUM_REGISTERS = 64;
@@ -219,14 +220,8 @@ void TestForEachCudaStreams()
   cudaStream_t s;
   cudaStreamCreate(&s);
 
-  thrust::device_vector<int> input(5);
+  thrust::device_vector<int> input{3, 2, 3, 4, 6};
   thrust::device_vector<int> output(7, 0);
-
-  input[0] = 3;
-  input[1] = 2;
-  input[2] = 3;
-  input[3] = 4;
-  input[4] = 6;
 
   mark_present_for_each<int> f;
   f.ptr = thrust::raw_pointer_cast(output.data());
@@ -235,13 +230,8 @@ void TestForEachCudaStreams()
 
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(output[0], 0);
-  ASSERT_EQUAL(output[1], 0);
-  ASSERT_EQUAL(output[2], 1);
-  ASSERT_EQUAL(output[3], 1);
-  ASSERT_EQUAL(output[4], 1);
-  ASSERT_EQUAL(output[5], 0);
-  ASSERT_EQUAL(output[6], 1);
+  thrust::device_vector<int> ref{0, 0, 1, 1, 1, 0, 1};
+  ASSERT_EQUAL(output, ref);
 
   cudaStreamDestroy(s);
 }

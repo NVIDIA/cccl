@@ -237,7 +237,7 @@ struct DispatchThreeWayPartitionIf
 
       // Number of input tiles
       int tile_size = block_threads * items_per_thread;
-      int num_tiles = static_cast<int>(DivideAndRoundUp(num_items, tile_size));
+      int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
 
       // Specify temporary storage allocation requirements
       size_t allocation_sizes[1]; // bytes needed for tile status descriptors
@@ -281,7 +281,7 @@ struct DispatchThreeWayPartitionIf
       }
 
       // Log three_way_partition_init_kernel configuration
-      int init_grid_size = CUB_MAX(1, DivideAndRoundUp(num_tiles, INIT_KERNEL_THREADS));
+      int init_grid_size = CUB_MAX(1, ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS));
 
 #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
       _CubLog("Invoking three_way_partition_init_kernel<<<%d, %d, 0, %lld>>>()\n",
@@ -319,7 +319,7 @@ struct DispatchThreeWayPartitionIf
       // Get grid size for scanning tiles
       dim3 scan_grid_size;
       scan_grid_size.z = 1;
-      scan_grid_size.y = DivideAndRoundUp(num_tiles, max_dim_x);
+      scan_grid_size.y = ::cuda::ceil_div(num_tiles, max_dim_x);
       scan_grid_size.x = CUB_MIN(num_tiles, max_dim_x);
 
 // Log select_if_kernel configuration

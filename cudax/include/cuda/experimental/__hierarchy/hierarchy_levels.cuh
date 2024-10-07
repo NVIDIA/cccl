@@ -292,7 +292,7 @@ template <typename Unit, typename Level>
     return dims_product<typename Level::product_type>(
       extents_impl<SplitLevel, Level>(), extents_impl<Unit, SplitLevel>());
   }
-  _LIBCUDACXX_UNREACHABLE();
+  _CCCL_UNREACHABLE();
 }
 
 template <typename Unit, typename Level>
@@ -309,7 +309,7 @@ template <typename Unit, typename Level>
       dims_product<typename Level::product_type>(index_impl<SplitLevel, Level>(), extents_impl<Unit, SplitLevel>()),
       index_impl<Unit, SplitLevel>());
   }
-  _LIBCUDACXX_UNREACHABLE();
+  _CCCL_UNREACHABLE();
 }
 } // namespace detail
 

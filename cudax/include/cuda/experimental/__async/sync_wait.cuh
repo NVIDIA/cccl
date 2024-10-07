@@ -177,7 +177,7 @@ public:
     else
     {
       _CUDA_VSTD::optional<__values_t> __result{};
-      __state_t<_Sndr> __state{&__result};
+      __state_t<_Sndr> __state{&__result, {}, {}};
 
       // Launch the sender with a continuation that will fill in a variant
       auto __opstate = __async::connect(static_cast<_Sndr&&>(__sndr), __rcvr_t{&__state});

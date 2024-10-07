@@ -16,7 +16,7 @@ However, any feature within this library has important use cases and we encourag
 
 Specifically, ``cudax`` provides:
    - :ref:`uninitialized storage <cudax-containers-uninitialized-buffer>`
-   - :ref:`an owning type erased memory resource <cudax-memory-resource-async-any-resource>`
+   - :ref:`an owning type erased memory resource <cudax-memory-resource-any-async-resource>`
    - :ref:`stream-ordered memory resources <cudax-memory-resource-async>`
    - dimensions description functionality
 

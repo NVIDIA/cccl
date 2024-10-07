@@ -808,7 +808,7 @@ THRUST_RUNTIME_FUNCTION cudaError_t doit_step(
 
   // Number of input tiles
   int tile_size  = reduce_by_key_plan.items_per_tile;
-  Size num_tiles = cub::DivideAndRoundUp(num_items, tile_size);
+  Size num_tiles = ::cuda::ceil_div(num_items, tile_size);
 
   size_t vshmem_size = core::vshmem_size(reduce_by_key_plan.shared_memory_size, num_tiles);
 

@@ -32,25 +32,22 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_MAKE_UNSIGNED) && !defined(_LIBCUDACXX_USE_MAKE_UNSIGNED_FALLBACK)
+#if defined(_CCCL_BUILTIN_MAKE_UNSIGNED) && !defined(_LIBCUDACXX_USE_MAKE_UNSIGNED_FALLBACK)
 
 template <class _Tp>
-using __make_unsigned_t = _LIBCUDACXX_MAKE_UNSIGNED(_Tp);
+using __make_unsigned_t = _CCCL_BUILTIN_MAKE_UNSIGNED(_Tp);
 
 #else
 typedef __type_list<unsigned char,
-                    __type_list<unsigned short,
-                                __type_list<unsigned int,
-                                            __type_list<unsigned long,
-                                                        __type_list<unsigned long long,
+                    unsigned short,
+                    unsigned int,
+                    unsigned long,
+                    unsigned long long
 #  ifndef _LIBCUDACXX_HAS_NO_INT128
-                                                                    __type_list<__uint128_t,
+                    ,
+                    __uint128_t
 #  endif
-                                                                                __nat
-#  ifndef _LIBCUDACXX_HAS_NO_INT128
-                                                                                >
-#  endif
-                                                                    >>>>>
+                    >
   __unsigned_types;
 
 template <class _Tp, bool = is_integral<_Tp>::value || is_enum<_Tp>::value>
@@ -60,7 +57,13 @@ struct __make_unsigned_impl
 template <class _Tp>
 struct __make_unsigned_impl<_Tp, true>
 {
-  typedef typename __find_first<__unsigned_types, sizeof(_Tp)>::type type;
+  struct __size_greater_equal_fn
+  {
+    template <class _Up>
+    using __call = bool_constant<(sizeof(_Tp) <= sizeof(_Up))>;
+  };
+
+  using type = __type_front<__type_find_if<__unsigned_types, __size_greater_equal_fn>>;
 };
 
 template <>
@@ -122,7 +125,7 @@ struct __make_unsigned_impl<__uint128_t, true>
 template <class _Tp>
 using __make_unsigned_t = typename __apply_cv<_Tp, typename __make_unsigned_impl<__remove_cv_t<_Tp>>::type>::type;
 
-#endif // defined(_LIBCUDACXX_MAKE_UNSIGNED) && !defined(_LIBCUDACXX_USE_MAKE_UNSIGNED_FALLBACK)
+#endif // defined(_CCCL_BUILTIN_MAKE_UNSIGNED) && !defined(_LIBCUDACXX_USE_MAKE_UNSIGNED_FALLBACK)
 
 template <class _Tp>
 struct make_unsigned

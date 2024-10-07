@@ -27,6 +27,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator1, class _InputIterator2, class _BinaryPredicate>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 equal(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _BinaryPredicate __pred)
@@ -48,6 +49,7 @@ equal(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first
   return _CUDA_VSTD::equal(__first1, __last1, __first2, __equal_to{});
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _InputIterator1, class _InputIterator2>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool __equal(
   _InputIterator1 __first1,

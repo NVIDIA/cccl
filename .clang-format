@@ -25,7 +25,6 @@ AlwaysBreakTemplateDeclarations: Yes
 AttributeMacros: [
                   '_CCCL_ALIGNAS_TYPE',
                   '_CCCL_ALIGNAS',
-                  '_CCCL_ALWAYS_INLINE',
                   '_CCCL_CONSTEXPR_CXX14',
                   '_CCCL_CONSTEXPR_CXX17',
                   '_CCCL_CONSTEXPR_CXX20',
@@ -47,7 +46,6 @@ AttributeMacros: [
                   'THRUST_RUNTIME_FUNCTION',
                   'THRUST_DETAIL_KERNEL_ATTRIBUTES',
                   '_LIBCUDACXX_ALIGNOF',
-                  '_LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS',
                   '_LIBCUDACXX_DEPRECATED_IN_CXX11',
                   '_LIBCUDACXX_DEPRECATED_IN_CXX14',
                   '_LIBCUDACXX_DEPRECATED_IN_CXX17',

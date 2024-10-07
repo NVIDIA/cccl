@@ -23,8 +23,6 @@
 
 #ifndef _CCCL_COMPILER_NVRTC
 #  include <cassert>
-
-#  include <assert.h>
 #endif //_CCCL_COMPILER_NVRTC
 
 #endif // _CUDA_STD_CASSERT

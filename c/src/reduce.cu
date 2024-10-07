@@ -19,7 +19,7 @@
 #include <iostream>
 #include <memory>
 
-#include <cccl/reduce.h>
+#include <cccl/c/reduce.h>
 #include <nvJitLink.h>
 #include <nvrtc.h>
 

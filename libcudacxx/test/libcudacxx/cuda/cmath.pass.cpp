@@ -19,18 +19,65 @@
 #  include <cstdint>
 #endif // !TEST_COMPILER_NVRTC
 
-template <class T>
+template <class T, class U>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
 {
   constexpr T maxv = cuda::std::numeric_limits<T>::max();
 
-  assert(cuda::ceil_div(T(0), T(1)) == T(0));
-  assert(cuda::ceil_div(T(1), T(1)) == T(1));
-  assert(cuda::ceil_div(T(126), T(64)) == T(2));
+  // ensure that we return the right type
+  static_assert(cuda::std::is_same<decltype(cuda::ceil_div(T(0), U(1))), T>::value, "");
+
+  assert(cuda::ceil_div(T(0), U(1)) == T(0));
+  assert(cuda::ceil_div(T(1), U(1)) == T(1));
+  assert(cuda::ceil_div(T(126), U(64)) == T(2));
 
   // ensure that we are resilient against overflow
-  assert(cuda::ceil_div(maxv, T(1)) == maxv);
+  assert(cuda::ceil_div(maxv, U(1)) == maxv);
   assert(cuda::ceil_div(maxv, maxv) == T(1));
+}
+
+template <class T>
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+{
+  // Builtin integer types:
+  test<T, char>();
+  test<T, signed char>();
+  test<T, unsigned char>();
+
+  test<T, short>();
+  test<T, unsigned short>();
+
+  test<T, int>();
+  test<T, unsigned int>();
+
+  test<T, long>();
+  test<T, unsigned long>();
+
+  test<T, long long>();
+  test<T, unsigned long long>();
+
+#if !defined(TEST_COMPILER_NVRTC)
+  // cstdint types:
+  test<T, std::size_t>();
+  test<T, std::ptrdiff_t>();
+  test<T, std::intptr_t>();
+  test<T, std::uintptr_t>();
+
+  test<T, std::int8_t>();
+  test<T, std::int16_t>();
+  test<T, std::int32_t>();
+  test<T, std::int64_t>();
+
+  test<T, std::uint8_t>();
+  test<T, std::uint16_t>();
+  test<T, std::uint32_t>();
+  test<T, std::uint64_t>();
+#endif // !TEST_COMPILER_NVRTC
+
+#if !defined(TEST_HAS_NO_INT128_T)
+  test<T, __int128_t>();
+  test<T, __uint128_t>();
+#endif // !TEST_HAS_NO_INT128_T
 }
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()

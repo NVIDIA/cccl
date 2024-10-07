@@ -361,7 +361,7 @@ struct dispatch_histogram
 
       // Get grid dimensions, trying to keep total blocks ~histogram_sweep_occupancy
       int pixels_per_tile = block_threads * pixels_per_thread;
-      int tiles_per_row   = static_cast<int>(cub::DivideAndRoundUp(num_row_pixels, pixels_per_tile));
+      int tiles_per_row   = static_cast<int>(::cuda::ceil_div(num_row_pixels, pixels_per_tile));
       int blocks_per_row  = CUB_MIN(histogram_sweep_occupancy, tiles_per_row);
       int blocks_per_col =
         (blocks_per_row > 0) ? int(CUB_MIN(histogram_sweep_occupancy / blocks_per_row, num_rows)) : 0;

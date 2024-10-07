@@ -50,8 +50,6 @@
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/cstdlib>
-#include <cuda/std/detail/libcxx/include/__assert>
 
 #if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
 
@@ -276,8 +274,8 @@ public:
   {
     if constexpr (sized_sentinel_for<_Sent, _Iter>)
     {
-      _LIBCUDACXX_ASSERT((__end_ - __begin_) == static_cast<iter_difference_t<_Iter>>(__n),
-                         "_CUDA_VSTD::_CUDA_VRANGES::subrange was passed an invalid size hint");
+      _CCCL_ASSERT((__end_ - __begin_) == static_cast<iter_difference_t<_Iter>>(__n),
+                   "_CUDA_VSTD::_CUDA_VRANGES::subrange was passed an invalid size hint");
     }
   }
 
@@ -345,7 +343,7 @@ public:
       return _CUDA_VSTD::__to_unsigned_like(__end_ - __begin_);
     }
 #  if defined(_CCCL_CUDACC_BELOW_11_3)
-    _LIBCUDACXX_UNREACHABLE();
+    _CCCL_UNREACHABLE();
 #  endif // _CCCL_CUDACC_BELOW_11_3
   }
 
@@ -444,7 +442,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto get(const subrange<_Iter, _Sent, _Kind>
   {
     return __subrange.end();
   }
-  _LIBCUDACXX_UNREACHABLE();
+  _CCCL_UNREACHABLE();
 }
 
 #  if _CCCL_STD_VER >= 2020
@@ -468,7 +466,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto get(subrange<_Iter, _Sent, _Kind>&& __s
   {
     return __subrange.end();
   }
-  _LIBCUDACXX_UNREACHABLE();
+  _CCCL_UNREACHABLE();
 }
 
 template <class _Ip, class _Sp, subrange_kind _Kp>

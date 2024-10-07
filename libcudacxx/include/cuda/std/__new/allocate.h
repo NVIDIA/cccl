@@ -60,22 +60,22 @@ template <class... _Args>
 _LIBCUDACXX_HIDE_FROM_ABI void* __libcpp_operator_new(_Args... __args)
 {
   // Those builtins are not usable on device and the tests crash when using them
-#if 0 && __has_builtin(__builtin_operator_new) && __has_builtin(__builtin_operator_delete)
-  return __builtin_operator_new(__args...);
-#else // ^^^ use builtin ^^^ / vvv no builtin
+#if defined(_CCCL_BUILTIN_OPERATOR_NEW)
+  return _CCCL_BUILTIN_OPERATOR_NEW(__args...);
+#else // ^^^ _CCCL_BUILTIN_OPERATOR_NEW ^^^ / vvv !_CCCL_BUILTIN_OPERATOR_NEW vvv
   return ::operator new(__args...);
-#endif // !__builtin_operator_new || !__builtin_operator_delete
+#endif // !_CCCL_BUILTIN_OPERATOR_NEW
 }
 
 template <class... _Args>
 _LIBCUDACXX_HIDE_FROM_ABI void __libcpp_operator_delete(_Args... __args)
 {
   // Those builtins are not usable on device and the tests crash when using them
-#if 0 && __has_builtin(__builtin_operator_new) && __has_builtin(__builtin_operator_delete)
-  __builtin_operator_delete(__args...);
-#else // ^^^ use builtin ^^^ / vvv no builtin
+#if defined(_CCCL_BUILTIN_OPERATOR_DELETE)
+  _CCCL_BUILTIN_OPERATOR_DELETE(__args...);
+#else // ^^^ _CCCL_BUILTIN_OPERATOR_DELETE ^^^ / vvv !_CCCL_BUILTIN_OPERATOR_DELETE vvv
   ::operator delete(__args...);
-#endif // !__builtin_operator_new || !__builtin_operator_delete
+#endif // !_CCCL_BUILTIN_OPERATOR_DELETE
 }
 
 _LIBCUDACXX_HIDE_FROM_ABI void* __libcpp_allocate(size_t __size, size_t __align)

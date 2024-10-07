@@ -62,7 +62,7 @@
 #endif
 #include "cuda_space_selector.h"
 
-template <template <cuda::thread_scope> typename Atomic,
+template <template <cuda::thread_scope> class Atomic,
           cuda::thread_scope Scope,
           template <typename, typename>
           class Selector>

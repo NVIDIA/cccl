@@ -136,30 +136,20 @@ void TestScanCudaStreams()
 
   Vector::iterator iter;
 
-  Vector input(5);
-  Vector result(5);
+  Vector input{1, 3, -2, 4, -5};
+  Vector result{1, 4, 2, 6, 1};
   Vector output(5);
-
-  input[0] = 1;
-  input[1] = 3;
-  input[2] = -2;
-  input[3] = 4;
-  input[4] = -5;
 
   Vector input_copy(input);
 
   cudaStream_t s;
   cudaStreamCreate(&s);
-
   // inclusive scan
+
   iter = thrust::inclusive_scan(thrust::cuda::par.on(s), input.begin(), input.end(), output.begin());
+
   cudaStreamSynchronize(s);
 
-  result[0] = 1;
-  result[1] = 4;
-  result[2] = 2;
-  result[3] = 6;
-  result[4] = 1;
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
   ASSERT_EQUAL(input, input_copy);
   ASSERT_EQUAL(output, result);
@@ -168,11 +158,7 @@ void TestScanCudaStreams()
   iter = thrust::exclusive_scan(thrust::cuda::par.on(s), input.begin(), input.end(), output.begin(), 0);
   cudaStreamSynchronize(s);
 
-  result[0] = 0;
-  result[1] = 1;
-  result[2] = 4;
-  result[3] = 2;
-  result[4] = 6;
+  result = {0, 1, 4, 2, 6};
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
   ASSERT_EQUAL(input, input_copy);
   ASSERT_EQUAL(output, result);
@@ -181,11 +167,7 @@ void TestScanCudaStreams()
   iter = thrust::exclusive_scan(thrust::cuda::par.on(s), input.begin(), input.end(), output.begin(), 3);
   cudaStreamSynchronize(s);
 
-  result[0] = 3;
-  result[1] = 4;
-  result[2] = 7;
-  result[3] = 5;
-  result[4] = 9;
+  result = {3, 4, 7, 5, 9};
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
   ASSERT_EQUAL(input, input_copy);
   ASSERT_EQUAL(output, result);
@@ -194,11 +176,7 @@ void TestScanCudaStreams()
   iter = thrust::inclusive_scan(thrust::cuda::par.on(s), input.begin(), input.end(), output.begin(), thrust::plus<T>());
   cudaStreamSynchronize(s);
 
-  result[0] = 1;
-  result[1] = 4;
-  result[2] = 2;
-  result[3] = 6;
-  result[4] = 1;
+  result = {1, 4, 2, 6, 1};
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
   ASSERT_EQUAL(input, input_copy);
   ASSERT_EQUAL(output, result);
@@ -208,11 +186,7 @@ void TestScanCudaStreams()
     thrust::inclusive_scan(thrust::cuda::par.on(s), input.begin(), input.end(), output.begin(), 3, thrust::plus<T>());
   cudaStreamSynchronize(s);
 
-  result[0] = 4;
-  result[1] = 7;
-  result[2] = 5;
-  result[3] = 9;
-  result[4] = 4;
+  result = {4, 7, 5, 9, 4};
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
   ASSERT_EQUAL(input, input_copy);
   ASSERT_EQUAL(output, result);
@@ -222,11 +196,7 @@ void TestScanCudaStreams()
     thrust::exclusive_scan(thrust::cuda::par.on(s), input.begin(), input.end(), output.begin(), 3, thrust::plus<T>());
   cudaStreamSynchronize(s);
 
-  result[0] = 3;
-  result[1] = 4;
-  result[2] = 7;
-  result[3] = 5;
-  result[4] = 9;
+  result = {3, 4, 7, 5, 9};
   ASSERT_EQUAL(std::size_t(iter - output.begin()), input.size());
   ASSERT_EQUAL(input, input_copy);
   ASSERT_EQUAL(output, result);
@@ -236,11 +206,7 @@ void TestScanCudaStreams()
   iter  = thrust::inclusive_scan(thrust::cuda::par.on(s), input.begin(), input.end(), input.begin());
   cudaStreamSynchronize(s);
 
-  result[0] = 1;
-  result[1] = 4;
-  result[2] = 2;
-  result[3] = 6;
-  result[4] = 1;
+  result = {1, 4, 2, 6, 1};
   ASSERT_EQUAL(std::size_t(iter - input.begin()), input.size());
   ASSERT_EQUAL(input, result);
 
@@ -249,11 +215,7 @@ void TestScanCudaStreams()
   iter  = thrust::exclusive_scan(thrust::cuda::par.on(s), input.begin(), input.end(), input.begin(), 3);
   cudaStreamSynchronize(s);
 
-  result[0] = 3;
-  result[1] = 4;
-  result[2] = 7;
-  result[3] = 5;
-  result[4] = 9;
+  result = {3, 4, 7, 5, 9};
   ASSERT_EQUAL(std::size_t(iter - input.begin()), input.size());
   ASSERT_EQUAL(input, result);
 
@@ -262,11 +224,7 @@ void TestScanCudaStreams()
   iter  = thrust::exclusive_scan(thrust::cuda::par.on(s), input.begin(), input.end(), input.begin());
   cudaStreamSynchronize(s);
 
-  result[0] = 0;
-  result[1] = 1;
-  result[2] = 4;
-  result[3] = 2;
-  result[4] = 6;
+  result = {0, 1, 4, 2, 6};
   ASSERT_EQUAL(std::size_t(iter - input.begin()), input.size());
   ASSERT_EQUAL(input, result);
 
@@ -292,32 +250,14 @@ struct const_ref_plus_mod3
 static void TestInclusiveScanWithConstAccumulator()
 {
   // add numbers modulo 3 with external lookup table
-  thrust::device_vector<int> data(7);
-  data[0] = 0;
-  data[1] = 1;
-  data[2] = 2;
-  data[3] = 1;
-  data[4] = 2;
-  data[5] = 0;
-  data[6] = 1;
+  thrust::device_vector<int> data{0, 1, 2, 1, 2, 0, 1};
 
-  thrust::device_vector<int> table(6);
-  table[0] = 0;
-  table[1] = 1;
-  table[2] = 2;
-  table[3] = 0;
-  table[4] = 1;
-  table[5] = 2;
+  thrust::device_vector<int> table{0, 1, 2, 0, 1, 2};
 
   thrust::inclusive_scan(
     data.begin(), data.end(), data.begin(), const_ref_plus_mod3<int>(thrust::raw_pointer_cast(&table[0])));
 
-  ASSERT_EQUAL(data[0], 0);
-  ASSERT_EQUAL(data[1], 1);
-  ASSERT_EQUAL(data[2], 0);
-  ASSERT_EQUAL(data[3], 1);
-  ASSERT_EQUAL(data[4], 0);
-  ASSERT_EQUAL(data[5], 0);
-  ASSERT_EQUAL(data[6], 1);
+  thrust::device_vector<int> ref{0, 1, 0, 1, 0, 0, 1};
+  ASSERT_EQUAL(data, ref);
 }
 DECLARE_UNITTEST(TestInclusiveScanWithConstAccumulator);

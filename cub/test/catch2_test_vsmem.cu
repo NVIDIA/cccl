@@ -302,7 +302,7 @@ struct dispatch_dummy_algorithm_t : SelectedPolicy
     constexpr auto block_threads    = vsmem_helper_t::agent_policy_t::BLOCK_THREADS;
     constexpr auto items_per_thread = vsmem_helper_t::agent_policy_t::ITEMS_PER_THREAD;
     constexpr auto tile_size        = block_threads * items_per_thread;
-    const auto num_tiles            = cub::DivideAndRoundUp(num_items, tile_size);
+    const auto num_tiles            = ::cuda::ceil_div(num_items, tile_size);
     const auto total_vsmem          = num_tiles * vsmem_helper_t::vsmem_per_block;
 
     // Get device ordinal

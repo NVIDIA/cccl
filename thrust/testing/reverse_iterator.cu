@@ -67,21 +67,16 @@ DECLARE_UNITTEST(TestReverseIteratorIncrement);
 template <typename Vector>
 void TestReverseIteratorCopy()
 {
-  Vector source(4);
-  source[0] = 10;
-  source[1] = 20;
-  source[2] = 30;
-  source[3] = 40;
+  Vector source{10, 20, 30, 40};
 
-  Vector destination(4, 0);
+  Vector destination(8, 0); // arm gcc is complaining here
 
   thrust::copy(
     thrust::make_reverse_iterator(source.end()), thrust::make_reverse_iterator(source.begin()), destination.begin());
 
-  ASSERT_EQUAL(destination[0], 40);
-  ASSERT_EQUAL(destination[1], 30);
-  ASSERT_EQUAL(destination[2], 20);
-  ASSERT_EQUAL(destination[3], 10);
+  destination.resize(4);
+  Vector ref{40, 30, 20, 10};
+  ASSERT_EQUAL(destination, ref);
 }
 DECLARE_VECTOR_UNITTEST(TestReverseIteratorCopy);
 

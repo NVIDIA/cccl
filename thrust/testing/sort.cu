@@ -41,22 +41,10 @@ template <class Vector>
 void InitializeSimpleKeySortTest(Vector& unsorted_keys, Vector& sorted_keys)
 {
   unsorted_keys.resize(7);
-  unsorted_keys[0] = 1;
-  unsorted_keys[1] = 3;
-  unsorted_keys[2] = 6;
-  unsorted_keys[3] = 5;
-  unsorted_keys[4] = 2;
-  unsorted_keys[5] = 0;
-  unsorted_keys[6] = 4;
+  unsorted_keys = {1, 3, 6, 5, 2, 0, 4};
 
   sorted_keys.resize(7);
-  sorted_keys[0] = 0;
-  sorted_keys[1] = 1;
-  sorted_keys[2] = 2;
-  sorted_keys[3] = 3;
-  sorted_keys[4] = 4;
-  sorted_keys[5] = 5;
-  sorted_keys[6] = 6;
+  sorted_keys = {0, 1, 2, 3, 4, 5, 6};
 }
 
 template <class Vector>

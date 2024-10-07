@@ -43,7 +43,7 @@
 
 using scalar_types = c2h::type_list<std::int8_t, std::int16_t, std::int32_t, std::int64_t, float, double>;
 
-using types = metal::append<
+using types = ::cuda::std::__type_push_back<
   scalar_types,
   char2,
   short2,

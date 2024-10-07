@@ -358,13 +358,16 @@ struct SmVersionCacheTag
 {};
 
 /**
- * \brief Retrieves the PTX virtual architecture that will be used on \p device (major * 100 + minor * 10).
+ * \brief Retrieves the PTX virtual architecture that will be used on \p device (major * 100 + minor * 10). If
+ * __CUDA_ARCH_LIST__ is defined, this value is one of __CUDA_ARCH_LIST__.
  *
  * \note This function may cache the result internally.
  * \note This function is thread safe.
  */
 _CCCL_HOST inline cudaError_t PtxVersion(int& ptx_version, int device)
 {
+  // Note: the ChainedPolicy pruning (i.e., invoke_static) requites that there's an exact match between one of the
+  // architectures in __CUDA_ARCH__ and the runtime queried ptx version.
   auto const payload = GetPerDeviceAttributeCache<PtxVersionCacheTag>()(
     // If this call fails, then we get the error code back in the payload, which we check with `CubDebug` below.
     [=](int& pv) {
@@ -388,6 +391,8 @@ _CCCL_HOST inline cudaError_t PtxVersion(int& ptx_version, int device)
  */
 CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersion(int& ptx_version)
 {
+  // Note: the ChainedPolicy pruning (i.e., invoke_static) requites that there's an exact match between one of the
+  // architectures in __CUDA_ARCH__ and the runtime queried ptx version.
   cudaError_t result = cudaErrorUnknown;
   NV_IF_TARGET(NV_IS_HOST,
                (result = PtxVersion(ptx_version, CurrentDevice());),
@@ -635,18 +640,83 @@ struct ChainedPolicy
   template <typename FunctorT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Invoke(int device_ptx_version, FunctorT& op)
   {
+    // __CUDA_ARCH_LIST__ is only available from CTK 11.5 onwards
+#ifdef __CUDA_ARCH_LIST__
+    return runtime_to_compiletime<__CUDA_ARCH_LIST__>(device_ptx_version, op);
+#else
     if (device_ptx_version < PolicyPtxVersion)
     {
       return PrevPolicyT::Invoke(device_ptx_version, op);
     }
     return op.template Invoke<PolicyT>();
+#endif
+  }
+
+private:
+  template <int, typename, typename>
+  friend struct ChainedPolicy; // let us call invoke_static of other ChainedPolicy instantiations
+
+  template <int... CudaArches, typename FunctorT>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t runtime_to_compiletime(int device_ptx_version, FunctorT& op)
+  {
+    // We instantiate invoke_static for each CudaArches, but only call the one matching device_ptx_version.
+    // If there's no exact match of any of the architectures in __CUDA_ARCH_LIST__ and the runtime
+    // queried ptx version (i.e., the closest ptx version to the current device's architecture that the EmptyKernel was
+    // compiled for), we return cudaErrorInvalidDeviceFunction. Such a scenario may arise if CUB_DISABLE_NAMESPACE_MAGIC
+    // is set and different TUs are compiled for different sets of architecture.
+    cudaError_t e             = cudaErrorInvalidDeviceFunction;
+    const cudaError_t dummy[] = {
+      (device_ptx_version == CudaArches ? (e = invoke_static<CudaArches>(op, ::cuda::std::true_type{}))
+                                        : cudaSuccess)...};
+    (void) dummy;
+    return e;
+  }
+
+  template <int DevicePtxVersion, typename FunctorT>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t invoke_static(FunctorT& op, ::cuda::std::true_type)
+  {
+    // TODO(bgruber): drop diagnostic suppression in C++17
+    _CCCL_DIAG_PUSH
+    _CCCL_DIAG_SUPPRESS_MSVC(4127) // suppress Conditional Expression is Constant
+    _CCCL_IF_CONSTEXPR (DevicePtxVersion < PolicyPtxVersion)
+    {
+      // TODO(bgruber): drop boolean tag dispatches in C++17, since _CCCL_IF_CONSTEXPR will discard this branch properly
+      return PrevPolicyT::template invoke_static<DevicePtxVersion>(
+        op, ::cuda::std::bool_constant<(DevicePtxVersion < PolicyPtxVersion)>{});
+    }
+    else
+    {
+      return do_invoke(op, ::cuda::std::bool_constant<DevicePtxVersion >= PolicyPtxVersion>{});
+    }
+    _CCCL_DIAG_POP
+  }
+
+  template <int, typename FunctorT>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t invoke_static(FunctorT&, ::cuda::std::false_type)
+  {
+    _CCCL_UNREACHABLE();
+  }
+
+  template <typename FunctorT>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t do_invoke(FunctorT& op, ::cuda::std::true_type)
+  {
+    return op.template Invoke<PolicyT>();
+  }
+
+  template <typename FunctorT>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t do_invoke(FunctorT&, ::cuda::std::false_type)
+  {
+    _CCCL_UNREACHABLE();
   }
 };
 
 /// Helper for dispatching into a policy chain (end-of-chain specialization)
-template <int PTX_VERSION, typename PolicyT>
-struct ChainedPolicy<PTX_VERSION, PolicyT, PolicyT>
+template <int PolicyPtxVersion, typename PolicyT>
+struct ChainedPolicy<PolicyPtxVersion, PolicyT, PolicyT>
 {
+  template <int, typename, typename>
+  friend struct ChainedPolicy; // befriend primary template, so it can call invoke_static
+
   /// The policy for the active compiler pass
   using ActivePolicy = PolicyT;
 
@@ -655,6 +725,19 @@ struct ChainedPolicy<PTX_VERSION, PolicyT, PolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Invoke(int /*ptx_version*/, FunctorT& op)
   {
     return op.template Invoke<PolicyT>();
+  }
+
+private:
+  template <int, typename FunctorT>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t invoke_static(FunctorT& op, ::cuda::std::true_type)
+  {
+    return op.template Invoke<PolicyT>();
+  }
+
+  template <int, typename FunctorT>
+  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t invoke_static(FunctorT&, ::cuda::std::false_type)
+  {
+    _CCCL_UNREACHABLE();
   }
 };
 

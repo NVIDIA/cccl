@@ -27,15 +27,15 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // TODO: Clang incorrectly reports that __is_array is true for T[0].
 //       Re-enable the branch once https://llvm.org/PR54705 is fixed.
-#if defined(_LIBCUDACXX_IS_ARRAY) && !defined(_LIBCUDACXX_USE_IS_ARRAY_FALLBACK)
+#if defined(_CCCL_BUILTIN_IS_ARRAY) && !defined(_LIBCUDACXX_USE_IS_ARRAY_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_array : public integral_constant<bool, _LIBCUDACXX_IS_ARRAY(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_array : public integral_constant<bool, _CCCL_BUILTIN_IS_ARRAY(_Tp)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_array_v = _LIBCUDACXX_IS_ARRAY(_Tp);
+_LIBCUDACXX_INLINE_VAR constexpr bool is_array_v = _CCCL_BUILTIN_IS_ARRAY(_Tp);
 #  endif
 
 #else
@@ -55,7 +55,7 @@ template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_array_v = is_array<_Tp>::value;
 #  endif
 
-#endif // defined(_LIBCUDACXX_IS_ARRAY) && !defined(_LIBCUDACXX_USE_IS_ARRAY_FALLBACK)
+#endif // defined(_CCCL_BUILTIN_IS_ARRAY) && !defined(_LIBCUDACXX_USE_IS_ARRAY_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

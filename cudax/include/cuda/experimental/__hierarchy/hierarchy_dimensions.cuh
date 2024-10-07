@@ -54,7 +54,7 @@ _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr auto fool_compiler(const dimensions<
   {
     return ex;
   }
-  _LIBCUDACXX_UNREACHABLE();
+  _CCCL_UNREACHABLE();
 }
 
 template <typename QueryLevel, typename Hierarchy>
@@ -96,7 +96,7 @@ struct get_level_helper
     {
       return (*this)(levels...);
     }
-    _LIBCUDACXX_UNREACHABLE();
+    _CCCL_UNREACHABLE();
   }
 };
 } // namespace detail

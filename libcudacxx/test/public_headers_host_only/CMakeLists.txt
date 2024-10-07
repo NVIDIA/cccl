@@ -28,6 +28,7 @@ function(libcudacxx_add_std_header_test header)
   add_library(headertest_std_${header_name} SHARED "${headertest_src}.cpp")
   target_include_directories(headertest_std_${header_name} PRIVATE "${libcudacxx_SOURCE_DIR}/include")
   target_compile_options(headertest_std_${header_name} PRIVATE ${headertest_warning_levels_host})
+  target_compile_definitions(headertest_std_${header_name} PRIVATE CCCL_ENABLE_ASSERTIONS)
 
   add_dependencies(libcudacxx.test.public_headers_host_only headertest_std_${header_name})
 endfunction()

@@ -1392,7 +1392,7 @@ void InitializeSegments(OffsetT num_items, int num_segments, OffsetT* h_segment_
     return;
   }
 
-  OffsetT expected_segment_length = CUB_NS_QUALIFIER::DivideAndRoundUp(num_items, OffsetT(num_segments));
+  OffsetT expected_segment_length = ::cuda::ceil_div(num_items, OffsetT(num_segments));
   OffsetT offset                  = 0;
   for (int i = 0; i < num_segments; ++i)
   {

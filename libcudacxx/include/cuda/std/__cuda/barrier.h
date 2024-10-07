@@ -27,7 +27,6 @@
 
 #include <cuda/std/__atomic/api/owned.h>
 #include <cuda/std/__type_traits/void_t.h> // _CUDA_VSTD::void_t
-#include <cuda/std/cstdlib> // _LIBCUDACXX_UNREACHABLE
 
 #if defined(_CCCL_CUDA_COMPILER)
 #  include <cuda/ptx> // cuda::ptx::*
@@ -97,13 +96,13 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI friend void init(barrier* __b, _CUDA_VSTD::ptrdiff_t __expected)
   {
-    _LIBCUDACXX_DEBUG_ASSERT(__expected >= 0, "Cannot initialize barrier with negative arrival count");
+    _CCCL_ASSERT(__expected >= 0, "Cannot initialize barrier with negative arrival count");
     new (__b) barrier(__expected);
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI friend void init(barrier* __b, _CUDA_VSTD::ptrdiff_t __expected, _CompletionF __completion)
   {
-    _LIBCUDACXX_DEBUG_ASSERT(__expected >= 0, "Cannot initialize barrier with negative arrival count");
+    _CCCL_ASSERT(__expected >= 0, "Cannot initialize barrier with negative arrival count");
     new (__b) barrier(__expected, __completion);
   }
 };
@@ -196,7 +195,7 @@ public:
 
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI arrival_token arrive(_CUDA_VSTD::ptrdiff_t __update = 1)
   {
-    _LIBCUDACXX_DEBUG_ASSERT(__update >= 0, "Arrival count update must be non-negative.");
+    _CCCL_ASSERT(__update >= 0, "Arrival count update must be non-negative.");
     arrival_token __token = {};
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
@@ -549,13 +548,12 @@ _CCCL_NODISCARD _CCCL_DEVICE inline barrier<thread_scope_block>::arrival_token b
   _CUDA_VSTD::ptrdiff_t __arrive_count_update,
   _CUDA_VSTD::ptrdiff_t __transaction_count_update)
 {
-  _LIBCUDACXX_DEBUG_ASSERT(__isShared(barrier_native_handle(__b)), "Barrier must be located in local shared memory.");
-  _LIBCUDACXX_DEBUG_ASSERT(1 <= __arrive_count_update, "Arrival count update must be at least one.");
-  _LIBCUDACXX_DEBUG_ASSERT(__arrive_count_update <= (1 << 20) - 1, "Arrival count update cannot exceed 2^20 - 1.");
-  _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update >= 0, "Transaction count update must be non-negative.");
+  _CCCL_ASSERT(__isShared(barrier_native_handle(__b)), "Barrier must be located in local shared memory.");
+  _CCCL_ASSERT(1 <= __arrive_count_update, "Arrival count update must be at least one.");
+  _CCCL_ASSERT(__arrive_count_update <= (1 << 20) - 1, "Arrival count update cannot exceed 2^20 - 1.");
+  _CCCL_ASSERT(__transaction_count_update >= 0, "Transaction count update must be non-negative.");
   // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#contents-of-the-mbarrier-object
-  _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update <= (1 << 20) - 1,
-                           "Transaction count update cannot exceed 2^20 - 1.");
+  _CCCL_ASSERT(__transaction_count_update <= (1 << 20) - 1, "Transaction count update cannot exceed 2^20 - 1.");
 
   barrier<thread_scope_block>::arrival_token __token = {};
   // On architectures pre-sm90, arrive_tx is not supported.
@@ -599,11 +597,10 @@ extern "C" _CCCL_DEVICE void __cuda_ptx_barrier_expect_tx_is_not_supported_befor
 _CCCL_DEVICE inline void
 barrier_expect_tx(barrier<thread_scope_block>& __b, _CUDA_VSTD::ptrdiff_t __transaction_count_update)
 {
-  _LIBCUDACXX_DEBUG_ASSERT(__isShared(barrier_native_handle(__b)), "Barrier must be located in local shared memory.");
-  _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update >= 0, "Transaction count update must be non-negative.");
+  _CCCL_ASSERT(__isShared(barrier_native_handle(__b)), "Barrier must be located in local shared memory.");
+  _CCCL_ASSERT(__transaction_count_update >= 0, "Transaction count update must be non-negative.");
   // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#contents-of-the-mbarrier-object
-  _LIBCUDACXX_DEBUG_ASSERT(__transaction_count_update <= (1 << 20) - 1,
-                           "Transaction count update cannot exceed 2^20 - 1.");
+  _CCCL_ASSERT(__transaction_count_update <= (1 << 20) - 1, "Transaction count update cannot exceed 2^20 - 1.");
 
   // We do not check for the statespace of the barrier here. This is
   // on purpose. This allows debugging tools like memcheck/racecheck
@@ -641,9 +638,9 @@ _CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
 #    endif
   static_assert(16 <= _Alignment, "mempcy_async_tx expects arguments to be at least 16 byte aligned.");
 
-  _LIBCUDACXX_DEBUG_ASSERT(__isShared(barrier_native_handle(__b)), "Barrier must be located in local shared memory.");
-  _LIBCUDACXX_DEBUG_ASSERT(__isShared(__dest), "dest must point to shared memory.");
-  _LIBCUDACXX_DEBUG_ASSERT(__isGlobal(__src), "src must point to global memory.");
+  _CCCL_ASSERT(__isShared(barrier_native_handle(__b)), "Barrier must be located in local shared memory.");
+  _CCCL_ASSERT(__isShared(__dest), "dest must point to shared memory.");
+  _CCCL_ASSERT(__isGlobal(__src), "src must point to global memory.");
 
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
@@ -661,7 +658,7 @@ _CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
         // or from shared to remote cluster dsmem. To copy to remote
         // dsmem, we need to arrive on a cluster-scoped barrier, which
         // is not yet implemented. So we trap in this case as well.
-        _LIBCUDACXX_UNREACHABLE();
+        _CCCL_UNREACHABLE();
       }),
     (__cuda_ptx_memcpy_async_tx_is_not_supported_before_SM_90__();));
 
@@ -782,7 +779,7 @@ struct __memcpy_completion_impl
         // This completion mechanism should not be used with a shared
         // memory barrier. Or at least, we do not currently envision
         // bulk group to be used with shared memory barriers.
-        _LIBCUDACXX_UNREACHABLE();
+        _CCCL_UNREACHABLE();
       case __completion_mechanism::__mbarrier_complete_tx:
 #  if __cccl_ptx_isa >= 800
         // Pre-sm90, the mbarrier_complete_tx completion mechanism is not available.
@@ -798,7 +795,7 @@ struct __memcpy_completion_impl
         return async_contract_fulfillment::none;
       default:
         // Get rid of "control reaches end of non-void function":
-        _LIBCUDACXX_UNREACHABLE();
+        _CCCL_UNREACHABLE();
     }
   }
 
@@ -828,16 +825,16 @@ struct __memcpy_completion_impl
         return async_contract_fulfillment::async;
       case __completion_mechanism::__mbarrier_complete_tx:
         // Non-smem barriers do not have an mbarrier_complete_tx mechanism..
-        _LIBCUDACXX_UNREACHABLE();
+        _CCCL_UNREACHABLE();
       case __completion_mechanism::__async_bulk_group:
         // This completion mechanism is currently not expected to be used with barriers.
-        _LIBCUDACXX_UNREACHABLE();
+        _CCCL_UNREACHABLE();
       case __completion_mechanism::__sync:
         // sync: In this case, we do not need to do anything.
         return async_contract_fulfillment::none;
       default:
         // Get rid of "control reaches end of non-void function":
-        _LIBCUDACXX_UNREACHABLE();
+        _CCCL_UNREACHABLE();
     }
   }
 
@@ -862,7 +859,7 @@ struct __memcpy_completion_impl
         return async_contract_fulfillment::none;
       default:
         // Get rid of "control reaches end of non-void function":
-        _LIBCUDACXX_UNREACHABLE();
+        _CCCL_UNREACHABLE();
     }
   }
 };
@@ -1105,8 +1102,8 @@ _CCCL_NODISCARD _CCCL_DEVICE inline __completion_mechanism __dispatch_memcpy_asy
     NV_PROVIDES_SM_90,
     (const bool __can_use_complete_tx = __allowed_completions & uint32_t(__completion_mechanism::__mbarrier_complete_tx);
      _LIBCUDACXX_UNUSED_VAR(__can_use_complete_tx);
-     _LIBCUDACXX_DEBUG_ASSERT(__can_use_complete_tx == (nullptr != __bar_handle),
-                              "Pass non-null bar_handle if and only if can_use_complete_tx.");
+     _CCCL_ASSERT(__can_use_complete_tx == (nullptr != __bar_handle),
+                  "Pass non-null bar_handle if and only if can_use_complete_tx.");
      _CCCL_IF_CONSTEXPR (_Align >= 16) {
        if (__can_use_complete_tx && __isShared(__bar_handle))
        {
@@ -1179,8 +1176,8 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI __completion_mechanism __dispatch_memc
   _CUDA_VSTD::size_t __size,
   _CUDA_VSTD::uint32_t __allowed_completions)
 {
-  _LIBCUDACXX_DEBUG_ASSERT(!(__allowed_completions & uint32_t(__completion_mechanism::__mbarrier_complete_tx)),
-                           "Cannot allow mbarrier_complete_tx completion mechanism when not passing a barrier. ");
+  _CCCL_ASSERT(!(__allowed_completions & uint32_t(__completion_mechanism::__mbarrier_complete_tx)),
+               "Cannot allow mbarrier_complete_tx completion mechanism when not passing a barrier. ");
   return __dispatch_memcpy_async<_Align>(__group, __dest_char, __src_char, __size, __allowed_completions, nullptr);
 }
 

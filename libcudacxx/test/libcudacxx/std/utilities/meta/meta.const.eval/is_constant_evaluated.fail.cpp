@@ -17,7 +17,7 @@
 
 int main(int, char**)
 {
-#ifndef _LIBCUDACXX_IS_CONSTANT_EVALUATED
+#ifndef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
   // expected-error@+1 {{no member named 'is_constant_evaluated' in namespace 'std'}}
   bool b = cuda::std::is_constant_evaluated();
 #else

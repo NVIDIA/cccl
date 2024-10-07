@@ -23,7 +23,7 @@
 #include <vector>
 
 #include <catch2/catch.hpp>
-#include <cccl/reduce.h>
+#include <cccl/c/reduce.h>
 #include <nvrtc.h>
 
 static std::string inspect_sass(const void* cubin, size_t cubin_size)

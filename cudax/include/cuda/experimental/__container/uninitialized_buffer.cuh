@@ -22,9 +22,9 @@
 
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__memory_resource/resource_ref.h>
-#include <cuda/std/__concepts/_One_of.h>
 #include <cuda/std/__memory/align.h>
 #include <cuda/std/__new/launder.h>
+#include <cuda/std/__utility/exchange.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
 #include <cuda/std/span>
@@ -62,7 +62,12 @@ template <class _Tp, class... _Properties>
 class uninitialized_buffer
 {
 private:
-  ::cuda::experimental::mr::any_resource<_Properties...> __mr_;
+  static_assert(_CUDA_VMR::__contains_execution_space_property<_Properties...>,
+                "The properties of cuda::experimental::mr::uninitialized_buffer must contain at least one execution "
+                "space property!");
+
+  using __resource = ::cuda::experimental::mr::any_resource<_Properties...>;
+  __resource __mr_;
   size_t __count_ = 0;
   void* __buf_    = nullptr;
 
@@ -88,7 +93,7 @@ private:
   _CCCL_NODISCARD_FRIEND _CUDA_VSTD::span<_Tp>
   __cudax_launch_transform(::cuda::stream_ref, uninitialized_buffer& __self) noexcept
   {
-    static_assert(_CUDA_VSTD::_One_of<_CUDA_VMR::device_accessible, _Properties...>,
+    static_assert(_CUDA_VSTD::__is_included_in<_CUDA_VMR::device_accessible, _Properties...>,
                   "The buffer must be device accessible to be passed to `launch`");
     return {__self.__get_data(), __self.size()};
   }
@@ -98,7 +103,7 @@ private:
   _CCCL_NODISCARD_FRIEND _CUDA_VSTD::span<const _Tp>
   __cudax_launch_transform(::cuda::stream_ref, const uninitialized_buffer& __self) noexcept
   {
-    static_assert(_CUDA_VSTD::_One_of<_CUDA_VMR::device_accessible, _Properties...>,
+    static_assert(_CUDA_VSTD::__is_included_in<_CUDA_VMR::device_accessible, _Properties...>,
                   "The buffer must be device accessible to be passed to `launch`");
     return {__self.__get_data(), __self.size()};
   }
@@ -115,7 +120,7 @@ public:
   //! @note Depending on the alignment requirements of `T` the size of the underlying allocation might be larger
   //! than `count * sizeof(T)`.
   //! @note Only allocates memory when \p __count > 0
-  uninitialized_buffer(::cuda::experimental::mr::any_resource<_Properties...> __mr, const size_t __count)
+  uninitialized_buffer(__resource __mr, const size_t __count)
       : __mr_(_CUDA_VSTD::move(__mr))
       , __count_(__count)
       , __buf_(__count_ == 0 ? nullptr : __mr_.allocate(__get_allocation_size(__count_)))
@@ -128,12 +133,9 @@ public:
   //! @param __other Another \c uninitialized_buffer
   uninitialized_buffer(uninitialized_buffer&& __other) noexcept
       : __mr_(_CUDA_VSTD::move(__other.__mr_))
-      , __count_(__other.__count_)
-      , __buf_(__other.__buf_)
-  {
-    __other.__count_ = 0;
-    __other.__buf_   = nullptr;
-  }
+      , __count_(_CUDA_VSTD::exchange(__other.__count_, 0))
+      , __buf_(_CUDA_VSTD::exchange(__other.__buf_, nullptr))
+  {}
 
   //! @brief Move assignment
   //! @param __other Another \c uninitialized_buffer
@@ -148,11 +150,9 @@ public:
     {
       __mr_.deallocate(__buf_, __get_allocation_size(__count_));
     }
-    __mr_            = _CUDA_VSTD::move(__other.__mr_);
-    __count_         = __other.__count_;
-    __buf_           = __other.__buf_;
-    __other.__count_ = 0;
-    __other.__buf_   = nullptr;
+    __mr_    = _CUDA_VSTD::move(__other.__mr_);
+    __count_ = _CUDA_VSTD::exchange(__other.__count_, 0);
+    __buf_   = _CUDA_VSTD::exchange(__other.__buf_, nullptr);
     return *this;
   }
 
@@ -192,13 +192,13 @@ public:
   }
 
   //! @rst
-  //! Returns a :ref:`resource_ref <libcudacxx-extended-api-memory-resources-resource-ref>` to the resource used to
-  //! allocate the buffer
+  //! Returns a \c const reference to the :ref:`any_resource <cudax-memory-resource-any-resource>`
+  //! that holds the memory resource used to allocate the buffer
   //! @endrst
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE _CUDA_VMR::resource_ref<_Properties...> resource() const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE const __resource& get_resource() const noexcept
   {
-    return _CUDA_VMR::resource_ref<_Properties...>{const_cast<uninitialized_buffer*>(this)->__mr_};
+    return __mr_;
   }
 
   //! @brief Swaps the contents with those of another \c uninitialized_buffer
@@ -213,7 +213,8 @@ public:
 #  ifndef DOXYGEN_SHOULD_SKIP_THIS // friend functions are currently brocken
   //! @brief Forwards the passed Properties
   _LIBCUDACXX_TEMPLATE(class _Property)
-  _LIBCUDACXX_REQUIRES((!property_with_value<_Property>) _LIBCUDACXX_AND _CUDA_VSTD::_One_of<_Property, _Properties...>)
+  _LIBCUDACXX_REQUIRES(
+    (!property_with_value<_Property>) _LIBCUDACXX_AND _CUDA_VSTD::__is_included_in<_Property, _Properties...>)
   friend constexpr void get_property(const uninitialized_buffer&, _Property) noexcept {}
 #  endif // DOXYGEN_SHOULD_SKIP_THIS
 };

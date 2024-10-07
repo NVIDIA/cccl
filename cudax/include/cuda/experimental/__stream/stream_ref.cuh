@@ -25,7 +25,8 @@
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/stream_ref>
 
-#include <cuda/experimental/__device/device_ref.cuh>
+#include <cuda/experimental/__device/all_devices.cuh>
+#include <cuda/experimental/__device/logical_device.cuh>
 #include <cuda/experimental/__event/timed_event.cuh>
 #include <cuda/experimental/__utility/ensure_current_device.cuh>
 
@@ -95,17 +96,51 @@ struct stream_ref : ::cuda::stream_ref
     wait(__tmp);
   }
 
+  //! @brief Get the logical device under which this stream was created
+  //! Compared to `device()` member function the returned logical_device will hold a green context for streams
+  //! created under one.
+  logical_device logical_device() const
+  {
+    CUcontext __stream_ctx;
+    ::cuda::experimental::logical_device::kinds __ctx_kind = ::cuda::experimental::logical_device::kinds::device;
+#if CUDART_VERSION >= 12050
+    if (detail::driver::getVersion() >= 12050)
+    {
+      auto __ctx = detail::driver::streamGetCtx_v2(__stream);
+      if (__ctx.__ctx_kind == detail::driver::__ctx_from_stream::__kind::__green)
+      {
+        __stream_ctx = detail::driver::ctxFromGreenCtx(__ctx.__ctx_ptr.__green);
+        __ctx_kind   = ::cuda::experimental::logical_device::kinds::green_context;
+      }
+      else
+      {
+        __stream_ctx = __ctx.__ctx_ptr.__device;
+        __ctx_kind   = ::cuda::experimental::logical_device::kinds::device;
+      }
+    }
+    else
+#endif // CUDART_VERSION >= 12050
+    {
+      __stream_ctx = detail::driver::streamGetCtx(__stream);
+      __ctx_kind   = ::cuda::experimental::logical_device::kinds::device;
+    }
+    // Because the stream can come from_native_handle, we can't just loop over devices comparing contexts,
+    // lower to CUDART for this instead
+    __ensure_current_device __setter(__stream_ctx);
+    int __id;
+    _CCCL_TRY_CUDA_API(cudaGetDevice, "Could not get device from a stream", &__id);
+    return __logical_device_access::make_logical_device(__id, __stream_ctx, __ctx_kind);
+  }
+
   //! @brief Get device under which this stream was created.
+  //!
+  //! Note: In case of a stream created under a `green_context` the device on which that `green_context` was created is
+  //! returned
   //!
   //! @throws cuda_error if device check fails
   device_ref device() const
   {
-    // Because the stream can come from_native_handle, we can't just loop over devices comparing contexts,
-    // lower to CUDART for this instead
-    __ensure_current_device __dev_setter(*this);
-    int result;
-    _CCCL_TRY_CUDA_API(cudaGetDevice, "Could not get device from a stream", &result);
-    return result;
+    return logical_device().get_underlying_device();
   }
 };
 

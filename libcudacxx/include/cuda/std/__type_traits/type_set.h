@@ -20,8 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/all_of.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstddef>
@@ -32,7 +32,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Set, class... _Ty>
 _LIBCUDACXX_INLINE_VAR constexpr bool __type_set_contains =
-  _CUDA_VSTD::__all_of<_CCCL_TRAIT(_CUDA_VSTD::is_base_of, __type_identity<_Ty>, _Set)...>;
+  _CUDA_VSTD::__fold_and<_CCCL_TRAIT(_CUDA_VSTD::is_base_of, __type_identity<_Ty>, _Set)...>;
 
 namespace __set
 {
@@ -82,6 +82,9 @@ using __type_set_insert = decltype(__set::__bulk_insert::__call<_Ts...>(static_c
 
 template <class... _Ts>
 using __make_type_set = __type_set_insert<__type_set<>, _Ts...>;
+
+template <class _Ty, class... _Ts>
+_LIBCUDACXX_INLINE_VAR constexpr bool __is_included_in = __fold_or<_CCCL_TRAIT(is_same, _Ty, _Ts)...>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
