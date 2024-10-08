@@ -46,7 +46,7 @@ workflows:
     - {jobs: ['test'],  project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['gcc12']}
     - {jobs: ['test'],  project: 'cudax', ctk: ['12.0'        ], std: 'max', cxx: ['clang14']}
     - {jobs: ['test'],  project: 'cudax', ctk: [        'curr'], std: 'max', cxx: ['clang18']}
-    # Python c/parallel jobs:
+    # Python and c/parallel jobs:
     - {jobs: ['test'], project: ['cccl_c_parallel', 'pycuda'], ctk: '12.5'}
     # cccl-infra:
     - {jobs: ['infra'], project: 'cccl', ctk: '11.1', cxx: ['gcc6',  'clang9']}
