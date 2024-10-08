@@ -316,6 +316,8 @@ struct AgentSelectIf
   InequalityWrapper<EqualityOpT> inequality_op; ///< T inequality operator
   SelectOpT select_op; ///< Selection operator
   OffsetT num_items; ///< Total number of input items
+
+  // Note: This is a const reference because we have seen double-digit percentage perf regressions otherwise
   const StreamingContextT& streaming_context; ///< Context for the current partition
 
   //---------------------------------------------------------------------
