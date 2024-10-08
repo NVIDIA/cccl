@@ -79,13 +79,13 @@ extern "C" CCCL_C_API CUresult cccl_device_for_build(
 {
   CUresult error = CUDA_SUCCESS;
 
-  if (d_data.type == cccl_iterator_kind_t::iterator)
-  {
-    throw std::runtime_error(std::string("Iterators are unsupported in for_each currently"));
-  }
-
   try
   {
+    if (d_data.type == cccl_iterator_kind_t::iterator)
+    {
+      throw std::runtime_error(std::string("Iterators are unsupported in for_each currently"));
+    }
+
     nvrtcProgram prog{};
     const char* name = "test";
 
@@ -186,15 +186,23 @@ extern "C" CCCL_C_API CUresult cccl_device_for(
   cccl_op_t op,
   CUstream stream) noexcept
 {
+  bool pushed    = false;
   CUresult error = CUDA_SUCCESS;
 
   try
   {
+    pushed = try_push_context();
     Invoke(d_data, num_items, op, build.cc, (CUfunction) build.static_kernel, stream);
   }
   catch (...)
   {
     error = CUDA_ERROR_UNKNOWN;
+  }
+
+  if (pushed)
+  {
+    CUcontext dummy;
+    cuCtxPopCurrent(&dummy);
   }
 
   return error;
