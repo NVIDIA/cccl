@@ -5,7 +5,7 @@
 # entrypoints.
 
 cccl_generate_header_tests(cccl.c.parallel.headers c/parallel/include
-  DIALECT ${config_dialect}
+  DIALECT 20
   GLOBS "cccl/c/*.h"
 )
 target_link_libraries(cccl.c.parallel.headers PUBLIC cccl.c.parallel)
