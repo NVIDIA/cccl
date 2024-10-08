@@ -42,6 +42,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/choose_offset.cuh>
 #include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_select_if.cuh>
 #include <cub/device/dispatch/dispatch_three_way_partition.cuh>
@@ -142,6 +143,9 @@ struct DevicePartition
   //! @tparam NumSelectedIteratorT
   //!   **[inferred]** Output iterator type for recording the number of items selected @iterator
   //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
@@ -169,7 +173,11 @@ struct DevicePartition
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT, typename FlagIterator, typename OutputIteratorT, typename NumSelectedIteratorT>
+  template <typename InputIteratorT,
+            typename FlagIterator,
+            typename OutputIteratorT,
+            typename NumSelectedIteratorT,
+            typename NumItemsT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Flagged(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -177,13 +185,14 @@ struct DevicePartition
     FlagIterator d_flags,
     OutputIteratorT d_out,
     NumSelectedIteratorT d_num_selected_out,
-    int num_items,
+    NumItemsT num_items,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DevicePartition::Flagged");
-    using OffsetT    = int; // Signed integer type for global offsets
-    using SelectOp   = NullType; // Selection op (not used)
-    using EqualityOp = NullType; // Equality operator (not used)
+    using ChooseOffsetT = detail::choose_signed_offset<NumItemsT>;
+    using OffsetT       = typename ChooseOffsetT::type; // Signed integer type for global offsets
+    using SelectOp      = NullType; // Selection op (not used)
+    using EqualityOp    = NullType; // Equality operator (not used)
     using DispatchSelectIfT =
       DispatchSelectIf<InputIteratorT,
                        FlagIterator,
@@ -193,6 +202,13 @@ struct DevicePartition
                        EqualityOp,
                        OffsetT,
                        true>;
+
+    // Check if the number of items exceeds the range covered by the selected signed offset type
+    cudaError_t error = ChooseOffsetT::is_exceeding_offset_type(num_items);
+    if (error)
+    {
+      return error;
+    }
 
     return DispatchSelectIfT::Dispatch(
       d_temp_storage,
@@ -208,7 +224,11 @@ struct DevicePartition
   }
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-  template <typename InputIteratorT, typename FlagIterator, typename OutputIteratorT, typename NumSelectedIteratorT>
+  template <typename InputIteratorT,
+            typename FlagIterator,
+            typename OutputIteratorT,
+            typename NumSelectedIteratorT,
+            typename NumItemsT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Flagged(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -216,7 +236,7 @@ struct DevicePartition
     FlagIterator d_flags,
     OutputIteratorT d_out,
     NumSelectedIteratorT d_num_selected_out,
-    int num_items,
+    NumItemsT num_items,
     cudaStream_t stream,
     bool debug_synchronous)
   {
@@ -305,6 +325,9 @@ struct DevicePartition
   //! @tparam SelectOp
   //!   **[inferred]** Selection functor type having member `bool operator()(const T &a)`
   //!
+  //! @tparam NumItemsT
+  //!   **[inferred]** Type of num_items
+  //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
   //!   required allocation size is written to `temp_storage_bytes` and no work is done.
@@ -331,21 +354,33 @@ struct DevicePartition
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT, typename SelectOp>
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename NumSelectedIteratorT,
+            typename SelectOp,
+            typename NumItemsT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   If(void* d_temp_storage,
      size_t& temp_storage_bytes,
      InputIteratorT d_in,
      OutputIteratorT d_out,
      NumSelectedIteratorT d_num_selected_out,
-     int num_items,
+     NumItemsT num_items,
      SelectOp select_op,
      cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DevicePartition::If");
-    using OffsetT      = int; // Signed integer type for global offsets
-    using FlagIterator = NullType*; // FlagT iterator type (not used)
-    using EqualityOp   = NullType; // Equality operator (not used)
+    using ChooseOffsetT = detail::choose_signed_offset<NumItemsT>;
+    using OffsetT       = typename ChooseOffsetT::type; // Signed integer type for global offsets
+    using FlagIterator  = NullType*; // FlagT iterator type (not used)
+    using EqualityOp    = NullType; // Equality operator (not used)
+
+    // Check if the number of items exceeds the range covered by the selected signed offset type
+    cudaError_t error = ChooseOffsetT::is_exceeding_offset_type(num_items);
+    if (error)
+    {
+      return error;
+    }
 
     using DispatchSelectIfT =
       DispatchSelectIf<InputIteratorT,
@@ -371,21 +406,25 @@ struct DevicePartition
   }
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-  template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT, typename SelectOp>
+  template <typename InputIteratorT,
+            typename OutputIteratorT,
+            typename NumSelectedIteratorT,
+            typename SelectOp,
+            typename NumItemsT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   If(void* d_temp_storage,
      size_t& temp_storage_bytes,
      InputIteratorT d_in,
      OutputIteratorT d_out,
      NumSelectedIteratorT d_num_selected_out,
-     int num_items,
+     NumItemsT num_items,
      SelectOp select_op,
      cudaStream_t stream,
      bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return If<InputIteratorT, OutputIteratorT, NumSelectedIteratorT, SelectOp>(
+    return If<InputIteratorT, OutputIteratorT, NumSelectedIteratorT, SelectOp, NumItemsT>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, select_op, stream);
   }
 #endif // DOXYGEN_SHOULD_SKIP_THIS
@@ -500,10 +539,10 @@ public:
   //!    {
   //!        int compare;
   //!
-  //!        CUB_RUNTIME_FUNCTION __forceinline__
+  //!        __host__ __device__ __forceinline__
   //!        explicit LessThan(int compare) : compare(compare) {}
   //!
-  //!        CUB_RUNTIME_FUNCTION __forceinline__
+  //!        __host__ __device__ __forceinline__
   //!        bool operator()(const int &a) const
   //!        {
   //!            return a < compare;
@@ -515,10 +554,10 @@ public:
   //!    {
   //!        int compare;
   //!
-  //!        CUB_RUNTIME_FUNCTION __forceinline__
+  //!        __host__ __device__ __forceinline__
   //!        explicit GreaterThan(int compare) : compare(compare) {}
   //!
-  //!        CUB_RUNTIME_FUNCTION __forceinline__
+  //!        __host__ __device__ __forceinline__
   //!        bool operator()(const int &a) const
   //!        {
   //!            return a > compare;

@@ -37,6 +37,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/cstdint>
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
 
@@ -60,7 +61,7 @@ struct choose_offset
                 "NumItemsT must be an integral type, but not bool");
 
   // Unsigned integer type for global offsets.
-  using type = typename ::cuda::std::conditional<sizeof(NumItemsT) <= 4, std::uint32_t, unsigned long long>::type;
+  using type = ::cuda::std::_If<(sizeof(NumItemsT) <= 4), std::uint32_t, unsigned long long>;
 };
 
 /**
@@ -83,7 +84,7 @@ struct promote_small_offset
                 "NumItemsT must be an integral type, but not bool");
 
   // Unsigned integer type for global offsets.
-  using type = typename ::cuda::std::conditional<sizeof(NumItemsT) < 4, std::int32_t, NumItemsT>::type;
+  using type = ::cuda::std::_If<(sizeof(NumItemsT) < 4), std::int32_t, NumItemsT>;
 };
 
 /**
@@ -92,6 +93,52 @@ struct promote_small_offset
  */
 template <typename NumItemsT>
 using promote_small_offset_t = typename promote_small_offset<NumItemsT>::type;
+
+/**
+ * choose_signed_offset checks NumItemsT, the type of the num_items parameter, and
+ * selects the offset type to be either int32 or int64, such that the selected offset type covers the range of NumItemsT
+ * unless it was uint64, in which case int64 will be used.
+ */
+template <typename NumItemsT>
+struct choose_signed_offset
+{
+  // NumItemsT must be an integral type (but not bool).
+  static_assert(::cuda::std::is_integral<NumItemsT>::value
+                  && !::cuda::std::is_same<typename ::cuda::std::remove_cv<NumItemsT>::type, bool>::value,
+                "NumItemsT must be an integral type, but not bool");
+
+  // Signed integer type for global offsets.
+  // uint32 -> int64, else
+  // LEQ 4B -> int32, else
+  // int64
+  using type =
+    ::cuda::std::_If<(::cuda::std::is_integral<NumItemsT>::value && ::cuda::std::is_unsigned<NumItemsT>::value),
+                     ::cuda::std::int64_t,
+                     ::cuda::std::_If<(sizeof(NumItemsT) <= 4), ::cuda::std::int32_t, ::cuda::std::int64_t>>;
+
+  /**
+   * Checks if the given num_items can be covered by the selected offset type. If not, returns cudaErrorInvalidValue,
+   * otherwise returns cudaSuccess.
+   */
+  static _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t is_exceeding_offset_type(NumItemsT num_items)
+  {
+    _CCCL_DIAG_PUSH
+    _CCCL_DIAG_SUPPRESS_MSVC(4127) /* conditional expression is constant */
+    if (sizeof(NumItemsT) >= 8 && num_items > static_cast<NumItemsT>(::cuda::std::numeric_limits<type>::max()))
+    {
+      return cudaErrorInvalidValue;
+    }
+    _CCCL_DIAG_POP
+    return cudaSuccess;
+  }
+};
+
+/**
+ * choose_signed_offset_t is an alias template that checks NumItemsT, the type of the num_items parameter, and
+ * selects the corresponding signed offset type based on it.
+ */
+template <typename NumItemsT>
+using choose_signed_offset_t = typename choose_signed_offset<NumItemsT>::type;
 
 /**
  * common_iterator_value sets member type to the common_type of
