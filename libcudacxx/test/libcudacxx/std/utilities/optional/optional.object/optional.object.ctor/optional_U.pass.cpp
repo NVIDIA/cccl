@@ -108,7 +108,7 @@ int main(int, char**)
 {
   test_all<short, int>();
   test_all<int, X>();
-#if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
+#if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
   static_assert(test_all<short, int>());
   static_assert(test_all<int, X>());
 #endif

@@ -47,8 +47,6 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/piecewise_construct.h>
 #include <cuda/std/__utility/swap.h>
-#include <cuda/std/detail/libcxx/include/__assert>
-#include <cuda/std/detail/libcxx/include/__debug>
 #include <cuda/std/tuple>
 
 #ifndef __cuda_std__
@@ -920,29 +918,21 @@ class __func<_Rp1 (^)(_ArgTypes1...), _Alloc, _Rp(_ArgTypes...)> : public __base
 
 public:
   _LIBCUDACXX_HIDE_FROM_ABI explicit __func(__block_type const& __f)
-#    ifdef _LIBCUDACXX_HAS_OBJC_ARC
-      : __f_(__f)
-#    else
       : __f_(reinterpret_cast<__block_type>(__f ? _Block_copy(__f) : nullptr))
-#    endif
   {}
 
   // [TODO] add && to save on a retain
 
   _LIBCUDACXX_HIDE_FROM_ABI explicit __func(__block_type __f, const _Alloc& /* unused */)
-#    ifdef _LIBCUDACXX_HAS_OBJC_ARC
-      : __f_(__f)
-#    else
       : __f_(reinterpret_cast<__block_type>(__f ? _Block_copy(__f) : nullptr))
-#    endif
   {}
 
   virtual __base<_Rp(_ArgTypes...)>* __clone() const
   {
-    _LIBCUDACXX_ASSERT(false,
-                       "Block pointers are just pointers, so they should always fit into "
-                       "std::function's small buffer optimization. This function should "
-                       "never be invoked.");
+    _CCCL_ASSERT(false,
+                 "Block pointers are just pointers, so they should always fit into "
+                 "std::function's small buffer optimization. This function should "
+                 "never be invoked.");
     return nullptr;
   }
 
@@ -953,21 +943,19 @@ public:
 
   virtual void destroy() noexcept
   {
-#    ifndef _LIBCUDACXX_HAS_OBJC_ARC
     if (__f_)
     {
       _Block_release(__f_);
     }
-#    endif
     __f_ = 0;
   }
 
   virtual void destroy_deallocate() noexcept
   {
-    _LIBCUDACXX_ASSERT(false,
-                       "Block pointers are just pointers, so they should always fit into "
-                       "std::function's small buffer optimization. This function should "
-                       "never be invoked.");
+    _CCCL_ASSERT(false,
+                 "Block pointers are just pointers, so they should always fit into "
+                 "std::function's small buffer optimization. This function should "
+                 "never be invoked.");
   }
 
   virtual _Rp operator()(_ArgTypes&&... __arg)

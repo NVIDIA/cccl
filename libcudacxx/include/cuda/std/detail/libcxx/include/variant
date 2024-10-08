@@ -215,8 +215,6 @@ C++20
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
-#include <cuda/std/detail/libcxx/include/__availability>
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 #  include <cuda/std/__compare/common_comparison_category.h>
 #  include <cuda/std/__compare/compare_three_way_result.h>
@@ -281,8 +279,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION
 using ::std::bad_variant_access;
 
 #  else // ^^^ __cpp_lib_variant ^^^ / vvv !__cpp_lib_variant vvv
-class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_AVAILABILITY_BAD_VARIANT_ACCESS bad_variant_access
-    : public ::std::exception
+class _CCCL_TYPE_VISIBILITY_DEFAULT bad_variant_access : public ::std::exception
 {
 public:
   const char* what() const noexcept override
@@ -1729,7 +1726,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool holds_alternative(const variant<_Types.
 }
 
 template <size_t _Ip, class _Vp>
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr auto&& __generic_get(_Vp&& __v)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr auto&& __generic_get(_Vp&& __v)
 {
   using __variant_detail::__access::__variant;
   if (!_CUDA_VSTD::__holds_alternative<_Ip>(__v))
@@ -1740,9 +1737,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS cons
 }
 
 template <size_t _Ip, class... _Types>
-_LIBCUDACXX_HIDE_FROM_ABI
-_LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr variant_alternative_t<_Ip, variant<_Types...>>&
-get(variant<_Types...>& __v)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr variant_alternative_t<_Ip, variant<_Types...>>& get(variant<_Types...>& __v)
 {
   static_assert(_Ip < sizeof...(_Types), "");
   static_assert(!_CCCL_TRAIT(is_void, variant_alternative_t<_Ip, variant<_Types...>>), "");
@@ -1750,9 +1745,7 @@ get(variant<_Types...>& __v)
 }
 
 template <size_t _Ip, class... _Types>
-_LIBCUDACXX_HIDE_FROM_ABI
-_LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr variant_alternative_t<_Ip, variant<_Types...>>&&
-get(variant<_Types...>&& __v)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr variant_alternative_t<_Ip, variant<_Types...>>&& get(variant<_Types...>&& __v)
 {
   static_assert(_Ip < sizeof...(_Types), "");
   static_assert(!_CCCL_TRAIT(is_void, variant_alternative_t<_Ip, variant<_Types...>>), "");
@@ -1760,8 +1753,7 @@ get(variant<_Types...>&& __v)
 }
 
 template <size_t _Ip, class... _Types>
-_LIBCUDACXX_HIDE_FROM_ABI
-_LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr const variant_alternative_t<_Ip, variant<_Types...>>&
+_LIBCUDACXX_HIDE_FROM_ABI constexpr const variant_alternative_t<_Ip, variant<_Types...>>&
 get(const variant<_Types...>& __v)
 {
   static_assert(_Ip < sizeof...(_Types), "");
@@ -1770,8 +1762,7 @@ get(const variant<_Types...>& __v)
 }
 
 template <size_t _Ip, class... _Types>
-_LIBCUDACXX_HIDE_FROM_ABI
-_LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr const variant_alternative_t<_Ip, variant<_Types...>>&&
+_LIBCUDACXX_HIDE_FROM_ABI constexpr const variant_alternative_t<_Ip, variant<_Types...>>&&
 get(const variant<_Types...>&& __v)
 {
   static_assert(_Ip < sizeof...(_Types), "");
@@ -1780,30 +1771,28 @@ get(const variant<_Types...>&& __v)
 }
 
 template <class _Tp, class... _Types>
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr _Tp& get(variant<_Types...>& __v)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp& get(variant<_Types...>& __v)
 {
   static_assert(!_CCCL_TRAIT(is_void, _Tp), "");
   return _CUDA_VSTD::get<__find_exactly_one_t<_Tp, _Types...>::value>(__v);
 }
 
 template <class _Tp, class... _Types>
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr _Tp&& get(variant<_Types...>&& __v)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp&& get(variant<_Types...>&& __v)
 {
   static_assert(!_CCCL_TRAIT(is_void, _Tp), "");
   return _CUDA_VSTD::get<__find_exactly_one_t<_Tp, _Types...>::value>(_CUDA_VSTD::move(__v));
 }
 
 template <class _Tp, class... _Types>
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr const _Tp&
-get(const variant<_Types...>& __v)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& get(const variant<_Types...>& __v)
 {
   static_assert(!_CCCL_TRAIT(is_void, _Tp), "");
   return _CUDA_VSTD::get<__find_exactly_one_t<_Tp, _Types...>::value>(__v);
 }
 
 template <class _Tp, class... _Types>
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr const _Tp&&
-get(const variant<_Types...>&& __v)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp&& get(const variant<_Types...>&& __v)
 {
   static_assert(!_CCCL_TRAIT(is_void, _Tp), "");
   return _CUDA_VSTD::get<__find_exactly_one_t<_Tp, _Types...>::value>(_CUDA_VSTD::move(__v));
@@ -2063,8 +2052,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator>=(const variant<_Types...>& __
 }
 
 template <class... _Vs>
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr void
-__throw_if_valueless(_Vs&&... __vs)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr void __throw_if_valueless(_Vs&&... __vs)
 {
   int __unused[] = {
     (_CUDA_VSTD::__as_variant(__vs).valueless_by_exception() ? _CUDA_VSTD::__throw_bad_variant_access() : void(), 0)...,
@@ -2075,8 +2063,7 @@ __throw_if_valueless(_Vs&&... __vs)
 template <class _Visitor,
           class... _Vs,
           typename = void_t<decltype(_CUDA_VSTD::__as_variant(_CUDA_VSTD::declval<_Vs>()))...>>
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr decltype(auto)
-visit(_Visitor&& __visitor, _Vs&&... __vs)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) visit(_Visitor&& __visitor, _Vs&&... __vs)
 {
   using __variant_detail::__visitation::__variant;
   _CUDA_VSTD::__throw_if_valueless(_CUDA_VSTD::forward<_Vs>(__vs)...);
@@ -2087,8 +2074,7 @@ template <class _Rp,
           class _Visitor,
           class... _Vs,
           typename = void_t<decltype(_CUDA_VSTD::__as_variant(_CUDA_VSTD::declval<_Vs>()))...>>
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_AVAILABILITY_THROW_BAD_VARIANT_ACCESS constexpr _Rp
-visit(_Visitor&& __visitor, _Vs&&... __vs)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _Rp visit(_Visitor&& __visitor, _Vs&&... __vs)
 {
   using __variant_detail::__visitation::__variant;
   _CUDA_VSTD::__throw_if_valueless(_CUDA_VSTD::forward<_Vs>(__vs)...);

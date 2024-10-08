@@ -11,7 +11,9 @@
 #ifndef _CUDA__CCCL_CONFIG
 #define _CUDA__CCCL_CONFIG
 
+#include <cuda/std/__cccl/assert.h> // IWYU pragma: export
 #include <cuda/std/__cccl/attributes.h> // IWYU pragma: export
+#include <cuda/std/__cccl/builtin.h> // IWYU pragma: export
 #include <cuda/std/__cccl/compiler.h> // IWYU pragma: export
 #include <cuda/std/__cccl/diagnostic.h> // IWYU pragma: export
 #include <cuda/std/__cccl/dialect.h> // IWYU pragma: export

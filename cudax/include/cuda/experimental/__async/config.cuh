@@ -28,13 +28,13 @@ namespace cuda::experimental::__async
 // Debuggers do not step into functions marked with __attribute__((__artificial__)).
 // This is useful for small wrapper functions that just dispatch to other functions and
 // that are inlined into the caller.
-#if __has_attribute(__artificial__) && !defined(__CUDACC__)
+#if _CCCL_HAS_ATTRIBUTE(__artificial__) && !defined(__CUDACC__)
 #  define _CUDAX_ARTIFICIAL __attribute__((__artificial__))
 #else
 #  define _CUDAX_ARTIFICIAL
 #endif
 
-#define _CUDAX_ALWAYS_INLINE _CCCL_ALWAYS_INLINE _CUDAX_ARTIFICIAL _LIBCUDACXX_NODEBUG inline
+#define _CUDAX_ALWAYS_INLINE _CCCL_FORCEINLINE _CUDAX_ARTIFICIAL _LIBCUDACXX_NODEBUG
 
 // GCC struggles with guaranteed copy elision of immovable types.
 #if defined(_CCCL_COMPILER_GCC)

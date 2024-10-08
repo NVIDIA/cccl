@@ -39,6 +39,9 @@ else() # NOT LIBCUDACXX_TEST_WITH_NVRTC
   set(LIBCUDACXX_TEST_COMPILER_FLAGS "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE")
 endif()
 
+# enable exceptions and assertions in tests
+string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_ENABLE_ASSERTIONS")
+
 if (NOT MSVC AND NOT ${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
   set(LIBCUDACXX_WARNING_LEVEL "--compiler-options=-Wall --compiler-options=-Wextra")
 endif()
@@ -55,6 +58,7 @@ endif()
 
 if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
   string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS
+    " ${CMAKE_CUDA_FLAGS}"
     " -Xclang -fcuda-allow-variadic-functions"
     " -Xclang -Wno-unused-parameter"
     " -Wno-unknown-cuda-version"
@@ -63,6 +67,7 @@ if (${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
     " ${LIBCUDACXX_WARNING_LEVEL}")
 
   string(APPEND LIBCUDACXX_TEST_LINKER_FLAGS
+    " ${CMAKE_CUDA_FLAGS}"
     " -L${CUDAToolkit_LIBRARY_DIR}"
     " -lcuda"
     " -lcudart")

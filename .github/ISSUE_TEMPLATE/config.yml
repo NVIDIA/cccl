@@ -3,6 +3,6 @@ contact_links:
   - name: Question
     url: https://github.com/NVIDIA/cccl/discussions
     about: Check out our Discussions page to ask and answer questions.
-  - name: CUDA C++ Core Libraries Discord
+  - name: CUDA Core Compute Libraries Discord
     url: https://discord.gg/nvidiadeveloper
     about: Come chat about using and contributing to CCCL!

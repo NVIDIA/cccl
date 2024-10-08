@@ -198,9 +198,6 @@ template<class T>
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
-#include <cuda/std/detail/libcxx/include/__availability>
-#include <cuda/std/detail/libcxx/include/__verbose_abort>
 #include <cuda/std/initializer_list>
 
 // standard-mandated includes
@@ -227,8 +224,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION
 using ::std::bad_optional_access;
 
 #  else // ^^^ __cpp_lib_optional ^^^ / vvv !__cpp_lib_optional vvv
-class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_AVAILABILITY_BAD_OPTIONAL_ACCESS bad_optional_access
-    : public ::std::exception
+class _CCCL_TYPE_VISIBILITY_DEFAULT bad_optional_access : public ::std::exception
 {
 public:
   const char* what() const noexcept override
@@ -396,7 +392,7 @@ struct __optional_storage_base : __optional_destruct_base<_Tp>
   template <class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void __construct(_Args&&... __args)
   {
-    _LIBCUDACXX_ASSERT(!has_value(), "__construct called for engaged __optional_storage");
+    _CCCL_ASSERT(!has_value(), "__construct called for engaged __optional_storage");
 #  if _CCCL_STD_VER > 2017
     _CUDA_VSTD::construct_at(_CUDA_VSTD::addressof(this->__val_), _CUDA_VSTD::forward<_Args>(__args)...);
 #  else
@@ -850,37 +846,37 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr add_pointer_t<value_type const> operator->() const
   {
-    _LIBCUDACXX_ASSERT(this->has_value(), "optional operator-> called on a disengaged value");
+    _CCCL_ASSERT(this->has_value(), "optional operator-> called on a disengaged value");
     return _CUDA_VSTD::addressof(this->__get());
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr add_pointer_t<value_type> operator->()
   {
-    _LIBCUDACXX_ASSERT(this->has_value(), "optional operator-> called on a disengaged value");
+    _CCCL_ASSERT(this->has_value(), "optional operator-> called on a disengaged value");
     return _CUDA_VSTD::addressof(this->__get());
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr const value_type& operator*() const& noexcept
   {
-    _LIBCUDACXX_ASSERT(this->has_value(), "optional operator* called on a disengaged value");
+    _CCCL_ASSERT(this->has_value(), "optional operator* called on a disengaged value");
     return this->__get();
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type& operator*() & noexcept
   {
-    _LIBCUDACXX_ASSERT(this->has_value(), "optional operator* called on a disengaged value");
+    _CCCL_ASSERT(this->has_value(), "optional operator* called on a disengaged value");
     return this->__get();
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type&& operator*() && noexcept
   {
-    _LIBCUDACXX_ASSERT(this->has_value(), "optional operator* called on a disengaged value");
+    _CCCL_ASSERT(this->has_value(), "optional operator* called on a disengaged value");
     return _CUDA_VSTD::move(this->__get());
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr const value_type&& operator*() const&& noexcept
   {
-    _LIBCUDACXX_ASSERT(this->has_value(), "optional operator* called on a disengaged value");
+    _CCCL_ASSERT(this->has_value(), "optional operator* called on a disengaged value");
     return _CUDA_VSTD::move(this->__get());
   }
 
@@ -892,7 +888,7 @@ public:
   using __base::__get;
   using __base::has_value;
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_AVAILABILITY_THROW_BAD_OPTIONAL_ACCESS constexpr value_type const& value() const&
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type const& value() const&
   {
     if (!this->has_value())
     {
@@ -901,7 +897,7 @@ public:
     return this->__get();
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_AVAILABILITY_THROW_BAD_OPTIONAL_ACCESS constexpr value_type& value() &
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type& value() &
   {
     if (!this->has_value())
     {
@@ -910,7 +906,7 @@ public:
     return this->__get();
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_AVAILABILITY_THROW_BAD_OPTIONAL_ACCESS constexpr value_type&& value() &&
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type&& value() &&
   {
     if (!this->has_value())
     {
@@ -919,8 +915,7 @@ public:
     return _CUDA_VSTD::move(this->__get());
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_AVAILABILITY_THROW_BAD_OPTIONAL_ACCESS constexpr value_type const&&
-  value() const&&
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type const&& value() const&&
   {
     if (!this->has_value())
     {
@@ -948,7 +943,7 @@ public:
   }
 
   template <class _Func>
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_AVAILABILITY_THROW_BAD_OPTIONAL_ACCESS constexpr auto and_then(_Func&& __f) &
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto and_then(_Func&& __f) &
   {
     using _Up = invoke_result_t<_Func, value_type&>;
     static_assert(__is_std_optional<remove_cvref_t<_Up>>::value,
@@ -961,8 +956,7 @@ public:
   }
 
   template <class _Func>
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_AVAILABILITY_THROW_BAD_OPTIONAL_ACCESS constexpr auto
-  and_then(_Func&& __f) const&
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto and_then(_Func&& __f) const&
   {
     using _Up = invoke_result_t<_Func, const value_type&>;
     static_assert(__is_std_optional<remove_cvref_t<_Up>>::value,
@@ -975,7 +969,7 @@ public:
   }
 
   template <class _Func>
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_AVAILABILITY_THROW_BAD_OPTIONAL_ACCESS constexpr auto and_then(_Func&& __f) &&
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto and_then(_Func&& __f) &&
   {
     using _Up = invoke_result_t<_Func, value_type&&>;
     static_assert(__is_std_optional<remove_cvref_t<_Up>>::value,
@@ -988,8 +982,7 @@ public:
   }
 
   template <class _Func>
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_AVAILABILITY_THROW_BAD_OPTIONAL_ACCESS constexpr auto
-  and_then(_Func&& __f) const&&
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto and_then(_Func&& __f) const&&
   {
     using _Up = invoke_result_t<_Func, const value_type&&>;
     static_assert(__is_std_optional<remove_cvref_t<_Up>>::value,
@@ -1002,7 +995,7 @@ public:
   }
 
   template <class _Func>
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_AVAILABILITY_THROW_BAD_OPTIONAL_ACCESS constexpr auto transform(_Func&& __f) &
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Func&& __f) &
   {
     using _Up = remove_cv_t<invoke_result_t<_Func, value_type&>>;
     static_assert(!_CCCL_TRAIT(is_array, _Up), "Result of f(value()) should not be an Array");
@@ -1017,8 +1010,7 @@ public:
   }
 
   template <class _Func>
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_AVAILABILITY_THROW_BAD_OPTIONAL_ACCESS constexpr auto
-  transform(_Func&& __f) const&
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Func&& __f) const&
   {
     using _Up = remove_cv_t<invoke_result_t<_Func, const value_type&>>;
     static_assert(!_CCCL_TRAIT(is_array, _Up), "Result of f(value()) should not be an Array");
@@ -1033,7 +1025,7 @@ public:
   }
 
   template <class _Func>
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_AVAILABILITY_THROW_BAD_OPTIONAL_ACCESS constexpr auto transform(_Func&& __f) &&
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Func&& __f) &&
   {
     using _Up = remove_cv_t<invoke_result_t<_Func, value_type&&>>;
     static_assert(!_CCCL_TRAIT(is_array, _Up), "Result of f(std::move(value())) should not be an Array");
@@ -1051,8 +1043,7 @@ public:
   }
 
   template <class _Func>
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_AVAILABILITY_THROW_BAD_OPTIONAL_ACCESS constexpr auto
-  transform(_Func&& __f) const&&
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Func&& __f) const&&
   {
     using _Up = remove_cvref_t<invoke_result_t<_Func, const value_type&&>>;
     static_assert(!_CCCL_TRAIT(is_array, _Up), "Result of f(std::move(value())) should not be an Array");

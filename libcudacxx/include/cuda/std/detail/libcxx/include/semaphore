@@ -57,7 +57,6 @@ using binary_semaphore = counting_semaphore<1>;
 
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/atomic>
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/type_traits>
 
 _CCCL_PUSH_MACROS
@@ -221,7 +220,7 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI void release(ptrdiff_t __update = 1)
   {
-    _LIBCUDACXX_ASSERT(__update == 1, "");
+    _CCCL_ASSERT(__update == 1, "");
     __available.store(1, memory_order_release);
     __available.notify_one();
     (void) __update;
@@ -283,7 +282,7 @@ class __sem_semaphore_base
     bool const __post_two = __back_amount > 1;
     auto const __success =
       (!__post_one || __libcpp_semaphore_post(&__semaphore)) && (!__post_two || __libcpp_semaphore_post(&__semaphore));
-    _LIBCUDACXX_ASSERT(__success, "");
+    _CCCL_ASSERT(__success, "");
     if (!__post_one || !__post_two)
     {
       __backbuffer.fetch_add(!__post_one ? 2 : 1, memory_order_relaxed);
@@ -354,12 +353,12 @@ _LIBCUDACXX_HIDE_FROM_ABI void __release_slow(ptrdiff_t __post_amount)
   }
   auto const __success =
     (!__post_one || __libcpp_semaphore_post(&__semaphore)) && (!__post_two || __libcpp_semaphore_post(&__semaphore));
-  _LIBCUDACXX_ASSERT(__success, "");
+  _CCCL_ASSERT(__success, "");
 #  else
     for (; __post_amount; --__post_amount)
     {
       auto const __success = __libcpp_semaphore_post(&__semaphore);
-      _LIBCUDACXX_ASSERT(__success, "");
+      _CCCL_ASSERT(__success, "");
     }
 #  endif
 }
@@ -387,23 +386,23 @@ _LIBCUDACXX_HIDE_FROM_ABI __sem_semaphore_base(ptrdiff_t __count = 0)
     , __backbuffer(0)
 #  endif
 {
-  _LIBCUDACXX_ASSERT(__count <= max(), "");
+  _CCCL_ASSERT(__count <= max(), "");
   auto const __success =
 #  ifndef _LIBCUDACXX_HAS_NO_SEMAPHORE_FRONT_BUFFER
     __libcpp_semaphore_init(&__semaphore, 0);
 #  else
       __libcpp_semaphore_init(&__semaphore, __count);
 #  endif
-  _LIBCUDACXX_ASSERT(__success, "");
+  _CCCL_ASSERT(__success, "");
 }
 
 _LIBCUDACXX_HIDE_FROM_ABI ~__sem_semaphore_base()
 {
 #  ifndef _LIBCUDACXX_HAS_NO_SEMAPHORE_FRONT_BUFFER
-  _LIBCUDACXX_ASSERT(0 == (__frontbuffer.load(memory_order_relaxed) & ~0u), "");
+  _CCCL_ASSERT(0 == (__frontbuffer.load(memory_order_relaxed) & ~0u), "");
 #  endif
   auto const __success = __libcpp_semaphore_destroy(&__semaphore);
-  _LIBCUDACXX_ASSERT(__success, "");
+  _CCCL_ASSERT(__success, "");
 }
 
 __sem_semaphore_base(const __sem_semaphore_base&)            = delete;

@@ -26,7 +26,7 @@
 #include "cuda_space_selector.h"
 #include "test_macros.h"
 
-template <class T, template <typename, typename> typename, cuda::thread_scope>
+template <class T, template <typename, typename> class, cuda::thread_scope>
 struct TestFn
 {
   __host__ __device__ void operator()() const

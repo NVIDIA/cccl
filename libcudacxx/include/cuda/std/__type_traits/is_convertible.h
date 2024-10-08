@@ -31,16 +31,16 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_IS_CONVERTIBLE_TO) && !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
+#if defined(_CCCL_BUILTIN_IS_CONVERTIBLE_TO) && !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
 
 template <class _T1, class _T2>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_convertible
-    : public integral_constant<bool, _LIBCUDACXX_IS_CONVERTIBLE_TO(_T1, _T2)>
+    : public integral_constant<bool, _CCCL_BUILTIN_IS_CONVERTIBLE_TO(_T1, _T2)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _T1, class _T2>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_convertible_v = _LIBCUDACXX_IS_CONVERTIBLE_TO(_T1, _T2);
+_LIBCUDACXX_INLINE_VAR constexpr bool is_convertible_v = _CCCL_BUILTIN_IS_CONVERTIBLE_TO(_T1, _T2);
 #  endif
 
 #  ifdef _CCCL_COMPILER_MSVC // Workaround for DevCom-1627396
@@ -73,7 +73,7 @@ template <class _Ty>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_convertible_v<volatile _Ty&, const volatile _Ty&> = true;
 #  endif // _CCCL_COMPILER_MSVC
 
-#else // __has_builtin(__is_convertible_to) && !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
+#else // ^^^ _CCCL_BUILTIN_IS_CONVERTIBLE_TO ^^^ / vvv !_CCCL_BUILTIN_IS_CONVERTIBLE_TO vvv
 
 namespace __is_convertible_imp
 {
@@ -203,7 +203,7 @@ template <class _From, class _To>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_convertible_v = is_convertible<_From, _To>::value;
 #  endif
 
-#endif // __has_builtin(__is_convertible_to) && !defined(_LIBCUDACXX_USE_IS_CONVERTIBLE_FALLBACK)
+#endif // !_CCCL_BUILTIN_IS_CONVERTIBLE_TO
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

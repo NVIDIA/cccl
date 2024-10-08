@@ -178,7 +178,6 @@ template <class... Types>
 #include <cuda/std/climits>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
@@ -236,7 +235,7 @@ class __tuple_leaf<_Ip, _Hp, __tuple_leaf_specialization::__default>
   template <class _Tp>
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __can_bind_reference()
   {
-#if __has_keyword(__reference_binds_to_temporary)
+#if _CCCL_HAS_KEYWORD(__reference_binds_to_temporary)
     return !__reference_binds_to_temporary(_Hp, _Tp);
 #else
     return true;
@@ -328,7 +327,7 @@ class __tuple_leaf<_Ip, _Hp, __tuple_leaf_specialization::__synthesize_assignmen
   template <class _Tp>
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __can_bind_reference()
   {
-#if __has_keyword(__reference_binds_to_temporary)
+#if _CCCL_HAS_KEYWORD(__reference_binds_to_temporary)
     return !__reference_binds_to_temporary(_Hp, _Tp);
 #else
     return true;

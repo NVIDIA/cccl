@@ -37,9 +37,9 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
-#if defined(_LIBCUDACXX_COMPILER_MSVC)
+#if defined(_CCCL_COMPILER_MSVC)
 _CCCL_NV_DIAG_SUPPRESS(461) // nonstandard cast to array type ignored
-#endif // _LIBCUDACXX_COMPILER_MSVC
+#endif // _CCCL_COMPILER_MSVC
 
 #if _CCCL_STD_VER > 2011
 
@@ -200,8 +200,8 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif // _CCCL_STD_VER > 2011
 
-#if defined(_LIBCUDACXX_COMPILER_MSVC)
+#if defined(_CCCL_COMPILER_MSVC)
 _CCCL_NV_DIAG_DEFAULT(461) // nonstandard cast to array type ignored
-#endif // _LIBCUDACXX_COMPILER_MSVC
+#endif // _CCCL_COMPILER_MSVC
 
 #endif // _LIBCUDACXX___CONCEPTS_SWAPPABLE_H

@@ -27,6 +27,7 @@
 
 #pragma once
 
+// #define CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT
 #include <cub/device/device_radix_sort.cuh>
 #include <cub/device/device_segmented_radix_sort.cuh>
 #include <cub/util_macro.cuh>
@@ -49,6 +50,49 @@
 #include "c2h/utility.cuh"
 #include "c2h/vector.cuh"
 #include "catch2_test_helper.h"
+
+// Index types used for OffsetsT testing
+using offset_types = c2h::type_list<cuda::std::int32_t, cuda::std::uint64_t>;
+using all_offset_types =
+  c2h::type_list<cuda::std::int32_t, cuda::std::uint32_t, cuda::std::int64_t, cuda::std::uint64_t>;
+
+// Create a segment iterator that returns the next multiple of Step except for a few cases. This allows to save memory
+template <typename OffsetT, OffsetT Step>
+struct segment_iterator
+{
+  OffsetT last = 0;
+
+  segment_iterator(OffsetT last1)
+      : last{last1}
+  {}
+
+  __host__ __device__ OffsetT operator()(OffsetT x) const
+  {
+    switch (x)
+    {
+      case Step * 100:
+        return Step * 100 + Step / 2;
+      case Step * 200:
+        return Step * 200 + Step / 2;
+      case Step * 300:
+        return Step * 300 + Step / 2;
+      case Step * 400:
+        return Step * 400 + Step / 2;
+      case Step * 500:
+        return Step * 500 + Step / 2;
+      case Step * 600:
+        return Step * 600 + Step / 2;
+      case Step * 700:
+        return Step * 700 + Step / 2;
+      case Step * 800:
+        return Step * 800 + Step / 2;
+      case Step * 900:
+        return Step * 900 + Step / 2;
+      default:
+        return (x >= last) ? last : x * Step;
+    }
+  }
+};
 
 // The launchers defined in catch2_test_launch_helper.h do not support
 // passing objects by reference since the device-launch tests cannot
@@ -446,7 +490,7 @@ std::pair<c2h::host_vector<KeyT>, c2h::host_vector<ValueT>> segmented_radix_sort
 }
 
 template <typename OffsetT>
-struct offset_scan_op_t
+struct radix_offset_scan_op_t
 {
   OffsetT num_items;
 
@@ -470,5 +514,5 @@ void generate_segment_offsets(c2h::seed_t seed, c2h::device_vector<OffsetT>& off
     offsets.end(),
     offsets.begin(),
     OffsetT{0},
-    offset_scan_op_t<OffsetT>{static_cast<OffsetT>(num_items)});
+    radix_offset_scan_op_t<OffsetT>{static_cast<OffsetT>(num_items)});
 }

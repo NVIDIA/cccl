@@ -18,17 +18,8 @@ else()
   )
 endif()
 
-include("${CUB_SOURCE_DIR}/cmake/CPM.cmake")
-CPMAddPackage("gh:catchorg/Catch2@2.13.9")
-
-CPMAddPackage(
-  NAME NVTX
-  GITHUB_REPOSITORY NVIDIA/NVTX
-  GIT_TAG release-v3
-  DOWNLOAD_ONLY
-  SYSTEM
-)
-include("${NVTX_SOURCE_DIR}/c/nvtxImportedTargets.cmake")
+cccl_get_catch2()
+cccl_get_nvtx()
 
 find_package(CUDAToolkit)
 

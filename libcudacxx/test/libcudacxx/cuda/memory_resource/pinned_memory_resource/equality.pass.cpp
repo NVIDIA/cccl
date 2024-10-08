@@ -78,9 +78,18 @@ void test()
     assert((first != second));
   }
 
-  { // comparison against a pinned_memory_resource wrapped inside a resource_ref<>
+  { // comparison against a pinned_memory_resource wrapped inside a resource_ref<cuda::mr::host_accessible>
     cuda::mr::pinned_memory_resource second{};
-    cuda::mr::resource_ref<> second_ref{second};
+    cuda::mr::resource_ref<cuda::mr::host_accessible> second_ref{second};
+    assert(first == second_ref);
+    assert(!(first != second_ref));
+    assert(second_ref == first);
+    assert(!(second_ref != first));
+  }
+
+  { // comparison against a pinned_memory_resource wrapped inside a resource_ref<cuda::mr::device_accessible>
+    cuda::mr::pinned_memory_resource second{};
+    cuda::mr::resource_ref<cuda::mr::device_accessible> second_ref{second};
     assert(first == second_ref);
     assert(!(first != second_ref));
     assert(second_ref == first);

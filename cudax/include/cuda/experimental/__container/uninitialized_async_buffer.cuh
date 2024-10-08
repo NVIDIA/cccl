@@ -22,7 +22,6 @@
 
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__memory_resource/resource_ref.h>
-#include <cuda/std/__concepts/_One_of.h>
 #include <cuda/std/__memory/align.h>
 #include <cuda/std/__new/launder.h>
 #include <cuda/std/__utility/exchange.h>
@@ -72,6 +71,10 @@ template <class _Tp, class... _Properties>
 class uninitialized_async_buffer
 {
 private:
+  static_assert(_CUDA_VMR::__contains_execution_space_property<_Properties...>,
+                "The properties of cuda::experimental::mr::uninitialized_async_buffer must contain at least one "
+                "execution space property!");
+
   using __async_resource = ::cuda::experimental::mr::any_async_resource<_Properties...>;
   __async_resource __mr_;
   ::cuda::stream_ref __stream_ = {};
@@ -100,7 +103,7 @@ private:
   _CCCL_NODISCARD_FRIEND _CUDA_VSTD::span<_Tp>
   __cudax_launch_transform(::cuda::stream_ref, uninitialized_async_buffer& __self) noexcept
   {
-    static_assert(_CUDA_VSTD::_One_of<_CUDA_VMR::device_accessible, _Properties...>,
+    static_assert(_CUDA_VSTD::__is_included_in<_CUDA_VMR::device_accessible, _Properties...>,
                   "The buffer must be device accessible to be passed to `launch`");
     return {__self.__get_data(), __self.size()};
   }
@@ -110,7 +113,7 @@ private:
   _CCCL_NODISCARD_FRIEND _CUDA_VSTD::span<const _Tp>
   __cudax_launch_transform(::cuda::stream_ref, const uninitialized_async_buffer& __self) noexcept
   {
-    static_assert(_CUDA_VSTD::_One_of<_CUDA_VMR::device_accessible, _Properties...>,
+    static_assert(_CUDA_VSTD::__is_included_in<_CUDA_VMR::device_accessible, _Properties...>,
                   "The buffer must be device accessible to be passed to `launch`");
     return {__self.__get_data(), __self.size()};
   }
@@ -242,7 +245,8 @@ public:
 #  ifndef DOXYGEN_SHOULD_SKIP_THIS // friend functions are currently broken
   //! @brief Forwards the passed properties
   _LIBCUDACXX_TEMPLATE(class _Property)
-  _LIBCUDACXX_REQUIRES((!property_with_value<_Property>) _LIBCUDACXX_AND _CUDA_VSTD::_One_of<_Property, _Properties...>)
+  _LIBCUDACXX_REQUIRES(
+    (!property_with_value<_Property>) _LIBCUDACXX_AND _CUDA_VSTD::__is_included_in<_Property, _Properties...>)
   friend constexpr void get_property(const uninitialized_async_buffer&, _Property) noexcept {}
 #  endif // DOXYGEN_SHOULD_SKIP_THIS
 };

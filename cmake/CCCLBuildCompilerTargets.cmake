@@ -20,6 +20,9 @@ set(CCCL_KNOWN_CXX_DIALECTS 11 14 17 20)
 # sccache cannot handle the -Fd option generating pdb files
 set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
 
+option(CCCL_ENABLE_EXCEPTIONS "Enable exceptions within CCCL libraries." ON)
+option(CCCL_ENABLE_WERROR "Treat warnings as errors for CCCL targets." ON)
+
 function(cccl_build_compiler_interface interface_target cuda_compile_options cxx_compile_options compile_defs)
   add_library(${interface_target} INTERFACE)
 
@@ -53,6 +56,10 @@ function(cccl_build_compiler_targets)
   # Ensure that we build our tests without treating ourself as system header
   list(APPEND cxx_compile_definitions "_CCCL_NO_SYSTEM_HEADER")
 
+  if (NOT CCCL_ENABLE_EXCEPTIONS)
+    list(APPEND cxx_compile_definitions "CCCL_DISABLE_EXCEPTIONS")
+  endif()
+
   if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
     list(APPEND cuda_compile_options "--use-local-env")
     list(APPEND cxx_compile_options "/bigobj")
@@ -64,8 +71,10 @@ function(cccl_build_compiler_targets)
     # as `nv_exec_check_disable` doesn't seem to work with MSVC debug iterators
     # and spurious warnings are emitted.
     # See NVIDIA/thrust#1273, NVBug 3129879.
-    if (CMAKE_BUILD_TYPE STREQUAL "Release")
-      append_option_if_available("/WX" cxx_compile_options)
+    if (CCCL_ENABLE_WERROR)
+      if (CMAKE_BUILD_TYPE STREQUAL "Release")
+        append_option_if_available("/WX" cxx_compile_options)
+      endif()
     endif()
 
     # Suppress overly-pedantic/unavoidable warnings brought in with /W4:
@@ -100,7 +109,10 @@ function(cccl_build_compiler_targets)
   else()
     list(APPEND cuda_compile_options "-Wreorder")
 
-    append_option_if_available("-Werror" cxx_compile_options)
+    if (CCCL_ENABLE_WERROR)
+      append_option_if_available("-Werror" cxx_compile_options)
+    endif()
+
     append_option_if_available("-Wall" cxx_compile_options)
     append_option_if_available("-Wextra" cxx_compile_options)
     append_option_if_available("-Wreorder" cxx_compile_options)

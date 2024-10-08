@@ -28,18 +28,18 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_IS_BASE_OF) && !defined(_LIBCUDACXX_USE_IS_BASE_OF_FALLBACK)
+#if defined(_CCCL_BUILTIN_IS_BASE_OF) && !defined(_LIBCUDACXX_USE_IS_BASE_OF_FALLBACK)
 
 template <class _Bp, class _Dp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_base_of : public integral_constant<bool, _LIBCUDACXX_IS_BASE_OF(_Bp, _Dp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_base_of : public integral_constant<bool, _CCCL_BUILTIN_IS_BASE_OF(_Bp, _Dp)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Bp, class _Dp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_base_of_v = _LIBCUDACXX_IS_BASE_OF(_Bp, _Dp);
+_LIBCUDACXX_INLINE_VAR constexpr bool is_base_of_v = _CCCL_BUILTIN_IS_BASE_OF(_Bp, _Dp);
 #  endif
 
-#else // defined(_LIBCUDACXX_IS_BASE_OF) && !defined(_LIBCUDACXX_USE_IS_BASE_OF_FALLBACK)
+#else // defined(_CCCL_BUILTIN_IS_BASE_OF) && !defined(_LIBCUDACXX_USE_IS_BASE_OF_FALLBACK)
 
 namespace __is_base_of_imp
 {
@@ -76,7 +76,7 @@ template <class _Bp, class _Dp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_base_of_v = is_base_of<_Bp, _Dp>::value;
 #  endif
 
-#endif // defined(_LIBCUDACXX_IS_BASE_OF) && !defined(_LIBCUDACXX_USE_IS_BASE_OF_FALLBACK)
+#endif // defined(_CCCL_BUILTIN_IS_BASE_OF) && !defined(_LIBCUDACXX_USE_IS_BASE_OF_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

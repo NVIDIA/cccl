@@ -31,7 +31,7 @@ struct InTemplate
 
 int main(int, char**)
 {
-#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   // Test the signature
   {
     ASSERT_SAME_TYPE(decltype(cuda::std::is_constant_evaluated()), bool);
