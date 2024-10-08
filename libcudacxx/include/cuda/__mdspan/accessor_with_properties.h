@@ -66,13 +66,26 @@ template <_EvictionPolicyEnum _Value>
 struct __is_eviction_policy<__eviction_policy_constant_t<_Value>> : _CUDA_VSTD::true_type
 {};
 
+/// @brief Cache eviction policies determine the order in which cache entries are removed when the cache reaches its
+///        capacity
 namespace eviction_policy
 {
 
-constexpr auto first         = __eviction_policy_constant<_EvictionPolicyEnum::_First>;
-constexpr auto normal        = __eviction_policy_constant<_EvictionPolicyEnum::_Normal>;
-constexpr auto last          = __eviction_policy_constant<_EvictionPolicyEnum::_Last>;
-constexpr auto last_use      = __eviction_policy_constant<_EvictionPolicyEnum::_LastUse>;
+/// @brief Evict first. Data will likely be evicted when cache eviction is required. This policy is suitable for
+///        streaming data
+constexpr auto first = __eviction_policy_constant<_EvictionPolicyEnum::_First>;
+
+/// @brief Default eviction policy. It maps to a standard memory access
+constexpr auto normal = __eviction_policy_constant<_EvictionPolicyEnum::_Normal>;
+
+/// @brief Evict last. Data will likely be evicted only after other data with 'evict_normal' or 'evict_first' eviction
+///        priotity is already evicted. This policy is suitable for persistentdata
+constexpr auto last = __eviction_policy_constant<_EvictionPolicyEnum::_Last>;
+
+/// @brief Last use. Data that is read can be invalidated even if dirty
+constexpr auto last_use = __eviction_policy_constant<_EvictionPolicyEnum::_LastUse>;
+
+/// @brief No allocation. Do not allocate data to cache. This policy is suitable for streaming data
 constexpr auto no_allocation = __eviction_policy_constant<_EvictionPolicyEnum::_NoAllocation>;
 
 }; // namespace eviction_policy
@@ -472,8 +485,6 @@ public:
                     accessor_reference<_ElementType, _Restrict, _Alignment, _Eviction, _Scope, _Prefetch, _CacheHint>>;
   using data_handle_type = _CUDA_VSTD::_If<_IsRestrict, _ElementType* __restrict__, _ElementType*>;
 
-  access_property __prop;
-
   explicit accessor_with_properties() noexcept = default;
 
   explicit accessor_with_properties(access_property __prop) noexcept
@@ -503,8 +514,12 @@ public:
 
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE data_handle_type offset(data_handle_type __p, size_t __i) const noexcept
   {
-    return __p + __i;
+    auto __p1 = /*_CUDA_VSTD::*/ assume_aligned(__p, _Alignment::value);
+    return __p1 + __i;
   }
+
+private:
+  access_property __prop;
 };
 
 /***********************************************************************************************************************
