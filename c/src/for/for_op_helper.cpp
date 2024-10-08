@@ -73,7 +73,7 @@ using for_each_iterator_t = input_iterator_state_t;
 
 static std::string get_for_kernel_user_op(cccl_op_t user_op, cccl_iterator_t iter)
 {
-  auto storage_t = cccl_type_enum_to_string(iter.value_type.type);
+  auto value_t = cccl_type_enum_to_string(iter.value_type.type);
 
   constexpr std::string_view op_format =
     R"XXX(
@@ -113,7 +113,7 @@ struct user_op_t {{
     op_format,
     user_op_stateful, // 0 - stateful user op
     user_op.name, // 1 - user op function name
-    storage_t, // 2 - user op input type
+    value_t, // 2 - user op input type
     user_op.alignment, // 3 - state alignment
     user_op.size // 4 - state size
   );
@@ -201,7 +201,7 @@ for_each_kernel_state make_for_kernel_state(cccl_op_t op, cccl_iterator_t iterat
 {
   // Iterator is either a pointer or a stateful object, allocate space according to its size or alignment
   size_t iter_size     = (cccl_iterator_kind_t::iterator == iterator.type) ? iterator.size : sizeof(void*);
-  size_t iter_align    = (cccl_iterator_kind_t::iterator == iterator.type) ? iterator.alignment : sizeof(void*);
+  size_t iter_align    = (cccl_iterator_kind_t::iterator == iterator.type) ? iterator.alignment : alignof(void*);
   void* iterator_state = (cccl_iterator_kind_t::iterator == iterator.type) ? iterator.state : &iterator.state;
 
   // Do we need to valid user input? Alignments larger than the provided size?
