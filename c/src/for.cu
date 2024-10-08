@@ -21,6 +21,7 @@
 #include <for/for_op_helper.h>
 #include <nvJitLink.h>
 #include <nvrtc.h>
+#include <util/context.h>
 #include <util/errors.h>
 #include <util/types.h>
 
