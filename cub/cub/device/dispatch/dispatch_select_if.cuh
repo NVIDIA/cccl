@@ -580,19 +580,6 @@ struct DispatchSelectIf : SelectedPolicy
       EqualityOpT,
       per_partition_offset_t,
       streaming_context_t>;
-
-    // Return for empty problem (also needed to avoid division by zero)
-    // TODO(elstehle): In this case d_num_selected_out will never be written. Maybe we want to write it despite?
-    if (num_items == 0)
-    {
-      // If this was just to query temporary storage requirements, return non-empty bytes
-      if (d_temp_storage == nullptr)
-      {
-        temp_storage_bytes = std::size_t{1};
-      }
-      return cudaSuccess;
-    }
-
     cudaError error = cudaSuccess;
 
     constexpr auto block_threads    = VsmemHelperT::agent_policy_t::BLOCK_THREADS;
@@ -607,8 +594,9 @@ struct DispatchSelectIf : SelectedPolicy
         ? static_cast<OffsetT>(partition_size)
         : num_items;
 
-    // The number of partitions required to "iterate" over the total input
-    auto const num_partitions = ::cuda::ceil_div(num_items, max_partition_size);
+    // The number of partitions required to "iterate" over the total input (ternary to avoid div-by-zero)
+    auto const num_partitions =
+      (max_partition_size == 0) ? static_cast<OffsetT>(1) : ::cuda::ceil_div(num_items, max_partition_size);
 
     // The maximum number of tiles for which we will ever invoke the kernel
     auto const max_num_tiles_per_invocation = static_cast<OffsetT>(::cuda::ceil_div(max_partition_size, tile_size));
@@ -702,6 +690,13 @@ struct DispatchSelectIf : SelectedPolicy
         if (cudaSuccess != error)
         {
           return error;
+        }
+
+        // No more items to process (note, we do not want to return early for num_items==0, because we need to make sure
+        // that `scan_init_kernel` has written '0' to d_num_selected_out)
+        if (current_num_items == 0)
+        {
+          return cudaSuccess;
         }
 
 // Log select_if_kernel configuration
