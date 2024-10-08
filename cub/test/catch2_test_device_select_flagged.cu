@@ -96,7 +96,7 @@ CUB_TEST("DeviceSelect::Flagged can run with empty input", "[device][select_flag
   c2h::device_vector<int> flags(num_items);
 
   // Needs to be device accessible
-  c2h::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 42);
   int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   select_flagged(in.begin(), flags.begin(), out.begin(), d_num_selected_out, num_items);

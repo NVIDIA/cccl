@@ -95,7 +95,7 @@ CUB_TEST("DevicePartition::If can run with empty input", "[device][partition_if]
   c2h::device_vector<type> out(num_items);
 
   // Needs to be device accessible
-  c2h::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 42);
   int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   partition_if(in.begin(), out.begin(), d_num_selected_out, num_items, always_true_t{});

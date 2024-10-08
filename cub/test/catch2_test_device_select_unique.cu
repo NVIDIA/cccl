@@ -111,7 +111,7 @@ CUB_TEST("DeviceSelect::Unique can run with empty input", "[device][select_uniqu
   c2h::device_vector<type> out(num_items);
 
   // Needs to be device accessible
-  c2h::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 42);
   int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   select_unique(in.begin(), out.begin(), d_num_selected_out, num_items);
