@@ -17,7 +17,7 @@ The accessor allows to specify the following properties:
 Types and Utilities
 -------------------
 
-**Main class** to describe the memory access properties
+The **main class** to describe the memory access properties
 
 .. code:: cpp
 
@@ -30,7 +30,7 @@ Types and Utilities
             typename CacheHint>
   class accessor_with_properties;
 
-**Proxy class** to allow distinguishing between load and store operations
+A **proxy class** to allow distinguishing between load and store operations
 
 .. code:: cpp
 
@@ -43,7 +43,7 @@ Types and Utilities
             typename CacheHint>
   class accessor_reference;
 
-**Factory** to simplify the creation of an accessor with properties. It supports a variable number of properties and without enforcing a specific order
+A **factory** to simplify the creation of an accessor with properties. It supports a variable number of properties and without enforcing a specific order
 
 .. code:: cpp
 
