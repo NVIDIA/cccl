@@ -37,11 +37,10 @@
 #endif
 
 #include <cuda/__memory_resource/get_property.h>
+#include <cuda/__memory_resource/properties.h>
 #include <cuda/__memory_resource/resource.h>
 #include <cuda/__memory_resource/resource_ref.h>
 #include <cuda/std/__concepts/__concept_macros.h>
-#include <cuda/std/__concepts/_One_of.h>
-#include <cuda/std/__concepts/all_of.h>
 #include <cuda/std/__new_>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
@@ -73,6 +72,10 @@ class basic_any_resource
     , private _CUDA_VMR::_Filtered_vtable<_Properties...>
 {
 private:
+  static_assert(_CUDA_VMR::__contains_execution_space_property<_Properties...>,
+                "The properties of cuda::experimental::mr::basic_any_resource must contain at least one execution "
+                "space property!");
+
   template <_CUDA_VMR::_AllocType, class...>
   friend class basic_any_resource;
 
@@ -151,7 +154,7 @@ public:
           nullptr, _CUDA_VSTD::exchange(__other.__static_vtable, nullptr))
       , __vtable(__other)
   {
-    _LIBCUDACXX_ASSERT(this->__static_vtable != nullptr, "copying from a moved-from object");
+    _CCCL_ASSERT(this->__static_vtable != nullptr, "copying from a moved-from object");
     this->__static_vtable->__move_fn(&this->__object, &__other.__object);
   }
 
@@ -162,7 +165,7 @@ public:
           nullptr, _CUDA_VSTD::exchange(__other.__static_vtable, nullptr))
       , __vtable(__other)
   {
-    _LIBCUDACXX_ASSERT(this->__static_vtable != nullptr, "copying from a moved-from object");
+    _CCCL_ASSERT(this->__static_vtable != nullptr, "copying from a moved-from object");
     this->__static_vtable->__move_fn(&this->__object, &__other.__object);
   }
 
@@ -191,7 +194,7 @@ public:
       : _CUDA_VMR::_Resource_base<_Alloc_type, _CUDA_VMR::_WrapperType::_Owning>(nullptr, __other.__static_vtable)
       , __vtable(__other)
   {
-    _LIBCUDACXX_ASSERT(this->__static_vtable != nullptr, "copying from a moved-from object");
+    _CCCL_ASSERT(this->__static_vtable != nullptr, "copying from a moved-from object");
     this->__static_vtable->__copy_fn(&this->__object, &__other.__object);
   }
 
@@ -259,12 +262,14 @@ public:
 
   //! @brief Forwards the stateless properties
   _LIBCUDACXX_TEMPLATE(class _Property)
-  _LIBCUDACXX_REQUIRES((!property_with_value<_Property>) _LIBCUDACXX_AND(_CUDA_VSTD::_One_of<_Property, _Properties...>))
+  _LIBCUDACXX_REQUIRES(
+    (!property_with_value<_Property>) _LIBCUDACXX_AND(_CUDA_VSTD::__is_included_in<_Property, _Properties...>))
   friend void get_property(const basic_any_resource&, _Property) noexcept {}
 
   //! @brief Forwards the stateful properties
   _LIBCUDACXX_TEMPLATE(class _Property)
-  _LIBCUDACXX_REQUIRES(property_with_value<_Property> _LIBCUDACXX_AND(_CUDA_VSTD::_One_of<_Property, _Properties...>))
+  _LIBCUDACXX_REQUIRES(
+    property_with_value<_Property> _LIBCUDACXX_AND(_CUDA_VSTD::__is_included_in<_Property, _Properties...>))
   _CCCL_NODISCARD_FRIEND __property_value_t<_Property> get_property(const basic_any_resource& __res, _Property) noexcept
   {
     _CUDA_VMR::_Property_vtable<_Property> const& __prop = __res;

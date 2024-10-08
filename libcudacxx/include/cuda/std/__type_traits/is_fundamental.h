@@ -27,18 +27,18 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_IS_FUNDAMENTAL) && !defined(_LIBCUDACXX_USE_IS_FUNDAMENTAL_FALLBACK)
+#if defined(_CCCL_BUILTIN_IS_FUNDAMENTAL) && !defined(_LIBCUDACXX_USE_IS_FUNDAMENTAL_FALLBACK)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_fundamental : public integral_constant<bool, _LIBCUDACXX_IS_FUNDAMENTAL(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_fundamental : public integral_constant<bool, _CCCL_BUILTIN_IS_FUNDAMENTAL(_Tp)>
 {};
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_fundamental_v = _LIBCUDACXX_IS_FUNDAMENTAL(_Tp);
+_LIBCUDACXX_INLINE_VAR constexpr bool is_fundamental_v = _CCCL_BUILTIN_IS_FUNDAMENTAL(_Tp);
 #  endif
 
-#else
+#else // ^^^ _CCCL_BUILTIN_IS_FUNDAMENTAL ^^^ / vvv !_CCCL_BUILTIN_IS_FUNDAMENTAL vvv
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_fundamental
@@ -50,7 +50,7 @@ template <class _Tp>
 _LIBCUDACXX_INLINE_VAR constexpr bool is_fundamental_v = is_fundamental<_Tp>::value;
 #  endif
 
-#endif // defined(_LIBCUDACXX_IS_FUNDAMENTAL) && !defined(_LIBCUDACXX_USE_IS_FUNDAMENTAL_FALLBACK)
+#endif // !_CCCL_BUILTIN_IS_FUNDAMENTAL
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

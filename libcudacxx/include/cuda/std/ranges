@@ -38,7 +38,6 @@ _CCCL_DIAG_SUPPRESS_MSVC(4848)
 #include <cuda/std/__ranges/subrange.h>
 #include <cuda/std/__ranges/view_interface.h>
 #include <cuda/std/__ranges/views.h>
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 
 // standard-mandated includes
 #include <cuda/std/version>

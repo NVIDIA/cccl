@@ -34,7 +34,6 @@
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__utility/declval.h>
-#include <cuda/std/detail/libcxx/include/__assert>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
@@ -135,7 +134,7 @@ public:
   _LIBCUDACXX_REQUIRES(forward_range<_D2>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) front()
   {
-    _LIBCUDACXX_ASSERT(!empty(), "Precondition `!empty()` not satisfied. `.front()` called on an empty view.");
+    _CCCL_ASSERT(!empty(), "Precondition `!empty()` not satisfied. `.front()` called on an empty view.");
     return *_CUDA_VRANGES::begin(__derived());
   }
 
@@ -143,7 +142,7 @@ public:
   _LIBCUDACXX_REQUIRES(forward_range<const _D2>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) front() const
   {
-    _LIBCUDACXX_ASSERT(!empty(), "Precondition `!empty()` not satisfied. `.front()` called on an empty view.");
+    _CCCL_ASSERT(!empty(), "Precondition `!empty()` not satisfied. `.front()` called on an empty view.");
     return *_CUDA_VRANGES::begin(__derived());
   }
 
@@ -151,7 +150,7 @@ public:
   _LIBCUDACXX_REQUIRES(bidirectional_range<_D2> _LIBCUDACXX_AND common_range<_D2>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) back()
   {
-    _LIBCUDACXX_ASSERT(!empty(), "Precondition `!empty()` not satisfied. `.back()` called on an empty view.");
+    _CCCL_ASSERT(!empty(), "Precondition `!empty()` not satisfied. `.back()` called on an empty view.");
     return *_CUDA_VRANGES::prev(_CUDA_VRANGES::end(__derived()));
   }
 
@@ -159,7 +158,7 @@ public:
   _LIBCUDACXX_REQUIRES(bidirectional_range<const _D2> _LIBCUDACXX_AND common_range<const _D2>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) back() const
   {
-    _LIBCUDACXX_ASSERT(!empty(), "Precondition `!empty()` not satisfied. `.back()` called on an empty view.");
+    _CCCL_ASSERT(!empty(), "Precondition `!empty()` not satisfied. `.back()` called on an empty view.");
     return *_CUDA_VRANGES::prev(_CUDA_VRANGES::end(__derived()));
   }
 

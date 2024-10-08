@@ -41,6 +41,34 @@ _CCCL_DIAG_POP
 #    include <sstream> // for std::basic_ostringstream
 #  endif // !_CCCL_COMPILER_NVRTC
 
+// This is a workaround against the user defining macros __CUDA_NO_HALF_CONVERSIONS__ __CUDA_NO_HALF_OPERATORS__
+namespace __cccl_internal
+{
+template <>
+struct __is_non_narrowing_convertible<__nv_bfloat16, float>
+{
+  static constexpr bool value = true;
+};
+
+template <>
+struct __is_non_narrowing_convertible<__nv_bfloat16, double>
+{
+  static constexpr bool value = true;
+};
+
+template <>
+struct __is_non_narrowing_convertible<float, __nv_bfloat16>
+{
+  static constexpr bool value = true;
+};
+
+template <>
+struct __is_non_narrowing_convertible<double, __nv_bfloat16>
+{
+  static constexpr bool value = true;
+};
+} // namespace __cccl_internal
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <>
@@ -59,23 +87,6 @@ struct __libcpp_complex_overload_traits<__nv_bfloat16, false, false>
   typedef __nv_bfloat16 _ValueType;
   typedef complex<__nv_bfloat16> _ComplexType;
 };
-
-// This is a workaround against the user defining macros __CUDA_NO_BFLOAT16_CONVERSIONS__ __CUDA_NO_BFLOAT16_OPERATORS__
-template <>
-struct __complex_can_implicitly_construct<__nv_bfloat16, float> : true_type
-{};
-
-template <>
-struct __complex_can_implicitly_construct<__nv_bfloat16, double> : true_type
-{};
-
-template <>
-struct __complex_can_implicitly_construct<float, __nv_bfloat16> : true_type
-{};
-
-template <>
-struct __complex_can_implicitly_construct<double, __nv_bfloat16> : true_type
-{};
 
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 __convert_to_bfloat16(const _Tp& __value) noexcept
@@ -108,14 +119,14 @@ public:
       : __repr_(__re, __im)
   {}
 
-  template <class _Up, __enable_if_t<__complex_can_implicitly_construct<value_type, _Up>::value, int> = 0>
+  template <class _Up, __enable_if_t<__cccl_internal::__is_non_narrowing_convertible<value_type, _Up>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI complex(const complex<_Up>& __c)
       : __repr_(__convert_to_bfloat16(__c.real()), __convert_to_bfloat16(__c.imag()))
   {}
 
   template <class _Up,
-            __enable_if_t<!__complex_can_implicitly_construct<value_type, _Up>::value, int> = 0,
-            __enable_if_t<_CCCL_TRAIT(is_constructible, value_type, _Up), int>              = 0>
+            __enable_if_t<!__cccl_internal::__is_non_narrowing_convertible<value_type, _Up>::value, int> = 0,
+            __enable_if_t<_CCCL_TRAIT(is_constructible, value_type, _Up), int>                           = 0>
   _LIBCUDACXX_HIDE_FROM_ABI explicit complex(const complex<_Up>& __c)
       : __repr_(__convert_to_bfloat16(__c.real()), __convert_to_bfloat16(__c.imag()))
   {}

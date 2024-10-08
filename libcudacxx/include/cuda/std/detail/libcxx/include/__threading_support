@@ -23,7 +23,6 @@
 #include <cuda/std/__functional/hash.h>
 #include <cuda/std/chrono>
 #include <cuda/std/climits>
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #include <cuda/std/detail/libcxx/include/iosfwd>
 
 _CCCL_PUSH_MACROS
@@ -61,7 +60,7 @@ _CCCL_PUSH_MACROS
 #    define _LIBCUDACXX_THREAD_ABI_VISIBILITY _LIBCUDACXX_HIDE_FROM_ABI
 #  endif
 
-#  if defined(__FreeBSD__) && defined(_CCCL_COMPILER_CLANG) && __has_attribute(no_thread_safety_analysis)
+#  if defined(__FreeBSD__) && defined(_CCCL_COMPILER_CLANG) && _CCCL_HAS_ATTRIBUTE(no_thread_safety_analysis)
 #    define _LIBCUDACXX_NO_THREAD_SAFETY_ANALYSIS __attribute__((no_thread_safety_analysis))
 #  else
 #    define _LIBCUDACXX_NO_THREAD_SAFETY_ANALYSIS
@@ -685,12 +684,6 @@ struct alignas(64) __libcpp_contention_t
 _LIBCUDACXX_HIDE_FROM_ABI __libcpp_contention_t* __libcpp_contention_state(void const volatile* p) noexcept;
 
 #  endif // _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
-
-#  if !defined(_LIBCUDACXX_HAS_NO_TREE_BARRIER) && !defined(_LIBCUDACXX_HAS_NO_THREAD_FAVORITE_BARRIER_INDEX)
-
-_CCCL_VISIBILITY_DEFAULT extern thread_local ptrdiff_t __libcpp_thread_favorite_barrier_index;
-
-#  endif
 
 #  ifndef __cuda_std__
 

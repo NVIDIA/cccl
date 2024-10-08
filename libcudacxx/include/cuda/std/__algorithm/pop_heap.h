@@ -29,7 +29,6 @@
 #include <cuda/std/__type_traits/is_copy_assignable.h>
 #include <cuda/std/__type_traits/is_copy_constructible.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/detail/libcxx/include/__assert>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -41,7 +40,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void __pop_heap(
   typename iterator_traits<_RandomAccessIterator>::difference_type __len)
 {
   // Calling `pop_heap` on an empty range is undefined behavior, but in practice it will be a no-op.
-  _LIBCUDACXX_ASSERT(__len > 0, "The heap given to pop_heap must be non-empty");
+  _CCCL_ASSERT(__len > 0, "The heap given to pop_heap must be non-empty");
 
   __comp_ref_type<_Compare> __comp_ref = __comp;
 
