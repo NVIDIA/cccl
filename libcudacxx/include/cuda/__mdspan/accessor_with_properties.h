@@ -40,6 +40,51 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 /***********************************************************************************************************************
+ * Aliasing Policies
+ **********************************************************************************************************************/
+
+enum class _AliasingPolicyEnum
+{
+  _Restrict,
+  _MayAlias
+};
+
+template <_AliasingPolicyEnum _Value>
+constexpr auto __aliasing_constant = _CUDA_VSTD::integral_constant<_AliasingPolicyEnum, _Value>{};
+
+template <typename>
+struct __is_aliasing_policy : _CUDA_VSTD::false_type
+{};
+
+template <_AliasingPolicyEnum _Value>
+struct __is_aliasing_policy<_CUDA_VSTD::integral_constant<_AliasingPolicyEnum, _Value>> : _CUDA_VSTD::true_type
+{};
+
+/// @brief The aliasing policy specifies how pointers are resolved by the compiler when they are used in an expression
+namespace aliasing_policy
+{
+
+/// @brief No aliasing. Pointers doesn’t overlap (default)
+constexpr auto restrict = __aliasing_constant<_AliasingPolicyEnum::_Restrict>;
+
+/// @brief May alias. Pointers may overlap
+constexpr auto may_alias = __aliasing_constant<_AliasingPolicyEnum::_MayAlias>;
+
+}; // namespace aliasing_policy
+
+/***********************************************************************************************************************
+ * Alignment
+ **********************************************************************************************************************/
+
+template <typename>
+struct __is_alignment : _CUDA_VSTD::false_type
+{};
+
+template <_CUDA_VSTD::size_t __AlignBytes>
+struct __is_alignment<aligned_size_t<__AlignBytes>> : _CUDA_VSTD::true_type
+{};
+
+/***********************************************************************************************************************
  * Eviction Policies
  **********************************************************************************************************************/
 
@@ -75,7 +120,7 @@ namespace eviction_policy
 ///        streaming data
 constexpr auto first = __eviction_policy_constant<_EvictionPolicyEnum::_First>;
 
-/// @brief Default eviction policy. It maps to a standard memory access
+/// @brief Normal eviction policy. It maps to a standard memory access (default)
 constexpr auto normal = __eviction_policy_constant<_EvictionPolicyEnum::_Normal>;
 
 /// @brief Evict last. Data will likely be evicted only after other data with 'evict_normal' or 'evict_first' eviction
@@ -117,14 +162,25 @@ template <_MemoryConsistencyScope _Value>
 struct __is_memory_consistency_scope<__memory_consistency_scope_constant_t<_Value>> : _CUDA_VSTD::true_type
 {};
 
+/// @brief The memory consistency scope defines the set of threads in which data is visible and consistent between reads
+///        and writes
 namespace memory_consistency_scope
 {
 
-constexpr auto none    = __memory_consistency_scope<_MemoryConsistencyScope::_None>;
-constexpr auto cta     = __memory_consistency_scope<_MemoryConsistencyScope::_Cta>;
+/// @brief the memory consistency scope is not specified (default)
+constexpr auto none = __memory_consistency_scope<_MemoryConsistencyScope::_None>;
+
+/// @brief the scope is limited to threads within the same CTA/Thread Block
+constexpr auto cta = __memory_consistency_scope<_MemoryConsistencyScope::_Cta>;
+
+/// @brief the scope is limited to threads within the same Thread Cluster
 constexpr auto cluster = __memory_consistency_scope<_MemoryConsistencyScope::_Cluster>;
-constexpr auto gpu     = __memory_consistency_scope<_MemoryConsistencyScope::_Gpu>;
-constexpr auto system  = __memory_consistency_scope<_MemoryConsistencyScope::_System>;
+
+/// @brief the scope is limited to threads within the same GPU
+constexpr auto gpu = __memory_consistency_scope<_MemoryConsistencyScope::_Gpu>;
+
+/// @brief the scope is not limited. It can interact with any thread in the system
+constexpr auto system = __memory_consistency_scope<_MemoryConsistencyScope::_System>;
 
 }; // namespace memory_consistency_scope
 
@@ -151,59 +207,26 @@ template <_PrefetchSizeEnum _Value>
 struct __is_prefetch_policy<_CUDA_VSTD::integral_constant<_PrefetchSizeEnum, _Value>> : _CUDA_VSTD::true_type
 {};
 
+/// @brief The prefetch size is a hint to fetch additional data of the specified size into the L2 cache level
 namespace prefetch_size
 {
 
+/// @brief  No prefetch (default)
 constexpr auto no_prefetch = __prefetch_constant<_PrefetchSizeEnum::_NoPrefetch>;
-constexpr auto bytes_64    = __prefetch_constant<_PrefetchSizeEnum::_Bytes64>;
-constexpr auto bytes_128   = __prefetch_constant<_PrefetchSizeEnum::_Bytes128>;
-constexpr auto bytes_256   = __prefetch_constant<_PrefetchSizeEnum::_Bytes256>;
+
+/// @brief 64 bytes prefetch
+constexpr auto bytes_64 = __prefetch_constant<_PrefetchSizeEnum::_Bytes64>;
+
+/// @brief 128 bytes prefetch
+constexpr auto bytes_128 = __prefetch_constant<_PrefetchSizeEnum::_Bytes128>;
+
+/// @brief 256 bytes prefetch
+constexpr auto bytes_256 = __prefetch_constant<_PrefetchSizeEnum::_Bytes256>;
 
 }; // namespace prefetch_size
 
 /***********************************************************************************************************************
- * Aliasing Policies
- **********************************************************************************************************************/
-
-enum class _AliasingPolicyEnum
-{
-  _Restrict,
-  _MayAlias
-};
-
-template <_AliasingPolicyEnum _Value>
-constexpr auto __aliasing_constant = _CUDA_VSTD::integral_constant<_AliasingPolicyEnum, _Value>{};
-
-template <typename>
-struct __is_aliasing_policy : _CUDA_VSTD::false_type
-{};
-
-template <_AliasingPolicyEnum _Value>
-struct __is_aliasing_policy<_CUDA_VSTD::integral_constant<_AliasingPolicyEnum, _Value>> : _CUDA_VSTD::true_type
-{};
-
-namespace aliasing_policy
-{
-
-constexpr auto restrict  = __aliasing_constant<_AliasingPolicyEnum::_Restrict>;
-constexpr auto may_alias = __aliasing_constant<_AliasingPolicyEnum::_MayAlias>;
-
-}; // namespace aliasing_policy
-
-/***********************************************************************************************************************
- * Alignment
- **********************************************************************************************************************/
-
-template <typename>
-struct __is_alignment : _CUDA_VSTD::false_type
-{};
-
-template <_CUDA_VSTD::size_t __AlignBytes>
-struct __is_alignment<aligned_size_t<__AlignBytes>> : _CUDA_VSTD::true_type
-{};
-
-/***********************************************************************************************************************
- * Cache Hints
+ * Cache Hint
  **********************************************************************************************************************/
 
 template <typename _T>
@@ -245,7 +268,7 @@ template <class... _Ts>
 using __type_count_cache_hint = _CUDA_VSTD::__type_call<__type_count_if<__is_cache_hint>, _Ts...>;
 
 /***********************************************************************************************************************
- * Find Properties
+ * Find Property Utilities
  **********************************************************************************************************************/
 
 template <template <typename> class _Predicate>
@@ -286,7 +309,7 @@ template <typename... _UserProperties>
 using __find_cache_hint_policy = __find_property<__is_cache_hint, access_property::global, _UserProperties...>;
 
 /***********************************************************************************************************************
- * accessor_with_properties implementation
+ * Accessor Properties to CUB
  **********************************************************************************************************************/
 
 template <typename...>
@@ -300,7 +323,7 @@ T* assume_aligned(T* __ptr, size_t)
   return __ptr;
 };
 
-template <bool _IsConst, _EvictionPolicyEnum _Eviction, _MemoryConsistencyScope _Scope>
+template <bool __is_const_elem, _EvictionPolicyEnum _Eviction, _MemoryConsistencyScope _Scope>
 constexpr auto __to_cub_load_enum()
 {
   // Current CUB limitations
@@ -314,7 +337,8 @@ constexpr auto __to_cub_load_enum()
                 "eviction_policy::no_allocation is currently unsupported eviction policy");
   static_assert(__current_memory_consistency_scopey == memory_consistency_scope::cluster,
                 "memory_consistency_scope::cluster is currently unsupported memory consistency scope");
-  if constexpr (_IsConst && _Eviction == _EvictionPolicyEnum::_Normal && _Scope == _MemoryConsistencyScope::_None)
+  if constexpr (__is_const_elem && _Eviction == _EvictionPolicyEnum::_Normal
+                && _Scope == _MemoryConsistencyScope::_None)
   {
     return cub::LOAD_LDG;
   }
@@ -389,7 +413,7 @@ constexpr auto __to_cub_store_enum()
 }
 
 /***********************************************************************************************************************
- * accessor_with_properties foward declaration
+ * accessor_with_properties Foward Declaration
  **********************************************************************************************************************/
 
 template <typename _ElementType,
@@ -414,9 +438,9 @@ template <typename _ElementType,
           typename _CacheHint>
 class accessor_reference
 {
-  static constexpr bool _IsRestrict = _CUDA_VSTD::is_same_v<_Restrict, decltype(aliasing_policy::restrict)>;
+  static constexpr bool __is_restrict = _CUDA_VSTD::is_same_v<_Restrict, decltype(aliasing_policy::restrict)>;
 
-  using __pointer_type = _CUDA_VSTD::_If<_IsRestrict, _ElementType* __restrict__, _ElementType*>;
+  using __pointer_type = _CUDA_VSTD::_If<__is_restrict, _ElementType* __restrict__, _ElementType*>;
 
   __pointer_type __p;
 
@@ -456,7 +480,7 @@ private:
 };
 
 /***********************************************************************************************************************
- * accessor_with_properties implementation
+ * accessor_with_properties Implementation
  **********************************************************************************************************************/
 
 template <typename _ElementType,
@@ -468,8 +492,8 @@ template <typename _ElementType,
           typename _CacheHint>
 class accessor_with_properties
 {
-  static constexpr bool _IsConst    = _CUDA_VSTD::is_const_v<_ElementType>;
-  static constexpr bool _IsRestrict = _CUDA_VSTD::is_same_v<_Restrict, decltype(aliasing_policy::restrict)>;
+  static constexpr bool __is_const_elem = _CUDA_VSTD::is_const_v<_ElementType>;
+  static constexpr bool __is_restrict   = _CUDA_VSTD::is_same_v<_Restrict, decltype(aliasing_policy::restrict)>;
 
 public:
   static_assert(!_CUDA_VSTD::is_array_v<_ElementType>,
@@ -480,10 +504,10 @@ public:
   using offset_policy = accessor_with_properties;
   using element_type  = _ElementType;
   using reference =
-    _CUDA_VSTD::_If<_IsConst,
+    _CUDA_VSTD::_If<__is_const_elem,
                     _ElementType,
                     accessor_reference<_ElementType, _Restrict, _Alignment, _Eviction, _Scope, _Prefetch, _CacheHint>>;
-  using data_handle_type = _CUDA_VSTD::_If<_IsRestrict, _ElementType* __restrict__, _ElementType*>;
+  using data_handle_type = _CUDA_VSTD::_If<__is_restrict, _ElementType* __restrict__, _ElementType*>;
 
   explicit accessor_with_properties() noexcept = default;
 
@@ -501,9 +525,9 @@ public:
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE reference access(data_handle_type __p, size_t __i) const noexcept
   {
     auto __p1 = /*_CUDA_VSTD::*/ assume_aligned(__p, _Alignment::value);
-    if constexpr (_IsConst)
+    if constexpr (__is_const_elem)
     {
-      constexpr auto __cub_enum = __to_cub_load_enum<_IsConst, _Eviction, _Scope>();
+      constexpr auto __cub_enum = __to_cub_load_enum<__is_const_elem, _Eviction, _Scope>();
       return cub::ThreadLoad<__cub_enum>(__p1 + __i);
     }
     else
@@ -523,7 +547,7 @@ private:
 };
 
 /***********************************************************************************************************************
- * make_accessor_with_properties
+ * make_accessor_with_properties()
  **********************************************************************************************************************/
 
 template <typename _P, typename... _Ps>
@@ -558,6 +582,10 @@ auto make_accessor_with_properties(_UserProperties... __properties) noexcept
   return accessor_with_properties<_ElementType, _Restrict, _Alignment, _Eviction, _Scope, _Prefetch, _CacheHint>(
     __filter_access_property(__properties..., _CacheHint{}));
 }
+
+/***********************************************************************************************************************
+ * Predefined Accessors with Properties
+ **********************************************************************************************************************/
 
 template <typename T>
 using streaming_accessor = decltype(make_accessor_with_properties<T>(eviction_policy::first));
