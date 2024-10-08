@@ -2,7 +2,11 @@ cmake_minimum_required(VERSION 3.30)
 
 project(cccl.c LANGUAGES CUDA CXX)
 
-add_library(cccl.c SHARED src/reduce.cu)
+add_library(cccl.c SHARED
+    src/reduce.cu src/for.cu
+    src/for/for_op_helper.cpp
+    src/util/errors.cpp src/util/types.cpp src/util/context.cpp)
+
 set_property(TARGET cccl.c PROPERTY POSITION_INDEPENDENT_CODE ON)
 set_property(TARGET cccl.c PROPERTY CXX_STANDARD 20)
 set_property(TARGET cccl.c PROPERTY CUDA_STANDARD 20)
@@ -16,5 +20,6 @@ target_link_libraries(cccl.c PRIVATE CUDA::cudart
                                      CUDA::cuda_driver)
 target_compile_definitions(cccl.c PRIVATE NVRTC_GET_TYPE_NAME=1 CCCL_C_EXPERIMENTAL=1)
 target_include_directories(cccl.c PUBLIC "include")
+target_include_directories(cccl.c PRIVATE "src")
 
 add_subdirectory(test)

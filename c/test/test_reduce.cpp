@@ -49,7 +49,7 @@ using integral_types = std::tuple<int32_t, uint32_t, int64_t, uint64_t>;
 TEMPLATE_LIST_TEST_CASE("Reduce works with integral types", "[reduce]", integral_types)
 {
   const int num_items               = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
-  operation_t op                    = make_operation("op", get_op(get_type_info<TestType>().type));
+  operation_t op                    = make_operation("op", get_reduce_op(get_type_info<TestType>().type));
   const std::vector<TestType> input = generate<TestType>(num_items);
   pointer_t<TestType> input_ptr(input);
   pointer_t<TestType> output_ptr(1);
@@ -107,7 +107,7 @@ struct counting_iterator_state_t
 TEST_CASE("Reduce works with input iterators", "[reduce]")
 {
   const std::size_t num_items                         = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
-  operation_t op                                      = make_operation("op", get_op(get_type_info<int>().type));
+  operation_t op                                      = make_operation("op", get_reduce_op(get_type_info<int>().type));
   iterator_t<int, counting_iterator_state_t> input_it = make_iterator<int, counting_iterator_state_t>(
     "struct counting_iterator_state_t { int value; };\n",
     {"advance",
@@ -137,7 +137,7 @@ struct transform_output_iterator_state_t
 TEST_CASE("Reduce works with output iterators", "[reduce]")
 {
   const int num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
-  operation_t op      = make_operation("op", get_op(get_type_info<int>().type));
+  operation_t op      = make_operation("op", get_reduce_op(get_type_info<int>().type));
   iterator_t<int, transform_output_iterator_state_t> output_it = make_iterator<int, transform_output_iterator_state_t>(
     "struct transform_output_iterator_state_t { int* d_output; };\n",
     {"advance",
@@ -169,8 +169,8 @@ struct constant_iterator_state_t
 
 TEST_CASE("Reduce works with input and output iterators", "[reduce]")
 {
-  const int num_items                                      = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
-  operation_t op                                           = make_operation("op", get_op(get_type_info<int>().type));
+  const int num_items = GENERATE(1, 42, take(4, random(1 << 12, 1 << 16)));
+  operation_t op      = make_operation("op", get_reduce_op(get_type_info<int>().type));
   iterator_t<int, constant_iterator_state_t<int>> input_it = make_iterator<int, constant_iterator_state_t<int>>(
     "struct constant_iterator_state_t { int value; };\n",
     {"in_advance",
@@ -205,7 +205,7 @@ TEST_CASE("Reduce works with input and output iterators", "[reduce]")
 TEST_CASE("Reduce accumulator type is influenced by initial value", "[reduce]")
 {
   const int num_items = 1 << 14; // 16384 > 128
-  operation_t op      = make_operation("op", get_op(get_type_info<size_t>().type));
+  operation_t op      = make_operation("op", get_reduce_op(get_type_info<size_t>().type));
   iterator_t<char, constant_iterator_state_t<char>> input_it = make_iterator<char, constant_iterator_state_t<char>>(
     "struct constant_iterator_state_t { char value; };\n",
     {"in_advance",
@@ -229,7 +229,7 @@ TEST_CASE("Reduce accumulator type is influenced by initial value", "[reduce]")
 TEST_CASE("Reduce works with large inputs", "[reduce]")
 {
   const size_t num_items = 1ull << 33;
-  operation_t op         = make_operation("op", get_op(get_type_info<size_t>().type));
+  operation_t op         = make_operation("op", get_reduce_op(get_type_info<size_t>().type));
   iterator_t<char, constant_iterator_state_t<char>> input_it = make_iterator<char, constant_iterator_state_t<char>>(
     "struct constant_iterator_state_t { char value; };\n",
     {"in_advance",
