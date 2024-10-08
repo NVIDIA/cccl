@@ -1012,20 +1012,20 @@ struct DeviceSelect
   }
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-  template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT, typename NumItemsT>
+  template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Unique(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
     NumSelectedIteratorT d_num_selected_out,
-    NumItemsT num_items,
+    ::cuda::std::int64_t num_items,
     cudaStream_t stream,
     bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return Unique<InputIteratorT, OutputIteratorT, NumSelectedIteratorT, NumItemsT>(
+    return Unique<InputIteratorT, OutputIteratorT, NumSelectedIteratorT>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, stream);
   }
 #endif // DOXYGEN_SHOULD_SKIP_THIS

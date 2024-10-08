@@ -169,6 +169,7 @@ struct partition_distinct_output_t
  * @tparam StreamingContextT
  *   Type providing the context information for the current partition, with the following member functions:
  *    input_offset() -> base offset for the input (and flags) iterator
+ *    is_first_partition() -> [Select::Unique-only] whether this is the first partition
  *    num_previously_selected() -> base offset for the output iterator for selected items
  *    num_previously_rejected() -> base offset for the output iterator for rejected items (partition only)
  *    num_total_items() -> total number of items across all partitions (partition only)

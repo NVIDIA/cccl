@@ -29,8 +29,6 @@
 
 #include <cub/config.cuh>
 
-#include "cuda/std/__type_traits/is_unsigned.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -63,7 +61,7 @@ struct choose_offset
                 "NumItemsT must be an integral type, but not bool");
 
   // Unsigned integer type for global offsets.
-  using type = typename ::cuda::std::conditional<sizeof(NumItemsT) <= 4, std::uint32_t, unsigned long long>::type;
+  using type = typename ::cuda::std::_If<sizeof(NumItemsT) <= 4, std::uint32_t, unsigned long long>::type;
 };
 
 /**
@@ -86,7 +84,7 @@ struct promote_small_offset
                 "NumItemsT must be an integral type, but not bool");
 
   // Unsigned integer type for global offsets.
-  using type = typename ::cuda::std::conditional<sizeof(NumItemsT) < 4, std::int32_t, NumItemsT>::type;
+  using type = typename ::cuda::std::_If<sizeof(NumItemsT) < 4, std::int32_t, NumItemsT>::type;
 };
 
 /**
@@ -113,10 +111,10 @@ struct choose_signed_offset
   // uint32 -> int64, else
   // LEQ 4B -> int32, else
   // int64
-  using type = typename ::cuda::std::conditional<
+  using type = typename ::cuda::std::_If<
     (::cuda::std::is_integral<NumItemsT>::value && ::cuda::std::is_unsigned<NumItemsT>::value),
     ::cuda::std::int64_t,
-    typename ::cuda::std::conditional<(sizeof(NumItemsT) <= 4), ::cuda::std::int32_t, ::cuda::std::int64_t>::type>::type;
+    typename ::cuda::std::_If<(sizeof(NumItemsT) <= 4), ::cuda::std::int32_t, ::cuda::std::int64_t>::type>::type;
 
   /**
    * Checks if the given num_items can be covered by the selected offset type. If not, returns cudaErrorInvalidValue,

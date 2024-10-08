@@ -236,7 +236,7 @@ THRUST_RUNTIME_FUNCTION OutputIt copy_if(
   void* temp_storage = static_cast<void*>(tmp.data().get());
 
   // Run algorithm
-  dispatch64_t::dispatch(
+  status = dispatch64_t::dispatch(
     policy, temp_storage, temp_storage_bytes, first, stencil, output, predicate, static_cast<std::int64_t>(num_items));
   cuda_cub::throw_on_error(status, "copy_if failed on 2nd step");
 

@@ -116,12 +116,12 @@ public:
     return first_partition;
   };
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_selected() const
+  _CCCL_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_selected() const
   {
     return first_partition ? TotalNumItemsT{0} : *d_num_selected_in;
   };
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_rejected() const
+  _CCCL_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_rejected() const
   {
     return first_partition ? TotalNumItemsT{0} : (total_previous_num_items - num_previously_selected());
   };
@@ -450,8 +450,7 @@ struct DispatchSelectIf : SelectedPolicy
   using num_total_items_t = OffsetT;
 
   // Type used to provide streaming information about each partition's context
-  static constexpr per_partition_offset_t const partition_size =
-    cuda::std::numeric_limits<per_partition_offset_t>::max();
+  static constexpr per_partition_offset_t partition_size = ::cuda::std::numeric_limits<per_partition_offset_t>::max();
 
   // If the values representable by OffsetT exceed the partition_size, we use a kernel template specialization that
   // supports streaming (i.e., splitting the input into partitions of up to partition_size number of items)
