@@ -33,8 +33,8 @@ void for_each(cccl_iterator_t input, unsigned long long num_items, cccl_op_t op)
     CUDA_SUCCESS
     == cccl_device_for_build(&build, input, op, cc_major, cc_minor, cub_path, thrust_path, libcudacxx_path, ctk_path));
   const std::string sass = inspect_sass(build.cubin, build.cubin_size);
-  // REQUIRE(sass.find("LDL") == std::string::npos);
-  // REQUIRE(sass.find("STL") == std::string::npos);
+  REQUIRE(sass.find("LDL") == std::string::npos);
+  REQUIRE(sass.find("STL") == std::string::npos);
 
   REQUIRE(CUDA_SUCCESS == cccl_device_for(build, input, num_items, op, 0));
   REQUIRE(CUDA_SUCCESS == cccl_device_for_cleanup(&build));
