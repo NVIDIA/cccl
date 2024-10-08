@@ -30,11 +30,16 @@
 
 #include <cub/device/device_select.cuh>
 
+#include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/discard_iterator.h>
+#include <thrust/iterator/tabulate_output_iterator.h>
+
+#include <cuda/cmath>
 
 #include <algorithm>
 
+#include "catch2_test_device_select_common.cuh"
 #include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
 
@@ -106,7 +111,7 @@ CUB_TEST("DeviceSelect::Unique can run with empty input", "[device][select_uniqu
   c2h::device_vector<type> out(num_items);
 
   // Needs to be device accessible
-  c2h::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 42);
   int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   select_unique(in.begin(), out.begin(), d_num_selected_out, num_items);
@@ -263,4 +268,85 @@ CUB_TEST("DeviceSelect::Unique works with a different output type", "[device][se
   out.resize(num_selected_out[0]);
   reference.resize(num_selected_out[0]);
   REQUIRE(reference == out);
+}
+
+CUB_TEST("DeviceSelect::Unique works for very large number of items", "[device][select_unique]")
+try
+{
+  using type     = std::int64_t;
+  using offset_t = std::int64_t;
+
+  // The partition size (the maximum number of items processed by a single kernel invocation) is an important boundary
+  constexpr auto max_partition_size = static_cast<offset_t>(::cuda::std::numeric_limits<std::int32_t>::max());
+
+  offset_t num_items = GENERATE_COPY(
+    values({
+      offset_t{2} * max_partition_size + offset_t{20000000}, // 3 partitions
+      offset_t{2} * max_partition_size, // 2 partitions
+      max_partition_size + offset_t{1}, // 2 partitions
+      max_partition_size, // 1 partitions
+      max_partition_size - offset_t{1} // 1 partitions
+    }),
+    take(2, random(max_partition_size - offset_t{1000000}, max_partition_size + offset_t{1000000})));
+
+  // All unique
+  SECTION("AllUnique")
+  {
+    auto in = thrust::make_counting_iterator(offset_t{0});
+
+    // Prepare tabulate output iterator to verify results in a memory-efficient way:
+    // We use a tabulate iterator that checks whenever the algorithm writes an output whether that item
+    // corresponds to the expected value at that index and, if correct, sets a boolean flag at that index.
+    static constexpr auto bits_per_element = 8 * sizeof(std::uint32_t);
+    c2h::device_vector<std::uint32_t> correctness_flags(::cuda::ceil_div(num_items, bits_per_element));
+    auto expected_result_it = in;
+    auto check_result_op =
+      make_checking_write_op(expected_result_it, thrust::raw_pointer_cast(correctness_flags.data()));
+    auto check_result_it = thrust::make_tabulate_output_iterator(check_result_op);
+
+    // Needs to be device accessible
+    c2h::device_vector<offset_t> num_selected_out(1, 0);
+    offset_t* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+
+    // Run test
+    select_unique(in, check_result_it, d_first_num_selected_out, num_items);
+
+    // Ensure that we created the correct output
+    REQUIRE(num_selected_out[0] == num_items);
+    bool all_results_correct = are_all_flags_set(correctness_flags, num_items);
+    REQUIRE(all_results_correct == true);
+  }
+
+  // All the same -> single unique
+  SECTION("AllSame")
+  {
+    auto in = thrust::make_constant_iterator(offset_t{0});
+    constexpr offset_t expected_num_unique{1};
+
+    // Prepare tabulate output iterator to verify results in a memory-efficient way:
+    // We use a tabulate iterator that checks whenever the algorithm writes an output whether that item
+    // corresponds to the expected value at that index and, if correct, sets a boolean flag at that index.
+    static constexpr auto bits_per_element = 8 * sizeof(std::uint32_t);
+    c2h::device_vector<std::uint32_t> correctness_flags(::cuda::ceil_div(expected_num_unique, bits_per_element));
+    auto expected_result_it = in;
+    auto check_result_op =
+      make_checking_write_op(expected_result_it, thrust::raw_pointer_cast(correctness_flags.data()));
+    auto check_result_it = thrust::make_tabulate_output_iterator(check_result_op);
+
+    // Needs to be device accessible
+    c2h::device_vector<offset_t> num_selected_out(1, 0);
+    offset_t* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+
+    // Run test
+    select_unique(in, check_result_it, d_first_num_selected_out, num_items);
+
+    // Ensure that we created the correct output
+    REQUIRE(num_selected_out[0] == expected_num_unique);
+    bool all_results_correct = are_all_flags_set(correctness_flags, expected_num_unique);
+    REQUIRE(all_results_correct == true);
+  }
+}
+catch (std::bad_alloc&)
+{
+  // Exceeding memory is not a failure.
 }
