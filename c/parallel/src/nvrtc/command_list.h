@@ -23,7 +23,7 @@
 
 struct nvrtc_cubin
 {
-  std::unique_ptr<char> cubin{};
+  std::unique_ptr<char[]> cubin{};
   size_t size;
 };
 
@@ -148,7 +148,7 @@ struct nvrtc_command_list_visitor
     check(jitlink_error);
 
     check(nvJitLinkGetLinkedCubinSize(jitlink.handle, &cleanup.cubin_ref.size));
-    cleanup.cubin_ref.cubin.reset(new char[cleanup.cubin_ref.size]);
+    cleanup.cubin_ref.cubin = std::unique_ptr<char[]>(new char[cleanup.cubin_ref.size]);
     check(nvJitLinkGetLinkedCubin(jitlink.handle, cleanup.cubin_ref.cubin.get()));
   }
 };

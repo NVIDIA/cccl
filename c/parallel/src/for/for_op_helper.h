@@ -27,7 +27,7 @@ struct for_each_default
 
 struct for_each_kernel_state
 {
-  std::variant<for_each_default, std::unique_ptr<char>> for_each_arg;
+  std::variant<for_each_default, std::unique_ptr<char[]>> for_each_arg;
   size_t user_op_offset;
 
   // Get address of argument for kernel

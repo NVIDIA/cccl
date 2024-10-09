@@ -233,7 +233,7 @@ for_each_kernel_state make_for_kernel_state(cccl_op_t op, cccl_iterator_t iterat
   // Return either local buffer or unique_ptr
   if (use_allocated_storage)
   {
-    return for_each_kernel_state{std::unique_ptr<char>{iter_start}, user_op_offset};
+    return for_each_kernel_state{std::unique_ptr<char[]>{iter_start}, user_op_offset};
   }
   else
   {
