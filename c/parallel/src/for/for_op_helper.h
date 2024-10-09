@@ -15,7 +15,6 @@
 #include <variant>
 
 #include <cccl/c/types.h>
-#include <util/memory.h>
 
 // For each kernel accepts a user operator that contains both iterator and user operator state
 // This declaration is used as blueprint for aligned_storage, but is only *valid* in the generated NVRTC program.
@@ -28,7 +27,7 @@ struct for_each_default
 
 struct for_each_kernel_state
 {
-  std::variant<for_each_default, unique_void> for_each_arg;
+  std::variant<for_each_default, std::unique_ptr<char>> for_each_arg;
   size_t user_op_offset;
 
   // Get address of argument for kernel

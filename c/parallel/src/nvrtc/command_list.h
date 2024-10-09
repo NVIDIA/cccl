@@ -12,6 +12,7 @@
 
 #include <cstdlib>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <tuple>
@@ -19,7 +20,12 @@
 #include <nvJitLink.h>
 #include <nvrtc.h>
 #include <util/errors.h>
-#include <util/memory.h>
+
+struct nvrtc_cubin
+{
+  std::unique_ptr<char> cubin{};
+  size_t size;
+};
 
 struct nvrtc_translation_unit
 {
@@ -46,11 +52,6 @@ struct nvrtc_ltoir
 {
   const char* ltoir;
   int ltsz;
-};
-struct nvrtc_cubin
-{
-  unique_void cubin{};
-  size_t size;
 };
 struct nvrtc_jitlink_cleanup
 {
@@ -99,13 +100,11 @@ struct nvrtc_command_list_visitor
     auto result = nvrtcCompileProgram(program, c.num_args, c.args);
 
     size_t log_size{};
-
     check(nvrtcGetProgramLogSize(program, &log_size));
-    std::unique_ptr<char[]> log{new char[log_size]};
-    check(nvrtcGetProgramLog(program, log.get()));
-
     if (log_size > 1)
     {
+      std::unique_ptr<char[]> log{new char[log_size]};
+      check(nvrtcGetProgramLog(program, log.get()));
       std::cerr << log.get() << std::endl;
     }
 
@@ -138,20 +137,18 @@ struct nvrtc_command_list_visitor
     auto jitlink_error = nvJitLinkComplete(jitlink.handle);
 
     size_t log_size{};
-
     check(nvJitLinkGetErrorLogSize(jitlink.handle, &log_size));
-    std::unique_ptr<char[]> log{new char[log_size]};
-    check(nvJitLinkGetErrorLog(jitlink.handle, log.get()));
-
     if (log_size > 1)
     {
+      std::unique_ptr<char[]> log{new char[log_size]};
+      check(nvJitLinkGetErrorLog(jitlink.handle, log.get()));
       std::cerr << log.get() << std::endl;
     }
 
     check(jitlink_error);
 
     check(nvJitLinkGetLinkedCubinSize(jitlink.handle, &cleanup.cubin_ref.size));
-    cleanup.cubin_ref.cubin.reset(malloc(cleanup.cubin_ref.size));
+    cleanup.cubin_ref.cubin.reset(new char[cleanup.cubin_ref.size]);
     check(nvJitLinkGetLinkedCubin(jitlink.handle, cleanup.cubin_ref.cubin.get()));
   }
 };
