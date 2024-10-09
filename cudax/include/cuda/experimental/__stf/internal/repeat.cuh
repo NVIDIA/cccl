@@ -28,12 +28,12 @@ public:
   static constexpr size_t tasks_per_epoch = 200;
 
   repeat_scope(context_t& ctx, size_t count)
-      : ctx(ctx)
-      , condition(count)
+      : condition(count)
+      , ctx(ctx)
   {}
   repeat_scope(context_t& ctx, ::std::function<bool()> condition)
-      : ctx(ctx)
-      , condition(mv(condition))
+      : condition(mv(condition))
+      , ctx(ctx)
   {}
 
   template <typename Fun>

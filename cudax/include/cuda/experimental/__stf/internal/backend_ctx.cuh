@@ -227,8 +227,8 @@ public:
   // Provide an explicit execution place
   cuda_kernel_scope(Ctx& ctx, exec_place e_place, task_dep<Deps>... deps)
       : ctx(ctx)
-      , e_place(mv(e_place))
       , deps(mv(deps)...)
+      , e_place(mv(e_place))
   {}
 
   cuda_kernel_scope(const cuda_kernel_scope&)            = delete;

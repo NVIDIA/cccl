@@ -29,9 +29,9 @@ class tiled_mdspan_shape
 public:
   // parts id, nparts ?
   tiled_mdspan_shape(const mdspan_shape_t& s, size_t part_id, size_t nparts)
-      : part_id(part_id)
+      : original_shape(s)
+      , part_id(part_id)
       , nparts(nparts)
-      , original_shape(s)
   {}
 
   /* The number of elements in this part */

@@ -157,9 +157,9 @@ public:
    * @param arg Arguments to be passed to the kernel.
    */
   launch(spec_t spec, exec_place e_place, ::std::vector<cudaStream_t> streams, Arg arg)
-      : spec(mv(spec))
+      : arg(mv(arg))
       , e_place(mv(e_place))
-      , arg(mv(arg))
+      , spec(mv(spec))
       , streams(mv(streams))
   {}
 
@@ -266,10 +266,10 @@ public:
    * @param deps Dependencies for the task to be launched.
    */
   launch_scope(Ctx& ctx, thread_hierarchy_spec_t spec, exec_place e_place, task_dep<Deps>... deps)
-      : ctx(ctx)
-      , spec(mv(spec))
+      : deps(deps...)
+      , ctx(ctx)
       , e_place(mv(e_place))
-      , deps(deps...)
+      , spec(mv(spec))
   {
     dump_hooks = get_dump_hooks(&ctx, deps...);
   }
