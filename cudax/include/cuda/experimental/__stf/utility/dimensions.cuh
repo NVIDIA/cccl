@@ -409,8 +409,8 @@ public:
   // This transforms a tuple of (shape, 1D index) into a coordinate
   CUDASTF_HOST_DEVICE coords_t index_to_coords(size_t index) const
   {
-// Help the compiler which may not detect that a device lambda is calling a device lambda
-#pragma diag_suppress no_device_stack
+    // Help the compiler which may not detect that a device lambda is calling a device lambda
+    CUDASTF_NO_DEVICE_STACK
     return make_tuple_indexwise<dimensions>([&](auto i) {
       // included
       const ssize_t begin_i = get_begin(i);
@@ -422,7 +422,7 @@ public:
       index /= extent_i;
       return result;
     });
-#pragma diag_default no_device_stack
+    CUDASTF_NO_DEVICE_STACK
   }
 
 private:

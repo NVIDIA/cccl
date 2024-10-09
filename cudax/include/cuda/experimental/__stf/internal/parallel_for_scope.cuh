@@ -324,12 +324,12 @@ public:
     // `__device__`.
     auto explode_deps = [=] CUDASTF_DEVICE(size_t i, ::std::tuple<deps_t...> data) {
       auto explode_coords = [=](deps_t... data) {
-// Help the compiler which may not detect that a device lambda is calling a device lambda
-#  pragma diag_suppress no_device_stack
+        // Help the compiler which may not detect that a device lambda is calling a device lambda
+        CUDASTF_NO_DEVICE_STACK
         auto h = [&](auto... coords) {
           f(coords..., data...);
         };
-#  pragma diag_default no_device_stack
+        CUDASTF_NO_DEVICE_STACK
         ::std::apply(h, sub_shape.index_to_coords(i));
       };
       ::std::apply(explode_coords, data);
