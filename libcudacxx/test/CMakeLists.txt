@@ -41,9 +41,4 @@ if (LIBCUDACXX_TEST_WITH_NVRTC)
   add_subdirectory(utils/nvidia/nvrtc)
 endif()
 
-find_program(filecheck "FileCheck")
-
-if (filecheck)
-  message("-- ${filecheck} found... building atomic codegen tests")
-  add_subdirectory(atomic_codegen)
-endif()
+add_subdirectory(atomic_codegen)

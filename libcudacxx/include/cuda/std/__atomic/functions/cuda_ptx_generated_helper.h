@@ -69,8 +69,15 @@ enum class __atomic_cuda_operand
 
 template <__atomic_cuda_operand _Op, size_t _Size>
 struct __atomic_cuda_operand_tag
-{};
+{
+  static constexpr auto __op   = _Op;
+  static constexpr auto __size = _Size;
+};
 
+using __atomic_cuda_operand_f8   = __atomic_cuda_operand_tag<__atomic_cuda_operand::_f, 8>;
+using __atomic_cuda_operand_s8   = __atomic_cuda_operand_tag<__atomic_cuda_operand::_s, 8>;
+using __atomic_cuda_operand_u8   = __atomic_cuda_operand_tag<__atomic_cuda_operand::_u, 8>;
+using __atomic_cuda_operand_b8   = __atomic_cuda_operand_tag<__atomic_cuda_operand::_b, 8>;
 using __atomic_cuda_operand_f16  = __atomic_cuda_operand_tag<__atomic_cuda_operand::_f, 16>;
 using __atomic_cuda_operand_s16  = __atomic_cuda_operand_tag<__atomic_cuda_operand::_s, 16>;
 using __atomic_cuda_operand_u16  = __atomic_cuda_operand_tag<__atomic_cuda_operand::_u, 16>;
@@ -103,13 +110,15 @@ struct __atomic_longlong2
 
 template <class _Type>
 using __atomic_cuda_deduce_bitwise =
-  _If<sizeof(_Type) == 2,
-      __atomic_cuda_operand_deduction<uint16_t, __atomic_cuda_operand_b16>,
-      _If<sizeof(_Type) == 4,
-          __atomic_cuda_operand_deduction<uint32_t, __atomic_cuda_operand_b32>,
-          _If<sizeof(_Type) == 8,
-              __atomic_cuda_operand_deduction<uint64_t, __atomic_cuda_operand_b64>,
-              __atomic_cuda_operand_deduction<__atomic_longlong2, __atomic_cuda_operand_b128>>>>;
+  _If<sizeof(_Type) == 1,
+      __atomic_cuda_operand_deduction<uint8_t, __atomic_cuda_operand_b8>,
+      _If<sizeof(_Type) == 2,
+          __atomic_cuda_operand_deduction<uint16_t, __atomic_cuda_operand_b16>,
+          _If<sizeof(_Type) == 4,
+              __atomic_cuda_operand_deduction<uint32_t, __atomic_cuda_operand_b32>,
+              _If<sizeof(_Type) == 8,
+                  __atomic_cuda_operand_deduction<uint64_t, __atomic_cuda_operand_b64>,
+                  __atomic_cuda_operand_deduction<__atomic_longlong2, __atomic_cuda_operand_b128>>>>>;
 
 template <class _Type>
 using __atomic_cuda_deduce_arithmetic =
@@ -118,37 +127,56 @@ using __atomic_cuda_deduce_arithmetic =
           __atomic_cuda_operand_deduction<float, __atomic_cuda_operand_f32>,
           __atomic_cuda_operand_deduction<double, __atomic_cuda_operand_f64>>,
       _If<_CCCL_TRAIT(is_signed, _Type),
-          _If<sizeof(_Type) == 4,
-              __atomic_cuda_operand_deduction<int32_t, __atomic_cuda_operand_s32>,
-              __atomic_cuda_operand_deduction<int64_t, __atomic_cuda_operand_u64>>, // There is no atom.add.s64
-          _If<sizeof(_Type) == 4,
-              __atomic_cuda_operand_deduction<uint32_t, __atomic_cuda_operand_u32>,
-              __atomic_cuda_operand_deduction<uint64_t, __atomic_cuda_operand_u64>>>>;
+          _If<sizeof(_Type) == 1,
+              __atomic_cuda_operand_deduction<int8_t, __atomic_cuda_operand_s8>,
+              _If<sizeof(_Type) == 2,
+                  __atomic_cuda_operand_deduction<int16_t, __atomic_cuda_operand_s16>,
+                  _If<sizeof(_Type) == 4,
+                      __atomic_cuda_operand_deduction<int32_t, __atomic_cuda_operand_s32>,
+                      __atomic_cuda_operand_deduction<int64_t, __atomic_cuda_operand_u64>>>>, // There is no
+                                                                                              // atom.add.s64
+          _If<sizeof(_Type) == 1,
+              __atomic_cuda_operand_deduction<uint8_t, __atomic_cuda_operand_u8>,
+              _If<sizeof(_Type) == 2,
+                  __atomic_cuda_operand_deduction<uint16_t, __atomic_cuda_operand_u16>,
+                  _If<sizeof(_Type) == 4,
+                      __atomic_cuda_operand_deduction<uint32_t, __atomic_cuda_operand_u32>,
+                      __atomic_cuda_operand_deduction<uint64_t, __atomic_cuda_operand_u64>>>>>>;
 
 template <class _Type>
 using __atomic_cuda_deduce_minmax =
-  _If<_CCCL_TRAIT(is_signed, _Type),
+  _If<_CCCL_TRAIT(is_floating_point, _Type),
       _If<sizeof(_Type) == 4,
-          __atomic_cuda_operand_deduction<int32_t, __atomic_cuda_operand_s32>,
-          __atomic_cuda_operand_deduction<int64_t, __atomic_cuda_operand_s64>>,
-      _If<sizeof(_Type) == 4,
-          __atomic_cuda_operand_deduction<uint32_t, __atomic_cuda_operand_u32>,
-          __atomic_cuda_operand_deduction<uint64_t, __atomic_cuda_operand_u64>>>;
+          __atomic_cuda_operand_deduction<float, __atomic_cuda_operand_f32>,
+          __atomic_cuda_operand_deduction<double, __atomic_cuda_operand_f64>>,
+      _If<_CCCL_TRAIT(is_signed, _Type),
+          _If<sizeof(_Type) == 1,
+              __atomic_cuda_operand_deduction<int8_t, __atomic_cuda_operand_s8>,
+              _If<sizeof(_Type) == 2,
+                  __atomic_cuda_operand_deduction<int16_t, __atomic_cuda_operand_s16>,
+                  _If<sizeof(_Type) == 4,
+                      __atomic_cuda_operand_deduction<int32_t, __atomic_cuda_operand_s32>,
+                      __atomic_cuda_operand_deduction<int64_t, __atomic_cuda_operand_s64>>>>, // atom.min|max.s64
+                                                                                              // supported
+          _If<sizeof(_Type) == 1,
+              __atomic_cuda_operand_deduction<uint8_t, __atomic_cuda_operand_u8>,
+              _If<sizeof(_Type) == 2,
+                  __atomic_cuda_operand_deduction<uint16_t, __atomic_cuda_operand_u16>,
+                  _If<sizeof(_Type) == 4,
+                      __atomic_cuda_operand_deduction<uint32_t, __atomic_cuda_operand_u32>,
+                      __atomic_cuda_operand_deduction<uint64_t, __atomic_cuda_operand_u64>>>>>>;
 
 template <class _Type>
 using __atomic_enable_if_native_bitwise = bool;
 
 template <class _Type>
-using __atomic_enable_if_native_arithmetic = typename enable_if<_CCCL_TRAIT(is_scalar, _Type), bool>::type;
+using __atomic_enable_if_native_arithmetic = __enable_if_t<_CCCL_TRAIT(is_scalar, _Type), bool>;
 
 template <class _Type>
-using __atomic_enable_if_not_native_arithmetic = typename enable_if<!_CCCL_TRAIT(is_scalar, _Type), bool>::type;
+using __atomic_enable_if_native_minmax = __enable_if_t<_CCCL_TRAIT(is_integral, _Type), bool>;
 
 template <class _Type>
-using __atomic_enable_if_native_minmax = typename enable_if<_CCCL_TRAIT(is_integral, _Type), bool>::type;
-
-template <class _Type>
-using __atomic_enable_if_not_native_minmax = typename enable_if<!_CCCL_TRAIT(is_integral, _Type), bool>::type;
+using __atomic_enable_if_not_native_minmax = __enable_if_t<!_CCCL_TRAIT(is_integral, _Type), bool>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

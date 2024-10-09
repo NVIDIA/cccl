@@ -83,7 +83,6 @@ static inline _CCCL_DEVICE bool __cuda_atomic_compare_exchange(
   };
 
   constexpr size_t supported_sizes[] = {
-    16,
     32,
     64,
     128,
