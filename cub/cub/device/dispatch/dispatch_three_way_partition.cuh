@@ -474,7 +474,7 @@ struct DispatchThreeWayPartitionIf
                 tile_status,
                 select_first_part_op,
                 select_second_part_op,
-                current_num_items,
+                static_cast<per_partition_offset_t>(current_num_items),
                 current_num_tiles,
                 streaming_context);
 

@@ -67,7 +67,7 @@ constexpr _CCCL_HOST_DEVICE auto max CUB_PREVENT_MACRO_SUBSTITUTION(T&& t, U&& u
 #  undef CUB_PREVENT_MACRO_SUBSTITUTION
 #endif
 
-// Gird-private constants were introduced in CTK 11.7. 
+// Gird-private constants were introduced in CTK 11.7.
 #if defined(_CCCL_CUDACC_BELOW_11_7) || (CUB_PTX_ARCH < 700)
 #  define _CUB_GRID_CONSTANT
 #else
