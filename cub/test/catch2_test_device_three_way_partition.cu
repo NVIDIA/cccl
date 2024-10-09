@@ -129,12 +129,15 @@ C2H_TEST("Device three-way partition can handle empty problems", "[partition][de
   type* d_first_part_out{};
   type* d_second_part_out{};
   type* d_unselected_out{};
-  type* d_num_selected_out{};
+  c2h::device_vector<type> num_selected_out(2, 42);
+  type* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   less_than_t<type> le(type{0});
   greater_or_equal_t<type> ge(type{1});
 
   partition(in, d_first_part_out, d_second_part_out, d_unselected_out, d_num_selected_out, num_items, le, ge);
+  REQUIRE(num_selected_out[0] == 0);
+  REQUIRE(num_selected_out[1] == 0);
 }
 
 template <typename T>
