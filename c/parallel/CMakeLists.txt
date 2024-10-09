@@ -38,9 +38,11 @@ target_link_libraries(cccl.c.parallel PRIVATE
   CUDA::cuda_driver
   cccl.compiler_interface_cpp20
 )
-target_compile_definitions(cccl.c.parallel PRIVATE NVRTC_GET_TYPE_NAME=1)
 target_compile_definitions(cccl.c.parallel PUBLIC CCCL_C_EXPERIMENTAL=1)
+target_compile_definitions(cccl.c.parallel PRIVATE NVRTC_GET_TYPE_NAME=1)
+
 target_include_directories(cccl.c.parallel PUBLIC "include")
+target_include_directories(cccl.c.parallel PRIVATE "src")
 
 if (CCCL_C_Parallel_ENABLE_TESTING)
   add_subdirectory(test)
