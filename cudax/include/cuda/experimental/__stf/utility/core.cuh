@@ -38,7 +38,7 @@ namespace cuda::experimental::stf
  * @pre The argument `v` must not be `const`, i.e., the function will fail to compile for `const` lvalues.
  */
 template <typename T>
-constexpr decltype(auto) mv(T&& obj)
+CUDASTF_HOST_DEVICE constexpr decltype(auto) mv(T&& obj)
 {
   static_assert(::std::is_lvalue_reference_v<T>, "Useless move from rvalue.");
   static_assert(!::std::is_const_v<::std::remove_reference_t<T>>, "Misleading move from const lvalue.");
