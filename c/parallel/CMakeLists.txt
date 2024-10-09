@@ -10,7 +10,13 @@ option(CCCL_C_Parallel_ENABLE_HEADER_TESTING "Build CUDA Experimental's standalo
 set(CCCL_C_PARALLEL_LIBRARY_OUTPUT_DIRECTORY "" CACHE PATH "Override output directory for the cccl.c.parallel library")
 mark_as_advanced(CCCL_C_PARALLEL_LIBRARY_OUTPUT_DIRECTORY)
 
-add_library(cccl.c.parallel SHARED src/reduce.cu)
+file(GLOB_RECURSE srcs
+  RELATIVE "${CMAKE_CURRENT_LIST_DIR}"
+  CONFIGURE_DEPENDS
+  "src/*.cu" "src/*.cpp"
+)
+
+add_library(cccl.c.parallel SHARED ${srcs})
 set_property(TARGET cccl.c.parallel PROPERTY POSITION_INDEPENDENT_CODE ON)
 cccl_configure_target(cccl.c.parallel DIALECT 20)
 
