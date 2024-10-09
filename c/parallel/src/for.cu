@@ -111,14 +111,14 @@ extern "C" CCCL_C_API CUresult cccl_device_for_build(
         .compile_program({args, num_args})
         .get_name({for_kernel_name, lowered_name})
         .cleanup_program()
-        .add_link({(void*) op.ltoir, (size_t) op.ltoir_size});
+        .add_link({op.ltoir, op.ltoir_size});
 
     nvrtc_cubin result{};
 
     if (cccl_iterator_kind_t::iterator == d_data.type)
     {
-      result = cl.add_link({(void*) d_data.advance.ltoir, (size_t) d_data.advance.ltoir_size})
-                 .add_link({(void*) d_data.dereference.ltoir, (size_t) d_data.dereference.ltoir_size})
+      result = cl.add_link({d_data.advance.ltoir, d_data.advance.ltoir_size})
+                 .add_link({d_data.dereference.ltoir, d_data.dereference.ltoir_size})
                  .finalize_program(num_lto_args, lopts);
     }
     else

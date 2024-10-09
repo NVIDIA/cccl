@@ -552,28 +552,28 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
         .get_name({single_tile_second_kernel_name, single_tile_second_kernel_lowered_name})
         .get_name({reduction_kernel_name, reduction_kernel_lowered_name})
         .cleanup_program()
-        .add_link({(void*) op.ltoir, (size_t) op.ltoir_size});
+        .add_link({op.ltoir, op.ltoir_size});
 
     nvrtc_cubin result{};
 
     if (cccl_iterator_kind_t::iterator == input_it.type && cccl_iterator_kind_t::iterator == output_it.type)
     {
-      result = cl.add_link({(void*) input_it.advance.ltoir, (size_t) input_it.advance.ltoir_size})
-                 .add_link({(void*) input_it.dereference.ltoir, (size_t) input_it.dereference.ltoir_size})
-                 .add_link({(void*) output_it.advance.ltoir, (size_t) output_it.advance.ltoir_size})
-                 .add_link({(void*) output_it.dereference.ltoir, (size_t) output_it.dereference.ltoir_size})
+      result = cl.add_link({input_it.advance.ltoir, input_it.advance.ltoir_size})
+                 .add_link({input_it.dereference.ltoir, input_it.dereference.ltoir_size})
+                 .add_link({output_it.advance.ltoir, output_it.advance.ltoir_size})
+                 .add_link({output_it.dereference.ltoir, output_it.dereference.ltoir_size})
                  .finalize_program(num_lto_args, lopts);
     }
     else if (cccl_iterator_kind_t::iterator == input_it.type)
     {
-      result = cl.add_link({(void*) input_it.advance.ltoir, (size_t) input_it.advance.ltoir_size})
-                 .add_link({(void*) input_it.dereference.ltoir, (size_t) input_it.dereference.ltoir_size})
+      result = cl.add_link({input_it.advance.ltoir, input_it.advance.ltoir_size})
+                 .add_link({input_it.dereference.ltoir, input_it.dereference.ltoir_size})
                  .finalize_program(num_lto_args, lopts);
     }
     else if (cccl_iterator_kind_t::iterator == output_it.type)
     {
-      result = cl.add_link({(void*) output_it.advance.ltoir, (size_t) output_it.advance.ltoir_size})
-                 .add_link({(void*) output_it.dereference.ltoir, (size_t) output_it.dereference.ltoir_size})
+      result = cl.add_link({output_it.advance.ltoir, output_it.advance.ltoir_size})
+                 .add_link({output_it.dereference.ltoir, output_it.dereference.ltoir_size})
                  .finalize_program(num_lto_args, lopts);
     }
     else

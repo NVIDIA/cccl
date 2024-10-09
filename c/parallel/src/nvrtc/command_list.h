@@ -44,8 +44,8 @@ struct nvrtc_program_cleanup
 {};
 struct nvrtc_ltoir
 {
-  void* ltoir;
-  size_t ltsz;
+  const char* ltoir;
+  int ltsz;
 };
 struct nvrtc_cubin
 {
@@ -117,7 +117,7 @@ struct nvrtc_command_list_visitor
     check(nvrtcGetLoweredName(program, gn.name.data(), &lowered_name));
     gn.lowered_name = lowered_name;
   }
-  void execute(nvrtc_program_cleanup cleanup)
+  void execute(nvrtc_program_cleanup)
   {
     std::size_t ltoir_size{};
     check(nvrtcGetLTOIRSize(program, &ltoir_size));
@@ -130,7 +130,8 @@ struct nvrtc_command_list_visitor
   }
   void execute(nvrtc_ltoir lto)
   {
-    check(nvJitLinkAddData(jitlink.handle, NVJITLINK_INPUT_LTOIR, lto.ltoir, lto.ltsz, program_name.data()));
+    check(nvJitLinkAddData(
+      jitlink.handle, NVJITLINK_INPUT_LTOIR, (const void*) lto.ltoir, (size_t) lto.ltsz, program_name.data()));
   }
   void execute(nvrtc_jitlink_cleanup cleanup)
   {
