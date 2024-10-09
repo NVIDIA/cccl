@@ -657,7 +657,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_cleanup(cccl_device_reduce_bui
       return CUDA_ERROR_INVALID_VALUE;
     }
 
-    std::unique_ptr<char> cubin(reinterpret_cast<char*>(bld_ptr->cubin));
+    std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(bld_ptr->cubin));
     check(cuLibraryUnload(bld_ptr->library));
   }
   catch (...)
