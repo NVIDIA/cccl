@@ -13,14 +13,12 @@
 #include <cub/util_device.cuh>
 
 #include <format>
-#include <iostream>
 #include <type_traits>
 
 #include <cccl/c/for.h>
 #include <cccl/c/types.h>
 #include <for/for_op_helper.h>
-#include <nvJitLink.h>
-#include <nvrtc.h>
+#include <nvrtc/command_list.h>
 #include <util/context.h>
 #include <util/errors.h>
 #include <util/types.h>
@@ -32,7 +30,7 @@ using OffsetT = unsigned long long;
 static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "OffsetT must be size_t");
 
 static cudaError_t
-Invoke(cccl_iterator_t d_in, size_t num_items, cccl_op_t op, int cc, CUfunction static_kernel, CUstream stream)
+Invoke(cccl_iterator_t d_in, size_t num_items, cccl_op_t op, int /*cc*/, CUfunction static_kernel, CUstream stream)
 {
   cudaError error = cudaSuccess;
 
@@ -87,7 +85,6 @@ extern "C" CCCL_C_API CUresult cccl_device_for_build(
       throw std::runtime_error(std::string("Iterators are unsupported in for_each currently"));
     }
 
-    nvrtcProgram prog{};
     const char* name = "test";
 
     const int cc                     = cc_major * 10 + cc_minor;
@@ -97,86 +94,49 @@ extern "C" CCCL_C_API CUresult cccl_device_for_build(
     const std::string for_kernel_name   = get_device_for_kernel_name();
     const std::string device_for_kernel = get_for_kernel(op, d_data);
 
-    check(nvrtcCreateProgram(&prog, device_for_kernel.c_str(), name, 0, nullptr, nullptr));
-
-    check(nvrtcAddNameExpression(prog, for_kernel_name.c_str()));
-
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    constexpr int num_args = 7;
-    const char* args[]     = {arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto"};
+    constexpr size_t num_args  = 7;
+    const char* args[num_args] = {arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto"};
 
-    std::size_t log_size{};
-    nvrtcResult compile_result = nvrtcCompileProgram(prog, num_args, args);
+    constexpr size_t num_lto_args   = 2;
+    const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
-    check(nvrtcGetProgramLogSize(prog, &log_size));
-    std::unique_ptr<char[]> log{new char[log_size]};
-    check(nvrtcGetProgramLog(prog, log.get()));
+    std::string lowered_name;
 
-    if (log_size > 1)
-    {
-      std::cerr << log.get() << std::endl;
-    }
+    auto cl =
+      make_nvrtc_command_list()
+        .add_program(nvrtc_translation_unit{device_for_kernel, name})
+        .add_expression({for_kernel_name})
+        .compile_program({args, num_args})
+        .get_name({for_kernel_name, lowered_name})
+        .cleanup_program()
+        .add_link({op.ltoir, op.ltoir_size});
 
-    std::string for_kernel_lowered_name;
-    {
-      const char* for_kernel_lowered_name_temp;
-      check(nvrtcGetLoweredName(prog, for_kernel_name.c_str(), &for_kernel_lowered_name_temp));
-      for_kernel_lowered_name = for_kernel_lowered_name_temp;
-    }
+    nvrtc_cubin result{};
 
-    check(compile_result);
-
-    std::size_t ltoir_size{};
-    check(nvrtcGetLTOIRSize(prog, &ltoir_size));
-    std::unique_ptr<char[]> ltoir{new char[ltoir_size]};
-    check(nvrtcGetLTOIR(prog, ltoir.get()));
-    check(nvrtcDestroyProgram(&prog));
-
-    nvJitLinkHandle handle;
-    const char* lopts[] = {"-lto", arch.c_str()};
-
-    check(nvJitLinkCreate(&handle, 2, lopts));
-    check(nvJitLinkAddData(handle, NVJITLINK_INPUT_LTOIR, ltoir.get(), ltoir_size, name));
-    check(nvJitLinkAddData(handle, NVJITLINK_INPUT_LTOIR, op.ltoir, op.ltoir_size, name));
     if (cccl_iterator_kind_t::iterator == d_data.type)
     {
-      check(nvJitLinkAddData(handle, NVJITLINK_INPUT_LTOIR, d_data.advance.ltoir, d_data.advance.ltoir_size, name));
-      check(
-        nvJitLinkAddData(handle, NVJITLINK_INPUT_LTOIR, d_data.dereference.ltoir, d_data.dereference.ltoir_size, name));
+      result = cl.add_link({d_data.advance.ltoir, d_data.advance.ltoir_size})
+                 .add_link({d_data.dereference.ltoir, d_data.dereference.ltoir_size})
+                 .finalize_program(num_lto_args, lopts);
     }
-
-    auto jitlink_error = nvJitLinkComplete(handle);
-
-    check(nvJitLinkGetErrorLogSize(handle, &log_size));
-    std::unique_ptr<char[]> jitlinklog{new char[log_size]};
-    check(nvJitLinkGetErrorLog(handle, jitlinklog.get()));
-
-    if (log_size > 1)
+    else
     {
-      std::cerr << jitlinklog.get() << std::endl;
+      result = cl.finalize_program(num_lto_args, lopts);
     }
 
-    check(jitlink_error);
-
-    std::size_t cubin_size{};
-    check(nvJitLinkGetLinkedCubinSize(handle, &cubin_size));
-    std::unique_ptr<char[]> cubin{new char[cubin_size]};
-    check(nvJitLinkGetLinkedCubin(handle, cubin.get()));
-    check(nvJitLinkDestroy(&handle));
-
-    cuLibraryLoadData(&build->library, cubin.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-    check(cuLibraryGetKernel(&build->static_kernel, build->library, for_kernel_lowered_name.c_str()));
+    cuLibraryLoadData(&build->library, result.cubin.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+    check(cuLibraryGetKernel(&build->static_kernel, build->library, lowered_name.c_str()));
 
     build->cc         = cc;
-    build->cubin      = cubin.release();
-    build->cubin_size = cubin_size;
+    build->cubin      = (void*) result.cubin.release();
+    build->cubin_size = result.size;
   }
   catch (...)
   {
     error = CUDA_ERROR_UNKNOWN;
   }
-
   return error;
 }
 

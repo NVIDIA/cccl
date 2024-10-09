@@ -23,8 +23,7 @@
 #include "util/errors.h"
 #include "util/types.h"
 #include <cccl/c/reduce.h>
-#include <nvJitLink.h>
-#include <nvrtc.h>
+#include <nvrtc/command_list.h>
 
 struct op_wrapper;
 struct device_reduce_policy;
@@ -64,7 +63,7 @@ static reduce_tuning_t find_tuning(int cc, const reduce_tuning_t (&tunings)[N])
   return tunings[N - 1];
 }
 
-static runtime_tuning_policy get_policy(int cc, cccl_type_info accumulator_type, cccl_type_info input_type)
+static runtime_tuning_policy get_policy(int cc, cccl_type_info accumulator_type, cccl_type_info /*input_type*/)
 {
   reduce_tuning_t chain[] = {{60, 256, 16, 4}, {35, 256, 20, 4}};
 
@@ -77,7 +76,7 @@ static runtime_tuning_policy get_policy(int cc, cccl_type_info accumulator_type,
   return {block_size, items_per_thread, vector_load_length};
 }
 
-static cccl_type_info get_accumulator_type(cccl_op_t op, cccl_iterator_t input_it, cccl_value_t init)
+static cccl_type_info get_accumulator_type(cccl_op_t /*op*/, cccl_iterator_t /*input_it*/, cccl_value_t init)
 {
   // TODO Should be decltype(op(init, *input_it)) but haven't implemented type arithmetic yet
   //      so switching back to the old accumulator type logic for now
@@ -254,7 +253,7 @@ static cudaError_t Invoke(
   runtime_tuning_policy policy = get_policy(cc, accum_t, d_in.value_type);
 
   // Force kernel code-generation in all compiler passes
-  if (num_items <= (policy.block_size * policy.items_per_thread))
+  if (num_items <= static_cast<OffsetT>(policy.block_size * policy.items_per_thread))
   {
     // Small, single tile size
     return InvokeSingleTile(
@@ -380,7 +379,6 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
 
   try
   {
-    nvrtcProgram prog{};
     const char* name = "test";
 
     const int cc                       = cc_major * 10 + cc_minor;
@@ -528,104 +526,70 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
       op_src, // 6
       policy.vector_load_length); // 7
 
-    check(nvrtcCreateProgram(&prog, src.c_str(), name, 0, nullptr, nullptr));
-
-    std::string single_tile_kernel_name = get_single_tile_kernel_name(input_it, output_it, op, init, false);
-    check(nvrtcAddNameExpression(prog, single_tile_kernel_name.c_str()));
-
+    std::string single_tile_kernel_name        = get_single_tile_kernel_name(input_it, output_it, op, init, false);
     std::string single_tile_second_kernel_name = get_single_tile_kernel_name(input_it, output_it, op, init, true);
-    check(nvrtcAddNameExpression(prog, single_tile_second_kernel_name.c_str()));
-
-    std::string reduction_kernel_name = get_device_reduce_kernel_name(op, input_it, init);
-    check(nvrtcAddNameExpression(prog, reduction_kernel_name.c_str()));
+    std::string reduction_kernel_name          = get_device_reduce_kernel_name(op, input_it, init);
+    std::string single_tile_kernel_lowered_name;
+    std::string single_tile_second_kernel_lowered_name;
+    std::string reduction_kernel_lowered_name;
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    constexpr int num_args     = 7;
+    constexpr size_t num_args  = 7;
     const char* args[num_args] = {arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto"};
 
-    std::size_t log_size{};
-    nvrtcResult compile_result = nvrtcCompileProgram(prog, num_args, args);
+    constexpr size_t num_lto_args   = 2;
+    const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
-    check(nvrtcGetProgramLogSize(prog, &log_size));
+    auto cl =
+      make_nvrtc_command_list()
+        .add_program(nvrtc_translation_unit{src.c_str(), name})
+        .add_expression({single_tile_kernel_name})
+        .add_expression({single_tile_second_kernel_name})
+        .add_expression({reduction_kernel_name})
+        .compile_program({args, num_args})
+        .get_name({single_tile_kernel_name, single_tile_kernel_lowered_name})
+        .get_name({single_tile_second_kernel_name, single_tile_second_kernel_lowered_name})
+        .get_name({reduction_kernel_name, reduction_kernel_lowered_name})
+        .cleanup_program()
+        .add_link({op.ltoir, op.ltoir_size});
 
-    std::unique_ptr<char[]> log{new char[log_size]};
-    check(nvrtcGetProgramLog(prog, log.get()));
+    nvrtc_cubin result{};
 
-    if (log_size > 1)
+    if (cccl_iterator_kind_t::iterator == input_it.type && cccl_iterator_kind_t::iterator == output_it.type)
     {
-      std::cerr << log.get() << std::endl;
+      result = cl.add_link({input_it.advance.ltoir, input_it.advance.ltoir_size})
+                 .add_link({input_it.dereference.ltoir, input_it.dereference.ltoir_size})
+                 .add_link({output_it.advance.ltoir, output_it.advance.ltoir_size})
+                 .add_link({output_it.dereference.ltoir, output_it.dereference.ltoir_size})
+                 .finalize_program(num_lto_args, lopts);
+    }
+    else if (cccl_iterator_kind_t::iterator == input_it.type)
+    {
+      result = cl.add_link({input_it.advance.ltoir, input_it.advance.ltoir_size})
+                 .add_link({input_it.dereference.ltoir, input_it.dereference.ltoir_size})
+                 .finalize_program(num_lto_args, lopts);
+    }
+    else if (cccl_iterator_kind_t::iterator == output_it.type)
+    {
+      result = cl.add_link({output_it.advance.ltoir, output_it.advance.ltoir_size})
+                 .add_link({output_it.dereference.ltoir, output_it.dereference.ltoir_size})
+                 .finalize_program(num_lto_args, lopts);
+    }
+    else
+    {
+      result = cl.finalize_program(num_lto_args, lopts);
     }
 
-    const char* single_tile_kernel_lowered_name;
-    check(nvrtcGetLoweredName(prog, single_tile_kernel_name.c_str(), &single_tile_kernel_lowered_name));
-
-    const char* single_tile_second_kernel_lowered_name;
-    check(nvrtcGetLoweredName(prog, single_tile_second_kernel_name.c_str(), &single_tile_second_kernel_lowered_name));
-
-    const char* reduction_kernel_lowered_name;
-    check(nvrtcGetLoweredName(prog, reduction_kernel_name.c_str(), &reduction_kernel_lowered_name));
-
-    // Copy lowered names to a std::unique_ptr to ensure they can be used after
-    // the program is destroyed
-
-    std::unique_ptr<char[]> single_tile_kernel_lowered_name_ptr{new char[strlen(single_tile_kernel_lowered_name) + 1]};
-    strcpy(single_tile_kernel_lowered_name_ptr.get(), single_tile_kernel_lowered_name);
-
-    std::unique_ptr<char[]> single_tile_second_kernel_lowered_name_ptr{
-      new char[strlen(single_tile_second_kernel_lowered_name) + 1]};
-    strcpy(single_tile_second_kernel_lowered_name_ptr.get(), single_tile_second_kernel_lowered_name);
-
-    std::unique_ptr<char[]> reduction_kernel_lowered_name_ptr{new char[strlen(reduction_kernel_lowered_name) + 1]};
-    strcpy(reduction_kernel_lowered_name_ptr.get(), reduction_kernel_lowered_name);
-
-    check(compile_result);
-
-    std::size_t ltoir_size{};
-    check(nvrtcGetLTOIRSize(prog, &ltoir_size));
-    std::unique_ptr<char[]> ltoir{new char[ltoir_size]};
-    check(nvrtcGetLTOIR(prog, ltoir.get()));
-    check(nvrtcDestroyProgram(&prog));
-
-    nvJitLinkHandle handle;
-    const char* lopts[] = {"-lto", arch.c_str()};
-    check(nvJitLinkCreate(&handle, 2, lopts));
-
-    check(nvJitLinkAddData(handle, NVJITLINK_INPUT_LTOIR, ltoir.get(), ltoir_size, name));
-    check(nvJitLinkAddData(handle, NVJITLINK_INPUT_LTOIR, op.ltoir, op.ltoir_size, name));
-
-    if (input_it.type == cccl_iterator_kind_t::iterator)
-    {
-      check(nvJitLinkAddData(handle, NVJITLINK_INPUT_LTOIR, input_it.advance.ltoir, input_it.advance.ltoir_size, name));
-      check(nvJitLinkAddData(
-        handle, NVJITLINK_INPUT_LTOIR, input_it.dereference.ltoir, input_it.dereference.ltoir_size, name));
-    }
-
-    if (output_it.type == cccl_iterator_kind_t::iterator)
-    {
-      check(
-        nvJitLinkAddData(handle, NVJITLINK_INPUT_LTOIR, output_it.advance.ltoir, output_it.advance.ltoir_size, name));
-      check(nvJitLinkAddData(
-        handle, NVJITLINK_INPUT_LTOIR, output_it.dereference.ltoir, output_it.dereference.ltoir_size, name));
-    }
-
-    check(nvJitLinkComplete(handle));
-
-    std::size_t cubin_size{};
-    check(nvJitLinkGetLinkedCubinSize(handle, &cubin_size));
-    std::unique_ptr<char[]> cubin{new char[cubin_size]};
-    check(nvJitLinkGetLinkedCubin(handle, cubin.get()));
-    check(nvJitLinkDestroy(&handle));
-
-    cuLibraryLoadData(&build->library, cubin.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-    check(cuLibraryGetKernel(&build->single_tile_kernel, build->library, single_tile_kernel_lowered_name_ptr.get()));
+    cuLibraryLoadData(&build->library, result.cubin.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+    check(cuLibraryGetKernel(&build->single_tile_kernel, build->library, single_tile_kernel_lowered_name.c_str()));
     check(cuLibraryGetKernel(
-      &build->single_tile_second_kernel, build->library, single_tile_second_kernel_lowered_name_ptr.get()));
-    check(cuLibraryGetKernel(&build->reduction_kernel, build->library, reduction_kernel_lowered_name_ptr.get()));
+      &build->single_tile_second_kernel, build->library, single_tile_second_kernel_lowered_name.c_str()));
+    check(cuLibraryGetKernel(&build->reduction_kernel, build->library, reduction_kernel_lowered_name.c_str()));
 
     build->cc         = cc;
-    build->cubin      = cubin.release();
-    build->cubin_size = cubin_size;
+    build->cubin      = (void*) result.cubin.release();
+    build->cubin_size = result.size;
   }
   catch (...)
   {

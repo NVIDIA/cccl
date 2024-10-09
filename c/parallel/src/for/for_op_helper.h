@@ -11,7 +11,6 @@
 #pragma once
 
 #include <cstdlib>
-#include <memory>
 #include <string>
 #include <variant>
 
@@ -26,22 +25,9 @@ struct for_each_default
   void* user_op; // A pointer for user data
 };
 
-struct unique_free_void
-{
-  inline void operator()(void* p)
-  {
-    if (p)
-    {
-      free(p);
-    }
-  }
-};
-
-using unique_void = std::unique_ptr<void, unique_free_void>;
-
 struct for_each_kernel_state
 {
-  std::variant<for_each_default, unique_void> for_each_arg;
+  std::variant<for_each_default, std::unique_ptr<char[]>> for_each_arg;
   size_t user_op_offset;
 
   // Get address of argument for kernel

@@ -48,7 +48,7 @@ void reduce(cccl_iterator_t input, cccl_iterator_t output, unsigned long long nu
 using integral_types = std::tuple<int32_t, uint32_t, int64_t, uint64_t>;
 TEMPLATE_LIST_TEST_CASE("Reduce works with integral types", "[reduce]", integral_types)
 {
-  const int num_items               = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
+  const std::size_t num_items       = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
   operation_t op                    = make_operation("op", get_reduce_op(get_type_info<TestType>().type));
   const std::vector<TestType> input = generate<TestType>(num_items);
   pointer_t<TestType> input_ptr(input);
@@ -70,7 +70,7 @@ struct pair
 
 TEST_CASE("Reduce works with custom types", "[reduce]")
 {
-  const int num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
+  const std::size_t num_items = GENERATE(0, 42, take(4, random(1 << 12, 1 << 24)));
 
   operation_t op = make_operation(
     "op",
@@ -204,8 +204,9 @@ TEST_CASE("Reduce works with input and output iterators", "[reduce]")
 
 TEST_CASE("Reduce accumulator type is influenced by initial value", "[reduce]")
 {
-  const int num_items = 1 << 14; // 16384 > 128
-  operation_t op      = make_operation("op", get_reduce_op(get_type_info<size_t>().type));
+  const std::size_t num_items = 1 << 14; // 16384 > 128
+
+  operation_t op = make_operation("op", get_reduce_op(get_type_info<size_t>().type));
   iterator_t<char, constant_iterator_state_t<char>> input_it = make_iterator<char, constant_iterator_state_t<char>>(
     "struct constant_iterator_state_t { char value; };\n",
     {"in_advance",
@@ -221,8 +222,8 @@ TEST_CASE("Reduce accumulator type is influenced by initial value", "[reduce]")
 
   reduce(input_it, output_it, num_items, op, init);
 
-  const size_t output = output_it[0];
-  const int expected  = init.value + num_items;
+  const size_t output   = output_it[0];
+  const size_t expected = init.value + num_items;
   REQUIRE(output == expected);
 }
 
