@@ -18,6 +18,8 @@
 
 #include <cuda/experimental/__stf/places/place_partition.cuh>
 
+#include <thread>
+
 namespace cuda::experimental::stf
 {
 

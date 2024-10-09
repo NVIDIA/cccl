@@ -15,6 +15,9 @@
 
 #pragma once
 
+#include <cuda/experimental/__stf/places/exec/host/callback_queues.cuh>
+#include <cuda/experimental/__stf/utility/traits.cuh>
+
 #define STATEFUL_CALLBACKS
 
 namespace cuda::experimental::stf

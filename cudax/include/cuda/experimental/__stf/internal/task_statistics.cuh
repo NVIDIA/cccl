@@ -22,6 +22,10 @@
 
 #pragma once
 
+#include <cuda/experimental/__stf/utility/hash.cuh>
+#include <cuda/experimental/__stf/utility/traits.cuh>
+#include <cuda/experimental/__stf/utility/unittest.cuh>
+
 #include <cmath>
 #include <cstdlib>
 #include <fstream>
