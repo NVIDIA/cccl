@@ -251,6 +251,8 @@ struct AgentThreeWayPartition
   SelectFirstPartOp select_first_part_op;
   SelectSecondPartOp select_second_part_op;
   OffsetT num_items; ///< Total number of input items
+
+  // Note: This is a const reference because we have seen double-digit percentage perf regressions otherwise
   const StreamingContextT& streaming_context; ///< Context for the current partition
 
   //---------------------------------------------------------------------

@@ -94,24 +94,24 @@ public:
     return first_partition ? TotalNumItemsT{0} : total_previous_num_items;
   };
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_selected_first() const
+  _CCCL_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_selected_first() const
   {
     return first_partition ? TotalNumItemsT{0} : d_num_selected_in[0];
   };
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_selected_second() const
+  _CCCL_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_selected_second() const
   {
     return first_partition ? TotalNumItemsT{0} : d_num_selected_in[1];
   };
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_rejected() const
+  _CCCL_DEVICE _CCCL_FORCEINLINE TotalNumItemsT num_previously_rejected() const
   {
     return first_partition ? TotalNumItemsT{0} : d_num_selected_in[2];
     ;
   };
 
   template <typename NumSelectedIteratorT, typename OffsetT>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void update_num_selected(
+  _CCCL_DEVICE _CCCL_FORCEINLINE void update_num_selected(
     NumSelectedIteratorT user_num_selected_out_it,
     OffsetT num_selected_first,
     OffsetT num_selected_second,
@@ -265,7 +265,7 @@ struct DispatchThreeWayPartitionIf
   using per_partition_offset_t = detail::three_way_partition::per_partition_offset_t;
 
   // Type used to provide streaming information about each partition's context
-  static constexpr per_partition_offset_t partition_size = cuda::std::numeric_limits<per_partition_offset_t>::max();
+  static constexpr per_partition_offset_t partition_size = ::cuda::std::numeric_limits<per_partition_offset_t>::max();
 
   // If the values representable by OffsetT exceed the partition_size, we use a kernel template specialization that
   // supports streaming (i.e., splitting the input into partitions of up to partition_size number of items)
