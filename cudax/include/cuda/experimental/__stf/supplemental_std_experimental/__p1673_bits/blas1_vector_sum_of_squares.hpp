@@ -46,84 +46,121 @@
 #include <cmath>
 #include <cstdlib>
 
-namespace std { namespace experimental { inline namespace __p1673_version_0 { namespace linalg {
+namespace std
+{
+namespace experimental
+{
+inline namespace __p1673_version_0
+{
+namespace linalg
+{
 
 // Scaled sum of squares of a vector's elements
 template <class Scalar>
-struct sum_of_squares_result {
-    Scalar scaling_factor;
-    Scalar scaled_sum_of_squares;
+struct sum_of_squares_result
+{
+  Scalar scaling_factor;
+  Scalar scaled_sum_of_squares;
 };
 
-namespace {
+namespace
+{
 template <class Exec, class x_t, class Scalar, class = void>
-struct is_custom_vector_sum_of_squares_avail : std::false_type {};
+struct is_custom_vector_sum_of_squares_avail : std::false_type
+{};
 
 template <class Exec, class x_t, class Scalar>
-struct is_custom_vector_sum_of_squares_avail<Exec, x_t, Scalar,
-        std::enable_if_t<std::is_same<decltype(vector_sum_of_squares(std::declval<Exec>(), std::declval<x_t>(),
-                                              std::declval<sum_of_squares_result<Scalar>>())),
-                                 sum_of_squares_result<Scalar>>::value &&
-                         !linalg::impl::is_inline_exec_v<Exec>>> : std::true_type {};
+struct is_custom_vector_sum_of_squares_avail<
+  Exec,
+  x_t,
+  Scalar,
+  std::enable_if_t<
+    std::is_same<decltype(vector_sum_of_squares(
+                   std::declval<Exec>(), std::declval<x_t>(), std::declval<sum_of_squares_result<Scalar>>())),
+                 sum_of_squares_result<Scalar>>::value
+    && !linalg::impl::is_inline_exec_v<Exec>>> : std::true_type
+{};
 
-}  // end anonymous namespace
+} // end anonymous namespace
 
 template <class ElementType, class SizeType, ::std::size_t ext0, class Layout, class Accessor, class Scalar>
-sum_of_squares_result<Scalar> vector_sum_of_squares(std::experimental::linalg::impl::inline_exec_t&& /* exec */,
-        std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> x,
-        sum_of_squares_result<Scalar> init) {
-    using std::abs;
+sum_of_squares_result<Scalar> vector_sum_of_squares(
+  std::experimental::linalg::impl::inline_exec_t&& /* exec */,
+  std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> x,
+  sum_of_squares_result<Scalar> init)
+{
+  using std::abs;
 
-    if (x.extent(0) == 0) {
-        return init;
+  if (x.extent(0) == 0)
+  {
+    return init;
+  }
+
+  // Rescaling, as in the Reference BLAS DNRM2 implementation, avoids
+  // unwarranted overflow or underflow.
+
+  Scalar scale = init.scaling_factor;
+  Scalar ssq   = init.scaled_sum_of_squares;
+  for (SizeType i = 0; i < x.extent(0); ++i)
+  {
+    if (abs(x(i)) != 0.0)
+    {
+      const auto absxi    = abs(x(i));
+      const auto quotient = scale / absxi;
+      if (scale < absxi)
+      {
+        ssq   = Scalar(1.0) + ssq * quotient * quotient;
+        scale = absxi;
+      }
+      else
+      {
+        ssq = ssq + quotient * quotient;
+      }
     }
+  }
 
-    // Rescaling, as in the Reference BLAS DNRM2 implementation, avoids
-    // unwarranted overflow or underflow.
-
-    Scalar scale = init.scaling_factor;
-    Scalar ssq = init.scaled_sum_of_squares;
-    for (SizeType i = 0; i < x.extent(0); ++i) {
-        if (abs(x(i)) != 0.0) {
-            const auto absxi = abs(x(i));
-            const auto quotient = scale / absxi;
-            if (scale < absxi) {
-                ssq = Scalar(1.0) + ssq * quotient * quotient;
-                scale = absxi;
-            } else {
-                ssq = ssq + quotient * quotient;
-            }
-        }
-    }
-
-    sum_of_squares_result<Scalar> result;
-    result.scaled_sum_of_squares = ssq;
-    result.scaling_factor = scale;
-    return result;
+  sum_of_squares_result<Scalar> result;
+  result.scaled_sum_of_squares = ssq;
+  result.scaling_factor        = scale;
+  return result;
 }
 
-template <class ExecutionPolicy, class ElementType, class SizeType, ::std::size_t ext0, class Layout, class Accessor,
-        class Scalar>
-sum_of_squares_result<Scalar> vector_sum_of_squares(ExecutionPolicy&& exec,
-        std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> v,
-        sum_of_squares_result<Scalar> init) {
-    constexpr bool use_custom =
-            is_custom_vector_sum_of_squares_avail<decltype(execpolicy_mapper(exec)), decltype(v), Scalar>::value;
+template <class ExecutionPolicy,
+          class ElementType,
+          class SizeType,
+          ::std::size_t ext0,
+          class Layout,
+          class Accessor,
+          class Scalar>
+sum_of_squares_result<Scalar> vector_sum_of_squares(
+  ExecutionPolicy&& exec,
+  std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> v,
+  sum_of_squares_result<Scalar> init)
+{
+  constexpr bool use_custom =
+    is_custom_vector_sum_of_squares_avail<decltype(execpolicy_mapper(exec)), decltype(v), Scalar>::value;
 
-    if constexpr (use_custom) {
-        return vector_sum_of_squares(execpolicy_mapper(exec), v, init);
-    } else {
-        return vector_sum_of_squares(std::experimental::linalg::impl::inline_exec_t(), v, init);
-    }
+  if constexpr (use_custom)
+  {
+    return vector_sum_of_squares(execpolicy_mapper(exec), v, init);
+  }
+  else
+  {
+    return vector_sum_of_squares(std::experimental::linalg::impl::inline_exec_t(), v, init);
+  }
 }
 
 template <class ElementType, class SizeType, ::std::size_t ext0, class Layout, class Accessor, class Scalar>
 sum_of_squares_result<Scalar> vector_sum_of_squares(
-        std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> v,
-        sum_of_squares_result<Scalar> init) {
-    return vector_sum_of_squares(std::experimental::linalg::impl::default_exec_t(), v, init);
+  std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> v,
+  sum_of_squares_result<Scalar> init)
+{
+  return vector_sum_of_squares(std::experimental::linalg::impl::default_exec_t(), v, init);
 }
 
-}}}}  // namespace std::experimental::__p1673_version_0::linalg
+} // namespace linalg
+} // namespace __p1673_version_0
+} // namespace experimental
+} // namespace std
 
-#endif  // LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_BLAS1_VECTOR_SUM_OF_SQUARES_HPP_
+#endif // LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_BLAS1_VECTOR_SUM_OF_SQUARES_HPP_

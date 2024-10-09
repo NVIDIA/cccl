@@ -18,7 +18,8 @@
 
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
 
-namespace cuda::experimental::stf {
+namespace cuda::experimental::stf
+{
 
 template <typename T>
 class logical_data;
@@ -31,141 +32,165 @@ class logical_data;
  * frozen data that is valid until unfreeze is called.
  */
 template <typename T>
-class frozen_logical_data {
+class frozen_logical_data
+{
 private:
-    class impl {
-    public:
-        impl(backend_ctx_untyped bctx_, logical_data<T> ld_, access_mode m_, data_place place_)
-                : bctx(mv(bctx_)), ld(mv(ld_)), m(m_), place(mv(place_)) {
-            ld.freeze(m, place);
+  class impl
+  {
+  public:
+    impl(backend_ctx_untyped bctx_, logical_data<T> ld_, access_mode m_, data_place place_)
+        : bctx(mv(bctx_))
+        , ld(mv(ld_))
+        , m(m_)
+        , place(mv(place_))
+    {
+      ld.freeze(m, place);
 
-            // A fake task is used to store output dependencies, so that future
-            // tasks (or frozen data) depending on the unfreeze operation might
-            // depend on something. No task is launch, and we simply use it for
-            // this purpose.
-            fake_task.set_symbol("FREEZE\n" + ld.get_symbol() + "(" + access_mode_string(m) + ")");
+      // A fake task is used to store output dependencies, so that future
+      // tasks (or frozen data) depending on the unfreeze operation might
+      // depend on something. No task is launch, and we simply use it for
+      // this purpose.
+      fake_task.set_symbol("FREEZE\n" + ld.get_symbol() + "(" + access_mode_string(m) + ")");
 
-            auto& dot = bctx.get_dot();
-            if (dot->is_tracing()) {
-                dot->add_vertex<task, logical_data_untyped>(fake_task);
-            }
+      auto& dot = bctx.get_dot();
+      if (dot->is_tracing())
+      {
+        dot->add_vertex<task, logical_data_untyped>(fake_task);
+      }
+    }
+
+    /**
+     * @brief Get the instance of a frozen data on a data place. It returns
+     * the instance and the corresponding prereqs.
+     */
+    ::std::pair<T, event_list> get(data_place place_)
+    {
+      auto result = ld.template get_frozen<T>(fake_task, mv(place_), m);
+
+      auto& dot = bctx.get_dot();
+      if (dot->is_tracing_prereqs())
+      {
+        for (auto& e : result.second)
+        {
+          int fake_task_id = fake_task.get_unique_id();
+          dot->add_edge(e->unique_prereq_id, fake_task_id, 1);
         }
+      }
 
-        /**
-         * @brief Get the instance of a frozen data on a data place. It returns
-         * the instance and the corresponding prereqs.
-         */
-        ::std::pair<T, event_list> get(data_place place_) {
-            auto result = ld.template get_frozen<T>(fake_task, mv(place_), m);
+      /* Use the ID of the fake task to identify "get" events. This makes
+       * it possible to automatically synchronize with these events when calling
+       * task_fence. */
+      bctx.get_stack().add_pending_freeze(fake_task, result.second);
 
-            auto& dot = bctx.get_dot();
-            if (dot->is_tracing_prereqs()) {
-                for (auto& e: result.second) {
-                    int fake_task_id = fake_task.get_unique_id();
-                    dot->add_edge(e->unique_prereq_id, fake_task_id, 1);
-                }
-            }
+      return mv(result);
+    }
 
-            /* Use the ID of the fake task to identify "get" events. This makes
-             * it possible to automatically synchronize with these events when calling
-             * task_fence. */
-            bctx.get_stack().add_pending_freeze(fake_task, result.second);
+    T get(data_place place, cudaStream_t stream)
+    {
+      // Get the tuple and synchronize it with the user-provided stream
+      ::std::pair<T, event_list> p = get(mv(place));
+      auto& prereqs                = p.second;
+      prereqs.sync_with_stream(bctx, stream);
+      return p.first;
+    }
 
-            return mv(result);
+    void unfreeze(event_list prereqs)
+    {
+      auto& dot = bctx.get_dot();
+      if (dot->is_tracing_prereqs())
+      {
+        int fake_task_id = fake_task.get_unique_id();
+        for (const auto& out_e : prereqs)
+        {
+          dot->add_edge(fake_task_id, out_e->unique_prereq_id, 1);
         }
+      }
 
-        T get(data_place place, cudaStream_t stream) {
-            // Get the tuple and synchronize it with the user-provided stream
-            ::std::pair<T, event_list> p = get(mv(place));
-            auto& prereqs = p.second;
-            prereqs.sync_with_stream(bctx, stream);
-            return p.first;
-        }
+      // There is no need to automatically synchronize with the get() operation in task_fence now
+      bctx.get_stack().remove_pending_freeze(fake_task);
 
-        void unfreeze(event_list prereqs) {
-            auto& dot = bctx.get_dot();
-            if (dot->is_tracing_prereqs()) {
-                int fake_task_id = fake_task.get_unique_id();
-                for (const auto& out_e: prereqs) {
-                    dot->add_edge(fake_task_id, out_e->unique_prereq_id, 1);
-                }
-            }
+      fake_task.merge_event_list(prereqs);
+      ld.unfreeze(fake_task, mv(prereqs));
+    }
 
-            // There is no need to automatically synchronize with the get() operation in task_fence now
-            bctx.get_stack().remove_pending_freeze(fake_task);
+    void unfreeze(cudaStream_t stream)
+    {
+      event_list prereqs = bctx.stream_to_event_list(stream, "unfreeze");
+      unfreeze(mv(prereqs));
 
-            fake_task.merge_event_list(prereqs);
-            ld.unfreeze(fake_task, mv(prereqs));
-        }
+      fake_task.clear();
+    }
 
-        void unfreeze(cudaStream_t stream) {
-            event_list prereqs = bctx.stream_to_event_list(stream, "unfreeze");
-            unfreeze(mv(prereqs));
+    void set_automatic_unfreeze(bool flag = true)
+    {
+      ld.set_automatic_unfreeze(fake_task, flag);
+    }
 
-            fake_task.clear();
-        }
+  private:
+    logical_data<T> ld;
+    access_mode m;
+    data_place place;
+    backend_ctx_untyped bctx;
 
-        void set_automatic_unfreeze(bool flag = true) { ld.set_automatic_unfreeze(fake_task, flag); }
-
-    private:
-        logical_data<T> ld;
-        access_mode m;
-        data_place place;
-        backend_ctx_untyped bctx;
-
-        // This is used internally to keep track of the dependencies of the
-        // unfreeze operations, so that future operations on the logical data
-        // may depend on them
-        task fake_task;
-    };
+    // This is used internally to keep track of the dependencies of the
+    // unfreeze operations, so that future operations on the logical data
+    // may depend on them
+    task fake_task;
+  };
 
 public:
-    frozen_logical_data(backend_ctx_untyped bctx, logical_data<T> ld, access_mode m, data_place place)
-            : pimpl(::std::make_shared<impl>(mv(bctx), mv(ld), m, mv(place))) {}
+  frozen_logical_data(backend_ctx_untyped bctx, logical_data<T> ld, access_mode m, data_place place)
+      : pimpl(::std::make_shared<impl>(mv(bctx), mv(ld), m, mv(place)))
+  {}
 
-    // So that we can have a frozen data variable that is populated later
-    frozen_logical_data() = default;
+  // So that we can have a frozen data variable that is populated later
+  frozen_logical_data() = default;
 
-    // Copy constructor
-    frozen_logical_data(const frozen_logical_data& other) = default;
+  // Copy constructor
+  frozen_logical_data(const frozen_logical_data& other) = default;
 
-    // Move constructor
-    frozen_logical_data(frozen_logical_data&& other) noexcept = default;
+  // Move constructor
+  frozen_logical_data(frozen_logical_data&& other) noexcept = default;
 
-    // Copy assignment
-    frozen_logical_data& operator=(const frozen_logical_data& other) = default;
+  // Copy assignment
+  frozen_logical_data& operator=(const frozen_logical_data& other) = default;
 
-    // Move assignment
-    frozen_logical_data& operator=(frozen_logical_data&& other) noexcept = default;
+  // Move assignment
+  frozen_logical_data& operator=(frozen_logical_data&& other) noexcept = default;
 
-    ::std::pair<T, event_list> get(data_place place) {
-        assert(pimpl);
-        return pimpl->get(mv(place));
-    }
+  ::std::pair<T, event_list> get(data_place place)
+  {
+    assert(pimpl);
+    return pimpl->get(mv(place));
+  }
 
-    T get(data_place place, cudaStream_t stream) {
-        assert(pimpl);
-        return pimpl->get(mv(place), stream);
-    }
+  T get(data_place place, cudaStream_t stream)
+  {
+    assert(pimpl);
+    return pimpl->get(mv(place), stream);
+  }
 
-    void unfreeze(event_list prereqs) {
-        assert(pimpl);
-        pimpl->unfreeze(mv(prereqs));
-    }
+  void unfreeze(event_list prereqs)
+  {
+    assert(pimpl);
+    pimpl->unfreeze(mv(prereqs));
+  }
 
-    void unfreeze(cudaStream_t stream) {
-        assert(pimpl);
-        pimpl->unfreeze(stream);
-    }
+  void unfreeze(cudaStream_t stream)
+  {
+    assert(pimpl);
+    pimpl->unfreeze(stream);
+  }
 
-    frozen_logical_data& set_automatic_unfreeze(bool flag = true) {
-        assert(pimpl);
-        pimpl->set_automatic_unfreeze(flag);
-        return *this;
-    }
+  frozen_logical_data& set_automatic_unfreeze(bool flag = true)
+  {
+    assert(pimpl);
+    pimpl->set_automatic_unfreeze(flag);
+    return *this;
+  }
 
 private:
-    ::std::shared_ptr<impl> pimpl = nullptr;
+  ::std::shared_ptr<impl> pimpl = nullptr;
 };
 
-}  // namespace cuda::experimental::stf
+} // namespace cuda::experimental::stf

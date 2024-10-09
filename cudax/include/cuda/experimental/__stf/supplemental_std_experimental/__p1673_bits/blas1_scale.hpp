@@ -43,75 +43,117 @@
 #ifndef LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_BLAS1_SCALE_HPP_
 #define LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_BLAS1_SCALE_HPP_
 
-namespace std { namespace experimental { inline namespace __p1673_version_0 { namespace linalg {
+namespace std
+{
+namespace experimental
+{
+inline namespace __p1673_version_0
+{
+namespace linalg
+{
 
-namespace {
+namespace
+{
 
 template <class ElementType, class SizeType, ::std::size_t ext0, class Layout, class Accessor, class Scalar>
-void linalg_scale_rank_1(const Scalar alpha,
-        std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> x) {
-    for (SizeType i = 0; i < x.extent(0); ++i) {
-        x(i) *= alpha;
-    }
+void linalg_scale_rank_1(
+  const Scalar alpha,
+  std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> x)
+{
+  for (SizeType i = 0; i < x.extent(0); ++i)
+  {
+    x(i) *= alpha;
+  }
 }
 
-template <class ElementType, class SizeType, ::std::size_t numRows, ::std::size_t numCols, class Layout, class Accessor,
-        class Scalar>
-void linalg_scale_rank_2(const Scalar alpha,
-        std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, numRows, numCols>, Layout, Accessor>
-                A) {
-    for (SizeType j = 0; j < A.extent(1); ++j) {
-        for (SizeType i = 0; i < A.extent(0); ++i) {
-            A(i, j) *= alpha;
-        }
+template <class ElementType,
+          class SizeType,
+          ::std::size_t numRows,
+          ::std::size_t numCols,
+          class Layout,
+          class Accessor,
+          class Scalar>
+void linalg_scale_rank_2(
+  const Scalar alpha,
+  std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, numRows, numCols>, Layout, Accessor> A)
+{
+  for (SizeType j = 0; j < A.extent(1); ++j)
+  {
+    for (SizeType i = 0; i < A.extent(0); ++i)
+    {
+      A(i, j) *= alpha;
     }
+  }
 }
 
 template <typename Exec, typename Scalar, typename x_t, typename = void>
-struct is_custom_scale_avail : std::false_type {};
+struct is_custom_scale_avail : std::false_type
+{};
 
 template <typename Exec, typename Scalar, typename x_t>
-struct is_custom_scale_avail<Exec, Scalar, x_t,
-        std::enable_if_t<
-                std::is_void_v<decltype(scale(std::declval<Exec>(), std::declval<Scalar>(), std::declval<x_t>()))> &&
-                !linalg::impl::is_inline_exec_v<Exec>>> : std::true_type {};
+struct is_custom_scale_avail<
+  Exec,
+  Scalar,
+  x_t,
+  std::enable_if_t<std::is_void_v<decltype(scale(std::declval<Exec>(), std::declval<Scalar>(), std::declval<x_t>()))>
+                   && !linalg::impl::is_inline_exec_v<Exec>>> : std::true_type
+{};
 
-}  // end anonymous namespace
+} // end anonymous namespace
 
 template <class Scalar, class ElementType, class SizeType, ::std::size_t... ext, class Layout, class Accessor>
-void scale(std::experimental::linalg::impl::inline_exec_t&& /* exec */, const Scalar alpha,
-        std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext...>, Layout, Accessor> x) {
-    static_assert(x.rank() <= 2);
+void scale(std::experimental::linalg::impl::inline_exec_t&& /* exec */,
+           const Scalar alpha,
+           std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext...>, Layout, Accessor> x)
+{
+  static_assert(x.rank() <= 2);
 
-    if constexpr (x.rank() == 1) {
-        linalg_scale_rank_1(alpha, x);
-    } else if constexpr (x.rank() == 2) {
-        linalg_scale_rank_2(alpha, x);
-    }
+  if constexpr (x.rank() == 1)
+  {
+    linalg_scale_rank_1(alpha, x);
+  }
+  else if constexpr (x.rank() == 2)
+  {
+    linalg_scale_rank_2(alpha, x);
+  }
 }
 
-template <class ExecutionPolicy, class Scalar, class ElementType, class SizeType, ::std::size_t... ext, class Layout,
-        class Accessor>
-void scale(ExecutionPolicy&& exec, const Scalar alpha,
-        std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext...>, Layout, Accessor> x) {
-    // Call custom overload if available else call std implementation
+template <class ExecutionPolicy,
+          class Scalar,
+          class ElementType,
+          class SizeType,
+          ::std::size_t... ext,
+          class Layout,
+          class Accessor>
+void scale(ExecutionPolicy&& exec,
+           const Scalar alpha,
+           std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext...>, Layout, Accessor> x)
+{
+  // Call custom overload if available else call std implementation
 
-    constexpr bool use_custom =
-            is_custom_scale_avail<decltype(execpolicy_mapper(exec)), decltype(alpha), decltype(x)>::value;
+  constexpr bool use_custom =
+    is_custom_scale_avail<decltype(execpolicy_mapper(exec)), decltype(alpha), decltype(x)>::value;
 
-    if constexpr (use_custom) {
-        scale(execpolicy_mapper(exec), alpha, x);
-    } else {
-        scale(std::experimental::linalg::impl::inline_exec_t(), alpha, x);
-    }
+  if constexpr (use_custom)
+  {
+    scale(execpolicy_mapper(exec), alpha, x);
+  }
+  else
+  {
+    scale(std::experimental::linalg::impl::inline_exec_t(), alpha, x);
+  }
 }
 
 template <class Scalar, class ElementType, class SizeType, ::std::size_t... ext, class Layout, class Accessor>
 void scale(const Scalar alpha,
-        std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext...>, Layout, Accessor> x) {
-    scale(std::experimental::linalg::impl::default_exec_t(), alpha, x);
+           std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext...>, Layout, Accessor> x)
+{
+  scale(std::experimental::linalg::impl::default_exec_t(), alpha, x);
 }
 
-}}}}  // namespace std::experimental::__p1673_version_0::linalg
+} // namespace linalg
+} // namespace __p1673_version_0
+} // namespace experimental
+} // namespace std
 
-#endif  // LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_BLAS1_SCALE_HPP_
+#endif // LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_BLAS1_SCALE_HPP_

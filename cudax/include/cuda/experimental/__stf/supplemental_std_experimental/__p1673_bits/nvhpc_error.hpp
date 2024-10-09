@@ -15,64 +15,94 @@
 
 #include <system_error>
 #ifdef __LINALG_ENABLE_CUBLAS
-#    include "cublas_v2.h"
-#    include "driver_types.h"
+#  include "cublas_v2.h"
+#  include "driver_types.h"
 #endif
 
-namespace std { namespace experimental {
+namespace std
+{
+namespace experimental
+{
 
-enum class __stdblas_errc { __SUCCESS, __UNSUPPORTED_INPLACE_OPS };
+enum class __stdblas_errc
+{
+  __SUCCESS,
+  __UNSUPPORTED_INPLACE_OPS
+};
 
-class __stdblas_category_t : public std::error_category {
+class __stdblas_category_t : public std::error_category
+{
 public:
-    virtual const char* name() const noexcept { return "stdblas"; }
+  virtual const char* name() const noexcept
+  {
+    return "stdblas";
+  }
 
-    virtual std::string message(int __ev) const {
-        switch (__ev) {
-        case static_cast<int>(__stdblas_errc::__SUCCESS): return "Success";
-        case static_cast<int>(__stdblas_errc::__UNSUPPORTED_INPLACE_OPS): return "Unsupported in-place transformation";
-        default: return "Unknown error";
-        }
+  virtual std::string message(int __ev) const
+  {
+    switch (__ev)
+    {
+      case static_cast<int>(__stdblas_errc::__SUCCESS):
+        return "Success";
+      case static_cast<int>(__stdblas_errc::__UNSUPPORTED_INPLACE_OPS):
+        return "Unsupported in-place transformation";
+      default:
+        return "Unknown error";
     }
+  }
 };
 
 inline __stdblas_category_t __stdblas_category;
 
-inline error_code make_error_code(__stdblas_errc __e) noexcept {
-    return std::error_code(static_cast<int>(__e), __stdblas_category);
+inline error_code make_error_code(__stdblas_errc __e) noexcept
+{
+  return std::error_code(static_cast<int>(__e), __stdblas_category);
 }
 
 #ifdef __LINALG_ENABLE_CUBLAS
-class __cublas_category_t : public std::error_category {
+class __cublas_category_t : public std::error_category
+{
 public:
-    virtual const char* name() const noexcept { return "cublas"; }
+  virtual const char* name() const noexcept
+  {
+    return "cublas";
+  }
 
-    virtual std::string message(int __ev) const {
-        return std::string(cublasGetStatusString(static_cast<cublasStatus_t>(__ev)));
-    }
+  virtual std::string message(int __ev) const
+  {
+    return std::string(cublasGetStatusString(static_cast<cublasStatus_t>(__ev)));
+  }
 };
 
-class __cuda_category_t : public std::error_category {
+class __cuda_category_t : public std::error_category
+{
 public:
-    virtual const char* name() const noexcept { return "cuda"; }
+  virtual const char* name() const noexcept
+  {
+    return "cuda";
+  }
 
-    virtual std::string message(int __ev) const {
-        return std::string(cudaGetErrorString(static_cast<cudaError_t>(__ev)));
-    }
+  virtual std::string message(int __ev) const
+  {
+    return std::string(cudaGetErrorString(static_cast<cudaError_t>(__ev)));
+  }
 };
 
 inline __cublas_category_t __cublas_category;
 
 inline __cuda_category_t __cuda_category;
 
-inline error_code make_error_code(cublasStatus_t __e) noexcept {
-    return std::error_code(static_cast<int>(__e), __cublas_category);
+inline error_code make_error_code(cublasStatus_t __e) noexcept
+{
+  return std::error_code(static_cast<int>(__e), __cublas_category);
 }
 
-inline error_code make_error_code(cudaError_t __e) noexcept {
-    return std::error_code(static_cast<int>(__e), __cuda_category);
+inline error_code make_error_code(cudaError_t __e) noexcept
+{
+  return std::error_code(static_cast<int>(__e), __cuda_category);
 }
 #endif
-}}  // namespace std::experimental
+} // namespace experimental
+} // namespace std
 
 #endif

@@ -24,7 +24,8 @@
 #include <type_traits>
 #include <utility>
 
-namespace cuda::experimental::stf {
+namespace cuda::experimental::stf
+{
 
 /**
  * @brief Custom move function that performs checks on the argument type.
@@ -37,10 +38,11 @@ namespace cuda::experimental::stf {
  * @pre The argument `v` must not be `const`, i.e., the function will fail to compile for `const` lvalues.
  */
 template <typename T>
-constexpr decltype(auto) mv(T&& obj) {
-    static_assert(::std::is_lvalue_reference_v<T>, "Useless move from rvalue.");
-    static_assert(!::std::is_const_v<::std::remove_reference_t<T>>, "Misleading move from const lvalue.");
-    return ::std::move(obj);
+constexpr decltype(auto) mv(T&& obj)
+{
+  static_assert(::std::is_lvalue_reference_v<T>, "Useless move from rvalue.");
+  static_assert(!::std::is_const_v<::std::remove_reference_t<T>>, "Misleading move from const lvalue.");
+  return ::std::move(obj);
 }
 
 /**
@@ -70,8 +72,9 @@ constexpr decltype(auto) mv(T&& obj) {
  * @endcode
  */
 template <typename T>
-auto to_shared(T&& obj) {
-    return ::std::make_shared<::std::remove_cv_t<::std::remove_reference_t<T>>>(::std::forward<T>(obj));
+auto to_shared(T&& obj)
+{
+  return ::std::make_shared<::std::remove_cv_t<::std::remove_reference_t<T>>>(::std::forward<T>(obj));
 }
 
 /**
@@ -88,38 +91,63 @@ auto to_shared(T&& obj) {
  * expression `true ? from : to`. This ensures expected behavior for iteration with different `from` and `to` types.
  */
 template <typename T, typename U>
-CUDASTF_HOST_DEVICE auto each(T from, U to) {
-    using common = ::std::remove_reference_t<decltype(true ? from : to)>;
+CUDASTF_HOST_DEVICE auto each(T from, U to)
+{
+  using common = ::std::remove_reference_t<decltype(true ? from : to)>;
 
-    class iterator {
-        common value;
+  class iterator
+  {
+    common value;
 
-    public:
-        CUDASTF_HOST_DEVICE iterator(common value) : value(mv(value)) {}
+  public:
+    CUDASTF_HOST_DEVICE iterator(common value)
+        : value(mv(value))
+    {}
 
-        CUDASTF_HOST_DEVICE common operator*() const { return value; }
+    CUDASTF_HOST_DEVICE common operator*() const
+    {
+      return value;
+    }
 
-        CUDASTF_HOST_DEVICE iterator& operator++() {
-            if constexpr (::std::is_enum_v<common>)
-                value = static_cast<T>(static_cast<::std::underlying_type_t<T>>(value) + 1);
-            else
-                ++value;
-            return *this;
-        }
+    CUDASTF_HOST_DEVICE iterator& operator++()
+    {
+      if constexpr (::std::is_enum_v<common>)
+      {
+        value = static_cast<T>(static_cast<::std::underlying_type_t<T>>(value) + 1);
+      }
+      else
+      {
+        ++value;
+      }
+      return *this;
+    }
 
-        CUDASTF_HOST_DEVICE bool operator!=(const iterator& other) const { return value != other.value; }
-    };
+    CUDASTF_HOST_DEVICE bool operator!=(const iterator& other) const
+    {
+      return value != other.value;
+    }
+  };
 
-    class each_t {
-        common begin_, end_;
+  class each_t
+  {
+    common begin_, end_;
 
-    public:
-        CUDASTF_HOST_DEVICE each_t(T begin, U end) : begin_(mv(begin)), end_(mv(end)) {}
-        CUDASTF_HOST_DEVICE iterator begin() const { return iterator(begin_); }
-        CUDASTF_HOST_DEVICE iterator end() const { return iterator(end_); }
-    };
+  public:
+    CUDASTF_HOST_DEVICE each_t(T begin, U end)
+        : begin_(mv(begin))
+        , end_(mv(end))
+    {}
+    CUDASTF_HOST_DEVICE iterator begin() const
+    {
+      return iterator(begin_);
+    }
+    CUDASTF_HOST_DEVICE iterator end() const
+    {
+      return iterator(end_);
+    }
+  };
 
-    return each_t { mv(from), mv(to) };
+  return each_t{mv(from), mv(to)};
 }
 
 /**
@@ -133,9 +161,10 @@ CUDASTF_HOST_DEVICE auto each(T from, U to) {
  * @note    The range includes 0 and excludes `to`
  */
 template <typename T>
-auto each(T to) {
-    static_assert(!::std::is_pointer_v<T>, "Use the two arguments version of each() with pointers.");
-    return each(T(0), mv(to));
+auto each(T to)
+{
+  static_assert(!::std::is_pointer_v<T>, "Use the two arguments version of each() with pointers.");
+  return each(T(0), mv(to));
 }
 
 /**
@@ -163,17 +192,24 @@ auto each(T to) {
  * compile-time invocable object.
  */
 template <size_t n, typename F, size_t... i>
-constexpr void unroll(F&& f, ::std::index_sequence<i...> = ::std::index_sequence<>()) {
-    if constexpr (sizeof...(i) != n) {
-        return unroll<n>(::std::forward<F>(f), ::std::make_index_sequence<n>());
-    } else {
-        using result_t = decltype(f(::std::integral_constant<size_t, 0>()));
-        if constexpr (::std::is_same_v<result_t, void>) {
-            (f(::std::integral_constant<size_t, i>()), ...);
-        } else {
-            (f(::std::integral_constant<size_t, i>()) && ...);
-        }
+constexpr void unroll(F&& f, ::std::index_sequence<i...> = ::std::index_sequence<>())
+{
+  if constexpr (sizeof...(i) != n)
+  {
+    return unroll<n>(::std::forward<F>(f), ::std::make_index_sequence<n>());
+  }
+  else
+  {
+    using result_t = decltype(f(::std::integral_constant<size_t, 0>()));
+    if constexpr (::std::is_same_v<result_t, void>)
+    {
+      (f(::std::integral_constant<size_t, i>()), ...);
     }
+    else
+    {
+      (f(::std::integral_constant<size_t, i>()) && ...);
+    }
+  }
 }
 
 /**
@@ -197,31 +233,40 @@ constexpr void unroll(F&& f, ::std::index_sequence<i...> = ::std::index_sequence
  * @endcode
  */
 template <typename T, typename... P>
-constexpr auto tuple_prepend(T&& prefix, ::std::tuple<P...> tuple) {
-    return ::std::apply(
-            [&](auto&&... p) { return ::std::tuple(::std::forward<T>(prefix), ::std::forward<decltype(p)>(p)...); },
-            mv(tuple));
+constexpr auto tuple_prepend(T&& prefix, ::std::tuple<P...> tuple)
+{
+  return ::std::apply(
+    [&](auto&&... p) {
+      return ::std::tuple(::std::forward<T>(prefix), ::std::forward<decltype(p)>(p)...);
+    },
+    mv(tuple));
 }
 
-namespace reserved {
+namespace reserved
+{
 
 // Like ::std::make_tuple, but skips all values of the same type as `::std::ignore`.
-inline constexpr auto make_tuple() {
-    return ::std::tuple<>();
+inline constexpr auto make_tuple()
+{
+  return ::std::tuple<>();
 }
 
 template <typename T, typename... P>
-constexpr auto make_tuple(T t, P... p) {
-    if constexpr (::std::is_same_v<const T, const decltype(::std::ignore)>) {
-        // Recurse skipping the first parameter
-        return make_tuple(mv(p)...);
-    } else {
-        // Keep first parameter, concatenate with recursive call
-        return tuple_prepend(mv(t), make_tuple(mv(p)...));
-    }
+constexpr auto make_tuple(T t, P... p)
+{
+  if constexpr (::std::is_same_v<const T, const decltype(::std::ignore)>)
+  {
+    // Recurse skipping the first parameter
+    return make_tuple(mv(p)...);
+  }
+  else
+  {
+    // Keep first parameter, concatenate with recursive call
+    return tuple_prepend(mv(t), make_tuple(mv(p)...));
+  }
 }
 
-}  // namespace reserved
+} // namespace reserved
 
 /**
  * @brief Creates a `std::tuple` by applying a callable object `f` to each integral constant within a given range `[0,
@@ -256,12 +301,16 @@ constexpr auto make_tuple(T t, P... p) {
  * Note: Since this function is `constexpr`, it can be used at compile-time if `f` is a compile-time invocable object.
  */
 template <size_t n, typename F, size_t... i>
-constexpr auto make_tuple_indexwise(F&& f, ::std::index_sequence<i...> = ::std::index_sequence<>()) {
-    if constexpr (sizeof...(i) != n) {
-        return make_tuple_indexwise<n>(::std::forward<F>(f), ::std::make_index_sequence<n>());
-    } else {
-        return reserved::make_tuple(f(::std::integral_constant<size_t, i>())...);
-    }
+constexpr auto make_tuple_indexwise(F&& f, ::std::index_sequence<i...> = ::std::index_sequence<>())
+{
+  if constexpr (sizeof...(i) != n)
+  {
+    return make_tuple_indexwise<n>(::std::forward<F>(f), ::std::make_index_sequence<n>());
+  }
+  else
+  {
+    return reserved::make_tuple(f(::std::integral_constant<size_t, i>())...);
+  }
 }
 
 /**
@@ -280,29 +329,39 @@ constexpr auto make_tuple_indexwise(F&& f, ::std::index_sequence<i...> = ::std::
  * (default-constructed as empty).
  */
 template <typename Tuple, typename F>
-constexpr void each_in_tuple(Tuple&& t, F&& f) {
-    constexpr size_t n = ::std::tuple_size_v<::std::remove_reference_t<Tuple>>;
-    unroll<n>([&](auto j) {
-        if constexpr (::std::is_invocable_v<F, decltype(j), decltype(::std::get<j>(::std::forward<Tuple>(t)))>) {
-            f(j, ::std::get<j>(::std::forward<Tuple>(t)));
-        } else {
-            f(::std::get<j>(::std::forward<Tuple>(t)));
-        }
-    });
+constexpr void each_in_tuple(Tuple&& t, F&& f)
+{
+  constexpr size_t n = ::std::tuple_size_v<::std::remove_reference_t<Tuple>>;
+  unroll<n>([&](auto j) {
+    if constexpr (::std::is_invocable_v<F, decltype(j), decltype(::std::get<j>(::std::forward<Tuple>(t)))>)
+    {
+      f(j, ::std::get<j>(::std::forward<Tuple>(t)));
+    }
+    else
+    {
+      f(::std::get<j>(::std::forward<Tuple>(t)));
+    }
+  });
 }
 
-namespace reserved {
+namespace reserved
+{
 // Implementation of each_in_pack below
 template <typename F, size_t... i, typename... P>
-constexpr void each_in_pack(F&& f, ::std::index_sequence<i...>, P&&... p) {
-    if constexpr (::std::is_invocable_v<F, ::std::integral_constant<size_t, 0>,
-                          ::std::tuple_element_t<0, ::std::tuple<P&&...>>>) {
-        (f(::std::integral_constant<size_t, i>(), ::std::forward<P>(p)), ...);
-    } else {
-        (f(::std::forward<P>(p)), ...);
-    }
+constexpr void each_in_pack(F&& f, ::std::index_sequence<i...>, P&&... p)
+{
+  if constexpr (::std::is_invocable_v<F,
+                                      ::std::integral_constant<size_t, 0>,
+                                      ::std::tuple_element_t<0, ::std::tuple<P&&...>>>)
+  {
+    (f(::std::integral_constant<size_t, i>(), ::std::forward<P>(p)), ...);
+  }
+  else
+  {
+    (f(::std::forward<P>(p)), ...);
+  }
 }
-}  // namespace reserved
+} // namespace reserved
 
 /**
  * @brief Applies a given function to each element in a parameter pack.
@@ -326,10 +385,12 @@ constexpr void each_in_pack(F&& f, ::std::index_sequence<i...>, P&&... p) {
  * "b", "c"); assert(s == "0a, 1b, 2c"); \endcode
  */
 template <typename F, typename... P>
-constexpr void each_in_pack(F&& f, P&&... p) {
-    if constexpr (sizeof...(P) > 0)
-        reserved::each_in_pack(
-                ::std::forward<F>(f), ::std::make_index_sequence<sizeof...(P)>(), ::std::forward<P>(p)...);
+constexpr void each_in_pack(F&& f, P&&... p)
+{
+  if constexpr (sizeof...(P) > 0)
+  {
+    reserved::each_in_pack(::std::forward<F>(f), ::std::make_index_sequence<sizeof...(P)>(), ::std::forward<P>(p)...);
+  }
 }
 
 /**
@@ -343,8 +404,9 @@ constexpr void each_in_pack(F&& f, P&&... p) {
  * @return The underlying integral value of the given enum value.
  */
 template <typename E>
-auto as_underlying(E value) {
-    return static_cast<::std::underlying_type_t<E>>(value);
+auto as_underlying(E value)
+{
+  return static_cast<::std::underlying_type_t<E>>(value);
 }
 
 /**
@@ -355,134 +417,171 @@ auto as_underlying(E value) {
  *
  * All arithmetic and logic operators are supported (if the original type supports them).
  */
-template <auto static_v, decltype(static_v) reserved = ::std::is_floating_point_v<decltype(static_v)>
-                                                               ? -::std::numeric_limits<decltype(static_v)>::max()
-                                                       : ::std::is_unsigned_v<decltype(static_v)>
-                                                               ? ::std::numeric_limits<decltype(static_v)>::max()
-                                                               : ::std::numeric_limits<decltype(static_v)>::min()>
-class optionally_static {
+template <auto static_v,
+          decltype(static_v) reserved =
+            ::std::is_floating_point_v<decltype(static_v)> ? -::std::numeric_limits<decltype(static_v)>::max()
+            : ::std::is_unsigned_v<decltype(static_v)>     ? ::std::numeric_limits<decltype(static_v)>::max()
+                                                           : ::std::numeric_limits<decltype(static_v)>::min()>
+class optionally_static
+{
 public:
-    /// The type of the underlying data
-    using type = decltype(static_v);
+  /// The type of the underlying data
+  using type = decltype(static_v);
 
-    /// Indicates whether the value is static.
-    static constexpr bool is_static = static_v != reserved;
+  /// Indicates whether the value is static.
+  static constexpr bool is_static = static_v != reserved;
 
-    /// The reserved value for indicating dynamic state.
-    static constexpr bool reserved_v = reserved;
+  /// The reserved value for indicating dynamic state.
+  static constexpr bool reserved_v = reserved;
 
-    /// Special functions.
-    constexpr optionally_static() = default;
-    /// Special functions.
-    constexpr optionally_static(const optionally_static&) = default;
-    /// Special functions.
-    constexpr optionally_static& operator=(const optionally_static&) = default;
+  /// Special functions.
+  constexpr optionally_static() = default;
+  /// Special functions.
+  constexpr optionally_static(const optionally_static&) = default;
+  /// Special functions.
+  constexpr optionally_static& operator=(const optionally_static&) = default;
 
-    /**
-     * @brief Constructor that initializes a dynamic value. Works only if `static_v == reserved`.
-     *
-     * @param dynamic The dynamic value.
-     */
-    constexpr optionally_static(type dynamic_value) : payload(dynamic_value) {}
+  /**
+   * @brief Constructor that initializes a dynamic value. Works only if `static_v == reserved`.
+   *
+   * @param dynamic The dynamic value.
+   */
+  constexpr optionally_static(type dynamic_value)
+      : payload(dynamic_value)
+  {}
 
-    /**
-     * @brief Retrieves the stored value (either static or dynamic).
-     *
-     * @return The stored value.
-     */
-    constexpr type get() const {
-        if constexpr (is_static) {
-            return static_v;
-        } else {
-            return payload;
-        }
+  /**
+   * @brief Retrieves the stored value (either static or dynamic).
+   *
+   * @return The stored value.
+   */
+  constexpr type get() const
+  {
+    if constexpr (is_static)
+    {
+      return static_v;
     }
-
-    /**
-     * @brief Forwards to `get()`.
-     *
-     * @return The stored value.
-     */
-    constexpr operator type() const { return get(); }
-
-    /**
-     * @brief Retrieves a reference to the stored value (assumed dynamic).
-     *
-     * @return The stored value.
-     */
-    constexpr type& get_ref() { return payload; }
-
-    optionally_static& operator++() {
-        ++get_ref();
-        return *this;
+    else
+    {
+      return payload;
     }
+  }
 
-    optionally_static operator++(int) {
-        auto copy = *this;
-        ++*this;
-        return copy;
+  /**
+   * @brief Forwards to `get()`.
+   *
+   * @return The stored value.
+   */
+  constexpr operator type() const
+  {
+    return get();
+  }
+
+  /**
+   * @brief Retrieves a reference to the stored value (assumed dynamic).
+   *
+   * @return The stored value.
+   */
+  constexpr type& get_ref()
+  {
+    return payload;
+  }
+
+  optionally_static& operator++()
+  {
+    ++get_ref();
+    return *this;
+  }
+
+  optionally_static operator++(int)
+  {
+    auto copy = *this;
+    ++*this;
+    return copy;
+  }
+
+  optionally_static& operator--()
+  {
+    --get_ref();
+    return *this;
+  }
+
+  optionally_static operator--(int)
+  {
+    auto copy = *this;
+    --*this;
+    return copy;
+  }
+
+  optionally_static operator+() const
+  {
+    return *this;
+  }
+
+  auto operator-() const
+  {
+    if constexpr (!is_static)
+    {
+      return -get();
     }
-
-    optionally_static& operator--() {
-        --get_ref();
-        return *this;
+    else if constexpr (-static_v == reserved)
+    {
+      /* rare case where we convert a static value into a dynamic one */
+      return reserved;
     }
-
-    optionally_static operator--(int) {
-        auto copy = *this;
-        --*this;
-        return copy;
+    else
+    {
+      return optionally_static<-static_v, reserved>();
     }
-
-    optionally_static operator+() const { return *this; }
-
-    auto operator-() const {
-        if constexpr (!is_static) {
-            return -get();
-        } else if constexpr (-static_v == reserved) {
-            /* rare case where we convert a static value into a dynamic one */
-            return reserved;
-        } else {
-            return optionally_static<-static_v, reserved>();
-        }
-    }
+  }
 
 private:
-    /// The dynamic state, conditional on whether the static value is reserved.
-    struct nonesuch {};
-    using state_t = ::std::conditional_t<is_static, nonesuch, type>;
-    [[no_unique_address]] state_t payload = state_t();
+  /// The dynamic state, conditional on whether the static value is reserved.
+  struct nonesuch
+  {};
+  using state_t                         = ::std::conditional_t<is_static, nonesuch, type>;
+  [[no_unique_address]] state_t payload = state_t();
 };
 
 // Operator implementations
-#define _3197bc91feaf98030b2cc0b441d7b0ea(op)                                                              \
-    template <auto v1, auto v2, auto r>                                                                    \
-    constexpr auto operator op(const optionally_static<v1, r>& lhs, const optionally_static<v2, r>& rhs) { \
-        if constexpr (!lhs.is_static || !rhs.is_static) {                                                  \
-            return lhs.get() op rhs.get();                                                                 \
-        } else if constexpr ((v1 op v2) == r) {                                                            \
-            /* rare case where we convert two static values into a dynamic one */                          \
-            return r;                                                                                      \
-        } else {                                                                                           \
-            return optionally_static<(v1 op v2), r>();                                                     \
-        }                                                                                                  \
-    }                                                                                                      \
-    template <auto v, auto r, typename T>                                                                  \
-    constexpr auto operator op(const optionally_static<v, r>& lhs, const T& rhs) {                         \
-        return lhs.get() op rhs;                                                                           \
-    }                                                                                                      \
-    template <auto v, auto r, typename T>                                                                  \
-    constexpr auto operator op(const T& lhs, const optionally_static<v, r>& rhs) {                         \
-        return lhs op rhs.get();                                                                           \
-    }                                                                                                      \
-    template <auto v2, auto r>                                                                             \
-    constexpr auto& operator op##=(optionally_static<r, r>& lhs, const optionally_static<v2, r>& rhs) {    \
-        return lhs.get_ref() op## = rhs.get();                                                             \
-    }                                                                                                      \
-    template <auto r, typename T>                                                                          \
-    constexpr auto& operator op##=(optionally_static<r, r>& lhs, const T& rhs) {                           \
-        return lhs.get_ref() op## = rhs;                                                                   \
-    }
+#define _3197bc91feaf98030b2cc0b441d7b0ea(op)                                                          \
+  template <auto v1, auto v2, auto r>                                                                  \
+  constexpr auto operator op(const optionally_static<v1, r>& lhs, const optionally_static<v2, r>& rhs) \
+  {                                                                                                    \
+    if constexpr (!lhs.is_static || !rhs.is_static)                                                    \
+    {                                                                                                  \
+      return lhs.get() op rhs.get();                                                                   \
+    }                                                                                                  \
+    else if constexpr ((v1 op v2) == r)                                                                \
+    {                                                                                                  \
+      /* rare case where we convert two static values into a dynamic one */                            \
+      return r;                                                                                        \
+    }                                                                                                  \
+    else                                                                                               \
+    {                                                                                                  \
+      return optionally_static<(v1 op v2), r>();                                                       \
+    }                                                                                                  \
+  }                                                                                                    \
+  template <auto v, auto r, typename T>                                                                \
+  constexpr auto operator op(const optionally_static<v, r>& lhs, const T& rhs)                         \
+  {                                                                                                    \
+    return lhs.get() op rhs;                                                                           \
+  }                                                                                                    \
+  template <auto v, auto r, typename T>                                                                \
+  constexpr auto operator op(const T& lhs, const optionally_static<v, r>& rhs)                         \
+  {                                                                                                    \
+    return lhs op rhs.get();                                                                           \
+  }                                                                                                    \
+  template <auto v2, auto r>                                                                           \
+  constexpr auto& operator op##=(optionally_static<r, r>& lhs, const optionally_static<v2, r>& rhs)    \
+  {                                                                                                    \
+    return lhs.get_ref() op## = rhs.get();                                                             \
+  }                                                                                                    \
+  template <auto r, typename T>                                                                        \
+  constexpr auto& operator op##=(optionally_static<r, r>& lhs, const T & rhs)                          \
+  {                                                                                                    \
+    return lhs.get_ref() op## = rhs;                                                                   \
+  }
 
 // Implement for the usual operators
 _3197bc91feaf98030b2cc0b441d7b0ea(+);
@@ -498,19 +597,22 @@ _3197bc91feaf98030b2cc0b441d7b0ea(>>);
 
 #undef _3197bc91feaf98030b2cc0b441d7b0ea
 
-#define _3197bc91feaf98030b2cc0b441d7b0ea(op)                                                              \
-    template <auto v1, auto v2, auto r>                                                                    \
-    constexpr bool operator op(const optionally_static<v1, r>& lhs, const optionally_static<v2, r>& rhs) { \
-        return lhs.get() op rhs.get();                                                                     \
-    }                                                                                                      \
-    template <auto v, auto r, typename T>                                                                  \
-    constexpr bool operator op(const optionally_static<v, r>& lhs, const T& rhs) {                         \
-        return lhs.get() op rhs;                                                                           \
-    }                                                                                                      \
-    template <auto v, auto r, typename T>                                                                  \
-    constexpr bool operator op(const T& lhs, const optionally_static<v, r>& rhs) {                         \
-        return lhs op rhs.get();                                                                           \
-    }
+#define _3197bc91feaf98030b2cc0b441d7b0ea(op)                                                          \
+  template <auto v1, auto v2, auto r>                                                                  \
+  constexpr bool operator op(const optionally_static<v1, r>& lhs, const optionally_static<v2, r>& rhs) \
+  {                                                                                                    \
+    return lhs.get() op rhs.get();                                                                     \
+  }                                                                                                    \
+  template <auto v, auto r, typename T>                                                                \
+  constexpr bool operator op(const optionally_static<v, r>& lhs, const T& rhs)                         \
+  {                                                                                                    \
+    return lhs.get() op rhs;                                                                           \
+  }                                                                                                    \
+  template <auto v, auto r, typename T>                                                                \
+  constexpr bool operator op(const T& lhs, const optionally_static<v, r>& rhs)                         \
+  {                                                                                                    \
+    return lhs op rhs.get();                                                                           \
+  }
 
 _3197bc91feaf98030b2cc0b441d7b0ea(==);
 _3197bc91feaf98030b2cc0b441d7b0ea(!=);
@@ -521,4 +623,4 @@ _3197bc91feaf98030b2cc0b441d7b0ea(>=);
 
 #undef _3197bc91feaf98030b2cc0b441d7b0ea
 
-}  // namespace cuda::experimental::stf
+} // namespace cuda::experimental::stf

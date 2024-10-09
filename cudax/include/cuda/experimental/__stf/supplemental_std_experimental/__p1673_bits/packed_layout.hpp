@@ -44,10 +44,16 @@
 #define LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_PACKED_LAYOUT_HPP_
 
 #include "layout_triangle.hpp"
-
 #include <experimental/mdspan>
 
-namespace std { namespace experimental { inline namespace __p1673_version_0 { namespace linalg {
+namespace std
+{
+namespace experimental
+{
+inline namespace __p1673_version_0
+{
+namespace linalg
+{
 
 // TODO declarations need extents-see-returns-below defined
 
@@ -69,8 +75,11 @@ packed(
   typename mdspan<EltType, Extents, Layout, Accessor>::index_type num_rows,
   Triangle,
   StorageOrder);
-#endif  // 0
+#endif // 0
 
-}}}}  // namespace std::experimental::__p1673_version_0::linalg
+} // namespace linalg
+} // namespace __p1673_version_0
+} // namespace experimental
+} // namespace std
 
-#endif  // LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_PACKED_LAYOUT_HPP_
+#endif // LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_PACKED_LAYOUT_HPP_

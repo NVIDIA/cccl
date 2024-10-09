@@ -15,34 +15,36 @@
 
 #include "exec_policy_wrapper_nvhpc.hpp"
 
-namespace __nvhpc_std {
+namespace __nvhpc_std
+{
 
-enum class __data_type {
-    __Unknown,
-    __Float16,
-    __BFloat16,
-    __Float32,
-    __Float64,
-    __Int8,
-    __UInt8,
-    __Int32,
-    __ComplexFloat16,
-    __ComplexBFloat16,
-    __ComplexFloat32,
-    __ComplexFloat64,
-    __ComplexInt8,
-    __ComplexUInt8,
-    __ComplexInt32
+enum class __data_type
+{
+  __Unknown,
+  __Float16,
+  __BFloat16,
+  __Float32,
+  __Float64,
+  __Int8,
+  __UInt8,
+  __Int32,
+  __ComplexFloat16,
+  __ComplexBFloat16,
+  __ComplexFloat32,
+  __ComplexFloat64,
+  __ComplexInt8,
+  __ComplexUInt8,
+  __ComplexInt32
 };
 
 template <typename>
 constexpr __data_type __stdblas_output_data_type = __data_type::__Unknown;
 
-#define __DEFINE_STDBLAS_TYPE_MAPPING(__type, __value)                                   \
-    template <>                                                                          \
-    constexpr __data_type __stdblas_output_data_type<__type> = __data_type::__##__value; \
-    template <>                                                                          \
-    constexpr __data_type __stdblas_output_data_type<std::complex<__type>> = __data_type::__Complex##__value
+#define __DEFINE_STDBLAS_TYPE_MAPPING(__type, __value)                                 \
+  template <>                                                                          \
+  constexpr __data_type __stdblas_output_data_type<__type> = __data_type::__##__value; \
+  template <>                                                                          \
+  constexpr __data_type __stdblas_output_data_type<std::complex<__type>> = __data_type::__Complex##__value
 
 __DEFINE_STDBLAS_TYPE_MAPPING(float, Float32);
 __DEFINE_STDBLAS_TYPE_MAPPING(double, Float64);
@@ -69,28 +71,33 @@ constexpr __data_type __stdblas_data_type = __stdblas_output_data_type<std::remo
 // std::complex<double>. cuBLAS provides some APIs that support mixed-precision.
 
 // TODO Add generic data type checks (for APIs that don't support mixed-precision)
-constexpr bool __data_type_supported(__data_type __A_type) {
-    return (__A_type == __data_type::__Float32 || __A_type == __data_type::__Float64 ||
-            __A_type == __data_type::__ComplexFloat32 || __A_type == __data_type::__ComplexFloat64);
+constexpr bool __data_type_supported(__data_type __A_type)
+{
+  return (__A_type == __data_type::__Float32 || __A_type == __data_type::__Float64
+          || __A_type == __data_type::__ComplexFloat32 || __A_type == __data_type::__ComplexFloat64);
 }
 
-constexpr bool __data_types_supported(__data_type __A_type, __data_type __B_type) {
-    return ((__A_type == __B_type) && __data_type_supported(__A_type));
+constexpr bool __data_types_supported(__data_type __A_type, __data_type __B_type)
+{
+  return ((__A_type == __B_type) && __data_type_supported(__A_type));
 }
 
-constexpr bool __data_types_supported(__data_type __A_type, __data_type __B_type, __data_type __C_type) {
-    return ((__A_type == __B_type) && (__A_type == __C_type) && __data_type_supported(__A_type));
+constexpr bool __data_types_supported(__data_type __A_type, __data_type __B_type, __data_type __C_type)
+{
+  return ((__A_type == __B_type) && (__A_type == __C_type) && __data_type_supported(__A_type));
 }
 
-constexpr bool __data_types_supported(
-        __data_type __A_type, __data_type __B_type, __data_type __C_type, __data_type __D_type) {
-    return ((__A_type == __B_type) && (__A_type == __C_type) && (__A_type == __D_type) &&
-            __data_type_supported(__A_type));
+constexpr bool
+__data_types_supported(__data_type __A_type, __data_type __B_type, __data_type __C_type, __data_type __D_type)
+{
+  return ((__A_type == __B_type) && (__A_type == __C_type) && (__A_type == __D_type)
+          && __data_type_supported(__A_type));
 }
 
 template <class _ExecutionPolicy>
-constexpr bool __gemm_data_types_supported(__data_type __A_type, __data_type __B_type, __data_type __C_type) {
-    return (__data_types_supported(__A_type, __B_type, __C_type));
+constexpr bool __gemm_data_types_supported(__data_type __A_type, __data_type __B_type, __data_type __C_type)
+{
+  return (__data_types_supported(__A_type, __B_type, __C_type));
 }
 
 /**
@@ -105,18 +112,22 @@ constexpr bool __gemm_data_types_supported(__data_type __A_type, __data_type __B
  */
 template <>
 constexpr bool __gemm_data_types_supported<__nvhpc_exec<__cublas_exec_space<__nvhpc_sync>>>(
-        __data_type __A_type, __data_type __B_type, __data_type __C_type) {
-    switch (__C_type) {
+  __data_type __A_type, __data_type __B_type, __data_type __C_type)
+{
+  switch (__C_type)
+  {
     case __data_type::__Float32:
-        return ((__A_type == __B_type) && (__A_type == __C_type || __A_type == __data_type::__Int8));
+      return ((__A_type == __B_type) && (__A_type == __C_type || __A_type == __data_type::__Int8));
     case __data_type::__ComplexFloat32:
-        return ((__A_type == __B_type) && (__B_type == __C_type || __B_type == __data_type::__ComplexInt8));
+      return ((__A_type == __B_type) && (__B_type == __C_type || __B_type == __data_type::__ComplexInt8));
     case __data_type::__Float64:
-    case __data_type::__ComplexFloat64: return (__A_type == __C_type && __B_type == __C_type);
-    default: return false;
-    }
+    case __data_type::__ComplexFloat64:
+      return (__A_type == __C_type && __B_type == __C_type);
+    default:
+      return false;
+  }
 }
 
-}  // namespace __nvhpc_std
+} // namespace __nvhpc_std
 
 #endif

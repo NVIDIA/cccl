@@ -13,7 +13,7 @@
 #pragma once
 #include <experimental/mdspan>
 #ifdef STDBLAS_VERBOSE
-#    include <iostream>
+#  include <iostream>
 #endif
 #include "experimental/__p1673_bits/blas1_add_nvhpc.hpp"
 #include "experimental/__p1673_bits/blas1_copy_nvhpc.hpp"

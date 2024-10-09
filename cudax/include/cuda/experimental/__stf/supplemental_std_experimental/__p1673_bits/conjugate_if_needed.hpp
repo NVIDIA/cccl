@@ -46,48 +46,72 @@
 #include <complex>
 #include <type_traits>
 
-namespace std { namespace experimental { inline namespace __p1673_version_0 { namespace linalg { namespace impl {
+namespace std
+{
+namespace experimental
+{
+inline namespace __p1673_version_0
+{
+namespace linalg
+{
+namespace impl
+{
 
 template <class T>
-struct is_complex : std::false_type {};
+struct is_complex : std::false_type
+{};
 
 template <>
-struct is_complex<std::complex<float>> : std::true_type {};
+struct is_complex<std::complex<float>> : std::true_type
+{};
 template <>
-struct is_complex<std::complex<double>> : std::true_type {};
+struct is_complex<std::complex<double>> : std::true_type
+{};
 template <>
-struct is_complex<std::complex<long double>> : std::true_type {};
+struct is_complex<std::complex<long double>> : std::true_type
+{};
 
 template <class T>
 inline constexpr bool is_complex_v = is_complex<T>::value;
 
 template <class T, class = void>
-struct has_conj : std::false_type {};
+struct has_conj : std::false_type
+{};
 
 // If I can find unqualified conj via overload resolution,
 // then assume that conj(t) returns the conjugate of t.
 template <class T>
-struct has_conj<T, decltype(conj(std::declval<T>()), void())> : std::true_type {};
+struct has_conj<T, decltype(conj(std::declval<T>()), void())> : std::true_type
+{};
 
 template <class T>
-T conj_if_needed_impl(const T& t, std::false_type) {
-    return t;
+T conj_if_needed_impl(const T& t, std::false_type)
+{
+  return t;
 }
 
 template <class T>
-auto conj_if_needed_impl(const T& t, std::true_type) {
-    if constexpr (std::is_arithmetic_v<T>) {
-        return t;
-    } else {
-        return conj(t);
-    }
+auto conj_if_needed_impl(const T& t, std::true_type)
+{
+  if constexpr (std::is_arithmetic_v<T>)
+  {
+    return t;
+  }
+  else
+  {
+    return conj(t);
+  }
 }
 
 auto conj_if_needed = [](const auto& t) {
-    using T = std::remove_const_t<decltype(t)>;
-    return conj_if_needed_impl(t, has_conj<T> {});
+  using T = std::remove_const_t<decltype(t)>;
+  return conj_if_needed_impl(t, has_conj<T>{});
 };
 
-}}}}}  // namespace std::experimental::__p1673_version_0::linalg::impl
+} // namespace impl
+} // namespace linalg
+} // namespace __p1673_version_0
+} // namespace experimental
+} // namespace std
 
-#endif  // LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_CONJUGATE_TRANSPOSED_HPP_
+#endif // LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_CONJUGATE_TRANSPOSED_HPP_

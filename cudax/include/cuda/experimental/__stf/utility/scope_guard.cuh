@@ -17,7 +17,8 @@
 
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
-namespace cuda::experimental::stf {
+namespace cuda::experimental::stf
+{
 
 /**
  * @brief Automatically runs code when a scope is exited (`SCOPE(exit)`), exited by means of an exception
@@ -42,117 +43,162 @@ namespace cuda::experimental::stf {
  * https://en.cppreference.com/w/cpp/experimental/scope_success
  */
 ///@{
-#define SCOPE(kind)                                                                                            \
-    auto UNIQUE_NAME(scope_guard) = ::std::integral_constant<::cuda::experimental::stf::scope_guard_condition, \
-                                            (::cuda::experimental::stf::scope_guard_condition::kind)>()        \
-                                            ->*[&]()
+#define SCOPE(kind)                                                                      \
+  auto UNIQUE_NAME(scope_guard) =                                                        \
+    ::std::integral_constant<::cuda::experimental::stf::scope_guard_condition,           \
+                             (::cuda::experimental::stf::scope_guard_condition::kind)>() \
+      ->*[&]()
 ///@}
 
-enum class scope_guard_condition { exit, fail, success };
+enum class scope_guard_condition
+{
+  exit,
+  fail,
+  success
+};
 
 template <scope_guard_condition cond, typename F>
-auto operator->*(::std::integral_constant<scope_guard_condition, cond>, F&& f) {
-    struct result {
-        result(F&& f, int threshold) : f(::std::forward<F>(f)), threshold(threshold) {}
-        result(result&) = delete;
-        result(result&& rhs) : f(mv(rhs.f)), threshold(rhs.threshold) {
-            // Disable call to lambda in rhs's destructor in all cases, we don't want double calls
-            rhs.threshold = -2;
-        }
+auto operator->*(::std::integral_constant<scope_guard_condition, cond>, F&& f)
+{
+  struct result
+  {
+    result(F&& f, int threshold)
+        : f(::std::forward<F>(f))
+        , threshold(threshold)
+    {}
+    result(result&) = delete;
+    result(result&& rhs)
+        : f(mv(rhs.f))
+        , threshold(rhs.threshold)
+    {
+      // Disable call to lambda in rhs's destructor in all cases, we don't want double calls
+      rhs.threshold = -2;
+    }
 
-        // Destructor (i.e. user's lambda) may throw exceptions if and only if we're in `SCOPE(success)`.
-        ~result() noexcept(cond != scope_guard_condition::success) {
-            // By convention, call always if threshold is -1, never if threshold < -1
-            if (threshold == -1 || ::std::uncaught_exceptions() == threshold)
-                f();
-        }
+    // Destructor (i.e. user's lambda) may throw exceptions if and only if we're in `SCOPE(success)`.
+    ~result() noexcept(cond != scope_guard_condition::success)
+    {
+      // By convention, call always if threshold is -1, never if threshold < -1
+      if (threshold == -1 || ::std::uncaught_exceptions() == threshold)
+      {
+        f();
+      }
+    }
 
-    private:
-        F f;
-        int threshold;
-    };
+  private:
+    F f;
+    int threshold;
+  };
 
-    // Threshold is -1 for SCOPE(exit), the same as current exceptions count for SCOPE(success), and 1 above the current
-    // exception count for SCOPE(fail).
-    return result(::std::forward<F>(f), cond == scope_guard_condition::exit
-                                                ? -1
-                                                : ::std::uncaught_exceptions() + (cond == scope_guard_condition::fail));
+  // Threshold is -1 for SCOPE(exit), the same as current exceptions count for SCOPE(success), and 1 above the current
+  // exception count for SCOPE(fail).
+  return result(
+    ::std::forward<F>(f),
+    cond == scope_guard_condition::exit ? -1 : ::std::uncaught_exceptions() + (cond == scope_guard_condition::fail));
 }
 
-}  // namespace cuda::experimental::stf
+} // namespace cuda::experimental::stf
 
 #ifdef UNITTESTED_FILE
-UNITTEST("SCOPE(exit)") {
-    //! [SCOPE(exit)]
-    // SCOPE(exit) runs the lambda upon the termination of the current scope.
-    bool done = false;
+UNITTEST("SCOPE(exit)")
+{
+  //! [SCOPE(exit)]
+  // SCOPE(exit) runs the lambda upon the termination of the current scope.
+  bool done = false;
+  {
+    SCOPE(exit)
     {
-        SCOPE(exit) { done = true; };
-        EXPECT(!done, "SCOPE_EXIT should not run early.");
-    }
+      done = true;
+    };
+    EXPECT(!done, "SCOPE_EXIT should not run early.");
+  }
+  EXPECT(done);
+  //! [SCOPE(exit)]
+};
+
+UNITTEST("SCOPE(fail)")
+{
+  //! [SCOPE(fail)]
+  bool done = false;
+  {
+    SCOPE(fail)
+    {
+      done = true;
+    };
+    EXPECT(!done, "SCOPE_FAIL should not run early.");
+  }
+  assert(!done);
+
+  try
+  {
+    SCOPE(fail)
+    {
+      done = true;
+    };
+    EXPECT(!done);
+    throw 42;
+  }
+  catch (...)
+  {
     EXPECT(done);
-    //! [SCOPE(exit)]
+  }
+  //! [SCOPE(fail)]
 };
 
-UNITTEST("SCOPE(fail)") {
-    //! [SCOPE(fail)]
-    bool done = false;
+UNITTEST("SCOPE(success)")
+{
+  //! [SCOPE(success)]
+  bool done = false;
+  {
+    SCOPE(success)
     {
-        SCOPE(fail) { done = true; };
-        EXPECT(!done, "SCOPE_FAIL should not run early.");
-    }
-    assert(!done);
+      done = true;
+    };
+    EXPECT(!done);
+  }
+  EXPECT(done);
+  done = false;
 
-    try {
-        SCOPE(fail) { done = true; };
-        EXPECT(!done);
-        throw 42;
-    } catch (...) {
-        EXPECT(done);
-    }
-    //! [SCOPE(fail)]
+  try
+  {
+    SCOPE(success)
+    {
+      done = true;
+    };
+    EXPECT(!done);
+    throw 42;
+  }
+  catch (...)
+  {
+    EXPECT(!done);
+  }
+  //! [SCOPE(success)]
 };
 
-UNITTEST("SCOPE(success)") {
-    //! [SCOPE(success)]
-    bool done = false;
+UNITTEST("SCOPE combinations")
+{
+  //! [SCOPE combinations]
+  int counter = 0;
+  {
+    SCOPE(exit)
     {
-        SCOPE(success) { done = true; };
-        EXPECT(!done);
-    }
-    EXPECT(done);
-    done = false;
-
-    try {
-        SCOPE(success) { done = true; };
-        EXPECT(!done);
-        throw 42;
-    } catch (...) {
-        EXPECT(!done);
-    }
-    //! [SCOPE(success)]
-};
-
-UNITTEST("SCOPE combinations") {
-    //! [SCOPE combinations]
-    int counter = 0;
+      EXPECT(counter == 2);
+      counter = 0;
+    };
+    SCOPE(success)
     {
-        SCOPE(exit) {
-            EXPECT(counter == 2);
-            counter = 0;
-        };
-        SCOPE(success) {
-            EXPECT(counter == 1);
-            ++counter;
-        };
-        SCOPE(exit) {
-            EXPECT(counter == 0);
-            ++counter;
-        };
-        EXPECT(counter == 0);
-    }
+      EXPECT(counter == 1);
+      ++counter;
+    };
+    SCOPE(exit)
+    {
+      EXPECT(counter == 0);
+      ++counter;
+    };
     EXPECT(counter == 0);
-    //! [SCOPE combinations]
+  }
+  EXPECT(counter == 0);
+  //! [SCOPE combinations]
 };
 
-#endif  // UNITTESTED_FILE
+#endif // UNITTESTED_FILE

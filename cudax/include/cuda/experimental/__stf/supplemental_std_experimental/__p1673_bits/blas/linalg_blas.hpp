@@ -22,5 +22,4 @@
 #include "experimental/__p1673_bits/blas/blas3_matrix_rank_2k_update_blas.hpp"
 #include "experimental/__p1673_bits/blas/blas3_matrix_rank_k_update_blas.hpp"
 #include "experimental/__p1673_bits/blas/blas3_triangular_matrix_matrix_solve_blas.hpp"
-
 #include <experimental/mdspan>

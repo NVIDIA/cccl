@@ -45,4 +45,3 @@
 
 #include "mdspan"
 #include "__p1684_bits/mdarray.hpp"
-

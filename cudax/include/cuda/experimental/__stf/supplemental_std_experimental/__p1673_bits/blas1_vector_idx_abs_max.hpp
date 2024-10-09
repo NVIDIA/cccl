@@ -43,73 +43,101 @@
 #ifndef LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_BLAS1_VECTOR_IDX_ABS_MAX_HPP_
 #define LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_BLAS1_VECTOR_IDX_ABS_MAX_HPP_
 
-namespace std { namespace experimental { inline namespace __p1673_version_0 { namespace linalg {
+namespace std
+{
+namespace experimental
+{
+inline namespace __p1673_version_0
+{
+namespace linalg
+{
 
 // begin anonymous namespace
-namespace {
+namespace
+{
 
 template <class Exec, class v_t, class = void>
-struct is_custom_idx_abs_max_avail : std::false_type {};
+struct is_custom_idx_abs_max_avail : std::false_type
+{};
 
 template <class Exec, class v_t>
-struct is_custom_idx_abs_max_avail<Exec, v_t,
-        std::enable_if_t<
-                // FRizzi: maybe should use is_convertible?
-                std::is_same<decltype(idx_abs_max(std::declval<Exec>(), std::declval<v_t>())),
-                        typename v_t::extents_type::size_type>::value &&
-                !linalg::impl::is_inline_exec_v<Exec>>> : std::true_type {};
+struct is_custom_idx_abs_max_avail<
+  Exec,
+  v_t,
+  std::enable_if_t<
+    // FRizzi: maybe should use is_convertible?
+    std::is_same<decltype(idx_abs_max(std::declval<Exec>(), std::declval<v_t>())),
+                 typename v_t::extents_type::size_type>::value
+    && !linalg::impl::is_inline_exec_v<Exec>>> : std::true_type
+{};
 
 template <class ElementType, class SizeType, ::std::size_t ext0, class Layout, class Accessor>
 SizeType idx_abs_max_default_impl(
-        std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> v) {
-    using std::abs;
-    using magnitude_type = decltype(abs(v(0)));
+  std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> v)
+{
+  using std::abs;
+  using magnitude_type = decltype(abs(v(0)));
 
-    if (v.extent(0) == 0) {
-        return std::numeric_limits<SizeType>::max();
-    }
+  if (v.extent(0) == 0)
+  {
+    return std::numeric_limits<SizeType>::max();
+  }
 
-    SizeType maxInd = 0;
-    magnitude_type maxVal = abs(v(0));
-    for (SizeType i = 1; i < v.extent(0); ++i) {
-        if (maxVal < abs(v(i))) {
-            maxVal = abs(v(i));
-            maxInd = i;
-        }
+  SizeType maxInd       = 0;
+  magnitude_type maxVal = abs(v(0));
+  for (SizeType i = 1; i < v.extent(0); ++i)
+  {
+    if (maxVal < abs(v(i)))
+    {
+      maxVal = abs(v(i));
+      maxInd = i;
     }
-    return maxInd;  // FIXME check for NaN "never less than" stuff
+  }
+  return maxInd; // FIXME check for NaN "never less than" stuff
 }
 
-}  // end anonymous namespace
+} // end anonymous namespace
 
 template <class ElementType, class SizeType, ::std::size_t ext0, class Layout, class Accessor>
-SizeType idx_abs_max(std::experimental::linalg::impl::inline_exec_t&& /* exec */,
-        std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> v) {
-    return idx_abs_max_default_impl(v);
+SizeType
+idx_abs_max(std::experimental::linalg::impl::inline_exec_t&& /* exec */,
+            std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> v)
+{
+  return idx_abs_max_default_impl(v);
 }
 
 template <class ExecutionPolicy, class ElementType, class SizeType, ::std::size_t ext0, class Layout, class Accessor>
-SizeType idx_abs_max(ExecutionPolicy&& exec,
-        std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> v) {
-    if (v.extent(0) == 0) {
-        return std::numeric_limits<SizeType>::max();
-    }
+SizeType
+idx_abs_max(ExecutionPolicy&& exec,
+            std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> v)
+{
+  if (v.extent(0) == 0)
+  {
+    return std::numeric_limits<SizeType>::max();
+  }
 
-    constexpr bool use_custom = is_custom_idx_abs_max_avail<decltype(execpolicy_mapper(exec)), decltype(v)>::value;
+  constexpr bool use_custom = is_custom_idx_abs_max_avail<decltype(execpolicy_mapper(exec)), decltype(v)>::value;
 
-    if constexpr (use_custom) {
-        return idx_abs_max(execpolicy_mapper(exec), v);
-    } else {
-        return idx_abs_max(std::experimental::linalg::impl::inline_exec_t(), v);
-    }
+  if constexpr (use_custom)
+  {
+    return idx_abs_max(execpolicy_mapper(exec), v);
+  }
+  else
+  {
+    return idx_abs_max(std::experimental::linalg::impl::inline_exec_t(), v);
+  }
 }
 
 template <class ElementType, class SizeType, ::std::size_t ext0, class Layout, class Accessor>
-SizeType idx_abs_max(
-        std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> v) {
-    return idx_abs_max(std::experimental::linalg::impl::default_exec_t(), v);
+SizeType
+idx_abs_max(std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> v)
+{
+  return idx_abs_max(std::experimental::linalg::impl::default_exec_t(), v);
 }
 
-}}}}  // namespace std::experimental::__p1673_version_0::linalg
+} // namespace linalg
+} // namespace __p1673_version_0
+} // namespace experimental
+} // namespace std
 
-#endif  // LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_BLAS1_VECTOR_IDX_ABS_MAX_HPP_
+#endif // LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_BLAS1_VECTOR_IDX_ABS_MAX_HPP_
