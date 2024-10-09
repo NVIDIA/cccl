@@ -201,7 +201,6 @@ for_each_kernel_state make_for_kernel_state(cccl_op_t op, cccl_iterator_t iterat
 {
   // Iterator is either a pointer or a stateful object, allocate space according to its size or alignment
   size_t iter_size     = (cccl_iterator_kind_t::iterator == iterator.type) ? iterator.size : sizeof(void*);
-  size_t iter_align    = (cccl_iterator_kind_t::iterator == iterator.type) ? iterator.alignment : alignof(void*);
   void* iterator_state = (cccl_iterator_kind_t::iterator == iterator.type) ? iterator.state : &iterator.state;
 
   // Do we need to valid user input? Alignments larger than the provided size?

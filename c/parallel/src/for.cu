@@ -30,7 +30,7 @@ using OffsetT = unsigned long long;
 static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "OffsetT must be size_t");
 
 static cudaError_t
-Invoke(cccl_iterator_t d_in, size_t num_items, cccl_op_t op, int cc, CUfunction static_kernel, CUstream stream)
+Invoke(cccl_iterator_t d_in, size_t num_items, cccl_op_t op, int /*cc*/, CUfunction static_kernel, CUstream stream)
 {
   cudaError error = cudaSuccess;
 
