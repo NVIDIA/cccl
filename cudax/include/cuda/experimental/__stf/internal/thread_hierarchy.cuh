@@ -395,17 +395,17 @@ private:
   void* system_tmp = nullptr;
 
   /* Special case to work-around spec = <> */
-  template <size_t I>
+  template <size_t Idx>
   CUDASTF_HOST_DEVICE bool may_sync_impl(int) const
   {
     return false;
   }
 
-  template <size_t I, bool sync, size_t w, auto... remaining>
+  template <size_t Idx, bool sync, size_t w, auto... remaining>
   CUDASTF_HOST_DEVICE bool may_sync_impl(int level) const
   {
-    static_assert(I < sizeof...(spec) / 2);
-    return (level == I) ? sync : may_sync_impl<I + 1, remaining...>(level);
+    static_assert(Idx < sizeof...(spec) / 2);
+    return (level == Idx) ? sync : may_sync_impl<Idx + 1, remaining...>(level);
   }
 
   /* Evaluate at runtime if we can call sync on the specified level */

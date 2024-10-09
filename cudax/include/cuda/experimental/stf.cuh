@@ -1383,19 +1383,19 @@ private:
 
   private:
     // Helper function to call fun with context and unpacked tuple arguments
-    template <typename Fun, ::std::size_t... I>
-    void call_with_tuple_impl(Fun&& fun, ::std::index_sequence<I...>)
+    template <typename Fun, ::std::size_t... Idx>
+    void call_with_tuple_impl(Fun&& fun, ::std::index_sequence<Idx...>)
     {
       // We may simply execute the algorithm within the existing context
       // if we do not want to generate sub-graphs (eg. to analyze the
       // advantage of using such algorithms)
       if (getenv("CUDASTF_ALGORITHM_INLINE"))
       {
-        alg.run_inline(::std::forward<Fun>(fun), ctx, ::std::get<I>(deps)...);
+        alg.run_inline(::std::forward<Fun>(fun), ctx, ::std::get<Idx>(deps)...);
       }
       else
       {
-        alg.run_as_task(::std::forward<Fun>(fun), ctx, ::std::get<I>(deps)...);
+        alg.run_as_task(::std::forward<Fun>(fun), ctx, ::std::get<Idx>(deps)...);
       }
     }
 
