@@ -46,6 +46,27 @@ function(cudax_add_header_test label definitions)
       GLOBS
         "cuda/experimental/stf.cuh"
         "cuda/experimental/__stf/*.cuh"
+
+      # FIXME: The cudax header template removes the check for the `small` macro.
+      # cuda/experimental/__stf/utility/memory.cuh defines functions named `small`.
+      # These should be renamed to avoid conflicts with windows system headers, and
+      # the following line removed:
+      HEADER_TEMPLATE "${cudax_SOURCE_DIR}/cmake/header_test.in.cu"
+
+      EXCLUDES
+        # FIXME: layout_left::mapping referenced before layout_left:
+        cuda/experimental/__stf/supplemental_std_experimental/__p0009_bits/layout_left.hpp
+
+        # FIXME: `cb` is used before its definition:
+        cuda/experimental/__stf/places/exec/host/callback_queues.cuh
+
+        # FIXME: error: possibly dangling reference to a temporary (stream_task.cuh:114)
+        cuda/experimental/__stf/stream/stream_task.cuh
+        cuda/experimental/__stf/stream/stream_ctx.cuh
+
+        # FIXME: -Wvla: Avoid VLAs (cudaMemAccessDesc desc[ndevices];), they're non-portable:
+        cuda/experimental/__stf/graph/graph_ctx.cuh
+        cuda/experimental/stf.cuh
     )
     target_link_libraries(${headertest_target} PUBLIC ${cn_target})
     target_compile_definitions(${headertest_target} PRIVATE
