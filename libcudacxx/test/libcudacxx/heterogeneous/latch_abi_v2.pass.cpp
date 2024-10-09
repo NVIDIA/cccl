@@ -13,8 +13,8 @@
 
 #define _LIBCUDACXX_CUDA_ABI_VERSION 2
 
+#include <cuda/latch>
 #include <cuda/std/cassert>
-#include <cuda/std/latch>
 
 #include "helpers.h"
 static_assert(sizeof(cuda::latch<cuda::thread_scope_device>) == 64, "");
