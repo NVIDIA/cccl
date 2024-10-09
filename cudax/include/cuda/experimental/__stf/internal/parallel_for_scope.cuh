@@ -85,9 +85,9 @@ public:
   /// @param shape Shape to iterate
   /// @param ...deps Dependencies
   parallel_for_scope(context& ctx, exec_place e_place, shape_t shape, task_dep<deps_t>... deps)
-      : ctx(ctx)
+      : deps{deps...}
+      , ctx(ctx)
       , e_place(mv(e_place))
-      , deps{deps...}
       , shape(mv(shape))
   {
     dump_hooks = get_dump_hooks(&ctx, deps...);

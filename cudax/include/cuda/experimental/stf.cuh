@@ -1368,8 +1368,8 @@ private:
   {
   public:
     runner_impl(context_t& _ctx, algorithm& _alg, task_dep<Deps>... _deps)
-        : ctx(_ctx)
-        , alg(_alg)
+        : alg(_alg)
+        , ctx(_ctx)
         , deps(::std::make_tuple(mv(_deps)...)) {};
 
     template <typename Fun>
@@ -1729,10 +1729,10 @@ class for_each_batched
 public:
   for_each_batched(
     context ctx, size_t cnt, size_t batch_size, ::std::function<::std::tuple<task_dep<Deps>...>(size_t)> df)
-      : ctx(ctx)
-      , cnt(cnt)
+      : cnt(cnt)
       , batch_size(batch_size)
       , df(mv(df))
+      , ctx(ctx)
   {}
 
   // Create a batch operation that computes fun(start), fun(start+1), ... f(end-1)

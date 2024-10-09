@@ -39,10 +39,10 @@ private:
   {
   public:
     impl(backend_ctx_untyped bctx_, logical_data<T> ld_, access_mode m_, data_place place_)
-        : bctx(mv(bctx_))
-        , ld(mv(ld_))
+        : ld(mv(ld_))
         , m(m_)
         , place(mv(place_))
+        , bctx(mv(bctx_))
     {
       ld.freeze(m, place);
 

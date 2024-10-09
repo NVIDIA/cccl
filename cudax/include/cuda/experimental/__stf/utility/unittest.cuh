@@ -419,8 +419,8 @@ public:
    * @param params other parameters, if any
    */
   unittest(const char* name, ::std::experimental::source_location loc, Param param, Params... params)
-      : param(::std::forward<Param>(param))
-      , unittest<Params...>(name, loc, ::std::forward<Params>(params)...)
+      : unittest<Params...>(name, loc, ::std::forward<Params>(params)...)
+      , param(::std::forward<Param>(param))
   {}
 
   /**
