@@ -15,6 +15,8 @@
 
 #pragma once
 
+#include <cuda/std/type_traits>
+
 #include <cuda/experimental/__stf/utility/traits.cuh>
 
 #include <filesystem>
@@ -164,7 +166,8 @@ struct expecter
   template <typename U>                                                               \
   auto operator op(const U& rhs)&&                                                    \
   {                                                                                   \
-    const bool r = value op rhs;                                                      \
+    using common_t = ::cuda::std::common_type_t<T, U>;                                \
+    const bool r   = static_cast<common_t>(value) op static_cast<common_t>(rhs);      \
     return comparison_expression<T, const U&>(r, ::std::forward<T>(value), rhs, #op); \
   }
 
