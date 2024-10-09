@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "cudastf/__stf/internal/backend_ctx.h"  // logical_data_untyped_impl has a backend_ctx_untyped
-#include "cudastf/__stf/internal/data_interface.h"
-#include "cudastf/__stf/utility/core.h"
+#include <cuda/experimental/__stf/internal/backend_ctx.cuh>  // logical_data_untyped_impl has a backend_ctx_untyped
+#include <cuda/experimental/__stf/internal/data_interface.cuh>
+#include <cuda/experimental/__stf/utility/core.cuh>
 
 #include <mutex>
 #include <optional>

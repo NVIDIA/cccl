@@ -15,10 +15,11 @@
 
 #pragma once
 
-#include "cudastf/__stf/utility/traits.h"
+#include <cuda/experimental/__stf/utility/traits.cuh>
+
+#include <filesystem>
 
 #include <experimental/source_location>
-#include <filesystem>
 
 // One level of macro indirection is required in order to resolve __COUNTER__,
 // and get varname1 instead of varname__COUNTER__.

@@ -15,9 +15,9 @@
 
 #pragma once
 
-#include "cudastf/__stf/internal/async_resources_handle.h"
-#include "cudastf/__stf/places/exec/green_ctx_view.h"
-#include "cudastf/__stf/places/places.h"
+#include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
+#include <cuda/experimental/__stf/places/exec/green_ctx_view.cuh>
+#include <cuda/experimental/__stf/places/places.cuh>
 
 #if CUDA_VERSION >= 12040
 namespace cuda::experimental::stf {

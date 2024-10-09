@@ -10,9 +10,9 @@
 
 #pragma once
 
-#include "cudastf/__stf/internal/execution_policy.h"  // launch_impl() uses execution_policy
-#include "cudastf/__stf/internal/thread_hierarchy.h"
-#include "cudastf/__stf/utility/scope_guard.h"  // graph_launch_impl() uses SCOPE
+#include <cuda/experimental/__stf/internal/execution_policy.cuh>  // launch_impl() uses execution_policy
+#include <cuda/experimental/__stf/internal/thread_hierarchy.cuh>
+#include <cuda/experimental/__stf/utility/scope_guard.cuh>  // graph_launch_impl() uses SCOPE
 
 namespace cuda::experimental::stf {
 

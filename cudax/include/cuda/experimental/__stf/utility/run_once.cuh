@@ -15,7 +15,7 @@
 
 #pragma once
 
-#include "cudastf/__stf/utility/hash.h"
+#include <cuda/experimental/__stf/utility/hash.cuh>
 
 #include <unordered_map>
 

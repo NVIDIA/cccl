@@ -15,8 +15,8 @@
  * @brief Implementation of green context views
  */
 
-#include "cudastf/__stf/internal/async_resources_handle.h"
-#include "cudastf/__stf/utility/hash.h"
+#include <cuda/experimental/__stf/internal/async_resources_handle.cuh>
+#include <cuda/experimental/__stf/utility/hash.cuh>
 
 #if CUDA_VERSION >= 12040
 namespace cuda::experimental::stf {

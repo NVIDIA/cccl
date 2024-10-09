@@ -15,15 +15,15 @@
 
 #pragma once
 
-#include "cudastf/__stf/allocators/pooled_allocator.h"
-#include "cudastf/__stf/internal/acquire_release.h"
-#include "cudastf/__stf/internal/backend_allocator_setup.h"
-#include "cudastf/__stf/internal/launch.h"
-#include "cudastf/__stf/internal/parallel_for_scope.h"
-#include "cudastf/__stf/internal/reorderer.h"
-#include "cudastf/__stf/places/blocked_partition.h"  // for unit test!
-#include "cudastf/__stf/stream/interfaces/slice.h"   // For implicit logical_data_untyped constructors
-#include "cudastf/__stf/stream/stream_task.h"
+#include <cuda/experimental/__stf/allocators/pooled_allocator.cuh>
+#include <cuda/experimental/__stf/internal/acquire_release.cuh>
+#include <cuda/experimental/__stf/internal/backend_allocator_setup.cuh>
+#include <cuda/experimental/__stf/internal/launch.cuh>
+#include <cuda/experimental/__stf/internal/parallel_for_scope.cuh>
+#include <cuda/experimental/__stf/internal/reorderer.cuh>
+#include <cuda/experimental/__stf/places/blocked_partition.cuh>  // for unit test!
+#include <cuda/experimental/__stf/stream/interfaces/slice.cuh>   // For implicit logical_data_untyped constructors
+#include <cuda/experimental/__stf/stream/stream_task.cuh>
 
 namespace cuda::experimental::stf {
 

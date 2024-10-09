@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "cudastf/__stf/graph/internal/event_types.h"
-#include "cudastf/__stf/internal/data_interface.h"
+#include <cuda/experimental/__stf/graph/internal/event_types.cuh>
+#include <cuda/experimental/__stf/internal/data_interface.cuh>
 
 namespace cuda::experimental::stf {
 

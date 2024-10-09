@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "cudastf/__stf/utility/cuda_attributes.h"
+#include <cuda/experimental/__stf/utility/cuda_attributes.cuh>
 #ifdef __CUDACC__
 #    include <cooperative_groups.h>
 #endif

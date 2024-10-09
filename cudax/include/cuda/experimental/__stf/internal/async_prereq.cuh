@@ -15,13 +15,13 @@
 
 #pragma once
 
-#include "cudastf/__stf/internal/dot.h"
-#include "cudastf/__stf/utility/handle.h"
-#include "cudastf/__stf/utility/memory.h"
-#include "cudastf/__stf/utility/nvtx.h"
-#include "cudastf/__stf/utility/scope_guard.h"
-#include "cudastf/__stf/utility/unique_id.h"
-#include "cudastf/__stf/utility/unstable_unique.h"
+#include <cuda/experimental/__stf/internal/dot.cuh>
+#include <cuda/experimental/__stf/utility/handle.cuh>
+#include <cuda/experimental/__stf/utility/memory.cuh>
+#include <cuda/experimental/__stf/utility/nvtx.cuh>
+#include <cuda/experimental/__stf/utility/scope_guard.cuh>
+#include <cuda/experimental/__stf/utility/unique_id.cuh>
+#include <cuda/experimental/__stf/utility/unstable_unique.cuh>
 
 #include <algorithm>
 #include <atomic>

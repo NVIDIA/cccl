@@ -17,9 +17,9 @@
 
 #pragma once
 
-#include "cudastf/__stf/graph/graph_data_interface.h"
-#include "cudastf/__stf/stream/stream_data_interface.h"
-#include "cudastf/__stf/utility/hash.h"
+#include <cuda/experimental/__stf/graph/graph_data_interface.cuh>
+#include <cuda/experimental/__stf/stream/stream_data_interface.cuh>
+#include <cuda/experimental/__stf/utility/hash.cuh>
 
 namespace cuda::experimental::stf {
 

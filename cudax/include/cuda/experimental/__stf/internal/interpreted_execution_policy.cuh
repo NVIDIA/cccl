@@ -10,8 +10,8 @@
 
 #pragma once
 
-#include "cudastf/__stf/internal/cooperative_group_system.h"
-#include "cudastf/__stf/internal/execution_policy.h"
+#include <cuda/experimental/__stf/internal/cooperative_group_system.cuh>
+#include <cuda/experimental/__stf/internal/execution_policy.cuh>
 
 #include <vector>
 

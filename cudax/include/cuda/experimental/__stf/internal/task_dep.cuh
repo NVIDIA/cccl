@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "cudastf/__stf/internal/reduction_base.h"
+#include <cuda/experimental/__stf/internal/reduction_base.cuh>
 
 namespace cuda::experimental::stf {
 

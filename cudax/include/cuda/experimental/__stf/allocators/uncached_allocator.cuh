@@ -15,7 +15,7 @@
 
 #pragma once
 
-#include "cudastf/__stf/allocators/block_allocator.h"
+#include <cuda/experimental/__stf/allocators/block_allocator.cuh>
 
 #include <mutex>
 

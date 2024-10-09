@@ -18,8 +18,8 @@
 
 #pragma once
 
-#include "cudastf/__stf/localization/composite_slice.h"
-#include "cudastf/__stf/stream/stream_data_interface.h"
+#include <cuda/experimental/__stf/localization/composite_slice.cuh>
+#include <cuda/experimental/__stf/stream/stream_data_interface.cuh>
 
 namespace cuda::experimental::stf {
 

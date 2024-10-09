@@ -15,7 +15,7 @@
 
 #pragma once
 
-#include "cudastf/__stf/stream/reduction.h"
+#include <cuda/experimental/__stf/stream/reduction.cuh>
 
 namespace cuda::experimental::stf {
 

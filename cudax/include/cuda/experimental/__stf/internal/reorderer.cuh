@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "cudastf/__stf/internal/task_dep.h"         // reorderer_payload uses task_dep_vector_untyped
-#include "cudastf/__stf/internal/task_statistics.h"  // heft_scheduler uses statistics_t
+#include <cuda/experimental/__stf/internal/task_dep.cuh>         // reorderer_payload uses task_dep_vector_untyped
+#include <cuda/experimental/__stf/internal/task_statistics.cuh>  // heft_scheduler uses statistics_t
 
 #include <algorithm>   // ::std::shuffle
 #include <functional>  // ::std::function

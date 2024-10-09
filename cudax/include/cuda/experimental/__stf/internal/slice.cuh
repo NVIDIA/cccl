@@ -15,10 +15,10 @@
 
 #pragma once
 
-#include "cudastf/__stf/utility/core.h"
-#include "cudastf/__stf/utility/dimensions.h"
-#include "cudastf/__stf/utility/hash.h"
-#include "cudastf/__stf/utility/memory.h"
+#include <cuda/experimental/__stf/utility/core.cuh>
+#include <cuda/experimental/__stf/utility/dimensions.cuh>
+#include <cuda/experimental/__stf/utility/hash.cuh>
+#include <cuda/experimental/__stf/utility/memory.cuh>
 
 #include <iostream>
 
@@ -37,8 +37,9 @@ using ::std::experimental::mdspan;
 }
 #    else
 // Use our copy
-#        include "cudastf/__stf/supplemental_std_experimental/mdspan"
-namespace cuda::experimental::stf {
+#    include <cuda/experimental/__stf/supplemental_std_experimental/mdspan>
+namespace cuda::experimental::stf
+{
 using ::std::experimental::mdspan;
 }
 #    endif

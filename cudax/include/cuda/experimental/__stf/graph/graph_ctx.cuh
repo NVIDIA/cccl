@@ -15,13 +15,13 @@
 
 #pragma once
 
-#include "cudastf/__stf/graph/graph_task.h"
-#include "cudastf/__stf/graph/interfaces/slice.h"
-#include "cudastf/__stf/internal/acquire_release.h"
-#include "cudastf/__stf/internal/backend_allocator_setup.h"
-#include "cudastf/__stf/internal/launch.h"
-#include "cudastf/__stf/internal/parallel_for_scope.h"
-#include "cudastf/__stf/places/blocked_partition.h"  // for unit test!
+#include <cuda/experimental/__stf/graph/graph_task.cuh>
+#include <cuda/experimental/__stf/graph/interfaces/slice.cuh>
+#include <cuda/experimental/__stf/internal/acquire_release.cuh>
+#include <cuda/experimental/__stf/internal/backend_allocator_setup.cuh>
+#include <cuda/experimental/__stf/internal/launch.cuh>
+#include <cuda/experimental/__stf/internal/parallel_for_scope.cuh>
+#include <cuda/experimental/__stf/places/blocked_partition.cuh>  // for unit test!
 
 namespace cuda::experimental::stf {
 

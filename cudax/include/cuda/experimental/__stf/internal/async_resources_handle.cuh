@@ -15,12 +15,12 @@
 
 #pragma once
 
-#include "cudastf/__stf/internal/exec_affinity.h"
-#include "cudastf/__stf/utility/core.h"
-#include "cudastf/__stf/utility/cuda_safe_call.h"
-#include "cudastf/__stf/utility/hash.h"  // for ::std::hash<::std::pair<ssize_t, ssize_t>>
-#include "cudastf/__stf/utility/stream_to_dev.h"
-#include "cudastf/__stf/utility/unittest.h"
+#include <cuda/experimental/__stf/internal/exec_affinity.cuh>
+#include <cuda/experimental/__stf/utility/core.cuh>
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__stf/utility/hash.cuh>  // for ::std::hash<::std::pair<ssize_t, ssize_t>>
+#include <cuda/experimental/__stf/utility/stream_to_dev.cuh>
+#include <cuda/experimental/__stf/utility/unittest.cuh>
 
 #include <atomic>
 #include <mutex>

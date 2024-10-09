@@ -19,8 +19,8 @@
 
 #pragma once
 
-#include "cudastf/__stf/internal/task.h"             // scheduler uses task
-#include "cudastf/__stf/internal/task_statistics.h"  // heft_scheduler uses statistics_t
+#include <cuda/experimental/__stf/internal/task.cuh>             // scheduler uses task
+#include <cuda/experimental/__stf/internal/task_statistics.cuh>  // heft_scheduler uses statistics_t
 
 #include <cstdlib>     // rand()
 #include <filesystem>  // ::std::filesystem::exists

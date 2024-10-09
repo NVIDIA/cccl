@@ -17,10 +17,10 @@
 
 #pragma once
 
-#include "cudastf/__stf/graph/internal/event_types.h"
-#include "cudastf/__stf/internal/backend_ctx.h"  // graph_task<> has-a backend_ctx_untyped
-#include "cudastf/__stf/internal/frozen_logical_data.h"
-#include "cudastf/__stf/internal/logical_data.h"
+#include <cuda/experimental/__stf/graph/internal/event_types.cuh>
+#include <cuda/experimental/__stf/internal/backend_ctx.cuh>  // graph_task<> has-a backend_ctx_untyped
+#include <cuda/experimental/__stf/internal/frozen_logical_data.cuh>
+#include <cuda/experimental/__stf/internal/logical_data.cuh>
 
 namespace cuda::experimental::stf {
 

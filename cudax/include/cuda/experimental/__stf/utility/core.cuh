@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include "cudastf/__stf/utility/cuda_attributes.h"
+#include <cuda/experimental/__stf/utility/cuda_attributes.cuh>
 
 #include <cstddef>
 #include <functional>

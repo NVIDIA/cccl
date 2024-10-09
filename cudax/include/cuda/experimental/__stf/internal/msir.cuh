@@ -21,7 +21,7 @@
  *   R : msir_state_id::reduction
  */
 
-#include "cudastf/__stf/internal/async_prereq.h"
+#include <cuda/experimental/__stf/internal/async_prereq.cuh>
 
 namespace cuda::experimental::stf {
 

@@ -18,9 +18,9 @@
 
 #pragma once
 
-#include "cudastf/__stf/internal/backend_ctx.h"
-#include "cudastf/__stf/internal/data_interface.h"
-#include "cudastf/__stf/stream/internal/event_types.h"
+#include <cuda/experimental/__stf/internal/backend_ctx.cuh>
+#include <cuda/experimental/__stf/internal/data_interface.cuh>
+#include <cuda/experimental/__stf/stream/internal/event_types.cuh>
 
 namespace cuda::experimental::stf {
 

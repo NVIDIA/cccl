@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "cudastf/__stf/internal/task.h"
+#include <cuda/experimental/__stf/internal/task.cuh>
 
 #include <optional>
 

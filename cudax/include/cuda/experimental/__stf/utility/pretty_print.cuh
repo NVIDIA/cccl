@@ -15,7 +15,7 @@
 
 #pragma once
 
-#include "cudastf/__stf/utility/scope_guard.h"
+#include <cuda/experimental/__stf/utility/scope_guard.cuh>
 
 #include <cmath>
 #include <iomanip>

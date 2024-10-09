@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "cudastf/__stf/internal/backend_ctx.h"
+#include <cuda/experimental/__stf/internal/backend_ctx.cuh>
 
 namespace cuda::experimental::stf {
 

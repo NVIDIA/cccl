@@ -15,10 +15,10 @@
 
 #pragma once
 
-#include "cudastf/__stf/internal/exec_affinity.h"
-#include "cudastf/__stf/places/exec/cuda_stream.h"
-#include "cudastf/__stf/places/exec/green_context.h"
-#include "cudastf/__stf/places/places.h"
+#include <cuda/experimental/__stf/internal/exec_affinity.cuh>
+#include <cuda/experimental/__stf/places/exec/cuda_stream.cuh>
+#include <cuda/experimental/__stf/places/exec/green_context.cuh>
+#include <cuda/experimental/__stf/places/places.cuh>
 
 namespace cuda::experimental::stf {
 

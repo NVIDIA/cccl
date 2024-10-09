@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "cudastf/__stf/utility/memory.h"
-#include "cudastf/__stf/utility/traits.h"
+#include <cuda/experimental/__stf/utility/memory.cuh>
+#include <cuda/experimental/__stf/utility/traits.cuh>
 
 #include <list>
 #include <random>

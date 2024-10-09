@@ -15,7 +15,7 @@
  * @brief Implementation of unstable_unique
  */
 
-#include "cudastf/__stf/utility/unittest.h"
+#include <cuda/experimental/__stf/utility/unittest.cuh>
 
 #include <iostream>
 #include <iterator>

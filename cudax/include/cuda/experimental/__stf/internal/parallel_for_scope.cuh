@@ -10,9 +10,9 @@
 
 #pragma once
 
-#include "cudastf/__stf/internal/backend_ctx.h"  // for null_partition
-#include "cudastf/__stf/internal/task_dep.h"
-#include "cudastf/__stf/internal/task_statistics.h"
+#include <cuda/experimental/__stf/internal/backend_ctx.cuh>  // for null_partition
+#include <cuda/experimental/__stf/internal/task_dep.cuh>
+#include <cuda/experimental/__stf/internal/task_statistics.cuh>
 
 #include <nvtx3/nvToolsExt.h>
 

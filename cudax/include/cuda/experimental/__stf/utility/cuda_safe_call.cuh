@@ -20,7 +20,7 @@
 
 #pragma once
 
-#include "cudastf/__stf/utility/unittest.h"
+#include <cuda/experimental/__stf/utility/unittest.cuh>
 
 #include <cuda.h>
 #include <cuda_occupancy.h>
