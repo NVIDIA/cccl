@@ -77,10 +77,8 @@ class BuildCMakeExtension(build_ext):
         extdir = os.path.abspath(os.path.dirname(
             self.get_ext_fullpath(ext.name)))
         cmake_args = [
-            '-DCCCL_ENABLE_CUB=YES',
-            '-DCCCL_ENABLE_THRUST=YES',
             '-DCCCL_ENABLE_C=YES',
-            '-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
+            '-DCCCL_C_PARALLEL_LIBRARY_OUTPUT_DIRECTORY=' + extdir,
             '-DCMAKE_BUILD_TYPE=Release',
         ]
 
@@ -90,7 +88,7 @@ class BuildCMakeExtension(build_ext):
         subprocess.check_call(['cmake', cccl_path] +
                               cmake_args, cwd=self.build_temp)
         subprocess.check_call(
-            ['cmake', '--build', '.', '--target', 'cccl.c'], cwd=self.build_temp)
+            ['cmake', '--build', '.', '--target', 'cccl.c.parallel'], cwd=self.build_temp)
 
 
 setup(
