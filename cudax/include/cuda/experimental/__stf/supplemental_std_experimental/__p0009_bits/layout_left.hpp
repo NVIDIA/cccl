@@ -77,14 +77,14 @@ private:
   struct __rank_count
   {};
 
-  template <size_t r, size_t Rank, class I, class... Indices>
-  constexpr index_type __compute_offset(__rank_count<r, Rank>, const I& i, Indices... idx) const
+  template <size_t r, size_t Rank, class Idx, class... Indices>
+  constexpr index_type __compute_offset(__rank_count<r, Rank>, const Idx& i, Indices... idx) const
   {
     return __compute_offset(__rank_count<r + 1, Rank>(), idx...) * __extents.template __extent<r>() + i;
   }
 
-  template <class I>
-  constexpr index_type __compute_offset(__rank_count<extents_type::rank() - 1, extents_type::rank()>, const I& i) const
+  template <class Idx>
+  constexpr index_type __compute_offset(__rank_count<extents_type::rank() - 1, extents_type::rank()>, const Idx& i) const
   {
     return i;
   }
