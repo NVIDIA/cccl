@@ -665,7 +665,7 @@ public:
     if (is_small())
     {
       // Todo: support non-random iterators
-      const auto new_size = small_length + (last - first);
+      const std::size_t new_size = small_length + (last - first);
       if (new_size <= small_cap)
       {
         auto b = small(), e = b + small_length;

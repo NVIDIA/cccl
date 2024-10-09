@@ -34,7 +34,7 @@ inline ::std::string pretty_print_bytes(size_t bytes)
   int i               = 0;
 
   double pretty_size = bytes;
-  while (pretty_size >= 1024.0 && i < size - 1)
+  while (pretty_size >= 1024.0 && static_cast<size_t>(i) < size - 1)
   {
     pretty_size /= 1024.0;
     ++i;

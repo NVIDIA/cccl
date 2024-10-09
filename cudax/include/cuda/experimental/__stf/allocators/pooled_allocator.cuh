@@ -157,7 +157,7 @@ public:
   {
     const ptrdiff_t offset = static_cast<char*>(ptr) - static_cast<char*>(base);
     // Add an assertion that offset % block_size == 0 ?
-    return (offset >= 0 && offset < (entries.size() * block_size));
+    return (offset >= 0 && offset < static_cast<ptrdiff_t>(entries.size() * block_size));
   }
 
   // Free the memory allocated for this block of allocations

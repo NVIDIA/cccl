@@ -90,7 +90,7 @@ public:
     // Create pools of CUDA streams
     pools.reserve(nbGroups);
 
-    for (int i = 0; i < nbGroups; i++)
+    for (int i = 0; i < static_cast<int>(nbGroups); i++)
     {
       if (resources[i].type != CU_DEV_RESOURCE_TYPE_INVALID)
       {
