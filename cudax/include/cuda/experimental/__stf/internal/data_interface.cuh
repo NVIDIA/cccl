@@ -19,6 +19,7 @@
 #include <cuda/experimental/__stf/allocators/block_allocator.cuh>
 #include <cuda/experimental/__stf/internal/msir.cuh>
 #include <cuda/experimental/__stf/internal/slice.cuh>
+#include <cuda/experimental/__stf/internal/task.cuh>
 
 #include <deque>
 #include <optional>

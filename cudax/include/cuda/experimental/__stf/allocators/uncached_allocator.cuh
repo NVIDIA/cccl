@@ -16,6 +16,7 @@
 #pragma once
 
 #include <cuda/experimental/__stf/allocators/block_allocator.cuh>
+#include <cuda/experimental/__stf/internal/backend_ctx.cuh>
 
 #include <mutex>
 

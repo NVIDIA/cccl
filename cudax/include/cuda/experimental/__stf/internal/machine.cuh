@@ -17,6 +17,13 @@
 
 #pragma once
 
+#include <cuda_runtime_api.h>
+
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__stf/utility/traits.cuh>
+
+#include <cstdio>
+
 namespace cuda::experimental::stf
 {
 

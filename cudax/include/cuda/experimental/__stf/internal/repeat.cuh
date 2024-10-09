@@ -10,6 +10,9 @@
 
 #pragma once
 
+#include <cuda/experimental/__stf/utility/core.cuh>
+
+#include <cassert>
 #include <variant>
 
 namespace cuda::experimental::stf
