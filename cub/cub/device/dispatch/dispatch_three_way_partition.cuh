@@ -138,14 +138,6 @@ public:
 /******************************************************************************
  * Kernel entry points
  *****************************************************************************/
-// TODO (elstehle) gird-private constants were introduced in CTK 11.7. The macro is temporarily placed here, do we want
-// to make this a CCCL macro?
-#if defined(_CCCL_CUDACC_BELOW_11_7) || (CUB_PTX_ARCH < 700)
-#  define __CUB_GRID_CONSTANT
-#else
-#  define __CUB_GRID_CONSTANT __grid_constant__
-#endif
-
 template <typename ChainedPolicyT,
           typename InputIteratorT,
           typename FirstOutputIteratorT,
@@ -169,7 +161,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ThreeWayPartitionPolicy::BLO
     SelectSecondPartOp select_second_part_op,
     OffsetT num_items,
     int num_tiles,
-    __CUB_GRID_CONSTANT const StreamingContextT streaming_context)
+    _CUB_GRID_CONSTANT const StreamingContextT streaming_context)
 {
   using AgentThreeWayPartitionPolicyT = typename ChainedPolicyT::ActivePolicy::ThreeWayPartitionPolicy;
 
