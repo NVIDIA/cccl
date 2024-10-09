@@ -28,7 +28,8 @@
 #include <stack>
 #include <vector>
 
-namespace cuda::experimental::stf {
+namespace cuda::experimental::stf
+{
 
 class exec_place;
 
@@ -39,46 +40,60 @@ class exec_place;
  * defines the default execution place used in CUDASTF constructs when no
  * execution place is supplied.
  */
-class exec_affinity {
+class exec_affinity
+{
 public:
-    exec_affinity() = default;
-    ~exec_affinity() = default;
+  exec_affinity()  = default;
+  ~exec_affinity() = default;
 
-    /**
-     * @brief Set the current affinity to a vector of execution places
-     */
-    void push(::std::vector<::std::shared_ptr<exec_place>> p) { s.push(mv(p)); }
+  /**
+   * @brief Set the current affinity to a vector of execution places
+   */
+  void push(::std::vector<::std::shared_ptr<exec_place>> p)
+  {
+    s.push(mv(p));
+  }
 
-    /**
-     * @brief Set the current affinity to a single execution place
-     */
-    void push(::std::shared_ptr<exec_place> p) {
-        s.push(::std::vector<::std::shared_ptr<exec_place>> { ::std::move(p) });
-    }
+  /**
+   * @brief Set the current affinity to a single execution place
+   */
+  void push(::std::shared_ptr<exec_place> p)
+  {
+    s.push(::std::vector<::std::shared_ptr<exec_place>>{::std::move(p)});
+  }
 
-    /**
-     * @brief Restore the affinity to its value before calling push
-     */
-    void pop() { s.pop(); }
+  /**
+   * @brief Restore the affinity to its value before calling push
+   */
+  void pop()
+  {
+    s.pop();
+  }
 
-    /**
-     * @brief Indicates if an affinity was set or not
-     */
-    bool has_affinity() const { return !s.empty(); }
+  /**
+   * @brief Indicates if an affinity was set or not
+   */
+  bool has_affinity() const
+  {
+    return !s.empty();
+  }
 
-    /**
-     * @brief Get a reference to the vector of place pointers at the top of the stack (ie. thread's current affinity)
-     */
-    const auto& top() const { return s.top(); }
+  /**
+   * @brief Get a reference to the vector of place pointers at the top of the stack (ie. thread's current affinity)
+   */
+  const auto& top() const
+  {
+    return s.top();
+  }
 
 private:
-    // A stack per thread
-    // (We use vectors of shared_ptr because exec_place implementation cannot
-    // be available so we rely on type erasure)
-    static thread_local ::std::stack<::std::vector<::std::shared_ptr<exec_place>>> s;
+  // A stack per thread
+  // (We use vectors of shared_ptr because exec_place implementation cannot
+  // be available so we rely on type erasure)
+  static thread_local ::std::stack<::std::vector<::std::shared_ptr<exec_place>>> s;
 };
 
 // Define the static thread_local member outside the class
 inline thread_local ::std::stack<::std::vector<::std::shared_ptr<exec_place>>> exec_affinity::s;
 
-}  // end namespace cuda::experimental::stf
+} // end namespace cuda::experimental::stf

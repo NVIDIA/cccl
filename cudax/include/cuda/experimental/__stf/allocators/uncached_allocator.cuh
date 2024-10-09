@@ -19,7 +19,8 @@
 
 #include <mutex>
 
-namespace cuda::experimental::stf {
+namespace cuda::experimental::stf
+{
 
 /**
  * @brief Uncached block allocator where allocations and deallocations are
@@ -30,24 +31,33 @@ namespace cuda::experimental::stf {
  * this wrapper is to make it possible to create an allocator policy using this
  * internal allocator.
  */
-class uncached_block_allocator : public block_allocator_interface {
-    void* allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ssize_t& s, event_list& prereqs) override {
-        auto& uncached = ctx.get_uncached_allocator();
-        return uncached.allocate(ctx, memory_node, s, prereqs);
-    }
+class uncached_block_allocator : public block_allocator_interface
+{
+  void* allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ssize_t& s, event_list& prereqs) override
+  {
+    auto& uncached = ctx.get_uncached_allocator();
+    return uncached.allocate(ctx, memory_node, s, prereqs);
+  }
 
-    void deallocate(backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr,
-            size_t sz) override {
-        auto& uncached = ctx.get_uncached_allocator();
-        uncached.deallocate(ctx, memory_node, prereqs, ptr, sz);
-    }
+  void deallocate(
+    backend_ctx_untyped& ctx, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
+  {
+    auto& uncached = ctx.get_uncached_allocator();
+    uncached.deallocate(ctx, memory_node, prereqs, ptr, sz);
+  }
 
-    /* Nothing is done here because this is just a wrapper on top of some
-     * existing allocator automatically created during backend initialization
-     * */
-    event_list deinit(backend_ctx_untyped&) override { return event_list(); }
+  /* Nothing is done here because this is just a wrapper on top of some
+   * existing allocator automatically created during backend initialization
+   * */
+  event_list deinit(backend_ctx_untyped&) override
+  {
+    return event_list();
+  }
 
-    ::std::string to_string() const override { return "uncached block allocator (wrapper)"; }
+  ::std::string to_string() const override
+  {
+    return "uncached block allocator (wrapper)";
+  }
 };
 
-}  // end namespace cuda::experimental::stf
+} // end namespace cuda::experimental::stf

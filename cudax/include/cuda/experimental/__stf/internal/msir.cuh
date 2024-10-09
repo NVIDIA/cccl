@@ -23,35 +23,49 @@
 
 #include <cuda/experimental/__stf/internal/async_prereq.cuh>
 
-namespace cuda::experimental::stf {
+namespace cuda::experimental::stf
+{
 
-enum class msir_state_id {
-    invalid,
-    modified,
-    shared,
-    reduction,
+enum class msir_state_id
+{
+  invalid,
+  modified,
+  shared,
+  reduction,
 };
 
-inline ::std::string status_to_string(msir_state_id status) {
-    switch (status) {
-    case msir_state_id::modified: return "msir_state_id::modified";
-    case msir_state_id::shared: return "msir_state_id::shared";
-    case msir_state_id::invalid: return "msir_state_id::invalid";
-    case msir_state_id::reduction: return "REDUCTION";
-    }
+inline ::std::string status_to_string(msir_state_id status)
+{
+  switch (status)
+  {
+    case msir_state_id::modified:
+      return "msir_state_id::modified";
+    case msir_state_id::shared:
+      return "msir_state_id::shared";
+    case msir_state_id::invalid:
+      return "msir_state_id::invalid";
+    case msir_state_id::reduction:
+      return "REDUCTION";
+  }
 
-    return "UNKNOWN";
+  return "UNKNOWN";
 }
 
-inline char status_to_char(msir_state_id status) {
-    switch (status) {
-    case msir_state_id::modified: return 'M';
-    case msir_state_id::shared: return 'S';
-    case msir_state_id::invalid: return 'I';
-    case msir_state_id::reduction: return 'R';
-    }
+inline char status_to_char(msir_state_id status)
+{
+  switch (status)
+  {
+    case msir_state_id::modified:
+      return 'M';
+    case msir_state_id::shared:
+      return 'S';
+    case msir_state_id::invalid:
+      return 'I';
+    case msir_state_id::reduction:
+      return 'R';
+  }
 
-    return 'U';
+  return 'U';
 }
 
 /*
@@ -80,76 +94,119 @@ private:
 };
 */
 
-class per_data_instance_msi_state {
+class per_data_instance_msi_state
+{
 public:
-    per_data_instance_msi_state() {}
+  per_data_instance_msi_state() {}
 
-    ~per_data_instance_msi_state() {}
+  ~per_data_instance_msi_state() {}
 
-    msir_state_id get_msir() const { return msir; }
+  msir_state_id get_msir() const
+  {
+    return msir;
+  }
 
-    void set_msir(msir_state_id _msir) { msir = _msir; }
+  void set_msir(msir_state_id _msir)
+  {
+    msir = _msir;
+  }
 
-    bool is_allocated() const { return allocated; }
+  bool is_allocated() const
+  {
+    return allocated;
+  }
 
-    void set_allocated(bool _allocated) { allocated = _allocated; }
+  void set_allocated(bool _allocated)
+  {
+    allocated = _allocated;
+  }
 
-    const event_list& get_read_prereq() const { return read_prereq; }
+  const event_list& get_read_prereq() const
+  {
+    return read_prereq;
+  }
 
-    const event_list& get_write_prereq() const { return write_prereq; }
+  const event_list& get_write_prereq() const
+  {
+    return write_prereq;
+  }
 
-    void set_read_prereq(event_list prereq) { read_prereq = mv(prereq); }
+  void set_read_prereq(event_list prereq)
+  {
+    read_prereq = mv(prereq);
+  }
 
-    void set_write_prereq(event_list prereq) { write_prereq = mv(prereq); }
+  void set_write_prereq(event_list prereq)
+  {
+    write_prereq = mv(prereq);
+  }
 
-    /**
-     * @brief Compute the maximum async prereq ID in this list (for both read and write accesses).
-     */
-    int max_prereq_id() const {
-        int res = read_prereq.max_prereq_id();
-        res = ::std::max(res, write_prereq.max_prereq_id());
-        return res;
+  /**
+   * @brief Compute the maximum async prereq ID in this list (for both read and write accesses).
+   */
+  int max_prereq_id() const
+  {
+    int res = read_prereq.max_prereq_id();
+    res     = ::std::max(res, write_prereq.max_prereq_id());
+    return res;
+  }
+
+  template <typename T>
+  void add_read_prereq(T&& prereq)
+  {
+    read_prereq.merge(::std::forward<T>(prereq));
+
+    if (read_prereq.size() > 16)
+    {
+      read_prereq.optimize();
     }
+  }
+  template <typename T>
+  void add_write_prereq(T&& prereq)
+  {
+    write_prereq.merge(::std::forward<T>(prereq));
 
-    template <typename T>
-    void add_read_prereq(T&& prereq) {
-        read_prereq.merge(::std::forward<T>(prereq));
-
-        if (read_prereq.size() > 16)
-            read_prereq.optimize();
+    if (write_prereq.size() > 16)
+    {
+      write_prereq.optimize();
     }
-    template <typename T>
-    void add_write_prereq(T&& prereq) {
-        write_prereq.merge(::std::forward<T>(prereq));
+  }
 
-        if (write_prereq.size() > 16)
-            write_prereq.optimize();
-    }
+  void clear_read_prereq()
+  {
+    read_prereq.clear();
+  }
+  void clear_write_prereq()
+  {
+    write_prereq.clear();
+  }
 
-    void clear_read_prereq() { read_prereq.clear(); }
-    void clear_write_prereq() { write_prereq.clear(); }
-
-    size_t hash() const { return hash_all(allocated, (int) msir); }
+  size_t hash() const
+  {
+    return hash_all(allocated, (int) msir);
+  }
 
 private:
-    // We need to fulfill these events __and those in read_prereq__ to modify the instance
-    event_list write_prereq;
+  // We need to fulfill these events __and those in read_prereq__ to modify the instance
+  event_list write_prereq;
 
-    // We need to fulfill these events to read the instance without modifying it
-    event_list read_prereq;
+  // We need to fulfill these events to read the instance without modifying it
+  event_list read_prereq;
 
-    msir_state_id msir = msir_state_id::invalid;  // MSIR = msir_state_id::modified, ...
-    bool allocated = false;
+  msir_state_id msir = msir_state_id::invalid; // MSIR = msir_state_id::modified, ...
+  bool allocated     = false;
 };
 
-}  // namespace cuda::experimental::stf
+} // namespace cuda::experimental::stf
 
 // Note : we do this outside the cudastf namespace !
 // Overload ::std::hash to compute the hash of a per_data_instance_msi_state
 // class from the MSI and allocated states.
 template <>
-struct std::hash<cuda::experimental::stf::per_data_instance_msi_state> {
-    ::std::size_t operator()(cuda::experimental::stf::per_data_instance_msi_state const& s) const noexcept {
-        return s.hash();
-    }
+struct std::hash<cuda::experimental::stf::per_data_instance_msi_state>
+{
+  ::std::size_t operator()(cuda::experimental::stf::per_data_instance_msi_state const& s) const noexcept
+  {
+    return s.hash();
+  }
 };

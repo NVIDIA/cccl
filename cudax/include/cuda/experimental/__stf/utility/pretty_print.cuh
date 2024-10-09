@@ -21,52 +21,59 @@
 #include <iomanip>
 #include <sstream>
 
-namespace cuda::experimental::stf {
+namespace cuda::experimental::stf
+{
 
 /**
  * @brief Convert a size into a human readable string
  */
-inline ::std::string pretty_print_bytes(size_t bytes) {
-    const char* units[] = { "B", "KB", "MB", "GB", "TB" };
-    size_t size = sizeof(units) / sizeof(char*);
-    int i = 0;
+inline ::std::string pretty_print_bytes(size_t bytes)
+{
+  const char* units[] = {"B", "KB", "MB", "GB", "TB"};
+  size_t size         = sizeof(units) / sizeof(char*);
+  int i               = 0;
 
-    double pretty_size = bytes;
-    while (pretty_size >= 1024.0 && i < size - 1) {
-        pretty_size /= 1024.0;
-        ++i;
-    }
+  double pretty_size = bytes;
+  while (pretty_size >= 1024.0 && i < size - 1)
+  {
+    pretty_size /= 1024.0;
+    ++i;
+  }
 
-    ::std::ostringstream out;
-    out << ::std::fixed << ::std::setprecision(2) << pretty_size << ' ' << units[i];
-    return out.str();
+  ::std::ostringstream out;
+  out << ::std::fixed << ::std::setprecision(2) << pretty_size << ' ' << units[i];
+  return out.str();
 }
 
 /**
  * A trait class to have the specifier to display the T type.
  */
 template <typename T>
-struct FormatSpecifier {
-    static constexpr const char* value = "%f ";   // Default for floating point
-    static constexpr const char* name = "float";  // Default for floating point
+struct FormatSpecifier
+{
+  static constexpr const char* value = "%f "; // Default for floating point
+  static constexpr const char* name  = "float"; // Default for floating point
 };
 
 template <>
-struct FormatSpecifier<int> {
-    static constexpr const char* value = "%d ";  // For int
-    static constexpr const char* name = "int";
+struct FormatSpecifier<int>
+{
+  static constexpr const char* value = "%d "; // For int
+  static constexpr const char* name  = "int";
 };
 
 template <>
-struct FormatSpecifier<unsigned int> {
-    static constexpr const char* value = "%u ";  // For unsigned int
-    static constexpr const char* name = "unsigned int";
+struct FormatSpecifier<unsigned int>
+{
+  static constexpr const char* value = "%u "; // For unsigned int
+  static constexpr const char* name  = "unsigned int";
 };
 
 template <>
-struct FormatSpecifier<uint64_t> {
-    static constexpr const char* value = "%llu ";  // For uint64_t, assuming LLP64 or LP64 model
-    static constexpr const char* name = "uint64_t";
+struct FormatSpecifier<uint64_t>
+{
+  static constexpr const char* value = "%llu "; // For uint64_t, assuming LLP64 or LP64 model
+  static constexpr const char* name  = "uint64_t";
 };
 
 /**
@@ -79,72 +86,89 @@ struct FormatSpecifier<uint64_t> {
  * @param filename The output file name where the VTK data will be written
  */
 template <typename mdspan_like>
-void mdspan_to_vtk(mdspan_like s, const ::std::string& filename) {
-    fprintf(stderr, "Writing slice of size to file %s\n", filename.c_str());
-    FILE* f = EXPECT(fopen(filename.c_str(), "w+") != nullptr);
-    SCOPE(exit) { EXPECT(fclose(f) != -1); };
+void mdspan_to_vtk(mdspan_like s, const ::std::string& filename)
+{
+  fprintf(stderr, "Writing slice of size to file %s\n", filename.c_str());
+  FILE* f = EXPECT(fopen(filename.c_str(), "w+") != nullptr);
+  SCOPE(exit)
+  {
+    EXPECT(fclose(f) != -1);
+  };
 
-    EXPECT(fprintf(f, "# vtk DataFile Version 2.0\noutput\nASCII\n") != -1);
+  EXPECT(fprintf(f, "# vtk DataFile Version 2.0\noutput\nASCII\n") != -1);
 
-    size_t nx = 1;
-    size_t ny = 1;
-    size_t nz = 1;
+  size_t nx = 1;
+  size_t ny = 1;
+  size_t nz = 1;
 
-    if constexpr (s.rank() > 0) {
-        nx = s.extent(0);
+  if constexpr (s.rank() > 0)
+  {
+    nx = s.extent(0);
+  }
+
+  if constexpr (s.rank() > 1)
+  {
+    ny = s.extent(1);
+  }
+
+  if constexpr (s.rank() > 2)
+  {
+    nz = s.extent(2);
+  }
+
+  EXPECT(fprintf(f, "DATASET STRUCTURED_POINTS\n") != -1);
+  EXPECT(fprintf(f, "DIMENSIONS %ld %ld %ld\n", nx, ny, nz) != -1);
+  EXPECT(fprintf(f, "ORIGIN 0 0 0\n") != -1);
+  EXPECT(fprintf(f, "SPACING 1 1 1\n") != -1);
+  EXPECT(fprintf(f, "POINT_DATA %ld\n", s.size()) != -1);
+  EXPECT(fprintf(f, "SCALARS value float\n") != -1);
+  EXPECT(fprintf(f, "LOOKUP_TABLE default\n") != -1);
+
+  static_assert(s.rank() <= 3 && s.rank() > 0);
+
+  if constexpr (s.rank() == 1)
+  {
+    for (size_t x = 0; x < nx; x++)
+    {
+      EXPECT(fprintf(f, "%f ", s(x)) != -1);
     }
+  }
 
-    if constexpr (s.rank() > 1) {
-        ny = s.extent(1);
+  if constexpr (s.rank() == 2)
+  {
+    for (size_t y = 0; y < ny; y++)
+    {
+      for (size_t x = 0; x < nx; x++)
+      {
+        EXPECT(fprintf(f, "%f ", s(x, y)) != -1);
+      }
+      EXPECT(fprintf(f, "\n") != -1);
     }
+  }
 
-    if constexpr (s.rank() > 2) {
-        nz = s.extent(2);
-    }
-
-    EXPECT(fprintf(f, "DATASET STRUCTURED_POINTS\n") != -1);
-    EXPECT(fprintf(f, "DIMENSIONS %ld %ld %ld\n", nx, ny, nz) != -1);
-    EXPECT(fprintf(f, "ORIGIN 0 0 0\n") != -1);
-    EXPECT(fprintf(f, "SPACING 1 1 1\n") != -1);
-    EXPECT(fprintf(f, "POINT_DATA %ld\n", s.size()) != -1);
-    EXPECT(fprintf(f, "SCALARS value float\n") != -1);
-    EXPECT(fprintf(f, "LOOKUP_TABLE default\n") != -1);
-
-    static_assert(s.rank() <= 3 && s.rank() > 0);
-
-    if constexpr (s.rank() == 1) {
-        for (size_t x = 0; x < nx; x++) {
-            EXPECT(fprintf(f, "%f ", s(x)) != -1);
+  if constexpr (s.rank() == 3)
+  {
+    for (size_t z = 0; z < nz; z++)
+    {
+      for (size_t y = 0; y < ny; y++)
+      {
+        for (size_t x = 0; x < nx; x++)
+        {
+          EXPECT(fprintf(f, "%f ", s(x, y, z)) != -1);
         }
+        EXPECT(fprintf(f, "\n") != -1);
+      }
     }
+  }
 
-    if constexpr (s.rank() == 2) {
-        for (size_t y = 0; y < ny; y++) {
-            for (size_t x = 0; x < nx; x++) {
-                EXPECT(fprintf(f, "%f ", s(x, y)) != -1);
-            }
-            EXPECT(fprintf(f, "\n") != -1);
-        }
-    }
-
-    if constexpr (s.rank() == 3) {
-        for (size_t z = 0; z < nz; z++)
-            for (size_t y = 0; y < ny; y++) {
-                for (size_t x = 0; x < nx; x++) {
-                    EXPECT(fprintf(f, "%f ", s(x, y, z)) != -1);
-                }
-                EXPECT(fprintf(f, "\n") != -1);
-            }
-    }
-
-    //    for (size_t y = 0; y < 4; y++)
-    //    {
-    //        for (size_t x = 0; x < 4; x++)
-    //        {
-    //            fprintf(stderr, "%f ", s(y, x));
-    //        }
-    //        fprintf(stderr, "\n");
-    //    }
+  //    for (size_t y = 0; y < 4; y++)
+  //    {
+  //        for (size_t x = 0; x < 4; x++)
+  //        {
+  //            fprintf(stderr, "%f ", s(y, x));
+  //        }
+  //        fprintf(stderr, "\n");
+  //    }
 }
 
 /**
@@ -159,56 +183,70 @@ void mdspan_to_vtk(mdspan_like s, const ::std::string& filename) {
  * The output is prefixed by `text` followed by a newline.
  */
 template <typename mdspan_like>
-void mdspan_print(mdspan_like s, const ::std::string& text, FILE* f = stderr) {
-    using T = typename mdspan_like::value_type;
+void mdspan_print(mdspan_like s, const ::std::string& text, FILE* f = stderr)
+{
+  using T = typename mdspan_like::value_type;
 
-    fprintf(f, "%s\n", text.c_str());
-    const char* format = FormatSpecifier<T>::value;
+  fprintf(f, "%s\n", text.c_str());
+  const char* format = FormatSpecifier<T>::value;
 
-    size_t nx = 1;
-    size_t ny = 1;
-    size_t nz = 1;
+  size_t nx = 1;
+  size_t ny = 1;
+  size_t nz = 1;
 
-    static constexpr size_t dimensions = s.rank();
+  static constexpr size_t dimensions = s.rank();
 
-    if constexpr (dimensions > 0) {
-        nx = s.extent(0);
+  if constexpr (dimensions > 0)
+  {
+    nx = s.extent(0);
+  }
+
+  if constexpr (dimensions > 1)
+  {
+    ny = s.extent(1);
+  }
+
+  if constexpr (dimensions > 2)
+  {
+    nz = s.extent(2);
+  }
+
+  static_assert(dimensions <= 3 && dimensions > 0);
+
+  if constexpr (dimensions == 1)
+  {
+    for (size_t x = 0; x < nx; x++)
+    {
+      EXPECT(fprintf(f, format, s(x)) != -1);
     }
+  }
 
-    if constexpr (dimensions > 1) {
-        ny = s.extent(1);
+  if constexpr (dimensions == 2)
+  {
+    for (size_t y = 0; y < ny; y++)
+    {
+      for (size_t x = 0; x < nx; x++)
+      {
+        EXPECT(fprintf(f, format, s(x, y)) != -1);
+      }
+      EXPECT(fprintf(f, "\n") != -1);
     }
+  }
 
-    if constexpr (dimensions > 2) {
-        nz = s.extent(2);
-    }
-
-    static_assert(dimensions <= 3 && dimensions > 0);
-
-    if constexpr (dimensions == 1) {
-        for (size_t x = 0; x < nx; x++) {
-            EXPECT(fprintf(f, format, s(x)) != -1);
+  if constexpr (dimensions == 3)
+  {
+    for (size_t z = 0; z < nz; z++)
+    {
+      for (size_t y = 0; y < ny; y++)
+      {
+        for (size_t x = 0; x < nx; x++)
+        {
+          EXPECT(fprintf(f, format, s(x, y, z)) != -1);
         }
+        EXPECT(fprintf(f, "\n") != -1);
+      }
     }
-
-    if constexpr (dimensions == 2) {
-        for (size_t y = 0; y < ny; y++) {
-            for (size_t x = 0; x < nx; x++) {
-                EXPECT(fprintf(f, format, s(x, y)) != -1);
-            }
-            EXPECT(fprintf(f, "\n") != -1);
-        }
-    }
-
-    if constexpr (dimensions == 3) {
-        for (size_t z = 0; z < nz; z++)
-            for (size_t y = 0; y < ny; y++) {
-                for (size_t x = 0; x < nx; x++) {
-                    EXPECT(fprintf(f, format, s(x, y, z)) != -1);
-                }
-                EXPECT(fprintf(f, "\n") != -1);
-            }
-    }
+  }
 }
 
-}  // end namespace cuda::experimental::stf
+} // end namespace cuda::experimental::stf

@@ -46,82 +46,114 @@
 #include <cmath>
 #include <cstdlib>
 
-namespace std { namespace experimental { inline namespace __p1673_version_0 { namespace linalg {
+namespace std
+{
+namespace experimental
+{
+inline namespace __p1673_version_0
+{
+namespace linalg
+{
 
-namespace {
+namespace
+{
 template <class Exec, class v_t, class Scalar, class = void>
-struct is_custom_vector_abs_sum_avail : std::false_type {};
+struct is_custom_vector_abs_sum_avail : std::false_type
+{};
 
 template <class Exec, class v_t, class Scalar>
-struct is_custom_vector_abs_sum_avail<Exec, v_t, Scalar,
-        std::enable_if_t<std::is_same<decltype(vector_abs_sum(
-                                              std::declval<Exec>(), std::declval<v_t>(), std::declval<Scalar>())),
-                                 Scalar>::value &&
-                         !linalg::impl::is_inline_exec_v<Exec>>> : std::true_type {};
+struct is_custom_vector_abs_sum_avail<
+  Exec,
+  v_t,
+  Scalar,
+  std::enable_if_t<
+    std::is_same<decltype(vector_abs_sum(std::declval<Exec>(), std::declval<v_t>(), std::declval<Scalar>())), Scalar>::value
+    && !linalg::impl::is_inline_exec_v<Exec>>> : std::true_type
+{};
 
-}  // end anonymous namespace
+} // end anonymous namespace
 
 template <class ElementType, class SizeType, ::std::size_t ext0, class Layout, class Accessor, class Scalar>
-Scalar vector_abs_sum(std::experimental::linalg::impl::inline_exec_t&& /* exec */,
-        std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> v,
-        Scalar init) {
-    const SizeType numElt = v.extent(0);
-    for (SizeType i = 0; i < numElt; ++i) {
-        using std::abs;
-        init += abs(v(i));
-    }
-    return init;
+Scalar vector_abs_sum(
+  std::experimental::linalg::impl::inline_exec_t&& /* exec */,
+  std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> v,
+  Scalar init)
+{
+  const SizeType numElt = v.extent(0);
+  for (SizeType i = 0; i < numElt; ++i)
+  {
+    using std::abs;
+    init += abs(v(i));
+  }
+  return init;
 }
 
-template <class ExecutionPolicy, class ElementType, class SizeType, ::std::size_t ext0, class Layout, class Accessor,
-        class Scalar>
-Scalar vector_abs_sum(ExecutionPolicy&& exec,
-        std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> v,
-        Scalar init) {
-    constexpr bool use_custom =
-            is_custom_vector_abs_sum_avail<decltype(execpolicy_mapper(exec)), decltype(v), Scalar>::value;
+template <class ExecutionPolicy,
+          class ElementType,
+          class SizeType,
+          ::std::size_t ext0,
+          class Layout,
+          class Accessor,
+          class Scalar>
+Scalar vector_abs_sum(
+  ExecutionPolicy&& exec,
+  std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> v,
+  Scalar init)
+{
+  constexpr bool use_custom =
+    is_custom_vector_abs_sum_avail<decltype(execpolicy_mapper(exec)), decltype(v), Scalar>::value;
 
-    if constexpr (use_custom) {
-        return vector_abs_sum(execpolicy_mapper(exec), v, init);
-    } else {
-        return vector_abs_sum(std::experimental::linalg::impl::inline_exec_t(), v, init);
-    }
+  if constexpr (use_custom)
+  {
+    return vector_abs_sum(execpolicy_mapper(exec), v, init);
+  }
+  else
+  {
+    return vector_abs_sum(std::experimental::linalg::impl::inline_exec_t(), v, init);
+  }
 }
 
 template <class ElementType, class SizeType, ::std::size_t ext0, class Layout, class Accessor, class Scalar>
 Scalar vector_abs_sum(
-        std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> v,
-        Scalar init) {
-    return vector_abs_sum(std::experimental::linalg::impl::default_exec_t(), v, init);
+  std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> v, Scalar init)
+{
+  return vector_abs_sum(std::experimental::linalg::impl::default_exec_t(), v, init);
 }
 
-namespace vector_abs_detail {
+namespace vector_abs_detail
+{
 using std::abs;
 
 // The point of this is to do correct ADL for abs,
 // without exposing "using std::abs" in the outer namespace.
 template <class ElementType, class SizeType, ::std::size_t ext0, class Layout, class Accessor>
 auto vector_abs_return_type_deducer(
-        std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> x)
-        -> decltype(abs(x(0)));
-}  // namespace vector_abs_detail
+  std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> x)
+  -> decltype(abs(x(0)));
+} // namespace vector_abs_detail
 
 template <class ElementType, class SizeType, ::std::size_t ext0, class Layout, class Accessor>
 auto vector_abs_sum(
-        std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> x)
-        -> decltype(vector_abs_detail::vector_abs_return_type_deducer(x)) {
-    using return_t = decltype(vector_abs_detail::vector_abs_return_type_deducer(x));
-    return vector_abs_sum(x, return_t {});
+  std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> x)
+  -> decltype(vector_abs_detail::vector_abs_return_type_deducer(x))
+{
+  using return_t = decltype(vector_abs_detail::vector_abs_return_type_deducer(x));
+  return vector_abs_sum(x, return_t{});
 }
 
 template <class ExecutionPolicy, class ElementType, class SizeType, ::std::size_t ext0, class Layout, class Accessor>
-auto vector_abs_sum(ExecutionPolicy&& exec,
-        std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> x)
-        -> decltype(vector_abs_detail::vector_abs_return_type_deducer(x)) {
-    using return_t = decltype(vector_abs_detail::vector_abs_return_type_deducer(x));
-    return vector_abs_sum(exec, x, return_t {});
+auto vector_abs_sum(
+  ExecutionPolicy&& exec,
+  std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> x)
+  -> decltype(vector_abs_detail::vector_abs_return_type_deducer(x))
+{
+  using return_t = decltype(vector_abs_detail::vector_abs_return_type_deducer(x));
+  return vector_abs_sum(exec, x, return_t{});
 }
 
-}}}}  // namespace std::experimental::__p1673_version_0::linalg
+} // namespace linalg
+} // namespace __p1673_version_0
+} // namespace experimental
+} // namespace std
 
-#endif  // LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_BLAS1_VECTOR_ABS_SUM_HPP_
+#endif // LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_BLAS1_VECTOR_ABS_SUM_HPP_

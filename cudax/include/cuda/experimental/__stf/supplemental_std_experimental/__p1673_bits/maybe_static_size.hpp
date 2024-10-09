@@ -45,38 +45,53 @@
 
 #include <experimental/mdspan>
 
-namespace std { namespace experimental { inline namespace __p1673_version_0 { namespace linalg { namespace detail {
+namespace std
+{
+namespace experimental
+{
+inline namespace __p1673_version_0
+{
+namespace linalg
+{
+namespace detail
+{
 
 template <class T, T Value, T DynSentinel>
-struct __maybe_static_value {
-    MDSPAN_INLINE_FUNCTION constexpr __maybe_static_value(T) noexcept {}
-    MDSPAN_INLINE_FUNCTION _MDSPAN_CONSTEXPR_14 __maybe_static_value& operator=(T) noexcept {}
+struct __maybe_static_value
+{
+  MDSPAN_INLINE_FUNCTION constexpr __maybe_static_value(T) noexcept {}
+  MDSPAN_INLINE_FUNCTION _MDSPAN_CONSTEXPR_14 __maybe_static_value& operator=(T) noexcept {}
 
-    MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr __maybe_static_value() noexcept = default;
-    MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr __maybe_static_value(__maybe_static_value const&) noexcept = default;
-    MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr __maybe_static_value(__maybe_static_value&&) noexcept = default;
-    MDSPAN_INLINE_FUNCTION_DEFAULTED _MDSPAN_CONSTEXPR_14_DEFAULTED __maybe_static_value& operator=(
-            __maybe_static_value const&) noexcept = default;
-    MDSPAN_INLINE_FUNCTION_DEFAULTED _MDSPAN_CONSTEXPR_14_DEFAULTED __maybe_static_value& operator=(
-            __maybe_static_value&&) noexcept = default;
-    MDSPAN_INLINE_FUNCTION_DEFAULTED
-    ~__maybe_static_value() = default;
+  MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr __maybe_static_value() noexcept                            = default;
+  MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr __maybe_static_value(__maybe_static_value const&) noexcept = default;
+  MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr __maybe_static_value(__maybe_static_value&&) noexcept      = default;
+  MDSPAN_INLINE_FUNCTION_DEFAULTED _MDSPAN_CONSTEXPR_14_DEFAULTED __maybe_static_value&
+  operator=(__maybe_static_value const&) noexcept = default;
+  MDSPAN_INLINE_FUNCTION_DEFAULTED _MDSPAN_CONSTEXPR_14_DEFAULTED __maybe_static_value&
+  operator=(__maybe_static_value&&) noexcept = default;
+  MDSPAN_INLINE_FUNCTION_DEFAULTED
+  ~__maybe_static_value() = default;
 
-    static constexpr auto value = Value;
-    static constexpr auto is_static = true;
-    static constexpr auto value_static = Value;
+  static constexpr auto value        = Value;
+  static constexpr auto is_static    = true;
+  static constexpr auto value_static = Value;
 };
 
 template <class T, T DynSentinel>
-struct __maybe_static_value<T, DynSentinel, DynSentinel> {
-    T value = {};
-    static constexpr auto is_static = false;
-    static constexpr auto value_static = DynSentinel;
+struct __maybe_static_value<T, DynSentinel, DynSentinel>
+{
+  T value                            = {};
+  static constexpr auto is_static    = false;
+  static constexpr auto value_static = DynSentinel;
 };
 
 template <::std::size_t StaticSize, ::std::size_t Sentinel = dynamic_extent>
 using __maybe_static_extent = __maybe_static_value<::std::size_t, StaticSize, Sentinel>;
 
-}}}}}  // namespace std::experimental::__p1673_version_0::linalg::detail
+} // namespace detail
+} // namespace linalg
+} // namespace __p1673_version_0
+} // namespace experimental
+} // namespace std
 
-#endif  // LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_MAYBE_STATIC_SIZE_HPP_
+#endif // LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_MAYBE_STATIC_SIZE_HPP_

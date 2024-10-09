@@ -24,9 +24,11 @@
 // Anchor type for `type_name` below.
 class _71d56d6539c0fd76d1af6c69e4e511a;
 
-namespace cuda::experimental::stf {
+namespace cuda::experimental::stf
+{
 
-namespace reserved {
+namespace reserved
+{
 
 // Returns a string representation of `T`.
 template <class T>
@@ -34,30 +36,33 @@ constexpr ::std::string_view type_name();
 
 // This function is used as a baseline; technically returns an incorrect result but is never used in anger.
 template <>
-constexpr ::std::string_view type_name<_71d56d6539c0fd76d1af6c69e4e511a>() {
-    return __PRETTY_FUNCTION__;
+constexpr ::std::string_view type_name<_71d56d6539c0fd76d1af6c69e4e511a>()
+{
+  return __PRETTY_FUNCTION__;
 }
 
 // Length of prefix and suffix in __PRETTY_FUNCTION__ when used with `type_name`.
 inline constexpr ::std::pair<size_t, size_t> type_name_affixes = []() {
-    ::std::string_view p = type_name<_71d56d6539c0fd76d1af6c69e4e511a>();
-    auto i = p.find("_71d56d6539c0fd76d1af6c69e4e511a");
-    auto j = p.size() - i - sizeof("_71d56d6539c0fd76d1af6c69e4e511a") + 1;
-    if (p[i - 1] == ':' && p[i - 2] == ':') {
-        // Maybe they use the `::` in front of global symbols
-        i -= 2;
-    }
-    return ::std::pair { i, j };
+  ::std::string_view p = type_name<_71d56d6539c0fd76d1af6c69e4e511a>();
+  auto i               = p.find("_71d56d6539c0fd76d1af6c69e4e511a");
+  auto j               = p.size() - i - sizeof("_71d56d6539c0fd76d1af6c69e4e511a") + 1;
+  if (p[i - 1] == ':' && p[i - 2] == ':')
+  {
+    // Maybe they use the `::` in front of global symbols
+    i -= 2;
+  }
+  return ::std::pair{i, j};
 }();
 
 // This yields the correct result for all types except `_71d56d6539c0fd76d1af6c69e4e511a`.
 template <class T>
-constexpr ::std::string_view type_name() {
-    ::std::string_view p = __PRETTY_FUNCTION__;
-    return p.substr(type_name_affixes.first, p.size() - type_name_affixes.first - type_name_affixes.second);
+constexpr ::std::string_view type_name()
+{
+  ::std::string_view p = __PRETTY_FUNCTION__;
+  return p.substr(type_name_affixes.first, p.size() - type_name_affixes.first - type_name_affixes.second);
 }
 
-}  // namespace reserved
+} // namespace reserved
 
 /**
  * @brief Yields a string form of type name. Exact spelling not guaranteed (e.g. `type_name<int*>` may be `"int*"`,
@@ -85,8 +90,13 @@ inline constexpr ::std::string_view type_name = reserved::type_name<T>();
  * @snippet unittest.h tuple2tuple
  */
 template <typename Tuple, typename Fun>
-constexpr auto tuple2tuple(const Tuple& t, Fun&& f) {
-    return ::std::apply([&](auto&&... x) { return ::std::tuple(f(::std::forward<decltype(x)>(x))...); }, t);
+constexpr auto tuple2tuple(const Tuple& t, Fun&& f)
+{
+  return ::std::apply(
+    [&](auto&&... x) {
+      return ::std::tuple(f(::std::forward<decltype(x)>(x))...);
+    },
+    t);
 }
 
 /*
@@ -98,8 +108,9 @@ constexpr auto tuple2tuple(const Tuple& t, Fun&& f) {
  * @tparam T A type which we want to display.
  */
 template <typename T>
-class print_type_name_and_fail {
-    static_assert(::std::integral_constant<T*, nullptr>::value, "Type name is: ");
+class print_type_name_and_fail
+{
+  static_assert(::std::integral_constant<T*, nullptr>::value, "Type name is: ");
 };
 
 /**
@@ -125,36 +136,40 @@ class print_type_name_and_fail {
  * ```
  */
 template <class T>
-class meyers_singleton {
-    template <class U>
-    struct wrapper {
-        using type = U;
-    };
-    friend class wrapper<T>::type;
+class meyers_singleton
+{
+  template <class U>
+  struct wrapper
+  {
+    using type = U;
+  };
+  friend class wrapper<T>::type;
 
-    meyers_singleton() = default;
-    ~meyers_singleton() = default;
-    meyers_singleton(const meyers_singleton&) = delete;
-    meyers_singleton(meyers_singleton&&) = delete;
+  meyers_singleton()                        = default;
+  ~meyers_singleton()                       = default;
+  meyers_singleton(const meyers_singleton&) = delete;
+  meyers_singleton(meyers_singleton&&)      = delete;
 
 public:
-    /**
-     * @brief Provides access to the single instance of the class.
-     *
-     * @return T& A reference to the singleton instance.
-     *
-     * If the instance hasn't been created yet, this function will create it.
-     */
-    static T& instance() {
-        static_assert(!::std::is_default_constructible_v<T>,
-                "Make the default constructor of your Meyers singleton protected.");
-        static_assert(!::std::is_destructible_v<T>, "Make the destructor of your Meyers singleton protected.");
-        static_assert(!::std::is_copy_constructible_v<T>, "Disable the copy constructor of your Meyers singleton.");
-        static_assert(!::std::is_move_constructible_v<T>, "Disable the move constructor of your Meyers singleton.");
-        struct U : T {};
-        static U instance;
-        return instance;
-    }
+  /**
+   * @brief Provides access to the single instance of the class.
+   *
+   * @return T& A reference to the singleton instance.
+   *
+   * If the instance hasn't been created yet, this function will create it.
+   */
+  static T& instance()
+  {
+    static_assert(!::std::is_default_constructible_v<T>,
+                  "Make the default constructor of your Meyers singleton protected.");
+    static_assert(!::std::is_destructible_v<T>, "Make the destructor of your Meyers singleton protected.");
+    static_assert(!::std::is_copy_constructible_v<T>, "Disable the copy constructor of your Meyers singleton.");
+    static_assert(!::std::is_move_constructible_v<T>, "Disable the move constructor of your Meyers singleton.");
+    struct U : T
+    {};
+    static U instance;
+    return instance;
+  }
 };
 
 /**
@@ -174,8 +189,11 @@ public:
  * @endcode
  */
 template <typename Array>
-auto to_tuple(Array&& array) {
-    return tuple2tuple(::std::forward<Array>(array), [](auto&& e) { return ::std::forward<decltype(e)>(e); });
+auto to_tuple(Array&& array)
+{
+  return tuple2tuple(::std::forward<Array>(array), [](auto&& e) {
+    return ::std::forward<decltype(e)>(e);
+  });
 }
 
 /**
@@ -196,7 +214,7 @@ auto to_tuple(Array&& array) {
  * @note The specialization `array_tuple<T, 0>` will result in an empty tuple (`std::tuple<>`).
  */
 template <typename T, size_t n>
-using array_tuple = decltype(to_tuple(::std::array<T, n> {}));
+using array_tuple = decltype(to_tuple(::std::array<T, n>{}));
 
 // Mini-unittest
 static_assert(::std::is_same_v<array_tuple<size_t, 3>, ::std::tuple<size_t, size_t, size_t>>);
@@ -214,10 +232,13 @@ static_assert(::std::is_same_v<array_tuple<size_t, 3>, ::std::tuple<size_t, size
  * @return An `std::array` containing the elements from the tuple, converted to type `T0`.
  */
 template <typename T0, typename... Ts>
-::std::array<T0, 1 + sizeof...(Ts)> to_array(const ::std::tuple<T0, Ts...>& obj) {
-    ::std::array<T0, 1 + sizeof...(Ts)> result;
-    each_in_tuple(obj, [&](auto index, const auto& value) { result[index] = value; });
-    return result;
+::std::array<T0, 1 + sizeof...(Ts)> to_array(const ::std::tuple<T0, Ts...>& obj)
+{
+  ::std::array<T0, 1 + sizeof...(Ts)> result;
+  each_in_tuple(obj, [&](auto index, const auto& value) {
+    result[index] = value;
+  });
+  return result;
 }
 
 /**
@@ -243,14 +264,18 @@ template <typename T0, typename... Ts>
  *   // The following call will return 's'.
  *   auto result = only_convertible<std::string>(i, d, s); */
 template <typename T, typename P0, typename... P>
-T only_convertible(P0&& p0, P&&... p) {
-    if constexpr (::std::is_convertible_v<P0, T>) {
-        static_assert(!(::std::is_convertible_v<P, T> || ...), "Duplicate argument type found");
-        return ::std::forward<P0>(p0);
-    } else {
-        // Ignore current head and recurse to tail
-        return only_convertible<T>(::std::forward<P>(p)...);
-    }
+T only_convertible(P0&& p0, P&&... p)
+{
+  if constexpr (::std::is_convertible_v<P0, T>)
+  {
+    static_assert(!(::std::is_convertible_v<P, T> || ...), "Duplicate argument type found");
+    return ::std::forward<P0>(p0);
+  }
+  else
+  {
+    // Ignore current head and recurse to tail
+    return only_convertible<T>(::std::forward<P>(p)...);
+  }
 }
 
 /**
@@ -281,29 +306,35 @@ T only_convertible(P0&& p0, P&&... p) {
  *   auto result = all_convertible<std::string>(i, s, d, s);
  */
 template <typename T, typename... P>
-auto all_convertible(P&&... p) {
-    // We use a union here to prevent the compiler from calling the destructor of the array.
-    // All construction/destruction will be done manually for efficiency purposes.
-    static constexpr size_t size = (::std::is_convertible_v<P, T> + ...);
-    unsigned char buffer[size * sizeof(T)];
-    auto& result = *reinterpret_cast<::std::array<T, size>*>(&buffer[0]);
-    size_t i = 0;  // marks the already-constructed portion of the array
-    try {
-        each_in_pack(
-                [&](auto&& e) {
-                    if constexpr (::std::is_convertible_v<decltype(e), T>) {
-                        new (result.data() + i) T(::std::forward<decltype(e)>(e));
-                        ++i;
-                    }
-                },
-                ::std::forward<P>(p)...);
-        return mv(result);
-    } catch (...) {
-        for (size_t j = 0; j < i; ++j) {
-            result[j].~T();
+auto all_convertible(P&&... p)
+{
+  // We use a union here to prevent the compiler from calling the destructor of the array.
+  // All construction/destruction will be done manually for efficiency purposes.
+  static constexpr size_t size = (::std::is_convertible_v<P, T> + ...);
+  unsigned char buffer[size * sizeof(T)];
+  auto& result = *reinterpret_cast<::std::array<T, size>*>(&buffer[0]);
+  size_t i     = 0; // marks the already-constructed portion of the array
+  try
+  {
+    each_in_pack(
+      [&](auto&& e) {
+        if constexpr (::std::is_convertible_v<decltype(e), T>)
+        {
+          new (result.data() + i) T(::std::forward<decltype(e)>(e));
+          ++i;
         }
-        throw;
+      },
+      ::std::forward<P>(p)...);
+    return mv(result);
+  }
+  catch (...)
+  {
+    for (size_t j = 0; j < i; ++j)
+    {
+      result[j].~T();
     }
+    throw;
+  }
 }
 
 /*
@@ -319,37 +350,45 @@ auto all_convertible(P&&... p) {
  * @return T Either the first convertible parameter, or `default_v` if no such parameter is found
  */
 template <typename T, typename... P>
-T only_convertible_or(T default_v, P&&... p) {
-    if constexpr (!(::std::is_convertible_v<P, T> || ...))
-        return default_v;
-    else
-        return only_convertible<T>(::std::forward<P>(p)...);
+T only_convertible_or(T default_v, P&&... p)
+{
+  if constexpr (!(::std::is_convertible_v<P, T> || ...))
+  {
+    return default_v;
+  }
+  else
+  {
+    return only_convertible<T>(::std::forward<P>(p)...);
+  }
 }
 
-namespace reserved {
+namespace reserved
+{
 /* Checks whether a collection of `DataTypes` objects can be unambiguously initialized (in some order)
  from a collection of `ArgTypes` objects. Not all objects must be initialized,
  e.g. `check_initialization<int, int*>(1)` passes. */
 template <typename... DataTypes>
-struct check_initialization {
-    /* Yields the number of types in `Ts` to which `T` can be converted. */
-    template <typename T>
-    static constexpr int count_convertibilty = (::std::is_convertible_v<T, DataTypes> + ... + 0);
+struct check_initialization
+{
+  /* Yields the number of types in `Ts` to which `T` can be converted. */
+  template <typename T>
+  static constexpr int count_convertibilty = (::std::is_convertible_v<T, DataTypes> + ... + 0);
 
-    template <typename... ArgTypes>
-    static constexpr void from() {
-        (
-                [] {
-                    using T = ArgTypes;
-                    static_assert(count_convertibilty<T> > 0,
-                            "Incompatible argument: argument type doesn't match any member type.");
-                    static_assert(count_convertibilty<T> == 1,
-                            "Ambiguous argument: argument type converts to more than one member type.");
-                }(),
-                ...);  // This expands ArgTypes
-    }
+  template <typename... ArgTypes>
+  static constexpr void from()
+  {
+    (
+      [] {
+        using T = ArgTypes;
+        static_assert(count_convertibilty<T> > 0,
+                      "Incompatible argument: argument type doesn't match any member type.");
+        static_assert(count_convertibilty<T> == 1,
+                      "Ambiguous argument: argument type converts to more than one member type.");
+      }(),
+      ...); // This expands ArgTypes
+  }
 };
-}  // namespace reserved
+} // namespace reserved
 
 /**
  * @brief Checks the convertibility of argument types to a set of data types.
@@ -385,8 +424,9 @@ struct check_initialization {
  *     // shuffled_args_check<int, float, double>(5);
  */
 template <typename... ArgTypes, typename... DataTypes>
-void shuffled_args_check(const DataTypes&...) {
-    reserved::check_initialization<DataTypes...>::template from<ArgTypes...>();
+void shuffled_args_check(const DataTypes&...)
+{
+  reserved::check_initialization<DataTypes...>::template from<ArgTypes...>();
 }
 
 /**
@@ -429,9 +469,10 @@ void shuffled_args_check(const DataTypes&...) {
  *     // auto my_tuple = shuffled_tuple<A, B, C>(b, c, 5);
  */
 template <typename... DataTypes, typename... ArgTypes>
-::std::tuple<DataTypes...> shuffled_tuple(ArgTypes... args) {
-    reserved::check_initialization<DataTypes...>::template from<ArgTypes...>();
-    return ::std::tuple<DataTypes...> { only_convertible_or(DataTypes(), mv(args)...)... };
+::std::tuple<DataTypes...> shuffled_tuple(ArgTypes... args)
+{
+  reserved::check_initialization<DataTypes...>::template from<ArgTypes...>();
+  return ::std::tuple<DataTypes...>{only_convertible_or(DataTypes(), mv(args)...)...};
 }
 
 /**
@@ -459,9 +500,10 @@ template <typename... DataTypes, typename... ArgTypes>
  * @endcode
  */
 template <typename... DataTypes, typename... ArgTypes>
-auto shuffled_array_tuple(ArgTypes... args) {
-    reserved::check_initialization<DataTypes...>::template from<ArgTypes...>();
-    return ::std::tuple { all_convertible<DataTypes>(mv(args)...)... };
+auto shuffled_array_tuple(ArgTypes... args)
+{
+  reserved::check_initialization<DataTypes...>::template from<ArgTypes...>();
+  return ::std::tuple{all_convertible<DataTypes>(mv(args)...)...};
 }
 
 /**
@@ -472,10 +514,12 @@ auto shuffled_array_tuple(ArgTypes... args) {
  * @tparam T The type to check for streaming support with std::ostream <<.
  */
 template <typename T, typename = void>
-struct has_ostream_operator : ::std::false_type {};
+struct has_ostream_operator : ::std::false_type
+{};
 
 template <typename T>
 struct has_ostream_operator<T, decltype(void(::std::declval<::std::ostream&>() << ::std::declval<const T&>()), void())>
-        : ::std::true_type {};
+    : ::std::true_type
+{};
 
-}  // namespace cuda::experimental::stf
+} // namespace cuda::experimental::stf

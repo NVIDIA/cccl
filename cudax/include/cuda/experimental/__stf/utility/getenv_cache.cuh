@@ -19,7 +19,8 @@
 #include <string>
 #include <unordered_map>
 
-namespace cuda::experimental::stf {
+namespace cuda::experimental::stf
+{
 
 /**
  * @brief Retrieves the value of an environment variable, caching the result for subsequent calls.
@@ -34,19 +35,22 @@ namespace cuda::experimental::stf {
  *
  * @note The cache is thread-local, so each thread will have its own independent cache.
  */
-inline const char* cached_getenv(const char* name) {
-    static thread_local ::std::unordered_map<::std::string, ::std::string> cache;
+inline const char* cached_getenv(const char* name)
+{
+  static thread_local ::std::unordered_map<::std::string, ::std::string> cache;
 
-    if (auto it = cache.find(name); it != cache.end()) {
-        return it->second.c_str();
-    }
+  if (auto it = cache.find(name); it != cache.end())
+  {
+    return it->second.c_str();
+  }
 
-    const char* value = ::std::getenv(name);
-    if (value) {
-        cache[name] = value;
-    }
+  const char* value = ::std::getenv(name);
+  if (value)
+  {
+    cache[name] = value;
+  }
 
-    return value;
+  return value;
 }
 
-}  // end namespace cuda::experimental::stf
+} // end namespace cuda::experimental::stf

@@ -18,21 +18,29 @@
 
 #include <nvtx3/nvToolsExt.h>
 
-namespace cuda::experimental::stf {
+namespace cuda::experimental::stf
+{
 
 /**
  * @brief A RAII style wrapper for NVTX ranges
  */
-class nvtx_range {
+class nvtx_range
+{
 public:
-    nvtx_range(const char* message) { nvtxRangePushA(message); }
+  nvtx_range(const char* message)
+  {
+    nvtxRangePushA(message);
+  }
 
-    // Noncopyable and nonassignable to avoid multiple pops
-    nvtx_range(const nvtx_range&) = delete;
-    nvtx_range(nvtx_range&&) = delete;
-    nvtx_range& operator=(const nvtx_range&) = delete;
+  // Noncopyable and nonassignable to avoid multiple pops
+  nvtx_range(const nvtx_range&)            = delete;
+  nvtx_range(nvtx_range&&)                 = delete;
+  nvtx_range& operator=(const nvtx_range&) = delete;
 
-    ~nvtx_range() { nvtxRangePop(); }
+  ~nvtx_range()
+  {
+    nvtxRangePop();
+  }
 };
 
-}  // end namespace cuda::experimental::stf
+} // end namespace cuda::experimental::stf

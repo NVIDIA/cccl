@@ -44,14 +44,22 @@
 #ifndef LINALG_INCLUDE_EXPERIMENTAL_BITS_LAYOUT_TRIANGLE_HPP_
 #define LINALG_INCLUDE_EXPERIMENTAL_BITS_LAYOUT_TRIANGLE_HPP_
 
-#include "layout_tags.hpp"
-
 #include <cstdint>
 #include <type_traits>
 
-namespace std { namespace experimental { inline namespace __p1673_version_0 { namespace linalg {
+#include "layout_tags.hpp"
 
-namespace __triangular_layouts_impl {
+namespace std
+{
+namespace experimental
+{
+inline namespace __p1673_version_0
+{
+namespace linalg
+{
+
+namespace __triangular_layouts_impl
+{
 
 template <class, class, class, class, class, class>
 struct __lower_triangle_layout_impl;
@@ -98,13 +106,16 @@ public:
 
 };
 
-#endif  // 0
+#endif // 0
 
-}  // end namespace __triangular_layouts_impl
+} // end namespace __triangular_layouts_impl
 
 template <class Triangle, class StorageOrder>
 class layout_blas_packed;
 
-}}}}  // namespace std::experimental::__p1673_version_0::linalg
+} // namespace linalg
+} // namespace __p1673_version_0
+} // namespace experimental
+} // namespace std
 
-#endif  // LINALG_INCLUDE_EXPERIMENTAL_BITS_LAYOUT_TRIANGLE_HPP_
+#endif // LINALG_INCLUDE_EXPERIMENTAL_BITS_LAYOUT_TRIANGLE_HPP_

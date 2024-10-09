@@ -23,5 +23,4 @@
 #include "experimental/__p1673_bits/cublas/blas3_matrix_rank_k_update_cublas.hpp"
 #include "experimental/__p1673_bits/cublas/blas3_triangular_matrix_matrix_solve_cublas.hpp"
 #include "experimental/__p1673_bits/cublas/helper.hpp"
-
 #include <experimental/mdspan>

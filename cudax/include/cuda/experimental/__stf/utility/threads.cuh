@@ -11,10 +11,12 @@
 #pragma once
 
 #include <atomic>
-#include <experimental/source_location>
 #include <mutex>
 
-namespace cuda::experimental::stf {
+#include <experimental/source_location>
+
+namespace cuda::experimental::stf
+{
 
 /**
  * @brief A simple RAII-style wrapper for ensuring single-threaded access to a code section. The interface is the same
@@ -36,47 +38,55 @@ namespace cuda::experimental::stf {
  * @tparam Mutex The type of mutex to use for synchronization.
  */
 template <typename Mutex>
-class single_threaded_section {
+class single_threaded_section
+{
 public:
-    using mutex_type = Mutex;
+  using mutex_type = Mutex;
 
 #ifndef NDEBUG
 
-    explicit single_threaded_section(
-            mutex_type& m, ::std::experimental::source_location loc = ::std::experimental::source_location::current())
-            : mutex(m) {
-        if (mutex.try_lock()) {
-            if constexpr (!::std::is_same_v<mutex_type, ::std::recursive_mutex>) {
-                // Would not be able to reenter this mutex, so release immediately.
-                mutex.unlock();
-            }
-            return;
-        }
-        fprintf(stderr, "%s(%u) Error: contested single-threaded section.\n", loc.file_name(), loc.line());
-        abort();
+  explicit single_threaded_section(
+    mutex_type& m, ::std::experimental::source_location loc = ::std::experimental::source_location::current())
+      : mutex(m)
+  {
+    if (mutex.try_lock())
+    {
+      if constexpr (!::std::is_same_v<mutex_type, ::std::recursive_mutex>)
+      {
+        // Would not be able to reenter this mutex, so release immediately.
+        mutex.unlock();
+      }
+      return;
     }
+    fprintf(stderr, "%s(%u) Error: contested single-threaded section.\n", loc.file_name(), loc.line());
+    abort();
+  }
 
-    single_threaded_section(mutex_type& m, ::std::adopt_lock_t) noexcept : mutex(m) {}  // calling thread owns mutex
+  single_threaded_section(mutex_type& m, ::std::adopt_lock_t) noexcept
+      : mutex(m)
+  {} // calling thread owns mutex
 
-    single_threaded_section(const single_threaded_section&) = delete;
-    single_threaded_section& operator=(const single_threaded_section&) = delete;
+  single_threaded_section(const single_threaded_section&)            = delete;
+  single_threaded_section& operator=(const single_threaded_section&) = delete;
 
-    ~single_threaded_section() {
-        if constexpr (::std::is_same_v<mutex_type, ::std::recursive_mutex>) {
-            // Keep the recursive mutex up until destruction.
-            mutex.unlock();
-        }
+  ~single_threaded_section()
+  {
+    if constexpr (::std::is_same_v<mutex_type, ::std::recursive_mutex>)
+    {
+      // Keep the recursive mutex up until destruction.
+      mutex.unlock();
     }
+  }
 
 private:
-    mutex_type& mutex;
+  mutex_type& mutex;
 
 #else
 
-    explicit single_threaded_section(mutex_type&) {}
-    single_threaded_section(mutex_type&, ::std::adopt_lock_t) noexcept {}
-    single_threaded_section(const single_threaded_section&) = delete;
-    single_threaded_section& operator=(const single_threaded_section&) = delete;
+  explicit single_threaded_section(mutex_type&) {}
+  single_threaded_section(mutex_type&, ::std::adopt_lock_t) noexcept {}
+  single_threaded_section(const single_threaded_section&)            = delete;
+  single_threaded_section& operator=(const single_threaded_section&) = delete;
 
 #endif
 };
@@ -110,9 +120,10 @@ private:
  * @return A reference to a `::std::atomic<unsigned long>` with static storage duration.
  */
 template <typename C, C...>
-::std::atomic<unsigned long>& operator""_counter() {
-    static ::std::atomic<unsigned long> count { 0 };
-    return count;
+::std::atomic<unsigned long>& operator""_counter()
+{
+  static ::std::atomic<unsigned long> count{0};
+  return count;
 }
 
 /**
@@ -146,21 +157,30 @@ template <typename C, C...>
  *       concurrent updates from different threads are safely handled.
  */
 template <typename C, C...>
-auto operator""_high_water_mark() {
-    static ::std::atomic<unsigned long> tracker { 0 };
+auto operator""_high_water_mark()
+{
+  static ::std::atomic<unsigned long> tracker{0};
 
-    struct Result {
-        static void record(unsigned long v) {
-            for (;;) {
-                auto previous = tracker.load();
-                if (previous >= v || tracker.compare_exchange_weak(previous, v))
-                    break;
-            }
+  struct Result
+  {
+    static void record(unsigned long v)
+    {
+      for (;;)
+      {
+        auto previous = tracker.load();
+        if (previous >= v || tracker.compare_exchange_weak(previous, v))
+        {
+          break;
         }
-        static unsigned long load() { return tracker.load(); }
-    };
+      }
+    }
+    static unsigned long load()
+    {
+      return tracker.load();
+    }
+  };
 
-    return Result();
+  return Result();
 }
 
-}  // namespace cuda::experimental::stf
+} // namespace cuda::experimental::stf

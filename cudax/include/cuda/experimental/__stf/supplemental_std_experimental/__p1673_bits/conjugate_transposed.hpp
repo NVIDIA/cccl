@@ -46,13 +46,24 @@
 #include "conjugated.hpp"
 #include "transposed.hpp"
 
-namespace std { namespace experimental { inline namespace __p1673_version_0 { namespace linalg {
+namespace std
+{
+namespace experimental
+{
+inline namespace __p1673_version_0
+{
+namespace linalg
+{
 
 template <class ElementType, class Extents, class Layout, class Accessor>
-auto conjugate_transposed(mdspan<ElementType, Extents, Layout, Accessor> a) {
-    return conjugated(transposed(a));
+auto conjugate_transposed(mdspan<ElementType, Extents, Layout, Accessor> a)
+{
+  return conjugated(transposed(a));
 }
 
-}}}}  // namespace std::experimental::__p1673_version_0::linalg
+} // namespace linalg
+} // namespace __p1673_version_0
+} // namespace experimental
+} // namespace std
 
-#endif  // LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_CONJUGATE_TRANSPOSED_HPP_
+#endif // LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_CONJUGATE_TRANSPOSED_HPP_

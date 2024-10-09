@@ -20,76 +20,89 @@
 
 #pragma once
 
-#include <cuda/experimental/__stf/utility/unittest.cuh>
-
 #include <cuda.h>
 #include <cuda_occupancy.h>
 #include <cuda_runtime.h>
 
+#include <cuda/experimental/__stf/utility/unittest.cuh>
+
 #if __has_include(<cusolverDn.h>)
-#    include <cusolverDn.h>
+#  include <cusolverDn.h>
 #endif
 
-namespace cuda::experimental::stf {
+namespace cuda::experimental::stf
+{
 
 #if __has_include(<cusolverDn.h>)
 // Undocumented
-inline const char* cusolverGetErrorString(const cusolverStatus_t status) {
-    switch (status) {
-    default: break;
-#    define _b738a2a5fe81ee876deadae4a109521c(x) \
-    case x: return #x
-        _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_SUCCESS);
-        _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_NOT_INITIALIZED);
-        _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_ALLOC_FAILED);
-        _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_INVALID_VALUE);
-        _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_ARCH_MISMATCH);
-        _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_MAPPING_ERROR);
-        _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_EXECUTION_FAILED);
-        _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_INTERNAL_ERROR);
-        _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_MATRIX_TYPE_NOT_SUPPORTED);
-        _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_NOT_SUPPORTED);
-        _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_ZERO_PIVOT);
-        _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_INVALID_LICENSE);
-        _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_IRS_PARAMS_NOT_INITIALIZED);
-        _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_IRS_PARAMS_INVALID);
-        _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_IRS_PARAMS_INVALID_PREC);
-        _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_IRS_PARAMS_INVALID_REFINE);
-        _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_IRS_PARAMS_INVALID_MAXITER);
-        _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_IRS_INTERNAL_ERROR);
-        _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_IRS_NOT_SUPPORTED);
-        _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_IRS_OUT_OF_RANGE);
-        _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_IRS_NRHS_NOT_SUPPORTED_FOR_REFINE_GMRES);
-        _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_IRS_INFOS_NOT_INITIALIZED);
-        _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_IRS_INFOS_NOT_DESTROYED);
-        _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_IRS_MATRIX_SINGULAR);
-        _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_INVALID_WORKSPACE);
-#    undef _b738a2a5fe81ee876deadae4a109521c
-    }
-    return "Unknown cuSOLVER status";
+inline const char* cusolverGetErrorString(const cusolverStatus_t status)
+{
+  switch (status)
+  {
+    default:
+      break;
+#  define _b738a2a5fe81ee876deadae4a109521c(x) \
+    case x:                                    \
+      return #x
+      _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_SUCCESS);
+      _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_NOT_INITIALIZED);
+      _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_ALLOC_FAILED);
+      _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_INVALID_VALUE);
+      _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_ARCH_MISMATCH);
+      _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_MAPPING_ERROR);
+      _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_EXECUTION_FAILED);
+      _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_INTERNAL_ERROR);
+      _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_MATRIX_TYPE_NOT_SUPPORTED);
+      _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_NOT_SUPPORTED);
+      _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_ZERO_PIVOT);
+      _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_INVALID_LICENSE);
+      _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_IRS_PARAMS_NOT_INITIALIZED);
+      _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_IRS_PARAMS_INVALID);
+      _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_IRS_PARAMS_INVALID_PREC);
+      _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_IRS_PARAMS_INVALID_REFINE);
+      _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_IRS_PARAMS_INVALID_MAXITER);
+      _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_IRS_INTERNAL_ERROR);
+      _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_IRS_NOT_SUPPORTED);
+      _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_IRS_OUT_OF_RANGE);
+      _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_IRS_NRHS_NOT_SUPPORTED_FOR_REFINE_GMRES);
+      _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_IRS_INFOS_NOT_INITIALIZED);
+      _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_IRS_INFOS_NOT_DESTROYED);
+      _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_IRS_MATRIX_SINGULAR);
+      _b738a2a5fe81ee876deadae4a109521c(CUSOLVER_STATUS_INVALID_WORKSPACE);
+#  undef _b738a2a5fe81ee876deadae4a109521c
+  }
+  return "Unknown cuSOLVER status";
 }
 #endif
 
 // Utility function to convert cudaGraphExecUpdate output to a string
-inline ::std::string cudaGraphExecUpdateErrorString(enum cudaGraphExecUpdateResult res) {
-    switch (res) {
-    case cudaGraphExecUpdateError: return "invalid value";
-    case cudaGraphExecUpdateErrorTopologyChanged: return "graph topology changed";
-    case cudaGraphExecUpdateErrorNodeTypeChanged: return "type of a node changed";
-    case cudaGraphExecUpdateErrorFunctionChanged: return "function of a kernel node changed (CUDA driver < 11.2)";
+inline ::std::string cudaGraphExecUpdateErrorString(enum cudaGraphExecUpdateResult res)
+{
+  switch (res)
+  {
+    case cudaGraphExecUpdateError:
+      return "invalid value";
+    case cudaGraphExecUpdateErrorTopologyChanged:
+      return "graph topology changed";
+    case cudaGraphExecUpdateErrorNodeTypeChanged:
+      return "type of a node changed";
+    case cudaGraphExecUpdateErrorFunctionChanged:
+      return "function of a kernel node changed (CUDA driver < 11.2)";
     case cudaGraphExecUpdateErrorUnsupportedFunctionChange:
-        return "func field of a kernel changed in an unsupported way";
+      return "func field of a kernel changed in an unsupported way";
     case cudaGraphExecUpdateErrorParametersChanged:
-        return "any parameters to a node changed in a way that is not supported";
+      return "any parameters to a node changed in a way that is not supported";
     case cudaGraphExecUpdateErrorAttributesChanged:
-        return "any attributes of a node changed in a way that is not supported";
+      return "any attributes of a node changed in a way that is not supported";
     case cudaGraphExecUpdateErrorNotSupported:
-        return "something about a node is unsupported, like the node's type or configuration";
-    case cudaGraphExecUpdateSuccess: assert(false); return ::std::string();
-    }
-    fprintf(stderr, "%s: invalid argument %d\n", __PRETTY_FUNCTION__, res);
-    abort();
-    return "Unknown error";
+      return "something about a node is unsupported, like the node's type or configuration";
+    case cudaGraphExecUpdateSuccess:
+      assert(false);
+      return ::std::string();
+  }
+  fprintf(stderr, "%s: invalid argument %d\n", __PRETTY_FUNCTION__, res);
+  abort();
+  return "Unknown error";
 }
 
 /**
@@ -98,114 +111,156 @@ inline ::std::string cudaGraphExecUpdateErrorString(enum cudaGraphExecUpdateResu
  * @paragraph example Example
  * @snippet this cuda_exception
  */
-class cuda_exception : public ::std::exception {
+class cuda_exception : public ::std::exception
+{
 public:
-    cuda_exception() = delete;
-    cuda_exception(const cuda_exception&) = delete;
+  cuda_exception()                      = delete;
+  cuda_exception(const cuda_exception&) = delete;
 
-    /**
-     * @brief Constructs an exception object from a status value.
-     *
-     * If `status` is `0`, the exception is still created with an empty error message. Otherwise, the constructor
-     * initializes the error message (later accessible with `what()`) appropriately.
-     *
-     * @tparam T status type, can be `cudaError_t`, `cublasStatus_t`, or `cusolverStatus_t`
-     * @param status status value, usually the result of a CUDA API call
-     * @param loc location of the call, defaulted
-     */
-    template <typename T>
-    cuda_exception(const T status,
-            const ::std::experimental::source_location loc = ::std::experimental::source_location::current()) {
-        // All "success" statuses are zero
-        static_assert(cudaSuccess == 0 && CUDA_SUCCESS == 0
+  /**
+   * @brief Constructs an exception object from a status value.
+   *
+   * If `status` is `0`, the exception is still created with an empty error message. Otherwise, the constructor
+   * initializes the error message (later accessible with `what()`) appropriately.
+   *
+   * @tparam T status type, can be `cudaError_t`, `cublasStatus_t`, or `cusolverStatus_t`
+   * @param status status value, usually the result of a CUDA API call
+   * @param loc location of the call, defaulted
+   */
+  template <typename T>
+  cuda_exception(const T status,
+                 const ::std::experimental::source_location loc = ::std::experimental::source_location::current())
+  {
+    // All "success" statuses are zero
+    static_assert(cudaSuccess == 0 && CUDA_SUCCESS == 0
 #if __has_include(<cublas_v2.h>)
-                              && CUBLAS_STATUS_SUCCESS == 0
+                    && CUBLAS_STATUS_SUCCESS == 0
 #endif
 #if __has_include(<cusolverDn.h>)
-                              && CUSOLVER_STATUS_SUCCESS == 0
+                    && CUSOLVER_STATUS_SUCCESS == 0
 #endif
-                ,
-                "Please revise this function.");
+                  ,
+                  "Please revise this function.");
 
-        // Common early exit test for all cases
-        if (status == 0)
-            return;
-
-        int dev = -1;
-        cudaGetDevice(&dev);
-
-#if __has_include(<cusolverDn.h>)
-        if constexpr (::std::is_same_v<T, cusolverStatus_t>) {
-            format("%s(%u) [device %d] CUSOLVER error in call %s: %s.", loc.file_name(), loc.line(), dev,
-                    loc.function_name(), cusolverGetErrorString(status));
-        } else
-#endif  // __has_include(<cusolverDn.h>)
-#if __has_include(<cublas_v2.h>)
-                if constexpr (::std::is_same_v<T, cublasStatus_t>) {
-            format("%s(%u) [device %d] CUBLAS error in %s: %s.", loc.file_name(), loc.line(), dev, loc.function_name(),
-                    cublasGetStatusString(status));
-        } else
-#endif  // __has_include(<cublas_v2.h>)
-                if constexpr (::std::is_same_v<T, cudaOccError>) {
-            format("%s(%u) [device %d] CUDA OCC error in %s: %s.", loc.file_name(), loc.line(), dev,
-                    loc.function_name(), cudaGetErrorString(cudaErrorInvalidConfiguration));
-        } else if constexpr (::std::is_same_v<T, CUresult>) {
-            const char* error_string = nullptr;
-            cuGetErrorString(status, &error_string);
-            const char* error_name = nullptr;
-            cuGetErrorName(status, &error_name);
-            format("%s(%u) [device %d] CUDA DRIVER error in %s: %s (%s).", loc.file_name(), loc.line(), dev,
-                    loc.function_name(), error_string, error_name);
-        } else {
-            static_assert(::std::is_same_v<T, cudaError_t>, "Error: not a CUDA status.");
-            format("%s(%u) [device %d] CUDA error in %s: %s (%s).", loc.file_name(), loc.line(), dev,
-                    loc.function_name(), cudaGetErrorString(status), cudaGetErrorName(status));
-        }
+    // Common early exit test for all cases
+    if (status == 0)
+    {
+      return;
     }
 
-    /**
-     * @brief Returns a message describing the error.
-     *
-     * @return the error message
-     */
-    const char* what() const noexcept override { return msg.c_str(); }
+    int dev = -1;
+    cudaGetDevice(&dev);
+
+#if __has_include(<cusolverDn.h>)
+    if constexpr (::std::is_same_v<T, cusolverStatus_t>)
+    {
+      format("%s(%u) [device %d] CUSOLVER error in call %s: %s.",
+             loc.file_name(),
+             loc.line(),
+             dev,
+             loc.function_name(),
+             cusolverGetErrorString(status));
+    }
+    else
+#endif // __has_include(<cusolverDn.h>)
+#if __has_include(<cublas_v2.h>)
+      if constexpr (::std::is_same_v<T, cublasStatus_t>)
+    {
+      format("%s(%u) [device %d] CUBLAS error in %s: %s.",
+             loc.file_name(),
+             loc.line(),
+             dev,
+             loc.function_name(),
+             cublasGetStatusString(status));
+    }
+    else
+#endif // __has_include(<cublas_v2.h>)
+      if constexpr (::std::is_same_v<T, cudaOccError>)
+      {
+        format("%s(%u) [device %d] CUDA OCC error in %s: %s.",
+               loc.file_name(),
+               loc.line(),
+               dev,
+               loc.function_name(),
+               cudaGetErrorString(cudaErrorInvalidConfiguration));
+      }
+      else if constexpr (::std::is_same_v<T, CUresult>)
+      {
+        const char* error_string = nullptr;
+        cuGetErrorString(status, &error_string);
+        const char* error_name = nullptr;
+        cuGetErrorName(status, &error_name);
+        format("%s(%u) [device %d] CUDA DRIVER error in %s: %s (%s).",
+               loc.file_name(),
+               loc.line(),
+               dev,
+               loc.function_name(),
+               error_string,
+               error_name);
+      }
+      else
+      {
+        static_assert(::std::is_same_v<T, cudaError_t>, "Error: not a CUDA status.");
+        format("%s(%u) [device %d] CUDA error in %s: %s (%s).",
+               loc.file_name(),
+               loc.line(),
+               dev,
+               loc.function_name(),
+               cudaGetErrorString(status),
+               cudaGetErrorName(status));
+      }
+  }
+
+  /**
+   * @brief Returns a message describing the error.
+   *
+   * @return the error message
+   */
+  const char* what() const noexcept override
+  {
+    return msg.c_str();
+  }
 
 private:
-    template <typename... Ps>
-    void format(const char* fmt, Ps&&... ps) {
-        // Compute the bytes to be written.
-        auto needed = ::std::snprintf(nullptr, 0, fmt, ps...);
-        // Pedantically reserve one extra character for the terminating `\0`.
-        msg.resize(needed + 1);
-        // This will write `needed` bytes plus a `\0` at the end.
-        ::std::snprintf(&msg[0], msg.capacity(), fmt, ::std::forward<Ps>(ps)...);
-        // The terminating `\0` is not part of the string's length.
-        msg.resize(needed);
-    }
+  template <typename... Ps>
+  void format(const char* fmt, Ps&&... ps)
+  {
+    // Compute the bytes to be written.
+    auto needed = ::std::snprintf(nullptr, 0, fmt, ps...);
+    // Pedantically reserve one extra character for the terminating `\0`.
+    msg.resize(needed + 1);
+    // This will write `needed` bytes plus a `\0` at the end.
+    ::std::snprintf(&msg[0], msg.capacity(), fmt, ::std::forward<Ps>(ps)...);
+    // The terminating `\0` is not part of the string's length.
+    msg.resize(needed);
+  }
 
-    ::std::string msg;
+  ::std::string msg;
 };
 
 #ifdef UNITTESTED_FILE
 //! [cuda_exception]
-UNITTEST("cuda_exception") {
-    auto e = cuda_exception(CUDA_SUCCESS);
-    EXPECT(e.what()[0] == 0);
-#    if __has_include(<cusolverDn.h>)
-    auto e1 = cuda_exception(CUSOLVER_STATUS_ZERO_PIVOT);
-    EXPECT(strlen(e1.what()) > 0u);
-#    endif
+UNITTEST("cuda_exception")
+{
+  auto e = cuda_exception(CUDA_SUCCESS);
+  EXPECT(e.what()[0] == 0);
+#  if __has_include(<cusolverDn.h>)
+  auto e1 = cuda_exception(CUSOLVER_STATUS_ZERO_PIVOT);
+  EXPECT(strlen(e1.what()) > 0u);
+#  endif
 };
 //! [cuda_exception]
-#endif  // UNITTESTED_FILE
+#endif // UNITTESTED_FILE
 
-namespace reserved {
+namespace reserved
+{
 template <typename>
 struct first_param_impl;
 
 template <typename R, typename P, typename... Ps>
-struct first_param_impl<R (*)(P, Ps...)> {
-    using type = P;
+struct first_param_impl<R (*)(P, Ps...)>
+{
+  using type = P;
 };
 
 /*
@@ -213,18 +268,19 @@ struct first_param_impl<R (*)(P, Ps...)> {
 */
 template <auto f>
 using first_param = typename first_param_impl<decltype(f)>::type;
-}  // namespace reserved
+} // namespace reserved
 
 #ifdef UNITTESTED_FILE
-UNITTEST("first_param") {
-    extern int test1(int);
-    static_assert(::std::is_same_v<reserved::first_param<test1>, int>);
-    extern int test2(double, int);
-    static_assert(::std::is_same_v<reserved::first_param<test2>, double>);
-    extern int test3(int&&);
-    static_assert(::std::is_same_v<reserved::first_param<test3>, int&&>);
+UNITTEST("first_param")
+{
+  extern int test1(int);
+  static_assert(::std::is_same_v<reserved::first_param<test1>, int>);
+  extern int test2(double, int);
+  static_assert(::std::is_same_v<reserved::first_param<test2>, double>);
+  extern int test3(int&&);
+  static_assert(::std::is_same_v<reserved::first_param<test3>, int&&>);
 };
-#endif  // UNITTESTED_FILE
+#endif // UNITTESTED_FILE
 
 /**
  * @brief Enforces successful call of CUDA API functions.
@@ -241,26 +297,31 @@ UNITTEST("first_param") {
  */
 template <typename T>
 void cuda_safe_call(const T status,
-        const ::std::experimental::source_location loc = ::std::experimental::source_location::current()) {
-    // Common early exit test for all cases
-    if (status == 0)
-        return;
-    fprintf(stderr, "%s\n", cuda_exception(status, loc).what());
-    abort();
+                    const ::std::experimental::source_location loc = ::std::experimental::source_location::current())
+{
+  // Common early exit test for all cases
+  if (status == 0)
+  {
+    return;
+  }
+  fprintf(stderr, "%s\n", cuda_exception(status, loc).what());
+  abort();
 }
 
 #ifdef UNITTESTED_FILE
-UNITTEST("cuda_safe_call") {
-    //! [cuda_safe_call]
-    cuda_safe_call(CUDA_SUCCESS);  // no effect
-    int dev;
-    cuda_safe_call(cudaGetDevice(&dev));  // continue execution if the call is successful
-    if (false) {
-        cuda_safe_call(CUDA_ERROR_INVALID_VALUE);  // would abort application if called
-    }
-    //! [cuda_safe_call]
+UNITTEST("cuda_safe_call")
+{
+  //! [cuda_safe_call]
+  cuda_safe_call(CUDA_SUCCESS); // no effect
+  int dev;
+  cuda_safe_call(cudaGetDevice(&dev)); // continue execution if the call is successful
+  if (false)
+  {
+    cuda_safe_call(CUDA_ERROR_INVALID_VALUE); // would abort application if called
+  }
+  //! [cuda_safe_call]
 };
-#endif  // UNITTESTED_FILE
+#endif // UNITTESTED_FILE
 
 /**
  * @brief Throws a `cuda_exception` if the given `status` is an error code
@@ -278,28 +339,34 @@ UNITTEST("cuda_safe_call") {
  */
 template <typename Status>
 void cuda_try(Status status,
-        const ::std::experimental::source_location loc = ::std::experimental::source_location::current()) {
-    if (status) {
-        throw cuda_exception(status, loc);
-    }
+              const ::std::experimental::source_location loc = ::std::experimental::source_location::current())
+{
+  if (status)
+  {
+    throw cuda_exception(status, loc);
+  }
 }
 
 #ifdef UNITTESTED_FILE
-UNITTEST("cuda_try1") {
-    //! [cuda_try1]
-    cuda_try(CUDA_SUCCESS);  // no effect, returns CUDA_SUCCESS
-    int dev;
-    cuda_try(cudaGetDevice(&dev));  // equivalent to the line above
-    try {
-        cuda_try(CUDA_ERROR_INVALID_VALUE);  // would abort application if called
-    } catch (...) {
-        // This point will be reached
-        return;
-    }
-    EXPECT(false, "Should not get here.");
-    //! [cuda_try1]
+UNITTEST("cuda_try1")
+{
+  //! [cuda_try1]
+  cuda_try(CUDA_SUCCESS); // no effect, returns CUDA_SUCCESS
+  int dev;
+  cuda_try(cudaGetDevice(&dev)); // equivalent to the line above
+  try
+  {
+    cuda_try(CUDA_ERROR_INVALID_VALUE); // would abort application if called
+  }
+  catch (...)
+  {
+    // This point will be reached
+    return;
+  }
+  EXPECT(false, "Should not get here.");
+  //! [cuda_try1]
 };
-#endif  // UNITTESTED_FILE
+#endif // UNITTESTED_FILE
 
 /**
  * @brief Calls a CUDA function and throws a `cuda_exception` in case of failure.
@@ -323,53 +390,65 @@ UNITTEST("cuda_try1") {
  * @snippet this cuda_try2
  */
 template <auto fun, typename... Ps>
-auto cuda_try(Ps&&... ps) {
-    if constexpr (::std::is_invocable_v<decltype(fun), Ps...>) {
-        cuda_try(fun(::std::forward<Ps>(ps)...));
-    } else {
-        ::std::remove_pointer_t<reserved::first_param<fun>> result {};
-        cuda_try(fun(&result, ::std::forward<Ps>(ps)...));
-        return result;
-    }
+auto cuda_try(Ps&&... ps)
+{
+  if constexpr (::std::is_invocable_v<decltype(fun), Ps...>)
+  {
+    cuda_try(fun(::std::forward<Ps>(ps)...));
+  }
+  else
+  {
+    ::std::remove_pointer_t<reserved::first_param<fun>> result{};
+    cuda_try(fun(&result, ::std::forward<Ps>(ps)...));
+    return result;
+  }
 }
 
 #ifdef UNITTESTED_FILE
-UNITTEST("cuda_try2") {
-    //! [cuda_try2]
-    int dev = cuda_try<cudaGetDevice>();  // continue execution if the call is successful
-    cuda_try(cudaGetDevice(&dev));        // equivalent to the line above
-    //! [cuda_try2]
+UNITTEST("cuda_try2")
+{
+  //! [cuda_try2]
+  int dev = cuda_try<cudaGetDevice>(); // continue execution if the call is successful
+  cuda_try(cudaGetDevice(&dev)); // equivalent to the line above
+  //! [cuda_try2]
 };
-#endif  // UNITTESTED_FILE
+#endif // UNITTESTED_FILE
 
 // Unused, keep for later
 /// @cond DO_NOT_DOCUMENT
-#define OVERLOADS_UNUSED(f)                                            \
-    ba7b8453f262e429575e23dcb2192b33(a2bce6d11e8033f5c8d9c9442849656c, \
-            f(::std::forward<decltype(a2bce6d11e8033f5c8d9c9442849656c)>(a2bce6d11e8033f5c8d9c9442849656c)...))
+#define OVERLOADS_UNUSED(f)           \
+  ba7b8453f262e429575e23dcb2192b33(   \
+    a2bce6d11e8033f5c8d9c9442849656c, \
+    f(::std::forward<decltype(a2bce6d11e8033f5c8d9c9442849656c)>(a2bce6d11e8033f5c8d9c9442849656c)...))
 // Unused, keep for later
-#define ba7b8453f262e429575e23dcb2192b33(a, fun_of_a) \
-    [&](auto&&... a) noexcept(noexcept(fun_of_a)) -> decltype(fun_of_a) { return fun_of_a; }
+#define ba7b8453f262e429575e23dcb2192b33(a, fun_of_a)                   \
+  [&](auto&&... a) noexcept(noexcept(fun_of_a)) -> decltype(fun_of_a) { \
+    return fun_of_a;                                                    \
+  }
 
 // Unused, keep for later
-#define CUDATRY_UNUSED(fun)                                                                                     \
-    a838e9c10e0ded64dff84e7b679d2342((fun), a2bce6d11e8033f5c8d9c9442849656c, cca0b395150985cb1c6ab3f8032edafa, \
-            fef8664203d67fe27b0434c87ce346fb)
+#define CUDATRY_UNUSED(fun)         \
+  a838e9c10e0ded64dff84e7b679d2342( \
+    (fun), a2bce6d11e8033f5c8d9c9442849656c, cca0b395150985cb1c6ab3f8032edafa, fef8664203d67fe27b0434c87ce346fb)
 // Unused, keep for later
-#define a838e9c10e0ded64dff84e7b679d2342(f, a, status, result)                         \
-    [&](auto&&... a) {                                                                 \
-        if constexpr (::std::is_invocable_v<decltype(OVERLOADS(f)), decltype(a)...>) { \
-            ::cuda::experimental::stf::cuda_try(f(::std::forward<decltype(a)>(a)...)); \
-        } else {                                                                       \
-            ::std::remove_pointer_t<reserved::first_param<f>> result;                  \
-            if (auto status = f(&result, ::std::forward<decltype(a)>(a)...)) {         \
-                throw ::cuda::experimental::stf::cuda_exception(status);               \
-            }                                                                          \
-            return result;                                                             \
-        }                                                                              \
-    } CUDATRY_ACCEPTS_ONLY_FUNCTION_NAMES
+#define a838e9c10e0ded64dff84e7b679d2342(f, a, status, result)                   \
+  [&](auto&&... a) {                                                             \
+    if constexpr (::std::is_invocable_v<decltype(OVERLOADS(f)), decltype(a)...>) \
+    {                                                                            \
+      ::cuda::experimental::stf::cuda_try(f(::std::forward<decltype(a)>(a)...)); \
+    }                                                                            \
+    else                                                                         \
+    {                                                                            \
+      ::std::remove_pointer_t<reserved::first_param<f>> result;                  \
+      if (auto status = f(&result, ::std::forward<decltype(a)>(a)...))           \
+      {                                                                          \
+        throw ::cuda::experimental::stf::cuda_exception(status);                 \
+      }                                                                          \
+      return result;                                                             \
+    }                                                                            \
+  } CUDATRY_ACCEPTS_ONLY_FUNCTION_NAMES
 // Unused, keep for later
 #define CUDATRY_ACCEPTS_ONLY_FUNCTION_NAMES_UNUSED(...) (__VA_ARGS__)
 /// @endcond
 
-}  // namespace cuda::experimental::stf
+} // namespace cuda::experimental::stf

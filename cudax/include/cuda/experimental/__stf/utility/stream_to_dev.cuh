@@ -15,30 +15,32 @@
 
 #pragma once
 
-#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
-
 #include <cuda.h>
 #include <cuda_runtime.h>
 
-namespace cuda::experimental::stf {
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+
+namespace cuda::experimental::stf
+{
 
 /**
  * @brief This computes the CUDA device in which the stream was created
  */
-inline int get_device_from_stream(cudaStream_t stream) {
-    // Convert the runtime API stream to a driver API structure
-    auto stream_driver = CUstream(stream);
+inline int get_device_from_stream(cudaStream_t stream)
+{
+  // Convert the runtime API stream to a driver API structure
+  auto stream_driver = CUstream(stream);
 
-    CUcontext ctx;
-    cuda_safe_call(cuStreamGetCtx(stream_driver, &ctx));
+  CUcontext ctx;
+  cuda_safe_call(cuStreamGetCtx(stream_driver, &ctx));
 
-    // Query the context associated with a stream by using the underlying driver API
-    CUdevice stream_dev;
-    cuda_safe_call(cuCtxPushCurrent(ctx));
-    cuda_safe_call(cuCtxGetDevice(&stream_dev));
-    cuda_safe_call(cuCtxPopCurrent(&ctx));
+  // Query the context associated with a stream by using the underlying driver API
+  CUdevice stream_dev;
+  cuda_safe_call(cuCtxPushCurrent(ctx));
+  cuda_safe_call(cuCtxGetDevice(&stream_dev));
+  cuda_safe_call(cuCtxPopCurrent(&ctx));
 
-    return int(stream_dev);
+  return int(stream_dev);
 }
 
-}  // end namespace cuda::experimental::stf
+} // end namespace cuda::experimental::stf

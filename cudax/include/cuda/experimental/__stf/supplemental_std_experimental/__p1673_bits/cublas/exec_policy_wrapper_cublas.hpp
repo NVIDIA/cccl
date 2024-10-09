@@ -15,28 +15,44 @@
 
 #include <execution>
 
-namespace __cublas_std {
+namespace __cublas_std
+{
 
-struct cublas_exec {};
+struct cublas_exec
+{};
 
-auto execpolicy_mapper(cublas_exec) {
-    return cublas_exec();
+auto execpolicy_mapper(cublas_exec)
+{
+  return cublas_exec();
 }
-}  // namespace __cublas_std
+} // namespace __cublas_std
 
 // Remap standard execution policies to cuBLAS
 #ifdef __LINALG_ENABLE_CUBLAS_DEFAULT
-namespace std { namespace experimental { inline namespace __p1673_version_0 { namespace linalg {
-auto execpolicy_mapper(std::experimental::linalg::impl::default_exec_t) {
-    return __cublas_std::cublas_exec();
+namespace std
+{
+namespace experimental
+{
+inline namespace __p1673_version_0
+{
+namespace linalg
+{
+auto execpolicy_mapper(std::experimental::linalg::impl::default_exec_t)
+{
+  return __cublas_std::cublas_exec();
 }
-auto execpolicy_mapper(std::execution::parallel_policy) {
-    return __cublas_std::cublas_exec();
+auto execpolicy_mapper(std::execution::parallel_policy)
+{
+  return __cublas_std::cublas_exec();
 }
-auto execpolicy_mapper(std::execution::parallel_unsequenced_policy) {
-    return __cublas_std::cublas_exec();
+auto execpolicy_mapper(std::execution::parallel_unsequenced_policy)
+{
+  return __cublas_std::cublas_exec();
 }
-}}}}  // namespace std::experimental::__p1673_version_0::linalg
+} // namespace linalg
+} // namespace __p1673_version_0
+} // namespace experimental
+} // namespace std
 #endif
 
 #endif

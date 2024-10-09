@@ -11,17 +11,17 @@
 #pragma once
 
 #if defined(__CUDACC__) && !defined(_NVHPC_CUDA)
-#    define CUDASTF_HOST_DEVICE __host__ __device__
-#    define CUDASTF_DEVICE __device__
-#    define CUDASTF_HOST __host__
+#  define CUDASTF_HOST_DEVICE __host__ __device__
+#  define CUDASTF_DEVICE      __device__
+#  define CUDASTF_HOST        __host__
 #else
-#    define CUDASTF_HOST_DEVICE
-#    define CUDASTF_DEVICE
-#    define CUDASTF_HOST
+#  define CUDASTF_HOST_DEVICE
+#  define CUDASTF_DEVICE
+#  define CUDASTF_HOST
 #endif
 
 #if __CUDA_ARCH__ >= 700
-#    define CUDASTF_GRID_CONSTANT __grid_constant__
+#  define CUDASTF_GRID_CONSTANT __grid_constant__
 #else
-#    define CUDASTF_GRID_CONSTANT
+#  define CUDASTF_GRID_CONSTANT
 #endif

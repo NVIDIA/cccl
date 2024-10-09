@@ -20,7 +20,8 @@
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
 #include <cuda/experimental/__stf/utility/pretty_print.cuh>
 
-namespace cuda::experimental::stf {
+namespace cuda::experimental::stf
+{
 
 /**
  * @brief Buddy allocator for one data place
@@ -29,272 +30,321 @@ namespace cuda::experimental::stf {
  *
  * We (currently) assume that the size is a power of 2
  */
-class buddy_allocator_metadata {
+class buddy_allocator_metadata
+{
 private:
-    /**
-     * @brief Describes an available piece of memory
-     */
-    struct avail_block {
-        // Copy prereqs
-        avail_block(size_t index_, event_list prereqs_) : index(index_), prereqs(mv(prereqs_)) {}
+  /**
+   * @brief Describes an available piece of memory
+   */
+  struct avail_block
+  {
+    // Copy prereqs
+    avail_block(size_t index_, event_list prereqs_)
+        : index(index_)
+        , prereqs(mv(prereqs_))
+    {}
 
-        size_t index = 0;    // location of the block
-        event_list prereqs;  // dependencies to use that block
-    };
+    size_t index = 0; // location of the block
+    event_list prereqs; // dependencies to use that block
+  };
 
 public:
-    buddy_allocator_metadata(size_t size, event_list init_prereqs) {
-        total_size_ = next_power_of_two(size);
-        assert(total_size_ == size);
+  buddy_allocator_metadata(size_t size, event_list init_prereqs)
+  {
+    total_size_ = next_power_of_two(size);
+    assert(total_size_ == size);
 
-        max_level_ = int_log2(total_size_);
+    max_level_ = int_log2(total_size_);
 
-        free_lists_.resize(max_level_ + 1);
+    free_lists_.resize(max_level_ + 1);
 
-        // Initially, the whole memory is free, but depends on init_prereqs
-        free_lists_[max_level_].emplace_back(0, init_prereqs);
+    // Initially, the whole memory is free, but depends on init_prereqs
+    free_lists_[max_level_].emplace_back(0, init_prereqs);
+  }
+
+  ssize_t allocate(size_t size, event_list& prereqs)
+  {
+    size         = next_power_of_two(size);
+    size_t level = int_log2(size);
+
+    if (level > max_level_)
+    {
+      fprintf(stderr, "Level %ld > max level %ld\n", level, max_level_);
+      return -1;
     }
 
-    ssize_t allocate(size_t size, event_list& prereqs) {
-        size = next_power_of_two(size);
-        size_t level = int_log2(size);
-
-        if (level > max_level_) {
-            fprintf(stderr, "Level %ld > max level %ld\n", level, max_level_);
-            return -1;
-        }
-
-        ssize_t alloc_index = find_free_block(level, prereqs);
-        if (alloc_index == -1) {
-            fprintf(stderr, "No free block available for size %ld\n", size);
-            return -1;
-        }
-
-        return alloc_index;
+    ssize_t alloc_index = find_free_block(level, prereqs);
+    if (alloc_index == -1)
+    {
+      fprintf(stderr, "No free block available for size %ld\n", size);
+      return -1;
     }
 
-    void deallocate(ssize_t index, size_t size, event_list& prereqs) {
-        size = next_power_of_two(size);
-        size_t level = int_log2(size);
+    return alloc_index;
+  }
 
-        // Deallocated blocks will depend on these, and we will merge the
-        // previous dependencies when merging buddies
-        event_list block_prereqs(prereqs);
+  void deallocate(ssize_t index, size_t size, event_list& prereqs)
+  {
+    size         = next_power_of_two(size);
+    size_t level = int_log2(size);
 
-        while (level < max_level_) {
-            size_t buddy_index = get_buddy_index(index, level);
-            auto& buddy_list = free_lists_[level];
-            auto it = ::std::find_if(buddy_list.begin(), buddy_list.end(),
-                    [buddy_index](const avail_block& block) { return block.index == buddy_index; });
+    // Deallocated blocks will depend on these, and we will merge the
+    // previous dependencies when merging buddies
+    event_list block_prereqs(prereqs);
 
-            if (it == buddy_list.end()) {
-                // No buddy available to merge, stop here
-                break;
-            }
-            // Merge with buddy
-            block_prereqs.merge(it->prereqs);
+    while (level < max_level_)
+    {
+      size_t buddy_index = get_buddy_index(index, level);
+      auto& buddy_list   = free_lists_[level];
+      auto it = ::std::find_if(buddy_list.begin(), buddy_list.end(), [buddy_index](const avail_block& block) {
+        return block.index == buddy_index;
+      });
 
-            buddy_list.erase(it);
-            index = ::std::min(index, ssize_t(buddy_index));
-            level++;
-        }
+      if (it == buddy_list.end())
+      {
+        // No buddy available to merge, stop here
+        break;
+      }
+      // Merge with buddy
+      block_prereqs.merge(it->prereqs);
 
-        free_lists_[level].emplace_back(index, prereqs);
+      buddy_list.erase(it);
+      index = ::std::min(index, ssize_t(buddy_index));
+      level++;
     }
 
-    void deinit(event_list& prereqs) {
-        for (auto& level: free_lists_) {
-            for (auto& block: level) {
-                prereqs.merge(block.prereqs);
-                block.prereqs.clear();
-            }
-        }
-    }
+    free_lists_[level].emplace_back(index, prereqs);
+  }
 
-    void debug_print() const {
-        size_t power = 1;
-        for (size_t i = 0; i <= max_level_; ++i, power *= 2) {
-            if (!free_lists_[i].empty()) {
-                fprintf(stderr, "Level %ld : %s bytes : ", i, pretty_print_bytes(power).c_str());
-                for (const auto& b: free_lists_[i]) {
-                    fprintf(stderr, "[%ld, %ld[ ", b.index, b.index + power);
-                }
-                fprintf(stderr, "\n");
-            }
-        }
+  void deinit(event_list& prereqs)
+  {
+    for (auto& level : free_lists_)
+    {
+      for (auto& block : level)
+      {
+        prereqs.merge(block.prereqs);
+        block.prereqs.clear();
+      }
     }
+  }
+
+  void debug_print() const
+  {
+    size_t power = 1;
+    for (size_t i = 0; i <= max_level_; ++i, power *= 2)
+    {
+      if (!free_lists_[i].empty())
+      {
+        fprintf(stderr, "Level %ld : %s bytes : ", i, pretty_print_bytes(power).c_str());
+        for (const auto& b : free_lists_[i])
+        {
+          fprintf(stderr, "[%ld, %ld[ ", b.index, b.index + power);
+        }
+        fprintf(stderr, "\n");
+      }
+    }
+  }
 
 private:
-    static size_t next_power_of_two(size_t size) {
-        if (size == 0)
-            return 1;
-        size_t power = 1;
-        while (power < size)
-            power *= 2;
-        return power;
+  static size_t next_power_of_two(size_t size)
+  {
+    if (size == 0)
+    {
+      return 1;
+    }
+    size_t power = 1;
+    while (power < size)
+    {
+      power *= 2;
+    }
+    return power;
+  }
+
+  static size_t int_log2(size_t n)
+  {
+    assert(n > 0);
+
+    size_t log = 0;
+    while (n >>= 1)
+    { // Right shift until n becomes 0
+      log++;
+    }
+    return log;
+  }
+
+  ssize_t find_free_block(size_t level, event_list& prereqs)
+  {
+    for (size_t current_level : each(level, max_level_ + 1))
+    {
+      if (free_lists_[current_level].empty())
+      {
+        continue;
+      }
+      auto& b              = free_lists_[current_level].back();
+      size_t block_index   = b.index;
+      event_list b_prereqs = mv(b.prereqs);
+      free_lists_[current_level].pop_back();
+
+      // Dependencies to reuse that block
+      prereqs.merge(b_prereqs);
+
+      // If we are not at the requested level, split blocks
+      while (current_level > level)
+      {
+        current_level--;
+        size_t buddy_index = block_index + (1 << current_level);
+        // split blocks depend on the previous dependencies of the whole unsplit block
+        free_lists_[current_level].emplace_back(buddy_index, b_prereqs);
+      }
+      return block_index;
     }
 
-    static size_t int_log2(size_t n) {
-        assert(n > 0);
+    return -1; // No block available
+  }
 
-        size_t log = 0;
-        while (n >>= 1) {  // Right shift until n becomes 0
-            log++;
-        }
-        return log;
-    }
+  size_t get_buddy_index(size_t index, size_t level)
+  {
+    assert(level <= 63);
+    return index ^ (1 << level); // XOR to find the buddy block
+  }
 
-    ssize_t find_free_block(size_t level, event_list& prereqs) {
-        for (size_t current_level: each(level, max_level_ + 1)) {
-            if (free_lists_[current_level].empty()) {
-                continue;
-            }
-            auto& b = free_lists_[current_level].back();
-            size_t block_index = b.index;
-            event_list b_prereqs = mv(b.prereqs);
-            free_lists_[current_level].pop_back();
-
-            // Dependencies to reuse that block
-            prereqs.merge(b_prereqs);
-
-            // If we are not at the requested level, split blocks
-            while (current_level > level) {
-                current_level--;
-                size_t buddy_index = block_index + (1 << current_level);
-                // split blocks depend on the previous dependencies of the whole unsplit block
-                free_lists_[current_level].emplace_back(buddy_index, b_prereqs);
-            }
-            return block_index;
-        }
-
-        return -1;  // No block available
-    }
-
-    size_t get_buddy_index(size_t index, size_t level) {
-        assert(level <= 63);
-        return index ^ (1 << level);  // XOR to find the buddy block
-    }
-
-    ::std::vector<::std::vector<avail_block>> free_lists_;
-    size_t total_size_ = 0;
-    size_t max_level_ = 0;
+  ::std::vector<::std::vector<avail_block>> free_lists_;
+  size_t total_size_ = 0;
+  size_t max_level_  = 0;
 };
 
 /**
  * @brief Buddy allocator policy which relies on a root allocator to create
  * large buffers which are then suballocated with a buddy allocation algorithm
  */
-class buddy_allocator : public block_allocator_interface {
+class buddy_allocator : public block_allocator_interface
+{
 public:
-    buddy_allocator() = default;
-    buddy_allocator(block_allocator_untyped root_allocator_) : root_allocator(mv(root_allocator_)) {}
+  buddy_allocator() = default;
+  buddy_allocator(block_allocator_untyped root_allocator_)
+      : root_allocator(mv(root_allocator_))
+  {}
 
 private:
-    // Per data place buffer and its corresponding metadata
-    struct per_place {
-        per_place(void* base_, size_t size, event_list& prereqs) : base(base_), buffer_size(size) {
-            metadata = ::std::make_shared<buddy_allocator_metadata>(buffer_size, prereqs);
-        }
+  // Per data place buffer and its corresponding metadata
+  struct per_place
+  {
+    per_place(void* base_, size_t size, event_list& prereqs)
+        : base(base_)
+        , buffer_size(size)
+    {
+      metadata = ::std::make_shared<buddy_allocator_metadata>(buffer_size, prereqs);
+    }
 
-        void* base = nullptr;
-        size_t buffer_size = 0;
-        ::std::shared_ptr<buddy_allocator_metadata> metadata;
-    };
+    void* base         = nullptr;
+    size_t buffer_size = 0;
+    ::std::shared_ptr<buddy_allocator_metadata> metadata;
+  };
 
 public:
-    void* allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ssize_t& s, event_list& prereqs) override {
-        auto it = map.find(memory_node);
-        if (it == map.end()) {
-            // There is currently no buffer associated to this place, create one lazily
-            // 1. create memory on that place
-            ssize_t sz = 128 * 1024 * 1024;  // TODO
-            auto& a = root_allocator ? root_allocator : ctx.get_uncached_allocator();
-            void* base = a.allocate(ctx, memory_node, sz, prereqs);
+  void* allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ssize_t& s, event_list& prereqs) override
+  {
+    auto it = map.find(memory_node);
+    if (it == map.end())
+    {
+      // There is currently no buffer associated to this place, create one lazily
+      // 1. create memory on that place
+      ssize_t sz = 128 * 1024 * 1024; // TODO
+      auto& a    = root_allocator ? root_allocator : ctx.get_uncached_allocator();
+      void* base = a.allocate(ctx, memory_node, sz, prereqs);
 
-            // 2. creates meta data for that buffer, and 3. associate it to the data place
-            it = map.emplace(memory_node, ::std::make_shared<per_place>(base, sz, prereqs)).first;
-        }
-
-        // There should be exactly one entry in the map
-        assert(map.count(memory_node) == 1);
-        auto& m = it->second;
-
-        ssize_t offset = m->metadata->allocate(s, prereqs);
-        assert(offset != -1);
-        return static_cast<char*>(m->base) + offset;
+      // 2. creates meta data for that buffer, and 3. associate it to the data place
+      it = map.emplace(memory_node, ::std::make_shared<per_place>(base, sz, prereqs)).first;
     }
 
-    void deallocate(
-            backend_ctx_untyped&, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override {
-        // There should be exactly one entry in the map
-        assert(map.count(memory_node) == 1);
-        auto& m = map[memory_node];
+    // There should be exactly one entry in the map
+    assert(map.count(memory_node) == 1);
+    auto& m = it->second;
 
-        size_t offset = static_cast<char*>(ptr) - static_cast<char*>(m->base);
+    ssize_t offset = m->metadata->allocate(s, prereqs);
+    assert(offset != -1);
+    return static_cast<char*>(m->base) + offset;
+  }
 
-        m->metadata->deallocate(offset, sz, prereqs);
+  void
+  deallocate(backend_ctx_untyped&, const data_place& memory_node, event_list& prereqs, void* ptr, size_t sz) override
+  {
+    // There should be exactly one entry in the map
+    assert(map.count(memory_node) == 1);
+    auto& m = map[memory_node];
+
+    size_t offset = static_cast<char*>(ptr) - static_cast<char*>(m->base);
+
+    m->metadata->deallocate(offset, sz, prereqs);
+  }
+
+  event_list deinit(backend_ctx_untyped& ctx) override
+  {
+    event_list result;
+    // For every place in the map
+    for (auto& [memory_node, pp] : map)
+    {
+      event_list local_prereqs;
+
+      // Deinitialize the metadata of the buddy allocator for this place
+      pp->metadata->deinit(local_prereqs);
+
+      // Deallocate the underlying buffer for this buddy allocator
+      auto& a = root_allocator ? root_allocator : ctx.get_uncached_allocator();
+      a.deallocate(ctx, memory_node, local_prereqs, pp->base, pp->buffer_size);
+
+      result.merge(local_prereqs);
     }
+    return result;
+  }
 
-    event_list deinit(backend_ctx_untyped& ctx) override {
-        event_list result;
-        // For every place in the map
-        for (auto& [memory_node, pp]: map) {
-            event_list local_prereqs;
-
-            // Deinitialize the metadata of the buddy allocator for this place
-            pp->metadata->deinit(local_prereqs);
-
-            // Deallocate the underlying buffer for this buddy allocator
-            auto& a = root_allocator ? root_allocator : ctx.get_uncached_allocator();
-            a.deallocate(ctx, memory_node, local_prereqs, pp->base, pp->buffer_size);
-
-            result.merge(local_prereqs);
-        }
-        return result;
-    }
-
-    ::std::string to_string() const override { return "buddy allocator"; }
+  ::std::string to_string() const override
+  {
+    return "buddy allocator";
+  }
 
 private:
-    ::std::unordered_map<data_place, ::std::shared_ptr<per_place>> map;
+  ::std::unordered_map<data_place, ::std::shared_ptr<per_place>> map;
 
-    block_allocator_untyped root_allocator;
+  block_allocator_untyped root_allocator;
 };
 
 #ifdef UNITTESTED_FILE
 
-UNITTEST("buddy_allocator is movable") {
-    static_assert(std::is_move_constructible<buddy_allocator>::value, "buddy_allocator must be move constructible");
-    static_assert(std::is_move_assignable<buddy_allocator>::value, "buddy_allocator must be move assignable");
+UNITTEST("buddy_allocator is movable")
+{
+  static_assert(std::is_move_constructible<buddy_allocator>::value, "buddy_allocator must be move constructible");
+  static_assert(std::is_move_assignable<buddy_allocator>::value, "buddy_allocator must be move assignable");
 };
 
-UNITTEST("buddy allocator meta data") {
-    event_list prereqs;  // starts empty
+UNITTEST("buddy allocator meta data")
+{
+  event_list prereqs; // starts empty
 
-    buddy_allocator_metadata allocator(1024, prereqs);
+  buddy_allocator_metadata allocator(1024, prereqs);
 
-    // ::std::cout << "Initial state:" << ::std::endl;
-    // allocator.debug_print();
+  // ::std::cout << "Initial state:" << ::std::endl;
+  // allocator.debug_print();
 
-    event_list dummy;
+  event_list dummy;
 
-    ssize_t ptr1 = allocator.allocate(200, dummy);  // Allocate 200 bytes
-    // ::std::cout << "\nAfter allocating 200 bytes:" << ::std::endl;
-    // allocator.debug_print();
+  ssize_t ptr1 = allocator.allocate(200, dummy); // Allocate 200 bytes
+  // ::std::cout << "\nAfter allocating 200 bytes:" << ::std::endl;
+  // allocator.debug_print();
 
-    ssize_t ptr2 = allocator.allocate(300, dummy);  // Allocate 300 bytes
-    // ::std::cout << "\nAfter allocating 300 bytes:" << ::std::endl;
-    // allocator.debug_print();
+  ssize_t ptr2 = allocator.allocate(300, dummy); // Allocate 300 bytes
+  // ::std::cout << "\nAfter allocating 300 bytes:" << ::std::endl;
+  // allocator.debug_print();
 
-    allocator.deallocate(ptr1, 200, dummy);  // Free the 200 bytes
-    // ::std::cout << "\nAfter freeing 200 bytes:" << ::std::endl;
-    // allocator.debug_print();
+  allocator.deallocate(ptr1, 200, dummy); // Free the 200 bytes
+  // ::std::cout << "\nAfter freeing 200 bytes:" << ::std::endl;
+  // allocator.debug_print();
 
-    allocator.deallocate(ptr2, 300, dummy);  // Free the 300 bytes
-    // ::std::cout << "\nAfter freeing 300 bytes:" << ::std::endl;
-    // allocator.debug_print();
+  allocator.deallocate(ptr2, 300, dummy); // Free the 300 bytes
+  // ::std::cout << "\nAfter freeing 300 bytes:" << ::std::endl;
+  // allocator.debug_print();
 };
 
-#endif  // UNITTESTED_FILE
+#endif // UNITTESTED_FILE
 
-}  // end namespace cuda::experimental::stf
+} // end namespace cuda::experimental::stf

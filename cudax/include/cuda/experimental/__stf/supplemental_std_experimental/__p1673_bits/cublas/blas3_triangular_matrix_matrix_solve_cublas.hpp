@@ -13,7 +13,8 @@
 #ifndef INCLUDE_EXPERIMENTAL___P1673_BITS_CUBLAS_BLAS3_TRIANGULAR_MATRIX_MATRIX_SOLVE_CUBLAS_HPP_
 #define INCLUDE_EXPERIMENTAL___P1673_BITS_CUBLAS_BLAS3_TRIANGULAR_MATRIX_MATRIX_SOLVE_CUBLAS_HPP_
 
-namespace __nvhpc_std {
+namespace __nvhpc_std
+{
 
 namespace __ex = std::experimental;
 namespace __cb = __cublas_std;
@@ -32,29 +33,54 @@ namespace __cb = __cublas_std;
  * which is what cuBLAS Trsm computes with input A^t, B^t, and SIDE = left
  */
 
-template <class _SyncType, class _ElementType_A, class _SizeType_A, ::std::size_t _numRows_A, ::std::size_t _numCols_A,
-        class _Layout_A, class _Accessor_A, class _ElementType_B, class _SizeType_B, ::std::size_t _numRows_B,
-        ::std::size_t _numCols_B, class _Layout_B, class _Accessor_B>
-void __triangular_matrix_matrix_solve_impl(__nvhpc_exec<__cublas_exec_space<_SyncType>>&& __exec,
-        _ElementType_B __alpha,
-        __ex::mdspan<_ElementType_A, __ex::extents<_SizeType_A, _numRows_A, _numCols_A>, _Layout_A, _Accessor_A> __A,
-        char __trans, char __uplo, char __side, char __diag, bool __is_transposed,
-        __ex::mdspan<_ElementType_B, __ex::extents<_SizeType_B, _numRows_B, _numCols_B>, _Layout_B, _Accessor_B> __B) {
+template <class _SyncType,
+          class _ElementType_A,
+          class _SizeType_A,
+          ::std::size_t _numRows_A,
+          ::std::size_t _numCols_A,
+          class _Layout_A,
+          class _Accessor_A,
+          class _ElementType_B,
+          class _SizeType_B,
+          ::std::size_t _numRows_B,
+          ::std::size_t _numCols_B,
+          class _Layout_B,
+          class _Accessor_B>
+void __triangular_matrix_matrix_solve_impl(
+  __nvhpc_exec<__cublas_exec_space<_SyncType>>&& __exec,
+  _ElementType_B __alpha,
+  __ex::mdspan<_ElementType_A, __ex::extents<_SizeType_A, _numRows_A, _numCols_A>, _Layout_A, _Accessor_A> __A,
+  char __trans,
+  char __uplo,
+  char __side,
+  char __diag,
+  bool __is_transposed,
+  __ex::mdspan<_ElementType_B, __ex::extents<_SizeType_B, _numRows_B, _numCols_B>, _Layout_B, _Accessor_B> __B)
+{
 #ifdef STDBLAS_VERBOSE
-    __STDBLAS_BACKEND_MESSAGE(triangular_matrix_matrix_solve, cuBLAS);
+  __STDBLAS_BACKEND_MESSAGE(triangular_matrix_matrix_solve, cuBLAS);
 #endif
 
-    __cb::__check_cublas_status(
-            __cb::__cublas_trsm(__cb::__get_cublas_handle(), __cb::__to_cublas_side_mode(__side),
-                    __cb::__to_cublas_fill_mode(__uplo), __cb::__op_to_cublas_op(__trans),
-                    __cb::__to_cublas_diag_type(__diag), __ex::linalg::__get_row_count(__B, __is_transposed),
-                    __ex::linalg::__get_col_count(__B, __is_transposed), &__alpha, __A.data_handle(),
-                    __ex::linalg::__get_leading_dim(__A), __B.data_handle(), __ex::linalg::__get_leading_dim(__B)),
-            "triangular_matrix_matrix_solve", "cublas_trsm");
+  __cb::__check_cublas_status(
+    __cb::__cublas_trsm(
+      __cb::__get_cublas_handle(),
+      __cb::__to_cublas_side_mode(__side),
+      __cb::__to_cublas_fill_mode(__uplo),
+      __cb::__op_to_cublas_op(__trans),
+      __cb::__to_cublas_diag_type(__diag),
+      __ex::linalg::__get_row_count(__B, __is_transposed),
+      __ex::linalg::__get_col_count(__B, __is_transposed),
+      &__alpha,
+      __A.data_handle(),
+      __ex::linalg::__get_leading_dim(__A),
+      __B.data_handle(),
+      __ex::linalg::__get_leading_dim(__B)),
+    "triangular_matrix_matrix_solve",
+    "cublas_trsm");
 
-    __cb::__synchronize(std::forward<__nvhpc_exec<__cublas_exec_space<_SyncType>>>(__exec));
+  __cb::__synchronize(std::forward<__nvhpc_exec<__cublas_exec_space<_SyncType>>>(__exec));
 }
 
-}  // namespace __nvhpc_std
+} // namespace __nvhpc_std
 
 #endif

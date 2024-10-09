@@ -43,92 +43,121 @@
 #ifndef LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_BLAS1_VECTOR_NORM2_HPP_
 #define LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_BLAS1_VECTOR_NORM2_HPP_
 
-#include "blas1_vector_sum_of_squares.hpp"
-
 #include <cmath>
 #include <cstdlib>
 
-namespace std { namespace experimental { inline namespace __p1673_version_0 { namespace linalg {
+#include "blas1_vector_sum_of_squares.hpp"
 
-namespace {
+namespace std
+{
+namespace experimental
+{
+inline namespace __p1673_version_0
+{
+namespace linalg
+{
+
+namespace
+{
 template <class Exec, class x_t, class Scalar, class = void>
-struct is_custom_vector_norm2_avail : std::false_type {};
+struct is_custom_vector_norm2_avail : std::false_type
+{};
 
 template <class Exec, class x_t, class Scalar>
-struct is_custom_vector_norm2_avail<Exec, x_t, Scalar,
-        std::enable_if_t<
-                std::is_same<decltype(vector_norm2(std::declval<Exec>(), std::declval<x_t>(), std::declval<Scalar>())),
-                        Scalar>::value &&
-                !linalg::impl::is_inline_exec_v<Exec>>> : std::true_type {};
-}  // end anonymous namespace
+struct is_custom_vector_norm2_avail<
+  Exec,
+  x_t,
+  Scalar,
+  std::enable_if_t<
+    std::is_same<decltype(vector_norm2(std::declval<Exec>(), std::declval<x_t>(), std::declval<Scalar>())), Scalar>::value
+    && !linalg::impl::is_inline_exec_v<Exec>>> : std::true_type
+{};
+} // end anonymous namespace
 
 template <class ElementType, class SizeType, ::std::size_t ext0, class Layout, class Accessor, class Scalar>
-Scalar vector_norm2(std::experimental::linalg::impl::inline_exec_t&& exec,
-        std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> x,
-        Scalar init) {
-    // Initialize the sum of squares result
-    sum_of_squares_result<Scalar> ssq_init;
-    ssq_init.scaling_factor = Scalar {};
-    // FIXME (Hoemmen 2021/05/27) We'll need separate versions of this
-    // for types whose "one" we don't know how to construct.
-    ssq_init.scaled_sum_of_squares = 1.0;
+Scalar
+vector_norm2(std::experimental::linalg::impl::inline_exec_t&& exec,
+             std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> x,
+             Scalar init)
+{
+  // Initialize the sum of squares result
+  sum_of_squares_result<Scalar> ssq_init;
+  ssq_init.scaling_factor = Scalar{};
+  // FIXME (Hoemmen 2021/05/27) We'll need separate versions of this
+  // for types whose "one" we don't know how to construct.
+  ssq_init.scaled_sum_of_squares = 1.0;
 
-    // Compute the sum of squares using an algorithm that avoids
-    // underflow and overflow by scaling.
-    auto ssq_res = vector_sum_of_squares(exec, x, ssq_init);
-    using std::sqrt;
-    return init + ssq_res.scaling_factor * sqrt(ssq_res.scaled_sum_of_squares);
+  // Compute the sum of squares using an algorithm that avoids
+  // underflow and overflow by scaling.
+  auto ssq_res = vector_sum_of_squares(exec, x, ssq_init);
+  using std::sqrt;
+  return init + ssq_res.scaling_factor * sqrt(ssq_res.scaled_sum_of_squares);
 }
 
-template <class ExecutionPolicy, class ElementType, class SizeType, ::std::size_t ext0, class Layout, class Accessor,
-        class Scalar>
-Scalar vector_norm2(ExecutionPolicy&& exec,
-        std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> x,
-        Scalar init) {
-    constexpr bool use_custom =
-            is_custom_vector_norm2_avail<decltype(execpolicy_mapper(exec)), decltype(x), Scalar>::value;
+template <class ExecutionPolicy,
+          class ElementType,
+          class SizeType,
+          ::std::size_t ext0,
+          class Layout,
+          class Accessor,
+          class Scalar>
+Scalar
+vector_norm2(ExecutionPolicy&& exec,
+             std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> x,
+             Scalar init)
+{
+  constexpr bool use_custom =
+    is_custom_vector_norm2_avail<decltype(execpolicy_mapper(exec)), decltype(x), Scalar>::value;
 
-    if constexpr (use_custom) {
-        return vector_norm2(execpolicy_mapper(exec), x, init);
-    } else {
-        return vector_norm2(std::experimental::linalg::impl::inline_exec_t(), x, init);
-    }
+  if constexpr (use_custom)
+  {
+    return vector_norm2(execpolicy_mapper(exec), x, init);
+  }
+  else
+  {
+    return vector_norm2(std::experimental::linalg::impl::inline_exec_t(), x, init);
+  }
 }
 
 template <class ElementType, class SizeType, ::std::size_t ext0, class Layout, class Accessor, class Scalar>
 Scalar vector_norm2(
-        std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> x,
-        Scalar init) {
-    return vector_norm2(std::experimental::linalg::impl::default_exec_t(), x, init);
+  std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> x, Scalar init)
+{
+  return vector_norm2(std::experimental::linalg::impl::default_exec_t(), x, init);
 }
 
-namespace vector_norm2_detail {
+namespace vector_norm2_detail
+{
 using std::abs;
 
 // The point of this is to do correct ADL for abs,
 // without exposing "using std::abs" in the outer namespace.
 template <class ElementType, class SizeType, ::std::size_t ext0, class Layout, class Accessor>
 auto vector_norm2_return_type_deducer(
-        std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> x)
-        -> decltype(abs(x(0)) * abs(x(0)));
-}  // namespace vector_norm2_detail
+  std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> x)
+  -> decltype(abs(x(0)) * abs(x(0)));
+} // namespace vector_norm2_detail
 
 template <class ElementType, class SizeType, ::std::size_t ext0, class Layout, class Accessor>
-auto vector_norm2(
-        std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> x)
-        -> decltype(vector_norm2_detail::vector_norm2_return_type_deducer(x)) {
-    using return_t = decltype(vector_norm2_detail::vector_norm2_return_type_deducer(x));
-    return vector_norm2(x, return_t {});
+auto vector_norm2(std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> x)
+  -> decltype(vector_norm2_detail::vector_norm2_return_type_deducer(x))
+{
+  using return_t = decltype(vector_norm2_detail::vector_norm2_return_type_deducer(x));
+  return vector_norm2(x, return_t{});
 }
 
 template <class ExecutionPolicy, class ElementType, class SizeType, ::std::size_t ext0, class Layout, class Accessor>
 auto vector_norm2(ExecutionPolicy&& exec,
-        std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> x)
-        -> decltype(vector_norm2_detail::vector_norm2_return_type_deducer(x)) {
-    using return_t = decltype(vector_norm2_detail::vector_norm2_return_type_deducer(x));
-    return vector_norm2(exec, x, return_t {});
+                  std::experimental::mdspan<ElementType, std::experimental::extents<SizeType, ext0>, Layout, Accessor> x)
+  -> decltype(vector_norm2_detail::vector_norm2_return_type_deducer(x))
+{
+  using return_t = decltype(vector_norm2_detail::vector_norm2_return_type_deducer(x));
+  return vector_norm2(exec, x, return_t{});
 }
 
-}}}}  // namespace std::experimental::__p1673_version_0::linalg
+} // namespace linalg
+} // namespace __p1673_version_0
+} // namespace experimental
+} // namespace std
 
-#endif  // LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_BLAS1_VECTOR_NORM2_HPP_
+#endif // LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_BLAS1_VECTOR_NORM2_HPP_

@@ -46,30 +46,48 @@
 
 #include <experimental/mdspan>
 
-namespace std { namespace experimental { inline namespace __p1673_version_0 { namespace linalg {
+namespace std
+{
+namespace experimental
+{
+inline namespace __p1673_version_0
+{
+namespace linalg
+{
 
 // TODO @proposal-bug make sure these can't convert from `{}`
 
-struct column_major_t {};
-_MDSPAN_INLINE_VARIABLE constexpr auto column_major = column_major_t {};
-struct row_major_t {};
-_MDSPAN_INLINE_VARIABLE constexpr auto row_major = row_major_t {};
+struct column_major_t
+{};
+_MDSPAN_INLINE_VARIABLE constexpr auto column_major = column_major_t{};
+struct row_major_t
+{};
+_MDSPAN_INLINE_VARIABLE constexpr auto row_major = row_major_t{};
 
-struct upper_triangle_t {};
-_MDSPAN_INLINE_VARIABLE constexpr auto upper_triangle = upper_triangle_t {};
-struct lower_triangle_t {};
-_MDSPAN_INLINE_VARIABLE constexpr auto lower_triangle = lower_triangle_t {};
+struct upper_triangle_t
+{};
+_MDSPAN_INLINE_VARIABLE constexpr auto upper_triangle = upper_triangle_t{};
+struct lower_triangle_t
+{};
+_MDSPAN_INLINE_VARIABLE constexpr auto lower_triangle = lower_triangle_t{};
 
-struct implicit_unit_diagonal_t {};
-_MDSPAN_INLINE_VARIABLE constexpr auto implicit_unit_diagonal = implicit_unit_diagonal_t {};
-struct explicit_diagonal_t {};
-_MDSPAN_INLINE_VARIABLE constexpr auto explicit_diagonal = explicit_diagonal_t {};
+struct implicit_unit_diagonal_t
+{};
+_MDSPAN_INLINE_VARIABLE constexpr auto implicit_unit_diagonal = implicit_unit_diagonal_t{};
+struct explicit_diagonal_t
+{};
+_MDSPAN_INLINE_VARIABLE constexpr auto explicit_diagonal = explicit_diagonal_t{};
 
-struct left_side_t {};
-_MDSPAN_INLINE_VARIABLE constexpr auto left_side = left_side_t {};
-struct right_side_t {};
-_MDSPAN_INLINE_VARIABLE constexpr auto right_side = right_side_t {};
+struct left_side_t
+{};
+_MDSPAN_INLINE_VARIABLE constexpr auto left_side = left_side_t{};
+struct right_side_t
+{};
+_MDSPAN_INLINE_VARIABLE constexpr auto right_side = right_side_t{};
 
-}}}}  // namespace std::experimental::__p1673_version_0::linalg
+} // namespace linalg
+} // namespace __p1673_version_0
+} // namespace experimental
+} // namespace std
 
-#endif  // LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_LAYOUT_TAGS_HPP_
+#endif // LINALG_INCLUDE_EXPERIMENTAL___P1673_BITS_LAYOUT_TAGS_HPP_
