@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "cudastf/__stf/allocators/block_allocator.h"
-#include "cudastf/__stf/internal/msir.h"
-#include "cudastf/__stf/internal/slice.h"
+#include <cuda/experimental/__stf/allocators/block_allocator.cuh>
+#include <cuda/experimental/__stf/internal/msir.cuh>
+#include <cuda/experimental/__stf/internal/slice.cuh>
 
 #include <deque>
 #include <optional>

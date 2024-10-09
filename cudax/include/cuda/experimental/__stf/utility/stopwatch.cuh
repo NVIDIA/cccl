@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "cudastf/__stf/utility/cuda_safe_call.h"
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 
 #include <chrono>
 #include <cuda_runtime.h>

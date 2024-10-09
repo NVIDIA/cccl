@@ -17,9 +17,9 @@
 
 #pragma once
 
-#include "cudastf/__stf/internal/frozen_logical_data.h"
-#include "cudastf/__stf/internal/logical_data.h"
-#include "cudastf/__stf/stream/internal/event_types.h"
+#include <cuda/experimental/__stf/internal/frozen_logical_data.cuh>
+#include <cuda/experimental/__stf/internal/logical_data.cuh>
+#include <cuda/experimental/__stf/stream/internal/event_types.cuh>
 
 #include <deque>
 

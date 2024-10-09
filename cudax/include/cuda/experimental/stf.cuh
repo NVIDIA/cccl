@@ -15,18 +15,18 @@
 
 #pragma once
 
-#include "cudastf/__stf/allocators/adapters.h"
-#include "cudastf/__stf/allocators/buddy_allocator.h"
-#include "cudastf/__stf/allocators/cached_allocator.h"
-#include "cudastf/__stf/allocators/pooled_allocator.h"
-#include "cudastf/__stf/allocators/uncached_allocator.h"
-#include "cudastf/__stf/graph/graph_ctx.h"
-#include "cudastf/__stf/internal/task_dep.h"
-#include "cudastf/__stf/internal/void_interface.h"
-#include "cudastf/__stf/places/exec/cuda_stream.h"
-#include "cudastf/__stf/places/inner_shape.h"
-#include "cudastf/__stf/stream/stream_ctx.h"
-#include "cudastf/__stf/utility/run_once.h"
+#include <cuda/experimental/__stf/allocators/adapters.cuh>
+#include <cuda/experimental/__stf/allocators/buddy_allocator.cuh>
+#include <cuda/experimental/__stf/allocators/cached_allocator.cuh>
+#include <cuda/experimental/__stf/allocators/pooled_allocator.cuh>
+#include <cuda/experimental/__stf/allocators/uncached_allocator.cuh>
+#include <cuda/experimental/__stf/graph/graph_ctx.cuh>
+#include <cuda/experimental/__stf/internal/task_dep.cuh>
+#include <cuda/experimental/__stf/internal/void_interface.cuh>
+#include <cuda/experimental/__stf/places/exec/cuda_stream.cuh>
+#include <cuda/experimental/__stf/places/inner_shape.cuh>
+#include <cuda/experimental/__stf/stream/stream_ctx.cuh>
+#include <cuda/experimental/__stf/utility/run_once.cuh>
 
 #include <map>
 #include <variant>

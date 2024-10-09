@@ -15,7 +15,7 @@
 
 #pragma once
 
-#include "cudastf/__stf/places/places.h"
+#include <cuda/experimental/__stf/places/places.cuh>
 
 namespace cuda::experimental::stf {
 

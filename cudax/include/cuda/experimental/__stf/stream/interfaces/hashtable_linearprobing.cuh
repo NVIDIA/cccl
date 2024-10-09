@@ -14,8 +14,8 @@
  * Defines a data interface over the hashtable class, which is based on https://nosferalatu.com/SimpleGPUHashTable.html
  */
 
-#include "cudastf/__stf/internal/hashtable_linearprobing.h"
-#include "cudastf/__stf/stream/stream_data_interface.h"
+#include <cuda/experimental/__stf/internal/hashtable_linearprobing.cuh>
+#include <cuda/experimental/__stf/stream/stream_data_interface.cuh>
 
 namespace cuda::experimental::stf {
 

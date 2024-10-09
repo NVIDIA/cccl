@@ -13,8 +13,8 @@
  */
 #pragma once
 
-#include "cudastf/__stf/utility/cuda_attributes.h"
-#include "cudastf/__stf/utility/cuda_safe_call.h"
+#include <cuda/experimental/__stf/utility/cuda_attributes.cuh>
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 
 #include <cassert>
 #include <variant>

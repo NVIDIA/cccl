@@ -15,9 +15,9 @@
 
 #pragma once
 
-#include "cudastf/__stf/allocators/block_allocator.h"
-#include "cudastf/__stf/internal/backend_ctx.h"
-#include "cudastf/__stf/utility/pretty_print.h"
+#include <cuda/experimental/__stf/allocators/block_allocator.cuh>
+#include <cuda/experimental/__stf/internal/backend_ctx.cuh>
+#include <cuda/experimental/__stf/utility/pretty_print.cuh>
 
 #include <optional>
 

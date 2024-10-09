@@ -18,11 +18,11 @@
 
 #pragma once
 
-#include "cudastf/__stf/internal/cooperative_group_system.h"
-#include "cudastf/__stf/internal/interpreted_execution_policy.h"
-#include "cudastf/__stf/internal/slice.h"
-#include "cudastf/__stf/places/blocked_partition.h"
-#include "cudastf/__stf/places/cyclic_shape.h"
+#include <cuda/experimental/__stf/internal/cooperative_group_system.cuh>
+#include <cuda/experimental/__stf/internal/interpreted_execution_policy.cuh>
+#include <cuda/experimental/__stf/internal/slice.cuh>
+#include <cuda/experimental/__stf/places/blocked_partition.cuh>
+#include <cuda/experimental/__stf/places/cyclic_shape.cuh>
 
 namespace cuda::experimental::stf {
 

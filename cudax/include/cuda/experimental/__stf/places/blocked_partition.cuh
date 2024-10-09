@@ -15,9 +15,9 @@
 
 #pragma once
 
-#include "cudastf/__stf/places/cyclic_shape.h"
-#include "cudastf/__stf/places/places.h"
-#include "cudastf/__stf/utility/dimensions.h"
+#include <cuda/experimental/__stf/places/cyclic_shape.cuh>
+#include <cuda/experimental/__stf/places/places.cuh>
+#include <cuda/experimental/__stf/utility/dimensions.cuh>
 
 namespace cuda::experimental::stf {
 

@@ -15,8 +15,8 @@
 
 #pragma once
 
-#include "cudastf/__stf/allocators/cached_allocator.h"
-#include "cudastf/__stf/allocators/pooled_allocator.h"
+#include <cuda/experimental/__stf/allocators/cached_allocator.cuh>
+#include <cuda/experimental/__stf/allocators/pooled_allocator.cuh>
 
 namespace cuda::experimental::stf {
 class block_allocator_untyped;

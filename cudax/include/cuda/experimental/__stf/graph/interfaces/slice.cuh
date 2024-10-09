@@ -15,8 +15,8 @@
 
 #pragma once
 
-#include "cudastf/__stf/graph/graph_data_interface.h"
-#include "cudastf/__stf/localization/composite_slice.h"
+#include <cuda/experimental/__stf/graph/graph_data_interface.cuh>
+#include <cuda/experimental/__stf/localization/composite_slice.cuh>
 
 namespace cuda::experimental::stf {
 

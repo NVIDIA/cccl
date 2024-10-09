@@ -10,7 +10,7 @@
 
 #pragma once
 
-#include "cudastf/__stf/internal/async_prereq.h"
+#include <cuda/experimental/__stf/internal/async_prereq.cuh>
 
 #include <vector>
 

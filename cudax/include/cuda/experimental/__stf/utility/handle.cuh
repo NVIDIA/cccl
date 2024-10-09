@@ -10,8 +10,8 @@
 
 #pragma once
 
-#include "cudastf/__stf/utility/traits.h"
-#include "cudastf/__stf/utility/unittest.h"
+#include <cuda/experimental/__stf/utility/traits.cuh>
+#include <cuda/experimental/__stf/utility/unittest.cuh>
 
 #include <memory>  // for ::std::shared_ptr
 

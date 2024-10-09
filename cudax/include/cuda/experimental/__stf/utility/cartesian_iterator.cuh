@@ -10,8 +10,8 @@
 
 #pragma once
 
-#include "cudastf/__stf/utility/cuda_attributes.h"
-#include "cudastf/__stf/utility/unittest.h"
+#include <cuda/experimental/__stf/utility/cuda_attributes.cuh>
+#include <cuda/experimental/__stf/utility/unittest.cuh>
 
 namespace cuda::experimental::stf {
 

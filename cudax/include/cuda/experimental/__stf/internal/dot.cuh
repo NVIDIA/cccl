@@ -21,10 +21,10 @@
 
 #pragma once
 
-#include "cudastf/__stf/internal/constants.h"
-#include "cudastf/__stf/utility/cuda_safe_call.h"
-#include "cudastf/__stf/utility/hash.h"
-#include "cudastf/__stf/utility/threads.h"
+#include <cuda/experimental/__stf/internal/constants.cuh>
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__stf/utility/hash.cuh>
+#include <cuda/experimental/__stf/utility/threads.cuh>
 
 #include <algorithm>
 #include <fstream>

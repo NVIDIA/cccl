@@ -15,7 +15,7 @@
 
 #pragma once
 
-#include "cudastf/__stf/utility/core.h"
+#include <cuda/experimental/__stf/utility/core.cuh>
 
 #include <cassert>
 #include <string_view>

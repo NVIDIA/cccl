@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "cudastf/__stf/places/place_partition.h"
+#include <cuda/experimental/__stf/places/place_partition.cuh>
 
 namespace cuda::experimental::stf {
 

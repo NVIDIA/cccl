@@ -15,8 +15,8 @@
 
 #pragma once
 
-#include "cudastf/__stf/internal/slice.h"
-#include "cudastf/__stf/utility/dimensions.h"
+#include <cuda/experimental/__stf/internal/slice.cuh>
+#include <cuda/experimental/__stf/utility/dimensions.cuh>
 
 namespace cuda::experimental::stf {
 

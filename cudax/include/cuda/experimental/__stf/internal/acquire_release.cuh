@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "cudastf/__stf/internal/logical_data.h"
+#include <cuda/experimental/__stf/internal/logical_data.cuh>
 
 namespace cuda::experimental::stf {
 

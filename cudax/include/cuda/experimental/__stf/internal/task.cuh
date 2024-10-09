@@ -21,8 +21,8 @@
  * accesses on "data" depending on in/out dependencies
  */
 
-#include "cudastf/__stf/internal/msir.h"
-#include "cudastf/__stf/internal/task_dep.h"  // task has-a task_dep_vector_untyped
+#include <cuda/experimental/__stf/internal/msir.cuh>
+#include <cuda/experimental/__stf/internal/task_dep.cuh>  // task has-a task_dep_vector_untyped
 
 #include <nvtx3/nvToolsExt.h>
 #include <optional>
