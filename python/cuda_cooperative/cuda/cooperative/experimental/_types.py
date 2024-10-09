@@ -30,42 +30,43 @@ NUMBA_TYPES_TO_CPP = {
 
 
 def numba_type_to_cpp(numba_type):
-  if numba_type in NUMBA_TYPES_TO_CPP:
-    return NUMBA_TYPES_TO_CPP[numba_type]
-  return 'storage_t'
+    if numba_type in NUMBA_TYPES_TO_CPP:
+        return NUMBA_TYPES_TO_CPP[numba_type]
+    return 'storage_t'
 
 
 def method_to_signature(numba_type, method):
-  ptr_type = types.CPointer(numba_type)
-  if method == 'construct':
-    return signature(types.void, ptr_type)
-  elif method == 'assign':
-    return signature(types.void, ptr_type, ptr_type)
-  else:
-    raise ValueError('Unexpected method {}'.format(method))
-
+    ptr_type = types.CPointer(numba_type)
+    if method == 'construct':
+        return signature(types.void, ptr_type)
+    elif method == 'assign':
+        return signature(types.void, ptr_type, ptr_type)
+    else:
+        raise ValueError('Unexpected method {}'.format(method))
 
 
 class TypeWrapper:
-  def __init__(self, numba_type, methods):
-    self.lto_irs = []
+    def __init__(self, numba_type, methods):
+        self.lto_irs = []
 
-    if numba_type in NUMBA_TYPES_TO_CPP:
-      self.code = ''
-    else:
-      context = cuda.descriptor.cuda_target.target_context
-      size = context.get_value_type(numba_type).get_abi_size(context.target_data)
-      alignment = context.get_value_type(numba_type).get_abi_alignment(context.target_data)
-      parameters = {
-          'size': size,
-          'alignment': alignment
-      }
-      if 'construct' in methods:
-        parameters['construct'] = methods['construct'].__name__
-      if 'assign' in methods:
-        parameters['assign'] = methods['assign'].__name__
-      environment = jinja2.Environment()
-      template = environment.from_string("""
+        if numba_type in NUMBA_TYPES_TO_CPP:
+            self.code = ''
+        else:
+            context = cuda.descriptor.cuda_target.target_context
+            size = context.get_value_type(
+                numba_type).get_abi_size(context.target_data)
+            alignment = context.get_value_type(
+                numba_type).get_abi_alignment(context.target_data)
+            parameters = {
+                'size': size,
+                'alignment': alignment
+            }
+            if 'construct' in methods:
+                parameters['construct'] = methods['construct'].__name__
+            if 'assign' in methods:
+                parameters['assign'] = methods['assign'].__name__
+            environment = jinja2.Environment()
+            template = environment.from_string("""
         {% if construct %}
         extern "C" __device__ void {{ construct }}(void *ptr);
         {% endif %}
@@ -91,20 +92,21 @@ class TypeWrapper:
             char data[{{ size }}];
         };
         """)
-      self.code = template.render(**parameters)
+            self.code = template.render(**parameters)
 
-      for method in methods:
-        lto_fn, _ = cuda.compile(methods[method], sig=method_to_signature(numba_type, method), output='ltoir')
-        self.lto_irs.append(lto_fn)
+            for method in methods:
+                lto_fn, _ = cuda.compile(methods[method], sig=method_to_signature(
+                    numba_type, method), output='ltoir')
+                self.lto_irs.append(lto_fn)
 
 
 def numba_type_to_wrapper(numba_type, methods=None):
-  if methods is None:
-    methods = {}
-  for method in methods:
-    if method not in ['construct', 'assign']:
-      raise ValueError('Unexpected method {}'.format(method))
-  return TypeWrapper(numba_type, methods)
+    if methods is None:
+        methods = {}
+    for method in methods:
+        if method not in ['construct', 'assign']:
+            raise ValueError('Unexpected method {}'.format(method))
+    return TypeWrapper(numba_type, methods)
 
 
 class Parameter:
@@ -217,7 +219,8 @@ class Dependency:
 
     def resolve(self, template_arguments):
         if self.dep not in template_arguments:
-            raise SubstitutionFailure(f'Template argument {self.dep} not provided')
+            raise SubstitutionFailure(
+                f'Template argument {self.dep} not provided')
         if template_arguments[self.dep] is None:
             raise SubstitutionFailure(f'Template argument {self.dep} is None')
         return template_arguments[self.dep]
@@ -281,7 +284,8 @@ class StatefulOperator:
         for aid, arg_type in enumerate(self.arg_cpp_types):
             arg_name = f'wp_{aid}'
             param_decls.append(f'const {arg_type}& {arg_name}')
-            param_refs.append('&' + arg_name if arg_type == 'storage_t' else arg_name)
+            param_refs.append('&' + arg_name if arg_type ==
+                              'storage_t' else arg_name)
 
         environment = jinja2.Environment()
         template = environment.from_string("""
@@ -332,7 +336,8 @@ class StatelessOperator:
         for aid, arg_type in enumerate(self.arg_cpp_types):
             arg_name = f'wp_{aid}'
             param_decls.append(f'const {arg_type}& {arg_name}')
-            param_refs.append('&' + arg_name if arg_type == 'storage_t' else arg_name)
+            param_refs.append('&' + arg_name if arg_type ==
+                              'storage_t' else arg_name)
 
         environment = jinja2.Environment()
         template = environment.from_string("""
@@ -366,7 +371,8 @@ class DependentOperator:
         op = self.op.resolve(template_arguments)
         ret_dtype = self.ret_dtype.resolve(template_arguments)
         ret_cpp_type = numba_type_to_cpp(ret_dtype)
-        ret_numba_type = types.CPointer(ret_dtype) if ret_cpp_type == 'storage_t' else ret_dtype
+        ret_numba_type = types.CPointer(
+            ret_dtype) if ret_cpp_type == 'storage_t' else ret_dtype
         arg_cpp_types = []
         arg_dtypes = []
         arg_numba_types = []
@@ -375,27 +381,36 @@ class DependentOperator:
             arg_cpp_type = numba_type_to_cpp(arg_dtype)
             arg_cpp_types.append(arg_cpp_type)
             arg_dtypes.append(str(arg_dtype))
-            arg_numba_types.append(types.CPointer(arg_dtype) if arg_cpp_type == 'storage_t' else arg_dtype)
+            arg_numba_types.append(types.CPointer(
+                arg_dtype) if arg_cpp_type == 'storage_t' else arg_dtype)
 
         if isinstance(op, StatefulFunction):
             binary_op = op.op.__call__
-            mangled_name = f'F{binary_op.__name__}_{ret_dtype}__' + '_'.join(arg_dtypes)
+            mangled_name = f'F{binary_op.__name__}_{ret_dtype}__' + \
+                '_'.join(arg_dtypes)
             if ret_cpp_type == 'storage_t':
-                binary_op_signature = signature(types.void, types.CPointer(op.dtype), *arg_numba_types, ret_numba_type)
+                binary_op_signature = signature(types.void, types.CPointer(
+                    op.dtype), *arg_numba_types, ret_numba_type)
             else:
-                binary_op_signature = signature(ret_numba_type, types.CPointer(op.dtype), *arg_numba_types)
+                binary_op_signature = signature(
+                    ret_numba_type, types.CPointer(op.dtype), *arg_numba_types)
             abi_info = {'abi_name': mangled_name}
-            ltoir, _ = cuda.compile(binary_op, sig=binary_op_signature, output='ltoir', abi_info=abi_info)
+            ltoir, _ = cuda.compile(
+                binary_op, sig=binary_op_signature, output='ltoir', abi_info=abi_info)
             return StatefulOperator(mangled_name, op.dtype, ret_cpp_type, arg_cpp_types, ltoir)
         else:
             binary_op = op
-            mangled_name = f'F{binary_op.__name__}_{ret_dtype}__' + '_'.join(arg_dtypes)
+            mangled_name = f'F{binary_op.__name__}_{ret_dtype}__' + \
+                '_'.join(arg_dtypes)
             if ret_cpp_type == 'storage_t':
-                binary_op_signature = signature(types.void, *arg_numba_types, ret_numba_type)
+                binary_op_signature = signature(
+                    types.void, *arg_numba_types, ret_numba_type)
             else:
-                binary_op_signature = signature(ret_numba_type, *arg_numba_types)
+                binary_op_signature = signature(
+                    ret_numba_type, *arg_numba_types)
             abi_info = {'abi_name': mangled_name}
-            ltoir, _ = cuda.compile(binary_op, sig=binary_op_signature, output='ltoir', abi_info=abi_info)
+            ltoir, _ = cuda.compile(
+                binary_op, sig=binary_op_signature, output='ltoir', abi_info=abi_info)
             return StatelessOperator(mangled_name, ret_cpp_type, arg_cpp_types, ltoir)
 
 
@@ -487,10 +502,11 @@ class Algorithm:
             specialized_signature = []
             try:
                 for parameter in method:
-                    specialized_signature.append(parameter.specialize(template_arguments))
+                    specialized_signature.append(
+                        parameter.specialize(template_arguments))
                 specialized_parameters.append(specialized_signature)
             except SubstitutionFailure as e:
-                pass # Substitution failure is not an error
+                pass  # Substitution failure is not an error
 
         specialized_name = f'{self.struct_name}<{template_list}>'
         return Algorithm(specialized_name, self.method_name, self.c_name, self.includes, [], specialized_parameters, type_definitions=self.type_definitions, fake_return=self.fake_return)
@@ -587,12 +603,28 @@ class Algorithm:
                     param_decls.append(param.cpp_decl(name))
                     if not self.fake_return and param.is_output:
                         if out_param is not None:
-                            raise ValueError('Multiple output parameters not supported')
+                            raise ValueError(
+                                'Multiple output parameters not supported')
                         out_param = name
                     else:
                         param_args.append(name)
 
             template = environment.from_string("""
+                extern "C" __device__ void {{ mangled_name }}_alloc({{ param_decls }})
+                {
+                  __shared__ temp_storage_t temp_storage;
+
+                  {% for decl in func_decls %}
+                  {{ decl }}
+                  {% endfor %}
+
+                  {% if out_param %}
+                  {{ out_param }} =
+                  {% endif %}
+
+                   algorithm_t(temp_storage).{{ method_name }}({{ param_args }});
+                }
+
                 extern "C" __device__ void {{ mangled_name }}( temp_storage_t *temp_storage, {{ param_decls }})
                 {
                   {% for decl in func_decls %}
@@ -620,15 +652,17 @@ class Algorithm:
         lto_irs.append(lto_fn)
         return lto_irs
 
-
     def codegen(self, func_to_overload):
         if len(self.template_parameters):
             raise ValueError('Cannot generate codegen for a template')
 
         for method in self.parameters:
-            self.codegen_method(func_to_overload, method)
+            self.codegen_method(func_to_overload, method,
+                                self.mangled_name(method))
+            self.codegen_method(func_to_overload, method[1:],
+                                self.mangled_name(method) + '_alloc')
 
-    def codegen_method(self, func_to_overload, method):
+    def codegen_method(self, func_to_overload, method, mangled_name):
         if len(self.template_parameters):
             raise ValueError('Cannot generate codegen for a template')
 
@@ -643,14 +677,18 @@ class Algorithm:
                         dtype = param.dtype()
                         if isinstance(param, StatefulOperator):
                             arg = args[arg_id]
-                            state_ptr = cgutils.create_struct_proxy(dtype)(context, builder, arg).data
-                            void_ptr = builder.bitcast(state_ptr, ir.PointerType(ir.IntType(8)))
+                            state_ptr = cgutils.create_struct_proxy(
+                                dtype)(context, builder, arg).data
+                            void_ptr = builder.bitcast(
+                                state_ptr, ir.PointerType(ir.IntType(8)))
                             types.append(ir.PointerType(ir.IntType(8)))
                             arguments.append(void_ptr)
                         if isinstance(param, Reference):
                             if param.is_output:
-                                ptr = cgutils.alloca_once(builder, context.get_value_type(dtype))
-                                void_ptr = builder.bitcast(ptr, ir.PointerType(ir.IntType(8)))
+                                ptr = cgutils.alloca_once(
+                                    builder, context.get_value_type(dtype))
+                                void_ptr = builder.bitcast(
+                                    ptr, ir.PointerType(ir.IntType(8)))
                                 types.append(ir.PointerType(ir.IntType(8)))
                                 arguments.append(void_ptr)
                                 ret = ptr
@@ -658,7 +696,8 @@ class Algorithm:
                                 arg = args[arg_id]
                                 ptr = cgutils.alloca_once_value(builder, arg)
                                 data_type = context.get_value_type(dtype)
-                                void_ptr = builder.bitcast(ptr, ir.PointerType(ir.IntType(8)))
+                                void_ptr = builder.bitcast(
+                                    ptr, ir.PointerType(ir.IntType(8)))
                                 types.append(ir.PointerType(ir.IntType(8)))
                                 arguments.append(void_ptr)
                         elif isinstance(param, Array) or isinstance(param, Pointer):
@@ -682,7 +721,7 @@ class Algorithm:
 
                 function_type = ir.FunctionType(ir.VoidType(), types)
                 function = cgutils.get_or_insert_function(
-                    builder.module, function_type, self.mangled_name(method))
+                    builder.module, function_type, mangled_name)
                 builder.call(function, arguments)
 
                 if ret is not None:
@@ -694,21 +733,24 @@ class Algorithm:
                 if not isinstance(param, StatelessOperator):
                     if param.is_output:
                         if ret is not numba.types.void:
-                            raise ValueError('Multiple output parameters not supported')
+                            raise ValueError(
+                                'Multiple output parameters not supported')
                         ret = param.dtype()
                     else:
                         params.append(param.dtype())
 
             return signature(ret, *params), codegen
 
-        num_user_provided_params = sum([param.is_provided_by_user() for param in method])
+        num_user_provided_params = sum(
+            [param.is_provided_by_user() for param in method])
         numba_intrinsic = intrinsic(war_introspection(
             intrinsic_impl, 1 + num_user_provided_params))
 
         def algorithm_impl(*args):
             return war_introspection(numba_intrinsic, len(args))
 
-        wrapped_algorithm_impl = war_introspection(algorithm_impl, num_user_provided_params)
+        wrapped_algorithm_impl = war_introspection(
+            algorithm_impl, num_user_provided_params)
         overload(func_to_overload, target='cuda')(wrapped_algorithm_impl)
 
 
