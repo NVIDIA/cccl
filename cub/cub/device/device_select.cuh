@@ -174,12 +174,12 @@ struct DeviceSelect
     FlagIterator d_flags,
     OutputIteratorT d_out,
     NumSelectedIteratorT d_num_selected_out,
-    int num_items,
+    ::cuda::std::int64_t num_items,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Flagged");
 
-    using OffsetT    = int; // Signed integer type for global offsets
+    using OffsetT    = ::cuda::std::int64_t; // Signed integer type for global offsets
     using SelectOp   = NullType; // Selection op (not used)
     using EqualityOp = NullType; // Equality operator (not used)
 
@@ -212,7 +212,7 @@ struct DeviceSelect
     FlagIterator d_flags,
     OutputIteratorT d_out,
     NumSelectedIteratorT d_num_selected_out,
-    int num_items,
+    ::cuda::std::int64_t num_items,
     cudaStream_t stream,
     bool debug_synchronous)
   {
@@ -309,12 +309,12 @@ struct DeviceSelect
     IteratorT d_data,
     FlagIterator d_flags,
     NumSelectedIteratorT d_num_selected_out,
-    int num_items,
+    ::cuda::std::int64_t num_items,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Flagged");
 
-    using OffsetT    = int; // Signed integer type for global offsets
+    using OffsetT    = ::cuda::std::int64_t; // Signed integer type for global offsets
     using SelectOp   = NullType; // Selection op (not used)
     using EqualityOp = NullType; // Equality operator (not used)
 
@@ -349,7 +349,7 @@ struct DeviceSelect
     IteratorT d_data,
     FlagIterator d_flags,
     NumSelectedIteratorT d_num_selected_out,
-    int num_items,
+    ::cuda::std::int64_t num_items,
     cudaStream_t stream,
     bool debug_synchronous)
   {
@@ -468,13 +468,13 @@ struct DeviceSelect
      InputIteratorT d_in,
      OutputIteratorT d_out,
      NumSelectedIteratorT d_num_selected_out,
-     int num_items,
+     ::cuda::std::int64_t num_items,
      SelectOp select_op,
      cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::If");
 
-    using OffsetT      = int; // Signed integer type for global offsets
+    using OffsetT      = ::cuda::std::int64_t; // Signed integer type for global offsets
     using FlagIterator = NullType*; // FlagT iterator type (not used)
     using EqualityOp   = NullType; // Equality operator (not used)
 
@@ -506,7 +506,7 @@ struct DeviceSelect
      InputIteratorT d_in,
      OutputIteratorT d_out,
      NumSelectedIteratorT d_num_selected_out,
-     int num_items,
+     ::cuda::std::int64_t num_items,
      SelectOp select_op,
      cudaStream_t stream,
      bool debug_synchronous)
@@ -615,13 +615,13 @@ struct DeviceSelect
      size_t& temp_storage_bytes,
      IteratorT d_data,
      NumSelectedIteratorT d_num_selected_out,
-     int num_items,
+     ::cuda::std::int64_t num_items,
      SelectOp select_op,
      cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::If");
 
-    using OffsetT      = int; // Signed integer type for global offsets
+    using OffsetT      = ::cuda::std::int64_t; // Signed integer type for global offsets
     using FlagIterator = NullType*; // FlagT iterator type (not used)
     using EqualityOp   = NullType; // Equality operator (not used)
 
@@ -655,7 +655,7 @@ struct DeviceSelect
      size_t& temp_storage_bytes,
      IteratorT d_data,
      NumSelectedIteratorT d_num_selected_out,
-     int num_items,
+     ::cuda::std::int64_t num_items,
      SelectOp select_op,
      cudaStream_t stream,
      bool debug_synchronous)
@@ -756,13 +756,13 @@ struct DeviceSelect
     FlagIterator d_flags,
     OutputIteratorT d_out,
     NumSelectedIteratorT d_num_selected_out,
-    int num_items,
+    ::cuda::std::int64_t num_items,
     SelectOp select_op,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::FlaggedIf");
 
-    using OffsetT    = int; // Signed integer type for global offsets
+    using OffsetT    = ::cuda::std::int64_t; // Signed integer type for global offsets
     using EqualityOp = NullType; // Equality operator (not used)
 
     return DispatchSelectIf<
@@ -861,13 +861,13 @@ struct DeviceSelect
     IteratorT d_data,
     FlagIterator d_flags,
     NumSelectedIteratorT d_num_selected_out,
-    int num_items,
+    ::cuda::std::int64_t num_items,
     SelectOp select_op,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::FlaggedIf");
 
-    using OffsetT    = int; // Signed integer type for global offsets
+    using OffsetT    = ::cuda::std::int64_t; // Signed integer type for global offsets
     using EqualityOp = NullType; // Equality operator (not used)
 
     constexpr bool may_alias = true;
@@ -981,12 +981,12 @@ struct DeviceSelect
     InputIteratorT d_in,
     OutputIteratorT d_out,
     NumSelectedIteratorT d_num_selected_out,
-    int num_items,
+    ::cuda::std::int64_t num_items,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceSelect::Unique");
 
-    using OffsetT      = int; // Signed integer type for global offsets
+    using OffsetT      = ::cuda::std::int64_t;
     using FlagIterator = NullType*; // FlagT iterator type (not used)
     using SelectOp     = NullType; // Selection op (not used)
     using EqualityOp   = Equality; // Default == operator
@@ -1019,7 +1019,7 @@ struct DeviceSelect
     InputIteratorT d_in,
     OutputIteratorT d_out,
     NumSelectedIteratorT d_num_selected_out,
-    int num_items,
+    ::cuda::std::int64_t num_items,
     cudaStream_t stream,
     bool debug_synchronous)
   {

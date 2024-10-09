@@ -19,35 +19,12 @@
 #include <iostream>
 #include <memory>
 
+#include "util/context.h"
+#include "util/errors.h"
+#include "util/types.h"
 #include <cccl/c/reduce.h>
 #include <nvJitLink.h>
 #include <nvrtc.h>
-
-void check(nvrtcResult result)
-{
-  if (result != NVRTC_SUCCESS)
-  {
-    throw std::runtime_error(std::string("NVRTC error: ") + nvrtcGetErrorString(result));
-  }
-}
-
-void check(CUresult result)
-{
-  if (result != CUDA_SUCCESS)
-  {
-    const char* str = nullptr;
-    cuGetErrorString(result, &str);
-    throw std::runtime_error(std::string("CUDA error: ") + str);
-  }
-}
-
-void check(nvJitLinkResult result)
-{
-  if (result != NVJITLINK_SUCCESS)
-  {
-    throw std::runtime_error(std::string("nvJitLink error: ") + std::to_string(result));
-  }
-}
 
 struct op_wrapper;
 struct device_reduce_policy;
@@ -65,127 +42,6 @@ struct runtime_tuning_policy
   int vector_load_length;
 };
 
-struct storage_t;
-struct input_iterator_state_t;
-struct output_iterator_t;
-
-char const* cccl_type_enum_to_string(cccl_type_enum type)
-{
-  switch (type)
-  {
-    case cccl_type_enum::INT8:
-      return "::cuda::std::int8_t";
-    case cccl_type_enum::INT16:
-      return "::cuda::std::int16_t";
-    case cccl_type_enum::INT32:
-      return "::cuda::std::int32_t";
-    case cccl_type_enum::INT64:
-      return "::cuda::std::int64_t";
-    case cccl_type_enum::UINT8:
-      return "::cuda::std::uint8_t";
-    case cccl_type_enum::UINT16:
-      return "::cuda::std::uint16_t";
-    case cccl_type_enum::UINT32:
-      return "::cuda::std::uint32_t";
-    case cccl_type_enum::UINT64:
-      return "::cuda::std::uint64_t";
-    case cccl_type_enum::FLOAT32:
-      return "float";
-    case cccl_type_enum::FLOAT64:
-      return "double";
-    case cccl_type_enum::STORAGE:
-      return "storage_t";
-  }
-  return "unknown";
-}
-
-std::string cccl_type_enum_to_name(cccl_type_enum type, bool is_pointer = false)
-{
-  std::string result;
-
-  if (is_pointer)
-  {
-    switch (type)
-    {
-      case cccl_type_enum::INT8:
-
-        check(nvrtcGetTypeName<::cuda::std::int8_t*>(&result));
-        break;
-      case cccl_type_enum::INT16:
-        check(nvrtcGetTypeName<::cuda::std::int16_t*>(&result));
-        break;
-      case cccl_type_enum::INT32:
-        check(nvrtcGetTypeName<::cuda::std::int32_t*>(&result));
-        break;
-      case cccl_type_enum::INT64:
-        check(nvrtcGetTypeName<::cuda::std::int64_t*>(&result));
-        break;
-      case cccl_type_enum::UINT8:
-        check(nvrtcGetTypeName<::cuda::std::uint8_t*>(&result));
-        break;
-      case cccl_type_enum::UINT16:
-        check(nvrtcGetTypeName<::cuda::std::uint16_t*>(&result));
-        break;
-      case cccl_type_enum::UINT32:
-        check(nvrtcGetTypeName<::cuda::std::uint32_t*>(&result));
-        break;
-      case cccl_type_enum::UINT64:
-        check(nvrtcGetTypeName<::cuda::std::uint64_t*>(&result));
-        break;
-      case cccl_type_enum::FLOAT32:
-        check(nvrtcGetTypeName<float*>(&result));
-        break;
-      case cccl_type_enum::FLOAT64:
-        check(nvrtcGetTypeName<double*>(&result));
-        break;
-      case cccl_type_enum::STORAGE:
-        check(nvrtcGetTypeName<storage_t*>(&result));
-        break;
-    }
-  }
-  else
-  {
-    switch (type)
-    {
-      case cccl_type_enum::INT8:
-        check(nvrtcGetTypeName<::cuda::std::int8_t>(&result));
-        break;
-      case cccl_type_enum::INT16:
-        check(nvrtcGetTypeName<::cuda::std::int16_t>(&result));
-        break;
-      case cccl_type_enum::INT32:
-        check(nvrtcGetTypeName<::cuda::std::int32_t>(&result));
-        break;
-      case cccl_type_enum::INT64:
-        check(nvrtcGetTypeName<::cuda::std::int64_t>(&result));
-        break;
-      case cccl_type_enum::UINT8:
-        check(nvrtcGetTypeName<::cuda::std::uint8_t>(&result));
-        break;
-      case cccl_type_enum::UINT16:
-        check(nvrtcGetTypeName<::cuda::std::uint16_t>(&result));
-        break;
-      case cccl_type_enum::UINT32:
-        check(nvrtcGetTypeName<::cuda::std::uint32_t>(&result));
-        break;
-      case cccl_type_enum::UINT64:
-        check(nvrtcGetTypeName<::cuda::std::uint64_t>(&result));
-        break;
-      case cccl_type_enum::FLOAT32:
-        check(nvrtcGetTypeName<float>(&result));
-        break;
-      case cccl_type_enum::FLOAT64:
-        check(nvrtcGetTypeName<double>(&result));
-        break;
-      case cccl_type_enum::STORAGE:
-        check(nvrtcGetTypeName<storage_t>(&result));
-        break;
-    }
-  }
-
-  return result;
-}
-
 struct reduce_tuning_t
 {
   int cc;
@@ -195,7 +51,7 @@ struct reduce_tuning_t
 };
 
 template <int N>
-reduce_tuning_t find_tuning(int cc, const reduce_tuning_t (&tunings)[N])
+static reduce_tuning_t find_tuning(int cc, const reduce_tuning_t (&tunings)[N])
 {
   for (const reduce_tuning_t& tuning : tunings)
   {
@@ -208,7 +64,7 @@ reduce_tuning_t find_tuning(int cc, const reduce_tuning_t (&tunings)[N])
   return tunings[N - 1];
 }
 
-runtime_tuning_policy get_policy(int cc, cccl_type_info accumulator_type, cccl_type_info /*input_type*/)
+static runtime_tuning_policy get_policy(int cc, cccl_type_info accumulator_type, cccl_type_info /*input_type*/)
 {
   reduce_tuning_t chain[] = {{60, 256, 16, 4}, {35, 256, 20, 4}};
 
@@ -221,14 +77,14 @@ runtime_tuning_policy get_policy(int cc, cccl_type_info accumulator_type, cccl_t
   return {block_size, items_per_thread, vector_load_length};
 }
 
-cccl_type_info get_accumulator_type(cccl_op_t /*op*/, cccl_iterator_t /*input_it*/, cccl_value_t init)
+static cccl_type_info get_accumulator_type(cccl_op_t /*op*/, cccl_iterator_t /*input_it*/, cccl_value_t init)
 {
   // TODO Should be decltype(op(init, *input_it)) but haven't implemented type arithmetic yet
   //      so switching back to the old accumulator type logic for now
   return init.type;
 }
 
-cudaError_t InvokeSingleTile(
+static cudaError_t InvokeSingleTile(
   void* d_temp_storage,
   std::size_t& temp_storage_bytes,
   cccl_iterator_t d_in,
@@ -271,7 +127,7 @@ cudaError_t InvokeSingleTile(
   return error;
 }
 
-cudaError_t InvokePasses(
+static cudaError_t InvokePasses(
   void* d_temp_storage,
   std::size_t& temp_storage_bytes,
   cccl_iterator_t d_in,
@@ -379,7 +235,7 @@ cudaError_t InvokePasses(
   return error;
 }
 
-cudaError_t Invoke(
+static cudaError_t Invoke(
   void* d_temp_storage,
   std::size_t& temp_storage_bytes,
   cccl_iterator_t d_in,
@@ -422,6 +278,9 @@ cudaError_t Invoke(
       stream);
   }
 }
+
+struct input_iterator_state_t;
+struct output_iterator_t;
 
 std::string get_input_iterator_name()
 {
@@ -502,24 +361,6 @@ std::string get_device_reduce_kernel_name(cccl_op_t op, cccl_iterator_t input_it
     reduction_op_t,
     accum_t,
     transform_op_t);
-}
-
-bool try_push_context()
-{
-  CUcontext context = nullptr;
-
-  check(cuCtxGetCurrent(&context));
-
-  if (context == nullptr)
-  {
-    const int default_device = 0;
-    check(cuDevicePrimaryCtxRetain(&context, default_device));
-    check(cuCtxPushCurrent(context));
-
-    return true;
-  }
-
-  return false;
 }
 
 extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
