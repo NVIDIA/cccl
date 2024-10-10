@@ -129,7 +129,7 @@ set(stf_test_sources
 )
 
 # Examples using CUBLAS, CUSOLVER...
-set(stf_tests_mathlib_sources
+set(stf_test_mathlib_sources
   cuda-samples/0_Introduction/vectorAdd/vectorAdd_cudastf.cu
   # Reduce compilation time by not adding this (useless) example
   # cuda-samples/0_Introduction/vectorAdd/vectorAdd
@@ -172,9 +172,7 @@ function(cudax_add_stf_test target_name_var source cn_target)
   target_link_libraries(${test_target} PRIVATE
     ${cn_target}
     CUDA::cudart
-    CUDA::cublas
     CUDA::curand
-    CUDA::cusolver
     CUDA::cuda_driver
   )
   target_compile_options(${test_target} PRIVATE
@@ -216,4 +214,14 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   foreach(source IN LISTS stf_test_sources)
     cudax_add_stf_test(test_target "${source}" ${cn_target})
   endforeach()
+
+  if (cudax_ENABLE_CUDASTF_MATHLIBS)
+    foreach(source IN LISTS stf_test_mathlib_sources)
+      cudax_add_stf_test(test_target "${source}" ${cn_target})
+      target_link_libraries(${test_target} PRIVATE
+        CUDA::cublas
+        CUDA::cusolver
+      )
+    endforeach()
+  endif()
 endforeach()
