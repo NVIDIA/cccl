@@ -77,6 +77,7 @@ function(cudax_add_stf_example target_name_var source cn_target)
     CUDA::cublas
     CUDA::curand
     CUDA::cusolver
+    CUDA::cuda_driver
   )
   target_compile_options(${example_target} PRIVATE
     $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
