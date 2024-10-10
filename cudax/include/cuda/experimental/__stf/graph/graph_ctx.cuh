@@ -118,7 +118,7 @@ private:
   {
     static const int ndevices = cuda_try<cudaGetDeviceCount>();
     // We need to declare who may access this buffer
-    cudaMemAccessDesc desc[ndevices];
+    ::std::vector<cudaMemAccessDesc> desc(ndevices);
     for (int peer : each(0, ndevices))
     {
       desc[peer].location.type = cudaMemLocationTypeDevice;
@@ -143,7 +143,7 @@ private:
 
     // Set only the variable parameters
     params.poolProps.location.id = device_ordinal(memory_node);
-    params.accessDescs           = desc;
+    params.accessDescs           = desc.data();
     params.accessDescCount       = size_t(ndevices);
     params.bytesize              = size_t(s);
 
