@@ -1002,7 +1002,7 @@ void unpin(mdspan<T, P...>& s)
 }
 
 template <typename E, typename X, typename L, typename A, size_t... i>
-size_t data_hash(mdspan<E, X, L, A> s, ::std::index_sequence<i...> = ::std::index_sequence<>())
+size_t data_hash([[maybe_unused]] mdspan<E, X, L, A> s, ::std::index_sequence<i...> = ::std::index_sequence<>())
 {
   using Slice = mdspan<E, X, L, A>;
   if constexpr (!has_std_hash_v<E>)
@@ -1082,35 +1082,6 @@ void data_dump(mdspan<E, X, L, A> s,
       {
         return;
       }
-
-      auto content_hash = [&](auto... indices) -> void {
-        for (;;)
-        {
-          bool bump = true;
-          each_in_pack(
-            [&](auto current_dim, size_t& index) {
-              if (!bump)
-              {
-                return;
-              }
-              ++index;
-              if (index >= s.extent(current_dim))
-              {
-                index = 0;
-              }
-              else
-              {
-                bump = false;
-              }
-            },
-            indices...);
-          if (bump)
-          {
-            // Done with all dimensions
-            break;
-          }
-        }
-      };
 
       auto print_element = [&](auto... indices) -> void {
         for (;;)
