@@ -281,7 +281,7 @@ inline int* cf_pop(callback_queue* q)
   return q->cfp.pop();
 }
 
-inline void callback_dispatcher(cudaStream_t stream, cudaError_t status, void* userData)
+inline void callback_dispatcher(cudaStream_t, cudaError_t, void* userData)
 {
   class cb* cb_                = (cb*) userData;
   class callback_queue* queue = cb_->queue;
@@ -499,7 +499,7 @@ inline __host__ cudaError_t cudaGraphAddHostNodeWithQueue(
 
   // Submit completion kernel in the stream ...
   // callback_completion_kernel<<<1,1,0,stream>>>(data->completion_flag);
-  cudaKernelNodeParams kernel_node_params = {0};
+  cudaKernelNodeParams kernel_node_params;
   kernel_node_params.func                 = (void*) callback_completion_kernel;
   kernel_node_params.gridDim              = 1;
   kernel_node_params.blockDim             = 1;

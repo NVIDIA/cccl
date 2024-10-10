@@ -57,9 +57,6 @@ function(cudax_add_header_test label definitions)
         # FIXME: layout_left::mapping referenced before layout_left:
         cuda/experimental/__stf/supplemental_std_experimental/__p0009_bits/layout_left.hpp
 
-        # FIXME: `cb` is used before its definition:
-        cuda/experimental/__stf/places/exec/host/callback_queues.cuh
-
         # FIXME: error: possibly dangling reference to a temporary (stream_task.cuh:114)
         cuda/experimental/__stf/stream/stream_task.cuh
         cuda/experimental/__stf/stream/stream_ctx.cuh
