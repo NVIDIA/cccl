@@ -17,15 +17,22 @@
 
 #include <cuda/experimental/__stf/places/exec/host/callback_queues.cuh>
 #include <cuda/experimental/__stf/utility/traits.cuh>
+#include <stack>
 
 #define STATEFUL_CALLBACKS
 
 namespace cuda::experimental::stf
 {
 
+class cb;
+
 #ifdef STATEFUL_CALLBACKS
 class cudaCallbackStateCtxKeys : public meyers_singleton<cudaCallbackStateCtxKeys>
 {
+protected:
+  cudaCallbackStateCtxKeys() = default;
+  ~cudaCallbackStateCtxKeys() = default;
+
 public:
   // per thread current callback
   pthread_key_t cb_key;
@@ -36,7 +43,7 @@ public:
 
 class cudaCallbackStateCtx : public meyers_singleton<cudaCallbackStateCtx>
 {
-public:
+protected:
   cudaCallbackStateCtx()
   {
     // Create a pthread_key to store the current callback
@@ -49,6 +56,7 @@ public:
     pthread_key_delete(cudaCallbackStateCtxKeys::instance().cb_key_once);
   }
 
+public:
   void set_current_cb(cb* cb)
   {
     pthread_setspecific(cudaCallbackStateCtxKeys::instance().cb_key, cb);
@@ -201,6 +209,15 @@ public:
 
 class callback_queue : public meyers_singleton<callback_queue>
 {
+protected:
+  callback_queue()
+  {
+    init();
+    launch_worker();
+  }
+
+  ~callback_queue() = default;
+
 public:
   ::std::deque<cb*> dq;
 
@@ -211,11 +228,6 @@ public:
   pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
   pthread_cond_t cond   = PTHREAD_COND_INITIALIZER;
 
-  callback_queue()
-  {
-    init();
-    launch_worker();
-  }
 
   void init()
   {
@@ -271,31 +283,31 @@ inline int* cf_pop(callback_queue* q)
 
 inline void callback_dispatcher(cudaStream_t stream, cudaError_t status, void* userData)
 {
-  class cb* cb                = (cb*) userData;
-  class callback_queue* queue = cb->queue;
+  class cb* cb_                = (cb*) userData;
+  class callback_queue* queue = cb_->queue;
 
   // Protect the queue
   pthread_mutex_lock(&queue->mutex);
-  queue->dq.push_back(cb);
+  queue->dq.push_back(cb_);
   pthread_cond_broadcast(&queue->cond);
   pthread_mutex_unlock(&queue->mutex);
 }
 
 inline void cudagraph_callback_dispatcher(void* userData)
 {
-  class cb* cb = (cb*) userData;
+  cb* cb_ = (cb*) userData;
 
-  class callback_queue* queue = cb->queue;
+  class callback_queue* queue = cb_->queue;
 
   // Protect the queue
   pthread_mutex_lock(&queue->mutex);
-  queue->dq.push_back(cb);
+  queue->dq.push_back(cb_);
   pthread_cond_broadcast(&queue->cond);
   pthread_mutex_unlock(&queue->mutex);
 }
 
 // There is likely a more efficient way in the current implementation of callbacks !
-inline __global__ void callback_completion_kernel(int* completion_flag)
+__global__ void callback_completion_kernel(int* completion_flag)
 {
   // Loop until *completion_flag == 1
   while (1 != (atomicCAS(completion_flag, 1, 1)))
@@ -510,7 +522,7 @@ inline __host__ cudaError_t cudaGraphAddHostNodeWithQueue(
  * @return `true` if the queue's status is set to 1, indicating that the queue has been processed and is empty, `false`
  * otherwise.
  */
-inline bool cudaCallbackQueueProgress(callback_queue* q, bool blocking)
+inline bool cudaCallbackQueueProgress(callback_queue* q, bool flag)
 {
   int blocking = (flag == 1);
 
