@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "cudastf/__stf/allocators/adapters.h"
-#include "cudastf/stf.h"
+#include <cuda/experimental/__stf/allocators/adapters.cuh>
+#include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;
 

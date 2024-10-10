@@ -43,8 +43,8 @@
  * of the programming guide with some additions like error checking.
  */
 
-#include "cudastf/__stf/graph/graph_ctx.h"
-#include "cudastf/__stf/stream/stream_ctx.h"
+#include <cuda/experimental/__stf/graph/graph_ctx.cuh>
+#include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 
 using namespace cuda::experimental::stf;
 

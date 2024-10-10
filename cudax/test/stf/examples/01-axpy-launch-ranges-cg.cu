@@ -8,9 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "cudastf/__stf/places/blocked_partition.h"
-#include "cudastf/__stf/places/cyclic_shape.h"
-#include "cudastf/stf.h"
+#include <cuda/experimental/__stf/places/blocked_partition.cuh>
+#include <cuda/experimental/__stf/places/cyclic_shape.cuh>
+#include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;
 

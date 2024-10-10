@@ -16,7 +16,7 @@
  * It also illustrates how we can use CUDASTF to allocate temporary data for CUSOLVER in CUDASTF tasks
  */
 
-#include "cudastf/__stf/stream/stream_ctx.h"
+#include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 #include <nvtx3/nvToolsExt.h>
 
 #define TILED

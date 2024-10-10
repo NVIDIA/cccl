@@ -35,7 +35,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include "MonteCarlo_common.h"
+#include "MonteCarlo_common.cuh"
 
 ////////////////////////////////////////////////////////////////////////////////
 // Black-Scholes formula for Monte Carlo results validation

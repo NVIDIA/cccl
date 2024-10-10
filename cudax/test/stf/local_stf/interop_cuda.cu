@@ -13,7 +13,7 @@
  * @brief This example illustrates how to introduce CUDASTF contexts within existing stream-synchronized library calls
  */
 
-#include "cudastf/stf.h"
+#include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;
 

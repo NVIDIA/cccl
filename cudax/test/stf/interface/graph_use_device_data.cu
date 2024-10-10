@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "cudastf/__stf/graph/graph_ctx.h"
-// #include "cudastf/__stf/graph/interfaces/slice.h"
+#include <cuda/experimental/__stf/graph/graph_ctx.cuh>
+// #include <cuda/experimental/__stf/graph/interfaces/slice.cuh>
 
 using namespace cuda::experimental::stf;
 

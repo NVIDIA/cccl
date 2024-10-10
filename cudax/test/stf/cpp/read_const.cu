@@ -13,7 +13,7 @@
  * @brief This test ensures that a task can access a logical data with a const qualifier.
  */
 
-#include "cudastf/stf.h"
+#include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;
 

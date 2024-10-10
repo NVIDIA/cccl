@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "cudastf/__stf/places/place_partition.h"
-#include "cudastf/stf.h"
+#include <cuda/experimental/__stf/places/place_partition.cuh>
+#include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;
 

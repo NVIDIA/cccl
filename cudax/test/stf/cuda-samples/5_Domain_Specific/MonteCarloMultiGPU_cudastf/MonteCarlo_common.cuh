@@ -37,9 +37,10 @@
 
 #ifndef MONTECARLO_COMMON_H
 #define MONTECARLO_COMMON_H
-#include "cudastf/stf.h"
+#include <cuda/experimental/stf.cuh>
+
 #include "curand_kernel.h"
-#include "realtype.h"
+#include "realtype.cuh"
 
 using namespace cuda::experimental::stf;
 

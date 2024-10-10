@@ -13,7 +13,7 @@
  * @brief Check that parallel_for constructs do update slices with shapes of different dimensions
  */
 
-#include "cudastf/stf.h"
+#include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;
 

@@ -46,7 +46,7 @@
 // where A is diagonally dominant and the exact solution consists
 // of all ones.
 
-#include "cudastf/__stf/utility/cuda_safe_call.h"
+#include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cooperative_groups.h>
 
 using cuda::experimental::stf::cuda_safe_call;

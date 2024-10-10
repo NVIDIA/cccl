@@ -15,7 +15,7 @@
  *
  */
 
-#include "cudastf/stf.h"
+#include <cuda/experimental/stf.cuh>
 #include "nvtx3/nvToolsExtCudaRt.h"
 
 using namespace cuda::experimental::stf;

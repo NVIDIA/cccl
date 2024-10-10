@@ -17,7 +17,7 @@
 #include <fstream>
 #include <map>
 
-#include "cudastf/stf.h"
+#include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;
 

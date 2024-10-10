@@ -15,8 +15,8 @@
  *
  */
 
-#include "cudastf/__stf/utility/constant_logical_data.h"
-#include "cudastf/stf.h"
+#include <cuda/experimental/__stf/utility/constant_logical_data.cuh>
+#include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;
 

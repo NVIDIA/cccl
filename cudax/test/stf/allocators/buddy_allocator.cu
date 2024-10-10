@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "cudastf/stf.h"
+#include <cuda/experimental/stf.cuh>
 
 /**
  * @brief Ensure the buddy allocation is working properly on the different backends

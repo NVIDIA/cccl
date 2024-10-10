@@ -13,7 +13,7 @@
  * @brief Ensure we can create graph contexts many times
  */
 
-#include "cudastf/stf.h"
+#include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;
 

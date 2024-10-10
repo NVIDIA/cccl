@@ -8,11 +8,11 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "cudastf/__stf/places/blocked_partition.h"
-#include "cudastf/__stf/places/cyclic_shape.h"
-#include "cudastf/__stf/stream/stream_ctx.h"
-#include "cudastf/__stf/utility/stopwatch.h"
-#include "cudastf/stf.h"
+#include <cuda/experimental/__stf/places/blocked_partition.cuh>
+#include <cuda/experimental/__stf/places/cyclic_shape.cuh>
+#include <cuda/experimental/__stf/stream/stream_ctx.cuh>
+#include <cuda/experimental/__stf/utility/stopwatch.cuh>
+#include <cuda/experimental/stf.cuh>
 #include <stdio.h>
 #include <time.h>
 

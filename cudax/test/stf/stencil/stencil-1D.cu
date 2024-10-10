@@ -10,7 +10,7 @@
 
 #include <iostream>
 
-#include "cudastf/__stf/graph/graph_ctx.h"
+#include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 
 using namespace cuda::experimental::stf;
 

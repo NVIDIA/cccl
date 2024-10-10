@@ -10,7 +10,7 @@
 
 #include <iostream>
 
-#include "cudastf/__stf/stream/stream_ctx.h"
+#include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 
 using namespace cuda::experimental::stf;
 

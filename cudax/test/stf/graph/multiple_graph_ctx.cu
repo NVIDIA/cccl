@@ -13,7 +13,7 @@
  * @brief Ensure we can use multiple graph contexts simultaneously and launch them
  */
 
-#include "cudastf/__stf/graph/graph_ctx.h"
+#include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 
 using namespace cuda::experimental::stf;
 
