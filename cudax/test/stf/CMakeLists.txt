@@ -35,8 +35,6 @@ set(stf_test_sources
   examples/05-stencil-no-copy.cu
   examples/05-stencil-places.cu
   examples/05-stencil2d-places.cu
-  examples/07-cholesky-redux.cu
-  examples/07-cholesky-unified.cu
   examples/09-nbody.cu
   examples/09-nbody-algorithm.cu
   examples/09-nbody-blocked.cu
@@ -60,8 +58,6 @@ set(stf_test_sources
   green_context/cuda_graph.cu
   green_context/gc_grid.cu
   gnu/include_only.cpp
-  gnu/06-pdgemm.cpp
-  gnu/07-cholesky.cpp
   hash/logical_data.cu
   hash/ctx_hash.cu
   hashtable/fusion.cu
@@ -130,6 +126,10 @@ set(stf_test_sources
   threads/axpy-threads-2.cu
   # threads/axpy-threads-pfor.cu   # Currently has a difficult-to-reproduce concurrency problem
   utility/timing_with_fences.cu
+)
+
+# Examples using CUBLAS, CUSOLVER...
+set(stf_tests_mathlib_sources
   cuda-samples/0_Introduction/vectorAdd/vectorAdd_cudastf.cu
   # Reduce compilation time by not adding this (useless) example
   # cuda-samples/0_Introduction/vectorAdd/vectorAdd
@@ -137,6 +137,10 @@ set(stf_test_sources
   cuda-samples/3_CUDA_Features/jacobiCudaGraphs/jacobi_cudastf.cu
   cuda-samples/4_CUDA_Libraries/conjugateGradientMultiDeviceCG/conjugateGradientMultiDeviceCG_custf.cu
   cuda-samples/5_Domain_Specific/MonteCarloMultiGPU_cudastf/MonteCarloMultiGPU.cu
+  examples/07-cholesky-redux.cu
+  examples/07-cholesky-unified.cu
+  gnu/06-pdgemm.cpp
+  gnu/07-cholesky.cpp
 )
 
 find_package(CUDAToolkit REQUIRED)
