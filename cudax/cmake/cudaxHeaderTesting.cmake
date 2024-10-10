@@ -63,10 +63,6 @@ function(cudax_add_header_test label definitions)
         # FIXME: error: possibly dangling reference to a temporary (stream_task.cuh:114)
         cuda/experimental/__stf/stream/stream_task.cuh
         cuda/experimental/__stf/stream/stream_ctx.cuh
-
-        # FIXME: -Wvla: Avoid VLAs (cudaMemAccessDesc desc[ndevices];), they're non-portable:
-        cuda/experimental/__stf/graph/graph_ctx.cuh
-        cuda/experimental/stf.cuh
     )
     target_link_libraries(${headertest_target} PUBLIC ${cn_target})
     target_compile_definitions(${headertest_target} PRIVATE
