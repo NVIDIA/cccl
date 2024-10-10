@@ -39,7 +39,7 @@ set(stf_example_sources
 )
 
 # Examples using CUBLAS, CUSOLVER...
-set(stf_examples_mathlib_sources
+set(stf_example_mathlib_sources
   linear_algebra/06-pdgemm.cu
   linear_algebra/07-cholesky.cu
   linear_algebra/07-potri.cu
@@ -78,9 +78,7 @@ function(cudax_add_stf_example target_name_var source cn_target)
   target_link_libraries(${example_target} PRIVATE
     ${cn_target}
     CUDA::cudart
-    CUDA::cublas
     CUDA::curand
-    CUDA::cusolver
     CUDA::cuda_driver
   )
   target_compile_options(${example_target} PRIVATE
@@ -122,4 +120,15 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   foreach(source IN LISTS stf_example_sources)
     cudax_add_stf_example(example_target "${source}" ${cn_target})
   endforeach()
+
+  if (cudax_ENABLE_CUDASTF_MATHLIBS)
+    foreach(source IN LISTS stf_example_mathlib_sources)
+      cudax_add_stf_example(example_target "${source}" ${cn_target})
+      target_link_libraries(${example_target} PRIVATE
+        CUDA::cublas
+        CUDA::cusolver
+      )
+    endforeach()
+  endif()
+
 endforeach()

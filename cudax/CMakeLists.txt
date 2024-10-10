@@ -18,6 +18,7 @@ option(cudax_ENABLE_HEADER_TESTING "Test that CUDA Experimental's public headers
 option(cudax_ENABLE_TESTING "Build CUDA Experimental's tests." ON)
 option(cudax_ENABLE_EXAMPLES "Build CUDA Experimental's tests." ON)
 option(cudax_ENABLE_CUDASTF_BOUNDSCHECK "Enable bounds checks for STF targets." ON)
+option(cudax_ENABLE_CUDASTF_MATHLIBS "Enable STF tests/examples that use cublas/cusolver." OFF)
 
 include(cmake/cudaxBuildCompilerTargets.cmake)
 include(cmake/cudaxBuildTargetList.cmake)
