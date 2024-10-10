@@ -28,12 +28,6 @@ set(stf_example_sources
   launch_scan.cu
   launch_sum.cu
   launch_sum_cub.cu
-  linear_algebra/06-pdgemm.cu
-  linear_algebra/07-cholesky.cu
-  linear_algebra/07-potri.cu
-  linear_algebra/cg_csr.cu
-  linear_algebra/cg_dense_2D.cu
-  linear_algebra/strassen.cu
   logical_gates_composition.cu
   parallel_for_2D.cu
   scan.cu
@@ -42,6 +36,16 @@ set(stf_example_sources
   thrust_zip_iterator.cu
   word_count.cu
   1f1b.cu
+)
+
+# Examples using CUBLAS, CUSOLVER...
+set(stf_examples_mathlib_sources
+  linear_algebra/06-pdgemm.cu
+  linear_algebra/07-cholesky.cu
+  linear_algebra/07-potri.cu
+  linear_algebra/cg_csr.cu
+  linear_algebra/cg_dense_2D.cu
+  linear_algebra/strassen.cu
 )
 
 find_package(CUDAToolkit REQUIRED)
