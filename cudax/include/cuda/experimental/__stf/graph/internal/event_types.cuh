@@ -24,7 +24,7 @@ namespace reserved
 class graph_event_impl : public event_impl
 {
 protected:
-  graph_event_impl()                        = delete;
+  graph_event_impl()                        = default;
   graph_event_impl(const graph_event_impl&) = delete;
   graph_event_impl(cudaGraphNode_t n, size_t epoch)
       : node(n)
