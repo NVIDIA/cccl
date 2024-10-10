@@ -171,6 +171,7 @@ function(cudax_add_stf_test target_name_var source cn_target)
     CUDA::cublas
     CUDA::curand
     CUDA::cusolver
+    CUDA::cuda_driver
   )
   target_compile_options(${test_target} PRIVATE
     $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
