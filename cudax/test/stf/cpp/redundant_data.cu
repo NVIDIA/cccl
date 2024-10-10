@@ -75,7 +75,7 @@ int main()
 {
   double X[n], Y[n];
 
-  for (int ind = 0; ind < n; ind++)
+  for (size_t ind = 0; ind < n; ind++)
   {
     X[ind] = 1.0 * ind;
     Y[ind] = 2.0 * ind - 3.0;
