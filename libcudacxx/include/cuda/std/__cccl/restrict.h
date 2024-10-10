@@ -22,14 +22,22 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if defined(__cplusplus) && defined(_CCCL_COMPILER_MSVC) // vvv _CCCL_COMPILER_MSVC vvv
 
 #  define _CCCL_RESTRICT __restrict
 
-#else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
+#elif defined(__cplusplus) // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
 
 #  define _CCCL_RESTRICT __restrict__
 
-#endif // !_CCCL_COMPILER_MSVC
+#elif !defined(__cplusplus) && __STDC_VERSION__ >= 199901L // ^^^ C++ ^^^ / vvv C99 vvv
+
+#  define _CCCL_RESTRICT restrict
+
+#else // ^^^ C99 ^^^ / vvv !C99 vvv
+
+#  define _CCCL_RESTRICT
+
+#endif // ^^^ !C99 ^^^
 
 #endif // __CCCL_RESTRICT_H
