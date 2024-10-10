@@ -133,7 +133,8 @@ _CCCL_NODISCARD constexpr auto make_hierarchy_fragment_reversable(L1&& l1, Level
                 "Provided levels can't create a valid hierarchy when stacked in the provided order or reversed");
   if constexpr (can_stack)
   {
-    return hierarchy_dimensions_fragment(LUnit{}, ::cuda::std::forward<L1>(l1), ::cuda::std::forward<Levels>(ls)...);
+    return hierarchy_dimensions_fragment(
+      LUnit{}, std::make_tuple(::cuda::std::forward<L1>(l1), ::cuda::std::forward<Levels>(ls)...));
   }
   else
   {
@@ -213,7 +214,7 @@ _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr auto dims_to_count(const dimensions<
 template <typename... Levels>
 _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr auto get_level_counts_helper(const Levels&... ls)
 {
-  return ::cuda::std::make_tuple(dims_to_count(ls.dims)...);
+  return ::cuda::std::make_tuple(dims_to_count(ls.dims_for_query())...);
 }
 
 template <typename Unit, typename Level, typename Dims>
@@ -244,14 +245,19 @@ struct hierarchy_extents_helper
     using TopLevel = typename LTopDims::level_type;
     if constexpr (sizeof...(Levels) == 0)
     {
-      return replace_with_intrinsics_or_constexpr<BottomUnit, TopLevel>(ltop.dims);
+      return replace_with_intrinsics_or_constexpr<BottomUnit, TopLevel>(ltop.dims_for_query());
     }
     else
     {
       using Unit = typename detail::get_first_level_type<typename Levels::level_type...>::type;
       return dims_product<typename TopLevel::product_type>(
-        replace_with_intrinsics_or_constexpr<Unit, TopLevel>(ltop.dims), (*this)(levels...));
+        replace_with_intrinsics_or_constexpr<Unit, TopLevel>(ltop.dims_for_query()), (*this)(levels...));
     }
+  }
+
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr auto operator()() noexcept
+  {
+    return hierarchy_query_result<dimensions_index_type, 1, 1, 1>();
   }
 };
 
@@ -271,16 +277,21 @@ struct index_helper
     using TopLevel = typename LTopDims::level_type;
     if constexpr (sizeof...(Levels) == 0)
     {
-      return static_index_hint(ltop.dims, dims_helper<BottomUnit, TopLevel>::index());
+      return static_index_hint(ltop.dims_for_query(), dims_helper<BottomUnit, TopLevel>::index());
     }
     else
     {
       using Unit        = typename detail::get_first_level_type<typename Levels::level_type...>::type;
-      auto hinted_index = static_index_hint(ltop.dims, dims_helper<Unit, TopLevel>::index());
+      auto hinted_index = static_index_hint(ltop.dims_for_query(), dims_helper<Unit, TopLevel>::index());
       return dims_sum<typename TopLevel::product_type>(
         dims_product<typename TopLevel::product_type>(hinted_index, hierarchy_extents_helper<BottomUnit>()(levels...)),
         index_helper<BottomUnit>()(levels...));
     }
+  }
+
+  _CCCL_NODISCARD _CCCL_DEVICE constexpr auto operator()() noexcept
+  {
+    return hierarchy_query_result<dimensions_index_type, 1, 1, 1>();
   }
 };
 
@@ -293,17 +304,22 @@ struct rank_helper
     using TopLevel = typename LTopDims::level_type;
     if constexpr (sizeof...(Levels) == 0)
     {
-      auto hinted_index = static_index_hint(ltop.dims, dims_helper<BottomUnit, TopLevel>::index());
-      return detail::index_to_linear<typename TopLevel::product_type>(hinted_index, ltop.dims);
+      auto hinted_index = static_index_hint(ltop.dims_for_query(), dims_helper<BottomUnit, TopLevel>::index());
+      return detail::index_to_linear<typename TopLevel::product_type>(hinted_index, ltop.dims_for_query());
     }
     else
     {
       using Unit        = typename detail::get_first_level_type<typename Levels::level_type...>::type;
-      auto hinted_index = static_index_hint(ltop.dims, dims_helper<Unit, TopLevel>::index());
-      auto level_rank   = detail::index_to_linear<typename TopLevel::product_type>(hinted_index, ltop.dims);
+      auto hinted_index = static_index_hint(ltop.dims_for_query(), dims_helper<Unit, TopLevel>::index());
+      auto level_rank   = detail::index_to_linear<typename TopLevel::product_type>(hinted_index, ltop.dims_for_query());
       return level_rank * dims_to_count(hierarchy_extents_helper<BottomUnit>()(levels...))
            + rank_helper<BottomUnit>()(levels...);
     }
+  }
+
+  _CCCL_NODISCARD _CCCL_DEVICE constexpr dimensions_index_type operator()() noexcept
+  {
+    return 1;
   }
 };
 } // namespace detail
@@ -344,19 +360,6 @@ struct hierarchy_dimensions_fragment
   static_assert(::cuda::std::is_base_of_v<hierarchy_level, BottomUnit> || ::cuda::std::is_same_v<BottomUnit, void>);
   ::cuda::std::tuple<Levels...> levels;
 
-  _CCCL_HOST_DEVICE constexpr hierarchy_dimensions_fragment(const Levels&... ls) noexcept
-      : levels(ls...)
-  {}
-  _CCCL_HOST_DEVICE constexpr hierarchy_dimensions_fragment(Levels&&... ls) noexcept
-      : levels(::cuda::std::forward<Levels>(ls)...)
-  {}
-  _CCCL_HOST_DEVICE constexpr hierarchy_dimensions_fragment(const BottomUnit&, const Levels&... ls) noexcept
-      : levels(ls...)
-  {}
-  _CCCL_HOST_DEVICE constexpr hierarchy_dimensions_fragment(const BottomUnit&, Levels&&... ls) noexcept
-      : levels(::cuda::std::forward<Levels>(ls)...)
-  {}
-
   _CCCL_HOST_DEVICE constexpr hierarchy_dimensions_fragment(const ::cuda::std::tuple<Levels...>& ls) noexcept
       : levels(ls)
   {}
@@ -365,11 +368,11 @@ struct hierarchy_dimensions_fragment
   {}
 
   _CCCL_HOST_DEVICE constexpr hierarchy_dimensions_fragment(
-    const BottomUnit& unit, const ::cuda::std::tuple<Levels...>& ls) noexcept
+    const BottomUnit&, const ::cuda::std::tuple<Levels...>& ls) noexcept
       : levels(ls)
   {}
   _CCCL_HOST_DEVICE constexpr hierarchy_dimensions_fragment(
-    const BottomUnit& unit, ::cuda::std::tuple<Levels...>&& ls) noexcept
+    const BottomUnit&, ::cuda::std::tuple<Levels...>&& ls) noexcept
       : levels(::cuda::std::forward<::cuda::std::tuple<Levels...>>(ls))
   {}
 
@@ -378,10 +381,17 @@ private:
   template <typename Unit, typename Level>
   _CCCL_NODISCARD _CCCL_HOST_DEVICE static constexpr auto levels_range_static(const decltype(levels)& levels) noexcept
   {
-    static_assert(has_level<Level, hierarchy_dimensions_fragment<BottomUnit, Levels...>>);
+    static_assert(has_level_or_unit<Level, hierarchy_dimensions_fragment<BottomUnit, Levels...>>);
     static_assert(has_level_or_unit<Unit, hierarchy_dimensions_fragment<BottomUnit, Levels...>>);
-    static_assert(detail::legal_unit_for_level<Unit, Level>);
-    return ::cuda::std::apply(detail::get_levels_range<Level, Unit, Levels...>, levels);
+    if constexpr (::cuda::std::is_same_v<Unit, Level>)
+    {
+      return ::cuda::std::make_tuple();
+    }
+    else
+    {
+      static_assert(detail::legal_unit_for_level<Unit, Level>);
+      return ::cuda::std::apply(detail::get_levels_range<Level, Unit, Levels...>, levels);
+    }
   }
 
   // TODO is this useful enough to expose?
@@ -397,7 +407,7 @@ private:
     template <typename... Selected>
     _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr auto operator()(const Selected&... levels) const noexcept
     {
-      return hierarchy_dimensions_fragment<Unit, Selected...>(levels...);
+      return hierarchy_dimensions_fragment<Unit, Selected...>(std::make_tuple(levels...));
     }
   };
 
@@ -478,6 +488,8 @@ public:
   _CCCL_HOST_DEVICE constexpr auto extents(const Unit& = Unit(), const Level& = Level()) const noexcept
   {
     auto selected = levels_range<Unit, Level>();
+    static_assert(detail::usable_for_queries<decltype(selected)>,
+                  "Dimensions type is not usable for queries, finalize the dimensions first");
     return detail::convert_to_query_result(::cuda::std::apply(detail::hierarchy_extents_helper<Unit>{}, selected));
   }
 
@@ -612,6 +624,8 @@ public:
   _CCCL_DEVICE constexpr auto index(const Unit& = Unit(), const Level& = Level()) const noexcept
   {
     auto selected = levels_range<Unit, Level>();
+    static_assert(detail::usable_for_queries<decltype(selected)>,
+                  "Dimensions type is not usable for queries, finalize the dimensions first");
     return detail::convert_to_query_result(::cuda::std::apply(detail::index_helper<Unit>{}, selected));
   }
 
@@ -655,6 +669,8 @@ public:
   _CCCL_DEVICE constexpr auto rank(const Unit& = Unit(), const Level& = Level()) const noexcept
   {
     auto selected = levels_range<Unit, Level>();
+    static_assert(detail::usable_for_queries<decltype(selected)>,
+                  "Dimensions type is not usable for queries, finalize the dimensions first");
     return ::cuda::std::apply(detail::rank_helper<Unit>{}, selected);
   }
 
