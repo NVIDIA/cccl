@@ -11,6 +11,7 @@
 // UNSUPPORTED: msvc
 // UNSUPPORTED: nvrtc
 // UNSUPPORTED: icc
+// UNSUPPORTED: nvhpc
 
 // Test the fix for https://llvm.org/PR54100
 

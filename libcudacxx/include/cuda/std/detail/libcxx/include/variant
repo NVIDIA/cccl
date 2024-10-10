@@ -1383,7 +1383,7 @@ template <class _Dest, class _Source>
 using __check_for_narrowing _LIBCUDACXX_NODEBUG_TYPE = typename _If<
 #  ifdef _LIBCUDACXX_ENABLE_NARROWING_CONVERSIONS_IN_VARIANT
   false &&
-#  endif
+#  endif // _LIBCUDACXX_ENABLE_NARROWING_CONVERSIONS_IN_VARIANT
     _CCCL_TRAIT(is_arithmetic, _Dest),
   __narrowing_check,
   __no_narrowing_check>::template _Apply<_Dest, _Source>;

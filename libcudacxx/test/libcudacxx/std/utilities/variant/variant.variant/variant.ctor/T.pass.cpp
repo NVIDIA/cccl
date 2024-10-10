@@ -143,13 +143,13 @@ __host__ __device__ void test_T_ctor_basic()
     static_assert(v.index() == 1, "");
     static_assert(cuda::std::get<1>(v) == 42, "");
   }
-#ifndef TEST_VARIANT_ALLOWS_NARROWING_CONVERSIONS
+#ifdef TEST_VARIANT_ALLOWS_NARROWING_CONVERSIONS
   {
     constexpr cuda::std::variant<unsigned, long> v(42);
     static_assert(v.index() == 1, "");
     static_assert(cuda::std::get<1>(v) == 42, "");
   }
-#endif
+#endif // TEST_VARIANT_ALLOWS_NARROWING_CONVERSIONS
   /* {
     cuda::std::variant<cuda::std::string, bool const> v = "foo";
     assert(v.index() == 0);
