@@ -350,7 +350,7 @@ auto all_convertible(P&&... p)
  * @return T Either the first convertible parameter, or `default_v` if no such parameter is found
  */
 template <typename T, typename... P>
-T only_convertible_or(T default_v, P&&... p)
+T only_convertible_or([[maybe_unused]] T default_v, P&&... p)
 {
   if constexpr (!(::std::is_convertible_v<P, T> || ...))
   {
