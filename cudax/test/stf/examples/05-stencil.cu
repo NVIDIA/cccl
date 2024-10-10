@@ -42,7 +42,7 @@ public:
     ctx.task(exec_place::host, handle.read())->*[&](cudaStream_t stream, auto sn) {
       cuda_safe_call(cudaStreamSynchronize(stream));
       const T* h_center = sn.data_handle();
-      for (int offset = ghost_size; offset < ghost_size + block_size; offset++)
+      for (size_t offset = ghost_size; offset < ghost_size + block_size; offset++)
       {
         sum += h_center[offset];
       }
@@ -145,8 +145,8 @@ void copy_array(data_block<T>& bn, data_block<T>& bn1)
 int main(int argc, char** argv)
 {
   int NITER      = 500;
-  int NBLOCKS    = 4;
-  int BLOCK_SIZE = 2048 * 1024;
+  size_t NBLOCKS    = 4;
+  size_t BLOCK_SIZE = 2048 * 1024;
 
   if (argc > 1)
   {
@@ -177,7 +177,7 @@ int main(int argc, char** argv)
   std::vector<data_block<double>> Un1;
 
   // Create blocks and allocates host data
-  for (int b = 0; b < NBLOCKS; b++)
+  for (size_t b = 0; b < NBLOCKS; b++)
   {
     int beg = b * BLOCK_SIZE;
     int end = (b + 1) * BLOCK_SIZE;
@@ -186,7 +186,7 @@ int main(int argc, char** argv)
     Un1.emplace_back(beg, end, 1);
   }
 
-  for (int b = 0; b < NBLOCKS; b++)
+  for (size_t b = 0; b < NBLOCKS; b++)
   {
     Un[b].preferred_device  = b % ndevs;
     Un1[b].preferred_device = b % ndevs;
@@ -195,7 +195,7 @@ int main(int argc, char** argv)
   // Fill blocks with initial values. For the sake of simplicity, we are
   // using a synchronization primitive and host code, but this could have
   // been written asynchronously using host callbacks.
-  for (int b = 0; b < NBLOCKS; b++)
+  for (size_t b = 0; b < NBLOCKS; b++)
   {
     int beg = b * BLOCK_SIZE;
 
@@ -205,7 +205,7 @@ int main(int argc, char** argv)
       double* Un_vals  = sUn.data_handle();
       double* Un1_vals = sUn1.data_handle();
 
-      for (int local_idx = 0; local_idx < BLOCK_SIZE; local_idx++)
+      for (size_t local_idx = 0; local_idx < BLOCK_SIZE; local_idx++)
       {
         Un1_vals[local_idx + GHOST_SIZE] = U0[(beg + local_idx + TOTAL_SIZE) % TOTAL_SIZE];
       }
@@ -214,25 +214,25 @@ int main(int argc, char** argv)
 
   for (int iter = 0; iter < NITER; iter++)
   {
-    for (int b = 0; b < NBLOCKS; b++)
+    for (size_t b = 0; b < NBLOCKS; b++)
     {
       // Update the internal copies of the left and right boundaries
       update_inner_interfaces(Un1[b]);
     }
 
-    for (int b = 0; b < NBLOCKS; b++)
+    for (size_t b = 0; b < NBLOCKS; b++)
     {
       // Apply ghost cells from neighbours to put then in the "center" array
       update_outer_interfaces(Un1[b], Un1[(b - 1 + NBLOCKS) % NBLOCKS], Un1[(b + 1) % NBLOCKS]);
     }
 
     // UPDATE Un from Un1
-    for (int b = 0; b < NBLOCKS; b++)
+    for (size_t b = 0; b < NBLOCKS; b++)
     {
       stencil(Un[b], Un1[b]);
     }
 
-    for (int b = 0; b < NBLOCKS; b++)
+    for (size_t b = 0; b < NBLOCKS; b++)
     {
       // Save Un into Un1
       copy_array(Un[b], Un1[b]);
@@ -242,7 +242,7 @@ int main(int argc, char** argv)
     if (iter % 250 == 0)
     {
       double check_sum = 0.0;
-      for (int b = 0; b < NBLOCKS; b++)
+      for (size_t b = 0; b < NBLOCKS; b++)
       {
         check_sum += Un[b].check_sum();
       }
@@ -253,7 +253,7 @@ int main(int argc, char** argv)
 
   // In this stencil, the sum of the elements is supposed to be a constant
   double check_sum = 0.0;
-  for (int b = 0; b < NBLOCKS; b++)
+  for (size_t b = 0; b < NBLOCKS; b++)
   {
     check_sum += Un[b].check_sum();
   }

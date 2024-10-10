@@ -210,13 +210,13 @@ int main(int argc, char** argv)
 
   for (int iter = 0; iter < NITER; iter++)
   {
-    for (int b = 0; b < NBLOCKS; b++)
+    for (size_t b = 0; b < NBLOCKS; b++)
     {
       update_halo(ctx, Un1[b], Un[(b - 1 + NBLOCKS) % NBLOCKS], Un[(b + 1) % NBLOCKS]);
     }
 
     // UPDATE Un from Un1
-    for (int b = 0; b < NBLOCKS; b++)
+    for (size_t b = 0; b < NBLOCKS; b++)
     {
       stencil(ctx, Un[b], Un1[b]);
     }
@@ -225,7 +225,7 @@ int main(int argc, char** argv)
     if (iter % 250 == 0)
     {
       double sum = 0.0;
-      for (int b = 0; b < NBLOCKS; b++)
+      for (size_t b = 0; b < NBLOCKS; b++)
       {
         sum += check_sum(ctx, Un[b]);
       }
@@ -233,7 +233,7 @@ int main(int argc, char** argv)
       // fprintf(stderr, "iter %d : CHECK SUM = %e\n", iter, sum);
     }
 
-    for (int b = 0; b < NBLOCKS; b++)
+    for (size_t b = 0; b < NBLOCKS; b++)
     {
       // Copy inner part of Un into Un1
       copy_inner(ctx, Un[b], Un1[b]);
@@ -242,7 +242,7 @@ int main(int argc, char** argv)
 
   // In this stencil, the sum of the elements is supposed to be a constant
   double sum = 0.0;
-  for (int b = 0; b < NBLOCKS; b++)
+  for (size_t b = 0; b < NBLOCKS; b++)
   {
     sum += check_sum(ctx, Un[b]);
   }

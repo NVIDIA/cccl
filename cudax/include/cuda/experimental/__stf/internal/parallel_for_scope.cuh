@@ -287,7 +287,6 @@ public:
         }
         else
         {
-          auto grid_dims   = t.grid_dims();
           size_t grid_size = t.grid_dims().size();
           for (size_t i = 0; i < grid_size; i++)
           {

@@ -1065,7 +1065,7 @@ size_t data_hash([[maybe_unused]] mdspan<E, X, L, A> s, ::std::index_sequence<i.
  * Write the content of the mdspan into a file
  */
 template <typename E, typename X, typename L, typename A, size_t... i>
-void data_dump(mdspan<E, X, L, A> s,
+void data_dump([[maybe_unused]] mdspan<E, X, L, A> s,
                ::std::ostream& file        = ::std::cerr,
                ::std::index_sequence<i...> = ::std::index_sequence<>())
 {
@@ -1181,7 +1181,7 @@ struct std::hash<::cuda::experimental::stf::mdspan<P...>>
 
     if constexpr (_dimensions > 1)
     {
-      for (auto i = 1; i < _dimensions; i++)
+      for (size_t i = 1; i < _dimensions; i++)
       {
         cuda::experimental::stf::hash_combine(h, s.stride(i));
       }
