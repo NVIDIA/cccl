@@ -22,14 +22,28 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_CCCL_CUDA_COMPILER) && defined(__CUDA_ARCH__) && __CUDA_ARCH__ >= 700 && !defined(_CCCL_CUDACC_BELOW_11_7)
+/// In device code, _CCCL_PTX_ARCH expands to the PTX version for which we are compiling.
+/// In host code, _CCCL_PTX_ARCH's value is implementation defined.
+#ifndef _CCCL_PTX_ARCH
+#  if defined(_CCCL_COMPILER_NVHPC)
+// __NVCOMPILER_CUDA_ARCH__ is the target PTX version, and is defined when compiling both host code and device code.
+// Currently, only one PTX version can be targeted.
+#    define _CCCL_PTX_ARCH __NVCOMPILER_CUDA_ARCH__
+#  elif !defined(__CUDA_ARCH__)
+#    define _CCCL_PTX_ARCH 0
+#  else
+#    define _CCCL_PTX_ARCH __CUDA_ARCH__
+#  endif
+#endif
 
-#  define _CCCL_GRID_CONSTANT__ __grid_constant__
+#if defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_PTX_ARCH >= 700 && !defined(_CCCL_CUDACC_BELOW_11_7)
 
-#else // ^^^ _CCCL_CUDA_COMPILER ^^^ / vvv !_CCCL_CUDA_COMPILER vvv
+#  define _CCCL_GRID_CONSTANT __grid_constant__
 
-#  define _CCCL_GRID_CONSTANT__
+#else // ^^^ _CCCL_CUDA_COMPILER_NVCC ^^^ / vvv !_CCCL_CUDA_COMPILER_NVCC vvv
 
-#endif // !_CCCL_CUDA_COMPILER
+#  define _CCCL_GRID_CONSTANT
+
+#endif // !_CCCL_CUDA_COMPILER_NVCC
 
 #endif // __CCCL_GRID_CONSTANT_H
