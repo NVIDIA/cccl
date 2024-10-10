@@ -171,6 +171,7 @@
 #  define _LIBCUDACXX_PP_IIF_1(_TRUE, ...) _TRUE
 
 #  define _LIBCUDACXX_PP_LPAREN (
+#  define _LIBCUDACXX_PP_RPAREN )
 
 #  define _LIBCUDACXX_PP_NOT(_BIT) _LIBCUDACXX_PP_CAT_(_LIBCUDACXX_PP_NOT_, _BIT)
 #  define _LIBCUDACXX_PP_NOT_0     1
@@ -220,11 +221,13 @@
 #  define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_SELECT_PROBE_requires _LIBCUDACXX_PP_PROBE_N(~, 1)
 #  define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_SELECT_PROBE_noexcept _LIBCUDACXX_PP_PROBE_N(~, 2)
 #  define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_SELECT_PROBE_typename _LIBCUDACXX_PP_PROBE_N(~, 3)
+#  define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_SELECT_PROBE__Same_as _LIBCUDACXX_PP_PROBE_N(~, 4)
 
 #  define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_SELECT_0 _LIBCUDACXX_PP_EXPAND
 #  define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_SELECT_1 _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_REQUIRES_OR_NOEXCEPT
 #  define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_SELECT_2 _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_REQUIRES_OR_NOEXCEPT
 #  define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_SELECT_3 _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_REQUIRES_OR_NOEXCEPT
+#  define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_SELECT_4 _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_SAME_AS
 #  define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_REQUIRES_OR_NOEXCEPT(_REQ) \
     _LIBCUDACXX_PP_CAT4(_LIBCUDACXX_CONCEPT_FRAGMENT_REQS_REQUIRES_, _REQ)
 #  define _LIBCUDACXX_PP_EAT_TYPENAME_PROBE_typename _LIBCUDACXX_PP_PROBE(~)
@@ -255,6 +258,14 @@
       {                                                              \
         __VA_ARGS__                                                  \
       } noexcept
+#    define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_SAME_AS(_REQ)                   \
+      {                                                                       \
+        _LIBCUDACXX_PP_CAT4(_LIBCUDACXX_PP_EAT_SAME_AS_, _REQ)                \
+      } -> _LIBCUDACXX_PP_EVAL(_LIBCUDACXX_CONCEPT_FRAGMENT_REQS_SAME_AS_AUX, \
+                               _LIBCUDACXX_PP_CAT4(_LIBCUDACXX_CONCEPT_FRAGMENT_REQS_SAME_AS_, _REQ))
+#    define _LIBCUDACXX_PP_EAT_SAME_AS__Same_as(...)
+#    define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_SAME_AS_AUX(_TYPE, ...) _CUDA_VSTD::same_as<_LIBCUDACXX_PP_EXPAND _TYPE>
+#    define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_SAME_AS__Same_as(...)   (__VA_ARGS__),
 
 #    define _LIBCUDACXX_FRAGMENT(_NAME, ...) _NAME<__VA_ARGS__>
 
@@ -294,6 +305,10 @@
 #    else
 #      define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_REQUIRES_noexcept(...) _Concept::_Requires<noexcept(__VA_ARGS__)>
 #    endif
+#    define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_SAME_AS(_REQ)        \
+      _Concept::_Requires<_CUDA_VSTD::same_as<_LIBCUDACXX_PP_CAT4( \
+        _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_SAME_AS_, _REQ) _LIBCUDACXX_PP_RPAREN>>
+#    define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_SAME_AS__Same_as(...) __VA_ARGS__, decltype _LIBCUDACXX_PP_LPAREN
 
 #    define _LIBCUDACXX_FRAGMENT(_NAME, ...) \
       (1u == sizeof(_NAME##_LIBCUDACXX_CONCEPT_FRAGMENT_(static_cast<_Concept::_Tag<__VA_ARGS__>*>(nullptr), nullptr)))
@@ -323,6 +338,72 @@
 #    define _LIBCUDACXX_TRAILING_REQUIRES(...)      ->_Concept::_Requires_t < __VA_ARGS__ _LIBCUDACXX_TRAILING_REQUIRES_AUX_
 #  endif
 
+////////////////////////////////////////////////////////////////////////////////
+// _LIBCUDACXX_REQUIRES_EXPR
+// Usage:
+//   template <typename T>
+//   _LIBCUDACXX_CONCEPT equality_comparable =
+//     _LIBCUDACXX_REQUIRES_EXPR((T), T const& lhs, T const& rhs) (
+//       lhs == rhs,
+//       lhs != rhs
+//     );
+//
+// Can only be used as the last requirement in a concept definition.
+#  if defined(__cpp_concepts) && _CCCL_STD_VER >= 2020
+#    define _LIBCUDACXX_REQUIRES_EXPR(_TY, ...) requires(__VA_ARGS__) _LIBCUDACXX_REQUIRES_EXPR_2
+#    define _LIBCUDACXX_REQUIRES_EXPR_2(...)    {_LIBCUDACXX_PP_FOR_EACH(_LIBCUDACXX_CONCEPT_FRAGMENT_REQS_M, __VA_ARGS__)}
+#  else
+#    define _LIBCUDACXX_REQUIRES_EXPR_TPARAM_PROBE_variadic _LIBCUDACXX_PP_PROBE(~)
+#    define _LIBCUDACXX_REQUIRES_EXPR_TPARAM_variadic
+
+#    define _LIBCUDACXX_REQUIRES_EXPR_DEF_TPARAM(_TY)                \
+      , _LIBCUDACXX_PP_CAT(_LIBCUDACXX_REQUIRES_EXPR_DEF_TPARAM_,    \
+                           _LIBCUDACXX_PP_EVAL(_LIBCUDACXX_PP_CHECK, \
+                                               _LIBCUDACXX_PP_CAT(_LIBCUDACXX_REQUIRES_EXPR_TPARAM_PROBE_, _TY)))(_TY)
+#    define _LIBCUDACXX_REQUIRES_EXPR_DEF_TPARAM_0(_TY) class _TY
+#    define _LIBCUDACXX_REQUIRES_EXPR_DEF_TPARAM_1(_TY) \
+      class... _LIBCUDACXX_PP_CAT(_LIBCUDACXX_REQUIRES_EXPR_TPARAM_, _TY)
+
+#    define _LIBCUDACXX_REQUIRES_EXPR_EXPAND_TPARAM(_TY)             \
+      , _LIBCUDACXX_PP_CAT(_LIBCUDACXX_REQUIRES_EXPR_EXPAND_TPARAM_, \
+                           _LIBCUDACXX_PP_EVAL(_LIBCUDACXX_PP_CHECK, \
+                                               _LIBCUDACXX_PP_CAT(_LIBCUDACXX_REQUIRES_EXPR_TPARAM_PROBE_, _TY)))(_TY)
+#    define _LIBCUDACXX_REQUIRES_EXPR_EXPAND_TPARAM_0(_TY) _TY
+#    define _LIBCUDACXX_REQUIRES_EXPR_EXPAND_TPARAM_1(_TY) _LIBCUDACXX_PP_CAT(_LIBCUDACXX_REQUIRES_EXPR_TPARAM_, _TY)...
+
+#    define _LIBCUDACXX_REQUIRES_EXPR_TPARAMS(...) \
+      _LIBCUDACXX_PP_FOR_EACH(_LIBCUDACXX_REQUIRES_EXPR_DEF_TPARAM, __VA_ARGS__)
+
+#    define _LIBCUDACXX_REQUIRES_EXPR_EXPAND_TPARAMS(...) \
+      _LIBCUDACXX_PP_FOR_EACH(_LIBCUDACXX_REQUIRES_EXPR_EXPAND_TPARAM, __VA_ARGS__)
+
+#    define _LIBCUDACXX_REQUIRES_EXPR(_TY, ...)                                                     \
+      decltype(_Concept::_Make_dependent(                                                           \
+        (struct _LIBCUDACXX_PP_CAT(_Libcudacxx_requires_expr_detail_, __LINE__)*) nullptr,          \
+        (_Concept::_Tag<void _LIBCUDACXX_REQUIRES_EXPR_EXPAND_TPARAMS _TY>*) nullptr))::            \
+        _Is_satisfied((_Concept::_Tag<void _LIBCUDACXX_REQUIRES_EXPR_EXPAND_TPARAMS _TY>*) nullptr, \
+                      (void (*)(__VA_ARGS__)) nullptr);                                             \
+      struct _LIBCUDACXX_PP_CAT(_Libcudacxx_requires_expr_detail_, __LINE__)                        \
+      {                                                                                             \
+        using _Self_t = _LIBCUDACXX_PP_CAT(_Libcudacxx_requires_expr_detail_, __LINE__);            \
+        template <class _LIBCUDACXX_REQUIRES_EXPR_TPARAMS _TY>                                      \
+        static auto _Well_formed(__VA_ARGS__) _LIBCUDACXX_REQUIRES_EXPR_2
+
+#    define _LIBCUDACXX_REQUIRES_EXPR_2(...)                                                           \
+      ->decltype(_LIBCUDACXX_PP_FOR_EACH(_LIBCUDACXX_CONCEPT_FRAGMENT_REQS_M, __VA_ARGS__) void()) {}  \
+      template <class... Args, class Sig>                                                              \
+      static constexpr auto _Is_satisfied(_Concept::_Tag<Args...>*, Sig*) /*                        */ \
+        -> decltype(!static_cast<Sig*>(&_Self_t::_Well_formed<Args...>))                               \
+      {                                                                                                \
+        return true;                                                                                   \
+      }                                                                                                \
+      static constexpr auto _Is_satisfied(void*, ...) -> bool                                          \
+      {                                                                                                \
+        return false;                                                                                  \
+      }                                                                                                \
+      }
+#  endif
+
 namespace _Concept
 {
 template <bool>
@@ -344,6 +425,7 @@ using _Requires_t = typename _Select<_Bp>::template type<_Tp>;
 
 template <typename...>
 struct _Tag;
+
 template <class>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool _Is_true()
 {
@@ -358,6 +440,9 @@ _LIBCUDACXX_HIDE_FROM_ABI _Concept::_Enable_if_t<_Bp> _Requires()
 template <bool _Bp, _Concept::_Enable_if_t<_Bp, int> = 0>
 _LIBCUDACXX_INLINE_VAR constexpr int _Requires = 0;
 #  endif
+
+template <class _Tp, class... _Args>
+auto _Make_dependent(_Tp*, _Tag<_Args...>*) -> _Tp;
 } // namespace _Concept
 
 #endif // _CCCL_STD_VER > 2011
