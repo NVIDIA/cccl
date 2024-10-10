@@ -127,19 +127,21 @@ private:
     }
 
     // Parameter structure for cudaGraphAddMemAllocNode - most values are constants.
-    static cudaMemAllocNodeParams params = {
-      .poolProps = {.allocType               = cudaMemAllocationTypePinned,
-                    .handleTypes             = cudaMemHandleTypeNone,
-                    .location                = {.type = cudaMemLocationTypeDevice, .id = 0},
-                    .win32SecurityAttributes = nullptr,
+    static cudaMemAllocNodeParams params = [] {
+      cudaMemAllocNodeParams result;
+      result.poolProps.allocType               = cudaMemAllocationTypePinned;
+      result.poolProps.handleTypes             = cudaMemHandleTypeNone;
+      result.poolProps.location                = {.type = cudaMemLocationTypeDevice, .id = 0};
+      result.poolProps.win32SecurityAttributes = nullptr;
 #if CUDA_VERSION >= 12030
-                    .maxSize = 0,
+      result.poolProps.maxSize = 0;
 #endif
-                    .reserved = {0}},
-      .accessDescs     = nullptr,
-      .accessDescCount = 0,
-      .bytesize        = 0,
-      .dptr            = nullptr};
+      result.accessDescs     = nullptr;
+      result.accessDescCount = 0;
+      result.bytesize        = 0;
+      result.dptr            = nullptr;
+      return result;
+    }();
 
     // Set only the variable parameters
     params.poolProps.location.id = device_ordinal(memory_node);

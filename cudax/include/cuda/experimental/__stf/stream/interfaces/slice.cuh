@@ -106,7 +106,7 @@ public:
     auto delinearize = [&](size_t ind) {
       static_assert(dimensions <= 4);
 
-      size_t nx, ny, nz, nt;
+      size_t nx, ny, nz;
       size_t x = 0, y = 0, z = 0, t = 0;
       if constexpr (dimensions >= 1)
       {
@@ -126,7 +126,6 @@ public:
 
       if constexpr (dimensions >= 4)
       {
-        nt = this->shape.extent(3);
         t  = (((ind - x) / nx - y) / ny - z) / nz;
       }
 
