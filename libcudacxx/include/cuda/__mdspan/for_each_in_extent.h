@@ -13,10 +13,6 @@
 
 #include <cuda/std/detail/__config>
 
-#include <cassert>
-#include <iostream>
-
-#include "cuda/std/__bit/has_single_bit.h"
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -26,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/__cmath/ceil_div.h>
+#include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/__bit/integral.h>
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/cstdint>
@@ -39,6 +36,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr unsigned
 __multiply_extract_higher_bits(unsigned __dividend, unsigned __multiplier) noexcept
 {
+  // this optimization is obsolete for recent architectures/compilers
   // clang-format off
   NV_IF_ELSE_TARGET(NV_IS_DEVICE,
     (return __umulhi(__dividend, __multiplier);),
@@ -64,7 +62,7 @@ struct fast_div_mod
   _CCCL_NODISCARD _CCCL_HOST_DEVICE explicit fast_div_mod(unsigned divisor) noexcept
       : __divisor{divisor}
   {
-    assert(divisor > 0);
+    _CCCL_ASSERT(divisor > 0, "divisor must be positive");
     if (divisor == 1)
     {
       return;
@@ -102,9 +100,8 @@ struct fast_div_mod
     return __div(dividend).remainder;
   }
 
-  unsigned __divisor = 1;
-
 private:
+  unsigned __divisor     = 1;
   unsigned __multiplier  = 0;
   unsigned __shift_right = 0;
 };
@@ -153,19 +150,12 @@ template <int Rank, typename T>
 _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE//
 T coordinate_at(T index, fast_div_mod sub_size, fast_div_mod extent)
 {
-  printf("T: %d, [q: %d, r: %d, d: %d] div: %d, coord: %d\n",
-         threadIdx.x,
-         sub_size(index).quotient,
-         sub_size(index).remainder,
-         sub_size.__divisor,
-         index / sub_size,
-         (index / sub_size) % extent);
   return (index / sub_size) % extent;
 }
 
-template <typename ExtentType, typename Func, typename FastDivModArrayType, ::cuda::std::size_t... Ranks>
-__global__ void __for_each_in_extent_impl(
-  __grid_constant__ const ExtentType ext,
+// Due to the limitations of CUDA kernel, we cannot use more than one parameter pack
+template <typename Func, typename FastDivModArrayType, ::cuda::std::size_t... Ranks>
+__global__ void for_each_in_extent_kernel(
   __grid_constant__ const Func func,
   __grid_constant__ const FastDivModArrayType sub_sizes_div_array,
   __grid_constant__ const FastDivModArrayType extends_div_array,
@@ -181,7 +171,7 @@ void for_each_in_extent(const ::cuda::std::extents<_IndexType, _Extents...>& ext
   constexpr auto seq                     = ::cuda::std::make_index_sequence<sizeof...(_Extents)>{};
   ::cuda::std::array sub_sizes_div_array = sub_sizes_fast_div_mod(ext, seq);
   ::cuda::std::array extends_div_array   = extends_fast_div_mod(ext, seq);
-  __for_each_in_extent_impl<<<1, sub_size<0>(ext)>>>(ext, func, sub_sizes_div_array, extends_div_array, seq);
+  for_each_in_extent_kernel<<<1, sub_size<0>(ext)>>>(ext, func, sub_sizes_div_array, extends_div_array, seq);
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
