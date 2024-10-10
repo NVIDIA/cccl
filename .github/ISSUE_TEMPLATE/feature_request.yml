@@ -21,6 +21,9 @@ body:
         - Thrust
         - CUB
         - libcu++
+        - Cuda Experimental (cudax)
+        - C Libraries
+        - Python Libraries
         - General CCCL
         - Infrastructure
         - Not sure
