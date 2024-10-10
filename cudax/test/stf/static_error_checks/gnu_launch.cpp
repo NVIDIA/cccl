@@ -12,14 +12,16 @@
 
 using namespace cuda::experimental::stf;
 
-int main() {
-    context ctx;
+int main()
+{
+  context ctx;
 
-    auto A = ctx.logical_data<int>(size_t(128));
+  auto A = ctx.logical_data<int>(size_t(128));
 
-    // We cannot do a launch on a device lambda without a CUDA compiler
-    // as we normally expect an extended lambda (which is also missing here)
-    ctx.launch(par(128), A.write())->*[](auto th, auto A) { A(th.rank(i) = 0; };
+  // We cannot do a launch on a device lambda without a CUDA compiler
+  // as we normally expect an extended lambda (which is also missing here)
+  ctx.launch(par(128), A.write())->*[](auto th, auto A) { A(th.rank(i) = 0;
+  };
 
-    ctx.finalize();
+  ctx.finalize();
 }

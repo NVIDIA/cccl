@@ -14,24 +14,26 @@
 
 using namespace cuda::experimental::stf;
 
-int main() {
-    stream_ctx ctx;
+int main()
+{
+  stream_ctx ctx;
 
-    // Create a logical data from a shape of hashtable
-    auto lh = ctx.logical_data(shape_of<hashtable>());
+  // Create a logical data from a shape of hashtable
+  auto lh = ctx.logical_data(shape_of<hashtable>());
 
-    // A write() access is needed because we initialized lh from a shape, so there is no reference copy
-    ctx.parallel_for(box(16), lh.write())->*[] CUDASTF_DEVICE(size_t i, auto h) {
-        uint32_t key = 10 * i;
-        uint32_t value = 17 + i * 14;
-        h.insert(key, value);
-    };
+  // A write() access is needed because we initialized lh from a shape, so there is no reference copy
+  ctx.parallel_for(box(16), lh.write())->*[] CUDASTF_DEVICE(size_t i, auto h) {
+    uint32_t key   = 10 * i;
+    uint32_t value = 17 + i * 14;
+    h.insert(key, value);
+  };
 
-    ctx.host_launch(lh.rw())->*[](auto h) {
-        for (size_t i = 0; i < 16; i++) {
-            EXPECT(h.get(i * 10) == 17 + i * 14);
-        }
-    };
+  ctx.host_launch(lh.rw())->*[](auto h) {
+    for (size_t i = 0; i < 16; i++)
+    {
+      EXPECT(h.get(i * 10) == 17 + i * 14);
+    }
+  };
 
-    ctx.finalize();
+  ctx.finalize();
 }

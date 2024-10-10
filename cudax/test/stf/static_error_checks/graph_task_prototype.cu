@@ -12,16 +12,17 @@
 
 using namespace cuda::experimental::stf;
 
-int main() {
-    graph_ctx ctx;
+int main()
+{
+  graph_ctx ctx;
 
-    auto A = ctx.logical_data<int>(size_t(1));
-    auto B = ctx.logical_data<int>(size_t(1));
+  auto A = ctx.logical_data<int>(size_t(1));
+  auto B = ctx.logical_data<int>(size_t(1));
 
-    // Task with an invalid prototype
-    ctx.task(A.rw(), B.rw())->*[](cudaStream_t s, auto A) {
+  // Task with an invalid prototype
+  ctx.task(A.rw(), B.rw())->*[](cudaStream_t s, auto A) {
 
-    };
+  };
 
-    ctx.finalize();
+  ctx.finalize();
 }

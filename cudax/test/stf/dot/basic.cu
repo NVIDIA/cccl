@@ -17,28 +17,29 @@
 
 using namespace cuda::experimental::stf;
 
-int main() {
-    // Generate a random filename
-    int r = rand();
+int main()
+{
+  // Generate a random filename
+  int r = rand();
 
-    char filename[64];
-    snprintf(filename, 64, "output_%d.dot", r);
-    // fprintf(stderr, "filename %s\n", filename);
-    setenv("CUDASTF_DOT_FILE", filename, 1);
+  char filename[64];
+  snprintf(filename, 64, "output_%d.dot", r);
+  // fprintf(stderr, "filename %s\n", filename);
+  setenv("CUDASTF_DOT_FILE", filename, 1);
 
-    stream_ctx ctx;
+  stream_ctx ctx;
 
-    auto lA = ctx.logical_data(shape_of<slice<char>>(64));
-    ctx.task(lA.write())->*[](cudaStream_t, auto) {};
-    ctx.task(lA.rw())->*[](cudaStream_t, auto) {};
-    ctx.finalize();
+  auto lA = ctx.logical_data(shape_of<slice<char>>(64));
+  ctx.task(lA.write())->*[](cudaStream_t, auto) {};
+  ctx.task(lA.rw())->*[](cudaStream_t, auto) {};
+  ctx.finalize();
 
-    // Call this explicitely for the purpose of the test
-    dot::instance().finish();
+  // Call this explicitely for the purpose of the test
+  dot::instance().finish();
 
-    // Make sure the file exists, and erase it
-    // fprintf(stderr, "ERASE. ...\n");
-    EXPECT(access(filename, F_OK) != -1);
+  // Make sure the file exists, and erase it
+  // fprintf(stderr, "ERASE. ...\n");
+  EXPECT(access(filename, F_OK) != -1);
 
-    EXPECT(unlink(filename) == 0);
+  EXPECT(unlink(filename) == 0);
 }

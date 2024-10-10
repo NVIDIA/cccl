@@ -21,32 +21,35 @@ using namespace cuda::experimental::stf;
 
 // a = b + 1;
 template <typename T>
-__global__ void add(T* a, const T* b) {
-    *a = *b + 1;
+__global__ void add(T* a, const T* b)
+{
+  *a = *b + 1;
 }
 
 template <class Ctx>
-void run() {
-    Ctx ctx;
+void run()
+{
+  Ctx ctx;
 
-    int var = 42;
-    auto var_handle = ctx.logical_data(make_slice(&var, 1));
+  int var         = 42;
+  auto var_handle = ctx.logical_data(make_slice(&var, 1));
 
-    // da and db are for the same variable : we expect it to be equivalent to a RW access
-    ctx.task(var_handle.write(), var_handle.read())->*[](cudaStream_t stream, auto da, auto db) {
-        add<<<1, 1, 0, stream>>>(da.data_handle(), db.data_handle());
-    };
+  // da and db are for the same variable : we expect it to be equivalent to a RW access
+  ctx.task(var_handle.write(), var_handle.read())->*[](cudaStream_t stream, auto da, auto db) {
+    add<<<1, 1, 0, stream>>>(da.data_handle(), db.data_handle());
+  };
 
-    // Read that value on the host
-    ctx.host_launch(var_handle.read())->*[](auto da) {
-        int result = *da.data_handle();
-        assert(result == 43);
-    };
+  // Read that value on the host
+  ctx.host_launch(var_handle.read())->*[](auto da) {
+    int result = *da.data_handle();
+    assert(result == 43);
+  };
 
-    ctx.finalize();
+  ctx.finalize();
 }
 
-int main() {
-    run<stream_ctx>();
-    run<graph_ctx>();
+int main()
+{
+  run<stream_ctx>();
+  run<graph_ctx>();
 }

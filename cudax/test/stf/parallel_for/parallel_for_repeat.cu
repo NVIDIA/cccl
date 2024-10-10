@@ -19,49 +19,57 @@
 
 using namespace cuda::experimental::stf;
 
-double X0(int i) {
-    return sin((double) i);
+double X0(int i)
+{
+  return sin((double) i);
 }
 
-double Y0(int i) {
-    return cos((double) i);
+double Y0(int i)
+{
+  return cos((double) i);
 }
 
-int main() {
-    context ctx;
+int main()
+{
+  context ctx;
 
-    const int N = 1024 * 1024 * 32;
-    double *X, *Y;
+  const int N = 1024 * 1024 * 32;
+  double *X, *Y;
 
-    X = new double[N];
-    Y = new double[N];
+  X = new double[N];
+  Y = new double[N];
 
-    for (size_t ind = 0; ind < N; ind++) {
-        X[ind] = X0(ind);
-        Y[ind] = Y0(ind);
-    }
+  for (size_t ind = 0; ind < N; ind++)
+  {
+    X[ind] = X0(ind);
+    Y[ind] = Y0(ind);
+  }
 
-    auto handle_X = ctx.logical_data(X, { N });
-    auto handle_Y = ctx.logical_data(Y, { N });
+  auto handle_X = ctx.logical_data(X, {N});
+  auto handle_Y = ctx.logical_data(Y, {N});
 
-    auto where = exec_place::repeat(exec_place::current_device(), 8);
+  auto where = exec_place::repeat(exec_place::current_device(), 8);
 
-    double alpha = 3.14;
-    size_t NITER = 5;
+  double alpha = 3.14;
+  size_t NITER = 5;
 
-    /* Compute Y = Y + alpha X */
-    for (size_t k = 0; k < NITER; k++) {
-        ctx.parallel_for(tiled_partition<1024 * 1024>(), where, handle_X.shape(), handle_X.read(), handle_Y.rw())
-                        ->*[=] CUDASTF_DEVICE(size_t i, auto sX, auto sY) { sY(i) += alpha * sX(i); };
-    }
+  /* Compute Y = Y + alpha X */
+  for (size_t k = 0; k < NITER; k++)
+  {
+    ctx.parallel_for(tiled_partition<1024 * 1024>(), where, handle_X.shape(), handle_X.read(), handle_Y.rw())
+        ->*[=] CUDASTF_DEVICE(size_t i, auto sX, auto sY) {
+              sY(i) += alpha * sX(i);
+            };
+  }
 
-    ctx.finalize();
+  ctx.finalize();
 
-    for (size_t ind = 0; ind < N; ind++) {
-        // Y should be Y0 + NITER alpha X0
-        assert(fabs(Y[ind] - (Y0(ind) + NITER * alpha * X0(ind))) < 0.0001);
+  for (size_t ind = 0; ind < N; ind++)
+  {
+    // Y should be Y0 + NITER alpha X0
+    assert(fabs(Y[ind] - (Y0(ind) + NITER * alpha * X0(ind))) < 0.0001);
 
-        // X should be X0
-        assert(fabs(X[ind] - X0(ind)) < 0.0001);
-    }
+    // X should be X0
+    assert(fabs(X[ind] - X0(ind)) < 0.0001);
+  }
 }

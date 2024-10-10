@@ -17,15 +17,18 @@
 
 using namespace cuda::experimental::stf;
 
-int main() {
-    for (size_t i = 0; i < 10240; i++) {
-        graph_ctx ctx;
-        auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
-        ctx.launch(lA.write())->*[] CUDASTF_DEVICE(auto t, slice<size_t> A) {
-            for (auto i: t.apply_partition(shape(A))) {
-                A(i) = 2 * i;
-            }
-        };
-        ctx.finalize();
-    }
+int main()
+{
+  for (size_t i = 0; i < 10240; i++)
+  {
+    graph_ctx ctx;
+    auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
+    ctx.launch(lA.write())->*[] CUDASTF_DEVICE(auto t, slice<size_t> A) {
+      for (auto i : t.apply_partition(shape(A)))
+      {
+        A(i) = 2 * i;
+      }
+    };
+    ctx.finalize();
+  }
 }

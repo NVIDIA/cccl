@@ -119,7 +119,7 @@ struct layout_stride
 
     using __strides_storage_t = array<index_type,
                                       extents_type::rank()>; //::std::experimental::dextents<index_type,
-                                                             //:extents_type::rank()>;
+                                                             //: extents_type::rank()>;
     using __member_pair_t = detail::__compressed_pair<extents_type, __strides_storage_t>;
 
 #if defined(_MDSPAN_USE_ATTRIBUTE_NO_UNIQUE_ADDRESS)

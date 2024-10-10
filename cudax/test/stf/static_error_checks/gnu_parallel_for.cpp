@@ -12,14 +12,17 @@
 
 using namespace cuda::experimental::stf;
 
-int main() {
-    context ctx;
+int main()
+{
+  context ctx;
 
-    auto A = ctx.logical_data<int>(size_t(1));
+  auto A = ctx.logical_data<int>(size_t(1));
 
-    // We cannot do a parallel for on a device lambda without a CUDA compiler
-    // as we normally expect an extended lambda (which is also missing here)
-    ctx.parallel_for(A.shape(), A.write())->*[](size_t i, auto A) { A(i) = 0; };
+  // We cannot do a parallel for on a device lambda without a CUDA compiler
+  // as we normally expect an extended lambda (which is also missing here)
+  ctx.parallel_for(A.shape(), A.write())->*[](size_t i, auto A) {
+    A(i) = 0;
+  };
 
-    ctx.finalize();
+  ctx.finalize();
 }

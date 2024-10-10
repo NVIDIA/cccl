@@ -647,8 +647,8 @@ struct __partially_static_sizes_tagged
 #  else
     = default;
 #  endif
-      MDSPAN_INLINE_FUNCTION_DEFAULTED constexpr __partially_static_sizes_tagged(
-        __partially_static_sizes_tagged const&) noexcept = default;
+      MDSPAN_INLINE_FUNCTION_DEFAULTED
+      constexpr __partially_static_sizes_tagged(__partially_static_sizes_tagged const&) noexcept = default;
   MDSPAN_INLINE_FUNCTION_DEFAULTED
   constexpr __partially_static_sizes_tagged(__partially_static_sizes_tagged&&) noexcept = default;
   MDSPAN_INLINE_FUNCTION_DEFAULTED

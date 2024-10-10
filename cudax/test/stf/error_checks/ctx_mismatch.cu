@@ -14,62 +14,75 @@
  *        different context
  */
 
-#include "cudastf/stf.h"
-
 #include <csignal>
+
+#include "cudastf/stf.h"
 
 using namespace cuda::experimental::stf;
 
 bool should_abort = false;
 
-void cleanupRoutine(int /*unused*/) {
-    if (should_abort) {
-        exit(EXIT_SUCCESS);
-    } else {
-        fprintf(stderr, "Unexpected SIGABRT !\n");
-        exit(EXIT_FAILURE);
-    }
+void cleanupRoutine(int /*unused*/)
+{
+  if (should_abort)
+  {
+    exit(EXIT_SUCCESS);
+  }
+  else
+  {
+    fprintf(stderr, "Unexpected SIGABRT !\n");
+    exit(EXIT_FAILURE);
+  }
 }
 
 template <typename Ctx, size_t n>
-void run(double (&X)[n]) {
-    Ctx ctx1;
-    auto lX = ctx1.logical_data(X);
+void run(double (&X)[n])
+{
+  Ctx ctx1;
+  auto lX = ctx1.logical_data(X);
 
-    // We are now using lX in the wrong context
-    should_abort = true;
+  // We are now using lX in the wrong context
+  should_abort = true;
 
-    Ctx ctx2;
-    ctx2.task(lX.rw())->*[&](cudaStream_t /*unused*/, auto /*unused*/) {};
+  Ctx ctx2;
+  ctx2.task(lX.rw())->*[&](cudaStream_t /*unused*/, auto /*unused*/) {};
 
-    assert(0 && "This should not be reached");
+  assert(0 && "This should not be reached");
 }
 
-int main() {
-    /* Setup an handler to catch the SIGABRT signal during the programming error */
-    struct sigaction sigabrt_action {};
-    memset(&sigabrt_action, 0, sizeof(sigabrt_action));
-    sigabrt_action.sa_handler = &cleanupRoutine;
+int main()
+{
+  /* Setup an handler to catch the SIGABRT signal during the programming error */
+  struct sigaction sigabrt_action
+  {};
+  memset(&sigabrt_action, 0, sizeof(sigabrt_action));
+  sigabrt_action.sa_handler = &cleanupRoutine;
 
-    if (sigaction(SIGABRT, &sigabrt_action, nullptr) != 0) {
-        perror("sigaction SIGABRT");
-        exit(EXIT_FAILURE);
-    }
+  if (sigaction(SIGABRT, &sigabrt_action, nullptr) != 0)
+  {
+    perror("sigaction SIGABRT");
+    exit(EXIT_FAILURE);
+  }
 
-    const int n = 12;
-    double X[n];
+  const int n = 12;
+  double X[n];
 
-    for (int ind = 0; ind < n; ind++) {
-        X[ind] = 1.0 * ind;
-    }
+  for (int ind = 0; ind < n; ind++)
+  {
+    X[ind] = 1.0 * ind;
+  }
 
-    // We can't run both stream and graph tests because either will abort the program. So choose one at random.
-    srand(time(nullptr));
-    if (rand() % 2 == 0)
-        run<stream_ctx>(X);
-    else
-        run<graph_ctx>(X);
+  // We can't run both stream and graph tests because either will abort the program. So choose one at random.
+  srand(time(nullptr));
+  if (rand() % 2 == 0)
+  {
+    run<stream_ctx>(X);
+  }
+  else
+  {
+    run<graph_ctx>(X);
+  }
 
-    assert(0 && "This should not be reached");
-    return EXIT_FAILURE;
+  assert(0 && "This should not be reached");
+  return EXIT_FAILURE;
 }

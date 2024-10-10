@@ -20,58 +20,68 @@
 using namespace cuda::experimental::stf;
 
 template <typename T>
-__global__ void setup(slice<T> s) {
-    int tid = blockIdx.x * blockDim.x + threadIdx.x;
-    int nthreads = gridDim.x * blockDim.x;
+__global__ void setup(slice<T> s)
+{
+  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
+  int nthreads = gridDim.x * blockDim.x;
 
-    for (size_t ind = tid; ind < s.size(); ind += nthreads) {
-        s(ind) = T(ind);
-    }
+  for (size_t ind = tid; ind < s.size(); ind += nthreads)
+  {
+    s(ind) = T(ind);
+  }
 }
 
 template <typename T>
-__global__ void add(slice<T> s, T val) {
-    int tid = blockIdx.x * blockDim.x + threadIdx.x;
-    int nthreads = gridDim.x * blockDim.x;
+__global__ void add(slice<T> s, T val)
+{
+  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
+  int nthreads = gridDim.x * blockDim.x;
 
-    for (size_t ind = tid; ind < s.size(); ind += nthreads) {
-        s(ind) += val;
-    }
+  for (size_t ind = tid; ind < s.size(); ind += nthreads)
+  {
+    s(ind) += val;
+  }
 }
 
-int main() {
-    stream_ctx ctx;
-    const size_t n = 12;
+int main()
+{
+  stream_ctx ctx;
+  const size_t n = 12;
 
-    int X[n];
+  int X[n];
 
-    for (size_t i = 0; i < n; i++) {
-        X[i] = i;
-    }
+  for (size_t i = 0; i < n; i++)
+  {
+    X[i] = i;
+  }
 
-    auto lX = ctx.logical_data(X);
+  auto lX = ctx.logical_data(X);
 
-    ctx.task(lX.rw())->*[](cudaStream_t stream, auto sX) {
-        graph_ctx gctx;
-        auto lX_alias = gctx.logical_data(sX, data_place::current_device());
+  ctx.task(lX.rw())->*[](cudaStream_t stream, auto sX) {
+    graph_ctx gctx;
+    auto lX_alias = gctx.logical_data(sX, data_place::current_device());
 
-        // X(i) = (i + 17)
-        gctx.task(lX_alias.rw())->*[](cudaStream_t stream2, auto sX) { add<<<16, 128, 0, stream2>>>(sX, 17); };
-
-        // X(i) = 2*(i + 17) + 1
-        gctx.host_launch(lX_alias.rw())->*[&](auto sX) {
-            for (size_t ind = 0; ind < n; ind++) {
-                sX(ind) = 2 * sX(ind) + 1;
-            }
-        };
-
-        gctx.submit(stream);
-        // no sync !
+    // X(i) = (i + 17)
+    gctx.task(lX_alias.rw())->*[](cudaStream_t stream2, auto sX) {
+      add<<<16, 128, 0, stream2>>>(sX, 17);
     };
 
-    ctx.finalize();
+    // X(i) = 2*(i + 17) + 1
+    gctx.host_launch(lX_alias.rw())->*[&](auto sX) {
+      for (size_t ind = 0; ind < n; ind++)
+      {
+        sX(ind) = 2 * sX(ind) + 1;
+      }
+    };
 
-    for (size_t ind = 0; ind < n; ind++) {
-        EXPECT(X[ind] == 2 * (ind + 17) + 1);
-    }
+    gctx.submit(stream);
+    // no sync !
+  };
+
+  ctx.finalize();
+
+  for (size_t ind = 0; ind < n; ind++)
+  {
+    EXPECT(X[ind] == 2 * (ind + 17) + 1);
+  }
 }

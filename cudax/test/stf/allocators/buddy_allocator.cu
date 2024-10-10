@@ -17,24 +17,27 @@
 using namespace cuda::experimental::stf;
 
 template <typename ctx_t>
-void test_buddy() {
-    ctx_t ctx;
-    ctx.set_allocator(block_allocator<buddy_allocator>(ctx));
+void test_buddy()
+{
+  ctx_t ctx;
+  ctx.set_allocator(block_allocator<buddy_allocator>(ctx));
 
-    std::vector<logical_data<slice<char>>> data;
-    for (size_t i = 0; i < 10; i++) {
-        size_t s = (1 + i % 8) * 1024ULL * 1024ULL;
-        auto l = ctx.logical_data(shape_of<slice<char>>(s));
-        data.push_back(l);
+  std::vector<logical_data<slice<char>>> data;
+  for (size_t i = 0; i < 10; i++)
+  {
+    size_t s = (1 + i % 8) * 1024ULL * 1024ULL;
+    auto l   = ctx.logical_data(shape_of<slice<char>>(s));
+    data.push_back(l);
 
-        ctx.task(l.write())->*[](cudaStream_t, auto) {};
-    }
+    ctx.task(l.write())->*[](cudaStream_t, auto) {};
+  }
 
-    ctx.finalize();
+  ctx.finalize();
 }
 
-int main(int, char**) {
-    test_buddy<stream_ctx>();
-    test_buddy<graph_ctx>();
-    test_buddy<context>();
+int main(int, char**)
+{
+  test_buddy<stream_ctx>();
+  test_buddy<graph_ctx>();
+  test_buddy<context>();
 }

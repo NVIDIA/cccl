@@ -13,12 +13,14 @@
 
 using namespace cuda::experimental::stf;
 
-static __global__ void scalar_div(const double* a, const double* b, double* c) {
-    *c = (*a) / (*b);
+static __global__ void scalar_div(const double* a, const double* b, double* c)
+{
+  *c = (*a) / (*b);
 }
 
-static __global__ void scalar_minus(const double* a, double* res) {
-    *res = -(*a);
+static __global__ void scalar_minus(const double* a, double* res)
+{
+  *res = -(*a);
 }
 
 /**
@@ -30,82 +32,96 @@ static __global__ void scalar_minus(const double* a, double* res) {
  *
  */
 template <typename Ctx>
-class scalar {
+class scalar
+{
 public:
-    scalar(Ctx* ctx, bool is_tmp = false) : ctx(ctx) {
-        size_t s = sizeof(double);
+  scalar(Ctx* ctx, bool is_tmp = false)
+      : ctx(ctx)
+  {
+    size_t s = sizeof(double);
 
-        if (is_tmp) {
-            // There is no physical backing for this temporary vector
-            h_addr = NULL;
-        } else {
-            h_addr = (double*) malloc(s);
-            cuda_safe_call(cudaHostRegister(h_addr, s, cudaHostRegisterPortable));
-        }
-
-        data_place d = is_tmp ? data_place::invalid : data_place::host;
-        handle = ctx->logical_data(make_slice(h_addr), d);
+    if (is_tmp)
+    {
+      // There is no physical backing for this temporary vector
+      h_addr = NULL;
+    }
+    else
+    {
+      h_addr = (double*) malloc(s);
+      cuda_safe_call(cudaHostRegister(h_addr, s, cudaHostRegisterPortable));
     }
 
-    // Copy constructor
-    scalar(const scalar& a) : ctx(a.ctx) {
-        h_addr = NULL;
-        handle = ctx->logical_data(make_slice((double*) nullptr));
+    data_place d = is_tmp ? data_place::invalid : data_place::host;
+    handle       = ctx->logical_data(make_slice(h_addr), d);
+  }
 
-        auto t = ctx->task(handle.write(), a.handle.read());
-        t->*[](cudaStream_t stream, auto dst, auto src) {
-            // There are likely much more efficient ways.
-            cuda_safe_call(cudaMemcpyAsync(
-                    dst.data_handle(), src.data_handle(), sizeof(double), cudaMemcpyDeviceToDevice, stream));
-        };
-    }
+  // Copy constructor
+  scalar(const scalar& a)
+      : ctx(a.ctx)
+  {
+    h_addr = NULL;
+    handle = ctx->logical_data(make_slice((double*) nullptr));
 
-    scalar operator/(scalar const& rhs) const {
-        // Submit a task that computes this/rhs
-        scalar res(ctx);
+    auto t = ctx->task(handle.write(), a.handle.read());
+    t->*[](cudaStream_t stream, auto dst, auto src) {
+      // There are likely much more efficient ways.
+      cuda_safe_call(
+        cudaMemcpyAsync(dst.data_handle(), src.data_handle(), sizeof(double), cudaMemcpyDeviceToDevice, stream));
+    };
+  }
 
-        auto t = ctx->task(handle.read(), rhs.handle.read(), res.handle.write());
-        t->*[](cudaStream_t stream, auto x, auto y1, auto result) {
-            scalar_div<<<1, 1, 0, stream>>>(x.data_handle(), y1.data_handle(), result.data_handle());
-        };
-        return res;
-    }
+  scalar operator/(scalar const& rhs) const
+  {
+    // Submit a task that computes this/rhs
+    scalar res(ctx);
 
-    scalar operator-() const {
-        // Submit a task that computes -s
-        scalar res(ctx);
-        auto t = ctx->task(handle.read(), res.handle.write());
+    auto t = ctx->task(handle.read(), rhs.handle.read(), res.handle.write());
+    t->*[](cudaStream_t stream, auto x, auto y1, auto result) {
+      scalar_div<<<1, 1, 0, stream>>>(x.data_handle(), y1.data_handle(), result.data_handle());
+    };
+    return res;
+  }
 
-        t->*[](cudaStream_t stream, auto x, auto result) {
-            scalar_minus<<<1, 1, 0, stream>>>(x.data_handle(), result.data_handle());
-        };
+  scalar operator-() const
+  {
+    // Submit a task that computes -s
+    scalar res(ctx);
+    auto t = ctx->task(handle.read(), res.handle.write());
 
-        return res;
-    }
+    t->*[](cudaStream_t stream, auto x, auto result) {
+      scalar_minus<<<1, 1, 0, stream>>>(x.data_handle(), result.data_handle());
+    };
 
-    Ctx* ctx;
-    mutable logical_data<slice<double, 0>> handle;
-    double* h_addr;
+    return res;
+  }
+
+  Ctx* ctx;
+  mutable logical_data<slice<double, 0>> handle;
+  double* h_addr;
 };
 
 template <typename Ctx>
-void run() {
-    Ctx ctx;
-    scalar a(&ctx);
-    scalar b(&ctx);
+void run()
+{
+  Ctx ctx;
+  scalar a(&ctx);
+  scalar b(&ctx);
 
-    *a.h_addr = 42.0;
-    *b.h_addr = 12.3;
+  *a.h_addr = 42.0;
+  *b.h_addr = 12.3;
 
-    scalar c = -a / b;
+  scalar c = -a / b;
 
-    auto t = ctx.host_launch(c.handle.read());
-    t->*[](auto x) { EXPECT(fabs(*x.data_handle() - (-42.0) / 12.3) < 0.001); };
+  auto t = ctx.host_launch(c.handle.read());
+  t->*[](auto x) {
+    EXPECT(fabs(*x.data_handle() - (-42.0) / 12.3) < 0.001);
+  };
 
-    ctx.finalize();
+  ctx.finalize();
 }
 
-int main() {
-    run<stream_ctx>();
-    run<graph_ctx>();
+int main()
+{
+  run<stream_ctx>();
+  run<graph_ctx>();
 }

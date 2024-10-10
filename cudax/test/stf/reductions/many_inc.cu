@@ -13,36 +13,39 @@
 
 using namespace cuda::experimental::stf;
 
-__global__ void add(int* ptr) {
-    *ptr = *ptr + 1;
+__global__ void add(int* ptr)
+{
+  *ptr = *ptr + 1;
 }
 
-int main() {
-    stream_ctx ctx;
+int main()
+{
+  stream_ctx ctx;
 
-    auto redux_op = std::make_shared<slice_reduction_op_sum<int>>();
+  auto redux_op = std::make_shared<slice_reduction_op_sum<int>>();
 
-    int a = 17;
+  int a = 17;
 
-    auto handle = ctx.logical_data(make_slice(&a, 1));
+  auto handle = ctx.logical_data(make_slice(&a, 1));
 
-    int ndevs;
-    cuda_safe_call(cudaGetDeviceCount(&ndevs));
+  int ndevs;
+  cuda_safe_call(cudaGetDeviceCount(&ndevs));
 
-    int K = 1024;
-    for (int i = 0; i < K; i++) {
-        // Increment the variable by 1
-        ctx.task(exec_place::device(i % ndevs), handle.redux(redux_op))->*[](auto stream, auto s) {
-            add<<<1, 1, 0, stream>>>(s.data_handle());
-        };
-    }
-
-    // Total value should be initial value + K
-    ctx.task(exec_place::host, handle.read())->*[&](auto stream, auto s) {
-        cuda_safe_call(cudaStreamSynchronize(stream));
-        EXPECT(s(0) == 17 + K);
-        // printf("VALUE %d expected %d\n", s(0), 17 + K);
+  int K = 1024;
+  for (int i = 0; i < K; i++)
+  {
+    // Increment the variable by 1
+    ctx.task(exec_place::device(i % ndevs), handle.redux(redux_op))->*[](auto stream, auto s) {
+      add<<<1, 1, 0, stream>>>(s.data_handle());
     };
+  }
 
-    ctx.finalize();
+  // Total value should be initial value + K
+  ctx.task(exec_place::host, handle.read())->*[&](auto stream, auto s) {
+    cuda_safe_call(cudaStreamSynchronize(stream));
+    EXPECT(s(0) == 17 + K);
+    // printf("VALUE %d expected %d\n", s(0), 17 + K);
+  };
+
+  ctx.finalize();
 }

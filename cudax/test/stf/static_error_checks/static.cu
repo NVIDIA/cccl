@@ -12,7 +12,8 @@
 
 using namespace cuda::experimental::stf;
 
-int main() {
-    static_assert(0);
-    return EXIT_FAILURE;
+int main()
+{
+  static_assert(0);
+  return EXIT_FAILURE;
 }

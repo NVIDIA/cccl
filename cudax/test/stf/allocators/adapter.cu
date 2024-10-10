@@ -13,41 +13,44 @@
 
 using namespace cuda::experimental::stf;
 
-int main() {
-    double* d_ptrA;
-    const size_t N = 128 * 1024;
-    const size_t NITER = 10;
+int main()
+{
+  double* d_ptrA;
+  const size_t N     = 128 * 1024;
+  const size_t NITER = 10;
 
-    // User allocated memory
-    cuda_safe_call(cudaMalloc(&d_ptrA, N * sizeof(double)));
+  // User allocated memory
+  cuda_safe_call(cudaMalloc(&d_ptrA, N * sizeof(double)));
 
-    async_resources_handle handle;
+  async_resources_handle handle;
 
-    cudaStream_t stream;
-    cuda_safe_call(cudaStreamCreate(&stream));
+  cudaStream_t stream;
+  cuda_safe_call(cudaStreamCreate(&stream));
 
-    for (size_t i = 0; i < NITER; i++) {
-        graph_ctx ctx(stream, handle);
+  for (size_t i = 0; i < NITER; i++)
+  {
+    graph_ctx ctx(stream, handle);
 
-        auto wrapper = stream_adapter(ctx, stream);
-        ctx.set_allocator(block_allocator<buddy_allocator>(ctx, wrapper.allocator()));
+    auto wrapper = stream_adapter(ctx, stream);
+    ctx.set_allocator(block_allocator<buddy_allocator>(ctx, wrapper.allocator()));
 
-        auto A = ctx.logical_data(make_slice(d_ptrA, N), data_place::current_device());
+    auto A = ctx.logical_data(make_slice(d_ptrA, N), data_place::current_device());
 
-        for (size_t k = 0; k < 4; k++) {
-            auto tmp = ctx.logical_data(A.shape());
-            auto tmp2 = ctx.logical_data(A.shape());
-            // Test device and managed memory
-            ctx.parallel_for(A.shape(), A.read(), tmp.write(), tmp2.write(data_place::managed))
-                            ->*[] __device__(size_t i, auto a, auto tmp, auto tmp2) {
-                                    tmp(i) = a(i);
-                                    tmp2(i) = a(i);
-                                };
-        }
-
-        ctx.finalize();
-
-        wrapper.clear();
+    for (size_t k = 0; k < 4; k++)
+    {
+      auto tmp  = ctx.logical_data(A.shape());
+      auto tmp2 = ctx.logical_data(A.shape());
+      // Test device and managed memory
+      ctx.parallel_for(A.shape(), A.read(), tmp.write(), tmp2.write(data_place::managed))
+          ->*[] __device__(size_t i, auto a, auto tmp, auto tmp2) {
+                tmp(i)  = a(i);
+                tmp2(i) = a(i);
+              };
     }
-    cuda_safe_call(cudaStreamSynchronize(stream));
+
+    ctx.finalize();
+
+    wrapper.clear();
+  }
+  cuda_safe_call(cudaStreamSynchronize(stream));
 }

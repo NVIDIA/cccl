@@ -17,51 +17,67 @@
 
 using namespace cuda::experimental::stf;
 
-struct foo {
-    // Intentionally choose an odd (actually prime) size
-    foo(context& ctx) { l = ctx.logical_data(shape_of<slice<int>>(50867)); }
+struct foo
+{
+  // Intentionally choose an odd (actually prime) size
+  foo(context& ctx)
+  {
+    l = ctx.logical_data(shape_of<slice<int>>(50867));
+  }
 
-    void set(context& ctx, int val) {
-        ctx.parallel_for(l.shape(), l.write())->*[=] CUDASTF_DEVICE(size_t i, auto dl) { dl(i) = val; };
-    }
+  void set(context& ctx, int val)
+  {
+    ctx.parallel_for(l.shape(), l.write())->*[=] CUDASTF_DEVICE(size_t i, auto dl) {
+      dl(i) = val;
+    };
+  }
 
-    void copy_from(context& ctx, const foo& other) {
-        ctx.parallel_for(l.shape(), l.write(), other.l.read())->*[=] CUDASTF_DEVICE(size_t i, auto dl, auto dotherl) {
-            dl(i) = dotherl(i);
-        };
-    }
+  void copy_from(context& ctx, const foo& other)
+  {
+    ctx.parallel_for(l.shape(), l.write(), other.l.read())->*[=] CUDASTF_DEVICE(size_t i, auto dl, auto dotherl) {
+      dl(i) = dotherl(i);
+    };
+  }
 
-    void ensure(context& ctx, int val) {
-        std::ignore = val;
-        ctx.parallel_for(l.shape(), l.read())->*[=] CUDASTF_DEVICE(size_t i, auto dl) { assert(dl(i) == val); };
-    }
+  void ensure(context& ctx, int val)
+  {
+    std::ignore = val;
+    ctx.parallel_for(l.shape(), l.read())->*[=] CUDASTF_DEVICE(size_t i, auto dl) {
+      assert(dl(i) == val);
+    };
+  }
 
-    auto& get_l() const { return l; }
+  auto& get_l() const
+  {
+    return l;
+  }
 
-    logical_data<slice<int>> l;
+  logical_data<slice<int>> l;
 };
 
-void read_only_access(context& ctx, const foo& f) {
-    ctx.parallel_for(f.l.shape(), f.l.read())->*[] CUDASTF_DEVICE(size_t i, auto dl) {
-        // no-op
-    };
+void read_only_access(context& ctx, const foo& f)
+{
+  ctx.parallel_for(f.l.shape(), f.l.read())->*[] CUDASTF_DEVICE(size_t i, auto dl) {
+    // no-op
+  };
 
-    ctx.parallel_for(f.get_l().shape(), f.get_l().read())->*[] CUDASTF_DEVICE(size_t i, auto dl) {
-        // no-op
-    };
+  ctx.parallel_for(f.get_l().shape(), f.get_l().read())->*[] CUDASTF_DEVICE(size_t i, auto dl) {
+    // no-op
+  };
 }
 
-int main() {
-    context ctx;
+int main()
+{
+  context ctx;
 
-    foo A(ctx);
-    A.set(ctx, 42);
-    A.ensure(ctx, 42);
-    foo B(ctx);
-    B.copy_from(ctx, A);
-    B.ensure(ctx, 42);
+  foo A(ctx);
+  A.set(ctx, 42);
+  A.ensure(ctx, 42);
+  foo B(ctx);
+  B.copy_from(ctx, A);
+  B.ensure(ctx, 42);
 
-    read_only_access(ctx, A);
+  read_only_access(ctx, A);
 
-    ctx.finalize();
+  ctx.finalize();
 }

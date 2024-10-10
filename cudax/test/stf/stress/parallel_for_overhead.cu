@@ -12,44 +12,48 @@
 
 using namespace cuda::experimental::stf;
 
-int main(int argc, char** argv) {
-    stream_ctx ctx;
-    const size_t N = 16;
-    double X[N], Y[N];
+int main(int argc, char** argv)
+{
+  stream_ctx ctx;
+  const size_t N = 16;
+  double X[N], Y[N];
 
-    for (size_t i = 0; i < N; i++) {
-        X[i] = 1.0;
-        Y[i] = 2.0;
-    }
+  for (size_t i = 0; i < N; i++)
+  {
+    X[i] = 1.0;
+    Y[i] = 2.0;
+  }
 
-    auto lX = ctx.logical_data(X);
-    auto lY = ctx.logical_data(Y);
+  auto lX = ctx.logical_data(X);
+  auto lY = ctx.logical_data(Y);
 
 #ifdef NDEBUG
-    int iter_cnt = 1000000;
+  int iter_cnt = 1000000;
 #else
-    int iter_cnt = 10000;
-    fprintf(stderr, "Warning: Running with small problem size in debug mode, should use DEBUG=0.\n");
+  int iter_cnt = 10000;
+  fprintf(stderr, "Warning: Running with small problem size in debug mode, should use DEBUG=0.\n");
 #endif
 
-    if (argc > 1) {
-        iter_cnt = atoi(argv[1]);
-    }
+  if (argc > 1)
+  {
+    iter_cnt = atoi(argv[1]);
+  }
 
-    std::chrono::steady_clock::time_point start, stop;
-    start = std::chrono::steady_clock::now();
-    for (int iter = 0; iter < iter_cnt; iter++) {
-        ctx.parallel_for(lX.shape(), lX.read(), lY.rw())->*[] CUDASTF_DEVICE(size_t i, auto X, auto Y) {
-            Y(i) = 2.0 * X(i);
-        };
+  std::chrono::steady_clock::time_point start, stop;
+  start = std::chrono::steady_clock::now();
+  for (int iter = 0; iter < iter_cnt; iter++)
+  {
+    ctx.parallel_for(lX.shape(), lX.read(), lY.rw())->*[] CUDASTF_DEVICE(size_t i, auto X, auto Y) {
+      Y(i) = 2.0 * X(i);
+    };
 
-        ctx.parallel_for(lX.shape(), lY.rw(), lY.read())->*[] CUDASTF_DEVICE(size_t i, auto X, auto Y) {
-            X(i) = 0.5 * Y(i);
-        };
-    }
-    stop = std::chrono::steady_clock::now();
-    ctx.finalize();
+    ctx.parallel_for(lX.shape(), lY.rw(), lY.read())->*[] CUDASTF_DEVICE(size_t i, auto X, auto Y) {
+      X(i) = 0.5 * Y(i);
+    };
+  }
+  stop = std::chrono::steady_clock::now();
+  ctx.finalize();
 
-    std::chrono::duration<double> duration = stop - start;
-    fprintf(stderr, "Elapsed: %.2lf us per task\n", duration.count() * 1000000.0 / (2 * iter_cnt));
+  std::chrono::duration<double> duration = stop - start;
+  fprintf(stderr, "Elapsed: %.2lf us per task\n", duration.count() * 1000000.0 / (2 * iter_cnt));
 }

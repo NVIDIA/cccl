@@ -13,57 +13,68 @@
 
 using namespace cuda::experimental::stf;
 
-int main() {
-    context ctx;
+int main()
+{
+  context ctx;
 
-    const size_t N = 16;
-    size_t niter = 12;
+  const size_t N = 16;
+  size_t niter   = 12;
 
-    int A[N];
+  int A[N];
 
-    for (size_t i = 0; i < N; i++) {
-        A[i] = 2 * i + 1;
-    }
+  for (size_t i = 0; i < N; i++)
+  {
+    A[i] = 2 * i + 1;
+  }
 
-    auto lres = ctx.logical_data(A);
+  auto lres = ctx.logical_data(A);
 
-    for (size_t k = 0; k < niter; k++) {
-        auto ltmp = ctx.logical_data(lres.shape());
-        ctx.parallel_for(ltmp.shape(), ltmp.write())->*[] __device__(size_t i, auto tmp) { tmp(i) = i; };
+  for (size_t k = 0; k < niter; k++)
+  {
+    auto ltmp = ctx.logical_data(lres.shape());
+    ctx.parallel_for(ltmp.shape(), ltmp.write())->*[] __device__(size_t i, auto tmp) {
+      tmp(i) = i;
+    };
 
-        ctx.parallel_for(lres.shape(), ltmp.read(), lres.rw())->*[] __device__(size_t i, auto tmp, auto res) {
-            res(i) += tmp(i);
-        };
-    }
+    ctx.parallel_for(lres.shape(), ltmp.read(), lres.rw())->*[] __device__(size_t i, auto tmp, auto res) {
+      res(i) += tmp(i);
+    };
+  }
 
-    for (size_t k = 0; k < niter; k++) {
-        auto ltmp = run_once()->*[&]() {
-            // Ensure this is only done once !
-            static bool done = false;
-            EXPECT(!done);
-            done = true;
+  for (size_t k = 0; k < niter; k++)
+  {
+    auto ltmp = run_once()->*[&]() {
+      // Ensure this is only done once !
+      static bool done = false;
+      EXPECT(!done);
+      done = true;
 
-            auto ltmp = ctx.logical_data(lres.shape());
-            ctx.parallel_for(ltmp.shape(), ltmp.write())->*[] __device__(size_t i, auto tmp) { tmp(i) = i; };
-            return ltmp;
-        };
+      auto ltmp = ctx.logical_data(lres.shape());
+      ctx.parallel_for(ltmp.shape(), ltmp.write())->*[] __device__(size_t i, auto tmp) {
+        tmp(i) = i;
+      };
+      return ltmp;
+    };
 
-        auto ltmp2 = run_once(size_t(k % 4))->*[&](size_t val) {
-            // fprintf(stderr, "COMPUTE FOR %ld\n", val);
+    auto ltmp2 = run_once(size_t(k % 4))->*[&](size_t val) {
+      // fprintf(stderr, "COMPUTE FOR %ld\n", val);
 
-            auto ltmp = ctx.logical_data(lres.shape());
-            ctx.parallel_for(ltmp.shape(), ltmp.write())->*[val] __device__(size_t i, auto tmp) { tmp(i) = val; };
-            return ltmp;
-        };
+      auto ltmp = ctx.logical_data(lres.shape());
+      ctx.parallel_for(ltmp.shape(), ltmp.write())->*[val] __device__(size_t i, auto tmp) {
+        tmp(i) = val;
+      };
+      return ltmp;
+    };
 
-        ctx.parallel_for(lres.shape(), ltmp.read(), lres.rw())->*[] __device__(size_t i, auto tmp, auto res) {
-            res(i) += tmp(i);
-        };
-    }
+    ctx.parallel_for(lres.shape(), ltmp.read(), lres.rw())->*[] __device__(size_t i, auto tmp, auto res) {
+      res(i) += tmp(i);
+    };
+  }
 
-    ctx.finalize();
+  ctx.finalize();
 
-    for (size_t i = 0; i < N; i++) {
-        EXPECT(A[i] == (2 * i + 1) + 2 * i * niter);
-    }
+  for (size_t i = 0; i < N; i++)
+  {
+    EXPECT(A[i] == (2 * i + 1) + 2 * i * niter);
+  }
 }

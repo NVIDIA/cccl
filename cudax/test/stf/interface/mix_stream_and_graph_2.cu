@@ -21,81 +21,99 @@
 using namespace cuda::experimental::stf;
 
 template <typename T>
-__global__ void setup(slice<T> s) {
-    int tid = blockIdx.x * blockDim.x + threadIdx.x;
-    int nthreads = gridDim.x * blockDim.x;
+__global__ void setup(slice<T> s)
+{
+  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
+  int nthreads = gridDim.x * blockDim.x;
 
-    for (size_t ind = tid; ind < s.size(); ind += nthreads) {
-        s(ind) = T(ind);
-    }
+  for (size_t ind = tid; ind < s.size(); ind += nthreads)
+  {
+    s(ind) = T(ind);
+  }
 }
 
 template <typename T>
-__global__ void add(slice<T> s, T val) {
-    int tid = blockIdx.x * blockDim.x + threadIdx.x;
-    int nthreads = gridDim.x * blockDim.x;
+__global__ void add(slice<T> s, T val)
+{
+  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
+  int nthreads = gridDim.x * blockDim.x;
 
-    for (size_t ind = tid; ind < s.size(); ind += nthreads) {
-        s(ind) += val;
-    }
+  for (size_t ind = tid; ind < s.size(); ind += nthreads)
+  {
+    s(ind) += val;
+  }
 }
 
-__global__ void slice_add(slice<const int> s_from, slice<int> s_to) {
-    int tid = blockIdx.x * blockDim.x + threadIdx.x;
-    int nthreads = gridDim.x * blockDim.x;
+__global__ void slice_add(slice<const int> s_from, slice<int> s_to)
+{
+  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
+  int nthreads = gridDim.x * blockDim.x;
 
-    for (size_t ind = tid; ind < s_from.size(); ind += nthreads) {
-        s_to(ind) += s_from(ind);
-    }
+  for (size_t ind = tid; ind < s_from.size(); ind += nthreads)
+  {
+    s_to(ind) += s_from(ind);
+  }
 }
 
-int main() {
-    stream_ctx ctx;
-    const size_t n = 12;
-    const size_t K = 10;
+int main()
+{
+  stream_ctx ctx;
+  const size_t n = 12;
+  const size_t K = 10;
 
-    int X[n];
-    int Y[n];
+  int X[n];
+  int Y[n];
 
-    for (size_t i = 0; i < n; i++) {
-        X[i] = i;
-        Y[i] = -i;
+  for (size_t i = 0; i < n; i++)
+  {
+    X[i] = i;
+    Y[i] = -i;
+  }
+
+  auto lX = ctx.logical_data(X);
+  auto lY = ctx.logical_data(Y);
+
+  /*
+   * Create a CUDA graph from a single task, and launch it many times
+   */
+
+  ctx.task(lX.rw(), lY.rw())->*[&](cudaStream_t stream, auto sX, auto sY) {
+    graph_ctx gctx;
+    auto lX_alias = gctx.logical_data(sX, data_place::current_device());
+    auto lY_alias = gctx.logical_data(sY, data_place::current_device());
+
+    for (size_t ii = 0; ii < 10; ii++)
+    {
+      gctx.task(lX_alias.rw())->*[](cudaStream_t stream2, auto sX) {
+        add<<<16, 128, 0, stream2>>>(sX, 17);
+      };
+      gctx.task(lY_alias.rw())->*[](cudaStream_t stream2, auto sY) {
+        add<<<16, 128, 0, stream2>>>(sY, 17);
+      };
+      gctx.task(lX_alias.read(), lY_alias.rw())->*[](cudaStream_t stream2, auto sX, auto sY) {
+        slice_add<<<16, 128, 0, stream2>>>(sX, sY);
+      };
+      gctx.task(lX_alias.rw())->*[](cudaStream_t stream2, auto sX) {
+        add<<<16, 128, 0, stream2>>>(sX, 17);
+      };
+      gctx.task(lY_alias.rw())->*[](cudaStream_t stream2, auto sY) {
+        add<<<16, 128, 0, stream2>>>(sY, 17);
+      };
     }
 
-    auto lX = ctx.logical_data(X);
-    auto lY = ctx.logical_data(Y);
+    //        gctx.host_launch(lX_alias.rw())->*[&](auto sX) {
+    //            for (size_t ind = 0; ind < n; ind++) {
+    //                sX(ind) = 2 * sX(ind) + 1;
+    //            }
+    //        };
 
-    /*
-     * Create a CUDA graph from a single task, and launch it many times
-     */
+    // gctx.print_to_dot("gctx" + std::to_string(iter));
+    auto exec_graph = gctx.instantiate();
+    for (size_t iter = 0; iter < K; iter++)
+    {
+      cudaGraphLaunch(*exec_graph, stream);
+    }
+  };
 
-    ctx.task(lX.rw(), lY.rw())->*[&](cudaStream_t stream, auto sX, auto sY) {
-        graph_ctx gctx;
-        auto lX_alias = gctx.logical_data(sX, data_place::current_device());
-        auto lY_alias = gctx.logical_data(sY, data_place::current_device());
-
-        for (size_t ii = 0; ii < 10; ii++) {
-            gctx.task(lX_alias.rw())->*[](cudaStream_t stream2, auto sX) { add<<<16, 128, 0, stream2>>>(sX, 17); };
-            gctx.task(lY_alias.rw())->*[](cudaStream_t stream2, auto sY) { add<<<16, 128, 0, stream2>>>(sY, 17); };
-            gctx.task(lX_alias.read(), lY_alias.rw())->*[](cudaStream_t stream2, auto sX, auto sY) {
-                slice_add<<<16, 128, 0, stream2>>>(sX, sY);
-            };
-            gctx.task(lX_alias.rw())->*[](cudaStream_t stream2, auto sX) { add<<<16, 128, 0, stream2>>>(sX, 17); };
-            gctx.task(lY_alias.rw())->*[](cudaStream_t stream2, auto sY) { add<<<16, 128, 0, stream2>>>(sY, 17); };
-        }
-
-        //        gctx.host_launch(lX_alias.rw())->*[&](auto sX) {
-        //            for (size_t ind = 0; ind < n; ind++) {
-        //                sX(ind) = 2 * sX(ind) + 1;
-        //            }
-        //        };
-
-        // gctx.print_to_dot("gctx" + std::to_string(iter));
-        auto exec_graph = gctx.instantiate();
-        for (size_t iter = 0; iter < K; iter++) {
-            cudaGraphLaunch(*exec_graph, stream);
-        }
-    };
-
-    ctx.finalize();
+  ctx.finalize();
 }

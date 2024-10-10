@@ -17,27 +17,31 @@
 
 using namespace cuda::experimental::stf;
 
-__global__ void dummy() {
-}
+__global__ void dummy() {}
 
-int main() {
-    // Generate a random filename
-    int r = rand();
+int main()
+{
+  // Generate a random filename
+  int r = rand();
 
-    char filename[64];
-    snprintf(filename, 64, "output_%d.dot", r);
-    // fprintf(stderr, "filename %s\n", filename);
+  char filename[64];
+  snprintf(filename, 64, "output_%d.dot", r);
+  // fprintf(stderr, "filename %s\n", filename);
 
-    graph_ctx ctx;
+  graph_ctx ctx;
 
-    auto lA = ctx.logical_data(shape_of<slice<char>>(64));
-    ctx.task(lA.write())->*[](cudaStream_t s, auto) { dummy<<<1, 1, 0, s>>>(); };
-    ctx.task(lA.rw())->*[](cudaStream_t s, auto) { dummy<<<1, 1, 0, s>>>(); };
-    ctx.print_to_dot(filename, cudaGraphDebugDotFlagsVerbose);
-    ctx.finalize();
+  auto lA = ctx.logical_data(shape_of<slice<char>>(64));
+  ctx.task(lA.write())->*[](cudaStream_t s, auto) {
+    dummy<<<1, 1, 0, s>>>();
+  };
+  ctx.task(lA.rw())->*[](cudaStream_t s, auto) {
+    dummy<<<1, 1, 0, s>>>();
+  };
+  ctx.print_to_dot(filename, cudaGraphDebugDotFlagsVerbose);
+  ctx.finalize();
 
-    // Make sure the file exists, and erase it
-    EXPECT(access(filename, F_OK) != -1);
+  // Make sure the file exists, and erase it
+  EXPECT(access(filename, F_OK) != -1);
 
-    EXPECT(unlink(filename) == 0);
+  EXPECT(unlink(filename) == 0);
 }
