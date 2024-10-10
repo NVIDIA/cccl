@@ -19,35 +19,11 @@
 #include <iostream>
 #include <memory>
 
+#include "util/context.h"
+#include "util/errors.h"
+#include "util/types.h"
 #include <cccl/c/reduce.h>
-#include <nvJitLink.h>
-#include <nvrtc.h>
-
-void check(nvrtcResult result)
-{
-  if (result != NVRTC_SUCCESS)
-  {
-    throw std::runtime_error(std::string("NVRTC error: ") + nvrtcGetErrorString(result));
-  }
-}
-
-void check(CUresult result)
-{
-  if (result != CUDA_SUCCESS)
-  {
-    const char* str = nullptr;
-    cuGetErrorString(result, &str);
-    throw std::runtime_error(std::string("CUDA error: ") + str);
-  }
-}
-
-void check(nvJitLinkResult result)
-{
-  if (result != NVJITLINK_SUCCESS)
-  {
-    throw std::runtime_error(std::string("nvJitLink error: ") + std::to_string(result));
-  }
-}
+#include <nvrtc/command_list.h>
 
 struct op_wrapper;
 struct device_reduce_policy;
@@ -65,127 +41,6 @@ struct runtime_tuning_policy
   int vector_load_length;
 };
 
-struct storage_t;
-struct input_iterator_state_t;
-struct output_iterator_t;
-
-char const* cccl_type_enum_to_string(cccl_type_enum type)
-{
-  switch (type)
-  {
-    case cccl_type_enum::INT8:
-      return "::cuda::std::int8_t";
-    case cccl_type_enum::INT16:
-      return "::cuda::std::int16_t";
-    case cccl_type_enum::INT32:
-      return "::cuda::std::int32_t";
-    case cccl_type_enum::INT64:
-      return "::cuda::std::int64_t";
-    case cccl_type_enum::UINT8:
-      return "::cuda::std::uint8_t";
-    case cccl_type_enum::UINT16:
-      return "::cuda::std::uint16_t";
-    case cccl_type_enum::UINT32:
-      return "::cuda::std::uint32_t";
-    case cccl_type_enum::UINT64:
-      return "::cuda::std::uint64_t";
-    case cccl_type_enum::FLOAT32:
-      return "float";
-    case cccl_type_enum::FLOAT64:
-      return "double";
-    case cccl_type_enum::STORAGE:
-      return "storage_t";
-  }
-  return "unknown";
-}
-
-std::string cccl_type_enum_to_name(cccl_type_enum type, bool is_pointer = false)
-{
-  std::string result;
-
-  if (is_pointer)
-  {
-    switch (type)
-    {
-      case cccl_type_enum::INT8:
-
-        check(nvrtcGetTypeName<::cuda::std::int8_t*>(&result));
-        break;
-      case cccl_type_enum::INT16:
-        check(nvrtcGetTypeName<::cuda::std::int16_t*>(&result));
-        break;
-      case cccl_type_enum::INT32:
-        check(nvrtcGetTypeName<::cuda::std::int32_t*>(&result));
-        break;
-      case cccl_type_enum::INT64:
-        check(nvrtcGetTypeName<::cuda::std::int64_t*>(&result));
-        break;
-      case cccl_type_enum::UINT8:
-        check(nvrtcGetTypeName<::cuda::std::uint8_t*>(&result));
-        break;
-      case cccl_type_enum::UINT16:
-        check(nvrtcGetTypeName<::cuda::std::uint16_t*>(&result));
-        break;
-      case cccl_type_enum::UINT32:
-        check(nvrtcGetTypeName<::cuda::std::uint32_t*>(&result));
-        break;
-      case cccl_type_enum::UINT64:
-        check(nvrtcGetTypeName<::cuda::std::uint64_t*>(&result));
-        break;
-      case cccl_type_enum::FLOAT32:
-        check(nvrtcGetTypeName<float*>(&result));
-        break;
-      case cccl_type_enum::FLOAT64:
-        check(nvrtcGetTypeName<double*>(&result));
-        break;
-      case cccl_type_enum::STORAGE:
-        check(nvrtcGetTypeName<storage_t*>(&result));
-        break;
-    }
-  }
-  else
-  {
-    switch (type)
-    {
-      case cccl_type_enum::INT8:
-        check(nvrtcGetTypeName<::cuda::std::int8_t>(&result));
-        break;
-      case cccl_type_enum::INT16:
-        check(nvrtcGetTypeName<::cuda::std::int16_t>(&result));
-        break;
-      case cccl_type_enum::INT32:
-        check(nvrtcGetTypeName<::cuda::std::int32_t>(&result));
-        break;
-      case cccl_type_enum::INT64:
-        check(nvrtcGetTypeName<::cuda::std::int64_t>(&result));
-        break;
-      case cccl_type_enum::UINT8:
-        check(nvrtcGetTypeName<::cuda::std::uint8_t>(&result));
-        break;
-      case cccl_type_enum::UINT16:
-        check(nvrtcGetTypeName<::cuda::std::uint16_t>(&result));
-        break;
-      case cccl_type_enum::UINT32:
-        check(nvrtcGetTypeName<::cuda::std::uint32_t>(&result));
-        break;
-      case cccl_type_enum::UINT64:
-        check(nvrtcGetTypeName<::cuda::std::uint64_t>(&result));
-        break;
-      case cccl_type_enum::FLOAT32:
-        check(nvrtcGetTypeName<float>(&result));
-        break;
-      case cccl_type_enum::FLOAT64:
-        check(nvrtcGetTypeName<double>(&result));
-        break;
-      case cccl_type_enum::STORAGE:
-        check(nvrtcGetTypeName<storage_t>(&result));
-        break;
-    }
-  }
-
-  return result;
-}
-
 struct reduce_tuning_t
 {
   int cc;
@@ -195,7 +50,7 @@ struct reduce_tuning_t
 };
 
 template <int N>
-reduce_tuning_t find_tuning(int cc, const reduce_tuning_t (&tunings)[N])
+static reduce_tuning_t find_tuning(int cc, const reduce_tuning_t (&tunings)[N])
 {
   for (const reduce_tuning_t& tuning : tunings)
   {
@@ -208,7 +63,7 @@ reduce_tuning_t find_tuning(int cc, const reduce_tuning_t (&tunings)[N])
   return tunings[N - 1];
 }
 
-runtime_tuning_policy get_policy(int cc, cccl_type_info accumulator_type, cccl_type_info input_type)
+static runtime_tuning_policy get_policy(int cc, cccl_type_info accumulator_type, cccl_type_info /*input_type*/)
 {
   reduce_tuning_t chain[] = {{60, 256, 16, 4}, {35, 256, 20, 4}};
 
@@ -221,14 +76,14 @@ runtime_tuning_policy get_policy(int cc, cccl_type_info accumulator_type, cccl_t
   return {block_size, items_per_thread, vector_load_length};
 }
 
-cccl_type_info get_accumulator_type(cccl_op_t op, cccl_iterator_t input_it, cccl_value_t init)
+static cccl_type_info get_accumulator_type(cccl_op_t /*op*/, cccl_iterator_t /*input_it*/, cccl_value_t init)
 {
   // TODO Should be decltype(op(init, *input_it)) but haven't implemented type arithmetic yet
   //      so switching back to the old accumulator type logic for now
   return init.type;
 }
 
-cudaError_t InvokeSingleTile(
+static cudaError_t InvokeSingleTile(
   void* d_temp_storage,
   std::size_t& temp_storage_bytes,
   cccl_iterator_t d_in,
@@ -271,7 +126,7 @@ cudaError_t InvokeSingleTile(
   return error;
 }
 
-cudaError_t InvokePasses(
+static cudaError_t InvokePasses(
   void* d_temp_storage,
   std::size_t& temp_storage_bytes,
   cccl_iterator_t d_in,
@@ -379,7 +234,7 @@ cudaError_t InvokePasses(
   return error;
 }
 
-cudaError_t Invoke(
+static cudaError_t Invoke(
   void* d_temp_storage,
   std::size_t& temp_storage_bytes,
   cccl_iterator_t d_in,
@@ -398,7 +253,7 @@ cudaError_t Invoke(
   runtime_tuning_policy policy = get_policy(cc, accum_t, d_in.value_type);
 
   // Force kernel code-generation in all compiler passes
-  if (num_items <= (policy.block_size * policy.items_per_thread))
+  if (num_items <= static_cast<OffsetT>(policy.block_size * policy.items_per_thread))
   {
     // Small, single tile size
     return InvokeSingleTile(
@@ -422,6 +277,9 @@ cudaError_t Invoke(
       stream);
   }
 }
+
+struct input_iterator_state_t;
+struct output_iterator_t;
 
 std::string get_input_iterator_name()
 {
@@ -504,24 +362,6 @@ std::string get_device_reduce_kernel_name(cccl_op_t op, cccl_iterator_t input_it
     transform_op_t);
 }
 
-bool try_push_context()
-{
-  CUcontext context = nullptr;
-
-  check(cuCtxGetCurrent(&context));
-
-  if (context == nullptr)
-  {
-    const int default_device = 0;
-    check(cuDevicePrimaryCtxRetain(&context, default_device));
-    check(cuCtxPushCurrent(context));
-
-    return true;
-  }
-
-  return false;
-}
-
 extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
   cccl_device_reduce_build_result_t* build,
   cccl_iterator_t input_it,
@@ -539,7 +379,6 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
 
   try
   {
-    nvrtcProgram prog{};
     const char* name = "test";
 
     const int cc                       = cc_major * 10 + cc_minor;
@@ -687,104 +526,70 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
       op_src, // 6
       policy.vector_load_length); // 7
 
-    check(nvrtcCreateProgram(&prog, src.c_str(), name, 0, nullptr, nullptr));
-
-    std::string single_tile_kernel_name = get_single_tile_kernel_name(input_it, output_it, op, init, false);
-    check(nvrtcAddNameExpression(prog, single_tile_kernel_name.c_str()));
-
+    std::string single_tile_kernel_name        = get_single_tile_kernel_name(input_it, output_it, op, init, false);
     std::string single_tile_second_kernel_name = get_single_tile_kernel_name(input_it, output_it, op, init, true);
-    check(nvrtcAddNameExpression(prog, single_tile_second_kernel_name.c_str()));
-
-    std::string reduction_kernel_name = get_device_reduce_kernel_name(op, input_it, init);
-    check(nvrtcAddNameExpression(prog, reduction_kernel_name.c_str()));
+    std::string reduction_kernel_name          = get_device_reduce_kernel_name(op, input_it, init);
+    std::string single_tile_kernel_lowered_name;
+    std::string single_tile_second_kernel_lowered_name;
+    std::string reduction_kernel_lowered_name;
 
     const std::string arch = std::format("-arch=sm_{0}{1}", cc_major, cc_minor);
 
-    constexpr int num_args     = 7;
+    constexpr size_t num_args  = 7;
     const char* args[num_args] = {arch.c_str(), cub_path, thrust_path, libcudacxx_path, ctk_path, "-rdc=true", "-dlto"};
 
-    std::size_t log_size{};
-    nvrtcResult compile_result = nvrtcCompileProgram(prog, num_args, args);
+    constexpr size_t num_lto_args   = 2;
+    const char* lopts[num_lto_args] = {"-lto", arch.c_str()};
 
-    check(nvrtcGetProgramLogSize(prog, &log_size));
+    auto cl =
+      make_nvrtc_command_list()
+        .add_program(nvrtc_translation_unit{src.c_str(), name})
+        .add_expression({single_tile_kernel_name})
+        .add_expression({single_tile_second_kernel_name})
+        .add_expression({reduction_kernel_name})
+        .compile_program({args, num_args})
+        .get_name({single_tile_kernel_name, single_tile_kernel_lowered_name})
+        .get_name({single_tile_second_kernel_name, single_tile_second_kernel_lowered_name})
+        .get_name({reduction_kernel_name, reduction_kernel_lowered_name})
+        .cleanup_program()
+        .add_link({op.ltoir, op.ltoir_size});
 
-    std::unique_ptr<char[]> log{new char[log_size]};
-    check(nvrtcGetProgramLog(prog, log.get()));
+    nvrtc_cubin result{};
 
-    if (log_size > 1)
+    if (cccl_iterator_kind_t::iterator == input_it.type && cccl_iterator_kind_t::iterator == output_it.type)
     {
-      std::cerr << log.get() << std::endl;
+      result = cl.add_link({input_it.advance.ltoir, input_it.advance.ltoir_size})
+                 .add_link({input_it.dereference.ltoir, input_it.dereference.ltoir_size})
+                 .add_link({output_it.advance.ltoir, output_it.advance.ltoir_size})
+                 .add_link({output_it.dereference.ltoir, output_it.dereference.ltoir_size})
+                 .finalize_program(num_lto_args, lopts);
+    }
+    else if (cccl_iterator_kind_t::iterator == input_it.type)
+    {
+      result = cl.add_link({input_it.advance.ltoir, input_it.advance.ltoir_size})
+                 .add_link({input_it.dereference.ltoir, input_it.dereference.ltoir_size})
+                 .finalize_program(num_lto_args, lopts);
+    }
+    else if (cccl_iterator_kind_t::iterator == output_it.type)
+    {
+      result = cl.add_link({output_it.advance.ltoir, output_it.advance.ltoir_size})
+                 .add_link({output_it.dereference.ltoir, output_it.dereference.ltoir_size})
+                 .finalize_program(num_lto_args, lopts);
+    }
+    else
+    {
+      result = cl.finalize_program(num_lto_args, lopts);
     }
 
-    const char* single_tile_kernel_lowered_name;
-    check(nvrtcGetLoweredName(prog, single_tile_kernel_name.c_str(), &single_tile_kernel_lowered_name));
-
-    const char* single_tile_second_kernel_lowered_name;
-    check(nvrtcGetLoweredName(prog, single_tile_second_kernel_name.c_str(), &single_tile_second_kernel_lowered_name));
-
-    const char* reduction_kernel_lowered_name;
-    check(nvrtcGetLoweredName(prog, reduction_kernel_name.c_str(), &reduction_kernel_lowered_name));
-
-    // Copy lowered names to a std::unique_ptr to ensure they can be used after
-    // the program is destroyed
-
-    std::unique_ptr<char[]> single_tile_kernel_lowered_name_ptr{new char[strlen(single_tile_kernel_lowered_name) + 1]};
-    strcpy(single_tile_kernel_lowered_name_ptr.get(), single_tile_kernel_lowered_name);
-
-    std::unique_ptr<char[]> single_tile_second_kernel_lowered_name_ptr{
-      new char[strlen(single_tile_second_kernel_lowered_name) + 1]};
-    strcpy(single_tile_second_kernel_lowered_name_ptr.get(), single_tile_second_kernel_lowered_name);
-
-    std::unique_ptr<char[]> reduction_kernel_lowered_name_ptr{new char[strlen(reduction_kernel_lowered_name) + 1]};
-    strcpy(reduction_kernel_lowered_name_ptr.get(), reduction_kernel_lowered_name);
-
-    check(compile_result);
-
-    std::size_t ltoir_size{};
-    check(nvrtcGetLTOIRSize(prog, &ltoir_size));
-    std::unique_ptr<char[]> ltoir{new char[ltoir_size]};
-    check(nvrtcGetLTOIR(prog, ltoir.get()));
-    check(nvrtcDestroyProgram(&prog));
-
-    nvJitLinkHandle handle;
-    const char* lopts[] = {"-lto", arch.c_str()};
-    check(nvJitLinkCreate(&handle, 2, lopts));
-
-    check(nvJitLinkAddData(handle, NVJITLINK_INPUT_LTOIR, ltoir.get(), ltoir_size, name));
-    check(nvJitLinkAddData(handle, NVJITLINK_INPUT_LTOIR, op.ltoir, op.ltoir_size, name));
-
-    if (input_it.type == cccl_iterator_kind_t::iterator)
-    {
-      check(nvJitLinkAddData(handle, NVJITLINK_INPUT_LTOIR, input_it.advance.ltoir, input_it.advance.ltoir_size, name));
-      check(nvJitLinkAddData(
-        handle, NVJITLINK_INPUT_LTOIR, input_it.dereference.ltoir, input_it.dereference.ltoir_size, name));
-    }
-
-    if (output_it.type == cccl_iterator_kind_t::iterator)
-    {
-      check(
-        nvJitLinkAddData(handle, NVJITLINK_INPUT_LTOIR, output_it.advance.ltoir, output_it.advance.ltoir_size, name));
-      check(nvJitLinkAddData(
-        handle, NVJITLINK_INPUT_LTOIR, output_it.dereference.ltoir, output_it.dereference.ltoir_size, name));
-    }
-
-    check(nvJitLinkComplete(handle));
-
-    std::size_t cubin_size{};
-    check(nvJitLinkGetLinkedCubinSize(handle, &cubin_size));
-    std::unique_ptr<char[]> cubin{new char[cubin_size]};
-    check(nvJitLinkGetLinkedCubin(handle, cubin.get()));
-    check(nvJitLinkDestroy(&handle));
-
-    cuLibraryLoadData(&build->library, cubin.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
-    check(cuLibraryGetKernel(&build->single_tile_kernel, build->library, single_tile_kernel_lowered_name_ptr.get()));
+    cuLibraryLoadData(&build->library, result.cubin.get(), nullptr, nullptr, 0, nullptr, nullptr, 0);
+    check(cuLibraryGetKernel(&build->single_tile_kernel, build->library, single_tile_kernel_lowered_name.c_str()));
     check(cuLibraryGetKernel(
-      &build->single_tile_second_kernel, build->library, single_tile_second_kernel_lowered_name_ptr.get()));
-    check(cuLibraryGetKernel(&build->reduction_kernel, build->library, reduction_kernel_lowered_name_ptr.get()));
+      &build->single_tile_second_kernel, build->library, single_tile_second_kernel_lowered_name.c_str()));
+    check(cuLibraryGetKernel(&build->reduction_kernel, build->library, reduction_kernel_lowered_name.c_str()));
 
     build->cc         = cc;
-    build->cubin      = cubin.release();
-    build->cubin_size = cubin_size;
+    build->cubin      = (void*) result.cubin.release();
+    build->cubin_size = result.size;
   }
   catch (...)
   {

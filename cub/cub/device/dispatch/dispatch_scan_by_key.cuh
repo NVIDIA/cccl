@@ -170,19 +170,19 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanByKeyPolicyT::BLOCK_THRE
     .ConsumeRange(num_items, tile_state, start_tile);
 }
 
-template <typename ScanTileStateT, typename KeysInputIteratorT>
+template <typename ScanTileStateT, typename KeysInputIteratorT, typename OffsetT>
 CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanByKeyInitKernel(
   ScanTileStateT tile_state,
   KeysInputIteratorT d_keys_in,
   cub::detail::value_t<KeysInputIteratorT>* d_keys_prev_in,
-  unsigned items_per_tile,
+  OffsetT items_per_tile,
   int num_tiles)
 {
   // Initialize tile status
   tile_state.InitializeStatus(num_tiles);
 
-  const unsigned tid       = threadIdx.x + blockDim.x * blockIdx.x;
-  const unsigned tile_base = tid * items_per_tile;
+  const unsigned tid      = threadIdx.x + blockDim.x * blockIdx.x;
+  const OffsetT tile_base = static_cast<OffsetT>(tid) * items_per_tile;
 
   if (tid > 0 && tid < num_tiles)
   {
@@ -247,6 +247,9 @@ struct DispatchScanByKey : SelectedPolicy
 
   // The input value type
   using InputT = cub::detail::value_t<ValuesInputIteratorT>;
+
+  // Tile state used for the decoupled look-back
+  using ScanByKeyTileStateT = ReduceByKeyScanTileState<AccumT, int>;
 
   /// Device-accessible allocation of temporary storage. When `nullptr`, the
   /// required allocation size is written to `temp_storage_bytes` and no work
@@ -373,8 +376,7 @@ struct DispatchScanByKey : SelectedPolicy
   template <typename ActivePolicyT, typename InitKernel, typename ScanKernel>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(InitKernel init_kernel, ScanKernel scan_kernel)
   {
-    using Policy              = typename ActivePolicyT::ScanByKeyPolicyT;
-    using ScanByKeyTileStateT = ReduceByKeyScanTileState<AccumT, OffsetT>;
+    using Policy = typename ActivePolicyT::ScanByKeyPolicyT;
 
     cudaError error = cudaSuccess;
     do
@@ -442,7 +444,7 @@ struct DispatchScanByKey : SelectedPolicy
 
       // Invoke init_kernel to initialize tile descriptors
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(init_grid_size, INIT_KERNEL_THREADS, 0, stream)
-        .doit(init_kernel, tile_state, d_keys_in, d_keys_prev_in, tile_size, num_tiles);
+        .doit(init_kernel, tile_state, d_keys_in, d_keys_prev_in, static_cast<OffsetT>(tile_size), num_tiles);
 
       // Check for failure to launch
       error = CubDebug(cudaPeekAtLastError());
@@ -452,18 +454,7 @@ struct DispatchScanByKey : SelectedPolicy
       }
 
       // Sync the stream if specified to flush runtime errors
-
       error = CubDebug(detail::DebugSyncStream(stream));
-      if (cudaSuccess != error)
-      {
-        break;
-      }
-
-      // Get SM occupancy for scan_kernel
-      int scan_sm_occupancy;
-      error = CubDebug(MaxSmOccupancy(scan_sm_occupancy, // out
-                                      scan_kernel,
-                                      Policy::BLOCK_THREADS));
       if (cudaSuccess != error)
       {
         break;
@@ -484,13 +475,12 @@ struct DispatchScanByKey : SelectedPolicy
 // Log scan_kernel configuration
 #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
         _CubLog("Invoking %d scan_kernel<<<%d, %d, 0, %lld>>>(), %d items "
-                "per thread, %d SM occupancy\n",
+                "per thread\n",
                 start_tile,
                 scan_grid_size,
                 Policy::BLOCK_THREADS,
                 (long long) stream,
-                Policy::ITEMS_PER_THREAD,
-                scan_sm_occupancy);
+                Policy::ITEMS_PER_THREAD);
 #endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
         // Invoke scan_kernel
@@ -529,12 +519,11 @@ struct DispatchScanByKey : SelectedPolicy
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke()
   {
-    using MaxPolicyT          = typename DispatchScanByKey::MaxPolicy;
-    using ScanByKeyTileStateT = ReduceByKeyScanTileState<AccumT, OffsetT>;
+    using MaxPolicyT = typename DispatchScanByKey::MaxPolicy;
 
     // Ensure kernels are instantiated.
     return Invoke<ActivePolicyT>(
-      DeviceScanByKeyInitKernel<ScanByKeyTileStateT, KeysInputIteratorT>,
+      DeviceScanByKeyInitKernel<ScanByKeyTileStateT, KeysInputIteratorT, OffsetT>,
       DeviceScanByKeyKernel<MaxPolicyT,
                             KeysInputIteratorT,
                             ValuesInputIteratorT,

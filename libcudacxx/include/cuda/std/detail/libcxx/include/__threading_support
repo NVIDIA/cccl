@@ -685,12 +685,6 @@ _LIBCUDACXX_HIDE_FROM_ABI __libcpp_contention_t* __libcpp_contention_state(void 
 
 #  endif // _LIBCUDACXX_HAS_NO_THREAD_CONTENTION_TABLE
 
-#  if !defined(_LIBCUDACXX_HAS_NO_TREE_BARRIER) && !defined(_LIBCUDACXX_HAS_NO_THREAD_FAVORITE_BARRIER_INDEX)
-
-_CCCL_VISIBILITY_DEFAULT extern thread_local ptrdiff_t __libcpp_thread_favorite_barrier_index;
-
-#  endif
-
 #  ifndef __cuda_std__
 
 class _CCCL_TYPE_VISIBILITY_DEFAULT thread;
