@@ -37,37 +37,39 @@
 #  pragma system_header
 #endif // no system header
 
-// #include <cub/device/dispatch/tuning/tuning_for.cuh>
-#include <cub/detail/mdspan_utils.cuh> // size(extent)
-#include <cub/device/dispatch/kernels/for_each_in_extents_kernel.cuh>
-#include <cub/util_device.cuh>
-#include <cub/util_namespace.cuh> // CUB_NAMESPACE_BEGIN
+#if _CCCL_STD_VER >= 2017
 
-#include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
+#  include <cub/detail/mdspan_utils.cuh> // size(extent)
+#  include <cub/device/dispatch/kernels/for_each_in_extents_kernel.cuh>
+#  include <cub/device/dispatch/tuning/tuning_for_each_in_extents.cuh> // policy_hub_t
+#  include <cub/util_device.cuh>
+#  include <cub/util_namespace.cuh> // CUB_NAMESPACE_BEGIN
 
-#include <cuda/std/__type_traits/integral_constant.h> // ::cuda::std::integral_constant
-#include <cuda/std/__utility/integer_sequence.h> // ::cuda::std::index_sequence
-#include <cuda/std/array> // ::cuda::std::array
-#include <cuda/std/cstddef> // ::cuda::std::size_t
+#  include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#define _CUB_RETURN_IF_ERROR(STATUS)       \
-  {                                        \
-    cudaError_t error_ = CubDebug(STATUS); \
-    if (error_ != cudaSuccess)             \
-    {                                      \
-      return error_;                       \
-    }                                      \
-  }
+#  include <cuda/std/__type_traits/integral_constant.h> // std::integral_constant
+#  include <cuda/std/__utility/integer_sequence.h> // std::index_sequence
+#  include <cuda/std/array> // std::array
+#  include <cuda/std/cstddef> // std::size_t
 
-#define _CUB_RETURN_IF_STREAM_ERROR(STREAM)                         \
-  {                                                                 \
-    cudaError_t error_ = CubDebug(detail::DebugSyncStream(STREAM)); \
-    if (error_ != cudaSuccess)                                      \
-    {                                                               \
-      CubDebug(error_ = SyncStream(STREAM));                        \
-      return error_;                                                \
-    }                                                               \
-  }
+#  define _CUB_RETURN_IF_ERROR(STATUS)       \
+    {                                        \
+      cudaError_t error_ = CubDebug(STATUS); \
+      if (error_ != cudaSuccess)             \
+      {                                      \
+        return error_;                       \
+      }                                      \
+    }
+
+#  define _CUB_RETURN_IF_STREAM_ERROR(STREAM)                         \
+    {                                                                 \
+      cudaError_t error_ = CubDebug(detail::DebugSyncStream(STREAM)); \
+      if (error_ != cudaSuccess)                                      \
+      {                                                               \
+        CubDebug(error_ = SyncStream(STREAM));                        \
+        return error_;                                                \
+      }                                                               \
+    }
 
 CUB_NAMESPACE_BEGIN
 
@@ -109,12 +111,12 @@ struct dispatch_t : PolicyHubT
     cudaError_t status = cudaSuccess;
 
     constexpr auto seq                     = ::cuda::std::make_index_sequence<ExtentsType::rank()>{};
-    ::cuda::std::array sub_sizes_div_array = sub_sizes_fast_div_mod(_ext, seq);
-    ::cuda::std::array extends_div_array   = extends_fast_div_mod(_ext, seq);
+    ::cuda::std::array sub_sizes_div_array = cub::detail::sub_sizes_fast_div_mod(_ext, seq);
+    ::cuda::std::array extents_div_array   = cub::detail::extents_fast_div_mod(_ext, seq);
     using FastDivModArrayType              = decltype(sub_sizes_div_array);
 
     auto& kernel =
-      &detail::for_each_in_extents::dynamic_kernel<max_policy_t>(_op, seq, sub_sizes_div_array, extends_div_array);
+      &detail::for_each_in_extents::dynamic_kernel<max_policy_t>(_op, seq, sub_sizes_div_array, extents_div_array);
 
     NV_IF_TARGET(NV_IS_HOST,
                  (int _{}; //
@@ -122,17 +124,17 @@ struct dispatch_t : PolicyHubT
 
     _CUB_RETURN_IF_ERROR(status)
     const auto num_cta = ::cuda::ceil_div(_size, block_threads);
-#ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
+#  ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
     _CubLog("Invoking detail::for_each_in_extents::dynamic_kernel<<<%d, %d, 0, %p>>>(), "
             "%d items per thread\n",
             static_cast<int>(num_cta),
             static_cast<int>(block_threads),
             _stream,
             static_cast<int>(items_per_thread));
-#endif
+#  endif
     status = THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
                static_cast<unsigned>(num_cta), static_cast<unsigned>(block_threads), 0, _stream)
-               .doit(kernel, _op, seq, sub_sizes_div_array, extends_div_array);
+               .doit(kernel, _op, seq, sub_sizes_div_array, extents_div_array);
     _CUB_RETURN_IF_ERROR(status)
     _CUB_RETURN_IF_STREAM_ERROR(_stream)
     return cudaSuccess;
@@ -168,6 +170,7 @@ struct dispatch_t : PolicyHubT
         _CUB_RETURN_IF_STREAM_ERROR(_stream)
         return cudaSuccess;
     */
+    return cudaSuccess;
   }
 
   template <typename ActivePolicyT>
@@ -191,3 +194,5 @@ struct dispatch_t : PolicyHubT
 } // namespace detail::for_each_in_extents
 
 CUB_NAMESPACE_END
+
+#endif // _CCCL_STD_VER >= 2017

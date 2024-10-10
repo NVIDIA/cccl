@@ -56,15 +56,19 @@ T coordinate_at(T index, fast_div_mod sub_size, fast_div_mod extent)
   return (index / sub_size) % extent;
 }
 
-template <typename Func, typename FastDivModArrayType, ::cuda::std::size_t... Ranks>
+template <typename Func, typename IndexType, typename FastDivModArrayType, ::cuda::std::size_t... Ranks>
 CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(
   Func func,
+  /*TODO: _CCCL_GRID_CONSTANT*/ const IndexType size,
   /*TODO: _CCCL_GRID_CONSTANT*/ const FastDivModArrayType sub_sizes_div_array,
-  /*TODO: _CCCL_GRID_CONSTANT*/ const FastDivModArrayType extends_div_array,
+  /*TODO: _CCCL_GRID_CONSTANT*/ const FastDivModArrayType extents_div_array,
   ::cuda::std::index_sequence<Ranks...> = {})
 {
   auto id = threadIdx.x + blockIdx.x * blockDim.x;
-  func(coordinate_at<Ranks>(id, sub_sizes_div_array[Ranks], extends_div_array[Ranks])...);
+  if (id < size)
+  {
+    func(coordinate_at<Ranks>(id, sub_sizes_div_array[Ranks], extents_div_array[Ranks])...);
+  }
 }
 
 } // namespace detail::for_each_in_extents

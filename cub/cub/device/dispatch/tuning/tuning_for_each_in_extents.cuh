@@ -39,8 +39,8 @@
 
 #if _CCCL_STD_VER >= 2017
 
-#  include <cub/agent/agent_for_each_in_extents.cuh>
-#  include <cub/util_device.cuh>
+#  include <cub/agent/agent_for_each_in_extents.cuh> // policy_t
+#  include <cub/util_device.cuh> // ChainedPolicy
 
 CUB_NAMESPACE_BEGIN
 

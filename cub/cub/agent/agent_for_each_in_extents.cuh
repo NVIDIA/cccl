@@ -39,8 +39,8 @@
 
 #if _CCCL_STD_VER >= 2017
 
-#  include <cub/util_ptx.cuh>
-#  include <cub/util_type.cuh>
+// #  include <cub/util_ptx.cuh>
+// #  include <cub/util_type.cuh>
 
 CUB_NAMESPACE_BEGIN
 

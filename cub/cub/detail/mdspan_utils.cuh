@@ -87,7 +87,7 @@ sub_sizes_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda:
 
 template <typename IndexType, ::cuda::std::size_t... E, ::cuda::std::size_t... Ranks>
 _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto
-extends_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::std::index_sequence<Ranks...> = {})
+extents_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::std::index_sequence<Ranks...> = {})
 {
   return ::cuda::std::array{fast_div_mod{ext.extent(Ranks)}...};
 }

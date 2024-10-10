@@ -47,7 +47,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-struct DeviceFor
+struct DeviceForEachInExtents
 {
 public:
   //! @rst
@@ -117,7 +117,7 @@ public:
       temp_storage_bytes = 1;
       return cudaSuccess;
     }
-    return DeviceFor::ForEachInExtent(ext, op, stream);
+    return DeviceForEachInExtents::ForEachInExtent(ext, op, stream);
   }
 
   //! @rst
@@ -171,7 +171,7 @@ public:
     using ExtentsType = ::cuda::std::extents<IndexType, Extents...>;
     static_assert(sizeof...(Extents) > 0, "Extents must have at least one dimension");
     // TODO: check dimensions overflows
-    CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachInExtent");
+    CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceForEachInExtents::ForEachInExtent");
     return detail::for_each_in_extents::dispatch_t<ExtentsType, OpType>::dispatch(ext, op, stream);
   }
 };
