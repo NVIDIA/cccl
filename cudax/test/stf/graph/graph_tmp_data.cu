@@ -20,38 +20,41 @@
 
 using namespace cuda::experimental::stf;
 
-double X0(int i) {
-    return sin((double) i);
+double X0(int i)
+{
+  return sin((double) i);
 }
 
-__global__ void dummy() {
-}
+__global__ void dummy() {}
 
-int main() {
-    //    stream_ctx ctx;
-    graph_ctx ctx;
-    const size_t N = 16;
-    double X[N];
+int main()
+{
+  //    stream_ctx ctx;
+  graph_ctx ctx;
+  const size_t N = 16;
+  double X[N];
 
-    for (size_t i = 0; i < N; i++) {
-        X[i] = X0(i);
-    }
+  for (size_t i = 0; i < N; i++)
+  {
+    X[i] = X0(i);
+  }
 
-    auto lX = ctx.logical_data(X);
+  auto lX = ctx.logical_data(X);
 
-    for (size_t i = 0; i < 10; i++) {
-        // fprintf(stderr, "START loop %ld\n", i);
-        auto lY = ctx.logical_data(lX.shape());
-        lY.set_symbol("tmp" + std::to_string(i));
+  for (size_t i = 0; i < 10; i++)
+  {
+    // fprintf(stderr, "START loop %ld\n", i);
+    auto lY = ctx.logical_data(lX.shape());
+    lY.set_symbol("tmp" + std::to_string(i));
 
-        // fprintf(stderr, "START pfor %ld\n", i);
-        ctx.parallel_for(lX.shape(), lX.rw(), lY.write())->*[] CUDASTF_DEVICE(size_t ind, auto dX, auto dY) {
-            dY(ind) = dX(ind);
-            dX(ind) = dY(ind) + 1.0;
-        };
-        // fprintf(stderr, "End loop %ld\n", i);
-    }
-    // fprintf(stderr, "OVER...\n");
+    // fprintf(stderr, "START pfor %ld\n", i);
+    ctx.parallel_for(lX.shape(), lX.rw(), lY.write())->*[] CUDASTF_DEVICE(size_t ind, auto dX, auto dY) {
+      dY(ind) = dX(ind);
+      dX(ind) = dY(ind) + 1.0;
+    };
+    // fprintf(stderr, "End loop %ld\n", i);
+  }
+  // fprintf(stderr, "OVER...\n");
 
-    ctx.finalize();
+  ctx.finalize();
 }

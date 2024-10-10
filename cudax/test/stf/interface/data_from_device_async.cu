@@ -13,28 +13,33 @@
 using namespace cuda::experimental::stf;
 
 template <typename T>
-__global__ void axpy(int n, T a, T* x, T* y) {
-    int tid = blockIdx.x * blockDim.x + threadIdx.x;
-    int nthreads = gridDim.x * blockDim.x;
+__global__ void axpy(int n, T a, T* x, T* y)
+{
+  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
+  int nthreads = gridDim.x * blockDim.x;
 
-    for (int ind = tid; ind < n; ind += nthreads) {
-        y[ind] += a * x[ind];
-    }
+  for (int ind = tid; ind < n; ind += nthreads)
+  {
+    y[ind] += a * x[ind];
+  }
 }
 
 template <typename T>
-__global__ void setup_vectors(int n, T* x, T* y, T* z) {
-    int tid = blockIdx.x * blockDim.x + threadIdx.x;
-    int nthreads = gridDim.x * blockDim.x;
+__global__ void setup_vectors(int n, T* x, T* y, T* z)
+{
+  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
+  int nthreads = gridDim.x * blockDim.x;
 
-    for (int ind = tid; ind < n; ind += nthreads) {
-        x[ind] = 1.0 * ind;
-        y[ind] = 2.0 * ind - 3.0;
-        z[ind] = 7.0 * ind + 6.0;
-    }
+  for (int ind = tid; ind < n; ind += nthreads)
+  {
+    x[ind] = 1.0 * ind;
+    y[ind] = 2.0 * ind - 3.0;
+    z[ind] = 7.0 * ind + 6.0;
+  }
 }
 
-int main() {
+int main()
+{
 // FIXME
 #if 0
     stream_ctx ctx;
@@ -93,5 +98,5 @@ int main() {
     ctx.finalize();
 #endif
 
-    return 0;
+  return 0;
 }

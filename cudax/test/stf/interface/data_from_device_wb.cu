@@ -18,52 +18,61 @@ using namespace cuda::experimental::stf;
  */
 
 template <typename T>
-__global__ void setup(slice<T> s) {
-    int tid = blockIdx.x * blockDim.x + threadIdx.x;
-    int nthreads = gridDim.x * blockDim.x;
+__global__ void setup(slice<T> s)
+{
+  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
+  int nthreads = gridDim.x * blockDim.x;
 
-    for (int ind = tid; ind < s.size(); ind += nthreads) {
-        s(ind) = 1.0 * ind;
-    }
+  for (int ind = tid; ind < s.size(); ind += nthreads)
+  {
+    s(ind) = 1.0 * ind;
+  }
 }
 
 template <typename T>
-__global__ void check(T* x, size_t n) {
-    int tid = blockIdx.x * blockDim.x + threadIdx.x;
-    int nthreads = gridDim.x * blockDim.x;
+__global__ void check(T* x, size_t n)
+{
+  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
+  int nthreads = gridDim.x * blockDim.x;
 
-    for (int ind = tid; ind < n; ind += nthreads) {
-        assert(x[ind] == 2.0 * ind + 1.0);
-    }
+  for (int ind = tid; ind < n; ind += nthreads)
+  {
+    assert(x[ind] == 2.0 * ind + 1.0);
+  }
 }
 
 template <typename Ctx>
-void run() {
-    Ctx ctx;
-    const size_t n = 12;
+void run()
+{
+  Ctx ctx;
+  const size_t n = 12;
 
-    double* dX;
-    cuda_safe_call(cudaMalloc((void**) &dX, n * sizeof(double)));
+  double* dX;
+  cuda_safe_call(cudaMalloc((void**) &dX, n * sizeof(double)));
 
-    // We here provide device addresses and memory node 1 (which is assumed to
-    // be device 0)
-    auto handle_X = ctx.logical_data(make_slice(dX, n), data_place::device(0));
+  // We here provide device addresses and memory node 1 (which is assumed to
+  // be device 0)
+  auto handle_X = ctx.logical_data(make_slice(dX, n), data_place::device(0));
 
-    ctx.task(handle_X.write())->*[&](cudaStream_t stream, auto X) { setup<<<16, 128, 0, stream>>>(X); };
+  ctx.task(handle_X.write())->*[&](cudaStream_t stream, auto X) {
+    setup<<<16, 128, 0, stream>>>(X);
+  };
 
-    ctx.host_launch(handle_X.rw())->*[&](auto X) {
-        for (int ind = 0; ind < n; ind++) {
-            X(ind) = 2.0 * X(ind) + 1.0;
-        }
-    };
+  ctx.host_launch(handle_X.rw())->*[&](auto X) {
+    for (int ind = 0; ind < n; ind++)
+    {
+      X(ind) = 2.0 * X(ind) + 1.0;
+    }
+  };
 
-    ctx.finalize();
+  ctx.finalize();
 
-    // Check if data was properly written-back with a blocking kernel
-    check<<<16, 128>>>(dX, n);
+  // Check if data was properly written-back with a blocking kernel
+  check<<<16, 128>>>(dX, n);
 }
 
-int main() {
-    run<stream_ctx>();
-    run<graph_ctx>();
+int main()
+{
+  run<stream_ctx>();
+  run<graph_ctx>();
 }

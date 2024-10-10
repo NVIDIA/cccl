@@ -19,59 +19,66 @@
 using namespace cuda::experimental::stf;
 
 // Compute which part ID has the item at position "index"
-__host__ __device__ int ref_tiling(size_t index, size_t tile_size, size_t nparts) {
-    // in which tile is this ?
-    size_t tile_id = index / tile_size;
+__host__ __device__ int ref_tiling(size_t index, size_t tile_size, size_t nparts)
+{
+  // in which tile is this ?
+  size_t tile_id = index / tile_size;
 
-    // part which owns this tile
-    return (tile_id % nparts);
+  // part which owns this tile
+  return (tile_id % nparts);
 }
 
-int main() {
-    stream_ctx ctx;
+int main()
+{
+  stream_ctx ctx;
 
-    const size_t nparts = 4;
-    const size_t tile_size = 8;
+  const size_t nparts    = 4;
+  const size_t tile_size = 8;
 
-    // Be sure to pick a number that is not a divisor to stress the tiling operator
-    const size_t N = nparts * 3 * tile_size + 7;
+  // Be sure to pick a number that is not a divisor to stress the tiling operator
+  const size_t N = nparts * 3 * tile_size + 7;
 
-    double Y[N];
+  double Y[N];
 
-    auto ly = ctx.logical_data(Y);
+  auto ly = ctx.logical_data(Y);
 
-    // Init Y
-    ctx.parallel_for(ly.shape(), ly.write())->*[=] CUDASTF_DEVICE(size_t pos, auto sy) { sy(pos) = -1.0; };
+  // Init Y
+  ctx.parallel_for(ly.shape(), ly.write())->*[=] CUDASTF_DEVICE(size_t pos, auto sy) {
+    sy(pos) = -1.0;
+  };
 
-    /*
-     * We apply a tiling operator on the shape of ly, to work on subsets of ly.
-     * For each subset, we put the id of the subset in the corresponding
-     * entries of Y
-     *
-     * Note that these tasks are serialized as they perform a rw() on the
-     * logical data as a whole.
-     */
-    for (size_t part_id = 0; part_id < nparts; part_id++) {
-        ctx.parallel_for(tiled<tile_size>(ly.shape(), part_id, nparts), ly.rw())
-                        ->*[=] CUDASTF_DEVICE(size_t pos, auto sy) { sy(pos) = (double) part_id; };
-    }
-
-    bool checked = false;
-    bool* pchecked = &checked;
-
-    /* Check the result on the host */
-    ctx.parallel_for(exec_place::host, ly.shape(), ly.read())->*[=](size_t pos, slice<double> sy) {
-        int expected = ref_tiling(pos, tile_size, nparts);
-        int value = (int) sy(pos);
-        if (expected != value) {
-            printf("POS %ld -> %d (expected %d)\n", pos, value, expected);
-        }
-        assert(expected == value);
-        *pchecked = true;
+  /*
+   * We apply a tiling operator on the shape of ly, to work on subsets of ly.
+   * For each subset, we put the id of the subset in the corresponding
+   * entries of Y
+   *
+   * Note that these tasks are serialized as they perform a rw() on the
+   * logical data as a whole.
+   */
+  for (size_t part_id = 0; part_id < nparts; part_id++)
+  {
+    ctx.parallel_for(tiled<tile_size>(ly.shape(), part_id, nparts), ly.rw())->*[=] CUDASTF_DEVICE(size_t pos, auto sy) {
+      sy(pos) = (double) part_id;
     };
+  }
 
-    ctx.finalize();
+  bool checked   = false;
+  bool* pchecked = &checked;
 
-    // Ensure verification code did occur
-    assert(checked);
+  /* Check the result on the host */
+  ctx.parallel_for(exec_place::host, ly.shape(), ly.read())->*[=](size_t pos, slice<double> sy) {
+    int expected = ref_tiling(pos, tile_size, nparts);
+    int value    = (int) sy(pos);
+    if (expected != value)
+    {
+      printf("POS %ld -> %d (expected %d)\n", pos, value, expected);
+    }
+    assert(expected == value);
+    *pchecked = true;
+  };
+
+  ctx.finalize();
+
+  // Ensure verification code did occur
+  assert(checked);
 }

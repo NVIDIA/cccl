@@ -353,4 +353,3 @@ fn conditional_swap(x: bits[16], y: bits[16], tmp: bits[16]) -> bits[16] {
   literal.917: bits[1] = literal(value=0, id=917)
   ret concat.1269: bits[16] = concat(or.1238, or.1240, or.1242, or.1244, or.1246, or.1248, or.1250, or.1252, or.1254, or.1256, or.1258, or.1260, or.1262, or.1264, or.1266, or.1268, id=1269)
 }
-

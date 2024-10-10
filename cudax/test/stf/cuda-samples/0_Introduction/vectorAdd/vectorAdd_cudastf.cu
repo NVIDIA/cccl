@@ -54,89 +54,98 @@ using namespace cuda::experimental::stf;
  * Computes the vector addition of A and B into C. The 3 vectors have the same
  * number of elements numElements.
  */
-__global__ void vectorAdd(const float* A, const float* B, float* C, int numElements) {
-    int i = blockDim.x * blockIdx.x + threadIdx.x;
+__global__ void vectorAdd(const float* A, const float* B, float* C, int numElements)
+{
+  int i = blockDim.x * blockIdx.x + threadIdx.x;
 
-    if (i < numElements) {
-        C[i] = A[i] + B[i] + 0.0f;
-    }
+  if (i < numElements)
+  {
+    C[i] = A[i] + B[i] + 0.0f;
+  }
 }
 
 template <typename Ctx>
-void run() {
-    Ctx ctx;
-    // Error code to check return values for CUDA calls
-    cudaError_t err = cudaSuccess;
+void run()
+{
+  Ctx ctx;
+  // Error code to check return values for CUDA calls
+  cudaError_t err = cudaSuccess;
 
-    // Print the vector length to be used, and compute its size
-    int numElements = 50000;
-    size_t size = numElements * sizeof(float);
-    // printf("[Vector addition of %d elements]\n", numElements);
+  // Print the vector length to be used, and compute its size
+  int numElements = 50000;
+  size_t size     = numElements * sizeof(float);
+  // printf("[Vector addition of %d elements]\n", numElements);
 
-    // Allocate the host input vector A
-    float* h_A = (float*) malloc(size);
+  // Allocate the host input vector A
+  float* h_A = (float*) malloc(size);
 
-    // Allocate the host input vector B
-    float* h_B = (float*) malloc(size);
+  // Allocate the host input vector B
+  float* h_B = (float*) malloc(size);
 
-    // Allocate the host output vector C
-    float* h_C = (float*) malloc(size);
+  // Allocate the host output vector C
+  float* h_C = (float*) malloc(size);
 
-    // Verify that allocations succeeded
-    if (h_A == NULL || h_B == NULL || h_C == NULL) {
-        fprintf(stderr, "Failed to allocate host vectors!\n");
+  // Verify that allocations succeeded
+  if (h_A == NULL || h_B == NULL || h_C == NULL)
+  {
+    fprintf(stderr, "Failed to allocate host vectors!\n");
+    exit(EXIT_FAILURE);
+  }
+
+  // Initialize the host input vectors
+  for (int i = 0; i < numElements; ++i)
+  {
+    h_A[i] = rand() / (float) RAND_MAX;
+    h_B[i] = rand() / (float) RAND_MAX;
+  }
+
+  auto A_handle = ctx.logical_data(h_A, numElements);
+  auto B_handle = ctx.logical_data(h_B, numElements);
+  auto C_handle = ctx.logical_data(h_C, numElements);
+
+  auto t = ctx.task(A_handle.read(), B_handle.read(), C_handle.rw());
+  t->*[&](cudaStream_t stream, auto d_A, auto d_B, auto d_C) {
+    // Launch the Vector Add CUDA Kernel
+    int threadsPerBlock = 256;
+    int blocksPerGrid   = (numElements + threadsPerBlock - 1) / threadsPerBlock;
+    // printf("CUDA kernel launch with %d blocks of %d threads\n", blocksPerGrid, threadsPerBlock);
+    vectorAdd<<<blocksPerGrid, threadsPerBlock, 0, stream>>>(
+      d_A.data_handle(), d_B.data_handle(), d_C.data_handle(), numElements);
+    err = cudaGetLastError();
+
+    if (err != cudaSuccess)
+    {
+      fprintf(stderr, "Failed to launch vectorAdd kernel (error code %s)!\n", cudaGetErrorString(err));
+      exit(EXIT_FAILURE);
+    }
+  };
+
+  auto t_host = ctx.host_launch(A_handle.read(), B_handle.read(), C_handle.read());
+  t_host->*[&](auto, auto, auto) {
+    // Verify that the result vector is correct
+    for (int i = 0; i < numElements; ++i)
+    {
+      if (fabs(h_A[i] + h_B[i] - h_C[i]) > 1e-5)
+      {
+        fprintf(stderr, "Result verification failed at element %d!\n", i);
         exit(EXIT_FAILURE);
+      }
     }
+  };
 
-    // Initialize the host input vectors
-    for (int i = 0; i < numElements; ++i) {
-        h_A[i] = rand() / (float) RAND_MAX;
-        h_B[i] = rand() / (float) RAND_MAX;
-    }
+  ctx.finalize();
 
-    auto A_handle = ctx.logical_data(h_A, numElements);
-    auto B_handle = ctx.logical_data(h_B, numElements);
-    auto C_handle = ctx.logical_data(h_C, numElements);
-
-    auto t = ctx.task(A_handle.read(), B_handle.read(), C_handle.rw());
-    t->*[&](cudaStream_t stream, auto d_A, auto d_B, auto d_C) {
-        // Launch the Vector Add CUDA Kernel
-        int threadsPerBlock = 256;
-        int blocksPerGrid = (numElements + threadsPerBlock - 1) / threadsPerBlock;
-        // printf("CUDA kernel launch with %d blocks of %d threads\n", blocksPerGrid, threadsPerBlock);
-        vectorAdd<<<blocksPerGrid, threadsPerBlock, 0, stream>>>(
-                d_A.data_handle(), d_B.data_handle(), d_C.data_handle(), numElements);
-        err = cudaGetLastError();
-
-        if (err != cudaSuccess) {
-            fprintf(stderr, "Failed to launch vectorAdd kernel (error code %s)!\n", cudaGetErrorString(err));
-            exit(EXIT_FAILURE);
-        }
-    };
-
-    auto t_host = ctx.host_launch(A_handle.read(), B_handle.read(), C_handle.read());
-    t_host->*[&](auto, auto, auto) {
-        // Verify that the result vector is correct
-        for (int i = 0; i < numElements; ++i) {
-            if (fabs(h_A[i] + h_B[i] - h_C[i]) > 1e-5) {
-                fprintf(stderr, "Result verification failed at element %d!\n", i);
-                exit(EXIT_FAILURE);
-            }
-        }
-    };
-
-    ctx.finalize();
-
-    // Free host memory
-    free(h_A);
-    free(h_B);
-    free(h_C);
+  // Free host memory
+  free(h_A);
+  free(h_B);
+  free(h_C);
 }
 
 /**
  * Host main routine
  */
-int main(void) {
-    run<stream_ctx>();
-    run<graph_ctx>();
+int main(void)
+{
+  run<stream_ctx>();
+  run<graph_ctx>();
 }

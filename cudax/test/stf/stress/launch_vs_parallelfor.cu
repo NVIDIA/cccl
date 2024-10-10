@@ -13,7 +13,6 @@
 #include "cudastf/__stf/stream/stream_ctx.h"
 #include "cudastf/__stf/utility/stopwatch.h"
 #include "cudastf/stf.h"
-
 #include <stdio.h>
 #include <time.h>
 
@@ -21,85 +20,105 @@
 
 using namespace cuda::experimental::stf;
 
-int main(int argc, char** argv) {
-    stream_ctx ctx;
+int main(int argc, char** argv)
+{
+  stream_ctx ctx;
 
-    int N0 = 128;
-    if (argc > 2) {
-        N0 = atoi(argv[2]);
-    }
+  int N0 = 128;
+  if (argc > 2)
+  {
+    N0 = atoi(argv[2]);
+  }
 
-    // fprintf(stderr, "Using %d...\n", N0);
+  // fprintf(stderr, "Using %d...\n", N0);
 
-    size_t N = size_t(N0) * 1024 * 1024;
+  size_t N = size_t(N0) * 1024 * 1024;
 
 #if 0
     auto number_devices = 1;
     auto all_devs = exec_place::repeat<blocked_partition>(exec_place::device(0), number_devices);
 #else
-    auto all_devs = exec_place::all_devices();
+  auto all_devs = exec_place::all_devices();
 #endif
 
-    data_place cdp;
-    // if (argc > 2) {
-    //     switch (atoi(argv[2])) {
-    //     case 0: cdp = data_place::composite(blocked_partition(), all_devs); break;
-    //     case 1: cdp = data_place::managed; break;
-    //     case 2: cdp = data_place::device(0); break;
-    //     case 3: cdp = data_place::host; break;
-    //     default: abort();
-    //     }
-    // } else {
-    cdp = data_place::composite(blocked_partition(), all_devs);
-    // }
+  data_place cdp;
+  // if (argc > 2) {
+  //     switch (atoi(argv[2])) {
+  //     case 0: cdp = data_place::composite(blocked_partition(), all_devs); break;
+  //     case 1: cdp = data_place::managed; break;
+  //     case 2: cdp = data_place::device(0); break;
+  //     case 3: cdp = data_place::host; break;
+  //     default: abort();
+  //     }
+  // } else {
+  cdp = data_place::composite(blocked_partition(), all_devs);
+  // }
 
-    fprintf(stderr, "data place: %s\n", cdp.to_string().c_str());
+  fprintf(stderr, "data place: %s\n", cdp.to_string().c_str());
 
-    // data_place cdp = data_place::device(0);
-    // data_place cdp = data_place::managed;
+  // data_place cdp = data_place::device(0);
+  // data_place cdp = data_place::managed;
 
-    auto data_logical = ctx.logical_data<int>(N);
-    // initialize centroids
-    ctx.parallel_for(blocked_partition(), all_devs, data_logical.shape(), data_logical.write(cdp))
-                    ->*[=] CUDASTF_DEVICE(size_t ind, auto data) { data(ind) = 0; };
-    int cur_iter = 1;
+  auto data_logical = ctx.logical_data<int>(N);
+  // initialize centroids
+  ctx.parallel_for(blocked_partition(), all_devs, data_logical.shape(), data_logical.write(cdp))
+      ->*[=] CUDASTF_DEVICE(size_t ind, auto data) {
+            data(ind) = 0;
+          };
+  int cur_iter = 1;
 
-    const char* const method = argc >= 2 ? argv[1] : "launch-partition";
+  const char* const method = argc >= 2 ? argv[1] : "launch-partition";
 
-    stopwatch sw(stopwatch::autostart, ctx.task_fence());
+  stopwatch sw(stopwatch::autostart, ctx.task_fence());
 
-    if (strcmp(method, "launch-partition") == 0) {
-        for (cur_iter = 1; cur_iter < MAX_ITER; ++cur_iter) {
-            ctx.launch(all_devs, data_logical.write(cdp)).set_symbol("launch assignment")
-                            ->*[=] CUDASTF_DEVICE(auto&& t, auto&& data) {
-                                    for (auto ind: t.apply_partition(shape(data))) {
-                                        data(ind) = 0;
-                                    }
-                                };
-        }
-    } else if (strcmp(method, "launch") == 0) {
-        for (cur_iter = 1; cur_iter < MAX_ITER; ++cur_iter) {
-            ctx.launch(all_devs, data_logical.rw(cdp))->*[=] CUDASTF_DEVICE(auto t, auto data) {};
-        }
-    } else if (strcmp(method, "parallel") == 0) {
-        for (cur_iter = 1; cur_iter < MAX_ITER; ++cur_iter) {
-            ctx.parallel_for(blocked_partition(), all_devs, data_logical.shape(), data_logical.rw(cdp))
-                            ->*[=] CUDASTF_DEVICE(size_t ind, auto data) {};
-        }
-    } else if (strcmp(method, "parallel-indexed") == 0) {
-        for (cur_iter = 1; cur_iter < MAX_ITER; ++cur_iter) {
-            ctx.parallel_for(blocked_partition(), all_devs, data_logical.shape(), data_logical.rw(cdp))
-                            .set_symbol("parallel for assignment")
-                            ->*[=] CUDASTF_DEVICE(size_t ind, auto data) { data(ind) = 0; };
-        }
-    } else {
-        fprintf(stderr, "Must choose one of launch-partition, parallel-indexed, launch, parallel\n");
-        return 1;
+  if (strcmp(method, "launch-partition") == 0)
+  {
+    for (cur_iter = 1; cur_iter < MAX_ITER; ++cur_iter)
+    {
+      ctx.launch(all_devs, data_logical.write(cdp)).set_symbol("launch assignment")
+          ->*[=] CUDASTF_DEVICE(auto&& t, auto&& data) {
+                for (auto ind : t.apply_partition(shape(data)))
+                {
+                  data(ind) = 0;
+                }
+              };
     }
+  }
+  else if (strcmp(method, "launch") == 0)
+  {
+    for (cur_iter = 1; cur_iter < MAX_ITER; ++cur_iter)
+    {
+      ctx.launch(all_devs, data_logical.rw(cdp))->*[=] CUDASTF_DEVICE(auto t, auto data) {};
+    }
+  }
+  else if (strcmp(method, "parallel") == 0)
+  {
+    for (cur_iter = 1; cur_iter < MAX_ITER; ++cur_iter)
+    {
+      ctx.parallel_for(blocked_partition(), all_devs, data_logical.shape(), data_logical.rw(cdp))
+          ->*[=] CUDASTF_DEVICE(size_t ind, auto data) {};
+    }
+  }
+  else if (strcmp(method, "parallel-indexed") == 0)
+  {
+    for (cur_iter = 1; cur_iter < MAX_ITER; ++cur_iter)
+    {
+      ctx.parallel_for(blocked_partition(), all_devs, data_logical.shape(), data_logical.rw(cdp))
+          .set_symbol("parallel for assignment")
+          ->*[=] CUDASTF_DEVICE(size_t ind, auto data) {
+                data(ind) = 0;
+              };
+    }
+  }
+  else
+  {
+    fprintf(stderr, "Must choose one of launch-partition, parallel-indexed, launch, parallel\n");
+    return 1;
+  }
 
-    sw.stop(ctx.task_fence());
+  sw.stop(ctx.task_fence());
 
-    ctx.finalize();
+  ctx.finalize();
 
-    printf("Method: %s, elapsed: %f ms\n", argv[1], sw.elapsed().count());
+  printf("Method: %s, elapsed: %f ms\n", argv[1], sw.elapsed().count());
 }

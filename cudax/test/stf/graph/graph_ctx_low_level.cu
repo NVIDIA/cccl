@@ -17,35 +17,38 @@
 
 using namespace cuda::experimental::stf;
 
-int main(int argc, char** argv) {
-    graph_ctx ctx;
+int main(int argc, char** argv)
+{
+  graph_ctx ctx;
 
-    double X[1024], Y[1024];
-    auto handle_X = ctx.logical_data(X);
-    auto handle_Y = ctx.logical_data(Y);
+  double X[1024], Y[1024];
+  auto handle_X = ctx.logical_data(X);
+  auto handle_Y = ctx.logical_data(Y);
 
-    for (int k = 0; k < 10; k++) {
-        graph_task<> t = ctx.task();
-        t.add_deps(handle_X.rw());
-        t.start();
-        cudaGraphNode_t n;
-        cuda_safe_call(cudaGraphAddEmptyNode(&n, t.get_graph(), nullptr, 0));
-        t.end();
-    }
+  for (int k = 0; k < 10; k++)
+  {
+    graph_task<> t = ctx.task();
+    t.add_deps(handle_X.rw());
+    t.start();
+    cudaGraphNode_t n;
+    cuda_safe_call(cudaGraphAddEmptyNode(&n, t.get_graph(), nullptr, 0));
+    t.end();
+  }
 
-    graph_task<> t2 = ctx.task();
-    t2.add_deps(handle_X.read(), handle_Y.rw());
-    t2.start();
-    cudaGraphNode_t n2;
-    cuda_safe_call(cudaGraphAddEmptyNode(&n2, t2.get_graph(), nullptr, 0));
-    t2.end();
+  graph_task<> t2 = ctx.task();
+  t2.add_deps(handle_X.read(), handle_Y.rw());
+  t2.start();
+  cudaGraphNode_t n2;
+  cuda_safe_call(cudaGraphAddEmptyNode(&n2, t2.get_graph(), nullptr, 0));
+  t2.end();
 
-    ctx.submit();
+  ctx.submit();
 
-    if (argc > 1) {
-        std::cout << "Generating DOT output in " << argv[1] << std::endl;
-        ctx.print_to_dot(argv[1]);
-    }
+  if (argc > 1)
+  {
+    std::cout << "Generating DOT output in " << argv[1] << std::endl;
+    ctx.print_to_dot(argv[1]);
+  }
 
-    ctx.finalize();
+  ctx.finalize();
 }

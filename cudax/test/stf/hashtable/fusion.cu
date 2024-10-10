@@ -15,45 +15,50 @@ using namespace cuda::experimental::stf;
 
 // Iterate over every item in the hashtableA, and add them to B
 
-__global__ void gpu_merge_hashtable(hashtable A, const hashtable B) {
-    unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
-    while (threadid < kHashTableCapacity) {
-        if (B.addr[threadid].key != kEmpty) {
-            uint32_t value = B.addr[threadid].value;
-            if (value != kEmpty) {
-                //    printf("INSERTING key %d value %d\n", pHashTableB[threadid].key, value);
-                A.insert(B.addr[threadid]);
-            }
-        }
-        threadid += blockDim.x * gridDim.x;
+__global__ void gpu_merge_hashtable(hashtable A, const hashtable B)
+{
+  unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
+  while (threadid < kHashTableCapacity)
+  {
+    if (B.addr[threadid].key != kEmpty)
+    {
+      uint32_t value = B.addr[threadid].value;
+      if (value != kEmpty)
+      {
+        //    printf("INSERTING key %d value %d\n", pHashTableB[threadid].key, value);
+        A.insert(B.addr[threadid]);
+      }
     }
+    threadid += blockDim.x * gridDim.x;
+  }
 }
 
-int main() {
-    stream_ctx ctx;
+int main()
+{
+  stream_ctx ctx;
 
-    hashtable A;
-    A.insert(KeyValue(107, 4));
-    A.insert(KeyValue(108, 6));
+  hashtable A;
+  A.insert(KeyValue(107, 4));
+  A.insert(KeyValue(108, 6));
 
-    hashtable B;
-    B.insert(KeyValue(7, 14));
-    B.insert(KeyValue(8, 16));
+  hashtable B;
+  B.insert(KeyValue(7, 14));
+  B.insert(KeyValue(8, 16));
 
-    auto lA = ctx.logical_data(A);
-    auto lB = ctx.logical_data(B);
+  auto lA = ctx.logical_data(A);
+  auto lB = ctx.logical_data(B);
 
-    ctx.task(lA.rw(), lB.read())->*[](auto stream, auto hA, auto hB) {
-        gpu_merge_hashtable<<<32, 128, 0, stream>>>(hA, hB);
-        cuda_safe_call(cudaGetLastError());
-    };
+  ctx.task(lA.rw(), lB.read())->*[](auto stream, auto hA, auto hB) {
+    gpu_merge_hashtable<<<32, 128, 0, stream>>>(hA, hB);
+    cuda_safe_call(cudaGetLastError());
+  };
 
-    ctx.host_launch(lA.read())->*[](auto hA) {
-        EXPECT(hA.get(107) == 4);
-        EXPECT(hA.get(108) == 6);
-        EXPECT(hA.get(7) == 14);
-        EXPECT(hA.get(8) == 16);
-    };
+  ctx.host_launch(lA.read())->*[](auto hA) {
+    EXPECT(hA.get(107) == 4);
+    EXPECT(hA.get(108) == 6);
+    EXPECT(hA.get(7) == 14);
+    EXPECT(hA.get(8) == 16);
+  };
 
-    ctx.finalize();
+  ctx.finalize();
 }

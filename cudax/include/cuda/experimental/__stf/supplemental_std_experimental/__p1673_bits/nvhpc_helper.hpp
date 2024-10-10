@@ -164,11 +164,11 @@ constexpr bool __is_conjugated()
 template <class _Layout, class _Accessor>
 constexpr inline bool __input_supported()
 {
-  return (
-    (__is_supported_layout<_Layout>() || __is_supported_layout_transpose<_Layout>()) // layout supported
-    && (__is_directly_scaled<_Accessor>() || __is_nested_scaled<_Accessor>() || __is_not_scaled<_Accessor>()) // in-place
-                                                                                                              // ops
-    && !__is_nested_transposed<_Layout>() // no nested transposed
+  return ((__is_supported_layout<_Layout>() || __is_supported_layout_transpose<_Layout>()) // layout supported
+          && (__is_directly_scaled<_Accessor>() || __is_nested_scaled<_Accessor>()
+              || __is_not_scaled<_Accessor>()) // in-place
+                                               // ops
+          && !__is_nested_transposed<_Layout>() // no nested transposed
   );
 }
 

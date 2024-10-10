@@ -12,24 +12,30 @@
 
 using namespace cuda::experimental::stf;
 
-void rec_func(exec_place_grid places) {
-    if (places.size() == 1) {
-        // places->print("SINGLE");
-    } else {
-        // places->print("REC");
-        for (int i = 0; i < 2; i++) {
-            // Take every other places from the grid
-            auto half_places = partition_cyclic(places, dim4(2), pos4(i));
-            rec_func(half_places);
-        }
+void rec_func(exec_place_grid places)
+{
+  if (places.size() == 1)
+  {
+    // places->print("SINGLE");
+  }
+  else
+  {
+    // places->print("REC");
+    for (int i = 0; i < 2; i++)
+    {
+      // Take every other places from the grid
+      auto half_places = partition_cyclic(places, dim4(2), pos4(i));
+      rec_func(half_places);
     }
+  }
 }
 
-int main() {
-    auto places = exec_place::all_devices();
-    // places->print("ALL");
+int main()
+{
+  auto places = exec_place::all_devices();
+  // places->print("ALL");
 
-    rec_func(places);
+  rec_func(places);
 
-    return 0;
+  return 0;
 }

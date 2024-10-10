@@ -13,24 +13,30 @@
 
 using namespace cuda::experimental::stf;
 
-__global__ void add(int* ptr, int value) {
-    *ptr = *ptr + value;
+__global__ void add(int* ptr, int value)
+{
+  *ptr = *ptr + value;
 }
 
-int main() {
-    stream_ctx ctx;
+int main()
+{
+  stream_ctx ctx;
 
-    int a = 17;
-    auto handle = ctx.logical_data(make_slice(&a, 1));
-    auto redux_op = std::make_shared<slice_reduction_op_sum<int>>();
-    ctx.task(handle.redux(redux_op))->*[](auto stream, auto s) { add<<<1, 1, 0, stream>>>(s.data_handle(), 42); };
+  int a         = 17;
+  auto handle   = ctx.logical_data(make_slice(&a, 1));
+  auto redux_op = std::make_shared<slice_reduction_op_sum<int>>();
+  ctx.task(handle.redux(redux_op))->*[](auto stream, auto s) {
+    add<<<1, 1, 0, stream>>>(s.data_handle(), 42);
+  };
 
-    ctx.task(handle.rw())->*[](auto stream, auto s) { add<<<1, 1, 0, stream>>>(s.data_handle(), 1); };
+  ctx.task(handle.rw())->*[](auto stream, auto s) {
+    add<<<1, 1, 0, stream>>>(s.data_handle(), 1);
+  };
 
-    ctx.task(exec_place::host, handle.read())->*[](auto stream, auto s) {
-        cuda_safe_call(cudaStreamSynchronize(stream));
-        EXPECT(s(0) == 17 + 42 + 1);
-    };
+  ctx.task(exec_place::host, handle.read())->*[](auto stream, auto s) {
+    cuda_safe_call(cudaStreamSynchronize(stream));
+    EXPECT(s(0) == 17 + 42 + 1);
+  };
 
-    ctx.finalize();
+  ctx.finalize();
 }

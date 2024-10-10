@@ -14,32 +14,38 @@
 using namespace cuda::experimental::stf;
 
 template <typename S>
-__global__ void inc_kernel(S sA) {
-    sA(threadIdx.x)++;
+__global__ void inc_kernel(S sA)
+{
+  sA(threadIdx.x)++;
 }
 
 template <typename Ctx>
-void run() {
-    int A[10] = { 0 };
-    stream_ctx ctx;
+void run()
+{
+  int A[10] = {0};
+  stream_ctx ctx;
 
-    auto l = ctx.logical_data(A);
+  auto l = ctx.logical_data(A);
 
-    for (size_t k = 0; k < 10; k++) {
-        size_t h = l.hash();
-        // fprintf(stderr, "iter %zu : logical data hash %zu ctx.hash %zu\n", k, h, ctx.hash());
+  for (size_t k = 0; k < 10; k++)
+  {
+    size_t h = l.hash();
+    // fprintf(stderr, "iter %zu : logical data hash %zu ctx.hash %zu\n", k, h, ctx.hash());
 
-        ctx.task(l.rw())->*[](cudaStream_t stream, auto sA) { inc_kernel<<<1, 10, 0, stream>>>(sA); };
-    }
-
-    ctx.host_launch(l.read())->*[&](auto /*unused*/) {
-        // fprintf(stderr, "HOST end : logical data hash %zu ctx.hash %zu\n", l.hash(), ctx.hash());
+    ctx.task(l.rw())->*[](cudaStream_t stream, auto sA) {
+      inc_kernel<<<1, 10, 0, stream>>>(sA);
     };
+  }
 
-    ctx.finalize();
+  ctx.host_launch(l.read())->*[&](auto /*unused*/) {
+    // fprintf(stderr, "HOST end : logical data hash %zu ctx.hash %zu\n", l.hash(), ctx.hash());
+  };
+
+  ctx.finalize();
 }
 
-int main() {
-    run<stream_ctx>();
-    run<graph_ctx>();
+int main()
+{
+  run<stream_ctx>();
+  run<graph_ctx>();
 }

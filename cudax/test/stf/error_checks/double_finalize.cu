@@ -13,57 +13,65 @@
  * @brief Ensure an error is detected if we can finalize more than once
  */
 
-#include "cudastf/stf.h"
-
 #include <csignal>
+
+#include "cudastf/stf.h"
 
 using namespace cuda::experimental::stf;
 
 bool should_abort = false;
 
-void cleanupRoutine(int /*unused*/) {
-    if (should_abort) {
-        exit(EXIT_SUCCESS);
-    } else {
-        fprintf(stderr, "Unexpected SIGABRT !\n");
-        exit(EXIT_FAILURE);
-    }
+void cleanupRoutine(int /*unused*/)
+{
+  if (should_abort)
+  {
+    exit(EXIT_SUCCESS);
+  }
+  else
+  {
+    fprintf(stderr, "Unexpected SIGABRT !\n");
+    exit(EXIT_FAILURE);
+  }
 }
 
-int main() {
-    // This test only works when assert() is enabled in
+int main()
+{
+  // This test only works when assert() is enabled in
 #ifndef NDEBUG
-    /* Setup an handler to catch the SIGABRT signal during the programming error */
-    struct sigaction sigabrt_action {};
-    memset(&sigabrt_action, 0, sizeof(sigabrt_action));
-    sigabrt_action.sa_handler = &cleanupRoutine;
+  /* Setup an handler to catch the SIGABRT signal during the programming error */
+  struct sigaction sigabrt_action
+  {};
+  memset(&sigabrt_action, 0, sizeof(sigabrt_action));
+  sigabrt_action.sa_handler = &cleanupRoutine;
 
-    if (sigaction(SIGABRT, &sigabrt_action, nullptr) != 0) {
-        perror("sigaction SIGABRT");
-        exit(EXIT_FAILURE);
-    }
+  if (sigaction(SIGABRT, &sigabrt_action, nullptr) != 0)
+  {
+    perror("sigaction SIGABRT");
+    exit(EXIT_FAILURE);
+  }
 
-    context ctx;
+  context ctx;
 
-    const int n = 12;
-    double X[n];
+  const int n = 12;
+  double X[n];
 
-    for (int ind = 0; ind < n; ind++) {
-        X[ind] = 1.0 * ind;
-    }
+  for (int ind = 0; ind < n; ind++)
+  {
+    X[ind] = 1.0 * ind;
+  }
 
-    // This creates a handle that is implicitly a vector of size n
-    auto lX = ctx.logical_data(X);
+  // This creates a handle that is implicitly a vector of size n
+  auto lX = ctx.logical_data(X);
 
-    ctx.task(lX.rw())->*[](cudaStream_t, auto) { /* no-op */ };
+  ctx.task(lX.rw())->*[](cudaStream_t, auto) { /* no-op */ };
 
-    ctx.finalize();
+  ctx.finalize();
 
-    should_abort = true;
-    // We cannot call sync twice
-    ctx.finalize();
+  should_abort = true;
+  // We cannot call sync twice
+  ctx.finalize();
 
-    assert(0 && "This should not be reached");
-    return EXIT_FAILURE;
+  assert(0 && "This should not be reached");
+  return EXIT_FAILURE;
 #endif
 }

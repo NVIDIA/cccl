@@ -34,4 +34,3 @@ foreach(SRC ${STATIC_ASSERT_TESTS})
     )
     add_dependencies(static_assert ${TARGET})
 endforeach()
-

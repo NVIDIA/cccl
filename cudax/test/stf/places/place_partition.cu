@@ -13,37 +13,40 @@
 
 using namespace cuda::experimental::stf;
 
-void print_partition(async_resources_handle& handle, exec_place place, place_partition_scope scope) {
-    fprintf(stderr, "-----------\n");
-    fprintf(stderr, "PARTITION %s (scope: %s):\n", place.to_string().c_str(),
-            place_partition_scope_to_string(scope).c_str());
-    for (auto sub_place: place_partition(handle, place, scope)) {
-        fprintf(stderr, "[%s] subplace: %s\n", place.to_string().c_str(), sub_place.to_string().c_str());
-    }
+void print_partition(async_resources_handle& handle, exec_place place, place_partition_scope scope)
+{
+  fprintf(stderr, "-----------\n");
+  fprintf(
+    stderr, "PARTITION %s (scope: %s):\n", place.to_string().c_str(), place_partition_scope_to_string(scope).c_str());
+  for (auto sub_place : place_partition(handle, place, scope))
+  {
+    fprintf(stderr, "[%s] subplace: %s\n", place.to_string().c_str(), sub_place.to_string().c_str());
+  }
 
-    fprintf(stderr, "-----------\n");
+  fprintf(stderr, "-----------\n");
 }
 
-int main() {
+int main()
+{
 #if CUDA_VERSION < 12040
-    fprintf(stderr, "Green contexts are not supported by this version of CUDA: skipping test.\n");
-    return 0;
+  fprintf(stderr, "Green contexts are not supported by this version of CUDA: skipping test.\n");
+  return 0;
 #else
-    async_resources_handle handle;
+  async_resources_handle handle;
 
-    print_partition(handle, exec_place::all_devices(), place_partition_scope::cuda_device);
+  print_partition(handle, exec_place::all_devices(), place_partition_scope::cuda_device);
 
-    print_partition(handle, exec_place::all_devices(), place_partition_scope::cuda_stream);
+  print_partition(handle, exec_place::all_devices(), place_partition_scope::cuda_stream);
 
-    print_partition(handle, exec_place::current_device(), place_partition_scope::cuda_stream);
+  print_partition(handle, exec_place::current_device(), place_partition_scope::cuda_stream);
 
-    print_partition(handle, exec_place::current_device(), place_partition_scope::green_context);
-    print_partition(handle, exec_place::current_device(), place_partition_scope::green_context);
+  print_partition(handle, exec_place::current_device(), place_partition_scope::green_context);
+  print_partition(handle, exec_place::current_device(), place_partition_scope::green_context);
 
-    print_partition(handle, exec_place::repeat(exec_place::current_device(), 4), place_partition_scope::green_context);
+  print_partition(handle, exec_place::repeat(exec_place::current_device(), 4), place_partition_scope::green_context);
 
-    print_partition(handle, exec_place::current_device(), place_partition_scope::cuda_device);
+  print_partition(handle, exec_place::current_device(), place_partition_scope::cuda_device);
 
-    print_partition(handle, exec_place::repeat(exec_place::current_device(), 4), place_partition_scope::cuda_stream);
+  print_partition(handle, exec_place::repeat(exec_place::current_device(), 4), place_partition_scope::cuda_stream);
 #endif
 }

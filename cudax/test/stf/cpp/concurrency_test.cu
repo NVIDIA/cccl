@@ -24,59 +24,75 @@ using namespace cuda::experimental::stf;
  * @param nanoseconds how many nanoseconds to sleep
  * @return void
  */
-__global__ void nano_sleep(unsigned long long nanoseconds) {
+__global__ void nano_sleep(unsigned long long nanoseconds)
+{
 #if defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 700)
-    static constexpr auto m = std::numeric_limits<unsigned int>::max();
-    for (;;) {
-        if (nanoseconds > m) {
-            __nanosleep(m);
-            nanoseconds -= m;
-        } else {
-            __nanosleep(static_cast<unsigned int>(nanoseconds));
-            break;
-        }
+  static constexpr auto m = std::numeric_limits<unsigned int>::max();
+  for (;;)
+  {
+    if (nanoseconds > m)
+    {
+      __nanosleep(m);
+      nanoseconds -= m;
     }
+    else
+    {
+      __nanosleep(static_cast<unsigned int>(nanoseconds));
+      break;
+    }
+  }
 #else
-    const clock_t end = clock() + nanoseconds / (1000000000ULL / CLOCKS_PER_SEC);
-    while (clock() < end) {
-        // busy wait
-    }
+  const clock_t end = clock() + nanoseconds / (1000000000ULL / CLOCKS_PER_SEC);
+  while (clock() < end)
+  {
+    // busy wait
+  }
 #endif
 }
 
-void run(context& ctx, int NTASKS, int ms) {
-    int dummy[1];
-    auto handle = ctx.logical_data(dummy);
+void run(context& ctx, int NTASKS, int ms)
+{
+  int dummy[1];
+  auto handle = ctx.logical_data(dummy);
 
-    ctx.task().add_deps(handle.rw())->*[](cudaStream_t stream) { nano_sleep<<<1, 1, 0, stream>>>(0); };
+  ctx.task().add_deps(handle.rw())->*[](cudaStream_t stream) {
+    nano_sleep<<<1, 1, 0, stream>>>(0);
+  };
 
-    for (int iter = 0; iter < 10; iter++) {
-        for (int k = 0; k < NTASKS; k++) {
-            ctx.task().add_deps(handle.read())->*[&](cudaStream_t stream) {
-                nano_sleep<<<1, 1, 0, stream>>>(ms * 1000ULL * 1000ULL);
-            };
-        }
-
-        ctx.task().add_deps(handle.rw())->*[&](cudaStream_t stream) { nano_sleep<<<1, 1, 0, stream>>>(0); };
+  for (int iter = 0; iter < 10; iter++)
+  {
+    for (int k = 0; k < NTASKS; k++)
+    {
+      ctx.task().add_deps(handle.read())->*[&](cudaStream_t stream) {
+        nano_sleep<<<1, 1, 0, stream>>>(ms * 1000ULL * 1000ULL);
+      };
     }
 
-    ctx.finalize();
+    ctx.task().add_deps(handle.rw())->*[&](cudaStream_t stream) {
+      nano_sleep<<<1, 1, 0, stream>>>(0);
+    };
+  }
+
+  ctx.finalize();
 }
 
-int main(int argc, char** argv) {
-    int NTASKS = 256;
-    int ms = 40;
+int main(int argc, char** argv)
+{
+  int NTASKS = 256;
+  int ms     = 40;
 
-    if (argc > 1) {
-        NTASKS = atoi(argv[1]);
-    }
+  if (argc > 1)
+  {
+    NTASKS = atoi(argv[1]);
+  }
 
-    if (argc > 2) {
-        ms = atoi(argv[2]);
-    }
+  if (argc > 2)
+  {
+    ms = atoi(argv[2]);
+  }
 
-    context ctx;
-    run(ctx, NTASKS, ms);
-    ctx = graph_ctx();
-    run(ctx, NTASKS, ms);
+  context ctx;
+  run(ctx, NTASKS, ms);
+  ctx = graph_ctx();
+  run(ctx, NTASKS, ms);
 }

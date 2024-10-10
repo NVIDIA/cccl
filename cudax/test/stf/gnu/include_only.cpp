@@ -13,10 +13,11 @@
 
 using namespace cuda::experimental::stf;
 
-int main() {
-    graph_ctx ctx;
-    ctx.finalize();
+int main()
+{
+  graph_ctx ctx;
+  ctx.finalize();
 
-    stream_ctx ctx2;
-    ctx2.finalize();
+  stream_ctx ctx2;
+  ctx2.finalize();
 }

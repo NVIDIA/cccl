@@ -20,28 +20,32 @@ using namespace cuda::experimental::stf;
 // Static graph ctx
 graph_ctx ctx;
 
-__global__ void dummy() {
-}
+__global__ void dummy() {}
 
-int main(int argc, char** argv) {
-    double X[1024], Y[1024];
-    auto handle_X = ctx.logical_data(X);
-    auto handle_Y = ctx.logical_data(Y);
+int main(int argc, char** argv)
+{
+  double X[1024], Y[1024];
+  auto handle_X = ctx.logical_data(X);
+  auto handle_Y = ctx.logical_data(Y);
 
-    for (int k = 0; k < 10; k++) {
-        ctx.task(handle_X.rw())->*[&](cudaStream_t s, auto /*unused*/) { dummy<<<1, 1, 0, s>>>(); };
-    }
-
-    ctx.task(handle_X.read(), handle_Y.rw())->*[&](cudaStream_t s, auto /*unused*/, auto /*unused*/) {
-        dummy<<<1, 1, 0, s>>>();
+  for (int k = 0; k < 10; k++)
+  {
+    ctx.task(handle_X.rw())->*[&](cudaStream_t s, auto /*unused*/) {
+      dummy<<<1, 1, 0, s>>>();
     };
+  }
 
-    ctx.submit();
+  ctx.task(handle_X.read(), handle_Y.rw())->*[&](cudaStream_t s, auto /*unused*/, auto /*unused*/) {
+    dummy<<<1, 1, 0, s>>>();
+  };
 
-    if (argc > 1) {
-        std::cout << "Generating DOT output in " << argv[1] << std::endl;
-        ctx.print_to_dot(argv[1]);
-    }
+  ctx.submit();
 
-    ctx.finalize();
+  if (argc > 1)
+  {
+    std::cout << "Generating DOT output in " << argv[1] << std::endl;
+    ctx.print_to_dot(argv[1]);
+  }
+
+  ctx.finalize();
 }

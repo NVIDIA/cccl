@@ -15,87 +15,101 @@
  *
  */
 
-#include "cudastf/__stf/stream/stream_ctx.h"
-
 #include <mutex>
 #include <thread>
 
+#include "cudastf/__stf/stream/stream_ctx.h"
+
 using namespace cuda::experimental::stf;
 
-static __global__ void cuda_sleep_kernel(long long int clock_cnt) {
-    long long int start_clock = clock64();
-    long long int clock_offset = 0;
-    while (clock_offset < clock_cnt) {
-        clock_offset = clock64() - start_clock;
-    }
+static __global__ void cuda_sleep_kernel(long long int clock_cnt)
+{
+  long long int start_clock  = clock64();
+  long long int clock_offset = 0;
+  while (clock_offset < clock_cnt)
+  {
+    clock_offset = clock64() - start_clock;
+  }
 }
 
-void cuda_sleep(double ms, cudaStream_t stream) {
-    int device;
-    cudaGetDevice(&device);
+void cuda_sleep(double ms, cudaStream_t stream)
+{
+  int device;
+  cudaGetDevice(&device);
 
-    // cudaDevAttrClockRate: Peak clock frequency in kilohertz;
-    int clock_rate;
-    cudaDeviceGetAttribute(&clock_rate, cudaDevAttrClockRate, device);
+  // cudaDevAttrClockRate: Peak clock frequency in kilohertz;
+  int clock_rate;
+  cudaDeviceGetAttribute(&clock_rate, cudaDevAttrClockRate, device);
 
-    long long int clock_cnt = (long long int) (ms * clock_rate);
-    cuda_sleep_kernel<<<1, 1, 0, stream>>>(clock_cnt);
+  long long int clock_cnt = (long long int) (ms * clock_rate);
+  cuda_sleep_kernel<<<1, 1, 0, stream>>>(clock_cnt);
 }
 
-__global__ void axpy(double a, slice<const double> x, slice<double> y) {
-    int tid = blockIdx.x * blockDim.x + threadIdx.x;
-    int nthreads = gridDim.x * blockDim.x;
+__global__ void axpy(double a, slice<const double> x, slice<double> y)
+{
+  int tid      = blockIdx.x * blockDim.x + threadIdx.x;
+  int nthreads = gridDim.x * blockDim.x;
 
-    for (int i = tid; i < x.size(); i += nthreads) {
-        y(i) += a * x(i);
-    }
+  for (int i = tid; i < x.size(); i += nthreads)
+  {
+    y(i) += a * x(i);
+  }
 }
 
-double X0(int i) {
-    return sin((double) i);
+double X0(int i)
+{
+  return sin((double) i);
 }
 
-double Y0(int i) {
-    return cos((double) i);
+double Y0(int i)
+{
+  return cos((double) i);
 }
 
-void mytask(stream_ctx ctx, int /*id*/, logical_data<slice<double>> lX) {
-    // std::cout << "Thread " << id << " is executing.\n";
+void mytask(stream_ctx ctx, int /*id*/, logical_data<slice<double>> lX)
+{
+  // std::cout << "Thread " << id << " is executing.\n";
 
-    const size_t N = 16;
+  const size_t N = 16;
 
-    double alpha = 3.14;
+  double alpha = 3.14;
 
-    auto lY = ctx.logical_data<double>(N);
-    ctx.task(lY.write())->*[](cudaStream_t, auto) {};
+  auto lY = ctx.logical_data<double>(N);
+  ctx.task(lY.write())->*[](cudaStream_t, auto) {};
 
-    /* Compute Y = Y + alpha X */
-    for (size_t i = 0; i < 10; i++) {
-        ctx.task(lX.read(), lY.rw())->*[&](cudaStream_t s, auto dX, auto dY) {
-            axpy<<<16, 128, 0, s>>>(alpha, dX, dY);
-            cuda_sleep(100.0, s);
-        };
-    }
+  /* Compute Y = Y + alpha X */
+  for (size_t i = 0; i < 10; i++)
+  {
+    ctx.task(lX.read(), lY.rw())->*[&](cudaStream_t s, auto dX, auto dY) {
+      axpy<<<16, 128, 0, s>>>(alpha, dX, dY);
+      cuda_sleep(100.0, s);
+    };
+  }
 }
 
-int main() {
-    stream_ctx ctx;
-    const size_t N = 16;
-    auto lX = ctx.logical_data<double>(N);
-    ctx.task(lX.write())->*[](cudaStream_t, auto) {};
+int main()
+{
+  stream_ctx ctx;
+  const size_t N = 16;
+  auto lX        = ctx.logical_data<double>(N);
+  ctx.task(lX.write())->*[](cudaStream_t, auto) {};
 
-    std::vector<std::thread> threads;
-    // Launch 8 threads.
-    for (int i = 0; i < 10; ++i) {
-        threads.emplace_back(mytask, ctx, i, lX);
-    }
+  std::vector<std::thread> threads;
+  // Launch 8 threads.
+  for (int i = 0; i < 10; ++i)
+  {
+    threads.emplace_back(mytask, ctx, i, lX);
+  }
 
-    // Wait for all threads to complete.
-    for (auto& th: threads) {
-        th.join();
-    }
+  // Wait for all threads to complete.
+  for (auto& th : threads)
+  {
+    th.join();
+  }
 
-    ctx.task(lX.rw())->*[&](cudaStream_t s, auto) { cuda_sleep(100.0, s); };
+  ctx.task(lX.rw())->*[&](cudaStream_t s, auto) {
+    cuda_sleep(100.0, s);
+  };
 
-    ctx.finalize();
+  ctx.finalize();
 }

@@ -554,4 +554,3 @@ fn kernel_sharpen(window: bits[8][9]) -> bits[8] {
   bit_slice.2892: bits[1] = bit_slice(array_index.2884, start=7, width=1, id=2892)
   ret concat.3352: bits[8] = concat(literal.2801, literal.2801, literal.2801, and.3343, or.3345, or.3347, or.3349, or.3351, id=3352)
 }
-
