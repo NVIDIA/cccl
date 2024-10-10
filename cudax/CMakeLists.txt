@@ -16,6 +16,8 @@ endif()
 
 option(cudax_ENABLE_HEADER_TESTING "Test that CUDA Experimental's public headers compile." ON)
 option(cudax_ENABLE_TESTING "Build CUDA Experimental's tests." ON)
+option(cudax_ENABLE_EXAMPLES "Build CUDA Experimental's tests." ON)
+option(cudax_ENABLE_CUDASTF_BOUNDSCHECK "Enable bounds checks for STF targets." ON)
 
 include(cmake/cudaxBuildCompilerTargets.cmake)
 include(cmake/cudaxBuildTargetList.cmake)
@@ -28,7 +30,9 @@ if (cudax_ENABLE_HEADER_TESTING)
 endif()
 
 if (cudax_ENABLE_TESTING)
-  include(CTest)
-  enable_testing() # Must be in root directory
   add_subdirectory(test)
+endif()
+
+if (cudax_ENABLE_EXAMPLES)
+  add_subdirectory(examples)
 endif()

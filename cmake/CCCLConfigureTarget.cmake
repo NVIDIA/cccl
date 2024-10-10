@@ -23,6 +23,9 @@ function(cccl_configure_target target_name)
         # work.
         CXX_STANDARD_REQUIRED ON
         CUDA_STANDARD_REQUIRED ON
+        # Disable compiler extensions:
+        CXX_EXTENSIONS OFF
+        CUDA_EXTENSIONS OFF
     )
 
     get_property(langs GLOBAL PROPERTY ENABLED_LANGUAGES)
