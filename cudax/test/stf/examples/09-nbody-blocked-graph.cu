@@ -12,10 +12,10 @@
  * This file is WIP : it is not compiled automatically yet
  */
 
-#include <random>
-
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
+
+#include <random>
 
 using namespace cuda::experimental::stf;
 

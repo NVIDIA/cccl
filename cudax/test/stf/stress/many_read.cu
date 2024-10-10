@@ -8,9 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <chrono>
-
 #include <cuda/experimental/stf.cuh>
+
+#include <chrono>
 
 using namespace std::chrono;
 using namespace cuda::experimental::stf;

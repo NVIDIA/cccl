@@ -13,9 +13,9 @@
  * @brief Ensure an error is detected if we can finalize more than once
  */
 
-#include <csignal>
-
 #include <cuda/experimental/stf.cuh>
+
+#include <csignal>
 
 using namespace cuda::experimental::stf;
 

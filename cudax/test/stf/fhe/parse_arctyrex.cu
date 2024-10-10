@@ -14,10 +14,10 @@
  *        described with an IR
  */
 
+#include <cuda/experimental/stf.cuh>
+
 #include <fstream>
 #include <map>
-
-#include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;
 

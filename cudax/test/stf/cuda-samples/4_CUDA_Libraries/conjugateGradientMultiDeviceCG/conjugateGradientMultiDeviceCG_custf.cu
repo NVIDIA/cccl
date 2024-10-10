@@ -56,6 +56,7 @@
 // Utilities and system includes
 #include <cuda/experimental/__stf/places/blocked_partition.cuh>
 #include <cuda/experimental/stf.cuh>
+
 #include <cooperative_groups.h>
 #include <cooperative_groups/reduce.h>
 
