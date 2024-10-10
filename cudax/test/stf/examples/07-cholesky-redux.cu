@@ -18,6 +18,7 @@
 
 #include <cuda/experimental/__stf/stream/interfaces/slice_reduction_ops.cuh>
 #include <cuda/experimental/stf.cuh>
+
 #include <nvtx3/nvToolsExt.h>
 
 #define TILED

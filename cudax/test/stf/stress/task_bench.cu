@@ -8,10 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cstdlib> // For rand() and srand()
-
 #include <cuda/experimental/__stf/internal/dot.cuh>
 #include <cuda/experimental/stf.cuh>
+
+#include <cstdlib> // For rand() and srand()
 
 using namespace cuda::experimental::stf;
 

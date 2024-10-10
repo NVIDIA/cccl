@@ -15,10 +15,10 @@
  *
  */
 
+#include <cuda/experimental/__stf/stream/stream_ctx.cuh>
+
 #include <mutex>
 #include <thread>
-
-#include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 
 using namespace cuda::experimental::stf;
 

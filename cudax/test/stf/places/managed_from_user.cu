@@ -16,9 +16,9 @@
  * explicitely created managed memory, and passes it to a logical data.
  */
 
-#include <iostream>
-
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
+
+#include <iostream>
 
 using namespace cuda::experimental::stf;
 

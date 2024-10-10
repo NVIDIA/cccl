@@ -14,9 +14,9 @@
  *        different context
  */
 
-#include <csignal>
-
 #include <cuda/experimental/stf.cuh>
+
+#include <csignal>
 
 using namespace cuda::experimental::stf;
 

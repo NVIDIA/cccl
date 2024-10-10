@@ -14,9 +14,9 @@
  *        amount of resources in a thread hierarchy spec
  */
 
-#include <csignal>
-
 #include <cuda/experimental/stf.cuh>
+
+#include <csignal>
 
 using namespace cuda::experimental::stf;
 

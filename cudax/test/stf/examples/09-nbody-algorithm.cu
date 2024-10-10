@@ -8,9 +8,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <random>
-
 #include <cuda/experimental/stf.cuh>
+
+#include <random>
 
 using namespace cuda::experimental::stf;
 

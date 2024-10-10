@@ -14,10 +14,10 @@
  *        with the wrong interface type
  */
 
-#include <csignal>
-
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
+
+#include <csignal>
 
 using namespace cuda::experimental::stf;
 

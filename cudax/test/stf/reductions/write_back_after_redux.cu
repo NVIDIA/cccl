@@ -14,10 +14,10 @@
  *        reduction phase during the write-back mechanism
  */
 
-#include <iostream>
-
 #include <cuda/experimental/__stf/stream/interfaces/slice_reduction_ops.cuh>
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
+
+#include <iostream>
 
 using namespace cuda::experimental::stf;
 
