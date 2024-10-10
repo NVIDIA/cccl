@@ -89,7 +89,7 @@ int main()
 
     auto& g_ctx = gc[devid];
     auto cnt    = g_ctx.get_count();
-    for (int i = 0; i < cnt; i++)
+    for (size_t i = 0; i < cnt; i++)
     {
       places.push_back(exec_place::green_ctx(g_ctx.get_view(i)));
     }

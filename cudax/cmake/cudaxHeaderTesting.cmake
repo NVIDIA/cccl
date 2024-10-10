@@ -57,9 +57,9 @@ function(cudax_add_header_test label definitions)
         # FIXME: layout_left::mapping referenced before layout_left:
         cuda/experimental/__stf/supplemental_std_experimental/__p0009_bits/layout_left.hpp
 
-        # FIXME: error: possibly dangling reference to a temporary (stream_task.cuh:114)
-        cuda/experimental/__stf/stream/stream_task.cuh
-        cuda/experimental/__stf/stream/stream_ctx.cuh
+        # # FIXME: error: possibly dangling reference to a temporary (stream_task.cuh:114)
+        # cuda/experimental/__stf/stream/stream_task.cuh
+        # cuda/experimental/__stf/stream/stream_ctx.cuh
     )
     target_link_libraries(${headertest_target} PUBLIC ${cn_target})
     target_compile_definitions(${headertest_target} PRIVATE

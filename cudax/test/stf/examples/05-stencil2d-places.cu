@@ -74,7 +74,7 @@ int main(int argc, char** argv)
   // TODO implement the proper tiled_partitioning along y !
   data_place cdp = data_place::composite(tiled_partition<128>(), all_devs);
 
-  for (int iter = 0; iter < NITER; iter++)
+  for (size_t iter = 0; iter < NITER; iter++)
   {
     // UPDATE Un from Un1
     ctx.task(lUn.rw(cdp), lUn1.read(cdp))->*[&](auto stream, auto sUn, auto sUn1) {
@@ -99,7 +99,7 @@ int main(int argc, char** argv)
         if (vtk_dump)
         {
           char str[32];
-          snprintf(str, 32, "Un_%05d.vtk", iter);
+          snprintf(str, 32, "Un_%05zu.vtk", iter);
           mdspan_to_vtk(sUn, std::string(str));
         }
       };

@@ -1537,7 +1537,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     }
     else
     {
-      if (l1_size > block_size_limit)
+      if (int(l1_size) > block_size_limit)
       {
         fprintf(stderr,
                 "Unsatisfiable spec: Maximum block size %d threads, requested %ld (level 1)\n",
@@ -1553,7 +1553,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     }
 
     // Enforce the resource limits in the number of threads per block
-    assert(l1_size <= block_size_limit);
+    assert(int(l1_size) <= block_size_limit);
 
     assert(l0_size % ndevs == 0);
 
@@ -1589,7 +1589,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     }
     else
     {
-      if (l2_size > block_size_limit)
+      if (int(l2_size) > block_size_limit)
       {
         fprintf(stderr,
                 "Unsatisfiable spec: Maximum block size %d threads, requested %ld (level 2)\n",
@@ -1610,8 +1610,8 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     }
 
     // Enforce the resource limits in the number of threads per block
-    assert(l2_size <= block_size_limit);
-    assert(l0_size <= ndevs);
+    assert(int(l2_size) <= block_size_limit);
+    assert(int(l0_size) <= ndevs);
 
     /* Merge blocks and devices */
     this->add_level({::std::make_pair(hw_scope::device, l0_size)});
