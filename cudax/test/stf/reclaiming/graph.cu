@@ -37,7 +37,7 @@ int main(int argc, char** argv)
 
   graph_ctx ctx;
 
-  logical_data<slice<char>> handles[nblocks];
+  ::std::vector<logical_data<slice<char>>> handles(nblocks);
 
   char* h_buffer = new char[nblocks * block_size];
 

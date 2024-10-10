@@ -36,7 +36,7 @@ int main(int argc, char** argv)
   setenv("MAX_ALLOC_CNT", "2", 1);
 
   graph_ctx ctx;
-  logical_data<slice<char>> handles[nblocks];
+  ::std::vector<logical_data<slice<char>>> handles(nblocks);
   std::vector<char> h_buffer(nblocks * block_size);
 
   for (int i = 0; i < nblocks; i++)

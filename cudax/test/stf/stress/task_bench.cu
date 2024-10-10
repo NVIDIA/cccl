@@ -174,7 +174,7 @@ void bench(context& ctx, test_id id, size_t width, size_t nsteps, size_t repeat_
 {
   std::chrono::steady_clock::time_point start, stop;
 
-  const int b = nsteps;
+  const size_t b = nsteps;
 
   std::vector<logical_data<slice<int>>> data(width * b);
   const size_t data_size = 128;

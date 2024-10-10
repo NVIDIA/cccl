@@ -95,8 +95,8 @@ int main(int argc, char** argv) {
             imageFile << width << " " << height << "\n";
             imageFile << "255\n";
 
-            for (int y = 0; y < height; y++)
-                for (int x = 0; x < width; x++) {
+            for (size_t y = 0; y < height; y++)
+                for (size_t x = 0; x < width; x++) {
                     int iterations = buffer(x, y);
                     // Convert iterations to RGB values
                     unsigned char r = (iterations % 8) * 32;
