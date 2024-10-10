@@ -10,7 +10,7 @@
 
 #include <chrono>
 
-#include "cudastf/stf.h"
+#include <cuda/experimental/stf.cuh>
 
 using namespace std::chrono;
 using namespace cuda::experimental::stf;

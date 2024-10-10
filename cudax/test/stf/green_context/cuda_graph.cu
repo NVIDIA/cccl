@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "cudastf/__stf/places/exec/green_context.h"
-#include "cudastf/stf.h"
+#include <cuda/experimental/__stf/places/exec/green_context.cuh>
+#include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;
 

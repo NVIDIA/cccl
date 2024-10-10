@@ -15,9 +15,9 @@
  *        places and composite data places
  */
 
-#include "cudastf/__stf/graph/graph_ctx.h"
-#include "cudastf/__stf/places/tiled_partition.h"
-#include "cudastf/__stf/stream/stream_ctx.h"
+#include <cuda/experimental/__stf/graph/graph_ctx.cuh>
+#include <cuda/experimental/__stf/places/tiled_partition.cuh>
+#include <cuda/experimental/__stf/stream/stream_ctx.cuh>
 
 using namespace cuda::experimental::stf;
 

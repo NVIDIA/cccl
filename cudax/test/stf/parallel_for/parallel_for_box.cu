@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "cudastf/__stf/stream/stream_ctx.h"
-#include "cudastf/__stf/utility/dimensions.h"
+#include <cuda/experimental/__stf/stream/stream_ctx.cuh>
+#include <cuda/experimental/__stf/utility/dimensions.cuh>
 
 using namespace cuda::experimental::stf;
 

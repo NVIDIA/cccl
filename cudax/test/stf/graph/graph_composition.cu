@@ -13,7 +13,7 @@
  * @brief Generate a library call from nested CUDA graphs generated using algorithms
  */
 
-#include "cudastf/stf.h"
+#include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;
 

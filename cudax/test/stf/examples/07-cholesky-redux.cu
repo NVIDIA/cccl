@@ -16,8 +16,8 @@
  * It also illustrates how we can use CUDASTF to allocate temporary data for CUSOLVER in CUDASTF tasks
  */
 
-#include "cudastf/__stf/stream/interfaces/slice_reduction_ops.h"
-#include "cudastf/stf.h"
+#include <cuda/experimental/__stf/stream/interfaces/slice_reduction_ops.cuh>
+#include <cuda/experimental/stf.cuh>
 #include <nvtx3/nvToolsExt.h>
 
 #define TILED

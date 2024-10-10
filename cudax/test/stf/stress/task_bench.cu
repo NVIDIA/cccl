@@ -10,8 +10,8 @@
 
 #include <cstdlib> // For rand() and srand()
 
-#include "cudastf/__stf/internal/dot.h"
-#include "cudastf/stf.h"
+#include <cuda/experimental/__stf/internal/dot.cuh>
+#include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;
 

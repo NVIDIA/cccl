@@ -13,7 +13,7 @@
  * @brief Ensure a graph context can be defined as a static variable
  */
 
-#include "cudastf/__stf/graph/graph_ctx.h"
+#include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 
 using namespace cuda::experimental::stf;
 

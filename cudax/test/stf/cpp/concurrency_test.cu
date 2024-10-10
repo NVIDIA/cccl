@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "cudastf/stf.h"
+#include <cuda/experimental/stf.cuh>
 
 /*
  * The goal of this test is to ensure that using read access modes actually

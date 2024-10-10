@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "cudastf/__stf/graph/graph_ctx.h"
+#include <cuda/experimental/__stf/graph/graph_ctx.cuh>
 
 /*
  * The goal of this test is to ensure that using read access modes actually

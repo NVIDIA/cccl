@@ -13,7 +13,7 @@
  * @brief This test makes sure we can generate a dot file
  */
 
-#include "cudastf/stf.h"
+#include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;
 

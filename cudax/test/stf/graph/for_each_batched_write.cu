@@ -13,7 +13,7 @@
  * @brief Ensure write-only accesses produces an output with for_each_batched
  */
 
-#include "cudastf/stf.h"
+#include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;
 
