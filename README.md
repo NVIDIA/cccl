@@ -177,7 +177,7 @@ conda install -c conda-forge cccl
 CCCL uses [CMake](https://cmake.org/) for all build and installation infrastructure, including tests as well as targets to link against in other CMake projects.
 Therefore, CMake is the recommended way to integrate CCCL into another project.
 
-For a complete example of how to do this using CMake Package Manager see [our example project](examples/example_project).
+For a complete example of how to do this using CMake Package Manager see [our basic example project](examples/basic).
 
 Other build systems should work, but only CMake is tested.
 Contributions to simplify integrating CCCL into other build systems are welcome.
