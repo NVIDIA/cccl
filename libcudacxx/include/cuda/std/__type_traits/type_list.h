@@ -258,7 +258,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_defer
 {};
 
 // Implementation for indexing into a list of types:
-#  if defined(__cpp_pack_indexing)
+#  if defined(__cpp_pack_indexing) && (_CCCL_STD_VER >= 2026)
 
 template <size_t _Ip, class... _Ts>
 using __type_index_c = _Ts...[_Ip];
