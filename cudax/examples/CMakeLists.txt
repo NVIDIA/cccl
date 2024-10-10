@@ -5,6 +5,6 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   set(config_meta_target ${config_prefix}.examples)
   add_custom_target(${config_meta_target})
   add_dependencies(${config_prefix}.all ${config_meta_target})
-endif()
+endforeach()
 
 add_subdirectory(stf)
