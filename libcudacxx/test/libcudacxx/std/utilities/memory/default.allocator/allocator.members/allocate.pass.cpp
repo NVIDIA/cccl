@@ -23,7 +23,7 @@
 #include "test_macros.h"
 
 #if defined(TEST_COMPILER_MSVC)
-#  pragma warning(disable : 4324)
+#  pragma warning(disable : 4324) // structure was padded due to alignment specifier
 #endif // TEST_COMPILER_MSVC
 
 #ifdef TEST_HAS_NO_ALIGNED_ALLOCATION

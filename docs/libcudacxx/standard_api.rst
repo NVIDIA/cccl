@@ -74,6 +74,8 @@ Feature availability:
       they need to be used similar to type traits as language concepts
       are not available.
 
+-  C++20 ``std::assume_aligned`` in ``<memory>`` is available in C++11.
+
 -  C++20 ``<ranges>`` are available in C++17.
 
    -  all ``<ranges>`` concepts are available in C++17. However, they

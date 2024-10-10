@@ -10,6 +10,7 @@ Utility Library
    utility_library/bitset
    utility_library/expected
    utility_library/functional
+   utility_library/memory
    utility_library/optional
    utility_library/tuple
    utility_library/type_traits
@@ -34,6 +35,9 @@ the information about the individual features for details.
      - Optional value with error channel
      - CCCL 2.3.0 / CUDA 12.4
    * - :ref:`libcudacxx-standard-api-utility-functional`
+     - ``std::assume_aligned``
+     - CCCL 2.9.0 / CUDA 12.9
+   * - :ref:`libcudacxx-standard-api-utility-memory`
      - Function objects and function wrappers
      - libcu++ 1.1.0 / CCCL 2.0.0 / CUDA 11.2
    * - :ref:`libcudacxx-standard-api-utility-optional`

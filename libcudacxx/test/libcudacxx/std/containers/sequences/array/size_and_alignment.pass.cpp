@@ -29,7 +29,7 @@
 TEST_NV_DIAG_SUPPRESS(cuda_demote_unsupported_floating_point)
 
 #if defined(TEST_COMPILER_MSVC)
-#  pragma warning(disable : 4324)
+#  pragma warning(disable : 4324) // structure was padded due to alignment specifier
 #endif // TEST_COMPILER_MSVC
 
 template <class T, cuda::std::size_t Size>

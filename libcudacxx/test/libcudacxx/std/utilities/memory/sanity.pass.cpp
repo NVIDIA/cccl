@@ -12,7 +12,7 @@
 
 // template <ObjectType T> T* addressof(T& r);
 
-#include <cuda/std/__memory_>
+#include <cuda/std/memory>
 
 int main(int, char**)
 {
