@@ -237,13 +237,6 @@ struct agent_select_if_wrapper_t
 /******************************************************************************
  * Kernel entry points
  *****************************************************************************/
-// TODO (elstehle) gird-private constants were introduced in CTK 11.7. The macro is temporarily placed here, do we want
-// to make this a CCCL macro?
-#if defined(_CCCL_CUDACC_BELOW_11_7) || (CUB_PTX_ARCH < 700)
-#  define _CUB_GRID_CONSTANT
-#else
-#  define _CUB_GRID_CONSTANT __grid_constant__
-#endif
 
 /**
  * Select kernel entry point (multi-block)
