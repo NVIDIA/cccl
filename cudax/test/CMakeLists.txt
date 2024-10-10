@@ -120,5 +120,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   cudax_add_catch2_test(test_target green_context ${cn_target}
     green_context/green_ctx_smoke.cu
   )
-
 endforeach()
+
+# STF tests are handled separately:
+add_subdirectory(stf)
