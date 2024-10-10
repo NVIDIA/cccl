@@ -28,10 +28,10 @@ public:
       : ghost_size(ghost_size)
       , block_size(end - beg + 1)
       , array(new T[block_size + 2 * ghost_size])
-      , handle(ctx.logical_data(array.get(), block_size + 2 * ghost_size))
       , left_interface(new T[ghost_size])
-      , left_handle(ctx.logical_data(left_interface.get(), ghost_size))
       , right_interface(new T[ghost_size])
+      , handle(ctx.logical_data(array.get(), block_size + 2 * ghost_size))
+      , left_handle(ctx.logical_data(left_interface.get(), ghost_size))
       , right_handle(ctx.logical_data(right_interface.get(), ghost_size))
   {}
 
@@ -46,8 +46,8 @@ public:
   }
 
 public:
-  size_t block_size;
   size_t ghost_size;
+  size_t block_size;
   std::unique_ptr<T[]> array;
   std::unique_ptr<T[]> left_interface;
   std::unique_ptr<T[]> right_interface;
@@ -55,11 +55,11 @@ public:
   // HANDLE = whole data + boundaries
   logical_data<slice<T>> handle;
 
-  // A piece of data to store the right part of the block
-  logical_data<slice<T>> right_handle;
-
   // A piece of data to store the left part of the block
   logical_data<slice<T>> left_handle;
+
+  // A piece of data to store the right part of the block
+  logical_data<slice<T>> right_handle;
 };
 
 template <typename T>
@@ -173,7 +173,7 @@ int main(int argc, char** argv)
   // Create the graph - it starts out empty
 
   int NITER = 400;
-  for (size_t iter = 0; iter < NITER; iter++)
+  for (int iter = 0; iter < NITER; iter++)
   {
     // UPDATE Un from Un1
     for (size_t b = 0; b < NBLOCKS; b++)

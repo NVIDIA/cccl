@@ -59,7 +59,7 @@ void run()
   };
 
   ctx.host_launch(handle_X.rw())->*[&](auto X) {
-    for (int ind = 0; ind < n; ind++)
+    for (size_t ind = 0; ind < n; ind++)
     {
       X(ind) = 2.0 * X(ind) + 1.0;
     }

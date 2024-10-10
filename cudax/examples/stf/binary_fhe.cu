@@ -24,7 +24,7 @@ class plaintext {
 public:
     plaintext(const context& ctx) : ctx(ctx) {}
 
-    plaintext(context& ctx, std::vector<char> v) : ctx(ctx), values(v) {
+    plaintext(context& ctx, std::vector<char> v) : values(v), ctx(ctx) {
         l = ctx.logical_data(&values[0], values.size());
     }
 
