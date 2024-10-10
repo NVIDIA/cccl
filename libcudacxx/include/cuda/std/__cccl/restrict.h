@@ -30,7 +30,7 @@
 
 #  define _CCCL_RESTRICT __restrict__
 
-#elif !defined(__cplusplus) && __STDC_VERSION__ >= 199901L // ^^^ C++ ^^^ / vvv C99 vvv
+#elif !defined(__cplusplus) && defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L // ^^^ C++ ^^^ / vvv C99 vvv
 
 #  define _CCCL_RESTRICT restrict
 
