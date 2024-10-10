@@ -90,12 +90,10 @@ int main()
   size_t N = 256 * 1024;
   size_t K = 8;
 
-  size_t BATCH_SIZE = 4;
-
   logical_data<slice<double>> lX[K];
   logical_data<slice<double>> lY[K];
 
-  for (int i = 0; i < K; i++)
+  for (size_t i = 0; i < K; i++)
   {
     lX[i] = ctx.logical_data<double>(N);
     lY[i] = ctx.logical_data<double>(N);
