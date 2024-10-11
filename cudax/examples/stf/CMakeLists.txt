@@ -71,10 +71,10 @@ find_package(CUDAToolkit REQUIRED)
 #   target. Useful for post-processing target information.
 # source: The source file for the example.
 # cn_target: The reference cudax target with configuration information.
+# Additional args are passed to cudax_stf_configure_target.
 function(cudax_add_stf_example target_name_var source cn_target)
   cudax_get_target_property(config_dialect ${cn_target} DIALECT)
   cudax_get_target_property(config_prefix ${cn_target} PREFIX)
-
 
   get_filename_component(dir ${source} DIRECTORY)
   get_filename_component(filename ${source} NAME_WE)
@@ -88,31 +88,11 @@ function(cudax_add_stf_example target_name_var source cn_target)
   add_executable(${example_target} ${source})
   cccl_configure_target(${example_target} DIALECT ${config_dialect})
   cudax_clone_target_properties(${example_target} ${cn_target})
+  cudax_stf_configure_target(${example_target} ${ARGN})
   target_link_libraries(${example_target} PRIVATE
-    ${cn_target}
-    CUDA::cudart
-    CUDA::curand
-    CUDA::cuda_driver
     cudax.stf.examples.thrust
     CUB::CUB
   )
-  target_compile_options(${example_target} PRIVATE
-    $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
-    $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>
-  )
-  target_compile_definitions(${example_target} PRIVATE
-    "CUDASTF_PROVIDE_MDSPAN"
-  )
-  set_target_properties(${example_target} PROPERTIES
-    CUDA_RUNTIME_LIBRARY Static
-    CUDA_SEPARABLE_COMPILATION ON
-  )
-
-  if (cudax_ENABLE_CUDASTF_BOUNDSCHECK)
-    target_compile_definitions(${example_target} PRIVATE
-      "CUDASTF_ENABLE_BOUNDSCHECK"
-    )
-  endif()
 
   set(stf_meta_target ${config_prefix}.examples.stf)
   add_dependencies(${stf_meta_target} ${example_target})
@@ -138,12 +118,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
 
   if (cudax_ENABLE_CUDASTF_MATHLIBS)
     foreach(source IN LISTS stf_example_mathlib_sources)
-      cudax_add_stf_example(example_target "${source}" ${cn_target})
-      target_link_libraries(${example_target} PRIVATE
-        CUDA::cublas
-        CUDA::cusolver
-      )
+      cudax_add_stf_example(example_target "${source}" ${cn_target} LINK_MATHLIBS)
     endforeach()
   endif()
-
 endforeach()
