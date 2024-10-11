@@ -107,9 +107,8 @@ public:
  * @extends streamed_interface_of
  */
 template <>
-class streamed_interface_of<void_interface>
+struct streamed_interface_of<void_interface>
 {
-public:
   using type = void_stream_interface;
 };
 
@@ -172,9 +171,8 @@ public:
  * @extends graphed_interface_of
  */
 template <>
-class graphed_interface_of<void_interface>
+struct graphed_interface_of<void_interface>
 {
-public:
   using type = void_graph_interface;
 };
 

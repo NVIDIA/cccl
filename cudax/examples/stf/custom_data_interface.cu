@@ -191,8 +191,7 @@ public:
  * @extends streamed_interface_of
  */
 template <typename T>
-class cuda::experimental::stf::streamed_interface_of<matrix<T>> {
-public:
+struct cuda::experimental::stf::streamed_interface_of<matrix<T>> {
     using type = matrix_stream_interface<T>;
 };
 
