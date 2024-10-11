@@ -143,6 +143,34 @@ set(stf_test_mathlib_sources
   gnu/07-cholesky.cpp
 )
 
+set(stf_unittested_headers
+  cuda/experimental/stf.cuh
+  cuda/experimental/__stf/allocators/buddy_allocator.cuh
+  cuda/experimental/__stf/graph/graph_ctx.cuh
+  cuda/experimental/__stf/internal/async_resources_handle.cuh
+  cuda/experimental/__stf/internal/execution_policy.cuh
+  cuda/experimental/__stf/internal/interpreted_execution_policy.cuh
+  cuda/experimental/__stf/internal/logical_data.cuh
+  cuda/experimental/__stf/internal/parallel_for_scope.cuh
+  cuda/experimental/__stf/internal/slice.cuh
+  cuda/experimental/__stf/internal/thread_hierarchy.cuh
+  cuda/experimental/__stf/places/cyclic_shape.cuh
+  cuda/experimental/__stf/places/inner_shape.cuh
+  cuda/experimental/__stf/places/places.cuh
+  cuda/experimental/__stf/places/tiled_partition.cuh
+  cuda/experimental/__stf/stream/stream_ctx.cuh
+  cuda/experimental/__stf/utility/cartesian_iterator.cuh
+  cuda/experimental/__stf/utility/cuda_safe_call.cuh
+  cuda/experimental/__stf/utility/dimensions.cuh
+  cuda/experimental/__stf/utility/handle.cuh
+  cuda/experimental/__stf/utility/hash.cuh
+  cuda/experimental/__stf/utility/memory.cuh
+  cuda/experimental/__stf/utility/scope_guard.cuh
+  cuda/experimental/__stf/utility/stopwatch.cuh
+  cuda/experimental/__stf/utility/unittest.cuh
+  cuda/experimental/__stf/utility/unstable_unique.cuh
+)
+
 find_package(CUDAToolkit REQUIRED)
 
 ## cudax_add_stf_test
@@ -164,7 +192,7 @@ function(cudax_add_stf_test target_name_var source cn_target)
   endif()
   string(REPLACE "/" "." test_name "stf/${filename}")
 
-  set(test_target ${config_prefix}.tests.${test_name})
+  set(test_target ${config_prefix}.tests.stf.${test_name})
 
   add_executable(${test_target} ${source})
   cccl_configure_target(${test_target} DIALECT ${config_dialect})
@@ -201,20 +229,85 @@ function(cudax_add_stf_test target_name_var source cn_target)
   set(${target_name_var} ${test_target} PARENT_SCOPE)
 endfunction()
 
+## cudax_add_stf_unittest_header
+#
+# Add an stf unittested header executable and register it with ctest.
+#
+# Unittested headers contain a set of tests that are enabled by including
+# `unittest.cuh` and defining `UNITTESTED_FILE`.
+#
+# target_name_var: Variable name to overwrite with the name of the test
+#   target. Useful for post-processing target information.
+# source: The source file for the test.
+# cn_target: The reference cudax target with configuration information.
+function(cudax_add_stf_unittest_header target_name_var source cn_target)
+  cudax_get_target_property(config_dialect ${cn_target} DIALECT)
+  cudax_get_target_property(config_prefix ${cn_target} PREFIX)
+
+  get_filename_component(relative_path ${source} DIRECTORY)
+  get_filename_component(filename ${source} NAME_WE)
+
+  string(REPLACE "cuda/experimental/" "" test_label "${relative_path}/${filename}")
+  string(REPLACE "/" "." test_label "${test_label}")
+  set(test_target "${config_prefix}.tests.stf.unittest_headers.${test_label}")
+
+  set(ut_template "${cudax_SOURCE_DIR}/cmake/stf_header_unittest.in.cu")
+  set(ut_source "${cudax_BINARY_DIR}/unittest_headers/${test_target}.cu")
+  configure_file(${ut_template} ${ut_source} @ONLY)
+
+  add_executable(${test_target} ${ut_source})
+  cccl_configure_target(${test_target} DIALECT ${config_dialect})
+  cudax_clone_target_properties(${test_target} ${cn_target})
+  target_link_libraries(${test_target} PRIVATE
+    ${cn_target}
+    CUDA::cudart
+    CUDA::curand
+    CUDA::cuda_driver
+  )
+  target_compile_options(${test_target} PRIVATE
+    $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
+    $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>
+  )
+  target_compile_definitions(${test_target} PRIVATE
+    "CUDASTF_PROVIDE_MDSPAN"
+  )
+  set_target_properties(${test_target} PROPERTIES
+    CUDA_RUNTIME_LIBRARY Static
+    CUDA_SEPARABLE_COMPILATION ON
+  )
+  if (cudax_ENABLE_CUDASTF_BOUNDSCHECK)
+    target_compile_definitions(${test_target} PRIVATE
+      "CUDASTF_ENABLE_BOUNDSCHECK"
+    )
+  endif()
+
+  set(stf_unittest_headers_meta_target ${config_prefix}.tests.stf.unittest_headers)
+  add_dependencies(${stf_unittest_headers_meta_target} ${test_target})
+
+  add_test(NAME ${test_target} COMMAND ${test_target})
+
+  set(${target_name_var} ${test_target} PARENT_SCOPE)
+endfunction()
+
 # Create tests for each enabled configuration:
 foreach(cn_target IN LISTS cudax_TARGETS)
   cudax_get_target_property(config_prefix ${cn_target} PREFIX)
 
-  # Metatarget for the current configuration's tests:
+  # Metatargets for the current configuration's tests:
   set(config_meta_target ${config_prefix}.tests)
-  set(stf_meta_target ${config_prefix}.tests.stf)
-  add_custom_target(${stf_meta_target})
-  add_dependencies(${config_meta_target} ${stf_meta_target})
+  set(stf_test_meta_target ${config_prefix}.tests.stf)
+  add_custom_target(${stf_test_meta_target})
+  add_dependencies(${config_meta_target} ${stf_test_meta_target})
+  set(stf_unittest_headers_meta_target ${config_prefix}.tests.stf.unittest_headers)
+  add_custom_target(${stf_unittest_headers_meta_target})
+  add_dependencies(${stf_test_meta_target} ${stf_unittest_headers_meta_target})
 
+  # Basic tests:
   foreach(source IN LISTS stf_test_sources)
     cudax_add_stf_test(test_target "${source}" ${cn_target})
   endforeach()
 
+  # Tests with mathlib deps:
   if (cudax_ENABLE_CUDASTF_MATHLIBS)
     foreach(source IN LISTS stf_test_mathlib_sources)
       cudax_add_stf_test(test_target "${source}" ${cn_target})
@@ -224,4 +317,9 @@ foreach(cn_target IN LISTS cudax_TARGETS)
       )
     endforeach()
   endif()
+
+  # Unittested headers
+  foreach(source IN LISTS stf_unittested_headers)
+    cudax_add_stf_unittest_header(test_target "${source}" ${cn_target})
+  endforeach()
 endforeach()
