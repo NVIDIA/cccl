@@ -149,7 +149,7 @@ public:
   }
 
   /// A unique identifier for the event, used to ensure proper event ordering.
-  const unique_id_t unique_prereq_id;
+  mutable unique_id_t unique_prereq_id;
 
   ::std::atomic<int> outbound_deps = 0;
 
