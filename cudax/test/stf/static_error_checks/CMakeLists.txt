@@ -1,36 +1,53 @@
-set(STATIC_ASSERT_TESTS
-    gnu_launch.cpp
-    gnu_parallel_for.cpp
-    static.cu
-    task_prototype.cu
-    stream_task_prototype.cu
-    graph_task_prototype.cu
+set(static_assert_tests
+  gnu_launch.cpp
+  gnu_parallel_for.cpp
+  static.cu
+  task_prototype.cu
+  stream_task_prototype.cu
+  graph_task_prototype.cu
 )
 
-get_property(INCLUDES DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
-list(TRANSFORM INCLUDES PREPEND "-I")
-string(JOIN " " INCLUDES ${INCLUDES})
+## cudax_add_stf_static_assert_test
+#
+# Adds an EXCLUDE_FROM_ALL build target for `source` and a ctest that
+# triggers the compilation and checks for "static assertion" in the output.
+#
+# target_name_var: Variable name to overwrite with the name of the test
+#   target. Useful for post-processing target information.
+# source: The source file for the test.
+# cn_target: The reference cudax target with configuration information.
+# Additional args are passed to cudax_stf_configure_target.
+function(cudax_stf_add_static_assert_test target_name_var source cn_target)
+  cudax_get_target_property(config_dialect ${cn_target} DIALECT)
+  cudax_get_target_property(config_prefix ${cn_target} PREFIX)
 
-add_custom_target(static_assert)
+  get_filename_component(filename ${source} NAME_WE)
 
-foreach(SRC ${STATIC_ASSERT_TESTS})
-    # Specify the executable name and the source files it should compile
-    get_filename_component(TARGET ${SRC} NAME_WE)
-    set(TARGET "static_error_checks.${TARGET}")
+  set(test_target "${config_prefix}.tests.stf.error.${filename}")
 
-    set(cmd "${CMAKE_CUDA_COMPILER} --forward-unknown-to-host-compiler -c ${CMAKE_CURRENT_SOURCE_DIR}/${SRC} ${INCLUDES} ${CMAKE_CUDA_FLAGS} -o /dev/null")
+  add_executable(${test_target} ${source})
+  cccl_configure_target(${test_target} DIALECT ${config_dialect})
+  cudax_clone_target_properties(${test_target} ${cn_target})
+  cudax_stf_configure_target(${test_target} ${ARGN})
+  set_target_properties(${test_target} PROPERTIES
+    EXCLUDE_FROM_ALL true
+    EXCLUDE_FROM_DEFAULT_BUILD true
+  )
 
-    add_custom_target(${TARGET}
-        COMMAND bash -c "${cmd} 2>&1 | grep -q 'static assertion';\
-            R=(\"\${PIPESTATUS[@]}\");\
-            if [ \${R[0]} = 0 ]; then\
-                echo 'Compilation should fail for target \"${target}\". To repro, run: ${cmd}' 1>&2;\
-                false;\
-            elif [ \${R[1]} != 0 ]; then\
-                echo 'Static assertion did not fail for target \"${target}\". To repro, run: ${cmd}' 1>&2;\
-                false;\
-            fi"
-        VERBATIM
-    )
-    add_dependencies(static_assert ${TARGET})
+  add_test(NAME ${test_target}
+    COMMAND ${CMAKE_COMMAND} --build "${CMAKE_BINARY_DIR}"
+                             --target ${test_target}
+                             --config $<CONFIGURATION>
+  )
+  set_tests_properties(${test_target} PROPERTIES
+    PASS_REGULAR_EXPRESSION "static assertion"
+  )
+
+  set(${target_name_var} ${test_target} PARENT_SCOPE)
+endfunction()
+
+foreach(cn_target IN LISTS cudax_TARGETS)
+  foreach(source IN LISTS static_assert_tests)
+    cudax_stf_add_static_assert_test(test_target "${source}" ${cn_target})
+  endforeach()
 endforeach()
