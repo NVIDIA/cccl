@@ -278,3 +278,5 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     cudax_add_stf_unittest_header(test_target "${source}" ${cn_target})
   endforeach()
 endforeach()
+
+add_subdirectory(static_error_checks)
