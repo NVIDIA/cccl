@@ -83,7 +83,7 @@ function(cudax_add_stf_example target_name_var source cn_target)
   endif()
   string(REPLACE "/" "." example_name "stf/${filename}")
 
-  set(example_target ${config_prefix}.examples.${example_name})
+  set(example_target ${config_prefix}.example.${example_name})
 
   add_executable(${example_target} ${source})
   cccl_configure_target(${example_target} DIALECT ${config_dialect})

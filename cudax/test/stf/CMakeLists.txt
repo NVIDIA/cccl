@@ -193,7 +193,7 @@ function(cudax_add_stf_test target_name_var source cn_target)
   endif()
   string(REPLACE "/" "." test_name "${filename}")
 
-  set(test_target ${config_prefix}.tests.stf.${test_name})
+  set(test_target ${config_prefix}.test.stf.${test_name})
 
   add_executable(${test_target} ${source})
   cccl_configure_target(${test_target} DIALECT ${config_dialect})
@@ -229,7 +229,7 @@ function(cudax_add_stf_unittest_header target_name_var source cn_target)
 
   string(REPLACE "cuda/experimental/" "" test_label "${relative_path}/${filename}")
   string(REPLACE "/" "." test_label "${test_label}")
-  set(test_target "${config_prefix}.tests.stf.unittest_headers.${test_label}")
+  set(test_target "${config_prefix}.test.stf.unittest_headers.${test_label}")
 
   set(ut_template "${cudax_SOURCE_DIR}/cmake/stf_header_unittest.in.cu")
   set(ut_source "${cudax_BINARY_DIR}/unittest_headers/${test_target}.cu")
