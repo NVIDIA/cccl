@@ -18,6 +18,7 @@
 #include <cuda/experimental/__stf/places/exec/host/callback_queues.cuh>
 #include <cuda/experimental/__stf/utility/traits.cuh>
 #include <stack>
+#include <cstdio>
 
 #define STATEFUL_CALLBACKS
 
