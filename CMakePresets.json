@@ -64,6 +64,7 @@
         "cudax_ENABLE_TESTING": true,
         "cudax_ENABLE_EXAMPLES": true,
         "cudax_ENABLE_CUDASTF_BOUNDSCHECK": true,
+        "cudax_ENABLE_CUDASTF_DEBUG": false,
         "cudax_ENABLE_CUDASTF_MATHLIBS": false,
         "cudax_ENABLE_DIALECT_CPP17": true,
         "cudax_ENABLE_DIALECT_CPP20": true
@@ -74,9 +75,10 @@
       "displayName": "all-dev debug",
       "inherits": "all-dev",
       "cacheVariables": {
-        "CCCL_ENABLE_BENCHMARKS": false,
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_CUDA_FLAGS": "-G"
+        "CMAKE_CUDA_FLAGS": "-G",
+        "CCCL_ENABLE_BENCHMARKS": false,
+        "cudax_ENABLE_CUDASTF_DEBUG": true
       }
     },
     {
