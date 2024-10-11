@@ -258,13 +258,14 @@
       {                                                              \
         __VA_ARGS__                                                  \
       } noexcept
-#    define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_SAME_AS(_REQ)                   \
-      {                                                                       \
-        _LIBCUDACXX_PP_CAT4(_LIBCUDACXX_PP_EAT_SAME_AS_, _REQ)                \
-      } -> _LIBCUDACXX_PP_EVAL(_LIBCUDACXX_CONCEPT_FRAGMENT_REQS_SAME_AS_AUX, \
-                               _LIBCUDACXX_PP_CAT4(_LIBCUDACXX_CONCEPT_FRAGMENT_REQS_SAME_AS_, _REQ))
+#    define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_SAME_AS(_REQ)       \
+      {                                                           \
+        _LIBCUDACXX_PP_CAT4(_LIBCUDACXX_PP_EAT_SAME_AS_, _REQ)    \
+      } -> _LIBCUDACXX_CONCEPT_VSTD::same_as<_LIBCUDACXX_PP_EVAL( \
+          _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_SAME_AS_AUX,          \
+          _LIBCUDACXX_PP_CAT4(_LIBCUDACXX_CONCEPT_FRAGMENT_REQS_SAME_AS_, _REQ))>
 #    define _LIBCUDACXX_PP_EAT_SAME_AS__Same_as(...)
-#    define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_SAME_AS_AUX(_TYPE, ...) _CUDA_VSTD::same_as<_LIBCUDACXX_PP_EXPAND _TYPE>
+#    define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_SAME_AS_AUX(_TYPE, ...) _LIBCUDACXX_PP_EXPAND _TYPE
 #    define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_SAME_AS__Same_as(...)   (__VA_ARGS__),
 
 #    define _LIBCUDACXX_FRAGMENT(_NAME, ...) _NAME<__VA_ARGS__>
@@ -404,6 +405,10 @@
       }
 #  endif
 
+// So that we can refer to the ::cuda::std namespace below
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_LIBCUDACXX_END_NAMESPACE_STD
+
 namespace _Concept
 {
 template <bool>
@@ -442,7 +447,22 @@ _LIBCUDACXX_INLINE_VAR constexpr int _Requires = 0;
 #  endif
 
 template <class _Tp, class... _Args>
-auto _Make_dependent(_Tp*, _Tag<_Args...>*) -> _Tp;
+_LIBCUDACXX_HIDE_FROM_ABI auto _Make_dependent(_Tp*, _Tag<_Args...>*) -> _Tp;
+
+// We put an alias for _CUDA_VSTD here because of a bug in nvcc <12.2
+// where a requirement such as:
+//
+//  { expression } -> ::concept<type>
+//
+// where ::concept is a fully qualified name, would not compile. The
+// _CUDA_VSTD macro is fully qualified.
+namespace _Vstd = _CUDA_VSTD; // NOLINT(misc-unused-alias-decls)
+
+#  if defined(_CCCL_CUDACC_BELOW_12_2)
+#    define _LIBCUDACXX_CONCEPT_VSTD _Concept::_Vstd // must not be fully qualified
+#  else
+#    define _LIBCUDACXX_CONCEPT_VSTD _CUDA_VSTD
+#  endif
 } // namespace _Concept
 
 #endif // _CCCL_STD_VER > 2011
