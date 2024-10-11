@@ -34,8 +34,8 @@ protected:
   }
 
 public:
-  const cudaGraphNode_t node;
-  size_t epoch;
+  mutable cudaGraphNode_t node;
+  mutable size_t epoch;
 };
 
 using graph_event = handle<graph_event_impl, handle_flags::non_null>;
