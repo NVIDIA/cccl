@@ -64,7 +64,7 @@ public:
   }
 
   template <typename mdspan_shape_t>
-  CUDASTF_HOST_DEVICE static const auto apply(const mdspan_shape_t& in, pos4 place_position, dim4 grid_dims)
+  CUDASTF_HOST_DEVICE static auto apply(const mdspan_shape_t& in, pos4 place_position, dim4 grid_dims)
   {
     constexpr size_t dimensions = mdspan_shape_t::rank();
 
