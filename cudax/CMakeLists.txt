@@ -17,9 +17,14 @@ endif()
 option(cudax_ENABLE_HEADER_TESTING "Test that CUDA Experimental's public headers compile." ON)
 option(cudax_ENABLE_TESTING "Build CUDA Experimental's tests." ON)
 option(cudax_ENABLE_EXAMPLES "Build CUDA Experimental's tests." ON)
-option(cudax_ENABLE_CUDASTF_BOUNDSCHECK "Enable bounds checks for STF targets." ON)
-option(cudax_ENABLE_CUDASTF_DEBUG "Enable additional debugging for STF targets." OFF)
+option(cudax_ENABLE_CUDASTF_BOUNDSCHECK "Enable bounds checks for STF targets. Requires debug build." OFF)
+option(cudax_ENABLE_CUDASTF_DEBUG "Enable additional debugging for STF targets. Requires debug build." OFF)
 option(cudax_ENABLE_CUDASTF_MATHLIBS "Enable STF tests/examples that use cublas/cusolver." OFF)
+
+if ((cudax_ENABLE_CUDASTF_BOUNDSCHECK OR cudax_ENABLE_CUDASTF_DEBUG) AND
+    NOT CMAKE_BUILD_TYPE MATCHES "Debug" AND NOT CMAKE_BUILD_TYPE MATCHES "RelWithDebInfo")
+  message(FATAL_ERROR "cudax_ENABLE_CUDASTF_BOUNDSCHECK and cudax_ENABLE_CUDASTF_DEBUG require a Debug build.")
+endif()
 
 include(cmake/cudaxBuildCompilerTargets.cmake)
 include(cmake/cudaxBuildTargetList.cmake)
