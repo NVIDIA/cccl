@@ -181,6 +181,7 @@ find_package(CUDAToolkit REQUIRED)
 #   target. Useful for post-processing target information.
 # source: The source file for the test.
 # cn_target: The reference cudax target with configuration information.
+# Additional args are passed to cudax_stf_configure_target.
 function(cudax_add_stf_test target_name_var source cn_target)
   cudax_get_target_property(config_dialect ${cn_target} DIALECT)
   cudax_get_target_property(config_prefix ${cn_target} PREFIX)
@@ -197,29 +198,7 @@ function(cudax_add_stf_test target_name_var source cn_target)
   add_executable(${test_target} ${source})
   cccl_configure_target(${test_target} DIALECT ${config_dialect})
   cudax_clone_target_properties(${test_target} ${cn_target})
-  target_link_libraries(${test_target} PRIVATE
-    ${cn_target}
-    CUDA::cudart
-    CUDA::curand
-    CUDA::cuda_driver
-  )
-  target_compile_options(${test_target} PRIVATE
-    $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
-    $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>
-  )
-  target_compile_definitions(${test_target} PRIVATE
-    "CUDASTF_PROVIDE_MDSPAN"
-  )
-  set_target_properties(${test_target} PROPERTIES
-    CUDA_RUNTIME_LIBRARY Static
-    CUDA_SEPARABLE_COMPILATION ON
-  )
-
-  if (cudax_ENABLE_CUDASTF_BOUNDSCHECK)
-    target_compile_definitions(${test_target} PRIVATE
-      "CUDASTF_ENABLE_BOUNDSCHECK"
-    )
-  endif()
+  cudax_stf_configure_target(${test_target} ${ARGN})
 
   set(stf_meta_target ${config_prefix}.tests.stf)
   add_dependencies(${stf_meta_target} ${test_target})
@@ -240,6 +219,7 @@ endfunction()
 #   target. Useful for post-processing target information.
 # source: The source file for the test.
 # cn_target: The reference cudax target with configuration information.
+# Additional args are passed to cudax_stf_configure_target.
 function(cudax_add_stf_unittest_header target_name_var source cn_target)
   cudax_get_target_property(config_dialect ${cn_target} DIALECT)
   cudax_get_target_property(config_prefix ${cn_target} PREFIX)
@@ -258,28 +238,7 @@ function(cudax_add_stf_unittest_header target_name_var source cn_target)
   add_executable(${test_target} ${ut_source})
   cccl_configure_target(${test_target} DIALECT ${config_dialect})
   cudax_clone_target_properties(${test_target} ${cn_target})
-  target_link_libraries(${test_target} PRIVATE
-    ${cn_target}
-    CUDA::cudart
-    CUDA::curand
-    CUDA::cuda_driver
-  )
-  target_compile_options(${test_target} PRIVATE
-    $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
-    $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>
-  )
-  target_compile_definitions(${test_target} PRIVATE
-    "CUDASTF_PROVIDE_MDSPAN"
-  )
-  set_target_properties(${test_target} PROPERTIES
-    CUDA_RUNTIME_LIBRARY Static
-    CUDA_SEPARABLE_COMPILATION ON
-  )
-  if (cudax_ENABLE_CUDASTF_BOUNDSCHECK)
-    target_compile_definitions(${test_target} PRIVATE
-      "CUDASTF_ENABLE_BOUNDSCHECK"
-    )
-  endif()
+  cudax_stf_configure_target(${test_target} ${ARGN})
 
   set(stf_unittest_headers_meta_target ${config_prefix}.tests.stf.unittest_headers)
   add_dependencies(${stf_unittest_headers_meta_target} ${test_target})
@@ -310,11 +269,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   # Tests with mathlib deps:
   if (cudax_ENABLE_CUDASTF_MATHLIBS)
     foreach(source IN LISTS stf_test_mathlib_sources)
-      cudax_add_stf_test(test_target "${source}" ${cn_target})
-      target_link_libraries(${test_target} PRIVATE
-        CUDA::cublas
-        CUDA::cusolver
-      )
+      cudax_add_stf_test(test_target "${source}" ${cn_target} LINK_MATHLIBS)
     endforeach()
   endif()
 

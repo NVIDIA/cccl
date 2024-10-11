@@ -22,6 +22,7 @@ option(cudax_ENABLE_CUDASTF_MATHLIBS "Enable STF tests/examples that use cublas/
 
 include(cmake/cudaxBuildCompilerTargets.cmake)
 include(cmake/cudaxBuildTargetList.cmake)
+include(cmake/cudaxSTFConfigureTarget.cmake)
 
 cudax_build_compiler_targets()
 cudax_build_target_list()
