@@ -115,8 +115,7 @@ struct dispatch_t : PolicyHubT
     ::cuda::std::array extents_div_array   = cub::detail::extents_fast_div_mod(_ext, seq);
     using FastDivModArrayType              = decltype(sub_sizes_div_array);
 
-    auto& kernel =
-      &detail::for_each_in_extents::dynamic_kernel<max_policy_t>(_op, seq, sub_sizes_div_array, extents_div_array);
+    auto& kernel = &detail::for_each_in_extents::dynamic_kernel(_op, seq, sub_sizes_div_array, extents_div_array);
 
     NV_IF_TARGET(NV_IS_HOST,
                  (int _{}; //

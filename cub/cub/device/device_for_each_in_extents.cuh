@@ -65,7 +65,7 @@ public:
   //! A Simple Example
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! The following code snippet demonstrates how to use ForEachInExtent to square each element in a device vector.
+  //! The following code snippet demonstrates how to use ForEachInExtents to square each element in a device vector.
   //!
   //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_api.cu
   //!     :language: c++
@@ -103,7 +103,7 @@ public:
   //! @param[in] stream
   //!   CUDA stream to launch kernels within. Default stream is `0`.
   template <typename IndexType, typename OpType, ::cuda::std::size_t... Extents>
-  CUB_RUNTIME_FUNCTION static cudaError_t ForEachInExtent(
+  CUB_RUNTIME_FUNCTION static cudaError_t ForEachInExtents(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     const ::cuda::std::extents<IndexType, Extents...>& ext,
@@ -117,7 +117,7 @@ public:
       temp_storage_bytes = 1;
       return cudaSuccess;
     }
-    return DeviceForEachInExtents::ForEachInExtent(ext, op, stream);
+    return DeviceForEachInExtents::ForEachInExtents(ext, op, stream);
   }
 
   //! @rst
@@ -166,12 +166,12 @@ public:
   //!   CUDA stream to launch kernels within. Default stream is `0`.
   template <typename IndexType, typename OpType, ::cuda::std::size_t... Extents>
   CUB_RUNTIME_FUNCTION static cudaError_t
-  ForEachInExtent(const ::cuda::std::extents<IndexType, Extents...>& ext, OpType op, cudaStream_t stream = {})
+  ForEachInExtents(const ::cuda::std::extents<IndexType, Extents...>& ext, OpType op, cudaStream_t stream = {})
   {
     using ExtentsType = ::cuda::std::extents<IndexType, Extents...>;
     static_assert(sizeof...(Extents) > 0, "Extents must have at least one dimension");
     // TODO: check dimensions overflows
-    CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceForEachInExtents::ForEachInExtent");
+    CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceForEachInExtents::ForEachInExtents");
     return detail::for_each_in_extents::dispatch_t<ExtentsType, OpType>::dispatch(ext, op, stream);
   }
 };
