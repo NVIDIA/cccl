@@ -1025,6 +1025,9 @@ public:
     return ::std::static_pointer_cast<impl>(exec_place::get_impl());
   }
 
+  // Default constructor
+  exec_place_grid() : exec_place(nullptr) {}
+
   // private:
   exec_place_grid(::std::shared_ptr<impl> p)
       : exec_place(mv(p))
