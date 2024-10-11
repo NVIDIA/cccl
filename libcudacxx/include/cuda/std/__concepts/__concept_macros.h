@@ -390,18 +390,17 @@
         template <class _LIBCUDACXX_REQUIRES_EXPR_TPARAMS _TY>                                      \
         static auto _Well_formed(__VA_ARGS__) _LIBCUDACXX_REQUIRES_EXPR_2
 
-#    define _LIBCUDACXX_REQUIRES_EXPR_2(...)                                                           \
-      ->decltype(_LIBCUDACXX_PP_FOR_EACH(_LIBCUDACXX_CONCEPT_FRAGMENT_REQS_M, __VA_ARGS__) void()) {}  \
-      template <class... Args, class Sig>                                                              \
-      static constexpr auto _Is_satisfied(_Concept::_Tag<Args...>*, Sig*) /*                        */ \
-        -> decltype(!static_cast<Sig*>(&_Self_t::_Well_formed<Args...>))                               \
-      {                                                                                                \
-        return true;                                                                                   \
-      }                                                                                                \
-      static constexpr auto _Is_satisfied(void*, ...) -> bool                                          \
-      {                                                                                                \
-        return false;                                                                                  \
-      }                                                                                                \
+#    define _LIBCUDACXX_REQUIRES_EXPR_2(...)                                                                    \
+      ->decltype(_LIBCUDACXX_PP_FOR_EACH(_LIBCUDACXX_CONCEPT_FRAGMENT_REQS_M, __VA_ARGS__) void()) {}           \
+      template <class... Args, class Sig, class = decltype(static_cast<Sig*>(&_Self_t::_Well_formed<Args...>))> \
+      static constexpr bool _Is_satisfied(_Concept::_Tag<Args...>*, Sig*)                                       \
+      {                                                                                                         \
+        return true;                                                                                            \
+      }                                                                                                         \
+      static constexpr bool _Is_satisfied(void*, ...)                                                           \
+      {                                                                                                         \
+        return false;                                                                                           \
+      }                                                                                                         \
       }
 #  endif
 
