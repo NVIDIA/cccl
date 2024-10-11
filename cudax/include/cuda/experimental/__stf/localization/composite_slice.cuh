@@ -36,6 +36,8 @@ class localized_array
 {
   struct metadata
   {
+    metadata(int dev_, size_t size_, size_t offset_) : alloc_handle{}, dev(dev_), size(size_), offset(offset_) {}
+
     CUmemGenericAllocationHandle alloc_handle;
     int dev;
     size_t size;
@@ -122,10 +124,7 @@ public:
         j++;
       }
 
-      meta.push_back({.alloc_handle = {},
-                      .dev          = grid_pos_to_dev(p),
-                      .size         = j * alloc_granularity_bytes,
-                      .offset       = i * block_size_bytes});
+      meta.emplace_back(grid_pos_to_dev(p), j * alloc_granularity_bytes, i * block_size_bytes);
 
       i += j;
     }
