@@ -191,7 +191,7 @@ function(cudax_add_stf_test target_name_var source cn_target)
   if (dir)
     set(filename "${dir}/${filename}")
   endif()
-  string(REPLACE "/" "." test_name "stf/${filename}")
+  string(REPLACE "/" "." test_name "${filename}")
 
   set(test_target ${config_prefix}.tests.stf.${test_name})
 
