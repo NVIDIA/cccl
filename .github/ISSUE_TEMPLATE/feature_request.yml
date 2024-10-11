@@ -21,9 +21,9 @@ body:
         - Thrust
         - CUB
         - libcu++
-        - Cuda Experimental (cudax)
-        - C Libraries
-        - Python Libraries
+        - CUDA Experimental (cudax)
+        - cuda.cooperative (Python)
+        - cuda.parallel (Python)
         - General CCCL
         - Infrastructure
         - Not sure
