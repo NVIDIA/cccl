@@ -64,6 +64,7 @@
         "cudax_ENABLE_TESTING": true,
         "cudax_ENABLE_EXAMPLES": true,
         "cudax_ENABLE_CUDASTF_BOUNDSCHECK": true,
+        "cudax_ENABLE_CUDASTF_MATHLIBS": false,
         "cudax_ENABLE_DIALECT_CPP17": true,
         "cudax_ENABLE_DIALECT_CPP20": true
       }
