@@ -48,6 +48,19 @@ set(stf_example_mathlib_sources
   linear_algebra/strassen.cu
 )
 
+find_package(cudax) # already found, bring in version info.
+
+find_package(CUB ${cudax_VERSION} EXACT CONFIG
+  NO_DEFAULT_PATH # Only check the explicit path in HINTS:
+  HINTS "${CCCL_SOURCE_DIR}/lib/cmake/cub/"
+)
+
+find_package(Thrust ${cudax_VERSION} EXACT CONFIG
+  NO_DEFAULT_PATH # Only check the explicit path in HINTS:
+  HINTS "${CCCL_SOURCE_DIR}/lib/cmake/thrust/"
+)
+thrust_create_target(cudax.stf.examples.thrust)
+
 find_package(CUDAToolkit REQUIRED)
 
 ## cudax_add_stf_example
@@ -80,6 +93,8 @@ function(cudax_add_stf_example target_name_var source cn_target)
     CUDA::cudart
     CUDA::curand
     CUDA::cuda_driver
+    cudax.stf.examples.thrust
+    CUB::CUB
   )
   target_compile_options(${example_target} PRIVATE
     $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
