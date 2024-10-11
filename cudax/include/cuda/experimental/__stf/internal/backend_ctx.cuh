@@ -1069,7 +1069,7 @@ private:
   template <typename T, typename... P>
   auto make_data_interface(P&&... p)
   {
-    return ::std::make_shared<typename Engine::data_interface<T>>(::std::forward<P>(p)...);
+    return ::std::make_shared<typename Engine::template data_interface<T>>(::std::forward<P>(p)...);
   }
 };
 
