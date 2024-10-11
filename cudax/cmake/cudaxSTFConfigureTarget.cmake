@@ -32,7 +32,7 @@ function(cudax_stf_configure_target target_name)
 
   if (cudax_ENABLE_CUDASTF_BOUNDSCHECK)
     target_compile_definitions(${target_name} PRIVATE
-      "CUDASTF_ENABLE_BOUNDSCHECK"
+      "CUDASTF_BOUNDSCHECK"
     )
   endif()
 endfunction()
