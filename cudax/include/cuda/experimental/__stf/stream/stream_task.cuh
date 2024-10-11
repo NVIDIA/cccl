@@ -111,7 +111,11 @@ public:
       // We have currently no way to pass an array of per-place streams
       assert(automatic_stream);
 
-      const auto& places = e_place.as_grid().get_places();
+      // Note: we store grid in a variable to avoid dangling references
+      // because the compiler does not know we are making a refernce to
+      // a vector that remains valid
+      const auto& grid = e_place.as_grid();
+      const auto& places = grid.get_places();
       for (const exec_place& p : places)
       {
         stream_grid.push_back(get_stream_from_pool(p));
