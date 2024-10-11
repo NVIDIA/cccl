@@ -575,7 +575,7 @@ public:
     auto& current_instance = get_data_instance(instance_id);
     auto current_state     = current_instance.get_msir();
 
-    static size_t total_write_back_cnt = 0;
+//    static size_t total_write_back_cnt = 0;
 
     /* Update MSI status depending on the current states and the required access mode */
     switch (current_state)
@@ -597,7 +597,7 @@ public:
         prereqs.merge(ref_instance.get_read_prereq(), current_instance.get_read_prereq());
 
         write_back(memory_node, instance_id, prereqs);
-        total_write_back_cnt++;
+        // total_write_back_cnt++;
         // fprintf(stderr, "WRITE BACK... %s (%ld)!!\n", get_symbol().c_str(), total_write_back_cnt);
 
         ref_instance.add_read_prereq(prereqs);
