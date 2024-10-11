@@ -217,13 +217,13 @@ public:
       cuda_safe_call(cuCtxSetCurrent(saved_ctx));
     }
 
-    virtual ::std::string to_string() const override
+    ::std::string to_string() const override
     {
       return "green ctx ( id=" + ::std::to_string(get_cuda_context_id(g_ctx)) + " dev_id =" + ::std::to_string(devid)
            + ")";
     }
 
-    virtual stream_pool& get_stream_pool(async_resources_handle&, bool) const
+    stream_pool& get_stream_pool(async_resources_handle&, bool) const override
     {
       return *pool;
     }

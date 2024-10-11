@@ -113,7 +113,7 @@ int main(int argc, char** argv)
   auto dummy_alloc = block_allocator<one_block_allocator>(ctx);
   ctx.set_allocator(dummy_alloc);
 
-  logical_data<slice<char>> handles[nblocks];
+  ::std::vector<logical_data<slice<char>>> handles(nblocks);
 
   char* h_buffer = new char[nblocks * block_size];
 

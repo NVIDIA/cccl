@@ -42,7 +42,7 @@ __global__ void setup_vectors(int n, T* x, T* y, T* z)
 int main(int argc, char** argv)
 {
   graph_ctx ctx;
-  size_t n           = 12;
+  const size_t n           = 12;
   const double alpha = 2.0;
 
   double *dX, *dY, *dZ;
@@ -77,7 +77,7 @@ int main(int argc, char** argv)
   };
 
   ctx.host_launch(handle_X.read(), handle_Y.read(), handle_Z.read())->*[&](auto hX, auto hY, auto hZ) {
-    for (int ind = 0; ind < n; ind++)
+    for (size_t ind = 0; ind < n; ind++)
     {
       // X unchanged
       EXPECT(fabs(hX(ind) - 1.0 * ind) < 0.00001);

@@ -124,8 +124,8 @@ int main() {
     printf("Page rank answer is %s.\n", abs(sum_pageranks - 1.0) < 0.001 ? "correct" : "not correct");
 
     printf("PageRank Results:\n");
-    for (int i = 0; i < page_rank.size(); ++i) {
-        printf("Vertex %d: %f\n", i, page_rank[i]);
+    for (size_t i = 0; i < page_rank.size(); ++i) {
+        printf("Vertex %ld: %f\n", i, page_rank[i]);
     }
 
     return 0;

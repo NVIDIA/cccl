@@ -281,17 +281,6 @@ public:
       dot.template add_vertex<typename Ctx::task_type, logical_data_untyped>(t);
     }
 
-    auto insert_one_kernel = [](cuda_kernel_desc& k, cudaGraphNode_t& n, cudaGraph_t& g) {
-      cudaKernelNodeParams kconfig;
-      kconfig.blockDim       = k.blockDim;
-      kconfig.extra          = nullptr;
-      kconfig.func           = (void*) k.func;
-      kconfig.gridDim        = k.gridDim;
-      kconfig.kernelParams   = k.args_ptr.data();
-      kconfig.sharedMemBytes = k.sharedMem;
-      cuda_safe_call(cudaGraphAddKernelNode(&n, g, nullptr, 0, &kconfig));
-    };
-
     // When chained is enable, we expect a vector of kernel description which should be executed one after the other
     if constexpr (chained)
     {
@@ -362,6 +351,18 @@ public:
   }
 
 private:
+  /* Add a kernel to a CUDA graph given its description */
+  auto insert_one_kernel(cuda_kernel_desc& k, cudaGraphNode_t& n, cudaGraph_t& g) const {
+    cudaKernelNodeParams kconfig;
+    kconfig.blockDim       = k.blockDim;
+    kconfig.extra          = nullptr;
+    kconfig.func           = const_cast<void *>(k.func);
+    kconfig.gridDim        = k.gridDim;
+    kconfig.kernelParams   = k.args_ptr.data();
+    kconfig.sharedMemBytes = k.sharedMem;
+    cuda_safe_call(cudaGraphAddKernelNode(&n, g, nullptr, 0, &kconfig));
+  }
+
   ::std::string symbol;
   Ctx& ctx;
   task_dep_vector<Deps...> deps;
@@ -1068,7 +1069,7 @@ private:
   template <typename T, typename... P>
   auto make_data_interface(P&&... p)
   {
-    return ::std::make_shared<typename Engine::data_interface<T>>(::std::forward<P>(p)...);
+    return ::std::make_shared<typename Engine::template data_interface<T>>(::std::forward<P>(p)...);
   }
 };
 

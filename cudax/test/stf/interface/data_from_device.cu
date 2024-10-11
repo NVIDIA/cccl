@@ -63,7 +63,7 @@ void run()
 
   // Access Ask to use X, Y and Z on the host
   ctx.host_launch(handle_X.read(), handle_Y.read())->*[&](auto X, auto Y) {
-    for (int ind = 0; ind < n; ind++)
+    for (size_t ind = 0; ind < n; ind++)
     {
       // X unchanged
       EXPECT(fabs(X(ind) - 1.0 * ind) < 0.00001);

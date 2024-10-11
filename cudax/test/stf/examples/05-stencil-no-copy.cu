@@ -52,7 +52,7 @@ T check_sum(stream_ctx& ctx, data_block<T>& bn)
   auto t = ctx.task(exec_place::host, bn.handle.read());
   t->*[&](cudaStream_t stream, auto h_center) {
     cuda_safe_call(cudaStreamSynchronize(stream));
-    for (int offset = bn.ghost_size; offset < bn.ghost_size + bn.block_size; offset++)
+    for (size_t offset = bn.ghost_size; offset < bn.ghost_size + bn.block_size; offset++)
     {
       sum += h_center.data_handle()[offset];
     }
@@ -147,8 +147,8 @@ int main(int argc, char** argv)
   stream_ctx ctx;
 
   int NITER      = 500;
-  int NBLOCKS    = 4 * ndevs;
-  int BLOCK_SIZE = 2048 * 1024;
+  size_t NBLOCKS    = 4 * ndevs;
+  size_t BLOCK_SIZE = 2048 * 1024;
 
   if (argc > 1)
   {
@@ -174,16 +174,16 @@ int main(int argc, char** argv)
   std::vector<data_block<double>> Un1;
 
   // Create blocks and allocates host data
-  for (int b = 0; b < NBLOCKS; b++)
+  for (size_t  b = 0; b < NBLOCKS; b++)
   {
-    int beg = b * BLOCK_SIZE;
-    int end = (b + 1) * BLOCK_SIZE;
+    size_t beg = b * BLOCK_SIZE;
+    size_t end = (b + 1) * BLOCK_SIZE;
 
     Un.emplace_back(ctx, beg, end, 1);
     Un1.emplace_back(ctx, beg, end, 1);
   }
 
-  for (int b = 0; b < NBLOCKS; b++)
+  for (size_t b = 0; b < NBLOCKS; b++)
   {
     Un[b].dev_id  = b % ndevs;
     Un1[b].dev_id = b % ndevs;
@@ -192,14 +192,14 @@ int main(int argc, char** argv)
   // Fill blocks with initial values. For the sake of simplicity, we are
   // using a synchronization primitive and host code, but this could have
   // been written asynchronously using host callbacks.
-  for (int b = 0; b < NBLOCKS; b++)
+  for (size_t b = 0; b < NBLOCKS; b++)
   {
-    int beg = b * BLOCK_SIZE;
+    size_t beg = b * BLOCK_SIZE;
 
     auto t = ctx.task(exec_place::host, Un[b].handle.rw(), Un1[b].handle.rw());
     t->*[&](cudaStream_t stream, auto Un_vals, auto Un1_vals) {
       cuda_safe_call(cudaStreamSynchronize(stream));
-      for (int local_idx = 0; local_idx < BLOCK_SIZE; local_idx++)
+      for (size_t local_idx = 0; local_idx < BLOCK_SIZE; local_idx++)
       {
         double val                                     = U0[(beg + local_idx + TOTAL_SIZE) % TOTAL_SIZE];
         Un1_vals.data_handle()[local_idx + GHOST_SIZE] = val;
@@ -210,13 +210,13 @@ int main(int argc, char** argv)
 
   for (int iter = 0; iter < NITER; iter++)
   {
-    for (int b = 0; b < NBLOCKS; b++)
+    for (size_t b = 0; b < NBLOCKS; b++)
     {
       update_halo(ctx, Un1[b], Un[(b - 1 + NBLOCKS) % NBLOCKS], Un[(b + 1) % NBLOCKS]);
     }
 
     // UPDATE Un from Un1
-    for (int b = 0; b < NBLOCKS; b++)
+    for (size_t b = 0; b < NBLOCKS; b++)
     {
       stencil(ctx, Un[b], Un1[b]);
     }
@@ -225,7 +225,7 @@ int main(int argc, char** argv)
     if (iter % 250 == 0)
     {
       double sum = 0.0;
-      for (int b = 0; b < NBLOCKS; b++)
+      for (size_t b = 0; b < NBLOCKS; b++)
       {
         sum += check_sum(ctx, Un[b]);
       }
@@ -233,7 +233,7 @@ int main(int argc, char** argv)
       // fprintf(stderr, "iter %d : CHECK SUM = %e\n", iter, sum);
     }
 
-    for (int b = 0; b < NBLOCKS; b++)
+    for (size_t b = 0; b < NBLOCKS; b++)
     {
       // Copy inner part of Un into Un1
       copy_inner(ctx, Un[b], Un1[b]);
@@ -242,7 +242,7 @@ int main(int argc, char** argv)
 
   // In this stencil, the sum of the elements is supposed to be a constant
   double sum = 0.0;
-  for (int b = 0; b < NBLOCKS; b++)
+  for (size_t b = 0; b < NBLOCKS; b++)
   {
     sum += check_sum(ctx, Un[b]);
   }

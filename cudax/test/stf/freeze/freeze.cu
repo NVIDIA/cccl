@@ -75,7 +75,7 @@ int main()
 
   ctx.finalize();
 
-  for (int i = 0; i < N; i++)
+  for (size_t i = 0; i < N; i++)
   {
     EXPECT(X[i] == 2 * X0(i) + 1);
   }

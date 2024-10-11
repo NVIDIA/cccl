@@ -30,7 +30,7 @@ int main(int argc, char** argv)
 
   std::chrono::steady_clock::time_point start, stop;
   start = std::chrono::steady_clock::now();
-  for (size_t iter = 0; iter < iter_cnt; iter++)
+  for (int iter = 0; iter < iter_cnt; iter++)
   {
     auto lX = ctx.logical_data(shape_of<slice<double>>(N));
     auto lY = ctx.logical_data(shape_of<slice<double>>(N));

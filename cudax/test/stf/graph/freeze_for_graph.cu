@@ -64,7 +64,7 @@ int main()
   fX.unfreeze(stream);
 
   ctx.host_launch(lX.read())->*[](auto x) {
-    for (int i = 0; i < x.size(); i++)
+    for (size_t i = 0; i < x.size(); i++)
     {
       EXPECT(x(i) == X0(i) + 2);
     }

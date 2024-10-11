@@ -287,7 +287,6 @@ public:
         }
         else
         {
-          auto grid_dims   = t.grid_dims();
           size_t grid_size = t.grid_dims().size();
           for (size_t i = 0; i < grid_size; i++)
           {
@@ -353,7 +352,7 @@ public:
     }();
 
     const auto [block_size, min_blocks] = conf;
-    const size_t n                      = sub_shape.size();
+    size_t n                      = sub_shape.size();
 
     // If there is no item in that shape, no need to launch a kernel !
     if (n == 0)
@@ -428,7 +427,7 @@ public:
 
       auto arg1                  = mv(explode_deps);
       auto arg2                  = deps.instance(t);
-      void* kernelArgs[]         = {(void*) &n, &arg1, &arg2};
+      void* kernelArgs[]         = {&n, &arg1, &arg2};
       kernel_params.kernelParams = kernelArgs;
       kernel_params.extra        = nullptr;
 

@@ -138,6 +138,7 @@ class print_type_name_and_fail
 template <class T>
 class meyers_singleton
 {
+protected:
   template <class U>
   struct wrapper
   {

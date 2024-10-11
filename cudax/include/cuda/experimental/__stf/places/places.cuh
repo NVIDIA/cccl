@@ -804,12 +804,28 @@ public:
 
     bool operator==(const exec_place::impl& rhs) const override
     {
-      if (!exec_place::impl::operator==(rhs))
-      {
-        return false;
-      }
+      // First, check if rhs is of type exec_place_grid::impl
       auto other = dynamic_cast<const impl*>(&rhs);
-      return other && dims == other->dims && places == other->places;
+      if (!other)
+      {
+          return false;  // rhs is not a grid, so they are not equal
+      }
+
+      // Compare two grids
+      return *this == *other;
+    }
+
+    // Compare two grids
+    bool operator==(const impl& rhs) const
+    {
+        // First, compare base class properties
+        if (!exec_place::impl::operator==(rhs))
+        {
+            return false;
+        }
+
+        // Compare grid-specific properties
+        return dims == rhs.dims && places == rhs.places;
     }
 
     const ::std::vector<exec_place>& get_places() const
@@ -1008,6 +1024,9 @@ public:
     assert(::std::dynamic_pointer_cast<impl>(exec_place::get_impl()));
     return ::std::static_pointer_cast<impl>(exec_place::get_impl());
   }
+
+  // Default constructor
+  exec_place_grid() : exec_place(nullptr) {}
 
   // private:
   exec_place_grid(::std::shared_ptr<impl> p)
@@ -1537,7 +1556,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     }
     else
     {
-      if (l1_size > block_size_limit)
+      if (int(l1_size) > block_size_limit)
       {
         fprintf(stderr,
                 "Unsatisfiable spec: Maximum block size %d threads, requested %ld (level 1)\n",
@@ -1553,7 +1572,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     }
 
     // Enforce the resource limits in the number of threads per block
-    assert(l1_size <= block_size_limit);
+    assert(int(l1_size) <= block_size_limit);
 
     assert(l0_size % ndevs == 0);
 
@@ -1589,7 +1608,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     }
     else
     {
-      if (l2_size > block_size_limit)
+      if (int(l2_size) > block_size_limit)
       {
         fprintf(stderr,
                 "Unsatisfiable spec: Maximum block size %d threads, requested %ld (level 2)\n",
@@ -1610,8 +1629,8 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     }
 
     // Enforce the resource limits in the number of threads per block
-    assert(l2_size <= block_size_limit);
-    assert(l0_size <= ndevs);
+    assert(int(l2_size) <= block_size_limit);
+    assert(int(l0_size) <= ndevs);
 
     /* Merge blocks and devices */
     this->add_level({::std::make_pair(hw_scope::device, l0_size)});
