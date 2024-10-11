@@ -804,12 +804,28 @@ public:
 
     bool operator==(const exec_place::impl& rhs) const override
     {
-      if (!exec_place::impl::operator==(rhs))
-      {
-        return false;
-      }
+      // First, check if rhs is of type exec_place_grid::impl
       auto other = dynamic_cast<const impl*>(&rhs);
-      return other && dims == other->dims && places == other->places;
+      if (!other)
+      {
+          return false;  // rhs is not a grid, so they are not equal
+      }
+
+      // Compare two grids
+      return *this == *other;
+    }
+
+    // Compare two grids
+    bool operator==(const impl& rhs) const
+    {
+        // First, compare base class properties
+        if (!exec_place::impl::operator==(rhs))
+        {
+            return false;
+        }
+
+        // Compare grid-specific properties
+        return dims == rhs.dims && places == rhs.places;
     }
 
     const ::std::vector<exec_place>& get_places() const
