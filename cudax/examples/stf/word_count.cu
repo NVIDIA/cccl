@@ -40,7 +40,7 @@ int main() {
 
     context ctx;
 
-    auto ltext = ctx.logical_data((char*) &raw_input[0], { sizeof(raw_input) });
+    auto ltext = ctx.logical_data(const_cast<char*>(&raw_input[0]), { sizeof(raw_input) });
 
     int cnt = 0;
     auto lcnt = ctx.logical_data(&cnt, { 1 });
