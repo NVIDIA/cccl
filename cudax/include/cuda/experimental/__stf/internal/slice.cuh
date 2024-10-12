@@ -866,20 +866,23 @@ UNITTEST("3D slice should be similar to 3D mdspan", (slice<double, 3>()))
 template <typename T, typename... P>
 bool pin(mdspan<T, P...>& s)
 {
+  // We need the rank as a constexpr value
+  constexpr auto rank = std::remove_cvref_t<decltype(s)>::extents_type::rank();
+
   if (address_is_pinned(s.data_handle()))
   {
     return false;
   }
 
-  if constexpr (s.rank() == 0)
+  if constexpr (rank == 0)
   {
     cuda_safe_call(pin_memory(s.data_handle(), 1));
   }
-  else if constexpr (s.rank() == 1)
+  else if constexpr (rank == 1)
   {
     cuda_safe_call(pin_memory(s.data_handle(), s.extent(0)));
   }
-  else if constexpr (s.rank() == 2)
+  else if constexpr (rank == 2)
   {
     switch (contiguous_dims(s))
     {
@@ -900,7 +903,7 @@ bool pin(mdspan<T, P...>& s)
   }
   else
   {
-    static_assert(s.rank() == 3, "Dimensionality not supported.");
+    static_assert(rank == 3, "Dimensionality not supported.");
     switch (contiguous_dims(s))
     {
       case 1:
@@ -942,15 +945,18 @@ bool pin(mdspan<T, P...>& s)
 template <typename T, typename... P>
 void unpin(mdspan<T, P...>& s)
 {
-  if constexpr (s.rank() == 0)
+  // We need the rank as a constexpr value
+  constexpr auto rank = std::remove_cvref_t<decltype(s)>::extents_type::rank();
+
+  if constexpr (rank == 0)
   {
     unpin_memory(s.data_handle());
   }
-  else if constexpr (s.rank() == 1)
+  else if constexpr (rank == 1)
   {
     unpin_memory(s.data_handle());
   }
-  else if constexpr (s.rank() == 2)
+  else if constexpr (rank == 2)
   {
     switch (contiguous_dims(s))
     {
@@ -971,7 +977,7 @@ void unpin(mdspan<T, P...>& s)
   }
   else
   {
-    static_assert(s.rank() == 3, "Dimensionality not supported.");
+    static_assert(rank == 3, "Dimensionality not supported.");
     switch (contiguous_dims(s))
     {
       case 1:
