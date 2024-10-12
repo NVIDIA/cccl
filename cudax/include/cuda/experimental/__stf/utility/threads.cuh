@@ -101,8 +101,8 @@ private:
  *
  * Example usage:
  * @code
- * counter<A>++;
- * counter<B>++;
+ * counter<A>.increment();
+ * counter<B>.increment();
  * ::std::cout << "A count: " << counter<A>.load() << ::std::endl; // Outputs: A count: 1
  * ::std::cout << "B count: " << counter<B>.load() << ::std::endl; // Outputs: B count: 2
  * @endcode
