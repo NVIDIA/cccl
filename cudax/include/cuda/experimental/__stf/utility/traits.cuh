@@ -144,7 +144,7 @@ protected:
   {
     using type = U;
   };
-  friend class wrapper<T>::type;
+  friend typename wrapper<T>::type;
 
   meyers_singleton()                        = default;
   ~meyers_singleton()                       = default;

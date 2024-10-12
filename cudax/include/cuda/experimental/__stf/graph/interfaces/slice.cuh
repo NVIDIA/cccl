@@ -36,7 +36,7 @@ public:
   /// @brief Alias for the base class
   using base = graph_data_interface<slice<T, dimensions>>;
   /// @brief Alias for the shape type
-  using base::shape_t;
+  using typename base::shape_t;
 
   using mutable_value_type = typename ::std::remove_const<T>::type;
 

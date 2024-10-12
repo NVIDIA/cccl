@@ -441,12 +441,11 @@ void join(context_t& ctx, some_event& to, event_list& prereq_in)
       from = dynamic_cast<some_event*>(item.operator->());
       if (!from)
       {
-        fprintf(stderr,
-                "Internal error: cannot dynamically cast event \"%s\" from %s to %.*s.\n",
-                item->get_symbol().c_str(),
-                typeid(*item).name(),
-                static_cast<int>(type_name<some_event>.size()),
-                type_name<some_event>.data());
+        fprintf(stderr, "Internal error: cannot dynamically cast event \"%s\" from %s to %.*s.\n",
+            item->get_symbol().c_str(),
+            typeid(decltype(*item)).name(),  // Change made here
+            static_cast<int>(type_name<some_event>.size()),
+            type_name<some_event>.data());
         abort();
       }
       typechecked = true;
