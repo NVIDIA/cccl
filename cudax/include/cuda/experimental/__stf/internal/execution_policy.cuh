@@ -614,9 +614,9 @@ UNITTEST("optionally_static")
   static_assert(v2.get() == 43);
 
   optionally_static<size_t(0), 0> v3;
-  assert(v3.get() == 0);
+  EXPECT(v3.get() == 0);
   v3 = 44;
-  assert(v3.get() == 44);
+  EXPECT(v3.get() == 44);
 
   // Make sure the size is optimized properly
   struct S1
@@ -637,7 +637,7 @@ UNITTEST("optionally_static")
   static_assert(v1 * v2 == 42 * 43);
   static_assert(v1 * 44 == 42 * 44);
   static_assert(44 * v1 == 42 * 44);
-  assert(v1 * v3 == 42 * 44);
+  EXPECT(v1 * v3 == 42 * 44);
 
   // Odds and ends
   optionally_static<3, 18> v4;
@@ -648,18 +648,18 @@ UNITTEST("optionally_static")
   // Mutating operators
   optionally_static<1, 1> v6;
   v6 += v6;
-  assert(v6 == 0);
+  EXPECT(v6 == 0);
   v6 += 2;
-  assert(v6 == 2);
+  EXPECT(v6 == 2);
   v6 -= 1;
-  assert(v6 == 1);
+  EXPECT(v6 == 1);
   v6++;
   ++v6;
-  assert(v6 == 3);
+  EXPECT(v6 == 3);
   --v6;
   v6--;
-  assert(v6 == 1);
-  assert(-v6 == -1);
+  EXPECT(v6 == 1);
+  EXPECT(-v6 == -1);
 };
 
 UNITTEST("thread hierarchy spec equality")

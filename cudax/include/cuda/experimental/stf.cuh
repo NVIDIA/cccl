@@ -90,7 +90,7 @@ class context
       }
       else
       {
-        EXPECT(payload.index() == 1, "Uninitialized scope.");
+        EXPECT(payload.index() == 1UL, "Uninitialized scope.");
         ::std::get<1>(payload)->*::std::forward<Fun>(f);
       }
     }

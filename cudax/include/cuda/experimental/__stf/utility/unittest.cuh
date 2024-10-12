@@ -574,7 +574,7 @@ UNITTEST("tuple2tuple")
     return x + 1.0;
   });
   static_assert(::std::is_same_v<decltype(t1), ::std::tuple<double, double, double>>);
-  assert(t1 == ::std::make_tuple(2.0, 3.0, 4.0));
+  EXPECT(t1 == ::std::make_tuple(2.0, 3.0, 4.0));
   //! [tuple2tuple]
 };
 
@@ -582,25 +582,25 @@ UNITTEST("only_convertible")
 {
   using namespace cuda::experimental::stf;
   auto a = only_convertible<int>(1, "hello");
-  assert(a == 1);
+  EXPECT(a == 1);
 };
 
 UNITTEST("all_convertible")
 {
   using namespace cuda::experimental::stf;
   auto a = all_convertible<int>(1, 2, "hello", 3);
-  assert((a == ::std::array<int, 3>{1, 2, 3}));
+  EXPECT((a == ::std::array<int, 3>{1, 2, 3}));
 };
 
 UNITTEST("shuffled arguments")
 {
   using namespace cuda::experimental::stf;
   auto x0 = only_convertible_or(42);
-  assert(x0 == 42);
+  EXPECT(x0 == 42);
   auto x1 = only_convertible_or(42, 23);
-  assert(x1 == 23);
+  EXPECT(x1 == 23);
   auto x2 = only_convertible_or(42, "23", ::std::tuple{1});
-  assert(x2 == 42);
+  EXPECT(x2 == 42);
   int a;
   shuffled_args_check<int>(a);
   shuffled_args_check<double>(a);
@@ -609,8 +609,8 @@ UNITTEST("shuffled arguments")
   // shuffled_args_check<char*>(a);  // "Incompatible argument: ..."
   auto t2       = shuffled_tuple<int, ::std::string>("hello", 1);
   auto [x, str] = shuffled_tuple<int, ::std::string>("hello", 1);
-  assert(str == "hello");
-  assert(x == 1);
+  EXPECT(str == "hello");
+  EXPECT(x == 1);
 
   struct A
   {
@@ -644,5 +644,5 @@ UNITTEST("shuffled_array_tuple")
 {
   using namespace cuda::experimental::stf;
   auto a = shuffled_array_tuple<int, ::std::string>(1, 2, "hello", 3, "world");
-  assert((a == ::std::tuple<::std::array<int, 3>, ::std::array<::std::string, 2>>{{1, 2, 3}, {"hello", "world"}}));
+  EXPECT((a == ::std::tuple<::std::array<int, 3>, ::std::array<::std::string, 2>>{{1, 2, 3}, {"hello", "world"}}));
 };
