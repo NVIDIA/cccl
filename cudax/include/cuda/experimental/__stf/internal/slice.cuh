@@ -1226,7 +1226,7 @@ UNITTEST("shape_of<slice> basics")
   using namespace cuda::experimental::stf;
   auto s1 = shape_of<slice<double, 3>>(1, 2, 3);
   auto s2 = shape_of<slice<double, 3>>(::std::tuple(1, 2, 3));
-  assert(s1 == s2);
+  EXPECT(s1 == s2);
 };
 
 #endif // UNITTESTED_FILE
