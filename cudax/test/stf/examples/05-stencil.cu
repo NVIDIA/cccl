@@ -238,6 +238,7 @@ int main(int argc, char** argv)
       copy_array(Un[b], Un1[b]);
     }
 
+#if 0
     // We make sure that the total sum of elements remains constant
     if (iter % 250 == 0)
     {
@@ -249,6 +250,7 @@ int main(int argc, char** argv)
 
       // fprintf(stderr, "iter %d : CHECK SUM = %e\n", iter, check_sum);
     }
+#endif
   }
 
   // In this stencil, the sum of the elements is supposed to be a constant
