@@ -286,7 +286,7 @@ UNITTEST("range")
   int n = 10;
   Range range(n);
 
-  int check[n];
+  ::std::vector<int> check(n);
 
   for (int num : range)
   {
