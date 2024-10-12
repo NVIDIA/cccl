@@ -22,6 +22,7 @@
 #include <cuda/experimental/__stf/utility/scope_guard.cuh>
 #include <cuda/experimental/__stf/utility/unique_id.cuh>
 #include <cuda/experimental/__stf/utility/unstable_unique.cuh>
+#include <cuda/experimental/__stf/utility/threads.cuh>
 
 #include <algorithm>
 #include <atomic>
@@ -419,6 +420,9 @@ inline event_list event_impl::from_stream(backend_ctx_untyped&, cudaStream_t) co
   return event_list();
 }
 
+// For counters
+class join_tag {};
+
 /**
  * @brief Introduce a dependency from all entries of an event list to an event.
 
@@ -451,7 +455,7 @@ void join(context_t& ctx, some_event& to, event_list& prereq_in)
     {
       from = static_cast<some_event*>(item.operator->());
     }
-    "joins"_counter ++;
+    counter<join_tag>::increment();
     to.insert_dep(ctx.async_resources(), *from);
     from->outbound_deps++;
   }

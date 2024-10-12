@@ -26,6 +26,18 @@
 namespace cuda::experimental::stf
 {
 
+// For counters
+class graph_tag {
+public:
+    class launch {};
+    class instantiate {};
+    class update {
+    public:
+        class success {};
+        class failure {};
+    };
+};
+
 /**
  * @brief Uncached allocator (used as a base for other allocators)
  *
@@ -301,13 +313,13 @@ public:
       return;
     }
 
-    fprintf(stderr, "[STATS CUDA GRAPHS] instantiated=%lu\n", "cudaGraphInstantiateWithFlags"_counter.load());
-    fprintf(stderr, "[STATS CUDA GRAPHS] launched=%lu\n", "cudaGraphLaunch"_counter.load());
+    fprintf(stderr, "[STATS CUDA GRAPHS] instantiated=%lu\n", counter<graph_tag::instantiate>.load());
+    fprintf(stderr, "[STATS CUDA GRAPHS] launched=%lu\n", counter<graph_tag::launch>.load());
     fprintf(stderr,
             "[STATS CUDA GRAPHS] updated=%lu success=%ld failed=%ld\n",
-            "cudaGraphExecUpdate"_counter.load(),
-            "cudaGraphExecUpdate_success"_counter.load(),
-            "cudaGraphExecUpdate_failed"_counter.load());
+            counter<graph_tag::update>.load(),
+            counter<graph_tag::update::success>.load(),
+            counter<graph_tag::update::failure>.load());
 #endif
   }
 
@@ -339,7 +351,7 @@ public:
     cuda_try(cudaGraphLaunch(*state.exec_graph, state.submitted_stream));
 
 #ifdef CUDASTF_DEBUG
-    "cudaGraphLaunch"_counter ++;
+    counter<graph_tag::launch>.increment();
 #endif
 
     // Note that we comment this out for now, so that it is possible to use
@@ -525,7 +537,7 @@ private:
     cuda_try(cudaGraphInstantiateWithFlags(res.get(), g, 0));
 
 #ifdef CUDASTF_DEBUG
-    "cudaGraphInstantiateWithFlags"_counter ++;
+    counter<graph_tag::instantiate>.increment();
 #endif
 
     return res;
@@ -623,7 +635,7 @@ private:
     cuda_try(cudaGraphLaunch(local_exec_graph, state.submitted_stream));
 
 #ifdef CUDASTF_DEBUG
-    "cudaGraphLaunch"_counter ++;
+    counter<graph_tag::launch>.increment();
 #endif
 
     return state.submitted_stream;
@@ -647,14 +659,14 @@ public:
     cudaError_t res = cudaGetLastError();
 
 #ifdef CUDASTF_DEBUG
-    "cudaGraphExecUpdate"_counter ++;
+    counter<graph_tag::update>.increment();
     if (res == cudaSuccess)
     {
-      "cudaGraphExecUpdate_success"_counter ++;
+      counter<graph_tag::update::success>.increment();
     }
     else
     {
-      "cudaGraphExecUpdate_failed"_counter ++;
+      counter<graph_tag::update::failure>.increment();
     }
 #endif
 

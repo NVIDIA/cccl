@@ -510,14 +510,14 @@ public:
 #ifdef CUDASTF_DEBUG
     // Ensure that the total number of CUDA events created corresponds to
     // the number of events destroyed
-    const auto alive = "cuda_events alive"_counter.load();
+    const auto alive = counter<cuda_event_tag::alive>.load();
     if (alive != 0)
     {
       fprintf(stderr,
               "WARNING!!! %lu CUDA events leaked (approx %lu created vs. %lu destroyed).\n",
               alive,
-              "cuda_events created"_counter.load(),
-              "cuda_events destroyed"_counter.load());
+              counter<cuda_event_tag::created>.load(),
+              counter<cuda_event_tag::destroyed>.load());
     }
 
     assert(alive == 0);
@@ -530,11 +530,11 @@ public:
 
     fprintf(stderr,
             "[STATS CUDA EVENTS] created=%lu destroyed=%lu alive=%lu high_water_mark=%lu\n",
-            "cuda_events created"_counter.load(),
-            "cuda_events destroyed"_counter.load(),
+            counter<cuda_event_tag::created>.load(),
+            counter<cuda_event_tag::destroyed>.load(),
             alive,
-            "cuda_events"_high_water_mark.load());
-    fprintf(stderr, "[STATS CUDA EVENTS] cuda_stream_wait_event=%lu\n", "cuda_stream_wait_event"_counter.load());
+            high_water_mark<cuda_event_tag>.load());
+    fprintf(stderr, "[STATS CUDA EVENTS] cuda_stream_wait_event=%lu\n", counter<cuda_stream_wait_event_tag>.load());
 #endif
   }
 
