@@ -592,8 +592,8 @@ _3197bc91feaf98030b2cc0b441d7b0ea(%);
 _3197bc91feaf98030b2cc0b441d7b0ea(&);
 _3197bc91feaf98030b2cc0b441d7b0ea(|);
 _3197bc91feaf98030b2cc0b441d7b0ea(^);
-_3197bc91feaf98030b2cc0b441d7b0ea(<<);
-_3197bc91feaf98030b2cc0b441d7b0ea(>>);
+//_3197bc91feaf98030b2cc0b441d7b0ea(<<);
+//_3197bc91feaf98030b2cc0b441d7b0ea(>>);
 
 #undef _3197bc91feaf98030b2cc0b441d7b0ea
 
