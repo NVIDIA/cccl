@@ -276,8 +276,12 @@ public:
     dump_hooks = get_dump_hooks(&ctx, deps...);
   }
 
-  /// Deleted copy assignment operator.
-  launch_scope& operator=(const launch_scope&) = delete;
+  /// Deleted copy constructor and copy assignment operator.
+  launch_scope(const launch_scope &) = delete;
+  launch_scope &operator=(const launch_scope &) = delete;
+
+  /// Move constructor
+  launch_scope(launch_scope &&) = default;
 
   /**
    * @brief Set the symbol for the task.
