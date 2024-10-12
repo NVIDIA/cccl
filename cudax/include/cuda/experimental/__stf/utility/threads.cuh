@@ -127,7 +127,7 @@ public:
     }
 
 private:
-   static ::std::atomic<unsigned long> count;
+   static inline ::std::atomic<unsigned long> count {0};
 };
 
 /**
@@ -177,9 +177,8 @@ public:
   {
     return tracker.load();
   }
-
 private:
-  static ::std::atomic<unsigned long> tracker;
+   static inline ::std::atomic<unsigned long> tracker {0};
 };
 
 } // namespace cuda::experimental::stf

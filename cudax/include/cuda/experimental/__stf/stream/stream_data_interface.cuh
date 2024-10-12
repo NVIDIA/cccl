@@ -85,7 +85,7 @@ class stream_data_interface_simple : public data_impl_base<T>
 {
 public:
   using base = data_impl_base<T>;
-  using base::shape_t;
+  using typename base::shape_t;
 
   stream_data_interface_simple(T p)
       : base(mv(p))
