@@ -112,9 +112,13 @@ function(cccl_generate_header_tests target_name project_include_path)
   set(link_target ${target_name}.link_check)
   add_library(${link_target} SHARED)
   cccl_configure_target(${link_target} ${cccl_configure_target_options})
+  set_target_properties(${link_target} PROPERTIES POSITION_INDEPENDENT_CODE ON)
   # Linking both ${target_name} and $<TARGET_OBJECTS:${target_name}> forces CMake to
   # link the same objects twice. The compiler will complain about duplicate symbols if
   # any functions are missing inline markup.
-  target_link_libraries(${link_target} PRIVATE ${target_name} $<TARGET_OBJECTS:${target_name}>)
+  target_link_libraries(${link_target} PRIVATE
+    ${target_name}
+    $<TARGET_OBJECTS:${target_name}>
+  )
 
 endfunction()
