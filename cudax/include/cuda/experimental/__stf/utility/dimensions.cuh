@@ -316,7 +316,7 @@ public:
     // Overload the dereference operator to get the current position
     CUDASTF_HOST_DEVICE auto& operator*()
     {
-      if constexpr (dimensions == 1)
+      if constexpr (dimensions == 1UL)
       {
         return current[0];
       }
@@ -329,7 +329,7 @@ public:
     // Overload the pre-increment operator to move to the next position
     CUDASTF_HOST_DEVICE iterator& operator++()
     {
-      if constexpr (dimensions == 1)
+      if constexpr (dimensions == 1UL)
       {
         current[0]++;
       }
@@ -389,7 +389,7 @@ public:
   // Overload the equality operator to check if two shapes are equal
   CUDASTF_HOST_DEVICE bool operator==(const box& rhs) const
   {
-    for (auto i : each(0, dimensions))
+    for (size_t i : each(0, dimensions))
     {
       if (get_begin(i) != rhs.get_begin(i) || get_end(i) != rhs.get_end(i))
       {

@@ -142,7 +142,7 @@ public:
   // Returns the width of a level
   size_t width(int l) const
   {
-    EXPECT(l < depth);
+    EXPECT(static_cast<size_t>(l) < depth);
     return levels[l].width();
   }
 

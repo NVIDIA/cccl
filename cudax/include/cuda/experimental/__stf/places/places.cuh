@@ -1091,7 +1091,7 @@ inline exec_place_grid exec_place::n_devices(size_t n, dim4 dims)
 {
   const int ndevs = cuda_try<cudaGetDeviceCount>();
 
-  EXPECT(ndevs >= n);
+  EXPECT(ndevs >= int(n));
   ::std::vector<exec_place> devices;
   devices.reserve(n);
   for (auto d : each(n))
