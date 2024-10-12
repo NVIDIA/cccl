@@ -19,14 +19,14 @@ namespace cuda::experimental::stf
  * copyable, but moving it transfers the unique id to the destination object.
  */
 template <typename C, C...>
-class unique_numeral
+class unique_id
 {
 public:
-  unique_numeral() = default;
-  constexpr unique_numeral(unique_numeral&& other) noexcept
+  unique_id() = default;
+  constexpr unique_id(unique_id&& other) noexcept
       : _value(::std::exchange(other._value, -1))
   {}
-  constexpr unique_numeral(const int val) noexcept
+  constexpr unique_id(const int val) noexcept
       : _value(val)
   {}
   constexpr operator int() const noexcept
@@ -34,16 +34,16 @@ public:
     return _value;
   }
 
-  unique_numeral& operator=(unique_numeral&& rhs)
+  unique_id& operator=(unique_id&& rhs)
   {
     _value = ::std::exchange(rhs._value, -1);
     return *this;
   }
 
-  unique_numeral(const unique_numeral&)            = delete;
-  unique_numeral& operator=(const unique_numeral&) = delete;
+  unique_id(const unique_id&)            = delete;
+  unique_id& operator=(const unique_id&) = delete;
 
-  bool operator==(const unique_numeral& other) const noexcept
+  bool operator==(const unique_id& other) const noexcept
   {
     return _value == other._value;
   }
@@ -58,18 +58,12 @@ private:
   int _value = next_id();
 };
 
-template <typename C, C... letters>
-auto operator""_unique_id()
-{
-  return unique_numeral<C, letters...>();
-}
-
 } // end namespace cuda::experimental::stf
 
 template <typename C, C... letters>
-struct std::hash<cuda::experimental::stf::unique_numeral<C, letters...>>
+struct std::hash<cuda::experimental::stf::unique_id<C, letters...>>
 {
-  size_t operator()(const cuda::experimental::stf::unique_numeral<C, letters...>& id) const
+  size_t operator()(const cuda::experimental::stf::unique_id<C, letters...>& id) const
   {
     return ::std::hash<int>()(id);
   }
