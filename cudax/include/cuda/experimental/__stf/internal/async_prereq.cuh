@@ -30,10 +30,10 @@
 namespace cuda::experimental::stf
 {
 
-using unique_id_t = decltype("cudastf"_unique_id);
-
 class event_impl;
 using event = handle<event_impl>;
+
+using unique_id_t = unique_id<event>;
 
 namespace reserved
 {
