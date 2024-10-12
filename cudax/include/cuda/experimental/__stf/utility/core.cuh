@@ -252,7 +252,7 @@ inline constexpr auto make_tuple()
 }
 
 template <typename T, typename... P>
-constexpr auto make_tuple(T t, P... p)
+constexpr auto make_tuple([[maybe_unused]] T t, P... p)
 {
   if constexpr (::std::is_same_v<const T, const decltype(::std::ignore)>)
   {
