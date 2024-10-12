@@ -121,7 +121,7 @@ public:
         stream_grid.push_back(get_stream_from_pool(p));
       }
 
-      EXPECT(stream_grid.size() > 0);
+      EXPECT(stream_grid.size() > 0UL);
     }
     else
     {

@@ -1803,7 +1803,7 @@ inline void reserved::logical_data_untyped_impl::erase()
   // This SHOULD be in the table because that piece of data was created
   // in this context and cannot already have been destroyed.
   auto erased = logical_data_ids.erase(get_unique_id());
-  EXPECT(erased == 1, "ERROR: prematurely destroyed data");
+  EXPECT(erased == 1UL, "ERROR: prematurely destroyed data");
 
   cs.logical_data_ids_mutex.unlock();
 
