@@ -291,7 +291,7 @@ public:
   {
   private:
     box iterated; // A copy of the box being iterated
-    ::std::array<size_t, dimensions> current; // Array to store the current position in each dimension
+    ::std::array<ssize_t, dimensions> current; // Array to store the current position in each dimension
 
   public:
     CUDASTF_HOST_DEVICE iterator(const box& b, bool at_end = false)
