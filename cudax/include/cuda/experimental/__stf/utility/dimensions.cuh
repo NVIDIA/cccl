@@ -336,13 +336,13 @@ public:
       else
       {
         // Increment current with carry to next dimension
-        for (auto i : each(0, dimensions))
+        for (size_t i : each(0, dimensions))
         {
           assert(current[i] < iterated.get_end(i) && "Attempt to increment past the end.");
           if (++current[i] < iterated.get_end(i))
           {
             // Found the new posish, now reset all lower dimensions to "zero"
-            for (auto j : each(0, i))
+            for (size_t j : each(0, i))
             {
               current[j] = iterated.get_begin(j);
             }
