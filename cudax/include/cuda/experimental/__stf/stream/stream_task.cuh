@@ -375,8 +375,8 @@ private:
     // Disable timing to avoid implicit barriers
     cuda_safe_call(cudaEventCreateWithFlags(&sync_event, cudaEventDisableTiming));
 #ifdef CUDASTF_DEBUG
-    "cuda_events created"_counter ++;
-    "cuda_events"_high_water_mark.record(++"cuda_events alive"_counter);
+    counter<cuda_event_tag::created>++;
+    high_water_mark<cuda_event_tag>.record(++counter<cuda_event_tag::alive>);
 #endif
 
     cuda_safe_call(cudaEventRecord(sync_event, streams[0].stream));
@@ -390,8 +390,8 @@ private:
     // Asynchronously destroy event to avoid a memleak
     cuda_safe_call(cudaEventDestroy(sync_event));
 #ifdef CUDASTF_DEBUG
-    "cuda_events destroyed"_counter ++;
-    "cuda_events alive"_counter --;
+    counter<cuda_event_tag::destroyed>.increment();
+    counter<cuda_event_tag::alive>.decrement();
 #endif
 
     if (current_dev != s0_dev)

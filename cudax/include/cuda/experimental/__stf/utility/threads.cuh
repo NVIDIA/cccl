@@ -96,91 +96,90 @@ private:
  *
  * This templated operator overload allows for the creation of unique counter objects
  * based on template literal strings. Each unique instantiation of this template with a
- * different literal results in a separate counter object. This can be used for counting
+ * different type results in a separate counter object. This can be used for counting
  * occurrences or events associated uniquely with compile-time known values.
- *
- * The returned (reference to) `::std::atomic<unsigned long>` can be manipulated with `++`, `--`,
- * and `load` in the usual manner. Each instantiation has its own count, ensuring that counts are
- * isolated between different literal strings.
  *
  * Example usage:
  * @code
- * auto& counterA = "A"_counter;
- * counterA++;
- * auto& counterB = "B"_counter;
- * counterB++;
- * counterB++;
- * ::std::cout << "A count: " << counterA.load() << ::std::endl; // Outputs: A count: 1
- * ::std::cout << "B count: " << counterB.load() << ::std::endl; // Outputs: B count: 2
+ * counter<A>++;
+ * counter<B>++;
+ * ::std::cout << "A count: " << counter<A>.load() << ::std::endl; // Outputs: A count: 1
+ * ::std::cout << "B count: " << counter<B>.load() << ::std::endl; // Outputs: B count: 2
  * @endcode
  *
- * @tparam C The character type of the template literal.
- * @tparam ... The characters of the template literal.
- *
- * @return A reference to a `::std::atomic<unsigned long>` with static storage duration.
+ * @tparam T tag type
  */
-template <typename C, C...>
-::std::atomic<unsigned long>& operator""_counter()
-{
-  static ::std::atomic<unsigned long> count{0};
-  return count;
-}
+template <typename T>
+class counter {
+public:
+    counter() = default;
+
+    static auto load() {
+        return count.load();
+    }
+
+    static auto increment() {
+        count++;
+    }
+
+    static auto decrement() {
+        count--;
+    }
+
+private:
+   static ::std::atomic<unsigned long> count;
+};
 
 /**
  * @brief Generates an object for tracking the high water mark (maximum value) recorded.
  *
- * This templated user-defined literal operator generates a unique object for each
- * literal usage, which allows for recording and querying the high water mark. The high water mark
- * is the highest value recorded using the `record` method. This utility can be used to monitor
- * peak usages or values in a system, such as maximum memory usage, maximum concurrent connections,
- * or other metrics where the peak value is of interest.
+ * This generates a unique counter for each type `T`, which allows for
+ * recording and querying the high water mark. The high water mark is the
+ * highest value recorded using the `record` method. This utility can be used
+ * to monitor peak usages or values in a system, such as maximum memory usage,
+ * maximum concurrent connections, or other metrics where the peak value is of
+ * interest.
  *
- * The returned type provides static methods to record a new value and query the
- * current high water mark. Each unique instantiation of this template with a different literal
- * results in a separate tracking context, allowing for isolated tracking based on compile-time
- * known values.
+ * Each unique instantiation of this template with a different type results in
+ * a separate tracking context, allowing for isolated tracking based on
+ * compile-time known values.
  *
  * Example usage:
  * @code
- * auto hwmTracker = "memory_usage"_high_water_mark;
- * hwmTracker.record(1024); // Record a new value
- * ::std::cout << "Current high water mark: " << hwmTracker.load() << ::std::endl;
+ * high_water_mark<event>.record(1024); // Record a new value
+ * ::std::cout << "Current high water mark: " << high_water_mark<event>.load() << ::std::endl;
  * @endcode
  *
- * @tparam C The character type of the template literal.
- * @tparam ... The characters of the template literal.
+ * @tparam T tag type for this counter
  *
- * @return An instance of the 'Result' class, which provides static methods for recording new values
- *         and querying the high water mark.
- *
- * @note The function and its returned 'Result' class are thread-safe, ensuring that
+ * @note The methods in this class are thread-safe, ensuring that
  *       concurrent updates from different threads are safely handled.
  */
-template <typename C, C...>
-auto operator""_high_water_mark()
+template <typename T>
+class high_water_mark
 {
-  static ::std::atomic<unsigned long> tracker{0};
+public:
+  high_water_mark() = default;
 
-  struct Result
+  static void record(unsigned long v)
   {
-    static void record(unsigned long v)
+    for (;;)
     {
-      for (;;)
+      auto previous = tracker.load();
+      if (previous >= v || tracker.compare_exchange_weak(previous, v))
       {
-        auto previous = tracker.load();
-        if (previous >= v || tracker.compare_exchange_weak(previous, v))
-        {
-          break;
-        }
+        break;
       }
     }
-    static unsigned long load()
-    {
-      return tracker.load();
-    }
-  };
+  }
 
-  return Result();
-}
+  static unsigned long load()
+  {
+    return tracker.load();
+  }
+
+private:
+  static ::std::atomic<unsigned long> tracker;
+};
 
 } // namespace cuda::experimental::stf
