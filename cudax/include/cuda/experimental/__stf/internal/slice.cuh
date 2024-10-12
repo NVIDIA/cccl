@@ -867,7 +867,7 @@ template <typename T, typename... P>
 bool pin(mdspan<T, P...>& s)
 {
   // We need the rank as a constexpr value
-  constexpr auto rank = std::remove_cvref_t<decltype(s)>::extents_type::rank();
+  constexpr auto rank = mdspan<T, P...>::extents_type::rank();
 
   if (address_is_pinned(s.data_handle()))
   {
@@ -946,7 +946,7 @@ template <typename T, typename... P>
 void unpin(mdspan<T, P...>& s)
 {
   // We need the rank as a constexpr value
-  constexpr auto rank = std::remove_cvref_t<decltype(s)>::extents_type::rank();
+  constexpr auto rank = mdspan<T, P...>::extents_type::rank();
 
   if constexpr (rank == 0)
   {
