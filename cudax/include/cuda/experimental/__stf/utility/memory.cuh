@@ -260,7 +260,8 @@ cudaError_t pin_memory(T* p, size_t n)
   {
     // We cast to (void *) because T may be a const type : we are not going
     // to modify the content, so this is legit ...
-    cudaHostRegister((void*) p, n * sizeof(T), cudaHostRegisterPortable);
+    using NonConstT = typename std::remove_const<T>::type;
+    cudaHostRegister(const_cast<NonConstT*>(p), n * sizeof(T), cudaHostRegisterPortable);
     // Fetch the result and clear the last error
     result = cudaGetLastError();
   }
@@ -281,9 +282,10 @@ void unpin_memory(T* p)
   // Make sure no one did a mistake before ignoring the one that may come !
   cuda_safe_call(cudaGetLastError());
 
-  // We cast to (void *) because T may be a const type : we are not going
+  // We cast to non const T * because T may be a const type : we are not going
   // to modify the content, so this is legit ...
-  if (cudaHostUnregister((void*) p) == cudaErrorHostMemoryNotRegistered)
+  using NonConstT = typename std::remove_const<T>::type;
+  if (cudaHostUnregister(const_cast<NonConstT*>(p)) == cudaErrorHostMemoryNotRegistered)
   {
     // Ignore that error, we probably also ignored an error about registering that buffer too !
     cudaGetLastError();
