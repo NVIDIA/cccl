@@ -608,15 +608,15 @@ UNITTEST("optionally_static")
   optionally_static<size_t(42), 0> v1;
   static_assert(v1.get() == 42);
   static_assert(v1 == v1);
-  static_assert(v1 == 42);
+  static_assert(v1 == 42UL);
 
   optionally_static<size_t(43), 0> v2;
-  static_assert(v2.get() == 43);
+  static_assert(v2.get() == 43UL);
 
   optionally_static<size_t(0), 0> v3;
   EXPECT(v3.get() == 0);
   v3 = 44;
-  EXPECT(v3.get() == 44);
+  EXPECT(v3.get() == 44UL);
 
   // Make sure the size is optimized properly
   struct S1
@@ -633,16 +633,16 @@ UNITTEST("optionally_static")
   static_assert(sizeof(S1) == sizeof(int));
 
   // Multiplication
-  static_assert(v1 * v1 == 42 * 42);
-  static_assert(v1 * v2 == 42 * 43);
-  static_assert(v1 * 44 == 42 * 44);
-  static_assert(44 * v1 == 42 * 44);
+  static_assert(v1 * v1 == 42UL * 42UL);
+  static_assert(v1 * v2 == 42UL * 43UL);
+  static_assert(v1 * 44 == 42UL * 44UL);
+  static_assert(44 * v1 == 42UL * 44UL);
   EXPECT(v1 * v3 == 42 * 44);
 
   // Odds and ends
   optionally_static<3, 18> v4;
   optionally_static<6, 18> v5;
-  static_assert(v4 * v5 == 18);
+  static_assert(v4 * v5 == 18UL);
   static_assert(v4 * v5 == (optionally_static<18, 18>(18)));
 
   // Mutating operators
