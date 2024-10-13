@@ -40,32 +40,28 @@ namespace reserved
  * @param f The function to execute.
  * @param p The additional parameters to pass to the function `f`.
  */
-template <bool single_element_per_thread, bool equal_threads, typename F, typename... P>
-__global__ void loop(const CUDASTF_GRID_CONSTANT size_t n, const CUDASTF_GRID_CONSTANT F f, P... p)
+template <typename F, typename shape_t, typename tuple_args>
+__global__ void loop(const CUDASTF_GRID_CONSTANT size_t n, shape_t shape, const CUDASTF_GRID_CONSTANT F f, tuple_args targs)
 {
   size_t i = blockIdx.x * blockDim.x + threadIdx.x;
-  if constexpr (single_element_per_thread)
-  {
-    if constexpr (equal_threads)
-    {
-      f(i, p...);
-    }
-    else
-    {
-      if (i < n)
+  const size_t step = blockDim.x * gridDim.x;
+
+  // This will explode the targs tuple into a pack of data
+
+  // Help the compiler which may not detect that a device lambda is calling a device lambda
+  CUDASTF_NO_DEVICE_STACK
+  auto explode_args = [&](auto... data) {
+      // For every linearized index in the shape
+      for (; i < n; i += step)
       {
-        f(i, p...);
+         CUDASTF_NO_DEVICE_STACK
+         auto explode_coords = [&](auto ...coords) {
+             f(coords..., data...);
+         };
+         ::std::apply(explode_coords, shape.index_to_coords(i));
       }
-    }
-  }
-  else
-  {
-    const size_t step = blockDim.x * gridDim.x;
-    for (; i < n; i += step)
-    {
-      f(i, p...);
-    }
-  }
+  };
+  ::std::apply(explode_args, mv(targs));
 }
 
 } // end namespace reserved
@@ -319,21 +315,6 @@ public:
       return do_parallel_for(::std::forward<Fun>(f), exec_place::current_device(), sub_shape, t);
     }
 
-    // See comment a few lines above about the other definition of explode_deps. Here, we define the lambdas as
-    // `__device__`.
-    auto explode_deps = [=] CUDASTF_DEVICE(size_t i, ::std::tuple<deps_t...> data) {
-      auto explode_coords = [=](deps_t... data) {
-        // Help the compiler which may not detect that a device lambda is calling a device lambda
-        CUDASTF_NO_DEVICE_STACK
-        auto h = [&](auto... coords) {
-          f(coords..., data...);
-        };
-        CUDASTF_NO_DEVICE_STACK
-        ::std::apply(h, sub_shape.index_to_coords(i));
-      };
-      ::std::apply(explode_coords, data);
-    };
-
     static const auto conf = [] {
       // We are using int instead of size_t because CUDA API uses int for occupancy calculations
       int min_grid_size = 0, max_block_size = 0, block_size_limit = 0;
@@ -342,7 +323,7 @@ public:
       // limit. We choose to dimension the kernel of the parallel loop to
       // optimize occupancy.
       compute_kernel_limits(
-        &reserved::loop<false, false, decltype(explode_deps), ::std::tuple<deps_t...>>,
+        &reserved::loop<Fun, sub_shape_t, ::std::tuple<deps_t...>>,
         min_grid_size,
         max_block_size,
         0,
@@ -369,65 +350,22 @@ public:
 
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
-      if (blocks * block_size == n)
-      {
-        if (blocks == max_blocks)
-        {
-          reserved::loop<true, true><<<blocks, block_size, 0, t.get_stream()>>>(n, mv(explode_deps), deps.instance(t));
-        }
-        else
-        {
-          reserved::loop<false, true><<<blocks, block_size, 0, t.get_stream()>>>(n, mv(explode_deps), deps.instance(t));
-        }
-      }
-      else
-      {
-        if (blocks == max_blocks)
-        {
-          reserved::loop<true, false><<<blocks, block_size, 0, t.get_stream()>>>(n, mv(explode_deps), deps.instance(t));
-        }
-        else
-        {
-          reserved::loop<false, false>
-            <<<blocks, block_size, 0, t.get_stream()>>>(n, mv(explode_deps), deps.instance(t));
-        }
-      }
+      reserved::loop<<<blocks, block_size, 0, t.get_stream()>>>(n, sub_shape, mv(f), deps.instance(t));
     }
     else if constexpr (::std::is_same_v<context, graph_ctx>)
     {
       // Put this kernel node in the child graph that implements the graph_task<>
       cudaKernelNodeParams kernel_params;
 
-      // Select the function
-      if (blocks * block_size == n)
-      {
-        if (blocks == max_blocks)
-        {
-          kernel_params.func = (void*) reserved::loop<true, true, decltype(explode_deps), ::std::tuple<deps_t...>>;
-        }
-        else
-        {
-          kernel_params.func = (void*) reserved::loop<false, true, decltype(explode_deps), ::std::tuple<deps_t...>>;
-        }
-      }
-      else
-      {
-        if (blocks == max_blocks)
-        {
-          kernel_params.func = (void*) reserved::loop<true, false, decltype(explode_deps), ::std::tuple<deps_t...>>;
-        }
-        else
-        {
-          kernel_params.func = (void*) reserved::loop<false, false, decltype(explode_deps), ::std::tuple<deps_t...>>;
-        }
-      }
+      kernel_params.func = (void*) reserved::loop<Fun, sub_shape_t, ::std::tuple<deps_t...>>;
 
       kernel_params.gridDim  = dim3(blocks);
       kernel_params.blockDim = dim3(block_size);
 
-      auto arg1                  = mv(explode_deps);
-      auto arg2                  = deps.instance(t);
-      void* kernelArgs[]         = {&n, &arg1, &arg2};
+      auto arg_instances                  = deps.instance(t);
+      // It is ok to use reference to local variables because the arguments
+      // will be used directly when calling cudaGraphAddKernelNode
+      void* kernelArgs[]         = {&n, const_cast<void*>(static_cast<const void*>(&sub_shape)), &f, &arg_instances};
       kernel_params.kernelParams = kernelArgs;
       kernel_params.extra        = nullptr;
 
