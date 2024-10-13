@@ -452,24 +452,11 @@ public:
   void do_parallel_for_host(Fun&& f, const sub_shape_t& shape, typename context::task_type& t)
   {
     const size_t n = shape.size();
-    // We wrap f in a supplemental lambda that "explodes" the tuple of dependencies into individual components.
-    // In turn, the coordinates are also exploded. The top-level lambda must capture by value, but the nested
-    // lambdas are okay with reference capture because the won't outlast the top-level lambda.
-    auto explode_deps = [=](size_t i, ::std::tuple<deps_t...> data) {
-      auto explode_coords = [&](deps_t... data) {
-        auto h = [&](auto... coords) {
-          f(coords..., data...);
-        };
-        ::std::apply(h, shape.index_to_coords(i));
-      };
-      ::std::apply(explode_coords, data);
-    };
 
     // Wrap this for_each_n call in a host callback launched in CUDA stream associated with that task
     // To do so, we pack all argument in a dynamically allocated tuple
     // that will be deleted by the callback
-    auto args = new ::std::tuple<decltype(deps.instance(t)), size_t, decltype(explode_deps)>(
-      deps.instance(t), n, mv(explode_deps));
+    auto args = new ::std::tuple<decltype(deps.instance(t)), size_t, Fun &&, sub_shape_t>(deps.instance(t), n, mv(f), shape);
 
     // The function which the host callback will execute
     auto host_func = [](void* untyped_args) {
@@ -481,12 +468,19 @@ public:
 
       auto& data         = ::std::get<0>(*p);
       const size_t n     = ::std::get<1>(*p);
-      auto& explode_deps = ::std::get<2>(*p);
+      Fun&& f      = mv(::std::get<2>(*p));
+      const sub_shape_t& shape = ::std::get<3>(*p);
 
-      // Finally we get to do the workload
-      for (size_t i = 0; i < n; ++i)
-      {
-        explode_deps(i, data);
+      auto explode_coords = [&](size_t i, deps_t... data) {
+        auto h = [&](auto... coords) {
+          f(coords..., data...);
+        };
+        ::std::apply(h, shape.index_to_coords(i));
+      };
+
+      // Finally we get to do the workload on every 1D item of the shape
+      for (size_t i = 0; i < n; ++i) {
+          ::std::apply(explode_coords, ::std::tuple_cat(::std::make_tuple(i), data));
       }
     };
 
