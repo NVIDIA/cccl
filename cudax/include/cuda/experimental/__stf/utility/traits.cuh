@@ -34,6 +34,7 @@ namespace reserved
 template <class T>
 constexpr ::std::string_view type_name();
 
+#if 0
 // This function is used as a baseline; technically returns an incorrect result but is never used in anger.
 template <>
 constexpr ::std::string_view type_name<_71d56d6539c0fd76d1af6c69e4e511a>()
@@ -61,6 +62,16 @@ constexpr ::std::string_view type_name()
   ::std::string_view p = __PRETTY_FUNCTION__;
   return p.substr(type_name_affixes.first, p.size() - type_name_affixes.first - type_name_affixes.second);
 }
+
+#else
+// This yields the correct result for all types except `_71d56d6539c0fd76d1af6c69e4e511a`.
+template <class T>
+constexpr ::std::string_view type_name()
+{
+    constexpr ::std::string_view p = __PRETTY_FUNCTION__;
+    return p;
+}
+#endif
 
 } // namespace reserved
 
