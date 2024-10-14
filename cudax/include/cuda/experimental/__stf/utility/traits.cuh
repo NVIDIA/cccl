@@ -16,6 +16,7 @@
 #pragma once
 
 #include <cuda/experimental/__stf/utility/core.cuh>
+#include <cuda/std/mdspan>
 
 #include <cassert>
 #include <string_view>
@@ -251,6 +252,19 @@ template <typename T0, typename... Ts>
     result[index] = value;
   });
   return result;
+}
+
+/**
+ * @brief Converts an `std::array` to a `cuda::std::array`
+ */
+template <typename T, size_t N>
+::cuda::std::array<T, N> convert_to_cuda_array(const ::std::array<T, N>& std_array) {
+    ::cuda::std::array<T, N> result;
+    for (size_t i = 0; i < N; i++)
+    {
+        result[i] = std_array[i];
+    }
+    return result;
 }
 
 /**
