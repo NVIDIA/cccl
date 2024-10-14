@@ -58,8 +58,8 @@ int main(int argc, char** argv)
   for (size_t iter = 0; iter < iter_cnt; iter++)
   {
     ctx.task(lY.rw(), lY.rw())->*[&](cudaStream_t s, auto dX, auto dY) {
-      swap<<<4, 16, 0, s>>>(dY, dX);
-      swap<<<4, 16, 0, s>>>(dX, dY);
+      ::swap<<<4, 16, 0, s>>>(dY, dX);
+      ::swap<<<4, 16, 0, s>>>(dX, dY);
     };
   }
   stop = std::chrono::steady_clock::now();
