@@ -89,7 +89,7 @@ template <typename T>
 class matrix_stream_interface : public stream_data_interface_simple<matrix<T>> {
 public:
     using base = stream_data_interface_simple<matrix<T>>;
-    using base::shape_t;
+    using typename base::shape_t;
 
     /// Initialize from an existing matrix
     matrix_stream_interface(matrix<T> m) : base(std::move(m)) {}
