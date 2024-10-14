@@ -100,7 +100,7 @@ int main() {
 
         // Reduce Error and Check for Convergence
         bool converged;
-        ctx.task(exec_place::host, lmax_diff.read())->*[iter, tolerance, &converged](cudaStream_t s, auto max_diff) {
+        ctx.task(exec_place::host, lmax_diff.read())->*[tolerance, &converged](cudaStream_t s, auto max_diff) {
             cuda_safe_call(cudaStreamSynchronize(s));
             converged = (max_diff(0) < tolerance);
         };

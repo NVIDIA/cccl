@@ -144,7 +144,7 @@ int main(int argc, char** argv) {
             }
         }
 
-        double dlevel = (upper_level - lower_level) / (num_levels - 1);
+        // double dlevel = (upper_level - lower_level) / (num_levels - 1);
         for (size_t i = 0; i < num_levels - 1; i++) {
             EXPECT(refhist[i] == histo[i]);
             // fprintf(stderr, "[%lf:%lf[ %ld\n", lower_level + i * dlevel, lower_level + (i + 1) * dlevel, histo[i]);
