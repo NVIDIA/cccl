@@ -30,10 +30,10 @@
 #  if defined(_M_ARM64)
 #    define _LIBCUDACXX_MSVC_POPC(x)   _CountOneBits(x)
 #    define _LIBCUDACXX_MSVC_POPC64(x) _CountOneBits64(x)
-#  else
+#  else // ^^^ _M_ARM64 ^^^ / vvv !_M_ARM64 vvv
 #    define _LIBCUDACXX_MSVC_POPC(x)   __popcnt(x)
 #    define _LIBCUDACXX_MSVC_POPC64(x) __popcnt64(x)
-#  endif
+#  endif // !_M_ARM64
 
 #endif // _CCCL_COMPILER_MSVC
 
