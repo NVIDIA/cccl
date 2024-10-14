@@ -278,7 +278,7 @@ public:
 
   // All instantiations of task_dep_vector are friends with one another
   template <typename...>
-  friend struct task_dep_vector;
+  friend class task_dep_vector;
 };
 
 } // end namespace cuda::experimental::stf

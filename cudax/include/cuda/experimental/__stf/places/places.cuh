@@ -675,7 +675,7 @@ UNITTEST("exec_place_host::operator->*")
   exec_place::host->*[&] {
     witness = true;
   };
-  assert(witness);
+  EXPECT(witness);
 };
 
 inline exec_place exec_place::device(int devid)

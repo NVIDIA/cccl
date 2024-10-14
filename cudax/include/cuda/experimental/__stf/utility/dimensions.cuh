@@ -414,9 +414,6 @@ public:
     return make_tuple_indexwise<dimensions>([&](auto i) {
       // included
       const ssize_t begin_i = get_begin(i);
-      // excluded
-      const ssize_t end_i = get_end(i);
-
       const ssize_t extent_i = get_extent(i);
       auto result            = begin_i + (index % extent_i);
       index /= extent_i;

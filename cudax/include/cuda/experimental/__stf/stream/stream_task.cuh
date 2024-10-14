@@ -530,7 +530,7 @@ public:
 
         if (dot->is_tracing())
         {
-          dot->add_vertex_timing<task>(*this, milliseconds);
+          dot->template add_vertex_timing<task>(*this, milliseconds);
         }
 
         if (statistics.is_calibrating())
