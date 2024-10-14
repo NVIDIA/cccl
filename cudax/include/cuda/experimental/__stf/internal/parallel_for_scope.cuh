@@ -41,7 +41,7 @@ namespace reserved
  * @param p The additional parameters to pass to the function `f`.
  */
 template <typename F, typename shape_t, typename tuple_args>
-__global__ void loop(const CUDASTF_GRID_CONSTANT size_t n, shape_t shape, const CUDASTF_GRID_CONSTANT F f, tuple_args targs)
+__global__ void loop(const CUDASTF_GRID_CONSTANT size_t n, shape_t shape, const F &f, tuple_args targs)
 {
   size_t i = blockIdx.x * blockDim.x + threadIdx.x;
   const size_t step = blockDim.x * gridDim.x;
