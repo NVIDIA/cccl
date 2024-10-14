@@ -154,7 +154,9 @@ public:
     auto& local_desc = this->instance(instance_id);
     // We can deallocate a copy of a logical data even if it was only accessible in read only mode
     auto ptr   = const_cast<mutable_value_type*>(local_desc.data_handle());
-    local_desc = slice<T, dimensions>(); // optional, helps with debugging
+
+    // TODO find a way to erase this variable to facilitate debugging
+    // local_desc = slice<T, dimensions>(); // optional, helps with debugging
 
     if (!memory_node.is_composite())
     {
