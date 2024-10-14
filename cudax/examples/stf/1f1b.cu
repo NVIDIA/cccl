@@ -79,7 +79,6 @@ int main(int argc, char** argv) {
     size_t niter = 10;
 
     for (size_t iter = 0; iter < niter; iter++) {
-        size_t task_cnt = 0;
         for (size_t b = 0; b < num_batches; b++) {
             for (int d = 0; d < num_devs; d++) {
                 ctx.task(exec_place::device(d % real_devs), data[b].rw())->*[=](cudaStream_t s, auto bd) {
@@ -87,7 +86,6 @@ int main(int argc, char** argv) {
                     long long int clock_cnt = (long long int) (ms * clock_rate / factor);
                     forward<<<f_grid_size, f_block_size, 0, s>>>(bd, clock_cnt);
                 };
-                task_cnt++;
             }
             //        }
             //
@@ -98,7 +96,6 @@ int main(int argc, char** argv) {
                     long long int clock_cnt = (long long int) (ms * clock_rate / factor);
                     backward<<<b_grid_size, b_block_size, 0, s>>>(bd, clock_cnt);
                 };
-                task_cnt++;
             }
         }
 
