@@ -378,15 +378,15 @@
 #    define _LIBCUDACXX_REQUIRES_EXPR_EXPAND_TPARAMS(...) \
       _LIBCUDACXX_PP_FOR_EACH(_LIBCUDACXX_REQUIRES_EXPR_EXPAND_TPARAM, __VA_ARGS__)
 
-#    define _LIBCUDACXX_REQUIRES_EXPR(_TY, ...)                                                            \
-      _Concept::_Requires_expr_impl<struct _LIBCUDACXX_PP_CAT(_Libcudacxx_requires_expr_detail_, __LINE__) \
-                                      _LIBCUDACXX_REQUIRES_EXPR_EXPAND_TPARAMS _TY>::                      \
-        _Is_satisfied((_Concept::_Tag<void _LIBCUDACXX_REQUIRES_EXPR_EXPAND_TPARAMS _TY>*) nullptr,        \
-                      (void (*)(__VA_ARGS__)) nullptr);                                                    \
-      struct _LIBCUDACXX_PP_CAT(_Libcudacxx_requires_expr_detail_, __LINE__)                               \
-      {                                                                                                    \
-        using _Self_t = _LIBCUDACXX_PP_CAT(_Libcudacxx_requires_expr_detail_, __LINE__);                   \
-        template <class _LIBCUDACXX_REQUIRES_EXPR_TPARAMS _TY>                                             \
+#    define _LIBCUDACXX_REQUIRES_EXPR(_TY, ...)                                                                 \
+      _Concept::_Requires_expr_impl<struct _LIBCUDACXX_PP_CAT(_Libcudacxx_requires_expr_detail_, __LINE__)      \
+                                      _LIBCUDACXX_REQUIRES_EXPR_EXPAND_TPARAMS _TY>::                           \
+        _Is_satisfied(static_cast<_Concept::_Tag<void _LIBCUDACXX_REQUIRES_EXPR_EXPAND_TPARAMS _TY>*>(nullptr), \
+                      static_cast<void (*)(__VA_ARGS__)>(nullptr));                                             \
+      struct _LIBCUDACXX_PP_CAT(_Libcudacxx_requires_expr_detail_, __LINE__)                                    \
+      {                                                                                                         \
+        using _Self_t = _LIBCUDACXX_PP_CAT(_Libcudacxx_requires_expr_detail_, __LINE__);                        \
+        template <class _LIBCUDACXX_REQUIRES_EXPR_TPARAMS _TY>                                                  \
         static auto _Well_formed(__VA_ARGS__) _LIBCUDACXX_REQUIRES_EXPR_2
 
 #    define _LIBCUDACXX_REQUIRES_EXPR_2(...)                                                                    \
@@ -449,7 +449,7 @@ _LIBCUDACXX_HIDE_FROM_ABI auto _Make_dependent(_Tp*, _Tag<_Args...>*) -> _Tp;
 
 template <class _Impl, class... _Args>
 using _Requires_expr_impl = //
-  decltype(_Concept::_Make_dependent((_Impl*) nullptr, (_Tag<void, _Args...>*) nullptr));
+  decltype(_Concept::_Make_dependent(static_cast<_Impl*>(nullptr), static_cast<_Tag<void, _Args...>*>(nullptr)));
 
 // We put an alias for _CUDA_VSTD here because of a bug in nvcc <12.2
 // where a requirement such as:
