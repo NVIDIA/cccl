@@ -545,7 +545,7 @@ typedef __char32_t char32_t;
 // Try to find out if RTTI is disabled.
 // g++ and cl.exe have RTTI on by default and define a macro when it is.
 #  ifndef _LIBCUDACXX_NO_RTTI
-#    define _LIBCUDACXX_NO_RTTI
+#    define _LIBCUDACXX_NO_RTTI _CCCL_NO_RTTI
 #  endif // !_LIBCUDACXX_NO_RTTI
 
 #  ifndef _LIBCUDACXX_NODEBUG_TYPE
