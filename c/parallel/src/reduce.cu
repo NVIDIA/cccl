@@ -394,7 +394,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
         : std::format(
             "extern \"C\" __device__ {3} {4}(const void *self_ptr);\n"
             "extern \"C\" __device__ void {5}(void *self_ptr, {0} offset);\n"
-            "struct __align__({2}) input_iterator_state_t {{\n;"
+            "struct __align__({2}) input_iterator_state_t {{\n"
             "  using iterator_category = cuda::std::random_access_iterator_tag;\n"
             "  using value_type = {3};\n"
             "  using difference_type = {0};\n"
