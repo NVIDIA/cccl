@@ -370,7 +370,7 @@ public:
    * @return unittest& `*this`
    */
   template <typename Fun>
-  unittest& operator->*(Fun&& fun)
+  unittest& operator->*([[maybe_unused]] Fun&& fun)
   {
 #ifdef UNITTESTED_FILE
     if (!::std::filesystem::equivalent(loc.file_name(), UNITTESTED_FILE))

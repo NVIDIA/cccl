@@ -39,7 +39,7 @@ int main() {
     auto handle_Z = ctx.logical_data(Z, { N });
 
     ctx.task(handle_X.read(), handle_Y.write(), handle_Z.write())
-                    ->*[&ctx](cudaStream_t s, slice<int> x, slice<int> y, slice<int> z) {
+                    ->*[](cudaStream_t s, slice<int> x, slice<int> y, slice<int> z) {
                             std::vector<cudaStream_t> streams;
                             streams.push_back(s);
                             auto spec = par(1024);
