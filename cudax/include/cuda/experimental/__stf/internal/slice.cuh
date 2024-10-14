@@ -22,71 +22,12 @@
 
 #include <iostream>
 
-#ifdef CUDASTF_PROVIDE_MDSPAN
+#include <cuda/std/mdspan>
 
-#  if __has_include(<mdspan>)
-// Great, mdspan is in the standard. Let's put an alias for it in ::std::experimental
 namespace cuda::experimental::stf
 {
-using ::std::mdspan;
+using ::cuda::std::mdspan;
 }
-#  elif __has_include(<experimental/mdspan>)
-// Great, mdspan is in experimental/ in our installation
-#    include <experimental/mdspan>
-namespace cuda::experimental::stf
-{
-using ::std::experimental::mdspan;
-}
-#  else
-// Use our copy
-#    include <cuda/experimental/__stf/supplemental_std_experimental/mdspan>
-namespace cuda::experimental::stf
-{
-using ::std::experimental::mdspan;
-}
-#  endif
-
-#else
-
-namespace cuda::experimental::stf
-{
-namespace reserved
-{
-
-template <typename, typename = void>
-constexpr bool is_type_complete_v = false;
-
-template <typename T>
-constexpr bool is_type_complete_v<T, ::std::void_t<decltype(sizeof(T))>> = true;
-
-} // namespace reserved
-} // namespace cuda::experimental::stf
-
-namespace std
-{
-namespace experimental
-{
-struct layout_right;
-template <class ElementType>
-class default_accessor;
-template <class IndexType, ::std::size_t... Extents>
-class extents;
-template <class T, class Extents, class LayoutPolicy, class AccessorPolicy>
-class mdspan;
-
-static_assert(::cuda::experimental::stf::reserved::is_type_complete_v<
-                mdspan<double, extents<size_t, 1>, layout_right, default_accessor<double>>>,
-              "Please #include <experimental/mdspan> before including stf.h, or define macro CUDASTF_PROVIDE_MDSPAN.");
-
-} // namespace experimental
-} // namespace std
-
-namespace cuda::experimental::stf
-{
-using ::std::experimental::mdspan;
-}
-
-#endif
 
 namespace cuda::experimental::stf
 {
@@ -115,16 +56,16 @@ class shape_of;
  *
  * In debug mode (i.e., `NDEBUG` is not defined) all uses of `operator()()` are bounds-checked by means of `assert`.
  */
-struct layout_stride : ::std::experimental::layout_stride
+struct layout_stride : ::cuda::std::layout_stride
 {
   template <class Extents>
-  struct mapping : ::std::experimental::layout_stride::mapping<Extents>
+  struct mapping : ::cuda::std::layout_stride::mapping<Extents>
   {
     constexpr mapping() = default;
 
     template <typename... A>
     constexpr CUDASTF_HOST_DEVICE mapping(A&&... a)
-        : ::std::experimental::layout_stride::mapping<Extents>(::std::forward<A>(a)...)
+        : ::cuda::std::layout_stride::mapping<Extents>(::std::forward<A>(a)...)
     {}
 
     template <typename... is_t>
@@ -137,7 +78,7 @@ struct layout_stride : ::std::experimental::layout_stride
         },
         is...);
 #endif
-      return ::std::experimental::layout_stride::mapping<Extents>::operator()(::std::forward<is_t>(is)...);
+      return ::cuda::std::layout_stride::mapping<Extents>::operator()(::std::forward<is_t>(is)...);
     }
   };
 };
@@ -149,7 +90,7 @@ struct layout_stride : ::std::experimental::layout_stride
  * @tparam dimensions
  */
 template <typename T, size_t dimensions = 1>
-using slice = mdspan<T, ::std::experimental::dextents<size_t, dimensions>, layout_stride>;
+using slice = mdspan<T, ::cuda::std::dextents<size_t, dimensions>, layout_stride>;
 
 /**
  * @brief Compute how many dimensions of a slice are actually contiguous.
@@ -200,10 +141,10 @@ make_slice(ElementType* data, const ::std::tuple<Extents...>& extents, const Str
   using Result = slice<ElementType, sizeof...(Extents)>;
   auto sizes   = ::std::apply(
     [&](auto&&... e) {
-      return ::std::array<size_t, sizeof...(Extents)>{size_t(e)...};
+      return ::cuda::std::array<size_t, sizeof...(Extents)>{size_t(e)...};
     },
     extents);
-  ::std::array<size_t, Result::rank()> mdspan_strides{1, size_t(strides)...};
+  ::cuda::std::array<size_t, Result::rank()> mdspan_strides{1, size_t(strides)...};
   return Result(data, typename Result::mapping_type(sizes, mdspan_strides));
 }
 
@@ -227,7 +168,7 @@ CUDASTF_HOST_DEVICE auto make_slice(T* data, const Extents&... extents)
   }
   else
   {
-    ::std::array<size_t, Result::rank()> sizes{size_t(extents)...}, strides;
+    ::cuda::std::array<size_t, Result::rank()> sizes{size_t(extents)...}, strides;
     for (size_t i = 1; i < strides.size(); ++i)
     {
       strides[i] = sizes[i - 1];
@@ -676,7 +617,7 @@ public:
 
 private:
   typename described_type::extents_type extents{};
-  ::std::array<typename described_type::index_type, described_type::rank()> strides{};
+  ::cuda::std::array<typename described_type::index_type, described_type::rank()> strides{};
 };
 
 #ifdef UNITTESTED_FILE
