@@ -462,7 +462,7 @@ public:
 
   ///@{ @name Constructors
   explicit shape_of(const ::std::array<size_t, rank()>& sizes)
-      : extents(sizes)
+      : extents(convert_to_cuda_array(sizes))
   {}
 
   explicit shape_of(const ::std::array<size_t, rank()>& sizes, const ::std::array<size_t, rank()>& _strides)
