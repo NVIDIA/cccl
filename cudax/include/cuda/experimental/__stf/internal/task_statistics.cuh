@@ -146,7 +146,7 @@ public:
     double squares = 0.0;
 
     // Only used when reading file
-    double stddev = 0.0;
+    [[maybe_unused]] double stddev = 0.0;
   };
 
   using statistics_map_t = ::std::unordered_map<::std::pair<::std::string, size_t>, statistic>;
