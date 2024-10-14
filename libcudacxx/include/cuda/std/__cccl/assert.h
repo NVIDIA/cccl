@@ -24,6 +24,7 @@
 
 #include <cuda/std/__cccl/attributes.h>
 #include <cuda/std/__cccl/builtin.h>
+#include <cuda/std/__cccl/execution_space.h>
 
 #if !defined(_CCCL_COMPILER_NVRTC)
 #  include <assert.h>
@@ -68,9 +69,11 @@
 #else // ^^^ MSVC STL ^^^ / vvv !MSVC STL vvv
 #  ifdef NDEBUG
 // Reintroduce the __assert_fail declaration
-extern void
+extern "C" {
+_CCCL_HOST_DEVICE void
 __assert_fail(const char* __assertion, const char* __file, unsigned int __line, const char* __function) __THROW
   __attribute__((__noreturn__));
+}
 #  endif // NDEBUG
 // ICC cannot deal with `__builtin_expect` in the constexpr evaluator, so just drop it
 #  if defined(_CCCL_COMPILER_ICC)
