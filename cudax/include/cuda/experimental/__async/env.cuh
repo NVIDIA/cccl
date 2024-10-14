@@ -33,6 +33,15 @@
 
 #include <cuda/experimental/__async/prologue.cuh>
 
+_CCCL_DIAG_PUSH
+
+// Suppress the warning: "definition of implicit copy constructor for 'env<>' is
+// deprecated because it has a user-declared copy assignment operator". We need to
+// suppress this warning rather than fix the code because defaulting or defining
+// the copy constructor would prevent aggregate initialization, which these types
+// depend on.
+_CCCL_DIAG_SUPPRESS_CLANG("-Wdeprecated-copy")
+
 // warning #20012-D: __device__ annotation is ignored on a
 // function("inplace_stop_source") that is explicitly defaulted on its first
 // declaration
@@ -192,6 +201,8 @@ using env_of_t = decltype(get_env(__declval<_Ty>()));
 } // namespace cuda::experimental::__async
 
 _CCCL_NV_DIAG_DEFAULT(20012)
+
+_CCCL_DIAG_POP
 
 #include <cuda/experimental/__async/epilogue.cuh>
 
