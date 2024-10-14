@@ -62,7 +62,7 @@
 //! _CCCL_ASSERT_IMPL_HOST should never be used directly
 #if defined(_CCCL_COMPILER_NVRTC) // There is no host standard library in nvrtc
 #  define _CCCL_ASSERT_IMPL_HOST(expression, message) ((void) 0)
-#elif __has_include(<yvals_core.h>) && defined(_CCCL_COMPILER_MSVC) // MSVC uses _STL_VERIFY from <yvals.h>
+#elif __has_include(<yvals.h>) && defined(_CCCL_COMPILER_MSVC) // MSVC uses _STL_VERIFY from <yvals.h>
 #  include <yvals.h>
 #  define _CCCL_ASSERT_IMPL_HOST(expression, message) _STL_VERIFY(expression, message)
 #else // ^^^ MSVC STL ^^^ / vvv !MSVC STL vvv
