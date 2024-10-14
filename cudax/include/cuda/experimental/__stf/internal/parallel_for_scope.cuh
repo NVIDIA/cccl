@@ -41,7 +41,7 @@ namespace reserved
  * @param p The additional parameters to pass to the function `f`.
  */
 template <typename F, typename shape_t, typename tuple_args>
-__global__ void loop(const CUDASTF_GRID_CONSTANT size_t n, shape_t shape, const F &f, tuple_args targs)
+__global__ void loop(const CUDASTF_GRID_CONSTANT size_t n, shape_t shape, F f, tuple_args targs)
 {
   size_t i = blockIdx.x * blockDim.x + threadIdx.x;
   const size_t step = blockDim.x * gridDim.x;
@@ -272,7 +272,7 @@ public:
       {
         // Apply the parallel_for construct over the entire shape on the
         // execution place of the task
-        do_parallel_for(::std::forward<Fun>(f), e_place, shape, t);
+        do_parallel_for(f, e_place, shape, t);
       }
       else
       {
@@ -288,7 +288,7 @@ public:
           {
             t.set_current_place(pos4(i));
             const auto sub_shape = partitioner_t::apply(shape, pos4(i), t.grid_dims());
-            do_parallel_for(::std::forward<Fun>(f), t.get_current_place(), sub_shape, t);
+            do_parallel_for(f, t.get_current_place(), sub_shape, t);
             t.unset_current_place();
           }
         }
@@ -304,7 +304,7 @@ public:
   // Executes the loop on a device, or use the host implementation
   template <typename Fun, typename sub_shape_t>
   void do_parallel_for(
-    Fun&& f, const exec_place& sub_exec_place, const sub_shape_t& sub_shape, typename context::task_type& t)
+    Fun &&f, const exec_place& sub_exec_place, const sub_shape_t& sub_shape, typename context::task_type& t)
   {
     // parallel_for never calls this function with a host.
     assert(sub_exec_place != exec_place::host && "Internal CUDASTF error.");
