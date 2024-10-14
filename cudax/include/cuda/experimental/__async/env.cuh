@@ -40,6 +40,7 @@ _CCCL_DIAG_PUSH
 // suppress this warning rather than fix the code because defaulting or defining
 // the copy constructor would prevent aggregate initialization, which these types
 // depend on.
+_CCCL_DIAG_SUPPRESS_CLANG("-Wunknown-warning-option")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wdeprecated-copy")
 
 // warning #20012-D: __device__ annotation is ignored on a
