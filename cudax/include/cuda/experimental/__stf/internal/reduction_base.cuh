@@ -51,7 +51,8 @@ public:
     event_list& prereq_in) = 0;
 
 private:
-  bool is_commutative;
+  // not used for now ...
+  [[maybe_unused]] bool is_commutative;
 };
 
 } // end namespace cuda::experimental::stf

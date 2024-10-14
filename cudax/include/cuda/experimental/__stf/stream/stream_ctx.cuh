@@ -442,7 +442,7 @@ public:
         return task.get_task_deps();
       }
 
-      void set_exec_place(exec_place e_place) override {}
+      void set_exec_place(exec_place) override {}
     };
 
     payload_t& my_payload() const
