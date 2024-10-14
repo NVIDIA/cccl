@@ -62,7 +62,7 @@ public:
     /* Make sure we aren't requesting more SMs than the GPU has available */
     int max_SMs;
     cuda_safe_call(cudaDeviceGetAttribute(&max_SMs, cudaDevAttrMultiProcessorCount, devid));
-    assert(max_SMs >= numsm);
+    assert(max_SMs >= int(numsm));
 
     /* Determine the device's resources */
     CUdevice device;
