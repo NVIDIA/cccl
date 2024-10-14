@@ -387,16 +387,16 @@
       {                                                                                                         \
         using _Self_t = _LIBCUDACXX_PP_CAT(_Libcudacxx_requires_expr_detail_, __LINE__);                        \
         template <class _LIBCUDACXX_REQUIRES_EXPR_TPARAMS _TY>                                                  \
-        static auto _Well_formed(__VA_ARGS__) _LIBCUDACXX_REQUIRES_EXPR_2
+        _LIBCUDACXX_HIDE_FROM_ABI static auto _Well_formed(__VA_ARGS__) _LIBCUDACXX_REQUIRES_EXPR_2
 
 #    define _LIBCUDACXX_REQUIRES_EXPR_2(...)                                                                    \
       ->decltype(_LIBCUDACXX_PP_FOR_EACH(_LIBCUDACXX_CONCEPT_FRAGMENT_REQS_M, __VA_ARGS__) void()) {}           \
       template <class... Args, class Sig, class = decltype(static_cast<Sig*>(&_Self_t::_Well_formed<Args...>))> \
-      static constexpr bool _Is_satisfied(_Concept::_Tag<Args...>*, Sig*)                                       \
+      _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool _Is_satisfied(_Concept::_Tag<Args...>*, Sig*)             \
       {                                                                                                         \
         return true;                                                                                            \
       }                                                                                                         \
-      static constexpr bool _Is_satisfied(void*, ...)                                                           \
+      _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool _Is_satisfied(void*, ...)                                 \
       {                                                                                                         \
         return false;                                                                                           \
       }                                                                                                         \
