@@ -23,9 +23,8 @@ class logical_data_untyped;
 class reduction_operator_base
 {
 public:
-  reduction_operator_base(bool is_commutative = true)
-      : is_commutative(is_commutative)
-  {}
+  // For now, we ignore commutativity !
+  reduction_operator_base(bool /* is_commutative */) {}
 
   virtual ~reduction_operator_base() {}
 
@@ -52,7 +51,7 @@ public:
 
 private:
   // not used for now ...
-  [[maybe_unused]] bool is_commutative;
+  // bool is_commutative;
 };
 
 } // end namespace cuda::experimental::stf
