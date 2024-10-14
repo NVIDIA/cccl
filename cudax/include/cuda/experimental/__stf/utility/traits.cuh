@@ -232,7 +232,7 @@ using array_tuple = decltype(to_tuple(::std::array<T, n>{}));
 static_assert(::std::is_same_v<array_tuple<size_t, 3>, ::std::tuple<size_t, size_t, size_t>>);
 
 /**
- * @brief Converts an `std::tuple` into an `std::array`.
+ * @brief Converts an `std::tuple` into a `cuda::std::array`.
  *
  * This function takes an `std::tuple` with elements of potentially differing types, provided the first type, `T0`, is
  * assignable from the rest. The resulting `std::array` will contain the elements from the tuple, where all the
@@ -244,9 +244,9 @@ static_assert(::std::is_same_v<array_tuple<size_t, 3>, ::std::tuple<size_t, size
  * @return An `std::array` containing the elements from the tuple, converted to type `T0`.
  */
 template <typename T0, typename... Ts>
-::std::array<T0, 1 + sizeof...(Ts)> to_array(const ::std::tuple<T0, Ts...>& obj)
+::cuda::std::array<T0, 1 + sizeof...(Ts)> to_cuda_array(const ::std::tuple<T0, Ts...>& obj)
 {
-  ::std::array<T0, 1 + sizeof...(Ts)> result;
+  ::cuda::std::array<T0, 1 + sizeof...(Ts)> result;
   each_in_tuple(obj, [&](auto index, const auto& value) {
     result[index] = value;
   });

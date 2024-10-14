@@ -420,7 +420,7 @@ public:
    * Initializes dimensions to `size0`, `sizes...`. This constructor is optional.
    */
   explicit shape_of(const coords_t& sizes)
-      : extents(to_array(sizes))
+      : extents(to_cuda_array(sizes))
   {
     size_t product_sizes = 1;
     unroll<rank()>([&](auto i) {
