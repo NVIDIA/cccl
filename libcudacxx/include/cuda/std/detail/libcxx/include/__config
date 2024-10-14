@@ -723,10 +723,9 @@ typedef unsigned int char32_t;
 #    define _LIBCUDACXX_DEPRECATED_IN_CXX20
 #  endif
 
-#  if _CCCL_STD_VER > 2014 && defined(__cpp_inline_variables) && (__cpp_inline_variables >= 201606L)
-#    define _LIBCUDACXX_INLINE_VAR inline
-#  else
-#    define _LIBCUDACXX_INLINE_VAR
+#  define _LIBCUDACXX_INLINE_VAR _CCCL_INLINE_VAR
+#  if defined(_CCCL_NO_INLINE_VARIABLES)
+#    define _LIBCUDACXX_HAS_NO_INLINE_VARIABLES
 #  endif
 
 #  ifdef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES

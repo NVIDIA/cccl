@@ -190,7 +190,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_list
 
 // Before the addition of inline variables, it was necessary to
 // provide a definition for constexpr class static data members.
-#  if _CCCL_STD_VER >= 2017 && defined(__cpp_inline_variables) && (__cpp_inline_variables >= 201606L)
+#  ifndef _LIBCUDACXX_HAS_NO_INLINE_VARIABLES
 template <class... _Ts>
 constexpr size_t const __type_list<_Ts...>::__size;
 #  endif

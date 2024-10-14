@@ -101,6 +101,7 @@
 #if _CCCL_STD_VER >= 2017 && defined(__cpp_inline_variables) && (__cpp_inline_variables >= 201606L)
 #  define _CCCL_INLINE_VAR inline
 #else // ^^^ C++14 ^^^ / vvv C++17 vvv
+#  define _CCCL_NO_INLINE_VARIABLES
 #  define _CCCL_INLINE_VAR
 #endif // _CCCL_STD_VER <= 2014
 
