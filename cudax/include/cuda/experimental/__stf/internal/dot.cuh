@@ -498,10 +498,7 @@ private:
     }
   }
 
-  int epoch_id = 0;
-
   bool tracing_prereqs = false;
-  FILE* dot_f          = nullptr;
 
   // Keep track of existing edges, to make the output possibly look better
   ::std::unordered_set<::std::pair<int, int>> existing_edges;
@@ -509,9 +506,6 @@ private:
   ::std::unordered_map<int, ::std::vector<int>> predecessors;
 
   mutable ::std::mutex mtx;
-
-  // context independant annotations
-  mutable ::std::ostringstream common_oss;
 
   ::std::string dot_filename;
 };
