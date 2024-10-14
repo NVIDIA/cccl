@@ -146,7 +146,7 @@ def _get_bindings():
     if _bindings is None:
         include_path = importlib.resources.files(
             'cuda.parallel.experimental').joinpath('cccl')
-        cccl_c_path = os.path.join(include_path, 'libcccl.c.so')
+        cccl_c_path = os.path.join(include_path, 'libcccl.c.parallel.so')
         _bindings = ctypes.CDLL(cccl_c_path)
         _bindings.cccl_device_reduce.restype = ctypes.c_int
         _bindings.cccl_device_reduce.restype = ctypes.c_int

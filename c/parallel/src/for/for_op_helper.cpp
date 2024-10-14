@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <format>
+#include <memory>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -201,7 +202,6 @@ for_each_kernel_state make_for_kernel_state(cccl_op_t op, cccl_iterator_t iterat
 {
   // Iterator is either a pointer or a stateful object, allocate space according to its size or alignment
   size_t iter_size     = (cccl_iterator_kind_t::iterator == iterator.type) ? iterator.size : sizeof(void*);
-  size_t iter_align    = (cccl_iterator_kind_t::iterator == iterator.type) ? iterator.alignment : alignof(void*);
   void* iterator_state = (cccl_iterator_kind_t::iterator == iterator.type) ? iterator.state : &iterator.state;
 
   // Do we need to valid user input? Alignments larger than the provided size?
@@ -219,7 +219,7 @@ for_each_kernel_state make_for_kernel_state(cccl_op_t op, cccl_iterator_t iterat
   if (use_allocated_storage)
   {
     // Allocate required space
-    iter_start = (char*) malloc(min_size);
+    iter_start = new char[min_size];
   }
 
   // Memcpy into either local or allocated buffer
@@ -233,7 +233,7 @@ for_each_kernel_state make_for_kernel_state(cccl_op_t op, cccl_iterator_t iterat
   // Return either local buffer or unique_ptr
   if (use_allocated_storage)
   {
-    return for_each_kernel_state{unique_void{(void*) iter_start}, user_op_offset};
+    return for_each_kernel_state{std::unique_ptr<char[]>{iter_start}, user_op_offset};
   }
   else
   {
