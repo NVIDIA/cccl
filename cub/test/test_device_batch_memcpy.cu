@@ -216,7 +216,8 @@ void RunTest(BufferOffsetT num_buffers,
 {
   try
   {
-    using SrcPtrT = uint8_t*;
+    using SrcPtrT = const uint8_t*;
+    using DstPtrT = uint8_t*;
 
     // Buffer segment data (their offsets and sizes)
     c2h::host_vector<BufferSizeT> h_buffer_sizes(num_buffers);
@@ -286,8 +287,8 @@ void RunTest(BufferOffsetT num_buffers,
       thrust::raw_pointer_cast(d_buffer_src_offsets.data()), src_transform_op);
 
     // Prepare d_buffer_dsts
-    OffsetToPtrOp<SrcPtrT> dst_transform_op{static_cast<SrcPtrT>(thrust::raw_pointer_cast(d_out.data()))};
-    cub::TransformInputIterator<SrcPtrT, OffsetToPtrOp<SrcPtrT>, ByteOffsetT*> d_buffer_dsts(
+    OffsetToPtrOp<DstPtrT> dst_transform_op{static_cast<DstPtrT>(thrust::raw_pointer_cast(d_out.data()))};
+    cub::TransformInputIterator<DstPtrT, OffsetToPtrOp<DstPtrT>, ByteOffsetT*> d_buffer_dsts(
       thrust::raw_pointer_cast(d_buffer_dst_offsets.data()), dst_transform_op);
 
     // Get temporary storage requirements
