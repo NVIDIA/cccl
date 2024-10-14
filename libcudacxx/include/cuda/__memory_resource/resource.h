@@ -71,12 +71,11 @@ _LIBCUDACXX_CONCEPT resource =
 //! @endrst
 //! @tparam _Resource The type that should implement the async resource concept
 template <class _Resource>
-_LIBCUDACXX_CONCEPT async_resource =
-  resource<_Resource>
-  && _LIBCUDACXX_REQUIRES_EXPR(
-    (_Resource), _Resource& __res, void* __ptr, size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)(
-    _Same_as(void*) __res.allocate_async(__bytes, __alignment, __stream),
-    _Same_as(void) __res.deallocate_async(__ptr, __bytes, __alignment, __stream));
+_LIBCUDACXX_CONCEPT async_resource = _LIBCUDACXX_REQUIRES_EXPR(
+  (_Resource), _Resource& __res, void* __ptr, size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)(
+  requires(resource<_Resource>),
+  _Same_as(void*) __res.allocate_async(__bytes, __alignment, __stream),
+  _Same_as(void) __res.deallocate_async(__ptr, __bytes, __alignment, __stream));
 
 //! @brief The \c resource_with concept verifies that a type Resource satisfies the `resource` concept and
 //! also satisfies all the provided Properties
