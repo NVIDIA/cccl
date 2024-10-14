@@ -42,68 +42,13 @@
 
 #include <algorithm>
 
+#include "catch2_test_device_select_common.cuh"
 #include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
 
-// TODO replace with DeviceSelect::If interface once https://github.com/NVIDIA/cccl/issues/50 is addressed
-// Temporary wrapper that allows specializing the DeviceSelect algorithm for different offset types
-template <typename InputIteratorT,
-          typename OutputIteratorT,
-          typename NumSelectedIteratorT,
-          typename OffsetT,
-          typename SelectOp>
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_select_if_wrapper(
-  void* d_temp_storage,
-  std::size_t& temp_storage_bytes,
-  InputIteratorT d_in,
-  OutputIteratorT d_out,
-  NumSelectedIteratorT d_num_selected_out,
-  OffsetT num_items,
-  SelectOp select_op,
-  cudaStream_t stream = 0)
-{
-  using flag_iterator_t = cub::NullType*;
-  using equality_op_t   = cub::NullType;
-
-  return cub::DispatchSelectIf<
-    InputIteratorT,
-    flag_iterator_t,
-    OutputIteratorT,
-    NumSelectedIteratorT,
-    SelectOp,
-    equality_op_t,
-    OffsetT,
-    false>::Dispatch(d_temp_storage,
-                     temp_storage_bytes,
-                     d_in,
-                     nullptr,
-                     d_out,
-                     d_num_selected_out,
-                     select_op,
-                     equality_op_t{},
-                     num_items,
-                     stream);
-}
-
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::If, select_if);
-DECLARE_LAUNCH_WRAPPER(dispatch_select_if_wrapper, dispatch_select_if);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
-
-template <typename T>
-struct less_than_t
-{
-  T compare;
-
-  explicit __host__ less_than_t(T compare)
-      : compare(compare)
-  {}
-
-  __host__ __device__ bool operator()(const T& a) const
-  {
-    return a < compare;
-  }
-};
 
 struct equal_to_default_t
 {
@@ -132,26 +77,6 @@ struct always_true_t
   }
 };
 
-template <typename T>
-struct mod_n
-{
-  T mod;
-  __host__ __device__ bool operator()(T x)
-  {
-    return (x % mod == 0) ? true : false;
-  }
-};
-
-template <typename T>
-struct multiply_n
-{
-  T multiplier;
-  __host__ __device__ T operator()(T x)
-  {
-    return x * multiplier;
-  }
-};
-
 using all_types =
   c2h::type_list<std::uint8_t,
                  std::uint16_t,
@@ -166,8 +91,6 @@ using all_types =
 using types = c2h::
   type_list<std::uint8_t, std::uint32_t, ulonglong4, c2h::custom_type_t<c2h::less_comparable_t, c2h::equal_comparable_t>>;
 
-using offset_types = c2h::type_list<std::int32_t, std::int64_t>;
-
 CUB_TEST("DeviceSelect::If can run with empty input", "[device][select_if]", types)
 {
   using type = typename c2h::get<0, TestType>;
@@ -177,7 +100,7 @@ CUB_TEST("DeviceSelect::If can run with empty input", "[device][select_if]", typ
   c2h::device_vector<type> out(num_items);
 
   // Needs to be device accessible
-  c2h::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 42);
   int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   select_if(in.begin(), out.begin(), d_num_selected_out, num_items, always_true_t{});
@@ -393,25 +316,24 @@ CUB_TEST("DeviceSelect::If works with a different output type", "[device][select
   REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), equal_to_default_t{}));
 }
 
-CUB_TEST("DeviceSelect::If works for very large number of items", "[device][select_if]", offset_types)
+CUB_TEST("DeviceSelect::If works for very large number of items", "[device][select_if]")
 try
 {
   using type     = std::int64_t;
-  using offset_t = typename c2h::get<0, TestType>;
+  using offset_t = std::int64_t;
 
-  // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
-  auto num_items_max_ull =
-    std::min(static_cast<std::size_t>(::cuda::std::numeric_limits<offset_t>::max()),
-             ::cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
-  offset_t num_items_max = static_cast<offset_t>(num_items_max_ull);
-  offset_t num_items_min =
-    num_items_max_ull > 10000 ? static_cast<offset_t>(num_items_max_ull - 10000ULL) : offset_t{0};
+  // The partition size (the maximum number of items processed by a single kernel invocation) is an important boundary
+  constexpr auto max_partition_size = static_cast<offset_t>(::cuda::std::numeric_limits<std::int32_t>::max());
+
   offset_t num_items = GENERATE_COPY(
     values({
-      num_items_max,
-      static_cast<offset_t>(num_items_max - 1),
+      offset_t{2} * max_partition_size + offset_t{20000000}, // 3 partitions
+      offset_t{2} * max_partition_size, // 2 partitions
+      max_partition_size + offset_t{1}, // 2 partitions
+      max_partition_size, // 1 partitions
+      max_partition_size - offset_t{1} // 1 partitions
     }),
-    take(2, random(num_items_min, num_items_max)));
+    take(2, random(max_partition_size - offset_t{1000000}, max_partition_size + offset_t{1000000})));
 
   // Input
   auto in = thrust::make_counting_iterator(static_cast<type>(0));
@@ -421,11 +343,10 @@ try
   offset_t* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   // Run test
-  std::size_t match_every_nth = 1000000;
-  offset_t expected_num_copied =
-    static_cast<offset_t>((static_cast<std::size_t>(num_items) + match_every_nth - 1ULL) / match_every_nth);
+  constexpr offset_t match_every_nth = 1000000;
+  offset_t expected_num_copied       = (num_items + match_every_nth - offset_t{1}) / match_every_nth;
   c2h::device_vector<type> out(expected_num_copied);
-  dispatch_select_if(
+  select_if(
     in, out.begin(), d_first_num_selected_out, num_items, mod_n<offset_t>{static_cast<offset_t>(match_every_nth)});
 
   // Ensure that we created the correct output
@@ -440,29 +361,30 @@ catch (std::bad_alloc&)
   // Exceeding memory is not a failure.
 }
 
-CUB_TEST("DeviceSelect::If works for very large number of output items", "[device][select_if]", offset_types)
+CUB_TEST("DeviceSelect::If works for very large number of output items", "[device][select_if]")
 try
 {
   using type     = std::uint8_t;
-  using offset_t = typename c2h::get<0, TestType>;
+  using offset_t = std::int64_t;
 
-  // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
-  auto num_items_max_ull =
-    std::min(static_cast<std::size_t>(::cuda::std::numeric_limits<offset_t>::max()),
-             ::cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
-  offset_t num_items_max = static_cast<offset_t>(num_items_max_ull);
-  offset_t num_items_min =
-    num_items_max_ull > 10000 ? static_cast<offset_t>(num_items_max_ull - 10000ULL) : offset_t{0};
+  // The partition size (the maximum number of items processed by a single kernel invocation) is an important boundary
+  constexpr auto max_partition_size = static_cast<offset_t>(::cuda::std::numeric_limits<std::int32_t>::max());
+
   offset_t num_items = GENERATE_COPY(
     values({
-      num_items_max,
-      static_cast<offset_t>(num_items_max - 1),
+      offset_t{2} * max_partition_size + offset_t{20000000}, // 3 partitions
+      offset_t{2} * max_partition_size, // 2 partitions
+      max_partition_size + offset_t{1}, // 2 partitions
+      max_partition_size, // 1 partitions
+      max_partition_size - offset_t{1} // 1 partitions
     }),
-    take(2, random(num_items_min, num_items_max)));
+    take(2, random(max_partition_size - offset_t{1000000}, max_partition_size + offset_t{1000000})));
 
-  // Prepare input
-  c2h::device_vector<type> in(num_items);
-  c2h::gen(CUB_SEED(1), in);
+  // Prepare input iterator: it[i] = (i%mod)+(i/div)
+  static constexpr offset_t mod = 200;
+  static constexpr offset_t div = 1000000000;
+  auto in                       = thrust::make_transform_iterator(
+    thrust::make_counting_iterator(offset_t{0}), modx_and_add_divy<offset_t, type>{mod, div});
 
   // Prepare output
   c2h::device_vector<type> out(num_items);
@@ -472,11 +394,12 @@ try
   offset_t* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   // Run test
-  dispatch_select_if(in.cbegin(), out.begin(), d_first_num_selected_out, num_items, always_true_t{});
+  select_if(in, out.begin(), d_first_num_selected_out, num_items, always_true_t{});
 
   // Ensure that we created the correct output
   REQUIRE(num_selected_out[0] == num_items);
-  REQUIRE(in == out);
+  bool all_results_correct = thrust::equal(out.cbegin(), out.cend(), in);
+  REQUIRE(all_results_correct == true);
 }
 catch (std::bad_alloc&)
 {

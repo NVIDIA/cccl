@@ -36,6 +36,7 @@
 
 #include <algorithm>
 
+#include "catch2_test_device_select_common.cuh"
 #include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
 
@@ -95,7 +96,7 @@ CUB_TEST("DeviceSelect::Flagged can run with empty input", "[device][select_flag
   c2h::device_vector<int> flags(num_items);
 
   // Needs to be device accessible
-  c2h::device_vector<int> num_selected_out(1, 0);
+  c2h::device_vector<int> num_selected_out(1, 42);
   int* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   select_flagged(in.begin(), flags.begin(), out.begin(), d_num_selected_out, num_items);
@@ -325,7 +326,7 @@ CUB_TEST("DeviceSelect::Flagged works with flags that alias input", "[device][se
   REQUIRE(reference == out);
 }
 
-CUB_TEST("DeviceSelect::Flagged works in place", "[device][select_if]", types)
+CUB_TEST("DeviceSelect::Flagged works in place", "[device][select_flagged]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -415,4 +416,49 @@ CUB_TEST("DeviceSelect::Flagged works with a different output type", "[device][s
   out.resize(num_selected_out[0]);
   REQUIRE(num_selected == num_selected_out[0]);
   REQUIRE(reference == out);
+}
+
+CUB_TEST("DeviceSelect::Flagged works for very large number of items", "[device][select_flagged]")
+try
+{
+  using type     = std::int64_t;
+  using offset_t = std::int64_t;
+
+  // The partition size (the maximum number of items processed by a single kernel invocation) is an important boundary
+  constexpr auto max_partition_size = static_cast<offset_t>(::cuda::std::numeric_limits<std::int32_t>::max());
+
+  offset_t num_items = GENERATE_COPY(
+    values({
+      offset_t{2} * max_partition_size + offset_t{20000000}, // 3 partitions
+      offset_t{2} * max_partition_size, // 2 partitions
+      max_partition_size + offset_t{1}, // 2 partitions
+      max_partition_size, // 1 partitions
+      max_partition_size - offset_t{1} // 1 partitions
+    }),
+    take(2, random(max_partition_size - offset_t{1000000}, max_partition_size + offset_t{1000000})));
+
+  // Input
+  constexpr offset_t match_every_nth = 1000000;
+  auto in                            = thrust::make_counting_iterator(static_cast<type>(0));
+  auto flags_in = thrust::make_transform_iterator(in, mod_n<offset_t>{static_cast<offset_t>(match_every_nth)});
+
+  // Needs to be device accessible
+  c2h::device_vector<offset_t> num_selected_out(1, 0);
+  offset_t* d_first_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
+
+  // Run test
+  offset_t expected_num_copied = (num_items + match_every_nth - offset_t{1}) / match_every_nth;
+  c2h::device_vector<type> out(expected_num_copied);
+  select_flagged(in, flags_in, out.begin(), d_first_num_selected_out, num_items);
+
+  // Ensure that we created the correct output
+  REQUIRE(num_selected_out[0] == expected_num_copied);
+  auto expected_out_it =
+    thrust::make_transform_iterator(in, multiply_n<offset_t>{static_cast<offset_t>(match_every_nth)});
+  bool all_results_correct = thrust::equal(out.cbegin(), out.cend(), expected_out_it);
+  REQUIRE(all_results_correct == true);
+}
+catch (std::bad_alloc&)
+{
+  // Exceeding memory is not a failure.
 }
