@@ -618,7 +618,8 @@ UNITTEST("shuffled arguments")
   EXPECT(x1 == 23);
   auto x2 = only_convertible_or(42, "23", ::std::tuple{1});
   EXPECT(x2 == 42);
-  int a;
+  // Note that a needs to be iniliazed because shuffled_args_check takes a const ref
+  int a = 0;
   shuffled_args_check<int>(a);
   shuffled_args_check<double>(a);
   // shuffled_args_check<int, double>(a);  // "Duplicate argument: ..."
