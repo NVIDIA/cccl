@@ -319,7 +319,7 @@ private:
 
     stream_pool& get_device_stream_pool(int dev_id, bool for_computation)
     {
-      assert(dev_id < pool.size());
+      assert(dev_id < int(pool.size()));
       return for_computation ? pool[dev_id].first : pool[dev_id].second;
     }
 
@@ -435,7 +435,7 @@ public:
   auto& gc_helper(int dev_id)
   {
     assert(pimpl);
-    assert(dev_id < pimpl->per_device_gc_helper.size());
+    assert(dev_id < int(pimpl->per_device_gc_helper.size()));
     return pimpl->per_device_gc_helper[dev_id];
   }
 

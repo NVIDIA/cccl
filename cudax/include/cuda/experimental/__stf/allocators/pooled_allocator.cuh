@@ -126,7 +126,7 @@ public:
 
     // Compute and return the pointer to data
     const ssize_t offset = e - &entries[0];
-    assert(offset >= 0 && offset < entries.size());
+    assert(offset >= 0 && offset < ssize_t(entries.size()));
     return static_cast<char*>(base) + offset * block_size;
   }
 

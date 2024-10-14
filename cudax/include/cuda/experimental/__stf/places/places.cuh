@@ -1157,7 +1157,7 @@ inline exec_place_grid partition_cyclic(const exec_place_grid& e_place, dim4 str
 
   //    fprintf(stderr, "ind %d (%d,%d,%d,%d)=%d\n", ind, size.x, size.y, size.z, size.t,
   //    size.x*size.y*size.z*size.t);
-  assert(places.size() == size.x * size.y * size.z * size.t);
+  assert(int(places.size()) == size.x * size.y * size.z * size.t);
 
   return make_grid(mv(places), size);
 }
@@ -1214,7 +1214,7 @@ inline exec_place_grid partition_tile(const exec_place_grid& e_place, dim4 tile_
 
   //    fprintf(stderr, "ind %d (%d,%d,%d,%d)=%d\n", ind, size.x, size.y, size.z, size.t,
   //    size.x*size.y*size.z*size.t);
-  assert(places.size() == size.x * size.y * size.z * size.t);
+  assert(int(places.size()) == size.x * size.y * size.z * size.t);
 
   return make_grid(mv(places), size);
 }
