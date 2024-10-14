@@ -375,6 +375,21 @@ doxygen_input = [
     "../../cudax/include/cuda/experimental/__launch/*.cuh",
     "../../cudax/include/cuda/experimental/__memory_resource/*.cuh",
     "../../cudax/include/cuda/experimental/__stream/*.cuh",
+    "../../cudax/include/cuda/experimental/stf.cuh",
+    "../../cudax/include/cuda/experimental/__stf/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/internal/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/utility/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/localization/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/allocators/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/graph/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/graph/internal/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/graph/interfaces/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/places/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/places/exec/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/places/exec/host/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/stream/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/stream/internal/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/stream/interfaces/*.cuh",
 ]
 
 doxygen_predefined = [
