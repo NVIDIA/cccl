@@ -101,7 +101,7 @@ static std::string compile(const std::string& source)
   REQUIRE(NVRTC_SUCCESS == nvrtcGetLTOIR(prog, ltoir.get()));
   REQUIRE(NVRTC_SUCCESS == nvrtcDestroyProgram(&prog));
 
-  return std::string(ltoir.release(), ltoir_size);
+  return std::string(ltoir.get(), ltoir_size);
 }
 
 template <class T>
