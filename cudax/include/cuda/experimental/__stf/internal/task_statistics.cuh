@@ -125,6 +125,9 @@ public:
 
       mean += delta / num_calls;
       squares += delta * (new_time - mean);
+
+      double variance = (num_calls == 1 ? 0 : squares / (num_calls - 1));
+      stddev = ::std::sqrt(variance);
     }
 
     int get_num_calls() const
@@ -135,9 +138,9 @@ public:
     {
       return mean;
     }
-    double get_variance() const
+    double get_stddev() const
     {
-      return num_calls == 1 ? 0 : squares / (num_calls - 1);
+      return stddev;
     }
 
   private:
@@ -146,7 +149,7 @@ public:
     double squares = 0.0;
 
     // Only used when reading file
-    [[maybe_unused]] double stddev = 0.0;
+    double stddev = 0.0;
   };
 
   using statistics_map_t = ::std::unordered_map<::std::pair<::std::string, size_t>, statistic>;
@@ -270,7 +273,7 @@ private:
     file << "task,size,num_calls,mean,stddev\n";
     for (const auto& [key, value] : statistics)
     {
-      double stddev = ::std::sqrt(value.get_variance());
+      double stddev = value.get_stddev();
       file << key.first << "," << key.second << "," << value.get_num_calls() << "," << value.get_mean() << "," << stddev
            << '\n';
     }
