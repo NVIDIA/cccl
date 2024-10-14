@@ -425,7 +425,7 @@ separately. To use CUB primitives in your code, simply:
    specifying a ``-I<path-to-CUB>`` include-path flag to reference
    the location of the CUB header library.
 
-We also have collection of simple CUB example programs.
+We also have a collection of simple CUB example programs.
 
 
 How is CUB different than Thrust and Modern GPU?
