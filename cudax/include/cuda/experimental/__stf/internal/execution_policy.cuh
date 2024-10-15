@@ -206,7 +206,8 @@ public:
     }
   }
 
-  template <auto... other>
+  // For other types ...
+  template <auto... other, typename = std::enable_if_t<!std::is_same_v<thread_hierarchy_t, thread_hierarchy_spec<other...>>>>
   constexpr bool operator==(const thread_hierarchy_spec<other...>&)
   {
     // Instantiation with other parameters is always considered false.
