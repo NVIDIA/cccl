@@ -29,6 +29,8 @@
 
 #include <cub/config.cuh>
 
+#include <utility>
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -115,25 +117,31 @@ struct dispatch_t : PolicyHubT
     ::cuda::std::array extents_div_array   = cub::detail::extents_fast_div_mod(_ext, seq);
     using FastDivModArrayType              = decltype(sub_sizes_div_array);
 
-    auto& kernel = &detail::for_each_in_extents::dynamic_kernel(_op, seq, sub_sizes_div_array, extents_div_array);
+    // const auto& kernel =
+    //   detail::for_each_in_extents::dynamic_kernel<OpType, int, decltype(sub_sizes_div_array), 5, 3, 4>;
+    //  (_op, _size, sub_sizes_div_array, extents_div_array, seq);
 
-    NV_IF_TARGET(NV_IS_HOST,
-                 (int _{}; //
-                  status = cudaOccupancyMaxPotentialBlockSize(&_, &block_threads, kernel);));
+    // NV_IF_TARGET(NV_IS_HOST,
+    //              (int _{}; //
+    //               status = cudaOccupancyMaxPotentialBlockSize(&_, &block_threads, kernel);));
 
     _CUB_RETURN_IF_ERROR(status)
     const auto num_cta = ::cuda::ceil_div(_size, block_threads);
 #  ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
-    _CubLog("Invoking detail::for_each_in_extents::dynamic_kernel<<<%d, %d, 0, %p>>>(), "
-            "%d items per thread\n",
+    _CubLog("Invoking detail::for_each_in_extents::dynamic_kernel<<<%d, %d, 0, %p>>>()\n",
             static_cast<int>(num_cta),
             static_cast<int>(block_threads),
-            _stream,
-            static_cast<int>(items_per_thread));
+            _stream);
 #  endif
-    status = THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
-               static_cast<unsigned>(num_cta), static_cast<unsigned>(block_threads), 0, _stream)
-               .doit(kernel, _op, seq, sub_sizes_div_array, extents_div_array);
+    status =
+      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+        static_cast<unsigned>(num_cta), static_cast<unsigned>(block_threads), 0, _stream)
+        .doit(detail::for_each_in_extents::dynamic_kernel<OpType, int, decltype(sub_sizes_div_array), 5, 3, 4>,
+              _op,
+              _size,
+              sub_sizes_div_array,
+              extents_div_array,
+              seq);
     _CUB_RETURN_IF_ERROR(status)
     _CUB_RETURN_IF_STREAM_ERROR(_stream)
     return cudaSuccess;
@@ -150,8 +158,8 @@ struct dispatch_t : PolicyHubT
           return cudaSuccess;
         }
         cudaError_t status             = cudaSuccess;
-        constexpr int block_threads    = ActivePolicyT::for_policy_t::block_threads;
-        constexpr int items_per_thread = ActivePolicyT::for_policy_t::items_per_thread;
+        constexpr int block_threads    = ActivePolicyT::for_each_in_extents_policy_t::block_threads;
+        constexpr int items_per_thread = ActivePolicyT::for_each_in_extents_policy_t::items_per_thread;
         const auto tile_size           = static_cast<ExtentsType>(block_threads * items_per_thread);
         const auto num_cta           = ::cuda::ceil_div(_size, tile_size);
     #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
@@ -175,8 +183,9 @@ struct dispatch_t : PolicyHubT
   template <typename ActivePolicyT>
   _CCCL_NODISCARD CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke() const
   {
-    constexpr bool static_block_size = (ActivePolicyT::for_policy_t::block_threads > 0);
-    return Invoke<ActivePolicyT>(::cuda::std::bool_constant<static_block_size>{});
+    // constexpr bool static_block_size = (ActivePolicyT::for_each_in_extents_policy_t::block_threads > 0);
+    // return Invoke<ActivePolicyT>(::cuda::std::bool_constant<static_block_size>{});
+    return Invoke<ActivePolicyT>(::cuda::std::bool_constant<false>{});
   }
 
   _CCCL_NODISCARD CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t

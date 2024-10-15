@@ -45,7 +45,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceForEachInExtents::ForEachInExtents, device_for
 
 CUB_TEST("DDeviceForEachInExtents works", "[ForEachInExtents][device]")
 {
-  using data_t = std::array<int, 3>;
+  using data_t = cuda::std::tuple<int, int, int>; // REQUIRE(x == y) doesn't work with cuda::std::array
   cuda::std::extents<int, 5, 3, 4> ext{};
   c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
   c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
@@ -55,6 +55,7 @@ CUB_TEST("DDeviceForEachInExtents works", "[ForEachInExtents][device]")
     auto id          = threadIdx.x + blockDim.x * blockIdx.x;
     d_output_raw[id] = {x, y, z};
   });
+  c2h::host_vector<data_t> h_output_gpu = d_output;
 
   for (int l = 0, i = 0; i < ext.extent(0); ++i)
   {
@@ -66,5 +67,5 @@ CUB_TEST("DDeviceForEachInExtents works", "[ForEachInExtents][device]")
       }
     }
   }
-  REQUIRE(d_output == h_output);
+  REQUIRE(h_output == h_output_gpu);
 }

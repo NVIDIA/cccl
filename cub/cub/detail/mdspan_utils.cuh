@@ -29,6 +29,8 @@
 
 #include <cub/config.cuh>
 
+#include "cuda/std/__type_traits/make_unsigned.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -54,12 +56,12 @@ namespace detail
  **********************************************************************************************************************/
 
 template <::cuda::std::size_t Rank, typename IndexType, ::cuda::std::size_t... Extents, ::cuda::std::size_t... Indices>
-_CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::size_t
+_CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::make_unsigned_t<IndexType>
 sub_size(const ::cuda::std::extents<IndexType, Extents...>& ext, ::cuda::std::index_sequence<Indices...> = {})
 {
   if constexpr (Rank >= ext.rank())
   {
-    return IndexType{1};
+    return ::cuda::std::make_unsigned_t<IndexType>{1};
   }
   else if constexpr (sizeof...(Indices) == 0)
   {
@@ -82,14 +84,14 @@ template <typename IndexType, ::cuda::std::size_t... E, ::cuda::std::size_t... R
 _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto
 sub_sizes_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::std::index_sequence<Ranks...> = {})
 {
-  return ::cuda::std::array{fast_div_mod{sub_size<Ranks + 1>(ext)}...};
+  return ::cuda::std::array{fast_div_mod(sub_size<Ranks + 1>(ext))...};
 }
 
 template <typename IndexType, ::cuda::std::size_t... E, ::cuda::std::size_t... Ranks>
 _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto
 extents_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::std::index_sequence<Ranks...> = {})
 {
-  return ::cuda::std::array{fast_div_mod{ext.extent(Ranks)}...};
+  return ::cuda::std::array{fast_div_mod(ext.extent(Ranks))...};
 }
 
 } // namespace detail
