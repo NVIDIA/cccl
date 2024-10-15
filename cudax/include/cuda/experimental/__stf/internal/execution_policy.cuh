@@ -211,10 +211,6 @@ public:
             std::enable_if_t<!std::is_same_v<thread_hierarchy_spec, thread_hierarchy_spec<other...>>, int> = 0>
   constexpr bool operator==(const thread_hierarchy_spec<other...>&) const noexcept
   {
-    static_assert(!::std::is_same_v<thread_hierarchy_t, thread_hierarchy_spec<other...>>,
-                  "Comparison between the same thread hierarchy specializations is invalid");
-
-    // Instantiation with other parameters is always considered false.
     return false;
   }
 
@@ -227,7 +223,7 @@ public:
             std::enable_if_t<!std::is_same_v<thread_hierarchy_spec, thread_hierarchy_spec<other...>>, int> = 0>
   constexpr bool operator!=(const thread_hierarchy_spec<other...>& rhs) const noexcept
   {
-    return !(*this == rhs);
+    return true;
   }
 
   /// @brief Compute the depth of the thread hierarchy.
