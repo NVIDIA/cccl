@@ -16,6 +16,7 @@
 #pragma once
 
 #include <cuda/experimental/__stf/utility/unittest.cuh>
+#include <cuda/std/__cccl/execution_space.h>
 
 namespace cuda::experimental::stf
 {
