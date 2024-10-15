@@ -604,12 +604,12 @@ _3197bc91feaf98030b2cc0b441d7b0ea(^);
   {                                                                                                    \
     return lhs.get() op rhs.get();                                                                     \
   }                                                                                                    \
-  template <auto v, auto r, typename T>                                                                \
+  template <auto v, auto r, typename T, typename = std::enable_if_t<!std::is_same_v<T, optionally_static<v, r>>>>                                                                \
   constexpr bool operator op(const optionally_static<v, r>& lhs, const T& rhs)                         \
   {                                                                                                    \
     return lhs.get() op rhs;                                                                           \
   }                                                                                                    \
-  template <auto v, auto r, typename T>                                                                \
+  template <auto v, auto r, typename T, typename = std::enable_if_t<!std::is_same_v<T, optionally_static<v, r>>>>                                                                \
   constexpr bool operator op(const T& lhs, const optionally_static<v, r>& rhs)                         \
   {                                                                                                    \
     return lhs op rhs.get();                                                                           \
