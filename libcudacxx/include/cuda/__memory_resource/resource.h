@@ -50,8 +50,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 //! @tparam _Resource The type that should implement the resource concept
 template <class _Resource>
 _LIBCUDACXX_CONCEPT resource =
-  _CUDA_VSTD::equality_comparable<_Resource>
-  && _LIBCUDACXX_REQUIRES_EXPR((_Resource), _Resource& __res, void* __ptr, size_t __bytes, size_t __alignment)(
+  _LIBCUDACXX_REQUIRES_EXPR((_Resource), _Resource& __res, void* __ptr, size_t __bytes, size_t __alignment)(
+    requires(_CUDA_VSTD::equality_comparable<_Resource>),
     _Same_as(void*) __res.allocate(__bytes, __alignment), //
     _Same_as(void) __res.deallocate(__ptr, __bytes, __alignment));
 
