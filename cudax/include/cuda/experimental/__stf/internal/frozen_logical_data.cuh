@@ -55,7 +55,7 @@ private:
       auto& dot = bctx.get_dot();
       if (dot->is_tracing())
       {
-        dot->add_vertex<task, logical_data_untyped>(fake_task);
+        dot->template add_vertex<task, logical_data_untyped>(fake_task);
       }
     }
 
