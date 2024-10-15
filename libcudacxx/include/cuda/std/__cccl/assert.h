@@ -70,7 +70,10 @@
 #  ifdef NDEBUG
 // Reintroduce the __assert_fail declaration
 extern "C" {
-_CCCL_HOST_DEVICE void
+#    if !defined(_CCCL_CUDA_COMPILER_CLANG)
+_CCCL_HOST_DEVICE
+#    endif // !_CCCL_CUDA_COMPILER_CLANG
+void
 __assert_fail(const char* __assertion, const char* __file, unsigned int __line, const char* __function) noexcept
   __attribute__((__noreturn__));
 }
