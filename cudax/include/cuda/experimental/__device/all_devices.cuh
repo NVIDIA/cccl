@@ -194,6 +194,26 @@ inline const arch_traits_t& device_ref::arch_traits() const
   return devices[get()].arch_traits();
 }
 
+inline ::std::vector<device_ref> get_peers(device_ref __dev)
+{
+  ::std::vector<device_ref> __result;
+  for (const device& __other_dev : devices)
+  {
+    int __can_access;
+    _CCCL_TRY_CUDA_API(
+      ::cudaDeviceCanAccessPeer,
+      "Could not query if device can be peer accessed",
+      &__can_access,
+      __dev.get(),
+      __other_dev.get());
+    if (__can_access)
+    {
+      __result.push_back(__other_dev);
+    }
+  }
+  return __result;
+}
+
 } // namespace cuda::experimental
 
 #endif // _CUDAX__DEVICE_ALL_DEVICES

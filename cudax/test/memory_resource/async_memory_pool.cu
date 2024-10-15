@@ -12,12 +12,14 @@
 #include <cuda/std/type_traits>
 #include <cuda/stream_ref>
 
+#include <cuda/experimental/launch.cuh>
 #include <cuda/experimental/memory_resource.cuh>
 #include <cuda/experimental/stream.cuh>
 
 #include <stdexcept>
 
 #include <catch2/catch.hpp>
+#include <utility.cuh>
 
 namespace cudax = cuda::experimental;
 using pool      = cudax::mr::async_memory_pool;
@@ -465,5 +467,27 @@ TEST_CASE("async_memory_pool accessors", "[memory_resource]")
 
     auto still_no_backing = pool.get_attribute(::cudaMemPoolAttrReservedMemCurrent);
     CHECK(still_no_backing == 0);
+  }
+
+  SECTION("async_memory_pool::enable_peer_access")
+  {
+    if (cudax::devices.size() > 1)
+    {
+      auto peers = cudax::get_peers(cudax::devices[0]);
+      if (peers.size() > 0)
+      {
+        cudax::mr::async_memory_pool pool{cudax::devices[0]};
+        // prime the pool to a given size
+        cudax::mr::async_memory_resource resource{pool};
+        cudax::stream stream{peers.front()};
+
+        resource.enable_peer_access(peers);
+
+        // Allocate 2 buffers
+        auto* ptr1 = resource.allocate_async(2048 * sizeof(int), stream);
+        auto dims  = cudax::distribute<1>(1);
+        cudax::launch(stream, dims, test::assign_42{}, (int*) ptr1);
+      }
+    }
   }
 }

@@ -64,6 +64,32 @@ inline void __device_supports_stream_ordered_allocations(const int __device_id)
   }
 }
 
+inline void __mempool_enable_peer_access(cudaMemPool_t __pool, const ::std::vector<device_ref>& __devices)
+{
+  ::std::vector<cudaMemAccessDesc> __descs;
+  __descs.reserve(__devices.size());
+  cudaMemAccessDesc __desc;
+  __desc.flags         = cudaMemAccessFlagsProtReadWrite;
+  __desc.location.type = cudaMemLocationTypeDevice;
+  for (size_t __i = 0; __i < __devices.size(); ++__i)
+  {
+    __desc.location.id = __devices[__i].get();
+    __descs[__i]       = __desc;
+  }
+  _CCCL_TRY_CUDA_API(
+    ::cudaMemPoolSetAccess, "Failed to set access of a memory pool", __pool, __descs.data(), __descs.size());
+}
+
+inline bool __mempool_get_access(cudaMemPool_t __pool, device_ref __dev)
+{
+  cudaMemAccessFlags __result;
+  cudaMemLocation __loc;
+  __loc.type = cudaMemLocationTypeDevice;
+  __loc.id   = __dev.get();
+  _CCCL_TRY_CUDA_API(::cudaMemPoolGetAccess, "failed to get access of a memory pool", &__result, __pool, &__loc);
+  return __result == cudaMemAccessFlagsProtReadWrite;
+}
+
 //! @brief Internal redefinition of ``cudaMemAllocationHandleType``.
 //! @note We need to define our own enum here because the earliest CUDA runtime version that supports asynchronous
 //! memory pools (CUDA 11.2) did not support these flags. See the <a
@@ -278,6 +304,16 @@ public:
       __pool_handle_,
       __attr,
       static_cast<void*>(&__value));
+  }
+
+  void enable_peer_access(const ::std::vector<device_ref>& __devices)
+  {
+    __mempool_enable_peer_access(__pool_handle_, __devices);
+  }
+
+  bool is_accessible_from(device_ref __dev)
+  {
+    return __mempool_get_access(__pool_handle_, __dev);
   }
 
   //! @brief Equality comparison with another \c async_memory_pool.

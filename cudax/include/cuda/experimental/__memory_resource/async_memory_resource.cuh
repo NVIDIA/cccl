@@ -238,6 +238,16 @@ public:
     _CCCL_ASSERT_CUDA_API(::cudaFreeAsync, "async_memory_resource::deallocate_async failed", __ptr, __stream.get());
   }
 
+  void enable_peer_access(const ::std::vector<device_ref>& __devices)
+  {
+    __mempool_enable_peer_access(__pool_, __devices);
+  }
+
+  bool is_accessible_from(device_ref __dev)
+  {
+    return __mempool_get_access(__pool_, __dev);
+  }
+
   //! @brief Equality comparison with another async_memory_resource.
   //! @returns true if underlying \c cudaMemPool_t are equal.
   _CCCL_NODISCARD constexpr bool operator==(async_memory_resource const& __rhs) const noexcept
