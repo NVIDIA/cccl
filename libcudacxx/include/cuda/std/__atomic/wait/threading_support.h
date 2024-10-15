@@ -87,15 +87,15 @@ _LIBCUDACXX_HIDE_FROM_ABI bool __libcpp_thread_poll_with_backoff(
     _CUDA_VSTD::chrono::nanoseconds const __step = __elapsed / 4;
     if (__step >= _CUDA_VSTD::chrono::milliseconds(1))
     {
-      __libcpp_thread_sleep_for(_CUDA_VSTD::chrono::milliseconds(1));
+      _CUDA_VSTD::__libcpp_thread_sleep_for(_CUDA_VSTD::chrono::milliseconds(1));
     }
     else if (__step >= _CUDA_VSTD::chrono::microseconds(10))
     {
-      __libcpp_thread_sleep_for(__step);
+      _CUDA_VSTD::__libcpp_thread_sleep_for(__step);
     }
     else
     {
-      __libcpp_thread_yield();
+      _CUDA_VSTD::__libcpp_thread_yield();
     }
   }
 }

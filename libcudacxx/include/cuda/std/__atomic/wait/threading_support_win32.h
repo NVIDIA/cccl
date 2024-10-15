@@ -67,12 +67,12 @@ typedef long __libcpp_tls_key;
 
 #  define _LIBCUDACXX_TLS_DESTRUCTOR_CC __stdcall
 
-void __libcpp_thread_yield()
+_LIBCUDACXX_HIDE_FROM_ABI void __libcpp_thread_yield()
 {
   SwitchToThread();
 }
 
-void __libcpp_thread_sleep_for(chrono::nanoseconds __ns)
+_LIBCUDACXX_HIDE_FROM_ABI void __libcpp_thread_sleep_for(chrono::nanoseconds __ns)
 {
   using namespace chrono;
   // round-up to the nearest milisecond

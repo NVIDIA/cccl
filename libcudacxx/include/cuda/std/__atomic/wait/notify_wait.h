@@ -76,7 +76,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void __atomic_wait(
     }
     else
     {
-      __libcpp_thread_yield();
+      _CUDA_VSTD::__libcpp_thread_yield();
     }
   }
   while (__nonatomic_compare_equal(__atomic_load_dispatch(__a, __order, _Sco{}), __val))
