@@ -47,7 +47,7 @@ int main()
 
   auto spec = par<16>(con<32>());
 
-  ctx.launch(spec, where, lX.read(), lsum.rw())->*[] _CCCL_DEVICE(auto th, auto x, auto sum) {
+  ctx.launch(spec, where, lX.read(), lsum.rw())->*[] CUDASTF_DEVICE(auto th, auto x, auto sum) {
     // Each thread computes the sum of elements assigned to it
     double local_sum = 0.0;
     for (size_t i = th.rank(); i < x.size(); i += th.size())

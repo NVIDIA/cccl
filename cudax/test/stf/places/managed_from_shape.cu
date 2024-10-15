@@ -71,7 +71,7 @@ int main()
   auto lY = ctx.logical_data(Y);
 
   // Make sure X is created automatically in managed memory
-  ctx.parallel_for(lX.shape(), lX.write(data_place::managed))->*[] _CCCL_DEVICE(size_t i, auto X) {
+  ctx.parallel_for(lX.shape(), lX.write(data_place::managed))->*[] CUDASTF_DEVICE(size_t i, auto X) {
     X(i) = X0(i);
   };
 

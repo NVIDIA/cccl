@@ -54,7 +54,7 @@ int main()
     {
       case 0:
         // Basic usage
-        ctx.parallel_for(ly.shape(), lx.read(), ly.rw())->*[=] _CCCL_DEVICE(size_t pos, auto sx, auto sy) {
+        ctx.parallel_for(ly.shape(), lx.read(), ly.rw())->*[=] CUDASTF_DEVICE(size_t pos, auto sx, auto sy) {
           sy(pos) += 0.5 * (sx(2 * pos) + sx(2 * pos + 1));
         };
         break;
@@ -63,7 +63,7 @@ int main()
         try
         {
           ctx.parallel_for(exec_place::host, ly.shape(), lx.read(), ly.rw())
-              ->*[=] _CCCL_DEVICE(size_t pos, auto sx, auto sy) {
+              ->*[=] CUDASTF_DEVICE(size_t pos, auto sx, auto sy) {
                     sy(pos) += 0.5 * (sx(2 * pos) + sx(2 * pos + 1));
                   };
         }

@@ -80,7 +80,7 @@ int main(int argc, char** argv)
 
   auto spec = con<NBLOCKS>(con(BLOCK_THREADS, mem((num_levels - 1) * sizeof(size_t))));
 
-  ctx.launch(spec, where, lX.read(), lhisto.write())->*[=] _CCCL_DEVICE(auto th, auto x, auto histo) {
+  ctx.launch(spec, where, lX.read(), lhisto.write())->*[=] CUDASTF_DEVICE(auto th, auto x, auto histo) {
     size_t block_id = th.rank(0);
 
     slice<size_t> smem_hist = th.template storage<size_t>(1);

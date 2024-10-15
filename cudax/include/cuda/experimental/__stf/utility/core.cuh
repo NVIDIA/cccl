@@ -38,7 +38,7 @@ namespace cuda::experimental::stf
  * @pre The argument `v` must not be `const`, i.e., the function will fail to compile for `const` lvalues.
  */
 template <typename T>
-_CCCL_HOST_DEVICE constexpr decltype(auto) mv(T&& obj)
+CUDASTF_HOST_DEVICE constexpr decltype(auto) mv(T&& obj)
 {
   static_assert(::std::is_lvalue_reference_v<T>, "Useless move from rvalue.");
   static_assert(!::std::is_const_v<::std::remove_reference_t<T>>, "Misleading move from const lvalue.");
@@ -91,7 +91,7 @@ auto to_shared(T&& obj)
  * expression `true ? from : to`. This ensures expected behavior for iteration with different `from` and `to` types.
  */
 template <typename T, typename U>
-_CCCL_HOST_DEVICE auto each(T from, U to)
+CUDASTF_HOST_DEVICE auto each(T from, U to)
 {
   using common = ::std::remove_reference_t<decltype(true ? from : to)>;
 
@@ -100,16 +100,16 @@ _CCCL_HOST_DEVICE auto each(T from, U to)
     common value;
 
   public:
-    _CCCL_HOST_DEVICE iterator(common value)
+    CUDASTF_HOST_DEVICE iterator(common value)
         : value(mv(value))
     {}
 
-    _CCCL_HOST_DEVICE common operator*() const
+    CUDASTF_HOST_DEVICE common operator*() const
     {
       return value;
     }
 
-    _CCCL_HOST_DEVICE iterator& operator++()
+    CUDASTF_HOST_DEVICE iterator& operator++()
     {
       if constexpr (::std::is_enum_v<common>)
       {
@@ -122,7 +122,7 @@ _CCCL_HOST_DEVICE auto each(T from, U to)
       return *this;
     }
 
-    _CCCL_HOST_DEVICE bool operator!=(const iterator& other) const
+    CUDASTF_HOST_DEVICE bool operator!=(const iterator& other) const
     {
       return value != other.value;
     }
@@ -133,15 +133,15 @@ _CCCL_HOST_DEVICE auto each(T from, U to)
     common begin_, end_;
 
   public:
-    _CCCL_HOST_DEVICE each_t(T begin, U end)
+    CUDASTF_HOST_DEVICE each_t(T begin, U end)
         : begin_(mv(begin))
         , end_(mv(end))
     {}
-    _CCCL_HOST_DEVICE iterator begin() const
+    CUDASTF_HOST_DEVICE iterator begin() const
     {
       return iterator(begin_);
     }
-    _CCCL_HOST_DEVICE iterator end() const
+    CUDASTF_HOST_DEVICE iterator end() const
     {
       return iterator(end_);
     }
@@ -603,21 +603,21 @@ _3197bc91feaf98030b2cc0b441d7b0ea(^);
 
 #undef _3197bc91feaf98030b2cc0b441d7b0ea
 
-#define _3197bc91feaf98030b2cc0b441d7b0ea(op)                                                                     \
-  template <auto v1, auto v2, auto r>                                                                             \
-  constexpr bool operator op(const optionally_static<v1, r>& lhs, const optionally_static<v2, r>& rhs)            \
-  {                                                                                                               \
-    return lhs.get() op rhs.get();                                                                                \
-  }                                                                                                               \
-  template <auto v, auto r, typename T, typename = std::enable_if_t<!std::is_same_v<T, optionally_static<v, r>>>> \
-  constexpr bool operator op(const optionally_static<v, r>& lhs, const T& rhs)                                    \
-  {                                                                                                               \
-    return lhs.get() op rhs;                                                                                      \
-  }                                                                                                               \
-  template <auto v, auto r, typename T, typename = std::enable_if_t<!std::is_same_v<T, optionally_static<v, r>>>> \
-  constexpr bool operator op(const T& lhs, const optionally_static<v, r>& rhs)                                    \
-  {                                                                                                               \
-    return lhs op rhs.get();                                                                                      \
+#define _3197bc91feaf98030b2cc0b441d7b0ea(op)                                                          \
+  template <auto v1, auto v2, auto r>                                                                  \
+  constexpr bool operator op(const optionally_static<v1, r>& lhs, const optionally_static<v2, r>& rhs) \
+  {                                                                                                    \
+    return lhs.get() op rhs.get();                                                                     \
+  }                                                                                                    \
+  template <auto v, auto r, typename T, typename = std::enable_if_t<!std::is_same_v<T, optionally_static<v, r>>>>                                                                \
+  constexpr bool operator op(const optionally_static<v, r>& lhs, const T& rhs)                         \
+  {                                                                                                    \
+    return lhs.get() op rhs;                                                                           \
+  }                                                                                                    \
+  template <auto v, auto r, typename T, typename = std::enable_if_t<!std::is_same_v<T, optionally_static<v, r>>>>                                                                \
+  constexpr bool operator op(const T& lhs, const optionally_static<v, r>& rhs)                         \
+  {                                                                                                    \
+    return lhs op rhs.get();                                                                           \
   }
 
 _3197bc91feaf98030b2cc0b441d7b0ea(==);

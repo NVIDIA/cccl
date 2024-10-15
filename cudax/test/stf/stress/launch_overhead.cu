@@ -43,14 +43,14 @@ int main(int argc, char** argv)
   start = std::chrono::steady_clock::now();
   for (int iter = 0; iter < iter_cnt; iter++)
   {
-    ctx.launch(lX.read(), lY.rw())->*[] _CCCL_DEVICE(auto th, auto X, auto Y) {
+    ctx.launch(lX.read(), lY.rw())->*[] CUDASTF_DEVICE(auto th, auto X, auto Y) {
       for (size_t i = th.rank(); i < X.size(); i += th.size())
       {
         Y(i) = 2.0 * X(i);
       }
     };
 
-    ctx.launch(lX.rw(), lY.read())->*[] _CCCL_DEVICE(auto th, auto X, auto Y) {
+    ctx.launch(lX.rw(), lY.read())->*[] CUDASTF_DEVICE(auto th, auto X, auto Y) {
       for (size_t i = th.rank(); i < X.size(); i += th.size())
       {
         X(i) = 0.5 * Y(i);

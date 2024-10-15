@@ -192,7 +192,7 @@ int main(int argc, char** argv)
     {
       ctx.launch(exec_place::device(b % ngpus), acc_parts[b].write())
           //.set_symbol("init_acc")
-          ->*[=] _CCCL_DEVICE(auto t, slice<double, 2> acc) {
+          ->*[=] CUDASTF_DEVICE(auto t, slice<double, 2> acc) {
                 for (size_t i = t.rank(); i < acc.extent(0); i += t.size())
                 {
                   for (size_t k = 0; k < 3; k++)
@@ -210,7 +210,7 @@ int main(int argc, char** argv)
       {
         ctx.launch(exec_place::device(b % ngpus), parts[b].read(), parts[b_other].read(), acc_parts[b].rw())
             //.set_symbol("compute_acc")
-            ->*[=] _CCCL_DEVICE(auto t, slice<body> p, slice<body> p_other, slice<double, 2> acc) {
+            ->*[=] CUDASTF_DEVICE(auto t, slice<body> p, slice<body> p_other, slice<double, 2> acc) {
                   for (size_t i = t.rank(); i < p.extent(0); i += t.size())
                   {
                     for (size_t j = 0; j < p_other.extent(0); j++)
@@ -242,7 +242,7 @@ int main(int argc, char** argv)
       // Update velocity and positions
       ctx.launch(exec_place::device(b % ngpus), parts[b].rw(), acc_parts[b].read())
           //.set_symbol("update")
-          ->*[=] _CCCL_DEVICE(auto t, slice<body> p, slice<double, 2> acc) {
+          ->*[=] CUDASTF_DEVICE(auto t, slice<body> p, slice<double, 2> acc) {
                 for (size_t i = t.rank(); i < p.extent(0); i += t.size())
                 {
                   for (size_t k = 0; k < 3; k++)

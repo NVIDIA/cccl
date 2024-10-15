@@ -181,7 +181,7 @@ public:
         int devid = get_preferred_devid(rowb, colb);
 
         ctx.parallel_for(exec_place::device(devid), h.shape(), h.write()).set_symbol("INIT")->*
-          [=] _CCCL_DEVICE(size_t lrow, size_t lcol, auto sA) {
+          [=] CUDASTF_DEVICE(size_t lrow, size_t lcol, auto sA) {
             size_t row     = lrow + rowb * sA.extent(0);
             size_t col     = lcol + colb * sA.extent(1);
             sA(lrow, lcol) = fun(row, col);
@@ -640,7 +640,7 @@ int main(int argc, char** argv)
   for (size_t d = 0; d < ndevs; d++)
   {
     auto lX = ctx.logical_data(shape_of<slice<double>>(1));
-    ctx.parallel_for(exec_place::device(d), lX.shape(), lX.write())->*[] _CCCL_DEVICE(size_t, auto) {};
+    ctx.parallel_for(exec_place::device(d), lX.shape(), lX.write())->*[] CUDASTF_DEVICE(size_t, auto) {};
     cuda_safe_call(cudaSetDevice(d));
     get_cublas_handle();
     get_cusolver_handle();
@@ -652,7 +652,7 @@ int main(int argc, char** argv)
   matrix<double> Aref(N, N, NB, NB, false, "Aref");
 
   // (Hilbert matrix + 2*N*Id) to have a diagonal dominant matrix
-  auto hilbert = [=] _CCCL_HOST_DEVICE(size_t row, size_t col) {
+  auto hilbert = [=] CUDASTF_HOST_DEVICE(size_t row, size_t col) {
     return 1.0 / (col + row + 1.0) + 2.0 * N * (col == row);
   };
 
@@ -669,7 +669,7 @@ int main(int argc, char** argv)
 
   if (check_result)
   {
-    auto rhs_vals = [] _CCCL_HOST_DEVICE(size_t row, size_t /*unused*/) {
+    auto rhs_vals = [] CUDASTF_HOST_DEVICE(size_t row, size_t /*unused*/) {
       return 1.0 * (row + 1);
     };
     B_potrs.fill(rhs_vals);

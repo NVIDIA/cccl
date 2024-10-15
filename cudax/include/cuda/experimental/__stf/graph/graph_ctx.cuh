@@ -968,7 +968,7 @@ inline void unit_test_launch_graph()
     ctx.finalize();
   };
   auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
-  ctx.launch(lA.write())->*[] _CCCL_DEVICE(auto t, slice<size_t> A) {
+  ctx.launch(lA.write())->*[] CUDASTF_DEVICE(auto t, slice<size_t> A) {
     for (auto i : t.apply_partition(shape(A)))
     {
       A(i) = 2 * i;
@@ -994,7 +994,7 @@ inline void unit_test_launch_many_graph_ctx()
   {
     graph_ctx ctx;
     auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
-    ctx.launch(lA.write())->*[] _CCCL_DEVICE(auto t, slice<size_t> A) {
+    ctx.launch(lA.write())->*[] CUDASTF_DEVICE(auto t, slice<size_t> A) {
       for (auto i : t.apply_partition(shape(A)))
       {
         A(i) = 2 * i;

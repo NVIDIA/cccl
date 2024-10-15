@@ -22,7 +22,7 @@ int main()
   hashtable h;
   auto lh = ctx.logical_data(h);
 
-  ctx.parallel_for(box(16), lh.rw())->*[] _CCCL_DEVICE(size_t i, auto h) {
+  ctx.parallel_for(box(16), lh.rw())->*[] CUDASTF_DEVICE(size_t i, auto h) {
     uint32_t key   = 10 * i;
     uint32_t value = 17 + i * 14;
     h.insert(key, value);

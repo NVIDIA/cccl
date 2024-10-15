@@ -22,7 +22,7 @@
 using namespace cuda::experimental::stf;
 
 /* Implement atomicMax with a compare and swap */
-_CCCL_DEVICE double atomicMax(double* address, double val)
+CUDASTF_DEVICE double atomicMax(double* address, double val)
 {
   unsigned long long int* address_as_ull = (unsigned long long int*) address;
   unsigned long long int old             = *address_as_ull, assumed;
@@ -39,7 +39,7 @@ _CCCL_DEVICE double atomicMax(double* address, double val)
 }
 
 template <typename thread_hierarchy_t, typename spec_t>
-_CCCL_DEVICE double reduce_max(thread_hierarchy_t& t, spec_t& spec, double local_max)
+CUDASTF_DEVICE double reduce_max(thread_hierarchy_t& t, spec_t& spec, double local_max)
 {
   auto ti             = t.inner();
   slice<double> error = t.template storage<double>(0);
@@ -98,7 +98,7 @@ int main(int argc, char** argv)
   auto all_devs = exec_place::all_devices();
 
   ctx.parallel_for(blocked_partition(), all_devs, lA.shape(), lA.write(), lAnew.write()).set_symbol("init")->*
-    [=] _CCCL_DEVICE(size_t i, size_t j, auto A, auto Anew) {
+    [=] CUDASTF_DEVICE(size_t i, size_t j, auto A, auto Anew) {
       A(i, j) = (i == j) ? 10.0 : -1.0;
     };
 
@@ -112,7 +112,7 @@ int main(int argc, char** argv)
   auto spec = con(con<64>(), mem(sizeof(double)));
 
   ctx.launch(spec, all_devs, lA.rw(), lAnew.write())
-      ->*[spec, iter_max, tol, n, m] _CCCL_DEVICE(auto t, auto A, auto Anew) {
+      ->*[spec, iter_max, tol, n, m] CUDASTF_DEVICE(auto t, auto A, auto Anew) {
             auto ti = t.inner();
             for (size_t iter = 0; iter < iter_max; iter++)
             {

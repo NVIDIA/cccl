@@ -426,7 +426,7 @@ private:
  * @brief A free function which returns the shape of a data instance (e.g. a slice)
  */
 template <typename T>
-inline _CCCL_HOST_DEVICE shape_of<T> shape(const T& inst)
+inline CUDASTF_HOST_DEVICE shape_of<T> shape(const T& inst)
 {
   return shape_of<T>(inst);
 }

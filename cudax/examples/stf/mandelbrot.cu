@@ -48,7 +48,7 @@ int main(int argc, char** argv)
 
   // Compute each pixel
   ctx.parallel_for(blocked_partition(), exec_place::all_devices(), lbuffer.shape(), lbuffer.write())
-      ->*[=] _CCCL_DEVICE(size_t x, size_t y, auto buffer) {
+      ->*[=] CUDASTF_DEVICE(size_t x, size_t y, auto buffer) {
             // Map pixel coordinates to complex plane
             // c = cr + i ci
             double cr = x * (xMax - xMin) / width + xMin;

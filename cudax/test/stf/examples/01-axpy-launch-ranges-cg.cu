@@ -46,7 +46,7 @@ int main()
   auto all_devs       = exec_place::repeat(exec_place::device(0), number_devices);
 
   auto spec = par(16 * 4, par(4));
-  ctx.launch(spec, all_devs, handle_X.read(), handle_Y.rw())->*[=] _CCCL_DEVICE(auto th, auto x, auto y) {
+  ctx.launch(spec, all_devs, handle_X.read(), handle_Y.rw())->*[=] CUDASTF_DEVICE(auto th, auto x, auto y) {
     // Blocked partition among elements in the outer most level
     auto outer_sh = blocked_partition::apply(shape(x), pos4(th.rank(0)), dim4(th.size(0)));
 
