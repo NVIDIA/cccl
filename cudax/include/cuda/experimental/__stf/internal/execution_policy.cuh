@@ -207,7 +207,7 @@ public:
   }
 
   // For other types ...
-  template <auto... other, typename = std::enable_if_t<!std::is_same_v<thread_hierarchy_t, thread_hierarchy_spec<other...>>>>
+  template <auto... other, typename = std::enable_if_t<!std::is_same_v<thread_hierarchy_spec, thread_hierarchy_spec<other...>>>>
   constexpr bool operator==(const thread_hierarchy_spec<other...>&)
   {
     static_assert(!::std::is_same_v<thread_hierarchy_t, thread_hierarchy_spec<other...>>,

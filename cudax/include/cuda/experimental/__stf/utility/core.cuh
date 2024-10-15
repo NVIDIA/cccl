@@ -553,14 +553,14 @@ private:
     {                                                                                                  \
       return lhs.get() op rhs.get();                                                                   \
     }                                                                                                  \
-    else if constexpr ((v1 op v2) == r)                                                                \
+    else if constexpr ((lhs op rhs) == r)                                                                \
     {                                                                                                  \
       /* rare case where we convert two static values into a dynamic one */                            \
       return r;                                                                                        \
     }                                                                                                  \
     else                                                                                               \
     {                                                                                                  \
-      return optionally_static<(v1 op v2), r>();                                                       \
+      return optionally_static<(lhs op rhs), r>();                                                       \
     }                                                                                                  \
   }                                                                                                    \
   template <auto v, auto r, typename T>                                                                \
@@ -599,7 +599,12 @@ _3197bc91feaf98030b2cc0b441d7b0ea(^);
 #undef _3197bc91feaf98030b2cc0b441d7b0ea
 
 #define _3197bc91feaf98030b2cc0b441d7b0ea(op)                                                          \
-  template <auto v1, auto v2, auto r>                                                                  \
+  template <auto v, auto r>                                                                           \
+  constexpr bool operator op(const optionally_static<v, r>& lhs, const optionally_static<v, r>& rhs)   \
+  {                                                                                                    \
+    return lhs.get() op rhs.get();                                                                     \
+  }                                                                                                    \
+  template <auto v1, auto v2, auto r, typename = std::enable_if_t<(v1 != v2)>>            \
   constexpr bool operator op(const optionally_static<v1, r>& lhs, const optionally_static<v2, r>& rhs) \
   {                                                                                                    \
     return lhs.get() op rhs.get();                                                                     \
