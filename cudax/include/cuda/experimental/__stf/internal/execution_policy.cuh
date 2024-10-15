@@ -13,6 +13,7 @@
  */
 #pragma once
 
+#include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/cuda_attributes.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 
