@@ -458,7 +458,7 @@ struct CubVector
 };
 
 /// The maximum number of elements in CUDA vector types
-_LIBCUDACXX_INLINE_VAR constexpr int MAX_VEC_ELEMENTS = 4;
+_CCCL_INLINE_VAR constexpr int MAX_VEC_ELEMENTS = 4;
 
 /**
  * Generic vector-1 type

@@ -260,7 +260,7 @@
 
 #  else
 
-#    define _LIBCUDACXX_CONCEPT _LIBCUDACXX_INLINE_VAR constexpr bool
+#    define _LIBCUDACXX_CONCEPT _CCCL_INLINE_VAR constexpr bool
 
 #    define _LIBCUDACXX_CONCEPT_FRAGMENT(_NAME, ...)                                            \
       _LIBCUDACXX_HIDE_FROM_ABI auto _NAME##_LIBCUDACXX_CONCEPT_FRAGMENT_impl_                  \
@@ -356,7 +356,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _Concept::_Enable_if_t<_Bp> _Requires()
 {}
 #  else
 template <bool _Bp, _Concept::_Enable_if_t<_Bp, int> = 0>
-_LIBCUDACXX_INLINE_VAR constexpr int _Requires = 0;
+_CCCL_INLINE_VAR constexpr int _Requires = 0;
 #  endif
 } // namespace _Concept
 
