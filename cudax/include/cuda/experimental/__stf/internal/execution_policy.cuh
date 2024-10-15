@@ -217,10 +217,15 @@ public:
     return false;
   }
 
-  template <typename R>
-  constexpr bool operator!=(const R& rhs)
+  constexpr bool operator!=(const thread_hierarchy_spec& rhs)
   {
     return !(*this == rhs);
+  }
+
+  template <typename R, typename = std::enable_if_t<!std::is_same_v<thread_hierarchy_spec, R>>>
+  constexpr bool operator!=(const R& rhs)
+  {
+    return true;
   }
 
   /// @brief Compute the depth of the thread hierarchy.
