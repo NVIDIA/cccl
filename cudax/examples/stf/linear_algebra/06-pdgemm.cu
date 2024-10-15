@@ -169,7 +169,7 @@ public:
         int devid = get_preferred_devid(rowb, colb);
 
         ctx.parallel_for(exec_place::device(devid), h.shape(), h.write()).set_symbol("INIT")->*
-          [=] CUDASTF_DEVICE(size_t lrow, size_t lcol, auto sA) {
+          [=] _CCCL_DEVICE(size_t lrow, size_t lcol, auto sA) {
             size_t row     = lrow + rowb * sA.extent(0);
             size_t col     = lcol + colb * sA.extent(1);
             sA(lrow, lcol) = fun(row, col);
@@ -331,7 +331,7 @@ void run(stream_ctx& ctx, size_t N, size_t NB)
   for (size_t d = 0; d < ndevs; d++)
   {
     auto lX = ctx.logical_data(shape_of<slice<double>>(1));
-    ctx.parallel_for(exec_place::device(d), lX.shape(), lX.write())->*[] CUDASTF_DEVICE(size_t, auto) {};
+    ctx.parallel_for(exec_place::device(d), lX.shape(), lX.write())->*[] _CCCL_DEVICE(size_t, auto) {};
   }
 
   /* Initializes CUBLAS on all devices */
@@ -346,7 +346,7 @@ void run(stream_ctx& ctx, size_t N, size_t NB)
   matrix<double> C(ctx, N, N, NB, NB, "C");
 
   // (Hilbert matrix + 2*N*Id)
-  auto hilbert = [=] CUDASTF_HOST_DEVICE(size_t row, size_t col) {
+  auto hilbert = [=] _CCCL_HOST_DEVICE(size_t row, size_t col) {
     return 1.0 / (col + row + 1.0) + 2.0 * N * (col == row);
   };
 

@@ -57,7 +57,7 @@ int main()
   for (size_t k = 0; k < NITER; k++)
   {
     ctx.parallel_for(tiled_partition<1024 * 1024>(), where, handle_X.shape(), handle_X.read(), handle_Y.rw())
-        ->*[=] CUDASTF_DEVICE(size_t i, auto sX, auto sY) {
+        ->*[=] _CCCL_DEVICE(size_t i, auto sX, auto sY) {
               sY(i) += alpha * sX(i);
             };
   }

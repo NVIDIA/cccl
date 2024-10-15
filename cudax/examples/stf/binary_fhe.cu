@@ -91,7 +91,7 @@ public:
     p.l = ctx.logical_data(shape_of<slice<char>>(l.shape().size()));
     // fprintf(stderr, "Decrypting...\n");
     ctx.parallel_for(l.shape(), l.read(), p.l.write()).set_symbol("decrypt")->*
-      [] CUDASTF_DEVICE(size_t i, auto dctxt, auto dptxt) {
+      [] _CCCL_DEVICE(size_t i, auto dctxt, auto dptxt) {
         dptxt(i) = char((dctxt(i) >> 32));
         // printf("DECRYPT %ld : %lx -> %x\n", i, dctxt(i), (int) dptxt(i));
       };
@@ -104,7 +104,7 @@ public:
     result.l = ctx.logical_data(data().shape());
 
     ctx.parallel_for(data().shape(), data().read(), other.data().read(), result.data().write()).set_symbol("OR")->*
-      [] CUDASTF_DEVICE(size_t i, auto d_c1, auto d_c2, auto d_res) {
+      [] _CCCL_DEVICE(size_t i, auto d_c1, auto d_c2, auto d_res) {
         d_res(i) = d_c1(i) | d_c2(i);
       };
 
@@ -117,7 +117,7 @@ public:
     result.l = ctx.logical_data(data().shape());
 
     ctx.parallel_for(data().shape(), data().read(), other.data().read(), result.data().write()).set_symbol("AND")->*
-      [] CUDASTF_DEVICE(size_t i, auto d_c1, auto d_c2, auto d_res) {
+      [] _CCCL_DEVICE(size_t i, auto d_c1, auto d_c2, auto d_res) {
         d_res(i) = d_c1(i) & d_c2(i);
       };
 
@@ -129,7 +129,7 @@ public:
     ciphertext result(ctx);
     result.l = ctx.logical_data(data().shape());
     ctx.parallel_for(data().shape(), data().read(), result.data().write()).set_symbol("NOT")->*
-      [] CUDASTF_DEVICE(size_t i, auto d_c, auto d_res) {
+      [] _CCCL_DEVICE(size_t i, auto d_c, auto d_res) {
         d_res(i) = ~d_c(i);
       };
 
@@ -158,7 +158,7 @@ ciphertext plaintext::encrypt() const
   c.l = ctx.logical_data(shape_of<slice<uint64_t>>(l.shape().size()));
 
   ctx.parallel_for(l.shape(), l.read(), c.l.write()).set_symbol("encrypt")->*
-    [] CUDASTF_DEVICE(size_t i, auto dptxt, auto dctxt) {
+    [] _CCCL_DEVICE(size_t i, auto dptxt, auto dctxt) {
       // A super safe encryption !
       dctxt(i) = ((uint64_t) (dptxt(i)) << 32 | 0x4);
     };
