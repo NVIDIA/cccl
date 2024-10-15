@@ -74,7 +74,7 @@ int main(int argc, char** argv)
   // auto where = exec_place::repeat(exec_place::current_device(), NDEVS);
   auto where = exec_place::current_device();
 
-  ctx.launch(spec, where, lX.rw())->*[=] CUDASTF_DEVICE(auto th, auto x) {
+  ctx.launch(spec, where, lX.rw())->*[=] _CCCL_DEVICE(auto th, auto x) {
     const size_t block_id = th.rank(0);
     const size_t tid      = th.inner().rank();
     // const size_t tid = th.rank(1, 0);

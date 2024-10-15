@@ -52,7 +52,7 @@ int main()
 
   auto spec = par(con(128));
 
-  ctx.launch(spec, all_devs, ltext.read(), lcnt.rw())->*[] CUDASTF_DEVICE(auto th, auto text, auto cnt) {
+  ctx.launch(spec, all_devs, ltext.read(), lcnt.rw())->*[] _CCCL_DEVICE(auto th, auto text, auto cnt) {
     int local_cnt = 0;
     for (size_t i = th.rank(); i < text.size() - 1; i += th.size())
     {

@@ -48,7 +48,7 @@ int main()
     lY.set_symbol("tmp" + std::to_string(i));
 
     // fprintf(stderr, "START pfor %ld\n", i);
-    ctx.parallel_for(lX.shape(), lX.rw(), lY.write())->*[] CUDASTF_DEVICE(size_t ind, auto dX, auto dY) {
+    ctx.parallel_for(lX.shape(), lX.rw(), lY.write())->*[] _CCCL_DEVICE(size_t ind, auto dX, auto dY) {
       dY(ind) = dX(ind);
       dX(ind) = dY(ind) + 1.0;
     };

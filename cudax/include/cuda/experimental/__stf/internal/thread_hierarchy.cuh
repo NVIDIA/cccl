@@ -71,7 +71,7 @@ public:
 
   // Construct from an outer thread hierarchy (peel off one level)
   template <bool outer_sync, size_t outer_width>
-  CUDASTF_HOST_DEVICE thread_hierarchy(const thread_hierarchy<outer_sync, outer_width, spec...>& outer)
+  _CCCL_HOST_DEVICE thread_hierarchy(const thread_hierarchy<outer_sync, outer_width, spec...>& outer)
       : devid(outer.devid)
       , launch_config(outer.launch_config)
       , cg_system(outer.cg_system)
@@ -119,15 +119,13 @@ public:
     return data[1 + 2 * level];
   }
 
-  CUDASTF_HOST_DEVICE
-  const ::std::array<size_t, 3>& get_config() const
+  _CCCL_HOST_DEVICE const ::std::array<size_t, 3>& get_config() const
   {
     return launch_config;
   }
 
   // Rank from the root
-  CUDASTF_HOST_DEVICE
-  size_t rank(int level, int root_level) const
+  _CCCL_HOST_DEVICE size_t rank(int level, int root_level) const
   {
 #ifndef __CUDA_ARCH__
     (void) level;
@@ -165,8 +163,7 @@ public:
 #endif
   }
 
-  CUDASTF_HOST_DEVICE
-  size_t size(int level, int root_level) const
+  _CCCL_HOST_DEVICE size_t size(int level, int root_level) const
   {
     if constexpr (depth == 0)
     {
@@ -191,20 +188,17 @@ public:
 #endif
   }
 
-  CUDASTF_HOST_DEVICE
-  size_t size(int level = int(depth) - 1) const
+  _CCCL_HOST_DEVICE size_t size(int level = int(depth) - 1) const
   {
     return size(level, -1);
   }
 
-  CUDASTF_HOST_DEVICE
-  size_t rank(int level = int(depth) - 1) const
+  _CCCL_HOST_DEVICE size_t rank(int level = int(depth) - 1) const
   {
     return rank(level, -1);
   }
 
-  CUDASTF_HOST_DEVICE
-  void sync(int level = 0)
+  _CCCL_HOST_DEVICE void sync(int level = 0)
   {
     assert(level >= 0);
     assert(level < depth);
@@ -264,7 +258,7 @@ public:
   }
 
   template <typename shape_t, typename P, typename... sub_partitions>
-  CUDASTF_HOST_DEVICE auto apply_partition(const shape_t& s, const ::std::tuple<P, sub_partitions...>& t) const
+  _CCCL_HOST_DEVICE auto apply_partition(const shape_t& s, const ::std::tuple<P, sub_partitions...>& t) const
   {
     auto s0         = P::apply(s, pos4(rank(0)), dim4(size(0)));
     auto sans_first = make_tuple_indexwise<sizeof...(sub_partitions)>([&](auto index) {
@@ -282,7 +276,7 @@ public:
 
   // Default partitioner tuple<blocked, blocked...., blocked, cyclic>
   template <typename shape_t>
-  CUDASTF_HOST_DEVICE auto apply_partition(const shape_t& s) const
+  _CCCL_HOST_DEVICE auto apply_partition(const shape_t& s) const
   {
     if constexpr (depth == 1)
     {
@@ -300,14 +294,13 @@ public:
    *
    * @return `thread_hierarchy` instantiated with `spec` sans the first two arguments
    */
-  CUDASTF_HOST_DEVICE
-  auto inner() const
+  _CCCL_HOST_DEVICE auto inner() const
   {
     return typename inner_t<spec...>::type(*this);
   }
 
   template <typename T>
-  CUDASTF_HOST_DEVICE slice<T> storage(int level)
+  _CCCL_HOST_DEVICE slice<T> storage(int level)
   {
     assert(level >= 0);
     assert(level < depth);
@@ -396,21 +389,20 @@ private:
 
   /* Special case to work-around spec = <> */
   template <size_t Idx>
-  CUDASTF_HOST_DEVICE bool may_sync_impl(int) const
+  _CCCL_HOST_DEVICE bool may_sync_impl(int) const
   {
     return false;
   }
 
   template <size_t Idx, bool sync, size_t w, auto... remaining>
-  CUDASTF_HOST_DEVICE bool may_sync_impl(int level) const
+  _CCCL_HOST_DEVICE bool may_sync_impl(int level) const
   {
     static_assert(Idx < sizeof...(spec) / 2);
     return (level == Idx) ? sync : may_sync_impl<Idx + 1, remaining...>(level);
   }
 
   /* Evaluate at runtime if we can call sync on the specified level */
-  CUDASTF_HOST_DEVICE
-  bool may_sync(int level) const
+  _CCCL_HOST_DEVICE bool may_sync(int level) const
   {
     return may_sync_impl<0, spec...>(level);
   }

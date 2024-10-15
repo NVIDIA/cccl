@@ -63,7 +63,7 @@ int main(int argc, char** argv)
   auto data_logical = ctx.logical_data<int>(N);
   // initialize centroids
   ctx.parallel_for(blocked_partition(), all_devs, data_logical.shape(), data_logical.write(cdp))
-      ->*[=] CUDASTF_DEVICE(size_t ind, auto data) {
+      ->*[=] _CCCL_DEVICE(size_t ind, auto data) {
             data(ind) = 0;
           };
   int cur_iter = 1;
@@ -77,7 +77,7 @@ int main(int argc, char** argv)
     for (cur_iter = 1; cur_iter < MAX_ITER; ++cur_iter)
     {
       ctx.launch(all_devs, data_logical.write(cdp)).set_symbol("launch assignment")
-          ->*[=] CUDASTF_DEVICE(auto&& t, auto&& data) {
+          ->*[=] _CCCL_DEVICE(auto&& t, auto&& data) {
                 for (auto ind : t.apply_partition(shape(data)))
                 {
                   data(ind) = 0;
@@ -89,7 +89,7 @@ int main(int argc, char** argv)
   {
     for (cur_iter = 1; cur_iter < MAX_ITER; ++cur_iter)
     {
-      ctx.launch(all_devs, data_logical.rw(cdp))->*[=] CUDASTF_DEVICE(auto t, auto data) {};
+      ctx.launch(all_devs, data_logical.rw(cdp))->*[=] _CCCL_DEVICE(auto t, auto data) {};
     }
   }
   else if (strcmp(method, "parallel") == 0)
@@ -97,7 +97,7 @@ int main(int argc, char** argv)
     for (cur_iter = 1; cur_iter < MAX_ITER; ++cur_iter)
     {
       ctx.parallel_for(blocked_partition(), all_devs, data_logical.shape(), data_logical.rw(cdp))
-          ->*[=] CUDASTF_DEVICE(size_t ind, auto data) {};
+          ->*[=] _CCCL_DEVICE(size_t ind, auto data) {};
     }
   }
   else if (strcmp(method, "parallel-indexed") == 0)
@@ -106,7 +106,7 @@ int main(int argc, char** argv)
     {
       ctx.parallel_for(blocked_partition(), all_devs, data_logical.shape(), data_logical.rw(cdp))
           .set_symbol("parallel for assignment")
-          ->*[=] CUDASTF_DEVICE(size_t ind, auto data) {
+          ->*[=] _CCCL_DEVICE(size_t ind, auto data) {
                 data(ind) = 0;
               };
     }

@@ -47,7 +47,7 @@ int main()
             streams.push_back(s);
             auto spec = par(1024);
             reserved::launch(spec, exec_place::current_device(), streams, std::tuple{x, y})
-                ->*[] CUDASTF_DEVICE(auto t, slice<int> x, slice<int> y) {
+                ->*[] _CCCL_DEVICE(auto t, slice<int> x, slice<int> y) {
                       size_t tid      = t.rank();
                       size_t nthreads = t.size();
                       for (size_t ind = tid; ind < N; ind += nthreads)
@@ -57,7 +57,7 @@ int main()
                     };
 
             reserved::launch(spec, exec_place::current_device(), streams, std::tuple{y, z})
-                ->*[] CUDASTF_DEVICE(auto t, slice<int> y, slice<int> z) {
+                ->*[] _CCCL_DEVICE(auto t, slice<int> y, slice<int> z) {
                       size_t tid      = t.rank();
                       size_t nthreads = t.size();
                       for (size_t ind = tid; ind < N; ind += nthreads)

@@ -60,7 +60,7 @@ int main()
 
   /* Compute Y = Y + alpha X */
   ctx.parallel_for(tiled_partition<1024 * 1024>(), all_devs, handle_X.shape(), handle_X.read(), handle_Y.rw())
-      ->*[=] CUDASTF_DEVICE(size_t i, auto sX, auto sY) {
+      ->*[=] _CCCL_DEVICE(size_t i, auto sX, auto sY) {
             sY(i) += alpha * sX(i);
           };
 

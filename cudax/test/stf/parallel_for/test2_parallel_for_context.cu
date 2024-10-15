@@ -38,11 +38,11 @@ int main()
   auto lx = ctx.logical_data(make_slice(&X[0], std::tuple{2 * N, 2 * N}, 2 * N));
   auto ly = ctx.logical_data(make_slice(&Y[0], std::tuple{N, N}, N));
 
-  ctx.parallel_for(lx.shape(), lx.write())->*[=] CUDASTF_DEVICE(size_t i, size_t j, auto sx) {
+  ctx.parallel_for(lx.shape(), lx.write())->*[=] _CCCL_DEVICE(size_t i, size_t j, auto sx) {
     sx(i, j) = x0(i, j);
   };
 
-  ctx.parallel_for(ly.shape(), lx.read(), ly.write())->*[=] CUDASTF_DEVICE(size_t i, size_t j, auto sx, auto sy) {
+  ctx.parallel_for(ly.shape(), lx.read(), ly.write())->*[=] _CCCL_DEVICE(size_t i, size_t j, auto sx, auto sy) {
     sy(i, j) = y0(i, j);
     for (size_t ii = 0; ii < 2; ii++)
     {

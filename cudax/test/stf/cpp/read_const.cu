@@ -27,14 +27,14 @@ struct foo
 
   void set(context& ctx, int val)
   {
-    ctx.parallel_for(l.shape(), l.write())->*[=] CUDASTF_DEVICE(size_t i, auto dl) {
+    ctx.parallel_for(l.shape(), l.write())->*[=] _CCCL_DEVICE(size_t i, auto dl) {
       dl(i) = val;
     };
   }
 
   void copy_from(context& ctx, const foo& other)
   {
-    ctx.parallel_for(l.shape(), l.write(), other.l.read())->*[=] CUDASTF_DEVICE(size_t i, auto dl, auto dotherl) {
+    ctx.parallel_for(l.shape(), l.write(), other.l.read())->*[=] _CCCL_DEVICE(size_t i, auto dl, auto dotherl) {
       dl(i) = dotherl(i);
     };
   }
@@ -42,7 +42,7 @@ struct foo
   void ensure(context& ctx, int val)
   {
     std::ignore = val;
-    ctx.parallel_for(l.shape(), l.read())->*[=] CUDASTF_DEVICE(size_t i, auto dl) {
+    ctx.parallel_for(l.shape(), l.read())->*[=] _CCCL_DEVICE(size_t i, auto dl) {
       assert(dl(i) == val);
     };
   }
@@ -57,11 +57,11 @@ struct foo
 
 void read_only_access(context& ctx, const foo& f)
 {
-  ctx.parallel_for(f.l.shape(), f.l.read())->*[] CUDASTF_DEVICE(size_t i, auto dl) {
+  ctx.parallel_for(f.l.shape(), f.l.read())->*[] _CCCL_DEVICE(size_t i, auto dl) {
     // no-op
   };
 
-  ctx.parallel_for(f.get_l().shape(), f.get_l().read())->*[] CUDASTF_DEVICE(size_t i, auto dl) {
+  ctx.parallel_for(f.get_l().shape(), f.get_l().read())->*[] _CCCL_DEVICE(size_t i, auto dl) {
     // no-op
   };
 }
