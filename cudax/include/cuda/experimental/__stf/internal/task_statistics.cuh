@@ -127,7 +127,7 @@ public:
       squares += delta * (new_time - mean);
 
       double variance = (num_calls == 1 ? 0 : squares / (num_calls - 1));
-      stddev = ::std::sqrt(variance);
+      stddev          = ::std::sqrt(variance);
     }
 
     int get_num_calls() const

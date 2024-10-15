@@ -808,7 +808,7 @@ public:
       auto other = dynamic_cast<const impl*>(&rhs);
       if (!other)
       {
-          return false;  // rhs is not a grid, so they are not equal
+        return false; // rhs is not a grid, so they are not equal
       }
 
       // Compare two grids
@@ -818,14 +818,14 @@ public:
     // Compare two grids
     bool operator==(const impl& rhs) const
     {
-        // First, compare base class properties
-        if (!exec_place::impl::operator==(rhs))
-        {
-            return false;
-        }
+      // First, compare base class properties
+      if (!exec_place::impl::operator==(rhs))
+      {
+        return false;
+      }
 
-        // Compare grid-specific properties
-        return dims == rhs.dims && places == rhs.places;
+      // Compare grid-specific properties
+      return dims == rhs.dims && places == rhs.places;
     }
 
     const ::std::vector<exec_place>& get_places() const
@@ -1026,7 +1026,9 @@ public:
   }
 
   // Default constructor
-  exec_place_grid() : exec_place(nullptr) {}
+  exec_place_grid()
+      : exec_place(nullptr)
+  {}
 
   // private:
   exec_place_grid(::std::shared_ptr<impl> p)

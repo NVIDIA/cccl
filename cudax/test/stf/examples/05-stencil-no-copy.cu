@@ -146,7 +146,7 @@ int main(int argc, char** argv)
 
   stream_ctx ctx;
 
-  int NITER      = 500;
+  int NITER         = 500;
   size_t NBLOCKS    = 4 * ndevs;
   size_t BLOCK_SIZE = 2048 * 1024;
 
@@ -174,7 +174,7 @@ int main(int argc, char** argv)
   std::vector<data_block<double>> Un1;
 
   // Create blocks and allocates host data
-  for (size_t  b = 0; b < NBLOCKS; b++)
+  for (size_t b = 0; b < NBLOCKS; b++)
   {
     size_t beg = b * BLOCK_SIZE;
     size_t end = (b + 1) * BLOCK_SIZE;

@@ -548,8 +548,8 @@ private:
   template <auto v1, auto v2, auto r>                                                                  \
   constexpr auto operator op(const optionally_static<v1, r>& lhs, const optionally_static<v2, r>& rhs) \
   {                                                                                                    \
-      if constexpr (!std::remove_reference_t<decltype(lhs)>::is_static ||                         \
-                    !std::remove_reference_t<decltype(rhs)>::is_static) \
+    if constexpr (!std::remove_reference_t<decltype(lhs)>::is_static                                   \
+                  || !std::remove_reference_t<decltype(rhs)>::is_static)                               \
     {                                                                                                  \
       return lhs.get() op rhs.get();                                                                   \
     }                                                                                                  \

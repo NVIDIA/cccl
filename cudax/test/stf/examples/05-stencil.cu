@@ -144,7 +144,7 @@ void copy_array(data_block<T>& bn, data_block<T>& bn1)
 
 int main(int argc, char** argv)
 {
-  int NITER      = 500;
+  int NITER         = 500;
   size_t NBLOCKS    = 4;
   size_t BLOCK_SIZE = 2048 * 1024;
 

@@ -114,7 +114,7 @@ public:
       // Note: we store grid in a variable to avoid dangling references
       // because the compiler does not know we are making a refernce to
       // a vector that remains valid
-      const auto& grid = e_place.as_grid();
+      const auto& grid   = e_place.as_grid();
       const auto& places = grid.get_places();
       for (const exec_place& p : places)
       {
@@ -375,7 +375,7 @@ private:
     // Disable timing to avoid implicit barriers
     cuda_safe_call(cudaEventCreateWithFlags(&sync_event, cudaEventDisableTiming));
 #ifdef CUDASTF_DEBUG
-    counter<cuda_event_tag::created>++;
+    counter<cuda_event_tag::created> ++;
     high_water_mark<cuda_event_tag>.record(++counter<cuda_event_tag::alive>);
 #endif
 

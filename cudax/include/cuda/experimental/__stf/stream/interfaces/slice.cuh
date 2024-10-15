@@ -126,7 +126,7 @@ public:
 
       if constexpr (dimensions >= 4)
       {
-        t  = (((ind - x) / nx - y) / ny - z) / nz;
+        t = (((ind - x) / nx - y) / ny - z) / nz;
       }
 
       return pos4(x, y, z, t);
@@ -159,10 +159,10 @@ public:
     const size_t sz  = this->shape.size() * sizeof(T);
     auto& local_desc = this->instance(instance_id);
     // We can deallocate a copy of a logical data even if it was only accessible in read only mode
-    auto ptr   = const_cast<mutable_value_type*>(local_desc.data_handle());
+    auto ptr = const_cast<mutable_value_type*>(local_desc.data_handle());
 
     // TODO erase local_desc to avoid future reuse by mistake
-    //local_desc = element_type();
+    // local_desc = element_type();
 
     if (!memory_node.is_composite())
     {

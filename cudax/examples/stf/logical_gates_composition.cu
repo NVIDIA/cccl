@@ -18,52 +18,58 @@
 using namespace cuda::experimental::stf;
 
 // z = AND(x,y)
-logical_data<slice<int>> AND(context& ctx, logical_data<slice<int>> x, logical_data<slice<int>> y) {
-    size_t nx = x.shape().size();
-    size_t ny = y.shape().size();
-    assert(nx == ny);
+logical_data<slice<int>> AND(context& ctx, logical_data<slice<int>> x, logical_data<slice<int>> y)
+{
+  size_t nx = x.shape().size();
+  size_t ny = y.shape().size();
+  assert(nx == ny);
 
-    auto z = ctx.logical_data(x.shape());
+  auto z = ctx.logical_data(x.shape());
 
-    std::string symbol = "(" + x.get_symbol() + " & " + y.get_symbol() + ")";
-    z.set_symbol(symbol);
+  std::string symbol = "(" + x.get_symbol() + " & " + y.get_symbol() + ")";
+  z.set_symbol(symbol);
 
-    ctx.parallel_for(z.shape(), x.read(), y.read(), z.write()).set_symbol("AND")->*
-            [] __device__(size_t i, auto dx, auto dy, auto dz) { dz(i) = dx(i) & dy(i); };
+  ctx.parallel_for(z.shape(), x.read(), y.read(), z.write()).set_symbol("AND")->*
+    [] __device__(size_t i, auto dx, auto dy, auto dz) {
+      dz(i) = dx(i) & dy(i);
+    };
 
-    return z;
+  return z;
 }
 
 // y = NOT(x)
-logical_data<slice<int>> NOT(context& ctx, logical_data<slice<int>> x) {
-    auto y = ctx.logical_data(x.shape());
+logical_data<slice<int>> NOT(context& ctx, logical_data<slice<int>> x)
+{
+  auto y = ctx.logical_data(x.shape());
 
-    std::string symbol = "( !" + x.get_symbol() + ")";
-    y.set_symbol(symbol);
+  std::string symbol = "( !" + x.get_symbol() + ")";
+  y.set_symbol(symbol);
 
-    ctx.parallel_for(y.shape(), x.read(), y.write()).set_symbol("NOT")->*
-            [] __device__(size_t i, auto dx, auto dy) { dy(i) = ~dx(i); };
+  ctx.parallel_for(y.shape(), x.read(), y.write()).set_symbol("NOT")->*[] __device__(size_t i, auto dx, auto dy) {
+    dy(i) = ~dx(i);
+  };
 
-    return y;
+  return y;
 }
 
-int main() {
-    const size_t n = 12;
+int main()
+{
+  const size_t n = 12;
 
-    int X[n], Y[n], Z[n];
+  int X[n], Y[n], Z[n];
 
-    context ctx;
+  context ctx;
 
-    auto lX = ctx.logical_data(X);
-    auto lY = ctx.logical_data(Y);
-    auto lZ = ctx.logical_data(Z);
+  auto lX = ctx.logical_data(X);
+  auto lY = ctx.logical_data(Y);
+  auto lZ = ctx.logical_data(Z);
 
-    lX.set_symbol("X");
-    lY.set_symbol("Y");
-    lZ.set_symbol("Z");
+  lX.set_symbol("X");
+  lY.set_symbol("Y");
+  lZ.set_symbol("Z");
 
-    auto lB = AND(ctx, AND(ctx, lX, lY), AND(ctx, lX, lZ));
-    auto lC = AND(ctx, NOT(ctx, AND(ctx, lB, NOT(ctx, lY))), lX);
+  auto lB = AND(ctx, AND(ctx, lX, lY), AND(ctx, lX, lZ));
+  auto lC = AND(ctx, NOT(ctx, AND(ctx, lB, NOT(ctx, lY))), lX);
 
-    ctx.finalize();
+  ctx.finalize();
 }

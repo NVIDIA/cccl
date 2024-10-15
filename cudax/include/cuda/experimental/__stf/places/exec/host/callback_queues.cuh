@@ -17,8 +17,9 @@
 
 #include <cuda/experimental/__stf/places/exec/host/callback_queues.cuh>
 #include <cuda/experimental/__stf/utility/traits.cuh>
-#include <stack>
+
 #include <cstdio>
+#include <stack>
 
 #define STATEFUL_CALLBACKS
 
@@ -31,7 +32,7 @@ class cb;
 class cudaCallbackStateCtxKeys : public meyers_singleton<cudaCallbackStateCtxKeys>
 {
 protected:
-  cudaCallbackStateCtxKeys() = default;
+  cudaCallbackStateCtxKeys()  = default;
   ~cudaCallbackStateCtxKeys() = default;
 
 public:
@@ -229,7 +230,6 @@ public:
   pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
   pthread_cond_t cond   = PTHREAD_COND_INITIALIZER;
 
-
   void init()
   {
     // Create a pool of completion flags
@@ -284,7 +284,7 @@ inline int* cf_pop(callback_queue* q)
 
 inline void callback_dispatcher(cudaStream_t, cudaError_t, void* userData)
 {
-  class cb* cb_                = (cb*) userData;
+  class cb* cb_               = (cb*) userData;
   class callback_queue* queue = cb_->queue;
 
   // Protect the queue
@@ -501,12 +501,12 @@ inline __host__ cudaError_t cudaGraphAddHostNodeWithQueue(
   // Submit completion kernel in the stream ...
   // callback_completion_kernel<<<1,1,0,stream>>>(data->completion_flag);
   cudaKernelNodeParams kernel_node_params;
-  kernel_node_params.func                 = (void*) callback_completion_kernel;
-  kernel_node_params.gridDim              = 1;
-  kernel_node_params.blockDim             = 1;
-  kernel_node_params.kernelParams         = new void*[1];
-  kernel_node_params.kernelParams[0]      = (void*) &data->completion_flag;
-  err                                     = cudaGraphAddKernelNode(node, graph, &node0, 1, &kernel_node_params);
+  kernel_node_params.func            = (void*) callback_completion_kernel;
+  kernel_node_params.gridDim         = 1;
+  kernel_node_params.blockDim        = 1;
+  kernel_node_params.kernelParams    = new void*[1];
+  kernel_node_params.kernelParams[0] = (void*) &data->completion_flag;
+  err                                = cudaGraphAddKernelNode(node, graph, &node0, 1, &kernel_node_params);
 
   return err;
 }

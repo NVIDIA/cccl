@@ -33,14 +33,19 @@ using stream_and_event_vector = small_vector<handle<stream_and_event>, 7>;
 } // namespace reserved
 
 /* Tag types for event counters */
-class cuda_event_tag {
+class cuda_event_tag
+{
 public:
-    class created {};
-    class alive {};
-    class destroyed {};
+  class created
+  {};
+  class alive
+  {};
+  class destroyed
+  {};
 };
 
-class cuda_stream_wait_event_tag {};
+class cuda_stream_wait_event_tag
+{};
 
 /* This event type allows to synchronize a CUDA stream with a CUDA event in
  * another stream, possibly on another device. */

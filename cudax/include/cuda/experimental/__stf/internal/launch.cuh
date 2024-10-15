@@ -277,11 +277,11 @@ public:
   }
 
   /// Deleted copy constructor and copy assignment operator.
-  launch_scope(const launch_scope &) = delete;
-  launch_scope &operator=(const launch_scope &) = delete;
+  launch_scope(const launch_scope&)            = delete;
+  launch_scope& operator=(const launch_scope&) = delete;
 
   /// Move constructor
-  launch_scope(launch_scope &&) = default;
+  launch_scope(launch_scope&&) = default;
 
   /**
    * @brief Set the symbol for the task.
