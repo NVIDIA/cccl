@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__latch/latch.h>
+#include <cuda/__latch/latch.h>
 #include <cuda/std/latch>
 
 #endif // _CUDA_LATCH
