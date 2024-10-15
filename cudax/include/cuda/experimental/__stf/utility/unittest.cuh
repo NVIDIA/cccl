@@ -35,15 +35,15 @@
  *
  * @code
  * // Example usage:
- * int UNIQUE_NAME(my_variable) = 42;  // Creates a unique variable name like my_variable0
- * int UNIQUE_NAME(my_variable) = 43;  // Creates a unique variable name like my_variable1
+ * int CUDASTF_UNIQUE_NAME(my_variable) = 42;  // Creates a unique variable name like my_variable0
+ * int CUDASTF_UNIQUE_NAME(my_variable) = 43;  // Creates a unique variable name like my_variable1
  * @endcode
  *
  * @note This macro is not portable as the `__COUNTER__` macro is not part of the C++ standard.
  *
  * @param base The base name for the unique identifier.
  */
-#define UNIQUE_NAME(base) _55f56f4e3b45c8cf3fa50b28fed72e2a(base, __COUNTER__)
+#define CUDASTF_UNIQUE_NAME(base) _55f56f4e3b45c8cf3fa50b28fed72e2a(base, __COUNTER__)
 
 /**
  * @brief Macro to check a variety of conditions, throws if the condition is false
@@ -474,14 +474,14 @@ int main()
 }
 
 #  define UNITTEST(name, ...)                                                                                         \
-    [[maybe_unused]] static const auto UNIQUE_NAME(unittest) =                                                        \
+    [[maybe_unused]] static const auto CUDASTF_UNIQUE_NAME(unittest) =                                                \
       ::cuda::experimental::stf::unittest<>::make(name, RESERVED_STF_SOURCE_LOCATION() __VA_OPT__(, __VA_ARGS__))->*[ \
       ]([[maybe_unused]] const char* unittest_name __VA_OPT__(, [[maybe_unused]] auto&& unittest_param))
 
 #else
 
-#  define UNITTEST(name, ...)                                         \
-    [[maybe_unused]] static const auto UNIQUE_NAME(unused_unittest) = \
+#  define UNITTEST(name, ...)                                                 \
+    [[maybe_unused]] static const auto CUDASTF_UNIQUE_NAME(unused_unittest) = \
       []([[maybe_unused]] auto&& unittest_name __VA_OPT__(, [[maybe_unused]] auto&& unittest_param))
 
 #endif

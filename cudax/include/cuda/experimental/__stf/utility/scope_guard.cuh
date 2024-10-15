@@ -44,7 +44,7 @@ namespace cuda::experimental::stf
  */
 ///@{
 #define SCOPE(kind)                                                                      \
-  auto UNIQUE_NAME(scope_guard) =                                                        \
+  auto CUDASTF_UNIQUE_NAME(scope_guard) =                                                \
     ::std::integral_constant<::cuda::experimental::stf::scope_guard_condition,           \
                              (::cuda::experimental::stf::scope_guard_condition::kind)>() \
       ->*[&]()
