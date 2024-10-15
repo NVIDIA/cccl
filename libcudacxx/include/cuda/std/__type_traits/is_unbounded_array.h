@@ -41,7 +41,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_unbounded_array<_Tp[]> : true_type
 {};
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_unbounded_array_v = is_unbounded_array<_Tp>::value;
+_CCCL_INLINE_VAR constexpr bool is_unbounded_array_v = is_unbounded_array<_Tp>::value;
 #endif
 
 _LIBCUDACXX_END_NAMESPACE_STD

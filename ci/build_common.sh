@@ -34,7 +34,7 @@ function usage {
     echo "  $ PARALLEL_LEVEL=8 $0"
     echo "  $ PARALLEL_LEVEL=8 $0 -cxx g++-9"
     echo "  $ $0 -cxx clang++-8"
-    echo "  $ $0 -configure -arch=80"
+    echo "  $ $0 -configure -arch 80"
     echo "  $ $0 -cxx g++-8 -std 14 -arch 80-real -v -cuda /usr/local/bin/nvcc"
     echo "  $ $0 -cmake-options \"-DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS=-Wfatal-errors\""
     exit 1

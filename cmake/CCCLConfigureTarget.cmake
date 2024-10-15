@@ -10,6 +10,13 @@ function(cccl_configure_target target_name)
 
   get_target_property(type ${target_name} TYPE)
 
+  set_target_properties(${target_name}
+    PROPERTIES
+      # Disable compiler extensions:
+      CXX_EXTENSIONS OFF
+      CUDA_EXTENSIONS OFF
+  )
+
   if (DEFINED CCT_DIALECT)
     set_target_properties(${target_name}
       PROPERTIES

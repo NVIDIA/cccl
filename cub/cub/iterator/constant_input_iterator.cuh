@@ -61,7 +61,7 @@ CUB_NAMESPACE_BEGIN
  * @brief A random-access input generator for dereferencing a sequence of homogeneous values
  *
  * @par Overview
- * - Read references to a ConstantInputIteratorTiterator always return the supplied constant
+ * - Read references to a ConstantInputIterator always return the supplied constant
  *   of type @p ValueType.
  * - Can be used with any data type.
  * - Can be constructed, manipulated, dereferenced, and exchanged within and between host and device
@@ -69,7 +69,7 @@ CUB_NAMESPACE_BEGIN
  * - Compatible with Thrust API v1.7 or newer.
  *
  * @par Snippet
- * The code snippet below illustrates the use of @p ConstantInputIteratorTto
+ * The code snippet below illustrates the use of @p ConstantInputIterator to
  * dereference a sequence of homogeneous doubles.
  * @par
  * @code

@@ -90,7 +90,7 @@ private:
     template <class... _Ts>
     _CCCL_HOST_DEVICE auto operator()(_Ts&&... __ts) const noexcept
     {
-      _SetTag()(static_cast<_Rcvr&>(__rcvr_), static_cast<_Ts&&>(__ts)...);
+      _SetTag()(static_cast<_Rcvr&&>(__rcvr_), static_cast<_Ts&&>(__ts)...);
     }
   };
 

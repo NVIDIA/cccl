@@ -155,7 +155,7 @@ through. The typical usage pattern for a CUB collective is:
 
 In particular, ``cub::BlockRadixSort`` is used to collectively sort the segment of data items
 that have been partitioned across the thread block. To provide coalesced accesses
-to device memory,  we configure the cub::BlockLoad and cub::BlockStore primitives
+to device memory,  we configure the ``cub::BlockLoad`` and ``cub::BlockStore`` primitives
 to access memory using a striped access pattern (where consecutive threads
 simultaneously access consecutive items) and then *transpose* the keys into
 a :ref:`blocked arrangement <flexible-data-arrangement>` of elements across threads.
@@ -179,9 +179,9 @@ library and software abstraction layer, CUB provides:
 
 #. **Simplicity of composition**. CUB enhances programmer productivity by
    allowing complex parallel operations to be easily sequenced and nested.
-   For example, ``cub::BlockRadixSort`` is constructed from cub::BlockExchange and
-   ``cub::BlockRadixRank``. The latter is composed of cub::BlockScan
-   which incorporates cub::WarpScan.
+   For example, ``cub::BlockRadixSort`` is constructed from ``cub::BlockExchange`` and
+   ``cub::BlockRadixRank``. The latter is composed of ``cub::BlockScan``
+   which incorporates ``cub::WarpScan``.
 
    .. figure:: ../img/nested_composition.png
     :align: center
@@ -202,7 +202,7 @@ library and software abstraction layer, CUB provides:
      change grain sizes (threads per block, items per thread, etc.) to best match
      the processor resources of their target architecture
    * **Variant tuning**.  Most CUB primitives support alternative algorithmic
-     strategies. For example, cub::BlockHistogram is parameterized to implement either
+     strategies. For example, ``cub::BlockHistogram`` is parameterized to implement either
      an atomic-based approach or a sorting-based approach. (The latter provides uniform
      performance regardless of input distribution.)
    * **Co-optimization**.  When the enclosing kernel
@@ -383,7 +383,7 @@ The benefits of processing multiple items per thread (a.k.a., *register blocking
 * Instruction-level parallelism.  Multiple items per thread also
   facilitates greater ILP for improved throughput and utilization.
 
-Finally, cub::BlockExchange provides operations for converting between blocked
+Finally, ``cub::BlockExchange`` provides operations for converting between blocked
 and striped arrangements.
 
 
@@ -395,7 +395,7 @@ Static tuning and co-tuning
 This style of flexible interface simplifies performance tuning. Most CUB
 primitives support alternative algorithmic strategies that can be
 statically targeted by a compiler-based or JIT-based autotuner. (For
-example, cub::BlockHistogram is parameterized to implement either an
+example, ``cub::BlockHistogram`` is parameterized to implement either an
 atomic-based approach or a sorting-based approach.) Algorithms are also
 tunable over parameters such as thread count and grain size as well.
 Taken together, each of the CUB algorithms provides a fairly rich tuning
@@ -425,7 +425,7 @@ separately. To use CUB primitives in your code, simply:
    specifying a ``-I<path-to-CUB>`` include-path flag to reference
    the location of the CUB header library.
 
-We also have collection of simple CUB example programs.
+We also have a collection of simple CUB example programs.
 
 
 How is CUB different than Thrust and Modern GPU?

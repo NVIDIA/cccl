@@ -150,10 +150,10 @@ _LIBCUDACXX_CONCEPT indirectly_swappable = _LIBCUDACXX_FRAGMENT(__indirectly_swa
 #  endif // _CCCL_STD_VER > 2017
 
 template <class _I1, class _I2 = _I1, class = void>
-_LIBCUDACXX_INLINE_VAR constexpr bool __noexcept_swappable = false;
+_CCCL_INLINE_VAR constexpr bool __noexcept_swappable = false;
 
 template <class _I1, class _I2>
-_LIBCUDACXX_INLINE_VAR constexpr bool __noexcept_swappable<_I1, _I2, __enable_if_t<indirectly_swappable<_I1, _I2>>> =
+_CCCL_INLINE_VAR constexpr bool __noexcept_swappable<_I1, _I2, __enable_if_t<indirectly_swappable<_I1, _I2>>> =
   noexcept(_CUDA_VRANGES::iter_swap(_CUDA_VSTD::declval<_I1&>(), _CUDA_VSTD::declval<_I2&>()));
 
 _LIBCUDACXX_END_NAMESPACE_STD

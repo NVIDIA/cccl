@@ -26,21 +26,21 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER >= 2017
 template <bool... _Preds>
-_LIBCUDACXX_INLINE_VAR constexpr bool __fold_and = (_Preds && ...);
+_CCCL_INLINE_VAR constexpr bool __fold_and = (_Preds && ...);
 
 template <bool... _Preds>
-_LIBCUDACXX_INLINE_VAR constexpr bool __fold_or = (_Preds || ...);
+_CCCL_INLINE_VAR constexpr bool __fold_or = (_Preds || ...);
 
 #elif _CCCL_STD_VER >= 2014
 template <bool... _Preds>
 struct __fold_helper;
 
 template <bool... _Preds>
-_LIBCUDACXX_INLINE_VAR constexpr bool __fold_and =
+_CCCL_INLINE_VAR constexpr bool __fold_and =
   _IsSame<__fold_helper<true, _Preds...>, __fold_helper<_Preds..., true>>::value;
 
 template <bool... _Preds>
-_LIBCUDACXX_INLINE_VAR constexpr bool __fold_or =
+_CCCL_INLINE_VAR constexpr bool __fold_or =
   !_IsSame<__fold_helper<false, _Preds...>, __fold_helper<_Preds..., false>>::value;
 #endif // _CCCL_STD_VER >= 2014
 

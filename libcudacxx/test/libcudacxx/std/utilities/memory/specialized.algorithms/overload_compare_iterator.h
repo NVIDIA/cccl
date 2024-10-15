@@ -12,8 +12,8 @@
 #ifndef LIBCUDACXX_TEST_STD_UTILITIES_MEMORY_SPECIALIZED_ALGORITHMS_OVERLOAD_COMPARE_ITERATOR_H
 #define LIBCUDACXX_TEST_STD_UTILITIES_MEMORY_SPECIALIZED_ALGORITHMS_OVERLOAD_COMPARE_ITERATOR_H
 
-#include <cuda/std/__memory_>
 #include <cuda/std/iterator>
+#include <cuda/std/memory>
 
 #include "test_macros.h"
 

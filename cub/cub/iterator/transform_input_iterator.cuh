@@ -61,7 +61,7 @@ CUB_NAMESPACE_BEGIN
  * @brief A random-access input wrapper for transforming dereferenced values.
  *
  * @par Overview
- * - TransformInputIteratorTwraps a unary conversion functor of type
+ * - TransformInputIterator wraps a unary conversion functor of type
  *   @p ConversionOp and a random-access input iterator of type <tt>InputIteratorT</tt>,
  *   using the former to produce references of type @p ValueType from the latter.
  * - Can be used with any data type.
@@ -71,7 +71,7 @@ CUB_NAMESPACE_BEGIN
  * - Compatible with Thrust API v1.7 or newer.
  *
  * @par Snippet
- * The code snippet below illustrates the use of @p TransformInputIteratorTto
+ * The code snippet below illustrates the use of @p TransformInputIterator to
  * dereference an array of integers, tripling the values and converting them to doubles.
  * @par
  * @code

@@ -26,6 +26,15 @@
 
 #if defined(_CCCL_COMPILER_MSVC)
 #  include <intrin.h>
+
+#  if defined(_M_ARM64)
+#    define _LIBCUDACXX_MSVC_POPC(x)   _CountOneBits(x)
+#    define _LIBCUDACXX_MSVC_POPC64(x) _CountOneBits64(x)
+#  else // ^^^ _M_ARM64 ^^^ / vvv !_M_ARM64 vvv
+#    define _LIBCUDACXX_MSVC_POPC(x)   __popcnt(x)
+#    define _LIBCUDACXX_MSVC_POPC64(x) __popcnt64(x)
+#  endif // !_M_ARM64
+
 #endif // _CCCL_COMPILER_MSVC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -95,7 +104,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __libcpp_popc(uint32_t __x)
 {
   if (!__libcpp_default_is_constant_evaluated())
   {
-    NV_IF_TARGET(NV_IS_HOST, (return static_cast<int>(__popcnt(__x));))
+    NV_IF_TARGET(NV_IS_HOST, (return static_cast<int>(_LIBCUDACXX_MSVC_POPC(__x));))
   }
 
   return __fallback_popc64(static_cast<uint64_t>(__x));
@@ -105,7 +114,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __libcpp_popc(uint64_t __x)
 {
   if (!__libcpp_default_is_constant_evaluated())
   {
-    NV_IF_TARGET(NV_IS_HOST, (return static_cast<int>(__popcnt64(__x));))
+    NV_IF_TARGET(NV_IS_HOST, (return static_cast<int>(_LIBCUDACXX_MSVC_POPC64(__x));))
   }
 
   return __fallback_popc64(static_cast<uint64_t>(__x));

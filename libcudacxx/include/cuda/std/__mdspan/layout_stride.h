@@ -93,7 +93,7 @@ struct layout_right
 namespace __detail
 {
 template <class _Layout, class _Mapping>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_mapping_of =
+_CCCL_INLINE_VAR constexpr bool __is_mapping_of =
   is_same<typename _Layout::template mapping<typename _Mapping::extents_type>, _Mapping>::value;
 
 #  if __MDSPAN_USE_CONCEPTS && __MDSPAN_HAS_CXX_20

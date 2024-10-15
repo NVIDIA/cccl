@@ -33,7 +33,7 @@ struct negation : _Not<_Tp>
 {};
 #if _CCCL_STD_VER >= 2014
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool negation_v = !_Tp::value;
+_CCCL_INLINE_VAR constexpr bool negation_v = !_Tp::value;
 #endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD

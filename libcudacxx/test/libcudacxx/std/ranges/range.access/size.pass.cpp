@@ -271,7 +271,7 @@ namespace std
 namespace ranges
 {
 template <>
-_LIBCUDACXX_INLINE_VAR constexpr bool disable_sized_range<SizeMemberDisabled> = true;
+_CCCL_INLINE_VAR constexpr bool disable_sized_range<SizeMemberDisabled> = true;
 }
 } // namespace std
 } // namespace cuda
@@ -292,7 +292,7 @@ namespace std
 namespace ranges
 {
 template <>
-_LIBCUDACXX_INLINE_VAR constexpr bool disable_sized_range<const ImproperlyDisabledMember> = true;
+_CCCL_INLINE_VAR constexpr bool disable_sized_range<const ImproperlyDisabledMember> = true;
 }
 } // namespace std
 } // namespace cuda
@@ -312,7 +312,7 @@ namespace std
 namespace ranges
 {
 template <>
-_LIBCUDACXX_INLINE_VAR constexpr bool disable_sized_range<SizeFunctionDisabled> = true;
+_CCCL_INLINE_VAR constexpr bool disable_sized_range<SizeFunctionDisabled> = true;
 }
 } // namespace std
 } // namespace cuda
@@ -332,7 +332,7 @@ namespace std
 namespace ranges
 {
 template <>
-_LIBCUDACXX_INLINE_VAR constexpr bool disable_sized_range<const ImproperlyDisabledFunction> = true;
+_CCCL_INLINE_VAR constexpr bool disable_sized_range<const ImproperlyDisabledFunction> = true;
 }
 } // namespace std
 } // namespace cuda

@@ -16,7 +16,7 @@
 
 // #include <cuda/std/memory>
 #include <cuda/std/cassert>
-#include <cuda/std/utility>
+#include <cuda/std/memory>
 
 #include "test_iterators.h"
 #include "test_macros.h"

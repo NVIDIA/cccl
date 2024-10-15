@@ -59,17 +59,17 @@ _LIBCUDACXX_HIDE_FROM_ABI void __is_derived_from_view_interface(const _Op*, cons
 #  if _CCCL_STD_VER >= 2020
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool enable_view = derived_from<_Tp, view_base> || requires {
+_CCCL_INLINE_VAR constexpr bool enable_view = derived_from<_Tp, view_base> || requires {
   _CUDA_VRANGES::__is_derived_from_view_interface((_Tp*) nullptr, (_Tp*) nullptr);
 };
 
 #  else // ^^^ _CCCL_STD_VER >= 2020 ^^^ / vvv _CCCL_STD_VER <= 2017 vvv
 
 template <class _Tp, class = void>
-_LIBCUDACXX_INLINE_VAR constexpr bool enable_view = derived_from<_Tp, view_base>;
+_CCCL_INLINE_VAR constexpr bool enable_view = derived_from<_Tp, view_base>;
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool
+_CCCL_INLINE_VAR constexpr bool
   enable_view<_Tp, void_t<decltype(_CUDA_VRANGES::__is_derived_from_view_interface((_Tp*) nullptr, (_Tp*) nullptr))>> =
     true;
 #  endif // _CCCL_STD_VER <= 2017

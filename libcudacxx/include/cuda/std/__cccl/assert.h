@@ -24,6 +24,7 @@
 
 #include <cuda/std/__cccl/attributes.h>
 #include <cuda/std/__cccl/builtin.h>
+#include <cuda/std/__cccl/execution_space.h>
 
 #if !defined(_CCCL_COMPILER_NVRTC)
 #  include <assert.h>
@@ -62,15 +63,20 @@
 //! _CCCL_ASSERT_IMPL_HOST should never be used directly
 #if defined(_CCCL_COMPILER_NVRTC) // There is no host standard library in nvrtc
 #  define _CCCL_ASSERT_IMPL_HOST(expression, message) ((void) 0)
-#elif __has_include(<yvals_core.h>) // MSVC uses _STL_VERIFY from <yvals.h>
+#elif __has_include(<yvals.h>) && defined(_CCCL_COMPILER_MSVC) // MSVC uses _STL_VERIFY from <yvals.h>
 #  include <yvals.h>
 #  define _CCCL_ASSERT_IMPL_HOST(expression, message) _STL_VERIFY(expression, message)
 #else // ^^^ MSVC STL ^^^ / vvv !MSVC STL vvv
 #  ifdef NDEBUG
 // Reintroduce the __assert_fail declaration
-extern void
-__assert_fail(const char* __assertion, const char* __file, unsigned int __line, const char* __function) __THROW
+extern "C" {
+#    if !defined(_CCCL_CUDA_COMPILER_CLANG)
+_CCCL_HOST_DEVICE
+#    endif // !_CCCL_CUDA_COMPILER_CLANG
+void
+__assert_fail(const char* __assertion, const char* __file, unsigned int __line, const char* __function) noexcept
   __attribute__((__noreturn__));
+}
 #  endif // NDEBUG
 // ICC cannot deal with `__builtin_expect` in the constexpr evaluator, so just drop it
 #  if defined(_CCCL_COMPILER_ICC)

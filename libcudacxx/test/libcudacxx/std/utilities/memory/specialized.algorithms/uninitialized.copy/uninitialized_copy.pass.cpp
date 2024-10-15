@@ -15,8 +15,8 @@
 //   uninitialized_copy(InputIterator first, InputIterator last,
 //                      ForwardIterator result);
 
-#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
+#include <cuda/std/memory>
 
 #include "../overload_compare_iterator.h"
 #include "test_macros.h"

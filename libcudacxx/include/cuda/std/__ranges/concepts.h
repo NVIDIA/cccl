@@ -126,10 +126,10 @@ template <class _Tp>
 concept common_range = range<_Tp> && same_as<iterator_t<_Tp>, sentinel_t<_Tp>>;
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_std_initializer_list = false;
+_CCCL_INLINE_VAR constexpr bool __is_std_initializer_list = false;
 
 template <class _Ep>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_std_initializer_list<initializer_list<_Ep>> = true;
+_CCCL_INLINE_VAR constexpr bool __is_std_initializer_list<initializer_list<_Ep>> = true;
 
 template <class _Tp>
 concept viewable_range =
@@ -269,10 +269,10 @@ template <class _Tp>
 _LIBCUDACXX_CONCEPT common_range = _LIBCUDACXX_FRAGMENT(__common_range_, _Tp);
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_std_initializer_list = false;
+_CCCL_INLINE_VAR constexpr bool __is_std_initializer_list = false;
 
 template <class _Ep>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_std_initializer_list<initializer_list<_Ep>> = true;
+_CCCL_INLINE_VAR constexpr bool __is_std_initializer_list<initializer_list<_Ep>> = true;
 
 template <class _Tp>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
