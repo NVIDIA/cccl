@@ -26,17 +26,17 @@
 
 #  if defined(_LIBCUDACXX_HAS_THREAD_API_EXTERNAL)
 #    include <cuda/std/__atomic/wait/threading_support_external.h>
-#  else // ^^^ _LIBCUDACXX_HAS_THREAD_API_EXTERNAL ^^^ / vvv !_LIBCUDACXX_HAS_THREAD_API_EXTERNAL vvv
-#    if defined(_LIBCUDACXX_HAS_THREAD_API_CUDA)
-#      include <cuda/std/__atomic/wait/threading_support_cuda.h>
-#    elif defined(_LIBCUDACXX_HAS_THREAD_API_PTHREAD)
-#      include <cuda/std/__atomic/wait/threading_support_pthread.h>
-#    elif defined(_LIBCUDACXX_HAS_THREAD_API_WIN32)
-#      include <cuda/std/__atomic/wait/threading_support_win32.h>
-#    else // ^^^ _LIBCUDACXX_HAS_THREAD_API_WIN32 ^^^ / vvv Unknown Thread API vvv
-#      error "Unknown Thread API"
-#    endif // Unknown Thread API
-#  endif // !_LIBCUDACXX_HAS_THREAD_API_EXTERNAL
+#  endif // _LIBCUDACXX_HAS_THREAD_API_EXTERNAL
+
+#  if defined(_LIBCUDACXX_HAS_THREAD_API_CUDA)
+#    include <cuda/std/__atomic/wait/threading_support_cuda.h>
+#  elif defined(_LIBCUDACXX_HAS_THREAD_API_PTHREAD)
+#    include <cuda/std/__atomic/wait/threading_support_pthread.h>
+#  elif defined(_LIBCUDACXX_HAS_THREAD_API_WIN32)
+#    include <cuda/std/__atomic/wait/threading_support_win32.h>
+#  else // ^^^ _LIBCUDACXX_HAS_THREAD_API_WIN32 ^^^ / vvv Unknown Thread API vvv
+#    error "Unknown Thread API"
+#  endif // Unknown Thread API
 
 _CCCL_PUSH_MACROS
 
