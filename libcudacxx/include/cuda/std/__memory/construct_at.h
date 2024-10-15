@@ -4,7 +4,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES
 //
 //===----------------------------------------------------------------------===//
 
@@ -185,8 +185,8 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator __destroy(_Forw
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp,
-          __enable_if_t<!is_array<_Tp>::value, int>                  = 0,
-          __enable_if_t<!is_trivially_destructible<_Tp>::value, int> = 0>
+          __enable_if_t<!_CCCL_TRAIT(is_array, _Tp), int>                  = 0,
+          __enable_if_t<!_CCCL_TRAIT(is_trivially_destructible, _Tp), int> = 0>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void __destroy_at(_Tp* __loc)
 {
   _CCCL_ASSERT(__loc != nullptr, "null pointer given to destroy_at");
@@ -195,22 +195,20 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void __destroy_at(_Tp* __loc)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp,
-          __enable_if_t<!is_array<_Tp>::value, int>                 = 0,
-          __enable_if_t<is_trivially_destructible<_Tp>::value, int> = 0>
+          __enable_if_t<!_CCCL_TRAIT(is_array, _Tp), int>                 = 0,
+          __enable_if_t<_CCCL_TRAIT(is_trivially_destructible, _Tp), int> = 0>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void __destroy_at(_Tp* __loc)
 {
   _CCCL_ASSERT(__loc != nullptr, "null pointer given to destroy_at");
   (void) __loc;
 }
 
-#if _CCCL_STD_VER >= 2020
-template <class _Tp, __enable_if_t<is_array<_Tp>::value, int> = 0>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr void __destroy_at(_Tp* __loc)
+template <class _Tp, __enable_if_t<_CCCL_TRAIT(is_array, _Tp), int> = 0>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void __destroy_at(_Tp* __loc)
 {
   _CCCL_ASSERT(__loc != nullptr, "null pointer given to destroy_at");
   _CUDA_VSTD::__destroy(_CUDA_VSTD::begin(*__loc), _CUDA_VSTD::end(*__loc));
 }
-#endif // _CCCL_STD_VER >= 2020
 
 template <class _ForwardIterator>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
@@ -235,22 +233,18 @@ __reverse_destroy(_BidirectionalIterator __first, _BidirectionalIterator __last)
   return __last;
 }
 
-#if _CCCL_STD_VER >= 2017
-
-template <class _Tp, enable_if_t<!is_array_v<_Tp>, int> = 0>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void destroy_at(_Tp* __loc) noexcept
+template <class _Tp, __enable_if_t<!_CCCL_TRAIT(is_array, _Tp), int> = 0>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void destroy_at(_Tp* __loc)
 {
   _CCCL_ASSERT(__loc != nullptr, "null pointer given to destroy_at");
   __loc->~_Tp();
 }
 
-#  if _CCCL_STD_VER >= 2020
-template <class _Tp, enable_if_t<is_array_v<_Tp>, int> = 0>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void destroy_at(_Tp* __loc) noexcept
+template <class _Tp, __enable_if_t<_CCCL_TRAIT(is_array, _Tp), int> = 0>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void destroy_at(_Tp* __loc)
 {
   _CUDA_VSTD::__destroy_at(__loc);
 }
-#  endif // _CCCL_STD_VER >= 2020
 
 template <class _ForwardIterator>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void destroy(_ForwardIterator __first, _ForwardIterator __last) noexcept
@@ -267,8 +261,6 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _ForwardIterator destroy_n(_Forw
   }
   return __first;
 }
-
-#endif // _CCCL_STD_VER >= 2017
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
