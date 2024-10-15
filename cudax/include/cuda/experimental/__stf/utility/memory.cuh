@@ -16,6 +16,7 @@
 #pragma once
 
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__stf/utility/source_location.cuh>
 
 #include <cstdint>
 
@@ -114,7 +115,7 @@ inline void* allocateManagedMemory(size_t sz)
  * @param loc location of the call, defaulted
  */
 inline void deallocateHostMemory(
-  void* p, size_t sz, ::std::experimental::source_location loc = ::std::experimental::source_location::current())
+  void* p, size_t sz, source_location loc = source_location::current())
 {
   ::std::ignore = loc;
   assert([&] {
@@ -140,7 +141,7 @@ inline void deallocateHostMemory(
  * @param loc location of the call, defaulted
  */
 inline void deallocateManagedMemory(
-  void* p, size_t sz, ::std::experimental::source_location loc = ::std::experimental::source_location::current())
+  void* p, size_t sz, source_location loc = source_location::current())
 {
   ::std::ignore = loc;
   assert([&] {
