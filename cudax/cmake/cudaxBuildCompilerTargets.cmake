@@ -25,6 +25,12 @@ function(cudax_build_compiler_targets)
     append_option_if_available("/Zc:__cplusplus" cxx_compile_options)
   endif()
 
+  if("Clang" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+    # stf heavily uses host device lambdas which break on clang due to a warning about the implicitly
+    # deleted copy constructor
+    append_option_if_available("-Wno-deprecated-copy" cxx_compile_options)
+  endif()
+
   cccl_build_compiler_interface(cudax.compiler_interface
     "${cuda_compile_options}"
     "${cxx_compile_options}"
