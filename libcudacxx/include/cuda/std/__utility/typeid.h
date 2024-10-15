@@ -44,7 +44,7 @@ using __type_info = ::std::type_info;
 struct __string_view
 {
   template <size_t N>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __string_view(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __string_view(
     char const (&str)[N], size_t prefix = 0, size_t suffix = 0) noexcept
       : __str_{str + prefix}
       , __len_{N - 1 - prefix - suffix}
@@ -152,9 +152,13 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameo
 #  elif defined(_CCCL_COMPILER_CLANG)
   constexpr size_t __nvcc_prefix =
     sizeof("cuda::std::__4::__string_view cuda::std::__4::__pretty_nameof() [with _Tp = ") - 1;
+#    if _CCCL_CLANG_VERSION < 160000
+  constexpr size_t __clang_prefix = sizeof("cuda::std::__string_view cuda::std::__pretty_nameof() [_Tp = ") - 1;
+#    else
   constexpr size_t __clang_prefix = sizeof("__string_view cuda::std::__pretty_nameof() [_Tp = ") - 1;
-  constexpr size_t __prefix       = __PRETTY_FUNCTION__[0] == 'c' ? __nvcc_prefix : __clang_prefix;
-  constexpr size_t __suffix       = sizeof("]") - 1;
+#    endif
+  constexpr size_t __prefix = __PRETTY_FUNCTION__[15] == ':' ? __nvcc_prefix : __clang_prefix;
+  constexpr size_t __suffix = sizeof("]") - 1;
   return __string_view(__PRETTY_FUNCTION__, __prefix, __suffix);
 #  elif defined(_CCCL_CUDA_COMPILER_NVCC) || defined(_CCCL_CUDA_COMPILER_NVHPC) || defined(_CCCL_COMPILER_NVRTC) \
     || defined(_CCCL_COMPILER_ICC) || defined(_CCCL_COMPILER_GCC)
