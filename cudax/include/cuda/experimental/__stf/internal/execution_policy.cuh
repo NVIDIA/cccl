@@ -190,7 +190,7 @@ public:
     }
   }
 
-  constexpr bool operator==(const thread_hierarchy_spec& rhs)
+  constexpr bool operator==(const thread_hierarchy_spec& rhs) const noexcept
   {
     if (dynamic_width != rhs.dynamic_width || sync_scope != rhs.sync_scope || mem_bytes != rhs.mem_bytes)
     {
@@ -207,8 +207,9 @@ public:
   }
 
   // For other types ...
-  template <auto... other, typename = std::enable_if_t<!std::is_same_v<thread_hierarchy_spec, thread_hierarchy_spec<other...>>>>
-  constexpr bool operator==(const thread_hierarchy_spec<other...>&)
+  template <auto... other,
+            std::enable_if_t<!std::is_same_v<thread_hierarchy_t, thread_hierarchy_spec<other...>>, int> = 0>
+  constexpr bool operator==(const thread_hierarchy_spec<other...>&) const noexcept
   {
     static_assert(!::std::is_same_v<thread_hierarchy_t, thread_hierarchy_spec<other...>>,
                   "Comparison between the same thread hierarchy specializations is invalid");
@@ -217,15 +218,10 @@ public:
     return false;
   }
 
-  constexpr bool operator!=(const thread_hierarchy_spec& rhs)
+  template <typename R>
+  constexpr bool operator!=(const R& rhs) const noexcept
   {
     return !(*this == rhs);
-  }
-
-  template <typename R, typename = std::enable_if_t<!std::is_same_v<thread_hierarchy_spec, R>>>
-  constexpr bool operator!=(const R& rhs)
-  {
-    return true;
   }
 
   /// @brief Compute the depth of the thread hierarchy.
