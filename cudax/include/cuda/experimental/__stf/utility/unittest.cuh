@@ -499,7 +499,7 @@ int main()
 #else
 #  define UNITTEST(name)                                                      \
     [[maybe_unused]] static const auto CUDASTF_UNIQUE_NAME(unused_unittest) = \
-      []([[maybe_unused]] auto&& unittest_name) { /* ignored test */ }
+      []([[maybe_unused]] auto&& unittest_name)
 #endif
 
 #endif
