@@ -23,12 +23,13 @@
 // BUGBUG
 #define _CCCL_NO_TYPEID
 
-#ifndef _CCCL_NO_TYPEID
-#  include <typeinfo>
-#endif
-
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 #  include <cuda/std/compare>
+#endif
+#include <cuda/std/cstddef>
+
+#ifndef _CCCL_NO_TYPEID
+#  include <typeinfo>
 #endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -140,30 +141,26 @@ private:
   char const* __str_;
   size_t __len_;
 };
+_LIBCUDACXX_END_NAMESPACE_STD
 
+_LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameof()
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __pretty_nameof()
 {
 #  if defined(_CCCL_COMPILER_MSVC)
-  constexpr size_t __prefix =
-    sizeof("struct cuda::std::__4::__string_view __cdecl cuda::std::__4::__pretty_nameof<") - 1;
+  constexpr size_t __prefix = sizeof("auto __cdecl cuda::std::__pretty_nameof<") - 1;
   constexpr size_t __suffix = sizeof(">(void)") - 1;
   return __string_view(__FUNCSIG__, __prefix, __suffix);
 #  elif defined(_CCCL_COMPILER_CLANG)
-  constexpr size_t __nvcc_prefix =
-    sizeof("cuda::std::__4::__string_view cuda::std::__4::__pretty_nameof() [with _Tp = ") - 1;
-#    if _CCCL_CLANG_VERSION < 160000
-  constexpr size_t __clang_prefix = sizeof("cuda::std::__string_view cuda::std::__pretty_nameof() [_Tp = ") - 1;
-#    else
-  constexpr size_t __clang_prefix = sizeof("__string_view cuda::std::__pretty_nameof() [_Tp = ") - 1;
-#    endif
-  constexpr size_t __prefix = __PRETTY_FUNCTION__[15] == ':' ? __nvcc_prefix : __clang_prefix;
+  constexpr size_t __nvcc_prefix  = sizeof("auto cuda::std::__pretty_nameof() [with _Tp = ") - 1;
+  constexpr size_t __clang_prefix = sizeof("auto cuda::std::__pretty_nameof() [_Tp = ") - 1;
+  static_assert(__PRETTY_FUNCTION__[34] == '[', "");
+  constexpr size_t __prefix = __PRETTY_FUNCTION__[35] == 'w' ? __nvcc_prefix : __clang_prefix;
   constexpr size_t __suffix = sizeof("]") - 1;
   return __string_view(__PRETTY_FUNCTION__, __prefix, __suffix);
 #  elif defined(_CCCL_CUDA_COMPILER_NVCC) || defined(_CCCL_CUDA_COMPILER_NVHPC) || defined(_CCCL_COMPILER_NVRTC) \
     || defined(_CCCL_COMPILER_ICC) || defined(_CCCL_COMPILER_GCC)
-  constexpr size_t __prefix =
-    sizeof("constexpr cuda::std::__4::__string_view cuda::std::__4::__pretty_nameof() [with _Tp = ") - 1;
+  constexpr size_t __prefix = sizeof("constexpr auto cuda::std::__pretty_nameof() [with _Tp = ") - 1;
   constexpr size_t __suffix = sizeof("]") - 1;
   return __string_view(__PRETTY_FUNCTION__, __prefix, __suffix);
 #  else
@@ -173,7 +170,9 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameo
 
 static_assert(__pretty_nameof<int>() == __string_view("int"), "__pretty_nameof<int>() == __string_view(\"int\")");
 static_assert(__pretty_nameof<float>() < __pretty_nameof<int>(), "__pretty_nameof<float>() < __pretty_nameof<int>()");
+_LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
 
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
 /// @brief A minimal implementation of `std::type_info` for platforms that do
 /// not support RTTI.
 struct __type_info
