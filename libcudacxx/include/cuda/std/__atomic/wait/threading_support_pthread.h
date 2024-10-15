@@ -266,6 +266,7 @@ _LIBCUDACXX_HIDE_FROM_ABI int __libcpp_execute_once(__libcpp_exec_once_flag* fla
 
 // Thread id
 // Returns non-zero if the thread ids are equal, otherwise 0
+_CCCL_EXEC_CHECK_DISABLE
 _LIBCUDACXX_HIDE_FROM_ABI bool __libcpp_thread_id_equal(__libcpp_thread_id t1, __libcpp_thread_id t2)
 {
   return pthread_equal(t1, t2) != 0;
