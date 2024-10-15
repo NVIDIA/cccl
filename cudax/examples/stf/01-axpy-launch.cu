@@ -45,7 +45,7 @@ int main()
   auto lY = ctx.logical_data(Y);
 
   /* Compute Y = Y + alpha X */
-  ctx.launch(lX.read(), lY.rw())->*[=] _CCCL_DEVICE(auto t, auto dX, auto dY) {
+  ctx.launch(lX.read(), lY.rw())->*[=] CUDASTF_DEVICE(auto t, auto dX, auto dY) {
     for (auto ind : t.apply_partition(shape(dX)))
     {
       dY(ind) += alpha * dX(ind);

@@ -88,7 +88,7 @@ void write_vtk_2D(const std::string& filename, slice<double, 3> Ez, double dx, d
 }
 
 // Define the source function
-_CCCL_DEVICE double Source(double t, double x, double y, double z)
+CUDASTF_DEVICE double Source(double t, double x, double y, double z)
 {
   constexpr double freq       = 1e9;
   constexpr double omega      = (2 * M_PI * freq);
@@ -184,7 +184,7 @@ int main(int argc, char** argv)
 
   // Initialize E
   ctx.parallel_for(blocked_partition(), where, data_shape, lEx.write(), lEy.write(), lEz.write())
-      ->*[] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ex, auto Ey, auto Ez) {
+      ->*[] CUDASTF_DEVICE(size_t i, size_t j, size_t k, auto Ex, auto Ey, auto Ez) {
             Ex(i, j, k) = 0.0;
             Ey(i, j, k) = 0.0;
             Ez(i, j, k) = 0.0;
@@ -192,7 +192,7 @@ int main(int argc, char** argv)
 
   // Initialize H
   ctx.parallel_for(blocked_partition(), where, data_shape, lHx.write(), lHy.write(), lHz.write())
-      ->*[] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hx, auto Hy, auto Hz) {
+      ->*[] CUDASTF_DEVICE(size_t i, size_t j, size_t k, auto Hx, auto Hy, auto Hz) {
             Hx(i, j, k) = 0.0;
             Hy(i, j, k) = 0.0;
             Hz(i, j, k) = 0.0;
@@ -200,7 +200,7 @@ int main(int argc, char** argv)
 
   // Initialize permittivity and permeability fields
   ctx.parallel_for(blocked_partition(), where, data_shape, lepsilon.write(), lmu.write())
-      ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto epsilon, auto mu) {
+      ->*[=] CUDASTF_DEVICE(size_t i, size_t j, size_t k, auto epsilon, auto mu) {
             epsilon(i, j, k) = EPSILON;
             mu(i, j, k)      = MU;
           };
@@ -221,31 +221,31 @@ int main(int argc, char** argv)
 
     // Update Ex
     ctx.parallel_for(blocked_partition(), where, Es, lEx.rw(), lHy.read(), lHz.read(), lepsilon.read())
-        ->*[=]
-      _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ex, auto Hy, auto Hz, auto epsilon) {
+        ->*
+      [=] CUDASTF_DEVICE(size_t i, size_t j, size_t k, auto Ex, auto Hy, auto Hz, auto epsilon) {
         Ex(i, j, k) = Ex(i, j, k)
                     + (DT / (epsilon(i, j, k) * DX)) * (Hz(i, j, k) - Hz(i, j - 1, k) - Hy(i, j, k) + Hy(i, j, k - 1));
       };
 
     // Update Ey
     ctx.parallel_for(blocked_partition(), where, Es, lEy.rw(), lHx.read(), lHz.read(), lepsilon.read())
-        ->*[=]
-      _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ey, auto Hx, auto Hz, auto epsilon) {
+        ->*
+      [=] CUDASTF_DEVICE(size_t i, size_t j, size_t k, auto Ey, auto Hx, auto Hz, auto epsilon) {
         Ey(i, j, k) = Ey(i, j, k)
                     + (DT / (epsilon(i, j, k) * DY)) * (Hx(i, j, k) - Hx(i, j, k - 1) - Hz(i, j, k) + Hz(i - 1, j, k));
       };
 
     // Update Ez
     ctx.parallel_for(blocked_partition(), where, Es, lEz.rw(), lHx.read(), lHy.read(), lepsilon.read())
-        ->*[=]
-      _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ez, auto Hx, auto Hy, auto epsilon) {
+        ->*
+      [=] CUDASTF_DEVICE(size_t i, size_t j, size_t k, auto Ez, auto Hx, auto Hy, auto epsilon) {
         Ez(i, j, k) = Ez(i, j, k)
                     + (DT / (epsilon(i, j, k) * DZ)) * (Hy(i, j, k) - Hy(i - 1, j, k) - Hx(i, j, k) + Hx(i, j - 1, k));
       };
 
     // Add the source function at the center of the grid
     ctx.parallel_for(blocked_partition(), where, source_s, lEz.rw())
-        ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ez) {
+        ->*[=] CUDASTF_DEVICE(size_t i, size_t j, size_t k, auto Ez) {
               Ez(i, j, k) = Ez(i, j, k) + Source(n * DT, i * DX, j * DY, k * DZ);
             };
 
@@ -253,21 +253,21 @@ int main(int argc, char** argv)
 
     // Update Hx
     ctx.parallel_for(blocked_partition(), where, Hs, lHx.rw(), lEy.read(), lEz.read(), lmu.read())
-        ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hx, auto Ey, auto Ez, auto mu) {
+        ->*[=] CUDASTF_DEVICE(size_t i, size_t j, size_t k, auto Hx, auto Ey, auto Ez, auto mu) {
               Hx(i, j, k) = Hx(i, j, k)
                           - (DT / (mu(i, j, k) * DY)) * (Ez(i, j + 1, k) - Ez(i, j, k) - Ey(i, j, k + 1) + Ey(i, j, k));
             };
 
     // Update Hy
     ctx.parallel_for(blocked_partition(), where, Hs, lHy.rw(), lEx.read(), lEz.read(), lmu.read())
-        ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hy, auto Ex, auto Ez, auto mu) {
+        ->*[=] CUDASTF_DEVICE(size_t i, size_t j, size_t k, auto Hy, auto Ex, auto Ez, auto mu) {
               Hy(i, j, k) = Hy(i, j, k)
                           - (DT / (mu(i, j, k) * DZ)) * (Ex(i, j, k + 1) - Ex(i, j, k) - Ez(i + 1, j, k) + Ez(i, j, k));
             };
 
     // Update Hz
     ctx.parallel_for(blocked_partition(), where, Hs, lHz.rw(), lEx.read(), lEy.read(), lmu.read())
-        ->*[=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Hz, auto Ex, auto Ey, auto mu) {
+        ->*[=] CUDASTF_DEVICE(size_t i, size_t j, size_t k, auto Hz, auto Ex, auto Ey, auto mu) {
               Hz(i, j, k) = Hz(i, j, k)
                           - (DT / (mu(i, j, k) * DX)) * (Ey(i + 1, j, k) - Ey(i, j, k) - Ex(i, j + 1, k) + Ex(i, j, k));
             };

@@ -813,7 +813,7 @@ inline void unit_test_context_pfor()
     ctx.finalize();
   };
   auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
-  ctx.parallel_for(lA.shape(), lA.write())->*[] _CCCL_DEVICE(size_t i, slice<size_t> A) {
+  ctx.parallel_for(lA.shape(), lA.write())->*[] CUDASTF_DEVICE(size_t i, slice<size_t> A) {
     A(i) = 2 * i;
   };
   ctx.host_launch(lA.read())->*[](auto A) {
@@ -855,7 +855,7 @@ inline void unit_test_context_launch()
     ctx.finalize();
   };
   auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
-  ctx.launch(spec, lA.write())->*[] _CCCL_DEVICE(auto th, slice<size_t> A) {
+  ctx.launch(spec, lA.write())->*[] CUDASTF_DEVICE(auto th, slice<size_t> A) {
     for (auto i : th.apply_partition(shape(A)))
     {
       A(i) = 2 * i;
@@ -889,7 +889,7 @@ inline void unit_test_context_launch_spec_noplace()
     ctx.finalize();
   };
   auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
-  ctx.launch(par(), lA.write())->*[] _CCCL_DEVICE(auto th, slice<size_t> A) {
+  ctx.launch(par(), lA.write())->*[] CUDASTF_DEVICE(auto th, slice<size_t> A) {
     for (auto i : th.apply_partition(shape(A)))
     {
       A(i) = 2 * i;
@@ -926,7 +926,7 @@ inline void unit_test_context_launch_generic()
   exec_place where2 = exec_place::current_device();
   // This will not compile because launch implementation will try to generate a CUDA kernel from that non device
   // lambda
-  ctx.launch(where2, lA.rw())->*[] _CCCL_DEVICE(auto th, slice<size_t> A) {
+  ctx.launch(where2, lA.rw())->*[] CUDASTF_DEVICE(auto th, slice<size_t> A) {
     for (auto i : th.apply_partition(shape(A)))
     {
       A(i) = 2 * A(i);
@@ -965,7 +965,7 @@ inline void unit_test_context_launch_exec_places()
     }
   };
 
-  ctx.launch(exec_place::current_device(), lA.rw())->*[] _CCCL_DEVICE(auto th, slice<size_t> A) {
+  ctx.launch(exec_place::current_device(), lA.rw())->*[] CUDASTF_DEVICE(auto th, slice<size_t> A) {
     for (auto i : th.apply_partition(shape(A)))
     {
       A(i) = 2 * A(i);
@@ -1006,7 +1006,7 @@ inline void unit_test_context_launch_sync()
     }
   };
 
-  ctx.launch(spec, exec_place::current_device(), lA.rw())->*[] _CCCL_DEVICE(auto th, slice<size_t> A) {
+  ctx.launch(spec, exec_place::current_device(), lA.rw())->*[] CUDASTF_DEVICE(auto th, slice<size_t> A) {
     for (auto i : th.apply_partition(shape(A)))
     {
       A(i) = 2 * A(i);
@@ -1042,7 +1042,7 @@ inline void unit_test_context_repeat()
   };
   auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
 
-  ctx.launch(lA.write())->*[] _CCCL_DEVICE(auto th, slice<size_t> A) {
+  ctx.launch(lA.write())->*[] CUDASTF_DEVICE(auto th, slice<size_t> A) {
     for (auto i : th.apply_partition(shape(A)))
     {
       A(i) = i;
@@ -1051,7 +1051,7 @@ inline void unit_test_context_repeat()
 
   // Repeat K times : A(i) = 2 * A(i)
   ctx.repeat(K)->*[&](context ctx, size_t) {
-    ctx.launch(lA.rw())->*[] _CCCL_DEVICE(auto th, slice<size_t> A) {
+    ctx.launch(lA.rw())->*[] CUDASTF_DEVICE(auto th, slice<size_t> A) {
       for (auto i : th.apply_partition(shape(A)))
       {
         A(i) = 2 * A(i);
@@ -1094,7 +1094,7 @@ inline void unit_test_context_launch_implicit_widths(spec_t spec)
     }
   };
 
-  ctx.launch(spec, exec_place::current_device(), lA.rw())->*[] _CCCL_DEVICE(auto th, slice<size_t> A) {
+  ctx.launch(spec, exec_place::current_device(), lA.rw())->*[] CUDASTF_DEVICE(auto th, slice<size_t> A) {
     for (auto i : th.apply_partition(shape(A)))
     {
       A(i) = 2 * A(i);
@@ -1162,7 +1162,7 @@ inline void unit_test_recursive_apply()
    * the composition of blocked() in the first level, and cyclic() in the second
    * level */
   auto spec = par<8>(par<16>());
-  ctx.launch(spec, exec_place::current_device(), lA.write())->*[] _CCCL_DEVICE(auto th, slice<size_t> A) {
+  ctx.launch(spec, exec_place::current_device(), lA.write())->*[] CUDASTF_DEVICE(auto th, slice<size_t> A) {
     for (auto i : th.apply_partition(shape(A), ::std::tuple<blocked_partition, cyclic_partition>()))
     {
       A(i) = 2 * i + 7;
@@ -1180,7 +1180,7 @@ inline void unit_test_recursive_apply()
   auto lB = ctx.logical_data(shape_of<slice<size_t>>(1280));
 
   auto spec3 = par(par<8>(par<16>()));
-  ctx.launch(spec3, exec_place::current_device(), lB.write())->*[] _CCCL_DEVICE(auto th, slice<size_t> B) {
+  ctx.launch(spec3, exec_place::current_device(), lB.write())->*[] CUDASTF_DEVICE(auto th, slice<size_t> B) {
     for (auto i : th.apply_partition(shape(B), ::std::tuple<blocked_partition, blocked_partition, cyclic_partition>()))
     {
       B(i) = 2 * i + 7;
@@ -1230,7 +1230,7 @@ inline void unit_test_partitioner_product()
    * level */
   auto spec = par<8>(par<16>());
 
-  ctx.launch(spec, exec_place::current_device(), lA.write())->*[=] _CCCL_DEVICE(auto th, slice<size_t> A) {
+  ctx.launch(spec, exec_place::current_device(), lA.write())->*[=] CUDASTF_DEVICE(auto th, slice<size_t> A) {
     for (auto i : th.apply_partition(shape(A), p))
     {
       A(i) = 2 * i + 7;
@@ -1370,7 +1370,7 @@ private:
     runner_impl(context_t& _ctx, algorithm& _alg, task_dep<Deps>... _deps)
         : alg(_alg)
         , ctx(_ctx)
-        , deps(::std::make_tuple(mv(_deps)...)){};
+        , deps(::std::make_tuple(mv(_deps)...)) {};
 
     template <typename Fun>
     void operator->*(Fun&& fun)

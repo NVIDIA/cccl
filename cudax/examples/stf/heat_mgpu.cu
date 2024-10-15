@@ -87,7 +87,7 @@ int main(int argc, char** argv)
   // Initialize the Un field with boundary conditions, and a disk at a lower
   // temperature in the middle.
   ctx.parallel_for(blocked_partition(), all_devs, lU.shape(), lU.write()).set_symbol("init")->*
-    [=] _CCCL_DEVICE(size_t i, size_t j, auto U) {
+    [=] CUDASTF_DEVICE(size_t i, size_t j, auto U) {
       double rad = U.extent(0) / 8.0;
       double dx  = (double) i - U.extent(0) / 2;
       double dy  = (double) j - U.extent(1) / 2;
@@ -144,7 +144,7 @@ int main(int argc, char** argv)
 
     // Update Un using Un1 value with a finite difference scheme
     ctx.parallel_for(blocked_partition(), all_devs, inner<1>(lU.shape()), lU.read(), lU1.write()).set_symbol("step")->*
-      [=] _CCCL_DEVICE(size_t i, size_t j, auto U, auto U1) {
+      [=] CUDASTF_DEVICE(size_t i, size_t j, auto U, auto U1) {
         U1(i, j) =
           U(i, j)
           + c * ((U(i - 1, j) - 2 * U(i, j) + U(i + 1, j)) / dx2 + (U(i, j - 1) - 2 * U(i, j) + U(i, j + 1)) / dy2);

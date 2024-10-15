@@ -96,7 +96,7 @@ public:
   using coords_t = ::std::tuple<size_t, size_t>;
 
   // This transforms a tuple of (shape, 1D index) into a coordinate
-  _CCCL_HOST_DEVICE coords_t index_to_coords(size_t index) const
+  CUDASTF_HOST_DEVICE coords_t index_to_coords(size_t index) const
   {
     return coords_t(index % m, index / m);
   }
@@ -309,7 +309,7 @@ int main()
   };
 
   // M(i,j) +=  2*i + 6*j
-  ctx.parallel_for(lM.shape(), lM.rw())->*[] _CCCL_DEVICE(size_t i, size_t j, auto dM) {
+  ctx.parallel_for(lM.shape(), lM.rw())->*[] CUDASTF_DEVICE(size_t i, size_t j, auto dM) {
     dM(i, j) += 2 * i + 6 * j;
   };
 

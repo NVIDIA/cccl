@@ -34,7 +34,8 @@ public:
   ///@{ @name Constructors
 
   /// Construct and explicit shape from a list of lower and upper bounds
-  _CCCL_HOST_DEVICE explicit cyclic_shape(const ::std::array<::std::tuple<size_t, size_t, size_t>, dimensions>& list)
+  CUDASTF_HOST_DEVICE
+  explicit cyclic_shape(const ::std::array<::std::tuple<size_t, size_t, size_t>, dimensions>& list)
   {
     size_t i = 0;
     for (auto& e : list)
@@ -48,15 +49,15 @@ public:
   }
 
   /// Construct and explicit shape from a list of lower and upper bounds
-  _CCCL_HOST_DEVICE cyclic_shape(const ::std::array<size_t, dimensions>& begins_,
-                                 const ::std::array<size_t, dimensions>& ends_,
-                                 const ::std::array<size_t, dimensions>& strides_)
+  CUDASTF_HOST_DEVICE cyclic_shape(const ::std::array<size_t, dimensions>& begins_,
+                                   const ::std::array<size_t, dimensions>& ends_,
+                                   const ::std::array<size_t, dimensions>& strides_)
       : begins(begins_)
       , ends(ends_)
       , strides(strides_)
   {}
 
-  _CCCL_HOST_DEVICE void print() const
+  CUDASTF_HOST_DEVICE void print() const
   {
     printf("CYCLIC SHAPE\n");
     for (size_t i = 0; i < dimensions; i++)
@@ -68,7 +69,7 @@ public:
   ///@}
 
   /// Get the total number of elements in this explicit shape
-  _CCCL_HOST_DEVICE ssize_t size() const
+  CUDASTF_HOST_DEVICE ssize_t size() const
   {
     size_t res = 1;
     for (size_t d = 0; d < dimensions; d++)
@@ -81,7 +82,7 @@ public:
   }
 
   // Overload the equality operator to check if two shapes are equal
-  _CCCL_HOST_DEVICE bool operator==(const cyclic_shape& other) const
+  CUDASTF_HOST_DEVICE bool operator==(const cyclic_shape& other) const
   {
     for (size_t i = 0; i < dimensions; ++i)
     {
@@ -95,7 +96,7 @@ public:
   }
 
   /// get the dimensionnality of the explicit shape
-  _CCCL_HOST_DEVICE size_t get_rank() const
+  CUDASTF_HOST_DEVICE size_t get_rank() const
   {
     return dimensions;
   }
@@ -109,14 +110,14 @@ public:
     ::std::array<size_t, dimensions> current; // Array to store the current position in each dimension
 
   public:
-    _CCCL_HOST_DEVICE iterator(cyclic_shape& s, size_t idx = 0)
+    CUDASTF_HOST_DEVICE iterator(cyclic_shape& s, size_t idx = 0)
         : shape(&s)
         , index(idx)
         , current(s.begins)
     {}
 
     // Overload the dereference operator to get the current position
-    _CCCL_HOST_DEVICE auto& operator*()
+    CUDASTF_HOST_DEVICE auto& operator*()
     {
       if constexpr (dimensions == 1)
       {
@@ -129,7 +130,7 @@ public:
     }
 
     // Overload the pre-increment operator to move to the next position
-    _CCCL_HOST_DEVICE iterator& operator++()
+    CUDASTF_HOST_DEVICE iterator& operator++()
     {
       index++;
 
@@ -151,7 +152,7 @@ public:
     }
 
     // Overload the equality operator to check if two iterators are equal
-    _CCCL_HOST_DEVICE bool operator==(const iterator& other) const
+    CUDASTF_HOST_DEVICE bool operator==(const iterator& other) const
     { /*printf("EQUALITY TEST index %d %d shape equal ? %s\n", index,
          other.index, (&shape == &other.shape)?"yes":"no"); */
       // printf("check == : index %d %d => %s shape equal ? %s\n", index, other.index, (index ==
@@ -160,19 +161,19 @@ public:
     }
 
     // Overload the inequality operator to check if two iterators are not equal
-    _CCCL_HOST_DEVICE bool operator!=(const iterator& other) const
+    CUDASTF_HOST_DEVICE bool operator!=(const iterator& other) const
     {
       return !(*this == other);
     }
   };
 
   // Functions to create the begin and end iterators
-  _CCCL_HOST_DEVICE iterator begin()
+  CUDASTF_HOST_DEVICE iterator begin()
   {
     return iterator(*this);
   }
 
-  _CCCL_HOST_DEVICE iterator end()
+  CUDASTF_HOST_DEVICE iterator end()
   {
     size_t total_positions = 1;
     for (auto i : each(0, dimensions))
@@ -201,7 +202,7 @@ public:
   cyclic_partition() = default;
 
   template <size_t dimensions>
-  _CCCL_HOST_DEVICE static auto apply(const box<dimensions>& in, pos4 place_position, dim4 grid_dims)
+  CUDASTF_HOST_DEVICE static auto apply(const box<dimensions>& in, pos4 place_position, dim4 grid_dims)
   {
     ::std::array<size_t, dimensions> begins;
     ::std::array<size_t, dimensions> ends;
@@ -217,7 +218,7 @@ public:
   }
 
   template <typename mdspan_shape_t>
-  _CCCL_HOST_DEVICE static auto apply(const mdspan_shape_t& in, pos4 place_position, dim4 grid_dims)
+  CUDASTF_HOST_DEVICE static auto apply(const mdspan_shape_t& in, pos4 place_position, dim4 grid_dims)
   {
     constexpr size_t dimensions = mdspan_shape_t::rank();
 
@@ -233,7 +234,8 @@ public:
     return cyclic_shape<dimensions>(bounds);
   }
 
-  _CCCL_HOST_DEVICE static pos4 get_executor(pos4 /*unused*/, dim4 /*unused*/, dim4 /*unused*/)
+  CUDASTF_HOST_DEVICE
+  static pos4 get_executor(pos4 /*unused*/, dim4 /*unused*/, dim4 /*unused*/)
   {
     abort();
     return pos4(0);

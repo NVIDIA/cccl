@@ -118,7 +118,7 @@ int main(int argc, char** argv)
   {
     cuda_safe_call(cudaSetDevice(b % ndevs));
     size_t start = b * BLOCK_SIZE;
-    ctx.parallel_for(lX[b].shape(), lX[b].write())->*[=] _CCCL_DEVICE(size_t i, auto lx) {
+    ctx.parallel_for(lX[b].shape(), lX[b].write())->*[=] CUDASTF_DEVICE(size_t i, auto lx) {
       lx(i) = X0(i + start);
     };
   }
@@ -135,7 +135,7 @@ int main(int argc, char** argv)
     // Create an auxiliary temporary buffer and blank it
     laux = ctx.logical_data(shape_of<slice<double>>(NBLOCKS)).set_symbol("aux");
     ctx.parallel_for(laux.shape(), laux.write(data_place::managed)).set_symbol("init_aux")
-        ->*[] _CCCL_DEVICE(size_t i, auto aux) {
+        ->*[] CUDASTF_DEVICE(size_t i, auto aux) {
               aux(i) = 0.0;
             };
 
@@ -155,7 +155,7 @@ int main(int argc, char** argv)
                        lX[b].read(data_place::device(b % ndevs)),
                        laux.rw(data_place::managed))
           .set_symbol("store sum X_" + std::to_string(b))
-          ->*[] _CCCL_DEVICE(size_t ind, auto Xb, auto aux) {
+          ->*[] CUDASTF_DEVICE(size_t ind, auto Xb, auto aux) {
                 aux(ind) = Xb(Xb.extent(0) - 1);
               };
     }
@@ -169,7 +169,7 @@ int main(int argc, char** argv)
       cuda_safe_call(cudaSetDevice(b % ndevs));
       ctx.parallel_for(lX[b].shape(), lX[b].rw(), laux.read(data_place::managed))
           .set_symbol("add X_" + std::to_string(b))
-          ->*[=] _CCCL_DEVICE(size_t i, auto Xb, auto aux) {
+          ->*[=] CUDASTF_DEVICE(size_t i, auto Xb, auto aux) {
                 Xb(i) += aux(b - 1);
               };
     }

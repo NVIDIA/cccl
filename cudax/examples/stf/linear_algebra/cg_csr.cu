@@ -46,7 +46,7 @@ public:
   static void copy_vector(const vector& from, vector& to)
   {
     ctx.parallel_for(to.handle.shape(), to.handle.write(), from.handle.read()).set_symbol("copy_vector")
-        ->*[] _CCCL_DEVICE(size_t i, slice<double> dto, slice<double> dfrom) {
+        ->*[] CUDASTF_DEVICE(size_t i, slice<double> dto, slice<double> dfrom) {
               dto(i) = dfrom(i);
             };
   }
@@ -62,7 +62,7 @@ public:
   vector& operator-=(const vector& rhs)
   {
     ctx.parallel_for(handle.shape(), handle.rw(), rhs.handle.read()).set_symbol("-= vector")
-        ->*[] _CCCL_DEVICE(size_t i, auto dthis, auto drhs) {
+        ->*[] CUDASTF_DEVICE(size_t i, auto dthis, auto drhs) {
               dthis(i) -= drhs(i);
             };
 
@@ -88,7 +88,7 @@ public:
   static void copy_scalar(const scalar& from, scalar& to)
   {
     ctx.parallel_for(to.handle.shape(), to.handle.write(), from.handle.read())
-        ->*[] _CCCL_DEVICE(size_t i, slice<double> dto, slice<double> dfrom) {
+        ->*[] CUDASTF_DEVICE(size_t i, slice<double> dto, slice<double> dfrom) {
               dto(i) = dfrom(i);
             };
   }
@@ -105,7 +105,7 @@ public:
     // Submit a task that computes this/rhs
     scalar res;
     ctx.parallel_for(handle.shape(), handle.read(), rhs.handle.read(), res.handle.write())
-        ->*[] _CCCL_DEVICE(size_t i, auto dthis, auto drhs, auto dres) {
+        ->*[] CUDASTF_DEVICE(size_t i, auto dthis, auto drhs, auto dres) {
               dres(i) = dthis(i) / drhs(i);
             };
 
@@ -117,7 +117,7 @@ public:
     // Submit a task that computes -s
     scalar res;
     ctx.parallel_for(handle.shape(), handle.read(), res.handle.write())
-        ->*[] _CCCL_DEVICE(size_t i, auto dthis, auto dres) {
+        ->*[] CUDASTF_DEVICE(size_t i, auto dthis, auto dres) {
               dres(i) = -dthis(i);
             };
 
@@ -144,13 +144,13 @@ scalar DOT(vector& a, vector& b)
 
   /* We initialize the result with a trivial kernel so that we do not need a
    * cooperative kernel launch for the reduction */
-  ctx.parallel_for(box(1), res.handle.write())->*[] _CCCL_DEVICE(size_t, auto dres) {
+  ctx.parallel_for(box(1), res.handle.write())->*[] CUDASTF_DEVICE(size_t, auto dres) {
     dres(0) = 0.0;
   };
 
   auto spec = par<128>(con<32>());
   ctx.launch(spec, exec_place::current_device(), a.handle.read(), b.handle.read(), res.handle.rw())
-      ->*[] _CCCL_DEVICE(auto th, auto da, auto db, auto dres) {
+      ->*[] CUDASTF_DEVICE(auto th, auto da, auto db, auto dres) {
             // Each thread computes the dot product of the elements assigned to it
             double local_sum = 0.0;
             for (auto i : th.apply_partition(shape(da), std::tuple<blocked_partition, cyclic_partition>()))
@@ -186,7 +186,7 @@ scalar DOT(vector& a, vector& b)
 void AXPY(const scalar& alpha, vector& x, vector& y)
 {
   ctx.parallel_for(x.handle.shape(), alpha.handle.read(), x.handle.read(), y.handle.rw())
-      ->*[] _CCCL_DEVICE(size_t i, auto dalpha, auto dx, auto dy) {
+      ->*[] CUDASTF_DEVICE(size_t i, auto dalpha, auto dx, auto dy) {
             dy(i) += dalpha(0) * dx(i);
           };
 };
@@ -195,7 +195,7 @@ void AXPY(const scalar& alpha, vector& x, vector& y)
 void SCALE_AXPY(const scalar& alpha, const vector& x, vector& y)
 {
   ctx.parallel_for(x.handle.shape(), alpha.handle.read(), x.handle.read(), y.handle.rw())
-      ->*[] _CCCL_DEVICE(size_t i, auto dalpha, auto dx, auto dy) {
+      ->*[] CUDASTF_DEVICE(size_t i, auto dalpha, auto dx, auto dy) {
             dy(i) = dalpha(0) * dy(i) + dx(i);
           };
 };
@@ -204,7 +204,7 @@ void SPMV(csr_matrix& a, vector& x, vector& y)
 {
   ctx.parallel_for(
     y.handle.shape(), a.val_handle.read(), a.col_handle.read(), a.row_handle.read(), x.handle.read(), y.handle.write())
-      ->*[] _CCCL_DEVICE(size_t row, auto da_val, auto da_col, auto da_row, auto dx, auto dy) {
+      ->*[] CUDASTF_DEVICE(size_t row, auto da_val, auto da_col, auto da_row, auto dx, auto dy) {
             int row_start = da_row(row);
             int row_end   = da_row(row + 1);
 
@@ -342,12 +342,12 @@ int main(int argc, char** argv)
   vector X(N), B(N);
 
   // RHS
-  ctx.parallel_for(B.handle.shape(), B.handle.write())->*[] _CCCL_DEVICE(size_t i, auto dB) {
+  ctx.parallel_for(B.handle.shape(), B.handle.write())->*[] CUDASTF_DEVICE(size_t i, auto dB) {
     dB(i) = 1.0;
   };
 
   // Initial guess
-  ctx.parallel_for(X.handle.shape(), X.handle.write())->*[] _CCCL_DEVICE(size_t i, auto dX) {
+  ctx.parallel_for(X.handle.shape(), X.handle.write())->*[] CUDASTF_DEVICE(size_t i, auto dX) {
     dX(i) = 1.0;
   };
 

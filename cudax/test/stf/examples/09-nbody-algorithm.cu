@@ -66,7 +66,7 @@ int main()
 
   auto fn = [dt](context ctx, logical_data<slice<body>> h_particles) {
     // Compute accelerations
-    ctx.parallel_for(h_particles.shape(), h_particles.rw())->*[=] _CCCL_DEVICE __host__(size_t i, slice<body> p) {
+    ctx.parallel_for(h_particles.shape(), h_particles.rw())->*[=] CUDASTF_DEVICE __host__(size_t i, slice<body> p) {
       double acc[3];
       for (size_t k = 0; k < 3; k++)
       {

@@ -183,7 +183,7 @@ public:
         int devid = get_preferred_devid(rowb, colb);
 
         ctx.parallel_for(exec_place::device(devid), h.shape(), h.write()).set_symbol("INIT")->*
-          [=] _CCCL_DEVICE(size_t lrow, size_t lcol, auto sA) {
+          [=] CUDASTF_DEVICE(size_t lrow, size_t lcol, auto sA) {
             size_t row     = lrow + rowb * sA.extent(0);
             size_t col     = lcol + colb * sA.extent(1);
             sA(lrow, lcol) = fun(row, col);
@@ -1482,7 +1482,7 @@ void run(int N, int NB)
   matrix<double> Aref(N, N, NB, NB, false, "Aref");
 
   // (Hilbert matrix + 2*N*Id) to have a diagonal dominant matrix
-  auto hilbert = [=] _CCCL_HOST_DEVICE(size_t row, size_t col) {
+  auto hilbert = [=] CUDASTF_HOST_DEVICE(size_t row, size_t col) {
     return 1.0 / (col + row + 1.0) + 2.0 * N * (col == row);
   };
 
@@ -1493,7 +1493,7 @@ void run(int N, int NB)
   matrix<double> B_potrs(N, 1, NB, 1, false, "B");
   matrix<double> Bref_potrs(N, 1, NB, 1, false, "Bref");
 
-  auto rhs_vals = [] _CCCL_HOST_DEVICE(size_t row, size_t /*unused*/) {
+  auto rhs_vals = [] CUDASTF_HOST_DEVICE(size_t row, size_t /*unused*/) {
     return 1.0 * (row + 1);
   };
 
@@ -1598,7 +1598,7 @@ void run(int N, int NB)
 
     // B_tmp = 0 (to avoid NaN*0.0)
     matrix<double> B_tmp(N, 1, NB, 1, false, "B_tmp");
-    auto zero_vals = [] _CCCL_HOST_DEVICE(size_t /* unused */, size_t /*unused*/) {
+    auto zero_vals = [] CUDASTF_HOST_DEVICE(size_t /* unused */, size_t /*unused*/) {
       return 0.0;
     };
     B_tmp.fill(zero_vals);

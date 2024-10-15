@@ -29,7 +29,7 @@ namespace cuda::experimental::stf
  * an explicit shape ({2, M-2}, {2, N-2})
  */
 template <size_t thickness, typename T, typename... P>
-_CCCL_HOST_DEVICE box<mdspan<T, P...>::rank()> inner(const shape_of<mdspan<T, P...>>& s)
+CUDASTF_HOST_DEVICE box<mdspan<T, P...>::rank()> inner(const shape_of<mdspan<T, P...>>& s)
 {
   using m               = mdspan<T, P...>;
   constexpr size_t rank = m::rank();
@@ -54,7 +54,7 @@ _CCCL_HOST_DEVICE box<mdspan<T, P...>::rank()> inner(const shape_of<mdspan<T, P.
  * will produce the explicit shape ({12, 98}, {-8, 8})
  */
 template <size_t thickness, size_t rank>
-_CCCL_HOST_DEVICE box<rank> inner(const box<rank>& s)
+CUDASTF_HOST_DEVICE box<rank> inner(const box<rank>& s)
 {
   ::std::array<::std::pair<ssize_t, ssize_t>, rank> inner_extents;
   for (size_t i = 0; i < rank; i++)
