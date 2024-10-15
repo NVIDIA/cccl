@@ -463,8 +463,6 @@ private:
 // Try to detect when __VA_OPT__ is available
 #if defined(__cplusplus) && __cplusplus >= 202002L
 #define STF_HAS_UNITTEST_WITH_ARGS 1
-#else
-#define STF_HAS_UNITTEST_WITH_ARGS 0
 #endif
 
 #ifdef UNITTESTED_FILE
