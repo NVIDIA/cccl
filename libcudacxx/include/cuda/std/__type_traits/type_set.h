@@ -31,7 +31,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Set, class... _Ty>
-_LIBCUDACXX_INLINE_VAR constexpr bool __type_set_contains =
+_CCCL_INLINE_VAR constexpr bool __type_set_contains =
   _CUDA_VSTD::__fold_and<_CCCL_TRAIT(_CUDA_VSTD::is_base_of, __type_identity<_Ty>, _Set)...>;
 
 namespace __set
@@ -71,7 +71,7 @@ struct __bulk_insert
 } // namespace __set
 
 template <class _ExpectedSet, class... _Ts>
-_LIBCUDACXX_INLINE_VAR constexpr bool __type_set_eq = //
+_CCCL_INLINE_VAR constexpr bool __type_set_eq = //
   (sizeof...(_Ts) == _ExpectedSet::__size()) && __type_set_contains<_ExpectedSet, _Ts...>;
 
 template <class... _Ts>
@@ -84,7 +84,7 @@ template <class... _Ts>
 using __make_type_set = __type_set_insert<__type_set<>, _Ts...>;
 
 template <class _Ty, class... _Ts>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_included_in = __fold_or<_CCCL_TRAIT(is_same, _Ty, _Ts)...>;
+_CCCL_INLINE_VAR constexpr bool __is_included_in = __fold_or<_CCCL_TRAIT(is_same, _Ty, _Ts)...>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

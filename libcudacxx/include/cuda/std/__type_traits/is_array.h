@@ -35,7 +35,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_array : public integral_constant<bool, _
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_array_v = _CCCL_BUILTIN_IS_ARRAY(_Tp);
+_CCCL_INLINE_VAR constexpr bool is_array_v = _CCCL_BUILTIN_IS_ARRAY(_Tp);
 #  endif
 
 #else
@@ -52,7 +52,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_array<_Tp[_Np]> : public true_type
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_array_v = is_array<_Tp>::value;
+_CCCL_INLINE_VAR constexpr bool is_array_v = is_array<_Tp>::value;
 #  endif
 
 #endif // defined(_CCCL_BUILTIN_IS_ARRAY) && !defined(_LIBCUDACXX_USE_IS_ARRAY_FALLBACK)

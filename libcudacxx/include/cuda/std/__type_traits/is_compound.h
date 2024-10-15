@@ -33,7 +33,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_compound : public integral_constant<bool
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_compound_v = _CCCL_BUILTIN_IS_COMPOUND(_Tp);
+_CCCL_INLINE_VAR constexpr bool is_compound_v = _CCCL_BUILTIN_IS_COMPOUND(_Tp);
 #  endif
 
 #else // ^^^ _CCCL_BUILTIN_IS_COMPOUND ^^^ / vvv !_CCCL_BUILTIN_IS_COMPOUND vvv
@@ -44,7 +44,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_compound : public integral_constant<bool
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_compound_v = is_compound<_Tp>::value;
+_CCCL_INLINE_VAR constexpr bool is_compound_v = is_compound<_Tp>::value;
 #  endif
 
 #endif // !_CCCL_BUILTIN_IS_COMPOUND

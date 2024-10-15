@@ -37,7 +37,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_copy_assignable
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_copy_assignable_v = _CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE(
+_CCCL_INLINE_VAR constexpr bool is_nothrow_copy_assignable_v = _CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE(
   __add_lvalue_reference_t<_Tp>, __add_lvalue_reference_t<typename add_const<_Tp>::type>);
 #  endif
 
@@ -50,7 +50,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_copy_assignable
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_copy_assignable_v = is_nothrow_copy_assignable<_Tp>::value;
+_CCCL_INLINE_VAR constexpr bool is_nothrow_copy_assignable_v = is_nothrow_copy_assignable<_Tp>::value;
 #  endif
 
 #endif

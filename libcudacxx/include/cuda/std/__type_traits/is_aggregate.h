@@ -32,7 +32,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_aggregate : public integral_constant<boo
 
 #  if !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_aggregate_v = _CCCL_BUILTIN_IS_AGGREGATE(_Tp);
+_CCCL_INLINE_VAR constexpr bool is_aggregate_v = _CCCL_BUILTIN_IS_AGGREGATE(_Tp);
 #  endif
 
 #endif // _CCCL_STD_VER > 2011 && defined(_CCCL_BUILTIN_IS_AGGREGATE)

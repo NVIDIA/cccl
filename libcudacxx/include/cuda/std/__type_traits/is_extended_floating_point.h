@@ -28,12 +28,12 @@ template <class _Tp>
 struct __is_extended_floating_point : false_type
 {};
 
-#ifndef _LIBCUDACXX_HAS_NO_INLINE_VARIABLES
+#ifndef _CCCL_NO_INLINE_VARIABLES
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_extended_floating_point_v = false;
+_CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v = false;
 #elif _CCCL_STD_VER >= 2014 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_extended_floating_point_v = __is_extended_floating_point<_Tp>::value;
+_CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v = __is_extended_floating_point<_Tp>::value;
 #endif // _CCCL_STD_VER >= 2014
 
 #if defined(_LIBCUDACXX_HAS_NVFP16)
@@ -43,9 +43,9 @@ template <>
 struct __is_extended_floating_point<__half> : true_type
 {};
 
-#  ifndef _LIBCUDACXX_HAS_NO_INLINE_VARIABLES
+#  ifndef _CCCL_NO_INLINE_VARIABLES
 template <>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_extended_floating_point_v<__half> = true;
+_CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v<__half> = true;
 #  endif // _CCCL_STD_VER >= 2014
 #endif // _LIBCUDACXX_HAS_NVFP16
 
@@ -59,9 +59,9 @@ template <>
 struct __is_extended_floating_point<__nv_bfloat16> : true_type
 {};
 
-#  ifndef _LIBCUDACXX_HAS_NO_INLINE_VARIABLES
+#  ifndef _CCCL_NO_INLINE_VARIABLES
 template <>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_extended_floating_point_v<__nv_bfloat16> = true;
+_CCCL_INLINE_VAR constexpr bool __is_extended_floating_point_v<__nv_bfloat16> = true;
 #  endif // _CCCL_STD_VER >= 2014
 #endif // _LIBCUDACXX_HAS_NVBF16
 

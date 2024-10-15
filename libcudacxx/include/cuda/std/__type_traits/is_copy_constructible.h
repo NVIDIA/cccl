@@ -33,7 +33,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_copy_constructible
 
 #if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_copy_constructible_v = is_copy_constructible<_Tp>::value;
+_CCCL_INLINE_VAR constexpr bool is_copy_constructible_v = is_copy_constructible<_Tp>::value;
 #endif
 
 _LIBCUDACXX_END_NAMESPACE_STD

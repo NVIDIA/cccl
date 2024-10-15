@@ -38,7 +38,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_final : public integral_constant<bool, _
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_final_v = _CCCL_BUILTIN_IS_FINAL(_Tp);
+_CCCL_INLINE_VAR constexpr bool is_final_v = _CCCL_BUILTIN_IS_FINAL(_Tp);
 #  endif
 
 #else
@@ -55,7 +55,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_final : public false_type
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_final_v = false;
+_CCCL_INLINE_VAR constexpr bool is_final_v = false;
 #  endif
 
 #endif // defined(_CCCL_BUILTIN_IS_FINAL)

@@ -34,7 +34,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivial : public integral_constant<bool,
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_trivial_v = _CCCL_BUILTIN_IS_TRIVIAL(_Tp);
+_CCCL_INLINE_VAR constexpr bool is_trivial_v = _CCCL_BUILTIN_IS_TRIVIAL(_Tp);
 #  endif
 
 #else
@@ -46,7 +46,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivial
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_trivial_v = is_trivial<_Tp>::value;
+_CCCL_INLINE_VAR constexpr bool is_trivial_v = is_trivial<_Tp>::value;
 #  endif
 
 #endif // defined(_CCCL_BUILTIN_IS_TRIVIAL) && !defined(_LIBCUDACXX_USE_IS_TRIVIAL_FALLBACK)

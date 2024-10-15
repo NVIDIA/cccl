@@ -46,7 +46,7 @@ namespace std
 namespace ranges
 {
 template <>
-_LIBCUDACXX_INLINE_VAR constexpr bool enable_borrowed_range<BorrowedRange> = true;
+_CCCL_INLINE_VAR constexpr bool enable_borrowed_range<BorrowedRange> = true;
 }
 } // namespace std
 } // namespace cuda

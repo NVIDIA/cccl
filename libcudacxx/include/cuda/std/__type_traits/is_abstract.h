@@ -30,7 +30,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_abstract : public integral_constant<bool
 
 #if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_abstract_v = __is_abstract(_Tp);
+_CCCL_INLINE_VAR constexpr bool is_abstract_v = __is_abstract(_Tp);
 #endif
 
 _LIBCUDACXX_END_NAMESPACE_STD

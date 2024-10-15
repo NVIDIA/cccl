@@ -44,14 +44,14 @@ struct __uses_allocator<_Tp, _Alloc, true> : is_convertible<_Alloc, typename _Tp
 {};
 #else // ^^^ _CCCL_STD_VER <= 2014 ^^^ / vvv _CCCL_STD_VER >= 2017 vvv
 template <class _Tp, class = void>
-_LIBCUDACXX_INLINE_VAR constexpr bool __has_allocator_type_v = false;
+_CCCL_INLINE_VAR constexpr bool __has_allocator_type_v = false;
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool __has_allocator_type_v<_Tp, void_t<typename _Tp::allocator_type>> = true;
+_CCCL_INLINE_VAR constexpr bool __has_allocator_type_v<_Tp, void_t<typename _Tp::allocator_type>> = true;
 
 template <class _Tp, class _Alloc, bool = _CCCL_TRAIT(__has_allocator_type, _Tp)>
-_LIBCUDACXX_INLINE_VAR constexpr bool __uses_allocator_v = false;
+_CCCL_INLINE_VAR constexpr bool __uses_allocator_v = false;
 template <class _Tp, class _Alloc>
-_LIBCUDACXX_INLINE_VAR constexpr bool __uses_allocator_v<_Tp, _Alloc, true> =
+_CCCL_INLINE_VAR constexpr bool __uses_allocator_v<_Tp, _Alloc, true> =
   is_convertible_v<_Alloc, typename _Tp::allocator_type>;
 #endif // _CCCL_STD_VER >= 2017
 
@@ -62,7 +62,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT uses_allocator
 
 #if _CCCL_STD_VER >= 2014
 template <class _Tp, class _Alloc>
-_LIBCUDACXX_INLINE_VAR constexpr bool uses_allocator_v = _CCCL_TRAIT(__uses_allocator, _Tp, _Alloc);
+_CCCL_INLINE_VAR constexpr bool uses_allocator_v = _CCCL_TRAIT(__uses_allocator, _Tp, _Alloc);
 #endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD

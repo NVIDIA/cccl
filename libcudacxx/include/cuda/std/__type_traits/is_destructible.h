@@ -37,7 +37,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_destructible
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_destructible_v = _CCCL_BUILTIN_IS_DESTRUCTIBLE(_Tp);
+_CCCL_INLINE_VAR constexpr bool is_destructible_v = _CCCL_BUILTIN_IS_DESTRUCTIBLE(_Tp);
 #  endif
 
 #else // ^^^ _CCCL_BUILTIN_IS_DESTRUCTIBLE ^^^ / vvv !_CCCL_BUILTIN_IS_DESTRUCTIBLE vvv
@@ -105,7 +105,7 @@ struct is_destructible<void> : public false_type
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_destructible_v = is_destructible<_Tp>::value;
+_CCCL_INLINE_VAR constexpr bool is_destructible_v = is_destructible<_Tp>::value;
 #  endif
 
 #endif // !_CCCL_BUILTIN_IS_DESTRUCTIBLE

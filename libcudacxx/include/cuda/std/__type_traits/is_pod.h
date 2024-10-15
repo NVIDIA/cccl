@@ -37,7 +37,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_pod : public integral_constant<bool, _CC
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_pod_v = _CCCL_BUILTIN_IS_POD(_Tp);
+_CCCL_INLINE_VAR constexpr bool is_pod_v = _CCCL_BUILTIN_IS_POD(_Tp);
 #  endif
 
 #else
@@ -52,7 +52,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_pod
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_pod_v = is_pod<_Tp>::value;
+_CCCL_INLINE_VAR constexpr bool is_pod_v = is_pod<_Tp>::value;
 #  endif
 
 #endif // defined(_CCCL_BUILTIN_IS_POD) && !defined(_LIBCUDACXX_USE_IS_POD_FALLBACK)

@@ -35,7 +35,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_member_object_pointer
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_member_object_pointer_v = _CCCL_BUILTIN_IS_MEMBER_OBJECT_POINTER(_Tp);
+_CCCL_INLINE_VAR constexpr bool is_member_object_pointer_v = _CCCL_BUILTIN_IS_MEMBER_OBJECT_POINTER(_Tp);
 #  endif
 
 #else // ^^^ _CCCL_BUILTIN_IS_MEMBER_OBJECT_POINTER ^^^ / vvv !_CCCL_BUILTIN_IS_MEMBER_OBJECT_POINTER vvv
@@ -47,7 +47,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_member_object_pointer
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_member_object_pointer_v = is_member_object_pointer<_Tp>::value;
+_CCCL_INLINE_VAR constexpr bool is_member_object_pointer_v = is_member_object_pointer<_Tp>::value;
 #  endif
 
 #endif // !_CCCL_BUILTIN_IS_MEMBER_OBJECT_POINTER

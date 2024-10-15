@@ -30,7 +30,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_default_constructible : public is_constr
 
 #if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_default_constructible_v = is_constructible_v<_Tp>;
+_CCCL_INLINE_VAR constexpr bool is_default_constructible_v = is_constructible_v<_Tp>;
 #endif
 
 _LIBCUDACXX_END_NAMESPACE_STD

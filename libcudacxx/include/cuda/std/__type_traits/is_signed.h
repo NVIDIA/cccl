@@ -36,7 +36,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_signed : public integral_constant<bool, 
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_signed_v = _CCCL_BUILTIN_IS_SIGNED(_Tp);
+_CCCL_INLINE_VAR constexpr bool is_signed_v = _CCCL_BUILTIN_IS_SIGNED(_Tp);
 #  endif
 
 #else
@@ -63,7 +63,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_signed : public __libcpp_is_signed<_Tp>
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_signed_v = is_signed<_Tp>::value;
+_CCCL_INLINE_VAR constexpr bool is_signed_v = is_signed<_Tp>::value;
 #  endif
 
 #endif // defined(_CCCL_BUILTIN_IS_SIGNED) && !defined(_LIBCUDACXX_USE_IS_SIGNED_FALLBACK)

@@ -41,7 +41,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_scoped_enum : public __is_scoped_enum_he
 {};
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_scoped_enum_v = is_scoped_enum<_Tp>::value;
+_CCCL_INLINE_VAR constexpr bool is_scoped_enum_v = is_scoped_enum<_Tp>::value;
 #endif
 
 _LIBCUDACXX_END_NAMESPACE_STD

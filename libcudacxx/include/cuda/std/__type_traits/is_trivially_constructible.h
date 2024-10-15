@@ -34,8 +34,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_constructible
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class... _Args>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_trivially_constructible_v =
-  _CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp, _Args...);
+_CCCL_INLINE_VAR constexpr bool is_trivially_constructible_v = _CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp, _Args...);
 #  endif
 
 #else
@@ -72,7 +71,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_constructible<_Tp, _Tp&>
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class... _Args>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_trivially_constructible_v = is_trivially_constructible<_Tp, _Args...>::value;
+_CCCL_INLINE_VAR constexpr bool is_trivially_constructible_v = is_trivially_constructible<_Tp, _Args...>::value;
 #  endif
 
 #endif // defined(_CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE) &&

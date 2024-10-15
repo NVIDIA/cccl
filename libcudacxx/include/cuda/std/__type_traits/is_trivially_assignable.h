@@ -33,7 +33,7 @@ struct is_trivially_assignable : integral_constant<bool, _CCCL_BUILTIN_IS_TRIVIA
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class _Arg>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_trivially_assignable_v = _CCCL_BUILTIN_IS_TRIVIALLY_ASSIGNABLE(_Tp, _Arg);
+_CCCL_INLINE_VAR constexpr bool is_trivially_assignable_v = _CCCL_BUILTIN_IS_TRIVIALLY_ASSIGNABLE(_Tp, _Arg);
 #  endif
 
 #else
@@ -60,7 +60,7 @@ struct is_trivially_assignable<_Tp&, _Tp&&> : integral_constant<bool, is_scalar<
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class _Arg>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_trivially_assignable_v = is_trivially_assignable<_Tp, _Arg>::value;
+_CCCL_INLINE_VAR constexpr bool is_trivially_assignable_v = is_trivially_assignable<_Tp, _Arg>::value;
 #  endif
 
 #endif // defined(_CCCL_BUILTIN_IS_TRIVIALLY_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_ASSIGNABLE_FALLBACK)

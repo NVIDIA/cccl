@@ -33,7 +33,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_empty : public integral_constant<bool, _
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_empty_v = _CCCL_BUILTIN_IS_EMPTY(_Tp);
+_CCCL_INLINE_VAR constexpr bool is_empty_v = _CCCL_BUILTIN_IS_EMPTY(_Tp);
 #  endif
 
 #else
@@ -63,7 +63,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_empty : public __libcpp_empty<_Tp>
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_empty_v = is_empty<_Tp>::value;
+_CCCL_INLINE_VAR constexpr bool is_empty_v = is_empty<_Tp>::value;
 #  endif
 
 #endif // defined(_CCCL_BUILTIN_IS_EMPTY) && !defined(_LIBCUDACXX_USE_IS_EMPTY_FALLBACK)

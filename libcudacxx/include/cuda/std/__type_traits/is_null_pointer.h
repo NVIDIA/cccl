@@ -43,7 +43,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_null_pointer : public __is_nullptr_t_imp
 
 #if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_null_pointer_v = is_null_pointer<_Tp>::value;
+_CCCL_INLINE_VAR constexpr bool is_null_pointer_v = is_null_pointer<_Tp>::value;
 #endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD

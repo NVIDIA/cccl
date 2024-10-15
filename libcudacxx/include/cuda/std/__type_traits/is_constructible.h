@@ -155,7 +155,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_constructible
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class... _Args>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_constructible_v = _CCCL_BUILTIN_IS_CONSTRUCTIBLE(_Tp, _Args...);
+_CCCL_INLINE_VAR constexpr bool is_constructible_v = _CCCL_BUILTIN_IS_CONSTRUCTIBLE(_Tp, _Args...);
 #  endif
 
 #else
@@ -165,7 +165,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_constructible : public __libcpp_is_const
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class... _Args>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_constructible_v = is_constructible<_Tp, _Args...>::value;
+_CCCL_INLINE_VAR constexpr bool is_constructible_v = is_constructible<_Tp, _Args...>::value;
 #  endif
 
 #endif // defined(_CCCL_BUILTIN_IS_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_CONSTRUCTIBLE_FALLBACK)

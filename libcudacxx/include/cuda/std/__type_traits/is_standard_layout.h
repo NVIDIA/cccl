@@ -35,7 +35,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_standard_layout
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_standard_layout_v = _CCCL_BUILTIN_IS_STANDARD_LAYOUT(_Tp);
+_CCCL_INLINE_VAR constexpr bool is_standard_layout_v = _CCCL_BUILTIN_IS_STANDARD_LAYOUT(_Tp);
 #  endif
 
 #else
@@ -47,7 +47,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_standard_layout
 
 #  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_standard_layout_v = is_standard_layout<_Tp>::value;
+_CCCL_INLINE_VAR constexpr bool is_standard_layout_v = is_standard_layout<_Tp>::value;
 #  endif
 
 #endif // defined(_CCCL_BUILTIN_IS_STANDARD_LAYOUT) && !defined(_LIBCUDACXX_USE_IS_STANDARD_LAYOUT_FALLBACK)

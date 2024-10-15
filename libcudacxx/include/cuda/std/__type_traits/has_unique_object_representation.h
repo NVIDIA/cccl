@@ -35,8 +35,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT has_unique_object_representations
 
 #  if !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool has_unique_object_representations_v =
-  has_unique_object_representations<_Tp>::value;
+_CCCL_INLINE_VAR constexpr bool has_unique_object_representations_v = has_unique_object_representations<_Tp>::value;
 #  endif
 
 #endif
