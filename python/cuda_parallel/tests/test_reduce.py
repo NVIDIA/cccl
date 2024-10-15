@@ -39,10 +39,10 @@ def test_device_reduce(dtype):
         num_items = 2 ** num_items_pow2
         h_input = random_int(num_items, dtype)
         d_input = cuda.to_device(h_input)
-        temp_storage_size = reduce_into(None, d_input, d_output, h_init)
+        temp_storage_size = reduce_into(None, None, d_input, d_output, h_init)
         d_temp_storage = cuda.device_array(
             temp_storage_size, dtype=numpy.uint8)
-        reduce_into(d_temp_storage, d_input, d_output, h_init)
+        reduce_into(d_temp_storage, None, d_input, d_output, h_init)
         h_output = d_output.copy_to_host()
         assert h_output[0] == sum(h_input) + init_value
 
@@ -59,9 +59,9 @@ def test_complex_device_reduce():
         h_input = numpy.random.random(
             num_items) + 1j * numpy.random.random(num_items)
         d_input = cuda.to_device(h_input)
-        temp_storage_bytes = reduce_into(None, d_input, d_output, h_init)
+        temp_storage_bytes = reduce_into(None, None, d_input, d_output, h_init)
         d_temp_storage = cuda.device_array(temp_storage_bytes, numpy.uint8)
-        reduce_into(d_temp_storage, d_input, d_output, h_init)
+        reduce_into(d_temp_storage, None, d_input, d_output, h_init)
 
         result = d_output.copy_to_host()[0]
         expected = numpy.sum(h_input, initial=h_init[0])
@@ -82,4 +82,4 @@ def test_device_reduce_dtype_mismatch():
 
     for ix in range(3):
         with pytest.raises(TypeError, match=r"^dtype mismatch: __init__=int32, __call__=int64$"):
-          reduce_into(None, d_inputs[int(ix == 0)], d_outputs[int(ix == 1)], h_inits[int(ix == 2)])
+          reduce_into(None, None, d_inputs[int(ix == 0)], d_outputs[int(ix == 1)], h_inits[int(ix == 2)])
