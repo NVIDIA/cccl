@@ -221,7 +221,7 @@ public:
 
   template <auto... other,
             std::enable_if_t<!std::is_same_v<thread_hierarchy_spec, thread_hierarchy_spec<other...>>, int> = 0>
-  constexpr bool operator!=(const thread_hierarchy_spec<other...>& rhs) const noexcept
+  constexpr bool operator!=(const thread_hierarchy_spec<other...>&) const noexcept
   {
     return true;
   }
