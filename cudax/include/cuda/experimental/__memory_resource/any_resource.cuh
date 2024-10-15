@@ -54,7 +54,7 @@
 namespace cuda::experimental::mr
 {
 template <class _Ty, class _Uy = _CUDA_VSTD::remove_cvref_t<_Ty>>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_basic_any_resource = false;
+_CCCL_INLINE_VAR constexpr bool __is_basic_any_resource = false;
 
 //! @rst
 //! .. _cudax-memory-resource-basic-any-resource:
@@ -279,8 +279,7 @@ public:
 
 //! @brief Checks whether a passed in type is a specialization of basic_any_resource
 template <class _Ty, _CUDA_VMR::_AllocType _Alloc_type, class... _Properties>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_basic_any_resource<_Ty, basic_any_resource<_Alloc_type, _Properties...>> =
-  true;
+_CCCL_INLINE_VAR constexpr bool __is_basic_any_resource<_Ty, basic_any_resource<_Alloc_type, _Properties...>> = true;
 
 //! @rst
 //! .. _cudax-memory-resource-any-resource:

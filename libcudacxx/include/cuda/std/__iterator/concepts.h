@@ -341,7 +341,7 @@ template <class _Sp, class _Ip>
 _LIBCUDACXX_CONCEPT sentinel_for = _LIBCUDACXX_FRAGMENT(__sentinel_for_, _Sp, _Ip);
 
 template <class, class>
-_LIBCUDACXX_INLINE_VAR constexpr bool disable_sized_sentinel_for = false;
+_CCCL_INLINE_VAR constexpr bool disable_sized_sentinel_for = false;
 
 template <class _Sp, class _Ip>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
@@ -616,16 +616,16 @@ template <class _In, class _Out>
 _LIBCUDACXX_CONCEPT indirectly_copyable_storable = _LIBCUDACXX_FRAGMENT(__indirectly_copyable_storable_, _In, _Out);
 
 template <class _Ip, class = void>
-_LIBCUDACXX_INLINE_VAR constexpr bool __has_iter_category = false;
+_CCCL_INLINE_VAR constexpr bool __has_iter_category = false;
 
 template <class _Ip>
-_LIBCUDACXX_INLINE_VAR constexpr bool __has_iter_category<_Ip, void_t<typename _Ip::iterator_category>> = true;
+_CCCL_INLINE_VAR constexpr bool __has_iter_category<_Ip, void_t<typename _Ip::iterator_category>> = true;
 
 template <class _Ip, class = void>
-_LIBCUDACXX_INLINE_VAR constexpr bool __has_iter_concept = false;
+_CCCL_INLINE_VAR constexpr bool __has_iter_concept = false;
 
 template <class _Ip>
-_LIBCUDACXX_INLINE_VAR constexpr bool __has_iter_concept<_Ip, void_t<typename _Ip::iterator_concept>> = true;
+_CCCL_INLINE_VAR constexpr bool __has_iter_concept<_Ip, void_t<typename _Ip::iterator_concept>> = true;
 
 #endif // _CCCL_STD_VER > 2014
 
