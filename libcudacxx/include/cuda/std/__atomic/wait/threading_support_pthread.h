@@ -101,128 +101,33 @@ _LIBCUDACXX_HIDE_FROM_ABI __libcpp_timespec_t __libcpp_to_timespec(const _CUDA_V
   return __ts;
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI int __libcpp_recursive_mutex_init(__libcpp_recursive_mutex_t* __m)
-{
-  pthread_mutexattr_t attr;
-  int __ec = pthread_mutexattr_init(&attr);
-  if (__ec)
-  {
-    return __ec;
-  }
-  __ec = pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
-  if (__ec)
-  {
-    pthread_mutexattr_destroy(&attr);
-    return __ec;
-  }
-  __ec = pthread_mutex_init(__m, &attr);
-  if (__ec)
-  {
-    pthread_mutexattr_destroy(&attr);
-    return __ec;
-  }
-  __ec = pthread_mutexattr_destroy(&attr);
-  if (__ec)
-  {
-    pthread_mutex_destroy(__m);
-    return __ec;
-  }
-  return 0;
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI int __libcpp_recursive_mutex_lock(__libcpp_recursive_mutex_t* __m)
-{
-  return pthread_mutex_lock(__m);
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI bool __libcpp_recursive_mutex_trylock(__libcpp_recursive_mutex_t* __m)
-{
-  return pthread_mutex_trylock(__m) == 0;
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI int __libcpp_recursive_mutex_unlock(__libcpp_mutex_t* __m)
-{
-  return pthread_mutex_unlock(__m);
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI int __libcpp_recursive_mutex_destroy(__libcpp_recursive_mutex_t* __m)
-{
-  return pthread_mutex_destroy(__m);
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI int __libcpp_mutex_lock(__libcpp_mutex_t* __m)
-{
-  return pthread_mutex_lock(__m);
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI bool __libcpp_mutex_trylock(__libcpp_mutex_t* __m)
-{
-  return pthread_mutex_trylock(__m) == 0;
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI int __libcpp_mutex_unlock(__libcpp_mutex_t* __m)
-{
-  return pthread_mutex_unlock(__m);
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI int __libcpp_mutex_destroy(__libcpp_mutex_t* __m)
-{
-  return pthread_mutex_destroy(__m);
-}
-
-// Condition Variable
-_LIBCUDACXX_HIDE_FROM_ABI int __libcpp_condvar_signal(__libcpp_condvar_t* __cv)
-{
-  return pthread_cond_signal(__cv);
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI int __libcpp_condvar_broadcast(__libcpp_condvar_t* __cv)
-{
-  return pthread_cond_broadcast(__cv);
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI int __libcpp_condvar_wait(__libcpp_condvar_t* __cv, __libcpp_mutex_t* __m)
-{
-  return pthread_cond_wait(__cv, __m);
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI int
-__libcpp_condvar_timedwait(__libcpp_condvar_t* __cv, __libcpp_mutex_t* __m, __libcpp_timespec_t* __ts)
-{
-  return pthread_cond_timedwait(__cv, __m, __ts);
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI int __libcpp_condvar_destroy(__libcpp_condvar_t* __cv)
-{
-  return pthread_cond_destroy(__cv);
-}
-
 // Semaphore
 #  if defined(__APPLE__)
 
-bool __libcpp_semaphore_init(__libcpp_semaphore_t* __sem, int __init)
+_LIBCUDACXX_HIDE_FROM_ABI bool __libcpp_semaphore_init(__libcpp_semaphore_t* __sem, int __init)
 {
   return (*__sem = dispatch_semaphore_create(__init)) != nullptr;
 }
 
-bool __libcpp_semaphore_destroy(__libcpp_semaphore_t* __sem)
+_LIBCUDACXX_HIDE_FROM_ABI bool __libcpp_semaphore_destroy(__libcpp_semaphore_t* __sem)
 {
   dispatch_release(*__sem);
   return true;
 }
 
-bool __libcpp_semaphore_post(__libcpp_semaphore_t* __sem)
+_LIBCUDACXX_HIDE_FROM_ABI bool __libcpp_semaphore_post(__libcpp_semaphore_t* __sem)
 {
   dispatch_semaphore_signal(*__sem);
   return true;
 }
 
-bool __libcpp_semaphore_wait(__libcpp_semaphore_t* __sem)
+_LIBCUDACXX_HIDE_FROM_ABI bool __libcpp_semaphore_wait(__libcpp_semaphore_t* __sem)
 {
   return dispatch_semaphore_wait(*__sem, DISPATCH_TIME_FOREVER) == 0;
 }
 
-bool __libcpp_semaphore_wait_timed(__libcpp_semaphore_t* __sem, _CUDA_VSTD::chrono::nanoseconds const& __ns)
+_LIBCUDACXX_HIDE_FROM_ABI bool
+__libcpp_semaphore_wait_timed(__libcpp_semaphore_t* __sem, _CUDA_VSTD::chrono::nanoseconds const& __ns)
 {
   return dispatch_semaphore_wait(*__sem, dispatch_time(DISPATCH_TIME_NOW, __ns.count())) == 0;
 }
@@ -257,73 +162,6 @@ __libcpp_semaphore_wait_timed(__libcpp_semaphore_t* __sem, _CUDA_VSTD::chrono::n
 }
 
 #  endif // !__APPLE__
-
-// Execute once
-_LIBCUDACXX_HIDE_FROM_ABI int __libcpp_execute_once(__libcpp_exec_once_flag* flag, void (*init_routine)())
-{
-  return pthread_once(flag, init_routine);
-}
-
-// Thread id
-// Returns non-zero if the thread ids are equal, otherwise 0
-_CCCL_EXEC_CHECK_DISABLE
-_LIBCUDACXX_HIDE_FROM_ABI bool __libcpp_thread_id_equal(__libcpp_thread_id t1, __libcpp_thread_id t2)
-{
-  return pthread_equal(t1, t2) != 0;
-}
-
-// Returns non-zero if t1 < t2, otherwise 0
-_LIBCUDACXX_HIDE_FROM_ABI bool __libcpp_thread_id_less(__libcpp_thread_id t1, __libcpp_thread_id t2)
-{
-  return t1 < t2;
-}
-
-// Thread
-_LIBCUDACXX_HIDE_FROM_ABI bool __libcpp_thread_isnull(const __libcpp_thread_t* __t)
-{
-  return *__t == 0;
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI int __libcpp_thread_create(__libcpp_thread_t* __t, void* (*__func)(void*), void* __arg)
-{
-  return pthread_create(__t, 0, __func, __arg);
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI __libcpp_thread_id __libcpp_thread_get_current_id()
-{
-  return pthread_self();
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI __libcpp_thread_id __libcpp_thread_get_id(const __libcpp_thread_t* __t)
-{
-  return *__t;
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI int __libcpp_thread_join(__libcpp_thread_t* __t)
-{
-  return pthread_join(*__t, 0);
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI int __libcpp_thread_detach(__libcpp_thread_t* __t)
-{
-  return pthread_detach(*__t);
-}
-
-// Thread local storage
-_LIBCUDACXX_HIDE_FROM_ABI int __libcpp_tls_create(__libcpp_tls_key* __key, void (*__at_exit)(void*))
-{
-  return pthread_key_create(__key, __at_exit);
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI void* __libcpp_tls_get(__libcpp_tls_key __key)
-{
-  return pthread_getspecific(__key);
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI int __libcpp_tls_set(__libcpp_tls_key __key, void* __p)
-{
-  return pthread_setspecific(__key, __p);
-}
 
 _LIBCUDACXX_HIDE_FROM_ABI void __libcpp_thread_yield()
 {
