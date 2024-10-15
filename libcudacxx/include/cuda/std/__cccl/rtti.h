@@ -53,7 +53,8 @@
 #  if defined(CCCL_DISABLE_RTTI) // CCCL_DISABLE_RTTI disables typeid also
 #    define _CCCL_NO_TYPEID
 #  elif defined(_CCCL_COMPILER_ICC)
-#    if __RTTI == 0 && __INTEL_RTTI__ == 0 && __GXX_RTTI == 0 && _CPPRTTI == 0
+// when emulating MSVC, typeid is available even when RTTI is disabled
+#    if !defined(_MSC_VER) && __RTTI == 0 && __INTEL_RTTI__ == 0 && __GXX_RTTI == 0 && _CPPRTTI == 0
 #      define _CCCL_NO_TYPEID
 #    endif
 #  elif defined(_CCCL_COMPILER_NVRTC)
