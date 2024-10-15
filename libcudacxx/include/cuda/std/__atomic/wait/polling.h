@@ -24,7 +24,7 @@
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__atomic/types.h>
-#include <cuda/std/__atomic/wait/threading_support.h>
+#include <cuda/std/__thread/threading_support.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

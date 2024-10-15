@@ -7,8 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___ATOMIC_WAIT_THREADING_SUPPORT_H
-#define _LIBCUDACXX___ATOMIC_WAIT_THREADING_SUPPORT_H
+#ifndef _LIBCUDACXX___THREAD_THREADING_SUPPORT_H
+#define _LIBCUDACXX___THREAD_THREADING_SUPPORT_H
 
 #include <cuda/std/detail/__config>
 
@@ -25,15 +25,15 @@
 #  include <cuda/std/chrono>
 
 #  if defined(_LIBCUDACXX_HAS_THREAD_API_EXTERNAL)
-#    include <cuda/std/__atomic/wait/threading_support_external.h>
+#    include <cuda/std/__thread/threading_support_external.h>
 #  endif // _LIBCUDACXX_HAS_THREAD_API_EXTERNAL
 
 #  if defined(_LIBCUDACXX_HAS_THREAD_API_CUDA)
-#    include <cuda/std/__atomic/wait/threading_support_cuda.h>
+#    include <cuda/std/__thread/threading_support_cuda.h>
 #  elif defined(_LIBCUDACXX_HAS_THREAD_API_PTHREAD)
-#    include <cuda/std/__atomic/wait/threading_support_pthread.h>
+#    include <cuda/std/__thread/threading_support_pthread.h>
 #  elif defined(_LIBCUDACXX_HAS_THREAD_API_WIN32)
-#    include <cuda/std/__atomic/wait/threading_support_win32.h>
+#    include <cuda/std/__thread/threading_support_win32.h>
 #  else // ^^^ _LIBCUDACXX_HAS_THREAD_API_WIN32 ^^^ / vvv Unknown Thread API vvv
 #    error "Unknown Thread API"
 #  endif // Unknown Thread API
@@ -106,4 +106,4 @@ _CCCL_POP_MACROS
 
 #endif // !_LIBCUDACXX_HAS_NO_THREADS
 
-#endif // _LIBCUDACXX___ATOMIC_WAIT_THREADING_SUPPORT_H
+#endif // _LIBCUDACXX___THREAD_THREADING_SUPPORT_H
