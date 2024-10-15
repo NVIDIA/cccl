@@ -460,6 +460,13 @@ private:
 
 } // namespace cuda::experimental::stf
 
+// Try to detect when __VA_OPT__ is available
+#if defined(__cplusplus) && __cplusplus >= 202002L
+#define STF_HAS_UNITTEST_WITH_ARGS 1
+#else
+#define STF_HAS_UNITTEST_WITH_ARGS 0
+#endif
+
 #ifdef UNITTESTED_FILE
 
 int main()
@@ -473,27 +480,41 @@ int main()
   // fprintf(stdout, "PASS: %zu of %zu\n", passed(), total());
 }
 
+#ifdef STF_HAS_UNITTEST_WITH_ARGS
 #  define UNITTEST(name, ...)                                                                                         \
     [[maybe_unused]] static const auto CUDASTF_UNIQUE_NAME(unittest) =                                                \
       ::cuda::experimental::stf::unittest<>::make(name, RESERVED_STF_SOURCE_LOCATION() __VA_OPT__(, __VA_ARGS__))->*[ \
       ]([[maybe_unused]] const char* unittest_name __VA_OPT__(, [[maybe_unused]] auto&& unittest_param))
+#else
+#  define UNITTEST(name)                                                                                              \
+    [[maybe_unused]] static const auto CUDASTF_UNIQUE_NAME(unittest) =                                                \
+      ::cuda::experimental::stf::unittest<>::make(name, RESERVED_STF_SOURCE_LOCATION())->*[                           \
+      ]([[maybe_unused]] const char* unittest_name)
+#endif
 
 #else
 
+#ifdef STF_HAS_UNITTEST_WITH_ARGS
 #  define UNITTEST(name, ...)                                                 \
     [[maybe_unused]] static const auto CUDASTF_UNIQUE_NAME(unused_unittest) = \
       []([[maybe_unused]] auto&& unittest_name __VA_OPT__(, [[maybe_unused]] auto&& unittest_param))
+#else
+#  define UNITTEST(name)                                                      \
+    [[maybe_unused]] static const auto CUDASTF_UNIQUE_NAME(unused_unittest) = \
+      []([[maybe_unused]] auto&& unittest_name) { /* ignored test */ }
+#endif
 
 #endif
 
 // Just making sure that core functionality works
-
+#ifdef STF_HAS_UNITTEST_WITH_ARGS
 UNITTEST("Numeric NOP test.", int(), float(), double())
 {
   using T = ::std::remove_reference_t<decltype(unittest_param)>;
   auto x  = EXPECT(T(1) + T(1) == T(2));
   static_assert(::std::is_same_v<decltype(x), T>);
 };
+#endif // STF_HAS_UNITTEST_WITH_ARGS
 
 UNITTEST("EXPECT")
 {
@@ -555,6 +576,7 @@ UNITTEST("Simple unittest")
 };
 //! [UNITTEST simple]
 
+#ifdef STF_HAS_UNITTEST_WITH_ARGS
 //! [UNITTEST parameterized]
 UNITTEST("Parameterized unittest", 42, 42L, 42.0f, 42.0)
 {
@@ -563,6 +585,7 @@ UNITTEST("Parameterized unittest", 42, 42L, 42.0f, 42.0)
   EXPECT(unittest_param == 42);
 };
 //! [UNITTEST parameterized]
+#endif // STF_HAS_UNITTEST_WITH_ARGS
 
 // Documentation unittest for traits.h
 UNITTEST("type_name")

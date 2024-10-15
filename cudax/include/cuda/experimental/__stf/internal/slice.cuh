@@ -195,6 +195,7 @@ auto make_mdview(Whatevs&&... whatevs)
 } // namespace reserved
 
 #ifdef UNITTESTED_FILE
+#ifdef STF_HAS_UNITTEST_WITH_ARGS
 UNITTEST("slice usual suspects: default ctor, copy, move, assign", (slice<double, 2>()))
 {
   using View = ::std::remove_reference_t<decltype(unittest_param)>;
@@ -342,6 +343,7 @@ UNITTEST("implicit contiguous strides", (slice<int, 3>()))
   EXPECT(contiguous_dims(s) == 3);
 };
 
+#endif // STF_HAS_UNITTEST_WITH_ARGS
 #endif // UNITTESTED_FILE
 
 /** @brief Specialization of the `shape` template for `mdspan`
