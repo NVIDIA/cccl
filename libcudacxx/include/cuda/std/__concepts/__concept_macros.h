@@ -272,7 +272,7 @@
 
 #  else
 
-#    define _LIBCUDACXX_CONCEPT _LIBCUDACXX_INLINE_VAR constexpr bool
+#    define _LIBCUDACXX_CONCEPT _CCCL_INLINE_VAR constexpr bool
 
 #    define _LIBCUDACXX_CONCEPT_FRAGMENT(_NAME, ...)                                            \
       _LIBCUDACXX_HIDE_FROM_ABI auto _NAME##_LIBCUDACXX_CONCEPT_FRAGMENT_impl_                  \
@@ -298,8 +298,8 @@
       (_REQ),
 #    define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_REQUIRES_requires(...) _Concept::_Requires<__VA_ARGS__>
 #    define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_REQUIRES_typename(...) static_cast<_Concept::_Tag<__VA_ARGS__>*>(nullptr)
-#    if defined(_CCCL_COMPILER_GCC)
-// GCC can't mangle noexcept expressions, so just check that the
+#    if defined(_CCCL_COMPILER_GCC) && (_CCCL_GCC_VERSION < 140000)
+// GCC < 14 can't mangle noexcept expressions, so just check that the
 // expression is well-formed.
 // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=70790
 #      define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_REQUIRES_noexcept(...) __VA_ARGS__
@@ -441,7 +441,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _Concept::_Enable_if_t<_Bp> _Requires()
 {}
 #  else
 template <bool _Bp, _Concept::_Enable_if_t<_Bp, int> = 0>
-_LIBCUDACXX_INLINE_VAR constexpr int _Requires = 0;
+_CCCL_INLINE_VAR constexpr int _Requires = 0;
 #  endif
 
 template <class _Tp, class... _Args>

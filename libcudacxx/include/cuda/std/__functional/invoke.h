@@ -502,10 +502,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_invocable_r : integral_constant<bool, __
 {};
 
 template <class _Fn, class... _Args>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_invocable_v = is_invocable<_Fn, _Args...>::value;
+_CCCL_INLINE_VAR constexpr bool is_invocable_v = is_invocable<_Fn, _Args...>::value;
 
 template <class _Ret, class _Fn, class... _Args>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_invocable_r_v = is_invocable_r<_Ret, _Fn, _Args...>::value;
+_CCCL_INLINE_VAR constexpr bool is_invocable_r_v = is_invocable_r<_Ret, _Fn, _Args...>::value;
 
 // is_nothrow_invocable
 
@@ -520,10 +520,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_invocable_r
 {};
 
 template <class _Fn, class... _Args>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_invocable_v = is_nothrow_invocable<_Fn, _Args...>::value;
+_CCCL_INLINE_VAR constexpr bool is_nothrow_invocable_v = is_nothrow_invocable<_Fn, _Args...>::value;
 
 template <class _Ret, class _Fn, class... _Args>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_invocable_r_v = is_nothrow_invocable_r<_Ret, _Fn, _Args...>::value;
+_CCCL_INLINE_VAR constexpr bool is_nothrow_invocable_r_v = is_nothrow_invocable_r<_Ret, _Fn, _Args...>::value;
 
 template <class _Fn, class... _Args>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT invoke_result : __invoke_of<_Fn, _Args...>

@@ -87,16 +87,16 @@ _LIBCUDACXX_HIDE_FROM_ABI extern const __ph<8> _8;
 _LIBCUDACXX_HIDE_FROM_ABI extern const __ph<9> _9;
 _LIBCUDACXX_HIDE_FROM_ABI extern const __ph<10> _10;
 #  else
-/* _LIBCUDACXX_INLINE_VAR */ constexpr __ph<1> _1{};
-/* _LIBCUDACXX_INLINE_VAR */ constexpr __ph<2> _2{};
-/* _LIBCUDACXX_INLINE_VAR */ constexpr __ph<3> _3{};
-/* _LIBCUDACXX_INLINE_VAR */ constexpr __ph<4> _4{};
-/* _LIBCUDACXX_INLINE_VAR */ constexpr __ph<5> _5{};
-/* _LIBCUDACXX_INLINE_VAR */ constexpr __ph<6> _6{};
-/* _LIBCUDACXX_INLINE_VAR */ constexpr __ph<7> _7{};
-/* _LIBCUDACXX_INLINE_VAR */ constexpr __ph<8> _8{};
-/* _LIBCUDACXX_INLINE_VAR */ constexpr __ph<9> _9{};
-/* _LIBCUDACXX_INLINE_VAR */ constexpr __ph<10> _10{};
+/* _CCCL_INLINE_VAR */ constexpr __ph<1> _1{};
+/* _CCCL_INLINE_VAR */ constexpr __ph<2> _2{};
+/* _CCCL_INLINE_VAR */ constexpr __ph<3> _3{};
+/* _CCCL_INLINE_VAR */ constexpr __ph<4> _4{};
+/* _CCCL_INLINE_VAR */ constexpr __ph<5> _5{};
+/* _CCCL_INLINE_VAR */ constexpr __ph<6> _6{};
+/* _CCCL_INLINE_VAR */ constexpr __ph<7> _7{};
+/* _CCCL_INLINE_VAR */ constexpr __ph<8> _8{};
+/* _CCCL_INLINE_VAR */ constexpr __ph<9> _9{};
+/* _CCCL_INLINE_VAR */ constexpr __ph<10> _10{};
 #  endif // defined(_LIBCUDACXX_BUILDING_LIBRARY)
 
 } // namespace placeholders

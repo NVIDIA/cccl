@@ -96,4 +96,10 @@
 #  define _CCCL_NORETURN __attribute__((noreturn))
 #endif
 
+#if defined(_CCCL_COMPILER_MSVC) // vvv _CCCL_COMPILER_MSVC vvv
+#  define _CCCL_RESTRICT __restrict
+#else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
+#  define _CCCL_RESTRICT __restrict__
+#endif // ^^^ !_CCCL_COMPILER_MSVC ^^^
+
 #endif // __CCCL_ATTRIBUTES_H

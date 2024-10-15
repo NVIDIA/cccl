@@ -469,7 +469,7 @@ template <_AllocType _Alloc_type>
 using _Vtable_store = _CUDA_VSTD::_If<_Alloc_type == _AllocType::_Default, _Alloc_vtable, _Async_alloc_vtable>;
 
 template <_AllocType _Alloc_type, _WrapperType _Wrapper_type, class _Resource>
-_LIBCUDACXX_INLINE_VAR constexpr _Vtable_store<_Alloc_type> __alloc_vtable =
+_CCCL_INLINE_VAR constexpr _Vtable_store<_Alloc_type> __alloc_vtable =
   _Resource_vtable_builder::template _Create<_Resource, _Alloc_type, _Wrapper_type>();
 
 struct _Resource_ref_helper
