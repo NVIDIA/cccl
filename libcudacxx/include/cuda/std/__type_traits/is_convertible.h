@@ -38,10 +38,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_convertible
     : public integral_constant<bool, _CCCL_BUILTIN_IS_CONVERTIBLE_TO(_T1, _T2)>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPALTES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _T1, class _T2>
 _CCCL_INLINE_VAR constexpr bool is_convertible_v = _CCCL_BUILTIN_IS_CONVERTIBLE_TO(_T1, _T2);
-#  endif // !_CCCL_NO_VARIABLE_TEMPALTES
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #  ifdef _CCCL_COMPILER_MSVC // Workaround for DevCom-1627396
 template <class _Ty>
@@ -198,10 +198,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_convertible : public __is_convertible_fa
   static const size_t __complete_check2 = __is_convertible_check<_T2>::__v;
 };
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPALTES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _From, class _To>
 _CCCL_INLINE_VAR constexpr bool is_convertible_v = is_convertible<_From, _To>::value;
-#  endif // !_CCCL_NO_VARIABLE_TEMPALTES
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #endif // !_CCCL_BUILTIN_IS_CONVERTIBLE_TO
 
