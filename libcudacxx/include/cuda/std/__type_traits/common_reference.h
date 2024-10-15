@@ -167,10 +167,10 @@ using common_reference_t = typename common_reference<_Types...>::type;
 
 #  if _CCCL_STD_VER > 2011
 template <class, class, class = void>
-_LIBCUDACXX_INLINE_VAR constexpr bool __has_common_reference = false;
+_CCCL_INLINE_VAR constexpr bool __has_common_reference = false;
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VAR constexpr bool __has_common_reference<_Tp, _Up, void_t<common_reference_t<_Tp, _Up>>> = true;
+_CCCL_INLINE_VAR constexpr bool __has_common_reference<_Tp, _Up, void_t<common_reference_t<_Tp, _Up>>> = true;
 #  endif // _CCCL_STD_VER > 2011
 
 // bullet 1 - sizeof...(T) == 0

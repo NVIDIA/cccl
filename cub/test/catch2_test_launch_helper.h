@@ -91,7 +91,7 @@
 
 #define DECLARE_LAUNCH_WRAPPER(API, WRAPPED_API_NAME)                                                  \
   DECLARE_INVOCABLE(API, WRAPPED_API_NAME, , );                                                        \
-  _LIBCUDACXX_INLINE_VAR constexpr struct WRAPPED_API_NAME##_t                                         \
+  _CCCL_INLINE_VAR constexpr struct WRAPPED_API_NAME##_t                                               \
   {                                                                                                    \
     template <class... As>                                                                             \
     void operator()(As... args) const                                                                  \
