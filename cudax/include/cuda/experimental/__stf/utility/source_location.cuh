@@ -15,7 +15,8 @@
 
 #pragma once
 
-#if defined(__cpp_lib_source_location)
+// GCC11 provides non constexpr builtins
+#if defined(__cpp_lib_source_location) && (!defined(_CCCL_COMPILER_GCC) || _CCCL_GCC_VERSION >= 120000)
 // C++20 version using std::source_location
 #  include <source_location>
 
