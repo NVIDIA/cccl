@@ -269,7 +269,7 @@ public:
     auto& dot = ctx.get_dot();
     if (dot->is_tracing())
     {
-      dot->add_vertex<task, logical_data_untyped>(*this);
+      dot->template add_vertex<task, logical_data_untyped>(*this);
     }
 
     // Default for the first argument is a `cudaStream_t`.
