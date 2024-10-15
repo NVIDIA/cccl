@@ -20,7 +20,6 @@
 #include <cuda/std/__cccl/exceptions.h> // IWYU pragma: export
 #include <cuda/std/__cccl/execution_space.h> // IWYU pragma: export
 #include <cuda/std/__cccl/extended_floating_point.h> // IWYU pragma: export
-#include <cuda/std/__cccl/grid_constant.h> // IWYU pragma: export
 #include <cuda/std/__cccl/preprocessor.h> // IWYU pragma: export
 #include <cuda/std/__cccl/ptx_isa.h> // IWYU pragma: export
 #include <cuda/std/__cccl/sequence_access.h> // IWYU pragma: export
