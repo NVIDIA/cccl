@@ -64,17 +64,18 @@ inline void __device_supports_stream_ordered_allocations(const int __device_id)
   }
 }
 
-inline void __mempool_enable_peer_access(cudaMemPool_t __pool, const ::std::vector<device_ref>& __devices)
+inline void __mempool_switch_peer_access(cudaMemPool_t __pool, const ::std::vector<device_ref>& __devices, bool __enable)
 {
   ::std::vector<cudaMemAccessDesc> __descs;
   __descs.reserve(__devices.size());
   cudaMemAccessDesc __desc;
-  __desc.flags         = cudaMemAccessFlagsProtReadWrite;
+  __desc.flags         = __enable ? cudaMemAccessFlagsProtReadWrite : cudaMemAccessFlagsProtNone;
   __desc.location.type = cudaMemLocationTypeDevice;
   for (size_t __i = 0; __i < __devices.size(); ++__i)
   {
+    printf("setting %d for %d\n", __desc.flags, __devices[__i].get());
     __desc.location.id = __devices[__i].get();
-    __descs[__i]       = __desc;
+    __descs.push_back(__desc);
   }
   _CCCL_TRY_CUDA_API(
     ::cudaMemPoolSetAccess, "Failed to set access of a memory pool", __pool, __descs.data(), __descs.size());
@@ -87,6 +88,7 @@ inline bool __mempool_get_access(cudaMemPool_t __pool, device_ref __dev)
   __loc.type = cudaMemLocationTypeDevice;
   __loc.id   = __dev.get();
   _CCCL_TRY_CUDA_API(::cudaMemPoolGetAccess, "failed to get access of a memory pool", &__result, __pool, &__loc);
+  printf("query returned %d for %d\n", __result, __dev.get());
   return __result == cudaMemAccessFlagsProtReadWrite;
 }
 
@@ -308,7 +310,12 @@ public:
 
   void enable_peer_access(const ::std::vector<device_ref>& __devices)
   {
-    __mempool_enable_peer_access(__pool_handle_, __devices);
+    __mempool_switch_peer_access(__pool_handle_, __devices, true);
+  }
+
+  void disable_peer_access(const ::std::vector<device_ref>& __devices)
+  {
+    __mempool_switch_peer_access(__pool_handle_, __devices, false);
   }
 
   bool is_accessible_from(device_ref __dev)

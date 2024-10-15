@@ -19,7 +19,7 @@
 #include <stdexcept>
 
 #include <catch2/catch.hpp>
-#include <utility.cuh>
+#include <testing.cuh>
 
 namespace cudax = cuda::experimental;
 using pool      = cudax::mr::async_memory_pool;
@@ -477,16 +477,21 @@ TEST_CASE("async_memory_pool accessors", "[memory_resource]")
       if (peers.size() > 0)
       {
         cudax::mr::async_memory_pool pool{cudax::devices[0]};
-        // prime the pool to a given size
-        cudax::mr::async_memory_resource resource{pool};
-        cudax::stream stream{peers.front()};
+        CUDAX_CHECK(pool.is_accessible_from(cudax::devices[0]));
 
-        resource.enable_peer_access(peers);
+        pool.enable_peer_access(peers);
+        CUDAX_CHECK(pool.is_accessible_from(peers.front()));
 
-        // Allocate 2 buffers
-        auto* ptr1 = resource.allocate_async(2048 * sizeof(int), stream);
-        auto dims  = cudax::distribute<1>(1);
-        cudax::launch(stream, dims, test::assign_42{}, (int*) ptr1);
+        ::std::vector<cudax::device_ref> disable;
+        disable.push_back(peers.front());
+
+        pool.disable_peer_access(disable);
+        CUDAX_CHECK(!pool.is_accessible_from(peers.front()));
+
+        if (peers.size() > 1)
+        {
+          CUDAX_CHECK(pool.is_accessible_from(peers[1]));
+        }
       }
     }
   }

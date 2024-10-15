@@ -240,7 +240,12 @@ public:
 
   void enable_peer_access(const ::std::vector<device_ref>& __devices)
   {
-    __mempool_enable_peer_access(__pool_, __devices);
+    __mempool_switch_peer_access(__pool_, __devices, true);
+  }
+
+  void disable_peer_access(const ::std::vector<device_ref>& __devices)
+  {
+    __mempool_switch_peer_access(__pool_, __devices, false);
   }
 
   bool is_accessible_from(device_ref __dev)

@@ -17,6 +17,7 @@
 #include <stdexcept>
 
 #include <catch2/catch.hpp>
+#include <utility.cuh>
 
 namespace cudax = cuda::experimental;
 
@@ -470,5 +471,41 @@ TEST_CASE("async_memory_resource comparison", "[memory_resource]")
     CHECK(host_async_resource != first);
     CHECK(!(device_async_resource == first));
     CHECK(device_async_resource != first);
+  }
+}
+
+TEST_CASE("Async memory resource peer access")
+{
+  if (cudax::devices.size() > 1)
+  {
+    auto peers = cudax::get_peers(cudax::devices[0]);
+    if (peers.size() > 0)
+    {
+      cudax::mr::async_memory_pool pool{cudax::devices[0]};
+      cudax::mr::async_memory_resource resource{pool};
+      cudax::stream stream{peers.front()};
+
+      auto allocate_and_check = [&](auto& resource) {
+        auto* ptr = resource.allocate_async(2048 * sizeof(int), stream);
+        auto dims = cudax::distribute<1>(1);
+        cudax::launch(stream, dims, test::assign_42{}, (int*) ptr);
+        stream.wait();
+        resource.deallocate_async(ptr, 2048 * sizeof(int), stream);
+      };
+
+      resource.enable_peer_access(peers);
+
+      CUDAX_CHECK(pool.is_accessible_from(peers.front()));
+      CUDAX_CHECK(resource.is_accessible_from(peers.front()));
+      allocate_and_check(resource);
+
+      cudax::mr::async_memory_resource another_resource{pool};
+      CUDAX_CHECK(another_resource.is_accessible_from(peers.front()));
+      allocate_and_check(another_resource);
+
+      pool.disable_peer_access(peers);
+      CUDAX_CHECK(!resource.is_accessible_from(peers.front()));
+      CUDAX_CHECK(!another_resource.is_accessible_from(peers.front()));
+    }
   }
 }
