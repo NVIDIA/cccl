@@ -114,8 +114,7 @@ inline void* allocateManagedMemory(size_t sz)
  * @param sz size in bytes
  * @param loc location of the call, defaulted
  */
-inline void deallocateHostMemory(
-  void* p, size_t sz, source_location loc = source_location::current())
+inline void deallocateHostMemory(void* p, size_t sz, source_location loc = RESERVED_STF_SOURCE_LOCATION())
 {
   ::std::ignore = loc;
   assert([&] {
@@ -140,8 +139,7 @@ inline void deallocateHostMemory(
  * @param sz size in bytes
  * @param loc location of the call, defaulted
  */
-inline void deallocateManagedMemory(
-  void* p, size_t sz, source_location loc = source_location::current())
+inline void deallocateManagedMemory(void* p, size_t sz, source_location loc = RESERVED_STF_SOURCE_LOCATION())
 {
   ::std::ignore = loc;
   assert([&] {

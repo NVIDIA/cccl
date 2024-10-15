@@ -129,8 +129,7 @@ public:
    * @param loc location of the call, defaulted
    */
   template <typename T>
-  cuda_exception(const T status,
-                 const source_location loc = source_location::current())
+  cuda_exception(const T status, const source_location loc = RESERVED_STF_SOURCE_LOCATION())
   {
     // All "success" statuses are zero
     static_assert(cudaSuccess == 0 && CUDA_SUCCESS == 0
@@ -297,8 +296,7 @@ UNITTEST("first_param")
  * @snippet this cuda_safe_call
  */
 template <typename T>
-void cuda_safe_call(const T status,
-                    const ::std::experimental::source_location loc = ::std::experimental::source_location::current())
+void cuda_safe_call(const T status, const ::std::experimental::source_location loc = RESERVED_STF_SOURCE_LOCATION())
 {
   // Common early exit test for all cases
   if (status == 0)
@@ -339,8 +337,7 @@ UNITTEST("cuda_safe_call")
  * @snippet this cuda_try1
  */
 template <typename Status>
-void cuda_try(Status status,
-              const ::std::experimental::source_location loc = ::std::experimental::source_location::current())
+void cuda_try(Status status, const ::std::experimental::source_location loc = RESERVED_STF_SOURCE_LOCATION())
 {
   if (status)
   {

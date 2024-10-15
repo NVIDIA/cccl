@@ -10,10 +10,10 @@
 
 #pragma once
 
+#include <cuda/experimental/__stf/utility/source_location.cuh>
+
 #include <atomic>
 #include <mutex>
-
-#include <cuda/experimental/__stf/utility/source_location.cuh>
 
 namespace cuda::experimental::stf
 {
@@ -45,8 +45,7 @@ public:
 
 #ifndef NDEBUG
 
-  explicit single_threaded_section(
-    mutex_type& m, source_location loc = source_location::current())
+  explicit single_threaded_section(mutex_type& m, source_location loc = RESERVED_STF_SOURCE_LOCATION())
       : mutex(m)
   {
     if (mutex.try_lock())
