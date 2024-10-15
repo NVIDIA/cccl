@@ -15,8 +15,8 @@
 
 #pragma once
 
-#include <cuda/experimental/__stf/utility/traits.cuh>
 #include <cuda/experimental/__stf/utility/source_location.cuh>
+#include <cuda/experimental/__stf/utility/traits.cuh>
 
 #include <filesystem>
 
@@ -67,7 +67,7 @@
  */
 #define EXPECT(...)                              \
   ::cuda::experimental::stf::expecter::validate( \
-    ::cuda::experimental::stf::source_location::current(), ::cuda::experimental::stf::expecter()->*__VA_ARGS__)
+    RESERVED_STF_SOURCE_LOCATION(), ::cuda::experimental::stf::expecter()->*__VA_ARGS__)
 
 namespace cuda::experimental::stf
 {
@@ -294,8 +294,7 @@ struct expecter
    * @param e expression, an exception will be thrown is `e.value` is false
    */
   template <typename L, typename R, typename... Msgs>
-  static decltype(auto)
-  validate(source_location loc, comparison_expression<L, R>&& e, const Msgs&... msgs)
+  static decltype(auto) validate(source_location loc, comparison_expression<L, R>&& e, const Msgs&... msgs)
   {
     if (e.value)
     {
@@ -474,11 +473,10 @@ int main()
   // fprintf(stdout, "PASS: %zu of %zu\n", passed(), total());
 }
 
-#  define UNITTEST(name, ...)                                                            \
-    [[maybe_unused]] static const auto UNIQUE_NAME(unittest) =                           \
-      ::cuda::experimental::stf::unittest<>::make(                                       \
-        name, ::cuda::experimental::stf::source_location::current() __VA_OPT__(, __VA_ARGS__)) \
-        ->*[]([[maybe_unused]] const char* unittest_name __VA_OPT__(, [[maybe_unused]] auto&& unittest_param))
+#  define UNITTEST(name, ...)                                                                                         \
+    [[maybe_unused]] static const auto UNIQUE_NAME(unittest) =                                                        \
+      ::cuda::experimental::stf::unittest<>::make(name, RESERVED_STF_SOURCE_LOCATION() __VA_OPT__(, __VA_ARGS__))->*[ \
+      ]([[maybe_unused]] const char* unittest_name __VA_OPT__(, [[maybe_unused]] auto&& unittest_param))
 
 #else
 
@@ -658,4 +656,17 @@ UNITTEST("shuffled_array_tuple")
   using namespace cuda::experimental::stf;
   auto a = shuffled_array_tuple<int, ::std::string>(1, 2, "hello", 3, "world");
   EXPECT((a == ::std::tuple<::std::array<int, 3>, ::std::array<::std::string, 2>>{{1, 2, 3}, {"hello", "world"}}));
+};
+
+UNITTEST("source_location")
+{
+  auto test_func = [](::cuda::experimental::stf::source_location loc = RESERVED_STF_SOURCE_LOCATION()) {
+    // Check the source location metadata
+    EXPECT(loc.line() > 0); // The line number should be positive
+    EXPECT(loc.file_name() != nullptr); // File name should not be null
+    EXPECT(loc.function_name() != nullptr); // Function name should not be null
+  };
+
+  // Call the test function and validate the source location information
+  test_func();
 };
