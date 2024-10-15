@@ -206,65 +206,64 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __PRETTY_NAMEOF()
   return __string_view(_CCCL_PRETTY_FUNCTION);
 }
 
+// clang-format off
+// These are the known pretty names for __PRETTY_NAMEOF<int>() for various compilers.
+constexpr size_t __pretty_index_impl()
+{
+  return //
+    __PRETTY_NAMEOF<int>() == __string_view{"constexpr cuda::std::__string_view cuda::std::__PRETTY_NAMEOF() [with _Tp = int]"} ? 0
+    : __PRETTY_NAMEOF<int>() == __string_view{"cuda::std::__string_view cuda::std::__PRETTY_NAMEOF() [with _Tp = int]"}         ? 1
+    : __PRETTY_NAMEOF<int>() == __string_view{"constexpr cuda::std::__string_view cuda::std::__PRETTY_NAMEOF() [_Tp = int]"}    ? 2
+    : __PRETTY_NAMEOF<int>() == __string_view{"cuda::std::__string_view cuda::std::__PRETTY_NAMEOF() [_Tp = int]"}              ? 3
+    : __PRETTY_NAMEOF<int>() == __string_view{"constexpr __string_view cuda::std::__PRETTY_NAMEOF() [with _Tp = int]"}          ? 4
+    : __PRETTY_NAMEOF<int>() == __string_view{"__string_view cuda::std::__PRETTY_NAMEOF() [with _Tp = int]"}                    ? 5
+    : __PRETTY_NAMEOF<int>() == __string_view{"constexpr __string_view cuda::std::__PRETTY_NAMEOF() [_Tp = int]"}               ? 6
+    : __PRETTY_NAMEOF<int>() == __string_view{"__string_view cuda::std::__PRETTY_NAMEOF() [_Tp = int]"}                         ? 7
+    : __PRETTY_NAMEOF<int>() == __string_view{"cuda::std::__string_view cuda::std::__PRETTY_NAMEOF<int>()"}                     ? 8
+    : __PRETTY_NAMEOF<int>() == __string_view{"struct cuda::std::__string_view __cdecl cuda::std::__PRETTY_NAMEOF<int>(void)"}  ? 9
+    : ~size_t(0);
+}
+// clang-format on
+
+// Find the index of the pretty name for __PRETTY_NAMEOF<int>() in the known list.
+constexpr size_t __pretty_index = __pretty_index_impl();
+
+// Assert that we found a match.
+static_assert(__pretty_index != ~size_t(0), "Unrecognized __PRETTY_FUNCTION__ string format.");
+
 struct __pretty_trim_counts
 {
   size_t __front;
   size_t __back;
 };
 
-// These are the known pretty names for __PRETTY_NAMEOF<int>() for various compilers.
-_CCCL_GLOBAL_CONSTANT __string_view __pretty_names[] = {
-  __string_view{"constexpr cuda::std::__string_view cuda::std::__PRETTY_NAMEOF() [with _Tp = int]"},
-  __string_view{"cuda::std::__string_view cuda::std::__PRETTY_NAMEOF() [with _Tp = int]"},
-  __string_view{"constexpr cuda::std::__string_view cuda::std::__PRETTY_NAMEOF() [_Tp = int]"},
-  __string_view{"cuda::std::__string_view cuda::std::__PRETTY_NAMEOF() [_Tp = int]"},
-  __string_view{"constexpr __string_view cuda::std::__PRETTY_NAMEOF() [with _Tp = int]"},
-  __string_view{"__string_view cuda::std::__PRETTY_NAMEOF() [with _Tp = int]"},
-  __string_view{"constexpr __string_view cuda::std::__PRETTY_NAMEOF() [_Tp = int]"},
-  __string_view{"__string_view cuda::std::__PRETTY_NAMEOF() [_Tp = int]"},
-  __string_view{"cuda::std::__string_view cuda::std::__PRETTY_NAMEOF<int>()"},
-  __string_view{"struct cuda::std::__string_view __cdecl cuda::std::__PRETTY_NAMEOF<int>(void)"},
-};
-
+// clang-format off
 // Break the pretty names into front and back parts to trim to get to the type name.
-_CCCL_GLOBAL_CONSTANT __pretty_trim_counts __pretty_trim[] = {
-  {sizeof("constexpr cuda::std::__string_view cuda::std::__PRETTY_NAMEOF() [with _Tp = ") - 1, sizeof("]") - 1}, //
-  {sizeof("cuda::std::__string_view cuda::std::__PRETTY_NAMEOF() [with _Tp = ") - 1, sizeof("]") - 1}, //
-  {sizeof("constexpr cuda::std::__string_view cuda::std::__PRETTY_NAMEOF() [_Tp = ") - 1, sizeof("]") - 1}, //
-  {sizeof("cuda::std::__string_view cuda::std::__PRETTY_NAMEOF() [_Tp = ") - 1, sizeof("]") - 1}, //
-  {sizeof("constexpr __string_view cuda::std::__PRETTY_NAMEOF() [with _Tp = ") - 1, sizeof("]") - 1}, //
-  {sizeof("__string_view cuda::std::__PRETTY_NAMEOF() [with _Tp = ") - 1, sizeof("]") - 1}, //
-  {sizeof("constexpr __string_view cuda::std::__PRETTY_NAMEOF() [_Tp = ") - 1, sizeof("]") - 1}, //
-  {sizeof("__string_view cuda::std::__PRETTY_NAMEOF() [_Tp = ") - 1, sizeof("]") - 1}, //
-  {sizeof("cuda::std::__string_view cuda::std::__PRETTY_NAMEOF<") - 1, sizeof(">()") - 1}, //
-  {sizeof("struct cuda::std::__string_view __cdecl cuda::std::__PRETTY_NAMEOF<") - 1, sizeof(">(void)") - 1}, //
+constexpr __pretty_trim_counts __pretty_trim_impl()
+{
+  using __pretty_trim_counts_array = __pretty_trim_counts[];
+  return __pretty_trim_counts_array{
+    __pretty_trim_counts{sizeof("constexpr cuda::std::__string_view cuda::std::__PRETTY_NAMEOF() [with _Tp = ") - 1, sizeof("]") - 1},
+    __pretty_trim_counts{sizeof("cuda::std::__string_view cuda::std::__PRETTY_NAMEOF() [with _Tp = ") - 1, sizeof("]") - 1},
+    __pretty_trim_counts{sizeof("constexpr cuda::std::__string_view cuda::std::__PRETTY_NAMEOF() [_Tp = ") - 1, sizeof("]") - 1},
+    __pretty_trim_counts{sizeof("cuda::std::__string_view cuda::std::__PRETTY_NAMEOF() [_Tp = ") - 1, sizeof("]") - 1},
+    __pretty_trim_counts{sizeof("constexpr __string_view cuda::std::__PRETTY_NAMEOF() [with _Tp = ") - 1, sizeof("]") - 1},
+    __pretty_trim_counts{sizeof("__string_view cuda::std::__PRETTY_NAMEOF() [with _Tp = ") - 1, sizeof("]") - 1},
+    __pretty_trim_counts{sizeof("constexpr __string_view cuda::std::__PRETTY_NAMEOF() [_Tp = ") - 1, sizeof("]") - 1},
+    __pretty_trim_counts{sizeof("__string_view cuda::std::__PRETTY_NAMEOF() [_Tp = ") - 1, sizeof("]") - 1},
+    __pretty_trim_counts{sizeof("cuda::std::__string_view cuda::std::__PRETTY_NAMEOF<") - 1, sizeof(">()") - 1},
+    __pretty_trim_counts{sizeof("struct cuda::std::__string_view __cdecl cuda::std::__PRETTY_NAMEOF<") - 1, sizeof(">(void)") - 1}
+  }[__pretty_index];
 };
+// clang-format on
 
-// Find the index of the pretty name for __PRETTY_NAMEOF<int>() in the known list.
-constexpr size_t __pretty_index =
-  __PRETTY_NAMEOF<int>() == __pretty_names[0]   ? 0
-  : __PRETTY_NAMEOF<int>() == __pretty_names[1] ? 1
-  : __PRETTY_NAMEOF<int>() == __pretty_names[2] ? 2
-  : __PRETTY_NAMEOF<int>() == __pretty_names[3] ? 3
-  : __PRETTY_NAMEOF<int>() == __pretty_names[4] ? 4
-  : __PRETTY_NAMEOF<int>() == __pretty_names[5] ? 5
-  : __PRETTY_NAMEOF<int>() == __pretty_names[6] ? 6
-  : __PRETTY_NAMEOF<int>() == __pretty_names[7] ? 7
-  : __PRETTY_NAMEOF<int>() == __pretty_names[8] ? 8
-  : __PRETTY_NAMEOF<int>() == __pretty_names[9]
-    ? 9
-    : ~size_t(0);
-
-// Assert that we found a match.
-static_assert(__pretty_index != ~size_t(0), "Unrecognized __PRETTY_FUNCTION__ string format.");
+constexpr __pretty_trim_counts __pretty_trim = __pretty_trim_impl();
 
 // Get the type name from the pretty name by trimming the front and back.
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameof()
 {
-  return __string_view(_CCCL_PRETTY_FUNCTION, //
-                       __pretty_trim[__pretty_index].__front,
-                       __pretty_trim[__pretty_index].__back);
+  return __string_view(_CCCL_PRETTY_FUNCTION, __pretty_trim.__front, __pretty_trim.__back);
 }
 
 // A quick smoke test to ensure that the pretty name extraction is working.
