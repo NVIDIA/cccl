@@ -110,24 +110,28 @@ private:
  * @tparam T tag type
  */
 template <typename T>
-class counter {
+class counter
+{
 public:
-    counter() = default;
+  counter() = default;
 
-    static auto load() {
-        return count.load();
-    }
+  static auto load()
+  {
+    return count.load();
+  }
 
-    static auto increment() {
-        count++;
-    }
+  static auto increment()
+  {
+    count++;
+  }
 
-    static auto decrement() {
-        count--;
-    }
+  static auto decrement()
+  {
+    count--;
+  }
 
 private:
-   static inline ::std::atomic<unsigned long> count {0};
+  static inline ::std::atomic<unsigned long> count{0};
 };
 
 /**
@@ -177,8 +181,9 @@ public:
   {
     return tracker.load();
   }
+
 private:
-   static inline ::std::atomic<unsigned long> tracker {0};
+  static inline ::std::atomic<unsigned long> tracker{0};
 };
 
 } // namespace cuda::experimental::stf

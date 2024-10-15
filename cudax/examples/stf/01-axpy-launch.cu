@@ -17,40 +17,46 @@
 
 using namespace cuda::experimental::stf;
 
-double X0(int i) {
-    return sin((double) i);
+double X0(int i)
+{
+  return sin((double) i);
 }
 
-double Y0(int i) {
-    return cos((double) i);
+double Y0(int i)
+{
+  return cos((double) i);
 }
 
-int main() {
-    context ctx;
-    const size_t N = 16;
-    double X[N], Y[N];
+int main()
+{
+  context ctx;
+  const size_t N = 16;
+  double X[N], Y[N];
 
-    for (size_t i = 0; i < N; i++) {
-        X[i] = X0(i);
-        Y[i] = Y0(i);
+  for (size_t i = 0; i < N; i++)
+  {
+    X[i] = X0(i);
+    Y[i] = Y0(i);
+  }
+
+  double alpha = 3.14;
+
+  auto lX = ctx.logical_data(X);
+  auto lY = ctx.logical_data(Y);
+
+  /* Compute Y = Y + alpha X */
+  ctx.launch(lX.read(), lY.rw())->*[=] CUDASTF_DEVICE(auto t, auto dX, auto dY) {
+    for (auto ind : t.apply_partition(shape(dX)))
+    {
+      dY(ind) += alpha * dX(ind);
     }
+  };
 
-    double alpha = 3.14;
+  ctx.finalize();
 
-    auto lX = ctx.logical_data(X);
-    auto lY = ctx.logical_data(Y);
-
-    /* Compute Y = Y + alpha X */
-    ctx.launch(lX.read(), lY.rw())->*[=] CUDASTF_DEVICE(auto t, auto dX, auto dY) {
-        for (auto ind: t.apply_partition(shape(dX))) {
-            dY(ind) += alpha * dX(ind);
-        }
-    };
-
-    ctx.finalize();
-
-    for (size_t i = 0; i < N; i++) {
-        assert(fabs(Y[i] - (Y0(i) + alpha * X0(i))) < 0.0001);
-        assert(fabs(X[i] - X0(i)) < 0.0001);
-    }
+  for (size_t i = 0; i < N; i++)
+  {
+    assert(fabs(Y[i] - (Y0(i) + alpha * X0(i))) < 0.0001);
+    assert(fabs(X[i] - X0(i)) < 0.0001);
+  }
 }

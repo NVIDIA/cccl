@@ -160,30 +160,26 @@ struct expecter
      * All comparison operators are defined assuming `const&` inputs. They are evaluated eagerly and return a
      * `compariso_expression` object with information necessary for constructing an error message, if any.
      */
-#define _9d10c7e37932af3c4f39a5ce7ff00b5a(op)                                                         \
-    template <typename U>                                               \
-    auto operator op(const U& rhs)&&                                    \
-    {                                                                   \
-        using T_noref = std::remove_reference_t<T>;                      \
-        using U_noref = std::remove_reference_t<U>;                      \
-        if constexpr (                                                   \
-            std::is_integral_v<T_noref> && std::is_integral_v<U_noref> &&\
-            std::is_signed_v<T_noref> != std::is_signed_v<U_noref>)      \
-        {                                                                \
-            using CommonType = std::common_type_t<T_noref, U_noref>;     \
-            const bool r = static_cast<CommonType>(value)                \
-                           op static_cast<CommonType>(rhs);              \
-            return comparison_expression<T, const U&>(                   \
-                r, std::forward<T>(value), rhs, #op);                    \
-        } \
-       else                                                            \
-        {                                                               \
-            /* Direct comparison for other cases */                     \
-            const bool r = value op rhs;                                           \
-            return comparison_expression<T, const U&>(                             \
-                r, std::forward<T>(value), rhs, #op);                       \
-        }                                                               \
-   }
+#define _9d10c7e37932af3c4f39a5ce7ff00b5a(op)                                            \
+  template <typename U>                                                                  \
+  auto operator op(const U& rhs)&&                                                       \
+  {                                                                                      \
+    using T_noref = std::remove_reference_t<T>;                                          \
+    using U_noref = std::remove_reference_t<U>;                                          \
+    if constexpr (std::is_integral_v<T_noref> && std::is_integral_v<U_noref>             \
+                  && std::is_signed_v<T_noref> != std::is_signed_v<U_noref>)             \
+    {                                                                                    \
+      using CommonType = std::common_type_t<T_noref, U_noref>;                           \
+      const bool r     = static_cast<CommonType>(value) op static_cast<CommonType>(rhs); \
+      return comparison_expression<T, const U&>(r, std::forward<T>(value), rhs, #op);    \
+    }                                                                                    \
+    else                                                                                 \
+    {                                                                                    \
+      /* Direct comparison for other cases */                                            \
+      const bool r = value op rhs;                                                       \
+      return comparison_expression<T, const U&>(r, std::forward<T>(value), rhs, #op);    \
+    }                                                                                    \
+  }
 
     _9d10c7e37932af3c4f39a5ce7ff00b5a(==);
     _9d10c7e37932af3c4f39a5ce7ff00b5a(!=);

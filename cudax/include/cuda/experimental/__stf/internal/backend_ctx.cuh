@@ -352,11 +352,12 @@ public:
 
 private:
   /* Add a kernel to a CUDA graph given its description */
-  auto insert_one_kernel(cuda_kernel_desc& k, cudaGraphNode_t& n, cudaGraph_t& g) const {
+  auto insert_one_kernel(cuda_kernel_desc& k, cudaGraphNode_t& n, cudaGraph_t& g) const
+  {
     cudaKernelNodeParams kconfig;
     kconfig.blockDim       = k.blockDim;
     kconfig.extra          = nullptr;
-    kconfig.func           = const_cast<void *>(k.func);
+    kconfig.func           = const_cast<void*>(k.func);
     kconfig.gridDim        = k.gridDim;
     kconfig.kernelParams   = k.args_ptr.data();
     kconfig.sharedMemBytes = k.sharedMem;

@@ -27,15 +27,21 @@ namespace cuda::experimental::stf
 {
 
 // For counters
-class graph_tag {
+class graph_tag
+{
 public:
-    class launch {};
-    class instantiate {};
-    class update {
-    public:
-        class success {};
-        class failure {};
-    };
+  class launch
+  {};
+  class instantiate
+  {};
+  class update
+  {
+  public:
+    class success
+    {};
+    class failure
+    {};
+  };
 };
 
 /**

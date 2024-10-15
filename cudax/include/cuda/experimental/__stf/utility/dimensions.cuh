@@ -413,7 +413,7 @@ public:
     CUDASTF_NO_DEVICE_STACK
     return make_tuple_indexwise<dimensions>([&](auto i) {
       // included
-      const ssize_t begin_i = get_begin(i);
+      const ssize_t begin_i  = get_begin(i);
       const ssize_t extent_i = get_extent(i);
       auto result            = begin_i + (index % extent_i);
       index /= extent_i;

@@ -43,7 +43,7 @@ namespace reserved
 template <typename F, typename shape_t, typename tuple_args>
 __global__ void loop(const CUDASTF_GRID_CONSTANT size_t n, shape_t shape, F f, tuple_args targs)
 {
-  size_t i = blockIdx.x * blockDim.x + threadIdx.x;
+  size_t i          = blockIdx.x * blockDim.x + threadIdx.x;
   const size_t step = blockDim.x * gridDim.x;
 
   // This will explode the targs tuple into a pack of data
@@ -51,15 +51,15 @@ __global__ void loop(const CUDASTF_GRID_CONSTANT size_t n, shape_t shape, F f, t
   // Help the compiler which may not detect that a device lambda is calling a device lambda
   CUDASTF_NO_DEVICE_STACK
   auto explode_args = [&](auto... data) {
-      // For every linearized index in the shape
-      for (; i < n; i += step)
-      {
-         CUDASTF_NO_DEVICE_STACK
-         auto explode_coords = [&](auto ...coords) {
-             f(coords..., data...);
-         };
-         ::std::apply(explode_coords, shape.index_to_coords(i));
-      }
+    // For every linearized index in the shape
+    for (; i < n; i += step)
+    {
+      CUDASTF_NO_DEVICE_STACK
+      auto explode_coords = [&](auto... coords) {
+        f(coords..., data...);
+      };
+      ::std::apply(explode_coords, shape.index_to_coords(i));
+    }
   };
   ::std::apply(explode_args, mv(targs));
 }
@@ -304,7 +304,7 @@ public:
   // Executes the loop on a device, or use the host implementation
   template <typename Fun, typename sub_shape_t>
   void do_parallel_for(
-    Fun &&f, const exec_place& sub_exec_place, const sub_shape_t& sub_shape, typename context::task_type& t)
+    Fun&& f, const exec_place& sub_exec_place, const sub_shape_t& sub_shape, typename context::task_type& t)
   {
     // parallel_for never calls this function with a host.
     assert(sub_exec_place != exec_place::host && "Internal CUDASTF error.");
@@ -333,7 +333,7 @@ public:
     }();
 
     const auto [block_size, min_blocks] = conf;
-    size_t n                      = sub_shape.size();
+    size_t n                            = sub_shape.size();
 
     // If there is no item in that shape, no need to launch a kernel !
     if (n == 0)
@@ -362,7 +362,7 @@ public:
       kernel_params.gridDim  = dim3(blocks);
       kernel_params.blockDim = dim3(block_size);
 
-      auto arg_instances                  = deps.instance(t);
+      auto arg_instances = deps.instance(t);
       // It is ok to use reference to local variables because the arguments
       // will be used directly when calling cudaGraphAddKernelNode
       void* kernelArgs[]         = {&n, const_cast<void*>(static_cast<const void*>(&sub_shape)), &f, &arg_instances};
@@ -394,7 +394,8 @@ public:
     // Wrap this for_each_n call in a host callback launched in CUDA stream associated with that task
     // To do so, we pack all argument in a dynamically allocated tuple
     // that will be deleted by the callback
-    auto args = new ::std::tuple<decltype(deps.instance(t)), size_t, Fun &&, sub_shape_t>(deps.instance(t), n, mv(f), shape);
+    auto args =
+      new ::std::tuple<decltype(deps.instance(t)), size_t, Fun&&, sub_shape_t>(deps.instance(t), n, mv(f), shape);
 
     // The function which the host callback will execute
     auto host_func = [](void* untyped_args) {
@@ -404,9 +405,9 @@ public:
         delete p;
       };
 
-      auto& data         = ::std::get<0>(*p);
-      const size_t n     = ::std::get<1>(*p);
-      Fun&& f      = mv(::std::get<2>(*p));
+      auto& data               = ::std::get<0>(*p);
+      const size_t n           = ::std::get<1>(*p);
+      Fun&& f                  = mv(::std::get<2>(*p));
       const sub_shape_t& shape = ::std::get<3>(*p);
 
       auto explode_coords = [&](size_t i, deps_t... data) {
@@ -417,8 +418,9 @@ public:
       };
 
       // Finally we get to do the workload on every 1D item of the shape
-      for (size_t i = 0; i < n; ++i) {
-          ::std::apply(explode_coords, ::std::tuple_cat(::std::make_tuple(i), data));
+      for (size_t i = 0; i < n; ++i)
+      {
+        ::std::apply(explode_coords, ::std::tuple_cat(::std::make_tuple(i), data));
       }
     };
 

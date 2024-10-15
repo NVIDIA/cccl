@@ -20,9 +20,9 @@
 #include <cuda/experimental/__stf/utility/memory.cuh>
 #include <cuda/experimental/__stf/utility/nvtx.cuh>
 #include <cuda/experimental/__stf/utility/scope_guard.cuh>
+#include <cuda/experimental/__stf/utility/threads.cuh>
 #include <cuda/experimental/__stf/utility/unique_id.cuh>
 #include <cuda/experimental/__stf/utility/unstable_unique.cuh>
-#include <cuda/experimental/__stf/utility/threads.cuh>
 
 #include <algorithm>
 #include <atomic>
@@ -421,7 +421,8 @@ inline event_list event_impl::from_stream(backend_ctx_untyped&, cudaStream_t) co
 }
 
 // For counters
-class join_tag {};
+class join_tag
+{};
 
 /**
  * @brief Introduce a dependency from all entries of an event list to an event.
@@ -441,11 +442,12 @@ void join(context_t& ctx, some_event& to, event_list& prereq_in)
       from = dynamic_cast<some_event*>(item.operator->());
       if (!from)
       {
-        fprintf(stderr, "Internal error: cannot dynamically cast event \"%s\" from %s to %.*s.\n",
-            item->get_symbol().c_str(),
-            typeid(decltype(*item)).name(),  // Change made here
-            static_cast<int>(type_name<some_event>.size()),
-            type_name<some_event>.data());
+        fprintf(stderr,
+                "Internal error: cannot dynamically cast event \"%s\" from %s to %.*s.\n",
+                item->get_symbol().c_str(),
+                typeid(decltype(*item)).name(), // Change made here
+                static_cast<int>(type_name<some_event>.size()),
+                type_name<some_event>.data());
         abort();
       }
       typechecked = true;

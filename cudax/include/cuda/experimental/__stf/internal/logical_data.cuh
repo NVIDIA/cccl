@@ -575,7 +575,7 @@ public:
     auto& current_instance = get_data_instance(instance_id);
     auto current_state     = current_instance.get_msir();
 
-//    static size_t total_write_back_cnt = 0;
+    //    static size_t total_write_back_cnt = 0;
 
     /* Update MSI status depending on the current states and the required access mode */
     switch (current_state)

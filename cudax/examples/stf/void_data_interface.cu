@@ -19,19 +19,20 @@
 
 using namespace cuda::experimental::stf;
 
-int main() {
-    context ctx;
+int main()
+{
+  context ctx;
 
-    auto ltask_res = ctx.logical_data(shape_of<void_interface>());
-    ctx.task(ltask_res.write())->*[](cudaStream_t, auto) {
+  auto ltask_res = ctx.logical_data(shape_of<void_interface>());
+  ctx.task(ltask_res.write())->*[](cudaStream_t, auto) {
 
-    };
+  };
 
-    void_interface sync;
-    auto ltask2_res = ctx.logical_data(sync);
-    ctx.task(ltask2_res.write(), ltask_res.read())->*[](cudaStream_t, auto, auto) {
+  void_interface sync;
+  auto ltask2_res = ctx.logical_data(sync);
+  ctx.task(ltask2_res.write(), ltask_res.read())->*[](cudaStream_t, auto, auto) {
 
-    };
+  };
 
-    ctx.finalize();
+  ctx.finalize();
 }

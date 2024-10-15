@@ -15,14 +15,14 @@
 
 #pragma once
 
+#include <cuda/std/mdspan>
+
 #include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/dimensions.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 #include <cuda/experimental/__stf/utility/memory.cuh>
 
 #include <iostream>
-
-#include <cuda/std/mdspan>
 
 namespace cuda::experimental::stf
 {

@@ -31,7 +31,8 @@
 namespace cuda::experimental::stf
 {
 
-class mapping_id_tag {};
+class mapping_id_tag
+{};
 using mapping_id_t = unique_id<mapping_id_tag>;
 
 class backend_ctx_untyped;
