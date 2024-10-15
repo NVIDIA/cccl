@@ -7,7 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
 // UNSUPPORTED: gcc-6
 
 // <memory>
@@ -17,8 +16,8 @@
 
 // #include <cuda/std/memory>
 #include <cuda/std/cassert>
+#include <cuda/std/memory>
 #include <cuda/std/type_traits>
-#include <cuda/std/utility>
 
 #include "test_iterators.h"
 #include "test_macros.h"
@@ -26,12 +25,12 @@
 struct Counted
 {
   int* counter_ = nullptr;
-  __host__ __device__ TEST_CONSTEXPR Counted(int* counter)
+  __host__ __device__ TEST_CONSTEXPR_CXX14 Counted(int* counter)
       : counter_(counter)
   {
     ++*counter_;
   }
-  __host__ __device__ TEST_CONSTEXPR Counted(Counted const& other)
+  __host__ __device__ TEST_CONSTEXPR_CXX14 Counted(Counted const& other)
       : counter_(other.counter_)
   {
     ++*counter_;
@@ -43,8 +42,7 @@ struct Counted
   __host__ __device__ friend void operator&(Counted) = delete;
 };
 
-#if TEST_STD_VER > 2017
-__host__ __device__ constexpr bool test_arrays()
+__host__ __device__ TEST_CONSTEXPR_CXX20 bool test_arrays()
 {
   {
     int counter     = 0;
@@ -70,7 +68,6 @@ __host__ __device__ constexpr bool test_arrays()
 
   return true;
 }
-#endif
 
 template <class It>
 __host__ __device__ TEST_CONSTEXPR_CXX20 void test()
@@ -102,8 +99,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool tests()
 int main(int, char**)
 {
   tests();
-#if TEST_STD_VER > 2017
   test_arrays();
+#if TEST_STD_VER > 2017
 #  if !defined(TEST_COMPILER_NVRTC)
 #    if (defined(TEST_COMPILER_CLANG) && __clang_major__ > 10) || (defined(TEST_COMPILER_GCC) && __GNUC__ > 9) \
       || defined(TEST_COMPILER_MSVC_2022) || defined(TEST_COMPILER_NVHPC)
