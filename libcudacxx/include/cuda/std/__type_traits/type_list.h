@@ -193,7 +193,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_list
 #  ifndef _CCCL_NO_INLINE_VARIABLES
 template <class... _Ts>
 constexpr size_t const __type_list<_Ts...>::__size;
-#  endif
+#  endif // !_CCCL_NO_INLINE_VARIABLES
 
 //! \brief A pointer to a type list, often used as a function argument.
 template <class... _Ts>

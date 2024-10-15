@@ -35,11 +35,11 @@ struct is_trivially_copy_assignable
                                  __add_lvalue_reference_t<_Tp>, __add_lvalue_reference_t<typename add_const<_Tp>::type>)>
 {};
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPALTES)
 template <class _Tp>
 _CCCL_INLINE_VAR constexpr bool is_trivially_copy_assignable_v = _CCCL_BUILTIN_IS_TRIVIALLY_ASSIGNABLE(
   __add_lvalue_reference_t<_Tp>, __add_lvalue_reference_t<typename add_const<_Tp>::type>);
-#  endif
+#  endif // !_CCCL_NO_VARIABLE_TEMPALTES
 
 #else
 
@@ -49,10 +49,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_copy_assignable
                                      __add_lvalue_reference_t<typename add_const<_Tp>::type>>
 {};
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPALTES)
 template <class _Tp>
 _CCCL_INLINE_VAR constexpr bool is_trivially_copy_assignable_v = is_trivially_copy_assignable<_Tp>::value;
-#  endif
+#  endif // !_CCCL_NO_VARIABLE_TEMPALTES
 
 #endif // defined(_CCCL_BUILTIN_IS_TRIVIALLY_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_ASSIGNABLE_FALLBACK)
 
