@@ -477,7 +477,7 @@ int main()
 #  define UNITTEST(name, ...)                                                            \
     [[maybe_unused]] static const auto UNIQUE_NAME(unittest) =                           \
       ::cuda::experimental::stf::unittest<>::make(                                       \
-        name, source_location::current() __VA_OPT__(, __VA_ARGS__)) \
+        name, ::cuda::experimental::stf::source_location::current() __VA_OPT__(, __VA_ARGS__)) \
         ->*[]([[maybe_unused]] const char* unittest_name __VA_OPT__(, [[maybe_unused]] auto&& unittest_param))
 
 #else
