@@ -372,7 +372,7 @@ public:
     unroll<rank()>([&](auto i) {
       sizes[i] = extents.extent(i);
     });
-    return box(sizes).begin();
+    return box<rank()>(sizes).begin();
   }
 
   CUDASTF_HOST_DEVICE auto end()
@@ -381,7 +381,7 @@ public:
     unroll<rank()>([&](auto i) {
       sizes[i] = extents.extent(i);
     });
-    return box(sizes).end();
+    return box<rank()>(sizes).end();
   }
 
   /**
