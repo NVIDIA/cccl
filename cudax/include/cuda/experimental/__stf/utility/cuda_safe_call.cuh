@@ -24,6 +24,7 @@
 #include <cuda_occupancy.h>
 #include <cuda_runtime.h>
 
+#include <cuda/experimental/__stf/utility/source_location.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
 #if __has_include(<cusolverDn.h>)
@@ -129,7 +130,7 @@ public:
    */
   template <typename T>
   cuda_exception(const T status,
-                 const ::std::experimental::source_location loc = ::std::experimental::source_location::current())
+                 const source_location loc = source_location::current())
   {
     // All "success" statuses are zero
     static_assert(cudaSuccess == 0 && CUDA_SUCCESS == 0

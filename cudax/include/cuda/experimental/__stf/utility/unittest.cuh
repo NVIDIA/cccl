@@ -16,10 +16,9 @@
 #pragma once
 
 #include <cuda/experimental/__stf/utility/traits.cuh>
+#include <cuda/experimental/__stf/utility/source_location.cuh>
 
 #include <filesystem>
-
-#include <experimental/source_location>
 
 // One level of macro indirection is required in order to resolve __COUNTER__,
 // and get varname1 instead of varname__COUNTER__.
@@ -68,7 +67,7 @@
  */
 #define EXPECT(...)                              \
   ::cuda::experimental::stf::expecter::validate( \
-    ::std::experimental::source_location::current(), ::cuda::experimental::stf::expecter()->*__VA_ARGS__)
+    ::cuda::experimental::stf::source_location::current(), ::cuda::experimental::stf::expecter()->*__VA_ARGS__)
 
 namespace cuda::experimental::stf
 {
@@ -86,12 +85,12 @@ struct expecter
   struct failure : ::std::runtime_error
   {
     template <typename... Msgs>
-    failure(::std::experimental::source_location loc, const Msgs&... msgs)
+    failure(source_location loc, const Msgs&... msgs)
         : ::std::runtime_error(text(loc, msgs...))
     {}
 
     template <typename... Msgs>
-    static ::std::string text(::std::experimental::source_location loc, const Msgs&... msgs)
+    static ::std::string text(source_location loc, const Msgs&... msgs)
     {
       ::std::stringstream s;
       s << loc.file_name() << '(' << loc.line() << "): ";
@@ -263,7 +262,7 @@ struct expecter
    * @param t term value, an exception will be thrown if non-true
    */
   template <typename T, typename... Msgs>
-  static decltype(auto) validate(::std::experimental::source_location loc, term<T>&& t, const Msgs&... msgs)
+  static decltype(auto) validate(source_location loc, term<T>&& t, const Msgs&... msgs)
   {
     if (t.value)
     {
@@ -296,7 +295,7 @@ struct expecter
    */
   template <typename L, typename R, typename... Msgs>
   static decltype(auto)
-  validate(::std::experimental::source_location loc, comparison_expression<L, R>&& e, const Msgs&... msgs)
+  validate(source_location loc, comparison_expression<L, R>&& e, const Msgs&... msgs)
   {
     if (e.value)
     {
@@ -334,7 +333,7 @@ public:
    * @param name name of the unittest, e.g. `UNITTEST("name goes here") { ... };`
    * @param loc current location of the use of `UNITTEST`, automatically provided by the `UNITTEST` macro.
    */
-  unittest(const char* name, ::std::experimental::source_location loc)
+  unittest(const char* name, source_location loc)
       : name(name)
       , loc(mv(loc))
   {}
@@ -349,10 +348,10 @@ public:
    * @return unittest<Params...> the unittest object with inferred type and properly initialized
    *
    * This function is not used directly. Instead, the invocation `UNITTEST("name", 1, 2.2)` calls
-   * `unittest<>::make("name", ::std::experimental::source_location::current(), 1, 2,2)`.
+   * `unittest<>::make("name", source_location::current(), 1, 2,2)`.
    */
   template <typename... Params>
-  static unittest<Params...> make(const char* name, ::std::experimental::source_location loc, Params&&... params)
+  static unittest<Params...> make(const char* name, source_location loc, Params&&... params)
   {
     return unittest<Params...>(name, loc, ::std::forward<Params>(params)...);
   }
@@ -407,7 +406,7 @@ public:
 
 protected:
   const char* const name;
-  const ::std::experimental::source_location loc;
+  const source_location loc;
 };
 
 /*
@@ -431,7 +430,7 @@ public:
    * @param param first parameter, is saved in this object and forwarded to the unittest lambda
    * @param params other parameters, if any
    */
-  unittest(const char* name, ::std::experimental::source_location loc, Param param, Params... params)
+  unittest(const char* name, source_location loc, Param param, Params... params)
       : unittest<Params...>(name, loc, ::std::forward<Params>(params)...)
       , param(::std::forward<Param>(param))
   {}
@@ -478,7 +477,7 @@ int main()
 #  define UNITTEST(name, ...)                                                            \
     [[maybe_unused]] static const auto UNIQUE_NAME(unittest) =                           \
       ::cuda::experimental::stf::unittest<>::make(                                       \
-        name, ::std::experimental::source_location::current() __VA_OPT__(, __VA_ARGS__)) \
+        name, source_location::current() __VA_OPT__(, __VA_ARGS__)) \
         ->*[]([[maybe_unused]] const char* unittest_name __VA_OPT__(, [[maybe_unused]] auto&& unittest_param))
 
 #else
