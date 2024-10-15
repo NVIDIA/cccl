@@ -15,7 +15,7 @@
 
 #pragma once
 
-#if __cplusplus >= 202002L
+#if __cplusplus >= 202002L and __has_include(<source_location>)
 // C++20 version using std::source_location
 #  include <source_location>
 
