@@ -409,6 +409,15 @@ auto as_underlying(E value)
   return static_cast<::std::underlying_type_t<E>>(value);
 }
 
+template <typename V>
+constexpr V get_reserved_default()
+{
+  return ::std::is_floating_point_v<V> ? -::std::numeric_limits<V>::max()
+       : ::std::is_unsigned_v<V>
+         ? ::std::numeric_limits<V>::max()
+         : ::std::numeric_limits<V>::min();
+}
+
 /**
  * @brief A class to represent a value that can be either static or dynamic.
  *
@@ -417,11 +426,7 @@ auto as_underlying(E value)
  *
  * All arithmetic and logic operators are supported (if the original type supports them).
  */
-template <auto static_v,
-          decltype(static_v) reserved =
-            ::std::is_floating_point_v<decltype(static_v)> ? -::std::numeric_limits<decltype(static_v)>::max()
-            : ::std::is_unsigned_v<decltype(static_v)>     ? ::std::numeric_limits<decltype(static_v)>::max()
-                                                           : ::std::numeric_limits<decltype(static_v)>::min()>
+template <auto static_v, decltype(static_v) reserved = get_reserved_default<decltype(static_v)>()>
 class optionally_static
 {
 public:
