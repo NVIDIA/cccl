@@ -623,6 +623,7 @@ private:
 };
 
 #ifdef UNITTESTED_FILE
+#ifdef STF_HAS_UNITTEST_WITH_ARGS
 UNITTEST("shape_of for slice and mdspan", (slice<double, 3>()))
 {
   using View = ::std::remove_reference_t<decltype(unittest_param)>;
@@ -797,6 +798,7 @@ UNITTEST("3D slice should be similar to 3D mdspan", (slice<double, 3>()))
   EXPECT(::std::equal(data, data + 3 * 4 * 5, witness));
 };
 
+#endif // STF_HAS_UNITTEST_WITH_ARGS
 #endif // UNITTESTED_FILE
 
 /**
