@@ -916,7 +916,7 @@ inline void unit_test_context_launch_generic()
     ctx.finalize();
   };
   auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
-  ctx.host_launch(lA.write())->*[] __host__(slice<size_t> A) {
+  ctx.host_launch(lA.write())->*[](slice<size_t> A) {
     for (auto i : shape(A))
     {
       A(i) = 2 * i;
@@ -958,7 +958,7 @@ inline void unit_test_context_launch_exec_places()
     ctx.finalize();
   };
   auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
-  ctx.host_launch(lA.write())->*[] __host__(slice<size_t> A) {
+  ctx.host_launch(lA.write())->*[](slice<size_t> A) {
     for (auto i : shape(A))
     {
       A(i) = 2 * i;
@@ -999,7 +999,7 @@ inline void unit_test_context_launch_sync()
   auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
 
   auto spec = con<1024>();
-  ctx.host_launch(lA.write())->*[] __host__(slice<size_t> A) {
+  ctx.host_launch(lA.write())->*[](slice<size_t> A) {
     for (auto i : shape(A))
     {
       A(i) = 2 * i;

@@ -768,7 +768,9 @@ inline void unit_test_graph_epoch()
   for (size_t k = 0; k < NITER; k++)
   {
     ctx.parallel_for(blocked_partition(), exec_place::current_device(), lA.shape(), lA.rw())
-        ->*[] __host__ __device__(size_t i, slice<double> A) { A(i) = cos(A(i)); };
+        ->*[] _CCCL_HOST_DEVICE(size_t i, slice<double> A) {
+              A(i) = cos(A(i));
+            };
 
     ctx.change_epoch();
   }
@@ -810,7 +812,9 @@ inline void unit_test_graph_empty_epoch()
   for (size_t k = 0; k < NITER; k++)
   {
     ctx.parallel_for(blocked_partition(), exec_place::current_device(), lA.shape(), lA.rw())
-        ->*[] __host__ __device__(size_t i, slice<double> A) { A(i) = cos(A(i)); };
+        ->*[] _CCCL_HOST_DEVICE(size_t i, slice<double> A) {
+              A(i) = cos(A(i));
+            };
 
     ctx.change_epoch();
     // Nothing in between
@@ -856,12 +860,16 @@ inline void unit_test_graph_epoch_2()
     if ((k % 2) == 0)
     {
       ctx.parallel_for(blocked_partition(), exec_place::current_device(), lA.shape(), lA.rw())
-          ->*[] __host__ __device__(size_t i, slice<double> A) { A(i) = cos(A(i)); };
+          ->*[] _CCCL_HOST_DEVICE(size_t i, slice<double> A) {
+                A(i) = cos(A(i));
+              };
     }
     else
     {
       ctx.parallel_for(blocked_partition(), exec_place::current_device(), lA.shape(), lA.rw())
-          ->*[] __host__ __device__(size_t i, slice<double> A) { A(i) = sin(A(i)); };
+          ->*[] _CCCL_HOST_DEVICE(size_t i, slice<double> A) {
+                A(i) = sin(A(i));
+              };
     }
 
     ctx.change_epoch();
@@ -909,12 +917,16 @@ inline void unit_test_graph_epoch_3()
     if ((k % 2) == 0)
     {
       ctx.parallel_for(blocked_partition(), exec_place::current_device(), lA.shape(), lA.rw(), lB.read())
-          ->*[] __host__ __device__(size_t i, slice<double> A, slice<double> B) { A(i) = cos(B(i)); };
+          ->*[] _CCCL_HOST_DEVICE(size_t i, slice<double> A, slice<double> B) {
+                A(i) = cos(B(i));
+              };
     }
     else
     {
       ctx.parallel_for(blocked_partition(), exec_place::current_device(), lA.shape(), lA.read(), lB.rw())
-          ->*[] __host__ __device__(size_t i, slice<double> A, slice<double> B) { B(i) = sin(A(i)); };
+          ->*[] _CCCL_HOST_DEVICE(size_t i, slice<double> A, slice<double> B) {
+                B(i) = sin(A(i));
+              };
     }
 
     ctx.change_epoch();

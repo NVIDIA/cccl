@@ -426,7 +426,7 @@ inline void execute_callback(cb* cb)
  * @param q the queue where to submit the callback
  * @return cudaError_t indicating if the submission was successful
  */
-inline __host__ cudaError_t cudaStreamAddCallbackWithQueue(
+inline _CCCL_HOST cudaError_t cudaStreamAddCallbackWithQueue(
   cudaStream_t stream, cudaStreamCallback_t callback, void* userData, unsigned int flags, callback_queue* q)
 {
   if (q)
@@ -456,7 +456,7 @@ inline __host__ cudaError_t cudaStreamAddCallbackWithQueue(
  * @param q the queue where to submit the callback
  * @return cudaError_t indicating if the submission was successful
  */
-inline __host__ cudaError_t
+inline _CCCL_HOST cudaError_t
 cudaLaunchHostFuncWithQueue(cudaStream_t stream, cudaHostFn_t fn, void* userData, class callback_queue* q)
 {
   assert(q);
@@ -473,7 +473,7 @@ cudaLaunchHostFuncWithQueue(cudaStream_t stream, cudaHostFn_t fn, void* userData
 /**
  * @brief Submit a host node in a CUDA graph into a specific queue
  */
-inline __host__ cudaError_t cudaGraphAddHostNodeWithQueue(
+inline _CCCL_HOST cudaError_t cudaGraphAddHostNodeWithQueue(
   cudaGraphNode_t* node,
   cudaGraph_t graph,
   cudaGraphNode_t* deps,

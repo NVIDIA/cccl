@@ -1197,7 +1197,7 @@ inline void unit_test_untyped_place_pfor()
   auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
   // We have to put both __host__ __device__ qualifiers as this is resolved
   // dynamically and both host and device codes will be generated
-  ctx.parallel_for(where, lA.shape(), lA.write())->*[] __host__ __device__(size_t i, slice<size_t> A) {
+  ctx.parallel_for(where, lA.shape(), lA.write())->*[] _CCCL_HOST_DEVICE(size_t i, slice<size_t> A) {
 #    ifdef __CUDA_ARCH__
     // Even if we do have a __device__ qualifier, we are not supposed to call it
     assert(0);
@@ -1247,8 +1247,9 @@ inline void unit_test_pfor_untyped_grid()
   exec_place where = exec_place::repeat(exec_place::current_device(), 4);
 
   auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
-  ctx.parallel_for(blocked_partition(), where, lA.shape(), lA.write())
-      ->*[] __host__ __device__(size_t i, slice<size_t> A) { A(i) = 2 * i; };
+  ctx.parallel_for(blocked_partition(), where, lA.shape(), lA.write())->*[] _CCCL_HOST_DEVICE(size_t i, slice<size_t> A) {
+    A(i) = 2 * i;
+  };
   ctx.host_launch(lA.read())->*[](auto A) {
     for (size_t i = 0; i < 64; i++)
     {
