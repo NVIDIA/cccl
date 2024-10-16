@@ -85,7 +85,7 @@ public:
     else
     {
       using ReturnType = ::std::invoke_result_t<decltype(fun), Ts...>;
-      static ::std::unordered_map<::std::tuple<Ts...>, ReturnType> cache;
+      static ::std::unordered_map<::std::tuple<Ts...>, ReturnType, ::cuda::experimental::stf::hash<::std::tuple<Ts...>>> cache;
 
       if (auto it = cache.find(val); it != cache.end())
       {
