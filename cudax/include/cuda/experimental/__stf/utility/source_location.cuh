@@ -15,6 +15,16 @@
 
 #pragma once
 
+#include <cuda/__cccl_config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 // GCC11 provides non constexpr builtins
 #if defined(__cpp_lib_source_location) && (!defined(_CCCL_COMPILER_GCC) || _CCCL_GCC_VERSION >= 120000)
 // C++20 version using std::source_location
