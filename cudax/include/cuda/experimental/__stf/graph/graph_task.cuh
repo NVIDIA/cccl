@@ -417,6 +417,12 @@ public:
     return mv(*this);
   }
 
+#if defined(_CCCL_COMPILER_MSVC)
+// TODO (miscco): figure out why MSVC is complaining about unreachable code here
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
+#endif // _CCCL_COMPILER_MSVC
+
   template <typename Fun>
   void operator->*(Fun&& f)
   {
@@ -481,12 +487,12 @@ public:
       // Get a stream from the pool associated to the execution place
       cudaStream_t capture_stream = get_exec_place().getStream(ctx.async_resources(), true).stream;
 
+      cudaGraph_t childGraph = nullptr;
       cuda_safe_call(cudaStreamBeginCapture(capture_stream, cudaStreamCaptureModeThreadLocal));
 
       // Launch the user provided function
       ::std::apply(f, tuple_prepend(mv(capture_stream), typed_deps()));
 
-      cudaGraph_t childGraph;
       cuda_safe_call(cudaStreamEndCapture(capture_stream, &childGraph));
 
       // Save this child graph as the implementation of the
@@ -508,8 +514,10 @@ public:
       // Launch the user provided function
       ::std::apply(f, tuple_prepend(mv(childGraph), typed_deps()));
     }
-    _CCCL_UNREACHABLE();
   }
+#if defined(_CCCL_COMPILER_MSVC)
+_CCCL_DIAG_POP
+#endif // _CCCL_COMPILER_MSVC
 
 private:
   auto typed_deps()
