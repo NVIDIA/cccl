@@ -645,9 +645,10 @@ private:
    * `impl`) */
   class impl : public backend_ctx<stream_ctx>::impl
   {
+    using base = backend_ctx<stream_ctx>::impl;
   public:
     impl(async_resources_handle _async_resources = async_resources_handle(nullptr))
-        : backend_ctx<stream_ctx>::impl(mv(_async_resources))
+        : base(mv(_async_resources))
     {
       reserved::backend_ctx_setup_allocators<impl, uncached_stream_allocator>(*this);
     }
@@ -658,7 +659,7 @@ private:
       deferred_tasks.clear();
       task_map.clear();
       submitted_stream = nullptr;
-      backend_ctx<stream_ctx>::impl::cleanup();
+      base::cleanup();
     }
 
     // Due to circular dependencies, we need to define it here, and not in backend_ctx_untyped
