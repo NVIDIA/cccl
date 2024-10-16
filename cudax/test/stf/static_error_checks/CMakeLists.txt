@@ -40,7 +40,7 @@ function(cudax_stf_add_static_assert_test target_name_var source cn_target)
                              --config $<CONFIGURATION>
   )
   set_tests_properties(${test_target} PROPERTIES
-    PASS_REGULAR_EXPRESSION "static assertion"
+    PASS_REGULAR_EXPRESSION "static_assert|static assertion"
   )
 
   set(${target_name_var} ${test_target} PARENT_SCOPE)
