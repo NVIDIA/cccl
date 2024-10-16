@@ -307,6 +307,7 @@ T only_convertible(P0&& p0, P&&... p)
 {
   if constexpr (::std::is_convertible_v<P0, T>)
   {
+    ((void)p, ...);
     static_assert(!(::std::is_convertible_v<P, T> || ...), "Duplicate argument type found");
     return ::std::forward<P0>(p0);
   }
