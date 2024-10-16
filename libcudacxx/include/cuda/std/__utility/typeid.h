@@ -26,6 +26,7 @@
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 #  include <cuda/std/compare>
 #endif
+#include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/cstddef>
 
@@ -101,6 +102,7 @@ private:
            : int(__len1) - int(__len2);
   }
 
+  template <bool _Forward>
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr ptrdiff_t __try_find(
     size_t __i,
     const char* __needle,
@@ -110,12 +112,13 @@ private:
     char const* __it) noexcept
   {
     return __i == __needle_size //
-           ? __it - __haystack_begin
-           : __needle[__i] != __it[__i]
+           ? (_Forward ? __it - __haystack_begin : __it - __haystack_end - 1)
+           : __needle[__i] != (_Forward ? __it : __it - 1)[__i]
                ? -1
-               : __try_find(__i + 1, __needle, __needle_size, __haystack_begin, __haystack_end, __it);
+               : __try_find<_Forward>(__i + 1, __needle, __needle_size, __haystack_begin, __haystack_end, __it);
   }
 
+  template <bool _Forward>
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr ptrdiff_t __find(
     ptrdiff_t __found,
     const char* __needle,
@@ -128,12 +131,13 @@ private:
            ? __found
            : __it == __haystack_end
                ? -1
-               : __find(__try_find(0, __needle, __needle_size, __haystack_begin, __haystack_end, __it),
-                        __needle,
-                        __needle_size,
-                        __haystack_begin,
-                        __haystack_end,
-                        __it + 1);
+               : __find<_Forward>(
+                   __try_find<_Forward>(0, __needle, __needle_size, __haystack_begin, __haystack_end, __it),
+                   __needle,
+                   __needle_size,
+                   __haystack_begin,
+                   __haystack_end,
+                   (_Forward ? __it + 1 : __it - 1));
   }
 
 public:
@@ -145,38 +149,47 @@ public:
   template <size_t _Np>
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr ptrdiff_t find(const char (&__other)[_Np]) const noexcept
   {
-    return ((_Np - 1) > __len_) ? -1 : __find(-1, __other, _Np - 1, __str_, __str_ + __len_ - (_Np - 1), __str_);
+    return ((_Np - 1) > __len_)
+           ? -1
+           : __find<true>(-1, __other, _Np - 1, __str_, __str_ + __len_ - (_Np - 1) + 1, __str_);
+  }
+
+  template <size_t _Np>
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr ptrdiff_t find_end(const char (&__other)[_Np]) const noexcept
+  {
+    return ((_Np - 1) > __len_)
+           ? -1
+           : __find<false>(
+               -1, __other, _Np - 1, __str_ + __len_ - (_Np - 1) + 1, __str_, __str_ + __len_ - (_Np - 1) + 1);
   }
 
 #  else // ^^^ C++11 ^^^ / vvv C++14 and beyond vvv
 
-  template <size_t _Np>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr ptrdiff_t find(const char (&__other)[_Np]) const noexcept
+private:
+  template <bool _Forward>
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr ptrdiff_t
+  __find(const char* __needle, size_t __needle_size, const char* __haystack_begin, const char* __haystack_end) noexcept
   {
-    if ((_Np - 1) > __len_)
-    {
-      return -1;
-    }
-
-    char const *__it = begin(), *__end = end() - (_Np - 1);
-    for (; __it != __end; ++__it)
+    char const* __it = __haystack_begin;
+    for (; __it != __haystack_end; (_Forward ? ++__it : --__it))
     {
       size_t __i = 0;
-      for (; __i < (_Np - 1); ++__i)
+      for (; __i != __needle_size; ++__i)
       {
-        if (__it[__i] != __other[__i])
+        if ((_Forward ? __it : __it - 1)[__i] != __needle[__i])
         {
           break;
         }
       }
-      if (__i == (_Np - 1))
+      if (__i == __needle_size)
       {
-        return __it - begin();
+        return _Forward ? __it - __haystack_begin : __it - __haystack_end - 1;
       }
     }
     return -1;
   }
 
+public:
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int compare(__string_view const& __other) const noexcept
   {
     size_t __n       = __min_(__len_, __other.__len_);
@@ -193,6 +206,18 @@ public:
       }
     }
     return int(__len_) - int(__other.__len_);
+  }
+
+  template <size_t _Np>
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr ptrdiff_t find(const char (&__other)[_Np]) const noexcept
+  {
+    return ((_Np - 1) > __len_) ? -1 : __find<true>(__other, _Np - 1, __str_, __str_ + __len_ - (_Np - 1) + 1);
+  }
+
+  template <size_t _Np>
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr ptrdiff_t find_end(const char (&__other)[_Np]) const noexcept
+  {
+    return ((_Np - 1) > __len_) ? -1 : __find<false>(__other, _Np - 1, __str_ + __len_ - (_Np - 1) + 1, __str_);
   }
 
 #  endif
@@ -285,7 +310,7 @@ struct __static_string
 };
 
 template <size_t _Np, size_t... _Is>
-constexpr auto __pretty_nameof_5(char const (&a)[_Np], index_sequence<_Is...>)
+constexpr __static_string<_Np> __pretty_nameof_5(char const (&a)[_Np], index_sequence<_Is...>)
 {
   return __static_string<_Np>{{a[_Is]...}};
 }
@@ -325,7 +350,7 @@ struct __pretty_name_begin
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameof_3(__string_view __sv) noexcept
 {
   return __sv.substr(__sv.find("__pretty_name_begin<") + sizeof("__pretty_name_begin<") - 1,
-                     __sv.find(">::__pretty_name_end"));
+                     __sv.find_end(">::__pretty_name_end"));
 }
 
 template <class _Tp>
