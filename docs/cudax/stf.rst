@@ -100,7 +100,7 @@ workspace in the rest of this document.
 
 .. code:: cpp
 
-   #include <cudastf/stf.h>
+   #include <cuda/experimental/stf.cuh>
 
    using cuda::experimental::stf;
 
@@ -145,7 +145,7 @@ and ``Y`` are two vectors, and ``alpha`` is a scalar value.
 
 .. code:: cpp
 
-   #include <cudastf/stf.h>
+   #include <cuda/experimental/stf.cuh>
 
    using namespace cuda::experimental::stf;
 
@@ -409,12 +409,12 @@ Slices
 To facilitate the use of potentially non-contiguous multi-dimensional
 arrays, we have introduced a C++ data structure class called ``slice``.
 A slice is a partial specialization of C++’s
-``std::experimental::mdspan``.
+``std::mdspan`` (or ``std::experimental::mdspan`` depending on the C++ revision).
 
 .. code:: cpp
 
    template <typename T, size_t dimensions = 1>
-   using slice = std::experimental::mdspan<T, std::experimental::dextents<size_t, dimensions>, std::experimental::layout_stride>;
+   using slice = mdspan<T, dextents<size_t, dimensions>, layout_stride>;
 
 When creating a ``logical_data`` from a C++ array, CUDASTF automatically
 describes it as a slice instantiated with the scalar element type and
@@ -432,7 +432,7 @@ where ``double`` is the scalar element type, and ``1`` is the
 dimensionality of the array. The default dimension corresponds to ``1``,
 so ``slice<double>`` is equivalent with ``slice<double, 1>``.
 
-The ``std::experimental::mdspan`` facility provides a `variety of
+The ``mdspan`` facility provides a `variety of
 methods <https://en.cppreference.com/w/cpp/container/mdspan>`__ also
 available to its alias ``slice``:
 
