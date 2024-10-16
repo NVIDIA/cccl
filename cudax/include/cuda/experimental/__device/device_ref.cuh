@@ -107,6 +107,17 @@ public:
   }
 
   const arch_traits_t& arch_traits() const;
+
+  // TODO this might return some more complex type in the future
+  // TODO we might want to include the calling device, depends on what we decide
+  // peer access APIs
+
+  //! @brief Retrieve a vector of `device_ref`s that are peers of this device
+  //!
+  //! The device on which this API is called is not included in the vector,
+  //! if a full group of peer devices is needed, it needs to be pushed_back separately.
+  //!
+  //! @throws cuda_error if any peer access query fails
   ::std::vector<device_ref> get_peers() const;
 };
 

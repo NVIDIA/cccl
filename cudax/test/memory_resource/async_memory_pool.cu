@@ -474,21 +474,18 @@ TEST_CASE("async_memory_pool accessors", "[memory_resource]")
     if (cudax::devices.size() > 1)
     {
       auto peers = cudax::devices[0].get_peers();
-      if (peers.size() > 1)
+      if (peers.size() > 0)
       {
         cudax::mr::async_memory_pool pool{cudax::devices[0]};
         CUDAX_CHECK(pool.is_accessible_from(cudax::devices[0]));
 
         pool.enable_peer_access(peers);
-        CUDAX_CHECK(pool.is_accessible_from(peers.back()));
+        CUDAX_CHECK(pool.is_accessible_from(peers.front()));
 
-        ::std::vector<cudax::device_ref> disable;
-        disable.push_back(peers.back());
+        pool.disable_peer_access(peers.front());
+        CUDAX_CHECK(!pool.is_accessible_from(peers.front()));
 
-        pool.disable_peer_access(disable);
-        CUDAX_CHECK(!pool.is_accessible_from(peers.back()));
-
-        if (peers.size() > 2)
+        if (peers.size() > 1)
         {
           CUDAX_CHECK(pool.is_accessible_from(peers[1]));
         }

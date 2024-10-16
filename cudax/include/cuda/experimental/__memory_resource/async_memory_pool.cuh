@@ -64,14 +64,15 @@ inline void __device_supports_stream_ordered_allocations(const int __device_id)
   }
 }
 
-inline void __mempool_switch_peer_access(cudaMemPool_t __pool, const ::std::vector<device_ref>& __devices, bool __enable)
+inline void
+__mempool_switch_peer_access(cudaMemPool_t __pool, const device_ref* __devices, size_t __count, bool __enable)
 {
   ::std::vector<cudaMemAccessDesc> __descs;
-  __descs.reserve(__devices.size());
+  __descs.reserve(__count);
   cudaMemAccessDesc __desc;
   __desc.flags         = __enable ? cudaMemAccessFlagsProtReadWrite : cudaMemAccessFlagsProtNone;
   __desc.location.type = cudaMemLocationTypeDevice;
-  for (size_t __i = 0; __i < __devices.size(); ++__i)
+  for (size_t __i = 0; __i < __count; ++__i)
   {
     printf("setting %d for %d\n", __desc.flags, __devices[__i].get());
     __desc.location.id = __devices[__i].get();
@@ -308,19 +309,48 @@ public:
       static_cast<void*>(&__value));
   }
 
+  //! @brief Enable peer access to this memory pool from the supplied devices
+  //!
+  //! Device on which this pool resides can be included in the vector.
+  //!
+  //! @param __devices A vector of `device_ref`s listing devices to enable access for
   void enable_peer_access(const ::std::vector<device_ref>& __devices)
   {
-    __mempool_switch_peer_access(__pool_handle_, __devices, true);
+    __mempool_switch_peer_access(__pool_handle_, __devices.data(), __devices.size(), true);
   }
 
+  //! @brief Enable peer access to this memory pool from the supplied device
+  //!
+  //! @param __device device_ref indicating for which device the access should be enabled
+  void enable_peer_access(device_ref __device)
+  {
+    __mempool_switch_peer_access(__pool_handle_, &__device, 1, true);
+  }
+
+  //! @brief Disable peer access to this memory pool from the supplied devices
+  //!
+  //! Device on which this pool resides can be included in the vector.
+  //!
+  //! @param __devices A vector of `device_ref`s listing devices to disable access for
   void disable_peer_access(const ::std::vector<device_ref>& __devices)
   {
-    __mempool_switch_peer_access(__pool_handle_, __devices, false);
+    __mempool_switch_peer_access(__pool_handle_, __devices.data(), __devices.size(), false);
   }
 
-  bool is_accessible_from(device_ref __dev)
+  //! @brief Disable peer access to this memory pool from the supplied device
+  //!
+  //! @param __device device_ref indicating for which device the access should be disable
+  void disable_peer_access(device_ref __device)
   {
-    return __mempool_get_access(__pool_handle_, __dev);
+    __mempool_switch_peer_access(__pool_handle_, &__device, 1, false);
+  }
+
+  //! @brief Query if memory allocated through this memory resource is accessible by the supplied device
+  //!
+  //! @param __device device for which the peer access is queried
+  bool is_accessible_from(device_ref __device)
+  {
+    return __mempool_get_access(__pool_handle_, __device);
   }
 
   //! @brief Equality comparison with another \c async_memory_pool.
