@@ -80,7 +80,7 @@ void cuda_launcher_graph(interpreted_spec interpreted_policy, Fun&& f, void** ar
   kconfig.extra          = nullptr;
   kconfig.func           = (void*) f;
   kconfig.kernelParams   = args;
-  kconfig.sharedMemBytes = mem_config[2];
+  kconfig.sharedMemBytes = static_cast<int>(mem_config[2]);
 
   cuda_safe_call(cudaGraphAddKernelNode(&n, g, nullptr, 0, &kconfig));
 
