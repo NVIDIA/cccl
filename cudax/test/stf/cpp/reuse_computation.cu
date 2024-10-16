@@ -17,12 +17,12 @@ int main()
 {
   context ctx;
 
-  const size_t N = 16;
-  size_t niter   = 12;
+  const int N  = 16;
+  size_t niter = 12;
 
   int A[N];
 
-  for (size_t i = 0; i < N; i++)
+  for (int i = 0; i < N; i++)
   {
     A[i] = 2 * i + 1;
   }
@@ -73,7 +73,7 @@ int main()
 
   ctx.finalize();
 
-  for (size_t i = 0; i < N; i++)
+  for (int i = 0; i < N; i++)
   {
     EXPECT(A[i] == (2 * i + 1) + 2 * i * niter);
   }
