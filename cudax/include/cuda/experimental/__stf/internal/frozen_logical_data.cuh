@@ -95,10 +95,10 @@ private:
       return mv(result);
     }
 
-    T get(data_place place, cudaStream_t stream)
+    T get(data_place place_, cudaStream_t stream)
     {
       // Get the tuple and synchronize it with the user-provided stream
-      ::std::pair<T, event_list> p = get(mv(place));
+      ::std::pair<T, event_list> p = get(mv(place_));
       auto& prereqs                = p.second;
       prereqs.sync_with_stream(bctx, stream);
       return p.first;

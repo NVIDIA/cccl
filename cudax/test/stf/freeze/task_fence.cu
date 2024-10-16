@@ -40,12 +40,10 @@ int main()
 {
   stream_ctx ctx;
 
-  cudaStream_t stream = ctx.pick_stream();
-
-  const size_t N = 16;
+  const int N = 16;
   int X[N];
 
-  for (size_t i = 0; i < N; i++)
+  for (int i = 0; i < N; i++)
   {
     X[i] = X0(i);
   }
@@ -63,14 +61,14 @@ int main()
     auto [dX, _] = fx.get(data_place::current_device());
 
     // the stream returned by task_fence should depend on the get operation
-    auto stream = ctx.task_fence();
-    print<<<8, 4, 0, stream>>>(dX);
+    auto stream2 = ctx.task_fence();
+    print<<<8, 4, 0, stream2>>>(dX);
 
     ctx.parallel_for(lX.shape(), lX.read(), lY.write()).set_symbol("Y=X")->*[] __device__(size_t i, auto x, auto y) {
       y(i) = x(i);
     };
 
-    fx.unfreeze(stream);
+    fx.unfreeze(stream2);
   }
 
   // test 2 : unfreeze with no events due to user sync
@@ -79,11 +77,11 @@ int main()
     auto [dX, _] = fx.get(data_place::current_device());
 
     // the stream returned by task_fence should depend on the get operation
-    auto stream = ctx.task_fence();
-    print<<<8, 4, 0, stream>>>(dX);
+    auto stream2 = ctx.task_fence();
+    print<<<8, 4, 0, stream2>>>(dX);
 
     // We synchronize so there is nothing to depend on anymore
-    cudaStreamSynchronize(stream);
+    cudaStreamSynchronize(stream2);
     fx.unfreeze(event_list());
   }
 
@@ -93,7 +91,7 @@ int main()
 
   ctx.finalize();
 
-  for (size_t i = 0; i < N; i++)
+  for (int i = 0; i < N; i++)
   {
     EXPECT(X[i] == 2 * X0(i) + 1);
   }

@@ -106,7 +106,7 @@ void load_input_file(std::string filename, std::vector<body>& particles)
     particles.push_back(p);
   }
 
-  fprintf(stderr, "Loaded %ld bodies from %s...\n", ind, filename.c_str());
+  fprintf(stderr, "Loaded %zu bodies from %s...\n", ind, filename.c_str());
 }
 
 int main(int argc, char** argv)
