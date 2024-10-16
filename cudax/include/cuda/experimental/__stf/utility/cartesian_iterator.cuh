@@ -168,7 +168,7 @@ public:
 
   CUDASTF_HOST_DEVICE RangeIterator& operator+=(difference_type n)
   {
-    currentValue += n;
+    currentValue += static_cast<int>(n);
     return *this;
   }
 
@@ -181,7 +181,7 @@ public:
 
   CUDASTF_HOST_DEVICE RangeIterator& operator-=(difference_type n)
   {
-    currentValue -= n;
+    currentValue -= static_cast<int>(n);
     return *this;
   }
 
