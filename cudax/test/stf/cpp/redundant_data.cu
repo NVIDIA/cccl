@@ -41,7 +41,7 @@ void compare_two_vectors(Ctx& ctx, logical_data<T>& a, logical_data<T>& b, int& 
 
   // Count the number of differences
   ctx.task(a.read(), b.read(), delta_cnt.rw())->*[=](cudaStream_t stream, auto da, auto db, auto ddelta) {
-    diff_cnt<<<16, 128, 0, stream>>>(n, da.data_handle(), db.data_handle(), ddelta.data_handle());
+    diff_cnt<<<16, 128, 0, stream>>>(static_cast<int>(n), da.data_handle(), db.data_handle(), ddelta.data_handle());
   };
 
   // Read that value on the host
