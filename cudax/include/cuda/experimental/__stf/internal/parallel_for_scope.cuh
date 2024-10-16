@@ -368,7 +368,7 @@ public:
       // Put this kernel node in the child graph that implements the graph_task<>
       cudaKernelNodeParams kernel_params;
 
-      kernel_params.func = (void*) reserved::loop<Fun, sub_shape_t, ::std::tuple<deps_t...>>;
+      kernel_params.func = (void*) reserved::loop<::std::remove_reference_t<Fun>, sub_shape_t, ::std::tuple<deps_t...>>;
 
       kernel_params.gridDim  = dim3(blocks);
       kernel_params.blockDim = dim3(block_size);
