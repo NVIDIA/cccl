@@ -101,11 +101,11 @@ public:
   using iterator = ::std::vector<exec_place>::iterator;
   iterator begin()
   {
-    return iterator(sub_places.data());
+    return sub_places.begin();
   }
   iterator end()
   {
-    return iterator(sub_places.data() + sub_places.size());
+    return sub_places.end();;
   }
 
   /** @brief Number of subplaces in the partition */
