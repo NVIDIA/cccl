@@ -110,7 +110,7 @@ int main()
     {
       for (unsigned i = 0; i < 10; i++)
       {
-        uint32_t key   = dev_id * 1000 + i;
+        uint32_t key   = static_cast<uint32_t>(dev_id * 1000 + i);
         uint32_t value = 2 * i;
 
         EXPECT(h.get(key) == value);

@@ -43,7 +43,7 @@ int main()
 
   // Create an array of values on the host
   KeyValue kvs_array[16];
-  for (size_t i = 0; i < 16; i++)
+  for (uint32_t i = 0; i < 16; i++)
   {
     kvs_array[i].key   = i * 10;
     kvs_array[i].value = 17 + i * 14;

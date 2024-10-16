@@ -29,7 +29,7 @@ void run()
 
   for (size_t k = 0; k < 10; k++)
   {
-    size_t h = l.hash();
+    // size_t h = l.hash();
     // fprintf(stderr, "iter %zu : logical data hash %zu ctx.hash %zu\n", k, h, ctx.hash());
 
     ctx.task(l.rw())->*[](cudaStream_t stream, auto sA) {

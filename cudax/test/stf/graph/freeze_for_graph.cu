@@ -30,10 +30,10 @@ __global__ void dummy() {}
 int main()
 {
   stream_ctx ctx;
-  const size_t N = 16;
+  const int N = 16;
   int X[N];
 
-  for (size_t i = 0; i < N; i++)
+  for (int i = 0; i < N; i++)
   {
     X[i] = X0(i);
   }
@@ -64,7 +64,7 @@ int main()
   fX.unfreeze(stream);
 
   ctx.host_launch(lX.read())->*[](auto x) {
-    for (size_t i = 0; i < x.size(); i++)
+    for (int i = 0; i < static_cast<int>(x.size()); i++)
     {
       EXPECT(x(i) == X0(i) + 2);
     }
