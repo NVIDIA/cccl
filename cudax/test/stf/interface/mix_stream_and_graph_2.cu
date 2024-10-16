@@ -58,13 +58,13 @@ __global__ void slice_add(slice<const int> s_from, slice<int> s_to)
 int main()
 {
   stream_ctx ctx;
-  const size_t n = 12;
+  const int N = 12;
   const size_t K = 10;
 
-  int X[n];
-  int Y[n];
+  int X[N];
+  int Y[N];
 
-  for (size_t i = 0; i < n; i++)
+  for (int i = 0; i < N; i++)
   {
     X[i] = i;
     Y[i] = -i;
@@ -102,7 +102,7 @@ int main()
     }
 
     //        gctx.host_launch(lX_alias.rw())->*[&](auto sX) {
-    //            for (size_t ind = 0; ind < n; ind++) {
+    //            for (size_t ind = 0; ind < N; ind++) {
     //                sX(ind) = 2 * sX(ind) + 1;
     //            }
     //        };

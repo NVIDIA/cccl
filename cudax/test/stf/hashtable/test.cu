@@ -51,7 +51,7 @@ int main()
   auto h_kvs_array = ctx.logical_data(make_slice(&kvs_array[0], 16));
 
   ctx.task(lh.rw(), h_kvs_array.read())->*[](auto stream, auto h, auto a) {
-    gpu_hashtable_insert(h, a.data_handle(), a.extent(0), stream);
+    gpu_hashtable_insert(h, a.data_handle(), static_cast<uint32_t>(a.extent(0)), stream);
   };
 
   ctx.finalize();

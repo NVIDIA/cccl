@@ -46,11 +46,11 @@ __global__ void add(slice<T> s, T val)
 int main()
 {
   stream_ctx ctx;
-  const size_t n = 12;
+  const int N = 12;
 
-  int X[n];
+  int X[N];
 
-  for (size_t i = 0; i < n; i++)
+  for (int i = 0; i < N; i++)
   {
     X[i] = i;
   }
@@ -68,7 +68,7 @@ int main()
 
     // X(i) = 2*(i + 17) + 1
     gctx.host_launch(lX_alias.rw())->*[&](auto sX) {
-      for (size_t ind = 0; ind < n; ind++)
+      for (int ind = 0; ind < N; ind++)
       {
         sX(ind) = 2 * sX(ind) + 1;
       }
@@ -80,7 +80,7 @@ int main()
 
   ctx.finalize();
 
-  for (size_t ind = 0; ind < n; ind++)
+  for (int ind = 0; ind < N; ind++)
   {
     EXPECT(X[ind] == 2 * (ind + 17) + 1);
   }
