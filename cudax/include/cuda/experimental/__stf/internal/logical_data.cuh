@@ -1847,7 +1847,7 @@ inline event_list enforce_stf_deps_before(
   auto result = event_list();
   auto& cs    = bctx.get_stack();
   // Get the context in which we store previous writer, readers, ...
-  auto& ctx = handle.get_state();
+  auto& ctx_ = handle.get_state();
 
   auto& dot                 = *bctx.get_dot();
   const bool dot_is_tracing = dot.is_tracing();
@@ -1855,13 +1855,13 @@ inline event_list enforce_stf_deps_before(
   if (mode == access_mode::redux)
   {
     // A reduction only needs to wait for previous accesses on the data instance
-    ctx.current_mode = access_mode::redux;
+    ctx_.current_mode = access_mode::redux;
 
     if (dot_is_tracing)
     {
       // Add this task to the list of task accessing the logical data in redux mode
       // We only store its id since this is used for dot
-      ctx.pending_redux_id.push_back(task.get_unique_id());
+      ctx_.pending_redux_id.push_back(task.get_unique_id());
     }
 
     // XXX with a mv we may avoid copies
@@ -1871,7 +1871,7 @@ inline event_list enforce_stf_deps_before(
   }
 
   // This is not a reduction, but perhaps we need to reconstruct the data first?
-  if (ctx.current_mode == access_mode::redux)
+  if (ctx_.current_mode == access_mode::redux)
   {
     assert(eplace.has_value());
     if (dot_is_tracing)
@@ -1879,14 +1879,14 @@ inline event_list enforce_stf_deps_before(
       // Add a dependency between previous tasks accessing the handle
       // in redux mode, and this task which forces its
       // reconstruction.
-      for (const int redux_task_id : ctx.pending_redux_id)
+      for (const int redux_task_id : ctx_.pending_redux_id)
       {
         dot.add_edge(redux_task_id, task.get_unique_id());
       }
-      ctx.pending_redux_id.clear();
+      ctx_.pending_redux_id.clear();
     }
     handle.reconstruct_after_redux(instance_id, eplace.value(), result);
-    ctx.current_mode = access_mode::none;
+    ctx_.current_mode = access_mode::none;
   }
 
   // @@@TODO@@@ cleaner ...
@@ -1896,12 +1896,12 @@ inline event_list enforce_stf_deps_before(
   // task->get_symbol() << ::std::endl;
   if (write)
   {
-    if (ctx.current_mode == access_mode::write)
+    if (ctx_.current_mode == access_mode::write)
     {
       // Write after Write (WAW)
-      assert(ctx.current_writer.has_value());
+      assert(ctx_.current_writer.has_value());
 
-      const auto& cw = ctx.current_writer.value();
+      const auto& cw = ctx_.current_writer.value();
       result.merge(cw.get_done_prereqs());
 
       const auto cw_id = cw.get_unique_id();
@@ -1914,14 +1914,14 @@ inline event_list enforce_stf_deps_before(
       cs.remove_leaf_task(cw_id);
 
       // Replace previous writer
-      ctx.previous_writer = cw;
+      ctx_.previous_writer = cw;
     }
     else
     {
       // Write after read
 
       // The writer depends on all current readers
-      auto& current_readers = ctx.current_readers;
+      auto& current_readers = ctx_.current_readers;
       result.merge(current_readers.get_done_prereqs());
 
       for (const int reader_task_id : current_readers.get_ids())
@@ -1934,21 +1934,21 @@ inline event_list enforce_stf_deps_before(
       }
 
       current_readers.clear();
-      ctx.current_mode = access_mode::write;
+      ctx_.current_mode = access_mode::write;
     }
     // Note the task will later be set as the current writer
   }
   else
   {
     // This is a read access
-    if (ctx.current_mode == access_mode::write)
+    if (ctx_.current_mode == access_mode::write)
     {
       // Read after Write
       // Current writer becomes the previous writer, and all future readers will depend on this previous
       // writer
-      assert(ctx.current_writer.has_value());
-      ctx.previous_writer = mv(ctx.current_writer);
-      const auto& pw      = ctx.previous_writer;
+      assert(ctx_.current_writer.has_value());
+      ctx_.previous_writer = mv(ctx_.current_writer);
+      const auto& pw      = ctx_.previous_writer;
 
       result.merge(pw->get_done_prereqs());
 
@@ -1961,12 +1961,12 @@ inline event_list enforce_stf_deps_before(
 
       cs.remove_leaf_task(pw_id);
 
-      ctx.current_mode = access_mode::none;
+      ctx_.current_mode = access_mode::none;
       // ::std::cout << "CHANGING to FALSE for " << symbol << ::std::endl;
     }
-    else if (ctx.previous_writer.has_value())
+    else if (ctx_.previous_writer.has_value())
     {
-      const auto& pw = ctx.previous_writer;
+      const auto& pw = ctx_.previous_writer;
       result.merge(pw->get_done_prereqs());
 
       const int pw_id = pw->get_unique_id();
