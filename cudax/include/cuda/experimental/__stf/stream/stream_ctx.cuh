@@ -172,6 +172,8 @@ public:
  */
 class stream_ctx : public backend_ctx<stream_ctx>
 {
+  using base = backend_ctx<stream_ctx>;
+
 public:
   using task_type = stream_task<>;
 
@@ -645,13 +647,11 @@ public:
 private:
   /* This class contains all the state associated to a stream_ctx, and all states associated to every contexts (in
    * `impl`) */
-  class impl : public backend_ctx<stream_ctx>::impl
+  class impl : public base::impl
   {
-    using base = backend_ctx<stream_ctx>::impl;
-
   public:
     impl(async_resources_handle _async_resources = async_resources_handle(nullptr))
-        : base(mv(_async_resources))
+        : base::impl(mv(_async_resources))
     {
       reserved::backend_ctx_setup_allocators<impl, uncached_stream_allocator>(*this);
     }
@@ -662,7 +662,7 @@ private:
       deferred_tasks.clear();
       task_map.clear();
       submitted_stream = nullptr;
-      base::cleanup();
+      base::impl::cleanup();
     }
 
     // Due to circular dependencies, we need to define it here, and not in backend_ctx_untyped
