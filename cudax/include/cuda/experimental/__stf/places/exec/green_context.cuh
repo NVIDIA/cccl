@@ -117,7 +117,7 @@ public:
         cuda_safe_call(cuCtxFromGreenCtx(&green_primary, ctxs[i]));
 
         pools.push_back(
-          ::std::make_shared<stream_pool>(async_resources_handle::pool_size, ssize_t(devid), green_primary));
+          ::std::make_shared<stream_pool>(async_resources_handle::pool_size, ::std::ptrdiff_t(devid), green_primary));
       }
     }
   }

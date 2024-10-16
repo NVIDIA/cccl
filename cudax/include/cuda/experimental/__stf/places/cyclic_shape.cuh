@@ -79,7 +79,7 @@ public:
   ///@}
 
   /// Get the total number of elements in this explicit shape
-  CUDASTF_HOST_DEVICE ssize_t size() const
+  CUDASTF_HOST_DEVICE ::std::ptrdiff_t size() const
   {
     size_t res = 1;
     for (size_t d = 0; d < dimensions; d++)

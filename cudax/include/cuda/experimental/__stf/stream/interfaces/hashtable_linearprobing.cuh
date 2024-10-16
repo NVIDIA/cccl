@@ -74,7 +74,7 @@ public:
     backend_ctx_untyped& /*unused*/,
     const data_place& memory_node,
     instance_id_t instance_id,
-    ssize_t& s,
+    ::std::ptrdiff_t& s,
     void** /*unused*/,
     cudaStream_t stream) override
   {

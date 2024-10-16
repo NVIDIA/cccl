@@ -120,7 +120,7 @@ public:
   /// Get the total size (multiply all dimensions)
   CUDASTF_HOST_DEVICE constexpr size_t size() const
   {
-    const ssize_t result = ssize_t(x) * y * z * t;
+    const ::std::ptrdiff_t result = ::std::ptrdiff_t(x) * y * z * t;
     assert(result >= 0);
     return result;
   }
@@ -255,25 +255,25 @@ public:
   }
 
   /// Get the number of elements along a dimension
-  CUDASTF_HOST_DEVICE ssize_t get_extent(size_t dim) const
+  CUDASTF_HOST_DEVICE ::std::ptrdiff_t get_extent(size_t dim) const
   {
     return s[dim].second - s[dim].first;
   }
 
   /// Get the first coordinate (included) in a specific dimension
-  CUDASTF_HOST_DEVICE ssize_t get_begin(size_t dim) const
+  CUDASTF_HOST_DEVICE ::std::ptrdiff_t get_begin(size_t dim) const
   {
     return s[dim].first;
   }
 
   /// Get the last coordinate (excluded) in a specific dimension
-  CUDASTF_HOST_DEVICE ssize_t get_end(size_t dim) const
+  CUDASTF_HOST_DEVICE ::std::ptrdiff_t get_end(size_t dim) const
   {
     return s[dim].second;
   }
 
   /// Get the total number of elements in this explicit shape
-  CUDASTF_HOST_DEVICE ssize_t size() const
+  CUDASTF_HOST_DEVICE ::std::ptrdiff_t size() const
   {
     if constexpr (dimensions == 1)
     {
@@ -301,7 +301,7 @@ public:
   {
   private:
     box iterated; // A copy of the box being iterated
-    ::std::array<ssize_t, dimensions> current; // Array to store the current position in each dimension
+    ::std::array<::std::ptrdiff_t, dimensions> current; // Array to store the current position in each dimension
 
   public:
     CUDASTF_HOST_DEVICE iterator(const box& b, bool at_end = false)
@@ -423,8 +423,8 @@ public:
     CUDASTF_NO_DEVICE_STACK
     return make_tuple_indexwise<dimensions>([&](auto i) {
       // included
-      const ssize_t begin_i  = get_begin(i);
-      const ssize_t extent_i = get_extent(i);
+      const ::std::ptrdiff_t begin_i  = get_begin(i);
+      const ::std::ptrdiff_t extent_i = get_extent(i);
       auto result            = begin_i + (index % extent_i);
       index /= extent_i;
       return result;
@@ -433,7 +433,7 @@ public:
   }
 
 private:
-  ::std::array<::std::pair<ssize_t, ssize_t>, dimensions> s;
+  ::std::array<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>, dimensions> s;
 };
 
 // Deduction guides

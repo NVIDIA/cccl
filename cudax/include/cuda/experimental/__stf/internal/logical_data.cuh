@@ -504,7 +504,7 @@ public:
   }
 
   void
-  allocate(const data_place& memory_node, instance_id_t instance_id, ssize_t& s, void** extra_args, event_list& prereqs)
+  allocate(const data_place& memory_node, instance_id_t instance_id, ::std::ptrdiff_t& s, void** extra_args, event_list& prereqs)
   {
     assert(memory_node != data_place::invalid);
     assert(has_interface());
@@ -1084,7 +1084,7 @@ public:
    * @param prereqs
    */
   void
-  allocate(const data_place& memory_node, instance_id_t instance_id, ssize_t& s, void** extra_args, event_list& prereqs)
+  allocate(const data_place& memory_node, instance_id_t instance_id, ::std::ptrdiff_t& s, void** extra_args, event_list& prereqs)
   {
     pimpl->allocate(memory_node, instance_id, s, extra_args, prereqs);
   }
