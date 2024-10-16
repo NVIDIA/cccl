@@ -34,9 +34,13 @@ namespace cuda::experimental::stf
 /**
  * @brief We define a hash trait class in our namespace
  */
+// Primary template for hash, falling back to std::hash<T>
 template <typename T>
-struct hash;
-
+struct hash {
+    ::std::size_t operator()(const T& obj) const {
+        return ::std::hash<T>{}(obj);  // Fallback to std::hash<T>
+    }
+};
 
 /**
  * @brief Update a hash value by combining it with another value to form a new
@@ -48,7 +52,7 @@ struct hash;
 template <typename T>
 void hash_combine(size_t& seed, const T& val)
 {
-  seed ^= ::std::hash<T>()(val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+  seed ^= ::cuda::experimental::stf::hash<T>()(val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
 }
 
 template <typename... Ts>
@@ -56,7 +60,7 @@ size_t hash_all(const Ts&... vals)
 {
   if constexpr (sizeof...(Ts) == 1)
   {
-    return ::std::hash<Ts...>()(vals...);
+    return ::cuda::experimental::stf::hash<Ts...>()(vals...);
   }
   else
   {

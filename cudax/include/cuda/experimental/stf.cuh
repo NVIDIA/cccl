@@ -1414,7 +1414,7 @@ public:
   void run_in_graph(Fun fun, parent_ctx_t& parent_ctx, cudaGraph_t graph, Args... args)
   {
     auto argsTuple = ::std::make_tuple(args...);
-    ::std::hash<decltype(argsTuple)> hasher;
+    ::cuda::experimental::stf::hash<decltype(argsTuple)> hasher;
     size_t hashValue = hasher(argsTuple);
 
     ::std::shared_ptr<cudaGraph_t> inner_graph;
