@@ -1994,16 +1994,16 @@ inline void enforce_stf_deps_after(logical_data_untyped& handle, const task_type
   }
 
   // Get the context in which we store previous writer, readers, ...
-  auto& ctx = handle.get_state();
+  auto& ctx_ = handle.get_state();
 
   if (mode == access_mode::rw || mode == access_mode::write)
   {
-    ctx.current_writer = task;
+    ctx_.current_writer = task;
   }
   else
   {
     // Add to the list of readers
-    ctx.current_readers.add(task);
+    ctx_.current_readers.add(task);
   }
 }
 
