@@ -28,6 +28,7 @@
 #include <cuda/experimental/__stf/allocators/pooled_allocator.cuh>
 #include <cuda/experimental/__stf/internal/acquire_release.cuh>
 #include <cuda/experimental/__stf/internal/backend_allocator_setup.cuh>
+#include <cuda/experimental/__stf/internal/backend_ctx.cuh>
 #include <cuda/experimental/__stf/internal/launch.cuh>
 #include <cuda/experimental/__stf/internal/parallel_for_scope.cuh>
 #include <cuda/experimental/__stf/internal/reorderer.cuh>
@@ -54,7 +55,8 @@ class uncached_stream_allocator : public block_allocator_interface
 public:
   uncached_stream_allocator() = default;
 
-  void* allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
+  void*
+  allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
   {
     void* result = nullptr;
 
@@ -646,6 +648,7 @@ private:
   class impl : public backend_ctx<stream_ctx>::impl
   {
     using base = backend_ctx<stream_ctx>::impl;
+
   public:
     impl(async_resources_handle _async_resources = async_resources_handle(nullptr))
         : base(mv(_async_resources))
