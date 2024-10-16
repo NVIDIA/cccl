@@ -374,7 +374,7 @@ public:
                                    parallel_for_scope<graph_ctx, S, null_partition, Deps...>>;
     return ::std::visit(
       [&](auto& self) {
-        return result_t(self.template parallel_for(mv(e_place), mv(shape), deps...));
+        return result_t(self.parallel_for(mv(e_place), mv(shape), deps...));
       },
       payload);
   }
@@ -393,7 +393,7 @@ public:
                                    parallel_for_scope<graph_ctx, S, partitioner_t, Deps...>>;
     return ::std::visit(
       [&](auto& self) {
-        return result_t(self.template parallel_for(mv(p), mv(e_place), mv(shape), deps...));
+        return result_t(self.parallel_for(mv(p), mv(e_place), mv(shape), deps...));
       },
       payload);
   }
