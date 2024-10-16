@@ -388,39 +388,48 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
     const std::string input_it_value_t = cccl_type_enum_to_string(input_it.value_type.type);
     const std::string offset_t         = cccl_type_enum_to_string(cccl_type_enum::UINT64);
 
-    const std::string input_iterator_src =
-      input_it.type == cccl_iterator_kind_t::pointer
-        ? std::string{}
-        : std::format(
-            "extern \"C\" __device__ {3} {4}(const void *self_ptr);\n"
-            "extern \"C\" __device__ void {5}(void *self_ptr, {0} offset);\n"
-            "struct __align__({2}) input_iterator_state_t {{\n"
-            "  using iterator_category = cuda::std::random_access_iterator_tag;\n"
-            "  using value_type = {3};\n"
-            "  using difference_type = {0};\n"
-            "  using pointer = {3}*;\n"
-            "  using reference = {3}&;\n"
-            "  __device__ value_type operator*() const {{ return {4}(this); }}\n"
-            "  __device__ input_iterator_state_t& operator+=(difference_type diff) {{\n"
-            "      {5}(this, diff);\n"
-            "      return *this;\n"
-            "  }}\n"
-            "  __device__ value_type operator[](difference_type diff) const {{\n"
-            "      return *(*this + diff);\n"
-            "  }}\n"
-            "  __device__ input_iterator_state_t operator+(difference_type diff) const {{\n"
-            "      input_iterator_state_t result = *this;\n"
-            "      result += diff;\n"
-            "      return result;\n"
-            "  }}\n"
-            "  char data[{1}];\n"
-            "}};\n",
-            offset_t, // 0
-            input_it.size, // 1
-            input_it.alignment, // 2
-            input_it_value_t, // 3
-            input_it.dereference.name, // 4
-            input_it.advance.name); // 5
+    std::string input_iterator_src;
+    if (input_it.type == cccl_iterator_kind_t::iterator && input_it.dereference.name != nullptr)
+    {
+      input_iterator_src = std::format(
+        "extern \"C\" __device__ {3} {4}(const void *self_ptr);\n"
+        "extern \"C\" __device__ void {5}(void *self_ptr, {0} offset);\n"
+        "struct __align__({2}) input_iterator_state_t {{\n"
+        "  using iterator_category = cuda::std::random_access_iterator_tag;\n"
+        "  using value_type = {3};\n"
+        "  using difference_type = {0};\n"
+        "  using pointer = {3}*;\n"
+        "  using reference = {3}&;\n"
+        "  __device__ value_type operator*() const {{ return {4}(this); }}\n"
+        "  __device__ input_iterator_state_t& operator+=(difference_type diff) {{\n"
+        "      {5}(this, diff);\n"
+        "      return *this;\n"
+        "  }}\n"
+        "  __device__ value_type operator[](difference_type diff) const {{\n"
+        "      return *(*this + diff);\n"
+        "  }}\n"
+        "  __device__ input_iterator_state_t operator+(difference_type diff) const {{\n"
+        "      input_iterator_state_t result = *this;\n"
+        "      result += diff;\n"
+        "      return result;\n"
+        "  }}\n"
+        "  char data[{1}];\n"
+        "}};\n",
+        offset_t, // 0
+        input_it.size, // 1
+        input_it.alignment, // 2
+        input_it_value_t, // 3
+        input_it.dereference.name, // 4
+        input_it.advance.name); // 5
+    }
+    if (input_it.type == cccl_iterator_kind_t::iterator && input_it.dereference.name == nullptr)
+    {
+      fflush(stderr);
+      printf("\nLOOOK WIP %s:%d\n", __FILE__, __LINE__);
+      fflush(stdout);
+      throw std::runtime_error("WIP");
+      // Use TransformRAIUnaryOp here
+    }
 
     const std::string output_iterator_src =
       output_it.type == cccl_iterator_kind_t::pointer
