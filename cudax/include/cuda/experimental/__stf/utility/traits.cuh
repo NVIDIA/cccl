@@ -29,6 +29,7 @@
 
 #include <cuda/experimental/__stf/utility/core.cuh>
 
+#include <array>
 #include <cassert>
 #include <string_view>
 #include <tuple>
