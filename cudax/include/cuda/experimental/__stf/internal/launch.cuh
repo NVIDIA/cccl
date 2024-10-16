@@ -58,8 +58,8 @@ void cuda_launcher(interpreted_spec interpreted_policy, Fun&& f, void** args, St
   attrs[0].val.cooperative = cooperative_kernel ? 1 : 0;
 
   cudaLaunchConfig_t lconfig;
-  lconfig.gridDim          = config[1];
-  lconfig.blockDim         = config[2];
+  lconfig.gridDim          = static_cast<int>(config[1]);
+  lconfig.blockDim         = static_cast<int>(config[2]);
   lconfig.attrs            = attrs;
   lconfig.numAttrs         = 1;
   lconfig.dynamicSmemBytes = mem_config[2];

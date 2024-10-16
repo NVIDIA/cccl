@@ -23,7 +23,7 @@ int main()
 {
   #if !defined(_CCCL_COMPILER_MSVC)
   // Generate a random dirname
-  srand(time(0));
+  srand(static_cast<unsigned>(time(nullptr)));
   int r = rand();
 
   std::string dirname = "dump_" + std::to_string(r);
