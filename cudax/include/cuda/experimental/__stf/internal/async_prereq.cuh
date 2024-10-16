@@ -423,12 +423,15 @@ private:
   bool optimized = true;
 };
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
 inline event_list event_impl::from_stream(backend_ctx_untyped&, cudaStream_t) const
 {
   fprintf(stderr, "Unsupported synchronization with stream.\n");
-  _CCCL_UNREACHABLE();
+  abort();
   return event_list();
 }
+_CCCL_DIAG_POP
 
 // For counters
 class join_tag

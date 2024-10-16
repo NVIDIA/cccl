@@ -508,6 +508,7 @@ public:
       // Launch the user provided function
       ::std::apply(f, tuple_prepend(mv(childGraph), typed_deps()));
     }
+    _CCCL_UNREACHABLE();
   }
 
 private:

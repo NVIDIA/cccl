@@ -961,6 +961,9 @@ void unpin(mdspan<T, P...>& s)
   }
 }
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
+
 template <typename E, typename X, typename L, typename A, size_t... i>
 size_t data_hash([[maybe_unused]] mdspan<E, X, L, A> s, ::std::index_sequence<i...> = ::std::index_sequence<>())
 {
@@ -968,7 +971,7 @@ size_t data_hash([[maybe_unused]] mdspan<E, X, L, A> s, ::std::index_sequence<i.
   if constexpr (!has_std_hash_v<E>)
   {
     fprintf(stderr, "Error: cannot compute data_hash on a mdspan<E, ...> if ::std::hash<E> is not defined.\n");
-    _CCCL_UNREACHABLE();
+    abort();
     return 0;
   }
   else
@@ -1020,6 +1023,7 @@ size_t data_hash([[maybe_unused]] mdspan<E, X, L, A> s, ::std::index_sequence<i.
     }
   }
 }
+_CCCL_DIAG_POP
 
 /**
  * Write the content of the mdspan into a file
