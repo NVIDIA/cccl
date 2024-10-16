@@ -10,6 +10,16 @@
 
 #pragma once
 
+#include <cuda/__cccl_config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 /*
  *   We here define the protocol to keep data copies up to date
  *   Task dependencies are supposed to be enforced by the STF model, so this is

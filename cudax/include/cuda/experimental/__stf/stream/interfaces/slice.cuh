@@ -18,6 +18,16 @@
 
 #pragma once
 
+#include <cuda/__cccl_config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <cuda/experimental/__stf/localization/composite_slice.cuh>
 #include <cuda/experimental/__stf/stream/stream_data_interface.cuh>
 

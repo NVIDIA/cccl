@@ -16,6 +16,16 @@
 
 #pragma once
 
+#include <cuda/__cccl_config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh> // logical_data_untyped_impl has a backend_ctx_untyped
 #include <cuda/experimental/__stf/internal/data_interface.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
