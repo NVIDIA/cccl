@@ -361,7 +361,7 @@ public:
 
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
-      reserved::loop<<<blocks, block_size, 0, t.get_stream()>>>(n, sub_shape, mv(f), deps.instance(t));
+      reserved::loop<<<static_cast<int>(blocks), static_cast<int>(block_size), 0, t.get_stream()>>>(static_cast<int>(n), sub_shape, mv(f), deps.instance(t));
     }
     else if constexpr (::std::is_same_v<context, graph_ctx>)
     {
@@ -370,8 +370,8 @@ public:
 
       kernel_params.func = (void*) reserved::loop<::std::remove_reference_t<Fun>, sub_shape_t, ::std::tuple<deps_t...>>;
 
-      kernel_params.gridDim  = dim3(blocks);
-      kernel_params.blockDim = dim3(block_size);
+      kernel_params.gridDim  = dim3(static_cast<int>(blocks));
+      kernel_params.blockDim = dim3(static_cast<int>(block_size));
 
       auto arg_instances = deps.instance(t);
       // It is ok to use reference to local variables because the arguments

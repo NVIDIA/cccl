@@ -38,12 +38,15 @@ namespace cuda::experimental::stf
 class pos4
 {
 public:
+  constexpr pos4() = default;
+
   /// Create a pos4 from its coordinates
-  CUDASTF_HOST_DEVICE constexpr explicit pos4(int x = 0, int y = 0, int z = 0, int t = 0)
-      : x(x)
-      , y(y)
-      , z(z)
-      , t(t)
+  template<typename Integral>
+  CUDASTF_HOST_DEVICE constexpr explicit pos4(Integral x, Integral y = 0, Integral z = 0, Integral t = 0)
+      : x(static_cast<int>(x))
+      , y(static_cast<int>(y))
+      , z(static_cast<int>(z))
+      , t(static_cast<int>(t))
   {}
 
   /// Get the position along a specific axis
@@ -100,7 +103,10 @@ public:
                          + ::std::to_string(t) + ")");
   }
 
-  int x, y, z, t;
+  int x = 0;
+  int y = 0;
+  int z = 0;
+  int t = 0;
 };
 
 /**

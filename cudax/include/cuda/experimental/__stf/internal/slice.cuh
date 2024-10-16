@@ -571,20 +571,19 @@ public:
     dim4 dims(0);
     if constexpr (rank() >= 1)
     {
-      dims.x = extents.extent(0);
+      dims.x = static_cast<int>(extents.extent(0));
     }
     if constexpr (rank() >= 2)
     {
-      dims.y = extents.extent(1);
+      dims.y = static_cast<int>(extents.extent(1));
     }
     if constexpr (rank() >= 3)
     {
-      dims.z = extents.extent(2);
+      dims.z = static_cast<int>(extents.extent(2));
     }
-
     if constexpr (rank() >= 4)
     {
-      dims.t = extents.extent(3);
+      dims.t = static_cast<int>(extents.extent(3));
     }
     return dims;
   }
