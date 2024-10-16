@@ -1,3 +1,5 @@
+.. _stf:
+
 CUDASTF is an implementation of the Sequential Task Flow model for CUDA.
 
 (`Click here <XXX_CUDASTF_DOXYGEN>`__ for the doxygen-generated
