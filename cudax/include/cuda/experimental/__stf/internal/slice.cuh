@@ -969,7 +969,7 @@ size_t data_hash([[maybe_unused]] mdspan<E, X, L, A> s, ::std::index_sequence<i.
   if constexpr (!has_std_hash_v<E>)
   {
     fprintf(stderr, "Error: cannot compute data_hash on a mdspan<E, ...> if ::std::hash<E> is not defined.\n");
-    abort();
+    _CCCL_UNREACHABLE();
     return 0;
   }
   else
