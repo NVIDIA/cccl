@@ -43,7 +43,7 @@ inline ::std::string pretty_print_bytes(size_t bytes)
   size_t size         = sizeof(units) / sizeof(char*);
   int i               = 0;
 
-  double pretty_size = bytes;
+  double pretty_size = static_cast<double>(bytes);
   while (pretty_size >= 1024.0 && static_cast<size_t>(i) < size - 1)
   {
     pretty_size /= 1024.0;
