@@ -79,14 +79,14 @@ public:
 
     if (level > max_level_)
     {
-      fprintf(stderr, "Level %ld > max level %ld\n", level, max_level_);
+      fprintf(stderr, "Level %zu > max level %zu\n", level, max_level_);
       return -1;
     }
 
     ::std::ptrdiff_t alloc_index = find_free_block(level, prereqs);
     if (alloc_index == -1)
     {
-      fprintf(stderr, "No free block available for size %ld\n", size);
+      fprintf(stderr, "No free block available for size %zu\n", size);
       return -1;
     }
 
@@ -145,10 +145,10 @@ public:
     {
       if (!free_lists_[i].empty())
       {
-        fprintf(stderr, "Level %ld : %s bytes : ", i, pretty_print_bytes(power).c_str());
+        fprintf(stderr, "Level %zu : %s bytes : ", i, pretty_print_bytes(power).c_str());
         for (const auto& b : free_lists_[i])
         {
-          fprintf(stderr, "[%ld, %ld[ ", b.index, b.index + power);
+          fprintf(stderr, "[%zu, %zu[ ", b.index, b.index + power);
         }
         fprintf(stderr, "\n");
       }
@@ -202,7 +202,7 @@ private:
       while (current_level > level)
       {
         current_level--;
-        size_t buddy_index = block_index + (1 << current_level);
+        size_t buddy_index = block_index + (1ull << current_level);
         // split blocks depend on the previous dependencies of the whole unsplit block
         free_lists_[current_level].emplace_back(buddy_index, b_prereqs);
       }
@@ -215,7 +215,7 @@ private:
   size_t get_buddy_index(size_t index, size_t level)
   {
     assert(level <= 63);
-    return index ^ (1 << level); // XOR to find the buddy block
+    return index ^ (1ull << level); // XOR to find the buddy block
   }
 
   ::std::vector<::std::vector<avail_block>> free_lists_;
