@@ -25,14 +25,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__stf/places/exec/host/callback_queues.cuh>
 #include <cuda/experimental/__stf/utility/traits.cuh>
 
 #include <cstdio>
 #include <stack>
 
-// XXX Disabled until they stop using pthreads
-// #define STATEFUL_CALLBACKS
+#if !defined(_CCCL_COMPILER_MSVC)
+#define STATEFUL_CALLBACKS
 
 namespace cuda::experimental::stf
 {
@@ -600,3 +599,5 @@ inline bool cudaCallbackQueueProgress(callback_queue* q, bool flag)
 }
 
 } // end namespace cuda::experimental::stf
+
+#endif // !_CCCL_COMPILER_MSVC
