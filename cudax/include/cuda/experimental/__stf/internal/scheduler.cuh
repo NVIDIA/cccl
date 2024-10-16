@@ -258,8 +258,7 @@ private:
       ::std::pair<msi_state, double>& device_info = info[device_id];
 
       // Update local state first
-      msi_state state = device_info.first;
-      switch (state)
+      switch (device_info.first)
       {
         case msi_state::modified:
           device_info.second = task_end;
