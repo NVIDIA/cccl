@@ -179,8 +179,8 @@ int main(int argc, char** argv)
     size_t beg = b * BLOCK_SIZE;
     size_t end = (b + 1) * BLOCK_SIZE;
 
-    Un.emplace_back(ctx, beg, end, 1);
-    Un1.emplace_back(ctx, beg, end, 1);
+    Un.emplace_back(ctx, beg, end, 1ull);
+    Un1.emplace_back(ctx, beg, end, 1ull);
   }
 
   for (size_t b = 0; b < NBLOCKS; b++)
