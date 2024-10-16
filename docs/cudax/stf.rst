@@ -383,7 +383,7 @@ data formats which are not regular multidimensional arrays, or to
 provide a direct access to a domain-specific or an application-specific
 data format.
 
-A complete example is given `here <docs/custom-data-interface.md>`__ to
+A complete example is given :ref:`here <stf_custom_data_interface>` to
 illustrate how to implement a custom data interface.
 
 Write-back policy
