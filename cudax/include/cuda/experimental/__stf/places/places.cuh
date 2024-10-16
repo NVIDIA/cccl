@@ -1501,7 +1501,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
   if constexpr (pdepth == 1)
   {
     size_t l0_size = p.get_width(0);
-    bool l0_sync   = p.template is_synchronizable<0>;
+    bool l0_sync   = decltype(p)::template is_synchronizable<0>;
 
     int max_block_size = 0, min_grid_size = 0;
     size_t shared_mem_bytes = 0;
@@ -1553,8 +1553,8 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
   {
     size_t l0_size = p.get_width(0);
     size_t l1_size = p.get_width(1);
-    bool l0_sync   = p.template is_synchronizable<0>;
-    bool l1_sync   = p.template is_synchronizable<1>;
+    bool l0_sync   = decltype(p)::template is_synchronizable<0>;
+    bool l1_sync   = decltype(p)::template is_synchronizable<1>;
 
     int max_block_size = 0, min_grid_size = 0;
     int block_size_limit = 0;
@@ -1604,9 +1604,9 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     size_t l0_size = p.get_width(0);
     size_t l1_size = p.get_width(1);
     size_t l2_size = p.get_width(1);
-    bool l0_sync   = p.template is_synchronizable<0>;
-    bool l1_sync   = p.template is_synchronizable<1>;
-    bool l2_sync   = p.template is_synchronizable<2>;
+    bool l0_sync   = decltype(p)::template is_synchronizable<0>;
+    bool l1_sync   = decltype(p)::template is_synchronizable<1>;
+    bool l2_sync   = decltype(p)::template is_synchronizable<2>;
 
     int max_block_size = 0, min_grid_size = 0;
     int block_size_limit = 0;

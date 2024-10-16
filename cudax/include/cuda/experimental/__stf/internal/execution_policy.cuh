@@ -477,7 +477,7 @@ UNITTEST("par") {
         auto x = par();
         static_assert(::std::is_same_v<decltype(x), thread_hierarchy_spec<false, size_t(0)>>);
         static_assert(x.depth() == 1);
-        static_assert(!x.is_synchronizable<0>);
+        static_assert(!decltype(x)::template is_synchronizable<0>);
         static_assert(x.static_width(0) == 0);
         ::std::ignore = x;
     }
@@ -501,8 +501,8 @@ UNITTEST("par") {
         auto x = par(par());
         static_assert(::std::is_same_v<decltype(x), thread_hierarchy_spec<false, size_t(0), false, size_t(0)>>);
         static_assert(x.depth() == 2);
-        static_assert(!x.is_synchronizable<0>);
-        static_assert(!x.is_synchronizable<1>);
+        static_assert(!decltype(x)::template is_synchronizable<0>);
+        static_assert(!decltype(x)::template is_synchronizable<1>);
         ::std::ignore = x;
     }
 
@@ -552,7 +552,7 @@ UNITTEST("con") {
         auto x = con();
         static_assert(::std::is_same_v<decltype(x), thread_hierarchy_spec<true, size_t(0)>>);
         static_assert(x.depth() == 1);
-        static_assert(x.is_synchronizable<0>);
+        static_assert(decltype(x)::template is_synchronizable<0>);
         ::std::ignore = x;
     }
 
