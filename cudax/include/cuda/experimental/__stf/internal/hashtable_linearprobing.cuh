@@ -28,6 +28,7 @@
 
 #include <cuda/experimental/__stf/utility/cuda_attributes.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
+#include <cuda/experimental/__stf/utility/hash.cuh>
 
 namespace cuda::experimental::stf
 {
@@ -250,13 +251,13 @@ private:
   mutable uint32_t capacity;
 };
 
-} // end namespace cuda::experimental::stf
-
 template <>
-struct std::hash<cuda::experimental::stf::hashtable>
+struct hash<cuda::experimental::stf::hashtable>
 {
   ::std::size_t operator()(cuda::experimental::stf::hashtable const& s) const noexcept
   {
     return ::std::hash<cuda::experimental::stf::KeyValue*>{}(s.addr);
   }
 };
+
+} // end namespace cuda::experimental::stf

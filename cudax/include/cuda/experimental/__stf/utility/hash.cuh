@@ -34,13 +34,15 @@ namespace cuda::experimental::stf
 /**
  * @brief We define a hash trait class in our namespace
  */
-// Primary template for hash, falling back to std::hash<T>
 template <typename T>
-struct hash {
-    ::std::size_t operator()(const T& obj) const {
-        return ::std::hash<T>{}(obj);  // Fallback to std::hash<T>
-    }
-};
+struct hash;
+
+// Helper trait to check if std::hash<T> is specialized for T
+template <typename T, typename = void>
+struct is_std_hash_specialized : ::std::false_type {};
+
+template <typename T>
+struct is_std_hash_specialized<T, ::std::void_t<decltype(::std::hash<T>{}(std::declval<const T&>()))>> : ::std::true_type {};
 
 /**
  * @brief Update a hash value by combining it with another value to form a new
@@ -52,7 +54,13 @@ struct hash {
 template <typename T>
 void hash_combine(size_t& seed, const T& val)
 {
-  seed ^= ::cuda::experimental::stf::hash<T>()(val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    if constexpr (is_std_hash_specialized<T>::value) {
+        // Use std::hash if it is specialized for T
+        seed ^= ::std::hash<T>()(val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    } else {
+        // Otherwise, use cuda::experimental::stf::hash
+        seed ^= ::cuda::experimental::stf::hash<T>()(val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    }
 }
 
 template <typename... Ts>
@@ -60,7 +68,12 @@ size_t hash_all(const Ts&... vals)
 {
   if constexpr (sizeof...(Ts) == 1)
   {
-    return ::cuda::experimental::stf::hash<Ts...>()(vals...);
+        // Special case: single value, use std::hash if possible
+        if constexpr (is_std_hash_specialized<Ts...>::value) {
+            return ::std::hash<Ts...>()(vals...);
+        } else {
+            return ::cuda::experimental::stf::hash<Ts...>()(vals...);
+        }
   }
   else
   {

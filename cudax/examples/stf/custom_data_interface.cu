@@ -255,7 +255,7 @@ struct cuda::experimental::stf::streamed_interface_of<matrix<T>>
  * @brief A hash of the matrix
  */
 template <typename T>
-struct std::hash<matrix<T>>
+struct cuda::experimental::stf::hash<matrix<T>>
 {
   std::size_t operator()(matrix<T> const& m) const noexcept
   {
