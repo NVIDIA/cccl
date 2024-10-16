@@ -37,12 +37,40 @@ namespace cuda::experimental::stf
 template <typename T>
 struct hash;
 
-// Helper trait to check if std::hash<T> is specialized for T
-template <typename T, typename = void>
-struct is_std_hash_specialized : ::std::false_type {};
+/**
+ * @brief Trait to check if std::hash<E> is defined.
+ *
+ * Primary template assumes std::hash<E> is not defined.
+ *
+ * @tparam E The type to check for std::hash definition.
+ */
+template <typename E, typename = void>
+struct has_std_hash : ::std::false_type
+{};
 
-template <typename T>
-struct is_std_hash_specialized<T, ::std::void_t<decltype(::std::hash<T>{}(std::declval<const T&>()))>> : ::std::true_type {};
+/**
+ * @brief Specialization of has_std_hash for types where std::hash<E> is defined.
+ *
+ * Uses SFINAE to detect if std::hash<E> can be instantiated.
+ *
+ * @tparam E The type to check for std::hash definition.
+ */
+template <typename E>
+struct has_std_hash<E, ::std::void_t<decltype(::std::declval<::std::hash<E>>()(::std::declval<E>()))>>
+    : ::std::true_type
+{};
+
+/**
+ * @brief Helper variable template to simplify usage of has_std_hash.
+ *
+ * Provides a convenient way to check if std::hash<E> is defined.
+ *
+ * @tparam E The type to check for std::hash definition.
+ */
+template <typename E>
+inline constexpr bool has_std_hash_v = has_std_hash<E>::value;
+
+
 
 /**
  * @brief Update a hash value by combining it with another value to form a new
@@ -54,7 +82,7 @@ struct is_std_hash_specialized<T, ::std::void_t<decltype(::std::hash<T>{}(std::d
 template <typename T>
 void hash_combine(size_t& seed, const T& val)
 {
-    if constexpr (is_std_hash_specialized<T>::value) {
+    if constexpr (has_std_hash_v<T>) {
         // Use std::hash if it is specialized for T
         seed ^= ::std::hash<T>()(val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     } else {
@@ -69,7 +97,7 @@ size_t hash_all(const Ts&... vals)
   if constexpr (sizeof...(Ts) == 1)
   {
         // Special case: single value, use std::hash if possible
-        if constexpr (is_std_hash_specialized<Ts...>::value) {
+        if constexpr (has_std_hash_v<Ts...>) {
             return ::std::hash<Ts...>()(vals...);
         } else {
             return ::cuda::experimental::stf::hash<Ts...>()(vals...);
@@ -149,7 +177,7 @@ struct hash<::std::tuple<Ts...>>
  * @tparam E The type to check for std::hash definition.
  */
 template <typename E, typename = void>
-struct has_std_hash : ::std::false_type
+struct has_cudastf_hash : ::std::false_type
 {};
 
 /**
@@ -160,7 +188,7 @@ struct has_std_hash : ::std::false_type
  * @tparam E The type to check for std::hash definition.
  */
 template <typename E>
-struct has_std_hash<E, ::std::void_t<decltype(::std::declval<hash<E>>()(::std::declval<E>()))>>
+struct has_cudastf_hash<E, ::std::void_t<decltype(::std::declval<::cuda::experimental::stf::hash<E>>()(::std::declval<E>()))>>
     : ::std::true_type
 {};
 
@@ -172,7 +200,7 @@ struct has_std_hash<E, ::std::void_t<decltype(::std::declval<hash<E>>()(::std::d
  * @tparam E The type to check for std::hash definition.
  */
 template <typename E>
-inline constexpr bool has_std_hash_v = has_std_hash<E>::value;
+inline constexpr bool has_cudastf_hash_v = has_cudastf_hash<E>::value;
 
 UNITTEST("hash for tuples")
 {
