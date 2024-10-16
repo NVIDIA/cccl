@@ -113,7 +113,7 @@ def _host_array_to_value(array):
     return _CCCLValue(info, array.ctypes.data_as(ctypes.c_void_p))
 
 
-class _Op:
+class _ReductionOp:
     def __init__(self, dtype, op):
         value_type = numba.from_dtype(dtype)
         self.ltoir, _ = cuda.compile(op, sig=value_type(
@@ -217,7 +217,7 @@ class _Reduce:
         cub_path, thrust_path, libcudacxx_path, cuda_include_path = _get_paths()
         bindings = _get_bindings()
         accum_t = init.dtype
-        self.op_wrapper = _Op(accum_t, op)
+        self.op_wrapper = _ReductionOp(accum_t, op)
         d_out_ptr = _device_array_to_pointer(d_out)
         self.build_result = _CCCLDeviceReduceBuildResult()
 
