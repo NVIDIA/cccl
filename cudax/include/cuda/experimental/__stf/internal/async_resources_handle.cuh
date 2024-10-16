@@ -86,7 +86,7 @@ struct stream_pool
    *
    * Streams are initialized lazily when calling next().
    */
-  stream_pool(size_t n, ::std::ptrdiff_t dev_id, CUcontext cuctx = nullptr)
+  stream_pool(size_t n, int dev_id, CUcontext cuctx = nullptr)
       : payload(n, decorated_stream(nullptr, -1, dev_id))
       , dev_id(dev_id)
       , primary_ctx(cuctx)
