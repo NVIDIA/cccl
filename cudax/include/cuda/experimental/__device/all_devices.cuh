@@ -194,7 +194,7 @@ inline const arch_traits_t& device_ref::arch_traits() const
   return devices[get()].arch_traits();
 }
 
-inline ::std::vector<device_ref> device_ref::get_peers() const
+_CCCL_NODISCARD inline ::std::vector<device_ref> device_ref::get_peers() const
 {
   ::std::vector<device_ref> __result;
   for (const device& __other_dev : devices)

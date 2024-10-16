@@ -287,7 +287,7 @@ public:
   //! @brief Query if memory allocated through this memory resource is accessible by the supplied device
   //!
   //! @param __device device for which the peer access is queried
-  bool is_accessible_from(device_ref __device)
+  _CCCL_NODISCARD bool is_accessible_from(device_ref __device)
   {
     return __mempool_get_access(__pool_, __device);
   }
