@@ -74,7 +74,6 @@ __mempool_switch_peer_access(cudaMemPool_t __pool, const device_ref* __devices, 
   __desc.location.type = cudaMemLocationTypeDevice;
   for (size_t __i = 0; __i < __count; ++__i)
   {
-    printf("setting %d for %d\n", __desc.flags, __devices[__i].get());
     __desc.location.id = __devices[__i].get();
     __descs.push_back(__desc);
   }
@@ -89,7 +88,6 @@ inline bool __mempool_get_access(cudaMemPool_t __pool, device_ref __dev)
   __loc.type = cudaMemLocationTypeDevice;
   __loc.id   = __dev.get();
   _CCCL_TRY_CUDA_API(::cudaMemPoolGetAccess, "failed to get access of a memory pool", &__result, __pool, &__loc);
-  printf("query returned %d for %d\n", __result, __dev.get());
   return __result == cudaMemAccessFlagsProtReadWrite;
 }
 
