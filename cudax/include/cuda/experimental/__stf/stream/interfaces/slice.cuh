@@ -72,7 +72,7 @@ public:
     block_allocator_untyped& custom_allocator,
     const data_place& memory_node,
     instance_id_t instance_id,
-    ssize_t& s,
+    ::std::ptrdiff_t& s,
     void** extra_args,
     event_list& prereqs) override
   {

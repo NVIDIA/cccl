@@ -46,7 +46,7 @@ CUDASTF_HOST_DEVICE box<mdspan<T, P...>::rank()> inner(const shape_of<mdspan<T, 
 
   const ::std::array<size_t, rank> sizes = s.get_sizes();
 
-  ::std::array<::std::pair<ssize_t, ssize_t>, rank> inner_extents;
+  ::std::array<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>, rank> inner_extents;
   for (size_t i = 0; i < rank; i++)
   {
     inner_extents[i].first  = thickness;
@@ -66,7 +66,7 @@ CUDASTF_HOST_DEVICE box<mdspan<T, P...>::rank()> inner(const shape_of<mdspan<T, 
 template <size_t thickness, size_t rank>
 CUDASTF_HOST_DEVICE box<rank> inner(const box<rank>& s)
 {
-  ::std::array<::std::pair<ssize_t, ssize_t>, rank> inner_extents;
+  ::std::array<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>, rank> inner_extents;
   for (size_t i = 0; i < rank; i++)
   {
     inner_extents[i].first  = s.get_begin(i) + thickness;

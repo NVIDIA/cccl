@@ -32,7 +32,7 @@
 namespace cuda::experimental::stf
 {
 
-template <ssize_t which_dim = -1>
+template <::std::ptrdiff_t which_dim = -1>
 class blocked_partition_custom
 {
 public:
@@ -41,7 +41,7 @@ public:
   template <size_t dimensions>
   CUDASTF_HOST_DEVICE static auto apply(const box<dimensions>& in, pos4 place_position, dim4 grid_dims)
   {
-    ::std::array<::std::pair<ssize_t, ssize_t>, dimensions> bounds;
+    ::std::array<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>, dimensions> bounds;
     size_t target_dim = (which_dim == -1) ? dimensions - 1 : size_t(which_dim);
     if (target_dim > dimensions - 1)
     {
@@ -59,10 +59,10 @@ public:
     //        }
 
     size_t nplaces    = grid_dims.x;
-    ssize_t dim_beg   = bounds[target_dim].first;
-    ssize_t dim_end   = bounds[target_dim].second;
+    ::std::ptrdiff_t dim_beg   = bounds[target_dim].first;
+    ::std::ptrdiff_t dim_end   = bounds[target_dim].second;
     size_t cnt        = dim_end - dim_beg;
-    ssize_t part_size = (cnt + nplaces - 1) / nplaces;
+    ::std::ptrdiff_t part_size = (cnt + nplaces - 1) / nplaces;
 
     // If first = second, this means it's an empty shape. This may happen
     // when there are more entries in grid_dims than in the shape for
@@ -78,7 +78,7 @@ public:
   {
     constexpr size_t dimensions = mdspan_shape_t::rank();
 
-    ::std::array<::std::pair<ssize_t, ssize_t>, dimensions> bounds;
+    ::std::array<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>, dimensions> bounds;
     for (size_t d = 0; d < dimensions; d++)
     {
       bounds[d].first  = 0;
@@ -92,13 +92,13 @@ public:
       target_dim = dimensions - 1;
     }
 
-    ssize_t dim_end = in.extent(target_dim);
+    ::std::ptrdiff_t dim_end = in.extent(target_dim);
 
     // The last dimension is split accross the different places
     size_t nplaces            = grid_dims.x;
     size_t part_size          = (in.extent(target_dim) + nplaces - 1) / nplaces;
-    bounds[target_dim].first  = ::std::min((ssize_t) part_size * place_position.x, dim_end);
-    bounds[target_dim].second = ::std::min((ssize_t) part_size * (place_position.x + 1), dim_end);
+    bounds[target_dim].first  = ::std::min((::std::ptrdiff_t) part_size * place_position.x, dim_end);
+    bounds[target_dim].second = ::std::min((::std::ptrdiff_t) part_size * (place_position.x + 1), dim_end);
 
     return box<dimensions>(bounds);
   }

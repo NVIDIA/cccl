@@ -28,7 +28,7 @@
 #include <cuda/experimental/__stf/internal/exec_affinity.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
-#include <cuda/experimental/__stf/utility/hash.cuh> // for ::std::hash<::std::pair<ssize_t, ssize_t>>
+#include <cuda/experimental/__stf/utility/hash.cuh> // for ::std::hash<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>>
 #include <cuda/experimental/__stf/utility/stream_to_dev.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
@@ -55,7 +55,7 @@ class exec_place;
  */
 struct decorated_stream
 {
-  decorated_stream(cudaStream_t stream = nullptr, ssize_t id = -1, int dev_id = -1)
+  decorated_stream(cudaStream_t stream = nullptr, ::std::ptrdiff_t id = -1, int dev_id = -1)
       : stream(stream)
       , id(id)
       , dev_id(dev_id)
@@ -63,7 +63,7 @@ struct decorated_stream
 
   cudaStream_t stream = nullptr;
   // Unique ID (-1 if this is not part of our pool)
-  ssize_t id = -1;
+  ::std::ptrdiff_t id = -1;
   // Device in which this stream resides
   int dev_id = -1;
 };
@@ -86,7 +86,7 @@ struct stream_pool
    *
    * Streams are initialized lazily when calling next().
    */
-  stream_pool(size_t n, ssize_t dev_id, CUcontext cuctx = nullptr)
+  stream_pool(size_t n, ::std::ptrdiff_t dev_id, CUcontext cuctx = nullptr)
       : payload(n, decorated_stream(nullptr, -1, dev_id))
       , dev_id(dev_id)
       , primary_ctx(cuctx)
@@ -220,13 +220,13 @@ private:
       assert(released.load() == current.load());
     }
 
-    ssize_t get_unique_id(size_t cnt = 1)
+    ::std::ptrdiff_t get_unique_id(size_t cnt = 1)
     {
       // Use fetch_add to atomically increment current and return the previous value
       return current.fetch_add(cnt);
     }
 
-    void release_unique_id(ssize_t /* id */, size_t cnt = 1)
+    void release_unique_id(::std::ptrdiff_t /* id */, size_t cnt = 1)
     {
       // Use fetch_add to atomically increment released
       released.fetch_add(cnt);
@@ -234,9 +234,9 @@ private:
 
   private:
     // next available ID
-    ::std::atomic<ssize_t> current{0};
+    ::std::atomic<::std::ptrdiff_t> current{0};
     // Number of IDs released, for bookkeeping
-    ::std::atomic<ssize_t> released{0};
+    ::std::atomic<::std::ptrdiff_t> released{0};
   };
 
   /**
@@ -257,7 +257,7 @@ private:
     // located on stream "from" to stream "dst" (stream dst waits for the
     // event)
     // Returned value : boolean indicating if we can skip the synchronization
-    bool validate_sync_and_update(ssize_t dst, ssize_t src, int event_id)
+    bool validate_sync_and_update(::std::ptrdiff_t dst, ::std::ptrdiff_t src, int event_id)
     {
       // If either of the streams is not from the pool, do not skip
       if (dst == -1 || src == -1)
@@ -286,7 +286,7 @@ private:
 
   private:
     // For each pair of unique IDs, we keep the last event id
-    ::std::unordered_map<::std::pair<ssize_t, ssize_t>, int> interactions;
+    ::std::unordered_map<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>, int> interactions;
 
     ::std::mutex mtx;
   };
@@ -411,19 +411,19 @@ public:
     return pimpl->get_device_stream_pool(dev_id, for_computation);
   }
 
-  ssize_t get_unique_id(size_t cnt = 1)
+  ::std::ptrdiff_t get_unique_id(size_t cnt = 1)
   {
     assert(pimpl);
     return pimpl->ids.get_unique_id(cnt);
   }
 
-  void release_unique_id(ssize_t id, size_t cnt = 1)
+  void release_unique_id(::std::ptrdiff_t id, size_t cnt = 1)
   {
     assert(pimpl);
     return pimpl->ids.release_unique_id(id, cnt);
   }
 
-  bool validate_sync_and_update(ssize_t dst, ssize_t src, int event_id)
+  bool validate_sync_and_update(::std::ptrdiff_t dst, ::std::ptrdiff_t src, int event_id)
   {
     assert(pimpl);
     return pimpl->cached_syncs.validate_sync_and_update(dst, src, event_id);

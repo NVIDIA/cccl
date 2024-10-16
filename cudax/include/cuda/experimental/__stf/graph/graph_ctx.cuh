@@ -67,7 +67,7 @@ class uncached_graph_allocator : public block_allocator_interface
 public:
   uncached_graph_allocator() = default;
 
-  void* allocate(backend_ctx_untyped& bctx, const data_place& memory_node, ssize_t& s, event_list& prereqs) override
+  void* allocate(backend_ctx_untyped& bctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
   {
     // This is not implemented yet
     EXPECT(!memory_node.is_composite(), "Composite data places are not implemented yet.");

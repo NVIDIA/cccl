@@ -72,7 +72,7 @@ public:
     free_lists_[max_level_].emplace_back(0, init_prereqs);
   }
 
-  ssize_t allocate(size_t size, event_list& prereqs)
+  ::std::ptrdiff_t allocate(size_t size, event_list& prereqs)
   {
     size         = next_power_of_two(size);
     size_t level = int_log2(size);
@@ -83,7 +83,7 @@ public:
       return -1;
     }
 
-    ssize_t alloc_index = find_free_block(level, prereqs);
+    ::std::ptrdiff_t alloc_index = find_free_block(level, prereqs);
     if (alloc_index == -1)
     {
       fprintf(stderr, "No free block available for size %ld\n", size);
@@ -93,7 +93,7 @@ public:
     return alloc_index;
   }
 
-  void deallocate(ssize_t index, size_t size, event_list& prereqs)
+  void deallocate(::std::ptrdiff_t index, size_t size, event_list& prereqs)
   {
     size         = next_power_of_two(size);
     size_t level = int_log2(size);
@@ -119,7 +119,7 @@ public:
       block_prereqs.merge(it->prereqs);
 
       buddy_list.erase(it);
-      index = ::std::min(index, ssize_t(buddy_index));
+      index = ::std::min(index, ::std::ptrdiff_t(buddy_index));
       level++;
     }
 
@@ -182,7 +182,7 @@ private:
     return log;
   }
 
-  ssize_t find_free_block(size_t level, event_list& prereqs)
+  ::std::ptrdiff_t find_free_block(size_t level, event_list& prereqs)
   {
     for (size_t current_level : each(level, max_level_ + 1))
     {
@@ -252,14 +252,14 @@ private:
   };
 
 public:
-  void* allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ssize_t& s, event_list& prereqs) override
+  void* allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
   {
     auto it = map.find(memory_node);
     if (it == map.end())
     {
       // There is currently no buffer associated to this place, create one lazily
       // 1. create memory on that place
-      ssize_t sz = 128 * 1024 * 1024; // TODO
+      ::std::ptrdiff_t sz = 128 * 1024 * 1024; // TODO
       auto& a    = root_allocator ? root_allocator : ctx.get_uncached_allocator();
       void* base = a.allocate(ctx, memory_node, sz, prereqs);
 
@@ -271,7 +271,7 @@ public:
     assert(map.count(memory_node) == 1);
     auto& m = it->second;
 
-    ssize_t offset = m->metadata->allocate(s, prereqs);
+    ::std::ptrdiff_t offset = m->metadata->allocate(s, prereqs);
     assert(offset != -1);
     return static_cast<char*>(m->base) + offset;
   }
@@ -338,11 +338,11 @@ UNITTEST("buddy allocator meta data")
 
   event_list dummy;
 
-  ssize_t ptr1 = allocator.allocate(200, dummy); // Allocate 200 bytes
+  ::std::ptrdiff_t ptr1 = allocator.allocate(200, dummy); // Allocate 200 bytes
   // ::std::cout << "\nAfter allocating 200 bytes:" << ::std::endl;
   // allocator.debug_print();
 
-  ssize_t ptr2 = allocator.allocate(300, dummy); // Allocate 300 bytes
+  ::std::ptrdiff_t ptr2 = allocator.allocate(300, dummy); // Allocate 300 bytes
   // ::std::cout << "\nAfter allocating 300 bytes:" << ::std::endl;
   // allocator.debug_print();
 

@@ -91,7 +91,7 @@ public:
 
   /// Pretend we allocate an instance on a specific data place : we do not do any allocation here
   void stream_data_allocate(
-    backend_ctx_untyped&, const data_place&, instance_id_t, ssize_t& s, void**, cudaStream_t) override
+    backend_ctx_untyped&, const data_place&, instance_id_t, ::std::ptrdiff_t& s, void**, cudaStream_t) override
   {
     // By filling a non negative number, we notify that the allocation was succesful
     s = 0;
@@ -141,7 +141,7 @@ public:
   {}
 
   void data_allocate(
-    backend_ctx_untyped&, block_allocator_untyped&, const data_place&, instance_id_t, ssize_t& s, void**, event_list&)
+    backend_ctx_untyped&, block_allocator_untyped&, const data_place&, instance_id_t, ::std::ptrdiff_t& s, void**, event_list&)
     override
   {
     s = 0;

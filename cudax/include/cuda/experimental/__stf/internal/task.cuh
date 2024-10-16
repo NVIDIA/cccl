@@ -408,7 +408,7 @@ void dep_allocate(
     int alloc_attempts = 0;
     while (true)
     {
-      ssize_t s = 0;
+      ::std::ptrdiff_t s = 0;
 
       prereqs.merge(inst.get_read_prereq(), inst.get_write_prereq());
 

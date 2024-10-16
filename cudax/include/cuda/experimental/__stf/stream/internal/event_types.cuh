@@ -292,7 +292,7 @@ public:
     return dstream;
   }
 
-  ssize_t get_stream_id() const
+  ::std::ptrdiff_t get_stream_id() const
   {
     return dstream.id;
   }
@@ -437,7 +437,7 @@ private:
     for (const auto& e : prereq_in)
     {
       cudaStream_t stream;
-      ssize_t stream_id = -1;
+      ::std::ptrdiff_t stream_id = -1;
       auto se           = handle<stream_and_event, handle_flags::non_null>(e, use_static_cast);
       stream            = se->get_stream();
       stream_id         = se->get_stream_id();

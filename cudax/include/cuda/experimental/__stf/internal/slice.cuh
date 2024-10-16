@@ -613,7 +613,7 @@ public:
   CUDASTF_HOST_DEVICE coords_t index_to_coords(size_t index) const
   {
     ::std::array<size_t, shape_of::rank()> coordinates{};
-    // for (ssize_t i = _dimensions - 1; i >= 0; i--)
+    // for (::std::ptrdiff_t i = _dimensions - 1; i >= 0; i--)
     for (auto i : each(0, shape_of::rank()))
     {
       coordinates[i] = index % extent(i);

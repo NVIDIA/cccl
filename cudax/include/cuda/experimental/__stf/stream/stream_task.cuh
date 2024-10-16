@@ -80,7 +80,7 @@ public:
       // Even with a grid, when we have a ctx.task construct we have not
       // yet selected/activated a specific place. So we take the main
       // stream associated to the whole task in that case.
-      ssize_t current_place_id = e_place.as_grid().current_place_id();
+      ::std::ptrdiff_t current_place_id = e_place.as_grid().current_place_id();
       return (current_place_id < 0 ? dstream.stream : stream_grid[current_place_id].stream);
     }
 

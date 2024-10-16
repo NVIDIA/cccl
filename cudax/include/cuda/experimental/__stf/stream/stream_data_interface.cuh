@@ -111,7 +111,7 @@ public:
     backend_ctx_untyped& ctx,
     const data_place& memory_node,
     instance_id_t instance_id,
-    ssize_t& s,
+    ::std::ptrdiff_t& s,
     void** extra_args,
     cudaStream_t stream) = 0;
 
@@ -120,7 +120,7 @@ public:
     block_allocator_untyped& /*unused*/,
     const data_place& memory_node,
     instance_id_t instance_id,
-    ssize_t& s,
+    ::std::ptrdiff_t& s,
     void** extra_args,
     event_list& prereqs) final override
   {

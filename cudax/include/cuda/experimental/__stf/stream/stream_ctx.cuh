@@ -54,7 +54,7 @@ class uncached_stream_allocator : public block_allocator_interface
 public:
   uncached_stream_allocator() = default;
 
-  void* allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ssize_t& s, event_list& prereqs) override
+  void* allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
   {
     void* result = nullptr;
 

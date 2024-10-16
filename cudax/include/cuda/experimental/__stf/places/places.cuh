@@ -871,7 +871,7 @@ public:
       }
 
       // get the 1D index for that position
-      current_p_1d = (ssize_t) p_index;
+      current_p_1d = (::std::ptrdiff_t) p_index;
 
       // The returned value contains the state to restore when we deactivate the place
       old_place = grid_activate(ctx, current_p_1d);
@@ -893,7 +893,7 @@ public:
       current_p_1d = -1;
     }
 
-    ssize_t current_place_id() const
+    ::std::ptrdiff_t current_place_id() const
     {
       return current_p_1d;
     }
@@ -951,7 +951,7 @@ public:
 
     // current position in the grid (flattened to 1D) if we have a grid of
     // execution place. -1 indicates there is no current position.
-    ssize_t current_p_1d = -1;
+    ::std::ptrdiff_t current_p_1d = -1;
 
     // saved state before setting the current place
     exec_place old_place;
@@ -991,7 +991,7 @@ public:
     return *get_impl() == *(rhs.get_impl());
   }
 
-  ssize_t current_place_id() const
+  ::std::ptrdiff_t current_place_id() const
   {
     return get_impl()->current_place_id();
   }
