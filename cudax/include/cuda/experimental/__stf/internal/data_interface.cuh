@@ -30,6 +30,7 @@
 #include <cuda/experimental/__stf/internal/msir.cuh>
 #include <cuda/experimental/__stf/internal/slice.cuh>
 #include <cuda/experimental/__stf/internal/task.cuh>
+#include <cuda/experimental/__stf/utility/hash.cuh>
 
 #include <deque>
 #include <optional>
@@ -369,7 +370,7 @@ public:
   size_t data_hash(instance_id_t instance_id) const final
   {
     const auto& inst_id = instance(instance_id);
-    return ::std::hash<T>{}(inst_id);
+    return ::cuda::experimental::stf::hash<T>{}(inst_id);
   }
 
   size_t data_footprint() const final

@@ -585,7 +585,7 @@ _CCCL_DIAG_POP
     ::std::unique_ptr<scheduler> auto_scheduler;
     ::std::unique_ptr<reorderer> auto_reorderer;
     // Stats-related stuff
-    ::std::unordered_map<::std::pair<int, int>, ::std::pair<size_t, size_t>> transfers;
+    ::std::unordered_map<::std::pair<int, int>, ::std::pair<size_t, size_t>, cuda::experimental::stf::hash<::std::pair<int, int>>> transfers;
     bool is_recording_stats = false;
     // Keep track of the number of tasks generated in the context
     ::std::atomic<size_t> total_task_cnt;

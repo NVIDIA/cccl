@@ -32,6 +32,13 @@ namespace cuda::experimental::stf
 {
 
 /**
+ * @brief We define a hash trait class in our namespace
+ */
+template <typename T>
+struct hash;
+
+
+/**
  * @brief Update a hash value by combining it with another value to form a new
  *        hash
  *
@@ -64,10 +71,8 @@ size_t hash_all(const Ts&... vals)
   }
 }
 
-} // end namespace cuda::experimental::stf
-
 /**
- * @brief Specialization of `std::hash` for `std::pair<T1, T2>`.
+ * @brief Specialization of `hash` for `std::pair<T1, T2>`.
  *
  * This hash specialization combines the individual hash values of the two elements in the pair to produce a unique hash
  * value for the pair.
@@ -76,7 +81,7 @@ size_t hash_all(const Ts&... vals)
  * @tparam T2 The type of the second element in the pair.
  */
 template <class T1, class T2>
-struct std::hash<::std::pair<T1, T2>>
+struct hash<::std::pair<T1, T2>>
 {
   /**
    * @brief Computes a hash value for a given `std::pair`.
@@ -94,7 +99,7 @@ struct std::hash<::std::pair<T1, T2>>
 };
 
 /**
- * @brief Specialization of std::hash for std::tuple.
+ * @brief Specialization of hash for std::tuple.
  *
  * Provides a hash function for std::tuple, allowing tuples to be used
  * as keys in associative containers such as std::unordered_map or std::unordered_set.
@@ -102,7 +107,7 @@ struct std::hash<::std::pair<T1, T2>>
  * @tparam Ts Types of the elements in the tuple.
  */
 template <typename... Ts>
-struct std::hash<::std::tuple<Ts...>>
+struct hash<::std::tuple<Ts...>>
 {
   /**
    * @brief Computes a hash value for a given std::tuple.
@@ -138,7 +143,7 @@ struct has_std_hash : ::std::false_type
  * @tparam E The type to check for std::hash definition.
  */
 template <typename E>
-struct has_std_hash<E, ::std::void_t<decltype(::std::declval<::std::hash<E>>()(::std::declval<E>()))>>
+struct has_std_hash<E, ::std::void_t<decltype(::std::declval<hash<E>>()(::std::declval<E>()))>>
     : ::std::true_type
 {};
 
@@ -154,6 +159,10 @@ inline constexpr bool has_std_hash_v = has_std_hash<E>::value;
 
 UNITTEST("hash for tuples")
 {
-  ::std::unordered_map<::std::tuple<int, int>, int> m;
+  ::std::unordered_map<::std::tuple<int, int>, int, ::cuda::experimental::stf::hash<::std::tuple<int, int>>> m;
   m[::std::tuple(1, 2)] = 42;
 };
+
+} // end namespace cuda::experimental::stf
+
+

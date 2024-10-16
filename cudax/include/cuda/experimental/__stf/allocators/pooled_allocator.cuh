@@ -394,7 +394,7 @@ private:
   }
 
   // For each memory node, a map of size_t to block_data_pool
-  ::std::unordered_multimap<::std::pair<size_t, size_t>, block_data_pool> map;
+  ::std::unordered_multimap<::std::pair<size_t, size_t>, block_data_pool, ::cuda::experimental::stf::hash<::std::pair<size_t, size_t>>> map;
 
 private:
   pooled_allocator_config config = {

@@ -1419,8 +1419,9 @@ template <typename Kernel>
 ::std::pair<int /*min_grid_size*/, int /*block_size*/>
 compute_occupancy(Kernel&& f, size_t dynamicSMemSize = 0, int blockSizeLimit = 0)
 {
-  static ::std::unordered_map<::std::pair<size_t /*dynamicSMemSize*/, int /*blockSizeLimit*/>,
-                              ::std::pair<int /*min_grid_size*/, int /*block_size*/>>
+  using key_t = ::std::pair<size_t /*dynamicSMemSize*/, int /*blockSizeLimit*/>;
+  static ::std::unordered_map<key_t,
+                              ::std::pair<int /*min_grid_size*/, int /*block_size*/>, ::cuda::experimental::stf::hash<key_t>>
     occupancy_cache;
   const auto key = ::std::make_pair(dynamicSMemSize, blockSizeLimit);
 

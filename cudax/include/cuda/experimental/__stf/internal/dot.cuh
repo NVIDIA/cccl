@@ -46,6 +46,11 @@
 namespace cuda::experimental::stf
 {
 
+/**
+ * @brief Some helper type
+ */
+using IntPairSet = ::std::unordered_set<::std::pair<int, int>, cuda::experimental::stf::hash<::std::pair<int, int>>>;
+
 class dot;
 
 class per_ctx_dot
@@ -268,7 +273,7 @@ private:
 
 public:
   // Keep track of existing edges, to make the output possibly look better
-  ::std::unordered_set<::std::pair<int, int>> existing_edges;
+  IntPairSet existing_edges;
 
   bool is_tracing() const
   {
@@ -466,7 +471,7 @@ private:
   }
 
   // This method will check whether an edge can be removed when there is already a direct path
-  void remove_redundant_edges(::std::unordered_set<::std::pair<int, int>>& edges)
+  void remove_redundant_edges(IntPairSet& edges)
   {
     single_threaded_section guard(mtx);
     // We first dump the set of edges into a map of predecessors per node
@@ -477,7 +482,7 @@ private:
 
     // Maybe this is not the most efficient, we could use a vector of
     // pair<int, int> if efficiency matters here.
-    ::std::unordered_set<::std::pair<int, int>> edges_cpy = edges;
+    IntPairSet edges_cpy = edges;
 
     // We will put back only those needed
     edges.clear();
@@ -511,7 +516,7 @@ private:
   bool tracing_prereqs = false;
 
   // Keep track of existing edges, to make the output possibly look better
-  ::std::unordered_set<::std::pair<int, int>> existing_edges;
+  IntPairSet existing_edges;
 
   ::std::unordered_map<int, ::std::vector<int>> predecessors;
 

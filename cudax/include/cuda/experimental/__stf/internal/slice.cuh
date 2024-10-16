@@ -1122,11 +1122,9 @@ UNITTEST("data_hash")
 };
 #endif
 
-} // namespace cuda::experimental::stf
-
-// Note that we are not in cudastf namespace
+// Note this is implementing it in the cudastf namespace, not std::hash
 template <typename... P>
-struct std::hash<::cuda::experimental::stf::mdspan<P...>>
+struct hash<::cuda::experimental::stf::mdspan<P...>>
 {
   ::std::size_t operator()(::cuda::experimental::stf::mdspan<P...> const& s) const noexcept
   {
@@ -1155,6 +1153,8 @@ struct std::hash<::cuda::experimental::stf::mdspan<P...>>
   }
 };
 
+} // namespace cuda::experimental::stf
+
 #ifdef UNITTESTED_FILE
 
 UNITTEST("slice hash")
@@ -1163,8 +1163,8 @@ UNITTEST("slice hash")
   auto s  = cuda::experimental::stf::make_slice(A, ::std::tuple{5, 2}, 5);
   auto s2 = cuda::experimental::stf::make_slice(A, ::std::tuple{4, 2}, 5);
 
-  size_t h  = ::std::hash<cuda::experimental::stf::slice<double, 2>>{}(s);
-  size_t h2 = ::std::hash<cuda::experimental::stf::slice<double, 2>>{}(s2);
+  size_t h  = cuda::experimental::stf::hash<cuda::experimental::stf::slice<double, 2>>{}(s);
+  size_t h2 = cuda::experimental::stf::hash<cuda::experimental::stf::slice<double, 2>>{}(s2);
 
   EXPECT(h != h2);
 };
@@ -1179,8 +1179,8 @@ UNITTEST("slice hash 3D")
   // non-contiguous
   auto s2 = cuda::experimental::stf::make_slice(A, ::std::tuple{4, 2, 40}, 5, 5 * 2);
 
-  size_t h  = ::std::hash<cuda::experimental::stf::slice<double, 3>>{}(s);
-  size_t h2 = ::std::hash<cuda::experimental::stf::slice<double, 3>>{}(s2);
+  size_t h  = cuda::experimental::stf::hash<cuda::experimental::stf::slice<double, 3>>{}(s);
+  size_t h2 = cuda::experimental::stf::hash<cuda::experimental::stf::slice<double, 3>>{}(s2);
 
   EXPECT(h != h2);
 };

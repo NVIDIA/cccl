@@ -286,7 +286,7 @@ private:
 
   private:
     // For each pair of unique IDs, we keep the last event id
-    ::std::unordered_map<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>, int> interactions;
+    ::std::unordered_map<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>, int, cuda::experimental::stf::hash<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>>> interactions;
 
     ::std::mutex mtx;
   };

@@ -186,16 +186,18 @@ struct graphed_interface_of<void_interface>
   using type = void_graph_interface;
 };
 
-} // end namespace cuda::experimental::stf
-
 /**
  * @brief A hash of the matrix
  */
 template <>
-struct std::hash<cuda::experimental::stf::void_interface>
+struct hash<cuda::experimental::stf::void_interface>
 {
   ::std::size_t operator()(cuda::experimental::stf::void_interface const&) const noexcept
   {
     return 42;
   }
 };
+
+} // end namespace cuda::experimental::stf
+
+
