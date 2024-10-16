@@ -720,7 +720,7 @@ public:
       assert(b <= first && first <= last && last <= e);
       auto result = ::std::move(last, e, first);
       ::std::destroy(result, e);
-      small_length -= last - first;
+      small_length -= static_cast<decltype(small_length)>(last - first);
       return result;
     }
     else

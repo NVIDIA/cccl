@@ -764,7 +764,7 @@ public:
     // Define a grid directly from a vector of places
     // This creates an execution grid automatically
     impl(::std::vector<exec_place> _places)
-        : dims(_places.size(), 1, 1, 1)
+        : dims(static_cast<int>(_places.size()), 1, 1, 1)
         , places(mv(_places))
     {
       assert(!places.empty());
@@ -921,7 +921,8 @@ public:
 
     const exec_place& get_place(size_t p_index) const
     {
-      return coords_to_place(p_index);
+      // TODO (miscco): should this method take an int?
+      return coords_to_place(static_cast<int>(p_index));
     }
 
     virtual stream_pool& get_stream_pool(async_resources_handle& async_resources, bool for_computation) const override
@@ -1058,7 +1059,7 @@ inline exec_place_grid make_grid(::std::vector<exec_place> places, const dim4& d
 inline exec_place_grid make_grid(::std::vector<exec_place> places)
 {
   assert(!places.empty());
-  const auto x = places.size();
+  const auto x = static_cast<int>(places.size());
   return make_grid(mv(places), dim4(x, 1, 1, 1));
 }
 
@@ -1108,7 +1109,8 @@ inline exec_place_grid exec_place::n_devices(size_t n, dim4 dims)
   devices.reserve(n);
   for (auto d : each(n))
   {
-    devices.push_back(exec_place::device(d));
+    // TODO (miscco): Use proper type
+    devices.push_back(exec_place::device(static_cast<int>(d)));
   }
 
   return make_grid(mv(devices), dims);
@@ -1117,7 +1119,7 @@ inline exec_place_grid exec_place::n_devices(size_t n, dim4 dims)
 /* Get the first N available devices */
 inline exec_place_grid exec_place::n_devices(size_t n)
 {
-  return n_devices(n, dim4(n, 1, 1, 1));
+  return n_devices(n, dim4(static_cast<int>(n), 1, 1, 1));
 }
 
 inline exec_place_grid exec_place::all_devices()
