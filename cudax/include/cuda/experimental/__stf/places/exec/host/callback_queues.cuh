@@ -31,7 +31,8 @@
 #include <cstdio>
 #include <stack>
 
-#define STATEFUL_CALLBACKS
+// XXX Disabled until they stop using pthreads
+// #define STATEFUL_CALLBACKS
 
 namespace cuda::experimental::stf
 {
