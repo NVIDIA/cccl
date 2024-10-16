@@ -262,7 +262,7 @@ private:
 #else
     ::std::random_device rd;
     ::std::mt19937 gen(rd());
-    ::std::uniform_int_distribution<> dis(0, allocation_granularity - 1);
+    ::std::uniform_int_distribution<> dis(0, static_cast<int>(allocation_granularity - 1));
 
     const size_t nsamples = 10;
     ::std::array<pos4, nsamples> sampled_pos;
