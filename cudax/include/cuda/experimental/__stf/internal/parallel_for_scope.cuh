@@ -326,6 +326,8 @@ public:
       return do_parallel_for(::std::forward<Fun>(f), exec_place::current_device(), sub_shape, t);
     }
 
+    using Fun_no_ref = ::std::remove_reference_t<Fun>;
+
     static const auto conf = [] {
       // We are using int instead of size_t because CUDA API uses int for occupancy calculations
       int min_grid_size = 0, max_block_size = 0, block_size_limit = 0;
@@ -334,7 +336,7 @@ public:
       // limit. We choose to dimension the kernel of the parallel loop to
       // optimize occupancy.
       compute_kernel_limits(
-        &reserved::loop<Fun, sub_shape_t, ::std::tuple<deps_t...>>,
+        &reserved::loop<Fun_no_ref, sub_shape_t, ::std::tuple<deps_t...>>,
         min_grid_size,
         max_block_size,
         0,
@@ -361,14 +363,14 @@ public:
 
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
-      reserved::loop<<<static_cast<int>(blocks), static_cast<int>(block_size), 0, t.get_stream()>>>(static_cast<int>(n), sub_shape, mv(f), deps.instance(t));
+      reserved::loop<Fun_no_ref><<<static_cast<int>(blocks), static_cast<int>(block_size), 0, t.get_stream()>>>(static_cast<int>(n), sub_shape, mv(f), deps.instance(t));
     }
     else if constexpr (::std::is_same_v<context, graph_ctx>)
     {
       // Put this kernel node in the child graph that implements the graph_task<>
       cudaKernelNodeParams kernel_params;
 
-      kernel_params.func = (void*) reserved::loop<::std::remove_reference_t<Fun>, sub_shape_t, ::std::tuple<deps_t...>>;
+      kernel_params.func = (void*) reserved::loop<Fun_no_ref, sub_shape_t, ::std::tuple<deps_t...>>;
 
       kernel_params.gridDim  = dim3(static_cast<int>(blocks));
       kernel_params.blockDim = dim3(static_cast<int>(block_size));
