@@ -26,12 +26,19 @@
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 #  include <cuda/std/compare>
 #endif
-#include <cuda/std/__type_traits/type_identity.h>
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/cstddef>
 
 #ifndef _CCCL_NO_TYPEID
 #  include <typeinfo>
+#endif
+
+#if defined(_CCCL_COMPILER_MSVC)
+#  define _CCCL_PRETTY_FUNCTION __FUNCSIG__
+#else
+#  define _CCCL_PRETTY_FUNCTION __PRETTY_FUNCTION__
 #endif
 
 #ifndef _CCCL_NO_TYPEID
@@ -42,6 +49,12 @@ using __type_info = ::std::type_info;
 _LIBCUDACXX_END_NAMESPACE_STD
 
 #else // ^^^ !_CCCL_NO_TYPEID ^^^ / vvv _CCCL_NO_TYPEID
+
+// We find a type T's name as follows:
+// 1. Use __PRETTY_FUNCTION__ in a function template parameterized by
+//    __pretty_name_begin<T>::__pretty_name_end.
+// 2. Find the substrings "__pretty_name_begin<" and ">::__pretty_name_end".
+//    Everything between them is the name of type T.
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -285,17 +298,6 @@ private:
   size_t __len_;
 };
 
-// We find a type T's name as follows:
-// 1. Use __PRETTY_FUNCTION__ in a function template parameterized by
-//    __pretty_name_begin<T>::__pretty_name_end.
-// 2. Find the substrings "__pretty_name_begin<" and ">::__pretty_name_end".
-//    Everything between them is the name of type T.
-#  if defined(_CCCL_COMPILER_MSVC)
-#    define _CCCL_PRETTY_FUNCTION __FUNCSIG__
-#  else
-#    define _CCCL_PRETTY_FUNCTION __PRETTY_FUNCTION__
-#  endif
-
 // Earlier versions of gcc (before gcc-9) do not treat __PRETTY_FUNCTION__ as a
 // constexpr value after a reference to it has been returned from the function.
 // Instead, arrange things so that the pretty name gets stored in a class static
@@ -304,47 +306,56 @@ private:
 #  if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 90000
 
 template <size_t _Np>
-struct __static_string
+struct __sstring
 {
   char __str_[_Np];
+  size_t __len_;
 };
 
-template <size_t _Np, size_t... _Is>
-constexpr __static_string<_Np> __pretty_nameof_5(char const (&a)[_Np], index_sequence<_Is...>)
+template <class _Tp, size_t _Np>
+struct __static_nameof;
+
+template <size_t _Np, size_t _Mp, size_t... _Is>
+_LIBCUDACXX_HIDE_FROM_ABI static constexpr __sstring<_Np>
+__make_pretty_name_impl(char const (&__s)[_Mp], index_sequence<_Is...>) noexcept
 {
-  return __static_string<_Np>{{a[_Is]...}};
+  static_assert(_Mp <= _Np, "Type name too long for __pretty_nameof");
+  return {{(_Is < _Mp ? __s[_Is] : '\0')...}, _Mp - 1};
 }
 
-template <class _Tp>
-constexpr auto __pretty_nameof_4()
+template <class _Tp, size_t _Np>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr auto __make_pretty_name(integral_constant<size_t, _Np>) noexcept //
+  -> __enable_if_t<_Np == ~size_t(0), __string_view>
 {
-  return __pretty_nameof_5(_CCCL_PRETTY_FUNCTION, make_index_sequence<sizeof(_CCCL_PRETTY_FUNCTION)>());
+  using _TpName = __static_nameof<_Tp, sizeof(_CCCL_PRETTY_FUNCTION)>;
+  return __string_view(_TpName::value.__str_, 0, sizeof(_CCCL_PRETTY_FUNCTION) - _TpName::value.__len_ - 1);
 }
 
-template <class _Tp>
-using __static_name_for = decltype(__pretty_nameof_4<_Tp>());
-
-template <class _Tp>
-struct __pretty_name_begin
+template <class _Tp, size_t _Np>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr auto __make_pretty_name(integral_constant<size_t, _Np>) noexcept //
+  -> __enable_if_t<_Np != ~size_t(0), __sstring<_Np>>
 {
-  static constexpr __static_name_for<_Tp> value = __pretty_nameof_4<_Tp>();
-  struct __pretty_name_end;
+  return __make_pretty_name_impl<_Np>(_CCCL_PRETTY_FUNCTION, make_index_sequence<_Np>{});
+}
+
+template <class _Tp, size_t _Np>
+struct __static_nameof
+{
+  static constexpr __sstring<_Np> value = __make_pretty_name<_Tp>(integral_constant<size_t, _Np>());
 };
 
-#    if !defined(_CCCL_NO_INLINE_VARIABLES)
-template <class _Tp>
-constexpr __static_name_for<_Tp> __pretty_name_begin<_Tp>::value;
-#    endif // !_CCCL_NO_INLINE_VARIABLES
-
-#  else // ^^^ _CCCL_GCC_VERSION < 90000 ^^^ / vvv _CCCL_GCC_VERSION >= 90000 vvv
-
-template <class _Tp>
-struct __pretty_name_begin
-{
-  struct __pretty_name_end;
-};
+#    if defined(_CCCL_NO_INLINE_VARIABLES)
+template <class _Tp, size_t _Np>
+constexpr __sstring<_Np> __static_nameof<_Tp, _Np>::value;
+#    endif
 
 #  endif // _CCCL_GCC_VERSION < 90000
+
+template <class _Tp>
+struct __pretty_name_begin
+{
+  struct __pretty_name_end;
+};
 
 // Get the type name from the pretty name by trimming the front and back.
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameof_3(__string_view __sv) noexcept
@@ -357,7 +368,7 @@ template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameof_2() noexcept
 {
 #  if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 90000
-  return __pretty_nameof_3(__string_view(__pretty_name_begin<_Tp>::value.__str_));
+  return __pretty_nameof_3(__make_pretty_name<_Tp>(integral_constant<size_t, ~size_t(0)>{}));
 #  else
   return __pretty_nameof_3(__string_view(_CCCL_PRETTY_FUNCTION));
 #  endif
