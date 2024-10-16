@@ -33,10 +33,10 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_fundamental : public integral_constant<bool, _CCCL_BUILTIN_IS_FUNDAMENTAL(_Tp)>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPALTES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _CCCL_INLINE_VAR constexpr bool is_fundamental_v = _CCCL_BUILTIN_IS_FUNDAMENTAL(_Tp);
-#  endif // !_CCCL_NO_VARIABLE_TEMPALTES
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #else // ^^^ _CCCL_BUILTIN_IS_FUNDAMENTAL ^^^ / vvv !_CCCL_BUILTIN_IS_FUNDAMENTAL vvv
 
@@ -45,10 +45,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_fundamental
     : public integral_constant<bool, is_void<_Tp>::value || __is_nullptr_t<_Tp>::value || is_arithmetic<_Tp>::value>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPALTES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _CCCL_INLINE_VAR constexpr bool is_fundamental_v = is_fundamental<_Tp>::value;
-#  endif // !_CCCL_NO_VARIABLE_TEMPALTES
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #endif // !_CCCL_BUILTIN_IS_FUNDAMENTAL
 

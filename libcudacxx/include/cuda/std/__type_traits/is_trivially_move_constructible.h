@@ -32,11 +32,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_move_constructible
     : public integral_constant<bool, _CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp, __add_rvalue_reference_t<_Tp>)>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPALTES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _CCCL_INLINE_VAR constexpr bool is_trivially_move_constructible_v =
   _CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp, __add_rvalue_reference_t<_Tp>);
-#  endif // !_CCCL_NO_VARIABLE_TEMPALTES
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #else
 
@@ -45,10 +45,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_move_constructible
     : public is_trivially_constructible<_Tp, __add_rvalue_reference_t<_Tp>>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPALTES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _CCCL_INLINE_VAR constexpr bool is_trivially_move_constructible_v = is_trivially_move_constructible<_Tp>::value;
-#  endif // !_CCCL_NO_VARIABLE_TEMPALTES
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #endif // defined(_CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE) &&
        // !defined(_LIBCUDACXX_USE_IS_TRIVIALLY_CONSTRUCTIBLE_FALLBACK)

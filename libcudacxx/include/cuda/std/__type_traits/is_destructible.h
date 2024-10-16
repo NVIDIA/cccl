@@ -35,10 +35,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_destructible
     : public integral_constant<bool, _CCCL_BUILTIN_IS_DESTRUCTIBLE(_Tp)>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPALTES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _CCCL_INLINE_VAR constexpr bool is_destructible_v = _CCCL_BUILTIN_IS_DESTRUCTIBLE(_Tp);
-#  endif // !_CCCL_NO_VARIABLE_TEMPALTES
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #else // ^^^ _CCCL_BUILTIN_IS_DESTRUCTIBLE ^^^ / vvv !_CCCL_BUILTIN_IS_DESTRUCTIBLE vvv
 
@@ -103,10 +103,10 @@ template <>
 struct is_destructible<void> : public false_type
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPALTES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _CCCL_INLINE_VAR constexpr bool is_destructible_v = is_destructible<_Tp>::value;
-#  endif // !_CCCL_NO_VARIABLE_TEMPALTES
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #endif // !_CCCL_BUILTIN_IS_DESTRUCTIBLE
 

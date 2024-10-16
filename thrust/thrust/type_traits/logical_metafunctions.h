@@ -40,11 +40,11 @@ THRUST_NAMESPACE_BEGIN
 using ::cuda::std::conjunction;
 using ::cuda::std::disjunction;
 using ::cuda::std::negation;
-#if !defined(_CCCL_NO_VARIABLE_TEMPALTES)
+#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 using ::cuda::std::conjunction_v;
 using ::cuda::std::disjunction_v;
 using ::cuda::std::negation_v;
-#endif // !_CCCL_NO_VARIABLE_TEMPALTES
+#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 //! \brief <a href="https://en.cppreference.com/w/cpp/types/integral_constant"><tt>std::integral_constant</tt></a>
 //! whose value is <tt>(... && Bs)</tt>.
