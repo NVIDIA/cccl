@@ -426,7 +426,7 @@ private:
 inline event_list event_impl::from_stream(backend_ctx_untyped&, cudaStream_t) const
 {
   fprintf(stderr, "Unsupported synchronization with stream.\n");
-  abort();
+  _CCCL_UNREACHABLE();
   return event_list();
 }
 
