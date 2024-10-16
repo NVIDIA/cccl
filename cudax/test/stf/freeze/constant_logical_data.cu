@@ -24,7 +24,7 @@ int main()
 {
   stream_ctx ctx;
 
-  const size_t N = 16;
+  const int N = 16;
 
   /* Create a constant value */
   auto ld_cst = ctx.logical_data(shape_of<slice<int>>(N));
@@ -35,7 +35,7 @@ int main()
 
   int X[N];
 
-  for (size_t i = 0; i < N; i++)
+  for (int i = 0; i < N; i++)
   {
     X[i] = 5 * i - 3;
   }
@@ -65,7 +65,7 @@ int main()
 
   ctx.finalize();
 
-  for (size_t i = 0; i < N; i++)
+  for (int i = 0; i < N; i++)
   {
     EXPECT(X[i] == (5 * i - 3) + 4 * (18 * i - 9) + 4 * (4 * i - 2));
   }

@@ -1757,6 +1757,7 @@ public:
     auto fn = [this, start, end, &fun](context gctx, stream_task<> t) {
       // How many logical data per iteration ?
       constexpr size_t data_per_iteration = ::std::tuple_size<decltype(df(0))>::value;
+      (void)data_per_iteration;
 
       auto logify = [](auto& dest_ctx, auto x) {
         return dest_ctx.logical_data(rw_type_of<decltype(x)>(x), exec_place::current_device().affine_data_place());

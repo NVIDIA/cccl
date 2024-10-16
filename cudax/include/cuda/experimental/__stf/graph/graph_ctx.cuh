@@ -604,7 +604,7 @@ private:
     cuda_safe_call(cudaGraphGetNodes(g, nullptr, &nnodes));
     cuda_safe_call(cudaGraphGetEdges(g, nullptr, nullptr, &nedges));
 
-    cudaGraphExec_t local_exec_graph;
+    cudaGraphExec_t local_exec_graph = nullptr;
 
     // fprintf(stderr, "Instantiate epoch %ld\n", epoch);
     display_graph_info(g);
