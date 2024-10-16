@@ -23,6 +23,8 @@
 
 #include <cuda/std/__cuda/api_wrapper.h>
 
+#include <vector>
+
 namespace cuda::experimental
 {
 class device;
@@ -105,6 +107,7 @@ public:
   }
 
   const arch_traits_t& arch_traits() const;
+  ::std::vector<device_ref> get_peers() const;
 };
 
 } // namespace cuda::experimental

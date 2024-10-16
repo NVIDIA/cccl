@@ -473,7 +473,7 @@ TEST_CASE("async_memory_pool accessors", "[memory_resource]")
   {
     if (cudax::devices.size() > 1)
     {
-      auto peers = cudax::get_peers(cudax::devices[0]);
+      auto peers = cudax::devices[0].get_peers();
       if (peers.size() > 0)
       {
         cudax::mr::async_memory_pool pool{cudax::devices[0]};

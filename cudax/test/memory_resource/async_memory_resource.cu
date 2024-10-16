@@ -478,7 +478,7 @@ TEST_CASE("Async memory resource peer access")
 {
   if (cudax::devices.size() > 1)
   {
-    auto peers = cudax::get_peers(cudax::devices[0]);
+    auto peers = cudax::devices[0].get_peers();
     if (peers.size() > 0)
     {
       cudax::mr::async_memory_pool pool{cudax::devices[0]};
@@ -486,11 +486,14 @@ TEST_CASE("Async memory resource peer access")
       cudax::stream stream{peers.front()};
 
       auto allocate_and_check = [&](auto& resource) {
-        auto* ptr = resource.allocate_async(2048 * sizeof(int), stream);
-        auto dims = cudax::distribute<1>(1);
-        cudax::launch(stream, dims, test::assign_42{}, (int*) ptr);
+        auto* ptr1 = resource.allocate_async(sizeof(int), stream);
+        auto* ptr2 = resource.allocate(sizeof(int));
+        auto dims  = cudax::distribute<1>(1);
+        cudax::launch(stream, dims, test::assign_42{}, (int*) ptr1);
+        cudax::launch(stream, dims, test::assign_42{}, (int*) ptr2);
         stream.wait();
-        resource.deallocate_async(ptr, 2048 * sizeof(int), stream);
+        resource.deallocate_async(ptr1, sizeof(int), stream);
+        resource.deallocate(ptr2, sizeof(int));
       };
 
       resource.enable_peer_access(peers);
