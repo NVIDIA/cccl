@@ -565,7 +565,8 @@ public:
 
     assert(get_phase() < backend_ctx_untyped::phase::submitted);
 
-    cudaEvent_t startEvent, stopEvent;
+    cudaEvent_t startEvent = nullptr;
+    cudaEvent_t stopEvent  = nullptr;
 
     ::std::unordered_map<int, reorderer_payload> payloads;
     if (reordering_tasks())
