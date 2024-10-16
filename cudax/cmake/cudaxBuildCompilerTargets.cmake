@@ -26,6 +26,9 @@ function(cudax_build_compiler_targets)
 
     # cudax requires __VA_OPT__ for its unit tests
     append_option_if_available("/Zc:preprocessor" cxx_compile_options)
+
+    # stf used getenv which is potentially unsafe but not in our context
+    list(APPEND cxx_compile_definitions "_CRT_SECURE_NO_WARNINGS")
   endif()
 
   if("Clang" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
