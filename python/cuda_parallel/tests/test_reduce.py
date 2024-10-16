@@ -83,3 +83,34 @@ def test_device_reduce_dtype_mismatch():
     for ix in range(3):
         with pytest.raises(TypeError, match=r"^dtype mismatch: __init__=int32, __call__=int64$"):
           reduce_into(None, None, d_inputs[int(ix == 0)], d_outputs[int(ix == 1)], h_inits[int(ix == 2)])
+
+
+def test_device_sum_repeat_1_equals_num_items(num_items=10):
+    def add_op(a, b):
+        return a + b
+
+    def constant_op(distance):
+        del distance
+        return 1
+
+    dtype = numpy.int32
+
+    if 1:
+        h_input = numpy.array([1] * num_items, dtype)
+        d_input = cuda.to_device(h_input)
+    else:
+        d_input = constant_op
+
+    d_output = cuda.device_array(1, dtype) # to store device sum
+
+    h_init = numpy.array([0], dtype) # start device sum with 0
+
+    reduce_into = cudax.reduce_into(d_in=d_input, d_out=d_output, op=add_op, init=h_init)
+
+    temp_storage_size = reduce_into(None, num_items, d_in=d_input, d_out=d_output, init=h_init)
+    d_temp_storage = cuda.device_array(temp_storage_size, dtype=numpy.uint8)
+
+    reduce_into(d_temp_storage, num_items, d_input, d_output, h_init)
+
+    h_output = d_output.copy_to_host()
+    assert h_output[0] == num_items
