@@ -107,10 +107,6 @@ def _device_array_to_pointer(array):
     return _CCCLIterator(1, 1, _CCCLIteratorKindEnum.POINTER, _CCCLOp(), _CCCLOp(), info, array.device_ctypes_pointer.value)
 
 
-def _itertools_iter_as_cccl_iter(d_in):
-    return _CCCLIterator(1, 1, _CCCLIteratorKindEnum.ITERATOR, _CCCLOp(), _CCCLOp(), _TypeInfo(), 0)
-
-
 def _host_array_to_value(array):
     dtype = array.dtype
     info = _type_to_info(dtype)
@@ -126,6 +122,20 @@ class _Op:
 
     def handle(self):
         return _CCCLOp(_CCCLOpKindEnum.STATELESS, self.name, ctypes.c_char_p(self.ltoir), len(self.ltoir), 1, 1, None)
+
+
+class _TransformRAIUnaryOp:
+    def __init__(self, result_numba_dtype, arg_numba_dtype, unary_op):
+        self.ltoir, _ = cuda.compile(unary_op, sig=result_numba_dtype(arg_numba_dtype), output='ltoir')
+        self.name = unary_op.__name__.encode('utf-8')
+
+    def handle(self):
+        return _CCCLOp(_CCCLOpKindEnum.STATELESS, self.name, ctypes.c_char_p(self.ltoir), len(self.ltoir), 1, 1, None)
+
+
+def _itertools_iter_as_cccl_iter(result_numba_dtype, d_in):
+    d_in_jitted = _TransformRAIUnaryOp(result_numba_dtype, numba.uint64, d_in).handle()
+    return _CCCLIterator(1, 1, _CCCLIteratorKindEnum.ITERATOR, d_in_jitted, _CCCLOp(), _TypeInfo(), 0)
 
 
 def _get_cuda_path():
@@ -268,7 +278,7 @@ class _Reduce:
                 assert d_in.size == num_items
             return num_items, _device_array_to_pointer(d_in)
         assert not hasattr(self._ctor_d_in, "dtype")
-        return num_items, _itertools_iter_as_cccl_iter(d_in)
+        return num_items, _itertools_iter_as_cccl_iter(numba.int32, d_in) # TODO pass numba dtype
 
 
 # TODO Figure out iterators

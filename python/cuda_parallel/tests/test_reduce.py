@@ -89,9 +89,9 @@ def test_device_sum_repeat_1_equals_num_items(num_items=10):
     def add_op(a, b):
         return a + b
 
-    def constant_op(distance):
-        del distance
-        return 1
+    def constant_op(unused_distance):
+        data = (3, 2)
+        return data[0] - data[1]
 
     dtype = numpy.int32
 
