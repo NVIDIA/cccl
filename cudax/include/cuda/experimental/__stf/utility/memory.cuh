@@ -368,7 +368,7 @@ public:
         {
           return false;
         }
-        new (small() + i) T(*b++);
+        new (small_begin() + i) T(*b++);
         ++small_length;
         return true;
       });
@@ -390,7 +390,7 @@ public:
         {
           return false;
         }
-        new (small() + i) T(mv(*b++));
+        new (small_begin() + i) T(mv(*b++));
         ++small_length;
         return true;
       });
@@ -411,7 +411,7 @@ public:
         {
           return false;
         }
-        new (small() + i) T(init.begin()[i]);
+        new (small_begin() + i) T(init.begin()[i]);
         ++small_length;
         return true;
       });
@@ -441,7 +441,7 @@ public:
         {
           return false;
         }
-        new (small() + i) T(rhs[i]);
+        new (small_begin() + i) T(rhs[i]);
         ++small_length;
         return true;
       });
@@ -471,7 +471,7 @@ public:
           {
             return false;
           }
-          new (small() + i) T(mv(rhs.small()[i]));
+          new (small_begin() + i) T(mv(rhs.small_begin()[i]));
           ++small_length;
           return true;
         });
@@ -486,7 +486,7 @@ public:
     {
       if (rhs.is_small())
       {
-        big().assign(rhs.small(), rhs.small() + rhs.small_length);
+        big().assign(rhs.small_begin(), rhs.small_begin() + rhs.small_length);
       }
       else
       {
@@ -508,7 +508,7 @@ public:
         {
           return false;
         }
-        small()[i].~T();
+        small_begin()[i].~T();
         return true;
       });
     }
@@ -525,7 +525,7 @@ public:
     if (is_small())
     {
       assert(pos < small_length);
-      return small()[pos];
+      return small_begin()[pos];
     }
     assert(pos < big().size());
     return big()[pos];
@@ -536,7 +536,7 @@ public:
     if (is_small())
     {
       assert(pos < small_length);
-      return small()[pos];
+      return small_begin()[pos];
     }
     assert(pos < big().size());
     return big()[pos];
@@ -561,16 +561,16 @@ public:
   // Iterators
   iterator begin() noexcept
   {
-    return is_small() ? small() : big().data();
+    return is_small() ? small_begin() : big().data();
   }
   const_iterator begin() const noexcept
   {
-    return is_small() ? small() : big().data();
+    return is_small() ? small_begin() : big().data();
   }
 
   const_iterator cbegin() const noexcept
   {
-    return is_small() ? small() : big().data();
+    return is_small() ? small_begin() : big().data();
   }
 
   iterator end() noexcept
@@ -620,7 +620,7 @@ public:
       }
       if (small_length > 0)
       {
-        // Non-empty small vector is a bit tricky
+        // Non-empty small_begin vector is a bit tricky
         ::std::vector<T> copy;
         copy.reserve(new_cap);
         for (auto& e : *this)
@@ -655,7 +655,7 @@ public:
         {
           return false;
         }
-        small()[i].~T();
+        small_begin()[i].~T();
         return true;
       });
       small_length = 0;
@@ -679,7 +679,7 @@ public:
       const std::size_t new_size = small_length + (last - first);
       if (new_size <= small_cap)
       {
-        auto b = small(), e = b + small_length;
+        auto b = small_begin(), e = b + small_length;
         assert(b <= pos && pos <= e);
         assert(first <= last);
         auto result = ::std::move_backward(pos, e, e + (last - first));
@@ -692,9 +692,9 @@ public:
       }
       ::std::vector<T> copy;
       copy.reserve(new_size);
-      copy.insert(copy.end(), ::std::move_iterator(small()), ::std::move_iterator(pos));
+      copy.insert(copy.end(), ::std::move_iterator(small_begin()), ::std::move_iterator(pos));
       auto result = copy.insert(copy.end(), first, last);
-      copy.insert(copy.end(), ::std::move_iterator(pos), ::std::move_iterator(small() + small_length));
+      copy.insert(copy.end(), ::std::move_iterator(pos), ::std::move_iterator(small_begin() + small_length));
       new (&big())::std::vector<T>(mv(copy));
       small_length = small_size_t(-1);
       assert(size() == new_size);
@@ -716,7 +716,7 @@ public:
   {
     if (is_small())
     {
-      auto b = small(), e = b + small_length;
+      auto b = small_begin(), e = b + small_length;
       assert(b <= first && first <= last && last <= e);
       auto result = ::std::move(last, e, first);
       ::std::destroy(result, e);
@@ -743,7 +743,7 @@ public:
     {
       if (small_length < small_cap)
       {
-        new (small() + small_length) T(mv(value));
+        new (small_begin() + small_length) T(mv(value));
         ++small_length;
         return;
       }
@@ -762,7 +762,7 @@ public:
     if (is_small())
     {
       assert(small_length > 0);
-      small()[--small_length].~T();
+      small_begin()[--small_length].~T();
     }
     else
     {
@@ -802,7 +802,7 @@ public:
       {
         if (new_size <= small_cap)
         {
-          ::std::uninitialized_fill(small() + small_length, small() + new_size, value);
+          ::std::uninitialized_fill(small_begin() + small_length, small_begin() + new_size, value);
           small_length = small_size_t(new_size);
         }
         else
@@ -810,7 +810,7 @@ public:
           // Small to big conversion, just create a new vector
           ::std::vector<T> copy;
           copy.reserve(new_size);
-          copy.insert(copy.end(), ::std::move_iterator(small()), ::std::move_iterator(small() + small_length));
+          copy.insert(copy.end(), ::std::move_iterator(small_begin()), ::std::move_iterator(small_begin() + small_length));
           copy.resize(new_size, value);
           clear(); // call destructors for the moved-from elements
           new (&big())::std::vector<T>(mv(copy));
@@ -835,7 +835,7 @@ public:
           return other.swap(*this);
         }
         // We are longer, the other is shorter
-        auto b = small(), e = small() + small_length, ob = other.small(), oe = other.small() + other.small_length;
+        auto b = small_begin(), e = small_begin() + small_length, ob = other.small_begin(), oe = other.small_begin() + other.small_length;
         ::std::swap_ranges(ob, oe, b);
         ::std::uninitialized_move(b + other.small_length, e, oe);
         ::std::destroy(b + other.small_length, e);
@@ -880,12 +880,12 @@ public:
   // friend void swap(small_vector& lhs, small_vector& rhs) noexcept;
 
 private:
-  auto small()
+  auto small_begin()
   {
     return reinterpret_cast<T*>(&small_);
   }
 
-  auto small() const
+  auto small_begin() const
   {
     return reinterpret_cast<const T*>(&small_);
   }
@@ -914,7 +914,7 @@ private:
       {
         return false;
       }
-      small()[small_length - 1 - i].~T();
+      small_begin()[small_length - 1 - i].~T();
       return true;
     });
     small_length -= delta;
