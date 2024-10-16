@@ -256,8 +256,8 @@ inline void task::release(backend_ctx_untyped& ctx, event_list& done_prereqs)
   if (dot.is_tracing())
   {
     // These prereqs depend on the task identified by unique_id
-    auto& done_prereqs = get_done_prereqs();
-    done_prereqs.dot_declare_prereqs_from(dot, get_unique_id(), 1);
+    auto& done_prereqs_ = get_done_prereqs();
+    done_prereqs_.dot_declare_prereqs_from(dot, get_unique_id(), 1);
   }
 
   // This task becomes a new "leaf task" until another task depends on it
