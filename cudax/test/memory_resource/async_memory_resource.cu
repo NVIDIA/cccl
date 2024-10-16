@@ -486,7 +486,7 @@ TEST_CASE("Async memory resource peer access")
       cudax::stream stream{peers.front()};
       CUDAX_CHECK(resource.is_accessible_from(cudax::devices[0]));
 
-      auto allocate_and_check = [&](auto& resource) {
+      auto allocate_and_check_access = [&](auto& resource) {
         auto* ptr1 = resource.allocate_async(sizeof(int), stream);
         auto* ptr2 = resource.allocate(sizeof(int));
         auto dims  = cudax::distribute<1>(1);
@@ -501,17 +501,41 @@ TEST_CASE("Async memory resource peer access")
 
       CUDAX_CHECK(pool.is_accessible_from(peers.front()));
       CUDAX_CHECK(resource.is_accessible_from(peers.front()));
-      allocate_and_check(resource);
+      allocate_and_check_access(resource);
 
       cudax::mr::async_memory_resource another_resource{pool};
       CUDAX_CHECK(another_resource.is_accessible_from(peers.front()));
-      allocate_and_check(another_resource);
+      allocate_and_check_access(another_resource);
 
       resource.disable_peer_access(peers.front());
       CUDAX_CHECK(!resource.is_accessible_from(peers.front()));
       CUDAX_CHECK(!another_resource.is_accessible_from(peers.front()));
 
+      if (peers.size() > 1)
+      {
+        CUDAX_CHECK(resource.is_accessible_from(peers[1]));
+      }
+
       resource.disable_peer_access(peers);
+
+      resource.enable_peer_access(peers.front());
+      CUDAX_CHECK(resource.is_accessible_from(peers.front()));
+      CUDAX_CHECK(another_resource.is_accessible_from(peers.front()));
+
+      // Check if enable can include the device on which the pool resides
+      peers.push_back(cudax::devices[0]);
+      resource.enable_peer_access(peers);
+
+      // Check the resource using the default pool
+      cudax::mr::async_memory_resource default_pool_resource{};
+      cudax::mr::async_memory_resource another_default_pool_resource{};
+
+      default_pool_resource.enable_peer_access(peers.front());
+
+      CUDAX_CHECK(default_pool_resource.is_accessible_from(peers.front()));
+      allocate_and_check_access(default_pool_resource);
+      CUDAX_CHECK(another_default_pool_resource.is_accessible_from(peers.front()));
+      allocate_and_check_access(another_default_pool_resource);
     }
   }
 }
