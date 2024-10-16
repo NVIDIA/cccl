@@ -31,7 +31,7 @@ int main()
   const int N = 128;
   double X[N], Y[N];
 
-  for (size_t ind = 0; ind < N; ind++)
+  for (int ind = 0; ind < N; ind++)
   {
     X[ind] = X0(ind);
     Y[ind] = Y0(ind);
@@ -60,7 +60,7 @@ int main()
   };
 
   ctx.host_launch(handle_X.read(), handle_Y.read())->*[=](auto X, auto Y) {
-    for (size_t ind = 0; ind < N; ind++)
+    for (int ind = 0; ind < N; ind++)
     {
       // Y should be Y0 + alpha X0
       // fprintf(stderr, "Y[%ld] = %lf - expect %lf\n", ind, Y(ind), (Y0(ind) + alpha * X0(ind)));

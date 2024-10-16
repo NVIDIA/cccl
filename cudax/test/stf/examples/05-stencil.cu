@@ -179,11 +179,11 @@ int main(int argc, char** argv)
   // Create blocks and allocates host data
   for (size_t b = 0; b < NBLOCKS; b++)
   {
-    int beg = b * BLOCK_SIZE;
-    int end = (b + 1) * BLOCK_SIZE;
+    size_t beg = b * BLOCK_SIZE;
+    size_t end = (b + 1) * BLOCK_SIZE;
 
-    Un.emplace_back(beg, end, 1);
-    Un1.emplace_back(beg, end, 1);
+    Un.emplace_back(beg, end, 1ull);
+    Un1.emplace_back(beg, end, 1ull);
   }
 
   for (size_t b = 0; b < NBLOCKS; b++)
@@ -207,7 +207,7 @@ int main(int argc, char** argv)
 
       for (size_t local_idx = 0; local_idx < BLOCK_SIZE; local_idx++)
       {
-        Un1_vals[local_idx + GHOST_SIZE] = U0[(beg + local_idx + TOTAL_SIZE) % TOTAL_SIZE];
+        Un1_vals[local_idx + GHOST_SIZE] = Un_vals[(beg + local_idx + TOTAL_SIZE) % TOTAL_SIZE];
       }
     };
   }

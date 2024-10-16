@@ -393,6 +393,7 @@ T only_convertible_or([[maybe_unused]] T default_v, P&&... p)
 {
   if constexpr (!(::std::is_convertible_v<P, T> || ...))
   {
+    ((void)p, ...);
     return default_v;
   }
   else
