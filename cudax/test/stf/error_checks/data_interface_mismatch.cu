@@ -86,7 +86,7 @@ int main()
   }
 
   // We can't run both stream and graph tests because either will abort the program. So choose one at random.
-  srand(time(nullptr));
+  srand(static_cast<unsigned>(time(nullptr)));
   if (rand() % 2 == 0)
   {
     run<stream_ctx>(X);

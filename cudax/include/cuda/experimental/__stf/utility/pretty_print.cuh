@@ -127,10 +127,10 @@ void mdspan_to_vtk(mdspan_like s, const ::std::string& filename)
   }
 
   EXPECT(fprintf(f, "DATASET STRUCTURED_POINTS\n") != -1);
-  EXPECT(fprintf(f, "DIMENSIONS %ld %ld %ld\n", nx, ny, nz) != -1);
+  EXPECT(fprintf(f, "DIMENSIONS %zu %zu %zu\n", nx, ny, nz) != -1);
   EXPECT(fprintf(f, "ORIGIN 0 0 0\n") != -1);
   EXPECT(fprintf(f, "SPACING 1 1 1\n") != -1);
-  EXPECT(fprintf(f, "POINT_DATA %ld\n", s.size()) != -1);
+  EXPECT(fprintf(f, "POINT_DATA %zu\n", s.size()) != -1);
   EXPECT(fprintf(f, "SCALARS value float\n") != -1);
   EXPECT(fprintf(f, "LOOKUP_TABLE default\n") != -1);
 

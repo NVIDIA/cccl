@@ -197,7 +197,7 @@ int main(int argc, char** argv)
   // been written asynchronously using host callbacks.
   for (size_t b = 0; b < NBLOCKS; b++)
   {
-    int beg = b * BLOCK_SIZE;
+    size_t beg = b * BLOCK_SIZE;
 
     ctx.task(exec_place::host, Un[b].handle.rw(), Un1[b].handle.rw())->*[&](cudaStream_t stream, auto sUn, auto sUn1) {
       cuda_safe_call(cudaStreamSynchronize(stream));
