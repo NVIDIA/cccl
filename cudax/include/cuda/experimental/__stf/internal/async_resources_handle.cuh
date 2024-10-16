@@ -165,11 +165,11 @@ struct stream_pool
   using iterator = ::std::vector<decorated_stream>::iterator;
   iterator begin()
   {
-    return iterator(payload.data());
+    return payload.begin();
   }
   iterator end()
   {
-    return iterator(payload.data() + payload.size());
+    return payload.end();
   }
 
   /**
