@@ -1496,7 +1496,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     return;
   }
 
-  int ndevs = where.size();
+  size_t ndevs = where.size();
 
   if constexpr (pdepth == 1)
   {
