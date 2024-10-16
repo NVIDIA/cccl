@@ -422,13 +422,48 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
         input_it.dereference.name, // 4
         input_it.advance.name); // 5
     }
+    bool link_input_it_dereference = false;
     if (input_it.type == cccl_iterator_kind_t::iterator && input_it.dereference.name == nullptr)
     {
       fflush(stderr);
       printf("\nLOOOK WIP %s:%d\n", __FILE__, __LINE__);
+      printf("\nLOOOK input_it.value_type.size %ld  %s:%d\n", (long) input_it.value_type.size, __FILE__, __LINE__);
+      printf("\nLOOOK input_it.dereference.name %s  %s:%d\n", input_it.dereference.name, __FILE__, __LINE__);
+      input_it.value_type.size = 1; // TODO SET FROM PYTHON
+      input_it.value_type.alignment = 1;
       fflush(stdout);
-      throw std::runtime_error("WIP");
-      // Use TransformRAIUnaryOp here
+      input_iterator_src = std::format(
+        "extern \"C\" __device__ {1} {2}({0} distance);\n"
+        "struct __align__(1) input_iterator_state_t {{\n"
+        "  using iterator_category = cuda::std::random_access_iterator_tag;\n"
+        "  using value_type = {1};\n"
+        "  using difference_type = {0};\n"
+        "  using pointer = value_type*;\n"
+        "  using reference = value_type&;\n"
+        "  __device__ value_type operator*() const {{\n"
+        "      return {2}(offset);\n"
+        "  }}\n"
+        "  __device__ input_iterator_state_t& operator+=(difference_type diff) {{\n"
+        "      offset += diff;\n"
+        "      return *this;\n"
+        "  }}\n"
+        "  __device__ value_type operator[](difference_type diff) const {{\n"
+        "      return {2}(offset + diff);\n"
+        "  }}\n"
+        "  __device__ input_iterator_state_t operator+(difference_type diff) const {{\n"
+        "      input_iterator_state_t result = *this;\n"
+        "      result += diff;\n"
+        "      return result;\n"
+        "  }}\n"
+        "  difference_type offset = 0;\n"
+        "}};\n",
+        offset_t, // 0
+        "::cuda::std::int32_t", // 1
+        input_it.dereference.name); // 2
+      link_input_it_dereference = true;
+      printf("\nLOOOK CODE BEGIN  %s:%d\n%sLOOOK CODE END", __FILE__, __LINE__, input_iterator_src.c_str());
+      fflush(stdout);
+      // throw std::runtime_error("WIP");
     }
 
     const std::string output_iterator_src =
@@ -504,7 +539,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
             reduction_op.alignment,
             reduction_op.size);
 
-    const std::string src = std::format(
+    const std::string combined_src = std::format(
       "#include <cub/block/block_reduce.cuh>\n"
       "#include <cub/device/dispatch/kernels/reduce.cuh>\n"
       "struct __align__({1}) storage_t {{\n"
@@ -535,6 +570,8 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
       op_src, // 6
       policy.vector_load_length); // 7
 
+    printf("\nLOOOK CODE BEGIN  %s:%d\n%sLOOOK CODE END", __FILE__, __LINE__, combined_src.c_str());
+
     std::string single_tile_kernel_name = get_single_tile_kernel_name(input_it, output_it, reduction_op, init, false);
     std::string single_tile_second_kernel_name =
       get_single_tile_kernel_name(input_it, output_it, reduction_op, init, true);
@@ -553,7 +590,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
 
     auto cl =
       make_nvrtc_command_list()
-        .add_program(nvrtc_translation_unit{src.c_str(), name})
+        .add_program(nvrtc_translation_unit{combined_src.c_str(), name})
         .add_expression({single_tile_kernel_name})
         .add_expression({single_tile_second_kernel_name})
         .add_expression({reduction_kernel_name})
@@ -563,6 +600,9 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
         .get_name({reduction_kernel_name, reduction_kernel_lowered_name})
         .cleanup_program()
         .add_link({reduction_op.ltoir, reduction_op.ltoir_size});
+    if (link_input_it_dereference) {
+        cl.add_link({input_it.dereference.ltoir, input_it.dereference.ltoir_size});
+    }
 
     nvrtc_cubin result{};
 
@@ -601,8 +641,9 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
     build->cubin      = (void*) result.cubin.release();
     build->cubin_size = result.size;
   }
-  catch (...)
+  catch (const std::exception &exc)
   {
+    fflush(stderr); printf("\nLOOOK EXCEPTION %s  %s:%d\n", exc.what(), __FILE__, __LINE__); fflush(stdout);
     error = CUDA_ERROR_UNKNOWN;
   }
 

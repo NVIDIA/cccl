@@ -95,7 +95,7 @@ def test_device_sum_repeat_1_equals_num_items(num_items=10):
 
     dtype = numpy.int32
 
-    if 1:
+    if 0:
         h_input = numpy.array([1] * num_items, dtype)
         d_input = cuda.to_device(h_input)
     else:
