@@ -143,7 +143,7 @@ public:
     levels[level].set_sync(sync);
   }
 
-  bool get_level_sync(int level) const
+  bool get_level_sync(size_t level) const
   {
     assert(level < depth);
     return levels[level].get_sync();

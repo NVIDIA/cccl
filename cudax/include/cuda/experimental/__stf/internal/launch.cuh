@@ -75,10 +75,10 @@ void cuda_launcher_graph(interpreted_spec interpreted_policy, Fun&& f, void** ar
   const ::std::array<size_t, 3> mem_config = interpreted_policy.get_mem_config();
 
   cudaKernelNodeParams kconfig;
-  kconfig.blockDim       = config[2];
+  kconfig.gridDim        = static_cast<int>(config[1]);
+  kconfig.blockDim       = static_cast<int>(config[2]);
   kconfig.extra          = nullptr;
   kconfig.func           = (void*) f;
-  kconfig.gridDim        = config[1];
   kconfig.kernelParams   = args;
   kconfig.sharedMemBytes = mem_config[2];
 
@@ -99,7 +99,7 @@ void launch_impl(interpreted_spec interpreted_policy, exec_place& p, Fun f, Arg 
   assert(!p.is_grid());
 
   p->*[&] {
-    auto th = thread_hierarchy(rank, interpreted_policy);
+    auto th = thread_hierarchy(static_cast<int>(rank), interpreted_policy);
 
     void* th_dev_tmp_ptr = nullptr;
 
@@ -143,7 +143,7 @@ void graph_launch_impl(task_t& t, interpreted_spec interpreted_policy, exec_plac
 {
   assert(!p.is_grid());
 
-  auto kernel_args = tuple_prepend(thread_hierarchy(rank, interpreted_policy), mv(arg));
+  auto kernel_args = tuple_prepend(thread_hierarchy(static_cast<int>(rank), interpreted_policy), mv(arg));
   using args_type  = decltype(kernel_args);
   void* all_args[] = {&f, &kernel_args};
 
