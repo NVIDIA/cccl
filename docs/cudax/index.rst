@@ -19,6 +19,7 @@ Specifically, ``cudax`` provides:
    - :ref:`an owning type erased memory resource <cudax-memory-resource-any-async-resource>`
    - :ref:`stream-ordered memory resources <cudax-memory-resource-async>`
    - dimensions description functionality
+   - :ref:`an implementation of the STF (Sequential Task Flow) programming model <stf>`
 
 Stability Guarantees
 ---------------------
