@@ -428,6 +428,9 @@ constexpr V get_reserved_default()
          : ::std::numeric_limits<V>::min();
 }
 
+template<auto V>
+using __copy_type_t = decltype(V);
+
 /**
  * @brief A class to represent a value that can be either static or dynamic.
  *
@@ -436,7 +439,7 @@ constexpr V get_reserved_default()
  *
  * All arithmetic and logic operators are supported (if the original type supports them).
  */
-template <auto static_v, decltype(static_v) reserved = get_reserved_default<decltype(static_v)>()>
+template <auto static_v, __copy_type_t<static_v> reserved = get_reserved_default<__copy_type_t<static_v>>()>
 class optionally_static
 {
 public:
