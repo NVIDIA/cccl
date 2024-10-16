@@ -48,10 +48,10 @@ void compare_two_vectors(Ctx& ctx, logical_data<T>& a, logical_data<T>& b, int& 
   ctx.host_launch(delta_cnt.read())->*[&](auto /*unused*/) {};
 }
 
-static const size_t n = 12;
+static const size_t N = 12;
 
 template <class Ctx>
-void run(double (&X)[n], double (&Y)[n])
+void run(double (&X)[N], double (&Y)[N])
 {
   Ctx ctx;
   auto handle_X = ctx.logical_data(X);
@@ -73,9 +73,9 @@ void run(double (&X)[n], double (&Y)[n])
 
 int main()
 {
-  double X[n], Y[n];
+  double X[N], Y[N];
 
-  for (size_t ind = 0; ind < n; ind++)
+  for (size_t ind = 0; ind < N; ind++)
   {
     X[ind] = 1.0 * ind;
     Y[ind] = 2.0 * ind - 3.0;
