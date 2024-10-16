@@ -366,7 +366,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
   cccl_device_reduce_build_result_t* build,
   cccl_iterator_t input_it,
   cccl_iterator_t output_it,
-  cccl_op_t op,
+  cccl_op_t reduction_op,
   cccl_value_t init,
   int cc_major,
   int cc_minor,
@@ -382,7 +382,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
     const char* name = "test";
 
     const int cc                       = cc_major * 10 + cc_minor;
-    const cccl_type_info accum_t       = get_accumulator_type(op, input_it, init);
+    const cccl_type_info accum_t       = get_accumulator_type(reduction_op, input_it, init);
     const std::string accum_cpp        = cccl_type_enum_to_string(accum_t.type);
     const runtime_tuning_policy policy = get_policy(cc, accum_t, input_it.value_type);
     const std::string input_it_value_t = cccl_type_enum_to_string(input_it.value_type.type);
@@ -469,7 +469,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
             output_it.alignment); // 5
 
     const std::string op_src =
-      op.type == cccl_op_kind_t::stateless
+      reduction_op.type == cccl_op_kind_t::stateless
         ? std::format(
             "extern \"C\" __device__ {0} {1}({0} lhs, {0} rhs);\n"
             "struct op_wrapper {{\n"
@@ -478,7 +478,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
             "  }}\n"
             "}};\n",
             accum_cpp,
-            op.name)
+            reduction_op.name)
         : std::format(
             "struct __align__({2}) op_state {{\n"
             "  char data[{3}];\n"
@@ -491,9 +491,9 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
             "  }}\n"
             "}};\n",
             accum_cpp,
-            op.name,
-            op.alignment,
-            op.size);
+            reduction_op.name,
+            reduction_op.alignment,
+            reduction_op.size);
 
     const std::string src = std::format(
       "#include <cub/block/block_reduce.cuh>\n"
@@ -526,9 +526,10 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
       op_src, // 6
       policy.vector_load_length); // 7
 
-    std::string single_tile_kernel_name        = get_single_tile_kernel_name(input_it, output_it, op, init, false);
-    std::string single_tile_second_kernel_name = get_single_tile_kernel_name(input_it, output_it, op, init, true);
-    std::string reduction_kernel_name          = get_device_reduce_kernel_name(op, input_it, init);
+    std::string single_tile_kernel_name = get_single_tile_kernel_name(input_it, output_it, reduction_op, init, false);
+    std::string single_tile_second_kernel_name =
+      get_single_tile_kernel_name(input_it, output_it, reduction_op, init, true);
+    std::string reduction_kernel_name = get_device_reduce_kernel_name(reduction_op, input_it, init);
     std::string single_tile_kernel_lowered_name;
     std::string single_tile_second_kernel_lowered_name;
     std::string reduction_kernel_lowered_name;
@@ -552,7 +553,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
         .get_name({single_tile_second_kernel_name, single_tile_second_kernel_lowered_name})
         .get_name({reduction_kernel_name, reduction_kernel_lowered_name})
         .cleanup_program()
-        .add_link({op.ltoir, op.ltoir_size});
+        .add_link({reduction_op.ltoir, reduction_op.ltoir_size});
 
     nvrtc_cubin result{};
 
