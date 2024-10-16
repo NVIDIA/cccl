@@ -95,7 +95,7 @@ public:
     {
       if (addr[i].value != kEmpty)
       {
-        fprintf(stderr, "VALID ENTRY at slot %ld, value %d key %d\n", i, addr[i].value, addr[i].key);
+        fprintf(stderr, "VALID ENTRY at slot %zu, value %d key %d\n", i, addr[i].value, addr[i].key);
       }
     }
   }
@@ -225,7 +225,7 @@ public:
    * All `shape_of` specializations must define this constructor.
    */
   shape_of(const hashtable& h)
-      : shape_of(h.get_capacity())
+      : shape_of(static_cast<uint32_t>(h.get_capacity()))
   {}
 
   // This size() value does not correspond to the actual amount of bytes

@@ -1456,7 +1456,7 @@ public:
       }
 
       // TODO THIS MAY BE A BUG: do we care about managed devices or host?
-      const auto memory_node = data_place::device(n - 2);
+      const auto memory_node = data_place::device(static_cast<int>(n - 2));
       // Skip the target memory node in this step
       if (memory_node == target_memory_node)
       {

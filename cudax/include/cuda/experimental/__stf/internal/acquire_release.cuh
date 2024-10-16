@@ -75,7 +75,7 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
   {
     assert(task_deps[index].get_data().is_initialized());
     // Save index before reordering
-    task_deps[index].dependency_index = index;
+    task_deps[index].dependency_index = static_cast<int>(index);
     // Mark up data to avoid them being reclaimed while they are going to be used anyway
     task_deps[index].get_data().add_ref();
   }
