@@ -111,7 +111,11 @@ inline ::std::string cudaGraphExecUpdateErrorString(enum cudaGraphExecUpdateResu
       assert(false);
       return ::std::string();
   }
+#if defined(_CCCL_COMPILER_MSVC)
+  fprintf(stderr, "%s: invalid argument %d\n", __FUNCSIG__, res);
+#else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
   fprintf(stderr, "%s: invalid argument %d\n", __PRETTY_FUNCTION__, res);
+#endif // !_CCCL_COMPILER_MSVC
   abort();
   return "Unknown error";
 }
