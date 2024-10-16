@@ -21,6 +21,7 @@ using namespace cuda::experimental::stf;
 
 int main()
 {
+  #if !defined(_CCCL_COMPILER_MSVC)
   // Generate a random dirname
   srand(time(0));
   int r = rand();
@@ -59,4 +60,5 @@ int main()
   EXPECT(!std::filesystem::exists(dirname + "/" + std::to_string(2)));
 
   std::filesystem::remove_all(dirname);
+#endif // !_CCCL_COMPILER_MSVC
 }
