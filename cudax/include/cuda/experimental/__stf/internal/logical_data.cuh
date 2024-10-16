@@ -699,22 +699,22 @@ public:
   event_list get_pending_done_prereqs(const data_place&)
   {
     auto prereqs = event_list();
-    auto& ctx    = get_state();
+    auto& state_    = get_state();
 
-    if (ctx.current_mode == access_mode::write)
+    if (state_.current_mode == access_mode::write)
     {
-      if (ctx.current_writer.has_value())
+      if (state_.current_writer.has_value())
       {
-        prereqs = ctx.current_writer->get_done_prereqs();
+        prereqs = state_.current_writer->get_done_prereqs();
       }
     }
     else
     {
-      prereqs.merge(ctx.current_readers.get_done_prereqs());
+      prereqs.merge(state_.current_readers.get_done_prereqs());
 
-      if (ctx.previous_writer.has_value())
+      if (state_.previous_writer.has_value())
       {
-        prereqs.merge(ctx.previous_writer->get_done_prereqs());
+        prereqs.merge(state_.previous_writer->get_done_prereqs());
       }
     }
 
@@ -1443,7 +1443,7 @@ public:
 
     // Naive plan : reduce all local instances (except on target node), copy to target node, reduce local instances
     // on target node
-    for (int n : each(max_nodes))
+    for (auto n : each(max_nodes))
     {
 #ifdef REDUCTION_DEBUG
       fprintf(stderr, "make_reduction_plan :: node %d per_node size %d\n", n, per_node[n].size());

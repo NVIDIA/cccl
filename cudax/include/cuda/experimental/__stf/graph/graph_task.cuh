@@ -103,26 +103,26 @@ public:
     // task nodes or the child graph.
     if (task_nodes.size() > 0)
     {
-      for (auto& n : task_nodes)
+      for (auto& node : task_nodes)
       {
 #ifndef NDEBUG
         // Ensure the node does not have dependencies yet
         size_t num_deps;
-        cuda_safe_call(cudaGraphNodeGetDependencies(n, nullptr, &num_deps));
+        cuda_safe_call(cudaGraphNodeGetDependencies(node, nullptr, &num_deps));
         assert(num_deps == 0);
 
         // Ensure there are no output dependencies either (or we could not
         // add input dependencies later)
         size_t num_deps_out;
-        cuda_safe_call(cudaGraphNodeGetDependentNodes(n, nullptr, &num_deps_out));
+        cuda_safe_call(cudaGraphNodeGetDependentNodes(node, nullptr, &num_deps_out));
         assert(num_deps_out == 0);
 #endif
 
-        // Repeat n as many times as there are input dependencies
-        ::std::vector<cudaGraphNode_t> out_array(ready_dependencies.size(), n);
+        // Repeat node as many times as there are input dependencies
+        ::std::vector<cudaGraphNode_t> out_array(ready_dependencies.size(), node);
         cuda_safe_call(
           cudaGraphAddDependencies(ctx_graph, ready_dependencies.data(), out_array.data(), ready_dependencies.size()));
-        auto gnp = reserved::graph_event(n, epoch);
+        auto gnp = reserved::graph_event(node, epoch);
         gnp->set_symbol(ctx, "done " + get_symbol());
         /* This node is now the output dependency of the task */
         done_prereqs.add(mv(gnp));
