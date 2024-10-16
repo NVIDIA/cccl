@@ -172,7 +172,7 @@ public:
 
   virtual bool do_is_equal(const THRUST_STD_MR_NS::memory_resource& other) const noexcept override
   {
-#  ifdef THRUST_HAS_DYNAMIC_CAST
+#  ifndef _CCCL_NO_RTTI
     auto mr_resource = dynamic_cast<memory_resource<>*>(&other);
     return mr_resource && do_is_equal(*mr_resource);
 #  else
