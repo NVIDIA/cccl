@@ -42,10 +42,10 @@ int main()
 
   cudaStream_t stream = ctx.pick_stream();
 
-  const size_t N = 16;
+  const int N = 16;
   int X[N];
 
-  for (size_t i = 0; i < N; i++)
+  for (int i = 0; i < N; i++)
   {
     X[i] = X0(i);
   }
@@ -75,7 +75,7 @@ int main()
 
   ctx.finalize();
 
-  for (size_t i = 0; i < N; i++)
+  for (int i = 0; i < N; i++)
   {
     EXPECT(X[i] == 2 * X0(i) + 1);
   }

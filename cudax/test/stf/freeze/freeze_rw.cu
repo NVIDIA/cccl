@@ -42,10 +42,10 @@ int main()
 
   cudaStream_t stream = ctx.pick_stream();
 
-  const size_t N = 16;
+  const int N = 16;
   int X[N];
 
-  for (size_t i = 0; i < N; i++)
+  for (int i = 0; i < N; i++)
   {
     X[i] = X0(i);
   }
@@ -53,7 +53,7 @@ int main()
   auto lX = ctx.logical_data(X).set_symbol("X");
   auto lY = ctx.logical_data(lX.shape()).set_symbol("Y");
 
-  for (size_t k = 0; k < 4; k++)
+  for (int k = 0; k < 4; k++)
   {
     auto fx = ctx.freeze(lX, access_mode::rw, data_place::current_device());
     auto dX = fx.get(data_place::current_device(), stream);

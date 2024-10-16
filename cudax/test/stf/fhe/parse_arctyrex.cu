@@ -66,9 +66,7 @@ logical_slice LITERAL(Ctx& ctx, size_t n, int, std::string out_symbol = "undefin
 template <typename Ctx>
 logical_slice OR(Ctx& ctx, logical_slice x, logical_slice y, std::string out_symbol = "undefined")
 {
-  size_t nx = x.shape().size();
-  size_t ny = y.shape().size();
-  assert(nx == ny);
+  assert(x.shape().size() == y.shape().size());
 
   auto z = ctx.logical_data(x.shape());
   z.set_symbol(out_symbol);
@@ -85,9 +83,7 @@ logical_slice OR(Ctx& ctx, logical_slice x, logical_slice y, std::string out_sym
 template <typename Ctx>
 logical_slice AND(Ctx& ctx, logical_slice x, logical_slice y, std::string out_symbol = "undefined")
 {
-  size_t nx = x.shape().size();
-  size_t ny = y.shape().size();
-  assert(nx == ny);
+  assert(x.shape().size() == y.shape().size());
 
   auto z = ctx.logical_data(x.shape());
   z.set_symbol(out_symbol);
