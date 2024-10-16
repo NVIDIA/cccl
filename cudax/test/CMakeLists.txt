@@ -1,11 +1,5 @@
 cccl_get_catch2()
 
-find_package(Thrust ${cudax_VERSION} EXACT CONFIG
-  NO_DEFAULT_PATH # Only check the explicit path in HINTS:
-  HINTS "${CCCL_SOURCE_DIR}/lib/cmake/thrust/"
-)
-thrust_create_target(cudax.test.thrust)
-
 add_library(catch2_main STATIC catch2_helpers/catch2_main.cpp)
 target_link_libraries(catch2_main PUBLIC Catch2::Catch2)
 
@@ -31,7 +25,6 @@ function(cudax_add_catch2_test target_name_var test_name cn_target) # ARGN=test 
   target_include_directories(${test_target} PRIVATE "common")
   target_link_libraries(${test_target} PRIVATE
     ${cn_target}
-    cudax.test.thrust
     Catch2::Catch2
     catch2_main
   )
