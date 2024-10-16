@@ -53,8 +53,10 @@ void run(double (&X)[n])
 int main()
 {
   /* Setup an handler to catch the SIGABRT signal during the programming error */
-  struct sigaction sigabrt_action
-  {};
+#if defined(_CCCL_COMPILER_MSVC)
+  signal(SIGABRT, &cleanupRoutine);
+#else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC
+  struct sigaction sigabrt_action{};
   memset(&sigabrt_action, 0, sizeof(sigabrt_action));
   sigabrt_action.sa_handler = &cleanupRoutine;
 
@@ -63,6 +65,7 @@ int main()
     perror("sigaction SIGABRT");
     exit(EXIT_FAILURE);
   }
+#endif // !_CCCL_COMPILER_MSVC
 
   const int n = 12;
   double X[n];
