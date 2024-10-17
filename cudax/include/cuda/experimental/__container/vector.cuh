@@ -195,9 +195,9 @@ private:
   //! @brief Helper to determine what cudaMemcpyKind we need to copy data from another vector with different
   template <class... _OtherProperties>
   static constexpr cudaMemcpyKind __transfer_kind =
-    __select_execution_space<_OtherProperties...> == _ExecutionSpace::__host
-      ? (__is_host_only ? cudaMemcpyHostToHost : cudaMemcpyHostToDevice)
-      : (__is_host_only ? cudaMemcpyDeviceToHost : cudaMemcpyDeviceToDevice);
+    _CUDA_VMR::__is_device_accessible<_OtherProperties...>
+      ? (__is_host_only ? cudaMemcpyDeviceToHost : cudaMemcpyDeviceToDevice)
+      : (__is_host_only ? cudaMemcpyHostToHost : cudaMemcpyHostToDevice);
 
   //! @brief Copies data from `[__first, __last)` to \p __dest, where \p __first and \p __dest reside in the same memory
   //! space
