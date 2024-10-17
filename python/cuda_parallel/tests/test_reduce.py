@@ -86,7 +86,7 @@ def test_device_reduce_dtype_mismatch():
 
 
 @pytest.mark.parametrize("use_numpy_array", [True, False])
-@pytest.mark.parametrize("input_generator", ["constant", "counting", "arbitrary", "nested"])
+@pytest.mark.parametrize("input_generator", ["constant", "counting", "arbitrary", "nested_inner", "nested_global"][:-1])
 def test_device_sum_input_unary_op(use_numpy_array, input_generator, num_items=19, start_sum_with=1000):
     def add_op(a, b):
         return a + b
@@ -102,12 +102,19 @@ def test_device_sum_input_unary_op(use_numpy_array, input_generator, num_items=1
         def input_unary_op(distance):
             permutation = (4, 2, 0, 3, 1)
             return permutation[distance % len(permutation)]
-    elif input_generator == "nested":
+    elif input_generator == "nested_inner":
         def input_unary_op(distance):
-            def inner_unary_op(distance):  # TODO: Figure out how to enable calling global functions.
+            def inner_unary_op(distance):
                 permutation = (4, 2, 0, 3, 1)
                 return permutation[distance % len(permutation)]
             return 2 * inner_unary_op(distance)
+    elif input_generator == "nested_global":
+        # TODO: Figure out how to make this work.
+        def other_unary_op(distance):
+            permutation = (4, 2, 0, 3, 1)
+            return permutation[distance % len(permutation)]
+        def input_unary_op(distance):
+            return 2 * other_unary_op(distance)
     else:
         raise RuntimeError("Unexpected input_generator")
 
