@@ -30,6 +30,8 @@
 #include <cstdio>
 #include <stack>
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // do not document
+
 #if !defined(_CCCL_COMPILER_MSVC)
 #define STATEFUL_CALLBACKS
 
@@ -601,3 +603,4 @@ inline bool cudaCallbackQueueProgress(callback_queue* q, bool flag)
 } // end namespace cuda::experimental::stf
 
 #endif // !_CCCL_COMPILER_MSVC
+#endif // DOXYGEN_SHOULD_SKIP_THIS do not document
