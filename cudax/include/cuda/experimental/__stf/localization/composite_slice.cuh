@@ -273,7 +273,7 @@ private:
     }
 
     // Count the number of occurences of each pos
-    ::std::unordered_map<pos4, size_t> sample_cnt;
+    ::std::unordered_map<pos4, size_t, hash<pos4>> sample_cnt;
     for (auto& s : sampled_pos)
     {
       ++sample_cnt[s];

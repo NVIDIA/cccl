@@ -520,19 +520,21 @@ UNITTEST("mix of integrals and pairs")
 
 #endif // UNITTESTED_FILE
 
-} // end namespace cuda::experimental::stf
 
 // So that we can create unordered_map of pos4 entries
 template <>
-struct std::hash<cuda::experimental::stf::pos4>
+struct hash<pos4>
 {
-  ::std::size_t operator()(cuda::experimental::stf::pos4 const& s) const noexcept
+  ::std::size_t operator()(pos4 const& s) const noexcept
   {
-    return cuda::experimental::stf::hash_all(s.x, s.y, s.z, s.t);
+    return hash_all(s.x, s.y, s.z, s.t);
   }
 };
 
 // So that we can create maps of dim4 entries
 template <>
-struct std::hash<cuda::experimental::stf::dim4> : ::std::hash<cuda::experimental::stf::pos4>
+struct hash<dim4> : hash<pos4>
 {};
+
+} // end namespace cuda::experimental::stf
+
