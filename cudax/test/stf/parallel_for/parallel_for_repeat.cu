@@ -19,12 +19,12 @@
 
 using namespace cuda::experimental::stf;
 
-double X0(int i)
+double X0(size_t i)
 {
   return sin((double) i);
 }
 
-double Y0(int i)
+double Y0(size_t i)
 {
   return cos((double) i);
 }

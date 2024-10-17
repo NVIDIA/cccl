@@ -19,7 +19,7 @@
 using namespace cuda::experimental::stf;
 
 // Compute which part ID has the item at position "index"
-__host__ __device__ int ref_tiling(size_t index, size_t tile_size, size_t nparts)
+__host__ __device__ size_t ref_tiling(size_t index, size_t tile_size, size_t nparts)
 {
   // in which tile is this ?
   size_t tile_id = index / tile_size;
@@ -67,11 +67,11 @@ int main()
 
   /* Check the result on the host */
   ctx.parallel_for(exec_place::host, ly.shape(), ly.read())->*[=](size_t pos, slice<double> sy) {
-    int expected = ref_tiling(pos, tile_size, nparts);
+    int expected = static_cast<int>(ref_tiling(pos, tile_size, nparts));
     int value    = (int) sy(pos);
     if (expected != value)
     {
-      printf("POS %ld -> %d (expected %d)\n", pos, value, expected);
+      printf("POS %zu -> %d (expected %d)\n", pos, value, expected);
     }
     assert(expected == value);
     *pchecked = true;

@@ -25,12 +25,12 @@ __global__ void axpy(size_t start, size_t cnt, T a, const T* x, T* y)
   }
 }
 
-double X0(int i)
+double X0(size_t i)
 {
   return sin((double) i);
 }
 
-double Y0(int i)
+double Y0(size_t i)
 {
   return cos((double) i);
 }
