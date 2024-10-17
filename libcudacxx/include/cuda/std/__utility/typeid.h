@@ -464,7 +464,7 @@ private:
 #if !defined(_CCCL_NO_INLINE_VARIABLES)
 
 template <class _Tp>
-_CCCL_INLINE_VAR _CCCL_CONSTEXPR_GLOBAL __type_info __typeid(__pretty_nameof<_Tp>());
+_CCCL_INLINE_VAR _CCCL_CONSTEXPR_GLOBAL __type_info __typeid{__pretty_nameof<_Tp>()};
 
 #  define _CCCL_CONSTEXPR_TYPEID(...) _CUDA_VSTD::__typeid<_CUDA_VSTD::__remove_cv_t<__VA_ARGS__>>
 
@@ -473,7 +473,7 @@ _CCCL_INLINE_VAR _CCCL_CONSTEXPR_GLOBAL __type_info __typeid(__pretty_nameof<_Tp
 template <class _Tp>
 struct __typeid_value
 {
-  static constexpr __type_info value(__pretty_nameof<_Tp>());
+  static constexpr __type_info value{__pretty_nameof<_Tp>()};
 };
 
 // Before the addition of inline variables, it was necessary to
