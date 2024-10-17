@@ -31,10 +31,10 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_compound : public integral_constant<bool, _CCCL_BUILTIN_IS_COMPOUND(_Tp)>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPALTES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _CCCL_INLINE_VAR constexpr bool is_compound_v = _CCCL_BUILTIN_IS_COMPOUND(_Tp);
-#  endif // !_CCCL_NO_VARIABLE_TEMPALTES
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #else // ^^^ _CCCL_BUILTIN_IS_COMPOUND ^^^ / vvv !_CCCL_BUILTIN_IS_COMPOUND vvv
 
@@ -42,10 +42,10 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_compound : public integral_constant<bool, !is_fundamental<_Tp>::value>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPALTES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _CCCL_INLINE_VAR constexpr bool is_compound_v = is_compound<_Tp>::value;
-#  endif // !_CCCL_NO_VARIABLE_TEMPALTES
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #endif // !_CCCL_BUILTIN_IS_COMPOUND
 

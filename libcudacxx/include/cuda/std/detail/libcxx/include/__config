@@ -525,12 +525,6 @@ typedef __char32_t char32_t;
 #    define _LIBCUDACXX_HAS_NO_WCHAR_H
 #  endif // _LIBCUDACXX_HAS_NO_WCHAR_H
 
-// Try to find out if RTTI is disabled.
-// g++ and cl.exe have RTTI on by default and define a macro when it is.
-#  ifndef _LIBCUDACXX_NO_RTTI
-#    define _LIBCUDACXX_NO_RTTI
-#  endif // !_LIBCUDACXX_NO_RTTI
-
 #  ifndef _LIBCUDACXX_NODEBUG_TYPE
 #    if defined(__cuda_std__)
 #      define _LIBCUDACXX_NODEBUG_TYPE
