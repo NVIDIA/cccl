@@ -197,7 +197,11 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
 
 template <typename PolicyT, typename = void>
 struct ReducePolicyWrapper : PolicyT
-{};
+{
+  CUB_RUNTIME_FUNCTION ReducePolicyWrapper(PolicyT base)
+      : PolicyT(base)
+  {}
+};
 
 template <typename StaticPolicyT>
 struct ReducePolicyWrapper<StaticPolicyT,
@@ -205,6 +209,10 @@ struct ReducePolicyWrapper<StaticPolicyT,
                                               typename StaticPolicyT::SingleTilePolicy,
                                               typename StaticPolicyT::SegmentedReducePolicy>> : StaticPolicyT
 {
+  CUB_RUNTIME_FUNCTION ReducePolicyWrapper(StaticPolicyT base)
+      : StaticPolicyT(base)
+  {}
+
   CUB_DEFINE_SUB_POLICY_GETTER(Reduce)
   CUB_DEFINE_SUB_POLICY_GETTER(SingleTile)
   CUB_DEFINE_SUB_POLICY_GETTER(SegmentedReduce)

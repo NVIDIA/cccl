@@ -603,12 +603,20 @@ MaxSmOccupancy(int& max_sm_occupancy, KernelPtr kernel_ptr, int block_threads, i
 
 template <typename PolicyT, typename = void>
 struct PolicyWrapper : PolicyT
-{};
+{
+  CUB_RUNTIME_FUNCTION PolicyWrapper(PolicyT base)
+      : PolicyT(base)
+  {}
+};
 
 template <typename StaticPolicyT>
 struct PolicyWrapper<StaticPolicyT, decltype(StaticPolicyT::BLOCK_THREADS, StaticPolicyT::ITEMS_PER_THREAD, void())>
     : StaticPolicyT
 {
+  CUB_RUNTIME_FUNCTION PolicyWrapper(StaticPolicyT base)
+      : StaticPolicyT(base)
+  {}
+
   CUB_RUNTIME_FUNCTION static constexpr std::size_t BlockThreads()
   {
     return StaticPolicyT::BLOCK_THREADS;
