@@ -199,9 +199,8 @@ int main(int argc, char** argv)
   {
     size_t beg = b * BLOCK_SIZE;
 
-    ctx.task(exec_place::host, Un[b].handle.rw(), Un1[b].handle.rw())->*[&](cudaStream_t stream, auto sUn, auto sUn1) {
+    ctx.task(exec_place::host, Un1[b].handle.rw())->*[&](cudaStream_t stream, auto sUn1) {
       cuda_safe_call(cudaStreamSynchronize(stream));
-
       double* Un1_vals = sUn1.data_handle();
 
       for (size_t local_idx = 0; local_idx < BLOCK_SIZE; local_idx++)
