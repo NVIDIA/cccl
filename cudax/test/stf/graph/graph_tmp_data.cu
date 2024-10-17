@@ -31,17 +31,17 @@ int main()
 {
   //    stream_ctx ctx;
   graph_ctx ctx;
-  const size_t N = 16;
+  const int N = 16;
   double X[N];
 
-  for (size_t i = 0; i < N; i++)
+  for (int i = 0; i < N; i++)
   {
     X[i] = X0(i);
   }
 
   auto lX = ctx.logical_data(X);
 
-  for (size_t i = 0; i < 10; i++)
+  for (int i = 0; i < 10; i++)
   {
     // fprintf(stderr, "START loop %ld\n", i);
     auto lY = ctx.logical_data(lX.shape());

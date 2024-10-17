@@ -52,7 +52,11 @@ constexpr ::std::string_view type_name();
 template <>
 constexpr ::std::string_view type_name<_71d56d6539c0fd76d1af6c69e4e511a>()
 {
+#if defined(_CCCL_COMPILER_MSVC)
+  return __FUNCSIG__;
+#else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
   return __PRETTY_FUNCTION__;
+#endif // !_CCCL_COMPILER_MSVC
 }
 
 // Length of prefix and suffix in __PRETTY_FUNCTION__ when used with `type_name`.
@@ -72,7 +76,11 @@ inline constexpr ::std::pair<size_t, size_t> type_name_affixes = []() {
 template <class T>
 constexpr ::std::string_view type_name()
 {
+#if defined(_CCCL_COMPILER_MSVC)
+  ::std::string_view p = __FUNCSIG__;
+#else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
   ::std::string_view p = __PRETTY_FUNCTION__;
+#endif // !_CCCL_COMPILER_MSVC
   return p.substr(type_name_affixes.first, p.size() - type_name_affixes.first - type_name_affixes.second);
 }
 
@@ -81,7 +89,11 @@ constexpr ::std::string_view type_name()
 template <class T>
 constexpr ::std::string_view type_name()
 {
+#if defined(_CCCL_COMPILER_MSVC)
+  constexpr ::std::string_view p = __FUNCSIG__;
+#else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
   constexpr ::std::string_view p = __PRETTY_FUNCTION__;
+#endif // !_CCCL_COMPILER_MSVC
   return p;
 }
 #endif

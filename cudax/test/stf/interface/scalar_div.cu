@@ -110,7 +110,7 @@ void run()
   *a.h_addr = 42.0;
   *b.h_addr = 12.3;
 
-  scalar c = -a / b;
+  scalar c = (-a) / b;
 
   auto t = ctx.host_launch(c.handle.read());
   t->*[](auto x) {

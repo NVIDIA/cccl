@@ -60,7 +60,7 @@ public:
     size_t input_cnt) = 0;
 
   // Returns prereq
-  void data_copy(backend_ctx_untyped& ctx,
+  void data_copy(backend_ctx_untyped& ctx_,
                  const data_place& dst_memory_node,
                  instance_id_t dst_instance_id,
                  const data_place& src_memory_node,
@@ -71,8 +71,8 @@ public:
     ::std::ignore = dst_memory_node;
     assert(src_memory_node != dst_memory_node);
 
-    cudaGraph_t graph  = ctx.graph();
-    size_t graph_epoch = ctx.epoch();
+    cudaGraph_t graph  = ctx_.graph();
+    size_t graph_epoch = ctx_.epoch();
     assert(graph && graph_epoch != size_t(-1));
 
     const ::std::vector<cudaGraphNode_t> nodes = join_with_graph_nodes(prereqs, graph_epoch);
@@ -82,7 +82,7 @@ public:
 
     cudaGraphNode_t out = graph_data_copy(kind, src_instance_id, dst_instance_id, graph, nodes.data(), nodes.size());
 
-    fork_from_graph_node(ctx, out, graph_epoch, prereqs, "copy");
+    fork_from_graph_node(ctx_, out, graph_epoch, prereqs, "copy");
   }
 };
 

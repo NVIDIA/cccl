@@ -29,7 +29,7 @@ int main()
   };
 
   ctx.host_launch(lh.rw())->*[](auto h) {
-    for (size_t i = 0; i < 16; i++)
+    for (int i = 0; i < 16; i++)
     {
       EXPECT(h.get(i * 10) == 17 + i * 14);
     }
