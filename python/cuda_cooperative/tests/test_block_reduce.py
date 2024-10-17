@@ -75,6 +75,49 @@ def impl_complex(context, builder, sig, args):
 
 
 @pytest.mark.parametrize('threads_in_block', [32, 64, 128, 256, 512, 1024])
+def test_block_reduction_of_user_defined_type_without_temp_storage(threads_in_block):
+    def op(result_ptr, lhs_ptr, rhs_ptr):
+        real_value = numba.int32(lhs_ptr[0].real + rhs_ptr[0].real)
+        imag_value = numba.int32(lhs_ptr[0].imag + rhs_ptr[0].imag)
+        result_ptr[0] = Complex(real_value, imag_value)
+
+    block_reduce = cudax.block.reduce(dtype=complex_type,
+                                      binary_op=op,
+                                      threads_in_block=threads_in_block,
+                                      methods={
+                                          'construct': Complex.construct,
+                                          'assign': Complex.assign,
+                                      })
+
+    @cuda.jit(link=block_reduce.files)
+    def kernel(input, output):
+        block_output = block_reduce(
+            Complex(input[cuda.threadIdx.x], input[threads_in_block + cuda.threadIdx.x]))
+
+        if cuda.threadIdx.x == 0:
+            output[0] = block_output.real
+            output[1] = block_output.imag
+
+    h_input = random_int(2 * threads_in_block, 'int32')
+    d_input = cuda.to_device(h_input)
+    d_output = cuda.device_array(2, dtype='int32')
+    kernel[1, threads_in_block](d_input, d_output)
+    cuda.synchronize()
+    h_output = d_output.copy_to_host()
+    h_expected = np.sum(h_input[:threads_in_block]), np.sum(
+        h_input[threads_in_block:])
+
+    assert h_output[0] == h_expected[0]
+    assert h_output[1] == h_expected[1]
+
+    sig = (numba.int32[::1], numba.int32[::1])
+    sass = kernel.inspect_sass(sig)
+
+    assert 'LDL' not in sass
+    assert 'STL' not in sass
+
+
+@pytest.mark.parametrize('threads_in_block', [32, 64, 128, 256, 512, 1024])
 def test_block_reduction_of_user_defined_type(threads_in_block):
     def op(result_ptr, lhs_ptr, rhs_ptr):
         real_value = numba.int32(lhs_ptr[0].real + rhs_ptr[0].real)
@@ -167,7 +210,8 @@ def test_block_sum(T, threads_in_block):
 
     @cuda.jit(link=block_reduce.files)
     def kernel(input, output):
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype='uint8')
+        temp_storage = cuda.shared.array(
+            shape=temp_storage_bytes, dtype='uint8')
         block_output = block_reduce(temp_storage, input[cuda.threadIdx.x])
 
         if cuda.threadIdx.x == 0:
@@ -199,8 +243,10 @@ def test_block_valid_sum(T, threads_in_block):
 
     @cuda.jit(link=block_reduce.files)
     def kernel(input, output):
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype='uint8')
-        block_output = block_reduce(temp_storage, input[cuda.threadIdx.x], numba.int32(threads_in_block / 2))
+        temp_storage = cuda.shared.array(
+            shape=temp_storage_bytes, dtype='uint8')
+        block_output = block_reduce(
+            temp_storage, input[cuda.threadIdx.x], numba.int32(threads_in_block / 2))
 
         if cuda.threadIdx.x == 0:
             output[0] = block_output
