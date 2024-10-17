@@ -9,6 +9,7 @@ endif()
 
 # Determine whether CCCL is the top-level project or included into
 # another project via add_subdirectory()
+set(CCCL_TOPLEVEL_PROJECT OFF)
 if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
   set(CCCL_TOPLEVEL_PROJECT ON)
 endif()
