@@ -208,8 +208,7 @@ jobs:
 
       - name: Tag the release candidate
         run: |
-          rc_tag=${{ needs.prepare.outputs.tag_name }}
-          git tag -a -m "CCCL Release Candidate ${rc_tag}" ${rc_tag} ${GITHUB_SHA}
-          git push origin ${rc_tag}
-          echo "Tagged release candidate ${rc_tag}."
+          git tag ${{ needs.prepare.outputs.tag_name }} ${GITHUB_SHA}
+          git push origin ${{ needs.prepare.outputs.tag_name }}
+          echo "Tagged release candidate ${{ needs.prepare.outputs.tag_name }}."
           # TODO Notify team of results.
