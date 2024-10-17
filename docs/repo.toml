@@ -174,7 +174,10 @@ doxygen_predefined = [
     "CUB_STATIC_ASSERT(cond,msg)=",
     "CUB_RUNTIME_FUNCTION",
     "CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED",
-    "CUB_IGNORE_DEPRECATED_CPP_DIALECT"
+    "CUB_IGNORE_DEPRECATED_CPP_DIALECT",
+    "CUDASTF_HOST",
+    "CUDASTF_DEVICE",
+    "CUDASTF_HOST_DEVICE"
 ]
 
 # make sure to use ./fetch_imgs.sh

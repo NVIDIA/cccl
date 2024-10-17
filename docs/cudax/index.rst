@@ -5,11 +5,12 @@ CUDA Experimental
 
 .. toctree::
    :hidden:
-   :maxdepth: 3
+   :maxdepth: 1
 
    container
    memory_resource
    ${repo_docs_api_path}/cudax_api
+   stf
 
 ``CUDA Experimental`` (``cudax``) provides experimental new features that are still in development and subject to change.
 However, any feature within this library has important use cases and we encourage users to experiment with them.

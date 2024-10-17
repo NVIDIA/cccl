@@ -1,14 +1,12 @@
 .. _stf:
 
-CUDASTF is an implementation of the Sequential Task Flow model for CUDA.
-
-(`Click here <XXX_CUDASTF_DOXYGEN>`__ for the doxygen-generated
-documentation.)
-
-[[*TOC*]]
-
 CUDASTF
 =======
+
+.. contents::
+   :depth: 2
+
+CUDASTF is an implementation of the Sequential Task Flow model for CUDA.
 
 The availability of parallelism within modern hardware has dramatically
 increased, with large nodes now featuring multiple accelerators. As a
@@ -26,7 +24,7 @@ CUDASTF is currently capable of generating parallel applications using
 either the CUDA stream API or the CUDA graph API.
 
 The Sequential Task Flow (STF) programming model
-================================================
+------------------------------------------------
 
 The CUDASTF programming model involves defining logical data and
 submitting tasks that operate on this data. CUDASTF automatically
@@ -81,17 +79,17 @@ below.
 .. image:: stf/images/graph_01.png
 
 Getting started with CUDASTF
-============================
+----------------------------
 
 Getting CUDASTF
----------------
+^^^^^^^^^^^^^^^
 
 .. code:: bash
 
    TODO
 
 Using CUDASTF
--------------
+^^^^^^^^^^^^^
 
 CUDASTF is a header-only C++ library which only require to include its
 main header. CUDASTF API is part of the ``cuda::experimental::stf`` C++
@@ -105,7 +103,7 @@ workspace in the rest of this document.
    using cuda::experimental::stf;
 
 Compiling
----------
+^^^^^^^^^
 
 CUDASTF requires a compiler conforming to the C++17 standard or later.
 Although there is no need to link against CUDASTF itself, the library
@@ -134,10 +132,16 @@ automatically generate CUDA kernels such as ``parallel_for`` or
 Using CUDASTF within a cmake project
 ------------------------------------
 
-TODO
+As part of the CCCL project, CUDASTF uses CMake for its build and installation
+infrastructure, and is the recommended way of building applications that use
+CUDASTF.
+
+This is facilitated by the CMake Package Manager as illustrated in this simple CUDASTF example.
+
+TODO create link
 
 A simple example
-================
+----------------
 
 The following example illustrates the use of CUDASTF to implement the
 well-known AXPY kernel, which computes ``Y = Y + alpha * X`` where ``X``
@@ -194,24 +198,26 @@ more detail in the following sections:
 More examples can be found in the ``examples`` directory in the sources.
 
 CUDASTF examples
-================
+----------------
 
 More examples are available in the examples/ directory of the CUDASTF
 project.
 
 List of examples
-----------------
+^^^^^^^^^^^^^^^^
 
 TODO
 
 Compiling examples
-------------------
+^^^^^^^^^^^^^^^^^^
 
 TODO dependencies (while CUDASTF itself has no dependencies, there are
 some for tests and examples)
 
-TODO list all examples, and their purpose # CUDASTF backends and
-contexts
+TODO list all examples, and their purpose
+
+CUDASTF backends and contexts
+-------------------------------
 
 The code snippet below includes the required CUDASTF header. It then
 creates a context object, which is an entry point for every API calls,
@@ -274,7 +280,7 @@ generic type can be required when CUDASTF automatically select the
 context type (see Algorithms).
 
 Tasks in the Stream backend
----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The ``stream_ctx`` backend utilizes CUDA streams and events to provide
 synchronization. Each ``stream_task`` in the ``stream_ctx`` backend
@@ -288,7 +294,7 @@ Users can query the stream associated to a ``stream_task`` using its
 ``get_stream()`` method.
 
 Tasks in the Graph backend
---------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In the ``graph_ctx`` environment, a CUDA graph is either created
 internally or passed in by the user during construction. If the user
@@ -308,7 +314,7 @@ Users can retrieve the graph associated to a ``graph_task`` by using its
 ``get_graph()`` method.
 
 Logical data
-============
+------------
 
 In traditional computing, “data”, such as a matrix describing a neural
 network layer, typically refers to a location in memory with a defined
@@ -360,7 +366,7 @@ host will also be invalidated, so CUDASTF will later copy data back to
 the host if another task needs to access ``X`` from the CPU.
 
 Data interfaces
----------------
+^^^^^^^^^^^^^^^
 
 CUDASTF implements a generic interface to manipulate different types of
 data formats across the machine.
@@ -375,7 +381,7 @@ operations such as allocating a data instance based on its shape, or
 copying an instance into another instance.
 
 Defining custom data interfaces (advanced)
-------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 CUDASTF API is designed to be extensible, so that advanced users may
 define their own data interfaces. This can be useful when manipulating
@@ -387,7 +393,7 @@ A complete example is given :ref:`here <stf_custom_data_interface>` to
 illustrate how to implement a custom data interface.
 
 Write-back policy
------------------
+^^^^^^^^^^^^^^^^^
 
 When a logical data object is destroyed, the original data instance is
 updated (unless the logical data was created without a reference value,
@@ -404,7 +410,7 @@ which was defined from a shape and has no reference data instance will
 result in an error.
 
 Slices
-------
+^^^^^^
 
 To facilitate the use of potentially non-contiguous multi-dimensional
 arrays, we have introduced a C++ data structure class called ``slice``.
@@ -464,7 +470,7 @@ kernel. Example:
    }
 
 Defining slices with multiple dimensions
-----------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Slices can be used on data with multiple dimensions, and possibly
 non-contiguous data.
@@ -518,7 +524,8 @@ Such slices can also be used to create logical data :
        // Non-contiguous 2D slice
        auto lX2 = ctx.logical_data(make_slice(A, std::tuple { 24, 32 }, 32));
 
-## Defining logical data from a shape
+Defining logical data from a shape
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Data interfaces supports data which are only described as a shape. For
 example, a user may want to define a vector of 10 integers, and later
@@ -552,8 +559,8 @@ with multiple dimensions.
    auto lX_2D = ctx.logical_data(shape_of<slice<double, 2>>({16, 24}));
    auto lX_3D = ctx.logical_data(shape_of<slice<double, 3>>({16, 24, 10}));
 
-Creating a task
----------------
+Task API
+--------
 
 A task is created by calling the ``ctx.task`` member function. It takes
 an optional argument that specifies the execution location of the task.
@@ -639,7 +646,8 @@ right way is to pass them to a kernel synchronized with the stream
 ``s``. CUDA execution semantics will ensure that by the time the kernel
 runs, ``sX`` and ``sY`` will be valid.
 
-## Example of creating and using multiple tasks
+Example of creating and using multiple tasks
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Often, complex algorithms involve multiple processing stages, each with
 its own inputs and outputs. In CUDASTF it suffices to express computing
@@ -695,8 +703,8 @@ matters instead.
 
 .. image:: stf/images/task-sequence.png
 
-Lower-level API
----------------
+Lower-level task API
+^^^^^^^^^^^^^^^^^^^^
 
 A lower-level API that does not rely on lambda functions is also
 available, and is described `here <stf_lower-level-api>`.
@@ -745,7 +753,7 @@ would wait for the completion of the first task before starting the
 second).
 
 Places
-======
+------
 
 To assist users with managing data and execution affinity, CUDASTF
 provides the notion of *place*. Places can represent either *execution
@@ -760,7 +768,7 @@ synchronization that emerges from combining various execution places
 asynchronously.
 
 Execution places
-----------------
+^^^^^^^^^^^^^^^^
 
 A task’s constructor allows choosing an execution place. The example
 below creates a logical data variable that describes an integer as a
@@ -831,7 +839,7 @@ underlying CUDA stream is needed, ``ctx.host_launch`` is thus compatible
 with the CUDA graph backend (i.e., a context of type ``graph_ctx``).
 
 Data places
------------
+^^^^^^^^^^^
 
 By default, logical data is associated with the device where it is
 currently processed. A task launched on a device should therefore have
@@ -921,186 +929,15 @@ perform such accesses, which may depend on the hardware (NVLINK, UVM, …)
 and the OS (WSL has limited support and lower performance when accessing
 host memory from CUDA kernels, for example).
 
-Types of logical data and tasks
-===============================
-
-To prevent a common class of errors, CUDASTF strives to align its
-processing semantics with C++ types as closely as possible. As shown in
-the various examples, the use of the ``auto`` keyword is usually
-recommended to create readable code while type safety is still enforced.
-
-.. _logical-data-1:
-
-Logical data
-------------
-
-The result of calling ``ctx.logical_data()`` is an object whose type
-contains information about the underlying data interface used to
-manipulate the logical data object. For example, a contiguous array of
-``double`` is internally represented as a ``slice`` (which is an alias
-of ``std::experimental::mdspan``) so that we can use the following type:
-
-.. code:: cpp
-
-   double X[16];
-   logical_data<slice<double>> lX = ctx.logical_data(X);
-
-For simplicity and without losing any information, users can typically
-rely on the ``auto`` keyword:
-
-.. code:: cpp
-
-   double X[16];
-   auto lX = ctx.logical_data(X);
-
-One may for example store the logical data of a ``slice<int>`` in a C++
-class or structure in such as way:
-
-.. code:: cpp
-
-   class foo {
-      ...
-      mutable logical_data<slice<int>> ldata;
-   };
-
-Note the use of the ``mutable`` qualifier because a task accessing a
-const foo object might want to read the ``ldata`` field. Submitting a
-task that use this logical data in read only mode would modify the
-internal data structures of the logical data, but should probably appear
-as a const operation from user’s perspective. Without this ``mutable``
-qualifier, we could not have a ``const`` qualifier on the ``f`` variable
-in the following code :
-
-.. code:: cpp
-
-   void func(context &ctx, const foo &f) {
-       ctx.task(f.ldata.read())->*[](cudaStream_t stream, auto) {
-           ... do work ...
-       };
-   }
-
-Tasks
------
-
-With a ``stream_ctx`` backend, ``ctx.task(lX.read(), lY.rw())`` returns
-an object of type ``stream_task<TX, TY>``, where the template arguments
-``TX`` and ``TY`` are the types associated to the data interfaces in
-logical data ``lX`` and ``lY``. Assuming two arrays of ``double``, which
-CUDASTF internally manages as ``slice<double>`` objects, the type of
-this task will be:
-
-.. code:: cpp
-
-   stream_task<slice<const double>, slice<double>>
-
-The type of the task contains information about the element type and its
-modifiability — read-only access is mapped to a slice of
-``const double`` as opposed to ``double``. The type information is
-propagated further from the task object to the lambda invoked by means
-of ``operator->*`` in such a way that type errors are detected during
-compilation.
-
-.. code:: cpp
-
-   double X[16], Y[16];
-   logical_data<slice<double>> lX = ctx.logical_data(X);
-   logical_data<slice<double>> lY = ctx.logical_data(Y);
-
-   // results in a compilation error due to the erroneous slice<int> type
-   ctx.task(lX.read(), lY.rw())->*[](cudaStream_t s, slice<int> x, slice<int> y) {
-       ...
-   };
-
-In most cases, it’s recommended to use the ``auto`` C++ keyword to
-automatically obtain the correct data types:
-
-.. code:: cpp
-
-   double X[16], Y[16];
-   auto lX = ctx.logical_data(X);
-   auto lY = ctx.logical_data(Y);
-
-   ctx.task(lX.read(), lY.rw())->*[](cudaStream_t s, auto x, auto y) {
-       ...
-   };
-
-In the graph backend, the untyped task type equivalent to
-``stream_task<>`` is ``graph_task``, and the equivalent to
-``stream_task<T1, T2>`` would be, for example, ``graph_task<T1, T2>``.
-When using the generic context type, CUDASTF would create a task of type
-``unified_task<T1, T2>``.
-
-Dynamically-typed tasks
------------------------
-
-In certain circumstances, the exact data accessed by a task (and
-consequently the type of a task as discussed above) may not be available
-statically. For example, updating a part of the computation domain might
-require accessing the closest neighbors of that part. The neighbors are
-known only dynamically, meaning that it is not possible to directly pass
-task dependencies as arguments to the ``ctx.task()`` call.
-
-For such situations CUDASTF offers a dynamically-typed task, called
-``stream_task<>`` in the stream_ctx backend, whose member function
-``add_deps`` allows adding dependencies dynamically:
-
-.. code:: cpp
-
-   double X[16], Y[16];
-   auto lX = ctx.logical_data(X);
-   auto lY = ctx.logical_data(Y);
-
-   stream_task<> t = ctx.task();
-   t.add_deps(lX.read(), lY.rw());
-
-This dynamic approach entails a loss of expressiveness. The API based on
-the ``->*`` notation is only compatible with *statically-typed* tasks,
-as the user-provided lambda function needs to be passed data instances
-of the proper types (for example ``slice<double>``) by CUDASTF. As a
-consequence, the ``stream_task<>`` needs to be manipulated with the
-`low-level API <#lower-level-api>`__.
-
-Combining typed and untyped tasks
----------------------------------
-
-It is possible to dynamically add dependencies to a typed task, but the
-type of the task will not reflect the dynamically added dependencies.
-This allows for combining the low-level API with the ``->*`` notation in
-the following way:
-
-.. code:: cpp
-
-   double X[16], Y[16];
-   auto lX = ctx.logical_data(X);
-   auto lY = ctx.logical_data(Y);
-
-   auto t = ctx.task(lX.read());
-   t.add_deps(lY.rw());
-   t->*[&](cudaStream_t s, auto x) {
-      slice<double> y = t.template get<slice<double>>(1);
-   };
-
-The program remains safe because accesses are checked dynamically.
-However, any errors will be caught at runtime instead of during
-compilation.
-
-Untyped tasks cannot be converted to typed tasks. On the other hand,
-typed tasks can be converted implicitly to untyped tasks (thus losing
-all the benefits of statically available types):
-
-.. code:: cpp
-
-   stream_task<> t = ctx.task(lX.read());
-
 The parallel ``for`` construct (``ctx.parallel_for``)
-=====================================================
+-----------------------------------------------------
 
 CUDASTF provides a helper construct which creates CUDA kernels (or CPU
 kernels) which execute an operation over an index space described as a
 *shape*.
 
 Example with a 1-dimensional array
-----------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The example below illustrates processing a 1D array using
 ``parallel_for``:
@@ -1139,7 +976,7 @@ instances associated with the logical data arguments (e.g.,
 ``slice<int> sA``).
 
 Example with multi-dimensional arrays
--------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 For multidimensional data shapes, iteration (and consequently the lambda
 function) requires additional parameters. Consider an example that uses
@@ -1178,7 +1015,7 @@ Passing a lambda with a signature that starts with a number of
 shape will result in a compilation error.
 
 Box shape
----------
+^^^^^^^^^
 
 There are situations where the desired index space does not correspond
 to the shape of a logical data object. For those cases, CUDASTF also
@@ -1188,7 +1025,7 @@ define multidimensional shapes with explicit bounds. The template
 parameter represents the dimension of the shape.
 
 Box shapes with extents
-~~~~~~~~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^^^^^^^^
 
 Passing a shape object defined as ``box<2>({2, 3})`` to ``parallel_for``
 will correspond to a 2-dimensional iteration where the first index
@@ -1245,7 +1082,7 @@ It will output (in an unspecified order):
    7, 3
 
 Defining custom shapes (advanced)
----------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Users typically map the ``parallel_for`` construct over the shape of a
 logical data, or over a box shape describing a regular multidimensional
@@ -1275,7 +1112,7 @@ The dimensionality of this ``coord_t`` tuple type determines the number
 of arguments passed to the lambda function in ``parallel_for``.
 
 ``ctx.launch``
-==============
+--------------
 
 The ``ctx.launch`` primitive in CUDASTF is a kernel-launch mechanism
 that handles the mapping and launching of a single kernel onto execution
@@ -1284,7 +1121,7 @@ places implicitly.
 .. _example-with-a-1-dimensional-array-1:
 
 Example with a 1-dimensional array
-----------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The example below illustrates processing a 1D array using ``launch``:
 
@@ -1316,14 +1153,14 @@ executing the kernel. Subsequent parameters are the data instances
 associated with the logical data arguments (e.g., ``slice<double> x``).
 
 Grid of places
-==============
+--------------
 
 CUDASTF also makes it possible to manipulate places which are a
 collection of multiple places. In particular, it is possible an
 execution place which corresponds to multiple device execution places.
 
 Creating grids of places
-------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 Grid of execution places are described with the ``exec_place_grid``
 class. This class is templated by two parameters : a scalar execution
@@ -1370,7 +1207,7 @@ the ``size_t size()`` method. For ``exec_place::all_devices()``, this
 will correspond to the total number of devices.
 
 Shaped grids
-------------
+^^^^^^^^^^^^
 
 To fit the needs of the applications, grid of places need not be 1D
 arrays, and can be structured as a multi-dimensional grid described with
@@ -1401,7 +1238,7 @@ into a cube of size 2.
        auto places_reshaped = places.reshape(dim4(2, 2, 2));
 
 Partitioning policies
----------------------
+^^^^^^^^^^^^^^^^^^^^^
 
 Partitioning policies makes it possible to express how data are
 dispatched over the different places of a grid, or how the index space
@@ -1456,7 +1293,7 @@ policy in an execution place grid therefore defines the *affine data
 place* of a logical data accessed on that grid.
 
 Predefined partitioning policies
---------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 There are currently two policies readily available in CUDASTF : -
 ``tiled_partition<TILE_SIZE>`` dispatches entries of a shape using a
@@ -1470,7 +1307,7 @@ dimension.
 This illustrates how a 2D shape is dispatched over 3 places using the
 blocked layout :
 
-.. code:: ascii
+.. code:: text
 
     __________________________________
    |           |           |         |
@@ -1485,7 +1322,7 @@ This illustrates how a 2D shape is dispatched over 3 places using a
 tiled layout, where the dimension of the tiles is indicated by the
 ``TILE_SIZE`` parameter :
 
-.. code:: ascii
+.. code:: text
 
     ________________________________
    |     |     |     |     |     |  |
@@ -1496,8 +1333,183 @@ tiled layout, where the dimension of the tiles is indicated by the
    |     |     |     |     |     |  |
    |_____|_____|_____|_____|_____|__|
 
+Types of logical data and tasks
+-------------------------------
+
+To prevent a common class of errors, CUDASTF strives to align its
+processing semantics with C++ types as closely as possible. As shown in
+the various examples, the use of the ``auto`` keyword is usually
+recommended to create readable code while type safety is still enforced.
+
+.. _logical-data-1:
+
+Logical data
+^^^^^^^^^^^^
+
+The result of calling ``ctx.logical_data()`` is an object whose type
+contains information about the underlying data interface used to
+manipulate the logical data object. For example, a contiguous array of
+``double`` is internally represented as a ``slice`` (which is an alias
+of ``std::experimental::mdspan``) so that we can use the following type:
+
+.. code:: cpp
+
+   double X[16];
+   logical_data<slice<double>> lX = ctx.logical_data(X);
+
+For simplicity and without losing any information, users can typically
+rely on the ``auto`` keyword:
+
+.. code:: cpp
+
+   double X[16];
+   auto lX = ctx.logical_data(X);
+
+One may for example store the logical data of a ``slice<int>`` in a C++
+class or structure in such as way:
+
+.. code:: cpp
+
+   class foo {
+      ...
+      mutable logical_data<slice<int>> ldata;
+   };
+
+Note the use of the ``mutable`` qualifier because a task accessing a
+const foo object might want to read the ``ldata`` field. Submitting a
+task that use this logical data in read only mode would modify the
+internal data structures of the logical data, but should probably appear
+as a const operation from user’s perspective. Without this ``mutable``
+qualifier, we could not have a ``const`` qualifier on the ``f`` variable
+in the following code :
+
+.. code:: cpp
+
+   void func(context &ctx, const foo &f) {
+       ctx.task(f.ldata.read())->*[](cudaStream_t stream, auto) {
+           ... do work ...
+       };
+   }
+
+Tasks
+^^^^^
+
+With a ``stream_ctx`` backend, ``ctx.task(lX.read(), lY.rw())`` returns
+an object of type ``stream_task<TX, TY>``, where the template arguments
+``TX`` and ``TY`` are the types associated to the data interfaces in
+logical data ``lX`` and ``lY``. Assuming two arrays of ``double``, which
+CUDASTF internally manages as ``slice<double>`` objects, the type of
+this task will be:
+
+.. code:: cpp
+
+   stream_task<slice<const double>, slice<double>>
+
+The type of the task contains information about the element type and its
+modifiability — read-only access is mapped to a slice of
+``const double`` as opposed to ``double``. The type information is
+propagated further from the task object to the lambda invoked by means
+of ``operator->*`` in such a way that type errors are detected during
+compilation.
+
+.. code:: cpp
+
+   double X[16], Y[16];
+   logical_data<slice<double>> lX = ctx.logical_data(X);
+   logical_data<slice<double>> lY = ctx.logical_data(Y);
+
+   // results in a compilation error due to the erroneous slice<int> type
+   ctx.task(lX.read(), lY.rw())->*[](cudaStream_t s, slice<int> x, slice<int> y) {
+       ...
+   };
+
+In most cases, it’s recommended to use the ``auto`` C++ keyword to
+automatically obtain the correct data types:
+
+.. code:: cpp
+
+   double X[16], Y[16];
+   auto lX = ctx.logical_data(X);
+   auto lY = ctx.logical_data(Y);
+
+   ctx.task(lX.read(), lY.rw())->*[](cudaStream_t s, auto x, auto y) {
+       ...
+   };
+
+In the graph backend, the untyped task type equivalent to
+``stream_task<>`` is ``graph_task``, and the equivalent to
+``stream_task<T1, T2>`` would be, for example, ``graph_task<T1, T2>``.
+When using the generic context type, CUDASTF would create a task of type
+``unified_task<T1, T2>``.
+
+Dynamically-typed tasks
+^^^^^^^^^^^^^^^^^^^^^^^
+
+In certain circumstances, the exact data accessed by a task (and
+consequently the type of a task as discussed above) may not be available
+statically. For example, updating a part of the computation domain might
+require accessing the closest neighbors of that part. The neighbors are
+known only dynamically, meaning that it is not possible to directly pass
+task dependencies as arguments to the ``ctx.task()`` call.
+
+For such situations CUDASTF offers a dynamically-typed task, called
+``stream_task<>`` in the stream_ctx backend, whose member function
+``add_deps`` allows adding dependencies dynamically:
+
+.. code:: cpp
+
+   double X[16], Y[16];
+   auto lX = ctx.logical_data(X);
+   auto lY = ctx.logical_data(Y);
+
+   stream_task<> t = ctx.task();
+   t.add_deps(lX.read(), lY.rw());
+
+This dynamic approach entails a loss of expressiveness. The API based on
+the ``->*`` notation is only compatible with *statically-typed* tasks,
+as the user-provided lambda function needs to be passed data instances
+of the proper types (for example ``slice<double>``) by CUDASTF. As a
+consequence, the ``stream_task<>`` needs to be manipulated with the
+`low-level API <#lower-level-api>`__.
+
+Combining typed and untyped tasks
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+It is possible to dynamically add dependencies to a typed task, but the
+type of the task will not reflect the dynamically added dependencies.
+This allows for combining the low-level API with the ``->*`` notation in
+the following way:
+
+.. code:: cpp
+
+   double X[16], Y[16];
+   auto lX = ctx.logical_data(X);
+   auto lY = ctx.logical_data(Y);
+
+   auto t = ctx.task(lX.read());
+   t.add_deps(lY.rw());
+   t->*[&](cudaStream_t s, auto x) {
+      slice<double> y = t.template get<slice<double>>(1);
+   };
+
+The program remains safe because accesses are checked dynamically.
+However, any errors will be caught at runtime instead of during
+compilation.
+
+Untyped tasks cannot be converted to typed tasks. On the other hand,
+typed tasks can be converted implicitly to untyped tasks (thus losing
+all the benefits of statically available types):
+
+.. code:: cpp
+
+   stream_task<> t = ctx.task(lX.read());
+
+
+Tools
+-----
+
 Visualizing task graphs
-=======================
+^^^^^^^^^^^^^^^^^^^^^^^
 
 In order to visualize the task graph generated by CUDASTF, it is
 possible to generate a file in the Graphviz format. This visualization
@@ -1589,13 +1601,13 @@ remove the list of data associated to each task by setting the
 ``CUDASTF_DOT_REMOVE_DATA_DEPS`` environment variable.
 
 Kernel tuning with ncu
-======================
+^^^^^^^^^^^^^^^^^^^^^^
 
 Users can analyze the performance of kernels generated using
 ``ctx.parallel_for`` and ``ctx.launch`` using the ``ncu`` tool.
 
 Naming kernels
---------------
+^^^^^^^^^^^^^^
 
 However, displayed kernel names would be hardly exploitable as they
 would all have the same name. One possible work-around is to let ``ncu``
@@ -1614,7 +1626,7 @@ name the generated kernel “updateA” :
    };
 
 Example with miniWeather
-------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 Kernel tuning should always be performed on optimized code :
 
