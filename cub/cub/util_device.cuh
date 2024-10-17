@@ -610,19 +610,20 @@ struct PolicyWrapper : PolicyT
 };
 
 template <typename StaticPolicyT>
-struct PolicyWrapper<StaticPolicyT, decltype(StaticPolicyT::BLOCK_THREADS, StaticPolicyT::ITEMS_PER_THREAD, void())>
-    : StaticPolicyT
+struct PolicyWrapper<
+  StaticPolicyT,
+  _CUDA_VSTD::void_t<decltype(StaticPolicyT::BLOCK_THREADS), decltype(StaticPolicyT::ITEMS_PER_THREAD)>> : StaticPolicyT
 {
   CUB_RUNTIME_FUNCTION PolicyWrapper(StaticPolicyT base)
       : StaticPolicyT(base)
   {}
 
-  CUB_RUNTIME_FUNCTION static constexpr std::size_t BlockThreads()
+  CUB_RUNTIME_FUNCTION static constexpr int BlockThreads()
   {
     return StaticPolicyT::BLOCK_THREADS;
   }
 
-  CUB_RUNTIME_FUNCTION static constexpr std::size_t ItemsPerThread()
+  CUB_RUNTIME_FUNCTION static constexpr int ItemsPerThread()
   {
     return StaticPolicyT::ITEMS_PER_THREAD;
   }

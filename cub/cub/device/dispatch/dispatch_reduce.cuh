@@ -530,8 +530,8 @@ struct DispatchReduce : SelectedPolicy
 
 // Log single_reduce_sweep_kernel configuration
 #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
-      _CubLog("Invoking DeviceReduceSingleTileKernel<<<1, %zu, 0, %lld>>>(), "
-              "%zu items per thread\n",
+      _CubLog("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
+              "%d items per thread\n",
               policy.SingleTile().BlockThreads(),
               (long long) stream,
               policy.SingleTile().ItemsPerThread());
@@ -642,13 +642,13 @@ struct DispatchReduce : SelectedPolicy
 
 // Log device_reduce_sweep_kernel configuration
 #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
-      _CubLog("Invoking DeviceReduceKernel<<<%zu, %zu, 0, %lld>>>(), %zu items "
-              "per thread, %zu SM occupancy\n",
+      _CubLog("Invoking DeviceReduceKernel<<<%lu, %d, 0, %lld>>>(), %d items "
+              "per thread, %d SM occupancy\n",
               (unsigned long) reduce_grid_size,
               active_policy.Reduce().BlockThreads(),
               (long long) stream,
               active_policy.Reduce().ItemsPerThread(),
-              (unsigned long) reduce_config.sm_occupancy);
+              reduce_config.sm_occupancy);
 #endif // CUB_DETAIL_DEBUG_ENABLE_LOG
 
       // Invoke DeviceReduceKernel
@@ -671,8 +671,8 @@ struct DispatchReduce : SelectedPolicy
 
 // Log single_reduce_sweep_kernel configuration
 #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
-      _CubLog("Invoking DeviceReduceSingleTileKernel<<<1, %zu, 0, %lld>>>(), "
-              "%zu items per thread\n",
+      _CubLog("Invoking DeviceReduceSingleTileKernel<<<1, %d, 0, %lld>>>(), "
+              "%d items per thread\n",
               active_policy.SingleTile().BlockThreads(),
               (long long) stream,
               active_policy.SingleTile().ItemsPerThread());
@@ -715,8 +715,8 @@ struct DispatchReduce : SelectedPolicy
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke(ActivePolicyT active_policy = {})
   {
     auto wrapped_policy = MakeReducePolicyWrapper(active_policy);
-    if (static_cast<std::size_t>(num_items)
-        <= (wrapped_policy.SingleTile().BlockThreads() * wrapped_policy.SingleTile().ItemsPerThread()))
+    if (num_items <= static_cast<OffsetT>(
+          wrapped_policy.SingleTile().BlockThreads() * wrapped_policy.SingleTile().ItemsPerThread()))
     {
       // Small, single tile size
       return InvokeSingleTile(kernel_source.SingleTileKernel(), wrapped_policy);
@@ -1083,8 +1083,8 @@ struct DispatchSegmentedReduce : SelectedPolicy
 
 // Log device_reduce_sweep_kernel configuration
 #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
-      _CubLog("Invoking SegmentedDeviceReduceKernel<<<%zu, %zu, 0, %lld>>>(), "
-              "%zu items per thread, %zu SM occupancy\n",
+      _CubLog("Invoking SegmentedDeviceReduceKernel<<<%d, %d, 0, %lld>>>(), "
+              "%d items per thread, %d SM occupancy\n",
               num_segments,
               ActivePolicyT::SegmentedReducePolicy::BLOCK_THREADS,
               (long long) stream,

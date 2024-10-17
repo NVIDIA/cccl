@@ -53,11 +53,11 @@ struct reduce_runtime_tuning_policy
     return *this;
   }
 
-  std::size_t ItemsPerThread() const
+  int ItemsPerThread() const
   {
     return items_per_thread;
   }
-  std::size_t BlockThreads() const
+  int BlockThreads() const
   {
     return block_size;
   }
