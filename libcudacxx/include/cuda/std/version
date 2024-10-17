@@ -121,6 +121,7 @@
 #  define __cccl_lib_unordered_map_try_emplace     201411L
 #  define __cccl_lib_variant                       201606L
 #  define __cccl_lib_void_t                        201411L
+#  define __cccl_lib_mdspan                        202207L
 #endif // _CCCL_STD_VER >= 2017
 
 #if _CCCL_STD_VER >= 2020

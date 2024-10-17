@@ -40,6 +40,7 @@
 
 #include <cstdint>
 #include <iosfwd>
+#include <iostream>
 
 #ifdef __GNUC__
 // There's a ton of type-punning going on in this file.
@@ -209,24 +210,24 @@ struct bfloat16_t
     uint16_t lowest_word = 0xFF7F;
     return reinterpret_cast<bfloat16_t&>(lowest_word);
   }
+
+  /******************************************************************************
+   * I/O stream overloads
+   ******************************************************************************/
+
+  /// Insert formatted \p bfloat16_t into the output stream
+  friend std::ostream& operator<<(std::ostream& out, const bfloat16_t& x)
+  {
+    out << (float) x;
+    return out;
+  }
+
+  /// Insert formatted \p __nv_bfloat16 into the output stream
+  friend std::ostream& operator<<(std::ostream& out, const __nv_bfloat16& x)
+  {
+    return out << bfloat16_t(x);
+  }
 };
-
-/******************************************************************************
- * I/O stream overloads
- ******************************************************************************/
-
-/// Insert formatted \p bfloat16_t into the output stream
-inline std::ostream& operator<<(std::ostream& out, const bfloat16_t& x)
-{
-  out << (float) x;
-  return out;
-}
-
-/// Insert formatted \p __nv_bfloat16 into the output stream
-inline std::ostream& operator<<(std::ostream& out, const __nv_bfloat16& x)
-{
-  return out << bfloat16_t(x);
-}
 
 /******************************************************************************
  * Traits overloads
