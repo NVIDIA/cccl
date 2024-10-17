@@ -46,7 +46,7 @@ int main()
         double expected = (i < 3 && j < 4) ? 13.0 : 42.0;
         if (sA(i, j) != expected)
         {
-          fprintf(stderr, "sA(%ld,%ld) = %lf, expected %lf\n", i, j, sA(i, j), expected);
+          fprintf(stderr, "sA(%zu,%zu) = %lf, expected %lf\n", i, j, sA(i, j), expected);
         }
       }
     }

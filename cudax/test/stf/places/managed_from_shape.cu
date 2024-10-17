@@ -32,12 +32,12 @@ __global__ void axpy(double a, slice<const double> x, slice<double> y)
   }
 }
 
-__host__ __device__ double X0(int i)
+__host__ __device__ double X0(size_t i)
 {
   return sin((double) i);
 }
 
-double Y0(int i)
+double Y0(size_t i)
 {
   return cos((double) i);
 }
