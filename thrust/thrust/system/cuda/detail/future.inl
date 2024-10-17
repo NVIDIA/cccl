@@ -458,7 +458,10 @@ public:
   // address after its been moved into the new signal we're constructing.
   // NOTE: NVCC has a bug that causes it to reorder our base class initializers
   // in generated host code, which leads to -Wreorder warnings.
-  THRUST_DISABLE_CLANG_AND_GCC_INITIALIZER_REORDERING_WARNING_BEGIN
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_CLANG("-Wreorder")
+  _CCCL_DIAG_SUPPRESS_GCC("-Wreorder")
+  _CCCL_DIAG_SUPPRESS_ICC(2407)
   template <typename ComputeContent>
   _CCCL_HOST explicit async_addressable_value_with_keep_alives(
     unique_stream&& stream, keep_alives_type&& keep_alives, ComputeContent&& compute_content)
@@ -468,7 +471,7 @@ public:
   {
     content_ = THRUST_FWD(compute_content)(std::get<0>(this->keep_alives_));
   }
-  THRUST_DISABLE_CLANG_AND_GCC_INITIALIZER_REORDERING_WARNING_END
+  _CCCL_DIAG_POP
 
   _CCCL_HOST bool valid_content() const noexcept final override
   {

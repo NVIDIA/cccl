@@ -24,13 +24,7 @@ struct vector_like
 template <class Vector>
 void TestVectorLowerBoundSimple()
 {
-  Vector vec(5);
-
-  vec[0] = 0;
-  vec[1] = 2;
-  vec[2] = 5;
-  vec[3] = 7;
-  vec[4] = 8;
+  Vector vec{0, 2, 5, 7, 8};
 
   Vector input(10);
   thrust::sequence(input.begin(), input.end());
@@ -47,16 +41,8 @@ void TestVectorLowerBoundSimple()
 
   ASSERT_EQUAL((output_end - integral_output.begin()), 10);
 
-  ASSERT_EQUAL(integral_output[0], 0);
-  ASSERT_EQUAL(integral_output[1], 1);
-  ASSERT_EQUAL(integral_output[2], 1);
-  ASSERT_EQUAL(integral_output[3], 2);
-  ASSERT_EQUAL(integral_output[4], 2);
-  ASSERT_EQUAL(integral_output[5], 2);
-  ASSERT_EQUAL(integral_output[6], 3);
-  ASSERT_EQUAL(integral_output[7], 3);
-  ASSERT_EQUAL(integral_output[8], 4);
-  ASSERT_EQUAL(integral_output[9], 5);
+  IntVector ref{0, 1, 1, 2, 2, 2, 3, 3, 4, 5};
+  ASSERT_EQUAL(integral_output, ref);
 
   //    // test with interator output type
   //    using IteratorVector = typename vector_like<Vector, typename Vector::iterator>::type;
@@ -120,13 +106,7 @@ DECLARE_UNITTEST(TestVectorLowerBoundDispatchImplicit);
 template <class Vector>
 void TestVectorUpperBoundSimple()
 {
-  Vector vec(5);
-
-  vec[0] = 0;
-  vec[1] = 2;
-  vec[2] = 5;
-  vec[3] = 7;
-  vec[4] = 8;
+  Vector vec{0, 2, 5, 7, 8};
 
   Vector input(10);
   thrust::sequence(input.begin(), input.end());
@@ -141,16 +121,8 @@ void TestVectorUpperBoundSimple()
 
   ASSERT_EQUAL((output_end - integral_output.begin()), 10);
 
-  ASSERT_EQUAL(integral_output[0], 1);
-  ASSERT_EQUAL(integral_output[1], 1);
-  ASSERT_EQUAL(integral_output[2], 2);
-  ASSERT_EQUAL(integral_output[3], 2);
-  ASSERT_EQUAL(integral_output[4], 2);
-  ASSERT_EQUAL(integral_output[5], 3);
-  ASSERT_EQUAL(integral_output[6], 3);
-  ASSERT_EQUAL(integral_output[7], 4);
-  ASSERT_EQUAL(integral_output[8], 5);
-  ASSERT_EQUAL(integral_output[9], 5);
+  IntVector ref{1, 1, 2, 2, 2, 3, 3, 4, 5, 5};
+  ASSERT_EQUAL(integral_output, ref);
 
   //    // test with interator output type
   //    using IteratorVector = typename vector_like<Vector, typename Vector::iterator>::type;
@@ -214,13 +186,7 @@ DECLARE_UNITTEST(TestVectorUpperBoundDispatchImplicit);
 template <class Vector>
 void TestVectorBinarySearchSimple()
 {
-  Vector vec(5);
-
-  vec[0] = 0;
-  vec[1] = 2;
-  vec[2] = 5;
-  vec[3] = 7;
-  vec[4] = 8;
+  Vector vec{0, 2, 5, 7, 8};
 
   Vector input(10);
   thrust::sequence(input.begin(), input.end());
@@ -236,16 +202,8 @@ void TestVectorBinarySearchSimple()
 
   ASSERT_EQUAL((bool_output_end - bool_output.begin()), 10);
 
-  ASSERT_EQUAL(bool_output[0], true);
-  ASSERT_EQUAL(bool_output[1], false);
-  ASSERT_EQUAL(bool_output[2], true);
-  ASSERT_EQUAL(bool_output[3], false);
-  ASSERT_EQUAL(bool_output[4], false);
-  ASSERT_EQUAL(bool_output[5], true);
-  ASSERT_EQUAL(bool_output[6], false);
-  ASSERT_EQUAL(bool_output[7], true);
-  ASSERT_EQUAL(bool_output[8], true);
-  ASSERT_EQUAL(bool_output[9], false);
+  BoolVector bool_ref{true, false, true, false, false, true, false, true, true, false};
+  ASSERT_EQUAL(bool_output, bool_ref);
 
   // test with integral output type
   IntVector integral_output(10, 2);
@@ -254,16 +212,8 @@ void TestVectorBinarySearchSimple()
 
   ASSERT_EQUAL((int_output_end - integral_output.begin()), 10);
 
-  ASSERT_EQUAL(integral_output[0], 1);
-  ASSERT_EQUAL(integral_output[1], 0);
-  ASSERT_EQUAL(integral_output[2], 1);
-  ASSERT_EQUAL(integral_output[3], 0);
-  ASSERT_EQUAL(integral_output[4], 0);
-  ASSERT_EQUAL(integral_output[5], 1);
-  ASSERT_EQUAL(integral_output[6], 0);
-  ASSERT_EQUAL(integral_output[7], 1);
-  ASSERT_EQUAL(integral_output[8], 1);
-  ASSERT_EQUAL(integral_output[9], 0);
+  IntVector int_ref{1, 0, 1, 0, 0, 1, 0, 1, 1, 0};
+  ASSERT_EQUAL(integral_output, int_ref);
 }
 DECLARE_VECTOR_UNITTEST(TestVectorBinarySearchSimple);
 

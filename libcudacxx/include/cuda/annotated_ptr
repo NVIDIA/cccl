@@ -187,8 +187,8 @@ public:
   _CCCL_HOST_DEVICE constexpr access_property() noexcept
       : __descriptor(__detail_ap::__sm_80::__interleave_normal())
   {}
-  constexpr access_property(access_property const&) noexcept        = default;
-  access_property& operator=(const access_property& other) noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr access_property(access_property const&) noexcept        = default;
+  _CCCL_HIDE_FROM_ABI access_property& operator=(const access_property& other) noexcept = default;
 
   _CCCL_HOST_DEVICE constexpr access_property(normal, float __fraction)
       : __descriptor(__detail_ap::__interleave(normal{}, __fraction))
@@ -351,17 +351,18 @@ public:
     return __repr - o.__repr;
   }
 
-  constexpr annotated_ptr() noexcept                     = default;
-  constexpr annotated_ptr(annotated_ptr const&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr annotated_ptr() noexcept                     = default;
+  _CCCL_HIDE_FROM_ABI constexpr annotated_ptr(annotated_ptr const&) noexcept = default;
   // No constexpr for c11 as the method can't be const
-  _CCCL_CONSTEXPR_CXX14 annotated_ptr& operator=(annotated_ptr const& other) noexcept = default;
+  _CCCL_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 annotated_ptr& operator=(annotated_ptr const& other) noexcept = default;
 
   _CCCL_HOST_DEVICE explicit annotated_ptr(pointer __p)
       : __repr(__p)
   {
-    NV_IF_TARGET(
-      NV_IS_DEVICE,
-      (_LIBCUDACXX_DEBUG_ASSERT((std::is_same<_Property, shared>::value && __isShared(__p) || __isGlobal(__p)), "");))
+    NV_IF_TARGET(NV_IS_DEVICE,
+                 (_CCCL_ASSERT((std::is_same<_Property, access_property::shared>::value && __isShared((void*) __p))
+                                 || __isGlobal((void*) __p),
+                               "");))
   }
 
   template <typename _RuntimeProperty>
@@ -378,7 +379,7 @@ public:
         || std::is_same<_RuntimeProperty, access_property::persisting>::value
         || std::is_same<_RuntimeProperty, access_property>::value,
       "This method requires RuntimeProperty=global|normal|streaming|persisting|access_property");
-    NV_IF_TARGET(NV_IS_DEVICE, (_LIBCUDACXX_DEBUG_ASSERT((__isGlobal(__p) == true), "");))
+    NV_IF_TARGET(NV_IS_DEVICE, (_CCCL_ASSERT((__isGlobal((void*) __p) == true), "");))
   }
 
   template <class _TTp, class _Prop>

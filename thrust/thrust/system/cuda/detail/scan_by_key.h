@@ -102,7 +102,7 @@ _CCCL_HOST_DEVICE ValuesOutIt inclusive_scan_by_key_n(
     EqualityOpT,
     ScanOpT,
     cub::NullType,
-    std::int32_t,
+    std::uint32_t,
     AccumT>;
   using Dispatch64 = cub::DispatchScanByKey<
     KeysInUnwrapIt,
@@ -111,7 +111,7 @@ _CCCL_HOST_DEVICE ValuesOutIt inclusive_scan_by_key_n(
     EqualityOpT,
     ScanOpT,
     cub::NullType,
-    std::int64_t,
+    std::uint64_t,
     AccumT>;
 
   cudaStream_t stream = thrust::cuda_cub::stream(policy);
@@ -120,7 +120,7 @@ _CCCL_HOST_DEVICE ValuesOutIt inclusive_scan_by_key_n(
   // Determine temporary storage requirements:
   std::size_t tmp_size = 0;
   {
-    THRUST_INDEX_TYPE_DISPATCH2(
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
       status,
       Dispatch32::Dispatch,
       Dispatch64::Dispatch,
@@ -146,7 +146,7 @@ _CCCL_HOST_DEVICE ValuesOutIt inclusive_scan_by_key_n(
     // Allocate temporary storage:
     thrust::detail::temporary_array<std::uint8_t, Derived> tmp{policy, tmp_size};
 
-    THRUST_INDEX_TYPE_DISPATCH2(
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
       status,
       Dispatch32::Dispatch,
       Dispatch64::Dispatch,
@@ -211,7 +211,7 @@ _CCCL_HOST_DEVICE ValuesOutIt exclusive_scan_by_key_n(
     EqualityOpT,
     ScanOpT,
     InitValueT,
-    std::int32_t,
+    std::uint32_t,
     InitValueT>;
   using Dispatch64 = cub::DispatchScanByKey<
     KeysInUnwrapIt,
@@ -220,7 +220,7 @@ _CCCL_HOST_DEVICE ValuesOutIt exclusive_scan_by_key_n(
     EqualityOpT,
     ScanOpT,
     InitValueT,
-    std::int64_t,
+    std::uint64_t,
     InitValueT>;
 
   cudaStream_t stream = thrust::cuda_cub::stream(policy);
@@ -229,7 +229,7 @@ _CCCL_HOST_DEVICE ValuesOutIt exclusive_scan_by_key_n(
   // Determine temporary storage requirements:
   std::size_t tmp_size = 0;
   {
-    THRUST_INDEX_TYPE_DISPATCH2(
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
       status,
       Dispatch32::Dispatch,
       Dispatch64::Dispatch,
@@ -255,7 +255,7 @@ _CCCL_HOST_DEVICE ValuesOutIt exclusive_scan_by_key_n(
     // Allocate temporary storage:
     thrust::detail::temporary_array<std::uint8_t, Derived> tmp{policy, tmp_size};
 
-    THRUST_INDEX_TYPE_DISPATCH2(
+    THRUST_UNSIGNED_INDEX_TYPE_DISPATCH2(
       status,
       Dispatch32::Dispatch,
       Dispatch64::Dispatch,

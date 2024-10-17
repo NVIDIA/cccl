@@ -348,7 +348,7 @@ void test_exceptions()
 
 int main(int, char**)
 {
-#if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
+#if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
   static_assert(test());
 #endif
   test_with_test_type();

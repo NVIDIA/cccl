@@ -144,12 +144,12 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
 using memory_order = _CUDA_VSTD::memory_order;
 
-_LIBCUDACXX_INLINE_VAR constexpr memory_order memory_order_relaxed = _CUDA_VSTD::memory_order_relaxed;
-_LIBCUDACXX_INLINE_VAR constexpr memory_order memory_order_consume = _CUDA_VSTD::memory_order_consume;
-_LIBCUDACXX_INLINE_VAR constexpr memory_order memory_order_acquire = _CUDA_VSTD::memory_order_acquire;
-_LIBCUDACXX_INLINE_VAR constexpr memory_order memory_order_release = _CUDA_VSTD::memory_order_release;
-_LIBCUDACXX_INLINE_VAR constexpr memory_order memory_order_acq_rel = _CUDA_VSTD::memory_order_acq_rel;
-_LIBCUDACXX_INLINE_VAR constexpr memory_order memory_order_seq_cst = _CUDA_VSTD::memory_order_seq_cst;
+_CCCL_INLINE_VAR constexpr memory_order memory_order_relaxed = _CUDA_VSTD::memory_order_relaxed;
+_CCCL_INLINE_VAR constexpr memory_order memory_order_consume = _CUDA_VSTD::memory_order_consume;
+_CCCL_INLINE_VAR constexpr memory_order memory_order_acquire = _CUDA_VSTD::memory_order_acquire;
+_CCCL_INLINE_VAR constexpr memory_order memory_order_release = _CUDA_VSTD::memory_order_release;
+_CCCL_INLINE_VAR constexpr memory_order memory_order_acq_rel = _CUDA_VSTD::memory_order_acq_rel;
+_CCCL_INLINE_VAR constexpr memory_order memory_order_seq_cst = _CUDA_VSTD::memory_order_seq_cst;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 

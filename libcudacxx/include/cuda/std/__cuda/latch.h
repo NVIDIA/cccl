@@ -27,7 +27,7 @@ template <thread_scope _Sco>
 class latch : public _CUDA_VSTD::__latch_base<_Sco>
 {
 public:
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr latch(_CUDA_VSTD::ptrdiff_t __count)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr latch(_CUDA_VSTD::ptrdiff_t __count)
       : _CUDA_VSTD::__latch_base<_Sco>(__count)
   {}
 };

@@ -91,22 +91,22 @@ struct allowed_levels<>
 namespace detail
 {
 template <typename QueryLevel, typename AllowedLevels>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_level_allowed = false;
+_CCCL_INLINE_VAR constexpr bool is_level_allowed = false;
 
 template <typename QueryLevel, typename... Levels>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_level_allowed<QueryLevel, allowed_levels<Levels...>> =
+_CCCL_INLINE_VAR constexpr bool is_level_allowed<QueryLevel, allowed_levels<Levels...>> =
   ::cuda::std::disjunction_v<::cuda::std::is_same<QueryLevel, Levels>...>;
 
 template <typename L1, typename L2>
-_LIBCUDACXX_INLINE_VAR constexpr bool can_stack_on_top =
+_CCCL_INLINE_VAR constexpr bool can_stack_on_top =
   is_level_allowed<L1, typename L2::allowed_below> || is_level_allowed<L2, typename L1::allowed_above>;
 
 template <typename Unit, typename Level>
-_LIBCUDACXX_INLINE_VAR constexpr bool legal_unit_for_level =
+_CCCL_INLINE_VAR constexpr bool legal_unit_for_level =
   can_stack_on_top<Unit, Level> || legal_unit_for_level<Unit, typename Level::allowed_below::default_unit>;
 
 template <typename Unit>
-_LIBCUDACXX_INLINE_VAR constexpr bool legal_unit_for_level<Unit, void> = false;
+_CCCL_INLINE_VAR constexpr bool legal_unit_for_level<Unit, void> = false;
 } // namespace detail
 
 // Base type for all hierarchy levels
@@ -292,7 +292,7 @@ template <typename Unit, typename Level>
     return dims_product<typename Level::product_type>(
       extents_impl<SplitLevel, Level>(), extents_impl<Unit, SplitLevel>());
   }
-  _LIBCUDACXX_UNREACHABLE();
+  _CCCL_UNREACHABLE();
 }
 
 template <typename Unit, typename Level>
@@ -309,7 +309,7 @@ template <typename Unit, typename Level>
       dims_product<typename Level::product_type>(index_impl<SplitLevel, Level>(), extents_impl<Unit, SplitLevel>()),
       index_impl<Unit, SplitLevel>());
   }
-  _LIBCUDACXX_UNREACHABLE();
+  _CCCL_UNREACHABLE();
 }
 } // namespace detail
 

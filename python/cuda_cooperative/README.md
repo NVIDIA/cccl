@@ -8,5 +8,5 @@ Please visit the documentation here: https://nvidia.github.io/cccl/python.html.
 
 ```bash
 pip3 install -e .[test]
-pytest -v ./tests/device/
+pytest -v ./tests/
 ```

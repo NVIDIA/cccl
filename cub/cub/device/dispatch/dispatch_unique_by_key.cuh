@@ -385,7 +385,7 @@ struct DispatchUniqueByKey : SelectedPolicy
       constexpr auto block_threads    = VsmemHelperT::agent_policy_t::BLOCK_THREADS;
       constexpr auto items_per_thread = VsmemHelperT::agent_policy_t::ITEMS_PER_THREAD;
       int tile_size                   = block_threads * items_per_thread;
-      int num_tiles                   = static_cast<int>(cub::DivideAndRoundUp(num_items, tile_size));
+      int num_tiles                   = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
       const auto vsmem_size           = num_tiles * VsmemHelperT::vsmem_per_block;
 
       // Specify temporary storage allocation requirements
@@ -423,7 +423,7 @@ struct DispatchUniqueByKey : SelectedPolicy
 
       // Log init_kernel configuration
       num_tiles          = CUB_MAX(1, num_tiles);
-      int init_grid_size = cub::DivideAndRoundUp(num_tiles, INIT_KERNEL_THREADS);
+      int init_grid_size = ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS);
 
 #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
       _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);
@@ -464,7 +464,7 @@ struct DispatchUniqueByKey : SelectedPolicy
       // Get grid size for scanning tiles
       dim3 scan_grid_size;
       scan_grid_size.z = 1;
-      scan_grid_size.y = cub::DivideAndRoundUp(num_tiles, max_dim_x);
+      scan_grid_size.y = ::cuda::ceil_div(num_tiles, max_dim_x);
       scan_grid_size.x = CUB_MIN(num_tiles, max_dim_x);
 
 // Log select_if_kernel configuration

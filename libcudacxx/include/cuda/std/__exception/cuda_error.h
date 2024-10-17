@@ -41,7 +41,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
  * @brief Exception thrown when a CUDA error is encountered.
  */
 
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#ifndef _CCCL_NO_EXCEPTIONS
 class cuda_error : public ::std::runtime_error
 {
 private:
@@ -62,24 +62,24 @@ public:
   {}
 };
 
-_CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_cuda_error(::cudaError_t __status, const char* __msg)
+_CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void __throw_cuda_error(::cudaError_t __status, const char* __msg)
 {
   NV_IF_ELSE_TARGET(NV_IS_HOST,
                     (throw ::cuda::cuda_error(__status, __msg);),
                     ((void) __status; (void) __msg; _CUDA_VSTD_NOVERSION::terminate();))
 }
-#else // ^^^ !_LIBCUDACXX_NO_EXCEPTIONS ^^^ / vvv _LIBCUDACXX_NO_EXCEPTIONS vvv
+#else // ^^^ !_CCCL_NO_EXCEPTIONS ^^^ / vvv _CCCL_NO_EXCEPTIONS vvv
 class cuda_error
 {
 public:
   cuda_error(::cudaError_t, const char*) noexcept {}
 };
 
-_CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_cuda_error(::cudaError_t, const char*)
+_CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void __throw_cuda_error(::cudaError_t, const char*)
 {
   _CUDA_VSTD_NOVERSION::terminate();
 }
-#endif // !_LIBCUDACXX_NO_EXCEPTIONS
+#endif // _CCCL_NO_EXCEPTIONS
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 

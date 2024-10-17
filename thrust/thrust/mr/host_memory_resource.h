@@ -33,6 +33,6 @@
 
 THRUST_NAMESPACE_BEGIN
 
-using host_memory_resource = thrust::system::cpp::memory_resource;
+using host_memory_resource = thrust::system::__THRUST_HOST_SYSTEM_NAMESPACE::memory_resource;
 
 THRUST_NAMESPACE_END

@@ -11,13 +11,13 @@
 #ifndef __CCCL_COMPILER_H
 #define __CCCL_COMPILER_H
 
-// Determine the host compiler
-#if defined(__INTEL_LLVM_COMPILER)
-#  define _CCCL_COMPILER_ICC_LLVM
-#elif defined(__INTEL_COMPILER)
+// Determine the host compiler and its version
+#if defined(__INTEL_COMPILER)
 #  define _CCCL_COMPILER_ICC
 #elif defined(__NVCOMPILER)
 #  define _CCCL_COMPILER_NVHPC
+#  define _CCCL_COMPILER_NVHPC_VERSION \
+    (__NVCOMPILER_MAJOR__ * 10000 + __NVCOMPILER_MINOR__ * 100 + __NVCOMPILER_PATCHLEVEL__)
 #elif defined(__clang__)
 #  define _CCCL_COMPILER_CLANG
 #  define _CCCL_CLANG_VERSION (__clang_major__ * 10000 + __clang_minor__ * 100 + __clang_patchlevel__)
@@ -28,8 +28,6 @@
 #  define _CCCL_COMPILER_MSVC
 #  define _CCCL_MSVC_VERSION      _MSC_VER
 #  define _CCCL_MSVC_VERSION_FULL _MSC_FULL_VER
-#elif defined(__IBMCPP__)
-#  define _CCCL_COMPILER_IBM
 #elif defined(__CUDACC_RTC__)
 #  define _CCCL_COMPILER_NVRTC
 #endif
@@ -60,7 +58,8 @@
 #  define _CCCL_CUDA_COMPILER
 #endif // cuda compiler available
 
-// clang-cuda does not define __CUDACC_VER_MAJOR__ and friends
+// clang-cuda does not define __CUDACC_VER_MAJOR__ and friends. They are instead retrieved from the CUDA_VERSION macro
+// defined in "cuda.h". clang-cuda automatically pre-includes "__clang_cuda_runtime_wrapper.h" which includes "cuda.h"
 #if defined(_CCCL_CUDA_COMPILER_CLANG)
 #  define _CCCL_CUDACC
 #  define _CCCL_CUDACC_VER_MAJOR CUDA_VERSION / 1000
@@ -73,7 +72,7 @@
 #  define _CCCL_CUDACC_VER_MINOR __CUDACC_VER_MINOR__
 #  define _CCCL_CUDACC_VER_BUILD __CUDACC_VER_BUILD__
 #  define _CCCL_CUDACC_VER       _CCCL_CUDACC_VER_MAJOR * 100000 + _CCCL_CUDACC_VER_MINOR * 1000 + _CCCL_CUDACC_VER_BUILD
-#endif // __CUDACC__ || _CCCL_CUDA_COMPILER_NVHPC
+#endif // _CCCL_CUDA_COMPILER
 
 // Some convenience macros to filter CUDACC versions
 #if !defined(_CCCL_CUDA_COMPILER) || (defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1102000)
@@ -91,6 +90,9 @@
 #if !defined(_CCCL_CUDA_COMPILER) || (defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1108000)
 #  define _CCCL_CUDACC_BELOW_11_8
 #endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1108000
+#if !defined(_CCCL_CUDA_COMPILER) || (defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1200000)
+#  define _CCCL_CUDACC_BELOW_12_0
+#endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1203000
 #if !defined(_CCCL_CUDA_COMPILER) || (defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1202000)
 #  define _CCCL_CUDACC_BELOW_12_2
 #endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1203000

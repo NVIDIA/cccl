@@ -70,7 +70,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
 
     *result = prev_value;
 
-    for (++first1, ++first2, ++result; first1 != last1; ++first1, ++first2, ++result)
+    for (++first1, ++first2, ++result; first1 != last1; ++first1, (void) ++first2, (void) ++result)
     {
       KeyType key = *first1;
 
@@ -123,7 +123,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
 
     next = binary_op(next, temp_value);
 
-    for (++first1, ++first2, ++result; first1 != last1; ++first1, ++first2, ++result)
+    for (++first1, ++first2, ++result; first1 != last1; ++first1, (void) ++first2, (void) ++result)
     {
       KeyType key = *first1;
 

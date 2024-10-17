@@ -42,7 +42,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_bounded_array<_Tp[_Np]> : true_type
 {};
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_bounded_array_v = is_bounded_array<_Tp>::value;
+_CCCL_INLINE_VAR constexpr bool is_bounded_array_v = is_bounded_array<_Tp>::value;
 
 #endif
 

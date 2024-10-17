@@ -54,7 +54,7 @@ _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr auto fool_compiler(const dimensions<
   {
     return ex;
   }
-  _LIBCUDACXX_UNREACHABLE();
+  _CCCL_UNREACHABLE();
 }
 
 template <typename QueryLevel, typename Hierarchy>
@@ -96,17 +96,17 @@ struct get_level_helper
     {
       return (*this)(levels...);
     }
-    _LIBCUDACXX_UNREACHABLE();
+    _CCCL_UNREACHABLE();
   }
 };
 } // namespace detail
 
 template <typename QueryLevel, typename Hierarchy>
-_LIBCUDACXX_INLINE_VAR constexpr bool has_level =
+_CCCL_INLINE_VAR constexpr bool has_level =
   detail::has_level_helper<QueryLevel, ::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<Hierarchy>>>::value;
 
 template <typename QueryLevel, typename Hierarchy>
-_LIBCUDACXX_INLINE_VAR constexpr bool has_level_or_unit =
+_CCCL_INLINE_VAR constexpr bool has_level_or_unit =
   detail::has_level_helper<QueryLevel, ::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<Hierarchy>>>::value
   || detail::has_unit<QueryLevel, ::cuda::std::remove_cv_t<::cuda::std::remove_reference_t<Hierarchy>>>::value;
 

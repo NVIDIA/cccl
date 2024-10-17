@@ -4,6 +4,9 @@
 
 #include <unittest/unittest.h>
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4244) // warning C4244: '=': conversion from 'int' to '_Ty', possible loss of data
+
 #define BINARY_FUNCTIONAL_PLACEHOLDERS_TEST(name, op, reference_functor, type_list)                               \
   template <typename Vector>                                                                                      \
   struct TestFunctionalPlaceholders##name                                                                         \
@@ -81,3 +84,5 @@ struct unary_plus_reference
 
 UNARY_FUNCTIONAL_PLACEHOLDERS_TEST(UnaryPlus, +, unary_plus_reference);
 UNARY_FUNCTIONAL_PLACEHOLDERS_TEST(Negate, -, thrust::negate);
+
+_CCCL_DIAG_POP

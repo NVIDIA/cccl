@@ -98,18 +98,7 @@ VariableUnitTest<TestSortDeviceDevice, unittest::type_list<unittest::int8_t, uni
 
 void TestSortCudaStreams()
 {
-  thrust::device_vector<int> keys(10);
-
-  keys[0] = 9;
-  keys[1] = 3;
-  keys[2] = 2;
-  keys[3] = 0;
-  keys[4] = 4;
-  keys[5] = 7;
-  keys[6] = 8;
-  keys[7] = 1;
-  keys[8] = 5;
-  keys[9] = 6;
+  thrust::device_vector<int> keys{9, 3, 2, 0, 4, 7, 8, 1, 5, 6};
 
   cudaStream_t s;
   cudaStreamCreate(&s);
@@ -125,18 +114,7 @@ DECLARE_UNITTEST(TestSortCudaStreams);
 
 void TestComparisonSortCudaStreams()
 {
-  thrust::device_vector<int> keys(10);
-
-  keys[0] = 9;
-  keys[1] = 3;
-  keys[2] = 2;
-  keys[3] = 0;
-  keys[4] = 4;
-  keys[5] = 7;
-  keys[6] = 8;
-  keys[7] = 1;
-  keys[8] = 5;
-  keys[9] = 6;
+  thrust::device_vector<int> keys{9, 3, 2, 0, 4, 7, 8, 1, 5, 6};
 
   cudaStream_t s;
   cudaStreamCreate(&s);

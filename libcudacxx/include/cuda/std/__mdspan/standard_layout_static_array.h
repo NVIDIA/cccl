@@ -177,25 +177,21 @@ struct __standard_layout_psa<_Tag,
 
   //--------------------------------------------------------------------------
 
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __standard_layout_psa() noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __standard_layout_psa(__standard_layout_psa const&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __standard_layout_psa(__standard_layout_psa&&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa& operator=(__standard_layout_psa const&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa& operator=(__standard_layout_psa&&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  ~__standard_layout_psa() noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr __standard_layout_psa() noexcept                             = default;
+  _CCCL_HIDE_FROM_ABI constexpr __standard_layout_psa(__standard_layout_psa const&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr __standard_layout_psa(__standard_layout_psa&&) noexcept      = default;
+  _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa&
+  operator=(__standard_layout_psa const&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa&
+  operator=(__standard_layout_psa&&) noexcept           = default;
+  _CCCL_HIDE_FROM_ABI ~__standard_layout_psa() noexcept = default;
 
   //--------------------------------------------------------------------------
 
-  __MDSPAN_INLINE_FUNCTION
-  constexpr __standard_layout_psa(__construct_psa_from_all_exts_values_tag_t,
-                                  _Tp const& /*__val*/,
-                                  __repeated_with_idxs<_Idxs, _Tp> const&... __vals) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __standard_layout_psa(
+    __construct_psa_from_all_exts_values_tag_t,
+    _Tp const& /*__val*/,
+    __repeated_with_idxs<_Idxs, _Tp> const&... __vals) noexcept
 #    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
 #    else
@@ -210,7 +206,7 @@ struct __standard_layout_psa<_Tag,
   {}
 
   template <class... _Ts>
-  __MDSPAN_INLINE_FUNCTION constexpr __standard_layout_psa(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __standard_layout_psa(
     __construct_psa_from_dynamic_exts_values_tag_t, _Ts const&... __vals) noexcept
 #    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
@@ -226,7 +222,7 @@ struct __standard_layout_psa<_Tag,
   {}
 
   template <class _Up, size_t _Np>
-  __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(array<_Up, _Np> const& __vals) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __standard_layout_psa(array<_Up, _Np> const& __vals) noexcept
 #    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
 #    else
@@ -241,7 +237,7 @@ struct __standard_layout_psa<_Tag,
   {}
 
   template <class _Up, size_t _NStatic>
-  __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __standard_layout_psa(
     __construct_psa_from_all_exts_array_tag_t const& __tag, array<_Up, _NStatic> const& __vals) noexcept
 #    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
@@ -257,7 +253,7 @@ struct __standard_layout_psa<_Tag,
   {}
 
   template <class _Up, size_t _IDynamic, size_t _NDynamic>
-  __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __standard_layout_psa(
     __construct_psa_from_dynamic_exts_array_tag_t<_IDynamic> __tag, array<_Up, _NDynamic> const& __vals) noexcept
 #    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
@@ -273,7 +269,7 @@ struct __standard_layout_psa<_Tag,
   {}
 
   template <class _Up, size_t _Np>
-  __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(_CUDA_VSTD::span<_Up, _Np> const& __vals) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __standard_layout_psa(_CUDA_VSTD::span<_Up, _Np> const& __vals) noexcept
 #    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
 #    else
@@ -288,7 +284,7 @@ struct __standard_layout_psa<_Tag,
   {}
 
   template <class _Up, size_t _NStatic>
-  __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __standard_layout_psa(
     __construct_psa_from_all_exts_array_tag_t const& __tag, _CUDA_VSTD::span<_Up, _NStatic> const& __vals) noexcept
 #    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
@@ -304,7 +300,7 @@ struct __standard_layout_psa<_Tag,
   {}
 
   template <class _Up, size_t _IDynamic, size_t _NDynamic>
-  __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __standard_layout_psa(
     __construct_psa_from_dynamic_exts_array_tag_t<_IDynamic> __tag,
     _CUDA_VSTD::span<_Up, _NDynamic> const& __vals) noexcept
 #    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
@@ -321,7 +317,7 @@ struct __standard_layout_psa<_Tag,
   {}
 
   template <class _UTag, class _Up, class _static_U, class _UValsSeq, _static_U __u_sentinal, class _IdxsSeq>
-  __MDSPAN_INLINE_FUNCTION constexpr __standard_layout_psa(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __standard_layout_psa(
     __standard_layout_psa<_UTag, _Up, _static_U, _UValsSeq, __u_sentinal, _IdxsSeq> const& __rhs) noexcept
 #    ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
       : __next_{
@@ -430,72 +426,68 @@ struct __standard_layout_psa<_Tag,
 
   //--------------------------------------------------------------------------
 
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __standard_layout_psa() noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __standard_layout_psa(__standard_layout_psa const&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __standard_layout_psa(__standard_layout_psa&&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa& operator=(__standard_layout_psa const&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa& operator=(__standard_layout_psa&&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  ~__standard_layout_psa() noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr __standard_layout_psa() noexcept                             = default;
+  _CCCL_HIDE_FROM_ABI constexpr __standard_layout_psa(__standard_layout_psa const&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr __standard_layout_psa(__standard_layout_psa&&) noexcept      = default;
+  _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa&
+  operator=(__standard_layout_psa const&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa&
+  operator=(__standard_layout_psa&&) noexcept           = default;
+  _CCCL_HIDE_FROM_ABI ~__standard_layout_psa() noexcept = default;
 
   //--------------------------------------------------------------------------
 
-  __MDSPAN_INLINE_FUNCTION
-  constexpr __standard_layout_psa(__construct_psa_from_all_exts_values_tag_t,
-                                  _Tp const& __val,
-                                  __repeated_with_idxs<_Idxs, _Tp> const&... __vals) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __standard_layout_psa(
+    __construct_psa_from_all_exts_values_tag_t,
+    _Tp const& __val,
+    __repeated_with_idxs<_Idxs, _Tp> const&... __vals) noexcept
       : __value_pair(__val, __next_t(__construct_psa_from_all_exts_values_tag, __vals...))
   {}
 
   template <class... _Ts>
-  __MDSPAN_INLINE_FUNCTION constexpr __standard_layout_psa(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __standard_layout_psa(
     __construct_psa_from_dynamic_exts_values_tag_t, _Tp const& __val, _Ts const&... __vals) noexcept
       : __value_pair(__val, __next_t(__construct_psa_from_dynamic_exts_values_tag, __vals...))
   {}
 
   template <class _Up, size_t _Np>
-  __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(array<_Up, _Np> const& __vals) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __standard_layout_psa(array<_Up, _Np> const& __vals) noexcept
       : __value_pair(_CUDA_VSTD::get<_Idx>(__vals), __vals)
   {}
 
   template <class _Up, size_t _NStatic>
-  __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __standard_layout_psa(
     __construct_psa_from_all_exts_array_tag_t __tag, array<_Up, _NStatic> const& __vals) noexcept
       : __value_pair(_CUDA_VSTD::get<_Idx>(__vals), __next_t(__tag, __vals))
   {}
 
   template <class _Up, size_t _IDynamic, size_t _NDynamic>
-  __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __standard_layout_psa(
     __construct_psa_from_dynamic_exts_array_tag_t<_IDynamic>, array<_Up, _NDynamic> const& __vals) noexcept
       : __value_pair(_CUDA_VSTD::get<_IDynamic>(__vals),
                      __next_t(__construct_psa_from_dynamic_exts_array_tag_t<_IDynamic + 1>{}, __vals))
   {}
 
   template <class _Up, size_t _Np>
-  __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(_CUDA_VSTD::span<_Up, _Np> const& __vals) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __standard_layout_psa(_CUDA_VSTD::span<_Up, _Np> const& __vals) noexcept
       : __value_pair(__vals[_Idx], __vals)
   {}
 
   template <class _Up, size_t _NStatic>
-  __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __standard_layout_psa(
     __construct_psa_from_all_exts_array_tag_t __tag, _CUDA_VSTD::span<_Up, _NStatic> const& __vals) noexcept
       : __value_pair(__vals[_Idx], __next_t(__tag, __vals))
   {}
 
   template <class _Up, size_t _IDynamic, size_t _NDynamic>
-  __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __standard_layout_psa(
     __construct_psa_from_dynamic_exts_array_tag_t<_IDynamic>, _CUDA_VSTD::span<_Up, _NDynamic> const& __vals) noexcept
       : __value_pair(__vals[_IDynamic],
                      __next_t(__construct_psa_from_dynamic_exts_array_tag_t<_IDynamic + 1>{}, __vals))
   {}
 
   template <class _UTag, class _Up, class _static_U, class _UValsSeq, _static_U __u_sentinal, class _UIdxsSeq>
-  __MDSPAN_INLINE_FUNCTION constexpr __standard_layout_psa(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __standard_layout_psa(
     __standard_layout_psa<_UTag, _Up, _static_U, _UValsSeq, __u_sentinal, _UIdxsSeq> const& __rhs) noexcept
       : __value_pair(__rhs.template __get_n<_Idx>(), __rhs.__next())
   {}
@@ -564,56 +556,51 @@ struct __standard_layout_psa<_Tag,
 
   //--------------------------------------------------------------------------
 
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __standard_layout_psa() noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __standard_layout_psa(__standard_layout_psa const&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __standard_layout_psa(__standard_layout_psa&&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa& operator=(__standard_layout_psa const&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa& operator=(__standard_layout_psa&&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  ~__standard_layout_psa() noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr __standard_layout_psa() noexcept                             = default;
+  _CCCL_HIDE_FROM_ABI constexpr __standard_layout_psa(__standard_layout_psa const&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr __standard_layout_psa(__standard_layout_psa&&) noexcept      = default;
+  _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa&
+  operator=(__standard_layout_psa const&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI __MDSPAN_CONSTEXPR_14_DEFAULTED __standard_layout_psa&
+  operator=(__standard_layout_psa&&) noexcept           = default;
+  _CCCL_HIDE_FROM_ABI ~__standard_layout_psa() noexcept = default;
 
-  __MDSPAN_INLINE_FUNCTION
-  constexpr __standard_layout_psa(__construct_psa_from_all_exts_values_tag_t) noexcept {}
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __standard_layout_psa(__construct_psa_from_all_exts_values_tag_t) noexcept {}
 
   template <class... _Ts>
-  __MDSPAN_INLINE_FUNCTION constexpr __standard_layout_psa(__construct_psa_from_dynamic_exts_values_tag_t) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __standard_layout_psa(__construct_psa_from_dynamic_exts_values_tag_t) noexcept
   {}
 
   template <class _Up, size_t _Np>
-  __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(array<_Up, _Np> const&) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __standard_layout_psa(array<_Up, _Np> const&) noexcept
   {}
 
   template <class _Up, size_t _NStatic>
-  __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __standard_layout_psa(
     __construct_psa_from_all_exts_array_tag_t, array<_Up, _NStatic> const&) noexcept
   {}
 
   template <class _Up, size_t _IDynamic, size_t _NDynamic>
-  __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __standard_layout_psa(
     __construct_psa_from_dynamic_exts_array_tag_t<_IDynamic>, array<_Up, _NDynamic> const&) noexcept
   {}
 
   template <class _Up, size_t _Np>
-  __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(_CUDA_VSTD::span<_Up, _Np> const&) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __standard_layout_psa(_CUDA_VSTD::span<_Up, _Np> const&) noexcept
   {}
 
   template <class _Up, size_t _NStatic>
-  __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __standard_layout_psa(
     __construct_psa_from_all_exts_array_tag_t, _CUDA_VSTD::span<_Up, _NStatic> const&) noexcept
   {}
 
   template <class _Up, size_t _IDynamic, size_t _NDynamic>
-  __MDSPAN_INLINE_FUNCTION constexpr explicit __standard_layout_psa(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __standard_layout_psa(
     __construct_psa_from_dynamic_exts_array_tag_t<_IDynamic>, _CUDA_VSTD::span<_Up, _NDynamic> const&) noexcept
   {}
 
   template <class _UTag, class _Up, class _static_U, class _UValsSeq, _static_U __u_sentinal, class _UIdxsSeq>
-  __MDSPAN_INLINE_FUNCTION constexpr __standard_layout_psa(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __standard_layout_psa(
     __standard_layout_psa<_UTag, _Up, _static_U, _UValsSeq, __u_sentinal, _UIdxsSeq> const&) noexcept
   {}
 
@@ -650,7 +637,7 @@ struct __partially_static_sizes_tagged
   using __psa_impl_t::__psa_impl_t;
 #    endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 #    ifdef __MDSPAN_DEFAULTED_CONSTRUCTORS_INHERITANCE_WORKAROUND
-  __MDSPAN_INLINE_FUNCTION
+  _LIBCUDACXX_HIDE_FROM_ABI
 #    endif
   constexpr __partially_static_sizes_tagged() noexcept
 #    ifdef __MDSPAN_DEFAULTED_CONSTRUCTORS_INHERITANCE_WORKAROUND
@@ -660,18 +647,16 @@ struct __partially_static_sizes_tagged
 #    endif
       // This line seems to be unstable under clang-format
       // clang-format off
-      __MDSPAN_INLINE_FUNCTION_DEFAULTED
-      constexpr __partially_static_sizes_tagged(__partially_static_sizes_tagged const&) noexcept = default;
+      _CCCL_HIDE_FROM_ABI constexpr __partially_static_sizes_tagged(__partially_static_sizes_tagged const&) noexcept = default;
   //clang-format on
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
-  constexpr __partially_static_sizes_tagged(__partially_static_sizes_tagged&&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
+  _CCCL_HIDE_FROM_ABI constexpr __partially_static_sizes_tagged(__partially_static_sizes_tagged&&) noexcept = default;
+  _CCCL_HIDE_FROM_ABI
   __MDSPAN_CONSTEXPR_14_DEFAULTED __partially_static_sizes_tagged&
   operator=(__partially_static_sizes_tagged const&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
+  _CCCL_HIDE_FROM_ABI
   __MDSPAN_CONSTEXPR_14_DEFAULTED __partially_static_sizes_tagged&
   operator=(__partially_static_sizes_tagged&&) noexcept = default;
-  __MDSPAN_INLINE_FUNCTION_DEFAULTED
+  _CCCL_HIDE_FROM_ABI
   ~__partially_static_sizes_tagged() noexcept = default;
 
   template <class _UTag>
@@ -706,7 +691,7 @@ public:
 #    endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
 
 #    ifdef __MDSPAN_DEFAULTED_CONSTRUCTORS_INHERITANCE_WORKAROUND
-  __MDSPAN_INLINE_FUNCTION
+  _LIBCUDACXX_HIDE_FROM_ABI
   constexpr __partially_static_sizes() noexcept
       : __base_t()
   {}

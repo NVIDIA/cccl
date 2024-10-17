@@ -103,7 +103,7 @@ auto configuration_test(
   ::cuda::stream_ref stream, const dim3& grid_dims, const dim3& block_dims, const dim3& cluster_dims = dim3())
 {
   auto dims             = make_test_dims<HasCluster>(grid_dims, block_dims, cluster_dims);
-  expectedConfig        = {0};
+  expectedConfig        = {};
   expectedConfig.stream = stream.get();
   if constexpr (HasCluster)
   {

@@ -581,10 +581,10 @@ CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN cudaError_t DeviceSegmentedSortCont
   const unsigned int small_segments  = group_sizes[1];
   const unsigned int medium_segments = static_cast<unsigned int>(num_segments) - (large_segments + small_segments);
 
-  const unsigned int small_blocks = DivideAndRoundUp(small_segments, SmallAndMediumPolicyT::SEGMENTS_PER_SMALL_BLOCK);
+  const unsigned int small_blocks = ::cuda::ceil_div(small_segments, SmallAndMediumPolicyT::SEGMENTS_PER_SMALL_BLOCK);
 
   const unsigned int medium_blocks =
-    DivideAndRoundUp(medium_segments, SmallAndMediumPolicyT::SEGMENTS_PER_MEDIUM_BLOCK);
+    ::cuda::ceil_div(medium_segments, SmallAndMediumPolicyT::SEGMENTS_PER_MEDIUM_BLOCK);
 
   const unsigned int small_and_medium_blocks_in_grid = small_blocks + medium_blocks;
 
@@ -1311,7 +1311,7 @@ struct DispatchSegmentedSort : SelectedPolicy
        * To avoid these issues, we have to use extra memory. The extra memory
        * holds temporary storage for writing intermediate results of each stage.
        * Since we iterate over digits in keys, we potentially need:
-       * `sizeof(KeyT) * num_items * DivideAndRoundUp(sizeof(KeyT),RADIX_BITS)`
+       * `sizeof(KeyT) * num_items * cuda::ceil_div(sizeof(KeyT),RADIX_BITS)`
        * auxiliary memory bytes. To reduce the auxiliary memory storage
        * requirements, the algorithm relies on a double buffer facility. The
        * idea behind it is in swapping destination and source buffers at each
@@ -1476,7 +1476,7 @@ private:
   {
     constexpr int byte_size = 8;
     constexpr int num_bits  = sizeof(KeyT) * byte_size;
-    const int num_passes    = DivideAndRoundUp(num_bits, radix_bits);
+    const int num_passes    = ::cuda::ceil_div(num_bits, radix_bits);
     return num_passes;
   }
 

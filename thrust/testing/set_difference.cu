@@ -53,22 +53,8 @@ void TestSetDifferenceSimple()
 {
   using Iterator = typename Vector::iterator;
 
-  Vector a(4), b(5);
-
-  a[0] = 0;
-  a[1] = 2;
-  a[2] = 4;
-  a[3] = 5;
-  b[0] = 0;
-  b[1] = 3;
-  b[2] = 3;
-  b[3] = 4;
-  b[4] = 6;
-
-  Vector ref(2);
-  ref[0] = 2;
-  ref[1] = 5;
-
+  Vector a{0, 2, 4, 5}, b{0, 3, 3, 4, 6};
+  Vector ref{2, 5};
   Vector result(2);
 
   Iterator end = thrust::set_difference(a.begin(), a.end(), b.begin(), b.end(), result.begin());

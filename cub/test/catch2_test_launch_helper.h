@@ -74,7 +74,7 @@
 //! Consult with `test/catch2_test_cdp_wrapper.cu` for more usage examples.
 
 #if !defined(TEST_LAUNCH)
-#  error Test file should contain %PARAM% TEST_LAUNCH lid 0:1
+#  error Test file should contain %PARAM% TEST_LAUNCH lid 0:1:2
 #endif
 
 #define DECLARE_INVOCABLE(API, WRAPPED_API_NAME, TMPL_HEAD_OPT, TMPL_ARGS_OPT)                  \
@@ -91,7 +91,7 @@
 
 #define DECLARE_LAUNCH_WRAPPER(API, WRAPPED_API_NAME)                                                  \
   DECLARE_INVOCABLE(API, WRAPPED_API_NAME, , );                                                        \
-  _LIBCUDACXX_INLINE_VAR constexpr struct WRAPPED_API_NAME##_t                                         \
+  _CCCL_INLINE_VAR constexpr struct WRAPPED_API_NAME##_t                                               \
   {                                                                                                    \
     template <class... As>                                                                             \
     void operator()(As... args) const                                                                  \

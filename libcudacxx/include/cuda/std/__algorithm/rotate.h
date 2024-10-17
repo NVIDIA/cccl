@@ -32,7 +32,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _AlgPolicy, class _ForwardIterator>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
 __rotate_left(_ForwardIterator __first, _ForwardIterator __last)
 {
   typedef typename iterator_traits<_ForwardIterator>::value_type value_type;
@@ -45,7 +45,7 @@ __rotate_left(_ForwardIterator __first, _ForwardIterator __last)
 }
 
 template <class _AlgPolicy, class _BidirectionalIterator>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _BidirectionalIterator
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _BidirectionalIterator
 __rotate_right(_BidirectionalIterator __first, _BidirectionalIterator __last)
 {
   typedef typename iterator_traits<_BidirectionalIterator>::value_type value_type;
@@ -60,7 +60,7 @@ __rotate_right(_BidirectionalIterator __first, _BidirectionalIterator __last)
 }
 
 template <class _AlgPolicy, class _ForwardIterator>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
 __rotate_forward(_ForwardIterator __first, _ForwardIterator __middle, _ForwardIterator __last)
 {
   _ForwardIterator __i = __middle;
@@ -103,7 +103,7 @@ __rotate_forward(_ForwardIterator __first, _ForwardIterator __middle, _ForwardIt
 }
 
 template <typename _Integral>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Integral __algo_gcd(_Integral __x, _Integral __y)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Integral __algo_gcd(_Integral __x, _Integral __y)
 {
   do
   {
@@ -115,7 +115,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Integral __algo_gcd(
 }
 
 template <class _AlgPolicy, typename _RandomAccessIterator>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator
 __rotate_gcd(_RandomAccessIterator __first, _RandomAccessIterator __middle, _RandomAccessIterator __last)
 {
   typedef typename iterator_traits<_RandomAccessIterator>::difference_type difference_type;
@@ -155,7 +155,7 @@ __rotate_gcd(_RandomAccessIterator __first, _RandomAccessIterator __middle, _Ran
 }
 
 template <class _AlgPolicy, class _ForwardIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator __rotate_impl(
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator __rotate_impl(
   _ForwardIterator __first, _ForwardIterator __middle, _ForwardIterator __last, _CUDA_VSTD::forward_iterator_tag)
 {
   typedef typename iterator_traits<_ForwardIterator>::value_type value_type;
@@ -170,7 +170,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator __ro
 }
 
 template <class _AlgPolicy, class _BidirectionalIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _BidirectionalIterator __rotate_impl(
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _BidirectionalIterator __rotate_impl(
   _BidirectionalIterator __first,
   _BidirectionalIterator __middle,
   _BidirectionalIterator __last,
@@ -192,7 +192,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _BidirectionalIterato
 }
 
 template <class _AlgPolicy, class _RandomAccessIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator __rotate_impl(
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator __rotate_impl(
   _RandomAccessIterator __first,
   _RandomAccessIterator __middle,
   _RandomAccessIterator __last,
@@ -215,7 +215,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator
 }
 
 template <class _AlgPolicy, class _Iterator, class _Sentinel>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 pair<_Iterator, _Iterator>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_Iterator, _Iterator>
 __rotate(_Iterator __first, _Iterator __middle, _Sentinel __last)
 {
   using _Ret            = pair<_Iterator, _Iterator>;
@@ -238,7 +238,7 @@ __rotate(_Iterator __first, _Iterator __middle, _Sentinel __last)
 }
 
 template <class _ForwardIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
 rotate(_ForwardIterator __first, _ForwardIterator __middle, _ForwardIterator __last)
 {
   return _CUDA_VSTD::__rotate<_ClassicAlgPolicy>(

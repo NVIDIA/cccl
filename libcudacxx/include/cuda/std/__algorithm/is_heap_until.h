@@ -27,7 +27,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Compare, class _RandomAccessIterator>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator
 __is_heap_until(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare&& __comp)
 {
   typedef typename iterator_traits<_RandomAccessIterator>::difference_type difference_type;
@@ -60,14 +60,14 @@ __is_heap_until(_RandomAccessIterator __first, _RandomAccessIterator __last, _Co
 }
 
 template <class _RandomAccessIterator, class _Compare>
-_CCCL_NODISCARD inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator
 is_heap_until(_RandomAccessIterator __first, _RandomAccessIterator __last, _Compare __comp)
 {
   return _CUDA_VSTD::__is_heap_until(__first, __last, static_cast<__comp_ref_type<_Compare>>(__comp));
 }
 
 template <class _RandomAccessIterator>
-_CCCL_NODISCARD inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _RandomAccessIterator
 is_heap_until(_RandomAccessIterator __first, _RandomAccessIterator __last)
 {
   return _CUDA_VSTD::__is_heap_until(__first, __last, __less{});

@@ -28,7 +28,7 @@
 
 #pragma once
 
-#include <thrust/detail/config/config.h>
+#include <thrust/detail/config/config.h> // IWYU pragma: export
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -38,7 +38,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/version>
+#include <cuda/version> // IWYU pragma: export
 
 //  This is the only Thrust header that is guaranteed to
 //  change with every Thrust release.
@@ -61,7 +61,7 @@
  *         <tt>THRUST_VERSION / 100 % 1000</tt> is the minor version.
  *         <tt>THRUST_VERSION / 100000</tt> is the major version.
  */
-#define THRUST_VERSION 200600 // macro expansion with ## requires this to be a single value
+#define THRUST_VERSION 200700 // macro expansion with ## requires this to be a single value
 
 /*! \def THRUST_MAJOR_VERSION
  *  \brief The preprocessor macro \p THRUST_MAJOR_VERSION encodes the

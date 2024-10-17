@@ -36,7 +36,7 @@
 #include "cuda_space_selector.h"
 #include "test_macros.h"
 
-template <class T, template <typename, typename> typename Selector, cuda::thread_scope>
+template <class T, template <typename, typename> class Selector, cuda::thread_scope>
 struct TestFn
 {
   __host__ __device__ void operator()() const
@@ -60,7 +60,7 @@ struct TestFn
   }
 };
 
-template <class T, template <typename, typename> typename Selector>
+template <class T, template <typename, typename> class Selector>
 __host__ __device__ void testp()
 {
   {

@@ -1637,10 +1637,10 @@ template <class T>
 struct Proxy;
 
 template <class T>
-_LIBCUDACXX_INLINE_VAR constexpr bool IsProxy = false;
+_CCCL_INLINE_VAR constexpr bool IsProxy = false;
 
 template <class T>
-_LIBCUDACXX_INLINE_VAR constexpr bool IsProxy<Proxy<T>> = true;
+_CCCL_INLINE_VAR constexpr bool IsProxy<Proxy<T>> = true;
 
 template <class T>
 struct Proxy
@@ -1811,7 +1811,7 @@ __host__ __device__ constexpr auto get_iterator_concept()
   {
     return cuda::std::input_iterator_tag{};
   }
-  _LIBCUDACXX_UNREACHABLE();
+  _CCCL_UNREACHABLE();
 }
 
 template <class Base, cuda::std::enable_if_t<cuda::std::input_iterator<Base>, int> = 0>

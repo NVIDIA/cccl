@@ -270,6 +270,13 @@ TEST_CASE("Smoke", "[device]")
                      config == device::attrs::numa_config.numa_node));
     }
 #endif
+    SECTION("Compute capability")
+    {
+      int compute_cap       = device_ref(0).attr(device::attrs::compute_capability);
+      int compute_cap_major = device_ref(0).attr(device::attrs::compute_capability_major);
+      int compute_cap_minor = device_ref(0).attr(device::attrs::compute_capability_minor);
+      CUDAX_REQUIRE(compute_cap == 100 * compute_cap_major + 10 * compute_cap_minor);
+    }
   }
 }
 

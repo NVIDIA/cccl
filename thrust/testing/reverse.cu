@@ -9,21 +9,11 @@ using ReverseTypes = unittest::type_list<unittest::int8_t, unittest::int16_t, un
 template <typename Vector>
 void TestReverseSimple()
 {
-  Vector data(5);
-  data[0] = 1;
-  data[1] = 2;
-  data[2] = 3;
-  data[3] = 4;
-  data[4] = 5;
+  Vector data{1, 2, 3, 4, 5};
 
   thrust::reverse(data.begin(), data.end());
 
-  Vector ref(5);
-  ref[0] = 5;
-  ref[1] = 4;
-  ref[2] = 3;
-  ref[3] = 2;
-  ref[4] = 1;
+  Vector ref{5, 4, 3, 2, 1};
 
   ASSERT_EQUAL(ref, data);
 }
@@ -75,24 +65,13 @@ void TestReverseCopySimple()
 
   using Iterator = typename Vector::iterator;
 
-  Vector input(5);
-  input[0] = 1;
-  input[1] = 2;
-  input[2] = 3;
-  input[3] = 4;
-  input[4] = 5;
-
-  Vector output(5);
+  Vector input{1, 2, 3, 4, 5};
+  Vector output(8); // arm GCC is complaining about destination size
 
   Iterator iter = thrust::reverse_copy(input.begin(), input.end(), output.begin());
 
-  Vector ref(5);
-  ref[0] = 5;
-  ref[1] = 4;
-  ref[2] = 3;
-  ref[3] = 2;
-  ref[4] = 1;
-
+  output.resize(5);
+  Vector ref{5, 4, 3, 2, 1};
   ASSERT_EQUAL(5, iter - output.begin());
   ASSERT_EQUAL(ref, output);
 }

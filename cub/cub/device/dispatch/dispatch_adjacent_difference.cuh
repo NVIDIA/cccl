@@ -205,7 +205,7 @@ struct DispatchAdjacentDifference : public SelectedPolicy
     do
     {
       constexpr int tile_size = AdjacentDifferencePolicyT::ITEMS_PER_TILE;
-      const int num_tiles     = static_cast<int>(DivideAndRoundUp(num_items, tile_size));
+      const int num_tiles     = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
 
       std::size_t first_tile_previous_size = MayAlias * num_tiles * sizeof(InputT);
 
@@ -244,7 +244,7 @@ struct DispatchAdjacentDifference : public SelectedPolicy
         using AgentDifferenceInitT = AgentDifferenceInit<InputIteratorT, InputT, OffsetT, ReadLeft>;
 
         constexpr int init_block_size = AgentDifferenceInitT::BLOCK_THREADS;
-        const int init_grid_size      = DivideAndRoundUp(num_tiles, init_block_size);
+        const int init_grid_size      = ::cuda::ceil_div(num_tiles, init_block_size);
 
 #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
         _CubLog("Invoking DeviceAdjacentDifferenceInitKernel"

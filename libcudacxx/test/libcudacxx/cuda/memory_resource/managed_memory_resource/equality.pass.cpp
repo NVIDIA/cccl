@@ -78,12 +78,20 @@ void test()
     assert((first != second));
   }
 
-  { // comparison against a managed_memory_resource wrapped inside a resource_ref<>
+  { // comparison against a managed_memory_resource wrapped inside a resource_ref<cuda::mr::host_accessible>
     cuda::mr::managed_memory_resource second{};
-    assert(first == cuda::mr::resource_ref<>{second});
-    assert(!(first != cuda::mr::resource_ref<>{second}));
-    assert(cuda::mr::resource_ref<>{second} == first);
-    assert(!(cuda::mr::resource_ref<>{second} != first));
+    assert(first == cuda::mr::resource_ref<cuda::mr::host_accessible>{second});
+    assert(!(first != cuda::mr::resource_ref<cuda::mr::host_accessible>{second}));
+    assert(cuda::mr::resource_ref<cuda::mr::host_accessible>{second} == first);
+    assert(!(cuda::mr::resource_ref<cuda::mr::host_accessible>{second} != first));
+  }
+
+  { // comparison against a managed_memory_resource wrapped inside a resource_ref<cuda::mr::device_accessible>
+    cuda::mr::managed_memory_resource second{};
+    assert(first == cuda::mr::resource_ref<cuda::mr::device_accessible>{second});
+    assert(!(first != cuda::mr::resource_ref<cuda::mr::device_accessible>{second}));
+    assert(cuda::mr::resource_ref<cuda::mr::device_accessible>{second} == first);
+    assert(!(cuda::mr::resource_ref<cuda::mr::device_accessible>{second} != first));
   }
 
   { // comparison against a different resource through resource_ref

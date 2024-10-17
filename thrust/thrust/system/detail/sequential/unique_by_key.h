@@ -65,7 +65,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> unique_by_key_c
     InputKeyType temp_key      = *keys_first;
     OutputValueType temp_value = *values_first;
 
-    for (++keys_first, ++values_first; keys_first != keys_last; ++keys_first, ++values_first)
+    for (++keys_first, ++values_first; keys_first != keys_last; ++keys_first, (void) ++values_first)
     {
       InputKeyType key      = *keys_first;
       OutputValueType value = *values_first;

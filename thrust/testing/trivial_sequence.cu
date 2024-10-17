@@ -33,32 +33,16 @@ void test(Iterator first, Iterator last)
 template <class Vector>
 void TestTrivialSequence()
 {
-  Vector A(5);
-  A[0] = 0;
-  A[1] = 2;
-  A[2] = 1;
-  A[3] = 0;
-  A[4] = 1;
-  Vector B(5);
-  B[0] = 11;
-  B[1] = 11;
-  B[2] = 13;
-  B[3] = 10;
-  B[4] = 12;
+  Vector A{0, 2, 1, 0, 1};
+  Vector B{11, 11, 13, 10, 12};
 
   test(thrust::make_zip_iterator(thrust::make_tuple(A.begin(), B.begin())),
        thrust::make_zip_iterator(thrust::make_tuple(A.end(), B.end())));
 
+  Vector refA{0, 2, 1, 0, 1};
+  ASSERT_EQUAL(A, refA);
   // ensure that values weren't modified
-  ASSERT_EQUAL(A[0], 0);
-  ASSERT_EQUAL(B[0], 11);
-  ASSERT_EQUAL(A[1], 2);
-  ASSERT_EQUAL(B[1], 11);
-  ASSERT_EQUAL(A[2], 1);
-  ASSERT_EQUAL(B[2], 13);
-  ASSERT_EQUAL(A[3], 0);
-  ASSERT_EQUAL(B[3], 10);
-  ASSERT_EQUAL(A[4], 1);
-  ASSERT_EQUAL(B[4], 12);
+  Vector refB{11, 11, 13, 10, 12};
+  ASSERT_EQUAL(B, refB);
 }
 DECLARE_VECTOR_UNITTEST(TestTrivialSequence);

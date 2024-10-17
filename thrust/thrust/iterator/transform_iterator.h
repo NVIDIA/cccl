@@ -297,7 +297,8 @@ private:
   // MSVC 2013 and 2015 incorrectly warning about returning a reference to
   // a local/temporary here.
   // See goo.gl/LELTNp
-  THRUST_DISABLE_MSVC_WARNING_BEGIN(4172)
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4172)
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE typename super_t::reference dereference() const
@@ -309,7 +310,7 @@ private:
     return m_f(x);
   }
 
-  THRUST_DISABLE_MSVC_WARNING_END(4172)
+  _CCCL_DIAG_POP
 
   // tag this as mutable per Dave Abrahams in this thread:
   // http://lists.boost.org/Archives/boost/2004/05/65332.php

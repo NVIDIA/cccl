@@ -34,7 +34,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_NO_CFI _LIBCUDACXX_INLINE_VISIBILITY pair<_Tp*, ptrdiff_t>
+_CCCL_NODISCARD _LIBCUDACXX_NO_CFI _LIBCUDACXX_HIDE_FROM_ABI pair<_Tp*, ptrdiff_t>
 get_temporary_buffer(ptrdiff_t __n) noexcept
 {
   pair<_Tp*, ptrdiff_t> __r(0, 0);
@@ -78,7 +78,7 @@ get_temporary_buffer(ptrdiff_t __n) noexcept
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY void return_temporary_buffer(_Tp* __p) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI void return_temporary_buffer(_Tp* __p) noexcept
 {
   _CUDA_VSTD::__libcpp_deallocate_unsized((void*) __p, _LIBCUDACXX_ALIGNOF(_Tp));
 }

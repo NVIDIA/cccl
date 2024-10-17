@@ -7,6 +7,35 @@
   },
   "configurePresets": [
     {
+      "name": "install",
+      "displayName": "Install only (users and packagers)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/install",
+      "cacheVariables": {
+        "CCCL_ENABLE_INSTALL_RULES": true,
+        "CCCL_ENABLE_LIBCUDACXX": true,
+        "libcudacxx_ENABLE_INSTALL_RULES": true,
+        "CCCL_ENABLE_CUB": true,
+        "CUB_ENABLE_INSTALL_RULES": true,
+        "CCCL_ENABLE_THRUST": true,
+        "THRUST_ENABLE_INSTALL_RULES": true,
+        "CCCL_ENABLE_UNSTABLE": false,
+        "CCCL_ENABLE_TESTING": false,
+        "CCCL_ENABLE_EXAMPLES": false,
+        "CCCL_ENABLE_BENCHMARKS": false,
+        "libcudacxx_ENABLE_CODEGEN": false,
+        "libcudacxx_ENABLE_CMAKE_TESTS": false,
+        "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": false,
+        "CUB_ENABLE_HEADER_TESTING": false,
+        "CUB_ENABLE_TESTING": false,
+        "CUB_ENABLE_EXAMPLES": false,
+        "THRUST_ENABLE_HEADER_TESTING": false,
+        "THRUST_ENABLE_TESTING": false,
+        "THRUST_ENABLE_EXAMPLES": false,
+        "THRUST_ENABLE_BENCHMARKS": false
+      }
+    },
+    {
       "name": "base",
       "hidden": true,
       "generator": "Ninja",
@@ -21,9 +50,10 @@
         "CCCL_ENABLE_CUDAX": false,
         "CCCL_ENABLE_TESTING": false,
         "CCCL_ENABLE_EXAMPLES": false,
+        "CCCL_ENABLE_C": false,
         "libcudacxx_ENABLE_INSTALL_RULES": true,
         "CUB_ENABLE_INSTALL_RULES": true,
-        "THRUST_ENABLE_INSTALL_RULES": true,
+        "Thrust_ENABLE_INSTALL_RULES": true,
         "cudax_ENABLE_INSTALL_RULES": true
       }
     },
@@ -62,7 +92,9 @@
         "cudax_ENABLE_HEADER_TESTING": true,
         "cudax_ENABLE_TESTING": true,
         "cudax_ENABLE_DIALECT_CPP17": true,
-        "cudax_ENABLE_DIALECT_CPP20": true
+        "cudax_ENABLE_DIALECT_CPP20": true,
+        "CCCL_C_Parallel_ENABLE_TESTING": true,
+        "CCCL_C_Parallel_ENABLE_HEADER_TESTING": true
       }
     },
     {
@@ -82,7 +114,6 @@
       "cacheVariables": {
         "CCCL_ENABLE_LIBCUDACXX": true,
         "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": false,
-        "libcudacxx_ENABLE_CMAKE_TESTS": false,
         "libcudacxx_ENABLE_CODEGEN": true,
         "LIBCUDACXX_ENABLE_CUDA": false
       }
@@ -316,6 +347,16 @@
       }
     },
     {
+      "name": "cccl-c-parallel",
+      "displayName" : "CCCL C Parallel Library",
+      "inherits": "base",
+      "cacheVariables": {
+        "CCCL_ENABLE_C": true,
+        "CCCL_C_Parallel_ENABLE_TESTING": true,
+        "CCCL_C_Parallel_ENABLE_HEADER_TESTING": true
+      }
+    },
+    {
       "name": "cccl-infra",
       "displayName": "CCCL Infrastructure",
       "inherits": "base",
@@ -338,17 +379,23 @@
     {
       "name": "libcudacxx-codegen",
       "configurePreset": "libcudacxx-codegen",
-      "targets": ["libcudacxx.atomics.codegen"]
+      "targets": [
+        "libcudacxx.atomics.codegen"
+      ]
     },
     {
       "name": "libcudacxx-codegen-install",
       "configurePreset": "libcudacxx-codegen",
-      "targets": ["libcudacxx.atomics.codegen.install"]
+      "targets": [
+        "libcudacxx.atomics.codegen.install"
+      ]
     },
     {
       "name": "libcudacxx-nvrtcc",
       "hidden": true,
-      "targets": ["libcudacxx.nvrtcc"]
+      "targets": [
+        "libcudacxx.nvrtcc"
+      ]
     },
     {
       "name": "libcudacxx-base",
@@ -357,52 +404,69 @@
         "libcudacxx.test.internal_headers",
         "libcudacxx.test.public_headers",
         "libcudacxx.test.public_headers_host_only",
-        "libcudacxx.test.lit.precompile"
+        "libcudacxx.test.lit.precompile",
+        "libcudacxx.test.atomics.ptx"
       ]
     },
     {
       "name": "libcudacxx-nvrtc-cpp11",
       "hidden": false,
-      "inherits": ["libcudacxx-nvrtcc"],
+      "inherits": [
+        "libcudacxx-nvrtcc"
+      ],
       "configurePreset": "libcudacxx-nvrtc-cpp11"
     },
     {
       "name": "libcudacxx-nvrtc-cpp14",
       "hidden": false,
-      "inherits": ["libcudacxx-nvrtcc"],
+      "inherits": [
+        "libcudacxx-nvrtcc"
+      ],
       "configurePreset": "libcudacxx-nvrtc-cpp14"
     },
     {
       "name": "libcudacxx-nvrtc-cpp17",
       "hidden": false,
-      "inherits": ["libcudacxx-nvrtcc"],
+      "inherits": [
+        "libcudacxx-nvrtcc"
+      ],
       "configurePreset": "libcudacxx-nvrtc-cpp17"
     },
     {
       "name": "libcudacxx-nvrtc-cpp20",
       "hidden": false,
-      "inherits": ["libcudacxx-nvrtcc"],
+      "inherits": [
+        "libcudacxx-nvrtcc"
+      ],
       "configurePreset": "libcudacxx-nvrtc-cpp20"
     },
     {
       "name": "libcudacxx-cpp11",
       "configurePreset": "libcudacxx-cpp11",
-      "inherits": ["libcudacxx-base"]
+      "inherits": [
+        "libcudacxx-base"
+      ]
     },
     {
       "name": "libcudacxx-cpp14",
       "configurePreset": "libcudacxx-cpp14",
-      "inherits": ["libcudacxx-base"]
+      "inherits": [
+        "libcudacxx-base"
+      ]
     },
     {
       "name": "libcudacxx-cpp17",
       "configurePreset": "libcudacxx-cpp17",
-      "inherits": ["libcudacxx-base"]
+      "inherits": [
+        "libcudacxx-base"
+      ]
     },
     {
       "name": "libcudacxx-cpp20",
       "configurePreset": "libcudacxx-cpp20",
-      "inherits": ["libcudacxx-base"]
+      "inherits": [
+        "libcudacxx-base"
+      ]
     },
     {
       "name": "cub-cpp11",
@@ -445,6 +509,10 @@
       "configurePreset": "cudax-cpp20"
     },
     {
+      "name": "cccl-c-parallel",
+      "configurePreset": "cccl-c-parallel"
+    },
+    {
       "name": "cccl-infra",
       "configurePreset": "cccl-infra"
     }
@@ -479,7 +547,7 @@
       ],
       "filter": {
         "exclude": {
-          "name": "^libcudacxx\\.test\\.(lit|atomics\\.codegen\\.diff)$"
+          "name": "^libcudacxx\\.test\\.lit$"
         }
       }
     },
@@ -491,34 +559,6 @@
           "name": "^libcudacxx\\.test\\.atomics\\.codegen.*$"
         }
       }
-    },
-    {
-      "name": "libcudacxx-ctest-cpp11",
-      "configurePreset": "libcudacxx-cpp11",
-      "inherits": [
-        "libcudacxx-ctest-base"
-      ]
-    },
-    {
-      "name": "libcudacxx-ctest-cpp14",
-      "configurePreset": "libcudacxx-cpp14",
-      "inherits": [
-        "libcudacxx-ctest-base"
-      ]
-    },
-    {
-      "name": "libcudacxx-ctest-cpp17",
-      "configurePreset": "libcudacxx-cpp17",
-      "inherits": [
-        "libcudacxx-ctest-base"
-      ]
-    },
-    {
-      "name": "libcudacxx-ctest-cpp20",
-      "configurePreset": "libcudacxx-cpp20",
-      "inherits": [
-        "libcudacxx-ctest-base"
-      ]
     },
     {
       "name": "libcudacxx-lit-base",
@@ -848,6 +888,11 @@
       "name": "cudax-cpp20",
       "configurePreset": "cudax-cpp20",
       "inherits": "cudax-base"
+    },
+    {
+      "name": "cccl-c-parallel",
+      "configurePreset": "cccl-c-parallel",
+      "inherits": "base"
     },
     {
       "name": "cccl-infra",

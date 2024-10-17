@@ -42,10 +42,10 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 //!
 //! @endrst
 template <class _Resource, class _Property, class = void>
-_LIBCUDACXX_INLINE_VAR constexpr bool has_property = false;
+_CCCL_INLINE_VAR constexpr bool has_property = false;
 
 template <class _Resource, class _Property>
-_LIBCUDACXX_INLINE_VAR constexpr bool has_property<
+_CCCL_INLINE_VAR constexpr bool has_property<
   _Resource,
   _Property,
   _CUDA_VSTD::void_t<decltype(get_property(_CUDA_VSTD::declval<const _Resource&>(), _CUDA_VSTD::declval<_Property>()))>> =
@@ -67,10 +67,10 @@ using __property_value_t = typename _Property::value_type;
 //!
 //! @endrst
 template <class _Property, class = void>
-_LIBCUDACXX_INLINE_VAR constexpr bool property_with_value = false;
+_CCCL_INLINE_VAR constexpr bool property_with_value = false;
 
 template <class _Property>
-_LIBCUDACXX_INLINE_VAR constexpr bool property_with_value<_Property, _CUDA_VSTD::void_t<__property_value_t<_Property>>> =
+_CCCL_INLINE_VAR constexpr bool property_with_value<_Property, _CUDA_VSTD::void_t<__property_value_t<_Property>>> =
   true;
 
 //! @brief The \c has_property_with concept verifies that a Resource satisfies a given stateful Property
@@ -124,14 +124,14 @@ struct __fn
   _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Property)
   _LIBCUDACXX_REQUIRES((!property_with_value<_Property>) _LIBCUDACXX_AND has_property<_Upstream, _Property>)
-  _LIBCUDACXX_INLINE_VISIBILITY friend constexpr void get_property(const _Derived&, _Property) noexcept {}
+  _LIBCUDACXX_HIDE_FROM_ABI friend constexpr void get_property(const _Derived&, _Property) noexcept {}
 
   // The indirection is needed, otherwise the compiler might believe that _Derived is an incomplete type
   _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_TEMPLATE(class _Property, class _Derived2 = _Derived)
   _LIBCUDACXX_REQUIRES(property_with_value<_Property> _LIBCUDACXX_AND has_property<_Upstream, _Property> _LIBCUDACXX_AND
                          __has_upstream_resource<_Derived2, _Upstream>)
-  _LIBCUDACXX_INLINE_VISIBILITY friend constexpr __property_value_t<_Property>
+  _LIBCUDACXX_HIDE_FROM_ABI friend constexpr __property_value_t<_Property>
   get_property(const _Derived& __res, _Property __prop)
   {
     return get_property(__res.upstream_resource(), __prop);

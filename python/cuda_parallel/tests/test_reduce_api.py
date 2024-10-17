@@ -13,7 +13,7 @@ import pytest
 
 def test_device_reduce():
     # example-begin reduce-min
-    def op(a, b):
+    def min_op(a, b):
         return a if a < b else b
 
     dtype = np.int32
@@ -22,9 +22,9 @@ def test_device_reduce():
     d_output = cp.empty(1, dtype=dtype)
 
     # Instantiate reduction for the given operator and initial value
-    reduce_into = cudax.reduce_into(d_output, d_output, op, h_init)
+    reduce_into = cudax.reduce_into(d_output, d_output, min_op, h_init)
 
-    # Deterrmine temporary device storage requirements
+    # Determine temporary device storage requirements
     temp_storage_size = reduce_into(None, d_input, d_output, h_init)
 
     # Allocate temporary storage

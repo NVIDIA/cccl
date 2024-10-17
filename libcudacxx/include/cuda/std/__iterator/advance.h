@@ -28,13 +28,11 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__utility/convert_to_integral.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/cstdlib>
-#include <cuda/std/detail/libcxx/include/__assert>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _InputIter>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
 __advance(_InputIter& __i, typename iterator_traits<_InputIter>::difference_type __n, input_iterator_tag)
 {
   for (; __n > 0; --__n)
@@ -44,7 +42,7 @@ __advance(_InputIter& __i, typename iterator_traits<_InputIter>::difference_type
 }
 
 template <class _BiDirIter>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
 __advance(_BiDirIter& __i, typename iterator_traits<_BiDirIter>::difference_type __n, bidirectional_iterator_tag)
 {
   if (__n >= 0)
@@ -64,7 +62,7 @@ __advance(_BiDirIter& __i, typename iterator_traits<_BiDirIter>::difference_type
 }
 
 template <class _RandIter>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
 __advance(_RandIter& __i, typename iterator_traits<_RandIter>::difference_type __n, random_access_iterator_tag)
 {
   __i += __n;
@@ -74,12 +72,12 @@ template <class _InputIter,
           class _Distance,
           class _IntegralDistance = decltype(_CUDA_VSTD::__convert_to_integral(_CUDA_VSTD::declval<_Distance>())),
           class                   = __enable_if_t<is_integral<_IntegralDistance>::value>>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 void advance(_InputIter& __i, _Distance __orig_n)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void advance(_InputIter& __i, _Distance __orig_n)
 {
   typedef typename iterator_traits<_InputIter>::difference_type _Difference;
   _Difference __n = static_cast<_Difference>(_CUDA_VSTD::__convert_to_integral(__orig_n));
-  _LIBCUDACXX_ASSERT(__n >= 0 || __is_cpp17_bidirectional_iterator<_InputIter>::value,
-                     "Attempt to advance(it, n) with negative n on a non-bidirectional iterator");
+  _CCCL_ASSERT(__n >= 0 || __is_cpp17_bidirectional_iterator<_InputIter>::value,
+               "Attempt to advance(it, n) with negative n on a non-bidirectional iterator");
   _CUDA_VSTD::__advance(__i, __n, typename iterator_traits<_InputIter>::iterator_category());
 }
 
@@ -95,7 +93,7 @@ struct __fn
 {
 private:
   template <class _Ip>
-  _LIBCUDACXX_INLINE_VISIBILITY static constexpr void __advance_forward(_Ip& __i, iter_difference_t<_Ip> __n)
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr void __advance_forward(_Ip& __i, iter_difference_t<_Ip> __n)
   {
     while (__n > 0)
     {
@@ -105,7 +103,7 @@ private:
   }
 
   template <class _Ip>
-  _LIBCUDACXX_INLINE_VISIBILITY static constexpr void __advance_backward(_Ip& __i, iter_difference_t<_Ip> __n)
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr void __advance_backward(_Ip& __i, iter_difference_t<_Ip> __n)
   {
     while (__n < 0)
     {
@@ -115,8 +113,7 @@ private:
   }
 
   template <class _Iter_difference>
-  _LIBCUDACXX_INLINE_VISIBILITY static constexpr auto
-  __magnitude_geq(_Iter_difference __a, _Iter_difference __b) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto __magnitude_geq(_Iter_difference __a, _Iter_difference __b) noexcept
   {
     return __a == 0 ? __b == 0 : //
              __a > 0 ? __a >= __b
@@ -128,11 +125,9 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Ip)
   _LIBCUDACXX_REQUIRES(input_or_output_iterator<_Ip>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr void
-  operator()(_Ip& __i, iter_difference_t<_Ip> __n) const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_Ip& __i, iter_difference_t<_Ip> __n) const
   {
-    _LIBCUDACXX_ASSERT(__n >= 0 || bidirectional_iterator<_Ip>,
-                       "If `n < 0`, then `bidirectional_iterator<I>` must be true.");
+    _CCCL_ASSERT(__n >= 0 || bidirectional_iterator<_Ip>, "If `n < 0`, then `bidirectional_iterator<I>` must be true.");
 
     // If `I` models `random_access_iterator`, equivalent to `i += n`.
     if constexpr (random_access_iterator<_Ip>)
@@ -158,7 +153,7 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Ip, class _Sp)
   _LIBCUDACXX_REQUIRES(input_or_output_iterator<_Ip> _LIBCUDACXX_AND sentinel_for<_Sp, _Ip>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr void operator()(_Ip& __i, _Sp __bound_sentinel) const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_Ip& __i, _Sp __bound_sentinel) const
   {
     // If `I` and `S` model `assignable_from<I&, S>`, equivalent to `i = std::move(bound_sentinel)`.
     if constexpr (assignable_from<_Ip&, _Sp>)
@@ -189,11 +184,11 @@ public:
   // Returns: `n - M`, where `M` is the difference between the ending and starting position.
   _LIBCUDACXX_TEMPLATE(class _Ip, class _Sp)
   _LIBCUDACXX_REQUIRES(input_or_output_iterator<_Ip> _LIBCUDACXX_AND sentinel_for<_Sp, _Ip>)
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_HIDE_FROM_ABI constexpr iter_difference_t<_Ip>
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr iter_difference_t<_Ip>
   operator()(_Ip& __i, iter_difference_t<_Ip> __n, _Sp __bound_sentinel) const
   {
-    _LIBCUDACXX_ASSERT((__n >= 0) || (bidirectional_iterator<_Ip> && same_as<_Ip, _Sp>),
-                       "If `n < 0`, then `bidirectional_iterator<I> && same_as<I, S>` must be true.");
+    _CCCL_ASSERT((__n >= 0) || (bidirectional_iterator<_Ip> && same_as<_Ip, _Sp>),
+                 "If `n < 0`, then `bidirectional_iterator<I> && same_as<I, S>` must be true.");
     // If `S` and `I` model `sized_sentinel_for<S, I>`:
     if constexpr (sized_sentinel_for<_Sp, _Ip>)
     {
@@ -231,7 +226,7 @@ public:
       }
       return __n;
     }
-    _LIBCUDACXX_UNREACHABLE();
+    _CCCL_UNREACHABLE();
   }
 };
 _LIBCUDACXX_END_NAMESPACE_CPO

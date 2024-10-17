@@ -10,19 +10,8 @@ void TestSetIntersectionDescendingSimple()
   using T        = typename Vector::value_type;
   using Iterator = typename Vector::iterator;
 
-  Vector a(3), b(4);
-
-  a[0] = 4;
-  a[1] = 2;
-  a[2] = 0;
-  b[0] = 4;
-  b[1] = 3;
-  b[2] = 3;
-  b[3] = 0;
-
-  Vector ref(2);
-  ref[0] = 4;
-  ref[1] = 0;
+  Vector a{4, 2, 0}, b{4, 3, 3, 0};
+  Vector ref{4, 0};
 
   Vector result(2);
 

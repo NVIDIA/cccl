@@ -24,16 +24,16 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_IS_SAME) && !defined(_LIBCUDACXX_USE_IS_SAME_FALLBACK)
+#if defined(_CCCL_BUILTIN_IS_SAME) && !defined(_LIBCUDACXX_USE_IS_SAME_FALLBACK)
 
 template <class _Tp, class _Up>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_same : bool_constant<_LIBCUDACXX_IS_SAME(_Tp, _Up)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_same : bool_constant<_CCCL_BUILTIN_IS_SAME(_Tp, _Up)>
 {};
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_same_v = _LIBCUDACXX_IS_SAME(_Tp, _Up);
-#  endif
+_CCCL_INLINE_VAR constexpr bool is_same_v = _CCCL_BUILTIN_IS_SAME(_Tp, _Up);
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 // _IsSame<T,U> has the same effect as is_same<T,U> but instantiates fewer types:
 // is_same<A,B> and is_same<C,D> are guaranteed to be different types, but
@@ -43,10 +43,10 @@ _LIBCUDACXX_INLINE_VAR constexpr bool is_same_v = _LIBCUDACXX_IS_SAME(_Tp, _Up);
 // (such as in a dependent return type).
 
 template <class _Tp, class _Up>
-using _IsSame = bool_constant<_LIBCUDACXX_IS_SAME(_Tp, _Up)>;
+using _IsSame = bool_constant<_CCCL_BUILTIN_IS_SAME(_Tp, _Up)>;
 
 template <class _Tp, class _Up>
-using _IsNotSame = bool_constant<!_LIBCUDACXX_IS_SAME(_Tp, _Up)>;
+using _IsNotSame = bool_constant<!_CCCL_BUILTIN_IS_SAME(_Tp, _Up)>;
 
 #else
 
@@ -57,10 +57,10 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_same<_Tp, _Tp> : public true_type
 {};
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_same_v = is_same<_Tp, _Up>::value;
-#  endif
+_CCCL_INLINE_VAR constexpr bool is_same_v = is_same<_Tp, _Up>::value;
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 // _IsSame<T,U> has the same effect as is_same<T,U> but instantiates fewer types:
 // is_same<A,B> and is_same<C,D> are guaranteed to be different types, but
@@ -75,7 +75,7 @@ using _IsSame = bool_constant<is_same<_Tp, _Up>::value>;
 template <class _Tp, class _Up>
 using _IsNotSame = bool_constant<!is_same<_Tp, _Up>::value>;
 
-#endif // defined(_LIBCUDACXX_IS_SAME) && !defined(_LIBCUDACXX_USE_IS_SAME_FALLBACK)
+#endif // defined(_CCCL_BUILTIN_IS_SAME) && !defined(_LIBCUDACXX_USE_IS_SAME_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

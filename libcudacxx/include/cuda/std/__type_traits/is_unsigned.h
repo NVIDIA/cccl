@@ -30,17 +30,17 @@ _CCCL_DIAG_SUPPRESS_MSVC(4197) //  top-level volatile in cast is ignored
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // Before AppleClang 14, __is_unsigned returned true for enums with signed underlying type.
-#if defined(_LIBCUDACXX_IS_UNSIGNED) && !defined(_LIBCUDACXX_USE_IS_UNSIGNED_FALLBACK) \
+#if defined(_CCCL_BUILTIN_IS_UNSIGNED) && !defined(_LIBCUDACXX_USE_IS_UNSIGNED_FALLBACK) \
   && !(defined(_LIBCUDACXX_APPLE_CLANG_VER) && _LIBCUDACXX_APPLE_CLANG_VER < 1400)
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_unsigned : public integral_constant<bool, _LIBCUDACXX_IS_UNSIGNED(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_unsigned : public integral_constant<bool, _CCCL_BUILTIN_IS_UNSIGNED(_Tp)>
 {};
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_unsigned_v = _LIBCUDACXX_IS_UNSIGNED(_Tp);
-#  endif
+_CCCL_INLINE_VAR constexpr bool is_unsigned_v = _CCCL_BUILTIN_IS_UNSIGNED(_Tp);
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #else
 
@@ -64,12 +64,12 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_unsigned : public __libcpp_is_unsigned<_Tp>
 {};
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_unsigned_v = is_unsigned<_Tp>::value;
-#  endif
+_CCCL_INLINE_VAR constexpr bool is_unsigned_v = is_unsigned<_Tp>::value;
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
-#endif // defined(_LIBCUDACXX_IS_UNSIGNED) && !defined(_LIBCUDACXX_USE_IS_UNSIGNED_FALLBACK)
+#endif // defined(_CCCL_BUILTIN_IS_UNSIGNED) && !defined(_LIBCUDACXX_USE_IS_UNSIGNED_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

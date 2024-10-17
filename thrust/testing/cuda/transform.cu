@@ -19,15 +19,9 @@ void TestTransformUnaryDevice(ExecutionPolicy exec)
 
   typename Vector::iterator iter;
 
-  Vector input(3);
+  Vector input{1, -2, 3};
   Vector output(3);
-  Vector result(3);
-  input[0]  = 1;
-  input[1]  = -2;
-  input[2]  = 3;
-  result[0] = -1;
-  result[1] = 2;
-  result[2] = -3;
+  Vector result{-1, 2, -3};
 
   thrust::device_vector<typename Vector::iterator> iter_vec(1);
 
@@ -79,19 +73,9 @@ void TestTransformIfUnaryNoStencilDevice(ExecutionPolicy exec)
 
   typename Vector::iterator iter;
 
-  Vector input(3);
-  Vector output(3);
-  Vector result(3);
-
-  input[0]  = 0;
-  input[1]  = -2;
-  input[2]  = 0;
-  output[0] = -1;
-  output[1] = -2;
-  output[2] = -3;
-  result[0] = -1;
-  result[1] = 2;
-  result[2] = -3;
+  Vector input{0, -2, 0};
+  Vector output{-1, -2, -3};
+  Vector result{-1, 2, -3};
 
   thrust::device_vector<typename Vector::iterator> iter_vec(1);
 
@@ -146,23 +130,10 @@ void TestTransformIfUnaryDevice(ExecutionPolicy exec)
 
   typename Vector::iterator iter;
 
-  Vector input(3);
-  Vector stencil(3);
-  Vector output(3);
-  Vector result(3);
-
-  input[0]   = 1;
-  input[1]   = -2;
-  input[2]   = 3;
-  output[0]  = 1;
-  output[1]  = 2;
-  output[2]  = 3;
-  stencil[0] = 1;
-  stencil[1] = 0;
-  stencil[2] = 1;
-  result[0]  = -1;
-  result[1]  = 2;
-  result[2]  = -3;
+  Vector input{1, -2, 3};
+  Vector stencil{1, 0, 1};
+  Vector output{1, 2, 3};
+  Vector result{-1, 2, -3};
 
   thrust::device_vector<typename Vector::iterator> iter_vec(1);
 
@@ -222,19 +193,10 @@ void TestTransformBinaryDevice(ExecutionPolicy exec)
 
   typename Vector::iterator iter;
 
-  Vector input1(3);
-  Vector input2(3);
+  Vector input1{1, -2, 3};
+  Vector input2{-4, 5, 6};
   Vector output(3);
-  Vector result(3);
-  input1[0] = 1;
-  input1[1] = -2;
-  input1[2] = 3;
-  input2[0] = -4;
-  input2[1] = 5;
-  input2[2] = 6;
-  result[0] = 5;
-  result[1] = -7;
-  result[2] = -3;
+  Vector result{5, -7, -3};
 
   thrust::device_vector<typename Vector::iterator> iter_vec(1);
 
@@ -291,27 +253,11 @@ void TestTransformIfBinaryDevice(ExecutionPolicy exec)
 
   typename Vector::iterator iter;
 
-  Vector input1(3);
-  Vector input2(3);
-  Vector stencil(3);
-  Vector output(3);
-  Vector result(3);
-
-  input1[0]  = 1;
-  input1[1]  = -2;
-  input1[2]  = 3;
-  input2[0]  = -4;
-  input2[1]  = 5;
-  input2[2]  = 6;
-  stencil[0] = 0;
-  stencil[1] = 1;
-  stencil[2] = 0;
-  output[0]  = 1;
-  output[1]  = 2;
-  output[2]  = 3;
-  result[0]  = 5;
-  result[1]  = 2;
-  result[2]  = -3;
+  Vector input1{1, -2, 3};
+  Vector input2{-4, 5, 6};
+  Vector stencil{0, 1, 0};
+  Vector output{1, 2, 3};
+  Vector result{5, 2, -3};
 
   thrust::identity<T> identity;
 
@@ -356,15 +302,9 @@ void TestTransformUnaryCudaStreams()
 
   Vector::iterator iter;
 
-  Vector input(3);
+  Vector input{1, -2, 3};
   Vector output(3);
-  Vector result(3);
-  input[0]  = 1;
-  input[1]  = -2;
-  input[2]  = 3;
-  result[0] = -1;
-  result[1] = 2;
-  result[2] = -3;
+  Vector result{-1, 2, -3};
 
   cudaStream_t s;
   cudaStreamCreate(&s);
@@ -386,19 +326,10 @@ void TestTransformBinaryCudaStreams()
 
   Vector::iterator iter;
 
-  Vector input1(3);
-  Vector input2(3);
+  Vector input1{1, -2, 3};
+  Vector input2{-4, 5, 6};
   Vector output(3);
-  Vector result(3);
-  input1[0] = 1;
-  input1[1] = -2;
-  input1[2] = 3;
-  input2[0] = -4;
-  input2[1] = 5;
-  input2[2] = 6;
-  result[0] = 5;
-  result[1] = -7;
-  result[2] = -3;
+  Vector result{5, -7, -3};
 
   cudaStream_t s;
   cudaStreamCreate(&s);

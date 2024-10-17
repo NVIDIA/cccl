@@ -90,14 +90,14 @@ struct __slice_wrap
 //--------------------------------------------------------------------------------
 
 template <size_t _OldExtent, size_t _OldStaticStride>
-__MDSPAN_INLINE_FUNCTION constexpr __slice_wrap<_OldExtent, _OldStaticStride, size_t>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr __slice_wrap<_OldExtent, _OldStaticStride, size_t>
 __wrap_slice(size_t __val, size_t __ext, size_t __stride)
 {
   return {__val, __ext, __stride};
 }
 
 template <size_t _OldExtent, size_t _OldStaticStride, class _IntegerType, _IntegerType _Value0>
-__MDSPAN_INLINE_FUNCTION constexpr __slice_wrap<_OldExtent, _OldStaticStride, integral_constant<_IntegerType, _Value0>>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr __slice_wrap<_OldExtent, _OldStaticStride, integral_constant<_IntegerType, _Value0>>
 __wrap_slice(size_t __val, size_t __ext, integral_constant<_IntegerType, _Value0> __stride)
 {
 #  if __MDSPAN_HAS_CXX_17
@@ -111,7 +111,7 @@ __wrap_slice(size_t __val, size_t __ext, integral_constant<_IntegerType, _Value0
 }
 
 template <size_t _OldExtent, size_t _OldStaticStride>
-__MDSPAN_INLINE_FUNCTION constexpr __slice_wrap<_OldExtent, _OldStaticStride, full_extent_t>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr __slice_wrap<_OldExtent, _OldStaticStride, full_extent_t>
 __wrap_slice(full_extent_t __val, size_t __ext, size_t __stride)
 {
   return {__val, __ext, __stride};
@@ -119,7 +119,7 @@ __wrap_slice(full_extent_t __val, size_t __ext, size_t __stride)
 
 // TODO generalize this to anything that works with get<0> and get<1>
 template <size_t _OldExtent, size_t _OldStaticStride>
-__MDSPAN_INLINE_FUNCTION constexpr __slice_wrap<_OldExtent, _OldStaticStride, _CUDA_VSTD::tuple<size_t, size_t>>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr __slice_wrap<_OldExtent, _OldStaticStride, _CUDA_VSTD::tuple<size_t, size_t>>
 __wrap_slice(_CUDA_VSTD::tuple<size_t, size_t> const& __val, size_t __ext, size_t __stride)
 {
   return {__val, __ext, __stride};
@@ -131,7 +131,7 @@ template <size_t _OldExtent,
           _IntegerType0 _Value0,
           class _IntegerType1,
           _IntegerType1 _Value1>
-__MDSPAN_INLINE_FUNCTION constexpr __slice_wrap<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr __slice_wrap<
   _OldExtent,
   _OldStaticStride,
   _CUDA_VSTD::tuple<integral_constant<_IntegerType0, _Value0>, integral_constant<_IntegerType1, _Value1>>>
@@ -262,12 +262,12 @@ struct __assign_op_slice_handler<
 
 #  ifdef __INTEL_COMPILER
 #    if __INTEL_COMPILER <= 1800
-  __MDSPAN_INLINE_FUNCTION constexpr __assign_op_slice_handler(__assign_op_slice_handler&& __other) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __assign_op_slice_handler(__assign_op_slice_handler&& __other) noexcept
       : __offsets(_CUDA_VSTD::move(__other.__offsets))
       , __exts(_CUDA_VSTD::move(__other.__exts))
       , __strides(_CUDA_VSTD::move(__other.__strides))
   {}
-  __MDSPAN_INLINE_FUNCTION constexpr __assign_op_slice_handler(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __assign_op_slice_handler(
     __offsets_storage_t&& __o, __extents_storage_t&& __e, __strides_storage_t&& __s) noexcept
       : __offsets(_CUDA_VSTD::move(__o))
       , __exts(_CUDA_VSTD::move(__e))
@@ -422,7 +422,7 @@ struct __assign_op_slice_handler<
 
   // TODO noexcept specification
   template <class NewLayout>
-  __MDSPAN_INLINE_FUNCTION __MDSPAN_DEDUCE_RETURN_TYPE_SINGLE_LINE(
+  _LIBCUDACXX_HIDE_FROM_ABI __MDSPAN_DEDUCE_RETURN_TYPE_SINGLE_LINE(
     (constexpr /* auto */
      _make_layout_mapping_impl(NewLayout) noexcept),
     (
@@ -431,7 +431,7 @@ struct __assign_op_slice_handler<
         extents<_IndexT, _Exts...>::__make_extents_impl(_CUDA_VSTD::move(__exts))) /* ; */
       ))
 
-    __MDSPAN_INLINE_FUNCTION __MDSPAN_DEDUCE_RETURN_TYPE_SINGLE_LINE(
+    _LIBCUDACXX_HIDE_FROM_ABI __MDSPAN_DEDUCE_RETURN_TYPE_SINGLE_LINE(
       (constexpr /* auto */
        _make_layout_mapping_impl(layout_stride) noexcept),
       (
@@ -440,7 +440,7 @@ struct __assign_op_slice_handler<
         ))
 
       template <class _OldLayoutMapping> // mostly for deferred instantiation, but maybe we'll use this in the future
-      __MDSPAN_INLINE_FUNCTION __MDSPAN_DEDUCE_RETURN_TYPE_SINGLE_LINE(
+      _LIBCUDACXX_HIDE_FROM_ABI __MDSPAN_DEDUCE_RETURN_TYPE_SINGLE_LINE(
         (constexpr /* auto */
          make_layout_mapping(_OldLayoutMapping const&) noexcept),
         (
@@ -453,7 +453,7 @@ struct __assign_op_slice_handler<
 #  if __MDSPAN_USE_RETURN_TYPE_DEDUCTION
 // Forking this because the C++11 version will be *completely* unreadable
 template <class _ET, class _ST, size_t... _Exts, class _LP, class _AP, class... _SliceSpecs, size_t... _Idxs>
-__MDSPAN_INLINE_FUNCTION constexpr auto _submdspan_impl(
+_LIBCUDACXX_HIDE_FROM_ABI constexpr auto _submdspan_impl(
   _CUDA_VSTD::integer_sequence<size_t, _Idxs...>,
   mdspan<_ET, _CUDA_VSTD::extents<_ST, _Exts...>, _LP, _AP> const& __src,
   _SliceSpecs&&... __slices) noexcept
@@ -490,7 +490,7 @@ auto _submdspan_impl_helper(_Src&& __src, _Handled&& __h, _CUDA_VSTD::integer_se
 }
 
 template <class _ET, class _ST, size_t... _Exts, class _LP, class _AP, class... _SliceSpecs, size_t... _Idxs>
-__MDSPAN_INLINE_FUNCTION __MDSPAN_DEDUCE_RETURN_TYPE_SINGLE_LINE(
+_LIBCUDACXX_HIDE_FROM_ABI __MDSPAN_DEDUCE_RETURN_TYPE_SINGLE_LINE(
   (constexpr /* auto */ _submdspan_impl(_CUDA_VSTD::integer_sequence<size_t, _Idxs...> __seq,
                                         mdspan<_ET, _CUDA_VSTD::extents<_ST, _Exts...>, _LP, _AP> const& __src,
                                         _SliceSpecs&&... __slices) noexcept),
@@ -530,8 +530,7 @@ _LIBCUDACXX_REQUIRES(
        || _CCCL_TRAIT(_CUDA_VSTD::is_convertible, _SliceSpecs, tuple<size_t, size_t>)
        || _CCCL_TRAIT(_CUDA_VSTD::is_convertible, _SliceSpecs, full_extent_t)) /* && ... */)
       _LIBCUDACXX_AND(sizeof...(_SliceSpecs) == _EXT::rank()))
-__MDSPAN_INLINE_FUNCTION
-__MDSPAN_DEDUCE_RETURN_TYPE_SINGLE_LINE(
+_LIBCUDACXX_HIDE_FROM_ABI __MDSPAN_DEDUCE_RETURN_TYPE_SINGLE_LINE(
   (constexpr submdspan(mdspan<_ET, _EXT, _LP, _AP> const& __src, _SliceSpecs... __slices) noexcept),
   (
     /* return */
@@ -541,6 +540,6 @@ __MDSPAN_DEDUCE_RETURN_TYPE_SINGLE_LINE(
 
 #endif // _CCCL_STD_VER > 2011
 
-_LIBCUDACXX_END_NAMESPACE_STD
+  _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif // _LIBCUDACXX___MDSPAN_SUBMDSPAN_HPP

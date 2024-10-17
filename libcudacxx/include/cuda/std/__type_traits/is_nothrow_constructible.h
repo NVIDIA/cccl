@@ -27,17 +27,17 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_IS_NOTHROW_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_NOTHROW_CONSTRUCTIBLE_FALLBACK)
+#if defined(_CCCL_BUILTIN_IS_NOTHROW_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_NOTHROW_CONSTRUCTIBLE_FALLBACK)
 
 template <class _Tp, class... _Args>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_constructible
-    : public integral_constant<bool, _LIBCUDACXX_IS_NOTHROW_CONSTRUCTIBLE(_Tp, _Args...)>
+    : public integral_constant<bool, _CCCL_BUILTIN_IS_NOTHROW_CONSTRUCTIBLE(_Tp, _Args...)>
 {};
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class... _Args>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_constructible_v = _LIBCUDACXX_IS_NOTHROW_CONSTRUCTIBLE(_Tp, _Args...);
-#  endif
+_CCCL_INLINE_VAR constexpr bool is_nothrow_constructible_v = _CCCL_BUILTIN_IS_NOTHROW_CONSTRUCTIBLE(_Tp, _Args...);
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #else
 
@@ -52,7 +52,7 @@ struct __libcpp_is_nothrow_constructible</*is constructible*/ true, /*is referen
 {};
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY void __implicit_conversion_to(_Tp) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI void __implicit_conversion_to(_Tp) noexcept
 {}
 
 template <class _Tp, class _Arg>
@@ -82,11 +82,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_constructible : false_type
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_constructible<_Tp>
-#    if defined(_LIBCUDACXX_HAS_NOTHROW_CONSTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_CONSTRUCTOR_FALLBACK)
-    : integral_constant<bool, _LIBCUDACXX_HAS_NOTHROW_CONSTRUCTOR(_Tp)>
+#    if defined(_CCCL_BUILTIN_HAS_NOTHROW_CONSTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_CONSTRUCTOR_FALLBACK)
+    : integral_constant<bool, _CCCL_BUILTIN_HAS_NOTHROW_CONSTRUCTOR(_Tp)>
 #    else
     : integral_constant<bool, is_scalar<_Tp>::value>
-#    endif // defined(_LIBCUDACXX_HAS_NOTHROW_CONSTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_CONSTRUCTOR_FALLBACK)
+#    endif // defined(_CCCL_BUILTIN_HAS_NOTHROW_CONSTRUCTOR) &&
+           // !defined(_LIBCUDACXX_USE_HAS_NOTHROW_CONSTRUCTOR_FALLBACK)
 {};
 
 template <class _Tp>
@@ -95,39 +96,39 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_constructible<_Tp, _Tp&&>
 #    else
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_constructible<_Tp, _Tp>
 #    endif
-#    if defined(_LIBCUDACXX_HAS_NOTHROW_COPY) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_COPY_FALLBACK)
-    : integral_constant<bool, _LIBCUDACXX_HAS_NOTHROW_COPY(_Tp)>
+#    if defined(_CCCL_BUILTIN_HAS_NOTHROW_COPY) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_COPY_FALLBACK)
+    : integral_constant<bool, _CCCL_BUILTIN_HAS_NOTHROW_COPY(_Tp)>
 #    else
     : integral_constant<bool, is_scalar<_Tp>::value>
-#    endif // defined(_LIBCUDACXX_HAS_NOTHROW_COPY) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_COPY_FALLBACK)
+#    endif // defined(_CCCL_BUILTIN_HAS_NOTHROW_COPY) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_COPY_FALLBACK)
 {};
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_constructible<_Tp, const _Tp&>
-#    if defined(_LIBCUDACXX_HAS_NOTHROW_COPY) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_COPY_FALLBACK)
-    : integral_constant<bool, _LIBCUDACXX_HAS_NOTHROW_COPY(_Tp)>
+#    if defined(_CCCL_BUILTIN_HAS_NOTHROW_COPY) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_COPY_FALLBACK)
+    : integral_constant<bool, _CCCL_BUILTIN_HAS_NOTHROW_COPY(_Tp)>
 #    else
     : integral_constant<bool, is_scalar<_Tp>::value>
-#    endif // defined(_LIBCUDACXX_HAS_NOTHROW_COPY) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_COPY_FALLBACK)
+#    endif // defined(_CCCL_BUILTIN_HAS_NOTHROW_COPY) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_COPY_FALLBACK)
 {};
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_constructible<_Tp, _Tp&>
-#    if defined(_LIBCUDACXX_HAS_NOTHROW_COPY) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_COPY_FALLBACK)
-    : integral_constant<bool, _LIBCUDACXX_HAS_NOTHROW_COPY(_Tp)>
+#    if defined(_CCCL_BUILTIN_HAS_NOTHROW_COPY) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_COPY_FALLBACK)
+    : integral_constant<bool, _CCCL_BUILTIN_HAS_NOTHROW_COPY(_Tp)>
 #    else
     : integral_constant<bool, is_scalar<_Tp>::value>
-#    endif // defined(_LIBCUDACXX_HAS_NOTHROW_COPY) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_COPY_FALLBACK)
+#    endif // defined(_CCCL_BUILTIN_HAS_NOTHROW_COPY) && !defined(_LIBCUDACXX_USE_HAS_NOTHROW_COPY_FALLBACK)
 {};
 
 #  endif // !defined(_LIBCUDACXX_HAS_NO_NOEXCEPT)
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class... _Args>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_constructible_v = is_nothrow_constructible<_Tp, _Args...>::value;
-#  endif
+_CCCL_INLINE_VAR constexpr bool is_nothrow_constructible_v = is_nothrow_constructible<_Tp, _Args...>::value;
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
-#endif // defined(_LIBCUDACXX_IS_NOTHROW_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_NOTHROW_CONSTRUCTIBLE_FALLBACK)
+#endif // defined(_CCCL_BUILTIN_IS_NOTHROW_CONSTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_NOTHROW_CONSTRUCTIBLE_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

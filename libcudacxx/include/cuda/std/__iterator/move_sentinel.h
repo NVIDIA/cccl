@@ -37,28 +37,27 @@ template <class _Sent, enable_if_t<semiregular<_Sent>, int> = 0>
 class _CCCL_TYPE_VISIBILITY_DEFAULT move_sentinel
 {
 public:
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr move_sentinel() = default;
+  _CCCL_HIDE_FROM_ABI constexpr move_sentinel() = default;
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit move_sentinel(_Sent __s)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit move_sentinel(_Sent __s)
       : __last_(_CUDA_VSTD::move(__s))
   {}
 
   _LIBCUDACXX_TEMPLATE(class _S2)
   _LIBCUDACXX_REQUIRES(convertible_to<const _S2&, _Sent>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr move_sentinel(const move_sentinel<_S2>& __s)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr move_sentinel(const move_sentinel<_S2>& __s)
       : __last_(__s.base())
   {}
 
   _LIBCUDACXX_TEMPLATE(class _S2)
   _LIBCUDACXX_REQUIRES(assignable_from<const _S2&, _Sent>)
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr move_sentinel&
-  operator=(const move_sentinel<_S2>& __s)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr move_sentinel& operator=(const move_sentinel<_S2>& __s)
   {
     __last_ = __s.base();
     return *this;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr _Sent base() const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Sent base() const
   {
     return __last_;
   }

@@ -2,20 +2,11 @@
 #include <thrust/mismatch.h>
 
 #include <unittest/unittest.h>
-
 template <class Vector>
 void TestMismatchSimple()
 {
-  Vector a(4);
-  Vector b(4);
-  a[0] = 1;
-  b[0] = 1;
-  a[1] = 2;
-  b[1] = 2;
-  a[2] = 3;
-  b[2] = 4;
-  a[3] = 4;
-  b[3] = 3;
+  Vector a{1, 2, 3, 4};
+  Vector b{1, 2, 4, 3};
 
   ASSERT_EQUAL(thrust::mismatch(a.begin(), a.end(), b.begin()).first - a.begin(), 2);
   ASSERT_EQUAL(thrust::mismatch(a.begin(), a.end(), b.begin()).second - b.begin(), 2);

@@ -16,14 +16,13 @@ struct my_accessor
   using reference        = T&;
   using data_handle_type = foo_ptr<T>;
 
-  __MDSPAN_INLINE_FUNCTION
-  constexpr my_accessor(int* ptr) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr my_accessor(int* ptr) noexcept
   {
     flag = ptr;
   }
 
   template <class OtherElementType>
-  __MDSPAN_INLINE_FUNCTION constexpr my_accessor(my_accessor<OtherElementType> other) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr my_accessor(my_accessor<OtherElementType> other) noexcept
   {
     flag = other.flag;
   }

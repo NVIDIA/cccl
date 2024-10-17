@@ -39,7 +39,7 @@ struct __atomic_locked_storage
   _Tp __a_value;
   mutable __atomic_storage<_LIBCUDACXX_ATOMIC_FLAG_TYPE> __a_lock;
 
-  explicit constexpr __atomic_locked_storage() noexcept = default;
+  _CCCL_HIDE_FROM_ABI explicit constexpr __atomic_locked_storage() noexcept = default;
 
   _CCCL_HOST_DEVICE constexpr explicit inline __atomic_locked_storage(_Tp value) noexcept
       : __a_value(value)

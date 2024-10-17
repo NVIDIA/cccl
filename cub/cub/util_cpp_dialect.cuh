@@ -40,7 +40,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_compiler.cuh>
+#include <cub/util_compiler.cuh> // IWYU pragma: export
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 

@@ -22,17 +22,31 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_CCCL_CUDA_COMPILER)
+// We need to ensure that we not only compile with a cuda compiler but also compile cuda source files
+#if defined(_CCCL_CUDA_COMPILER) && (defined(__CUDACC__) || defined(_NVHPC_CUDA))
 #  define _CCCL_HOST        __host__
 #  define _CCCL_DEVICE      __device__
 #  define _CCCL_HOST_DEVICE __host__ __device__
-#  define _CCCL_FORCEINLINE __forceinline__
-#else // ^^^ _CCCL_CUDA_COMPILER ^^^ / vvv !_CCCL_CUDA_COMPILER
+#else // ^^^ _CCCL_CUDA_COMPILATION ^^^ / vvv !_CCCL_CUDA_COMPILATION vvv
 #  define _CCCL_HOST
 #  define _CCCL_DEVICE
 #  define _CCCL_HOST_DEVICE
-#  define _CCCL_FORCEINLINE inline
-#endif // !_CCCL_CUDA_COMPILER
+#endif // !_CCCL_CUDA_COMPILATION
+
+/// In device code, _CCCL_PTX_ARCH expands to the PTX version for which we are compiling.
+/// In host code, _CCCL_PTX_ARCH's value is implementation defined.
+#if !defined(__CUDA_ARCH__)
+#  define _CCCL_PTX_ARCH 0
+#else
+#  define _CCCL_PTX_ARCH __CUDA_ARCH__
+#endif
+
+// Compile with NVCC compiler and only device code, Volta+  GPUs
+#if defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_PTX_ARCH >= 700 && !defined(_CCCL_CUDACC_BELOW_11_7)
+#  define _CCCL_GRID_CONSTANT __grid_constant__
+#else // ^^^ _CCCL_CUDA_COMPILER_NVCC ^^^ / vvv !_CCCL_CUDA_COMPILER_NVCC vvv
+#  define _CCCL_GRID_CONSTANT
+#endif // defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_PTX_ARCH >= 700 && !defined(_CCCL_CUDACC_BELOW_11_7)
 
 #if !defined(_CCCL_EXEC_CHECK_DISABLE)
 #  if defined(_CCCL_CUDA_COMPILER_NVCC)

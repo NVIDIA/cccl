@@ -226,10 +226,11 @@ TEST_CASE("Test nvrtc", "[test][nvrtc]")
   int ptx_version{};
   cub::PtxVersion(ptx_version);
   const std::string arch = std::string("-arch=sm_") + std::to_string(ptx_version / 10);
+  const std::string std  = std::string("-std=c++") + std::to_string(_CCCL_STD_VER - 2000);
 
-  constexpr int num_includes         = 5;
+  constexpr int num_includes         = 6;
   const char* includes[num_includes] = {
-    NVRTC_CUB_PATH, NVRTC_THRUST_PATH, NVRTC_LIBCUDACXX_PATH, NVRTC_CTK_PATH, arch.c_str()};
+    NVRTC_CUB_PATH, NVRTC_THRUST_PATH, NVRTC_LIBCUDACXX_PATH, NVRTC_CTK_PATH, arch.c_str(), std.c_str()};
 
   std::size_t log_size{};
   nvrtcResult compile_result = nvrtcCompileProgram(prog, num_includes, includes);

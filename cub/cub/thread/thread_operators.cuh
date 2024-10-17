@@ -47,14 +47,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/type_traits.cuh> // always_false
 #include <cub/util_cpp_dialect.cuh>
 #include <cub/util_type.cuh>
 
-_CCCL_SUPPRESS_DEPRECATED_PUSH
-#include <cuda/std/functional>
-_CCCL_SUPPRESS_DEPRECATED_POP
-#include <cuda/std/type_traits>
-#include <cuda/std/utility>
+#include <cuda/std/functional> // cuda::std::plus
+#include <cuda/std/type_traits> // cuda::std::common_type
+#include <cuda/std/utility> // cuda::std::forward
+
+// #include <functional> // std::plus
 
 CUB_NAMESPACE_BEGIN
 
@@ -216,6 +217,64 @@ struct ArgMin
 
 namespace detail
 {
+template <typename ScanOpT>
+struct ScanBySegmentOp
+{
+  /// Wrapped operator
+  ScanOpT op;
+
+  /// Constructor
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScanBySegmentOp() {}
+
+  /// Constructor
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ScanBySegmentOp(ScanOpT op)
+      : op(op)
+  {}
+
+  /**
+   * @brief Scan operator
+   *
+   * @tparam KeyValuePairT
+   *   KeyValuePair pairing of T (value) and int (head flag)
+   *
+   * @param[in] first
+   *   First partial reduction
+   *
+   * @param[in] second
+   *   Second partial reduction
+   */
+  template <typename KeyValuePairT>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePairT operator()(const KeyValuePairT& first, const KeyValuePairT& second)
+  {
+    KeyValuePairT retval;
+    retval.key = first.key | second.key;
+#ifdef _NVHPC_CUDA // WAR bug on nvc++
+    if (second.key)
+    {
+      retval.value = second.value;
+    }
+    else
+    {
+      // If second.value isn't copied into a temporary here, nvc++ will
+      // crash while compiling the TestScanByKeyWithLargeTypes test in
+      // thrust/testing/scan_by_key.cu:
+      auto v2      = second.value;
+      retval.value = op(first.value, v2);
+    }
+#else // not nvc++:
+    // if (second.key) {
+    //   The second partial reduction spans a segment reset, so it's value
+    //   aggregate becomes the running aggregate
+    // else {
+    //   The second partial reduction does not span a reset, so accumulate both
+    //   into the running aggregate
+    // }
+    retval.value = (second.key) ? second.value : op(first.value, second.value);
+#endif
+    return retval;
+  }
+};
+
 template <class OpT>
 struct basic_binary_op_t
 {
@@ -412,5 +471,122 @@ _CCCL_HOST_DEVICE BinaryFlip<BinaryOpT> MakeBinaryFlip(BinaryOpT binary_op)
 {
   return BinaryFlip<BinaryOpT>(binary_op);
 }
+
+namespace internal
+{
+// TODO: Remove DPX specilization when nvbug 4823237 is fixed
+
+template <typename T>
+struct DpxMin
+{
+  static_assert(detail::always_false<T>(), "DpxMin is not supported for this type");
+};
+
+template <>
+struct DpxMin<::cuda::std::int16_t>
+{
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
+  {
+    return __vmins2(a, b);
+  }
+};
+
+template <>
+struct DpxMin<::cuda::std::uint16_t>
+{
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
+  {
+    return __vminu2(a, b);
+  }
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+
+template <typename T>
+struct DpxMax
+{
+  static_assert(detail::always_false<T>(), "DpxMax is not supported for this type");
+};
+
+template <>
+struct DpxMax<::cuda::std::int16_t>
+{
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
+  {
+    return __vmaxs2(a, b);
+  }
+};
+
+template <>
+struct DpxMax<::cuda::std::uint16_t>
+{
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
+  {
+    return __vmaxu2(a, b);
+  }
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+
+template <typename T>
+struct DpxSum
+{
+  static_assert(detail::always_false<T>(), "DpxSum is not supported for this type");
+};
+
+template <>
+struct DpxSum<::cuda::std::int16_t>
+{
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
+  {
+    return __vadd2(a, b);
+  }
+};
+
+template <>
+struct DpxSum<::cuda::std::uint16_t>
+{
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
+  {
+    return __vadd2(a, b);
+  }
+};
+
+//----------------------------------------------------------------------------------------------------------------------
+
+template <typename ReduceOp, typename T>
+struct CubOperatorToDpx
+{
+  static_assert(detail::always_false<T>(), "Dpx is not supported for this operator");
+};
+
+template <typename T>
+struct CubOperatorToDpx<cub::Min, T>
+{
+  using type = DpxMin<T>;
+};
+
+template <typename T>
+struct CubOperatorToDpx<cub::Max, T>
+{
+  using type = DpxMax<T>;
+};
+
+template <typename T>
+struct CubOperatorToDpx<cub::Sum, T>
+{
+  using type = DpxSum<T>;
+};
+
+// template <typename T>
+// struct CubOperatorToDpx<std::plus<T>, T>
+//{
+//   using type = DpxSum<T>;
+// };
+
+template <typename ReduceOp, typename T>
+using cub_operator_to_dpx_t = CubOperatorToDpx<ReduceOp, T>;
+
+} // namespace internal
 
 CUB_NAMESPACE_END

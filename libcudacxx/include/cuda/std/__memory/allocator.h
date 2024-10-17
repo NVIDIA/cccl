@@ -32,7 +32,6 @@
 #include <cuda/std/__type_traits/is_volatile.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/cstdlib>
 
 #if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION) && !defined(_CCCL_COMPILER_NVRTC)
 #  include <memory>
@@ -96,7 +95,7 @@ struct __non_trivial_if
 template <class _Unique>
 struct __non_trivial_if<true, _Unique>
 {
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __non_trivial_if() noexcept {}
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __non_trivial_if() noexcept {}
 };
 
 // allocator
@@ -119,11 +118,11 @@ public:
   _CCCL_CONSTEXPR_CXX20 allocator() noexcept = default;
 
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 allocator(const allocator<_Up>&) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 allocator(const allocator<_Up>&) noexcept
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20_ALLOCATION _Tp* allocate(size_t __n)
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20_ALLOCATION _Tp* allocate(size_t __n)
   {
     if (__n > allocator_traits<allocator>::max_size(*this))
     {
@@ -141,15 +140,14 @@ public:
   }
 
 #if _CCCL_STD_VER >= 2023
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr allocation_result<_Tp*>
-  allocate_at_least(size_t __n)
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr allocation_result<_Tp*> allocate_at_least(size_t __n)
   {
     return {allocate(__n), __n};
   }
 #endif // _CCCL_HAS_CONSTEXPR_ALLOCATION
 
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20_ALLOCATION void deallocate(_Tp* __p, size_t __n) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20_ALLOCATION void deallocate(_Tp* __p, size_t __n) noexcept
   {
 #if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION)
     if (__libcpp_is_constant_evaluated())
@@ -176,32 +174,32 @@ public:
     typedef allocator<_Up> other;
   };
 
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VISIBILITY pointer address(reference __x) const noexcept
+  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_HIDE_FROM_ABI pointer address(reference __x) const noexcept
   {
     return _CUDA_VSTD::addressof(__x);
   }
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VISIBILITY const_pointer address(const_reference __x) const noexcept
+  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_HIDE_FROM_ABI const_pointer address(const_reference __x) const noexcept
   {
     return _CUDA_VSTD::addressof(__x);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_DEPRECATED_IN_CXX17 _Tp* allocate(size_t __n, const void*)
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_DEPRECATED_IN_CXX17 _Tp* allocate(size_t __n, const void*)
   {
     return allocate(__n);
   }
 
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VISIBILITY size_type max_size() const noexcept
+  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_HIDE_FROM_ABI size_type max_size() const noexcept
   {
     return size_type(~0) / sizeof(_Tp);
   }
 
   template <class _Up, class... _Args>
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VISIBILITY void construct(_Up* __p, _Args&&... __args)
+  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_HIDE_FROM_ABI void construct(_Up* __p, _Args&&... __args)
   {
     ::new ((void*) __p) _Up(_CUDA_VSTD::forward<_Args>(__args)...);
   }
 
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VISIBILITY void destroy(pointer __p) noexcept
+  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_HIDE_FROM_ABI void destroy(pointer __p) noexcept
   {
     __p->~_Tp();
   }
@@ -224,10 +222,10 @@ public:
   _CCCL_CONSTEXPR_CXX20 allocator() noexcept = default;
 
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 allocator(const allocator<_Up>&) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 allocator(const allocator<_Up>&) noexcept
   {}
 
-  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 const _Tp* allocate(size_t __n)
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 const _Tp* allocate(size_t __n)
   {
     if (__n > allocator_traits<allocator>::max_size(*this))
     {
@@ -244,14 +242,13 @@ public:
   }
 
 #if _CCCL_STD_VER >= 2023
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr allocation_result<const _Tp*>
-  allocate_at_least(size_t __n)
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr allocation_result<const _Tp*> allocate_at_least(size_t __n)
   {
     return {allocate(__n), __n};
   }
 #endif // _CCCL_STD_VER >= 2023
 
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void deallocate(const _Tp* __p, size_t __n) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void deallocate(const _Tp* __p, size_t __n) noexcept
   {
     if (__libcpp_is_constant_evaluated())
     {
@@ -276,29 +273,28 @@ public:
     typedef allocator<_Up> other;
   };
 
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VISIBILITY const_pointer address(const_reference __x) const noexcept
+  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_HIDE_FROM_ABI const_pointer address(const_reference __x) const noexcept
   {
     return _CUDA_VSTD::addressof(__x);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_DEPRECATED_IN_CXX17 const _Tp*
-  allocate(size_t __n, const void*)
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_DEPRECATED_IN_CXX17 const _Tp* allocate(size_t __n, const void*)
   {
     return allocate(__n);
   }
 
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VISIBILITY size_type max_size() const noexcept
+  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_HIDE_FROM_ABI size_type max_size() const noexcept
   {
     return size_type(~0) / sizeof(_Tp);
   }
 
   template <class _Up, class... _Args>
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VISIBILITY void construct(_Up* __p, _Args&&... __args)
+  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_HIDE_FROM_ABI void construct(_Up* __p, _Args&&... __args)
   {
     ::new ((void*) __p) _Up(_CUDA_VSTD::forward<_Args>(__args)...);
   }
 
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_INLINE_VISIBILITY void destroy(pointer __p) noexcept
+  _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_HIDE_FROM_ABI void destroy(pointer __p) noexcept
   {
     __p->~_Tp();
   }
@@ -306,15 +302,13 @@ public:
 };
 
 template <class _Tp, class _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 bool
-operator==(const allocator<_Tp>&, const allocator<_Up>&) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator==(const allocator<_Tp>&, const allocator<_Up>&) noexcept
 {
   return true;
 }
 
 template <class _Tp, class _Up>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 bool
-operator!=(const allocator<_Tp>&, const allocator<_Up>&) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 bool operator!=(const allocator<_Tp>&, const allocator<_Up>&) noexcept
 {
   return false;
 }

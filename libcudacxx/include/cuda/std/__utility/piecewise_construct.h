@@ -24,7 +24,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT piecewise_construct_t
 {
-  explicit piecewise_construct_t() = default;
+  _CCCL_HIDE_FROM_ABI explicit piecewise_construct_t() = default;
 };
 _CCCL_GLOBAL_CONSTANT piecewise_construct_t piecewise_construct = piecewise_construct_t();
 

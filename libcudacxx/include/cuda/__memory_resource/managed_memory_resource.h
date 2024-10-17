@@ -51,7 +51,7 @@ public:
   constexpr managed_memory_resource(const unsigned int __flags = cudaMemAttachGlobal) noexcept
       : __flags_(__flags & __available_flags)
   {
-    _LIBCUDACXX_ASSERT(__flags_ == __flags, "Unexpected flags passed to managed_memory_resource");
+    _CCCL_ASSERT(__flags_ == __flags, "Unexpected flags passed to managed_memory_resource");
   }
 
   //! @brief Allocate CUDA unified memory of size at least \p __bytes.
@@ -80,8 +80,7 @@ public:
   void deallocate(void* __ptr, const size_t, const size_t __alignment = default_cuda_malloc_alignment) const noexcept
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
-    _LIBCUDACXX_ASSERT(__is_valid_alignment(__alignment),
-                       "Invalid alignment passed to managed_memory_resource::deallocate.");
+    _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to managed_memory_resource::deallocate.");
     _CCCL_ASSERT_CUDA_API(::cudaFree, "managed_memory_resource::deallocate failed", __ptr);
     (void) __alignment;
   }
@@ -103,41 +102,76 @@ public:
   }
 #    endif // _CCCL_STD_VER <= 2017
 
-  //! @brief Equality comparison between a \c managed_memory_resource and another resource.
-  //! @param __lhs The \c managed_memory_resource.
-  //! @param __rhs The resource to compare to.
+#    if _CCCL_STD_VER >= 2020
+  //! @brief Equality comparison between a \c managed_memory_resource and another resource
+  //! @param __rhs The resource to compare to
   //! @return If the underlying types are equality comparable, returns the result of equality comparison of both
   //! resources. Otherwise, returns false.
+  _LIBCUDACXX_TEMPLATE(class _Resource)
+  _LIBCUDACXX_REQUIRES(__different_resource<managed_memory_resource, _Resource>)
+  _CCCL_NODISCARD bool operator==(_Resource const& __rhs) const noexcept
+  {
+    if constexpr (has_property<_Resource, host_accessible>)
+    {
+      return resource_ref<host_accessible>{const_cast<managed_memory_resource*>(this)}
+          == resource_ref<host_accessible>{const_cast<_Resource&>(__rhs)};
+    }
+    else if constexpr (has_property<_Resource, device_accessible>)
+    {
+      return resource_ref<device_accessible>{const_cast<managed_memory_resource*>(this)}
+          == resource_ref<device_accessible>{const_cast<_Resource&>(__rhs)};
+    }
+    else
+    {
+      return false;
+    }
+  }
+#    else // ^^^ C++20 ^^^ / vvv C++17
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator==(managed_memory_resource const& __lhs, _Resource const& __rhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<managed_memory_resource, _Resource>)
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(
+      __different_resource<managed_memory_resource, _Resource>&& has_property<_Resource, host_accessible>)
   {
-    return resource_ref<>{const_cast<managed_memory_resource&>(__lhs)} == resource_ref<>{const_cast<_Resource&>(__rhs)};
+    return resource_ref<host_accessible>{const_cast<managed_memory_resource&>(__lhs)}
+        == resource_ref<host_accessible>{const_cast<_Resource&>(__rhs)};
   }
-#    if _CCCL_STD_VER <= 2017
-  //! @copydoc managed_memory_resource::operator<_Resource>==(managed_memory_resource const&, _Resource
-  //! const&)
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator==(_Resource const& __rhs, managed_memory_resource const& __lhs) noexcept
+  _CCCL_NODISCARD_FRIEND auto operator==(managed_memory_resource const& __lhs, _Resource const& __rhs) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(
+      __different_resource<managed_memory_resource, _Resource> && !has_property<_Resource, host_accessible>
+      && has_property<_Resource, device_accessible>)
+  {
+    return resource_ref<device_accessible>{const_cast<managed_memory_resource&>(__lhs)}
+        == resource_ref<device_accessible>{const_cast<_Resource&>(__rhs)};
+  }
+  template <class _Resource>
+  _CCCL_NODISCARD_FRIEND auto operator==(managed_memory_resource const& __lhs, _Resource const& __rhs) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(
+      __different_resource<managed_memory_resource, _Resource> && !has_property<_Resource, host_accessible>
+      && !has_property<_Resource, device_accessible>)
+  {
+    return false;
+  }
+
+  template <class _Resource>
+  _CCCL_NODISCARD_FRIEND auto operator==(_Resource const& __lhs, managed_memory_resource const& __rhs) noexcept
     _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<managed_memory_resource, _Resource>)
   {
-    return resource_ref<>{const_cast<managed_memory_resource&>(__lhs)} == resource_ref<>{const_cast<_Resource&>(__rhs)};
+    return __rhs == __lhs;
   }
-  //! @copydoc managed_memory_resource::operator<_Resource>==(managed_memory_resource const&, _Resource
-  //! const&)
+
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator!=(managed_memory_resource const& __lhs, _Resource const& __rhs) noexcept
     _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<managed_memory_resource, _Resource>)
   {
-    return resource_ref<>{const_cast<managed_memory_resource&>(__lhs)} != resource_ref<>{const_cast<_Resource&>(__rhs)};
+    return !(__lhs == __rhs);
   }
-  //! @copydoc managed_memory_resource::operator<_Resource>==(managed_memory_resource const&, _Resource
-  //! const&)
+
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator!=(_Resource const& __rhs, managed_memory_resource const& __lhs) noexcept
     _LIBCUDACXX_TRAILING_REQUIRES(bool)(__different_resource<managed_memory_resource, _Resource>)
   {
-    return resource_ref<>{const_cast<managed_memory_resource&>(__lhs)} != resource_ref<>{const_cast<_Resource&>(__rhs)};
+    return !(__rhs == __lhs);
   }
 #    endif // _CCCL_STD_VER <= 2017
 

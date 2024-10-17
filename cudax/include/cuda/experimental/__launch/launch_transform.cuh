@@ -49,6 +49,7 @@ struct __fn
     }
     else
     {
+      (void) __stream;
       return _CUDA_VSTD::forward<_Arg>(__arg);
     }
   }

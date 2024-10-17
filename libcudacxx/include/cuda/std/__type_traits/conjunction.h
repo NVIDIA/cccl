@@ -30,10 +30,10 @@ template <class...>
 using __expand_to_true = true_type;
 
 template <class... _Pred>
-_LIBCUDACXX_INLINE_VISIBILITY __expand_to_true<__enable_if_t<_Pred::value>...> __and_helper(int);
+_CCCL_HOST_DEVICE __expand_to_true<__enable_if_t<_Pred::value>...> __and_helper(int);
 
 template <class...>
-_LIBCUDACXX_INLINE_VISIBILITY false_type __and_helper(...);
+_CCCL_HOST_DEVICE false_type __and_helper(...);
 
 // _And always performs lazy evaluation of its arguments.
 //
@@ -55,10 +55,10 @@ template <class _Arg, class... _Args>
 struct conjunction<_Arg, _Args...> : _If<!bool(_Arg::value), _Arg, conjunction<_Args...>>
 {};
 
-#if _CCCL_STD_VER >= 2014 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class... _Args>
-_LIBCUDACXX_INLINE_VAR constexpr bool conjunction_v = conjunction<_Args...>::value;
-#endif // _CCCL_STD_VER >= 2014
+_CCCL_INLINE_VAR constexpr bool conjunction_v = conjunction<_Args...>::value;
+#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

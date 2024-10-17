@@ -30,7 +30,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <thrust/detail/config/compiler.h>
+#include <thrust/detail/config/compiler.h> // IWYU pragma: export
 
 // Deprecation warnings may be silenced by defining the following macros. These
 // may be combined.

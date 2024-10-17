@@ -257,7 +257,8 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n(
 {
   THRUST_CDP_DISPATCH(
     (result = thrust::cuda_cub::detail::inclusive_scan_n_impl(policy, first, num_items, result, init, scan_op);),
-    (result = thrust::inclusive_scan(cvt_to_seq(derived_cast(policy)), first, first + num_items, result, scan_op);));
+    (result =
+       thrust::inclusive_scan(cvt_to_seq(derived_cast(policy)), first, first + num_items, result, init, scan_op);));
   return result;
 }
 

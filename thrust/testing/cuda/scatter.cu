@@ -137,15 +137,9 @@ void TestScatterCudaStreams()
 {
   using Vector = thrust::device_vector<int>;
 
-  Vector map(5); // scatter indices
-  Vector src(5); // source vector
-  Vector dst(8); // destination vector
-
-  // clang-format off
-  map[0] = 6; map[1] = 3; map[2] = 1; map[3] = 7; map[4] = 2;
-  src[0] = 0; src[1] = 1; src[2] = 2; src[3] = 3; src[4] = 4;
-  dst[0] = 0; dst[1] = 0; dst[2] = 0; dst[3] = 0; dst[4] = 0; dst[5] = 0; dst[6] = 0; dst[7] = 0;
-  // clang-format on
+  Vector map{6, 3, 1, 7, 2}; // scatter indices
+  Vector src{0, 1, 2, 3, 4}; // source vector
+  Vector dst(8, 0); // destination vector
 
   cudaStream_t s;
   cudaStreamCreate(&s);
@@ -154,14 +148,8 @@ void TestScatterCudaStreams()
 
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(dst[0], 0);
-  ASSERT_EQUAL(dst[1], 2);
-  ASSERT_EQUAL(dst[2], 4);
-  ASSERT_EQUAL(dst[3], 1);
-  ASSERT_EQUAL(dst[4], 0);
-  ASSERT_EQUAL(dst[5], 0);
-  ASSERT_EQUAL(dst[6], 0);
-  ASSERT_EQUAL(dst[7], 3);
+  Vector ref{0, 2, 4, 1, 0, 0, 0, 3};
+  ASSERT_EQUAL(dst, ref);
 
   cudaStreamDestroy(s);
 }
@@ -171,17 +159,10 @@ void TestScatterIfCudaStreams()
 {
   using Vector = thrust::device_vector<int>;
 
-  Vector flg(5); // predicate array
-  Vector map(5); // scatter indices
-  Vector src(5); // source vector
+  Vector flg{0, 1, 0, 1, 0}; // predicate array
+  Vector map{6, 3, 1, 7, 2}; // scatter indices
+  Vector src{0, 1, 2, 3, 4}; // source vector
   Vector dst(8); // destination vector
-
-  // clang-format off
-  flg[0] = 0; flg[1] = 1; flg[2] = 0; flg[3] = 1; flg[4] = 0;
-  map[0] = 6; map[1] = 3; map[2] = 1; map[3] = 7; map[4] = 2;
-  src[0] = 0; src[1] = 1; src[2] = 2; src[3] = 3; src[4] = 4;
-  dst[0] = 0; dst[1] = 0; dst[2] = 0; dst[3] = 0; dst[4] = 0; dst[5] = 0; dst[6] = 0; dst[7] = 0;
-  // clang-format on
 
   cudaStream_t s;
   cudaStreamCreate(&s);
@@ -189,14 +170,8 @@ void TestScatterIfCudaStreams()
   thrust::scatter_if(thrust::cuda::par.on(s), src.begin(), src.end(), map.begin(), flg.begin(), dst.begin());
   cudaStreamSynchronize(s);
 
-  ASSERT_EQUAL(dst[0], 0);
-  ASSERT_EQUAL(dst[1], 0);
-  ASSERT_EQUAL(dst[2], 0);
-  ASSERT_EQUAL(dst[3], 1);
-  ASSERT_EQUAL(dst[4], 0);
-  ASSERT_EQUAL(dst[5], 0);
-  ASSERT_EQUAL(dst[6], 0);
-  ASSERT_EQUAL(dst[7], 3);
+  Vector ref{0, 0, 0, 1, 0, 0, 0, 3};
+  ASSERT_EQUAL(dst, ref);
 
   cudaStreamDestroy(s);
 }

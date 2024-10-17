@@ -133,6 +133,7 @@ TEST_CASE("Traits", "[device]")
       traits.max_registers_per_multiprocessor == dev.attr(cudax::device::attrs::max_registers_per_multiprocessor));
     CUDAX_REQUIRE(traits.compute_capability_major == dev.attr(cudax::device::attrs::compute_capability_major));
     CUDAX_REQUIRE(traits.compute_capability_minor == dev.attr(cudax::device::attrs::compute_capability_minor));
+    CUDAX_REQUIRE(traits.compute_capability == dev.attr(cudax::device::attrs::compute_capability));
     CUDAX_REQUIRE(traits.max_shared_memory_per_multiprocessor
                   == dev.attr(cudax::device::attrs::max_shared_memory_per_multiprocessor));
     CUDAX_REQUIRE(

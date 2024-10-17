@@ -33,7 +33,7 @@
 #pragma once
 
 // For _CCCL_IMPLICIT_SYSTEM_HEADER
-#include <cuda/__cccl_config>
+#include <cuda/__cccl_config> // IWYU pragma: export
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -43,9 +43,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_arch.cuh>
-#include <cub/util_compiler.cuh>
-#include <cub/util_cpp_dialect.cuh>
-#include <cub/util_deprecated.cuh>
-#include <cub/util_macro.cuh>
-#include <cub/util_namespace.cuh>
+#include <cub/util_arch.cuh> // IWYU pragma: export
+#include <cub/util_compiler.cuh> // IWYU pragma: export
+#include <cub/util_cpp_dialect.cuh> // IWYU pragma: export
+#include <cub/util_deprecated.cuh> // IWYU pragma: export
+#include <cub/util_macro.cuh> // IWYU pragma: export
+#include <cub/util_namespace.cuh> // IWYU pragma: export

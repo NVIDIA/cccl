@@ -624,7 +624,7 @@ struct DispatchSpmv
         }
 
         constexpr int threads_in_block = EMPTY_MATRIX_KERNEL_THREADS;
-        const int blocks_in_grid       = cub::DivideAndRoundUp(spmv_params.num_rows, threads_in_block);
+        const int blocks_in_grid       = ::cuda::ceil_div(spmv_params.num_rows, threads_in_block);
 
 #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
         _CubLog("Invoking spmv_empty_matrix_kernel<<<%d, %d, 0, %lld>>>()\n",
@@ -661,7 +661,7 @@ struct DispatchSpmv
 
         // Get search/init grid dims
         int degen_col_kernel_block_size = INIT_KERNEL_THREADS;
-        int degen_col_kernel_grid_size  = cub::DivideAndRoundUp(spmv_params.num_rows, degen_col_kernel_block_size);
+        int degen_col_kernel_grid_size  = ::cuda::ceil_div(spmv_params.num_rows, degen_col_kernel_block_size);
 
 #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
         _CubLog("Invoking spmv_1col_kernel<<<%d, %d, 0, %lld>>>()\n",
@@ -720,8 +720,8 @@ struct DispatchSpmv
       int segment_fixup_tile_size = segment_fixup_config.block_threads * segment_fixup_config.items_per_thread;
 
       // Number of tiles for kernels
-      int num_merge_tiles         = cub::DivideAndRoundUp(num_merge_items, merge_tile_size);
-      int num_segment_fixup_tiles = cub::DivideAndRoundUp(num_merge_tiles, segment_fixup_tile_size);
+      int num_merge_tiles         = ::cuda::ceil_div(num_merge_items, merge_tile_size);
+      int num_segment_fixup_tiles = ::cuda::ceil_div(num_merge_tiles, segment_fixup_tile_size);
 
       // Get SM occupancy for kernels
       int spmv_sm_occupancy;
@@ -738,10 +738,10 @@ struct DispatchSpmv
       }
 
       // Get grid dimensions
-      dim3 spmv_grid_size(CUB_MIN(num_merge_tiles, max_dim_x), cub::DivideAndRoundUp(num_merge_tiles, max_dim_x), 1);
+      dim3 spmv_grid_size(CUB_MIN(num_merge_tiles, max_dim_x), ::cuda::ceil_div(num_merge_tiles, max_dim_x), 1);
 
       dim3 segment_fixup_grid_size(
-        CUB_MIN(num_segment_fixup_tiles, max_dim_x), cub::DivideAndRoundUp(num_segment_fixup_tiles, max_dim_x), 1);
+        CUB_MIN(num_segment_fixup_tiles, max_dim_x), ::cuda::ceil_div(num_segment_fixup_tiles, max_dim_x), 1);
 
       // Get the temporary storage allocation requirements
       size_t allocation_sizes[3];
@@ -777,7 +777,7 @@ struct DispatchSpmv
 
       // Get search/init grid dims
       int search_block_size = INIT_KERNEL_THREADS;
-      int search_grid_size  = cub::DivideAndRoundUp(num_merge_tiles + 1, search_block_size);
+      int search_grid_size  = ::cuda::ceil_div(num_merge_tiles + 1, search_block_size);
 
       if (search_grid_size < sm_count)
       //            if (num_merge_tiles < spmv_sm_occupancy * sm_count)
