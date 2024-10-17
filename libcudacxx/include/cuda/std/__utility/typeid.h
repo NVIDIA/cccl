@@ -20,14 +20,26 @@
 #  pragma system_header
 #endif // no system header
 
-// BUGBUG
-#define _CCCL_NO_TYPEID
+// This file provides a minimal implementation of `std::type_info` for platforms
+// that do not support RTTI. It defines the following:
+//
+// `cuda::std::type_info`   - An alias for `std::type_info` if RTTI is available, or
+//                            an alias for `cuda::std::__type_info` if RTTI is not
+//                            available.
+// `cuda::std::__type_info` - A class type that provides the `std::type_info` interface
+//                            where the member functions are `constexpr`.
+// `_CCCL_TYPEID(<type>)`   - A macro that returns a reference to the `const`
+//                            `cuda::std::type_info` object for the specified type.
+// `_CCCL_CONSTEXPR_TYPEID(<type>)`
+//                          - A macro that returns a reference to the `const`
+//                            `cuda::std::__type_info` object for the specified type.
 
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 #  include <cuda/std/compare>
 #endif
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/cstddef>
 
@@ -41,14 +53,21 @@
 #  define _CCCL_PRETTY_FUNCTION __PRETTY_FUNCTION__
 #endif
 
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
+
+struct __type_info;
+
 #ifndef _CCCL_NO_TYPEID
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
-#  define _CCCL_TYPEID(...) typeid(__VA_ARGS__)
-using __type_info = ::std::type_info;
-_LIBCUDACXX_END_NAMESPACE_STD
+#  define _CCCL_TYPEID(...) typeid(_CUDA_VSTD::_CCCL_TYPEID_only_supports_types<__VA_ARGS__>)
+using type_info = ::std::type_info;
 
 #else // ^^^ !_CCCL_NO_TYPEID ^^^ / vvv _CCCL_NO_TYPEID
+
+#  define _CCCL_TYPEID _CCCL_CONSTEXPR_TYPEID
+using type_info = _CUDA_VSTD::__type_info;
+
+#endif // !_CCCL_NO_TYPEID
 
 // We find a type T's name as follows:
 // 1. Use __PRETTY_FUNCTION__ in a function template parameterized by
@@ -56,7 +75,8 @@ _LIBCUDACXX_END_NAMESPACE_STD
 // 2. Find the substrings "__pretty_name_begin<" and ">::__pretty_name_end".
 //    Everything between them is the name of type T.
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
+template <class _Tp>
+using _CCCL_TYPEID_only_supports_types = _Tp;
 
 // TODO: replace this with `cuda::std::string_view` when available.
 struct __string_view
@@ -100,7 +120,7 @@ struct __string_view
   }
 
   // C++11 constexpr string comparison
-#  if _CCCL_STD_VER < 2014 || __cpp_constexpr < 201304L
+#if _CCCL_STD_VER < 2014 || __cpp_constexpr < 201304L
 
 private:
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr int
@@ -176,7 +196,7 @@ public:
                -1, __other, _Np - 1, __str_ + __len_ - (_Np - 1) + 1, __str_, __str_ + __len_ - (_Np - 1) + 1);
   }
 
-#  else // ^^^ C++11 ^^^ / vvv C++14 and beyond vvv
+#else // ^^^ C++11 ^^^ / vvv C++14 and beyond vvv
 
 private:
   template <bool _Forward>
@@ -233,7 +253,7 @@ public:
     return ((_Np - 1) > __len_) ? -1 : __find<false>(__other, _Np - 1, __str_ + __len_ - (_Np - 1) + 1, __str_);
   }
 
-#  endif
+#endif
 
   _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
   operator==(__string_view const& __lhs, __string_view const& __rhs) noexcept
@@ -241,7 +261,7 @@ public:
     return __lhs.__len_ == __rhs.__len_ && __lhs.compare(__rhs) == 0;
   }
 
-#  ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 
   _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
   operator<=>(__string_view const& __lhs, __string_view const& __rhs) noexcept
@@ -249,7 +269,7 @@ public:
     return __lhs.compare(__rhs) <=> 0;
   }
 
-#  else // ^^^ !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR ^^^ / vvv _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#else // ^^^ !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR ^^^ / vvv _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 
   _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
   operator!=(__string_view const& __lhs, __string_view const& __rhs) noexcept
@@ -281,7 +301,7 @@ public:
     return __lhs.compare(__rhs) >= 0;
   }
 
-#  endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
+#endif // _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 
 private:
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __min_(size_t __x, size_t __y) noexcept
@@ -299,11 +319,11 @@ private:
 };
 
 // Earlier versions of gcc (before gcc-9) do not treat __PRETTY_FUNCTION__ as a
-// constexpr value after a reference to it has been returned from the function.
+// constexpr value after a reference to it has been returned from a function.
 // Instead, arrange things so that the pretty name gets stored in a class static
 // data member, where it can be referenced from other constexpr contexts.
 
-#  if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 90000
+#if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 90000
 
 template <size_t _Np>
 struct __sstring
@@ -344,12 +364,12 @@ struct __static_nameof
   static constexpr __sstring<_Np> value = __make_pretty_name<_Tp>(integral_constant<size_t, _Np>());
 };
 
-#    if defined(_CCCL_NO_INLINE_VARIABLES)
+#  if defined(_CCCL_NO_INLINE_VARIABLES)
 template <class _Tp, size_t _Np>
 constexpr __sstring<_Np> __static_nameof<_Tp, _Np>::value;
-#    endif
+#  endif
 
-#  endif // _CCCL_GCC_VERSION < 90000
+#endif // _CCCL_GCC_VERSION < 90000
 
 template <class _Tp>
 struct __pretty_name_begin
@@ -367,11 +387,11 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameo
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameof_2() noexcept
 {
-#  if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 90000
+#if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 90000
   return __pretty_nameof_3(__make_pretty_name<_Tp>(integral_constant<size_t, ~size_t(0)>{}));
-#  else
+#else
   return __pretty_nameof_3(__string_view(_CCCL_PRETTY_FUNCTION));
-#  endif
+#endif
 }
 
 template <class _Tp>
@@ -388,6 +408,9 @@ static_assert(__pretty_nameof<float>() < __pretty_nameof<int>(), "__pretty_nameo
 /// not support RTTI.
 struct __type_info
 {
+  __type_info()                   = delete;
+  __type_info(__type_info const&) = delete;
+
   _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr __type_info(__string_view __name) noexcept
       : __name_(__name)
   {}
@@ -395,6 +418,11 @@ struct __type_info
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr char const* name() const noexcept
   {
     return __name_.begin();
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __name_view() const noexcept
+  {
+    return __name_;
   }
 
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool before(const __type_info& __other) const noexcept
@@ -414,26 +442,26 @@ struct __type_info
     return &__lhs == &__rhs || __lhs.__name_ == __rhs.__name_;
   }
 
-#  if _CCCL_STD_VER <= 2017
+#if _CCCL_STD_VER <= 2017
   _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
   operator!=(const __type_info& __lhs, const __type_info& __rhs) noexcept
   {
     return !(__lhs == __rhs);
   }
-#  endif
+#endif
 
 private:
   __string_view __name_;
 };
 
-#  if !defined(_CCCL_NO_INLINE_VARIABLES)
+#if !defined(_CCCL_NO_INLINE_VARIABLES)
 
 template <class _Tp>
 _CCCL_INLINE_VAR _CCCL_CONSTEXPR_GLOBAL auto __typeid = __type_info(__pretty_nameof<_Tp>());
 
-#    define _CCCL_TYPEID(...) _CUDA_VSTD::__typeid<__VA_ARGS__>
+#  define _CCCL_CONSTEXPR_TYPEID(...) _CUDA_VSTD::__typeid<_CUDA_VSTD::__remove_cv_t<__VA_ARGS__>>
 
-#  else
+#else
 
 template <class _Tp>
 struct __typeid_value
@@ -446,14 +474,14 @@ struct __typeid_value
 template <class _Tp>
 constexpr __type_info __typeid_value<_Tp>::value;
 
-#    ifndef _CCCL_NO_VARIABLE_TEMPLATES
+#  ifndef _CCCL_NO_VARIABLE_TEMPLATES
 
 template <class _Tp>
 _CCCL_CONSTEXPR_GLOBAL __type_info& __typeid = __typeid_value<_Tp>::value;
 
-#      define _CCCL_TYPEID(...) _CUDA_VSTD::__typeid<__VA_ARGS__>
+#    define _CCCL_CONSTEXPR_TYPEID(...) _CUDA_VSTD::__typeid<_CUDA_VSTD::__remove_cv_t<__VA_ARGS__>>
 
-#    else // !_CCCL_NO_VARIABLE_TEMPLATES
+#  else // !_CCCL_NO_VARIABLE_TEMPLATES
 
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info const& __typeid() noexcept
@@ -461,14 +489,12 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info const& __typeid(
   return __typeid_value<_Tp>::value;
 }
 
-#      define _CCCL_TYPEID(...) _CUDA_VSTD::__typeid<__VA_ARGS__>()
+#    define _CCCL_CONSTEXPR_TYPEID(...) _CUDA_VSTD::__typeid<_CUDA_VSTD::__remove_cv_t<__VA_ARGS__>>()
 
-#    endif // !_CCCL_NO_VARIABLE_TEMPLATES
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
-#  endif // !_CCCL_NO_INLINE_VARIABLES
+#endif // !_CCCL_NO_INLINE_VARIABLES
 
 _LIBCUDACXX_END_NAMESPACE_STD
-
-#endif // _CCCL_NO_TYPEID
 
 #endif // _LIBCUDACXX___UTILITY_TYPEID_H

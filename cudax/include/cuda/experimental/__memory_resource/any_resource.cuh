@@ -50,7 +50,6 @@
 #include <cuda/std/__utility/exchange.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/in_place.h>
-#include <cuda/std/__utility/typeid.h> // BUGBUG not used yet
 
 namespace cuda::experimental::mr
 {
