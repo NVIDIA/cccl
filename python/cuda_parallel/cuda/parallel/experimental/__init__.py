@@ -92,13 +92,17 @@ class _CCCLValue(ctypes.Structure):
                 ("state", ctypes.c_void_p)]
 
 
-def _type_to_info(numpy_type):
-    numba_type = numba.from_dtype(numpy_type)
+def _type_to_info_from_numba_type(numba_type):
     context = cuda.descriptor.cuda_target.target_context
     size = context.get_value_type(numba_type).get_abi_size(context.target_data)
     alignment = context.get_value_type(
         numba_type).get_abi_alignment(context.target_data)
     return _TypeInfo(size, alignment, _type_to_enum(numba_type))
+
+
+def _type_to_info(numpy_type):
+    numba_type = numba.from_dtype(numpy_type)
+    return _type_to_info_from_numba_type(numba_type)
 
 
 def _device_array_to_pointer(array):
@@ -136,7 +140,8 @@ class _TransformRAIUnaryOp:
 
 def _itertools_iter_as_cccl_iter(result_numba_dtype, d_in):
     d_in_jitted = _TransformRAIUnaryOp(result_numba_dtype, numba.uint64, d_in).handle()
-    return _CCCLIterator(1, 1, _CCCLIteratorKindEnum.ITERATOR, d_in_jitted, _CCCLOp(), _TypeInfo(), 0)
+    info = _type_to_info_from_numba_type(numba.int32)
+    return _CCCLIterator(1, 1, _CCCLIteratorKindEnum.ITERATOR, d_in_jitted, _CCCLOp(), info, 0)
 
 
 def _get_cuda_path():
@@ -210,6 +215,7 @@ def _dtype_validation(dt1, dt2):
 
 class _Reduce:
     def __init__(self, d_in, d_out, op, init):
+        print("__init__ ENTRY", flush=True)
         self._ctor_d_in = d_in
         _, d_in_cccl = self.__handle_d_in(None, d_in)
         self._ctor_d_out_dtype = d_out.dtype
@@ -237,8 +243,10 @@ class _Reduce:
                                                   ctypes.c_char_p(cuda_include_path))
         if error != enums.CUDA_SUCCESS:
             raise ValueError('Error building reduce')
+        print("__init__ DONE", flush=True)
 
     def __call__(self, temp_storage, num_items, d_in, d_out, init):
+        print("__call__ ENTRY", flush=True)
         num_items, d_in_cccl = self.__handle_d_in(num_items, d_in)
         assert num_items is not None
         _dtype_validation(self._ctor_d_out_dtype, d_out.dtype)
@@ -251,6 +259,7 @@ class _Reduce:
             temp_storage_bytes = ctypes.c_size_t(temp_storage.nbytes)
             d_temp_storage = temp_storage.device_ctypes_pointer.value
         d_out_ptr = _device_array_to_pointer(d_out)
+        print("BEFORE cccl_device_reduce() CALL", flush=True)
         error = bindings.cccl_device_reduce(self.build_result,
                                             d_temp_storage,
                                             ctypes.byref(temp_storage_bytes),
@@ -260,9 +269,12 @@ class _Reduce:
                                             self.op_wrapper.handle(),
                                             _host_array_to_value(init),
                                             None)
+        print(" AFTER cccl_device_reduce() CALL", flush=True)
         if error != enums.CUDA_SUCCESS:
+            print("__call__ ValueError('Error reducing')", flush=True)
             raise ValueError('Error reducing')
 
+        print("__call__ DONE", flush=True)
         return temp_storage_bytes.value
 
     def __del__(self):
