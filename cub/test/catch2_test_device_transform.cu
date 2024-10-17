@@ -77,7 +77,8 @@ DECLARE_TMPL_LAUNCH_WRAPPER(transform_many_with_alg_entry_point,
 
 using algorithms =
   c2h::enum_type_list<Algorithm,
-                      Algorithm::fallback_for
+                      Algorithm::fallback_for,
+                      Algorithm::memcpy_async
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
                       ,
                       Algorithm::ublkcp
@@ -101,6 +102,10 @@ using offset_types = c2h::type_list<std::int32_t, std::int64_t>;
   REQUIRE(cub::PtxVersion(ptx_version) == cudaSuccess);                   \
   _CCCL_DIAG_PUSH                                                         \
   _CCCL_DIAG_SUPPRESS_MSVC(4127) /* conditional expression is constant */ \
+  if (alg == Algorithm::memcpy_async && ptx_version < 800)                \
+  {                                                                       \
+    return;                                                               \
+  }                                                                       \
   FILTER_UBLKCP                                                           \
   _CCCL_DIAG_POP
 
