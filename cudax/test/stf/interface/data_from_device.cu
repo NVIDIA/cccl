@@ -26,12 +26,12 @@ __global__ void axpy(int n, T a, const T* x, T* y)
 }
 
 template <typename T>
-__global__ void setup_vectors(int n, T* x, T* y)
+__global__ void setup_vectors(size_t n, T* x, T* y)
 {
   int tid      = blockIdx.x * blockDim.x + threadIdx.x;
   int nthreads = gridDim.x * blockDim.x;
 
-  for (int ind = tid; ind < n; ind += nthreads)
+  for (size_t ind = tid; ind < n; ind += nthreads)
   {
     x[ind] = 1.0 * ind;
     y[ind] = 2.0 * ind - 3.0;

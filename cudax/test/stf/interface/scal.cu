@@ -14,12 +14,12 @@
 using namespace cuda::experimental::stf;
 
 template <typename T>
-__global__ void scal(int n, T a, T* x)
+__global__ void scal(size_t n, T a, T* x)
 {
   int tid      = blockIdx.x * blockDim.x + threadIdx.x;
   int nthreads = gridDim.x * blockDim.x;
 
-  for (int ind = tid; ind < n; ind += nthreads)
+  for (size_t ind = tid; ind < n; ind += nthreads)
   {
     x[ind] = a * x[ind];
   }
