@@ -101,13 +101,15 @@ def _type_to_info(numpy_type):
 def _device_array_to_pointer(array):
     dtype = array.dtype
     info = _type_to_info(dtype)
-    return _CCCLIterator(1, 1, _CCCLIteratorKindEnum.POINTER, _CCCLOp(), _CCCLOp(), info, array.device_ctypes_pointer.value)
+    # Note: this is slightly slower, but supports all ndarray-like objects as long as they support CAI
+    # TODO: switch to use gpumemoryview once it's ready
+    return _CCCLIterator(1, 1, _CCCLIteratorKindEnum.POINTER, _CCCLOp(), _CCCLOp(), info, array.__cuda_array_interface__["data"][0])
 
 
 def _host_array_to_value(array):
     dtype = array.dtype
     info = _type_to_info(dtype)
-    return _CCCLValue(info, array.ctypes.data_as(ctypes.c_void_p))
+    return _CCCLValue(info, array.ctypes.data)
 
 
 class _Op:
@@ -230,7 +232,9 @@ class _Reduce:
             d_temp_storage = None
         else:
             temp_storage_bytes = ctypes.c_size_t(temp_storage.nbytes)
-            d_temp_storage = temp_storage.device_ctypes_pointer.value
+            # Note: this is slightly slower, but supports all ndarray-like objects as long as they support CAI
+            # TODO: switch to use gpumemoryview once it's ready
+            d_temp_storage = temp_storage.__cuda_array_interface__["data"][0]
         d_in_ptr = _device_array_to_pointer(d_in)
         d_out_ptr = _device_array_to_pointer(d_out)
         num_items = ctypes.c_ulonglong(d_in.size)
