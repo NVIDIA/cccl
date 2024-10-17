@@ -266,10 +266,10 @@ public:
   virtual void destroy() noexcept            = 0;
   virtual void destroy_deallocate() noexcept = 0;
   virtual _Rp operator()(_ArgTypes&&...)     = 0;
-#  ifndef _LIBCUDACXX_NO_RTTI
+#  ifndef _CCCL_NO_RTTI
   virtual const void* target(const type_info&) const noexcept = 0;
   virtual const type_info& target_type() const noexcept       = 0;
-#  endif // _LIBCUDACXX_NO_RTTI
+#  endif // _CCCL_NO_RTTI
 };
 
 // __func implements __base for a given functor type.
@@ -304,10 +304,10 @@ public:
   virtual void destroy() noexcept;
   virtual void destroy_deallocate() noexcept;
   virtual _Rp operator()(_ArgTypes&&... __arg);
-#  ifndef _LIBCUDACXX_NO_RTTI
+#  ifndef _CCCL_NO_RTTI
   virtual const void* target(const type_info&) const noexcept;
   virtual const type_info& target_type() const noexcept;
-#  endif // _LIBCUDACXX_NO_RTTI
+#  endif // _CCCL_NO_RTTI
 };
 
 template <class _Fp, class _Alloc, class _Rp, class... _ArgTypes>
@@ -350,7 +350,7 @@ _Rp __func<_Fp, _Alloc, _Rp(_ArgTypes...)>::operator()(_ArgTypes&&... __arg)
   return __f_(_CUDA_VSTD::forward<_ArgTypes>(__arg)...);
 }
 
-#  ifndef _LIBCUDACXX_NO_RTTI
+#  ifndef _CCCL_NO_RTTI
 
 template <class _Fp, class _Alloc, class _Rp, class... _ArgTypes>
 const void* __func<_Fp, _Alloc, _Rp(_ArgTypes...)>::target(const type_info& __ti) const noexcept
@@ -368,7 +368,7 @@ const type_info& __func<_Fp, _Alloc, _Rp(_ArgTypes...)>::target_type() const noe
   return typeid(_Fp);
 }
 
-#  endif // _LIBCUDACXX_NO_RTTI
+#  endif // _CCCL_NO_RTTI
 
 // __value_func creates a value-type from a __func.
 
@@ -561,7 +561,7 @@ public:
     return __f_ != nullptr;
   }
 
-#  ifndef _LIBCUDACXX_NO_RTTI
+#  ifndef _CCCL_NO_RTTI
   _LIBCUDACXX_HIDE_FROM_ABI const type_info& target_type() const noexcept
   {
     if (__f_ == nullptr)
@@ -580,7 +580,7 @@ public:
     }
     return (const _Tp*) __f_->target(typeid(_Tp));
   }
-#  endif // _LIBCUDACXX_NO_RTTI
+#  endif // _CCCL_NO_RTTI
 };
 
 // Storage for a functor object, to be used with __policy to manage copy and
@@ -628,7 +628,7 @@ struct __policy
       nullptr,
       nullptr,
       true,
-#  ifndef _LIBCUDACXX_NO_RTTI
+#  ifndef _CCCL_NO_RTTI
       &typeid(void)
 #  else
       nullptr
@@ -658,7 +658,7 @@ private:
       &__large_clone<_Fun>,
       &__large_destroy<_Fun>,
       false,
-#  ifndef _LIBCUDACXX_NO_RTTI
+#  ifndef _CCCL_NO_RTTI
       &typeid(typename _Fun::_Target)
 #  else
       nullptr
@@ -674,7 +674,7 @@ private:
       nullptr,
       nullptr,
       false,
-#  ifndef _LIBCUDACXX_NO_RTTI
+#  ifndef _CCCL_NO_RTTI
       &typeid(typename _Fun::_Target)
 #  else
       nullptr
@@ -880,7 +880,7 @@ public:
     return !__policy_->__is_null;
   }
 
-#  ifndef _LIBCUDACXX_NO_RTTI
+#  ifndef _CCCL_NO_RTTI
   _LIBCUDACXX_HIDE_FROM_ABI const type_info& target_type() const noexcept
   {
     return *__policy_->__type_info;
@@ -902,7 +902,7 @@ public:
       return reinterpret_cast<const _Tp*>(&__buf_.__small);
     }
   }
-#  endif // _LIBCUDACXX_NO_RTTI
+#  endif // _CCCL_NO_RTTI
 };
 
 #  if defined(_LIBCUDACXX_HAS_BLOCKS_RUNTIME)
@@ -963,7 +963,7 @@ public:
     return _CUDA_VSTD::__invoke(__f_, _CUDA_VSTD::forward<_ArgTypes>(__arg)...);
   }
 
-#    ifndef _LIBCUDACXX_NO_RTTI
+#    ifndef _CCCL_NO_RTTI
   virtual const void* target(type_info const& __ti) const noexcept
   {
     if (__ti == typeid(__func::__block_type))
@@ -977,7 +977,7 @@ public:
   {
     return typeid(__func::__block_type);
   }
-#    endif // _LIBCUDACXX_NO_RTTI
+#    endif // _CCCL_NO_RTTI
 };
 
 #  endif // _LIBCUDACXX_HAS_EXTENSION_BLOCKS
@@ -1075,14 +1075,14 @@ public:
   // function invocation:
   _Rp operator()(_ArgTypes...) const;
 
-#  ifndef _LIBCUDACXX_NO_RTTI
+#  ifndef _CCCL_NO_RTTI
   // function target access:
   const type_info& target_type() const noexcept;
   template <typename _Tp>
   _Tp* target() noexcept;
   template <typename _Tp>
   const _Tp* target() const noexcept;
-#  endif // _LIBCUDACXX_NO_RTTI
+#  endif // _CCCL_NO_RTTI
 };
 
 #  if _CCCL_STD_VER > 2014
@@ -1265,7 +1265,7 @@ _Rp function<_Rp(_ArgTypes...)>::operator()(_ArgTypes... __arg) const
   return __f_(_CUDA_VSTD::forward<_ArgTypes>(__arg)...);
 }
 
-#  ifndef _LIBCUDACXX_NO_RTTI
+#  ifndef _CCCL_NO_RTTI
 
 template <class _Rp, class... _ArgTypes>
 const type_info& function<_Rp(_ArgTypes...)>::target_type() const noexcept
@@ -1287,7 +1287,7 @@ const _Tp* function<_Rp(_ArgTypes...)>::target() const noexcept
   return __f_.template target<_Tp>();
 }
 
-#  endif // _LIBCUDACXX_NO_RTTI
+#  endif // _CCCL_NO_RTTI
 
 template <class _Rp, class... _ArgTypes>
 _LIBCUDACXX_HIDE_FROM_ABI bool operator==(const function<_Rp(_ArgTypes...)>& __f, nullptr_t) noexcept

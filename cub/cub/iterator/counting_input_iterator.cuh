@@ -67,14 +67,14 @@ CUB_NAMESPACE_BEGIN
  * @brief A random-access input generator for dereferencing a sequence of incrementing integer values.
  *
  * @par Overview
- * - After initializing a CountingInputIteratorTto a certain integer @p base, read references
+ * - After initializing a CountingInputIterator to a certain integer @p base, read references
  *   at @p offset will return the value @p base + @p offset.
  * - Can be constructed, manipulated, dereferenced, and exchanged within and between host and device
  *   functions.
  * - Compatible with Thrust API v1.7 or newer.
  *
  * @par Snippet
- * The code snippet below illustrates the use of @p CountingInputIteratorTto
+ * The code snippet below illustrates the use of @p CountingInputIterator to
  * dereference a sequence of incrementing integers.
  * @par
  * @code

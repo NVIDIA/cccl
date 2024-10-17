@@ -190,10 +190,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_list
 
 // Before the addition of inline variables, it was necessary to
 // provide a definition for constexpr class static data members.
-#  if _CCCL_STD_VER >= 2017 && defined(__cpp_inline_variables) && (__cpp_inline_variables >= 201606L)
+#  ifndef _CCCL_NO_INLINE_VARIABLES
 template <class... _Ts>
 constexpr size_t const __type_list<_Ts...>::__size;
-#  endif
+#  endif // !_CCCL_NO_INLINE_VARIABLES
 
 //! \brief A pointer to a type list, often used as a function argument.
 template <class... _Ts>
@@ -258,13 +258,18 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_defer
 {};
 
 // Implementation for indexing into a list of types:
-#  if defined(__cpp_pack_indexing)
+#  if defined(__cpp_pack_indexing) && !defined(_CCCL_CUDA_COMPILER_NVCC)
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wc++26-extensions")
 
 template <size_t _Ip, class... _Ts>
 using __type_index_c = _Ts...[_Ip];
 
 template <class _Ip, class... _Ts>
 using __type_index = _Ts...[_Ip::value];
+
+_CCCL_DIAG_POP
 
 // Versions of nvcc prior to 12.0 have trouble with pack expansion into
 // __type_pack_element in an alias template, so we use the fall-back

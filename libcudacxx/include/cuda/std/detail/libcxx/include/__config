@@ -382,10 +382,6 @@ typedef __char32_t char32_t;
 #      define _LIBCUDACXX_HAS_NO_GENERALIZED_INITIALIZERS
 #    endif
 
-#    if !(_CCCL_HAS_FEATURE(cxx_variable_templates))
-#      define _LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES
-#    endif
-
 #    if !(_CCCL_HAS_FEATURE(cxx_noexcept))
 #      define _LIBCUDACXX_HAS_NO_NOEXCEPT
 #    endif
@@ -399,11 +395,6 @@ typedef __char32_t char32_t;
 #    define _LIBCUDACXX_DISABLE_EXTENSION_WARNING __extension__
 
 #  elif defined(_CCCL_COMPILER_GCC)
-
-// GCC 5 supports variable templates
-#    if !defined(__cpp_variable_templates) || __cpp_variable_templates < 201304L
-#      define _LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES
-#    endif
 
 #    if _GNUC_VER < 600
 #      define _LIBCUDACXX_GCC_MATH_IN_STD
@@ -442,10 +433,6 @@ typedef __char32_t char32_t;
 #      define _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
 #    endif
 
-#    if _CCCL_STD_VER < 2014
-#      define _LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES
-#    endif
-
 #    define _LIBCUDACXX_HAS_NO_VECTOR_EXTENSION
 
 #    define _LIBCUDACXX_DISABLE_EXTENSION_WARNING
@@ -453,10 +440,6 @@ typedef __char32_t char32_t;
 #    define _LIBCUDACXX_HAS_NO_VECTOR_EXTENSION
 
 #  elif defined(_CCCL_COMPILER_NVRTC) || defined(_CCCL_COMPILER_NVHPC)
-
-#    if !defined(__cpp_variable_templates) || __cpp_variable_templates < 201304L
-#      define _LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES
-#    endif
 
 #    define _LIBCUDACXX_DISABLE_EXTENSION_WARNING
 
@@ -541,12 +524,6 @@ typedef __char32_t char32_t;
 #  ifndef _LIBCUDACXX_HAS_NO_WCHAR_H
 #    define _LIBCUDACXX_HAS_NO_WCHAR_H
 #  endif // _LIBCUDACXX_HAS_NO_WCHAR_H
-
-// Try to find out if RTTI is disabled.
-// g++ and cl.exe have RTTI on by default and define a macro when it is.
-#  ifndef _LIBCUDACXX_NO_RTTI
-#    define _LIBCUDACXX_NO_RTTI
-#  endif // !_LIBCUDACXX_NO_RTTI
 
 #  ifndef _LIBCUDACXX_NODEBUG_TYPE
 #    if defined(__cuda_std__)
@@ -721,12 +698,6 @@ typedef unsigned int char32_t;
 #    define _LIBCUDACXX_DEPRECATED_IN_CXX20 _LIBCUDACXX_DEPRECATED
 #  else
 #    define _LIBCUDACXX_DEPRECATED_IN_CXX20
-#  endif
-
-#  if _CCCL_STD_VER > 2014 && defined(__cpp_inline_variables) && (__cpp_inline_variables >= 201606L)
-#    define _LIBCUDACXX_INLINE_VAR inline
-#  else
-#    define _LIBCUDACXX_INLINE_VAR
 #  endif
 
 #  ifdef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES

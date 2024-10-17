@@ -187,16 +187,16 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if _CCCL_STD_VER >= 2014
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_std_array = false;
+_CCCL_INLINE_VAR constexpr bool __is_std_array = false;
 
 template <class _Tp, size_t _Sz>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_std_array<array<_Tp, _Sz>> = true;
+_CCCL_INLINE_VAR constexpr bool __is_std_array<array<_Tp, _Sz>> = true;
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_std_span = false;
+_CCCL_INLINE_VAR constexpr bool __is_std_span = false;
 
 template <class _Tp, size_t _Extent>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_std_span<span<_Tp, _Extent>> = true;
+_CCCL_INLINE_VAR constexpr bool __is_std_span<span<_Tp, _Extent>> = true;
 
 template <class _From, class _To>
 _LIBCUDACXX_CONCEPT __span_array_convertible = _CCCL_TRAIT(is_convertible, _From (*)[], _To (*)[]);
@@ -247,10 +247,10 @@ _LIBCUDACXX_CONCEPT __span_compatible_sentinel_for =
 #  else // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER_MSVC_2017
 
 template <class _Tp, class _ElementType, class = void>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_span_compatible_container = false;
+_CCCL_INLINE_VAR constexpr bool __is_span_compatible_container = false;
 
 template <class _Tp, class _ElementType>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_span_compatible_container<
+_CCCL_INLINE_VAR constexpr bool __is_span_compatible_container<
   _Tp,
   _ElementType,
   void_t<
@@ -295,10 +295,10 @@ _LIBCUDACXX_CONCEPT __integral_constant_like = _LIBCUDACXX_FRAGMENT(__integral_c
 #  endif // _CCCL_STD_VER <= 2017
 
 template <class _Tp, bool = __integral_constant_like<_Tp>>
-_LIBCUDACXX_INLINE_VAR constexpr size_t __maybe_static_ext = dynamic_extent;
+_CCCL_INLINE_VAR constexpr size_t __maybe_static_ext = dynamic_extent;
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr size_t __maybe_static_ext<_Tp, true> = {_Tp::value};
+_CCCL_INLINE_VAR constexpr size_t __maybe_static_ext<_Tp, true> = {_Tp::value};
 
 template <typename _Tp, size_t _Extent>
 class _CCCL_TYPE_VISIBILITY_DEFAULT span
@@ -832,10 +832,10 @@ _LIBCUDACXX_END_NAMESPACE_STD
 #if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 template <class _Tp, size_t _Extent>
-_LIBCUDACXX_INLINE_VAR constexpr bool enable_borrowed_range<span<_Tp, _Extent>> = true;
+_CCCL_INLINE_VAR constexpr bool enable_borrowed_range<span<_Tp, _Extent>> = true;
 
 template <class _Tp, size_t _Extent>
-_LIBCUDACXX_INLINE_VAR constexpr bool enable_view<span<_Tp, _Extent>> = true;
+_CCCL_INLINE_VAR constexpr bool enable_view<span<_Tp, _Extent>> = true;
 _LIBCUDACXX_END_NAMESPACE_RANGES
 #endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER_MSVC_2017
 

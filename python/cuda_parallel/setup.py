@@ -112,6 +112,7 @@ setup(
     extras_require={
         "test": [
             "pytest",
+            "cupy-cuda12x",
         ]
     },
     cmdclass={

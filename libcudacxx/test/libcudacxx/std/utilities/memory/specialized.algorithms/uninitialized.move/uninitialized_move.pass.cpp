@@ -13,9 +13,9 @@
 // template <class InputIt, class ForwardIt>
 // ForwardIt uninitialized_move(InputIt, InputIt, ForwardIt);
 
-#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdlib>
+#include <cuda/std/memory>
 
 #include "../overload_compare_iterator.h"
 #include "test_iterators.h"

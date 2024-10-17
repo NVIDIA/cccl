@@ -32,10 +32,10 @@ template <class _Tp, size_t _Dim = 0>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT extent : integral_constant<size_t, _CCCL_BUILTIN_ARRAY_EXTENT(_Tp, _Dim)>
 {};
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp, unsigned _Ip = 0>
-_LIBCUDACXX_INLINE_VAR constexpr size_t extent_v = _CCCL_BUILTIN_ARRAY_EXTENT(_Tp, _Ip);
-#  endif
+_CCCL_INLINE_VAR constexpr size_t extent_v = _CCCL_BUILTIN_ARRAY_EXTENT(_Tp, _Ip);
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #else // ^^^ _CCCL_BUILTIN_ARRAY_EXTENT ^^^ / vvv !_CCCL_BUILTIN_ARRAY_EXTENT vvv
 
@@ -56,10 +56,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT extent<_Tp[_Np], _Ip>
     : public integral_constant<size_t, extent<_Tp, _Ip - 1>::value>
 {};
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp, unsigned _Ip = 0>
-_LIBCUDACXX_INLINE_VAR constexpr size_t extent_v = extent<_Tp, _Ip>::value;
-#  endif
+_CCCL_INLINE_VAR constexpr size_t extent_v = extent<_Tp, _Ip>::value;
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #endif // !_CCCL_BUILTIN_ARRAY_EXTENT
 

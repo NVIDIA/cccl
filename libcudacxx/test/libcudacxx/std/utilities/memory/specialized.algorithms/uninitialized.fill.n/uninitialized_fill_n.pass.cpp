@@ -14,8 +14,8 @@
 //   ForwardIterator
 //   uninitialized_fill_n(ForwardIterator first, Size n, const T& x);
 
-#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
+#include <cuda/std/memory>
 
 #include "test_macros.h"
 
