@@ -15,8 +15,6 @@
 
 name: "Release: 3. Create Final Release"
 
-# This workflow must be started on an release candidate tag.
-
 on:
   workflow_dispatch:
 
