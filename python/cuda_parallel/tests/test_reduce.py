@@ -85,24 +85,48 @@ def test_device_reduce_dtype_mismatch():
           reduce_into(None, None, d_inputs[int(ix == 0)], d_outputs[int(ix == 1)], h_inits[int(ix == 2)])
 
 
-def test_device_sum_repeat_1_equals_num_items(num_items=10):
+@pytest.mark.parametrize("use_numpy_array", [True, False])
+@pytest.mark.parametrize("input_generator", ["constant", "counting", "arbitrary", "nested"])
+def test_device_sum_input_unary_op(use_numpy_array, input_generator, num_items=19, start_sum_with=1000):
     def add_op(a, b):
         return a + b
 
-    def input_unary_op(unused_distance):
-        return 1
+    if input_generator == "constant":
+        def input_unary_op(unused_distance):
+            data = (5, 2)
+            return data[0] - data[1]
+    elif input_generator == "counting":
+        def input_unary_op(distance):
+            return distance
+    elif input_generator == "arbitrary":
+        def input_unary_op(distance):
+            permutation = (4, 2, 0, 3, 1)
+            return permutation[distance % len(permutation)]
+    elif input_generator == "nested":
+        def input_unary_op(distance):
+            def inner_unary_op(distance):  # TODO: Figure out how to enable calling global functions.
+                permutation = (4, 2, 0, 3, 1)
+                return permutation[distance % len(permutation)]
+            return 2 * inner_unary_op(distance)
+    else:
+        raise RuntimeError("Unexpected input_generator")
 
-    dtype = numpy.int32
+    l_input = [input_unary_op(distance) for distance in range(num_items)]
+    expected_result = start_sum_with
+    for v in l_input:
+        expected_result = add_op(expected_result, v)
 
-    if 0:
-        h_input = numpy.array([1] * num_items, dtype)
+    dtype = numpy.int32 # TODO: Replace hard-wired dtype in production code.
+
+    if use_numpy_array:
+        h_input = numpy.array(l_input, dtype)
         d_input = cuda.to_device(h_input)
     else:
         d_input = input_unary_op
 
     d_output = cuda.device_array(1, dtype) # to store device sum
 
-    h_init = numpy.array([0], dtype) # start device sum with 0
+    h_init = numpy.array([start_sum_with], dtype)
 
     reduce_into = cudax.reduce_into(d_in=d_input, d_out=d_output, op=add_op, init=h_init)
 
@@ -112,4 +136,4 @@ def test_device_sum_repeat_1_equals_num_items(num_items=10):
     reduce_into(d_temp_storage, num_items, d_input, d_output, h_init)
 
     h_output = d_output.copy_to_host()
-    assert h_output[0] == num_items
+    assert h_output[0] == expected_result

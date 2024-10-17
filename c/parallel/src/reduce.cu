@@ -110,7 +110,7 @@ static cudaError_t InvokeSingleTile(
     TransformOpT transform_op{};
     void* op_state     = op.type == cccl_op_kind_t::stateless ? &nothing : op.state;
     void* in_ptr       = d_in.type == cccl_iterator_kind_t::pointer ? &d_in.state : d_in.state;
-    long fake_in_ptr[] = {999L};
+    long fake_in_ptr[] = {0L}; // TODO: Find out where this is dereferenced.
     if (in_ptr == nullptr)
     {
       fflush(stderr);
@@ -155,7 +155,7 @@ static cudaError_t InvokePasses(
   do
   {
     void* in_ptr       = d_in.type == cccl_iterator_kind_t::pointer ? &d_in.state : d_in.state;
-    long fake_in_ptr[] = {999L};
+    long fake_in_ptr[] = {0L}; // TODO: Find out where this is dereferenced.
     if (in_ptr == nullptr)
     {
       fflush(stderr);
