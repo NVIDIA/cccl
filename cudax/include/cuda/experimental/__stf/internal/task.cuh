@@ -611,7 +611,7 @@ public:
   // Compute a hash of the MSI/Alloc state
   size_t state_hash() const
   {
-    return ::std::hash<per_data_instance_msi_state>{}(state);
+    return hash<per_data_instance_msi_state>{}(state);
   }
 
   void set_extra_args(void* args)

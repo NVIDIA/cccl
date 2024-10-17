@@ -207,16 +207,17 @@ private:
   bool allocated     = false;
 };
 
-} // namespace cuda::experimental::stf
-
-// Note : we do this outside the cudastf namespace !
-// Overload ::std::hash to compute the hash of a per_data_instance_msi_state
+// Overload hash to compute the hash of a per_data_instance_msi_state
 // class from the MSI and allocated states.
 template <>
-struct std::hash<cuda::experimental::stf::per_data_instance_msi_state>
+struct hash<per_data_instance_msi_state>
 {
-  ::std::size_t operator()(cuda::experimental::stf::per_data_instance_msi_state const& s) const noexcept
+  ::std::size_t operator()(per_data_instance_msi_state const& s) const noexcept
   {
     return s.hash();
   }
 };
+
+} // namespace cuda::experimental::stf
+
+
