@@ -7,35 +7,6 @@
   },
   "configurePresets": [
     {
-      "name": "install",
-      "displayName": "Install only (users and packagers)",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/install",
-      "cacheVariables": {
-        "CCCL_ENABLE_INSTALL_RULES": true,
-        "CCCL_ENABLE_LIBCUDACXX": true,
-        "libcudacxx_ENABLE_INSTALL_RULES": true,
-        "CCCL_ENABLE_CUB": true,
-        "CUB_ENABLE_INSTALL_RULES": true,
-        "CCCL_ENABLE_THRUST": true,
-        "THRUST_ENABLE_INSTALL_RULES": true,
-        "CCCL_ENABLE_UNSTABLE": false,
-        "CCCL_ENABLE_TESTING": false,
-        "CCCL_ENABLE_EXAMPLES": false,
-        "CCCL_ENABLE_BENCHMARKS": false,
-        "libcudacxx_ENABLE_CODEGEN": false,
-        "libcudacxx_ENABLE_CMAKE_TESTS": false,
-        "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": false,
-        "CUB_ENABLE_HEADER_TESTING": false,
-        "CUB_ENABLE_TESTING": false,
-        "CUB_ENABLE_EXAMPLES": false,
-        "THRUST_ENABLE_HEADER_TESTING": false,
-        "THRUST_ENABLE_TESTING": false,
-        "THRUST_ENABLE_EXAMPLES": false,
-        "THRUST_ENABLE_BENCHMARKS": false
-      }
-    },
-    {
       "name": "base",
       "hidden": true,
       "generator": "Ninja",

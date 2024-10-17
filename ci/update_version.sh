@@ -28,7 +28,6 @@ if [ -z "$major" ] || [ -z "$minor" ] || [ -z "$patch" ]; then
 fi
 
 # Version file paths
-REPO_VERSION_FILE="cccl-version.json"
 CCCL_VERSION_FILE="libcudacxx/include/cuda/std/__cccl/version.h"
 THRUST_VERSION_FILE="thrust/thrust/version.h"
 CUB_VERSION_FILE="cub/cub/version.cuh"
@@ -79,13 +78,7 @@ update_file () {
     fi
 }
 
-# Update version information in files:
-
-update_file "$REPO_VERSION_FILE" "\"full\": \".+\"" "  \"full\": \"$major.$minor.$patch\""
-update_file "$REPO_VERSION_FILE" "\"major\": .+,"   "  \"major\": $major,"
-update_file "$REPO_VERSION_FILE" "\"minor\": .+,"   "  \"minor\": $minor,"
-update_file "$REPO_VERSION_FILE" "\"patch\": .+"    "  \"patch\": $patch"
-
+# Update version information in files
 update_file "$CCCL_VERSION_FILE" "^#define CCCL_VERSION \([0-9]\+\)" "#define CCCL_VERSION $new_cccl_version"
 update_file "$THRUST_VERSION_FILE" "^#define THRUST_VERSION \([0-9]\+\)" "#define THRUST_VERSION $new_thrust_cub_version"
 update_file "$CUB_VERSION_FILE" "^#define CUB_VERSION \([0-9]\+\)" "#define CUB_VERSION $new_thrust_cub_version"
