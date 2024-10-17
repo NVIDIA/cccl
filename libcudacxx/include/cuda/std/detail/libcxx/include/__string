@@ -438,7 +438,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<wchar_t>
 #  endif // !__cuda_std__
 };
 
-inline _CCCL_CONSTEXPR_CXX14 int
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 int
 char_traits<wchar_t>::compare(const char_type* __s1, const char_type* __s2, size_t __n) noexcept
 {
   if (__n == 0)
@@ -481,7 +481,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t __char_traits_length_checked(const ty
 }
 
 #ifndef _LIBCUDACXX_HAS_NO_WCHAR_H
-inline _CCCL_CONSTEXPR_CXX14 size_t char_traits<wchar_t>::length(const char_type* __s) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 size_t char_traits<wchar_t>::length(const char_type* __s) noexcept
 {
 #  if _CCCL_HAS_FEATURE(cxx_constexpr_string_builtins)
   return __builtin_wcslen(__s);
@@ -497,7 +497,7 @@ inline _CCCL_CONSTEXPR_CXX14 size_t char_traits<wchar_t>::length(const char_type
 #  endif
 }
 
-inline _CCCL_CONSTEXPR_CXX14 const wchar_t*
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const wchar_t*
 char_traits<wchar_t>::find(const char_type* __s, size_t __n, const char_type& __a) noexcept
 {
   if (__n == 0)
