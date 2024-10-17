@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <atomic>
+#include <cudax/include/cuda/experimental/__stf/utility/hash.cuh>
 
 namespace cuda::experimental::stf
 {
