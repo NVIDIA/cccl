@@ -113,7 +113,9 @@ static cudaError_t InvokeSingleTile(
     void* out_ptr  = d_out.type == cccl_iterator_kind_t::pointer ? &d_out.state : d_out.state;
     void* args[]   = {in_ptr, out_ptr, &num_items, op_state, init.state, &transform_op};
 
+fflush(stderr); printf("\nLOOOK single_tile_kernel CALL %s:%d\n", __FILE__, __LINE__); fflush(stdout);
     check(cuLaunchKernel((CUfunction) single_tile_kernel, 1, 1, 1, policy.block_size, 1, 1, 0, stream, args, 0));
+fflush(stderr); printf("\nLOOOK single_tile_kernel DONE %s:%d\n", __FILE__, __LINE__); fflush(stdout);
 
     // Check for failure to launch
     error = CubDebug(cudaPeekAtLastError());
@@ -205,8 +207,10 @@ static cudaError_t InvokePasses(
     TransformOpT transform_op{};
     void* reduce_args[] = {in_ptr, &allocations[0], &num_items, &even_share, op_state, &transform_op};
 
+fflush(stderr); printf("\nLOOOK reduce_kernel CALL %s:%d\n", __FILE__, __LINE__); fflush(stdout);
     check(cuLaunchKernel(
       (CUfunction) reduce_kernel, reduce_grid_size, 1, 1, policy.block_size, 1, 1, 0, stream, reduce_args, 0));
+fflush(stderr); printf("\nLOOOK reduce_kernel DONE %s:%d\n", __FILE__, __LINE__); fflush(stdout);
 
     // Check for failure to launch
     error = CubDebug(cudaPeekAtLastError());
@@ -693,8 +697,11 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce(
       cu_device,
       stream);
   }
-  catch (...)
+  catch (const std::exception& exc)
   {
+    fflush(stderr);
+    printf("\nLOOOK EXCEPTION %s  %s:%d\n", exc.what(), __FILE__, __LINE__);
+    fflush(stdout);
     error = CUDA_ERROR_UNKNOWN;
   }
 
@@ -719,8 +726,11 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_cleanup(cccl_device_reduce_bui
     std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(bld_ptr->cubin));
     check(cuLibraryUnload(bld_ptr->library));
   }
-  catch (...)
+  catch (const std::exception& exc)
   {
+    fflush(stderr);
+    printf("\nLOOOK EXCEPTION %s  %s:%d\n", exc.what(), __FILE__, __LINE__);
+    fflush(stdout);
     return CUDA_ERROR_UNKNOWN;
   }
 
