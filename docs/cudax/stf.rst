@@ -699,7 +699,7 @@ Lower-level API
 ---------------
 
 A lower-level API that does not rely on lambda functions is also
-available, and is described `here <docs/lower-level-api.md>`__.
+available, and is described `here <stf_lower-level-api>`.
 
 Synchronization
 ---------------
