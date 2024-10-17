@@ -136,9 +136,7 @@ As part of the CCCL project, CUDASTF uses CMake for its build and installation
 infrastructure, and is the recommended way of building applications that use
 CUDASTF.
 
-This is facilitated by the CMake Package Manager as illustrated in this simple CUDASTF example.
-
-TODO create link
+This is facilitated by the CMake Package Manager as illustrated in this simple example which is available `here <https://github.com/caugonnet/cccl/examples/cudax_stf>`_.
 
 A simple example
 ----------------
@@ -382,6 +380,12 @@ copying an instance into another instance.
 
 Defining custom data interfaces (advanced)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. toctree::
+   :maxdepth: 1
+
+   stf_custom_data_interface
+
 
 CUDASTF API is designed to be extensible, so that advanced users may
 define their own data interfaces. This can be useful when manipulating
@@ -705,6 +709,11 @@ matters instead.
 
 Lower-level task API
 ^^^^^^^^^^^^^^^^^^^^
+
+.. toctree::
+   :maxdepth: 1
+
+   stf_lower-level-api
 
 A lower-level API that does not rely on lambda functions is also
 available, and is described `here <stf_lower-level-api>`.
