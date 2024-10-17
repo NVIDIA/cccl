@@ -130,16 +130,16 @@ automatically generate CUDA kernels such as ``parallel_for`` or
    g++ -lcuda -lcudart
 
 Using CUDASTF within a cmake project
-------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 As part of the CCCL project, CUDASTF uses CMake for its build and installation
 infrastructure, and is the recommended way of building applications that use
 CUDASTF.
 
-This is facilitated by the CMake Package Manager as illustrated in this simple example which is available `here <https://github.com/caugonnet/cccl/examples/cudax_stf>`_.
+This is facilitated by the CMake Package Manager as illustrated in this simple example which is available `here <https://github.com/caugonnet/cccl/examples/cudax_stf>`_, and which is described in the next paragraph.
 
 A simple example
-----------------
+^^^^^^^^^^^^^^^^
 
 The following example illustrates the use of CUDASTF to implement the
 well-known AXPY kernel, which computes ``Y = Y + alpha * X`` where ``X``
@@ -195,26 +195,7 @@ more detail in the following sections:
 
 More examples can be found in the ``examples`` directory in the sources.
 
-CUDASTF examples
-----------------
-
-More examples are available in the examples/ directory of the CUDASTF
-project.
-
-List of examples
-^^^^^^^^^^^^^^^^
-
-TODO
-
-Compiling examples
-^^^^^^^^^^^^^^^^^^
-
-TODO dependencies (while CUDASTF itself has no dependencies, there are
-some for tests and examples)
-
-TODO list all examples, and their purpose
-
-CUDASTF backends and contexts
+Backends and contexts
 -------------------------------
 
 The code snippet below includes the required CUDASTF header. It then
@@ -563,8 +544,8 @@ with multiple dimensions.
    auto lX_2D = ctx.logical_data(shape_of<slice<double, 2>>({16, 24}));
    auto lX_3D = ctx.logical_data(shape_of<slice<double, 3>>({16, 24, 10}));
 
-Task API
---------
+Tasks
+-----
 
 A task is created by calling the ``ctx.task`` member function. It takes
 an optional argument that specifies the execution location of the task.
@@ -938,8 +919,185 @@ perform such accesses, which may depend on the hardware (NVLINK, UVM, …)
 and the OS (WSL has limited support and lower performance when accessing
 host memory from CUDA kernels, for example).
 
-The parallel ``for`` construct (``ctx.parallel_for``)
------------------------------------------------------
+Grid of places
+^^^^^^^^^^^^^^
+
+CUDASTF also makes it possible to manipulate places which are a
+collection of multiple places. In particular, it is possible an
+execution place which corresponds to multiple device execution places.
+
+Creating grids of places
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Grid of execution places are described with the ``exec_place_grid``
+class. This class is templated by two parameters : a scalar execution
+place type which represents the type of each individual element, and a
+partitioning class which defines how data and indexes are spread across
+the different places of the grid.
+
+The scalar execution place can be for example be ``exec_place_device``
+if all entries are devices, or it can be the base ``exec_place`` class
+if the type of the places is not homogeneous in the grid, or if the type
+is not known statically, for example.
+
+It is possible to generate a 1D grid from a vector of places :
+
+.. code:: c++
+
+       exec_place exec_place::grid(std::vector<exec_place> places);
+
+For example, this is used to implement the ``exec_place::all_devices()``
+helper which creates a grid of all devices.
+
+.. code:: c++
+
+   template <typename partitioner_t>
+   inline exec_place_grid<exec_place_device, partitioner_t> exec_place::all_devices() {
+       int ndevs;
+       cuda_safe_call(cudaGetDeviceCount(&ndevs));
+
+       std::vector<exec_place> devices;
+       devices.reserve(ndevs);
+       for (int d = 0; d < ndevs; d++) {
+           devices.push_back(exec_place::device(d));
+       }
+
+       return exec_place::grid<exec_place_device, partitioner_t>(std::move(devices));
+   }
+
+The default partitioner class associated to
+``exec_place::all_devices()`` is ``null_partition``, which means there
+is no partitioning operator defined if none is provided.
+
+It is possible to retrieve the total number of elements in a grid using
+the ``size_t size()`` method. For ``exec_place::all_devices()``, this
+will correspond to the total number of devices.
+
+Shaped grids
+~~~~~~~~~~~~
+
+To fit the needs of the applications, grid of places need not be 1D
+arrays, and can be structured as a multi-dimensional grid described with
+a ``dim4`` class. There is indeed another constructor which takes such a
+``dim4`` parameter :
+
+.. code:: c++
+
+       exec_place::grid(std::vector<exec_place> places, dim4 dims);
+
+Note that the total size of ``dims`` must match the size of the vector
+of places.
+
+It is possible to query the *shape* of the grid using the following
+methods : - ``dim4 get_dims()`` returns the shape of the grid -
+``int get_dim(int axis_id)`` returns the number of elements along
+direction ``axis_id``
+
+Given an ``exec_place_grid``, it is also possible to create a new grid
+with a different shape using the reshape member of the
+``exec_place_grid``. In this example, a grid of 8 devices is reshaped
+into a cube of size 2.
+
+.. code:: c++
+
+       // This assumes places.size() == 8
+       auto places = exec_place::all_devices();
+       auto places_reshaped = places.reshape(dim4(2, 2, 2));
+
+Partitioning policies
+~~~~~~~~~~~~~~~~~~~~~
+
+Partitioning policies makes it possible to express how data are
+dispatched over the different places of a grid, or how the index space
+of a ``parallel_loop`` will be scattered across places too.
+
+.. code:: c++
+
+   class MyPartition : public partitioner_base {
+   public:
+       template <typename S_out, typename S_in>
+       static const S_out apply(const S_in& in, pos4 position, dim4 grid_dims);
+
+       pos4 get_executor(pos4 data_coords, dim4 data_dims, dim4 grid_dims);
+   };
+
+A partitioning class must implement a ``apply`` method which takes : - a
+reference to a shape of type ``S_in`` - a position within a grid of
+execution places. This position is described using an object of type
+``pos4`` - the dimension of this grid express as a ``dim4`` object.
+
+``apply`` returns a shape which corresponds to the subset of the ``in``
+shape associated to this entry of the grid. Note that the output shape
+type ``S_out`` may be different from the ``S_in`` type of the input
+shape.
+
+To support different types of shapes, appropriate overloads of the
+``apply`` method should be implemented.
+
+This ``apply`` method is typically used by the ``parallel_for``
+construct in order to dispatch indices over the different places.
+
+A partitioning class must also implement the ``get_executor`` virtual
+method which allows CUDASTF to use localized data allocators. This
+method indicates, for each entry of a shape, on which place this entry
+should *preferably* be allocated.
+
+``get_executor`` returns a ``pos4`` coordinate in the execution place
+grid, and its arguments are : - a coordinate within the shape described
+as a ``pos4`` object - the dimension of the shape expressed as a
+``dim4`` object - the dimension of the execution place grid expressed as
+a ``dim4`` object
+
+Defining the ``get_executor`` makes it possible to map a piece of data
+over a execution place grid. The ``get_executor`` method of partitioning
+policy in an execution place grid therefore defines the *affine data
+place* of a logical data accessed on that grid.
+
+Predefined partitioning policies
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+There are currently two policies readily available in CUDASTF : -
+``tiled_partition<TILE_SIZE>`` dispatches entries of a shape using a
+*tiled* layout. For multi-dimensional shapes, the outermost dimension is
+dispatched into contiguous tiles of size ``TILE_SIZE``. -
+``blocked_partition`` dispatches entries of the shape using a *blocked*
+layout, where each entry of the grid of places receive approximatively
+the same contiguous portion of the shape, dispatched along the outermost
+dimension.
+
+This illustrates how a 2D shape is dispatched over 3 places using the
+blocked layout :
+
+.. code:: text
+
+    __________________________________
+   |           |           |         |
+   |           |           |         |
+   |           |           |         |
+   |    P 0    |    P 1    |   P 2   |
+   |           |           |         |
+   |           |           |         |
+   |___________|___________|_________|
+
+This illustrates how a 2D shape is dispatched over 3 places using a
+tiled layout, where the dimension of the tiles is indicated by the
+``TILE_SIZE`` parameter :
+
+.. code:: text
+
+    ________________________________
+   |     |     |     |     |     |  |
+   |     |     |     |     |     |  |
+   |     |     |     |     |     |  |
+   | P 0 | P 1 | P 2 | P 0 | P 1 |P2|
+   |     |     |     |     |     |  |
+   |     |     |     |     |     |  |
+   |_____|_____|_____|_____|_____|__|
+
+
+
+``parallel_for`` construct
+--------------------------
 
 CUDASTF provides a helper construct which creates CUDA kernels (or CPU
 kernels) which execute an operation over an index space described as a
@@ -1120,8 +1278,9 @@ and member function ``index_to_coords`` as follows:
 The dimensionality of this ``coord_t`` tuple type determines the number
 of arguments passed to the lambda function in ``parallel_for``.
 
-``ctx.launch``
---------------
+
+``launch`` construct
+--------------------
 
 The ``ctx.launch`` primitive in CUDASTF is a kernel-launch mechanism
 that handles the mapping and launching of a single kernel onto execution
@@ -1160,187 +1319,6 @@ corresponds to the per thread information that the user can query. This
 includes a global thread id and the total number of threads that will be
 executing the kernel. Subsequent parameters are the data instances
 associated with the logical data arguments (e.g., ``slice<double> x``).
-
-Grid of places
---------------
-
-CUDASTF also makes it possible to manipulate places which are a
-collection of multiple places. In particular, it is possible an
-execution place which corresponds to multiple device execution places.
-
-Creating grids of places
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-Grid of execution places are described with the ``exec_place_grid``
-class. This class is templated by two parameters : a scalar execution
-place type which represents the type of each individual element, and a
-partitioning class which defines how data and indexes are spread across
-the different places of the grid.
-
-The scalar execution place can be for example be ``exec_place_device``
-if all entries are devices, or it can be the base ``exec_place`` class
-if the type of the places is not homogeneous in the grid, or if the type
-is not known statically, for example.
-
-It is possible to generate a 1D grid from a vector of places :
-
-.. code:: c++
-
-       exec_place exec_place::grid(std::vector<exec_place> places);
-
-For example, this is used to implement the ``exec_place::all_devices()``
-helper which creates a grid of all devices.
-
-.. code:: c++
-
-   template <typename partitioner_t>
-   inline exec_place_grid<exec_place_device, partitioner_t> exec_place::all_devices() {
-       int ndevs;
-       cuda_safe_call(cudaGetDeviceCount(&ndevs));
-
-       std::vector<exec_place> devices;
-       devices.reserve(ndevs);
-       for (int d = 0; d < ndevs; d++) {
-           devices.push_back(exec_place::device(d));
-       }
-
-       return exec_place::grid<exec_place_device, partitioner_t>(std::move(devices));
-   }
-
-The default partitioner class associated to
-``exec_place::all_devices()`` is ``null_partition``, which means there
-is no partitioning operator defined if none is provided.
-
-It is possible to retrieve the total number of elements in a grid using
-the ``size_t size()`` method. For ``exec_place::all_devices()``, this
-will correspond to the total number of devices.
-
-Shaped grids
-^^^^^^^^^^^^
-
-To fit the needs of the applications, grid of places need not be 1D
-arrays, and can be structured as a multi-dimensional grid described with
-a ``dim4`` class. There is indeed another constructor which takes such a
-``dim4`` parameter :
-
-.. code:: c++
-
-       exec_place::grid(std::vector<exec_place> places, dim4 dims);
-
-Note that the total size of ``dims`` must match the size of the vector
-of places.
-
-It is possible to query the *shape* of the grid using the following
-methods : - ``dim4 get_dims()`` returns the shape of the grid -
-``int get_dim(int axis_id)`` returns the number of elements along
-direction ``axis_id``
-
-Given an ``exec_place_grid``, it is also possible to create a new grid
-with a different shape using the reshape member of the
-``exec_place_grid``. In this example, a grid of 8 devices is reshaped
-into a cube of size 2.
-
-.. code:: c++
-
-       // This assumes places.size() == 8
-       auto places = exec_place::all_devices();
-       auto places_reshaped = places.reshape(dim4(2, 2, 2));
-
-Partitioning policies
-^^^^^^^^^^^^^^^^^^^^^
-
-Partitioning policies makes it possible to express how data are
-dispatched over the different places of a grid, or how the index space
-of a ``parallel_loop`` will be scattered across places too.
-
-.. code:: c++
-
-   class MyPartition : public partitioner_base {
-   public:
-       template <typename S_out, typename S_in>
-       static const S_out apply(const S_in& in, pos4 position, dim4 grid_dims);
-
-       pos4 get_executor(pos4 data_coords, dim4 data_dims, dim4 grid_dims);
-   };
-
-``apply``
-~~~~~~~~~
-
-A partitioning class must implement a ``apply`` method which takes : - a
-reference to a shape of type ``S_in`` - a position within a grid of
-execution places. This position is described using an object of type
-``pos4`` - the dimension of this grid express as a ``dim4`` object.
-
-``apply`` returns a shape which corresponds to the subset of the ``in``
-shape associated to this entry of the grid. Note that the output shape
-type ``S_out`` may be different from the ``S_in`` type of the input
-shape.
-
-To support different types of shapes, appropriate overloads of the
-``apply`` method should be implemented.
-
-This ``apply`` method is typically used by the ``parallel_for``
-construct in order to dispatch indices over the different places.
-
-``get_executor``
-~~~~~~~~~~~~~~~~
-
-A partitioning class must also implement the ``get_executor`` virtual
-method which allows CUDASTF to use localized data allocators. This
-method indicates, for each entry of a shape, on which place this entry
-should *preferably* be allocated.
-
-``get_executor`` returns a ``pos4`` coordinate in the execution place
-grid, and its arguments are : - a coordinate within the shape described
-as a ``pos4`` object - the dimension of the shape expressed as a
-``dim4`` object - the dimension of the execution place grid expressed as
-a ``dim4`` object
-
-Defining the ``get_executor`` makes it possible to map a piece of data
-over a execution place grid. The ``get_executor`` method of partitioning
-policy in an execution place grid therefore defines the *affine data
-place* of a logical data accessed on that grid.
-
-Predefined partitioning policies
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-There are currently two policies readily available in CUDASTF : -
-``tiled_partition<TILE_SIZE>`` dispatches entries of a shape using a
-*tiled* layout. For multi-dimensional shapes, the outermost dimension is
-dispatched into contiguous tiles of size ``TILE_SIZE``. -
-``blocked_partition`` dispatches entries of the shape using a *blocked*
-layout, where each entry of the grid of places receive approximatively
-the same contiguous portion of the shape, dispatched along the outermost
-dimension.
-
-This illustrates how a 2D shape is dispatched over 3 places using the
-blocked layout :
-
-.. code:: text
-
-    __________________________________
-   |           |           |         |
-   |           |           |         |
-   |           |           |         |
-   |    P 0    |    P 1    |   P 2   |
-   |           |           |         |
-   |           |           |         |
-   |___________|___________|_________|
-
-This illustrates how a 2D shape is dispatched over 3 places using a
-tiled layout, where the dimension of the tiles is indicated by the
-``TILE_SIZE`` parameter :
-
-.. code:: text
-
-    ________________________________
-   |     |     |     |     |     |  |
-   |     |     |     |     |     |  |
-   |     |     |     |     |     |  |
-   | P 0 | P 1 | P 2 | P 0 | P 1 |P2|
-   |     |     |     |     |     |  |
-   |     |     |     |     |     |  |
-   |_____|_____|_____|_____|_____|__|
 
 Types of logical data and tasks
 -------------------------------

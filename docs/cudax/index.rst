@@ -9,8 +9,8 @@ CUDA Experimental
 
    container
    memory_resource
-   ${repo_docs_api_path}/cudax_api
    stf
+   ${repo_docs_api_path}/cudax_api
 
 ``CUDA Experimental`` (``cudax``) provides experimental new features that are still in development and subject to change.
 However, any feature within this library has important use cases and we encourage users to experiment with them.
