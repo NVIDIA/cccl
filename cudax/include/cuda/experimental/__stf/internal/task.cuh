@@ -670,13 +670,15 @@ public:
   bool automatically_pinned = false;
 };
 
-} // namespace cuda::experimental::stf
-
 template <>
-struct std::hash<cuda::experimental::stf::task>
+struct hash<task>
 {
-  ::std::size_t operator()(const cuda::experimental::stf::task& t) const
+  ::std::size_t operator()(const task& t) const
   {
     return t.hash();
   }
 };
+
+} // namespace cuda::experimental::stf
+
+
