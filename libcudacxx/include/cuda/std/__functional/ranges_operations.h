@@ -29,6 +29,8 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
 
+// TODO(bgruber): do we need to specialize __can_copy_arguments_impl here as well?
+
 struct equal_to
 {
   _LIBCUDACXX_TEMPLATE(class _Tp, class _Up)

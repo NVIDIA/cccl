@@ -21,8 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__functional/address_stability.h>
 #include <cuda/std/__functional/binary_function.h>
 #include <cuda/std/__functional/unary_function.h>
+#include <cuda/std/__type_traits/conjunction.h>
+#include <cuda/std/__type_traits/is_class.h>
+#include <cuda/std/__type_traits/is_enum.h>
+#include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__utility/forward.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -526,5 +531,46 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT logical_or<void>
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
+template <typename _T>
+struct __has_builtin_operators
+    : _CUDA_VSTD::bool_constant<!_CUDA_VSTD::is_class<_T>::value && !_CUDA_VSTD::is_enum<_T>::value
+                                && !_CUDA_VSTD::is_void<_T>::value>
+{};
+
+#define _LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(functor)                                               \
+  /*we know what plus<T> etc. do if T is not a type that could have a weird operatorX() */         \
+  template <typename _T, typename... _Args>                                                        \
+  struct __allows_copied_arguments_impl<functor<_T>, void, _Args...> : __has_builtin_operators<_T> \
+  {};                                                                                              \
+  /*we know what plus<void> etc. do if T is not a type that could have a weird operatorX() */      \
+  template <typename... _Args>                                                                     \
+  struct __allows_copied_arguments_impl<functor<void>, void, _Args...>                             \
+      : _CUDA_VSTD::conjunction<__has_builtin_operators<_Args>...>                                 \
+  {};
+
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::plus);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::minus);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::multiplies);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::divides);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::modulus);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::negate);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::bit_and);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::bit_not);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::bit_or);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::bit_xor);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::equal_to);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::not_equal_to);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::less);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::less_equal);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::greater_equal);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::greater);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::logical_and);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::logical_not);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(_CUDA_VSTD::logical_or);
+
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
 #endif // _LIBCUDACXX___FUNCTIONAL_OPERATIONS_H

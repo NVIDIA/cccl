@@ -109,7 +109,7 @@ _CCCL_DEVICE void transform_kernel_impl(
   RandomAccessIteratorsIn... ins)
 {
   auto op = [&](Offset i) {
-    out[i] = transform_op(ins[i]...);
+    out[i] = transform_op(THRUST_NS_QUALIFIER::raw_reference_cast(ins[i])...);
   };
   using OpT = decltype(op);
 
@@ -428,17 +428,28 @@ _CCCL_DEVICE void transform_kernel_impl(
 template <typename It>
 union kernel_arg
 {
-  aligned_base_ptr<value_t<It>> aligned_ptr;
+  aligned_base_ptr<value_t<It>> aligned_ptr; // first member is trivial
+  static_assert(::cuda::std::is_trivial<decltype(aligned_ptr)>::value, "");
   It iterator;
 
-  _CCCL_HOST_DEVICE kernel_arg() {} // in case It is not default-constructible
+  _CCCL_HOST_DEVICE kernel_arg() {} // needed in case It is not default-constructible
+
+  _CCCL_HOST_DEVICE kernel_arg(const kernel_arg& other) // needed in case It is not copy-constructible
+  {
+    // since we use kernel_arg only to pass data to the device, the contained data is semantically copyable, even if the
+    // type system is telling us otherwise.
+    ::cuda::std::memcpy(reinterpret_cast<char*>(this), reinterpret_cast<const char*>(&other), sizeof(kernel_arg));
+  }
 };
 
 template <typename It>
 _CCCL_HOST_DEVICE auto make_iterator_kernel_arg(It it) -> kernel_arg<It>
 {
   kernel_arg<It> arg;
-  arg.iterator = it;
+  // since we switch the active member of the union, we have to use placement new. This also uses the copy constructor
+  // of It, which works in more cases than assignment (e.g. thrust::transform_iterator with non-copy-assignable functor,
+  // e.g. in merge sort tests)
+  new (&arg.iterator) It(it);
   return arg;
 }
 
@@ -556,7 +567,7 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
     static constexpr bool exhaust_smem =
       bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>(
         async_policy::block_threads * async_policy::min_items_per_thread)
-      > 48 * 1024;
+      > int{max_smem_per_block};
     static constexpr bool any_type_is_overalinged =
 #  if _CCCL_STD_VER >= 2017
       ((alignof(value_t<RandomAccessIteratorsIn>) > bulk_copy_alignment) || ...);
