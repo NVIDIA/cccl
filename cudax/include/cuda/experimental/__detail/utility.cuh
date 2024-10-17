@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/__concept_macros.h>
+
 namespace cuda::experimental
 {
 namespace detail
@@ -30,8 +32,8 @@ struct [[maybe_unused]] __ignore
 {
   __ignore() = default;
 
-  template <typename _Arg>
-  _CCCL_HOST_DEVICE constexpr __ignore(_Arg&&) noexcept
+  template <typename... _Args>
+  _CCCL_HOST_DEVICE constexpr __ignore(_Args&&...) noexcept
   {}
 };
 
@@ -42,6 +44,17 @@ struct __immovable
   __immovable(__immovable&&)            = delete;
   __immovable& operator=(__immovable&&) = delete;
 };
+
+template <class... _Types>
+struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __inherit : _Types...
+{};
+
+template <class _Type, template <class...> class _Template>
+inline constexpr bool __is_specialization_of = false;
+
+template <template <class...> class _Template, class... _Args>
+inline constexpr bool __is_specialization_of<_Template<_Args...>, _Template> = true;
+
 } // namespace detail
 
 struct uninit_t

@@ -61,6 +61,7 @@
 
 namespace cuda::experimental
 {
+namespace __cudax = ::cuda::experimental; // NOLINT: misc-unused-alias-decls
 }
 
 #endif // __CUDAX__DETAIL_CONFIG_CUH
