@@ -601,6 +601,33 @@ MaxSmOccupancy(int& max_sm_occupancy, KernelPtr kernel_ptr, int block_threads, i
  * Policy management
  ******************************************************************************/
 
+template <typename PolicyT, typename = void>
+struct PolicyWrapper : PolicyT
+{};
+
+template <typename StaticPolicyT>
+struct PolicyWrapper<StaticPolicyT, decltype(StaticPolicyT::BLOCK_THREADS, StaticPolicyT::ITEMS_PER_THREAD, void())>
+    : StaticPolicyT
+{
+  CUB_RUNTIME_FUNCTION static constexpr std::size_t BlockThreads()
+  {
+    return StaticPolicyT::BLOCK_THREADS;
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr std::size_t ItemsPerThread()
+  {
+    return StaticPolicyT::ITEMS_PER_THREAD;
+  }
+};
+
+template <typename PolicyT>
+CUB_RUNTIME_FUNCTION PolicyWrapper<PolicyT> MakePolicyWrapper(PolicyT policy)
+{
+  return PolicyWrapper<PolicyT>{policy};
+}
+
+struct TripleChevronFactory;
+
 /**
  * Kernel dispatch configuration
  */
@@ -618,14 +645,14 @@ struct KernelConfig
       , sm_occupancy(0)
   {}
 
-  template <typename AgentPolicyT, typename KernelPtrT>
-  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t Init(KernelPtrT kernel_ptr)
+  template <typename AgentPolicyT, typename KernelPtrT, typename LauncherFactory = TripleChevronFactory>
+  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
+  Init(KernelPtrT kernel_ptr, AgentPolicyT agent_policy = {}, LauncherFactory launcher_factory = {})
   {
-    block_threads      = AgentPolicyT::BLOCK_THREADS;
-    items_per_thread   = AgentPolicyT::ITEMS_PER_THREAD;
-    tile_size          = block_threads * items_per_thread;
-    cudaError_t retval = MaxSmOccupancy(sm_occupancy, kernel_ptr, block_threads);
-    return retval;
+    block_threads    = MakePolicyWrapper(agent_policy).BlockThreads();
+    items_per_thread = MakePolicyWrapper(agent_policy).ItemsPerThread();
+    tile_size        = block_threads * items_per_thread;
+    return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, block_threads);
   }
 };
 
