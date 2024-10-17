@@ -90,10 +90,11 @@ void write_vtk_2D(const std::string& filename, slice<double, 3> Ez, double dx, d
 // Define the source function
 CUDASTF_DEVICE double Source(double t, double x, double y, double z)
 {
+  constexpr double pi = 3.14159265358979323846;
   constexpr double freq       = 1e9;
-  constexpr double omega      = (2 * M_PI * freq);
+  constexpr double omega      = (2 * pi * freq);
   constexpr double wavelength = 3e8 / freq;
-  constexpr double k          = 2 * M_PI / wavelength;
+  constexpr double k          = 2 * pi / wavelength;
   return sin(k * x - omega * t);
 }
 
