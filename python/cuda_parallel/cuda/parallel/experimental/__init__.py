@@ -128,6 +128,7 @@ class _TransformRAIUnaryOp:
     def __init__(self, result_numba_dtype, arg_numba_dtype, unary_op):
         self.ltoir, _ = cuda.compile(unary_op, sig=result_numba_dtype(arg_numba_dtype), output='ltoir')
         self.name = unary_op.__name__.encode('utf-8')
+        print(f"{self.name=}", flush=True)
 
     def handle(self):
         return _CCCLOp(_CCCLOpKindEnum.STATELESS, self.name, ctypes.c_char_p(self.ltoir), len(self.ltoir), 1, 1, None)

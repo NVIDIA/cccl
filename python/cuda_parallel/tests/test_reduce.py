@@ -89,9 +89,8 @@ def test_device_sum_repeat_1_equals_num_items(num_items=10):
     def add_op(a, b):
         return a + b
 
-    def constant_op(unused_distance):
-        data = (3, 2)
-        return data[0] - data[1]
+    def input_unary_op(unused_distance):
+        return 1
 
     dtype = numpy.int32
 
@@ -99,7 +98,7 @@ def test_device_sum_repeat_1_equals_num_items(num_items=10):
         h_input = numpy.array([1] * num_items, dtype)
         d_input = cuda.to_device(h_input)
     else:
-        d_input = constant_op
+        d_input = input_unary_op
 
     d_output = cuda.device_array(1, dtype) # to store device sum
 

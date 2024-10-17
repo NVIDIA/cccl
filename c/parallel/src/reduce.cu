@@ -422,14 +422,19 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
         input_it.dereference.name, // 4
         input_it.advance.name); // 5
     }
-    bool link_input_it_dereference = false;
+    bool link_input_it_advance = false;
     if (input_it.type == cccl_iterator_kind_t::iterator && input_it.dereference.name == nullptr)
     {
       fflush(stderr);
       printf("\nLOOOK WIP %s:%d\n", __FILE__, __LINE__);
       printf("\nLOOOK input_it.value_type.size %ld  %s:%d\n", (long) input_it.value_type.size, __FILE__, __LINE__);
-      printf("\nLOOOK input_it.dereference.name %s  %s:%d\n", input_it.dereference.name, __FILE__, __LINE__);
-      input_it.value_type.size = 1; // TODO SET FROM PYTHON
+      printf("\nLOOOK input_it.advance.name %s  %s:%d\n", input_it.advance.name, __FILE__, __LINE__);
+      printf("\nLOOOK input_it.advance.ltoir_size %ld  %s:%d\n", (long) input_it.advance.ltoir_size, __FILE__, __LINE__);
+      if (input_it.advance.name != nullptr && std::string(input_it.advance.name) != "input_unary_op")
+      {
+        throw std::runtime_error("UNEXPECTED input_it.advance.name");
+      }
+      input_it.value_type.size      = 1; // TODO SET FROM PYTHON
       input_it.value_type.alignment = 1;
       fflush(stdout);
       input_iterator_src = std::format(
@@ -459,8 +464,8 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
         "}};\n",
         offset_t, // 0
         "::cuda::std::int32_t", // 1
-        input_it.dereference.name); // 2
-      link_input_it_dereference = true;
+        input_it.advance.name); // 2
+      link_input_it_advance = true;
       printf("\nLOOOK CODE BEGIN  %s:%d\n%sLOOOK CODE END", __FILE__, __LINE__, input_iterator_src.c_str());
       fflush(stdout);
       // throw std::runtime_error("WIP");
@@ -600,13 +605,14 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
         .get_name({reduction_kernel_name, reduction_kernel_lowered_name})
         .cleanup_program()
         .add_link({reduction_op.ltoir, reduction_op.ltoir_size});
-    if (link_input_it_dereference) {
-        cl.add_link({input_it.dereference.ltoir, input_it.dereference.ltoir_size});
-    }
 
     nvrtc_cubin result{};
 
-    if (cccl_iterator_kind_t::iterator == input_it.type && cccl_iterator_kind_t::iterator == output_it.type)
+    if (link_input_it_advance)
+    {
+      result = cl.add_link({input_it.advance.ltoir, input_it.advance.ltoir_size}).finalize_program(num_lto_args, lopts);
+    }
+    else if (cccl_iterator_kind_t::iterator == input_it.type && cccl_iterator_kind_t::iterator == output_it.type)
     {
       result = cl.add_link({input_it.advance.ltoir, input_it.advance.ltoir_size})
                  .add_link({input_it.dereference.ltoir, input_it.dereference.ltoir_size})
@@ -626,7 +632,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
                  .add_link({output_it.dereference.ltoir, output_it.dereference.ltoir_size})
                  .finalize_program(num_lto_args, lopts);
     }
-    else
+    else if (!link_input_it_advance)
     {
       result = cl.finalize_program(num_lto_args, lopts);
     }
@@ -641,9 +647,11 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
     build->cubin      = (void*) result.cubin.release();
     build->cubin_size = result.size;
   }
-  catch (const std::exception &exc)
+  catch (const std::exception& exc)
   {
-    fflush(stderr); printf("\nLOOOK EXCEPTION %s  %s:%d\n", exc.what(), __FILE__, __LINE__); fflush(stdout);
+    fflush(stderr);
+    printf("\nLOOOK EXCEPTION %s  %s:%d\n", exc.what(), __FILE__, __LINE__);
+    fflush(stdout);
     error = CUDA_ERROR_UNKNOWN;
   }
 
