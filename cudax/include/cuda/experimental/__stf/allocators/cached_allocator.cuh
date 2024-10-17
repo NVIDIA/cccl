@@ -107,7 +107,7 @@ public:
    */
   event_list deinit(backend_ctx_untyped& ctx) override
   {
-    ::std::unordered_map<data_place, per_place_map_t> free_cache_janitor;
+    ::std::unordered_map<data_place, per_place_map_t, hash<data_place>> free_cache_janitor;
     {
       ::std::lock_guard<::std::mutex> g(allocator_mutex);
       free_cache.swap(free_cache_janitor);
@@ -174,7 +174,7 @@ protected:
   using per_place_map_t = ::std::unordered_multimap<size_t, alloc_cache_entry>;
 
   /// Top-level cache map mapping data_place to per_place_map_t.
-  ::std::unordered_map<data_place, per_place_map_t> free_cache;
+  ::std::unordered_map<data_place, per_place_map_t, hash<data_place>> free_cache;
 
   ::std::mutex allocator_mutex;
 };

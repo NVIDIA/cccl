@@ -1666,16 +1666,14 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
   }
 }
 
-} // end namespace cuda::experimental::stf
-
 /**
  * @brief Specialization of `std::hash` for `cuda::experimental::stf::data_place` to allow it to be used as a key in
  * `std::unordered_map`.
  */
 template <>
-struct std::hash<cuda::experimental::stf::data_place>
+struct hash<data_place>
 {
-  ::std::size_t operator()(const cuda::experimental::stf::data_place& k) const
+  ::std::size_t operator()(const data_place& k) const
   {
     // Not implemented for composite places
     EXPECT(!k.is_composite());
@@ -1684,7 +1682,7 @@ struct std::hash<cuda::experimental::stf::data_place>
     if (k.is_green_ctx())
     {
 #if CUDA_VERSION >= 12040
-      return ::std::hash<cuda::experimental::stf::green_ctx_view>()(*(k.gc_view));
+      return hash<green_ctx_view>()(*(k.gc_view));
 #else
       assert(0);
 #endif
@@ -1693,3 +1691,7 @@ struct std::hash<cuda::experimental::stf::data_place>
     return ::std::hash<int>()(device_ordinal(k));
   }
 };
+
+} // end namespace cuda::experimental::stf
+
+

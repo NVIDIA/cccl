@@ -55,15 +55,16 @@ public:
   }
 };
 
-} // end namespace cuda::experimental::stf
-
 template <>
-struct std::hash<cuda::experimental::stf::green_ctx_view>
+struct hash<cuda::experimental::stf::green_ctx_view>
 {
-  ::std::size_t operator()(const cuda::experimental::stf::green_ctx_view& k) const
+  ::std::size_t operator()(const green_ctx_view& k) const
   {
-    return cuda::experimental::stf::hash_all(k.g_ctx, k.pool, k.devid);
+    return hash_all(k.g_ctx, k.pool, k.devid);
   }
 };
+
+
+} // end namespace cuda::experimental::stf
 
 #endif

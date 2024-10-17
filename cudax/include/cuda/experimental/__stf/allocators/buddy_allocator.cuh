@@ -314,7 +314,7 @@ public:
   }
 
 private:
-  ::std::unordered_map<data_place, ::std::shared_ptr<per_place>> map;
+  ::std::unordered_map<data_place, ::std::shared_ptr<per_place>, hash<data_place>> map;
 
   block_allocator_untyped root_allocator;
 };
