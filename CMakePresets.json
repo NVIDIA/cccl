@@ -8,7 +8,6 @@
   "configurePresets": [
     {
       "name": "install",
-      "displayName": "Install only (users and packagers)",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/install",
       "cacheVariables": {
