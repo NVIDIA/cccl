@@ -75,7 +75,7 @@ protected:
   int num_devices = 0;
 
   // Map from task id to device
-  using schedule_t = ::std::unordered_map<mapping_id_t, int>;
+  using schedule_t = ::std::unordered_map<mapping_id_t, int, hash<mapping_id_t>>;
 };
 
 class random_scheduler : public scheduler

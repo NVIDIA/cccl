@@ -68,13 +68,15 @@ private:
   int _value = next_id();
 };
 
-} // end namespace cuda::experimental::stf
-
 template <typename C, C... letters>
-struct std::hash<cuda::experimental::stf::unique_id<C, letters...>>
+struct hash<unique_id<C, letters...>>
 {
-  size_t operator()(const cuda::experimental::stf::unique_id<C, letters...>& id) const
+  size_t operator()(const unique_id<C, letters...>& id) const
   {
     return ::std::hash<int>()(id);
   }
 };
+
+} // end namespace cuda::experimental::stf
+
+
