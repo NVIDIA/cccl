@@ -239,14 +239,20 @@ private:
       static_assert(__kind == cudaMemcpyHostToDevice, "Invalid use case");
       auto __temp = _CUDA_VSTD::get_temporary_buffer<_Tp>(__count).first;
       _CUDA_VSTD::copy(__first, __last, __temp);
-      _CCCL_TRY_CUDA_API(::cudaMemcpy, "failed to copy data", __dest, __temp, sizeof(_Tp) * __count, __kind);
+      _CCCL_TRY_CUDA_API(
+        ::cudaMemcpy, "failed to copy data with temp buffer", __dest, __temp, sizeof(_Tp) * __count, __kind);
       _CUDA_VSTD::return_temporary_buffer(__temp);
     }
     else
     {
       (void) __last;
       _CCCL_TRY_CUDA_API(
-        ::cudaMemcpy, "failed to copy data", __dest, _CUDA_VSTD::to_address(__first), sizeof(_Tp) * __count, __kind);
+        ::cudaMemcpy,
+        "failed to copy data across execution spaces",
+        __dest,
+        _CUDA_VSTD::to_address(__first),
+        sizeof(_Tp) * __count,
+        __kind);
     }
   }
 
