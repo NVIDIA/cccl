@@ -176,7 +176,7 @@ private:
 public:
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int compare(__string_view const& __other) const noexcept
   {
-    return __compare(__str_, __len_, __other.__str_, __other.__len_, __min_(__len_, __other.__len_));
+    return __compare(__str_, __len_, __other.__str_, __other.__len_, (__min_) (__len_, __other.__len_));
   }
 
   template <size_t _Np>
@@ -225,17 +225,22 @@ private:
 public:
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int compare(__string_view const& __other) const noexcept
   {
-    size_t __n       = __min_(__len_, __other.__len_);
-    char const *__s1 = __str_, *__s2 = __other.__str_;
-    for (; __n; --__n, ++__s1, ++__s2)
+    if (size_t __n = (__min_) (__len_, __other.__len_))
     {
-      if (*__s1 < *__s2)
+      for (auto __s1 = __str_, __s2 = __other.__str_;; ++__s1, ++__s2)
       {
-        return -1;
-      }
-      if (*__s2 < *__s1)
-      {
-        return 1;
+        if (*__s1 < *__s2)
+        {
+          return -1;
+        }
+        if (*__s2 < *__s1)
+        {
+          return 1;
+        }
+        if (0 == --__n)
+        {
+          break;
+        }
       }
     }
     return int(__len_) - int(__other.__len_);
@@ -401,6 +406,8 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameo
 }
 
 // A quick smoke test to ensure that the pretty name extraction is working.
+static_assert(3 == __string_view("int").size(), "3 == __string_view(int).size()");
+static_assert(3 == __pretty_nameof<int>().size(), "3 == __pretty_nameof<int>().size()");
 static_assert(__pretty_nameof<int>() == __string_view("int"), "__pretty_nameof<int>() == __string_view(\"int\")");
 static_assert(__pretty_nameof<float>() < __pretty_nameof<int>(), "__pretty_nameof<float>() < __pretty_nameof<int>()");
 
@@ -457,7 +464,7 @@ private:
 #if !defined(_CCCL_NO_INLINE_VARIABLES)
 
 template <class _Tp>
-_CCCL_INLINE_VAR _CCCL_CONSTEXPR_GLOBAL auto __typeid = __type_info(__pretty_nameof<_Tp>());
+_CCCL_INLINE_VAR _CCCL_CONSTEXPR_GLOBAL __type_info __typeid(__pretty_nameof<_Tp>());
 
 #  define _CCCL_CONSTEXPR_TYPEID(...) _CUDA_VSTD::__typeid<_CUDA_VSTD::__remove_cv_t<__VA_ARGS__>>
 
@@ -466,7 +473,7 @@ _CCCL_INLINE_VAR _CCCL_CONSTEXPR_GLOBAL auto __typeid = __type_info(__pretty_nam
 template <class _Tp>
 struct __typeid_value
 {
-  static constexpr __type_info value = __type_info(__pretty_nameof<_Tp>());
+  static constexpr __type_info value(__pretty_nameof<_Tp>());
 };
 
 // Before the addition of inline variables, it was necessary to
