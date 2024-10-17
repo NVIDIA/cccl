@@ -108,14 +108,20 @@ static cudaError_t InvokeSingleTile(
 
     nothing_t nothing{};
     TransformOpT transform_op{};
-    void* op_state = op.type == cccl_op_kind_t::stateless ? &nothing : op.state;
-    void* in_ptr   = d_in.type == cccl_iterator_kind_t::pointer ? &d_in.state : d_in.state;
-    void* out_ptr  = d_out.type == cccl_iterator_kind_t::pointer ? &d_out.state : d_out.state;
-    void* args[]   = {in_ptr, out_ptr, &num_items, op_state, init.state, &transform_op};
+    void* op_state     = op.type == cccl_op_kind_t::stateless ? &nothing : op.state;
+    void* in_ptr       = d_in.type == cccl_iterator_kind_t::pointer ? &d_in.state : d_in.state;
+    long fake_in_ptr[] = {999L};
+    if (in_ptr == nullptr)
+    {
+      fflush(stderr);
+      printf("\nLOOOK using fake_in_ptr\n");
+      fflush(stdout);
+      in_ptr = fake_in_ptr;
+    }
+    void* out_ptr = d_out.type == cccl_iterator_kind_t::pointer ? &d_out.state : d_out.state;
+    void* args[]  = {in_ptr, out_ptr, &num_items, op_state, init.state, &transform_op};
 
-fflush(stderr); printf("\nLOOOK single_tile_kernel CALL %s:%d\n", __FILE__, __LINE__); fflush(stdout);
     check(cuLaunchKernel((CUfunction) single_tile_kernel, 1, 1, 1, policy.block_size, 1, 1, 0, stream, args, 0));
-fflush(stderr); printf("\nLOOOK single_tile_kernel DONE %s:%d\n", __FILE__, __LINE__); fflush(stdout);
 
     // Check for failure to launch
     error = CubDebug(cudaPeekAtLastError());
@@ -148,7 +154,15 @@ static cudaError_t InvokePasses(
   cudaError error = cudaSuccess;
   do
   {
-    void* in_ptr  = d_in.type == cccl_iterator_kind_t::pointer ? &d_in.state : d_in.state;
+    void* in_ptr       = d_in.type == cccl_iterator_kind_t::pointer ? &d_in.state : d_in.state;
+    long fake_in_ptr[] = {999L};
+    if (in_ptr == nullptr)
+    {
+      fflush(stderr);
+      printf("\nLOOOK using fake_in_ptr\n");
+      fflush(stdout);
+      in_ptr = fake_in_ptr;
+    }
     void* out_ptr = d_out.type == cccl_iterator_kind_t::pointer ? &d_out.state : d_out.state;
 
     // Get SM count
@@ -207,10 +221,8 @@ static cudaError_t InvokePasses(
     TransformOpT transform_op{};
     void* reduce_args[] = {in_ptr, &allocations[0], &num_items, &even_share, op_state, &transform_op};
 
-fflush(stderr); printf("\nLOOOK reduce_kernel CALL %s:%d\n", __FILE__, __LINE__); fflush(stdout);
     check(cuLaunchKernel(
       (CUfunction) reduce_kernel, reduce_grid_size, 1, 1, policy.block_size, 1, 1, 0, stream, reduce_args, 0));
-fflush(stderr); printf("\nLOOOK reduce_kernel DONE %s:%d\n", __FILE__, __LINE__); fflush(stdout);
 
     // Check for failure to launch
     error = CubDebug(cudaPeekAtLastError());
@@ -430,10 +442,10 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
     if (input_it.type == cccl_iterator_kind_t::iterator && input_it.dereference.name == nullptr)
     {
       fflush(stderr);
-      printf("\nLOOOK WIP %s:%d\n", __FILE__, __LINE__);
       printf("\nLOOOK input_it.value_type.size %ld  %s:%d\n", (long) input_it.value_type.size, __FILE__, __LINE__);
       printf("\nLOOOK input_it.advance.name %s  %s:%d\n", input_it.advance.name, __FILE__, __LINE__);
       printf("\nLOOOK input_it.advance.ltoir_size %ld  %s:%d\n", (long) input_it.advance.ltoir_size, __FILE__, __LINE__);
+      fflush(stdout);
       if (input_it.advance.name != nullptr && std::string(input_it.advance.name) != "input_unary_op")
       {
         throw std::runtime_error("UNEXPECTED input_it.advance.name");
@@ -470,9 +482,6 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
         "::cuda::std::int32_t", // 1
         input_it.advance.name); // 2
       link_input_it_advance = true;
-      printf("\nLOOOK CODE BEGIN  %s:%d\n%sLOOOK CODE END", __FILE__, __LINE__, input_iterator_src.c_str());
-      fflush(stdout);
-      // throw std::runtime_error("WIP");
     }
 
     const std::string output_iterator_src =
@@ -579,7 +588,9 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
       op_src, // 6
       policy.vector_load_length); // 7
 
-    printf("\nLOOOK CODE BEGIN  %s:%d\n%sLOOOK CODE END", __FILE__, __LINE__, combined_src.c_str());
+    fflush(stderr);
+    printf("\nLOOOK CODE4NVRTC BEGIN  %s:%d\n%sLOOOK CODE4NVRTC END\n", __FILE__, __LINE__, combined_src.c_str());
+    fflush(stdout);
 
     std::string single_tile_kernel_name = get_single_tile_kernel_name(input_it, output_it, reduction_op, init, false);
     std::string single_tile_second_kernel_name =
