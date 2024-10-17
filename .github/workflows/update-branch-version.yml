@@ -102,6 +102,21 @@ jobs:
             exit 1
           fi
 
+          #Ensure that target branch version is compatible.
+          if [[ "${branch_name}" =~ ^branch/[0-9]+\.[0-9]+\.x$ ]]; then
+            branch_version=$(echo ${branch_name} | cut -d/ -f1 --complement)
+            branch_major=$(echo ${branch_version} | cut -d. -f1)
+            branch_minor=$(echo ${branch_version} | cut -d. -f2)
+            if [ "${branch_major}" != "${major_version}" ]; then
+              echo "  Target branch major version mismatch"
+              exit 1
+            fi;
+            if [ "${branch_minor}" != "${minor_version}" ]; then
+              echo "  Target branch minor version mismatch"
+              exit 1
+            fi
+          fi
+
           # PR branch must *not* exist
           if [ "${enable_force_push}" == "false" ]; then
             if git ls-remote --exit-code origin ${pr_branch}; then
