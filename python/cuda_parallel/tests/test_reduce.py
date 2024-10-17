@@ -39,10 +39,10 @@ def test_device_reduce(dtype):
         num_items = 2 ** num_items_pow2
         h_input = random_int(num_items, dtype)
         d_input = cuda.to_device(h_input)
-        temp_storage_size = reduce_into(None, d_input, d_output, h_init)
+        temp_storage_size = reduce_into(None, None, d_input, d_output, h_init)
         d_temp_storage = cuda.device_array(
             temp_storage_size, dtype=numpy.uint8)
-        reduce_into(d_temp_storage, d_input, d_output, h_init)
+        reduce_into(d_temp_storage, None, d_input, d_output, h_init)
         h_output = d_output.copy_to_host()
         assert h_output[0] == sum(h_input) + init_value
 
@@ -59,9 +59,9 @@ def test_complex_device_reduce():
         h_input = numpy.random.random(
             num_items) + 1j * numpy.random.random(num_items)
         d_input = cuda.to_device(h_input)
-        temp_storage_bytes = reduce_into(None, d_input, d_output, h_init)
+        temp_storage_bytes = reduce_into(None, None, d_input, d_output, h_init)
         d_temp_storage = cuda.device_array(temp_storage_bytes, numpy.uint8)
-        reduce_into(d_temp_storage, d_input, d_output, h_init)
+        reduce_into(d_temp_storage, None, d_input, d_output, h_init)
 
         result = d_output.copy_to_host()[0]
         expected = numpy.sum(h_input, initial=h_init[0])
@@ -82,4 +82,65 @@ def test_device_reduce_dtype_mismatch():
 
     for ix in range(3):
         with pytest.raises(TypeError, match=r"^dtype mismatch: __init__=int32, __call__=int64$"):
-          reduce_into(None, d_inputs[int(ix == 0)], d_outputs[int(ix == 1)], h_inits[int(ix == 2)])
+          reduce_into(None, None, d_inputs[int(ix == 0)], d_outputs[int(ix == 1)], h_inits[int(ix == 2)])
+
+
+@pytest.mark.parametrize("use_numpy_array", [True, False])
+@pytest.mark.parametrize("input_generator", ["constant", "counting", "arbitrary", "nested_inner", "nested_global"][:-1])
+def test_device_sum_input_unary_op(use_numpy_array, input_generator, num_items=19, start_sum_with=1000):
+    def add_op(a, b):
+        return a + b
+
+    if input_generator == "constant":
+        def input_unary_op(unused_distance):
+            data = (5, 2)
+            return data[0] - data[1]
+    elif input_generator == "counting":
+        def input_unary_op(distance):
+            return distance
+    elif input_generator == "arbitrary":
+        def input_unary_op(distance):
+            permutation = (4, 2, 0, 3, 1)
+            return permutation[distance % len(permutation)]
+    elif input_generator == "nested_inner":
+        def input_unary_op(distance):
+            def inner_unary_op(distance):
+                permutation = (4, 2, 0, 3, 1)
+                return permutation[distance % len(permutation)]
+            return 2 * inner_unary_op(distance)
+    elif input_generator == "nested_global":
+        # TODO: Figure out how to make this work.
+        def other_unary_op(distance):
+            permutation = (4, 2, 0, 3, 1)
+            return permutation[distance % len(permutation)]
+        def input_unary_op(distance):
+            return 2 * other_unary_op(distance)
+    else:
+        raise RuntimeError("Unexpected input_generator")
+
+    l_input = [input_unary_op(distance) for distance in range(num_items)]
+    expected_result = start_sum_with
+    for v in l_input:
+        expected_result = add_op(expected_result, v)
+
+    dtype = numpy.int32 # TODO: Replace hard-wired dtype in production code.
+
+    if use_numpy_array:
+        h_input = numpy.array(l_input, dtype)
+        d_input = cuda.to_device(h_input)
+    else:
+        d_input = input_unary_op
+
+    d_output = cuda.device_array(1, dtype) # to store device sum
+
+    h_init = numpy.array([start_sum_with], dtype)
+
+    reduce_into = cudax.reduce_into(d_in=d_input, d_out=d_output, op=add_op, init=h_init)
+
+    temp_storage_size = reduce_into(None, num_items, d_in=d_input, d_out=d_output, init=h_init)
+    d_temp_storage = cuda.device_array(temp_storage_size, dtype=numpy.uint8)
+
+    reduce_into(d_temp_storage, num_items, d_input, d_output, h_init)
+
+    h_output = d_output.copy_to_host()
+    assert h_output[0] == expected_result
