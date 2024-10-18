@@ -36,6 +36,9 @@
 namespace cuda::experimental::stf
 {
 
+namespace reserved
+{
+
 enum class msir_state_id
 {
   invalid,
@@ -207,12 +210,14 @@ private:
   bool allocated     = false;
 };
 
+} // end namespace reserved
+
 // Overload hash to compute the hash of a per_data_instance_msi_state
 // class from the MSI and allocated states.
 template <>
-struct hash<per_data_instance_msi_state>
+struct hash<reserved::per_data_instance_msi_state>
 {
-  ::std::size_t operator()(per_data_instance_msi_state const& s) const noexcept
+  ::std::size_t operator()(reserved::per_data_instance_msi_state const& s) const noexcept
   {
     return s.hash();
   }

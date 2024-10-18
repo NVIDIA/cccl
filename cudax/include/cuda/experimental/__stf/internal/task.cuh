@@ -547,12 +547,12 @@ public:
     state.set_allocated(b);
   }
 
-  msir_state_id get_msir() const
+  reserved::msir_state_id get_msir() const
   {
     return state.get_msir();
   }
 
-  void set_msir(msir_state_id st)
+  void set_msir(reserved::msir_state_id st)
   {
     state.set_msir(st);
   }
@@ -615,7 +615,7 @@ public:
   // Compute a hash of the MSI/Alloc state
   size_t state_hash() const
   {
-    return hash<per_data_instance_msi_state>{}(state);
+    return hash<reserved::per_data_instance_msi_state>{}(state);
   }
 
   void set_extra_args(void* args)
@@ -653,7 +653,7 @@ private:
   // This structure contains everything to implement the MSI protocol,
   // including asynchronous prereqs so that we only use a data instance once
   // it's ready to do so
-  per_data_instance_msi_state state;
+  reserved::per_data_instance_msi_state state;
 
   // This stores the last task which used this instance with a relaxed coherence mode (redux)
   ::std::optional<task> last_task_relaxed;

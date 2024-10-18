@@ -206,7 +206,7 @@ public:
     }
 #endif
 
-    inst.set_msir(msir_state_id::modified);
+    inst.set_msir(reserved::msir_state_id::modified);
     inst.set_allocated(true);
 
     assert(inst.get_read_prereq().size() == 0);
@@ -429,7 +429,7 @@ public:
   instance_id_t find_source_instance_id(instance_id_t dst_instance_id)
   {
     ::std::ignore = dst_instance_id;
-    assert(get_data_instance(dst_instance_id).get_msir() == msir_state_id::invalid);
+    assert(get_data_instance(dst_instance_id).get_msir() == reserved::msir_state_id::invalid);
 
 // @@@@ TODO @@@@ reimplement !
 #if 0
@@ -441,7 +441,7 @@ public:
             // We iterate over nodes, in an order that is could improve locality
             for (int n = 0; n < nnodes(); n++) {
                 int n_aux = machine.get_ith_closest_node(dst_node, n);
-                if (get_data_instance(n_aux).get_msir() != msir_state_id::invalid) {
+                if (get_data_instance(n_aux).get_msir() != reserved::msir_state_id::invalid) {
                     return data_place(n_aux);
                 }
             }
@@ -449,7 +449,7 @@ public:
     auto nnodes = instance_id_t(get_data_instance_count());
     for (auto id : each(nnodes))
     {
-      if (get_data_instance(id).get_msir() != msir_state_id::invalid)
+      if (get_data_instance(id).get_msir() != reserved::msir_state_id::invalid)
       {
         return id;
       }
@@ -590,19 +590,19 @@ public:
     /* Update MSI status depending on the current states and the required access mode */
     switch (current_state)
     {
-      case msir_state_id::invalid:
+      case reserved::msir_state_id::invalid:
         // fprintf(stderr, "RECLAIM %s WITH NO TRANSFER (INVALID)... (wb cnt = %ld)\n", get_symbol().c_str(),
         //         total_write_back_cnt);
         // No-op !
         current_instance.add_read_prereq(prereqs);
         break;
 
-      case msir_state_id::modified: {
+      case reserved::msir_state_id::modified: {
         // Host becomes the only valid copy
         // XXX @@@@TODO@@@ ! reclaims assumes that 0 == host we need a reference copy
         auto& ref_instance = get_data_instance(instance_id_t(0));
-        ref_instance.set_msir(msir_state_id::modified);
-        current_instance.set_msir(msir_state_id::invalid);
+        ref_instance.set_msir(reserved::msir_state_id::modified);
+        current_instance.set_msir(reserved::msir_state_id::invalid);
 
         prereqs.merge(ref_instance.get_read_prereq(), current_instance.get_read_prereq());
 
@@ -615,17 +615,17 @@ public:
         break;
       }
 
-      case msir_state_id::shared: {
+      case reserved::msir_state_id::shared: {
         // fprintf(stderr, "RECLAIM %s WITH NO TRANSFER (SHARED)... (wb cnt = %ld)\n", get_symbol().c_str(),
         //         total_write_back_cnt);
 
-        // Invalidate this copy, others may become either msir_state_id::shared or msir_state_id::modified
+        // Invalidate this copy, others may become either reserved::msir_state_id::shared or reserved::msir_state_id::modified
         int cpy_cnt = 0;
 
         const auto nnodes = instance_id_t(get_data_instance_count());
         for (auto n : each(nnodes))
         {
-          if (get_data_instance(n).get_msir() != msir_state_id::invalid)
+          if (get_data_instance(n).get_msir() != reserved::msir_state_id::invalid)
           {
             cpy_cnt++;
           }
@@ -633,20 +633,20 @@ public:
 
         assert(cpy_cnt > 0);
 
-        current_instance.set_msir(msir_state_id::invalid);
+        current_instance.set_msir(reserved::msir_state_id::invalid);
         current_instance.add_read_prereq(prereqs);
 
         // Update other copies (if needed)
         for (auto n : each(nnodes))
         {
           auto& inst_n = get_data_instance(n);
-          if (inst_n.get_msir() != msir_state_id::invalid)
+          if (inst_n.get_msir() != reserved::msir_state_id::invalid)
           {
             // If there was 2 shared copies, there only remain ones
             // now, which becomes modified. If there were more they
             // remain shared, there cannot be less than 2 copies if
             // this is shared
-            auto new_state = (cpy_cnt == 2) ? msir_state_id::modified : msir_state_id::shared;
+            auto new_state = (cpy_cnt == 2) ? reserved::msir_state_id::modified : reserved::msir_state_id::shared;
             inst_n.set_msir(new_state);
           }
         }
@@ -738,13 +738,13 @@ public:
       case access_mode::read: {
         switch (current_msir)
         {
-          case msir_state_id::modified:
-          case msir_state_id::shared:
+          case reserved::msir_state_id::modified:
+          case reserved::msir_state_id::shared:
             /* no-op : just reuse previous reqs */
             prereqs.merge(current_instance.get_read_prereq());
             break;
 
-          case msir_state_id::invalid: {
+          case reserved::msir_state_id::invalid: {
             /* There must be at least a valid copy at another place, so this becomes shared */
 
             // There is no local valid copy ... find one !
@@ -779,29 +779,29 @@ public:
             /*
              * Update MSI statuses
              */
-            dst_instance.set_msir(msir_state_id::shared);
+            dst_instance.set_msir(reserved::msir_state_id::shared);
 
             /* If there was a single copy, they are turned into shared if they were invalid */
             for (auto& inst : used_instances)
             {
-              if (inst.get_msir() != msir_state_id::invalid)
+              if (inst.get_msir() != reserved::msir_state_id::invalid)
               {
-                inst.set_msir(msir_state_id::shared);
+                inst.set_msir(reserved::msir_state_id::shared);
               }
             }
           }
           break;
 
-          case msir_state_id::reduction: {
+          case reserved::msir_state_id::reduction: {
             // This is where we should reconstruct the data ?
 
             // Invalidate all other existing copies but that one
             for (auto& inst : used_instances)
             {
-              inst.set_msir(msir_state_id::invalid);
+              inst.set_msir(reserved::msir_state_id::invalid);
             }
 
-            get_data_instance(instance_id).set_msir(msir_state_id::modified);
+            get_data_instance(instance_id).set_msir(reserved::msir_state_id::modified);
 
             break;
           }
@@ -818,12 +818,12 @@ public:
       case access_mode::write: {
         switch (current_msir)
         {
-          case msir_state_id::modified:
+          case reserved::msir_state_id::modified:
             /* no-op */
             prereqs.merge(current_instance.get_read_prereq(), current_instance.get_write_prereq());
             break;
 
-          case msir_state_id::shared: {
+          case reserved::msir_state_id::shared: {
             // There is a local copy, but we need to invalidate others
             prereqs.merge(current_instance.get_read_prereq(), current_instance.get_write_prereq());
 
@@ -834,16 +834,16 @@ public:
               if (i != size_t(instance_id))
               {
                 auto& inst_i = get_data_instance(instance_id_t(i));
-                inst_i.set_msir(msir_state_id::invalid);
+                inst_i.set_msir(reserved::msir_state_id::invalid);
                 inst_i.clear_read_prereq();
                 inst_i.clear_write_prereq();
               }
             }
 
-            current_instance.set_msir(msir_state_id::modified);
+            current_instance.set_msir(reserved::msir_state_id::modified);
             break;
           }
-          case msir_state_id::invalid: {
+          case reserved::msir_state_id::invalid: {
             // If we need to perform a copy, this will be the source instance
             instance_id_t src_instance_id = instance_id_t::invalid;
             // Do not find a source if this is write only
@@ -897,11 +897,11 @@ public:
               }
 
               // including instance_id, but we will set it to modified after
-              inst_i.set_msir(msir_state_id::invalid);
+              inst_i.set_msir(reserved::msir_state_id::invalid);
             }
 
             // This is the only valid instance now
-            current_instance.set_msir(msir_state_id::modified);
+            current_instance.set_msir(reserved::msir_state_id::modified);
             break;
           }
 
@@ -914,7 +914,7 @@ public:
       }
 
       case access_mode::redux:
-        current_instance.set_msir(msir_state_id::reduction);
+        current_instance.set_msir(reserved::msir_state_id::reduction);
         break;
       default:
         assert(!"Corrupt MSIR state detected.");
@@ -1356,21 +1356,21 @@ public:
 
 #ifdef REDUCTION_DEBUG
       fprintf(
-        stderr, "make_reduction_plan :: instance %d status %s\n", i, status_to_string(instance_i.get_msir()).c_str());
+        stderr, "make_reduction_plan :: instance %d status %s\n", i, reserved::status_to_string(instance_i.get_msir()).c_str());
 #endif
 
       // We exclude the target instance id because we want to reduce to this id, not from this id
-      if (i != instance_id && instance_i.get_msir() == msir_state_id::reduction)
+      if (i != instance_id && instance_i.get_msir() == reserved::msir_state_id::reduction)
       {
         const data_place& dplace = instance_i.get_dplace();
         per_node[to_index(dplace)].push_back(i);
-        // fprintf(stderr, "instance %d : get_msir() == msir_state_id::reduction memory_node = %d\n", i,
+        // fprintf(stderr, "instance %d : get_msir() == reserved::msir_state_id::reduction memory_node = %d\n", i,
         //        memory_node);
         continue;
       }
 
       // If this is a valid copy, we put this aside and will select one of these
-      if (instance_i.get_msir() == msir_state_id::modified || instance_i.get_msir() == msir_state_id::shared)
+      if (instance_i.get_msir() == reserved::msir_state_id::modified || instance_i.get_msir() == reserved::msir_state_id::shared)
       {
         ref_copies.push_back(i);
         continue;
@@ -1378,7 +1378,7 @@ public:
 
       // If this is an invalid copy, and that it is on the target memory node, we can use this as a temporary
       // storage
-      if (instance_i.get_msir() == msir_state_id::invalid && instance_i.get_dplace() == target_memory_node)
+      if (instance_i.get_msir() == reserved::msir_state_id::invalid && instance_i.get_dplace() == target_memory_node)
       {
         available_instances.push_back(i);
         continue;
@@ -1438,7 +1438,7 @@ public:
     // First start by invalidating all data instances !
     for (auto i : each(nnodes))
     {
-      get_data_instance(i).set_msir(msir_state_id::invalid);
+      get_data_instance(i).set_msir(reserved::msir_state_id::invalid);
     }
 
     // Naive plan : reduce all local instances (except on target node), copy to target node, reduce local instances
@@ -1585,7 +1585,7 @@ public:
     // This is likely not optimal : but we assume the only valid copy is
     // the last one. Note that in some situations, we may have other valid
     // copies if we did copy the reduced data, and did not modify it again
-    get_data_instance(target_instance_id).set_msir(msir_state_id::modified);
+    get_data_instance(target_instance_id).set_msir(reserved::msir_state_id::modified);
   }
 
   size_t get_data_instance_count() const
@@ -1737,7 +1737,7 @@ inline void reserved::logical_data_untyped_impl::erase()
     }
 
     auto s = used_instances[size_t(ref_id)].get_msir();
-    if (s == msir_state_id::invalid)
+    if (s == reserved::msir_state_id::invalid)
     {
       // Write-back needed
       // fprintf(stderr, "Write-back needed %s\n", get_symbol().c_str());
@@ -2066,7 +2066,7 @@ reserved::logical_data_untyped_impl::get_frozen(task& fake_task, const data_plac
 
   // Make sure we now have a valid copy
   assert(used_instances[int(id)].is_allocated());
-  assert(used_instances[int(id)].get_msir() != msir_state_id::invalid);
+  assert(used_instances[int(id)].get_msir() != reserved::msir_state_id::invalid);
 
   return ::std::pair<T, event_list>(dinterface->instance<T>(id), mv(prereqs));
 }
@@ -2401,14 +2401,14 @@ inline void reclaim_memory(
         {
           case 0:
             // Only process locally invalid instances
-            if (current_state != msir_state_id::invalid)
+            if (current_state != reserved::msir_state_id::invalid)
             {
               eligible = false;
             }
             break;
           case 1:
-            // Only process instances which will not require a write back (ie. exclude msir_state_id::modified)
-            if (current_state == msir_state_id::modified)
+            // Only process instances which will not require a write back (ie. exclude reserved::msir_state_id::modified)
+            if (current_state == reserved::msir_state_id::modified)
             {
               eligible = false;
             }

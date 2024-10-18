@@ -568,7 +568,7 @@ public:
     cudaEvent_t startEvent = nullptr;
     cudaEvent_t stopEvent  = nullptr;
 
-    ::std::unordered_map<int, reorderer_payload> payloads;
+    ::std::unordered_map<int, reserved::reorderer_payload> payloads;
     if (reordering_tasks())
     {
       build_task_graph();
