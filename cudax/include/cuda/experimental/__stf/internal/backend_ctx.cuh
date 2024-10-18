@@ -70,6 +70,9 @@ class launch_scope;
 
 class null_partition;
 
+namespace reserved
+{
+
 /**
  * @brief Result of `host_launch` (below)
  *
@@ -172,6 +175,8 @@ private:
   Ctx& ctx;
   task_dep_vector<Deps...> deps;
 };
+
+} // end namespace reserved
 
 /**
  * @brief Description of a CUDA kernel
@@ -994,7 +999,7 @@ public:
   template <typename... Deps>
   auto host_launch(task_dep<Deps>... deps)
   {
-    return host_launch_scope<Engine, false, Deps...>(self(), mv(deps)...);
+    return reserved::host_launch_scope<Engine, false, Deps...>(self(), mv(deps)...);
   }
 
   template <typename... Deps>
@@ -1019,7 +1024,7 @@ public:
   template <typename... Deps>
   auto launch(exec_place_host, task_dep<Deps>... deps)
   {
-    return host_launch_scope<Engine, true, Deps...>(self(), mv(deps)...);
+    return reserved::host_launch_scope<Engine, true, Deps...>(self(), mv(deps)...);
   }
 
   /* Default execution policy, explicit place */

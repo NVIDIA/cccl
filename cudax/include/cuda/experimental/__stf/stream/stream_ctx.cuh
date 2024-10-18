@@ -411,8 +411,8 @@ public:
           : task(ctx, mv(deps)...)
       {}
 
-      host_launch_scope<stream_ctx, false, Data...> task;
-      ::std::function<void(host_launch_scope<stream_ctx, false, Data...>&)> todo;
+      reserved::host_launch_scope<stream_ctx, false, Data...> task;
+      ::std::function<void(reserved::host_launch_scope<stream_ctx, false, Data...>&)> todo;
 
       void set_symbol(::std::string s) override
       {
@@ -498,7 +498,7 @@ public:
     template <typename Fun>
     void operator->*(Fun fun)
     {
-      my_payload().todo = [f = mv(fun)](host_launch_scope<stream_ctx, false, Data...>& task) {
+      my_payload().todo = [f = mv(fun)](reserved::host_launch_scope<stream_ctx, false, Data...>& task) {
         task->*f;
       };
     }

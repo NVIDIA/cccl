@@ -409,7 +409,7 @@ public:
   {
     assert(payload.index() != ::std::variant_npos && "Context is not initialized");
     using result_t =
-      unified_scope<host_launch_scope<stream_ctx, false, Deps...>, host_launch_scope<graph_ctx, false, Deps...>>;
+      unified_scope<reserved::host_launch_scope<stream_ctx, false, Deps...>, reserved::host_launch_scope<graph_ctx, false, Deps...>>;
     return ::std::visit(
       [&](auto& self) {
         return result_t(self.host_launch(deps...));
