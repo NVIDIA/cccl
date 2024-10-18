@@ -508,4 +508,10 @@
 #  define _CCCL_BUILTIN_UNDERLYING_TYPE(...) __underlying_type(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(underlying_type) && gcc >= 4.7
 
+#if defined(_CCCL_COMPILER_MSVC)
+#  define _CCCL_PRETTY_FUNCTION __FUNCSIG__
+#else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
+#  define _CCCL_PRETTY_FUNCTION __PRETTY_FUNCTION__
+#endif // !_CCCL_COMPILER_MSVC
+
 #endif // __CCCL_BUILTIN_H
