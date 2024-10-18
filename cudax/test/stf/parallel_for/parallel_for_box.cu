@@ -27,13 +27,13 @@ int main()
   std::vector<double> A(M * N);
   auto lA = ctx.logical_data(make_slice(&A[0], std::tuple<size_t, size_t>{M, N}, M));
 
-  ctx.parallel_for(lA.shape(), lA.write())->*[=] CUDASTF_DEVICE(size_t i, size_t j, auto sA) {
+  ctx.parallel_for(lA.shape(), lA.write())->*[=] _CCCL_DEVICE(size_t i, size_t j, auto sA) {
     sA(i, j) = 42.0;
   };
 
   // Create a subset of a limited size
   box subset_shape(3, 4);
-  ctx.parallel_for(subset_shape, lA.rw())->*[=] CUDASTF_DEVICE(size_t i, size_t j, auto sA) {
+  ctx.parallel_for(subset_shape, lA.rw())->*[=] _CCCL_DEVICE(size_t i, size_t j, auto sA) {
     sA(i, j) = 13.0;
   };
 
@@ -57,13 +57,13 @@ int main()
   std::vector<double> B(M * N);
   auto lB = ctx.logical_data(make_slice(&B[0], std::tuple<size_t, size_t>{M, N}, M));
 
-  ctx.parallel_for(lB.shape(), lB.write())->*[=] CUDASTF_DEVICE(size_t i, size_t j, auto sB) {
+  ctx.parallel_for(lB.shape(), lB.write())->*[=] _CCCL_DEVICE(size_t i, size_t j, auto sB) {
     sB(i, j) = 42.0;
   };
 
   // Create a subset of a limited size
   box subset_shape_2({2, 5}, {5, 8});
-  ctx.parallel_for(subset_shape_2, lB.rw())->*[=] CUDASTF_DEVICE(size_t i, size_t j, auto sB) {
+  ctx.parallel_for(subset_shape_2, lB.rw())->*[=] _CCCL_DEVICE(size_t i, size_t j, auto sB) {
     sB(i, j) = 13.0;
   };
 

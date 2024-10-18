@@ -39,7 +39,7 @@ public:
   blocked_partition_custom() = default;
 
   template <size_t dimensions>
-  CUDASTF_HOST_DEVICE static auto apply(const box<dimensions>& in, pos4 place_position, dim4 grid_dims)
+  _CCCL_HOST_DEVICE static auto apply(const box<dimensions>& in, pos4 place_position, dim4 grid_dims)
   {
     ::std::array<::std::pair<::std::ptrdiff_t, ::std::ptrdiff_t>, dimensions> bounds;
     size_t target_dim = (which_dim == -1) ? dimensions - 1 : size_t(which_dim);
@@ -74,7 +74,7 @@ public:
   }
 
   template <typename mdspan_shape_t>
-  CUDASTF_HOST_DEVICE static auto apply(const mdspan_shape_t& in, pos4 place_position, dim4 grid_dims)
+  _CCCL_HOST_DEVICE static auto apply(const mdspan_shape_t& in, pos4 place_position, dim4 grid_dims)
   {
     constexpr size_t dimensions = mdspan_shape_t::rank();
 
@@ -103,7 +103,7 @@ public:
     return box<dimensions>(bounds);
   }
 
-  CUDASTF_HOST_DEVICE
+  _CCCL_HOST_DEVICE
   static pos4 get_executor(pos4 data_coords, dim4 data_dims, dim4 grid_dims)
   {
     // Find the largest dimension

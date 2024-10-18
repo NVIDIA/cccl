@@ -45,7 +45,7 @@ class KeyValue
 public:
   ///@{ @name Constructors
   KeyValue() = default;
-  CUDASTF_HOST_DEVICE KeyValue(uint32_t key, uint32_t value)
+  _CCCL_HOST_DEVICE KeyValue(uint32_t key, uint32_t value)
       : key(key)
       , value(value)
   {}
@@ -72,14 +72,14 @@ public:
   }
 
   /** @brief Constructor from pointer to `KeyValue` (runs  on host or device) */
-  CUDASTF_HOST_DEVICE hashtable(KeyValue* addr, uint32_t capacity = kHashTableCapacity)
+  _CCCL_HOST_DEVICE hashtable(KeyValue* addr, uint32_t capacity = kHashTableCapacity)
       : addr(addr)
       , capacity(capacity)
   {}
 
   hashtable(const hashtable&) = default;
 
-  CUDASTF_HOST_DEVICE ~hashtable()
+  _CCCL_HOST_DEVICE ~hashtable()
   {
     if (automatically_allocated)
     {
@@ -106,7 +106,7 @@ public:
    * @brief Get the entry with the requested key, if any
    *
    */
-  CUDASTF_HOST_DEVICE uint32_t get(uint32_t key) const
+  _CCCL_HOST_DEVICE uint32_t get(uint32_t key) const
   {
     uint32_t slot = hash(key);
     while (true)
@@ -124,7 +124,7 @@ public:
    * @brief TODO
    *
    */
-  CUDASTF_HOST_DEVICE void insert(uint32_t key, uint32_t value)
+  _CCCL_HOST_DEVICE void insert(uint32_t key, uint32_t value)
   {
     insert(KeyValue(key, value));
   }
@@ -133,7 +133,7 @@ public:
    * @brief Introduce a pair of key/value in a hashtable
    *
    */
-  CUDASTF_HOST_DEVICE void insert(const KeyValue& kvs)
+  _CCCL_HOST_DEVICE void insert(const KeyValue& kvs)
   {
     uint32_t key   = kvs.key;
     uint32_t value = kvs.value;
@@ -161,7 +161,7 @@ public:
 
   KeyValue* addr;
 
-  CUDASTF_HOST_DEVICE
+  _CCCL_HOST_DEVICE
   size_t get_capacity() const
   {
     return capacity;
@@ -171,7 +171,7 @@ private:
   mutable size_t capacity;
 
   // 32 bit Murmur3 hash
-  inline CUDASTF_HOST_DEVICE uint32_t hash(uint32_t k) const
+  inline _CCCL_HOST_DEVICE uint32_t hash(uint32_t k) const
   {
     k ^= k >> 16;
     k *= 0x85ebca6b;
@@ -236,13 +236,13 @@ public:
   //
   // In practice, the current implementation effectively transfers the whole
   // array so it is correct.
-  CUDASTF_HOST_DEVICE
+  _CCCL_HOST_DEVICE
   size_t size() const
   {
     return capacity * sizeof(uint32_t);
   }
 
-  CUDASTF_HOST_DEVICE
+  _CCCL_HOST_DEVICE
   uint32_t get_capacity() const
   {
     return capacity;

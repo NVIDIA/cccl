@@ -58,7 +58,7 @@ int main()
 
   // Initialize the Un field with boundary conditions, and a disk at a lower
   // temperature in the middle.
-  ctx.parallel_for(lU.shape(), lU.write())->*[=] CUDASTF_DEVICE(size_t i, size_t j, auto U) {
+  ctx.parallel_for(lU.shape(), lU.write())->*[=] _CCCL_DEVICE(size_t i, size_t j, auto U) {
     double rad = U.extent(0) / 8.0;
     double dx  = (double) i - U.extent(0) / 2;
     double dy  = (double) j - U.extent(1) / 2;
@@ -113,7 +113,7 @@ int main()
     // Update Un using Un1 value with a finite difference scheme
     ctx.parallel_for(inner<1>(lU.shape()), lU.read(), lU1.write())
         ->*
-      [=] CUDASTF_DEVICE(size_t i, size_t j, auto U, auto U1) {
+      [=] _CCCL_DEVICE(size_t i, size_t j, auto U, auto U1) {
         U1(i, j) =
           U(i, j)
           + c * ((U(i - 1, j) - 2 * U(i, j) + U(i + 1, j)) / dx2 + (U(i, j - 1) - 2 * U(i, j) + U(i, j + 1)) / dy2);

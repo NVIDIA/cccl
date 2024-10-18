@@ -88,7 +88,7 @@ public:
 
   using coords_t = typename mdspan_shape_t::coords_t;
 
-  CUDASTF_HOST_DEVICE coords_t index_to_coords(size_t index) const
+  _CCCL_HOST_DEVICE coords_t index_to_coords(size_t index) const
   {
     // First transform from nparts and part_id to one coordinate
     const size_t remain  = index % tile_size;
@@ -135,7 +135,7 @@ public:
     return tiled_mdspan_shape<tile_size, mdspan_shape_t>(in, place_position.x, grid_dims.x);
   }
 
-  CUDASTF_HOST_DEVICE
+  _CCCL_HOST_DEVICE
   static pos4 get_executor(pos4 data_coords, dim4 /*unused*/, dim4 grid_dims)
   {
     assert(grid_dims.x > 0);

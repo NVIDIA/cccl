@@ -457,7 +457,7 @@ int main()
     handle_r.write(),
     handle_dot_result.write())
       ->*
-    [=] CUDASTF_DEVICE(
+    [=] _CCCL_DEVICE(
       auto t,
       slice<int> I,
       slice<int> J,

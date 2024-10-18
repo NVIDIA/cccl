@@ -39,7 +39,7 @@ namespace cuda::experimental::stf
 class cooperative_group_system
 {
 public:
-  CUDASTF_HOST_DEVICE cooperative_group_system(unsigned char* hostMemoryArrivedList = nullptr)
+  _CCCL_HOST_DEVICE cooperative_group_system(unsigned char* hostMemoryArrivedList = nullptr)
       : hostMemoryArrivedList(hostMemoryArrivedList)
   {}
 
@@ -55,7 +55,7 @@ public:
   ///@}
 
 #ifdef __CUDACC__
-  CUDASTF_DEVICE void sync(size_t devid, size_t ndevs) const
+  _CCCL_DEVICE void sync(size_t devid, size_t ndevs) const
   {
     auto grid = cooperative_groups::this_grid();
     grid.sync();
@@ -101,7 +101,7 @@ private:
   unsigned char* hostMemoryArrivedList = nullptr; ///< Pointer to the host memory synchronization list.
 
 #ifdef __CUDACC__
-  CUDASTF_DEVICE unsigned char load_arrived(unsigned char* arrived) const
+  _CCCL_DEVICE unsigned char load_arrived(unsigned char* arrived) const
   {
 #  if __CUDA_ARCH__ < 700
     return *(volatile unsigned char*) arrived;
@@ -112,7 +112,7 @@ private:
 #  endif
   }
 
-  CUDASTF_DEVICE void store_arrived(unsigned char* arrived, unsigned char val) const
+  _CCCL_DEVICE void store_arrived(unsigned char* arrived, unsigned char val) const
   {
 #  if __CUDA_ARCH__ < 700
     *(volatile unsigned char*) arrived = val;

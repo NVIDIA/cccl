@@ -1130,7 +1130,7 @@ inline void unit_test_pfor()
     ctx.finalize();
   };
   auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
-  ctx.parallel_for(lA.shape(), lA.write())->*[] CUDASTF_DEVICE(size_t i, slice<size_t> A) {
+  ctx.parallel_for(lA.shape(), lA.write())->*[] _CCCL_DEVICE(size_t i, slice<size_t> A) {
     A(i) = 2 * i;
   };
   ctx.host_launch(lA.read())->*[](auto A) {
@@ -1176,7 +1176,7 @@ inline void unit_test_pfor_mix_host_dev()
 
   auto lx = ctx.logical_data(X);
 
-  ctx.parallel_for(lx.shape(), lx.write())->*[=] CUDASTF_DEVICE(size_t pos, auto sx) {
+  ctx.parallel_for(lx.shape(), lx.write())->*[=] _CCCL_DEVICE(size_t pos, auto sx) {
     sx(pos) = 17 * pos + 4;
   };
 
@@ -1184,7 +1184,7 @@ inline void unit_test_pfor_mix_host_dev()
     sx(pos) = sx(pos) * sx(pos);
   };
 
-  ctx.parallel_for(lx.shape(), lx.rw())->*[=] CUDASTF_DEVICE(size_t pos, auto sx) {
+  ctx.parallel_for(lx.shape(), lx.rw())->*[=] _CCCL_DEVICE(size_t pos, auto sx) {
     sx(pos) = sx(pos) - 7;
   };
 
@@ -1238,7 +1238,7 @@ inline void unit_test_pfor_grid()
   stream_ctx ctx;
   auto where = exec_place::all_devices();
   auto lA    = ctx.logical_data(shape_of<slice<size_t>>(64));
-  ctx.parallel_for(blocked_partition(), where, lA.shape(), lA.write())->*[] CUDASTF_DEVICE(size_t i, slice<size_t> A) {
+  ctx.parallel_for(blocked_partition(), where, lA.shape(), lA.write())->*[] _CCCL_DEVICE(size_t i, slice<size_t> A) {
     A(i) = 2 * i;
   };
   ctx.host_launch(lA.read())->*[](auto A) {
@@ -1287,7 +1287,7 @@ inline void unit_test_launch()
     ctx.finalize();
   };
   auto lA = ctx.logical_data(shape_of<slice<size_t>>(64));
-  ctx.launch(lA.write())->*[] CUDASTF_DEVICE(auto t, slice<size_t> A) {
+  ctx.launch(lA.write())->*[] _CCCL_DEVICE(auto t, slice<size_t> A) {
     for (auto i : t.apply_partition(shape(A)))
     {
       A(i) = 2 * i;

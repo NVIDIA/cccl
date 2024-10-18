@@ -74,12 +74,12 @@ struct layout_stride : ::cuda::std::layout_stride
     constexpr mapping() = default;
 
     template <typename... A>
-    constexpr CUDASTF_HOST_DEVICE mapping(A&&... a)
+    constexpr _CCCL_HOST_DEVICE mapping(A&&... a)
         : ::cuda::std::layout_stride::mapping<Extents>(::std::forward<A>(a)...)
     {}
 
     template <typename... is_t>
-    constexpr CUDASTF_HOST_DEVICE auto operator()(is_t&&... is) const
+    constexpr _CCCL_HOST_DEVICE auto operator()(is_t&&... is) const
     {
 #ifdef CUDASTF_BOUNDSCHECK
       each_in_pack(
@@ -144,7 +144,7 @@ size_t contiguous_dims(const S& span)
  * @return auto `slice<ElementType, sizeof...(Extents)>`
  */
 template <typename ElementType, typename... Extents, typename... Strides>
-CUDASTF_HOST_DEVICE auto
+_CCCL_HOST_DEVICE auto
 make_slice(ElementType* data, const ::std::tuple<Extents...>& extents, const Strides&... strides)
 {
   static_assert(sizeof...(Extents) == sizeof...(Strides) + 1);
@@ -167,7 +167,7 @@ make_slice(ElementType* data, const ::std::tuple<Extents...>& extents, const Str
  * @return auto
  */
 template <typename T, typename... Extents>
-CUDASTF_HOST_DEVICE auto make_slice(T* data, const Extents&... extents)
+_CCCL_HOST_DEVICE auto make_slice(T* data, const Extents&... extents)
 {
   using Result = slice<T, sizeof...(Extents)>;
   static_assert(sizeof...(Extents) == Result::rank());
@@ -371,14 +371,14 @@ public:
    * @brief Dimensionality of the slice.
    *
    */
-  CUDASTF_HOST_DEVICE
+  _CCCL_HOST_DEVICE
   static constexpr size_t rank()
   {
     return described_type::rank();
   }
 
   // Functions to create the begin and end iterators
-  CUDASTF_HOST_DEVICE auto begin()
+  _CCCL_HOST_DEVICE auto begin()
   {
     ::std::array<size_t, rank()> sizes;
     unroll<rank()>([&](auto i) {
@@ -387,7 +387,7 @@ public:
     return box<rank()>(sizes).begin();
   }
 
-  CUDASTF_HOST_DEVICE auto end()
+  _CCCL_HOST_DEVICE auto end()
   {
     ::std::array<size_t, rank()> sizes;
     unroll<rank()>([&](auto i) {
@@ -417,7 +417,7 @@ public:
    *
    * All `shape_of` specializations must define this constructor.
    */
-  explicit CUDASTF_HOST_DEVICE shape_of(const described_type& x)
+  explicit _CCCL_HOST_DEVICE shape_of(const described_type& x)
       : extents(x.extents())
       , strides(x.mapping().strides())
   {}
@@ -508,7 +508,7 @@ public:
    *
    * This member function is optional.
    */
-  constexpr CUDASTF_HOST_DEVICE size_t extent(size_t dim) const
+  constexpr _CCCL_HOST_DEVICE size_t extent(size_t dim) const
   {
     assert(dim < rank());
     return extents.extent(dim);
@@ -520,7 +520,7 @@ public:
    * @param dim The dimension for which to get the stride.
    * @return The stride for the specified dimension.
    */
-  constexpr CUDASTF_HOST_DEVICE size_t stride(size_t dim) const
+  constexpr _CCCL_HOST_DEVICE size_t stride(size_t dim) const
   {
     assert(dim < rank());
     return strides[dim];
@@ -533,7 +533,7 @@ public:
    *
    * This member function is optional.
    */
-  CUDASTF_HOST_DEVICE size_t size() const
+  _CCCL_HOST_DEVICE size_t size() const
   {
     size_t result = 1;
     for (size_t i = 0; i != rank(); ++i)
@@ -548,7 +548,7 @@ public:
    *
    * @return const std::array<size_t, dimensions>&
    */
-  CUDASTF_HOST_DEVICE
+  _CCCL_HOST_DEVICE
   ::std::array<size_t, rank()> get_sizes() const
   {
     ::std::array<size_t, rank()> result;
@@ -609,7 +609,7 @@ public:
   }
 
   // This transforms a tuple of (shape, 1D index) into a coordinate
-  CUDASTF_HOST_DEVICE coords_t index_to_coords(size_t index) const
+  _CCCL_HOST_DEVICE coords_t index_to_coords(size_t index) const
   {
     ::std::array<size_t, shape_of::rank()> coordinates{};
     // for (::std::ptrdiff_t i = _dimensions - 1; i >= 0; i--)

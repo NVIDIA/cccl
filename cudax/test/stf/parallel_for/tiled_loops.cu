@@ -43,7 +43,7 @@ int main()
   auto ly = ctx.logical_data(Y);
 
   // Init Y
-  ctx.parallel_for(ly.shape(), ly.write())->*[=] CUDASTF_DEVICE(size_t pos, auto sy) {
+  ctx.parallel_for(ly.shape(), ly.write())->*[=] _CCCL_DEVICE(size_t pos, auto sy) {
     sy(pos) = -1.0;
   };
 
@@ -57,7 +57,7 @@ int main()
    */
   for (size_t part_id = 0; part_id < nparts; part_id++)
   {
-    ctx.parallel_for(tiled<tile_size>(ly.shape(), part_id, nparts), ly.rw())->*[=] CUDASTF_DEVICE(size_t pos, auto sy) {
+    ctx.parallel_for(tiled<tile_size>(ly.shape(), part_id, nparts), ly.rw())->*[=] _CCCL_DEVICE(size_t pos, auto sy) {
       sy(pos) = (double) part_id;
     };
   }

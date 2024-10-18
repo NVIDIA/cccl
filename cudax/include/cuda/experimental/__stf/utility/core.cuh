@@ -48,7 +48,7 @@ namespace cuda::experimental::stf
  * @pre The argument `v` must not be `const`, i.e., the function will fail to compile for `const` lvalues.
  */
 template <typename T>
-CUDASTF_HOST_DEVICE constexpr decltype(auto) mv(T&& obj)
+_CCCL_HOST_DEVICE constexpr decltype(auto) mv(T&& obj)
 {
   static_assert(::std::is_lvalue_reference_v<T>, "Useless move from rvalue.");
   static_assert(!::std::is_const_v<::std::remove_reference_t<T>>, "Misleading move from const lvalue.");
@@ -101,7 +101,7 @@ auto to_shared(T&& obj)
  * expression `true ? from : to`. This ensures expected behavior for iteration with different `from` and `to` types.
  */
 template <typename T, typename U>
-CUDASTF_HOST_DEVICE auto each(T from, U to)
+_CCCL_HOST_DEVICE auto each(T from, U to)
 {
   using common = ::std::remove_reference_t<decltype(true ? from : to)>;
 
@@ -110,16 +110,16 @@ CUDASTF_HOST_DEVICE auto each(T from, U to)
     common value;
 
   public:
-    CUDASTF_HOST_DEVICE iterator(common value)
+    _CCCL_HOST_DEVICE iterator(common value)
         : value(mv(value))
     {}
 
-    CUDASTF_HOST_DEVICE common operator*() const
+    _CCCL_HOST_DEVICE common operator*() const
     {
       return value;
     }
 
-    CUDASTF_HOST_DEVICE iterator& operator++()
+    _CCCL_HOST_DEVICE iterator& operator++()
     {
       if constexpr (::std::is_enum_v<common>)
       {
@@ -132,7 +132,7 @@ CUDASTF_HOST_DEVICE auto each(T from, U to)
       return *this;
     }
 
-    CUDASTF_HOST_DEVICE bool operator!=(const iterator& other) const
+    _CCCL_HOST_DEVICE bool operator!=(const iterator& other) const
     {
       return value != other.value;
     }
@@ -143,15 +143,15 @@ CUDASTF_HOST_DEVICE auto each(T from, U to)
     common begin_, end_;
 
   public:
-    CUDASTF_HOST_DEVICE each_t(T begin, U end)
+    _CCCL_HOST_DEVICE each_t(T begin, U end)
         : begin_(mv(begin))
         , end_(mv(end))
     {}
-    CUDASTF_HOST_DEVICE iterator begin() const
+    _CCCL_HOST_DEVICE iterator begin() const
     {
       return iterator(begin_);
     }
-    CUDASTF_HOST_DEVICE iterator end() const
+    _CCCL_HOST_DEVICE iterator end() const
     {
       return iterator(end_);
     }
