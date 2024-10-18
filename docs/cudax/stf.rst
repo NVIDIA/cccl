@@ -1594,7 +1594,7 @@ Users can analyze the performance of kernels generated using
 ``ctx.parallel_for`` and ``ctx.launch`` using the ``ncu`` tool.
 
 Naming kernels
-^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~
 
 However, displayed kernel names would be hardly exploitable as they
 would all have the same name. One possible work-around is to let ``ncu``
@@ -1613,7 +1613,7 @@ name the generated kernel “updateA” :
    };
 
 Example with miniWeather
-^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 Kernel tuning should always be performed on optimized code :
 
