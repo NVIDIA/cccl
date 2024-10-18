@@ -20,6 +20,8 @@
 
 #include "test_macros.h"
 
+_CCCL_DIAG_SUPPRESS_GCC("-Wtautological-compare")
+
 struct a_dummy_class_type
 {};
 
