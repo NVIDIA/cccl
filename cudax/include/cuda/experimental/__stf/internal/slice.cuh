@@ -1124,20 +1124,20 @@ UNITTEST("data_hash")
 
 // Note this is implementing it in the cudastf namespace, not std::hash
 template <typename... P>
-struct hash<::cuda::experimental::stf::mdspan<P...>>
+struct hash<mdspan<P...>>
 {
-  ::std::size_t operator()(::cuda::experimental::stf::mdspan<P...> const& s) const noexcept
+  ::std::size_t operator()(mdspan<P...> const& s) const noexcept
   {
-    static constexpr auto _dimensions = ::cuda::experimental::stf::mdspan<P...>::rank();
+    static constexpr auto _dimensions = mdspan<P...>::rank();
     // Combine hashes from the ptr, sizes and strides
     size_t h = 0;
-    cuda::experimental::stf::hash_combine(h, s.data_handle());
+    hash_combine(h, s.data_handle());
 
     if constexpr (_dimensions > 0)
     {
       for (size_t i = 0; i < _dimensions; i++)
       {
-        cuda::experimental::stf::hash_combine(h, s.extent(i));
+        hash_combine(h, s.extent(i));
       }
     }
 
@@ -1145,7 +1145,7 @@ struct hash<::cuda::experimental::stf::mdspan<P...>>
     {
       for (size_t i = 1; i < _dimensions; i++)
       {
-        cuda::experimental::stf::hash_combine(h, s.stride(i));
+        hash_combine(h, s.stride(i));
       }
     }
 
@@ -1153,18 +1153,16 @@ struct hash<::cuda::experimental::stf::mdspan<P...>>
   }
 };
 
-} // namespace cuda::experimental::stf
-
 #ifdef UNITTESTED_FILE
 
 UNITTEST("slice hash")
 {
   double A[5 * 2];
-  auto s  = cuda::experimental::stf::make_slice(A, ::std::tuple{5, 2}, 5);
-  auto s2 = cuda::experimental::stf::make_slice(A, ::std::tuple{4, 2}, 5);
+  auto s  = make_slice(A, ::std::tuple{5, 2}, 5);
+  auto s2 = make_slice(A, ::std::tuple{4, 2}, 5);
 
-  size_t h  = cuda::experimental::stf::hash<cuda::experimental::stf::slice<double, 2>>{}(s);
-  size_t h2 = cuda::experimental::stf::hash<cuda::experimental::stf::slice<double, 2>>{}(s2);
+  size_t h  = hash<slice<double, 2>>{}(s);
+  size_t h2 = hash<slice<double, 2>>{}(s2);
 
   EXPECT(h != h2);
 };
@@ -1174,13 +1172,13 @@ UNITTEST("slice hash 3D")
   double A[5 * 2 * 40];
 
   // contiguous
-  auto s = cuda::experimental::stf::make_slice(A, ::std::tuple{5, 2, 40}, 5, 5 * 2);
+  auto s = make_slice(A, ::std::tuple{5, 2, 40}, 5, 5 * 2);
 
   // non-contiguous
-  auto s2 = cuda::experimental::stf::make_slice(A, ::std::tuple{4, 2, 40}, 5, 5 * 2);
+  auto s2 = make_slice(A, ::std::tuple{4, 2, 40}, 5, 5 * 2);
 
-  size_t h  = cuda::experimental::stf::hash<cuda::experimental::stf::slice<double, 3>>{}(s);
-  size_t h2 = cuda::experimental::stf::hash<cuda::experimental::stf::slice<double, 3>>{}(s2);
+  size_t h  = hash<slice<double, 3>>{}(s);
+  size_t h2 = hash<slice<double, 3>>{}(s2);
 
   EXPECT(h != h2);
 };
@@ -1194,3 +1192,5 @@ UNITTEST("shape_of<slice> basics")
 };
 
 #endif // UNITTESTED_FILE
+
+} // namespace cuda::experimental::stf
