@@ -235,7 +235,7 @@ public:
   {
     EXPECT(state().deferred_tasks.empty(), "Mixing deferred and immediate tasks is not supported yet.");
 
-    auto dump_hooks = get_dump_hooks(this, deps...);
+    auto dump_hooks = reserved::get_dump_hooks(this, deps...);
 
     auto res = stream_task<Deps...>(*this, mv(e_place), mv(deps)...);
     res.add_post_submission_hook(dump_hooks);

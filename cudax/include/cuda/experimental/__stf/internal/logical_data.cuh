@@ -236,7 +236,7 @@ public:
   void erase();
 
   // Data handle unique id : when this object is moved, it is set automatically to -1
-  unique_id_t unique_id;
+  reserved::unique_id_t unique_id;
 
   backend_ctx_untyped ctx;
 

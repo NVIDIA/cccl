@@ -153,7 +153,7 @@ public:
     bool dot_is_tracing = dot.is_tracing();
     if (dot_is_tracing)
     {
-      fence_unique_id = unique_id_t();
+      fence_unique_id = reserved::unique_id_t();
       dot.add_fence_vertex(fence_unique_id);
     }
 

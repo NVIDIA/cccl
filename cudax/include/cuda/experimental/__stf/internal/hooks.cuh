@@ -69,6 +69,8 @@ size_t data_hash(Unknown)
   return 0;
 }
 
+namespace reserved
+{
 inline void create_dump_dir(const ::std::string& dump_dir)
 {
   // Create the directory (no-op if it already exists)
@@ -214,5 +216,7 @@ static ::std::vector<::std::function<void()>> get_dump_hooks(ctxt_t* ctx, task_d
 
   return hooks;
 }
+
+} // end namespace reserved
 
 } // end namespace cuda::experimental::stf

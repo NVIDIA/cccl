@@ -128,7 +128,7 @@ private:
     event_list done_prereqs;
 
     // Used to uniquely identify the task
-    unique_id_t unique_id;
+    reserved::unique_id_t unique_id;
 
     // Used to uniquely identify the task for mapping purposes
     mapping_id_t mapping_id;

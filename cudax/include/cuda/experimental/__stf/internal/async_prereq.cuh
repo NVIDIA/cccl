@@ -44,10 +44,10 @@ namespace cuda::experimental::stf
 class event_impl;
 using event = reserved::handle<event_impl>;
 
-using unique_id_t = reserved::unique_id<event>;
-
 namespace reserved
 {
+using unique_id_t = unique_id<event>;
+
 using event_vector = small_vector<event, 7>;
 static_assert(sizeof(event_vector) == 120);
 } // namespace reserved
@@ -160,7 +160,7 @@ public:
   }
 
   /// A unique identifier for the event, used to ensure proper event ordering.
-  mutable unique_id_t unique_prereq_id;
+  mutable reserved::unique_id_t unique_prereq_id;
 
   ::std::atomic<int> outbound_deps = 0;
 

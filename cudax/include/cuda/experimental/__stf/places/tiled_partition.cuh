@@ -132,7 +132,7 @@ public:
   tiled_partition() = default;
 
   template <typename mdspan_shape_t>
-  static const tiled_mdspan_shape<tile_size, mdspan_shape_t>
+  static const reserved::tiled_mdspan_shape<tile_size, mdspan_shape_t>
   apply(const mdspan_shape_t& in, pos4 place_position, dim4 grid_dims)
   {
     // TODO assert 1D !

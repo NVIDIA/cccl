@@ -294,7 +294,7 @@ public:
   template <typename... Deps>
   auto task(exec_place e_place, task_dep<Deps>... deps)
   {
-    auto dump_hooks = get_dump_hooks(this, deps...);
+    auto dump_hooks = reserved::get_dump_hooks(this, deps...);
     auto res        = graph_task<Deps...>(*this, get_graph(), get_graph_epoch(), mv(e_place), mv(deps)...);
     res.add_post_submission_hook(dump_hooks);
     return res;

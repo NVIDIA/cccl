@@ -97,7 +97,7 @@ public:
       , e_place(mv(e_place))
       , shape(mv(shape))
   {
-    dump_hooks = get_dump_hooks(&ctx, deps...);
+    dump_hooks = reserved::get_dump_hooks(&ctx, deps...);
   }
 
   parallel_for_scope(const parallel_for_scope&)            = delete;

@@ -283,7 +283,7 @@ public:
       , e_place(mv(e_place))
       , spec(mv(spec))
   {
-    dump_hooks = get_dump_hooks(&ctx, deps...);
+    dump_hooks = reserved::get_dump_hooks(&ctx, deps...);
   }
 
   /// Deleted copy constructor and copy assignment operator.
