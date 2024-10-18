@@ -14,7 +14,7 @@
 using namespace cuda::experimental::stf;
 
 // Insert the key/values in kvs into the hashtable
-__global__ void gpu_hashtable_insert_kernel(hashtable h, const KeyValue* kvs, unsigned int numkvs)
+__global__ void gpu_hashtable_insert_kernel(hashtable h, const reserved::KeyValue* kvs, unsigned int numkvs)
 {
   unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
   if (threadid < numkvs)
@@ -23,7 +23,7 @@ __global__ void gpu_hashtable_insert_kernel(hashtable h, const KeyValue* kvs, un
   }
 }
 
-void gpu_hashtable_insert(hashtable d_h, const KeyValue* device_kvs, unsigned int num_kvs, cudaStream_t stream)
+void gpu_hashtable_insert(hashtable d_h, const reserved::KeyValue* device_kvs, unsigned int num_kvs, cudaStream_t stream)
 {
   // Have CUDA calculate the thread block size
   auto [mingridsize, threadblocksize] = compute_occupancy(gpu_hashtable_insert_kernel);
@@ -42,7 +42,7 @@ int main()
   auto lh = ctx.logical_data(h);
 
   // Create an array of values on the host
-  KeyValue kvs_array[16];
+  reserved::KeyValue kvs_array[16];
   for (uint32_t i = 0; i < 16; i++)
   {
     kvs_array[i].key   = i * 10;

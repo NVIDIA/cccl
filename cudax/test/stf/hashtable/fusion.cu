@@ -20,10 +20,10 @@ __global__ void gpu_merge_hashtable(hashtable A, const hashtable B)
   unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
   while (threadid < reserved::kHashTableCapacity)
   {
-    if (B.addr[threadid].key != kEmpty)
+    if (B.addr[threadid].key != reserved::kEmpty)
     {
       uint32_t value = B.addr[threadid].value;
-      if (value != kEmpty)
+      if (value != reserved::kEmpty)
       {
         //    printf("INSERTING key %d value %d\n", pHashTableB[threadid].key, value);
         A.insert(B.addr[threadid]);
@@ -38,12 +38,12 @@ int main()
   stream_ctx ctx;
 
   hashtable A;
-  A.insert(KeyValue(107, 4));
-  A.insert(KeyValue(108, 6));
+  A.insert(reserved::KeyValue(107, 4));
+  A.insert(reserved::KeyValue(108, 6));
 
   hashtable B;
-  B.insert(KeyValue(7, 14));
-  B.insert(KeyValue(8, 16));
+  B.insert(reserved::KeyValue(7, 14));
+  B.insert(reserved::KeyValue(8, 16));
 
   auto lA = ctx.logical_data(A);
   auto lB = ctx.logical_data(B);
