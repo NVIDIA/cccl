@@ -142,7 +142,17 @@ std::string get_single_tile_kernel_name(
   const std::string init_t = cccl_type_enum_to_name(init.type.type);
 
   std::string offset_t;
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+  if (is_second_kernel)
+  {
+    // Second kernel is always invoked with an int offset.
+    // See the definition of the local variable `reduce_grid_size`
+    // in DispatchReduce::InvokePasses.
+    check(nvrtcGetTypeName<int>(&offset_t));
+  }
+  else
+  {
+    check(nvrtcGetTypeName<OffsetT>(&offset_t));
+  }
 
   std::string reduction_op_t;
   check(nvrtcGetTypeName<op_wrapper>(&reduction_op_t));
