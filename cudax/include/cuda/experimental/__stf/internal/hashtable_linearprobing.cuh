@@ -34,6 +34,8 @@
 namespace cuda::experimental::stf
 {
 
+namespace reserved {
+
 const uint32_t kEmpty = 0xffffffff;
 
 /**
@@ -57,6 +59,8 @@ public:
 /* Default capacity */
 const ::std::uint32_t kHashTableCapacity = 64 * 1024 * 1024;
 
+} // end namespace reserved
+
 /**
  * @brief A simple hashtable that maps `size_t` to `size_t`
  *
@@ -65,14 +69,14 @@ class hashtable
 {
 public:
   /** @brief Default constructor (runs on host) */
-  hashtable(uint32_t capacity = kHashTableCapacity)
+  hashtable(uint32_t capacity = reserved::kHashTableCapacity)
       : capacity(capacity)
   {
     init();
   }
 
   /** @brief Constructor from pointer to `KeyValue` (runs  on host or device) */
-  _CCCL_HOST_DEVICE hashtable(KeyValue* addr, uint32_t capacity = kHashTableCapacity)
+  _CCCL_HOST_DEVICE hashtable(reserved::KeyValue* addr, uint32_t capacity = reserved::kHashTableCapacity)
       : addr(addr)
       , capacity(capacity)
   {}
@@ -95,7 +99,7 @@ public:
   {
     for (size_t i = 0; i < capacity; i++)
     {
-      if (addr[i].value != kEmpty)
+      if (addr[i].value != reserved::kEmpty)
       {
         fprintf(stderr, "VALID ENTRY at slot %zu, value %d key %d\n", i, addr[i].value, addr[i].key);
       }
@@ -112,7 +116,7 @@ public:
     while (true)
     {
       uint32_t prev = addr[slot].key;
-      if (prev == kEmpty || prev == key)
+      if (prev == reserved::kEmpty || prev == key)
       {
         return addr[slot].value;
       }
@@ -126,14 +130,14 @@ public:
    */
   _CCCL_HOST_DEVICE void insert(uint32_t key, uint32_t value)
   {
-    insert(KeyValue(key, value));
+    insert(reserved::KeyValue(key, value));
   }
 
   /**
    * @brief Introduce a pair of key/value in a hashtable
    *
    */
-  _CCCL_HOST_DEVICE void insert(const KeyValue& kvs)
+  _CCCL_HOST_DEVICE void insert(const reserved::KeyValue& kvs)
   {
     uint32_t key   = kvs.key;
     uint32_t value = kvs.value;
@@ -142,11 +146,11 @@ public:
     while (true)
     {
 #if defined(__CUDA_ARCH__)
-      uint32_t prev = atomicCAS(&addr[slot].key, kEmpty, key);
+      uint32_t prev = atomicCAS(&addr[slot].key, reserved::kEmpty, key);
 #else
       uint32_t prev = addr[slot].key;
 #endif
-      if (prev == kEmpty || prev == key)
+      if (prev == reserved::kEmpty || prev == key)
       {
         addr[slot].value = value;
 #if !defined(__CUDA_ARCH__)
@@ -159,7 +163,7 @@ public:
     }
   }
 
-  KeyValue* addr;
+  reserved::KeyValue* addr;
 
   _CCCL_HOST_DEVICE
   size_t get_capacity() const
@@ -184,7 +188,7 @@ private:
   // Initialization of the table (host memory)
   void init()
   {
-    size_t sz = capacity * sizeof(KeyValue);
+    size_t sz = capacity * sizeof(reserved::KeyValue);
     cuda_try(cudaHostAlloc(&addr, sz, cudaHostAllocMapped));
     memset(addr, 0xff, sz);
     automatically_allocated = true;
@@ -208,7 +212,7 @@ public:
   /**
    * @brief Initialize with a specific capacity
    */
-  shape_of(uint32_t capacity = kHashTableCapacity)
+  shape_of(uint32_t capacity = reserved::kHashTableCapacity)
       : capacity(capacity)
   {}
 
@@ -253,11 +257,11 @@ private:
 };
 
 template <>
-struct hash<cuda::experimental::stf::hashtable>
+struct hash<hashtable>
 {
-  ::std::size_t operator()(cuda::experimental::stf::hashtable const& s) const noexcept
+  ::std::size_t operator()(hashtable const& s) const noexcept
   {
-    return ::std::hash<cuda::experimental::stf::KeyValue*>{}(s.addr);
+    return ::std::hash<reserved::KeyValue*>{}(s.addr);
   }
 };
 
