@@ -301,6 +301,7 @@ public:
    *
    * @tparam level The level in the hierarchy to check for the `sync` property. Level starts from 0 (top-level).
    */
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen fails to parse this
   template <size_t level>
   static inline constexpr bool is_synchronizable = [] {
     if constexpr (level > 0)
@@ -312,6 +313,10 @@ public:
       return can_sync;
     }
   }();
+#else
+  template <size_t level>
+  static inline constexpr bool is_synchronizable;
+#endif
 
   /**
    * @brief Get the statically-specified width at a specific level
