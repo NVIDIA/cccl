@@ -43,7 +43,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace cuda::experimental::stf
+namespace cuda::experimental::stf::reserved
 {
 
 /**
@@ -464,4 +464,4 @@ inline ::std::unique_ptr<scheduler> scheduler::make(const char* schedule_type)
   exit(EXIT_FAILURE);
 }
 
-} // namespace cuda::experimental::stf
+} // namespace cuda::experimental::stf::reserved

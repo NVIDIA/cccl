@@ -422,8 +422,8 @@ protected:
     friend class backend_ctx_untyped;
 
     impl(async_resources_handle async_resources = async_resources_handle())
-        : auto_scheduler(scheduler::make(getenv("CUDASTF_SCHEDULE")))
-        , auto_reorderer(reorderer::make(getenv("CUDASTF_TASK_ORDER")))
+        : auto_scheduler(reserved::scheduler::make(getenv("CUDASTF_SCHEDULE")))
+        , auto_reorderer(reserved::reorderer::make(getenv("CUDASTF_TASK_ORDER")))
         , async_resources(async_resources ? mv(async_resources) : async_resources_handle())
         , is_tracing(reserved::dot::instance().is_tracing())
         , is_tracing_prereqs(reserved::dot::instance().is_tracing_prereqs())
@@ -582,8 +582,8 @@ _CCCL_DIAG_POP
     ::std::vector<block_allocator_untyped> attached_allocators;
     composite_slice_cache composite_cache;
 
-    ::std::unique_ptr<scheduler> auto_scheduler;
-    ::std::unique_ptr<reorderer> auto_reorderer;
+    ::std::unique_ptr<reserved::scheduler> auto_scheduler;
+    ::std::unique_ptr<reserved::reorderer> auto_reorderer;
     // Stats-related stuff
     ::std::unordered_map<::std::pair<int, int>, ::std::pair<size_t, size_t>, cuda::experimental::stf::hash<::std::pair<int, int>>> transfers;
     bool is_recording_stats = false;
@@ -698,7 +698,7 @@ public:
     return pimpl->auto_scheduler->schedule_task(t);
   }
 
-  void reorder_tasks(::std::vector<int>& tasks, ::std::unordered_map<int, reorderer_payload>& task_map)
+  void reorder_tasks(::std::vector<int>& tasks, ::std::unordered_map<int, reserved::reorderer_payload>& task_map)
   {
     assert(pimpl);
     assert(pimpl->auto_reorderer);

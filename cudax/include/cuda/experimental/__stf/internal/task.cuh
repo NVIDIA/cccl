@@ -41,9 +41,13 @@
 namespace cuda::experimental::stf
 {
 
+namespace reserved {
+
 class mapping_id_tag
 {};
-using mapping_id_t = reserved::unique_id<mapping_id_tag>;
+
+} // end namespace reserved
+using mapping_id_t = reserved::unique_id<reserved::mapping_id_tag>;
 
 class backend_ctx_untyped;
 class logical_data_untyped;

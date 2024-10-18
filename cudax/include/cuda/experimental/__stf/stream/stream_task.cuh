@@ -714,11 +714,11 @@ public:
     payload->set_cost(cost);
   }
 
-  reorderer_payload get_reorderer_payload() const
+  auto get_reorderer_payload() const
   {
     assert(payload);
     payload->populate_deps_scheduling_info();
-    return reorderer_payload(
+    return reserved::reorderer_payload(
       payload->get_symbol(),
       payload->get_mapping_id(),
       payload->get_successors(),

@@ -38,7 +38,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace cuda::experimental::stf
+namespace cuda::experimental::stf::reserved
 {
 
 /**
@@ -378,4 +378,4 @@ inline ::std::unique_ptr<reorderer> reorderer::make(const char* reorderer_type)
   abort();
 }
 
-} // namespace cuda::experimental::stf
+} // namespace cuda::experimental::stf::reserved

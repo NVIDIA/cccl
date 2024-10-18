@@ -36,6 +36,9 @@
 namespace cuda::experimental::stf
 {
 
+namespace reserved
+{
+
 // For counters
 class graph_tag
 {
@@ -53,6 +56,8 @@ public:
     {};
   };
 };
+
+} // end namespace reserved
 
 /**
  * @brief Uncached allocator (used as a base for other allocators)
@@ -329,13 +334,13 @@ public:
       return;
     }
 
-    fprintf(stderr, "[STATS CUDA GRAPHS] instantiated=%lu\n", reserved::counter<graph_tag::instantiate>.load());
-    fprintf(stderr, "[STATS CUDA GRAPHS] launched=%lu\n", reserved::counter<graph_tag::launch>.load());
+    fprintf(stderr, "[STATS CUDA GRAPHS] instantiated=%lu\n", reserved::counter<reserved::graph_tag::instantiate>.load());
+    fprintf(stderr, "[STATS CUDA GRAPHS] launched=%lu\n", reserved::counter<reserved::graph_tag::launch>.load());
     fprintf(stderr,
             "[STATS CUDA GRAPHS] updated=%lu success=%ld failed=%ld\n",
-            reserved::counter<graph_tag::update>.load(),
-            reserved::counter<graph_tag::update::success>.load(),
-            reserved::counter<graph_tag::update::failure>.load());
+            reserved::counter<reserved::graph_tag::update>.load(),
+            reserved::counter<reserved::graph_tag::update::success>.load(),
+            reserved::counter<reserved::graph_tag::update::failure>.load());
 #endif
   }
 
@@ -367,7 +372,7 @@ public:
     cuda_try(cudaGraphLaunch(*state.exec_graph, state.submitted_stream));
 
 #ifdef CUDASTF_DEBUG
-    reserved::counter<graph_tag::launch>.increment();
+    reserved::counter<reserved::graph_tag::launch>.increment();
 #endif
 
     // Note that we comment this out for now, so that it is possible to use
@@ -553,7 +558,7 @@ private:
     cuda_try(cudaGraphInstantiateWithFlags(res.get(), g, 0));
 
 #ifdef CUDASTF_DEBUG
-    reserved::counter<graph_tag::instantiate>.increment();
+    reserved::counter<reserved::graph_tag::instantiate>.increment();
 #endif
 
     return res;
@@ -651,7 +656,7 @@ private:
     cuda_try(cudaGraphLaunch(local_exec_graph, state.submitted_stream));
 
 #ifdef CUDASTF_DEBUG
-    reserved::counter<graph_tag::launch>.increment();
+    reserved::counter<reserved::graph_tag::launch>.increment();
 #endif
 
     return state.submitted_stream;
@@ -675,14 +680,14 @@ public:
     cudaError_t res = cudaGetLastError();
 
 #ifdef CUDASTF_DEBUG
-    reserved::counter<graph_tag::update>.increment();
+    reserved::counter<reserved::graph_tag::update>.increment();
     if (res == cudaSuccess)
     {
-      reserved::counter<graph_tag::update::success>.increment();
+      reserved::counter<reserved::graph_tag::update::success>.increment();
     }
     else
     {
-      reserved::counter<graph_tag::update::failure>.increment();
+      reserved::counter<reserved::graph_tag::update::failure>.increment();
     }
 #endif
 
