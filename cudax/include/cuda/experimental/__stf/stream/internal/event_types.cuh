@@ -40,7 +40,6 @@ class stream_and_event;
 namespace reserved
 {
 using stream_and_event_vector = small_vector<handle<stream_and_event>, 7>;
-} // namespace reserved
 
 /* Tag types for event counters */
 class cuda_event_tag
@@ -56,6 +55,8 @@ public:
 
 class cuda_stream_wait_event_tag
 {};
+
+} // namespace reserved
 
 /* This event type allows to synchronize a CUDA stream with a CUDA event in
  * another stream, possibly on another device. */
@@ -76,8 +77,8 @@ protected:
     {
       cuda_safe_call(cudaEventDestroy(cudaEvent));
 #ifdef CUDASTF_DEBUG
-      counter<cuda_event_tag::destroyed>::increment();
-      counter<cuda_event_tag::alive>::decrement();
+      counter<reserved::cuda_event_tag::destroyed>::increment();
+      counter<reserved::cuda_event_tag::alive>::decrement();
 #endif
 
       //            fprintf(stderr, "DESTROY EVENT %p #%d (created %d)\n", event, ++destroyed_event_cnt,
@@ -128,9 +129,9 @@ public:
       cudaEvent_t sync_event;
       cuda_safe_call(cudaEventCreateWithFlags(&sync_event, cudaEventDisableTiming));
 #ifdef CUDASTF_DEBUG
-      counter<cuda_event_tag::created>::increment();
-      counter<cuda_event_tag::alive>::increment();
-      high_water_mark<cuda_event_tag::alive>::record(counter<cuda_event_tag::alive>::load());
+      counter<reserved::cuda_event_tag::created>::increment();
+      counter<reserved::cuda_event_tag::alive>::increment();
+      high_water_mark<reserved::cuda_event_tag::alive>::record(counter<cuda_event_tag::alive>::load());
 #endif
 
       cuda_safe_call(cudaEventRecord(sync_event, s2));
@@ -138,14 +139,14 @@ public:
       // According to documentation "event may be from a different device than stream."
       cuda_safe_call(cudaStreamWaitEvent(s1, sync_event, 0));
 #ifdef CUDASTF_DEBUG
-      counter<cuda_stream_wait_event_tag>.increment();
+      counter<reserved::cuda_stream_wait_event_tag>.increment();
 #endif
 
       // Asynchronously destroy event to avoid a memleak
       cuda_safe_call(cudaEventDestroy(sync_event));
 #ifdef CUDASTF_DEBUG
-      counter<cuda_event_tag::destroyed>::increment();
-      counter<cuda_event_tag::alive>::decrement();
+      counter<reserved::cuda_event_tag::destroyed>::increment();
+      counter<reserved::cuda_event_tag::alive>::decrement();
 #endif
     };
   }
@@ -165,9 +166,9 @@ public:
       // fprintf(stderr, "CREATE EVENT %p %s\n", cudaEvent, get_symbol().c_str());
       assert(cudaEvent);
 #ifdef CUDASTF_DEBUG
-      counter<cuda_event_tag::created>::increment();
-      counter<cuda_event_tag::alive>::increment();
-      high_water_mark<cuda_event_tag::alive>::record(counter<cuda_event_tag::alive>::load());
+      counter<reserved::cuda_event_tag::created>::increment();
+      counter<reserved::cuda_event_tag::alive>::increment();
+      high_water_mark<reserved::cuda_event_tag::alive>::record(counter<cuda_event_tag::alive>::load());
 #endif
       cuda_safe_call(cudaEventRecord(cudaEvent, dstream.stream));
     };
@@ -183,7 +184,7 @@ public:
       {
         cuda_safe_call(cudaStreamWaitEvent(dstream.stream, from.cudaEvent, 0));
 #ifdef CUDASTF_DEBUG
-        counter<cuda_stream_wait_event_tag>.increment();
+        counter<reserved::cuda_stream_wait_event_tag>.increment();
 #endif
       }
     }
@@ -412,7 +413,7 @@ private:
         {
           cuda_safe_call(cudaStreamWaitEvent(dstream.stream, se->get_cuda_event(), 0));
 #ifdef CUDASTF_DEBUG
-          counter<cuda_stream_wait_event_tag>.increment();
+          counter<reserved::cuda_stream_wait_event_tag>.increment();
 #endif
         }
       }

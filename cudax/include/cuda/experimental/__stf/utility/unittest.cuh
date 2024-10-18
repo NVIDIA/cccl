@@ -704,6 +704,6 @@ UNITTEST("source_location")
 };
 
 #else // DOXYGEN_SHOULD_SKIP_THIS  Do not document
-// Ensure These are ignored by Doxygen
+// Ensure these are ignored by Doxygen
 #define UNITTEST(name, ...)
 #endif // DOXYGEN_SHOULD_SKIP_THIS  Do not document

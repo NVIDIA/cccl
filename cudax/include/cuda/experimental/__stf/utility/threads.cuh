@@ -25,7 +25,7 @@
 #include <atomic>
 #include <mutex>
 
-namespace cuda::experimental::stf
+namespace cuda::experimental::stf::reserved
 {
 
 /**
@@ -195,4 +195,4 @@ private:
   static inline ::std::atomic<unsigned long> tracker{0};
 };
 
-} // namespace cuda::experimental::stf
+} // namespace cuda::experimental::stf::reserved

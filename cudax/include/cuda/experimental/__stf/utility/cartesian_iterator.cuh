@@ -23,7 +23,7 @@
 #include <cuda/experimental/__stf/utility/cuda_attributes.cuh>
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
-namespace cuda::experimental::stf
+namespace cuda::experimental::stf::reserved
 {
 
 #if 0
@@ -500,8 +500,6 @@ UNITTEST("StridedRange loop")
   EXPECT(cnt == n);
 };
 
-namespace reserved
-{
 template <typename T>
 __global__ void unit_test_strided_range_func(T n)
 {
@@ -513,7 +511,6 @@ __global__ void unit_test_strided_range_func(T n)
     //    printf("CUDA %ld\n", i);
   }
 }
-} // namespace reserved
 
 UNITTEST("StridedRange CUDA")
 {
@@ -523,4 +520,5 @@ UNITTEST("StridedRange CUDA")
 };
 #endif // UNITTESTED_FILE
 
-} // end namespace cuda::experimental::stf
+
+} // end namespace cuda::experimental::stf::reserved

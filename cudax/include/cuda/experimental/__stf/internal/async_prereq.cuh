@@ -44,7 +44,7 @@ namespace cuda::experimental::stf
 class event_impl;
 using event = handle<event_impl>;
 
-using unique_id_t = unique_id<event>;
+using unique_id_t = reserved::unique_id<event>;
 
 namespace reserved
 {
