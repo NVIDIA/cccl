@@ -37,6 +37,9 @@ namespace cuda::experimental::stf
 template <typename T>
 struct hash;
 
+namespace reserved
+{
+
 /**
  * @brief Trait to check if std::hash<E> is defined.
  *
@@ -70,7 +73,7 @@ struct has_std_hash<E, ::std::void_t<decltype(::std::declval<::std::hash<E>>()(:
 template <typename E>
 inline constexpr bool has_std_hash_v = has_std_hash<E>::value;
 
-
+} // end namespace reserved
 
 /**
  * @brief Update a hash value by combining it with another value to form a new
@@ -82,7 +85,7 @@ inline constexpr bool has_std_hash_v = has_std_hash<E>::value;
 template <typename T>
 void hash_combine(size_t& seed, const T& val)
 {
-    if constexpr (has_std_hash_v<T>) {
+    if constexpr (reserved::has_std_hash_v<T>) {
         // Use std::hash if it is specialized for T
         seed ^= ::std::hash<T>()(val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
     } else {
@@ -97,7 +100,7 @@ size_t hash_all(const Ts&... vals)
   if constexpr (sizeof...(Ts) == 1)
   {
         // Special case: single value, use std::hash if possible
-        if constexpr (has_std_hash_v<Ts...>) {
+        if constexpr (reserved::has_std_hash_v<Ts...>) {
             return ::std::hash<Ts...>()(vals...);
         } else {
             return ::cuda::experimental::stf::hash<Ts...>()(vals...);
@@ -169,6 +172,7 @@ struct hash<::std::tuple<Ts...>>
   }
 };
 
+namespace reserved {
 /**
  * @brief Trait to check if std::hash<E> is defined.
  *
@@ -201,6 +205,8 @@ struct has_cudastf_hash<E, ::std::void_t<decltype(::std::declval<::cuda::experim
  */
 template <typename E>
 inline constexpr bool has_cudastf_hash_v = has_cudastf_hash<E>::value;
+
+} // end namespace reserved
 
 UNITTEST("hash for tuples")
 {

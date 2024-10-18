@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/internal/execution_policy.cuh> // launch_impl() uses execution_policy
+#include <cuda/experimental/__stf/internal/hooks.cuh>
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
 #include <cuda/experimental/__stf/internal/thread_hierarchy.cuh>

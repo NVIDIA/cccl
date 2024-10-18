@@ -46,8 +46,9 @@ namespace reserved {
 class mapping_id_tag
 {};
 
-} // end namespace reserved
 using mapping_id_t = reserved::unique_id<reserved::mapping_id_tag>;
+
+} // end namespace reserved
 
 class backend_ctx_untyped;
 class logical_data_untyped;
@@ -131,7 +132,7 @@ private:
     reserved::unique_id_t unique_id;
 
     // Used to uniquely identify the task for mapping purposes
-    mapping_id_t mapping_id;
+    reserved::mapping_id_t mapping_id;
 
     // This is a pointer to a generic data structure used by "unset_place" to
     // restore previous context
@@ -499,7 +500,7 @@ public:
   {
 #if 0
         // Since this will default construct a task, we need to decrement the id
-        mapping_id_t::decrement_id();
+        reserved::mapping_id_t::decrement_id();
 #endif
   }
 

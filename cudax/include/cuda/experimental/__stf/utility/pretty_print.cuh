@@ -55,6 +55,7 @@ inline ::std::string pretty_print_bytes(size_t bytes)
   return out.str();
 }
 
+namespace reserved {
 /**
  * A trait class to have the specifier to display the T type.
  */
@@ -85,6 +86,8 @@ struct FormatSpecifier<uint64_t>
   static constexpr const char* value = "%llu "; // For uint64_t, assuming LLP64 or LP64 model
   static constexpr const char* name  = "uint64_t";
 };
+
+} // end namespace reserved
 
 /**
  * @brief Writes an `mdspan` to a VTK file.
@@ -198,7 +201,7 @@ void mdspan_print(mdspan_like s, const ::std::string& text, FILE* f = stderr)
   using T = typename mdspan_like::value_type;
 
   fprintf(f, "%s\n", text.c_str());
-  const char* format = FormatSpecifier<T>::value;
+  const char* format = reserved::FormatSpecifier<T>::value;
 
   size_t nx = 1;
   size_t ny = 1;

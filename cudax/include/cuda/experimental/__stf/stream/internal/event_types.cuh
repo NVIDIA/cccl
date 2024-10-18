@@ -33,12 +33,13 @@
 namespace cuda::experimental::stf
 {
 
-inline event join_with_stream(
-  backend_ctx_untyped& bctx, decorated_stream dstream, event_list& prereq_in, ::std::string string, bool record_event);
-
 class stream_and_event;
 namespace reserved
 {
+
+inline event join_with_stream(
+  backend_ctx_untyped& bctx, decorated_stream dstream, event_list& prereq_in, ::std::string string, bool record_event);
+
 using stream_and_event_vector = small_vector<reserved::handle<stream_and_event>, 7>;
 
 /* Tag types for event counters */
@@ -280,7 +281,7 @@ public:
 
   void sync_with_stream(backend_ctx_untyped& bctx, event_list& prereqs, cudaStream_t stream) const override
   {
-    join_with_stream(bctx, decorated_stream(stream), prereqs, "sync", false);
+    reserved::join_with_stream(bctx, decorated_stream(stream), prereqs, "sync", false);
   }
 
   cudaStream_t get_stream() const
@@ -470,6 +471,9 @@ private:
   ::std::vector<int> joined_ids;
 };
 
+namespace reserved
+{
+
 /* This creates a synchronization point between all entries of the prereq_in list, and a CUDA stream */
 inline event join_with_stream(
   backend_ctx_untyped& bctx, decorated_stream dstream, event_list& prereq_in, ::std::string string, bool record_event)
@@ -489,5 +493,7 @@ inline event record_event_in_stream(const decorated_stream& dstream)
 {
   return reserved::handle<stream_and_event>(dstream, true);
 }
+
+} // end namespace reserved
 
 } // namespace cuda::experimental::stf

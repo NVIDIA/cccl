@@ -968,7 +968,7 @@ template <typename E, typename X, typename L, typename A, size_t... i>
 size_t data_hash([[maybe_unused]] mdspan<E, X, L, A> s, ::std::index_sequence<i...> = ::std::index_sequence<>())
 {
   using Slice = mdspan<E, X, L, A>;
-  if constexpr (!has_std_hash_v<E> && !has_cudastf_hash_v<E>)
+  if constexpr (!reserved::has_std_hash_v<E> && !reserved::has_cudastf_hash_v<E>)
   {
     fprintf(stderr, "Error: cannot compute data_hash on a mdspan<E, ...> if ::std::hash<E> is not defined.\n");
     abort();

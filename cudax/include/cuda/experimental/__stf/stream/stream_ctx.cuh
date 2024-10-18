@@ -209,7 +209,7 @@ public:
     this->state().user_dstream = dstream;
 
     // Create an event in the stream
-    auto start_e = record_event_in_stream(dstream);
+    auto start_e = reserved::record_event_in_stream(dstream);
     get_stack().add_start_events(event_list(mv(start_e)));
 
     // When a stream is attached to the context creation, the finalize()
@@ -286,7 +286,7 @@ public:
     prereqs.optimize();
 
     // The output event is used for the tools in practice so we can ignore it
-    /* auto before_e = */ join_with_stream(*this, dstream, prereqs, "task_fence", false);
+    /* auto before_e = */ reserved::join_with_stream(*this, dstream, prereqs, "task_fence", false);
 
     return dstream.stream;
   }
@@ -674,7 +674,7 @@ private:
 
     event_list stream_to_event_list(cudaStream_t stream, ::std::string) const override
     {
-      auto e = record_event_in_stream(decorated_stream(stream));
+      auto e = reserved::record_event_in_stream(decorated_stream(stream));
       /// e->set_symbol(mv(event_symbol));
       return event_list(mv(e));
     }
