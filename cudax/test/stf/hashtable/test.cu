@@ -26,7 +26,7 @@ __global__ void gpu_hashtable_insert_kernel(hashtable h, const reserved::KeyValu
 void gpu_hashtable_insert(hashtable d_h, const reserved::KeyValue* device_kvs, unsigned int num_kvs, cudaStream_t stream)
 {
   // Have CUDA calculate the thread block size
-  auto [mingridsize, threadblocksize] = compute_occupancy(gpu_hashtable_insert_kernel);
+  auto [mingridsize, threadblocksize] = reserved::compute_occupancy(gpu_hashtable_insert_kernel);
 
   // Insert all the keys into the hash table
   int gridsize = ((uint32_t) num_kvs + threadblocksize - 1) / threadblocksize;

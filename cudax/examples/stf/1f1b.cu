@@ -54,10 +54,10 @@ int main(int argc, char** argv)
   cudaDeviceGetAttribute(&clock_rate, cudaDevAttrClockRate, device);
 
   int f_grid_size, f_block_size;
-  std::tie(f_grid_size, f_block_size) = compute_occupancy(forward);
+  std::tie(f_grid_size, f_block_size) = reserved::compute_occupancy(forward);
 
   int b_grid_size, b_block_size;
-  std::tie(b_grid_size, b_block_size) = compute_occupancy(backward);
+  std::tie(b_grid_size, b_block_size) = reserved::compute_occupancy(backward);
 
   int factor = 1;
   if (argc > 1)
