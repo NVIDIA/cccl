@@ -165,7 +165,7 @@ public:
   void operator->*(Fun&& f)
   {
     auto& dot        = *ctx.get_dot();
-    auto& statistics = task_statistics::instance();
+    auto& statistics = reserved::task_statistics::instance();
     auto t           = ctx.task(e_place);
 
     assert(e_place.affine_data_place() == t.get_affine_data_place());

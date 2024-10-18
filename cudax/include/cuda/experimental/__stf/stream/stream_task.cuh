@@ -320,7 +320,7 @@ public:
   bool schedule_task()
   {
     reserved::dot& dot                    = reserved::dot::instance();
-    task_statistics& statistics = task_statistics::instance();
+    auto& statistics = reserved::task_statistics::instance();
 
     const bool is_auto = get_exec_place().affine_data_place() == data_place::device_auto;
     bool calibrate     = false;
@@ -504,7 +504,7 @@ public:
   {
     // Apply function to the stream (in the first position) and the data tuple
     auto& dot                   = ctx.get_dot();
-    task_statistics& statistics = task_statistics::instance();
+    auto& statistics = reserved::task_statistics::instance();
 
     cudaEvent_t start_event, end_event;
 

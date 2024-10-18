@@ -191,7 +191,7 @@ public:
   bool schedule_task()
   {
     auto& dot                   = *ctx.get_dot();
-    task_statistics& statistics = task_statistics::instance();
+    auto& statistics = reserved::task_statistics::instance();
 
     const bool is_auto = get_exec_place().affine_data_place() == data_place::device_auto;
     bool calibrate     = false;
@@ -223,7 +223,7 @@ public:
   void operator->*(Fun&& f)
   {
     auto& dot                   = *ctx.get_dot();
-    task_statistics& statistics = task_statistics::instance();
+    auto& statistics = reserved::task_statistics::instance();
 
     // cudaEvent_t start_event, end_event;
 
@@ -427,7 +427,7 @@ _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
   void operator->*(Fun&& f)
   {
     auto& dot                   = *ctx.get_dot();
-    task_statistics& statistics = task_statistics::instance();
+    auto& statistics = reserved::task_statistics::instance();
 
     // cudaEvent_t start_event, end_event;
 

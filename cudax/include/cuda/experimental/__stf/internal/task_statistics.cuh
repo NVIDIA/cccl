@@ -43,7 +43,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace cuda::experimental::stf
+namespace cuda::experimental::stf::reserved
 {
 
 /**
@@ -299,4 +299,4 @@ private:
   statistics_map_t statistics;
 };
 
-} // namespace cuda::experimental::stf
+} // namespace cuda::experimental::stf::reserved

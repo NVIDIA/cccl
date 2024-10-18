@@ -329,7 +329,7 @@ public:
     EXPECT(e_place != exec_place::host, "Attempt to run a launch on the host.");
 
     auto& dot                   = *ctx.get_dot();
-    task_statistics& statistics = task_statistics::instance();
+    auto& statistics = reserved::task_statistics::instance();
 
     auto t = ctx.task(e_place);
 
