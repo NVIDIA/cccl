@@ -117,13 +117,15 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void basic_tests()
     }
   }
 
-  TEST_NV_DIAG_SUPPRESS(174) // expression has no effect
+#if !defined(TEST_COMPILER_NVHPC) // NVHPC seems unable to silence the warning
+  TEST_NV_DIAG_SUPPRESS(expr_has_no_effect)
   {
     cuda::std::array<cuda::std::size_t, 0> v{};
     cuda::std::array<cuda::std::size_t, 0> res{};
     cuda::std::transform_inclusive_scan(v.begin(), v.end(), res.begin(), cuda::std::plus<>(), add_one{});
     assert(res.empty());
   }
+#endif // !TEST_COMPILER_NVHPC
 }
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()

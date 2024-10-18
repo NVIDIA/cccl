@@ -30,6 +30,11 @@ endif()
 
 option(CUB_C2H_ENABLE_CURAND "Use CUDA CURAND library" ${curand_default})
 
+set(build_nvrtc_tests ON)
+if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  set(build_nvrtc_tests OFF)
+endif()
+
 # The function below reads the filepath `src`, extracts the %PARAM% comments,
 # and fills `labels_var` with a list of `label1_value1.label2_value2...`
 # strings, and puts the corresponding `DEFINITION=value1:DEFINITION=value2`
@@ -180,10 +185,16 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
       target_include_directories(${config_c2h_target} PUBLIC "${CUB_SOURCE_DIR}/test")
       cub_clone_target_properties(${config_c2h_target} ${cub_target})
       cub_configure_cuda_target(${config_c2h_target} RDC ${cdp_val})
-      target_link_libraries(${config_c2h_target} PRIVATE ${cub_target}
-                                                 PUBLIC CUDA::nvrtc CUDA::cuda_driver)
+      target_link_libraries(${config_c2h_target} PRIVATE ${cub_target})
+      if (build_nvrtc_tests)
+        target_link_libraries(${config_c2h_target} PUBLIC CUDA::nvrtc CUDA::cuda_driver)
+      endif()
       if (CUB_C2H_ENABLE_CURAND)
-        target_link_libraries(${config_c2h_target} PRIVATE CUDA::curand)
+        if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+          target_link_libraries(${config_c2h_target} PRIVATE NVHPC::CURAND)
+        else()
+          target_link_libraries(${config_c2h_target} PRIVATE CUDA::curand)
+        endif()
         target_compile_definitions(${config_c2h_target} PRIVATE C2H_HAS_CURAND=1)
       else()
         target_compile_definitions(${config_c2h_target} PRIVATE C2H_HAS_CURAND=0)
@@ -345,6 +356,12 @@ foreach (test_src IN LISTS test_srcs)
 
   cub_get_test_params("${test_src}" variant_labels variant_defs)
   list(LENGTH variant_labels num_variants)
+
+  if ("${test_name}" MATCHES "nvrtc")
+    if (NOT build_nvrtc_tests)
+      continue()
+    endif()
+  endif()
 
   # Subtract 1 to support the inclusive endpoint of foreach(...RANGE...):
   math(EXPR range_end "${num_variants} - 1")
