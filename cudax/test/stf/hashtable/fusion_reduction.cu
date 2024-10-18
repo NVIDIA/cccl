@@ -19,10 +19,10 @@ __global__ void gpu_merge_hashtable(hashtable A, const hashtable B)
   unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;
   while (threadid < B.get_capacity())
   {
-    if (B.addr[threadid].key != kEmpty)
+    if (B.addr[threadid].key != reserved::kEmpty)
     {
       uint32_t value = B.addr[threadid].value;
-      if (value != kEmpty)
+      if (value != reserved::kEmpty)
       {
         //    printf("INSERTING key %d value %d\n", pHashTableB[threadid].key, value);
         A.insert(B.addr[threadid]);
@@ -36,10 +36,10 @@ void cpu_merge_hashtable(hashtable A, const hashtable B)
 {
   for (unsigned int i = 0; i < B.get_capacity(); i++)
   {
-    if (B.addr[i].key != kEmpty)
+    if (B.addr[i].key != reserved::kEmpty)
     {
       uint32_t value = B.addr[i].value;
-      if (value != kEmpty)
+      if (value != reserved::kEmpty)
       {
         //    printf("INSERTING key %d value %d\n", pHashTableB[threadid].key, value);
         A.insert(B.addr[i]);
@@ -81,7 +81,7 @@ __global__ void fill_table(size_t dev_id, size_t cnt, hashtable h)
     uint32_t key   = dev_id * 1000 + i;
     uint32_t value = 2 * i;
 
-    KeyValue kvs(key, value);
+    reserved::KeyValue kvs(key, value);
     h.insert(kvs);
   }
 }

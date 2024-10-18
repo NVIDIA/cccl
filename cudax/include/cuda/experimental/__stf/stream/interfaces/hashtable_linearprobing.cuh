@@ -97,7 +97,7 @@ public:
       cuda_safe_call(cudaMallocAsync(&base_ptr, s, stream));
 
       // We also need to initialize the hashtable
-      static_assert(kEmpty == 0xffffffff, "memset expected kEmpty=0xffffffff");
+      static_assert(reserved::kEmpty == 0xffffffff, "memset expected kEmpty=0xffffffff");
       cuda_safe_call(cudaMemsetAsync(base_ptr, 0xff, s, stream));
     }
 
