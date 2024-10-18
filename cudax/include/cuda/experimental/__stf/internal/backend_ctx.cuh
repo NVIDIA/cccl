@@ -464,7 +464,7 @@ protected:
 
       display_transfers();
 
-      fprintf(stderr, "TOTAL SYNC COUNT: %lu\n", counter<join_tag>::load());
+      fprintf(stderr, "TOTAL SYNC COUNT: %lu\n", counter<reserved::join_tag>::load());
     }
 
     impl(const impl&)            = delete;
