@@ -65,10 +65,10 @@ struct disjunction : _Or<_Args...>
 {};
 #endif // !MSVC
 
-#if _CCCL_STD_VER >= 2014 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class... _Args>
-_LIBCUDACXX_INLINE_VAR constexpr bool disjunction_v = _Or<_Args...>::value;
-#endif // _CCCL_STD_VER >= 2014
+_CCCL_INLINE_VAR constexpr bool disjunction_v = _Or<_Args...>::value;
+#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

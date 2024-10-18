@@ -100,9 +100,15 @@
 // Inline variables are only available from C++17 onwards
 #if _CCCL_STD_VER >= 2017 && defined(__cpp_inline_variables) && (__cpp_inline_variables >= 201606L)
 #  define _CCCL_INLINE_VAR inline
-#else // ^^^ C++14 ^^^ / vvv C++17 vvv
+#else // ^^^ C++17 ^^^ / vvv C++14 vvv
+#  define _CCCL_NO_INLINE_VARIABLES
 #  define _CCCL_INLINE_VAR
 #endif // _CCCL_STD_VER <= 2014
+
+// Variable templates are only available from C++14 onwards and require some compiler support
+#if _CCCL_STD_VER <= 2011 || !defined(__cpp_variable_templates) || (__cpp_variable_templates < 201304L)
+#  define _CCCL_NO_VARIABLE_TEMPLATES
+#endif // _CCCL_STD_VER <= 2011
 
 // We need to treat host and device separately
 #if defined(__CUDA_ARCH__)
