@@ -390,7 +390,7 @@ private:
   // ndevs * nblocks * nthreads
   ::std::array<size_t, 3> launch_config = {};
 
-  cooperative_group_system cg_system;
+  reserved::cooperative_group_system cg_system;
 
   // witdh of each level
   ::std::array<size_t, depth> level_sizes = {};

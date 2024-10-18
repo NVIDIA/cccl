@@ -147,7 +147,7 @@ public:
     {
       // this is not the host, so this has to be a device ... (XXX)
       auto [gridsize,
-            threadblocksize] = compute_occupancy(slice_reduction_op_kernel<element_type, dimensions, ReduxOp>);
+            threadblocksize] = reserved::compute_occupancy(slice_reduction_op_kernel<element_type, dimensions, ReduxOp>);
       slice_reduction_op_kernel<element_type, dimensions, ReduxOp><<<gridsize, threadblocksize, 0, s>>>(in, inout);
     }
   }
@@ -185,7 +185,7 @@ public:
     {
       // this is not the host, so this has to be a device ... (XXX)
       auto [gridsize,
-            threadblocksize] = compute_occupancy(slice_reduction_op_init_kernel<element_type, dimensions, ReduxOp>);
+            threadblocksize] = reserved::compute_occupancy(slice_reduction_op_init_kernel<element_type, dimensions, ReduxOp>);
 
       EXPECT(out.data_handle() != nullptr);
       slice_reduction_op_init_kernel<element_type, dimensions, ReduxOp><<<gridsize, threadblocksize, 0, s>>>(out);

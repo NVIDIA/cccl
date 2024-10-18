@@ -115,7 +115,7 @@ public:
   ~interpreted_execution_policy() = default;
 
   /* A substem that contains sync() related functionality for the thread hierarchy */
-  cooperative_group_system cg_system;
+  reserved::cooperative_group_system cg_system;
 
   template <typename Fun>
   interpreted_execution_policy(const thread_hierarchy_spec<spec...>& p, const exec_place& where, const Fun& f);

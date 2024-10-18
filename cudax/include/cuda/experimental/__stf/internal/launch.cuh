@@ -232,7 +232,7 @@ public:
         auto hostMemoryArrivedList = (unsigned char*) allocateManagedMemory(grid_size - 1);
         // printf("About to allocate hostmemarrivedlist : %lu bytes\n", grid_size - 1);
         memset(hostMemoryArrivedList, 0, grid_size - 1);
-        interpreted_policy.cg_system = cooperative_group_system(hostMemoryArrivedList);
+        interpreted_policy.cg_system = reserved::cooperative_group_system(hostMemoryArrivedList);
       }
     }
 
@@ -449,7 +449,7 @@ public:
         unsigned char* hostMemoryArrivedList;
         hostMemoryArrivedList = (unsigned char*) allocateManagedMemory(grid_size - 1);
         memset(hostMemoryArrivedList, 0, grid_size - 1);
-        interpreted_policy.cg_system = cooperative_group_system(hostMemoryArrivedList);
+        interpreted_policy.cg_system = reserved::cooperative_group_system(hostMemoryArrivedList);
       }
     }
 

@@ -1618,7 +1618,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     int block_size_limit = 0;
     /* level 2 will be mapped on threads, level 1 on blocks, level 0 on devices */
     size_t shared_mem_bytes = size_t(p.get_mem(2));
-    reserverd::compute_kernel_limits(f, min_grid_size, max_block_size, shared_mem_bytes, l0_sync || l1_sync, block_size_limit);
+    reserved::compute_kernel_limits(f, min_grid_size, max_block_size, shared_mem_bytes, l0_sync || l1_sync, block_size_limit);
 
     // For implicit widths, use sizes suggested by CUDA occupancy calculator
     if (l2_size == 0)

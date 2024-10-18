@@ -25,7 +25,7 @@
 #  include <cooperative_groups.h>
 #endif
 
-namespace cuda::experimental::stf
+namespace cuda::experimental::stf::reserved
 {
 
 /**
@@ -126,4 +126,4 @@ private:
 #endif // __CUDACC__
 };
 
-} // end namespace cuda::experimental::stf
+} // end namespace cuda::experimental::stf::reserved
