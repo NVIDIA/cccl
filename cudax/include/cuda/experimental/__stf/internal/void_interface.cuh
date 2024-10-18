@@ -190,9 +190,9 @@ struct graphed_interface_of<void_interface>
  * @brief A hash of the matrix
  */
 template <>
-struct hash<cuda::experimental::stf::void_interface>
+struct hash<void_interface>
 {
-  ::std::size_t operator()(cuda::experimental::stf::void_interface const&) const noexcept
+  ::std::size_t operator()(void_interface const&) const noexcept
   {
     return 42;
   }
