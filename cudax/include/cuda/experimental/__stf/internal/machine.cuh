@@ -34,7 +34,7 @@
 
 #include <cstdio>
 
-namespace cuda::experimental::stf
+namespace cuda::experimental::stf::reserved
 {
 
 /**
@@ -129,4 +129,4 @@ private:
   int ndevices;
 };
 
-} // namespace cuda::experimental::stf
+} // namespace cuda::experimental::stf::reserved
