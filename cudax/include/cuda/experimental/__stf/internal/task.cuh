@@ -388,6 +388,9 @@ public:
   }
 };
 
+namespace reserved
+{
+
 /* This method lazily allocates data (possibly reclaiming memory) and copies data if needed */
 template <typename Data>
 void dep_allocate(
@@ -458,6 +461,8 @@ void dep_allocate(
     }
   }
 }
+
+} // end namespace reserved
 
 // inline size_t task_state::hash() const {
 //     size_t h = 0;

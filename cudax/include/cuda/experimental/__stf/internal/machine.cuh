@@ -41,7 +41,7 @@ namespace cuda::experimental::stf::reserved
  * @brief Singleton object abstracting a machine able to set up CUDA peer accesses.
  *
  */
-class machine : public meyers_singleton<machine>
+class machine : public reserved::meyers_singleton<machine>
 {
 protected:
   machine()

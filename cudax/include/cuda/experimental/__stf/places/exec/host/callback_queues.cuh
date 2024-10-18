@@ -41,7 +41,7 @@ namespace cuda::experimental::stf
 class cb;
 
 #ifdef STATEFUL_CALLBACKS
-class cudaCallbackStateCtxKeys : public meyers_singleton<cudaCallbackStateCtxKeys>
+class cudaCallbackStateCtxKeys : public reserved::meyers_singleton<cudaCallbackStateCtxKeys>
 {
 protected:
   cudaCallbackStateCtxKeys()  = default;
@@ -55,7 +55,7 @@ public:
   pthread_once_t cb_key_once;
 };
 
-class cudaCallbackStateCtx : public meyers_singleton<cudaCallbackStateCtx>
+class cudaCallbackStateCtx : public reserved::meyers_singleton<cudaCallbackStateCtx>
 {
 protected:
   cudaCallbackStateCtx()
@@ -221,7 +221,7 @@ public:
   }
 };
 
-class callback_queue : public meyers_singleton<callback_queue>
+class callback_queue : public reserved::meyers_singleton<callback_queue>
 {
 protected:
   callback_queue()

@@ -1520,7 +1520,7 @@ public:
 
         // mode is rather meaningless here (?)
         // fprintf(stderr, "ALLOCATE ID %d on node %d\n", copy_instance_id, int(target_memory_node));
-        dep_allocate(pimpl->ctx, *this, access_mode::read, target_memory_node, e_place_n, copy_instance_id, prereqs);
+        reserved::dep_allocate(pimpl->ctx, *this, access_mode::read, target_memory_node, e_place_n, copy_instance_id, prereqs);
       }
 
       // Copy the last instance to the destination
@@ -2023,7 +2023,7 @@ inline void fetch_data(
   if (d.has_interface())
   {
     // Allocate data if needed (and possibly reclaim memory to do so)
-    dep_allocate(ctx, d, mode, dplace, eplace, instance_id, stf_prereq);
+    reserved::dep_allocate(ctx, d, mode, dplace, eplace, instance_id, stf_prereq);
 
     /*
      * DATA LAZY UPDATE (relying on the MSI protocol)

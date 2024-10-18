@@ -301,7 +301,7 @@ public: // XXX protected, friend : dot
   mutable ::std::vector<::std::ostringstream> prev_oss;
 };
 
-class dot : public meyers_singleton<dot>
+class dot : public reserved::meyers_singleton<dot>
 {
 protected:
   dot()

@@ -118,7 +118,7 @@ struct expecter
     template <typename T>
     static void stream(::std::stringstream& s, const T& x)
     {
-      if constexpr (has_ostream_operator<T>::value)
+      if constexpr (reserved::has_ostream_operator<T>::value)
       {
         s << x;
       }

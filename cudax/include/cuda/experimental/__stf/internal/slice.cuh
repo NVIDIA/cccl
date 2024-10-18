@@ -1034,7 +1034,7 @@ void data_dump([[maybe_unused]] mdspan<E, X, L, A> s,
                ::std::index_sequence<i...> = ::std::index_sequence<>())
 {
   using Slice = mdspan<E, X, L, A>;
-  if constexpr (has_ostream_operator<E>::value)
+  if constexpr (reserved::has_ostream_operator<E>::value)
   {
     if constexpr (sizeof...(i) != Slice::rank())
     {

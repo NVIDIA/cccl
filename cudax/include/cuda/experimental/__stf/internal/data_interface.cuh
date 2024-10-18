@@ -99,6 +99,7 @@ using readonly_type_of = typename reserved::readonly_type_of<T>::type;
 template <typename T>
 using rw_type_of = typename reserved::rw_type_of<T>::type;
 
+namespace reserved {
 template <typename Data>
 void dep_allocate(
   backend_ctx_untyped& ctx,
@@ -108,6 +109,7 @@ void dep_allocate(
   const ::std::optional<exec_place> eplace,
   instance_id_t instance_id,
   event_list& prereqs);
+} // end namespace reserved
 
 /**
  * @brief The data_interface class defines the methods used to allocate, deallocate, or transfer a piece of data with a

@@ -149,6 +149,8 @@ class print_type_name_and_fail
   static_assert(::std::integral_constant<T*, nullptr>::value, "Type name is: ");
 };
 
+namespace reserved {
+
 /**
  * @brief A singleton template class implementing the Meyers Singleton design pattern.
  *
@@ -208,6 +210,8 @@ public:
     return instance;
   }
 };
+
+} // end namespace reserved
 
 /**
  * @brief Converts an array-like object (such as an `std::array`) to an `std::tuple`.
@@ -559,6 +563,9 @@ auto shuffled_array_tuple(ArgTypes... args)
   return ::std::tuple{all_convertible<DataTypes>(mv(args)...)...};
 }
 
+namespace reserved
+{
+
 /**
  * @brief A compile-time boolean that checks if a type supports streaming with std::ostream <<.
  *
@@ -574,5 +581,7 @@ template <typename T>
 struct has_ostream_operator<T, decltype(void(::std::declval<::std::ostream&>() << ::std::declval<const T&>()), void())>
     : ::std::true_type
 {};
+
+} // end namespace reserved
 
 } // namespace cuda::experimental::stf

@@ -36,7 +36,7 @@ namespace reserved
  * counter shared by all contexts, we can compare the content of files with the
  * same index during different executions.
  */
-class dump_hook_cnt : public meyers_singleton<dump_hook_cnt>
+class dump_hook_cnt : public reserved::meyers_singleton<dump_hook_cnt>
 {
 protected:
   dump_hook_cnt()

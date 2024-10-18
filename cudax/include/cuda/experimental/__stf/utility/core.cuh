@@ -561,6 +561,7 @@ private:
   [[no_unique_address]] state_t payload = state_t();
 };
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 // Operator implementations
 #define _3197bc91feaf98030b2cc0b441d7b0ea(op)                                                          \
   template <auto v1, auto v2, auto r>                                                                  \
@@ -641,5 +642,7 @@ _3197bc91feaf98030b2cc0b441d7b0ea(<=);
 _3197bc91feaf98030b2cc0b441d7b0ea(>=);
 
 #undef _3197bc91feaf98030b2cc0b441d7b0ea
+
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
 } // namespace cuda::experimental::stf
