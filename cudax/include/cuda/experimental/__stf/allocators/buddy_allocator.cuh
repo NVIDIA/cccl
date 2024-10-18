@@ -33,6 +33,9 @@
 namespace cuda::experimental::stf
 {
 
+namespace reserved
+{
+
 /**
  * @brief Buddy allocator for one data place
  *
@@ -223,6 +226,8 @@ private:
   size_t max_level_  = 0;
 };
 
+} // end namespace reserved
+
 /**
  * @brief Buddy allocator policy which relies on a root allocator to create
  * large buffers which are then suballocated with a buddy allocation algorithm
@@ -243,12 +248,12 @@ private:
         : base(base_)
         , buffer_size(size)
     {
-      metadata = ::std::make_shared<buddy_allocator_metadata>(buffer_size, prereqs);
+      metadata = ::std::make_shared<reserved::buddy_allocator_metadata>(buffer_size, prereqs);
     }
 
     void* base         = nullptr;
     size_t buffer_size = 0;
-    ::std::shared_ptr<buddy_allocator_metadata> metadata;
+    ::std::shared_ptr<reserved::buddy_allocator_metadata> metadata;
   };
 
 public:
@@ -331,7 +336,7 @@ UNITTEST("buddy allocator meta data")
 {
   event_list prereqs; // starts empty
 
-  buddy_allocator_metadata allocator(1024, prereqs);
+  reserved::buddy_allocator_metadata allocator(1024, prereqs);
 
   // ::std::cout << "Initial state:" << ::std::endl;
   // allocator.debug_print();
