@@ -515,7 +515,7 @@ __global__ void unit_test_strided_range_func(T n)
 UNITTEST("StridedRange CUDA")
 {
   size_t n = 100;
-  reserved::unit_test_strided_range_func<<<4, 2>>>(n);
+  unit_test_strided_range_func<<<4, 2>>>(n);
   cudaDeviceSynchronize();
 };
 #endif // UNITTESTED_FILE
