@@ -12,7 +12,7 @@ from numba import cuda, types
 from numba.cuda.cudadrv import enums
 
 
-# Should match C++
+# MUST match `cccl_type_enum` in c/include/cccl/c/types.h
 class _TypeEnum(ctypes.c_int):
     INT8 = 0
     INT16 = 1
@@ -27,13 +27,13 @@ class _TypeEnum(ctypes.c_int):
     STORAGE = 10
 
 
-# Should match C++
+# MUST match `cccl_op_kind_t` in c/include/cccl/c/types.h
 class _CCCLOpKindEnum(ctypes.c_int):
     STATELESS = 0
     STATEFUL = 1
 
 
-# Should match C++
+# MUST match `cccl_iterator_kind_t` in c/include/cccl/c/types.h
 class _CCCLIteratorKindEnum(ctypes.c_int):
     POINTER = 0
     ITERATOR = 1
@@ -57,13 +57,14 @@ def _type_to_enum(numba_type):
     return _TypeEnum.STORAGE
 
 
-# TODO Extract into reusable module
+# MUST match `cccl_type_info` in c/include/cccl/c/types.h
 class _TypeInfo(ctypes.Structure):
     _fields_ = [("size", ctypes.c_int),
                 ("alignment", ctypes.c_int),
                 ("type", _TypeEnum)]
 
 
+# MUST match `cccl_op_t` in c/include/cccl/c/types.h
 class _CCCLOp(ctypes.Structure):
     _fields_ = [("type", _CCCLOpKindEnum),
                 ("name", ctypes.c_char_p),
@@ -74,6 +75,7 @@ class _CCCLOp(ctypes.Structure):
                 ("state", ctypes.c_void_p)]
 
 
+# MUST match `cccl_iterator_t` in c/include/cccl/c/types.h
 class _CCCLIterator(ctypes.Structure):
     _fields_ = [("size", ctypes.c_int),
                 ("alignment", ctypes.c_int),
@@ -84,18 +86,23 @@ class _CCCLIterator(ctypes.Structure):
                 ("state", ctypes.c_void_p)]
 
 
+# MUST match `cccl_value_t` in c/include/cccl/c/types.h
 class _CCCLValue(ctypes.Structure):
     _fields_ = [("type", _TypeInfo),
                 ("state", ctypes.c_void_p)]
 
 
-def _type_to_info(numpy_type):
-    numba_type = numba.from_dtype(numpy_type)
+def _type_to_info_from_numba_type(numba_type):
     context = cuda.descriptor.cuda_target.target_context
     size = context.get_value_type(numba_type).get_abi_size(context.target_data)
     alignment = context.get_value_type(
         numba_type).get_abi_alignment(context.target_data)
     return _TypeInfo(size, alignment, _type_to_enum(numba_type))
+
+
+def _type_to_info(numpy_type):
+    numba_type = numba.from_dtype(numpy_type)
+    return _type_to_info_from_numba_type(numba_type)
 
 
 def _device_array_to_pointer(array):
@@ -112,7 +119,7 @@ def _host_array_to_value(array):
     return _CCCLValue(info, array.ctypes.data)
 
 
-class _Op:
+class _ReductionOp:
     def __init__(self, dtype, op):
         value_type = numba.from_dtype(dtype)
         self.ltoir, _ = cuda.compile(op, sig=value_type(
@@ -121,6 +128,22 @@ class _Op:
 
     def handle(self):
         return _CCCLOp(_CCCLOpKindEnum.STATELESS, self.name, ctypes.c_char_p(self.ltoir), len(self.ltoir), 1, 1, None)
+
+
+class _TransformRAIUnaryOp:
+    def __init__(self, result_numba_dtype, arg_numba_dtype, unary_op):
+        self.ltoir, _ = cuda.compile(unary_op, sig=result_numba_dtype(arg_numba_dtype), output='ltoir')
+        self.name = unary_op.__name__.encode('utf-8')
+        print(f"{self.name=}", flush=True)
+
+    def handle(self):
+        return _CCCLOp(_CCCLOpKindEnum.STATELESS, self.name, ctypes.c_char_p(self.ltoir), len(self.ltoir), 1, 1, None)
+
+
+def _itertools_iter_as_cccl_iter(result_numba_dtype, d_in):
+    d_in_jitted = _TransformRAIUnaryOp(result_numba_dtype, numba.uint64, d_in).handle()
+    info = _type_to_info_from_numba_type(numba.int32)
+    return _CCCLIterator(1, 1, _CCCLIteratorKindEnum.ITERATOR, d_in_jitted, _CCCLOp(), info, 0)
 
 
 def _get_cuda_path():
@@ -176,6 +199,7 @@ def _get_paths():
     return _paths
 
 
+# MUST match `cccl_device_reduce_build_result_t` in c/include/cccl/c/reduce.h
 class _CCCLDeviceReduceBuildResult(ctypes.Structure):
     _fields_ = [("cc", ctypes.c_int),
                 ("cubin", ctypes.c_void_p),
@@ -193,21 +217,22 @@ def _dtype_validation(dt1, dt2):
 
 class _Reduce:
     def __init__(self, d_in, d_out, op, init):
-        self._ctor_d_in_dtype = d_in.dtype
+        print("__init__ ENTRY", flush=True)
+        self._ctor_d_in = d_in
+        _, d_in_cccl = self.__handle_d_in(None, d_in)
         self._ctor_d_out_dtype = d_out.dtype
         self._ctor_init_dtype = init.dtype
         cc_major, cc_minor = cuda.get_current_device().compute_capability
         cub_path, thrust_path, libcudacxx_path, cuda_include_path = _get_paths()
         bindings = _get_bindings()
         accum_t = init.dtype
-        self.op_wrapper = _Op(accum_t, op)
-        d_in_ptr = _device_array_to_pointer(d_in)
+        self.op_wrapper = _ReductionOp(accum_t, op)
         d_out_ptr = _device_array_to_pointer(d_out)
         self.build_result = _CCCLDeviceReduceBuildResult()
 
         # TODO Figure out caching
         error = bindings.cccl_device_reduce_build(ctypes.byref(self.build_result),
-                                                  d_in_ptr,
+                                                  d_in_cccl,
                                                   d_out_ptr,
                                                   self.op_wrapper.handle(),
                                                   _host_array_to_value(init),
@@ -220,10 +245,12 @@ class _Reduce:
                                                   ctypes.c_char_p(cuda_include_path))
         if error != enums.CUDA_SUCCESS:
             raise ValueError('Error building reduce')
+        print("__init__ DONE", flush=True)
 
-    def __call__(self, temp_storage, d_in, d_out, init):
-        # TODO validate POINTER vs ITERATOR when iterator support is added
-        _dtype_validation(self._ctor_d_in_dtype, d_in.dtype)
+    def __call__(self, temp_storage, num_items, d_in, d_out, init):
+        print("__call__ ENTRY", flush=True)
+        num_items, d_in_cccl = self.__handle_d_in(num_items, d_in)
+        assert num_items is not None
         _dtype_validation(self._ctor_d_out_dtype, d_out.dtype)
         _dtype_validation(self._ctor_init_dtype, init.dtype)
         bindings = _get_bindings()
@@ -235,26 +262,40 @@ class _Reduce:
             # Note: this is slightly slower, but supports all ndarray-like objects as long as they support CAI
             # TODO: switch to use gpumemoryview once it's ready
             d_temp_storage = temp_storage.__cuda_array_interface__["data"][0]
-        d_in_ptr = _device_array_to_pointer(d_in)
         d_out_ptr = _device_array_to_pointer(d_out)
-        num_items = ctypes.c_ulonglong(d_in.size)
+        print("BEFORE cccl_device_reduce() CALL", flush=True)
         error = bindings.cccl_device_reduce(self.build_result,
                                             d_temp_storage,
                                             ctypes.byref(temp_storage_bytes),
-                                            d_in_ptr,
+                                            d_in_cccl,
                                             d_out_ptr,
-                                            num_items,
+                                            ctypes.c_ulonglong(num_items),
                                             self.op_wrapper.handle(),
                                             _host_array_to_value(init),
                                             None)
+        print(" AFTER cccl_device_reduce() CALL", flush=True)
         if error != enums.CUDA_SUCCESS:
+            print("__call__ ValueError('Error reducing')", flush=True)
             raise ValueError('Error reducing')
 
+        print("__call__ DONE", flush=True)
         return temp_storage_bytes.value
 
     def __del__(self):
         bindings = _get_bindings()
         bindings.cccl_device_reduce_cleanup(ctypes.byref(self.build_result))
+
+    def __handle_d_in(self, num_items, d_in):
+        if hasattr(d_in, "dtype"):
+            assert hasattr(self._ctor_d_in, "dtype")
+            _dtype_validation(self._ctor_d_in.dtype, d_in.dtype)
+            if num_items is None:
+                num_items = d_in.size
+            else:
+                assert d_in.size == num_items
+            return num_items, _device_array_to_pointer(d_in)
+        assert not hasattr(self._ctor_d_in, "dtype")
+        return num_items, _itertools_iter_as_cccl_iter(numba.int32, d_in) # TODO pass numba dtype
 
 
 # TODO Figure out iterators
