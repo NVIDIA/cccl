@@ -223,7 +223,7 @@ struct AgentRadixSortHistogram
 #pragma unroll
       for (int pass = 0; pass < num_passes; ++pass)
       {
-        OffsetT count = internal::ThreadReduce(s.bins[pass][bin], Sum());
+        OffsetT count = cub::ThreadReduce(s.bins[pass][bin], Sum());
         if (count > 0)
         {
           // Using cuda::atomic<> here would also require using it in

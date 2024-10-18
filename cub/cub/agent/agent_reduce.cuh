@@ -253,8 +253,8 @@ struct AgentReduce
       threadIdx.x, d_wrapped_in + block_offset, items, transform_op);
 
     // Reduce items within each thread stripe
-    thread_aggregate = (IS_FIRST_TILE) ? internal::ThreadReduce(items, reduction_op)
-                                       : internal::ThreadReduce(items, reduction_op, thread_aggregate);
+    thread_aggregate = (IS_FIRST_TILE) ? cub::ThreadReduce(items, reduction_op)
+                                       : cub::ThreadReduce(items, reduction_op, thread_aggregate);
   }
 
   /**
@@ -301,8 +301,8 @@ struct AgentReduce
     }
 
     // Reduce items within each thread stripe
-    thread_aggregate = (IS_FIRST_TILE) ? internal::ThreadReduce(items, reduction_op)
-                                       : internal::ThreadReduce(items, reduction_op, thread_aggregate);
+    thread_aggregate = (IS_FIRST_TILE) ? cub::ThreadReduce(items, reduction_op)
+                                       : cub::ThreadReduce(items, reduction_op, thread_aggregate);
   }
 
   /**
