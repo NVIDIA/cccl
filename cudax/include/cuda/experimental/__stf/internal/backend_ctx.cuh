@@ -425,8 +425,8 @@ protected:
         : auto_scheduler(scheduler::make(getenv("CUDASTF_SCHEDULE")))
         , auto_reorderer(reorderer::make(getenv("CUDASTF_TASK_ORDER")))
         , async_resources(async_resources ? mv(async_resources) : async_resources_handle())
-        , is_tracing(dot::instance().is_tracing())
-        , is_tracing_prereqs(dot::instance().is_tracing_prereqs())
+        , is_tracing(reserved::dot::instance().is_tracing())
+        , is_tracing_prereqs(reserved::dot::instance().is_tracing_prereqs())
     {
       // Enable peer memory accesses (if not done already)
       reserved::machine::instance().enable_peer_accesses();
@@ -446,10 +446,10 @@ protected:
 #endif
 
       // Initialize a structure to generate a visualization of the activity in this context
-      dot = ::std::make_shared<per_ctx_dot>(is_tracing, is_tracing_prereqs);
+      dot = ::std::make_shared<reserved::per_ctx_dot>(is_tracing, is_tracing_prereqs);
 
       // Record it in the list of all traced contexts
-      dot::instance().per_ctx.push_back(dot);
+      reserved::dot::instance().per_ctx.push_back(dot);
     }
 
     virtual ~impl()
@@ -464,7 +464,7 @@ protected:
 
       display_transfers();
 
-      fprintf(stderr, "TOTAL SYNC COUNT: %lu\n", counter<reserved::join_tag>::load());
+      fprintf(stderr, "TOTAL SYNC COUNT: %lu\n", reserved::counter<reserved::join_tag>::load());
     }
 
     impl(const impl&)            = delete;
@@ -606,12 +606,12 @@ _CCCL_DIAG_POP
     // generating a dot output)
     bool generate_event_symbols = false;
 
-    ::std::shared_ptr<per_ctx_dot>& get_dot()
+    ::std::shared_ptr<reserved::per_ctx_dot>& get_dot()
     {
       return dot;
     }
 
-    const ::std::shared_ptr<per_ctx_dot>& get_dot() const
+    const ::std::shared_ptr<reserved::per_ctx_dot>& get_dot() const
     {
       return dot;
     }
@@ -638,7 +638,7 @@ _CCCL_DIAG_POP
 
   private:
     // Used if we print the task graph using DOT
-    ::std::shared_ptr<per_ctx_dot> dot;
+    ::std::shared_ptr<reserved::per_ctx_dot> dot;
 
     backend_ctx_untyped::phase ctx_phase = backend_ctx_untyped::phase::setup;
   };
@@ -828,7 +828,7 @@ public:
   template <typename parent_ctx_t>
   void set_parent_ctx(parent_ctx_t& parent_ctx)
   {
-    per_ctx_dot::set_parent_ctx(parent_ctx.get_dot(), get_dot());
+    reserved::per_ctx_dot::set_parent_ctx(parent_ctx.get_dot(), get_dot());
   }
 
   auto get_phase() const

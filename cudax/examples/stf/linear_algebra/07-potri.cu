@@ -980,7 +980,7 @@ void PDGEMM(cublasOperation_t transa,
             matrix<double>& C)
 {
 #ifdef HAVE_DOT
-  dot::set_current_color("blue");
+  reserved::dot::set_current_color("blue");
 #endif
 
   for (int m = 0; m < C.mt; m++)

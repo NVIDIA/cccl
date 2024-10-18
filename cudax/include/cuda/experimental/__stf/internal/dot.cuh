@@ -43,7 +43,7 @@
 #include <sstream>
 #include <unordered_set>
 
-namespace cuda::experimental::stf
+namespace cuda::experimental::stf::reserved
 {
 
 /**
@@ -525,4 +525,4 @@ private:
   ::std::string dot_filename;
 };
 
-} // namespace cuda::experimental::stf
+} // namespace cuda::experimental::stf::reserved

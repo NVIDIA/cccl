@@ -319,7 +319,7 @@ public:
    */
   bool schedule_task()
   {
-    dot& dot                    = dot::instance();
+    reserved::dot& dot                    = reserved::dot::instance();
     task_statistics& statistics = task_statistics::instance();
 
     const bool is_auto = get_exec_place().affine_data_place() == data_place::device_auto;
@@ -385,8 +385,8 @@ private:
     // Disable timing to avoid implicit barriers
     cuda_safe_call(cudaEventCreateWithFlags(&sync_event, cudaEventDisableTiming));
 #ifdef CUDASTF_DEBUG
-    counter<reserved::cuda_event_tag::created> ++;
-    high_water_mark<reserved::cuda_event_tag>.record(++counter<cuda_event_tag::alive>);
+    reserved::counter<reserved::cuda_event_tag::created> ++;
+    reserved::high_water_mark<reserved::cuda_event_tag>.record(++reserved::counter<cuda_event_tag::alive>);
 #endif
 
     cuda_safe_call(cudaEventRecord(sync_event, streams[0].stream));
@@ -400,8 +400,8 @@ private:
     // Asynchronously destroy event to avoid a memleak
     cuda_safe_call(cudaEventDestroy(sync_event));
 #ifdef CUDASTF_DEBUG
-    counter<reserved::cuda_event_tag::destroyed>.increment();
-    counter<reserved::cuda_event_tag::alive>.decrement();
+    reserved::counter<reserved::cuda_event_tag::destroyed>.increment();
+    reserved::counter<reserved::cuda_event_tag::alive>.decrement();
 #endif
 
     if (current_dev != s0_dev)

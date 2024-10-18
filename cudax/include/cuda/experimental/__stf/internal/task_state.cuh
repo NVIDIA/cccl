@@ -145,7 +145,7 @@ public:
   ctx_stack& operator=(const ctx_stack&) = delete;
 
   // Insert a fence with all pending asynchronous operations on the current context
-  [[nodiscard]] inline event_list insert_task_fence(per_ctx_dot& dot)
+  [[nodiscard]] inline event_list insert_task_fence(reserved::per_ctx_dot& dot)
   {
     auto prereqs = event_list();
     // Create a node in the DOT output (if any)

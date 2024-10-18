@@ -37,7 +37,7 @@ int main()
   ctx.finalize();
 
   // Call this explicitely for the purpose of the test
-  dot::instance().finish();
+  reserved::dot::instance().finish();
 
   // Make sure the file exists, and erase it
   // fprintf(stderr, "ERASE. ...\n");

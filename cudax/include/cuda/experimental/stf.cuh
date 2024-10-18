@@ -606,7 +606,7 @@ public:
       payload);
   }
 
-  ::std::shared_ptr<per_ctx_dot> get_dot()
+  ::std::shared_ptr<reserved::per_ctx_dot> get_dot()
   {
     assert(payload.index() != ::std::variant_npos && "Context is not initialized");
     return ::std::visit(
@@ -620,7 +620,7 @@ public:
   void set_parent_ctx(parent_ctx_t& parent_ctx)
   {
     assert(payload.index() != ::std::variant_npos && "Context is not initialized");
-    per_ctx_dot::set_parent_ctx(parent_ctx.get_dot(), get_dot());
+    reserved::per_ctx_dot::set_parent_ctx(parent_ctx.get_dot(), get_dot());
     ::std::visit(
       [&](auto& self) {
         self.set_parent_ctx(parent_ctx.get_dot());

@@ -251,7 +251,7 @@ public:
   }
 
   // id_to can be the id of a task or another prereq
-  void dot_declare_prereqs(per_ctx_dot& dot, int id_to, int array_style = 0)
+  void dot_declare_prereqs(reserved::per_ctx_dot& dot, int id_to, int array_style = 0)
   {
     if (!dot.is_tracing_prereqs())
     {
@@ -265,7 +265,7 @@ public:
   }
 
   // id_from can be the id of a task or another prereq
-  void dot_declare_prereqs_from(per_ctx_dot& dot, int id_from, int array_style = 0) const
+  void dot_declare_prereqs_from(reserved::per_ctx_dot& dot, int id_from, int array_style = 0) const
   {
     if (!dot.is_tracing_prereqs())
     {
@@ -473,7 +473,7 @@ void join(context_t& ctx, some_event& to, event_list& prereq_in)
     {
       from = static_cast<some_event*>(item.operator->());
     }
-    counter<reserved::join_tag>::increment();
+    reserved::counter<reserved::join_tag>::increment();
     to.insert_dep(ctx.async_resources(), *from);
     from->outbound_deps++;
   }

@@ -348,7 +348,7 @@ void DTRSM(
 void PDNRM2_HOST(matrix<double>* A, double* result)
 {
 #ifdef HAVE_DOT
-  dot::set_current_color("red");
+  reserved::dot::set_current_color("red");
 #endif
 
   for (int rowb = 0; rowb < A->mt; rowb++)
@@ -374,7 +374,7 @@ void PDNRM2_HOST(matrix<double>* A, double* result)
 void PDPOTRF(matrix<double>& A)
 {
 #ifdef HAVE_DOT
-  dot::set_current_color("yellow");
+  reserved::dot::set_current_color("yellow");
 #endif
 
   assert(A.m == A.n);
@@ -493,7 +493,7 @@ void PDTRSM(cublasSideMode_t side,
 void PDPOTRS(matrix<double>& A, class matrix<double>& B, cublasFillMode_t uplo)
 {
 #ifdef HAVE_DOT
-  dot::set_current_color("green");
+  reserved::dot::set_current_color("green");
 #endif
 
   //    std::cout << "[PDPOTRS] START" << std::endl;
@@ -502,7 +502,7 @@ void PDPOTRS(matrix<double>& A, class matrix<double>& B, cublasFillMode_t uplo)
     CUBLAS_SIDE_LEFT, uplo, uplo == CUBLAS_FILL_MODE_UPPER ? CUBLAS_OP_T : CUBLAS_OP_N, CUBLAS_DIAG_NON_UNIT, 1.0, A, B);
 
 #ifdef HAVE_DOT
-  dot::set_current_color("darkgreen");
+  reserved::dot::set_current_color("darkgreen");
 #endif
 
   PDTRSM(
@@ -524,7 +524,7 @@ void PDGEMM(cublasOperation_t transa,
             class matrix<double>& C)
 {
 #ifdef HAVE_DOT
-  dot::set_current_color("blue");
+  reserved::dot::set_current_color("blue");
 #endif
 
   for (int m = 0; m < C.mt; m++)

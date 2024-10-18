@@ -524,14 +524,14 @@ public:
 #ifdef CUDASTF_DEBUG
     // Ensure that the total number of CUDA events created corresponds to
     // the number of events destroyed
-    const auto alive = counter<reserved::cuda_event_tag::alive>.load();
+    const auto alive = reserved::counter<reserved::cuda_event_tag::alive>.load();
     if (alive != 0)
     {
       fprintf(stderr,
               "WARNING!!! %lu CUDA events leaked (approx %lu created vs. %lu destroyed).\n",
               alive,
-              counter<reserved::cuda_event_tag::created>.load(),
-              counter<reserved::cuda_event_tag::destroyed>.load());
+              reserved::counter<reserved::cuda_event_tag::created>.load(),
+              reserved::counter<reserved::cuda_event_tag::destroyed>.load());
     }
 
     assert(alive == 0);
@@ -543,12 +543,12 @@ public:
     }
 
     fprintf(stderr,
-            "[STATS CUDA EVENTS] created=%lu destroyed=%lu alive=%lu high_water_mark=%lu\n",
-            counter<reserved::cuda_event_tag::created>.load(),
-            counter<reserved::cuda_event_tag::destroyed>.load(),
+            "[STATS CUDA EVENTS] created=%lu destroyed=%lu alive=%lu reserved::high_water_mark=%lu\n",
+            reserved::counter<reserved::cuda_event_tag::created>.load(),
+            reserved::counter<reserved::cuda_event_tag::destroyed>.load(),
             alive,
-            high_water_mark<reserved::cuda_event_tag>.load());
-    fprintf(stderr, "[STATS CUDA EVENTS] cuda_stream_wait_event=%lu\n", counter<reserved::cuda_stream_wait_event_tag>.load());
+            reserved::high_water_mark<reserved::cuda_event_tag>.load());
+    fprintf(stderr, "[STATS CUDA EVENTS] cuda_stream_wait_event=%lu\n", reserved::counter<reserved::cuda_stream_wait_event_tag>.load());
 #endif
   }
 
