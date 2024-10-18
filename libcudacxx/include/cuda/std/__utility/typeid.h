@@ -205,9 +205,7 @@ struct __type_info_ptr
 /// not depend on RTTI or variable templates.
 struct __type_info
 {
-  __type_info()                              = delete;
-  __type_info(__type_info const&)            = delete;
-  __type_info& operator=(__type_info const&) = delete;
+  __type_info() = delete;
 
   _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr __type_info(__type_info_impl (*__pfn)() noexcept) noexcept
       : __pfn_(__pfn)
@@ -256,6 +254,12 @@ struct __type_info
   {
     return !(__a == __b);
   }
+
+private:
+  friend struct __type_info_ptr;
+
+  __type_info(__type_info const&)            = default; // needed by __type_info_ptr::operator*() before C++17
+  __type_info& operator=(__type_info const&) = delete;
 
   __type_info_impl (*__pfn_)() noexcept;
 };
