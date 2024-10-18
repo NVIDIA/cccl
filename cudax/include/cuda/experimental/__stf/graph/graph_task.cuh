@@ -45,6 +45,9 @@ class graph_task;
  * the dependencies from and to that child graph, in addition to extra nodes
  * intended to implement data transfers, or allocations for example.
  *
+ * For graph tasks generated automatically by CUDASTF which are only made of a
+ * single CUDA graph node, we may use the graph node directly rather than
+ * embedding it in a child graph.
  */
 template <>
 class graph_task<> : public task
