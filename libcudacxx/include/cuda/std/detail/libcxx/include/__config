@@ -792,6 +792,11 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 #    define _LIBCUDACXX_HAS_MSVC_ATOMIC_IMPL
 #  endif
 
+// Enable bypassing automatic storage checks in atomics when using CTK 12.2 and below and if NDEBUG is defined.
+#  if defined(_CCCL_CUDACC_BELOW_12_2) && !defined(NDEBUG)
+#    define _LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE
+#  endif // _CCCL_CUDACC_BELOW_12_2
+
 // CUDA Atomics supersede host atomics in order to insert the host/device dispatch layer
 #  if defined(_CCCL_CUDA_COMPILER_NVCC) || defined(_CCCL_COMPILER_NVRTC) || defined(_CCCL_COMPILER_NVHPC) \
     || defined(_CCCL_CUDACC)
