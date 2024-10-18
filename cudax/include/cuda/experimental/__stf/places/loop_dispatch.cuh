@@ -33,6 +33,8 @@
 namespace cuda::experimental::stf
 {
 
+namespace reserved {
+
 /* A very simple hash function to give the impression of a random distribution of indices */
 inline size_t customHash(size_t value)
 {
@@ -45,6 +47,8 @@ inline size_t customHash(size_t value)
 
   return hash;
 }
+
+} // end namespace reserved
 
 /* TODO : introduce a policy to decide whether or not to use threads, and the thread-index mapping (currently random) */
 template <typename context_t, typename exec_place_t, bool use_threads = true>
@@ -82,7 +86,7 @@ inline void loop_dispatch(
 
       for (size_t i = start; i < end; i++)
       {
-        if (customHash(i) % nthreads == tid)
+        if (reserved::customHash(i) % nthreads == tid)
         {
           func(i);
         }
