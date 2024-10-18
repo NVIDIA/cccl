@@ -23,6 +23,8 @@
 #  include <thrust/tuple.h>
 #  include <thrust/type_traits/integer_sequence.h>
 
+#  include <cuda/__functional/address_stability.h>
+
 THRUST_NAMESPACE_BEGIN
 
 /*! \addtogroup function_objects Function Objects
@@ -150,7 +152,7 @@ public:
 #  if _CCCL_STD_VER >= 2014
 
   template <typename Tuple>
-  _CCCL_HOST_DEVICE decltype(auto) operator()(Tuple&& args) const
+  _CCCL_HOST_DEVICE decltype(auto) operator()(Tuple && args) const
   {
     return detail::zip_detail::apply(func, THRUST_FWD(args));
   }
@@ -200,5 +202,10 @@ _CCCL_HOST_DEVICE zip_function<typename std::decay<Function>::type> make_zip_fun
  */
 
 THRUST_NAMESPACE_END
+
+template <typename F, typename... Args>
+struct ::cuda::allows_copied_arguments<THRUST_NS_QUALIFIER::zip_function<F>, void, Args...>
+    : ::cuda::allows_copied_arguments<F, Args...>
+{};
 
 #endif
