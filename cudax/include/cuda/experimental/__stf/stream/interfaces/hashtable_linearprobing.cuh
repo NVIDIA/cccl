@@ -64,9 +64,9 @@ public:
     const hashtable& src_instance = this->instance(src_instance_id);
     const hashtable& dst_instance = this->instance(dst_instance_id);
 
-    KeyValue* src = src_instance.addr;
-    KeyValue* dst = dst_instance.addr;
-    size_t sz     = this->shape.get_capacity() * sizeof(KeyValue);
+    reserved::KeyValue* src = src_instance.addr;
+    reserved::KeyValue* dst = dst_instance.addr;
+    size_t sz     = this->shape.get_capacity() * sizeof(reserved::KeyValue);
 
     // NAIVE method !
     cuda_safe_call(cudaMemcpyAsync((void*) dst, (void*) src, sz, kind, s));
@@ -80,10 +80,10 @@ public:
     void** /*unused*/,
     cudaStream_t stream) override
   {
-    s                     = this->shape.get_capacity() * sizeof(KeyValue);
+    s                     = this->shape.get_capacity() * sizeof(reserved::KeyValue);
     hashtable& local_desc = this->instance(instance_id);
 
-    KeyValue* base_ptr;
+    reserved::KeyValue* base_ptr;
 
     if (memory_node == data_place::host)
     {
