@@ -161,7 +161,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ThreeWayPartitionPolicy::BLO
     SelectSecondPartOp select_second_part_op,
     OffsetT num_items,
     int num_tiles,
-    _CUB_GRID_CONSTANT const StreamingContextT streaming_context)
+    _CCCL_GRID_CONSTANT const StreamingContextT streaming_context)
 {
   using AgentThreeWayPartitionPolicyT = typename ChainedPolicyT::ActivePolicy::ThreeWayPartitionPolicy;
 
