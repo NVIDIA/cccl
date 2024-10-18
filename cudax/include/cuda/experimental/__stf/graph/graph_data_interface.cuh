@@ -75,14 +75,14 @@ public:
     size_t graph_epoch = ctx_.epoch();
     assert(graph && graph_epoch != size_t(-1));
 
-    const ::std::vector<cudaGraphNode_t> nodes = join_with_graph_nodes(prereqs, graph_epoch);
+    const ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(prereqs, graph_epoch);
 
     // Let CUDA figure out from pointers
     cudaMemcpyKind kind = cudaMemcpyDefault;
 
     cudaGraphNode_t out = graph_data_copy(kind, src_instance_id, dst_instance_id, graph, nodes.data(), nodes.size());
 
-    fork_from_graph_node(ctx_, out, graph_epoch, prereqs, "copy");
+    reserved::fork_from_graph_node(ctx_, out, graph_epoch, prereqs, "copy");
   }
 };
 

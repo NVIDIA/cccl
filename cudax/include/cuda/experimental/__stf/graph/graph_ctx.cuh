@@ -81,7 +81,7 @@ public:
 
     const size_t graph_epoch                   = bctx.epoch();
     const cudaGraph_t graph                    = bctx.graph();
-    const ::std::vector<cudaGraphNode_t> nodes = join_with_graph_nodes(prereqs, graph_epoch);
+    const ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(prereqs, graph_epoch);
     cudaGraphNode_t out                        = nullptr;
 
     if (memory_node == data_place::host)
@@ -107,7 +107,7 @@ public:
       assert(s > 0);
     }
 
-    fork_from_graph_node(bctx, out, graph_epoch, prereqs, "alloc");
+    reserved::fork_from_graph_node(bctx, out, graph_epoch, prereqs, "alloc");
     return result;
   }
 
@@ -117,7 +117,7 @@ public:
     const cudaGraph_t graph                    = bctx.graph();
     const size_t graph_epoch                   = bctx.epoch();
     cudaGraphNode_t out                        = nullptr;
-    const ::std::vector<cudaGraphNode_t> nodes = join_with_graph_nodes(prereqs, graph_epoch);
+    const ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(prereqs, graph_epoch);
     if (memory_node == data_place::host)
     {
       // fprintf(stderr, "TODO deallocate host memory (graph_ctx)\n");
@@ -127,7 +127,7 @@ public:
     {
       cuda_safe_call(cudaGraphAddMemFreeNode(&out, graph, nodes.data(), nodes.size(), ptr));
     }
-    fork_from_graph_node(bctx, out, graph_epoch, prereqs, "dealloc");
+    reserved::fork_from_graph_node(bctx, out, graph_epoch, prereqs, "dealloc");
   }
 
   ::std::string to_string() const override
@@ -534,13 +534,13 @@ private:
     auto prereq_fence = cs.insert_task_fence(*get_dot());
 
     const size_t graph_epoch             = state.graph_epoch;
-    ::std::vector<cudaGraphNode_t> nodes = join_with_graph_nodes(prereq_fence, graph_epoch);
+    ::std::vector<cudaGraphNode_t> nodes = reserved::join_with_graph_nodes(prereq_fence, graph_epoch);
 
     // Create an empty graph node
     cudaGraphNode_t n;
     cuda_safe_call(cudaGraphAddEmptyNode(&n, get_graph(), nodes.data(), nodes.size()));
 
-    fork_from_graph_node(*this, n, graph_epoch, prereq_fence, "fence");
+    reserved::fork_from_graph_node(*this, n, graph_epoch, prereq_fence, "fence");
 
     return nullptr; // for conformity with the stream version
   }

@@ -153,7 +153,7 @@ public:
             // fprintf(stderr, "outbounds %d (%s)\n", e->outbound_deps.load(), e->get_symbol().c_str());
             if (e->outbound_deps == 0)
             {
-              auto se                    = handle<stream_and_event>(e, use_static_cast);
+              auto se                    = reserved::handle<stream_and_event>(e, reserved::use_static_cast);
               decorated_stream candidate = se->get_decorated_stream();
 
               if (candidate.id != -1)

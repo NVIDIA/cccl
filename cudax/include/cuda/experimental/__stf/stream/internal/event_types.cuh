@@ -39,7 +39,7 @@ inline event join_with_stream(
 class stream_and_event;
 namespace reserved
 {
-using stream_and_event_vector = small_vector<handle<stream_and_event>, 7>;
+using stream_and_event_vector = small_vector<reserved::handle<stream_and_event>, 7>;
 
 /* Tag types for event counters */
 class cuda_event_tag
@@ -249,7 +249,7 @@ public:
 
     // // For each element, compare it with existing entries of the map, keep only the most recent ones
     // for (auto& e: events) {
-    //     auto se = handle<stream_and_event>(e, use_dynamic_cast);
+    //     auto se = reserved::handle<stream_and_event>(e, reserved::use_dynamic_cast);
     //     cudaStream_t stream = se->stream;
     //     int id = se->unique_prereq_id;
 
@@ -362,7 +362,7 @@ public:
   event end_as_event(backend_ctx_untyped& bctx)
   {
     /* Create an event that synchronize with all pending work in the CUDA stream */
-    event e = event(handle<stream_and_event>(dstream, true));
+    event e = event(reserved::handle<stream_and_event>(dstream, true));
 
     if (!symbol.empty())
     {
@@ -403,7 +403,7 @@ private:
     for (const auto& e : prereq_in)
     {
       assert(dynamic_cast<stream_and_event*>(e.operator->()));
-      auto se = handle<stream_and_event>(e, use_static_cast);
+      auto se = reserved::handle<stream_and_event>(e, reserved::use_static_cast);
 
       if (dstream.stream != se->get_stream())
       {
@@ -439,7 +439,7 @@ private:
     {
       cudaStream_t stream;
       ::std::ptrdiff_t stream_id = -1;
-      auto se           = handle<stream_and_event, handle_flags::non_null>(e, use_static_cast);
+      auto se           = reserved::handle<stream_and_event, reserved::handle_flags::non_null>(e, reserved::use_static_cast);
       stream            = se->get_stream();
       stream_id         = se->get_stream_id();
 
@@ -478,7 +478,7 @@ inline event join_with_stream(
   // API calls to a minimum. If the list was already optimized, this will be a no-op
   prereq_in.optimize();
 
-  auto se = handle<stream_and_event>(mv(dstream), record_event);
+  auto se = reserved::handle<stream_and_event>(mv(dstream), record_event);
   se->set_symbol(bctx, mv(string));
   join(bctx, *se, prereq_in);
   return se;
@@ -487,7 +487,7 @@ inline event join_with_stream(
 /* Create a simple event in a CUDA stream */
 inline event record_event_in_stream(const decorated_stream& dstream)
 {
-  return handle<stream_and_event>(dstream, true);
+  return reserved::handle<stream_and_event>(dstream, true);
 }
 
 } // namespace cuda::experimental::stf

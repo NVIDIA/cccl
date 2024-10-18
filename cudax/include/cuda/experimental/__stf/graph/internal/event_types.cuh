@@ -24,10 +24,7 @@
 
 #include <vector>
 
-namespace cuda::experimental::stf
-{
-
-namespace reserved
+namespace cuda::experimental::stf::reserved
 {
 
 /* A prereq corresponds to a node, which is always paired to its graph */
@@ -48,9 +45,7 @@ public:
   mutable size_t epoch;
 };
 
-using graph_event = handle<graph_event_impl, handle_flags::non_null>;
-
-} // namespace reserved
+using graph_event = reserved::handle<graph_event_impl, reserved::handle_flags::non_null>;
 
 // This converts a prereqs and converts it to a vector of graph nodes. As a
 // side-effect, it also remove duplicates from the prereqs list of events
@@ -63,7 +58,7 @@ inline ::std::vector<cudaGraphNode_t> join_with_graph_nodes(event_list& prereqs,
 
   for (const auto& e : prereqs)
   {
-    const auto ge = reserved::graph_event(e, use_dynamic_cast);
+    const auto ge = reserved::graph_event(e, reserved::use_dynamic_cast);
     EXPECT(current_epoch >= ge->epoch);
 
     // If current_epoch > ge->epoch, then this was already implicitely
@@ -98,4 +93,4 @@ inline void fork_from_graph_node(
   previous_prereqs = event_list(gnp);
 }
 
-} // namespace cuda::experimental::stf
+} // namespace cuda::experimental::stf::reserved

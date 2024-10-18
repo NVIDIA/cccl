@@ -25,7 +25,7 @@
 
 #include <memory> // for ::std::shared_ptr
 
-namespace cuda::experimental::stf
+namespace cuda::experimental::stf::reserved
 {
 
 /**
@@ -289,4 +289,4 @@ UNITTEST("Weak handle")
 };
 #endif // UNITTESTED_FILE
 
-} // namespace cuda::experimental::stf
+} // namespace cuda::experimental::stf::reserved

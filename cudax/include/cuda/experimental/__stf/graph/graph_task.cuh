@@ -81,7 +81,7 @@ public:
 
     for (auto& e : prereqs)
     {
-      auto ge = reserved::graph_event(e, use_dynamic_cast);
+      auto ge = reserved::graph_event(e, reserved::use_dynamic_cast);
       if (ge->epoch == epoch)
       {
         ready_dependencies.push_back(ge->node);
