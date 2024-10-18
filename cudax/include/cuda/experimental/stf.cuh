@@ -370,8 +370,8 @@ public:
     static_assert(::std::is_same_v<S, ::std::false_type>, "parallel_for is only supported with CUDA compilers.");
 #endif
     EXPECT(payload.index() != ::std::variant_npos, "Context is not initialized.");
-    using result_t = unified_scope<parallel_for_scope<stream_ctx, S, null_partition, Deps...>,
-                                   parallel_for_scope<graph_ctx, S, null_partition, Deps...>>;
+    using result_t = unified_scope<reserved::parallel_for_scope<stream_ctx, S, null_partition, Deps...>,
+                                   reserved::parallel_for_scope<graph_ctx, S, null_partition, Deps...>>;
     return ::std::visit(
       [&](auto& self) {
         return result_t(self.parallel_for(mv(e_place), mv(shape), deps...));
@@ -389,8 +389,8 @@ public:
     static_assert(::std::is_same_v<S, ::std::false_type>, "parallel_for is only supported with CUDA compilers.");
 #endif
     EXPECT(payload.index() != ::std::variant_npos, "Context is not initialized.");
-    using result_t = unified_scope<parallel_for_scope<stream_ctx, S, partitioner_t, Deps...>,
-                                   parallel_for_scope<graph_ctx, S, partitioner_t, Deps...>>;
+    using result_t = unified_scope<reserved::parallel_for_scope<stream_ctx, S, partitioner_t, Deps...>,
+                                   reserved::parallel_for_scope<graph_ctx, S, partitioner_t, Deps...>>;
     return ::std::visit(
       [&](auto& self) {
         return result_t(self.parallel_for(mv(p), mv(e_place), mv(shape), deps...));
@@ -423,7 +423,7 @@ public:
     assert(payload.index() != ::std::variant_npos && "Context is not initialized");
     // false : we expect a single kernel descriptor in the lambda function return type
     using result_t =
-      unified_scope<cuda_kernel_scope<stream_ctx, false, Deps...>, cuda_kernel_scope<graph_ctx, false, Deps...>>;
+      unified_scope<reserved::cuda_kernel_scope<stream_ctx, false, Deps...>, reserved::cuda_kernel_scope<graph_ctx, false, Deps...>>;
     return ::std::visit(
       [&](auto& self) {
         return result_t(self.cuda_kernel(deps...));
@@ -437,7 +437,7 @@ public:
     assert(payload.index() != ::std::variant_npos && "Context is not initialized");
     // false : we expect a single kernel descriptor in the lambda function return type
     using result_t =
-      unified_scope<cuda_kernel_scope<stream_ctx, false, Deps...>, cuda_kernel_scope<graph_ctx, false, Deps...>>;
+      unified_scope<reserved::cuda_kernel_scope<stream_ctx, false, Deps...>, reserved::cuda_kernel_scope<graph_ctx, false, Deps...>>;
     return ::std::visit(
       [&](auto& self) {
         return result_t(self.cuda_kernel(e_place, deps...));
@@ -451,7 +451,7 @@ public:
     assert(payload.index() != ::std::variant_npos && "Context is not initialized");
     // true : we expect a vector of cuda kernel descriptors in the lambda function return type
     using result_t =
-      unified_scope<cuda_kernel_scope<stream_ctx, true, Deps...>, cuda_kernel_scope<graph_ctx, true, Deps...>>;
+      unified_scope<reserved::cuda_kernel_scope<stream_ctx, true, Deps...>, reserved::cuda_kernel_scope<graph_ctx, true, Deps...>>;
     return ::std::visit(
       [&](auto& self) {
         return result_t(self.cuda_kernel_chain(deps...));
@@ -465,7 +465,7 @@ public:
     assert(payload.index() != ::std::variant_npos && "Context is not initialized");
     // true : we expect a vector of cuda kernel descriptors in the lambda function return type
     using result_t =
-      unified_scope<cuda_kernel_scope<stream_ctx, true, Deps...>, cuda_kernel_scope<graph_ctx, true, Deps...>>;
+      unified_scope<reserved::cuda_kernel_scope<stream_ctx, true, Deps...>, reserved::cuda_kernel_scope<graph_ctx, true, Deps...>>;
     return ::std::visit(
       [&](auto& self) {
         return result_t(self.cuda_kernel_chain(e_place, deps...));
@@ -484,8 +484,8 @@ public:
                   "launch is only supported with CUDA compilers.");
 #endif
 
-    using result_t = unified_scope<launch_scope<stream_ctx, thread_hierarchy_spec_t, Deps...>,
-                                   launch_scope<graph_ctx, thread_hierarchy_spec_t, Deps...>>;
+    using result_t = unified_scope<reserved::launch_scope<stream_ctx, thread_hierarchy_spec_t, Deps...>,
+                                   reserved::launch_scope<graph_ctx, thread_hierarchy_spec_t, Deps...>>;
     return ::std::visit(
       [&](auto& self) {
         using Self = ::std::remove_reference_t<decltype((self))>;

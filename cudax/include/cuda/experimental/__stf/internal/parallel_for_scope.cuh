@@ -75,10 +75,10 @@ __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tup
   ::std::apply(explode_args, mv(targs));
 }
 
-} // end namespace reserved
-
 /**
- * @brief TODO
+ * @brief Supporting class for the parallel_for construct
+ *
+ * This is used to implement operators such as ->* on the object produced by `ctx.parallel_for`
  *
  * @tparam deps_t
  */
@@ -466,6 +466,7 @@ private:
 
   ::std::vector<::std::function<void()>> dump_hooks;
 };
+} // end namespace reserved
 
 #endif // __CUDACC__
 

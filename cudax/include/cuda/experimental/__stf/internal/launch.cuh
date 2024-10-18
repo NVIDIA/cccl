@@ -260,8 +260,6 @@ private:
   ::std::vector<cudaStream_t> streams;
 };
 
-} // namespace reserved
-
 /**
  * @brief A class template for launching tasks with dependencies and execution context.
  * @tparam Ctx Type of the execution context.
@@ -504,6 +502,8 @@ private:
 
   ::std::vector<::std::function<void()>> dump_hooks;
 };
+
+} // namespace reserved
 
 #endif // __CUDACC__
 } // end namespace cuda::experimental::stf

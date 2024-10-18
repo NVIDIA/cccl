@@ -54,9 +54,6 @@
 namespace cuda::experimental::stf
 {
 
-template <typename Ctx, typename shape_t, typename partitioner_t, typename... Deps>
-class parallel_for_scope;
-
 template <typename T>
 class logical_data;
 
@@ -65,13 +62,16 @@ class frozen_logical_data;
 
 class graph_ctx;
 
-template <typename Ctx, typename thread_hierarchy_spec_t, typename... Deps>
-class launch_scope;
-
 class null_partition;
 
 namespace reserved
 {
+
+template <typename Ctx, typename shape_t, typename partitioner_t, typename... Deps>
+class parallel_for_scope;
+
+template <typename Ctx, typename thread_hierarchy_spec_t, typename... Deps>
+class launch_scope;
 
 /**
  * @brief Result of `host_launch` (below)
@@ -180,6 +180,9 @@ private:
 
 /**
  * @brief Description of a CUDA kernel
+ *
+ * This is used to describe kernels passed to the `ctx.cuda_kernel` and
+ * `ctx.cuda_kernel_chain` API calls.
  */
 struct cuda_kernel_desc
 {
@@ -224,6 +227,9 @@ struct cuda_kernel_desc
 private:
   ::std::shared_ptr<void> arg_tuple_type_erased;
 };
+
+namespace reserved
+{
 
 /**
  * @brief Implementation of the CUDA kernel construct
@@ -384,6 +390,8 @@ private:
   task_dep_vector<Deps...> deps;
   ::std::optional<exec_place> e_place;
 };
+
+} // end namespace reserved
 
 /**
  * @brief Unified context!!!
@@ -1005,19 +1013,19 @@ public:
   template <typename... Deps>
   auto cuda_kernel(task_dep<Deps>... deps)
   {
-    return cuda_kernel_scope<Engine, false, Deps...>(self(), mv(deps)...);
+    return reserved::cuda_kernel_scope<Engine, false, Deps...>(self(), mv(deps)...);
   }
 
   template <typename... Deps>
   auto cuda_kernel_chain(task_dep<Deps>... deps)
   {
-    return cuda_kernel_scope<Engine, true, Deps...>(self(), mv(deps)...);
+    return reserved::cuda_kernel_scope<Engine, true, Deps...>(self(), mv(deps)...);
   }
 
   template <typename thread_hierarchy_spec_t, typename... Deps>
   auto launch(thread_hierarchy_spec_t spec, exec_place e_place, task_dep<Deps>... deps)
   {
-    return launch_scope<Engine, thread_hierarchy_spec_t, Deps...>(self(), mv(spec), mv(e_place), mv(deps)...);
+    return reserved::launch_scope<Engine, thread_hierarchy_spec_t, Deps...>(self(), mv(spec), mv(e_place), mv(deps)...);
   }
 
   /* Using ctx.launch with a host place */
@@ -1058,13 +1066,13 @@ public:
   template <typename S, typename... Deps>
   auto parallel_for(exec_place e_place, S shape, task_dep<Deps>... deps)
   {
-    return parallel_for_scope<Engine, S, null_partition, Deps...>(self(), mv(e_place), mv(shape), mv(deps)...);
+    return reserved::parallel_for_scope<Engine, S, null_partition, Deps...>(self(), mv(e_place), mv(shape), mv(deps)...);
   }
 
   template <typename partitioner_t, typename S, typename... Deps>
   auto parallel_for(partitioner_t, exec_place e_place, S shape, task_dep<Deps>... deps)
   {
-    return parallel_for_scope<Engine, S, partitioner_t, Deps...>(self(), mv(e_place), mv(shape), mv(deps)...);
+    return reserved::parallel_for_scope<Engine, S, partitioner_t, Deps...>(self(), mv(e_place), mv(shape), mv(deps)...);
   }
 
   template <typename S, typename... Deps>

@@ -304,8 +304,8 @@ public:
           : task(ctx, mv(e_place), mv(shape), mv(deps)...)
       {}
 
-      parallel_for_scope<stream_ctx, shape_t, P, Data...> task;
-      ::std::function<void(parallel_for_scope<stream_ctx, shape_t, P, Data...>&)> todo;
+      reserved::parallel_for_scope<stream_ctx, shape_t, P, Data...> task;
+      ::std::function<void(reserved::parallel_for_scope<stream_ctx, shape_t, P, Data...>&)> todo;
 
       void set_symbol(::std::string s) override
       {
@@ -396,7 +396,7 @@ public:
     template <typename Fun>
     void operator->*(Fun fun)
     {
-      my_payload().todo = [f = mv(fun)](parallel_for_scope<stream_ctx, shape_t, P, Data...>& task) {
+      my_payload().todo = [f = mv(fun)](reserved::parallel_for_scope<stream_ctx, shape_t, P, Data...>& task) {
         task->*f;
       };
     }
