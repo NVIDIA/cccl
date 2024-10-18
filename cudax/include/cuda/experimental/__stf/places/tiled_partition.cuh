@@ -30,6 +30,9 @@
 namespace cuda::experimental::stf
 {
 
+namespace reserved
+{
+
 /*
  * Define a tiled transformation to a shape of mdspan
  */
@@ -103,6 +106,8 @@ private:
   size_t nparts;
 };
 
+} // end namespace reserved
+
 /**
  * @brief Tiled partition strategy applied on a shape of mdspan
  *
@@ -115,7 +120,7 @@ private:
 template <size_t tile_size, typename mdspan_shape_t>
 auto tiled(const mdspan_shape_t s, size_t part_id, size_t nparts)
 {
-  return tiled_mdspan_shape<tile_size, mdspan_shape_t>(s, part_id, nparts);
+  return reserved::tiled_mdspan_shape<tile_size, mdspan_shape_t>(s, part_id, nparts);
 }
 
 template <size_t tile_size>
@@ -132,7 +137,7 @@ public:
   {
     // TODO assert 1D !
     assert(grid_dims.x > 0);
-    return tiled_mdspan_shape<tile_size, mdspan_shape_t>(in, place_position.x, grid_dims.x);
+    return reserved::tiled_mdspan_shape<tile_size, mdspan_shape_t>(in, place_position.x, grid_dims.x);
   }
 
   _CCCL_HOST_DEVICE
