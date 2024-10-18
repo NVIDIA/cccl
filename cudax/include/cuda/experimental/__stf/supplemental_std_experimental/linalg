@@ -1,0 +1,116 @@
+ /*
+//@HEADER
+// ************************************************************************
+//
+//                        Kokkos v. 2.0
+//              Copyright (2019) Sandia Corporation
+//
+// Under the terms of Contract DE-AC04-94AL85000 with Sandia Corporation,
+// the U.S. Government retains certain rights in this software.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// 1. Redistributions of source code must retain the above copyright
+// notice, this list of conditions and the following disclaimer.
+//
+// 2. Redistributions in binary form must reproduce the above copyright
+// notice, this list of conditions and the following disclaimer in the
+// documentation and/or other materials provided with the distribution.
+//
+// 3. Neither the name of the Corporation nor the names of the
+// contributors may be used to endorse or promote products derived from
+// this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY SANDIA CORPORATION "AS IS" AND ANY
+// EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+// PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL SANDIA CORPORATION OR THE
+// CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+// EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+// PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//
+// Questions? Contact Christian R. Trott (crtrott@sandia.gov)
+//
+// ************************************************************************
+//@HEADER
+*/
+
+#pragma once
+
+#if _NVHPC_STDPAR_USE_GCC
+  #if __GNUC__ < 7
+    #error Using stdBLAS requires GCC 7 for C++17 features.
+  #endif
+#else
+  #if __pgnu_vsn < 70200
+    #error Using stdBLAS requires GCC 7 for C++17 features.
+  #endif
+#endif
+
+#if __cplusplus < 201703L
+  #error Using stdBLAS requires C++17. Use the option --c++17 to enable C++17 mode.
+#endif
+
+#if defined (_NVHPC_STDPAR_MULTICORE)
+  #define __LINALG_ENABLE_BLAS
+  #define __LINALG_ENABLE_BLAS_DEFAULT
+#elif defined (_NVHPC_STDPAR_GPU)
+  #if __has_include(<cublas_v2.h>)
+    #define __LINALG_ENABLE_CUBLAS
+    #define __LINALG_ENABLE_CUBLAS_DEFAULT
+  #else
+    #warning "Falling back to the sequential algorithm. Please add `-cudalib=cublas` to the compile line to enable the cuBLAS backend."
+  #endif
+#endif
+
+//#include "__p1673_bits/linalg_config.h"
+#include "__p1673_bits/linalg_execpolicy_mapper.hpp"
+#include "__p1673_bits/maybe_static_size.hpp"
+#include "__p1673_bits/layout_blas_general.hpp"
+#include "__p1673_bits/layout_tags.hpp"
+#include "__p1673_bits/layout_triangle.hpp"
+#include "__p1673_bits/packed_layout.hpp"
+#include "__p1673_bits/conjugate_if_needed.hpp"
+#include "__p1673_bits/proxy_reference.hpp"
+#include "__p1673_bits/scaled.hpp"
+#include "__p1673_bits/conjugated.hpp"
+#include "__p1673_bits/transposed.hpp"
+#include "__p1673_bits/conjugate_transposed.hpp"
+#include "__p1673_bits/blas1_givens.hpp"
+#include "__p1673_bits/blas1_linalg_swap.hpp"
+#include "__p1673_bits/blas1_matrix_frob_norm.hpp"
+#include "__p1673_bits/blas1_matrix_inf_norm.hpp"
+#include "__p1673_bits/blas1_matrix_one_norm.hpp"
+#include "__p1673_bits/blas1_scale.hpp"
+#include "__p1673_bits/blas1_linalg_copy.hpp"
+#include "__p1673_bits/blas1_linalg_add.hpp"
+#include "__p1673_bits/blas1_dot.hpp"
+#include "__p1673_bits/blas1_vector_norm2.hpp"
+#include "__p1673_bits/blas1_vector_abs_sum.hpp"
+#include "__p1673_bits/blas1_vector_idx_abs_max.hpp"
+#include "__p1673_bits/blas1_vector_sum_of_squares.hpp"
+#include "__p1673_bits/blas2_matrix_vector_product.hpp"
+#include "__p1673_bits/blas2_matrix_vector_solve.hpp"
+#include "__p1673_bits/blas2_matrix_rank_1_update.hpp"
+#include "__p1673_bits/blas2_matrix_rank_2_update.hpp"
+#include "__p1673_bits/blas3_matrix_product.hpp"
+#include "__p1673_bits/blas3_matrix_rank_k_update.hpp"
+#include "__p1673_bits/blas3_matrix_rank_2k_update.hpp"
+#include "__p1673_bits/blas3_triangular_matrix_matrix_solve.hpp"
+#include "__p1673_bits/helper.hpp"
+#ifdef __LINALG_ENABLE_CUBLAS
+  #include "__p1673_bits/linalg_nvhpc.hpp"
+  #include "__p1673_bits/cublas/linalg_cublas.hpp"
+#endif
+#ifdef __LINALG_ENABLE_BLAS
+  #include "__p1673_bits/linalg_nvhpc.hpp"
+  #include "__p1673_bits/blas/linalg_blas.hpp"
+#endif
+
+namespace stdex = std::experimental;
