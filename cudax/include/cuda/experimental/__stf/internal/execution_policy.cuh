@@ -434,6 +434,7 @@ constexpr auto par(const P&... p)
   return R(p...);
 }
 
+/// @{
 /**
  * @brief Creates and returns a `thread_hierarchy_spec` object with synchronization and dynamic width.
  *
