@@ -86,40 +86,6 @@ inline const char* cusolverGetErrorString(const cusolverStatus_t status)
 }
 #endif
 
-// Utility function to convert cudaGraphExecUpdate output to a string
-inline ::std::string cudaGraphExecUpdateErrorString(enum cudaGraphExecUpdateResult res)
-{
-  switch (res)
-  {
-    case cudaGraphExecUpdateError:
-      return "invalid value";
-    case cudaGraphExecUpdateErrorTopologyChanged:
-      return "graph topology changed";
-    case cudaGraphExecUpdateErrorNodeTypeChanged:
-      return "type of a node changed";
-    case cudaGraphExecUpdateErrorFunctionChanged:
-      return "function of a kernel node changed (CUDA driver < 11.2)";
-    case cudaGraphExecUpdateErrorUnsupportedFunctionChange:
-      return "func field of a kernel changed in an unsupported way";
-    case cudaGraphExecUpdateErrorParametersChanged:
-      return "any parameters to a node changed in a way that is not supported";
-    case cudaGraphExecUpdateErrorAttributesChanged:
-      return "any attributes of a node changed in a way that is not supported";
-    case cudaGraphExecUpdateErrorNotSupported:
-      return "something about a node is unsupported, like the node's type or configuration";
-    case cudaGraphExecUpdateSuccess:
-      assert(false);
-      return ::std::string();
-  }
-#if defined(_CCCL_COMPILER_MSVC)
-  fprintf(stderr, "%s: invalid argument %d\n", __FUNCSIG__, res);
-#else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
-  fprintf(stderr, "%s: invalid argument %d\n", __PRETTY_FUNCTION__, res);
-#endif // !_CCCL_COMPILER_MSVC
-  abort();
-  return "Unknown error";
-}
-
 /**
  * @brief Exception type across CUDA, CUBLAS, and CUSOLVER.
  *
