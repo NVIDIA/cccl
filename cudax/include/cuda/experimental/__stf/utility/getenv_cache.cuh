@@ -29,7 +29,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace cuda::experimental::stf
+namespace cuda::experimental::stf::reserved
 {
 
 /**
@@ -63,4 +63,4 @@ inline const char* cached_getenv(const char* name)
   return value;
 }
 
-} // end namespace cuda::experimental::stf
+} // end namespace cuda::experimental::stf::reserved

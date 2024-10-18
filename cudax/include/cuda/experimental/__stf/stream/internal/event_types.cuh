@@ -430,7 +430,7 @@ private:
    * prereq list */
   static decorated_stream device_lookup_in_event_list(backend_ctx_untyped& /* bctx */, event_list& prereq_in, int devid)
   {
-    if (cached_getenv("CUDASTF_NO_LOOKUP"))
+    if (reserved::cached_getenv("CUDASTF_NO_LOOKUP"))
     {
       return decorated_stream(nullptr);
     }
