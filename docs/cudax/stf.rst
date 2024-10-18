@@ -365,7 +365,7 @@ Defining custom data interfaces (advanced)
 .. toctree::
    :maxdepth: 1
 
-   stf_custom_data_interface
+   stf/custom_data_interface
 
 
 CUDASTF API is designed to be extensible, so that advanced users may
@@ -694,7 +694,7 @@ Lower-level task API
 .. toctree::
    :maxdepth: 1
 
-   stf_lower-level-api
+   stf/lower-level-api
 
 A lower-level API that does not rely on lambda functions is also
 available, and is described `here <stf_lower-level-api>`.

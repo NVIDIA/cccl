@@ -8,7 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-/** @file
+/**
+ * @file
  *
  * @brief A simple hashtable implementation based on https://nosferalatu.com/SimpleGPUHashTable.html
  * The goal of this class is to illustrate the extensibility of our data interface mechanism.

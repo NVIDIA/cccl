@@ -25,6 +25,7 @@
 #  pragma system_header
 #endif // no system header
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 #include <cuda/experimental/__stf/utility/source_location.cuh>
 #include <cuda/experimental/__stf/utility/traits.cuh>
 
@@ -701,3 +702,8 @@ UNITTEST("source_location")
   // Call the test function and validate the source location information
   test_func();
 };
+
+#else // DOXYGEN_SHOULD_SKIP_THIS  Do not document
+// Ensure These are ignored by Doxygen
+#define UNITTEST(name, ...)
+#endif // DOXYGEN_SHOULD_SKIP_THIS  Do not document
