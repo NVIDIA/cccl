@@ -184,7 +184,7 @@ struct __type_info
 
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr char const* name() const noexcept
   {
-    return __pfn_().__name_.__str_;
+    return __pfn_().__name_.begin();
   }
 
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool before(__type_info __other) const noexcept
