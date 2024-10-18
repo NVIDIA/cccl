@@ -638,7 +638,7 @@ struct DispatchReduce : SelectedPolicy
       AccumT* d_block_reductions = static_cast<AccumT*>(allocations[0]);
 
       // Get grid size for device_reduce_sweep_kernel
-      OffsetT reduce_grid_size = even_share.grid_size;
+      int reduce_grid_size = even_share.grid_size;
 
 // Log device_reduce_sweep_kernel configuration
 #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
