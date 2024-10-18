@@ -575,12 +575,12 @@ _CCCL_DIAG_POP
     block_allocator_untyped custom_allocator;
     block_allocator_untyped default_allocator;
     block_allocator_untyped uncached_allocator;
-    ctx_stack stack;
+    reserved::ctx_stack stack;
 
     // A vector of all allocators used in this ctx, so that they are
     // destroyed when calling finalize()
     ::std::vector<block_allocator_untyped> attached_allocators;
-    composite_slice_cache composite_cache;
+    reserved::composite_slice_cache composite_cache;
 
     ::std::unique_ptr<reserved::scheduler> auto_scheduler;
     ::std::unique_ptr<reserved::reorderer> auto_reorderer;
@@ -674,7 +674,7 @@ public:
     return pimpl->async_resources;
   }
 
-  ctx_stack& get_stack()
+  auto& get_stack()
   {
     assert(pimpl);
     return pimpl->stack;

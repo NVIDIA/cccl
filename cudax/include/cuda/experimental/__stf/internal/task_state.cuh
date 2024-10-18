@@ -24,13 +24,10 @@
 
 #include <optional>
 
-namespace cuda::experimental::stf
+namespace cuda::experimental::stf::reserved
 {
 
-namespace reserved
-{
 class logical_data_untyped_impl; // TODO: this should never be used outside logical_data_untyped
-}
 
 /* To support task nesting, we create a stack of task contexts. Every time a
  * new task is executed (between acquire and release), a new task_state is pushed
@@ -254,4 +251,4 @@ private:
   event_list start_events;
 };
 
-} // namespace cuda::experimental::stf
+} // namespace cuda::experimental::stf::reserved

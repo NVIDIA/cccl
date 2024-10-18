@@ -530,7 +530,7 @@ private:
   {
     auto& state = this->state();
 
-    ctx_stack& cs     = this->get_stack();
+    auto& cs     = this->get_stack();
     auto prereq_fence = cs.insert_task_fence(*get_dot());
 
     const size_t graph_epoch             = state.graph_epoch;

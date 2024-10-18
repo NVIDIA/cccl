@@ -182,8 +182,8 @@ public:
     // localized_array object into a cache, which will speedup the
     // allocation of identical arrays, if any.
     // This cached array is only usable once the prereqs of this deallocation are fulfilled.
-    auto* array = static_cast<localized_array*>(extra_args);
-    bctx.get_composite_cache().put(::std::unique_ptr<localized_array>(array), prereqs);
+    auto* array = static_cast<reserved::localized_array*>(extra_args);
+    bctx.get_composite_cache().put(::std::unique_ptr<reserved::localized_array>(array), prereqs);
   }
 
   /// @brief Implementation of interface primitive

@@ -34,7 +34,7 @@
 #include <list>
 #include <random>
 
-namespace cuda::experimental::stf
+namespace cuda::experimental::stf::reserved
 {
 
 /**
@@ -373,4 +373,4 @@ private:
   reserved::linear_pool<localized_array> cache;
 };
 
-} // end namespace cuda::experimental::stf
+} // end namespace cuda::experimental::stf::reserved

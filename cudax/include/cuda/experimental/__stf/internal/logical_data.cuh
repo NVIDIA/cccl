@@ -1708,7 +1708,7 @@ inline void reserved::logical_data_untyped_impl::erase()
     unfreeze(frozen_fake_task.value(), event_list());
   }
 
-  ctx_stack& cs = ctx.get_stack();
+  auto& cs = ctx.get_stack();
 
   auto wb_prereqs = event_list();
   auto& h_state   = get_state();
@@ -2309,7 +2309,7 @@ inline void reclaim_memory(
 {
   const auto memory_node = to_index(place);
 
-  ctx_stack& cs = ctx.get_stack();
+  auto& cs = ctx.get_stack();
 
   reclaimed_s = 0;
 

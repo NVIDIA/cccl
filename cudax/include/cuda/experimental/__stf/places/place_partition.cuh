@@ -35,6 +35,8 @@ namespace cuda::experimental::stf
 
 /**
  * @brief Defines a partitioning granularity
+ *
+ * This should be used in combination with `place_partition`
  */
 enum class place_partition_scope
 {
