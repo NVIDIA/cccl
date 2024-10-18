@@ -36,14 +36,14 @@ int main(int, char**)
   assert(_CCCL_TYPEID(int).name()[0] == 'i');
 #else // ^^^ !_CCCL_NO_TYPEID ^^^ / vvv _CCCL_NO_TYPEID vvv
   ASSERT_SAME_TYPE(::cuda::std::type_info, ::cuda::std::__type_info);
-  ASSERT_SAME_TYPE(decltype((_CCCL_TYPEID(int))), ::cuda::std::__type_info const&);
+  ASSERT_SAME_TYPE(decltype((_CCCL_TYPEID(int))), ::cuda::std::__type_info_ref);
   ASSERT_NOEXCEPT(_CCCL_TYPEID(int));
   static_assert(!std::is_default_constructible<::cuda::std::type_info>::value, "");
   static_assert(!std::is_copy_constructible<::cuda::std::type_info>::value, "");
   assert(_CCCL_TYPEID(int).name()[0] == 'i');
 #endif // _CCCL_NO_TYPEID
 
-  ASSERT_SAME_TYPE(decltype((_CCCL_CONSTEXPR_TYPEID(int))), ::cuda::std::__type_info const&);
+  ASSERT_SAME_TYPE(decltype((_CCCL_CONSTEXPR_TYPEID(int))), ::cuda::std::__type_info_ref);
   ASSERT_NOEXCEPT(_CCCL_CONSTEXPR_TYPEID(int));
   assert(_CCCL_CONSTEXPR_TYPEID(int).name()[0] == 'i');
   assert(_CCCL_CONSTEXPR_TYPEID(int).name() == _CCCL_CONSTEXPR_TYPEID(int).__name_view().begin());

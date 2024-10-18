@@ -33,7 +33,7 @@ struct __string_view
 {
   template <size_t _Np>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __string_view(
-    char const (&str)[_Np], size_t __prefix = 0, size_t __suffix = 0) noexcept
+    char const (&str)[_Np], size_t __prefix = 0, size_t __suffix = 0)
       : __str_{str + __check_offset(ptrdiff_t(__prefix), _Np - 1)}
       , __len_{_Np - 1 - ptrdiff_t(__prefix) - __check_offset(ptrdiff_t(__suffix), _Np - 1 - __prefix)}
   {}

@@ -135,11 +135,19 @@ struct __pretty_name_begin
   struct __pretty_name_end;
 };
 
+// If a position is -1, it is an invalid position. Return it unchanged.
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr ptrdiff_t
+__add_string_view_position(ptrdiff_t __pos, ptrdiff_t __diff) noexcept
+{
+  return __pos == -1 ? -1 : __pos + __diff;
+}
+
 // Get the type name from the pretty name by trimming the front and back.
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameof_3(__string_view __sv) noexcept
 {
-  return __sv.substr(__sv.find("__pretty_name_begin<") + ptrdiff_t(sizeof("__pretty_name_begin<")) - 1,
-                     __sv.find_end(">::__pretty_name_end"));
+  return __sv.substr(
+    __add_string_view_position(__sv.find("__pretty_name_begin<"), ptrdiff_t(sizeof("__pretty_name_begin<")) - 1),
+    __sv.find_end(">::__pretty_name_end"));
 }
 
 template <class _Tp>
@@ -162,22 +170,51 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameo
 static_assert(_CUDA_VSTD::__pretty_nameof<int>() == __string_view("int"), "");
 static_assert(_CUDA_VSTD::__pretty_nameof<float>() < _CUDA_VSTD::__pretty_nameof<int>(), "");
 
-// We need a special implementation of `__type_info` when compiling device code
-// without support for variable templates.
+// The preferred implementation of `__type_info` only works in device code when
+// both variable templates and inline variables are supported. Then, we can
+// define an inline `__typeid<T>` variable template at namespace scope, and have
+// the linker select one object out of all the translation units that use it.
 
-#if defined(__CUDA_ARCH__) && defined(_CCCL_NO_VARIABLE_TEMPLATES)
+#if defined(__CUDA_ARCH__) && (defined(_CCCL_NO_VARIABLE_TEMPLATES) || defined(_CCCL_NO_INLINE_VARIABLES))
 
 struct __type_info_impl
 {
   __string_view __name_;
 };
 
+struct __type_info_ptr
+{
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info operator*() const noexcept;
+
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  operator==(__type_info_ptr __a, __type_info_ptr __b) noexcept
+  {
+    return __a.__pfn_ == __b.__pfn_;
+  }
+
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  operator!=(__type_info_ptr __a, __type_info_ptr __b) noexcept
+  {
+    return !(__a == __b);
+  }
+
+  __type_info_impl (*__pfn_)() noexcept;
+};
+
 /// @brief A minimal implementation of `std::type_info` for device code that does
 /// not depend on RTTI or variable templates.
 struct __type_info
 {
+  __type_info()                              = delete;
+  __type_info(__type_info const&)            = delete;
+  __type_info& operator=(__type_info const&) = delete;
+
+  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr __type_info(__type_info_impl (*__pfn)() noexcept) noexcept
+      : __pfn_(__pfn)
+  {}
+
   template <class _Tp>
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr __type_info_impl _get_ti_for() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr __type_info_impl __get_ti_for() noexcept
   {
     return __type_info_impl{_CUDA_VSTD::__pretty_nameof<_Tp>()};
   }
@@ -185,6 +222,11 @@ struct __type_info
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr char const* name() const noexcept
   {
     return __pfn_().__name_.begin();
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __name_view() const noexcept
+  {
+    return __pfn_().__name_;
   }
 
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool before(__type_info __other) const noexcept
@@ -198,23 +240,18 @@ struct __type_info
   //   return ;
   // }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info operator&() const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info_ptr operator&() const noexcept
   {
-    return *this;
+    return __type_info_ptr{__pfn_};
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info operator*() const noexcept
-  {
-    return *this;
-  }
-
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
   operator==(__type_info const& __a, __type_info const& __b) noexcept
   {
     return __a.__pfn_ == __b.__pfn_ || __a.__pfn_().__name_ == __b.__pfn_().__name_;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
   operator!=(__type_info const& __a, __type_info const& __b) noexcept
   {
     return !(__a == __b);
@@ -223,17 +260,26 @@ struct __type_info
   __type_info_impl (*__pfn_)() noexcept;
 };
 
-using __type_info_ptr = __type_info;
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info __type_info_ptr::operator*() const noexcept
+{
+  return __type_info(__pfn_);
+}
 
-#else // ^^^ defined(__CUDA_ARCH__) && defined(_CCCL_NO_VARIABLE_TEMPLATES) ^^^
-      // vvv !defined(__CUDA_ARCH__) ||!defined(_CCCL_NO_VARIABLE_TEMPLATES) vvv
+using __type_info_ref = __type_info;
+
+#  define _CCCL_CONSTEXPR_TYPEID(...) \
+    _CUDA_VSTD::__type_info(&_CUDA_VSTD::__type_info::__get_ti_for<_CUDA_VSTD::__remove_cv_t<__VA_ARGS__>>)
+
+#else // ^^^ defined(__CUDA_ARCH__) && (defined(_CCCL_NO_VARIABLE_TEMPLATES) || defined(_CCCL_NO_INLINE_VARIABLES)) ^^^
+      // vvv !defined(__CUDA_ARCH__) ||!(defined(_CCCL_NO_VARIABLE_TEMPLATES) || defined(_CCCL_NO_INLINE_VARIABLES)) vvv
 
 /// @brief A minimal implementation of `std::type_info` for platforms that do
 /// not support RTTI.
 struct __type_info
 {
-  __type_info()                   = delete;
-  __type_info(__type_info const&) = delete;
+  __type_info()                              = delete;
+  __type_info(__type_info const&)            = delete;
+  __type_info& operator=(__type_info const&) = delete;
 
   _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr __type_info(__string_view __name) noexcept
       : __name_(__name)
@@ -279,6 +325,7 @@ private:
 };
 
 using __type_info_ptr = __type_info const*;
+using __type_info_ref = __type_info const&;
 
 #  if !defined(_CCCL_NO_INLINE_VARIABLES)
 
@@ -321,7 +368,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info const& __typeid(
 
 #  endif // _CCCL_NO_INLINE_VARIABLES
 
-#endif // !defined(__CUDA_ARCH__) || !defined(_CCCL_NO_VARIABLE_TEMPLATES)
+#endif // !defined(__CUDA_ARCH__) ||!(defined(_CCCL_NO_VARIABLE_TEMPLATES) || defined(_CCCL_NO_INLINE_VARIABLES))
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
