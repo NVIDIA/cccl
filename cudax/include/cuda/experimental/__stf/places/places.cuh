@@ -1415,6 +1415,9 @@ UNITTEST("grid exec place equality")
 };
 #endif // UNITTESTED_FILE
 
+namespace reserved
+{
+
 template <typename Kernel>
 ::std::pair<int /*min_grid_size*/, int /*block_size*/>
 compute_occupancy(Kernel&& f, size_t dynamicSMemSize = 0, int blockSizeLimit = 0)
@@ -1480,6 +1483,8 @@ void compute_kernel_limits(
   block_size_limit = maxThreadsPerBlock;
 }
 
+} // end namespace reserved
+
 template <auto... spec>
 template <typename Fun>
 interpreted_execution_policy<spec...>::interpreted_execution_policy(
@@ -1508,7 +1513,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     size_t shared_mem_bytes = 0;
     int block_size_limit    = 0;
 
-    compute_kernel_limits(f, min_grid_size, max_block_size, shared_mem_bytes, l0_sync, block_size_limit);
+    reserved::compute_kernel_limits(f, min_grid_size, max_block_size, shared_mem_bytes, l0_sync, block_size_limit);
 
     int grid_size = 0;
     int block_size;
@@ -1561,7 +1566,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     int block_size_limit = 0;
     /* level 1 will be mapped on threads, level 0 on blocks and above */
     size_t shared_mem_bytes = size_t(p.get_mem(1));
-    compute_kernel_limits(f, min_grid_size, max_block_size, shared_mem_bytes, l0_sync, block_size_limit);
+    reserved::compute_kernel_limits(f, min_grid_size, max_block_size, shared_mem_bytes, l0_sync, block_size_limit);
 
     // For implicit widths, use sizes suggested by CUDA occupancy calculator
     if (l1_size == 0)
@@ -1613,7 +1618,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     int block_size_limit = 0;
     /* level 2 will be mapped on threads, level 1 on blocks, level 0 on devices */
     size_t shared_mem_bytes = size_t(p.get_mem(2));
-    compute_kernel_limits(f, min_grid_size, max_block_size, shared_mem_bytes, l0_sync || l1_sync, block_size_limit);
+    reserverd::compute_kernel_limits(f, min_grid_size, max_block_size, shared_mem_bytes, l0_sync || l1_sync, block_size_limit);
 
     // For implicit widths, use sizes suggested by CUDA occupancy calculator
     if (l2_size == 0)

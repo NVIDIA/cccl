@@ -992,6 +992,9 @@ UNITTEST("small_vector basics")
 };
 #endif // UNITTESTED_FILE
 
+namespace reserved
+{
+
 /*!
  * @brief A simple object pool with linear search for managing objects of type `T`.
  *
@@ -1077,5 +1080,7 @@ private:
    */
   ::std::vector<::std::unique_ptr<T>> payload;
 };
+
+} // end namespace reserved
 
 } // namespace cuda::experimental::stf

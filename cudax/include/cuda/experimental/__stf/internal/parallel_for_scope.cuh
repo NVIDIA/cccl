@@ -335,7 +335,7 @@ public:
       // block size to optimize occupancy, as well as some block size
       // limit. We choose to dimension the kernel of the parallel loop to
       // optimize occupancy.
-      compute_kernel_limits(
+      reserved::compute_kernel_limits(
         &reserved::loop<Fun_no_ref, sub_shape_t, ::std::tuple<deps_t...>>,
         min_grid_size,
         max_block_size,

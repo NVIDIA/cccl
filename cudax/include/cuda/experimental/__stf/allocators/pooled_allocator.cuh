@@ -34,6 +34,9 @@
 namespace cuda::experimental::stf
 {
 
+namespace reserved
+{
+
 class block_data_pool_set;
 
 /**
@@ -226,6 +229,8 @@ private:
   friend class block_data_pool_set;
 };
 
+} // end namespace reserved
+
 /**
  * @brief Optional configurations to tune pooled allocators
  */
@@ -251,6 +256,9 @@ struct pooled_allocator_config
     return max_ratio.has_value() ? max_ratio.value() : 0.9;
   };
 };
+
+namespace reserved
+{
 
 /// This class implements a set of blocks of allocations
 class block_data_pool_set
@@ -401,6 +409,9 @@ private:
     .max_entries_per_place = 1024, .max_ratio = 0.2, .max_footprint_per_place = ::std::nullopt};
 };
 
+} // end namespace reserved
+
+
 /**
  * @brief A pooled allocation strategy, where each memory node has a map, each
  * map associates a size_t with a pool of blocks of this size.
@@ -454,7 +465,7 @@ public:
   }
 
 private:
-  block_data_pool_set pool_set;
+  reserved::block_data_pool_set pool_set;
   block_allocator_untyped root_allocator;
 };
 
@@ -506,7 +517,7 @@ public:
   }
 
 private:
-  block_data_pool_set pool_set;
+  reserved::block_data_pool_set pool_set;
 
   // The (fixed) size of all blocks
   const size_t block_size;

@@ -370,7 +370,7 @@ public:
   }
 
 private:
-  linear_pool<localized_array> cache;
+  reserved::linear_pool<localized_array> cache;
 };
 
 } // end namespace cuda::experimental::stf
