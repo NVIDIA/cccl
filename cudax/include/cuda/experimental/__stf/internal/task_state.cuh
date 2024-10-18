@@ -32,15 +32,6 @@ namespace reserved
 class logical_data_untyped_impl; // TODO: this should never be used outside logical_data_untyped
 }
 
-/**
- * @brief Typed version of a task ID. Use in function signatures and data members to disambiguate.
- *
- */
-enum class task_id_t : int
-{
-  invalid = -1
-};
-
 /* To support task nesting, we create a stack of task contexts. Every time a
  * new task is executed (between acquire and release), a new task_state is pushed
  * on the stack. There is always a "root ctx" which corresponds to the state of
