@@ -138,7 +138,7 @@ struct __pretty_name_begin
 // Get the type name from the pretty name by trimming the front and back.
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameof_3(__string_view __sv) noexcept
 {
-  return __sv.substr(__sv.find("__pretty_name_begin<") + sizeof("__pretty_name_begin<") - 1,
+  return __sv.substr(__sv.find("__pretty_name_begin<") + ptrdiff_t(sizeof("__pretty_name_begin<")) - 1,
                      __sv.find_end(">::__pretty_name_end"));
 }
 
