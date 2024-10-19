@@ -9,11 +9,14 @@
 //===----------------------------------------------------------------------===//
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/device/device_reduce.cuh>
 #include <cub/grid/grid_even_share.cuh>
+#include <cub/launcher/cuda_driver.h>
 #include <cub/util_device.cuh>
 
 #include <cuda/std/cstdint>
 #include <cuda/std/functional>
+#include <cuda/std/variant>
 
 #include <format>
 #include <iostream>
@@ -21,6 +24,7 @@
 
 #include "util/context.h"
 #include "util/errors.h"
+#include "util/indirect_arg.h"
 #include "util/types.h"
 #include <cccl/c/reduce.h>
 #include <nvrtc/command_list.h>
@@ -34,11 +38,29 @@ static_assert(std::is_same_v<cub::detail::choose_offset_t<OffsetT>, OffsetT>, "O
 struct nothing_t
 {};
 
-struct runtime_tuning_policy
+struct reduce_runtime_tuning_policy
 {
   int block_size;
   int items_per_thread;
   int vector_load_length;
+
+  reduce_runtime_tuning_policy SingleTile() const
+  {
+    return *this;
+  }
+  reduce_runtime_tuning_policy Reduce() const
+  {
+    return *this;
+  }
+
+  int ItemsPerThread() const
+  {
+    return items_per_thread;
+  }
+  int BlockThreads() const
+  {
+    return block_size;
+  }
 };
 
 struct reduce_tuning_t
@@ -49,10 +71,10 @@ struct reduce_tuning_t
   int vector_load_length;
 };
 
-template <int N>
-static reduce_tuning_t find_tuning(int cc, const reduce_tuning_t (&tunings)[N])
+template <typename Tuning, int N>
+Tuning find_tuning(int cc, const Tuning (&tunings)[N])
 {
-  for (const reduce_tuning_t& tuning : tunings)
+  for (const Tuning& tuning : tunings)
   {
     if (cc >= tuning.cc)
     {
@@ -63,7 +85,7 @@ static reduce_tuning_t find_tuning(int cc, const reduce_tuning_t (&tunings)[N])
   return tunings[N - 1];
 }
 
-static runtime_tuning_policy get_policy(int cc, cccl_type_info accumulator_type, cccl_type_info /*input_type*/)
+reduce_runtime_tuning_policy get_policy(int cc, cccl_type_info accumulator_type)
 {
   reduce_tuning_t chain[] = {{60, 256, 16, 4}, {35, 256, 20, 4}};
 
@@ -81,201 +103,6 @@ static cccl_type_info get_accumulator_type(cccl_op_t /*op*/, cccl_iterator_t /*i
   // TODO Should be decltype(op(init, *input_it)) but haven't implemented type arithmetic yet
   //      so switching back to the old accumulator type logic for now
   return init.type;
-}
-
-static cudaError_t InvokeSingleTile(
-  void* d_temp_storage,
-  std::size_t& temp_storage_bytes,
-  cccl_iterator_t d_in,
-  cccl_iterator_t d_out,
-  unsigned long long num_items,
-  cccl_op_t op,
-  cccl_value_t init,
-  int cc,
-  CUkernel single_tile_kernel,
-  CUstream stream)
-{
-  const runtime_tuning_policy policy = get_policy(cc, d_in.value_type, d_in.value_type);
-
-  cudaError error = cudaSuccess;
-  do
-  {
-    if (d_temp_storage == nullptr)
-    {
-      temp_storage_bytes = 1;
-      break;
-    }
-
-    nothing_t nothing{};
-    TransformOpT transform_op{};
-    void* op_state = op.type == cccl_op_kind_t::stateless ? &nothing : op.state;
-    void* in_ptr   = d_in.type == cccl_iterator_kind_t::pointer ? &d_in.state : d_in.state;
-    void* out_ptr  = d_out.type == cccl_iterator_kind_t::pointer ? &d_out.state : d_out.state;
-    void* args[]   = {in_ptr, out_ptr, &num_items, op_state, init.state, &transform_op};
-
-    check(cuLaunchKernel((CUfunction) single_tile_kernel, 1, 1, 1, policy.block_size, 1, 1, 0, stream, args, 0));
-
-    // Check for failure to launch
-    error = CubDebug(cudaPeekAtLastError());
-    if (cudaSuccess != error)
-    {
-      break;
-    }
-  } while (0);
-
-  return error;
-}
-
-static cudaError_t InvokePasses(
-  void* d_temp_storage,
-  std::size_t& temp_storage_bytes,
-  cccl_iterator_t d_in,
-  cccl_iterator_t d_out,
-  unsigned long long num_items,
-  cccl_op_t op,
-  cccl_value_t init,
-  int cc,
-  CUkernel reduce_kernel,
-  CUkernel single_tile_kernel,
-  CUdevice device,
-  CUstream stream)
-{
-  const cccl_type_info accum_t       = get_accumulator_type(op, d_in, init);
-  const runtime_tuning_policy policy = get_policy(cc, accum_t, d_in.value_type);
-
-  cudaError error = cudaSuccess;
-  do
-  {
-    void* in_ptr  = d_in.type == cccl_iterator_kind_t::pointer ? &d_in.state : d_in.state;
-    void* out_ptr = d_out.type == cccl_iterator_kind_t::pointer ? &d_out.state : d_out.state;
-
-    // Get SM count
-    int sm_count;
-    check(cuDeviceGetAttribute(&sm_count, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, device));
-
-    // Init regular kernel configuration
-    const auto tile_size = policy.block_size * policy.items_per_thread;
-
-    // Older drivers have issues handling CUkernel in the occupancy queries, get the CUfunction instead.
-    // Assumes that the current device is properly set, it needs to be set for the occupancy queries anyway
-    CUfunction reduce_kernel_fn;
-    check(cuKernelGetFunction(&reduce_kernel_fn, reduce_kernel));
-
-    int sm_occupancy = 1;
-    check(cuOccupancyMaxActiveBlocksPerMultiprocessor(&sm_occupancy, reduce_kernel_fn, policy.block_size, 0));
-
-    int reduce_device_occupancy = sm_occupancy * sm_count;
-
-    // Even-share work distribution
-    int max_blocks = reduce_device_occupancy * CUB_SUBSCRIPTION_FACTOR(0);
-    cub::GridEvenShare<OffsetT> even_share;
-    even_share.DispatchInit(num_items, max_blocks, tile_size);
-
-    // Temporary storage allocation requirements
-    void* allocations[1]       = {};
-    size_t allocation_sizes[1] = {
-      max_blocks * static_cast<std::size_t>(d_in.value_type.size) // bytes needed for privatized block reductions
-    };
-
-    // Alias the temporary allocations from the single storage blob (or
-    // compute the necessary size of the blob)
-    error = CubDebug(cub::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes));
-    if (cudaSuccess != error)
-    {
-      break;
-    }
-
-    if (d_temp_storage == nullptr)
-    {
-      // Return if the caller is simply requesting the size of the storage
-      // allocation
-      return cudaSuccess;
-    }
-
-    // Get grid size for device_reduce_sweep_kernel
-    OffsetT reduce_grid_size = even_share.grid_size;
-
-    // Invoke DeviceReduceKernel
-    // reduce_kernel<<<reduce_grid_size, ActivePolicyT::ReducePolicy::BLOCK_THREADS>>>(
-    //    d_in, d_block_reductions, num_items, even_share, ReductionOpT{}, TransformOpT{});
-
-    nothing_t nothing{};
-    void* op_state = op.type == cccl_op_kind_t::stateless ? &nothing : op.state;
-
-    TransformOpT transform_op{};
-    void* reduce_args[] = {in_ptr, &allocations[0], &num_items, &even_share, op_state, &transform_op};
-
-    check(cuLaunchKernel(
-      (CUfunction) reduce_kernel, reduce_grid_size, 1, 1, policy.block_size, 1, 1, 0, stream, reduce_args, 0));
-
-    // Check for failure to launch
-    error = CubDebug(cudaPeekAtLastError());
-    if (cudaSuccess != error)
-    {
-      break;
-    }
-
-    // single_tile_kernel<<<1, ActivePolicyT::SingleTilePolicy::BLOCK_THREADS>>>(
-    //     d_block_reductions, d_out, reduce_grid_size, ReductionOpT{}, 0, TransformOpT{});
-
-    void* single_tile_kernel_args[] = {&allocations[0], out_ptr, &reduce_grid_size, op_state, init.state, &transform_op};
-
-    check(cuLaunchKernel(
-      (CUfunction) single_tile_kernel, 1, 1, 1, policy.block_size, 1, 1, 0, stream, single_tile_kernel_args, 0));
-
-    // Check for failure to launch
-    error = CubDebug(cudaPeekAtLastError());
-    if (cudaSuccess != error)
-    {
-      break;
-    }
-  } while (0);
-
-  return error;
-}
-
-static cudaError_t Invoke(
-  void* d_temp_storage,
-  std::size_t& temp_storage_bytes,
-  cccl_iterator_t d_in,
-  cccl_iterator_t d_out,
-  OffsetT num_items,
-  cccl_op_t op,
-  cccl_value_t init,
-  int cc,
-  CUkernel single_tile_kernel,
-  CUkernel single_tile_second_kernel,
-  CUkernel reduce_kernel,
-  CUdevice device,
-  CUstream stream)
-{
-  const cccl_type_info accum_t = get_accumulator_type(op, d_in, init);
-  runtime_tuning_policy policy = get_policy(cc, accum_t, d_in.value_type);
-
-  // Force kernel code-generation in all compiler passes
-  if (num_items <= static_cast<OffsetT>(policy.block_size * policy.items_per_thread))
-  {
-    // Small, single tile size
-    return InvokeSingleTile(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, op, init, cc, single_tile_kernel, stream);
-  }
-  else
-  {
-    // Multi-tile pass
-    return InvokePasses(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_in,
-      d_out,
-      num_items,
-      op,
-      init,
-      cc,
-      reduce_kernel,
-      single_tile_second_kernel,
-      device,
-      stream);
-  }
 }
 
 struct input_iterator_state_t;
@@ -315,7 +142,17 @@ std::string get_single_tile_kernel_name(
   const std::string init_t = cccl_type_enum_to_name(init.type.type);
 
   std::string offset_t;
-  check(nvrtcGetTypeName<OffsetT>(&offset_t));
+  if (is_second_kernel)
+  {
+    // Second kernel is always invoked with an int offset.
+    // See the definition of the local variable `reduce_grid_size`
+    // in DispatchReduce::InvokePasses.
+    check(nvrtcGetTypeName<int>(&offset_t));
+  }
+  else
+  {
+    check(nvrtcGetTypeName<OffsetT>(&offset_t));
+  }
 
   std::string reduction_op_t;
   check(nvrtcGetTypeName<op_wrapper>(&reduction_op_t));
@@ -381,12 +218,12 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
   {
     const char* name = "test";
 
-    const int cc                       = cc_major * 10 + cc_minor;
-    const cccl_type_info accum_t       = get_accumulator_type(op, input_it, init);
-    const std::string accum_cpp        = cccl_type_enum_to_string(accum_t.type);
-    const runtime_tuning_policy policy = get_policy(cc, accum_t, input_it.value_type);
-    const std::string input_it_value_t = cccl_type_enum_to_string(input_it.value_type.type);
-    const std::string offset_t         = cccl_type_enum_to_string(cccl_type_enum::UINT64);
+    const int cc                              = cc_major * 10 + cc_minor;
+    const cccl_type_info accum_t              = get_accumulator_type(op, input_it, init);
+    const std::string accum_cpp               = cccl_type_enum_to_string(accum_t.type);
+    const reduce_runtime_tuning_policy policy = get_policy(cc, accum_t);
+    const std::string input_it_value_t        = cccl_type_enum_to_string(input_it.value_type.type);
+    const std::string offset_t                = cccl_type_enum_to_string(cccl_type_enum::UINT64);
 
     const std::string input_iterator_src =
       input_it.type == cccl_iterator_kind_t::pointer
@@ -587,9 +424,10 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
       &build->single_tile_second_kernel, build->library, single_tile_second_kernel_lowered_name.c_str()));
     check(cuLibraryGetKernel(&build->reduction_kernel, build->library, reduction_kernel_lowered_name.c_str()));
 
-    build->cc         = cc;
-    build->cubin      = (void*) result.cubin.release();
-    build->cubin_size = result.size;
+    build->cc               = cc;
+    build->cubin            = (void*) result.cubin.release();
+    build->cubin_size       = result.size;
+    build->accumulator_size = accum_t.size;
   }
   catch (...)
   {
@@ -598,6 +436,42 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
 
   return error;
 }
+
+template <auto* GetPolicy>
+struct dynamic_reduce_policy_t
+{
+  using MaxPolicy = dynamic_reduce_policy_t;
+
+  template <typename F>
+  cudaError_t Invoke(int device_ptx_version, F& op)
+  {
+    return op.template Invoke<reduce_runtime_tuning_policy>(GetPolicy(device_ptx_version, accumulator_type));
+  }
+
+  cccl_type_info accumulator_type;
+};
+
+struct reduce_kernel_source
+{
+  cccl_device_reduce_build_result_t& build;
+
+  std::size_t AccumSize() const
+  {
+    return build.accumulator_size;
+  }
+  CUkernel SingleTileKernel() const
+  {
+    return build.single_tile_kernel;
+  }
+  CUkernel SingleTileSecondKernel() const
+  {
+    return build.single_tile_second_kernel;
+  }
+  CUkernel ReductionKernel() const
+  {
+    return build.reduction_kernel;
+  }
+};
 
 extern "C" CCCL_C_API CUresult cccl_device_reduce(
   cccl_device_reduce_build_result_t build,
@@ -619,20 +493,29 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce(
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
-    Invoke(
-      d_temp_storage,
-      *temp_storage_bytes,
-      d_in,
-      d_out,
-      num_items,
-      op,
-      init,
-      build.cc,
-      build.single_tile_kernel,
-      build.single_tile_second_kernel,
-      build.reduction_kernel,
-      cu_device,
-      stream);
+    cub::DispatchReduce<indirect_arg_t,
+                        indirect_arg_t,
+                        ::cuda::std::size_t,
+                        indirect_arg_t,
+                        indirect_arg_t,
+                        void,
+                        dynamic_reduce_policy_t<&get_policy>,
+                        ::cuda::std::__identity,
+                        reduce_kernel_source,
+                        cub::CudaDriverLauncherFactory>::
+      Dispatch(
+        d_temp_storage,
+        *temp_storage_bytes,
+        d_in,
+        d_out,
+        num_items,
+        op,
+        init,
+        stream,
+        {},
+        {build},
+        cub::CudaDriverLauncherFactory{cu_device, build.cc},
+        {get_accumulator_type(op, d_in, init)});
   }
   catch (...)
   {
