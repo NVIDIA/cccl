@@ -24,7 +24,7 @@
 #include <cuda/std/__atomic/order.h>
 #include <cuda/std/__atomic/scopes.h>
 #include <cuda/std/__atomic/types.h>
-#include <cuda/std/detail/libcxx/include/__threading_support>
+#include <cuda/std/__thread/threading_support.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -53,7 +53,7 @@ template <typename _Tp, typename _Sco>
 _CCCL_HOST_DEVICE void __atomic_try_wait_slow_fallback(
   _Tp const volatile* __a, __atomic_underlying_remove_cv_t<_Tp> __val, memory_order __order, _Sco)
 {
-  __libcpp_thread_poll_with_backoff(__atomic_poll_tester<_Tp, _Sco>(__a, __val, __order));
+  _CUDA_VSTD::__libcpp_thread_poll_with_backoff(__atomic_poll_tester<_Tp, _Sco>(__a, __val, __order));
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
