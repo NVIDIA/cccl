@@ -43,10 +43,10 @@ int main(int, char**)
   assert(_CCCL_TYPEID(int).name()[0] == 'i');
 #endif // _CCCL_NO_TYPEID
 
-  ASSERT_SAME_TYPE(decltype((_CCCL_CONSTEXPR_TYPEID(int))), ::cuda::std::__type_info_ref);
-  ASSERT_NOEXCEPT(_CCCL_CONSTEXPR_TYPEID(int));
-  assert(_CCCL_CONSTEXPR_TYPEID(int).name()[0] == 'i');
-  assert(_CCCL_CONSTEXPR_TYPEID(int).name() == _CCCL_CONSTEXPR_TYPEID(int).__name_view().begin());
+  ASSERT_SAME_TYPE(decltype((_CCCL_TYPEID(int))), ::cuda::std::__type_info_ref);
+  ASSERT_NOEXCEPT(_CCCL_TYPEID(int));
+  assert(_CCCL_TYPEID(int).name()[0] == 'i');
+  assert(_CCCL_TYPEID(int).name() == _CCCL_TYPEID(int).__name_view().begin());
 
   assert(_CCCL_TYPEID(int) == _CCCL_TYPEID(int));
   assert(!(_CCCL_TYPEID(int) != _CCCL_TYPEID(int)));
@@ -55,23 +55,25 @@ int main(int, char**)
   assert(_CCCL_TYPEID(const int) == _CCCL_TYPEID(int));
   assert(_CCCL_TYPEID(int&) != _CCCL_TYPEID(int));
 
-  static_assert(_CCCL_CONSTEXPR_TYPEID(int) == _CCCL_CONSTEXPR_TYPEID(int), "");
-  static_assert(!(_CCCL_CONSTEXPR_TYPEID(int) != _CCCL_CONSTEXPR_TYPEID(int)), "");
-  static_assert(_CCCL_CONSTEXPR_TYPEID(int) != _CCCL_CONSTEXPR_TYPEID(float), "");
-  static_assert(!(_CCCL_CONSTEXPR_TYPEID(int) == _CCCL_CONSTEXPR_TYPEID(float)), "");
-  static_assert(_CCCL_CONSTEXPR_TYPEID(const int) == _CCCL_CONSTEXPR_TYPEID(int), "");
-  static_assert(_CCCL_CONSTEXPR_TYPEID(int&) != _CCCL_CONSTEXPR_TYPEID(int), "");
+#ifdef _CCCL_TYPEID_CONSTEXPR
+  static_assert(_CCCL_TYPEID_CONSTEXPR(int) == _CCCL_TYPEID_CONSTEXPR(int), "");
+  static_assert(!(_CCCL_TYPEID_CONSTEXPR(int) != _CCCL_TYPEID_CONSTEXPR(int)), "");
+  static_assert(_CCCL_TYPEID_CONSTEXPR(int) != _CCCL_TYPEID_CONSTEXPR(float), "");
+  static_assert(!(_CCCL_TYPEID_CONSTEXPR(int) == _CCCL_TYPEID_CONSTEXPR(float)), "");
+  static_assert(_CCCL_TYPEID_CONSTEXPR(const int) == _CCCL_TYPEID_CONSTEXPR(int), "");
+  static_assert(_CCCL_TYPEID_CONSTEXPR(int&) != _CCCL_TYPEID_CONSTEXPR(int), "");
 
-  static_assert(&_CCCL_CONSTEXPR_TYPEID(int) == &_CCCL_CONSTEXPR_TYPEID(int), "");
-  static_assert(&_CCCL_CONSTEXPR_TYPEID(int) != &_CCCL_CONSTEXPR_TYPEID(float), "");
+  static_assert(&_CCCL_TYPEID_CONSTEXPR(int) == &_CCCL_TYPEID_CONSTEXPR(int), "");
+  static_assert(&_CCCL_TYPEID_CONSTEXPR(int) != &_CCCL_TYPEID_CONSTEXPR(float), "");
 
-  static_assert(_CCCL_CONSTEXPR_TYPEID(float).before(_CCCL_CONSTEXPR_TYPEID(int)), "");
-  static_assert(!_CCCL_CONSTEXPR_TYPEID(int).before(_CCCL_CONSTEXPR_TYPEID(int)), "");
-  static_assert(!_CCCL_CONSTEXPR_TYPEID(int).before(_CCCL_CONSTEXPR_TYPEID(float)), "");
+  static_assert(_CCCL_TYPEID_CONSTEXPR(float).before(_CCCL_TYPEID_CONSTEXPR(int)), "");
+  static_assert(!_CCCL_TYPEID_CONSTEXPR(int).before(_CCCL_TYPEID_CONSTEXPR(int)), "");
+  static_assert(!_CCCL_TYPEID_CONSTEXPR(int).before(_CCCL_TYPEID_CONSTEXPR(float)), "");
 
-  static_assert(_CCCL_CONSTEXPR_TYPEID(int).__name_view() == ::cuda::std::__string_view("int"), "");
-  static_assert(_CCCL_CONSTEXPR_TYPEID(float).__name_view() == ::cuda::std::__string_view("float"), "");
-  static_assert(_CCCL_CONSTEXPR_TYPEID(a_dummy_class_type).__name_view().find("a_dummy_class_type") != -1, "");
+  static_assert(_CCCL_TYPEID_CONSTEXPR(int).__name_view() == ::cuda::std::__string_view("int"), "");
+  static_assert(_CCCL_TYPEID_CONSTEXPR(float).__name_view() == ::cuda::std::__string_view("float"), "");
+  static_assert(_CCCL_TYPEID_CONSTEXPR(a_dummy_class_type).__name_view().find("a_dummy_class_type") != -1, "");
+#endif
 
   return 0;
 }
