@@ -364,7 +364,7 @@ struct __typeid_value
   static constexpr __type_info value{_CUDA_VSTD::__pretty_nameof<_Tp>()};
 };
 
-#    ifndef _CCCL_NO_INLINE_VARIABLES
+#    ifdef _CCCL_NO_INLINE_VARIABLES
 // Before the addition of inline variables, it was necessary to
 // provide a definition for constexpr class static data members.
 template <class _Tp>
