@@ -34,23 +34,15 @@
 #include <string_view>
 #include <tuple>
 
-// Anchor type for `type_name` below.
-class _71d56d6539c0fd76d1af6c69e4e511a;
-
 namespace cuda::experimental::stf
 {
 
 namespace reserved
 {
 
-// Returns a string representation of `T`.
-template <class T>
-constexpr ::std::string_view type_name();
-
-#if 0
-// This function is used as a baseline; technically returns an incorrect result but is never used in anger.
-template <>
-constexpr ::std::string_view type_name<_71d56d6539c0fd76d1af6c69e4e511a>()
+// We use this function as a detector for what __PRETTY_FUNCTION__ looks like
+template <typename T>
+constexpr ::std::string_view type_name_IMPL()
 {
 #if defined(_CCCL_COMPILER_MSVC)
   return __FUNCSIG__;
@@ -60,45 +52,35 @@ constexpr ::std::string_view type_name<_71d56d6539c0fd76d1af6c69e4e511a>()
 }
 
 // Length of prefix and suffix in __PRETTY_FUNCTION__ when used with `type_name`.
-inline constexpr ::std::pair<size_t, size_t> type_name_affixes = []() {
-  ::std::string_view p = type_name<_71d56d6539c0fd76d1af6c69e4e511a>();
-  auto i               = p.find("_71d56d6539c0fd76d1af6c69e4e511a");
-  auto j               = p.size() - i - sizeof("_71d56d6539c0fd76d1af6c69e4e511a") + 1;
-  if (p[i - 1] == ':' && p[i - 2] == ':')
-  {
-    // Maybe they use the `::` in front of global symbols
-    i -= 2;
+inline constexpr ::std::pair<size_t, size_t> type_name_affixes = [] {
+  const auto p = type_name_IMPL<double>();
+  const auto target = ::std::string_view("double");
+  const auto len = target.size();
+  // Simulate p.find() by hand because clang can't do it.
+  size_t i = target.npos;
+  for (std::size_t start = 0; start <= p.size() - len; ++start) {
+    if (p.substr(start, len) == target) {
+        i = start;  // Found the substring, set i to the starting position
+        break;      // Exit loop after finding the first match
+    }
   }
+  auto j = p.size() - i - len;
   return ::std::pair{i, j};
 }();
 
-// This yields the correct result for all types except `_71d56d6539c0fd76d1af6c69e4e511a`.
 template <class T>
-constexpr ::std::string_view type_name()
+constexpr ::std::string_view type_name_impl()
 {
 #if defined(_CCCL_COMPILER_MSVC)
   ::std::string_view p = __FUNCSIG__;
 #else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
   ::std::string_view p = __PRETTY_FUNCTION__;
 #endif // !_CCCL_COMPILER_MSVC
+    //return p;
   return p.substr(type_name_affixes.first, p.size() - type_name_affixes.first - type_name_affixes.second);
 }
 
-#else
-// This yields the correct result for all types except `_71d56d6539c0fd76d1af6c69e4e511a`.
-template <class T>
-constexpr ::std::string_view type_name()
-{
-#if defined(_CCCL_COMPILER_MSVC)
-  constexpr ::std::string_view p = __FUNCSIG__;
-#else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
-  constexpr ::std::string_view p = __PRETTY_FUNCTION__;
-#endif // !_CCCL_COMPILER_MSVC
-  return p;
 }
-#endif
-
-} // namespace reserved
 
 /**
  * @brief Yields a string form of type name. Exact spelling not guaranteed (e.g. `type_name<int*>` may be `"int*"`,
@@ -110,7 +92,7 @@ constexpr ::std::string_view type_name()
  * @snippet unittest.h type_name
  */
 template <class T>
-inline constexpr ::std::string_view type_name = reserved::type_name<T>();
+inline constexpr ::std::string_view type_name = reserved::type_name_impl<T>();
 
 /**
  * @brief Converts each element in `t` to a new value by calling `f`, then returns a tuple collecting the values thus
