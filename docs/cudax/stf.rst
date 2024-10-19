@@ -1654,3 +1654,201 @@ In this case, we can see that the kernel are named accordingly to the
 symbols set in the tasks of the miniWeather examples : |image1|
 
 .. |image1| image:: stf/images/ncu-ui.png
+
+CUDASTF Reference Card
+----------------------
+
+This section gives a brief overview of the CUDASTF API.
+
+Using CUDASTF
+^^^^^^^^^^^^^
+
+STF is a C++ header-only library which API is defined in the `cuda::experimental::stf` namespace.
+
+.. code-block:: cpp
+
+    #include <cudastf/cudastf.h>
+
+    using cuda::experimental::stf;
+
+Creating a Context
+^^^^^^^^^^^^^^^^^^
+
+Contexts store the state of the CUDASTF library and are used as an entry point for all API calls. The `finalize()` method must be called upon completion.
+
+.. code-block:: cpp
+
+    context ctx;
+    ctx.finalize();
+
+Logical Data
+^^^^^^^^^^^^
+
+Creating a Logical Data
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Purpose: Encapsulates data structures (e.g. arrays, slices) to be shared and accessed by tasks. Logical data represents the abstraction of data in the model.
+
+.. code-block:: cpp
+
+    // Create a logical data from an existing piece of data
+    auto ctx.logical_data(data view [data_place = data_place::current_device()]);
+
+Examples:
+
+- Describing an array
+
+.. code-block:: cpp
+
+    int X[1024];
+    auto lX = ctx.logical_data(X);
+
+- Describing a vector of n elements of type T located at address `addr`
+
+.. code-block:: cpp
+
+    auto data_handle = ctx.logical_data(slice<T>(addr {n}));
+
+- Describing a contiguous matrix of size (m, n)
+
+.. code-block:: cpp
+
+    auto data_handle = ctx.logical_data(slice<T2>(addr {m, n}));
+
+- Describing a matrix of size (m, n) with a stride of ld elements
+
+.. code-block:: cpp
+
+    auto data_handle = ctx.logical_data(slice<T2>(addr {m, n}, {ld}));
+
+- Create a logical data from a shape
+
+.. code-block:: cpp
+
+    auto ctx.logical_data(shape);
+
+Examples:
+
+.. code-block:: cpp
+
+    auto lX = ctx.logical_data(shape_of<slice<int>>(1024)));
+    auto lY = ctx.logical_data(lX.shape());
+
+Tasks
+^^^^^
+
+Data Dependency
+~~~~~~~~~~~~~~~
+
+Purpose: Define how a logical data should be used in a task construct (and derivated constructs such as `parallel_for`, `launch`, `host_launch`).
+
+Syntax:
+
+.. code-block:: cpp
+
+    logicalData.accessMode([data place])
+
+- **Data Places**: Specify where a logical data in the data dependencies should be located:
+  - `data_place::affine` (default): Locate data on the data place affine to the execution place (e.g., device memory when running on a CUDA device).
+  - `data_place::managed`: Use managed memory.
+  - `data_place::device(i)`: Put data in the memory of the i-th CUDA device (which may be different from the current device or the device of the execution place).
+
+- **Access Modes**:
+  - `.read()`: Read-only access.
+  - `.write()`: Write-only access.
+  - `.rw()`: Read and write access.
+
+Task Creation
+~~~~~~~~~~~~~
+
+Purpose: Define computational tasks that operate on logical data. Tasks can specify data dependencies and access modes.
+
+Syntax:
+
+.. code-block:: cpp
+
+    ctx.task([execution place] dependency1 dependency2 ...) 
+        ->*[&](cudaStream_t stream, auto data1, auto data2 ...) { 
+            // Task implementation using stream 
+        };
+
+- **Execution Place**: Specify where the task should be executed:
+  - `exec_place::current_device()` (default): Run on current CUDA device.
+  - `exec_place::device(ID)`: Run on CUDA device identified by its index.
+  - `exec_place::host`: Run on the host (Note: this is providing a CUDA stream which should be used to submit CUDA callbacks. For example, users should typically use the `host_launch` API instead).
+
+Examples:
+
+.. code-block:: cpp
+
+    ctx.task(lX.read(), lY.rw()) 
+        ->*[&](cudaStream_t s, auto dX, auto dY) { 
+            axpy<<<16, 128, 0, s>>>(alpha, dX, dY); 
+        };
+
+Host-Side Task Execution with `host_launch`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Purpose: Execute tasks on the host (CPU) while still utilizing the task and data management system.
+
+.. code-block:: cpp
+
+    ctx.host_launch(logicalData1.accessMode(), logicalData2.accessMode()) 
+        ->*[capture list](auto data1, auto data2 ...) { 
+            // Host-based task implementation here 
+        };
+
+Kernel authoring
+^^^^^^^^^^^^^^^^
+
+In addition to user-provided CUDA kernels or CUDA libraries, CUDASTF makes it possible to author compute kernels directly on top of logical data using the `parallel_for` and `launch` mechanisms.
+
+`parallel_for` construct
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Purpose: Apply a kernel on each coordinate of a shape.
+
+Syntax:
+
+.. code-block:: cpp
+
+    ctx.parallel_for([execution place], [partitioner], shape, logicalData1.accessMode(), logicalData2.accessMode()) 
+        ->*[capture list] __device__ (size_t index1, size_t index2, ... auto data1, auto data2 ...) { 
+            // Kernel implementation 
+        };
+
+Examples:
+
+- Applying a kernel on a 1D array:
+
+.. code-block:: cpp
+
+    double X[N];
+    double Y[N];
+    
+    auto lX = ctx.logical_data(X);
+    auto lY = ctx.logical_data(Y);
+
+    ctx.parallel_for(lY.shape(), lX.read(), lY.rw()) 
+        ->*[alpha] __device__(size_t i, auto dX, auto dY) { 
+            dY(i) += alpha * dX(i); 
+        };
+
+- Applying a kernel on a 2D matrix:
+
+.. code-block:: cpp
+
+    double X[N*N];
+    double Y[N];
+    
+    auto lX = ctx.logical_data(make_slice(&X[0], std::tuple{N, N}));
+    auto lY = ctx.logical_data(Y);
+
+    ctx.parallel_for(lX.shape(), lX.rw(), lY.read()) 
+        ->*[](size_t i, size_t j, auto dX, auto dY) { 
+            dX(i, j) += dY(i) * dY(j); 
+        };
+
+`launch` construct
+~~~~~~~~~~~~~~~~~~~~~~~~~
+TODO
