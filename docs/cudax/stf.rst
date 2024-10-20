@@ -1402,7 +1402,7 @@ We can query the affinity of the i-th level with
 
 .. code-block:: cpp
 
-    th.get_scope(i);
+    th.get_scope(i); // returns the scope of the i-th level
 
 It is possible to get the amount of memory available for each level :
 
@@ -1432,7 +1432,7 @@ will differ between the different threads which call `inner()`.
     ...
     th.inner().sync(); // synchronize threads in the same block of the second level of the hierarchy
 
-Types of logical data and tasks
+C++ Types of logical data and tasks
 -------------------------------
 
 To prevent a common class of errors, CUDASTF strives to align its
