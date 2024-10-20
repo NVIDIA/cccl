@@ -1284,6 +1284,16 @@ The ``ctx.launch`` primitive in CUDASTF is a kernel-launch mechanism
 that handles the mapping and launching of a single kernel onto execution
 places implicitly.
 
+Syntax:
+
+.. code-block:: cpp
+
+    template <typename thread_hierarchy_spec_t>
+    ctx.launch([thread hierarchy spec], [execution place], logicalData1.accessMode(), logicalData2.accessMode()) 
+        ->*[capture list] __device__ (thread_hierarchy_spec_t spec, auto data1, auto data2 ...) { 
+            // Kernel implementation
+        };
+
 .. _example-with-a-1-dimensional-array-1:
 
 Example with a 1-dimensional array
@@ -1293,7 +1303,7 @@ The example below illustrates processing a 1D array using ``launch``:
 
 .. code:: cpp
 
-   ctx.launch(all_devs, handle_X.read(cdp), handle_Y.rw(cdp))->*[=] CUDASTF_DEVICE(thread_info t, slice<double> x, slice<double> y) {
+   ctx.launch(par(1024), all_devs, handle_X.read(cdp), handle_Y.rw(cdp))->*[=] CUDASTF_DEVICE(thread_info t, slice<double> x, slice<double> y) {
        size_t tid = t.thread_id();
        size_t nthreads = t.get_num_threads();
        for (size_t ind = tid; ind < N; ind += nthreads) {
@@ -1303,12 +1313,13 @@ The example below illustrates processing a 1D array using ``launch``:
 
 The ``launch`` construct consists of five main elements:
 
+- an optional ``execution_policy`` that explicitly specifies the launch
+  shape. Here we specify that a group of 1024 independant threads should
+  execute the loop described in the body of the launch construct.
 - an execution place that indicates where the code will be executed;
 - a set of data dependencies;
 - a body of code specified using the ``->*`` operator.
 - a parameter to the kernel ``thread_info t`` for thread properties.
-- an optional ``execution_policy`` that explicitly specifies the launch
-  shape.
 
 In the example above, the kernel is launched on all of the available
 CUDA devices. The lambda function has the ``__device__`` attribute
@@ -1317,6 +1328,109 @@ corresponds to the per thread information that the user can query. This
 includes a global thread id and the total number of threads that will be
 executing the kernel. Subsequent parameters are the data instances
 associated with the logical data arguments (e.g., ``slice<double> x``).
+
+Describing a thread hierarchy
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The thread hierarchy specification describes the structure of the parallelism of this kernel. Level sizes can be computed automatically, be a dynamic value or be specified at compile-time.
+Threads in a parallel group (`par`) are executed independantly.
+Threads in a concurrent group (`con`) can be synchronized using the `sync()` API which issues a group-level barrier.
+
+.. code-block:: cpp
+
+    con() // A single level of threads which are allowed to synchronize
+    par(128) // A single level of 128 threads which cannot synchronize
+    par<128>() // A single level with a statically defined size
+
+Thread are described in a hierarchical manner : we can nest multiple groups with different characteristics.
+
+.. code-block:: cpp
+
+    par(128, con<256>()) // A two-level thread hierarchy with 128 independant groups of 256 synchronizable threads..
+
+Within each group, we can provide additional information such memory automatically shared among group members.
+
+.. code-block:: cpp
+
+    con(256, mem(64)) // A group of 256 threads sharing 64 bytes of memory
+
+We can also provide some affinity information if we want to ensure that  group of threads is mapped on a specific level of the machine hierarchy.
+
+The different scopes available are :
+
+- `hw_scope::thread` : CUDA threads
+- `hw_scope::block` : CUDA blocks
+- `hw_scope::device` : CUDA device
+- `hw_scope::all` : all machine
+
+This for example describes a thread hierarchy where the inner-most level is limited to CUDA threads (ie. it cannot span multiple CUDA blocks). And the overall kernel can be mapped at most on a single device, but not on multiple devices).
+
+.. code-block:: cpp
+
+    par(hw_scope::device | hw_scope::block, par<128>(hw_scope::thread));
+
+Manipulating a thread hierarchy
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When the `ctx.launch` construct is executed, a thread hierarchy object is passed to the function which implements the kernel. This object is available on the device(s) (assuming a device execution place), and makes it possible to query the structure of the hierarchy (e.g. based on the type of the thread hierarchy object), and allows the threads in the hierarchy to interact by the means of the `sync()` primitive for groups marked as concurrent (`con`).
+
+As an example, let us consider that we have the `par(128, con<32>())` hierarchy.
+
+.. code-block:: cpp
+
+    th.rank(); // rank of the thread within the entire hierarchy (a number between 0 and 4096)
+    th.size(); // size of the group within the entire hierarchy (4096)
+    th.rank(i); // rank of the thread within the i-th level of the hierarchy (e.g. a number between 0 and 128 for th.rank(0))
+    th.size(i); // size of the group at the i-th level of the hierarchy (128)
+    th.static_with(i) // size of the group at the i-th level if known at compile time (constexpr value)
+
+We can query if the i-th level is synchronizable or not using the following API:
+
+.. code-block:: cpp
+
+   th.is_synchronizable(i); // if i is a dynamic value
+   th.template is_synchronizable<i>(); // if i is known at compile time
+
+If the level is synchonizable, we can call
+
+.. code-block:: cpp
+
+    th.sync(i) // synchronize all threads of the i-th level
+    th.sync() // synchronize all threads of the top-most level (level 0)
+
+We can query the affinity of the i-th level with
+
+.. code-block:: cpp
+
+    th.get_scope(i);
+
+It is possible to get the amount of memory available for each level :
+
+.. code-block:: cpp
+
+    th.get_mem(i); // returns the amount of memory available at i-th level
+
+And we can retrieve the corresponding per-level buffer as a slice (which
+CUDASTF will automatically allocate in the most appropriate level of the memory
+hierarchy among shared memory, device memory or managed memory) :
+
+.. code-block:: cpp
+
+    slice<char> smem = th.template storage<char>(1);
+
+To simplify how we navigate within hierarchies, applying the `inner()` method
+returns a thread hierarchy where the top-most level was removed. The returned specification
+will differ between the different threads which call `inner()`.
+
+.. code-block:: cpp
+
+    auto spec = con<128>(con());
+    ...
+    auto ti = th.inner();
+    ti.size(); // size within the par() hierarchy (automatically computed value)
+    ti.rank(); // rank within the par() hierarchy
+    ...
+    th.inner().sync(); // synchronize threads in the same block of the second level of the hierarchy
 
 Types of logical data and tasks
 -------------------------------
@@ -1773,6 +1887,7 @@ Syntax:
         };
 
 - **Execution Place**: Specify where the task should be executed:
+
   - `exec_place::current_device()` (default): Run on current CUDA device.
   - `exec_place::device(ID)`: Run on CUDA device identified by its index.
   - `exec_place::host`: Run on the host (Note: this is providing a CUDA stream which should be used to submit CUDA callbacks. For example, users should typically use the `host_launch` API instead).
@@ -1851,4 +1966,23 @@ Examples:
 
 `launch` construct
 ~~~~~~~~~~~~~~~~~~~~~~~~~
-TODO
+
+The `launch` construct makes it possible to launch structured compute kernels. Contrary to `parallel_for` which applies the same operation on every member of a shape, `launch` executes a kernel over a thread hierarchy.
+
+Syntax:
+
+.. code-block:: cpp
+
+    template <typename thread_hierarchy_spec_t>
+    ctx.launch([thread hierarchy spec], [execution place], logicalData1.accessMode(), logicalData2.accessMode()) 
+        ->*[capture list] __device__ (thread_hierarchy_spec_t spec, auto data1, auto data2 ...) { 
+            // Kernel implementation
+        };
+
+TODO syntax of spec, api of spec ...
+sync ...
+levels
+
+Examples:
+
+
