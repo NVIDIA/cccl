@@ -168,6 +168,18 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameo
   return _CUDA_VSTD::__pretty_nameof_2<typename __pretty_name_begin<_Tp>::__pretty_name_end>();
 }
 
+// BUGBUG
+#ifdef _CCCL_COMPILER_MSVC
+template <class _Tp>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __msvc_test() noexcept
+{
+  return _CUDA_VSTD::__string_view(_CCCL_PRETTY_FUNCTION);
+}
+using __pretty_name_int = typename __pretty_name_begin<int>::__pretty_name_end;
+static_assert(-1 != _CUDA_VSTD::__msvc_test<__pretty_name_int>().find("__pretty_name_begin<"), "");
+static_assert(-1 != _CUDA_VSTD::__msvc_test<__pretty_name_int>().find_end(">::__pretty_name_end"), "");
+#endif
+
 // In device code with old versions of gcc, we cannot have nice things.
 #if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 90000 && defined(__CUDA_ARCH__)
 #  define _CCCL_NO_CONSTEXPR_PRETTY_NAMEOF
@@ -295,7 +307,7 @@ struct __type_info
   __type_info(__type_info const&)            = delete;
   __type_info& operator=(__type_info const&) = delete;
 
-  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr __type_info(__string_view __name) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info(__string_view __name) noexcept
       : __name_(__name)
   {}
 
