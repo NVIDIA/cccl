@@ -170,7 +170,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameo
 
 // BUGBUG
 #ifdef _CCCL_COMPILER_MSVC
-[[deprecated]] _LIBCUDACXX_HIDE_FROM_ABI char __print_char(char __c) noexcept
+[[deprecated]] _LIBCUDACXX_HIDE_FROM_ABI constexpr char __print_char(char __c) noexcept
 {
   return __c;
 }
