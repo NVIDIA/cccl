@@ -84,9 +84,7 @@ Getting started with CUDASTF
 Getting CUDASTF
 ^^^^^^^^^^^^^^^
 
-.. code:: bash
-
-   TODO
+CUDASTF is part of the CUDA Experimental library of the CCCL project. It is not distributed with the CUDA Toolkit like the rest of CCCL. It is only avaiable on the `CCCL GitHub repository <https://github.com/NVIDIA/cccl>`_.
 
 Using CUDASTF
 ^^^^^^^^^^^^^
@@ -1305,12 +1303,12 @@ The example below illustrates processing a 1D array using ``launch``:
 
 The ``launch`` construct consists of five main elements:
 
--  an execution place that indicates where the code will be executed;
--  a set of data dependencies;
--  a body of code specified using the ``->*`` operator.
--  a parameter to the kernel ``thread_info t`` for thread properties.
--  an optional ``execution_policy`` that explicitly specifies the launch
-   shape.
+- an execution place that indicates where the code will be executed;
+- a set of data dependencies;
+- a body of code specified using the ``->*`` operator.
+- a parameter to the kernel ``thread_info t`` for thread properties.
+- an optional ``execution_policy`` that explicitly specifies the launch
+  shape.
 
 In the example above, the kernel is launched on all of the available
 CUDA devices. The lambda function has the ``__device__`` attribute
@@ -1749,11 +1747,13 @@ Syntax:
     logicalData.accessMode([data place])
 
 - **Data Places**: Specify where a logical data in the data dependencies should be located:
+
   - `data_place::affine` (default): Locate data on the data place affine to the execution place (e.g., device memory when running on a CUDA device).
   - `data_place::managed`: Use managed memory.
   - `data_place::device(i)`: Put data in the memory of the i-th CUDA device (which may be different from the current device or the device of the execution place).
 
 - **Access Modes**:
+
   - `.read()`: Read-only access.
   - `.write()`: Write-only access.
   - `.rw()`: Read and write access.
@@ -1825,7 +1825,7 @@ Examples:
 
     double X[N];
     double Y[N];
-    
+
     auto lX = ctx.logical_data(X);
     auto lY = ctx.logical_data(Y);
 
@@ -1840,7 +1840,7 @@ Examples:
 
     double X[N*N];
     double Y[N];
-    
+
     auto lX = ctx.logical_data(make_slice(&X[0], std::tuple{N, N}));
     auto lY = ctx.logical_data(Y);
 
