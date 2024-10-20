@@ -170,14 +170,28 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameo
 
 // BUGBUG
 #ifdef _CCCL_COMPILER_MSVC
-template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __msvc_test() noexcept
+[[deprecated]] _LIBCUDACXX_HIDE_FROM_ABI char __print_char(char __c) noexcept
 {
-  return _CUDA_VSTD::__string_view(_CCCL_PRETTY_FUNCTION);
+  return __c;
+}
+template <class _Tp>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr char const*
+__msvc_test_3(char, char const* __begin, char const* __end) noexcept
+{
+  return __begin == __end ? __begin : __msvc_test_3(__print_char(*begin), __begin + 1, __end);
+}
+template <class _Tp>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr char const* __msvc_test_2(__string_view __name) noexcept
+{
+  return __msvc_test_3('\0', __name.begin(), __name.end());
+}
+template <class _Tp>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr char const* __msvc_test() noexcept
+{
+  return __msvc_test_2(_CUDA_VSTD::__string_view(_CCCL_PRETTY_FUNCTION));
 }
 using __pretty_name_int = typename __pretty_name_begin<int>::__pretty_name_end;
-static_assert(-1 != _CUDA_VSTD::__msvc_test<__pretty_name_int>().find("__pretty_name_begin<"), "");
-static_assert(-1 != _CUDA_VSTD::__msvc_test<__pretty_name_int>().find_end(">::__pretty_name_end"), "");
+static_assert('\0' == *_CUDA_VSTD::__msvc_test<__pretty_name_int>(), "");
 #endif
 
 // In device code with old versions of gcc, we cannot have nice things.
@@ -376,7 +390,7 @@ struct __typeid_value
   static constexpr __type_info value{_CUDA_VSTD::__pretty_nameof<_Tp>()};
 };
 
-#    ifdef _CCCL_NO_INLINE_VARIABLES
+#    if defined(_CCCL_NO_INLINE_VARIABLES) || _CCCL_STD_VER < 2017
 // Before the addition of inline variables, it was necessary to
 // provide a definition for constexpr class static data members.
 template <class _Tp>
