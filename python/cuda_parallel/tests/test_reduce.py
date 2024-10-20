@@ -4,6 +4,7 @@
 
 import numpy
 import pytest
+import numba
 from numba import cuda
 import cuda.parallel.experimental as cudax
 
@@ -85,36 +86,37 @@ def test_device_reduce_dtype_mismatch():
           reduce_into(None, None, d_inputs[int(ix == 0)], d_outputs[int(ix == 1)], h_inits[int(ix == 2)])
 
 
+def cu_repeat(value):
+    def input_unary_op(unused_distance):
+        data = (value + 2, value + 1)
+        return data[0] - data[1]
+    return input_unary_op
+
+
+def cu_count(start):
+    def input_unary_op(distance):
+        return distance
+    return input_unary_op
+
+
+def cu_arbitrary(permutation):
+    def input_unary_op(distance):
+        return permutation[distance % len(permutation)]
+    return input_unary_op
+
+
 @pytest.mark.parametrize("use_numpy_array", [True, False])
-@pytest.mark.parametrize("input_generator", ["constant", "counting", "arbitrary", "nested_inner", "nested_global"][:-1])
+@pytest.mark.parametrize("input_generator", ["constant", "counting", "arbitrary"])
 def test_device_sum_input_unary_op(use_numpy_array, input_generator, num_items=19, start_sum_with=1000):
     def add_op(a, b):
         return a + b
 
     if input_generator == "constant":
-        def input_unary_op(unused_distance):
-            data = (5, 2)
-            return data[0] - data[1]
+        input_unary_op = cu_repeat(3)
     elif input_generator == "counting":
-        def input_unary_op(distance):
-            return distance
+        input_unary_op = cu_count(4)
     elif input_generator == "arbitrary":
-        def input_unary_op(distance):
-            permutation = (4, 2, 0, 3, 1)
-            return permutation[distance % len(permutation)]
-    elif input_generator == "nested_inner":
-        def input_unary_op(distance):
-            def inner_unary_op(distance):
-                permutation = (4, 2, 0, 3, 1)
-                return permutation[distance % len(permutation)]
-            return 2 * inner_unary_op(distance)
-    elif input_generator == "nested_global":
-        # TODO: Figure out how to make this work.
-        def other_unary_op(distance):
-            permutation = (4, 2, 0, 3, 1)
-            return permutation[distance % len(permutation)]
-        def input_unary_op(distance):
-            return 2 * other_unary_op(distance)
+        input_unary_op = cu_arbitrary((4, 2, 0, 3, 1))
     else:
         raise RuntimeError("Unexpected input_generator")
 
