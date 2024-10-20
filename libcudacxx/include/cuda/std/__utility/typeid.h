@@ -174,13 +174,11 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameo
 {
   return __c;
 }
-template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr char const*
 __msvc_test_3(char, char const* __begin, char const* __end) noexcept
 {
   return __begin == __end ? __begin : __msvc_test_3(__print_char(*begin), __begin + 1, __end);
 }
-template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr char const* __msvc_test_2(__string_view __name) noexcept
 {
   return __msvc_test_3('\0', __name.begin(), __name.end());
