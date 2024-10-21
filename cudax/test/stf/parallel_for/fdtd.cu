@@ -168,9 +168,9 @@ int main(int argc, char** argv)
   }
 
   /* Index shapes for Electric fields, Magnetic fields, and the indices where there is a source */
-  box Es({1ul, SIZE_X - 1}, {1ul, SIZE_Y - 1}, {1ul, SIZE_Z - 1});
-  box Hs({0ul, SIZE_X - 1}, {0ul, SIZE_Y - 1}, {0ul, SIZE_Z - 1});
-  box source_s({center_x, center_x + 1}, {center_y, center_y + 1}, {center_z, center_z + 1});
+  box<3> Es({1ul, SIZE_X - 1}, {1ul, SIZE_Y - 1}, {1ul, SIZE_Z - 1});
+  box<3> Hs({0ul, SIZE_X - 1}, {0ul, SIZE_Y - 1}, {0ul, SIZE_Z - 1});
+  box<3> source_s({center_x, center_x + 1}, {center_y, center_y + 1}, {center_z, center_z + 1});
 
   for (size_t n = 0; n < timesteps; n++)
   {
