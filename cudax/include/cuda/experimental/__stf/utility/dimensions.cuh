@@ -458,7 +458,7 @@ UNITTEST("box<3>")
   size_t cnt                = 0;
   auto shape                = box({0, 3}, {1, 3}, {10, 14});
   static_assert(::std::is_same_v<decltype(shape), box<3>>);
-  for (const auto& /* pos*/ : shape)
+  for ([[maybe_unused]] const auto& pos : shape)
   {
     EXPECT(cnt < expected_cnt);
     cnt++;
@@ -474,7 +474,7 @@ UNITTEST("box<3> upper")
   size_t cnt                = 0;
   auto shape                = box(3, 2, 4);
   static_assert(::std::is_same_v<decltype(shape), box<3>>);
-  for (const auto& /* pos */ : shape)
+  for ([[maybe_unused]] const auto& pos : shape)
   {
     EXPECT(cnt < expected_cnt);
     cnt++;
@@ -497,7 +497,7 @@ UNITTEST("empty box<1>")
   }
 
   // There should be no entry in this range
-  for (const auto& /* pos */ : shape)
+  for ([[maybe_unused]] const auto& pos : shape)
   {
     abort();
   }
@@ -509,7 +509,7 @@ UNITTEST("mix of integrals and pairs")
   size_t cnt                = 0;
   auto shape                = box(3, ::std::pair(1, 2), 4);
   static_assert(::std::is_same_v<decltype(shape), box<3>>);
-  for (const auto& /* pos */ : shape)
+  for ([[maybe_unused]] const auto& pos : shape)
   {
     EXPECT(cnt < expected_cnt);
     cnt++;
