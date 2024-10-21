@@ -68,16 +68,26 @@ inline constexpr ::std::pair<size_t, size_t> type_name_affixes = [] {
   return ::std::pair{i, j};
 }();
 
+#if defined(_CCCL_COMPILER_MSVC)
+template <size_t N>
+constexpr ::std::string_view substr_constexpr(const char (&str)[N], size_t start, size_t length) {
+    return ::std::string_view(str + start, length);
+}
+#endif
+
 template <class T>
 constexpr ::std::string_view type_name_impl()
 {
 #if defined(_CCCL_COMPILER_MSVC)
-  ::std::string_view p = __FUNCSIG__;
+  constexpr ::std::string_view p = __FUNCSIG__;
+  // MSVC does not provide a constexpr substr so we use our own
+  constexpr size_t start = type_name_affixes.first;
+  constexpr size_t length = p.size() - type_name_affixes.first - type_name_affixes.second;
+  return substr_constexpr(p.data(), start, length);
 #else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
   ::std::string_view p = __PRETTY_FUNCTION__;
-#endif // !_CCCL_COMPILER_MSVC
-    //return p;
   return p.substr(type_name_affixes.first, p.size() - type_name_affixes.first - type_name_affixes.second);
+#endif // !_CCCL_COMPILER_MSVC
 }
 
 }
