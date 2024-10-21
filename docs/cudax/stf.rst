@@ -1112,7 +1112,7 @@ The example below illustrates processing a 1D array using
    int A[128];
    auto lA = ctx.logical_data(A);
 
-   ctx.parallel_for(exec_place::device(1), lA.shape(), lA.write())->*[] CUDASTF_DEVICE (size_t i, auto sA) {
+   ctx.parallel_for(exec_place::device(1), lA.shape(), lA.write())->*[] __device__ (size_t i, auto sA) {
        A(i) = 2*i + 1;
    };
 
@@ -1156,9 +1156,9 @@ function) requires additional parameters. Consider an example that uses
    auto lx = ctx.logical_data(make_slice(&X[0], std::tuple{ 2 * N, 2 * N }, 2 * N));
    auto ly = ctx.logical_data(make_slice(&Y[0], std::tuple{ N, N }, N));
 
-   ctx.parallel_for(lx.shape(), lx.write())->*[=] CUDASTF_DEVICE(size_t i, size_t j, auto sx) { sx(i, j) = 0.1; };
+   ctx.parallel_for(lx.shape(), lx.write())->*[=] __device__(size_t i, size_t j, auto sx) { sx(i, j) = 0.1; };
 
-   ctx.parallel_for(ly.shape(), lx.read(), ly.write())->*[=] CUDASTF_DEVICE(size_t i, size_t j, auto sx, auto sy) {
+   ctx.parallel_for(ly.shape(), lx.read(), ly.write())->*[=] __device__(size_t i, size_t j, auto sx, auto sy) {
        sy(i, j) = y0(i, j);
        for (size_t ii = 0; ii < 2; ii++)
            for (size_t jj = 0; jj < 2; jj++) {
@@ -1198,7 +1198,7 @@ varies from 0 through 1 and the second from 0 through 2. Consider:
 
 .. code:: cpp
 
-   ctx.parallel_for(box<2>({2, 3}))->*[] CUDASTF_DEVICE(size_t i, size_t j) {
+   ctx.parallel_for(box<2>({2, 3}))->*[] __device__(size_t i, size_t j) {
        printf("%ld, %ld\n", i, j);
    };
 
@@ -1218,7 +1218,7 @@ to write code to iterate over all values of ``i`` from 0 through 3:
 
 .. code:: cpp
 
-   ctx.parallel_for(box({4}))->*[] CUDASTF_DEVICE(size_t i) {
+   ctx.parallel_for(box({4}))->*[] __device__(size_t i) {
        printf("%ld\n", i);
    };
 
@@ -1231,7 +1231,7 @@ Consider an example similar to the previous one:
 
 .. code:: cpp
 
-   ctx.parallel_for(box<2>({{5, 8}, {2, 4}}))->*[] CUDASTF_DEVICE(size_t i, size_t j) {
+   ctx.parallel_for(box<2>({{5, 8}, {2, 4}}))->*[] __device__(size_t i, size_t j) {
        printf("%ld, %ld\n", i, j);
    };
 
@@ -1303,7 +1303,7 @@ The example below illustrates processing a 1D array using ``launch``:
 
 .. code:: cpp
 
-   ctx.launch(par(1024), all_devs, handle_X.read(cdp), handle_Y.rw(cdp))->*[=] CUDASTF_DEVICE(thread_info t, slice<double> x, slice<double> y) {
+   ctx.launch(par(1024), all_devs, handle_X.read(cdp), handle_Y.rw(cdp))->*[=] __device__(thread_info t, slice<double> x, slice<double> y) {
        size_t tid = t.thread_id();
        size_t nthreads = t.get_num_threads();
        for (size_t ind = tid; ind < N; ind += nthreads) {
@@ -1726,7 +1726,7 @@ name the generated kernel “updateA” :
    int A[128];
    auto lA = ctx.logical_data(A);
 
-   ctx.parallel_for(lA.shape(), lA.write()).set_symbol("updateA")->*[] CUDASTF_DEVICE (size_t i, auto sA) {
+   ctx.parallel_for(lA.shape(), lA.write()).set_symbol("updateA")->*[] __device__ (size_t i, auto sA) {
        A(i) = 2*i + 1;
    };
 
