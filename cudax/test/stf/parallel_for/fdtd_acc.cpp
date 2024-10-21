@@ -8,6 +8,11 @@
 //
 //===----------------------------------------------------------------------===//
 
+/**
+ * @file
+ *
+ * @brief Reference OpenACC implementation of the FDTD example
+ */
 #include <string>
 
 #include <math.h>
