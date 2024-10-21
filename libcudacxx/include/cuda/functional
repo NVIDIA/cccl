@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__functional/address_stability.h>
 #include <cuda/__functional/proclaim_return_type.h>
 #include <cuda/std/functional>
 
