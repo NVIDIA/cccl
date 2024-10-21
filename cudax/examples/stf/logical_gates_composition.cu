@@ -20,9 +20,7 @@ using namespace cuda::experimental::stf;
 // z = AND(x,y)
 logical_data<slice<int>> AND(context& ctx, logical_data<slice<int>> x, logical_data<slice<int>> y)
 {
-  size_t nx = x.shape().size();
-  size_t ny = y.shape().size();
-  assert(nx == ny);
+  assert(x.shape().size() == y.shape().size());
 
   auto z = ctx.logical_data(x.shape());
 
