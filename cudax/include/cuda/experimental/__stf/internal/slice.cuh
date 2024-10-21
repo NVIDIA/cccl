@@ -684,7 +684,7 @@ UNITTEST("3D slice should be similar to 3D mdspan", (slice<double, 3>()))
   double data[3 * 4 * 5];
   for (size_t i = 0; i < sizeof(data) / sizeof(data[0]); ++i)
   {
-    data[i] = i;
+    data[i] = 1.0*i;
   }
   // Access each element of the array
   auto m = reserved::make_mdview<View>(data, ::std::tuple{3, 4, 5}, 3, 3 * 4);
