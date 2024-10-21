@@ -38,8 +38,8 @@ _CCCL_DEVICE double atomicMax(double* address, double val)
   return __longlong_as_double(old);
 }
 
-template <typename thread_hierarchy_t, typename spec_t>
-_CCCL_DEVICE double reduce_max(thread_hierarchy_t& t, spec_t& spec, double local_max)
+template <typename thread_hierarchy_t>
+_CCCL_DEVICE double reduce_max(thread_hierarchy_t& t, double local_max)
 {
   auto ti             = t.inner();
   slice<double> error = t.template storage<double>(0);
@@ -47,7 +47,7 @@ _CCCL_DEVICE double reduce_max(thread_hierarchy_t& t, spec_t& spec, double local
   error(0) = 0.0;
   t.sync();
 
-  __shared__ double block_max[spec.static_width(1)];
+  __shared__ double block_max[t.static_width(1)];
   block_max[ti.rank()] = local_max;
   for (size_t s = ti.size() / 2; s > 0; s /= 2)
   {
@@ -112,7 +112,7 @@ int main(int argc, char** argv)
   auto spec = con(con<64>(), mem(sizeof(double)));
 
   ctx.launch(spec, all_devs, lA.rw(), lAnew.write())
-      ->*[spec, iter_max, tol, n, m] _CCCL_DEVICE(auto t, auto A, auto Anew) {
+      ->*[iter_max, tol, n, m] _CCCL_DEVICE(auto t, auto A, auto Anew) {
             auto ti = t.inner();
             for (size_t iter = 0; iter < iter_max; iter++)
             {
@@ -127,7 +127,7 @@ int main(int argc, char** argv)
               }
 
               // compute the overall maximum error
-              double error = reduce_max(t, spec, local_error);
+              double error = reduce_max(t, local_error);
 
               /* Fill A with the new values */
               for (auto [i, j] : t.apply_partition(shape(A)))
