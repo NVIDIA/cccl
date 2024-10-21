@@ -39,7 +39,7 @@ int main()
   auto handle_X5 = ctx.logical_data(make_slice(X5, std::tuple{16, 4, 4}, 32, 32 * 4));
 
   double* X6     = new double[32 * 4 * 4];
-  auto handle_X6 = ctx.logical_data(make_slice(X5, std::tuple{32, 2, 4}, 32, 32 * 4));
+  auto handle_X6 = ctx.logical_data(make_slice(X6, std::tuple{32, 2, 4}, 32, 32 * 4));
 
   double* X7 = new double[128 * 128 * 128];
   cuda_safe_call(cudaHostRegister(X7, 128 * 128 * 128, cudaHostRegisterPortable));
