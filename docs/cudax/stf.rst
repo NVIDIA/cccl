@@ -1439,7 +1439,7 @@ will differ between the different threads which call `inner()`.
     th.inner().sync(); // synchronize threads in the same block of the second level of the hierarchy
 
 C++ Types of logical data and tasks
--------------------------------
+-----------------------------------
 
 To prevent a common class of errors, CUDASTF strives to align its
 processing semantics with C++ types as closely as possible. As shown in

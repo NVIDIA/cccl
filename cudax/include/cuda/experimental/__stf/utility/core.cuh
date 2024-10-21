@@ -422,7 +422,6 @@ constexpr void each_in_pack(F&& f, ::std::index_sequence<i...>, P&&... p)
  * @param f Callable object to apply to each element in the parameter pack
  * @param p Variadic parameter pack
  *
- * @example
  * \code{.cpp}
  * std::string s;
  * cuda::experimental::stf::each_in_pack([&](auto&& p) { s += std::to_string(p) + ", "; }, 1, 2, 3, 4, 5);
@@ -430,6 +429,7 @@ constexpr void each_in_pack(F&& f, ::std::index_sequence<i...>, P&&... p)
  * s = "";
  * cuda::experimental::stf::each_in_pack([&](auto i, auto&& p) { s += (i ? ", " : "") + std::to_string(i) + p; }, "a",
  * "b", "c"); assert(s == "0a, 1b, 2c"); \endcode
+ * \endcode
  */
 template <typename F, typename... P>
 constexpr void each_in_pack(F&& f, P&&... p)

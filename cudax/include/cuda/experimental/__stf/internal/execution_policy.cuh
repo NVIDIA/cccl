@@ -404,7 +404,7 @@ private:
  * - If type is `mem`, parameter is used to initialize the memory (bytes) attribute of the object
  * - If type is `hw_scope`, parameter is used to initialize the scope attribute of the object
  *
- * @param P... Types of parameters
+ * @tparam P... Types of parameters
  * @param p Values of parameters
  * @return A `thread_hierarchy_spec` instantiation with the appropriate arguments.
  */
@@ -418,12 +418,15 @@ constexpr auto par(const P&... p)
 /**
  * @brief Creates and returns a `thread_hierarchy_spec` object with no synchronization and static width.
  *
+ * @overload
+ *
  * Parameters are used for initializing the result depending on their types as follows:
  * - If type is `thread_hierarchy_spec<lower_levels...>`, parameter is used to initalize the inner part
  * - If type is `mem`, parameter is used to initialize the memory (bytes) attribute of the object
  * - If type is `hw_scope`, parameter is used to initialize the scope attribute of the object
  *
- * @param P... Types of parameters
+ * @tparam width level width
+ * @tparam P... Types of parameters
  * @param p Values of parameters
  * @return A `thread_hierarchy_spec` instantiation with the appropriate arguments.
  */
@@ -457,6 +460,8 @@ constexpr auto con(const P&... p)
 
 /**
  * @brief Creates and returns a `thread_hierarchy_spec` object with synchronization and static width.
+ *
+ * @overload
  *
  * Parameters are used for initializing the result depending on their types as follows:
  * - If type is `thread_hierarchy_spec<lower_levels...>`, parameter is used to initalize the inner part

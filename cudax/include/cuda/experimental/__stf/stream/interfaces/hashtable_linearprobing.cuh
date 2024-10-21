@@ -33,6 +33,9 @@
 namespace cuda::experimental::stf
 {
 
+/**
+ * @brief A simple example of a hashtable data interface that can be used as a logical data in the ``stream_ctx``.
+ */
 class hashtable_stream_interface : public stream_data_interface_simple<hashtable>
 {
 public:

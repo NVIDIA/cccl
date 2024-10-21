@@ -298,12 +298,15 @@ template <typename T, size_t N>
  *
  * @throw static_assert If more than one argument in the parameter pack is convertible to type `T`.
  *
- * @example
+ * \code{.cpp}
  *   int i = 42;
  *   double d = 3.14;
  *   std::string s = "hello";
  *   // The following call will return 's'.
- *   auto result = only_convertible<std::string>(i, d, s); */
+ *   auto result = only_convertible<std::string>(i, d, s);
+ * \endcode
+ *
+ */
 template <typename T, typename P0, typename... P>
 T only_convertible(P0&& p0, P&&... p)
 {
@@ -339,13 +342,14 @@ T only_convertible(P0&& p0, P&&... p)
  * @throws Any exception thrown during the construction of elements in the array will be propagated after destructing
  * already constructed elements.
  *
- * @example
+ * \code{.cpp}
  *   int i = 42;
  *   double d = 3.14;
  *   std::string s = "hello";
  *   // The following call will create an array of strings from all arguments that can be converted to a string.
  *   // In this case, only 's' is convertible, so the array will contain two copies of 's'.
  *   auto result = all_convertible<std::string>(i, s, d, s);
+ * \endcode
  */
 template <typename T, typename... P>
 auto all_convertible(P&&... p)
@@ -445,8 +449,7 @@ struct check_initialization
  *
  * @throws static_assert If a type is not convertible to exactly one type.
  *
- * @example
- *
+ * \code{.cpp}
  *     struct A {};
  *     struct B {};
  *     struct C {};
@@ -465,6 +468,7 @@ struct check_initialization
  *
  *     // This will fail to compile because int is convertible to both float and double, causing ambiguity.
  *     // shuffled_args_check<int, float, double>(5);
+ * \endcode
  */
 template <typename... ArgTypes, typename... DataTypes>
 void shuffled_args_check(const DataTypes&...)
@@ -489,8 +493,7 @@ void shuffled_args_check(const DataTypes&...)
  *
  * @throws static_assert If a type is not convertible to exactly one type.
  *
- * @example
- *
+ * \code{.cpp}
  *     struct A { int value; };
  *     struct B { std::string text; };
  *     struct C { float number; };
@@ -510,6 +513,7 @@ void shuffled_args_check(const DataTypes&...)
  *     // This will not compile because the argument '5' can convert to both 'int' and 'float',
  *     // causing an ambiguity.
  *     // auto my_tuple = shuffled_tuple<A, B, C>(b, c, 5);
+ *  \endcode
  */
 template <typename... DataTypes, typename... ArgTypes>
 ::std::tuple<DataTypes...> shuffled_tuple(ArgTypes... args)
