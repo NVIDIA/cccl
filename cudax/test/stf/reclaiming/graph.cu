@@ -70,5 +70,3 @@ int main(int argc, char** argv)
   ctx.finalize();
 #endif // !defined(_CCCL_COMPILER_MSVC)
 }
-
-
