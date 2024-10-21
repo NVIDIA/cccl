@@ -815,7 +815,7 @@ UNITTEST("logical_data_untyped moveable")
     scalar(stream_ctx& ctx)
     {
       size_t s    = sizeof(double);
-      auto h_addr = (double*) malloc(s);
+      double *h_addr = (double*) malloc(s);
       cuda_safe_call(cudaHostRegister(h_addr, s, cudaHostRegisterPortable));
       handle = ctx.logical_data(h_addr, 1);
     }
