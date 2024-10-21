@@ -226,7 +226,7 @@ private:
   //! @param __last Pointer to the end of the input segment.
   //! @param __dest Pointer to the start of the output segment.
   //! @param __count The number of elements to be copied.
-  template <class _Iter, cudaMemcpyKind __kind = cudaMemcpyHostToDevice>
+  template <class _Iter, cudaMemcpyKind __kind = __is_host_only ? cudaMemcpyHostToHost : cudaMemcpyHostToDevice>
   static void __copy_cross(_Iter __first, _Iter __last, pointer __dest, size_type __count)
   {
     _CCCL_IF_CONSTEXPR (__kind == cudaMemcpyHostToHost)
@@ -526,7 +526,11 @@ public:
   {
     if (__size_ > 0)
     {
-      this->__copy_cross(__first, __last, __unwrapped_begin(), __size_);
+      constexpr cudaMemcpyKind __detect_transfer_kind =
+        has_property<_Iter, _CUDA_VMR::device_accessible>
+          ? __transfer_kind<_CUDA_VMR::device_accessible>
+          : __transfer_kind<_CUDA_VMR::host_accessible>;
+      this->__copy_cross<_Iter, __detect_transfer_kind>(__first, __last, __unwrapped_begin(), __size_);
     }
   }
 
@@ -575,7 +579,12 @@ public:
   {
     if (__size_ > 0)
     {
-      this->__copy_cross(
+      using _Iter = _CUDA_VRANGES::iterator_t<_Range>;
+      constexpr cudaMemcpyKind __detect_transfer_kind =
+        has_property<_Range, _CUDA_VMR::device_accessible>
+          ? __transfer_kind<_CUDA_VMR::device_accessible>
+          : __transfer_kind<_CUDA_VMR::host_accessible>;
+      this->__copy_cross<_Iter, __detect_transfer_kind>(
         _CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __unwrapped_begin(), __size_);
     }
   }
@@ -591,7 +600,12 @@ public:
   {
     if (__size_ > 0)
     {
-      this->__copy_cross(
+      using _Iter = _CUDA_VRANGES::iterator_t<_Range>;
+      constexpr cudaMemcpyKind __detect_transfer_kind =
+        has_property<_Range, _CUDA_VMR::device_accessible>
+          ? __transfer_kind<_CUDA_VMR::device_accessible>
+          : __transfer_kind<_CUDA_VMR::host_accessible>;
+      this->__copy_cross<_Iter, __detect_transfer_kin>(
         _CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __unwrapped_begin(), __size_);
     }
   }
