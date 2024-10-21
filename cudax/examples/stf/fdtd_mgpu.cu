@@ -110,10 +110,10 @@ int main(int argc, char** argv)
   }
 
   // No output by default
-  ssize_t output_freq = -1;
+  int output_freq = -1;
   if (argc > 2)
   {
-    output_freq = (ssize_t) atol(argv[2]);
+    output_freq = atoi(argv[2]);
   }
 
   // Default value : grid of all devices
