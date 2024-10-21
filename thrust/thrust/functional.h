@@ -1403,6 +1403,30 @@ THRUST_INLINE_CONSTANT thrust::detail::functional::placeholder<9>::type _10;
 
 THRUST_NAMESPACE_END
 
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(thrust::plus);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(thrust::minus);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(thrust::multiplies);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(thrust::divides);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(thrust::modulus);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(thrust::negate);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(thrust::bit_and);
+//_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(thrust::bit_not); // does not exist?
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(thrust::bit_or);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(thrust::bit_xor);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(thrust::equal_to);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(thrust::not_equal_to);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(thrust::less);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(thrust::less_equal);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(thrust::greater_equal);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(thrust::greater);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(thrust::logical_and);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(thrust::logical_not);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(thrust::logical_or);
+
+_LIBCUDACXX_END_NAMESPACE_CUDA
+
 #include <thrust/detail/functional.inl>
 #include <thrust/detail/functional/operators.h>
 #include <thrust/detail/type_traits/is_commutative.h>

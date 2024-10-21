@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__functional/address_stability.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/perfect_forward.h>
 #include <cuda/std/__type_traits/decay.h>
@@ -71,5 +72,12 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 auto not_fn(_Fn&& __f)
 #endif // _CCCL_STD_VER > 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+template <typename _Fn, typename... _Args>
+struct __allows_copied_arguments_impl<_CUDA_VSTD::__not_fn_t<_Fn>, void, _Args...>
+    : ::cuda::allows_copied_arguments<_Fn, _Args...>
+{};
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
 #endif // _LIBCUDACXX___FUNCTIONAL_NOT_FN_H
