@@ -210,8 +210,42 @@ inline event_list task::acquire(backend_ctx_untyped& ctx)
   return result;
 }
 
-/*
- * TODO insert description here.
+/**
+ * @brief Releases resources associated with a task and transitions it to the finished phase.
+ *
+ * This function releases a task after it has completed its execution. It merges the
+ * list of prerequisites (events) that are marked as done, updates the dependencies for
+ * the task's logical data, resets the execution context to its original configuration,
+ * and marks the task as finished.
+ *
+ * After calling this function, the task is considered "over" and is transitioned
+ * from the `running` phase to the `finished` phase. All associated resources are unlocked
+ * and post-submission hooks (if any) are executed.
+ *
+ * @param ctx The context of the backend, which manages the execution environment.
+ * @param done_prereqs A list of events that must be marked as complete before the task can be released.
+ *
+ * @pre The task must be in the `running` phase.
+ * @pre The task's list of prerequisites (dependencies) must be empty at the time of calling.
+ *
+ * The function performs the following actions:
+ * - Merges the provided list of `done_prereqs` into the task's list of prerequisites.
+ * - Updates logical data dependencies based on the access mode (read or write).
+ * - Ensures proper synchronization by setting reader/writer prerequisites on the logical data.
+ * - Updates internal structures to reflect that the task has become a new "leaf task."
+ * - Resets the execution context (device, SM affinity, etc.) to its previous state.
+ * - Unlocks mutexes for the logical data that were locked during task execution.
+ * - Releases any references to logical data, preventing potential memory leaks.
+ * - Executes any post-submission hooks attached to the task.
+ *
+ * The function also interacts with tracing and debugging tools, marking
+ * the task's completion and declaring the task as a prerequisite for future tasks in the trace.
+ *
+ * @note After calling this function, the task is no longer in the `running` phase
+ * and cannot be modified.
+ *
+ * @warning The task must have completed all its work before calling this function.
+ * Failure to follow the task's lifecycle correctly may lead to undefined behavior.
  */
 inline void task::release(backend_ctx_untyped& ctx, event_list& done_prereqs)
 {
