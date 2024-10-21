@@ -57,7 +57,7 @@ int main()
 
   auto lX = ctx.logical_data(X);
 
-  ctx.task(lX.rw())->*[](cudaStream_t stream, auto sX) {
+  ctx.task(lX.rw())->*[N](cudaStream_t stream, auto sX) {
     graph_ctx gctx;
     auto lX_alias = gctx.logical_data(sX, data_place::current_device());
 

@@ -14,7 +14,7 @@
 using namespace cuda::experimental::stf;
 
 template <typename T>
-__global__ void axpy(int n, T a, const T* x, T* y)
+__global__ void axpy(size_t n, T a, const T* x, T* y)
 {
   int tid      = blockIdx.x * blockDim.x + threadIdx.x;
   int nthreads = gridDim.x * blockDim.x;
