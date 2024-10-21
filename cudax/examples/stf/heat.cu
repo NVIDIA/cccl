@@ -29,7 +29,7 @@ void dump_iter(slice<double, 2> sUn, int iter)
   char name[64];
   snprintf(name, 64, "heat_%06d.ppm", iter);
   FILE* f = fopen(name, "wb");
-  fprintf(f, "P6\n%ld %ld\n255\n", sUn.extent(0), sUn.extent(1));
+  fprintf(f, "P6\n%zu %zu\n255\n", sUn.extent(0), sUn.extent(1));
   for (size_t j = 0; j < sUn.extent(1); j++)
   {
     for (size_t i = 0; i < sUn.extent(0); i++)
@@ -38,9 +38,9 @@ void dump_iter(slice<double, 2> sUn, int iter)
       // we assume values between 0.0 and 100.0 : max value is in red,
       // min is in blue
       unsigned char color[3];
-      color[0] = v; /* red */
-      color[1] = 0; /* green */
-      color[2] = 255 - v; /* blue */
+      color[0] = static_cast<char>(v); /* red */
+      color[1] = static_cast<char>(0); /* green */
+      color[2] = static_cast<char>(255 - v); /* blue */
       fwrite(color, 1, 3, f);
     }
   }
