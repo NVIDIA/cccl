@@ -1092,7 +1092,7 @@ tiled layout, where the dimension of the tiles is indicated by the
    |     |     |     |     |     |  |
    |_____|_____|_____|_____|_____|__|
 
-
+.. _parallel_for_construct:
 
 ``parallel_for`` construct
 --------------------------
@@ -1276,6 +1276,7 @@ and member function ``index_to_coords`` as follows:
 The dimensionality of this ``coord_t`` tuple type determines the number
 of arguments passed to the lambda function in ``parallel_for``.
 
+.. _launch_construct:
 
 ``launch`` construct
 --------------------
@@ -1288,9 +1289,8 @@ Syntax:
 
 .. code-block:: cpp
 
-    template <typename thread_hierarchy_spec_t>
     ctx.launch([thread hierarchy spec], [execution place], logicalData1.accessMode(), logicalData2.accessMode()) 
-        ->*[capture list] __device__ (thread_hierarchy_spec_t spec, auto data1, auto data2 ...) { 
+        ->*[capture list] __device__ (auto th_spec, auto data1, auto data2 ...) { 
             // Kernel implementation
         };
 
@@ -1799,6 +1799,19 @@ Contexts store the state of the CUDASTF library and are used as an entry point f
     context ctx;
     ctx.finalize();
 
+By default, this relies on the ``stream_ctx`` back-end, but it is also possible to select at runtime a ``graph_ctx`` back-end :
+
+.. code-block:: cpp
+
+    context ctx = graph_ctx();
+
+Or one may statically select either backends :
+
+.. code-block:: cpp
+
+    stream_ctx ctx;
+    graph_ctx ctx;
+
 Logical Data
 ^^^^^^^^^^^^
 
@@ -1970,6 +1983,8 @@ Examples:
             dX(i, j) += dY(i) * dY(j); 
         };
 
+See :ref:`this section <parallel_for_construct>` for more details.
+
 `launch` construct
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -2014,3 +2029,16 @@ When passed to the user-provided kernel implementation, this object provides dif
 
     th.depth(); // (constexpr) get the depth of the thread hierarchy
     th.inner(); // get the thread hierarchy subset obtained by removing the top-most level of the hierarchy
+
+Examples:
+
+.. code-block:: cpp
+
+    con(128);
+    par();
+    con<128>();
+    con(128, par(32));
+    con(128, mem(64), con(32));
+    par(hw_scope::device | hw_scope::block, par<128>(hw_scope::thread));
+
+See :ref:`this section <launch_construct>` for more details.
