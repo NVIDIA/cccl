@@ -48,7 +48,7 @@
  * @return 0 on success, or -1 on failure (invalid input or memory allocation failure).
  * @note This function is designed for MSVC, which lacks a standard `setenv` function.
  */
-int setenv(const char* name, const char* value, int overwrite) {
+inline int setenv(const char* name, const char* value, int overwrite) {
     if (!name || !value || !name[0]) {
         // Invalid input: name or value is null, or name is an empty string
         return -1;
