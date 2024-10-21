@@ -69,7 +69,7 @@ void run(int NTASKS, int ms)
   cuda_safe_call(cudaEventElapsedTime(&elapsed, start, stop));
 
   // Give 25% margin of error
-  float expected = NTASKS * ms;
+  float expected = 1.0 * NTASKS * ms;
   float err      = fabs(elapsed - expected) / expected;
   EXPECT(err < 0.25f);
 }
