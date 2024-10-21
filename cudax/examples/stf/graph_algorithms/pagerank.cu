@@ -75,8 +75,8 @@ int main()
   std::vector<int> nonzeros = {1, 2, 3, 6, 0, 3, 4, 5, 6, 7, 8, 0, 0, 1, 1, 1, 0, 1, 1, 1};
 
   int num_vertices = offsets.size() - 1;
-  float init_rank  = 1.0 / num_vertices;
-  float tolerance  = 1e-6;
+  float init_rank  = 1.0f / num_vertices;
+  float tolerance  = 1e-6f;
   float max_diff   = 0.0f;
   int NITER        = 100;
 
