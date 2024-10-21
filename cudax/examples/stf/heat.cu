@@ -23,11 +23,11 @@
 
 using namespace cuda::experimental::stf;
 
-void dump_iter(slice<double, 2> sUn, size_t iter)
+void dump_iter(slice<double, 2> sUn, int iter)
 {
   /* Create a binary file in the PPM format */
   char name[64];
-  snprintf(name, 64, "heat_%06zu.ppm", iter);
+  snprintf(name, 64, "heat_%06d.ppm", iter);
   FILE* f = fopen(name, "wb");
   fprintf(f, "P6\n%ld %ld\n255\n", sUn.extent(0), sUn.extent(1));
   for (size_t j = 0; j < sUn.extent(1); j++)
@@ -97,10 +97,10 @@ int main()
 
   double c = a * dt;
 
-  size_t nsteps      = 1000;
-  ssize_t image_freq = -1;
+  int nsteps      = 1000;
+  int image_freq = -1;
 
-  for (size_t iter = 0; iter < nsteps; iter++)
+  for (int iter = 0; iter < nsteps; iter++)
   {
     if (image_freq > 0 && iter % image_freq == 0)
     {
