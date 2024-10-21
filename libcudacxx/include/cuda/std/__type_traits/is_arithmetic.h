@@ -31,10 +31,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_arithmetic
     : public integral_constant<bool, is_integral<_Tp>::value || is_floating_point<_Tp>::value>
 {};
 
-#if !defined(_CCCL_NO_VARIABLE_TEMPALTES)
+#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _CCCL_INLINE_VAR constexpr bool is_arithmetic_v = is_arithmetic<_Tp>::value;
-#endif // !_CCCL_NO_VARIABLE_TEMPALTES
+#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

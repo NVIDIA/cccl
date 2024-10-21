@@ -33,10 +33,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT
 _LIBCUDACXX_DEPRECATED_IN_CXX17 is_literal_type : public integral_constant<bool, _CCCL_BUILTIN_IS_LITERAL(_Tp)>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPALTES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_DEPRECATED_IN_CXX17 _CCCL_INLINE_VAR constexpr bool is_literal_type_v = __is_literal_type(_Tp);
-#  endif // !_CCCL_NO_VARIABLE_TEMPALTES
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #else
 
@@ -47,10 +47,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED_IN_CXX17 is_literal_
                                  || is_reference<__remove_all_extents_t<_Tp>>::value>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPALTES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _LIBCUDACXX_DEPRECATED_IN_CXX17 _CCCL_INLINE_VAR constexpr bool is_literal_type_v = is_literal_type<_Tp>::value;
-#  endif // !_CCCL_NO_VARIABLE_TEMPALTES
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #endif // defined(_CCCL_BUILTIN_IS_LITERAL) && !defined(_LIBCUDACXX_USE_IS_LITERAL_FALLBACK)
 

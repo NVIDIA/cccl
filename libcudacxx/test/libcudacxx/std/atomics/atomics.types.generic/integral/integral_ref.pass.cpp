@@ -177,6 +177,10 @@ __host__ __device__ void test_for_all_types()
 #ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
   test<Atomic<char32_t, Scope>, char32_t, Selector>();
 #endif // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
+  test<Atomic<int8_t, Scope>, int8_t, Selector>();
+  test<Atomic<uint8_t, Scope>, uint8_t, Selector>();
+  test<Atomic<int16_t, Scope>, int16_t, Selector>();
+  test<Atomic<uint16_t, Scope>, uint16_t, Selector>();
   test<Atomic<int32_t, Scope>, int32_t, Selector>();
   test<Atomic<uint32_t, Scope>, uint32_t, Selector>();
   test<Atomic<int64_t, Scope>, int64_t, Selector>();

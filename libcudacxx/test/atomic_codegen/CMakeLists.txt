@@ -1,6 +1,13 @@
 add_custom_target(libcudacxx.test.atomics.ptx)
 
-find_program(filecheck "FileCheck" REQUIRED)
+find_program(filecheck "FileCheck")
+
+if (filecheck)
+  message("-- ${filecheck} found... building atomic codegen tests")
+else()
+  return()
+endif()
+
 find_program(cuobjdump "cuobjdump" REQUIRED)
 find_program(bash "bash" REQUIRED)
 
@@ -15,6 +22,14 @@ foreach(test_path IN LISTS libcudacxx_atomic_codegen_tests)
         atomic_codegen_${test_name}
         STATIC ${test_path}
     )
+
+    set_target_properties(
+        atomic_codegen_${test_name}
+        PROPERTIES
+          CUDA_ARCHITECTURES "80"
+    )
+
+    target_compile_options(atomic_codegen_${test_name} PRIVATE "-Wno-comment")
 
     ## Important for testing the local headers
     target_include_directories(atomic_codegen_${test_name} PRIVATE "${libcudacxx_SOURCE_DIR}/include")

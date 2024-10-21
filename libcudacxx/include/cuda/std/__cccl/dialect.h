@@ -107,7 +107,7 @@
 
 // Variable templates are only available from C++14 onwards and require some compiler support
 #if _CCCL_STD_VER <= 2011 || !defined(__cpp_variable_templates) || (__cpp_variable_templates < 201304L)
-#  define _CCCL_NO_VARIABLE_TEMPALTES
+#  define _CCCL_NO_VARIABLE_TEMPLATES
 #endif // _CCCL_STD_VER <= 2011
 
 // We need to treat host and device separately
