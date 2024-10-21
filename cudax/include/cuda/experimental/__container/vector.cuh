@@ -88,6 +88,11 @@ _CCCL_PUSH_MACROS
 namespace cuda::experimental
 {
 
+template <bool _IsHostOnly, class _Iter>
+_CCCL_INLINE_VAR constexpr cudaMemcpyKind __detect_transfer_kind =
+  has_property<_Iter, _CUDA_VMR::device_accessible>
+    ? (_IsHostOnly ? cudaMemcpyKind::cudaMemcpyDeviceToHost : cudaMemcpyKind::cudaMemcpyDeviceToDevice)
+    : (_IsHostOnly ? cudaMemcpyKind::cudaMemcpyHostToHost : cudaMemcpyKind::cudaMemcpyHostToDevice);
 //! @rst
 //! .. _cudax-containers-vector:
 //!
@@ -526,11 +531,8 @@ public:
   {
     if (__size_ > 0)
     {
-      constexpr cudaMemcpyKind __detect_transfer_kind =
-        has_property<_Iter, _CUDA_VMR::device_accessible>
-          ? __transfer_kind<_CUDA_VMR::device_accessible>
-          : __transfer_kind<_CUDA_VMR::host_accessible>;
-      this->__copy_cross<_Iter, __detect_transfer_kind>(__first, __last, __unwrapped_begin(), __size_);
+      this->__copy_cross<_Iter, __detect_transfer_kind<__is_host_only, _Iter>>(
+        __first, __last, __unwrapped_begin(), __size_);
     }
   }
 
@@ -580,11 +582,7 @@ public:
     if (__size_ > 0)
     {
       using _Iter = _CUDA_VRANGES::iterator_t<_Range>;
-      constexpr cudaMemcpyKind __detect_transfer_kind =
-        has_property<_Range, _CUDA_VMR::device_accessible>
-          ? __transfer_kind<_CUDA_VMR::device_accessible>
-          : __transfer_kind<_CUDA_VMR::host_accessible>;
-      this->__copy_cross<_Iter, __detect_transfer_kind>(
+      this->__copy_cross<_Iter, __detect_transfer_kind<__is_host_only, _Range>>(
         _CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __unwrapped_begin(), __size_);
     }
   }
@@ -601,11 +599,7 @@ public:
     if (__size_ > 0)
     {
       using _Iter = _CUDA_VRANGES::iterator_t<_Range>;
-      constexpr cudaMemcpyKind __detect_transfer_kind =
-        has_property<_Range, _CUDA_VMR::device_accessible>
-          ? __transfer_kind<_CUDA_VMR::device_accessible>
-          : __transfer_kind<_CUDA_VMR::host_accessible>;
-      this->__copy_cross<_Iter, __detect_transfer_kind>(
+      this->__copy_cross<_Iter, __detect_transfer_kind<__is_host_only, _Range>>(
         _CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __unwrapped_begin(), __size_);
     }
   }
@@ -972,12 +966,14 @@ public:
     if (capacity() < __count)
     {
       __buffer __new_buf{__buf_.get_resource(), __count};
-      this->__copy_cross(__first, __last, __new_buf.begin(), __count);
+      this->__copy_cross<_Iter, __detect_transfer_kind<__is_host_only, _Iter>>(
+        __first, __last, __new_buf.begin(), __count);
       __buf_.__swap_allocations(__new_buf);
     }
     else
     {
-      this->__copy_cross(__first, __last, __unwrapped_begin(), __count);
+      this->__copy_cross<_Iter, __detect_transfer_kind<__is_host_only, _Iter>>(
+        __first, __last, __unwrapped_begin(), __count);
     }
     __size_ = __count;
   }
@@ -1035,11 +1031,7 @@ public:
     }
 
     using _Iter = _CUDA_VRANGES::iterator_t<_Range>;
-    constexpr cudaMemcpyKind __detect_transfer_kind =
-      has_property<_Range, _CUDA_VMR::device_accessible>
-        ? __transfer_kind<_CUDA_VMR::device_accessible>
-        : __transfer_kind<_CUDA_VMR::host_accessible>;
-    this->__copy_cross<_Iter, __detect_transfer_kind>(
+    this->__copy_cross<_Iter, __detect_transfer_kind<__is_host_only, _Range>>(
       _CUDA_VSTD::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __unwrapped_begin(), __size);
     __size_ = __size;
   }
@@ -1062,11 +1054,8 @@ public:
     }
 
     using _Iter = _CUDA_VRANGES::iterator_t<_Range>;
-    constexpr cudaMemcpyKind __detect_transfer_kind =
-      has_property<_Range, _CUDA_VMR::device_accessible>
-        ? __transfer_kind<_CUDA_VMR::device_accessible>
-        : __transfer_kind<_CUDA_VMR::host_accessible>;
-    this->__copy_cross<_Iter, __detect_transfer_kind>(__first, __last, __unwrapped_begin(), __size);
+    this->__copy_cross<_Iter, __detect_transfer_kind<__is_host_only, _Range>>(
+      __first, __last, __unwrapped_begin(), __size);
     __size_ = __size;
   }
 #endif // DOXYGEN_SHOULD_SKIP_THIS
