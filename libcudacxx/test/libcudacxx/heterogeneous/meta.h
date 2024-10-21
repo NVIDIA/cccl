@@ -67,7 +67,7 @@ using for_n = typename for_n_impl<Idx, T, Fn>::type;
 // static_assert(std::is_same<for_n<2, type_list<int, char, short>, rotl>, type_list<short, int, char>>(), "");
 // static_assert(std::is_same<for_n<3, type_list<int, char, short>, rotl>, type_list<int, char, short>>(), "");
 
-template <template <typename...> typename Fn, typename B>
+template <template <typename...> class Fn, typename B>
 struct bind_last_impl
 {
   template <typename T>
@@ -80,7 +80,7 @@ struct bind_last_impl
   using type = typename bound<T>::type;
 };
 
-template <template <typename...> typename Fn, typename B>
+template <template <typename...> class Fn, typename B>
 using bind_last = bind_last_impl<Fn, B>;
 
 template <typename TypeList, typename... Tx>
