@@ -21,6 +21,7 @@ set(CCCL_KNOWN_CXX_DIALECTS 11 14 17 20)
 set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
 
 option(CCCL_ENABLE_EXCEPTIONS "Enable exceptions within CCCL libraries." ON)
+option(CCCL_ENABLE_RTTI "Enable RTTI within CCCL libraries." ON)
 option(CCCL_ENABLE_WERROR "Treat warnings as errors for CCCL targets." ON)
 
 function(cccl_build_compiler_interface interface_target cuda_compile_options cxx_compile_options compile_defs)
@@ -58,6 +59,10 @@ function(cccl_build_compiler_targets)
 
   if (NOT CCCL_ENABLE_EXCEPTIONS)
     list(APPEND cxx_compile_definitions "CCCL_DISABLE_EXCEPTIONS")
+  endif()
+
+  if (NOT CCCL_ENABLE_RTTI)
+    list(APPEND cxx_compile_definitions "CCCL_DISABLE_RTTI")
   endif()
 
   if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")

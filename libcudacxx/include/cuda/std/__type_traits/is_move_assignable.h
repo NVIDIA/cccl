@@ -31,10 +31,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_move_assignable
     : public is_assignable<__add_lvalue_reference_t<_Tp>, __add_rvalue_reference_t<_Tp>>
 {};
 
-#if !defined(_CCCL_NO_VARIABLE_TEMPALTES)
+#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _CCCL_INLINE_VAR constexpr bool is_move_assignable_v = is_move_assignable<_Tp>::value;
-#endif // !_CCCL_NO_VARIABLE_TEMPALTES
+#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

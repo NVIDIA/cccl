@@ -1,14 +1,14 @@
+// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___TYPE_TRAITS_IS_DEFAULT_CONSTRUCTIBLE_H
-#define _LIBCUDACXX___TYPE_TRAITS_IS_DEFAULT_CONSTRUCTIBLE_H
+#ifndef _LIBCUDACXX___THREAD_THREADING_SUPPORT_EXTERNAL_H
+#define _LIBCUDACXX___THREAD_THREADING_SUPPORT_EXTERNAL_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,19 +20,22 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/is_constructible.h>
+#if !defined(_LIBCUDACXX_HAS_NO_THREADS) && defined(_LIBCUDACXX_HAS_THREAD_API_EXTERNAL)
+
+#  include <cuda/std/chrono>
+
+_CCCL_PUSH_MACROS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_default_constructible : public is_constructible<_Tp>
-{};
+_LIBCUDACXX_HIDE_FROM_ABI void __libcpp_thread_yield();
 
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
-template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool is_default_constructible_v = is_constructible_v<_Tp>;
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
+_LIBCUDACXX_HIDE_FROM_ABI void __libcpp_thread_sleep_for(_CUDA_VSTD::chrono::nanoseconds __ns);
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _LIBCUDACXX___TYPE_TRAITS_IS_DEFAULT_CONSTRUCTIBLE_H
+_CCCL_POP_MACROS
+
+#endif // !_LIBCUDACXX_HAS_NO_THREADS && _LIBCUDACXX_HAS_THREAD_API_EXTERNAL
+
+#endif // _LIBCUDACXX___THREAD_THREADING_SUPPORT_EXTERNAL_H
