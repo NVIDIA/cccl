@@ -605,7 +605,7 @@ public:
         has_property<_Range, _CUDA_VMR::device_accessible>
           ? __transfer_kind<_CUDA_VMR::device_accessible>
           : __transfer_kind<_CUDA_VMR::host_accessible>;
-      this->__copy_cross<_Iter, __detect_transfer_kin>(
+      this->__copy_cross<_Iter, __detect_transfer_kind>(
         _CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __unwrapped_begin(), __size_);
     }
   }
@@ -1034,7 +1034,13 @@ public:
       __buf_.__swap_allocations(__new_buf);
     }
 
-    this->__copy_cross(_CUDA_VSTD::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __unwrapped_begin(), __size);
+    using _Iter = _CUDA_VRANGES::iterator_t<_Range>;
+    constexpr cudaMemcpyKind __detect_transfer_kind =
+      has_property<_Range, _CUDA_VMR::device_accessible>
+        ? __transfer_kind<_CUDA_VMR::device_accessible>
+        : __transfer_kind<_CUDA_VMR::host_accessible>;
+    this->__copy_cross<_Iter, __detect_transfer_kind>(
+      _CUDA_VSTD::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __unwrapped_begin(), __size);
     __size_ = __size;
   }
 
@@ -1055,7 +1061,12 @@ public:
       __buf_.__swap_allocations(__new_buf);
     }
 
-    this->__copy_cross(__first, __last, __unwrapped_begin(), __size);
+    using _Iter = _CUDA_VRANGES::iterator_t<_Range>;
+    constexpr cudaMemcpyKind __detect_transfer_kind =
+      has_property<_Range, _CUDA_VMR::device_accessible>
+        ? __transfer_kind<_CUDA_VMR::device_accessible>
+        : __transfer_kind<_CUDA_VMR::host_accessible>;
+    this->__copy_cross<_Iter, __detect_transfer_kind>(__first, __last, __unwrapped_begin(), __size);
     __size_ = __size;
   }
 #endif // DOXYGEN_SHOULD_SKIP_THIS
