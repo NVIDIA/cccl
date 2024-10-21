@@ -76,7 +76,7 @@ int main()
         double expected = (2 <= i && i < 5 && 5 <= j && j < 8) ? 13.0 : 42.0;
         if (sB(i, j) != expected)
         {
-          fprintf(stderr, "sB(%ld,%ld) = %lf, expected %lf\n", i, j, sB(i, j), expected);
+          fprintf(stderr, "sB(%zu,%zu) = %lf, expected %lf\n", i, j, sB(i, j), expected);
         }
       }
     }

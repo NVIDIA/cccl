@@ -161,10 +161,10 @@ int main(int argc, char** argv)
   }
 
   // No output by default
-  ssize_t output_freq = -1;
+  int64_t output_freq = -1;
   if (argc > 2)
   {
-    output_freq = (ssize_t) atol(argv[2]);
+    output_freq = (int64_t) atol(argv[2]);
   }
 
   /* Index shapes for Electric fields, Magnetic fields, and the indices where there is a source */
