@@ -424,4 +424,6 @@ doxygen_conf_extra = """
   EXAMPLE_PATTERNS       = *.cu
   EXCLUDE_SYMBOLS        = "*detail*" "__*" "_A*" "_B*" "_C*" "_D*" "_E*" "_F*" "_G*" "_H*" "_I*" "_J*" "_K*" "_L*" "_M*" "_N*" "_O*" "_P*" "_Q*" "_R*" "_S*" "_T*" "_U*" "_V*" "_W*" "_X*" "_Y*" "_Z*"
   AUTOLINK_SUPPORT       = YES
+  FULL_PATH_NAMES        = YES
+  STRIP_FROM_PATH        = ../../cudax
 """
