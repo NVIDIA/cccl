@@ -51,7 +51,7 @@ public:
 
 public:
   // Note that this allocates memory immediately, so we just do not modify the event list and ignore it
-  void* allocate(backend_ctx_untyped&, const data_place& memory_node, ssize_t& s, event_list&) override
+  void* allocate(backend_ctx_untyped&, const data_place& memory_node, ::std::ptrdiff_t& s, event_list&) override
   {
     if (busy)
     {
