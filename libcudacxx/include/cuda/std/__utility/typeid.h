@@ -170,26 +170,19 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameo
 
 // BUGBUG
 #ifdef _CCCL_COMPILER_MSVC
-[[deprecated]] _LIBCUDACXX_HIDE_FROM_ABI constexpr char __print_char(char __c) noexcept
+template <char... _Chs>
+struct __string_literal
 {
-  return __c;
-}
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr char const*
-__msvc_test_3(char, char const* __begin, char const* __end) noexcept
+  static_assert(sizeof...(_Chs) == 0, "error");
+  static constexpr char __str[sizeof...(_Chs) + 1] = {_Chs..., '\0'};
+};
+template <class _Tp, size_t... _Is>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr char const* __msvc_test(index_sequence<_Is...>) noexcept
 {
-  return __begin == __end ? __begin : __msvc_test_3(__print_char(*__begin), __begin + 1, __end);
-}
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr char const* __msvc_test_2(__string_view __name) noexcept
-{
-  return __msvc_test_3('\0', __name.begin(), __name.end());
-}
-template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr char const* __msvc_test() noexcept
-{
-  return __msvc_test_2(_CUDA_VSTD::__string_view(_CCCL_PRETTY_FUNCTION));
+  return __string_literal<(_Is < sizeof(_CCCL_PRETTY_FUNCTION) ? _CCCL_PRETTY_FUNCTION[_Is] : '\0')...>::__str;
 }
 using __pretty_name_int = typename __pretty_name_begin<int>::__pretty_name_end;
-static_assert('\0' == *_CUDA_VSTD::__msvc_test<__pretty_name_int>(), "");
+static_assert('\0' != *_CUDA_VSTD::__msvc_test<__pretty_name_int>(make_index_sequence<100>()), "");
 #endif
 
 // In device code with old versions of gcc, we cannot have nice things.
