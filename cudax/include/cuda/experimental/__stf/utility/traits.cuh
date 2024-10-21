@@ -296,7 +296,7 @@ template <typename T, size_t N>
  * @param p The remaining arguments in the parameter pack.
  * @return `T` A copy or reference to the first argument that is convertible to type `T`.
  *
- * @throw static_assert If more than one argument in the parameter pack is convertible to type `T`.
+ * @note This function will cause a compile-time error if more than one argument in the parameter pack is convertible to type `T`.
  *
  * \code{.cpp}
  *   int i = 42;
@@ -447,7 +447,7 @@ struct check_initialization
  * @tparam DataTypes The types to check the convertibility to.
  * @param unused The data of the types to check the convertibility to.
  *
- * @throws static_assert If a type is not convertible to exactly one type.
+ * @note A static_assert error occurs if a type is not convertible to exactly one type.
  *
  * \code{.cpp}
  *     struct A {};
@@ -491,7 +491,7 @@ void shuffled_args_check(const DataTypes&...)
  * @return std::tuple<DataTypes...> A tuple where each element is a value from `args` that is convertible to the
  * corresponding type in `DataTypes`.
  *
- * @throws static_assert If a type is not convertible to exactly one type.
+ * @note A static_assert error is issued if a type is not convertible to exactly one type.
  *
  * \code{.cpp}
  *     struct A { int value; };

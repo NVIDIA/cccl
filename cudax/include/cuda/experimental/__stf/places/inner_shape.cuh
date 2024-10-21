@@ -37,6 +37,11 @@ namespace cuda::experimental::stf
  *
  * For example, a applying inner<2> on mdspan of dimension {M, N} will produce
  * an explicit shape ({2, M-2}, {2, N-2})
+ *
+ * @tparam thickness number of elements to remove in every direction
+ * @tparam rank dimension of the box
+ * @param s input box shape
+ *
  */
 template <size_t thickness, typename T, typename... P>
 _CCCL_HOST_DEVICE box<mdspan<T, P...>::rank()> inner(const shape_of<mdspan<T, P...>>& s)
@@ -60,8 +65,14 @@ _CCCL_HOST_DEVICE box<mdspan<T, P...>::rank()> inner(const shape_of<mdspan<T, P.
  * @brief Applying "inner" on an explicit shape returns another explicit shape which
  * extents have been diminished by a "thickness" constant.
  *
+ * @overload
+ *
  * For example, a applying inner<2> on an explicit shape {{10, 100}, {-10, 10}}
  * will produce the explicit shape ({12, 98}, {-8, 8})
+ *
+ * @tparam thickness number of elements to remove in every direction
+ * @tparam rank dimension of the box
+ * @param s input box shape
  */
 template <size_t thickness, size_t rank>
 _CCCL_HOST_DEVICE box<rank> inner(const box<rank>& s)
