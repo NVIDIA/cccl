@@ -259,7 +259,7 @@ UNITTEST("cyclic_shape<3>")
   const size_t expected_cnt = 16;
   size_t cnt                = 0;
   cyclic_shape<3> shape{{::std::make_tuple(0, 7, 2), ::std::make_tuple(1, 5, 2), ::std::make_tuple(10, 20, 5)}};
-  for (const auto& pos : shape)
+  for ([[maybe_unused]] const auto& pos : shape)
   {
     //// Use the position in each dimension
     // ::std::cout << "(";
@@ -287,7 +287,7 @@ UNITTEST("empty cyclic_shape<1>")
   }
 
   // There should be no entry in this range
-  for (const auto& pos : shape)
+  for ([[maybe_unused]] const auto& pos : shape)
   {
     abort();
   }
