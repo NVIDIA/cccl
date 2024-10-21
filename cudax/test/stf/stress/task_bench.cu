@@ -200,7 +200,7 @@ void bench(context& ctx, test_id id, size_t width, size_t nsteps, size_t repeat_
   cuda_safe_call(cudaStreamSynchronize(ctx.task_fence()));
   ctx.change_epoch(); // for better DOT rendering
 
-  std::vector<double> t;
+  std::vector<double> tv;
   const int niter = 10;
   size_t task_cnt;
   size_t deps_cnt;
@@ -242,22 +242,22 @@ void bench(context& ctx, test_id id, size_t width, size_t nsteps, size_t repeat_
     stop = std::chrono::steady_clock::now();
 
     std::chrono::duration<double> duration = stop - start;
-    t.push_back(duration.count() * 1000000.0 / (task_cnt));
+    tv.push_back(duration.count() * 1000000.0 / (task_cnt));
   }
 
   // Compute the mean (average)
-  double sum  = ::std::accumulate(t.begin(), t.end(), 0.0);
-  double mean = sum / t.size();
+  double sum  = ::std::accumulate(t.begin(), tv.end(), 0.0);
+  double mean = sum / tv.size();
 
   // Compute the standard deviation
-  double sq_sum            = std::accumulate(t.begin(), t.end(), 0.0, [mean](double acc, double val) {
+  double sq_sum            = ::std::accumulate(tv.begin(), tv.end(), 0.0, [mean](double acc, double val) {
     return acc + std::pow(val - mean, 2);
   });
-  double variance          = sq_sum / t.size();
-  double standardDeviation = std::sqrt(variance);
+  double variance          = sq_sum / tv.size();
+  double standardDeviation = ::std::sqrt(variance);
 
   fprintf(stderr,
-          "[%s] Elapsed: %.3lf+-%.4lf us per task (%ld tasks, %ld deps, %lf deps/task (avg)\n",
+          "[%s] Elapsed: %.3lf+-%.4lf us per task (%zu tasks, %zu deps, %lf deps/task (avg)\n",
           test_name(id).c_str(),
           mean,
           standardDeviation,
