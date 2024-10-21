@@ -45,23 +45,23 @@ using rotl = typename rotl_impl<Tx...>::type;
 // static_assert(std::is_same<rotl<int, char>, type_list<char,int>>(), "");
 // static_assert(std::is_same<rotl<int, char, short>, type_list<char,short,int>>(), "");
 
-template <size_t Idx, typename T, template <typename> typename Fn>
+template <size_t Idx, typename T, template <typename> class Fn>
 struct for_n_impl
 {
   using type = typename for_n_impl<Idx - 1, Fn<T>, Fn>::type;
 };
-template <typename T, template <typename> typename Fn>
+template <typename T, template <typename> class Fn>
 struct for_n_impl<1, T, Fn>
 {
   using type = Fn<T>;
 };
-template <typename T, template <typename> typename Fn>
+template <typename T, template <typename> class Fn>
 struct for_n_impl<0, T, Fn>
 {
   using type = T;
 };
 
-template <size_t Idx, typename T, template <typename> typename Fn>
+template <size_t Idx, typename T, template <typename> class Fn>
 using for_n = typename for_n_impl<Idx, T, Fn>::type;
 
 // static_assert(std::is_same<for_n<2, type_list<int, char, short>, rotl>, type_list<short, int, char>>(), "");
