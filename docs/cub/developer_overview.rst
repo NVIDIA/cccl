@@ -14,13 +14,12 @@ how many threads participate,
 and on which thread(s) the result is valid.
 
 These layers naturally build on each other.
-For example, :cpp:struct:`WarpReduce <cub::WarpReduce>` uses :cpp:func:`ThreadReduce <cub::internal::ThreadReduce>`,
+For example, :cpp:struct:`WarpReduce <cub::WarpReduce>` uses :cpp:func:`ThreadReduce <cub::ThreadReduce>`,
 :cpp:struct:`BlockReduce <cub::BlockReduce>` uses :cpp:struct:`WarpReduce <cub::WarpReduce>`, etc.
 
-:cpp:func:`ThreadReduce <cub::internal::ThreadReduce>`
+:cpp:func:`ThreadReduce <cub::ThreadReduce>`
 
    - A normal function invoked and executed sequentially by a single thread that returns a valid result on that thread
-   - Single thread functions are usually an implementation detail and not exposed in CUB's public API
 
 :cpp:struct:`WarpReduce <cub::WarpReduce>` and :cpp:struct:`BlockReduce <cub::BlockReduce>`
 
@@ -46,7 +45,7 @@ The table below provides a summary of these functions:
       - parallel execution
       - max threads
       - valid result in
-    * - :cpp:func:`ThreadReduce <cub::internal::ThreadReduce>`
+    * - :cpp:func:`ThreadReduce <cub::ThreadReduce>`
       - :math:`-`
       - :math:`-`
       - :math:`1`
@@ -121,25 +120,24 @@ An example of :cpp:struct:`cub::BlockReduce` demonstrates these patterns in prac
 Thread-level
 ************************************
 
-In contrast to algorithms at the warp/block/device layer,
-single threaded functionality like ``cub::ThreadReduce``
-is typically implemented as a sequential function and rarely exposed to the user.
+CUB thread-level algorithms are specialized for execution by a single CUDA thread.
 
 .. code-block:: c++
 
-    template <
-        int         LENGTH,
-        typename    T,
-        typename    ReductionOp,
-        typename    PrefixT,
-        typename    AccumT = detail::accumulator_t<ReductionOp, PrefixT, T>>
-    __device__ __forceinline__ AccumT ThreadReduce(
-        T           (&input)[LENGTH],
-        ReductionOp reduction_op,
-        PrefixT     prefix)
-    {
+    template <typename Input,
+              typename ReductionOp,
+              typename ValueT = ::cuda::std::__remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>,
+              typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, ValueT>>
+    _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE
+    AccumT ThreadReduce(const Input& input, ReductionOp reduction_op) {
         return ...;
     }
+
+.. code-block:: c++
+
+    int array[4] = {1, 2, 3, 4};
+    int sum      = cub::ThreadReduce(array, cub::Sum{}); // sum = 10
+    int sum      = cub::ThreadReduce(array, cub::Min{}); // sum = 1
 
 Warp-level
 ************************************
