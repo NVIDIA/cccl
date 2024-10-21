@@ -31,6 +31,8 @@
 namespace cuda::experimental::stf
 {
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen fails to parse this
+
 /**
  * @brief Applying "inner" on a mdspan shape returns an explicit shape which extents
  * have been diminished by a "thickness" constant.
@@ -86,6 +88,8 @@ _CCCL_HOST_DEVICE box<rank> inner(const box<rank>& s)
 
   return box(inner_extents);
 }
+
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
 #ifdef UNITTESTED_FILE
 UNITTEST("inner explicit shape (explicit bounds)")

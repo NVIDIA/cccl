@@ -325,9 +325,9 @@ private:
 };
 
 /**
-Base implementation of data_interface using Data as constant data and PerInstanceData for each instance.
-Adds the state, implements shape and instance and leaves everything else alone.
-*/
+ * @brief Base implementation of data_interface using Data as constant data and PerInstanceData for each instance.
+ * Adds the state, implements shape and instance and leaves everything else alone.
+ */
 template <typename T>
 class data_impl_base : public data_interface
 {

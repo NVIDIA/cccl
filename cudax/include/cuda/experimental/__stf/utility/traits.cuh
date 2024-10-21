@@ -254,7 +254,7 @@ static_assert(::std::is_same_v<array_tuple<size_t, 3>, ::std::tuple<size_t, size
  * elements are of the type `T0`.
  *
  * @tparam T0 The type of the first element in the tuple, and the type of the elements in the resulting array.
- * @tparam Ts The types of the other elements in the tuple. They must all be convertible to `T0`.
+ * @tparam Ts... The types of the other elements in the tuple. They must all be convertible to `T0`.
  * @param obj The `std::tuple` object to convert.
  * @return An `std::array` containing the elements from the tuple, converted to type `T0`.
  */

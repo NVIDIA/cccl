@@ -582,11 +582,12 @@ private:
 };
 
 /*
- * Deferred tasks are tasks that are not executed immediately, but rather upon `ctx.submit()`.
+ * @brief Deferred tasks are tasks that are not executed immediately, but rather upon `ctx.submit()`.
  */
 template <typename... Data>
 class deferred_stream_task;
 
+#ifdef DOXYGEN_SHOULD_SKIP_THIS // doxygen has issues with this code
 /*
  * Base of all deferred tasks. Stores the needed information for typed deferred tasks to run (see below).
  */
@@ -846,5 +847,6 @@ public:
     };
   }
 };
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
 } // namespace cuda::experimental::stf
