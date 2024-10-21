@@ -175,26 +175,29 @@ struct __string_literal
 {
   static constexpr char __str[sizeof...(_Chs) + 1] = {_Chs..., '\0'};
 
-  static constexpr int __offset_or_throw(int pos) noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr ptrdiff_t __offset_or_throw(ptrdiff_t pos)
   {
     return pos != -1 ? pos : (_CUDA_VSTD::__throw_runtime_error("Invalid position"), 0);
   }
 
-  static constexpr int __find_pretty() noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr ptrdiff_t __find_pretty() noexcept
   {
     return __offset_or_throw(__string_view(__str).find("pretty"));
   }
 };
 
-template <class _Tp, size_t... _Is>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int __msvc_test(index_sequence<_Is...>) noexcept
+template <class _Tp>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr ptrdiff_t __msvc_test() noexcept
 {
-  using _Literal = __string_literal<(_Is < sizeof(_CCCL_PRETTY_FUNCTION) ? _CCCL_PRETTY_FUNCTION[_Is] : '\0')...>;
-  return _Literal::__find_pretty();
+  constexpr __string_view name{_CCCL_PRETTY_FUNCTION};
+  return []<size_t... Is>(index_sequence<Is...>) -> __string_literal<name[Is]..., 0> {
+    return {};
+  }(make_index_sequence<sizeof(_CCCL_PRETTY_FUNCTION)>{})
+                                                      .__find_pretty();
 }
 
 using __pretty_name_int = typename __pretty_name_begin<int>::__pretty_name_end;
-static_assert(-1 != _CUDA_VSTD::__msvc_test<__pretty_name_int>(make_index_sequence<100>()), "");
+static_assert(-1 != _CUDA_VSTD::__msvc_test<__pretty_name_int>(), "test failed");
 #endif
 
 // In device code with old versions of gcc, we cannot have nice things.
