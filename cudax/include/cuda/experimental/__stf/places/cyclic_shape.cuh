@@ -309,7 +309,7 @@ UNITTEST("apply cyclic ")
     for (size_t i1 = 0; i1 < dim1; i1++)
     {
       auto c = cyclic_partition::apply(e, pos4(i0, i1), dim4(dim0, dim1));
-      for (const auto& pos : c)
+      for (const auto& /* pos */ : c)
       {
         //// Use the position in each dimension
         // ::std::cout << " (";
