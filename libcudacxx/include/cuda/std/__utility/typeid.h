@@ -40,6 +40,7 @@
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 #  include <cuda/std/compare>
 #endif
+#include <cuda/std/__cccl/preprocessor.h>
 #include <cuda/std/__string/string_view.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -169,12 +170,13 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameo
 }
 
 // BUGBUG
-#ifdef _CCCL_COMPILER_MSVC
+#if defined(_CCCL_COMPILER_MSVC)
 template <char... _Chs>
 struct __string_literal
 {
   static constexpr char __str[sizeof...(_Chs) + 1] = {_Chs..., '\0'};
 
+  [[deprecated]]
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr ptrdiff_t __offset_or_throw(ptrdiff_t pos)
   {
     return pos != -1 ? pos : (_CUDA_VSTD::__throw_runtime_error("Invalid position"), 0);
@@ -189,11 +191,10 @@ struct __string_literal
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr ptrdiff_t __msvc_test() noexcept
 {
-  constexpr __string_view name{_CCCL_PRETTY_FUNCTION};
-  return []<size_t... Is>(index_sequence<Is...>) -> __string_literal<name[Is]..., 0> {
-    return {};
-  }(make_index_sequence<sizeof(_CCCL_PRETTY_FUNCTION)>{})
-                                                      .__find_pretty();
+#  define M0(I) (I < sizeof(_CCCL_PRETTY_FUNCTION) ? _CCCL_PRETTY_FUNCTION[I] : '\0'),
+  using _Literal = __string_literal<_CCCL_PP_REPEAT(128, M0) '\0'>;
+#  undef M0
+  return _Literal::__find_pretty();
 }
 
 using __pretty_name_int = typename __pretty_name_begin<int>::__pretty_name_end;
