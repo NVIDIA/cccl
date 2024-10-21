@@ -174,7 +174,10 @@ doxygen_predefined = [
     "CUB_STATIC_ASSERT(cond,msg)=",
     "CUB_RUNTIME_FUNCTION",
     "CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED",
-    "CUB_IGNORE_DEPRECATED_CPP_DIALECT"
+    "CUB_IGNORE_DEPRECATED_CPP_DIALECT",
+    "CUDASTF_HOST",
+    "CUDASTF_DEVICE",
+    "CUDASTF_HOST_DEVICE"
 ]
 
 # make sure to use ./fetch_imgs.sh
@@ -265,6 +268,9 @@ doxygen_predefined = [
   "_CCCL_DIAG_SUPPRESS_ICC(x)=",
   "_CCCL_DIAG_SUPPRESS_MSVC(x)=",
   "_CCCL_DIAG_SUPPRESS_NVHPC(x)=",
+  "CUDASTF_HOST=",
+  "CUDASTF_DEVICE=",
+  "CUDASTF_HOST_DEVICE=",
   "DOXYGEN_SHOULD_SKIP_THIS",
   "DOXYGEN_ACTIVE",
   "_LIBCUDACXX_DEPRECATED_IN_CXX11",
@@ -375,6 +381,21 @@ doxygen_input = [
     "../../cudax/include/cuda/experimental/__launch/*.cuh",
     "../../cudax/include/cuda/experimental/__memory_resource/*.cuh",
     "../../cudax/include/cuda/experimental/__stream/*.cuh",
+    "../../cudax/include/cuda/experimental/stf.cuh",
+    "../../cudax/include/cuda/experimental/__stf/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/internal/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/utility/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/localization/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/allocators/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/graph/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/graph/internal/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/graph/interfaces/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/places/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/places/exec/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/places/exec/host/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/stream/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/stream/internal/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/stream/interfaces/*.cuh",
 ]
 
 doxygen_predefined = [
@@ -422,7 +443,7 @@ doxygen_conf_extra = """
   EXTENSION_MAPPING      = cuh=c++ cu=c++
   EXAMPLE_RECURSIVE      = NO
   EXAMPLE_PATTERNS       = *.cu
-  EXCLUDE_SYMBOLS        = "*detail*" "__*" "_A*" "_B*" "_C*" "_D*" "_E*" "_F*" "_G*" "_H*" "_I*" "_J*" "_K*" "_L*" "_M*" "_N*" "_O*" "_P*" "_Q*" "_R*" "_S*" "_T*" "_U*" "_V*" "_W*" "_X*" "_Y*" "_Z*"
+  EXCLUDE_SYMBOLS        = "*detail*" "*RESERVED*" "*reserved*" "__*" "_A*" "_B*" "_C*" "_D*" "_E*" "_F*" "_G*" "_H*" "_I*" "_J*" "_K*" "_L*" "_M*" "_N*" "_O*" "_P*" "_Q*" "_R*" "_S*" "_T*" "_U*" "_V*" "_W*" "_X*" "_Y*" "_Z*" "UNITTEST"
   AUTOLINK_SUPPORT       = YES
   FULL_PATH_NAMES        = YES
   STRIP_FROM_PATH        = ../../cudax

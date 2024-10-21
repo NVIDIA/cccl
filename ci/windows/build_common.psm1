@@ -112,7 +112,7 @@ function build_preset {
 
     sccache_stats('Start')
 
-    cmake --build --preset $PRESET -v
+    cmake --build --preset $PRESET -v -- -k 0
     $test_result = $LastExitCode
 
     $preset_dir = "${BUILD_DIR}/${PRESET}"
