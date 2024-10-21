@@ -33,7 +33,7 @@ template <typename _Ty>
 inline constexpr bool __is_span = false;
 
 template <typename _TyInSpan, ::std::size_t _Size>
-_CCCL_INLINE_VAR constexpr bool __is_span<::cuda::std::span<_TyInSpan, _Size>> = true;
+_CCCL_INLINE_VAR bool __is_span<::cuda::std::span<_TyInSpan, _Size>> = true;
 
 // TODO add more cases like mdspan
 template <typename _Ty>
