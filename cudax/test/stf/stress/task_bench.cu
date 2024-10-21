@@ -12,6 +12,7 @@
 #include <cuda/experimental/stf.cuh>
 
 #include <cstdlib> // For rand() and srand()
+#include <numeric> // accumulate
 
 using namespace cuda::experimental::stf;
 
@@ -245,7 +246,7 @@ void bench(context& ctx, test_id id, size_t width, size_t nsteps, size_t repeat_
   }
 
   // Compute the mean (average)
-  double sum  = std::accumulate(t.begin(), t.end(), 0.0);
+  double sum  = ::std::accumulate(t.begin(), t.end(), 0.0);
   double mean = sum / t.size();
 
   // Compute the standard deviation
