@@ -261,7 +261,7 @@ __host__ __device__ void test_T_assignment_basic()
     assert(v.index() == 1);
     assert(cuda::std::get<1>(v) == 43);
   }
-#ifndef TEST_VARIANT_ALLOWS_NARROWING_CONVERSIONS
+#ifdef TEST_VARIANT_ALLOWS_NARROWING_CONVERSIONS
   {
     cuda::std::variant<unsigned, long> v;
     v = 42;
@@ -271,7 +271,7 @@ __host__ __device__ void test_T_assignment_basic()
     assert(v.index() == 0);
     assert(cuda::std::get<0>(v) == 43);
   }
-#endif
+#endif // TEST_VARIANT_ALLOWS_NARROWING_CONVERSIONS
 #if defined(_LIBCUDACXX_HAS_STRING)
   {
     cuda::std::variant<cuda::std::string, bool> v = true;

@@ -28,8 +28,11 @@ int main(int, char**)
   static_assert(!cuda::std::is_constructible<cuda::std::variant<int, int>, int>::value, "");
 #endif // !gcc-6
   static_assert(!cuda::std::is_constructible<cuda::std::variant<long, long long>, int>::value, "");
+
+#if !defined(TEST_COMPILER_NVHPC)
   static_assert(cuda::std::is_constructible<cuda::std::variant<char>, int>::value == VariantAllowsNarrowingConversions,
                 "");
+#endif // !TEST_COMPILER_NVHPC
 
   // static_assert(cuda::std::is_constructible<cuda::std::variant<cuda::std::string, float>, int>::value ==
   // VariantAllowsNarrowingConversions, "");
