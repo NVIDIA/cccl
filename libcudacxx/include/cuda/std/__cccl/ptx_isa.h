@@ -36,10 +36,13 @@
 // We make sure that these get the highest known PTX ISA version.
 #if (defined(_CCCL_CUDACC) && (_CCCL_CUDACC_VER_MAJOR > 12))
 #  define __cccl_ptx_isa 850ULL
+// PTX ISA 8.5 is available from CUDA 12.5, driver r555
 #elif (defined(_CCCL_CUDACC) && (_CCCL_CUDACC_VER_MAJOR >= 12 && _CCCL_CUDACC_VER_MINOR >= 5))
 #  define __cccl_ptx_isa 850ULL
+// PTX ISA 8.4 is available from CUDA 12.4, driver r550
 #elif (defined(_CCCL_CUDACC) && (_CCCL_CUDACC_VER_MAJOR >= 12 && _CCCL_CUDACC_VER_MINOR >= 4))
 #  define __cccl_ptx_isa 840ULL
+// PTX ISA 8.3 is available from CUDA 12.3, driver r545
 #elif (defined(_CCCL_CUDACC) && (_CCCL_CUDACC_VER_MAJOR >= 12 && _CCCL_CUDACC_VER_MINOR >= 3))
 #  define __cccl_ptx_isa 830ULL
 // PTX ISA 8.2 is available from CUDA 12.2, driver r535
