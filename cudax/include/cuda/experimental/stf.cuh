@@ -517,7 +517,7 @@ public:
 
   auto repeat(size_t count)
   {
-    using result_t = unified_scope<repeat_scope<stream_ctx>, repeat_scope<graph_ctx>>;
+    using result_t = unified_scope<reserved::repeat_scope<stream_ctx>, reserved::repeat_scope<graph_ctx>>;
     return ::std::visit(
       [&](auto& self) {
         using Self = ::std::remove_reference_t<decltype((self))>;
@@ -528,7 +528,7 @@ public:
 
   auto repeat(::std::function<bool()> condition)
   {
-    using result_t = unified_scope<repeat_scope<stream_ctx>, repeat_scope<graph_ctx>>;
+    using result_t = unified_scope<reserved::repeat_scope<stream_ctx>, reserved::repeat_scope<graph_ctx>>;
     return ::std::visit(
       [&](auto& self) {
         using Self = ::std::remove_reference_t<decltype((self))>;

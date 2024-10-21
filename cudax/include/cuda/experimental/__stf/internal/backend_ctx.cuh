@@ -1052,12 +1052,12 @@ public:
 
   auto repeat(size_t count)
   {
-    return repeat_scope(self(), count);
+    return reserved::repeat_scope(self(), count);
   }
 
   auto repeat(::std::function<bool()> condition)
   {
-    return repeat_scope(self(), mv(condition));
+    return reserved::repeat_scope(self(), mv(condition));
   }
 
   /*

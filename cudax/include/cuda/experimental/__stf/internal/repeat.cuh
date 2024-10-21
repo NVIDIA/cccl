@@ -25,7 +25,7 @@
 #include <cassert>
 #include <variant>
 
-namespace cuda::experimental::stf
+namespace cuda::experimental::stf::reserved
 {
 
 /**
@@ -88,4 +88,4 @@ private:
   context_t& ctx;
 };
 
-} // end namespace cuda::experimental::stf
+} // end namespace cuda::experimental::stf::reserved
