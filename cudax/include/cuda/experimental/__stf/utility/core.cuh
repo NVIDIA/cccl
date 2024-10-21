@@ -450,7 +450,7 @@ public:
   static constexpr bool is_static = static_v != reserved;
 
   /// The reserved value for indicating dynamic state.
-  static constexpr bool reserved_v = reserved;
+  static constexpr auto reserved_v = reserved;
 
   /// Special functions.
   constexpr optionally_static() = default;
