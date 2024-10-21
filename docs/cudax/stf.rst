@@ -84,7 +84,7 @@ Getting started with CUDASTF
 Getting CUDASTF
 ^^^^^^^^^^^^^^^
 
-CUDASTF is part of the CUDA Experimental library of the CCCL project. It is not distributed with the CUDA Toolkit like the rest of CCCL. It is only avaiable on the `CCCL GitHub repository <https://github.com/NVIDIA/cccl>`_.
+CUDASTF is part of the CUDA Experimental library of the CCCL project. It is not distributed with the CUDA Toolkit like the rest of CCCL. It is only available on the `CCCL GitHub repository <https://github.com/NVIDIA/cccl>`_.
 
 Using CUDASTF
 ^^^^^^^^^^^^^
@@ -230,7 +230,7 @@ launch. Subsequent operations would be put in a new CUDA graph.
 Selecting this backend is an easy way to adopt CUDA graphs, and can be
 beneficial in terms of performance with a repeated task patterns. Unlike
 other context types, it is not allowed for a task to synchronize with
-the CUDA stream (eg. with ``cudaStreamSynchronize``) within a task.
+the CUDA stream (e.g. with ``cudaStreamSynchronize``) within a task.
 
 Using either ``context``, ``stream_ctx`` or ``graph_ctx`` should result
 in the same behaviour, even if the underlying implementation differs.
@@ -808,7 +808,7 @@ lambda parameter. Therefore, the code shown synchronizes explicitly with
 the CUDA stream by calling ``cudaStreamSynchronize(stream)``. This
 ensures the value ``sX`` is read only after data is guaranteed to be
 valid, i.e., after the completion of prior operations in the stream.
-This is disallowed in the graph_ctx backend.
+This is disallowed in the ``graph_ctx`` backend.
 
 An alternative solution which is compatible with all types of backend is
 to use ``ctx.host_launch``:
@@ -1314,7 +1314,7 @@ The example below illustrates processing a 1D array using ``launch``:
 The ``launch`` construct consists of five main elements:
 
 - an optional ``execution_policy`` that explicitly specifies the launch
-  shape. Here we specify that a group of 1024 independant threads should
+  shape. Here we specify that a group of 1024 independent threads should
   execute the loop described in the body of the launch construct.
 - an execution place that indicates where the code will be executed;
 - a set of data dependencies;
@@ -1333,7 +1333,7 @@ Describing a thread hierarchy
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The thread hierarchy specification describes the structure of the parallelism of this kernel. Level sizes can be computed automatically, be a dynamic value or be specified at compile-time.
-Threads in a parallel group (`par`) are executed independantly.
+Threads in a parallel group (`par`) are executed independently.
 Threads in a concurrent group (`con`) can be synchronized using the `sync()` API which issues a group-level barrier.
 
 .. code-block:: cpp
@@ -1346,7 +1346,7 @@ Thread are described in a hierarchical manner : we can nest multiple groups with
 
 .. code-block:: cpp
 
-    par(128, con<256>()) // A two-level thread hierarchy with 128 independant groups of 256 synchronizable threads..
+    par(128, con<256>()) // A two-level thread hierarchy with 128 independent groups of 256 synchronizable threads..
 
 Within each group, we can provide additional information such memory automatically shared among group members.
 
@@ -1363,7 +1363,7 @@ The different scopes available are :
 - `hw_scope::device` : CUDA device
 - `hw_scope::all` : all machine
 
-This for example describes a thread hierarchy where the inner-most level is limited to CUDA threads (ie. it cannot span multiple CUDA blocks). And the overall kernel can be mapped at most on a single device, but not on multiple devices).
+This for example describes a thread hierarchy where the inner-most level is limited to CUDA threads (i.e. it cannot span multiple CUDA blocks). And the overall kernel can be mapped at most on a single device, but not on multiple devices).
 
 .. code-block:: cpp
 
@@ -1417,6 +1417,12 @@ hierarchy among shared memory, device memory or managed memory) :
 .. code-block:: cpp
 
     slice<char> smem = th.template storage<char>(1);
+
+The depth of the thread hierarchy corresponds to the number of nested levels in the hierarchy :
+
+.. code-block:: cpp
+
+    th.depth(); // (constexpr) return the number of levels in the hierarchy
 
 To simplify how we navigate within hierarchies, applying the `inner()` method
 returns a thread hierarchy where the top-most level was removed. The returned specification
@@ -1475,10 +1481,10 @@ class or structure in such as way:
    };
 
 Note the use of the ``mutable`` qualifier because a task accessing a
-const foo object might want to read the ``ldata`` field. Submitting a
+``const foo`` object might want to read the ``ldata`` field. Submitting a
 task that use this logical data in read only mode would modify the
 internal data structures of the logical data, but should probably appear
-as a const operation from user’s perspective. Without this ``mutable``
+as a ``const`` operation from user’s perspective. Without this ``mutable``
 qualifier, we could not have a ``const`` qualifier on the ``f`` variable
 in the following code :
 
@@ -1552,7 +1558,7 @@ known only dynamically, meaning that it is not possible to directly pass
 task dependencies as arguments to the ``ctx.task()`` call.
 
 For such situations CUDASTF offers a dynamically-typed task, called
-``stream_task<>`` in the stream_ctx backend, whose member function
+``stream_task<>`` in the ``stream_ctx`` backend, whose member function
 ``add_deps`` allows adding dependencies dynamically:
 
 .. code:: cpp
@@ -1881,8 +1887,8 @@ Syntax:
 
 .. code-block:: cpp
 
-    ctx.task([execution place] dependency1 dependency2 ...) 
-        ->*[&](cudaStream_t stream, auto data1, auto data2 ...) { 
+    ctx.task([execution place] dependency1 dependency2 ...)
+        ->*[&](cudaStream_t stream, auto data1, auto data2 ...) {
             // Task implementation using stream 
         };
 
@@ -1896,9 +1902,9 @@ Examples:
 
 .. code-block:: cpp
 
-    ctx.task(lX.read(), lY.rw()) 
-        ->*[&](cudaStream_t s, auto dX, auto dY) { 
-            axpy<<<16, 128, 0, s>>>(alpha, dX, dY); 
+    ctx.task(lX.read(), lY.rw())
+        ->*[&](cudaStream_t s, auto dX, auto dY) {
+            axpy<<<16, 128, 0, s>>>(alpha, dX, dY);
         };
 
 Host-Side Task Execution with `host_launch`
@@ -1908,7 +1914,7 @@ Purpose: Execute tasks on the host (CPU) while still utilizing the task and data
 
 .. code-block:: cpp
 
-    ctx.host_launch(logicalData1.accessMode(), logicalData2.accessMode()) 
+    ctx.host_launch(logicalData1.accessMode(), logicalData2.accessMode() ...)
         ->*[capture list](auto data1, auto data2 ...) { 
             // Host-based task implementation here 
         };
@@ -1927,8 +1933,8 @@ Syntax:
 
 .. code-block:: cpp
 
-    ctx.parallel_for([execution place], [partitioner], shape, logicalData1.accessMode(), logicalData2.accessMode()) 
-        ->*[capture list] __device__ (size_t index1, size_t index2, ... auto data1, auto data2 ...) { 
+    ctx.parallel_for([execution place], [partitioner], shape, logicalData1.accessMode(), logicalData2.accessMode(), ...)
+        ->*[capture list] __device__ (size_t index1, size_t index2, ... auto data1, auto data2 ...) {
             // Kernel implementation 
         };
 
@@ -1944,9 +1950,9 @@ Examples:
     auto lX = ctx.logical_data(X);
     auto lY = ctx.logical_data(Y);
 
-    ctx.parallel_for(lY.shape(), lX.read(), lY.rw()) 
-        ->*[alpha] __device__(size_t i, auto dX, auto dY) { 
-            dY(i) += alpha * dX(i); 
+    ctx.parallel_for(lY.shape(), lX.read(), lY.rw())
+        ->*[alpha] __device__(size_t i, auto dX, auto dY) {
+            dY(i) += alpha * dX(i);
         };
 
 - Applying a kernel on a 2D matrix:
@@ -1974,15 +1980,37 @@ Syntax:
 .. code-block:: cpp
 
     template <typename thread_hierarchy_spec_t>
-    ctx.launch([thread hierarchy spec], [execution place], logicalData1.accessMode(), logicalData2.accessMode()) 
-        ->*[capture list] __device__ (thread_hierarchy_spec_t spec, auto data1, auto data2 ...) { 
+    ctx.launch([thread hierarchy spec], [execution place], logicalData1.accessMode(), logicalData2.accessMode(), ...)
+        ->*[capture list] __device__ (thread_hierarchy_spec_t th, auto data1, auto data2 ...) {
             // Kernel implementation
         };
 
-TODO syntax of spec, api of spec ...
-sync ...
-levels
 
-Examples:
+The thread hierarchy passed to the construct is defined as a nested object of the form
 
+.. code-block:: cpp
 
+    {par|con}<[static_width]>([width], [scope], [mem(size)] [nested hierarchy specification])
+
+When passed to the user-provided kernel implementation, this object provides different mechanisms to let threads interact or to query the structure of the parallelism
+
+.. code-block:: cpp
+
+    th.rank(); // get thread rank within the entire hierarchy
+    th.rank(i); // get thread rank at i-th level
+    th.template rank<i>(); // (constexpr) get thread rank at the i-th level at compile time
+
+    th.size(); // get the total number of threads
+    th.size(i); // get the number of threads at the i-th level
+    th.template size<i>(); // (constexpr) get the number of threads at the i-th level at compile time
+
+    th.get_scope(i); // get the affinity of the i-th level
+    th.template storage<T>(i); // get the local storage associated to the i-th level as a slice<T>
+
+    th.sync(); // issue a barrier among all threads
+    th.sync(i); // issue a barrier among threads of the i-th level
+    th.is_synchronizable(i); // check if we can call sync(i)
+    th.template is_synchronizable<i>(); // (constexpr) check if we can call sync(i) at compile time
+
+    th.depth(); // (constexpr) get the depth of the thread hierarchy
+    th.inner(); // get the thread hierarchy subset obtained by removing the top-most level of the hierarchy
