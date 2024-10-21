@@ -76,8 +76,6 @@ cudaLaunchKernelExTestReplacement(const cudaLaunchConfig_t* config, void (*kerne
   }
 }
 
-__global__ void empty_kernel(int i) {}
-
 template <bool HasCluster>
 auto make_test_dims(const dim3& grid_dims, const dim3& block_dims, const dim3& cluster_dims = dim3())
 {
