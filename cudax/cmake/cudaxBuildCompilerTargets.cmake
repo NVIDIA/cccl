@@ -27,6 +27,10 @@ function(cudax_build_compiler_targets)
     # cudax requires __VA_OPT__ for its unit tests
     append_option_if_available("/Zc:preprocessor" cxx_compile_options)
 
+    # XXX Temporary hack for STF !
+    # C4267: conversion from 'meow' to 'purr', possible loss of data
+    append_option_if_available("/wd4267" cxx_compile_options)
+
     # stf used getenv which is potentially unsafe but not in our context
     list(APPEND cxx_compile_definitions "_CRT_SECURE_NO_WARNINGS")
   endif()
