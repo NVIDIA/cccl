@@ -154,7 +154,7 @@ int main(int argc, char** argv)
     {
       if (fabs(X[i] - X[i - 1] - X0(i)) > 0.00001)
       {
-        fprintf(stderr, "I %ld X[i] %f (X[i] - X[i-1]) %f expect %f\n", i, X[i], (X[i] - X[i - 1]), X0(i));
+        fprintf(stderr, "I %zu X[i] %f (X[i] - X[i-1]) %f expect %f\n", i, X[i], (X[i] - X[i - 1]), X0(i));
       }
       EXPECT(fabs(X[i] - X[i - 1] - X0(i)) < 0.00001);
     }

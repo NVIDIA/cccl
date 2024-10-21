@@ -137,7 +137,7 @@ int main(int argc, char** argv)
 
               if (iter % 25 == 0 && t.rank() == 0)
               {
-                printf("iter %ld : error %e (tol %e)\n", iter, error, tol);
+                printf("iter %zu : error %e (tol %e)\n", iter, error, tol);
               }
             }
           };

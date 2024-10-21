@@ -139,7 +139,7 @@ int main()
   printf("PageRank Results:\n");
   for (size_t i = 0; i < page_rank.size(); ++i)
   {
-    printf("Vertex %ld: %f\n", i, page_rank[i]);
+    printf("Vertex %zu: %f\n", i, page_rank[i]);
   }
 
   return 0;
