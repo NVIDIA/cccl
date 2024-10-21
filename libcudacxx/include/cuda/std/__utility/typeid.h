@@ -174,19 +174,27 @@ template <char... _Chs>
 struct __string_literal
 {
   static constexpr char __str[sizeof...(_Chs) + 1] = {_Chs..., '\0'};
-  [[deprecated]]
-  static constexpr __string_view __get() noexcept
+
+  static constexpr int __offset_or_throw(int pos) noexcept
   {
-    return __string_view(__str);
+    return pos != -1 ? pos : (_CUDA_VSTD::__throw_runtime_error("Invalid position"), 0);
+  }
+
+  static constexpr int __find_pretty() noexcept
+  {
+    return __offset_or_throw(__string_view(__str).find("pretty"));
   }
 };
+
 template <class _Tp, size_t... _Is>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __msvc_test(index_sequence<_Is...>) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int __msvc_test(index_sequence<_Is...>) noexcept
 {
-  return __string_literal<(_Is < sizeof(_CCCL_PRETTY_FUNCTION) ? _CCCL_PRETTY_FUNCTION[_Is] : '\0')...>{};
+  using _Literal = __string_literal<(_Is < sizeof(_CCCL_PRETTY_FUNCTION) ? _CCCL_PRETTY_FUNCTION[_Is] : '\0')...>;
+  return _Literal::__find_pretty();
 }
+
 using __pretty_name_int = typename __pretty_name_begin<int>::__pretty_name_end;
-static_assert(-1 != _CUDA_VSTD::__msvc_test<__pretty_name_int>(make_index_sequence<100>()).__get().find("pretty"), "");
+static_assert(-1 != _CUDA_VSTD::__msvc_test<__pretty_name_int>(make_index_sequence<100>()), "");
 #endif
 
 // In device code with old versions of gcc, we cannot have nice things.
