@@ -11,6 +11,12 @@
 #   be linked into the developer build targets, as they include both
 #   cudax.compiler_interface and cccl.compiler_interface_cppXX.
 
+find_package(Thrust ${cudax_VERSION} EXACT CONFIG
+  NO_DEFAULT_PATH # Only check the explicit path in HINTS:
+  HINTS "${CCCL_SOURCE_DIR}/lib/cmake/thrust/"
+)
+thrust_create_target(cudax.thrust)
+
 function(cudax_build_compiler_targets)
   set(cuda_compile_options)
   set(cxx_compile_options)
@@ -43,6 +49,7 @@ function(cudax_build_compiler_targets)
       # order matters here, we need the cudax options to override the cccl options.
       cccl.compiler_interface_cpp${dialect}
       cudax.compiler_interface
+      cudax.thrust
     )
   endforeach()
 
