@@ -67,7 +67,8 @@ class stream_adapter
     {}
 
     // these are events from a graph_ctx
-    void* allocate(backend_ctx_untyped&, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& /* prereqs */) override
+    void* allocate(
+      backend_ctx_untyped&, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& /* prereqs */) override
     {
       // prereqs are unchanged
 

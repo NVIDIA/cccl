@@ -17,8 +17,8 @@ int main()
 {
   context ctx;
 
-  const int N = 16;
-  size_t niter   = 12;
+  const int N  = 16;
+  size_t niter = 12;
 
   int A[N];
 

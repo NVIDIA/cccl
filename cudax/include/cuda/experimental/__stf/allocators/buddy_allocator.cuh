@@ -257,7 +257,8 @@ private:
   };
 
 public:
-  void* allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
+  void*
+  allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
   {
     auto it = map.find(memory_node);
     if (it == map.end())
@@ -265,8 +266,8 @@ public:
       // There is currently no buffer associated to this place, create one lazily
       // 1. create memory on that place
       ::std::ptrdiff_t sz = 128 * 1024 * 1024; // TODO
-      auto& a    = root_allocator ? root_allocator : ctx.get_uncached_allocator();
-      void* base = a.allocate(ctx, memory_node, sz, prereqs);
+      auto& a             = root_allocator ? root_allocator : ctx.get_uncached_allocator();
+      void* base          = a.allocate(ctx, memory_node, sz, prereqs);
 
       // 2. creates meta data for that buffer, and 3. associate it to the data place
       it = map.emplace(memory_node, ::std::make_shared<per_place>(base, sz, prereqs)).first;

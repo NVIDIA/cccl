@@ -64,7 +64,6 @@ struct hash<cuda::experimental::stf::green_ctx_view>
   }
 };
 
-
 } // end namespace cuda::experimental::stf
 
 #endif

@@ -72,7 +72,8 @@ class uncached_graph_allocator : public block_allocator_interface
 public:
   uncached_graph_allocator() = default;
 
-  void* allocate(backend_ctx_untyped& bctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
+  void*
+  allocate(backend_ctx_untyped& bctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
   {
     // This is not implemented yet
     EXPECT(!memory_node.is_composite(), "Composite data places are not implemented yet.");
@@ -334,7 +335,8 @@ public:
       return;
     }
 
-    fprintf(stderr, "[STATS CUDA GRAPHS] instantiated=%lu\n", reserved::counter<reserved::graph_tag::instantiate>.load());
+    fprintf(
+      stderr, "[STATS CUDA GRAPHS] instantiated=%lu\n", reserved::counter<reserved::graph_tag::instantiate>.load());
     fprintf(stderr, "[STATS CUDA GRAPHS] launched=%lu\n", reserved::counter<reserved::graph_tag::launch>.load());
     fprintf(stderr,
             "[STATS CUDA GRAPHS] updated=%lu success=%ld failed=%ld\n",
@@ -530,7 +532,7 @@ private:
   {
     auto& state = this->state();
 
-    auto& cs     = this->get_stack();
+    auto& cs          = this->get_stack();
     auto prereq_fence = cs.insert_task_fence(*get_dot());
 
     const size_t graph_epoch             = state.graph_epoch;

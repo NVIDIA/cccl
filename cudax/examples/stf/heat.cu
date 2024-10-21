@@ -97,7 +97,7 @@ int main()
 
   double c = a * dt;
 
-  int nsteps      = 1000;
+  int nsteps     = 1000;
   int image_freq = -1;
 
   for (int iter = 0; iter < nsteps; iter++)
@@ -112,8 +112,8 @@ int main()
 
     // Update Un using Un1 value with a finite difference scheme
     ctx.parallel_for(inner<1>(lU.shape()), lU.read(), lU1.write())
-        ->*
-      [=] _CCCL_DEVICE(size_t i, size_t j, auto U, auto U1) {
+        ->*[=]
+      _CCCL_DEVICE(size_t i, size_t j, auto U, auto U1) {
         U1(i, j) =
           U(i, j)
           + c * ((U(i - 1, j) - 2 * U(i, j) + U(i + 1, j)) / dx2 + (U(i, j - 1) - 2 * U(i, j) + U(i, j + 1)) / dy2);

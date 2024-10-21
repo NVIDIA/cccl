@@ -20,10 +20,11 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/execution_space.h>
+
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh> // for null_partition
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
-#include <cuda/std/__cccl/execution_space.h>
 
 #include <nvtx3/nvToolsExt.h>
 
@@ -363,7 +364,8 @@ public:
 
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
-      reserved::loop<Fun_no_ref><<<static_cast<int>(blocks), static_cast<int>(block_size), 0, t.get_stream()>>>(static_cast<int>(n), sub_shape, mv(f), deps.instance(t));
+      reserved::loop<Fun_no_ref><<<static_cast<int>(blocks), static_cast<int>(block_size), 0, t.get_stream()>>>(
+        static_cast<int>(n), sub_shape, mv(f), deps.instance(t));
     }
     else if constexpr (::std::is_same_v<context, graph_ctx>)
     {

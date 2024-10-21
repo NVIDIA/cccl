@@ -98,7 +98,7 @@ public:
     }
 
     ::std::ptrdiff_t sz = nentries * block_size;
-    base       = root_allocator.allocate(ctx, place, sz, prereqs);
+    base                = root_allocator.allocate(ctx, place, sz, prereqs);
     assert(sz > 0);
     assert(base);
 
@@ -402,7 +402,10 @@ private:
   }
 
   // For each memory node, a map of size_t to block_data_pool
-  ::std::unordered_multimap<::std::pair<size_t, size_t>, block_data_pool, ::cuda::experimental::stf::hash<::std::pair<size_t, size_t>>> map;
+  ::std::unordered_multimap<::std::pair<size_t, size_t>,
+                            block_data_pool,
+                            ::cuda::experimental::stf::hash<::std::pair<size_t, size_t>>>
+    map;
 
 private:
   pooled_allocator_config config = {
@@ -410,7 +413,6 @@ private:
 };
 
 } // end namespace reserved
-
 
 /**
  * @brief A pooled allocation strategy, where each memory node has a map, each
@@ -437,7 +439,8 @@ public:
     pool_set.set_config(mv(config));
   };
 
-  void* allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
+  void*
+  allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
   {
     auto* res = pool_set.get_pool_entry(
       ctx, root_allocator ? root_allocator : ctx.get_uncached_allocator(), memory_node, s, prereqs);
@@ -488,7 +491,8 @@ public:
 
   fixed_size_allocator() = delete;
 
-  void* allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
+  void*
+  allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
   {
     EXPECT(s <= block_size);
     auto* res = pool_set.get_pool_entry(ctx, ctx.get_uncached_allocator(), memory_node, block_size, prereqs);

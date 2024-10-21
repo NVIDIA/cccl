@@ -45,7 +45,7 @@ void run()
   Ctx ctx;
 
   const double alpha = 2.0;
-  const int N     = 12;
+  const int N        = 12;
 
   double *dX, *dY, *dZ;
   cuda_safe_call(cudaMalloc((void**) &dX, N * sizeof(double)));

@@ -41,7 +41,8 @@
 namespace cuda::experimental::stf
 {
 
-namespace reserved {
+namespace reserved
+{
 
 class mapping_id_tag
 {};
@@ -690,5 +691,3 @@ struct hash<task>
 };
 
 } // namespace cuda::experimental::stf
-
-

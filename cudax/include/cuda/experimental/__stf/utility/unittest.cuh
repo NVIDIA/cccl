@@ -26,15 +26,15 @@
 #endif // no system header
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-#include <cuda/experimental/__stf/utility/source_location.cuh>
-#include <cuda/experimental/__stf/utility/traits.cuh>
+#  include <cuda/experimental/__stf/utility/source_location.cuh>
+#  include <cuda/experimental/__stf/utility/traits.cuh>
 
-#include <filesystem>
+#  include <filesystem>
 
 // One level of macro indirection is required in order to resolve __COUNTER__,
 // and get varname1 instead of varname__COUNTER__.
-#define _55f56f4e3b45c8cf3fa50b28fed72e2a(a, b) _a56ec7069122ad2e0888a508ecdc4639(a, b)
-#define _a56ec7069122ad2e0888a508ecdc4639(a, b) a##b
+#  define _55f56f4e3b45c8cf3fa50b28fed72e2a(a, b) _a56ec7069122ad2e0888a508ecdc4639(a, b)
+#  define _a56ec7069122ad2e0888a508ecdc4639(a, b) a##b
 
 /**
  * @brief A macro that creates a unique identifier based on a given base name.
@@ -54,7 +54,7 @@
  *
  * @param base The base name for the unique identifier.
  */
-#define CUDASTF_UNIQUE_NAME(base) _55f56f4e3b45c8cf3fa50b28fed72e2a(base, __COUNTER__)
+#  define CUDASTF_UNIQUE_NAME(base) _55f56f4e3b45c8cf3fa50b28fed72e2a(base, __COUNTER__)
 
 /**
  * @brief Macro to check a variety of conditions, throws if the condition is false
@@ -76,9 +76,9 @@
  * @paragraph example Example
  * @snippet this EXPECT
  */
-#define EXPECT(...)                              \
-  ::cuda::experimental::stf::expecter::validate( \
-    RESERVED_STF_SOURCE_LOCATION(), ::cuda::experimental::stf::expecter()->*__VA_ARGS__)
+#  define EXPECT(...)                              \
+    ::cuda::experimental::stf::expecter::validate( \
+      RESERVED_STF_SOURCE_LOCATION(), ::cuda::experimental::stf::expecter()->*__VA_ARGS__)
 
 namespace cuda::experimental::stf
 {
@@ -170,26 +170,26 @@ struct expecter
      * All comparison operators are defined assuming `const&` inputs. They are evaluated eagerly and return a
      * `compariso_expression` object with information necessary for constructing an error message, if any.
      */
-#define _9d10c7e37932af3c4f39a5ce7ff00b5a(op)                                            \
-  template <typename U>                                                                  \
-  auto operator op(const U& rhs)&&                                                       \
-  {                                                                                      \
-    using T_noref = std::remove_reference_t<T>;                                          \
-    using U_noref = std::remove_reference_t<U>;                                          \
-    if constexpr (std::is_integral_v<T_noref> && std::is_integral_v<U_noref>             \
-                  && std::is_signed_v<T_noref> != std::is_signed_v<U_noref>)             \
-    {                                                                                    \
-      using CommonType = std::common_type_t<T_noref, U_noref>;                           \
-      const bool r     = static_cast<CommonType>(value) op static_cast<CommonType>(rhs); \
-      return comparison_expression<T, const U&>(r, std::forward<T>(value), rhs, #op);    \
-    }                                                                                    \
-    else                                                                                 \
-    {                                                                                    \
-      /* Direct comparison for other cases */                                            \
-      const bool r = value op rhs;                                                       \
-      return comparison_expression<T, const U&>(r, std::forward<T>(value), rhs, #op);    \
-    }                                                                                    \
-  }
+#  define _9d10c7e37932af3c4f39a5ce7ff00b5a(op)                                            \
+    template <typename U>                                                                  \
+    auto operator op(const U& rhs)&&                                                       \
+    {                                                                                      \
+      using T_noref = std::remove_reference_t<T>;                                          \
+      using U_noref = std::remove_reference_t<U>;                                          \
+      if constexpr (std::is_integral_v<T_noref> && std::is_integral_v<U_noref>             \
+                    && std::is_signed_v<T_noref> != std::is_signed_v<U_noref>)             \
+      {                                                                                    \
+        using CommonType = std::common_type_t<T_noref, U_noref>;                           \
+        const bool r     = static_cast<CommonType>(value) op static_cast<CommonType>(rhs); \
+        return comparison_expression<T, const U&>(r, std::forward<T>(value), rhs, #op);    \
+      }                                                                                    \
+      else                                                                                 \
+      {                                                                                    \
+        /* Direct comparison for other cases */                                            \
+        const bool r = value op rhs;                                                       \
+        return comparison_expression<T, const U&>(r, std::forward<T>(value), rhs, #op);    \
+      }                                                                                    \
+    }
 
     _9d10c7e37932af3c4f39a5ce7ff00b5a(==);
     _9d10c7e37932af3c4f39a5ce7ff00b5a(!=);
@@ -198,7 +198,7 @@ struct expecter
     _9d10c7e37932af3c4f39a5ce7ff00b5a(<=);
     _9d10c7e37932af3c4f39a5ce7ff00b5a(>=);
 
-#undef _9d10c7e37932af3c4f39a5ce7ff00b5a
+#  undef _9d10c7e37932af3c4f39a5ce7ff00b5a
 
     /*
      * Operators `^`, `|`, `*`, `/`, `%`, `+`, `-`, `>>`, and `<<` are defined only for carrying the actual
@@ -207,13 +207,13 @@ struct expecter
      * evaluating
      * `==`.
      */
-#define _9d10c7e37932af3c4f39a5ce7ff00b5a(op)                                \
-  template <typename U>                                                      \
-  auto operator op(U&& rhs)&&                                                \
-  {                                                                          \
-    using Result = decltype(value op ::std::forward<U>(rhs));                \
-    return term<Result>(::std::forward<T>(value) op ::std::forward<U>(rhs)); \
-  }
+#  define _9d10c7e37932af3c4f39a5ce7ff00b5a(op)                                \
+    template <typename U>                                                      \
+    auto operator op(U&& rhs)&&                                                \
+    {                                                                          \
+      using Result = decltype(value op ::std::forward<U>(rhs));                \
+      return term<Result>(::std::forward<T>(value) op ::std::forward<U>(rhs)); \
+    }
 
     _9d10c7e37932af3c4f39a5ce7ff00b5a(*);
     _9d10c7e37932af3c4f39a5ce7ff00b5a(/);
@@ -237,7 +237,7 @@ struct expecter
     _9d10c7e37932af3c4f39a5ce7ff00b5a(^=);
     _9d10c7e37932af3c4f39a5ce7ff00b5a(|=);
 
-#undef _9d10c7e37932af3c4f39a5ce7ff00b5a
+#  undef _9d10c7e37932af3c4f39a5ce7ff00b5a
 
     /*
      * Operators `&&`, `||`, `,` do not obey order of evaluation and are disallowed at top level. For example you
@@ -377,7 +377,7 @@ public:
   template <typename Fun>
   unittest& operator->*([[maybe_unused]] Fun&& fun)
   {
-#ifdef UNITTESTED_FILE
+#  ifdef UNITTESTED_FILE
     if (!::std::filesystem::equivalent(loc.file_name(), UNITTESTED_FILE))
     {
       return *this;
@@ -397,7 +397,7 @@ public:
     {
       fprintf(stderr, "%s(%u): %s\nUNITTEST FAILURE: %s\n", loc.file_name(), loc.line(), e.what(), name);
     }
-#endif
+#  endif
     return *this;
   }
 
@@ -472,11 +472,11 @@ private:
 } // namespace cuda::experimental::stf
 
 // Try to detect when __VA_OPT__ is available
-#if defined(__cplusplus) && __cplusplus >= 202002L
-#define STF_HAS_UNITTEST_WITH_ARGS 1
-#endif
+#  if defined(__cplusplus) && __cplusplus >= 202002L
+#    define STF_HAS_UNITTEST_WITH_ARGS 1
+#  endif
 
-#ifdef UNITTESTED_FILE
+#  ifdef UNITTESTED_FILE
 
 int main()
 {
@@ -489,41 +489,41 @@ int main()
   // fprintf(stdout, "PASS: %zu of %zu\n", passed(), total());
 }
 
-#ifdef STF_HAS_UNITTEST_WITH_ARGS
-#  define UNITTEST(name, ...)                                                                                         \
-    [[maybe_unused]] static const auto CUDASTF_UNIQUE_NAME(unittest) =                                                \
-      ::cuda::experimental::stf::unittest<>::make(name, RESERVED_STF_SOURCE_LOCATION() __VA_OPT__(, __VA_ARGS__))->*[ \
-      ]([[maybe_unused]] const char* unittest_name __VA_OPT__(, [[maybe_unused]] auto&& unittest_param))
-#else
-#  define UNITTEST(name)                                                                                              \
-    [[maybe_unused]] static const auto CUDASTF_UNIQUE_NAME(unittest) =                                                \
-      ::cuda::experimental::stf::unittest<>::make(name, RESERVED_STF_SOURCE_LOCATION())->*[                           \
-      ]([[maybe_unused]] const char* unittest_name)
-#endif
+#    ifdef STF_HAS_UNITTEST_WITH_ARGS
+#      define UNITTEST(name, ...)                                                                                     \
+        [[maybe_unused]] static const auto CUDASTF_UNIQUE_NAME(unittest) =                                            \
+          ::cuda::experimental::stf::unittest<>::make(name, RESERVED_STF_SOURCE_LOCATION() __VA_OPT__(, __VA_ARGS__)) \
+            ->*[]([[maybe_unused]] const char* unittest_name __VA_OPT__(, [[maybe_unused]] auto&& unittest_param))
+#    else
+#      define UNITTEST(name)                                                                    \
+        [[maybe_unused]] static const auto CUDASTF_UNIQUE_NAME(unittest) =                      \
+          ::cuda::experimental::stf::unittest<>::make(name, RESERVED_STF_SOURCE_LOCATION())->*[ \
+          ]([[maybe_unused]] const char* unittest_name)
+#    endif
 
-#else
+#  else
 
-#ifdef STF_HAS_UNITTEST_WITH_ARGS
-#  define UNITTEST(name, ...)                                                 \
-    [[maybe_unused]] static const auto CUDASTF_UNIQUE_NAME(unused_unittest) = \
-      []([[maybe_unused]] auto&& unittest_name __VA_OPT__(, [[maybe_unused]] auto&& unittest_param))
-#else
-#  define UNITTEST(name)                                                      \
-    [[maybe_unused]] static const auto CUDASTF_UNIQUE_NAME(unused_unittest) = \
-      []([[maybe_unused]] auto&& unittest_name)
-#endif
+#    ifdef STF_HAS_UNITTEST_WITH_ARGS
+#      define UNITTEST(name, ...)                                                 \
+        [[maybe_unused]] static const auto CUDASTF_UNIQUE_NAME(unused_unittest) = \
+          []([[maybe_unused]] auto&& unittest_name __VA_OPT__(, [[maybe_unused]] auto&& unittest_param))
+#    else
+#      define UNITTEST(name)                                                      \
+        [[maybe_unused]] static const auto CUDASTF_UNIQUE_NAME(unused_unittest) = \
+          []([[maybe_unused]] auto&& unittest_name)
+#    endif
 
-#endif
+#  endif
 
 // Just making sure that core functionality works
-#ifdef STF_HAS_UNITTEST_WITH_ARGS
+#  ifdef STF_HAS_UNITTEST_WITH_ARGS
 UNITTEST("Numeric NOP test.", int(), float(), double())
 {
   using T = ::std::remove_reference_t<decltype(unittest_param)>;
   auto x  = EXPECT(T(1) + T(1) == T(2));
   static_assert(::std::is_same_v<decltype(x), T>);
 };
-#endif // STF_HAS_UNITTEST_WITH_ARGS
+#  endif // STF_HAS_UNITTEST_WITH_ARGS
 
 UNITTEST("EXPECT")
 {
@@ -574,9 +574,9 @@ UNITTEST("EXPECT")
  * If the unittest code throws an exception, it counts as a failure. Exception information will be output to `stderr`
  * and testing will continue with the next unittest.
  */
-#define babe699bbb083d2b0aac2460e75bca96(name, ...)
+#  define babe699bbb083d2b0aac2460e75bca96(name, ...)
 
-#undef babe699bbb083d2b0aac2460e75bca96
+#  undef babe699bbb083d2b0aac2460e75bca96
 
 //! [UNITTEST simple]
 UNITTEST("Simple unittest")
@@ -585,7 +585,7 @@ UNITTEST("Simple unittest")
 };
 //! [UNITTEST simple]
 
-#ifdef STF_HAS_UNITTEST_WITH_ARGS
+#  ifdef STF_HAS_UNITTEST_WITH_ARGS
 //! [UNITTEST parameterized]
 UNITTEST("Parameterized unittest", 42, 42L, 42.0f, 42.0)
 {
@@ -594,7 +594,7 @@ UNITTEST("Parameterized unittest", 42, 42L, 42.0f, 42.0)
   EXPECT(unittest_param == 42);
 };
 //! [UNITTEST parameterized]
-#endif // STF_HAS_UNITTEST_WITH_ARGS
+#  endif // STF_HAS_UNITTEST_WITH_ARGS
 
 // Documentation unittest for traits.h
 UNITTEST("type_name")
@@ -705,5 +705,5 @@ UNITTEST("source_location")
 
 #else // DOXYGEN_SHOULD_SKIP_THIS  Do not document
 // Ensure these are ignored by Doxygen
-#define UNITTEST(name, ...)
+#  define UNITTEST(name, ...)
 #endif // DOXYGEN_SHOULD_SKIP_THIS  Do not document

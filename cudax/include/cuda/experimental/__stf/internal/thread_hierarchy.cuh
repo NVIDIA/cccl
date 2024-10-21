@@ -129,15 +129,13 @@ public:
     return data[1 + 2 * level];
   }
 
-  _CCCL_HOST_DEVICE
-  const ::std::array<size_t, 3>& get_config() const
+  _CCCL_HOST_DEVICE const ::std::array<size_t, 3>& get_config() const
   {
     return launch_config;
   }
 
   // Rank from the root
-  _CCCL_HOST_DEVICE
-  size_t rank(int level, int root_level) const
+  _CCCL_HOST_DEVICE size_t rank(int level, int root_level) const
   {
 #ifndef __CUDA_ARCH__
     (void) level;
@@ -175,8 +173,7 @@ public:
 #endif
   }
 
-  _CCCL_HOST_DEVICE
-  size_t size(int level, int root_level) const
+  _CCCL_HOST_DEVICE size_t size(int level, int root_level) const
   {
     if constexpr (depth == 0)
     {
@@ -201,20 +198,17 @@ public:
 #endif
   }
 
-  _CCCL_HOST_DEVICE
-  size_t size(int level = int(depth) - 1) const
+  _CCCL_HOST_DEVICE size_t size(int level = int(depth) - 1) const
   {
     return size(level, -1);
   }
 
-  _CCCL_HOST_DEVICE
-  size_t rank(int level = int(depth) - 1) const
+  _CCCL_HOST_DEVICE size_t rank(int level = int(depth) - 1) const
   {
     return rank(level, -1);
   }
 
-  _CCCL_HOST_DEVICE
-  void sync(int level = 0)
+  _CCCL_HOST_DEVICE void sync(int level = 0)
   {
     assert(level >= 0);
     assert(level < depth);
@@ -310,8 +304,7 @@ public:
    *
    * @return `thread_hierarchy` instantiated with `spec` sans the first two arguments
    */
-  _CCCL_HOST_DEVICE
-  auto inner() const
+  _CCCL_HOST_DEVICE auto inner() const
   {
     return typename inner_t<spec...>::type(*this);
   }
@@ -419,8 +412,7 @@ private:
   }
 
   /* Evaluate at runtime if we can call sync on the specified level */
-  _CCCL_HOST_DEVICE
-  bool may_sync(int level) const
+  _CCCL_HOST_DEVICE bool may_sync(int level) const
   {
     return may_sync_impl<0, spec...>(level);
   }

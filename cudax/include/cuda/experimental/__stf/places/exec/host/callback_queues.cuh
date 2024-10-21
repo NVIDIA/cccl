@@ -32,15 +32,15 @@
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // do not document
 
-#if !defined(_CCCL_COMPILER_MSVC)
-#define STATEFUL_CALLBACKS
+#  if !defined(_CCCL_COMPILER_MSVC)
+#    define STATEFUL_CALLBACKS
 
 namespace cuda::experimental::stf
 {
 
 class cb;
 
-#ifdef STATEFUL_CALLBACKS
+#    ifdef STATEFUL_CALLBACKS
 class cudaCallbackStateCtxKeys : public reserved::meyers_singleton<cudaCallbackStateCtxKeys>
 {
 protected:
@@ -92,7 +92,7 @@ private:
     pthread_setspecific(ctx->cb_key, NULL);
   }
 };
-#endif // STATEFUL_CALLBACKS
+#    endif // STATEFUL_CALLBACKS
 
 class callback_queue;
 
@@ -101,9 +101,9 @@ cudaError_t cudaStreamAddCallbackWithQueue(
   cudaStream_t stream, cudaStreamCallback_t callback, void* userData, unsigned int flags, class callback_queue* q);
 int* cf_pop(callback_queue* q);
 
-#define USE_COMPLETION_FLAG_POOL 1
+#    define USE_COMPLETION_FLAG_POOL 1
 
-#ifdef USE_COMPLETION_FLAG_POOL
+#    ifdef USE_COMPLETION_FLAG_POOL
 class completion_flag_pool
 {
 public:
@@ -147,7 +147,7 @@ private:
   // A mutex to protect the pool of completion flags
   pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 };
-#endif
+#    endif
 
 class cb
 {
@@ -166,11 +166,11 @@ public:
 
   class callback_queue* queue;
 
-#ifdef STATEFUL_CALLBACKS
+#    ifdef STATEFUL_CALLBACKS
   // To deal with restartable callbacks
   int step          = 0;
   void* private_ptr = NULL;
-#endif
+#    endif
 
   // This serves as a spinlock to unlock the stream after the execution
   // of the callback.
@@ -186,16 +186,16 @@ public:
     userData           = _userData;
     queue              = _queue;
 
-#ifdef STATEFUL_CALLBACKS
+#    ifdef STATEFUL_CALLBACKS
     step        = 0;
     private_ptr = NULL;
-#endif
+#    endif
 
-#ifdef USE_COMPLETION_FLAG_POOL
+#    ifdef USE_COMPLETION_FLAG_POOL
     completion_flag = cf_pop(queue);
-#else
+#    else
     cudaMallocManaged((void**) &completion_flag, sizeof(int));
-#endif
+#    endif
   }
 
   /* Callback from CUDA streams */
@@ -208,16 +208,16 @@ public:
     graph_callback     = NULL;
     queue              = _queue;
 
-#ifdef STATEFUL_CALLBACKS
+#    ifdef STATEFUL_CALLBACKS
     step        = 0;
     private_ptr = NULL;
-#endif
+#    endif
 
-#ifdef USE_COMPLETION_FLAG_POOL
+#    ifdef USE_COMPLETION_FLAG_POOL
     completion_flag = cf_pop(queue);
-#else
+#    else
     cudaMallocManaged((void**) &completion_flag, sizeof(int));
-#endif
+#    endif
   }
 };
 
@@ -268,9 +268,9 @@ public:
   /* Helper routines to create a thread dedicated to this queue ! */
   pthread_t progress_thread;
 
-#ifdef USE_COMPLETION_FLAG_POOL
+#    ifdef USE_COMPLETION_FLAG_POOL
   class completion_flag_pool cfp;
-#endif
+#    endif
 
   static void* callback_queue_worker(void* args)
   {
@@ -330,7 +330,7 @@ __global__ void callback_completion_kernel(int* completion_flag)
   //    printf("notified %p\n", completion_flag);
 }
 
-#ifdef STATEFUL_CALLBACKS
+#    ifdef STATEFUL_CALLBACKS
 inline void set_current_cb(cb* cb)
 {
   cudaCallbackStateCtx::instance().set_current_cb(cb);
@@ -382,7 +382,7 @@ inline void* cudaCallbackGetPrivatePtr()
   cudaCallbackGetStatus(NULL, &private_ptr);
   return private_ptr;
 }
-#endif // STATEFUL_CALLBACKS
+#    endif // STATEFUL_CALLBACKS
 
 inline void execute_callback(cb* cb)
 {
@@ -392,11 +392,11 @@ inline void execute_callback(cb* cb)
 
   if (cb->callback || cb->graph_callback)
   {
-#ifdef STATEFUL_CALLBACKS
+#    ifdef STATEFUL_CALLBACKS
     // This makes it possible to retrieve the state of the callback from
     // the user-provided callback function itself
     set_current_cb(cb);
-#endif
+#    endif
     if (cb->is_graph_host_node)
     {
       //           fprintf(stderr, "EXECUTING cb->graph_callback\n");
@@ -408,11 +408,11 @@ inline void execute_callback(cb* cb)
       cb->callback(cb->stream, cb->status, cb->userData);
     }
 
-#ifdef STATEFUL_CALLBACKS
+#    ifdef STATEFUL_CALLBACKS
     // Values equal to 0 or strictly negative indicate the callback is over
     cb_restart = (cb->step > 0);
     set_current_cb(NULL);
-#endif
+#    endif
   }
 
   // If the callback is over
@@ -572,7 +572,7 @@ inline bool cudaCallbackQueueProgress(callback_queue* q, bool flag)
     {
       execute_callback(cb);
 
-#ifdef STATEFUL_CALLBACKS
+#    ifdef STATEFUL_CALLBACKS
       int cb_restart = (cb->step > 0);
       if (cb_restart)
       {
@@ -581,7 +581,7 @@ inline bool cudaCallbackQueueProgress(callback_queue* q, bool flag)
         pthread_cond_broadcast(&q->cond);
         pthread_mutex_unlock(&q->mutex);
       }
-#endif
+#    endif
 
       if (cb->callback == NULL && cb->graph_callback == NULL)
       {
@@ -602,5 +602,5 @@ inline bool cudaCallbackQueueProgress(callback_queue* q, bool flag)
 
 } // end namespace cuda::experimental::stf
 
-#endif // !_CCCL_COMPILER_MSVC
+#  endif // !_CCCL_COMPILER_MSVC
 #endif // DOXYGEN_SHOULD_SKIP_THIS do not document

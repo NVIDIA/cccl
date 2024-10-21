@@ -48,8 +48,8 @@ int main(int argc, char** argv)
 {
   context ctx;
 
-  size_t N           = 1000;
-  int nsteps      = 100;
+  size_t N       = 1000;
+  int nsteps     = 100;
   int image_freq = -1;
 
   if (argc > 1)

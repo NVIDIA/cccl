@@ -810,7 +810,8 @@ public:
           // Small to big conversion, just create a new vector
           ::std::vector<T> copy;
           copy.reserve(new_size);
-          copy.insert(copy.end(), ::std::move_iterator(small_begin()), ::std::move_iterator(small_begin() + small_length));
+          copy.insert(
+            copy.end(), ::std::move_iterator(small_begin()), ::std::move_iterator(small_begin() + small_length));
           copy.resize(new_size, value);
           clear(); // call destructors for the moved-from elements
           new (&big())::std::vector<T>(mv(copy));
@@ -835,7 +836,8 @@ public:
           return other.swap(*this);
         }
         // We are longer, the other is shorter
-        auto b = small_begin(), e = small_begin() + small_length, ob = other.small_begin(), oe = other.small_begin() + other.small_length;
+        auto b = small_begin(), e = small_begin() + small_length, ob = other.small_begin(),
+             oe = other.small_begin() + other.small_length;
         ::std::swap_ranges(ob, oe, b);
         ::std::uninitialized_move(b + other.small_length, e, oe);
         ::std::destroy(b + other.small_length, e);

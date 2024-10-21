@@ -193,7 +193,7 @@ public:
    */
   bool schedule_task()
   {
-    auto& dot                   = *ctx.get_dot();
+    auto& dot        = *ctx.get_dot();
     auto& statistics = reserved::task_statistics::instance();
 
     const bool is_auto = get_exec_place().affine_data_place() == data_place::device_auto;
@@ -225,7 +225,7 @@ public:
   template <typename Fun>
   void operator->*(Fun&& f)
   {
-    auto& dot                   = *ctx.get_dot();
+    auto& dot        = *ctx.get_dot();
     auto& statistics = reserved::task_statistics::instance();
 
     // cudaEvent_t start_event, end_event;
@@ -421,15 +421,15 @@ public:
   }
 
 #if defined(_CCCL_COMPILER_MSVC)
-// TODO (miscco): figure out why MSVC is complaining about unreachable code here
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
+  // TODO (miscco): figure out why MSVC is complaining about unreachable code here
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
 #endif // _CCCL_COMPILER_MSVC
 
   template <typename Fun>
   void operator->*(Fun&& f)
   {
-    auto& dot                   = *ctx.get_dot();
+    auto& dot        = *ctx.get_dot();
     auto& statistics = reserved::task_statistics::instance();
 
     // cudaEvent_t start_event, end_event;
@@ -519,7 +519,7 @@ _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
     }
   }
 #if defined(_CCCL_COMPILER_MSVC)
-_CCCL_DIAG_POP
+  _CCCL_DIAG_POP
 #endif // _CCCL_COMPILER_MSVC
 
 private:

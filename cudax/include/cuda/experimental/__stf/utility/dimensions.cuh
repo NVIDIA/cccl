@@ -41,7 +41,7 @@ public:
   constexpr pos4() = default;
 
   /// Create a pos4 from its coordinates
-  template<typename Integral>
+  template <typename Integral>
   _CCCL_HOST_DEVICE constexpr explicit pos4(Integral x, Integral y = 0, Integral z = 0, Integral t = 0)
       : x(static_cast<int>(x))
       , y(static_cast<int>(y))
@@ -431,7 +431,7 @@ public:
       // included
       const ::std::ptrdiff_t begin_i  = get_begin(i);
       const ::std::ptrdiff_t extent_i = get_extent(i);
-      auto result            = begin_i + (index % extent_i);
+      auto result                     = begin_i + (index % extent_i);
       index /= extent_i;
       return result;
     });
@@ -520,7 +520,6 @@ UNITTEST("mix of integrals and pairs")
 
 #endif // UNITTESTED_FILE
 
-
 // So that we can create unordered_map of pos4 entries
 template <>
 struct hash<pos4>
@@ -537,4 +536,3 @@ struct hash<dim4> : hash<pos4>
 {};
 
 } // end namespace cuda::experimental::stf
-

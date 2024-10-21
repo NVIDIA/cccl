@@ -1289,8 +1289,8 @@ Syntax:
 
 .. code-block:: cpp
 
-    ctx.launch([thread hierarchy spec], [execution place], logicalData1.accessMode(), logicalData2.accessMode()) 
-        ->*[capture list] __device__ (auto th_spec, auto data1, auto data2 ...) { 
+    ctx.launch([thread hierarchy spec], [execution place], logicalData1.accessMode(), logicalData2.accessMode())
+        ->*[capture list] __device__ (auto th_spec, auto data1, auto data2 ...) {
             // Kernel implementation
         };
 
@@ -1902,7 +1902,7 @@ Syntax:
 
     ctx.task([execution place] dependency1 dependency2 ...)
         ->*[&](cudaStream_t stream, auto data1, auto data2 ...) {
-            // Task implementation using stream 
+            // Task implementation using stream
         };
 
 - **Execution Place**: Specify where the task should be executed:
@@ -1928,8 +1928,8 @@ Purpose: Execute tasks on the host (CPU) while still utilizing the task and data
 .. code-block:: cpp
 
     ctx.host_launch(logicalData1.accessMode(), logicalData2.accessMode() ...)
-        ->*[capture list](auto data1, auto data2 ...) { 
-            // Host-based task implementation here 
+        ->*[capture list](auto data1, auto data2 ...) {
+            // Host-based task implementation here
         };
 
 Kernel authoring
@@ -1948,7 +1948,7 @@ Syntax:
 
     ctx.parallel_for([execution place], [partitioner], shape, logicalData1.accessMode(), logicalData2.accessMode(), ...)
         ->*[capture list] __device__ (size_t index1, size_t index2, ... auto data1, auto data2 ...) {
-            // Kernel implementation 
+            // Kernel implementation
         };
 
 Examples:
@@ -1978,9 +1978,9 @@ Examples:
     auto lX = ctx.logical_data(make_slice(&X[0], std::tuple{N, N}));
     auto lY = ctx.logical_data(Y);
 
-    ctx.parallel_for(lX.shape(), lX.rw(), lY.read()) 
-        ->*[](size_t i, size_t j, auto dX, auto dY) { 
-            dX(i, j) += dY(i) * dY(j); 
+    ctx.parallel_for(lX.shape(), lX.rw(), lY.read())
+        ->*[](size_t i, size_t j, auto dX, auto dY) {
+            dX(i, j) += dY(i) * dY(j);
         };
 
 See :ref:`this section <parallel_for_construct>` for more details.

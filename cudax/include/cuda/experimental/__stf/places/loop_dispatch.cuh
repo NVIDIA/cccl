@@ -33,7 +33,8 @@
 namespace cuda::experimental::stf
 {
 
-namespace reserved {
+namespace reserved
+{
 
 /* A very simple hash function to give the impression of a random distribution of indices */
 inline size_t customHash(size_t value)

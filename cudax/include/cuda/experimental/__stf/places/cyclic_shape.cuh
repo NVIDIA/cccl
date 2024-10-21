@@ -44,8 +44,7 @@ public:
   ///@{ @name Constructors
 
   /// Construct and explicit shape from a list of lower and upper bounds
-  _CCCL_HOST_DEVICE
-  explicit cyclic_shape(const ::std::array<::std::tuple<size_t, size_t, size_t>, dimensions>& list)
+  _CCCL_HOST_DEVICE explicit cyclic_shape(const ::std::array<::std::tuple<size_t, size_t, size_t>, dimensions>& list)
   {
     size_t i = 0;
     for (auto& e : list)
@@ -60,8 +59,8 @@ public:
 
   /// Construct and explicit shape from a list of lower and upper bounds
   _CCCL_HOST_DEVICE cyclic_shape(const ::std::array<size_t, dimensions>& begins_,
-                                   const ::std::array<size_t, dimensions>& ends_,
-                                   const ::std::array<size_t, dimensions>& strides_)
+                                 const ::std::array<size_t, dimensions>& ends_,
+                                 const ::std::array<size_t, dimensions>& strides_)
       : begins(begins_)
       , ends(ends_)
       , strides(strides_)
@@ -244,8 +243,7 @@ public:
     return cyclic_shape<dimensions>(bounds);
   }
 
-  _CCCL_HOST_DEVICE
-  static pos4 get_executor(pos4 /*unused*/, dim4 /*unused*/, dim4 /*unused*/)
+  _CCCL_HOST_DEVICE static pos4 get_executor(pos4 /*unused*/, dim4 /*unused*/, dim4 /*unused*/)
   {
     abort();
     return pos4(0);

@@ -8,10 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/std/cmath>
+
 #include <cuda/experimental/__stf/places/loop_dispatch.cuh>
 #include <cuda/experimental/stf.cuh>
-
-#include <cuda/std/cmath>
 
 using namespace cuda::experimental::stf;
 
@@ -38,7 +38,7 @@ int main()
       auto lA = ctx.logical_data<int>(size_t(1024 * 1024));
 
       ctx.parallel_for(ctx.current_exec_place(), lA.shape(), lA.write())->*[] __device__(size_t i, auto a) {
-        a(i) = (int) (10.0 * cuda::std::cos((double)i));
+        a(i) = (int) (10.0 * cuda::std::cos((double) i));
       };
 
       ctx.parallel_for(ctx.current_exec_place(), lA.shape(), lA.rw(), lB.read())

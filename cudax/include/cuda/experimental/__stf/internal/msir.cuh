@@ -224,5 +224,3 @@ struct hash<reserved::per_data_instance_msi_state>
 };
 
 } // namespace cuda::experimental::stf
-
-

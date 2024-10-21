@@ -408,8 +408,8 @@ public:
   auto host_launch(task_dep<Deps>... deps)
   {
     assert(payload.index() != ::std::variant_npos && "Context is not initialized");
-    using result_t =
-      unified_scope<reserved::host_launch_scope<stream_ctx, false, Deps...>, reserved::host_launch_scope<graph_ctx, false, Deps...>>;
+    using result_t = unified_scope<reserved::host_launch_scope<stream_ctx, false, Deps...>,
+                                   reserved::host_launch_scope<graph_ctx, false, Deps...>>;
     return ::std::visit(
       [&](auto& self) {
         return result_t(self.host_launch(deps...));
@@ -422,8 +422,8 @@ public:
   {
     assert(payload.index() != ::std::variant_npos && "Context is not initialized");
     // false : we expect a single kernel descriptor in the lambda function return type
-    using result_t =
-      unified_scope<reserved::cuda_kernel_scope<stream_ctx, false, Deps...>, reserved::cuda_kernel_scope<graph_ctx, false, Deps...>>;
+    using result_t = unified_scope<reserved::cuda_kernel_scope<stream_ctx, false, Deps...>,
+                                   reserved::cuda_kernel_scope<graph_ctx, false, Deps...>>;
     return ::std::visit(
       [&](auto& self) {
         return result_t(self.cuda_kernel(deps...));
@@ -436,8 +436,8 @@ public:
   {
     assert(payload.index() != ::std::variant_npos && "Context is not initialized");
     // false : we expect a single kernel descriptor in the lambda function return type
-    using result_t =
-      unified_scope<reserved::cuda_kernel_scope<stream_ctx, false, Deps...>, reserved::cuda_kernel_scope<graph_ctx, false, Deps...>>;
+    using result_t = unified_scope<reserved::cuda_kernel_scope<stream_ctx, false, Deps...>,
+                                   reserved::cuda_kernel_scope<graph_ctx, false, Deps...>>;
     return ::std::visit(
       [&](auto& self) {
         return result_t(self.cuda_kernel(e_place, deps...));
@@ -450,8 +450,8 @@ public:
   {
     assert(payload.index() != ::std::variant_npos && "Context is not initialized");
     // true : we expect a vector of cuda kernel descriptors in the lambda function return type
-    using result_t =
-      unified_scope<reserved::cuda_kernel_scope<stream_ctx, true, Deps...>, reserved::cuda_kernel_scope<graph_ctx, true, Deps...>>;
+    using result_t = unified_scope<reserved::cuda_kernel_scope<stream_ctx, true, Deps...>,
+                                   reserved::cuda_kernel_scope<graph_ctx, true, Deps...>>;
     return ::std::visit(
       [&](auto& self) {
         return result_t(self.cuda_kernel_chain(deps...));
@@ -464,8 +464,8 @@ public:
   {
     assert(payload.index() != ::std::variant_npos && "Context is not initialized");
     // true : we expect a vector of cuda kernel descriptors in the lambda function return type
-    using result_t =
-      unified_scope<reserved::cuda_kernel_scope<stream_ctx, true, Deps...>, reserved::cuda_kernel_scope<graph_ctx, true, Deps...>>;
+    using result_t = unified_scope<reserved::cuda_kernel_scope<stream_ctx, true, Deps...>,
+                                   reserved::cuda_kernel_scope<graph_ctx, true, Deps...>>;
     return ::std::visit(
       [&](auto& self) {
         return result_t(self.cuda_kernel_chain(e_place, deps...));
@@ -1757,7 +1757,7 @@ public:
     auto fn = [this, start, end, &fun](context gctx, stream_task<> t) {
       // How many logical data per iteration ?
       constexpr size_t data_per_iteration = ::std::tuple_size<decltype(df(0))>::value;
-      (void)data_per_iteration;
+      (void) data_per_iteration;
 
       auto logify = [](auto& dest_ctx, auto x) {
         return dest_ctx.logical_data(rw_type_of<decltype(x)>(x), exec_place::current_device().affine_data_place());

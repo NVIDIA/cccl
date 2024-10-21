@@ -58,7 +58,7 @@ __global__ void slice_add(slice<const int> s_from, slice<int> s_to)
 int main()
 {
   stream_ctx ctx;
-  const int N = 12;
+  const int N    = 12;
   const size_t K = 10;
 
   int X[N];

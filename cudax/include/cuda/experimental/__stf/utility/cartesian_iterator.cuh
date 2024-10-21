@@ -520,5 +520,4 @@ UNITTEST("StridedRange CUDA")
 };
 #endif // UNITTESTED_FILE
 
-
 } // end namespace cuda::experimental::stf::reserved

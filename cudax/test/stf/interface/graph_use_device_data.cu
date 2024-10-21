@@ -42,7 +42,7 @@ __global__ void setup_vectors(int N, T* x, T* y, T* z)
 int main(int argc, char** argv)
 {
   graph_ctx ctx;
-  const int N     = 12;
+  const int N        = 12;
   const double alpha = 2.0;
 
   double *dX, *dY, *dZ;

@@ -111,36 +111,35 @@ int main(int argc, char** argv)
 
   auto spec = con(con<64>(), mem(sizeof(double)));
 
-  ctx.launch(spec, all_devs, lA.rw(), lAnew.write())
-      ->*[iter_max, tol, n, m] _CCCL_DEVICE(auto t, auto A, auto Anew) {
-            auto ti = t.inner();
-            for (size_t iter = 0; iter < iter_max; iter++)
-            {
-              // thread-local maximum error
-              double local_error = 0.0;
+  ctx.launch(spec, all_devs, lA.rw(), lAnew.write())->*[iter_max, tol, n, m] _CCCL_DEVICE(auto t, auto A, auto Anew) {
+    auto ti = t.inner();
+    for (size_t iter = 0; iter < iter_max; iter++)
+    {
+      // thread-local maximum error
+      double local_error = 0.0;
 
-              for (auto [i, j] : t.apply_partition(inner<1>(shape(A))))
-              {
-                Anew(i, j) = 0.25 * (A(i - 1, j) + A(i + 1, j) + A(i, j - 1) + A(i, j + 1));
+      for (auto [i, j] : t.apply_partition(inner<1>(shape(A))))
+      {
+        Anew(i, j) = 0.25 * (A(i - 1, j) + A(i + 1, j) + A(i, j - 1) + A(i, j + 1));
 
-                local_error = fmax(local_error, fabs(A(i, j) - Anew(i, j)));
-              }
+        local_error = fmax(local_error, fabs(A(i, j) - Anew(i, j)));
+      }
 
-              // compute the overall maximum error
-              double error = reduce_max(t, local_error);
+      // compute the overall maximum error
+      double error = reduce_max(t, local_error);
 
-              /* Fill A with the new values */
-              for (auto [i, j] : t.apply_partition(shape(A)))
-              {
-                A(i, j) = Anew(i, j);
-              }
+      /* Fill A with the new values */
+      for (auto [i, j] : t.apply_partition(shape(A)))
+      {
+        A(i, j) = Anew(i, j);
+      }
 
-              if (iter % 25 == 0 && t.rank() == 0)
-              {
-                printf("iter %zu : error %e (tol %e)\n", iter, error, tol);
-              }
-            }
-          };
+      if (iter % 25 == 0 && t.rank() == 0)
+      {
+        printf("iter %zu : error %e (tol %e)\n", iter, error, tol);
+      }
+    }
+  };
 
   cuda_safe_call(cudaEventRecord(stop, ctx.task_fence()));
 

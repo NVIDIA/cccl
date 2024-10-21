@@ -548,7 +548,9 @@ public:
             reserved::counter<reserved::cuda_event_tag::destroyed>.load(),
             alive,
             reserved::high_water_mark<reserved::cuda_event_tag>.load());
-    fprintf(stderr, "[STATS CUDA EVENTS] cuda_stream_wait_event=%lu\n", reserved::counter<reserved::cuda_stream_wait_event_tag>.load());
+    fprintf(stderr,
+            "[STATS CUDA EVENTS] cuda_stream_wait_event=%lu\n",
+            reserved::counter<reserved::cuda_stream_wait_event_tag>.load());
 #endif
   }
 
@@ -814,8 +816,8 @@ UNITTEST("logical_data_untyped moveable")
   public:
     scalar(stream_ctx& ctx)
     {
-      size_t s    = sizeof(double);
-      double *h_addr = (double*) malloc(s);
+      size_t s       = sizeof(double);
+      double* h_addr = (double*) malloc(s);
       cuda_safe_call(cudaHostRegister(h_addr, s, cudaHostRegisterPortable));
       handle = ctx.logical_data(h_addr, 1);
     }

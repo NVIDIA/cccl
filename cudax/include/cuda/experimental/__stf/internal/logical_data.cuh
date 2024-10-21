@@ -503,8 +503,11 @@ public:
     return used_instances.size();
   }
 
-  void
-  allocate(const data_place& memory_node, instance_id_t instance_id, ::std::ptrdiff_t& s, void** extra_args, event_list& prereqs)
+  void allocate(const data_place& memory_node,
+                instance_id_t instance_id,
+                ::std::ptrdiff_t& s,
+                void** extra_args,
+                event_list& prereqs)
   {
     assert(memory_node != data_place::invalid);
     assert(has_interface());
@@ -619,7 +622,8 @@ public:
         // fprintf(stderr, "RECLAIM %s WITH NO TRANSFER (SHARED)... (wb cnt = %ld)\n", get_symbol().c_str(),
         //         total_write_back_cnt);
 
-        // Invalidate this copy, others may become either reserved::msir_state_id::shared or reserved::msir_state_id::modified
+        // Invalidate this copy, others may become either reserved::msir_state_id::shared or
+        // reserved::msir_state_id::modified
         int cpy_cnt = 0;
 
         const auto nnodes = instance_id_t(get_data_instance_count());
@@ -699,7 +703,7 @@ public:
   event_list get_pending_done_prereqs(const data_place&)
   {
     auto prereqs = event_list();
-    auto& state_    = get_state();
+    auto& state_ = get_state();
 
     if (state_.current_mode == access_mode::write)
     {
@@ -1083,8 +1087,11 @@ public:
    * @param extra_args
    * @param prereqs
    */
-  void
-  allocate(const data_place& memory_node, instance_id_t instance_id, ::std::ptrdiff_t& s, void** extra_args, event_list& prereqs)
+  void allocate(const data_place& memory_node,
+                instance_id_t instance_id,
+                ::std::ptrdiff_t& s,
+                void** extra_args,
+                event_list& prereqs)
   {
     pimpl->allocate(memory_node, instance_id, s, extra_args, prereqs);
   }
@@ -1355,8 +1362,10 @@ public:
       auto& instance_i = get_data_instance(i);
 
 #ifdef REDUCTION_DEBUG
-      fprintf(
-        stderr, "make_reduction_plan :: instance %d status %s\n", i, reserved::status_to_string(instance_i.get_msir()).c_str());
+      fprintf(stderr,
+              "make_reduction_plan :: instance %d status %s\n",
+              i,
+              reserved::status_to_string(instance_i.get_msir()).c_str());
 #endif
 
       // We exclude the target instance id because we want to reduce to this id, not from this id
@@ -1370,7 +1379,8 @@ public:
       }
 
       // If this is a valid copy, we put this aside and will select one of these
-      if (instance_i.get_msir() == reserved::msir_state_id::modified || instance_i.get_msir() == reserved::msir_state_id::shared)
+      if (instance_i.get_msir() == reserved::msir_state_id::modified
+          || instance_i.get_msir() == reserved::msir_state_id::shared)
       {
         ref_copies.push_back(i);
         continue;
@@ -1520,7 +1530,8 @@ public:
 
         // mode is rather meaningless here (?)
         // fprintf(stderr, "ALLOCATE ID %d on node %d\n", copy_instance_id, int(target_memory_node));
-        reserved::dep_allocate(pimpl->ctx, *this, access_mode::read, target_memory_node, e_place_n, copy_instance_id, prereqs);
+        reserved::dep_allocate(
+          pimpl->ctx, *this, access_mode::read, target_memory_node, e_place_n, copy_instance_id, prereqs);
       }
 
       // Copy the last instance to the destination
@@ -1948,7 +1959,7 @@ inline event_list enforce_stf_deps_before(
       // writer
       assert(ctx_.current_writer.has_value());
       ctx_.previous_writer = mv(ctx_.current_writer);
-      const auto& pw      = ctx_.previous_writer;
+      const auto& pw       = ctx_.previous_writer;
 
       result.merge(pw->get_done_prereqs());
 
@@ -2407,7 +2418,8 @@ inline void reclaim_memory(
             }
             break;
           case 1:
-            // Only process instances which will not require a write back (ie. exclude reserved::msir_state_id::modified)
+            // Only process instances which will not require a write back (ie. exclude
+            // reserved::msir_state_id::modified)
             if (current_state == reserved::msir_state_id::modified)
             {
               eligible = false;

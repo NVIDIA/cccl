@@ -34,7 +34,8 @@
 namespace cuda::experimental::stf
 {
 
-namespace reserved {
+namespace reserved
+{
 
 const uint32_t kEmpty = 0xffffffff;
 
@@ -165,8 +166,7 @@ public:
 
   reserved::KeyValue* addr;
 
-  _CCCL_HOST_DEVICE
-  size_t get_capacity() const
+  _CCCL_HOST_DEVICE size_t get_capacity() const
   {
     return capacity;
   }
@@ -240,14 +240,12 @@ public:
   //
   // In practice, the current implementation effectively transfers the whole
   // array so it is correct.
-  _CCCL_HOST_DEVICE
-  size_t size() const
+  _CCCL_HOST_DEVICE size_t size() const
   {
     return capacity * sizeof(uint32_t);
   }
 
-  _CCCL_HOST_DEVICE
-  uint32_t get_capacity() const
+  _CCCL_HOST_DEVICE uint32_t get_capacity() const
   {
     return capacity;
   }

@@ -9,31 +9,32 @@
 //===----------------------------------------------------------------------===//
 
 #include <cuda/experimental/stf.cuh>
+
 #include <cstdio>
 
 using namespace cuda::experimental::stf;
 
 int main()
 {
-    context ctx;
+  context ctx;
 
-    int array[128];
-    for (size_t i = 0; i < 128; i++)
-    {
-        array[i] = i;
-    }
+  int array[128];
+  for (size_t i = 0; i < 128; i++)
+  {
+    array[i] = i;
+  }
 
-    auto A = ctx.logical_data(array);
+  auto A = ctx.logical_data(array);
 
-    ctx.parallel_for(A.shape(), A.rw())->*[]__device__(size_t i, auto a) {
-        a(i) += 4;
-    };
+  ctx.parallel_for(A.shape(), A.rw())->*[] __device__(size_t i, auto a) {
+    a(i) += 4;
+  };
 
-    ctx.finalize();
+  ctx.finalize();
 
-    for (size_t i = 0; i < 128; i++)
-    {
-        printf("array[%ld] = %d\n", i, array[i]);
-    }
-    return 0;
+  for (size_t i = 0; i < 128; i++)
+  {
+    printf("array[%ld] = %d\n", i, array[i]);
+  }
+  return 0;
 }

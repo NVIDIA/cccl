@@ -55,7 +55,8 @@ inline ::std::string pretty_print_bytes(size_t bytes)
   return out.str();
 }
 
-namespace reserved {
+namespace reserved
+{
 /**
  * A trait class to have the specifier to display the T type.
  */

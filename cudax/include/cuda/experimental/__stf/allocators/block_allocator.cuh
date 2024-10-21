@@ -67,7 +67,8 @@ public:
    * @param prereqs List of events that should finish before the allocation starts
    * @return void* Pointer to the allocated memory
    */
-  virtual void* allocate(backend_ctx_untyped&, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) = 0;
+  virtual void*
+  allocate(backend_ctx_untyped&, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) = 0;
 
   /**
    * @brief Deallocation of memory

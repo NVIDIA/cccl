@@ -456,17 +456,16 @@ int main()
     handle_p.write(),
     handle_r.write(),
     handle_dot_result.write())
-      ->*
-    [=] _CCCL_DEVICE(
-      auto t,
-      slice<int> I,
-      slice<int> J,
-      slice<float> val,
-      slice<float> x,
-      slice<float> Ax,
-      slice<float> p,
-      slice<float> r,
-      slice<double> dot_result) {
+      ->*[=]
+    _CCCL_DEVICE(auto t,
+                 slice<int> I,
+                 slice<int> J,
+                 slice<float> val,
+                 slice<float> x,
+                 slice<float> Ax,
+                 slice<float> p,
+                 slice<float> r,
+                 slice<double> dot_result) {
       multiGpuConjugateGradient(t, I, J, val, x, Ax, p, r, dot_result.data_handle(), nz, N, tol);
     };
 

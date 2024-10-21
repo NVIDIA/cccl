@@ -104,7 +104,7 @@ void write_vtk_2D(
 // Define the source function
 double Source(double t, double x, double y, double z)
 {
-  const double pi = 3.14159265358979323846;
+  const double pi         = 3.14159265358979323846;
   const double freq       = 1e9;
   const double omega      = (2 * pi * freq);
   const double wavelength = 3e8 / freq;

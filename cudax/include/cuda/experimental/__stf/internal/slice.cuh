@@ -144,8 +144,7 @@ size_t contiguous_dims(const S& span)
  * @return auto `slice<ElementType, sizeof...(Extents)>`
  */
 template <typename ElementType, typename... Extents, typename... Strides>
-_CCCL_HOST_DEVICE auto
-make_slice(ElementType* data, const ::std::tuple<Extents...>& extents, const Strides&... strides)
+_CCCL_HOST_DEVICE auto make_slice(ElementType* data, const ::std::tuple<Extents...>& extents, const Strides&... strides)
 {
   static_assert(sizeof...(Extents) == sizeof...(Strides) + 1);
   using Result = slice<ElementType, sizeof...(Extents)>;
@@ -205,7 +204,7 @@ auto make_mdview(Whatevs&&... whatevs)
 } // namespace reserved
 
 #ifdef UNITTESTED_FILE
-#ifdef STF_HAS_UNITTEST_WITH_ARGS
+#  ifdef STF_HAS_UNITTEST_WITH_ARGS
 UNITTEST("slice usual suspects: default ctor, copy, move, assign", (slice<double, 2>()))
 {
   using View = ::std::remove_reference_t<decltype(unittest_param)>;
@@ -353,7 +352,7 @@ UNITTEST("implicit contiguous strides", (slice<int, 3>()))
   EXPECT(contiguous_dims(s) == 3);
 };
 
-#endif // STF_HAS_UNITTEST_WITH_ARGS
+#  endif // STF_HAS_UNITTEST_WITH_ARGS
 #endif // UNITTESTED_FILE
 
 /** @brief Specialization of the `shape` template for `mdspan`
@@ -371,8 +370,7 @@ public:
    * @brief Dimensionality of the slice.
    *
    */
-  _CCCL_HOST_DEVICE
-  static constexpr size_t rank()
+  _CCCL_HOST_DEVICE static constexpr size_t rank()
   {
     return described_type::rank();
   }
@@ -548,8 +546,7 @@ public:
    *
    * @return const std::array<size_t, dimensions>&
    */
-  _CCCL_HOST_DEVICE
-  ::std::array<size_t, rank()> get_sizes() const
+  _CCCL_HOST_DEVICE ::std::array<size_t, rank()> get_sizes() const
   {
     ::std::array<size_t, rank()> result;
     for (size_t i = 0; i < rank(); ++i)
@@ -632,7 +629,7 @@ private:
 };
 
 #ifdef UNITTESTED_FILE
-#ifdef STF_HAS_UNITTEST_WITH_ARGS
+#  ifdef STF_HAS_UNITTEST_WITH_ARGS
 UNITTEST("shape_of for slice and mdspan", (slice<double, 3>()))
 {
   using View = ::std::remove_reference_t<decltype(unittest_param)>;
@@ -684,7 +681,7 @@ UNITTEST("3D slice should be similar to 3D mdspan", (slice<double, 3>()))
   double data[3 * 4 * 5];
   for (size_t i = 0; i < sizeof(data) / sizeof(data[0]); ++i)
   {
-    data[i] = 1.0*i;
+    data[i] = 1.0 * i;
   }
   // Access each element of the array
   auto m = reserved::make_mdview<View>(data, ::std::tuple{3, 4, 5}, 3, 3 * 4);
@@ -807,7 +804,7 @@ UNITTEST("3D slice should be similar to 3D mdspan", (slice<double, 3>()))
   EXPECT(::std::equal(data, data + 3 * 4 * 5, witness));
 };
 
-#endif // STF_HAS_UNITTEST_WITH_ARGS
+#  endif // STF_HAS_UNITTEST_WITH_ARGS
 #endif // UNITTESTED_FILE
 
 /**

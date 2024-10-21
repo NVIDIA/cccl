@@ -433,7 +433,8 @@ inline event_list event_impl::from_stream(backend_ctx_untyped&, cudaStream_t) co
 }
 _CCCL_DIAG_POP
 
-namespace reserved {
+namespace reserved
+{
 
 // For counters
 class join_tag

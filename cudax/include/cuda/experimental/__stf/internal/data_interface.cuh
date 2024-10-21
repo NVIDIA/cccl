@@ -99,7 +99,8 @@ using readonly_type_of = typename reserved::readonly_type_of<T>::type;
 template <typename T>
 using rw_type_of = typename reserved::rw_type_of<T>::type;
 
-namespace reserved {
+namespace reserved
+{
 template <typename Data>
 void dep_allocate(
   backend_ctx_untyped& ctx,

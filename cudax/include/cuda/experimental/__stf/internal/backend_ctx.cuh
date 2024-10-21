@@ -493,8 +493,8 @@ protected:
     }
 
 #if defined(_CCCL_COMPILER_MSVC)
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
+    _CCCL_DIAG_PUSH
+    _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
 #endif // _CCCL_COMPILER_MSVC
     virtual event_list stream_to_event_list(cudaStream_t, ::std::string) const
     {
@@ -503,7 +503,7 @@ _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
       return event_list();
     }
 #if defined(_CCCL_COMPILER_MSVC)
-_CCCL_DIAG_POP
+    _CCCL_DIAG_POP
 #endif // _CCCL_COMPILER_MSVC
 
     virtual size_t epoch() const
@@ -598,7 +598,10 @@ _CCCL_DIAG_POP
     ::std::unique_ptr<reserved::scheduler> auto_scheduler;
     ::std::unique_ptr<reserved::reorderer> auto_reorderer;
     // Stats-related stuff
-    ::std::unordered_map<::std::pair<int, int>, ::std::pair<size_t, size_t>, cuda::experimental::stf::hash<::std::pair<int, int>>> transfers;
+    ::std::unordered_map<::std::pair<int, int>,
+                         ::std::pair<size_t, size_t>,
+                         cuda::experimental::stf::hash<::std::pair<int, int>>>
+      transfers;
     bool is_recording_stats = false;
     // Keep track of the number of tasks generated in the context
     ::std::atomic<size_t> total_task_cnt;

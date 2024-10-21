@@ -163,7 +163,8 @@ public:
   };
 
   using statistics_map_key_t = ::std::pair<::std::string, size_t>;
-  using statistics_map_t = ::std::unordered_map<statistics_map_key_t, statistic, cuda::experimental::stf::hash<statistics_map_key_t>>;
+  using statistics_map_t =
+    ::std::unordered_map<statistics_map_key_t, statistic, cuda::experimental::stf::hash<statistics_map_key_t>>;
 
   void read_statistics_file(const char* filename)
   {

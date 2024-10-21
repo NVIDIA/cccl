@@ -40,7 +40,8 @@ int main()
 #if defined(_CCCL_COMPILER_MSVC)
   signal(SIGABRT, &cleanupRoutine);
 #else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC
-  struct sigaction sigabrt_action{};
+  struct sigaction sigabrt_action
+  {};
   memset(&sigabrt_action, 0, sizeof(sigabrt_action));
   sigabrt_action.sa_handler = &cleanupRoutine;
 

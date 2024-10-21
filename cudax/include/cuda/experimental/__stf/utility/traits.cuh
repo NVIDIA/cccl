@@ -53,15 +53,17 @@ constexpr ::std::string_view type_name_IMPL()
 
 // Length of prefix and suffix in __PRETTY_FUNCTION__ when used with `type_name`.
 inline constexpr ::std::pair<size_t, size_t> type_name_affixes = [] {
-  const auto p = type_name_IMPL<double>();
+  const auto p      = type_name_IMPL<double>();
   const auto target = ::std::string_view("double");
-  const auto len = target.size();
+  const auto len    = target.size();
   // Simulate p.find() by hand because clang can't do it.
   size_t i = target.npos;
-  for (std::size_t start = 0; start <= p.size() - len; ++start) {
-    if (p.substr(start, len) == target) {
-        i = start;  // Found the substring, set i to the starting position
-        break;      // Exit loop after finding the first match
+  for (std::size_t start = 0; start <= p.size() - len; ++start)
+  {
+    if (p.substr(start, len) == target)
+    {
+      i = start; // Found the substring, set i to the starting position
+      break; // Exit loop after finding the first match
     }
   }
   auto j = p.size() - i - len;
@@ -81,7 +83,7 @@ constexpr ::std::string_view type_name_impl()
 #endif // !_CCCL_COMPILER_MSVC
 }
 
-}
+} // namespace reserved
 
 /**
  * @brief Yields a string form of type name. Exact spelling not guaranteed (e.g. `type_name<int*>` may be `"int*"`,
@@ -132,7 +134,8 @@ class print_type_name_and_fail
   static_assert(::std::integral_constant<T*, nullptr>::value, "Type name is: ");
 };
 
-namespace reserved {
+namespace reserved
+{
 
 /**
  * @brief A singleton template class implementing the Meyers Singleton design pattern.
@@ -306,7 +309,7 @@ T only_convertible(P0&& p0, P&&... p)
 {
   if constexpr (::std::is_convertible_v<P0, T>)
   {
-    ((void)p, ...);
+    ((void) p, ...);
     static_assert(!(::std::is_convertible_v<P, T> || ...), "Duplicate argument type found");
     return ::std::forward<P0>(p0);
   }
@@ -393,7 +396,7 @@ T only_convertible_or([[maybe_unused]] T default_v, P&&... p)
 {
   if constexpr (!(::std::is_convertible_v<P, T> || ...))
   {
-    ((void)p, ...);
+    ((void) p, ...);
     return default_v;
   }
   else

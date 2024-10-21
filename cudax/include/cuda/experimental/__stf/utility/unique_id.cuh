@@ -20,8 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <atomic>
 #include <cuda/experimental/__stf/utility/hash.cuh>
+
+#include <atomic>
 
 namespace cuda::experimental::stf
 {
@@ -84,5 +85,3 @@ struct hash<reserved::unique_id<C, letters...>>
 };
 
 } // end namespace cuda::experimental::stf
-
-

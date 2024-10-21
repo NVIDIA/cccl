@@ -141,8 +141,13 @@ public:
   {}
 
   void data_allocate(
-    backend_ctx_untyped&, block_allocator_untyped&, const data_place&, instance_id_t, ::std::ptrdiff_t& s, void**, event_list&)
-    override
+    backend_ctx_untyped&,
+    block_allocator_untyped&,
+    const data_place&,
+    instance_id_t,
+    ::std::ptrdiff_t& s,
+    void**,
+    event_list&) override
   {
     s = 0;
   }
@@ -199,5 +204,3 @@ struct hash<void_interface>
 };
 
 } // end namespace cuda::experimental::stf
-
-

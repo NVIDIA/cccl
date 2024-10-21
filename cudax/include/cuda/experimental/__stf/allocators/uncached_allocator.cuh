@@ -44,7 +44,8 @@ namespace cuda::experimental::stf
  */
 class uncached_block_allocator : public block_allocator_interface
 {
-  void* allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
+  void*
+  allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
   {
     auto& uncached = ctx.get_uncached_allocator();
     return uncached.allocate(ctx, memory_node, s, prereqs);

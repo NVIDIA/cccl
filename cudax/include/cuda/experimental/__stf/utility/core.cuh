@@ -428,7 +428,7 @@ constexpr V get_reserved_default()
          : ::std::numeric_limits<V>::min();
 }
 
-template<auto V>
+template <auto V>
 using __copy_type_t = decltype(V);
 
 /**
@@ -563,45 +563,45 @@ private:
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 // Operator implementations
-#define _3197bc91feaf98030b2cc0b441d7b0ea(op)                                                          \
-  template <auto v1, auto v2, auto r>                                                                  \
-  constexpr auto operator op(const optionally_static<v1, r>& lhs, const optionally_static<v2, r>& rhs) \
-  {                                                                                                    \
-    if constexpr (!std::remove_reference_t<decltype(lhs)>::is_static                                   \
-                  || !std::remove_reference_t<decltype(rhs)>::is_static)                               \
-    {                                                                                                  \
-      return lhs.get() op rhs.get();                                                                   \
-    }                                                                                                  \
-    else if constexpr ((v1 op v2) == r)                                                                \
-    {                                                                                                  \
-      /* rare case where we convert two static values into a dynamic one */                            \
-      return r;                                                                                        \
-    }                                                                                                  \
-    else                                                                                               \
-    {                                                                                                  \
-      return optionally_static<(v1 op v2), r>();                                                       \
-    }                                                                                                  \
-  }                                                                                                    \
-  template <auto v, auto r, typename T>                                                                \
-  constexpr auto operator op(const optionally_static<v, r>& lhs, const T& rhs)                         \
-  {                                                                                                    \
-    return lhs.get() op rhs;                                                                           \
-  }                                                                                                    \
-  template <auto v, auto r, typename T>                                                                \
-  constexpr auto operator op(const T& lhs, const optionally_static<v, r>& rhs)                         \
-  {                                                                                                    \
-    return lhs op rhs.get();                                                                           \
-  }                                                                                                    \
-  template <auto v2, auto r>                                                                           \
-  constexpr auto& operator op##=(optionally_static<r, r>& lhs, const optionally_static<v2, r>& rhs)    \
-  {                                                                                                    \
-    return lhs.get_ref() op## = rhs.get();                                                             \
-  }                                                                                                    \
-  template <auto r, typename T>                                                                        \
-  constexpr auto& operator op##=(optionally_static<r, r>& lhs, const T & rhs)                          \
-  {                                                                                                    \
-    return lhs.get_ref() op## = rhs;                                                                   \
-  }
+#  define _3197bc91feaf98030b2cc0b441d7b0ea(op)                                                          \
+    template <auto v1, auto v2, auto r>                                                                  \
+    constexpr auto operator op(const optionally_static<v1, r>& lhs, const optionally_static<v2, r>& rhs) \
+    {                                                                                                    \
+      if constexpr (!std::remove_reference_t<decltype(lhs)>::is_static                                   \
+                    || !std::remove_reference_t<decltype(rhs)>::is_static)                               \
+      {                                                                                                  \
+        return lhs.get() op rhs.get();                                                                   \
+      }                                                                                                  \
+      else if constexpr ((v1 op v2) == r)                                                                \
+      {                                                                                                  \
+        /* rare case where we convert two static values into a dynamic one */                            \
+        return r;                                                                                        \
+      }                                                                                                  \
+      else                                                                                               \
+      {                                                                                                  \
+        return optionally_static<(v1 op v2), r>();                                                       \
+      }                                                                                                  \
+    }                                                                                                    \
+    template <auto v, auto r, typename T>                                                                \
+    constexpr auto operator op(const optionally_static<v, r>& lhs, const T& rhs)                         \
+    {                                                                                                    \
+      return lhs.get() op rhs;                                                                           \
+    }                                                                                                    \
+    template <auto v, auto r, typename T>                                                                \
+    constexpr auto operator op(const T& lhs, const optionally_static<v, r>& rhs)                         \
+    {                                                                                                    \
+      return lhs op rhs.get();                                                                           \
+    }                                                                                                    \
+    template <auto v2, auto r>                                                                           \
+    constexpr auto& operator op##=(optionally_static<r, r>& lhs, const optionally_static<v2, r>& rhs)    \
+    {                                                                                                    \
+      return lhs.get_ref() op## = rhs.get();                                                             \
+    }                                                                                                    \
+    template <auto r, typename T>                                                                        \
+    constexpr auto& operator op##=(optionally_static<r, r>& lhs, const T & rhs)                          \
+    {                                                                                                    \
+      return lhs.get_ref() op## = rhs;                                                                   \
+    }
 
 // Implement for the usual operators
 _3197bc91feaf98030b2cc0b441d7b0ea(+);
@@ -615,24 +615,24 @@ _3197bc91feaf98030b2cc0b441d7b0ea(^);
 //_3197bc91feaf98030b2cc0b441d7b0ea(<<);
 //_3197bc91feaf98030b2cc0b441d7b0ea(>>);
 
-#undef _3197bc91feaf98030b2cc0b441d7b0ea
+#  undef _3197bc91feaf98030b2cc0b441d7b0ea
 
-#define _3197bc91feaf98030b2cc0b441d7b0ea(op)                                                          \
-  template <auto v1, auto v2, auto r>                                                                  \
-  constexpr bool operator op(const optionally_static<v1, r>& lhs, const optionally_static<v2, r>& rhs) \
-  {                                                                                                    \
-    return lhs.get() op rhs.get();                                                                     \
-  }                                                                                                    \
-  template <auto v, auto r, typename T, typename = std::enable_if_t<!std::is_same_v<T, optionally_static<v, r>>>>                                                                \
-  constexpr bool operator op(const optionally_static<v, r>& lhs, const T& rhs)                         \
-  {                                                                                                    \
-    return lhs.get() op rhs;                                                                           \
-  }                                                                                                    \
-  template <auto v, auto r, typename T, typename = std::enable_if_t<!std::is_same_v<T, optionally_static<v, r>>>>                                                                \
-  constexpr bool operator op(const T& lhs, const optionally_static<v, r>& rhs)                         \
-  {                                                                                                    \
-    return lhs op rhs.get();                                                                           \
-  }
+#  define _3197bc91feaf98030b2cc0b441d7b0ea(op)                                                                     \
+    template <auto v1, auto v2, auto r>                                                                             \
+    constexpr bool operator op(const optionally_static<v1, r>& lhs, const optionally_static<v2, r>& rhs)            \
+    {                                                                                                               \
+      return lhs.get() op rhs.get();                                                                                \
+    }                                                                                                               \
+    template <auto v, auto r, typename T, typename = std::enable_if_t<!std::is_same_v<T, optionally_static<v, r>>>> \
+    constexpr bool operator op(const optionally_static<v, r>& lhs, const T& rhs)                                    \
+    {                                                                                                               \
+      return lhs.get() op rhs;                                                                                      \
+    }                                                                                                               \
+    template <auto v, auto r, typename T, typename = std::enable_if_t<!std::is_same_v<T, optionally_static<v, r>>>> \
+    constexpr bool operator op(const T& lhs, const optionally_static<v, r>& rhs)                                    \
+    {                                                                                                               \
+      return lhs op rhs.get();                                                                                      \
+    }
 
 _3197bc91feaf98030b2cc0b441d7b0ea(==);
 _3197bc91feaf98030b2cc0b441d7b0ea(!=);
@@ -641,7 +641,7 @@ _3197bc91feaf98030b2cc0b441d7b0ea(>);
 _3197bc91feaf98030b2cc0b441d7b0ea(<=);
 _3197bc91feaf98030b2cc0b441d7b0ea(>=);
 
-#undef _3197bc91feaf98030b2cc0b441d7b0ea
+#  undef _3197bc91feaf98030b2cc0b441d7b0ea
 
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 

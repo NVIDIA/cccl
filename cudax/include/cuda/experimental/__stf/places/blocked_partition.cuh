@@ -58,10 +58,10 @@ public:
     }
     //        }
 
-    size_t nplaces    = grid_dims.x;
+    size_t nplaces             = grid_dims.x;
     ::std::ptrdiff_t dim_beg   = bounds[target_dim].first;
     ::std::ptrdiff_t dim_end   = bounds[target_dim].second;
-    size_t cnt        = dim_end - dim_beg;
+    size_t cnt                 = dim_end - dim_beg;
     ::std::ptrdiff_t part_size = (cnt + nplaces - 1) / nplaces;
 
     // If first = second, this means it's an empty shape. This may happen
@@ -103,8 +103,7 @@ public:
     return box<dimensions>(bounds);
   }
 
-  _CCCL_HOST_DEVICE
-  static pos4 get_executor(pos4 data_coords, dim4 data_dims, dim4 grid_dims)
+  _CCCL_HOST_DEVICE static pos4 get_executor(pos4 data_coords, dim4 data_dims, dim4 grid_dims)
   {
     // Find the largest dimension
     size_t rank       = data_dims.get_rank();

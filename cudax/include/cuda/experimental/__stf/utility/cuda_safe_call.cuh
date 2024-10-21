@@ -95,7 +95,7 @@ inline const char* cusolverGetErrorString(const cusolverStatus_t status)
 class cuda_exception : public ::std::exception
 {
 public:
-  cuda_exception()                      = delete;
+  cuda_exception() = delete;
   // TODO (miscco): Why was this not copyable?
   // cuda_exception(const cuda_exception&) = delete;
 

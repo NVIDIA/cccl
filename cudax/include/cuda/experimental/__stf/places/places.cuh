@@ -1423,9 +1423,9 @@ template <typename Kernel>
 compute_occupancy(Kernel&& f, size_t dynamicSMemSize = 0, int blockSizeLimit = 0)
 {
   using key_t = ::std::pair<size_t /*dynamicSMemSize*/, int /*blockSizeLimit*/>;
-  static ::std::unordered_map<key_t,
-                              ::std::pair<int /*min_grid_size*/, int /*block_size*/>, ::cuda::experimental::stf::hash<key_t>>
-    occupancy_cache;
+  static ::std::
+    unordered_map<key_t, ::std::pair<int /*min_grid_size*/, int /*block_size*/>, ::cuda::experimental::stf::hash<key_t>>
+      occupancy_cache;
   const auto key = ::std::make_pair(dynamicSMemSize, blockSizeLimit);
 
   if (auto i = occupancy_cache.find(key); i != occupancy_cache.end())
@@ -1618,7 +1618,8 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     int block_size_limit = 0;
     /* level 2 will be mapped on threads, level 1 on blocks, level 0 on devices */
     size_t shared_mem_bytes = size_t(p.get_mem(2));
-    reserved::compute_kernel_limits(f, min_grid_size, max_block_size, shared_mem_bytes, l0_sync || l1_sync, block_size_limit);
+    reserved::compute_kernel_limits(
+      f, min_grid_size, max_block_size, shared_mem_bytes, l0_sync || l1_sync, block_size_limit);
 
     // For implicit widths, use sizes suggested by CUDA occupancy calculator
     if (l2_size == 0)
@@ -1698,5 +1699,3 @@ struct hash<data_place>
 };
 
 } // end namespace cuda::experimental::stf
-
-

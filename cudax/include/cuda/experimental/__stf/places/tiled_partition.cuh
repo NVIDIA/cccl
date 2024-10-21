@@ -140,8 +140,7 @@ public:
     return reserved::tiled_mdspan_shape<tile_size, mdspan_shape_t>(in, place_position.x, grid_dims.x);
   }
 
-  _CCCL_HOST_DEVICE
-  static pos4 get_executor(pos4 data_coords, dim4 /*unused*/, dim4 grid_dims)
+  _CCCL_HOST_DEVICE static pos4 get_executor(pos4 data_coords, dim4 /*unused*/, dim4 grid_dims)
   {
     assert(grid_dims.x > 0);
     return pos4((data_coords.x / tile_size) % grid_dims.x);

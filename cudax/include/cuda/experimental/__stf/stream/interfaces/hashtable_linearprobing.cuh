@@ -23,7 +23,8 @@
 /**
  * @file
  *
- * @brief Defines a data interface over the hashtable class, which is based on https://nosferalatu.com/SimpleGPUHashTable.html
+ * @brief Defines a data interface over the hashtable class, which is based on
+ * https://nosferalatu.com/SimpleGPUHashTable.html
  */
 
 #include <cuda/experimental/__stf/internal/hashtable_linearprobing.cuh>
@@ -66,7 +67,7 @@ public:
 
     reserved::KeyValue* src = src_instance.addr;
     reserved::KeyValue* dst = dst_instance.addr;
-    size_t sz     = this->shape.get_capacity() * sizeof(reserved::KeyValue);
+    size_t sz               = this->shape.get_capacity() * sizeof(reserved::KeyValue);
 
     // NAIVE method !
     cuda_safe_call(cudaMemcpyAsync((void*) dst, (void*) src, sz, kind, s));

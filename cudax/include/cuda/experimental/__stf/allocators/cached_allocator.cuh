@@ -60,7 +60,8 @@ public:
    * @param prereqs List of events that this allocation depends on.
    * @return void* A pointer to the allocated memory block or nullptr if allocation fails.
    */
-  void* allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
+  void*
+  allocate(backend_ctx_untyped& ctx, const data_place& memory_node, ::std::ptrdiff_t& s, event_list& prereqs) override
   {
     EXPECT(s > 0);
 

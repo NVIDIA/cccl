@@ -90,7 +90,7 @@ void write_vtk_2D(const std::string& filename, slice<double, 3> Ez, double dx, d
 // Define the source function
 _CCCL_DEVICE double Source(double t, double x, double y, double z)
 {
-  constexpr double pi = 3.14159265358979323846;
+  constexpr double pi         = 3.14159265358979323846;
   constexpr double freq       = 1e9;
   constexpr double omega      = (2 * pi * freq);
   constexpr double wavelength = 3e8 / freq;
@@ -222,24 +222,24 @@ int main(int argc, char** argv)
 
     // Update Ex
     ctx.parallel_for(blocked_partition(), where, Es, lEx.rw(), lHy.read(), lHz.read(), lepsilon.read())
-        ->*
-      [=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ex, auto Hy, auto Hz, auto epsilon) {
+        ->*[=]
+      _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ex, auto Hy, auto Hz, auto epsilon) {
         Ex(i, j, k) = Ex(i, j, k)
                     + (DT / (epsilon(i, j, k) * DX)) * (Hz(i, j, k) - Hz(i, j - 1, k) - Hy(i, j, k) + Hy(i, j, k - 1));
       };
 
     // Update Ey
     ctx.parallel_for(blocked_partition(), where, Es, lEy.rw(), lHx.read(), lHz.read(), lepsilon.read())
-        ->*
-      [=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ey, auto Hx, auto Hz, auto epsilon) {
+        ->*[=]
+      _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ey, auto Hx, auto Hz, auto epsilon) {
         Ey(i, j, k) = Ey(i, j, k)
                     + (DT / (epsilon(i, j, k) * DY)) * (Hx(i, j, k) - Hx(i, j, k - 1) - Hz(i, j, k) + Hz(i - 1, j, k));
       };
 
     // Update Ez
     ctx.parallel_for(blocked_partition(), where, Es, lEz.rw(), lHx.read(), lHy.read(), lepsilon.read())
-        ->*
-      [=] _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ez, auto Hx, auto Hy, auto epsilon) {
+        ->*[=]
+      _CCCL_DEVICE(size_t i, size_t j, size_t k, auto Ez, auto Hx, auto Hy, auto epsilon) {
         Ez(i, j, k) = Ez(i, j, k)
                     + (DT / (epsilon(i, j, k) * DZ)) * (Hy(i, j, k) - Hy(i - 1, j, k) - Hx(i, j, k) + Hx(i, j - 1, k));
       };

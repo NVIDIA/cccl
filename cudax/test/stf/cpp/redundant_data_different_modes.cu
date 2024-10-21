@@ -42,7 +42,7 @@ void run()
   // Read that value on the host
   ctx.host_launch(var_handle.read())->*[](auto da) {
     int result = *da.data_handle();
-    (void)result;
+    (void) result;
     assert(result == 43);
   };
 

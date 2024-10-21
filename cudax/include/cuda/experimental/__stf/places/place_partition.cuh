@@ -107,7 +107,8 @@ public:
   }
   iterator end()
   {
-    return sub_places.end();;
+    return sub_places.end();
+    ;
   }
 
   /** @brief Number of subplaces in the partition */

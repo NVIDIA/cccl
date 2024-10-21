@@ -132,7 +132,8 @@ public:
 #ifdef CUDASTF_DEBUG
       reserved::counter<reserved::cuda_event_tag::created>::increment();
       reserved::counter<reserved::cuda_event_tag::alive>::increment();
-      reserved::high_water_mark<reserved::cuda_event_tag::alive>::record(reserved::counter<cuda_event_tag::alive>::load());
+      reserved::high_water_mark<reserved::cuda_event_tag::alive>::record(
+        reserved::counter<cuda_event_tag::alive>::load());
 #endif
 
       cuda_safe_call(cudaEventRecord(sync_event, s2));
@@ -169,7 +170,8 @@ public:
 #ifdef CUDASTF_DEBUG
       reserved::counter<reserved::cuda_event_tag::created>::increment();
       reserved::counter<reserved::cuda_event_tag::alive>::increment();
-      reserved::high_water_mark<reserved::cuda_event_tag::alive>::record(reserved::counter<cuda_event_tag::alive>::load());
+      reserved::high_water_mark<reserved::cuda_event_tag::alive>::record(
+        reserved::counter<cuda_event_tag::alive>::load());
 #endif
       cuda_safe_call(cudaEventRecord(cudaEvent, dstream.stream));
     };
@@ -440,9 +442,9 @@ private:
     {
       cudaStream_t stream;
       ::std::ptrdiff_t stream_id = -1;
-      auto se           = reserved::handle<stream_and_event, reserved::handle_flags::non_null>(e, reserved::use_static_cast);
-      stream            = se->get_stream();
-      stream_id         = se->get_stream_id();
+      auto se   = reserved::handle<stream_and_event, reserved::handle_flags::non_null>(e, reserved::use_static_cast);
+      stream    = se->get_stream();
+      stream_id = se->get_stream_id();
 
       // Find the stream structure in the driver API
       auto stream_driver = CUstream(stream);

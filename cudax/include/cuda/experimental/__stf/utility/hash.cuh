@@ -85,13 +85,16 @@ inline constexpr bool has_std_hash_v = has_std_hash<E>::value;
 template <typename T>
 void hash_combine(size_t& seed, const T& val)
 {
-    if constexpr (reserved::has_std_hash_v<T>) {
-        // Use std::hash if it is specialized for T
-        seed ^= ::std::hash<T>()(val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    } else {
-        // Otherwise, use cuda::experimental::stf::hash
-        seed ^= ::cuda::experimental::stf::hash<T>()(val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-    }
+  if constexpr (reserved::has_std_hash_v<T>)
+  {
+    // Use std::hash if it is specialized for T
+    seed ^= ::std::hash<T>()(val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+  }
+  else
+  {
+    // Otherwise, use cuda::experimental::stf::hash
+    seed ^= ::cuda::experimental::stf::hash<T>()(val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+  }
 }
 
 template <typename... Ts>
@@ -99,12 +102,15 @@ size_t hash_all(const Ts&... vals)
 {
   if constexpr (sizeof...(Ts) == 1)
   {
-        // Special case: single value, use std::hash if possible
-        if constexpr (reserved::has_std_hash_v<Ts...>) {
-            return ::std::hash<Ts...>()(vals...);
-        } else {
-            return ::cuda::experimental::stf::hash<Ts...>()(vals...);
-        }
+    // Special case: single value, use std::hash if possible
+    if constexpr (reserved::has_std_hash_v<Ts...>)
+    {
+      return ::std::hash<Ts...>()(vals...);
+    }
+    else
+    {
+      return ::cuda::experimental::stf::hash<Ts...>()(vals...);
+    }
   }
   else
   {
@@ -172,7 +178,8 @@ struct hash<::std::tuple<Ts...>>
   }
 };
 
-namespace reserved {
+namespace reserved
+{
 /**
  * @brief Trait to check if std::hash<E> is defined.
  *
@@ -192,8 +199,9 @@ struct has_cudastf_hash : ::std::false_type
  * @tparam E The type to check for std::hash definition.
  */
 template <typename E>
-struct has_cudastf_hash<E, ::std::void_t<decltype(::std::declval<::cuda::experimental::stf::hash<E>>()(::std::declval<E>()))>>
-    : ::std::true_type
+struct has_cudastf_hash<
+  E,
+  ::std::void_t<decltype(::std::declval<::cuda::experimental::stf::hash<E>>()(::std::declval<E>()))>> : ::std::true_type
 {};
 
 /**
@@ -215,5 +223,3 @@ UNITTEST("hash for tuples")
 };
 
 } // end namespace cuda::experimental::stf
-
-
