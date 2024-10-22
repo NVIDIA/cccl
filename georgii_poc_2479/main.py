@@ -12,10 +12,10 @@ import numpy as np
 
 
 class RawPointer:
-    def __init__(self, ptr): # TODO Showcasing the case of int32, need dtype with at least primitive types, ideally any numba type
+    def __init__(self, ptr, dtype):
         self.val = ctypes.c_void_p(ptr)
-        self.ltoirs = [numba.cuda.compile(RawPointer.pointer_advance, sig=numba.types.void(numba.types.CPointer(numba.types.uint64), numba.types.int32), output='ltoir'),
-                       numba.cuda.compile(RawPointer.pointer_dereference, sig=numba.types.int32(numba.types.CPointer(numba.types.CPointer(numba.types.int32))), output='ltoir')]
+        self.ltoirs = [numba.cuda.compile(RawPointer.pointer_advance, sig=numba.types.void(numba.types.CPointer(numba.types.uint64), dtype), output='ltoir'),
+                       numba.cuda.compile(RawPointer.pointer_dereference, sig=dtype(numba.types.CPointer(numba.types.CPointer(dtype))), output='ltoir')]
         self.prefix = 'pointer'
 
     def pointer_advance(this, distance):
@@ -34,8 +34,8 @@ class RawPointer:
         return 8 # TODO should be using numba for user-defined types support
 
 
-def pointer(container):
-    return RawPointer(container.device_ctypes_pointer.value)
+def pointer(container, dtype):
+    return RawPointer(container.device_ctypes_pointer.value, dtype)
 
 
 @intrinsic
@@ -315,12 +315,12 @@ parallel_algorithm(mult_count_by_2_and_add_10, num_items, output_array)
 print("expect: 94 96 98 100; get:", " ".join([str(x) for x in output_array.copy_to_host()]))
 
 input_array = numba.cuda.to_device(np.array([4, 3, 2, 1], dtype=np.int32))
-ptr = pointer(input_array) # TODO this transformation should be hidden on the transform implementation side
+ptr = pointer(input_array, numba.types.int32) # TODO this transformation should be hidden on the transform implementation side
 parallel_algorithm(ptr, num_items, output_array)
 print("expect:  4  3  2 1  ; get:", " ".join([str(x) for x in output_array.copy_to_host()]))
 
 input_array = numba.cuda.to_device(np.array([4, 3, 2, 1], dtype=np.int32))
-ptr = pointer(input_array) # TODO this transformation should be hidden on the transform implementation side
+ptr = pointer(input_array, numba.types.int32) # TODO this transformation should be hidden on the transform implementation side
 tptr = map(ptr, mult)
 parallel_algorithm(tptr, num_items, output_array)
 print("expect:  8  6  4 2  ; get:", " ".join([str(x) for x in output_array.copy_to_host()]))
