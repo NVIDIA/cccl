@@ -75,6 +75,7 @@ inline int setenv(const char* name, const char* value, int overwrite) {
 namespace cuda::experimental::stf
 {
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // FIXME Doxygen is lost with decltype(auto)
 /**
  * @brief Custom move function that performs checks on the argument type.
  *
@@ -92,6 +93,7 @@ _CCCL_HOST_DEVICE constexpr decltype(auto) mv(T&& obj)
   static_assert(!::std::is_const_v<::std::remove_reference_t<T>>, "Misleading move from const lvalue.");
   return ::std::move(obj);
 }
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
 /**
  * @brief Creates a `std::shared_ptr` managing a copy of the given object.

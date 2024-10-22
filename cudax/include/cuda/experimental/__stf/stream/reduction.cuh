@@ -65,6 +65,7 @@ public:
     const exec_place& e,
     cudaStream_t s) = 0;
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen has issues with this code
   void op_untyped(
     logical_data_untyped& d,
     const data_place& inout_memory_node,
@@ -109,6 +110,7 @@ public:
 
     prereqs = async_op.end(d.get_ctx());
   }
+#endif // DOXYGEN_SHOULD_SKIP_THIS // doxygen has issues with this code
 };
 
 /**
