@@ -69,7 +69,7 @@
 
 // Define THRUST_COMPILER_DEPRECATION macro:
 #if defined(_CCCL_COMPILER_MSVC)
-#  define THRUST_COMP_DEPR_IMPL(msg) _CCCL_PRAGMA(message(__FILE__ ":" _CCCL_TOSTRING(__LINE__) ": warning: " #msg))
+#  define THRUST_COMP_DEPR_IMPL(msg) _CCCL_PRAGMA(message(__FILE__ ":" _CCCL_TO_STRING(__LINE__) ": warning: " #msg))
 #else // clang / gcc:
 #  define THRUST_COMP_DEPR_IMPL(msg) _CCCL_PRAGMA(GCC warning #msg)
 #endif
