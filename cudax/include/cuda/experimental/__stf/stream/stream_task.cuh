@@ -587,7 +587,7 @@ private:
 template <typename... Data>
 class deferred_stream_task;
 
-#ifdef DOXYGEN_SHOULD_SKIP_THIS // doxygen has issues with this code
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen has issues with this code
 /*
  * Base of all deferred tasks. Stores the needed information for typed deferred tasks to run (see below).
  */
