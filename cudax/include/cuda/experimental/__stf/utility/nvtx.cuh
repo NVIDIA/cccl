@@ -26,7 +26,9 @@
 #  pragma system_header
 #endif // no system header
 
+#if __has_include(<nvtx3/nvToolsExt.h>)
 #include <nvtx3/nvToolsExt.h>
+#endif
 
 namespace cuda::experimental::stf
 {
@@ -39,7 +41,9 @@ class nvtx_range
 public:
   nvtx_range(const char* message)
   {
+#if __has_include(<nvtx3/nvToolsExt.h>)
     nvtxRangePushA(message);
+#endif
   }
 
   // Noncopyable and nonassignable to avoid multiple pops
@@ -49,7 +53,9 @@ public:
 
   ~nvtx_range()
   {
+#if __has_include(<nvtx3/nvToolsExt.h>)
     nvtxRangePop();
+#endif
   }
 };
 
