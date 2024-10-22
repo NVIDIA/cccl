@@ -23,16 +23,16 @@
 
 #include <cuda/std/__concepts/__concept_macros.h>
 #include <cuda/std/__ranges/concepts.h>
+#include <cuda/std/span>
 
-#include <cuda/experimental/__data_manipulation/common.cuh>
+#include <cuda/experimental/__launch/launch_transform.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
 
 namespace cuda::experimental
 {
 
-template <typename _SrcTy, ::std::size_t _SrcSize, typename _DstTy, ::std::size_t _DstSize>
-void __copy_bytes_impl(
-  stream_ref __stream, _CUDA_VSTD::span<_SrcTy, _SrcSize> __src, _CUDA_VSTD::span<_DstTy, _DstSize> __dst)
+template <typename _SrcTy, typename _DstTy>
+void __copy_bytes_impl(stream_ref __stream, _CUDA_VSTD::span<_SrcTy> __src, _CUDA_VSTD::span<_DstTy> __dst)
 {
   static_assert(!_CUDA_VSTD::is_const_v<_DstTy>, "Copy destination can't be const");
   static_assert(_CUDA_VSTD::is_trivially_copyable_v<_SrcTy> && _CUDA_VSTD::is_trivially_copyable_v<_DstTy>);
@@ -53,6 +53,18 @@ void __copy_bytes_impl(
     __stream.get());
 }
 
+//! @brief Launches a bytewise memory copy from source to destination into the provided stream.
+//!
+//! Both source and destination needs to either be a `contiguous_range` or implicitly
+//! implicitly/launch transform to one.
+//! Both source and destination type is required to be trivially copyable.
+//!
+//! This call might be synchronous if either source or destination is pagable host memory.
+//! It will be synchronous if both destination and copy is located in host memory.
+//!
+//! @param __stream Stream that the copy should be inserted into
+//! @param __src Source to copy from
+//! @param __dst Destination to copy into
 _LIBCUDACXX_TEMPLATE(typename _SrcTy, typename _DstTy)
 _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::contiguous_range<detail::__as_copy_arg_t<_SrcTy>> _LIBCUDACXX_AND
                        _CUDA_VRANGES::contiguous_range<detail::__as_copy_arg_t<_DstTy>>)

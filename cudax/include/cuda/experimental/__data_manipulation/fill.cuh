@@ -23,8 +23,9 @@
 
 #include <cuda/std/__concepts/__concept_macros.h>
 #include <cuda/std/__ranges/concepts.h>
+#include <cuda/std/span>
 
-#include <cuda/experimental/__data_manipulation/common.cuh>
+#include <cuda/experimental/__launch/launch_transform.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
 
 namespace cuda::experimental
@@ -41,6 +42,15 @@ void __fill_bytes_impl(stream_ref __stream, _CUDA_VSTD::span<_DstTy, _DstSize> _
     ::cudaMemsetAsync, "Failed to perform a fill", __dst.data(), __value, __dst.size_bytes(), __stream.get());
 }
 
+//! @brief Launches an operation to bytewise fill the memory into the provided stream.
+//!
+//! Destination needs to either be a `contiguous_range` or implicitly/launch transform
+//! into one. It can't reside in pagable host memory.
+//! Destination type is required to be trivially copyable.
+//!
+//! @param __stream Stream that the copy should be inserted into
+//! @param __dst Destination memory to fill
+//! @param __value Value to fill into every byte in the destination
 _LIBCUDACXX_TEMPLATE(typename _DstTy)
 _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::contiguous_range<detail::__as_copy_arg_t<_DstTy>>)
 void fill_bytes(stream_ref __stream, _DstTy&& __dst, uint8_t __value)
