@@ -197,8 +197,16 @@ inline const arch_traits_t& device_ref::arch_traits() const
 _CCCL_NODISCARD inline ::std::vector<device_ref> device_ref::get_peers() const
 {
   ::std::vector<device_ref> __result;
+  __result.reserve(devices.size());
+
   for (const device& __other_dev : devices)
   {
+    // Exclude the device this API is called on. The main use case for this API
+    // is enable/disable peer access. While enable peer access can be called on
+    // device on which memory resides, disable peer access will error-out.
+    // Usage of the peer access control is smoother when *this is excluded,
+    // while it can be easily added with .push_back() on the vector if a full
+    // group of peers is needed (for cases other than peer access control)
     if (__other_dev != *this)
     {
       int __can_access;
