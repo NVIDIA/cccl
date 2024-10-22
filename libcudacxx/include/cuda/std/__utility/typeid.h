@@ -167,7 +167,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameo
 {
 #if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 90000 && !defined(__CUDA_ARCH__)
   return _CUDA_VSTD::__find_pretty_name(_CUDA_VSTD::__make_pretty_name<_Tp>(integral_constant<size_t, size_t(-1)>{}));
-#elif defined(_CCCL_COMPILER_NVCC) // ^^^ gcc < 9 ^^^ / vvv nvcc vvv
+#elif defined(_CCCL_COMPILER_MSVC) && defined(__CUDACC__) // ^^^ gcc < 9 ^^^ / vvv msvc vvv
   return _CUDA_VSTD::__pretty_name_msvc<_Tp>::__get();
 #else // ^^^ msvc ^^^^/ vvv other compiler vvv
   return _CUDA_VSTD::__find_pretty_name(_CUDA_VSTD::__string_view(_CCCL_PRETTY_FUNCTION));
@@ -190,6 +190,52 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameo
 static_assert(_CUDA_VSTD::__pretty_nameof<int>() == __string_view("int"), "");
 static_assert(_CUDA_VSTD::__pretty_nameof<float>() < _CUDA_VSTD::__pretty_nameof<int>(), "");
 #endif
+
+#if defined(_CCCL_COMPILER_MSVC)
+template <char... _Chs>
+struct __string_literal
+{
+  static constexpr char __str[sizeof...(_Chs) + 1] = {_Chs..., '\0'};
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr ptrdiff_t __offset_or_throw(ptrdiff_t pos1, ptrdiff_t pos2)
+  {
+    return pos1 == pos2
+           ? (pos1 != -1 ? pos1 : (__throw_runtime_error("No occurrence of __pretty_name_bagin< found"), 0))
+           : (__throw_logic_error("Multiple occurrences of __pretty_name_begin<"), 0);
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr ptrdiff_t __find_pretty() noexcept
+  {
+    return __offset_or_throw(__string_view(__str).find("__pretty_name_begin<"),
+                             __string_view(__str).find_end("__pretty_name_begin<"));
+  }
+};
+
+template <class _Tp>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr ptrdiff_t __msvc_test1() noexcept
+{
+#  define M0(I) (I < sizeof(_CCCL_PRETTY_FUNCTION) ? _CCCL_PRETTY_FUNCTION[I] : '\0'),
+  using _Literal = __string_literal<_CCCL_PP_REPEAT(128, M0) '\0'>;
+#  undef M0
+  return _Literal::__find_pretty();
+}
+
+template <class _Tp>
+struct __msvc_test2
+{
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr ptrdiff_t __test() noexcept
+  {
+#  define M0(I) (I < sizeof(_CCCL_PRETTY_FUNCTION) ? _CCCL_PRETTY_FUNCTION[I] : '\0'),
+    using _Literal = __string_literal<_CCCL_PP_REPEAT(128, M0) '\0'>;
+#  undef M0
+    return _Literal::__find_pretty();
+  }
+};
+
+using __pretty_name_int = typename __pretty_name_begin<int>::__pretty_name_end;
+static_assert(-1 != __msvc_test1<__pretty_name_int>(), "");
+static_assert(-1 != __msvc_test2<__pretty_name_int>::__test(), "");
+#endif // defined(_CCCL_COMPILER_MSVC)
 
 // The preferred implementation of `__type_info` only works in device code when
 // both variable templates are supported. Then, we can define a `__typeid<T>`
