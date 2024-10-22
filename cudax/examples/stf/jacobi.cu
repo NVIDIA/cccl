@@ -47,7 +47,9 @@ _CCCL_DEVICE double reduce_max(thread_hierarchy_t& t, double local_max)
   error(0) = 0.0;
   t.sync();
 
-  __shared__ double block_max[t.static_width(1)];
+  // Note we do not use t.static_width(1) because t is a runtime variable so it
+  // cannot be used directly to statically evaluate the size.
+  __shared__ double block_max[thread_hierarchy_t::static_width(1)];
   block_max[ti.rank()] = local_max;
   for (size_t s = ti.size() / 2; s > 0; s /= 2)
   {
