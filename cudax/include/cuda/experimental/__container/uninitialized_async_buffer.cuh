@@ -206,6 +206,12 @@ public:
     return __count_;
   }
 
+  //! @brief Returns the size of the buffer in bytes
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr size_type size_bytes() const noexcept
+  {
+    return __count_ * sizeof(_Tp);
+  }
+
   //! @rst
   //! Returns a \c const reference to the :ref:`any_async_resource <cudax-memory-resource-any-async-resource>`
   //! that holds the memory resource used to allocate the buffer
