@@ -82,9 +82,9 @@ public:
       async_op.set_symbol("redux op " + d.get_symbol());
     }
 
-#ifdef REDUCTION_DEBUG
+#  ifdef REDUCTION_DEBUG
     fprintf(stderr, "stream_redux_op inout %d in %d\n", inout_instance_id, in_instance_id);
-#endif
+#  endif
     stream_redux_op(d, inout_memory_node, inout_instance_id, in_memory_node, in_instance_id, ep, dstream.stream);
 
     prereqs = async_op.end(d.get_ctx());
@@ -103,9 +103,9 @@ public:
       async_op.set_symbol("redux init op " + d.get_symbol());
     }
 
-#ifdef REDUCTION_DEBUG
+#  ifdef REDUCTION_DEBUG
     fprintf(stderr, "stream_init_op out %d\n", out_instance_id);
-#endif
+#  endif
     stream_init_op(d, out_memory_node, out_instance_id, ep, dstream.stream);
 
     prereqs = async_op.end(d.get_ctx());

@@ -74,9 +74,10 @@ public:
     // Submit a task that computes this/rhs
     scalar res(ctx);
 
-    ctx->task(handle.read(), rhs.handle.read(), res.handle.write())->*[](cudaStream_t stream, auto x, auto y1, auto result) {
-      scalar_div<<<1, 1, 0, stream>>>(x.data_handle(), y1.data_handle(), result.data_handle());
-    };
+    ctx->task(handle.read(), rhs.handle.read(), res.handle.write())
+        ->*[](cudaStream_t stream, auto x, auto y1, auto result) {
+              scalar_div<<<1, 1, 0, stream>>>(x.data_handle(), y1.data_handle(), result.data_handle());
+            };
 
     return res;
   }

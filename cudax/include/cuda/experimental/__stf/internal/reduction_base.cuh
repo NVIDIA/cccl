@@ -62,7 +62,7 @@ public:
     const exec_place& e,
     event_list& prereq_in) = 0;
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS 
+#endif // DOXYGEN_SHOULD_SKIP_THIS
 
 private:
   // not used for now ...

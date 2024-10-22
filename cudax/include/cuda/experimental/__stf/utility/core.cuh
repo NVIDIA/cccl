@@ -30,10 +30,10 @@
 #include <functional>
 #include <limits>
 #include <memory>
+#include <string>
 #include <tuple>
 #include <type_traits>
 #include <utility>
-#include <string>
 
 // Hack setenv on Windows
 #if defined(_CCCL_COMPILER_MSVC)
@@ -49,26 +49,30 @@
  * @return 0 on success, or -1 on failure (invalid input or memory allocation failure).
  * @note This function is designed for MSVC, which lacks a standard `setenv` function.
  */
-inline int setenv(const char* name, const char* value, int overwrite) {
-    if (!name || !value || !name[0]) {
-        // Invalid input: name or value is null, or name is an empty string
-        return -1;
-    }
+inline int setenv(const char* name, const char* value, int overwrite)
+{
+  if (!name || !value || !name[0])
+  {
+    // Invalid input: name or value is null, or name is an empty string
+    return -1;
+  }
 
-    // Check if the variable already exists and if overwrite is allowed
-    if (!overwrite && ::std::getenv(name) != nullptr) {
-        return 0;  // Variable exists, and we're not allowed to overwrite it
-    }
+  // Check if the variable already exists and if overwrite is allowed
+  if (!overwrite && ::std::getenv(name) != nullptr)
+  {
+    return 0; // Variable exists, and we're not allowed to overwrite it
+  }
 
-    // Construct the string in the form "NAME=VALUE"
-    auto env_var = ::std::string(name) + "=" + value;
+  // Construct the string in the form "NAME=VALUE"
+  auto env_var = ::std::string(name) + "=" + value;
 
-    // Use _putenv to set the environment variable in MSVC
-    if (_putenv(env_var.c_str()) != 0) {
-        return -1;  // _putenv failed
-    }
+  // Use _putenv to set the environment variable in MSVC
+  if (_putenv(env_var.c_str()) != 0)
+  {
+    return -1; // _putenv failed
+  }
 
-    return 0;  // Success
+  return 0; // Success
 }
 #endif
 

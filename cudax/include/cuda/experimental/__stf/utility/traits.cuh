@@ -301,7 +301,8 @@ template <typename T, size_t N>
  * @param p The remaining arguments in the parameter pack.
  * @return `T` A copy or reference to the first argument that is convertible to type `T`.
  *
- * @note This function will cause a compile-time error if more than one argument in the parameter pack is convertible to type `T`.
+ * @note This function will cause a compile-time error if more than one argument in the parameter pack is convertible to
+ * type `T`.
  *
  * \code{.cpp}
  *   int i = 42;
