@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CUDA_LATCH_H
-#define _LIBCUDACXX___CUDA_LATCH_H
+#ifndef __CUDA__LATCH_LATCH_H
+#define __CUDA__LATCH_LATCH_H
 
 #include <cuda/std/detail/__config>
 
@@ -20,6 +20,9 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
+#include <cuda/std/__latch/latch.h>
+#include <cuda/std/cstddef>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -34,4 +37,4 @@ public:
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#endif // _LIBCUDACXX___CUDA_LATCH_H
+#endif // __CUDA__LATCH_LATCH_H
