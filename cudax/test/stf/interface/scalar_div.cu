@@ -62,8 +62,7 @@ public:
     h_addr = NULL;
     handle = ctx->logical_data(make_slice((double*) nullptr));
 
-    auto t = ctx->task(handle.write(), a.handle.read());
-    t->*[](cudaStream_t stream, auto dst, auto src) {
+    ctx->task(handle.write(), a.handle.read())->*[](cudaStream_t stream, auto dst, auto src) {
       // There are likely much more efficient ways.
       cuda_safe_call(
         cudaMemcpyAsync(dst.data_handle(), src.data_handle(), sizeof(double), cudaMemcpyDeviceToDevice, stream));
@@ -75,10 +74,10 @@ public:
     // Submit a task that computes this/rhs
     scalar res(ctx);
 
-    auto t = ctx->task(handle.read(), rhs.handle.read(), res.handle.write());
-    t->*[](cudaStream_t stream, auto x, auto y1, auto result) {
+    ctx->task(handle.read(), rhs.handle.read(), res.handle.write())->*[](cudaStream_t stream, auto x, auto y1, auto result) {
       scalar_div<<<1, 1, 0, stream>>>(x.data_handle(), y1.data_handle(), result.data_handle());
     };
+
     return res;
   }
 
@@ -86,9 +85,7 @@ public:
   {
     // Submit a task that computes -s
     scalar res(ctx);
-    auto t = ctx->task(handle.read(), res.handle.write());
-
-    t->*[](cudaStream_t stream, auto x, auto result) {
+    ctx->task(handle.read(), res.handle.write())->*[](cudaStream_t stream, auto x, auto result) {
       scalar_minus<<<1, 1, 0, stream>>>(x.data_handle(), result.data_handle());
     };
 
@@ -112,8 +109,7 @@ void run()
 
   scalar c = (-a) / b;
 
-  auto t = ctx.host_launch(c.handle.read());
-  t->*[](auto x) {
+  ctx.host_launch(c.handle.read())->*[](auto x) {
     EXPECT(fabs(*x.data_handle() - (-42.0) / 12.3) < 0.001);
   };
 
