@@ -15,9 +15,6 @@ function(cudax_stf_configure_target target_name)
     $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
     $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>
   )
-  target_compile_definitions(${target_name} PRIVATE
-    "CUDASTF_PROVIDE_MDSPAN"
-  )
   set_target_properties(${target_name} PROPERTIES
     CUDA_RUNTIME_LIBRARY Static
     CUDA_SEPARABLE_COMPILATION ON

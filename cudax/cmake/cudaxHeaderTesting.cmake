@@ -54,10 +54,6 @@ function(cudax_add_header_test label definitions)
       HEADER_TEMPLATE "${cudax_SOURCE_DIR}/cmake/header_test.in.cu"
     )
     target_link_libraries(${headertest_target} PUBLIC ${cn_target})
-    target_compile_definitions(${headertest_target} PRIVATE
-      ${definitions}
-      "-DCUDASTF_PROVIDE_MDSPAN"
-    )
     target_compile_options(${headertest_target} PRIVATE
       # Required by stf headers:
       $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
