@@ -77,7 +77,7 @@ void run(int NTASKS, int ms)
 int main(int argc, char** argv)
 {
   int NTASKS = 25;
-  int ms     = 40;
+  int ms     = 200;
 
   if (argc > 1)
   {
