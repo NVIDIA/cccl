@@ -189,7 +189,7 @@ struct __string_literal
 };
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr ptrdiff_t __msvc_test() noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr ptrdiff_t __msvc_test(_Tp*) noexcept
 {
 #  define M0(I) (I < sizeof(_CCCL_PRETTY_FUNCTION) ? _CCCL_PRETTY_FUNCTION[I] : '\0'),
   using _Literal = __string_literal<_CCCL_PP_REPEAT(128, M0) '\0'>;
@@ -198,7 +198,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr ptrdiff_t __msvc_test() noex
 }
 
 using __pretty_name_int = typename __pretty_name_begin<int>::__pretty_name_end;
-static_assert(-1 != _CUDA_VSTD::__msvc_test<__pretty_name_int>(), "test failed");
+static_assert(-1 != _CUDA_VSTD::__msvc_test(static_cast<__pretty_name_int*>(nullptr)), "test failed");
 #endif
 
 // In device code with old versions of gcc, we cannot have nice things.
