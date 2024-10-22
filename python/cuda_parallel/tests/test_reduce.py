@@ -105,8 +105,14 @@ def cu_arbitrary(permutation):
     return input_unary_op
 
 
+def cu_map(func, rai):
+    def input_unary_op(distance):
+        return func(rai(distance))
+    return input_unary_op
+
+
 @pytest.mark.parametrize("use_numpy_array", [True, False])
-@pytest.mark.parametrize("input_generator", ["constant", "counting", "arbitrary"])
+@pytest.mark.parametrize("input_generator", ["constant", "counting", "arbitrary", "map_mul2"][-1:])
 def test_device_sum_input_unary_op(use_numpy_array, input_generator, num_items=19, start_sum_with=1000):
     def add_op(a, b):
         return a + b
@@ -117,6 +123,8 @@ def test_device_sum_input_unary_op(use_numpy_array, input_generator, num_items=1
         input_unary_op = cu_count(4)
     elif input_generator == "arbitrary":
         input_unary_op = cu_arbitrary((4, 2, 0, 3, 1))
+    elif input_generator == "map_mul2":
+        input_unary_op = cu_map(lambda val: 2 * val, cu_count(0))
     else:
         raise RuntimeError("Unexpected input_generator")
 
