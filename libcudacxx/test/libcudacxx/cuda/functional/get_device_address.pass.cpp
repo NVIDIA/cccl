@@ -8,8 +8,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: nvrtc
-
 #include <cuda/functional>
 #include <cuda/std/cassert>
 
@@ -21,14 +19,15 @@ __device__ const int const_scalar_object = 42;
 __device__ int array_object[]             = {42, 1337, -1};
 __device__ const int const_array_object[] = {42, 1337, -1};
 
+#if !defined(TEST_COMPILER_NVRTC)
 template <class T>
-void test(T& object)
+void test_host(T& object)
 {
   {
-    T* address = cuda::std::addressof(object);
+    T* host_address = cuda::std::addressof(object);
 
     cudaPointerAttributes attributes;
-    cudaError_t status = cudaPointerGetAttributes(&attributes, address);
+    cudaError_t status = cudaPointerGetAttributes(&attributes, host_address);
     assert(status == cudaSuccess);
     assert(attributes.devicePointer == nullptr);
   }
@@ -42,12 +41,21 @@ void test(T& object)
     assert(attributes.devicePointer == device_address);
   }
 }
+#endif // !TEST_COMPILER_NVRTC
+
+template <class T>
+__host__ __device__ void test(T& object)
+{
+  NV_IF_ELSE_TARGET(
+    NV_IS_DEVICE, (assert(cuda::std::addressof(object) == cuda::get_device_address(object));), (test_host(object);))
+}
 
 int main(int argc, char** argv)
 {
-  NV_IF_ELSE_TARGET(NV_IS_HOST,
-                    (test(scalar_object); test(const_scalar_object); test(array_object); test(const_array_object);),
-                    (unused(scalar_object, const_scalar_object, array_object, const_array_object);))
+  test(scalar_object);
+  test(const_scalar_object);
+  test(array_object);
+  test(const_array_object);
 
   return 0;
 }
