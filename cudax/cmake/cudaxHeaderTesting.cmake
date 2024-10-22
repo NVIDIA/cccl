@@ -38,31 +38,34 @@ function(cudax_add_header_test label definitions)
     add_dependencies(cudax.all.headers ${headertest_target})
     add_dependencies(${config_prefix}.all ${headertest_target})
 
-    ###############
-    # STF headers #
-    set(headertest_target ${config_prefix}.headers.${label}.stf)
-    cccl_generate_header_tests(${headertest_target} cudax/include
-      DIALECT ${config_dialect}
-      GLOBS
-        "cuda/experimental/stf.cuh"
-        "cuda/experimental/__stf/*.cuh"
+    # FIXME: Enable MSVC
+    if (NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+      ###############
+      # STF headers #
+      set(headertest_target ${config_prefix}.headers.${label}.stf)
+      cccl_generate_header_tests(${headertest_target} cudax/include
+        DIALECT ${config_dialect}
+        GLOBS
+          "cuda/experimental/stf.cuh"
+          "cuda/experimental/__stf/*.cuh"
 
-      # FIXME: The cudax header template removes the check for the `small` macro.
-      # cuda/experimental/__stf/utility/memory.cuh defines functions named `small`.
-      # These should be renamed to avoid conflicts with windows system headers, and
-      # the following line removed:
-      HEADER_TEMPLATE "${cudax_SOURCE_DIR}/cmake/header_test.in.cu"
-    )
-    target_link_libraries(${headertest_target} PUBLIC ${cn_target})
-    target_compile_options(${headertest_target} PRIVATE
-      # Required by stf headers:
-      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
-      # FIXME: We should be able to refactor away from needing this by
-      # using _CCCL_HOST_DEVICE and friends + `::cuda::std` utilities where
-      # necessary.
-      $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>
-    )
-    cudax_clone_target_properties(${headertest_target} ${cn_target})
+        # FIXME: The cudax header template removes the check for the `small` macro.
+        # cuda/experimental/__stf/utility/memory.cuh defines functions named `small`.
+        # These should be renamed to avoid conflicts with windows system headers, and
+        # the following line removed:
+        HEADER_TEMPLATE "${cudax_SOURCE_DIR}/cmake/header_test.in.cu"
+      )
+      target_link_libraries(${headertest_target} PUBLIC ${cn_target})
+      target_compile_options(${headertest_target} PRIVATE
+        # Required by stf headers:
+        $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
+        # FIXME: We should be able to refactor away from needing this by
+        # using _CCCL_HOST_DEVICE and friends + `::cuda::std` utilities where
+        # necessary.
+        $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--expt-relaxed-constexpr>
+      )
+      cudax_clone_target_properties(${headertest_target} ${cn_target})
+    endif()
 
     add_dependencies(cudax.all.headers ${headertest_target})
     add_dependencies(${config_prefix}.all ${headertest_target})

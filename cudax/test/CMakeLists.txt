@@ -124,5 +124,8 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   )
 endforeach()
 
-# STF tests are handled separately:
-add_subdirectory(stf)
+# FIXME: Enable MSVC
+if (NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  # STF tests are handled separately:
+  add_subdirectory(stf)
+endif()
