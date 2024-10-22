@@ -31,6 +31,10 @@ function(cudax_build_compiler_targets)
     # C4267: conversion from 'meow' to 'purr', possible loss of data
     append_option_if_available("/wd4267" cxx_compile_options)
 
+    # C4459 : declaration of 'identifier' hides global declaration
+    # We work around std::chrono::last which hides some internal "last" variable
+    append_option_if_available("/wd4459" cxx_compile_options)
+
     # stf used getenv which is potentially unsafe but not in our context
     list(APPEND cxx_compile_definitions "_CRT_SECURE_NO_WARNINGS")
   endif()
