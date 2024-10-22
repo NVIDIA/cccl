@@ -54,46 +54,16 @@ void __copy_bytes_impl(
 }
 
 _LIBCUDACXX_TEMPLATE(typename _SrcTy, typename _DstTy)
-_LIBCUDACXX_REQUIRES(__transforms_to_copy_fill_arg<_SrcTy> _LIBCUDACXX_AND __transforms_to_copy_fill_arg<_DstTy>)
+_LIBCUDACXX_REQUIRES(_CUDA_VRANGES::contiguous_range<detail::__as_copy_arg_t<_SrcTy>> _LIBCUDACXX_AND
+                       _CUDA_VRANGES::contiguous_range<detail::__as_copy_arg_t<_DstTy>>)
 void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst)
 {
   __copy_bytes_impl(
     __stream,
-    static_cast<as_kernel_arg_t<_SrcTy>>(detail::__launch_transform(__stream, _CUDA_VSTD::forward<_SrcTy>(__src))),
-    static_cast<as_kernel_arg_t<_DstTy>>(detail::__launch_transform(__stream, _CUDA_VSTD::forward<_DstTy>(__dst))));
-}
-
-_LIBCUDACXX_TEMPLATE(typename _SrcTy, typename _DstTy)
-_LIBCUDACXX_REQUIRES(__transforms_to_copy_fill_arg<_SrcTy> _LIBCUDACXX_AND(!__transforms_to_copy_fill_arg<_DstTy>)
-                       _LIBCUDACXX_AND _CUDA_VRANGES::contiguous_range<_DstTy>)
-void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst)
-{
-  __copy_bytes_impl(
-    __stream,
-    static_cast<as_kernel_arg_t<_SrcTy>>(detail::__launch_transform(__stream, _CUDA_VSTD::forward<_SrcTy>(__src))),
-    _CUDA_VSTD::span(_CUDA_VSTD::forward<_DstTy>(__dst)));
-}
-
-_LIBCUDACXX_TEMPLATE(typename _SrcTy, typename _DstTy)
-_LIBCUDACXX_REQUIRES((!__transforms_to_copy_fill_arg<_SrcTy>) _LIBCUDACXX_AND _CUDA_VRANGES::contiguous_range<_SrcTy>
-                       _LIBCUDACXX_AND __transforms_to_copy_fill_arg<_DstTy>)
-void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst)
-{
-  __copy_bytes_impl(
-    __stream,
-    _CUDA_VSTD::span(_CUDA_VSTD::forward<_SrcTy>(__src)),
-    static_cast<as_kernel_arg_t<_DstTy>>(detail::__launch_transform(__stream, _CUDA_VSTD::forward<_DstTy>(__dst))));
-}
-
-_LIBCUDACXX_TEMPLATE(typename _SrcTy, typename _DstTy)
-_LIBCUDACXX_REQUIRES(
-  (!__transforms_to_copy_fill_arg<_SrcTy>) _LIBCUDACXX_AND _CUDA_VRANGES::contiguous_range<_SrcTy> _LIBCUDACXX_AND(
-    !__transforms_to_copy_fill_arg<_DstTy>) _LIBCUDACXX_AND _CUDA_VRANGES::contiguous_range<_DstTy>)
-void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst)
-{
-  __copy_bytes_impl(__stream,
-                    _CUDA_VSTD::span(_CUDA_VSTD::forward<_SrcTy>(__src)),
-                    _CUDA_VSTD::span(_CUDA_VSTD::forward<_DstTy>(__dst)));
+    _CUDA_VSTD::span(static_cast<detail::__as_copy_arg_t<_SrcTy>>(
+      detail::__launch_transform(__stream, _CUDA_VSTD::forward<_SrcTy>(__src)))),
+    _CUDA_VSTD::span(static_cast<detail::__as_copy_arg_t<_DstTy>>(
+      detail::__launch_transform(__stream, _CUDA_VSTD::forward<_DstTy>(__dst)))));
 }
 
 } // namespace cuda::experimental

@@ -12,5 +12,6 @@
 #define __CUDAX_DATA_MANIPULATION__
 
 #include <cuda/experimental/__data_manipulation/copy.cuh>
+#include <cuda/experimental/__data_manipulation/fill.cuh>
 
 #endif // __CUDAX_DATA_MANIPULATION__

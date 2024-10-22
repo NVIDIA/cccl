@@ -124,7 +124,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   )
 
   cudax_add_catch2_test(test_target data_manipulation ${cn_target}
-    data_manipulation/copy.cu
+    data_manipulation/fill_and_copy.cu
   )
 
 endforeach()
