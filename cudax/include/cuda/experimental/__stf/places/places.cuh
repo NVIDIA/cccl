@@ -1632,7 +1632,7 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
       if (int(l2_size) > block_size_limit)
       {
         fprintf(stderr,
-                "Unsatisfiable spec: Maximum block size %d threads, requested %ld (level 2)\n",
+                "Unsatisfiable spec: Maximum block size %d threads, requested %zu (level 2)\n",
                 block_size_limit,
                 l2_size);
         abort();
