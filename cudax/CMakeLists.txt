@@ -7,12 +7,15 @@ if (CCCL_ENABLE_CUDAX)
   cmake_minimum_required(VERSION 3.21)
 endif()
 
-project(cudax LANGUAGES CUDA CXX)
+project(cudax LANGUAGES CXX)
 
 if (NOT CCCL_ENABLE_CUDAX)
   include(cmake/cudaxAddSubdir.cmake)
   return()
 endif()
+
+# Enable CUDA only when required for the developer build, see #2609
+enable_language(CUDA)
 
 option(cudax_ENABLE_HEADER_TESTING "Test that CUDA Experimental's public headers compile." ON)
 option(cudax_ENABLE_TESTING "Build CUDA Experimental's tests." ON)
