@@ -33,6 +33,7 @@
 #include <tuple>
 #include <type_traits>
 #include <utility>
+#include <string>
 
 // Hack setenv on Windows
 #if defined(_CCCL_COMPILER_MSVC)
@@ -55,7 +56,7 @@ inline int setenv(const char* name, const char* value, int overwrite) {
     }
 
     // Check if the variable already exists and if overwrite is allowed
-    if (!overwrite && std::getenv(name) != nullptr) {
+    if (!overwrite && ::std::getenv(name) != nullptr) {
         return 0;  // Variable exists, and we're not allowed to overwrite it
     }
 
