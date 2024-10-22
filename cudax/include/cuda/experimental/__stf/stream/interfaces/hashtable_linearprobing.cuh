@@ -42,12 +42,17 @@ public:
   using base = stream_data_interface_simple<hashtable>;
   using base::shape_t;
 
-  // Initialize from an existing hashtable
+  /**
+   * @brief Initialize from an existing hashtable
+   */
   hashtable_stream_interface(hashtable h)
       : base(mv(h))
   {}
 
-  // Initialize from a shape of hashtable (start empty)
+  /**
+   * @brief Initialize from a shape of hashtable (start empty)
+   * @overload
+   */
   hashtable_stream_interface(shape_t /*unused*/)
       : base(hashtable(nullptr))
   {}
@@ -130,8 +135,11 @@ public:
   }
 };
 
+/// @cond
+// Forward declaration
 template <typename T>
 struct streamed_interface_of;
+/// @endcond
 
 template <>
 struct streamed_interface_of<hashtable>

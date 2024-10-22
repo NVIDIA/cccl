@@ -28,7 +28,8 @@ namespace cuda::experimental::stf
 class logical_data_untyped;
 
 /**
- * TODO : Nice description of the class comes here.
+ * @brief Interface of the reduction operators (how to initialize data, how to
+ *        apply the reduction)
  */
 class reduction_operator_base
 {
@@ -40,6 +41,8 @@ public:
 
   reduction_operator_base& operator=(const reduction_operator_base&) = delete;
   reduction_operator_base(const reduction_operator_base&)            = delete;
+
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen fails here
 
   // Reduction operator (inout, in)
   virtual void op_untyped(
@@ -58,6 +61,8 @@ public:
     instance_id_t out_instance_id,
     const exec_place& e,
     event_list& prereq_in) = 0;
+
+#endif // DOXYGEN_SHOULD_SKIP_THIS 
 
 private:
   // not used for now ...
