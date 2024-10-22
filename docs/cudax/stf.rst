@@ -692,10 +692,10 @@ Lower-level task API
 .. toctree::
    :maxdepth: 1
 
-   stf/lower-level-api
+   stf/lower_level_api
 
 A lower-level API that does not rely on lambda functions is also
-available, and is described `here <stf_lower-level-api>`.
+available, and is described `here <stf_lower_level_api>`.
 
 Synchronization
 ---------------
