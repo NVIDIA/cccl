@@ -16,7 +16,7 @@ endif()
 
 option(cudax_ENABLE_HEADER_TESTING "Test that CUDA Experimental's public headers compile." ON)
 option(cudax_ENABLE_TESTING "Build CUDA Experimental's tests." ON)
-option(cudax_ENABLE_EXAMPLES "Build CUDA Experimental's tests." ON)
+option(cudax_ENABLE_EXAMPLES "Build CUDA Experimental's examples." ON)
 option(cudax_ENABLE_CUDASTF_BOUNDSCHECK "Enable bounds checks for STF targets. Requires debug build." OFF)
 option(cudax_ENABLE_CUDASTF_DEBUG "Enable additional debugging for STF targets. Requires debug build." OFF)
 option(cudax_ENABLE_CUDASTF_MATHLIBS "Enable STF tests/examples that use cublas/cusolver." OFF)
