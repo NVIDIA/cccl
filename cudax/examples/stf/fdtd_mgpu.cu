@@ -101,7 +101,7 @@ _CCCL_DEVICE double Source(double t, double x, double y, double z)
 }
 #endif // !defined(_CCCL_COMPILER_MSVC)
 
-int main(int argc, char** argv)
+int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 {
 #if !defined(_CCCL_COMPILER_MSVC)
   context ctx;
