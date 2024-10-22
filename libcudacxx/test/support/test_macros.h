@@ -443,17 +443,9 @@ __host__ __device__ constexpr bool unused(T&&...)
 #if defined(TEST_COMPILER_CLANG_CUDA)
 #  define TEST_NV_DIAG_SUPPRESS(WARNING)
 #elif defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
-#  if defined(TEST_COMPILER_MSVC)
-#    define TEST_NV_DIAG_SUPPRESS(WARNING) __pragma(_TEST_TOSTRING(nv_diag_suppress WARNING))
-#  else // ^^^ MSVC ^^^ / vvv not MSVC vvv
-#    define TEST_NV_DIAG_SUPPRESS(WARNING) _Pragma(_TEST_TOSTRING(nv_diag_suppress WARNING))
-#  endif // not MSVC
+#  define TEST_NV_DIAG_SUPPRESS(WARNING) _CCCL_PRAGMA(nv_diag_suppress WARNING)
 #else // ^^^ __NVCC_DIAG_PRAGMA_SUPPORT__ ^^^ / vvv !__NVCC_DIAG_PRAGMA_SUPPORT__ vvv
-#  if defined(TEST_COMPILER_MSVC)
-#    define TEST_NV_DIAG_SUPPRESS(WARNING) __pragma(_TEST_TOSTRING(diag_suppress WARNING))
-#  else // ^^^ MSVC ^^^ / vvv not MSVC vvv
-#    define TEST_NV_DIAG_SUPPRESS(WARNING) _Pragma(_TEST_TOSTRING(diag_suppress WARNING))
-#  endif // not MSVC
+#  define TEST_NV_DIAG_SUPPRESS(WARNING) _CCCL_PRAGMA(diag_suppress WARNING)
 #endif
 
 #define TEST_CONSTEXPR_GLOBAL _CCCL_CONSTEXPR_GLOBAL

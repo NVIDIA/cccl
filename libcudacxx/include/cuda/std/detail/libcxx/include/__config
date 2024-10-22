@@ -319,17 +319,10 @@ extern "C++" {
 #    define _CCCL_ALIGNAS(x)      __attribute__((__aligned__(x)))
 #  endif // !_CCCL_COMPILER_MSVC && !_CCCL_HAS_FEATURE(cxx_alignas)
 
-#  define _LIBCUDACXX_TOSTRING2(_STR) #_STR
-#  define _LIBCUDACXX_TOSTRING(_STR)  _LIBCUDACXX_TOSTRING2(_STR)
-
 // This is wrapped in __CUDA_ARCH__ to prevent error: "ignoring '#pragma unroll'
 // [-Werror=unknown-pragmas]"
 #  if defined(__CUDA_ARCH__)
-#    if defined(_CCCL_COMPILER_MSVC)
-#      define _LIBCUDACXX_PRAGMA_UNROLL(_N) __pragma(_LIBCUDACXX_TOSTRING(unroll _N))
-#    else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
-#      define _LIBCUDACXX_PRAGMA_UNROLL(_N) _Pragma(_LIBCUDACXX_TOSTRING(unroll _N))
-#    endif // !_CCCL_COMPILER_MSVC
+#    define _LIBCUDACXX_PRAGMA_UNROLL(_N) _CCCL_PRAGMA(unroll _N)
 #  else // ^^^ __CUDA_ARCH__ ^^^ / vvv !__CUDA_ARCH__ vvv
 #    define _LIBCUDACXX_PRAGMA_UNROLL(_N)
 #  endif // !__CUDA_ARCH__
@@ -412,7 +405,7 @@ typedef __char32_t char32_t;
 
 #  elif defined(_CCCL_COMPILER_MSVC)
 
-#    define _LIBCUDACXX_WARNING(x) __pragma(message(__FILE__ "(" _LIBCUDACXX_TOSTRING(__LINE__) ") : warning note: " x))
+#    define _LIBCUDACXX_WARNING(x) _CCCL_PRAGMA(message(__FILE__ "(" _CCCL_TO_STRING(__LINE__) ") : warning note: " x))
 
 #    if _MSC_VER < 1900
 #      error "MSVC versions prior to Visual Studio 2015 are not supported"
