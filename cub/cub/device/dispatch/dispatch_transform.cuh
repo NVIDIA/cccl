@@ -385,7 +385,7 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 #  define UBLKCP_AGENT(full_tile)                                                                                    \
     _CCCL_PRAGMA(unroll 1) /* Unroll 1 tends to improve performance, especially for smaller data types (confirmed by \
                               benchmark) */                                                                          \
-      for (int j = 0; j < num_elem_per_thread; ++j)                                                                  \
+    for (int j = 0; j < num_elem_per_thread; ++j)                                                                    \
     {                                                                                                                \
       const int idx = j * block_dim + threadIdx.x;                                                                   \
       if (full_tile || idx < tile_size)                                                                              \

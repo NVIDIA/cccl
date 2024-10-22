@@ -31,36 +31,36 @@
 #  define _CCCL_DIAG_SUPPRESS_MSVC(str)
 #  define _CCCL_DIAG_SUPPRESS_ICC(str)
 #elif defined(_CCCL_COMPILER_GCC)
-#  define _CCCL_DIAG_PUSH                _CCCL_PRAGMA(GCC diagnostic push)
-#  define _CCCL_DIAG_POP                 _CCCL_PRAGMA(GCC diagnostic pop)
+#  define _CCCL_DIAG_PUSH _CCCL_PRAGMA(GCC diagnostic push)
+#  define _CCCL_DIAG_POP  _CCCL_PRAGMA(GCC diagnostic pop)
 #  define _CCCL_DIAG_SUPPRESS_CLANG(str)
-#  define _CCCL_DIAG_SUPPRESS_GCC(str)   _CCCL_PRAGMA(GCC diagnostic ignored str)
+#  define _CCCL_DIAG_SUPPRESS_GCC(str) _CCCL_PRAGMA(GCC diagnostic ignored str)
 #  define _CCCL_DIAG_SUPPRESS_NVHPC(str)
 #  define _CCCL_DIAG_SUPPRESS_MSVC(str)
 #  define _CCCL_DIAG_SUPPRESS_ICC(str)
 #elif defined(_CCCL_COMPILER_ICC)
-#  define _CCCL_DIAG_PUSH                _CCCL_PRAGMA(GCC diagnostic push)
-#  define _CCCL_DIAG_POP                 _CCCL_PRAGMA(GCC diagnostic pop)
+#  define _CCCL_DIAG_PUSH _CCCL_PRAGMA(GCC diagnostic push)
+#  define _CCCL_DIAG_POP  _CCCL_PRAGMA(GCC diagnostic pop)
 #  define _CCCL_DIAG_SUPPRESS_CLANG(str)
-#  define _CCCL_DIAG_SUPPRESS_GCC(str)   _CCCL_PRAGMA(GCC diagnostic ignored str)
+#  define _CCCL_DIAG_SUPPRESS_GCC(str) _CCCL_PRAGMA(GCC diagnostic ignored str)
 #  define _CCCL_DIAG_SUPPRESS_NVHPC(str)
 #  define _CCCL_DIAG_SUPPRESS_MSVC(str)
-#  define _CCCL_DIAG_SUPPRESS_ICC(str)   _CCCL_PRAGMA(warning disable str)
+#  define _CCCL_DIAG_SUPPRESS_ICC(str) _CCCL_PRAGMA(warning disable str)
 #elif defined(_CCCL_COMPILER_NVHPC)
-#  define _CCCL_DIAG_PUSH                _CCCL_PRAGMA(diagnostic push)
-#  define _CCCL_DIAG_POP                 _CCCL_PRAGMA(diagnostic pop)
+#  define _CCCL_DIAG_PUSH _CCCL_PRAGMA(diagnostic push)
+#  define _CCCL_DIAG_POP  _CCCL_PRAGMA(diagnostic pop)
 #  define _CCCL_DIAG_SUPPRESS_CLANG(str)
 #  define _CCCL_DIAG_SUPPRESS_GCC(str)
 #  define _CCCL_DIAG_SUPPRESS_NVHPC(str) _CCCL_PRAGMA(diag_suppress str)
 #  define _CCCL_DIAG_SUPPRESS_MSVC(str)
 #  define _CCCL_DIAG_SUPPRESS_ICC(str)
 #elif defined(_CCCL_COMPILER_MSVC)
-#  define _CCCL_DIAG_PUSH                _CCCL_PRAGMA(warning(push))
-#  define _CCCL_DIAG_POP                 _CCCL_PRAGMA(warning(pop))
+#  define _CCCL_DIAG_PUSH _CCCL_PRAGMA(warning(push))
+#  define _CCCL_DIAG_POP  _CCCL_PRAGMA(warning(pop))
 #  define _CCCL_DIAG_SUPPRESS_CLANG(str)
 #  define _CCCL_DIAG_SUPPRESS_GCC(str)
 #  define _CCCL_DIAG_SUPPRESS_NVHPC(str)
-#  define _CCCL_DIAG_SUPPRESS_MSVC(str)  _CCCL_PRAGMA(warning(disable : str))
+#  define _CCCL_DIAG_SUPPRESS_MSVC(str) _CCCL_PRAGMA(warning(disable : str))
 #  define _CCCL_DIAG_SUPPRESS_ICC(str)
 #else
 #  define _CCCL_DIAG_PUSH
@@ -105,14 +105,12 @@
 #      define _CCCL_NV_DIAG_SUPPRESS(_WARNING) _CCCL_PRAGMA(nv_diag_suppress _WARNING)
 #      define _CCCL_NV_DIAG_DEFAULT(_WARNING)  _CCCL_PRAGMA(nv_diag_default _WARNING)
 #    else // ^^^ _CCCL_COMPILER_{MSVC,ICC}^^^ / vvv !_CCCL_COMPILER_{MSVC,ICC} vvv
-#      define _CCCL_NV_DIAG_SUPPRESS(_WARNING) \
-        _CCCL_PRAGMA(nv_diagnostic push) _CCCL_PRAGMA(nv_diag_suppress _WARNING)
-#      define _CCCL_NV_DIAG_DEFAULT(_WARNING) _CCCL_PRAGMA(nv_diagnostic pop)
+#      define _CCCL_NV_DIAG_SUPPRESS(_WARNING) _CCCL_PRAGMA(nv_diagnostic push) _CCCL_PRAGMA(nv_diag_suppress _WARNING)
+#      define _CCCL_NV_DIAG_DEFAULT(_WARNING)  _CCCL_PRAGMA(nv_diagnostic pop)
 #    endif // !_CCCL_COMPILER_MSVC
 #  elif defined(_CCCL_COMPILER_NVHPC)
-#    define _CCCL_NV_DIAG_SUPPRESS(_WARNING) \
-      _CCCL_PRAGMA(diagnostic push) _CCCL_PRAGMA(diag_suppress _WARNING)
-#    define _CCCL_NV_DIAG_DEFAULT(_WARNING) _CCCL_PRAGMA(diagnostic pop)
+#    define _CCCL_NV_DIAG_SUPPRESS(_WARNING) _CCCL_PRAGMA(diagnostic push) _CCCL_PRAGMA(diag_suppress _WARNING)
+#    define _CCCL_NV_DIAG_DEFAULT(_WARNING)  _CCCL_PRAGMA(diagnostic pop)
 #  else // ^^^ __NVCC_DIAG_PRAGMA_SUPPORT__ ^^^ / vvv !__NVCC_DIAG_PRAGMA_SUPPORT__ vvv
 #    if defined(_CCCL_COMPILER_MSVC_2017) // MSVC 2017 has issues with restoring the warning
 #      define _CCCL_NV_DIAG_SUPPRESS(_WARNING) _CCCL_PRAGMA(diag_suppress _WARNING)
@@ -146,9 +144,9 @@
 // warning C4800: 'boo': forcing value to bool 'true' or 'false' (performance warning)
 // warning C4996: 'meow': was declared deprecated
 #  define _CCCL_MSVC_DISABLED_WARNINGS 4100 4127 4180 4197 4296 4324 4455 4503 4522 4668 4800 4996 /**/
-#  define _CCCL_MSVC_WARNINGS_PUSH     \
-     _CCCL_PRAGMA(warning(push)) _CCCL_PRAGMA(warning(disable : _CCCL_MSVC_DISABLED_WARNINGS))
-#  define _CCCL_MSVC_WARNINGS_POP      _CCCL_PRAGMA(warning(pop))
+#  define _CCCL_MSVC_WARNINGS_PUSH \
+    _CCCL_PRAGMA(warning(push)) _CCCL_PRAGMA(warning(disable : _CCCL_MSVC_DISABLED_WARNINGS))
+#  define _CCCL_MSVC_WARNINGS_POP _CCCL_PRAGMA(warning(pop))
 #else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
 #  define _CCCL_MSVC_WARNINGS_PUSH
 #  define _CCCL_MSVC_WARNINGS_POP

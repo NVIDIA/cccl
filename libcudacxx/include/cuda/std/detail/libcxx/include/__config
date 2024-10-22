@@ -405,8 +405,7 @@ typedef __char32_t char32_t;
 
 #  elif defined(_CCCL_COMPILER_MSVC)
 
-#    define _LIBCUDACXX_WARNING(x) \
-       _CCCL_PRAGMA(message(__FILE__ "(" _CCCL_TOSTRING(__LINE__) ") : warning note: " x))
+#    define _LIBCUDACXX_WARNING(x) _CCCL_PRAGMA(message(__FILE__ "(" _CCCL_TOSTRING(__LINE__) ") : warning note: " x))
 
 #    if _MSC_VER < 1900
 #      error "MSVC versions prior to Visual Studio 2015 are not supported"
