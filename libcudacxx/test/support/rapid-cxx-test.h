@@ -84,12 +84,12 @@
     {                                                                                                      \
       Name();                                                                                              \
     }                                                                                                      \
-    _Pragma("clang diagnostic push")                                                                       \
-      _Pragma("clang diagnostic ignored \"-Wglobal-constructors\"") static ::rapid_cxx_test::registrar     \
+    _CCCL_PRAGMA(clang diagnostic push)                                                                    \
+      _CCCL_PRAGMA(clang diagnostic ignored "-Wglobal-constructors") static ::rapid_cxx_test::registrar    \
         RAPID_CXX_TEST_PP_CAT(rapid_cxx_test_registrar_, Name)(                                            \
           get_test_suite(),                                                                                \
           ::rapid_cxx_test::test_case(__FILE__, #Name, __LINE__, &RAPID_CXX_TEST_PP_CAT(Name, _invoker))); \
-    _Pragma("clang diagnostic pop") void Name()
+    _CCCL_PRAGMA(clang diagnostic pop) void Name()
 #
 #endif /* !defined(__clang__) */
 
