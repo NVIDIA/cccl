@@ -146,60 +146,39 @@ __add_string_view_position(ptrdiff_t __pos, ptrdiff_t __diff) noexcept
 }
 
 // Get the type name from the pretty name by trimming the front and back.
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameof_3(__string_view __sv) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __find_pretty_name(__string_view __sv) noexcept
 {
-  return __sv.substr(
-    __add_string_view_position(__sv.find("__pretty_name_begin<"), ptrdiff_t(sizeof("__pretty_name_begin<")) - 1),
-    __sv.find_end(">::__pretty_name_end"));
+  return __sv.substr(_CUDA_VSTD::__add_string_view_position(
+                       __sv.find("__pretty_name_begin<"), ptrdiff_t(sizeof("__pretty_name_begin<")) - 1),
+                     __sv.find_end(">::__pretty_name_end"));
 }
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameof_2() noexcept
+struct __pretty_name_msvc
+{
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr __string_view __get() noexcept
+  {
+    return _CUDA_VSTD::__find_pretty_name(_CUDA_VSTD::__string_view(_CCCL_PRETTY_FUNCTION));
+  }
+};
+
+template <class _Tp>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameof_helper() noexcept
 {
 #if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 90000 && !defined(__CUDA_ARCH__)
-  return _CUDA_VSTD::__pretty_nameof_3(_CUDA_VSTD::__make_pretty_name<_Tp>(integral_constant<size_t, size_t(-1)>{}));
-#else // ^^^ gcc < 9 ^^^^/ vvv other compiler vvv
-  return _CUDA_VSTD::__pretty_nameof_3(_CUDA_VSTD::__string_view(_CCCL_PRETTY_FUNCTION));
+  return _CUDA_VSTD::__find_pretty_name(_CUDA_VSTD::__make_pretty_name<_Tp>(integral_constant<size_t, size_t(-1)>{}));
+#elif defined(_CCCL_COMPILER_MSVC) // ^^^ gcc < 9 ^^^ / vvv msvc vvv
+  return _CUDA_VSTD::__pretty_name_msvc<_Tp>::__get();
+#else // ^^^ msvc ^^^^/ vvv other compiler vvv
+  return _CUDA_VSTD::__find_pretty_name(_CUDA_VSTD::__string_view(_CCCL_PRETTY_FUNCTION));
 #endif // not gcc < 9
 }
 
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameof() noexcept
 {
-  return _CUDA_VSTD::__pretty_nameof_2<typename __pretty_name_begin<_Tp>::__pretty_name_end>();
+  return _CUDA_VSTD::__pretty_nameof_helper<typename __pretty_name_begin<_Tp>::__pretty_name_end>();
 }
-
-// BUGBUG
-#if defined(_CCCL_COMPILER_MSVC)
-template <char... _Chs>
-struct __string_literal
-{
-  static constexpr char __str[sizeof...(_Chs) + 1] = {_Chs..., '\0'};
-
-  [[deprecated]]
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr ptrdiff_t __offset_or_throw(ptrdiff_t pos)
-  {
-    return pos != -1 ? pos : (_CUDA_VSTD::__throw_runtime_error("Invalid position"), 0);
-  }
-
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr ptrdiff_t __find_pretty() noexcept
-  {
-    return __offset_or_throw(__string_view(__str).find("pretty"));
-  }
-};
-
-template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr ptrdiff_t __msvc_test(_Tp*) noexcept
-{
-#  define M0(I) (I < sizeof(_CCCL_PRETTY_FUNCTION) ? _CCCL_PRETTY_FUNCTION[I] : '\0'),
-  using _Literal = __string_literal<_CCCL_PP_REPEAT(128, M0) '\0'>;
-#  undef M0
-  return _Literal::__find_pretty();
-}
-
-using __pretty_name_int = typename __pretty_name_begin<int>::__pretty_name_end;
-static_assert(-1 != _CUDA_VSTD::__msvc_test(static_cast<__pretty_name_int*>(nullptr)), "test failed");
-#endif
 
 // In device code with old versions of gcc, we cannot have nice things.
 #if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 90000 && defined(__CUDA_ARCH__)
