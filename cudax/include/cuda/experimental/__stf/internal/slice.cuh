@@ -430,7 +430,7 @@ public:
    * Initializes dimensions to `size0`, `sizes...`. This constructor is optional.
    */
   explicit shape_of(const coords_t& sizes)
-      : extents(to_cuda_array(sizes))
+      : extents(reserved::to_cuda_array(sizes))
   {
     size_t product_sizes = 1;
     unroll<rank()>([&](auto i) {
@@ -472,7 +472,7 @@ public:
 
   ///@{ @name Constructors
   explicit shape_of(const ::std::array<size_t, rank()>& sizes)
-      : extents(convert_to_cuda_array(sizes))
+      : extents(reserved::convert_to_cuda_array(sizes))
   {}
 
   explicit shape_of(const ::std::array<size_t, rank()>& sizes, const ::std::array<size_t, rank()>& _strides)

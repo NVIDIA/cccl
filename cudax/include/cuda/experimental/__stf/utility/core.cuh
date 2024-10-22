@@ -78,11 +78,11 @@ namespace cuda::experimental::stf
  * @brief Custom move function that performs checks on the argument type.
  *
  * @tparam T Type of the object being moved. The type should satisfy certain conditions for the move to be performed.
- * @param v The object to be moved.
+ * @param obj The object to be moved.
  * @return The moved object, ready to be passed to another owner.
  *
- * @pre The argument `v` must be an lvalue, i.e., the function will fail to compile for rvalues.
- * @pre The argument `v` must not be `const`, i.e., the function will fail to compile for `const` lvalues.
+ * @pre The argument `obj` must be an lvalue, i.e., the function will fail to compile for rvalues.
+ * @pre The argument `obj` must not be `const`, i.e., the function will fail to compile for `const` lvalues.
  */
 template <typename T>
 _CCCL_HOST_DEVICE constexpr decltype(auto) mv(T&& obj)

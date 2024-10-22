@@ -246,6 +246,9 @@ using array_tuple = decltype(to_tuple(::std::array<T, n>{}));
 // Mini-unittest
 static_assert(::std::is_same_v<array_tuple<size_t, 3>, ::std::tuple<size_t, size_t, size_t>>);
 
+namespace reserved
+{
+
 /**
  * @brief Converts an `std::tuple` into a `cuda::std::array`.
  *
@@ -281,6 +284,8 @@ template <typename T, size_t N>
   }
   return result;
 }
+
+} // end namespace reserved
 
 /**
  * @brief Extracts and returns the first argument from a parameter pack that is convertible to type `T`.
