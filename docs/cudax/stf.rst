@@ -350,15 +350,14 @@ data formats across the machine.
 
 Every type of data format is described using three separate types :
 
-- its shape, which stores parameters which will be common to all instance.
-For a fixed-sized vector, the shape would for example contain the length
-of the vector.
-- a per-instance type that describes a specific data
-instance. For a fixed-sized vector, this type would for example contain
-the address of the vector.
-- a data interface class which implements
-operations such as allocating a data instance based on its shape, or
-copying an instance into another instance.
+- its shape, which stores parameters which will be common to all instance.  For
+  a fixed-sized vector, the shape would for example contain the length of the
+  vector.
+- a per-instance type that describes a specific data instance. For a
+  fixed-sized vector, this type would for example contain the address of the
+  vector.
+- a data interface class which implements operations such as allocating a data
+  instance based on its shape, or copying an instance into another instance.
 
 Defining custom data interfaces (advanced)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1025,8 +1024,7 @@ of a ``parallel_loop`` will be scattered across places too.
 A partitioning class must implement a ``apply`` method which takes :
 
 - a reference to a shape of type ``S_in`` - a position within a grid of
-execution places. This position is described using an object of type
-``pos4``
+  execution places. This position is described using an object of type ``pos4``
 - the dimension of this grid express as a ``dim4`` object.
 
 ``apply`` returns a shape which corresponds to the subset of the ``in``
