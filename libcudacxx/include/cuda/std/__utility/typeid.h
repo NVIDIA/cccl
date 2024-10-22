@@ -167,7 +167,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameo
 {
 #if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 90000 && !defined(__CUDA_ARCH__)
   return _CUDA_VSTD::__find_pretty_name(_CUDA_VSTD::__make_pretty_name<_Tp>(integral_constant<size_t, size_t(-1)>{}));
-#elif defined(_CCCL_COMPILER_MSVC) // ^^^ gcc < 9 ^^^ / vvv msvc vvv
+#elif defined(_CCCL_COMPILER_NVCC) // ^^^ gcc < 9 ^^^ / vvv nvcc vvv
   return _CUDA_VSTD::__pretty_name_msvc<_Tp>::__get();
 #else // ^^^ msvc ^^^^/ vvv other compiler vvv
   return _CUDA_VSTD::__find_pretty_name(_CUDA_VSTD::__string_view(_CCCL_PRETTY_FUNCTION));
