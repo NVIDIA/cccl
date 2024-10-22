@@ -25,8 +25,12 @@
 #  pragma system_header
 #endif // no system header
 
+#if defined(_CCCL_COMPILER_MSVC) && CUDA_VERSION < 12050
+#define _CCCL_SOURCE_LOCATION_FALLBACK 1
+#endif
+
 // GCC11 provides non constexpr builtins
-#if defined(__cpp_lib_source_location) && (!defined(_CCCL_COMPILER_GCC) || _CCCL_GCC_VERSION >= 120000)
+#if !(defined(_CCCL_SOURCE_LOCATION_FALLBACK)) && defined(__cpp_lib_source_location) && (!defined(_CCCL_COMPILER_GCC) || _CCCL_GCC_VERSION >= 120000)
 // C++20 version using std::source_location
 #  include <source_location>
 
@@ -36,7 +40,7 @@ using source_location = ::std::source_location;
 }
 #  define RESERVED_STF_SOURCE_LOCATION() ::cuda::experimental::stf::source_location::current()
 
-#elif __has_include(<experimental/source_location>)
+#elif !(defined(_CCCL_SOURCE_LOCATION_FALLBACK)) && __has_include(<experimental/source_location>)
 #  include <experimental/source_location>
 namespace cuda::experimental::stf
 {
