@@ -72,13 +72,12 @@ int main(int argc, char** argv)
   cuda_safe_call(cudaEventRecord(start, ctx.task_fence()));
 
   constexpr size_t BLOCK_THREADS = 128;
-  constexpr size_t NBLOCKS       = 8;
 
   // size_t NDEVS = 1;
   // auto where = exec_place::repeat(exec_place::current_device(), NDEVS);
   auto where = exec_place::current_device();
 
-  auto spec = con<NBLOCKS>(con(BLOCK_THREADS, mem((num_levels - 1) * sizeof(size_t))));
+  auto spec = con<8>(con(BLOCK_THREADS, mem((num_levels - 1) * sizeof(size_t))));
 
   ctx.launch(spec, where, lX.read(), lhisto.write())->*[=] _CCCL_DEVICE(auto th, auto x, auto histo) {
     size_t block_id = th.rank(0);
