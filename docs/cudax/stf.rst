@@ -742,6 +742,14 @@ achieves this goal (whereas calling
 would wait for the completion of the first task before starting the
 second).
 
+To wait for the completion of all pending operations (tasks, transfers, ...),
+an asynchronous fence mechanism is available :
+
+.. code:: cpp
+
+    cudaStream_t stream = ctx.task_fence();
+    cudaStreamSynchronize(stream);
+
 Places
 ------
 
