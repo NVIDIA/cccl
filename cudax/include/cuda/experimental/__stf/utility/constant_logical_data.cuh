@@ -45,20 +45,17 @@ class constant_logical_data
   public:
     // Initialize from an existing logical data
     template <typename ctx_t>
-    impl(ctx_t& ctx, logical_data<T> orig_ld)
+    impl(ctx_t& ctx, logical_data<T> orig_ld) : ld(mv(orig_ld)), frozen_ld(ctx.freeze(ld, access_mode::read)), stream(ctx.pick_stream())
     {
-      ld = mv(orig_ld);
       // Freeze it and ensure it will be unfrozen automatically
-      frozen_ld = ctx.freeze(ld, access_mode::read);
       frozen_ld.set_automatic_unfreeze(true);
 
       // Cache a stream : we can use the same since we block on it so there
       // is no reason for taking different ones
-      stream = ctx.pick_stream();
     }
 
     // Return an instance of the data on the specified data place. This will block if necessary.
-    T& get(const data_place where = data_place::current_device())
+    T& get(const data_place& where = data_place::current_device())
     {
       auto it = cached.find(where);
       if (it != cached.end())
@@ -83,7 +80,7 @@ class constant_logical_data
     frozen_logical_data<T> frozen_ld;
 
     // cached stream used to get instances
-    cudaStream_t stream;
+    cudaStream_t stream = {};
 
     // A cache of the instances, we can use them without further
     // synchronization once they are populated. If an instance is missing, we
@@ -112,7 +109,7 @@ public:
   // Move assignment
   constant_logical_data& operator=(constant_logical_data&& other) noexcept = default;
 
-  T& get(const data_place where = data_place::current_device())
+  T& get(const data_place& where = data_place::current_device())
   {
     assert(pimpl);
     return pimpl->get(where);
