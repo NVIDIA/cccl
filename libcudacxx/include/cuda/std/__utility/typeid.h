@@ -197,18 +197,18 @@ struct __type_info_impl
   __string_view __name_;
 };
 
-struct __type_info_ptr
+struct __type_info_ptr_
 {
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info operator*() const noexcept;
 
   _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-  operator==(__type_info_ptr __a, __type_info_ptr __b) noexcept
+  operator==(__type_info_ptr_ __a, __type_info_ptr_ __b) noexcept
   {
     return __a.__pfn_ == __b.__pfn_;
   }
 
   _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
-  operator!=(__type_info_ptr __a, __type_info_ptr __b) noexcept
+  operator!=(__type_info_ptr_ __a, __type_info_ptr_ __b) noexcept
   {
     return !(__a == __b);
   }
@@ -253,9 +253,9 @@ struct __type_info
   //   return ;
   // }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info_ptr operator&() const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info_ptr_ operator&() const noexcept
   {
-    return __type_info_ptr{__pfn_};
+    return __type_info_ptr_{__pfn_};
   }
 
   _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
@@ -271,20 +271,23 @@ struct __type_info
   }
 
 private:
-  friend struct __type_info_ptr;
+  friend struct __type_info_ptr_;
 
-  __type_info(__type_info const&)            = default; // needed by __type_info_ptr::operator*() before C++17
+  __type_info(__type_info const&)            = default; // needed by __type_info_ptr_::operator*() before C++17
   __type_info& operator=(__type_info const&) = delete;
 
   __type_info_impl (*__pfn_)() noexcept;
 };
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info __type_info_ptr::operator*() const noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info __type_info_ptr_::operator*() const noexcept
 {
   return __type_info(__pfn_);
 }
 
+#  ifdef _CCCL_NO_TYPEID
+using __type_info_ptr = __type_info_ptr_;
 using __type_info_ref = __type_info;
+#  endif
 
 #  define _CCCL_TYPEID_FALLBACK(...) \
     _CUDA_VSTD::__type_info(&_CUDA_VSTD::__type_info::__get_ti_for<_CUDA_VSTD::__remove_cv_t<__VA_ARGS__>>)
