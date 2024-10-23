@@ -60,6 +60,8 @@ struct __type_info;
 
 #  define _CCCL_TYPEID(...) typeid(_CUDA_VSTD::_CCCL_TYPEID_only_supports_types<__VA_ARGS__>)
 using type_info = ::std::type_info;
+using __type_info_ptr = type_info const*;
+using __type_info_ref = type_info const&;
 
 #else // ^^^ !_CCCL_NO_TYPEID ^^^ / vvv _CCCL_NO_TYPEID
 
@@ -154,22 +156,11 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __find_pretty_
 }
 
 template <class _Tp>
-struct __pretty_name_msvc
-{
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr __string_view __get() noexcept
-  {
-    return _CUDA_VSTD::__find_pretty_name(_CUDA_VSTD::__string_view(_CCCL_PRETTY_FUNCTION));
-  }
-};
-
-template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameof_helper() noexcept
 {
 #if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 90000 && !defined(__CUDA_ARCH__)
   return _CUDA_VSTD::__find_pretty_name(_CUDA_VSTD::__make_pretty_name<_Tp>(integral_constant<size_t, size_t(-1)>{}));
-#elif defined(_CCCL_COMPILER_MSVC) && defined(__CUDACC__) // ^^^ gcc < 9 ^^^ / vvv msvc vvv
-  return _CUDA_VSTD::__pretty_name_msvc<_Tp>::__get();
-#else // ^^^ msvc ^^^^/ vvv other compiler vvv
+#else // ^^^ gcc < 9 ^^^^/ vvv other compiler vvv
   return _CUDA_VSTD::__find_pretty_name(_CUDA_VSTD::__string_view(_CCCL_PRETTY_FUNCTION));
 #endif // not gcc < 9
 }
@@ -183,6 +174,8 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameo
 // In device code with old versions of gcc, we cannot have nice things.
 #if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 90000 && defined(__CUDA_ARCH__)
 #  define _CCCL_NO_CONSTEXPR_PRETTY_NAMEOF
+#elif defined(_CCCL_COMPILER_MSVC) && defined(_CCCL_CUDACC) && !defined(__CUDA_ARCH__)
+#  define _CCCL_NO_CONSTEXPR_PRETTY_NAMEOF
 #endif
 
 #ifndef _CCCL_NO_CONSTEXPR_PRETTY_NAMEOF
@@ -191,54 +184,8 @@ static_assert(_CUDA_VSTD::__pretty_nameof<int>() == __string_view("int"), "");
 static_assert(_CUDA_VSTD::__pretty_nameof<float>() < _CUDA_VSTD::__pretty_nameof<int>(), "");
 #endif
 
-#if defined(_CCCL_COMPILER_MSVC)
-template <char... _Chs>
-struct __string_literal
-{
-  static constexpr char __str[sizeof...(_Chs) + 1] = {_Chs..., '\0'};
-
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr ptrdiff_t __offset_or_throw(ptrdiff_t pos1, ptrdiff_t pos2)
-  {
-    return pos1 == pos2
-           ? (pos1 != -1 ? pos1 : (__throw_runtime_error("No occurrence of __pretty_name_bagin< found"), 0))
-           : (__throw_logic_error("Multiple occurrences of __pretty_name_begin<"), 0);
-  }
-
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr ptrdiff_t __find_pretty() noexcept
-  {
-    return __offset_or_throw(__string_view(__str).find("__pretty_name_begin<"),
-                             __string_view(__str).find_end("__pretty_name_begin<"));
-  }
-};
-
-template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr ptrdiff_t __msvc_test1() noexcept
-{
-#  define M0(I) (I < sizeof(_CCCL_PRETTY_FUNCTION) ? _CCCL_PRETTY_FUNCTION[I] : '\0'),
-  using _Literal = __string_literal<_CCCL_PP_REPEAT(128, M0) '\0'>;
-#  undef M0
-  return _Literal::__find_pretty();
-}
-
-template <class _Tp>
-struct __msvc_test2
-{
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr ptrdiff_t __test() noexcept
-  {
-#  define M0(I) (I < sizeof(_CCCL_PRETTY_FUNCTION) ? _CCCL_PRETTY_FUNCTION[I] : '\0'),
-    using _Literal = __string_literal<_CCCL_PP_REPEAT(128, M0) '\0'>;
-#  undef M0
-    return _Literal::__find_pretty();
-  }
-};
-
-using __pretty_name_int = typename __pretty_name_begin<int>::__pretty_name_end;
-static_assert(-1 != __msvc_test1<__pretty_name_int>(), "");
-static_assert(-1 != __msvc_test2<__pretty_name_int>::__test(), "");
-#endif // defined(_CCCL_COMPILER_MSVC)
-
 // The preferred implementation of `__type_info` only works in device code when
-// both variable templates are supported. Then, we can define a `__typeid<T>`
+// variable templates are supported. Then, we can define a `__typeid<T>`
 // variable template at namespace scope, an inline function to return it by
 // reference, and have the linker select one of the inline definitions out of
 // all the translation units that use it to yield a unique address.
@@ -342,7 +289,119 @@ using __type_info_ref = __type_info;
 #  define _CCCL_TYPEID_FALLBACK(...) \
     _CUDA_VSTD::__type_info(&_CUDA_VSTD::__type_info::__get_ti_for<_CUDA_VSTD::__remove_cv_t<__VA_ARGS__>>)
 
-#else // ^^^ defined(__CUDA_ARCH__) && defined(_CCCL_NO_VARIABLE_TEMPLATES) ^^^
+// ^^^ defined(__CUDA_ARCH__) && defined(_CCCL_NO_VARIABLE_TEMPLATES) ^^^
+#elif defined(_CCCL_COMPILER_MSVC) && defined(_CCCL_CUDACC) && !defined(__CUDA_ARCH__)
+
+// There is a bug in cudafe++ that causes __FUNCSIG__ to be replaced prematurely
+// with a bogus string literal during preprocessing. That means we cannot use it
+// to extract the pretty name of a type for the purpose of type identification.
+// Instead, we will use a fallback implementation that uses the address of an
+// inline function marked __declspec(dllexport) to get a unique address for each
+// type.
+/// @brief A minimal implementation of `std::type_info` for platforms that do
+/// not support RTTI.
+struct __type_info
+{
+  __type_info()                              = delete;
+  __type_info(__type_info const&)            = delete;
+  __type_info& operator=(__type_info const&) = delete;
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info(void (*__pfn)()) noexcept
+      : __pfn_(__pfn)
+  {}
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr char const* name() const noexcept
+  {
+    return __name_view().begin();
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __name_view() const noexcept
+  {
+    return __string_view("<unknown>");
+  }
+
+  // Unfortunately, this cannot be made constexpr because it involves comparing
+  // pointers to different objects.
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool before(const __type_info& __other) const noexcept
+  {
+    // MSVC supports casting a function pointer to an object pointer
+    // https://learn.microsoft.com/en-us/cpp/build/reference/microsoft-extensions-to-c-and-cpp#casts
+    return __pfn_ < __other.__pfn_;
+  }
+
+  // Not yet implemented:
+  // _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t hash_code() const noexcept
+  // {
+  //   return ;
+  // }
+
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  operator==(const __type_info& __lhs, const __type_info& __rhs) noexcept
+  {
+    return __lhs.__pfn_ == __rhs.__pfn_;
+  }
+
+#  if _CCCL_STD_VER <= 2017
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  operator!=(const __type_info& __lhs, const __type_info& __rhs) noexcept
+  {
+    return !(__lhs == __rhs);
+  }
+#  endif // _CCCL_STD_VER <= 2017
+
+private:
+  void (*__pfn_)();
+};
+
+#ifdef _CCCL_NO_TYPEID
+using __type_info_ptr = __type_info const*;
+using __type_info_ref = __type_info const&;
+#endif
+
+#  ifndef _CCCL_NO_VARIABLE_TEMPLATES
+
+template <class _Tp>
+__declspec(dllexport) _LIBCUDACXX_HIDE_FROM_ABI void __type_info_fn() {}
+
+template <class _Tp>
+_CCCL_GLOBAL_CONSTANT __type_info __typeid_v{&__type_info_fn<_Tp>()};
+
+// When inline variables are available, this indirection through an inline function
+// is not necessary, but it doesn't hurt either.
+template <class _Tp>
+__declspec(dllexport) _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info const& __typeid() noexcept
+{
+  return __typeid_v<_Tp>;
+}
+
+#    define _CCCL_TYPEID_FALLBACK(...) _CUDA_VSTD::__typeid<_CUDA_VSTD::__remove_cv_t<__VA_ARGS__>>()
+
+#  else // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES ^^^ / vvv _CCCL_NO_VARIABLE_TEMPLATES vvv
+
+template <class _Tp>
+struct __typeid_value
+{
+  static constexpr __type_info value{_CUDA_VSTD::__pretty_nameof<_Tp>()};
+};
+
+#    if defined(_CCCL_NO_INLINE_VARIABLES) || _CCCL_STD_VER < 2017
+// Before the addition of inline variables, it was necessary to
+// provide a definition for constexpr class static data members.
+template <class _Tp>
+constexpr __type_info __typeid_value<_Tp>::value;
+#    endif // _CCCL_NO_INLINE_VARIABLES
+
+template <class _Tp>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info const& __typeid() noexcept
+{
+  return __typeid_value<_Tp>::value;
+}
+
+#    define _CCCL_TYPEID_FALLBACK(...) _CUDA_VSTD::__typeid<_CUDA_VSTD::__remove_cv_t<__VA_ARGS__>>()
+
+#  endif // _CCCL_NO_VARIABLE_TEMPLATES
+
+#else // ^^^ defined(_CCCL_COMPILER_MSVC) && defined(_CCCL_CUDACC) && !defined(__CUDA_ARCH__) ^^^
       // vvv !defined(__CUDA_ARCH__) ||!defined(_CCCL_NO_VARIABLE_TEMPLATES) vvv
 
 /// @brief A minimal implementation of `std::type_info` for platforms that do
@@ -396,13 +455,21 @@ private:
   __string_view __name_;
 };
 
+#ifdef _CCCL_NO_TYPEID
 using __type_info_ptr = __type_info const*;
 using __type_info_ref = __type_info const&;
+#endif
 
 #  ifndef _CCCL_NO_VARIABLE_TEMPLATES
 
+#if defined(_CCCL_COMPILER_MSVC) && defined(__CUDA_ARCH__)
+// device variables cannot be marked const on Windows
+template <class _Tp>
+_CCCL_DEVICE __type_info __typeid_v{_CUDA_VSTD::__pretty_nameof<_Tp>()};
+#else
 template <class _Tp>
 _CCCL_GLOBAL_CONSTANT __type_info __typeid_v{_CUDA_VSTD::__pretty_nameof<_Tp>()};
+#endif
 
 // When inline variables are available, this indirection through an inline function
 // is not necessary, but it doesn't hurt either.
