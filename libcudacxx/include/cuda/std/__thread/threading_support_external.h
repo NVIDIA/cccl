@@ -4,12 +4,11 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CUDA_LATCH_H
-#define _LIBCUDACXX___CUDA_LATCH_H
+#ifndef _LIBCUDACXX___THREAD_THREADING_SUPPORT_EXTERNAL_H
+#define _LIBCUDACXX___THREAD_THREADING_SUPPORT_EXTERNAL_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,17 +20,22 @@
 #  pragma system_header
 #endif // no system header
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+#if !defined(_LIBCUDACXX_HAS_NO_THREADS) && defined(_LIBCUDACXX_HAS_THREAD_API_EXTERNAL)
 
-template <thread_scope _Sco>
-class latch : public _CUDA_VSTD::__latch_base<_Sco>
-{
-public:
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr latch(_CUDA_VSTD::ptrdiff_t __count)
-      : _CUDA_VSTD::__latch_base<_Sco>(__count)
-  {}
-};
+#  include <cuda/std/chrono>
 
-_LIBCUDACXX_END_NAMESPACE_CUDA
+_CCCL_PUSH_MACROS
 
-#endif // _LIBCUDACXX___CUDA_LATCH_H
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
+
+_LIBCUDACXX_HIDE_FROM_ABI void __libcpp_thread_yield();
+
+_LIBCUDACXX_HIDE_FROM_ABI void __libcpp_thread_sleep_for(_CUDA_VSTD::chrono::nanoseconds __ns);
+
+_LIBCUDACXX_END_NAMESPACE_STD
+
+_CCCL_POP_MACROS
+
+#endif // !_LIBCUDACXX_HAS_NO_THREADS && _LIBCUDACXX_HAS_THREAD_API_EXTERNAL
+
+#endif // _LIBCUDACXX___THREAD_THREADING_SUPPORT_EXTERNAL_H

@@ -7,36 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX_LATCH
-#define _LIBCUDACXX_LATCH
-
-/*
-    latch synopsis
-
-namespace std
-{
-
-  class latch
-  {
-  public:
-    constexpr explicit latch(ptrdiff_t __expected);
-    ~latch();
-
-    latch(const latch&) = delete;
-    latch& operator=(const latch&) = delete;
-
-    void count_down(ptrdiff_t __update = 1);
-    bool try_wait() const noexcept;
-    void wait() const;
-    void arrive_and_wait(ptrdiff_t __update = 1);
-
-  private:
-    ptrdiff_t __counter; // exposition only
-  };
-
-}
-
-*/
+#ifndef _LIBCUDACXX___LATCH_LATCH_H
+#define _LIBCUDACXX___LATCH_LATCH_H
 
 #include <cuda/std/detail/__config>
 
@@ -48,7 +20,6 @@ namespace std
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__atomic/api/owned.h>
 #include <cuda/std/atomic>
 #include <cuda/std/limits>
 
@@ -122,8 +93,6 @@ using latch = __latch_base<>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#include <cuda/std/__cuda/latch.h>
-
 _CCCL_POP_MACROS
 
-#endif //_LIBCUDACXX_LATCH
+#endif //_LIBCUDACXX___LATCH_LATCH_H
