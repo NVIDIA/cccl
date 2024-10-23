@@ -78,8 +78,6 @@ TEST_CASE("Copy", "[data_manipulation]")
   }
   SECTION("Launch transform")
   {
-    cudax::stream _stream;
-
     cuda::mr::pinned_memory_resource host_resource;
     cudax::weird_buffer input(host_resource, buffer_size);
     cudax::weird_buffer output(host_resource, buffer_size);
@@ -92,8 +90,6 @@ TEST_CASE("Copy", "[data_manipulation]")
 
   SECTION("Asymetric size")
   {
-    cudax::stream _stream;
-
     cuda::mr::pinned_memory_resource host_resource;
     cudax::uninitialized_buffer<int, cuda::mr::host_accessible> host_buffer(host_resource, 1);
     cudax::fill_bytes(_stream, host_buffer, fill_byte);
