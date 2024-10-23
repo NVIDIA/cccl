@@ -27,7 +27,7 @@
 #endif // no system header
 
 #if __has_include(<nvtx3/nvToolsExt.h>)
-#include <nvtx3/nvToolsExt.h>
+#  include <nvtx3/nvToolsExt.h>
 #endif
 
 namespace cuda::experimental::stf
