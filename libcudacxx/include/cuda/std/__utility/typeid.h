@@ -59,7 +59,7 @@ struct __type_info;
 #ifndef _CCCL_NO_TYPEID
 
 #  define _CCCL_TYPEID(...) typeid(_CUDA_VSTD::_CCCL_TYPEID_only_supports_types<__VA_ARGS__>)
-using type_info = ::std::type_info;
+using type_info       = ::std::type_info;
 using __type_info_ptr = type_info const*;
 using __type_info_ref = type_info const&;
 
@@ -353,15 +353,16 @@ private:
   void (*__pfn_)();
 };
 
-#ifdef _CCCL_NO_TYPEID
+#  ifdef _CCCL_NO_TYPEID
 using __type_info_ptr = __type_info const*;
 using __type_info_ref = __type_info const&;
-#endif
+#  endif
 
 #  ifndef _CCCL_NO_VARIABLE_TEMPLATES
 
 template <class _Tp>
-__declspec(dllexport) _LIBCUDACXX_HIDE_FROM_ABI void __type_info_fn() {}
+__declspec(dllexport) _LIBCUDACXX_HIDE_FROM_ABI void __type_info_fn()
+{}
 
 template <class _Tp>
 _CCCL_GLOBAL_CONSTANT __type_info __typeid_v{&__type_info_fn<_Tp>()};
@@ -455,21 +456,21 @@ private:
   __string_view __name_;
 };
 
-#ifdef _CCCL_NO_TYPEID
+#  ifdef _CCCL_NO_TYPEID
 using __type_info_ptr = __type_info const*;
 using __type_info_ref = __type_info const&;
-#endif
+#  endif
 
 #  ifndef _CCCL_NO_VARIABLE_TEMPLATES
 
-#if defined(_CCCL_COMPILER_MSVC) && defined(__CUDA_ARCH__)
+#    if defined(_CCCL_COMPILER_MSVC) && defined(__CUDA_ARCH__)
 // device variables cannot be marked const on Windows
 template <class _Tp>
 _CCCL_DEVICE __type_info __typeid_v{_CUDA_VSTD::__pretty_nameof<_Tp>()};
-#else
+#    else
 template <class _Tp>
 _CCCL_GLOBAL_CONSTANT __type_info __typeid_v{_CUDA_VSTD::__pretty_nameof<_Tp>()};
-#endif
+#    endif
 
 // When inline variables are available, this indirection through an inline function
 // is not necessary, but it doesn't hurt either.
