@@ -38,7 +38,9 @@ static_assert(cuda::std::indirectly_swappable<reverse_bidirectional_iterator, re
 using reverse_random_access_iterator = cuda::std::reverse_iterator<random_access_iterator<int*>>;
 static_assert(common_reverse_iterator_checks<reverse_random_access_iterator>());
 static_assert(cuda::std::random_access_iterator<reverse_random_access_iterator>);
+#if TEST_STD_VER >= 2020 // There is no contiguous_iterator_tag in C++17 so we should not require it
 static_assert(!cuda::std::contiguous_iterator<reverse_random_access_iterator>);
+#endif // TEST_STD_VER >= 2020
 static_assert(cuda::std::sized_sentinel_for<reverse_random_access_iterator, reverse_random_access_iterator>);
 static_assert(cuda::std::indirectly_movable<reverse_random_access_iterator, reverse_random_access_iterator>);
 static_assert(cuda::std::indirectly_movable_storable<reverse_random_access_iterator, reverse_random_access_iterator>);
@@ -49,7 +51,9 @@ static_assert(cuda::std::indirectly_swappable<reverse_random_access_iterator, re
 using reverse_contiguous_iterator = cuda::std::reverse_iterator<contiguous_iterator<int*>>;
 static_assert(common_reverse_iterator_checks<reverse_contiguous_iterator>());
 static_assert(cuda::std::random_access_iterator<reverse_contiguous_iterator>);
+#if TEST_STD_VER >= 2020 // There is no contiguous_iterator_tag in C++17 so we should not require it
 static_assert(!cuda::std::contiguous_iterator<reverse_contiguous_iterator>);
+#endif // TEST_STD_VER >= 2020
 static_assert(cuda::std::sized_sentinel_for<reverse_contiguous_iterator, reverse_contiguous_iterator>);
 static_assert(cuda::std::indirectly_movable<reverse_contiguous_iterator, reverse_contiguous_iterator>);
 static_assert(cuda::std::indirectly_movable_storable<reverse_contiguous_iterator, reverse_contiguous_iterator>);
