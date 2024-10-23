@@ -35,6 +35,9 @@
 #include <type_traits>
 #include <utility>
 
+namespace cuda::experimental::stf
+{
+
 // Hack setenv on Windows
 #if defined(_CCCL_COMPILER_MSVC)
 /**
@@ -75,9 +78,6 @@ inline int setenv(const char* name, const char* value, int overwrite)
   return 0; // Success
 }
 #endif
-
-namespace cuda::experimental::stf
-{
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // FIXME Doxygen is lost with decltype(auto)
 /**
