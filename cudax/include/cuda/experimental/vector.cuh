@@ -1,15 +1,14 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of libcu++, the C++ Standard Library for your entire system,
-// under the Apache License v2.0 with LLVM Exceptions.
+// Part of the CUDA Toolkit, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 // SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_FUNCTIONAL_
-#define _CUDA_FUNCTIONAL_
+#ifndef _CUDA_VECTOR
+#define _CUDA_VECTOR
 
 #include <cuda/std/detail/__config>
 
@@ -21,8 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__functional/get_device_address.h>
-#include <cuda/__functional/proclaim_return_type.h>
-#include <cuda/std/functional>
+#include <cuda/experimental/__container/vector.cuh>
 
-#endif // _CUDA_FUNCTIONAL_
+#endif //_CUDA_VECTOR
