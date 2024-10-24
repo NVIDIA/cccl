@@ -32,12 +32,12 @@
 
 #include <cstdint>
 
-#include "c2h/custom_type.cuh"
-#include "c2h/extended_types.cuh"
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_device_scan.cuh"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.cuh>
+#include <c2h/custom_type.cuh>
+#include <c2h/extended_types.cuh>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSumByKey, device_exclusive_sum_by_key);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScanByKey, device_exclusive_scan_by_key);
@@ -79,7 +79,7 @@ enum class gen_data_t : int
   GEN_TYPE_CONST
 };
 
-CUB_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", full_type_list)
+C2H_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", full_type_list)
 {
   using params   = params_t<TestType>;
   using key_t    = typename params::type_pair_t::key_t;
@@ -107,7 +107,7 @@ CUB_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
 
   // Generate input segments
   c2h::device_vector<offset_t> segment_offsets = c2h::gen_uniform_offsets<offset_t>(
-    CUB_SEED(1), num_items, std::get<0>(seg_size_range), std::get<1>(seg_size_range));
+    C2H_SEED(1), num_items, std::get<0>(seg_size_range), std::get<1>(seg_size_range));
 
   // Get array of keys from segment offsets
   c2h::device_vector<key_t> segment_keys(num_items);

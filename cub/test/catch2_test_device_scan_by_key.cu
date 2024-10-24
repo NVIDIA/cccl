@@ -33,12 +33,12 @@
 #include <cstdint>
 #include <type_traits>
 
-#include "c2h/custom_type.cuh"
-#include "c2h/extended_types.cuh"
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_device_scan.cuh"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.cuh>
+#include <c2h/custom_type.cuh>
+#include <c2h/extended_types.cuh>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSumByKey, device_exclusive_sum_by_key);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScanByKey, device_exclusive_scan_by_key);
@@ -79,7 +79,7 @@ type_quad<custom_t, custom_t, custom_t>
 // clang-format on
 #endif
 
-CUB_TEST("Device scan works with all device interfaces", "[by_key][scan][device]", full_type_list)
+C2H_TEST("Device scan works with all device interfaces", "[by_key][scan][device]", full_type_list)
 {
   using params   = params_t<TestType>;
   using key_t    = typename params::type_pair_t::key_t;
@@ -107,7 +107,7 @@ CUB_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
 
   // Generate input segments
   c2h::device_vector<offset_t> segment_offsets = c2h::gen_uniform_offsets<offset_t>(
-    CUB_SEED(1), num_items, std::get<0>(seg_size_range), std::get<1>(seg_size_range));
+    C2H_SEED(1), num_items, std::get<0>(seg_size_range), std::get<1>(seg_size_range));
 
   // Get array of keys from segment offsets
   c2h::device_vector<key_t> segment_keys(num_items);
@@ -116,7 +116,7 @@ CUB_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
 
   // Generate input data
   c2h::device_vector<value_t> in_values(num_items);
-  c2h::gen(CUB_SEED(2), in_values, std::numeric_limits<value_t>::min());
+  c2h::gen(C2H_SEED(2), in_values, std::numeric_limits<value_t>::min());
   auto d_values_it = thrust::raw_pointer_cast(in_values.data());
 
 // Skip DeviceScan::InclusiveSum and DeviceScan::ExclusiveSum tests for extended floating-point
@@ -265,7 +265,7 @@ using key_alias_type_list = c2h::type_list<float>;
 using key_alias_type_list = c2h::type_list<custom_t>;
 #endif
 
-CUB_TEST("Device scan works when memory for keys and results alias one another",
+C2H_TEST("Device scan works when memory for keys and results alias one another",
          "[by_key][scan][device]",
          key_alias_type_list)
 {
@@ -293,7 +293,7 @@ CUB_TEST("Device scan works when memory for keys and results alias one another",
 
   // Generate input segments
   c2h::device_vector<offset_t> segment_offsets = c2h::gen_uniform_offsets<offset_t>(
-    CUB_SEED(1), num_items, std::get<0>(seg_size_range), std::get<1>(seg_size_range));
+    C2H_SEED(1), num_items, std::get<0>(seg_size_range), std::get<1>(seg_size_range));
 
   // Get array of keys from segment offsets
   c2h::device_vector<key_t> segment_keys(num_items);
@@ -302,7 +302,7 @@ CUB_TEST("Device scan works when memory for keys and results alias one another",
 
   // Generate input data
   c2h::device_vector<value_t> in_values(num_items);
-  c2h::gen(CUB_SEED(2), in_values, std::numeric_limits<value_t>::min());
+  c2h::gen(C2H_SEED(2), in_values, std::numeric_limits<value_t>::min());
   auto d_values_it = thrust::raw_pointer_cast(in_values.data());
 
   SECTION("inclusive sum")

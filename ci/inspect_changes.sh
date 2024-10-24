@@ -28,17 +28,19 @@ subprojects=(
   cudax
   pycuda
   cccl_c_parallel
+  c2h
 )
 
 # ...and their dependencies:
 declare -A dependencies=(
   [cccl]=""
   [libcudacxx]="cccl"
-  [cub]="cccl libcudacxx thrust"
+  [cub]="cccl libcudacxx thrust c2h"
   [thrust]="cccl libcudacxx cub"
   [cudax]="cccl libcudacxx"
   [pycuda]="cccl libcudacxx cub thrust cccl_c_parallel"
   [cccl_c_parallel]="cccl libcudacxx cub thrust"
+  [c2h]="cccl libcudacxx cub thrust"
 )
 
 declare -A project_names=(
@@ -49,6 +51,7 @@ declare -A project_names=(
   [cudax]="CUDA Experimental"
   [pycuda]="pycuda"
   [cccl_c_parallel]="CCCL C Parallel Library"
+  [c2h]="Catch2Helper"
 )
 
 # By default, the project directory is assumed to be the same as the subproject name,
