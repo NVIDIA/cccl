@@ -109,7 +109,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __make_pretty_name(integral_constant<si
   -> __enable_if_t<_Np == size_t(-1), __string_view>
 {
   using _TpName = __static_nameof<_Tp, sizeof(_CCCL_PRETTY_FUNCTION)>;
-  return __string_view(_TpName::value.__str_, 0, sizeof(_CCCL_PRETTY_FUNCTION) - _TpName::value.__len_ - 1);
+  return __string_view(_TpName::value.__str_, _TpName::value.__len_);
 }
 
 template <class _Tp, size_t _Np>

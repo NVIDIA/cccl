@@ -25,17 +25,21 @@
 #endif
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/cstddef>
+#include <cuda/std/detail/libcxx/include/__string>
 #include <cuda/std/detail/libcxx/include/stdexcept>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct __string_view
 {
-  template <size_t _Np>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __string_view(
-    char const (&str)[_Np], size_t __prefix = 0, size_t __suffix = 0)
-      : __str_{str + __check_offset(ptrdiff_t(__prefix), _Np - 1)}
-      , __len_{_Np - 1 - ptrdiff_t(__prefix) - __check_offset(ptrdiff_t(__suffix), _Np - 1 - __prefix)}
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view(char const* __str, size_t __len) noexcept
+      : __str_(__str)
+      , __len_(__len)
+  {}
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __string_view(char const* __str) noexcept
+      : __str_(__str)
+      , __len_(std::char_traits<char>::length(__str))
   {}
 
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t size() const noexcept
@@ -63,8 +67,7 @@ struct __string_view
     return __str_[__n];
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view
-  substr(ptrdiff_t __start, ptrdiff_t __stop) const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view substr(ptrdiff_t __start, ptrdiff_t __stop) const
   {
     return __string_view(__str_ + __check_offset(__start, __len_), __check_offset(__stop - __start, __len_));
   }
@@ -289,11 +292,6 @@ private:
            ? (_CUDA_VSTD::__throw_out_of_range("__string_view index out of range"), size_t(0))
            : static_cast<size_t>(__diff);
   }
-
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view(char const* __str, size_t __len) noexcept
-      : __str_(__str)
-      , __len_(__len)
-  {}
 
   char const* __str_;
   size_t __len_;
