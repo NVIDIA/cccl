@@ -38,10 +38,6 @@
 
 #include <cuda/experimental/__async/prologue.cuh>
 
-_CCCL_DIAG_PUSH
-_CCCL_NV_DIAG_SUPPRESS(expr_has_no_effect)
-_CCCL_DIAG_SUPPRESS_GCC("-Wunused-value")
-
 namespace cuda::experimental::__async
 {
 // Forward declare the when_all tag type:
@@ -237,8 +233,16 @@ extern __completion_metadata<__mtrue, // There will be no value completion, so v
   __merge_metadata<__completion_metadata<_LeftValsOK, _LeftErrsOK, _Offsets, _LeftSigs...>,
                    __completion_metadata<_RightValsOK, _RightErrsOK, __moffsets<>, set_value_t(_As...), _RightSigs...>>;
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wunused-value")
+_CCCL_NV_DIAG_SUPPRESS(expr_has_no_effect)
+_CCCL_DIAG_SUPPRESS_NVHPC(expr_has_no_effect)
+
 template <size_t... _Offsets>
 _CCCL_INLINE_VAR constexpr size_t __last_offset = (0, ..., _Offsets);
+
+_CCCL_NV_DIAG_DEFAULT(expr_has_no_effect)
+_CCCL_DIAG_POP
 
 template <size_t _Count, size_t... _Offsets>
 using __append_offset = __moffsets<_Offsets..., _Count + __last_offset<_Offsets...>>;
@@ -641,9 +645,6 @@ _CCCL_HOST_DEVICE __when_all::__sndr_t<_Sndrs...> when_all_t::operator()(_Sndrs.
 _CCCL_GLOBAL_CONSTANT when_all_t when_all{};
 
 } // namespace cuda::experimental::__async
-
-_CCCL_NV_DIAG_DEFAULT(expr_has_no_effect)
-_CCCL_DIAG_POP
 
 #include <cuda/experimental/__async/epilogue.cuh>
 

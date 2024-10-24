@@ -16,13 +16,15 @@ function(thrust_build_compiler_targets)
   set(cxx_compile_options)
   set(cxx_compile_definitions)
 
-  # Disabled loss-of-data conversion warnings.
-  # TODO Re-enable.
-  append_option_if_available("/wd4244" cxx_compile_options)
+  if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+    # Disabled loss-of-data conversion warnings.
+    # TODO Re-enable.
+    append_option_if_available("/wd4244" cxx_compile_options)
 
-  # Disable warning about applying unary operator- to unsigned type.
-  # TODO Re-enable.
-  append_option_if_available("/wd4146" cxx_compile_options)
+    # Disable warning about applying unary operator- to unsigned type.
+    # TODO Re-enable.
+    append_option_if_available("/wd4146" cxx_compile_options)
+  endif()
 
   if (THRUST_DISPATCH_TYPE STREQUAL "Force32bit")
     list(APPEND cxx_compile_definitions "THRUST_FORCE_32_BIT_OFFSET_TYPE")

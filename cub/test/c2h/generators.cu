@@ -63,6 +63,10 @@ namespace c2h
 #if !C2H_HAS_CURAND
 struct i_to_rnd_t
 {
+  __host__ __device__ i_to_rnd_t(thrust::default_random_engine engine)
+      : m_engine(engine)
+  {}
+
   thrust::default_random_engine m_engine{};
 
   template <typename IndexType>
@@ -72,7 +76,7 @@ struct i_to_rnd_t
     return thrust::uniform_real_distribution<float>{0.0f, 1.0f}(m_engine);
   }
 };
-#endif
+#endif // !C2H_HAS_CURAND
 
 class generator_t
 {
@@ -99,7 +103,7 @@ public:
   {
     return m_gen;
   }
-#endif
+#endif // C2H_HAS_CURAND
 
   float* prepare_random_generator(seed_t seed, std::size_t num_items);
 
