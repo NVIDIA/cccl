@@ -86,5 +86,5 @@ private:
 } // end namespace cuda::experimental::stf
 
 #  define RESERVED_STF_SOURCE_LOCATION() \
-    ::cuda::experimental::stf::source_location::current(__FILE__, __LINE__, __func__)
+    ::cuda::experimental::stf::source_location::current(__builtin_FILE(), __builtin_LINE(), __builtin_FUNCTION())
 #endif
