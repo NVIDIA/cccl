@@ -63,9 +63,8 @@
 // older versions of MSVC, we fall back to using the built-in typeid feature,
 // which is always available on MSVC, even when RTTI is disabled.
 
-#if defined(_CCCL_COMPILER_MSVC) && (_CCCL_MSVC_VERSION < 1935) && defined(_CCCL_CUDA_COMPILER_NVCC) \
-  && !defined(__CUDA_ARCH__)
-#  define _CCCL_BROKEN_MSVC_PRETTY_FUNCTION
+#if defined(_CCCL_COMPILER_MSVC) && (_CCCL_MSVC_VERSION < 1935) && defined(_CCCL_CUDA_COMPILER_NVCC)
+#  define _CCCL_BROKEN_MSVC_FUNCSIG
 #endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -81,16 +80,16 @@ using type_info       = ::std::type_info;
 using __type_info_ptr = type_info const*;
 using __type_info_ref = type_info const&;
 
-#elif defined(_CCCL_BROKEN_MSVC_PRETTY_FUNCTION) // ^^^ !_CCCL_NO_TYPEID ^^^ / vvv _CCCL_BROKEN_MSVC_PRETTY_FUNCTION
+#elif defined(_CCCL_BROKEN_MSVC_FUNCSIG) // ^^^ !_CCCL_NO_TYPEID ^^^ / vvv _CCCL_BROKEN_MSVC_FUNCSIG
 
-// See comment above about _CCCL_BROKEN_MSVC_PRETTY_FUNCTION.
+// See comment above about _CCCL_BROKEN_MSVC_FUNCSIG.
 #  define _CCCL_TYPEID          _CCCL_STD_TYPEID
 #  define _CCCL_TYPEID_FALLBACK _CCCL_STD_TYPEID
 using type_info       = ::std::type_info;
 using __type_info_ptr = type_info const*;
 using __type_info_ref = type_info const&;
 
-#else // ^^^ _CCCL_BROKEN_MSVC_PRETTY_FUNCTION ^^^ / vvv _CCCL_NO_TYPEID && !_CCCL_BROKEN_MSVC_PRETTY_FUNCTION vvv
+#else // ^^^ _CCCL_BROKEN_MSVC_FUNCSIG ^^^ / vvv _CCCL_NO_TYPEID && !_CCCL_BROKEN_MSVC_FUNCSIG vvv
 
 #  define _CCCL_TYPEID _CCCL_TYPEID_FALLBACK
 using type_info = _CUDA_VSTD::__type_info;
