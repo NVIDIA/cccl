@@ -192,7 +192,7 @@ public:
   }
 
   //! @brief Returns the size of the buffer in bytes
-  _CCCL_NODISCARD constexpr _CCCL_HOST_DEVICE size_type size_bytes() const noexcept
+  _CCCL_NODISCARD constexpr size_type size_bytes() const noexcept
   {
     return __count_ * sizeof(_Tp);
   }
