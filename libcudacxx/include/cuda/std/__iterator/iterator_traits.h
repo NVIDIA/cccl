@@ -144,8 +144,7 @@ using bidirectional_iterator_tag = ::std::bidirectional_iterator_tag;
 using random_access_iterator_tag = ::std::random_access_iterator_tag;
 
 #  if _CCCL_STD_VER >= 2020
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __contiguous_iterator_tag_backfill : public ::std::random_access_iterator_tag
-{};
+using __contiguous_iterator_tag_backfill = ::std::random_access_iterator_tag;
 using contiguous_iterator_tag =
   _If<::std::__cccl_std_contiguous_iterator_tag_exists::value,
       ::std::contiguous_iterator_tag,
