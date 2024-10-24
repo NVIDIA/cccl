@@ -45,7 +45,10 @@ class constant_logical_data
   public:
     // Initialize from an existing logical data
     template <typename ctx_t>
-    impl(ctx_t& ctx, logical_data<T> orig_ld) : ld(mv(orig_ld)), frozen_ld(ctx.freeze(ld, access_mode::read)), stream(ctx.pick_stream())
+    impl(ctx_t& ctx, logical_data<T> orig_ld)
+        : ld(mv(orig_ld))
+        , frozen_ld(ctx.freeze(ld, access_mode::read))
+        , stream(ctx.pick_stream())
     {
       // Freeze it and ensure it will be unfrozen automatically
       frozen_ld.set_automatic_unfreeze(true);
