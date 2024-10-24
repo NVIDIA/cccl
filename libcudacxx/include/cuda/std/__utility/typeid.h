@@ -381,9 +381,11 @@ using __type_info_ref = __type_info const&;
 #    ifndef _CCCL_NO_VARIABLE_TEMPLATES
 
 #      if defined(_CCCL_COMPILER_MSVC) && defined(__CUDA_ARCH__)
-// "A __device__ variable template cannot have a const qualified type on Windows"
+// "A __device__ variable template cannot have a const qualified type on
+// Windows" and "An inline __device__/__constant__/__managed__ variable must
+// have internal linkage when the program is compiled in whole program mode"
 template <class _Tp>
-_CCCL_DEVICE _CCCL_INLINE_VAR __type_info __typeid_v{_CUDA_VSTD::__pretty_nameof<_Tp>()};
+_CCCL_DEVICE __type_info __typeid_v{_CUDA_VSTD::__pretty_nameof<_Tp>()};
 #      else // ^^^ _CCCL_COMPILER_MSVC && __CUDA_ARCH__ ^^^ / vvv !_CCCL_COMPILER_MSVC || !__CUDA_ARCH__ vvv
 template <class _Tp>
 _CCCL_GLOBAL_CONSTANT __type_info __typeid_v{_CUDA_VSTD::__pretty_nameof<_Tp>()};
