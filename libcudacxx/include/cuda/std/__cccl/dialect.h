@@ -112,17 +112,9 @@
 
 // We need to treat host and device separately
 #if defined(__CUDA_ARCH__)
-// On Windows, device variables of class type cannot be marked const
-#  if defined(_CCCL_COMPILER_MSVC)
-#    define _CCCL_GLOBAL_CONSTANT        _CCCL_DEVICE
-#    define _CCCL_GLOBAL_CONSTANT_SCALAR _CCCL_DEVICE _CCCL_CONSTEXPR_GLOBAL
-#  else
-#    define _CCCL_GLOBAL_CONSTANT        _CCCL_DEVICE _CCCL_CONSTEXPR_GLOBAL
-#    define _CCCL_GLOBAL_CONSTANT_SCALAR _CCCL_GLOBAL_CONSTANT
-#  endif
+#  define _CCCL_GLOBAL_CONSTANT _CCCL_DEVICE _CCCL_CONSTEXPR_GLOBAL
 #else // ^^^ __CUDA_ARCH__ ^^^ / vvv !__CUDA_ARCH__ vvv
-#  define _CCCL_GLOBAL_CONSTANT        _CCCL_INLINE_VAR constexpr
-#  define _CCCL_GLOBAL_CONSTANT_SCALAR _CCCL_GLOBAL_CONSTANT
+#  define _CCCL_GLOBAL_CONSTANT _CCCL_INLINE_VAR constexpr
 #endif // __CUDA_ARCH__
 
 #endif // __CCCL_DIALECT_H

@@ -63,7 +63,8 @@
 // older versions of MSVC, we fall back to using the built-in typeid feature,
 // which is always available on MSVC, even when RTTI is disabled.
 
-#if defined(_CCCL_COMPILER_MSVC) && (_CCCL_MSVC_VERSION < 1935) && defined(_CCCL_CUDA_COMPILER_NVCC)
+#if defined(_CCCL_COMPILER_MSVC) && (_CCCL_MSVC_VERSION < 1935) && defined(_CCCL_CUDA_COMPILER_NVCC) \
+  && !defined(__CUDA_ARCH__)
 #  define _CCCL_BROKEN_MSVC_FUNCSIG
 #endif
 
