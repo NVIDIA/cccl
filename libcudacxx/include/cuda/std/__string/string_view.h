@@ -39,7 +39,7 @@ struct __string_view
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __string_view(char const* __str) noexcept
       : __str_(__str)
-      , __len_(std::char_traits<char>::length(__str))
+      , __len_(__strlen_(__str))
   {}
 
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t size() const noexcept
@@ -284,6 +284,23 @@ private:
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __min_(size_t __x, size_t __y) noexcept
   {
     return __x < __y ? __x : __y;
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t
+  __strlen_0x_(char const* __str, size_t __len) noexcept
+  {
+    return *__str ? __strlen_0x_(__str + 1, __len + 1) : __len;
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __strlen_(char const* __str) noexcept
+  {
+#ifndef _CCCL_HAS_NO_BUILTIN_STRLEN
+    return __builtin_strlen(__str);
+#elif _CCCL_STD_VER >= 2014
+    return std::char_traits<char>::length(__str);
+#else
+    return __strlen_0x_(__str, 0);
+#endif
   }
 
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __check_offset(ptrdiff_t __diff, size_t __len)

@@ -27,21 +27,12 @@ struct a_dummy_class_type
 
 int main(int, char**)
 {
-#ifndef _CCCL_NO_TYPEID
-  ASSERT_SAME_TYPE(::cuda::std::type_info, ::std::type_info);
-  ASSERT_SAME_TYPE(decltype((_CCCL_TYPEID(int))), ::std::type_info const&);
-  ASSERT_NOEXCEPT(_CCCL_TYPEID(int));
-  static_assert(!::cuda::std::is_default_constructible<::cuda::std::type_info>::value, "");
-  static_assert(!::cuda::std::is_copy_constructible<::cuda::std::type_info>::value, "");
-  // assert(_CCCL_TYPEID(int).name()[0] == 'i');
-#else // ^^^ !_CCCL_NO_TYPEID ^^^ / vvv _CCCL_NO_TYPEID vvv
   ASSERT_SAME_TYPE(::cuda::std::type_info, ::cuda::std::__type_info);
   ASSERT_SAME_TYPE(decltype((_CCCL_TYPEID(int))), ::cuda::std::__type_info_ref);
   ASSERT_NOEXCEPT(_CCCL_TYPEID(int));
   static_assert(!::cuda::std::is_default_constructible<::cuda::std::type_info>::value, "");
   static_assert(!::cuda::std::is_copy_constructible<::cuda::std::type_info>::value, "");
   // assert(_CCCL_TYPEID(int).name()[0] == 'i');
-#endif // _CCCL_NO_TYPEID
 
   ASSERT_SAME_TYPE(decltype((_CCCL_TYPEID(int))), ::cuda::std::__type_info_ref);
   ASSERT_NOEXCEPT(_CCCL_TYPEID(int));
