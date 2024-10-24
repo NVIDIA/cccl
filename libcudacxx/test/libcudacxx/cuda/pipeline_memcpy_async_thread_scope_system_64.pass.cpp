@@ -10,6 +10,9 @@
 
 // UNSUPPORTED: pre-sm-70
 
+// clang-cuda errors out with "fatal error: error in backend: Cannot cast between two non-generic address spaces"
+// XFAIL: clang && !nvcc
+
 #include "pipeline_memcpy_async_thread_scope_generic.h"
 
 int main(int argc, char** argv)
