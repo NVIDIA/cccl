@@ -218,7 +218,9 @@ template <typename T>
 auto each(T to)
 {
   static_assert(!::std::is_pointer_v<T>, "Use the two arguments version of each() with pointers.");
-  assert(to >= 0 && "Attempt to iterate from 0 to a negative value.");
+  if constexpr(_CCCL_TRAIT(is_signed, T)) {
+    assert(to >= 0 && "Attempt to iterate from 0 to a negative value.");
+  }
   return each(T(0), mv(to));
 }
 
