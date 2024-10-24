@@ -509,7 +509,11 @@
 #endif // _CCCL_CHECK_BUILTIN(underlying_type) && gcc >= 4.7
 
 #if defined(_CCCL_COMPILER_MSVC)
-#  define _CCCL_PRETTY_FUNCTION __FUNCSIG__
+#  if defined(_CCCL_CUDA_COMPILER_NVCC) && !defined(__CUDA_ARCH__)
+#    define _CCCL_PRETTY_FUNCTION __builtin_FUNCSIG()
+#  else // ^^^ _CCCL_CUDA_COMPILER_NVCC ^^^ / vvv !_CCCL_CUDA_COMPILER_NVCC vvv
+#    define _CCCL_PRETTY_FUNCTION __FUNCSIG__
+#  endif
 #else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
 #  define _CCCL_PRETTY_FUNCTION __PRETTY_FUNCTION__
 #endif // !_CCCL_COMPILER_MSVC
