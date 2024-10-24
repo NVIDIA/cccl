@@ -451,6 +451,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
   __contiguous_iterator_,
   requires(const _Ip& __i)(
     requires(random_access_iterator<_Ip>),
+    typename(decltype(_CUDA_VSTD::to_address(__i))),
     requires(is_lvalue_reference_v<iter_reference_t<_Ip>>),
     requires(same_as<iter_value_t<_Ip>, remove_cvref_t<iter_reference_t<_Ip>>>),
     requires(same_as<add_pointer_t<iter_reference_t<_Ip>>, decltype(_CUDA_VSTD::to_address(__i))>)));
