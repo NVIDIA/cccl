@@ -92,11 +92,13 @@ TEMPLATE_TEST_CASE(
       assign_rvalue = cuda::std::move(input);
       CUDAX_CHECK(assign_rvalue.data() == ptr);
       CUDAX_CHECK(assign_rvalue.size() == 42);
+      CUDAX_CHECK(assign_rvalue.size_bytes() == 42 * sizeof(TestType));
       CUDAX_CHECK(assign_rvalue.get_stream() == other_stream);
 
       // Ensure that we properly reset the input buffer
       CUDAX_CHECK(input.data() == nullptr);
       CUDAX_CHECK(input.size() == 0);
+      CUDAX_CHECK(input.size_bytes() == 0);
       CUDAX_CHECK(input.get_stream() == cuda::stream_ref{});
     }
 
@@ -108,6 +110,7 @@ TEMPLATE_TEST_CASE(
       CUDAX_CHECK(buf.data() == old_ptr);
       CUDAX_CHECK(buf.get_stream() == stream);
       CUDAX_CHECK(buf.size() == 42);
+      CUDAX_CHECK(buf.size_bytes() == 42 * sizeof(TestType));
     }
   }
 
@@ -116,6 +119,7 @@ TEMPLATE_TEST_CASE(
     uninitialized_async_buffer buf{resource, stream, 42};
     CUDAX_CHECK(buf.data() != nullptr);
     CUDAX_CHECK(buf.size() == 42);
+    CUDAX_CHECK(buf.size_bytes() == 42 * sizeof(TestType));
     CUDAX_CHECK(buf.begin() == buf.data());
     CUDAX_CHECK(buf.end() == buf.begin() + buf.size());
     CUDAX_CHECK(buf.get_stream() == stream);
@@ -123,6 +127,7 @@ TEMPLATE_TEST_CASE(
 
     CUDAX_CHECK(cuda::std::as_const(buf).data() != nullptr);
     CUDAX_CHECK(cuda::std::as_const(buf).size() == 42);
+    CUDAX_CHECK(cuda::std::as_const(buf).size_bytes() == 42 * sizeof(TestType));
     CUDAX_CHECK(cuda::std::as_const(buf).begin() == buf.data());
     CUDAX_CHECK(cuda::std::as_const(buf).end() == buf.begin() + buf.size());
     CUDAX_CHECK(cuda::std::as_const(buf).get_stream() == stream);
