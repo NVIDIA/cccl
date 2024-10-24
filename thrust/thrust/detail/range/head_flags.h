@@ -25,6 +25,7 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
+
 #include <thrust/functional.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/transform_iterator.h>
@@ -41,57 +42,39 @@ template <typename RandomAccessIterator,
           typename IndexType       = typename thrust::iterator_difference<RandomAccessIterator>::type>
 class head_flags
 {
-  // XXX WAR cudafe issue
-  // private:
-
 public:
   struct head_flag_functor
   {
     BinaryPredicate binary_pred; // this must be the first member for performance reasons
-    IndexType n;
+    RandomAccessIterator iter;
 
     using result_type = ValueType;
 
-    _CCCL_HOST_DEVICE head_flag_functor(IndexType n)
-        : binary_pred()
-        , n(n)
-    {}
-
-    _CCCL_HOST_DEVICE head_flag_functor(IndexType n, BinaryPredicate binary_pred)
+    _CCCL_HOST_DEVICE head_flag_functor(RandomAccessIterator iter, BinaryPredicate binary_pred = {})
         : binary_pred(binary_pred)
-        , n(n)
+        , iter(iter)
     {}
 
-    template <typename Tuple>
-    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE result_type operator()(const Tuple& t)
+    _CCCL_HOST_DEVICE _CCCL_FORCEINLINE result_type operator()(const IndexType i)
     {
-      const IndexType i = thrust::get<0>(t);
-
-      // note that we do not dereference the tuple's 2nd element when i <= 0
+      // note that we do not dereference the iterators i <= 0
       // and therefore do not dereference a bad location at the boundary
-      return (i == 0 || !binary_pred(thrust::get<1>(t), thrust::get<2>(t)));
+      if (i <= 0)
+      {
+        return true;
+      }
+
+      return !binary_pred(thrust::raw_reference_cast(iter[i]), thrust::raw_reference_cast(iter[i - 1]));
     }
   };
 
-  using counting_iterator = thrust::counting_iterator<IndexType>;
-
 public:
-  using iterator = thrust::transform_iterator<
-    head_flag_functor,
-    thrust::zip_iterator<thrust::tuple<counting_iterator, RandomAccessIterator, RandomAccessIterator>>>;
+  using iterator = thrust::transform_iterator<head_flag_functor, thrust::counting_iterator<IndexType>>;
 
-  _CCCL_HOST_DEVICE head_flags(RandomAccessIterator first, RandomAccessIterator last)
+  _CCCL_HOST_DEVICE head_flags(RandomAccessIterator first, RandomAccessIterator last, BinaryPredicate binary_pred = {})
       : m_begin(thrust::make_transform_iterator(
-          thrust::make_zip_iterator(thrust::make_tuple(thrust::counting_iterator<IndexType>(0), first, first - 1)),
-          head_flag_functor(last - first)))
-      , m_end(m_begin + (last - first))
-  {}
-
-  _CCCL_HOST_DEVICE head_flags(RandomAccessIterator first, RandomAccessIterator last, BinaryPredicate binary_pred)
-      : m_begin(thrust::make_transform_iterator(
-          thrust::make_zip_iterator(thrust::make_tuple(thrust::counting_iterator<IndexType>(0), first, first - 1)),
-          head_flag_functor(last - first, binary_pred)))
-      , m_end(m_begin + (last - first))
+          thrust::counting_iterator<IndexType>(0), head_flag_functor(first, binary_pred)))
+      , m_count(last - first)
   {}
 
   _CCCL_HOST_DEVICE iterator begin() const
@@ -101,7 +84,7 @@ public:
 
   _CCCL_HOST_DEVICE iterator end() const
   {
-    return m_end;
+    return m_begin + m_count;
   }
 
   template <typename OtherIndex>
@@ -113,7 +96,8 @@ public:
   _CCCL_SYNTHESIZE_SEQUENCE_ACCESS(head_flags, iterator);
 
 private:
-  iterator m_begin, m_end;
+  iterator m_begin;
+  IndexType m_count;
 };
 
 template <typename RandomAccessIterator, typename BinaryPredicate>
