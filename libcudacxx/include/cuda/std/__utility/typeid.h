@@ -105,7 +105,7 @@ using type_info = _CUDA_VSTD::__type_info;
 template <class _Tp>
 using _CCCL_TYPEID_ONLY_SUPPORTS_TYPES = _Tp;
 
-#if !defined(_CCCL_MSVC_BROKEN_PRETTY_FUNCTION)
+#if !defined(_CCCL_BROKEN_MSVC_FUNCSIG)
 
 // Earlier versions of gcc (before gcc-9) do not treat __PRETTY_FUNCTION__ as a
 // constexpr value after a reference to it has been returned from a function.
@@ -424,7 +424,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info const& __typeid(
 #    define _CCCL_TYPEOF_CONSTEXPR _CCCL_TYPEOF_FALLBACK
 #  endif
 
-#endif // _CCCL_MSVC_BROKEN_PRETTY_FUNCTION
+#endif // _CCCL_BROKEN_MSVC_FUNCSIG
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
