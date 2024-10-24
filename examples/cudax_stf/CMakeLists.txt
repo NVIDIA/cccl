@@ -24,9 +24,8 @@ include(cmake/CPM.cmake)
 # This will automatically clone CCCL from GitHub and make the exported cmake targets available
 CPMAddPackage(
   NAME CCCL
-  # TODO update later !
-  GITHUB_REPOSITORY "caugonnet/cccl"
-  GIT_TAG "cudastf"
+  GITHUB_REPOSITORY "nvidia/cccl"
+  GIT_TAG "main"
   # The following is required to make the `CCCL::cudax` target available:
   OPTIONS "CCCL_ENABLE_UNSTABLE ON"
 )

@@ -134,7 +134,7 @@ As part of the CCCL project, CUDASTF uses CMake for its build and installation
 infrastructure, and is the recommended way of building applications that use
 CUDASTF.
 
-This is facilitated by the CMake Package Manager as illustrated in this simple example which is available `here <https://github.com/caugonnet/cccl/examples/cudax_stf>`_, and which is described in the next paragraph.
+This is facilitated by the CMake Package Manager as illustrated in this simple example which is available `here <https://github.com/NVIDIA/cccl/tree/main/examples/cudax_stf>`_, and which is described in the next paragraph.
 
 A simple example
 ^^^^^^^^^^^^^^^^
