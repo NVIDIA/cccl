@@ -4,7 +4,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -29,11 +29,12 @@
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_move_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
+#include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/forward.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2014
+#if _CCCL_STD_VER >= 2017
 
 struct __bind_front_op
 {
@@ -49,18 +50,7 @@ struct __bind_front_op
 template <class _Fn, class... _BoundArgs>
 struct __bind_front_t : __perfect_forward<__bind_front_op, _Fn, _BoundArgs...>
 {
-  using __base = __perfect_forward<__bind_front_op, _Fn, _BoundArgs...>;
-#  if defined(_CCCL_COMPILER_NVRTC)
-  _CCCL_HIDE_FROM_ABI constexpr __bind_front_t() noexcept = default;
-
-  template <class... _Args>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __bind_front_t(_Args&&... __args) noexcept(
-    noexcept(__base(_CUDA_VSTD::declval<_Args>()...)))
-      : __base(_CUDA_VSTD::forward<_Args>(__args)...)
-  {}
-#  else
-  using __base::__base;
-#  endif
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__bind_front_t, __perfect_forward, __bind_front_op, _Fn, _BoundArgs...);
 };
 
 template <class _Fn, class... _Args>
@@ -77,7 +67,7 @@ bind_front(_Fn&& __f, _Args&&... __args) noexcept(is_nothrow_constructible_v<tup
     _CUDA_VSTD::forward<_Fn>(__f), _CUDA_VSTD::forward<_Args>(__args)...);
 }
 
-#endif // _CCCL_STD_VER > 2014
+#endif // _CCCL_STD_VER >= 2017
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

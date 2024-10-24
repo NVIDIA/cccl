@@ -225,7 +225,7 @@ struct __pointer_traits_rebind<_Sp<_Tp, _A0, _A1, _A2>, _Up, false>
 
 #endif // _LIBCUDACXX_HAS_NO_VARIADICS
 
-template <class _Ptr>
+template <class _Ptr, class = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT pointer_traits
 {
   typedef _Ptr pointer;
