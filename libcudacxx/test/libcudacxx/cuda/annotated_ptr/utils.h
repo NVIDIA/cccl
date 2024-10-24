@@ -64,6 +64,18 @@ __device__ __host__ __noinline__ T* alloc(bool shared = false)
   return arr;
 }
 
+template <typename T, int N>
+__device__ __noinline__ T* shared_alloc()
+{
+  __shared__ T data[N];
+
+  for (int i = 0; i < N; ++i)
+  {
+    data[i] = i;
+  }
+  return data;
+}
+
 template <typename T>
 __device__ __host__ __noinline__ void dealloc(T* arr, bool shared)
 {
