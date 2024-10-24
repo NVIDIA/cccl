@@ -31,10 +31,10 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_integral : public integral_constant<bool, _CCCL_BUILTIN_IS_INTEGRAL(_Tp)>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPALTES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _CCCL_INLINE_VAR constexpr bool is_integral_v = _CCCL_BUILTIN_IS_INTEGRAL(_Tp);
-#  endif // !_CCCL_NO_VARIABLE_TEMPALTES
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #else // ^^^ _CCCL_BUILTIN_IS_INTEGRAL ^^^ / vvv !_CCCL_BUILTIN_IS_INTEGRAL vvv
 
@@ -107,10 +107,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_integral
     : public integral_constant<bool, __libcpp_is_integral<__remove_cv_t<_Tp>>::value>
 {};
 
-#  if !defined(_CCCL_NO_VARIABLE_TEMPALTES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _CCCL_INLINE_VAR constexpr bool is_integral_v = is_integral<_Tp>::value;
-#  endif // !_CCCL_NO_VARIABLE_TEMPALTES
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #endif // !_CCCL_BUILTIN_IS_INTEGRAL
 
