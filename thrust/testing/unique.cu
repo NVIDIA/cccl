@@ -295,7 +295,7 @@ struct TestUniqueMemoryAccess
 {
   void operator()(void)
   {
-    thrust::device_vector<cuda::std::array<T, 10000>> v(10);
+    thrust::device_vector<cuda::std::array<T, 1000>> v(10);
     thrust::unique(v.begin(), v.end());
   }
 };
