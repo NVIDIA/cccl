@@ -52,18 +52,45 @@
 #  include <typeinfo>
 #endif
 
+// When using MSVC as the host compiler, there is a bug in the EDG front-end of
+// cudafe++ that causes the __FUNCSIG__ predefined macro to be expanded too
+// early in the compilation process. The result is that within a function
+// template the __FUNCSIG__ string does not mention the template arguments. This
+// makes it impossible to extract the pretty name of a type from __FUNCSIG__,
+// which in turn makes it impossible to implement a constexpr replacement for
+// typeid. On MSVC v19.35 and higher, the __builtin_FUNCSIG() intrinsic is
+// available and can be used in place of __FUNCSIG__, resolving the issue. For
+// older versions of MSVC, we fall back to using the built-in typeid feature,
+// which is always available on MSVC, even when RTTI is disabled.
+
+#if defined(_CCCL_COMPILER_MSVC) && (_CCCL_MSVC_VERSION < 1935) && defined(_CCCL_CUDA_COMPILER_NVCC) \
+  && !defined(__CUDA_ARCH__)
+#  define _CCCL_BROKEN_MSVC_PRETTY_FUNCTION
+#endif
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct __type_info;
 
+#define _CCCL_STD_TYPEID(...) typeid(_CUDA_VSTD::_CCCL_TYPEID_ONLY_SUPPORTS_TYPES<__VA_ARGS__>)
+
 #if !defined(_CCCL_NO_TYPEID) && !defined(_CCCL_USE_TYPEID_FALLBACK)
 
-#  define _CCCL_TYPEID(...) typeid(_CUDA_VSTD::_CCCL_TYPEID_only_supports_types<__VA_ARGS__>)
+#  define _CCCL_TYPEID _CCCL_STD_TYPEID
 using type_info       = ::std::type_info;
 using __type_info_ptr = type_info const*;
 using __type_info_ref = type_info const&;
 
-#else // ^^^ !_CCCL_NO_TYPEID ^^^ / vvv _CCCL_NO_TYPEID
+#elif defined(_CCCL_BROKEN_MSVC_PRETTY_FUNCTION) // ^^^ !_CCCL_NO_TYPEID ^^^ / vvv _CCCL_BROKEN_MSVC_PRETTY_FUNCTION
+
+// See comment above about _CCCL_BROKEN_MSVC_PRETTY_FUNCTION.
+#  define _CCCL_TYPEID          _CCCL_STD_TYPEID
+#  define _CCCL_TYPEID_FALLBACK _CCCL_STD_TYPEID
+using type_info       = ::std::type_info;
+using __type_info_ptr = type_info const*;
+using __type_info_ref = type_info const&;
+
+#else // ^^^ _CCCL_BROKEN_MSVC_PRETTY_FUNCTION ^^^ / vvv _CCCL_NO_TYPEID && !_CCCL_BROKEN_MSVC_PRETTY_FUNCTION vvv
 
 #  define _CCCL_TYPEID _CCCL_TYPEID_FALLBACK
 using type_info = _CUDA_VSTD::__type_info;
@@ -77,14 +104,16 @@ using type_info = _CUDA_VSTD::__type_info;
 //    Everything between them is the name of type _Tp.
 
 template <class _Tp>
-using _CCCL_TYPEID_only_supports_types = _Tp;
+using _CCCL_TYPEID_ONLY_SUPPORTS_TYPES = _Tp;
+
+#if !defined(_CCCL_MSVC_BROKEN_PRETTY_FUNCTION)
 
 // Earlier versions of gcc (before gcc-9) do not treat __PRETTY_FUNCTION__ as a
 // constexpr value after a reference to it has been returned from a function.
 // Instead, arrange things so that the pretty name gets stored in a class static
 // data member, where it can be referenced from other constexpr contexts.
 
-#if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 90000
+#  if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 90000
 
 template <size_t _Np>
 struct __sstring
@@ -127,12 +156,12 @@ struct __static_nameof
   static constexpr __sstring<_Np> value = _CUDA_VSTD::__make_pretty_name<_Tp>(integral_constant<size_t, _Np>());
 };
 
-#  if defined(_CCCL_NO_INLINE_VARIABLES)
+#    if defined(_CCCL_NO_INLINE_VARIABLES)
 template <class _Tp, size_t _Np>
 constexpr __sstring<_Np> __static_nameof<_Tp, _Np>::value;
-#  endif // _CCCL_NO_INLINE_VARIABLES
+#    endif // _CCCL_NO_INLINE_VARIABLES
 
-#endif // _CCCL_GCC_VERSION < 90000
+#  endif // _CCCL_GCC_VERSION < 90000
 
 template <class _Tp>
 struct __pretty_name_begin
@@ -158,11 +187,11 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __find_pretty_
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameof_helper() noexcept
 {
-#if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 90000 && !defined(__CUDA_ARCH__)
+#  if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 90000 && !defined(__CUDA_ARCH__)
   return _CUDA_VSTD::__find_pretty_name(_CUDA_VSTD::__make_pretty_name<_Tp>(integral_constant<size_t, size_t(-1)>{}));
-#else // ^^^ gcc < 9 ^^^^/ vvv other compiler vvv
+#  else // ^^^ gcc < 9 ^^^^/ vvv other compiler vvv
   return _CUDA_VSTD::__find_pretty_name(_CUDA_VSTD::__string_view(_CCCL_PRETTY_FUNCTION));
-#endif // not gcc < 9
+#  endif // not gcc < 9
 }
 
 template <class _Tp>
@@ -172,15 +201,15 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameo
 }
 
 // In device code with old versions of gcc, we cannot have nice things.
-#if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 90000 && defined(__CUDA_ARCH__)
-#  define _CCCL_NO_CONSTEXPR_PRETTY_NAMEOF
-#endif
+#  if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 90000 && defined(__CUDA_ARCH__)
+#    define _CCCL_NO_CONSTEXPR_PRETTY_NAMEOF
+#  endif
 
-#ifndef _CCCL_NO_CONSTEXPR_PRETTY_NAMEOF
+#  ifndef _CCCL_NO_CONSTEXPR_PRETTY_NAMEOF
 // A quick smoke test to ensure that the pretty name extraction is working.
 static_assert(_CUDA_VSTD::__pretty_nameof<int>() == __string_view("int"), "");
 static_assert(_CUDA_VSTD::__pretty_nameof<float>() < _CUDA_VSTD::__pretty_nameof<int>(), "");
-#endif
+#  endif
 
 // The preferred implementation of `__type_info` only works in device code when
 // variable templates are supported. Then, we can define a `__typeid<T>`
@@ -188,7 +217,7 @@ static_assert(_CUDA_VSTD::__pretty_nameof<float>() < _CUDA_VSTD::__pretty_nameof
 // reference, and have the linker select one of the inline definitions out of
 // all the translation units that use it to yield a unique address.
 
-#if defined(__CUDA_ARCH__) && defined(_CCCL_NO_VARIABLE_TEMPLATES)
+#  if defined(__CUDA_ARCH__) && defined(_CCCL_NO_VARIABLE_TEMPLATES)
 
 struct __type_info_impl
 {
@@ -282,16 +311,16 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info __type_info_ptr_
   return __type_info(__pfn_);
 }
 
-#  if defined(_CCCL_NO_TYPEID) || defined(_CCCL_USE_TYPEID_FALLBACK)
+#    if defined(_CCCL_NO_TYPEID) || defined(_CCCL_USE_TYPEID_FALLBACK)
 using __type_info_ptr = __type_info_ptr_;
 using __type_info_ref = __type_info;
-#  endif
+#    endif
 
-#  define _CCCL_TYPEID_FALLBACK(...) \
-    _CUDA_VSTD::__type_info(&_CUDA_VSTD::__type_info::__get_ti_for<_CUDA_VSTD::__remove_cv_t<__VA_ARGS__>>)
+#    define _CCCL_TYPEID_FALLBACK(...) \
+      _CUDA_VSTD::__type_info(&_CUDA_VSTD::__type_info::__get_ti_for<_CUDA_VSTD::__remove_cv_t<__VA_ARGS__>>)
 
-#else // ^^^ defined(__CUDA_ARCH__) && defined(_CCCL_NO_VARIABLE_TEMPLATES) ^^^
-      // vvv !defined(__CUDA_ARCH__) ||!defined(_CCCL_NO_VARIABLE_TEMPLATES) vvv
+#  else // ^^^ defined(__CUDA_ARCH__) && defined(_CCCL_NO_VARIABLE_TEMPLATES) ^^^
+        // vvv !defined(__CUDA_ARCH__) ||!defined(_CCCL_NO_VARIABLE_TEMPLATES) vvv
 
 /// @brief A minimal implementation of `std::type_info` for platforms that do
 /// not support RTTI.
@@ -332,33 +361,27 @@ struct __type_info
     return &__lhs == &__rhs || __lhs.__name_ == __rhs.__name_;
   }
 
-#  if _CCCL_STD_VER <= 2017
+#    if _CCCL_STD_VER <= 2017
   _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
   operator!=(const __type_info& __lhs, const __type_info& __rhs) noexcept
   {
     return !(__lhs == __rhs);
   }
-#  endif // _CCCL_STD_VER <= 2017
+#    endif // _CCCL_STD_VER <= 2017
 
 private:
   __string_view __name_;
 };
 
-#  if defined(_CCCL_NO_TYPEID) || defined(_CCCL_USE_TYPEID_FALLBACK)
+#    if defined(_CCCL_NO_TYPEID) || defined(_CCCL_USE_TYPEID_FALLBACK)
 using __type_info_ptr = __type_info const*;
 using __type_info_ref = __type_info const&;
-#  endif
+#    endif
 
-#  ifndef _CCCL_NO_VARIABLE_TEMPLATES
+#    ifndef _CCCL_NO_VARIABLE_TEMPLATES
 
-#    if defined(_CCCL_COMPILER_MSVC) && defined(__CUDA_ARCH__)
-// device variables cannot be marked const on Windows
-template <class _Tp>
-_CCCL_DEVICE __type_info __typeid_v{_CUDA_VSTD::__pretty_nameof<_Tp>()};
-#    else
 template <class _Tp>
 _CCCL_GLOBAL_CONSTANT __type_info __typeid_v{_CUDA_VSTD::__pretty_nameof<_Tp>()};
-#    endif
 
 // When inline variables are available, this indirection through an inline function
 // is not necessary, but it doesn't hurt either.
@@ -368,9 +391,9 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info const& __typeid(
   return __typeid_v<_Tp>;
 }
 
-#    define _CCCL_TYPEID_FALLBACK(...) _CUDA_VSTD::__typeid<_CUDA_VSTD::__remove_cv_t<__VA_ARGS__>>()
+#      define _CCCL_TYPEID_FALLBACK(...) _CUDA_VSTD::__typeid<_CUDA_VSTD::__remove_cv_t<__VA_ARGS__>>()
 
-#  else // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES ^^^ / vvv _CCCL_NO_VARIABLE_TEMPLATES vvv
+#    else // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES ^^^ / vvv _CCCL_NO_VARIABLE_TEMPLATES vvv
 
 template <class _Tp>
 struct __typeid_value
@@ -378,12 +401,12 @@ struct __typeid_value
   static constexpr __type_info value{_CUDA_VSTD::__pretty_nameof<_Tp>()};
 };
 
-#    if defined(_CCCL_NO_INLINE_VARIABLES) || _CCCL_STD_VER < 2017
+#      if defined(_CCCL_NO_INLINE_VARIABLES) || _CCCL_STD_VER < 2017
 // Before the addition of inline variables, it was necessary to
 // provide a definition for constexpr class static data members.
 template <class _Tp>
 constexpr __type_info __typeid_value<_Tp>::value;
-#    endif // _CCCL_NO_INLINE_VARIABLES
+#      endif // _CCCL_NO_INLINE_VARIABLES
 
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info const& __typeid() noexcept
@@ -391,16 +414,18 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info const& __typeid(
   return __typeid_value<_Tp>::value;
 }
 
-#    define _CCCL_TYPEID_FALLBACK(...) _CUDA_VSTD::__typeid<_CUDA_VSTD::__remove_cv_t<__VA_ARGS__>>()
+#      define _CCCL_TYPEID_FALLBACK(...) _CUDA_VSTD::__typeid<_CUDA_VSTD::__remove_cv_t<__VA_ARGS__>>()
 
-#  endif // _CCCL_NO_VARIABLE_TEMPLATES
+#    endif // _CCCL_NO_VARIABLE_TEMPLATES
 
-#endif // !defined(__CUDA_ARCH__) ||!defined(_CCCL_NO_VARIABLE_TEMPLATES)
+#  endif // !defined(__CUDA_ARCH__) ||!defined(_CCCL_NO_VARIABLE_TEMPLATES)
 
 // if `__pretty_nameof` is constexpr _CCCL_TYPEID_FALLBACK is also constexpr.
-#ifndef _CCCL_NO_CONSTEXPR_PRETTY_NAMEOF
-#  define _CCCL_TYPEOF_CONSTEXPR _CCCL_TYPEOF_FALLBACK
-#endif
+#  ifndef _CCCL_NO_CONSTEXPR_PRETTY_NAMEOF
+#    define _CCCL_TYPEOF_CONSTEXPR _CCCL_TYPEOF_FALLBACK
+#  endif
+
+#endif // _CCCL_MSVC_BROKEN_PRETTY_FUNCTION
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

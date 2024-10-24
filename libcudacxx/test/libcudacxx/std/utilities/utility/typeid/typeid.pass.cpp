@@ -37,7 +37,6 @@ int main(int, char**)
   ASSERT_SAME_TYPE(decltype((_CCCL_TYPEID(int))), ::cuda::std::__type_info_ref);
   ASSERT_NOEXCEPT(_CCCL_TYPEID(int));
   // assert(_CCCL_TYPEID(int).name()[0] == 'i');
-  assert(_CCCL_TYPEID_FALLBACK(int).name() == _CCCL_TYPEID_FALLBACK(int).__name_view().begin());
 
   assert(_CCCL_TYPEID(int) == _CCCL_TYPEID(int));
   assert(!(_CCCL_TYPEID(int) != _CCCL_TYPEID(int)));
