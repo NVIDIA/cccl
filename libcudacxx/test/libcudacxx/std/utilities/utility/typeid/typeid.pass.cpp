@@ -12,7 +12,7 @@
 // _CCCL_TYPEID(<type>)
 // _CCCL_CONSTEXPR_TYPEID(<type>)
 
-#define _CUDAX_USE_TYPEID_FALLBACK
+#define _CCCL_USE_TYPEID_FALLBACK
 
 #include <cuda/std/__utility/typeid.h>
 #include <cuda/std/cassert>

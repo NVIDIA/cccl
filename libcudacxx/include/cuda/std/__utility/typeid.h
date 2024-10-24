@@ -56,7 +56,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct __type_info;
 
-#if !defined(_CCCL_NO_TYPEID) && !defined(_CUDAX_USE_TYPEID_FALLBACK)
+#if !defined(_CCCL_NO_TYPEID) && !defined(_CCCL_USE_TYPEID_FALLBACK)
 
 #  define _CCCL_TYPEID(...) typeid(_CUDA_VSTD::_CCCL_TYPEID_only_supports_types<__VA_ARGS__>)
 using type_info       = ::std::type_info;
@@ -282,7 +282,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info __type_info_ptr_
   return __type_info(__pfn_);
 }
 
-#  if defined(_CCCL_NO_TYPEID) || defined(_CUDAX_USE_TYPEID_FALLBACK)
+#  if defined(_CCCL_NO_TYPEID) || defined(_CCCL_USE_TYPEID_FALLBACK)
 using __type_info_ptr = __type_info_ptr_;
 using __type_info_ref = __type_info;
 #  endif
@@ -344,7 +344,7 @@ private:
   __string_view __name_;
 };
 
-#  if defined(_CCCL_NO_TYPEID) || defined(_CUDAX_USE_TYPEID_FALLBACK)
+#  if defined(_CCCL_NO_TYPEID) || defined(_CCCL_USE_TYPEID_FALLBACK)
 using __type_info_ptr = __type_info const*;
 using __type_info_ref = __type_info const&;
 #  endif
