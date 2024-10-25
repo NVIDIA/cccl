@@ -76,7 +76,7 @@ struct stream_ref : ::cuda::stream_ref
   //! @throws cuda_error if inserting the dependency fails
   void wait(event_ref __ev) const
   {
-    assert(__ev.get() != nullptr);
+    _CCCL_ASSERT(__ev.get() != nullptr, "cuda::experimental::stream_ref::wait invalid event passed");
     // Need to use driver API, cudaStreamWaitEvent would push dev 0 if stack was empty
     detail::driver::streamWaitEvent(get(), __ev.get());
   }
@@ -91,7 +91,7 @@ struct stream_ref : ::cuda::stream_ref
   {
     // TODO consider an optimization to not create an event every time and instead have one persistent event or one
     // per stream
-    assert(__stream != detail::__invalid_stream);
+    _CCCL_ASSERT(__stream != detail::__invalid_stream, "cuda::experimental::stream_ref::wait invalid stream passed");
     event __tmp(__other);
     wait(__tmp);
   }
