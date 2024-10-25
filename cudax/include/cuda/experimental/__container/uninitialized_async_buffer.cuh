@@ -201,9 +201,15 @@ public:
   }
 
   //! @brief Returns the size of the buffer
-  _CCCL_NODISCARD constexpr size_t size() const noexcept
+  _CCCL_NODISCARD constexpr size_type size() const noexcept
   {
     return __count_;
+  }
+
+  //! @brief Returns the size of the buffer in bytes
+  _CCCL_NODISCARD constexpr size_type size_bytes() const noexcept
+  {
+    return __count_ * sizeof(_Tp);
   }
 
   //! @rst
