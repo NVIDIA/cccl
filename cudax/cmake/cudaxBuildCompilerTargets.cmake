@@ -57,6 +57,9 @@ function(cudax_build_compiler_targets)
     $<$<COMPILE_LANG_AND_ID:CUDA,Clang>:-Wno_unknown-cuda-version>
   )
 
+  # Ensure that we test with assertions enabled
+  target_compile_definitions(cudax.compiler_interface INTERFACE CCCL_ENABLE_ASSERTIONS)
+
   foreach (dialect IN LISTS CCCL_KNOWN_CXX_DIALECTS)
     add_library(cudax.compiler_interface_cpp${dialect} INTERFACE)
     target_link_libraries(cudax.compiler_interface_cpp${dialect} INTERFACE

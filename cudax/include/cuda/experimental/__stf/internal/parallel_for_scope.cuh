@@ -317,7 +317,7 @@ public:
     Fun&& f, const exec_place& sub_exec_place, const sub_shape_t& sub_shape, typename context::task_type& t)
   {
     // parallel_for never calls this function with a host.
-    assert(sub_exec_place != exec_place::host && "Internal CUDASTF error.");
+    _CCCL_ASSERT(sub_exec_place != exec_place::host, "Internal CUDASTF error.");
 
     if (sub_exec_place == exec_place::device_auto)
     {

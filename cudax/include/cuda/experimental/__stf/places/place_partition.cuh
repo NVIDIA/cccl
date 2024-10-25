@@ -82,7 +82,7 @@ public:
   place_partition(async_resources_handle& handle, exec_place place, place_partition_scope scope)
   {
 #if CUDA_VERSION < 12040
-    assert(scope != place_partition_scope::green_context && "Green contexts unsupported.");
+    _CCCL_ASSERT(scope != place_partition_scope::green_context, "Green contexts unsupported.");
 #endif
     compute_subplaces(handle, place, scope);
   }
