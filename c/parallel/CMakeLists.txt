@@ -37,6 +37,8 @@ target_link_libraries(cccl.c.parallel PRIVATE
   CUDA::nvJitLink
   CUDA::cuda_driver
   cccl.compiler_interface_cpp20
+  CUB::CUB
+  Thrust::Thrust
 )
 target_compile_definitions(cccl.c.parallel PUBLIC CCCL_C_EXPERIMENTAL=1)
 target_compile_definitions(cccl.c.parallel PRIVATE NVRTC_GET_TYPE_NAME=1)
