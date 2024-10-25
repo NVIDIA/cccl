@@ -32,7 +32,7 @@
 
 namespace cuda::experimental::__async
 {
-_CCCL_GLOBAL_CONSTANT size_t __npos = ~0UL;
+_CCCL_GLOBAL_CONSTANT size_t __npos = static_cast<size_t>(-1);
 
 struct __ignore
 {

@@ -228,12 +228,6 @@ _LIBCUDACXX_HIDE_FROM_ABI _CharT* char_traits<_CharT>::assign(char_type* __s, si
 
 // char_traits<char>
 
-// GCC's builtin_strlen isn't reliable at constexpr time
-// MSVC does not expose builtin_strlen before C++17
-#if defined(_CCCL_COMPILER_GCC) || (defined(_CCCL_COMPILER_MSVC) && _CCCL_STD_VER < 2017)
-#  define _CCCL_HAS_NO_BUILTIN_STRLEN
-#endif
-
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char>
 {
