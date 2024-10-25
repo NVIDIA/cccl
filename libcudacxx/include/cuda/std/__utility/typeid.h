@@ -52,6 +52,11 @@
 #  include <typeinfo>
 #endif
 
+// warning #20012-D: __device__ annotation is ignored on a
+// function("inplace_stop_source") that is explicitly defaulted on its first
+// declaration
+_CCCL_NV_DIAG_SUPPRESS(20012)
+
 // When using MSVC as the host compiler, there is a bug in the EDG front-end of
 // cudafe++ that causes the __FUNCSIG__ predefined macro to be expanded too
 // early in the compilation process. The result is that within a function
@@ -203,6 +208,8 @@ static_assert(_CUDA_VSTD::__pretty_nameof<float>() < _CUDA_VSTD::__pretty_nameof
 #if defined(__CUDA_ARCH__)
 
 struct __type_info;
+struct __type_info_ptr_;
+struct __type_info_ref_;
 
 struct __type_info_impl
 {
@@ -211,7 +218,13 @@ struct __type_info_impl
 
 struct __type_info_ptr_
 {
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info operator*() const noexcept;
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info_ptr_() noexcept = default;
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info_ptr_(__type_info_impl (*__pfn_)() noexcept) noexcept
+      : __pfn_(__pfn_)
+  {}
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info_ref_ operator*() const noexcept;
 
   _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
   operator==(__type_info_ptr_ __a, __type_info_ptr_ __b) noexcept
@@ -284,6 +297,7 @@ struct __type_info
 
 private:
   friend struct __type_info_ptr_;
+  friend struct __type_info_ref_;
 
   __type_info(__type_info const&)            = default; // needed by __type_info_ptr_::operator*() before C++17
   __type_info& operator=(__type_info const&) = delete;
@@ -291,19 +305,34 @@ private:
   __type_info_impl (*__pfn_)() noexcept;
 };
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info __type_info_ptr_::operator*() const noexcept
+struct __type_info_ref_ : __type_info
 {
-  return __type_info(__pfn_);
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info_ref_(__type_info_impl (*__pfn)() noexcept) noexcept
+      : __type_info(__pfn)
+  {}
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info_ref_(__type_info const& __other) noexcept
+      : __type_info(__other)
+  {}
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info_ref_(__type_info_ref_ const& __other) noexcept
+      : __type_info(__other)
+  {}
+};
+
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info_ref_ __type_info_ptr_::operator*() const noexcept
+{
+  return __type_info_ref_(__pfn_);
 }
 
 #  if defined(_CCCL_NO_TYPEID) || defined(_CCCL_USE_TYPEID_FALLBACK)
 using type_info       = __type_info;
 using __type_info_ptr = __type_info_ptr_;
-using __type_info_ref = __type_info;
+using __type_info_ref = __type_info_ref_;
 #  endif // defined(_CCCL_NO_TYPEID) || defined(_CCCL_USE_TYPEID_FALLBACK)
 
 #  define _CCCL_TYPEID_FALLBACK(...) \
-    _CUDA_VSTD::__type_info(&_CUDA_VSTD::__type_info::__get_ti_for<_CUDA_VSTD::__remove_cv_t<__VA_ARGS__>>)
+    _CUDA_VSTD::__type_info_ref(&_CUDA_VSTD::__type_info::__get_ti_for<_CUDA_VSTD::__remove_cv_t<__VA_ARGS__>>)
 
 #elif defined(_CCCL_BROKEN_MSVC_FUNCSIG) // ^^^ defined(__CUDA_ARCH__) ^^^
 
@@ -422,5 +451,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info const& __typeid(
 #endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+_CCCL_NV_DIAG_DEFAULT(20012)
 
 #endif // _LIBCUDACXX___UTILITY_TYPEID_H
