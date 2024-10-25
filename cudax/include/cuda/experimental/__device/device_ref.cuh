@@ -25,6 +25,7 @@
 
 #include <cuda/experimental/__utility/driver_api.cuh>
 
+#include <string>
 #include <vector>
 
 namespace cuda::experimental
