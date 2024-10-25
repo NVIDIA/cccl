@@ -282,6 +282,7 @@ TEST_CASE("Smoke", "[device]")
   {
     std::string name = device_ref(0).get_name();
     CUDAX_REQUIRE(name.length() != 0);
+    CUDAX_REQUIRE(name[0] != 0);
   }
 }
 
