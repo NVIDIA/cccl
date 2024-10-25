@@ -14,7 +14,4 @@
 
 #include <cccl/c/types.h>
 
-struct storage_t;
-
-std::string cccl_type_enum_to_name(cccl_type_enum type, bool is_pointer = false);
-std::string_view cccl_type_enum_to_string(cccl_type_enum type);
+std::string make_kernel_user_binary_operator(std::string_view input_value_t, cccl_op_t operation);
