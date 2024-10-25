@@ -382,22 +382,22 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
   // note: I tried expressing the UBLKCP_AGENT as a function object but it adds a lot of code to handle the variadics
   // TODO(bgruber): use a polymorphic lambda in C++14
-#  define UBLKCP_AGENT(full_tile)                                                                                 \
-    _Pragma("unroll 1") /* Unroll 1 tends to improve performance, especially for smaller data types (confirmed by \
-                             benchmark) */                                                                        \
-      for (int j = 0; j < num_elem_per_thread; ++j)                                                               \
-    {                                                                                                             \
-      const int idx = j * block_dim + threadIdx.x;                                                                \
-      if (full_tile || idx < tile_size)                                                                           \
-      {                                                                                                           \
-        int smem_offset = 0;                                                                                      \
-        /* need to expand into a tuple for guaranteed order of evaluation*/                                       \
-        out[idx] = poor_apply(                                                                                    \
-          [&](const InTs&... values) {                                                                            \
-            return f(values...);                                                                                  \
-          },                                                                                                      \
-          ::cuda::std::tuple<InTs...>{fetch_operand(tile_stride, smem, smem_offset, idx, aligned_ptrs)...});      \
-      }                                                                                                           \
+#  define UBLKCP_AGENT(full_tile)                                                                            \
+    /* Unroll 1 tends to improve performance, especially for smaller data types (confirmed by benchmark) */  \
+    _CCCL_PRAGMA(unroll 1)                                                                                   \
+    for (int j = 0; j < num_elem_per_thread; ++j)                                                            \
+    {                                                                                                        \
+      const int idx = j * block_dim + threadIdx.x;                                                           \
+      if (full_tile || idx < tile_size)                                                                      \
+      {                                                                                                      \
+        int smem_offset = 0;                                                                                 \
+        /* need to expand into a tuple for guaranteed order of evaluation*/                                  \
+        out[idx] = poor_apply(                                                                               \
+          [&](const InTs&... values) {                                                                       \
+            return f(values...);                                                                             \
+          },                                                                                                 \
+          ::cuda::std::tuple<InTs...>{fetch_operand(tile_stride, smem, smem_offset, idx, aligned_ptrs)...}); \
+      }                                                                                                      \
     }
   if (tile_stride == tile_size)
   {
