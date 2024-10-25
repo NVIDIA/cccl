@@ -103,10 +103,12 @@ TEMPLATE_TEST_CASE(
       CUDAX_CHECK(buf.data() != old_ptr);
       CUDAX_CHECK(buf.data() == old_input_ptr);
       CUDAX_CHECK(buf.size() == 42);
+      CUDAX_CHECK(buf.size_bytes() == 42 * sizeof(TestType));
       CUDAX_CHECK(buf.get_resource() == other_resource);
 
       CUDAX_CHECK(input.data() == nullptr);
       CUDAX_CHECK(input.size() == 0);
+      CUDAX_CHECK(input.size_bytes() == 0);
     }
 
     { // Ensure self move assignment doesnt do anything
@@ -116,6 +118,7 @@ TEMPLATE_TEST_CASE(
       buf = cuda::std::move(buf);
       CUDAX_CHECK(buf.data() == old_ptr);
       CUDAX_CHECK(buf.size() == 1337);
+      CUDAX_CHECK(buf.size_bytes() == 1337 * sizeof(TestType));
     }
   }
 
@@ -124,6 +127,7 @@ TEMPLATE_TEST_CASE(
     uninitialized_buffer buf{resource, 42};
     CUDAX_CHECK(buf.data() != nullptr);
     CUDAX_CHECK(buf.size() == 42);
+    CUDAX_CHECK(buf.size_bytes() == 42 * sizeof(TestType));
     CUDAX_CHECK(buf.begin() == buf.data());
     CUDAX_CHECK(buf.end() == buf.begin() + buf.size());
     CUDAX_CHECK(buf.get_resource() == resource);

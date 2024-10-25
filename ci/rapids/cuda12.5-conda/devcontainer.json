@@ -1,5 +1,5 @@
 {
-  "image": "rapidsai/devcontainers:24.10-cpp-mambaforge-ubuntu22.04",
+  "image": "rapidsai/devcontainers:24.12-cpp-mambaforge-ubuntu22.04",
   "runArgs": [
     "--rm",
     "--name",
@@ -23,7 +23,7 @@
     "PYTHON_PACKAGE_MANAGER": "conda",
     "SCCACHE_REGION": "us-east-2",
     "SCCACHE_BUCKET": "rapids-sccache-devs",
-    "VAULT_HOST": "https://vault.ops.k8s.rapids.ai",
+    "AWS_ROLE_ARN": "arn:aws:iam::279114543810:role/nv-gha-token-sccache-devs",
     "HISTFILE": "/home/coder/.cache/._bash_history",
     "LIBCUDF_KERNEL_CACHE_PATH": "/home/coder/cudf/cpp/build/latest/jitify_cache",
     "RAPIDS_LIBS": "${localEnv:RAPIDS_LIBS}",
