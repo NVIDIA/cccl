@@ -34,20 +34,35 @@ int main(int argc, char** argv)
     exit(2);
   }
 
-  // Query device properties
-  cudaDeviceProp prop[64];
-  int gpuid[2]; // we want to find the first two GPU's that can support P2P
-
-  for (int i = 0; i < gpu_n; i++)
-  {
-    checkCudaErrors(cudaGetDeviceProperties(&prop[i], i));
-  }
   // Check possibility for peer access
   printf("\nChecking GPU(s) for support of peer to peer memory access...\n");
 
-  int can_access_peer;
-  int p2pCapableGPUs[2]; // We take only 1 pair of P2P capable GPUs
-  p2pCapableGPUs[0] = p2pCapableGPUs[1] = -1;
+  std::vector<cudax::device_ref> peers;
+  for (auto dev& : cudax::devices)
+  {
+    peers = dev.get_peers();
+    if (peers.size() != 0)
+    {
+      peers.push_back(dev);
+      break;
+    }
+  }
+
+  for (auto dev_i : peers)
+  {
+    for (auto dev_j : peers)
+    {
+      if (i != j)
+      {
+        printf("> Peer access from %s (GPU%d) -> %s (GPU%d) : %s\n",
+               prop[i].name,
+               i,
+               prop[j].name,
+               j,
+               can_access_peer ? "Yes" : "No");
+      }
+    }
+  }
 
   // Show all the combinations of supported P2P GPUs
   for (int i = 0; i < gpu_n; i++)
