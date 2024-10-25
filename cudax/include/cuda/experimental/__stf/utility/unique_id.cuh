@@ -33,24 +33,30 @@ namespace reserved
 /* This defines an object with a unique identifier. This object is non
  * copyable, but moving it transfers the unique id to the destination object.
  */
-template <typename C, C...>
+template <typename C>
 class unique_id
 {
 public:
   unique_id() = default;
   constexpr unique_id(unique_id&& other) noexcept
       : _value(::std::exchange(other._value, -1))
-  {}
+  {
+    assert(_value >= 0 && "Reading a dead unique_id is not allowed.");
+  }
   constexpr unique_id(const int val) noexcept
       : _value(val)
-  {}
+  {
+    assert(val >= 0 && "A unique_id must contain a non-negative value.");
+  }
   constexpr operator int() const noexcept
   {
+    assert(_value >= 0 && "Reading a dead unique_id is not allowed.");
     return _value;
   }
 
-  unique_id& operator=(unique_id&& rhs)
+  constexpr unique_id& operator=(unique_id&& rhs)
   {
+    assert(rhs._value >= 0 && "Reading a dead uniwue_id is not allowed.");
     _value = ::std::exchange(rhs._value, -1);
     return *this;
   }
@@ -58,9 +64,16 @@ public:
   unique_id(const unique_id&)            = delete;
   unique_id& operator=(const unique_id&) = delete;
 
-  bool operator==(const unique_id& other) const noexcept
+  constexpr bool operator==(const unique_id& rhs) const noexcept
   {
-    return _value == other._value;
+    assert(_value >= 0 && "Reading a dead uniwue_id is not allowed.");
+    if (_value == rhs._value)
+    {
+      assert(this == &rhs && "Distinct unique_id objects may not contain the same value.");
+      return true;
+    }
+    assert(rhs._value >= 0 && "Reading a dead uniwue_id is not allowed.");
+    return false;
   }
 
 private:
@@ -75,10 +88,10 @@ private:
 
 } // end namespace reserved
 
-template <typename C, C... letters>
-struct hash<reserved::unique_id<C, letters...>>
+template <typename C>
+struct hash<reserved::unique_id<C>>
 {
-  size_t operator()(const reserved::unique_id<C, letters...>& id) const
+  size_t operator()(const reserved::unique_id<C>& id) const
   {
     return ::std::hash<int>()(id);
   }
