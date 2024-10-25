@@ -52,11 +52,6 @@
 #  include <typeinfo>
 #endif
 
-// warning #20012-D: __device__ annotation is ignored on a
-// function("inplace_stop_source") that is explicitly defaulted on its first
-// declaration
-_CCCL_NV_DIAG_SUPPRESS(20012)
-
 // When using MSVC as the host compiler, there is a bug in the EDG front-end of
 // cudafe++ that causes the __FUNCSIG__ predefined macro to be expanded too
 // early in the compilation process. The result is that within a function
@@ -117,7 +112,7 @@ template <class _Tp, size_t _Np>
 struct __static_nameof;
 
 template <size_t _Np, size_t _Mp, size_t... _Is>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __sstring<_Np>
+_CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __sstring<_Np>
 __make_pretty_name_impl(char const (&__s)[_Mp], index_sequence<_Is...>) noexcept
 {
   static_assert(_Mp <= _Np, "Type name too long for __pretty_nameof");
@@ -125,7 +120,7 @@ __make_pretty_name_impl(char const (&__s)[_Mp], index_sequence<_Is...>) noexcept
 }
 
 template <class _Tp, size_t _Np>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr auto __make_pretty_name(integral_constant<size_t, _Np>) noexcept //
+_CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr auto __make_pretty_name(integral_constant<size_t, _Np>) noexcept //
   -> __enable_if_t<_Np == size_t(-1), __string_view>
 {
   using _TpName = __static_nameof<_Tp, sizeof(_CCCL_PRETTY_FUNCTION)>;
@@ -133,7 +128,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __make_pretty_name(integral_constant<si
 }
 
 template <class _Tp, size_t _Np>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr auto __make_pretty_name(integral_constant<size_t, _Np>) noexcept //
+_CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr auto __make_pretty_name(integral_constant<size_t, _Np>) noexcept //
   -> __enable_if_t<_Np != size_t(-1), __sstring<_Np>>
 {
   return _CUDA_VSTD::__make_pretty_name_impl<_Np>(_CCCL_PRETTY_FUNCTION, make_index_sequence<_Np>{});
@@ -161,14 +156,15 @@ struct __pretty_name_begin
 };
 
 // If a position is -1, it is an invalid position. Return it unchanged.
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr ptrdiff_t
+_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr ptrdiff_t
 __add_string_view_position(ptrdiff_t __pos, ptrdiff_t __diff) noexcept
 {
   return __pos == -1 ? -1 : __pos + __diff;
 }
 
 // Get the type name from the pretty name by trimming the front and back.
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __find_pretty_name(__string_view __sv) noexcept
+_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __string_view
+__find_pretty_name(__string_view __sv) noexcept
 {
   return __sv.substr(_CUDA_VSTD::__add_string_view_position(
                        __sv.find("__pretty_name_begin<"), ptrdiff_t(sizeof("__pretty_name_begin<")) - 1),
@@ -176,7 +172,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __find_pretty_
 }
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameof_helper() noexcept
+_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __string_view __pretty_nameof_helper() noexcept
 {
 #if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 90000 && !defined(__CUDA_ARCH__)
   return _CUDA_VSTD::__find_pretty_name(_CUDA_VSTD::__make_pretty_name<_Tp>(integral_constant<size_t, size_t(-1)>{}));
@@ -186,7 +182,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameo
 }
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __pretty_nameof() noexcept
+_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __string_view __pretty_nameof() noexcept
 {
   return _CUDA_VSTD::__pretty_nameof_helper<typename __pretty_name_begin<_Tp>::__pretty_name_end>();
 }
@@ -218,21 +214,21 @@ struct __type_info_impl
 
 struct __type_info_ptr_
 {
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info_ptr_() noexcept = default;
+  _CCCL_HIDE_FROM_ABI constexpr __type_info_ptr_() noexcept = default;
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info_ptr_(__type_info_impl (*__pfn_)() noexcept) noexcept
+  _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr __type_info_ptr_(__type_info_impl (*__pfn_)() noexcept) noexcept
       : __pfn_(__pfn_)
   {}
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info_ref_ operator*() const noexcept;
+  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr __type_info_ref_ operator*() const noexcept;
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr bool
   operator==(__type_info_ptr_ __a, __type_info_ptr_ __b) noexcept
   {
     return __a.__pfn_ == __b.__pfn_;
   }
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr bool
   operator!=(__type_info_ptr_ __a, __type_info_ptr_ __b) noexcept
   {
     return !(__a == __b);
@@ -247,49 +243,49 @@ struct __type_info
 {
   __type_info() = delete;
 
-  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr __type_info(__type_info_impl (*__pfn)() noexcept) noexcept
+  _CCCL_HIDE_FROM_ABI _CCCL_DEVICE explicit constexpr __type_info(__type_info_impl (*__pfn)() noexcept) noexcept
       : __pfn_(__pfn)
   {}
 
   template <class _Tp>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr __type_info_impl __get_ti_for() noexcept
+  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE static constexpr __type_info_impl __get_ti_for() noexcept
   {
     return __type_info_impl{_CUDA_VSTD::__pretty_nameof<_Tp>()};
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr char const* name() const noexcept
+  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr char const* name() const noexcept
   {
     return __pfn_().__name_.begin();
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __name_view() const noexcept
+  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr __string_view __name_view() const noexcept
   {
     return __pfn_().__name_;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool before(__type_info const& __other) const noexcept
+  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr bool before(__type_info const& __other) const noexcept
   {
     return __pfn_().__name_ < __other.__pfn_().__name_;
   }
 
   // Not yet implemented:
-  // _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t hash_code() const noexcept
+  // _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr size_t hash_code() const noexcept
   // {
   //   return ;
   // }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info_ptr_ operator&() const noexcept
+  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr __type_info_ptr_ operator&() const noexcept
   {
     return __type_info_ptr_{__pfn_};
   }
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr bool
   operator==(__type_info const& __a, __type_info const& __b) noexcept
   {
     return __a.__pfn_ == __b.__pfn_ || __a.__pfn_().__name_ == __b.__pfn_().__name_;
   }
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr bool
   operator!=(__type_info const& __a, __type_info const& __b) noexcept
   {
     return !(__a == __b);
@@ -307,20 +303,20 @@ private:
 
 struct __type_info_ref_ : __type_info
 {
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info_ref_(__type_info_impl (*__pfn)() noexcept) noexcept
+  _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr __type_info_ref_(__type_info_impl (*__pfn)() noexcept) noexcept
       : __type_info(__pfn)
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info_ref_(__type_info const& __other) noexcept
+  _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr __type_info_ref_(__type_info const& __other) noexcept
       : __type_info(__other)
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info_ref_(__type_info_ref_ const& __other) noexcept
+  _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr __type_info_ref_(__type_info_ref_ const& __other) noexcept
       : __type_info(__other)
   {}
 };
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info_ref_ __type_info_ptr_::operator*() const noexcept
+_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE constexpr __type_info_ref_ __type_info_ptr_::operator*() const noexcept
 {
   return __type_info_ref_(__pfn_);
 }
@@ -354,39 +350,39 @@ struct __type_info
   __type_info(__type_info const&)            = delete;
   __type_info& operator=(__type_info const&) = delete;
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info(__string_view __name) noexcept
+  _CCCL_HIDE_FROM_ABI constexpr __type_info(__string_view __name) noexcept
       : __name_(__name)
   {}
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr char const* name() const noexcept
+  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr char const* name() const noexcept
   {
     return __name_.begin();
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __string_view __name_view() const noexcept
+  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr __string_view __name_view() const noexcept
   {
     return __name_;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool before(const __type_info& __other) const noexcept
+  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr bool before(const __type_info& __other) const noexcept
   {
     return __name_ < __other.__name_;
   }
 
   // Not yet implemented:
-  // _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t hash_code() const noexcept
+  // _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr size_t hash_code() const noexcept
   // {
   //   return ;
   // }
 
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI constexpr bool
   operator==(const __type_info& __lhs, const __type_info& __rhs) noexcept
   {
     return &__lhs == &__rhs || __lhs.__name_ == __rhs.__name_;
   }
 
 #  if _CCCL_STD_VER <= 2017
-  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool
+  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI constexpr bool
   operator!=(const __type_info& __lhs, const __type_info& __rhs) noexcept
   {
     return !(__lhs == __rhs);
@@ -411,7 +407,7 @@ _CCCL_GLOBAL_CONSTANT __type_info __typeid_v{_CUDA_VSTD::__pretty_nameof<_Tp>()}
 // When inline variables are available, this indirection through an inline function
 // is not necessary, but it doesn't hurt either.
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info const& __typeid() noexcept
+_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr __type_info const& __typeid() noexcept
 {
   return __typeid_v<_Tp>;
 }
@@ -434,7 +430,7 @@ constexpr __type_info __typeid_value<_Tp>::value;
 #    endif // _CCCL_NO_INLINE_VARIABLES
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info const& __typeid() noexcept
+_CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr __type_info const& __typeid() noexcept
 {
   return __typeid_value<_Tp>::value;
 }
@@ -451,7 +447,5 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __type_info const& __typeid(
 #endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
-
-_CCCL_NV_DIAG_DEFAULT(20012)
 
 #endif // _LIBCUDACXX___UTILITY_TYPEID_H
