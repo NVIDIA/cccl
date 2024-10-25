@@ -1,5 +1,7 @@
 cccl_get_catch2()
 
+find_package(cudax) # already found, bring in version info.
+
 find_package(Thrust ${cudax_VERSION} EXACT CONFIG
   NO_DEFAULT_PATH # Only check the explicit path in HINTS:
   HINTS "${CCCL_SOURCE_DIR}/lib/cmake/thrust/"
@@ -120,5 +122,10 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   cudax_add_catch2_test(test_target green_context ${cn_target}
     green_context/green_ctx_smoke.cu
   )
-
 endforeach()
+
+# FIXME: Enable MSVC
+if (NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  # STF tests are handled separately:
+  add_subdirectory(stf)
+endif()

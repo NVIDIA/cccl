@@ -81,13 +81,9 @@
 
 // Define CUB_COMPILER_DEPRECATION macro:
 #  if defined(_CCCL_COMPILER_MSVC)
-#    define CUB_COMP_DEPR_IMPL(msg) __pragma(message(__FILE__ ":" CUB_COMP_DEPR_IMPL0(__LINE__) ": warning: " #msg))
-#    define CUB_COMP_DEPR_IMPL0(x)  CUB_COMP_DEPR_IMPL1(x)
-#    define CUB_COMP_DEPR_IMPL1(x)  #x
+#    define CUB_COMP_DEPR_IMPL(msg) _CCCL_PRAGMA(message(__FILE__ ":" _CCCL_TO_STRING(__LINE__) ": warning: " #msg))
 #  else // clang / gcc:
-#    define CUB_COMP_DEPR_IMPL(msg)   CUB_COMP_DEPR_IMPL0(GCC warning #msg)
-#    define CUB_COMP_DEPR_IMPL0(expr) _Pragma(#expr)
-#    define CUB_COMP_DEPR_IMPL1       /* intentionally blank */
+#    define CUB_COMP_DEPR_IMPL(msg) _CCCL_PRAGMA(GCC warning #msg)
 #  endif
 
 #  define CUB_COMPILER_DEPRECATION(REQ) \

@@ -100,4 +100,15 @@
 #  define _CCCL_CUDACC_BELOW_12_3
 #endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1203000
 
+// Convert parameter to string
+#define _CCCL_TO_STRING2(_STR) #_STR
+#define _CCCL_TO_STRING(_STR)  _CCCL_TO_STRING2(_STR)
+
+// Define the pragma for the host compiler
+#if defined(_CCCL_COMPILER_MSVC)
+#  define _CCCL_PRAGMA(x) __pragma(x)
+#else
+#  define _CCCL_PRAGMA(x) _Pragma(_CCCL_TO_STRING(x))
+#endif // defined(_CCCL_COMPILER_MSVC)
+
 #endif // __CCCL_COMPILER_H
