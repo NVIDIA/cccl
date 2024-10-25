@@ -124,7 +124,8 @@ inline void* allocateManagedMemory(size_t sz)
  * @param sz size in bytes
  * @param loc location of the call, defaulted
  */
-inline void deallocateHostMemory(void* p, size_t sz, source_location loc = ::cuda::experimental::stf::source_location::current())
+inline void
+deallocateHostMemory(void* p, size_t sz, source_location loc = ::cuda::experimental::stf::source_location::current())
 {
   ::std::ignore = loc;
   assert([&] {
@@ -149,7 +150,8 @@ inline void deallocateHostMemory(void* p, size_t sz, source_location loc = ::cud
  * @param sz size in bytes
  * @param loc location of the call, defaulted
  */
-inline void deallocateManagedMemory(void* p, size_t sz, source_location loc = ::cuda::experimental::stf::source_location::current())
+inline void
+deallocateManagedMemory(void* p, size_t sz, source_location loc = ::cuda::experimental::stf::source_location::current())
 {
   ::std::ignore = loc;
   assert([&] {

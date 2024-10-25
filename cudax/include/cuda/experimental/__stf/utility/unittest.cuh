@@ -490,13 +490,14 @@ int main()
 }
 
 #    ifdef STF_HAS_UNITTEST_WITH_ARGS
-#      define UNITTEST(name, ...)                                                                                     \
-        [[maybe_unused]] static const auto CUDASTF_UNIQUE_NAME(unittest) =                                            \
-          ::cuda::experimental::stf::unittest<>::make(name, ::cuda::experimental::stf::source_location::current() __VA_OPT__(, __VA_ARGS__)) \
+#      define UNITTEST(name, ...)                                                                  \
+        [[maybe_unused]] static const auto CUDASTF_UNIQUE_NAME(unittest) =                         \
+          ::cuda::experimental::stf::unittest<>::make(                                             \
+            name, ::cuda::experimental::stf::source_location::current() __VA_OPT__(, __VA_ARGS__)) \
             ->*[]([[maybe_unused]] const char* unittest_name __VA_OPT__(, [[maybe_unused]] auto&& unittest_param))
 #    else
-#      define UNITTEST(name)                                                                    \
-        [[maybe_unused]] static const auto CUDASTF_UNIQUE_NAME(unittest) =                      \
+#      define UNITTEST(name)                                                                                           \
+        [[maybe_unused]] static const auto CUDASTF_UNIQUE_NAME(unittest) =                                             \
           ::cuda::experimental::stf::unittest<>::make(name, ::cuda::experimental::stf::source_location::current())->*[ \
           ]([[maybe_unused]] const char* unittest_name)
 #    endif
@@ -692,12 +693,13 @@ UNITTEST("shuffled_array_tuple")
 
 UNITTEST("source_location")
 {
-  auto test_func = [](::cuda::experimental::stf::source_location loc = ::cuda::experimental::stf::source_location::current()) {
-    // Check the source location metadata
-    EXPECT(loc.line() > 0); // The line number should be positive
-    EXPECT(loc.file_name() != nullptr); // File name should not be null
-    EXPECT(loc.function_name() != nullptr); // Function name should not be null
-  };
+  auto test_func =
+    [](::cuda::experimental::stf::source_location loc = ::cuda::experimental::stf::source_location::current()) {
+      // Check the source location metadata
+      EXPECT(loc.line() > 0); // The line number should be positive
+      EXPECT(loc.file_name() != nullptr); // File name should not be null
+      EXPECT(loc.function_name() != nullptr); // Function name should not be null
+    };
 
   // Call the test function and validate the source location information
   test_func();

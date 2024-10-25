@@ -68,24 +68,28 @@ public:
     return func_;
   }
 
-  static constexpr source_location
-  current(const char* file = __builtin_FILE(), ::std::uint_least32_t line = __builtin_LINE(), ::std::uint_least32_t column = __builtin_COLUMN(), const char* func = __builtin_FUNCTION()) noexcept
+  static constexpr source_location current(
+    const char* file             = __builtin_FILE(),
+    ::std::uint_least32_t line   = __builtin_LINE(),
+    ::std::uint_least32_t column = __builtin_COLUMN(),
+    const char* func             = __builtin_FUNCTION()) noexcept
   {
     return source_location(file, line, column, func);
   }
 
 private:
-  constexpr source_location(const char* file, ::std::uint_least32_t line, ::std::uint_least32_t column, const char* func) noexcept
+  constexpr source_location(
+    const char* file, ::std::uint_least32_t line, ::std::uint_least32_t column, const char* func) noexcept
       : file_(file)
       , line_(line)
       , column(_column)
       , func_(func)
   {}
 
-  const char* file_ = "";
-  ::std::uint_least32_t line_ = 0;
+  const char* file_             = "";
+  ::std::uint_least32_t line_   = 0;
   ::std::uint_least32_t column_ = 0;
-  const char* func_ = "";
+  const char* func_             = "";
 };
 
 } // end namespace cuda::experimental::stf
