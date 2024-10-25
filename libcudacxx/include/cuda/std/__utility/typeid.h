@@ -238,7 +238,7 @@ struct __type_info_ptr_
     return !(__a == __b);
   }
 
-  __type_info_impl (*__pfn_)() noexcept;
+  __type_info_impl (*__pfn_)() noexcept = nullptr;
 };
 
 /// @brief A minimal implementation of `std::type_info` for device code that does
