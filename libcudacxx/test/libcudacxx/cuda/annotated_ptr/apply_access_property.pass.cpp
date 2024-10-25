@@ -18,9 +18,9 @@
 constexpr size_t array_size = 128;
 
 template <typename T, typename P>
-__device__ __host__ __noinline__ void test(P ap, bool shared = false)
+__device__ __host__ __noinline__ void test(P ap)
 {
-  T* arr = alloc<T, array_size>(shared);
+  T* arr = global_alloc<T, array_size>();
 
   cuda::apply_access_property(arr, array_size * sizeof(T), ap);
 
@@ -29,13 +29,13 @@ __device__ __host__ __noinline__ void test(P ap, bool shared = false)
     assert(arr[i] == i);
   }
 
-  dealloc<T>(arr, shared);
+  dealloc<T>(arr);
 }
 
 template <typename T, typename P>
-__device__ __host__ __noinline__ void test_aligned(P ap, bool shared = false)
+__device__ __host__ __noinline__ void test_aligned(P ap)
 {
-  T* arr = alloc<T, array_size>(shared);
+  T* arr = global_alloc<T, array_size>();
 
   cuda::apply_access_property(arr, cuda::aligned_size_t<sizeof(T)>(array_size * sizeof(T)), ap);
 
@@ -44,7 +44,7 @@ __device__ __host__ __noinline__ void test_aligned(P ap, bool shared = false)
     assert(arr[i] == i);
   }
 
-  dealloc<T>(arr, shared);
+  dealloc<T>(arr);
 }
 
 __device__ __host__ __noinline__ void test_all()

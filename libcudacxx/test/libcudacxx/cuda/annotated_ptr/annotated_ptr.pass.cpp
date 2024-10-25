@@ -110,7 +110,7 @@ __device__ __host__ __noinline__ void test_write_access(In i)
 
 __device__ __host__ __noinline__ void all_tests()
 {
-  S* arr = alloc<S, N>(false);
+  S* arr = global_alloc<S, N>();
 
   test_read_access(cuda::annotated_ptr<S, cuda::access_property::normal>(arr), arr);
   test_read_access(cuda::annotated_ptr<S, cuda::access_property::streaming>(arr), arr);
