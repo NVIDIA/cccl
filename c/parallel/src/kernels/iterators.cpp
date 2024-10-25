@@ -15,15 +15,7 @@
 #include <util/errors.h>
 #include <util/types.h>
 
-std::string make_kernel_input_iterator(
-  std::string_view diff_t,
-  size_t alignment,
-  size_t size,
-  std::string_view value_t,
-  std::string_view deref,
-  std::string_view advance)
-{
-  constexpr std::string_view format_template = R"XXX(
+constexpr std::string_view format_template = R"XXX(
 #define DIFF_T {0}
 #define OP_ALIGNMENT {1}
 #define OP_SIZE {2}
@@ -42,6 +34,14 @@ std::string make_kernel_input_iterator(
 #undef ADVANCE
 )XXX";
 
+std::string make_kernel_input_iterator(
+  std::string_view diff_t,
+  size_t alignment,
+  size_t size,
+  std::string_view value_t,
+  std::string_view deref,
+  std::string_view advance)
+{
   constexpr std::string_view iter_def = R"XXX(
 extern "C" __device__ VALUE_T DEREF(const void *self_ptr);
 extern "C" __device__ void ADVANCE(void *self_ptr, DIFF_T offset);
@@ -90,25 +90,6 @@ std::string make_kernel_output_iterator(
   std::string_view deref,
   std::string_view advance)
 {
-  constexpr std::string_view format_template = R"XXX(
-#define DIFF_T {0}
-#define OP_ALIGNMENT {1}
-#define OP_SIZE {2}
-#define VALUE_T {3}
-#define DEREF {4}
-#define ADVANCE {5}
-
-// Kernel Source
-{6}
-
-#undef DIFF_T
-#undef OP_ALIGNMENT
-#undef OP_SIZE
-#undef VALUE_T
-#undef DEREF
-#undef ADVANCE
-)XXX";
-
   constexpr std::string_view iter_def = R"XXX(
 extern "C" __device__ void DEREF(const void *self_ptr, VALUE_T x);
 extern "C" __device__ void ADVANCE(void *self_ptr, DIFF_T offset);

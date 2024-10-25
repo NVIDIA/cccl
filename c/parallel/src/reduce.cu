@@ -23,6 +23,7 @@
 #include <memory>
 
 #include "kernels/iterators.h"
+#include "kernels/operators.h"
 #include "util/context.h"
 #include "util/errors.h"
 #include "util/indirect_arg.h"
@@ -229,32 +230,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
     const std::string input_iterator_src  = make_kernel_input_iterator(offset_t, input_it_value_t, input_it);
     const std::string output_iterator_src = make_kernel_output_iterator(offset_t, accum_cpp, output_it);
 
-    const std::string op_src =
-      op.type == cccl_op_kind_t::stateless
-        ? std::format(
-            "extern \"C\" __device__ {0} {1}({0} lhs, {0} rhs);\n"
-            "struct op_wrapper {{\n"
-            "  __device__ {0} operator()({0} lhs, {0} rhs) const {{\n"
-            "    return {1}(lhs, rhs);\n"
-            "  }}\n"
-            "}};\n",
-            accum_cpp,
-            op.name)
-        : std::format(
-            "struct __align__({2}) op_state {{\n"
-            "  char data[{3}];\n"
-            "}};"
-            "extern \"C\" __device__ {0} {1}(op_state *state, {0} lhs, {0} rhs);\n"
-            "struct op_wrapper {{\n"
-            "  op_state state;\n"
-            "  __device__ {0} operator()({0} lhs, {0} rhs) {{\n"
-            "    return {1}(&state, lhs, rhs);\n"
-            "  }}\n"
-            "}};\n",
-            accum_cpp,
-            op.name,
-            op.alignment,
-            op.size);
+    const std::string op_src = make_kernel_user_binary_operator(accum_cpp, op);
 
     const std::string src = std::format(
       "#include <cub/block/block_reduce.cuh>\n"
