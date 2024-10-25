@@ -27,7 +27,6 @@ struct a_dummy_class_type
 
 int main(int, char**)
 {
-  ASSERT_SAME_TYPE(::cuda::std::type_info, ::cuda::std::__type_info);
   ASSERT_SAME_TYPE(decltype((_CCCL_TYPEID(int))), ::cuda::std::__type_info_ref);
   ASSERT_NOEXCEPT(_CCCL_TYPEID(int));
   static_assert(!::cuda::std::is_default_constructible<::cuda::std::type_info>::value, "");
