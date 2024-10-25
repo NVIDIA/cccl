@@ -23,6 +23,8 @@
 
 #include <cuda/std/__cuda/api_wrapper.h>
 
+#include <cuda/experimental/__utility/driver_api.cuh>
+
 #include <vector>
 
 namespace cuda::experimental
@@ -104,6 +106,16 @@ public:
   _CCCL_NODISCARD auto attr() const
   {
     return attr(detail::__dev_attr<_Attr>());
+  }
+
+  _CCCL_NODISCARD ::std::string get_name() const
+  {
+    constexpr int __max_name_length = 256;
+    ::std::string __name(256, 0);
+
+    // For some reason there is no separate name query in CUDA runtime
+    detail::driver::getName(__name.data(), __max_name_length, get());
+    return __name;
   }
 
   const arch_traits_t& arch_traits() const;

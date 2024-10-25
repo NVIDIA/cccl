@@ -278,6 +278,11 @@ TEST_CASE("Smoke", "[device]")
       CUDAX_REQUIRE(compute_cap == 100 * compute_cap_major + 10 * compute_cap_minor);
     }
   }
+  SECTION("Name")
+  {
+    std::string name = device_ref(0).get_name();
+    CUDAX_REQUIRE(name.length() != 0);
+  }
 }
 
 TEST_CASE("global devices vector", "[device]")
