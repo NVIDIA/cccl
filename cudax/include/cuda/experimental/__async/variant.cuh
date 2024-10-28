@@ -84,12 +84,12 @@ public:
     __destroy();
   }
 
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void* __ptr() noexcept
+  _CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE void* __ptr() noexcept
   {
     return __storage_;
   }
 
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE size_t __index() const noexcept
+  _CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE size_t __index() const noexcept
   {
     return __index_;
   }

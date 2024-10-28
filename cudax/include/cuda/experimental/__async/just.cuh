@@ -22,10 +22,10 @@
 #endif // no system header
 
 #include <cuda/experimental/__async/completion_signatures.cuh>
-#include <cuda/experimental/__async/config.cuh>
 #include <cuda/experimental/__async/cpos.cuh>
 #include <cuda/experimental/__async/tuple.cuh>
 #include <cuda/experimental/__async/utility.cuh>
+#include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/prologue.cuh>
 
@@ -110,7 +110,7 @@ private:
 
 public:
   template <class... _Ts>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto operator()(_Ts... __ts) const noexcept
+  _CUDAX_HIDDEN_INLINE _CCCL_HOST_DEVICE auto operator()(_Ts... __ts) const noexcept
   {
     return __sndr_t<_Ts...>{_JustTag{}, {{static_cast<_Ts&&>(__ts)}...}};
   }

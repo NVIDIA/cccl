@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__async/config.cuh>
+#include <cuda/experimental/__detail/config.cuh>
 
 // libcu++ does not have <cuda/std/mutex> or <cuda/std/condition_variable>
 #if !defined(__CUDA_ARCH__)

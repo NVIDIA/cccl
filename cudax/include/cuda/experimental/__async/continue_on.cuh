@@ -207,7 +207,7 @@ public:
   _CCCL_HOST_DEVICE __sndr_t<_Sndr, _Sch> operator()(_Sndr __sndr, _Sch __sch) const noexcept;
 
   template <class _Sch>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE __closure_t<_Sch> operator()(_Sch __sch) const noexcept;
+  _CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE __closure_t<_Sch> operator()(_Sch __sch) const noexcept;
 };
 
 template <class _Sch>
@@ -216,7 +216,7 @@ struct continue_on_t::__closure_t
   _Sch __sch;
 
   template <class _Sndr>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE friend auto operator|(_Sndr __sndr, __closure_t&& __self)
+  _CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE friend auto operator|(_Sndr __sndr, __closure_t&& __self)
   {
     return continue_on_t()(static_cast<_Sndr&&>(__sndr), static_cast<_Sch&&>(__self.__sch));
   }
@@ -274,7 +274,7 @@ continue_on_t::operator()(_Sndr __sndr, _Sch __sch) const noexcept -> continue_o
 }
 
 template <class _Sch>
-_CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE continue_on_t::__closure_t<_Sch>
+_CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE continue_on_t::__closure_t<_Sch>
 continue_on_t::operator()(_Sch __sch) const noexcept
 {
   return __closure_t<_Sch>{__sch};

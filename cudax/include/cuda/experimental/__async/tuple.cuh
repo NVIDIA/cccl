@@ -21,9 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__async/config.cuh>
 #include <cuda/experimental/__async/meta.cuh>
 #include <cuda/experimental/__async/type_traits.cuh>
+#include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/prologue.cuh>
 
@@ -39,7 +39,7 @@ struct __box
 };
 
 template <size_t _Idx, class _Ty>
-_CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE constexpr auto __cget(__box<_Idx, _Ty> const& __box) noexcept -> _Ty const&
+_CUDAX_HIDDEN_INLINE _CCCL_HOST_DEVICE constexpr auto __cget(__box<_Idx, _Ty> const& __box) noexcept -> _Ty const&
 {
   return __box.__value_;
 }
@@ -51,7 +51,7 @@ template <size_t... _Idx, class... _Ts>
 struct __tupl<__mindices<_Idx...>, _Ts...> : __box<_Idx, _Ts>...
 {
   template <class _Fn, class _Self, class... _Us>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) //
+  _CUDAX_HIDDEN_INLINE _CCCL_HOST_DEVICE static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) //
     noexcept(__nothrow_callable<_Fn, _Us..., __copy_cvref_t<_Self, _Ts>...>)
       -> __call_result_t<_Fn, _Us..., __copy_cvref_t<_Self, _Ts>...>
   {
@@ -61,7 +61,7 @@ struct __tupl<__mindices<_Idx...>, _Ts...> : __box<_Idx, _Ts>...
   }
 
   template <class _Fn, class _Self, class... _Us>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE static auto __for_each(_Fn&& __fn, _Self&& __self, _Us&&... __us) //
+  _CUDAX_HIDDEN_INLINE _CCCL_HOST_DEVICE static auto __for_each(_Fn&& __fn, _Self&& __self, _Us&&... __us) //
     noexcept((__nothrow_callable<_Fn, _Us..., __copy_cvref_t<_Self, _Ts>>
               && ...)) -> __mif<(__callable<_Fn, _Us..., __copy_cvref_t<_Self, _Ts>> && ...)>
   {

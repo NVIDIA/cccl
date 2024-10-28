@@ -179,7 +179,7 @@ private:
     }
 
     template <class _Tag, class... _Ts>
-    _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void __complete(_Tag, _Ts&&... __ts) noexcept
+    _CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE void __complete(_Tag, _Ts&&... __ts) noexcept
     {
       if constexpr (_CUDA_VSTD::is_same_v<_Tag, _SetTag>)
       {
@@ -250,13 +250,13 @@ private:
     _Fn __fn_;
 
     template <class _Sndr>
-    _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto operator()(_Sndr __sndr) -> __call_result_t<_UponTag, _Sndr, _Fn>
+    _CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE auto operator()(_Sndr __sndr) -> __call_result_t<_UponTag, _Sndr, _Fn>
     {
       return _UponTag()(static_cast<_Sndr&&>(__sndr), static_cast<_Fn&&>(__fn_));
     }
 
     template <class _Sndr>
-    _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE friend auto operator|(_Sndr __sndr, __closure_t&& __self) //
+    _CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE friend auto operator|(_Sndr __sndr, __closure_t&& __self) //
       -> __call_result_t<_UponTag, _Sndr, _Fn>
     {
       return _UponTag()(static_cast<_Sndr&&>(__sndr), static_cast<_Fn&&>(__self.__fn_));
@@ -265,7 +265,7 @@ private:
 
 public:
   template <class _Sndr, class _Fn>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto operator()(_Sndr __sndr, _Fn __fn) const noexcept //
+  _CUDAX_HIDDEN_INLINE _CCCL_HOST_DEVICE auto operator()(_Sndr __sndr, _Fn __fn) const noexcept //
     -> __sndr_t<_Fn, _Sndr>
   {
     // If the incoming sender is non-dependent, we can check the completion
@@ -279,7 +279,7 @@ public:
   }
 
   template <class _Fn>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto operator()(_Fn __fn) const noexcept
+  _CUDAX_HIDDEN_INLINE _CCCL_HOST_DEVICE auto operator()(_Fn __fn) const noexcept
   {
     return __closure_t<_Fn>{static_cast<_Fn&&>(__fn)};
   }

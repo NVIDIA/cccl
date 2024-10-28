@@ -23,8 +23,8 @@
 
 #include <cuda/std/__type_traits/remove_reference.h>
 
-#include <cuda/experimental/__async/config.cuh>
 #include <cuda/experimental/__async/meta.cuh>
+#include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/prologue.cuh>
 

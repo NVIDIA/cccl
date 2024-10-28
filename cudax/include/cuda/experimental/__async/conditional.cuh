@@ -12,11 +12,11 @@
 #define __CUDAX_ASYNC_DETAIL_CONDITIONAL
 
 #include <cuda/experimental/__async/completion_signatures.cuh>
-#include <cuda/experimental/__async/config.cuh>
 #include <cuda/experimental/__async/just_from.cuh>
 #include <cuda/experimental/__async/meta.cuh>
 #include <cuda/experimental/__async/type_traits.cuh>
 #include <cuda/experimental/__async/variant.cuh>
+#include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/prologue.cuh>
 
@@ -45,7 +45,7 @@ struct __cond_t
   };
 
   template <class... _Args>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE static auto __mk_complete_fn(_Args&&... __args) noexcept
+  _CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE static auto __mk_complete_fn(_Args&&... __args) noexcept
   {
     return [&](auto __sink) noexcept {
       return __sink(static_cast<_Args&&>(__args)...);
@@ -141,18 +141,18 @@ struct __cond_t
     __cond_t::__data<_Pred, _Then, _Else> __data_;
 
     template <class _Sndr>
-    _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto __mk_sender(_Sndr&& __sndr) //
+    _CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE auto __mk_sender(_Sndr&& __sndr) //
       -> __sndr_t<_Sndr, _Pred, _Then, _Else>;
 
     template <class _Sndr>
-    _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto operator()(_Sndr __sndr) //
+    _CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE auto operator()(_Sndr __sndr) //
       -> __sndr_t<_Sndr, _Pred, _Then, _Else>
     {
       return __mk_sender(static_cast<_Sndr&&>(__sndr));
     }
 
     template <class _Sndr>
-    _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE friend auto operator|(_Sndr __sndr, __closure&& __self) //
+    _CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE friend auto operator|(_Sndr __sndr, __closure&& __self) //
       -> __sndr_t<_Sndr, _Pred, _Then, _Else>
     {
       return __self.__mk_sender(static_cast<_Sndr&&>(__sndr));
@@ -160,11 +160,11 @@ struct __cond_t
   };
 
   template <class _Sndr, class _Pred, class _Then, class _Else>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const //
+  _CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE auto operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const //
     -> __sndr_t<_Sndr, _Pred, _Then, _Else>;
 
   template <class _Pred, class _Then, class _Else>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto operator()(_Pred __pred, _Then __then, _Else __else) const
+  _CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE auto operator()(_Pred __pred, _Then __then, _Else __else) const
   {
     return __closure<_Pred, _Then, _Else>{
       {static_cast<_Pred&&>(__pred), static_cast<_Then&&>(__then), static_cast<_Else&&>(__else)}};
@@ -199,7 +199,7 @@ struct __cond_t::__sndr_t
 };
 
 template <class _Sndr, class _Pred, class _Then, class _Else>
-_CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto
+_CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE auto
 __cond_t::operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const //
   -> __sndr_t<_Sndr, _Pred, _Then, _Else>
 {
@@ -217,7 +217,7 @@ __cond_t::operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) con
 
 template <class _Pred, class _Then, class _Else>
 template <class _Sndr>
-_CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto __cond_t::__closure<_Pred, _Then, _Else>::__mk_sender(_Sndr&& __sndr) //
+_CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE auto __cond_t::__closure<_Pred, _Then, _Else>::__mk_sender(_Sndr&& __sndr) //
   -> __sndr_t<_Sndr, _Pred, _Then, _Else>
 {
   if constexpr (__is_non_dependent_sender<_Sndr>)

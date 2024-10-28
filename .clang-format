@@ -52,6 +52,8 @@ AttributeMacros: [
                   '_LIBCUDACXX_DEPRECATED_IN_CXX20',
                   '_LIBCUDACXX_DEPRECATED',
                   '_LIBCUDACXX_HIDE_FROM_ABI',
+                  '_CUDAX_HIDDEN',
+                  '_CUDAX_HIDDEN_INLINE',
                  ]
 BinPackArguments: false
 BinPackParameters: false

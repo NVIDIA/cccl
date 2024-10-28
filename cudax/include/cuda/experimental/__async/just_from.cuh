@@ -24,11 +24,11 @@
 #include <cuda/std/__type_traits/conditional.h>
 
 #include <cuda/experimental/__async/completion_signatures.cuh>
-#include <cuda/experimental/__async/config.cuh>
 #include <cuda/experimental/__async/cpos.cuh>
 #include <cuda/experimental/__async/rcvr_ref.cuh>
 #include <cuda/experimental/__async/tuple.cuh>
 #include <cuda/experimental/__async/utility.cuh>
+#include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/prologue.cuh>
 
@@ -135,7 +135,7 @@ private:
 
 public:
   template <class _Fn>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto operator()(_Fn __fn) const noexcept
+  _CUDAX_HIDDEN_INLINE _CCCL_HOST_DEVICE auto operator()(_Fn __fn) const noexcept
   {
     using __completions = __call_result_t<_Fn, __probe_fn>;
     static_assert(__is_completion_signatures<__completions>,
