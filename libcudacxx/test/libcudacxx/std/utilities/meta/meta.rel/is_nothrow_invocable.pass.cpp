@@ -66,7 +66,7 @@ __host__ __device__ constexpr bool throws_invocable_r()
 
 __host__ __device__ void test_noexcept_function_pointers()
 {
-#if !defined(TEST_COMPILER_NVCC) || TEST_STD_VER >= 2017 // nvbug4360046
+#if TEST_STD_VER >= 2017 // nvbug4360046
   struct Dummy
   {
     __host__ __device__ void foo() noexcept {}
