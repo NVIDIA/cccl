@@ -133,6 +133,12 @@
 #  define _CCCL_BUILTIN_COLUMN() 0
 #endif // !_CCCL_HAS_BUILTIN(__builtin_COLUMN)
 
+// NVCC below 11.3 cannot handle __builtin_COLUMN
+#if defined(_CCCL_CUDACC_BELOW_11_3)
+#  undef __builtin_COLUMN
+#  define __builtin_COLUMN() 0
+#endif // _CCCL_CUDACC_BELOW_11_3
+
 #if _CCCL_CHECK_BUILTIN(builtin_contant_p) || defined(_CCCL_COMPILER_GCC)
 #  define _CCCL_BUILTIN_CONSTANT_P(...) __builtin_constant_p(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_contant_p)
@@ -148,12 +154,24 @@
 #  define _CCCL_BUILTIN_FILE() __FILE__
 #endif // !_CCCL_HAS_BUILTIN(__builtin_LINE)
 
+// NVCC below 11.3 cannot handle __builtin_FILE
+#if defined(_CCCL_CUDACC_BELOW_11_3)
+#  undef _CCCL_BUILTIN_FILE
+#  define _CCCL_BUILTIN_FILE() __FILE__
+#endif // _CCCL_CUDACC_BELOW_11_3
+
 #if _CCCL_HAS_BUILTIN(__builtin_FUNCTION) || defined(_CCCL_COMPILER_GCC) \
   || (defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION >= 1927)
 #  define _CCCL_BUILTIN_FUNCTION() __builtin_FUNCTION()
 #else // ^^^ _CCCL_HAS_BUILTIN(__builtin_FUNCTION) ^^^ / vvv !_CCCL_HAS_BUILTIN(__builtin_FUNCTION) vvv
 #  define _CCCL_BUILTIN_FUNCTION() "__builtin_FUNCTION is unsupported!"
 #endif // !_CCCL_HAS_BUILTIN(__builtin_FUNCTION)
+
+// NVCC below 11.3 cannot handle __builtin_FUNCTION
+#if defined(_CCCL_CUDACC_BELOW_11_3)
+#  undef _CCCL_BUILTIN_FUNCTION
+#  define _CCCL_BUILTIN_FUNCTION() "__builtin_FUNCTION is unsupported!"
+#endif // _CCCL_CUDACC_BELOW_11_3
 
 #if _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 90000) \
   || (defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION > 1924 && !defined(_CCCL_CUDACC_BELOW_11_3))
@@ -182,6 +200,12 @@
 #else // ^^^ _CCCL_HAS_BUILTIN(__builtin_LINE) ^^^ / vvv !_CCCL_HAS_BUILTIN(__builtin_LINE) vvv
 #  define _CCCL_BUILTIN_LINE() __LINE__
 #endif // !_CCCL_HAS_BUILTIN(__builtin_LINE)
+
+// NVCC below 11.3 cannot handle __builtin_LINE
+#if defined(_CCCL_CUDACC_BELOW_11_3)
+#  undef _CCCL_BUILTIN_LINE
+#  define _CCCL_BUILTIN_LINE() __LINE__
+#endif // _CCCL_CUDACC_BELOW_11_3
 
 #if _CCCL_CHECK_BUILTIN(__builtin_operator_new) && _CCCL_CHECK_BUILTIN(__builtin_operator_delete) \
   && defined(_CCCL_CUDA_COMPILER_CLANG)
