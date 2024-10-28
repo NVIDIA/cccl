@@ -178,10 +178,10 @@ test(cuda::std::array<uint32_t, num_dims> smem_coord,
 
   // TEST: Add i to buffer[i]
   alignas(128) __shared__ int smem_buffer[smem_len];
-  __shared__ barrier bar;
+  __shared__ barrier* bar;
   if (threadIdx.x == 0)
   {
-    init(&bar, blockDim.x);
+    init(bar, blockDim.x);
   }
   __syncthreads();
 
@@ -190,17 +190,17 @@ test(cuda::std::array<uint32_t, num_dims> smem_coord,
   if (threadIdx.x == 0)
   {
     // Fastest moving coordinate first.
-    cp_tensor_global_to_shared(global_tensor_map, smem_coord, smem_buffer, bar);
-    token = cuda::device::barrier_arrive_tx(bar, 1, sizeof(smem_buffer));
+    cp_tensor_global_to_shared(global_tensor_map, smem_coord, smem_buffer, *bar);
+    token = cuda::device::barrier_arrive_tx(*bar, 1, sizeof(smem_buffer));
   }
   else
   {
-    token = bar.arrive();
+    token = bar->arrive();
   }
-  bar.wait(cuda::std::move(token));
+  bar->wait(cuda::std::move(token));
 
   // Check smem
-  for (int i = threadIdx.x; i < smem_len; i += blockDim.x)
+  for (int i = threadIdx.x; i < static_cast<int>(smem_len); i += blockDim.x)
   {
     int gmem_lin_idx = smem_lin_idx_to_gmem_lin_idx(i, smem_coord, smem_dims, gmem_dims);
     assert(smem_buffer[i] == gmem_lin_idx);
@@ -209,7 +209,7 @@ test(cuda::std::array<uint32_t, num_dims> smem_coord,
   __syncthreads();
 
   // Update smem
-  for (int i = threadIdx.x; i < smem_len; i += blockDim.x)
+  for (int i = threadIdx.x; i < static_cast<int>(smem_len); i += blockDim.x)
   {
     smem_buffer[i] = 2 * smem_buffer[i] + 1;
   }
@@ -227,7 +227,7 @@ test(cuda::std::array<uint32_t, num_dims> smem_coord,
   __syncthreads();
 
   // // TEAR-DOWN: check that global memory is correct
-  for (int i = threadIdx.x; i < smem_len; i += blockDim.x)
+  for (int i = threadIdx.x; i < static_cast<int>(smem_len); i += blockDim.x)
   {
     int gmem_lin_idx = smem_lin_idx_to_gmem_lin_idx(i, smem_coord, smem_dims, gmem_dims);
 

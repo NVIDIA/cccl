@@ -26,7 +26,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if __has_include(<nvtx3/nvToolsExt.h>)
+#if __has_include(<nvtx3/nvToolsExt.h>) &&(!defined(_CCCL_COMPILER_NVHPC) || _CCCL_STD_VER <= 2017)
 #  include <nvtx3/nvToolsExt.h>
 #endif
 
@@ -41,7 +41,7 @@ class nvtx_range
 public:
   nvtx_range(const char* message)
   {
-#if __has_include(<nvtx3/nvToolsExt.h>)
+#if __has_include(<nvtx3/nvToolsExt.h>)&&(!defined(_CCCL_COMPILER_NVHPC) || _CCCL_STD_VER <= 2017)
     nvtxRangePushA(message);
 #endif
   }
@@ -53,7 +53,7 @@ public:
 
   ~nvtx_range()
   {
-#if __has_include(<nvtx3/nvToolsExt.h>)
+#if __has_include(<nvtx3/nvToolsExt.h>)&&(!defined(_CCCL_COMPILER_NVHPC) || _CCCL_STD_VER <= 2017)
     nvtxRangePop();
 #endif
   }

@@ -436,8 +436,10 @@ struct negate
    */
   using result_type = T;
 
+#if defined(_CCCL_COMPILER_MSVC)
   _CCCL_DIAG_PUSH
   _CCCL_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type, result still unsigned
+#endif // _CCCL_COMPILER_MSVC
 
   /*! Function call operator. The return value is <tt>-x</tt>.
    */
@@ -447,7 +449,9 @@ struct negate
     return -x;
   }
 
+#if defined(_CCCL_COMPILER_MSVC)
   _CCCL_DIAG_POP
+#endif // _CCCL_COMPILER_MSVC
 
 }; // end negate
 

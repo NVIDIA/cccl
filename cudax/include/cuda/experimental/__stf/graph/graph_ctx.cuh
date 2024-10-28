@@ -162,7 +162,7 @@ private:
 
     // Parameter structure for cudaGraphAddMemAllocNode - most values are constants.
     static cudaMemAllocNodeParams params = [] {
-      cudaMemAllocNodeParams result;
+      cudaMemAllocNodeParams result{};
       result.poolProps.allocType               = cudaMemAllocationTypePinned;
       result.poolProps.handleTypes             = cudaMemHandleTypeNone;
       result.poolProps.location                = {.type = cudaMemLocationTypeDevice, .id = 0};

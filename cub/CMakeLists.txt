@@ -56,6 +56,11 @@ include(cmake/CubBuildTargetList.cmake)
 include(cmake/CubCudaConfig.cmake)
 include(cmake/CubUtilities.cmake)
 
+if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  set(CUB_ENABLE_BENCHMARKS OFF)
+  set(CUB_ENABLE_TUNING OFF)
+endif()
+
 if ("" STREQUAL "${CMAKE_BUILD_TYPE}")
   set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Choose the type of build." FORCE)
 
