@@ -142,6 +142,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/__cmath/ceil_div.h>
 #include <cuda/barrier>
 #include <cuda/discard_memory>
 #include <cuda/std/cstdint>
