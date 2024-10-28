@@ -80,7 +80,7 @@ __device__ __constant__ cuda::std::source_location global_source = cuda::std::so
 __host__ __device__ void test()
 {
   assert(!compare_strings(global_source.file_name(), ""));
-  assert(compare_strings(global_source.function_name(), "__builtin_FUNCTION is unsupported!"));
+  assert(compare_strings(global_source.function_name(), "__builtin_FUNCTION is unsupported"));
   assert(global_source.line() != 0);
   assert(global_source.column() == 0);
 

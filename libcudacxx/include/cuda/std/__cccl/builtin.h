@@ -164,13 +164,13 @@
   || (defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION >= 1927)
 #  define _CCCL_BUILTIN_FUNCTION() __builtin_FUNCTION()
 #else // ^^^ _CCCL_HAS_BUILTIN(__builtin_FUNCTION) ^^^ / vvv !_CCCL_HAS_BUILTIN(__builtin_FUNCTION) vvv
-#  define _CCCL_BUILTIN_FUNCTION() "__builtin_FUNCTION is unsupported!"
+#  define _CCCL_BUILTIN_FUNCTION() "__builtin_FUNCTION is unsupported"
 #endif // !_CCCL_HAS_BUILTIN(__builtin_FUNCTION)
 
 // NVCC below 11.3 cannot handle __builtin_FUNCTION
 #if defined(_CCCL_CUDACC_BELOW_11_3)
 #  undef _CCCL_BUILTIN_FUNCTION
-#  define _CCCL_BUILTIN_FUNCTION() "__builtin_FUNCTION is unsupported!"
+#  define _CCCL_BUILTIN_FUNCTION() "__builtin_FUNCTION is unsupported"
 #endif // _CCCL_CUDACC_BELOW_11_3
 
 #if _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 90000) \

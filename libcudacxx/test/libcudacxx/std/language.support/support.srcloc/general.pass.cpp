@@ -45,8 +45,8 @@ ASSERT_NOEXCEPT(empty.line());
 ASSERT_NOEXCEPT(empty.column());
 ASSERT_NOEXCEPT(empty.file_name());
 ASSERT_NOEXCEPT(empty.function_name());
-static_assert(cuda::std::is_same<unsigned, decltype(empty.line())>::value, "");
-static_assert(cuda::std::is_same<unsigned, decltype(empty.column())>::value, "");
+static_assert(cuda::std::is_same<cuda::std::uint_least32_t, decltype(empty.line())>::value, "");
+static_assert(cuda::std::is_same<cuda::std::uint_least32_t, decltype(empty.column())>::value, "");
 static_assert(cuda::std::is_same<const char*, decltype(empty.file_name())>::value, "");
 static_assert(cuda::std::is_same<const char*, decltype(empty.function_name())>::value, "");
 
@@ -73,13 +73,15 @@ static_assert(cur.column() > 0, "");
 #else // ^^^ _CCCL_BULTIN_COLUMN ^^^ / vvv !_CCCL_BULTIN_COLUMN vvv
 static_assert(cur.column() == 0, "");
 #endif // !_CCCL_BULTIN_COLUMN
-static_assert(cur.file_name()[0] == 's' && cur.file_name()[1] == 's' && cur.file_name()[2] == '\0', "");
+static_assert(cur.file_name()[0] == __FILE__[0] && cur.file_name()[1] == __FILE__[1]
+                && cur.file_name()[sizeof(__FILE__) - 1] == '\0',
+              "");
 
 // MSVC below 19.27 is broken with function name
 #if !defined(_CCCL_COMPILER_MSVC) || _CCCL_MSVC_VERSION >= 1927
 static_assert(cur.function_name()[0] == '\0', "");
 #else // ^^^ __builtin_FUNCTION ^^^ / vvv !__builtin_FUNCTION vvv
-static_assert(compare_strings(cur.function_name(), "__builtin_FUNCTION is unsupported!"));
+static_assert(compare_strings(cur.function_name(), "__builtin_FUNCTION is unsupported"));
 #endif // !__builtin_FUNCTION
 
 __host__ __device__ bool compare_strings(const char* lhs, const char* rhs) noexcept
@@ -134,13 +136,13 @@ __host__ __device__ void test()
 {
 #line 2000
   auto local = cuda::std::source_location::current();
-  assert(compare_strings(local.file_name(), "ss"));
+  assert(compare_strings(local.file_name(), __FILE__));
 
   // MSVC below 19.27 is broken with function name
 #if !defined(_CCCL_COMPILER_MSVC) || _CCCL_MSVC_VERSION >= 1927
   assert(find_substring(local.function_name(), "test"));
 #else // ^^^ __builtin_FUNCTION ^^^ / vvv !__builtin_FUNCTION vvv
-  assert(compare_strings(local.function_name(), "__builtin_FUNCTION is unsupported!"));
+  assert(compare_strings(local.function_name(), "__builtin_FUNCTION is unsupported"));
 #endif // !__builtin_FUNCTION
 
   assert(local.line() == 2000);
