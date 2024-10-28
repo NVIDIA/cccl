@@ -8,6 +8,8 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: nvcc-11.1, nvcc-11.2
+// The way we currently compile nvrtc is not working with that test
+// XFAIL: nvrtc
 
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
