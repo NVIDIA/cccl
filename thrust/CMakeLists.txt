@@ -30,6 +30,10 @@ option(THRUST_ENABLE_TESTING "Build Thrust testing suite." "ON")
 option(THRUST_ENABLE_EXAMPLES "Build Thrust examples." "ON")
 option(THRUST_ENABLE_BENCHMARKS "Build Thrust runtime benchmarks." "${CCCL_ENABLE_BENCHMARKS}")
 
+if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  set(THRUST_ENABLE_BENCHMARKS OFF)
+endif()
+
 # Allow the user to optionally select offset type dispatch to fixed 32 or 64 bit types
 set(THRUST_DISPATCH_TYPE "Dynamic" CACHE STRING "Select Thrust offset type dispatch." FORCE)
 set_property(CACHE THRUST_DISPATCH_TYPE PROPERTY STRINGS "Dynamic" "Force32bit" "Force64bit")

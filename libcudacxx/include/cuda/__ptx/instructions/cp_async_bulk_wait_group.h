@@ -41,13 +41,13 @@ __device__ static inline void cp_async_bulk_wait_group(
 #if __cccl_ptx_isa >= 800
 extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_wait_group_is_not_supported_before_SM_90__();
 template <int _N32>
-_CCCL_DEVICE static inline void cp_async_bulk_wait_group(n32_t<_N32> __N)
+_CCCL_DEVICE static inline void cp_async_bulk_wait_group(n32_t<_N32> __n)
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
     (asm volatile("cp.async.bulk.wait_group %0;"
                   :
-                  : "n"(__N)
+                  : "n"(__n.value)
                   : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
@@ -64,13 +64,13 @@ __device__ static inline void cp_async_bulk_wait_group_read(
 #if __cccl_ptx_isa >= 800
 extern "C" _CCCL_DEVICE void __cuda_ptx_cp_async_bulk_wait_group_read_is_not_supported_before_SM_90__();
 template <int _N32>
-_CCCL_DEVICE static inline void cp_async_bulk_wait_group_read(n32_t<_N32> __N)
+_CCCL_DEVICE static inline void cp_async_bulk_wait_group_read(n32_t<_N32> __n)
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
     (asm volatile("cp.async.bulk.wait_group.read %0;"
                   :
-                  : "n"(__N)
+                  : "n"(__n.value)
                   : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message

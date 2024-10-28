@@ -25,10 +25,13 @@ workflows:
     - {jobs: ['test_lid1',  'test_lid2'], project: ['cub'], std: 'max',    cxx: ['gcc']}
     - {jobs: ['test_nolid', 'test_lid0'], project: ['cub'], std: 'max',    cxx: ['clang', 'msvc']}
     # Modded builds:
+    - {jobs: ['build'], std: 'all', ctk: '12.5', cxx: 'nvhpc'}
     - {jobs: ['build'], std: 'all', cxx: ['gcc', 'clang'], cpu: 'arm64'}
     - {jobs: ['build'], std: 'all', cxx: ['gcc'], sm: '90a'}
     # default_projects: clang-cuda
-    - {jobs: ['build'], std: [17, 20], cudacxx: 'clang', cxx: 'clang'}
+    - {jobs: ['build'], std: 'all', cudacxx: 'clang', cxx: 'clang'}
+    - {jobs: ['build'], project: 'libcudacxx', std: 'all', cudacxx: 'clang', cxx: 'clang', sm: '90'}
+    - {jobs: ['build'], project: 'libcudacxx', std: 'all', cudacxx: 'clang', cxx: 'clang', sm: '90a'}
     # nvrtc:
     - {jobs: ['nvrtc'], project: 'libcudacxx', std: 'all'}
     # verify-codegen:
@@ -37,6 +40,7 @@ workflows:
     - {jobs: ['build'], project: 'cudax', ctk: ['12.0', 'curr'], std: 'all', cxx: ['gcc9', 'gcc10', 'gcc11']}
     - {jobs: ['build'], project: 'cudax', ctk: ['12.0', 'curr'], std: 'all', cxx: ['clang9', 'clang10', 'clang11', 'clang12', 'clang13']}
     - {jobs: ['build'], project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['clang14', 'clang15', 'clang16', 'clang17']}
+    - {jobs: ['build'], project: 'cudax', ctk: [        '12.5'], std: 'all', cxx: ['nvhpc']}
     - {jobs: ['build'], project: 'cudax', ctk: ['12.0',       ], std: 20,    cxx: ['msvc14.36']}
     - {jobs: ['build'], project: 'cudax', ctk: [        'curr'], std: 20,    cxx: ['msvc2022']}
     - {jobs: ['build'], project: 'cudax', ctk: ['12.0'        ], std: 17,    cxx: ['gcc12'], sm: "90"}
@@ -101,6 +105,7 @@ ctk_versions:
   11.1: { stds: [11, 14, 17,   ] }
   11.8: { stds: [11, 14, 17,   ] }
   12.0: { stds: [11, 14, 17, 20] }
+  12.5: { stds: [11, 14, 17, 20] }
   12.6: { stds: [11, 14, 17, 20], aka: 'curr' }
 
 device_compilers:
@@ -155,6 +160,12 @@ host_compilers:
     exe: icpc
     versions:
       2023.2.0: { stds: [11, 14, 17,   ] }
+  nvhpc:
+    name: 'NVHPC'
+    container_tag: 'nvhpc'
+    exe: nvc++
+    versions:
+      24.7: { stds: [11, 14, 17, 20 ] }
 
 # Jobs support the following properties:
 #

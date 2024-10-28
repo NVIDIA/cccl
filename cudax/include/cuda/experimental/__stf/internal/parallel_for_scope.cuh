@@ -26,8 +26,6 @@
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/task_statistics.cuh>
 
-#include <nvtx3/nvToolsExt.h>
-
 namespace cuda::experimental::stf
 {
 
