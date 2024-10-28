@@ -24,6 +24,7 @@
 
 #include <atomic>
 #include <mutex>
+#include <cstdio>
 
 namespace cuda::experimental::stf::reserved
 {

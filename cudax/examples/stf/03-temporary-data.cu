@@ -61,7 +61,7 @@ int main()
   ctx.finalize();
 
   // We have exchanged an odd number of times, so they must be inverted
-  for (size_t i = 0; i < n; i++)
+  for (int i = 0; i < n; i++)
   {
     assert(X[i] == 2 * i - 3);
     assert(Y[i] == 3 * i);

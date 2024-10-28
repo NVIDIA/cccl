@@ -315,9 +315,9 @@ int main()
 
   ctx.finalize();
 
-  for (size_t j = 0; j < n; j++)
+  for (int j = 0; j < n; j++)
   {
-    for (size_t i = 0; i < m; i++)
+    for (int i = 0; i < m; i++)
     {
       assert(M(i, j) == (17 * i + 23 * j) + (-i + 7 * j) + (2 * i + 6 * j));
     }
