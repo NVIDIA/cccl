@@ -85,7 +85,7 @@ int main(int argc, char** argv)
   cudax::stream dev1_stream(peers[1]);
 
   // Allocate buffers
-  constexpr size_t buf_cnt = 1024 * 1024 * 16;
+  constexpr size_t buf_cnt = 1024 * 1024 * 256;
   printf("Allocating buffers (%iMB on GPU%d, GPU%d and CPU Host)...\n",
          int(buf_cnt / 1024 / 1024 * sizeof(float)),
          peers[0].get(),
@@ -128,7 +128,7 @@ int main(int argc, char** argv)
   printf("cudaMemcpyPeer / cudaMemcpy between GPU%d and GPU%d: %.2fGB/s\n",
          peers[0].get(),
          peers[1].get(),
-         (dev0_buffer.size_bytes() / (1024 * 1024 * 1024) / duration.count()));
+         ((float) dev0_buffer.size_bytes() / (1024 * 1024 * 1024) / duration.count()));
 
   // Prepare host buffer and copy to GPU 0
   printf("Preparing host buffer and memcpy to GPU%d...\n", peers[0].get());
@@ -143,8 +143,8 @@ int main(int argc, char** argv)
 
   dev1_stream.wait(dev0_stream);
 
-    // Kernel launch configuration
-    const dim3 threads(512, 1);
+  // Kernel launch configuration
+  const dim3 threads(512, 1);
   const dim3 blocks((dev0_buffer.size_bytes() / sizeof(float)) / threads.x, 1);
 
   // Run kernel on GPU 1, reading input from the GPU 0 buffer, writing
@@ -176,6 +176,8 @@ int main(int argc, char** argv)
     host_buffer.data(), dev0_buffer.data(), dev0_buffer.size_bytes(), cudaMemcpyDefault, dev0_stream.get()));
 
   int error_count = 0;
+
+  dev0_stream.wait();
 
   for (int i = 0; i < dev0_buffer.size_bytes() / sizeof(float); i++)
   {
