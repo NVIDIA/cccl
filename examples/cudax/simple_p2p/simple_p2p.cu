@@ -56,6 +56,7 @@ int main(int argc, char** argv)
         if (can_access_peer && peers.size() == 0)
         {
           peers = dev_i.get_peers();
+          peers.push_back(dev_i);
         }
         printf("> Peer access from %s (GPU%d) -> %s (GPU%d) : %s\n",
                "", // dev_i.get_name(),
@@ -77,6 +78,8 @@ int main(int argc, char** argv)
 
     exit(2);
   }
+
+  printf("Found %lu peers, using devices %d and %d\n", peers.size(), peers[0].get(), peers[1].get());
 
   cudax::stream dev0_stream(peers[0]);
   cudax::stream dev1_stream(peers[1]);
@@ -120,6 +123,7 @@ int main(int argc, char** argv)
   }
 
   auto end_event = dev0_stream.record_timed_event();
+  dev0_stream.wait();
   cuda::std::chrono::duration<double> duration(end_event - start_event);
   printf("cudaMemcpyPeer / cudaMemcpy between GPU%d and GPU%d: %.2fGB/s\n",
          peers[0].get(),
@@ -134,7 +138,8 @@ int main(int argc, char** argv)
     host_buffer.data()[i] = float(i % 4096);
   }
 
-  checkCudaErrors(cudaMemcpy(dev0_buffer.data(), host_buffer.data(), dev0_buffer.size_bytes(), cudaMemcpyDefault));
+  checkCudaErrors(cudaMemcpyAsync(
+    dev0_buffer.data(), host_buffer.data(), dev0_buffer.size_bytes(), cudaMemcpyDefault, dev0_stream.get()));
 
   // Kernel launch configuration
   const dim3 threads(512, 1);
@@ -165,7 +170,8 @@ int main(int argc, char** argv)
 
   // Copy data back to host and verify
   printf("Copy data back to host from GPU%d and verify results...\n", peers[0].get());
-  checkCudaErrors(cudaMemcpy(host_buffer.data(), dev0_buffer.data(), dev0_buffer.size_bytes(), cudaMemcpyDefault));
+  checkCudaErrors(cudaMemcpyAsync(
+    host_buffer.data(), dev0_buffer.data(), dev0_buffer.size_bytes(), cudaMemcpyDefault, dev0_stream.get()));
 
   int error_count = 0;
 
