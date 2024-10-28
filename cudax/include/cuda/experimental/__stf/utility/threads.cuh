@@ -23,8 +23,8 @@
 #include <cuda/experimental/__stf/utility/source_location.cuh>
 
 #include <atomic>
-#include <mutex>
 #include <cstdio>
+#include <mutex>
 
 namespace cuda::experimental::stf::reserved
 {
