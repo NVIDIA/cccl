@@ -209,14 +209,10 @@ _CCCL_NODISCARD inline ::std::vector<device_ref> device_ref::get_peers() const
     // group of peers is needed (for cases other than peer access control)
     if (__other_dev != *this)
     {
-      int __can_access;
-      _CCCL_TRY_CUDA_API(
-        ::cudaDeviceCanAccessPeer,
-        "Could not query if device can be peer accessed",
-        &__can_access,
-        get(),
-        __other_dev.get());
-      if (__can_access)
+      // While in almost all practical applications peer access should be symmetrical,
+      // it is possible to build a system with one directional peer access, check
+      // both ways here just to be safe
+      if (can_peer_access_to(__other_dev) && __other_dev.can_peer_access_to(*this))
       {
         __result.push_back(__other_dev);
       }
