@@ -141,6 +141,18 @@ public:
 
   const arch_traits_t& arch_traits() const;
 
+  bool is_peer_accessible_from(device_ref __other_dev) const
+  {
+    int __can_access;
+    _CCCL_TRY_CUDA_API(
+      ::cudaDeviceCanAccessPeer,
+      "Could not query if device can be peer accessed",
+      &__can_access,
+      get(),
+      __other_dev.get());
+    return __can_access;
+  }
+
   // TODO this might return some more complex type in the future
   // TODO we might want to include the calling device, depends on what we decide
   // peer access APIs

@@ -66,7 +66,11 @@ endif()
 add_executable(vector_add vector_add/vector_add.cu)
 target_link_libraries(vector_add PUBLIC cudax_samples_interface)
 
+add_executable(simple_p2p simple_p2p/simple_p2p.cu)
+target_link_libraries(simple_p2p PUBLIC cudax_samples_interface)
+
 # This is only relevant for internal testing and not needed by end users.
 include(CTest)
 enable_testing()
 add_test(NAME vector_add COMMAND vector_add)
+add_test(NAME simple_p2p COMMAND simple_p2p)
