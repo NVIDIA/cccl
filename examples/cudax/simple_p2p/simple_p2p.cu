@@ -155,7 +155,7 @@ int main(int argc, char** argv)
   auto dims = cudax::distribute<512>(dev0_buffer.size());
   cudax::launch(dev1_stream, dims, SimpleKernel, dev0_buffer.data(), dev1_buffer.data());
 
-  dev1_stream.wait();
+  dev0_stream.wait(dev1_stream);
 
   // Run kernel on GPU 0, reading input from the GPU 1 buffer, writing
   // output to the GPU 0 buffer
@@ -166,7 +166,7 @@ int main(int argc, char** argv)
          peers[0].get());
   cudax::launch(dev0_stream, dims, SimpleKernel, dev1_buffer.data(), dev0_buffer.data());
 
-  dev1_stream.wait();
+  dev0_stream.wait();
 
   // Copy data back to host and verify
   printf("Copy data back to host from GPU%d and verify results...\n", peers[0].get());
