@@ -127,6 +127,12 @@
 #  undef _CCCL_BUILTIN_BIT_CAST
 #endif // clang < 10 || nvcc < 11.7
 
+#if _CCCL_HAS_BUILTIN(__builtin_COLUMN) || defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION >= 1927
+#  define _CCCL_BUILTIN_COLUMN() __builtin_COLUMN()
+#else // ^^^ _CCCL_HAS_BUILTIN(__builtin_COLUMN) ^^^ / vvv !_CCCL_HAS_BUILTIN(__builtin_COLUMN) vvv
+#  define _CCCL_BUILTIN_COLUMN() 0
+#endif // !_CCCL_HAS_BUILTIN(__builtin_COLUMN)
+
 #if _CCCL_CHECK_BUILTIN(builtin_contant_p) || defined(_CCCL_COMPILER_GCC)
 #  define _CCCL_BUILTIN_CONSTANT_P(...) __builtin_constant_p(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_contant_p)
@@ -134,6 +140,20 @@
 #if _CCCL_CHECK_BUILTIN(builtin_expect) || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_GCC)
 #  define _CCCL_BUILTIN_EXPECT(...) __builtin_expect(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_expect)
+
+#if _CCCL_HAS_BUILTIN(__builtin_FILE) || defined(_CCCL_COMPILER_GCC) \
+  || (defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION >= 1927)
+#  define _CCCL_BUILTIN_FILE() __builtin_FILE()
+#else // ^^^ _CCCL_HAS_BUILTIN(__builtin_FILE) ^^^ / vvv !_CCCL_HAS_BUILTIN(__builtin_FILE) vvv
+#  define _CCCL_BUILTIN_FILE() __FILE__
+#endif // !_CCCL_HAS_BUILTIN(__builtin_LINE)
+
+#if _CCCL_HAS_BUILTIN(__builtin_FUNCTION) || defined(_CCCL_COMPILER_GCC) \
+  || (defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION >= 1927)
+#  define _CCCL_BUILTIN_FUNCTION() __builtin_FUNCTION()
+#else // ^^^ _CCCL_HAS_BUILTIN(__builtin_FUNCTION) ^^^ / vvv !_CCCL_HAS_BUILTIN(__builtin_FUNCTION) vvv
+#  define _CCCL_BUILTIN_FUNCTION() "__builtin_FUNCTION is unsupported!"
+#endif // !_CCCL_HAS_BUILTIN(__builtin_FUNCTION)
 
 #if _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 90000) \
   || (defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION > 1924 && !defined(_CCCL_CUDACC_BELOW_11_3))
@@ -155,6 +175,13 @@
 #if (defined(_CCCL_COMPILER_CLANG) && _CCCL_CLANG_VERSION < 100000) || defined(_CCCL_CUDACC_BELOW_11_3)
 #  undef _CCCL_BUILTIN_LAUNDER
 #endif // clang < 10 || nvcc < 11.3
+
+#if _CCCL_HAS_BUILTIN(__builtin_LINE) || defined(_CCCL_COMPILER_GCC) \
+  || (defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION >= 1927)
+#  define _CCCL_BUILTIN_LINE() __builtin_LINE()
+#else // ^^^ _CCCL_HAS_BUILTIN(__builtin_LINE) ^^^ / vvv !_CCCL_HAS_BUILTIN(__builtin_LINE) vvv
+#  define _CCCL_BUILTIN_LINE() __LINE__
+#endif // !_CCCL_HAS_BUILTIN(__builtin_LINE)
 
 #if _CCCL_CHECK_BUILTIN(__builtin_operator_new) && _CCCL_CHECK_BUILTIN(__builtin_operator_delete) \
   && defined(_CCCL_CUDA_COMPILER_CLANG)
