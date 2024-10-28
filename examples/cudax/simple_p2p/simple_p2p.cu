@@ -141,8 +141,10 @@ int main(int argc, char** argv)
   checkCudaErrors(cudaMemcpyAsync(
     dev0_buffer.data(), host_buffer.data(), dev0_buffer.size_bytes(), cudaMemcpyDefault, dev0_stream.get()));
 
-  // Kernel launch configuration
-  const dim3 threads(512, 1);
+  dev1_stream.wait(dev0_stream);
+
+    // Kernel launch configuration
+    const dim3 threads(512, 1);
   const dim3 blocks((dev0_buffer.size_bytes() / sizeof(float)) / threads.x, 1);
 
   // Run kernel on GPU 1, reading input from the GPU 0 buffer, writing
