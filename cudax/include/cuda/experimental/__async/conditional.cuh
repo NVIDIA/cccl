@@ -45,7 +45,7 @@ struct __cond_t
   };
 
   template <class... _Args>
-  _CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE static auto __mk_complete_fn(_Args&&... __args) noexcept
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static auto __mk_complete_fn(_Args&&... __args) noexcept
   {
     return [&](auto __sink) noexcept {
       return __sink(static_cast<_Args&&>(__args)...);
