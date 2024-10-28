@@ -36,8 +36,6 @@
 
 #include <optional>
 
-#include <nvtx3/nvToolsExt.h>
-
 namespace cuda::experimental::stf
 {
 
