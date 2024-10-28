@@ -138,7 +138,7 @@ template <typename T>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE const char* round_down_ptr(const T* ptr, unsigned alignment)
 {
 #if _CCCL_STD_VER > 2011
-  _LIBCUDACXX_ASSERT(::cuda::std::has_single_bit(alignment), "");
+  _CCCL_ASSERT(::cuda::std::has_single_bit(alignment), "");
 #endif // _CCCL_STD_VER > 2011
   return reinterpret_cast<const char*>(
     reinterpret_cast<::cuda::std::uintptr_t>(ptr) & ~::cuda::std::uintptr_t{alignment - 1});
@@ -161,7 +161,7 @@ template <typename T>
 _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch(const T* addr)
 {
   // TODO(bgruber): prefetch to L1 may be even better
-  asm volatile("prefetch.global.L2 [%0];" : : "l"(addr) : "memory");
+  asm volatile("prefetch.global.L2 [%0];" : : "l"(__cvta_generic_to_global(addr)) : "memory");
 }
 
 template <int BlockDim, typename T>
@@ -184,7 +184,9 @@ template <int, typename It, ::cuda::std::__enable_if_t<!::cuda::std::is_pointer<
 _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(It, int)
 {}
 
-// this kernel guarantees stable addresses for the parameters of the user provided function
+// This kernel guarantees that objects passed as arguments to the user-provided transformation function f reside in
+// global memory. No intermediate copies are taken. If the parameter type of f is a reference, taking the address of the
+// parameter yields a global memory address.
 template <typename PrefetchPolicy,
           typename Offset,
           typename F,
