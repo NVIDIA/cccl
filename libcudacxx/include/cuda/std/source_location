@@ -30,18 +30,18 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 class source_location
 {
 private:
-  const char* _M_file_name     = "";
-  const char* _M_function_name = "";
-  uint_least32_t _M_line       = 0;
-  uint_least32_t _M_column     = 0;
+  const char* __file_name_     = "";
+  const char* __function_name_ = "";
+  uint_least32_t __line_       = 0;
+  uint_least32_t __column_     = 0;
 
   // Needed to make C++11 happy
   _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr source_location(
     const char* __file, const char* __func, uint_least32_t __line, uint_least32_t __column) noexcept
-      : _M_file_name(__file)
-      , _M_function_name(__func)
-      , _M_line(__line)
-      , _M_column(__column)
+      : __file_name_(__file)
+      , __function_name_(__func)
+      , __line_(__line)
+      , __column_(__column)
   {}
 
 public:
@@ -58,19 +58,19 @@ public:
 
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr uint_least32_t line() const noexcept
   {
-    return _M_line;
+    return __line_;
   }
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr uint_least32_t column() const noexcept
   {
-    return _M_column;
+    return __column_;
   }
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const char* file_name() const noexcept
   {
-    return _M_file_name;
+    return __file_name_;
   }
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const char* function_name() const noexcept
   {
-    return _M_function_name;
+    return __function_name_;
   }
 };
 
