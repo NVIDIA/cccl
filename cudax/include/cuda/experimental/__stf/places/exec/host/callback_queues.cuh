@@ -320,6 +320,7 @@ inline void cudagraph_callback_dispatcher(void* userData)
 }
 
 // There is likely a more efficient way in the current implementation of callbacks !
+template <int = 0> // template to make this `inline` without using `inline`, which nvcc dislikes
 __global__ void callback_completion_kernel(int* completion_flag)
 {
   // Loop until *completion_flag == 1
@@ -341,7 +342,7 @@ inline class cb* get_current_cb()
   return cudaCallbackStateCtx::instance().get_current_cb();
 }
 
-cudaError_t cudaCallbackSetStatus(int step, void* private_ptr)
+inline cudaError_t cudaCallbackSetStatus(int step, void* private_ptr)
 {
   class cb* current_cb = get_current_cb();
   assert(current_cb);
@@ -350,7 +351,7 @@ cudaError_t cudaCallbackSetStatus(int step, void* private_ptr)
   return cudaSuccess;
 }
 
-cudaError_t cudaCallbackGetStatus(int* step, void** private_ptr)
+inline cudaError_t cudaCallbackGetStatus(int* step, void** private_ptr)
 {
   class cb* current_cb = get_current_cb();
   assert(current_cb);
@@ -513,7 +514,7 @@ inline _CCCL_HOST cudaError_t cudaGraphAddHostNodeWithQueue(
   // Submit completion kernel in the stream ...
   // callback_completion_kernel<<<1,1,0,stream>>>(data->completion_flag);
   cudaKernelNodeParams kernel_node_params;
-  kernel_node_params.func            = (void*) callback_completion_kernel;
+  kernel_node_params.func            = (void*) callback_completion_kernel<>;
   kernel_node_params.gridDim         = 1;
   kernel_node_params.blockDim        = 1;
   kernel_node_params.kernelParams    = new void*[1];
