@@ -42,16 +42,14 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Begin group
-      shell: sh
-      run: |
-        echo "::group:: Job Setup"
     - name: Install dependencies
       shell: sh
       run: |
+        echo "::group::📦 Install Dependencies"
         # Install script dependencies
         apt update
         apt install -y --no-install-recommends tree git
+        echo "::endgroup::"
     - name: Checkout repo
       uses: actions/checkout@v4
       with:
@@ -67,10 +65,6 @@ runs:
         role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
         aws-region: us-east-2
         role-duration-seconds: 43200 # 12 hours
-    - name: End group
-      shell: sh
-      run: |
-        echo "::endgroup::"
     - name: Run command # Do not change this step's name, it is checked in parse-job-times.py
       shell: bash --noprofile --norc -euo pipefail {0}
       env:
