@@ -21,18 +21,29 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/conjunction.h>
 #include <cuda/std/__type_traits/fold.h>
+#include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/cstddef>
 
-#if _CCCL_STD_VER >= 2014
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+#ifndef _CCCL_NO_VARIABLE_TEMPLATES
+
 template <class _Set, class... _Ty>
-_CCCL_INLINE_VAR constexpr bool __type_set_contains =
-  _CUDA_VSTD::__fold_and<_CCCL_TRAIT(_CUDA_VSTD::is_base_of, __type_identity<_Ty>, _Set)...>;
+_CCCL_INLINE_VAR constexpr bool __type_set_contains_v = __fold_and_v<is_base_of_v<__type_identity<_Ty>, _Set>...>;
+
+template <class _Set, class... _Ty>
+using __type_set_contains = bool_constant<__type_set_contains_v<_Set, _Ty...>>;
+
+#else // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES ^^^ / vvv _CCCL_NO_VARIABLE_TEMPLATES vvv
+
+template <class _Set, class... _Ty>
+using __type_set_contains = __fold_and<is_base_of<__type_identity<_Ty>, _Set>::value...>;
+
+#endif // _CCCL_NO_VARIABLE_TEMPLATES
 
 namespace __set
 {
@@ -57,7 +68,8 @@ struct __tupl<_Ty, _Ts...>
 };
 
 template <class _Ty, class... _Elements>
-using __insert = _If<__type_set_contains<__tupl<_Elements...>, _Ty>, __tupl<_Elements...>, __tupl<_Ty, _Elements...>>;
+using __insert =
+  _If<_CCCL_TRAIT(__type_set_contains, __tupl<_Elements...>, _Ty), __tupl<_Elements...>, __tupl<_Ty, _Elements...>>;
 
 struct __bulk_insert
 {
@@ -70,9 +82,16 @@ struct __bulk_insert
 };
 } // namespace __set
 
+// When comparing sets for equality, use conjunction<> to short-circuit the set
+// comparison if the sizes are different.
 template <class _ExpectedSet, class... _Ts>
-_CCCL_INLINE_VAR constexpr bool __type_set_eq = //
-  (sizeof...(_Ts) == _ExpectedSet::__size()) && __type_set_contains<_ExpectedSet, _Ts...>;
+using __type_set_eq =
+  conjunction<bool_constant<sizeof...(_Ts) == _ExpectedSet::__size()>, __type_set_contains<_ExpectedSet, _Ts...>>;
+
+#ifndef _CCCL_NO_VARIABLE_TEMPLATES
+template <class _ExpectedSet, class... _Ts>
+_CCCL_INLINE_VAR constexpr bool __type_set_eq_v = __type_set_eq<_ExpectedSet, _Ts...>::value;
+#endif // _CCCL_NO_VARIABLE_TEMPLATES
 
 template <class... _Ts>
 using __type_set = __set::__tupl<_Ts...>;
@@ -83,11 +102,17 @@ using __type_set_insert = decltype(__set::__bulk_insert::__call<_Ts...>(static_c
 template <class... _Ts>
 using __make_type_set = __type_set_insert<__type_set<>, _Ts...>;
 
+#ifndef _CCCL_NO_VARIABLE_TEMPLATES
 template <class _Ty, class... _Ts>
-_CCCL_INLINE_VAR constexpr bool __is_included_in = __fold_or<_CCCL_TRAIT(is_same, _Ty, _Ts)...>;
+_CCCL_INLINE_VAR constexpr bool __is_included_in_v = __fold_or_v<is_same_v<_Ty, _Ts>...>;
+
+template <class _Ty, class... _Ts>
+using __is_included_in = bool_constant<__is_included_in_v<_Ty, _Ts...>>;
+#else // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES ^^^ / vvv _CCCL_NO_VARIABLE_TEMPLATES vvv
+template <class _Ty, class... _Ts>
+using __is_included_in = __fold_or<is_same<_Ty, _Ts>::value...>;
+#endif // _CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
-
-#endif // _CCCL_STD_VER >= 2014
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_TYPE_SET_H
