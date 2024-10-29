@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 
 #include <cub/device/device_reduce.cuh>
-#include <cub/iterator/arg_index_input_iterator.cuh>
+#include <cub/device/dispatch/dispatch_streaming_reduce.cuh>
 
 #ifndef TUNE_BASE
 #  define TUNE_ITEMS_PER_VEC_LOAD (1 << TUNE_ITEMS_PER_VEC_LOAD_POW2)
@@ -40,33 +40,36 @@ struct policy_hub_t
 template <typename T, typename OffsetT>
 void arg_reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 {
-  using offset_t    = OffsetT;
-  
+  using offset_t = OffsetT;
+
+  // Offset type used within the kernel and to index within one partition
+  using per_partition_offset_t = int;
+
+  // Offset type used to index within the total input in the range [d_in, d_in + num_items)
+  using global_offset_t = ::cuda::std::uint64_t;
+
   // The value type of the KeyValuePair<offset_t, output_value_t> returned by the ArgIndexInputIterator
   using output_value_t = T;
-  
+
   // Iterator providing the values being reduced
-  using values_it_t  =  T*;
+  using values_it_t = T*;
 
   // Iterator providing the input items for the reduction
-  using input_it_t  = cub::ArgIndexInputIterator<values_it_t, offset_t, output_value_t>;
-  
+  using input_it_t = values_it_t;
+
   // Type used for the final result
-  using output_tuple_t = cub::KeyValuePair<offset_t, T>;
-  
-  // Single-item output iterator to which the reduced result is written
-  using output_it_t = output_tuple_t*;
+  using output_tuple_t = cub::KeyValuePair<global_offset_t, T>;
 
-  // Accumulator type
-  using accum_t     = output_tuple_t;
+  using op_t = cub::ArgMin;
 
-  // Initial value type (only used for empty problems)
-  using init_t      = cub::detail::reduce::empty_problem_init_t<accum_t>;
+  auto const init = ::cuda::std::numeric_limits<T>::max();
+
 #if !TUNE_BASE
   using policy_t   = policy_hub_t<accum_t, offset_t>;
   using dispatch_t = cub::DispatchReduce<input_it_t, output_it_t, offset_t, op_t, init_t, accum_t, policy_t>;
 #else // TUNE_BASE
-  using dispatch_t = cub::DispatchReduce<input_it_t, output_it_t, offset_t, op_t, init_t, accum_t>;
+  using dispatch_t =
+    cub::DispatchStagedArgReduce<input_it_t, T*, global_offset_t*, per_partition_offset_t, global_offset_t, op_t, T>;
 #endif // TUNE_BASE
 
   // Retrieve axis parameters
@@ -74,9 +77,9 @@ void arg_reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   thrust::device_vector<T> in = generate(elements);
   thrust::device_vector<output_tuple_t> out(1);
 
-  values_it_t d_values_in   = thrust::raw_pointer_cast(in.data());
-  input_it_t d_arg_in{d_values_in};
-  output_it_t d_out = thrust::raw_pointer_cast(out.data());
+  values_it_t d_in         = thrust::raw_pointer_cast(in.data());
+  global_offset_t* d_index_out  = &(thrust::raw_pointer_cast(out.data()))->key;
+  output_value_t* d_result_out = &(thrust::raw_pointer_cast(out.data()))->value;
 
   // Enable throughput calculations and add "Size" column to results.
   state.add_element_count(elements);
@@ -86,14 +89,30 @@ void arg_reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   // Allocate temporary storage:
   std::size_t temp_size;
   dispatch_t::Dispatch(
-    nullptr, temp_size, d_arg_in, d_out, static_cast<offset_t>(elements), op_t{}, init_t{}, 0 /* stream */);
+    nullptr,
+    temp_size,
+    d_in,
+    d_result_out,
+    d_index_out,
+    static_cast<offset_t>(elements),
+    op_t{},
+    init,
+    0 /* stream */);
 
   thrust::device_vector<nvbench::uint8_t> temp(temp_size);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
   state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     dispatch_t::Dispatch(
-      temp_storage, temp_size, d_arg_in, d_out, static_cast<offset_t>(elements), op_t{}, init_t{}, launch.get_stream());
+      temp_storage,
+      temp_size,
+      d_in,
+      d_result_out,
+      d_index_out,
+      static_cast<offset_t>(elements),
+      op_t{},
+      init,
+      launch.get_stream());
   });
 }
 
