@@ -5,6 +5,8 @@ set -euo pipefail
 # Ensure the script is being executed in the cccl/ root
 cd "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/..";
 
+source ../ci/pretty_printing.sh
+
 print_help() {
     echo "Usage: $0 [-c|--cuda <CUDA version>] [-H|--host <Host compiler>] [-d|--docker]"
     echo "Launch a development container. If no CUDA version or Host compiler are specified,"
@@ -280,6 +282,7 @@ launch_vscode() {
 }
 
 main() {
+    begin_group "📦 Container Setup"
     local -a unparsed;
     parse_options "$@" unparsed;
     set -- "${unparsed[@]}";
@@ -301,6 +304,7 @@ main() {
     else
         launch_vscode
     fi
+    end_group "📦 Container Setup"
 }
 
 main "$@"
