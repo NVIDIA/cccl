@@ -29,6 +29,29 @@
       }
     },
     {
+      "name": "install",
+      "displayName": "Installation / Packaging (only stable libraries)",
+      "inherits": "base",
+      "cacheVariables": {
+        "cudax_ENABLE_INSTALL_RULES": false
+      }
+    },
+    {
+      "name": "install-unstable",
+      "displayName": "Installation / Packaging (includes experimental libraries)",
+      "inherits": "base"
+    },
+    {
+      "name": "install-unstable-only",
+      "displayName": "Installation / Packaging (*only* experimental libraries)",
+      "inherits": "base",
+      "cacheVariables": {
+        "libcudacxx_ENABLE_INSTALL_RULES": false,
+        "CUB_ENABLE_INSTALL_RULES": false,
+        "Thrust_ENABLE_INSTALL_RULES": false
+      }
+    },
+    {
       "name": "all-dev",
       "inherits": "base",
       "cacheVariables": {
