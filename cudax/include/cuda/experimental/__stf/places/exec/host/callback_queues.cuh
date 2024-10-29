@@ -320,8 +320,7 @@ inline void cudagraph_callback_dispatcher(void* userData)
 }
 
 // There is likely a more efficient way in the current implementation of callbacks !
-template <int = 0> // template to make this `inline` without using `inline`, which nvcc dislikes
-__global__ void callback_completion_kernel(int* completion_flag)
+__global__ static void callback_completion_kernel(int* completion_flag)
 {
   // Loop until *completion_flag == 1
   while (1 != (atomicCAS(completion_flag, 1, 1)))
