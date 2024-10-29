@@ -36,7 +36,7 @@ struct __type_set_contains : __fold_and<_CCCL_TRAIT(is_base_of, __type_identity<
 
 #ifndef _CCCL_NO_VARIABLE_TEMPLATES
 template <class _Set, class... _Ty>
-_CCCL_GLOBAL_CONSTANT bool __type_set_contains_v = __fold_and_v<is_base_of_v<__type_identity<_Ty>, _Set>...>;
+_CCCL_INLINE_VAR constexpr bool __type_set_contains_v = __fold_and_v<is_base_of_v<__type_identity<_Ty>, _Set>...>;
 #endif // _CCCL_NO_VARIABLE_TEMPLATES
 
 namespace __set
@@ -84,7 +84,7 @@ using __type_set_eq =
 
 #ifndef _CCCL_NO_VARIABLE_TEMPLATES
 template <class _ExpectedSet, class... _Ts>
-_CCCL_GLOBAL_CONSTANT bool __type_set_eq_v = __type_set_eq<_ExpectedSet, _Ts...>::value;
+_CCCL_INLINE_VAR constexpr bool __type_set_eq_v = __type_set_eq<_ExpectedSet, _Ts...>::value;
 #endif // _CCCL_NO_VARIABLE_TEMPLATES
 
 template <class... _Ts>
@@ -102,7 +102,7 @@ struct __is_included_in : __fold_or<_CCCL_TRAIT(is_same, _Ty, _Ts)...>
 
 #ifndef _CCCL_NO_VARIABLE_TEMPLATES
 template <class _Ty, class... _Ts>
-_CCCL_GLOBAL_CONSTANT bool __is_included_in_v = __fold_or_v<is_same_v<_Ty, _Ts>...>;
+_CCCL_INLINE_VAR constexpr bool __is_included_in_v = __fold_or_v<is_same_v<_Ty, _Ts>...>;
 #endif // _CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD

@@ -31,10 +31,10 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // Use fold expressions when possible to implement __fold_and[_v] and
 // __fold_or[_v].
 template <bool... _Preds>
-_CCCL_GLOBAL_CONSTANT bool __fold_and_v = (_Preds && ...);
+_CCCL_INLINE_VAR constexpr bool __fold_and_v = (_Preds && ...);
 
 template <bool... _Preds>
-_CCCL_GLOBAL_CONSTANT bool __fold_or_v = (_Preds || ...);
+_CCCL_INLINE_VAR constexpr bool __fold_or_v = (_Preds || ...);
 
 template <bool... _Preds>
 using __fold_and = bool_constant<(_Preds && ...)>;
@@ -56,10 +56,10 @@ using __fold_or = _Not<_IsSame<__fold_helper<false, _Preds...>, __fold_helper<_P
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <bool... _Preds>
-_CCCL_GLOBAL_CONSTANT bool __fold_and_v = __fold_and<_Preds...>::value;
+_CCCL_INLINE_VAR constexpr bool __fold_and_v = __fold_and<_Preds...>::value;
 
 template <bool... _Preds>
-_CCCL_GLOBAL_CONSTANT bool __fold_or_v = __fold_or<_Preds...>::value;
+_CCCL_INLINE_VAR constexpr bool __fold_or_v = __fold_or<_Preds...>::value;
 #  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #endif // _LIBCUDACXX_HAS_NO_FOLD_EXPRESSIONS
