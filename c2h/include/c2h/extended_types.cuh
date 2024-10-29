@@ -40,11 +40,11 @@
 #ifdef TEST_HALF_T
 #  include <cuda_fp16.h>
 
-#  include "../half.h"
+#  include <c2h/half.cuh>
 #endif
 
 #ifdef TEST_BF_T
 #  include <cuda_bf16.h>
 
-#  include "../bfloat16.h"
+#  include <c2h/bfloat16.cuh>
 #endif

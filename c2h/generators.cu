@@ -47,9 +47,9 @@
 #include <c2h/custom_type.cuh>
 #include <c2h/device_policy.cuh>
 #include <c2h/extended_types.cuh>
+#include <c2h/fill_striped.cuh>
 #include <c2h/generators.cuh>
 #include <c2h/vector.cuh>
-#include <fill_striped.cuh>
 
 #if C2H_HAS_CURAND
 #  include <curand.h>

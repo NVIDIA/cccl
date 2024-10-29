@@ -29,13 +29,12 @@
 
 #include <cub/util_compiler.cuh>
 
+#include <cuda/std/__cccl/diagnostic.h>
+
 #include <cstdint>
 #include <cstdlib>
 #include <tuple>
 #include <type_traits>
-
-#include "cuda/std/__cccl/diagnostic.h"
-#include "test_util_vec.h"
 
 #if __CUDACC_VER_MAJOR__ == 11
 _CCCL_NV_DIAG_SUPPRESS(177) // catch2 may contain unused variableds
@@ -46,9 +45,9 @@ _CCCL_NV_DIAG_SUPPRESS(177) // catch2 may contain unused variableds
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-#include "catch2_main.cuh"
-#include "test_warning_suppression.cuh"
+#include <c2h/catch2_main.cuh>
 #include <c2h/device_policy.cuh>
+#include <c2h/test_util_vec.cuh>
 #include <c2h/utility.cuh>
 #include <c2h/vector.cuh>
 
@@ -234,26 +233,26 @@ struct Catch::StringMaker<cudaError>
 #include <c2h/custom_type.cuh>
 #include <c2h/generators.cuh>
 
-#define CUB_TEST_NAME_IMPL(NAME, PARAM) CUB_TEST_STR(NAME) "(" CUB_TEST_STR(PARAM) ")"
+#define C2H_TEST_NAME_IMPL(NAME, PARAM) C2H_TEST_STR(NAME) "(" C2H_TEST_STR(PARAM) ")"
 
-#define CUB_TEST_NAME(NAME) CUB_TEST_NAME_IMPL(NAME, VAR_IDX)
+#define C2H_TEST_NAME(NAME) C2H_TEST_NAME_IMPL(NAME, VAR_IDX)
 
-#define CUB_TEST_CONCAT(A, B)       CUB_TEST_CONCAT_INNER(A, B)
-#define CUB_TEST_CONCAT_INNER(A, B) A##B
+#define C2H_TEST_CONCAT(A, B)       C2H_TEST_CONCAT_INNER(A, B)
+#define C2H_TEST_CONCAT_INNER(A, B) A##B
 
-#define CUB_TEST_IMPL(ID, NAME, TAG, ...)                                  \
-  using CUB_TEST_CONCAT(types_, ID) = c2h::cartesian_product<__VA_ARGS__>; \
-  TEMPLATE_LIST_TEST_CASE(CUB_TEST_NAME(NAME), TAG, CUB_TEST_CONCAT(types_, ID))
+#define C2H_TEST_IMPL(ID, NAME, TAG, ...)                                  \
+  using C2H_TEST_CONCAT(types_, ID) = c2h::cartesian_product<__VA_ARGS__>; \
+  TEMPLATE_LIST_TEST_CASE(C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
 
-#define CUB_TEST(NAME, TAG, ...) CUB_TEST_IMPL(__LINE__, NAME, TAG, __VA_ARGS__)
+#define C2H_TEST(NAME, TAG, ...) C2H_TEST_IMPL(__LINE__, NAME, TAG, __VA_ARGS__)
 
-#define CUB_TEST_LIST_IMPL(ID, NAME, TAG, ...)                     \
-  using CUB_TEST_CONCAT(types_, ID) = c2h::type_list<__VA_ARGS__>; \
-  TEMPLATE_LIST_TEST_CASE(CUB_TEST_NAME(NAME), TAG, CUB_TEST_CONCAT(types_, ID))
+#define C2H_TEST_LIST_IMPL(ID, NAME, TAG, ...)                     \
+  using C2H_TEST_CONCAT(types_, ID) = c2h::type_list<__VA_ARGS__>; \
+  TEMPLATE_LIST_TEST_CASE(C2H_TEST_NAME(NAME), TAG, C2H_TEST_CONCAT(types_, ID))
 
-#define CUB_TEST_LIST(NAME, TAG, ...) CUB_TEST_LIST_IMPL(__LINE__, NAME, TAG, __VA_ARGS__)
+#define C2H_TEST_LIST(NAME, TAG, ...) C2H_TEST_LIST_IMPL(__LINE__, NAME, TAG, __VA_ARGS__)
 
-#define CUB_TEST_STR(a) #a
+#define C2H_TEST_STR(a) #a
 
 namespace detail
 {
@@ -267,7 +266,7 @@ inline std::size_t adjust_seed_count(std::size_t requested)
 }
 } // namespace detail
 
-#define CUB_SEED(N)                                                                                                    \
+#define C2H_SEED(N)                                                                                                    \
   c2h::seed_t                                                                                                          \
   {                                                                                                                    \
     GENERATE_COPY(take(                                                                                                \

@@ -18,17 +18,10 @@ else()
   )
 endif()
 
-cccl_get_catch2()
+cccl_get_c2h()
 cccl_get_nvtx()
 
 find_package(CUDAToolkit)
-
-set(curand_default OFF)
-if (CUDA_curand_LIBRARY)
-  set(curand_default ON)
-endif()
-
-option(CUB_C2H_ENABLE_CURAND "Use CUDA CURAND library" ${curand_default})
 
 set(build_nvrtc_tests ON)
 if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
@@ -181,31 +174,21 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
     # Per config helper library:
     set(config_c2h_target ${config_prefix}.test.catch2_helper.lid_${launcher_id})
     if (NOT TARGET ${config_c2h_target})
-      add_library(${config_c2h_target} STATIC c2h/generators.cu)
-      target_include_directories(${config_c2h_target} PUBLIC "${CUB_SOURCE_DIR}/test")
+      add_library(${config_c2h_target} INTERFACE)
+      target_include_directories(${config_c2h_target} INTERFACE "${CUB_SOURCE_DIR}/test")
       cub_clone_target_properties(${config_c2h_target} ${cub_target})
       cub_configure_cuda_target(${config_c2h_target} RDC ${cdp_val})
-      target_link_libraries(${config_c2h_target} PRIVATE ${cub_target})
-      if (build_nvrtc_tests)
-        target_link_libraries(${config_c2h_target} PUBLIC CUDA::nvrtc CUDA::cuda_driver)
-      endif()
-      if (CUB_C2H_ENABLE_CURAND)
-        target_link_libraries(${config_c2h_target} PRIVATE CUDA::curand)
-        target_compile_definitions(${config_c2h_target} PRIVATE C2H_HAS_CURAND=1)
-      else()
-        target_compile_definitions(${config_c2h_target} PRIVATE C2H_HAS_CURAND=0)
-      endif()
+      target_link_libraries(${config_c2h_target} INTERFACE
+        ${cub_target}
+        cccl.c2h
+        CUDA::nvrtc
+        CUDA::cuda_driver
+      )
     endif() # config_c2h_target
 
     if (CUB_SEPARATE_CATCH2)
-      set(catch2_main_objects ${config_prefix}.catch2_main_objects)
-      if (NOT TARGET ${catch2_main_objects})
-        add_library(${catch2_main_objects} OBJECT catch2_runner.cpp catch2_runner_helper.cu)
-        target_link_libraries(${catch2_main_objects} PUBLIC Catch2::Catch2)
-      endif()
-
       add_executable(${test_target} "${test_src}")
-      target_link_libraries(${test_target} PRIVATE ${catch2_main_objects})
+      target_link_libraries(${test_target} PRIVATE cccl.c2h.main)
       add_dependencies(${config_meta_target} ${test_target})
 
       add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>")
@@ -213,8 +196,9 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
       # Per config catch2 runner
       set(config_c2run_target ${config_prefix}.catch2_test.lid_${launcher_id})
       if (NOT TARGET ${config_c2run_target})
-        add_executable(${config_c2run_target} catch2_runner.cpp catch2_runner_helper.cu)
+        add_executable(${config_c2run_target})
         target_link_libraries(${config_c2run_target} PRIVATE
+          cccl.c2h.main
           ${cub_target}
           ${config_c2h_target}
           Catch2::Catch2)
@@ -272,15 +256,17 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
     set(test_meta_target cub.all.test.${test_name})
 
     add_executable(${test_target} "${test_src}")
-    target_link_libraries(${test_target} ${cub_target})
+    target_link_libraries(${test_target} PRIVATE
+      ${cub_target}
+      cccl.c2h
+    )
     cub_clone_target_properties(${test_target} ${cub_target})
     target_include_directories(${test_target} PRIVATE "${CUB_SOURCE_DIR}/test")
     target_compile_definitions(${test_target} PRIVATE CUB_DETAIL_DEBUG_ENABLE_SYNC)
 
     if ("${test_target}" MATCHES "nvtx_in_usercode")
-      target_link_libraries(${test_target} nvtx3-cpp)
+      target_link_libraries(${test_target} PRIVATE nvtx3-cpp)
     endif()
-
 
     _cub_is_fail_test(is_fail_test "${test_src}")
     if (is_fail_test)
