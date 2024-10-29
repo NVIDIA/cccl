@@ -135,8 +135,8 @@
 
 // NVCC below 11.3 cannot handle __builtin_COLUMN
 #if defined(_CCCL_CUDACC_BELOW_11_3)
-#  undef __builtin_COLUMN
-#  define __builtin_COLUMN() 0
+#  undef _CCCL_BUILTIN_COLUMN
+#  define _CCCL_BUILTIN_COLUMN() 0
 #endif // _CCCL_CUDACC_BELOW_11_3
 
 #if _CCCL_CHECK_BUILTIN(builtin_contant_p) || defined(_CCCL_COMPILER_GCC)
