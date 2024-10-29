@@ -725,8 +725,8 @@ static_assert(::cuda::std::is_same<::cuda::std::__type_remove_if<::cuda::std::__
               "");
 static_assert(
   ::cuda::std::is_same<
-    ::cuda::std::__type_remove_if<::cuda::std::__type_list<char[0], char[8], char[4], char[3], char[5]>, BiggerThanFour>,
-    ::cuda::std::__type_list<char[0], char[4], char[3]>>::value,
+    ::cuda::std::__type_remove_if<::cuda::std::__type_list<char[1], char[8], char[4], char[3], char[5]>, BiggerThanFour>,
+    ::cuda::std::__type_list<char[1], char[4], char[3]>>::value,
   "");
 
 // __type_copy_if
@@ -735,7 +735,7 @@ static_assert(::cuda::std::is_same<::cuda::std::__type_remove_if<::cuda::std::__
               "");
 static_assert(
   ::cuda::std::is_same<
-    ::cuda::std::__type_copy_if<::cuda::std::__type_list<char[0], char[8], char[4], char[3], char[5]>, BiggerThanFour>,
+    ::cuda::std::__type_copy_if<::cuda::std::__type_list<char[1], char[8], char[4], char[3], char[5]>, BiggerThanFour>,
     ::cuda::std::__type_list<char[8], char[5]>>::value,
   "");
 
