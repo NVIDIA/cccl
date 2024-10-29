@@ -44,7 +44,7 @@ namespace __set
 template <class... _Ts>
 struct __tupl
 {
-  static constexpr size_t __size() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __size() noexcept
   {
     return 0;
   }
@@ -55,7 +55,7 @@ struct __tupl<_Ty, _Ts...>
     : __type_identity<_Ty>
     , __tupl<_Ts...>
 {
-  static constexpr size_t __size() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __size() noexcept
   {
     return sizeof...(_Ts) + 1;
   }
@@ -68,10 +68,10 @@ using __insert =
 struct __bulk_insert
 {
   template <class... _Ts>
-  static auto __call(__tupl<_Ts...>*) -> __tupl<_Ts...>;
+  _LIBCUDACXX_HIDE_FROM_ABI static auto __call(__tupl<_Ts...>*) -> __tupl<_Ts...>;
 
   template <class _Ap, class... _Us, class... _Ts, class _SetInsert = __bulk_insert>
-  static auto __call(__tupl<_Ts...>*)
+  _LIBCUDACXX_HIDE_FROM_ABI static auto __call(__tupl<_Ts...>*)
     -> decltype(_SetInsert::template __call<_Us...>(static_cast<__insert<_Ap, _Ts...>*>(nullptr)));
 };
 } // namespace __set

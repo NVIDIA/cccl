@@ -37,10 +37,10 @@ template <bool... _Preds>
 _CCCL_INLINE_VAR constexpr bool __fold_or_v = (_Preds || ...);
 
 template <bool... _Preds>
-using __fold_and = bool_constant<(_Preds && ...)>;
+using __fold_and = bool_constant<bool((_Preds && ...))>; // cast to bool to avoid error from gcc < 8
 
 template <bool... _Preds>
-using __fold_or = bool_constant<(_Preds || ...)>;
+using __fold_or = bool_constant<bool((_Preds || ...))>; // cast to bool to avoid error from gcc < 8
 
 #else // ^^^ !_LIBCUDACXX_HAS_NO_FOLD_EXPRESSIONS / _LIBCUDACXX_HAS_NO_FOLD_EXPRESSIONS vvv
 
