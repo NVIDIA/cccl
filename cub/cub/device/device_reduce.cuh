@@ -45,6 +45,7 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_reduce.cuh>
+#include <cub/device/dispatch/dispatch_streaming_reduce.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/util_deprecated.cuh>
@@ -712,6 +713,34 @@ struct DeviceReduce
     // Offset type used to index within the total input in the range [d_in, d_in + num_items)
     using GlobalOffsetT = ::cuda::std::uint64_t;
 
+    // Initial value type
+    using AggregateT = detail::non_void_value_t<AggregateOutIteratorT, cub::detail::value_t<InputIteratorT>>;
+    using InitT = AggregateT;
+
+    using ReduceOpT = cub::ArgMin;
+
+    // Initial value
+    InitT initial_value{::cuda::std::numeric_limits<AggregateT>::max()};
+
+    return DispatchStagedArgReduce< InputIteratorT,
+           AggregateOutIteratorT,
+           IndexOutIteratorT,
+           PerPartitionOffsetT,
+           GlobalOffsetT,
+           ReduceOpT,
+           InitT>::Dispatch(d_temp_storage,
+                                temp_storage_bytes,
+                                d_in,
+                                d_result_out,
+                                d_index_out,
+                                static_cast<GlobalOffsetT>(num_items),
+                                ReduceOpT{},
+                                initial_value,
+                                stream);
+
+
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  #if false
     // The input type
     using InputValueT = cub::detail::value_t<InputIteratorT>;
 
@@ -722,8 +751,6 @@ struct DeviceReduce
     using OutputTupleT = KeyValuePair<PerPartitionOffsetT, OutputAggregateT>;
     using GlobalAccumT = KeyValuePair<GlobalOffsetT, OutputAggregateT>;
 
-    // Initial value type
-    using InitT = detail::reduce::empty_problem_init_t<OutputTupleT>;
 
     // Helper iterator to offset the input iterator by the current partition's offset
     using constant_offset_it = cub::ConstantInputIterator<GlobalOffsetT>;
@@ -733,8 +760,6 @@ struct DeviceReduce
     using ArgIndexInputIteratorT =
       ArgIndexInputIterator<OffsetIteratorT<InputIteratorT, constant_offset_it>, PerPartitionOffsetT, InputValueT>;
 
-    // Initial value
-    InitT initial_value{OutputTupleT(1, ::cuda::std::numeric_limits<InputValueT>::max())};
 
     // Accumulator type that accumulates across partitions
     using global_accum_t = KeyValuePair<GlobalOffsetT, OutputAggregateT>;
@@ -854,6 +879,7 @@ struct DeviceReduce
     }
 
     return cudaSuccess;
+    #endif
   }
 
   template <typename InputIteratorT, typename OutputIteratorT>
