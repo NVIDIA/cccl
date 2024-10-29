@@ -69,6 +69,7 @@ template <> struct char_traits<char8_t>;  // c++20
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__algorithm/search.h>
 #include <cuda/std/__fwd/string.h>
+#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/detail/libcxx/include/iosfwd>
 
 _CCCL_PUSH_MACROS
@@ -268,14 +269,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char>
   }
   _LIBCUDACXX_HIDE_FROM_ABI static size_t _CCCL_CONSTEXPR_CXX14 length(const char_type* __s) noexcept
   {
+#if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 130000
+    // absurd workaround for GCC "internal compiler error: in cxx_eval_array_reference"
     if (__libcpp_is_constant_evaluated())
-    {
-      return (_CCCL_BUILTIN_STRLEN) (__s);
-    }
-    // In device code, always call the above _CCCL_BUILTIN_STRLEN function. In
-    // host code, call __builtin_strlen if available; otherwise, call the
-    // fallback function.
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return (_CCCL_BUILTIN_STRLEN) (__s);), (return _CCCL_BUILTIN_STRLEN(__s);))
+      ;
+#endif
+    // This will use __builtin_strlen if it is available; otherwise, it will
+    // call the fallback function above.
+    return _CCCL_BUILTIN_STRLEN(__s);
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI static _CCCL_CONSTEXPR_CXX14 const char_type*
