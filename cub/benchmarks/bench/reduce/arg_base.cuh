@@ -75,8 +75,8 @@ void arg_reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   thrust::device_vector<T> in = generate(elements);
   thrust::device_vector<output_tuple_t> out(1);
 
-  values_it_t d_in         = thrust::raw_pointer_cast(in.data());
-  global_offset_t* d_index_out  = &(thrust::raw_pointer_cast(out.data()))->key;
+  values_it_t d_in             = thrust::raw_pointer_cast(in.data());
+  global_offset_t* d_index_out = &(thrust::raw_pointer_cast(out.data()))->key;
   output_value_t* d_result_out = &(thrust::raw_pointer_cast(out.data()))->value;
 
   // Enable throughput calculations and add "Size" column to results.
@@ -87,15 +87,7 @@ void arg_reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   // Allocate temporary storage:
   std::size_t temp_size;
   dispatch_t::Dispatch(
-    nullptr,
-    temp_size,
-    d_in,
-    d_result_out,
-    d_index_out,
-    static_cast<offset_t>(elements),
-    op_t{},
-    init,
-    0 /* stream */);
+    nullptr, temp_size, d_in, d_result_out, d_index_out, static_cast<offset_t>(elements), op_t{}, init, 0 /* stream */);
 
   thrust::device_vector<nvbench::uint8_t> temp(temp_size);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
