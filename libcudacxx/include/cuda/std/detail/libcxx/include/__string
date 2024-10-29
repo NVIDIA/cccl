@@ -256,24 +256,16 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char>
   compare(const char_type* __s1, const char_type* __s2, size_t __n) noexcept;
   _LIBCUDACXX_HIDE_FROM_ABI static size_t _CCCL_CONSTEXPR_CXX14 length(const char_type* __s) noexcept
   {
-#ifdef _CCCL_HAS_NO_BUILTIN_STRLEN
-#  ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED // is_constant_evaluated only exists since GCC 9
-    if (__libcpp_is_constant_evaluated())
-#  endif // defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+#ifdef _CCCL_BUILTIN_STRLEN
+    return _CCCL_BUILTIN_STRLEN(__s);
+#else // ^^^ _CCCL_BUILTIN_STRLEN ^^^ / vvv !_CCCL_BUILTIN_STRLEN vvv
+    size_t __len = 0;
+    for (; !eq(*__s, char(0)); ++__s)
     {
-      size_t __len = 0;
-      for (; !eq(*__s, char(0)); ++__s)
-      {
-        ++__len;
-      }
-      return __len;
+      ++__len;
     }
-#endif // defined(_CCCL_HAS_NO_BUILTIN_STRLEN)
-#if !defined(_CCCL_HAS_NO_BUILTIN_STRLEN) || defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                      (size_t __len = 0; for (; !eq(*__s, char(0)); ++__s)++ __len; return __len;),
-                      (return __builtin_strlen(__s);))
-#endif // !defined(_CCCL_HAS_NO_BUILTIN_STRLEN) || defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+    return __len;
+#endif // !_CCCL_BUILTIN_STRLEN
   }
   _LIBCUDACXX_HIDE_FROM_ABI static _CCCL_CONSTEXPR_CXX14 const char_type*
   find(const char_type* __s, size_t __n, const char_type& __a) noexcept;
