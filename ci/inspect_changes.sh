@@ -26,7 +26,7 @@ subprojects=(
   cub
   thrust
   cudax
-  pycuda
+  python
   cccl_c_parallel
 )
 
@@ -37,7 +37,7 @@ declare -A dependencies=(
   [cub]="cccl libcudacxx thrust"
   [thrust]="cccl libcudacxx cub"
   [cudax]="cccl libcudacxx"
-  [pycuda]="cccl libcudacxx cub thrust cccl_c_parallel"
+  [python]="cccl libcudacxx cub thrust cccl_c_parallel"
   [cccl_c_parallel]="cccl libcudacxx cub thrust"
 )
 
@@ -47,7 +47,7 @@ declare -A project_names=(
   [cub]="CUB"
   [thrust]="Thrust"
   [cudax]="CUDA Experimental"
-  [pycuda]="pycuda"
+  [python]="python"
   [cccl_c_parallel]="CCCL C Parallel Library"
 )
 
@@ -55,7 +55,6 @@ declare -A project_names=(
 # but can be overridden here. The `cccl` project is special, and checks for files outside
 # of any subproject directory.
 declare -A project_dirs=(
-  [pycuda]="python/cuda_cooperative"
   [cccl_c_parallel]="c/parallel"
 )
 
