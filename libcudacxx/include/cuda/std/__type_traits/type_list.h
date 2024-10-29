@@ -181,14 +181,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_always
 //! \note The AND operation is not short-circuiting.
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_strict_and
 {
-#  ifndef _LIBCUDACXX_HAS_NO_FOLD_EXPRESSIONS
   template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<(_Ts::value && ...)>;
-#  else
-  template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<_CCCL_TRAIT(
-    is_same, integer_sequence<bool, true, _Ts::value...>, integer_sequence<bool, _Ts::value..., true>)>;
-#  endif
+  using __call _LIBCUDACXX_NODEBUG_TYPE = __fold_and<_Ts::value...>;
 };
 
 //! \brief Perform a logical OR operation on a list of Boolean types.
@@ -196,14 +190,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_strict_and
 //! \note The OR operation is not short-circuiting.
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_strict_or
 {
-#  ifndef _LIBCUDACXX_HAS_NO_FOLD_EXPRESSIONS
   template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<(_Ts::value || ...)>;
-#  else
-  template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<!_CCCL_TRAIT(
-    is_same, integer_sequence<bool, false, _Ts::value...>, integer_sequence<bool, _Ts::value..., false>)>;
-#  endif
+  using __call _LIBCUDACXX_NODEBUG_TYPE = __fold_or<_Ts::value...>;
 };
 
 //! \brief Perform a logical NOT operation on a Boolean type.
@@ -371,6 +359,15 @@ template <class _Fn, class... _Ts>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_defer
     : __type_call<__detail::__type_defer_fn<__type_callable<_Fn, _Ts...>::value>, _Fn, _Ts...>
 {};
+
+//! \brief Defer the instantiation of a template with a list of arguments.
+//!
+//! Given a variadic template and a list of arguments, return a trait type \c T
+//! where \c T::type is the result of instantiating the template with the
+//! arguments, or if the template cannot be instantiated with the arguments, a
+//! class type without a nested \c ::type type alias.
+template <template <class...> class _Fn, class... _Ts>
+using __type_defer_quote = __type_defer<__type_quote<_Fn>, _Ts...>;
 
 //! \brief A composition of two meta-callables that will attempt to call the
 //! first, and if that fails, call the second.

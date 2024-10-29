@@ -30,19 +30,13 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+template <class _Set, class... _Ty>
+struct __type_set_contains : __fold_and<_CCCL_TRAIT(is_base_of, __type_identity<_Ty>, _Set)...>
+{};
+
 #ifndef _CCCL_NO_VARIABLE_TEMPLATES
-
 template <class _Set, class... _Ty>
-_CCCL_INLINE_VAR constexpr bool __type_set_contains_v = __fold_and_v<is_base_of_v<__type_identity<_Ty>, _Set>...>;
-
-template <class _Set, class... _Ty>
-using __type_set_contains = bool_constant<__type_set_contains_v<_Set, _Ty...>>;
-
-#else // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES ^^^ / vvv _CCCL_NO_VARIABLE_TEMPLATES vvv
-
-template <class _Set, class... _Ty>
-using __type_set_contains = __fold_and<is_base_of<__type_identity<_Ty>, _Set>::value...>;
-
+_CCCL_GLOBAL_CONSTANT bool __type_set_contains_v = __fold_and_v<is_base_of_v<__type_identity<_Ty>, _Set>...>;
 #endif // _CCCL_NO_VARIABLE_TEMPLATES
 
 namespace __set
@@ -90,7 +84,7 @@ using __type_set_eq =
 
 #ifndef _CCCL_NO_VARIABLE_TEMPLATES
 template <class _ExpectedSet, class... _Ts>
-_CCCL_INLINE_VAR constexpr bool __type_set_eq_v = __type_set_eq<_ExpectedSet, _Ts...>::value;
+_CCCL_GLOBAL_CONSTANT bool __type_set_eq_v = __type_set_eq<_ExpectedSet, _Ts...>::value;
 #endif // _CCCL_NO_VARIABLE_TEMPLATES
 
 template <class... _Ts>
@@ -102,15 +96,13 @@ using __type_set_insert = decltype(__set::__bulk_insert::__call<_Ts...>(static_c
 template <class... _Ts>
 using __make_type_set = __type_set_insert<__type_set<>, _Ts...>;
 
+template <class _Ty, class... _Ts>
+struct __is_included_in : __fold_or<_CCCL_TRAIT(is_same, _Ty, _Ts)...>
+{};
+
 #ifndef _CCCL_NO_VARIABLE_TEMPLATES
 template <class _Ty, class... _Ts>
-_CCCL_INLINE_VAR constexpr bool __is_included_in_v = __fold_or_v<is_same_v<_Ty, _Ts>...>;
-
-template <class _Ty, class... _Ts>
-using __is_included_in = bool_constant<__is_included_in_v<_Ty, _Ts...>>;
-#else // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES ^^^ / vvv _CCCL_NO_VARIABLE_TEMPLATES vvv
-template <class _Ty, class... _Ts>
-using __is_included_in = __fold_or<is_same<_Ty, _Ts>::value...>;
+_CCCL_GLOBAL_CONSTANT bool __is_included_in_v = __fold_or_v<is_same_v<_Ty, _Ts>...>;
 #endif // _CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
