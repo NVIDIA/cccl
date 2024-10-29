@@ -55,7 +55,7 @@
 #  if defined(CCCL_DISABLE_RTTI) // CCCL_DISABLE_RTTI disables typeid also
 #    define _CCCL_NO_TYPEID
 #  elif defined(_CCCL_CUDACC) && defined(__CUDA_ARCH__)
-#    define _CCCL_NO_RTTI // No RTTI in CUDA device code
+#    define _CCCL_NO_TYPEID // No RTTI in CUDA device code
 #  elif defined(_CCCL_COMPILER_ICC)
 // when emulating MSVC, typeid is available even when RTTI is disabled
 #    if !defined(_MSC_VER) && __RTTI == 0 && __INTEL_RTTI__ == 0 && __GXX_RTTI == 0 && _CPPRTTI == 0
