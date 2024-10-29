@@ -60,8 +60,6 @@ void arg_reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   // Type used for the final result
   using output_tuple_t = cub::KeyValuePair<global_offset_t, T>;
 
-  using op_t = cub::ArgMin;
-
   auto const init = ::cuda::std::numeric_limits<T>::max();
 
 #if !TUNE_BASE
@@ -69,7 +67,7 @@ void arg_reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   using dispatch_t = cub::DispatchReduce<input_it_t, output_it_t, offset_t, op_t, init_t, accum_t, policy_t>;
 #else // TUNE_BASE
   using dispatch_t =
-    cub::DispatchStagedArgReduce<input_it_t, T*, global_offset_t*, per_partition_offset_t, global_offset_t, op_t, T>;
+    cub::DispatchStreamingArgReduce<input_it_t, T*, global_offset_t*, per_partition_offset_t, global_offset_t, op_t, T>;
 #endif // TUNE_BASE
 
   // Retrieve axis parameters

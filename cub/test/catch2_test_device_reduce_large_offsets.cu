@@ -1,29 +1,6 @@
-/******************************************************************************
- * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
+// SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 #include "insert_nested_NVTX_range_guard.h"
 // above header needs to be included first
 
@@ -48,7 +25,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
 // List of offset types to test
-using offset_types = c2h::type_list</*std::int32_t, */std::uint32_t, std::uint64_t>;
+using offset_types = c2h::type_list<std::int32_t, std::uint32_t, std::uint64_t>;
 
 __host__ __device__ __forceinline__ uint64_t
 get_segmented_guassian_sum(const uint64_t num_items, const uint64_t segment_size)
@@ -182,13 +159,13 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
     c2h::device_vector<result_t> out_result(1);
     auto d_out_it = thrust::raw_pointer_cast(out_result.data());
 
-    auto d_in_it  = thrust::make_reverse_iterator(index_it + num_items + iterator_offset);
+    auto d_in_it = thrust::make_reverse_iterator(index_it + num_items + iterator_offset);
 
-    device_arg_min(d_in_it, &d_out_it->value, &d_out_it->key, num_items);
+    device_arg_min(d_in_it, d_out_it, num_items);
 
     // Verify result
-    const index_t expected_value = iterator_offset;
-    const index_t expected_index = num_items - 1;
+    const index_t expected_value  = iterator_offset;
+    const offset_t expected_index = num_items - 1;
 
     // Verify result
     result_t gpu_result = out_result[0];
@@ -196,65 +173,72 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
     REQUIRE(expected_index == gpu_result.key);
   }
 
-  // SECTION("argmax int-key-value-pair")
-  // {
-  //   using result_t = cub::KeyValuePair<offset_t, index_t>;
-
-  //   // Run test
-  //   const index_t iterator_offset = 1000;
-  //   c2h::device_vector<result_t> out_result(1);
-  //   auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-  //   auto d_in_it  = index_it + iterator_offset;
-
-  //   device_arg_max(d_in_it, d_out_it, num_items);
-
-  //   // Verify result
-  //   const index_t expected_value = num_items + iterator_offset - index_t{1};
-  //   const index_t expected_index = num_items + - index_t{1};
-
-  //   // Verify result
-  //   result_t gpu_result = out_result[0];
-  //   REQUIRE(expected_value == gpu_result.value);
-  //   REQUIRE(expected_index == gpu_result.key);
-  // }
-
-  // Argmax still works with an output iterator that has KeyValuePair<int, T> value type
-  // SECTION("argmax int-kv pair")
-  // {
-  //   // Prepare verification data
-  //   c2h::host_vector<item_t> host_items(in_items);
-  //   auto expected_result = std::max_element(host_items.cbegin(), host_items.cend());
-
-  //   // Run test
-
-  //   using result_t = cub::KeyValuePair<int, unwrap_value_t<output_t>>;
-  //   c2h::device_vector<result_t> out_result(num_segments);
-  //   device_arg_max(unwrap_it(d_in_it), thrust::raw_pointer_cast(out_result.data()), num_items);
-
-  //   // Verify result
-  //   result_t gpu_result = out_result[0];
-  //   output_t gpu_value  = static_cast<output_t>(gpu_result.value); // Explicitly rewrap the gpu value
-  //   REQUIRE(expected_result[0] == gpu_value);
-  //   REQUIRE((expected_result - host_items.cbegin()) == gpu_result.key);
-  // }
-
-#if false
-  SECTION("argmin int")
+  SECTION("argmin with int index type")
   {
-    // Prepare verification data
-    c2h::host_vector<item_t> host_items(in_items);
-    auto expected_result = std::min_element(host_items.cbegin(), host_items.cend());
+    using result_t = cub::KeyValuePair<int, index_t>;
 
     // Run test
-    using result_t = cub::KeyValuePair<int, unwrap_value_t<output_t>>;
-    c2h::device_vector<result_t> out_result(num_segments);
-    device_arg_min(unwrap_it(d_in_it), thrust::raw_pointer_cast(out_result.data()), num_items);
+    const index_t iterator_offset = 1000;
+    c2h::device_vector<result_t> out_result(1);
+    auto d_out_it = thrust::raw_pointer_cast(out_result.data());
+
+    auto d_in_it = index_it + iterator_offset;
+
+    device_arg_min(d_in_it, d_out_it, num_items);
+
+    // Verify result
+    const index_t expected_value = iterator_offset;
+    const int expected_index     = 0;
 
     // Verify result
     result_t gpu_result = out_result[0];
-    output_t gpu_value  = static_cast<output_t>(gpu_result.value); // Explicitly rewrap the gpu value
-    REQUIRE(expected_result[0] == gpu_value);
-    REQUIRE((expected_result - host_items.cbegin()) == gpu_result.key);
+    REQUIRE(expected_value == gpu_result.value);
+    REQUIRE(expected_index == gpu_result.key);
   }
-#endif
+
+  SECTION("argmax")
+  {
+    using result_t = cub::KeyValuePair<offset_t, index_t>;
+
+    // Run test
+    const index_t iterator_offset = 1000;
+    c2h::device_vector<result_t> out_result(1);
+    auto d_out_it = thrust::raw_pointer_cast(out_result.data());
+
+    auto d_in_it = index_it + iterator_offset;
+
+    device_arg_max(d_in_it, d_out_it, num_items);
+
+    // Verify result
+    const index_t expected_value  = iterator_offset + num_items - index_t{1};
+    const offset_t expected_index = num_items - offset_t{1};
+
+    // Verify result
+    result_t gpu_result = out_result[0];
+    REQUIRE(expected_value == gpu_result.value);
+    REQUIRE(expected_index == gpu_result.key);
+  }
+
+  SECTION("argmax with int index type")
+  {
+    using result_t = cub::KeyValuePair<int, index_t>;
+
+    // Run test
+    const index_t iterator_offset = 1000;
+    c2h::device_vector<result_t> out_result(1);
+    auto d_out_it = thrust::raw_pointer_cast(out_result.data());
+
+    auto d_in_it = thrust::make_reverse_iterator(index_it + num_items + iterator_offset);
+
+    device_arg_max(d_in_it, d_out_it, num_items);
+
+    // Verify result
+    const index_t expected_value = iterator_offset + num_items - index_t{1};
+    const int expected_index     = 0;
+
+    // Verify result
+    result_t gpu_result = out_result[0];
+    REQUIRE(expected_value == gpu_result.value);
+    REQUIRE(expected_index == gpu_result.key);
+  }
 }

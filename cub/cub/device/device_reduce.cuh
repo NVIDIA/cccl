@@ -45,158 +45,17 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_reduce.cuh>
-#include <cub/device/dispatch/dispatch_streaming_reduce.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
-#include <cub/iterator/arg_index_input_iterator.cuh>
+#include <cub/device/dispatch/dispatch_streaming_reduce.cuh>
 #include <cub/util_deprecated.cuh>
 #include <cub/util_type.cuh>
 
 #include <thrust/iterator/tabulate_output_iterator.h>
 
-
 #include <iterator>
 #include <limits>
 
 CUB_NAMESPACE_BEGIN
-
-template <typename GlobalAccumT, typename PromoteToGlobalOpT, typename GlobalReductionOpT, typename FinalResultOutIteratorT>
-class accumulating_transform_output_op
-{
-private:
-  bool first_partition = true;
-  bool last_partition  = false;
-
-  // We use a double-buffer to make assignment idempotent (i.e., allow potential repeated assignment)
-  GlobalAccumT* d_previous_aggregate = nullptr;
-  GlobalAccumT* d_aggregate_out      = nullptr;
-
-  // Output iterator to which the final result of type `GlobalAccumT` across all partitions will be assigned
-  FinalResultOutIteratorT d_out;
-
-  //
-  PromoteToGlobalOpT promote_op;
-
-  //
-  GlobalReductionOpT reduce_op;
-
-public:
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE accumulating_transform_output_op(
-    GlobalAccumT* d_previous_aggregate,
-    GlobalAccumT* d_aggregate_out,
-    bool is_last_partition,
-    FinalResultOutIteratorT d_out,
-    PromoteToGlobalOpT promote_op,
-    GlobalReductionOpT reduce_op)
-      : last_partition(is_last_partition)
-      , d_previous_aggregate(d_previous_aggregate)
-      , d_aggregate_out(d_aggregate_out)
-      , d_out(d_out)
-      , promote_op(promote_op)
-      , reduce_op(reduce_op)
-  {}
-
-  template <typename IndexT, typename AccumT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(IndexT, AccumT per_partition_aggregate)
-  {
-    // Add this partitions aggregate to the global aggregate
-    if (first_partition)
-    {
-      *d_aggregate_out = promote_op(per_partition_aggregate);
-    }
-    else
-    {
-      *d_aggregate_out = reduce_op(*d_previous_aggregate, promote_op(per_partition_aggregate));
-    }
-
-    // If this is the last partition, we write the global aggregate to the user-provided iterator
-    if (last_partition)
-    {
-      *d_out = *d_aggregate_out;
-    }
-  }
-
-  /**
-   * This is a helper function that's invoked after a partition has been fully processed
-   */
-  template <typename GlobalOffsetT>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void advance(GlobalOffsetT partition_size, bool next_partition_is_the_last)
-  {
-    promote_op.advance(partition_size);
-    ::cuda::std::swap(d_previous_aggregate, d_aggregate_out);
-    first_partition = false;
-    last_partition  = next_partition_is_the_last;
-  };
-};
-
-template <typename GlobalOffsetT>
-struct accumulating_argmin_reduction_op
-{
-  // The current partition's offset to be factored into this partitions index
-  GlobalOffsetT current_partition_offset;
-
-  /**
-   * This is a helper function that's invoked after a partition has been fully processed
-   */
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void advance(GlobalOffsetT partition_size)
-  {
-    current_partition_offset += partition_size;
-  };
-
-  /**
-   * Unary operator called to "transform" the per-partition aggregate of the very first partition to a global
-   * aggregate type (across partitions)
-   */
-  template <typename PerPartitionOffsetT, typename AccumT>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePair<GlobalOffsetT, AccumT>
-  operator()(KeyValuePair<PerPartitionOffsetT, AccumT> partition_aggregate)
-  {
-    return KeyValuePair<GlobalOffsetT, AccumT>{
-      current_partition_offset + static_cast<GlobalOffsetT>(partition_aggregate.key), partition_aggregate.value};
-  }
-};
-
-template <typename Iterator, typename OffsetItT>
-class OffsetIteratorT : public thrust::iterator_adaptor<OffsetIteratorT<Iterator, OffsetItT>, Iterator>
-{
-public:
-  using super_t = thrust::iterator_adaptor<OffsetIteratorT<Iterator, OffsetItT>, Iterator>;
-
-  __host__ __device__ OffsetIteratorT(const Iterator& it, OffsetItT offset_it)
-      : super_t(it)
-      , offset_it(offset_it)
-  {}
-
-  // befriend thrust::iterator_core_access to allow it access to the private interface below
-  friend class thrust::iterator_core_access;
-
-private:
-  OffsetItT offset_it;
-
-  __host__ __device__ typename super_t::reference dereference() const
-  {
-    return *(this->base() + (*offset_it));
-  }
-};
-
-template <typename Iterator, typename OffsetItT>
-_CCCL_HOST_DEVICE OffsetIteratorT<Iterator, OffsetItT> make_offset_iterator(Iterator it, OffsetItT offset_it)
-{
-  return OffsetIteratorT<Iterator, OffsetItT>{it, offset_it};
-}
-
-template <typename AggregateOutIteratorT, typename IndexOutIteratorT>
-struct write_arg_result_to_user_iterators_op
-{
-  AggregateOutIteratorT result_out_it;
-  IndexOutIteratorT index_out_it;
-
-  template <typename IndexT, typename KeyValuePairT>
-  __host__ __device__ void operator()(IndexT, KeyValuePairT reduced_result)
-  {
-    *result_out_it = reduced_result.value;
-    *index_out_it  = reduced_result.key;
-  }
-};
 
 //! @rst
 //! DeviceReduce provides device-wide, parallel operations for computing
@@ -695,17 +554,19 @@ struct DeviceReduce
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT, typename AggregateOutIteratorT, typename IndexOutIteratorT, typename OffsetT>
+  template <typename InputIteratorT, typename OutputIteratorT, typename OffsetT>
   CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
-    AggregateOutIteratorT d_result_out,
-    IndexOutIteratorT d_index_out,
+    OutputIteratorT d_out,
     OffsetT num_items,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMin");
+
+    // The input type
+    using InputValueT = cub::detail::value_t<InputIteratorT>;
 
     // Offset type used within the kernel and to index within one partition
     using PerPartitionOffsetT = int;
@@ -714,228 +575,55 @@ struct DeviceReduce
     using GlobalOffsetT = ::cuda::std::uint64_t;
 
     // Initial value type
-    using AggregateT = detail::non_void_value_t<AggregateOutIteratorT, cub::detail::value_t<InputIteratorT>>;
-    using InitT = AggregateT;
+    using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<GlobalOffsetT, InputValueT>>;
+    using InitT        = typename OutputTupleT::Value;
 
+    // Reduction operation
     using ReduceOpT = cub::ArgMin;
 
     // Initial value
-    InitT initial_value{::cuda::std::numeric_limits<AggregateT>::max()};
-
-    return DispatchStagedArgReduce< InputIteratorT,
-           AggregateOutIteratorT,
-           IndexOutIteratorT,
-           PerPartitionOffsetT,
-           GlobalOffsetT,
-           ReduceOpT,
-           InitT>::Dispatch(d_temp_storage,
-                                temp_storage_bytes,
-                                d_in,
-                                d_result_out,
-                                d_index_out,
-                                static_cast<GlobalOffsetT>(num_items),
-                                ReduceOpT{},
-                                initial_value,
-                                stream);
-
-
-  //! +++++++++++++++++++++++++++++++++++++++++++++
-  #if false
-    // The input type
-    using InputValueT = cub::detail::value_t<InputIteratorT>;
-
-    // The value type used for the accumulator
-    using OutputAggregateT = detail::non_void_value_t<AggregateOutIteratorT, InputValueT>;
-
-    // The per-partition accumulator and output tuple type
-    using OutputTupleT = KeyValuePair<PerPartitionOffsetT, OutputAggregateT>;
-    using GlobalAccumT = KeyValuePair<GlobalOffsetT, OutputAggregateT>;
-
-
-    // Helper iterator to offset the input iterator by the current partition's offset
-    using constant_offset_it = cub::ConstantInputIterator<GlobalOffsetT>;
-
-    // Wrapped input iterator to produce index-value tuples, i.e., <PerPartitionOffsetT, InputT>-tuples
-    // We make sure to offset the user-provided input iterator by the current partition's offset
-    using ArgIndexInputIteratorT =
-      ArgIndexInputIterator<OffsetIteratorT<InputIteratorT, constant_offset_it>, PerPartitionOffsetT, InputValueT>;
-
-
-    // Accumulator type that accumulates across partitions
-    using global_accum_t = KeyValuePair<GlobalOffsetT, OutputAggregateT>;
-
-    // Reduction operator type that accumulates the per-partition ArgMin-reduction results to a global aggrate
-    // operator()(OutputAggregateT) -> GlobalOffsetT (invoked after first partition)
-    // operator()(GlobalOffsetT, OutputAggregateT) -> GlobalOffsetT (invoked to accumulate per-partition result to
-    // the global aggregate)
-    using accumulating_argmin_reduction_op_t = accumulating_argmin_reduction_op<GlobalOffsetT>;
-    accumulating_argmin_reduction_op_t accumulating_argmin_op_t{GlobalOffsetT{0}};
-
-    // Iterator that "unzips" the KeyValuePair from the global aggregate and assigns key and the value to one of the two
-    // output iterators, respectively
-    using write_kv_pair_to_distinct_out_its_t =
-      thrust::tabulate_output_iterator<write_arg_result_to_user_iterators_op<AggregateOutIteratorT, IndexOutIteratorT>>;
-    write_kv_pair_to_distinct_out_its_t d_out = thrust::make_tabulate_output_iterator(
-      write_arg_result_to_user_iterators_op<AggregateOutIteratorT, IndexOutIteratorT>{d_result_out, d_index_out});
-
-    // Reduction operator type that enables accumulating per-partition results to a global reduction result
-    using accumulating_transform_output_op_t =
-      accumulating_transform_output_op<global_accum_t,
-                                       accumulating_argmin_reduction_op_t,
-                                       cub::ArgMin,
-                                       write_kv_pair_to_distinct_out_its_t>;
-
-    // The output iterator that implements the logic to accumulate per-partition result to a global aggregate and,
-    // eventually, write to the user-provided output iterators
-    using tabulate_output_iterator_t = thrust::tabulate_output_iterator<accumulating_transform_output_op_t>;
-
-    void* allocations[2]       = {nullptr};
-    size_t allocation_sizes[2] = {0, 2 * sizeof(GlobalAccumT)};
-
-    // The current partition's input iterator is an ArgIndex iterator that generates indexes relative to the beginning
-    // of the current partition, i.e., [0, partition_size) along with an OffsetIterator that offsets the user-provided
-    // input iterator by the current partition's offset.
-    ArgIndexInputIteratorT d_indexed_offset_in(make_offset_iterator(d_in, constant_offset_it{GlobalOffsetT{0}}));
-
-    //
-    accumulating_transform_output_op_t accumulating_out_op(nullptr, nullptr, false, d_out, accumulating_argmin_op_t, cub::ArgMin{});
-
-    // Upper bound at which we want to cut the input into multiple partitions
-    static constexpr PerPartitionOffsetT max_partition_size =
-      ::cuda::std::numeric_limits<PerPartitionOffsetT>::max();
-
-    // Whether the given number of items fits into a single partition
-    const bool is_single_partition =
-      static_cast<GlobalOffsetT>(max_partition_size) >= static_cast<GlobalOffsetT>(num_items);
-
-    // The largest partition size ever encountered
-    const auto largest_partition_size =
-      is_single_partition ? static_cast<PerPartitionOffsetT>(num_items) : max_partition_size;
-
-    // Query temporary storage requirements for per-partition reduction
-    DispatchReduce<ArgIndexInputIteratorT,
-                   tabulate_output_iterator_t,
-                   PerPartitionOffsetT,
-                   cub::ArgMin,
-                   InitT,
-                   OutputTupleT>::Dispatch(nullptr,
-                                           allocation_sizes[0],
-                                           d_indexed_offset_in,
-                                           thrust::make_tabulate_output_iterator(accumulating_out_op),
-                                           static_cast<PerPartitionOffsetT>(largest_partition_size),
-                                           cub::ArgMin(),
-                                           initial_value,
-                                           stream);
-
-    // Alias the temporary allocations from the single storage blob (or compute the necessary size
-    // of the blob)
-    cudaError_t error = cub::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
-    if (error != cudaSuccess)
-    {
-      return error;
-    }
-
-    // Return if the caller is simply requesting the size of the storage allocation
-    if (d_temp_storage == nullptr)
-    {
-      return cudaSuccess;
-    }
-
-    // Pointer to the double-buffer of global accumulators, which aggregate cross-partition results
-    GlobalAccumT* d_global_aggregates = reinterpret_cast<GlobalAccumT*>(allocations[1]);
-
-    accumulating_out_op = accumulating_transform_output_op_t{
-      d_global_aggregates, (d_global_aggregates + 1), is_single_partition, d_out, accumulating_argmin_op_t, cub::ArgMin{}};
-
-    for (GlobalOffsetT current_partition_offset = 0;
-         current_partition_offset < static_cast<GlobalOffsetT>(num_items);
-         current_partition_offset += static_cast<GlobalOffsetT>(max_partition_size))
-    {
-      const GlobalOffsetT remaining_items = (num_items - current_partition_offset);
-      GlobalOffsetT current_num_items = (remaining_items < max_partition_size) ? remaining_items : max_partition_size;
-
-      d_indexed_offset_in =
-        ArgIndexInputIteratorT(make_offset_iterator(d_in, constant_offset_it{current_partition_offset}));
-
-      error = DispatchReduce<
-        ArgIndexInputIteratorT,
-        tabulate_output_iterator_t,
-        PerPartitionOffsetT,
-        cub::ArgMin,
-        InitT,
-        OutputTupleT>::Dispatch(d_temp_storage,
-                                temp_storage_bytes,
-                                d_indexed_offset_in,
-                                thrust::make_tabulate_output_iterator(accumulating_out_op),
-                                static_cast<PerPartitionOffsetT>(current_num_items),
-                                cub::ArgMin(),
-                                initial_value,
-                                stream);
-
-      // Whether the next partition will be the last partition
-      const bool next_partition_is_last =
-        (remaining_items - current_num_items) <= static_cast<GlobalOffsetT>(max_partition_size);
-      accumulating_out_op.advance(current_num_items, next_partition_is_last);
-    }
-
-    return cudaSuccess;
-    #endif
-  }
-
-  template <typename InputIteratorT, typename OutputIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    int num_items,
-    cudaStream_t stream = 0)
-  {
-    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMin");
-
-    // Signed integer type for global offsets
-    using OffsetT = int;
-
-    // The input type
-    using InputValueT = cub::detail::value_t<InputIteratorT>;
-
-    // The output tuple type
-    using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;
-
-    using AccumT = OutputTupleT;
-
-    using InitT = detail::reduce::empty_problem_init_t<AccumT>;
-
-    // The output value type
-    using OutputValueT = typename OutputTupleT::Value;
-
-    // Wrapped input iterator to produce index-value <OffsetT, InputT> tuples
-    using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OffsetT, OutputValueT>;
-
-    ArgIndexInputIteratorT d_indexed_in(d_in);
-
-    // Initial value
     // TODO Address https://github.com/NVIDIA/cub/issues/651
-    InitT initial_value{AccumT(1, Traits<InputValueT>::Max())};
+    InitT initial_value{Traits<InputValueT>::Max()};
 
-    return DispatchReduce<ArgIndexInputIteratorT, OutputIteratorT, OffsetT, cub::ArgMin, InitT, AccumT>::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_indexed_in, d_out, num_items, cub::ArgMin(), initial_value, stream);
+    // Helper transform output iterator, to allow "implicit conversion" between KeyValuePair types that have a different
+    // key type, which may happen if the user uses a different index type than the global offset type used by the
+    // algorithm
+    using implicit_cast_kv_pair_op_it =
+      thrust::tabulate_output_iterator<detail::reduce::write_to_user_out_it<OutputIteratorT>>;
+    implicit_cast_kv_pair_op_it out_it =
+      thrust::make_tabulate_output_iterator(detail::reduce::write_to_user_out_it<OutputIteratorT>{d_out});
+
+    return detail::reduce::DispatchStreamingArgReduce<
+      InputIteratorT,
+      implicit_cast_kv_pair_op_it,
+      PerPartitionOffsetT,
+      GlobalOffsetT,
+      ReduceOpT,
+      InitT>::Dispatch(d_temp_storage,
+                       temp_storage_bytes,
+                       d_in,
+                       out_it,
+                       static_cast<GlobalOffsetT>(num_items),
+                       ReduceOpT{},
+                       initial_value,
+                       stream);
   }
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-  template <typename InputIteratorT, typename OutputIteratorT>
+  template <typename InputIteratorT, typename OutputIteratorT, typename OffsetT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    int num_items,
+    OffsetT num_items,
     cudaStream_t stream,
     bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return ArgMin<InputIteratorT, OutputIteratorT>(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
+    return ArgMin<InputIteratorT, OutputIteratorT, OffsetT>(
+      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 
@@ -1145,60 +833,76 @@ struct DeviceReduce
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT>
+  template <typename InputIteratorT, typename OutputIteratorT, typename OffsetT>
   CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    int num_items,
+    OffsetT num_items,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMax");
 
-    // Signed integer type for global offsets
-    using OffsetT = int;
-
     // The input type
     using InputValueT = cub::detail::value_t<InputIteratorT>;
 
-    // The output tuple type
-    using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;
+    // Offset type used within the kernel and to index within one partition
+    using PerPartitionOffsetT = int;
 
-    using AccumT = OutputTupleT;
+    // Offset type used to index within the total input in the range [d_in, d_in + num_items)
+    using GlobalOffsetT = ::cuda::std::uint64_t;
 
-    // The output value type
-    using OutputValueT = typename OutputTupleT::Value;
+    // Initial value type
+    using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<GlobalOffsetT, InputValueT>>;
+    using InitT        = typename OutputTupleT::Value;
 
-    using InitT = detail::reduce::empty_problem_init_t<AccumT>;
-
-    // Wrapped input iterator to produce index-value <OffsetT, InputT> tuples
-    using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OffsetT, OutputValueT>;
-
-    ArgIndexInputIteratorT d_indexed_in(d_in);
+    // Reduction operation
+    using ReduceOpT = cub::ArgMax;
 
     // Initial value
     // TODO Address https://github.com/NVIDIA/cub/issues/651
-    InitT initial_value{AccumT(1, Traits<InputValueT>::Lowest())};
+    InitT initial_value{Traits<InputValueT>::Lowest()};
 
-    return DispatchReduce<ArgIndexInputIteratorT, OutputIteratorT, OffsetT, cub::ArgMax, InitT, AccumT>::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_indexed_in, d_out, num_items, cub::ArgMax(), initial_value, stream);
+    // Helper transform output iterator, to allow "implicit conversion" between KeyValuePair types that have a different
+    // key type, which may happen if the user uses a different index type than the global offset type used by the
+    // algorithm
+    using implicit_cast_kv_pair_op_it =
+      thrust::tabulate_output_iterator<detail::reduce::write_to_user_out_it<OutputIteratorT>>;
+    implicit_cast_kv_pair_op_it out_it =
+      thrust::make_tabulate_output_iterator(detail::reduce::write_to_user_out_it<OutputIteratorT>{d_out});
+
+    return detail::reduce::DispatchStreamingArgReduce<
+      InputIteratorT,
+      implicit_cast_kv_pair_op_it,
+      PerPartitionOffsetT,
+      GlobalOffsetT,
+      ReduceOpT,
+      InitT>::Dispatch(d_temp_storage,
+                       temp_storage_bytes,
+                       d_in,
+                       out_it,
+                       static_cast<GlobalOffsetT>(num_items),
+                       ReduceOpT{},
+                       initial_value,
+                       stream);
   }
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-  template <typename InputIteratorT, typename OutputIteratorT>
+  template <typename InputIteratorT, typename OutputIteratorT, typename OffsetT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    int num_items,
+    OffsetT num_items,
     cudaStream_t stream,
     bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return ArgMax<InputIteratorT, OutputIteratorT>(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
+    return ArgMax<InputIteratorT, OutputIteratorT, OffsetT>(
+      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 
