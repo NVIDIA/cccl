@@ -312,7 +312,7 @@ struct DispatchStreamingArgReduce
     // Wrapped input iterator to produce index-value tuples, i.e., <PerPartitionOffsetT, InputT>-tuples
     // We make sure to offset the user-provided input iterator by the current partition's offset
     using arg_index_input_iterator_t =
-      ArgIndexInputIterator<offset_iterator<InputIteratorT, constant_offset_it_t>, PerPartitionOffsetT, input_value_t>;
+      ArgIndexInputIterator<offset_iterator<InputIteratorT, constant_offset_it_t>, PerPartitionOffsetT, InitT>;
 
     // The type used for the aggregate that the user wants to find the extremum for
     using output_aggregate_t = InitT;
