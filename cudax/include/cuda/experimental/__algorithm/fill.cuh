@@ -51,14 +51,18 @@ void __fill_bytes_impl(stream_ref __stream, _CUDA_VSTD::span<_DstTy, _DstSize> _
 //! @param __stream Stream that the copy should be inserted into
 //! @param __dst Destination memory to fill
 //! @param __value Value to fill into every byte in the destination
+// TMP WAR until we can construct a cuda::std::span from ::std containers in c++17
+#if _CCCL_STD_VER >= 2020
 _LIBCUDACXX_TEMPLATE(typename _DstTy)
 _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::contiguous_range<detail::__as_copy_arg_t<_DstTy>>)
+#else
+template <typename _DstTy>
+#endif
 void fill_bytes(stream_ref __stream, _DstTy&& __dst, uint8_t __value)
 {
-  __fill_bytes_impl(__stream,
-                    _CUDA_VSTD::span(static_cast<detail::__as_copy_arg_t<_DstTy>>(
-                      detail::__launch_transform(__stream, _CUDA_VSTD::forward<_DstTy>(__dst)))),
-                    __value);
+  decltype(auto) __dst_transformed = static_cast<detail::__as_copy_arg_t<_DstTy>>(
+    detail::__launch_transform(__stream, _CUDA_VSTD::forward<_DstTy>(__dst)));
+  __fill_bytes_impl(__stream, _CUDA_VSTD::span(__dst_transformed.data(), __dst_transformed.size()), __value);
 }
 
 } // namespace cuda::experimental
