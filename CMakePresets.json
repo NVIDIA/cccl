@@ -336,19 +336,29 @@
       "configurePreset": "all-dev-debug"
     },
     {
+      "name": "install",
+      "configurePreset": "install"
+    },
+    {
       "name": "libcudacxx-codegen",
       "configurePreset": "libcudacxx-codegen",
-      "targets": ["libcudacxx.atomics.codegen"]
+      "targets": [
+        "libcudacxx.atomics.codegen"
+      ]
     },
     {
       "name": "libcudacxx-codegen-install",
       "configurePreset": "libcudacxx-codegen",
-      "targets": ["libcudacxx.atomics.codegen.install"]
+      "targets": [
+        "libcudacxx.atomics.codegen.install"
+      ]
     },
     {
       "name": "libcudacxx-nvrtcc",
       "hidden": true,
-      "targets": ["libcudacxx.nvrtcc"]
+      "targets": [
+        "libcudacxx.nvrtcc"
+      ]
     },
     {
       "name": "libcudacxx-base",
@@ -363,46 +373,62 @@
     {
       "name": "libcudacxx-nvrtc-cpp11",
       "hidden": false,
-      "inherits": ["libcudacxx-nvrtcc"],
+      "inherits": [
+        "libcudacxx-nvrtcc"
+      ],
       "configurePreset": "libcudacxx-nvrtc-cpp11"
     },
     {
       "name": "libcudacxx-nvrtc-cpp14",
       "hidden": false,
-      "inherits": ["libcudacxx-nvrtcc"],
+      "inherits": [
+        "libcudacxx-nvrtcc"
+      ],
       "configurePreset": "libcudacxx-nvrtc-cpp14"
     },
     {
       "name": "libcudacxx-nvrtc-cpp17",
       "hidden": false,
-      "inherits": ["libcudacxx-nvrtcc"],
+      "inherits": [
+        "libcudacxx-nvrtcc"
+      ],
       "configurePreset": "libcudacxx-nvrtc-cpp17"
     },
     {
       "name": "libcudacxx-nvrtc-cpp20",
       "hidden": false,
-      "inherits": ["libcudacxx-nvrtcc"],
+      "inherits": [
+        "libcudacxx-nvrtcc"
+      ],
       "configurePreset": "libcudacxx-nvrtc-cpp20"
     },
     {
       "name": "libcudacxx-cpp11",
       "configurePreset": "libcudacxx-cpp11",
-      "inherits": ["libcudacxx-base"]
+      "inherits": [
+        "libcudacxx-base"
+      ]
     },
     {
       "name": "libcudacxx-cpp14",
       "configurePreset": "libcudacxx-cpp14",
-      "inherits": ["libcudacxx-base"]
+      "inherits": [
+        "libcudacxx-base"
+      ]
     },
     {
       "name": "libcudacxx-cpp17",
       "configurePreset": "libcudacxx-cpp17",
-      "inherits": ["libcudacxx-base"]
+      "inherits": [
+        "libcudacxx-base"
+      ]
     },
     {
       "name": "libcudacxx-cpp20",
       "configurePreset": "libcudacxx-cpp20",
-      "inherits": ["libcudacxx-base"]
+      "inherits": [
+        "libcudacxx-base"
+      ]
     },
     {
       "name": "cub-cpp11",
