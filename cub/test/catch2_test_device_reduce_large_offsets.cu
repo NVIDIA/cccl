@@ -9,6 +9,8 @@
 
 #include <thrust/iterator/counting_iterator.h>
 
+#include <cuda/std/__algorithm_>
+
 #include <cstdint>
 
 #include "catch2_test_device_reduce.cuh"
@@ -30,12 +32,12 @@ using offset_types = c2h::type_list<std::int32_t, std::uint32_t, std::uint64_t>;
 __host__ __device__ __forceinline__ uint64_t
 get_segmented_guassian_sum(const uint64_t num_items, const uint64_t segment_size)
 {
-  uint64_t sum_per_full_segment = (segment_size * (segment_size - 1)) / 2;
-  uint64_t full_segments        = num_items / segment_size;
-  uint64_t index_within_segment = num_items % segment_size;
+  const uint64_t sum_per_full_segment = (segment_size * (segment_size - 1)) / 2;
+  const uint64_t full_segments        = num_items / segment_size;
+  const uint64_t index_within_segment = num_items % segment_size;
 
-  uint64_t sum_within_partial_segment = (index_within_segment * (index_within_segment - 1)) / 2;
-  uint64_t sum_over_full_segments     = full_segments * sum_per_full_segment;
+  const uint64_t sum_within_partial_segment = (index_within_segment * (index_within_segment - 1)) / 2;
+  const uint64_t sum_over_full_segments     = full_segments * sum_per_full_segment;
   return sum_within_partial_segment + sum_over_full_segments;
 }
 
@@ -58,21 +60,22 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
   CAPTURE(c2h::type_name<offset_t>());
 
   // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
-  auto num_items_max_ull =
-    std::min(static_cast<std::size_t>(::cuda::std::numeric_limits<offset_t>::max()),
-             ::cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
-  offset_t num_items_max = static_cast<offset_t>(num_items_max_ull);
-  offset_t num_items_min =
+  const auto num_items_max_ull = ::cuda::std::clamp(
+    static_cast<std::size_t>(::cuda::std::numeric_limits<offset_t>::max()),
+    std::size_t{0},
+    ::cuda::std::numeric_limits<std::uint32_t>::max() + static_cast<std::size_t>(2000000ULL));
+  const offset_t num_items_max = static_cast<offset_t>(num_items_max_ull);
+  const offset_t num_items_min =
     num_items_max_ull > 10000 ? static_cast<offset_t>(num_items_max_ull - 10000ULL) : offset_t{0};
 
   // Generate the input sizes to test for
-  offset_t num_items = GENERATE_COPY(
+  const offset_t num_items = GENERATE_COPY(
     values(
       {num_items_max, static_cast<offset_t>(num_items_max - 1), static_cast<offset_t>(1), static_cast<offset_t>(3)}),
     take(2, random(num_items_min, num_items_max)));
 
   // Input data
-  auto index_it = thrust::make_counting_iterator(index_t{});
+  const auto index_it = thrust::make_counting_iterator(index_t{});
 
   SECTION("reduce")
   {
@@ -85,15 +88,15 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
     const auto init_val = index_t{42};
 
     // Binary reduction operator
-    auto reduction_op = op_t{};
+    const auto reduction_op = op_t{};
 
     // Prepare verification data
-    index_t expected_result = init_val + get_segmented_guassian_sum(num_items, segment_size);
+    const index_t expected_result = init_val + get_segmented_guassian_sum(num_items, segment_size);
 
     // Run test
     c2h::device_vector<index_t> out_result(1);
-    auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    auto d_in_it  = thrust::make_transform_iterator(index_it, mod_op<index_t>{segment_size});
+    const auto d_out_it = thrust::raw_pointer_cast(out_result.data());
+    const auto d_in_it  = thrust::make_transform_iterator(index_it, mod_op<index_t>{segment_size});
 
     device_reduce(d_in_it, d_out_it, num_items, reduction_op, init_val);
 
@@ -107,12 +110,12 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
     const auto segment_size = 1000;
 
     // Prepare verification data
-    index_t expected_result = get_segmented_guassian_sum(num_items, segment_size);
+    const index_t expected_result = get_segmented_guassian_sum(num_items, segment_size);
 
     // Run test
     c2h::device_vector<index_t> out_result(1);
-    auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    auto d_in_it  = thrust::make_transform_iterator(index_it, mod_op<index_t>{segment_size});
+    const auto d_out_it = thrust::raw_pointer_cast(out_result.data());
+    const auto d_in_it  = thrust::make_transform_iterator(index_it, mod_op<index_t>{segment_size});
 
     device_sum(d_in_it, d_out_it, num_items);
 
@@ -125,8 +128,8 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
     // Run test
     const index_t iterator_offset = 1000;
     c2h::device_vector<index_t> out_result(1);
-    auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    auto d_in_it  = thrust::make_reverse_iterator(index_it + num_items + iterator_offset);
+    const auto d_out_it = thrust::raw_pointer_cast(out_result.data());
+    const auto d_in_it  = thrust::make_reverse_iterator(index_it + num_items + iterator_offset);
 
     device_min(d_in_it, d_out_it, num_items);
 
@@ -140,8 +143,8 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
     // Run test
     const index_t iterator_offset = 1000;
     c2h::device_vector<index_t> out_result(1);
-    auto d_out_it = thrust::raw_pointer_cast(out_result.data());
-    auto d_in_it  = index_it + iterator_offset;
+    const auto d_out_it = thrust::raw_pointer_cast(out_result.data());
+    const auto d_in_it  = index_it + iterator_offset;
 
     device_max(d_in_it, d_out_it, num_items);
 
@@ -157,9 +160,9 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
     // Run test
     const index_t iterator_offset = 1000;
     c2h::device_vector<result_t> out_result(1);
-    auto d_out_it = thrust::raw_pointer_cast(out_result.data());
+    const auto d_out_it = thrust::raw_pointer_cast(out_result.data());
 
-    auto d_in_it = thrust::make_reverse_iterator(index_it + num_items + iterator_offset);
+    const auto d_in_it = thrust::make_reverse_iterator(index_it + num_items + iterator_offset);
 
     device_arg_min(d_in_it, d_out_it, num_items);
 
@@ -168,7 +171,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
     const offset_t expected_index = num_items - 1;
 
     // Verify result
-    result_t gpu_result = out_result[0];
+    const result_t gpu_result = out_result[0];
     REQUIRE(expected_value == gpu_result.value);
     REQUIRE(expected_index == gpu_result.key);
   }
@@ -180,9 +183,9 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
     // Run test
     const index_t iterator_offset = 1000;
     c2h::device_vector<result_t> out_result(1);
-    auto d_out_it = thrust::raw_pointer_cast(out_result.data());
+    const auto d_out_it = thrust::raw_pointer_cast(out_result.data());
 
-    auto d_in_it = index_it + iterator_offset;
+    const auto d_in_it = index_it + iterator_offset;
 
     device_arg_min(d_in_it, d_out_it, num_items);
 
@@ -191,7 +194,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
     const int expected_index     = 0;
 
     // Verify result
-    result_t gpu_result = out_result[0];
+    const result_t gpu_result = out_result[0];
     REQUIRE(expected_value == gpu_result.value);
     REQUIRE(expected_index == gpu_result.key);
   }
@@ -203,9 +206,9 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
     // Run test
     const index_t iterator_offset = 1000;
     c2h::device_vector<result_t> out_result(1);
-    auto d_out_it = thrust::raw_pointer_cast(out_result.data());
+    const auto d_out_it = thrust::raw_pointer_cast(out_result.data());
 
-    auto d_in_it = index_it + iterator_offset;
+    const auto d_in_it = index_it + iterator_offset;
 
     device_arg_max(d_in_it, d_out_it, num_items);
 
@@ -214,7 +217,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
     const offset_t expected_index = num_items - offset_t{1};
 
     // Verify result
-    result_t gpu_result = out_result[0];
+    const result_t gpu_result = out_result[0];
     REQUIRE(expected_value == gpu_result.value);
     REQUIRE(expected_index == gpu_result.key);
   }
@@ -226,9 +229,9 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
     // Run test
     const index_t iterator_offset = 1000;
     c2h::device_vector<result_t> out_result(1);
-    auto d_out_it = thrust::raw_pointer_cast(out_result.data());
+    const auto d_out_it = thrust::raw_pointer_cast(out_result.data());
 
-    auto d_in_it = thrust::make_reverse_iterator(index_it + num_items + iterator_offset);
+    const auto d_in_it = thrust::make_reverse_iterator(index_it + num_items + iterator_offset);
 
     device_arg_max(d_in_it, d_out_it, num_items);
 
@@ -237,7 +240,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
     const int expected_index     = 0;
 
     // Verify result
-    result_t gpu_result = out_result[0];
+    const result_t gpu_result = out_result[0];
     REQUIRE(expected_value == gpu_result.value);
     REQUIRE(expected_index == gpu_result.key);
   }
