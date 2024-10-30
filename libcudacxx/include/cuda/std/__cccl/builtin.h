@@ -561,20 +561,20 @@
 
 #if defined(_CCCL_COMPILER_MSVC)
 #  if _CCCL_MSVC_VERSION >= 1935
-#    define _CCCL_PRETTY_FUNCTION __builtin_FUNCSIG()
+#    define _CCCL_BUILTIN_PRETTY_FUNCTION() __builtin_FUNCSIG()
 #  else // ^^^ _CCCL_MSVC_VERSION >= 1935 ^^^ / vvv _CCCL_MSVC_VERSION < 1935 vvv
-#    define _CCCL_PRETTY_FUNCTION __FUNCSIG__
+#    define _CCCL_BUILTIN_PRETTY_FUNCTION() __FUNCSIG__
 #  endif // _CCCL_MSVC_VERSION < 1935
 #else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
-#  define _CCCL_PRETTY_FUNCTION __PRETTY_FUNCTION__
+#  define _CCCL_BUILTIN_PRETTY_FUNCTION() __PRETTY_FUNCTION__
 #endif // !_CCCL_COMPILER_MSVC
 
 // GCC's builtin_strlen isn't reliable at constexpr time
 // MSVC does not expose builtin_strlen before C++17
 // NVRTC does not expose builtin_strlen
-#if defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_NVRTC) \
-  || (defined(_CCCL_COMPILER_MSVC) && _CCCL_STD_VER < 2017)
-#  define _CCCL_HAS_NO_BUILTIN_STRLEN
+#if !defined(_CCCL_COMPILER_GCC) && !defined(_CCCL_COMPILER_NVRTC) \
+  && !(defined(_CCCL_COMPILER_MSVC) && _CCCL_STD_VER < 2017)
+#  define _CCCL_BUILTIN_STRLEN(...) __builtin_strlen(__VA_ARGS__)
 #endif
 
 #endif // __CCCL_BUILTIN_H

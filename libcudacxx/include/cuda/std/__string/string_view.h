@@ -294,10 +294,8 @@ private:
 
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __strlen_(char const* __str) noexcept
   {
-#ifndef _CCCL_HAS_NO_BUILTIN_STRLEN
-    return __builtin_strlen(__str);
-#elif _CCCL_STD_VER >= 2014
-    return std::char_traits<char>::length(__str);
+#if _CCCL_STD_VER >= 2014
+    return _CUDA_VSTD::char_traits<char>::length(__str);
 #else
     return __strlen_0x_(__str, 0);
 #endif
