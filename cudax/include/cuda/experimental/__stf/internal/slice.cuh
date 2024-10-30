@@ -84,7 +84,7 @@ struct layout_stride : ::cuda::std::layout_stride
 #ifdef CUDASTF_BOUNDSCHECK
       each_in_pack(
         [&](auto r, const auto& i) {
-          assert(i < this->extents().extent(r) && "Index out of bounds.");
+          _CCCL_ASSERT(i < this->extents().extent(r), "Index out of bounds.");
         },
         is...);
 #endif

@@ -388,37 +388,33 @@ public:
   void VTEST##Universal()                                                                                               \
   {                                                                                                                     \
     VTEST<thrust::universal_vector<int>>();                                                                             \
-    VTEST<thrust::device_vector<                                                                                        \
-      int,                                                                                                              \
-      thrust::mr::stateless_resource_allocator<int, thrust::universal_host_pinned_memory_resource>>>();                 \
+    VTEST<thrust::universal_host_pinned_vector<int>>();                                                                 \
   }                                                                                                                     \
   DECLARE_UNITTEST(VTEST##Host);                                                                                        \
   DECLARE_UNITTEST(VTEST##Device);                                                                                      \
   DECLARE_UNITTEST(VTEST##Universal);
 
 // Same as above, but only for integral types
-#define DECLARE_INTEGRAL_VECTOR_UNITTEST(VTEST)                                                         \
-  void VTEST##Host()                                                                                    \
-  {                                                                                                     \
-    VTEST<thrust::host_vector<signed char>>();                                                          \
-    VTEST<thrust::host_vector<short>>();                                                                \
-    VTEST<thrust::host_vector<int>>();                                                                  \
-  }                                                                                                     \
-  void VTEST##Device()                                                                                  \
-  {                                                                                                     \
-    VTEST<thrust::device_vector<signed char>>();                                                        \
-    VTEST<thrust::device_vector<short>>();                                                              \
-    VTEST<thrust::device_vector<int>>();                                                                \
-  }                                                                                                     \
-  void VTEST##Universal()                                                                               \
-  {                                                                                                     \
-    VTEST<thrust::universal_vector<int>>();                                                             \
-    VTEST<thrust::device_vector<                                                                        \
-      int,                                                                                              \
-      thrust::mr::stateless_resource_allocator<int, thrust::universal_host_pinned_memory_resource>>>(); \
-  }                                                                                                     \
-  DECLARE_UNITTEST(VTEST##Host);                                                                        \
-  DECLARE_UNITTEST(VTEST##Device);                                                                      \
+#define DECLARE_INTEGRAL_VECTOR_UNITTEST(VTEST)         \
+  void VTEST##Host()                                    \
+  {                                                     \
+    VTEST<thrust::host_vector<signed char>>();          \
+    VTEST<thrust::host_vector<short>>();                \
+    VTEST<thrust::host_vector<int>>();                  \
+  }                                                     \
+  void VTEST##Device()                                  \
+  {                                                     \
+    VTEST<thrust::device_vector<signed char>>();        \
+    VTEST<thrust::device_vector<short>>();              \
+    VTEST<thrust::device_vector<int>>();                \
+  }                                                     \
+  void VTEST##Universal()                               \
+  {                                                     \
+    VTEST<thrust::universal_vector<int>>();             \
+    VTEST<thrust::universal_host_pinned_vector<int>>(); \
+  }                                                     \
+  DECLARE_UNITTEST(VTEST##Host);                        \
+  DECLARE_UNITTEST(VTEST##Device);                      \
   DECLARE_UNITTEST(VTEST##Universal);
 
 // Macro to create instances of a test for several data types.

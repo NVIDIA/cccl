@@ -50,7 +50,7 @@ public:
   /* The number of elements in this part */
   size_t size() const
   {
-    assert(mdspan_shape_t::rank() == 1 && "Tiled mdspan shape only implemented in 1D yet");
+    _CCCL_ASSERT(mdspan_shape_t::rank() == 1, "Tiled mdspan shape only implemented in 1D yet");
 
     const size_t n = original_shape.size();
 
