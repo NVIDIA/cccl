@@ -68,10 +68,13 @@ void run(int NTASKS, int ms)
   float elapsed;
   cuda_safe_call(cudaEventElapsedTime(&elapsed, start, stop));
 
-  // Give 25% margin of error
   float expected = 1.0f * NTASKS * ms;
-  float err      = fabs(elapsed - expected) / expected;
-  EXPECT(err < 0.25f);
+
+  /* We cannot really expect this measurement to be accurate because the
+   * thread(s) executing the code might be preempted on a system with a high load
+   * (as during unit tests). So the best we can expect is that the elapsed time
+   * is larger than the sleep time. */
+  EXPECT(elapsed >= expected);
 }
 
 int main(int argc, char** argv)
