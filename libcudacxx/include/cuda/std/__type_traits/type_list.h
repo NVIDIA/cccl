@@ -25,6 +25,7 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_identity.h>
+#include <cuda/std/__type_traits/type_set.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/integer_sequence.h>
 
@@ -46,8 +47,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class... _Ts>
 struct __type_list;
 
-template <class _Tp>
-using __type = typename _Tp::type;
+template <class _Ty>
+using __type = typename _Ty::type;
 
 //! \brief Evaluate a meta-callable with the given arguments
 template <class _Fn, class... _Ts>
@@ -175,6 +176,89 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_always
   using __call _LIBCUDACXX_NODEBUG_TYPE = _Ty;
 };
 
+//! \brief Perform a logical AND operation on a list of Boolean types.
+//!
+//! \note The AND operation is not short-circuiting.
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_strict_and
+{
+  template <class... _Ts>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = __fold_and<_Ts::value...>;
+};
+
+//! \brief Perform a logical OR operation on a list of Boolean types.
+//!
+//! \note The OR operation is not short-circuiting.
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_strict_or
+{
+  template <class... _Ts>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = __fold_or<_Ts::value...>;
+};
+
+//! \brief Perform a logical NOT operation on a Boolean type.
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_not
+{
+  template <class _Ty>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<(!_Ty::value)>;
+};
+
+//! \brief Test whether two integral constants are equal.
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_equal
+{
+  template <class _Ty, class _Uy>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<(_Ty::value == _Uy::value)>;
+};
+
+//! \brief Test whether two integral constants are not equal.
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_not_equal
+{
+  template <class _Ty, class _Uy>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<(_Ty::value != _Uy::value)>;
+};
+
+//! \brief Test whether one integral constant is less than another.
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_less
+{
+  template <class _Ty, class _Uy>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<(_Ty::value < _Uy::value)>;
+};
+
+//! \brief Test whether one integral constant is less than or equal to another.
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_less_equal
+{
+  template <class _Ty, class _Uy>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<(_Ty::value <= _Uy::value)>;
+};
+
+//! \brief Test whether one integral constant is greater than another.
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_greater
+{
+  template <class _Ty, class _Uy>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<(_Ty::value > _Uy::value)>;
+};
+
+//! \brief Test whether one integral constant is greater than or equal to another.
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_greater_equal
+{
+  template <class _Ty, class _Uy>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<(_Ty::value >= _Uy::value)>;
+};
+
+//! \brief A functional adaptor that negates a unary predicate
+template <class _Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_negate1
+{
+  template <class _Ty>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = __type_call1<__type_not, __type_call1<_Fn, _Ty>>;
+};
+
+//! \brief A functional adaptor that negates a binary predicate
+template <class _Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_negate2
+{
+  template <class _Ty, class _Uy>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = __type_call1<__type_not, __type_call2<_Fn, _Ty, _Uy>>;
+};
+
 //! \brief A type list
 template <class... _Ts>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_list
@@ -210,6 +294,25 @@ using __type_push_back = __type_call<_List, __type_quote<__type_list>, _Ts...>;
 //! \brief Given a type list and a list of types, prepend the types to the list.
 template <class _List, class... _Ts>
 using __type_push_front = __type_call1<_List, __type_bind_front<__type_quote<__type_list>, _Ts...>>;
+
+namespace __detail
+{
+template <template <class...> class _Fn, class... _Ts>
+_LIBCUDACXX_HIDE_FROM_ABI auto __as_type_list_fn(_Fn<_Ts...>*) -> __type_list<_Ts...>;
+
+template <template <class _Ty, _Ty...> class _Fn, class _Ty, _Ty... _Us>
+_LIBCUDACXX_HIDE_FROM_ABI auto __as_type_list_fn(_Fn<_Ty, _Us...>*) -> __type_list<integral_constant<_Ty, _Us>...>;
+} // namespace __detail
+
+//! \brief Given a type that is a specialization of a class template, return a
+//! type list of the template arguments.
+template <class _List>
+using __as_type_list = decltype(__detail::__as_type_list_fn(static_cast<_List*>(nullptr)));
+
+//! \brief Given a type that is a specialization of a class template and a
+//! meta-callable, invoke the callable with the template arguments.
+template <class _Fn, class _List>
+using __type_apply = __type_call<__as_type_list<_List>, _Fn>;
 
 namespace __detail
 {
@@ -256,6 +359,31 @@ template <class _Fn, class... _Ts>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_defer
     : __type_call<__detail::__type_defer_fn<__type_callable<_Fn, _Ts...>::value>, _Fn, _Ts...>
 {};
+
+//! \brief Defer the instantiation of a template with a list of arguments.
+//!
+//! Given a variadic template and a list of arguments, return a trait type \c T
+//! where \c T::type is the result of instantiating the template with the
+//! arguments, or if the template cannot be instantiated with the arguments, a
+//! class type without a nested \c ::type type alias.
+template <template <class...> class _Fn, class... _Ts>
+using __type_defer_quote = __type_defer<__type_quote<_Fn>, _Ts...>;
+
+//! \brief A composition of two meta-callables that will attempt to call the
+//! first, and if that fails, call the second.
+//!
+//! Compose two meta-callables, \c _TryFn and \c _CatchFn, into a new
+//! meta-callable. Given arguments \c _Ts... , \c __type_try_catch will try to
+//! evaluate `__type_call<_TryFn, _Ts...>`. If this type is well-formed, it will
+//! be the result of the composition. Otherwise, the result will be
+//! `__type_call<_CatchFn, _Ts...>`.
+template <class _TryFn, class _CatchFn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_try_catch
+{
+  template <class... _Ts>
+  using __call _LIBCUDACXX_NODEBUG_TYPE =
+    __type_call<_If<__type_callable<_TryFn, _Ts...>::value, _TryFn, _CatchFn>, _Ts...>;
+};
 
 // Implementation for indexing into a list of types:
 #  if defined(__cpp_pack_indexing) && !defined(_CCCL_CUDA_COMPILER_NVCC)
@@ -471,13 +599,28 @@ using __type_flatten = __type_call1<_ListOfLists, __type_quote<__type_concat>>;
 namespace __detail
 {
 template <bool _IsEmpty>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_find_if_fn;
+
+template <bool _Found>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_find_if_found
+{
+  template <class _Fn, class _Head, class... _Tail>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = __type_list<_Head, _Tail...>;
+};
+
+template <>
+struct __type_find_if_found<false>
+{
+  template <class _Fn, class _Head, class... _Tail>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = __type_call<__type_maybe_find_if_fn<sizeof...(_Tail) == 0>, _Fn, _Tail...>;
+};
+
+template <bool _IsEmpty>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_find_if_fn // Type list is not empty
 {
   template <class _Fn, class _Head, class... _Tail>
   using __call _LIBCUDACXX_NODEBUG_TYPE =
-    _If<__type_call1<_Fn, _Head>::value,
-        __type_list<_Head, _Tail...>,
-        __type_call<__type_maybe_find_if_fn<sizeof...(_Tail) == 0>, _Fn, _Tail...>>;
+    __type_call<__type_find_if_found<__type_call1<_Fn, _Head>::value>, _Fn, _Head, _Tail...>;
 };
 
 template <>
@@ -493,16 +636,31 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_find_if_fn
   template <class... _Ts>
   using __call _LIBCUDACXX_NODEBUG_TYPE = __type_call<__type_maybe_find_if_fn<sizeof...(_Ts) == 0>, _Fn, _Ts...>;
 };
+
+template <class _Ty>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_same_as
+{
+  template <class _Uy>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<_CCCL_TRAIT(is_same, _Ty, _Uy)>;
+};
 } // namespace __detail
 
-//! \brief Given a type list and a predicate, find the first type in a list that
-//! satisfies a predicate. It returns a type list containing the first type that
-//! satisfies the predicate and all the types after it.
+//! \brief Given a type list and a predicate, find the first type in the list
+//! that satisfies the predicate. It returns a type list containing the first
+//! type that satisfies the predicate and all the types after it.
 //!
-//! If no type in the list satisfies the predicate, \c __type_find_if
-//! returns an empty type list.
+//! If no type in the list satisfies the predicate, \c __type_find_if returns an
+//! empty type list.
 template <class _List, class _Fn>
 using __type_find_if = __type_call1<_List, __detail::__type_find_if_fn<_Fn>>;
+
+//! \brief Given a type list and type, find the first occurrance of the type in
+//! the list. It returns a type list containing the type and all the types after
+//! it.
+//!
+//! If the type is not in the list, \c __type_find returns an empty type list.
+template <class _List, class _Ty>
+using __type_find = __type_find_if<_List, __detail::__type_same_as<_Ty>>;
 
 namespace __detail
 {
@@ -627,6 +785,28 @@ using __type_remove = __type_flatten<__type_transform<_List, __detail::__type_re
 
 namespace __detail
 {
+template <class _Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_remove_if_fn
+{
+  template <class _Uy>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = _If<__type_call1<_Fn, _Uy>::value, __type_list<>, __type_list<_Uy>>;
+};
+} // namespace __detail
+
+//! \brief Remove all types satisfying a unary predicate from a type list
+template <class _List, class _Fn>
+using __type_remove_if = __type_flatten<__type_transform<_List, __detail::__type_remove_if_fn<_Fn>>>;
+
+//! \brief Remove all types not satisfying a unary predicate from a type list
+template <class _List, class _Fn>
+using __type_copy_if = __type_flatten<__type_transform<_List, __detail::__type_remove_if_fn<__type_negate1<_Fn>>>>;
+
+//! \brief Remove all duplicate types from a type list
+template <class _List>
+using __type_unique = __type_concat<__type_call<_List, __type_quote<__make_type_set>>>;
+
+namespace __detail
+{
 // _State is the list of type lists being built by the __type_fold_left
 template <class _State, class _List>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_cartesian_product_fn
@@ -662,87 +842,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_sizeof
 {
   template <class _Ty>
   using __call _LIBCUDACXX_NODEBUG_TYPE = integral_constant<size_t, sizeof(_Ty)>;
-};
-
-//! \brief Perform a logical AND operation on a list of Boolean types.
-//!
-//! \note The AND operation is not short-circuiting.
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_strict_and
-{
-#  ifndef _LIBCUDACXX_HAS_NO_FOLD_EXPRESSIONS
-  template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<(_Ts::value && ...)>;
-#  else
-  template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<_CCCL_TRAIT(
-    is_same, integer_sequence<bool, true, _Ts::value...>, integer_sequence<bool, _Ts::value..., true>)>;
-#  endif
-};
-
-//! \brief Perform a logical OR operation on a list of Boolean types.
-//!
-//! \note The OR operation is not short-circuiting.
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_strict_or
-{
-#  ifndef _LIBCUDACXX_HAS_NO_FOLD_EXPRESSIONS
-  template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<(_Ts::value || ...)>;
-#  else
-  template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<!_CCCL_TRAIT(
-    is_same, integer_sequence<bool, false, _Ts::value...>, integer_sequence<bool, _Ts::value..., false>)>;
-#  endif
-};
-
-//! \brief Perform a logical NOT operation on a Boolean type.
-//!
-//! \note The AND operation is not short-circuiting.
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_not
-{
-  template <class _Ty>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<(!_Ty::value)>;
-};
-
-//! \brief Test whether two integral constants are equal.
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_equal
-{
-  template <class _Ty, class _Uy>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<(_Ty::value == _Uy::value)>;
-};
-
-//! \brief Test whether two integral constants are not equal.
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_not_equal
-{
-  template <class _Ty, class _Uy>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<(_Ty::value != _Uy::value)>;
-};
-
-//! \brief Test whether one integral constant is less than another.
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_less
-{
-  template <class _Ty, class _Uy>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<(_Ty::value < _Uy::value)>;
-};
-
-//! \brief Test whether one integral constant is less than or equal to another.
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_less_equal
-{
-  template <class _Ty, class _Uy>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<(_Ty::value <= _Uy::value)>;
-};
-
-//! \brief Test whether one integral constant is greater than another.
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_greater
-{
-  template <class _Ty, class _Uy>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<(_Ty::value > _Uy::value)>;
-};
-
-//! \brief Test whether one integral constant is greater than or equal to another.
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_greater_equal
-{
-  template <class _Ty, class _Uy>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<(_Ty::value >= _Uy::value)>;
 };
 
 //! \brief A pair of types
