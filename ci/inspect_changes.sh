@@ -83,7 +83,6 @@ ignore_paths=(
   ".github/workflows/update_branch_version.yml"
   ".github/workflows/verify-devcontainers.yml"
   ".gitignore"
-  ".pre-commit-config.yaml"
   "ci-overview.md"
   "CITATION.md"
   "CODE_OF_CONDUCT.md"
