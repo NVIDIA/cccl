@@ -589,9 +589,9 @@ struct DeviceReduce
     // key type, which may happen if the user uses a different index type than the global offset type used by the
     // algorithm
     using implicit_cast_kv_pair_op_it =
-      thrust::tabulate_output_iterator<detail::reduce::write_to_user_out_it<OutputIteratorT>>;
+      THRUST_NS_QUALIFIER::tabulate_output_iterator<detail::reduce::write_to_user_out_it<OutputIteratorT>>;
     implicit_cast_kv_pair_op_it out_it =
-      thrust::make_tabulate_output_iterator(detail::reduce::write_to_user_out_it<OutputIteratorT>{d_out});
+      THRUST_NS_QUALIFIER::make_tabulate_output_iterator(detail::reduce::write_to_user_out_it<OutputIteratorT>{d_out});
 
     return detail::reduce::DispatchStreamingArgReduce<
       InputIteratorT,
@@ -868,9 +868,9 @@ struct DeviceReduce
     // key type, which may happen if the user uses a different index type than the global offset type used by the
     // algorithm
     using implicit_cast_kv_pair_op_it =
-      thrust::tabulate_output_iterator<detail::reduce::write_to_user_out_it<OutputIteratorT>>;
+      THRUST_NS_QUALIFIER::tabulate_output_iterator<detail::reduce::write_to_user_out_it<OutputIteratorT>>;
     implicit_cast_kv_pair_op_it out_it =
-      thrust::make_tabulate_output_iterator(detail::reduce::write_to_user_out_it<OutputIteratorT>{d_out});
+      THRUST_NS_QUALIFIER::make_tabulate_output_iterator(detail::reduce::write_to_user_out_it<OutputIteratorT>{d_out});
 
     return detail::reduce::DispatchStreamingArgReduce<
       InputIteratorT,

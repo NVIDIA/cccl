@@ -168,10 +168,10 @@ struct promote_to_global_op
  * `it[*offset_it + i]` is accessed.
  */
 template <typename Iterator, typename OffsetItT>
-class offset_iterator : public thrust::iterator_adaptor<offset_iterator<Iterator, OffsetItT>, Iterator>
+class offset_iterator : public THRUST_NS_QUALIFIER::iterator_adaptor<offset_iterator<Iterator, OffsetItT>, Iterator>
 {
 public:
-  using super_t = thrust::iterator_adaptor<offset_iterator<Iterator, OffsetItT>, Iterator>;
+  using super_t = THRUST_NS_QUALIFIER::iterator_adaptor<offset_iterator<Iterator, OffsetItT>, Iterator>;
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE offset_iterator(const Iterator& it, OffsetItT offset_it)
       : super_t(it)
@@ -179,7 +179,7 @@ public:
   {}
 
   // befriend thrust::iterator_core_access to allow it access to the private interface below
-  friend class thrust::iterator_core_access;
+  friend class THRUST_NS_QUALIFIER::iterator_core_access;
 
 private:
   OffsetItT offset_it;
@@ -337,7 +337,8 @@ struct DispatchStreamingArgReduce
 
     // The output iterator that implements the logic to accumulate per-partition result to a global aggregate and,
     // eventually, write to the user-provided output iterators
-    using accumulating_transform_out_it_t = thrust::tabulate_output_iterator<accumulating_transform_output_op_t>;
+    using accumulating_transform_out_it_t =
+      THRUST_NS_QUALIFIER::tabulate_output_iterator<accumulating_transform_output_op_t>;
 
     // Empty problem initialization type
     using empty_problem_init_t = empty_problem_init_t<per_partition_accum_t>;
@@ -385,7 +386,7 @@ struct DispatchStreamingArgReduce
       nullptr,
       allocation_sizes[0],
       d_indexed_offset_in,
-      thrust::make_tabulate_output_iterator(accumulating_out_op),
+      THRUST_NS_QUALIFIER::make_tabulate_output_iterator(accumulating_out_op),
       static_cast<PerPartitionOffsetT>(largest_partition_size),
       reduce_op,
       initial_value,
@@ -430,7 +431,7 @@ struct DispatchStreamingArgReduce
         d_temp_storage,
         temp_storage_bytes,
         d_indexed_offset_in,
-        thrust::make_tabulate_output_iterator(accumulating_out_op),
+        THRUST_NS_QUALIFIER::make_tabulate_output_iterator(accumulating_out_op),
         static_cast<PerPartitionOffsetT>(current_num_items),
         reduce_op,
         initial_value,
