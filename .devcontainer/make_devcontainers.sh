@@ -133,8 +133,14 @@ readonly DEFAULT_NAME=$(make_name "$DEFAULT_CUDA" "$DEFAULT_CUDA_EXT" "$DEFAULT_
 update_devcontainer ${base_devcontainer_file} "./temp_devcontainer.json" "$DEFAULT_NAME" "$DEFAULT_CUDA" "$DEFAULT_CUDA_EXT" "$DEFAULT_COMPILER_NAME" "$DEFAULT_COMPILER_EXE" "$DEFAULT_COMPILER_VERSION" "$DEVCONTAINER_VERSION"
 mv "./temp_devcontainer.json" ${base_devcontainer_file}
 
+# Always create an extended version of the default devcontainer:
+readonly EXT_NAME=$(make_name "$DEFAULT_CUDA" true "$DEFAULT_COMPILER_NAME" "$DEFAULT_COMPILER_VERSION")
+update_devcontainer ${base_devcontainer_file} "./temp_devcontainer.json" "$EXT_NAME" "$DEFAULT_CUDA" true "$DEFAULT_COMPILER_NAME" "$DEFAULT_COMPILER_EXE" "$DEFAULT_COMPILER_VERSION" "$DEVCONTAINER_VERSION"
+mkdir -p "$EXT_NAME"
+mv "./temp_devcontainer.json" "$EXT_NAME/devcontainer.json"
+
 # Create an array to keep track of valid subdirectory names
-valid_subdirs=()
+valid_subdirs=("$EXT_NAME")
 
 # The img folder should not be removed:
 valid_subdirs+=("img")
