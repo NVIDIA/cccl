@@ -32,11 +32,9 @@ struct policy_hub_for_alg
     static constexpr int min_bif         = 64 * 1024;
     static constexpr Algorithm algorithm = Alg;
     using algo_policy =
-      ::cuda::std::_If<Alg == Algorithm::fallback_for,
-                       cub::detail::transform::fallback_for_policy,
-                       ::cuda::std::_If<Alg == Algorithm::prefetch,
-                                        cub::detail::transform::prefetch_policy_t<256>,
-                                        cub::detail::transform::async_copy_policy_t<256>>>;
+      ::cuda::std::_If<Alg == Algorithm::prefetch,
+                       cub::detail::transform::prefetch_policy_t<256>,
+                       cub::detail::transform::async_copy_policy_t<256>>;
   };
 };
 
@@ -79,7 +77,6 @@ DECLARE_TMPL_LAUNCH_WRAPPER(transform_many_with_alg_entry_point,
 
 using algorithms =
   c2h::enum_type_list<Algorithm,
-                      Algorithm::fallback_for,
                       Algorithm::prefetch
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
                       ,

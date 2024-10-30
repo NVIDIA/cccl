@@ -20,10 +20,9 @@ _CCCL_NV_DIAG_SUPPRESS(186)
 // see also: https://godbolt.org/z/1x8b4hn3G
 #endif // defined(_CCCL_CUDA_COMPILER) && _CCCL_CUDACC_VER < 1105000
 
-#include <cub/agent/agent_for.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
-#include <cub/device/dispatch/tuning/tuning_for.cuh>
 #include <cub/util_arch.cuh>
+#include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
@@ -88,51 +87,13 @@ _CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
 
 enum class Algorithm
 {
-  fallback_for,
+  // We previously had a fallback algorithm that would use cub::DeviceFor. Benchmarks showed that the prefetch algorithm
+  // is always superior to that fallback, so it was removed.
   prefetch,
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
   ublkcp,
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
 };
-
-// this kernel replicates the behavior of cub::DeviceFor::Bulk
-template <typename ForPolicy,
-          typename Offset,
-          typename F,
-          typename RandomAccessIteratorOut,
-          typename... RandomAccessIteratorsIn>
-_CCCL_DEVICE void transform_kernel_impl(
-  ::cuda::std::integral_constant<Algorithm, Algorithm::fallback_for>,
-  Offset num_items,
-  int /* items_per_thread */,
-  F transform_op,
-  RandomAccessIteratorOut out,
-  RandomAccessIteratorsIn... ins)
-{
-  auto op = [&](Offset i) {
-    out[i] = transform_op(ins[i]...);
-  };
-  using OpT = decltype(op);
-
-  // TODO(bgruber): verbatim copy from for_each's static_kernel below:
-  using agent_t = for_each::agent_block_striped_t<ForPolicy, Offset, OpT>;
-
-  constexpr auto block_threads  = ForPolicy::block_threads;
-  constexpr auto items_per_tile = ForPolicy::items_per_thread * block_threads;
-
-  const auto tile_base     = static_cast<Offset>(blockIdx.x) * items_per_tile;
-  const auto num_remaining = num_items - tile_base;
-  const auto items_in_tile = static_cast<Offset>(num_remaining < items_per_tile ? num_remaining : items_per_tile);
-
-  if (items_in_tile == items_per_tile)
-  {
-    agent_t{tile_base, op}.template consume_tile<true>(items_per_tile, block_threads);
-  }
-  else
-  {
-    agent_t{tile_base, op}.template consume_tile<false>(items_in_tile, block_threads);
-  }
-}
 
 template <typename T>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE const char* round_down_ptr(const T* ptr, unsigned alignment)
@@ -619,8 +580,6 @@ _CCCL_HOST_DEVICE constexpr auto bulk_copy_smem_for_tile_size(int tile_size) -> 
        + sizeof...(RandomAccessIteratorsIn) * bulk_copy_alignment;
 }
 
-using fallback_for_policy = for_each::policy_hub_t::policy_350_t::for_policy_t;
-
 template <bool RequiresStableAddress, typename RandomAccessIteratorTupleIn>
 struct policy_hub
 {
@@ -930,25 +889,6 @@ struct dispatch_t<RequiresStableAddress,
         THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(::cuda::std::get<Is>(in)), bulk_copy_alignment)...);
   }
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
-
-  template <typename ActivePolicy, std::size_t... Is>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
-  invoke_algorithm(cuda::std::index_sequence<Is...>, ::cuda::std::integral_constant<Algorithm, Algorithm::fallback_for>)
-  {
-    constexpr int block_threads    = ActivePolicy::algo_policy::block_threads;
-    constexpr int items_per_thread = ActivePolicy::algo_policy::items_per_thread;
-    constexpr int tile_size        = block_threads * items_per_thread;
-    const auto grid_dim            = static_cast<unsigned>(::cuda::ceil_div(num_items, Offset{tile_size}));
-    return CubDebug(
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(grid_dim, block_threads, 0, stream)
-        .doit(
-          CUB_DETAIL_TRANSFORM_KERNEL_PTR,
-          num_items,
-          items_per_thread,
-          op,
-          out,
-          make_iterator_kernel_arg(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(::cuda::std::get<Is>(in)))...));
-  }
 
   template <typename ActivePolicy, std::size_t... Is>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
