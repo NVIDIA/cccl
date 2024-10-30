@@ -201,7 +201,7 @@ _CCCL_INLINE_VAR constexpr bool __is_std_span<span<_Tp, _Extent>> = true;
 template <class _From, class _To>
 _LIBCUDACXX_CONCEPT __span_array_convertible = _CCCL_TRAIT(is_convertible, _From (*)[], _To (*)[]);
 
-// We want to eensure that span interacts nicely with containers that might not have had the ranges treatment
+// We want to ensure that span interacts nicely with containers that might not have had the ranges treatment
 #  if defined(__cpp_lib_ranges) && !defined(_CCCL_COMPILER_MSVC_2017)
 #    define _CCCL_SPAN_USES_RANGES
 #  endif // __cpp_lib_ranges && !_CCCL_COMPILER_MSVC_2017
