@@ -52,6 +52,7 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 #include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/iterator/constant_input_iterator.cuh>
 
+#include <thrust/iterator/iterator_adaptor.h>
 #include <thrust/iterator/tabulate_output_iterator.h>
 
 #include <cuda/std/type_traits>
@@ -230,31 +231,31 @@ struct write_to_user_out_it
  * Single-problem streaming reduction dispatch
  *****************************************************************************/
 
-/**
- * @brief Utility class for dispatching the appropriately-tuned kernels for
- *        device-wide reduction
- *
- * @tparam InputIteratorT
- *   Random-access input iterator type for reading input items @iterator
- *
- * @tparam OutputIteratorT
- *   Output iterator type for writing the result of the (index, extremum)-key-value-pair
- *
- * @tparam PerPartitionOffsetT
- *   Offset type used as the index to access items within one partition, i.e., the offset type used within the kernel
- * template specialization
- *
- * @tparam GlobalOffsetT
- *   Offset type used as the index to access items within the total input range, i.e., in the range [d_in, d_in +
- * num_items)
- *
- * @tparam ReductionOpT
- *   Binary reduction functor type having member
- *   `auto operator()(const T &a, const U &b)`
- *
- * @tparam InitT
- *   Initial value type
- */
+//! @rst
+//! Utility class for dispatching a streaming device-wide argument extremum computation, like `ArgMin` and `ArgMax`.
+//! Streaming, here, refers to the approach used for large number of items that are processed in multiple partitions.
+//!
+//! @tparam InputIteratorT
+//!   Random-access input iterator type for reading input items @iterator
+//!
+//! @tparam OutputIteratorT
+//!   Output iterator type for writing the result of the (index, extremum)-key-value-pair
+//!
+//! @tparam PerPartitionOffsetT
+//!   Offset type used as the index to access items within one partition, i.e., the offset type used within the kernel
+//! template specialization
+//!
+//! @tparam GlobalOffsetT
+//!   Offset type used as the index to access items within the total input range, i.e., in the range [d_in, d_in +
+//! num_items)
+//!
+//! @tparam ReductionOpT
+//!   Binary reduction functor type having member
+//!   `auto operator()(const T &a, const U &b)`
+//!
+//! @tparam InitT
+//!   Initial value type
+//! @endrst
 template <typename InputIteratorT,
           typename OutputIteratorT,
           typename PerPartitionOffsetT,
@@ -263,37 +264,36 @@ template <typename InputIteratorT,
           typename InitT>
 struct DispatchStreamingArgReduce
 {
-  /**
-   * @brief Internal dispatch routine for computing a device-wide reduction
-   *
-   * @param[in] d_temp_storage
-   *   Device-accessible allocation of temporary storage. When `nullptr`, the
-   *   required allocation size is written to `temp_storage_bytes` and no work
-   *   is done.
-   *
-   * @param[in,out] temp_storage_bytes
-   *   Reference to size in bytes of `d_temp_storage` allocation
-   *
-   * @param[in] d_in
-   *   Pointer to the input sequence of data items
-   *
-   * @param[out] d_result_out
-   *   Iterator to which the  (index, extremum)-key-value-pair is written
-   *
-   * @param[in] num_items
-   *   Total number of input items (i.e., length of `d_in`)
-   *
-   * @param[in] reduce_op
-   *   Reduction operator that returns the (index, extremum)-key-value-pair corresponding to the extremum of the two
-   * input items.
-   *
-   * @param[in] init
-   *   The extremum value to be returned for empty problems
-   *
-   * @param[in] stream
-   *   **[optional]** CUDA stream to launch kernels within.
-   *   Default is stream<sub>0</sub>.
-   */
+  //! @rst
+  //! Internal dispatch routine for computing a device-wide argument extremum, like `ArgMin` and `ArgMax`
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work
+  //!   is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_in
+  //!   Pointer to the input sequence of data items
+  //!
+  //! @param[out] d_result_out
+  //!   Iterator to which the  (index, extremum)-key-value-pair is written
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of `d_in`)
+  //!
+  //! @param[in] reduce_op
+  //!   Reduction operator that returns the (index, extremum)-key-value-pair corresponding to the extremum of the two
+  //! input items.
+  //!
+  //! @param[in] init
+  //!   The extremum value to be returned for empty problems
+  //!
+  //! @param[in] stream
+  //!   CUDA stream to launch kernels within.
+  //! @endrst
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
