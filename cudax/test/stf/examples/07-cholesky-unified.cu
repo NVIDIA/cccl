@@ -87,7 +87,7 @@ public:
 
     for (size_t colb = 0; colb < nt; colb++)
     {
-      int low_rowb = sym_matrix ? colb : 0;
+      size_t low_rowb = sym_matrix ? colb : 0;
       for (size_t rowb = low_rowb; rowb < mt; rowb++)
       {
         T* addr_h = get_block_h(rowb, colb);
@@ -538,7 +538,7 @@ void PDGEMM(cublasOperation_t transa,
       //=========================================
       // alpha*A*B does not contribute; scale C
       //=========================================
-      int inner_k = transa == CUBLAS_OP_N ? A.n : A.m;
+      size_t inner_k = transa == CUBLAS_OP_N ? A.n : A.m;
       if (alpha == 0.0 || inner_k == 0)
       {
         DGEMM(transa, transb, alpha, A, 0, 0, B, 0, 0, beta, C, m, n);

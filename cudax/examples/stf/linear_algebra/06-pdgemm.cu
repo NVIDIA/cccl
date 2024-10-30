@@ -259,7 +259,7 @@ void PDGEMM(stream_ctx& ctx,
       //=========================================
       // alpha*A*B does not contribute; scale C
       //=========================================
-      int inner_k = transa == CUBLAS_OP_N ? A.n : A.m;
+      size_t inner_k = transa == CUBLAS_OP_N ? A.n : A.m;
       if (alpha == 0.0 || inner_k == 0)
       {
         DGEMM(ctx, transa, transb, alpha, A, 0, 0, B, 0, 0, beta, C, m, n);

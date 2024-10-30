@@ -160,9 +160,9 @@ public:
         T* addr_h = get_block_h(rowb, colb);
 #ifdef TILED
         // tiles are stored contiguously
-        int ld = mb;
+        size_t ld = mb;
 #else
-        int ld = m;
+        size_t ld = m;
 #endif
 
         for (size_t lrow = 0; lrow < mb; lrow++)
@@ -262,7 +262,7 @@ void PDGEMM(Ctx& ctx,
       //=========================================
       // alpha*A*B does not contribute; scale C
       //=========================================
-      int inner_k = transa == CUBLAS_OP_N ? A.n : A.m;
+      size_t inner_k = transa == CUBLAS_OP_N ? A.n : A.m;
       if (alpha == 0.0 || inner_k == 0)
       {
         DGEMM(ctx, transa, transb, alpha, A, 0, 0, B, 0, 0, beta, C, m, n);
