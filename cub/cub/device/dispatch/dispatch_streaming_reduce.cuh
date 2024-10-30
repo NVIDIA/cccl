@@ -255,13 +255,18 @@ struct write_to_user_out_it
 //!
 //! @tparam InitT
 //!   Initial value type
+//!
+//! @tparam PolicyChainT
+//!   The policy chain passed to the DispatchReduce template specialization
 //! @endrst
 template <typename InputIteratorT,
           typename OutputIteratorT,
           typename PerPartitionOffsetT,
           typename GlobalOffsetT,
           typename ReductionOpT,
-          typename InitT>
+          typename InitT,
+          typename PolicyChainT =
+            DeviceReducePolicy<KeyValuePair<PerPartitionOffsetT, InitT>, PerPartitionOffsetT, ReductionOpT>>
 struct DispatchStreamingArgReduce
 {
   //! @rst
@@ -344,7 +349,8 @@ struct DispatchStreamingArgReduce
                      PerPartitionOffsetT,
                      ReductionOpT,
                      empty_problem_init_t,
-                     per_partition_accum_t>;
+                     per_partition_accum_t,
+                     PolicyChainT>;
 
     void* allocations[2]       = {nullptr};
     size_t allocation_sizes[2] = {0, 2 * sizeof(global_accum_t)};

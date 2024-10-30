@@ -4,6 +4,13 @@
 #include <cub/device/device_reduce.cuh>
 #include <cub/device/dispatch/dispatch_streaming_reduce.cuh>
 
+#include <cuda/std/type_traits>
+#include <nvbench_helper.cuh>
+
+// %RANGE% TUNE_ITEMS_PER_THREAD ipt 7:24:1
+// %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
+// %RANGE% TUNE_ITEMS_PER_VEC_LOAD_POW2 ipv 1:2:1
+
 #ifndef TUNE_BASE
 #  define TUNE_ITEMS_PER_VEC_LOAD (1 << TUNE_ITEMS_PER_VEC_LOAD_POW2)
 #endif
@@ -37,8 +44,8 @@ struct policy_hub_t
 };
 #endif // !TUNE_BASE
 
-template <typename T, typename OffsetT>
-void arg_reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
+template <typename T, typename OffsetT, typename OpT>
+void arg_reduce(nvbench::state& state, nvbench::type_list<T, OffsetT, OpT>)
 {
   using offset_t = OffsetT;
 
@@ -60,14 +67,17 @@ void arg_reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   // Type used for the final result
   using output_tuple_t = cub::KeyValuePair<global_offset_t, T>;
 
-  auto const init = ::cuda::std::numeric_limits<T>::max();
+  auto const init = ::cuda::std::is_same<OpT, cub::ArgMin>::value
+                    ? cub::Traits<T>::Max()
+                    : cub::Traits<T>::Lowest();
 
 #if !TUNE_BASE
-  using policy_t   = policy_hub_t<accum_t, offset_t>;
-  using dispatch_t = cub::DispatchReduce<input_it_t, output_it_t, offset_t, op_t, init_t, accum_t, policy_t>;
+  using policy_t   = policy_hub_t<output_tuple_t, per_partition_offset_t>;
+  using dispatch_t = cub::detail::reduce::
+    DispatchStreamingArgReduce<input_it_t, output_tuple_t*, per_partition_offset_t, global_offset_t, OpT, T, policy_t>;
 #else // TUNE_BASE
   using dispatch_t = cub::detail::reduce::
-    DispatchStreamingArgReduce<input_it_t, output_tuple_t*, per_partition_offset_t, global_offset_t, op_t, T>;
+    DispatchStreamingArgReduce<input_it_t, output_tuple_t*, per_partition_offset_t, global_offset_t, OpT, T>;
 #endif // TUNE_BASE
 
   // Retrieve axis parameters
@@ -85,18 +95,20 @@ void arg_reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 
   // Allocate temporary storage:
   std::size_t temp_size;
-  dispatch_t::Dispatch(nullptr, temp_size, d_in, d_out, static_cast<offset_t>(elements), op_t{}, init, 0 /* stream */);
+  dispatch_t::Dispatch(nullptr, temp_size, d_in, d_out, static_cast<offset_t>(elements), OpT{}, init, 0 /* stream */);
 
   thrust::device_vector<nvbench::uint8_t> temp(temp_size);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
   state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     dispatch_t::Dispatch(
-      temp_storage, temp_size, d_in, d_out, static_cast<offset_t>(elements), op_t{}, init, launch.get_stream());
+      temp_storage, temp_size, d_in, d_out, static_cast<offset_t>(elements), OpT{}, init, launch.get_stream());
   });
 }
 
-NVBENCH_BENCH_TYPES(arg_reduce, NVBENCH_TYPE_AXES(fundamental_types, offset_types))
+using op_types = nvbench::type_list<cub::ArgMin, cub::ArgMax>;
+
+NVBENCH_BENCH_TYPES(arg_reduce, NVBENCH_TYPE_AXES(fundamental_types, offset_types, op_types))
   .set_name("base")
-  .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
+  .set_type_axes_names({"T{ct}", "OffsetT{ct}", "Operation{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
