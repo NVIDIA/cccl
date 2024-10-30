@@ -32,11 +32,11 @@
 
 #include <cuda/std/limits>
 
-#include "c2h/custom_type.cuh"
-#include "c2h/extended_types.cuh"
 #include "catch2_test_device_reduce.cuh"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.cuh>
+#include <c2h/custom_type.cuh>
+#include <c2h/extended_types.cuh>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_sum);
@@ -77,7 +77,7 @@ type_pair<custom_t>
 
 using offsets = c2h::type_list<std::int32_t, std::uint32_t>;
 
-CUB_TEST("Device reduce works with all device interfaces", "[segmented][reduce][device]", full_type_list, offsets)
+C2H_TEST("Device reduce works with all device interfaces", "[segmented][reduce][device]", full_type_list, offsets)
 {
   using type_pair_t = typename c2h::get<0, TestType>;
   using input_t     = typename type_pair_t::input_t;
@@ -104,13 +104,13 @@ CUB_TEST("Device reduce works with all device interfaces", "[segmented][reduce][
 
   // Generate input segments
   c2h::device_vector<offset_t> segment_offsets = c2h::gen_uniform_offsets<offset_t>(
-    CUB_SEED(1), num_items, std::get<0>(seg_size_range), std::get<1>(seg_size_range));
+    C2H_SEED(1), num_items, std::get<0>(seg_size_range), std::get<1>(seg_size_range));
   const offset_t num_segments = static_cast<offset_t>(segment_offsets.size() - 1);
   auto d_offsets_it           = thrust::raw_pointer_cast(segment_offsets.data());
 
   // Generate input data
   c2h::device_vector<input_t> in_items(num_items);
-  c2h::gen(CUB_SEED(2), in_items);
+  c2h::gen(C2H_SEED(2), in_items);
   auto d_in_it = thrust::raw_pointer_cast(in_items.data());
 
   SECTION("reduce")

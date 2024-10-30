@@ -35,12 +35,12 @@
 
 #include <cstdint>
 
-#include "c2h/custom_type.cuh"
-#include "c2h/extended_types.cuh"
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_device_scan.cuh"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.cuh>
+#include <c2h/custom_type.cuh>
+#include <c2h/extended_types.cuh>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSum, device_exclusive_sum);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScan, device_exclusive_scan);
@@ -58,7 +58,7 @@ using custom_t =
 
 using iterator_type_list = c2h::type_list<type_pair<std::int8_t>, type_pair<custom_t>, type_pair<uchar3>>;
 
-CUB_TEST("Device scan works with iterators", "[scan][device]", iterator_type_list)
+C2H_TEST("Device scan works with iterators", "[scan][device]", iterator_type_list)
 {
   using params   = params_t<TestType>;
   using input_t  = typename params::item_t;
@@ -283,7 +283,7 @@ struct index_to_custom_output_op
   }
 };
 
-CUB_TEST("Device scan works complex accumulator types", "[scan][device]")
+C2H_TEST("Device scan works complex accumulator types", "[scan][device]")
 {
   constexpr int num_items = 2 * 1024 * 1024;
 

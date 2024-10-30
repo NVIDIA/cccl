@@ -32,11 +32,11 @@
 
 #include <cstdint>
 
-#include "c2h/custom_type.cuh"
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_device_scan.cuh"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.cuh>
+#include <c2h/custom_type.cuh>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::InclusiveScanInit, device_inclusive_scan_with_init);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSum, device_exclusive_sum);
@@ -85,7 +85,7 @@ enum class gen_data_t : int
   GEN_TYPE_CONST
 };
 
-CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_type_list)
+C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_type_list)
 {
   using params   = params_t<TestType>;
   using input_t  = typename params::item_t;
@@ -110,7 +110,7 @@ CUB_TEST("Device scan works with all device interfaces", "[scan][device]", full_
   c2h::device_vector<input_t> in_items(num_items);
   if (data_gen_mode == gen_data_t::GEN_TYPE_RANDOM)
   {
-    c2h::gen(CUB_SEED(2), in_items);
+    c2h::gen(C2H_SEED(2), in_items);
   }
   else
   {

@@ -68,7 +68,7 @@ inline int CoutCast(signed char val)
 /**
  * Vector1 overloads
  */
-#define CUB_VEC_OVERLOAD_1(T, BaseT)                                        \
+#define C2H_VEC_OVERLOAD_1(T, BaseT)                                        \
   /* Ostream output */                                                      \
   inline std::ostream& operator<<(std::ostream& os, const T& val)           \
   {                                                                         \
@@ -105,7 +105,7 @@ inline int CoutCast(signed char val)
 /**
  * Vector2 overloads
  */
-#define CUB_VEC_OVERLOAD_2(T, BaseT)                                        \
+#define C2H_VEC_OVERLOAD_2(T, BaseT)                                        \
   /* Ostream output */                                                      \
   inline std::ostream& operator<<(std::ostream& os, const T& val)           \
   {                                                                         \
@@ -150,7 +150,7 @@ inline int CoutCast(signed char val)
 /**
  * Vector3 overloads
  */
-#define CUB_VEC_OVERLOAD_3(T, BaseT)                                                         \
+#define C2H_VEC_OVERLOAD_3(T, BaseT)                                                         \
   /* Ostream output */                                                                       \
   inline std::ostream& operator<<(std::ostream& os, const T& val)                            \
   {                                                                                          \
@@ -203,7 +203,7 @@ inline int CoutCast(signed char val)
 /**
  * Vector4 overloads
  */
-#define CUB_VEC_OVERLOAD_4(T, BaseT)                                                                                   \
+#define C2H_VEC_OVERLOAD_4(T, BaseT)                                                                                   \
   /* Ostream output */                                                                                                 \
   inline std::ostream& operator<<(std::ostream& os, const T& val)                                                      \
   {                                                                                                                    \
@@ -264,27 +264,27 @@ inline int CoutCast(signed char val)
 /**
  * All vector overloads
  */
-#define CUB_VEC_OVERLOAD(COMPONENT_T, BaseT) \
-  CUB_VEC_OVERLOAD_1(COMPONENT_T##1, BaseT)  \
-  CUB_VEC_OVERLOAD_2(COMPONENT_T##2, BaseT)  \
-  CUB_VEC_OVERLOAD_3(COMPONENT_T##3, BaseT)  \
-  CUB_VEC_OVERLOAD_4(COMPONENT_T##4, BaseT)
+#define C2H_VEC_OVERLOAD(COMPONENT_T, BaseT) \
+  C2H_VEC_OVERLOAD_1(COMPONENT_T##1, BaseT)  \
+  C2H_VEC_OVERLOAD_2(COMPONENT_T##2, BaseT)  \
+  C2H_VEC_OVERLOAD_3(COMPONENT_T##3, BaseT)  \
+  C2H_VEC_OVERLOAD_4(COMPONENT_T##4, BaseT)
 
 /**
  * Define for types
  */
-CUB_VEC_OVERLOAD(char, char)
-CUB_VEC_OVERLOAD(short, short)
-CUB_VEC_OVERLOAD(int, int)
-CUB_VEC_OVERLOAD(long, long)
-CUB_VEC_OVERLOAD(longlong, long long)
-CUB_VEC_OVERLOAD(uchar, unsigned char)
-CUB_VEC_OVERLOAD(ushort, unsigned short)
-CUB_VEC_OVERLOAD(uint, unsigned int)
-CUB_VEC_OVERLOAD(ulong, unsigned long)
-CUB_VEC_OVERLOAD(ulonglong, unsigned long long)
-CUB_VEC_OVERLOAD(float, float)
-CUB_VEC_OVERLOAD(double, double)
+C2H_VEC_OVERLOAD(char, char)
+C2H_VEC_OVERLOAD(short, short)
+C2H_VEC_OVERLOAD(int, int)
+C2H_VEC_OVERLOAD(long, long)
+C2H_VEC_OVERLOAD(longlong, long long)
+C2H_VEC_OVERLOAD(uchar, unsigned char)
+C2H_VEC_OVERLOAD(ushort, unsigned short)
+C2H_VEC_OVERLOAD(uint, unsigned int)
+C2H_VEC_OVERLOAD(ulong, unsigned long)
+C2H_VEC_OVERLOAD(ulonglong, unsigned long long)
+C2H_VEC_OVERLOAD(float, float)
+C2H_VEC_OVERLOAD(double, double)
 
 /*
  * The following section defines macros to overload cub::NumericTraits<T>::{Max,Lowest}() for vector
@@ -294,7 +294,7 @@ CUB_VEC_OVERLOAD(double, double)
 /**
  * Vector1 overloads
  */
-#define CUB_VEC_1_TRAITS_OVERLOAD(T, BaseT)            \
+#define C2H_VEC_1_TRAITS_OVERLOAD(T, BaseT)            \
   CUB_NAMESPACE_BEGIN                                  \
   template <>                                          \
   struct NumericTraits<T>                              \
@@ -321,7 +321,7 @@ CUB_VEC_OVERLOAD(double, double)
 /**
  * Vector2 overloads
  */
-#define CUB_VEC_2_TRAITS_OVERLOAD(T, BaseT)                                        \
+#define C2H_VEC_2_TRAITS_OVERLOAD(T, BaseT)                                        \
   CUB_NAMESPACE_BEGIN                                                              \
   template <>                                                                      \
   struct NumericTraits<T>                                                          \
@@ -348,7 +348,7 @@ CUB_VEC_OVERLOAD(double, double)
 /**
  * Vector3 overloads
  */
-#define CUB_VEC_3_TRAITS_OVERLOAD(T, BaseT)                                                                        \
+#define C2H_VEC_3_TRAITS_OVERLOAD(T, BaseT)                                                                        \
   CUB_NAMESPACE_BEGIN                                                                                              \
   template <>                                                                                                      \
   struct NumericTraits<T>                                                                                          \
@@ -375,7 +375,7 @@ CUB_VEC_OVERLOAD(double, double)
 /**
  * Vector4 overloads
  */
-#define CUB_VEC_4_TRAITS_OVERLOAD(T, BaseT)            \
+#define C2H_VEC_4_TRAITS_OVERLOAD(T, BaseT)            \
   CUB_NAMESPACE_BEGIN                                  \
   template <>                                          \
   struct NumericTraits<T>                              \
@@ -408,24 +408,24 @@ CUB_VEC_OVERLOAD(double, double)
 /**
  * All vector overloads
  */
-#define CUB_VEC_TRAITS_OVERLOAD(COMPONENT_T, BaseT) \
-  CUB_VEC_1_TRAITS_OVERLOAD(COMPONENT_T##1, BaseT)  \
-  CUB_VEC_2_TRAITS_OVERLOAD(COMPONENT_T##2, BaseT)  \
-  CUB_VEC_3_TRAITS_OVERLOAD(COMPONENT_T##3, BaseT)  \
-  CUB_VEC_4_TRAITS_OVERLOAD(COMPONENT_T##4, BaseT)
+#define C2H_VEC_TRAITS_OVERLOAD(COMPONENT_T, BaseT) \
+  C2H_VEC_1_TRAITS_OVERLOAD(COMPONENT_T##1, BaseT)  \
+  C2H_VEC_2_TRAITS_OVERLOAD(COMPONENT_T##2, BaseT)  \
+  C2H_VEC_3_TRAITS_OVERLOAD(COMPONENT_T##3, BaseT)  \
+  C2H_VEC_4_TRAITS_OVERLOAD(COMPONENT_T##4, BaseT)
 
 /**
  * Define for types
  */
-CUB_VEC_TRAITS_OVERLOAD(char, signed char)
-CUB_VEC_TRAITS_OVERLOAD(short, short)
-CUB_VEC_TRAITS_OVERLOAD(int, int)
-CUB_VEC_TRAITS_OVERLOAD(long, long)
-CUB_VEC_TRAITS_OVERLOAD(longlong, long long)
-CUB_VEC_TRAITS_OVERLOAD(uchar, unsigned char)
-CUB_VEC_TRAITS_OVERLOAD(ushort, unsigned short)
-CUB_VEC_TRAITS_OVERLOAD(uint, unsigned int)
-CUB_VEC_TRAITS_OVERLOAD(ulong, unsigned long)
-CUB_VEC_TRAITS_OVERLOAD(ulonglong, unsigned long long)
-CUB_VEC_TRAITS_OVERLOAD(float, float)
-CUB_VEC_TRAITS_OVERLOAD(double, double)
+C2H_VEC_TRAITS_OVERLOAD(char, signed char)
+C2H_VEC_TRAITS_OVERLOAD(short, short)
+C2H_VEC_TRAITS_OVERLOAD(int, int)
+C2H_VEC_TRAITS_OVERLOAD(long, long)
+C2H_VEC_TRAITS_OVERLOAD(longlong, long long)
+C2H_VEC_TRAITS_OVERLOAD(uchar, unsigned char)
+C2H_VEC_TRAITS_OVERLOAD(ushort, unsigned short)
+C2H_VEC_TRAITS_OVERLOAD(uint, unsigned int)
+C2H_VEC_TRAITS_OVERLOAD(ulong, unsigned long)
+C2H_VEC_TRAITS_OVERLOAD(ulonglong, unsigned long long)
+C2H_VEC_TRAITS_OVERLOAD(float, float)
+C2H_VEC_TRAITS_OVERLOAD(double, double)

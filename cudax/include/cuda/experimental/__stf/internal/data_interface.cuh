@@ -349,7 +349,7 @@ public:
 
   /*nonvirtual*/ T& instance(instance_id_t instance_id)
   {
-    assert(instance_id != instance_id_t::invalid && "instance: Invalid argument.");
+    _CCCL_ASSERT(instance_id != instance_id_t::invalid, "instance: Invalid argument.");
     const auto i = size_t(instance_id);
     if (i >= store.size())
     {
@@ -368,7 +368,7 @@ public:
 
   /*nonvirtual*/ const T& instance(instance_id_t instance_id) const
   {
-    assert(instance_id != instance_id_t::invalid && "instance: Invalid argument.");
+    _CCCL_ASSERT(instance_id != instance_id_t::invalid, "instance: Invalid argument.");
     return store[size_t(instance_id)];
   }
 

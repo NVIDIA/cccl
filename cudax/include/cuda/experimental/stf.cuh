@@ -250,7 +250,7 @@ public:
    */
   ::std::string to_string() const
   {
-    assert(payload.index() != ::std::variant_npos && "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     return ::std::visit(
       [&](auto& self) {
         return self.to_string();
@@ -269,7 +269,7 @@ public:
   template <typename T, typename... Sizes>
   auto logical_data(size_t elements, Sizes... othersizes)
   {
-    assert(payload.index() != ::std::variant_npos && "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     return ::std::visit(
       [&](auto& self) {
         return self.template logical_data<T>(elements, othersizes...);
@@ -288,7 +288,7 @@ public:
   template <typename P0, typename... Ps>
   auto logical_data(P0&& p0, Ps&&... ps)
   {
-    assert(payload.index() != ::std::variant_npos && "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     using T0 = ::std::remove_reference_t<P0>;
     if constexpr (::std::is_integral_v<T0>)
     {
@@ -331,7 +331,7 @@ public:
   auto logical_data(T* p, size_t n, data_place dplace = data_place::host)
   {
     EXPECT(dplace != data_place::invalid);
-    assert(payload.index() != ::std::variant_npos && "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     return ::std::visit(
       [&](auto& self) {
         return self.logical_data(make_slice(p, n), mv(dplace));
@@ -342,7 +342,7 @@ public:
   template <typename... Deps>
   unified_task<Deps...> task(exec_place e_place, task_dep<Deps>... deps)
   {
-    assert(payload.index() != ::std::variant_npos && "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     // Workaround: For some obscure reason `mv(deps)...` fails to compile
     return ::std::visit(
       [&](auto& self) {
@@ -407,7 +407,7 @@ public:
   template <typename... Deps>
   auto host_launch(task_dep<Deps>... deps)
   {
-    assert(payload.index() != ::std::variant_npos && "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     using result_t = unified_scope<reserved::host_launch_scope<stream_ctx, false, Deps...>,
                                    reserved::host_launch_scope<graph_ctx, false, Deps...>>;
     return ::std::visit(
@@ -420,7 +420,7 @@ public:
   template <typename... Deps>
   auto cuda_kernel(task_dep<Deps>... deps)
   {
-    assert(payload.index() != ::std::variant_npos && "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     // false : we expect a single kernel descriptor in the lambda function return type
     using result_t = unified_scope<reserved::cuda_kernel_scope<stream_ctx, false, Deps...>,
                                    reserved::cuda_kernel_scope<graph_ctx, false, Deps...>>;
@@ -434,7 +434,7 @@ public:
   template <typename... Deps>
   auto cuda_kernel(exec_place e_place, task_dep<Deps>... deps)
   {
-    assert(payload.index() != ::std::variant_npos && "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     // false : we expect a single kernel descriptor in the lambda function return type
     using result_t = unified_scope<reserved::cuda_kernel_scope<stream_ctx, false, Deps...>,
                                    reserved::cuda_kernel_scope<graph_ctx, false, Deps...>>;
@@ -448,7 +448,7 @@ public:
   template <typename... Deps>
   auto cuda_kernel_chain(task_dep<Deps>... deps)
   {
-    assert(payload.index() != ::std::variant_npos && "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     // true : we expect a vector of cuda kernel descriptors in the lambda function return type
     using result_t = unified_scope<reserved::cuda_kernel_scope<stream_ctx, true, Deps...>,
                                    reserved::cuda_kernel_scope<graph_ctx, true, Deps...>>;
@@ -462,7 +462,7 @@ public:
   template <typename... Deps>
   auto cuda_kernel_chain(exec_place e_place, task_dep<Deps>... deps)
   {
-    assert(payload.index() != ::std::variant_npos && "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     // true : we expect a vector of cuda kernel descriptors in the lambda function return type
     using result_t = unified_scope<reserved::cuda_kernel_scope<stream_ctx, true, Deps...>,
                                    reserved::cuda_kernel_scope<graph_ctx, true, Deps...>>;
@@ -539,7 +539,7 @@ public:
 
   cudaStream_t task_fence()
   {
-    assert(payload.index() != ::std::variant_npos && "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     return ::std::visit(
       [&](auto& self) {
         return self.task_fence();
@@ -549,7 +549,7 @@ public:
 
   void finalize()
   {
-    assert(payload.index() != ::std::variant_npos && "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     ::std::visit(
       [](auto& self) {
         self.finalize();
@@ -559,7 +559,7 @@ public:
 
   void submit()
   {
-    assert(payload.index() != ::std::variant_npos && "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     ::std::visit(
       [](auto& self) {
         self.submit();
@@ -569,7 +569,7 @@ public:
 
   void set_allocator(block_allocator_untyped custom_allocator)
   {
-    assert(payload.index() != ::std::variant_npos && "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     ::std::visit(
       [&](auto& self) {
         self.set_allocator(mv(custom_allocator));
@@ -579,7 +579,7 @@ public:
 
   void attach_allocator(block_allocator_untyped custom_allocator)
   {
-    assert(payload.index() != ::std::variant_npos && "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     ::std::visit(
       [&](auto& self) {
         self.attach_allocator(mv(custom_allocator));
@@ -598,7 +598,7 @@ public:
 
   void change_epoch()
   {
-    assert(payload.index() != ::std::variant_npos && "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     ::std::visit(
       [](auto& self) {
         self.change_epoch();
@@ -608,7 +608,7 @@ public:
 
   ::std::shared_ptr<reserved::per_ctx_dot> get_dot()
   {
-    assert(payload.index() != ::std::variant_npos && "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     return ::std::visit(
       [](auto& self) {
         return self.get_dot();
@@ -619,7 +619,7 @@ public:
   template <typename parent_ctx_t>
   void set_parent_ctx(parent_ctx_t& parent_ctx)
   {
-    assert(payload.index() != ::std::variant_npos && "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     reserved::per_ctx_dot::set_parent_ctx(parent_ctx.get_dot(), get_dot());
     ::std::visit(
       [&](auto& self) {
@@ -632,7 +632,7 @@ public:
    * may specialize code to deal with the specific constraints of CUDA graphs. */
   bool is_graph_ctx() const
   {
-    assert(payload.index() != ::std::variant_npos && "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     return (payload.index() == 1);
   }
 
@@ -669,7 +669,7 @@ public:
   }
   const exec_place& current_exec_place() const
   {
-    assert(current_affinity().size() > 0);
+    _CCCL_ASSERT(current_affinity().size() > 0, "current_exec_place no affinity set");
     return *(current_affinity()[0]);
   }
 
@@ -711,7 +711,7 @@ private:
   auto visit(Fun&& fun)
     -> decltype(::std::visit(::std::forward<Fun>(fun), ::std::declval<::std::variant<stream_ctx, graph_ctx>&>()))
   {
-    assert(payload.index() != ::std::variant_npos && "Context is not initialized");
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     return ::std::visit(::std::forward<Fun>(fun), payload);
   }
 

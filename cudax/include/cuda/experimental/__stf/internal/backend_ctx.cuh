@@ -468,7 +468,7 @@ protected:
     virtual ~impl()
     {
       // We can't assert here because there may be tasks inside tasks
-      // assert(total_task_cnt == 0 && "You created some tasks but forgot to call finalize().");
+      //_CCCL_ASSERT(total_task_cnt == 0, "You created some tasks but forgot to call finalize().");
 
       if (!is_recording_stats)
       {
@@ -888,7 +888,7 @@ public:
 
   const exec_place& current_exec_place() const
   {
-    assert(has_affinity() && "current_exec_place() cannot be called without setting the affinity first.");
+    _CCCL_ASSERT(has_affinity(), "current_exec_place() cannot be called without setting the affinity first.");
     assert(current_affinity().size() > 0);
     return *(current_affinity()[0]);
   }

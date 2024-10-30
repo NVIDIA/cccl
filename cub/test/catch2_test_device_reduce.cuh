@@ -37,10 +37,10 @@
 #include <numeric>
 #include <type_traits>
 
-#include "c2h/custom_type.cuh"
-#include "c2h/extended_types.cuh"
-#include "catch2_test_helper.h"
-#include "test_util_vec.h"
+#include <c2h/catch2_test_helper.cuh>
+#include <c2h/custom_type.cuh>
+#include <c2h/extended_types.cuh>
+#include <c2h/test_util_vec.cuh>
 #include <nv/target>
 
 CUB_NAMESPACE_BEGIN
