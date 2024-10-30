@@ -67,13 +67,13 @@ declare -A project_dirs=(
 ignore_paths=(
   ".clang-format"
   ".clangd"
-  ".devcontainer/README.md"
   ".devcontainer/img"
+  ".devcontainer/README.md"
   ".git-blame-ignore-revs"
   ".github/actions/docs-build"
-  ".github/ISSUE_TEMPLATE"
   ".github/CODEOWNERS"
   ".github/copy-pr-bot.yaml"
+  ".github/ISSUE_TEMPLATE"
   ".github/PULL_REQUEST_TEMPLATE.md"
   ".github/workflows/backport-prs.yml"
   ".github/workflows/build-docs.yml"
@@ -87,10 +87,10 @@ ignore_paths=(
   "CITATION.md"
   "CODE_OF_CONDUCT.md"
   "CONTRIBUTING.md"
+  "docs"
   "LICENSE"
   "README.md"
   "SECURITY.md"
-  "docs"
 )
 
 # Usage checks:
