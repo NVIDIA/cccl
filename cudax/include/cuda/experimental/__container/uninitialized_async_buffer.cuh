@@ -100,10 +100,10 @@ private:
 
   //! @brief Causes the buffer to be treated as a span when passed to cudax::launch.
   //! @pre The buffer must have the cuda::mr::device_accessible property.
-  _LIBCUDACXX_TEMPLATE(typename = void)
-  _LIBCUDACXX_REQUIRES(_CUDA_VSTD::__is_included_in<_CUDA_VMR::device_accessible, _Properties...>)
-  _CCCL_NODISCARD_FRIEND _CUDA_VSTD::span<_Tp>
-  __cudax_launch_transform(::cuda::stream_ref, uninitialized_async_buffer& __self) noexcept
+  template <class _Tp2 = _Tp>
+  _CCCL_NODISCARD_FRIEND auto __cudax_launch_transform(::cuda::stream_ref, uninitialized_async_buffer& __self) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(_CUDA_VSTD::span<_Tp>)(
+      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in<_CUDA_VMR::device_accessible, _Properties...>)
   {
     // TODO add auto synchronization
     return {__self.__get_data(), __self.size()};
@@ -111,10 +111,11 @@ private:
 
   //! @brief Causes the buffer to be treated as a span when passed to cudax::launch
   //! @pre The buffer must have the cuda::mr::device_accessible property.
-  _LIBCUDACXX_TEMPLATE(typename = void)
-  _LIBCUDACXX_REQUIRES(_CUDA_VSTD::__is_included_in<_CUDA_VMR::device_accessible, _Properties...>)
-  _CCCL_NODISCARD_FRIEND _CUDA_VSTD::span<const _Tp>
+  template <class _Tp2 = _Tp>
+  _CCCL_NODISCARD_FRIEND auto
   __cudax_launch_transform(::cuda::stream_ref, const uninitialized_async_buffer& __self) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(_CUDA_VSTD::span<const _Tp>)(
+      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in<_CUDA_VMR::device_accessible, _Properties...>)
   {
     // TODO add auto synchronization
     return {__self.__get_data(), __self.size()};

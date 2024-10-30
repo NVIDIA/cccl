@@ -8,10 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_DATA_MANIPULATION__
-#define __CUDAX_DATA_MANIPULATION__
+#ifndef __CUDAX_ALGORITHM__
+#define __CUDAX_ALGORITHM__
 
-#include <cuda/experimental/__data_manipulation/copy.cuh>
-#include <cuda/experimental/__data_manipulation/fill.cuh>
+#include <cuda/experimental/__algorithm/copy.cuh>
+#include <cuda/experimental/__algorithm/fill.cuh>
 
-#endif // __CUDAX_DATA_MANIPULATION__
+#endif // __CUDAX_ALGORITHM__

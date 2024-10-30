@@ -8,13 +8,13 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __DATA_MANIPULATION_COMMON__
-#define __DATA_MANIPULATION_COMMON__
+#ifndef __ALGORITHM_COMMON__
+#define __ALGORITHM_COMMON__
 
 #include <cuda/memory_resource>
 
+#include <cuda/experimental/algorithm.cuh>
 #include <cuda/experimental/buffer.cuh>
-#include <cuda/experimental/data_manipulation.cuh>
 #include <cuda/experimental/memory_resource.cuh>
 
 #include <catch2/catch.hpp>
@@ -90,4 +90,4 @@ static_assert(std::is_same_v<cudax::as_kernel_arg_t<cudax::weird_buffer>, cuda::
 
 } // namespace cuda::experimental
 
-#endif // __DATA_MANIPULATION_COMMON__
+#endif // __ALGORITHM_COMMON__

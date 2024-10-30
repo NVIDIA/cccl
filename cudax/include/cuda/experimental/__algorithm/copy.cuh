@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_DATA_MANIPULATION_COPY
-#define __CUDAX_DATA_MANIPULATION_COPY
+#ifndef __CUDAX_ALGORITHM_COPY
+#define __CUDAX_ALGORITHM_COPY
 
 #include <cuda/__cccl_config>
 
@@ -79,4 +79,4 @@ void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst)
 }
 
 } // namespace cuda::experimental
-#endif // __CUDAX_DATA_MANIPULATION_COPY
+#endif // __CUDAX_ALGORITHM_COPY

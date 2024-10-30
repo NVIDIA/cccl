@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDAX_DATA_MANIPULATION_FILL
-#define __CUDAX_DATA_MANIPULATION_FILL
+#ifndef __CUDAX_ALGORITHM_FILL
+#define __CUDAX_ALGORITHM_FILL
 
 #include <cuda/__cccl_config>
 
@@ -62,4 +62,4 @@ void fill_bytes(stream_ref __stream, _DstTy&& __dst, uint8_t __value)
 }
 
 } // namespace cuda::experimental
-#endif // __CUDAX_DATA_MANIPULATION_FILL
+#endif // __CUDAX_ALGORITHM_FILL

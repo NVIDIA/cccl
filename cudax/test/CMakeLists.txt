@@ -123,9 +123,9 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     green_context/green_ctx_smoke.cu
   )
 
-  cudax_add_catch2_test(test_target data_manipulation ${cn_target}
-    data_manipulation/fill.cu
-    data_manipulation/copy.cu
+  cudax_add_catch2_test(test_target algorithm ${cn_target}
+    algorithm/fill.cu
+    algorithm/copy.cu
   )
 
 endforeach()
