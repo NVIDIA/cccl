@@ -258,17 +258,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char>
   _LIBCUDACXX_HIDE_FROM_ABI static _CCCL_CONSTEXPR_CXX14 int
   compare(const char_type* __s1, const char_type* __s2, size_t __n) noexcept;
 
-  // Define a fallback _CCCL_BUILTIN_STRLEN function using parens to prevent
-  // macro expansion.
-  _LIBCUDACXX_HIDE_FROM_ABI static _CCCL_CONSTEXPR_CXX14 size_t(_CCCL_BUILTIN_STRLEN)(const char_type* __s) noexcept
-  {
-    size_t __len = 0;
-    for (; !eq(*__s, char(0)); ++__s)
-    {
-      ++__len;
-    }
-    return __len;
-  }
   _LIBCUDACXX_HIDE_FROM_ABI static size_t _CCCL_CONSTEXPR_CXX14 length(const char_type* __s) noexcept
   {
 #if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 130000
@@ -276,10 +265,18 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char>
     if (__libcpp_is_constant_evaluated())
       ;
 #endif
-    // On device, this will always use the fallback function above. On host,
-    // this will use __builtin_strlen if it is available; otherwise, it will
-    // call the fallback function above.
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return (_CCCL_BUILTIN_STRLEN) (__s);), (return _CCCL_BUILTIN_STRLEN(__s);))
+#if defined(_CCCL_BUILTIN_STRLEN)
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                      (size_t __len = 0; for (; !eq(*__s, char(0)); ++__s)++ __len; return __len;),
+                      (return _CCCL_BUILTIN_STRLEN(__s);))
+#else
+    size_t __len = 0;
+    for (; !eq(*__s, char(0)); ++__s)
+    {
+      ++__len;
+    }
+    return __len;
+#endif
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI static _CCCL_CONSTEXPR_CXX14 const char_type*
