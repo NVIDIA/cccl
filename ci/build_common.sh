@@ -126,6 +126,7 @@ print_environment_details() {
       NVCC_VERSION \
       CMAKE_BUILD_PARALLEL_LEVEL \
       CTEST_PARALLEL_LEVEL \
+      CCCL_CUDA_EXTENDED \
       CCCL_BUILD_INFIX \
       GLOBAL_CMAKE_OPTIONS \
       TBB_ROOT

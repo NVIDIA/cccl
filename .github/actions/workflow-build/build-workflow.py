@@ -1093,8 +1093,18 @@ def print_devcontainer_info(args):
     for workflow_name in workflow_names:
         matrix_jobs.extend(parse_workflow_matrix_jobs(args, workflow_name))
 
+    # Check if the extended cuda images are needed:
+    for matrix_job in matrix_jobs:
+        cuda_ext = False
+        for job in matrix_job['jobs']:
+            job_info = get_job_type_info(job)
+            if job_info['cuda_ext']:
+                cuda_ext = True
+                break
+        matrix_job['cuda_ext'] = cuda_ext
+
     # Remove all but the following keys from the matrix jobs:
-    keep_keys = ['ctk', 'cxx']
+    keep_keys = ['ctk', 'cxx', 'cuda_ext']
     combinations = [{key: job[key] for key in keep_keys} for job in matrix_jobs]
 
     # Remove duplicates and filter out windows jobs:
