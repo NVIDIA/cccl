@@ -524,7 +524,7 @@
 // clang's builtin_strlen is host-only
 #if !defined(_CCCL_COMPILER_GCC) && !defined(_CCCL_COMPILER_NVRTC) \
   && !(defined(_CCCL_COMPILER_MSVC) && _CCCL_STD_VER < 2017)       \
-  && !(defined(_CCCL_COMPILER_CLANG) && defined(_CCCL_CUDA_COMPILER_NVCC) && defined(__CUDA_ARCH__))
+  && !(defined(_CCCL_COMPILER_CLANG) && defined(__CUDA_ARCH__))
 #  define _CCCL_BUILTIN_STRLEN(...) __builtin_strlen(__VA_ARGS__)
 #endif
 
