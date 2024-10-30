@@ -179,6 +179,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(const T* addr, int tile_size)
   }
 }
 
+// TODO(miscco): we should probably constrain It to not be a contiguous iterator in C++17 (and change the overload
+// above to accept any contiguous iterator)
 // overload for any iterator that is not a pointer, do nothing
 template <int, typename It, ::cuda::std::__enable_if_t<!::cuda::std::is_pointer<It>::value, int> = 0>
 _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(It, int)
