@@ -141,18 +141,18 @@ struct __cond_t
     __cond_t::__data<_Pred, _Then, _Else> __data_;
 
     template <class _Sndr>
-    _CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE auto __mk_sender(_Sndr&& __sndr) //
+    _CUDAX_TRIVIAL_API auto __mk_sender(_Sndr&& __sndr) //
       -> __sndr_t<_Sndr, _Pred, _Then, _Else>;
 
     template <class _Sndr>
-    _CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE auto operator()(_Sndr __sndr) //
+    _CUDAX_TRIVIAL_API auto operator()(_Sndr __sndr) //
       -> __sndr_t<_Sndr, _Pred, _Then, _Else>
     {
       return __mk_sender(static_cast<_Sndr&&>(__sndr));
     }
 
     template <class _Sndr>
-    _CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE friend auto operator|(_Sndr __sndr, __closure&& __self) //
+    _CUDAX_TRIVIAL_API friend auto operator|(_Sndr __sndr, __closure&& __self) //
       -> __sndr_t<_Sndr, _Pred, _Then, _Else>
     {
       return __self.__mk_sender(static_cast<_Sndr&&>(__sndr));
@@ -160,11 +160,11 @@ struct __cond_t
   };
 
   template <class _Sndr, class _Pred, class _Then, class _Else>
-  _CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE auto operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const //
+  _CUDAX_TRIVIAL_API auto operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const //
     -> __sndr_t<_Sndr, _Pred, _Then, _Else>;
 
   template <class _Pred, class _Then, class _Else>
-  _CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE auto operator()(_Pred __pred, _Then __then, _Else __else) const
+  _CUDAX_TRIVIAL_API auto operator()(_Pred __pred, _Then __then, _Else __else) const
   {
     return __closure<_Pred, _Then, _Else>{
       {static_cast<_Pred&&>(__pred), static_cast<_Then&&>(__then), static_cast<_Else&&>(__else)}};
@@ -199,8 +199,7 @@ struct __cond_t::__sndr_t
 };
 
 template <class _Sndr, class _Pred, class _Then, class _Else>
-_CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE auto
-__cond_t::operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const //
+_CUDAX_TRIVIAL_API auto __cond_t::operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const //
   -> __sndr_t<_Sndr, _Pred, _Then, _Else>
 {
   if constexpr (__is_non_dependent_sender<_Sndr>)
@@ -217,7 +216,7 @@ __cond_t::operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) con
 
 template <class _Pred, class _Then, class _Else>
 template <class _Sndr>
-_CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE auto __cond_t::__closure<_Pred, _Then, _Else>::__mk_sender(_Sndr&& __sndr) //
+_CUDAX_TRIVIAL_API auto __cond_t::__closure<_Pred, _Then, _Else>::__mk_sender(_Sndr&& __sndr) //
   -> __sndr_t<_Sndr, _Pred, _Then, _Else>
 {
   if constexpr (__is_non_dependent_sender<_Sndr>)

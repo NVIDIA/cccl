@@ -135,7 +135,7 @@ private:
 
 public:
   template <class _Fn>
-  _CUDAX_HIDDEN_INLINE _CCCL_HOST_DEVICE auto operator()(_Fn __fn) const noexcept
+  _CUDAX_TRIVIAL_API auto operator()(_Fn __fn) const noexcept
   {
     using __completions = __call_result_t<_Fn, __probe_fn>;
     static_assert(__is_completion_signatures<__completions>,

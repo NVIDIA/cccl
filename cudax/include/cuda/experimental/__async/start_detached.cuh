@@ -90,7 +90,7 @@ public:
   /// @brief Eagerly connects and starts a sender and lets it
   /// run detached.
   template <class _Sndr>
-  _CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE void operator()(_Sndr __sndr) const
+  _CUDAX_TRIVIAL_API void operator()(_Sndr __sndr) const
   {
     __async::start(*new __opstate_t<_Sndr>{static_cast<_Sndr&&>(__sndr)});
   }

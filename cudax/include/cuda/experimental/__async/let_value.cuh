@@ -212,18 +212,18 @@ private:
     }
 
     template <class... _As>
-    _CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE void set_value(_As&&... __as) noexcept
+    _CUDAX_TRIVIAL_API void set_value(_As&&... __as) noexcept
     {
       __complete(set_value_t(), static_cast<_As&&>(__as)...);
     }
 
     template <class _Error>
-    _CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE void set_error(_Error&& __error) noexcept
+    _CUDAX_TRIVIAL_API void set_error(_Error&& __error) noexcept
     {
       __complete(set_error_t(), static_cast<_Error&&>(__error));
     }
 
-    _CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE void set_stopped() noexcept
+    _CUDAX_TRIVIAL_API void set_stopped() noexcept
     {
       __complete(set_stopped_t());
     }
@@ -273,14 +273,14 @@ private:
     _Fn __fn_;
 
     template <class _Sndr>
-    _CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE auto operator()(_Sndr __sndr) const //
+    _CUDAX_TRIVIAL_API auto operator()(_Sndr __sndr) const //
       -> __call_result_t<_LetTag, _Sndr, _Fn>
     {
       return _LetTag()(static_cast<_Sndr&&>(__sndr), __fn_);
     }
 
     template <class _Sndr>
-    _CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE friend auto operator|(_Sndr __sndr, const __closure_t& __self) //
+    _CUDAX_TRIVIAL_API friend auto operator|(_Sndr __sndr, const __closure_t& __self) //
       -> __call_result_t<_LetTag, _Sndr, _Fn>
     {
       return _LetTag()(static_cast<_Sndr&&>(__sndr), __self.__fn_);
@@ -302,7 +302,7 @@ public:
   }
 
   template <class _Fn>
-  _CUDAX_HIDDEN_INLINE _CCCL_HOST_DEVICE auto operator()(_Fn __fn) const noexcept
+  _CUDAX_TRIVIAL_API auto operator()(_Fn __fn) const noexcept
   {
     return __closure_t<_Fn>{static_cast<_Fn&&>(__fn)};
   }

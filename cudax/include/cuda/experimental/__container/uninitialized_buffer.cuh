@@ -186,7 +186,7 @@ public:
   }
 
   //! @brief Returns the size of the buffer
-  _CCCL_NODISCARD constexpr _CCCL_HOST_DEVICE size_type size() const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr size_type size() const noexcept
   {
     return __count_;
   }

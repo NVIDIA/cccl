@@ -33,18 +33,18 @@
 // _CCCL_HIDE_FROM_ABI and _CCCL_FORCEINLINE cannot be used together because they both
 // try to add `inline` to the function declaration. In cudax we solve this problem with
 // two attributes:
-// - `_CUDAX_HIDDEN` for hiding the symbol from the ABI
-// - `_CUDAX_HIDDEN_INLINE` for hiding the symbol from the ABI and forcing inlining
+// - `_CUDAX_API` declares the function host/device and hides the symbol from the ABI
+// - `_CUDAX_TRIVIAL_API` does the same while also forcing inlining and hiding the function from debuggers
 #if defined(_CCCL_COMPILER_ICC) // ICC has issues with visibility attributes on symbols with internal linkage
-#  define _CUDAX_HIDDEN
+#  define _CUDAX_API _CCCL_HOST_DEVICE
 #else // ^^^ _CCCL_COMPILER_ICC ^^^ / vvv !_CCCL_COMPILER_ICC vvv
-#  define _CUDAX_HIDDEN _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
+#  define _CUDAX_API _CCCL_HOST_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
 #endif // !_CCCL_COMPILER_ICC
 
-// _CUDAX_HIDDEN_INLINE force-inlines a function, marks its visibility as hidden, and causes debuggers to skip it.
+// _CUDAX_TRIVIAL_API force-inlines a function, marks its visibility as hidden, and causes debuggers to skip it.
 // This is useful for trivial internal functions that do dispatching or other plumbing work. It is particularly
-// useful in the definition of custimization point objects.
-#define _CUDAX_HIDDEN_INLINE _CUDAX_HIDDEN _CCCL_FORCEINLINE _CUDAX_ARTIFICIAL _LIBCUDACXX_NODEBUG
+// useful in the definition of customization point objects.
+#define _CUDAX_TRIVIAL_API _CUDAX_API _CCCL_FORCEINLINE _CUDAX_ARTIFICIAL _LIBCUDACXX_NODEBUG
 
 // GCC struggles with guaranteed copy elision of immovable types.
 #if defined(_CCCL_COMPILER_GCC)

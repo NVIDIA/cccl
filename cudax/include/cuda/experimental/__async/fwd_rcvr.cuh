@@ -44,18 +44,18 @@ struct __fwd_rcvr<_Rcvr*>
   _Rcvr* __rcvr_;
 
   template <class... _As>
-  _CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE void set_value(_As&&... __as) noexcept
+  _CUDAX_TRIVIAL_API void set_value(_As&&... __as) noexcept
   {
     __async::set_value(__rcvr_);
   }
 
   template <class _Error>
-  _CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE void set_error(_Error&& __error) noexcept
+  _CUDAX_TRIVIAL_API void set_error(_Error&& __error) noexcept
   {
     __async::set_error(__rcvr_, static_cast<_Error&&>(__error));
   }
 
-  _CCCL_HOST_DEVICE _CUDAX_HIDDEN_INLINE void set_stopped() noexcept
+  _CUDAX_TRIVIAL_API void set_stopped() noexcept
   {
     __async::set_stopped(__rcvr_);
   }
