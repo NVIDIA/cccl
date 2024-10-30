@@ -66,8 +66,8 @@ void arg_reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   using policy_t   = policy_hub_t<accum_t, offset_t>;
   using dispatch_t = cub::DispatchReduce<input_it_t, output_it_t, offset_t, op_t, init_t, accum_t, policy_t>;
 #else // TUNE_BASE
-  using dispatch_t =
-    cub::DispatchStreamingArgReduce<input_it_t, T*, global_offset_t*, per_partition_offset_t, global_offset_t, op_t, T>;
+  using dispatch_t = cub::detail::reduce::
+    DispatchStreamingArgReduce<input_it_t, output_tuple_t*, per_partition_offset_t, global_offset_t, op_t, T>;
 #endif // TUNE_BASE
 
   // Retrieve axis parameters
@@ -75,9 +75,8 @@ void arg_reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   thrust::device_vector<T> in = generate(elements);
   thrust::device_vector<output_tuple_t> out(1);
 
-  values_it_t d_in             = thrust::raw_pointer_cast(in.data());
-  global_offset_t* d_index_out = &(thrust::raw_pointer_cast(out.data()))->key;
-  output_value_t* d_result_out = &(thrust::raw_pointer_cast(out.data()))->value;
+  values_it_t d_in      = thrust::raw_pointer_cast(in.data());
+  output_tuple_t* d_out = thrust::raw_pointer_cast(out.data());
 
   // Enable throughput calculations and add "Size" column to results.
   state.add_element_count(elements);
@@ -86,23 +85,14 @@ void arg_reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 
   // Allocate temporary storage:
   std::size_t temp_size;
-  dispatch_t::Dispatch(
-    nullptr, temp_size, d_in, d_result_out, d_index_out, static_cast<offset_t>(elements), op_t{}, init, 0 /* stream */);
+  dispatch_t::Dispatch(nullptr, temp_size, d_in, d_out, static_cast<offset_t>(elements), op_t{}, init, 0 /* stream */);
 
   thrust::device_vector<nvbench::uint8_t> temp(temp_size);
   auto* temp_storage = thrust::raw_pointer_cast(temp.data());
 
   state.exec(nvbench::exec_tag::no_batch, [&](nvbench::launch& launch) {
     dispatch_t::Dispatch(
-      temp_storage,
-      temp_size,
-      d_in,
-      d_result_out,
-      d_index_out,
-      static_cast<offset_t>(elements),
-      op_t{},
-      init,
-      launch.get_stream());
+      temp_storage, temp_size, d_in, d_out, static_cast<offset_t>(elements), op_t{}, init, launch.get_stream());
   });
 }
 

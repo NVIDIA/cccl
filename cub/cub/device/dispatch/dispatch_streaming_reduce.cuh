@@ -36,8 +36,6 @@
 
 #include <cub/config.cuh>
 
-#include "cuda/std/__type_traits/is_assignable.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -55,6 +53,8 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 #include <cub/iterator/constant_input_iterator.cuh>
 
 #include <thrust/iterator/tabulate_output_iterator.h>
+
+#include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
 
@@ -129,7 +129,7 @@ public:
     ::cuda::std::swap(d_previous_aggregate, d_aggregate_out);
     first_partition = false;
     last_partition  = next_partition_is_the_last;
-  };
+  }
 };
 
 /**
@@ -147,7 +147,7 @@ struct promote_to_global_op
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void advance(GlobalOffsetT partition_size)
   {
     current_partition_offset += partition_size;
-  };
+  }
 
   /**
    * Unary operator called to transform the per-partition aggregate of a partition to a global aggregate type (i.e., one
@@ -209,16 +209,17 @@ struct write_to_user_out_it
   _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(IndexT, cub::KeyValuePair<OffsetT, ResultT> reduced_result)
   {
     using kv_pair_t = ::cuda::std::_If<
-      ::cuda::std::is_assignable_v<decltype(*std::declval<KeyValuePairOutItT>()),
-                                   cub::KeyValuePair<::cuda::std::uint64_t, ResultT>>,
+      ::cuda::std::is_assignable<decltype(*std::declval<KeyValuePairOutItT>()),
+                                 cub::KeyValuePair<::cuda::std::uint64_t, ResultT>>::value,
       cub::KeyValuePair<::cuda::std::uint64_t, ResultT>,
-      ::cuda::std::_If<::cuda::std::is_assignable_v<decltype(*std::declval<KeyValuePairOutItT>()),
-                                                    cub::KeyValuePair<::cuda::std::int64_t, ResultT>>,
-                       cub::KeyValuePair<::cuda::std::int64_t, ResultT>,
-                       ::cuda::std::_If<::cuda::std::is_assignable_v<decltype(*std::declval<KeyValuePairOutItT>()),
-                                                                     cub::KeyValuePair<::cuda::std::uint32_t, ResultT>>,
-                                        cub::KeyValuePair<::cuda::std::uint32_t, ResultT>,
-                                        cub::KeyValuePair<::cuda::std::int32_t, ResultT>>>>;
+      ::cuda::std::_If<
+        ::cuda::std::is_assignable<decltype(*std::declval<KeyValuePairOutItT>()),
+                                   cub::KeyValuePair<::cuda::std::int64_t, ResultT>>::value,
+        cub::KeyValuePair<::cuda::std::int64_t, ResultT>,
+        ::cuda::std::_If<::cuda::std::is_assignable<decltype(*std::declval<KeyValuePairOutItT>()),
+                                                    cub::KeyValuePair<::cuda::std::uint32_t, ResultT>>::value,
+                         cub::KeyValuePair<::cuda::std::uint32_t, ResultT>,
+                         cub::KeyValuePair<::cuda::std::int32_t, ResultT>>>>;
 
     using index_t = typename kv_pair_t::Key;
     *out_it       = kv_pair_t{static_cast<index_t>(reduced_result.key), reduced_result.value};
@@ -399,7 +400,7 @@ struct DispatchStreamingArgReduce
     }
 
     // Pointer to the double-buffer of global accumulators, which aggregate cross-partition results
-    global_accum_t* d_global_aggregates = reinterpret_cast<global_accum_t*>(allocations[1]);
+    global_accum_t* const d_global_aggregates = reinterpret_cast<global_accum_t*>(allocations[1]);
 
     accumulating_out_op = accumulating_transform_output_op_t{
       d_global_aggregates,
@@ -413,7 +414,8 @@ struct DispatchStreamingArgReduce
          current_partition_offset += static_cast<GlobalOffsetT>(max_partition_size))
     {
       const GlobalOffsetT remaining_items = (num_items - current_partition_offset);
-      GlobalOffsetT current_num_items = (remaining_items < max_partition_size) ? remaining_items : max_partition_size;
+      const GlobalOffsetT current_num_items =
+        (remaining_items < max_partition_size) ? remaining_items : max_partition_size;
 
       d_indexed_offset_in = arg_index_input_iterator_t(
         detail::reduce::make_offset_iterator(d_in, constant_offset_it_t{current_partition_offset}));
