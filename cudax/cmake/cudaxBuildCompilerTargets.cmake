@@ -11,6 +11,11 @@
 #   be linked into the developer build targets, as they include both
 #   cudax.compiler_interface and cccl.compiler_interface_cppXX.
 
+find_package(libcudacxx ${cudax_VERSION} EXACT CONFIG REQUIRED
+  NO_DEFAULT_PATH # Only check the explicit path in HINTS:
+  HINTS "${CCCL_SOURCE_DIR}/lib/cmake/libcudacxx/"
+)
+
 function(cudax_build_compiler_targets)
   set(cuda_compile_options)
   set(cxx_compile_options)
@@ -66,6 +71,7 @@ function(cudax_build_compiler_targets)
       # order matters here, we need the cudax options to override the cccl options.
       cccl.compiler_interface_cpp${dialect}
       cudax.compiler_interface
+      libcudacxx::libcudacxx
     )
   endforeach()
 

@@ -34,7 +34,8 @@
 #include <cuda_occupancy.h>
 #include <cuda_runtime.h>
 
-#include <cuda/experimental/__stf/utility/source_location.cuh>
+#include <cuda/std/source_location>
+
 #include <cuda/experimental/__stf/utility/unittest.cuh>
 
 #if __has_include(<cusolverDn.h>)
@@ -110,7 +111,7 @@ public:
    * @param loc location of the call, defaulted
    */
   template <typename T>
-  cuda_exception(const T status, const source_location loc = RESERVED_STF_SOURCE_LOCATION())
+  cuda_exception(const T status, const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
   {
     // All "success" statuses are zero
     static_assert(cudaSuccess == 0 && CUDA_SUCCESS == 0
@@ -277,7 +278,7 @@ UNITTEST("first_param")
  * @snippet this cuda_safe_call
  */
 template <typename T>
-void cuda_safe_call(const T status, const source_location loc = RESERVED_STF_SOURCE_LOCATION())
+void cuda_safe_call(const T status, const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
 {
   // Common early exit test for all cases
   if (status == 0)
@@ -318,7 +319,7 @@ UNITTEST("cuda_safe_call")
  * @snippet this cuda_try1
  */
 template <typename Status>
-void cuda_try(Status status, const source_location loc = RESERVED_STF_SOURCE_LOCATION())
+void cuda_try(Status status, const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
 {
   if (status)
   {

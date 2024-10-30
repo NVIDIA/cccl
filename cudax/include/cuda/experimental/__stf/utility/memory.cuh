@@ -25,8 +25,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/source_location>
+
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
-#include <cuda/experimental/__stf/utility/source_location.cuh>
 
 #include <cstdint>
 
@@ -124,7 +125,8 @@ inline void* allocateManagedMemory(size_t sz)
  * @param sz size in bytes
  * @param loc location of the call, defaulted
  */
-inline void deallocateHostMemory(void* p, size_t sz, source_location loc = RESERVED_STF_SOURCE_LOCATION())
+inline void
+deallocateHostMemory(void* p, size_t sz, const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
 {
   ::std::ignore = loc;
   assert([&] {
@@ -149,7 +151,8 @@ inline void deallocateHostMemory(void* p, size_t sz, source_location loc = RESER
  * @param sz size in bytes
  * @param loc location of the call, defaulted
  */
-inline void deallocateManagedMemory(void* p, size_t sz, source_location loc = RESERVED_STF_SOURCE_LOCATION())
+inline void deallocateManagedMemory(
+  void* p, size_t sz, const _CUDA_VSTD::source_location loc = _CUDA_VSTD::source_location::current())
 {
   ::std::ignore = loc;
   assert([&] {
