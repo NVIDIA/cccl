@@ -710,7 +710,7 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
 
     # Natural sort impl (handles embedded numbers in strings, case insensitive)
     def natural_sort_key(key):
-        return [(int(text) if text.isdigit() else text.lower()) for text in re.split('(\d+)', key)]
+        return [(int(text) if text.isdigit() else text.lower()) for text in re.split('(\\d+)', key)]
 
     # Sort the dispatch groups by name:
     workflow_dispatch_groups = dict(sorted(workflow_dispatch_groups.items(), key=lambda x: natural_sort_key(x[0])))
