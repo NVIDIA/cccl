@@ -2,15 +2,15 @@
 // SPDX-License-Identifier: BSD-3-Clause
 
 // %RANGE% TUNE_THREADS tpb 128:1024:128
-// %RANGE% TUNE_ALGORITHM alg 0:1:1
+// %RANGE% TUNE_ALGORITHM alg 0:2:1
 
 // keep checks at the top so compilation of discarded variants fails really fast
 #if !TUNE_BASE
-#  if TUNE_ALGORITHM == 1 && (__CUDA_ARCH_LIST__) < 900
+#  if TUNE_ALGORITHM == 2 && (__CUDA_ARCH_LIST__) < 900
 #    error "Cannot compile algorithm 4 (ublkcp) below sm90"
 #  endif
 
-#  if TUNE_ALGORITHM == 1 && !defined(_CUB_HAS_TRANSFORM_UBLKCP)
+#  if TUNE_ALGORITHM == 2 && !defined(_CUB_HAS_TRANSFORM_UBLKCP)
 #    error "Cannot tune for ublkcp algorithm, which is not provided by CUB (old CTK?)"
 #  endif
 #endif
