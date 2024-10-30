@@ -79,7 +79,8 @@ DECLARE_TMPL_LAUNCH_WRAPPER(transform_many_with_alg_entry_point,
 
 using algorithms =
   c2h::enum_type_list<Algorithm,
-                      Algorithm::fallback_for
+                      Algorithm::fallback_for,
+                      Algorithm::prefetch
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
                       ,
                       Algorithm::ublkcp
