@@ -319,8 +319,8 @@ TEST_CASE("global devices vector", "[device]")
     auto peers = cudax::devices[0].get_peers();
     for (auto peer : peers)
     {
-      CUDAX_REQUIRE(cudax::devices[0].can_peer_access_to(peer))
-      CUDAX_REQUIRE(peer.can_peer_access_to(cudax::devices[0]));
+      CUDAX_REQUIRE(cudax::devices[0].has_peer_access_to(peer))
+      CUDAX_REQUIRE(peer.has_peer_access_to(cudax::devices[0]));
     }
   }
 

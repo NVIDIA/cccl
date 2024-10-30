@@ -212,7 +212,7 @@ _CCCL_NODISCARD inline ::std::vector<device_ref> device_ref::get_peers() const
       // While in almost all practical applications peer access should be symmetrical,
       // it is possible to build a system with one directional peer access, check
       // both ways here just to be safe
-      if (can_peer_access_to(__other_dev) && __other_dev.can_peer_access_to(*this))
+      if (has_peer_access_to(__other_dev) && __other_dev.has_peer_access_to(*this))
       {
         __result.push_back(__other_dev);
       }

@@ -119,7 +119,6 @@ public:
     return __name;
   }
 
-  // TODO not sure if this is the best name :(
   //! @brief Queries if its possible for this device to directly access specified device's memory.
   //!
   //! If this function returns true, device supplied to this call can be passed into enable_peer_access
@@ -128,7 +127,7 @@ public:
   //!
   //! @param __other_dev Device to query the peer access
   //! @return true if its possible for this device to access the specified device's memory
-  bool can_peer_access_to(device_ref __other_dev) const
+  bool has_peer_access_to(device_ref __other_dev) const
   {
     int __can_access;
     _CCCL_TRY_CUDA_API(
