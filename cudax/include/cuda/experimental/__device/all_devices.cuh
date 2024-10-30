@@ -111,7 +111,7 @@ struct all_devices::__initializer_iterator
 
 _CCCL_NODISCARD inline const device& all_devices::operator[](size_type __id_) const noexcept
 {
-  assert(__id_ < size());
+  _CCCL_ASSERT(__id_ < size(), "cuda::experimental::all_devices::subscript device index out of range");
   return __devices()[__id_];
 }
 
