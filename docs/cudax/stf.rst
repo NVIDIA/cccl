@@ -193,6 +193,31 @@ more detail in the following sections:
 
 More examples can be found in the ``examples`` directory in the sources.
 
+Compiling examples
+^^^^^^^^^^^^^^^^^^
+
+The following commands compile STF examples from the root of the CCCL sources.
+Please note the `-j` option, which specifies how many processes should be used to
+compile the examples. Not specifying it will launch as many processes as there
+are processors on the machine, which might lead to an excessive resource
+consumption and system instability.
+
+.. code:: bash
+
+    mkdir -p build
+    cd build
+    cmake .. --preset cudax-cpp17
+    cd cudax-cpp17
+    ninja cudax.cpp17.examples.stf -j4
+
+To launch examples, simply run binaries under the `bin/`
+subdirectory in the current directory. For instance, to launch the `01-axpy`
+example :
+
+.. code:: bash
+
+    ./bin/cudax.cpp17.example.stf.01-axpy
+
 Backends and contexts
 -------------------------------
 
