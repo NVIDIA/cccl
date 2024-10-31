@@ -71,8 +71,10 @@ private:
 class ciphertext {
 public:
     ciphertext() = default;
+    ciphertext(const ciphertext&) = default;
 
     ciphertext(const stackable_ctx& ctx) : ctx(ctx) {}
+
 
     plaintext decrypt() const {
         plaintext p(ctx);
