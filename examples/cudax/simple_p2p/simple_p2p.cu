@@ -52,9 +52,9 @@ std::vector<cudax::device_ref> find_peers_group()
           peers.push_back(dev_i);
         }
         printf("> Peer access from %s (GPU%d) -> %s (GPU%d) : %s\n",
-               dev_i.get_name(),
+               dev_i.get_name().c_str(),
                dev_i.get(),
-               dev_j.get_name(),
+               dev_j.get_name().c_str(),
                dev_j.get(),
                can_access_peer ? "Yes" : "No");
       }
@@ -63,12 +63,7 @@ std::vector<cudax::device_ref> find_peers_group()
 
   if (peers.size() == 0)
   {
-    printf("Two or more GPUs with Peer-to-Peer access capability are required for "
-           "%s.\n",
-           argv[0]);
-    printf("Peer to Peer access is not available amongst GPUs in the system, "
-           "waiving test.\n");
-
+    printf("Two or more GPUs with Peer-to-Peer access capability are required, waving the test.\n");
     exit(2);
   }
 
@@ -77,10 +72,10 @@ std::vector<cudax::device_ref> find_peers_group()
 
 template <typename BufferType>
 void benchmark_cross_device_ping_pong_copy(
-  cudax::stream_ref stream, const BufferType& dev0_buffer, const BufferType& dev1_buffer)
+  cudax::stream_ref dev0_stream, cudax::stream_ref dev1_stream, BufferType& dev0_buffer, BufferType& dev1_buffer)
 {
   constexpr int cpy_count = 100;
-  auto start_event        = stream.record_timed_event();
+  auto start_event        = dev0_stream.record_timed_event();
   for (int i = 0; i < cpy_count; i++)
   {
     // Ping-pong copy between GPUs
@@ -88,34 +83,34 @@ void benchmark_cross_device_ping_pong_copy(
     {
       // cudax::copy_bytes(stream, dev0_buffer, dev1_buffer);
       checkCudaErrors(cudaMemcpyAsync(
-        dev1_buffer.data(), dev0_buffer.data(), dev0_buffer.size_bytes(), cudaMemcpyDefault, stream.get()));
+        dev1_buffer.data(), dev0_buffer.data(), dev0_buffer.size_bytes(), cudaMemcpyDefault, dev0_stream.get()));
     }
     else
     {
       // cudax::copy_bytes(stream, dev1_buffer, dev0_buffer);
       checkCudaErrors(cudaMemcpyAsync(
-        dev0_buffer.data(), dev1_buffer.data(), dev0_buffer.size_bytes(), cudaMemcpyDefault, stream.get()));
+        dev0_buffer.data(), dev1_buffer.data(), dev0_buffer.size_bytes(), cudaMemcpyDefault, dev1_stream.get()));
     }
   }
 
-  auto end_event = stream.record_timed_event();
-  stream.wait();
+  auto end_event = dev0_stream.record_timed_event();
+  dev0_stream.wait();
   cuda::std::chrono::duration<double> duration(end_event - start_event);
   printf("cudaMemcpyPeer / cudaMemcpy between GPU%d and GPU%d: %.2fGB/s\n",
-         peers[0].get(),
-         peers[1].get(),
+         dev0_stream.device().get(),
+         dev1_stream.device().get(),
          (static_cast<float>(cpy_count * dev0_buffer.size_bytes()) / (1024 * 1024 * 1024) / duration.count()));
 }
 
 template <typename BufferType>
 void test_cross_device_access_from_kernel(
-  cudax::stream_ref dev0_stream,
-  cudax::stream_ref dev1_stream,
-  const BufferType& dev0_buffer,
-  const BufferType& dev1_buffer)
+  cudax::stream_ref dev0_stream, cudax::stream_ref dev1_stream, BufferType& dev0_buffer, BufferType& dev1_buffer)
 {
+  cudax::device_ref dev0 = dev0_stream.device().get();
+  cudax::device_ref dev1 = dev1_stream.device().get();
+
   // Prepare host buffer and copy to GPU 0
-  printf("Preparing host buffer and memcpy to GPU%d...\n", peers[0].get());
+  printf("Preparing host buffer and memcpy to GPU%d...\n", dev0.get());
 
   // This will be a pinned memory vector once available
   cudax::uninitialized_buffer<float, cuda::mr::host_accessible> host_buffer(
@@ -138,10 +133,10 @@ void test_cross_device_access_from_kernel(
   // output to the GPU 1 buffer
   printf("Run kernel on GPU%d, taking source data from GPU%d and writing to "
          "GPU%d...\n",
-         peers[1].get(),
-         peers[0].get(),
-         peers[1].get());
-  cudax::launch(dev1_stream, dims, SimpleKernel{}, dev0_buffer.data(), dev1_buffer.data());
+         dev1.get(),
+         dev0.get(),
+         dev1.get());
+  cudax::launch(dev1_stream, dims, SimpleKernel{}, dev0_buffer, dev1_buffer);
 
   dev0_stream.wait(dev1_stream);
 
@@ -149,15 +144,15 @@ void test_cross_device_access_from_kernel(
   // output to the GPU 0 buffer
   printf("Run kernel on GPU%d, taking source data from GPU%d and writing to "
          "GPU%d...\n",
-         peers[0].get(),
-         peers[1].get(),
-         peers[0].get());
-  cudax::launch(dev0_stream, dims, SimpleKernel{}, dev1_buffer.data(), dev0_buffer.data());
+         dev0.get(),
+         dev1.get(),
+         dev0.get());
+  cudax::launch(dev0_stream, dims, SimpleKernel{}, dev1_buffer, dev0_buffer);
 
   dev0_stream.wait();
 
   // Copy data back to host and verify
-  printf("Copy data back to host from GPU%d and verify results...\n", peers[0].get());
+  printf("Copy data back to host from GPU%d and verify results...\n", dev0.get());
   // cudax::copy_bytes(dev0_stream, dev0_buffer, host_buffer);
   checkCudaErrors(cudaMemcpyAsync(
     host_buffer.data(), dev0_buffer.data(), dev0_buffer.size_bytes(), cudaMemcpyDefault, dev0_stream.get()));
@@ -221,7 +216,7 @@ int main(int argc, char** argv)
   cudax::uninitialized_buffer<float, cuda::mr::device_accessible> dev0_buffer(dev0_resource, buf_cnt);
   cudax::uninitialized_buffer<float, cuda::mr::device_accessible> dev1_buffer(dev1_resource, buf_cnt);
 
-  benchmark_cross_device_ping_pong_copy(dev0_stream, dev0_buffer, dev1_buffer);
+  benchmark_cross_device_ping_pong_copy(dev0_stream, dev1_stream, dev0_buffer, dev1_buffer);
 
   test_cross_device_access_from_kernel(dev0_stream, dev1_stream, dev0_buffer, dev1_buffer);
 
