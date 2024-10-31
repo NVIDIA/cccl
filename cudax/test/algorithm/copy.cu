@@ -94,12 +94,12 @@ TEST_CASE("Copy", "[data_manipulation]")
     cudax::uninitialized_buffer<int, cuda::mr::host_accessible> host_buffer(host_resource, 1);
     cudax::fill_bytes(_stream, host_buffer, fill_byte);
 
-    ::std::vector<int> vec(buffer_size, 0xdeadbeef);
+    ::std::vector<int> vec(buffer_size, 0xbeef);
 
     cudax::copy_bytes(_stream, host_buffer, vec);
     _stream.wait();
 
     CUDAX_REQUIRE(vec[0] == get_expected_value(fill_byte));
-    CUDAX_REQUIRE(vec[1] == 0xdeadbeef);
+    CUDAX_REQUIRE(vec[1] == 0xbeef);
   }
 }
