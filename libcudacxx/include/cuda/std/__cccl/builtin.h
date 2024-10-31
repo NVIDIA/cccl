@@ -549,10 +549,10 @@
 #  define _CCCL_BUILTIN_TYPE_PACK_ELEMENT(...) __type_pack_element<__VA_ARGS__>
 #endif // _CCCL_HAS_BUILTIN(__type_pack_element)
 
-// NVCC prior to 12.0 have trouble with pack expansion into __type_pack_element in an alias template
-#if defined(_CCCL_CUDACC_BELOW_12_0)
+// NVCC prior to 12.2 have trouble with pack expansion into __type_pack_element in an alias template
+#if defined(_CCCL_CUDACC_BELOW_12_2)
 #  undef _CCCL_BUILTIN_TYPE_PACK_ELEMENT
-#endif // _CCCL_CUDACC_BELOW_12_0
+#endif // _CCCL_CUDACC_BELOW_12_2
 
 #if _CCCL_CHECK_BUILTIN(underlying_type) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 40700) \
   || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
