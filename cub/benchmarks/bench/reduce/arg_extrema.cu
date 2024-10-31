@@ -52,7 +52,7 @@ void arg_reduce(nvbench::state& state, nvbench::type_list<T, OpT>)
   using per_partition_offset_t = int;
 
   // Offset type used to index within the total input in the range [d_in, d_in + num_items)
-  using global_offset_t = ::cuda::std::uint64_t;
+  using global_offset_t = ::cuda::std::int64_t;
 
   // The value type of the KeyValuePair<global_offset_t, output_value_t> returned by the ArgIndexInputIterator
   using output_value_t = T;

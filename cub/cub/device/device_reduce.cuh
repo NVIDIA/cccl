@@ -554,13 +554,13 @@ struct DeviceReduce
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename OffsetT>
+  template <typename InputIteratorT, typename OutputIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    OffsetT num_items,
+    ::cuda::std::int64_t num_items,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMin");
@@ -572,7 +572,7 @@ struct DeviceReduce
     using PerPartitionOffsetT = int;
 
     // Offset type used to index within the total input in the range [d_in, d_in + num_items)
-    using GlobalOffsetT = ::cuda::std::uint64_t;
+    using GlobalOffsetT = ::cuda::std::int64_t;
 
     // Initial value type
     using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<GlobalOffsetT, InputValueT>>;
@@ -610,20 +610,19 @@ struct DeviceReduce
   }
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-  template <typename InputIteratorT, typename OutputIteratorT, typename OffsetT>
+  template <typename InputIteratorT, typename OutputIteratorT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    OffsetT num_items,
+    ::cuda::std::int64_t num_items,
     cudaStream_t stream,
     bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return ArgMin<InputIteratorT, OutputIteratorT, OffsetT>(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
+    return ArgMin<InputIteratorT, OutputIteratorT>(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 
@@ -833,13 +832,13 @@ struct DeviceReduce
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename InputIteratorT, typename OutputIteratorT, typename OffsetT>
+  template <typename InputIteratorT, typename OutputIteratorT>
   CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    OffsetT num_items,
+    ::cuda::std::int64_t num_items,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMax");
@@ -851,7 +850,7 @@ struct DeviceReduce
     using PerPartitionOffsetT = int;
 
     // Offset type used to index within the total input in the range [d_in, d_in + num_items)
-    using GlobalOffsetT = ::cuda::std::uint64_t;
+    using GlobalOffsetT = ::cuda::std::int64_t;
 
     // Initial value type
     using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<GlobalOffsetT, InputValueT>>;
@@ -889,20 +888,19 @@ struct DeviceReduce
   }
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-  template <typename InputIteratorT, typename OutputIteratorT, typename OffsetT>
+  template <typename InputIteratorT, typename OutputIteratorT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    OffsetT num_items,
+    ::cuda::std::int64_t num_items,
     cudaStream_t stream,
     bool debug_synchronous)
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
 
-    return ArgMax<InputIteratorT, OutputIteratorT, OffsetT>(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
+    return ArgMax<InputIteratorT, OutputIteratorT>(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 
