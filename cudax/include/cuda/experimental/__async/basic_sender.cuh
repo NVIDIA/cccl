@@ -105,7 +105,7 @@ struct basic_receiver
 };
 
 template <class _Rcvr>
-_CCCL_INLINE_VAR constexpr bool has_no_environment = _CUDA_VSTD::is_same_v<_Rcvr, receiver_archetype>;
+inline constexpr bool has_no_environment = _CUDA_VSTD::is_same_v<_Rcvr, receiver_archetype>;
 
 template <bool _HasStopped, class _Data, class _Rcvr>
 struct __mk_completions
@@ -172,7 +172,7 @@ struct __basic_opstate
                                     __traits_t::template __set_error_t,
                                     typename __traits_t::__set_stopped_t>;
 
-  _CCCL_HOST_DEVICE __basic_opstate(_Sndr&& __sndr, _Data __data, _Rcvr __rcvr)
+  _CUDAX_API __basic_opstate(_Sndr&& __sndr, _Data __data, _Rcvr __rcvr)
       : __state_{static_cast<_Data&&>(__data), static_cast<_Rcvr&&>(__rcvr)}
       , __op_(__async::connect(static_cast<_Sndr&&>(__sndr), __rcvr_t{__state_}))
   {}

@@ -37,16 +37,16 @@ struct completion_signatures
 
 // A metafunction to determine if a type is a completion signature
 template <class>
-_CCCL_INLINE_VAR constexpr bool __is_valid_signature = false;
+inline constexpr bool __is_valid_signature = false;
 
 template <class... _Ts>
-_CCCL_INLINE_VAR constexpr bool __is_valid_signature<set_value_t(_Ts...)> = true;
+inline constexpr bool __is_valid_signature<set_value_t(_Ts...)> = true;
 
 template <class _Error>
-_CCCL_INLINE_VAR constexpr bool __is_valid_signature<set_error_t(_Error)> = true;
+inline constexpr bool __is_valid_signature<set_error_t(_Error)> = true;
 
 template <>
-_CCCL_INLINE_VAR constexpr bool __is_valid_signature<set_stopped_t()> = true;
+inline constexpr bool __is_valid_signature<set_stopped_t()> = true;
 
 // The implementation of transform_completion_signatures starts here
 template <class _Sig, template <class...> class _Vy, template <class...> class _Ey, class _Sy>
@@ -264,11 +264,11 @@ template <class _Sndr, class _Rcvr, template <class...> class _Variant>
 using error_types_of_t = __error_types<completion_signatures_of_t<_Sndr, _Rcvr>, _Variant>;
 
 template <class _Sigs>
-_CCCL_INLINE_VAR constexpr bool __sends_stopped = //
+inline constexpr bool __sends_stopped = //
   __transform_completion_signatures<_Sigs, __malways<__mfalse>::__f, __malways<__mfalse>::__f, __mtrue, __mor>::__value;
 
 template <class _Sndr, class _Rcvr = receiver_archetype>
-_CCCL_INLINE_VAR constexpr bool sends_stopped = //
+inline constexpr bool sends_stopped = //
   __sends_stopped<completion_signatures_of_t<_Sndr, _Rcvr>>;
 
 using __eptr_completion = completion_signatures<set_error_t(::std::exception_ptr)>;
@@ -277,17 +277,17 @@ template <bool _NoExcept>
 using __eptr_completion_if = _CUDA_VSTD::_If<_NoExcept, completion_signatures<>, __eptr_completion>;
 
 template <class>
-_CCCL_INLINE_VAR constexpr bool __is_completion_signatures = false;
+inline constexpr bool __is_completion_signatures = false;
 
 template <class... _Sigs>
-_CCCL_INLINE_VAR constexpr bool __is_completion_signatures<completion_signatures<_Sigs...>> = true;
+inline constexpr bool __is_completion_signatures<completion_signatures<_Sigs...>> = true;
 
 template <class _Sndr>
 using __is_non_dependent_detail_ = //
   __mif<__is_completion_signatures<completion_signatures_of_t<_Sndr>>>;
 
 template <class _Sndr>
-_CCCL_INLINE_VAR constexpr bool __is_non_dependent_sender = __mvalid_q<__is_non_dependent_detail_, _Sndr>;
+inline constexpr bool __is_non_dependent_sender = __mvalid_q<__is_non_dependent_detail_, _Sndr>;
 
 namespace __csig
 {

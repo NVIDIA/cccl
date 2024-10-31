@@ -141,7 +141,7 @@ struct env<_Env0, _Env1>
 };
 
 template <class... _Envs>
-_CCCL_HOST_DEVICE env(_Envs...) -> env<__unwrap_reference_t<_Envs>...>;
+_CUDAX_API env(_Envs...) -> env<__unwrap_reference_t<_Envs>...>;
 
 using empty_env = env<>;
 

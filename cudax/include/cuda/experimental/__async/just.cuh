@@ -72,13 +72,13 @@ private:
     {
       __opstate_t* __self_;
 
-      _CCCL_HOST_DEVICE void operator()(_Ts&... __ts) const noexcept
+      _CUDAX_API void operator()(_Ts&... __ts) const noexcept
       {
         _SetTag()(static_cast<_Rcvr&&>(__self_->__rcvr_), static_cast<_Ts&&>(__ts)...);
       }
     };
 
-    _CCCL_HOST_DEVICE void start() & noexcept
+    _CUDAX_API void start() & noexcept
     {
       __values_.__apply(__complete_fn{this}, __values_);
     }
@@ -94,14 +94,14 @@ private:
     __tuple<_Ts...> __values_;
 
     template <class _Rcvr>
-    _CCCL_HOST_DEVICE __opstate_t<_Rcvr, _Ts...> connect(_Rcvr __rcvr) && //
+    _CUDAX_API __opstate_t<_Rcvr, _Ts...> connect(_Rcvr __rcvr) && //
       noexcept(__nothrow_decay_copyable<_Rcvr, _Ts...>)
     {
       return __opstate_t<_Rcvr, _Ts...>{static_cast<_Rcvr&&>(__rcvr), static_cast<__tuple<_Ts...>&&>(__values_)};
     }
 
     template <class _Rcvr>
-    _CCCL_HOST_DEVICE __opstate_t<_Rcvr, _Ts...> connect(_Rcvr __rcvr) const& //
+    _CUDAX_API __opstate_t<_Rcvr, _Ts...> connect(_Rcvr __rcvr) const& //
       noexcept(__nothrow_decay_copyable<_Rcvr, _Ts const&...>)
     {
       return __opstate_t<_Rcvr, _Ts...>{static_cast<_Rcvr&&>(__rcvr), __values_};

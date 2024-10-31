@@ -76,11 +76,11 @@ private:
       delete static_cast<__opstate_t*>(__ptr);
     }
 
-    _CCCL_HOST_DEVICE explicit __opstate_t(_Sndr&& __sndr)
+    _CUDAX_API explicit __opstate_t(_Sndr&& __sndr)
         : __opstate_(__async::connect(static_cast<_Sndr&&>(__sndr), __rcvr_t{this, &__destroy}))
     {}
 
-    _CCCL_HOST_DEVICE void start() & noexcept
+    _CUDAX_API void start() & noexcept
     {
       __async::start(__opstate_);
     }
