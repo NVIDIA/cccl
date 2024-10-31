@@ -34,13 +34,15 @@ template <typename _Tp>
 concept __valid_copy_fill_argument = _CUDA_VRANGES::contiguous_range<detail::__as_copy_arg_t<_Tp>>;
 
 #else
-template <typename _Tp, bool = true>
+template <typename _Tp, typename = int>
 inline constexpr bool __convertible_to_span = false;
 
 template <typename _Tp>
 inline constexpr bool __convertible_to_span<
   _Tp,
-  _CUDA_VSTD::is_convertible_v<_Tp, _CUDA_VSTD::span<typename _CUDA_VSTD::decay_t<_Tp>::value_type>>> = true;
+  _CUDA_VSTD::enable_if_t<
+    _CUDA_VSTD::is_convertible_v<_Tp, _CUDA_VSTD::span<typename _CUDA_VSTD::decay_t<_Tp>::value_type>>,
+    int>> = true;
 
 template <typename _Tp>
 inline constexpr bool __valid_copy_fill_argument =
