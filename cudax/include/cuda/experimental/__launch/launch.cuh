@@ -132,14 +132,18 @@ void launch(
       launcher,
       conf,
       kernel,
-      static_cast<as_kernel_arg_t<Args>>(detail::__launch_transform(stream, args))...);
+      static_cast<as_kernel_arg_t<Args>>(detail::__launch_transform(stream, std::forward<Args>(args)))...);
   }
   else
   {
     static_assert(::cuda::std::is_invocable_v<Kernel, as_kernel_arg_t<Args>...>);
     auto launcher = detail::kernel_launcher_no_config<Kernel, as_kernel_arg_t<Args>...>;
     status        = detail::launch_impl(
-      stream, conf, launcher, kernel, static_cast<as_kernel_arg_t<Args>>(detail::__launch_transform(stream, args))...);
+      stream,
+      conf,
+      launcher,
+      kernel,
+      static_cast<as_kernel_arg_t<Args>>(detail::__launch_transform(stream, std::forward<Args>(args)))...);
   }
   if (status != cudaSuccess)
   {
@@ -202,7 +206,7 @@ void launch(::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& di
       launcher,
       dims,
       kernel,
-      static_cast<as_kernel_arg_t<Args>>(detail::__launch_transform(stream, args))...);
+      static_cast<as_kernel_arg_t<Args>>(detail::__launch_transform(stream, std::forward<Args>(args)))...);
   }
   else
   {
@@ -213,7 +217,7 @@ void launch(::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& di
       kernel_config(dims),
       launcher,
       kernel,
-      static_cast<as_kernel_arg_t<Args>>(detail::__launch_transform(stream, args))...);
+      static_cast<as_kernel_arg_t<Args>>(detail::__launch_transform(stream, std::forward<Args>(args)))...);
   }
   if (status != cudaSuccess)
   {
