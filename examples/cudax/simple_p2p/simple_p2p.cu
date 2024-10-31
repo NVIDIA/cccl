@@ -11,17 +11,23 @@
 #include <cuda/experimental/launch.cuh>
 #include <cuda/experimental/memory_resource.cuh>
 
+#include <algorithm>
+
 #include <stdio.h>
 #include <stdlib.h>
 
 namespace cudax = cuda::experimental;
 
-__global__ void SimpleKernel(float* src, float* dst)
+struct SimpleKernel
 {
-  // Just a dummy kernel, doing enough for us to verify that everything
-  // worked
-  const int idx = blockIdx.x * blockDim.x + threadIdx.x;
-  dst[idx]      = src[idx] * 2.0f;
+  template <typename Dimensions>
+  __device__ void operator()(Dimensions dims, ::cuda::std::span<const float> src, ::cuda::std::span<float> dst)
+  {
+    // Just a dummy kernel, doing enough for us to verify that everything
+    // worked
+    const auto idx = dims.rank(cudax::thread);
+    dst[idx]       = src[idx] * 2.0f;
+  }
 }
 
 int main(int argc, char** argv)
@@ -79,10 +85,14 @@ int main(int argc, char** argv)
     exit(2);
   }
 
-  printf("Found %lu peers, using devices %d and %d\n", peers.size(), peers[0].get(), peers[1].get());
-
   cudax::stream dev0_stream(peers[0]);
   cudax::stream dev1_stream(peers[1]);
+
+  printf("Enabling peer access between GPU%d and GPU%d...\n", peers[0].get(), peers[1].get());
+  cudax::mr::async_memory_resource dev0_resource(peers[0]);
+  dev0_resource.enable_peer_access(peers[1]);
+  cudax::mr::async_memory_resource dev1_resource(peers[1]);
+  dev1_resource.enable_peer_access(peers[0]);
 
   // Allocate buffers
   constexpr size_t buf_cnt = 1024 * 1024 * 256;
@@ -91,32 +101,27 @@ int main(int argc, char** argv)
          peers[0].get(),
          peers[1].get());
 
-  cudax::mr::async_memory_resource dev0_resource(peers[0]);
-  dev0_resource.enable_peer_access(peers[1]);
-  cudax::mr::async_memory_resource dev1_resource(peers[1]);
-  dev1_resource.enable_peer_access(peers[0]);
-
   cudax::uninitialized_buffer<float, cuda::mr::device_accessible> dev0_buffer(dev0_resource, buf_cnt);
   cudax::uninitialized_buffer<float, cuda::mr::device_accessible> dev1_buffer(dev1_resource, buf_cnt);
-  cudax::uninitialized_buffer<float, cuda::mr::host_accessible> host_buffer(cuda::mr::pinned_memory_resource(), buf_cnt);
 
 #define checkCudaErrors
   // Create CUDA event handles
   printf("Creating event handles...\n");
 
-  auto start_event = dev0_stream.record_timed_event();
-  for (int i = 0; i < 100; i++)
+  constexpr int cpy_count = 100;
+  auto start_event        = dev0_stream.record_timed_event();
+  for (int i = 0; i < cpy_count; i++)
   {
-    // With UVA we don't need to specify source and target devices, the
-    // runtime figures this out by itself from the pointers
     // Ping-pong copy between GPUs
     if (i % 2 == 0)
     {
+      // cudax::copy_bytes(dev0_stream, dev0_buffer, dev1_buffer);
       checkCudaErrors(cudaMemcpyAsync(
         dev1_buffer.data(), dev0_buffer.data(), dev0_buffer.size_bytes(), cudaMemcpyDefault, dev0_stream.get()));
     }
     else
     {
+      // cudax::copy_bytes(dev0_stream, dev1_buffer, dev0_buffer);
       checkCudaErrors(cudaMemcpyAsync(
         dev0_buffer.data(), dev1_buffer.data(), dev0_buffer.size_bytes(), cudaMemcpyDefault, dev0_stream.get()));
     }
@@ -128,24 +133,25 @@ int main(int argc, char** argv)
   printf("cudaMemcpyPeer / cudaMemcpy between GPU%d and GPU%d: %.2fGB/s\n",
          peers[0].get(),
          peers[1].get(),
-         ((float) dev0_buffer.size_bytes() / (1024 * 1024 * 1024) / duration.count()));
+         (static_cast<float>(cpy_count * dev0_buffer.size_bytes()) / (1024 * 1024 * 1024) / duration.count()));
 
   // Prepare host buffer and copy to GPU 0
   printf("Preparing host buffer and memcpy to GPU%d...\n", peers[0].get());
 
-  for (int i = 0; i < dev0_buffer.size_bytes() / sizeof(float); i++)
-  {
-    host_buffer.data()[i] = float(i % 4096);
-  }
+  cudax::uninitialized_buffer<float, cuda::mr::host_accessible> host_buffer(cuda::mr::pinned_memory_resource(), buf_cnt);
+  std::generate(host_buffer.begin(), host_buffer.end(), []() {
+    static int i = 0;
+    return (i++) % 4096;
+  });
 
+  // cudax::copy_bytes(dev0_stream, host_buffer, dev0_buffer);
   checkCudaErrors(cudaMemcpyAsync(
     dev0_buffer.data(), host_buffer.data(), dev0_buffer.size_bytes(), cudaMemcpyDefault, dev0_stream.get()));
 
   dev1_stream.wait(dev0_stream);
 
   // Kernel launch configuration
-  const dim3 threads(512, 1);
-  const dim3 blocks((dev0_buffer.size_bytes() / sizeof(float)) / threads.x, 1);
+  auto dims = cudax::distribute<512>(dev0_buffer.size());
 
   // Run kernel on GPU 1, reading input from the GPU 0 buffer, writing
   // output to the GPU 1 buffer
@@ -154,8 +160,7 @@ int main(int argc, char** argv)
          peers[1].get(),
          peers[0].get(),
          peers[1].get());
-  auto dims = cudax::distribute<512>(dev0_buffer.size());
-  cudax::launch(dev1_stream, dims, SimpleKernel, dev0_buffer.data(), dev1_buffer.data());
+  cudax::launch(dev1_stream, dims, SimpleKernel{}, dev0_buffer.data(), dev1_buffer.data());
 
   dev0_stream.wait(dev1_stream);
 
@@ -166,12 +171,13 @@ int main(int argc, char** argv)
          peers[0].get(),
          peers[1].get(),
          peers[0].get());
-  cudax::launch(dev0_stream, dims, SimpleKernel, dev1_buffer.data(), dev0_buffer.data());
+  cudax::launch(dev0_stream, dims, SimpleKernel{}, dev1_buffer.data(), dev0_buffer.data());
 
   dev0_stream.wait();
 
   // Copy data back to host and verify
   printf("Copy data back to host from GPU%d and verify results...\n", peers[0].get());
+  // cudax::copy_bytes(dev0_stream, dev0_buffer, host_buffer);
   checkCudaErrors(cudaMemcpyAsync(
     host_buffer.data(), dev0_buffer.data(), dev0_buffer.size_bytes(), cudaMemcpyDefault, dev0_stream.get()));
 
@@ -197,7 +203,7 @@ int main(int argc, char** argv)
     }
   }
 
-  // Disable peer access (also unregisters memory for non-UVA cases)
+  // Disable peer access
   printf("Disabling peer access...\n");
   dev0_resource.disable_peer_access(peers[1]);
   dev1_resource.disable_peer_access(peers[0]);
