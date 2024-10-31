@@ -119,7 +119,7 @@ launch_impl(::cuda::stream_ref stream, Config conf, const Kernel& kernel_fn, con
  */
 template <typename... Args, typename... Config, typename Dimensions, typename Kernel>
 void launch(
-  ::cuda::stream_ref stream, const kernel_config<Dimensions, Config...>& conf, const Kernel& kernel, Args... args)
+  ::cuda::stream_ref stream, const kernel_config<Dimensions, Config...>& conf, const Kernel& kernel, Args&&... args)
 {
   __ensure_current_device __dev_setter(stream);
   cudaError_t status;
@@ -189,7 +189,7 @@ void launch(
  * arguments to be passed into the kernel functor
  */
 template <typename... Args, typename... Levels, typename Kernel>
-void launch(::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& dims, const Kernel& kernel, Args... args)
+void launch(::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& dims, const Kernel& kernel, Args&&... args)
 {
   __ensure_current_device __dev_setter(stream);
   cudaError_t status;
