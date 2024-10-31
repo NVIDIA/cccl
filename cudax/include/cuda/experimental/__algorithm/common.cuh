@@ -29,7 +29,7 @@
 
 namespace cuda::experimental
 {
-#if _CCCL_STD_VER >= 2020 && _CCCL_SPAN_USES_RANGES
+#if _CCCL_STD_VER >= 2020 && defined(_CCCL_SPAN_USES_RANGES)
 template <typename _Tp>
 concept __valid_copy_fill_argument = _CUDA_VRANGES::contiguous_range<detail::__as_copy_arg_t<_Tp>>;
 
