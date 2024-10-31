@@ -474,14 +474,19 @@ struct DeviceReduce
 
     return Min<InputIteratorT, OutputIteratorT>(d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
+
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 
   //! @rst
   //! Finds the first device-wide minimum using the less-than (``<``) operator, also returning the index of that item.
   //!
-  //! - The output value type of ``d_out`` is ``cub::KeyValuePair<int, T>``
-  //!   (assuming the value type of ``d_in`` is ``T``)
-  //!
+  //! - The output value type assigned to ``d_out`` is ``cub::KeyValuePair<offset_t, T>``
+  //!   (Where  ``T`` corresponds to ``iterator_traits<d_out>::value_type::Value``, if the iterator value type of
+  //!   ``d_out`` is not void. Otherwise, ``T`` is the iterator value type of ``d_in``. ``offset_t`` is determined as
+  //!   follows:
+  //!   ``uint64_t`` if ``cub::KeyValuePair<uint64_t, T>`` is assignable to ``d_out``. Otherwise, ``int64_t`` if
+  //!   ``cub::KeyValuePair<int64_t, T>`` is assignable to ``d_out``. Otherwise, ``uint32_t`` if
+  //!   ``cub::KeyValuePair<uint32_t, T>`` is assignable to ``d_out``. Otherwise, ``int32_t``.
   //!   - The minimum is written to ``d_out.value`` and its offset in the input array is written to ``d_out.key``.
   //!   - The ``{1, std::numeric_limits<T>::max()}`` tuple is produced for zero-length inputs
   //!
@@ -532,7 +537,7 @@ struct DeviceReduce
   //!
   //! @tparam OutputIteratorT
   //!   **[inferred]** Output iterator type for recording the reduced aggregate
-  //!   (having value type `cub::KeyValuePair<int, T>`) @iterator
+  //!   (having value type `cub::KeyValuePair<offset_t, T>`) @iterator
   //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
@@ -754,8 +759,15 @@ struct DeviceReduce
   //! Finds the first device-wide maximum using the greater-than (``>``)
   //! operator, also returning the index of that item
   //!
-  //! - The output value type of ``d_out`` is ``cub::KeyValuePair<int, T>``
-  //!   (assuming the value type of ``d_in`` is ``T``)
+  //! - The output value type assigned to ``d_out`` is ``cub::KeyValuePair<offset_t, T>``
+  //!   (Where  ``T`` corresponds to ``iterator_traits<d_out>::value_type::Value``, if the iterator value type of
+  //!   ``d_out`` is not void. Otherwise, ``T`` is the iterator value type of ``d_in``. ``offset_t`` is determined as
+  //!   follows:
+  //!   ``uint64_t`` if ``cub::KeyValuePair<uint64_t, T>`` is assignable to ``d_out``. Otherwise, ``int64_t`` if
+  //!   ``cub::KeyValuePair<int64_t, T>`` is assignable to ``d_out``. Otherwise, ``uint32_t`` if
+  //!   ``cub::KeyValuePair<uint32_t, T>`` is assignable to ``d_out``. Otherwise, ``int32_t``.
+  //!   - The minimum is written to ``d_out.value`` and its offset in the input array is written to ``d_out.key``.
+  //!   - The ``{1, std::numeric_limits<T>::max()}`` tuple is produced for zero-length inputs
   //!
   //!   - The maximum is written to ``d_out.value`` and its offset in the input
   //!     array is written to ``d_out.key``.
@@ -810,7 +822,7 @@ struct DeviceReduce
   //!
   //! @tparam OutputIteratorT
   //!   **[inferred]** Output iterator type for recording the reduced aggregate
-  //!   (having value type `cub::KeyValuePair<int, T>`) @iterator
+  //!   (having value type `cub::KeyValuePair<offset_t, T>`) @iterator
   //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
