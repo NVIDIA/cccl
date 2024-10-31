@@ -65,23 +65,17 @@ void __copy_bytes_impl(stream_ref __stream, _CUDA_VSTD::span<_SrcTy> __src, _CUD
 //! @param __stream Stream that the copy should be inserted into
 //! @param __src Source to copy from
 //! @param __dst Destination to copy into
-// TMP WAR until we can construct a cuda::std::span from ::std containers in c++17
-#if _CCCL_STD_VER >= 2020
 _LIBCUDACXX_TEMPLATE(typename _SrcTy, typename _DstTy)
 _LIBCUDACXX_REQUIRES(_CUDA_VRANGES::contiguous_range<detail::__as_copy_arg_t<_SrcTy>> _LIBCUDACXX_AND
                        _CUDA_VRANGES::contiguous_range<detail::__as_copy_arg_t<_DstTy>>)
-#else
-template <typename _SrcTy, typename _DstTy>
-#endif
 void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst)
 {
-  decltype(auto) __src_transformed = static_cast<detail::__as_copy_arg_t<_SrcTy>>(
-    detail::__launch_transform(__stream, _CUDA_VSTD::forward<_SrcTy>(__src)));
-  decltype(auto) __dst_transformed = static_cast<detail::__as_copy_arg_t<_DstTy>>(
-    detail::__launch_transform(__stream, _CUDA_VSTD::forward<_DstTy>(__dst)));
-  __copy_bytes_impl(__stream,
-                    _CUDA_VSTD::span(__src_transformed.data(), __src_transformed.size()),
-                    _CUDA_VSTD::span(__dst_transformed.data(), __dst_transformed.size()));
+  __copy_bytes_impl(
+    __stream,
+    _CUDA_VSTD::span(static_cast<detail::__as_copy_arg_t<_SrcTy>>(
+      detail::__launch_transform(__stream, _CUDA_VSTD::forward<_SrcTy>(__src)))),
+    _CUDA_VSTD::span(static_cast<detail::__as_copy_arg_t<_DstTy>>(
+      detail::__launch_transform(__stream, _CUDA_VSTD::forward<_DstTy>(__dst)))));
 }
 
 } // namespace cuda::experimental

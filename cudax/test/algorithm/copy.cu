@@ -39,10 +39,8 @@ TEST_CASE("Copy", "[data_manipulation]")
       cudax::copy_bytes(_stream, const_buffer, host_vector);
       check_result_and_erase(_stream, host_vector);
 
-#if _CCCL_STD_VER >= 2020
       cudax::copy_bytes(_stream, const_buffer, cuda::std::span(host_vector));
       check_result_and_erase(_stream, host_vector);
-#endif
     }
   }
 
