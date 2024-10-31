@@ -75,8 +75,8 @@ __device__ double grid_dot_result = 0.0;
 void genTridiag(slice<int> I, slice<int> J, slice<float> val, int N, int nz)
 {
   I(0) = 0, J(0) = 0, J(1) = 1;
-  val(0) = (float) rand() / RAND_MAX + 10.0f;
-  val(1) = (float) rand() / RAND_MAX;
+  val(0) = (float) rand() / (float)RAND_MAX + 10.0f;
+  val(1) = (float) rand() / (float)RAND_MAX;
   int start;
 
   for (int i = 1; i < N; i++)
@@ -100,11 +100,11 @@ void genTridiag(slice<int> I, slice<int> J, slice<float> val, int N, int nz)
     }
 
     val(start)     = val(start - 1);
-    val(start + 1) = (float) rand() / RAND_MAX + 10.0f;
+    val(start + 1) = (float) rand() / (float)RAND_MAX + 10.0f;
 
     if (i < N - 1)
     {
-      val(start + 2) = (float) rand() / RAND_MAX;
+      val(start + 2) = (float) rand() / (float)RAND_MAX;
     }
   }
 
