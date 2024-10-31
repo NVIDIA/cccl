@@ -22,10 +22,8 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/__concept_macros.h>
-#include <cuda/std/__ranges/concepts.h>
-#include <cuda/std/span>
 
-#include <cuda/experimental/__launch/launch_transform.cuh>
+#include <cuda/experimental/__algorithm/common.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
 
 namespace cuda::experimental
@@ -52,7 +50,7 @@ void __fill_bytes_impl(stream_ref __stream, _CUDA_VSTD::span<_DstTy, _DstSize> _
 //! @param __dst Destination memory to fill
 //! @param __value Value to fill into every byte in the destination
 _LIBCUDACXX_TEMPLATE(typename _DstTy)
-_LIBCUDACXX_REQUIRES(_CUDA_VRANGES::contiguous_range<detail::__as_copy_arg_t<_DstTy>>)
+_LIBCUDACXX_REQUIRES(__valid_copy_fill_argument<_DstTy>)
 void fill_bytes(stream_ref __stream, _DstTy&& __dst, uint8_t __value)
 {
   __fill_bytes_impl(__stream,

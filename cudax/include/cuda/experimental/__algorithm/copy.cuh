@@ -22,10 +22,8 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/__concept_macros.h>
-#include <cuda/std/__ranges/concepts.h>
-#include <cuda/std/span>
 
-#include <cuda/experimental/__launch/launch_transform.cuh>
+#include <cuda/experimental/__algorithm/common.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
 
 namespace cuda::experimental
@@ -66,8 +64,7 @@ void __copy_bytes_impl(stream_ref __stream, _CUDA_VSTD::span<_SrcTy> __src, _CUD
 //! @param __src Source to copy from
 //! @param __dst Destination to copy into
 _LIBCUDACXX_TEMPLATE(typename _SrcTy, typename _DstTy)
-_LIBCUDACXX_REQUIRES(_CUDA_VRANGES::contiguous_range<detail::__as_copy_arg_t<_SrcTy>> _LIBCUDACXX_AND
-                       _CUDA_VRANGES::contiguous_range<detail::__as_copy_arg_t<_DstTy>>)
+_LIBCUDACXX_REQUIRES(__valid_copy_fill_argument<_SrcTy> _LIBCUDACXX_AND __valid_copy_fill_argument<_DstTy>)
 void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst)
 {
   __copy_bytes_impl(
