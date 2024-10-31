@@ -706,6 +706,18 @@ public:
     }
   }
 
+    auto pick_dstream() {
+        return ::std::visit([](auto& self) { return self.pick_dstream(); }, payload);
+    }
+
+    /**
+     * @brief Get a stream from the stream pool(s) of the context
+     *
+     * This is a helper routine which can be used to launch graphs, for example. Using the stream after finalize()
+     * results in undefined behavior.
+     */
+    cudaStream_t pick_stream() { return pick_dstream().stream; }
+
 private:
   template <typename Fun>
   auto visit(Fun&& fun)

@@ -11,6 +11,7 @@ set(stf_example_sources
   08-cub-reduce.cu
   axpy-annotated.cu
   binary_fhe.cu
+  binary_fhe_stackable.cu
   cfd.cu
   custom_data_interface.cu
   void_data_interface.cu
