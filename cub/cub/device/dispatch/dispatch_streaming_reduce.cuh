@@ -184,7 +184,7 @@ public:
 private:
   OffsetItT offset_it;
 
-  _CCCL_DEVICE _CCCL_FORCEINLINE typename super_t::reference dereference() const
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE typename super_t::reference dereference() const
   {
     return *(this->base() + (*offset_it));
   }
@@ -210,17 +210,15 @@ struct write_to_user_out_it
   _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(IndexT, cub::KeyValuePair<OffsetT, ResultT> reduced_result)
   {
     using kv_pair_t = ::cuda::std::_If<
-      ::cuda::std::is_assignable<decltype(*std::declval<KeyValuePairOutItT>()),
-                                 cub::KeyValuePair<::cuda::std::uint64_t, ResultT>>::value,
+      ::cuda::std::is_assignable<decltype(*out_it), cub::KeyValuePair<::cuda::std::uint64_t, ResultT>>::value,
       cub::KeyValuePair<::cuda::std::uint64_t, ResultT>,
       ::cuda::std::_If<
-        ::cuda::std::is_assignable<decltype(*std::declval<KeyValuePairOutItT>()),
-                                   cub::KeyValuePair<::cuda::std::int64_t, ResultT>>::value,
+        ::cuda::std::is_assignable<decltype(*out_it), cub::KeyValuePair<::cuda::std::int64_t, ResultT>>::value,
         cub::KeyValuePair<::cuda::std::int64_t, ResultT>,
-        ::cuda::std::_If<::cuda::std::is_assignable<decltype(*std::declval<KeyValuePairOutItT>()),
-                                                    cub::KeyValuePair<::cuda::std::uint32_t, ResultT>>::value,
-                         cub::KeyValuePair<::cuda::std::uint32_t, ResultT>,
-                         cub::KeyValuePair<::cuda::std::int32_t, ResultT>>>>;
+        ::cuda::std::_If<
+          ::cuda::std::is_assignable<decltype(*out_it), cub::KeyValuePair<::cuda::std::uint32_t, ResultT>>::value,
+          cub::KeyValuePair<::cuda::std::uint32_t, ResultT>,
+          cub::KeyValuePair<::cuda::std::int32_t, ResultT>>>>;
 
     using index_t = typename kv_pair_t::Key;
     *out_it       = kv_pair_t{static_cast<index_t>(reduced_result.key), reduced_result.value};
