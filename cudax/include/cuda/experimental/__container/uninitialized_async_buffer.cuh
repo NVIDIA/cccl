@@ -103,7 +103,7 @@ private:
   template <class _Tp2 = _Tp>
   _CCCL_NODISCARD_FRIEND auto __cudax_launch_transform(::cuda::stream_ref, uninitialized_async_buffer& __self) noexcept
     _LIBCUDACXX_TRAILING_REQUIRES(_CUDA_VSTD::span<_Tp>)(
-      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in<_CUDA_VMR::device_accessible, _Properties...>)
+      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<_CUDA_VMR::device_accessible, _Properties...>)
   {
     // TODO add auto synchronization
     return {__self.__get_data(), __self.size()};
@@ -115,7 +115,7 @@ private:
   _CCCL_NODISCARD_FRIEND auto
   __cudax_launch_transform(::cuda::stream_ref, const uninitialized_async_buffer& __self) noexcept
     _LIBCUDACXX_TRAILING_REQUIRES(_CUDA_VSTD::span<const _Tp>)(
-      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in<_CUDA_VMR::device_accessible, _Properties...>)
+      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<_CUDA_VMR::device_accessible, _Properties...>)
   {
     // TODO add auto synchronization
     return {__self.__get_data(), __self.size()};
