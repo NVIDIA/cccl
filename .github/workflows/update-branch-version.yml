@@ -16,8 +16,7 @@
 name: "Release: 0. Update version in target branch"
 
 # The target branch when starting this workflow should be:
-# 1. "branch/{major}.{minor}.x" if it exists, or
-# 2. "main"
+#   "branch/{major}.{minor}.x" if it exists, or "main"
 
 on:
   workflow_dispatch:
@@ -55,15 +54,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ inputs.target_branch }}
-
-      - name: Verify run from main
-        id: verify-main
-        run: |
-          # This action can only be run from main.
-          if [[ $GITHUB_REF != refs/heads/main ]]; then
-            echo "  This action may only be run fom main" | tee -a $GITHUB_STEP_SUMMARY
-            exit 1
-          fi
 
       - name: Prepare environment
         id: prepare-env
@@ -145,8 +135,8 @@ jobs:
 
             git add .
 
-            git config user.name github-actions
-            git config user.email github-actions@github.com
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git commit -m "${pr_body}"
 
             # Push the changes to the release branch:
