@@ -12,9 +12,9 @@
 
 #if !defined(_CCCL_CUDACC_BELOW_12_0)
 
-#include <cuda.h>
+#  include <cuda.h>
 
-#include <cub/util_device.cuh>
+#  include <cub/util_device.cuh>
 
 CUB_NAMESPACE_BEGIN
 
