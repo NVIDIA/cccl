@@ -21,7 +21,6 @@
 #endif // no system header
 
 #include <cuda/std/__utility/declval.h>
-#include <cuda/std/detail/libcxx/include/__debug>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -60,7 +59,7 @@ struct __debug_less
   _CCCL_CONSTEXPR_CXX14 decltype((void) declval<_Compare&>()(declval<_LHS&>(), declval<_RHS&>()))
   __do_compare_assert(int, _LHS& __l, _RHS& __r)
   {
-    _LIBCUDACXX_DEBUG_ASSERT(!__comp_(__l, __r), "Comparator does not induce a strict weak ordering");
+    _CCCL_ASSERT(!__comp_(__l, __r), "Comparator does not induce a strict weak ordering");
     (void) __l;
     (void) __r;
   }
@@ -72,7 +71,7 @@ struct __debug_less
 
 // Pass the comparator by lvalue reference. Or in debug mode, using a
 // debugging wrapper that stores a reference.
-#ifdef _LIBCUDACXX_ENABLE_DEBUG_MODE
+#ifdef _CCCL_ENABLE_DEBUG_MODE
 template <class _Comp>
 using __comp_ref_type = __debug_less<_Comp>;
 #else

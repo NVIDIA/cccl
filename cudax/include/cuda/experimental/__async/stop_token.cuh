@@ -21,9 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__thread/threading_support.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/atomic>
-#include <cuda/std/detail/libcxx/include/__threading_support>
 
 #include <cuda/experimental/__async/config.cuh>
 #include <cuda/experimental/__async/thread.cuh>
@@ -303,8 +303,8 @@ _CCCL_HOST_DEVICE inline void __inplace_stop_callback_base::__register_callback(
 
 _CCCL_HOST_DEVICE inline inplace_stop_source::~inplace_stop_source()
 {
-  _LIBCUDACXX_ASSERT((__state_.load(_CUDA_VSTD::memory_order_relaxed) & __locked_flag) == 0, "");
-  _LIBCUDACXX_ASSERT(__callbacks_ == nullptr, "");
+  _CCCL_ASSERT((__state_.load(_CUDA_VSTD::memory_order_relaxed) & __locked_flag) == 0, "");
+  _CCCL_ASSERT(__callbacks_ == nullptr, "");
 }
 
 _CCCL_HOST_DEVICE inline auto inplace_stop_source::request_stop() noexcept -> bool

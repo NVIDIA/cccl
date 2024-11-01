@@ -135,7 +135,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14_NOT_MSVC_2017 bool tests()
 int main(int, char**)
 {
   tests();
-#if TEST_STD_VER >= 2014 && defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED) && !defined(TEST_COMPILER_MSVC_2017)
+#if TEST_STD_VER >= 2014 && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && !defined(TEST_COMPILER_MSVC_2017)
   static_assert(tests(), "");
 #endif
   return 0;

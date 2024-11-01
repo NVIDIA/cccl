@@ -25,8 +25,8 @@ namespace detail
 {
 namespace merge
 {
-_LIBCUDACXX_INLINE_VAR constexpr int fallback_BLOCK_THREADS    = 64;
-_LIBCUDACXX_INLINE_VAR constexpr int fallback_ITEMS_PER_THREAD = 1;
+_CCCL_INLINE_VAR constexpr int fallback_BLOCK_THREADS    = 64;
+_CCCL_INLINE_VAR constexpr int fallback_ITEMS_PER_THREAD = 1;
 
 template <typename DefaultPolicy, class... Args>
 class choose_merge_agent

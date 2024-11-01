@@ -9,6 +9,7 @@ endif()
 
 # Determine whether CCCL is the top-level project or included into
 # another project via add_subdirectory()
+set(CCCL_TOPLEVEL_PROJECT OFF)
 if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
   set(CCCL_TOPLEVEL_PROJECT ON)
 endif()
@@ -40,7 +41,12 @@ option(CCCL_ENABLE_C "Enable CUDA C Core Library." OFF)
 option(CCCL_ENABLE_UNSTABLE "Enable targets and developer build options for unstable projects." OFF)
 
 if (CCCL_ENABLE_UNSTABLE)
-  option(CCCL_ENABLE_CUDAX "Enable the CUDA Experimental developer build." ON)
+  option(CCCL_ENABLE_CUDAX "Enable the CUDA Experimental developer build." ${CCCL_TOPLEVEL_PROJECT})
+else()
+  # Always off if unstable disabled:
+  # Note that this doesn't override the cache variable, but rather creates a new
+  # directory-scoped variable that shadows it. This is sufficient for our purposes.
+  set(CCCL_ENABLE_CUDAX OFF)
 endif()
 
 include(CTest)
@@ -53,24 +59,10 @@ if (CCCL_TOPLEVEL_PROJECT)
   include(cmake/CCCLBuildCompilerTargets.cmake)
   include(cmake/CCCLClangdCompileInfo.cmake)
   include(cmake/CCCLConfigureTarget.cmake)
+  include(cmake/CCCLGenerateHeaderTests.cmake)
+  include(cmake/CCCLGetDependencies.cmake)
 
   cccl_build_compiler_targets()
-endif()
-
-if (CCCL_ENABLE_LIBCUDACXX)
-  set(LIBCUDACXX_TOPLEVEL_PROJECT ${CCCL_TOPLEVEL_PROJECT})
-endif()
-
-if (CCCL_ENABLE_CUB)
-  set(CUB_TOPLEVEL_PROJECT ${CCCL_TOPLEVEL_PROJECT})
-endif()
-
-if (CCCL_ENABLE_THRUST)
-  set(THRUST_TOPLEVEL_PROJECT ${CCCL_TOPLEVEL_PROJECT})
-endif()
-
-if (CCCL_ENABLE_CUDAX)
-  set(cudax_TOPLEVEL_PROJECT ${CCCL_TOPLEVEL_PROJECT})
 endif()
 
 add_subdirectory(libcudacxx)

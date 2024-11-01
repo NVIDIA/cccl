@@ -24,12 +24,12 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_ADD_RVALUE_REFERENCE) && !defined(_LIBCUDACXX_USE_ADD_RVALUE_REFERENCE_FALLBACK)
+#if defined(_CCCL_BUILTIN_ADD_RVALUE_REFERENCE) && !defined(_LIBCUDACXX_USE_ADD_RVALUE_REFERENCE_FALLBACK)
 
 template <class _Tp>
-using __add_rvalue_reference_t = _LIBCUDACXX_ADD_RVALUE_REFERENCE(_Tp);
+using __add_rvalue_reference_t = _CCCL_BUILTIN_ADD_RVALUE_REFERENCE(_Tp);
 
-#else
+#else // ^^^ _CCCL_BUILTIN_ADD_RVALUE_REFERENCE ^^^ / vvv !_CCCL_BUILTIN_ADD_RVALUE_REFERENCE vvv
 
 template <class _Tp, bool = __libcpp_is_referenceable<_Tp>::value>
 struct __add_rvalue_reference_impl
@@ -45,7 +45,7 @@ struct __add_rvalue_reference_impl<_Tp, true>
 template <class _Tp>
 using __add_rvalue_reference_t = typename __add_rvalue_reference_impl<_Tp>::type;
 
-#endif // defined(_LIBCUDACXX_ADD_RVALUE_REFERENCE) && !defined(_LIBCUDACXX_USE_ADD_RVALUE_REFERENCE_FALLBACK)
+#endif // _CCCL_BUILTIN_ADD_RVALUE_REFERENCE
 
 template <class _Tp>
 struct add_rvalue_reference

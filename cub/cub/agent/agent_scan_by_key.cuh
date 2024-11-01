@@ -142,11 +142,10 @@ struct AgentScanByKey
 
   using KeyT               = cub::detail::value_t<KeysInputIteratorT>;
   using InputT             = cub::detail::value_t<ValuesInputIteratorT>;
-  using SizeValuePairT     = KeyValuePair<OffsetT, AccumT>;
-  using KeyValuePairT      = KeyValuePair<KeyT, AccumT>;
-  using ReduceBySegmentOpT = ReduceBySegmentOp<ScanOpT>;
+  using FlagValuePairT     = KeyValuePair<int, AccumT>;
+  using ReduceBySegmentOpT = detail::ScanBySegmentOp<ScanOpT>;
 
-  using ScanTileStateT = ReduceByKeyScanTileState<AccumT, OffsetT>;
+  using ScanTileStateT = ReduceByKeyScanTileState<AccumT, int>;
 
   // Constants
   // Inclusive scan if no init_value type is provided
@@ -175,9 +174,9 @@ struct AgentScanByKey
 
   using DelayConstructorT = typename AgentScanByKeyPolicyT::detail::delay_constructor_t;
   using TilePrefixCallbackT =
-    TilePrefixCallbackOp<SizeValuePairT, ReduceBySegmentOpT, ScanTileStateT, 0, DelayConstructorT>;
+    TilePrefixCallbackOp<FlagValuePairT, ReduceBySegmentOpT, ScanTileStateT, 0, DelayConstructorT>;
 
-  using BlockScanT = BlockScan<SizeValuePairT, BLOCK_THREADS, AgentScanByKeyPolicyT::SCAN_ALGORITHM, 1, 1>;
+  using BlockScanT = BlockScan<FlagValuePairT, BLOCK_THREADS, AgentScanByKeyPolicyT::SCAN_ALGORITHM, 1, 1>;
 
   union TempStorage_
   {
@@ -216,14 +215,14 @@ struct AgentScanByKey
 
   // Exclusive scan specialization
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(
-    SizeValuePairT (&scan_items)[ITEMS_PER_THREAD], SizeValuePairT& tile_aggregate, Int2Type<false> /* is_inclusive */)
+    FlagValuePairT (&scan_items)[ITEMS_PER_THREAD], FlagValuePairT& tile_aggregate, Int2Type<false> /* is_inclusive */)
   {
     BlockScanT(storage.scan_storage.scan).ExclusiveScan(scan_items, scan_items, pair_scan_op, tile_aggregate);
   }
 
   // Inclusive scan specialization
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(
-    SizeValuePairT (&scan_items)[ITEMS_PER_THREAD], SizeValuePairT& tile_aggregate, Int2Type<true> /* is_inclusive */)
+    FlagValuePairT (&scan_items)[ITEMS_PER_THREAD], FlagValuePairT& tile_aggregate, Int2Type<true> /* is_inclusive */)
   {
     BlockScanT(storage.scan_storage.scan).InclusiveScan(scan_items, scan_items, pair_scan_op, tile_aggregate);
   }
@@ -234,8 +233,8 @@ struct AgentScanByKey
 
   // Exclusive scan specialization (with prefix from predecessors)
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(
-    SizeValuePairT (&scan_items)[ITEMS_PER_THREAD],
-    SizeValuePairT& tile_aggregate,
+    FlagValuePairT (&scan_items)[ITEMS_PER_THREAD],
+    FlagValuePairT& tile_aggregate,
     TilePrefixCallbackT& prefix_op,
     Int2Type<false> /* is_inclusive */)
   {
@@ -245,8 +244,8 @@ struct AgentScanByKey
 
   // Inclusive scan specialization (with prefix from predecessors)
   _CCCL_DEVICE _CCCL_FORCEINLINE void ScanTile(
-    SizeValuePairT (&scan_items)[ITEMS_PER_THREAD],
-    SizeValuePairT& tile_aggregate,
+    FlagValuePairT (&scan_items)[ITEMS_PER_THREAD],
+    FlagValuePairT& tile_aggregate,
     TilePrefixCallbackT& prefix_op,
     Int2Type<true> /* is_inclusive */)
   {
@@ -263,7 +262,7 @@ struct AgentScanByKey
     OffsetT num_remaining,
     AccumT (&values)[ITEMS_PER_THREAD],
     OffsetT (&segment_flags)[ITEMS_PER_THREAD],
-    SizeValuePairT (&scan_items)[ITEMS_PER_THREAD])
+    FlagValuePairT (&scan_items)[ITEMS_PER_THREAD])
   {
 // Zip values and segment_flags
 #pragma unroll
@@ -281,7 +280,7 @@ struct AgentScanByKey
   }
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  UnzipValues(AccumT (&values)[ITEMS_PER_THREAD], SizeValuePairT (&scan_items)[ITEMS_PER_THREAD])
+  UnzipValues(AccumT (&values)[ITEMS_PER_THREAD], FlagValuePairT (&scan_items)[ITEMS_PER_THREAD])
   {
 // Unzip values and segment_flags
 #pragma unroll
@@ -321,7 +320,7 @@ struct AgentScanByKey
     KeyT keys[ITEMS_PER_THREAD];
     AccumT values[ITEMS_PER_THREAD];
     OffsetT segment_flags[ITEMS_PER_THREAD];
-    SizeValuePairT scan_items[ITEMS_PER_THREAD];
+    FlagValuePairT scan_items[ITEMS_PER_THREAD];
 
     if (IS_LAST_TILE)
     {
@@ -359,7 +358,7 @@ struct AgentScanByKey
       ZipValuesAndFlags<IS_LAST_TILE>(num_remaining, values, segment_flags, scan_items);
 
       // Exclusive scan of values and segment_flags
-      SizeValuePairT tile_aggregate;
+      FlagValuePairT tile_aggregate;
       ScanTile(scan_items, tile_aggregate, Int2Type<IS_INCLUSIVE>());
 
       if (threadIdx.x == 0)
@@ -382,7 +381,7 @@ struct AgentScanByKey
       // Zip values and segment_flags
       ZipValuesAndFlags<IS_LAST_TILE>(num_remaining, values, segment_flags, scan_items);
 
-      SizeValuePairT tile_aggregate;
+      FlagValuePairT tile_aggregate;
       TilePrefixCallbackT prefix_op(tile_state, storage.scan_storage.prefix, pair_scan_op, tile_idx);
       ScanTile(scan_items, tile_aggregate, prefix_op, Int2Type<IS_INCLUSIVE>());
     }

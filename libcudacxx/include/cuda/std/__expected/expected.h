@@ -60,7 +60,6 @@
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
-#include <cuda/std/detail/libcxx/include/__assert>
 #include <cuda/std/initializer_list>
 
 #if _CCCL_STD_VER > 2011
@@ -73,31 +72,31 @@ class expected;
 namespace __expected
 {
 template <class _Tp, class _Err>
-_LIBCUDACXX_INLINE_VAR constexpr bool __valid_expected =
+_CCCL_INLINE_VAR constexpr bool __valid_expected =
   !_CCCL_TRAIT(is_reference, _Tp) && !_CCCL_TRAIT(is_function, _Tp)
   && !_CCCL_TRAIT(is_same, __remove_cv_t<_Tp>, in_place_t) && !_CCCL_TRAIT(is_same, __remove_cv_t<_Tp>, unexpect_t)
   && !__unexpected::__is_unexpected<__remove_cv_t<_Tp>> && __unexpected::__valid_unexpected<_Err>;
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_expected = false;
+_CCCL_INLINE_VAR constexpr bool __is_expected = false;
 
 template <class _Tp, class _Err>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_expected<expected<_Tp, _Err>> = true;
+_CCCL_INLINE_VAR constexpr bool __is_expected<expected<_Tp, _Err>> = true;
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_expected_nonvoid = __is_expected<_Tp>;
+_CCCL_INLINE_VAR constexpr bool __is_expected_nonvoid = __is_expected<_Tp>;
 
 template <class _Err>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_expected_nonvoid<expected<void, _Err>> = false;
+_CCCL_INLINE_VAR constexpr bool __is_expected_nonvoid<expected<void, _Err>> = false;
 
 template <class _Tp, class _Err>
-_LIBCUDACXX_INLINE_VAR constexpr bool __can_swap =
+_CCCL_INLINE_VAR constexpr bool __can_swap =
   _CCCL_TRAIT(is_swappable, _Tp) && _CCCL_TRAIT(is_swappable, _Err) && _CCCL_TRAIT(is_move_constructible, _Tp)
   && _CCCL_TRAIT(is_move_constructible, _Err)
   && (_CCCL_TRAIT(is_nothrow_move_constructible, _Tp) || _CCCL_TRAIT(is_nothrow_move_constructible, _Err));
 
 template <class _Err>
-_LIBCUDACXX_INLINE_VAR constexpr bool __can_swap<void, _Err> =
+_CCCL_INLINE_VAR constexpr bool __can_swap<void, _Err> =
   _CCCL_TRAIT(is_swappable, _Err) && _CCCL_TRAIT(is_move_constructible, _Err);
 } // namespace __expected
 
@@ -487,37 +486,37 @@ public:
   // [expected.object.obs], observers
   _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp* operator->() const noexcept
   {
-    _LIBCUDACXX_ASSERT(this->__has_val_, "expected::operator-> requires the expected to contain a value");
+    _CCCL_ASSERT(this->__has_val_, "expected::operator-> requires the expected to contain a value");
     return _CUDA_VSTD::addressof(this->__union_.__val_);
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* operator->() noexcept
   {
-    _LIBCUDACXX_ASSERT(this->__has_val_, "expected::operator-> requires the expected to contain a value");
+    _CCCL_ASSERT(this->__has_val_, "expected::operator-> requires the expected to contain a value");
     return _CUDA_VSTD::addressof(this->__union_.__val_);
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& operator*() const& noexcept
   {
-    _LIBCUDACXX_ASSERT(this->__has_val_, "expected::operator* requires the expected to contain a value");
+    _CCCL_ASSERT(this->__has_val_, "expected::operator* requires the expected to contain a value");
     return this->__union_.__val_;
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp& operator*() & noexcept
   {
-    _LIBCUDACXX_ASSERT(this->__has_val_, "expected::operator* requires the expected to contain a value");
+    _CCCL_ASSERT(this->__has_val_, "expected::operator* requires the expected to contain a value");
     return this->__union_.__val_;
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp&& operator*() const&& noexcept
   {
-    _LIBCUDACXX_ASSERT(this->__has_val_, "expected::operator* requires the expected to contain a value");
+    _CCCL_ASSERT(this->__has_val_, "expected::operator* requires the expected to contain a value");
     return _CUDA_VSTD::move(this->__union_.__val_);
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp&& operator*() && noexcept
   {
-    _LIBCUDACXX_ASSERT(this->__has_val_, "expected::operator* requires the expected to contain a value");
+    _CCCL_ASSERT(this->__has_val_, "expected::operator* requires the expected to contain a value");
     return _CUDA_VSTD::move(this->__union_.__val_);
   }
 
@@ -579,25 +578,25 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Err& error() const& noexcept
   {
-    _LIBCUDACXX_ASSERT(!this->__has_val_, "expected::error requires the expected to contain an error");
+    _CCCL_ASSERT(!this->__has_val_, "expected::error requires the expected to contain an error");
     return this->__union_.__unex_;
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _Err& error() & noexcept
   {
-    _LIBCUDACXX_ASSERT(!this->__has_val_, "expected::error requires the expected to contain an error");
+    _CCCL_ASSERT(!this->__has_val_, "expected::error requires the expected to contain an error");
     return this->__union_.__unex_;
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Err&& error() const&& noexcept
   {
-    _LIBCUDACXX_ASSERT(!this->__has_val_, "expected::error requires the expected to contain an error");
+    _CCCL_ASSERT(!this->__has_val_, "expected::error requires the expected to contain an error");
     return _CUDA_VSTD::move(this->__union_.__unex_);
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _Err&& error() && noexcept
   {
-    _LIBCUDACXX_ASSERT(!this->__has_val_, "expected::error requires the expected to contain an error");
+    _CCCL_ASSERT(!this->__has_val_, "expected::error requires the expected to contain an error");
     return _CUDA_VSTD::move(this->__union_.__unex_);
   }
 
@@ -1435,7 +1434,7 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator*() const noexcept
   {
-    _LIBCUDACXX_ASSERT(this->__has_val_, "expected::operator* requires the expected to contain a value");
+    _CCCL_ASSERT(this->__has_val_, "expected::operator* requires the expected to contain a value");
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void value() const&
@@ -1460,25 +1459,25 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Err& error() const& noexcept
   {
-    _LIBCUDACXX_ASSERT(!this->__has_val_, "expected::error requires the expected to contain an error");
+    _CCCL_ASSERT(!this->__has_val_, "expected::error requires the expected to contain an error");
     return this->__union_.__unex_;
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _Err& error() & noexcept
   {
-    _LIBCUDACXX_ASSERT(!this->__has_val_, "expected::error requires the expected to contain an error");
+    _CCCL_ASSERT(!this->__has_val_, "expected::error requires the expected to contain an error");
     return this->__union_.__unex_;
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Err&& error() const&& noexcept
   {
-    _LIBCUDACXX_ASSERT(!this->__has_val_, "expected::error requires the expected to contain an error");
+    _CCCL_ASSERT(!this->__has_val_, "expected::error requires the expected to contain an error");
     return _CUDA_VSTD::move(this->__union_.__unex_);
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _Err&& error() && noexcept
   {
-    _LIBCUDACXX_ASSERT(!this->__has_val_, "expected::error requires the expected to contain an error");
+    _CCCL_ASSERT(!this->__has_val_, "expected::error requires the expected to contain an error");
     return _CUDA_VSTD::move(this->__union_.__unex_);
   }
 

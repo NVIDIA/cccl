@@ -198,8 +198,6 @@ template<class T>
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
-#include <cuda/std/detail/libcxx/include/__verbose_abort>
 #include <cuda/std/initializer_list>
 
 // standard-mandated includes
@@ -394,7 +392,7 @@ struct __optional_storage_base : __optional_destruct_base<_Tp>
   template <class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void __construct(_Args&&... __args)
   {
-    _LIBCUDACXX_ASSERT(!has_value(), "__construct called for engaged __optional_storage");
+    _CCCL_ASSERT(!has_value(), "__construct called for engaged __optional_storage");
 #  if _CCCL_STD_VER > 2017
     _CUDA_VSTD::construct_at(_CUDA_VSTD::addressof(this->__val_), _CUDA_VSTD::forward<_Args>(__args)...);
 #  else
@@ -437,7 +435,7 @@ struct __optional_storage_base : __optional_destruct_base<_Tp>
 };
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr __smf_availability __optional_can_copy_construct =
+_CCCL_INLINE_VAR constexpr __smf_availability __optional_can_copy_construct =
   _CCCL_TRAIT(is_trivially_copy_constructible, _Tp) ? __smf_availability::__trivial
   : _CCCL_TRAIT(is_copy_constructible, _Tp)
     ? __smf_availability::__available
@@ -479,7 +477,7 @@ struct __optional_copy_base<_Tp, __smf_availability::__deleted> : __optional_sto
 };
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr __smf_availability __optional_can_move_construct =
+_CCCL_INLINE_VAR constexpr __smf_availability __optional_can_move_construct =
   _CCCL_TRAIT(is_trivially_move_constructible, _Tp) ? __smf_availability::__trivial
   : _CCCL_TRAIT(is_move_constructible, _Tp)
     ? __smf_availability::__available
@@ -520,7 +518,7 @@ struct __optional_move_base<_Tp, __smf_availability::__deleted> : __optional_cop
 };
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr __smf_availability __optional_can_copy_assign =
+_CCCL_INLINE_VAR constexpr __smf_availability __optional_can_copy_assign =
   _CCCL_TRAIT(is_trivially_destructible, _Tp) && _CCCL_TRAIT(is_trivially_copy_constructible, _Tp)
       && _CCCL_TRAIT(is_trivially_copy_assignable, _Tp)
     ? __smf_availability::__trivial
@@ -563,7 +561,7 @@ struct __optional_copy_assign_base<_Tp, __smf_availability::__deleted> : __optio
 };
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr __smf_availability __optional_can_move_assign =
+_CCCL_INLINE_VAR constexpr __smf_availability __optional_can_move_assign =
   _CCCL_TRAIT(is_trivially_destructible, _Tp) && _CCCL_TRAIT(is_trivially_move_constructible, _Tp)
       && _CCCL_TRAIT(is_trivially_move_assignable, _Tp)
     ? __smf_availability::__trivial
@@ -635,33 +633,33 @@ using __opt_check_assignable_from_opt =
       is_assignable<_Tp&, _Opt const&&>>;
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VAR constexpr bool __opt_is_implictly_constructible =
+_CCCL_INLINE_VAR constexpr bool __opt_is_implictly_constructible =
   _CCCL_TRAIT(is_constructible, _Tp, _Up) && _CCCL_TRAIT(is_convertible, _Up, _Tp);
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VAR constexpr bool __opt_is_explictly_constructible =
+_CCCL_INLINE_VAR constexpr bool __opt_is_explictly_constructible =
   _CCCL_TRAIT(is_constructible, _Tp, _Up) && !_CCCL_TRAIT(is_convertible, _Up, _Tp);
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VAR constexpr bool __opt_is_constructible_from_U =
+_CCCL_INLINE_VAR constexpr bool __opt_is_constructible_from_U =
   !_CCCL_TRAIT(is_same, __remove_cvref_t<_Up>, in_place_t)
   && !_CCCL_TRAIT(is_same, __remove_cvref_t<_Up>, optional<_Tp>);
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VAR constexpr bool __opt_is_constructible_from_opt =
+_CCCL_INLINE_VAR constexpr bool __opt_is_constructible_from_opt =
   !_CCCL_TRAIT(is_same, _Up, _Tp) && !__opt_check_constructible_from_opt<_Tp, _Up>::value;
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VAR constexpr bool __opt_is_assignable =
+_CCCL_INLINE_VAR constexpr bool __opt_is_assignable =
   _CCCL_TRAIT(is_constructible, _Tp, _Up) && _CCCL_TRAIT(is_assignable, _Tp&, _Up);
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VAR constexpr bool __opt_is_assignable_from_U =
+_CCCL_INLINE_VAR constexpr bool __opt_is_assignable_from_U =
   !_CCCL_TRAIT(is_same, __remove_cvref_t<_Up>, optional<_Tp>)
   && (!_CCCL_TRAIT(is_same, __remove_cvref_t<_Up>, _Tp) || !_CCCL_TRAIT(is_scalar, _Tp));
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VAR constexpr bool __opt_is_assignable_from_opt =
+_CCCL_INLINE_VAR constexpr bool __opt_is_assignable_from_opt =
   !_CCCL_TRAIT(is_same, _Up, _Tp) && !__opt_check_constructible_from_opt<_Tp, _Up>::value
   && !__opt_check_assignable_from_opt<_Tp, _Up>::value;
 
@@ -848,37 +846,37 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr add_pointer_t<value_type const> operator->() const
   {
-    _LIBCUDACXX_ASSERT(this->has_value(), "optional operator-> called on a disengaged value");
+    _CCCL_ASSERT(this->has_value(), "optional operator-> called on a disengaged value");
     return _CUDA_VSTD::addressof(this->__get());
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr add_pointer_t<value_type> operator->()
   {
-    _LIBCUDACXX_ASSERT(this->has_value(), "optional operator-> called on a disengaged value");
+    _CCCL_ASSERT(this->has_value(), "optional operator-> called on a disengaged value");
     return _CUDA_VSTD::addressof(this->__get());
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr const value_type& operator*() const& noexcept
   {
-    _LIBCUDACXX_ASSERT(this->has_value(), "optional operator* called on a disengaged value");
+    _CCCL_ASSERT(this->has_value(), "optional operator* called on a disengaged value");
     return this->__get();
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type& operator*() & noexcept
   {
-    _LIBCUDACXX_ASSERT(this->has_value(), "optional operator* called on a disengaged value");
+    _CCCL_ASSERT(this->has_value(), "optional operator* called on a disengaged value");
     return this->__get();
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type&& operator*() && noexcept
   {
-    _LIBCUDACXX_ASSERT(this->has_value(), "optional operator* called on a disengaged value");
+    _CCCL_ASSERT(this->has_value(), "optional operator* called on a disengaged value");
     return _CUDA_VSTD::move(this->__get());
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr const value_type&& operator*() const&& noexcept
   {
-    _LIBCUDACXX_ASSERT(this->has_value(), "optional operator* called on a disengaged value");
+    _CCCL_ASSERT(this->has_value(), "optional operator* called on a disengaged value");
     return _CUDA_VSTD::move(this->__get());
   }
 

@@ -7,25 +7,17 @@
 # Meta target for all configs' header builds:
 add_custom_target(cub.all.headers)
 
-file(GLOB_RECURSE headers
-  RELATIVE "${CUB_SOURCE_DIR}/cub"
-  CONFIGURE_DEPENDS
-  cub/*.cuh
-)
-
-set(headertest_srcs)
-foreach (header IN LISTS headers)
-  set(headertest_src "headers/${header}.cu")
-  configure_file("${CUB_SOURCE_DIR}/cmake/header_test.in" "${headertest_src}")
-  list(APPEND headertest_srcs "${headertest_src}")
-endforeach()
-
 function(cub_add_header_test label definitions)
   foreach(cub_target IN LISTS CUB_TARGETS)
+    cub_get_target_property(config_dialect ${cub_target} DIALECT)
     cub_get_target_property(config_prefix ${cub_target} PREFIX)
 
     set(headertest_target ${config_prefix}.headers.${label})
-    add_library(${headertest_target} OBJECT ${headertest_srcs})
+
+    cccl_generate_header_tests(${headertest_target} cub
+      DIALECT ${config_dialect}
+      GLOBS "cub/*.cuh"
+    )
     target_link_libraries(${headertest_target} PUBLIC ${cub_target})
     target_compile_definitions(${headertest_target} PRIVATE ${definitions})
     cub_clone_target_properties(${headertest_target} ${cub_target})
@@ -47,11 +39,11 @@ set(header_definitions
   "THRUST_WRAPPED_NAMESPACE=wrapped_thrust"
   "CUB_WRAPPED_NAMESPACE=wrapped_cub"
   "CCCL_DISABLE_BF16_SUPPORT")
-cub_add_header_test(bf16 "${header_definitions}")
+cub_add_header_test(no_bf16 "${header_definitions}")
 
 # Check that half support can be disabled
 set(header_definitions
   "THRUST_WRAPPED_NAMESPACE=wrapped_thrust"
   "CUB_WRAPPED_NAMESPACE=wrapped_cub"
   "CCCL_DISABLE_FP16_SUPPORT")
-cub_add_header_test(half "${header_definitions}")
+cub_add_header_test(no_half "${header_definitions}")

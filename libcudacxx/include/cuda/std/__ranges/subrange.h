@@ -50,7 +50,6 @@
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/detail/libcxx/include/__assert>
 
 #if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
 
@@ -275,8 +274,8 @@ public:
   {
     if constexpr (sized_sentinel_for<_Sent, _Iter>)
     {
-      _LIBCUDACXX_ASSERT((__end_ - __begin_) == static_cast<iter_difference_t<_Iter>>(__n),
-                         "_CUDA_VSTD::_CUDA_VRANGES::subrange was passed an invalid size hint");
+      _CCCL_ASSERT((__end_ - __begin_) == static_cast<iter_difference_t<_Iter>>(__n),
+                   "_CUDA_VSTD::_CUDA_VRANGES::subrange was passed an invalid size hint");
     }
   }
 
@@ -471,7 +470,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto get(subrange<_Iter, _Sent, _Kind>&& __s
 }
 
 template <class _Ip, class _Sp, subrange_kind _Kp>
-_LIBCUDACXX_INLINE_VAR constexpr bool enable_borrowed_range<subrange<_Ip, _Sp, _Kp>> = true;
+_CCCL_INLINE_VAR constexpr bool enable_borrowed_range<subrange<_Ip, _Sp, _Kp>> = true;
 
 template <class _Rp>
 using borrowed_subrange_t = enable_if_t<range<_Rp>, _If<borrowed_range<_Rp>, subrange<iterator_t<_Rp>>, dangling>>;

@@ -164,8 +164,7 @@ public:
   //! properly synchronize all relevant streams before calling `deallocate`.
   void deallocate(void* __ptr, const size_t, const size_t __alignment = _CUDA_VMR::default_cuda_malloc_alignment)
   {
-    _LIBCUDACXX_ASSERT(__is_valid_alignment(__alignment),
-                       "Invalid alignment passed to async_memory_resource::deallocate.");
+    _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to async_memory_resource::deallocate.");
     _CCCL_ASSERT_CUDA_API(
       ::cudaFreeAsync, "async_memory_resource::deallocate failed", __ptr, __async_memory_resource_sync_stream().get());
     __async_memory_resource_sync_stream().wait();
@@ -221,8 +220,7 @@ public:
   void deallocate_async(void* __ptr, const size_t __bytes, const size_t __alignment, const ::cuda::stream_ref __stream)
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
-    _LIBCUDACXX_ASSERT(__is_valid_alignment(__alignment),
-                       "Invalid alignment passed to async_memory_resource::deallocate.");
+    _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to async_memory_resource::deallocate.");
     deallocate_async(__ptr, __bytes, __stream);
     (void) __alignment;
   }
@@ -238,6 +236,62 @@ public:
   void deallocate_async(void* __ptr, size_t, const ::cuda::stream_ref __stream)
   {
     _CCCL_ASSERT_CUDA_API(::cudaFreeAsync, "async_memory_resource::deallocate_async failed", __ptr, __stream.get());
+  }
+
+  //! @brief Enable peer access to memory allocated through this memory resource by the supplied devices
+  //!
+  //! Access is controlled through the underyling memory pool, so this
+  //! setting is shared between all memory resources created from the same pool.
+  //! Device on which this resource allocates memory can be included in the vector.
+  //!
+  //! @param __devices A vector of `device_ref`s listing devices to enable access for
+  void enable_peer_access(const ::std::vector<device_ref>& __devices)
+  {
+    ::cuda::experimental::mr::__mempool_switch_peer_access(
+      __pool_, {__devices.data(), __devices.size()}, cudaMemAccessFlagsProtReadWrite);
+  }
+
+  //! @brief Enable peer access to memory allocated through this memory resource by the supplied device
+  //!
+  //! Access is controlled through the underyling memory pool, so this
+  //! setting is shared between all memory resources created from the same pool.
+  //!
+  //! @param __device device_ref indicating for which device the access should be enabled
+  void enable_peer_access(device_ref __device)
+  {
+    ::cuda::experimental::mr::__mempool_switch_peer_access(__pool_, {&__device, 1}, cudaMemAccessFlagsProtReadWrite);
+  }
+
+  //! @brief Enable peer access to memory allocated through this memory resource by the supplied devices
+  //!
+  //! Access is controlled through the underyling memory pool, so this
+  //! setting is shared between all memory resources created from the same pool.
+  //! Device on which this resource allocates memory can be included in the vector.
+  //!
+  //! @param __devices A vector of `device_ref`s listing devices to disable access for
+  void disable_peer_access(const ::std::vector<device_ref>& __devices)
+  {
+    ::cuda::experimental::mr::__mempool_switch_peer_access(
+      __pool_, {__devices.data(), __devices.size()}, cudaMemAccessFlagsProtNone);
+  }
+
+  //! @brief Enable peer access to memory allocated through this memory resource by the supplied device
+  //!
+  //! Access is controlled through the underyling memory pool, so this
+  //! setting is shared between all memory resources created from the same pool.
+  //!
+  //! @param __device device_ref indicating for which device the access should be enabled
+  void disable_peer_access(device_ref __device)
+  {
+    ::cuda::experimental::mr::__mempool_switch_peer_access(__pool_, {&__device, 1}, cudaMemAccessFlagsProtNone);
+  }
+
+  //! @brief Query if memory allocated through this memory resource is accessible by the supplied device
+  //!
+  //! @param __device device for which the peer access is queried
+  _CCCL_NODISCARD bool is_accessible_from(device_ref __device)
+  {
+    return ::cuda::experimental::mr::__mempool_get_access(__pool_, __device);
   }
 
   //! @brief Equality comparison with another async_memory_resource.
@@ -265,40 +319,83 @@ public:
   _LIBCUDACXX_REQUIRES((_CUDA_VMR::__different_resource<async_memory_resource, _Resource>) )
   _CCCL_NODISCARD bool operator==(_Resource const& __rhs) const noexcept
   {
-    return _CUDA_VMR::resource_ref<>{const_cast<async_memory_resource*>(this)}
-        == _CUDA_VMR::resource_ref<>{const_cast<_Resource&>(__rhs)};
+    if constexpr (has_property<_Resource, _CUDA_VMR::device_accessible>)
+    {
+      return _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<async_memory_resource*>(this)}
+          == _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<_Resource&>(__rhs)};
+    }
+    else
+    {
+      return false;
+    }
   }
 #    else // ^^^ C++20 ^^^ / vvv C++17
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator==(async_memory_resource const& __lhs, _Resource const& __rhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<async_memory_resource, _Resource>)
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<async_memory_resource, _Resource>&&
+                                          has_property<_Resource, _CUDA_VMR::device_accessible>)
   {
-    return _CUDA_VMR::resource_ref<>{const_cast<async_memory_resource&>(__lhs)}
-        == _CUDA_VMR::resource_ref<>{const_cast<_Resource&>(__rhs)};
+    return _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<async_memory_resource&>(__lhs)}
+        == _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<_Resource&>(__rhs)};
+  }
+
+  template <class _Resource>
+  _CCCL_NODISCARD_FRIEND auto operator==(async_memory_resource const&, _Resource const&) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<async_memory_resource, _Resource>
+                                        && !has_property<_Resource, _CUDA_VMR::device_accessible>)
+  {
+    return false;
   }
 
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator==(_Resource const& __rhs, async_memory_resource const& __lhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<async_memory_resource, _Resource>)
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<async_memory_resource, _Resource>&&
+                                          has_property<_Resource, _CUDA_VMR::device_accessible>)
   {
-    return _CUDA_VMR::resource_ref<>{const_cast<async_memory_resource&>(__lhs)}
-        == _CUDA_VMR::resource_ref<>{const_cast<_Resource&>(__rhs)};
+    return _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<async_memory_resource&>(__lhs)}
+        == _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<_Resource&>(__rhs)};
+  }
+
+  template <class _Resource>
+  _CCCL_NODISCARD_FRIEND auto operator==(_Resource const&, async_memory_resource const&) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<async_memory_resource, _Resource>
+                                        && !has_property<_Resource, _CUDA_VMR::device_accessible>)
+  {
+    return false;
   }
 
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator!=(async_memory_resource const& __lhs, _Resource const& __rhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<async_memory_resource, _Resource>)
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<async_memory_resource, _Resource>&&
+                                          has_property<_Resource, _CUDA_VMR::device_accessible>)
   {
-    return _CUDA_VMR::resource_ref<>{const_cast<async_memory_resource&>(__lhs)}
-        != _CUDA_VMR::resource_ref<>{const_cast<_Resource&>(__rhs)};
+    return _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<async_memory_resource&>(__lhs)}
+        != _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<_Resource&>(__rhs)};
+  }
+
+  template <class _Resource>
+  _CCCL_NODISCARD_FRIEND auto operator!=(async_memory_resource const&, _Resource const&) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<async_memory_resource, _Resource>
+                                        && !has_property<_Resource, _CUDA_VMR::device_accessible>)
+  {
+    return true;
   }
 
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator!=(_Resource const& __rhs, async_memory_resource const& __lhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<async_memory_resource, _Resource>)
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<async_memory_resource, _Resource>&&
+                                          has_property<_Resource, _CUDA_VMR::device_accessible>)
   {
-    return _CUDA_VMR::resource_ref<>{const_cast<async_memory_resource&>(__lhs)}
-        != _CUDA_VMR::resource_ref<>{const_cast<_Resource&>(__rhs)};
+    return _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<async_memory_resource&>(__lhs)}
+        != _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<_Resource&>(__rhs)};
+  }
+
+  template <class _Resource>
+  _CCCL_NODISCARD_FRIEND auto operator!=(_Resource const&, async_memory_resource const&) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<async_memory_resource, _Resource>
+                                        && !has_property<_Resource, _CUDA_VMR::device_accessible>)
+  {
+    return true;
   }
 #    endif // _CCCL_STD_VER <= 2017
 

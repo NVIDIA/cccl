@@ -62,7 +62,6 @@
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/cstddef>
-#include <cuda/std/detail/libcxx/include/__assert>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

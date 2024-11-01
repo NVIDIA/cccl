@@ -27,21 +27,30 @@
 #  define _CCCL_HOST        __host__
 #  define _CCCL_DEVICE      __device__
 #  define _CCCL_HOST_DEVICE __host__ __device__
-#  define _CCCL_FORCEINLINE __forceinline__
 #else // ^^^ _CCCL_CUDA_COMPILATION ^^^ / vvv !_CCCL_CUDA_COMPILATION vvv
 #  define _CCCL_HOST
 #  define _CCCL_DEVICE
 #  define _CCCL_HOST_DEVICE
-#  define _CCCL_FORCEINLINE inline
 #endif // !_CCCL_CUDA_COMPILATION
+
+/// In device code, _CCCL_PTX_ARCH expands to the PTX version for which we are compiling.
+/// In host code, _CCCL_PTX_ARCH's value is implementation defined.
+#if !defined(__CUDA_ARCH__)
+#  define _CCCL_PTX_ARCH 0
+#else
+#  define _CCCL_PTX_ARCH __CUDA_ARCH__
+#endif
+
+// Compile with NVCC compiler and only device code, Volta+  GPUs
+#if defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_PTX_ARCH >= 700 && !defined(_CCCL_CUDACC_BELOW_11_7)
+#  define _CCCL_GRID_CONSTANT __grid_constant__
+#else // ^^^ _CCCL_CUDA_COMPILER_NVCC ^^^ / vvv !_CCCL_CUDA_COMPILER_NVCC vvv
+#  define _CCCL_GRID_CONSTANT
+#endif // defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_PTX_ARCH >= 700 && !defined(_CCCL_CUDACC_BELOW_11_7)
 
 #if !defined(_CCCL_EXEC_CHECK_DISABLE)
 #  if defined(_CCCL_CUDA_COMPILER_NVCC)
-#    if defined(_CCCL_COMPILER_MSVC)
-#      define _CCCL_EXEC_CHECK_DISABLE __pragma("nv_exec_check_disable")
-#    else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
-#      define _CCCL_EXEC_CHECK_DISABLE _Pragma("nv_exec_check_disable")
-#    endif // !_CCCL_COMPILER_MSVC
+#    define _CCCL_EXEC_CHECK_DISABLE _CCCL_PRAGMA(nv_exec_check_disable)
 #  else
 #    define _CCCL_EXEC_CHECK_DISABLE
 #  endif // _CCCL_CUDA_COMPILER_NVCC

@@ -46,11 +46,12 @@ workflows:
     - {jobs: ['test'],  project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['gcc12']}
     - {jobs: ['test'],  project: 'cudax', ctk: ['12.0'        ], std: 'max', cxx: ['clang14']}
     - {jobs: ['test'],  project: 'cudax', ctk: [        'curr'], std: 'max', cxx: ['clang18']}
-    # Python jobs:
-    - {jobs: ['test'], project: 'pycuda', ctk: ['12.5']}
+    # Python and c/parallel jobs:
+    - {jobs: ['test'], project: ['cccl_c_parallel', 'pycuda'], ctk: '12.5'}
     # cccl-infra:
-    - {jobs: ['infra'], project: 'cccl', ctk: '11.1', cxx: ['gcc6', 'clang9']}
-    - {jobs: ['infra'], project: 'cccl', ctk: 'curr', cxx: ['gcc',  'clang']}
+    - {jobs: ['infra'], project: 'cccl', ctk: '11.1', cxx: ['gcc6',  'clang9']}
+    - {jobs: ['infra'], project: 'cccl', ctk: '12.0', cxx: ['gcc12', 'clang14']}
+    - {jobs: ['infra'], project: 'cccl', ctk: 'curr', cxx: ['gcc',   'clang']}
 
   nightly:
     # Increased test coverage compared to nightlies:
@@ -232,6 +233,9 @@ projects:
   pycuda:
     name: "cuda (python)"
     job_map: { build: [], test: ['test_nobuild'] }
+  cccl_c_parallel:
+    name: 'CCCL C Parallel'
+    stds: [20]
 
 # testing -> Runner with GPU is in a nv-gh-runners testing pool
 gpus:

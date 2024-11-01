@@ -12,8 +12,6 @@
 
 #include <cuda/std/detail/__config>
 
-#include "cuda/std/detail/libcxx/include/__config"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -24,21 +22,21 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_constant_evaluated() noexcept
 {
-  return _LIBCUDACXX_IS_CONSTANT_EVALUATED();
+  return _CCCL_BUILTIN_IS_CONSTANT_EVALUATED();
 }
 
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __libcpp_is_constant_evaluated() noexcept
 {
-  return _LIBCUDACXX_IS_CONSTANT_EVALUATED();
+  return _CCCL_BUILTIN_IS_CONSTANT_EVALUATED();
 }
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __libcpp_default_is_constant_evaluated() noexcept
 {
-  return _LIBCUDACXX_IS_CONSTANT_EVALUATED();
+  return _CCCL_BUILTIN_IS_CONSTANT_EVALUATED();
 }
-#else // ^^^ _LIBCUDACXX_IS_CONSTANT_EVALUATED ^^^ / vvv !_LIBCUDACXX_IS_CONSTANT_EVALUATED vvv
+#else // ^^^ _CCCL_BUILTIN_IS_CONSTANT_EVALUATED ^^^ / vvv !_CCCL_BUILTIN_IS_CONSTANT_EVALUATED vvv
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __libcpp_is_constant_evaluated() noexcept
 {
   return false;
@@ -47,7 +45,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __libcpp_default_is_constant_evaluated(
 {
   return true;
 }
-#endif // !_LIBCUDACXX_IS_CONSTANT_EVALUATED
+#endif // !_CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

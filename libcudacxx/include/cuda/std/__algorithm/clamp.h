@@ -21,7 +21,6 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/comp.h>
-#include <cuda/std/detail/libcxx/include/__assert>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -29,7 +28,7 @@ template <class _Tp, class _Compare>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const _Tp&
 clamp(const _Tp& __v, const _Tp& __lo, const _Tp& __hi, _Compare __comp)
 {
-  _LIBCUDACXX_ASSERT(!__comp(__hi, __lo), "Bad bounds passed to std::clamp");
+  _CCCL_ASSERT(!__comp(__hi, __lo), "Bad bounds passed to std::clamp");
   return __comp(__v, __lo) ? __lo : __comp(__hi, __v) ? __hi : __v;
 }
 

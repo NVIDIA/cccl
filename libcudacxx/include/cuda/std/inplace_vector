@@ -66,7 +66,6 @@
 #  include <cuda/std/__utility/forward.h>
 #  include <cuda/std/__utility/move.h>
 #  include <cuda/std/cstdint>
-#  include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
 #  include <cuda/std/detail/libcxx/include/stdexcept>
 #  include <cuda/std/initializer_list>
 #  include <cuda/std/limits>

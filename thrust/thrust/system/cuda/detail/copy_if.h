@@ -219,19 +219,16 @@ THRUST_RUNTIME_FUNCTION OutputIt copy_if(
   cudaError_t status        = cudaSuccess;
   size_t temp_storage_bytes = 0;
 
-  // 32-bit offset-type dispatch
-  using dispatch32_t = DispatchCopyIf<MayAlias, Derived, InputIt, StencilIt, OutputIt, Predicate, std::int32_t>;
-
   // 64-bit offset-type dispatch
+  // Since https://github.com/NVIDIA/cccl/pull/2400, cub::DeviceSelect is using a streaming approach that splits up
+  // inputs larger than INT_MAX into partitions of up to `INT_MAX` items each, repeatedly invoking the respective
+  // algorithm. With that approach, we can always use i64 offset types for DispatchSelectIf, because there's only very
+  // limited performance upside for using i32 offset types. This avoids potentially duplicate kernel compilation.
   using dispatch64_t = DispatchCopyIf<MayAlias, Derived, InputIt, StencilIt, OutputIt, Predicate, std::int64_t>;
 
   // Query temporary storage requirements
-  THRUST_INDEX_TYPE_DISPATCH2(
-    status,
-    dispatch32_t::dispatch,
-    dispatch64_t::dispatch,
-    num_items,
-    (policy, nullptr, temp_storage_bytes, first, stencil, output, predicate, num_items_fixed));
+  status = dispatch64_t::dispatch(
+    policy, nullptr, temp_storage_bytes, first, stencil, output, predicate, static_cast<std::int64_t>(num_items));
   cuda_cub::throw_on_error(status, "copy_if failed on 1st step");
 
   // Allocate temporary storage.
@@ -239,12 +236,8 @@ THRUST_RUNTIME_FUNCTION OutputIt copy_if(
   void* temp_storage = static_cast<void*>(tmp.data().get());
 
   // Run algorithm
-  THRUST_INDEX_TYPE_DISPATCH2(
-    status,
-    dispatch32_t::dispatch,
-    dispatch64_t::dispatch,
-    num_items,
-    (policy, temp_storage, temp_storage_bytes, first, stencil, output, predicate, num_items_fixed));
+  status = dispatch64_t::dispatch(
+    policy, temp_storage, temp_storage_bytes, first, stencil, output, predicate, static_cast<std::int64_t>(num_items));
   cuda_cub::throw_on_error(status, "copy_if failed on 2nd step");
 
   return output;

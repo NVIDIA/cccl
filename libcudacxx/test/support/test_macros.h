@@ -34,8 +34,8 @@
 #define TEST_CONCAT1(X, Y) X##Y
 #define TEST_CONCAT(X, Y)  TEST_CONCAT1(X, Y)
 
-#ifdef __has_feature
-#  define TEST_HAS_FEATURE(X) __has_feature(X)
+#ifdef _CCCL_HAS_FEATURE
+#  define TEST_HAS_FEATURE(X) _CCCL_HAS_FEATURE(X)
 #else
 #  define TEST_HAS_FEATURE(X) 0
 #endif
@@ -257,14 +257,6 @@
 #  define TEST_HAS_SANITIZERS
 #endif
 
-#if defined(TEST_COMPILER_MSVC)
-#  define TEST_NORETURN __declspec(noreturn)
-#elif __has_cpp_attribute(noreturn)
-#  define TEST_NORETURN [[noreturn]]
-#else
-#  define TEST_NORETURN __attribute__((noreturn))
-#endif
-
 #if defined(_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION) \
   || (!(TEST_STD_VER > 2014 || (defined(__cpp_aligned_new) && __cpp_aligned_new >= 201606L)))
 #  define TEST_HAS_NO_ALIGNED_ALLOCATION
@@ -313,6 +305,14 @@
 #  define TEST_NODISCARD [[nodiscard]]
 #else
 #  define TEST_NODISCARD
+#endif
+
+#if defined(TEST_COMPILER_MSVC)
+#  define TEST_NORETURN __declspec(noreturn)
+#elif __has_cpp_attribute(noreturn)
+#  define TEST_NORETURN [[noreturn]]
+#else
+#  define TEST_NORETURN __attribute__((noreturn))
 #endif
 
 #define TEST_IGNORE_NODISCARD (void)
@@ -443,17 +443,9 @@ __host__ __device__ constexpr bool unused(T&&...)
 #if defined(TEST_COMPILER_CLANG_CUDA)
 #  define TEST_NV_DIAG_SUPPRESS(WARNING)
 #elif defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
-#  if defined(TEST_COMPILER_MSVC)
-#    define TEST_NV_DIAG_SUPPRESS(WARNING) __pragma(_TEST_TOSTRING(nv_diag_suppress WARNING))
-#  else // ^^^ MSVC ^^^ / vvv not MSVC vvv
-#    define TEST_NV_DIAG_SUPPRESS(WARNING) _Pragma(_TEST_TOSTRING(nv_diag_suppress WARNING))
-#  endif // not MSVC
+#  define TEST_NV_DIAG_SUPPRESS(WARNING) _CCCL_PRAGMA(nv_diag_suppress WARNING)
 #else // ^^^ __NVCC_DIAG_PRAGMA_SUPPORT__ ^^^ / vvv !__NVCC_DIAG_PRAGMA_SUPPORT__ vvv
-#  if defined(TEST_COMPILER_MSVC)
-#    define TEST_NV_DIAG_SUPPRESS(WARNING) __pragma(_TEST_TOSTRING(diag_suppress WARNING))
-#  else // ^^^ MSVC ^^^ / vvv not MSVC vvv
-#    define TEST_NV_DIAG_SUPPRESS(WARNING) _Pragma(_TEST_TOSTRING(diag_suppress WARNING))
-#  endif // not MSVC
+#  define TEST_NV_DIAG_SUPPRESS(WARNING) _CCCL_PRAGMA(diag_suppress WARNING)
 #endif
 
 #define TEST_CONSTEXPR_GLOBAL _CCCL_CONSTEXPR_GLOBAL

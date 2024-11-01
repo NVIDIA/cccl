@@ -34,6 +34,7 @@
 #  include <cuda/__memory_resource/resource_ref.h>
 #  include <cuda/std/__cuda/api_wrapper.h>
 #  include <cuda/std/__new_>
+#  include <cuda/std/span>
 #  include <cuda/stream_ref>
 
 #  include <cuda/experimental/__stream/stream.cuh>
@@ -62,6 +63,33 @@ inline void __device_supports_stream_ordered_allocations(const int __device_id)
   {
     ::cuda::__throw_cuda_error(::cudaErrorNotSupported, "cudaMallocAsync is not supported on the given device");
   }
+}
+
+inline void __mempool_switch_peer_access(
+  cudaMemPool_t __pool, ::cuda::std::span<const device_ref> __devices, cudaMemAccessFlags __flags)
+{
+  ::std::vector<cudaMemAccessDesc> __descs;
+  __descs.reserve(__devices.size());
+  cudaMemAccessDesc __desc;
+  __desc.flags         = __flags;
+  __desc.location.type = cudaMemLocationTypeDevice;
+  for (size_t __i = 0; __i < __devices.size(); ++__i)
+  {
+    __desc.location.id = __devices[__i].get();
+    __descs.push_back(__desc);
+  }
+  _CCCL_TRY_CUDA_API(
+    ::cudaMemPoolSetAccess, "Failed to set access of a memory pool", __pool, __descs.data(), __descs.size());
+}
+
+_CCCL_NODISCARD inline bool __mempool_get_access(cudaMemPool_t __pool, device_ref __dev)
+{
+  cudaMemAccessFlags __result;
+  cudaMemLocation __loc;
+  __loc.type = cudaMemLocationTypeDevice;
+  __loc.id   = __dev.get();
+  _CCCL_TRY_CUDA_API(::cudaMemPoolGetAccess, "failed to get access of a memory pool", &__result, __pool, &__loc);
+  return __result == cudaMemAccessFlagsProtReadWrite;
 }
 
 //! @brief Internal redefinition of ``cudaMemAllocationHandleType``.
@@ -226,6 +254,105 @@ public:
   ~async_memory_pool() noexcept
   {
     _CCCL_ASSERT_CUDA_API(::cudaMemPoolDestroy, "~async_memory_pool() failed to destroy pool", __pool_handle_);
+  }
+
+  //! @brief Tries to release memory.
+  //! @param __min_bytes_to_keep the minimal guaranteed size of the pool.
+  //! @note If the pool has less than \p __minBytesToKeep reserved, the trim_to operation is a no-op. Otherwise the pool
+  //! will be guaranteed to have at least \p __minBytesToKeep bytes reserved after the operation.
+  void trim_to(const size_t __min_bytes_to_keep)
+  {
+    _CCCL_TRY_CUDA_API(::cudaMemPoolTrimTo,
+                       "Failed to call cudaMemPoolTrimTo in async_memory_pool::trim_to",
+                       __pool_handle_,
+                       __min_bytes_to_keep);
+  }
+
+  //! @brief Gets the value of an attribute of the pool.
+  //! @param __attribute the attribute to be set.
+  //! @return The value of the attribute. For boolean attributes any value not equal to 0 equates to true.
+  size_t get_attribute(::cudaMemPoolAttr __attr) const
+  {
+    size_t __value = 0;
+    _CCCL_TRY_CUDA_API(
+      ::cudaMemPoolGetAttribute,
+      "Failed to call cudaMemPoolSetAttribute in async_memory_pool::get_attribute",
+      __pool_handle_,
+      __attr,
+      static_cast<void*>(&__value));
+    return __value;
+  }
+
+  //! @brief Sets an attribute of the pool to a given value.
+  //! @param __attribute the attribute to be set.
+  //! @param __value the new value of that attribute.
+  //! @note For boolean attributes any non-zero value equates to true.
+  void set_attribute(::cudaMemPoolAttr __attr, size_t __value)
+  {
+    if (__attr == ::cudaMemPoolAttrReservedMemCurrent || __attr == cudaMemPoolAttrUsedMemCurrent)
+    {
+      _CUDA_VSTD_NOVERSION::__throw_invalid_argument("Invalid attribute passed to async_memory_pool::set_attribute.");
+    }
+    else if ((__attr == ::cudaMemPoolAttrReservedMemHigh || __attr == cudaMemPoolAttrUsedMemHigh) && __value != 0)
+    {
+      _CUDA_VSTD_NOVERSION::__throw_invalid_argument(
+        "async_memory_pool::set_attribute: It is illegal to set this "
+        "attribute to a non-zero value.");
+    }
+
+    _CCCL_TRY_CUDA_API(
+      ::cudaMemPoolSetAttribute,
+      "Failed to call cudaMemPoolSetAttribute in async_memory_pool::set_attribute",
+      __pool_handle_,
+      __attr,
+      static_cast<void*>(&__value));
+  }
+
+  //! @brief Enable peer access to this memory pool from the supplied devices
+  //!
+  //! Device on which this pool resides can be included in the vector.
+  //!
+  //! @param __devices A vector of `device_ref`s listing devices to enable access for
+  void enable_peer_access(const ::std::vector<device_ref>& __devices)
+  {
+    ::cuda::experimental::mr::__mempool_switch_peer_access(
+      __pool_handle_, {__devices.data(), __devices.size()}, cudaMemAccessFlagsProtReadWrite);
+  }
+
+  //! @brief Enable peer access to this memory pool from the supplied device
+  //!
+  //! @param __device device_ref indicating for which device the access should be enabled
+  void enable_peer_access(device_ref __device)
+  {
+    ::cuda::experimental::mr::__mempool_switch_peer_access(
+      __pool_handle_, {&__device, 1}, cudaMemAccessFlagsProtReadWrite);
+  }
+
+  //! @brief Disable peer access to this memory pool from the supplied devices
+  //!
+  //! Device on which this pool resides can be included in the vector.
+  //!
+  //! @param __devices A vector of `device_ref`s listing devices to disable access for
+  void disable_peer_access(const ::std::vector<device_ref>& __devices)
+  {
+    ::cuda::experimental::mr::__mempool_switch_peer_access(
+      __pool_handle_, {__devices.data(), __devices.size()}, cudaMemAccessFlagsProtNone);
+  }
+
+  //! @brief Disable peer access to this memory pool from the supplied device
+  //!
+  //! @param __device device_ref indicating for which device the access should be disable
+  void disable_peer_access(device_ref __device)
+  {
+    ::cuda::experimental::mr::__mempool_switch_peer_access(__pool_handle_, {&__device, 1}, cudaMemAccessFlagsProtNone);
+  }
+
+  //! @brief Query if memory allocated through this memory resource is accessible by the supplied device
+  //!
+  //! @param __device device for which the peer access is queried
+  _CCCL_NODISCARD bool is_accessible_from(device_ref __device)
+  {
+    return ::cuda::experimental::mr::__mempool_get_access(__pool_handle_, __device);
   }
 
   //! @brief Equality comparison with another \c async_memory_pool.
