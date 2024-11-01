@@ -599,7 +599,7 @@ struct DeviceReduce
     implicit_cast_kv_pair_op_it out_it =
       THRUST_NS_QUALIFIER::make_tabulate_output_iterator(detail::reduce::write_to_user_out_it<OutputIteratorT>{d_out});
 
-    return detail::reduce::DispatchStreamingArgReduce<
+    return detail::reduce::dispatch_streaming_arg_reduce_t<
       InputIteratorT,
       implicit_cast_kv_pair_op_it,
       PerPartitionOffsetT,
@@ -885,7 +885,7 @@ struct DeviceReduce
     implicit_cast_kv_pair_op_it out_it =
       THRUST_NS_QUALIFIER::make_tabulate_output_iterator(detail::reduce::write_to_user_out_it<OutputIteratorT>{d_out});
 
-    return detail::reduce::DispatchStreamingArgReduce<
+    return detail::reduce::dispatch_streaming_arg_reduce_t<
       InputIteratorT,
       implicit_cast_kv_pair_op_it,
       PerPartitionOffsetT,

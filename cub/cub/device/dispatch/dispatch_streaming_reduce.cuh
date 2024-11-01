@@ -26,6 +26,8 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 
 #include <cuda/std/type_traits>
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail
@@ -86,10 +88,10 @@ struct accumulating_transform_output_op
 };
 
 /**
- * Unary promotion operator type that is used to transform a per-partition result to a global result
+ * Unary "promotion" operator type that is used to transform a per-partition result to a global result
  */
 template <typename GlobalOffsetT>
-struct promote_to_global_op
+struct local_to_global_op
 {
   // The current partition's offset to be factored into this partition's index
   GlobalOffsetT current_partition_offset;
@@ -116,14 +118,14 @@ struct promote_to_global_op
 };
 
 /**
- * Offsets a the given input iterator by a fixed offset, such that when an item at index `i` is accessed, the item
+ * Offsets a given input iterator by a fixed offset, such that when an item at index `i` is accessed, the item
  * `it[*offset_it + i]` is accessed.
  */
 template <typename Iterator, typename OffsetItT>
 class offset_iterator : public THRUST_NS_QUALIFIER::iterator_adaptor<offset_iterator<Iterator, OffsetItT>, Iterator>
 {
 public:
-  using super_t = THRUST_NS_QUALIFIER::iterator_adaptor<offset_iterator<Iterator, OffsetItT>, Iterator>;
+  using super_t = THRUST_NS_QUALIFIER::iterator_adaptor<offset_iterator, Iterator>;
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE offset_iterator(const Iterator& it, OffsetItT offset_it)
       : super_t(it)
@@ -159,18 +161,17 @@ struct write_to_user_out_it
   KeyValuePairOutItT out_it;
 
   template <typename IndexT, typename OffsetT, typename ResultT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(IndexT, cub::KeyValuePair<OffsetT, ResultT> reduced_result)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(IndexT, KeyValuePair<OffsetT, ResultT> reduced_result)
   {
     using kv_pair_t = ::cuda::std::_If<
-      ::cuda::std::is_assignable<decltype(*out_it), cub::KeyValuePair<::cuda::std::uint64_t, ResultT>>::value,
-      cub::KeyValuePair<::cuda::std::uint64_t, ResultT>,
+      ::cuda::std::is_assignable<decltype(*out_it), KeyValuePair<::cuda::std::uint64_t, ResultT>>::value,
+      KeyValuePair<::cuda::std::uint64_t, ResultT>,
       ::cuda::std::_If<
-        ::cuda::std::is_assignable<decltype(*out_it), cub::KeyValuePair<::cuda::std::int64_t, ResultT>>::value,
-        cub::KeyValuePair<::cuda::std::int64_t, ResultT>,
-        ::cuda::std::_If<
-          ::cuda::std::is_assignable<decltype(*out_it), cub::KeyValuePair<::cuda::std::uint32_t, ResultT>>::value,
-          cub::KeyValuePair<::cuda::std::uint32_t, ResultT>,
-          cub::KeyValuePair<::cuda::std::int32_t, ResultT>>>>;
+        ::cuda::std::is_assignable<decltype(*out_it), KeyValuePair<::cuda::std::int64_t, ResultT>>::value,
+        KeyValuePair<::cuda::std::int64_t, ResultT>,
+        ::cuda::std::_If<::cuda::std::is_assignable<decltype(*out_it), KeyValuePair<::cuda::std::uint32_t, ResultT>>::value,
+                         KeyValuePair<::cuda::std::uint32_t, ResultT>,
+                         KeyValuePair<::cuda::std::int32_t, ResultT>>>>;
 
     using index_t = typename kv_pair_t::Key;
     *out_it       = kv_pair_t{static_cast<index_t>(reduced_result.key), reduced_result.value};
@@ -181,35 +182,33 @@ struct write_to_user_out_it
  * Single-problem streaming reduction dispatch
  *****************************************************************************/
 
-//! @rst
-//! Utility class for dispatching a streaming device-wide argument extremum computation, like `ArgMin` and `ArgMax`.
-//! Streaming, here, refers to the approach used for large number of items that are processed in multiple partitions.
-//!
-//! @tparam InputIteratorT
-//!   Random-access input iterator type for reading input items @iterator
-//!
-//! @tparam OutputIteratorT
-//!   Output iterator type for writing the result of the (index, extremum)-key-value-pair
-//!
-//! @tparam PerPartitionOffsetT
-//!   Offset type used as the index to access items within one partition, i.e., the offset type used within the kernel
-//! template specialization
-//!
-//! @tparam GlobalOffsetT
-//!   Offset type used as the index to access items within the total input range, i.e., in the range [d_in, d_in +
-//! num_items)
-//!
-//! @tparam ReductionOpT
-//!   Binary reduction functor type having a member function that returns the selected extremum of two input items.
-//!   The streaming reduction requires two overloads, one used for selecting the extremum within one partition and one
-//!   for selecting the extremum across partitions.
-//!
-//! @tparam InitT
-//!   Initial value type
-//!
-//! @tparam PolicyChainT
-//!   The policy chain passed to the DispatchReduce template specialization
-//! @endrst
+// Utility class for dispatching a streaming device-wide argument extremum computation, like `ArgMin` and `ArgMax`.
+// Streaming, here, refers to the approach used for large number of items that are processed in multiple partitions.
+//
+// @tparam InputIteratorT
+//   Random-access input iterator type for reading input items @iterator
+//
+// @tparam OutputIteratorT
+//   Output iterator type for writing the result of the (index, extremum)-key-value-pair
+//
+// @tparam PerPartitionOffsetT
+//   Offset type used as the index to access items within one partition, i.e., the offset type used within the kernel
+// template specialization
+//
+// @tparam GlobalOffsetT
+//   Offset type used as the index to access items within the total input range, i.e., in the range [d_in, d_in +
+// num_items)
+//
+// @tparam ReductionOpT
+//   Binary reduction functor type having a member function that returns the selected extremum of two input items.
+//   The streaming reduction requires two overloads, one used for selecting the extremum within one partition and one
+//   for selecting the extremum across partitions.
+//
+// @tparam InitT
+//   Initial value type
+//
+// @tparam PolicyChainT
+//   The policy chain passed to the DispatchReduce template specialization
 template <typename InputIteratorT,
           typename OutputIteratorT,
           typename PerPartitionOffsetT,
@@ -218,38 +217,36 @@ template <typename InputIteratorT,
           typename InitT,
           typename PolicyChainT =
             DeviceReducePolicy<KeyValuePair<PerPartitionOffsetT, InitT>, PerPartitionOffsetT, ReductionOpT>>
-struct DispatchStreamingArgReduce
+struct dispatch_streaming_arg_reduce_t
 {
-  //! @rst
-  //! Internal dispatch routine for computing a device-wide argument extremum, like `ArgMin` and `ArgMax`
-  //!
-  //! @param[in] d_temp_storage
-  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
-  //!   required allocation size is written to `temp_storage_bytes` and no work
-  //!   is done.
-  //!
-  //! @param[in,out] temp_storage_bytes
-  //!   Reference to size in bytes of `d_temp_storage` allocation
-  //!
-  //! @param[in] d_in
-  //!   Pointer to the input sequence of data items
-  //!
-  //! @param[out] d_result_out
-  //!   Iterator to which the  (index, extremum)-key-value-pair is written
-  //!
-  //! @param[in] num_items
-  //!   Total number of input items (i.e., length of `d_in`)
-  //!
-  //! @param[in] reduce_op
-  //!   Reduction operator that returns the (index, extremum)-key-value-pair corresponding to the extremum of the two
-  //! input items.
-  //!
-  //! @param[in] init
-  //!   The extremum value to be returned for empty problems
-  //!
-  //! @param[in] stream
-  //!   CUDA stream to launch kernels within.
-  //! @endrst
+  // Internal dispatch routine for computing a device-wide argument extremum, like `ArgMin` and `ArgMax`
+  //
+  // @param[in] d_temp_storage
+  //   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //   required allocation size is written to `temp_storage_bytes` and no work
+  //   is done.
+  //
+  // @param[in,out] temp_storage_bytes
+  //   Reference to size in bytes of `d_temp_storage` allocation
+  //
+  // @param[in] d_in
+  //   Pointer to the input sequence of data items
+  //
+  // @param[out] d_result_out
+  //   Iterator to which the  (index, extremum)-key-value-pair is written
+  //
+  // @param[in] num_items
+  //   Total number of input items (i.e., length of `d_in`)
+  //
+  // @param[in] reduce_op
+  //   Reduction operator that returns the (index, extremum)-key-value-pair corresponding to the extremum of the two
+  // input items.
+  //
+  // @param[in] init
+  //   The extremum value to be returned for empty problems
+  //
+  // @param[in] stream
+  //   CUDA stream to launch kernels within.
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -260,11 +257,8 @@ struct DispatchStreamingArgReduce
     InitT init,
     cudaStream_t stream)
   {
-    // The input type
-    using input_value_t = cub::detail::value_t<InputIteratorT>;
-
     // Constant iterator to provide the offset of the current partition for the user-provided input iterator
-    using constant_offset_it_t = cub::ConstantInputIterator<GlobalOffsetT>;
+    using constant_offset_it_t = ConstantInputIterator<GlobalOffsetT>;
 
     // Wrapped input iterator to produce index-value tuples, i.e., <PerPartitionOffsetT, InputT>-tuples
     // We make sure to offset the user-provided input iterator by the current partition's offset
@@ -280,11 +274,11 @@ struct DispatchStreamingArgReduce
 
     // Unary promotion operator type that is used to transform a per-partition result to a global result
     // operator()(per_partition_accum_t) -> global_accum_t
-    using promote_to_global_op_t = promote_to_global_op<GlobalOffsetT>;
+    using local_to_global_op_t = local_to_global_op<GlobalOffsetT>;
 
     // Reduction operator type that enables accumulating per-partition results to a global reduction result
     using accumulating_transform_output_op_t =
-      accumulating_transform_output_op<global_accum_t, promote_to_global_op_t, ReductionOpT, OutputIteratorT>;
+      accumulating_transform_output_op<global_accum_t, local_to_global_op_t, ReductionOpT, OutputIteratorT>;
 
     // The output iterator that implements the logic to accumulate per-partition result to a global aggregate and,
     // eventually, write to the user-provided output iterators
@@ -304,20 +298,20 @@ struct DispatchStreamingArgReduce
                      per_partition_accum_t,
                      PolicyChainT>;
 
-    void* allocations[2]       = {nullptr};
-    size_t allocation_sizes[2] = {0, 2 * sizeof(global_accum_t)};
-
-    // The current partition's input iterator is an ArgIndex iterator that generates indexes relative to the beginning
+    // The current partition's input iterator is an ArgIndex iterator that generates indices relative to the beginning
     // of the current partition, i.e., [0, partition_size) along with an OffsetIterator that offsets the user-provided
     // input iterator by the current partition's offset
     arg_index_input_iterator_t d_indexed_offset_in(make_offset_iterator(d_in, constant_offset_it_t{GlobalOffsetT{0}}));
 
     // Transforms the per-partition result to a global result by adding the current partition's offset to the arg result
     // of a partition
-    promote_to_global_op_t promote_to_global_op{GlobalOffsetT{0}};
+    local_to_global_op_t local_to_global_op{GlobalOffsetT{0}};
 
-    // Upper bound at which we want to cut the input into multiple partitions
-    static constexpr PerPartitionOffsetT max_partition_size = ::cuda::std::numeric_limits<PerPartitionOffsetT>::max();
+    // Upper bound at which we want to cut the input into multiple partitions. Align to 4096 bytes for performance
+    // reasons
+    static constexpr PerPartitionOffsetT max_offset_size = ::cuda::std::numeric_limits<PerPartitionOffsetT>::max();
+    static constexpr PerPartitionOffsetT max_partition_size =
+      max_offset_size - (max_offset_size % PerPartitionOffsetT{4096});
 
     // Whether the given number of items fits into a single partition
     const bool is_single_partition =
@@ -328,9 +322,12 @@ struct DispatchStreamingArgReduce
       is_single_partition ? static_cast<PerPartitionOffsetT>(num_items) : max_partition_size;
 
     accumulating_transform_output_op_t accumulating_out_op{
-      true, is_single_partition, nullptr, nullptr, d_result_out, promote_to_global_op, reduce_op};
+      true, is_single_partition, nullptr, nullptr, d_result_out, local_to_global_op, reduce_op};
 
     empty_problem_init_t initial_value{{PerPartitionOffsetT{1}, init}};
+
+    void* allocations[2]       = {nullptr, nullptr};
+    size_t allocation_sizes[2] = {0, 2 * sizeof(global_accum_t)};
 
     // Query temporary storage requirements for per-partition reduction
     dispatch_reduce_t::Dispatch(
@@ -345,7 +342,7 @@ struct DispatchStreamingArgReduce
 
     // Alias the temporary allocations from the single storage blob (or compute the necessary size
     // of the blob)
-    cudaError_t error = cub::AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
+    cudaError_t error = AliasTemporaries(d_temp_storage, temp_storage_bytes, allocations, allocation_sizes);
     if (error != cudaSuccess)
     {
       return error;
@@ -358,7 +355,7 @@ struct DispatchStreamingArgReduce
     }
 
     // Pointer to the double-buffer of global accumulators, which aggregate cross-partition results
-    global_accum_t* const d_global_aggregates = reinterpret_cast<global_accum_t*>(allocations[1]);
+    global_accum_t* const d_global_aggregates = static_cast<global_accum_t*>(allocations[1]);
 
     accumulating_out_op = accumulating_transform_output_op_t{
       true,
@@ -366,7 +363,7 @@ struct DispatchStreamingArgReduce
       d_global_aggregates,
       (d_global_aggregates + 1),
       d_result_out,
-      promote_to_global_op,
+      local_to_global_op,
       reduce_op};
 
     for (GlobalOffsetT current_partition_offset = 0; current_partition_offset < static_cast<GlobalOffsetT>(num_items);
@@ -389,6 +386,11 @@ struct DispatchStreamingArgReduce
         initial_value,
         stream);
 
+      if (error != cudaSuccess)
+      {
+        return error;
+      }
+
       // Whether the next partition will be the last partition
       const bool next_partition_is_last =
         (remaining_items - current_num_items) <= static_cast<GlobalOffsetT>(max_partition_size);
@@ -403,3 +405,5 @@ struct DispatchStreamingArgReduce
 } // namespace detail
 
 CUB_NAMESPACE_END
+
+#endif // DOXYGEN_SHOULD_SKIP_THIS

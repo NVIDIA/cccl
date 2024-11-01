@@ -52,6 +52,15 @@ struct mod_op
   }
 };
 
+struct custom_sum_op
+{
+  template <typename ItemT>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE ItemT operator()(const ItemT lhs, const ItemT rhs) const
+  {
+    return lhs + rhs;
+  }
+};
+
 C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", offset_types)
 {
   using index_t  = uint64_t;
@@ -79,7 +88,9 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
 
   SECTION("reduce")
   {
-    using op_t = cub::Sum;
+    // Use a custom operator to increase test coverage, different from potentially different code paths used for
+    // cub::Sum
+    using op_t = custom_sum_op;
 
     // Segment size (generate a series of: 0, 1, 2, ..., <segment_size-1>,  0, 1, 2, ..., <segment_size-1>, 0, 1, ...)
     const auto segment_size = 1000;
