@@ -24,7 +24,6 @@
 #include <cuda/std/atomic>
 
 #include <cuda/experimental/__async/completion_signatures.cuh>
-#include <cuda/experimental/__async/config.cuh>
 #include <cuda/experimental/__async/cpos.cuh>
 #include <cuda/experimental/__async/env.cuh>
 #include <cuda/experimental/__async/exception.cuh>
@@ -35,12 +34,9 @@
 #include <cuda/experimental/__async/type_traits.cuh>
 #include <cuda/experimental/__async/utility.cuh>
 #include <cuda/experimental/__async/variant.cuh>
+#include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/prologue.cuh>
-
-_CCCL_DIAG_PUSH
-_CCCL_NV_DIAG_SUPPRESS(expr_has_no_effect)
-_CCCL_DIAG_SUPPRESS_GCC("-Wunused-value")
 
 namespace cuda::experimental::__async
 {
@@ -237,8 +233,16 @@ extern __completion_metadata<__mtrue, // There will be no value completion, so v
   __merge_metadata<__completion_metadata<_LeftValsOK, _LeftErrsOK, _Offsets, _LeftSigs...>,
                    __completion_metadata<_RightValsOK, _RightErrsOK, __moffsets<>, set_value_t(_As...), _RightSigs...>>;
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_GCC("-Wunused-value")
+_CCCL_NV_DIAG_SUPPRESS(expr_has_no_effect)
+_CCCL_DIAG_SUPPRESS_NVHPC(expr_has_no_effect)
+
 template <size_t... _Offsets>
 _CCCL_INLINE_VAR constexpr size_t __last_offset = (0, ..., _Offsets);
+
+_CCCL_NV_DIAG_DEFAULT(expr_has_no_effect)
+_CCCL_DIAG_POP
 
 template <size_t _Count, size_t... _Offsets>
 using __append_offset = __moffsets<_Offsets..., _Count + __last_offset<_Offsets...>>;
@@ -318,7 +322,7 @@ struct __rcvr_t
   __state_t& __state_;
 
   template <class... _Ts>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void set_value(_Ts&&... __ts) noexcept
+  _CUDAX_TRIVIAL_API void set_value(_Ts&&... __ts) noexcept
   {
     constexpr auto idx = __mmake_indices<sizeof...(_Ts)>();
     __state_.template __set_value<_Index>(idx, static_cast<_Ts&&>(__ts)...);
@@ -326,7 +330,7 @@ struct __rcvr_t
   }
 
   template <class _Error>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void set_error(_Error&& __error) noexcept
+  _CUDAX_TRIVIAL_API void set_error(_Error&& __error) noexcept
   {
     __state_.__set_error(static_cast<_Error&&>(__error));
     __state_.__arrive();
@@ -641,9 +645,6 @@ _CCCL_HOST_DEVICE __when_all::__sndr_t<_Sndrs...> when_all_t::operator()(_Sndrs.
 _CCCL_GLOBAL_CONSTANT when_all_t when_all{};
 
 } // namespace cuda::experimental::__async
-
-_CCCL_NV_DIAG_DEFAULT(expr_has_no_effect)
-_CCCL_DIAG_POP
 
 #include <cuda/experimental/__async/epilogue.cuh>
 

@@ -28,12 +28,14 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER > 2011
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Cont>
 constexpr _LIBCUDACXX_HIDE_FROM_ABI auto data(_Cont& __c) noexcept(noexcept(__c.data())) -> decltype(__c.data())
 {
   return __c.data();
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Cont>
 constexpr _LIBCUDACXX_HIDE_FROM_ABI auto data(const _Cont& __c) noexcept(noexcept(__c.data())) -> decltype(__c.data())
 {

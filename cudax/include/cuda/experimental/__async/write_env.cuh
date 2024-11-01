@@ -23,13 +23,13 @@
 
 #include <cuda/std/__type_traits/conditional.h>
 
-#include <cuda/experimental/__async/config.cuh>
 #include <cuda/experimental/__async/cpos.cuh>
 #include <cuda/experimental/__async/env.cuh>
 #include <cuda/experimental/__async/exception.cuh>
 #include <cuda/experimental/__async/queries.cuh>
 #include <cuda/experimental/__async/rcvr_with_env.cuh>
 #include <cuda/experimental/__async/utility.cuh>
+#include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/prologue.cuh>
 
@@ -70,7 +70,7 @@ public:
   /// @brief Wraps one sender in another that modifies the execution
   /// environment by merging in the environment specified.
   template <class _Sndr, class _Env>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE constexpr auto operator()(_Sndr, _Env) const //
+  _CUDAX_TRIVIAL_API constexpr auto operator()(_Sndr, _Env) const //
     -> __sndr_t<_Sndr, _Env>;
 };
 
@@ -103,7 +103,7 @@ struct write_env_t::__sndr_t
 };
 
 template <class _Sndr, class _Env>
-_CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE constexpr auto write_env_t::operator()(_Sndr __sndr, _Env __env) const //
+_CUDAX_TRIVIAL_API constexpr auto write_env_t::operator()(_Sndr __sndr, _Env __env) const //
   -> write_env_t::__sndr_t<_Sndr, _Env>
 {
   return write_env_t::__sndr_t<_Sndr, _Env>{{}, static_cast<_Env&&>(__env), static_cast<_Sndr&&>(__sndr)};

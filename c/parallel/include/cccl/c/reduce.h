@@ -24,6 +24,7 @@ struct cccl_device_reduce_build_result_t
   void* cubin;
   size_t cubin_size;
   CUlibrary library;
+  unsigned long long accumulator_size;
   CUkernel single_tile_kernel;
   CUkernel single_tile_second_kernel;
   CUkernel reduction_kernel;

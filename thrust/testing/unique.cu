@@ -3,6 +3,8 @@
 #include <thrust/iterator/retag.h>
 #include <thrust/unique.h>
 
+#include <cuda/std/array>
+
 #include <unittest/unittest.h>
 
 template <typename ForwardIterator>
@@ -287,3 +289,14 @@ struct TestUniqueCount
   }
 };
 VariableUnitTest<TestUniqueCount, IntegralTypes> TestUniqueCountInstance;
+
+template <typename T>
+struct TestUniqueMemoryAccess
+{
+  void operator()(void)
+  {
+    thrust::device_vector<cuda::std::array<T, 100>> v(10);
+    thrust::unique(v.begin(), v.end());
+  }
+};
+SimpleUnitTest<TestUniqueMemoryAccess, unittest::type_list<int>> TestUniqueMemoryAccessInstance;

@@ -35,7 +35,7 @@
 
 #include <cuda/std/type_traits>
 
-#include "catch2_test_helper.h"
+#include <c2h/catch2_test_helper.cuh>
 
 /******************************************************************************
  * HELPER CLASS FOR RUN-LENGTH DECODING TESTS
@@ -496,7 +496,7 @@ struct params_t
   static constexpr int block_dim_z              = BlockDimZ;
 };
 
-CUB_TEST_LIST(
+C2H_TEST_LIST(
   "Block Run Length Decode works with run lengths and offsets relative to each run",
   "[rld][block]",
   params_t<1, 1, 64>,
@@ -520,7 +520,7 @@ CUB_TEST_LIST(
                               DO_TEST_RELATIVE_OFFSETS>();
 }
 
-CUB_TEST_LIST(
+C2H_TEST_LIST(
   "Block Run Length Decode works with run lengths and performs normal run-length "
   "decoding",
   "[rld][block]",
@@ -545,7 +545,7 @@ CUB_TEST_LIST(
                               DO_NOT_TEST_RELATIVE_OFFSETS>();
 }
 
-CUB_TEST_LIST(
+C2H_TEST_LIST(
   "Block Run Length Decode works with run offsets and generates offsets relative to "
   "each run",
   "[rld][block]",
@@ -570,7 +570,7 @@ CUB_TEST_LIST(
                               DO_TEST_RELATIVE_OFFSETS>();
 }
 
-CUB_TEST_LIST(
+C2H_TEST_LIST(
   "Block Run Length Decode works with run offsets and performs normal run-length "
   "decoding",
   "[rld][block]",

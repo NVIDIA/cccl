@@ -23,6 +23,7 @@ set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
 option(CCCL_ENABLE_EXCEPTIONS "Enable exceptions within CCCL libraries." ON)
 option(CCCL_ENABLE_RTTI "Enable RTTI within CCCL libraries." ON)
 option(CCCL_ENABLE_WERROR "Treat warnings as errors for CCCL targets." ON)
+option(CCCL_SUPPRESS_ICC_DEPRECATION_WARNING "Suppress Intel Compiler deprecation warnings" OFF)
 
 function(cccl_build_compiler_interface interface_target cuda_compile_options cxx_compile_options compile_defs)
   add_library(${interface_target} INTERFACE)
@@ -63,6 +64,10 @@ function(cccl_build_compiler_targets)
 
   if (NOT CCCL_ENABLE_RTTI)
     list(APPEND cxx_compile_definitions "CCCL_DISABLE_RTTI")
+  endif()
+
+  if (CCCL_SUPPRESS_ICC_DEPRECATION_WARNING)
+    list(APPEND cxx_compile_definitions "CCCL_SUPPRESS_ICC_DEPRECATION_WARNING")
   endif()
 
   if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")

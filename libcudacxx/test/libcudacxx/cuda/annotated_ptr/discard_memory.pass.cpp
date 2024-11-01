@@ -19,21 +19,16 @@
 template <typename T>
 __device__ __host__ __noinline__ void test(bool shared = false)
 {
-  T* arr = alloc<T, ARR_SZ>(shared);
+  T* arr = global_alloc<T, ARR_SZ>();
 
   cuda::discard_memory(arr, ARR_SZ);
 
-  dealloc<T>(arr, shared);
+  dealloc<T>(arr);
 }
 
 __device__ __host__ __noinline__ void test_all()
 {
   test<int>();
-}
-
-__global__ void test_kernel()
-{
-  test_all();
 }
 
 int main(int argc, char** argv)

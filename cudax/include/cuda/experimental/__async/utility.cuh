@@ -24,15 +24,15 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/initializer_list>
 
-#include <cuda/experimental/__async/config.cuh>
 #include <cuda/experimental/__async/meta.cuh>
 #include <cuda/experimental/__async/type_traits.cuh>
+#include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
-_CCCL_GLOBAL_CONSTANT size_t __npos = ~0UL;
+_CCCL_GLOBAL_CONSTANT size_t __npos = static_cast<size_t>(-1);
 
 struct __ignore
 {
@@ -124,6 +124,7 @@ _CCCL_HOST_DEVICE constexpr _Ty __decay_copy(_Ty&& __ty) noexcept(__nothrow_deca
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wnon-template-friend")
+_CCCL_DIAG_SUPPRESS_NVHPC(probable_guiding_friend)
 _CCCL_NV_DIAG_SUPPRESS(probable_guiding_friend)
 
 // __zip/__unzip is for keeping type names short. It has the unfortunate side
