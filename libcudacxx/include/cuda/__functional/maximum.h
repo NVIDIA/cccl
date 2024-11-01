@@ -21,9 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__functional/binary_function.h>
-#include <cuda/std/__utility/forward.h>
+#include <cuda/std/__type_traits/common_type.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -34,9 +33,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT maximum : __binary_function<_Tp, _Tp, _Tp>
 
   _CCCL_EXEC_CHECK_DISABLE
   constexpr _LIBCUDACXX_HIDE_FROM_ABI _Tp operator()(const _Tp& __x, const _Tp& __y) const
-    noexcept(noexcept(_CUDA_VSTD::max(__x, __y)))
+    noexcept(noexcept(__x < __y ? __y : __x))
   {
-    return _CUDA_VSTD::max(__x, __y);
+    return (__x < __y) ? __y : __x;
   }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(maximum);
@@ -46,11 +45,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT maximum<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  constexpr _LIBCUDACXX_HIDE_FROM_ABI auto operator()(_T1&& __t, _T2&& __u) const
-    noexcept(noexcept(_CUDA_VSTD::max(_CUDA_VSTD::forward<_T1>(__t), _CUDA_VSTD::forward<_T2>(__u))))
-      -> decltype(_CUDA_VSTD::max(_CUDA_VSTD::forward<_T1>(__t), _CUDA_VSTD::forward<_T2>(__u)))
+  constexpr _LIBCUDACXX_HIDE_FROM_ABI typename _CUDA_VSTD::common_type<_T1, _T2>::type
+  operator()(const _T1& __t, const _T2& __u) const noexcept(noexcept((__t < __u) ? __u : __t))
   {
-    return _CUDA_VSTD::max(_CUDA_VSTD::forward<_T1>(__t), _CUDA_VSTD::forward<_T2>(__u));
+    return (__t < __u) ? __u : __t;
   }
 
   using is_transparent = void;
