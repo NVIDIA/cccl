@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_FUNCTIONAL_MINIMUM_H
-#define _CUDA_FUNCTIONAL_MINIMUM_H
+#ifndef _CUDA_FUNCTIONAL_MAXIMUM_H
+#define _CUDA_FUNCTIONAL_MAXIMUM_H
 
 #include <cuda/std/detail/__config>
 
@@ -58,4 +58,4 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT maximum<void>
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
 
-#endif // _CUDA_FUNCTIONAL_MINIMUM_H
+#endif // _CUDA_FUNCTIONAL_MAXIMUM_H
