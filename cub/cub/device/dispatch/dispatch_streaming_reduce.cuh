@@ -38,12 +38,12 @@ namespace reduce
 template <typename GlobalAccumT, typename PromoteToGlobalOpT, typename GlobalReductionOpT, typename FinalResultOutIteratorT>
 struct accumulating_transform_output_op
 {
-  bool first_partition = true;
-  bool last_partition  = false;
+  bool first_partition;
+  bool last_partition;
 
   // We use a double-buffer to make assignment idempotent (i.e., allow potential repeated assignment)
-  GlobalAccumT* d_previous_aggregate = nullptr;
-  GlobalAccumT* d_aggregate_out      = nullptr;
+  GlobalAccumT* d_previous_aggregate;
+  GlobalAccumT* d_aggregate_out;
 
   // Output iterator to which the final result of type `GlobalAccumT` across all partitions will be assigned
   FinalResultOutIteratorT d_out;
