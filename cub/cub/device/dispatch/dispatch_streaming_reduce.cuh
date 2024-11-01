@@ -1,36 +1,5 @@
-/******************************************************************************
- * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2022, NVIDIA CORPORATION.  All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in the
- *       documentation and/or other materials provided with the distribution.
- *     * Neither the name of the NVIDIA CORPORATION nor the
- *       names of its contributors may be used to endorse or promote products
- *       derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
- * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
- * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
- * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- ******************************************************************************/
-
-/**
- * @file cub::DeviceReduce provides device-wide, parallel operations for
- *       computing a reduction across a sequence of data items residing within
- *       device-accessible memory.
- */
+// SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 #pragma once
 
@@ -65,9 +34,8 @@ namespace reduce
 {
 
 template <typename GlobalAccumT, typename PromoteToGlobalOpT, typename GlobalReductionOpT, typename FinalResultOutIteratorT>
-class accumulating_transform_output_op
+struct accumulating_transform_output_op
 {
-private:
   bool first_partition = true;
   bool last_partition  = false;
 
@@ -83,22 +51,6 @@ private:
 
   // Reduction operation
   GlobalReductionOpT reduce_op;
-
-public:
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE accumulating_transform_output_op(
-    GlobalAccumT* d_previous_aggregate,
-    GlobalAccumT* d_aggregate_out,
-    bool is_last_partition,
-    FinalResultOutIteratorT d_out,
-    PromoteToGlobalOpT promote_op,
-    GlobalReductionOpT reduce_op)
-      : last_partition(is_last_partition)
-      , d_previous_aggregate(d_previous_aggregate)
-      , d_aggregate_out(d_aggregate_out)
-      , d_out(d_out)
-      , promote_op(promote_op)
-      , reduce_op(reduce_op)
-  {}
 
   template <typename IndexT, typename AccumT>
   _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(IndexT, AccumT per_partition_aggregate)
@@ -248,8 +200,9 @@ struct write_to_user_out_it
 //! num_items)
 //!
 //! @tparam ReductionOpT
-//!   Binary reduction functor type having member
-//!   `auto operator()(const T &a, const U &b)`
+//!   Binary reduction functor type having a member function that returns the selected extremum of two input items.
+//!   The streaming reduction requires two overloads, one used for selecting the extremum within one partition and one
+//!   for selecting the extremum across partitions.
 //!
 //! @tparam InitT
 //!   Initial value type
@@ -363,9 +316,6 @@ struct DispatchStreamingArgReduce
     // of a partition
     promote_to_global_op_t promote_to_global_op{GlobalOffsetT{0}};
 
-    accumulating_transform_output_op_t accumulating_out_op(
-      nullptr, nullptr, false, d_result_out, promote_to_global_op, reduce_op);
-
     // Upper bound at which we want to cut the input into multiple partitions
     static constexpr PerPartitionOffsetT max_partition_size = ::cuda::std::numeric_limits<PerPartitionOffsetT>::max();
 
@@ -376,6 +326,9 @@ struct DispatchStreamingArgReduce
     // The largest partition size ever encountered
     const auto largest_partition_size =
       is_single_partition ? static_cast<PerPartitionOffsetT>(num_items) : max_partition_size;
+
+    accumulating_transform_output_op_t accumulating_out_op{
+      true, is_single_partition, nullptr, nullptr, d_result_out, promote_to_global_op, reduce_op};
 
     empty_problem_init_t initial_value{{PerPartitionOffsetT{1}, init}};
 
@@ -408,9 +361,10 @@ struct DispatchStreamingArgReduce
     global_accum_t* const d_global_aggregates = reinterpret_cast<global_accum_t*>(allocations[1]);
 
     accumulating_out_op = accumulating_transform_output_op_t{
+      true,
+      is_single_partition,
       d_global_aggregates,
       (d_global_aggregates + 1),
-      is_single_partition,
       d_result_out,
       promote_to_global_op,
       reduce_op};
