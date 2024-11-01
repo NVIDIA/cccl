@@ -32,6 +32,7 @@
 
 #include <thrust/detail/functional/actor.h>
 
+#include <cuda/functional>
 #include <cuda/std/functional>
 
 #include <functional>
@@ -927,7 +928,7 @@ THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(identity, THRUST_FWD(x));
  *  \see binary_function
  */
 template <typename T = void>
-struct maximum : cuda::std::maximum<T>
+struct maximum : ::cuda::maximum<T>
 {
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
@@ -974,7 +975,7 @@ struct maximum : cuda::std::maximum<T>
  *  \see binary_function
  */
 template <typename T = void>
-struct minimum : cuda::std::minimum<T>
+struct minimum : ::cuda::minimum<T>
 {
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
