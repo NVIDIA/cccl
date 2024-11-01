@@ -6,6 +6,7 @@
 // includes, system
 #include <cuda/memory_resource>
 
+#include <cuda/experimental/algorithm.cuh>
 #include <cuda/experimental/buffer.cuh>
 #include <cuda/experimental/device.cuh>
 #include <cuda/experimental/launch.cuh>
@@ -81,11 +82,11 @@ void benchmark_cross_device_ping_pong_copy(
     // Ping-pong copy between GPUs
     if (i % 2 == 0)
     {
-      cudax::copy_bytes(stream, dev0_buffer, dev1_buffer);
+      cudax::copy_bytes(dev0_stream, dev0_buffer, dev1_buffer);
     }
     else
     {
-      cudax::copy_bytes(stream, dev1_buffer, dev0_buffer);
+      cudax::copy_bytes(dev0_stream, dev1_buffer, dev0_buffer);
     }
   }
 
