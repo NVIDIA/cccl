@@ -927,7 +927,7 @@ THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(identity, THRUST_FWD(x));
  *  \see binary_function
  */
 template <typename T = void>
-struct maximum
+struct maximum : cuda::std::maximum<T>
 {
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
@@ -946,17 +946,7 @@ struct maximum
    *  deprecated [Since 2.6]
    */
   using result_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T;
-
-  /*! Function call operator. The return value is <tt>rhs < lhs ? lhs : rhs</tt>.
-   */
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE constexpr T operator()(const T& lhs, const T& rhs) const
-  {
-    return lhs < rhs ? rhs : lhs;
-  }
 }; // end maximum
-
-THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION(maximum, t1 < t2 ? THRUST_FWD(t2) : THRUST_FWD(t1));
 
 /*! \p minimum is a function object that takes two arguments and returns the lesser
  *  of the two. Specifically, it is an Adaptable Binary Function. If \c f is an
@@ -984,7 +974,7 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION(maximum, t1 < t2 ? THRUST_FWD(t2) : TH
  *  \see binary_function
  */
 template <typename T = void>
-struct minimum
+struct minimum : cuda::std::minimum<T>
 {
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
@@ -1003,17 +993,7 @@ struct minimum
    *  deprecated [Since 2.6]
    */
   using result_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T;
-
-  /*! Function call operator. The return value is <tt>lhs < rhs ? lhs : rhs</tt>.
-   */
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE constexpr T operator()(const T& lhs, const T& rhs) const
-  {
-    return lhs < rhs ? lhs : rhs;
-  }
 }; // end minimum
-
-THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION(minimum, t1 < t2 ? THRUST_FWD(t1) : THRUST_FWD(t2));
 
 /*! \p project1st is a function object that takes two arguments and returns
  *  its first argument; the second argument is unused. It is essentially a
