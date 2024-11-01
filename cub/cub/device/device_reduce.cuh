@@ -480,9 +480,10 @@ struct DeviceReduce
   //! @rst
   //! Finds the first device-wide minimum using the less-than (``<``) operator, also returning the index of that item.
   //!
-  //! - The output value type assigned to ``d_out`` is ``cub::KeyValuePair<offset_t, T>``
-  //!   (Where  ``T`` corresponds to ``iterator_traits<d_out>::value_type::Value``, if the iterator value type of
-  //!   ``d_out`` is not void. Otherwise, ``T`` is the iterator value type of ``d_in``. ``offset_t`` is determined as
+  //! - The output value type assigned to ``d_out`` is ``cub::KeyValuePair<offset_t, T>``.
+  //!   ``T`` is ``iterator_traits<OutputIteratorT>::value_type::Value``, unless this type is `void`,
+  //!   in which case ``T`` is ``iterator_traits<InputIteratorT>::value_type``.
+  //!   ``offset_t`` is determined as
   //!   follows:
   //!   ``uint64_t`` if ``cub::KeyValuePair<uint64_t, T>`` is assignable to ``d_out``. Otherwise, ``int64_t`` if
   //!   ``cub::KeyValuePair<int64_t, T>`` is assignable to ``d_out``. Otherwise, ``uint32_t`` if
@@ -579,7 +580,7 @@ struct DeviceReduce
     // Offset type used to index within the total input in the range [d_in, d_in + num_items)
     using GlobalOffsetT = ::cuda::std::int64_t;
 
-    // Initial value type
+    // Determine initial value type
     using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<GlobalOffsetT, InputValueT>>;
     using InitT        = typename OutputTupleT::Value;
 
@@ -759,9 +760,10 @@ struct DeviceReduce
   //! Finds the first device-wide maximum using the greater-than (``>``)
   //! operator, also returning the index of that item
   //!
-  //! - The output value type assigned to ``d_out`` is ``cub::KeyValuePair<offset_t, T>``
-  //!   (Where  ``T`` corresponds to ``iterator_traits<d_out>::value_type::Value``, if the iterator value type of
-  //!   ``d_out`` is not void. Otherwise, ``T`` is the iterator value type of ``d_in``. ``offset_t`` is determined as
+  //! - The output value type assigned to ``d_out`` is ``cub::KeyValuePair<offset_t, T>``.
+  //!   ``T`` is ``iterator_traits<OutputIteratorT>::value_type::Value``, unless this type is `void`,
+  //!   in which case ``T`` is ``iterator_traits<InputIteratorT>::value_type``.
+  //!   ``offset_t`` is determined as
   //!   follows:
   //!   ``uint64_t`` if ``cub::KeyValuePair<uint64_t, T>`` is assignable to ``d_out``. Otherwise, ``int64_t`` if
   //!   ``cub::KeyValuePair<int64_t, T>`` is assignable to ``d_out``. Otherwise, ``uint32_t`` if
@@ -864,7 +866,7 @@ struct DeviceReduce
     // Offset type used to index within the total input in the range [d_in, d_in + num_items)
     using GlobalOffsetT = ::cuda::std::int64_t;
 
-    // Initial value type
+    // Determine initial value type
     using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<GlobalOffsetT, InputValueT>>;
     using InitT        = typename OutputTupleT::Value;
 
