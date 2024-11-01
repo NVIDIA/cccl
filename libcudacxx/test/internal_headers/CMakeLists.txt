@@ -55,6 +55,9 @@ function(libcudacxx_create_internal_header_test header_name, headertest_src, fal
     target_compile_definitions(headertest_${header_name} PRIVATE "-D${fallback}")
   endif()
   target_compile_definitions(headertest_${header_name} PRIVATE "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE")
+  if (CCCL_SUPPRESS_ICC_DEPRECATION_WARNING)
+    target_compile_definitions(headertest_${header_name} PRIVATE CCCL_SUPPRESS_ICC_DEPRECATION_WARNING)
+  endif()
 
   add_dependencies(libcudacxx.test.internal_headers headertest_${header_name})
 endfunction()

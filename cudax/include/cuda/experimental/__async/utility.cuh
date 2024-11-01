@@ -24,9 +24,9 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/initializer_list>
 
-#include <cuda/experimental/__async/config.cuh>
 #include <cuda/experimental/__async/meta.cuh>
 #include <cuda/experimental/__async/type_traits.cuh>
+#include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/prologue.cuh>
 

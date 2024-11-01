@@ -25,9 +25,9 @@
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/atomic>
 
-#include <cuda/experimental/__async/config.cuh>
 #include <cuda/experimental/__async/thread.cuh>
 #include <cuda/experimental/__async/utility.cuh>
+#include <cuda/experimental/__detail/config.cuh>
 
 #if __has_include(<stop_token>) && __cpp_lib_jthread >= 201911
 #  include <stop_token>

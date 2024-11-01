@@ -93,7 +93,7 @@ private:
   _CCCL_NODISCARD_FRIEND _CUDA_VSTD::span<_Tp>
   __cudax_launch_transform(::cuda::stream_ref, uninitialized_buffer& __self) noexcept
   {
-    static_assert(_CUDA_VSTD::__is_included_in<_CUDA_VMR::device_accessible, _Properties...>,
+    static_assert(_CUDA_VSTD::__is_included_in_v<_CUDA_VMR::device_accessible, _Properties...>,
                   "The buffer must be device accessible to be passed to `launch`");
     return {__self.__get_data(), __self.size()};
   }
@@ -103,7 +103,7 @@ private:
   _CCCL_NODISCARD_FRIEND _CUDA_VSTD::span<const _Tp>
   __cudax_launch_transform(::cuda::stream_ref, const uninitialized_buffer& __self) noexcept
   {
-    static_assert(_CUDA_VSTD::__is_included_in<_CUDA_VMR::device_accessible, _Properties...>,
+    static_assert(_CUDA_VSTD::__is_included_in_v<_CUDA_VMR::device_accessible, _Properties...>,
                   "The buffer must be device accessible to be passed to `launch`");
     return {__self.__get_data(), __self.size()};
   }
@@ -186,7 +186,7 @@ public:
   }
 
   //! @brief Returns the size of the buffer
-  _CCCL_NODISCARD constexpr _CCCL_HOST_DEVICE size_type size() const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr size_type size() const noexcept
   {
     return __count_;
   }
@@ -220,7 +220,7 @@ public:
   //! @brief Forwards the passed Properties
   _LIBCUDACXX_TEMPLATE(class _Property)
   _LIBCUDACXX_REQUIRES(
-    (!property_with_value<_Property>) _LIBCUDACXX_AND _CUDA_VSTD::__is_included_in<_Property, _Properties...>)
+    (!property_with_value<_Property>) _LIBCUDACXX_AND _CUDA_VSTD::__is_included_in_v<_Property, _Properties...>)
   friend constexpr void get_property(const uninitialized_buffer&, _Property) noexcept {}
 #  endif // DOXYGEN_SHOULD_SKIP_THIS
 };

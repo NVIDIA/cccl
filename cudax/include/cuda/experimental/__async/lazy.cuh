@@ -25,9 +25,9 @@
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__new/launder.h>
 
-#include <cuda/experimental/__async/config.cuh>
 #include <cuda/experimental/__async/meta.cuh>
 #include <cuda/experimental/__async/type_traits.cuh>
+#include <cuda/experimental/__detail/config.cuh>
 
 #include <new> // IWYU pragma: keep
 
@@ -87,7 +87,7 @@ template <>
 struct __lazy_tupl<__mindices<>>
 {
   template <class _Fn, class _Self, class... _Us>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE static auto __apply(_Fn&& __fn, _Self&&, _Us&&... __us) //
+  _CUDAX_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&&, _Us&&... __us) //
     noexcept(__nothrow_callable<_Fn, _Us...>) -> __call_result_t<_Fn, _Us...>
   {
     return static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)...);
@@ -100,7 +100,7 @@ struct __lazy_tupl<__mindices<_Idx...>, _Ts...> : __detail::__lazy_box<_Idx, _Ts
   template <size_t _Ny>
   using __at = __m_at_c<_Ny, _Ts...>;
 
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE __lazy_tupl() noexcept {}
+  _CUDAX_TRIVIAL_API __lazy_tupl() noexcept {}
 
   _CCCL_HOST_DEVICE ~__lazy_tupl()
   {
@@ -108,13 +108,13 @@ struct __lazy_tupl<__mindices<_Idx...>, _Ts...> : __detail::__lazy_box<_Idx, _Ts
   }
 
   template <size_t _Ny, class _Ty>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE _Ty* __get() noexcept
+  _CUDAX_TRIVIAL_API _Ty* __get() noexcept
   {
     return reinterpret_cast<_Ty*>(this->__detail::__lazy_box<_Ny, _Ty>::__data_);
   }
 
   template <size_t _Ny, class... _Us>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE __at<_Ny>& __emplace(_Us&&... __us) //
+  _CUDAX_TRIVIAL_API __at<_Ny>& __emplace(_Us&&... __us) //
     noexcept(__nothrow_constructible<__at<_Ny>, _Us...>)
   {
     using _Ty       = __at<_Ny>;
@@ -124,7 +124,7 @@ struct __lazy_tupl<__mindices<_Idx...>, _Ts...> : __detail::__lazy_box<_Idx, _Ts
   }
 
   template <class _Fn, class _Self, class... _Us>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) //
+  _CUDAX_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) //
     noexcept(__nothrow_callable<_Fn, _Us..., __copy_cvref_t<_Self, _Ts>...>)
       -> __call_result_t<_Fn, _Us..., __copy_cvref_t<_Self, _Ts>...>
   {

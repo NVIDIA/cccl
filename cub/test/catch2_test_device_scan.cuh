@@ -30,7 +30,7 @@
 #include <cub/detail/type_traits.cuh>
 #include <cub/thread/thread_operators.cuh>
 
-#include "catch2_test_helper.h"
+#include <c2h/catch2_test_helper.cuh>
 
 /**
  * @brief Helper class template to facilitate specifying input/output type pairs along with the key

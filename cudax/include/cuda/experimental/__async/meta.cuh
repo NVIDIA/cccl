@@ -25,7 +25,7 @@
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__utility/integer_sequence.h>
 
-#include <cuda/experimental/__async/config.cuh>
+#include <cuda/experimental/__detail/config.cuh>
 
 #if __cpp_lib_three_way_comparison
 #  include <compare>

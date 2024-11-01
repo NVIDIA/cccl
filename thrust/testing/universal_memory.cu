@@ -133,6 +133,27 @@ void TestUniversalThrustVector(std::size_t const n)
 }
 DECLARE_VARIABLE_UNITTEST(TestUniversalThrustVector);
 
+// TODO(bgruber): merge test into previous when we have Catch2
+template <typename T>
+void TestUniversalHostPinnedThrustVector(std::size_t const n)
+{
+  thrust::host_vector<T> host(n);
+  thrust::universal_host_pinned_vector<T> universal(n);
+
+  // FIXME(bgruber): only the CUDA system uses a universal_ptr here. Other systems have a native pointer.
+  // static_assert(std::is_same<typename std::decay<decltype(universal)>::type::pointer,
+  // thrust::universal_ptr<T>>::value,
+  //              "Unexpected thrust::universal_vector pointer type.");
+
+  thrust::sequence(host.begin(), host.end(), 0);
+  thrust::sequence(universal.begin(), universal.end(), 0);
+
+  ASSERT_EQUAL(host.size(), n);
+  ASSERT_EQUAL(universal.size(), n);
+  ASSERT_EQUAL(host, universal);
+}
+DECLARE_VARIABLE_UNITTEST(TestUniversalHostPinnedThrustVector);
+
 // Verify that a std::vector using the universal allocator will work with
 // Standard Library algorithms.
 template <typename T>

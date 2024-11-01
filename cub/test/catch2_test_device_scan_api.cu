@@ -30,9 +30,9 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
-#include "catch2_test_helper.h"
+#include <c2h/catch2_test_helper.cuh>
 
-CUB_TEST("Device inclusive scan works", "[scan][device]")
+C2H_TEST("Device inclusive scan works", "[scan][device]")
 {
   // example-begin device-inclusive-scan
   thrust::device_vector<int> input{0, -1, 2, -3, 4, -5, 6};

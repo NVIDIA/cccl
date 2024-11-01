@@ -23,8 +23,8 @@
 
 #include <cuda/std/__exception/terminate.h>
 
-#include <cuda/experimental/__async/config.cuh>
 #include <cuda/experimental/__async/cpos.cuh>
+#include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/prologue.cuh>
 
@@ -90,7 +90,7 @@ public:
   /// @brief Eagerly connects and starts a sender and lets it
   /// run detached.
   template <class _Sndr>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void operator()(_Sndr __sndr) const
+  _CUDAX_TRIVIAL_API void operator()(_Sndr __sndr) const
   {
     __async::start(*new __opstate_t<_Sndr>{static_cast<_Sndr&&>(__sndr)});
   }

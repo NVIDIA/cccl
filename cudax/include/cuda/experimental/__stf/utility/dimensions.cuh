@@ -194,7 +194,7 @@ public:
       s[ind].second = sizes[ind];
       if constexpr (::std::is_signed_v<Int>)
       {
-        assert(sizes[ind] >= 0 && "Invalid shape.");
+        _CCCL_ASSERT(sizes[ind] >= 0, "Invalid shape.");
       }
     }
   }
@@ -228,7 +228,7 @@ public:
     static_assert(sizeof...(E) == dimensions, "Number of dimensions must match");
     each_in_pack(
       [&](auto i, auto&& e) {
-        assert((e.size() == 1 || e.size() == 2) && "Invalid arguments for box.");
+        _CCCL_ASSERT((e.size() == 1 || e.size() == 2), "Invalid arguments for box.");
         if (e.size() > 1)
         {
           s[i].first  = *e.begin();
@@ -354,7 +354,7 @@ public:
         // Increment current with carry to next dimension
         for (size_t i : each(0, dimensions))
         {
-          assert(current[i] < iterated.get_end(i) && "Attempt to increment past the end.");
+          _CCCL_ASSERT(current[i] < iterated.get_end(i), "Attempt to increment past the end.");
           if (++current[i] < iterated.get_end(i))
           {
             // Found the new posish, now reset all lower dimensions to "zero"
@@ -373,7 +373,7 @@ public:
     _CCCL_HOST_DEVICE bool operator==(const iterator& rhs) const
     { /*printf("EQUALITY TEST index %d %d shape equal ? %s\n", index,
            other.index, (&shape == &other.shape)?"yes":"no"); */
-      assert(iterated == rhs.iterated && "Cannot compare iterators in different boxes.");
+      _CCCL_ASSERT(iterated == rhs.iterated, "Cannot compare iterators in different boxes.");
       for (auto i : each(0, dimensions))
       {
         if (current[i] != rhs.current[i])
