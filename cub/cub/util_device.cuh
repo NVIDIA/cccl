@@ -779,4 +779,4 @@ private:
 
 CUB_NAMESPACE_END
 
-#include <cub/launcher/cuda_runtime.h> // to complete the definition of TripleChevronFactory
+#include <cub/launcher/cuda_runtime.cuh> // to complete the definition of TripleChevronFactory
