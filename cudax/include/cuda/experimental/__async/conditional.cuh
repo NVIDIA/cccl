@@ -60,7 +60,7 @@ struct __cond_t
   {
     using operation_state_concept = operation_state_t;
 
-    _CCCL_HOST_DEVICE friend env_of_t<_Rcvr> get_env(const __opstate* __self) noexcept
+    _CUDAX_API friend env_of_t<_Rcvr> get_env(const __opstate* __self) noexcept
     {
       return get_env(__self->__rcvr_);
     }
@@ -83,19 +83,19 @@ struct __cond_t
     using completion_signatures = //
       transform_completion_signatures_of<_Sndr, __opstate*, __async::completion_signatures<>, __value_t>;
 
-    _CCCL_HOST_DEVICE __opstate(_Sndr&& __sndr, _Rcvr&& __rcvr, __data<_Pred, _Then, _Else>&& __data)
+    _CUDAX_API __opstate(_Sndr&& __sndr, _Rcvr&& __rcvr, __data<_Pred, _Then, _Else>&& __data)
         : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
         , __data_{static_cast<__cond_t::__data<_Pred, _Then, _Else>>(__data)}
         , __op_{__async::connect(static_cast<_Sndr&&>(__sndr), this)}
     {}
 
-    _CCCL_HOST_DEVICE void start() noexcept
+    _CUDAX_API void start() noexcept
     {
       __async::start(__op_);
     }
 
     template <class... _Args>
-    _CCCL_HOST_DEVICE void set_value(_Args&&... __args) noexcept
+    _CUDAX_API void set_value(_Args&&... __args) noexcept
     {
       if (static_cast<_Pred&&>(__data_.__pred_)(__args...))
       {
@@ -116,12 +116,12 @@ struct __cond_t
     }
 
     template <class _Error>
-    _CCCL_HOST_DEVICE void set_error(_Error&& __error) noexcept
+    _CUDAX_API void set_error(_Error&& __error) noexcept
     {
       __async::set_error(static_cast<_Rcvr&&>(__rcvr_), static_cast<_Error&&>(__error));
     }
 
-    _CCCL_HOST_DEVICE void set_stopped() noexcept
+    _CUDAX_API void set_stopped() noexcept
     {
       __async::set_stopped(static_cast<_Rcvr&&>(__rcvr_));
     }
@@ -179,7 +179,7 @@ struct __cond_t::__sndr_t
   _Sndr __sndr_;
 
   template <class _Rcvr>
-  _CCCL_HOST_DEVICE auto connect(_Rcvr __rcvr) && -> __opstate<_Sndr, _Rcvr, _Pred, _Then, _Else>
+  _CUDAX_API auto connect(_Rcvr __rcvr) && -> __opstate<_Sndr, _Rcvr, _Pred, _Then, _Else>
   {
     return {static_cast<_Sndr&&>(__sndr_),
             static_cast<_Rcvr&&>(__rcvr),
@@ -187,12 +187,12 @@ struct __cond_t::__sndr_t
   }
 
   template <class _Rcvr>
-  _CCCL_HOST_DEVICE auto connect(_Rcvr __rcvr) const& -> __opstate<_Sndr const&, _Rcvr, _Pred, _Then, _Else>
+  _CUDAX_API auto connect(_Rcvr __rcvr) const& -> __opstate<_Sndr const&, _Rcvr, _Pred, _Then, _Else>
   {
     return {__sndr_, static_cast<_Rcvr&&>(__rcvr), static_cast<__cond_t::__data<_Pred, _Then, _Else>&&>(__data_)};
   }
 
-  _CCCL_HOST_DEVICE env_of_t<_Sndr> get_env() const noexcept
+  _CUDAX_API env_of_t<_Sndr> get_env() const noexcept
   {
     return __async::get_env(__sndr_);
   }

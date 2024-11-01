@@ -37,26 +37,26 @@ namespace cuda::experimental::__async
 template <class _Ty>
 struct __lazy
 {
-  _CCCL_HOST_DEVICE __lazy() noexcept {}
+  _CUDAX_API __lazy() noexcept {}
 
-  _CCCL_HOST_DEVICE ~__lazy() {}
+  _CUDAX_API ~__lazy() {}
 
   template <class... _Ts>
-  _CCCL_HOST_DEVICE _Ty& construct(_Ts&&... __ts) noexcept(__nothrow_constructible<_Ty, _Ts...>)
+  _CUDAX_API _Ty& construct(_Ts&&... __ts) noexcept(__nothrow_constructible<_Ty, _Ts...>)
   {
     _Ty* __value_ = ::new (static_cast<void*>(_CUDA_VSTD::addressof(__value_))) _Ty{static_cast<_Ts&&>(__ts)...};
     return *_CUDA_VSTD::launder(__value_);
   }
 
   template <class _Fn, class... _Ts>
-  _CCCL_HOST_DEVICE _Ty& construct_from(_Fn&& __fn, _Ts&&... __ts) noexcept(__nothrow_callable<_Fn, _Ts...>)
+  _CUDAX_API _Ty& construct_from(_Fn&& __fn, _Ts&&... __ts) noexcept(__nothrow_callable<_Fn, _Ts...>)
   {
     _Ty* __value_ = ::new (static_cast<void*>(_CUDA_VSTD::addressof(__value_)))
       _Ty{static_cast<_Fn&&>(__fn)(static_cast<_Ts&&>(__ts)...)};
     return *_CUDA_VSTD::launder(__value_);
   }
 
-  _CCCL_HOST_DEVICE void destroy() noexcept
+  _CUDAX_API void destroy() noexcept
   {
     _CUDA_VSTD::destroy_at(&__value_);
   }
@@ -102,7 +102,7 @@ struct __lazy_tupl<__mindices<_Idx...>, _Ts...> : __detail::__lazy_box<_Idx, _Ts
 
   _CUDAX_TRIVIAL_API __lazy_tupl() noexcept {}
 
-  _CCCL_HOST_DEVICE ~__lazy_tupl()
+  _CUDAX_API ~__lazy_tupl()
   {
     ((__engaged_[_Idx] ? _CUDA_VSTD::destroy_at(__get<_Idx, _Ts>()) : void(0)), ...);
   }

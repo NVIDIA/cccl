@@ -282,17 +282,17 @@ constexpr bool __ustdex_unhandled_error(...) noexcept
 }
 
 template <class _Ty>
-_CCCL_INLINE_VAR constexpr bool __is_error = false;
+inline constexpr bool __is_error = false;
 
 template <class... _What>
-_CCCL_INLINE_VAR constexpr bool __is_error<_ERROR<_What...>> = true;
+inline constexpr bool __is_error<_ERROR<_What...>> = true;
 
 template <class... _What>
-_CCCL_INLINE_VAR constexpr bool __is_error<_ERROR<_What...>&> = true;
+inline constexpr bool __is_error<_ERROR<_What...>&> = true;
 
 // True if any of the types in _Ts... are errors; false otherwise.
 template <class... _Ts>
-_CCCL_INLINE_VAR constexpr bool __contains_error =
+inline constexpr bool __contains_error =
 #if defined(_CCCL_COMPILER_MSVC)
   (__is_error<_Ts> || ...);
 #else
@@ -327,28 +327,28 @@ template <class _Ty, class...>
 using __mfront = _Ty;
 
 template <template <class...> class _Fn, class _List, class _Enable = void>
-_CCCL_INLINE_VAR constexpr bool __mvalid_ = false;
+inline constexpr bool __mvalid_ = false;
 
 template <template <class...> class _Fn, class... _Ts>
-_CCCL_INLINE_VAR constexpr bool __mvalid_<_Fn, __mlist<_Ts...>, __mvoid<_Fn<_Ts...>>> = true;
+inline constexpr bool __mvalid_<_Fn, __mlist<_Ts...>, __mvoid<_Fn<_Ts...>>> = true;
 
 template <template <class...> class _Fn, class... _Ts>
-_CCCL_INLINE_VAR constexpr bool __mvalid_q = __mvalid_<_Fn, __mlist<_Ts...>>;
+inline constexpr bool __mvalid_q = __mvalid_<_Fn, __mlist<_Ts...>>;
 
 template <class _Fn, class... _Ts>
-_CCCL_INLINE_VAR constexpr bool __mvalid = __mvalid_<_Fn::template __f, __mlist<_Ts...>>;
+inline constexpr bool __mvalid = __mvalid_<_Fn::template __f, __mlist<_Ts...>>;
 
 template <class _Tp>
-_CCCL_INLINE_VAR constexpr auto __v = _Tp::__value;
+inline constexpr auto __v = _Tp::__value;
 
 template <auto _Value>
-_CCCL_INLINE_VAR constexpr auto __v<__mvalue<_Value>> = _Value;
+inline constexpr auto __v<__mvalue<_Value>> = _Value;
 
 template <bool _Value>
-_CCCL_INLINE_VAR constexpr auto __v<__mbool<_Value>> = _Value;
+inline constexpr auto __v<__mbool<_Value>> = _Value;
 
 template <class _Tp, _Tp _Value>
-_CCCL_INLINE_VAR constexpr auto __v<_CUDA_VSTD::integral_constant<_Tp, _Value>> = _Value;
+inline constexpr auto __v<_CUDA_VSTD::integral_constant<_Tp, _Value>> = _Value;
 
 struct __midentity
 {
@@ -676,7 +676,7 @@ struct __mconcat_into_q
 
 // The following must be super-fast to compile, so use an intrinsic directly if it is available
 template <class _Set, class... _Ty>
-_CCCL_INLINE_VAR constexpr bool __mset_contains = (_CUDA_VSTD::is_base_of_v<__mtype<_Ty>, _Set> && ...);
+inline constexpr bool __mset_contains = (_CUDA_VSTD::is_base_of_v<__mtype<_Ty>, _Set> && ...);
 
 namespace __set
 {
@@ -720,7 +720,7 @@ template <class... _Ts>
 using __mmake_set = __mset_insert<__mset<>, _Ts...>;
 
 template <class _Set1, class _Set2>
-_CCCL_INLINE_VAR constexpr bool __mset_eq = __v<__mapply<__set::__eq<_Set1>, _Set2>>;
+inline constexpr bool __mset_eq = __v<__mapply<__set::__eq<_Set1>, _Set2>>;
 
 template <class _Fn>
 struct __munique

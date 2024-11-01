@@ -53,13 +53,13 @@ template <class _Ty>
 using __scheduler_concept_t = typename __remove_ref_t<_Ty>::scheduler_concept;
 
 template <class _Ty>
-_CCCL_INLINE_VAR constexpr bool __is_sender = __mvalid_q<__sender_concept_t, _Ty>;
+inline constexpr bool __is_sender = __mvalid_q<__sender_concept_t, _Ty>;
 
 template <class _Ty>
-_CCCL_INLINE_VAR constexpr bool __is_receiver = __mvalid_q<__receiver_concept_t, _Ty>;
+inline constexpr bool __is_receiver = __mvalid_q<__receiver_concept_t, _Ty>;
 
 template <class _Ty>
-_CCCL_INLINE_VAR constexpr bool __is_scheduler = __mvalid_q<__scheduler_concept_t, _Ty>;
+inline constexpr bool __is_scheduler = __mvalid_q<__scheduler_concept_t, _Ty>;
 
 _CCCL_GLOBAL_CONSTANT struct set_value_t
 {
@@ -190,7 +190,7 @@ template <class _Sch>
 using schedule_result_t = decltype(schedule(__declval<_Sch>()));
 
 template <class _Sndr, class _Rcvr>
-_CCCL_INLINE_VAR constexpr bool __nothrow_connectable = noexcept(connect(__declval<_Sndr>(), __declval<_Rcvr>()));
+inline constexpr bool __nothrow_connectable = noexcept(connect(__declval<_Sndr>(), __declval<_Rcvr>()));
 
 // handy enumerations for keeping type names readable
 enum __disposition_t
