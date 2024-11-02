@@ -19,15 +19,12 @@
 
 namespace cudax = cuda::experimental;
 
-#define checkCudaErrors
-
-struct SimpleKernel
+struct simple_kernel
 {
   template <typename Dimensions>
   __device__ void operator()(Dimensions dims, ::cuda::std::span<const float> src, ::cuda::std::span<float> dst)
   {
-    // Just a dummy kernel, doing enough for us to verify that everything
-    // worked
+    // Just a dummy kernel, doing enough for us to verify that everything worked
     const auto idx = dims.rank(cudax::thread);
     dst[idx]       = src[idx] * 2.0f;
   }
@@ -50,7 +47,7 @@ std::vector<cudax::device_ref> find_peers_group()
         if (can_access_peer && peers.size() == 0)
         {
           peers = dev_i.get_peers();
-          peers.push_back(dev_i);
+          peers.insert(peers.begin(), dev_i);
         }
         printf("> Peer access from %s (GPU%d) -> %s (GPU%d) : %s\n",
                dev_i.get_name().c_str(),
@@ -60,12 +57,6 @@ std::vector<cudax::device_ref> find_peers_group()
                can_access_peer ? "Yes" : "No");
       }
     }
-  }
-
-  if (peers.size() == 0)
-  {
-    printf("Two or more GPUs with Peer-to-Peer access capability are required, waving the test.\n");
-    exit(2);
   }
 
   return peers;
@@ -123,24 +114,22 @@ void test_cross_device_access_from_kernel(
   // Kernel launch configuration
   auto dims = cudax::distribute<512>(dev0_buffer.size());
 
-  // Run kernel on GPU 1, reading input from the GPU 0 buffer, writing
-  // output to the GPU 1 buffer
+  // Run kernel on GPU 1, reading input from the GPU 0 buffer, writing output to the GPU 1 buffer
   printf("Run kernel on GPU%d, taking source data from GPU%d and writing to "
          "GPU%d...\n",
          dev1.get(),
          dev0.get(),
          dev1.get());
-  cudax::launch(dev1_stream, dims, SimpleKernel{}, dev0_buffer, dev1_buffer);
+  cudax::launch(dev1_stream, dims, simple_kernel{}, dev0_buffer, dev1_buffer);
   dev0_stream.wait(dev1_stream);
 
-  // Run kernel on GPU 0, reading input from the GPU 1 buffer, writing
-  // output to the GPU 0 buffer
+  // Run kernel on GPU 0, reading input from the GPU 1 buffer, writing output to the GPU 0 buffer
   printf("Run kernel on GPU%d, taking source data from GPU%d and writing to "
          "GPU%d...\n",
          dev0.get(),
          dev1.get(),
          dev0.get());
-  cudax::launch(dev0_stream, dims, SimpleKernel{}, dev1_buffer, dev0_buffer);
+  cudax::launch(dev0_stream, dims, simple_kernel{}, dev1_buffer, dev0_buffer);
 
   // Copy data back to host and verify
   printf("Copy data back to host from GPU%d and verify results...\n", dev0.get());
@@ -151,8 +140,7 @@ void test_cross_device_access_from_kernel(
   for (int i = 0; i < host_buffer.size(); i++)
   {
     cuda::std::span host_span(host_buffer);
-    // Re-generate input data and apply 2x '* 2.0f' computation of both
-    // kernel runs
+    // Re-generate input data and apply 2x '* 2.0f' computation of both kernel runs
     float expected = float(i % 4096) * 2.0f * 2.0f;
     if (host_span[i] != expected)
     {
@@ -164,10 +152,17 @@ void test_cross_device_access_from_kernel(
       }
     }
   }
+  if (error_count != 0)
+  {
+    printf("Test failed!\n");
+    exit(EXIT_FAILURE);
+  }
 }
 
 int main(int argc, char** argv)
+try
 {
+  const int test_waived = 2;
   printf("[%s] - Starting...\n", argv[0]);
 
   // Number of GPUs
@@ -176,14 +171,18 @@ int main(int argc, char** argv)
 
   if (cudax::devices.size() < 2)
   {
-    printf("Two or more GPUs with Peer-to-Peer access capability are required for "
-           "%s.\n",
-           argv[0]);
+    printf("Two or more GPUs with Peer-to-Peer access capability are required for %s.\n", argv[0]);
     printf("Waiving test.\n");
-    exit(2);
+    exit(test_waived);
   }
 
   auto peers = find_peers_group();
+
+  if (peers.size() == 0)
+  {
+    printf("Two or more GPUs with Peer-to-Peer access capability are required, waving the test.\n");
+    exit(test_waived);
+  }
 
   cudax::stream dev0_stream(peers[0]);
   cudax::stream dev1_stream(peers[1]);
@@ -195,7 +194,7 @@ int main(int argc, char** argv)
   dev1_resource.enable_peer_access(peers[0]);
 
   // Allocate buffers
-  constexpr size_t buf_cnt = 1024 * 1024 * 256;
+  constexpr size_t buf_cnt = 1024 * 1024 * 32;
   printf("Allocating buffers (%iMB on GPU%d, GPU%d and CPU Host)...\n",
          int(buf_cnt / 1024 / 1024 * sizeof(float)),
          peers[0].get(),
@@ -214,4 +213,14 @@ int main(int argc, char** argv)
   dev1_resource.disable_peer_access(peers[0]);
 
   // No cleanup needed
+  printf("Test passed\n");
+  return 0;
+}
+catch (const std::exception& e)
+{
+  printf("caught an exception: \"%s\"\n", e.what());
+}
+catch (...)
+{
+  printf("caught an unknown exception\n");
 }
