@@ -194,7 +194,7 @@ try
   dev1_resource.enable_peer_access(peers[0]);
 
   // Allocate buffers
-  constexpr size_t buf_cnt = 1024 * 1024 * 32;
+  constexpr size_t buf_cnt = 1024 * 1024 * 16;
   printf("Allocating buffers (%iMB on GPU%d, GPU%d and CPU Host)...\n",
          int(buf_cnt / 1024 / 1024 * sizeof(float)),
          peers[0].get(),
