@@ -187,10 +187,7 @@ struct AgentFind
 
     __syncthreads();
 
-    enum
-    {
-      NUMBER_OF_VECTORS = ITEMS_PER_THREAD / VECTOR_LOAD_LENGTH
-    };
+    constexpr int NUMBER_OF_VECTORS = ITEMS_PER_THREAD / VECTOR_LOAD_LENGTH;
     //// vectorized loads begin
     InputT* d_in_unqualified = const_cast<InputT*>(d_in) + tile_offset + (threadIdx.x * VECTOR_LOAD_LENGTH);
 
@@ -211,10 +208,10 @@ struct AgentFind
     for (int i = 0; i < ITEMS_PER_THREAD; ++i)
     {
       OffsetT nth_vector_of_thread = i / VECTOR_LOAD_LENGTH;
-      OffsetT element_in_word      = i % VECTOR_LOAD_LENGTH;
+      OffsetT element_in_vector    = i % VECTOR_LOAD_LENGTH;
       OffsetT vector_of_tile       = nth_vector_of_thread * BLOCK_THREADS + threadIdx.x;
 
-      OffsetT index = tile_offset + vector_of_tile * VECTOR_LOAD_LENGTH + element_in_word;
+      OffsetT index = tile_offset + vector_of_tile * VECTOR_LOAD_LENGTH + element_in_vector;
 
       if (index < num_items)
       {
@@ -286,7 +283,7 @@ struct AgentFind
     for (int tile_offset = blockIdx.x * TILE_ITEMS; tile_offset < num_items; tile_offset += TILE_ITEMS * gridDim.x)
     {
       // Only one thread reads atomically and propagates it to the
-      // the rest threads of the block through shared memory
+      // the other threads of the block through shared memory
       if (threadIdx.x == 0)
       {
         sresult = atomicAdd(value_temp_storage, 0);

@@ -34,9 +34,6 @@ template <typename T>
 struct equals
 {
   T val;
-  equals(T _val)
-      : val(_val)
-  {}
 
   __device__ __host__ bool operator()(T i)
   {
