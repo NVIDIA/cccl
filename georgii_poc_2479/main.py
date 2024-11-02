@@ -275,21 +275,24 @@ def parallel_algorithm(d_in, num_items, d_out):
     output_pointer = output_array.device_ctypes_pointer.value
     bindings.host_code(d_in.size(), d_in.alignment(), d_in.host_address(), d_in.prefix.encode('utf-8'), num_items, output_pointer, input_ltoirs, input_ltoir_sizes, len(ltoirs))
 
-
 # User Code
 
 num_items = 4
 output_array = numba.cuda.device_array(num_items, dtype=np.int32)
 
+def assert_expected_output_array(expected):
+    print(f"{expected=}")
+    assert expected == " ".join([str(x) for x in output_array.copy_to_host()])
+
 ## Repeat
 r = repeat(42)
 parallel_algorithm(r, num_items, output_array)
-print("expect: 42 42 42 42;  get: ", " ".join([str(x) for x in output_array.copy_to_host()]))
+assert_expected_output_array("42 42 42 42")
 
 ## Count
 c = count(42)
 parallel_algorithm(c, num_items, output_array)
-print("expect: 42 43 44 45;  get: ", " ".join([str(x) for x in output_array.copy_to_host()]))
+assert_expected_output_array("42 43 44 45")
 
 ## Transform
 def mult(x):
@@ -297,34 +300,41 @@ def mult(x):
 
 mult_42_by_2 = map(r, mult)
 parallel_algorithm(mult_42_by_2, num_items, output_array)
-print("expect: 84 84 84 84;  get: ", " ".join([str(x) for x in output_array.copy_to_host()]))
+assert_expected_output_array("84 84 84 84")
 
 def add(x):
     return x + 10
 
 mult_42_by_2_plus10 = map(mult_42_by_2, add)
 parallel_algorithm(mult_42_by_2_plus10, num_items, output_array)
-print("expect: 94 94 94 94;  get: ", " ".join([str(x) for x in output_array.copy_to_host()]))
+assert_expected_output_array("94 94 94 94")
 
 mult_count_by_2 = map(c, mult)
 parallel_algorithm(mult_count_by_2, num_items, output_array)
-print("expect: 84 86 88 90;  get: ", " ".join([str(x) for x in output_array.copy_to_host()]))
+assert_expected_output_array("84 86 88 90")
 
 mult_count_by_2_and_add_10 = map(mult_count_by_2, add)
 parallel_algorithm(mult_count_by_2_and_add_10, num_items, output_array)
-print("expect: 94 96 98 100; get:", " ".join([str(x) for x in output_array.copy_to_host()]))
+assert_expected_output_array("94 96 98 100")
 
 input_array = numba.cuda.to_device(np.array([4, 3, 2, 1], dtype=np.int32))
 ptr = pointer(input_array, numba.types.int32) # TODO this transformation should be hidden on the transform implementation side
 parallel_algorithm(ptr, num_items, output_array)
-print("expect:  4  3  2 1  ; get:", " ".join([str(x) for x in output_array.copy_to_host()]))
+assert_expected_output_array("4 3 2 1")
 
 input_array = numba.cuda.to_device(np.array([4, 3, 2, 1], dtype=np.int32))
 ptr = pointer(input_array, numba.types.int32) # TODO this transformation should be hidden on the transform implementation side
 tptr = map(ptr, mult)
 parallel_algorithm(tptr, num_items, output_array)
-print("expect:  8  6  4 2  ; get:", " ".join([str(x) for x in output_array.copy_to_host()]))
+assert_expected_output_array("8 6 4 2")
 
 streamed_input = cache(input_array, 'stream')
 parallel_algorithm(streamed_input, num_items, output_array)
-print("expect:  4  3  2 1  ; get:", " ".join([str(x) for x in output_array.copy_to_host()]))
+assert_expected_output_array("4 3 2 1")
+
+def add20(x):
+    return x + 20
+
+more_nested_map = map(map(map(count(42), mult), add), add20)
+parallel_algorithm(more_nested_map, num_items, output_array)
+assert_expected_output_array("114 116 118 120")
