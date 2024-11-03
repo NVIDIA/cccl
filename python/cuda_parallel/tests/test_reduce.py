@@ -7,6 +7,7 @@ import pytest
 import numba
 from numba import cuda
 import cuda.parallel.experimental as cudax
+from numba.extending import register_jitable
 
 
 def random_int(shape, dtype):
@@ -87,6 +88,7 @@ def test_device_reduce_dtype_mismatch():
 
 
 def cu_repeat(value):
+    @register_jitable
     def input_unary_op(unused_distance):
         data = (value + 2, value + 1)
         return data[0] - data[1]
@@ -94,25 +96,40 @@ def cu_repeat(value):
 
 
 def cu_count(start):
+    @register_jitable
     def input_unary_op(distance):
         return distance
     return input_unary_op
 
 
 def cu_arbitrary(permutation):
+    @register_jitable
     def input_unary_op(distance):
         return permutation[distance % len(permutation)]
     return input_unary_op
 
 
 def cu_map(func, rai):
+    @register_jitable
     def input_unary_op(distance):
         return func(rai(distance))
     return input_unary_op
 
 
+@register_jitable
+def mul2(val):
+    return 2 * val
+
+
+@register_jitable
+def add10(val):
+    return val + 10
+
+
 @pytest.mark.parametrize("use_numpy_array", [True, False])
-@pytest.mark.parametrize("input_generator", ["constant", "counting", "arbitrary", "map_mul2"][-1:])
+@pytest.mark.parametrize("input_generator",
+                         ["constant", "counting", "arbitrary",
+                          "map_mul2", "map_add10_map_mul2"])
 def test_device_sum_input_unary_op(use_numpy_array, input_generator, num_items=19, start_sum_with=1000):
     def add_op(a, b):
         return a + b
@@ -124,7 +141,9 @@ def test_device_sum_input_unary_op(use_numpy_array, input_generator, num_items=1
     elif input_generator == "arbitrary":
         input_unary_op = cu_arbitrary((4, 2, 0, 3, 1))
     elif input_generator == "map_mul2":
-        input_unary_op = cu_map(lambda val: 2 * val, cu_count(0))
+        input_unary_op = cu_map(mul2, cu_count(0))
+    elif input_generator == "map_add10_map_mul2":
+        input_unary_op = cu_map(add10, cu_map(mul2, cu_count(0)))
     else:
         raise RuntimeError("Unexpected input_generator")
 
