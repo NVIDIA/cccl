@@ -30,7 +30,7 @@ namespace cuda::experimental::__async
 template <class _Rcvr>
 struct __fwd_rcvr : _Rcvr
 {
-  _CCCL_HOST_DEVICE decltype(auto) get_env() const noexcept
+  _CUDAX_API decltype(auto) get_env() const noexcept
   {
     // TODO: only forward the "forwarding" queries:
     return __async::get_env(static_cast<_Rcvr const&>(*this));
@@ -60,7 +60,7 @@ struct __fwd_rcvr<_Rcvr*>
     __async::set_stopped(__rcvr_);
   }
 
-  _CCCL_HOST_DEVICE decltype(auto) get_env() const noexcept
+  _CUDAX_API decltype(auto) get_env() const noexcept
   {
     // TODO: only forward the "forwarding" queries:
     return __async::get_env(__rcvr_);

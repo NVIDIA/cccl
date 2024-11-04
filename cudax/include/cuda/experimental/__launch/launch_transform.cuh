@@ -59,17 +59,27 @@ template <typename _Arg>
 using __launch_transform_result_t = decltype(__fn{}(::cuda::stream_ref{}, _CUDA_VSTD::declval<_Arg>()));
 
 template <typename _Arg, typename _Enable = void>
-struct __as_kernel_arg
+struct __as_copy_arg
 {
-  using type = _CUDA_VSTD::decay_t<__launch_transform_result_t<_Arg>>;
+  using type = __launch_transform_result_t<_Arg>;
+};
+
+// Copy needs to know if original value is a reference
+template <typename _Arg>
+struct __as_copy_arg<_Arg,
+                     _CUDA_VSTD::void_t<typename _CUDA_VSTD::decay_t<__launch_transform_result_t<_Arg>>::__as_kernel_arg>>
+{
+  using type = typename _CUDA_VSTD::decay_t<__launch_transform_result_t<_Arg>>::__as_kernel_arg;
 };
 
 template <typename _Arg>
-struct __as_kernel_arg<
-  _Arg,
-  _CUDA_VSTD::void_t<typename _CUDA_VSTD::decay_t<__launch_transform_result_t<_Arg>>::__as_kernel_arg>>
+using __as_copy_arg_t = typename detail::__as_copy_arg<_Arg>::type;
+
+// While kernel argument can't be a reference
+template <typename _Arg>
+struct __as_kernel_arg
 {
-  using type = typename _CUDA_VSTD::decay_t<__launch_transform_result_t<_Arg>>::__as_kernel_arg;
+  using type = _CUDA_VSTD::decay_t<typename __as_copy_arg<_Arg>::type>;
 };
 
 _CCCL_GLOBAL_CONSTANT __fn __launch_transform{};

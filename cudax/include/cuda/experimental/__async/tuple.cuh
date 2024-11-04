@@ -72,7 +72,7 @@ struct __tupl<__mindices<_Idx...>, _Ts...> : __box<_Idx, _Ts>...
 };
 
 template <class... _Ts>
-_CCCL_HOST_DEVICE __tupl(_Ts...) //
+_CUDAX_API __tupl(_Ts...) //
   -> __tupl<__mmake_indices<sizeof...(_Ts)>, _Ts...>;
 
 template <class _Fn, class _Tupl, class... _Us>

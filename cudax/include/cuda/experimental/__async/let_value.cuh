@@ -147,7 +147,7 @@ private:
   template <class _Rcvr, class _CvSndr, class _Fn>
   struct __opstate_t
   {
-    _CCCL_HOST_DEVICE friend env_of_t<_Rcvr> get_env(const __opstate_t* __self) noexcept
+    _CUDAX_API friend env_of_t<_Rcvr> get_env(const __opstate_t* __self) noexcept
     {
       return __async::get_env(__self->__rcvr_);
     }
@@ -168,20 +168,20 @@ private:
     connect_result_t<_CvSndr, __opstate_t*> __opstate1_;
     __opstate_variant_t __opstate2_;
 
-    _CCCL_HOST_DEVICE __opstate_t(_CvSndr&& __sndr, _Fn __fn, _Rcvr __rcvr) noexcept(
+    _CUDAX_API __opstate_t(_CvSndr&& __sndr, _Fn __fn, _Rcvr __rcvr) noexcept(
       __nothrow_decay_copyable<_Fn, _Rcvr> && __nothrow_connectable<_CvSndr, __opstate_t*>)
         : __rcvr_(static_cast<_Rcvr&&>(__rcvr))
         , __fn_(static_cast<_Fn&&>(__fn))
         , __opstate1_(__async::connect(static_cast<_CvSndr&&>(__sndr), this))
     {}
 
-    _CCCL_HOST_DEVICE void start() noexcept
+    _CUDAX_API void start() noexcept
     {
       __async::start(__opstate1_);
     }
 
     template <class _Tag, class... _As>
-    _CCCL_HOST_DEVICE void __complete(_Tag, _As&&... __as) noexcept
+    _CUDAX_API void __complete(_Tag, _As&&... __as) noexcept
     {
       if constexpr (_CUDA_VSTD::is_same_v<_Tag, _SetTag>)
       {
@@ -242,7 +242,7 @@ private:
     _Sndr __sndr_;
 
     template <class _Rcvr>
-    _CCCL_HOST_DEVICE auto connect(_Rcvr __rcvr) && noexcept(
+    _CUDAX_API auto connect(_Rcvr __rcvr) && noexcept(
       __nothrow_constructible<__opstate_t<_Rcvr, _Sndr, _Fn>, _Sndr, _Fn, _Rcvr>) -> __opstate_t<_Rcvr, _Sndr, _Fn>
     {
       return __opstate_t<_Rcvr, _Sndr, _Fn>(
@@ -250,7 +250,7 @@ private:
     }
 
     template <class _Rcvr>
-    _CCCL_HOST_DEVICE auto connect(_Rcvr __rcvr) const& noexcept( //
+    _CUDAX_API auto connect(_Rcvr __rcvr) const& noexcept( //
       __nothrow_constructible<__opstate_t<_Rcvr, const _Sndr&, _Fn>,
                               const _Sndr&,
                               const _Fn&,
@@ -260,7 +260,7 @@ private:
       return __opstate_t<_Rcvr, const _Sndr&, _Fn>(__sndr_, __fn_, static_cast<_Rcvr&&>(__rcvr));
     }
 
-    _CCCL_HOST_DEVICE env_of_t<_Sndr> get_env() const noexcept
+    _CUDAX_API env_of_t<_Sndr> get_env() const noexcept
     {
       return __async::get_env(__sndr_);
     }
@@ -289,7 +289,7 @@ private:
 
 public:
   template <class _Sndr, class _Fn>
-  _CCCL_HOST_DEVICE __sndr_t<_Sndr, _Fn> operator()(_Sndr __sndr, _Fn __fn) const
+  _CUDAX_API __sndr_t<_Sndr, _Fn> operator()(_Sndr __sndr, _Fn __fn) const
   {
     // If the incoming sender is non-dependent, we can check the completion
     // signatures of the composed sender immediately.

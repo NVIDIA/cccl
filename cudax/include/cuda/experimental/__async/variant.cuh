@@ -49,7 +49,7 @@ class __variant_impl<__mindices<>>
 {
 public:
   template <class _Fn, class... _Us>
-  _CCCL_HOST_DEVICE void __visit(_Fn&&, _Us&&...) const noexcept
+  _CUDAX_API void __visit(_Fn&&, _Us&&...) const noexcept
   {}
 };
 
@@ -64,7 +64,7 @@ class __variant_impl<__mindices<_Idx...>, _Ts...>
   template <size_t _Ny>
   using __at = __m_at_c<_Ny, _Ts...>;
 
-  _CCCL_HOST_DEVICE void __destroy() noexcept
+  _CUDAX_API void __destroy() noexcept
   {
     if (__index_ != __npos)
     {
@@ -77,9 +77,9 @@ class __variant_impl<__mindices<_Idx...>, _Ts...>
 public:
   _CUDAX_IMMOVABLE(__variant_impl);
 
-  _CCCL_HOST_DEVICE __variant_impl() noexcept {}
+  _CUDAX_API __variant_impl() noexcept {}
 
-  _CCCL_HOST_DEVICE ~__variant_impl()
+  _CUDAX_API ~__variant_impl()
   {
     __destroy();
   }
@@ -95,7 +95,7 @@ public:
   }
 
   template <class _Ty, class... _As>
-  _CCCL_HOST_DEVICE _Ty& __emplace(_As&&... __as) //
+  _CUDAX_API _Ty& __emplace(_As&&... __as) //
     noexcept(__nothrow_constructible<_Ty, _As...>)
   {
     constexpr size_t __new_index = __async::__index_of<_Ty, _Ts...>();
@@ -108,7 +108,7 @@ public:
   }
 
   template <size_t _Ny, class... _As>
-  _CCCL_HOST_DEVICE __at<_Ny>& __emplace_at(_As&&... __as) //
+  _CUDAX_API __at<_Ny>& __emplace_at(_As&&... __as) //
     noexcept(__nothrow_constructible<__at<_Ny>, _As...>)
   {
     static_assert(_Ny < sizeof...(_Ts), "variant index is too large");
@@ -120,7 +120,7 @@ public:
   }
 
   template <class _Fn, class... _As>
-  _CCCL_HOST_DEVICE auto __emplace_from(_Fn&& __fn, _As&&... __as) //
+  _CUDAX_API auto __emplace_from(_Fn&& __fn, _As&&... __as) //
     noexcept(__nothrow_callable<_Fn, _As...>) -> __call_result_t<_Fn, _As...>&
   {
     using __result_t             = __call_result_t<_Fn, _As...>;
@@ -134,7 +134,7 @@ public:
   }
 
   template <class _Fn, class _Self, class... _As>
-  _CCCL_HOST_DEVICE static void __visit(_Fn&& __fn, _Self&& __self, _As&&... __as) //
+  _CUDAX_API static void __visit(_Fn&& __fn, _Self&& __self, _As&&... __as) //
     noexcept((__nothrow_callable<_Fn, _As..., __copy_cvref_t<_Self, _Ts>> && ...))
   {
     // make this local in case destroying the sub-object destroys *this
@@ -147,21 +147,21 @@ public:
   }
 
   template <size_t _Ny>
-  _CCCL_HOST_DEVICE __at<_Ny>&& __get() && noexcept
+  _CUDAX_API __at<_Ny>&& __get() && noexcept
   {
     _CCCL_ASSERT(_Ny == __index_, "");
     return static_cast<__at<_Ny>&&>(*static_cast<__at<_Ny>*>(__ptr()));
   }
 
   template <size_t _Ny>
-  _CCCL_HOST_DEVICE __at<_Ny>& __get() & noexcept
+  _CUDAX_API __at<_Ny>& __get() & noexcept
   {
     _CCCL_ASSERT(_Ny == __index_, "");
     return *static_cast<__at<_Ny>*>(__ptr());
   }
 
   template <size_t _Ny>
-  _CCCL_HOST_DEVICE const __at<_Ny>& __get() const& noexcept
+  _CUDAX_API const __at<_Ny>& __get() const& noexcept
   {
     _CCCL_ASSERT(_Ny == __index_, "");
     return *static_cast<const __at<_Ny>*>(__ptr());
