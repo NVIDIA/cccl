@@ -23,7 +23,7 @@ __host__ __device__ constexpr bool test_op()
 
   assert(op(lhs, rhs) == expected);
 
-  if constexpr (rhs == lhs)
+  if (rhs == lhs)
   {
     assert(op(lhs, rhs) == op(rhs, lhs));
   }
