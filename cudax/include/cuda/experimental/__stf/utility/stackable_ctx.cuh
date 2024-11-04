@@ -64,12 +64,12 @@ public:
 
         const auto& get() const { return s.back(); }
 
-        auto& at(size_t level) {
+        auto& operator[](size_t level) {
             _CCCL_ASSERT(level < s.size(), "Out of bound access");
             return s[level];
         }
 
-        const auto& at(size_t level) const {
+        const auto& operator[](size_t level) const {
             _CCCL_ASSERT(level < s.size(), "Out of bound access");
             return s[level];
         }
@@ -107,8 +107,13 @@ public:
     const auto& get() const { return pimpl->get(); }
     auto& get() { return pimpl->get(); }
 
-    const auto& at(size_t level) const { return pimpl->at(level); }
-    auto& at(size_t level) { return pimpl->at(level); }
+    auto& operator[](size_t level) {
+        return pimpl->operator[](level);
+    }
+
+    const auto& operator[](size_t level) const {
+        return pimpl->operator[](level);
+    }
 
     cudaStream_t stream_at(size_t level) const { return pimpl->stream_at(level); }
 
@@ -173,8 +178,8 @@ class stackable_logical_data {
 
         void push(access_mode m, data_place where = data_place::invalid) {
             // We have not pushed yet, so the current depth is the one before pushing
-            context& from_ctx = sctx.at(depth());
-            context& to_ctx = sctx.at(depth() + 1);
+            context& from_ctx = sctx[depth()];
+            context& to_ctx = sctx[depth() + 1];
 
             // Ensure this will match the depth of the context after pushing
             _CCCL_ASSERT(sctx.depth() == depth() + 1, "Invalid depth");
