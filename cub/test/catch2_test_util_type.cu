@@ -31,7 +31,7 @@
 
 #include <cuda/std/type_traits>
 
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 C2H_TEST("Tests non_void_value_t", "[util][type]")
 {

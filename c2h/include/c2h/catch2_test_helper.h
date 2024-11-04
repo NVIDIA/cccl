@@ -27,9 +27,12 @@
 
 #pragma once
 
-#include <cub/util_compiler.cuh>
+#include <cuda/std/detail/__config>
 
-#include <cuda/std/__cccl/diagnostic.h>
+#include <cuda/std/bit>
+#include <cuda/std/cmath>
+#include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #include <cstdint>
 #include <cstdlib>
@@ -37,19 +40,14 @@
 #include <type_traits>
 
 #if __CUDACC_VER_MAJOR__ == 11
-_CCCL_NV_DIAG_SUPPRESS(177) // catch2 may contain unused variableds
+_CCCL_NV_DIAG_SUPPRESS(177) // catch2 may contain unused variables
 #endif // nvcc-11
 
-#include <cuda/std/bit>
-#include <cuda/std/cmath>
-#include <cuda/std/type_traits>
-#include <cuda/std/utility>
-
-#include <c2h/catch2_main.cuh>
-#include <c2h/device_policy.cuh>
-#include <c2h/test_util_vec.cuh>
-#include <c2h/utility.cuh>
-#include <c2h/vector.cuh>
+#include <c2h/catch2_main.h>
+#include <c2h/device_policy.h>
+#include <c2h/test_util_vec.h>
+#include <c2h/utility.h>
+#include <c2h/vector.h>
 
 #ifndef VAR_IDX
 #  define VAR_IDX 0
@@ -136,10 +134,7 @@ struct bitwise_equal
   template <typename T>
   bool operator()(const T& a, const T& b) const
   {
-    using bits_t  = typename cub::Traits<T>::UnsignedBits;
-    bits_t a_bits = ::cuda::std::bit_cast<bits_t>(a);
-    bits_t b_bits = ::cuda::std::bit_cast<bits_t>(b);
-    return a_bits == b_bits;
+    return ::cuda::std::memcmp(&a, &b, sizeof(T)) == 0;
   }
 };
 
@@ -230,8 +225,8 @@ struct Catch::StringMaker<cudaError>
   }
 };
 
-#include <c2h/custom_type.cuh>
-#include <c2h/generators.cuh>
+#include <c2h/custom_type.h>
+#include <c2h/generators.h>
 
 #define C2H_TEST_NAME_IMPL(NAME, PARAM) C2H_TEST_STR(NAME) "(" C2H_TEST_STR(PARAM) ")"
 
