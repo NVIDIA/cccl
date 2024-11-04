@@ -42,8 +42,14 @@ _CCCL_INLINE_VAR constexpr bool __type_set_contains_v = __fold_and_v<is_base_of_
 namespace __set
 {
 template <class... _Ts>
-struct __tupl
+struct __tupl;
+
+template <>
+struct __tupl<>
 {
+  template <class _Ty>
+  using __maybe_insert _LIBCUDACXX_NODEBUG_TYPE = __tupl<_Ty>;
+
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __size() noexcept
   {
     return 0;
@@ -55,24 +61,29 @@ struct __tupl<_Ty, _Ts...>
     : __type_identity<_Ty>
     , __tupl<_Ts...>
 {
+  template <class _Uy>
+  using __maybe_insert _LIBCUDACXX_NODEBUG_TYPE =
+    _If<_CCCL_TRAIT(__type_set_contains, __tupl, _Uy), __tupl, __tupl<_Uy, _Ty, _Ts...>>;
+
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __size() noexcept
   {
     return sizeof...(_Ts) + 1;
   }
 };
 
-template <class _Ty, class... _Elements>
-using __insert =
-  _If<_CCCL_TRAIT(__type_set_contains, __tupl<_Elements...>, _Ty), __tupl<_Elements...>, __tupl<_Ty, _Elements...>>;
-
+template <bool _Empty>
 struct __bulk_insert
 {
-  template <class... _Ts>
-  _LIBCUDACXX_HIDE_FROM_ABI static auto __call(__tupl<_Ts...>*, int) -> __tupl<_Ts...>;
+  template <class _Set, class...>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = _Set;
+};
 
-  template <class _Ap, class... _Us, class... _Ts, class _SetInsert = __bulk_insert>
-  _LIBCUDACXX_HIDE_FROM_ABI static auto __call(__tupl<_Ts...>*, long)
-    -> decltype(_SetInsert::template __call<_Us...>(static_cast<__insert<_Ap, _Ts...>*>(nullptr), 0));
+template <>
+struct __bulk_insert<false>
+{
+  template <class _Set, class _Ty, class... _Us>
+  using __call _LIBCUDACXX_NODEBUG_TYPE =
+    typename __bulk_insert<sizeof...(_Us) == 0>::template __call<typename _Set::template __maybe_insert<_Ty>, _Us...>;
 };
 } // namespace __set
 
@@ -91,7 +102,7 @@ template <class... _Ts>
 using __type_set = __set::__tupl<_Ts...>;
 
 template <class _Set, class... _Ts>
-using __type_set_insert = decltype(__set::__bulk_insert::__call<_Ts...>(static_cast<_Set*>(nullptr), 0));
+using __type_set_insert = typename __set::__bulk_insert<sizeof...(_Ts) == 0>::template __call<_Set, _Ts...>;
 
 template <class... _Ts>
 using __make_type_set = __type_set_insert<__type_set<>, _Ts...>;
