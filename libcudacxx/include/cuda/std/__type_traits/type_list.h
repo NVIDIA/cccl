@@ -550,7 +550,7 @@ struct __type_concat_fn
   template <class... _Lists>
   using __call _LIBCUDACXX_NODEBUG_TYPE = __type<__trait<_Lists...>>;
 };
-#  else
+#  else // ^^^ _CCCL_COMPILER_MSVC < 19.38 ^^^ / vvv !(_CCCL_COMPILER_MSVC < 19.38) vvv
 template <size_t _Count>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_concat_fn
 {
@@ -610,7 +610,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_concat_fn
     __type_list_ptr<>{nullptr},
     __type_list_ptr<>{nullptr}));
 };
-#  endif
+#  endif // !(_CCCL_COMPILER_MSVC < 19.38)
 } // namespace __detail
 
 //! \brief Concatenate a list of type lists into a single type list.
