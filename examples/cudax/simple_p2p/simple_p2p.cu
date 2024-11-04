@@ -1,9 +1,35 @@
-/*
- * This sample demonstrates a combination of Peer-to-Peer (P2P) and
- * Unified Virtual Address Space (UVA) features new to SDK 4.0
+/* Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *  * Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ *  * Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *  * Neither the name of NVIDIA CORPORATION nor the names of its
+ *    contributors may be used to endorse or promote products derived
+ *    from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
+ * OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-// includes, system
+/*
+ * This sample demonstrates a combination of Peer-to-Peer (P2P) and
+ * Unified Virtual Address Space (UVA) features.
+ */
+
 #include <cuda/memory_resource>
 
 #include <cuda/experimental/algorithm.cuh>
@@ -66,23 +92,24 @@ template <typename BufferType>
 void benchmark_cross_device_ping_pong_copy(
   cudax::stream_ref dev0_stream, cudax::stream_ref dev1_stream, BufferType& dev0_buffer, BufferType& dev1_buffer)
 {
+  // Use dev1 stream due to some surprising performance issue
   constexpr int cpy_count = 100;
-  auto start_event        = dev0_stream.record_timed_event();
+  auto start_event        = dev1_stream.record_timed_event();
   for (int i = 0; i < cpy_count; i++)
   {
     // Ping-pong copy between GPUs
     if (i % 2 == 0)
     {
-      cudax::copy_bytes(dev0_stream, dev0_buffer, dev1_buffer);
+      cudax::copy_bytes(dev1_stream, dev0_buffer, dev1_buffer);
     }
     else
     {
-      cudax::copy_bytes(dev0_stream, dev1_buffer, dev0_buffer);
+      cudax::copy_bytes(dev1_stream, dev1_buffer, dev0_buffer);
     }
   }
 
-  auto end_event = dev0_stream.record_timed_event();
-  dev0_stream.wait();
+  auto end_event = dev1_stream.record_timed_event();
+  dev1_stream.wait();
   cuda::std::chrono::duration<double> duration(end_event - start_event);
   printf("Peer copy between GPU%d and GPU%d: %.2fGB/s\n",
          dev0_stream.device().get(),
