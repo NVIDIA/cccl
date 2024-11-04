@@ -78,11 +78,9 @@ public:
     plaintext decrypt() const {
         plaintext p(ctx);
         p.l = ctx.logical_data(shape_of<slice<char>>(l.shape().size()));
-        // fprintf(stderr, "Decrypting...\n");
         ctx.parallel_for(l.shape(), l.read(), p.l.write()).set_symbol("decrypt")->*
                 [] __device__ (size_t i, auto dctxt, auto dptxt) {
                     dptxt(i) = char((dctxt(i) >> 32));
-                    // printf("DECRYPT %ld : %lx -> %x\n", i, dctxt(i), (int) dptxt(i));
                 };
         return p;
     }
@@ -90,8 +88,6 @@ public:
     // Copy assignment operator
     ciphertext& operator=(const ciphertext& other) {
         if (this != &other) {
-            fprintf(stderr, "COPY ASSIGNMENT OP... this->l.depth() %ld other.l.depth() %ld - ctx depth %ld other.ctx.depth %ld\n", l.depth(), other.l.depth(), ctx.depth(), other.ctx.depth());
-    //        l = ctx.logical_data(other.data().shape());
             assert(l.shape() == other.l.shape());
             other.ctx.parallel_for(l.shape(), other.l.read(), l.write()).set_symbol("copy")->*
                     [] __device__ (size_t i, auto other, auto result) { result(i) = other(i); };
