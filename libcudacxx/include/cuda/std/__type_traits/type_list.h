@@ -523,6 +523,34 @@ using __type_back = __type_at_c<_List::__size - 1, _List>;
 
 namespace __detail
 {
+#  if defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION < 1938
+// A workaround for https://developercommunity.visualstudio.com/t/fatal-error-C1001:-Internal-compiler-err/10405847
+struct __type_concat_fn
+{
+  template <class... _Lists>
+  struct __trait
+  {};
+
+  template <class... _Ts, class... _Us, class... _Lists>
+  struct __trait<__type_list<_Ts...>, __type_list<_Us...>, _Lists...> : __trait<__type_list<_Ts..., _Us...>, _Lists...>
+  {};
+
+  template <class... _Ts>
+  struct __trait<__type_list<_Ts...>>
+  {
+    using type = __type_list<_Ts...>;
+  };
+
+  template <>
+  struct __trait<>
+  {
+    using type = __type_list<>;
+  };
+
+  template <class... _Lists>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = __type<__trait<_Lists...>>;
+};
+#  else
 template <size_t _Count>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_concat_fn
 {
@@ -582,6 +610,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_concat_fn
     __type_list_ptr<>{nullptr},
     __type_list_ptr<>{nullptr}));
 };
+#  endif
 } // namespace __detail
 
 //! \brief Concatenate a list of type lists into a single type list.
@@ -803,7 +832,7 @@ using __type_copy_if = __type_flatten<__type_transform<_List, __detail::__type_r
 
 //! \brief Remove all duplicate types from a type list
 template <class _List>
-using __type_unique = __type_concat<__type_call<_List, __type_quote<__make_type_set>>>;
+using __type_unique = __as_type_list<__type_call<_List, __type_quote<__make_type_set>>>;
 
 namespace __detail
 {

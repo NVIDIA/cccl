@@ -68,11 +68,11 @@ using __insert =
 struct __bulk_insert
 {
   template <class... _Ts>
-  _LIBCUDACXX_HIDE_FROM_ABI static auto __call(__tupl<_Ts...>*) -> __tupl<_Ts...>;
+  _LIBCUDACXX_HIDE_FROM_ABI static auto __call(__tupl<_Ts...>*, int) -> __tupl<_Ts...>;
 
   template <class _Ap, class... _Us, class... _Ts, class _SetInsert = __bulk_insert>
-  _LIBCUDACXX_HIDE_FROM_ABI static auto __call(__tupl<_Ts...>*)
-    -> decltype(_SetInsert::template __call<_Us...>(static_cast<__insert<_Ap, _Ts...>*>(nullptr)));
+  _LIBCUDACXX_HIDE_FROM_ABI static auto __call(__tupl<_Ts...>*, long)
+    -> decltype(_SetInsert::template __call<_Us...>(static_cast<__insert<_Ap, _Ts...>*>(nullptr), 0));
 };
 } // namespace __set
 
@@ -91,7 +91,7 @@ template <class... _Ts>
 using __type_set = __set::__tupl<_Ts...>;
 
 template <class _Set, class... _Ts>
-using __type_set_insert = decltype(__set::__bulk_insert::__call<_Ts...>(static_cast<_Set*>(nullptr)));
+using __type_set_insert = decltype(__set::__bulk_insert::__call<_Ts...>(static_cast<_Set*>(nullptr), 0));
 
 template <class... _Ts>
 using __make_type_set = __type_set_insert<__type_set<>, _Ts...>;
