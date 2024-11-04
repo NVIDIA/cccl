@@ -45,15 +45,19 @@ _CCCL_NV_DIAG_SUPPRESS(186)
 
 #include <cassert>
 
-#include <cooperative_groups.h>
-#include <cooperative_groups/memcpy_async.h>
+// cooperative groups do not support NVHPC yet
+#ifndef _CCCL_CUDA_COMPILER_NVHPC
+#  include <cooperative_groups.h>
+#  include <cooperative_groups/memcpy_async.h>
+#endif
 
 CUB_NAMESPACE_BEGIN
 
-// the ublkcp kernel needs PTX features that are only available and understood by CTK 12 and later
-#if _CCCL_CUDACC_VER_MAJOR >= 12
+// The ublkcp kernel needs PTX features that are only available and understood by nvcc >=12.
+// Also, cooperative groups do not support NVHPC yet.
+#if _CCCL_CUDACC_VER_MAJOR >= 12 && !defined(_CCCL_CUDA_COMPILER_NVHPC)
 #  define _CUB_HAS_TRANSFORM_UBLKCP
-#endif // _CCCL_CUDACC_VER_MAJOR >= 12
+#endif // _CCCL_CUDACC_VER_MAJOR >= 12 && !defined(_CCCL_CUDA_COMPILER_NVHPC)
 
 namespace detail
 {
