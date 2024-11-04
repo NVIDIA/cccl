@@ -61,6 +61,7 @@ public:
 private:
   void sync_host_to_device(::cuda::stream_ref __str, detail::__param_kind __p) const
   {
+    (void) __str;
     if (__dirty_)
     {
       if (__p == detail::__param_kind::_out)
