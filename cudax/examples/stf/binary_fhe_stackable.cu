@@ -224,7 +224,7 @@ int main()
   auto eA = pA.encrypt();
   auto eB = pB.encrypt();
 
-  ctx.push_graph();
+  ctx.push();
 
   eA.push(access_mode::read);
   eB.push(access_mode::read);

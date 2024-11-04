@@ -41,7 +41,7 @@ int main()
   // repeat : {tmp = a, a++; tmp*=2; a+=tmp}
   for (size_t iter = 0; iter < 10; iter++)
   {
-    ctx.push_graph();
+    ctx.push();
 
     lA.push(access_mode::rw);
 
