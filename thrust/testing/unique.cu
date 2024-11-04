@@ -239,7 +239,6 @@ struct TestUniqueCopyToDiscardIterator
 
     thrust::discard_iterator<> reference(h_unique.size());
 
-    typename thrust::host_vector<T>::iterator h_new_last;
     typename thrust::device_vector<T>::iterator d_new_last;
 
     thrust::discard_iterator<> h_result =
