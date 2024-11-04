@@ -87,22 +87,28 @@
 #endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1103000
 #if !defined(_CCCL_CUDA_COMPILER) || (defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1104000)
 #  define _CCCL_CUDACC_BELOW_11_4
-#endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 11074000
+#endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1104000
 #if !defined(_CCCL_CUDA_COMPILER) || (defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1107000)
 #  define _CCCL_CUDACC_BELOW_11_7
-#endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1104000
+#endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1107000
 #if !defined(_CCCL_CUDA_COMPILER) || (defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1108000)
 #  define _CCCL_CUDACC_BELOW_11_8
 #endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1108000
 #if !defined(_CCCL_CUDA_COMPILER) || (defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1200000)
 #  define _CCCL_CUDACC_BELOW_12_0
-#endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1203000
+#endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1200000
 #if !defined(_CCCL_CUDA_COMPILER) || (defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1202000)
 #  define _CCCL_CUDACC_BELOW_12_2
-#endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1203000
+#endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1202000
 #if !defined(_CCCL_CUDA_COMPILER) || (defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1203000)
 #  define _CCCL_CUDACC_BELOW_12_3
 #endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1203000
+#if !defined(_CCCL_CUDA_COMPILER) || (defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1204000)
+#  define _CCCL_CUDACC_BELOW_12_4
+#endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1204000
+#if !defined(_CCCL_CUDA_COMPILER) || (defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1205000)
+#  define _CCCL_CUDACC_BELOW_12_5
+#endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1205000
 
 // Convert parameter to string
 #define _CCCL_TO_STRING2(_STR) #_STR
@@ -110,9 +116,9 @@
 
 // Define the pragma for the host compiler
 #if defined(_CCCL_COMPILER_MSVC)
-#  define _CCCL_PRAGMA(x) __pragma(x)
+#  define _CCCL_PRAGMA(_ARG) __pragma(_ARG)
 #else
-#  define _CCCL_PRAGMA(x) _Pragma(_CCCL_TO_STRING(x))
+#  define _CCCL_PRAGMA(_ARG) _Pragma(_CCCL_TO_STRING(_ARG))
 #endif // defined(_CCCL_COMPILER_MSVC)
 
 #endif // __CCCL_COMPILER_H
