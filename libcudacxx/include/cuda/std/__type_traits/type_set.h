@@ -30,6 +30,9 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+template <class...>
+struct __type_list;
+
 template <class _Set, class... _Ty>
 struct __type_set_contains : __fold_and<_CCCL_TRAIT(is_base_of, __type_identity<_Ty>, _Set)...>
 {};
@@ -81,9 +84,18 @@ struct __bulk_insert
 template <>
 struct __bulk_insert<false>
 {
+#if defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION < 1920
+  template <class _Set, class _Ty, class... _Us>
+  _LIBCUDACXX_HIDE_FROM_ABI static auto __insert_fn(__type_list<_Ty, _Us...>*) ->
+    typename __bulk_insert<sizeof...(_Us) == 0>::template __call<typename _Set::template __maybe_insert<_Ty>, _Us...>;
+
+  template <class _Set, class... _Us>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = decltype(__insert_fn<_Set>(static_cast<__type_list<_Us...>*>(nullptr)));
+#else
   template <class _Set, class _Ty, class... _Us>
   using __call _LIBCUDACXX_NODEBUG_TYPE =
     typename __bulk_insert<sizeof...(_Us) == 0>::template __call<typename _Set::template __maybe_insert<_Ty>, _Us...>;
+#endif
 };
 } // namespace __set
 
