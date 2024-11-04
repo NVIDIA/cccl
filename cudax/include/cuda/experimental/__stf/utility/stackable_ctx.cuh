@@ -28,275 +28,378 @@
 #include "cuda/experimental/__stf/allocators/adapters.cuh"
 #include "cuda/experimental/stf.cuh"
 
-namespace cuda::experimental::stf {
+namespace cuda::experimental::stf
+{
 
 template <typename T>
 class stackable_logical_data;
 
-class stackable_ctx {
+class stackable_ctx
+{
 public:
-    class impl {
-    public:
-        impl() { push(stream_ctx(), nullptr); }
-
-        ~impl() = default;
-
-        void push(context ctx, cudaStream_t stream) {
-            s.push_back(mv(ctx));
-            s_stream.push_back(stream);
-        }
-
-        void pop() {
-            s.back().finalize();
-
-            s.pop_back();
-
-            s_stream.pop_back();
-
-            _CCCL_ASSERT(alloc_adapters.size() > 0, "Calling pop from an empty container");
-            alloc_adapters.back().clear();
-            alloc_adapters.pop_back();
-        }
-
-        size_t depth() const { return s.size() - 1; }
-
-        auto& get() { return s.back(); }
-
-        const auto& get() const { return s.back(); }
-
-        auto& operator[](size_t level) {
-            _CCCL_ASSERT(level < s.size(), "Out of bound access");
-            return s[level];
-        }
-
-        const auto& operator[](size_t level) const {
-            _CCCL_ASSERT(level < s.size(), "Out of bound access");
-            return s[level];
-        }
-
-        cudaStream_t stream_at(size_t level) const { return s_stream[level]; }
-
-        void push_graph() {
-            cudaStream_t stream = get().pick_stream();
-
-            // These resources are not destroyed when we pop, so we create it only if needed
-            if (async_handles.size() < s_stream.size()) {
-                async_handles.emplace_back();
-            }
-
-            auto gctx = graph_ctx(stream, async_handles.back());
-
-            auto wrapper = stream_adapter(gctx, stream);
-            // FIXME : issue with the deinit phase
-            //   gctx.update_uncached_allocator(wrapper.allocator());
-
-            alloc_adapters.push_back(wrapper);
-
-            push(mv(gctx), stream);
-        }
-
-    private:
-        ::std::vector<context> s;
-        ::std::vector<cudaStream_t> s_stream;
-        ::std::vector<async_resources_handle> async_handles;
-        ::std::vector<stream_adapter> alloc_adapters;
-    };
-
-    stackable_ctx() : pimpl(::std::make_shared<impl>()) {}
-
-    const auto& get() const { return pimpl->get(); }
-    auto& get() { return pimpl->get(); }
-
-    auto& operator[](size_t level) {
-        return pimpl->operator[](level);
+  class impl
+  {
+  public:
+    impl()
+    {
+      push(stream_ctx(), nullptr);
     }
 
-    const auto& operator[](size_t level) const {
-        return pimpl->operator[](level);
+    ~impl() = default;
+
+    void push(context ctx, cudaStream_t stream)
+    {
+      s.push_back(mv(ctx));
+      s_stream.push_back(stream);
     }
 
-    cudaStream_t stream_at(size_t level) const { return pimpl->stream_at(level); }
+    void pop()
+    {
+      s.back().finalize();
 
-    const auto& operator()() const { return get(); }
+      s.pop_back();
 
-    auto& operator()() { return get(); }
+      s_stream.pop_back();
 
-    void push_graph() { pimpl->push_graph(); }
-
-    void pop() { pimpl->pop(); }
-
-    size_t depth() const { return pimpl->depth(); }
-
-    template <typename... Pack>
-    auto logical_data(Pack&&... pack) {
-        return stackable_logical_data(*this, depth(), get().logical_data(::std::forward<Pack>(pack)...));
+      _CCCL_ASSERT(alloc_adapters.size() > 0, "Calling pop from an empty container");
+      alloc_adapters.back().clear();
+      alloc_adapters.pop_back();
     }
 
-    template <typename... Pack>
-    auto task(Pack&&... pack) {
-        return get().task(::std::forward<Pack>(pack)...);
+    size_t depth() const
+    {
+      return s.size() - 1;
     }
 
-    template <typename... Pack>
-    auto parallel_for(Pack&&... pack) {
-        return get().parallel_for(::std::forward<Pack>(pack)...);
+    auto& get()
+    {
+      return s.back();
     }
 
-    template <typename... Pack>
-    auto host_launch(Pack&&... pack) {
-        return get().host_launch(::std::forward<Pack>(pack)...);
+    const auto& get() const
+    {
+      return s.back();
     }
 
-    void finalize() {
-        // There must be only one level left
-        _CCCL_ASSERT(depth() == 0, "All nested levels must have been popped");
-
-        get().finalize();
+    auto& operator[](size_t level)
+    {
+      _CCCL_ASSERT(level < s.size(), "Out of bound access");
+      return s[level];
     }
+
+    const auto& operator[](size_t level) const
+    {
+      _CCCL_ASSERT(level < s.size(), "Out of bound access");
+      return s[level];
+    }
+
+    cudaStream_t stream_at(size_t level) const
+    {
+      return s_stream[level];
+    }
+
+    void push_graph()
+    {
+      cudaStream_t stream = get().pick_stream();
+
+      // These resources are not destroyed when we pop, so we create it only if needed
+      if (async_handles.size() < s_stream.size())
+      {
+        async_handles.emplace_back();
+      }
+
+      auto gctx = graph_ctx(stream, async_handles.back());
+
+      auto wrapper = stream_adapter(gctx, stream);
+      // FIXME : issue with the deinit phase
+      //   gctx.update_uncached_allocator(wrapper.allocator());
+
+      alloc_adapters.push_back(wrapper);
+
+      push(mv(gctx), stream);
+    }
+
+  private:
+    ::std::vector<context> s;
+    ::std::vector<cudaStream_t> s_stream;
+    ::std::vector<async_resources_handle> async_handles;
+    ::std::vector<stream_adapter> alloc_adapters;
+  };
+
+  stackable_ctx()
+      : pimpl(::std::make_shared<impl>())
+  {}
+
+  const auto& get() const
+  {
+    return pimpl->get();
+  }
+  auto& get()
+  {
+    return pimpl->get();
+  }
+
+  auto& operator[](size_t level)
+  {
+    return pimpl->operator[](level);
+  }
+
+  const auto& operator[](size_t level) const
+  {
+    return pimpl->operator[](level);
+  }
+
+  cudaStream_t stream_at(size_t level) const
+  {
+    return pimpl->stream_at(level);
+  }
+
+  const auto& operator()() const
+  {
+    return get();
+  }
+
+  auto& operator()()
+  {
+    return get();
+  }
+
+  void push_graph()
+  {
+    pimpl->push_graph();
+  }
+
+  void pop()
+  {
+    pimpl->pop();
+  }
+
+  size_t depth() const
+  {
+    return pimpl->depth();
+  }
+
+  template <typename... Pack>
+  auto logical_data(Pack&&... pack)
+  {
+    return stackable_logical_data(*this, depth(), get().logical_data(::std::forward<Pack>(pack)...));
+  }
+
+  template <typename... Pack>
+  auto task(Pack&&... pack)
+  {
+    return get().task(::std::forward<Pack>(pack)...);
+  }
+
+  template <typename... Pack>
+  auto parallel_for(Pack&&... pack)
+  {
+    return get().parallel_for(::std::forward<Pack>(pack)...);
+  }
+
+  template <typename... Pack>
+  auto host_launch(Pack&&... pack)
+  {
+    return get().host_launch(::std::forward<Pack>(pack)...);
+  }
+
+  void finalize()
+  {
+    // There must be only one level left
+    _CCCL_ASSERT(depth() == 0, "All nested levels must have been popped");
+
+    get().finalize();
+  }
 
 public:
-    ::std::shared_ptr<impl> pimpl;
+  ::std::shared_ptr<impl> pimpl;
 };
 
 template <typename T>
-class stackable_logical_data {
-    class impl {
-    public:
-        impl() = default;
-        impl(stackable_ctx sctx, size_t depth, logical_data<T> ld) : base_depth(depth), sctx(mv(sctx)) {
-            s.push_back(ld);
-        }
+class stackable_logical_data
+{
+  class impl
+  {
+  public:
+    impl() = default;
+    impl(stackable_ctx sctx, size_t depth, logical_data<T> ld)
+        : base_depth(depth)
+        , sctx(mv(sctx))
+    {
+      s.push_back(ld);
+    }
 
-        const auto& get() const {
-            check_level_mismatch();
-            return s.back();
-        }
-        auto& get() {
-            check_level_mismatch();
-            return s.back();
-        }
+    const auto& get() const
+    {
+      check_level_mismatch();
+      return s.back();
+    }
+    auto& get()
+    {
+      check_level_mismatch();
+      return s.back();
+    }
 
-        void push(access_mode m, data_place where = data_place::invalid) {
-            // We have not pushed yet, so the current depth is the one before pushing
-            context& from_ctx = sctx[depth()];
-            context& to_ctx = sctx[depth() + 1];
+    void push(access_mode m, data_place where = data_place::invalid)
+    {
+      // We have not pushed yet, so the current depth is the one before pushing
+      context& from_ctx = sctx[depth()];
+      context& to_ctx   = sctx[depth() + 1];
 
-            // Ensure this will match the depth of the context after pushing
-            _CCCL_ASSERT(sctx.depth() == depth() + 1, "Invalid depth");
+      // Ensure this will match the depth of the context after pushing
+      _CCCL_ASSERT(sctx.depth() == depth() + 1, "Invalid depth");
 
-            if (where == data_place::invalid) {
-                // use the default place
-                where = from_ctx.default_exec_place().affine_data_place();
-            }
+      if (where == data_place::invalid)
+      {
+        // use the default place
+        where = from_ctx.default_exec_place().affine_data_place();
+      }
 
-            _CCCL_ASSERT(where != data_place::invalid, "Invalid data place");
+      _CCCL_ASSERT(where != data_place::invalid, "Invalid data place");
 
-            // Freeze the logical data at the top
-            logical_data<T>& from_data = s.back();
-            frozen_logical_data<T> f = from_ctx.freeze(from_data, m, mv(where));
+      // Freeze the logical data at the top
+      logical_data<T>& from_data = s.back();
+      frozen_logical_data<T> f   = from_ctx.freeze(from_data, m, mv(where));
 
-            // Save the frozen data in a separate vector
-            frozen_s.push_back(f);
+      // Save the frozen data in a separate vector
+      frozen_s.push_back(f);
 
-            // FAKE IMPORT : use the stream needed to support the (graph) ctx
-            cudaStream_t stream = sctx.stream_at(depth());
+      // FAKE IMPORT : use the stream needed to support the (graph) ctx
+      cudaStream_t stream = sctx.stream_at(depth());
 
-            T inst = f.get(where, stream);
-            auto ld = to_ctx.logical_data(inst, where);
+      T inst  = f.get(where, stream);
+      auto ld = to_ctx.logical_data(inst, where);
 
-            if (!symbol.empty()) {
-                ld.set_symbol(symbol + "." + ::std::to_string(depth() + 1));
-            }
+      if (!symbol.empty())
+      {
+        ld.set_symbol(symbol + "." + ::std::to_string(depth() + 1));
+      }
 
-            s.push_back(mv(ld));
-        }
+      s.push_back(mv(ld));
+    }
 
-        void pop() {
-            // We are going to unfreeze the data, which is currently being used
-            // in a (graph) ctx that uses this stream to launch the graph
-            cudaStream_t stream = sctx.stream_at(depth());
+    void pop()
+    {
+      // We are going to unfreeze the data, which is currently being used
+      // in a (graph) ctx that uses this stream to launch the graph
+      cudaStream_t stream = sctx.stream_at(depth());
 
-            frozen_logical_data<T>& f = frozen_s.back();
-            f.unfreeze(stream);
+      frozen_logical_data<T>& f = frozen_s.back();
+      f.unfreeze(stream);
 
-            // Remove frozen logical data
-            frozen_s.pop_back();
-            // Remove aliased logical data
-            s.pop_back();
-        }
+      // Remove frozen logical data
+      frozen_s.pop_back();
+      // Remove aliased logical data
+      s.pop_back();
+    }
 
-        size_t depth() const { return s.size() - 1 + base_depth; }
+    size_t depth() const
+    {
+      return s.size() - 1 + base_depth;
+    }
 
-        void set_symbol(::std::string symbol_) {
-            symbol = mv(symbol_);
-            s.back().set_symbol(symbol + "." + ::std::to_string(depth()));
-        }
+    void set_symbol(::std::string symbol_)
+    {
+      symbol = mv(symbol_);
+      s.back().set_symbol(symbol + "." + ::std::to_string(depth()));
+    }
 
-    private:
-        void check_level_mismatch() const {
-            if (depth() != sctx.depth()) {
-                fprintf(stderr, "Warning: mismatch between ctx level %ld and data level %ld\n", sctx.depth(), depth());
-            }
-        }
+  private:
+    void check_level_mismatch() const
+    {
+      if (depth() != sctx.depth())
+      {
+        fprintf(stderr, "Warning: mismatch between ctx level %ld and data level %ld\n", sctx.depth(), depth());
+      }
+    }
 
-        mutable ::std::vector<logical_data<T>> s;
+    mutable ::std::vector<logical_data<T>> s;
 
-        // When stacking data, we freeze data from the lower levels, these are
-        // their frozen counterparts. This vector has one item less than the
-        // vector of logical data.
-        mutable ::std::vector<frozen_logical_data<T>> frozen_s;
+    // When stacking data, we freeze data from the lower levels, these are
+    // their frozen counterparts. This vector has one item less than the
+    // vector of logical data.
+    mutable ::std::vector<frozen_logical_data<T>> frozen_s;
 
-        // If the logical data was created at a level that is not directly the root of the context, we remember this
-        // offset
-        size_t base_depth = 0;
-        stackable_ctx sctx;  // in which stackable context was this created ?
+    // If the logical data was created at a level that is not directly the root of the context, we remember this
+    // offset
+    size_t base_depth = 0;
+    stackable_ctx sctx; // in which stackable context was this created ?
 
-        ::std::string symbol;
-    };
+    ::std::string symbol;
+  };
 
 public:
-    stackable_logical_data() = default;
+  stackable_logical_data() = default;
 
-    template <typename... Args>
-    stackable_logical_data(stackable_ctx sctx, size_t depth, logical_data<T> ld)
-            : pimpl(::std::make_shared<impl>(mv(sctx), depth, mv(ld))) {}
+  template <typename... Args>
+  stackable_logical_data(stackable_ctx sctx, size_t depth, logical_data<T> ld)
+      : pimpl(::std::make_shared<impl>(mv(sctx), depth, mv(ld)))
+  {}
 
-    const auto& get() const { return pimpl->get(); }
-    auto& get() { return pimpl->get(); }
+  const auto& get() const
+  {
+    return pimpl->get();
+  }
+  auto& get()
+  {
+    return pimpl->get();
+  }
 
-    const auto& operator()() const { return get(); }
-    auto& operator()() { return get(); }
+  const auto& operator()() const
+  {
+    return get();
+  }
+  auto& operator()()
+  {
+    return get();
+  }
 
-    size_t depth() const { return pimpl->depth(); }
+  size_t depth() const
+  {
+    return pimpl->depth();
+  }
 
-    void push(access_mode m, data_place where = data_place::invalid) { pimpl->push(m, mv(where)); }
-    void pop() { pimpl->pop(); }
+  void push(access_mode m, data_place where = data_place::invalid)
+  {
+    pimpl->push(m, mv(where));
+  }
+  void pop()
+  {
+    pimpl->pop();
+  }
 
-    // Helpers
-    template <typename... Pack>
-    auto read(Pack&&... pack) const {
-        return get().read(::std::forward<Pack>(pack)...);
-    }
+  // Helpers
+  template <typename... Pack>
+  auto read(Pack&&... pack) const
+  {
+    return get().read(::std::forward<Pack>(pack)...);
+  }
 
-    template <typename... Pack>
-    auto write(Pack&&... pack) {
-        return get().write(::std::forward<Pack>(pack)...);
-    }
+  template <typename... Pack>
+  auto write(Pack&&... pack)
+  {
+    return get().write(::std::forward<Pack>(pack)...);
+  }
 
-    template <typename... Pack>
-    auto rw(Pack&&... pack) {
-        return get().rw(::std::forward<Pack>(pack)...);
-    }
+  template <typename... Pack>
+  auto rw(Pack&&... pack)
+  {
+    return get().rw(::std::forward<Pack>(pack)...);
+  }
 
-    auto shape() const { return get().shape(); }
+  auto shape() const
+  {
+    return get().shape();
+  }
 
-    auto& set_symbol(::std::string symbol) {
-        pimpl->set_symbol(mv(symbol));
-        return *this;
-    }
+  auto& set_symbol(::std::string symbol)
+  {
+    pimpl->set_symbol(mv(symbol));
+    return *this;
+  }
 
 private:
-    ::std::shared_ptr<impl> pimpl;
+  ::std::shared_ptr<impl> pimpl;
 };
 
-}  // end namespace cuda::experimental::stf
+} // end namespace cuda::experimental::stf
