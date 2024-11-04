@@ -19,9 +19,8 @@ namespace
 template <typename T, T lhs, T rhs, T expected>
 __host__ __device__ constexpr bool do_test()
 {
-  test_op<cuda::minimum<T>, T, lhs, rhs, expected>();
-  test_op<cuda::minimum<>, T, lhs, rhs, expected>();
-  test_op<cuda::minimum<void>, T, lhs, rhs, expected>();
+  return test_op<cuda::minimum<T>, T, lhs, rhs, expected>() && test_op<cuda::minimum<>, T, lhs, rhs, expected>()
+      && test_op<cuda::minimum<void>, T, lhs, rhs, expected>();
 }
 
 __host__ __device__ constexpr bool test()
