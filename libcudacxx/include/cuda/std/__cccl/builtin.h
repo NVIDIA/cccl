@@ -561,7 +561,7 @@
 
 #if defined(_CCCL_COMPILER_MSVC)
 #  // To use __builtin_FUNCSIG(), both MSVC and nvcc need to support it
-#  if _CCCL_MSVC_VERSION >= 1935 && (!defined(_CCCL_CUDACC) || _CCCL_CUDACC_VER >= 1203000)
+#  if _CCCL_MSVC_VERSION >= 1935 && !defined(_CCCL_CUDACC_BELOW_12_3)
 #    define _CCCL_BUILTIN_PRETTY_FUNCTION() __builtin_FUNCSIG()
 #  else // ^^^ _CCCL_MSVC_VERSION >= 1935 ^^^ / vvv _CCCL_MSVC_VERSION < 1935 vvv
 #    define _CCCL_BUILTIN_PRETTY_FUNCTION() __FUNCSIG__
