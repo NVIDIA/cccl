@@ -53,7 +53,7 @@ public:
 
             s_stream.pop_back();
 
-            assert(alloc_adapters.size() > 0);
+            _CCCL_ASSERT(alloc_adapters.size() > 0, "Calling pop from an empty container");
             alloc_adapters.back().clear();
             alloc_adapters.pop_back();
         }
@@ -65,13 +65,12 @@ public:
         const auto& get() const { return s.back(); }
 
         auto& at(size_t level) {
-            assert(level < s.size());
+            _CCCL_ASSERT(level < s.size(), "Out of bound access");
             return s[level];
         }
 
         const auto& at(size_t level) const {
-            assert(level < s.size());
-
+            _CCCL_ASSERT(level < s.size(), "Out of bound access");
             return s[level];
         }
 
@@ -145,7 +144,7 @@ public:
 
     void finalize() {
         // There must be only one level left
-        assert(depth() == 0);
+        _CCCL_ASSERT(depth() == 0, "All nested levels must have been popped");
 
         get().finalize();
     }
@@ -178,14 +177,14 @@ class stackable_logical_data {
             context& to_ctx = sctx.at(depth() + 1);
 
             // Ensure this will match the depth of the context after pushing
-            assert(sctx.depth() == depth() + 1);
+            _CCCL_ASSERT(sctx.depth() == depth() + 1, "Invalid depth");
 
             if (where == data_place::invalid) {
                 // use the default place
                 where = from_ctx.default_exec_place().affine_data_place();
             }
 
-            assert(where != data_place::invalid);
+            _CCCL_ASSERT(where != data_place::invalid, "Invalid data place");
 
             // Freeze the logical data at the top
             logical_data<T>& from_data = s.back();
