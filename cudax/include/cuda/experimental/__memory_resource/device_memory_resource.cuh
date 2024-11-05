@@ -39,13 +39,13 @@
 #  include <cuda/stream_ref>
 
 #  include <cuda/experimental/__device/device_ref.cuh>
-#  include <cuda/experimental/__memory_resource/async_memory_pool.cuh>
+#  include <cuda/experimental/__memory_resource/device_memory_pool.cuh>
 #  include <cuda/experimental/__stream/stream.cuh>
 
 #  if _CCCL_STD_VER >= 2014
 
 //! @file
-//! The \c async_memory_pool class provides an asynchronous memory resource that allocates device memory in stream
+//! The \c device_memory_pool class provides an asynchronous memory resource that allocates device memory in stream
 //! order.
 namespace cuda::experimental::mr
 {
@@ -122,9 +122,9 @@ public:
       : __pool_(__pool)
   {}
 
-  //! @brief  Constructs the device_memory_resource from a \c async_memory_pool by calling get().
-  //! @param __pool The \c async_memory_pool used to allocate memory.
-  explicit device_memory_resource(async_memory_pool& __pool) noexcept
+  //! @brief  Constructs the device_memory_resource from a \c device_memory_pool by calling get().
+  //! @param __pool The \c device_memory_pool used to allocate memory.
+  explicit device_memory_resource(device_memory_pool& __pool) noexcept
       : __pool_(__pool.get())
   {}
 

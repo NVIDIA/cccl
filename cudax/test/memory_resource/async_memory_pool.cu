@@ -22,7 +22,7 @@
 #include <testing.cuh>
 
 namespace cudax = cuda::experimental;
-using pool      = cudax::mr::async_memory_pool;
+using pool      = cudax::mr::device_memory_pool;
 static_assert(!cuda::std::is_trivial<pool>::value, "");
 static_assert(!cuda::std::is_trivially_default_constructible<pool>::value, "");
 static_assert(!cuda::std::is_default_constructible<pool>::value, "");
@@ -69,7 +69,7 @@ static bool ensure_export_handle(::cudaMemPool_t pool, const ::cudaMemAllocation
   return allocation_handle == ::cudaMemHandleTypeNone ? status == ::cudaErrorInvalidValue : status == ::cudaSuccess;
 }
 
-TEST_CASE("async_memory_pool construction", "[memory_resource]")
+TEST_CASE("device_memory_pool construction", "[memory_resource]")
 {
   int current_device{};
   {
@@ -89,10 +89,10 @@ TEST_CASE("async_memory_pool construction", "[memory_resource]")
                        current_device);
   }
 
-  using memory_pool = cudax::mr::async_memory_pool;
+  using memory_pool = cudax::mr::device_memory_pool;
   SECTION("Construct from device id")
   {
-    cudax::mr::async_memory_pool from_device{current_device};
+    cudax::mr::device_memory_pool from_device{current_device};
 
     ::cudaMemPool_t get = from_device.get();
     CHECK(get != current_default_pool);
@@ -109,7 +109,7 @@ TEST_CASE("async_memory_pool construction", "[memory_resource]")
 
   SECTION("Construct with empty properties")
   {
-    cudax::mr::async_memory_pool_properties props{};
+    cudax::mr::device_memory_pool_properties props{};
     memory_pool from_defaulted_properties{current_device, props};
 
     ::cudaMemPool_t get = from_defaulted_properties.get();
@@ -127,7 +127,7 @@ TEST_CASE("async_memory_pool construction", "[memory_resource]")
 
   SECTION("Construct with initial pool size")
   {
-    cudax::mr::async_memory_pool_properties props = {42, 20};
+    cudax::mr::device_memory_pool_properties props = {42, 20};
     memory_pool with_threshold{current_device, props};
 
     ::cudaMemPool_t get = with_threshold.get();
@@ -147,7 +147,7 @@ TEST_CASE("async_memory_pool construction", "[memory_resource]")
 #if !defined(_CCCL_CUDACC_BELOW_11_2)
   SECTION("Construct with allocation handle")
   {
-    cudax::mr::async_memory_pool_properties props = {
+    cudax::mr::device_memory_pool_properties props = {
       42, 20, cudax::mr::cudaMemAllocationHandleType::cudaMemHandleTypePosixFileDescriptor};
     memory_pool with_allocation_handle{current_device, props};
 
@@ -175,12 +175,12 @@ TEST_CASE("async_memory_pool construction", "[memory_resource]")
     ::cudaMemPool_t new_pool{};
     _CCCL_TRY_CUDA_API(::cudaMemPoolCreate, "Failed to call cudaMemPoolCreate", &new_pool, &pool_properties);
 
-    cudax::mr::async_memory_pool from_handle = cudax::mr::async_memory_pool::from_native_handle(new_pool);
+    cudax::mr::device_memory_pool from_handle = cudax::mr::device_memory_pool::from_native_handle(new_pool);
     CHECK(from_handle.get() == new_pool);
   }
 }
 
-TEST_CASE("async_memory_pool comparison", "[memory_resource]")
+TEST_CASE("device_memory_pool comparison", "[memory_resource]")
 {
   int current_device{};
   {
@@ -200,9 +200,9 @@ TEST_CASE("async_memory_pool comparison", "[memory_resource]")
                        current_device);
   }
 
-  cudax::mr::async_memory_pool first{current_device};
-  { // comparison against a plain async_memory_pool
-    cudax::mr::async_memory_pool second{current_device};
+  cudax::mr::device_memory_pool first{current_device};
+  { // comparison against a plain device_memory_pool
+    cudax::mr::device_memory_pool second{current_device};
     CHECK(first == first);
     CHECK(first != second);
   }
@@ -215,7 +215,7 @@ TEST_CASE("async_memory_pool comparison", "[memory_resource]")
   }
 }
 
-TEST_CASE("async_memory_pool accessors", "[memory_resource]")
+TEST_CASE("device_memory_pool accessors", "[memory_resource]")
 {
   int current_device{};
   {
@@ -235,9 +235,9 @@ TEST_CASE("async_memory_pool accessors", "[memory_resource]")
                        current_device);
   }
 
-  SECTION("async_memory_pool::set_attribute")
+  SECTION("device_memory_pool::set_attribute")
   {
-    cudax::mr::async_memory_pool pool{current_device};
+    cudax::mr::device_memory_pool pool{current_device};
 
     { // cudaMemPoolReuseFollowEventDependencies
       // Get the attribute value
@@ -327,7 +327,7 @@ TEST_CASE("async_memory_pool accessors", "[memory_resource]")
       catch (::std::invalid_argument& err)
       {
         CHECK(strcmp(err.what(),
-                     "async_memory_pool::set_attribute: It is illegal to set this attribute to a non-zero value.")
+                     "device_memory_pool::set_attribute: It is illegal to set this attribute to a non-zero value.")
               == 0);
       }
       catch (...)
@@ -356,7 +356,7 @@ TEST_CASE("async_memory_pool accessors", "[memory_resource]")
       catch (::std::invalid_argument& err)
       {
         CHECK(strcmp(err.what(),
-                     "async_memory_pool::set_attribute: It is illegal to set this attribute to a non-zero value.")
+                     "device_memory_pool::set_attribute: It is illegal to set this attribute to a non-zero value.")
               == 0);
       }
       catch (...)
@@ -382,7 +382,7 @@ TEST_CASE("async_memory_pool accessors", "[memory_resource]")
       }
       catch (::std::invalid_argument& err)
       {
-        CHECK(strcmp(err.what(), "Invalid attribute passed to async_memory_pool::set_attribute.") == 0);
+        CHECK(strcmp(err.what(), "Invalid attribute passed to device_memory_pool::set_attribute.") == 0);
       }
       catch (...)
       {
@@ -402,7 +402,7 @@ TEST_CASE("async_memory_pool accessors", "[memory_resource]")
       }
       catch (::std::invalid_argument& err)
       {
-        CHECK(strcmp(err.what(), "Invalid attribute passed to async_memory_pool::set_attribute.") == 0);
+        CHECK(strcmp(err.what(), "Invalid attribute passed to device_memory_pool::set_attribute.") == 0);
       }
       catch (...)
       {
@@ -415,9 +415,9 @@ TEST_CASE("async_memory_pool accessors", "[memory_resource]")
     stream.wait();
   }
 
-  SECTION("async_memory_pool::trim_to")
+  SECTION("device_memory_pool::trim_to")
   {
-    cudax::mr::async_memory_pool pool{current_device};
+    cudax::mr::device_memory_pool pool{current_device};
     // prime the pool to a given size
     cudax::mr::device_memory_resource resource{pool};
     cudax::stream stream{};
@@ -469,14 +469,14 @@ TEST_CASE("async_memory_pool accessors", "[memory_resource]")
     CHECK(still_no_backing == 0);
   }
 
-  SECTION("async_memory_pool::enable_peer_access")
+  SECTION("device_memory_pool::enable_peer_access")
   {
     if (cudax::devices.size() > 1)
     {
       auto peers = cudax::devices[0].get_peers();
       if (peers.size() > 0)
       {
-        cudax::mr::async_memory_pool pool{cudax::devices[0]};
+        cudax::mr::device_memory_pool pool{cudax::devices[0]};
         CUDAX_CHECK(pool.is_accessible_from(cudax::devices[0]));
 
         pool.enable_peer_access(peers);

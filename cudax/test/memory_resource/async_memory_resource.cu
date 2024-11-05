@@ -149,10 +149,10 @@ TEST_CASE("device_memory_resource construction", "[memory_resource]")
 
   SECTION("Construct with initial pool size")
   {
-    cuda::experimental::mr::async_memory_pool_properties props = {
+    cuda::experimental::mr::device_memory_pool_properties props = {
       42,
     };
-    cuda::experimental::mr::async_memory_pool pool{current_device, props};
+    cuda::experimental::mr::device_memory_pool pool{current_device, props};
     async_resource from_initial_pool_size{pool};
 
     ::cudaMemPool_t get = from_initial_pool_size.get();
@@ -170,11 +170,11 @@ TEST_CASE("device_memory_resource construction", "[memory_resource]")
 
   SECTION("Construct with release threshold")
   {
-    cuda::experimental::mr::async_memory_pool_properties props = {
+    cuda::experimental::mr::device_memory_pool_properties props = {
       42,
       20,
     };
-    cuda::experimental::mr::async_memory_pool pool{current_device, props};
+    cuda::experimental::mr::device_memory_pool pool{current_device, props};
     async_resource with_threshold{pool};
 
     ::cudaMemPool_t get = with_threshold.get();
@@ -194,12 +194,12 @@ TEST_CASE("device_memory_resource construction", "[memory_resource]")
 #if !defined(_CCCL_CUDACC_BELOW_11_2)
   SECTION("Construct with allocation handle")
   {
-    cuda::experimental::mr::async_memory_pool_properties props = {
+    cuda::experimental::mr::device_memory_pool_properties props = {
       42,
       20,
       cuda::experimental::mr::cudaMemAllocationHandleType::cudaMemHandleTypePosixFileDescriptor,
     };
-    cuda::experimental::mr::async_memory_pool pool{current_device, props};
+    cuda::experimental::mr::device_memory_pool pool{current_device, props};
     async_resource with_allocation_handle{pool};
 
     ::cudaMemPool_t get = with_allocation_handle.get();
@@ -481,7 +481,7 @@ TEST_CASE("Async memory resource peer access")
     auto peers = cudax::devices[0].get_peers();
     if (peers.size() > 0)
     {
-      cudax::mr::async_memory_pool pool{cudax::devices[0]};
+      cudax::mr::device_memory_pool pool{cudax::devices[0]};
       cudax::mr::device_memory_resource resource{pool};
       cudax::stream stream{peers.front()};
       CUDAX_CHECK(resource.is_accessible_from(cudax::devices[0]));

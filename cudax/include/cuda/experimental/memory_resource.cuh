@@ -12,7 +12,7 @@
 #define __CUDAX_MEMORY_RESOURCE___
 
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
-#include <cuda/experimental/__memory_resource/async_memory_pool.cuh>
+#include <cuda/experimental/__memory_resource/device_memory_pool.cuh>
 #include <cuda/experimental/__memory_resource/device_memory_resource.cuh>
 #include <cuda/experimental/__memory_resource/shared_resource.cuh>
 
