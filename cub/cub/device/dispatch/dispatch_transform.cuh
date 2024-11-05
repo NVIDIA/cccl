@@ -950,14 +950,15 @@ struct dispatch_t<RequiresStableAddress,
       return config.error;
     }
 
+    // choose items per thread to reach minimum bytes in flight
     const int items_per_thread =
       loaded_bytes_per_iter == 0
         ? +policy_t::items_per_thread_no_input
         : ::cuda::ceil_div(ActivePolicy::min_bif, config->max_occupancy * block_dim * loaded_bytes_per_iter);
 
-    // Generate at least one block per SM. This improves tiny problem sizes (e.g. 2^16 elements).
-    const int items_per_thread_evenly_spread =
-      static_cast<int>(::cuda::std::min(Offset{items_per_thread}, num_items / (config->sm_count * block_dim)));
+    // but also generate enough blocks for full occupancy to optimize small problem sizes, e.g., 2^16 or 2^20 elements
+    const int items_per_thread_evenly_spread = static_cast<int>(
+      ::cuda::std::min(Offset{items_per_thread}, num_items / (config->sm_count * block_dim * config->max_occupancy)));
 
     const int items_per_thread_clamped = ::cuda::std::clamp(
       items_per_thread_evenly_spread, +policy_t::min_items_per_thread, +policy_t::max_items_per_thread);
