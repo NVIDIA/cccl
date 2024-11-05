@@ -40,6 +40,7 @@
 #include <fstream>
 #include <iostream>
 #include <mutex>
+#include <optional>
 #include <sstream>
 #include <unordered_set>
 
@@ -52,6 +53,14 @@ namespace cuda::experimental::stf::reserved
 using IntPairSet = ::std::unordered_set<::std::pair<int, int>, cuda::experimental::stf::hash<::std::pair<int, int>>>;
 
 class dot;
+
+// Information for every task, so that we can eventually generate a node for the task
+struct per_task_info
+{
+  ::std::string color;
+  ::std::string label;
+  ::std::optional<float> timing;
+};
 
 class per_ctx_dot
 {
@@ -161,9 +170,17 @@ public:
 
     vertices.push_back(t.get_unique_id());
 
-    // Add an entry in the DOT file
-    oss << "\"NODE_" << t.get_unique_id() << "\" [style=\"filled\" fillcolor=\"" << get_current_color() << "\" label=\""
-        << t.get_symbol();
+    auto& task_metadata = metadata[t.get_unique_id()];
+
+    task_metadata.color = get_current_color();
+
+    // Add an entry in the DOT file : we just put the node, and we will define its style/label later
+    oss << "\"NODE_" << t.get_unique_id() << "\" [style=\"filled\"]\n";
+
+    // We here create the label of the task, which we may augment later with
+    // timing information for example
+    ::std::ostringstream task_oss;
+    task_oss << t.get_symbol();
 
     // Append the text with a list of accessed logical data, and the corresponding access modes
     if (!remove_deps)
@@ -174,11 +191,11 @@ public:
         data_type d      = e.get_data();
         access_mode mode = e.get_access_mode();
         size_t size      = d.get_data_interface().data_footprint();
-        oss << "\\n" << d.get_symbol() << "(" << access_mode_string(mode) << ")(" << size << ") ";
+        task_oss << "\\n" << d.get_symbol() << "(" << access_mode_string(mode) << ")(" << size << ") ";
       }
     }
 
-    oss << "\"]\n";
+    task_metadata.label = task_oss.str();
   }
 
   template <typename task_type>
@@ -193,6 +210,9 @@ public:
 
     oss << "// " << t.get_unique_id() << " : mapping_id=" << t.get_mapping_id() << " time=" << time_ms
         << " device=" << device << "\n";
+
+    // Save timing information for this task
+    metadata[t.get_unique_id()].timing = time_ms;
   }
 
   // Take a reference to an (unused) `::std::lock_guard<::std::mutex>` to make sure someone ddid take a lock.
@@ -299,6 +319,7 @@ public: // XXX protected, friend : dot
   mutable ::std::ostringstream oss;
   // strings of the previous epochs
   mutable ::std::vector<::std::ostringstream> prev_oss;
+  ::std::unordered_map<int /* id */, per_task_info> metadata;
 };
 
 class dot : public reserved::meyers_singleton<dot>
@@ -377,6 +398,49 @@ public:
     }
   }
 
+  // This will update colors if necessary
+  void update_colors_with_timing()
+  {
+    const char* dot_timing_str = ::std::getenv("CUDASTF_DOT_TIMING");
+    if (dot_timing_str && atoi(dot_timing_str) != 0)
+    {
+      float sum  = 0.0;
+      size_t cnt = 0;
+      // First go over all tasks which have some timing and compute avg/max values
+      for (const auto& pc : per_ctx)
+      {
+        for (const auto& p : pc->metadata)
+        {
+          if (p.second.timing.has_value())
+          {
+            float ms = p.second.timing.value();
+            cnt++;
+            sum += ms;
+          }
+        }
+      }
+
+      if (cnt > 0)
+      {
+        float avg = sum / cnt;
+
+        // Update colors now
+        for (auto& pc : per_ctx)
+        {
+          for (auto& p : pc->metadata)
+          {
+            if (p.second.timing.has_value())
+            {
+              float ms       = p.second.timing.value();
+              p.second.color = get_color_for_duration(ms, avg);
+              p.second.label += "\ntiming: " + ::std::to_string(ms) + " ms\n";
+            }
+          }
+        }
+      }
+    }
+  }
+
   // This should not need to be called explicitly, unless we are doing some automatic tests for example
   void finish()
   {
@@ -386,6 +450,8 @@ public:
     {
       return;
     }
+
+    update_colors_with_timing();
 
     for (const auto& pc : per_ctx)
     {
@@ -422,6 +488,16 @@ public:
         outFile << "\"NODE_" << from << "\" -> \"NODE_" << to << "\"\n";
       }
 
+      // Update node properties such as labels and colors now that we have all information
+      for (const auto& pc : per_ctx)
+      {
+        for (const auto& p : pc->metadata)
+        {
+          outFile << "\"NODE_" << p.first << "\" [fillcolor=\"" << p.second.color << "\" label=\"" << p.second.label
+                  << "\"]\n";
+        }
+      }
+
       outFile << "}\n";
 
       outFile.close();
@@ -447,6 +523,38 @@ public:
   ::std::vector<::std::shared_ptr<per_ctx_dot>> per_ctx;
 
 private:
+  // Function to get a color based on task duration relative to the average
+  ::std::string get_color_for_duration(double duration, double avg_duration)
+  {
+    // Define thresholds relative to the average duration
+    const double very_short_threshold = 0.5 * avg_duration; // < 50% of avg
+    const double short_threshold      = 0.8 * avg_duration; // < 80% of avg
+    const double long_threshold       = 1.5 * avg_duration; // > 150% of avg
+    const double very_long_threshold  = 2.0 * avg_duration; // > 200% of avg
+
+    // Return color based on duration thresholds
+    if (duration < very_short_threshold)
+    {
+      return "#b6e3b6"; // Light Green for Very Short tasks
+    }
+    else if (duration < short_threshold)
+    {
+      return "#69b369"; // Green for Short tasks
+    }
+    else if (duration <= long_threshold)
+    {
+      return "#ffd966"; // Yellow for Around Average tasks
+    }
+    else if (duration <= very_long_threshold)
+    {
+      return "#ffb84d"; // Orange for Long tasks
+    }
+    else
+    {
+      return "#ff6666"; // Red for Very Long tasks
+    }
+  }
+
   bool reachable(int from, int to, ::std::unordered_set<int>& visited)
   {
     visited.insert(to);

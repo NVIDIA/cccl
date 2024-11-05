@@ -212,7 +212,10 @@ public:
       calibrate = needs_calibration;
     }
 
-    return dot.is_tracing() || (calibrate && statistics.is_calibrating());
+    const char* dot_timing_str = ::std::getenv("CUDASTF_DOT_TIMING");
+    bool dot_timing            = (dot_timing_str && atoi(dot_timing_str) != 0);
+
+    return dot_timing || (calibrate && statistics.is_calibrating());
   }
 
   /**
