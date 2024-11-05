@@ -10,33 +10,34 @@
 
 #include <cuda/functional>
 
-#include "min_max_common.h"
 #include "test_macros.h"
 
-template <typename T, T lhs, T rhs, T expected>
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
+template <typename OpT, typename T>
+__host__ __device__ constexpr bool test_op(const T lhs, const T rhs, const T expected)
 {
-  test_op<cuda::minimum<T>, T, lhs, rhs, expected>();
-  test_op<cuda::minimum<>, T, lhs, rhs, expected>();
-  test_op<cuda::minimum<void>, T, lhs, rhs, expected>();
+  return (OpT{}(lhs, rhs) == expected) && (OpT{}(lhs, rhs) == OpT{}(rhs, lhs));
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+template <typename T>
+__host__ __device__ constexpr bool test(T lhs, T rhs, T expected)
 {
-  test<int, 0, 1, 0>();
-  test<int, 1, 0, 0>();
-  test<int, 0, 0, 0>();
-  test<int, -1, 1, -1>();
-  test<char, 'a', 'b', 'a'>();
+  return test_op<cuda::minimum<T>>(lhs, rhs, expected) && //
+         test_op<cuda::minimum<>>(lhs, rhs, expected) && //
+         test_op<cuda::minimum<void>>(lhs, rhs, expected);
+}
 
-  return true;
+__host__ __device__ constexpr bool test()
+{
+  return test<int>(0, 1, 0) && //
+         test<int>(1, 0, 0) && //
+         test<int>(0, 0, 0) && //
+         test<int>(-1, 1, -1) && //
+         test<char>('a', 'b', 'a');
 }
 
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014
   return 0;
 }
