@@ -54,7 +54,7 @@
 namespace cuda::experimental::mr
 {
 template <class _Ty, class _Uy = _CUDA_VSTD::remove_cvref_t<_Ty>>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_basic_any_resource = false;
+_CCCL_INLINE_VAR constexpr bool __is_basic_any_resource = false;
 
 //! @rst
 //! .. _cudax-memory-resource-basic-any-resource:
@@ -87,7 +87,7 @@ private:
   //! @brief Validates that a set of \c _OtherProperties... is a superset of \c _Properties... .
   template <class... _OtherProperties>
   static constexpr bool __properties_match =
-    _CUDA_VSTD::__type_set_contains<_CUDA_VSTD::__make_type_set<_OtherProperties...>, _Properties...>;
+    _CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__make_type_set<_OtherProperties...>, _Properties...>;
 
   //! @brief Validates that a passed in \c _Resource satisfies the \c resource or \c async_resource concept respectively
   //! as well as all properties in \c _Properties... .
@@ -218,8 +218,8 @@ public:
   //! @return The \c resource_ref to this resource.
   _LIBCUDACXX_TEMPLATE(_CUDA_VMR::_AllocType _OtherAllocType, class... _OtherProperties)
   _LIBCUDACXX_REQUIRES(
-    (_OtherAllocType == _CUDA_VMR::_AllocType::_Default || _OtherAllocType == _Alloc_type)
-      _LIBCUDACXX_AND(_CUDA_VSTD::__type_set_contains<_CUDA_VSTD::__make_type_set<_Properties...>, _OtherProperties...>))
+    (_OtherAllocType == _CUDA_VMR::_AllocType::_Default || _OtherAllocType == _Alloc_type) _LIBCUDACXX_AND(
+      _CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__make_type_set<_Properties...>, _OtherProperties...>))
   operator _CUDA_VMR::basic_resource_ref<_OtherAllocType, _OtherProperties...>() noexcept
   {
     return _CUDA_VMR::_Resource_ref_helper::_Construct<_Alloc_type, _OtherProperties...>(
@@ -263,13 +263,13 @@ public:
   //! @brief Forwards the stateless properties
   _LIBCUDACXX_TEMPLATE(class _Property)
   _LIBCUDACXX_REQUIRES(
-    (!property_with_value<_Property>) _LIBCUDACXX_AND(_CUDA_VSTD::__is_included_in<_Property, _Properties...>))
+    (!property_with_value<_Property>) _LIBCUDACXX_AND(_CUDA_VSTD::__is_included_in_v<_Property, _Properties...>))
   friend void get_property(const basic_any_resource&, _Property) noexcept {}
 
   //! @brief Forwards the stateful properties
   _LIBCUDACXX_TEMPLATE(class _Property)
   _LIBCUDACXX_REQUIRES(
-    property_with_value<_Property> _LIBCUDACXX_AND(_CUDA_VSTD::__is_included_in<_Property, _Properties...>))
+    property_with_value<_Property> _LIBCUDACXX_AND(_CUDA_VSTD::__is_included_in_v<_Property, _Properties...>))
   _CCCL_NODISCARD_FRIEND __property_value_t<_Property> get_property(const basic_any_resource& __res, _Property) noexcept
   {
     _CUDA_VMR::_Property_vtable<_Property> const& __prop = __res;
@@ -279,8 +279,7 @@ public:
 
 //! @brief Checks whether a passed in type is a specialization of basic_any_resource
 template <class _Ty, _CUDA_VMR::_AllocType _Alloc_type, class... _Properties>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_basic_any_resource<_Ty, basic_any_resource<_Alloc_type, _Properties...>> =
-  true;
+_CCCL_INLINE_VAR constexpr bool __is_basic_any_resource<_Ty, basic_any_resource<_Alloc_type, _Properties...>> = true;
 
 //! @rst
 //! .. _cudax-memory-resource-any-resource:

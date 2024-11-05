@@ -1,10 +1,20 @@
 add_custom_target(libcudacxx.test.atomics.ptx)
 
-find_program(filecheck "FileCheck" REQUIRED)
+find_program(filecheck "FileCheck")
+
+if (filecheck)
+  message("-- ${filecheck} found... building atomic codegen tests")
+else()
+  return()
+endif()
+
 find_program(cuobjdump "cuobjdump" REQUIRED)
 find_program(bash "bash" REQUIRED)
 
-file(GLOB libcudacxx_atomic_codegen_tests "*.cu")
+set(libcudacxx_atomic_codegen_tests)
+if (NOT "NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  file(GLOB libcudacxx_atomic_codegen_tests "*.cu")
+endif()
 
 # For every atomic API compile the TU and check if the SASS/PTX matches the expected result
 foreach(test_path IN LISTS libcudacxx_atomic_codegen_tests)
@@ -15,6 +25,14 @@ foreach(test_path IN LISTS libcudacxx_atomic_codegen_tests)
         atomic_codegen_${test_name}
         STATIC ${test_path}
     )
+
+    set_target_properties(
+        atomic_codegen_${test_name}
+        PROPERTIES
+          CUDA_ARCHITECTURES "80"
+    )
+
+    target_compile_options(atomic_codegen_${test_name} PRIVATE "-Wno-comment")
 
     ## Important for testing the local headers
     target_include_directories(atomic_codegen_${test_name} PRIVATE "${libcudacxx_SOURCE_DIR}/include")

@@ -31,11 +31,11 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
-#include "catch2_test_helper.h"
 #include "cuda/std/__algorithm/fill.h"
 #include "cuda/std/__algorithm/max.h"
 #include "cuda/std/__numeric/inclusive_scan.h"
 #include "cuda/std/__numeric/iota.h"
+#include <c2h/catch2_test_helper.cuh>
 
 constexpr int num_warps = 4;
 
@@ -85,7 +85,7 @@ __global__ void InclusiveWarpScanKernel(int* output)
   // example-end inclusive-warp-scan-init-value
 }
 
-CUB_TEST("Warp array-based inclusive scan works with initial value", "[scan][warp]")
+C2H_TEST("Warp array-based inclusive scan works with initial value", "[scan][warp]")
 {
   thrust::device_vector<int> d_out(num_warps * 32);
 
@@ -139,7 +139,7 @@ __global__ void InclusiveWarpScanKernelAggr(int* output, int* d_warp_aggregate)
   d_warp_aggregate[warp_id] = warp_aggregate;
 }
 
-CUB_TEST("Warp array-based inclusive scan aggregate works with initial value", "[scan][warp]")
+C2H_TEST("Warp array-based inclusive scan aggregate works with initial value", "[scan][warp]")
 {
   thrust::device_vector<int> d_out(num_warps * 32);
   c2h::device_vector<int> d_warp_aggregate(num_warps);

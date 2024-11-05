@@ -62,6 +62,7 @@ using memory_resource = detail::native_resource;
  *  \p mr::new_delete_resource and tags it with \p cpp::universal_pointer.
  */
 using universal_memory_resource = detail::universal_native_resource;
+// FIXME(bgruber): comment below is wrong or alias should be to universal_memory_resource
 /*! An alias for \p cpp::universal_memory_resource. */
 using universal_host_pinned_memory_resource = detail::native_resource;
 

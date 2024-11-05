@@ -22,9 +22,9 @@
 #  pragma system_header
 #endif // no system header
 
-#if !defined(_CCCL_CUDA_COMPILER_NVCC) && !defined(_CCCL_CUDA_COMPILER_NVHPC)
+#if defined(_CCCL_CUDA_COMPILER_CLANG)
 #  include <cuda_runtime_api.h>
-#endif // !_CCCL_CUDA_COMPILER_NVCC && !_CCCL_CUDA_COMPILER_NVHPC
+#endif // _CCCL_CUDA_COMPILER_CLANG
 
 #include <cuda/std/__exception/terminate.h>
 
@@ -72,7 +72,7 @@ _CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void __throw_cuda_error(::cudaError_t _
 class cuda_error
 {
 public:
-  cuda_error(::cudaError_t, const char*) noexcept {}
+  _LIBCUDACXX_HIDE_FROM_ABI cuda_error(::cudaError_t, const char*) noexcept {}
 };
 
 _CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void __throw_cuda_error(::cudaError_t, const char*)

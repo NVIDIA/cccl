@@ -458,7 +458,7 @@ struct CubVector
 };
 
 /// The maximum number of elements in CUDA vector types
-_LIBCUDACXX_INLINE_VAR constexpr int MAX_VEC_ELEMENTS = 4;
+_CCCL_INLINE_VAR constexpr int MAX_VEC_ELEMENTS = 4;
 
 /**
  * Generic vector-1 type
@@ -657,14 +657,7 @@ struct Uninitialized
 /**
  * \brief A key identifier paired with a corresponding value
  */
-template <typename _Key,
-          typename _Value
-#  if defined(_WIN32) && !defined(_WIN64)
-          ,
-          bool KeyIsLT = (AlignBytes<_Key>::ALIGN_BYTES < AlignBytes<_Value>::ALIGN_BYTES),
-          bool ValIsLT = (AlignBytes<_Value>::ALIGN_BYTES < AlignBytes<_Key>::ALIGN_BYTES)
-#  endif // #if defined(_WIN32) && !defined(_WIN64)
-          >
+template <typename _Key, typename _Value>
 struct KeyValuePair
 {
   using Key   = _Key; ///< Key data type
@@ -688,80 +681,6 @@ struct KeyValuePair
     return (value != b.value) || (key != b.key);
   }
 };
-
-#  if defined(_WIN32) && !defined(_WIN64)
-
-/**
- * Win32 won't do 16B alignment.  This can present two problems for
- * should-be-16B-aligned (but actually 8B aligned) built-in and intrinsics members:
- * 1) If a smaller-aligned item were to be listed first, the host compiler places the
- *    should-be-16B item at too early an offset (and disagrees with device compiler)
- * 2) Or, if a smaller-aligned item lists second, the host compiler gets the size
- *    of the struct wrong (and disagrees with device compiler)
- *
- * So we put the larger-should-be-aligned item first, and explicitly pad the
- * end of the struct
- */
-
-/// Smaller key specialization
-template <typename K, typename V>
-struct KeyValuePair<K, V, true, false>
-{
-  using Key   = K;
-  using Value = V;
-
-  using Pad = char[AlignBytes<V>::ALIGN_BYTES - AlignBytes<K>::ALIGN_BYTES];
-
-  Value value; // Value has larger would-be alignment and goes first
-  Key key;
-  Pad pad;
-
-  /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePair() {}
-
-  /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePair(Key const& key, Value const& value)
-      : key(key)
-      , value(value)
-  {}
-
-  /// Inequality operator
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const KeyValuePair& b)
-  {
-    return (value != b.value) || (key != b.key);
-  }
-};
-
-/// Smaller value specialization
-template <typename K, typename V>
-struct KeyValuePair<K, V, false, true>
-{
-  using Key   = K;
-  using Value = V;
-
-  using Pad = char[AlignBytes<K>::ALIGN_BYTES - AlignBytes<V>::ALIGN_BYTES];
-
-  Key key; // Key has larger would-be alignment and goes first
-  Value value;
-  Pad pad;
-
-  /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePair() {}
-
-  /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePair(Key const& key, Value const& value)
-      : key(key)
-      , value(value)
-  {}
-
-  /// Inequality operator
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const KeyValuePair& b)
-  {
-    return (value != b.value) || (key != b.key);
-  }
-};
-
-#  endif // #if defined(_WIN32) && !defined(_WIN64)
 
 /**
  * \brief A wrapper for passing simple static arrays as kernel parameters

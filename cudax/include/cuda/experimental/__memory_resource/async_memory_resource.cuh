@@ -24,10 +24,10 @@
 // cudaMallocAsync was introduced in CTK 11.2
 #if !defined(_CCCL_COMPILER_MSVC_2017) && !defined(_CCCL_CUDACC_BELOW_11_2)
 
-#  if !defined(_CCCL_CUDA_COMPILER_NVCC) && !defined(_CCCL_CUDA_COMPILER_NVHPC)
+#  if defined(_CCCL_CUDA_COMPILER_CLANG)
 #    include <cuda_runtime.h>
 #    include <cuda_runtime_api.h>
-#  endif // !_CCCL_CUDA_COMPILER_NVCC && !_CCCL_CUDA_COMPILER_NVHPC
+#  endif // _CCCL_CUDA_COMPILER_CLANG
 
 #  include <cuda/__memory_resource/get_property.h>
 #  include <cuda/__memory_resource/properties.h>
@@ -236,6 +236,62 @@ public:
   void deallocate_async(void* __ptr, size_t, const ::cuda::stream_ref __stream)
   {
     _CCCL_ASSERT_CUDA_API(::cudaFreeAsync, "async_memory_resource::deallocate_async failed", __ptr, __stream.get());
+  }
+
+  //! @brief Enable peer access to memory allocated through this memory resource by the supplied devices
+  //!
+  //! Access is controlled through the underyling memory pool, so this
+  //! setting is shared between all memory resources created from the same pool.
+  //! Device on which this resource allocates memory can be included in the vector.
+  //!
+  //! @param __devices A vector of `device_ref`s listing devices to enable access for
+  void enable_peer_access(const ::std::vector<device_ref>& __devices)
+  {
+    ::cuda::experimental::mr::__mempool_switch_peer_access(
+      __pool_, {__devices.data(), __devices.size()}, cudaMemAccessFlagsProtReadWrite);
+  }
+
+  //! @brief Enable peer access to memory allocated through this memory resource by the supplied device
+  //!
+  //! Access is controlled through the underyling memory pool, so this
+  //! setting is shared between all memory resources created from the same pool.
+  //!
+  //! @param __device device_ref indicating for which device the access should be enabled
+  void enable_peer_access(device_ref __device)
+  {
+    ::cuda::experimental::mr::__mempool_switch_peer_access(__pool_, {&__device, 1}, cudaMemAccessFlagsProtReadWrite);
+  }
+
+  //! @brief Enable peer access to memory allocated through this memory resource by the supplied devices
+  //!
+  //! Access is controlled through the underyling memory pool, so this
+  //! setting is shared between all memory resources created from the same pool.
+  //! Device on which this resource allocates memory can be included in the vector.
+  //!
+  //! @param __devices A vector of `device_ref`s listing devices to disable access for
+  void disable_peer_access(const ::std::vector<device_ref>& __devices)
+  {
+    ::cuda::experimental::mr::__mempool_switch_peer_access(
+      __pool_, {__devices.data(), __devices.size()}, cudaMemAccessFlagsProtNone);
+  }
+
+  //! @brief Enable peer access to memory allocated through this memory resource by the supplied device
+  //!
+  //! Access is controlled through the underyling memory pool, so this
+  //! setting is shared between all memory resources created from the same pool.
+  //!
+  //! @param __device device_ref indicating for which device the access should be enabled
+  void disable_peer_access(device_ref __device)
+  {
+    ::cuda::experimental::mr::__mempool_switch_peer_access(__pool_, {&__device, 1}, cudaMemAccessFlagsProtNone);
+  }
+
+  //! @brief Query if memory allocated through this memory resource is accessible by the supplied device
+  //!
+  //! @param __device device for which the peer access is queried
+  _CCCL_NODISCARD bool is_accessible_from(device_ref __device)
+  {
+    return ::cuda::experimental::mr::__mempool_get_access(__pool_, __device);
   }
 
   //! @brief Equality comparison with another async_memory_resource.

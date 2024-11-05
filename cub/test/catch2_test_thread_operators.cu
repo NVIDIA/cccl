@@ -27,8 +27,8 @@
 
 #include <cub/thread/thread_operators.cuh>
 
-#include "catch2_test_helper.h"
 #include "test_util.h"
+#include <c2h/catch2_test_helper.cuh>
 
 template <class T>
 T Make(int val)
@@ -90,7 +90,7 @@ CUSTOM_TYPE_FACTORY(Div, int, /, false);
 CUSTOM_TYPE_FACTORY(Gt, bool, >, true);
 CUSTOM_TYPE_FACTORY(Lt, bool, <, true);
 
-CUB_TEST("Equality", "[thread_operator]")
+C2H_TEST("Equality", "[thread_operator]")
 {
   cub::Equality op{};
 
@@ -105,7 +105,7 @@ CUB_TEST("Equality", "[thread_operator]")
   CHECK(op(Make<CustomEqT>(magic_val), magic_val + 1) == false);
 }
 
-CUB_TEST("Inequality", "[thread_operator]")
+C2H_TEST("Inequality", "[thread_operator]")
 {
   cub::Inequality op{};
 
@@ -120,7 +120,7 @@ CUB_TEST("Inequality", "[thread_operator]")
   CHECK(op(Make<CustomIneqT>(magic_val), magic_val + 1) == true);
 }
 
-CUB_TEST("InequalityWrapper", "[thread_operator]")
+C2H_TEST("InequalityWrapper", "[thread_operator]")
 {
   cub::Equality wrapped_op{};
   cub::InequalityWrapper<cub::Equality> op{wrapped_op};
@@ -161,7 +161,7 @@ void StaticSame()
   STATIC_REQUIRE(std::is_same<ExpectedT, ActualT>::value);
 }
 
-CUB_TEST("Sum", "[thread_operator]")
+C2H_TEST("Sum", "[thread_operator]")
 {
   cub::Sum op{};
 
@@ -178,7 +178,7 @@ CUB_TEST("Sum", "[thread_operator]")
   StaticSame<decltype(op(CustomSumCustomIntSink{}, 1.0)), CustomSumIntSink>();
 }
 
-CUB_TEST("Difference", "[thread_operator]")
+C2H_TEST("Difference", "[thread_operator]")
 {
   cub::Difference op{};
 
@@ -196,7 +196,7 @@ CUB_TEST("Difference", "[thread_operator]")
   StaticSame<decltype(op(CustomDiffCustomIntSink{}, 1.0)), CustomDiffIntSink>();
 }
 
-CUB_TEST("Division", "[thread_operator]")
+C2H_TEST("Division", "[thread_operator]")
 {
   cub::Division op{};
 
@@ -214,7 +214,7 @@ CUB_TEST("Division", "[thread_operator]")
   StaticSame<decltype(op(CustomDivCustomIntSink{}, 1.0)), CustomDivIntSink>();
 }
 
-CUB_TEST("Max", "[thread_operator]")
+C2H_TEST("Max", "[thread_operator]")
 {
   cub::Max op{};
 
@@ -231,7 +231,7 @@ CUB_TEST("Max", "[thread_operator]")
   StaticSame<decltype(op(1, Make<CustomGtT>(magic_val))), int>();
 }
 
-CUB_TEST("Min", "[thread_operator]")
+C2H_TEST("Min", "[thread_operator]")
 {
   cub::Min op{};
 

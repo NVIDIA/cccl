@@ -42,14 +42,31 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 //!
 //! @endrst
 template <class _Resource, class _Property, class = void>
-_LIBCUDACXX_INLINE_VAR constexpr bool has_property = false;
+_CCCL_INLINE_VAR constexpr bool has_property = false;
 
 template <class _Resource, class _Property>
-_LIBCUDACXX_INLINE_VAR constexpr bool has_property<
+_CCCL_INLINE_VAR constexpr bool has_property<
   _Resource,
   _Property,
   _CUDA_VSTD::void_t<decltype(get_property(_CUDA_VSTD::declval<const _Resource&>(), _CUDA_VSTD::declval<_Property>()))>> =
   true;
+
+#    if defined(_CCCL_COMPILER_NVHPC) // NVHPC has issues accepting this at compile time if it is in a variable template
+template <class _Resource, class _Property, class = void>
+struct __has_property_impl
+{
+  static constexpr bool value = false;
+};
+
+template <class _Resource, class _Property>
+struct __has_property_impl<
+  _Resource,
+  _Property,
+  _CUDA_VSTD::void_t<decltype(get_property(_CUDA_VSTD::declval<const _Resource&>(), _CUDA_VSTD::declval<_Property>()))>>
+{
+  static constexpr bool value = true;
+};
+#    endif // _CCCL_COMPILER_NVHPC
 
 template <class _Property>
 using __property_value_t = typename _Property::value_type;
@@ -67,10 +84,10 @@ using __property_value_t = typename _Property::value_type;
 //!
 //! @endrst
 template <class _Property, class = void>
-_LIBCUDACXX_INLINE_VAR constexpr bool property_with_value = false;
+_CCCL_INLINE_VAR constexpr bool property_with_value = false;
 
 template <class _Property>
-_LIBCUDACXX_INLINE_VAR constexpr bool property_with_value<_Property, _CUDA_VSTD::void_t<__property_value_t<_Property>>> =
+_CCCL_INLINE_VAR constexpr bool property_with_value<_Property, _CUDA_VSTD::void_t<__property_value_t<_Property>>> =
   true;
 
 //! @brief The \c has_property_with concept verifies that a Resource satisfies a given stateful Property

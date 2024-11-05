@@ -46,13 +46,13 @@ class unexpected;
 namespace __unexpected
 {
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_unexpected = false;
+_CCCL_INLINE_VAR constexpr bool __is_unexpected = false;
 
 template <class _Err>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_unexpected<unexpected<_Err>> = true;
+_CCCL_INLINE_VAR constexpr bool __is_unexpected<unexpected<_Err>> = true;
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool __valid_unexpected =
+_CCCL_INLINE_VAR constexpr bool __valid_unexpected =
   _CCCL_TRAIT(is_object, _Tp) && !_CCCL_TRAIT(is_array, _Tp) && !__is_unexpected<_Tp> && !_CCCL_TRAIT(is_const, _Tp)
   && !_CCCL_TRAIT(is_volatile, _Tp);
 } // namespace __unexpected

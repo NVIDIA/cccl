@@ -56,18 +56,17 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER >= 2017
 template <class _Iter, class = void>
-_LIBCUDACXX_INLINE_VAR constexpr bool __noexcept_rev_iter_iter_move = false;
+_CCCL_INLINE_VAR constexpr bool __noexcept_rev_iter_iter_move = false;
 
 template <class _Iter>
-_LIBCUDACXX_INLINE_VAR constexpr bool
-  __noexcept_rev_iter_iter_move<_Iter, void_t<decltype(--_CUDA_VSTD::declval<_Iter&>())>> =
-    is_nothrow_copy_constructible_v<_Iter> && noexcept(_CUDA_VRANGES::iter_move(--_CUDA_VSTD::declval<_Iter&>()));
+_CCCL_INLINE_VAR constexpr bool __noexcept_rev_iter_iter_move<_Iter, void_t<decltype(--_CUDA_VSTD::declval<_Iter&>())>> =
+  is_nothrow_copy_constructible_v<_Iter> && noexcept(_CUDA_VRANGES::iter_move(--_CUDA_VSTD::declval<_Iter&>()));
 
 template <class _Iter, class _Iter2, class = void>
-_LIBCUDACXX_INLINE_VAR constexpr bool __noexcept_rev_iter_iter_swap = false;
+_CCCL_INLINE_VAR constexpr bool __noexcept_rev_iter_iter_swap = false;
 
 template <class _Iter, class _Iter2>
-_LIBCUDACXX_INLINE_VAR constexpr bool
+_CCCL_INLINE_VAR constexpr bool
   __noexcept_rev_iter_iter_swap<_Iter, _Iter2, enable_if_t<indirectly_swappable<_Iter, _Iter2>>> =
     is_nothrow_copy_constructible_v<_Iter> && is_nothrow_copy_constructible_v<_Iter2>
     && noexcept(_CUDA_VRANGES::iter_swap(--declval<_Iter&>(), --declval<_Iter2&>()));
@@ -269,10 +268,7 @@ public:
   {
     auto __xtmp = __x.base();
     auto __ytmp = __y.base();
-    _CUDA_VRANGES::iter_swap(--__xtmp, --__ytmp);
-#    if defined(_CCCL_COMPILER_ICC)
-    _CCCL_UNREACHABLE();
-#    endif // _CCCL_COMPILER_ICC
+    return _CUDA_VRANGES::iter_swap(--__xtmp, --__ytmp);
   }
 #  endif // !_CCCL_COMPILER_MSVC_2017
 #endif // _CCCL_STD_VER > 2014

@@ -84,7 +84,17 @@
 
 #if _CCCL_HAS_BUILTIN(__array_extent)
 #  define _CCCL_BUILTIN_ARRAY_EXTENT(...) __array_extent(__VA_ARGS__)
-#endif // _CCCL_HAS_BUILTIN(array_extent)
+#endif // _CCCL_HAS_BUILTIN(__array_extent)
+
+#if _CCCL_HAS_BUILTIN(__builtin_assume_aligned) || (defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION >= 1923) \
+  || defined(_CCCL_COMPILER_GCC)
+#  define _CCCL_BUILTIN_ASSUME_ALIGNED(...) __builtin_assume_aligned(__VA_ARGS__)
+#endif // _CCCL_HAS_BUILTIN(__builtin_assume_aligned)
+
+// NVCC below 11.2 treats this as a host only function
+#if defined(_CCCL_CUDACC_BELOW_11_2)
+#  undef _CCCL_BUILTIN_ASSUME_ALIGNED
+#endif // _CCCL_CUDACC_BELOW_11_2
 
 // nvhpc has a bug where it supports __builtin_addressof but does not mark it via _CCCL_CHECK_BUILTIN
 #if _CCCL_CHECK_BUILTIN(builtin_addressof) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 70000) \
@@ -117,6 +127,18 @@
 #  undef _CCCL_BUILTIN_BIT_CAST
 #endif // clang < 10 || nvcc < 11.7
 
+#if _CCCL_HAS_BUILTIN(__builtin_COLUMN) || defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION >= 1927
+#  define _CCCL_BUILTIN_COLUMN() __builtin_COLUMN()
+#else // ^^^ _CCCL_HAS_BUILTIN(__builtin_COLUMN) ^^^ / vvv !_CCCL_HAS_BUILTIN(__builtin_COLUMN) vvv
+#  define _CCCL_BUILTIN_COLUMN() 0
+#endif // !_CCCL_HAS_BUILTIN(__builtin_COLUMN)
+
+// NVCC below 11.3 cannot handle __builtin_COLUMN
+#if defined(_CCCL_CUDACC_BELOW_11_3)
+#  undef _CCCL_BUILTIN_COLUMN
+#  define _CCCL_BUILTIN_COLUMN() 0
+#endif // _CCCL_CUDACC_BELOW_11_3
+
 #if _CCCL_CHECK_BUILTIN(builtin_contant_p) || defined(_CCCL_COMPILER_GCC)
 #  define _CCCL_BUILTIN_CONSTANT_P(...) __builtin_constant_p(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_contant_p)
@@ -124,6 +146,32 @@
 #if _CCCL_CHECK_BUILTIN(builtin_expect) || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_GCC)
 #  define _CCCL_BUILTIN_EXPECT(...) __builtin_expect(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_expect)
+
+#if _CCCL_HAS_BUILTIN(__builtin_FILE) || defined(_CCCL_COMPILER_GCC) \
+  || (defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION >= 1927)
+#  define _CCCL_BUILTIN_FILE() __builtin_FILE()
+#else // ^^^ _CCCL_HAS_BUILTIN(__builtin_FILE) ^^^ / vvv !_CCCL_HAS_BUILTIN(__builtin_FILE) vvv
+#  define _CCCL_BUILTIN_FILE() __FILE__
+#endif // !_CCCL_HAS_BUILTIN(__builtin_LINE)
+
+// NVCC below 11.3 cannot handle __builtin_FILE
+#if defined(_CCCL_CUDACC_BELOW_11_3)
+#  undef _CCCL_BUILTIN_FILE
+#  define _CCCL_BUILTIN_FILE() __FILE__
+#endif // _CCCL_CUDACC_BELOW_11_3
+
+#if _CCCL_HAS_BUILTIN(__builtin_FUNCTION) || defined(_CCCL_COMPILER_GCC) \
+  || (defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION >= 1927)
+#  define _CCCL_BUILTIN_FUNCTION() __builtin_FUNCTION()
+#else // ^^^ _CCCL_HAS_BUILTIN(__builtin_FUNCTION) ^^^ / vvv !_CCCL_HAS_BUILTIN(__builtin_FUNCTION) vvv
+#  define _CCCL_BUILTIN_FUNCTION() "__builtin_FUNCTION is unsupported"
+#endif // !_CCCL_HAS_BUILTIN(__builtin_FUNCTION)
+
+// NVCC below 11.3 cannot handle __builtin_FUNCTION
+#if defined(_CCCL_CUDACC_BELOW_11_3)
+#  undef _CCCL_BUILTIN_FUNCTION
+#  define _CCCL_BUILTIN_FUNCTION() "__builtin_FUNCTION is unsupported"
+#endif // _CCCL_CUDACC_BELOW_11_3
 
 #if _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 90000) \
   || (defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION > 1924 && !defined(_CCCL_CUDACC_BELOW_11_3))
@@ -145,6 +193,19 @@
 #if (defined(_CCCL_COMPILER_CLANG) && _CCCL_CLANG_VERSION < 100000) || defined(_CCCL_CUDACC_BELOW_11_3)
 #  undef _CCCL_BUILTIN_LAUNDER
 #endif // clang < 10 || nvcc < 11.3
+
+#if _CCCL_HAS_BUILTIN(__builtin_LINE) || defined(_CCCL_COMPILER_GCC) \
+  || (defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION >= 1927)
+#  define _CCCL_BUILTIN_LINE() __builtin_LINE()
+#else // ^^^ _CCCL_HAS_BUILTIN(__builtin_LINE) ^^^ / vvv !_CCCL_HAS_BUILTIN(__builtin_LINE) vvv
+#  define _CCCL_BUILTIN_LINE() __LINE__
+#endif // !_CCCL_HAS_BUILTIN(__builtin_LINE)
+
+// NVCC below 11.3 cannot handle __builtin_LINE
+#if defined(_CCCL_CUDACC_BELOW_11_3)
+#  undef _CCCL_BUILTIN_LINE
+#  define _CCCL_BUILTIN_LINE() __LINE__
+#endif // _CCCL_CUDACC_BELOW_11_3
 
 #if _CCCL_CHECK_BUILTIN(__builtin_operator_new) && _CCCL_CHECK_BUILTIN(__builtin_operator_delete) \
   && defined(_CCCL_CUDA_COMPILER_CLANG)
@@ -488,14 +549,34 @@
 #  define _CCCL_BUILTIN_TYPE_PACK_ELEMENT(...) __type_pack_element<__VA_ARGS__>
 #endif // _CCCL_HAS_BUILTIN(__type_pack_element)
 
-// NVCC prior to 12.0 have trouble with pack expansion into __type_pack_element in an alias template
-#if defined(_CCCL_CUDACC_BELOW_12_0)
+// NVCC prior to 12.2 have trouble with pack expansion into __type_pack_element in an alias template
+#if defined(_CCCL_CUDACC_BELOW_12_2)
 #  undef _CCCL_BUILTIN_TYPE_PACK_ELEMENT
-#endif // _CCCL_CUDACC_BELOW_12_0
+#endif // _CCCL_CUDACC_BELOW_12_2
 
 #if _CCCL_CHECK_BUILTIN(underlying_type) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 40700) \
   || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
 #  define _CCCL_BUILTIN_UNDERLYING_TYPE(...) __underlying_type(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(underlying_type) && gcc >= 4.7
+
+#if defined(_CCCL_COMPILER_MSVC)
+#  // To use __builtin_FUNCSIG(), both MSVC and nvcc need to support it
+#  if _CCCL_MSVC_VERSION >= 1935 && !defined(_CCCL_CUDACC_BELOW_12_3)
+#    define _CCCL_BUILTIN_PRETTY_FUNCTION() __builtin_FUNCSIG()
+#  else // ^^^ _CCCL_MSVC_VERSION >= 1935 ^^^ / vvv _CCCL_MSVC_VERSION < 1935 vvv
+#    define _CCCL_BUILTIN_PRETTY_FUNCTION() __FUNCSIG__
+#    define _CCCL_BROKEN_MSVC_FUNCSIG
+#  endif // _CCCL_MSVC_VERSION < 1935
+#else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
+#  define _CCCL_BUILTIN_PRETTY_FUNCTION() __PRETTY_FUNCTION__
+#endif // !_CCCL_COMPILER_MSVC
+
+// GCC's builtin_strlen isn't reliable at constexpr time
+// MSVC does not expose builtin_strlen before C++17
+// NVRTC does not expose builtin_strlen
+#if !defined(_CCCL_COMPILER_GCC) && !defined(_CCCL_COMPILER_NVRTC) \
+  && !(defined(_CCCL_COMPILER_MSVC) && _CCCL_STD_VER < 2017)
+#  define _CCCL_BUILTIN_STRLEN(...) __builtin_strlen(__VA_ARGS__)
+#endif
 
 #endif // __CCCL_BUILTIN_H

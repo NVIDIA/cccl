@@ -20,10 +20,9 @@ _CCCL_NV_DIAG_SUPPRESS(186)
 // see also: https://godbolt.org/z/1x8b4hn3G
 #endif // defined(_CCCL_CUDA_COMPILER) && _CCCL_CUDACC_VER < 1105000
 
-#include <cub/agent/agent_for.cuh>
 #include <cub/detail/uninitialized_copy.cuh>
-#include <cub/device/dispatch/tuning/tuning_for.cuh>
 #include <cub/util_arch.cuh>
+#include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>
 
@@ -46,15 +45,19 @@ _CCCL_NV_DIAG_SUPPRESS(186)
 
 #include <cassert>
 
-#include <cooperative_groups.h>
-#include <cooperative_groups/memcpy_async.h>
+// cooperative groups do not support NVHPC yet
+#ifndef _CCCL_CUDA_COMPILER_NVHPC
+#  include <cooperative_groups.h>
+#  include <cooperative_groups/memcpy_async.h>
+#endif
 
 CUB_NAMESPACE_BEGIN
 
-// the ublkcp kernel needs PTX features that are only available and understood by CTK 12 and later
-#if _CCCL_CUDACC_VER_MAJOR >= 12
+// The ublkcp kernel needs PTX features that are only available and understood by nvcc >=12.
+// Also, cooperative groups do not support NVHPC yet.
+#if _CCCL_CUDACC_VER_MAJOR >= 12 && !defined(_CCCL_CUDA_COMPILER_NVHPC)
 #  define _CUB_HAS_TRANSFORM_UBLKCP
-#endif // _CCCL_CUDACC_VER_MAJOR >= 12
+#endif // _CCCL_CUDACC_VER_MAJOR >= 12 && !defined(_CCCL_CUDA_COMPILER_NVHPC)
 
 namespace detail
 {
@@ -88,49 +91,122 @@ _CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
 
 enum class Algorithm
 {
-  fallback_for,
+  // We previously had a fallback algorithm that would use cub::DeviceFor. Benchmarks showed that the prefetch algorithm
+  // is always superior to that fallback, so it was removed.
+  prefetch,
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
   ublkcp,
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
 };
 
-// this kernel replicates the behavior of cub::DeviceFor::Bulk
-template <typename ForPolicy,
+template <typename T>
+_CCCL_HOST_DEVICE _CCCL_FORCEINLINE const char* round_down_ptr(const T* ptr, unsigned alignment)
+{
+#if _CCCL_STD_VER > 2011
+  _CCCL_ASSERT(::cuda::std::has_single_bit(alignment), "");
+#endif // _CCCL_STD_VER > 2011
+  return reinterpret_cast<const char*>(
+    reinterpret_cast<::cuda::std::uintptr_t>(ptr) & ~::cuda::std::uintptr_t{alignment - 1});
+}
+
+template <int BlockThreads>
+struct prefetch_policy_t
+{
+  static constexpr int block_threads = BlockThreads;
+  // items per tile are determined at runtime. these (inclusive) bounds allow overriding that value via a tuning policy
+  static constexpr int items_per_thread_no_input = 2; // when there are no input iterators, the kernel is just filling
+  static constexpr int min_items_per_thread      = 1;
+  static constexpr int max_items_per_thread      = 32;
+};
+
+// Prefetches (at least on Hopper) a 128 byte cache line. Prefetching out-of-bounds addresses has no side effects
+// TODO(bgruber): there is also the cp.async.bulk.prefetch instruction available on Hopper. May improve perf a tiny bit
+// as we need to create less instructions to prefetch the same amount of data.
+template <typename T>
+_CCCL_DEVICE _CCCL_FORCEINLINE void prefetch(const T* addr)
+{
+  // TODO(bgruber): prefetch to L1 may be even better
+  asm volatile("prefetch.global.L2 [%0];" : : "l"(__cvta_generic_to_global(addr)) : "memory");
+}
+
+template <int BlockDim, typename T>
+_CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(const T* addr, int tile_size)
+{
+  constexpr int prefetch_byte_stride = 128; // TODO(bgruber): should correspond to cache line size. Does this need to be
+                                            // architecture dependent?
+  const int tile_size_bytes = tile_size * sizeof(T);
+  // prefetch does not stall and unrolling just generates a lot of unnecessary computations and predicate handling
+#pragma unroll 1
+  for (int offset = threadIdx.x * prefetch_byte_stride; offset < tile_size_bytes;
+       offset += BlockDim * prefetch_byte_stride)
+  {
+    prefetch(reinterpret_cast<const char*>(addr) + offset);
+  }
+}
+
+// TODO(miscco): we should probably constrain It to not be a contiguous iterator in C++17 (and change the overload
+// above to accept any contiguous iterator)
+// overload for any iterator that is not a pointer, do nothing
+template <int, typename It, ::cuda::std::__enable_if_t<!::cuda::std::is_pointer<It>::value, int> = 0>
+_CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(It, int)
+{}
+
+// This kernel guarantees that objects passed as arguments to the user-provided transformation function f reside in
+// global memory. No intermediate copies are taken. If the parameter type of f is a reference, taking the address of the
+// parameter yields a global memory address.
+template <typename PrefetchPolicy,
           typename Offset,
           typename F,
           typename RandomAccessIteratorOut,
-          typename... RandomAccessIteratorsIn>
+          typename... RandomAccessIteratorIn>
 _CCCL_DEVICE void transform_kernel_impl(
-  ::cuda::std::integral_constant<Algorithm, Algorithm::fallback_for>,
+  ::cuda::std::integral_constant<Algorithm, Algorithm::prefetch>,
   Offset num_items,
-  int /* items_per_thread */,
-  F transform_op,
+  int num_elem_per_thread,
+  F f,
   RandomAccessIteratorOut out,
-  RandomAccessIteratorsIn... ins)
+  RandomAccessIteratorIn... ins)
 {
-  auto op = [&](Offset i) {
-    out[i] = transform_op(ins[i]...);
-  };
-  using OpT = decltype(op);
+  constexpr int block_dim = PrefetchPolicy::block_threads;
+  const int tile_stride   = block_dim * num_elem_per_thread;
+  const Offset offset     = static_cast<Offset>(blockIdx.x) * tile_stride;
+  const int tile_size     = static_cast<int>(::cuda::std::min(num_items - offset, Offset{tile_stride}));
 
-  // TODO(bgruber): verbatim copy from for_each's static_kernel below:
-  using agent_t = for_each::agent_block_striped_t<ForPolicy, Offset, OpT>;
-
-  constexpr auto block_threads  = ForPolicy::block_threads;
-  constexpr auto items_per_tile = ForPolicy::items_per_thread * block_threads;
-
-  const auto tile_base     = static_cast<Offset>(blockIdx.x) * items_per_tile;
-  const auto num_remaining = num_items - tile_base;
-  const auto items_in_tile = static_cast<Offset>(num_remaining < items_per_tile ? num_remaining : items_per_tile);
-
-  if (items_in_tile == items_per_tile)
+  // move index and iterator domain to the block/thread index, to reduce arithmetic in the loops below
   {
-    agent_t{tile_base, op}.template consume_tile<true>(items_per_tile, block_threads);
+    int dummy[] = {(ins += offset, 0)..., 0};
+    (void) &dummy;
+    out += offset;
+  }
+
+  {
+    // TODO(bgruber): replace by fold over comma in C++17
+    int dummy[] = {(prefetch_tile<block_dim>(ins, tile_size), 0)..., 0}; // extra zero to handle empty packs
+    (void) &dummy; // nvcc 11.1 needs extra strong unused warning suppression
+  }
+
+#define PREFETCH_AGENT(full_tile)                                                                                  \
+  /* ahendriksen: various unrolling yields less <1% gains at much higher compile-time cost */                      \
+  /* bgruber: but A6000 and H100 show small gains without pragma */                                                \
+  /*_Pragma("unroll 1")*/ for (int j = 0; j < num_elem_per_thread; ++j)                                            \
+  {                                                                                                                \
+    const int idx = j * block_dim + threadIdx.x;                                                                   \
+    if (full_tile || idx < tile_size)                                                                              \
+    {                                                                                                              \
+      /* we have to unwrap Thrust's proxy references here for backward compatibility (try zip_iterator.cu test) */ \
+      out[idx] = f(THRUST_NS_QUALIFIER::raw_reference_cast(ins[idx])...);                                          \
+    }                                                                                                              \
+  }
+
+  if (tile_stride == tile_size)
+  {
+    PREFETCH_AGENT(true);
   }
   else
   {
-    agent_t{tile_base, op}.template consume_tile<false>(items_in_tile, block_threads);
+    PREFETCH_AGENT(false);
   }
+#undef PREFETCH_AGENT
 }
 
 template <int BlockThreads>
@@ -171,16 +247,6 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto round_up_to_po2_multiple(Inte
   _CCCL_ASSERT(::cuda::std::has_single_bit(static_cast<::cuda::std::__make_unsigned_t<Integral>>(mult)), "");
 #endif // _CCCL_STD_VER > 2011
   return (x + mult - 1) & ~(mult - 1);
-}
-
-template <typename T>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE const char* round_down_ptr(const T* ptr, unsigned alignment)
-{
-#if _CCCL_STD_VER > 2011
-  _CCCL_ASSERT(::cuda::std::has_single_bit(alignment), "");
-#endif // _CCCL_STD_VER > 2011
-  return reinterpret_cast<const char*>(
-    reinterpret_cast<::cuda::std::uintptr_t>(ptr) & ~::cuda::std::uintptr_t{alignment - 1});
 }
 
 // Implementation notes on memcpy_async and UBLKCP kernels regarding copy alignment and padding
@@ -382,22 +448,22 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
 
   // note: I tried expressing the UBLKCP_AGENT as a function object but it adds a lot of code to handle the variadics
   // TODO(bgruber): use a polymorphic lambda in C++14
-#  define UBLKCP_AGENT(full_tile)                                                                                 \
-    _Pragma("unroll 1") /* Unroll 1 tends to improve performance, especially for smaller data types (confirmed by \
-                             benchmark) */                                                                        \
-      for (int j = 0; j < num_elem_per_thread; ++j)                                                               \
-    {                                                                                                             \
-      const int idx = j * block_dim + threadIdx.x;                                                                \
-      if (full_tile || idx < tile_size)                                                                           \
-      {                                                                                                           \
-        int smem_offset = 0;                                                                                      \
-        /* need to expand into a tuple for guaranteed order of evaluation*/                                       \
-        out[idx] = poor_apply(                                                                                    \
-          [&](const InTs&... values) {                                                                            \
-            return f(values...);                                                                                  \
-          },                                                                                                      \
-          ::cuda::std::tuple<InTs...>{fetch_operand(tile_stride, smem, smem_offset, idx, aligned_ptrs)...});      \
-      }                                                                                                           \
+#  define UBLKCP_AGENT(full_tile)                                                                            \
+    /* Unroll 1 tends to improve performance, especially for smaller data types (confirmed by benchmark) */  \
+    _CCCL_PRAGMA(unroll 1)                                                                                   \
+    for (int j = 0; j < num_elem_per_thread; ++j)                                                            \
+    {                                                                                                        \
+      const int idx = j * block_dim + threadIdx.x;                                                           \
+      if (full_tile || idx < tile_size)                                                                      \
+      {                                                                                                      \
+        int smem_offset = 0;                                                                                 \
+        /* need to expand into a tuple for guaranteed order of evaluation*/                                  \
+        out[idx] = poor_apply(                                                                               \
+          [&](const InTs&... values) {                                                                       \
+            return f(values...);                                                                             \
+          },                                                                                                 \
+          ::cuda::std::tuple<InTs...>{fetch_operand(tile_stride, smem, smem_offset, idx, aligned_ptrs)...}); \
+      }                                                                                                      \
     }
   if (tile_stride == tile_size)
   {
@@ -518,8 +584,6 @@ _CCCL_HOST_DEVICE constexpr auto bulk_copy_smem_for_tile_size(int tile_size) -> 
        + sizeof...(RandomAccessIteratorsIn) * bulk_copy_alignment;
 }
 
-using fallback_for_policy = for_each::policy_hub_t::policy_350_t::for_policy_t;
-
 template <bool RequiresStableAddress, typename RandomAccessIteratorTupleIn>
 struct policy_hub
 {
@@ -543,8 +607,8 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
   {
     static constexpr int min_bif = arch_to_min_bytes_in_flight(300);
     // TODO(bgruber): we don't need algo, because we can just detect the type of algo_policy
-    static constexpr auto algorithm = Algorithm::fallback_for;
-    using algo_policy               = fallback_for_policy;
+    static constexpr auto algorithm = Algorithm::prefetch;
+    using algo_policy               = prefetch_policy_t<256>;
   };
 
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
@@ -566,8 +630,8 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
 
     static constexpr bool use_fallback =
       RequiresStableAddress || !can_memcpy || no_input_streams || exhaust_smem || any_type_is_overalinged;
-    static constexpr auto algorithm = use_fallback ? Algorithm::fallback_for : Algorithm::ublkcp;
-    using algo_policy               = ::cuda::std::_If<use_fallback, fallback_for_policy, async_policy>;
+    static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Algorithm::ublkcp;
+    using algo_policy               = ::cuda::std::_If<use_fallback, prefetch_policy_t<256>, async_policy>;
   };
 
   using max_policy = policy900;
@@ -647,11 +711,36 @@ _CCCL_HOST_DEVICE inline PoorExpected<int> get_max_shared_memory()
   return max_smem;
 }
 
+_CCCL_HOST_DEVICE inline PoorExpected<int> get_sm_count()
+{
+  int device = 0;
+  auto error = CubDebug(cudaGetDevice(&device));
+  if (error != cudaSuccess)
+  {
+    return error;
+  }
+
+  int sm_count = 0;
+  error        = CubDebug(cudaDeviceGetAttribute(&sm_count, cudaDevAttrMultiProcessorCount, device));
+  if (error != cudaSuccess)
+  {
+    return error;
+  }
+
+  return sm_count;
+}
+
 struct elem_counts
 {
   int elem_per_thread;
   int tile_size;
   int smem_size;
+};
+
+struct prefetch_config
+{
+  int max_occupancy;
+  int sm_count;
 };
 
 template <bool RequiresStableAddress,
@@ -758,15 +847,11 @@ struct dispatch_t<RequiresStableAddress,
       return last_counts;
     };
     PoorExpected<elem_counts> config = [&]() {
-      NV_IF_TARGET(
-        NV_IS_HOST,
-        (
-          // this static variable exists for each template instantiation of the surrounding function and class, on which
-          // the chosen element count solely depends (assuming max SMEM is constant during a program execution)
-          static auto cached_config = determine_element_counts(); return cached_config;),
-        (
-          // we cannot cache the determined element count in device code
-          return determine_element_counts();));
+      NV_IF_TARGET(NV_IS_HOST,
+                   (static auto cached_config = determine_element_counts(); return cached_config;),
+                   (
+                     // we cannot cache the determined element count in device code
+                     return determine_element_counts();));
     }();
     if (!config)
     {
@@ -811,18 +896,61 @@ struct dispatch_t<RequiresStableAddress,
 
   template <typename ActivePolicy, std::size_t... Is>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
-  invoke_algorithm(cuda::std::index_sequence<Is...>, ::cuda::std::integral_constant<Algorithm, Algorithm::fallback_for>)
+  invoke_algorithm(cuda::std::index_sequence<Is...>, ::cuda::std::integral_constant<Algorithm, Algorithm::prefetch>)
   {
-    constexpr int block_threads    = ActivePolicy::algo_policy::block_threads;
-    constexpr int items_per_thread = ActivePolicy::algo_policy::items_per_thread;
-    constexpr int tile_size        = block_threads * items_per_thread;
-    const auto grid_dim            = static_cast<unsigned>(::cuda::ceil_div(num_items, Offset{tile_size}));
+    using policy_t          = typename ActivePolicy::algo_policy;
+    constexpr int block_dim = policy_t::block_threads;
+
+    auto determine_config = [&]() -> PoorExpected<prefetch_config> {
+      int max_occupancy = 0;
+      const auto error  = CubDebug(MaxSmOccupancy(max_occupancy, CUB_DETAIL_TRANSFORM_KERNEL_PTR, block_dim, 0));
+      if (error != cudaSuccess)
+      {
+        return error;
+      }
+      const auto sm_count = get_sm_count();
+      if (!sm_count)
+      {
+        return sm_count.error;
+      }
+      return prefetch_config{max_occupancy, *sm_count};
+    };
+
+    PoorExpected<prefetch_config> config = [&]() {
+      NV_IF_TARGET(
+        NV_IS_HOST,
+        (
+          // this static variable exists for each template instantiation of the surrounding function and class, on which
+          // the chosen element count solely depends (assuming max SMEM is constant during a program execution)
+          static auto cached_config = determine_config(); return cached_config;),
+        (
+          // we cannot cache the determined element count in device code
+          return determine_config();));
+    }();
+    if (!config)
+    {
+      return config.error;
+    }
+
+    const int items_per_thread =
+      loaded_bytes_per_iter == 0
+        ? +policy_t::items_per_thread_no_input
+        : ::cuda::ceil_div(ActivePolicy::min_bif, config->max_occupancy * block_dim * loaded_bytes_per_iter);
+
+    // Generate at least one block per SM. This improves tiny problem sizes (e.g. 2^16 elements).
+    const int items_per_thread_evenly_spread =
+      static_cast<int>(::cuda::std::min(Offset{items_per_thread}, num_items / (config->sm_count * block_dim)));
+
+    const int items_per_thread_clamped = ::cuda::std::clamp(
+      items_per_thread_evenly_spread, +policy_t::min_items_per_thread, +policy_t::max_items_per_thread);
+    const int tile_size = block_dim * items_per_thread_clamped;
+    const auto grid_dim = static_cast<unsigned int>(::cuda::ceil_div(num_items, Offset{tile_size}));
     return CubDebug(
-      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(grid_dim, block_threads, 0, stream)
+      THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(grid_dim, block_dim, 0, stream)
         .doit(
           CUB_DETAIL_TRANSFORM_KERNEL_PTR,
           num_items,
-          items_per_thread,
+          items_per_thread_clamped,
           op,
           out,
           make_iterator_kernel_arg(THRUST_NS_QUALIFIER::try_unwrap_contiguous_iterator(::cuda::std::get<Is>(in)))...));

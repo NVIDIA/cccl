@@ -392,7 +392,7 @@ struct gen_t
     T min               = std::numeric_limits<T>::min,
     T max               = std::numeric_limits<T>::max()) const
   {
-    return {seed_t{}, elements, entropy, min, max};
+    return {{seed_t{}, elements, entropy}, min, max};
   }
 
   gen_uniform_t uniform{};

@@ -67,6 +67,12 @@
 #  define _CCCL_NO_UNIQUE_ADDRESS
 #endif
 
+// Passing objects with nested [[no_unique_address]] to kernels leads to data corruption
+// This happens up to clang18
+#if !defined(_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS) && defined(_CCCL_COMPILER_CLANG)
+#  define _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
+#endif // !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS && _CCCL_COMPILER_CLANG
+
 #if _CCCL_HAS_CPP_ATTRIBUTE(nodiscard) || (defined(_CCCL_COMPILER_MSVC) && _CCCL_STD_VER >= 2017)
 #  define _CCCL_NODISCARD [[nodiscard]]
 #else // ^^^ has nodiscard ^^^ / vvv no nodiscard vvv
@@ -95,5 +101,11 @@
 #else
 #  define _CCCL_NORETURN __attribute__((noreturn))
 #endif
+
+#if defined(_CCCL_COMPILER_MSVC) // vvv _CCCL_COMPILER_MSVC vvv
+#  define _CCCL_RESTRICT __restrict
+#else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
+#  define _CCCL_RESTRICT __restrict__
+#endif // ^^^ !_CCCL_COMPILER_MSVC ^^^
 
 #endif // __CCCL_ATTRIBUTES_H

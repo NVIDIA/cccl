@@ -33,6 +33,16 @@
 
 #include <cuda/experimental/__async/prologue.cuh>
 
+_CCCL_DIAG_PUSH
+
+// Suppress the warning: "definition of implicit copy constructor for 'env<>' is
+// deprecated because it has a user-declared copy assignment operator". We need to
+// suppress this warning rather than fix the code because defaulting or defining
+// the copy constructor would prevent aggregate initialization, which these types
+// depend on.
+_CCCL_DIAG_SUPPRESS_CLANG("-Wunknown-warning-option")
+_CCCL_DIAG_SUPPRESS_CLANG("-Wdeprecated-copy")
+
 // warning #20012-D: __device__ annotation is ignored on a
 // function("inplace_stop_source") that is explicitly defaulted on its first
 // declaration
@@ -58,10 +68,12 @@ struct prop
   _CCCL_NO_UNIQUE_ADDRESS _Query __query;
   _CCCL_NO_UNIQUE_ADDRESS _Value __value;
 
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE constexpr auto query(_Query) const noexcept -> const _Value&
+  _CUDAX_TRIVIAL_API constexpr auto query(_Query) const noexcept -> const _Value&
   {
     return __value;
   }
+
+  prop& operator=(const prop&) = delete;
 };
 
 template <class... _Envs>
@@ -70,7 +82,7 @@ struct env
   __tuple<_Envs...> __envs_;
 
   template <class _Query>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE constexpr decltype(auto) __get_1st(_Query) const noexcept
+  _CUDAX_TRIVIAL_API constexpr decltype(auto) __get_1st(_Query) const noexcept
   {
     constexpr bool __flags[] = {__queryable<_Envs, _Query>..., false};
     constexpr size_t __idx   = __async::__find_pos(__flags, __flags + sizeof...(_Envs));
@@ -84,12 +96,14 @@ struct env
   using __1st_env_t = decltype(__declval<const _Env&>().__get_1st(_Query{}));
 
   template <class _Query>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE constexpr auto query(_Query __query) const
+  _CUDAX_TRIVIAL_API constexpr auto query(_Query __query) const
     noexcept(__nothrow_queryable<__1st_env_t<_Query>, _Query>) //
     -> __query_result_t<__1st_env_t<_Query>, _Query>
   {
     return __get_1st(__query).__query(__query);
   }
+
+  env& operator=(const env&) = delete;
 };
 
 // partial specialization for two environments
@@ -100,7 +114,7 @@ struct env<_Env0, _Env1>
   _CCCL_NO_UNIQUE_ADDRESS _Env1 __env1_;
 
   template <class _Query>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE constexpr decltype(auto) __get_1st(_Query) const noexcept
+  _CUDAX_TRIVIAL_API constexpr decltype(auto) __get_1st(_Query) const noexcept
   {
     if constexpr (__queryable<_Env0, _Query>)
     {
@@ -116,23 +130,25 @@ struct env<_Env0, _Env1>
   using __1st_env_t = decltype(__declval<const _Env&>().__get_1st(_Query{}));
 
   template <class _Query>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE constexpr auto query(_Query __query) const
+  _CUDAX_TRIVIAL_API constexpr auto query(_Query __query) const
     noexcept(__nothrow_queryable<__1st_env_t<_Query>, _Query>) //
     -> __query_result_t<__1st_env_t<_Query>, _Query>
   {
     return __get_1st(__query).__query(__query);
   }
+
+  env& operator=(const env&) = delete;
 };
 
 template <class... _Envs>
-_CCCL_HOST_DEVICE env(_Envs...) -> env<__unwrap_reference_t<_Envs>...>;
+_CUDAX_API env(_Envs...) -> env<__unwrap_reference_t<_Envs>...>;
 
 using empty_env = env<>;
 
 namespace __adl
 {
 template <class _Ty>
-_CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto get_env(_Ty* __ty) noexcept //
+_CUDAX_TRIVIAL_API auto get_env(_Ty* __ty) noexcept //
   -> decltype(__ty->get_env())
 {
   static_assert(noexcept(__ty->get_env()));
@@ -142,7 +158,7 @@ _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto get_env(_Ty* __ty) noexcept //
 struct __get_env_t
 {
   template <class _Ty>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto operator()(_Ty* __ty) const noexcept //
+  _CUDAX_TRIVIAL_API auto operator()(_Ty* __ty) const noexcept //
     -> decltype(get_env(__ty))
   {
     static_assert(noexcept(get_env(__ty)));
@@ -154,7 +170,7 @@ struct __get_env_t
 struct get_env_t
 {
   template <class _Ty>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto operator()(_Ty&& __ty) const noexcept //
+  _CUDAX_TRIVIAL_API auto operator()(_Ty&& __ty) const noexcept //
     -> decltype(__ty.get_env())
   {
     static_assert(noexcept(__ty.get_env()));
@@ -162,13 +178,13 @@ struct get_env_t
   }
 
   template <class _Ty>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto operator()(_Ty* __ty) const noexcept //
+  _CUDAX_TRIVIAL_API auto operator()(_Ty* __ty) const noexcept //
     -> __call_result_t<__adl::__get_env_t, _Ty*>
   {
     return __adl::__get_env_t()(__ty);
   }
 
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE empty_env operator()(__ignore) const noexcept
+  _CUDAX_TRIVIAL_API empty_env operator()(__ignore) const noexcept
   {
     return {};
   }
@@ -186,6 +202,8 @@ using env_of_t = decltype(get_env(__declval<_Ty>()));
 } // namespace cuda::experimental::__async
 
 _CCCL_NV_DIAG_DEFAULT(20012)
+
+_CCCL_DIAG_POP
 
 #include <cuda/experimental/__async/epilogue.cuh>
 

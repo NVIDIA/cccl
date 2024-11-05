@@ -33,11 +33,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT has_unique_object_representations
     : public integral_constant<bool, __has_unique_object_representations(remove_cv_t<remove_all_extents_t<_Tp>>)>
 {};
 
-#  if !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool has_unique_object_representations_v =
-  has_unique_object_representations<_Tp>::value;
-#  endif
+_CCCL_INLINE_VAR constexpr bool has_unique_object_representations_v = has_unique_object_representations<_Tp>::value;
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #endif
 
