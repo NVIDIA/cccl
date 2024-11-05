@@ -47,8 +47,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT minimum<void>
   {
     return (__lhs < __rhs) ? __lhs : __rhs;
   }
-
-  using is_transparent = void;
 };
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
