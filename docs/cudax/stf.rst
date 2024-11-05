@@ -1742,6 +1742,11 @@ To reduce the amount of information displayed in the graph, we can
 remove the list of data associated to each task by setting the
 ``CUDASTF_DOT_REMOVE_DATA_DEPS`` environment variable.
 
+It is also possible to include timing information in this graph by setting the
+``CUDASTF_DOT_TIMING`` environment variable to a non-null value. This will
+color the graph nodes according to their relative duration, and the measured
+duration will be included in task labels.
+
 Kernel tuning with ncu
 ^^^^^^^^^^^^^^^^^^^^^^
 
