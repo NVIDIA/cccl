@@ -276,7 +276,7 @@ public:
 
     const char* dot_timing_str = ::std::getenv("CUDASTF_DOT_TIMING");
     bool dot_timing            = (dot_timing_str && atoi(dot_timing_str) != 0);
-    bool record_time = dot_timing;
+    bool record_time           = dot_timing;
 
     cudaEvent_t start_event, end_event;
 
@@ -307,7 +307,6 @@ public:
       }
 
       clear();
-
     };
 
     if (dot->is_tracing())
