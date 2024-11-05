@@ -52,6 +52,8 @@
 #  include <typeinfo>
 #endif
 
+// _CCCL_MSVC_BROKEN_FUNCSIG:
+//
 // When using MSVC as the host compiler, there is a bug in the EDG front-end of
 // cudafe++ that causes the __FUNCSIG__ predefined macro to be expanded too
 // early in the compilation process. The result is that within a function
@@ -62,11 +64,6 @@
 // available and can be used in place of __FUNCSIG__, resolving the issue. For
 // older versions of MSVC, we fall back to using the built-in typeid feature,
 // which is always available on MSVC, even when RTTI is disabled.
-
-#if defined(_CCCL_COMPILER_MSVC) && (_CCCL_MSVC_VERSION < 1935) && defined(_CCCL_CUDA_COMPILER_NVCC) \
-  && !defined(__CUDA_ARCH__)
-#  define _CCCL_BROKEN_MSVC_FUNCSIG
-#endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -442,7 +439,7 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr __type_info const& __typeid() noex
 #endif // !defined(__CUDA_ARCH__) && !_CCCL_BROKEN_MSVC_FUNCSIG
 
 // if `__pretty_nameof` is constexpr _CCCL_TYPEID_FALLBACK is also constexpr.
-#if !defined(_CCCL_NO_CONSTEXPR_PRETTY_NAMEOF) && !defined(_CCCL_BROKEN_MSVC_FUNCSIG)
+#if !defined(_CCCL_NO_CONSTEXPR_PRETTY_NAMEOF) && (!defined(_CCCL_BROKEN_MSVC_FUNCSIG) || defined(__CUDA_ARCH__))
 #  define _CCCL_TYPEOF_CONSTEXPR _CCCL_TYPEOF_FALLBACK
 #endif
 
