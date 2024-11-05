@@ -170,7 +170,8 @@ void test_cross_device_access_from_kernel(
     cuda::std::span host_span(host_buffer);
     // Re-generate input data and apply 2x '* 2.0f' computation of both kernel runs
     float expected = float(i % 4096) * 2.0f * 2.0f;
-    if (host_span[i] != expected)
+    // for some reason MSVC complains on [] here
+    if (host_span.data()[i] != expected)
     {
       printf("Verification error @ element %lu: val = %f, ref = %f\n", i, host_span[i], expected);
 
@@ -190,18 +191,17 @@ void test_cross_device_access_from_kernel(
 int main([[maybe_unused]] int argc, char** argv)
 try
 {
-  const int test_waived = 2;
   printf("[%s] - Starting...\n", argv[0]);
 
   // Number of GPUs
   printf("Checking for multiple GPUs...\n");
-  printf("CUDA-capable device count: %lu\n", cudax::devices.size());
+  printf("CUDA-capable device count: %zu\n", cudax::devices.size());
 
   if (cudax::devices.size() < 2)
   {
     printf("Two or more GPUs with Peer-to-Peer access capability are required for %s.\n", argv[0]);
     printf("Waiving test.\n");
-    exit(test_waived);
+    return 0;
   }
 
   auto peers = find_peers_group();
@@ -209,7 +209,7 @@ try
   if (peers.size() == 0)
   {
     printf("Two or more GPUs with Peer-to-Peer access capability are required, waving the test.\n");
-    exit(test_waived);
+    return 0;
   }
 
   cudax::stream dev0_stream(peers[0]);
