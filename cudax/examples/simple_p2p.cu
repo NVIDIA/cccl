@@ -167,13 +167,12 @@ void test_cross_device_access_from_kernel(
   int error_count = 0;
   for (size_t i = 0; i < host_buffer.size(); i++)
   {
-    cuda::std::span host_span(host_buffer);
+    cuda::std::span<float> host_span(host_buffer);
     // Re-generate input data and apply 2x '* 2.0f' computation of both kernel runs
     float expected = float(i % 4096) * 2.0f * 2.0f;
-    // for some reason MSVC complains on [] here
-    if (host_span.data()[i] != expected)
+    if (host_span[i] != expected)
     {
-      printf("Verification error @ element %lu: val = %f, ref = %f\n", i, host_span[i], expected);
+      printf("Verification error @ element %zu: val = %f, ref = %f\n", i, host_span[i], expected);
 
       if (error_count++ > 10)
       {
