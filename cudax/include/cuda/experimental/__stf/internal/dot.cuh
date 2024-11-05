@@ -656,9 +656,6 @@ private:
     // Total Work (T1) in Cilk terminology
     float t1 = 0.0f;
 
-    // Count tasks with timing information
-    int cnt = 0;
-
     ::std::unordered_map<int, ::std::vector<int>> predecessors;
     ::std::unordered_map<int, ::std::vector<int>> successors;
 
@@ -679,7 +676,6 @@ private:
         if (p.second.timing.has_value())
         {
           float ms = p.second.timing.value();
-          cnt++;
           // Total work is simply the sum of all work
           t1 += ms;
           durations[p.first] = ms;
