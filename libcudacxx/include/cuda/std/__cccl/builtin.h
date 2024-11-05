@@ -560,10 +560,12 @@
 #endif // _CCCL_CHECK_BUILTIN(underlying_type) && gcc >= 4.7
 
 #if defined(_CCCL_COMPILER_MSVC)
-#  if _CCCL_MSVC_VERSION >= 1935
+#  // To use __builtin_FUNCSIG(), both MSVC and nvcc need to support it
+#  if _CCCL_MSVC_VERSION >= 1935 && !defined(_CCCL_CUDACC_BELOW_12_3)
 #    define _CCCL_BUILTIN_PRETTY_FUNCTION() __builtin_FUNCSIG()
 #  else // ^^^ _CCCL_MSVC_VERSION >= 1935 ^^^ / vvv _CCCL_MSVC_VERSION < 1935 vvv
 #    define _CCCL_BUILTIN_PRETTY_FUNCTION() __FUNCSIG__
+#    define _CCCL_BROKEN_MSVC_FUNCSIG
 #  endif // _CCCL_MSVC_VERSION < 1935
 #else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
 #  define _CCCL_BUILTIN_PRETTY_FUNCTION() __PRETTY_FUNCTION__
