@@ -30,6 +30,7 @@
  * Unified Virtual Address Space (UVA) features.
  */
 
+#define LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 #include <cuda/memory_resource>
 
 #include <cuda/experimental/algorithm.cuh>
@@ -68,7 +69,7 @@ std::vector<cudax::device_ref> find_peers_group()
     {
       if (dev_i != dev_j)
       {
-        bool can_access_peer = dev_i.is_peer_accessible_from(dev_j);
+        bool can_access_peer = dev_i.has_peer_access_to(dev_j);
         // Save all peers of a first device found with a peer
         if (can_access_peer && peers.size() == 0)
         {
@@ -164,14 +165,14 @@ void test_cross_device_access_from_kernel(
   dev0_stream.wait();
 
   int error_count = 0;
-  for (int i = 0; i < host_buffer.size(); i++)
+  for (size_t i = 0; i < host_buffer.size(); i++)
   {
     cuda::std::span host_span(host_buffer);
     // Re-generate input data and apply 2x '* 2.0f' computation of both kernel runs
     float expected = float(i % 4096) * 2.0f * 2.0f;
     if (host_span[i] != expected)
     {
-      printf("Verification error @ element %i: val = %f, ref = %f\n", i, host_span[i], expected);
+      printf("Verification error @ element %lu: val = %f, ref = %f\n", i, host_span[i], expected);
 
       if (error_count++ > 10)
       {
@@ -186,7 +187,7 @@ void test_cross_device_access_from_kernel(
   }
 }
 
-int main(int argc, char** argv)
+int main([[maybe_unused]] int argc, char** argv)
 try
 {
   const int test_waived = 2;
