@@ -42,6 +42,7 @@
 #include <iostream>
 #include <mutex>
 #include <optional>
+#include <queue>
 #include <sstream>
 #include <unordered_set>
 
@@ -66,9 +67,10 @@ struct per_task_info
 class per_ctx_dot
 {
 public:
-  per_ctx_dot(bool _is_tracing, bool _is_tracing_prereqs)
+  per_ctx_dot(bool _is_tracing, bool _is_tracing_prereqs, bool _is_timing)
       : _is_tracing(_is_tracing)
       , _is_tracing_prereqs(_is_tracing_prereqs)
+      , _is_timing(_is_timing)
   {}
   ~per_ctx_dot() = default;
 
@@ -307,6 +309,12 @@ public:
   }
   bool _is_tracing_prereqs;
 
+  bool _is_timing;
+  bool is_timing() const
+  {
+    return _is_timing;
+  }
+
   // We may temporarily discard some tasks
   bool tracing_enabled = true;
 
@@ -490,6 +498,8 @@ public:
         remove_redundant_edges(existing_edges);
       }
 
+      compute_critical_path(outFile);
+
       /* Edges do not have to belong to the cluster (Vertices do) */
       for (const auto& [from, to] : existing_edges)
       {
@@ -632,6 +642,126 @@ private:
         edges.insert(::std::pair(from, to));
       }
     }
+  }
+
+  void compute_critical_path(::std::ofstream& outFile)
+  {
+    single_threaded_section guard(mtx);
+
+    // Total Work (T1) in Cilk terminology
+    float t1 = 0.0f;
+
+    // Count tasks with timing information
+    int cnt = 0;
+
+    ::std::unordered_map<int, ::std::vector<int>> predecessors;
+    ::std::unordered_map<int, ::std::vector<int>> successors;
+
+    ::std::unordered_map<int, float> dist;
+    ::std::unordered_map<int, int> indegree;
+
+    ::std::unordered_map<int, float> durations; // there might be missing entries for non-timed nodes (eg. events which
+                                                // are not tasks)
+
+    ::std::unordered_map<int, int> path_predecessor;
+
+    // Gather durations
+    for (const auto& pc : per_ctx)
+    {
+      // Per task
+      for (const auto& p : pc->metadata)
+      {
+        if (p.second.timing.has_value())
+        {
+          float ms = p.second.timing.value();
+          cnt++;
+          // Total work is simply the sum of all work
+          t1 += ms;
+          durations[p.first] = ms;
+        }
+      }
+
+      // We go through edges to find the predecessors of every node
+      for (const auto& [from, to] : pc->existing_edges)
+      {
+        predecessors[to].push_back(from);
+        successors[from].push_back(to);
+
+        // For nodes which don't have timing information, we assume a 0.0 duration. This will make a simpler algorithm
+        if (durations.find(from) == durations.end())
+        {
+          durations[from] = 0.0f;
+        }
+
+        if (durations.find(to) == durations.end())
+        {
+          durations[to] = 0.0f;
+        }
+      }
+    }
+
+    for (const auto& p : durations)
+    {
+      path_predecessor[p.first] = -1;
+    }
+
+    // Topological sort using Kahn's algorithm
+    ::std::queue<int> q;
+    for (const auto& p : durations)
+    {
+      int id       = p.first;
+      indegree[id] = predecessors[id].size();
+      dist[id]     = p.second;
+      if (indegree[id] == 0)
+      {
+        q.push(id);
+      }
+    }
+
+    // Process each node in topological order
+    while (!q.empty())
+    {
+      int u = q.front();
+      q.pop();
+
+      for (int v : successors[u])
+      {
+        if (dist[u] + durations[v] > dist[v])
+        {
+          dist[v]             = dist[u] + durations[v];
+          path_predecessor[v] = u;
+        }
+        indegree[v]--;
+        if (indegree[v] == 0)
+        {
+          q.push(v);
+        }
+      }
+    }
+
+    // The longest path in dist gives the critical path (Tinfinity)
+    float max_dist = 0.0f;
+    int max_ind    = -1;
+    for (const auto& pair : dist)
+    {
+      if (pair.second > max_dist)
+      {
+        max_dist = pair.second;
+        max_ind  = pair.first;
+      }
+    }
+
+    // Highlight the critical path in the DAG by backtracking in the path
+    // until we reach the first node
+    int next = max_ind;
+    while (next != -1)
+    {
+      outFile << "\"NODE_" << next << "\" [color=red, penwidth=10]\n";
+      next = path_predecessor[next];
+    }
+
+    fprintf(stderr, "T1 = %f\n", t1);
+    fprintf(stderr, "Tinfinity = %f\n", max_dist);
   }
 
   // Are we tracing asynchronous events in addition to tasks ? (eg. copies, allocations, ...)

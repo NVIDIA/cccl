@@ -459,7 +459,7 @@ protected:
 #endif
 
       // Initialize a structure to generate a visualization of the activity in this context
-      dot = ::std::make_shared<reserved::per_ctx_dot>(is_tracing, is_tracing_prereqs);
+      dot            = ::std::make_shared<reserved::per_ctx_dot>(is_tracing, is_tracing_prereqs, reserved::dot::instance().is_timing());
 
       // Record it in the list of all traced contexts
       reserved::dot::instance().per_ctx.push_back(dot);
