@@ -29,10 +29,10 @@ template <class _Tp = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT minimum
 {
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp operator()(const _Tp& __x, const _Tp& __y) const
-    noexcept(noexcept((__x < __y) ? __x : __y))
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp operator()(const _Tp& __lhs, const _Tp& __rhs) const
+    noexcept(noexcept((__lhs < __rhs) ? __lhs : __rhs))
   {
-    return (__x < __y) ? __x : __y;
+    return (__lhs < __rhs) ? __lhs : __rhs;
   }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(minimum);
@@ -42,10 +42,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT minimum<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __common_type_t<_T1, _T2> operator()(const _T1& __t, const _T2& __u) const
-    noexcept(noexcept((__t < __u) ? __t : __u))
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::__common_type_t<_T1, _T2>
+  operator()(const _T1& __lhs, const _T2& __rhs) const noexcept(noexcept((__lhs < __rhs) ? __lhs : __rhs))
   {
-    return (__t < __u) ? __t : __u;
+    return (__lhs < __rhs) ? __lhs : __rhs;
   }
 
   using is_transparent = void;
