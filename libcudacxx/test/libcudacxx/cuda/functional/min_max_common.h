@@ -16,20 +16,12 @@
 #include "test_macros.h"
 
 template <typename OpT, typename T, T lhs, T rhs, T expected>
-__host__ __device__ constexpr bool test_op()
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test_op()
 {
-  constexpr auto op = OpT{};
+  const auto op = OpT{};
 
   assert(op(lhs, rhs) == expected);
-
-  if (rhs == lhs)
-  {
-    assert(op(lhs, rhs) == op(rhs, lhs));
-  }
-  else
-  {
-    assert(op(lhs, rhs) != op(rhs, lhs));
-  }
+  assert(op(lhs, rhs) == op(rhs, lhs));
   return true;
 }
 
