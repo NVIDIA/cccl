@@ -13,9 +13,6 @@
 #include "min_max_common.h"
 #include "test_macros.h"
 
-namespace
-{
-
 template <typename T, T lhs, T rhs, T expected>
 __host__ __device__ constexpr bool do_test()
 {
@@ -28,8 +25,6 @@ __host__ __device__ constexpr bool test()
   return do_test<int, 0, 1, 1>() && do_test<int, 1, 0, 1>() && do_test<int, 0, 0, 0>() && do_test<int, -1, 1, 1>()
       && do_test<char, 'a', 'b', 'b'>();
 }
-
-} // namespace
 
 int main(int, char**)
 {

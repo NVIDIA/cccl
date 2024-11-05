@@ -13,8 +13,7 @@
 
 #include <cuda/std/cassert>
 
-namespace
-{
+#include "test_macros.h"
 
 template <typename OpT, typename T, T lhs, T rhs, T expected>
 __host__ __device__ constexpr bool test_op()
@@ -33,7 +32,5 @@ __host__ __device__ constexpr bool test_op()
   }
   return true;
 }
-
-} // namespace
 
 #endif // _TEST_LIBCUDACXX_CUDA_FUNCTIONAL_MIN_MAX_COMMON_H
