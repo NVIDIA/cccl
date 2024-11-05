@@ -36,14 +36,14 @@
 #include <thrust/equal.h>
 #include <thrust/sequence.h>
 
-#include "catch2_test_helper.h"
+#include "c2h/catch2_test_helper.cuh"
 #include "catch2_test_launch_helper.h"
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceForEachInExtents::ForEachInExtents, device_for_each_in_extents);
 
-CUB_TEST("DDeviceForEachInExtents works", "[ForEachInExtents][device]")
+C2H_TEST("DDeviceForEachInExtents works", "[ForEachInExtents][device]")
 {
   using data_t = cuda::std::tuple<int, int, int>; // REQUIRE(x == y) doesn't work with cuda::std::array
   cuda::std::extents<int, 5, 3, 4> ext{};
