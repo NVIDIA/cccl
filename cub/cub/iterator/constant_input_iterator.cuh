@@ -128,10 +128,6 @@ public:
 private:
   ValueType val;
   OffsetT offset;
-#ifdef _WIN32
-  // Workaround for win32 parameter-passing bug (ulonglong2 argmin DeviceReduce)
-  OffsetT pad[CUB_MAX(1, (16 / sizeof(OffsetT) - 1))];
-#endif
 
 public:
   /**
