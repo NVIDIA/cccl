@@ -133,7 +133,7 @@ void test_cross_device_access_from_kernel(
     cuda::mr::pinned_memory_resource(), dev0_buffer.size());
   std::generate(host_buffer.begin(), host_buffer.end(), []() {
     static int i = 0;
-    return (i++) % 4096;
+    return static_cast<float>((i++) % 4096);
   });
 
   cudax::copy_bytes(dev0_stream, host_buffer, dev0_buffer);
