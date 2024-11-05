@@ -14,25 +14,29 @@
 #include "test_macros.h"
 
 template <typename T, T lhs, T rhs, T expected>
-__host__ __device__ constexpr bool do_test()
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
 {
-  return test_op<cuda::maximum<T>, T, lhs, rhs, expected>() && test_op<cuda::maximum<>, T, lhs, rhs, expected>()
-      && test_op<cuda::maximum<void>, T, lhs, rhs, expected>();
+  test_op<cuda::maximum<T>, T, lhs, rhs, expected>();
+  test_op<cuda::maximum<>, T, lhs, rhs, expected>();
+  test_op<cuda::maximum<void>, T, lhs, rhs, expected>();
 }
 
-__host__ __device__ constexpr bool test()
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 {
-  return do_test<int, 0, 1, 1>() && do_test<int, 1, 0, 1>() && do_test<int, 0, 0, 0>() && do_test<int, -1, 1, 1>()
-      && do_test<char, 'a', 'b', 'b'>();
+  test<int, 0, 1, 1>();
+  test<int, 1, 0, 1>();
+  test<int, 0, 0, 0>();
+  test<int, -1, 1, 1>();
+  test<char, 'a', 'b', 'b'>();
+
+  return true;
 }
 
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2017
-#  if !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-  static_assert(test());
-#  endif // !(defined(TEST_COMPILER_CUDACC_BELOW_11_3) && defined(TEST_COMPILER_CLANG))
-#endif
+#if TEST_STD_VER >= 2014
+  static_assert(test(), "");
+#endif // TEST_STD_VER >= 2014
   return 0;
 }
