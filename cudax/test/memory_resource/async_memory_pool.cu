@@ -300,7 +300,7 @@ TEST_CASE("async_memory_pool accessors", "[memory_resource]")
     }
 
     // prime the pool to a given size
-    cudax::mr::async_memory_resource resource{pool};
+    cudax::mr::device_memory_resource resource{pool};
     cudax::stream stream{};
 
     // Allocate a buffer to prime
@@ -419,7 +419,7 @@ TEST_CASE("async_memory_pool accessors", "[memory_resource]")
   {
     cudax::mr::async_memory_pool pool{current_device};
     // prime the pool to a given size
-    cudax::mr::async_memory_resource resource{pool};
+    cudax::mr::device_memory_resource resource{pool};
     cudax::stream stream{};
 
     // Allocate 2 buffers

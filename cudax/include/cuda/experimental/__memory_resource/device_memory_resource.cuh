@@ -166,7 +166,7 @@ public:
   {
     _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to device_memory_resource::deallocate.");
     _CCCL_ASSERT_CUDA_API(
-      ::cudaFreeAsync, "device_memory_resource::deallocate failed", __ptr, __async_memory_resource_sync_stream().get());
+      ::cudaFreeAsync, "device_memory_resource::deallocate failed", __ptr, __device_memory_resource_sync_stream().get());
     __device_memory_resource_sync_stream().wait();
     (void) __alignment;
   }
