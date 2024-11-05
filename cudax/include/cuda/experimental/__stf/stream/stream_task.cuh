@@ -274,7 +274,7 @@ public:
 
     auto& dot = ctx.get_dot();
 
-    bool record_time = reserved::dot::is_timing();
+    bool record_time = reserved::dot::instance().is_timing();
 
     cudaEvent_t start_event, end_event;
 
