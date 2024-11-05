@@ -271,12 +271,45 @@ public:
     // Apply function to the stream (in the first position) and the data tuple
     nvtx_range nr(get_symbol().c_str());
     start();
-    SCOPE(exit)
-    {
-      end();
-    };
 
     auto& dot = ctx.get_dot();
+
+    const char* dot_timing_str = ::std::getenv("CUDASTF_DOT_TIMING");
+    bool dot_timing            = (dot_timing_str && atoi(dot_timing_str) != 0);
+    bool record_time = dot_timing;
+
+    cudaEvent_t start_event, end_event;
+
+    if (record_time)
+    {
+      // Events must be created here to avoid issues with multi-gpu
+      cuda_safe_call(cudaEventCreate(&start_event));
+      cuda_safe_call(cudaEventCreate(&end_event));
+      cuda_safe_call(cudaEventRecord(start_event, get_stream()));
+    }
+
+    SCOPE(exit)
+    {
+      end_uncleared();
+
+      if (record_time)
+      {
+        cuda_safe_call(cudaEventRecord(end_event, get_stream()));
+        cuda_safe_call(cudaEventSynchronize(end_event));
+
+        float milliseconds = 0;
+        cuda_safe_call(cudaEventElapsedTime(&milliseconds, start_event, end_event));
+
+        if (dot->is_tracing())
+        {
+          dot->template add_vertex_timing<task>(*this, milliseconds);
+        }
+      }
+
+      clear();
+
+    };
+
     if (dot->is_tracing())
     {
       dot->template add_vertex<task, logical_data_untyped>(*this);
