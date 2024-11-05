@@ -339,6 +339,9 @@ protected:
 
     const char* ignore_prereqs_str = getenv("CUDASTF_DOT_IGNORE_PREREQS");
     tracing_prereqs                = ignore_prereqs_str && atoi(ignore_prereqs_str) == 0;
+
+    const char* dot_timing_str = ::std::getenv("CUDASTF_DOT_TIMING");
+    enable_timing              = (dot_timing_str && atoi(dot_timing_str) != 0);
   }
 
   ~dot()
@@ -402,40 +405,41 @@ public:
   // This will update colors if necessary
   void update_colors_with_timing()
   {
-    const char* dot_timing_str = ::std::getenv("CUDASTF_DOT_TIMING");
-    if (dot_timing_str && atoi(dot_timing_str) != 0)
+    if (!enable_timing)
     {
-      float sum  = 0.0;
-      size_t cnt = 0;
-      // First go over all tasks which have some timing and compute avg/max values
-      for (const auto& pc : per_ctx)
+      return;
+    }
+
+    float sum  = 0.0;
+    size_t cnt = 0;
+    // First go over all tasks which have some timing and compute avg/max values
+    for (const auto& pc : per_ctx)
+    {
+      for (const auto& p : pc->metadata)
       {
-        for (const auto& p : pc->metadata)
+        if (p.second.timing.has_value())
+        {
+          float ms = p.second.timing.value();
+          cnt++;
+          sum += ms;
+        }
+      }
+    }
+
+    if (cnt > 0)
+    {
+      float avg = sum / cnt;
+
+      // Update colors now
+      for (auto& pc : per_ctx)
+      {
+        for (auto& p : pc->metadata)
         {
           if (p.second.timing.has_value())
           {
-            float ms = p.second.timing.value();
-            cnt++;
-            sum += ms;
-          }
-        }
-      }
-
-      if (cnt > 0)
-      {
-        float avg = sum / cnt;
-
-        // Update colors now
-        for (auto& pc : per_ctx)
-        {
-          for (auto& p : pc->metadata)
-          {
-            if (p.second.timing.has_value())
-            {
-              float ms       = p.second.timing.value();
-              p.second.color = get_color_for_duration(ms, avg);
-              p.second.label += "\ntiming: " + ::std::to_string(ms) + " ms\n";
-            }
+            float ms       = p.second.timing.value();
+            p.second.color = get_color_for_duration(ms, avg);
+            p.second.label += "\ntiming: " + ::std::to_string(ms) + " ms\n";
           }
         }
       }
@@ -519,6 +523,11 @@ public:
   bool is_tracing_prereqs()
   {
     return tracing_prereqs;
+  }
+
+  bool is_timing() const
+  {
+    return enable_timing;
   }
 
   ::std::vector<::std::shared_ptr<per_ctx_dot>> per_ctx;
@@ -622,7 +631,11 @@ private:
     }
   }
 
+  // Are we tracing asynchronous events in addition to tasks ? (eg. copies, allocations, ...)
   bool tracing_prereqs = false;
+
+  // Are we measuring the duration of tasks ?
+  bool enable_timing = false;
 
   // Keep track of existing edges, to make the output possibly look better
   IntPairSet existing_edges;
