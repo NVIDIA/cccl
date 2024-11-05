@@ -701,18 +701,19 @@ private:
       }
     }
 
-    for (const auto& p : durations)
-    {
-      path_predecessor[p.first] = -1;
-    }
-
     // Topological sort using Kahn's algorithm
     ::std::queue<int> q;
     for (const auto& p : durations)
     {
       int id       = p.first;
+
+      // how many input deps for that node ?
       indegree[id] = predecessors[id].size();
+      // how much time is needed to compute that node (and also its predecessors)
       dist[id]     = p.second;
+      // we will backtrack which were the tasks in the critical path
+      path_predecessor[p.first] = -1;
+
       if (indegree[id] == 0)
       {
         q.push(id);
