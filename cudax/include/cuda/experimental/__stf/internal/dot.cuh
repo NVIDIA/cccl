@@ -646,6 +646,11 @@ private:
 
   void compute_critical_path(::std::ofstream& outFile)
   {
+    if (!enable_timing)
+    {
+      return;
+    }
+
     single_threaded_section guard(mtx);
 
     // Total Work (T1) in Cilk terminology
@@ -760,8 +765,8 @@ private:
       next = path_predecessor[next];
     }
 
-    fprintf(stderr, "T1 = %f\n", t1);
-    fprintf(stderr, "Tinfinity = %f\n", max_dist);
+    outFile << "// T1 = " << t1 << ::std::endl;
+    outFile << "// Tinf = " << max_dist << ::std::endl;
   }
 
   // Are we tracing asynchronous events in addition to tasks ? (eg. copies, allocations, ...)
