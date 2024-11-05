@@ -412,7 +412,7 @@ public:
 
     float sum  = 0.0;
     size_t cnt = 0;
-    // First go over all tasks which have some timing and compute avg/max values
+    // First go over all tasks which have some timing and compute the average duration
     for (const auto& pc : per_ctx)
     {
       for (const auto& p : pc->metadata)
@@ -430,7 +430,8 @@ public:
     {
       float avg = sum / cnt;
 
-      // Update colors now
+      // Update colors assocated to tasks with timing now in order to
+      // illustrate how long they take to execute relative to the average
       for (auto& pc : per_ctx)
       {
         for (auto& p : pc->metadata)
@@ -456,12 +457,14 @@ public:
       return;
     }
 
-    update_colors_with_timing();
-
     for (const auto& pc : per_ctx)
     {
       pc->finish();
     }
+
+    // Now we have executed all tasks, so we can compute the average execution
+    // times, and update the colors appropriately if needed.
+    update_colors_with_timing();
 
     ::std::ofstream outFile(dot_filename);
     if (outFile.is_open())
