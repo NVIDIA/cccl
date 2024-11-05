@@ -21,9 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#if !defined(_CCCL_CUDA_COMPILER_NVCC) && !defined(_CCCL_CUDA_COMPILER_NVHPC)
+#if defined(_CCCL_CUDA_COMPILER)
 #  include <cuda_runtime_api.h>
-#endif // !_CCCL_CUDA_COMPILER_NVCC && !_CCCL_CUDA_COMPILER_NVHPC
+#endif // _CCCL_CUDA_COMPILER
 
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/__exception/cuda_error.h>

@@ -21,10 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda_runtime_api.h>
+#if defined(_CCCL_CUDA_COMPILER)
+#  include <cuda_runtime_api.h>
 
-#include <cuda/std/__cuda/api_wrapper.h>
+#  include <cuda/std/__cuda/api_wrapper.h>
+#endif // _CCCL_CUDA_COMPILER
+
 #include <cuda/std/__memory/addressof.h>
+
+#include <nv/target>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -34,6 +39,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _Tp* get_device_address(_Tp& __device_object)
 {
+#if defined(_CCCL_CUDA_COMPILER)
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE,
     (return _CUDA_VSTD::addressof(__device_object);),
@@ -43,6 +49,9 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _Tp* get_device_address(_Tp& __device_
        &__device_ptr,
        __device_object);
      return static_cast<_Tp*>(__device_ptr);))
+#else // ^^^ _CCCL_CUDA_COMPILER ^^^ / vvv !_CCCL_CUDA_COMPILER vvv
+  return _CUDA_VSTD::addressof(__device_object);
+#endif // !_CCCL_CUDA_COMPILER
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
