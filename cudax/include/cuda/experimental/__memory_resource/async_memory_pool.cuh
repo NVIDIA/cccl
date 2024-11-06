@@ -313,7 +313,7 @@ public:
   //! Device on which this pool resides can be included in the vector.
   //!
   //! @param __devices A vector of `device_ref`s listing devices to enable access for
-  void enable_peer_access(const ::std::vector<device_ref>& __devices)
+  void enable_peer_access_from(const ::std::vector<device_ref>& __devices)
   {
     ::cuda::experimental::mr::__mempool_switch_peer_access(
       __pool_handle_, {__devices.data(), __devices.size()}, cudaMemAccessFlagsProtReadWrite);
@@ -322,7 +322,7 @@ public:
   //! @brief Enable peer access to this memory pool from the supplied device
   //!
   //! @param __device device_ref indicating for which device the access should be enabled
-  void enable_peer_access(device_ref __device)
+  void enable_peer_access_from(device_ref __device)
   {
     ::cuda::experimental::mr::__mempool_switch_peer_access(
       __pool_handle_, {&__device, 1}, cudaMemAccessFlagsProtReadWrite);
@@ -333,7 +333,7 @@ public:
   //! Device on which this pool resides can be included in the vector.
   //!
   //! @param __devices A vector of `device_ref`s listing devices to disable access for
-  void disable_peer_access(const ::std::vector<device_ref>& __devices)
+  void disable_peer_access_from(const ::std::vector<device_ref>& __devices)
   {
     ::cuda::experimental::mr::__mempool_switch_peer_access(
       __pool_handle_, {__devices.data(), __devices.size()}, cudaMemAccessFlagsProtNone);
@@ -342,7 +342,7 @@ public:
   //! @brief Disable peer access to this memory pool from the supplied device
   //!
   //! @param __device device_ref indicating for which device the access should be disable
-  void disable_peer_access(device_ref __device)
+  void disable_peer_access_from(device_ref __device)
   {
     ::cuda::experimental::mr::__mempool_switch_peer_access(__pool_handle_, {&__device, 1}, cudaMemAccessFlagsProtNone);
   }

@@ -57,12 +57,11 @@ struct simple_kernel
   }
 };
 
-std::vector<cudax::device_ref> find_peers_group()
+void print_peer_accessibility()
 {
   // Check possibility for peer access
   printf("\nChecking GPU(s) for support of peer to peer memory access...\n");
 
-  std::vector<cudax::device_ref> peers;
   for (auto& dev_i : cudax::devices)
   {
     for (auto& dev_j : cudax::devices)
@@ -70,12 +69,6 @@ std::vector<cudax::device_ref> find_peers_group()
       if (dev_i != dev_j)
       {
         bool can_access_peer = dev_i.has_peer_access_to(dev_j);
-        // Save all peers of a first device found with a peer
-        if (can_access_peer && peers.size() == 0)
-        {
-          peers = dev_i.get_peers();
-          peers.insert(peers.begin(), dev_i);
-        }
         printf("> Peer access from %s (GPU%d) -> %s (GPU%d) : %s\n",
                dev_i.get_name().c_str(),
                dev_i.get(),
@@ -85,8 +78,6 @@ std::vector<cudax::device_ref> find_peers_group()
       }
     }
   }
-
-  return peers;
 }
 
 template <typename BufferType>
@@ -203,7 +194,20 @@ try
     return 0;
   }
 
-  auto peers = find_peers_group();
+  // Print full peer access matrix
+  print_peer_accessibility();
+
+  // But use a shorthand to find all peers of a device
+  std::vector<cudax::device_ref> peers;
+  for (auto& dev : cudax::devices)
+  {
+    peers = dev.get_peers();
+    if (peers.size() != 0)
+    {
+      peers.insert(peers.begin(), dev);
+      break;
+    }
+  }
 
   if (peers.size() == 0)
   {
@@ -216,9 +220,9 @@ try
 
   printf("Enabling peer access between GPU%d and GPU%d...\n", peers[0].get(), peers[1].get());
   cudax::mr::async_memory_resource dev0_resource(peers[0]);
-  dev0_resource.enable_peer_access(peers[1]);
+  dev0_resource.enable_peer_access_from(peers[1]);
   cudax::mr::async_memory_resource dev1_resource(peers[1]);
-  dev1_resource.enable_peer_access(peers[0]);
+  dev1_resource.enable_peer_access_from(peers[0]);
 
   // Allocate buffers
   constexpr size_t buf_cnt = 1024 * 1024 * 16;
@@ -236,8 +240,8 @@ try
 
   // Disable peer access
   printf("Disabling peer access...\n");
-  dev0_resource.disable_peer_access(peers[1]);
-  dev1_resource.disable_peer_access(peers[0]);
+  dev0_resource.disable_peer_access_from(peers[1]);
+  dev1_resource.disable_peer_access_from(peers[0]);
 
   // No cleanup needed
   printf("Test passed\n");
