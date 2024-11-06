@@ -100,7 +100,6 @@ set(stf_test_sources
   error_checks/non_managed_data.cu
   error_checks/uninitialized_data.cu
   error_checks/write_frozen.cu
-  examples/01-axpy-launch-ranges-cg.cu
   examples/05-stencil.cu
   examples/05-stencil-no-copy.cu
   examples/05-stencil-places.cu
@@ -132,6 +131,7 @@ set(stf_test_codegen_sources
   examples/09-nbody.cu
   examples/09-nbody-algorithm.cu
   examples/01-axpy-places.cu
+  examples/01-axpy-launch-ranges-cg.cu
   examples/09-nbody-blocked.cu
 )
 
