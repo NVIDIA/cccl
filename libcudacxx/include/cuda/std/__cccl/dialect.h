@@ -84,12 +84,6 @@
 #  define _CCCL_ELSE_IF_CONSTEXPR else if
 #endif // _CCCL_STD_VER <= 2014
 
-#if _CCCL_STD_VER >= 2017
-#  define _CCCL_TRAIT(__TRAIT, ...) __TRAIT##_v<__VA_ARGS__>
-#else // ^^^ C++17 ^^^ / vvv C++14 vvv
-#  define _CCCL_TRAIT(__TRAIT, ...) __TRAIT<__VA_ARGS__>::value
-#endif // _CCCL_STD_VER <= 2014
-
 // In nvcc prior to 11.3 global variables could not be marked constexpr
 #if defined(_CCCL_CUDACC_BELOW_11_3)
 #  define _CCCL_CONSTEXPR_GLOBAL const
@@ -109,6 +103,13 @@
 #if _CCCL_STD_VER <= 2011 || !defined(__cpp_variable_templates) || (__cpp_variable_templates < 201304L)
 #  define _CCCL_NO_VARIABLE_TEMPLATES
 #endif // _CCCL_STD_VER <= 2011
+
+// Variable templates are more efficient most of the time, so we want to use them rather than structs when possible
+#if defined(_CCCL_NO_VARIABLE_TEMPLATES)
+#  define _CCCL_TRAIT(__TRAIT, ...) __TRAIT<__VA_ARGS__>::value
+#else // ^^^ _CCCL_NO_VARIABLE_TEMPLATES ^^^ / vvv !_CCCL_NO_VARIABLE_TEMPLATES vvv
+#  define _CCCL_TRAIT(__TRAIT, ...) __TRAIT##_v<__VA_ARGS__>
+#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 // We need to treat host and device separately
 #if defined(__CUDA_ARCH__)

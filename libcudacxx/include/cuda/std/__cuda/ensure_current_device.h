@@ -26,7 +26,6 @@
 #endif // _CCCL_CUDA_COMPILER_CLANG
 
 #include <cuda/std/__cuda/api_wrapper.h>
-#include <cuda/std/__exception/cuda_error.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
