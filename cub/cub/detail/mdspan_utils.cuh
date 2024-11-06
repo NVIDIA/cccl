@@ -72,8 +72,8 @@ sub_size(const ::cuda::std::extents<IndexType, Extents...>& ext, ::cuda::std::in
   {
     return (ext.extent(Rank + Indices) * ...);
   }
-#  if (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 9) \
-    || (defined(_CCCL_COMPILER_CLANG) && _CCCL_CLANG_VERSION < 9)
+#  if (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION <= 100000) \
+    || (defined(_CCCL_COMPILER_CLANG) && _CCCL_CLANG_VERSION <= 100000)
   return 0; // GCC9/Clang9 workaround
 #  endif
 }
@@ -89,14 +89,14 @@ template <typename IndexType, ::cuda::std::size_t... E, ::cuda::std::size_t... R
 _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto
 sub_sizes_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::std::index_sequence<Ranks...> = {})
 {
-  return ::cuda::std::array{fast_div_mod(sub_size<Ranks + 1>(ext))...};
+  return ::cuda::std::array<fast_div_mod, sizeof...(Ranks)>{fast_div_mod(sub_size<Ranks + 1>(ext))...};
 }
 
 template <typename IndexType, ::cuda::std::size_t... E, ::cuda::std::size_t... Ranks>
 _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto
 extents_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::std::index_sequence<Ranks...> = {})
 {
-  return ::cuda::std::array{fast_div_mod(ext.extent(Ranks))...};
+  return ::cuda::std::array<fast_div_mod, sizeof...(Ranks)>{fast_div_mod(ext.extent(Ranks))...};
 }
 
 } // namespace detail
