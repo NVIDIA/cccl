@@ -29,7 +29,7 @@
 namespace cuda::experimental::stf
 {
 
-#ifdef __CUDACC__
+#ifdef CUDASTF_CODE_GENERATION
 
 class stream_ctx;
 class graph_ctx;
@@ -468,6 +468,6 @@ private:
 };
 } // end namespace reserved
 
-#endif // __CUDACC__
+#endif // CUDASTF_CODE_GENERATION
 
 } // end namespace cuda::experimental::stf

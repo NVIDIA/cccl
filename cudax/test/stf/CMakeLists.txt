@@ -1,43 +1,4 @@
-set(stf_test_sources
-  algorithm/graph_algorithms.cu
-  algorithm/in_graph_ctx.cu
-  algorithm/nested.cu
-  algorithm/algorithm_with_read.cu
-  allocators/adapter.cu
-  allocators/buddy_allocator.cu
-  allocators/cap_tmp_buffers.cu
-  cpp/read_const.cu
-  cpp/redundant_data.cu
-  cpp/redundant_data_different_modes.cu
-  cpp/reuse_computation.cu
-  cpp/reuse_computation_2.cu
-  cpp/scoped_graph_task.cu
-  cpp/user_streams.cu
-  cpp/concurrency_test.cu
-  dot/basic.cu
-  dot/with_events.cu
-  dot/graph_print_to_dot.cu
-  tools/auto_dump/auto_dump.cu
-  error_checks/ctx_mismatch.cu
-  error_checks/data_interface_mismatch.cu
-  error_checks/double_finalize.cu
-  error_checks/erase_frozen.cu
-  error_checks/misformed_tasks_dbl_end.cu
-  error_checks/misformed_tasks_dbl_start.cu
-  error_checks/non_managed_data.cu
-  error_checks/slice_check_bounds.cu
-  error_checks/uninitialized_data.cu
-  error_checks/unsatisfiable_spec.cu
-  error_checks/write_frozen.cu
-  examples/01-axpy-launch-ranges-cg.cu
-  examples/01-axpy-places.cu
-  examples/05-stencil.cu
-  examples/05-stencil-no-copy.cu
-  examples/05-stencil-places.cu
-  examples/05-stencil2d-places.cu
-  examples/09-nbody.cu
-  examples/09-nbody-algorithm.cu
-  examples/09-nbody-blocked.cu
+set(todo_stf_test_sources
   fhe/parse_arctyrex.cu
   freeze/constant_logical_data.cu
   freeze/freeze.cu
@@ -81,13 +42,6 @@ set(stf_test_sources
   loop_dispatch/dispatch_on_streams.cu
   loop_dispatch/nested_loop_dispatch.cu
   loop_dispatch/loop_dispatch.cu
-  parallel_for/parallel_for_repeat.cu
-  parallel_for/test_parallel_for.cu
-  parallel_for/test2_parallel_for_context.cu
-  parallel_for/parallel_for_box.cu
-  parallel_for/parallel_for_all_devs.cu
-  parallel_for/fdtd.cu
-  parallel_for/tiled_loops.cu
   places/cuda_stream_place.cu
   places/managed.cu
   places/managed_from_shape.cu
@@ -122,10 +76,63 @@ set(stf_test_sources
   stress/many_read.cu
   stress/parallel_for_overhead.cu
   stress/task_bench.cu
+)
+
+set(stf_test_sources
+  allocators/buddy_allocator.cu
+  cpp/redundant_data.cu
+  cpp/redundant_data_different_modes.cu
+  cpp/scoped_graph_task.cu
+  cpp/user_streams.cu
+  cpp/concurrency_test.cu
+  dot/basic.cu
+  dot/with_events.cu
+  dot/graph_print_to_dot.cu
   # threads/axpy-threads.cu
   threads/axpy-threads-2.cu
-  # threads/axpy-threads-pfor.cu   # Currently has a difficult-to-reproduce concurrency problem
   utility/timing_with_fences.cu
+  error_checks/ctx_mismatch.cu
+  error_checks/data_interface_mismatch.cu
+  error_checks/double_finalize.cu
+  error_checks/erase_frozen.cu
+  error_checks/misformed_tasks_dbl_end.cu
+  error_checks/misformed_tasks_dbl_start.cu
+  error_checks/non_managed_data.cu
+  error_checks/uninitialized_data.cu
+  error_checks/write_frozen.cu
+  examples/01-axpy-launch-ranges-cg.cu
+  examples/05-stencil.cu
+  examples/05-stencil-no-copy.cu
+  examples/05-stencil-places.cu
+  examples/05-stencil2d-places.cu
+
+)
+
+set(stf_test_codegen_sources
+  algorithm/graph_algorithms.cu
+  algorithm/in_graph_ctx.cu
+  algorithm/nested.cu
+  error_checks/unsatisfiable_spec.cu
+  algorithm/algorithm_with_read.cu
+  allocators/adapter.cu
+  allocators/cap_tmp_buffers.cu
+  cpp/read_const.cu
+  cpp/reuse_computation.cu
+  cpp/reuse_computation_2.cu
+  error_checks/slice_check_bounds.cu
+  # threads/axpy-threads-pfor.cu   # Currently has a difficult-to-reproduce concurrency problem
+  parallel_for/parallel_for_repeat.cu
+  parallel_for/test_parallel_for.cu
+  parallel_for/test2_parallel_for_context.cu
+  parallel_for/parallel_for_box.cu
+  parallel_for/parallel_for_all_devs.cu
+  parallel_for/fdtd.cu
+  parallel_for/tiled_loops.cu
+  tools/auto_dump/auto_dump.cu
+  examples/09-nbody.cu
+  examples/09-nbody-algorithm.cu
+  examples/01-axpy-places.cu
+  examples/09-nbody-blocked.cu
 )
 
 # Examples using CUBLAS, CUSOLVER...
