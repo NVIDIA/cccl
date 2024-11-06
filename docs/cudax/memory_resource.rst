@@ -19,7 +19,7 @@ The ``<cuda/experimental/memory_resource.cuh>`` header provides:
       :ref:`any_async_resource <cudax-memory-resource-any-async-resource>` type erased memory resources similar to
       ``std::any``. In contrast to :ref:`resource_ref <libcudacxx-extended-api-memory-resources-resource-ref>` they
       own the contained resource.
-   -  :ref:`async_memory_resource <cudax-memory-resource-async>` A standard C++ interface for *heterogeneous*,
+   -  :ref:`device_memory_resource <cudax-memory-resource-async>` A standard C++ interface for *heterogeneous*,
       *stream-ordered* memory allocation tailored to the needs of CUDA C++ developers. This design builds off of the
       success of the `RAPIDS Memory Manager (RMM) <https://github.com/rapidsai/rmm>`__ project and evolves the design
       based on lessons learned.
