@@ -438,8 +438,6 @@ protected:
         : auto_scheduler(reserved::scheduler::make(getenv("CUDASTF_SCHEDULE")))
         , auto_reorderer(reserved::reorderer::make(getenv("CUDASTF_TASK_ORDER")))
         , async_resources(async_resources ? mv(async_resources) : async_resources_handle())
-        , is_tracing(reserved::dot::instance().is_tracing())
-        , is_tracing_prereqs(reserved::dot::instance().is_tracing_prereqs())
     {
       // Enable peer memory accesses (if not done already)
       reserved::machine::instance().enable_peer_accesses();
@@ -451,17 +449,18 @@ protected:
         is_recording_stats = true;
       }
 
+      // Initialize a structure to generate a visualization of the activity in this context
+      dot = ::std::make_shared<reserved::per_ctx_dot>(
+        reserved::dot::instance().is_tracing(),
+        reserved::dot::instance().is_tracing_prereqs(),
+        reserved::dot::instance().is_timing());
+
       // We generate symbols if we may use them
 #ifdef CUDASTF_DEBUG
       generate_event_symbols = true;
 #else
-      generate_event_symbols = is_tracing_prereqs;
+      generate_event_symbols = dot->is_tracing_prereqs();
 #endif
-
-      // Initialize a structure to generate a visualization of the activity in this context
-      dot = ::std::make_shared<reserved::per_ctx_dot>(
-        is_tracing, is_tracing_prereqs, reserved::dot::instance().is_timing());
-
       // Record it in the list of all traced contexts
       reserved::dot::instance().per_ctx.push_back(dot);
     }
@@ -613,10 +612,6 @@ protected:
     //
     // We use an optional to avoid instantiating it until we have initialized it
     async_resources_handle async_resources;
-
-    // Should we generate a DOT output ? Should it include prereqs too ?
-    mutable bool is_tracing         = false;
-    mutable bool is_tracing_prereqs = false;
 
     // Do we need to generate symbols for events ? This is true when we are
     // in debug mode (as we may inspect structures with a debugger, or when
@@ -784,16 +779,6 @@ public:
     pimpl->transfers[nodes].first++;
     // Add the value of s to the sum for the pair
     pimpl->transfers[nodes].second += s;
-  }
-
-  bool is_tracing() const
-  {
-    return pimpl->is_tracing;
-  }
-
-  bool is_tracing_prereqs() const
-  {
-    return pimpl->is_tracing_prereqs;
   }
 
   bool generate_event_symbols() const

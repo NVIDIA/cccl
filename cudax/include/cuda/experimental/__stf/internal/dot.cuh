@@ -705,12 +705,12 @@ private:
     ::std::queue<int> q;
     for (const auto& p : durations)
     {
-      int id       = p.first;
+      int id = p.first;
 
       // how many input deps for that node ?
       indegree[id] = predecessors[id].size();
       // how much time is needed to compute that node (and also its predecessors)
-      dist[id]     = p.second;
+      dist[id] = p.second;
       // we will backtrack which were the tasks in the critical path
       path_predecessor[p.first] = -1;
 
