@@ -52,15 +52,10 @@ namespace detail
  **********************************************************************************************************************/
 
 _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr unsigned
-multiply_extract_higher_bits(unsigned dividend, unsigned _multiplier) noexcept
+multiply_extract_higher_bits(unsigned dividend, unsigned _multiplier)
 {
-  // this optimization is obsolete for recent architectures/compilers
-  // clang-format off
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-    (return __umulhi(dividend, _multiplier);),
-    (return static_cast<unsigned>((static_cast<::cuda::std::uint64_t>(dividend) * _multiplier) >> 32u);)
-  )
-  // clang-format on
+  // __umulhi(dividend, _multiplier):   this optimization is obsolete for recent architectures/compilers
+  return static_cast<unsigned>((static_cast<::cuda::std::uint64_t>(dividend) * _multiplier) >> 32u);
 }
 
 /***********************************************************************************************************************
