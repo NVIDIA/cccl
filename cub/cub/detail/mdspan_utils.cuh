@@ -29,8 +29,6 @@
 
 #include <cub/config.cuh>
 
-#include "cuda/std/__type_traits/make_unsigned.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -39,12 +37,15 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/detail/fast_modulo_division.cuh> // fast_div_mod
+#if _CCCL_STD_VER >= 2017
 
-#include <cuda/std/__mdspan/extents.h> // std::extents
-#include <cuda/std/__utility/integer_sequence.h> // ::cuda::std::index_sequence
-#include <cuda/std/array> // std::array
-#include <cuda/std/cstddef> // size_t
+#  include <cub/detail/fast_modulo_division.cuh> // fast_div_mod
+
+#  include <cuda/std/__mdspan/extents.h> // std::extents
+#  include <cuda/std/__utility/integer_sequence.h> // ::cuda::std::index_sequence
+#  include <cuda/std/array> // std::array
+#  include <cuda/std/cstddef> // size_t
+#  include <cuda/std/type_traits> // make_unsigned_t
 
 CUB_NAMESPACE_BEGIN
 
@@ -97,3 +98,5 @@ extents_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::s
 } // namespace detail
 
 CUB_NAMESPACE_END
+
+#endif // _CCCL_STD_VER >= 2017

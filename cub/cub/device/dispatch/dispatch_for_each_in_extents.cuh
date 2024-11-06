@@ -116,13 +116,12 @@ struct dispatch_t : PolicyHubT
     ::cuda::std::array extents_div_array   = cub::detail::extents_fast_div_mod(_ext, seq);
     using FastDivModArrayType              = decltype(sub_sizes_div_array);
 
-    auto kernel =
+    [[maybe_unused]] auto kernel =
       detail::for_each_in_extents::dynamic_kernel<OpType, ext_index_type, decltype(sub_sizes_div_array), Ranks...>;
 
     NV_IF_TARGET(NV_IS_HOST,
                  (int _{}; //
                   status = cudaOccupancyMaxPotentialBlockSize(&_, &block_threads, kernel);));
-    static_cast<void>(kernel);
 
     _CUB_RETURN_IF_ERROR(status)
     const auto num_cta = ::cuda::ceil_div(_size, block_threads);
