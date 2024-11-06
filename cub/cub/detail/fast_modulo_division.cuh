@@ -101,14 +101,12 @@ struct fast_div_mod
     return result{quotient, remainder};
   }
 
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE friend unsigned
-  operator/(unsigned dividend, fast_div_mod div) noexcept
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE friend unsigned operator/(unsigned dividend, fast_div_mod div) noexcept
   {
     return div(dividend).quotient;
   }
 
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE friend unsigned
-  operator%(unsigned dividend, fast_div_mod div) noexcept
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE friend unsigned operator%(unsigned dividend, fast_div_mod div) noexcept
   {
     return div(dividend).remainder;
   }
