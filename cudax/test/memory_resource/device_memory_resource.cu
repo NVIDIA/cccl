@@ -149,7 +149,7 @@ TEST_CASE("device_memory_resource construction", "[memory_resource]")
 
   SECTION("Construct with initial pool size")
   {
-    cuda::experimental::mr::device_memory_pool_properties props = {
+    cuda::experimental::mr::memory_pool_properties props = {
       42,
     };
     cuda::experimental::mr::device_memory_pool pool{current_device, props};
@@ -170,7 +170,7 @@ TEST_CASE("device_memory_resource construction", "[memory_resource]")
 
   SECTION("Construct with release threshold")
   {
-    cuda::experimental::mr::device_memory_pool_properties props = {
+    cuda::experimental::mr::memory_pool_properties props = {
       42,
       20,
     };
@@ -194,7 +194,7 @@ TEST_CASE("device_memory_resource construction", "[memory_resource]")
 #if !defined(_CCCL_CUDACC_BELOW_11_2)
   SECTION("Construct with allocation handle")
   {
-    cuda::experimental::mr::device_memory_pool_properties props = {
+    cuda::experimental::mr::memory_pool_properties props = {
       42,
       20,
       cuda::experimental::mr::cudaMemAllocationHandleType::cudaMemHandleTypePosixFileDescriptor,

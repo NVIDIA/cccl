@@ -105,9 +105,9 @@ enum class cudaMemAllocationHandleType
   cudaMemHandleTypeFabric = 0x8, ///< Allows a fabric handle to be used for exporting. (cudaMemFabricHandle_t)
 };
 
-//! @brief \c device_memory_pool_properties is a wrapper around properties passed to \c device_memory_pool to create a
+//! @brief \c memory_pool_properties is a wrapper around properties passed to \c device_memory_pool to create a
 //! <a href="https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html">cudaMemPool_t</a>.
-struct device_memory_pool_properties
+struct memory_pool_properties
 {
   size_t initial_pool_size                           = 0;
   size_t release_threshold                           = 0;
@@ -117,7 +117,7 @@ struct device_memory_pool_properties
 //! @brief \c device_memory_pool is an owning wrapper around a
 //! <a href="https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html">cudaMemPool_t</a>.
 //!
-//! It handles creation and destruction of the underlying pool utilizing the provided \c device_memory_pool_properties.
+//! It handles creation and destruction of the underlying pool utilizing the provided \c memory_pool_properties.
 class device_memory_pool
 {
 private:
@@ -164,7 +164,7 @@ private:
   //! @throws cuda_error If the creation of the CUDA memory pool failed.
   //! @returns The created CUDA memory pool.
   _CCCL_NODISCARD static cudaMemPool_t
-  __create_cuda_mempool(const int __device_id, device_memory_pool_properties __properties) noexcept
+  __create_cuda_mempool(const int __device_id, memory_pool_properties __properties) noexcept
   {
     ::cuda::experimental::mr::__device_supports_stream_ordered_allocations(__device_id);
     device_memory_pool::__cuda_supports_export_handle_type(__device_id, __properties.allocation_handle_type);
@@ -238,7 +238,7 @@ public:
   //! @param __device_id The device id of the device the stream pool is constructed on.
   //! @param __pool_properties Optional, additional properties of the pool to be created.
   explicit device_memory_pool(const ::cuda::experimental::device_ref __device_id,
-                              device_memory_pool_properties __properties = {})
+                              memory_pool_properties __properties = {})
       : __pool_handle_(__create_cuda_mempool(__device_id.get(), __properties))
   {}
 

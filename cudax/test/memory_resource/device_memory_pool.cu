@@ -109,7 +109,7 @@ TEST_CASE("device_memory_pool construction", "[memory_resource]")
 
   SECTION("Construct with empty properties")
   {
-    cudax::mr::device_memory_pool_properties props{};
+    cudax::mr::memory_pool_properties props{};
     memory_pool from_defaulted_properties{current_device, props};
 
     ::cudaMemPool_t get = from_defaulted_properties.get();
@@ -127,7 +127,7 @@ TEST_CASE("device_memory_pool construction", "[memory_resource]")
 
   SECTION("Construct with initial pool size")
   {
-    cudax::mr::device_memory_pool_properties props = {42, 20};
+    cudax::mr::memory_pool_properties props = {42, 20};
     memory_pool with_threshold{current_device, props};
 
     ::cudaMemPool_t get = with_threshold.get();
@@ -147,7 +147,7 @@ TEST_CASE("device_memory_pool construction", "[memory_resource]")
 #if !defined(_CCCL_CUDACC_BELOW_11_2)
   SECTION("Construct with allocation handle")
   {
-    cudax::mr::device_memory_pool_properties props = {
+    cudax::mr::memory_pool_properties props = {
       42, 20, cudax::mr::cudaMemAllocationHandleType::cudaMemHandleTypePosixFileDescriptor};
     memory_pool with_allocation_handle{current_device, props};
 
