@@ -90,19 +90,19 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
   }
 
   template <class Arg>
-  void _CCCL_DEVICE copy_arg(void* buffer, size_t& offset, const Arg& arg) const
+  void _CCCL_DEVICE copy_arg(char* buffer, size_t& offset, const Arg& arg) const
   {
     // TODO(bgruber): we should make sure that we can actually byte-wise copy Arg, but this fails with some tests
     // static_assert(::cuda::std::is_trivially_copyable<Arg>::value, "");
     offset = align_up<Arg>(offset);
-    ::memcpy(buffer, static_cast<const void*>(&arg), sizeof(arg));
+    ::memcpy(buffer + offset, static_cast<const void*>(&arg), sizeof(arg));
     offset += sizeof(Arg);
   }
 
   _CCCL_DEVICE void fill_arguments(char*, size_t) const {}
 
   template <class... Args>
-  _CCCL_DEVICE void fill_arguments(void* buffer, size_t offset, Args const&... args) const
+  _CCCL_DEVICE void fill_arguments(char* buffer, size_t offset, Args const&... args) const
   {
     // TODO(bgruber): replace by fold over comma in C++17 (make sure order of evaluation is left to right!)
     int dummy[] = {(copy_arg(buffer, offset, args), 0)...};
@@ -113,9 +113,9 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
   template <class K, class... Args>
   cudaError_t _CCCL_DEVICE doit_device(K k, Args const&... args) const
   {
-    const size_t size = argument_pack_size(0, args...);
-    auto param_buffer = cudaGetParameterBuffer(64, size);
-    fill_arguments(param_buffer, 0, args...);
+    const size_t size  = argument_pack_size(0, args...);
+    void* param_buffer = cudaGetParameterBuffer(64, size);
+    fill_arguments((char*) param_buffer, 0, args...);
     return launch_device(k, param_buffer);
   }
 
