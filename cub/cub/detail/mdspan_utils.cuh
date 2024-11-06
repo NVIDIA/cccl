@@ -72,7 +72,10 @@ sub_size(const ::cuda::std::extents<IndexType, Extents...>& ext, ::cuda::std::in
   {
     return (ext.extent(Rank + Indices) * ...);
   }
-  return 0; // GCC9 workaround
+#  if (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 9) \
+    || (defined(_CCCL_COMPILER_CLANG) && _CCCL_CLANG_VERSION < 9)
+  return 0; // GCC9/Clang9 workaround
+#  endif
 }
 
 template <typename IndexType, ::cuda::std::size_t... Extents>

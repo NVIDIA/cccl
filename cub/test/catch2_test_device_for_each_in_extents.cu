@@ -47,7 +47,10 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceForEachInExtents::ForEachInExtents, device_for
 
 template <typename T, typename IndexType, int Rank = 0, size_t... Extents, typename... IndicesType>
 static void fill_linear_impl(
-  c2h::host_vector<T>& vector, const cuda::std::extents<IndexType, Extents...>& ext, size_t& pos, IndicesType... indices)
+  c2h::host_vector<T>& vector,
+  [[maybe_unused]] const cuda::std::extents<IndexType, Extents...>& ext,
+  size_t& pos,
+  IndicesType... indices)
 {
   if constexpr (Rank < sizeof...(Extents) /*ext.rank()*/)
   {
