@@ -16,7 +16,7 @@ TEST_CASE("Copy", "[data_manipulation]")
 
   SECTION("Device resource")
   {
-    cudax::mr::async_memory_resource device_resource;
+    cudax::mr::device_memory_resource device_resource;
     std::vector<int> host_vector(buffer_size);
 
     {
