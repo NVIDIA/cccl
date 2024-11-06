@@ -28,9 +28,6 @@
 #pragma once
 
 #include <cub/config.cuh>
-
-#include <utility>
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -100,9 +97,10 @@ struct dispatch_t : PolicyHubT
 
   dispatch_t(dispatch_t&&) = delete;
 
-  template <typename ActivePolicyT>
+  // InvokeVariadic is a workaround for an nvcc problem with variadic templates and index sequence
+  template <::cuda::std::size_t... Ranks>
   _CCCL_NODISCARD CUB_RUNTIME_FUNCTION
-  _CCCL_FORCEINLINE cudaError_t Invoke(::cuda::std::false_type /* block _size is not known at compile time */) const
+  _CCCL_FORCEINLINE cudaError_t InvokeVariadic(::cuda::std::index_sequence<Ranks...>) const
   {
     using max_policy_t = typename dispatch_t::MaxPolicy;
     if (_size == 0)
@@ -117,13 +115,17 @@ struct dispatch_t : PolicyHubT
     ::cuda::std::array extents_div_array   = cub::detail::extents_fast_div_mod(_ext, seq);
     using FastDivModArrayType              = decltype(sub_sizes_div_array);
 
-    // const auto& kernel =
-    //   detail::for_each_in_extents::dynamic_kernel<OpType, int, decltype(sub_sizes_div_array), 5, 3, 4>;
-    //  (_op, _size, sub_sizes_div_array, extents_div_array, seq);
+    printf(
+      "@@@ _multiplier: %u, _shift_right %u\n", extents_div_array[0]._multiplier, extents_div_array[0]._shift_right);
+    printf("@@@1 size: %lu, align %lu\n", sizeof(sub_sizes_div_array), alignof(decltype(sub_sizes_div_array)));
+    printf("@@@2 size: %lu, align %lu\n", sizeof(extents_div_array), alignof(decltype(extents_div_array)));
+    const auto& kernel =
+      detail::for_each_in_extents::dynamic_kernel<OpType, int, decltype(sub_sizes_div_array), Ranks...>;
 
     // NV_IF_TARGET(NV_IS_HOST,
     //              (int _{}; //
     //               status = cudaOccupancyMaxPotentialBlockSize(&_, &block_threads, kernel);));
+    static_cast<void>(kernel);
 
     _CUB_RETURN_IF_ERROR(status)
     const auto num_cta = ::cuda::ceil_div(_size, block_threads);
@@ -136,12 +138,11 @@ struct dispatch_t : PolicyHubT
     status =
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
         static_cast<unsigned>(num_cta), static_cast<unsigned>(block_threads), 0, _stream)
-        .doit(detail::for_each_in_extents::dynamic_kernel<OpType, int, decltype(sub_sizes_div_array), 5, 3, 4>,
+        .doit(detail::for_each_in_extents::dynamic_kernel<OpType, int, decltype(sub_sizes_div_array), Ranks...>,
               _op,
-              _size,
+              static_cast<typename ExtentsType::index_type>(_size),
               sub_sizes_div_array,
-              extents_div_array,
-              seq);
+              extents_div_array);
     _CUB_RETURN_IF_ERROR(status)
     _CUB_RETURN_IF_STREAM_ERROR(_stream)
     return cudaSuccess;
@@ -149,8 +150,17 @@ struct dispatch_t : PolicyHubT
 
   template <typename ActivePolicyT>
   _CCCL_NODISCARD CUB_RUNTIME_FUNCTION
+  _CCCL_FORCEINLINE cudaError_t Invoke(::cuda::std::false_type /* block _size is not known at compile time */) const
+  {
+    constexpr auto seq = ::cuda::std::make_index_sequence<ExtentsType::rank()>{};
+    return InvokeVariadic(seq);
+  }
+
+  template <typename ActivePolicyT>
+  _CCCL_NODISCARD CUB_RUNTIME_FUNCTION
   _CCCL_FORCEINLINE cudaError_t Invoke(::cuda::std::true_type /* block _size is known at compile time */) const
   {
+    printf("gfsgggggggggggggggggg\n");
     /*
         using max_policy_t = typename dispatch_t::MaxPolicy;
         if (_size == 0)

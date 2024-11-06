@@ -86,7 +86,7 @@ struct fast_div_mod
       return;
     }
     auto num_bits = ::cuda::std::bit_width(divisor) + !::cuda::std::has_single_bit(divisor);
-    _multiplier   = static_cast<unsigned>(::cuda::ceil_div(int64_t{1} << (num_bits + 30), divisor));
+    _multiplier   = static_cast<unsigned>(::cuda::ceil_div(::cuda::std::uint64_t{1} << (num_bits + 30), divisor));
     _shift_right  = num_bits - 2;
   }
 

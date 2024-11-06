@@ -59,15 +59,22 @@ T coordinate_at(T index, fast_div_mod sub_size, fast_div_mod extent)
 template <typename Func, typename IndexType, typename FastDivModArrayType, ::cuda::std::size_t... Ranks>
 CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(
   Func func,
-  /*TODO: _CCCL_GRID_CONSTANT*/ const IndexType size,
-  /*TODO: _CCCL_GRID_CONSTANT*/ const FastDivModArrayType sub_sizes_div_array,
-  /*TODO: _CCCL_GRID_CONSTANT*/ const FastDivModArrayType extents_div_array,
-  ::cuda::std::index_sequence<Ranks...> = {})
+  _CCCL_GRID_CONSTANT const IndexType size,
+  _CCCL_GRID_CONSTANT const FastDivModArrayType sub_sizes_div_array,
+  _CCCL_GRID_CONSTANT const FastDivModArrayType extents_div_array)
 {
-  auto id = threadIdx.x + blockIdx.x * blockDim.x;
+  auto id = static_cast<IndexType>(threadIdx.x + blockIdx.x * blockDim.x);
+  if (id == 0)
+  {
+    printf("###  size %u, _divisor %u, _multiplier: %u, _shift_right %u\n",
+           size,
+           sub_sizes_div_array[0]._divisor,
+           sub_sizes_div_array[0]._multiplier,
+           sub_sizes_div_array[0]._shift_right);
+  }
   if (id < size)
   {
-    func(coordinate_at<Ranks>(id, sub_sizes_div_array[Ranks], extents_div_array[Ranks])...);
+    func(id, coordinate_at<Ranks>(id, sub_sizes_div_array[Ranks], extents_div_array[Ranks])...);
   }
 }
 

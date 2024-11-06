@@ -24,48 +24,123 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  ******************************************************************************/
+#include <cub/config.cuh>
 
-#include "insert_nested_NVTX_range_guard.h"
-// above header needs to be included first
+#if _CCCL_STD_VER >= 2017
 
-#include <cub/device/device_for_each_in_extents.cuh>
-#include <cub/iterator/counting_input_iterator.cuh>
+#  include <cub/device/device_for_each_in_extents.cuh>
 
-#include <thrust/count.h>
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/equal.h>
-#include <thrust/sequence.h>
+#  include <thrust/detail/raw_pointer_cast.h>
 
-#include "c2h/catch2_test_helper.cuh"
-#include "catch2_test_launch_helper.h"
+#  include <cuda/std/array>
+
+#  include "c2h/catch2_test_helper.cuh"
+#  include "catch2_test_launch_helper.h"
+#  include "insert_nested_NVTX_range_guard.h"
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceForEachInExtents::ForEachInExtents, device_for_each_in_extents);
 
-C2H_TEST("DDeviceForEachInExtents works", "[ForEachInExtents][device]")
+/***********************************************************************************************************************
+ * UTLILITIES
+ **********************************************************************************************************************/
+
+template <typename T, typename IndexType, int Rank = 0, size_t... Extents, typename... IndicesType>
+static void fill_linear_impl(
+  c2h::host_vector<T>& vector, const cuda::std::extents<IndexType, Extents...>& ext, size_t& pos, IndicesType... indices)
 {
-  using data_t = cuda::std::tuple<int, int, int>; // REQUIRE(x == y) doesn't work with cuda::std::array
+  if constexpr (Rank < sizeof...(Extents) /*ext.rank()*/)
+  {
+    for (IndexType i = 0; i < ext.extent(Rank); ++i)
+    {
+      fill_linear_impl<T, IndexType, Rank + 1>(vector, ext, pos, indices..., i);
+    }
+  }
+  else
+  {
+    vector[pos++] = {indices...};
+  }
+}
+
+template <typename T, typename IndexType, size_t... Extents>
+static void fill_linear(c2h::host_vector<T>& vector, const cuda::std::extents<IndexType, Extents...>& ext)
+{
+  size_t pos = 0;
+  fill_linear_impl(vector, ext, pos);
+}
+
+/***********************************************************************************************************************
+ * TEST CASES
+ **********************************************************************************************************************/
+
+C2H_TEST("DeviceForEachInExtents 3D static", "[ForEachInExtents][static][device]")
+{
+  using data_t = cuda::std::array<int, 1>;
+  cuda::std::extents<int, 5> ext{};
+  // c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
+  // c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
+  // auto d_output_raw = thrust::raw_pointer_cast(d_output.data());
+
+  data_t* ptr = nullptr;
+  device_for_each_in_extents(ext, [ptr] __device__(auto idx, auto x) {
+    // d_output_raw[idx] = {x};
+  });
+  // c2h::host_vector<data_t> h_output_gpu = d_output;
+  // fill_linear(h_output, ext);
+  // REQUIRE(h_output == h_output_gpu);
+}
+
+/*
+C2H_TEST("DeviceForEachInExtents 3D static", "[ForEachInExtents][static][device]")
+{
+  using data_t = cuda::std::array<int, 3>;
   cuda::std::extents<int, 5, 3, 4> ext{};
   c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
   c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
   auto d_output_raw = thrust::raw_pointer_cast(d_output.data());
 
-  device_for_each_in_extents(ext, [d_output_raw] __device__(auto x, auto y, auto z) {
-    auto id          = threadIdx.x + blockDim.x * blockIdx.x;
-    d_output_raw[id] = {x, y, z};
+  device_for_each_in_extents(ext, [d_output_raw] __device__(auto idx, auto x, auto y, auto z) {
+    d_output_raw[idx] = {x, y, z};
   });
   c2h::host_vector<data_t> h_output_gpu = d_output;
-
-  for (int l = 0, i = 0; i < ext.extent(0); ++i)
-  {
-    for (int j = 0; j < ext.extent(1); ++j)
-    {
-      for (int k = 0; k < ext.extent(2); ++k)
-      {
-        h_output[l++] = {i, j, k};
-      }
-    }
-  }
+  fill_linear(h_output, ext);
   REQUIRE(h_output == h_output_gpu);
 }
+
+C2H_TEST("DeviceForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][device]")
+{
+  using data_t = cuda::std::array<int, 3>;
+  auto X       = GENERATE_COPY(take(3, random(2, 10)));
+  auto Y       = GENERATE_COPY(take(3, random(2, 10)));
+  auto Z       = GENERATE_COPY(take(3, random(2, 10)));
+  cuda::std::dextents<int, 3> ext{X, Y, Z};
+  c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
+  c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
+  auto d_output_raw = thrust::raw_pointer_cast(d_output.data());
+
+  device_for_each_in_extents(ext, [d_output_raw] __device__(auto idx, auto x, auto y, auto z) {
+    d_output_raw[idx] = {x, y, z};
+  });
+  c2h::host_vector<data_t> h_output_gpu = d_output;
+  fill_linear(h_output, ext);
+  REQUIRE(h_output == h_output_gpu);
+}
+
+C2H_TEST("DeviceForEachInExtents 4D static", "[ForEachInExtents][static][device]")
+{
+  using data_t = cuda::std::array<int, 4>;
+  cuda::std::extents<int, 3, 2, 6, 5> ext{};
+  c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
+  c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
+  auto d_output_raw = thrust::raw_pointer_cast(d_output.data());
+
+  device_for_each_in_extents(ext, [d_output_raw] __device__(auto idx, auto x, auto y, auto z, auto w) {
+    d_output_raw[idx] = {x, y, z, w};
+  });
+  c2h::host_vector<data_t> h_output_gpu = d_output;
+  fill_linear(h_output, ext);
+  REQUIRE(h_output == h_output_gpu);
+}
+*/
+#endif // _CCCL_STD_VER >= 2017

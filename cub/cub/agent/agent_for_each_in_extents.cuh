@@ -39,9 +39,6 @@
 
 #if _CCCL_STD_VER >= 2017
 
-// #  include <cub/util_ptx.cuh>
-// #  include <cub/util_type.cuh>
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail::for_each_in_extents
@@ -53,30 +50,6 @@ struct policy_t
   static constexpr int block_threads    = BlockThreads;
   static constexpr int items_per_thread = ItemsPerThread;
 };
-
-// template <class PolicyT, class OffsetT, class OpT>
-// struct agent_block_striped_t
-//{
-//   static constexpr int items_per_thread = PolicyT::items_per_thread;
-//
-//   OffsetT tile_base;
-//   OpT op;
-//
-//   template <bool IsFullTile>
-//   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(int items_in_tile, int block_threads)
-//   {
-// #pragma unroll
-//     for (int item = 0; item < items_per_thread; item++)
-//     {
-//       const auto idx = static_cast<OffsetT>(block_threads * item + threadIdx.x);
-//
-//       if (IsFullTile || idx < items_in_tile)
-//       {
-//         (void) op(tile_base + idx);
-//       }
-//     }
-//   }
-// };
 
 } // namespace detail::for_each_in_extents
 
