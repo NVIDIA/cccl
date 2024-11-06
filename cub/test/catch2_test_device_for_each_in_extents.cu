@@ -36,7 +36,6 @@
 
 #  include "c2h/catch2_test_helper.cuh"
 #  include "catch2_test_launch_helper.h"
-#  include "insert_nested_NVTX_range_guard.h"
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -74,24 +73,22 @@ static void fill_linear(c2h::host_vector<T>& vector, const cuda::std::extents<In
  * TEST CASES
  **********************************************************************************************************************/
 
-C2H_TEST("DeviceForEachInExtents 3D static", "[ForEachInExtents][static][device]")
+C2H_TEST("DeviceForEachInExtents 1D static", "[ForEachInExtents][static][device]")
 {
   using data_t = cuda::std::array<int, 1>;
   cuda::std::extents<int, 5> ext{};
-  // c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
-  // c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
-  // auto d_output_raw = thrust::raw_pointer_cast(d_output.data());
+  c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
+  c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
+  auto d_output_raw = thrust::raw_pointer_cast(d_output.data());
 
-  data_t* ptr = nullptr;
-  device_for_each_in_extents(ext, [ptr] __device__(auto idx, auto x) {
-    // d_output_raw[idx] = {x};
+  device_for_each_in_extents(ext, [d_output_raw] __device__(auto idx, auto x) {
+    d_output_raw[idx] = {x};
   });
-  // c2h::host_vector<data_t> h_output_gpu = d_output;
-  // fill_linear(h_output, ext);
-  // REQUIRE(h_output == h_output_gpu);
+  c2h::host_vector<data_t> h_output_gpu = d_output;
+  fill_linear(h_output, ext);
+  REQUIRE(h_output == h_output_gpu);
 }
 
-/*
 C2H_TEST("DeviceForEachInExtents 3D static", "[ForEachInExtents][static][device]")
 {
   using data_t = cuda::std::array<int, 3>;
@@ -142,5 +139,5 @@ C2H_TEST("DeviceForEachInExtents 4D static", "[ForEachInExtents][static][device]
   fill_linear(h_output, ext);
   REQUIRE(h_output == h_output_gpu);
 }
-*/
+
 #endif // _CCCL_STD_VER >= 2017

@@ -28,6 +28,7 @@
 #pragma once
 
 #include <cub/config.cuh>
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -102,29 +103,25 @@ struct dispatch_t : PolicyHubT
   _CCCL_NODISCARD CUB_RUNTIME_FUNCTION
   _CCCL_FORCEINLINE cudaError_t InvokeVariadic(::cuda::std::index_sequence<Ranks...>) const
   {
-    using max_policy_t = typename dispatch_t::MaxPolicy;
+    using max_policy_t   = typename dispatch_t::MaxPolicy;
+    using ext_index_type = typename ExtentsType::index_type;
     if (_size == 0)
     {
       return cudaSuccess;
     }
-    int block_threads  = 256;
-    cudaError_t status = cudaSuccess;
-
+    int block_threads                      = 256;
+    cudaError_t status                     = cudaSuccess;
     constexpr auto seq                     = ::cuda::std::make_index_sequence<ExtentsType::rank()>{};
     ::cuda::std::array sub_sizes_div_array = cub::detail::sub_sizes_fast_div_mod(_ext, seq);
     ::cuda::std::array extents_div_array   = cub::detail::extents_fast_div_mod(_ext, seq);
     using FastDivModArrayType              = decltype(sub_sizes_div_array);
 
-    printf(
-      "@@@ _multiplier: %u, _shift_right %u\n", extents_div_array[0]._multiplier, extents_div_array[0]._shift_right);
-    printf("@@@1 size: %lu, align %lu\n", sizeof(sub_sizes_div_array), alignof(decltype(sub_sizes_div_array)));
-    printf("@@@2 size: %lu, align %lu\n", sizeof(extents_div_array), alignof(decltype(extents_div_array)));
-    const auto& kernel =
-      detail::for_each_in_extents::dynamic_kernel<OpType, int, decltype(sub_sizes_div_array), Ranks...>;
+    auto kernel =
+      detail::for_each_in_extents::dynamic_kernel<OpType, ext_index_type, decltype(sub_sizes_div_array), Ranks...>;
 
-    // NV_IF_TARGET(NV_IS_HOST,
-    //              (int _{}; //
-    //               status = cudaOccupancyMaxPotentialBlockSize(&_, &block_threads, kernel);));
+    NV_IF_TARGET(NV_IS_HOST,
+                 (int _{}; //
+                  status = cudaOccupancyMaxPotentialBlockSize(&_, &block_threads, kernel);));
     static_cast<void>(kernel);
 
     _CUB_RETURN_IF_ERROR(status)
@@ -138,74 +135,27 @@ struct dispatch_t : PolicyHubT
     status =
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
         static_cast<unsigned>(num_cta), static_cast<unsigned>(block_threads), 0, _stream)
-        .doit(detail::for_each_in_extents::dynamic_kernel<OpType, int, decltype(sub_sizes_div_array), Ranks...>,
-              _op,
-              static_cast<typename ExtentsType::index_type>(_size),
-              sub_sizes_div_array,
-              extents_div_array);
+        .doit(
+          detail::for_each_in_extents::dynamic_kernel<OpType, ext_index_type, decltype(sub_sizes_div_array), Ranks...>,
+          _op,
+          static_cast<ext_index_type>(_size),
+          sub_sizes_div_array,
+          extents_div_array);
     _CUB_RETURN_IF_ERROR(status)
     _CUB_RETURN_IF_STREAM_ERROR(_stream)
     return cudaSuccess;
   }
 
-  template <typename ActivePolicyT>
-  _CCCL_NODISCARD CUB_RUNTIME_FUNCTION
-  _CCCL_FORCEINLINE cudaError_t Invoke(::cuda::std::false_type /* block _size is not known at compile time */) const
+  _CCCL_NODISCARD CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke() const
   {
     constexpr auto seq = ::cuda::std::make_index_sequence<ExtentsType::rank()>{};
     return InvokeVariadic(seq);
   }
 
-  template <typename ActivePolicyT>
-  _CCCL_NODISCARD CUB_RUNTIME_FUNCTION
-  _CCCL_FORCEINLINE cudaError_t Invoke(::cuda::std::true_type /* block _size is known at compile time */) const
-  {
-    printf("gfsgggggggggggggggggg\n");
-    /*
-        using max_policy_t = typename dispatch_t::MaxPolicy;
-        if (_size == 0)
-        {
-          return cudaSuccess;
-        }
-        cudaError_t status             = cudaSuccess;
-        constexpr int block_threads    = ActivePolicyT::for_each_in_extents_policy_t::block_threads;
-        constexpr int items_per_thread = ActivePolicyT::for_each_in_extents_policy_t::items_per_thread;
-        const auto tile_size           = static_cast<ExtentsType>(block_threads * items_per_thread);
-        const auto num_cta           = ::cuda::ceil_div(_size, tile_size);
-    #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
-        _CubLog("Invoking detail::for_each_in_extents::static_kernel<<<%d, %d, 0, %p>>>(), "
-                "%d items per thread\n",
-                static_cast<int>(num_cta),
-                static_cast<int>(block_threads),
-                _stream,
-                static_cast<int>(items_per_thread));
-    #endif
-        status = THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
-                   static_cast<unsigned>(num_cta), static_cast<unsigned>(block_threads), 0, _stream)
-                   .doit(detail::for_each_in_extents::static_kernel<max_policy_t, ExtentsType, OpType>, _ext, _op);
-        _CUB_RETURN_IF_ERROR(CubDebug(status))
-        _CUB_RETURN_IF_STREAM_ERROR(_stream)
-        return cudaSuccess;
-    */
-    return cudaSuccess;
-  }
-
-  template <typename ActivePolicyT>
-  _CCCL_NODISCARD CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke() const
-  {
-    // constexpr bool static_block_size = (ActivePolicyT::for_each_in_extents_policy_t::block_threads > 0);
-    // return Invoke<ActivePolicyT>(::cuda::std::bool_constant<static_block_size>{});
-    return Invoke<ActivePolicyT>(::cuda::std::bool_constant<false>{});
-  }
-
   _CCCL_NODISCARD CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   dispatch(const ExtentsType& _ext, const OpType& _op, cudaStream_t _stream)
   {
-    using max_policy_t = typename dispatch_t::MaxPolicy;
-    int ptx_version    = 0;
-    _CUB_RETURN_IF_ERROR(PtxVersion(ptx_version))
-    dispatch_t dispatch{_ext, _op, _stream};
-    return CubDebug(max_policy_t::Invoke(ptx_version, dispatch));
+    return dispatch_t{_ext, _op, _stream}.Invoke();
   }
 };
 

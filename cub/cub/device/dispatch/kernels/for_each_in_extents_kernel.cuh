@@ -64,14 +64,6 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(
   _CCCL_GRID_CONSTANT const FastDivModArrayType extents_div_array)
 {
   auto id = static_cast<IndexType>(threadIdx.x + blockIdx.x * blockDim.x);
-  if (id == 0)
-  {
-    printf("###  size %u, _divisor %u, _multiplier: %u, _shift_right %u\n",
-           size,
-           sub_sizes_div_array[0]._divisor,
-           sub_sizes_div_array[0]._multiplier,
-           sub_sizes_div_array[0]._shift_right);
-  }
   if (id < size)
   {
     func(id, coordinate_at<Ranks>(id, sub_sizes_div_array[Ranks], extents_div_array[Ranks])...);
