@@ -285,7 +285,7 @@ struct CustomDeviceRunLengthEncode
     cudaStream_t stream = 0)
   {
     using OffsetT    = int; // Signed integer type for global offsets
-    using EqualityOp = cub::Equality; // Default == operator
+    using EqualityOp = ::cuda::std::equal_to<>; // Default == operator
 
     return cub::DeviceRleDispatch<InputIteratorT,
                                   OffsetsOutputIteratorT,
