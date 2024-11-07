@@ -1313,9 +1313,8 @@ UNITTEST("basic launch test")
 };
 
 } // end namespace reserved
-#endif // CUDASTF_CODE_GENERATION
+#  endif // CUDASTF_CODE_GENERATION
 
-#  endif // UNITTESTED_FILE
-
+#endif // UNITTESTED_FILE
 
 } // namespace cuda::experimental::stf
