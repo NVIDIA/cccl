@@ -1,10 +1,13 @@
 set(static_assert_tests
-  gnu_launch.cpp
-  gnu_parallel_for.cpp
   static.cu
   task_prototype.cu
   stream_task_prototype.cu
   graph_task_prototype.cu
+)
+
+set(static_assert_tests_codegen
+  gnu_launch.cpp
+  gnu_parallel_for.cpp
 )
 
 ## cudax_add_stf_static_assert_test
@@ -50,4 +53,10 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   foreach(source IN LISTS static_assert_tests)
     cudax_stf_add_static_assert_test(test_target "${source}" ${cn_target})
   endforeach()
+
+  if (cudax_ENABLE_CUDASTF_CODE_GENERATION)
+    foreach(source IN LISTS static_assert_tests_codegen)
+      cudax_stf_add_static_assert_test(test_target "${source}" ${cn_target})
+    endforeach()
+  endif()
 endforeach()
