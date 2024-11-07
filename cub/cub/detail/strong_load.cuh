@@ -61,11 +61,11 @@ static _CCCL_DEVICE _CCCL_FORCEINLINE uint4 load_relaxed(uint4 const* ptr)
     NV_PROVIDES_SM_70,
     (asm volatile("ld.relaxed.gpu.v4.u32 {%0, %1, %2, %3}, [%4];"
                   : "=r"(retval.x), "=r"(retval.y), "=r"(retval.z), "=r"(retval.w)
-                  : _CUB_ASM_PTR_(ptr)
+                  : "l"(ptr)
                   : "memory");),
     (asm volatile("ld.cg.v4.u32 {%0, %1, %2, %3}, [%4];"
                   : "=r"(retval.x), "=r"(retval.y), "=r"(retval.z), "=r"(retval.w)
-                  : _CUB_ASM_PTR_(ptr)
+                  : "l"(ptr)
                   : "memory");));
   return retval;
 }
@@ -77,11 +77,11 @@ static _CCCL_DEVICE _CCCL_FORCEINLINE ulonglong2 load_relaxed(ulonglong2 const* 
     NV_PROVIDES_SM_70,
     (asm volatile("ld.relaxed.gpu.v2.u64 {%0, %1}, [%2];"
                   : "=l"(retval.x), "=l"(retval.y)
-                  : _CUB_ASM_PTR_(ptr)
+                  : "l"(ptr)
                   : "memory");),
     (asm volatile("ld.cg.v2.u64 {%0, %1}, [%2];"
                   : "=l"(retval.x), "=l"(retval.y)
-                  : _CUB_ASM_PTR_(ptr)
+                  : "l"(ptr)
                   : "memory");));
   return retval;
 }
@@ -93,11 +93,11 @@ static _CCCL_DEVICE _CCCL_FORCEINLINE ushort4 load_relaxed(ushort4 const* ptr)
     NV_PROVIDES_SM_70,
     (asm volatile("ld.relaxed.gpu.v4.u16 {%0, %1, %2, %3}, [%4];"
                   : "=h"(retval.x), "=h"(retval.y), "=h"(retval.z), "=h"(retval.w)
-                  : _CUB_ASM_PTR_(ptr)
+                  : "l"(ptr)
                   : "memory");),
     (asm volatile("ld.cg.v4.u16 {%0, %1, %2, %3}, [%4];"
                   : "=h"(retval.x), "=h"(retval.y), "=h"(retval.z), "=h"(retval.w)
-                  : _CUB_ASM_PTR_(ptr)
+                  : "l"(ptr)
                   : "memory");));
   return retval;
 }
@@ -109,11 +109,11 @@ static _CCCL_DEVICE _CCCL_FORCEINLINE uint2 load_relaxed(uint2 const* ptr)
     NV_PROVIDES_SM_70,
     (asm volatile("ld.relaxed.gpu.v2.u32 {%0, %1}, [%2];"
                   : "=r"(retval.x), "=r"(retval.y)
-                  : _CUB_ASM_PTR_(ptr)
+                  : "l"(ptr)
                   : "memory");),
     (asm volatile("ld.cg.v2.u32 {%0, %1}, [%2];"
                   : "=r"(retval.x), "=r"(retval.y)
-                  : _CUB_ASM_PTR_(ptr)
+                  : "l"(ptr)
                   : "memory");));
   return retval;
 }
@@ -125,11 +125,11 @@ static _CCCL_DEVICE _CCCL_FORCEINLINE unsigned long long load_relaxed(unsigned l
     NV_PROVIDES_SM_70,
     (asm volatile("ld.relaxed.gpu.u64 %0, [%1];"
                   : "=l"(retval)
-                  : _CUB_ASM_PTR_(ptr)
+                  : "l"(ptr)
                   : "memory");),
     (asm volatile("ld.cg.u64 %0, [%1];"
                   : "=l"(retval)
-                  : _CUB_ASM_PTR_(ptr)
+                  : "l"(ptr)
                   : "memory");));
   return retval;
 }
@@ -141,11 +141,11 @@ static _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int load_relaxed(unsigned int con
     NV_PROVIDES_SM_70,
     (asm volatile("ld.relaxed.gpu.u32 %0, [%1];"
                   : "=r"(retval)
-                  : _CUB_ASM_PTR_(ptr)
+                  : "l"(ptr)
                   : "memory");),
     (asm volatile("ld.cg.u32 %0, [%1];"
                   : "=r"(retval)
-                  : _CUB_ASM_PTR_(ptr)
+                  : "l"(ptr)
                   : "memory");));
 
   return retval;
@@ -158,11 +158,11 @@ static _CCCL_DEVICE _CCCL_FORCEINLINE unsigned short load_relaxed(unsigned short
     NV_PROVIDES_SM_70,
     (asm volatile("ld.relaxed.gpu.u16 %0, [%1];"
                   : "=h"(retval)
-                  : _CUB_ASM_PTR_(ptr)
+                  : "l"(ptr)
                   : "memory");),
     (asm volatile("ld.cg.u16 %0, [%1];"
                   : "=h"(retval)
-                  : _CUB_ASM_PTR_(ptr)
+                  : "l"(ptr)
                   : "memory");));
   return retval;
 }
@@ -179,7 +179,7 @@ static _CCCL_DEVICE _CCCL_FORCEINLINE unsigned char load_relaxed(unsigned char c
        "  cvt.u16.u8 %0, datum;"
        "}"
        : "=h"(retval)
-       : _CUB_ASM_PTR_(ptr)
+       : "l"(ptr)
        : "memory");),
     (asm volatile(
        "{"
@@ -188,7 +188,7 @@ static _CCCL_DEVICE _CCCL_FORCEINLINE unsigned char load_relaxed(unsigned char c
        "  cvt.u16.u8 %0, datum;"
        "}"
        : "=h"(retval)
-       : _CUB_ASM_PTR_(ptr)
+       : "l"(ptr)
        : "memory");));
   return (unsigned char) retval;
 }
@@ -200,11 +200,11 @@ static _CCCL_DEVICE _CCCL_FORCEINLINE ulonglong2 load_acquire(ulonglong2 const* 
     NV_PROVIDES_SM_70,
     (asm volatile("ld.acquire.gpu.v2.u64 {%0, %1}, [%2];"
                   : "=l"(retval.x), "=l"(retval.y)
-                  : _CUB_ASM_PTR_(ptr)
+                  : "l"(ptr)
                   : "memory");),
     (asm volatile("ld.cg.v2.u64 {%0, %1}, [%2];"
                   : "=l"(retval.x), "=l"(retval.y)
-                  : _CUB_ASM_PTR_(ptr)
+                  : "l"(ptr)
                   : "memory");
      __threadfence();));
   return retval;
@@ -217,11 +217,11 @@ static _CCCL_DEVICE _CCCL_FORCEINLINE uint2 load_acquire(uint2 const* ptr)
     NV_PROVIDES_SM_70,
     (asm volatile("ld.acquire.gpu.v2.u32 {%0, %1}, [%2];"
                   : "=r"(retval.x), "=r"(retval.y)
-                  : _CUB_ASM_PTR_(ptr)
+                  : "l"(ptr)
                   : "memory");),
     (asm volatile("ld.cg.v2.u32 {%0, %1}, [%2];"
                   : "=r"(retval.x), "=r"(retval.y)
-                  : _CUB_ASM_PTR_(ptr)
+                  : "l"(ptr)
                   : "memory");
      __threadfence();));
   return retval;
@@ -234,11 +234,11 @@ static _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int load_acquire(unsigned int con
     NV_PROVIDES_SM_70,
     (asm volatile("ld.acquire.gpu.u32 %0, [%1];"
                   : "=r"(retval)
-                  : _CUB_ASM_PTR_(ptr)
+                  : "l"(ptr)
                   : "memory");),
     (asm volatile("ld.cg.u32 %0, [%1];"
                   : "=r"(retval)
-                  : _CUB_ASM_PTR_(ptr)
+                  : "l"(ptr)
                   : "memory");
      __threadfence();));
 

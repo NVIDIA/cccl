@@ -11,7 +11,10 @@ endif()
 find_program(cuobjdump "cuobjdump" REQUIRED)
 find_program(bash "bash" REQUIRED)
 
-file(GLOB libcudacxx_atomic_codegen_tests "*.cu")
+set(libcudacxx_atomic_codegen_tests)
+if (NOT "NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  file(GLOB libcudacxx_atomic_codegen_tests "*.cu")
+endif()
 
 # For every atomic API compile the TU and check if the SASS/PTX matches the expected result
 foreach(test_path IN LISTS libcudacxx_atomic_codegen_tests)

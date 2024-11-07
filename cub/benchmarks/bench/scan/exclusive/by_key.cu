@@ -76,12 +76,12 @@ template <typename KeyT, typename ValueT, typename OffsetT>
 static void scan(nvbench::state& state, nvbench::type_list<KeyT, ValueT, OffsetT>)
 {
   using init_value_t    = ValueT;
-  using op_t            = cub::Sum;
+  using op_t            = ::cuda::std::plus<>;
   using accum_t         = ::cuda::std::__accumulator_t<op_t, ValueT, init_value_t>;
   using key_input_it_t  = const KeyT*;
   using val_input_it_t  = const ValueT*;
   using val_output_it_t = ValueT*;
-  using equality_op_t   = cub::Equality;
+  using equality_op_t   = ::cuda::std::equal_to<>;
   using offset_t        = OffsetT;
 
 #if !TUNE_BASE

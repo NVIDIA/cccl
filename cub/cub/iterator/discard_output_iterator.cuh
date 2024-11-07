@@ -95,11 +95,6 @@ public:
 private:
   OffsetT offset;
 
-#if defined(_WIN32) || !defined(_WIN64)
-  // Workaround for win32 parameter-passing bug (ulonglong2 argmin DeviceReduce)
-  OffsetT pad[CUB_MAX(1, (16 / sizeof(OffsetT) - 1))] = {};
-#endif
-
 public:
   /**
    * @param offset
