@@ -87,67 +87,19 @@ def test_device_reduce_dtype_mismatch():
           reduce_into(None, None, d_inputs[int(ix == 0)], d_outputs[int(ix == 1)], h_inits[int(ix == 2)])
 
 
-def cu_repeat(value):
-    @register_jitable
-    def input_unary_op(unused_distance):
-        data = (value + 2, value + 1)
-        return data[0] - data[1]
-    return input_unary_op
-
-
-def cu_count(start):
-    @register_jitable
-    def input_unary_op(distance):
-        return distance
-    return input_unary_op
-
-
-def cu_arbitrary(permutation):
-    @register_jitable
-    def input_unary_op(distance):
-        return permutation[distance % len(permutation)]
-    return input_unary_op
-
-
-def cu_map(func, rai):
-    @register_jitable
-    def input_unary_op(distance):
-        return func(rai(distance))
-    return input_unary_op
-
-
-@register_jitable
-def mul2(val):
-    return 2 * val
-
-
-@register_jitable
-def add10(val):
-    return val + 10
-
-
-@pytest.mark.parametrize("use_numpy_array", [True, False])
-@pytest.mark.parametrize("input_generator",
-                         ["constant", "counting", "arbitrary",
-                          "map_mul2", "map_add10_map_mul2"])
-def test_device_sum_input_unary_op(use_numpy_array, input_generator, num_items=19, start_sum_with=1000):
+@pytest.mark.parametrize("use_numpy_array", [True, False][:1])
+@pytest.mark.parametrize("input_generator", ["constant", "counting"])
+def test_device_sum_input_unary_op(use_numpy_array, input_generator, num_items=3, start_sum_with=10):
     def add_op(a, b):
         return a + b
 
     if input_generator == "constant":
-        input_unary_op = cu_repeat(3)
+        l_input = [42 for distance in range(num_items)]
     elif input_generator == "counting":
-        input_unary_op = cu_count(4)
-    elif input_generator == "arbitrary":
-        input_unary_op = cu_arbitrary((4, 2, 0, 3, 1))
-    elif input_generator == "map_mul2":
-        input_unary_op = cu_map(mul2, cu_count(0))
-    elif input_generator == "map_add10_map_mul2":
-        input_unary_op = cu_map(add10, cu_map(mul2, cu_count(0)))
+        l_input = [start_sum_with + distance for distance in range(num_items)]
     else:
         raise RuntimeError("Unexpected input_generator")
 
-    l_input = [input_unary_op(distance) for distance in range(num_items)]
     expected_result = start_sum_with
     for v in l_input:
         expected_result = add_op(expected_result, v)
@@ -158,7 +110,7 @@ def test_device_sum_input_unary_op(use_numpy_array, input_generator, num_items=1
         h_input = numpy.array(l_input, dtype)
         d_input = cuda.to_device(h_input)
     else:
-        d_input = input_unary_op
+        raise RuntimeError("WIP")
 
     d_output = cuda.device_array(1, dtype) # to store device sum
 

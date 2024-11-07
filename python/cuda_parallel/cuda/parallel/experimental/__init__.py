@@ -130,20 +130,8 @@ class _ReductionOp:
         return _CCCLOp(_CCCLOpKindEnum.STATELESS, self.name, ctypes.c_char_p(self.ltoir), len(self.ltoir), 1, 1, None)
 
 
-class _TransformRAIUnaryOp:
-    def __init__(self, result_numba_dtype, arg_numba_dtype, unary_op):
-        self.ltoir, _ = cuda.compile(unary_op, sig=result_numba_dtype(arg_numba_dtype), output='ltoir')
-        self.name = unary_op.__name__.encode('utf-8')
-        print(f"{self.name=}", flush=True)
-
-    def handle(self):
-        return _CCCLOp(_CCCLOpKindEnum.STATELESS, self.name, ctypes.c_char_p(self.ltoir), len(self.ltoir), 1, 1, None)
-
-
 def _itertools_iter_as_cccl_iter(result_numba_dtype, d_in):
-    d_in_jitted = _TransformRAIUnaryOp(result_numba_dtype, numba.uint64, d_in).handle()
-    info = _type_to_info_from_numba_type(numba.int32)
-    return _CCCLIterator(1, 1, _CCCLIteratorKindEnum.ITERATOR, d_in_jitted, _CCCLOp(), info, 0)
+    raise RuntimeError("WIP")
 
 
 def _get_cuda_path():
