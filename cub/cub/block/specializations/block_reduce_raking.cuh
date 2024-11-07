@@ -252,7 +252,7 @@ struct BlockReduceRaking
   template <bool IS_FULL_TILE>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T partial, int num_valid)
   {
-    cub::Sum reduction_op;
+    ::cuda::std::plus<> reduction_op;
 
     return Reduce<IS_FULL_TILE>(partial, num_valid, reduction_op);
   }

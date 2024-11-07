@@ -407,7 +407,12 @@ public:
 
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
 
-    return segmented_reduce<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT, OffsetT, cub::Sum>(
+    return segmented_reduce<InputIteratorT,
+                            OutputIteratorT,
+                            BeginOffsetIteratorT,
+                            EndOffsetIteratorT,
+                            OffsetT,
+                            ::cuda::std::plus<>>(
       integral_offset_check{},
       d_temp_storage,
       temp_storage_bytes,
@@ -416,7 +421,7 @@ public:
       num_segments,
       d_begin_offsets,
       d_end_offsets,
-      cub::Sum(),
+      ::cuda::std::plus<>{},
       OutputT(), // zero-initialize
       stream);
   }
@@ -545,7 +550,12 @@ public:
 
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
 
-    return segmented_reduce<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT, OffsetT, cub::Min>(
+    return segmented_reduce<InputIteratorT,
+                            OutputIteratorT,
+                            BeginOffsetIteratorT,
+                            EndOffsetIteratorT,
+                            OffsetT,
+                            ::cuda::minimum<>>(
       integral_offset_check{},
       d_temp_storage,
       temp_storage_bytes,
@@ -554,7 +564,7 @@ public:
       num_segments,
       d_begin_offsets,
       d_end_offsets,
-      cub::Min(),
+      ::cuda::minimum<>{},
       Traits<InputT>::Max(), // replace with
                              // std::numeric_limits<T>::max()
                              // when C++11 support is
@@ -859,7 +869,7 @@ public:
       num_segments,
       d_begin_offsets,
       d_end_offsets,
-      cub::Max(),
+      ::cuda::maximum<>{},
       Traits<InputT>::Lowest(), // replace with
                                 // std::numeric_limits<T>::lowest()
                                 // when C++11 support is

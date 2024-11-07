@@ -55,7 +55,7 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
   Size const shared_mem;
   cudaStream_t const stream;
 
-  THRUST_RUNTIME_FUNCTION triple_chevron(dim3 grid_, dim3 block_, Size shared_mem_ = 0, cudaStream_t stream_ = 0)
+  THRUST_RUNTIME_FUNCTION triple_chevron(dim3 grid_, dim3 block_, Size shared_mem_ = 0, cudaStream_t stream_ = nullptr)
       : grid(grid_)
       , block(block_)
       , shared_mem(shared_mem_)
@@ -84,22 +84,18 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
   size_t _CCCL_DEVICE argument_pack_size(size_t size, Args const&...) const
   {
     // TODO(bgruber): replace by fold over comma in C++17 (make sure order of evaluation is left to right!)
-    int dummy[] = {(size += align_up<Args>(size) + sizeof(Args), 0)...};
-    (void) dummy;
+    int dummy[] = {(size = align_up<Args>(size) + sizeof(Args), 0)...};
+    static_cast<void>(dummy);
     return size;
   }
 
   template <class Arg>
-  void _CCCL_DEVICE copy_arg(char* buffer, size_t& offset, Arg arg) const
+  void _CCCL_DEVICE copy_arg(char* buffer, size_t& offset, const Arg& arg) const
   {
     // TODO(bgruber): we should make sure that we can actually byte-wise copy Arg, but this fails with some tests
     // static_assert(::cuda::std::is_trivially_copyable<Arg>::value, "");
-
     offset = align_up<Arg>(offset);
-    for (int i = 0; i != sizeof(Arg); ++i)
-    {
-      buffer[offset + i] = reinterpret_cast<const char*>(&arg)[i];
-    }
+    ::memcpy(buffer + offset, static_cast<const void*>(&arg), sizeof(arg));
     offset += sizeof(Arg);
   }
 
@@ -110,7 +106,7 @@ struct _CCCL_VISIBILITY_HIDDEN triple_chevron
   {
     // TODO(bgruber): replace by fold over comma in C++17 (make sure order of evaluation is left to right!)
     int dummy[] = {(copy_arg(buffer, offset, args), 0)...};
-    (void) dummy;
+    static_cast<void>(dummy);
   }
 
 #ifdef THRUST_RDC_ENABLED

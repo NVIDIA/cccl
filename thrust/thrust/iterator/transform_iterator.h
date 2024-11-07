@@ -305,10 +305,15 @@ private:
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE typename super_t::reference dereference() const
   {
-    // Create a temporary to allow iterators with wrapped references to
-    // convert to their value type before calling m_f. Note that this
-    // disallows non-constant operations through m_f.
+    // TODO(bgruber): we should do as `std::ranges::transform_view::iterator` does:
+    // `return std::invoke(m_f, *this->base());` and return `decltype(auto)`
+
+    // Create a temporary to allow iterators with wrapped references to convert to their value type before calling m_f.
+    // Note that this disallows non-constant operations through m_f.
     typename thrust::iterator_value<Iterator>::type const& x = *this->base();
+    // FIXME(bgruber): x may be a reference to a temporary (e.g. if the base iterator is a counting_iterator). If `m_f`
+    // does not produce an independent copy and super_t::reference is a reference, we return a dangling reference (e.g.
+    // `thrust::identity<T>` because it does not forward. `thrust::identity<void>` shoud work).
     return m_f(x);
   }
 
