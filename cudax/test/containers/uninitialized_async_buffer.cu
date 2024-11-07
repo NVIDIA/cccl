@@ -42,7 +42,7 @@ constexpr int get_property(
 {
   return 42;
 }
-constexpr int get_property(const cuda::experimental::mr::async_memory_resource&, my_property)
+constexpr int get_property(const cuda::experimental::mr::device_memory_resource&, my_property)
 {
   return 42;
 }
