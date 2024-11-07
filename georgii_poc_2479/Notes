@@ -1,0 +1,6 @@
+cmake -S . -B build -DCMAKE_VERBOSE_MAKEFILE=ON
+(cd build; make)
+python -m venv pocenv
+. pocenv/bin/activate
+pip install numba
+python main.py
