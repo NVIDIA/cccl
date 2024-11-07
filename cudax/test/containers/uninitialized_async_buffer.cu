@@ -42,6 +42,10 @@ constexpr int get_property(
 {
   return 42;
 }
+constexpr int get_property(const cuda::experimental::mr::async_memory_resource&, my_property)
+{
+  return 42;
+}
 
 TEMPLATE_TEST_CASE(
   "uninitialized_async_buffer", "[container]", char, short, int, long, long long, float, double, do_not_construct)
@@ -77,6 +81,23 @@ TEMPLATE_TEST_CASE(
       CUDAX_CHECK(input.size() == 0);
       CUDAX_CHECK(input.get_stream() == cuda::stream_ref{});
     }
+  }
+
+  SECTION("conversion")
+  {
+    cuda::experimental::uninitialized_async_buffer<TestType, cuda::mr::device_accessible, my_property> input{
+      resource, stream, 42};
+    const TestType* ptr = input.data();
+
+    uninitialized_async_buffer from_rvalue{cuda::std::move(input)};
+    CUDAX_CHECK(from_rvalue.data() == ptr);
+    CUDAX_CHECK(from_rvalue.size() == 42);
+    CUDAX_CHECK(from_rvalue.get_stream() == stream);
+
+    // Ensure that we properly reset the input buffer
+    CUDAX_CHECK(input.data() == nullptr);
+    CUDAX_CHECK(input.size() == 0);
+    CUDAX_CHECK(input.get_stream() == cuda::stream_ref{});
   }
 
   SECTION("assignment")
@@ -162,6 +183,24 @@ TEMPLATE_TEST_CASE(
       thrust::fill(thrust::device, buf.begin(), buf.end(), TestType{2});
       const auto res = thrust::reduce(thrust::device, buf.begin(), buf.end(), TestType{0}, thrust::plus<int>());
       CUDAX_CHECK(res == TestType{84});
+    }
+  }
+
+  SECTION("Replace allocation of current buffer")
+  {
+    uninitialized_async_buffer buf{resource, stream, 42};
+    const TestType* old_ptr = buf.data();
+    const size_t old_size   = buf.size();
+
+    {
+      const uninitialized_async_buffer old_buf = buf.__replace_allocation(1337);
+      CUDAX_CHECK(buf.data() != old_ptr);
+      CUDAX_CHECK(buf.size() == 1337);
+
+      CUDAX_CHECK(old_buf.data() == old_ptr);
+      CUDAX_CHECK(old_buf.size() == old_size);
+
+      CUDAX_CHECK(buf.get_stream() == old_buf.get_stream());
     }
   }
 }
