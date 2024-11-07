@@ -48,7 +48,7 @@
 #include <cub/device/dispatch/kernels/reduce.cuh>
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/iterator/arg_index_input_iterator.cuh>
-#include <cub/launcher/cuda_runtime.h>
+#include <cub/launcher/cuda_runtime.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/thread/thread_store.cuh>
 #include <cub/util_debug.cuh>

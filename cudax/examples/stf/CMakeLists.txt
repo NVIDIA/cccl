@@ -55,12 +55,6 @@ find_package(CUB ${cudax_VERSION} EXACT CONFIG
   HINTS "${CCCL_SOURCE_DIR}/lib/cmake/cub/"
 )
 
-find_package(Thrust ${cudax_VERSION} EXACT CONFIG
-  NO_DEFAULT_PATH # Only check the explicit path in HINTS:
-  HINTS "${CCCL_SOURCE_DIR}/lib/cmake/thrust/"
-)
-thrust_create_target(cudax.stf.examples.thrust)
-
 find_package(CUDAToolkit REQUIRED)
 
 ## cudax_add_stf_example
@@ -90,7 +84,7 @@ function(cudax_add_stf_example target_name_var source cn_target)
   cudax_clone_target_properties(${example_target} ${cn_target})
   cudax_stf_configure_target(${example_target} ${ARGN})
   target_link_libraries(${example_target} PRIVATE
-    cudax.stf.examples.thrust
+    cudax.examples.thrust
     CUB::CUB
   )
 

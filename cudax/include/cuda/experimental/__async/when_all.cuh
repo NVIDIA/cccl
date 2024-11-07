@@ -24,7 +24,6 @@
 #include <cuda/std/atomic>
 
 #include <cuda/experimental/__async/completion_signatures.cuh>
-#include <cuda/experimental/__async/config.cuh>
 #include <cuda/experimental/__async/cpos.cuh>
 #include <cuda/experimental/__async/env.cuh>
 #include <cuda/experimental/__async/exception.cuh>
@@ -35,6 +34,7 @@
 #include <cuda/experimental/__async/type_traits.cuh>
 #include <cuda/experimental/__async/utility.cuh>
 #include <cuda/experimental/__async/variant.cuh>
+#include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/prologue.cuh>
 
@@ -239,7 +239,7 @@ _CCCL_NV_DIAG_SUPPRESS(expr_has_no_effect)
 _CCCL_DIAG_SUPPRESS_NVHPC(expr_has_no_effect)
 
 template <size_t... _Offsets>
-_CCCL_INLINE_VAR constexpr size_t __last_offset = (0, ..., _Offsets);
+inline constexpr size_t __last_offset = (0, ..., _Offsets);
 
 _CCCL_NV_DIAG_DEFAULT(expr_has_no_effect)
 _CCCL_DIAG_POP
@@ -301,13 +301,13 @@ struct __env_t
 
   __state_t& __state_;
 
-  _CCCL_HOST_DEVICE inplace_stop_token __query(get_stop_token_t) const noexcept
+  _CUDAX_API inplace_stop_token __query(get_stop_token_t) const noexcept
   {
     return __state_.__stop_token_;
   }
 
   template <class _Tag>
-  _CCCL_HOST_DEVICE auto query(_Tag) const noexcept -> __query_result_t<_Tag, env_of_t<__rcvr_t>>
+  _CUDAX_API auto query(_Tag) const noexcept -> __query_result_t<_Tag, env_of_t<__rcvr_t>>
   {
     return __async::get_env(__state_.__rcvr_).__query(_Tag());
   }
@@ -322,7 +322,7 @@ struct __rcvr_t
   __state_t& __state_;
 
   template <class... _Ts>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void set_value(_Ts&&... __ts) noexcept
+  _CUDAX_TRIVIAL_API void set_value(_Ts&&... __ts) noexcept
   {
     constexpr auto idx = __mmake_indices<sizeof...(_Ts)>();
     __state_.template __set_value<_Index>(idx, static_cast<_Ts&&>(__ts)...);
@@ -330,19 +330,19 @@ struct __rcvr_t
   }
 
   template <class _Error>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void set_error(_Error&& __error) noexcept
+  _CUDAX_TRIVIAL_API void set_error(_Error&& __error) noexcept
   {
     __state_.__set_error(static_cast<_Error&&>(__error));
     __state_.__arrive();
   }
 
-  _CCCL_HOST_DEVICE void set_stopped() noexcept
+  _CUDAX_API void set_stopped() noexcept
   {
     __state_.__set_stopped();
     __state_.__arrive();
   }
 
-  _CCCL_HOST_DEVICE auto get_env() const noexcept -> __env_t<_StateZip>
+  _CUDAX_API auto get_env() const noexcept -> __env_t<_StateZip>
   {
     return {__state_};
   }
@@ -388,7 +388,7 @@ struct __state_t<_Rcvr, _CvFn, __tupl<__mindices<_Idx...>, _Sndrs...>>
   using __stop_tok_t      = stop_token_of_t<env_of_t<_Rcvr>>;
   using __stop_callback_t = stop_callback_for_t<__stop_tok_t, __on_stop_request>;
 
-  _CCCL_HOST_DEVICE explicit __state_t(_Rcvr __rcvr, size_t __count)
+  _CUDAX_API explicit __state_t(_Rcvr __rcvr, size_t __count)
       : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
       , __count_{__count}
       , __stop_source_{}
@@ -407,7 +407,7 @@ struct __state_t<_Rcvr, _CvFn, __tupl<__mindices<_Idx...>, _Sndrs...>>
   }
 
   template <size_t _Index, size_t... _Jdx, class... _Ts>
-  _CCCL_HOST_DEVICE void __set_value(__mindices<_Jdx...>, [[maybe_unused]] _Ts&&... __ts) noexcept
+  _CUDAX_API void __set_value(__mindices<_Jdx...>, [[maybe_unused]] _Ts&&... __ts) noexcept
   {
     [[maybe_unused]] constexpr size_t _Offset = __offset_for<_Index>(static_cast<__offsets_t*>(nullptr));
     if constexpr (!_CUDA_VSTD::is_same_v<__values_t, __nil>)
@@ -431,7 +431,7 @@ struct __state_t<_Rcvr, _CvFn, __tupl<__mindices<_Idx...>, _Sndrs...>>
   }
 
   template <class _Error>
-  _CCCL_HOST_DEVICE void __set_error(_Error&& __err) noexcept
+  _CUDAX_API void __set_error(_Error&& __err) noexcept
   {
     // TODO: Use weaker memory orders
     if (__error != __state_.exchange(__error))
@@ -457,7 +457,7 @@ struct __state_t<_Rcvr, _CvFn, __tupl<__mindices<_Idx...>, _Sndrs...>>
     }
   }
 
-  _CCCL_HOST_DEVICE void __set_stopped() noexcept
+  _CUDAX_API void __set_stopped() noexcept
   {
     _CUDA_VSTD::underlying_type_t<__estate_t> __expected = __started;
     // Transition to the "stopped" state if and only if we're in the
@@ -469,7 +469,7 @@ struct __state_t<_Rcvr, _CvFn, __tupl<__mindices<_Idx...>, _Sndrs...>>
     }
   }
 
-  _CCCL_HOST_DEVICE void __arrive() noexcept
+  _CUDAX_API void __arrive() noexcept
   {
     if (0 == --__count_)
     {
@@ -477,7 +477,7 @@ struct __state_t<_Rcvr, _CvFn, __tupl<__mindices<_Idx...>, _Sndrs...>>
     }
   }
 
-  _CCCL_HOST_DEVICE void __complete() noexcept
+  _CUDAX_API void __complete() noexcept
   {
     // Stop callback is no longer needed. Destroy it.
     __on_stop_.destroy();
@@ -529,7 +529,7 @@ struct __opstate_t<_Rcvr, _CvFn, __tupl<__mindices<_Idx...>, _Sndrs...>>
   struct __connect_subs_fn
   {
     template <class... _CvSndrs>
-    _CCCL_HOST_DEVICE auto operator()(__state_t& __state, _CvSndrs&&... __sndrs_) const
+    _CUDAX_API auto operator()(__state_t& __state, _CvSndrs&&... __sndrs_) const
     {
       using __state_ref_t = __zip<__state_t>;
       if constexpr (_CUDA_VSTD::is_same_v<__offsets_t, __moffsets<>>)
@@ -556,7 +556,7 @@ struct __opstate_t<_Rcvr, _CvFn, __tupl<__mindices<_Idx...>, _Sndrs...>>
 
   /// Initialize the data member, connect all the sub-operations and
   /// save the resulting operation states in __sub_ops_.
-  _CCCL_HOST_DEVICE __opstate_t(__sndrs_t&& __sndrs_, _Rcvr __rcvr)
+  _CUDAX_API __opstate_t(__sndrs_t&& __sndrs_, _Rcvr __rcvr)
       : __state_{static_cast<_Rcvr&&>(__rcvr), sizeof...(_Sndrs)}
       , __sub_ops_{__sndrs_.__apply(__connect_subs_fn(), static_cast<__sndrs_t&&>(__sndrs_), __state_)}
   {}
@@ -564,7 +564,7 @@ struct __opstate_t<_Rcvr, _CvFn, __tupl<__mindices<_Idx...>, _Sndrs...>>
   _CUDAX_IMMOVABLE(__opstate_t);
 
   /// Start all the sub-operations.
-  _CCCL_HOST_DEVICE void start() & noexcept
+  _CUDAX_API void start() & noexcept
   {
     // register stop callback:
     __state_.__on_stop_.construct(
@@ -601,7 +601,7 @@ struct __sndr_t;
 struct when_all_t
 {
   template <class... _Sndrs>
-  _CCCL_HOST_DEVICE __when_all::__sndr_t<_Sndrs...> operator()(_Sndrs... __sndrs_) const;
+  _CUDAX_API __when_all::__sndr_t<_Sndrs...> operator()(_Sndrs... __sndrs_) const;
 };
 
 // The sender for when_all
@@ -616,13 +616,13 @@ struct __when_all::__sndr_t
   __sndrs_t __sndrs_;
 
   template <class _Rcvr>
-  _CCCL_HOST_DEVICE auto connect(_Rcvr __rcvr) && -> __opstate_t<_Rcvr, __cp, __sndrs_t>
+  _CUDAX_API auto connect(_Rcvr __rcvr) && -> __opstate_t<_Rcvr, __cp, __sndrs_t>
   {
     return __opstate_t<_Rcvr, __cp, __sndrs_t>(static_cast<__sndrs_t&&>(__sndrs_), static_cast<_Rcvr&&>(__rcvr));
   }
 
   template <class _Rcvr>
-  _CCCL_HOST_DEVICE auto connect(_Rcvr __rcvr) const& //
+  _CUDAX_API auto connect(_Rcvr __rcvr) const& //
     -> __opstate_t<_Rcvr, __cpclr, __sndrs_t>
   {
     return __opstate_t<_Rcvr, __cpclr, __sndrs_t>(__sndrs_, static_cast<_Rcvr&&>(__rcvr));
@@ -630,7 +630,7 @@ struct __when_all::__sndr_t
 };
 
 template <class... _Sndrs>
-_CCCL_HOST_DEVICE __when_all::__sndr_t<_Sndrs...> when_all_t::operator()(_Sndrs... __sndrs_) const
+_CUDAX_API __when_all::__sndr_t<_Sndrs...> when_all_t::operator()(_Sndrs... __sndrs_) const
 {
   // If the incoming sender is non-dependent, we can check the completion
   // signatures of the composed sender immediately.

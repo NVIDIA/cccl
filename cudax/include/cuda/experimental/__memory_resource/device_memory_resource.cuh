@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDAX__MEMORY_RESOURCE_CUDA_ASYNC_MEMORY_RESOURCE
-#define _CUDAX__MEMORY_RESOURCE_CUDA_ASYNC_MEMORY_RESOURCE
+#ifndef _CUDAX__MEMORY_RESOURCE_CUDA_DEVICE_MEMORY_RESOURCE
+#define _CUDAX__MEMORY_RESOURCE_CUDA_DEVICE_MEMORY_RESOURCE
 
 #include <cuda/std/detail/__config>
 
@@ -24,10 +24,10 @@
 // cudaMallocAsync was introduced in CTK 11.2
 #if !defined(_CCCL_COMPILER_MSVC_2017) && !defined(_CCCL_CUDACC_BELOW_11_2)
 
-#  if !defined(_CCCL_CUDA_COMPILER_NVCC) && !defined(_CCCL_CUDA_COMPILER_NVHPC)
+#  if defined(_CCCL_CUDA_COMPILER_CLANG)
 #    include <cuda_runtime.h>
 #    include <cuda_runtime_api.h>
-#  endif // !_CCCL_CUDA_COMPILER_NVCC && !_CCCL_CUDA_COMPILER_NVHPC
+#  endif // _CCCL_CUDA_COMPILER_CLANG
 
 #  include <cuda/__memory_resource/get_property.h>
 #  include <cuda/__memory_resource/properties.h>
@@ -39,19 +39,19 @@
 #  include <cuda/stream_ref>
 
 #  include <cuda/experimental/__device/device_ref.cuh>
-#  include <cuda/experimental/__memory_resource/async_memory_pool.cuh>
+#  include <cuda/experimental/__memory_resource/device_memory_pool.cuh>
 #  include <cuda/experimental/__stream/stream.cuh>
 
 #  if _CCCL_STD_VER >= 2014
 
 //! @file
-//! The \c async_memory_pool class provides an asynchronous memory resource that allocates device memory in stream
+//! The \c device_memory_pool class provides an asynchronous memory resource that allocates device memory in stream
 //! order.
 namespace cuda::experimental::mr
 {
 
-//! @brief global stream to synchronize in the synchronous interface of \c async_memory_resource
-inline ::cuda::stream_ref __async_memory_resource_sync_stream()
+//! @brief global stream to synchronize in the synchronous interface of \c device_memory_resource
+inline ::cuda::stream_ref __device_memory_resource_sync_stream()
 {
   static ::cuda::experimental::stream __stream{};
   return __stream;
@@ -63,17 +63,17 @@ inline ::cuda::stream_ref __async_memory_resource_sync_stream()
 //! Stream ordered memory resource
 //! ------------------------------
 //!
-//! ``async_memory_resource`` uses `cudaMallocFromPoolAsync / cudaFreeAsync
+//! ``device_memory_resource`` uses `cudaMallocFromPoolAsync / cudaFreeAsync
 //! <https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__MEMORY__POOLS.html>`__ for allocation/deallocation. A
-//! ``async_memory_resource`` is a thin wrapper around a \c cudaMemPool_t.
+//! ``device_memory_resource`` is a thin wrapper around a \c cudaMemPool_t.
 //!
 //! .. warning::
 //!
-//!    ``async_memory_resource`` does not own the pool and it is the responsibility of the user to ensure that the
-//!    lifetime of the pool exceeds the lifetime of the ``async_memory_resource``.
+//!    ``device_memory_resource`` does not own the pool and it is the responsibility of the user to ensure that the
+//!    lifetime of the pool exceeds the lifetime of the ``device_memory_resource``.
 //!
 //! @endrst
-class async_memory_resource
+class device_memory_resource
 {
 private:
   ::cudaMemPool_t __pool_;
@@ -101,30 +101,30 @@ private:
   }
 
 public:
-  //! @brief Default constructs the async_memory_resource using the default \c cudaMemPool_t of the default device.
+  //! @brief Default constructs the device_memory_resource using the default \c cudaMemPool_t of the default device.
   //! @throws cuda_error if retrieving the default \c cudaMemPool_t fails.
-  async_memory_resource()
+  device_memory_resource()
       : __pool_(__get_default_mem_pool(0))
   {}
 
-  //! @brief Constructs a async_memory_resource using the default \c cudaMemPool_t of a given device.
+  //! @brief Constructs a device_memory_resource using the default \c cudaMemPool_t of a given device.
   //! @throws cuda_error if retrieving the default \c cudaMemPool_t fails.
-  explicit async_memory_resource(::cuda::experimental::device_ref __device)
+  explicit device_memory_resource(::cuda::experimental::device_ref __device)
       : __pool_(__get_default_mem_pool(__device.get()))
   {}
 
-  async_memory_resource(int)                   = delete;
-  async_memory_resource(_CUDA_VSTD::nullptr_t) = delete;
+  device_memory_resource(int)                   = delete;
+  device_memory_resource(_CUDA_VSTD::nullptr_t) = delete;
 
-  //! @brief  Constructs the async_memory_resource from a \c cudaMemPool_t.
+  //! @brief  Constructs the device_memory_resource from a \c cudaMemPool_t.
   //! @param __pool The \c cudaMemPool_t used to allocate memory.
-  explicit async_memory_resource(::cudaMemPool_t __pool) noexcept
+  explicit device_memory_resource(::cudaMemPool_t __pool) noexcept
       : __pool_(__pool)
   {}
 
-  //! @brief  Constructs the async_memory_resource from a \c async_memory_pool by calling get().
-  //! @param __pool The \c async_memory_pool used to allocate memory.
-  explicit async_memory_resource(async_memory_pool& __pool) noexcept
+  //! @brief  Constructs the device_memory_resource from a \c device_memory_pool by calling get().
+  //! @param __pool The \c device_memory_pool used to allocate memory.
+  explicit device_memory_resource(device_memory_pool& __pool) noexcept
       : __pool_(__pool.get())
   {}
 
@@ -141,18 +141,18 @@ public:
     {
       _CUDA_VSTD_NOVERSION::__throw_invalid_argument(
         "Invalid alignment passed to "
-        "async_memory_resource::allocate_async.");
+        "device_memory_resource::allocate_async.");
     }
 
     void* __ptr{nullptr};
     _CCCL_TRY_CUDA_API(
       ::cudaMallocFromPoolAsync,
-      "async_memory_resource::allocate failed to allocate with cudaMallocFromPoolAsync",
+      "device_memory_resource::allocate failed to allocate with cudaMallocFromPoolAsync",
       &__ptr,
       __bytes,
       __pool_,
-      __async_memory_resource_sync_stream().get());
-    __async_memory_resource_sync_stream().wait();
+      __device_memory_resource_sync_stream().get());
+    __device_memory_resource_sync_stream().wait();
     return __ptr;
   }
 
@@ -164,10 +164,10 @@ public:
   //! properly synchronize all relevant streams before calling `deallocate`.
   void deallocate(void* __ptr, const size_t, const size_t __alignment = _CUDA_VMR::default_cuda_malloc_alignment)
   {
-    _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to async_memory_resource::deallocate.");
+    _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to device_memory_resource::deallocate.");
     _CCCL_ASSERT_CUDA_API(
-      ::cudaFreeAsync, "async_memory_resource::deallocate failed", __ptr, __async_memory_resource_sync_stream().get());
-    __async_memory_resource_sync_stream().wait();
+      ::cudaFreeAsync, "device_memory_resource::deallocate failed", __ptr, __device_memory_resource_sync_stream().get());
+    __device_memory_resource_sync_stream().wait();
     (void) __alignment;
   }
 
@@ -184,7 +184,7 @@ public:
     {
       _CUDA_VSTD_NOVERSION::__throw_invalid_argument(
         "Invalid alignment passed to "
-        "async_memory_resource::allocate_async.");
+        "device_memory_resource::allocate_async.");
     }
 
     return allocate_async(__bytes, __stream);
@@ -200,7 +200,7 @@ public:
     void* __ptr{nullptr};
     _CCCL_TRY_CUDA_API(
       ::cudaMallocFromPoolAsync,
-      "async_memory_resource::allocate_async failed to allocate with cudaMallocFromPoolAsync",
+      "device_memory_resource::allocate_async failed to allocate with cudaMallocFromPoolAsync",
       &__ptr,
       __bytes,
       __pool_,
@@ -220,7 +220,7 @@ public:
   void deallocate_async(void* __ptr, const size_t __bytes, const size_t __alignment, const ::cuda::stream_ref __stream)
   {
     // We need to ensure that the provided alignment matches the minimal provided alignment
-    _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to async_memory_resource::deallocate.");
+    _CCCL_ASSERT(__is_valid_alignment(__alignment), "Invalid alignment passed to device_memory_resource::deallocate.");
     deallocate_async(__ptr, __bytes, __stream);
     (void) __alignment;
   }
@@ -235,7 +235,7 @@ public:
   //! It is the caller's responsibility to properly synchronize all relevant streams before calling `deallocate_async`.
   void deallocate_async(void* __ptr, size_t, const ::cuda::stream_ref __stream)
   {
-    _CCCL_ASSERT_CUDA_API(::cudaFreeAsync, "async_memory_resource::deallocate_async failed", __ptr, __stream.get());
+    _CCCL_ASSERT_CUDA_API(::cudaFreeAsync, "device_memory_resource::deallocate_async failed", __ptr, __stream.get());
   }
 
   //! @brief Enable peer access to memory allocated through this memory resource by the supplied devices
@@ -294,34 +294,34 @@ public:
     return ::cuda::experimental::mr::__mempool_get_access(__pool_, __device);
   }
 
-  //! @brief Equality comparison with another async_memory_resource.
+  //! @brief Equality comparison with another device_memory_resource.
   //! @returns true if underlying \c cudaMemPool_t are equal.
-  _CCCL_NODISCARD constexpr bool operator==(async_memory_resource const& __rhs) const noexcept
+  _CCCL_NODISCARD constexpr bool operator==(device_memory_resource const& __rhs) const noexcept
   {
     return __pool_ == __rhs.__pool_;
   }
 #    if _CCCL_STD_VER <= 2017
 
-  //! @brief Inequality comparison with another \c async_memory_resource.
+  //! @brief Inequality comparison with another \c device_memory_resource.
   //! @returns true if underlying \c cudaMemPool_t are inequal.
-  _CCCL_NODISCARD constexpr bool operator!=(async_memory_resource const& __rhs) const noexcept
+  _CCCL_NODISCARD constexpr bool operator!=(device_memory_resource const& __rhs) const noexcept
   {
     return __pool_ != __rhs.__pool_;
   }
 #    endif // _CCCL_STD_VER <= 2017
 
 #    if _CCCL_STD_VER >= 2020
-  //! @brief Equality comparison between a \c async_memory_resource and another resource.
+  //! @brief Equality comparison between a \c device_memory_resource and another resource.
   //! @param __rhs The resource to compare to.
   //! @returns If the underlying types are equality comparable, returns the result of equality comparison of both
   //! resources. Otherwise, returns false.
   _LIBCUDACXX_TEMPLATE(class _Resource)
-  _LIBCUDACXX_REQUIRES((_CUDA_VMR::__different_resource<async_memory_resource, _Resource>) )
+  _LIBCUDACXX_REQUIRES((_CUDA_VMR::__different_resource<device_memory_resource, _Resource>) )
   _CCCL_NODISCARD bool operator==(_Resource const& __rhs) const noexcept
   {
     if constexpr (has_property<_Resource, _CUDA_VMR::device_accessible>)
     {
-      return _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<async_memory_resource*>(this)}
+      return _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<device_memory_resource*>(this)}
           == _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<_Resource&>(__rhs)};
     }
     else
@@ -331,68 +331,68 @@ public:
   }
 #    else // ^^^ C++20 ^^^ / vvv C++17
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator==(async_memory_resource const& __lhs, _Resource const& __rhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<async_memory_resource, _Resource>&&
+  _CCCL_NODISCARD_FRIEND auto operator==(device_memory_resource const& __lhs, _Resource const& __rhs) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>&&
                                           has_property<_Resource, _CUDA_VMR::device_accessible>)
   {
-    return _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<async_memory_resource&>(__lhs)}
+    return _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<device_memory_resource&>(__lhs)}
         == _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<_Resource&>(__rhs)};
   }
 
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator==(async_memory_resource const&, _Resource const&) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<async_memory_resource, _Resource>
+  _CCCL_NODISCARD_FRIEND auto operator==(device_memory_resource const&, _Resource const&) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>
                                         && !has_property<_Resource, _CUDA_VMR::device_accessible>)
   {
     return false;
   }
 
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator==(_Resource const& __rhs, async_memory_resource const& __lhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<async_memory_resource, _Resource>&&
+  _CCCL_NODISCARD_FRIEND auto operator==(_Resource const& __rhs, device_memory_resource const& __lhs) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>&&
                                           has_property<_Resource, _CUDA_VMR::device_accessible>)
   {
-    return _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<async_memory_resource&>(__lhs)}
+    return _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<device_memory_resource&>(__lhs)}
         == _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<_Resource&>(__rhs)};
   }
 
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator==(_Resource const&, async_memory_resource const&) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<async_memory_resource, _Resource>
+  _CCCL_NODISCARD_FRIEND auto operator==(_Resource const&, device_memory_resource const&) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>
                                         && !has_property<_Resource, _CUDA_VMR::device_accessible>)
   {
     return false;
   }
 
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator!=(async_memory_resource const& __lhs, _Resource const& __rhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<async_memory_resource, _Resource>&&
+  _CCCL_NODISCARD_FRIEND auto operator!=(device_memory_resource const& __lhs, _Resource const& __rhs) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>&&
                                           has_property<_Resource, _CUDA_VMR::device_accessible>)
   {
-    return _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<async_memory_resource&>(__lhs)}
+    return _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<device_memory_resource&>(__lhs)}
         != _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<_Resource&>(__rhs)};
   }
 
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator!=(async_memory_resource const&, _Resource const&) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<async_memory_resource, _Resource>
+  _CCCL_NODISCARD_FRIEND auto operator!=(device_memory_resource const&, _Resource const&) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>
                                         && !has_property<_Resource, _CUDA_VMR::device_accessible>)
   {
     return true;
   }
 
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator!=(_Resource const& __rhs, async_memory_resource const& __lhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<async_memory_resource, _Resource>&&
+  _CCCL_NODISCARD_FRIEND auto operator!=(_Resource const& __rhs, device_memory_resource const& __lhs) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>&&
                                           has_property<_Resource, _CUDA_VMR::device_accessible>)
   {
-    return _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<async_memory_resource&>(__lhs)}
+    return _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<device_memory_resource&>(__lhs)}
         != _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<_Resource&>(__rhs)};
   }
 
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator!=(_Resource const&, async_memory_resource const&) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<async_memory_resource, _Resource>
+  _CCCL_NODISCARD_FRIEND auto operator!=(_Resource const&, device_memory_resource const&) noexcept
+    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>
                                         && !has_property<_Resource, _CUDA_VMR::device_accessible>)
   {
     return true;
@@ -406,12 +406,12 @@ public:
   }
 
 #    ifndef DOXYGEN_SHOULD_SKIP_THIS // Doxygen cannot handle the friend function
-  //! @brief Enables the \c device_accessible property for \c async_memory_resource.
-  //! @relates async_memory_resource
-  friend constexpr void get_property(async_memory_resource const&, _CUDA_VMR::device_accessible) noexcept {}
+  //! @brief Enables the \c device_accessible property for \c device_memory_resource.
+  //! @relates device_memory_resource
+  friend constexpr void get_property(device_memory_resource const&, _CUDA_VMR::device_accessible) noexcept {}
 #    endif // DOXYGEN_SHOULD_SKIP_THIS
 };
-static_assert(_CUDA_VMR::resource_with<async_memory_resource, _CUDA_VMR::device_accessible>, "");
+static_assert(_CUDA_VMR::resource_with<device_memory_resource, _CUDA_VMR::device_accessible>, "");
 
 } // namespace cuda::experimental::mr
 
@@ -419,4 +419,4 @@ static_assert(_CUDA_VMR::resource_with<async_memory_resource, _CUDA_VMR::device_
 
 #endif // !_CCCL_COMPILER_MSVC_2017 && !_CCCL_CUDACC_BELOW_11_2
 
-#endif //_CUDAX__MEMORY_RESOURCE_CUDA_ASYNC_MEMORY_RESOURCE
+#endif //_CUDAX__MEMORY_RESOURCE_CUDA_DEVICE_MEMORY_RESOURCE

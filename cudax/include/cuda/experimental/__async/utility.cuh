@@ -24,9 +24,9 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/initializer_list>
 
-#include <cuda/experimental/__async/config.cuh>
 #include <cuda/experimental/__async/meta.cuh>
 #include <cuda/experimental/__async/type_traits.cuh>
+#include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/prologue.cuh>
 
@@ -37,7 +37,7 @@ _CCCL_GLOBAL_CONSTANT size_t __npos = static_cast<size_t>(-1);
 struct __ignore
 {
   template <class... _As>
-  _CCCL_HOST_DEVICE constexpr __ignore(_As&&...) noexcept {};
+  _CUDAX_API constexpr __ignore(_As&&...) noexcept {};
 };
 
 template <class...>
@@ -58,7 +58,7 @@ struct __immovable
   _CUDAX_IMMOVABLE(__immovable);
 };
 
-_CCCL_HOST_DEVICE constexpr size_t __maximum(_CUDA_VSTD::initializer_list<size_t> __il) noexcept
+_CUDAX_API constexpr size_t __maximum(_CUDA_VSTD::initializer_list<size_t> __il) noexcept
 {
   size_t __max = 0;
   for (auto i : __il)
@@ -71,7 +71,7 @@ _CCCL_HOST_DEVICE constexpr size_t __maximum(_CUDA_VSTD::initializer_list<size_t
   return __max;
 }
 
-_CCCL_HOST_DEVICE constexpr size_t __find_pos(bool const* const __begin, bool const* const __end) noexcept
+_CUDAX_API constexpr size_t __find_pos(bool const* const __begin, bool const* const __end) noexcept
 {
   for (bool const* __where = __begin; __where != __end; ++__where)
   {
@@ -84,14 +84,14 @@ _CCCL_HOST_DEVICE constexpr size_t __find_pos(bool const* const __begin, bool co
 }
 
 template <class _Ty, class... _Ts>
-_CCCL_HOST_DEVICE constexpr size_t __index_of() noexcept
+_CUDAX_API constexpr size_t __index_of() noexcept
 {
   constexpr bool __same[] = {_CUDA_VSTD::is_same_v<_Ty, _Ts>...};
   return __async::__find_pos(__same, __same + sizeof...(_Ts));
 }
 
 template <class _Ty, class _Uy = _Ty>
-_CCCL_HOST_DEVICE constexpr _Ty __exchange(_Ty& __obj, _Uy&& __new_value) noexcept
+_CUDAX_API constexpr _Ty __exchange(_Ty& __obj, _Uy&& __new_value) noexcept
 {
   constexpr bool __is_nothrow = //
     noexcept(_Ty(static_cast<_Ty&&>(__obj))) && //
@@ -104,7 +104,7 @@ _CCCL_HOST_DEVICE constexpr _Ty __exchange(_Ty& __obj, _Uy&& __new_value) noexce
 }
 
 template <class _Ty>
-_CCCL_HOST_DEVICE constexpr void __swap(_Ty& __left, _Ty& __right) noexcept
+_CUDAX_API constexpr void __swap(_Ty& __left, _Ty& __right) noexcept
 {
   constexpr bool __is_nothrow = //
     noexcept(_Ty(static_cast<_Ty&&>(__left))) && //
@@ -117,7 +117,7 @@ _CCCL_HOST_DEVICE constexpr void __swap(_Ty& __left, _Ty& __right) noexcept
 }
 
 template <class _Ty>
-_CCCL_HOST_DEVICE constexpr _Ty __decay_copy(_Ty&& __ty) noexcept(__nothrow_decay_copyable<_Ty>)
+_CUDAX_API constexpr _Ty __decay_copy(_Ty&& __ty) noexcept(__nothrow_decay_copyable<_Ty>)
 {
   return static_cast<_Ty&&>(__ty);
 }

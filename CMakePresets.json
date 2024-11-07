@@ -352,7 +352,7 @@
     },
     {
       "name": "cccl-c-parallel",
-      "displayName" : "CCCL C Parallel Library",
+      "displayName": "CCCL C Parallel Library",
       "inherits": "base",
       "cacheVariables": {
         "CCCL_ENABLE_C": true,
@@ -379,6 +379,10 @@
     {
       "name": "all-dev-debug",
       "configurePreset": "all-dev-debug"
+    },
+    {
+      "name": "install",
+      "configurePreset": "install"
     },
     {
       "name": "libcudacxx-codegen",

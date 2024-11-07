@@ -45,15 +45,19 @@ _CCCL_NV_DIAG_SUPPRESS(186)
 
 #include <cassert>
 
-#include <cooperative_groups.h>
-#include <cooperative_groups/memcpy_async.h>
+// cooperative groups do not support NVHPC yet
+#ifndef _CCCL_CUDA_COMPILER_NVHPC
+#  include <cooperative_groups.h>
+#  include <cooperative_groups/memcpy_async.h>
+#endif
 
 CUB_NAMESPACE_BEGIN
 
-// the ublkcp kernel needs PTX features that are only available and understood by CTK 12 and later
-#if _CCCL_CUDACC_VER_MAJOR >= 12
+// The ublkcp kernel needs PTX features that are only available and understood by nvcc >=12.
+// Also, cooperative groups do not support NVHPC yet.
+#if _CCCL_CUDACC_VER_MAJOR >= 12 && !defined(_CCCL_CUDA_COMPILER_NVHPC)
 #  define _CUB_HAS_TRANSFORM_UBLKCP
-#endif // _CCCL_CUDACC_VER_MAJOR >= 12
+#endif // _CCCL_CUDACC_VER_MAJOR >= 12 && !defined(_CCCL_CUDA_COMPILER_NVHPC)
 
 namespace detail
 {
@@ -177,7 +181,8 @@ _CCCL_DEVICE void transform_kernel_impl(
 
   {
     // TODO(bgruber): replace by fold over comma in C++17
-    int dummy[] = {(prefetch_tile<block_dim>(ins, tile_size), 0)..., 0}; // extra zero to handle empty packs
+    // extra zero at the end handles empty packs
+    int dummy[] = {(prefetch_tile<block_dim>(THRUST_NS_QUALIFIER::raw_reference_cast(ins), tile_size), 0)..., 0};
     (void) &dummy; // nvcc 11.1 needs extra strong unused warning suppression
   }
 
@@ -490,17 +495,34 @@ _CCCL_DEVICE void transform_kernel_impl(
 template <typename It>
 union kernel_arg
 {
-  aligned_base_ptr<value_t<It>> aligned_ptr;
-  It iterator;
+  aligned_base_ptr<value_t<It>> aligned_ptr; // first member is trivial
+  It iterator; // may not be trivially [default|copy]-constructible
 
-  _CCCL_HOST_DEVICE kernel_arg() {} // in case It is not default-constructible
+  static_assert(::cuda::std::is_trivial<decltype(aligned_ptr)>::value, "");
+
+  // Sometimes It is not trivially [default|copy]-constructible (e.g.
+  // thrust::normal_iterator<thrust::device_pointer<T>>), so because of
+  // https://eel.is/c++draft/class.union#general-note-3, kernel_args's special members are deleted. We work around it by
+  // explicitly defining them.
+
+  _CCCL_HOST_DEVICE kernel_arg() {}
+
+  _CCCL_HOST_DEVICE kernel_arg(const kernel_arg& other)
+  {
+    // since we use kernel_arg only to pass data to the device, the contained data is semantically trivially copyable,
+    // even if the type system is telling us otherwise.
+    ::cuda::std::memcpy(reinterpret_cast<char*>(this), reinterpret_cast<const char*>(&other), sizeof(kernel_arg));
+  }
 };
 
 template <typename It>
 _CCCL_HOST_DEVICE auto make_iterator_kernel_arg(It it) -> kernel_arg<It>
 {
   kernel_arg<It> arg;
-  arg.iterator = it;
+  // since we switch the active member of the union, we must use placement new or construct_at. This also uses the copy
+  // constructor of It, which works in more cases than assignment (e.g. thrust::transform_iterator with
+  // non-copy-assignable functor, e.g. in merge sort tests)
+  ::cuda::std::__construct_at(&arg.iterator, it);
   return arg;
 }
 
@@ -616,7 +638,7 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
     static constexpr bool exhaust_smem =
       bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>(
         async_policy::block_threads * async_policy::min_items_per_thread)
-      > 48 * 1024;
+      > int{max_smem_per_block};
     static constexpr bool any_type_is_overalinged =
 #  if _CCCL_STD_VER >= 2017
       ((alignof(value_t<RandomAccessIteratorsIn>) > bulk_copy_alignment) || ...);
@@ -928,14 +950,15 @@ struct dispatch_t<RequiresStableAddress,
       return config.error;
     }
 
+    // choose items per thread to reach minimum bytes in flight
     const int items_per_thread =
       loaded_bytes_per_iter == 0
         ? +policy_t::items_per_thread_no_input
         : ::cuda::ceil_div(ActivePolicy::min_bif, config->max_occupancy * block_dim * loaded_bytes_per_iter);
 
-    // Generate at least one block per SM. This improves tiny problem sizes (e.g. 2^16 elements).
-    const int items_per_thread_evenly_spread =
-      static_cast<int>(::cuda::std::min(Offset{items_per_thread}, num_items / (config->sm_count * block_dim)));
+    // but also generate enough blocks for full occupancy to optimize small problem sizes, e.g., 2^16 or 2^20 elements
+    const int items_per_thread_evenly_spread = static_cast<int>(
+      ::cuda::std::min(Offset{items_per_thread}, num_items / (config->sm_count * block_dim * config->max_occupancy)));
 
     const int items_per_thread_clamped = ::cuda::std::clamp(
       items_per_thread_evenly_spread, +policy_t::min_items_per_thread, +policy_t::max_items_per_thread);

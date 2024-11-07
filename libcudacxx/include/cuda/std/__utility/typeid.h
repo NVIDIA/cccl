@@ -52,6 +52,8 @@
 #  include <typeinfo>
 #endif
 
+// _CCCL_MSVC_BROKEN_FUNCSIG:
+//
 // When using MSVC as the host compiler, there is a bug in the EDG front-end of
 // cudafe++ that causes the __FUNCSIG__ predefined macro to be expanded too
 // early in the compilation process. The result is that within a function
@@ -62,11 +64,6 @@
 // available and can be used in place of __FUNCSIG__, resolving the issue. For
 // older versions of MSVC, we fall back to using the built-in typeid feature,
 // which is always available on MSVC, even when RTTI is disabled.
-
-#if defined(_CCCL_COMPILER_MSVC) && (_CCCL_MSVC_VERSION < 1935) && defined(_CCCL_CUDA_COMPILER_NVCC) \
-  && !defined(__CUDA_ARCH__)
-#  define _CCCL_BROKEN_MSVC_FUNCSIG
-#endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -123,7 +120,7 @@ template <class _Tp, size_t _Np>
 _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr auto __make_pretty_name(integral_constant<size_t, _Np>) noexcept //
   -> __enable_if_t<_Np == size_t(-1), __string_view>
 {
-  using _TpName = __static_nameof<_Tp, sizeof(_CCCL_PRETTY_FUNCTION)>;
+  using _TpName = __static_nameof<_Tp, sizeof(_CCCL_BUILTIN_PRETTY_FUNCTION())>;
   return __string_view(_TpName::value.__str_, _TpName::value.__len_);
 }
 
@@ -131,7 +128,7 @@ template <class _Tp, size_t _Np>
 _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr auto __make_pretty_name(integral_constant<size_t, _Np>) noexcept //
   -> __enable_if_t<_Np != size_t(-1), __sstring<_Np>>
 {
-  return _CUDA_VSTD::__make_pretty_name_impl<_Np>(_CCCL_PRETTY_FUNCTION, make_index_sequence<_Np>{});
+  return _CUDA_VSTD::__make_pretty_name_impl<_Np>(_CCCL_BUILTIN_PRETTY_FUNCTION(), make_index_sequence<_Np>{});
 }
 
 // TODO: class statics cannot be accessed from device code, so we need to use
@@ -177,7 +174,7 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __string_view __
 #if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 90000 && !defined(__CUDA_ARCH__)
   return _CUDA_VSTD::__find_pretty_name(_CUDA_VSTD::__make_pretty_name<_Tp>(integral_constant<size_t, size_t(-1)>{}));
 #else // ^^^ gcc < 9 ^^^^/ vvv other compiler vvv
-  return _CUDA_VSTD::__find_pretty_name(_CUDA_VSTD::__string_view(_CCCL_PRETTY_FUNCTION));
+  return _CUDA_VSTD::__find_pretty_name(_CUDA_VSTD::__string_view(_CCCL_BUILTIN_PRETTY_FUNCTION()));
 #endif // not gcc < 9
 }
 
@@ -442,7 +439,7 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr __type_info const& __typeid() noex
 #endif // !defined(__CUDA_ARCH__) && !_CCCL_BROKEN_MSVC_FUNCSIG
 
 // if `__pretty_nameof` is constexpr _CCCL_TYPEID_FALLBACK is also constexpr.
-#if !defined(_CCCL_NO_CONSTEXPR_PRETTY_NAMEOF) && !defined(_CCCL_BROKEN_MSVC_FUNCSIG)
+#if !defined(_CCCL_NO_CONSTEXPR_PRETTY_NAMEOF) && (!defined(_CCCL_BROKEN_MSVC_FUNCSIG) || defined(__CUDA_ARCH__))
 #  define _CCCL_TYPEOF_CONSTEXPR _CCCL_TYPEOF_FALLBACK
 #endif
 

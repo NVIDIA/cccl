@@ -110,7 +110,7 @@ C2H_TEST("Device reduce-by-key works", "[by_key][reduce][device]", full_type_lis
 
   SECTION("sum")
   {
-    using op_t = cub::Sum;
+    using op_t = ::cuda::std::plus<>;
 
     // Binary reduction operator
     auto reduction_op = unwrap_op(reference_extended_fp(d_values_it), op_t{});
@@ -144,7 +144,7 @@ C2H_TEST("Device reduce-by-key works", "[by_key][reduce][device]", full_type_lis
 
   SECTION("min")
   {
-    using op_t = cub::Min;
+    using op_t = ::cuda::minimum<>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_segments);

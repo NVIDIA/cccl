@@ -193,6 +193,31 @@ more detail in the following sections:
 
 More examples can be found in the ``examples`` directory in the sources.
 
+Compiling examples
+^^^^^^^^^^^^^^^^^^
+
+The following commands compile STF examples from the root of the CCCL sources.
+Please note the `-j` option, which specifies how many processes should be used to
+compile the examples. Not specifying it will launch as many processes as there
+are processors on the machine, which might lead to an excessive resource
+consumption and system instability.
+
+.. code:: bash
+
+    mkdir -p build
+    cd build
+    cmake .. --preset cudax-cpp17
+    cd cudax-cpp17
+    ninja cudax.cpp17.examples.stf -j4
+
+To launch examples, simply run binaries under the `bin/`
+subdirectory in the current directory. For instance, to launch the `01-axpy`
+example :
+
+.. code:: bash
+
+    ./bin/cudax.cpp17.example.stf.01-axpy
+
 Backends and contexts
 -------------------------------
 
@@ -541,8 +566,8 @@ with multiple dimensions.
 
 .. code:: cpp
 
-   auto lX_2D = ctx.logical_data(shape_of<slice<double, 2>>({16, 24}));
-   auto lX_3D = ctx.logical_data(shape_of<slice<double, 3>>({16, 24, 10}));
+   auto lX_2D = ctx.logical_data(shape_of<slice<double, 2>>(16, 24));
+   auto lX_3D = ctx.logical_data(shape_of<slice<double, 3>>(16, 24, 10));
 
 Tasks
 -----
@@ -1717,6 +1742,11 @@ To reduce the amount of information displayed in the graph, we can
 remove the list of data associated to each task by setting the
 ``CUDASTF_DOT_REMOVE_DATA_DEPS`` environment variable.
 
+It is also possible to include timing information in this graph by setting the
+``CUDASTF_DOT_TIMING`` environment variable to a non-null value. This will
+color the graph nodes according to their relative duration, and the measured
+duration will be included in task labels.
+
 Kernel tuning with ncu
 ^^^^^^^^^^^^^^^^^^^^^^
 
@@ -1856,13 +1886,13 @@ Examples:
 
 .. code-block:: cpp
 
-    auto data_handle = ctx.logical_data(slice<T2>(addr {m, n}));
+    auto data_handle = ctx.logical_data(slice<T, 2>(addr, {m, n}));
 
 - Describing a matrix of size (m, n) with a stride of ld elements
 
 .. code-block:: cpp
 
-    auto data_handle = ctx.logical_data(slice<T2>(addr {m, n}, {ld}));
+    auto data_handle = ctx.logical_data(slice<T, 2>(addr, {m, n}, {ld}));
 
 - Create a logical data from a shape
 
@@ -1874,7 +1904,7 @@ Examples:
 
 .. code-block:: cpp
 
-    auto lX = ctx.logical_data(shape_of<slice<int>>(1024)));
+    auto lX = ctx.logical_data(shape_of<slice<int>>(1024));
     auto lY = ctx.logical_data(lX.shape());
 
 Tasks

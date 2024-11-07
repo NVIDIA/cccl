@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__async/config.cuh>
+#include <cuda/experimental/__detail/config.cuh>
 
 // run_loop isn't supported on-device yet, so neither can sync_wait be.
 #if !defined(__CUDA_ARCH__)
@@ -52,12 +52,12 @@ private:
   {
     run_loop* __loop_;
 
-    _CCCL_HOST_DEVICE auto query(get_scheduler_t) const noexcept
+    _CUDAX_API auto query(get_scheduler_t) const noexcept
     {
       return __loop_->get_scheduler();
     }
 
-    _CCCL_HOST_DEVICE auto query(get_delegatee_scheduler_t) const noexcept
+    _CUDAX_API auto query(get_delegatee_scheduler_t) const noexcept
     {
       return __loop_->get_scheduler();
     }
@@ -72,7 +72,7 @@ private:
       __state_t* __state_;
 
       template <class... _As>
-      _CCCL_HOST_DEVICE void set_value(_As&&... __as) noexcept
+      _CUDAX_API void set_value(_As&&... __as) noexcept
       {
         _CUDAX_TRY( //
           ({ //
@@ -86,7 +86,7 @@ private:
       }
 
       template <class _Error>
-      _CCCL_HOST_DEVICE void set_error(_Error __err) noexcept
+      _CUDAX_API void set_error(_Error __err) noexcept
       {
         if constexpr (_CUDA_VSTD::is_same_v<_Error, ::std::exception_ptr>)
         {
@@ -103,7 +103,7 @@ private:
         __state_->__loop_.finish();
       }
 
-      _CCCL_HOST_DEVICE void set_stopped() noexcept
+      _CUDAX_API void set_stopped() noexcept
       {
         __state_->__loop_.finish();
       }

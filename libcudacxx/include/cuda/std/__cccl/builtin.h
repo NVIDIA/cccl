@@ -549,10 +549,10 @@
 #  define _CCCL_BUILTIN_TYPE_PACK_ELEMENT(...) __type_pack_element<__VA_ARGS__>
 #endif // _CCCL_HAS_BUILTIN(__type_pack_element)
 
-// NVCC prior to 12.0 have trouble with pack expansion into __type_pack_element in an alias template
-#if defined(_CCCL_CUDACC_BELOW_12_0)
+// NVCC prior to 12.2 have trouble with pack expansion into __type_pack_element in an alias template
+#if defined(_CCCL_CUDACC_BELOW_12_2)
 #  undef _CCCL_BUILTIN_TYPE_PACK_ELEMENT
-#endif // _CCCL_CUDACC_BELOW_12_0
+#endif // _CCCL_CUDACC_BELOW_12_2
 
 #if _CCCL_CHECK_BUILTIN(underlying_type) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 40700) \
   || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
@@ -560,21 +560,23 @@
 #endif // _CCCL_CHECK_BUILTIN(underlying_type) && gcc >= 4.7
 
 #if defined(_CCCL_COMPILER_MSVC)
-#  if _CCCL_MSVC_VERSION >= 1935
-#    define _CCCL_PRETTY_FUNCTION __builtin_FUNCSIG()
+#  // To use __builtin_FUNCSIG(), both MSVC and nvcc need to support it
+#  if _CCCL_MSVC_VERSION >= 1935 && !defined(_CCCL_CUDACC_BELOW_12_3)
+#    define _CCCL_BUILTIN_PRETTY_FUNCTION() __builtin_FUNCSIG()
 #  else // ^^^ _CCCL_MSVC_VERSION >= 1935 ^^^ / vvv _CCCL_MSVC_VERSION < 1935 vvv
-#    define _CCCL_PRETTY_FUNCTION __FUNCSIG__
+#    define _CCCL_BUILTIN_PRETTY_FUNCTION() __FUNCSIG__
+#    define _CCCL_BROKEN_MSVC_FUNCSIG
 #  endif // _CCCL_MSVC_VERSION < 1935
 #else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
-#  define _CCCL_PRETTY_FUNCTION __PRETTY_FUNCTION__
+#  define _CCCL_BUILTIN_PRETTY_FUNCTION() __PRETTY_FUNCTION__
 #endif // !_CCCL_COMPILER_MSVC
 
 // GCC's builtin_strlen isn't reliable at constexpr time
 // MSVC does not expose builtin_strlen before C++17
 // NVRTC does not expose builtin_strlen
-#if defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_NVRTC) \
-  || (defined(_CCCL_COMPILER_MSVC) && _CCCL_STD_VER < 2017)
-#  define _CCCL_HAS_NO_BUILTIN_STRLEN
+#if !defined(_CCCL_COMPILER_GCC) && !defined(_CCCL_COMPILER_NVRTC) \
+  && !(defined(_CCCL_COMPILER_MSVC) && _CCCL_STD_VER < 2017)
+#  define _CCCL_BUILTIN_STRLEN(...) __builtin_strlen(__VA_ARGS__)
 #endif
 
 #endif // __CCCL_BUILTIN_H

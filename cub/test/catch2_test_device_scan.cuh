@@ -36,7 +36,10 @@
  * @brief Helper class template to facilitate specifying input/output type pairs along with the key
  * type for *-by-key algorithms, and an equality operator type.
  */
-template <typename InputT, typename OutputT = InputT, typename KeyT = std::int32_t, typename EqualityOpT = cub::Equality>
+template <typename InputT,
+          typename OutputT     = InputT,
+          typename KeyT        = std::int32_t,
+          typename EqualityOpT = ::cuda::std::equal_to<>>
 struct type_quad
 {
   using input_t  = InputT;

@@ -10,9 +10,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda.h>
+#if !defined(_CCCL_CUDACC_BELOW_12_0)
 
-#include <cub/util_device.cuh>
+#  include <cuda.h>
+
+#  include <cub/util_device.cuh>
 
 CUB_NAMESPACE_BEGIN
 
@@ -44,7 +46,7 @@ struct CudaDriverLauncherFactory
 {
   CudaDriverLauncher operator()(dim3 grid, dim3 block, _CUDA_VSTD::size_t shared_mem, CUstream stream) const
   {
-    return CudaDriverLauncher(grid, block, shared_mem, stream);
+    return CudaDriverLauncher{grid, block, shared_mem, stream};
   }
 
   cudaError_t PtxVersion(int& version) const
@@ -77,3 +79,5 @@ struct CudaDriverLauncherFactory
 };
 
 CUB_NAMESPACE_END
+
+#endif // !defined(_CCCL_CUDACC_BELOW_12_0)
