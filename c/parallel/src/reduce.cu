@@ -108,18 +108,10 @@ static cudaError_t InvokeSingleTile(
 
     nothing_t nothing{};
     TransformOpT transform_op{};
-    void* op_state     = op.type == cccl_op_kind_t::stateless ? &nothing : op.state;
-    void* in_ptr       = d_in.type == cccl_iterator_kind_t::pointer ? &d_in.state : d_in.state;
-    long fake_in_ptr[] = {0L}; // TODO: Find out where this is dereferenced.
-    if (in_ptr == nullptr)
-    {
-      fflush(stderr);
-      printf("\nLOOOK using fake_in_ptr\n");
-      fflush(stdout);
-      in_ptr = fake_in_ptr;
-    }
-    void* out_ptr = d_out.type == cccl_iterator_kind_t::pointer ? &d_out.state : d_out.state;
-    void* args[]  = {in_ptr, out_ptr, &num_items, op_state, init.state, &transform_op};
+    void* op_state = op.type == cccl_op_kind_t::stateless ? &nothing : op.state;
+    void* in_ptr   = d_in.type == cccl_iterator_kind_t::pointer ? &d_in.state : d_in.state;
+    void* out_ptr  = d_out.type == cccl_iterator_kind_t::pointer ? &d_out.state : d_out.state;
+    void* args[]   = {in_ptr, out_ptr, &num_items, op_state, init.state, &transform_op};
 
     check(cuLaunchKernel((CUfunction) single_tile_kernel, 1, 1, 1, policy.block_size, 1, 1, 0, stream, args, 0));
 
@@ -154,15 +146,7 @@ static cudaError_t InvokePasses(
   cudaError error = cudaSuccess;
   do
   {
-    void* in_ptr       = d_in.type == cccl_iterator_kind_t::pointer ? &d_in.state : d_in.state;
-    long fake_in_ptr[] = {0L}; // TODO: Find out where this is dereferenced.
-    if (in_ptr == nullptr)
-    {
-      fflush(stderr);
-      printf("\nLOOOK using fake_in_ptr\n");
-      fflush(stdout);
-      in_ptr = fake_in_ptr;
-    }
+    void* in_ptr  = d_in.type == cccl_iterator_kind_t::pointer ? &d_in.state : d_in.state;
     void* out_ptr = d_out.type == cccl_iterator_kind_t::pointer ? &d_out.state : d_out.state;
 
     // Get SM count
@@ -382,7 +366,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
   cccl_device_reduce_build_result_t* build,
   cccl_iterator_t input_it,
   cccl_iterator_t output_it,
-  cccl_op_t reduction_op,
+  cccl_op_t op,
   cccl_value_t init,
   int cc_major,
   int cc_minor,
@@ -398,91 +382,45 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
     const char* name = "test";
 
     const int cc                       = cc_major * 10 + cc_minor;
-    const cccl_type_info accum_t       = get_accumulator_type(reduction_op, input_it, init);
+    const cccl_type_info accum_t       = get_accumulator_type(op, input_it, init);
     const std::string accum_cpp        = cccl_type_enum_to_string(accum_t.type);
     const runtime_tuning_policy policy = get_policy(cc, accum_t, input_it.value_type);
     const std::string input_it_value_t = cccl_type_enum_to_string(input_it.value_type.type);
     const std::string offset_t         = cccl_type_enum_to_string(cccl_type_enum::UINT64);
 
-    std::string input_iterator_src;
-    if (input_it.type == cccl_iterator_kind_t::iterator && input_it.dereference.name != nullptr)
-    {
-      input_iterator_src = std::format(
-        "extern \"C\" __device__ {3} {4}(const void *self_ptr);\n"
-        "extern \"C\" __device__ void {5}(void *self_ptr, {0} offset);\n"
-        "struct __align__({2}) input_iterator_state_t {{\n"
-        "  using iterator_category = cuda::std::random_access_iterator_tag;\n"
-        "  using value_type = {3};\n"
-        "  using difference_type = {0};\n"
-        "  using pointer = {3}*;\n"
-        "  using reference = {3}&;\n"
-        "  __device__ value_type operator*() const {{ return {4}(this); }}\n"
-        "  __device__ input_iterator_state_t& operator+=(difference_type diff) {{\n"
-        "      {5}(this, diff);\n"
-        "      return *this;\n"
-        "  }}\n"
-        "  __device__ value_type operator[](difference_type diff) const {{\n"
-        "      return *(*this + diff);\n"
-        "  }}\n"
-        "  __device__ input_iterator_state_t operator+(difference_type diff) const {{\n"
-        "      input_iterator_state_t result = *this;\n"
-        "      result += diff;\n"
-        "      return result;\n"
-        "  }}\n"
-        "  char data[{1}];\n"
-        "}};\n",
-        offset_t, // 0
-        input_it.size, // 1
-        input_it.alignment, // 2
-        input_it_value_t, // 3
-        input_it.dereference.name, // 4
-        input_it.advance.name); // 5
-    }
-    bool link_input_it_advance = false;
-    if (input_it.type == cccl_iterator_kind_t::iterator && input_it.dereference.name == nullptr)
-    {
-      fflush(stderr);
-      printf("\nLOOOK input_it.value_type.size %ld  %s:%d\n", (long) input_it.value_type.size, __FILE__, __LINE__);
-      printf("\nLOOOK input_it.advance.name %s  %s:%d\n", input_it.advance.name, __FILE__, __LINE__);
-      printf("\nLOOOK input_it.advance.ltoir_size %ld  %s:%d\n", (long) input_it.advance.ltoir_size, __FILE__, __LINE__);
-      fflush(stdout);
-      if (input_it.advance.name != nullptr && std::string(input_it.advance.name) != "input_unary_op")
-      {
-        throw std::runtime_error("UNEXPECTED input_it.advance.name");
-      }
-      input_it.value_type.size      = 1; // TODO SET FROM PYTHON
-      input_it.value_type.alignment = 1;
-      fflush(stdout);
-      input_iterator_src = std::format(
-        "extern \"C\" __device__ {1} {2}({0} distance);\n"
-        "struct __align__(1) input_iterator_state_t {{\n"
-        "  using iterator_category = cuda::std::random_access_iterator_tag;\n"
-        "  using value_type = {1};\n"
-        "  using difference_type = {0};\n"
-        "  using pointer = value_type*;\n"
-        "  using reference = value_type&;\n"
-        "  __device__ value_type operator*() const {{\n"
-        "      return {2}(offset);\n"
-        "  }}\n"
-        "  __device__ input_iterator_state_t& operator+=(difference_type diff) {{\n"
-        "      offset += diff;\n"
-        "      return *this;\n"
-        "  }}\n"
-        "  __device__ value_type operator[](difference_type diff) const {{\n"
-        "      return {2}(offset + diff);\n"
-        "  }}\n"
-        "  __device__ input_iterator_state_t operator+(difference_type diff) const {{\n"
-        "      input_iterator_state_t result = *this;\n"
-        "      result += diff;\n"
-        "      return result;\n"
-        "  }}\n"
-        "  difference_type offset = 0;\n"
-        "}};\n",
-        offset_t, // 0
-        "::cuda::std::int32_t", // 1
-        input_it.advance.name); // 2
-      link_input_it_advance = true;
-    }
+    const std::string input_iterator_src =
+      input_it.type == cccl_iterator_kind_t::pointer
+        ? std::string{}
+        : std::format(
+            "extern \"C\" __device__ {3} {4}(const void *self_ptr);\n"
+            "extern \"C\" __device__ void {5}(void *self_ptr, {0} offset);\n"
+            "struct __align__({2}) input_iterator_state_t {{\n"
+            "  using iterator_category = cuda::std::random_access_iterator_tag;\n"
+            "  using value_type = {3};\n"
+            "  using difference_type = {0};\n"
+            "  using pointer = {3}*;\n"
+            "  using reference = {3}&;\n"
+            "  __device__ value_type operator*() const {{ return {4}(this); }}\n"
+            "  __device__ input_iterator_state_t& operator+=(difference_type diff) {{\n"
+            "      {5}(this, diff);\n"
+            "      return *this;\n"
+            "  }}\n"
+            "  __device__ value_type operator[](difference_type diff) const {{\n"
+            "      return *(*this + diff);\n"
+            "  }}\n"
+            "  __device__ input_iterator_state_t operator+(difference_type diff) const {{\n"
+            "      input_iterator_state_t result = *this;\n"
+            "      result += diff;\n"
+            "      return result;\n"
+            "  }}\n"
+            "  char data[{1}];\n"
+            "}};\n",
+            offset_t, // 0
+            input_it.size, // 1
+            input_it.alignment, // 2
+            input_it_value_t, // 3
+            input_it.dereference.name, // 4
+            input_it.advance.name); // 5
 
     const std::string output_iterator_src =
       output_it.type == cccl_iterator_kind_t::pointer
@@ -531,7 +469,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
             output_it.alignment); // 5
 
     const std::string op_src =
-      reduction_op.type == cccl_op_kind_t::stateless
+      op.type == cccl_op_kind_t::stateless
         ? std::format(
             "extern \"C\" __device__ {0} {1}({0} lhs, {0} rhs);\n"
             "struct op_wrapper {{\n"
@@ -540,7 +478,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
             "  }}\n"
             "}};\n",
             accum_cpp,
-            reduction_op.name)
+            op.name)
         : std::format(
             "struct __align__({2}) op_state {{\n"
             "  char data[{3}];\n"
@@ -553,11 +491,11 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
             "  }}\n"
             "}};\n",
             accum_cpp,
-            reduction_op.name,
-            reduction_op.alignment,
-            reduction_op.size);
+            op.name,
+            op.alignment,
+            op.size);
 
-    const std::string combined_src = std::format(
+    const std::string src = std::format(
       "#include <cub/block/block_reduce.cuh>\n"
       "#include <cub/device/dispatch/kernels/reduce.cuh>\n"
       "struct __align__({1}) storage_t {{\n"
@@ -588,14 +526,9 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
       op_src, // 6
       policy.vector_load_length); // 7
 
-    fflush(stderr);
-    printf("\nLOOOK CODE4NVRTC BEGIN  %s:%d\n%sLOOOK CODE4NVRTC END\n", __FILE__, __LINE__, combined_src.c_str());
-    fflush(stdout);
-
-    std::string single_tile_kernel_name = get_single_tile_kernel_name(input_it, output_it, reduction_op, init, false);
-    std::string single_tile_second_kernel_name =
-      get_single_tile_kernel_name(input_it, output_it, reduction_op, init, true);
-    std::string reduction_kernel_name = get_device_reduce_kernel_name(reduction_op, input_it, init);
+    std::string single_tile_kernel_name        = get_single_tile_kernel_name(input_it, output_it, op, init, false);
+    std::string single_tile_second_kernel_name = get_single_tile_kernel_name(input_it, output_it, op, init, true);
+    std::string reduction_kernel_name          = get_device_reduce_kernel_name(op, input_it, init);
     std::string single_tile_kernel_lowered_name;
     std::string single_tile_second_kernel_lowered_name;
     std::string reduction_kernel_lowered_name;
@@ -610,7 +543,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
 
     auto cl =
       make_nvrtc_command_list()
-        .add_program(nvrtc_translation_unit{combined_src.c_str(), name})
+        .add_program(nvrtc_translation_unit{src.c_str(), name})
         .add_expression({single_tile_kernel_name})
         .add_expression({single_tile_second_kernel_name})
         .add_expression({reduction_kernel_name})
@@ -619,15 +552,11 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
         .get_name({single_tile_second_kernel_name, single_tile_second_kernel_lowered_name})
         .get_name({reduction_kernel_name, reduction_kernel_lowered_name})
         .cleanup_program()
-        .add_link({reduction_op.ltoir, reduction_op.ltoir_size});
+        .add_link({op.ltoir, op.ltoir_size});
 
     nvrtc_cubin result{};
 
-    if (link_input_it_advance)
-    {
-      result = cl.add_link({input_it.advance.ltoir, input_it.advance.ltoir_size}).finalize_program(num_lto_args, lopts);
-    }
-    else if (cccl_iterator_kind_t::iterator == input_it.type && cccl_iterator_kind_t::iterator == output_it.type)
+    if (cccl_iterator_kind_t::iterator == input_it.type && cccl_iterator_kind_t::iterator == output_it.type)
     {
       result = cl.add_link({input_it.advance.ltoir, input_it.advance.ltoir_size})
                  .add_link({input_it.dereference.ltoir, input_it.dereference.ltoir_size})
@@ -647,7 +576,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
                  .add_link({output_it.dereference.ltoir, output_it.dereference.ltoir_size})
                  .finalize_program(num_lto_args, lopts);
     }
-    else if (!link_input_it_advance)
+    else
     {
       result = cl.finalize_program(num_lto_args, lopts);
     }
@@ -662,11 +591,8 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
     build->cubin      = (void*) result.cubin.release();
     build->cubin_size = result.size;
   }
-  catch (const std::exception& exc)
+  catch (...)
   {
-    fflush(stderr);
-    printf("\nLOOOK EXCEPTION %s  %s:%d\n", exc.what(), __FILE__, __LINE__);
-    fflush(stdout);
     error = CUDA_ERROR_UNKNOWN;
   }
 
@@ -708,11 +634,8 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce(
       cu_device,
       stream);
   }
-  catch (const std::exception& exc)
+  catch (...)
   {
-    fflush(stderr);
-    printf("\nLOOOK EXCEPTION %s  %s:%d\n", exc.what(), __FILE__, __LINE__);
-    fflush(stdout);
     error = CUDA_ERROR_UNKNOWN;
   }
 
@@ -737,11 +660,8 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_cleanup(cccl_device_reduce_bui
     std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(bld_ptr->cubin));
     check(cuLibraryUnload(bld_ptr->library));
   }
-  catch (const std::exception& exc)
+  catch (...)
   {
-    fflush(stderr);
-    printf("\nLOOOK EXCEPTION %s  %s:%d\n", exc.what(), __FILE__, __LINE__);
-    fflush(stdout);
     return CUDA_ERROR_UNKNOWN;
   }
 
