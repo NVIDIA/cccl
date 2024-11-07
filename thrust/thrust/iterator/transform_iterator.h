@@ -207,9 +207,8 @@ public:
   /*! \endcond
    */
 
-public:
-  /*! Null constructor does nothing.
-   */
+  using reference = typename super_t::reference;
+
   transform_iterator() = default;
 
   transform_iterator(transform_iterator const&) = default;
@@ -302,13 +301,31 @@ private:
   _CCCL_DIAG_SUPPRESS_MSVC(4172)
 #endif // _CCCL_COMPILER_MSVC_2017
 
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE typename super_t::reference dereference() const
+  _CCCL_HOST_DEVICE reference dereference() const
   {
-    // Create a temporary to allow iterators with wrapped references to
-    // convert to their value type before calling m_f. Note that this
-    // disallows non-constant operations through m_f.
-    typename thrust::iterator_value<Iterator>::type const& x = *this->base();
+    // For backward compatibility with the previous transform_iterator implementation, we need to decay proxy
+    // references, that cannot be turned into raw references, into their value types before passing them to the
+    // transformation function.
+    // TODO(bgruber): use an if constexpr in C++17
+    static constexpr bool base_iter_ref_needs_decay =
+      !::cuda::std::is_same<iterator_value_t<Iterator>, ::cuda::std::__decay_t<iterator_reference_t<Iterator>>>::value
+      && !detail::is_wrapped_reference<iterator_reference_t<Iterator>>::value;
+    return dereference_impl(::cuda::std::bool_constant<base_iter_ref_needs_decay>{});
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE reference dereference_impl(::cuda::std::false_type /* raw reference or wrapped reference */) const
+  {
+    return m_f(raw_reference_cast(*this->base()));
+  }
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE
+  reference dereference_impl(::cuda::std::true_type /* proxy reference which needs to be decayed */) const
+  {
+    // Create a temporary to allow iterators with wrapped references to convert to their value type before calling m_f.
+    // Note that this disallows non-constant operations through m_f.
+    iterator_value_t<Iterator> const& x = *this->base();
     return m_f(x);
   }
 

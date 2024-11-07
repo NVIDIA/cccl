@@ -154,7 +154,7 @@ void TestTransformIteratorReferenceAndValueType()
     (void) it_tr_ref;
 
     auto it_tr_fwd = thrust::make_transform_iterator(it, forward{});
-    static_assert(is_same<decltype(it_tr_fwd)::reference, bool&&>::value, "");
+    static_assert(is_same<decltype(it_tr_fwd)::reference, bool&>::value, "");
     static_assert(is_same<decltype(it_tr_fwd)::value_type, bool>::value, "");
     (void) it_tr_fwd;
   }
@@ -177,7 +177,7 @@ void TestTransformIteratorReferenceAndValueType()
     (void) it_tr_ref;
 
     auto it_tr_fwd = thrust::make_transform_iterator(it, forward{});
-    static_assert(is_same<decltype(it_tr_fwd)::reference, bool&&>::value, ""); // wrapped reference is decayed
+    static_assert(is_same<decltype(it_tr_fwd)::reference, bool&>::value, ""); // wrapped reference is turned to raw ref.
     static_assert(is_same<decltype(it_tr_fwd)::value_type, bool>::value, "");
     (void) it_tr_fwd;
   }
@@ -200,9 +200,49 @@ void TestTransformIteratorReferenceAndValueType()
     (void) it_tr_ref;
 
     auto it_tr_fwd = thrust::make_transform_iterator(it, forward{});
-    static_assert(is_same<decltype(it_tr_fwd)::reference, bool&&>::value, ""); // proxy reference is decayed
+    static_assert(is_same<decltype(it_tr_fwd)::reference, const bool&>::value, ""); // proxy reference is decayed
     static_assert(is_same<decltype(it_tr_fwd)::value_type, bool>::value, "");
     (void) it_tr_fwd;
   }
 }
 DECLARE_UNITTEST(TestTransformIteratorReferenceAndValueType);
+
+struct foo
+{
+  int x, y;
+};
+
+struct access_x
+{
+  _CCCL_HOST_DEVICE int& operator()(foo& f) const noexcept
+  {
+    return f.x;
+  }
+};
+
+template <template <typename...> class SrcVec, template <typename...> class DstVec = SrcVec>
+void TestTransformIteratorAsDestinationWith()
+{
+  constexpr auto n = 10;
+  SrcVec<int> src(n, 1234);
+  DstVec<foo> dst(n, foo{1, 2});
+
+  thrust::copy(src.begin(), src.end(), thrust::make_transform_iterator(dst.begin(), access_x{}));
+
+  const thrust::host_vector<foo>& dst_h = dst; // no copy when Vec is a host vector
+  for (const auto& f : dst_h)
+  {
+    ASSERT_EQUAL(f.x, 1234);
+    ASSERT_EQUAL(f.y, 2);
+  }
+}
+
+void TestTransformIteratorAsDestination()
+{
+  TestTransformIteratorAsDestinationWith<thrust::host_vector>();
+  TestTransformIteratorAsDestinationWith<thrust::device_vector>();
+
+  TestTransformIteratorAsDestinationWith<thrust::host_vector, thrust::device_vector>();
+  TestTransformIteratorAsDestinationWith<thrust::device_vector, thrust::host_vector>();
+}
+DECLARE_UNITTEST(TestTransformIteratorAsDestination);

@@ -42,15 +42,20 @@ namespace detail
 template <class UnaryFunc, class Iterator, class Reference, class Value>
 struct make_transform_iterator_base
 {
-private:
-  // FIXME(bgruber): the next line should be correct, but thrust::identity<T> lies and advertises a ::return_type of T,
-  // while its operator() returns const T& (which __invoke_of correctly detects), which causes transform_iterator to
-  // crash during dereferencing.
-  // using wrapped_func_ret_t = ::cuda::std::__invoke_of<UnaryFunc, iterator_value_t<Iterator>>;
-  using wrapped_func_ret_t = result_of_adaptable_function<UnaryFunc(iterator_value_t<Iterator>)>;
+  // We need to decay any proxy reference type that cannot be decayed to a raw reference (e.g.
+  // std::vector<bool>::reference). Thrust's wrapped references can be decayed.
+  static constexpr bool base_iter_ref_needs_decay =
+    !::cuda::std::is_same<iterator_value_t<Iterator>, ::cuda::std::__decay_t<iterator_reference_t<Iterator>>>::value
+    && !is_wrapped_reference<iterator_reference_t<Iterator>>::value;
+
+  using func_input_t =
+    ::cuda::std::_If<base_iter_ref_needs_decay,
+                     const iterator_value_t<Iterator>&, // decay the reference to the value type
+                     typename raw_reference<iterator_reference_t<Iterator>>::type>;
+  using func_return_t = ::cuda::std::__invoke_of<UnaryFunc, func_input_t>;
 
   // By default, dereferencing the iterator yields the same as the function.
-  using reference  = typename ia_dflt_help<Reference, wrapped_func_ret_t>::type;
+  using reference  = typename ia_dflt_help<Reference, func_return_t>::type;
   using value_type = typename ia_dflt_help<Value, remove_cvref<reference>>::type;
 
 public:
