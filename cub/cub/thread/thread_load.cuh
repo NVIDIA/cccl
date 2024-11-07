@@ -190,48 +190,44 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void UnrolledCopy(RandomAccessIterator src, T* ds
       uint4 retval;                                                                                              \
       asm volatile("ld." #ptx_modifier ".v4.u32 {%0, %1, %2, %3}, [%4];"                                         \
                    : "=r"(retval.x), "=r"(retval.y), "=r"(retval.z), "=r"(retval.w)                              \
-                   : _CUB_ASM_PTR_(ptr));                                                                        \
+                   : "l"(ptr));                                                                                  \
       return retval;                                                                                             \
     }                                                                                                            \
     template <>                                                                                                  \
     _CCCL_DEVICE _CCCL_FORCEINLINE ulonglong2 ThreadLoad<cub_modifier, ulonglong2 const*>(ulonglong2 const* ptr) \
     {                                                                                                            \
       ulonglong2 retval;                                                                                         \
-      asm volatile("ld." #ptx_modifier ".v2.u64 {%0, %1}, [%2];"                                                 \
-                   : "=l"(retval.x), "=l"(retval.y)                                                              \
-                   : _CUB_ASM_PTR_(ptr));                                                                        \
+      asm volatile("ld." #ptx_modifier ".v2.u64 {%0, %1}, [%2];" : "=l"(retval.x), "=l"(retval.y) : "l"(ptr));   \
       return retval;                                                                                             \
     }
 
 /**
  * Define a uint2 (8B) ThreadLoad specialization for the given Cache load modifier
  */
-#  define _CUB_LOAD_8(cub_modifier, ptx_modifier)                                                          \
-    template <>                                                                                            \
-    _CCCL_DEVICE _CCCL_FORCEINLINE ushort4 ThreadLoad<cub_modifier, ushort4 const*>(ushort4 const* ptr)    \
-    {                                                                                                      \
-      ushort4 retval;                                                                                      \
-      asm volatile("ld." #ptx_modifier ".v4.u16 {%0, %1, %2, %3}, [%4];"                                   \
-                   : "=h"(retval.x), "=h"(retval.y), "=h"(retval.z), "=h"(retval.w)                        \
-                   : _CUB_ASM_PTR_(ptr));                                                                  \
-      return retval;                                                                                       \
-    }                                                                                                      \
-    template <>                                                                                            \
-    _CCCL_DEVICE _CCCL_FORCEINLINE uint2 ThreadLoad<cub_modifier, uint2 const*>(uint2 const* ptr)          \
-    {                                                                                                      \
-      uint2 retval;                                                                                        \
-      asm volatile("ld." #ptx_modifier ".v2.u32 {%0, %1}, [%2];"                                           \
-                   : "=r"(retval.x), "=r"(retval.y)                                                        \
-                   : _CUB_ASM_PTR_(ptr));                                                                  \
-      return retval;                                                                                       \
-    }                                                                                                      \
-    template <>                                                                                            \
-    _CCCL_DEVICE _CCCL_FORCEINLINE unsigned long long ThreadLoad<cub_modifier, unsigned long long const*>( \
-      unsigned long long const* ptr)                                                                       \
-    {                                                                                                      \
-      unsigned long long retval;                                                                           \
-      asm volatile("ld." #ptx_modifier ".u64 %0, [%1];" : "=l"(retval) : _CUB_ASM_PTR_(ptr));              \
-      return retval;                                                                                       \
+#  define _CUB_LOAD_8(cub_modifier, ptx_modifier)                                                              \
+    template <>                                                                                                \
+    _CCCL_DEVICE _CCCL_FORCEINLINE ushort4 ThreadLoad<cub_modifier, ushort4 const*>(ushort4 const* ptr)        \
+    {                                                                                                          \
+      ushort4 retval;                                                                                          \
+      asm volatile("ld." #ptx_modifier ".v4.u16 {%0, %1, %2, %3}, [%4];"                                       \
+                   : "=h"(retval.x), "=h"(retval.y), "=h"(retval.z), "=h"(retval.w)                            \
+                   : "l"(ptr));                                                                                \
+      return retval;                                                                                           \
+    }                                                                                                          \
+    template <>                                                                                                \
+    _CCCL_DEVICE _CCCL_FORCEINLINE uint2 ThreadLoad<cub_modifier, uint2 const*>(uint2 const* ptr)              \
+    {                                                                                                          \
+      uint2 retval;                                                                                            \
+      asm volatile("ld." #ptx_modifier ".v2.u32 {%0, %1}, [%2];" : "=r"(retval.x), "=r"(retval.y) : "l"(ptr)); \
+      return retval;                                                                                           \
+    }                                                                                                          \
+    template <>                                                                                                \
+    _CCCL_DEVICE _CCCL_FORCEINLINE unsigned long long ThreadLoad<cub_modifier, unsigned long long const*>(     \
+      unsigned long long const* ptr)                                                                           \
+    {                                                                                                          \
+      unsigned long long retval;                                                                               \
+      asm volatile("ld." #ptx_modifier ".u64 %0, [%1];" : "=l"(retval) : "l"(ptr));                            \
+      return retval;                                                                                           \
     }
 
 /**
@@ -242,7 +238,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void UnrolledCopy(RandomAccessIterator src, T* ds
     _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int ThreadLoad<cub_modifier, unsigned int const*>(unsigned int const* ptr) \
     {                                                                                                                  \
       unsigned int retval;                                                                                             \
-      asm volatile("ld." #ptx_modifier ".u32 %0, [%1];" : "=r"(retval) : _CUB_ASM_PTR_(ptr));                          \
+      asm volatile("ld." #ptx_modifier ".u32 %0, [%1];" : "=r"(retval) : "l"(ptr));                                    \
       return retval;                                                                                                   \
     }
 
@@ -255,7 +251,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void UnrolledCopy(RandomAccessIterator src, T* ds
       unsigned short const* ptr)                                                                   \
     {                                                                                              \
       unsigned short retval;                                                                       \
-      asm volatile("ld." #ptx_modifier ".u16 %0, [%1];" : "=h"(retval) : _CUB_ASM_PTR_(ptr));      \
+      asm volatile("ld." #ptx_modifier ".u16 %0, [%1];" : "=h"(retval) : "l"(ptr));                \
       return retval;                                                                               \
     }
 
@@ -275,7 +271,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void UnrolledCopy(RandomAccessIterator src, T* ds
         "    cvt.u16.u8 %0, datum;"                                                              \
         "}"                                                                                      \
         : "=h"(retval)                                                                           \
-        : _CUB_ASM_PTR_(ptr));                                                                   \
+        : "l"(ptr));                                                                             \
       return (unsigned char) retval;                                                             \
     }
 

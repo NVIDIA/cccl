@@ -268,10 +268,7 @@ public:
   {
     auto __xtmp = __x.base();
     auto __ytmp = __y.base();
-    _CUDA_VRANGES::iter_swap(--__xtmp, --__ytmp);
-#    if defined(_CCCL_COMPILER_ICC)
-    _CCCL_UNREACHABLE();
-#    endif // _CCCL_COMPILER_ICC
+    return _CUDA_VRANGES::iter_swap(--__xtmp, --__ytmp);
   }
 #  endif // !_CCCL_COMPILER_MSVC_2017
 #endif // _CCCL_STD_VER > 2014

@@ -74,6 +74,8 @@
 
 #if defined(_CCCL_COMPILER_ICC) // ICC has issues with visibility attributes on symbols with internal linkage
 #  define _CCCL_HIDE_FROM_ABI inline
+#elif defined(_CCCL_COMPILER_NVHPC) // NVHPC has issues with visibility attributes on symbols with internal linkage
+#  define _CCCL_HIDE_FROM_ABI inline
 #else // ^^^ _CCCL_COMPILER_ICC ^^^ / vvv !_CCCL_COMPILER_ICC vvv
 #  define _CCCL_HIDE_FROM_ABI _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION inline
 #endif // !_CCCL_COMPILER_ICC

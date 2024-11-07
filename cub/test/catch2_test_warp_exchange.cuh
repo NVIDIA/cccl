@@ -35,8 +35,8 @@
 
 #include <type_traits>
 
-#include "catch2_test_helper.h"
-#include "fill_striped.cuh"
+#include <c2h/catch2_test_helper.cuh>
+#include <c2h/fill_striped.cuh>
 
 template <typename InputT, typename OutputT, int ItemsPerThread, cub::WarpExchangeAlgorithm Alg, typename = void>
 struct exchange_data_t;

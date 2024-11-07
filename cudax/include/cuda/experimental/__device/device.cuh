@@ -89,7 +89,7 @@ public:
       __device      = detail::driver::deviceGet(__id_);
       __primary_ctx = detail::driver::primaryCtxRetain(__device);
     });
-    assert(__primary_ctx != nullptr);
+    _CCCL_ASSERT(__primary_ctx != nullptr, "cuda::experimental::attr_result_t::primary_context failed to get context");
     return __primary_ctx;
   }
 

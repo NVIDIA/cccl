@@ -27,6 +27,8 @@ defaults:
 jobs:
   create-release:
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
     permissions:
       contents: write
     outputs:
@@ -35,8 +37,7 @@ jobs:
     steps:
       - name: Checkout the repository
         uses: actions/checkout@v4
-        with:
-          persist-credentials: false
+
       - name: Prepare environment
         id: prepare
         run: |
@@ -100,15 +101,7 @@ jobs:
           rsync -av ${source_exclude[*]/#/--exclude=} . ${source_base}
           echo "::endgroup::"
 
-          echo "::group::Configuring install"
-          cmake --preset install -DCMAKE_INSTALL_PREFIX=${package_base}
-          echo "::endgroup::"
-
-          echo "::group::Installing"
-          pushd build/install
-          cmake --install .
-          popd
-          echo "::endgroup::"
+          ci/install_cccl.sh "${package_base}"
 
           mkdir archives
 
@@ -149,6 +142,9 @@ jobs:
 
       - name: Tag
         run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+
           git tag -a -m "CCCL Release ${release_tag}" ${release_tag} ${rc_tag}
           git push origin ${release_tag}
           echo "Tagged release ${release_tag} from ${rc_tag}." | tee -a $GITHUB_STEP_SUMMARY

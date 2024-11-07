@@ -21,16 +21,16 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__async/config.cuh>
 #include <cuda/experimental/__async/cpos.cuh>
 #include <cuda/experimental/__async/env.cuh>
+#include <cuda/experimental/__detail/config.cuh>
 
 namespace cuda::experimental::__async
 {
 template <class _Rcvr>
 struct __fwd_rcvr : _Rcvr
 {
-  _CCCL_HOST_DEVICE decltype(auto) get_env() const noexcept
+  _CUDAX_API decltype(auto) get_env() const noexcept
   {
     // TODO: only forward the "forwarding" queries:
     return __async::get_env(static_cast<_Rcvr const&>(*this));
@@ -44,23 +44,23 @@ struct __fwd_rcvr<_Rcvr*>
   _Rcvr* __rcvr_;
 
   template <class... _As>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void set_value(_As&&... __as) noexcept
+  _CUDAX_TRIVIAL_API void set_value(_As&&... __as) noexcept
   {
     __async::set_value(__rcvr_);
   }
 
   template <class _Error>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void set_error(_Error&& __error) noexcept
+  _CUDAX_TRIVIAL_API void set_error(_Error&& __error) noexcept
   {
     __async::set_error(__rcvr_, static_cast<_Error&&>(__error));
   }
 
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void set_stopped() noexcept
+  _CUDAX_TRIVIAL_API void set_stopped() noexcept
   {
     __async::set_stopped(__rcvr_);
   }
 
-  _CCCL_HOST_DEVICE decltype(auto) get_env() const noexcept
+  _CUDAX_API decltype(auto) get_env() const noexcept
   {
     // TODO: only forward the "forwarding" queries:
     return __async::get_env(__rcvr_);

@@ -23,8 +23,8 @@
 
 #include <cuda/std/__type_traits/remove_reference.h>
 
-#include <cuda/experimental/__async/config.cuh>
 #include <cuda/experimental/__async/meta.cuh>
+#include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/prologue.cuh>
 
@@ -190,53 +190,53 @@ template <class _Fn, class... _As>
 using __call_result_t = decltype(__declval<_Fn>()(__declval<_As>()...));
 
 template <class _Fn, class... _As>
-_CCCL_INLINE_VAR constexpr bool __callable = __mvalid_q<__call_result_t, _Fn, _As...>;
+inline constexpr bool __callable = __mvalid_q<__call_result_t, _Fn, _As...>;
 
 #if defined(__CUDA_ARCH__)
 template <class _Fn, class... _As>
-_CCCL_INLINE_VAR constexpr bool __nothrow_callable = true;
+inline constexpr bool __nothrow_callable = true;
 
 template <class _Ty, class... _As>
-_CCCL_INLINE_VAR constexpr bool __nothrow_constructible = true;
+inline constexpr bool __nothrow_constructible = true;
 
 template <class... _As>
-_CCCL_INLINE_VAR constexpr bool __nothrow_decay_copyable = true;
+inline constexpr bool __nothrow_decay_copyable = true;
 
 template <class... _As>
-_CCCL_INLINE_VAR constexpr bool __nothrow_movable = true;
+inline constexpr bool __nothrow_movable = true;
 
 template <class... _As>
-_CCCL_INLINE_VAR constexpr bool __nothrow_copyable = true;
+inline constexpr bool __nothrow_copyable = true;
 #else
 template <class _Fn, class... _As>
 using __nothrow_callable_ = __mif<noexcept(__declval<_Fn>()(__declval<_As>()...))>;
 
 template <class _Fn, class... _As>
-_CCCL_INLINE_VAR constexpr bool __nothrow_callable = __mvalid_q<__nothrow_callable_, _Fn, _As...>;
+inline constexpr bool __nothrow_callable = __mvalid_q<__nothrow_callable_, _Fn, _As...>;
 
 template <class _Ty, class... _As>
 using __nothrow_constructible_ = __mif<noexcept(_Ty{__declval<_As>()...})>;
 
 template <class _Ty, class... _As>
-_CCCL_INLINE_VAR constexpr bool __nothrow_constructible = __mvalid_q<__nothrow_constructible_, _Ty, _As...>;
+inline constexpr bool __nothrow_constructible = __mvalid_q<__nothrow_constructible_, _Ty, _As...>;
 
 template <class _Ty>
 using __nothrow_decay_copyable_ = __mif<noexcept(__decay_t<_Ty>(__declval<_Ty>()))>;
 
 template <class... _As>
-_CCCL_INLINE_VAR constexpr bool __nothrow_decay_copyable = (__mvalid_q<__nothrow_decay_copyable_, _As> && ...);
+inline constexpr bool __nothrow_decay_copyable = (__mvalid_q<__nothrow_decay_copyable_, _As> && ...);
 
 template <class _Ty>
 using __nothrow_movable_ = __mif<noexcept(_Ty(__declval<_Ty>()))>;
 
 template <class... _As>
-_CCCL_INLINE_VAR constexpr bool __nothrow_movable = (__mvalid_q<__nothrow_movable_, _As> && ...);
+inline constexpr bool __nothrow_movable = (__mvalid_q<__nothrow_movable_, _As> && ...);
 
 template <class _Ty>
 using __nothrow_copyable_ = __mif<noexcept(_Ty(__declval<const _Ty&>()))>;
 
 template <class... _As>
-_CCCL_INLINE_VAR constexpr bool __nothrow_copyable = (__mvalid_q<__nothrow_copyable_, _As> && ...);
+inline constexpr bool __nothrow_copyable = (__mvalid_q<__nothrow_copyable_, _As> && ...);
 #endif
 } // namespace cuda::experimental::__async
 

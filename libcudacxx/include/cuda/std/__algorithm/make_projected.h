@@ -39,7 +39,7 @@ struct _ProjectedPred
   _Pred& __pred; // Can be a unary or a binary predicate.
   _Proj& __proj;
 
-  constexpr _LIBCUDACXX_HIDE_FROM_ABI _ProjectedPred(_Pred& __pred_arg, _Proj& __proj_arg)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr _ProjectedPred(_Pred& __pred_arg, _Proj& __proj_arg)
       : __pred(__pred_arg)
       , __proj(__proj_arg)
   {}

@@ -74,7 +74,7 @@ class __atomic_semaphore
 
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool __acquire_slow_timed(chrono::nanoseconds const& __rel_time)
   {
-    return __libcpp_thread_poll_with_backoff(
+    return _CUDA_VSTD::__libcpp_thread_poll_with_backoff(
       [this]() {
         ptrdiff_t const __old = __count.load(memory_order_acquire);
         return __old != 0 && __fetch_sub_if_slow(__old);
@@ -157,7 +157,7 @@ class __atomic_semaphore<_Sco, 1>
 
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool __acquire_slow_timed(chrono::nanoseconds const& __rel_time)
   {
-    return __libcpp_thread_poll_with_backoff(
+    return _CUDA_VSTD::__libcpp_thread_poll_with_backoff(
       [this]() {
         return try_acquire();
       },

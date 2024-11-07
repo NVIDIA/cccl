@@ -344,6 +344,11 @@ def is_windows(matrix_job):
     return host_compiler['container_tag'] == 'cl'
 
 
+def is_nvhpc(matrix_job):
+    host_compiler = get_host_compiler(matrix_job['cxx'])
+    return host_compiler['container_tag'] == "nvhpc"
+
+
 def generate_dispatch_group_name(matrix_job):
     project = get_project(matrix_job['project'])
     ctk = matrix_job['ctk']
@@ -410,6 +415,9 @@ def generate_dispatch_job_image(matrix_job, job_type):
 
     if is_windows(matrix_job):
         return f"rapidsai/devcontainers:{devcontainer_version}-cuda{ctk}-{host_compiler}"
+
+    if is_nvhpc(matrix_job):
+        return f"rapidsai/devcontainers:{devcontainer_version}-cpp-{host_compiler}"
 
     return f"rapidsai/devcontainers:{devcontainer_version}-cpp-{host_compiler}-cuda{ctk}"
 

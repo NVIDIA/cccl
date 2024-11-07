@@ -256,22 +256,22 @@ fence_proxy_tensormap_generic(sem_acquire_t, scope_t<_Scope> __scope, const void
       _CCCL_IF_CONSTEXPR (__scope == scope_cta) {
         asm volatile("fence.proxy.tensormap::generic.acquire.cta [%0], %1; // 8."
                      :
-                     : "l"(__addr), "n"(__size)
+                     : "l"(__addr), "n"(__size.value)
                      : "memory");
       } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_cluster) {
         asm volatile("fence.proxy.tensormap::generic.acquire.cluster [%0], %1; // 8."
                      :
-                     : "l"(__addr), "n"(__size)
+                     : "l"(__addr), "n"(__size.value)
                      : "memory");
       } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_gpu) {
         asm volatile("fence.proxy.tensormap::generic.acquire.gpu [%0], %1; // 8."
                      :
-                     : "l"(__addr), "n"(__size)
+                     : "l"(__addr), "n"(__size.value)
                      : "memory");
       } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_sys) {
         asm volatile("fence.proxy.tensormap::generic.acquire.sys [%0], %1; // 8."
                      :
-                     : "l"(__addr), "n"(__size)
+                     : "l"(__addr), "n"(__size.value)
                      : "memory");
       }),
     (

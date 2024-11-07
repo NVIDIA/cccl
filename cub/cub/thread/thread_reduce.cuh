@@ -83,11 +83,11 @@ constexpr bool enable_dpx_reduction()
 {
   using T = decltype(::cuda::std::declval<Input>()[0]);
   // TODO: use constexpr variable in C++14+
-  using Lenght = ::cuda::std::integral_constant<int, detail::static_size<Input>()>;
-  return ((Lenght{} >= 9 && detail::are_same<ReductionOp, cub::Sum/*, std::plus<T>*/>()) || Lenght{} >= 10)
+  using Length = ::cuda::std::integral_constant<int, detail::static_size<Input>()>;
+  return ((Length{} >= 9 && detail::are_same<ReductionOp, ::cuda::std::plus<>/*, std::plus<T>*/>()) || Length{} >= 10)
             && detail::are_same<T, AccumT>()
             && detail::is_one_of<T, int16_t, uint16_t>()
-            && detail::is_one_of<ReductionOp, cub::Min, cub::Max, cub::Sum/*, std::plus<T>*/>();
+            && detail::is_one_of<ReductionOp,::cuda::minimum<>, ::cuda::maximum<>, ::cuda::std::plus<>/*, std::plus<T>*/>();
 }
 // clang-format on
 

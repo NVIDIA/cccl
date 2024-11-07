@@ -193,8 +193,8 @@ struct DeviceRunLengthEncode
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceRunLengthEncode::Encode");
 
     using offset_t     = int; // Signed integer type for global offsets
-    using equality_op  = Equality; // Default == operator
-    using reduction_op = cub::Sum; // Value reduction operator
+    using equality_op  = ::cuda::std::equal_to<>; // Default == operator
+    using reduction_op = ::cuda::std::plus<>; // Value reduction operator
 
     // The lengths output value type
     using length_t = cub::detail::non_void_value_t<LengthsOutputIteratorT, offset_t>;
@@ -367,7 +367,7 @@ struct DeviceRunLengthEncode
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceRunLengthEncode::NonTrivialRuns");
 
     using OffsetT    = int; // Signed integer type for global offsets
-    using EqualityOp = Equality; // Default == operator
+    using EqualityOp = ::cuda::std::equal_to<>; // Default == operator
 
     return DeviceRleDispatch<
       InputIteratorT,

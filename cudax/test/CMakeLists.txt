@@ -1,5 +1,7 @@
 cccl_get_catch2()
 
+find_package(cudax) # already found, bring in version info.
+
 find_package(Thrust ${cudax_VERSION} EXACT CONFIG
   NO_DEFAULT_PATH # Only check the explicit path in HINTS:
   HINTS "${CCCL_SOURCE_DIR}/lib/cmake/thrust/"
@@ -102,8 +104,8 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   cudax_add_catch2_test(test_target memory_resource ${cn_target}
     memory_resource/any_async_resource.cu
     memory_resource/any_resource.cu
-    memory_resource/async_memory_pool.cu
-    memory_resource/async_memory_resource.cu
+    memory_resource/device_memory_pool.cu
+    memory_resource/device_memory_resource.cu
     memory_resource/shared_resource.cu
   )
 
@@ -121,4 +123,16 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     green_context/green_ctx_smoke.cu
   )
 
+  cudax_add_catch2_test(test_target algorithm ${cn_target}
+    algorithm/fill.cu
+    algorithm/copy.cu
+  )
+
 endforeach()
+
+# FIXME: Enable MSVC
+if (NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}" AND
+    NOT "NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  # STF tests are handled separately:
+  add_subdirectory(stf)
+endif()

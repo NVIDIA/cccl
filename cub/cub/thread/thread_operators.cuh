@@ -48,17 +48,15 @@
 #endif // no system header
 
 #include <cub/detail/type_traits.cuh> // always_false
-#include <cub/util_cpp_dialect.cuh>
 #include <cub/util_type.cuh>
 
-#include <cuda/std/functional> // cuda::std::plus
+#include <cuda/functional>
 #include <cuda/std/type_traits> // cuda::std::common_type
 #include <cuda/std/utility> // cuda::std::forward
 
-// #include <functional> // std::plus
-
 CUB_NAMESPACE_BEGIN
 
+// TODO(bgruber): deprecate in C++17 with a note: "replace by decltype(cuda::std::not_fn(EqualityOp{}))"
 /// @brief Inequality functor (wraps equality functor)
 template <typename EqualityOp>
 struct InequalityWrapper
@@ -79,82 +77,13 @@ struct InequalityWrapper
   }
 };
 
-#if _CCCL_STD_VER > 2011
-using Equality   = ::cuda::std::equal_to<>;
-using Inequality = ::cuda::std::not_equal_to<>;
-using Sum        = ::cuda::std::plus<>;
-using Difference = ::cuda::std::minus<>;
-using Division   = ::cuda::std::divides<>;
-#else
-/// @brief Default equality functor
-struct Equality
-{
-  /// Boolean equality operator, returns `t == u`
-  template <typename T, typename U>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(T&& t, U&& u) const
-  {
-    return ::cuda::std::forward<T>(t) == ::cuda::std::forward<U>(u);
-  }
-};
-
-/// @brief Default inequality functor
-struct Inequality
-{
-  /// Boolean inequality operator, returns `t != u`
-  template <typename T, typename U>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(T&& t, U&& u) const
-  {
-    return ::cuda::std::forward<T>(t) != ::cuda::std::forward<U>(u);
-  }
-};
-
-/// @brief Default sum functor
-struct Sum
-{
-  /// Binary sum operator, returns `t + u`
-  template <typename T, typename U>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto
-  operator()(T&& t, U&& u) const -> decltype(::cuda::std::forward<T>(t) + ::cuda::std::forward<U>(u))
-  {
-    return ::cuda::std::forward<T>(t) + ::cuda::std::forward<U>(u);
-  }
-};
-
-/// @brief Default difference functor
-struct Difference
-{
-  /// Binary difference operator, returns `t - u`
-  template <typename T, typename U>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto
-  operator()(T&& t, U&& u) const -> decltype(::cuda::std::forward<T>(t) - ::cuda::std::forward<U>(u))
-  {
-    return ::cuda::std::forward<T>(t) - ::cuda::std::forward<U>(u);
-  }
-};
-
-/// @brief Default division functor
-struct Division
-{
-  /// Binary division operator, returns `t / u`
-  template <typename T, typename U>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto
-  operator()(T&& t, U&& u) const -> decltype(::cuda::std::forward<T>(t) / ::cuda::std::forward<U>(u))
-  {
-    return ::cuda::std::forward<T>(t) / ::cuda::std::forward<U>(u);
-  }
-};
-#endif
-
-/// @brief Default max functor
-struct Max
-{
-  /// Boolean max operator, returns `(t > u) ? t : u`
-  template <typename T, typename U>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::common_type<T, U>::type operator()(T&& t, U&& u) const
-  {
-    return CUB_MAX(t, u);
-  }
-};
+using Equality CUB_DEPRECATED_BECAUSE("use cuda::std::equal_to instead")       = ::cuda::std::equal_to<>;
+using Inequality CUB_DEPRECATED_BECAUSE("use cuda::std::not_equal_to instead") = ::cuda::std::not_equal_to<>;
+using Sum CUB_DEPRECATED_BECAUSE("use cuda::std::plus instead")                = ::cuda::std::plus<>;
+using Difference CUB_DEPRECATED_BECAUSE("use cuda::std::minus instead")        = ::cuda::std::minus<>;
+using Division CUB_DEPRECATED_BECAUSE("use cuda::std::divides instead")        = ::cuda::std::divides<>;
+using Max CUB_DEPRECATED_BECAUSE("use cuda::maximum instead")                  = ::cuda::maximum<>;
+using Min CUB_DEPRECATED_BECAUSE("use cuda::minimum instead")                  = ::cuda::minimum<>;
 
 /// @brief Arg max functor (keeps the value and offset of the first occurrence
 ///        of the larger item)
@@ -177,17 +106,6 @@ struct ArgMax
     }
 
     return a;
-  }
-};
-
-/// @brief Default min functor
-struct Min
-{
-  /// Boolean min operator, returns `(t < u) ? t : u`
-  template <typename T, typename U>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::common_type<T, U>::type operator()(T&& t, U&& u) const
-  {
-    return CUB_MIN(t, u);
   }
 };
 
@@ -449,8 +367,9 @@ struct ReduceByKeyOp
   }
 };
 
+//! Deprecated [Since 2.8]
 template <typename BinaryOpT>
-struct BinaryFlip
+struct CUB_DEPRECATED BinaryFlip
 {
   BinaryOpT binary_op;
 
@@ -466,11 +385,14 @@ struct BinaryFlip
   }
 };
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+//! Deprecated [Since 2.8]
 template <typename BinaryOpT>
-_CCCL_HOST_DEVICE BinaryFlip<BinaryOpT> MakeBinaryFlip(BinaryOpT binary_op)
+CUB_DEPRECATED _CCCL_HOST_DEVICE BinaryFlip<BinaryOpT> MakeBinaryFlip(BinaryOpT binary_op)
 {
   return BinaryFlip<BinaryOpT>(binary_op);
 }
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 namespace internal
 {
@@ -561,19 +483,19 @@ struct CubOperatorToDpx
 };
 
 template <typename T>
-struct CubOperatorToDpx<cub::Min, T>
+struct CubOperatorToDpx<::cuda::minimum<>, T>
 {
   using type = DpxMin<T>;
 };
 
 template <typename T>
-struct CubOperatorToDpx<cub::Max, T>
+struct CubOperatorToDpx<::cuda::maximum<>, T>
 {
   using type = DpxMax<T>;
 };
 
 template <typename T>
-struct CubOperatorToDpx<cub::Sum, T>
+struct CubOperatorToDpx<::cuda::std::plus<>, T>
 {
   using type = DpxSum<T>;
 };
@@ -585,7 +507,7 @@ struct CubOperatorToDpx<cub::Sum, T>
 // };
 
 template <typename ReduceOp, typename T>
-using cub_operator_to_dpx_t = CubOperatorToDpx<ReduceOp, T>;
+using cub_operator_to_dpx_t = typename CubOperatorToDpx<ReduceOp, T>::type;
 
 } // namespace internal
 

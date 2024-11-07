@@ -39,6 +39,9 @@ check_host_compiler_version() {
             actual_version="2023.2.0"
         fi
         expected_compiler="oneapi"
+    elif [[ "$CXX" =~ "nvc++" ]]; then
+        local actual_version=$(echo "$version_output" | head -n 2 | cut -d ' ' -f 2 | cut -d '-' -f 1 | tail -n 1)
+        local expected_compiler="nvhpc"
     else
         echo "::error:: Unexpected CXX value ($CXX)."
         exit 1
