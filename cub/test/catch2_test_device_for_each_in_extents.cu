@@ -105,7 +105,7 @@ struct Store4D
 
   __device__ void operator()(int idx, int x, int y, int z, int w)
   {
-    d_output_raw[idx] = {x, y, z};
+    d_output_raw[idx] = {x, y, z, w};
   }
 };
 

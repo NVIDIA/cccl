@@ -43,7 +43,7 @@
 #  include <cub/device/dispatch/kernels/for_each_in_extents_kernel.cuh>
 #  include <cub/device/dispatch/tuning/tuning_for_each_in_extents.cuh> // policy_hub_t
 #  include <cub/util_device.cuh>
-#  include <cub/util_namespace.cuh> // CUB_NAMESPACE_BEGIN
+#  include <cub/util_namespace.cuh>
 
 #  include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
