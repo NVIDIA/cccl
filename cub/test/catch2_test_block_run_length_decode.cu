@@ -235,8 +235,6 @@ public:
       uint32_t num_valid_items = decoded_size - decoded_window_offset;
       run_length_decode.RunLengthDecode(decoded_items, relative_offsets, decoded_window_offset);
 
-      cub::CTA_SYNC(); // Sync before reusing aliased temp storage
-
       BlockStoreDecodedItemT(temp_storage.decode.store_decoded_runs_storage)
         .Store(d_block_decoded_out + decoded_window_offset, decoded_items, num_valid_items);
 
@@ -247,6 +245,11 @@ public:
       }
 
       decoded_window_offset += DECODED_ITEMS_PER_THREAD * BLOCK_THREADS;
+      if (decoded_window_offset < decoded_size)
+      {
+        // Sync before starting the next loop, which reuses shmem
+        cub::CTA_SYNC();
+      }
     }
     return decoded_size;
   }
