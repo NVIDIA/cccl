@@ -25,10 +25,6 @@ option(cudax_ENABLE_CUDASTF_BOUNDSCHECK "Enable bounds checks for STF targets. R
 option(cudax_ENABLE_CUDASTF_DEBUG "Enable additional debugging for STF targets. Requires debug build." OFF)
 option(cudax_ENABLE_CUDASTF_MATHLIBS "Enable STF tests/examples that use cublas/cusolver." OFF)
 
-if (cudax_ENABLE_CUDASTF_CODE_GENERATION)
-   message(FATAL_ERROR "code gen enabled")
-endif()
-
 if ((cudax_ENABLE_CUDASTF_BOUNDSCHECK OR cudax_ENABLE_CUDASTF_DEBUG) AND
     NOT CMAKE_BUILD_TYPE MATCHES "Debug" AND NOT CMAKE_BUILD_TYPE MATCHES "RelWithDebInfo")
   message(FATAL_ERROR "cudax_ENABLE_CUDASTF_BOUNDSCHECK and cudax_ENABLE_CUDASTF_DEBUG require a Debug build.")
