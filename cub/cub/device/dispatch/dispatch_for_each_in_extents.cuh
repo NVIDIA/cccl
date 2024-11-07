@@ -103,19 +103,19 @@ struct dispatch_t : PolicyHubT
   _CCCL_NODISCARD CUB_RUNTIME_FUNCTION
   _CCCL_FORCEINLINE cudaError_t InvokeVariadic(::cuda::std::index_sequence<Ranks...>) const
   {
-    using max_policy_t      = typename dispatch_t::MaxPolicy;
-    using ext_index_type    = typename ExtentsType::index_type;
-    constexpr auto NumRanks = sizeof...(Ranks);
+    using max_policy_t   = typename dispatch_t::MaxPolicy;
+    using ext_index_type = typename ExtentsType::index_type;
+    using ArrayType      = ::cuda::std::array<fast_div_mod, sizeof...(Ranks)>; // workaround for nvcc 11.1 bug
     if (_size == 0)
     {
       return cudaSuccess;
     }
-    int block_threads  = 256;
-    cudaError_t status = cudaSuccess;
-    constexpr auto seq = ::cuda::std::make_index_sequence<ExtentsType::rank()>{};
-    ::cuda::std::array<fast_div_mod, NumRanks> sub_sizes_div_array = cub::detail::sub_sizes_fast_div_mod(_ext, seq);
-    ::cuda::std::array<fast_div_mod, NumRanks> extents_div_array   = cub::detail::extents_fast_div_mod(_ext, seq);
-    using FastDivModArrayType                                      = decltype(sub_sizes_div_array);
+    int block_threads             = 256;
+    cudaError_t status            = cudaSuccess;
+    constexpr auto seq            = ::cuda::std::make_index_sequence<ExtentsType::rank()>{};
+    ArrayType sub_sizes_div_array = cub::detail::sub_sizes_fast_div_mod(_ext, seq);
+    ArrayType extents_div_array   = cub::detail::extents_fast_div_mod(_ext, seq);
+    using FastDivModArrayType     = decltype(sub_sizes_div_array);
 
     [[maybe_unused]] auto kernel =
       detail::for_each_in_extents::dynamic_kernel<OpType, ext_index_type, decltype(sub_sizes_div_array), Ranks...>;
