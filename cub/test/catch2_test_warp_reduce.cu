@@ -373,7 +373,7 @@ C2H_TEST("Warp reduce works", "[reduce][warp]", builtin_type_list, logical_warp_
 {
   using params   = params_t<TestType>;
   using type     = typename params::type;
-  using red_op_t = cub::Min;
+  using red_op_t = ::cuda::minimum<>;
 
   // Prepare test data
   c2h::device_vector<type> d_in(params::tile_size);
@@ -438,7 +438,7 @@ C2H_TEST("Warp reduce on partial warp works", "[reduce][warp]", builtin_type_lis
 {
   using params   = params_t<TestType>;
   using type     = typename params::type;
-  using red_op_t = cub::Min;
+  using red_op_t = ::cuda::minimum<>;
 
   // Prepare test data
   c2h::device_vector<type> d_in(params::tile_size);
@@ -515,7 +515,7 @@ C2H_TEST("Warp segmented reduction works", "[reduce][warp]", builtin_type_list, 
 {
   using params   = params_t<TestType>;
   using type     = typename params::type;
-  using red_op_t = cub::Min;
+  using red_op_t = ::cuda::minimum<>;
 
   constexpr auto segmented_mod = c2h::get<2, TestType>::value;
   static_assert(segmented_mod == reduce_mode::tail_flags || segmented_mod == reduce_mode::head_flags,

@@ -240,7 +240,7 @@ struct Int2Type
  *     temp_storage_bytes,
  *     d_in,
  *     d_out,
- *     cub::Sum(),
+ *     cuda::std::plus<>{},
  *     init_value,
  *     num_items);
  * allocator.DeviceFree(d_intermediate_result);

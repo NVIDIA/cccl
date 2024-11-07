@@ -126,7 +126,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
 #if TEST_TYPES != 3
   SECTION("inclusive sum")
   {
-    using op_t    = cub::Sum;
+    using op_t    = ::cuda::std::plus<>;
     using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
@@ -154,7 +154,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
 
   SECTION("exclusive sum")
   {
-    using op_t    = cub::Sum;
+    using op_t    = ::cuda::std::plus<>;
     using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
@@ -183,7 +183,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
 
   SECTION("inclusive scan")
   {
-    using op_t    = cub::Min;
+    using op_t    = ::cuda::minimum<>;
     using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Prepare verification data
@@ -212,7 +212,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
 
   SECTION("inclusive scan with init value")
   {
-    using op_t    = cub::Sum;
+    using op_t    = ::cuda::std::plus<>;
     using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Scan operator
@@ -247,7 +247,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
 
   SECTION("exclusive scan")
   {
-    using op_t    = cub::Sum;
+    using op_t    = ::cuda::std::plus<>;
     using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Scan operator
@@ -280,7 +280,7 @@ C2H_TEST("Device scan works with all device interfaces", "[scan][device]", full_
 
   SECTION("exclusive scan with future-init value")
   {
-    using op_t    = cub::Sum;
+    using op_t    = ::cuda::std::plus<>;
     using accum_t = ::cuda::std::__accumulator_t<op_t, input_t, input_t>;
 
     // Scan operator

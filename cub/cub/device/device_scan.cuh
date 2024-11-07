@@ -197,8 +197,15 @@ struct DeviceScan
     // Initial value
     InitT init_value{};
 
-    return DispatchScan<InputIteratorT, OutputIteratorT, Sum, detail::InputValue<InitT>, OffsetT>::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, Sum(), detail::InputValue<InitT>(init_value), num_items, stream);
+    return DispatchScan<InputIteratorT, OutputIteratorT, ::cuda::std::plus<>, detail::InputValue<InitT>, OffsetT>::
+      Dispatch(d_temp_storage,
+               temp_storage_bytes,
+               d_in,
+               d_out,
+               ::cuda::std::plus<>{},
+               detail::InputValue<InitT>(init_value),
+               num_items,
+               stream);
   }
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
@@ -380,7 +387,7 @@ struct DeviceScan
   //! @tparam OutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing scan outputs @iterator
   //!
-  //! @tparam ScanOp
+  //! @tparam ScanOpT
   //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @tparam InitValueT
@@ -526,7 +533,7 @@ struct DeviceScan
   //! @tparam IteratorT
   //!   **[inferred]** Random-access input iterator type for reading scan inputs and writing scan outputs
   //!
-  //! @tparam ScanOp
+  //! @tparam ScanOpT
   //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @tparam InitValueT
@@ -664,7 +671,7 @@ struct DeviceScan
   //! @tparam OutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing scan outputs @iterator
   //!
-  //! @tparam ScanOp
+  //! @tparam ScanOpT
   //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @tparam InitValueT
@@ -823,7 +830,7 @@ struct DeviceScan
   //! @tparam IteratorT
   //!   **[inferred]** Random-access input iterator type for reading scan inputs and writing scan outputs
   //!
-  //! @tparam ScanOp
+  //! @tparam ScanOpT
   //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @tparam InitValueT
@@ -992,8 +999,8 @@ struct DeviceScan
     // Unsigned integer type for global offsets
     using OffsetT = detail::choose_offset_t<NumItemsT>;
 
-    return DispatchScan<InputIteratorT, OutputIteratorT, Sum, NullType, OffsetT>::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_in, d_out, Sum(), NullType(), num_items, stream);
+    return DispatchScan<InputIteratorT, OutputIteratorT, ::cuda::std::plus<>, NullType, OffsetT>::Dispatch(
+      d_temp_storage, temp_storage_bytes, d_in, d_out, ::cuda::std::plus<>{}, NullType{}, num_items, stream);
   }
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
@@ -1172,7 +1179,7 @@ struct DeviceScan
   //! @tparam OutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing scan outputs @iterator
   //!
-  //! @tparam ScanOp
+  //! @tparam ScanOpT
   //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @tparam NumItemsT
@@ -1405,7 +1412,7 @@ struct DeviceScan
   //! @tparam IteratorT
   //!   **[inferred]** Random-access input iterator type for reading scan inputs and writing scan outputs
   //!
-  //! @tparam ScanOp
+  //! @tparam ScanOpT
   //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @tparam NumItemsT
@@ -1552,7 +1559,7 @@ struct DeviceScan
   //!
   //! @param[in] equality_op
   //!   Binary functor that defines the equality of keys.
-  //!   Default is cub::Equality().
+  //!   Default is cuda::std::equal_to<>{}.
   //!
   //! @param[in] stream
   //!   @rst
@@ -1561,7 +1568,7 @@ struct DeviceScan
   template <typename KeysInputIteratorT,
             typename ValuesInputIteratorT,
             typename ValuesOutputIteratorT,
-            typename EqualityOpT = Equality,
+            typename EqualityOpT = ::cuda::std::equal_to<>,
             typename NumItemsT   = std::uint32_t>
   CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSumByKey(
     void* d_temp_storage,
@@ -1587,7 +1594,7 @@ struct DeviceScan
       ValuesInputIteratorT,
       ValuesOutputIteratorT,
       EqualityOpT,
-      Sum,
+      ::cuda::std::plus<>,
       InitT,
       OffsetT>::Dispatch(d_temp_storage,
                          temp_storage_bytes,
@@ -1595,7 +1602,7 @@ struct DeviceScan
                          d_values_in,
                          d_values_out,
                          equality_op,
-                         Sum(),
+                         ::cuda::std::plus<>{},
                          init_value,
                          num_items,
                          stream);
@@ -1605,7 +1612,7 @@ struct DeviceScan
   template <typename KeysInputIteratorT,
             typename ValuesInputIteratorT,
             typename ValuesOutputIteratorT,
-            typename EqualityOpT = Equality,
+            typename EqualityOpT = ::cuda::std::equal_to<>,
             typename NumItemsT   = std::uint32_t>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSumByKey(
     void* d_temp_storage,
@@ -1715,7 +1722,7 @@ struct DeviceScan
   //! @tparam ValuesOutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing scan values outputs @iterator
   //!
-  //! @tparam ScanOp
+  //! @tparam ScanOpT
   //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @tparam InitValueT
@@ -1758,7 +1765,7 @@ struct DeviceScan
   //!
   //!  @param[in] equality_op
   //!    Binary functor that defines the equality of keys.
-  //!    Default is cub::Equality().
+  //!    Default is cuda::std::equal_to<>{}.
   //!
   //!  @param[in] stream
   //!    @rst
@@ -1769,7 +1776,7 @@ struct DeviceScan
             typename ValuesOutputIteratorT,
             typename ScanOpT,
             typename InitValueT,
-            typename EqualityOpT = Equality,
+            typename EqualityOpT = ::cuda::std::equal_to<>,
             typename NumItemsT   = std::uint32_t>
   CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScanByKey(
     void* d_temp_storage,
@@ -1813,7 +1820,7 @@ struct DeviceScan
             typename ValuesOutputIteratorT,
             typename ScanOpT,
             typename InitValueT,
-            typename EqualityOpT = Equality,
+            typename EqualityOpT = ::cuda::std::equal_to<>,
             typename NumItemsT   = std::uint32_t>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScanByKey(
     void* d_temp_storage,
@@ -1938,7 +1945,7 @@ struct DeviceScan
   //!
   //!  @param[in] equality_op
   //!    Binary functor that defines the equality of keys.
-  //!    Default is cub::Equality().
+  //!    Default is cuda::std::equal_to<>{}.
   //!
   //!  @param[in] stream
   //!    @rst
@@ -1947,7 +1954,7 @@ struct DeviceScan
   template <typename KeysInputIteratorT,
             typename ValuesInputIteratorT,
             typename ValuesOutputIteratorT,
-            typename EqualityOpT = Equality,
+            typename EqualityOpT = ::cuda::std::equal_to<>,
             typename NumItemsT   = std::uint32_t>
   CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSumByKey(
     void* d_temp_storage,
@@ -1969,7 +1976,7 @@ struct DeviceScan
       ValuesInputIteratorT,
       ValuesOutputIteratorT,
       EqualityOpT,
-      Sum,
+      ::cuda::std::plus<>,
       NullType,
       OffsetT>::Dispatch(d_temp_storage,
                          temp_storage_bytes,
@@ -1977,8 +1984,8 @@ struct DeviceScan
                          d_values_in,
                          d_values_out,
                          equality_op,
-                         Sum(),
-                         NullType(),
+                         ::cuda::std::plus<>{},
+                         NullType{},
                          num_items,
                          stream);
   }
@@ -1987,7 +1994,7 @@ struct DeviceScan
   template <typename KeysInputIteratorT,
             typename ValuesInputIteratorT,
             typename ValuesOutputIteratorT,
-            typename EqualityOpT = Equality,
+            typename EqualityOpT = ::cuda::std::equal_to<>,
             typename NumItemsT   = std::uint32_t>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSumByKey(
     void* d_temp_storage,
@@ -2092,7 +2099,7 @@ struct DeviceScan
   //! @tparam ValuesOutputIteratorT
   //!   **[inferred]** Random-access output iterator type for writing scan values outputs @iterator
   //!
-  //! @tparam ScanOp
+  //! @tparam ScanOpT
   //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
   //!
   //! @tparam EqualityOpT
@@ -2126,7 +2133,7 @@ struct DeviceScan
   //!
   //!  @param[in] equality_op
   //!    Binary functor that defines the equality of keys.
-  //!    Default is cub::Equality().
+  //!    Default is cuda::std::equal_to<>{}.
   //!
   //!  @param[in] stream
   //!    @rst
@@ -2136,7 +2143,7 @@ struct DeviceScan
             typename ValuesInputIteratorT,
             typename ValuesOutputIteratorT,
             typename ScanOpT,
-            typename EqualityOpT = Equality,
+            typename EqualityOpT = ::cuda::std::equal_to<>,
             typename NumItemsT   = std::uint32_t>
   CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanByKey(
     void* d_temp_storage,
@@ -2178,7 +2185,7 @@ struct DeviceScan
             typename ValuesInputIteratorT,
             typename ValuesOutputIteratorT,
             typename ScanOpT,
-            typename EqualityOpT = Equality,
+            typename EqualityOpT = ::cuda::std::equal_to<>,
             typename NumItemsT   = std::uint32_t>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScanByKey(
     void* d_temp_storage,

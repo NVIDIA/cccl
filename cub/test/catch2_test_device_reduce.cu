@@ -130,7 +130,7 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
 #if TEST_TYPES != 4
   SECTION("reduce")
   {
-    using op_t = cub::Sum;
+    using op_t = ::cuda::std::plus<>;
 
     // Binary reduction operator
     auto reduction_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
@@ -156,7 +156,7 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
 #if TEST_TYPES != 3
   SECTION("sum")
   {
-    using op_t    = cub::Sum;
+    using op_t    = ::cuda::std::plus<>;
     using accum_t = ::cuda::std::__accumulator_t<op_t, item_t, output_t>;
 
     // Prepare verification data

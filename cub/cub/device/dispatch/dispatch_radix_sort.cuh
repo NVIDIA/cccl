@@ -190,17 +190,23 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicy::BLOCK_THREADS), 
 {
   // Parameterize the AgentScan type for the current configuration
   using AgentScanT =
-    AgentScan<typename ChainedPolicyT::ActivePolicy::ScanPolicy, OffsetT*, OffsetT*, cub::Sum, OffsetT, OffsetT, OffsetT>;
+    AgentScan<typename ChainedPolicyT::ActivePolicy::ScanPolicy,
+              OffsetT*,
+              OffsetT*,
+              ::cuda::std::plus<>,
+              OffsetT,
+              OffsetT,
+              OffsetT>;
 
   // Shared memory storage
   __shared__ typename AgentScanT::TempStorage temp_storage;
 
   // Block scan instance
-  AgentScanT block_scan(temp_storage, d_spine, d_spine, cub::Sum(), OffsetT(0));
+  AgentScanT block_scan(temp_storage, d_spine, d_spine, ::cuda::std::plus<>{}, OffsetT(0));
 
   // Process full input tiles
   int block_offset = 0;
-  BlockScanRunningPrefixOp<OffsetT, Sum> prefix_op(0, Sum());
+  BlockScanRunningPrefixOp<OffsetT, ::cuda::std::plus<>> prefix_op(0, ::cuda::std::plus<>{});
   while (block_offset + AgentScanT::TILE_ITEMS <= num_counts)
   {
     block_scan.template ConsumeTile<false, false>(block_offset, prefix_op);

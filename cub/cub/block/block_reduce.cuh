@@ -338,7 +338,7 @@ public:
   //!        ...
   //!
   //!        // Compute the block-wide max for thread0
-  //!        int aggregate = BlockReduce(temp_storage).Reduce(thread_data, cub::Max());
+  //!        int aggregate = BlockReduce(temp_storage).Reduce(thread_data, cuda::maximum<>{});
   //!
   //! @endrst
   //!
@@ -388,7 +388,7 @@ public:
   //!        ...
   //!
   //!        // Compute the block-wide max for thread0
-  //!        int aggregate = BlockReduce(temp_storage).Reduce(thread_data, cub::Max());
+  //!        int aggregate = BlockReduce(temp_storage).Reduce(thread_data, cuda::maximum<>{});
   //!
   //! @endrst
   //!
@@ -442,7 +442,7 @@ public:
   //!        if (threadIdx.x < num_valid) thread_data = ...
   //!
   //!        // Compute the block-wide max for thread0
-  //!        int aggregate = BlockReduce(temp_storage).Reduce(thread_data, cub::Max(), num_valid);
+  //!        int aggregate = BlockReduce(temp_storage).Reduce(thread_data, cuda::maximum<>{}, num_valid);
   //!
   //! @endrst
   //!
@@ -562,7 +562,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T (&inputs)[ITEMS_PER_THREAD])
   {
     // Reduce partials
-    T partial = internal::ThreadReduce(inputs, cub::Sum());
+    T partial = internal::ThreadReduce(inputs, ::cuda::std::plus<>{});
     return Sum(partial);
   }
 
