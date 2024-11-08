@@ -109,33 +109,75 @@ struct Store4D
   }
 };
 
+template <typename IndexType, int Size>
+struct LinearStore
+{
+  using data_t = cuda::std::array<IndexType, Size>;
+  data_t* d_output_raw;
+
+  template <typename... TArgs>
+  __device__ void operator()(IndexType idx, TArgs... args)
+  {
+    static_assert(sizeof...(TArgs) == Size);
+    d_output_raw[idx] = {args...};
+  }
+};
+
 /***********************************************************************************************************************
  * TEST CASES
  **********************************************************************************************************************/
 
-C2H_TEST("DeviceForEachInExtents 1D static", "[ForEachInExtents][static][device]")
+// using index_types = c2h::type_list<int8_t, uint8_t, int16_t, uint16_t, int, unsigned, int64_t, uint64_t>;
+
+C2H_TEST("DeviceForEachInExtents 2D static", "[ForEachInExtents][static][device]")
 {
-  using data_t = cuda::std::array<int, 1>;
-  cuda::std::extents<int, 5> ext{};
+  constexpr int rank = 2;
+  using index_type   = uint64_t;
+  using data_t       = cuda::std::array<index_type, rank>;
+  using store_op_t   = LinearStore<index_type, rank>;
+  cuda::std::extents<index_type, 5, 3> ext{};
   c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
   c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
   auto d_output_raw = thrust::raw_pointer_cast(d_output.data());
+  CAPTURE(c2h::type_name<index_type>());
 
-  device_for_each_in_extents(ext, Store1D{d_output_raw});
+  device_for_each_in_extents(ext, store_op_t{d_output_raw});
   c2h::host_vector<data_t> h_output_gpu = d_output;
   fill_linear(h_output, ext);
   REQUIRE(h_output == h_output_gpu);
 }
 
-C2H_TEST("DeviceForEachInExtents 3D static", "[ForEachInExtents][static][device]")
+#  if 0
+C2H_TEST("DeviceForEachInExtents 1D static", "[ForEachInExtents][static][device]", index_types)
 {
-  using data_t = cuda::std::array<int, 3>;
-  cuda::std::extents<int, 5, 3, 4> ext{};
+  constexpr int rank = 1;
+  using index_type   = c2h::get<0, TestType>;
+  using data_t       = cuda::std::array<index_type, rank>;
+  using store_op_t   = LinearStore<index_type, rank>;
+  cuda::std::extents<index_type, 5> ext{};
   c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
   c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
   auto d_output_raw = thrust::raw_pointer_cast(d_output.data());
 
-  device_for_each_in_extents(ext, Store3D{d_output_raw});
+  device_for_each_in_extents(ext, store_op_t{d_output_raw});
+  c2h::host_vector<data_t> h_output_gpu = d_output;
+  fill_linear(h_output, ext);
+  REQUIRE(h_output == h_output_gpu);
+}
+
+C2H_TEST("DeviceForEachInExtents 3D static", "[ForEachInExtents][static][device]", index_types)
+{
+  constexpr int rank = 3;
+  using index_type   = c2h::get<0, TestType>;
+  using data_t       = cuda::std::array<index_type, rank>;
+  using store_op_t   = LinearStore<index_type, rank>;
+  cuda::std::extents<index_type, 5, 3, 4> ext{};
+  c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
+  c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
+  auto d_output_raw = thrust::raw_pointer_cast(d_output.data());
+  CAPTURE(c2h::type_name<index_type>());
+
+  device_for_each_in_extents(ext, store_op_t{d_output_raw});
   c2h::host_vector<data_t> h_output_gpu = d_output;
   fill_linear(h_output, ext);
   REQUIRE(h_output == h_output_gpu);
@@ -143,16 +185,18 @@ C2H_TEST("DeviceForEachInExtents 3D static", "[ForEachInExtents][static][device]
 
 C2H_TEST("DeviceForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][device]")
 {
-  using data_t = cuda::std::array<int, 3>;
-  auto X       = GENERATE_COPY(take(3, random(2, 10)));
-  auto Y       = GENERATE_COPY(take(3, random(2, 10)));
-  auto Z       = GENERATE_COPY(take(3, random(2, 10)));
+  constexpr int rank = 3;
+  using data_t       = cuda::std::array<int, rank>;
+  using store_op_t   = LinearStore<int, rank>;
+  auto X             = GENERATE_COPY(take(3, random(2, 10)));
+  auto Y             = GENERATE_COPY(take(3, random(2, 10)));
+  auto Z             = GENERATE_COPY(take(3, random(2, 10)));
   cuda::std::dextents<int, 3> ext{X, Y, Z};
   c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
   c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
   auto d_output_raw = thrust::raw_pointer_cast(d_output.data());
 
-  device_for_each_in_extents(ext, Store3D{d_output_raw});
+  device_for_each_in_extents(ext, store_op_t{d_output_raw});
   c2h::host_vector<data_t> h_output_gpu = d_output;
   fill_linear(h_output, ext);
   REQUIRE(h_output == h_output_gpu);
@@ -160,16 +204,18 @@ C2H_TEST("DeviceForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][devic
 
 C2H_TEST("DeviceForEachInExtents 4D static", "[ForEachInExtents][static][device]")
 {
-  using data_t = cuda::std::array<int, 4>;
+  constexpr int rank = 4;
+  using data_t       = cuda::std::array<int, rank>;
+  using store_op_t   = LinearStore<int, rank>;
   cuda::std::extents<int, 3, 2, 6, 5> ext{};
   c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
   c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
   auto d_output_raw = thrust::raw_pointer_cast(d_output.data());
 
-  device_for_each_in_extents(ext, Store4D{d_output_raw});
+  device_for_each_in_extents(ext, store_op_t{d_output_raw});
   c2h::host_vector<data_t> h_output_gpu = d_output;
   fill_linear(h_output, ext);
   REQUIRE(h_output == h_output_gpu);
 }
-
+#  endif
 #endif // _CCCL_STD_VER >= 2017

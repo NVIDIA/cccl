@@ -49,24 +49,31 @@ CUB_NAMESPACE_BEGIN
 namespace detail::for_each_in_extents
 {
 
-template <int Rank, typename T>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE//
-T coordinate_at(T index, fast_div_mod sub_size, fast_div_mod extent)
+template <typename IndexType>
+_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE //
+IndexType
+coordinate_at(IndexType index, fast_div_mod<IndexType> sub_size, fast_div_mod<IndexType> extent)
 {
   return (index / sub_size) % extent;
 }
 
-template <typename Func, typename IndexType, typename FastDivModArrayType, ::cuda::std::size_t... Ranks>
+template <typename IndexType,
+          typename Func,
+          typename FastDivModArrayType,
+          typename UIndexType = ::cuda::std::make_unsigned_t<IndexType>,
+          ::cuda::std::size_t... Ranks>
 CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(
   Func func,
-  _CCCL_GRID_CONSTANT const IndexType size,
+  _CCCL_GRID_CONSTANT const UIndexType size,
   _CCCL_GRID_CONSTANT const FastDivModArrayType sub_sizes_div_array,
-  _CCCL_GRID_CONSTANT const FastDivModArrayType extents_div_array)
+  _CCCL_GRID_CONSTANT const FastDivModArrayType extents_mod_array)
 {
-  auto id = static_cast<IndexType>(threadIdx.x + blockIdx.x * blockDim.x);
-  if (id < size)
+  auto id  = threadIdx.x + blockIdx.x * blockDim.x;
+  auto id1 = static_cast<IndexType>(id);
+  _CCCL_ASSERT(id < ::cuda::std::numeric_limits<IndexType>::max(), "id overflow wrt. IndexType");
+  if (id1 < size)
   {
-    func(id, coordinate_at<Ranks>(id, sub_sizes_div_array[Ranks], extents_div_array[Ranks])...);
+    func(id1, coordinate_at(id1, sub_sizes_div_array[Ranks], extents_mod_array[Ranks])...);
   }
 }
 

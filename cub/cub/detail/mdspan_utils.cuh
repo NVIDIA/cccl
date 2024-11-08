@@ -56,6 +56,7 @@ namespace detail
  * Utilities
  **********************************************************************************************************************/
 
+// Compute the submdspan size of a given rank
 template <::cuda::std::size_t Rank, typename IndexType, ::cuda::std::size_t... Extents, ::cuda::std::size_t... Indices>
 _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::make_unsigned_t<IndexType>
 sub_size(const ::cuda::std::extents<IndexType, Extents...>& ext, ::cuda::std::index_sequence<Indices...> = {})
@@ -74,29 +75,35 @@ sub_size(const ::cuda::std::extents<IndexType, Extents...>& ext, ::cuda::std::in
   }
 #  if (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION <= 100000) \
     || (defined(_CCCL_COMPILER_CLANG) && _CCCL_CLANG_VERSION <= 100000)
-  return 0; // GCC9/Clang9 workaround
+  return 0; // GCC <= 9 / Clang <= 9 workaround
 #  endif
 }
 
+// TODO: move to cuda::std
 template <typename IndexType, ::cuda::std::size_t... Extents>
-_CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::size_t
+_CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::make_unsigned_t<IndexType>
 size(const ::cuda::std::extents<IndexType, Extents...>& ext)
 {
   return sub_size<0>(ext);
 }
 
+// precompute modulo/division for each submdspan size (by rank)
 template <typename IndexType, ::cuda::std::size_t... E, ::cuda::std::size_t... Ranks>
 _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto
 sub_sizes_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::std::index_sequence<Ranks...> = {})
 {
-  return ::cuda::std::array<fast_div_mod, sizeof...(Ranks)>{fast_div_mod(sub_size<Ranks + 1>(ext))...};
+  // deduction guides don't work with nvcc 11.x
+  using fast_mod_div_t = fast_div_mod<IndexType>;
+  return ::cuda::std::array<fast_mod_div_t, sizeof...(Ranks)>{fast_mod_div_t(sub_size<Ranks + 1>(ext))...};
 }
 
+// precompute modulo/division for each mdspan extent
 template <typename IndexType, ::cuda::std::size_t... E, ::cuda::std::size_t... Ranks>
 _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto
 extents_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::std::index_sequence<Ranks...> = {})
 {
-  return ::cuda::std::array<fast_div_mod, sizeof...(Ranks)>{fast_div_mod(ext.extent(Ranks))...};
+  using fast_mod_div_t = fast_div_mod<IndexType>;
+  return ::cuda::std::array<fast_mod_div_t, sizeof...(Ranks)>{fast_mod_div_t(ext.extent(Ranks))...};
 }
 
 } // namespace detail
