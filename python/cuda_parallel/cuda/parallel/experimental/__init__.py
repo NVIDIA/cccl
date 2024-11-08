@@ -131,7 +131,14 @@ class _ReductionOp:
 
 
 def _itertools_iter_as_cccl_iter(result_numba_dtype, d_in):
-    raise RuntimeError("WIP")
+    def prefix_name(name):
+        return (d_in.prefix + "_" + name).encode('utf-8')
+    # type name ltoi ltoir_size size alignment state
+    adv = _CCCLOp(_CCCLOpKindEnum.STATELESS, prefix_name("advance"), ctypes.c_char_p(d_in.ltoirs[0][0]), len(d_in.ltoirs[0][0]), 1, 1, None)
+    drf = _CCCLOp(_CCCLOpKindEnum.STATELESS, prefix_name("dereference"), ctypes.c_char_p(d_in.ltoirs[1][0]), len(d_in.ltoirs[1][0]), 1, 1, None)
+    info = _type_to_info_from_numba_type(numba.int32)
+    # size alignment type advance dereference value_type state
+    return _CCCLIterator(d_in.size(), d_in.alignment(), _CCCLIteratorKindEnum.ITERATOR, adv, drf, info, d_in.state_c_void_p())
 
 
 def _get_cuda_path():

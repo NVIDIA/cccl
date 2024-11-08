@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import ctypes
 import numpy
 import pytest
 import numba
@@ -87,16 +88,77 @@ def test_device_reduce_dtype_mismatch():
           reduce_into(None, None, d_inputs[int(ix == 0)], d_outputs[int(ix == 1)], h_inits[int(ix == 2)])
 
 
-@pytest.mark.parametrize("use_numpy_array", [True, False][:1])
+class ConstantIterator:
+    def __init__(self, val): # TODO Showcasing the case of int32, need dtype with at least primitive types, ideally any numba type
+        thisty = numba.types.CPointer(numba.types.int32)
+        self.val = ctypes.c_int32(val)
+        self.ltoirs = [numba.cuda.compile(ConstantIterator.constant_int32_advance, sig=numba.types.void(thisty, numba.types.int32), output='ltoir'),
+                       numba.cuda.compile(ConstantIterator.constant_int32_dereference, sig=numba.types.int32(thisty), output='ltoir')]
+        self.prefix = 'constant_int32'
+
+    def constant_int32_advance(this, _):
+        print(f"\nLOOOK PYTHON constant_int32_advance")
+        pass
+
+    def constant_int32_dereference(this):
+        print(f"\nLOOOK PYTHON constant_int32_dereference")
+        return this[0]
+
+    def host_address(self):
+        # TODO should use numba instead for support of user-defined types
+        return ctypes.byref(self.val)
+
+    def state_c_void_p(self):
+        return ctypes.cast(ctypes.pointer(self.val), ctypes.c_void_p)
+
+    def size(self):
+        return ctypes.sizeof(self.val) # TODO should be using numba for user-defined types support
+
+    def alignment(self):
+        return ctypes.alignment(self.val) # TODO should be using numba for user-defined types support
+
+
+class CountingIterator:
+    def __init__(self, count): # TODO Showcasing the case of int32, need dtype
+        thisty = numba.types.CPointer(numba.types.int32)
+        self.count = ctypes.c_int32(count)
+        self.ltoirs = [numba.cuda.compile(CountingIterator.count_int32_advance, sig=numba.types.void(thisty, numba.types.int32), output='ltoir'),
+                       numba.cuda.compile(CountingIterator.count_int32_dereference, sig=numba.types.int32(thisty), output='ltoir')]
+        self.prefix = 'count_int32'
+
+    def count_int32_advance(this, diff):
+        print(f"\nLOOOK PYTHON count_int32_advance")
+        this[0] += diff
+
+    def count_int32_dereference(this):
+        print(f"\nLOOOK PYTHON count_int32_dereference")
+        return this[0]
+
+    def host_address(self):
+        return ctypes.byref(self.count)
+
+    def state_c_void_p(self):
+        return ctypes.cast(ctypes.pointer(self.count), ctypes.c_void_p)
+
+    def size(self):
+        return ctypes.sizeof(self.count) # TODO should be using numba for user-defined types support
+
+    def alignment(self):
+        return ctypes.alignment(self.count) # TODO should be using numba for user-defined types support
+
+
+@pytest.mark.parametrize("use_numpy_array", [True, False])
 @pytest.mark.parametrize("input_generator", ["constant", "counting"])
-def test_device_sum_input_unary_op(use_numpy_array, input_generator, num_items=3, start_sum_with=10):
+def test_device_sum_sentinel_iterator(use_numpy_array, input_generator, num_items=3, start_sum_with=10):
     def add_op(a, b):
         return a + b
 
     if input_generator == "constant":
         l_input = [42 for distance in range(num_items)]
+        sentinel_iterator = ConstantIterator(42)
     elif input_generator == "counting":
         l_input = [start_sum_with + distance for distance in range(num_items)]
+        sentinel_iterator = CountingIterator(start_sum_with)
     else:
         raise RuntimeError("Unexpected input_generator")
 
@@ -110,7 +172,7 @@ def test_device_sum_input_unary_op(use_numpy_array, input_generator, num_items=3
         h_input = numpy.array(l_input, dtype)
         d_input = cuda.to_device(h_input)
     else:
-        raise RuntimeError("WIP")
+        d_input = sentinel_iterator
 
     d_output = cuda.device_array(1, dtype) # to store device sum
 

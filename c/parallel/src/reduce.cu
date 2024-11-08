@@ -400,6 +400,10 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce(
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
+    fflush(stderr);
+    printf("\nLOOOK cccl_device_reduce num_items=%lu  %s:%d\n", (unsigned long) num_items, __FILE__, __LINE__);
+    printf("\nLOOOK cub::DispatchReduce<>::Dispatch() BEGIN  %s:%d\n", __FILE__, __LINE__);
+    fflush(stdout);
     cub::DispatchReduce<indirect_arg_t,
                         indirect_arg_t,
                         ::cuda::std::size_t,
@@ -423,6 +427,9 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce(
         {build},
         cub::CudaDriverLauncherFactory{cu_device, build.cc},
         {get_accumulator_type(op, d_in, init)});
+    fflush(stderr);
+    printf("\nLOOOK cub::DispatchReduce<>::Dispatch() DONE.  %s:%d\n", __FILE__, __LINE__);
+    fflush(stdout);
   }
   catch (const std::exception& exc)
   {
