@@ -121,7 +121,7 @@ struct __make_signed_impl<__uint128_t, true>
 #  endif
 
 template <class _Tp>
-using __make_signed_t = typename __apply_cv<_Tp, typename __make_signed_impl<__remove_cv_t<_Tp>>::type>::type;
+using __make_signed_t = __apply_cv_t<_Tp, typename __make_signed_impl<__remove_cv_t<_Tp>>::type>;
 
 #endif // defined(_CCCL_BUILTIN_MAKE_SIGNED) && !defined(_LIBCUDACXX_USE_MAKE_SIGNED_FALLBACK)
 

@@ -158,7 +158,6 @@ template <class... Types>
 #include <cuda/std/__functional/unwrap_ref.h>
 #include <cuda/std/__fwd/array.h>
 #include <cuda/std/__memory/allocator_arg_t.h>
-#include <cuda/std/__tuple_dir/apply_cv.h>
 #include <cuda/std/__tuple_dir/make_tuple_types.h>
 #include <cuda/std/__tuple_dir/sfinae_helpers.h>
 #include <cuda/std/__tuple_dir/structured_bindings.h>
@@ -168,6 +167,7 @@ template <class... Types>
 #include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__tuple_dir/tuple_types.h>
 #include <cuda/std/__tuple_dir/vector_types.h>
+#include <cuda/std/__type_traits/apply_cv.h>
 #include <cuda/std/__type_traits/maybe_const.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/integer_sequence.h>
@@ -1256,14 +1256,13 @@ template <class... _Types, size_t... _I0, class _Tuple0>
 struct __tuple_cat_return_ref_imp<tuple<_Types...>, __tuple_indices<_I0...>, _Tuple0>
 {
   typedef _LIBCUDACXX_NODEBUG_TYPE __libcpp_remove_reference_t<_Tuple0> _T0;
-  typedef tuple<_Types..., typename __apply_cv<_Tuple0, __tuple_element_t<_I0, _T0>>::type&&...> type;
+  typedef tuple<_Types..., __apply_cv_t<_Tuple0, __tuple_element_t<_I0, _T0>>&&...> type;
 };
 
 template <class... _Types, size_t... _I0, class _Tuple0, class _Tuple1, class... _Tuples>
 struct __tuple_cat_return_ref_imp<tuple<_Types...>, __tuple_indices<_I0...>, _Tuple0, _Tuple1, _Tuples...>
     : public __tuple_cat_return_ref_imp<
-        tuple<_Types...,
-              typename __apply_cv<_Tuple0, __tuple_element_t<_I0, __libcpp_remove_reference_t<_Tuple0>>>::type&&...>,
+        tuple<_Types..., __apply_cv_t<_Tuple0, __tuple_element_t<_I0, __libcpp_remove_reference_t<_Tuple0>>>&&...>,
         __make_tuple_indices_t<tuple_size<__libcpp_remove_reference_t<_Tuple1>>::value>,
         _Tuple1,
         _Tuples...>
@@ -1300,7 +1299,7 @@ struct __tuple_cat<tuple<_Types...>, __tuple_indices<_I0...>, __tuple_indices<_J
     (void) __t;
     typedef _LIBCUDACXX_NODEBUG_TYPE __libcpp_remove_reference_t<_Tuple0> _T0;
     typedef _LIBCUDACXX_NODEBUG_TYPE __libcpp_remove_reference_t<_Tuple1> _T1;
-    return __tuple_cat<tuple<_Types..., typename __apply_cv<_Tuple0, __tuple_element_t<_J0, _T0>>::type&&...>,
+    return __tuple_cat<tuple<_Types..., __apply_cv_t<_Tuple0, __tuple_element_t<_J0, _T0>>&&...>,
                        __make_tuple_indices_t<sizeof...(_Types) + tuple_size<_T0>::value>,
                        __make_tuple_indices_t<tuple_size<_T1>::value>>()(
       _CUDA_VSTD::forward_as_tuple(_CUDA_VSTD::forward<_Types>(_CUDA_VSTD::get<_I0>(__t))...,
