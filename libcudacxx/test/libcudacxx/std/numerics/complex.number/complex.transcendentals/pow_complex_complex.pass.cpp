@@ -51,7 +51,7 @@ __host__ __device__ void test_edges()
       }
       else
       {
-        if(real(r) != real(z))
+        if (real(r) != real(z))
         {
           is_about(real(r), real(z));
         }
@@ -63,7 +63,7 @@ __host__ __device__ void test_edges()
       }
       else
       {
-        if(imag(r) != imag(z))
+        if (imag(r) != imag(z))
         {
           is_about(imag(r), imag(z));
         }
