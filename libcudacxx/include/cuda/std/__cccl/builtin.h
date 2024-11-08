@@ -206,7 +206,34 @@
 #  undef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #endif // _CCCL_STD_VER < 2014 && _CCCL_CUDA_COMPILER_NVCC
 
-#if _CCCL_CHECK_BUILTIN(builtin_launder) || _CCCL_COMPILER(GCC, >=, 7)
+#if _CCCL_CHECK_BUILTIN(builtin_isfinite) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(NVRTC)
+#  define _CCCL_BUILTIN_ISFINITE(...) __builtin_isfinite(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(isfinite)
+
+// Below 11.7 nvcc treats the builtin as a host only function
+#if _CCCL_CUDACC_BELOW(11, 7)
+#  undef _CCCL_BUILTIN_ISFINITE
+#endif // _CCCL_CUDACC_BELOW(11, 7)
+
+#if _CCCL_CHECK_BUILTIN(builtin_isinf) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ISINF(...) __builtin_isinf(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(isinf)
+
+// Below 11.7 nvcc treats the builtin as a host only function
+#if _CCCL_CUDACC_BELOW(11, 7)
+#  undef _CCCL_BUILTIN_ISINF
+#endif // _CCCL_CUDACC_BELOW(11, 7)
+
+#if _CCCL_CHECK_BUILTIN(builtin_isnan) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ISNAN(...) __builtin_isnan(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(isnan)
+
+// Below 11.7 nvcc treats the builtin as a host only function
+#if _CCCL_CUDACC_BELOW(11, 7)
+#  undef _CCCL_BUILTIN_ISNAN
+#endif // _CCCL_CUDACC_BELOW(11, 7)
+
+#if (_CCCL_CHECK_BUILTIN(builtin_launder) || (_CCCL_COMPILER(GCC) && _CCCL_GCC_VERSION >= 70000))
 #  define _CCCL_BUILTIN_LAUNDER(...) __builtin_launder(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_launder) && gcc >= 7
 
@@ -315,6 +342,15 @@
 #  define _CCCL_BUILTIN_OPERATOR_DELETE(...) __builtin_operator_delete(__VA_ARGS__)
 #  define _CCCL_BUILTIN_OPERATOR_NEW(...)    __builtin_operator_new(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(__builtin_operator_new) && _CCCL_CHECK_BUILTIN(__builtin_operator_delete)
+
+#if _CCCL_CHECK_BUILTIN(builtin_signbit) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_SIGNBIT(...) __builtin_signbit(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_signbit)
+
+// Below 11.7 nvcc treats the builtin as a host only function
+#if _CCCL_CUDACC_BELOW(11, 7)
+#  undef _CCCL_BUILTIN_SIGNBIT
+#endif // _CCCL_CUDACC_BELOW(11, 7)
 
 #if _CCCL_HAS_BUILTIN(__decay) && defined(_CCCL_CUDA_COMPILER_CLANG)
 #  define _CCCL_BUILTIN_DECAY(...) __decay(__VA_ARGS__)
@@ -578,18 +614,6 @@
 #if 0 // _CCCL_HAS_BUILTIN(__is_volatile)
 #  define _CCCL_BUILTIN_IS_VOLATILE(...) __is_volatile(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__is_volatile)
-
-#if _CCCL_CHECK_BUILTIN(isfinite)
-#  define _CCCL_BUILTIN_ISFINITE(...) __builtin_isfinite(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(isfinite)
-
-#if _CCCL_CHECK_BUILTIN(isinf)
-#  define _CCCL_BUILTIN_ISINF(...) __builtin_isinf(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(isinf)
-
-#if _CCCL_CHECK_BUILTIN(isnan)
-#  define _CCCL_BUILTIN_ISNAN(...) __builtin_isnan(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(isnan)
 
 #if _CCCL_CHECK_BUILTIN(make_integer_seq) || _CCCL_COMPILER(MSVC, >=, 19, 23)
 #  define _CCCL_BUILTIN_MAKE_INTEGER_SEQ(...) __make_integer_seq<__VA_ARGS__>

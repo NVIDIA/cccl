@@ -321,6 +321,7 @@ long double    truncl(long double x);
 #include <cuda/std/__cmath/lerp.h>
 #include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__cmath/min_max.h>
+#include <cuda/std/__cmath/traits.h>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 #include <cuda/std/version>
@@ -342,11 +343,6 @@ long double    truncl(long double x);
 _CCCL_PUSH_MACROS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
-
-using ::isfinite;
-using ::isinf;
-using ::isnan;
-using ::signbit;
 
 using ::acos;
 using ::acosf;
@@ -399,14 +395,6 @@ using ::abs;
 #if !_CCCL_COMPILER(NVRTC)
 
 using ::fpclassify;
-using ::isgreater;
-using ::isgreaterequal;
-using ::isless;
-using ::islessequal;
-using ::islessgreater;
-using ::isnormal;
-
-using ::isunordered;
 
 using ::double_t;
 using ::float_t;
@@ -595,69 +583,6 @@ hypot(_A1 __lcpp_x, _A2 __lcpp_y, _A3 __lcpp_z) noexcept
 #  define _CCCL_CONSTEXPR_CXX14_COMPLEX
 #endif // _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
 
-template <class _A1>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<is_floating_point<_A1>::value, bool>
-__constexpr_isnan(_A1 __lcpp_x) noexcept
-{
-#if _CCCL_CUDACC_BELOW(11, 8)
-  return __isnan(__lcpp_x);
-#elif defined(_CCCL_BUILTIN_ISNAN)
-  // nvcc at times has issues determining the type of __lcpp_x
-  return _CCCL_BUILTIN_ISNAN(static_cast<double>(__lcpp_x));
-#else // ^^^ _CCCL_BUILTIN_ISNAN ^^^ / vvv !_CCCL_BUILTIN_ISNAN vvv
-  return ::isnan(__lcpp_x);
-#endif // !_CCCL_BUILTIN_ISNAN
-}
-
-template <class _A1>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<!is_floating_point<_A1>::value, bool>
-__constexpr_isnan(_A1 __lcpp_x) noexcept
-{
-  return ::isnan(__lcpp_x);
-}
-
-template <class _A1>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<is_floating_point<_A1>::value, bool>
-__constexpr_isinf(_A1 __lcpp_x) noexcept
-{
-#if _CCCL_CUDACC_BELOW(11, 8)
-  return __isinf(__lcpp_x);
-#elif defined(_CCCL_BUILTIN_ISINF)
-  // nvcc at times has issues determining the type of __lcpp_x
-  return __builtin_isinf(static_cast<double>(__lcpp_x));
-#else // ^^^ _CCCL_BUILTIN_ISINF ^^^ / vvv !_CCCL_BUILTIN_ISINF vvv
-  return ::isinf(__lcpp_x);
-#endif // !_CCCL_BUILTIN_ISINF
-}
-
-template <class _A1>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<!is_floating_point<_A1>::value, bool>
-__constexpr_isinf(_A1 __lcpp_x) noexcept
-{
-  return ::isinf(__lcpp_x);
-}
-
-template <class _A1>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<is_floating_point<_A1>::value, bool>
-__constexpr_isfinite(_A1 __lcpp_x) noexcept
-{
-#if _CCCL_CUDACC_BELOW(11, 8)
-  return !__isinf(__lcpp_x) && !__isnan(__lcpp_x);
-#elif defined(_CCCL_BUILTIN_ISFINITE)
-  // nvcc at times has issues determining the type of __lcpp_x
-  return __builtin_isfinite(static_cast<double>(__lcpp_x));
-#else // ^^^ _CCCL_BUILTIN_ISFINITE ^^^ / vvv !_CCCL_BUILTIN_ISFINITE vvv
-  return ::isfinite(__lcpp_x);
-#endif // !_CCCL_BUILTIN_ISFINITE
-}
-
-template <class _A1>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<!is_floating_point<_A1>::value, bool>
-__constexpr_isfinite(_A1 __lcpp_x) noexcept
-{
-  return isfinite(__lcpp_x);
-}
-
 #if _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC)
 template <class _A1>
 _LIBCUDACXX_HIDE_FROM_ABI _A1 __constexpr_copysign(_A1 __x, _A1 __y) noexcept
@@ -675,11 +600,13 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 double __constexpr_copysign(doub
   return __builtin_copysign(__x, __y);
 }
 
+#  if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 long double
 __constexpr_copysign(long double __x, long double __y) noexcept
 {
   return __builtin_copysignl(__x, __y);
 }
+#  endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
 template <class _A1, class _A2>
 _LIBCUDACXX_HIDE_FROM_ABI
@@ -709,10 +636,12 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 double __constexpr_fabs(double _
   return __builtin_fabs(__x);
 }
 
+#  if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 long double __constexpr_fabs(long double __x) noexcept
 {
   return __builtin_fabsl(__x);
 }
+#  endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
 template <class _Tp, enable_if_t<is_integral<_Tp>::value, int> = 0>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 double __constexpr_fabs(_Tp __x) noexcept
@@ -737,11 +666,11 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX float __constexpr_fmax(f
   if (_CCCL_BUILTIN_IS_CONSTANT_EVALUATED())
 #    endif // _CCCL_COMPILER(ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
   {
-    if (_CUDA_VSTD::__constexpr_isnan(__x))
+    if (_CUDA_VSTD::isnan(__x))
     {
       return __y;
     }
-    if (_CUDA_VSTD::__constexpr_isnan(__y))
+    if (_CUDA_VSTD::isnan(__y))
     {
       return __x;
     }
@@ -760,11 +689,11 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX double __constexpr_fmax(
   if (_CCCL_BUILTIN_IS_CONSTANT_EVALUATED())
 #    endif // _CCCL_COMPILER(ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
   {
-    if (_CUDA_VSTD::__constexpr_isnan(__x))
+    if (_CUDA_VSTD::isnan(__x))
     {
       return __y;
     }
-    if (_CUDA_VSTD::__constexpr_isnan(__y))
+    if (_CUDA_VSTD::isnan(__y))
     {
       return __x;
     }
@@ -774,29 +703,31 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX double __constexpr_fmax(
   return __builtin_fmax(__x, __y);
 }
 
+#  if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX long double
 __constexpr_fmax(long double __x, long double __y) noexcept
 {
-#  if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
-#    if _CCCL_COMPILER(ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
+#    if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && !defined(_LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS)
+#      if _CCCL_COMPILER(ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
   if (false)
-#    else // _CCCL_COMPILER(ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
+#      else // _CCCL_COMPILER(ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
   if (_CCCL_BUILTIN_IS_CONSTANT_EVALUATED())
-#    endif // _CCCL_COMPILER(ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
+#      endif // _CCCL_COMPILER(ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
   {
-    if (_CUDA_VSTD::__constexpr_isnan(__x))
+    if (_CUDA_VSTD::isnan(__x))
     {
       return __y;
     }
-    if (_CUDA_VSTD::__constexpr_isnan(__y))
+    if (_CUDA_VSTD::isnan(__y))
     {
       return __x;
     }
     return __x < __y ? __y : __x;
   }
-#  endif // defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+#    endif // defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   return __builtin_fmax(__x, __y);
 }
+#  endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
 template <class _Tp, class _Up, enable_if_t<is_arithmetic<_Tp>::value && is_arithmetic<_Up>::value, int> = 0>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX __promote_t<_Tp, _Up> __constexpr_fmax(_Tp __x, _Up __y) noexcept
@@ -825,12 +756,12 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX _Tp __constexpr_logb(_Tp
       return -numeric_limits<_Tp>::infinity();
     }
 
-    if (_CUDA_VSTD::__constexpr_isinf(__x))
+    if (_CUDA_VSTD::isinf(__x))
     {
       return numeric_limits<_Tp>::infinity();
     }
 
-    if (_CUDA_VSTD::__constexpr_isnan(__x))
+    if (_CUDA_VSTD::isnan(__x))
     {
       return numeric_limits<_Tp>::quiet_NaN();
     }
@@ -887,7 +818,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX _Tp __constexpr_scalbn(_
       return __x;
     }
 
-    if (_CUDA_VSTD::__constexpr_isinf(__x))
+    if (_CUDA_VSTD::isinf(__x))
     {
       return __x;
     }
@@ -897,7 +828,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX _Tp __constexpr_scalbn(_
       return __x;
     }
 
-    if (_CUDA_VSTD::__constexpr_isnan(__x))
+    if (_CUDA_VSTD::isnan(__x))
     {
       return numeric_limits<_Tp>::quiet_NaN();
     }

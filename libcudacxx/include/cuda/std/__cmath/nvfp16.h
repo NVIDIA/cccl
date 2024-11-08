@@ -141,46 +141,6 @@ _LIBCUDACXX_HIDE_FROM_ABI __half sqrt(__half __x)
 }
 
 // floating point helper
-_LIBCUDACXX_HIDE_FROM_ABI bool signbit(__half __v)
-{
-  return ::signbit(::__half2float(__v));
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI bool __constexpr_isnan(__half __x) noexcept
-{
-  return ::__hisnan(__x);
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI bool isnan(__half __v)
-{
-  return _CUDA_VSTD::__constexpr_isnan(__v);
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI bool __constexpr_isinf(__half __x) noexcept
-{
-#  if _CCCL_STD_VER >= 2020 && _CCCL_CUDACC_BELOW(12, 3)
-  // this is a workaround for nvbug 4362808
-  return !::__hisnan(__x) && ::__hisnan(__x - __x);
-#  else // ^^^ C++20 && below 12.3 ^^^ / vvv C++17 or 12.3+ vvv
-  return ::__hisinf(__x) != 0;
-#  endif // _CCCL_STD_VER <= 2017 || _CCCL_CUDACC_BELOW(12, 3)
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI bool isinf(__half __v)
-{
-  return _CUDA_VSTD::__constexpr_isinf(__v);
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI bool __constexpr_isfinite(__half __x) noexcept
-{
-  return !_CUDA_VSTD::__constexpr_isnan(__x) && !_CUDA_VSTD::__constexpr_isinf(__x);
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI bool isfinite(__half __v)
-{
-  return _CUDA_VSTD::__constexpr_isfinite(__v);
-}
-
 _LIBCUDACXX_HIDE_FROM_ABI __half __constexpr_copysign(__half __x, __half __y) noexcept
 {
   return __float2half(::copysignf(__half2float(__x), __half2float(__y)));
