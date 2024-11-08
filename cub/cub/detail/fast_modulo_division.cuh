@@ -53,6 +53,10 @@
 #include "cuda/std/__type_traits/is_integral.h"
 #include "nv/detail/__target_macros"
 
+#if defined(__NVCC_DIAG_PRAGMA_SUPPORT__) && defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
+#  pragma nv_diag_suppress 186
+#endif
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail
@@ -120,7 +124,7 @@ multiply_extract_higher_bits(T value, R multiplier)
       (return static_cast<unsigned_t>((static_cast<larger_t>(value) * multiplier) >> BitSize);),
     //NV_IS_DEVICE
       (return (sizeof(T) == 8)
-        ? __umul64hi(value, multiplier)
+        ? static_cast<unsigned_t>(__umul64hi(value, multiplier))
         : static_cast<unsigned_t>((static_cast<larger_t>(value) * multiplier) >> BitSize);));
   // clang-format on
 }
@@ -132,6 +136,8 @@ multiply_extract_higher_bits(T value, R multiplier)
 template <typename T>
 struct fast_div_mod
 {
+  static_assert(::cuda::std::is_integral<T>::value && !::cuda::std::is_same<T, bool>::value, "unsupported type");
+
   using unsigned_t = unsigned_implicit_prom_t<T>;
   using prom_t     = implicit_prom_t<T>;
   using larger_t   = larger_unsigned_type_t<T>;
@@ -148,20 +154,25 @@ struct fast_div_mod
       : _divisor{static_cast<prom_t>(divisor)}
   {
     _CCCL_ASSERT(divisor > 0, "divisor must be positive");
-    if (divisor == 1)
+    auto udivisor = static_cast<unsigned_t>(divisor);
+    if (::cuda::std::has_single_bit(udivisor)) // power of two
+    {
+      _shift_right = ::cuda::std::bit_width(udivisor) - 1;
+      return;
+    }
+    else if (sizeof(T) == 8 && divisor == 3)
     {
       return;
     }
     constexpr int BitSize   = sizeof(T) * CHAR_BIT;
     constexpr int BitOffset = BitSize / 16;
-    auto udivisor           = static_cast<unsigned_t>(divisor);
     int num_bits            = ::cuda::std::bit_width(udivisor) + !::cuda::std::has_single_bit(udivisor);
     _multiplier  = static_cast<unsigned_t>(::cuda::ceil_div(larger_t{1} << (num_bits + BitSize - BitOffset), //
                                                            static_cast<larger_t>(divisor)));
     _shift_right = num_bits - BitOffset;
-    // printf("divisor =%u\n", divisor);
+    // printf("divisor =%lu\n", divisor);
     // printf("num_bits =%d,  BitSize = %d, BitOffset = %d\n", num_bits, BitSize, BitOffset);
-    // printf("multiplier = %u, shift_right = %u\n", _multiplier, _shift_right);
+    // printf("multiplier = %lu, shift_right = %u\n", _multiplier, _shift_right);
   }
 
   fast_div_mod(const fast_div_mod&) noexcept = default;
@@ -172,20 +183,18 @@ struct fast_div_mod
   {
     _CCCL_ASSERT(dividend >= 0, "divisor must be non-negative");
     // the following branches are needed to avoid negative shift
-    if (sizeof(T) == 4 && _divisor == 1)
+    if (_divisor == 1)
     {
       return result{dividend, 0};
     }
-    else if (sizeof(T) == 8 && _divisor == 2)
+    if (sizeof(T) == 8 && _divisor == 3)
     {
-      return result{dividend / prom_t{2}, dividend % prom_t{2}};
+      return result{static_cast<prom_t>(dividend / unsigned_t{3}), static_cast<prom_t>(dividend % unsigned_t{3})};
     }
-    else if (sizeof(T) == 8 && _divisor == 3)
-    {
-      return result{dividend / prom_t{3}, dividend % prom_t{3}};
-    }
-    auto quotient  = multiply_extract_higher_bits(dividend, _multiplier) >> _shift_right;
+    auto quotient =
+      ((_multiplier == 0) ? dividend : multiply_extract_higher_bits(dividend, _multiplier)) >> _shift_right;
     auto remainder = dividend - (quotient * _divisor);
+    _CCCL_ASSERT(quotient == dividend / _divisor, "wrong quotient");
     _CCCL_ASSERT(remainder >= 0 && remainder < _divisor, "remainder out of range");
     return result{static_cast<prom_t>(quotient), static_cast<prom_t>(remainder)};
   }

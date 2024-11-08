@@ -24,6 +24,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  ******************************************************************************/
+#include "c2h/utility.cuh"
+#define CCCL_ENABLE_DEVICE_ASSERTIONS
 #include <cub/config.cuh>
 
 #if _CCCL_STD_VER >= 2017
@@ -76,39 +78,6 @@ static void fill_linear(c2h::host_vector<T>& vector, const cuda::std::extents<In
  * Function Objects
  **********************************************************************************************************************/
 
-struct Store1D
-{
-  using data_t = cuda::std::array<int, 1>;
-  data_t* d_output_raw;
-
-  __device__ void operator()(int idx, int x)
-  {
-    d_output_raw[idx] = {x};
-  }
-};
-
-struct Store3D
-{
-  using data_t = cuda::std::array<int, 3>;
-  data_t* d_output_raw;
-
-  __device__ void operator()(int idx, int x, int y, int z)
-  {
-    d_output_raw[idx] = {x, y, z};
-  }
-};
-
-struct Store4D
-{
-  using data_t = cuda::std::array<int, 4>;
-  data_t* d_output_raw;
-
-  __device__ void operator()(int idx, int x, int y, int z, int w)
-  {
-    d_output_raw[idx] = {x, y, z, w};
-  }
-};
-
 template <typename IndexType, int Size>
 struct LinearStore
 {
@@ -127,7 +96,8 @@ struct LinearStore
  * TEST CASES
  **********************************************************************************************************************/
 
-using index_types = c2h::type_list<int8_t, uint8_t, int16_t, uint16_t, int, unsigned, int64_t, uint64_t>;
+using index_types     = c2h::type_list<int8_t, uint8_t, int16_t, uint16_t, int, unsigned, int64_t, uint64_t>;
+using index_types_dyn = c2h::type_list<int16_t, uint16_t, int, unsigned, int64_t, uint64_t>;
 
 C2H_TEST("DeviceForEachInExtents 2D static", "[ForEachInExtents][static][device]", index_types)
 {
@@ -147,7 +117,6 @@ C2H_TEST("DeviceForEachInExtents 2D static", "[ForEachInExtents][static][device]
   REQUIRE(h_output == h_output_gpu);
 }
 
-#  if 0
 C2H_TEST("DeviceForEachInExtents 1D static", "[ForEachInExtents][static][device]", index_types)
 {
   constexpr int rank = 1;
@@ -183,18 +152,20 @@ C2H_TEST("DeviceForEachInExtents 3D static", "[ForEachInExtents][static][device]
   REQUIRE(h_output == h_output_gpu);
 }
 
-C2H_TEST("DeviceForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][device]")
+C2H_TEST("DeviceForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][device]", index_types_dyn)
 {
   constexpr int rank = 3;
-  using data_t       = cuda::std::array<int, rank>;
-  using store_op_t   = LinearStore<int, rank>;
+  using index_type   = c2h::get<0, TestType>;
+  using data_t       = cuda::std::array<index_type, rank>;
+  using store_op_t   = LinearStore<index_type, rank>;
   auto X             = GENERATE_COPY(take(3, random(2, 10)));
   auto Y             = GENERATE_COPY(take(3, random(2, 10)));
   auto Z             = GENERATE_COPY(take(3, random(2, 10)));
-  cuda::std::dextents<int, 3> ext{X, Y, Z};
+  cuda::std::dextents<index_type, 3> ext{X, Y, Z};
   c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
   c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
   auto d_output_raw = thrust::raw_pointer_cast(d_output.data());
+  CAPTURE(c2h::type_name<index_type>(), X, Y, Z);
 
   device_for_each_in_extents(ext, store_op_t{d_output_raw});
   c2h::host_vector<data_t> h_output_gpu = d_output;
@@ -217,5 +188,5 @@ C2H_TEST("DeviceForEachInExtents 4D static", "[ForEachInExtents][static][device]
   fill_linear(h_output, ext);
   REQUIRE(h_output == h_output_gpu);
 }
-#  endif
+
 #endif // _CCCL_STD_VER >= 2017

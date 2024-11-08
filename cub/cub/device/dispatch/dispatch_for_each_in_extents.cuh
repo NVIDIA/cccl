@@ -29,6 +29,8 @@
 
 #include <cub/config.cuh>
 
+#include <limits>
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -115,19 +117,15 @@ struct dispatch_t : PolicyHubT
     {
       return cudaSuccess;
     }
-    int block_threads             = 256;
+    int block_threads             = 128;
     cudaError_t status            = cudaSuccess;
     constexpr auto seq            = ::cuda::std::make_index_sequence<ExtentsType::rank()>{};
     ArrayType sub_sizes_div_array = cub::detail::sub_sizes_fast_div_mod(_ext, seq);
     ArrayType extents_div_array   = cub::detail::extents_fast_div_mod(_ext, seq);
     using FastDivModArrayType     = decltype(sub_sizes_div_array);
 
-    [[maybe_unused]] auto kernel = detail::for_each_in_extents::
-      dynamic_kernel<ext_index_type, OpType, decltype(sub_sizes_div_array), uext_index_type, Ranks...>;
-
-    NV_IF_TARGET(NV_IS_HOST,
-                 (int _{}; //
-                  status = cudaOccupancyMaxPotentialBlockSize(&_, &block_threads, kernel);));
+    // [[maybe_unused]] auto kernel = detail::for_each_in_extents::
+    //   dynamic_kernel<ext_index_type, OpType, decltype(sub_sizes_div_array), uext_index_type, Ranks...>;
 
     _CUB_RETURN_IF_ERROR(status)
     const auto num_cta = ::cuda::ceil_div(_size, block_threads);
@@ -137,13 +135,22 @@ struct dispatch_t : PolicyHubT
             static_cast<int>(block_threads),
             _stream);
 #  endif
+    // status =
+    //   THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
+    //     static_cast<unsigned>(num_cta), static_cast<unsigned>(block_threads), 0, _stream)
+    //     .doit(detail::for_each_in_extents::
+    //             dynamic_kernel<ext_index_type, OpType, decltype(sub_sizes_div_array), uext_index_type, Ranks...>,
+    //           _op,
+    //           _size,
+    //           sub_sizes_div_array,
+    //           extents_div_array);
     status =
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
         static_cast<unsigned>(num_cta), static_cast<unsigned>(block_threads), 0, _stream)
         .doit(detail::for_each_in_extents::
-                dynamic_kernel<ext_index_type, OpType, decltype(sub_sizes_div_array), uext_index_type, Ranks...>,
+                for_each_in_extents_kernel<OpType, ExtentsType, decltype(sub_sizes_div_array), Ranks...>,
               _op,
-              _size,
+              _ext,
               sub_sizes_div_array,
               extents_div_array);
     _CUB_RETURN_IF_ERROR(status)

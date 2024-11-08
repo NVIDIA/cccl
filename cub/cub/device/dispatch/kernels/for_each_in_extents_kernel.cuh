@@ -40,9 +40,11 @@
 #if _CCCL_STD_VER >= 2017
 
 #  include <cub/detail/fast_modulo_division.cuh> // fast_div_mod
+#  include <cub/detail/mdspan_utils.cuh>
 
 #  include <cuda/std/__utility/integer_sequence.h> // std::index_sequence
 #  include <cuda/std/cstddef> // std::size_t
+#  include <cuda/std/mdspan> // std::size_t
 
 CUB_NAMESPACE_BEGIN
 
@@ -70,10 +72,53 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(
 {
   auto id  = threadIdx.x + blockIdx.x * blockDim.x;
   auto id1 = static_cast<IndexType>(id);
-  _CCCL_ASSERT(id < ::cuda::std::numeric_limits<IndexType>::max(), "id overflow wrt. IndexType");
   if (id1 < size)
   {
     func(id1, coordinate_at(id1, sub_sizes_div_array[Ranks], extents_mod_array[Ranks])...);
+  }
+}
+
+template <int Rank, typename ExtendType, typename IndexType = typename ExtendType::index_type>
+_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE //
+IndexType
+coordinate_at(
+  IndexType index, ExtendType ext, fast_div_mod<IndexType> div_mod_sub_size, fast_div_mod<IndexType> div_mod_size)
+{
+  auto get_sub_size = [&]() {
+    if constexpr (cub::detail::is_sub_size_static<Rank + 1>(ext))
+    {
+      return sub_size<Rank + 1>(ext);
+    }
+    else
+    {
+      return div_mod_sub_size;
+    }
+  };
+  auto get_ext_size = [&]() {
+    if constexpr (ExtendType::static_extent(Rank) != ::cuda::std::dynamic_extent)
+    {
+      return IndexType{ext.static_extent(Rank)};
+    }
+    else
+    {
+      return div_mod_size;
+    }
+  };
+  return (index / get_sub_size()) % get_ext_size();
+}
+
+template <typename Func, typename ExtendType, typename FastDivModArrayType, ::cuda::std::size_t... Ranks>
+CUB_DETAIL_KERNEL_ATTRIBUTES void for_each_in_extents_kernel(
+  Func func,
+  _CCCL_GRID_CONSTANT const ExtendType ext,
+  _CCCL_GRID_CONSTANT const FastDivModArrayType sub_sizes_div_array,
+  _CCCL_GRID_CONSTANT const FastDivModArrayType extents_mod_array)
+{
+  auto id = threadIdx.x + blockIdx.x * blockDim.x;
+  if (id < cub::detail::size(ext))
+  {
+    auto id1 = static_cast<typename ExtendType::index_type>(id);
+    func(id1, coordinate_at<Ranks>(id1, ext, sub_sizes_div_array[Ranks], extents_mod_array[Ranks])...);
   }
 }
 
