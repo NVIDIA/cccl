@@ -78,6 +78,8 @@ set(stf_test_sources
   interface/scalar_div.cu
   local_stf/interop_cuda.cu
   local_stf/legacy_to_stf.cu
+  local_stf/stackable.cu
+  local_stf/stackable2.cu
   loop_dispatch/dispatch_on_streams.cu
   loop_dispatch/nested_loop_dispatch.cu
   loop_dispatch/loop_dispatch.cu
