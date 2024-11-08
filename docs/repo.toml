@@ -177,7 +177,14 @@ doxygen_predefined = [
     "CUB_IGNORE_DEPRECATED_CPP_DIALECT",
     "CUDASTF_HOST",
     "CUDASTF_DEVICE",
-    "CUDASTF_HOST_DEVICE"
+    "CUDASTF_HOST_DEVICE",
+    "_CUDAX_API",
+    "_CUDAX_HOST_API",
+    "_CUDAX_DEVICE_API",
+    "_CUDAX_TRIVIAL_API",
+    "_CUDAX_TRIVIAL_HOST_API",
+    "_CUDAX_TRIVIAL_DEVICE_API",
+    "_CUDAX_PUBLIC_API"
 ]
 
 # make sure to use ./fetch_imgs.sh
