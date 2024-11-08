@@ -146,6 +146,32 @@
 #  define _CCCL_BUILTIN_EXPECT(...) __builtin_expect(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_expect)
 
+#if _CCCL_CHECK_BUILTIN(builtin_fmax) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_FMAXF(...) __builtin_fmaxf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_FMAX(...)  __builtin_fmax(__VA_ARGS__)
+#  define _CCCL_BUILTIN_FMAXL(...) __builtin_fmaxl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_fmax)
+
+// Below 11.7 nvcc treats the builtin as a host only function
+#if _CCCL_CUDACC_BELOW(11, 7)
+#  undef _CCCL_BUILTIN_FMAXF
+#  undef _CCCL_BUILTIN_FMAX
+#  undef _CCCL_BUILTIN_FMAXL
+#endif // _CCCL_CUDACC_BELOW(11, 7)
+
+#if _CCCL_CHECK_BUILTIN(builtin_fmin) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_FMINF(...) __builtin_fminf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_FMIN(...)  __builtin_fmin(__VA_ARGS__)
+#  define _CCCL_BUILTIN_FMINL(...) __builtin_fminl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_fmin)
+
+// Below 11.7 nvcc treats the builtin as a host only function
+#if _CCCL_CUDACC_BELOW(11, 7)
+#  undef _CCCL_BUILTIN_FMINF
+#  undef _CCCL_BUILTIN_FMIN
+#  undef _CCCL_BUILTIN_FMINL
+#endif // _CCCL_CUDACC_BELOW(11, 7)
+
 #if _CCCL_HAS_BUILTIN(__builtin_FILE) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC, >=, 19, 27)
 #  define _CCCL_BUILTIN_FILE() __builtin_FILE()
 #else // ^^^ _CCCL_HAS_BUILTIN(__builtin_FILE) ^^^ / vvv !_CCCL_HAS_BUILTIN(__builtin_FILE) vvv
@@ -202,7 +228,7 @@
 #  define _CCCL_BUILTIN_LINE() __LINE__
 #endif // _CCCL_CUDACC_BELOW(11, 3)
 
-#if _CCCL_CHECK_BUILTIN(builtin_log) || defined(_CCCL_COMPILER_GCC)
+#if _CCCL_CHECK_BUILTIN(builtin_log) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_LOGF(...) __builtin_logf(__VA_ARGS__)
 #  define _CCCL_BUILTIN_LOG(...)  __builtin_log(__VA_ARGS__)
 #  define _CCCL_BUILTIN_LOGL(...) __builtin_logl(__VA_ARGS__)
@@ -216,7 +242,7 @@
 #  undef _CCCL_BUILTIN_LOGL
 #endif // _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER_CLANG
 
-#if _CCCL_CHECK_BUILTIN(builtin_log10) || defined(_CCCL_COMPILER_GCC)
+#if _CCCL_CHECK_BUILTIN(builtin_log10) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_LOG10F(...) __builtin_log10f(__VA_ARGS__)
 #  define _CCCL_BUILTIN_LOG10(...)  __builtin_log10(__VA_ARGS__)
 #  define _CCCL_BUILTIN_LOG10L(...) __builtin_log10l(__VA_ARGS__)
@@ -229,7 +255,7 @@
 #  undef _CCCL_BUILTIN_LOG10L
 #endif // _CCCL_CUDACC_BELOW(11, 7)
 
-#if _CCCL_CHECK_BUILTIN(builtin_ilogb) || defined(_CCCL_COMPILER_GCC)
+#if _CCCL_CHECK_BUILTIN(builtin_ilogb) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_ILOGBF(...) __builtin_ilogbf(__VA_ARGS__)
 #  define _CCCL_BUILTIN_ILOGB(...)  __builtin_ilogb(__VA_ARGS__)
 #  define _CCCL_BUILTIN_ILOGBL(...) __builtin_ilogbl(__VA_ARGS__)
@@ -243,7 +269,7 @@
 #  undef _CCCL_BUILTIN_ILOGBL
 #endif // _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER_CLANG
 
-#if _CCCL_CHECK_BUILTIN(builtin_log1p) || defined(_CCCL_COMPILER_GCC)
+#if _CCCL_CHECK_BUILTIN(builtin_log1p) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_LOG1PF(...) __builtin_log1pf(__VA_ARGS__)
 #  define _CCCL_BUILTIN_LOG1P(...)  __builtin_log1p(__VA_ARGS__)
 #  define _CCCL_BUILTIN_LOG1PL(...) __builtin_log1pl(__VA_ARGS__)
@@ -257,7 +283,7 @@
 #  undef _CCCL_BUILTIN_LOG1PL
 #endif // _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER_CLANG
 
-#if _CCCL_CHECK_BUILTIN(builtin_log2) || defined(_CCCL_COMPILER_GCC)
+#if _CCCL_CHECK_BUILTIN(builtin_log2) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_LOG2F(...) __builtin_log2f(__VA_ARGS__)
 #  define _CCCL_BUILTIN_LOG2(...)  __builtin_log2(__VA_ARGS__)
 #  define _CCCL_BUILTIN_LOG2L(...) __builtin_log2l(__VA_ARGS__)
@@ -270,7 +296,7 @@
 #  undef _CCCL_BUILTIN_LOG2L
 #endif // _CCCL_CUDACC_BELOW(11, 7)
 
-#if _CCCL_CHECK_BUILTIN(builtin_logb) || defined(_CCCL_COMPILER_GCC)
+#if _CCCL_CHECK_BUILTIN(builtin_logb) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_LOGBF(...) __builtin_logbf(__VA_ARGS__)
 #  define _CCCL_BUILTIN_LOGB(...)  __builtin_logb(__VA_ARGS__)
 #  define _CCCL_BUILTIN_LOGBL(...) __builtin_logbl(__VA_ARGS__)

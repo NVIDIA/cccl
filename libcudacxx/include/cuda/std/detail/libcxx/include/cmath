@@ -320,6 +320,7 @@ long double    truncl(long double x);
 
 #include <cuda/std/__cmath/lerp.h>
 #include <cuda/std/__cmath/logarithms.h>
+#include <cuda/std/__cmath/min_max.h>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 #include <cuda/std/version>
@@ -466,10 +467,6 @@ using ::fdim;
 using ::fdimf;
 using ::fma;
 using ::fmaf;
-using ::fmax;
-using ::fmaxf;
-using ::fmin;
-using ::fminf;
 using ::lgamma;
 using ::lgammaf;
 using ::llrint;
@@ -541,8 +538,6 @@ using ::exp2l;
 using ::expm1l;
 using ::fdiml;
 using ::fmal;
-using ::fmaxl;
-using ::fminl;
 using ::hypotl;
 using ::lgammal;
 using ::llrintl;
