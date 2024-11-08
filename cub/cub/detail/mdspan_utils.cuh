@@ -122,6 +122,10 @@ is_sub_size_static(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::std
   {
     return ((ext.static_extent(Rank + Is) != ::cuda::std::dynamic_extent) && ...);
   }
+#  if (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION <= 100000) \
+    || (defined(_CCCL_COMPILER_CLANG) && _CCCL_CLANG_VERSION <= 100000)
+  return 0; // GCC <= 9 / Clang <= 9 workaround
+#  endif
 }
 
 } // namespace detail

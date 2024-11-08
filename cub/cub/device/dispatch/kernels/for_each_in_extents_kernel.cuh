@@ -85,7 +85,8 @@ coordinate_at(
   IndexType index, ExtendType ext, fast_div_mod<IndexType> div_mod_sub_size, fast_div_mod<IndexType> div_mod_size)
 {
   auto get_sub_size = [&]() {
-    if constexpr (cub::detail::is_sub_size_static<Rank + 1>(ext))
+    constexpr auto is_sub_size_static_v = cub::detail::is_sub_size_static<Rank + 1>(ext); // GCC <= 9 workaround
+    if constexpr (is_sub_size_static_v)
     {
       return sub_size<Rank + 1>(ext);
     }
