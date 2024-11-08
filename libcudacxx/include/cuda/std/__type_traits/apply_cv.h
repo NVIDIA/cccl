@@ -20,13 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/is_const.h>
-#include <cuda/std/__type_traits/is_reference.h>
-#include <cuda/std/__type_traits/is_volatile.h>
-#include <cuda/std/__type_traits/remove_reference.h>
-#include <cuda/std/__type_traits/type_list.h>
-#include <cuda/std/cstddef>
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct __apply_cv_
