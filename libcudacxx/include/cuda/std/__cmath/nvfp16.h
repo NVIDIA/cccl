@@ -180,7 +180,7 @@ _LIBCUDACXX_HIDE_FROM_ABI bool __constexpr_isnan(__half __x) noexcept
 
 _LIBCUDACXX_HIDE_FROM_ABI bool isnan(__half __v)
 {
-  return __constexpr_isnan(__v);
+  return _CUDA_VSTD::__constexpr_isnan(__v);
 }
 
 _LIBCUDACXX_HIDE_FROM_ABI bool __constexpr_isinf(__half __x) noexcept
@@ -195,17 +195,17 @@ _LIBCUDACXX_HIDE_FROM_ABI bool __constexpr_isinf(__half __x) noexcept
 
 _LIBCUDACXX_HIDE_FROM_ABI bool isinf(__half __v)
 {
-  return __constexpr_isinf(__v);
+  return _CUDA_VSTD::__constexpr_isinf(__v);
 }
 
 _LIBCUDACXX_HIDE_FROM_ABI bool __constexpr_isfinite(__half __x) noexcept
 {
-  return !__constexpr_isnan(__x) && !__constexpr_isinf(__x);
+  return !_CUDA_VSTD::__constexpr_isnan(__x) && !_CUDA_VSTD::__constexpr_isinf(__x);
 }
 
 _LIBCUDACXX_HIDE_FROM_ABI bool isfinite(__half __v)
 {
-  return __constexpr_isfinite(__v);
+  return _CUDA_VSTD::__constexpr_isfinite(__v);
 }
 
 _LIBCUDACXX_HIDE_FROM_ABI __half __constexpr_copysign(__half __x, __half __y) noexcept
@@ -215,7 +215,7 @@ _LIBCUDACXX_HIDE_FROM_ABI __half __constexpr_copysign(__half __x, __half __y) no
 
 _LIBCUDACXX_HIDE_FROM_ABI __half copysign(__half __x, __half __y)
 {
-  return __constexpr_copysign(__x, __y);
+  return _CUDA_VSTD::__constexpr_copysign(__x, __y);
 }
 
 _LIBCUDACXX_HIDE_FROM_ABI __half __constexpr_fabs(__half __x) noexcept
@@ -225,12 +225,12 @@ _LIBCUDACXX_HIDE_FROM_ABI __half __constexpr_fabs(__half __x) noexcept
 
 _LIBCUDACXX_HIDE_FROM_ABI __half fabs(__half __x)
 {
-  return __constexpr_fabs(__x);
+  return _CUDA_VSTD::__constexpr_fabs(__x);
 }
 
 _LIBCUDACXX_HIDE_FROM_ABI __half abs(__half __x)
 {
-  return __constexpr_fabs(__x);
+  return _CUDA_VSTD::__constexpr_fabs(__x);
 }
 
 _LIBCUDACXX_HIDE_FROM_ABI __half __constexpr_fmax(__half __x, __half __y) noexcept

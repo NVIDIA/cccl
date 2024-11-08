@@ -93,7 +93,7 @@ _LIBCUDACXX_HIDE_FROM_ABI bool __constexpr_isnan(__nv_bfloat16 __x) noexcept
 
 _LIBCUDACXX_HIDE_FROM_ABI bool isnan(__nv_bfloat16 __v)
 {
-  return __constexpr_isnan(__v);
+  return _CUDA_VSTD::__constexpr_isnan(__v);
 }
 
 _LIBCUDACXX_HIDE_FROM_ABI bool __constexpr_isinf(__nv_bfloat16 __x) noexcept
@@ -108,17 +108,17 @@ _LIBCUDACXX_HIDE_FROM_ABI bool __constexpr_isinf(__nv_bfloat16 __x) noexcept
 
 _LIBCUDACXX_HIDE_FROM_ABI bool isinf(__nv_bfloat16 __v)
 {
-  return __constexpr_isinf(__v);
+  return _CUDA_VSTD::__constexpr_isinf(__v);
 }
 
 _LIBCUDACXX_HIDE_FROM_ABI bool __constexpr_isfinite(__nv_bfloat16 __x) noexcept
 {
-  return !__constexpr_isnan(__x) && !__constexpr_isinf(__x);
+  return !_CUDA_VSTD::__constexpr_isnan(__x) && !_CUDA_VSTD::__constexpr_isinf(__x);
 }
 
 _LIBCUDACXX_HIDE_FROM_ABI bool isfinite(__nv_bfloat16 __v)
 {
-  return __constexpr_isfinite(__v);
+  return _CUDA_VSTD::__constexpr_isfinite(__v);
 }
 
 _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 __constexpr_copysign(__nv_bfloat16 __x, __nv_bfloat16 __y) noexcept
@@ -128,7 +128,7 @@ _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 __constexpr_copysign(__nv_bfloat16 __x, 
 
 _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 copysign(__nv_bfloat16 __x, __nv_bfloat16 __y)
 {
-  return __constexpr_copysign(__x, __y);
+  return _CUDA_VSTD::__constexpr_copysign(__x, __y);
 }
 
 _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 __constexpr_fabs(__nv_bfloat16 __x) noexcept
@@ -138,12 +138,12 @@ _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 __constexpr_fabs(__nv_bfloat16 __x) noex
 
 _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 fabs(__nv_bfloat16 __x)
 {
-  return __constexpr_fabs(__x);
+  return _CUDA_VSTD::__constexpr_fabs(__x);
 }
 
 _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 abs(__nv_bfloat16 __x)
 {
-  return __constexpr_fabs(__x);
+  return _CUDA_VSTD::__constexpr_fabs(__x);
 }
 
 _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 __constexpr_fmax(__nv_bfloat16 __x, __nv_bfloat16 __y) noexcept

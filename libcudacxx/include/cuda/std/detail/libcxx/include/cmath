@@ -588,16 +588,16 @@ using ::truncl;
 #if _CCCL_STD_VER > 2014 && !defined(__cuda_std__)
 _LIBCUDACXX_HIDE_FROM_ABI float hypot(float x, float y, float z)
 {
-  return sqrt(x * x + y * y + z * z);
+  return _CUDA_VSTD::sqrt(x * x + y * y + z * z);
 }
 _LIBCUDACXX_HIDE_FROM_ABI double hypot(double x, double y, double z)
 {
-  return sqrt(x * x + y * y + z * z);
+  return _CUDA_VSTD::sqrt(x * x + y * y + z * z);
 }
 #  ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 _LIBCUDACXX_HIDE_FROM_ABI long double hypot(long double x, long double y, long double z)
 {
-  return sqrt(x * x + y * y + z * z);
+  return _CUDA_VSTD::sqrt(x * x + y * y + z * z);
 }
 #  endif
 
@@ -611,7 +611,7 @@ hypot(_A1 __lcpp_x, _A2 __lcpp_y, _A3 __lcpp_z) noexcept
   static_assert(
     (!(is_same<_A1, __result_type>::value && is_same<_A2, __result_type>::value && is_same<_A3, __result_type>::value)),
     "");
-  return ::hypot((__result_type) __lcpp_x, (__result_type) __lcpp_y, (__result_type) __lcpp_z);
+  return _CUDA_VSTD::hypot((__result_type) __lcpp_x, (__result_type) __lcpp_y, (__result_type) __lcpp_z);
 }
 #endif
 
@@ -763,11 +763,11 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX float __constexpr_fmax(f
   if (_CCCL_BUILTIN_IS_CONSTANT_EVALUATED())
 #    endif // _CCCL_COMPILER(ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
   {
-    if (__constexpr_isnan(__x))
+    if (_CUDA_VSTD::__constexpr_isnan(__x))
     {
       return __y;
     }
-    if (__constexpr_isnan(__y))
+    if (_CUDA_VSTD::__constexpr_isnan(__y))
     {
       return __x;
     }
@@ -786,11 +786,11 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX double __constexpr_fmax(
   if (_CCCL_BUILTIN_IS_CONSTANT_EVALUATED())
 #    endif // _CCCL_COMPILER(ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
   {
-    if (__constexpr_isnan(__x))
+    if (_CUDA_VSTD::__constexpr_isnan(__x))
     {
       return __y;
     }
-    if (__constexpr_isnan(__y))
+    if (_CUDA_VSTD::__constexpr_isnan(__y))
     {
       return __x;
     }
@@ -810,11 +810,11 @@ __constexpr_fmax(long double __x, long double __y) noexcept
   if (_CCCL_BUILTIN_IS_CONSTANT_EVALUATED())
 #    endif // _CCCL_COMPILER(ICC) && _NV_ISEMPTY(_CCCL_CONSTEXPR_CXX14_COMPLEX)
   {
-    if (__constexpr_isnan(__x))
+    if (_CUDA_VSTD::__constexpr_isnan(__x))
     {
       return __y;
     }
-    if (__constexpr_isnan(__y))
+    if (_CUDA_VSTD::__constexpr_isnan(__y))
     {
       return __x;
     }
@@ -851,17 +851,17 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX _Tp __constexpr_logb(_Tp
       return -numeric_limits<_Tp>::infinity();
     }
 
-    if (__constexpr_isinf(__x))
+    if (_CUDA_VSTD::__constexpr_isinf(__x))
     {
       return numeric_limits<_Tp>::infinity();
     }
 
-    if (__constexpr_isnan(__x))
+    if (_CUDA_VSTD::__constexpr_isnan(__x))
     {
       return numeric_limits<_Tp>::quiet_NaN();
     }
 
-    __x                      = __constexpr_fabs(__x);
+    __x                      = _CUDA_VSTD::__constexpr_fabs(__x);
     unsigned long long __exp = 0;
     while (__x >= _Tp(numeric_limits<_Tp>::radix))
     {
@@ -913,7 +913,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX _Tp __constexpr_scalbn(_
       return __x;
     }
 
-    if (__constexpr_isinf(__x))
+    if (_CUDA_VSTD::__constexpr_isinf(__x))
     {
       return __x;
     }
@@ -923,7 +923,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX _Tp __constexpr_scalbn(_
       return __x;
     }
 
-    if (__constexpr_isnan(__x))
+    if (_CUDA_VSTD::__constexpr_isnan(__x))
     {
       return numeric_limits<_Tp>::quiet_NaN();
     }
