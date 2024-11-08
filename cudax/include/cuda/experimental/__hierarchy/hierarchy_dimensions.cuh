@@ -141,6 +141,9 @@ struct can_stack_checker
   using can_stack = ::cuda::std::__fold_and<detail::can_stack_on_top<LevelsShifted, Levels>...>;
 };
 
+template <typename... Levels>
+using get_last_level = level_at_index<sizeof...(Levels) - 1, Levels...>;
+
 template <typename LUnit, typename L1, typename... Levels>
 _CCCL_INLINE_VAR constexpr bool __can_stack =
   can_stack_checker<__level_type_of<L1>,
