@@ -59,23 +59,23 @@ namespace detail
 {
 
 /***********************************************************************************************************************
- * larger_integral_type
+ * larger_unsigned_type
  **********************************************************************************************************************/
 
 template <typename T, typename = void>
-struct larger_integral_type
+struct larger_unsigned_type
 {
   static_assert(sizeof(T) >= 8, "Unsupported type");
 };
 
 template <typename T>
-struct larger_integral_type<T, typename ::cuda::std::enable_if<(sizeof(T) < 4)>::type>
+struct larger_unsigned_type<T, typename ::cuda::std::enable_if<(sizeof(T) < 4)>::type>
 {
   using type = unsigned;
 };
 
 template <typename T>
-struct larger_integral_type<T, typename ::cuda::std::enable_if<(sizeof(T) == 4)>::type>
+struct larger_unsigned_type<T, typename ::cuda::std::enable_if<(sizeof(T) == 4)>::type>
 {
   using type = ::cuda::std::uint64_t;
 };
@@ -83,7 +83,7 @@ struct larger_integral_type<T, typename ::cuda::std::enable_if<(sizeof(T) == 4)>
 #if CUB_IS_INT128_ENABLED
 
 template <typename T>
-struct larger_integral_type<T, typename ::cuda::std::enable_if<(sizeof(T) == 8)>::type>
+struct larger_unsigned_type<T, typename ::cuda::std::enable_if<(sizeof(T) == 8)>::type>
 {
   using type = __uint128_t;
 };
@@ -91,35 +91,37 @@ struct larger_integral_type<T, typename ::cuda::std::enable_if<(sizeof(T) == 8)>
 #endif // CUB_IS_INT128_ENABLED
 
 template <typename T>
-using larger_unsigned_type_t = typename larger_integral_type<T>::type;
+using larger_unsigned_type_t = typename larger_unsigned_type<T>::type;
 
 template <typename T>
-using impl_prom_t = decltype(+T{});
+using implicit_prom_t = decltype(+T{});
 
 template <typename T>
-using unsigned_impl_prom_t = typename ::cuda::std::make_unsigned<impl_prom_t<T>>::type;
+using unsigned_implicit_prom_t = typename ::cuda::std::make_unsigned<implicit_prom_t<T>>::type;
 
 /***********************************************************************************************************************
  * Extract higher bits after multiplication
  **********************************************************************************************************************/
 
-template <typename T>
-_CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned_impl_prom_t<T>
-multiply_extract_higher_bits(T dividend, T multiplier)
+template <typename T, typename R>
+_CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned_implicit_prom_t<T>
+multiply_extract_higher_bits(T value, R multiplier)
 {
-  static_assert(sizeof(T) <= 8 && ::cuda::std::is_integral<T>::value && !::cuda::std::is_same<T, bool>::value,
-                "unsupported type");
-  _CCCL_ASSERT(dividend >= 0, "dividend must be non-negative");
-  _CCCL_ASSERT(multiplier >= 0, "dividend must non-negative positive");
-  using unsigned_t = unsigned_impl_prom_t<T>;
-  using larger_t   = larger_unsigned_type_t<T>;
+  static_assert(::cuda::std::is_integral<T>::value && !::cuda::std::is_same<T, bool>::value, "unsupported type");
+  static_assert(::cuda::std::is_integral<R>::value && !::cuda::std::is_same<R, bool>::value, "unsupported type");
+  _CCCL_ASSERT(value >= 0, "value must be non-negative");
+  _CCCL_ASSERT(multiplier >= 0, "multiplier must be non-negative positive");
+  using unsigned_t           = unsigned_implicit_prom_t<T>;
+  using larger_t             = larger_unsigned_type_t<T>;
+  constexpr unsigned BitSize = sizeof(T) * CHAR_BIT;
   // clang-format off
   NV_IF_TARGET(
     NV_IS_HOST,
-      (constexpr unsigned BitSize = sizeof(T) * CHAR_BIT;
-       return static_cast<unsigned_t>((static_cast<larger_t>(dividend) * multiplier) >> BitSize);),
+      (return static_cast<unsigned_t>((static_cast<larger_t>(value) * multiplier) >> BitSize);),
     //NV_IS_DEVICE
-      (return (sizeof(T) == 8) ? __umul64hi(dividend, multiplier) : __umulhi(dividend, multiplier);));
+      (return (sizeof(T) == 8)
+        ? __umul64hi(value, multiplier)
+        : static_cast<unsigned_t>((static_cast<larger_t>(value) * multiplier) >> BitSize);));
   // clang-format on
 }
 
@@ -130,20 +132,20 @@ multiply_extract_higher_bits(T dividend, T multiplier)
 template <typename T>
 struct fast_div_mod
 {
-  using impl_t     = impl_prom_t<T>;
-  using unsigned_t = unsigned_impl_prom_t<T>;
+  using unsigned_t = unsigned_implicit_prom_t<T>;
+  using prom_t     = implicit_prom_t<T>;
   using larger_t   = larger_unsigned_type_t<T>;
 
   struct result
   {
-    impl_t quotient;
-    impl_t remainder;
+    prom_t quotient;
+    prom_t remainder;
   };
 
   fast_div_mod() = delete;
 
   _CCCL_NODISCARD _CCCL_HOST_DEVICE explicit fast_div_mod(T divisor) noexcept
-      : _divisor{static_cast<unsigned_t>(divisor)}
+      : _divisor{static_cast<prom_t>(divisor)}
   {
     _CCCL_ASSERT(divisor > 0, "divisor must be positive");
     if (divisor == 1)
@@ -153,12 +155,13 @@ struct fast_div_mod
     constexpr int BitSize   = sizeof(T) * CHAR_BIT;
     constexpr int BitOffset = BitSize / 16;
     auto udivisor           = static_cast<unsigned_t>(divisor);
-    auto num_bits           = ::cuda::std::bit_width(udivisor) + !::cuda::std::has_single_bit(udivisor);
+    int num_bits            = ::cuda::std::bit_width(udivisor) + !::cuda::std::has_single_bit(udivisor);
     _multiplier  = static_cast<unsigned_t>(::cuda::ceil_div(larger_t{1} << (num_bits + BitSize - BitOffset), //
                                                            static_cast<larger_t>(divisor)));
     _shift_right = num_bits - BitOffset;
-    printf("num_bits =%d,  BitSize = %d, BitOffset = %d\n", num_bits, BitSize, BitOffset);
-    printf("multiplier = %llu, shift_right = %llu\n", _multiplier, _shift_right);
+    // printf("divisor =%u\n", divisor);
+    // printf("num_bits =%d,  BitSize = %d, BitOffset = %d\n", num_bits, BitSize, BitOffset);
+    // printf("multiplier = %u, shift_right = %u\n", _multiplier, _shift_right);
   }
 
   fast_div_mod(const fast_div_mod&) noexcept = default;
@@ -168,31 +171,39 @@ struct fast_div_mod
   _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE result operator()(T dividend) const noexcept
   {
     _CCCL_ASSERT(dividend >= 0, "divisor must be non-negative");
-    if (_divisor == 1)
+    // the following branches are needed to avoid negative shift
+    if (sizeof(T) == 4 && _divisor == 1)
     {
       return result{dividend, 0};
     }
-    auto udividend = static_cast<unsigned_t>(dividend);
-    auto quotient  = multiply_extract_higher_bits(udividend, _multiplier) >> _shift_right;
-    auto remainder = udividend - (quotient * _divisor);
+    else if (sizeof(T) == 8 && _divisor == 2)
+    {
+      return result{dividend / prom_t{2}, dividend % prom_t{2}};
+    }
+    else if (sizeof(T) == 8 && _divisor == 3)
+    {
+      return result{dividend / prom_t{3}, dividend % prom_t{3}};
+    }
+    auto quotient  = multiply_extract_higher_bits(dividend, _multiplier) >> _shift_right;
+    auto remainder = dividend - (quotient * _divisor);
     _CCCL_ASSERT(remainder >= 0 && remainder < _divisor, "remainder out of range");
-    return result{static_cast<impl_t>(quotient), static_cast<impl_t>(remainder)};
+    return result{static_cast<prom_t>(quotient), static_cast<prom_t>(remainder)};
   }
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE friend impl_t operator/(T dividend, fast_div_mod div) noexcept
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE friend prom_t operator/(T dividend, fast_div_mod div) noexcept
   {
     return div(dividend).quotient;
   }
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE friend impl_t operator%(T dividend, fast_div_mod div) noexcept
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE friend prom_t operator%(T dividend, fast_div_mod div) noexcept
   {
     return div(dividend).remainder;
   }
 
 private:
-  unsigned_t _divisor     = 1;
-  unsigned_t _multiplier  = 0;
-  unsigned_t _shift_right = 0;
+  prom_t _divisor        = 1;
+  unsigned_t _multiplier = 0;
+  unsigned _shift_right  = 0;
 };
 
 } // namespace detail

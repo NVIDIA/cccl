@@ -127,12 +127,12 @@ struct LinearStore
  * TEST CASES
  **********************************************************************************************************************/
 
-// using index_types = c2h::type_list<int8_t, uint8_t, int16_t, uint16_t, int, unsigned, int64_t, uint64_t>;
+using index_types = c2h::type_list<int8_t, uint8_t, int16_t, uint16_t, int, unsigned, int64_t, uint64_t>;
 
-C2H_TEST("DeviceForEachInExtents 2D static", "[ForEachInExtents][static][device]")
+C2H_TEST("DeviceForEachInExtents 2D static", "[ForEachInExtents][static][device]", index_types)
 {
   constexpr int rank = 2;
-  using index_type   = uint64_t;
+  using index_type   = c2h::get<0, TestType>;
   using data_t       = cuda::std::array<index_type, rank>;
   using store_op_t   = LinearStore<index_type, rank>;
   cuda::std::extents<index_type, 5, 3> ext{};
