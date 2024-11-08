@@ -798,10 +798,10 @@ constexpr auto make_hierarchy(L1 l1, Levels... ls) noexcept
 
 // We can consider removing the operator&, but its convenient for in-line construction
 // TODO accept forwarding references
-template <typename LUnit, typename NewL, typename... Levels>
-_CUDAX_API constexpr auto operator&(const hierarchy_dimensions_fragment<LUnit, Levels...>& ls, NewL nl) noexcept
+template <typename LUnit, typename LNew, typename... Levels>
+_CUDAX_API constexpr auto operator&(const hierarchy_dimensions_fragment<LUnit, Levels...>& ls, LNew lnew) noexcept
 {
-  auto new_level     = detail::__as_level(nl);
+  auto new_level     = detail::__as_level(lnew);
   using NewLevel     = decltype(new_level);
   using top_level    = __level_type_of<::cuda::std::__type_index_c<0, Levels...>>;
   using bottom_level = __level_type_of<::cuda::std::__type_index_c<sizeof...(Levels) - 1, Levels...>>;
