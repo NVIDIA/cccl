@@ -1001,45 +1001,6 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr long double lerp(long double __a, long doubl
 
 #endif // _CCCL_STD_VER > 2017
 
-template <class _IntT,
-          class _FloatT,
-          bool _FloatBigger = (numeric_limits<_FloatT>::digits > numeric_limits<_IntT>::digits),
-          int _Bits         = (numeric_limits<_IntT>::digits - numeric_limits<_FloatT>::digits)>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr _IntT __max_representable_int_for_float() noexcept
-{
-  static_assert(is_floating_point<_FloatT>::value, "must be a floating point type");
-  static_assert(is_integral<_IntT>::value, "must be an integral type");
-  static_assert(numeric_limits<_FloatT>::radix == 2, "FloatT has incorrect radix");
-#ifdef _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
-  static_assert(
-    (_IsSame<_FloatT, float>::value || _IsSame<_FloatT, double>::value || _IsSame<_FloatT, long double>::value),
-    "unsupported floating point type");
-#else
-  static_assert((_IsSame<_FloatT, float>::value || _IsSame<_FloatT, double>::value), "unsupported floating point type");
-#endif
-  return _FloatBigger ? numeric_limits<_IntT>::max() : (numeric_limits<_IntT>::max() >> _Bits << _Bits);
-}
-
-// Convert a floating point number to the specified integral type after
-// clamping to the integral types representable range.
-//
-// The behavior is undefined if `__r` is NaN.
-template <class _IntT, class _RealT>
-_LIBCUDACXX_HIDE_FROM_ABI _IntT __clamp_to_integral(_RealT __r) noexcept
-{
-  using _Lim          = _CUDA_VSTD::numeric_limits<_IntT>;
-  const _IntT _MaxVal = _CUDA_VSTD::__max_representable_int_for_float<_IntT, _RealT>();
-  if (__r >= ::nextafter(static_cast<_RealT>(_MaxVal), INFINITY))
-  {
-    return _Lim::max();
-  }
-  else if (__r <= _Lim::lowest())
-  {
-    return _Lim::min();
-  }
-  return static_cast<_IntT>(__r);
-}
-
 _LIBCUDACXX_END_NAMESPACE_STD
 
 _CCCL_POP_MACROS
