@@ -202,6 +202,88 @@
 #  define _CCCL_BUILTIN_LINE() __LINE__
 #endif // _CCCL_CUDACC_BELOW(11, 3)
 
+#if _CCCL_CHECK_BUILTIN(builtin_log) || defined(_CCCL_COMPILER_GCC)
+#  define _CCCL_BUILTIN_LOGF(...) __builtin_logf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOG(...)  __builtin_log(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOGL(...) __builtin_logl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_log)
+
+// Below 11.7 nvcc treats the builtin as a host only function
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "logf"
+#if _CCCL_CUDACC_BELOW(11, 7) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#  undef _CCCL_BUILTIN_LOGF
+#  undef _CCCL_BUILTIN_LOG
+#  undef _CCCL_BUILTIN_LOGL
+#endif // _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER_CLANG
+
+#if _CCCL_CHECK_BUILTIN(builtin_log10) || defined(_CCCL_COMPILER_GCC)
+#  define _CCCL_BUILTIN_LOG10F(...) __builtin_log10f(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOG10(...)  __builtin_log10(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOG10L(...) __builtin_log10l(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_log10)
+
+// Below 11.7 nvcc treats the builtin as a host only function
+#if _CCCL_CUDACC_BELOW(11, 7)
+#  undef _CCCL_BUILTIN_LOG10F
+#  undef _CCCL_BUILTIN_LOG10
+#  undef _CCCL_BUILTIN_LOG10L
+#endif // _CCCL_CUDACC_BELOW(11, 7)
+
+#if _CCCL_CHECK_BUILTIN(builtin_ilogb) || defined(_CCCL_COMPILER_GCC)
+#  define _CCCL_BUILTIN_ILOGBF(...) __builtin_ilogbf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ILOGB(...)  __builtin_ilogb(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ILOGBL(...) __builtin_ilogbl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_log10)
+
+// Below 11.7 nvcc treats the builtin as a host only function
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "ilogb"
+#if _CCCL_CUDACC_BELOW(11, 7) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#  undef _CCCL_BUILTIN_ILOGBF
+#  undef _CCCL_BUILTIN_ILOGB
+#  undef _CCCL_BUILTIN_ILOGBL
+#endif // _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER_CLANG
+
+#if _CCCL_CHECK_BUILTIN(builtin_log1p) || defined(_CCCL_COMPILER_GCC)
+#  define _CCCL_BUILTIN_LOG1PF(...) __builtin_log1pf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOG1P(...)  __builtin_log1p(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOG1PL(...) __builtin_log1pl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_log1p)
+
+// Below 11.7 nvcc treats the builtin as a host only function
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "log1p"
+#if _CCCL_CUDACC_BELOW(11, 7) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#  undef _CCCL_BUILTIN_LOG1PF
+#  undef _CCCL_BUILTIN_LOG1P
+#  undef _CCCL_BUILTIN_LOG1PL
+#endif // _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER_CLANG
+
+#if _CCCL_CHECK_BUILTIN(builtin_log2) || defined(_CCCL_COMPILER_GCC)
+#  define _CCCL_BUILTIN_LOG2F(...) __builtin_log2f(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOG2(...)  __builtin_log2(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOG2L(...) __builtin_log2l(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_log1)
+
+// Below 11.7 nvcc treats the builtin as a host only function
+#if _CCCL_CUDACC_BELOW(11, 7)
+#  undef _CCCL_BUILTIN_LOG2F
+#  undef _CCCL_BUILTIN_LOG2
+#  undef _CCCL_BUILTIN_LOG2L
+#endif // _CCCL_CUDACC_BELOW(11, 7)
+
+#if _CCCL_CHECK_BUILTIN(builtin_logb) || defined(_CCCL_COMPILER_GCC)
+#  define _CCCL_BUILTIN_LOGBF(...) __builtin_logbf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOGB(...)  __builtin_logb(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOGBL(...) __builtin_logbl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_log1)
+
+// Below 11.7 nvcc treats the builtin as a host only function
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "logb"
+#if _CCCL_CUDACC_BELOW(11, 7) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#  undef _CCCL_BUILTIN_LOGBF
+#  undef _CCCL_BUILTIN_LOGB
+#  undef _CCCL_BUILTIN_LOGBL
+#endif // _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER_CLANG
+
 #if _CCCL_CHECK_BUILTIN(__builtin_operator_new) && _CCCL_CHECK_BUILTIN(__builtin_operator_delete) \
   && defined(_CCCL_CUDA_COMPILER_CLANG)
 #  define _CCCL_BUILTIN_OPERATOR_DELETE(...) __builtin_operator_delete(__VA_ARGS__)

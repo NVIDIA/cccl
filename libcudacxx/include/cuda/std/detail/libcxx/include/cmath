@@ -319,6 +319,7 @@ long double    truncl(long double x);
 #endif // _CCCL_COMPILER(NVHPC)
 
 #include <cuda/std/__cmath/lerp.h>
+#include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 #include <cuda/std/version>
@@ -387,9 +388,6 @@ using ::asinhf;
 using ::atanh;
 using ::atanhf;
 
-using ::log;
-using ::logf;
-
 using ::hypot;
 using ::hypotf;
 
@@ -425,11 +423,6 @@ using ::frexpf;
 using ::ldexp;
 using ::ldexpf;
 
-using ::log;
-using ::logf;
-
-using ::log10;
-using ::log10f;
 using ::modf;
 using ::modff;
 
@@ -477,20 +470,12 @@ using ::fmax;
 using ::fmaxf;
 using ::fmin;
 using ::fminf;
-using ::ilogb;
-using ::ilogbf;
 using ::lgamma;
 using ::lgammaf;
 using ::llrint;
 using ::llrintf;
 using ::llround;
 using ::llroundf;
-using ::log1p;
-using ::log1pf;
-using ::log2;
-using ::log2f;
-using ::logb;
-using ::logbf;
 using ::lrint;
 using ::lrintf;
 using ::lround;
@@ -535,8 +520,6 @@ using ::floorl;
 using ::fmodl;
 using ::frexpl;
 using ::ldexpl;
-using ::log10l;
-using ::logl;
 using ::modfl;
 using ::powl;
 using ::sinhl;
@@ -561,13 +544,9 @@ using ::fmal;
 using ::fmaxl;
 using ::fminl;
 using ::hypotl;
-using ::ilogbl;
 using ::lgammal;
 using ::llrintl;
 using ::llroundl;
-using ::log1pl;
-using ::log2l;
-using ::logbl;
 using ::lrintl;
 using ::lroundl;
 using ::nanl;
@@ -836,7 +815,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX __promote_t<_Tp, _Up> __
 template <class _A1>
 _LIBCUDACXX_HIDE_FROM_ABI _A1 __constexpr_logb(_A1 __x)
 {
-  return ::logb(__x);
+  return _CUDA_VSTD::logb(__x);
 }
 #else
 template <class _Tp>

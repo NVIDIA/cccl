@@ -70,11 +70,6 @@ _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 atan2(__nv_bfloat16 __x, __nv_bfloat16 _
   return __float2bfloat16(::atan2f(__bfloat162float(__x), __bfloat162float(__y)));
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 log(__nv_bfloat16 __x)
-{
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::hlog(__x);), (return __float2bfloat16(::logf(__bfloat162float(__x)));))
-}
-
 _LIBCUDACXX_HIDE_FROM_ABI __nv_bfloat16 sqrt(__nv_bfloat16 __x)
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::hsqrt(__x);), (return __float2bfloat16(::sqrtf(__bfloat162float(__x)));))

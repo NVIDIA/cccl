@@ -135,33 +135,6 @@ _LIBCUDACXX_HIDE_FROM_ABI __half atan2(__half __x, __half __y)
   return __float2half(::atan2f(__half2float(__x), __half2float(__y)));
 }
 
-// clang-format off
-_LIBCUDACXX_HIDE_FROM_ABI  __half log(__half __x)
-{
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_53, (
-    return ::hlog(__x);
-  ), (
-    {
-      float __vf            = __half2float(__x);
-      __vf                  = ::logf(__vf);
-      __half_raw __ret_repr = ::__float2half_rn(__vf);
-
-      uint16_t __repr = __half_raw(__x).x;
-      switch (__repr)
-      {
-        case 7544:
-          __ret_repr.x -= 1;
-          break;
-
-        default:;
-      }
-
-      return __ret_repr;
-    }
-  ))
-}
-// clang-format on
-
 _LIBCUDACXX_HIDE_FROM_ABI __half sqrt(__half __x)
 {
   NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return ::hsqrt(__x);), (return __float2half(::sqrtf(__half2float(__x)));))
