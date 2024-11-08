@@ -142,9 +142,9 @@ struct can_stack_checker
 };
 
 template <typename LUnit, typename L1, typename... Levels>
-using __can_stack =
-  typename can_stack_checker<__level_type_of<L1>,
-                             __level_type_of<Levels>...>::template can_stack<__level_type_of<Levels>..., LUnit>;
+_CCCL_INLINE_VAR constexpr bool __can_stack =
+  can_stack_checker<__level_type_of<L1>,
+                    __level_type_of<Levels>...>::template can_stack<__level_type_of<Levels>..., LUnit>::value;
 
 template <size_t... _Id>
 _CUDAX_API constexpr auto __reverse_indices(::cuda::std::index_sequence<_Id...>) noexcept
@@ -162,21 +162,20 @@ struct __make_hierarchy_fragment
     return __make_hierarchy_fragment<LUnit, true>()(::cuda::std::get<_Ids>(ls)...);
   }
 
-  template <typename L1, typename... Levels>
-  _CCCL_NODISCARD _CUDAX_API constexpr auto operator()(const L1& l1, const Levels&... ls) const noexcept
+  template <typename... Levels>
+  _CCCL_NODISCARD _CUDAX_API constexpr auto operator()(const Levels&... ls) const noexcept
   {
-    if constexpr (__can_stack<LUnit, L1, Levels...>::value)
+    if constexpr (__can_stack<LUnit, Levels...>)
     {
-      return hierarchy_dimensions_fragment(LUnit{}, l1, ls...);
+      return hierarchy_dimensions_fragment(LUnit{}, ls...);
     }
     else if constexpr (!Reversed)
     {
-      return __apply_reverse(::cuda::std::tie(l1, ls...),
-                             __reverse_indices(::cuda::std::index_sequence_for<L1, Levels...>()));
+      return __apply_reverse(::cuda::std::tie(ls...), __reverse_indices(::cuda::std::index_sequence_for<Levels...>()));
     }
     else
     {
-      static_assert(__can_stack<LUnit, L1, Levels...>::value,
+      static_assert(__can_stack<LUnit, Levels...>,
                     "Provided levels can't create a valid hierarchy when stacked in the provided order or reversed");
     }
   }
@@ -799,26 +798,26 @@ constexpr auto make_hierarchy(L1 l1, Levels... ls) noexcept
 
 // We can consider removing the operator&, but its convenient for in-line construction
 // TODO accept forwarding references
-template <typename LUnit, typename L1, typename... Levels>
-_CUDAX_API constexpr auto operator&(const hierarchy_dimensions_fragment<LUnit, Levels...>& ls, L1 l1) noexcept
+template <typename LUnit, typename NewL, typename... Levels>
+_CUDAX_API constexpr auto operator&(const hierarchy_dimensions_fragment<LUnit, Levels...>& ls, NewL nl) noexcept
 {
-  auto level1        = detail::__as_level(l1);
-  using Level1       = decltype(level1);
+  auto new_level     = detail::__as_level(nl);
+  using NewLevel     = decltype(new_level);
   using top_level    = __level_type_of<::cuda::std::__type_index_c<0, Levels...>>;
   using bottom_level = __level_type_of<::cuda::std::__type_index_c<sizeof...(Levels) - 1, Levels...>>;
 
-  if constexpr (detail::can_stack_on_top<top_level, __level_type_of<Level1>>)
+  if constexpr (detail::can_stack_on_top<top_level, __level_type_of<NewLevel>>)
   {
-    return hierarchy_dimensions_fragment<LUnit, Level1, Levels...>(
-      ::cuda::std::tuple_cat(::cuda::std::make_tuple(level1), ls.levels));
+    return hierarchy_dimensions_fragment<LUnit, NewLevel, Levels...>(
+      ::cuda::std::tuple_cat(::cuda::std::make_tuple(new_level), ls.levels));
   }
   else
   {
-    static_assert(detail::can_stack_on_top<__level_type_of<Level1>, bottom_level>,
+    static_assert(detail::can_stack_on_top<__level_type_of<NewLevel>, bottom_level>,
                   "Not supported order of levels in hierarchy");
-    using NewUnit = typename __level_type_of<Level1>::allowed_below::default_unit;
-    return hierarchy_dimensions_fragment<NewUnit, Levels..., Level1>(
-      ::cuda::std::tuple_cat(ls.levels, ::cuda::std::make_tuple(level1)));
+    using NewUnit = typename __level_type_of<NewLevel>::allowed_below::default_unit;
+    return hierarchy_dimensions_fragment<NewUnit, Levels..., NewLevel>(
+      ::cuda::std::tuple_cat(ls.levels, ::cuda::std::make_tuple(new_level)));
   }
 }
 
