@@ -65,10 +65,10 @@ bit_ceil(_Tp __t) noexcept
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, int>
 bit_width(_Tp __t) noexcept
 {
-  return __t == 0 ? 0 : static_cast<_Tp>(__bit_log2(__t) + 1);
+  return __t == 0 ? 0 : static_cast<int>(__bit_log2(__t) + 1);
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD

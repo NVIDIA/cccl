@@ -87,7 +87,7 @@ C2H_TEST("Device reduce-by-key works with iterators", "[by_key][reduce][device]"
   init_default_constant(default_constant);
   auto value_it = thrust::make_constant_iterator(default_constant);
 
-  using op_t = cub::Sum;
+  using op_t = ::cuda::std::plus<>;
 
   // Prepare verification data
   using accum_t = ::cuda::std::__accumulator_t<op_t, value_t, output_t>;

@@ -97,7 +97,7 @@ struct div_op
 C2H_TEST("DeviceScan::ScanByKey works for very large number of items", "[by_key][scan][device]", offset_types)
 try
 {
-  using op_t     = cub::Sum;
+  using op_t     = ::cuda::std::plus<>;
   using item_t   = std::uint32_t;
   using key_t    = std::uint64_t;
   using index_t  = std::uint64_t;
@@ -130,7 +130,8 @@ try
   {
     constexpr bool is_exclusive = true;
     auto initial_value          = item_t{42};
-    device_exclusive_scan_by_key(keys_it, items_it, d_items_out_it, op_t{}, initial_value, num_items, cub::Equality{});
+    device_exclusive_scan_by_key(
+      keys_it, items_it, d_items_out_it, op_t{}, initial_value, num_items, ::cuda::std::equal_to<>{});
 
     // Ensure that we created the correct output
     auto expected_out_it = thrust::make_transform_iterator(
@@ -142,7 +143,7 @@ try
   {
     constexpr bool is_exclusive = false;
     auto initial_value          = item_t{0};
-    device_inclusive_scan_by_key(keys_it, items_it, d_items_out_it, op_t{}, num_items, cub::Equality{});
+    device_inclusive_scan_by_key(keys_it, items_it, d_items_out_it, op_t{}, num_items, ::cuda::std::equal_to<>{});
 
     // Ensure that we created the correct output
     auto expected_out_it = thrust::make_transform_iterator(

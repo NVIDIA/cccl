@@ -255,7 +255,7 @@ and algorithm implementation look like:
 
     __device__ __forceinline__ T Sum(T input, int valid_items) {
       return InternalWarpReduce(temp_storage)
-          .Reduce(input, valid_items, cub::Sum());
+          .Reduce(input, valid_items, ::cuda::std::plus<>{});
     }
 
 Due to ``LEGACY_PTX_ARCH`` issues described above,
@@ -282,15 +282,15 @@ we can't specialize on the PTX version.
                               std::is_same<unsigned int, U>::value,
                               T>::type
         ReduceImpl(T input,
-                  int,      // valid_items
-                  cub::Sum) // reduction_op
+                  int,               // valid_items
+                  ::cuda::std::plus<>) // reduction_op
     {
       T output = input;
 
       NV_IF_TARGET(NV_PROVIDES_SM_80,
                   (output = __reduce_add_sync(member_mask, input);),
-                  (output = ReduceImpl<cub::Sum>(
-                        input, LOGICAL_WARP_THREADS, cub::Sum{});));
+                  (output = ReduceImpl<::cuda::std::plus<>>(
+                        input, LOGICAL_WARP_THREADS, ::cuda::std::plus<>{});));
 
       return output;
     }
