@@ -25,73 +25,73 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 struct __apply_cv_
 {
   template <class _Tp>
-  using __call = _Tp;
+  using __call _LIBCUDACXX_NODEBUG_TYPE = _Tp;
 };
 
 struct __apply_cv_c
 {
   template <class _Tp>
-  using __call = const _Tp;
+  using __call _LIBCUDACXX_NODEBUG_TYPE = const _Tp;
 };
 
 struct __apply_cv_v
 {
   template <class _Tp>
-  using __call = volatile _Tp;
+  using __call _LIBCUDACXX_NODEBUG_TYPE = volatile _Tp;
 };
 
 struct __apply_cv_cv
 {
   template <class _Tp>
-  using __call = const volatile _Tp;
+  using __call _LIBCUDACXX_NODEBUG_TYPE = const volatile _Tp;
 };
 
 struct __apply_cv_lr
 {
   template <class _Tp>
-  using __call = _Tp&;
+  using __call _LIBCUDACXX_NODEBUG_TYPE = _Tp&;
 };
 
 struct __apply_cv_clr
 {
   template <class _Tp>
-  using __call = const _Tp&;
+  using __call _LIBCUDACXX_NODEBUG_TYPE = const _Tp&;
 };
 
 struct __apply_cv_vlr
 {
   template <class _Tp>
-  using __call = volatile _Tp&;
+  using __call _LIBCUDACXX_NODEBUG_TYPE = volatile _Tp&;
 };
 
 struct __apply_cv_cvlr
 {
   template <class _Tp>
-  using __call = const volatile _Tp&;
+  using __call _LIBCUDACXX_NODEBUG_TYPE = const volatile _Tp&;
 };
 
 struct __apply_cv_rr
 {
   template <class _Tp>
-  using __call = _Tp&&;
+  using __call _LIBCUDACXX_NODEBUG_TYPE = _Tp&&;
 };
 
 struct __apply_cv_crr
 {
   template <class _Tp>
-  using __call = const _Tp&&;
+  using __call _LIBCUDACXX_NODEBUG_TYPE = const _Tp&&;
 };
 
 struct __apply_cv_vrr
 {
   template <class _Tp>
-  using __call = volatile _Tp&&;
+  using __call _LIBCUDACXX_NODEBUG_TYPE = volatile _Tp&&;
 };
 
 struct __apply_cv_cvrr
 {
   template <class _Tp>
-  using __call = const volatile _Tp&&;
+  using __call _LIBCUDACXX_NODEBUG_TYPE = const volatile _Tp&&;
 };
 
 #ifndef _CCCL_NO_VARIABLE_TEMPLATES
@@ -126,66 +126,66 @@ using __apply_cv_fn = decltype(__apply_cpcvr<_Tp>);
 template <class>
 struct __apply_cvr
 {
-  using type = __apply_cv_;
+  using type _LIBCUDACXX_NODEBUG_TYPE = __apply_cv_;
 };
 template <class _Tp>
 struct __apply_cvr<const _Tp>
 {
-  using type = __apply_cv_c;
+  using type _LIBCUDACXX_NODEBUG_TYPE = __apply_cv_c;
 };
 template <class _Tp>
 struct __apply_cvr<volatile _Tp>
 {
-  using type = __apply_cv_v;
+  using type _LIBCUDACXX_NODEBUG_TYPE = __apply_cv_v;
 };
 template <class _Tp>
 struct __apply_cvr<const volatile _Tp>
 {
-  using type = __apply_cv_cv;
+  using type _LIBCUDACXX_NODEBUG_TYPE = __apply_cv_cv;
 };
 template <class _Tp>
 struct __apply_cvr<_Tp&>
 {
-  using type = __apply_cv_lr;
+  using type _LIBCUDACXX_NODEBUG_TYPE = __apply_cv_lr;
 };
 template <class _Tp>
 struct __apply_cvr<const _Tp&>
 {
-  using type = __apply_cv_clr;
+  using type _LIBCUDACXX_NODEBUG_TYPE = __apply_cv_clr;
 };
 template <class _Tp>
 struct __apply_cvr<volatile _Tp&>
 {
-  using type = __apply_cv_vlr;
+  using type _LIBCUDACXX_NODEBUG_TYPE = __apply_cv_vlr;
 };
 template <class _Tp>
 struct __apply_cvr<const volatile _Tp&>
 {
-  using type = __apply_cv_cvlr;
+  using type _LIBCUDACXX_NODEBUG_TYPE = __apply_cv_cvlr;
 };
 template <class _Tp>
 struct __apply_cvr<_Tp&&>
 {
-  using type = __apply_cv_rr;
+  using type _LIBCUDACXX_NODEBUG_TYPE = __apply_cv_rr;
 };
 template <class _Tp>
 struct __apply_cvr<const _Tp&&>
 {
-  using type = __apply_cv_crr;
+  using type _LIBCUDACXX_NODEBUG_TYPE = __apply_cv_crr;
 };
 template <class _Tp>
 struct __apply_cvr<volatile _Tp&&>
 {
-  using type = __apply_cv_vrr;
+  using type _LIBCUDACXX_NODEBUG_TYPE = __apply_cv_vrr;
 };
 template <class _Tp>
 struct __apply_cvr<const volatile _Tp&&>
 {
-  using type = __apply_cv_cvrr;
+  using type _LIBCUDACXX_NODEBUG_TYPE = __apply_cv_cvrr;
 };
 
 template <class _Tp>
-using __apply_cv_fn = typename __apply_cvr<_Tp>::type;
+using __apply_cv_fn _LIBCUDACXX_NODEBUG_TYPE = typename __apply_cvr<_Tp>::type;
 #endif // _CCCL_NO_VARIABLE_TEMPLATES
 
 template <class _From, class _To>
