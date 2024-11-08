@@ -79,9 +79,6 @@ template <typename QueryLevel, typename Unit, typename... Levels>
 struct has_unit<QueryLevel, hierarchy_dimensions_fragment<Unit, Levels...>> : ::cuda::std::is_same<QueryLevel, Unit>
 {};
 
-template <unsigned int Id, typename... Levels>
-using level_at_index = typename ::cuda::std::tuple_element<Id, ::cuda::std::__tuple_types<Levels...>>::type;
-
 template <typename QueryLevel>
 struct get_level_helper
 {
@@ -116,7 +113,7 @@ template <typename... Levels>
 struct can_stack_checker
 {
   template <typename... LevelsShifted>
-  static constexpr bool can_stack = (detail::can_stack_on_top<LevelsShifted, Levels> && ...);
+  static constexpr bool can_stack = (detail::can_rhs_stack_on_lhs<LevelsShifted, Levels> && ...);
 };
 
 template <typename LUnit, ::cuda::std::size_t... Ids, typename... Levels>
@@ -248,7 +245,7 @@ struct hierarchy_extents_helper
     }
     else
     {
-      using Unit = typename detail::get_first_level_type<typename Levels::level_type...>::type;
+      using Unit = typename detail::get_first_level<typename Levels::level_type...>;
       return dims_product<typename TopLevel::product_type>(
         replace_with_intrinsics_or_constexpr<Unit, TopLevel>(ltop.dims), (*this)(levels...));
     }
@@ -275,7 +272,7 @@ struct index_helper
     }
     else
     {
-      using Unit        = typename detail::get_first_level_type<typename Levels::level_type...>::type;
+      using Unit        = typename detail::get_first_level<typename Levels::level_type...>;
       auto hinted_index = static_index_hint(ltop.dims, dims_helper<Unit, TopLevel>::index());
       return dims_sum<typename TopLevel::product_type>(
         dims_product<typename TopLevel::product_type>(hinted_index, hierarchy_extents_helper<BottomUnit>()(levels...)),
@@ -298,7 +295,7 @@ struct rank_helper
     }
     else
     {
-      using Unit        = typename detail::get_first_level_type<typename Levels::level_type...>::type;
+      using Unit        = typename detail::get_first_level<typename Levels::level_type...>;
       auto hinted_index = static_index_hint(ltop.dims, dims_helper<Unit, TopLevel>::index());
       auto level_rank   = detail::index_to_linear<typename TopLevel::product_type>(hinted_index, ltop.dims);
       return level_rank * dims_to_count(hierarchy_extents_helper<BottomUnit>()(levels...))
@@ -402,6 +399,9 @@ private:
   };
 
 public:
+  template <typename, typename...>
+  friend struct hierarchy_dimensions_fragment;
+
   template <typename Unit, typename Level>
   using extents_type =
     decltype(::cuda::std::apply(::cuda::std::declval<detail::hierarchy_extents_helper<Unit>>(),
@@ -473,8 +473,7 @@ public:
    * @tparam Level
    *  Specifies at what CUDA hierarchy level the extents are requested
    */
-  template <typename Unit  = BottomUnit,
-            typename Level = typename detail::get_first_level_type<Levels...>::type::level_type>
+  template <typename Unit = BottomUnit, typename Level = typename detail::get_first_level<Levels...>::level_type>
   _CCCL_HOST_DEVICE constexpr auto extents(const Unit& = Unit(), const Level& = Level()) const noexcept
   {
     auto selected = levels_range<Unit, Level>();
@@ -516,8 +515,7 @@ public:
    * @tparam Level
    *  Specifies at what level the count should happen
    */
-  template <typename Unit  = BottomUnit,
-            typename Level = typename detail::get_first_level_type<Levels...>::type::level_type>
+  template <typename Unit = BottomUnit, typename Level = typename detail::get_first_level<Levels...>::level_type>
   _CCCL_HOST_DEVICE constexpr auto count(const Unit& = Unit(), const Level& = Level()) const noexcept
   {
     return detail::dims_to_count(extents<Unit, Level>());
@@ -554,8 +552,7 @@ public:
    * @tparam Level
    *  Specifies at what level the count should happen
    */
-  template <typename Unit  = BottomUnit,
-            typename Level = typename detail::get_first_level_type<Levels...>::type::level_type>
+  template <typename Unit = BottomUnit, typename Level = typename detail::get_first_level<Levels...>::level_type>
   _CCCL_HOST_DEVICE constexpr static auto static_count(const Unit& = Unit(), const Level& = Level()) noexcept
   {
     if constexpr (extents_type<Unit, Level>::rank_dynamic() == 0)
@@ -607,8 +604,7 @@ public:
    * @tparam Level
    *  Specifies at what hierarchy level the index is requested
    */
-  template <typename Unit  = BottomUnit,
-            typename Level = typename detail::get_first_level_type<Levels...>::type::level_type>
+  template <typename Unit = BottomUnit, typename Level = typename detail::get_first_level<Levels...>::level_type>
   _CCCL_DEVICE constexpr auto index(const Unit& = Unit(), const Level& = Level()) const noexcept
   {
     auto selected = levels_range<Unit, Level>();
@@ -650,8 +646,7 @@ public:
    * @tparam Level
    *  Specifies at what level the rank is requested
    */
-  template <typename Unit  = BottomUnit,
-            typename Level = typename detail::get_first_level_type<Levels...>::type::level_type>
+  template <typename Unit = BottomUnit, typename Level = typename detail::get_first_level<Levels...>::level_type>
   _CCCL_DEVICE constexpr auto rank(const Unit& = Unit(), const Level& = Level()) const noexcept
   {
     auto selected = levels_range<Unit, Level>();
@@ -685,6 +680,63 @@ public:
     static_assert(has_level<Level, hierarchy_dimensions_fragment<BottomUnit, Levels...>>);
 
     return ::cuda::std::apply(detail::get_level_helper<Level>{}, levels);
+  }
+
+  //! @brief Returns a new hierarchy with combined levels of this and the other supplied hierarchy
+  //!
+  //! This function combines this hierarchy with the supplied hierarchy, the resulting hierarchy
+  //! holds levels present in both hierarchies. In case of overlap of levels this hierarchy
+  //! is prioritized, so the result always holds all levels from this hierarchy and non-overlapping
+  //! levels from the other hierarchy.
+  //!
+  //! @param other The other hierarchy to be combined with this hierarchy
+  //!
+  //! @return Hierarchy holding the combined levels from both hierarchies
+  template <typename OtherUnit, typename... OtherLevels>
+  constexpr auto combine(const hierarchy_dimensions_fragment<OtherUnit, OtherLevels...>& other)
+  {
+    using this_top_level     = typename detail::get_first_level<Levels...>::level_type;
+    using this_bottom_level  = typename detail::get_last_level<Levels...>::level_type;
+    using other_top_level    = typename detail::get_first_level<OtherLevels...>::level_type;
+    using other_bottom_level = typename detail::get_last_level<OtherLevels...>::level_type;
+    if constexpr (detail::can_rhs_stack_on_lhs<other_top_level, this_bottom_level>)
+    {
+      // Easily stackable case, example this is (grid), other is (cluster, block)
+      return ::cuda::std::apply(fragment_helper<OtherUnit>(), ::cuda::std::tuple_cat(levels, other.levels));
+    }
+    else if constexpr (has_level<this_bottom_level, hierarchy_dimensions_fragment<OtherUnit, OtherLevels...>>
+                       && (!has_level<this_top_level, hierarchy_dimensions_fragment<OtherUnit, OtherLevels...>>
+                           || ::cuda::std::is_same_v<this_top_level, other_top_level>) )
+    {
+      // Overlap with this on the top, e.g. this is (grid, cluster), other is (cluster, block), can fully overlap
+      // Do we have some CCCL tuple utils that can select all but the first?
+      auto to_add_with_one_too_many = other.template levels_range<OtherUnit, this_bottom_level>();
+      auto to_add                   = ::cuda::std::apply(
+        [](auto&&, auto&&... rest) {
+          return ::cuda::std::make_tuple(rest...);
+        },
+        to_add_with_one_too_many);
+      return ::cuda::std::apply(fragment_helper<OtherUnit>(), ::cuda::std::tuple_cat(levels, to_add));
+    }
+    else
+    {
+      if constexpr (detail::can_rhs_stack_on_lhs<this_top_level, other_bottom_level>)
+      {
+        // Easily stackable case again, just reversed
+        return ::cuda::std::apply(fragment_helper<BottomUnit>(), ::cuda::std::tuple_cat(other.levels, levels));
+      }
+      else
+      {
+        // Overlap with this on the bottom, e.g. this is (cluster, block), other is (grid, cluster), can fully overlap
+        static_assert(has_level<other_bottom_level, hierarchy_dimensions_fragment<BottomUnit, Levels...>>
+                        && (!has_level<this_bottom_level, hierarchy_dimensions_fragment<OtherUnit, OtherLevels...>>
+                            || ::cuda::std::is_same_v<this_bottom_level, other_bottom_level>),
+                      "Can't combine the hierarchies");
+
+        auto to_add = other.template levels_range<this_top_level, other_top_level>();
+        return ::cuda::std::apply(fragment_helper<BottomUnit>(), ::cuda::std::tuple_cat(to_add, levels));
+      }
+    }
   }
 };
 
@@ -782,14 +834,14 @@ operator&(const hierarchy_dimensions_fragment<LUnit, Levels...>& ls, const L1& l
   using top_level    = typename detail::level_at_index<0, Levels...>::level_type;
   using bottom_level = typename detail::level_at_index<sizeof...(Levels) - 1, Levels...>::level_type;
 
-  if constexpr (detail::can_stack_on_top<top_level, typename L1::level_type>)
+  if constexpr (detail::can_rhs_stack_on_lhs<top_level, typename L1::level_type>)
   {
     return hierarchy_dimensions_fragment<LUnit, L1, Levels...>(
       ::cuda::std::tuple_cat(::cuda::std::make_tuple(l1), ls.levels));
   }
   else
   {
-    static_assert(detail::can_stack_on_top<typename L1::level_type, bottom_level>,
+    static_assert(detail::can_rhs_stack_on_lhs<typename L1::level_type, bottom_level>,
                   "Not supported order of levels in hierarchy");
     using NewUnit = typename L1::level_type::allowed_below::default_unit;
     return hierarchy_dimensions_fragment<NewUnit, Levels..., L1>(
