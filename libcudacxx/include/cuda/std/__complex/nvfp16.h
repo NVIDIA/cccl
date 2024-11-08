@@ -25,8 +25,8 @@
 
 #  include <cuda_fp16.h>
 
+#  include <cuda/std/__cmath/nvfp16.h>
 #  include <cuda/std/__complex/vector_support.h>
-#  include <cuda/std/__cuda/cmath_nvfp16.h>
 #  include <cuda/std/__fwd/get.h>
 #  include <cuda/std/__type_traits/enable_if.h>
 #  include <cuda/std/__type_traits/integral_constant.h>

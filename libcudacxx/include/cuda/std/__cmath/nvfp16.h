@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CUDA_CMATH_NVFP16_H
-#define _LIBCUDACXX___CUDA_CMATH_NVFP16_H
+#ifndef _LIBCUDACXX___CMATH_NVFP16_H
+#define _LIBCUDACXX___CMATH_NVFP16_H
 
 #include <cuda/std/detail/__config>
 
@@ -242,4 +242,4 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif /// _LIBCUDACXX_HAS_NVFP16
 
-#endif // _LIBCUDACXX___CUDA_CMATH_NVFP16_H
+#endif // _LIBCUDACXX___CMATH_NVFP16_H

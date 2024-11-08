@@ -323,11 +323,11 @@ long double    truncl(long double x);
 #include <cuda/std/version>
 
 #ifdef _LIBCUDACXX_HAS_NVFP16
-#  include <cuda/std/__cuda/cmath_nvfp16.h>
+#  include <cuda/std/__cmath/nvfp16.h>
 #endif // _LIBCUDACXX_HAS_NVFP16
 
 #ifdef _LIBCUDACXX_HAS_NVBF16
-#  include <cuda/std/__cuda/cmath_nvbf16.h>
+#  include <cuda/std/__cmath/nvbf16.h>
 #endif // _LIBCUDACXX_HAS_NVBF16
 
 #if _CCCL_COMPILER(NVRTC)

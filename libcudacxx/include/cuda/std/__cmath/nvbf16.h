@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CUDA_CMATH_NVBF16_H
-#define _LIBCUDACXX___CUDA_CMATH_NVBF16_H
+#ifndef _LIBCUDACXX___CMATH_NVBF16_H
+#define _LIBCUDACXX___CMATH_NVBF16_H
 
 #include <cuda/std/detail/__config>
 
@@ -155,4 +155,4 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif /// _LIBCUDACXX_HAS_NVBF16
 
-#endif // _LIBCUDACXX___CUDA_CMATH_NVBF16_H
+#endif // _LIBCUDACXX___CMATH_NVBF16_H

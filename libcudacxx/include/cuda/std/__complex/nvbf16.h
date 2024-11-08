@@ -28,8 +28,8 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
 #  include <cuda_bf16.h>
 _CCCL_DIAG_POP
 
+#  include <cuda/std/__cmath/nvbf16.h>
 #  include <cuda/std/__complex/vector_support.h>
-#  include <cuda/std/__cuda/cmath_nvbf16.h>
 #  include <cuda/std/__fwd/get.h>
 #  include <cuda/std/__type_traits/enable_if.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
