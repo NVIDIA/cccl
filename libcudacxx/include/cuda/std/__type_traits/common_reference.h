@@ -76,13 +76,9 @@ using __cond_res = decltype(false ? _CUDA_VSTD::declval<_Xp (&)()>()() : _CUDA_V
 // Let `XREF(A)` denote a unary alias template `T` such that `T<U>` denotes the same type as `U`
 // with the addition of `A`'s cv and reference qualifiers, for a non-reference cv-unqualified type
 // `U`.
-// [Note: `XREF(A)` is `__xref<A>::template __apply`]
+// [Note: `XREF(A)` is `__xref<A>::template __call`]
 template <class _Tp>
-struct __xref
-{
-  template <class _Up>
-  using __apply = __copy_cvref_t<_Tp, _Up>;
-};
+using __xref = __apply_cv_fn<_Tp>;
 
 // Given types A and B, let X be remove_reference_t<A>, let Y be remove_reference_t<B>,
 // and let COMMON-REF(A, B) be:
@@ -220,8 +216,8 @@ template <class _Tp, class _Up>
 using __basic_common_reference_t =
   typename basic_common_reference<remove_cvref_t<_Tp>,
                                   remove_cvref_t<_Up>,
-                                  __xref<_Tp>::template __apply,
-                                  __xref<_Up>::template __apply>::type;
+                                  __xref<_Tp>::template __call,
+                                  __xref<_Up>::template __call>::type;
 
 template <class _Tp, class _Up>
 struct __common_reference_sub_bullet2<_Tp, _Up, void_t<__basic_common_reference_t<_Tp, _Up>>>
