@@ -133,7 +133,10 @@ using __decay_t = typename decltype(__mdecay<_Ty>)::template __f<_Ty>;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // __copy_cvref_t: For copying cvref from one type to another
-template <class _From, class _To>
+template <class _Tp>
+using __copy_cvref_fn = _CUDA_VSTD::__apply_cvref_fn<_Tp>;
+
+ template <class _From, class _To>
 using __copy_cvref_t = _CUDA_VSTD::__copy_cvref_t<_From, _To>;
 
 template <class _Fn, class... _As>
