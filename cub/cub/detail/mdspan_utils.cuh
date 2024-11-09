@@ -47,6 +47,10 @@
 #  include <cuda/std/cstddef> // size_t
 #  include <cuda/std/type_traits> // make_unsigned_t
 
+#  if __CUDACC_VER_MAJOR__ == 11
+_CCCL_NV_DIAG_SUPPRESS(940) // missing return statement at end of non-void function "lambda []()->U"
+#  endif // nvcc-11
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail
@@ -73,10 +77,6 @@ sub_size(const ::cuda::std::extents<IndexType, Extents...>& ext, ::cuda::std::in
   {
     return (ext.extent(Rank + Indices) * ...);
   }
-#  if (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION <= 100000) \
-    || (defined(_CCCL_COMPILER_CLANG) && _CCCL_CLANG_VERSION <= 100000)
-  return 0; // GCC <= 9 / Clang <= 9 workaround
-#  endif
 }
 
 // TODO: move to cuda::std
@@ -123,10 +123,6 @@ _CCCL_FORCEINLINE constexpr bool is_sub_size_static(::cuda::std::index_sequence<
   {
     return ((Extent::static_extent(Rank + Is) != ::cuda::std::dynamic_extent) && ...);
   }
-#  if (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION <= 100000) \
-    || (defined(_CCCL_COMPILER_CLANG) && _CCCL_CLANG_VERSION <= 100000)
-  return 0; // GCC <= 9 / Clang <= 9 workaround
-#  endif
 }
 
 } // namespace detail
