@@ -96,8 +96,31 @@ struct LinearStore
  * TEST CASES
  **********************************************************************************************************************/
 
-using index_types     = c2h::type_list<int8_t, uint8_t, int16_t, uint16_t, int, unsigned, int64_t, uint64_t>;
-using index_types_dyn = c2h::type_list<int16_t, uint16_t, int, unsigned, int64_t, uint64_t>;
+using index_types =
+  c2h::type_list<int8_t,
+                 uint8_t,
+                 int16_t,
+                 uint16_t,
+                 int,
+                 unsigned
+#  if CUB_IS_INT128_ENABLED
+                 ,
+                 int64_t,
+                 uint64_t
+#  endif
+                 >;
+
+using index_types_dyn =
+  c2h::type_list<int16_t,
+                 uint16_t,
+                 int,
+                 unsigned
+#  if CUB_IS_INT128_ENABLED
+                 ,
+                 int64_t,
+                 uint64_t
+#  endif
+                 >;
 
 C2H_TEST("DeviceForEachInExtents 2D static", "[ForEachInExtents][static][device]", index_types)
 {
