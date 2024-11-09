@@ -121,7 +121,7 @@ template <class _Tp>
 extern __apply_cv_cvrr __apply_cvr<const volatile _Tp&&>;
 
 template <class _Tp>
-using __apply_cv_fn = decltype(__apply_cpcvr<_Tp>);
+using __apply_cv_fn = decltype(__apply_cvr<_Tp>);
 #else // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES / _CCCL_NO_VARIABLE_TEMPLATES vvv
 template <class>
 struct __apply_cvr
