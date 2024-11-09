@@ -138,7 +138,7 @@ def count(offset):
     return CountingIterator(offset)
 
 
-def map(it, op):
+def cu_map(op, it):
     def source_advance(it_state_ptr, diff):
         pass
 
@@ -298,22 +298,22 @@ assert_expected_output_array("42 43 44 45")
 def mult(x):
     return x * 2
 
-mult_42_by_2 = map(r, mult)
+mult_42_by_2 = cu_map(mult, r)
 parallel_algorithm(mult_42_by_2, num_items, output_array)
 assert_expected_output_array("84 84 84 84")
 
 def add(x):
     return x + 10
 
-mult_42_by_2_plus10 = map(mult_42_by_2, add)
+mult_42_by_2_plus10 = cu_map(add, mult_42_by_2)
 parallel_algorithm(mult_42_by_2_plus10, num_items, output_array)
 assert_expected_output_array("94 94 94 94")
 
-mult_count_by_2 = map(c, mult)
+mult_count_by_2 = cu_map(mult, c)
 parallel_algorithm(mult_count_by_2, num_items, output_array)
 assert_expected_output_array("84 86 88 90")
 
-mult_count_by_2_and_add_10 = map(mult_count_by_2, add)
+mult_count_by_2_and_add_10 = cu_map(add, mult_count_by_2)
 parallel_algorithm(mult_count_by_2_and_add_10, num_items, output_array)
 assert_expected_output_array("94 96 98 100")
 
@@ -324,7 +324,7 @@ assert_expected_output_array("4 3 2 1")
 
 input_array = numba.cuda.to_device(np.array([4, 3, 2, 1], dtype=np.int32))
 ptr = pointer(input_array, numba.types.int32) # TODO this transformation should be hidden on the transform implementation side
-tptr = map(ptr, mult)
+tptr = cu_map(mult, ptr)
 parallel_algorithm(tptr, num_items, output_array)
 assert_expected_output_array("8 6 4 2")
 
@@ -335,6 +335,6 @@ assert_expected_output_array("4 3 2 1")
 def add20(x):
     return x + 20
 
-more_nested_map = map(map(map(count(42), mult), add), add20)
+more_nested_map = cu_map(add20, cu_map(add, cu_map(mult, count(42))))
 parallel_algorithm(more_nested_map, num_items, output_array)
 assert_expected_output_array("114 116 118 120")
