@@ -40,55 +40,26 @@
 #if _CCCL_STD_VER >= 2017
 
 #  include <cub/detail/fast_modulo_division.cuh> // fast_div_mod
-#  include <cub/detail/mdspan_utils.cuh>
+#  include <cub/detail/mdspan_utils.cuh> // is_sub_size_static
 
-#  include <cuda/std/__utility/integer_sequence.h> // std::index_sequence
-#  include <cuda/std/cstddef> // std::size_t
-#  include <cuda/std/mdspan> // std::size_t
+#  include <cuda/std/__mdspan/extents.h> // dynamic_extent
+#  include <cuda/std/__utility/integer_sequence.h> // index_sequence
+#  include <cuda/std/cstddef> // size_t
 
 CUB_NAMESPACE_BEGIN
 
 namespace detail::for_each_in_extents
 {
 
-template <typename IndexType>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE //
-IndexType
-coordinate_at(IndexType index, fast_div_mod<IndexType> sub_size, fast_div_mod<IndexType> extent)
-{
-  return (index / sub_size) % extent;
-}
-
-template <typename IndexType,
-          typename Func,
-          typename FastDivModArrayType,
-          typename UIndexType = ::cuda::std::make_unsigned_t<IndexType>,
-          ::cuda::std::size_t... Ranks>
-CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(
-  Func func,
-  _CCCL_GRID_CONSTANT const UIndexType size,
-  _CCCL_GRID_CONSTANT const FastDivModArrayType sub_sizes_div_array,
-  _CCCL_GRID_CONSTANT const FastDivModArrayType extents_mod_array)
-{
-  auto id  = threadIdx.x + blockIdx.x * blockDim.x;
-  auto id1 = static_cast<IndexType>(id);
-  if (id1 < size)
-  {
-    func(id1, coordinate_at(id1, sub_sizes_div_array[Ranks], extents_mod_array[Ranks])...);
-  }
-}
-
 template <int Rank, typename ExtendType, typename IndexType = typename ExtendType::index_type>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE //
-IndexType
-coordinate_at(
+_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE IndexType coordinate_at(
   IndexType index, ExtendType ext, fast_div_mod<IndexType> div_mod_sub_size, fast_div_mod<IndexType> div_mod_size)
 {
+  using U           = ::cuda::std::make_unsigned_t<IndexType>;
   auto get_sub_size = [&]() {
-    constexpr auto is_sub_size_static_v = cub::detail::is_sub_size_static<Rank + 1>(ext); // GCC <= 9 workaround
-    if constexpr (is_sub_size_static_v)
+    if constexpr (cub::detail::is_sub_size_static<Rank + 1, ExtendType>())
     {
-      return sub_size<Rank + 1>(ext);
+      return static_cast<U>(sub_size<Rank + 1>(ext));
     }
     else
     {
@@ -98,7 +69,7 @@ coordinate_at(
   auto get_ext_size = [&]() {
     if constexpr (ExtendType::static_extent(Rank) != ::cuda::std::dynamic_extent)
     {
-      return IndexType{ext.static_extent(Rank)};
+      return U{ext.static_extent(Rank)};
     }
     else
     {

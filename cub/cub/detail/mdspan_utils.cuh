@@ -106,21 +106,22 @@ extents_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::s
   return ::cuda::std::array<fast_mod_div_t, sizeof...(Ranks)>{fast_mod_div_t(ext.extent(Ranks))...};
 }
 
-template <int Rank, typename IndexType, ::cuda::std::size_t... E, ::cuda::std::size_t... Is>
-_CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr bool
-is_sub_size_static(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::std::index_sequence<Is...> = {})
+// GCC <= 9 workaround: Extent must be passed as type only, even const Extent& doesn't work
+template <int Rank, typename Extent, ::cuda::std::size_t... Is>
+_CCCL_NODISCARD _CCCL_HOST_DEVICE
+_CCCL_FORCEINLINE constexpr bool is_sub_size_static(::cuda::std::index_sequence<Is...> = {})
 {
-  if constexpr (Rank >= sizeof...(E))
+  if constexpr (Rank >= Extent::rank())
   {
     return true;
   }
   else if constexpr (sizeof...(Is) == 0)
   {
-    return is_sub_size_static<Rank>(ext, ::cuda::std::make_index_sequence<sizeof...(E) - Rank>{});
+    return is_sub_size_static<Rank, Extent>(::cuda::std::make_index_sequence<Extent::rank() - Rank>{});
   }
   else
   {
-    return ((ext.static_extent(Rank + Is) != ::cuda::std::dynamic_extent) && ...);
+    return ((Extent::static_extent(Rank + Is) != ::cuda::std::dynamic_extent) && ...);
   }
 #  if (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION <= 100000) \
     || (defined(_CCCL_COMPILER_CLANG) && _CCCL_CLANG_VERSION <= 100000)
