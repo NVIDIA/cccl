@@ -17,6 +17,7 @@
  * CUDASTF_DOT_IGNORE_PREREQS
  * CUDASTF_DOT_COLOR_BY_DEVICE
  * CUDASTF_DOT_REMOVE_DATA_DEPS
+ * CUDASTF_DOT_TIMING
  */
 
 #pragma once
@@ -40,6 +41,8 @@
 #include <fstream>
 #include <iostream>
 #include <mutex>
+#include <optional>
+#include <queue>
 #include <sstream>
 #include <unordered_set>
 
@@ -53,12 +56,21 @@ using IntPairSet = ::std::unordered_set<::std::pair<int, int>, cuda::experimenta
 
 class dot;
 
+// Information for every task, so that we can eventually generate a node for the task
+struct per_task_info
+{
+  ::std::string color;
+  ::std::string label;
+  ::std::optional<float> timing;
+};
+
 class per_ctx_dot
 {
 public:
-  per_ctx_dot(bool _is_tracing, bool _is_tracing_prereqs)
+  per_ctx_dot(bool _is_tracing, bool _is_tracing_prereqs, bool _is_timing)
       : _is_tracing(_is_tracing)
       , _is_tracing_prereqs(_is_tracing_prereqs)
+      , _is_timing(_is_timing)
   {}
   ~per_ctx_dot() = default;
 
@@ -161,9 +173,17 @@ public:
 
     vertices.push_back(t.get_unique_id());
 
-    // Add an entry in the DOT file
-    oss << "\"NODE_" << t.get_unique_id() << "\" [style=\"filled\" fillcolor=\"" << get_current_color() << "\" label=\""
-        << t.get_symbol();
+    auto& task_metadata = metadata[t.get_unique_id()];
+
+    task_metadata.color = get_current_color();
+
+    // Add an entry in the DOT file : we just put the node, and we will define its style/label later
+    oss << "\"NODE_" << t.get_unique_id() << "\" [style=\"filled\"]\n";
+
+    // We here create the label of the task, which we may augment later with
+    // timing information for example
+    ::std::ostringstream task_oss;
+    task_oss << t.get_symbol();
 
     // Append the text with a list of accessed logical data, and the corresponding access modes
     if (!remove_deps)
@@ -174,11 +194,11 @@ public:
         data_type d      = e.get_data();
         access_mode mode = e.get_access_mode();
         size_t size      = d.get_data_interface().data_footprint();
-        oss << "\\n" << d.get_symbol() << "(" << access_mode_string(mode) << ")(" << size << ") ";
+        task_oss << "\\n" << d.get_symbol() << "(" << access_mode_string(mode) << ")(" << size << ") ";
       }
     }
 
-    oss << "\"]\n";
+    task_metadata.label = task_oss.str();
   }
 
   template <typename task_type>
@@ -193,6 +213,9 @@ public:
 
     oss << "// " << t.get_unique_id() << " : mapping_id=" << t.get_mapping_id() << " time=" << time_ms
         << " device=" << device << "\n";
+
+    // Save timing information for this task
+    metadata[t.get_unique_id()].timing = time_ms;
   }
 
   // Take a reference to an (unused) `::std::lock_guard<::std::mutex>` to make sure someone ddid take a lock.
@@ -286,6 +309,12 @@ public:
   }
   bool _is_tracing_prereqs;
 
+  bool _is_timing;
+  bool is_timing() const
+  {
+    return _is_timing;
+  }
+
   // We may temporarily discard some tasks
   bool tracing_enabled = true;
 
@@ -299,6 +328,7 @@ public: // XXX protected, friend : dot
   mutable ::std::ostringstream oss;
   // strings of the previous epochs
   mutable ::std::vector<::std::ostringstream> prev_oss;
+  ::std::unordered_map<int /* id */, per_task_info> metadata;
 };
 
 class dot : public reserved::meyers_singleton<dot>
@@ -317,6 +347,9 @@ protected:
 
     const char* ignore_prereqs_str = getenv("CUDASTF_DOT_IGNORE_PREREQS");
     tracing_prereqs                = ignore_prereqs_str && atoi(ignore_prereqs_str) == 0;
+
+    const char* dot_timing_str = ::std::getenv("CUDASTF_DOT_TIMING");
+    enable_timing              = (dot_timing_str && atoi(dot_timing_str) != 0);
   }
 
   ~dot()
@@ -377,6 +410,51 @@ public:
     }
   }
 
+  // This will update colors if necessary
+  void update_colors_with_timing()
+  {
+    if (!enable_timing)
+    {
+      return;
+    }
+
+    float sum  = 0.0;
+    size_t cnt = 0;
+    // First go over all tasks which have some timing and compute the average duration
+    for (const auto& pc : per_ctx)
+    {
+      for (const auto& p : pc->metadata)
+      {
+        if (p.second.timing.has_value())
+        {
+          float ms = p.second.timing.value();
+          cnt++;
+          sum += ms;
+        }
+      }
+    }
+
+    if (cnt > 0)
+    {
+      float avg = sum / cnt;
+
+      // Update colors assocated to tasks with timing now in order to
+      // illustrate how long they take to execute relative to the average
+      for (auto& pc : per_ctx)
+      {
+        for (auto& p : pc->metadata)
+        {
+          if (p.second.timing.has_value())
+          {
+            float ms       = p.second.timing.value();
+            p.second.color = get_color_for_duration(ms, avg);
+            p.second.label += "\ntiming: " + ::std::to_string(ms) + " ms\n";
+          }
+        }
+      }
+    }
+  }
+
   // This should not need to be called explicitly, unless we are doing some automatic tests for example
   void finish()
   {
@@ -391,6 +469,10 @@ public:
     {
       pc->finish();
     }
+
+    // Now we have executed all tasks, so we can compute the average execution
+    // times, and update the colors appropriately if needed.
+    update_colors_with_timing();
 
     ::std::ofstream outFile(dot_filename);
     if (outFile.is_open())
@@ -416,10 +498,22 @@ public:
         remove_redundant_edges(existing_edges);
       }
 
+      compute_critical_path(outFile);
+
       /* Edges do not have to belong to the cluster (Vertices do) */
       for (const auto& [from, to] : existing_edges)
       {
         outFile << "\"NODE_" << from << "\" -> \"NODE_" << to << "\"\n";
+      }
+
+      // Update node properties such as labels and colors now that we have all information
+      for (const auto& pc : per_ctx)
+      {
+        for (const auto& p : pc->metadata)
+        {
+          outFile << "\"NODE_" << p.first << "\" [fillcolor=\"" << p.second.color << "\" label=\"" << p.second.label
+                  << "\"]\n";
+        }
       }
 
       outFile << "}\n";
@@ -444,9 +538,46 @@ public:
     return tracing_prereqs;
   }
 
+  bool is_timing() const
+  {
+    return enable_timing;
+  }
+
   ::std::vector<::std::shared_ptr<per_ctx_dot>> per_ctx;
 
 private:
+  // Function to get a color based on task duration relative to the average
+  ::std::string get_color_for_duration(double duration, double avg_duration)
+  {
+    // Define thresholds relative to the average duration
+    const double very_short_threshold = 0.5 * avg_duration; // < 50% of avg
+    const double short_threshold      = 0.8 * avg_duration; // < 80% of avg
+    const double long_threshold       = 1.5 * avg_duration; // > 150% of avg
+    const double very_long_threshold  = 2.0 * avg_duration; // > 200% of avg
+
+    // Return color based on duration thresholds
+    if (duration < very_short_threshold)
+    {
+      return "#b6e3b6"; // Light Green for Very Short tasks
+    }
+    else if (duration < short_threshold)
+    {
+      return "#69b369"; // Green for Short tasks
+    }
+    else if (duration <= long_threshold)
+    {
+      return "#ffd966"; // Yellow for Around Average tasks
+    }
+    else if (duration <= very_long_threshold)
+    {
+      return "#ffb84d"; // Orange for Long tasks
+    }
+    else
+    {
+      return "#ff6666"; // Red for Very Long tasks
+    }
+  }
+
   bool reachable(int from, int to, ::std::unordered_set<int>& visited)
   {
     visited.insert(to);
@@ -513,7 +644,133 @@ private:
     }
   }
 
+  void compute_critical_path(::std::ofstream& outFile)
+  {
+    if (!enable_timing)
+    {
+      return;
+    }
+
+    single_threaded_section guard(mtx);
+
+    // Total Work (T1) in Cilk terminology
+    float t1 = 0.0f;
+
+    ::std::unordered_map<int, ::std::vector<int>> predecessors;
+    ::std::unordered_map<int, ::std::vector<int>> successors;
+
+    ::std::unordered_map<int, float> dist;
+    ::std::unordered_map<int, int> indegree;
+
+    ::std::unordered_map<int, float> durations; // there might be missing entries for non-timed nodes (eg. events which
+                                                // are not tasks)
+
+    ::std::unordered_map<int, int> path_predecessor;
+
+    // Gather durations
+    for (const auto& pc : per_ctx)
+    {
+      // Per task
+      for (const auto& p : pc->metadata)
+      {
+        if (p.second.timing.has_value())
+        {
+          float ms = p.second.timing.value();
+          // Total work is simply the sum of all work
+          t1 += ms;
+          durations[p.first] = ms;
+        }
+      }
+
+      // We go through edges to find the predecessors of every node
+      for (const auto& [from, to] : pc->existing_edges)
+      {
+        predecessors[to].push_back(from);
+        successors[from].push_back(to);
+
+        // For nodes which don't have timing information, we assume a 0.0 duration. This will make a simpler algorithm
+        if (durations.find(from) == durations.end())
+        {
+          durations[from] = 0.0f;
+        }
+
+        if (durations.find(to) == durations.end())
+        {
+          durations[to] = 0.0f;
+        }
+      }
+    }
+
+    // Topological sort using Kahn's algorithm
+    ::std::queue<int> q;
+    for (const auto& p : durations)
+    {
+      int id = p.first;
+
+      // how many input deps for that node ?
+      indegree[id] = predecessors[id].size();
+      // how much time is needed to compute that node (and also its predecessors)
+      dist[id] = p.second;
+      // we will backtrack which were the tasks in the critical path
+      path_predecessor[p.first] = -1;
+
+      if (indegree[id] == 0)
+      {
+        q.push(id);
+      }
+    }
+
+    // Process each node in topological order
+    while (!q.empty())
+    {
+      int u = q.front();
+      q.pop();
+
+      for (int v : successors[u])
+      {
+        if (dist[u] + durations[v] > dist[v])
+        {
+          dist[v]             = dist[u] + durations[v];
+          path_predecessor[v] = u;
+        }
+        indegree[v]--;
+        if (indegree[v] == 0)
+        {
+          q.push(v);
+        }
+      }
+    }
+
+    // The longest path in dist gives the critical path (Tinfinity)
+    float max_dist = 0.0f;
+    int max_ind    = -1;
+    for (const auto& pair : dist)
+    {
+      if (pair.second > max_dist)
+      {
+        max_dist = pair.second;
+        max_ind  = pair.first;
+      }
+    }
+
+    // Highlight the critical path in the DAG by backtracking in the path
+    // until we reach the first node
+    int next = max_ind;
+    while (next != -1)
+    {
+      outFile << "\"NODE_" << next << "\" [color=red, penwidth=10]\n";
+      next = path_predecessor[next];
+    }
+
+    outFile << "// T1 = " << t1 << ::std::endl;
+    outFile << "// Tinf = " << max_dist << ::std::endl;
+  }
+
+  // Are we tracing asynchronous events in addition to tasks ? (eg. copies, allocations, ...)
   bool tracing_prereqs = false;
+
+  // Are we measuring the duration of tasks ?
+  bool enable_timing = false;
 
   // Keep track of existing edges, to make the output possibly look better
   IntPairSet existing_edges;

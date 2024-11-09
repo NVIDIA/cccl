@@ -109,7 +109,7 @@ struct max_partial_tile_op_t
   template <int ItemsPerThread, class BlockReduceT, class T>
   __device__ T operator()(BlockReduceT& reduce, T (&thread_data)[ItemsPerThread], int valid_items) const
   {
-    return reduce.Reduce(thread_data[0], cub::Max{}, valid_items);
+    return reduce.Reduce(thread_data[0], ::cuda::maximum<>{}, valid_items);
   }
 };
 
@@ -118,7 +118,7 @@ struct max_full_tile_op_t
   template <int ItemsPerThread, class BlockReduceT, class T>
   __device__ T operator()(BlockReduceT& reduce, T (&thread_data)[ItemsPerThread], int /* valid_items */) const
   {
-    return reduce.Reduce(thread_data, cub::Max{});
+    return reduce.Reduce(thread_data, ::cuda::maximum<>{});
   }
 };
 

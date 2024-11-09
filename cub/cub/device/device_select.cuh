@@ -989,7 +989,7 @@ struct DeviceSelect
     using OffsetT      = ::cuda::std::int64_t;
     using FlagIterator = NullType*; // FlagT iterator type (not used)
     using SelectOp     = NullType; // Selection op (not used)
-    using EqualityOp   = Equality; // Default == operator
+    using EqualityOp   = ::cuda::std::equal_to<>; // Default == operator
 
     return DispatchSelectIf<
       InputIteratorT,
@@ -1326,7 +1326,7 @@ struct DeviceSelect
       d_values_out,
       d_num_selected_out,
       num_items,
-      Equality{},
+      ::cuda::std::equal_to<>{},
       stream);
   }
 
