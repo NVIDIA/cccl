@@ -126,31 +126,31 @@ template <typename T, typename>
 struct cub_operator_to_std;
 
 template <typename T>
-struct cub_operator_to_std<T, cub::Sum>
+struct cub_operator_to_std<T, cuda::std::plus<>>
 {
   using type = ::std::plus<T>;
 };
 
 template <typename T>
-struct cub_operator_to_std<T, cub::Mul>
+struct cub_operator_to_std<T, cuda::std::multiplies<>>
 {
   using type = ::std::multiplies<T>;
 };
 
 template <typename T>
-struct cub_operator_to_std<T, cub::BitAnd>
+struct cub_operator_to_std<T, cuda::std::bit_and<>>
 {
   using type = ::std::bit_and<T>;
 };
 
 template <typename T>
-struct cub_operator_to_std<T, cub::BitOr>
+struct cub_operator_to_std<T, cuda::std::bit_or<>>
 {
   using type = ::std::bit_or<T>;
 };
 
 template <typename T>
-struct cub_operator_to_std<T, cub::BitXor>
+struct cub_operator_to_std<T, cuda::std::bit_xor<>>
 {
   using type = ::std::bit_xor<T>;
 };
@@ -196,7 +196,7 @@ template <typename T, typename Operator, typename = void>
 struct cub_operator_to_identity;
 
 template <typename T>
-struct cub_operator_to_identity<T, cub::Sum>
+struct cub_operator_to_identity<T, cuda::std::plus<>>
 {
   static constexpr T value()
   {
@@ -205,7 +205,7 @@ struct cub_operator_to_identity<T, cub::Sum>
 };
 
 template <typename T>
-struct cub_operator_to_identity<T, cub::Mul>
+struct cub_operator_to_identity<T, cuda::std::multiplies<>>
 {
   static constexpr T value()
   {
@@ -214,7 +214,7 @@ struct cub_operator_to_identity<T, cub::Mul>
 };
 
 template <typename T>
-struct cub_operator_to_identity<T, cub::BitAnd>
+struct cub_operator_to_identity<T, cuda::std::bit_and<>>
 {
   static constexpr T value()
   {
@@ -223,7 +223,7 @@ struct cub_operator_to_identity<T, cub::BitAnd>
 };
 
 template <typename T>
-struct cub_operator_to_identity<T, cub::BitOr>
+struct cub_operator_to_identity<T, cuda::std::bit_or<>>
 {
   static constexpr T value()
   {
@@ -232,7 +232,7 @@ struct cub_operator_to_identity<T, cub::BitOr>
 };
 
 template <typename T>
-struct cub_operator_to_identity<T, cub::BitXor>
+struct cub_operator_to_identity<T, cuda::std::bit_xor<>>
 {
   static constexpr T value()
   {
@@ -283,9 +283,15 @@ using integral_type_list = c2h::
   type_list<::cuda::std::int8_t, ::cuda::std::int16_t, ::cuda::std::uint16_t, ::cuda::std::int32_t, ::cuda::std::int64_t>;
 
 using cub_operator_integral_list =
-  c2h::type_list<cub::Sum, cub::Mul, cub::BitAnd, cub::BitOr, cub::BitXor, cub::Min, cub::Max>;
+  c2h::type_list<cuda::std::plus<>,
+                 cuda::std::multiplies<>,
+                 cuda::std::bit_and<>,
+                 cuda::std::bit_or<>,
+                 cuda::std::bit_xor<>,
+                 cub::Min,
+                 cub::Max>;
 
-using cub_operator_fp_list = c2h::type_list<cub::Sum, cub::Mul, cub::Min, cub::Max>;
+using cub_operator_fp_list = c2h::type_list<cuda::std::plus<>, cuda::std::multiplies<>, cub::Min, cub::Max>;
 
 /***********************************************************************************************************************
  * Verify results and kernel launch
@@ -477,14 +483,14 @@ C2H_TEST("ThreadReduce Containter Tests", "[reduce][thread]")
   auto reference_result      = std::accumulate(h_in.begin(), h_in.end(), 0, std::plus<int>{});
 
   thread_reduce_kernel_array<max_size>
-    <<<1, 1>>>(thrust::raw_pointer_cast(d_in.data()), thrust::raw_pointer_cast(d_out.data()), cub::Sum{});
+    <<<1, 1>>>(thrust::raw_pointer_cast(d_in.data()), thrust::raw_pointer_cast(d_out.data()), cuda::std::plus<>{});
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   verify_results(reference_result, c2h::host_vector<int>(d_out)[0]);
 
 #  if _CCCL_STD_VER >= 2014
   thread_reduce_kernel_span<max_size>
-    <<<1, 1>>>(thrust::raw_pointer_cast(d_in.data()), thrust::raw_pointer_cast(d_out.data()), cub::Sum{});
+    <<<1, 1>>>(thrust::raw_pointer_cast(d_in.data()), thrust::raw_pointer_cast(d_out.data()), cuda::std::plus<>{});
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   verify_results(reference_result, c2h::host_vector<int>(d_out)[0]);
@@ -492,7 +498,7 @@ C2H_TEST("ThreadReduce Containter Tests", "[reduce][thread]")
 
 #  if _CCCL_STD_VER >= 2023
   thread_reduce_kernel_mdspan<max_size>
-    <<<1, 1>>>(thrust::raw_pointer_cast(d_in.data()), thrust::raw_pointer_cast(d_out.data()), cub::Sum{});
+    <<<1, 1>>>(thrust::raw_pointer_cast(d_in.data()), thrust::raw_pointer_cast(d_out.data()), cuda::std::plus<>{});
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   verify_results(reference_result, c2h::host_vector<int>(d_out)[0]);

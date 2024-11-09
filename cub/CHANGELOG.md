@@ -433,7 +433,7 @@ cub::DeviceScan::ExclusiveScan(d_temp_storage,
                                temp_storage_bytes,
                                d_in,
                                d_out,
-                               cub::Sum(),
+                               cuda::std::plus<>(),
                                init_value,
                                num_items);
 ```

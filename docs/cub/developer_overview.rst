@@ -46,7 +46,7 @@ The table below provides a summary of these functions:
       - parallel execution
       - max threads
       - valid result in
-    * - :cpp:func:`ThreadReduce <cub::cub::ThreadReduce>`
+    * - :cpp:func:`ThreadReduce <cub::ThreadReduce>`
       - :math:`-`
       - :math:`-`
       - :math:`1`

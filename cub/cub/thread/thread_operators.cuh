@@ -52,6 +52,7 @@
 #include <cub/detail/type_traits.cuh> // always_false
 #include <cub/util_type.cuh>
 
+#include <cuda/functional> // cuda::maximum
 #include <cuda/std/bit> // cuda::std::bit_cast
 #include <cuda/std/functional> // cuda::std::plus
 #include <cuda/std/type_traits> // cuda::std::common_type
@@ -397,6 +398,8 @@ CUB_DEPRECATED _CCCL_HOST_DEVICE BinaryFlip<BinaryOpT> MakeBinaryFlip(BinaryOpT 
 }
 _CCCL_SUPPRESS_DEPRECATED_POP
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+
 namespace internal
 {
 
@@ -428,7 +431,7 @@ struct SimdMin<::cuda::std::uint16_t>
   }
 };
 
-#if defined(_CCCL_HAS_NVFP16)
+#  if defined(_CCCL_HAS_NVFP16)
 
 template <>
 struct SimdMin<__half>
@@ -439,14 +442,14 @@ struct SimdMin<__half>
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmin2(a, b);),
-                 (return __halves2half2(__float2half(cub::Min{}(__half2float(a.x), __half2float(b.x))),
-                                        __float2half(cub::Min{}(__half2float(a.y), __half2float(b.y))));));
+                 (return __halves2half2(__float2half(::cuda::minimum<>{}(__half2float(a.x), __half2float(b.x))),
+                                        __float2half(::cuda::minimum<>{}(__half2float(a.y), __half2float(b.y))));));
   }
 };
 
-#endif // defined(_CCCL_HAS_NVFP16)
+#  endif // defined(_CCCL_HAS_NVFP16)
 
-#if defined(_CCCL_HAS_NVBF16)
+#  if defined(_CCCL_HAS_NVBF16)
 
 // NOTE: __halves2bfloat162 is not always available on older CUDA Toolkits for __CUDA_ARCH__ < 800
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 halves2bfloat162(__nv_bfloat16 a, __nv_bfloat16 b)
@@ -470,12 +473,12 @@ struct SimdMin<__nv_bfloat16>
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmin2(a, b);),
                  (return cub::internal::halves2bfloat162(
-                           __float2bfloat16(cub::Min{}(__bfloat162float(a.x), __bfloat162float(b.x))),
-                           __float2bfloat16(cub::Min{}(__bfloat162float(a.y), __bfloat162float(b.y))));));
+                           __float2bfloat16(::cuda::minimum<>{}(__bfloat162float(a.x), __bfloat162float(b.x))),
+                           __float2bfloat16(::cuda::minimum<>{}(__bfloat162float(a.y), __bfloat162float(b.y))));));
   }
 };
 
-#endif // defined(_CCCL_HAS_NVBF16)
+#  endif // defined(_CCCL_HAS_NVBF16)
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -507,7 +510,7 @@ struct SimdMax<::cuda::std::uint16_t>
   }
 };
 
-#if defined(_CCCL_HAS_NVFP16)
+#  if defined(_CCCL_HAS_NVFP16)
 
 template <>
 struct SimdMax<__half>
@@ -518,14 +521,14 @@ struct SimdMax<__half>
   {
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmax2(a, b);),
-                 (return __halves2half2(__float2half(cub::Max{}(__half2float(a.x), __half2float(b.x))),
-                                        __float2half(cub::Max{}(__half2float(a.y), __half2float(b.y))));));
+                 (return __halves2half2(__float2half(::cuda::maximum<>{}(__half2float(a.x), __half2float(b.x))),
+                                        __float2half(::cuda::maximum<>{}(__half2float(a.y), __half2float(b.y))));));
   }
 };
 
-#endif // defined(_CCCL_HAS_NVFP16)
+#  endif // defined(_CCCL_HAS_NVFP16)
 
-#if defined(_CCCL_HAS_NVBF16)
+#  if defined(_CCCL_HAS_NVBF16)
 
 template <>
 struct SimdMax<__nv_bfloat16>
@@ -537,12 +540,12 @@ struct SimdMax<__nv_bfloat16>
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmax2(a, b);),
                  (return cub::internal::halves2bfloat162(
-                           __float2bfloat16(cub::Max{}(__bfloat162float(a.x), __bfloat162float(b.x))),
-                           __float2bfloat16(cub::Max{}(__bfloat162float(a.y), __bfloat162float(b.y))));));
+                           __float2bfloat16(::cuda::maximum<>{}(__bfloat162float(a.x), __bfloat162float(b.x))),
+                           __float2bfloat16(::cuda::maximum<>{}(__bfloat162float(a.y), __bfloat162float(b.y))));));
   }
 };
 
-#endif // defined(_CCCL_HAS_NVBF16)
+#  endif // defined(_CCCL_HAS_NVBF16)
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -552,7 +555,7 @@ struct SimdSum
   static_assert(cub::detail::always_false<T>(), "Unsupported specialization");
 };
 
-#if defined(_CCCL_HAS_NVFP16)
+#  if defined(_CCCL_HAS_NVFP16)
 
 template <>
 struct SimdSum<__half>
@@ -568,9 +571,9 @@ struct SimdSum<__half>
   }
 };
 
-#endif // defined(_CCCL_HAS_NVFP16)
+#  endif // defined(_CCCL_HAS_NVFP16)
 
-#if defined(_CCCL_HAS_NVBF16)
+#  if defined(_CCCL_HAS_NVBF16)
 
 template <>
 struct SimdSum<__nv_bfloat16>
@@ -587,7 +590,7 @@ struct SimdSum<__nv_bfloat16>
   }
 };
 
-#endif // defined(_CCCL_HAS_NVBF16)
+#  endif // defined(_CCCL_HAS_NVBF16)
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -597,7 +600,7 @@ struct SimdMul
   static_assert(cub::detail::always_false<T>(), "Unsupported specialization");
 };
 
-#if defined(_CCCL_HAS_NVFP16)
+#  if defined(_CCCL_HAS_NVFP16)
 
 template <>
 struct SimdMul<__half>
@@ -613,9 +616,9 @@ struct SimdMul<__half>
   }
 };
 
-#endif // defined(_CCCL_HAS_NVFP16)
+#  endif // defined(_CCCL_HAS_NVFP16)
 
-#if defined(_CCCL_HAS_NVBF16)
+#  if defined(_CCCL_HAS_NVBF16)
 
 template <>
 struct SimdMul<__nv_bfloat16>
@@ -631,7 +634,7 @@ struct SimdMul<__nv_bfloat16>
   }
 };
 
-#endif // defined(_CCCL_HAS_NVBF16)
+#  endif // defined(_CCCL_HAS_NVBF16)
 
 //----------------------------------------------------------------------------------------------------------------------
 

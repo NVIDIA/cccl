@@ -324,8 +324,8 @@ struct ReduceAgent
       }
 
       // Reduce items within each thread stripe
-      thread_aggregate = (IS_FIRST_TILE) ? cub::cub::ThreadReduce(items, reduction_op)
-                                         : cub::cub::ThreadReduce(items, reduction_op, thread_aggregate);
+      thread_aggregate = (IS_FIRST_TILE) ? cub::ThreadReduce(items, reduction_op)
+                                         : cub::ThreadReduce(items, reduction_op, thread_aggregate);
     }
 
     // Consume a partial tile of input

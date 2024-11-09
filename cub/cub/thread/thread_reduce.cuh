@@ -87,20 +87,27 @@ CUB_NAMESPACE_BEGIN
 //!
 //! - Vectorization/SIMD for
 //!
-//!   * Sum (``cub::Sum``) and Multiplication (``cub::Mul``) on SM70+ for ``__half`` data type
-//!   * Sum (``cub::Sum``) and Multiplication (``cub::Mul``) on SM80+ for ``__nv_bfloat16`` data type
-//!   * Minimum (``cub::Min``) and Maximum (``cub::Max``) on SM80+ for ``__half`` and ``__nv_bfloat16`` data types
-//!   * Minimum (``cub::Min``) and Maximum (``cub::Max``) on SM90+ for ``int16_t`` and ``uint16_t`` data types
+//!   * Sum (``::cuda::std::plus<>``) and Multiplication (``::cuda::std::multiplies<>``) on SM70+ for ``__half`` data
+//!   type
+//!   * Sum (``::cuda::std::plus<>``) and Multiplication (``::cuda::std::multiplies<>``) on SM80+ for ``__nv_bfloat16``
+//!   data type
+//!   * Minimum (``::cuda::minimum<>``) and Maximum (``::cuda::maximum<>``) on SM80+ for ``__half`` and
+//!   ``__nv_bfloat16`` data types
+//!   * Minimum (``::cuda::minimum<>``) and Maximum (``::cuda::maximum<>``) on SM90+ for ``int16_t`` and ``uint16_t``
+//!   data types
 //!     (Hopper DPX instructions)
 //!
 //! - Instruction-Level Parallelism (ILP) by exploiting a ternary tree reduction for
 //!
-//!   * Sum (``cub::Sum``), Bitwise AND (``cub::BitAnd``), OR (``cub::BitOr``), XOR (``cub::BitXor``) on SM50+ for
+//!   * Sum (``::cuda::std::plus<>``), Bitwise AND (``::cuda::std::bit_and<>``), OR (``::cuda::std::bit_or<>``), XOR
+//!   (``::cuda::std::bit_xor<>``) on SM50+ for
 //!     integer data types
-//!   * Minimum (``cub::Min``) and Maximum (``cub::Max``) on SM80+ for integer data types (Hopper DPX instructions),
+//!   * Minimum (``::cuda::minimum<>``) and Maximum (``::cuda::maximum<>``) on SM80+ for integer data types (Hopper DPX
+//!   instructions),
 //!     ``__half2``, ``__nv_bfloat162``, ``__half`` (after vectorization), and ``__nv_bfloat16`` (after vectorization)
 //!     data types
-//!   * Minimum (``cub::Min``) and Maximum (``cub::Max``) on SM90+ for integer data types (Hopper DPX instructions)
+//!   * Minimum (``::cuda::minimum<>``) and Maximum (``::cuda::maximum<>``) on SM90+ for integer data types (Hopper DPX
+//!   instructions)
 //!
 //! - Instruction-Level Parallelism (ILP) by exploiting a binary tree reduction for all other cases
 //!
@@ -116,7 +123,7 @@ CUB_NAMESPACE_BEGIN
 //!    __global__ void ExampleKernel(...)
 //!    {
 //!        int array[4] = {1, 2, 3, 4};
-//!        int sum      = cub::ThreadReduce(array, cub::Sum()); // sum = 10
+//!        int sum      = cub::ThreadReduce(array, ::cuda::std::plus<>()); // sum = 10
 //!
 //! @endrst
 //!
@@ -217,13 +224,13 @@ _CCCL_NODISCARD _CCCL_DEVICE constexpr bool enable_generic_simd_reduction()
   using T      = ::cuda::std::__remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>;
   using Length = ::cuda::std::integral_constant<int, cub::detail::static_size_v<Input>()>;
   // clang-format off
-  return ((is_one_of<T, ::cuda::std::int16_t, ::cuda::std::uint16_t>() && is_one_of<ReductionOp, cub::Min, cub::Max>())
+  return ((is_one_of<T, ::cuda::std::int16_t, ::cuda::std::uint16_t>() && is_one_of<ReductionOp, ::cuda::minimum<>, ::cuda::maximum<>>())
 #  if defined(_CCCL_HAS_NVFP16)
-     || (::cuda::std::is_same<T, __half>::value && is_one_of<ReductionOp, cub::Min, cub::Max, cub::Sum, cub::Mul>())
+     || (::cuda::std::is_same<T, __half>::value && is_one_of<ReductionOp, ::cuda::minimum<>, ::cuda::maximum<>, ::cuda::std::plus<>, ::cuda::std::multiplies<>>())
 #  endif
 #  if defined(_CCCL_HAS_NVBF16)
      || (::cuda::std::is_same<T, __nv_bfloat16>::value &&
-         is_one_of<ReductionOp, cub::Min, cub::Max, cub::Sum, cub::Mul>())
+         is_one_of<ReductionOp, ::cuda::minimum<>, ::cuda::maximum<>, ::cuda::std::plus<>, ::cuda::std::multiplies<>>())
 #  endif
    ) && Length{} >= 4;
   // clang-format on
@@ -233,9 +240,9 @@ template <typename T, typename ReductionOp, int Length>
 _CCCL_NODISCARD _CCCL_DEVICE constexpr bool enable_sm90_simd_reduction()
 {
   using cub::detail::is_one_of;
-  // cub::Sum not handled: IADD3 always produces less instructions than VIADD2
+  // ::cuda::std::plus<> not handled: IADD3 always produces less instructions than VIADD2
   return is_one_of<T, ::cuda::std::int16_t, ::cuda::std::uint16_t>() && //
-         is_one_of<ReductionOp, cub::Min, cub::Max>() && Length >= 10;
+         is_one_of<ReductionOp, ::cuda::minimum<>, ::cuda::maximum<>>() && Length >= 10;
 }
 
 template <typename T, typename ReductionOp, int Length>
@@ -243,7 +250,8 @@ _CCCL_NODISCARD _CCCL_DEVICE constexpr bool enable_sm80_simd_reduction()
 {
   using cub::detail::is_one_of;
   using ::cuda::std::is_same;
-  return is_one_of<ReductionOp, cub::Min, cub::Max, cub::Sum, cub::Mul>() && Length >= 4
+  return is_one_of<ReductionOp, ::cuda::minimum<>, ::cuda::maximum<>, ::cuda::std::plus<>, ::cuda::std::multiplies<>>()
+      && Length >= 4
 #  if defined(_CCCL_HAS_NVFP16) && defined(_CCCL_HAS_NVBF16)
       && (is_same<T, __half>::value || is_same<T, __nv_bfloat16>::value)
 #  elif defined(_CCCL_HAS_NVFP16)
@@ -260,7 +268,8 @@ _CCCL_NODISCARD _CCCL_DEVICE constexpr bool enable_sm70_simd_reduction()
   using cub::detail::is_one_of;
   using ::cuda::std::is_same;
 #  if defined(_CCCL_HAS_NVFP16)
-  return is_same<T, __half>::value && is_one_of<ReductionOp, cub::Sum, cub::Mul>() && Length >= 4;
+  return is_same<T, __half>::value && is_one_of<ReductionOp, ::cuda::std::plus<>, ::cuda::std::multiplies<>>()
+      && Length >= 4;
 #  else
   return false;
 #  endif
@@ -317,20 +326,20 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE _CCCL_CONSTEXPR_CXX14 bool enable
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
         (return (is_one_of<T, ::cuda::std::int32_t, ::cuda::std::uint32_t, ::cuda::std::int64_t, ::cuda::std::uint64_t>
-                 && is_one_of<ReductionOp, cub::Min, cub::Max, cub::Sum, cub::BitAnd, cub::BitOr, cub::BitXor>())
+                 && is_one_of<ReductionOp, ::cuda::minimum<>, ::cuda::maximum<>, ::cuda::std::plus<>, ::cuda::std::bit_and<>, ::cuda::std::bit_or<>, ::cuda::std::bit_xor<>>())
 #if defined(_CCCL_HAS_NVFP16)
                || (is_same<T, __half2>::value &&
-                   is_one_of<ReductionOp, cub::Min, cub::Max, SimdMin<__half>, SimdMax<__half>>())
+                   is_one_of<ReductionOp, ::cuda::minimum<>, ::cuda::maximum<>, SimdMin<__half>, SimdMax<__half>>())
 #endif
 #if defined(_CCCL_HAS_NVBF16)
                || (is_same<T, __nv_bfloat162>::value &&
-                   is_one_of<ReductionOp, cub::Min, cub::Max, SimdMin<__nv_bfloat16>, SimdMax<__nv_bfloat16>>())
+                   is_one_of<ReductionOp, ::cuda::minimum<>, ::cuda::maximum<>, SimdMin<__nv_bfloat16>, SimdMax<__nv_bfloat16>>())
 #endif
          ;),
       NV_PROVIDES_SM_50,
         (return is_one_of<AccumT, ::cuda::std::int32_t, ::cuda::std::uint32_t, ::cuda::std::int64_t,
                                   ::cuda::std::uint64_t>()
-             && is_one_of<ReductionOp, cub::Sum, cub::BitAnd, cub::BitOr, cub::BitXor>();),
+             && is_one_of<ReductionOp, ::cuda::std::plus<>, ::cuda::std::bit_and<>, ::cuda::std::bit_or<>, ::cuda::std::bit_xor<>>();),
       NV_ANY_TARGET,
         (return false;)
     );
@@ -346,7 +355,14 @@ _CCCL_NODISCARD _CCCL_DEVICE constexpr bool enable_promotion()
   using ::cuda::std::is_same;
   using T = ::cuda::std::__remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>;
   return ::cuda::std::is_integral<T>::value && sizeof(T) <= 2
-      && is_one_of<ReductionOp, cub::Sum, cub::Mul, cub::BitAnd, cub::BitOr, cub::BitXor, cub::Max, cub::Min>();
+      && is_one_of<ReductionOp,
+                   ::cuda::std::plus<>,
+                   ::cuda::std::multiplies<>,
+                   ::cuda::std::bit_and<>,
+                   ::cuda::std::bit_or<>,
+                   ::cuda::std::bit_xor<>,
+                   ::cuda::maximum<>,
+                   ::cuda::minimum<>>();
 }
 
 /***********************************************************************************************************************
