@@ -9,6 +9,11 @@ import numba
 from numba import cuda
 import cuda.parallel.experimental as cudax
 from numba.extending import register_jitable
+from llvmlite import ir
+from numba.core import cgutils
+from numba.core.typing import signature
+from numba.core.extending import intrinsic, overload
+from numba.core.errors import NumbaTypeError
 
 
 def random_int(shape, dtype):
@@ -147,8 +152,129 @@ class CountingIterator:
         return ctypes.alignment(self.count) # TODO should be using numba for user-defined types support
 
 
+def cu_map(op, it):
+    def source_advance(it_state_ptr, diff):
+        pass
+
+    def make_advance_codegen(name):
+        retty = numba.types.void
+        statety = numba.types.CPointer(numba.types.int8)
+        distty = numba.types.int32
+
+        def codegen(context, builder, sig, args):
+            state_ptr, dist = args
+            fnty = ir.FunctionType(ir.VoidType(), (ir.PointerType(ir.IntType(8)), ir.IntType(32)))
+            fn = cgutils.get_or_insert_function(builder.module, fnty, name)
+            builder.call(fn, (state_ptr, dist))
+
+        return signature(retty, statety, distty), codegen
+
+
+    def advance_codegen(func_to_overload, name):
+        @intrinsic
+        def intrinsic_impl(typingctx, it_state_ptr, diff):
+            return make_advance_codegen(name)
+
+        @overload(func_to_overload, target='cuda')
+        def impl(it_state_ptr, diff):
+            def impl(it_state_ptr, diff):
+                return intrinsic_impl(it_state_ptr, diff)
+            return impl
+
+    def source_dereference(it_state_ptr):
+        pass
+
+    def make_dereference_codegen(name):
+        retty = numba.types.int32
+        statety = numba.types.CPointer(numba.types.int8)
+
+        def codegen(context, builder, sig, args):
+            state_ptr, = args
+            fnty = ir.FunctionType(ir.IntType(32), (ir.PointerType(ir.IntType(8)),))
+            fn = cgutils.get_or_insert_function(builder.module, fnty, name)
+            return builder.call(fn, (state_ptr,))
+
+        return signature(retty, statety), codegen
+
+
+    def dereference_codegen(func_to_overload, name):
+        @intrinsic
+        def intrinsic_impl(typingctx, it_state_ptr):
+            return make_dereference_codegen(name)
+
+        @overload(func_to_overload, target='cuda')
+        def impl(it_state_ptr):
+            def impl(it_state_ptr):
+                return intrinsic_impl(it_state_ptr)
+            return impl
+
+    def make_op_codegen(name):
+        retty = numba.types.int32
+        valty = numba.types.int32
+
+        def codegen(context, builder, sig, args):
+            val, = args
+            fnty = ir.FunctionType(ir.IntType(32), (ir.IntType(32),))
+            fn = cgutils.get_or_insert_function(builder.module, fnty, name)
+            return builder.call(fn, (val,))
+
+        return signature(retty, valty), codegen
+
+
+    def op_codegen(func_to_overload, name):
+        @intrinsic
+        def intrinsic_impl(typingctx, val):
+            return make_op_codegen(name)
+
+        @overload(func_to_overload, target='cuda')
+        def impl(val):
+            def impl(val):
+                return intrinsic_impl(val)
+            return impl
+
+    advance_codegen(source_advance, f"{it.prefix}_advance")
+    dereference_codegen(source_dereference, f"{it.prefix}_dereference")
+    op_codegen(op, op.__name__)
+
+
+    class TransformIterator:
+        def __init__(self, it, op):
+            self.it = it # TODO support row pointers
+            self.op = op
+            self.prefix = f'transform_{it.prefix}_{op.__name__}'
+            print(f"\nLOOOK PYTHON TransformIterator {self.prefix=}", flush=True)
+            self.ltoirs = it.ltoirs + [numba.cuda.compile(TransformIterator.transform_advance, sig=numba.types.void(numba.types.CPointer(numba.types.char), numba.types.int32), output='ltoir', abi_info={"abi_name": f"{self.prefix}_advance"}),
+                                       numba.cuda.compile(TransformIterator.transform_dereference, sig=numba.types.int32(numba.types.CPointer(numba.types.char)), output='ltoir', abi_info={"abi_name": f"{self.prefix}_dereference"}),
+                                       numba.cuda.compile(op, sig=numba.types.int32(numba.types.int32), output='ltoir')]
+
+        def transform_advance(it_state_ptr, diff):
+            source_advance(it_state_ptr, diff) # just a function call
+
+        def transform_dereference(it_state_ptr):
+            return op(source_dereference(it_state_ptr)) # just a function call
+
+        def host_address(self):
+            return self.it.host_address() # TODO support stateful operators
+
+        def state_c_void_p(self):
+            return self.it.state_c_void_p()
+
+        def size(self):
+            return self.it.size() # TODO fix for stateful op
+
+        def alignment(self):
+            return self.it.alignment() # TODO fix for stateful op
+
+
+    return TransformIterator(it, op)
+
+
+def mul2(val):
+    return 2 * val
+
+
 @pytest.mark.parametrize("use_numpy_array", [True, False])
-@pytest.mark.parametrize("input_generator", ["constant", "counting"])
+@pytest.mark.parametrize("input_generator", ["constant", "counting", "map_mul2"])
 def test_device_sum_sentinel_iterator(use_numpy_array, input_generator, num_items=3, start_sum_with=10):
     def add_op(a, b):
         return a + b
@@ -159,6 +285,9 @@ def test_device_sum_sentinel_iterator(use_numpy_array, input_generator, num_item
     elif input_generator == "counting":
         l_input = [start_sum_with + distance for distance in range(num_items)]
         sentinel_iterator = CountingIterator(start_sum_with)
+    elif input_generator == "map_mul2":
+        l_input = [2 * (start_sum_with + distance) for distance in range(num_items)]
+        sentinel_iterator = cu_map(mul2, CountingIterator(start_sum_with))
     else:
         raise RuntimeError("Unexpected input_generator")
 
