@@ -767,7 +767,7 @@ constexpr auto _CCCL_HOST get_launch_dimensions(const hierarchy_dimensions<Level
  This could have been a single function with make_hierarchy and first template
  argument defauled, but then the above TODO would be impossible and the current
  name makes more sense */
-template <typename LUnit, typename L1, typename... Levels>
+template <typename LUnit = void, typename L1, typename... Levels>
 constexpr auto make_hierarchy_fragment(L1 l1, Levels... ls) noexcept
 {
   return detail::__make_hierarchy_fragment<LUnit>()(detail::__as_level(l1), detail::__as_level(ls)...);
