@@ -57,7 +57,8 @@ struct __seq
         __sndr1_t,
         __opstate*,
         completion_signatures_of_t<__sndr2_t, __rcvr_ref_t<__rcvr_t&>>,
-        __malways<__async::completion_signatures<>>::__f>; // swallow the first sender's value completions
+        _CUDA_VSTD::__type_always<__async::completion_signatures<>>::__call>; // swallow the first sender's value
+                                                                              // completions
 
     _CUDAX_API friend env_of_t<__rcvr_t> get_env(const __opstate* __self) noexcept
     {

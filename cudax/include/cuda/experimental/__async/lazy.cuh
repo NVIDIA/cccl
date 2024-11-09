@@ -24,6 +24,7 @@
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__new/launder.h>
+#include <cuda/std/__utility/integer_sequence.h>
 
 #include <cuda/experimental/__async/meta.cuh>
 #include <cuda/experimental/__async/type_traits.cuh>
@@ -84,7 +85,7 @@ template <class _Idx, class... _Ts>
 struct __lazy_tupl;
 
 template <>
-struct __lazy_tupl<__mindices<>>
+struct __lazy_tupl<_CUDA_VSTD::index_sequence<>>
 {
   template <class _Fn, class _Self, class... _Us>
   _CUDAX_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&&, _Us&&... __us) //
@@ -95,10 +96,10 @@ struct __lazy_tupl<__mindices<>>
 };
 
 template <size_t... _Idx, class... _Ts>
-struct __lazy_tupl<__mindices<_Idx...>, _Ts...> : __detail::__lazy_box<_Idx, _Ts>...
+struct __lazy_tupl<_CUDA_VSTD::index_sequence<_Idx...>, _Ts...> : __detail::__lazy_box<_Idx, _Ts>...
 {
   template <size_t _Ny>
-  using __at = __m_at_c<_Ny, _Ts...>;
+  using __at = _CUDA_VSTD::__type_index_c<_Ny, _Ts...>;
 
   _CUDAX_TRIVIAL_API __lazy_tupl() noexcept {}
 
@@ -139,15 +140,15 @@ struct __lazy_tupl<__mindices<_Idx...>, _Ts...> : __detail::__lazy_box<_Idx, _Ts
 template <class... _Ts>
 struct __mk_lazy_tuple_
 {
-  using __indices_t = __mmake_indices<sizeof...(_Ts)>;
+  using __indices_t = _CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>;
   using type        = __lazy_tupl<__indices_t, _Ts...>;
 };
 
 template <class... _Ts>
-using __lazy_tuple = __t<__mk_lazy_tuple_<_Ts...>>;
+using __lazy_tuple = typename __mk_lazy_tuple_<_Ts...>::type;
 #else
 template <class... _Ts>
-using __lazy_tuple = __lazy_tupl<__mmake_indices<sizeof...(_Ts)>, _Ts...>;
+using __lazy_tuple = __lazy_tupl<_CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>, _Ts...>;
 #endif
 
 template <class... _Ts>
