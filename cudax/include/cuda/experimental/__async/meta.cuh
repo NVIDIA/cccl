@@ -474,6 +474,23 @@ struct __mquote<_Fn, _Default>
   using __f = typename __mif<__mvalid_q<_Fn, _Ts...>, __mquote<_Fn>, __malways<_Default>>::template __f<_Ts...>;
 };
 
+template <template <class> class _Fn, class... _Default>
+struct __mquote1;
+
+template <template <class> class _Fn>
+struct __mquote1<_Fn>
+{
+  template <class _Ty>
+  using __f = _Fn<_Ty>;
+};
+
+template <template <class> class _Fn, class _Default>
+struct __mquote1<_Fn, _Default>
+{
+  template <class _Ty>
+  using __f = typename __mif<__mvalid_q<_Fn, _Ty>, __mquote1<_Fn>, __malways<_Default>>::template __f<_Ty>;
+};
+
 template <template <class...> class _Fn, class... _Default>
 struct __mtry_quote;
 

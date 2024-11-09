@@ -133,8 +133,13 @@ using __decay_t = typename decltype(__mdecay<_Ty>)::template __f<_Ty>;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // __copy_cvref_t: For copying cvref from one type to another
-template <class _Tp>
-using __copy_cvref_fn = _CUDA_VSTD::__apply_cvref_fn<_Tp>;
+// TODO: This is a temporary implementation. We should merge this file and meta.cuh
+// with the facilities in <cuda/std/__type_traits/type_list.h>.
+template <class _Ty>
+using __cref_t = _Ty const&;
+
+using __cp    = __midentity;
+using __cpclr = __mquote1<__cref_t>;
 
 template <class _From, class _To>
 using __copy_cvref_t = _CUDA_VSTD::__copy_cvref_t<_From, _To>;
