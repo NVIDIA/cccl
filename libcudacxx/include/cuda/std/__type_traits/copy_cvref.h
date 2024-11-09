@@ -20,32 +20,182 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/add_lvalue_reference.h>
-#include <cuda/std/__type_traits/add_rvalue_reference.h>
-#include <cuda/std/__type_traits/copy_cv.h>
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
+
+struct __apply_cvref_
+{
+  template <class _Tp>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = _Tp;
+};
+
+struct __apply_cvref_c
+{
+  template <class _Tp>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = const _Tp;
+};
+
+struct __apply_cvref_v
+{
+  template <class _Tp>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = volatile _Tp;
+};
+
+struct __apply_cvref_cv
+{
+  template <class _Tp>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = const volatile _Tp;
+};
+
+struct __apply_cvref_lr
+{
+  template <class _Tp>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = _Tp&;
+};
+
+struct __apply_cvref_clr
+{
+  template <class _Tp>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = const _Tp&;
+};
+
+struct __apply_cvref_vlr
+{
+  template <class _Tp>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = volatile _Tp&;
+};
+
+struct __apply_cvref_cvlr
+{
+  template <class _Tp>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = const volatile _Tp&;
+};
+
+struct __apply_cvref_rr
+{
+  template <class _Tp>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = _Tp&&;
+};
+
+struct __apply_cvref_crr
+{
+  template <class _Tp>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = const _Tp&&;
+};
+
+struct __apply_cvref_vrr
+{
+  template <class _Tp>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = volatile _Tp&&;
+};
+
+struct __apply_cvref_cvrr
+{
+  template <class _Tp>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = const volatile _Tp&&;
+};
+
+#ifndef _CCCL_NO_VARIABLE_TEMPLATES
+template <class>
+extern __apply_cvref_ __apply_cvref;
+template <class _Tp>
+extern __apply_cvref_c __apply_cvref<const _Tp>;
+template <class _Tp>
+extern __apply_cvref_v __apply_cvref<volatile _Tp>;
+template <class _Tp>
+extern __apply_cvref_cv __apply_cvref<const volatile _Tp>;
+template <class _Tp>
+extern __apply_cvref_lr __apply_cvref<_Tp&>;
+template <class _Tp>
+extern __apply_cvref_clr __apply_cvref<const _Tp&>;
+template <class _Tp>
+extern __apply_cvref_vlr __apply_cvref<volatile _Tp&>;
+template <class _Tp>
+extern __apply_cvref_cvlr __apply_cvref<const volatile _Tp&>;
+template <class _Tp>
+extern __apply_cvref_rr __apply_cvref<_Tp&&>;
+template <class _Tp>
+extern __apply_cvref_crr __apply_cvref<const _Tp&&>;
+template <class _Tp>
+extern __apply_cvref_vrr __apply_cvref<volatile _Tp&&>;
+template <class _Tp>
+extern __apply_cvref_cvrr __apply_cvref<const volatile _Tp&&>;
+
+template <class _Tp>
+using __apply_cvref_fn = decltype(__apply_cvref<_Tp>);
+#else // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES / _CCCL_NO_VARIABLE_TEMPLATES vvv
+template <class>
+struct __apply_cvref
+{
+  using type _LIBCUDACXX_NODEBUG_TYPE = __apply_cvref_;
+};
+template <class _Tp>
+struct __apply_cvref<const _Tp>
+{
+  using type _LIBCUDACXX_NODEBUG_TYPE = __apply_cvref_c;
+};
+template <class _Tp>
+struct __apply_cvref<volatile _Tp>
+{
+  using type _LIBCUDACXX_NODEBUG_TYPE = __apply_cvref_v;
+};
+template <class _Tp>
+struct __apply_cvref<const volatile _Tp>
+{
+  using type _LIBCUDACXX_NODEBUG_TYPE = __apply_cvref_cv;
+};
+template <class _Tp>
+struct __apply_cvref<_Tp&>
+{
+  using type _LIBCUDACXX_NODEBUG_TYPE = __apply_cvref_lr;
+};
+template <class _Tp>
+struct __apply_cvref<const _Tp&>
+{
+  using type _LIBCUDACXX_NODEBUG_TYPE = __apply_cvref_clr;
+};
+template <class _Tp>
+struct __apply_cvref<volatile _Tp&>
+{
+  using type _LIBCUDACXX_NODEBUG_TYPE = __apply_cvref_vlr;
+};
+template <class _Tp>
+struct __apply_cvref<const volatile _Tp&>
+{
+  using type _LIBCUDACXX_NODEBUG_TYPE = __apply_cvref_cvlr;
+};
+template <class _Tp>
+struct __apply_cvref<_Tp&&>
+{
+  using type _LIBCUDACXX_NODEBUG_TYPE = __apply_cvref_rr;
+};
+template <class _Tp>
+struct __apply_cvref<const _Tp&&>
+{
+  using type _LIBCUDACXX_NODEBUG_TYPE = __apply_cvref_crr;
+};
+template <class _Tp>
+struct __apply_cvref<volatile _Tp&&>
+{
+  using type _LIBCUDACXX_NODEBUG_TYPE = __apply_cvref_vrr;
+};
+template <class _Tp>
+struct __apply_cvref<const volatile _Tp&&>
+{
+  using type _LIBCUDACXX_NODEBUG_TYPE = __apply_cvref_cvrr;
+};
+
+template <class _Tp>
+using __apply_cvref_fn _LIBCUDACXX_NODEBUG_TYPE = typename __apply_cvref<_Tp>::type;
+#endif // _CCCL_NO_VARIABLE_TEMPLATES
+
+template <class _From, class _To>
+using __copy_cvref_t = typename __apply_cvref_fn<_From>::template __call<_To>;
 
 template <class _From, class _To>
 struct __copy_cvref
 {
-  using type = __copy_cv_t<_From, _To>;
+  using type _LIBCUDACXX_NODEBUG_TYPE = __copy_cvref_t<_From, _To>;
 };
-
-template <class _From, class _To>
-struct __copy_cvref<_From&, _To>
-{
-  using type = __add_lvalue_reference_t<__copy_cv_t<_From, _To>>;
-};
-
-template <class _From, class _To>
-struct __copy_cvref<_From&&, _To>
-{
-  using type = __add_rvalue_reference_t<__copy_cv_t<_From, _To>>;
-};
-
-template <class _From, class _To>
-using __copy_cvref_t = typename __copy_cvref<_From, _To>::type;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

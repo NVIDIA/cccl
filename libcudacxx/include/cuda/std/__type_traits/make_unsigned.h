@@ -20,8 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/apply_cv.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/is_enum.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
@@ -123,7 +123,7 @@ struct __make_unsigned_impl<__uint128_t, true>
 #  endif
 
 template <class _Tp>
-using __make_unsigned_t = __apply_cv_t<_Tp, typename __make_unsigned_impl<__remove_cv_t<_Tp>>::type>;
+using __make_unsigned_t = __copy_cvref_t<_Tp, typename __make_unsigned_impl<__remove_cv_t<_Tp>>::type>;
 
 #endif // defined(_CCCL_BUILTIN_MAKE_UNSIGNED) && !defined(_LIBCUDACXX_USE_MAKE_UNSIGNED_FALLBACK)
 

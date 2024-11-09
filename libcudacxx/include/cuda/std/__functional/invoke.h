@@ -22,8 +22,8 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
-#include <cuda/std/__type_traits/apply_cv.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>

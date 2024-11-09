@@ -26,7 +26,7 @@
 #include <cuda/std/__tuple_dir/tuple_indices.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__tuple_dir/tuple_types.h>
-#include <cuda/std/__type_traits/apply_cv.h>
+#include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__type_traits/type_list.h>
@@ -48,7 +48,7 @@ struct __make_tuple_types_flat<_Tuple<_Types...>, __tuple_indices<_Idx...>>
   using __tuple_types_list = __type_list<_Types...>;
 
   // Specialization for pair, tuple, and __tuple_types
-  template <class _Tp, class _ApplyFn = __apply_cv_fn<_Tp>>
+  template <class _Tp, class _ApplyFn = __apply_cvref_fn<_Tp>>
   using __apply_quals _LIBCUDACXX_NODEBUG_TYPE =
     __tuple_types<__type_call<_ApplyFn, __type_at_c<_Idx, __tuple_types_list>>...>;
 };
@@ -58,7 +58,7 @@ struct __make_tuple_types_flat<array<_Vt, _Np>, __tuple_indices<_Idx...>>
 {
   template <size_t>
   using __value_type = _Vt;
-  template <class _Tp, class _ApplyFn = __apply_cv_fn<_Tp>>
+  template <class _Tp, class _ApplyFn = __apply_cvref_fn<_Tp>>
   using __apply_quals = __tuple_types<__type_call<_ApplyFn, __value_type<_Idx>>...>;
 };
 

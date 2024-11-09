@@ -36,7 +36,6 @@
 #include <cuda/std/__type_traits/aligned_storage.h>
 #include <cuda/std/__type_traits/aligned_union.h>
 #include <cuda/std/__type_traits/alignment_of.h>
-#include <cuda/std/__type_traits/apply_cv.h>
 #include <cuda/std/__type_traits/can_extract_key.h>
 #include <cuda/std/__type_traits/common_reference.h>
 #include <cuda/std/__type_traits/common_type.h>
