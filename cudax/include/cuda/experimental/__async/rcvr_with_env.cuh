@@ -69,7 +69,7 @@ struct __rcvr_with_env_t : _Rcvr
     noexcept(__nothrow_queryable<_1st_env_t<_Query>, _Query>) //
     -> __query_result_t<_1st_env_t<_Query>, _Query>
   {
-    return __get_1st(__query).__query(__query);
+    return __get_1st(__query).query(__query);
   }
 
   _Env __env_;
@@ -128,7 +128,7 @@ struct __rcvr_with_env_t<_Rcvr*, _Env>
     noexcept(__nothrow_queryable<_1st_env_t<_Query>, _Query>) //
     -> __query_result_t<_1st_env_t<_Query>, _Query>
   {
-    return __get_1st(__query).__query(__query);
+    return __get_1st(__query).query(__query);
   }
 
   _Rcvr* __rcvr_;

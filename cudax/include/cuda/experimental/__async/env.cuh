@@ -100,7 +100,7 @@ struct env
     noexcept(__nothrow_queryable<__1st_env_t<_Query>, _Query>) //
     -> __query_result_t<__1st_env_t<_Query>, _Query>
   {
-    return __get_1st(__query).__query(__query);
+    return __get_1st(__query).query(__query);
   }
 
   env& operator=(const env&) = delete;
@@ -134,7 +134,7 @@ struct env<_Env0, _Env1>
     noexcept(__nothrow_queryable<__1st_env_t<_Query>, _Query>) //
     -> __query_result_t<__1st_env_t<_Query>, _Query>
   {
-    return __get_1st(__query).__query(__query);
+    return __get_1st(__query).query(__query);
   }
 
   env& operator=(const env&) = delete;
