@@ -78,7 +78,7 @@ using __cond_res = decltype(false ? _CUDA_VSTD::declval<_Xp (&)()>()() : _CUDA_V
 // `U`.
 // [Note: `XREF(A)` is `__xref<A>::template __call`]
 template <class _Tp>
-using __xref = __apply_cv_fn<_Tp>;
+using __xref = __apply_cvref_fn<_Tp>;
 
 // Given types A and B, let X be remove_reference_t<A>, let Y be remove_reference_t<B>,
 // and let COMMON-REF(A, B) be:
