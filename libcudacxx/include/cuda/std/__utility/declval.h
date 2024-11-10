@@ -26,8 +26,10 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // When variable templates and noexcept function types are available, a faster
 // implementation of declval is available. It compiles approximately 2x faster
-// than the fallback.
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES) && !defined(_CCCL_NO_NOEXCEPT_FUNCTION_TYPE)
+// than the fallback. NOTE: this implementation causes nvcc < 12.4 to ICE so we
+// use the fallback instead.
+#if !defined(_CCCL_NO_VARIABLE_TEMPLATES) && !defined(_CCCL_NO_NOEXCEPT_FUNCTION_TYPE) \
+  && !(defined(_CCCL_CUDA_COMPILER_NVCC) && defined(_CCCL_CUDACC_BELOW_12_4))
 
 template <class _Tp>
 using __identity_t _LIBCUDACXX_NODEBUG_TYPE = _Tp;
