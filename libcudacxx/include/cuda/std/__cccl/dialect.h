@@ -104,6 +104,14 @@
 #  define _CCCL_NO_VARIABLE_TEMPLATES
 #endif // _CCCL_STD_VER <= 2011
 
+// noexcept function types are only available from C++17 onwards
+#if _CCCL_STD_VER > 2014 && defined(__cpp_noexcept_function_type) && (__cpp_noexcept_function_type >= 201510L)
+#  define _CCCL_FUNCTION_TYPE_NOEXCEPT noexcept
+#else // ^^^ C++17 ^^^ / vvv C++14 vvv
+#  define _CCCL_NO_NOEXCEPT_FUNCTION_TYPE
+#  define _CCCL_FUNCTION_TYPE_NOEXCEPT
+#endif // _CCCL_STD_VER <= 2014
+
 // Variable templates are more efficient most of the time, so we want to use them rather than structs when possible
 #if defined(_CCCL_NO_VARIABLE_TEMPLATES)
 #  define _CCCL_TRAIT(__TRAIT, ...) __TRAIT<__VA_ARGS__>::value

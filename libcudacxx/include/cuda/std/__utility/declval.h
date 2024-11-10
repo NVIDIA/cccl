@@ -24,18 +24,19 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-// When variable templates are available, a faster implementation of declval
-// is available. It compiles approximately 2x faster than the fallback.
-#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
+// When variable templates and noexcept function types are available, a faster
+// implementation of declval is available. It compiles approximately 2x faster
+// than the fallback.
+#if !defined(_CCCL_NO_VARIABLE_TEMPLATES) && !defined(_CCCL_NO_NOEXCEPT_FUNCTION_TYPE)
 
 template <class _Tp>
-using __typename_t _LIBCUDACXX_NODEBUG_TYPE = _Tp;
+using __identity_t _LIBCUDACXX_NODEBUG_TYPE = _Tp;
 
 template <class _Tp, class = void>
-extern __typename_t<void (*)() noexcept> declval;
+extern __identity_t<void (*)() noexcept> declval;
 
 template <class _Tp>
-extern __typename_t<_Tp && (*) () noexcept> declval<_Tp, void_t<_Tp&&>>;
+extern __identity_t<_Tp && (*) () noexcept> declval<_Tp, void_t<_Tp&&>>;
 
 #else // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES ^^^ / vvv _CCCL_NO_VARIABLE_TEMPLATES vvv
 
