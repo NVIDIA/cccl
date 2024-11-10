@@ -301,7 +301,7 @@ struct __env_t
 
   __state_t& __state_;
 
-  _CUDAX_API inplace_stop_token __query(get_stop_token_t) const noexcept
+  _CUDAX_API inplace_stop_token query(get_stop_token_t) const noexcept
   {
     return __state_.__stop_token_;
   }
@@ -309,7 +309,7 @@ struct __env_t
   template <class _Tag>
   _CUDAX_API auto query(_Tag) const noexcept -> __query_result_t<_Tag, env_of_t<__rcvr_t>>
   {
-    return __async::get_env(__state_.__rcvr_).__query(_Tag());
+    return __async::get_env(__state_.__rcvr_).query(_Tag());
   }
 };
 
