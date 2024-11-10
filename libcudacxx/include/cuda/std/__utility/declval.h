@@ -28,11 +28,14 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // is available. It compiles approximately 2x faster than the fallback.
 #if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 
+template <class _Tp>
+using __typename_t _LIBCUDACXX_NODEBUG_TYPE = _Tp;
+
 template <class _Tp, class = void>
-extern void (*declval)() noexcept;
+extern __typename_t<void (*)() noexcept> declval;
 
 template <class _Tp>
-  extern _Tp && (*declval<_Tp, void_t<_Tp&&>>) () noexcept;
+extern __typename_t<_Tp && (*) () noexcept> declval<_Tp, void_t<_Tp&&>>;
 
 #else // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES ^^^ / vvv _CCCL_NO_VARIABLE_TEMPLATES vvv
 
