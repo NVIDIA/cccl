@@ -244,7 +244,7 @@ struct continue_on_t::__sndr_t
     _CUDAX_API auto query(_Query) const //
       -> __query_result_t<_Query, env_of_t<_Sndr>>
     {
-      return __async::get_env(__sndr->__sndr).__query(_Query{});
+      return __async::get_env(__sndr->__sndr).query(_Query{});
     }
   };
 
