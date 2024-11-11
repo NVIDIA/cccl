@@ -9,7 +9,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 C2H_TEST("DeviceMerge::MergeKeys API example", "[merge][device]")
 {

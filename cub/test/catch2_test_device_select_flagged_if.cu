@@ -37,7 +37,7 @@
 #include <algorithm>
 
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 template <typename PredOpT>
 struct predicate_op_wrapper_t
