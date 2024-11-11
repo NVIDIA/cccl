@@ -70,7 +70,7 @@ struct get_stream_wrong_return
 };
 TEST_CASE("The get_stream method must return a cuda::stream_ref", "[stream]")
 {
-  static_assert(!::cuda::std::is_invocable_v<::cuda::experimental::get_stream_t, const get_stream_wrong_return&>);
+  STATIC_REQUIRE(!::cuda::std::is_invocable_v<::cuda::experimental::get_stream_t, const get_stream_wrong_return&>);
 }
 
 struct env_with_query
