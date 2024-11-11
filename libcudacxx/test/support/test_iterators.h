@@ -1667,6 +1667,8 @@ struct Proxy
     return static_cast<const T&&>(data);
   }
 
+  Proxy(const Proxy&) = default;
+
   _LIBCUDACXX_TEMPLATE(class U)
   _LIBCUDACXX_REQUIRES(cuda::std::constructible_from<T, U&&>)
   __host__ __device__ constexpr Proxy(U&& u)

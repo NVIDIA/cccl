@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/apply_cv.h>
+#include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_enum.h>
 #include <cuda/std/__type_traits/is_integral.h>
@@ -121,7 +121,7 @@ struct __make_signed_impl<__uint128_t, true>
 #  endif
 
 template <class _Tp>
-using __make_signed_t = typename __apply_cv<_Tp, typename __make_signed_impl<__remove_cv_t<_Tp>>::type>::type;
+using __make_signed_t = __copy_cvref_t<_Tp, typename __make_signed_impl<__remove_cv_t<_Tp>>::type>;
 
 #endif // defined(_CCCL_BUILTIN_MAKE_SIGNED) && !defined(_LIBCUDACXX_USE_MAKE_SIGNED_FALLBACK)
 

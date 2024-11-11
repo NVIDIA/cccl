@@ -622,8 +622,7 @@ struct __when_all::__sndr_t
   }
 
   template <class _Rcvr>
-  _CUDAX_API auto connect(_Rcvr __rcvr) const& //
-    -> __opstate_t<_Rcvr, __cpclr, __sndrs_t>
+  _CUDAX_API auto connect(_Rcvr __rcvr) const& -> __opstate_t<_Rcvr, __cpclr, __sndrs_t>
   {
     return __opstate_t<_Rcvr, __cpclr, __sndrs_t>(__sndrs_, static_cast<_Rcvr&&>(__rcvr));
   }
