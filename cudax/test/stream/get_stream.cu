@@ -56,7 +56,7 @@ struct non_const_get_stream
 
 TEST_CASE("The get_stream method must be const qualified", "[stream]")
 {
-  static_assert(!::cuda::std::is_invocable_v<::cuda::experimental::get_stream_t, const non_const_get_stream&>);
+  STATIC_REQUIRE(!::cuda::std::is_invocable_v<::cuda::experimental::get_stream_t, const non_const_get_stream&>);
 }
 
 struct get_stream_wrong_return
@@ -130,6 +130,6 @@ struct env_with_query_that_returns_wrong_type
 };
 TEST_CASE("Queries require a proper return type", "[stream]")
 {
-  static_assert(
+  STATIC_REQUIRE(
     !::cuda::std::is_invocable_v<::cuda::experimental::get_stream_t, const env_with_query_that_returns_wrong_type&>);
 }

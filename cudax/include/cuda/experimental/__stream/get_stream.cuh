@@ -73,7 +73,7 @@ struct get_stream_t
     static_assert(noexcept(__env.query(*this)), "");
     return __env.query(*this);
   }
-}; // namespace cuda::experimental
+};
 
 _CCCL_GLOBAL_CONSTANT auto get_stream = get_stream_t{};
 
