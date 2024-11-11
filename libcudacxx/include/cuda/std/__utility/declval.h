@@ -32,7 +32,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
   && !(defined(_CCCL_CUDA_COMPILER_NVCC) && defined(_CCCL_CUDACC_BELOW_12_4))
 
 // Workaround for MSVC versions prior to 19.39
-#  if defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION < 1939
+#  if 1 // defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION < 1939
 #    define _CCCL_VOIDIFY(_Tp) void_t<_Tp>
 #  else
 #    define _CCCL_VOIDIFY(_Tp) void
