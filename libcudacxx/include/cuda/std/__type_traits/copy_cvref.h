@@ -20,6 +20,17 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/add_lvalue_reference.h>
+#include <cuda/std/__type_traits/add_rvalue_reference.h>
+
+#if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 70000
+#  define _CCCL_ADD_LVALUE_REFERENCE_WAR(_Tp) __add_lvalue_reference_t<_Tp>
+#  define _CCCL_ADD_RVALUE_REFERENCE_WAR(_Tp) __add_rvalue_reference_t<_Tp>
+#else
+#  define _CCCL_ADD_LVALUE_REFERENCE_WAR(_Tp) _Tp&
+#  define _CCCL_ADD_RVALUE_REFERENCE_WAR(_Tp) _Tp&&
+#endif
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct __apply_cvref_
@@ -49,49 +60,49 @@ struct __apply_cvref_cv
 struct __apply_cvref_lr
 {
   template <class _Tp>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = _Tp&;
+  using __call _LIBCUDACXX_NODEBUG_TYPE = _CCCL_ADD_LVALUE_REFERENCE_WAR(_Tp);
 };
 
 struct __apply_cvref_clr
 {
   template <class _Tp>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = const _Tp&;
+  using __call _LIBCUDACXX_NODEBUG_TYPE = _CCCL_ADD_LVALUE_REFERENCE_WAR(const _Tp);
 };
 
 struct __apply_cvref_vlr
 {
   template <class _Tp>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = volatile _Tp&;
+  using __call _LIBCUDACXX_NODEBUG_TYPE = _CCCL_ADD_LVALUE_REFERENCE_WAR(volatile _Tp);
 };
 
 struct __apply_cvref_cvlr
 {
   template <class _Tp>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = const volatile _Tp&;
+  using __call _LIBCUDACXX_NODEBUG_TYPE = _CCCL_ADD_LVALUE_REFERENCE_WAR(const volatile _Tp);
 };
 
 struct __apply_cvref_rr
 {
   template <class _Tp>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = _Tp&&;
+  using __call _LIBCUDACXX_NODEBUG_TYPE = _CCCL_ADD_RVALUE_REFERENCE_WAR(_Tp);
 };
 
 struct __apply_cvref_crr
 {
   template <class _Tp>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = const _Tp&&;
+  using __call _LIBCUDACXX_NODEBUG_TYPE = _CCCL_ADD_RVALUE_REFERENCE_WAR(const _Tp);
 };
 
 struct __apply_cvref_vrr
 {
   template <class _Tp>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = volatile _Tp&&;
+  using __call _LIBCUDACXX_NODEBUG_TYPE = _CCCL_ADD_RVALUE_REFERENCE_WAR(volatile _Tp);
 };
 
 struct __apply_cvref_cvrr
 {
   template <class _Tp>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = const volatile _Tp&&;
+  using __call _LIBCUDACXX_NODEBUG_TYPE = _CCCL_ADD_RVALUE_REFERENCE_WAR(const volatile _Tp);
 };
 
 #ifndef _CCCL_NO_VARIABLE_TEMPLATES
@@ -198,5 +209,8 @@ struct __copy_cvref
 };
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#undef _CCCL_ADD_RVALUE_REFERENCE_WAR
+#undef _CCCL_ADD_LVALUE_REFERENCE_WAR
 
 #endif // _LIBCUDACXX___TYPE_TRAITS_COPY_CVREF_H
