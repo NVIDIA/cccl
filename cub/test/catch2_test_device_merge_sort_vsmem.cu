@@ -37,7 +37,7 @@
 
 #include "catch2_test_device_merge_sort_common.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 

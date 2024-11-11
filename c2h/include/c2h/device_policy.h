@@ -27,19 +27,18 @@
 
 #pragma once
 
-#include <thrust/detail/vector_base.h>
-
-#include <memory>
+#include <thrust/execution_policy.h>
 
 #include <c2h/checked_allocator.cuh>
 
 namespace c2h
 {
-
-template <typename T>
-using host_vector = thrust::detail::vector_base<T, c2h::checked_host_allocator<T>>;
-
-template <typename T>
-using device_vector = thrust::detail::vector_base<T, c2h::checked_cuda_allocator<T>>;
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+static const auto device_policy        = thrust::cuda::par(checked_cuda_allocator<char>{});
+static const auto nosync_device_policy = thrust::cuda::par_nosync(checked_cuda_allocator<char>{});
+#else // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+static const auto device_policy        = thrust::device;
+static const auto nosync_device_policy = thrust::device;
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 
 } // namespace c2h

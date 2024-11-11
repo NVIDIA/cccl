@@ -39,7 +39,7 @@
 #include <algorithm>
 
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 template <class T>
 inline T to_bound(const unsigned long long bound)

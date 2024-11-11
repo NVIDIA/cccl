@@ -27,21 +27,27 @@
 
 #pragma once
 
-#include <thrust/system/cuda/execution_policy.h>
+#include <thrust/detail/vector_base.h>
 
-#include <type_traits>
+#include <memory>
 
-#include <c2h/checked_allocator.cuh>
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+#  include <c2h/checked_allocator.cuh>
+#else
+#  include <thrust/device_vector.h>
+#  include <thrust/host_vector.h>
+#endif
 
 namespace c2h
 {
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+template <typename T>
+using host_vector = thrust::detail::vector_base<T, c2h::checked_host_allocator<T>>;
 
-using device_policy_t =
-  typename std::remove_reference<decltype(thrust::cuda::par(checked_cuda_allocator<char>{}))>::type;
-static const device_policy_t device_policy = thrust::cuda::par(checked_cuda_allocator<char>{});
-
-using nosync_device_policy_t =
-  typename std::remove_reference<decltype(thrust::cuda::par_nosync(checked_cuda_allocator<char>{}))>::type;
-static const nosync_device_policy_t nosync_device_policy = thrust::cuda::par_nosync(checked_cuda_allocator<char>{});
-
+template <typename T>
+using device_vector = thrust::detail::vector_base<T, c2h::checked_cuda_allocator<T>>;
+#else // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+using thrust::device_vector;
+using thrust::host_vector;
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 } // namespace c2h
