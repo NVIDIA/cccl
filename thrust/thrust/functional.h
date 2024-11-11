@@ -837,21 +837,34 @@ struct bit_xor : public ::cuda::std::bit_xor<T>
  *  \see https://en.cppreference.com/w/cpp/utility/functional/identity
  *  \see unary_function
  */
+// TODO(bgruber): this version can also act as a functor casting to T making it not equivalent to ::cuda::std::identity
 template <typename T = void>
 struct identity
 {
   using argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
   using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11   = T;
 
-  // FIXME(bgruber): this should take T&& and forward, to not add const to a mutable reference or dangle a temporary arg
-  /*! Function call operator. The return value is <tt>x</tt>.
-   */
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE constexpr const T& operator()(const T& x) const
   {
     return x;
   }
-}; // end identity
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE constexpr T& operator()(T& x) const
+  {
+    return x;
+  }
+
+  // we cannot add an overload for `const T&&` because then calling e.g. `thrust::identity<int>{}(3.14);` is ambigious
+  // on MSVC
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE constexpr T&& operator()(T&& x) const
+  {
+    return _CUDA_VSTD::move(x);
+  }
+};
 
 template <>
 struct identity<void> : ::cuda::std::__identity
