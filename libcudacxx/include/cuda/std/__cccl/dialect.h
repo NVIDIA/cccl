@@ -105,7 +105,7 @@
 #endif // _CCCL_STD_VER <= 2011
 
 // noexcept function types are only available from C++17 onwards
-#if _CCCL_STD_VER > 2014 && defined(__cpp_noexcept_function_type) && (__cpp_noexcept_function_type >= 201510L)
+#if _CCCL_STD_VER >= 2017 && defined(__cpp_noexcept_function_type) && (__cpp_noexcept_function_type >= 201510L)
 #  define _CCCL_FUNCTION_TYPE_NOEXCEPT noexcept
 #else // ^^^ C++17 ^^^ / vvv C++14 vvv
 #  define _CCCL_NO_NOEXCEPT_FUNCTION_TYPE
