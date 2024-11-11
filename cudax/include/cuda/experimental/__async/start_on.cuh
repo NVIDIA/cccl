@@ -38,7 +38,7 @@ struct __sch_env_t
 {
   _Sch __sch_;
 
-  _Sch __query(get_scheduler_t) const noexcept
+  _Sch query(get_scheduler_t) const noexcept
   {
     return __sch_;
   }
