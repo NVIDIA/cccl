@@ -14,7 +14,7 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_identity.h>
 
-#if defined(_CCCL_CUDACC_BELOW_12_2) || defined(_CCCL_COMPILER_ICC) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#if defined(_CCCL_COMPILER_ICC) || defined(_CCCL_CUDA_COMPILER_NVCC) || defined(_CCCL_CUDA_COMPILER_CLANG)
 // These compilers have trouble making substitution failures during
 // alias template instantiation non-fatal.
 #  define SKIP_SFINAE_TESTS
