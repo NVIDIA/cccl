@@ -683,3 +683,9 @@ using simd_type_t = typename CubOperatorToSimdOperator<ReduceOp, T>::simd_type;
 #endif // !DOXYGEN_SHOULD_SKIP_THIS
 
 CUB_NAMESPACE_END
+
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+template <typename F>
+struct proclaims_copyable_arguments<CUB_NS_QUALIFIER::InequalityWrapper<F>> : proclaims_copyable_arguments<F>
+{};
+_LIBCUDACXX_END_NAMESPACE_CUDA
