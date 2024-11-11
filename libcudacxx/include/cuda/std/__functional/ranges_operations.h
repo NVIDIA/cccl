@@ -24,7 +24,7 @@
 #include <cuda/std/__concepts/totally_ordered.h>
 #include <cuda/std/__utility/forward.h>
 
-#if _CCCL_STD_VER > 2014
+#if _CCCL_STD_VER >= 2017
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
