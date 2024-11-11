@@ -115,7 +115,7 @@ _CCCL_GLOBAL_CONSTANT struct get_scheduler_t
   }
 } get_scheduler{};
 
-_CCCL_GLOBAL_CONSTANT struct get_delegatee_scheduler_t
+_CCCL_GLOBAL_CONSTANT struct get_delegation_scheduler_t
 {
   template <class _Env>
   _CUDAX_API auto operator()(const _Env& __env) const noexcept //
@@ -124,7 +124,7 @@ _CCCL_GLOBAL_CONSTANT struct get_delegatee_scheduler_t
     static_assert(noexcept(__env.query(*this)));
     return __env.query(*this);
   }
-} get_delegatee_scheduler{};
+} get_delegation_scheduler{};
 
 enum class forward_progress_guarantee
 {
