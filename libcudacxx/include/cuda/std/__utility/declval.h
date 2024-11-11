@@ -26,28 +26,21 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // When variable templates and noexcept function types are available, a faster
 // implementation of declval is available. It compiles approximately 2x faster
-// than the fallback. NOTE: this implementation causes nvcc < 12.4 to ICE so we
-// use the fallback instead.
+// than the fallback. NOTE: this implementation causes nvcc < 12.4 to ICE and
+// MSVC < 19.39 to miscompile so we use the fallback instead. The use of the
+// `__identity_t` alias is help MSVC parse the declaration correctly.
 #if !defined(_CCCL_NO_VARIABLE_TEMPLATES) && !defined(_CCCL_NO_NOEXCEPT_FUNCTION_TYPE) \
-  && !(defined(_CCCL_CUDA_COMPILER_NVCC) && defined(_CCCL_CUDACC_BELOW_12_4))
-
-// Workaround for MSVC versions prior to 19.39
-#  if 1 // defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION < 1939
-#    define _CCCL_VOIDIFY(_Tp) void_t<_Tp>
-#  else
-#    define _CCCL_VOIDIFY(_Tp) void
-#  endif
+  && !(defined(_CCCL_CUDA_COMPILER_NVCC) && defined(_CCCL_CUDACC_BELOW_12_4))          \
+  && !(defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION < 1939)
 
 template <class _Tp>
 using __identity_t _LIBCUDACXX_NODEBUG_TYPE = _Tp;
 
 template <class _Tp, class = void>
-extern __identity_t<_CCCL_VOIDIFY(_Tp) (*)() noexcept> declval;
+extern __identity_t<void (*)() noexcept> declval;
 
 template <class _Tp>
 extern __identity_t<_Tp && (*) () noexcept> declval<_Tp, void_t<_Tp&&>>;
-
-#  undef _CCCL_VOIDIFY
 
 #else // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES ^^^ / vvv _CCCL_NO_VARIABLE_TEMPLATES vvv
 
