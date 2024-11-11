@@ -29,7 +29,7 @@
 
 #include <climits>
 
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 template <cub::BlockScanAlgorithm Algorithm,
           int ItemsPerThread,

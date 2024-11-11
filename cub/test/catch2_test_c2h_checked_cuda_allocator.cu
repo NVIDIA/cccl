@@ -25,13 +25,13 @@
  *
  ******************************************************************************/
 
+#include <thrust/detail/execution_policy.h>
 #include <thrust/execution_policy.h>
 
 #include <algorithm>
 #include <new> // std::bad_alloc
 
-#include "thrust/detail/execution_policy.h"
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 std::size_t get_alloc_bytes()
 {

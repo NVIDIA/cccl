@@ -36,7 +36,7 @@
 
 #include <cstddef>
 
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 // example-begin segmented-select-iseven
 struct is_even_t

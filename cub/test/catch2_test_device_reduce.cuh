@@ -40,10 +40,10 @@
 #include <numeric>
 #include <type_traits>
 
-#include <c2h/catch2_test_helper.cuh>
-#include <c2h/custom_type.cuh>
-#include <c2h/extended_types.cuh>
-#include <c2h/test_util_vec.cuh>
+#include <c2h/catch2_test_helper.h>
+#include <c2h/custom_type.h>
+#include <c2h/extended_types.h>
+#include <c2h/test_util_vec.h>
 #include <nv/target>
 
 #if TEST_HALF_T

@@ -30,7 +30,7 @@
 #include <limits>
 #include <numeric>
 
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 template <cub::BlockReduceAlgorithm Algorithm,
           int ItemsPerThread,

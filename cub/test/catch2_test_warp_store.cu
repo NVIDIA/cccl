@@ -28,8 +28,8 @@
 #include <cub/iterator/cache_modified_output_iterator.cuh>
 #include <cub/warp/warp_store.cuh>
 
-#include <c2h/catch2_test_helper.cuh>
-#include <c2h/fill_striped.cuh>
+#include <c2h/catch2_test_helper.h>
+#include <c2h/fill_striped.h>
 
 template <cub::WarpStoreAlgorithm StoreAlgorithm,
           int LOGICAL_WARP_THREADS,
