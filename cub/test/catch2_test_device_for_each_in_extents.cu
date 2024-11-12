@@ -24,8 +24,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  ******************************************************************************/
-#include "c2h/utility.h"
-#define CCCL_ENABLE_DEVICE_ASSERTIONS
 #include <cub/config.cuh>
 
 #if _CCCL_STD_VER >= 2017
@@ -37,6 +35,7 @@
 #  include <cuda/std/array>
 
 #  include "c2h/catch2_test_helper.cuh"
+#  include "c2h/utility.cuh"
 #  include "catch2_test_launch_helper.h"
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
