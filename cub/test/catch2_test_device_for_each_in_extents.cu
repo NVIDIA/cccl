@@ -82,7 +82,7 @@ template <typename IndexType, int Size>
 struct LinearStore
 {
   using data_t = cuda::std::array<IndexType, Size>;
-  data_t* d_output_raw;
+  cuda::std::span<data_t> d_output_raw;
 
   template <typename... TArgs>
   __device__ void operator()(IndexType idx, TArgs... args)
