@@ -115,7 +115,7 @@ multiply_extract_higher_bits(T value, R multiplier)
   static_assert(::cuda::std::is_integral<T>::value && !::cuda::std::is_same<T, bool>::value, "unsupported type");
   static_assert(::cuda::std::is_integral<R>::value && !::cuda::std::is_same<R, bool>::value, "unsupported type");
   _CCCL_ASSERT(value >= 0, "value must be non-negative");
-  _CCCL_ASSERT(multiplier >= 0, "multiplier must be non-negative positive");
+  _CCCL_ASSERT(multiplier >= 0, "multiplier must be non-negative");
   using unsigned_t           = unsigned_implicit_prom_t<T>;
   using larger_t             = larger_unsigned_type_t<T>;
   constexpr unsigned BitSize = sizeof(T) * CHAR_BIT;
