@@ -679,6 +679,8 @@ struct ChainedPolicy
     // __CUDA_ARCH_LIST__ is only available from CTK 11.5 onwards
 #ifdef __CUDA_ARCH_LIST__
     return runtime_to_compiletime<__CUDA_ARCH_LIST__>(device_ptx_version, op);
+#elif defined(NV_TARGET_SM_INTEGER_LIST)
+    return runtime_to_compiletime<NV_TARGET_SM_INTEGER_LIST>(device_ptx_version, op);
 #else
     if (device_ptx_version < PolicyPtxVersion)
     {
@@ -696,7 +698,7 @@ private:
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t runtime_to_compiletime(int device_ptx_version, FunctorT& op)
   {
     // We instantiate invoke_static for each CudaArches, but only call the one matching device_ptx_version.
-    // If there's no exact match of any of the architectures in __CUDA_ARCH_LIST__ and the runtime
+    // If there's no exact match of the architectures in __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST and the runtime
     // queried ptx version (i.e., the closest ptx version to the current device's architecture that the EmptyKernel was
     // compiled for), we return cudaErrorInvalidDeviceFunction. Such a scenario may arise if CUB_DISABLE_NAMESPACE_MAGIC
     // is set and different TUs are compiled for different sets of architecture.
