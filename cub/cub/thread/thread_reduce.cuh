@@ -381,7 +381,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE _CCCL_CONSTEXPR_CXX14 bool enable
     // clang-format off
     NV_DISPATCH_TARGET(
       NV_PROVIDES_SM_90,
-        (return enable_ternary_reduction_sm90<T, ReductionOp>::value),
+        (return enable_ternary_reduction_sm90<T, ReductionOp>::value);,
       NV_PROVIDES_SM_50,
         (return is_one_of<AccumT, ::cuda::std::int32_t, ::cuda::std::uint32_t, ::cuda::std::int64_t,
                                   ::cuda::std::uint64_t>()
