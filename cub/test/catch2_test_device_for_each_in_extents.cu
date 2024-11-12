@@ -122,13 +122,15 @@ using index_types_dyn =
 #  endif
                  >;
 
-C2H_TEST("DeviceForEachInExtents 2D static", "[ForEachInExtents][static][device]", index_types)
+using extents = c2h::type_list<cuda::std::extents<index_type, 5>, cuda::std::extents<index_type, 5, 3>, ...>;
+C2H_TEST("DeviceForEachInExtents static", "[ForEachInExtents][static][device]", index_types, extents)
 {
-  constexpr int rank = 2;
   using index_type   = c2h::get<0, TestType>;
+  using extent_type   = c2h::get<1, TestType>;
+  constexpr int rank = extent_type::rank();
   using data_t       = cuda::std::array<index_type, rank>;
   using store_op_t   = LinearStore<index_type, rank>;
-  cuda::std::extents<index_type, 5, 3> ext{};
+  extent_type ext{};
   c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
   c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
   auto d_output_raw = thrust::raw_pointer_cast(d_output.data());
