@@ -34,11 +34,11 @@ struct __is_nullptr_t_impl<nullptr_t> : public true_type
 {};
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __is_nullptr_t : public __is_nullptr_t_impl<__remove_cv_t<_Tp>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __is_nullptr_t : public __is_nullptr_t_impl<remove_cv_t<_Tp>>
 {};
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_null_pointer : public __is_nullptr_t_impl<__remove_cv_t<_Tp>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_null_pointer : public __is_nullptr_t_impl<remove_cv_t<_Tp>>
 {};
 
 #if !defined(_CCCL_NO_VARIABLE_TEMPLATES)

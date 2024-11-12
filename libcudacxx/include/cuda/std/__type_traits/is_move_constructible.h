@@ -27,7 +27,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_move_constructible : public is_constructible<_Tp, __add_rvalue_reference_t<_Tp>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_move_constructible : public is_constructible<_Tp, add_rvalue_reference_t<_Tp>>
 {};
 
 #if !defined(_CCCL_NO_VARIABLE_TEMPLATES)

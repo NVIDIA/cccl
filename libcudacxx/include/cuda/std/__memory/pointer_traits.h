@@ -49,7 +49,7 @@ struct __pointer_traits_element_type;
 template <class _Ptr>
 struct __pointer_traits_element_type<_Ptr, true>
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE typename _Ptr::element_type type;
+  typedef _CCCL_NODEBUG_ALIAS typename _Ptr::element_type type;
 };
 
 #ifndef _LIBCUDACXX_HAS_NO_VARIADICS
@@ -57,13 +57,13 @@ struct __pointer_traits_element_type<_Ptr, true>
 template <template <class, class...> class _Sp, class _Tp, class... _Args>
 struct __pointer_traits_element_type<_Sp<_Tp, _Args...>, true>
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE typename _Sp<_Tp, _Args...>::element_type type;
+  typedef _CCCL_NODEBUG_ALIAS typename _Sp<_Tp, _Args...>::element_type type;
 };
 
 template <template <class, class...> class _Sp, class _Tp, class... _Args>
 struct __pointer_traits_element_type<_Sp<_Tp, _Args...>, false>
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE _Tp type;
+  typedef _CCCL_NODEBUG_ALIAS _Tp type;
 };
 
 #else // _LIBCUDACXX_HAS_NO_VARIADICS
@@ -129,13 +129,13 @@ struct __has_difference_type<_Tp, void_t<typename _Tp::difference_type>> : true_
 template <class _Ptr, bool = __has_difference_type<_Ptr>::value>
 struct __pointer_traits_difference_type
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE ptrdiff_t type;
+  typedef _CCCL_NODEBUG_ALIAS ptrdiff_t type;
 };
 
 template <class _Ptr>
 struct __pointer_traits_difference_type<_Ptr, true>
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE typename _Ptr::difference_type type;
+  typedef _CCCL_NODEBUG_ALIAS typename _Ptr::difference_type type;
 };
 
 template <class _Tp, class _Up>
@@ -156,7 +156,7 @@ public:
 template <class _Tp, class _Up, bool = __has_rebind<_Tp, _Up>::value>
 struct __pointer_traits_rebind
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE typename _Tp::template rebind<_Up> type;
+  typedef _CCCL_NODEBUG_ALIAS typename _Tp::template rebind<_Up> type;
 };
 
 #ifndef _LIBCUDACXX_HAS_NO_VARIADICS
@@ -164,7 +164,7 @@ struct __pointer_traits_rebind
 template <template <class, class...> class _Sp, class _Tp, class... _Args, class _Up>
 struct __pointer_traits_rebind<_Sp<_Tp, _Args...>, _Up, true>
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE typename _Sp<_Tp, _Args...>::template rebind<_Up> type;
+  typedef _CCCL_NODEBUG_ALIAS typename _Sp<_Tp, _Args...>::template rebind<_Up> type;
 };
 
 template <template <class, class...> class _Sp, class _Tp, class... _Args, class _Up>
@@ -241,7 +241,7 @@ private:
 
 public:
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 static pointer
-  pointer_to(__conditional_t<is_void<element_type>::value, __nat, element_type>& __r)
+  pointer_to(conditional_t<is_void<element_type>::value, __nat, element_type>& __r)
   {
     return pointer::pointer_to(__r);
   }
@@ -263,7 +263,7 @@ private:
 
 public:
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 static pointer
-  pointer_to(__conditional_t<is_void<element_type>::value, __nat, element_type>& __r) noexcept
+  pointer_to(conditional_t<is_void<element_type>::value, __nat, element_type>& __r) noexcept
   {
     return _CUDA_VSTD::addressof(__r);
   }
@@ -311,8 +311,8 @@ struct _IsFancyPointer
 };
 
 // enable_if is needed here to avoid instantiating checks for fancy pointers on raw pointers
-template <class _Pointer, class = __enable_if_t<_And<is_class<_Pointer>, _IsFancyPointer<_Pointer>>::value>>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __decay_t<decltype(__to_address_helper<_Pointer>::__call(declval<const _Pointer&>()))>
+template <class _Pointer, class = enable_if_t<_And<is_class<_Pointer>, _IsFancyPointer<_Pointer>>::value>>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr decay_t<decltype(__to_address_helper<_Pointer>::__call(declval<const _Pointer&>()))>
 __to_address(const _Pointer& __p) noexcept
 {
   return __to_address_helper<_Pointer>::__call(__p);

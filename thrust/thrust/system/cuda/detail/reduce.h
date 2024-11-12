@@ -150,7 +150,7 @@ struct Tuning<sm35, T> : Tuning<sm30, T>
               cub::LOAD_LDG,
               cub::GRID_MAPPING_DYNAMIC>;
 
-  using type = ::cuda::std::__conditional_t<(sizeof(T) < 4), ReducePolicy1B, ReducePolicy4B>;
+  using type = ::cuda::std::conditional_t<(sizeof(T) < 4), ReducePolicy1B, ReducePolicy4B>;
 }; // Tuning sm35
 
 template <class InputIt, class OutputIt, class T, class Size, class ReductionOp>

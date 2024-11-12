@@ -124,16 +124,16 @@ struct __pair_base
   _T1 first;
   _T2 second;
 
-  template <class _Constraints                                                 = __pair_constraints<_T1, _T2>,
-            __enable_if_t<_Constraints::__explicit_default_constructible, int> = 0>
+  template <class _Constraints                                               = __pair_constraints<_T1, _T2>,
+            enable_if_t<_Constraints::__explicit_default_constructible, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr __pair_base() noexcept(
     _CCCL_TRAIT(is_nothrow_default_constructible, _T1) && _CCCL_TRAIT(is_nothrow_default_constructible, _T2))
       : first()
       , second()
   {}
 
-  template <class _Constraints                                                 = __pair_constraints<_T1, _T2>,
-            __enable_if_t<_Constraints::__implicit_default_constructible, int> = 0>
+  template <class _Constraints                                               = __pair_constraints<_T1, _T2>,
+            enable_if_t<_Constraints::__implicit_default_constructible, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __pair_base() noexcept(
     _CCCL_TRAIT(is_nothrow_default_constructible, _T1) && _CCCL_TRAIT(is_nothrow_default_constructible, _T2))
       : first()
@@ -163,16 +163,16 @@ struct __pair_base<_T1, _T2, true>
   _T1 first;
   _T2 second;
 
-  template <class _Constraints                                                 = __pair_constraints<_T1, _T2>,
-            __enable_if_t<_Constraints::__explicit_default_constructible, int> = 0>
+  template <class _Constraints                                               = __pair_constraints<_T1, _T2>,
+            enable_if_t<_Constraints::__explicit_default_constructible, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr __pair_base() noexcept(
     _CCCL_TRAIT(is_nothrow_default_constructible, _T1) && _CCCL_TRAIT(is_nothrow_default_constructible, _T2))
       : first()
       , second()
   {}
 
-  template <class _Constraints                                                 = __pair_constraints<_T1, _T2>,
-            __enable_if_t<_Constraints::__implicit_default_constructible, int> = 0>
+  template <class _Constraints                                               = __pair_constraints<_T1, _T2>,
+            enable_if_t<_Constraints::__implicit_default_constructible, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __pair_base() noexcept(
     _CCCL_TRAIT(is_nothrow_default_constructible, _T1) && _CCCL_TRAIT(is_nothrow_default_constructible, _T2))
       : first()
@@ -184,10 +184,8 @@ struct __pair_base<_T1, _T2, true>
 
   // We need to ensure that a reference type, which would inhibit the implicit copy assignment still works
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __pair_base& operator=(
-    __conditional_t<_CCCL_TRAIT(is_copy_assignable, _T1) && _CCCL_TRAIT(is_copy_assignable, _T2),
-                    __pair_base,
-                    __nat> const& __p) noexcept(_CCCL_TRAIT(is_nothrow_copy_assignable, _T1)
-                                                && _CCCL_TRAIT(is_nothrow_copy_assignable, _T2))
+    conditional_t<_CCCL_TRAIT(is_copy_assignable, _T1) && _CCCL_TRAIT(is_copy_assignable, _T2), __pair_base, __nat> const&
+      __p) noexcept(_CCCL_TRAIT(is_nothrow_copy_assignable, _T1) && _CCCL_TRAIT(is_nothrow_copy_assignable, _T2))
   {
     first  = __p.first;
     second = __p.second;
@@ -196,7 +194,7 @@ struct __pair_base<_T1, _T2, true>
 
   // We need to ensure that a reference type, which would inhibit the implicit move assignment still works
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __pair_base& operator=(
-    __conditional_t<_CCCL_TRAIT(is_move_assignable, _T1) && _CCCL_TRAIT(is_move_assignable, _T2), __pair_base, __nat>&&
+    conditional_t<_CCCL_TRAIT(is_move_assignable, _T1) && _CCCL_TRAIT(is_move_assignable, _T2), __pair_base, __nat>&&
       __p) noexcept(_CCCL_TRAIT(is_nothrow_move_assignable, _T1) && _CCCL_TRAIT(is_nothrow_move_assignable, _T2))
   {
     first  = _CUDA_VSTD::forward<_T1>(__p.first);
@@ -229,30 +227,30 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
   typedef _T1 first_type;
   typedef _T2 second_type;
 
-  template <class _Constraints                                                 = __pair_constraints<_T1, _T2>,
-            __enable_if_t<_Constraints::__explicit_default_constructible, int> = 0>
+  template <class _Constraints                                               = __pair_constraints<_T1, _T2>,
+            enable_if_t<_Constraints::__explicit_default_constructible, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr pair() noexcept(
     _CCCL_TRAIT(is_nothrow_default_constructible, _T1) && _CCCL_TRAIT(is_nothrow_default_constructible, _T2))
       : __base()
   {}
 
-  template <class _Constraints                                                 = __pair_constraints<_T1, _T2>,
-            __enable_if_t<_Constraints::__implicit_default_constructible, int> = 0>
+  template <class _Constraints                                               = __pair_constraints<_T1, _T2>,
+            enable_if_t<_Constraints::__implicit_default_constructible, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr pair() noexcept(
     _CCCL_TRAIT(is_nothrow_default_constructible, _T1) && _CCCL_TRAIT(is_nothrow_default_constructible, _T2))
       : __base()
   {}
 
   // element wise constructors
-  template <class _Constraints                                                       = __pair_constraints<_T1, _T2>,
-            __enable_if_t<_Constraints::__explicit_constructible_from_elements, int> = 0>
+  template <class _Constraints                                                     = __pair_constraints<_T1, _T2>,
+            enable_if_t<_Constraints::__explicit_constructible_from_elements, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr pair(const _T1& __t1, const _T2& __t2) noexcept(
     _CCCL_TRAIT(is_nothrow_copy_constructible, _T1) && _CCCL_TRAIT(is_nothrow_copy_constructible, _T2))
       : __base(__t1, __t2)
   {}
 
-  template <class _Constraints                                                       = __pair_constraints<_T1, _T2>,
-            __enable_if_t<_Constraints::__implicit_constructible_from_elements, int> = 0>
+  template <class _Constraints                                                     = __pair_constraints<_T1, _T2>,
+            enable_if_t<_Constraints::__implicit_constructible_from_elements, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr pair(const _T1& __t1, const _T2& __t2) noexcept(
     _CCCL_TRAIT(is_nothrow_copy_constructible, _T1) && _CCCL_TRAIT(is_nothrow_copy_constructible, _T2))
       : __base(__t1, __t2)
@@ -261,19 +259,19 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
   template <class _U1, class _U2>
   using __pair_constructible = typename __pair_constraints<_T1, _T2>::template __constructible<_U1, _U2>;
 
-  template <class _U1                                                  = _T1,
-            class _U2                                                  = _T2,
-            class _Constraints                                         = __pair_constructible<_U1, _U2>,
-            __enable_if_t<_Constraints::__explicit_constructible, int> = 0>
+  template <class _U1                                                = _T1,
+            class _U2                                                = _T2,
+            class _Constraints                                       = __pair_constructible<_U1, _U2>,
+            enable_if_t<_Constraints::__explicit_constructible, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr pair(_U1&& __u1, _U2&& __u2) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _T1, _U1) && _CCCL_TRAIT(is_nothrow_constructible, _T2, _U2))
       : __base(_CUDA_VSTD::forward<_U1>(__u1), _CUDA_VSTD::forward<_U2>(__u2))
   {}
 
-  template <class _U1                                                  = _T1,
-            class _U2                                                  = _T2,
-            class _Constraints                                         = __pair_constructible<_U1, _U2>,
-            __enable_if_t<_Constraints::__implicit_constructible, int> = 0>
+  template <class _U1                                                = _T1,
+            class _U2                                                = _T2,
+            class _Constraints                                       = __pair_constructible<_U1, _U2>,
+            enable_if_t<_Constraints::__implicit_constructible, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr pair(_U1&& __u1, _U2&& __u2) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _T1, _U1) && _CCCL_TRAIT(is_nothrow_constructible, _T2, _U2))
       : __base(_CUDA_VSTD::forward<_U1>(__u1), _CUDA_VSTD::forward<_U2>(__u2))
@@ -294,38 +292,38 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
   _CCCL_HIDE_FROM_ABI pair(pair const&) = default;
   _CCCL_HIDE_FROM_ABI pair(pair&&)      = default;
 
-  template <class _U1                                                  = _T1,
-            class _U2                                                  = _T2,
-            class _Constraints                                         = __pair_constructible<const _U1&, const _U2&>,
-            __enable_if_t<_Constraints::__explicit_constructible, int> = 0>
+  template <class _U1                                                = _T1,
+            class _U2                                                = _T2,
+            class _Constraints                                       = __pair_constructible<const _U1&, const _U2&>,
+            enable_if_t<_Constraints::__explicit_constructible, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI explicit _CCCL_CONSTEXPR_CXX14 pair(const pair<_U1, _U2>& __p) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _T1, const _U1&) && _CCCL_TRAIT(is_nothrow_constructible, _T2, const _U2&))
       : __base(__p.first, __p.second)
   {}
 
-  template <class _U1                                                  = _T1,
-            class _U2                                                  = _T2,
-            class _Constraints                                         = __pair_constructible<const _U1&, const _U2&>,
-            __enable_if_t<_Constraints::__implicit_constructible, int> = 0>
+  template <class _U1                                                = _T1,
+            class _U2                                                = _T2,
+            class _Constraints                                       = __pair_constructible<const _U1&, const _U2&>,
+            enable_if_t<_Constraints::__implicit_constructible, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair(const pair<_U1, _U2>& __p) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _T1, const _U1&) && _CCCL_TRAIT(is_nothrow_constructible, _T2, const _U2&))
       : __base(__p.first, __p.second)
   {}
 
   // move constructors
-  template <class _U1                                                  = _T1,
-            class _U2                                                  = _T2,
-            class _Constraints                                         = __pair_constructible<_U1, _U2>,
-            __enable_if_t<_Constraints::__explicit_constructible, int> = 0>
+  template <class _U1                                                = _T1,
+            class _U2                                                = _T2,
+            class _Constraints                                       = __pair_constructible<_U1, _U2>,
+            enable_if_t<_Constraints::__explicit_constructible, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI explicit _CCCL_CONSTEXPR_CXX14 pair(pair<_U1, _U2>&& __p) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _T1, _U1) && _CCCL_TRAIT(is_nothrow_constructible, _T2, _U2))
       : __base(_CUDA_VSTD::forward<_U1>(__p.first), _CUDA_VSTD::forward<_U2>(__p.second))
   {}
 
-  template <class _U1                                                  = _T1,
-            class _U2                                                  = _T2,
-            class _Constraints                                         = __pair_constructible<_U1, _U2>,
-            __enable_if_t<_Constraints::__implicit_constructible, int> = 0>
+  template <class _U1                                                = _T1,
+            class _U2                                                = _T2,
+            class _Constraints                                       = __pair_constructible<_U1, _U2>,
+            enable_if_t<_Constraints::__implicit_constructible, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair(pair<_U1, _U2>&& __p) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _T1, _U1) && _CCCL_TRAIT(is_nothrow_constructible, _T2, _U2))
       : __base(_CUDA_VSTD::forward<_U1>(__p.first), _CUDA_VSTD::forward<_U2>(__p.second))
@@ -335,8 +333,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
 #if !defined(_CCCL_COMPILER_NVRTC)
   template <class _U1,
             class _U2,
-            class _Constraints                                         = __pair_constructible<const _U1&, const _U2&>,
-            __enable_if_t<_Constraints::__explicit_constructible, int> = 0>
+            class _Constraints                                       = __pair_constructible<const _U1&, const _U2&>,
+            enable_if_t<_Constraints::__explicit_constructible, int> = 0>
   _CCCL_HOST _LIBCUDACXX_HIDE_FROM_ABI explicit _CCCL_CONSTEXPR_CXX14 pair(const ::std::pair<_U1, _U2>& __p) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _T1, const _U1&) && _CCCL_TRAIT(is_nothrow_constructible, _T2, const _U2&))
       : __base(__p.first, __p.second)
@@ -344,8 +342,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
 
   template <class _U1,
             class _U2,
-            class _Constraints                                         = __pair_constructible<const _U1&, const _U2&>,
-            __enable_if_t<_Constraints::__implicit_constructible, int> = 0>
+            class _Constraints                                       = __pair_constructible<const _U1&, const _U2&>,
+            enable_if_t<_Constraints::__implicit_constructible, int> = 0>
   _CCCL_HOST _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair(const ::std::pair<_U1, _U2>& __p) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _T1, const _U1&) && _CCCL_TRAIT(is_nothrow_constructible, _T2, const _U2&))
       : __base(__p.first, __p.second)
@@ -353,8 +351,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
 
   template <class _U1,
             class _U2,
-            class _Constraints                                         = __pair_constructible<_U1, _U2>,
-            __enable_if_t<_Constraints::__explicit_constructible, int> = 0>
+            class _Constraints                                       = __pair_constructible<_U1, _U2>,
+            enable_if_t<_Constraints::__explicit_constructible, int> = 0>
   _CCCL_HOST _LIBCUDACXX_HIDE_FROM_ABI explicit _CCCL_CONSTEXPR_CXX14 pair(::std::pair<_U1, _U2>&& __p) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _T1, _U1) && _CCCL_TRAIT(is_nothrow_constructible, _T2, _U2))
       : __base(_CUDA_VSTD::forward<_U1>(__p.first), _CUDA_VSTD::forward<_U2>(__p.second))
@@ -362,8 +360,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
 
   template <class _U1,
             class _U2,
-            class _Constraints                                         = __pair_constructible<_U1, _U2>,
-            __enable_if_t<_Constraints::__implicit_constructible, int> = 0>
+            class _Constraints                                       = __pair_constructible<_U1, _U2>,
+            enable_if_t<_Constraints::__implicit_constructible, int> = 0>
   _CCCL_HOST _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair(::std::pair<_U1, _U2>&& __p) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _T1, _U1) && _CCCL_TRAIT(is_nothrow_constructible, _T2, _U2))
       : __base(_CUDA_VSTD::forward<_U1>(__p.first), _CUDA_VSTD::forward<_U2>(__p.second))
@@ -377,7 +375,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
   template <class _U1,
             class _U2,
             class _Constraints = typename __pair_constraints<_T1, _T2>::template __assignable<const _U1&, const _U2&>,
-            __enable_if_t<_Constraints::__enable_assign, int> = 0>
+            enable_if_t<_Constraints::__enable_assign, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair& operator=(const pair<_U1, _U2>& __p) noexcept(
     _CCCL_TRAIT(is_nothrow_assignable, _T1, const _U1&) && _CCCL_TRAIT(is_nothrow_assignable, _T2, const _U2&))
   {
@@ -389,7 +387,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
   template <class _U1,
             class _U2,
             class _Constraints = typename __pair_constraints<_T1, _T2>::template __assignable<_U1, _U2>,
-            __enable_if_t<_Constraints::__enable_assign, int> = 0>
+            enable_if_t<_Constraints::__enable_assign, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair& operator=(pair<_U1, _U2>&& __p) noexcept(
     _CCCL_TRAIT(is_nothrow_assignable, _T1, _U1) && _CCCL_TRAIT(is_nothrow_assignable, _T2, _U2))
   {
@@ -400,7 +398,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
 
   // std assignments
 #if !defined(_CCCL_COMPILER_NVRTC)
-  template <class _UT1 = _T1, __enable_if_t<is_copy_assignable<_UT1>::value && is_copy_assignable<_T2>::value, int> = 0>
+  template <class _UT1 = _T1, enable_if_t<is_copy_assignable<_UT1>::value && is_copy_assignable<_T2>::value, int> = 0>
   _CCCL_HOST _CCCL_CONSTEXPR_CXX14 pair& operator=(::std::pair<_T1, _T2> const& __p) noexcept(
     _CCCL_TRAIT(is_nothrow_copy_assignable, _T1) && _CCCL_TRAIT(is_nothrow_copy_assignable, _T2))
   {
@@ -409,7 +407,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
     return *this;
   }
 
-  template <class _UT1 = _T1, __enable_if_t<is_move_assignable<_UT1>::value && is_move_assignable<_T2>::value, int> = 0>
+  template <class _UT1 = _T1, enable_if_t<is_move_assignable<_UT1>::value && is_move_assignable<_T2>::value, int> = 0>
   _CCCL_HOST _CCCL_CONSTEXPR_CXX14 pair& operator=(::std::pair<_T1, _T2>&& __p) noexcept(
     _CCCL_TRAIT(is_nothrow_copy_assignable, _T1) && _CCCL_TRAIT(is_nothrow_copy_assignable, _T2))
   {
@@ -608,7 +606,7 @@ struct common_type<pair<_T1, _T2>, pair<_U1, _U2>>
 
 template <class _T1, class _T2>
 _LIBCUDACXX_HIDE_FROM_ABI
-_CCCL_CONSTEXPR_CXX20 __enable_if_t<__is_swappable<_T1>::value && __is_swappable<_T2>::value, void>
+_CCCL_CONSTEXPR_CXX20 enable_if_t<__is_swappable<_T1>::value && __is_swappable<_T2>::value, void>
 swap(pair<_T1, _T2>& __x,
      pair<_T1, _T2>& __y) noexcept((__is_nothrow_swappable<_T1>::value && __is_nothrow_swappable<_T2>::value))
 {
@@ -647,13 +645,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, pair<_T1, _T2>>
 template <class _T1, class _T2>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<0, pair<_T1, _T2>>
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE _T1 type;
+  typedef _CCCL_NODEBUG_ALIAS _T1 type;
 };
 
 template <class _T1, class _T2>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<1, pair<_T1, _T2>>
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE _T2 type;
+  typedef _CCCL_NODEBUG_ALIAS _T2 type;
 };
 
 template <size_t _Ip>

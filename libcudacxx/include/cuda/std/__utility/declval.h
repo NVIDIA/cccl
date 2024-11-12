@@ -34,7 +34,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
   && !(defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION < 1939)
 
 template <class _Tp>
-using __identity_t _LIBCUDACXX_NODEBUG_TYPE = _Tp;
+using __identity_t _CCCL_NODEBUG_ALIAS = _Tp;
 
 template <class _Tp, class = void>
 extern __identity_t<void (*)() noexcept> declval;

@@ -42,7 +42,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT minimum<void>
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <class _T1, class _T2>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::__common_type_t<_T1, _T2>
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::common_type_t<_T1, _T2>
   operator()(const _T1& __lhs, const _T2& __rhs) const noexcept(noexcept((__lhs < __rhs) ? __lhs : __rhs))
   {
     return (__lhs < __rhs) ? __lhs : __rhs;

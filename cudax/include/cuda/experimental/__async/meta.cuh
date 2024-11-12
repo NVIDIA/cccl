@@ -94,7 +94,7 @@ template <class... _What>
 struct _ERROR : __merror_base
 {
   template <class...>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = _ERROR;
+  using __call _CCCL_NODEBUG_ALIAS = _ERROR;
 
   _ERROR operator+();
 
@@ -138,14 +138,14 @@ template <bool _Error>
 struct __type_self_or_error_with_
 {
   template <class _Ty, class... _With>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = _Ty;
+  using __call _CCCL_NODEBUG_ALIAS = _Ty;
 };
 
 template <>
 struct __type_self_or_error_with_<true>
 {
   template <class _Ty, class... _With>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = decltype(__declval<_Ty&>().with(__declval<_ERROR<_With...>&>()));
+  using __call _CCCL_NODEBUG_ALIAS = decltype(__declval<_Ty&>().with(__declval<_ERROR<_With...>&>()));
 };
 
 template <class _Ty, class... _With>
@@ -162,7 +162,7 @@ struct __type_try__<false>
   using __call_q = _Fn<_Ts...>;
 
   template <class _Fn, class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = typename _Fn::template __call<_Ts...>;
+  using __call _CCCL_NODEBUG_ALIAS = typename _Fn::template __call<_Ts...>;
 };
 
 template <>
@@ -172,7 +172,7 @@ struct __type_try__<true>
   using __call_q = __type_find_error<_Ts...>;
 
   template <class _Fn, class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = __type_find_error<_Fn, _Ts...>;
+  using __call _CCCL_NODEBUG_ALIAS = __type_find_error<_Fn, _Ts...>;
 };
 
 template <class _Fn, class... _Ts>
@@ -187,7 +187,7 @@ template <class _Fn>
 struct __type_try
 {
   template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = __type_try_call<_Fn, _Ts...>;
+  using __call _CCCL_NODEBUG_ALIAS = __type_try_call<_Fn, _Ts...>;
 };
 
 template <template <class...> class _Fn, class... _Default>
@@ -198,7 +198,7 @@ template <template <class...> class _Fn>
 struct __type_try_quote<_Fn>
 {
   template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE =
+  using __call _CCCL_NODEBUG_ALIAS =
     typename __type_try__<__type_contains_error<_Ts...>>::template __call_q<_Fn, _Ts...>;
 };
 
@@ -207,7 +207,7 @@ template <template <class...> class _Fn, class _Default>
 struct __type_try_quote<_Fn, _Default>
 {
   template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE =
+  using __call _CCCL_NODEBUG_ALIAS =
     typename _CUDA_VSTD::_If<__type_valid_v<_Fn, _Ts...>, //
                              __type_try_quote<_Fn>,
                              _CUDA_VSTD::__type_always<_Default>>::template __call<_Ts...>;
@@ -230,20 +230,20 @@ template <template <class...> class _Second, template <class...> class _First>
 struct __type_compose_quote
 {
   template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = _Second<_First<_Ts...>>;
+  using __call _CCCL_NODEBUG_ALIAS = _Second<_First<_Ts...>>;
 };
 
 struct __type_count
 {
   template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = _CUDA_VSTD::integral_constant<size_t, sizeof...(_Ts)>;
+  using __call _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::integral_constant<size_t, sizeof...(_Ts)>;
 };
 
 template <template <class...> class _Continuation>
 struct __type_concat_into_quote
 {
   template <class... _Args>
-  using __call _LIBCUDACXX_NODEBUG_TYPE =
+  using __call _CCCL_NODEBUG_ALIAS =
     _CUDA_VSTD::__type_call1<_CUDA_VSTD::__type_concat<_CUDA_VSTD::__as_type_list<_Args>...>,
                              _CUDA_VSTD::__type_quote<_Continuation>>;
 };
@@ -252,7 +252,7 @@ template <class _Ty>
 struct __type_self_or
 {
   template <class _Uy = _Ty>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = _Uy;
+  using __call _CCCL_NODEBUG_ALIAS = _Uy;
 };
 } // namespace cuda::experimental::__async
 

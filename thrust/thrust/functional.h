@@ -1247,9 +1247,9 @@ struct not_fun_t
 //! \see https://en.cppreference.com/w/cpp/utility/functional/not_fn
 // TODO(bgruber): alias to ::cuda::std::not_fn in C++17
 template <class F>
-_CCCL_HOST_DEVICE auto not_fn(F&& f) -> detail::not_fun_t<::cuda::std::__decay_t<F>>
+_CCCL_HOST_DEVICE auto not_fn(F&& f) -> detail::not_fun_t<::cuda::std::decay_t<F>>
 {
-  return detail::not_fun_t<::cuda::std::__decay_t<F>>{std::forward<F>(f)};
+  return detail::not_fun_t<::cuda::std::decay_t<F>>{std::forward<F>(f)};
 }
 
 /*! \}

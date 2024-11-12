@@ -147,7 +147,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(const T* addr, int tile_size)
 // TODO(miscco): we should probably constrain It to not be a contiguous iterator in C++17 (and change the overload
 // above to accept any contiguous iterator)
 // overload for any iterator that is not a pointer, do nothing
-template <int, typename It, ::cuda::std::__enable_if_t<!::cuda::std::is_pointer<It>::value, int> = 0>
+template <int, typename It, ::cuda::std::enable_if_t<!::cuda::std::is_pointer<It>::value, int> = 0>
 _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(It, int)
 {}
 
@@ -232,12 +232,12 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto poor_apply(F&& f, Tuple&& t)
   -> decltype(poor_apply_impl(
     ::cuda::std::forward<F>(f),
     ::cuda::std::forward<Tuple>(t),
-    ::cuda::std::make_index_sequence<::cuda::std::tuple_size<::cuda::std::__libcpp_remove_reference_t<Tuple>>::value>{}))
+    ::cuda::std::make_index_sequence<::cuda::std::tuple_size<::cuda::std::remove_reference_t<Tuple>>::value>{}))
 {
   return poor_apply_impl(
     ::cuda::std::forward<F>(f),
     ::cuda::std::forward<Tuple>(t),
-    ::cuda::std::make_index_sequence<::cuda::std::tuple_size<::cuda::std::__libcpp_remove_reference_t<Tuple>>::value>{});
+    ::cuda::std::make_index_sequence<::cuda::std::tuple_size<::cuda::std::remove_reference_t<Tuple>>::value>{});
 }
 
 // mult must be a power of 2
@@ -245,7 +245,7 @@ template <typename Integral>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto round_up_to_po2_multiple(Integral x, Integral mult) -> Integral
 {
 #if _CCCL_STD_VER > 2011
-  _CCCL_ASSERT(::cuda::std::has_single_bit(static_cast<::cuda::std::__make_unsigned_t<Integral>>(mult)), "");
+  _CCCL_ASSERT(::cuda::std::has_single_bit(static_cast<::cuda::std::make_unsigned_t<Integral>>(mult)), "");
 #endif // _CCCL_STD_VER > 2011
   return (x + mult - 1) & ~(mult - 1);
 }
@@ -544,7 +544,7 @@ using needs_aligned_ptr_t =
                              >;
 
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
-template <Algorithm Alg, typename It, ::cuda::std::__enable_if_t<needs_aligned_ptr_t<Alg>::value, int> = 0>
+template <Algorithm Alg, typename It, ::cuda::std::enable_if_t<needs_aligned_ptr_t<Alg>::value, int> = 0>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto select_kernel_arg(
   ::cuda::std::integral_constant<Algorithm, Alg>, kernel_arg<It>&& arg) -> aligned_base_ptr<value_t<It>>&&
 {
@@ -552,7 +552,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto select_kernel_arg(
 }
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
 
-template <Algorithm Alg, typename It, ::cuda::std::__enable_if_t<!needs_aligned_ptr_t<Alg>::value, int> = 0>
+template <Algorithm Alg, typename It, ::cuda::std::enable_if_t<!needs_aligned_ptr_t<Alg>::value, int> = 0>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto
 select_kernel_arg(::cuda::std::integral_constant<Algorithm, Alg>, kernel_arg<It>&& arg) -> It&&
 {

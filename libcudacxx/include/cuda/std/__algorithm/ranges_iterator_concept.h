@@ -31,7 +31,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 template <class _IterMaybeQualified>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr auto __get_iterator_concept()
 {
-  using _Iter = __remove_cvref_t<_IterMaybeQualified>;
+  using _Iter = remove_cvref_t<_IterMaybeQualified>;
 
   if constexpr (contiguous_iterator<_Iter>)
   {
