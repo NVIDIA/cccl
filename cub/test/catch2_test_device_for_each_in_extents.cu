@@ -100,8 +100,8 @@ using index_types =
                  uint8_t,
                  int16_t,
                  uint16_t,
-                 int,
-                 unsigned
+                 int32_t,
+                 uint32_t
 #  if CUB_IS_INT128_ENABLED
                  ,
                  int64_t,
@@ -112,8 +112,8 @@ using index_types =
 using index_types_dyn =
   c2h::type_list<int16_t,
                  uint16_t,
-                 int,
-                 unsigned
+                 int32_t,
+                 uint32_t
 #  if CUB_IS_INT128_ENABLED
                  ,
                  int64_t,
