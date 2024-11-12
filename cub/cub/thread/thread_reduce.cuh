@@ -65,7 +65,7 @@ CUB_NAMESPACE_BEGIN
 //! - A `reduction <http://en.wikipedia.org/wiki/Reduce_(higher-order_function)>`__ (or *fold*)
 //!   uses a binary combining operator to compute a single aggregate from a list of input elements.
 //! - Supports array-like types that are statically-sized and can be indexed with the ``[] operator``:
-//!   raw arrays, ``std::array``, ``std::span``,  ``std::mdspan`` (C++23),
+//!   raw arrays, ``std::array``, ``std::span``,  ``std::mdspan`` (C++23)
 //!
 //! Overloading
 //! ++++++++++++++++++++++++++
@@ -89,27 +89,23 @@ CUB_NAMESPACE_BEGIN
 //!
 //! - Vectorization/SIMD for
 //!
-//!   * Sum (``::cuda::std::plus<>``) and Multiplication (``::cuda::std::multiplies<>``) on SM70+ for ``__half`` data
-//!   type
-//!   * Sum (``::cuda::std::plus<>``) and Multiplication (``::cuda::std::multiplies<>``) on SM80+ for ``__nv_bfloat16``
-//!   data type
-//!   * Minimum (``::cuda::minimum<>``) and Maximum (``::cuda::maximum<>``) on SM80+ for ``__half`` and
-//!   ``__nv_bfloat16`` data types
-//!   * Minimum (``::cuda::minimum<>``) and Maximum (``::cuda::maximum<>``) on SM90+ for ``int16_t`` and ``uint16_t``
-//!   data types
-//!     (Hopper DPX instructions)
+//!   - Sum (``cuda::std::plus<>``) and Multiplication (``cuda::std::multiplies<>``) on SM70+ for ``__half`` data type
+//!   - Sum (``cuda::std::plus<>``) and Multiplication (``cuda::std::multiplies<>``) on SM80+ for ``__nv_bfloat16``
+//!     data type
+//!   - Minimum (``cuda::minimum<>``) and Maximum (``cuda::maximum<>``) on SM80+ for ``__half`` and ``__nv_bfloat16``
+//!     data types
+//!   - Minimum (``cuda::minimum<>``) and Maximum (``cuda::maximum<>``) on SM90+ for ``int16_t`` and ``uint16_t``
+//!     data types (Hopper DPX instructions)
 //!
 //! - Instruction-Level Parallelism (ILP) by exploiting a ternary tree reduction for
 //!
-//!   * Sum (``::cuda::std::plus<>``), Bitwise AND (``::cuda::std::bit_and<>``), OR (``::cuda::std::bit_or<>``), XOR
-//!   (``::cuda::std::bit_xor<>``) on SM50+ for
-//!     integer data types
-//!   * Minimum (``::cuda::minimum<>``) and Maximum (``::cuda::maximum<>``) on SM80+ for integer data types (Hopper DPX
-//!   instructions),
-//!     ``__half2``, ``__nv_bfloat162``, ``__half`` (after vectorization), and ``__nv_bfloat16`` (after vectorization)
-//!     data types
-//!   * Minimum (``::cuda::minimum<>``) and Maximum (``::cuda::maximum<>``) on SM90+ for integer data types (Hopper DPX
-//!   instructions)
+//!   - Sum (``cuda::std::plus<>``), Bitwise AND (``cuda::std::bit_and<>``), OR (``cuda::std::bit_or<>``), XOR
+//!     (``cuda::std::bit_xor<>``) on SM50+ for integer data types
+//!   - Minimum (``cuda::minimum<>``) and Maximum (``cuda::maximum<>``) on SM80+ for integer data types (Hopper DPX
+//!     instructions), ``__half2``, ``__nv_bfloat162``, ``__half`` (after vectorization), and ``__nv_bfloat16``
+//!     (after vectorization) data types
+//!   - Minimum (``cuda::minimum<>``) and Maximum (``cuda::maximum<>``) on SM90+ for integer data types (Hopper DPX
+//!     instructions)
 //!
 //! - Instruction-Level Parallelism (ILP) by exploiting a binary tree reduction for all other cases
 //!
