@@ -22,7 +22,10 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/copy_cvref.h>
+#include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/__type_traits/type_list.h>
 
 #include <cuda/experimental/__async/meta.cuh>
 #include <cuda/experimental/__detail/config.cuh>
@@ -40,94 +43,12 @@ using __remove_ref_t = _CUDA_VSTD::__libcpp_remove_reference_t<_Ty>;
 #if defined(_CCCL_BUILTIN_DECAY)
 
 template <class _Ty>
-using __decay_t = __decay(_Ty);
-
-// #elif defined(_CCCL_COMPILER_NVHPC)
-
-//   template <class _Ty>
-//   using __decay_t = _CUDA_VSTD::decay_t<_Ty>;
+using __decay_t = _CCCL_BUILTIN_DECAY(_Ty);
 
 #else // ^^^ _CCCL_BUILTIN_DECAY ^^^ / vvv !_CCCL_BUILTIN_DECAY vvv
 
-struct __decay_object
-{
-  template <class _Ty>
-  static _Ty __g(_Ty const&);
-  template <class _Ty>
-  using __f = decltype(__g(__declval<_Ty>()));
-};
-
-struct __decay_default
-{
-  template <class _Ty>
-  static _Ty __g(_Ty);
-  template <class _Ty>
-  using __f = decltype(__g(__declval<_Ty>()));
-};
-
-// I don't care to support abominable function types,
-// but if that's needed, this is the way to do it:
-// struct __decay_abominable {
-//   template <class _Ty>
-//   using __f = _Ty;
-// };
-
-struct __decay_void
-{
-  template <class _Ty>
-  using __f = void;
-};
-
 template <class _Ty>
-extern __decay_object __mdecay;
-
-template <class _Ty, class... _Us>
-extern __decay_default __mdecay<_Ty(_Us...)>;
-
-template <class _Ty, class... _Us>
-extern __decay_default __mdecay<_Ty(_Us...) noexcept>;
-
-template <class _Ty, class... _Us>
-extern __decay_default __mdecay<_Ty (&)(_Us...)>;
-
-template <class _Ty, class... _Us>
-extern __decay_default __mdecay<_Ty (&)(_Us...) noexcept>;
-
-// template <class _Ty, class... _Us>
-// extern __decay_abominable __mdecay<_Ty(_Us...) const>;
-
-// template <class _Ty, class... _Us>
-// extern __decay_abominable __mdecay<_Ty(_Us...) const noexcept>;
-
-// template <class _Ty, class... _Us>
-// extern __decay_abominable __mdecay<_Ty(_Us...) const &>;
-
-// template <class _Ty, class... _Us>
-// extern __decay_abominable __mdecay<_Ty(_Us...) const & noexcept>;
-
-// template <class _Ty, class... _Us>
-// extern __decay_abominable __mdecay<_Ty(_Us...) const &&>;
-
-// template <class _Ty, class... _Us>
-// extern __decay_abominable __mdecay<_Ty(_Us...) const && noexcept>;
-
-template <class _Ty>
-extern __decay_default __mdecay<_Ty[]>;
-
-template <class _Ty, size_t _Ny>
-extern __decay_default __mdecay<_Ty[_Ny]>;
-
-template <class _Ty, size_t _Ny>
-extern __decay_default __mdecay<_Ty (&)[_Ny]>;
-
-template <>
-inline __decay_void __mdecay<void>;
-
-template <>
-inline __decay_void __mdecay<void const>;
-
-template <class _Ty>
-using __decay_t = typename decltype(__mdecay<_Ty>)::template __f<_Ty>;
+using __decay_t = _CUDA_VSTD::decay_t<_Ty>;
 
 #endif // _CCCL_BUILTIN_DECAY
 
@@ -138,8 +59,8 @@ using __decay_t = typename decltype(__mdecay<_Ty>)::template __f<_Ty>;
 template <class _Ty>
 using __cref_t = _Ty const&;
 
-using __cp    = __midentity;
-using __cpclr = __mquote1<__cref_t>;
+using __cp    = _CUDA_VSTD::__type_self;
+using __cpclr = _CUDA_VSTD::__type_quote1<__cref_t>;
 
 template <class _From, class _To>
 using __copy_cvref_t = _CUDA_VSTD::__copy_cvref_t<_From, _To>;
@@ -148,7 +69,7 @@ template <class _Fn, class... _As>
 using __call_result_t = decltype(__declval<_Fn>()(__declval<_As>()...));
 
 template <class _Fn, class... _As>
-inline constexpr bool __callable = __mvalid_q<__call_result_t, _Fn, _As...>;
+inline constexpr bool __callable = __type_valid_v<__call_result_t, _Fn, _As...>;
 
 #if defined(__CUDA_ARCH__)
 template <class _Fn, class... _As>
@@ -167,34 +88,34 @@ template <class... _As>
 inline constexpr bool __nothrow_copyable = true;
 #else
 template <class _Fn, class... _As>
-using __nothrow_callable_ = __mif<noexcept(__declval<_Fn>()(__declval<_As>()...))>;
+using __nothrow_callable_ = _CUDA_VSTD::enable_if_t<noexcept(__declval<_Fn>()(__declval<_As>()...))>;
 
 template <class _Fn, class... _As>
-inline constexpr bool __nothrow_callable = __mvalid_q<__nothrow_callable_, _Fn, _As...>;
+inline constexpr bool __nothrow_callable = __type_valid_v<__nothrow_callable_, _Fn, _As...>;
 
 template <class _Ty, class... _As>
-using __nothrow_constructible_ = __mif<noexcept(_Ty{__declval<_As>()...})>;
+using __nothrow_constructible_ = _CUDA_VSTD::enable_if_t<noexcept(_Ty{__declval<_As>()...})>;
 
 template <class _Ty, class... _As>
-inline constexpr bool __nothrow_constructible = __mvalid_q<__nothrow_constructible_, _Ty, _As...>;
+inline constexpr bool __nothrow_constructible = __type_valid_v<__nothrow_constructible_, _Ty, _As...>;
 
 template <class _Ty>
-using __nothrow_decay_copyable_ = __mif<noexcept(__decay_t<_Ty>(__declval<_Ty>()))>;
+using __nothrow_decay_copyable_ = _CUDA_VSTD::enable_if_t<noexcept(__decay_t<_Ty>(__declval<_Ty>()))>;
 
 template <class... _As>
-inline constexpr bool __nothrow_decay_copyable = (__mvalid_q<__nothrow_decay_copyable_, _As> && ...);
+inline constexpr bool __nothrow_decay_copyable = (__type_valid_v<__nothrow_decay_copyable_, _As> && ...);
 
 template <class _Ty>
-using __nothrow_movable_ = __mif<noexcept(_Ty(__declval<_Ty>()))>;
+using __nothrow_movable_ = _CUDA_VSTD::enable_if_t<noexcept(_Ty(__declval<_Ty>()))>;
 
 template <class... _As>
-inline constexpr bool __nothrow_movable = (__mvalid_q<__nothrow_movable_, _As> && ...);
+inline constexpr bool __nothrow_movable = (__type_valid_v<__nothrow_movable_, _As> && ...);
 
 template <class _Ty>
-using __nothrow_copyable_ = __mif<noexcept(_Ty(__declval<const _Ty&>()))>;
+using __nothrow_copyable_ = _CUDA_VSTD::enable_if_t<noexcept(_Ty(__declval<const _Ty&>()))>;
 
 template <class... _As>
-inline constexpr bool __nothrow_copyable = (__mvalid_q<__nothrow_copyable_, _As> && ...);
+inline constexpr bool __nothrow_copyable = (__type_valid_v<__nothrow_copyable_, _As> && ...);
 #endif
 } // namespace cuda::experimental::__async
 

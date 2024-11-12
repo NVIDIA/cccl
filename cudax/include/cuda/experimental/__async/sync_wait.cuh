@@ -114,7 +114,7 @@ private:
       }
     };
 
-    using __values_t = value_types_of_t<_Sndr, __rcvr_t, _CUDA_VSTD::tuple, __midentity::__f>;
+    using __values_t = value_types_of_t<_Sndr, __rcvr_t, _CUDA_VSTD::tuple, _CUDA_VSTD::__type_self_t>;
 
     _CUDA_VSTD::optional<__values_t>* __values_;
     ::std::exception_ptr __eptr_;

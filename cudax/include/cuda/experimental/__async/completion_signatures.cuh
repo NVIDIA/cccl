@@ -22,6 +22,8 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/disjunction.h>
+#include <cuda/std/__type_traits/enable_if.h>
 
 #include <cuda/experimental/__async/cpos.cuh>
 #include <cuda/experimental/__async/exception.cuh>
@@ -125,10 +127,10 @@ struct __gather_sigs_fn<set_value_t>
             template <class...>
             class _Variant,
             class... _More>
-  using __f = __transform_completion_signatures<
+  using __call = __transform_completion_signatures<
     _Sigs,
     _Then,
-    __mbind_front_q<_Else, set_error_t>::template __f,
+    _CUDA_VSTD::__type_bind_front_quote<_Else, set_error_t>::template __call,
     _Else<set_stopped_t>,
     _Variant,
     _More...>;
@@ -145,9 +147,9 @@ struct __gather_sigs_fn<set_error_t>
             template <class...>
             class _Variant,
             class... _More>
-  using __f = __transform_completion_signatures<
+  using __call = __transform_completion_signatures<
     _Sigs,
-    __mbind_front_q<_Else, set_value_t>::template __f,
+    _CUDA_VSTD::__type_bind_front_quote<_Else, set_value_t>::template __call,
     _Then,
     _Else<set_stopped_t>,
     _Variant,
@@ -165,10 +167,10 @@ struct __gather_sigs_fn<set_stopped_t>
             template <class...>
             class _Variant,
             class... _More>
-  using __f = __transform_completion_signatures<
+  using __call = __transform_completion_signatures<
     _Sigs,
-    __mbind_front_q<_Else, set_value_t>::template __f,
-    __mbind_front_q<_Else, set_error_t>::template __f,
+    _CUDA_VSTD::__type_bind_front_quote<_Else, set_value_t>::template __call,
+    _CUDA_VSTD::__type_bind_front_quote<_Else, set_error_t>::template __call,
     _Then<>,
     _Variant,
     _More...>;
@@ -184,7 +186,7 @@ template <class _Sigs,
           class _Variant,
           class... _More>
 using __gather_completion_signatures =
-  typename __gather_sigs_fn<_WantedTag>::template __f<_Sigs, _Then, _Else, _Variant, _More...>;
+  typename __gather_sigs_fn<_WantedTag>::template __call<_Sigs, _Then, _Else, _Variant, _More...>;
 
 template <class... _Ts>
 using __set_value_transform_t = completion_signatures<set_value_t(_Ts...)>;
@@ -193,17 +195,19 @@ template <class _Ty>
 using __set_error_transform_t = completion_signatures<set_error_t(_Ty)>;
 
 template <class... _Ts, class... _Us>
-auto operator*(__mset<_Ts...>&, __undefined<completion_signatures<_Us...>>&) -> __mset_insert<__mset<_Ts...>, _Us...>&;
+auto operator*(_CUDA_VSTD::__type_set<_Ts...>&, __undefined<completion_signatures<_Us...>>&)
+  -> _CUDA_VSTD::__type_set_insert<_CUDA_VSTD::__type_set<_Ts...>, _Us...>&;
 
 template <class... _Ts, class... _What>
-auto operator*(__mset<_Ts...>&, __undefined<_ERROR<_What...>>&) -> _ERROR<_What...>&;
+auto operator*(_CUDA_VSTD::__type_set<_Ts...>&, __undefined<_ERROR<_What...>>&) -> _ERROR<_What...>&;
 
 template <class... _What, class... _Us>
 auto operator*(_ERROR<_What...>&, __undefined<completion_signatures<_Us...>>&) -> _ERROR<_What...>&;
 
 template <class... _Sigs>
 using __concat_completion_signatures = //
-  __mapply_q<completion_signatures, __mconcat_into_q<__mmake_set>::__f<_Sigs...>>;
+  _CUDA_VSTD::__type_apply<_CUDA_VSTD::__type_quote<completion_signatures>,
+                           __type_concat_into_quote<_CUDA_VSTD::__make_type_set>::__call<_Sigs...>>;
 
 template <class _Tag, class... _Ts>
 using __default_completions = completion_signatures<_Tag(_Ts...)>;
@@ -218,7 +222,7 @@ using transform_completion_signatures = //
                                     _ValueTransform,
                                     _ErrorTransform,
                                     _StoppedSigs,
-                                    __mtry_quote<__concat_completion_signatures>::__f,
+                                    __type_try_quote<__concat_completion_signatures>::__call,
                                     _MoreSigs>;
 
 template <class _Sndr,
@@ -241,31 +245,35 @@ template <class _Sigs,
           class _Variant>
 using __value_types = //
   __transform_completion_signatures<_Sigs,
-                                    __mcompose_q<__mlist, _Tuple>::template __f,
-                                    __malways<__mlist<>>::__f,
-                                    __mlist<>,
-                                    __mconcat_into_q<_Variant>::template __f>;
+                                    __type_compose_quote<_CUDA_VSTD::__type_list, _Tuple>::template __call,
+                                    _CUDA_VSTD::__type_always<_CUDA_VSTD::__type_list<>>::__call,
+                                    _CUDA_VSTD::__type_list<>,
+                                    __type_concat_into_quote<_Variant>::template __call>;
 
 template <class _Sndr, class _Rcvr, template <class...> class _Tuple, template <class...> class _Variant>
 using value_types_of_t =
-  __value_types<completion_signatures_of_t<_Sndr, _Rcvr>, _Tuple, __mtry_quote<_Variant>::template __f>;
+  __value_types<completion_signatures_of_t<_Sndr, _Rcvr>, _Tuple, __type_try_quote<_Variant>::template __call>;
 
 template <class _Sigs,
           template <class...>
           class _Variant>
 using __error_types = //
   __transform_completion_signatures<_Sigs,
-                                    __malways<__mlist<>>::__f,
-                                    __mlist,
-                                    __mlist<>,
-                                    __mconcat_into_q<_Variant>::template __f>;
+                                    _CUDA_VSTD::__type_always<_CUDA_VSTD::__type_list<>>::__call,
+                                    _CUDA_VSTD::__type_list,
+                                    _CUDA_VSTD::__type_list<>,
+                                    __type_concat_into_quote<_Variant>::template __call>;
 
 template <class _Sndr, class _Rcvr, template <class...> class _Variant>
 using error_types_of_t = __error_types<completion_signatures_of_t<_Sndr, _Rcvr>, _Variant>;
 
 template <class _Sigs>
 inline constexpr bool __sends_stopped = //
-  __transform_completion_signatures<_Sigs, __malways<__mfalse>::__f, __malways<__mfalse>::__f, __mtrue, __mor>::__value;
+  __transform_completion_signatures<_Sigs,
+                                    _CUDA_VSTD::__type_always<_CUDA_VSTD::false_type>::__call,
+                                    _CUDA_VSTD::__type_always<_CUDA_VSTD::false_type>::__call,
+                                    _CUDA_VSTD::true_type,
+                                    _CUDA_VSTD::_Or>::value;
 
 template <class _Sndr, class _Rcvr = receiver_archetype>
 inline constexpr bool sends_stopped = //
@@ -284,10 +292,10 @@ inline constexpr bool __is_completion_signatures<completion_signatures<_Sigs...>
 
 template <class _Sndr>
 using __is_non_dependent_detail_ = //
-  __mif<__is_completion_signatures<completion_signatures_of_t<_Sndr>>>;
+  _CUDA_VSTD::enable_if_t<__is_completion_signatures<completion_signatures_of_t<_Sndr>>>;
 
 template <class _Sndr>
-inline constexpr bool __is_non_dependent_sender = __mvalid_q<__is_non_dependent_detail_, _Sndr>;
+inline constexpr bool __is_non_dependent_sender = __type_valid_v<__is_non_dependent_detail_, _Sndr>;
 
 namespace __csig
 {

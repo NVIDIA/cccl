@@ -73,12 +73,14 @@ struct __cond_t
 
     template <class... _Args>
     using __opstate_t = //
-      __mlist< //
+      _CUDA_VSTD::__type_list< //
         connect_result_t<__call_result_t<_Then, __just_from_t<_Args...>>, __rcvr_ref_t<_Rcvr&>>,
         connect_result_t<__call_result_t<_Else, __just_from_t<_Args...>>, __rcvr_ref_t<_Rcvr&>>>;
 
     using __next_ops_variant_t = //
-      __value_types<completion_signatures_of_t<_Sndr, __opstate*>, __opstate_t, __mconcat_into_q<__variant>::__f>;
+      __value_types<completion_signatures_of_t<_Sndr, __opstate*>,
+                    __opstate_t,
+                    __type_concat_into_quote<__variant>::__call>;
 
     using completion_signatures = //
       transform_completion_signatures_of<_Sndr, __opstate*, __async::completion_signatures<>, __value_t>;

@@ -23,6 +23,7 @@
 
 #include <cuda/std/__memory/construct_at.h>
 #include <cuda/std/__new/launder.h>
+#include <cuda/std/__utility/integer_sequence.h>
 
 #include <cuda/experimental/__async/meta.cuh>
 #include <cuda/experimental/__async/type_traits.cuh>
@@ -45,7 +46,7 @@ template <class _Idx, class... _Ts>
 class __variant_impl;
 
 template <>
-class __variant_impl<__mindices<>>
+class __variant_impl<_CUDA_VSTD::index_sequence<>>
 {
 public:
   template <class _Fn, class... _Us>
@@ -54,7 +55,7 @@ public:
 };
 
 template <size_t... _Idx, class... _Ts>
-class __variant_impl<__mindices<_Idx...>, _Ts...>
+class __variant_impl<_CUDA_VSTD::index_sequence<_Idx...>, _Ts...>
 {
   static constexpr size_t __max_size = __maximum({sizeof(_Ts)...});
   static_assert(__max_size != 0);
@@ -62,7 +63,7 @@ class __variant_impl<__mindices<_Idx...>, _Ts...>
   alignas(_Ts...) unsigned char __storage_[__max_size];
 
   template <size_t _Ny>
-  using __at = __m_at_c<_Ny, _Ts...>;
+  using __at = _CUDA_VSTD::__type_index_c<_Ny, _Ts...>;
 
   _CUDAX_API void __destroy() noexcept
   {
@@ -172,15 +173,15 @@ public:
 template <class... _Ts>
 struct __mk_variant_
 {
-  using __indices_t = __mmake_indices<sizeof...(_Ts)>;
+  using __indices_t = _CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>;
   using type        = __variant_impl<__indices_t, _Ts...>;
 };
 
 template <class... _Ts>
-using __variant = __t<__mk_variant_<_Ts...>>;
+using __variant = typename __mk_variant_<_Ts...>::type;
 #else
 template <class... _Ts>
-using __variant = __variant_impl<__mmake_indices<sizeof...(_Ts)>, _Ts...>;
+using __variant = __variant_impl<_CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>, _Ts...>;
 #endif
 
 template <class... _Ts>

@@ -103,17 +103,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_quote2
   using __call _LIBCUDACXX_NODEBUG_TYPE = _Fn<_Ty, _Uy>;
 };
 
-//! \brief Turns a class or alias template into a meta-callable with an
-//! indirection to avoid the dreaded "pack expansion argument for non-pack
-//! parameter" error.
-template <template <class...> class _Fn>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_quote_indirect
-{
-  template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE =
-    typename __detail::__type_call_indirect_fn<sizeof(__type_list<_Ts...>*)>::template __call<_Fn, _Ts...>;
-};
-
 //! \brief Turns a trait class template \c _Fn into a meta-callable \c
 //! __type_quote_trait such that \c __type_quote_trait<_Fn>::__call<_Ts...> is
 //! equivalent to \c _Fn<_Ts...>::type.
@@ -144,6 +133,27 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_quote_trait2
   using __call _LIBCUDACXX_NODEBUG_TYPE = __type<_Fn<_Ty, _Uy>>;
 };
 
+//! \brief Adds an indirection to a meta-callable to avoid the dreaded "pack
+//! expansion argument for non-pack parameter" error.
+template <class _Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_indirect
+{
+  template <class... _Ts>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = typename __detail::__type_call_indirect_fn<sizeof(
+    __type_list<_Ts...>*)>::template __call<_Fn::template __call, _Ts...>;
+};
+
+//! \brief Turns a class or alias template into a meta-callable with an
+//! indirection to avoid the dreaded "pack expansion argument for non-pack
+//! parameter" error.
+template <template <class...> class _Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_indirect_quote
+{
+  template <class... _Ts>
+  using __call _LIBCUDACXX_NODEBUG_TYPE =
+    typename __detail::__type_call_indirect_fn<sizeof(__type_list<_Ts...>*)>::template __call<_Fn, _Ts...>;
+};
+
 //! \brief A meta-callable that composes two meta-callables
 template <class _Fn1, class _Fn2>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_compose
@@ -152,21 +162,29 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_compose
   using __call _LIBCUDACXX_NODEBUG_TYPE = __type_call1<_Fn1, __type_call<_Fn2, _Ts...>>;
 };
 
-//! \brief A meta-callable that binds the front arguments to a meta-callable
-template <class _Fn, class... _Ts>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_bind_front
+template <template <class...> class _Fn, class... _Ts>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_bind_front_quote
 {
   template <class... _Us>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = __type_call<_Fn, _Ts..., _Us...>;
+  using __call _LIBCUDACXX_NODEBUG_TYPE = _Fn<_Ts..., _Us...>;
+};
+
+//! \brief A meta-callable that binds the front arguments to a meta-callable
+template <class _Fn, class... _Ts>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_bind_front : __type_bind_front_quote<_Fn::template __call, _Ts...>
+{};
+
+template <template <class...> class _Fn, class... _Ts>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_bind_back_quote
+{
+  template <class... _Us>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = _Fn<_Us..., _Ts...>;
 };
 
 //! \brief A meta-callable that binds the back arguments to a meta-callable
 template <class _Fn, class... _Ts>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_bind_back
-{
-  template <class... _Us>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = __type_call<_Fn, _Us..., _Ts...>;
-};
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_bind_back : __type_bind_back_quote<_Fn::template __call, _Ts...>
+{};
 
 //! \brief A meta-callable that always evaluates to \c _Ty.
 template <class _Ty>
@@ -175,6 +193,16 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_always
   template <class...>
   using __call _LIBCUDACXX_NODEBUG_TYPE = _Ty;
 };
+
+//! \brief A unary meta-callable that returns its argument unmodified.
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_self
+{
+  template <class _Ty>
+  using __call _LIBCUDACXX_NODEBUG_TYPE = _Ty;
+};
+
+template <class _Ty>
+using __type_self_t _LIBCUDACXX_NODEBUG_TYPE = _Ty;
 
 //! \brief Perform a logical AND operation on a list of Boolean types.
 //!
@@ -293,7 +321,7 @@ using __type_push_back = __type_call<_List, __type_quote<__type_list>, _Ts...>;
 
 //! \brief Given a type list and a list of types, prepend the types to the list.
 template <class _List, class... _Ts>
-using __type_push_front = __type_call1<_List, __type_bind_front<__type_quote<__type_list>, _Ts...>>;
+using __type_push_front = __type_call1<_List, __type_bind_front_quote<__type_list, _Ts...>>;
 
 namespace __detail
 {
