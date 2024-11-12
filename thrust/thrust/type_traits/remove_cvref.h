@@ -31,10 +31,8 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_STD_VER >= 2017
-#  if __has_include(<version>)
-#    include <version>
-#  endif
+#if _CCCL_HAS_INCLUDE(<version>)
+#  include <version>
 #endif
 
 #include <type_traits>
