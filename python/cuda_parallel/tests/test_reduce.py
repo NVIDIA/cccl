@@ -5,6 +5,7 @@
 import ctypes
 import numpy
 import pytest
+import random
 import numba
 from numba import cuda
 import cuda.parallel.experimental as cudax
@@ -91,6 +92,82 @@ def test_device_reduce_dtype_mismatch():
     for ix in range(3):
         with pytest.raises(TypeError, match=r"^dtype mismatch: __init__=int32, __call__=int64$"):
           reduce_into(None, None, d_inputs[int(ix == 0)], d_outputs[int(ix == 1)], h_inits[int(ix == 2)])
+
+
+class RawPointer:
+    def __init__(self, ptr, dtype):
+        self.val = ctypes.c_void_p(ptr)
+        self.ltoirs = [numba.cuda.compile(RawPointer.pointer_advance, sig=numba.types.void(numba.types.CPointer(numba.types.uint64), dtype), output='ltoir'),
+                       numba.cuda.compile(RawPointer.pointer_dereference, sig=dtype(numba.types.CPointer(numba.types.CPointer(dtype))), output='ltoir')]
+        self.prefix = 'pointer'
+
+    def pointer_advance(this, distance):
+        this[0] = this[0] + numba.types.uint64(4 * distance) # TODO Showcasing the case of int32, need dtype with at least primitive types, ideally any numba type
+
+    def pointer_dereference(this):
+        return this[0][0]
+
+    def host_address(self):
+        return ctypes.byref(self.val)
+
+    def state_c_void_p(self):
+        return ctypes.cast(ctypes.pointer(self.val), ctypes.c_void_p)
+
+    def size(self):
+        return 8 # TODO should be using numba for user-defined types support
+
+    def alignment(self):
+        return 8 # TODO should be using numba for user-defined types support
+
+
+def pointer(container, dtype):
+    return RawPointer(container.device_ctypes_pointer.value, dtype)
+
+
+@intrinsic
+def ldcs(typingctx, base):
+    signature = numba.types.int32(numba.types.CPointer(numba.types.int32))
+
+    def codegen(context, builder, sig, args):
+        int32 = ir.IntType(32)
+        int32_ptr = int32.as_pointer()
+        ldcs_type = ir.FunctionType(int32, [int32_ptr])
+        ldcs = ir.InlineAsm(ldcs_type, "ld.global.cs.b32 $0, [$1];", "=r, l")
+        return builder.call(ldcs, args)
+
+    return signature, codegen
+
+
+class CacheModifiedPointer:
+    def __init__(self, ptr): # TODO Showcasing the case of int32, need dtype with at least primitive types, ideally any numba type
+        self.val = ctypes.c_void_p(ptr)
+        self.ltoirs = [numba.cuda.compile(CacheModifiedPointer.cache_advance, sig=numba.types.void(numba.types.CPointer(numba.types.uint64), numba.types.int32), output='ltoir'),
+                       numba.cuda.compile(CacheModifiedPointer.cache_dereference, sig=numba.types.int32(numba.types.CPointer(numba.types.CPointer(numba.types.int32))), output='ltoir')]
+        self.prefix = 'cache'
+
+    def cache_advance(this, distance):
+        this[0] = this[0] + numba.types.uint64(4 * distance) # TODO Showcasing the case of int32, need dtype with at least primitive types, ideally any numba type
+
+    def cache_dereference(this):
+        return ldcs(this[0])
+
+    def host_address(self):
+        return ctypes.byref(self.val)
+
+    def state_c_void_p(self):
+        return ctypes.cast(ctypes.pointer(self.val), ctypes.c_void_p)
+
+    def size(self):
+        return 8 # TODO should be using numba for user-defined types support
+
+    def alignment(self):
+        return 8 # TODO should be using numba for user-defined types support
+
+
+def cache(container, modifier='stream'):
+    if modifier != 'stream':
+        raise NotImplementedError("Only stream modifier is supported")
+    return CacheModifiedPointer(container.device_ctypes_pointer.value)
 
 
 class ConstantIterator:
@@ -274,7 +351,8 @@ def mul2(val):
 
 
 @pytest.mark.parametrize("use_numpy_array", [True, False])
-@pytest.mark.parametrize("input_generator", ["constant", "counting", "map_mul2"])
+@pytest.mark.parametrize("input_generator", ["constant", "counting", "map_mul2",
+                                             "raw_pointer", "streamed_input"])
 def test_device_sum_sentinel_iterator(use_numpy_array, input_generator, num_items=3, start_sum_with=10):
     def add_op(a, b):
         return a + b
@@ -288,6 +366,16 @@ def test_device_sum_sentinel_iterator(use_numpy_array, input_generator, num_item
     elif input_generator == "map_mul2":
         l_input = [2 * (start_sum_with + distance) for distance in range(num_items)]
         sentinel_iterator = cu_map(mul2, CountingIterator(start_sum_with))
+    elif input_generator == "raw_pointer":
+        rng = random.Random(0)
+        l_input = [rng.randrange(100) for _ in range(num_items)]
+        raw_pointer_devarr = numba.cuda.to_device(numpy.array(l_input, dtype=numpy.int32))
+        sentinel_iterator = pointer(raw_pointer_devarr, numba.types.int32)
+    elif input_generator == "streamed_input":
+        rng = random.Random(0)
+        l_input = [rng.randrange(100) for _ in range(num_items)]
+        streamed_input_devarr = numba.cuda.to_device(numpy.array(l_input, dtype=numpy.int32))
+        sentinel_iterator = cache(streamed_input_devarr, 'stream')
     else:
         raise RuntimeError("Unexpected input_generator")
 
