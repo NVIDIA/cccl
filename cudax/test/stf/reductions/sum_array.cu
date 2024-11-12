@@ -98,7 +98,7 @@ int main()
 
   for (int i = 0; i < N; i++)
   {
-    ctx.task(var_handle.redux(redux_op), array_handles[i].read())->*[](cudaStream_t stream, auto d_var, auto d_array_i) {
+    ctx.task(var_handle.relaxed(redux_op), array_handles[i].read())->*[](cudaStream_t stream, auto d_var, auto d_array_i) {
       add<<<1, 1, 0, stream>>>(d_array_i.data_handle(), d_var.data_handle());
     };
   }
