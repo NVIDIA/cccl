@@ -511,10 +511,12 @@ INSTANTIATE(char);
 
 #ifdef TEST_HALF_T
 INSTANTIATE(half_t);
+INSTANTIATE(__half);
 #endif
 
 #ifdef TEST_BF_T
 INSTANTIATE(bfloat16_t);
+INSTANTIATE(__nv_bfloat16);
 #endif
 
 template <typename T, int VecItem>
