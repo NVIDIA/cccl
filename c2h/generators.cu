@@ -305,7 +305,7 @@ struct count_to_item_t
   __device__ T operator()(CounterT id)
   {
     // This has to be a type for which extended floating point types like __nv_fp8_e5m2 provide an overload
-    return static_cast<T>(static_cast<unsigned long long int>(id) % n);
+    return static_cast<T>(static_cast<float>(static_cast<unsigned long long int>(id) % n));
   }
 };
 
