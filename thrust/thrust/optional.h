@@ -88,8 +88,6 @@ template <class T>
 using decay_t = typename std::decay<T>::type;
 template <bool E, class T = void>
 using enable_if_t = typename std::enable_if<E, T>::type;
-template <bool B, class T, class F>
-using conditional_t = typename std::conditional<B, T, F>::type;
 
 // std::conjunction from C++17
 template <class...>
@@ -181,7 +179,7 @@ using is_optional = is_optional_impl<decay_t<T>>;
 
 // Change void to thrust::monostate
 template <class U>
-using fixup_void = conditional_t<std::is_void<U>::value, monostate, U>;
+using fixup_void = ::cuda::std::conditional_t<std::is_void<U>::value, monostate, U>;
 
 template <class F, class U, class = invoke_result_t<F, U>>
 using get_map_return = optional<fixup_void<invoke_result_t<F, U>>>;
@@ -1951,7 +1949,8 @@ struct i_am_secret
 _CCCL_EXEC_CHECK_DISABLE
 template <class T = detail::i_am_secret,
           class U,
-          class Ret = detail::conditional_t<std::is_same<T, detail::i_am_secret>::value, detail::decay_t<U>, T>>
+          class Ret =
+            ::cuda::std::conditional_t<_CCCL_TRAIT(::cuda::std::is_same, T, detail::i_am_secret), detail::decay_t<U>, T>>
 _CCCL_HOST_DEVICE inline constexpr optional<Ret> make_optional(U&& v)
 {
   return optional<Ret>(std::forward<U>(v));

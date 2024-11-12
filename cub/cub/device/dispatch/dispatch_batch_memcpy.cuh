@@ -115,9 +115,9 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT::BLO
   using BufferSizeT   = cub::detail::value_t<BufferSizeIteratorT>;
   /// Internal load/store type. For byte-wise memcpy, a single-byte type
   using AliasT =
-    typename ::cuda::std::conditional<IsMemcpy,
-                                      std::iterator_traits<char*>,
-                                      std::iterator_traits<cub::detail::value_t<InputBufferIt>>>::type::value_type;
+    typename ::cuda::std::conditional_t<IsMemcpy,
+                                        std::iterator_traits<char*>,
+                                        std::iterator_traits<cub::detail::value_t<InputBufferIt>>>::value_type;
   /// Types of the input and output buffers
   using InputBufferT  = cub::detail::value_t<InputBufferIt>;
   using OutputBufferT = cub::detail::value_t<OutputBufferIt>;
@@ -455,10 +455,12 @@ struct DispatchBatchMemcpy : SelectedPolicy
     // The number of thread blocks (or tiles) required to process all of the given buffers
     BlockOffsetT num_tiles = ::cuda::ceil_div(num_buffers, TILE_SIZE);
 
-    using BlevBufferSrcsOutT   = ::cuda::std::conditional_t<IsMemcpy, const void*, cub::detail::value_t<InputBufferIt>>;
-    using BlevBufferDstOutT    = ::cuda::std::conditional_t<IsMemcpy, void*, cub::detail::value_t<OutputBufferIt>>;
-    using BlevBufferSrcsOutItT = BlevBufferSrcsOutT*;
-    using BlevBufferDstsOutItT = BlevBufferDstOutT*;
+    using BlevBufferSrcsOutT =
+      typename ::cuda::std::conditional_t<IsMemcpy, const void*, cub::detail::value_t<InputBufferIt>>;
+    using BlevBufferDstOutT =
+      typename ::cuda::std::conditional_t<IsMemcpy, void*, cub::detail::value_t<OutputBufferIt>>;
+    using BlevBufferSrcsOutItT        = BlevBufferSrcsOutT*;
+    using BlevBufferDstsOutItT        = BlevBufferDstOutT*;
     using BlevBufferSizesOutItT       = BufferSizeT*;
     using BlevBufferTileOffsetsOutItT = BlockOffsetT*;
 
