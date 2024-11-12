@@ -35,9 +35,6 @@
 namespace cuda::experimental::__async
 {
 
-template <class _Ty>
-using __remove_ref_t = _CUDA_VSTD::__libcpp_remove_reference_t<_Ty>;
-
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // __decay_t: An efficient implementation for ::std::decay
 #if defined(_CCCL_BUILTIN_DECAY)

@@ -44,14 +44,9 @@ struct underlying_type : __underlying_type_impl<_Tp, is_enum<_Tp>::value>
 {};
 
 template <class _Tp>
-using __underlying_type_t = typename underlying_type<_Tp>::type;
+using underlying_type_t _CCCL_NODEBUG_ALIAS = typename underlying_type<_Tp>::type;
 
-#  if _CCCL_STD_VER > 2011
-template <class _Tp>
-using underlying_type_t = typename underlying_type<_Tp>::type;
-#  endif
-
-#else
+#else // ^^^ _CCCL_BUILTIN_UNDERLYING_TYPE ^^^ / vvv !_CCCL_BUILTIN_UNDERLYING_TYPE vvv
 
 template <class _Tp, bool _Support = false>
 struct underlying_type
@@ -62,7 +57,7 @@ struct underlying_type
                 "libc++ does not know how to use it.");
 };
 
-#endif // defined(_CCCL_BUILTIN_UNDERLYING_TYPE) && !defined(_LIBCUDACXX_USE_UNDERLYING_TYPE_FALLBACK)
+#endif // !_CCCL_BUILTIN_UNDERLYING_TYPE
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

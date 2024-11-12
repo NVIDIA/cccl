@@ -44,13 +44,13 @@ struct scheduler_t
 {};
 
 template <class _Ty>
-using __sender_concept_t = typename __remove_ref_t<_Ty>::sender_concept;
+using __sender_concept_t = typename _CUDA_VSTD::remove_reference_t<_Ty>::sender_concept;
 
 template <class _Ty>
-using __receiver_concept_t = typename __remove_ref_t<_Ty>::receiver_concept;
+using __receiver_concept_t = typename _CUDA_VSTD::remove_reference_t<_Ty>::receiver_concept;
 
 template <class _Ty>
-using __scheduler_concept_t = typename __remove_ref_t<_Ty>::scheduler_concept;
+using __scheduler_concept_t = typename _CUDA_VSTD::remove_reference_t<_Ty>::scheduler_concept;
 
 template <class _Ty>
 inline constexpr bool __is_sender = __type_valid_v<__sender_concept_t, _Ty>;

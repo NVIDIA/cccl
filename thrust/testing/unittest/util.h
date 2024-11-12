@@ -31,7 +31,7 @@ truncate_to_max_representable(std::size_t n)
 
 // TODO: This probably won't work for `half`.
 template <typename T>
-typename ::cuda::std::__enable_if_t<::cuda::std::is_floating_point<T>::value, T>
+typename ::cuda::std::enable_if_t<::cuda::std::is_floating_point<T>::value, T>
 truncate_to_max_representable(std::size_t n)
 {
   return THRUST_NS_QUALIFIER::min<T>(static_cast<T>(n), THRUST_NS_QUALIFIER::numeric_limits<T>::max());
