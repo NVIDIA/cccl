@@ -183,9 +183,9 @@ C2H_TEST("DeviceForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][devic
   using index_type   = c2h::get<0, TestType>;
   using data_t       = cuda::std::array<index_type, rank>;
   using store_op_t   = LinearStore<index_type, rank>;
-  auto X             = GENERATE_COPY(take(3, random(2, 10)));
-  auto Y             = GENERATE_COPY(take(3, random(2, 10)));
-  auto Z             = GENERATE_COPY(take(3, random(2, 10)));
+  auto X             = GENERATE(take(3, random(2, 10)));
+  auto Y             = GENERATE(take(3, random(2, 10)));
+  auto Z             = GENERATE(take(3, random(2, 10)));
   cuda::std::dextents<index_type, 3> ext{X, Y, Z};
   c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
   c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
