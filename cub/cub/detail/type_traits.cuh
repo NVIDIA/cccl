@@ -49,7 +49,9 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 #include <cuda/std/functional>
 _CCCL_SUPPRESS_DEPRECATED_POP
 #include <cuda/std/array>
-#include <cuda/std/mdspan>
+#if _CCCL_STD_VER >= 2017 || (_CCCL_STD_VER >= 2020 && defined(_CCCL_COMPILER_MSVC))
+#  include <cuda/std/mdspan>
+#endif // _CCCL_STD_VER >= 2017 || (_CCCL_STD_VER >= 2020 && defined(_CCCL_COMPILER_MSVC))
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 
