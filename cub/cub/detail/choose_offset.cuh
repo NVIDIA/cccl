@@ -148,7 +148,7 @@ using choose_signed_offset_t = typename choose_signed_offset<NumItemsT>::type;
 template <typename... Iter>
 struct common_iterator_value
 {
-  using type = ::cuda::std::__common_type_t<::cuda::std::__iter_value_type<Iter>...>;
+  using type = ::cuda::std::common_type_t<::cuda::std::__iter_value_type<Iter>...>;
 };
 template <typename... Iter>
 using common_iterator_value_t = typename common_iterator_value<Iter...>::type;

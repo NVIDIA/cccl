@@ -36,8 +36,8 @@
 #include <numeric>
 
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.cuh>
-#include <c2h/custom_type.cuh>
+#include <c2h/catch2_test_helper.h>
+#include <c2h/custom_type.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceAdjacentDifference::SubtractRight, adjacent_difference_subtract_right);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceAdjacentDifference::SubtractRightCopy, adjacent_difference_subtract_right_copy);
@@ -92,7 +92,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy does not change the input"
 template <class T>
 struct ref_diff
 {
-  template <class T2, cuda::std::__enable_if_t<cuda::std::is_same<T, T2>::value, int> = 0>
+  template <class T2, cuda::std::enable_if_t<cuda::std::is_same<T, T2>::value, int> = 0>
   __host__ __device__ constexpr T2 operator()(const T2& lhs, const T2& rhs) const noexcept
   {
     return rhs - lhs;

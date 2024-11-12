@@ -7,7 +7,7 @@
 
 #include <cuda/std/type_traits>
 
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 template <typename T>
 struct less_than_t

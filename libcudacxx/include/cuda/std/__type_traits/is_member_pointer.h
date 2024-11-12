@@ -42,7 +42,7 @@ _CCCL_INLINE_VAR constexpr bool is_member_pointer_v = _CCCL_BUILTIN_IS_MEMBER_PO
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_member_pointer
-    : public integral_constant<bool, __libcpp_is_member_pointer<__remove_cv_t<_Tp>>::__is_member>
+    : public integral_constant<bool, __libcpp_is_member_pointer<remove_cv_t<_Tp>>::__is_member>
 {};
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)

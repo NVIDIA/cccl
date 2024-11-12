@@ -136,7 +136,7 @@ template <class _ForwardIterator, class _Size, class _Tp, class _BinaryPredicate
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
 search_n(_ForwardIterator __first, _ForwardIterator __last, _Size __count, const _Tp& __value_, _BinaryPredicate __pred)
 {
-  return _CUDA_VSTD::__search_n<__add_lvalue_reference_t<_BinaryPredicate>>(
+  return _CUDA_VSTD::__search_n<add_lvalue_reference_t<_BinaryPredicate>>(
     __first,
     __last,
     __convert_to_integral(__count),

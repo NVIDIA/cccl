@@ -205,7 +205,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool __is_permut
     return false;
   }
   return _CUDA_VSTD::
-    is_permutation<_RandomAccessIterator1, _RandomAccessIterator2, __add_lvalue_reference_t<_BinaryPredicate>>(
+    is_permutation<_RandomAccessIterator1, _RandomAccessIterator2, add_lvalue_reference_t<_BinaryPredicate>>(
       __first1, __last1, __first2, __pred);
 }
 
@@ -217,7 +217,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool is_permutat
   _ForwardIterator2 __last2,
   _BinaryPredicate __pred)
 {
-  return _CUDA_VSTD::__is_permutation<__add_lvalue_reference_t<_BinaryPredicate>>(
+  return _CUDA_VSTD::__is_permutation<add_lvalue_reference_t<_BinaryPredicate>>(
     __first1,
     __last1,
     __first2,

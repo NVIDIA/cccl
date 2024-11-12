@@ -35,7 +35,7 @@
 #include "cuda/std/__algorithm/max.h"
 #include "cuda/std/__numeric/inclusive_scan.h"
 #include "cuda/std/__numeric/iota.h"
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 constexpr int num_warps = 4;
 

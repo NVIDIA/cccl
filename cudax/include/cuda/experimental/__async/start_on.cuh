@@ -38,7 +38,7 @@ struct __sch_env_t
 {
   _Sch __sch_;
 
-  _Sch __query(get_scheduler_t) const noexcept
+  _Sch query(get_scheduler_t) const noexcept
   {
     return __sch_;
   }
@@ -66,7 +66,7 @@ private:
         completion_signatures_of_t<_CvSndr, __rcvr_with_env_t<_Rcvr, __sch_env_t<_Sch>>*>,
         transform_completion_signatures<completion_signatures_of_t<schedule_result_t<_Sch>, __opstate_t*>,
                                         __async::completion_signatures<>,
-                                        __malways<__async::completion_signatures<>>::__f>>;
+                                        _CUDA_VSTD::__type_always<__async::completion_signatures<>>::__call>>;
 
     __rcvr_with_env_t<_Rcvr, __sch_env_t<_Sch>> __env_rcvr_;
     connect_result_t<schedule_result_t<_Sch>, __opstate_t*> __opstate1_;

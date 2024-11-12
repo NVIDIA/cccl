@@ -28,7 +28,7 @@
 #include <cub/thread/thread_operators.cuh>
 
 #include "test_util.h"
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 template <class T>
 T Make(int val)

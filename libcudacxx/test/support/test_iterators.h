@@ -1667,6 +1667,8 @@ struct Proxy
     return static_cast<const T&&>(data);
   }
 
+  Proxy(const Proxy&) = default;
+
   _LIBCUDACXX_TEMPLATE(class U)
   _LIBCUDACXX_REQUIRES(cuda::std::constructible_from<T, U&&>)
   __host__ __device__ constexpr Proxy(U&& u)
@@ -1684,7 +1686,7 @@ struct Proxy
 
   _LIBCUDACXX_TEMPLATE(class Other)
   _LIBCUDACXX_REQUIRES((IsProxy<cuda::std::decay_t<Other>>
-                        && cuda::std::assignable_from<cuda::std::__add_lvalue_reference_t<T>,
+                        && cuda::std::assignable_from<cuda::std::add_lvalue_reference_t<T>,
                                                       decltype(cuda::std::declval<Other>().getData())>) )
   __host__ __device__ constexpr Proxy& operator=(Other&& other)
   {
@@ -1699,7 +1701,7 @@ struct Proxy
   // const assignment required to make ProxyIterator model cuda::std::indirectly_writable
   _LIBCUDACXX_TEMPLATE(class Other)
   _LIBCUDACXX_REQUIRES((IsProxy<cuda::std::decay_t<Other>>
-                        && cuda::std::assignable_from<const cuda::std::__add_lvalue_reference_t<T>,
+                        && cuda::std::assignable_from<const cuda::std::add_lvalue_reference_t<T>,
                                                       decltype(cuda::std::declval<Other>().getData())>) )
   __host__ __device__ constexpr const Proxy& operator=(Other&& other) const
   {

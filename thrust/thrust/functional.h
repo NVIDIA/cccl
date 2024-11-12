@@ -837,21 +837,34 @@ struct bit_xor : public ::cuda::std::bit_xor<T>
  *  \see https://en.cppreference.com/w/cpp/utility/functional/identity
  *  \see unary_function
  */
+// TODO(bgruber): this version can also act as a functor casting to T making it not equivalent to ::cuda::std::identity
 template <typename T = void>
 struct identity
 {
   using argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
   using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11   = T;
 
-  // FIXME(bgruber): this should take T&& and forward, to not add const to a mutable reference or dangle a temporary arg
-  /*! Function call operator. The return value is <tt>x</tt>.
-   */
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE constexpr const T& operator()(const T& x) const
   {
     return x;
   }
-}; // end identity
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE constexpr T& operator()(T& x) const
+  {
+    return x;
+  }
+
+  // we cannot add an overload for `const T&&` because then calling e.g. `thrust::identity<int>{}(3.14);` is ambigious
+  // on MSVC
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE constexpr T&& operator()(T&& x) const
+  {
+    return _CUDA_VSTD::move(x);
+  }
+};
 
 template <>
 struct identity<void> : ::cuda::std::__identity
@@ -1234,9 +1247,9 @@ struct not_fun_t
 //! \see https://en.cppreference.com/w/cpp/utility/functional/not_fn
 // TODO(bgruber): alias to ::cuda::std::not_fn in C++17
 template <class F>
-_CCCL_HOST_DEVICE auto not_fn(F&& f) -> detail::not_fun_t<::cuda::std::__decay_t<F>>
+_CCCL_HOST_DEVICE auto not_fn(F&& f) -> detail::not_fun_t<::cuda::std::decay_t<F>>
 {
-  return detail::not_fun_t<::cuda::std::__decay_t<F>>{std::forward<F>(f)};
+  return detail::not_fun_t<::cuda::std::decay_t<F>>{std::forward<F>(f)};
 }
 
 /*! \}
@@ -1340,6 +1353,30 @@ THRUST_INLINE_CONSTANT thrust::detail::functional::placeholder<9>::type _10;
 #undef THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION
 
 THRUST_NAMESPACE_END
+
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::plus);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::minus);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::multiplies);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::divides);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::modulus);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::negate);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::bit_and);
+//_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::bit_not); // does not exist?
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::bit_or);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::bit_xor);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::equal_to);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::not_equal_to);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::less);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::less_equal);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::greater_equal);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::greater);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::logical_and);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::logical_not);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::logical_or);
+
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <thrust/detail/functional.inl>
 #include <thrust/detail/functional/operators.h>

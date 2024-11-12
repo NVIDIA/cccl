@@ -242,7 +242,7 @@ public:
 
   reserved::logical_data_state state;
 
-  // For temporary or redux accesses, we need to be able to find an available entry
+  // For temporary or relaxed accesses, we need to be able to find an available entry
   ::std::vector<data_instance> used_instances;
 
   // A string useful for debugging purpose
@@ -917,7 +917,7 @@ public:
         break;
       }
 
-      case access_mode::redux:
+      case access_mode::relaxed:
         current_instance.set_msir(reserved::msir_state_id::reduction);
         break;
       default:
@@ -1238,9 +1238,9 @@ public:
     return task_dep_untyped(*this, access_mode::rw, mv(dp));
   }
 
-  task_dep_untyped redux(::std::shared_ptr<reduction_operator_base> op, data_place dp = data_place::affine)
+  task_dep_untyped relaxed(::std::shared_ptr<reduction_operator_base> op, data_place dp = data_place::affine)
   {
-    return task_dep_untyped(*this, access_mode::redux, mv(dp), op);
+    return task_dep_untyped(*this, access_mode::relaxed, mv(dp), op);
   }
 
   ///@}
@@ -1732,7 +1732,7 @@ inline void reserved::logical_data_untyped_impl::erase()
     assert(ref_id != instance_id_t::invalid);
 
     // Get the state in which we store previous writer, readers, ...
-    if (h_state.current_mode == access_mode::redux)
+    if (h_state.current_mode == access_mode::relaxed)
     {
       // Reconstruction of the data on the reference data place needed
 
@@ -1863,14 +1863,14 @@ inline event_list enforce_stf_deps_before(
   auto& dot                 = *bctx.get_dot();
   const bool dot_is_tracing = dot.is_tracing();
 
-  if (mode == access_mode::redux)
+  if (mode == access_mode::relaxed)
   {
     // A reduction only needs to wait for previous accesses on the data instance
-    ctx_.current_mode = access_mode::redux;
+    ctx_.current_mode = access_mode::relaxed;
 
     if (dot_is_tracing)
     {
-      // Add this task to the list of task accessing the logical data in redux mode
+      // Add this task to the list of task accessing the logical data in relaxed mode
       // We only store its id since this is used for dot
       ctx_.pending_redux_id.push_back(task.get_unique_id());
     }
@@ -1882,13 +1882,13 @@ inline event_list enforce_stf_deps_before(
   }
 
   // This is not a reduction, but perhaps we need to reconstruct the data first?
-  if (ctx_.current_mode == access_mode::redux)
+  if (ctx_.current_mode == access_mode::relaxed)
   {
     assert(eplace.has_value());
     if (dot_is_tracing)
     {
       // Add a dependency between previous tasks accessing the handle
-      // in redux mode, and this task which forces its
+      // in relaxed mode, and this task which forces its
       // reconstruction.
       for (const int redux_task_id : ctx_.pending_redux_id)
       {
@@ -1998,7 +1998,7 @@ inline event_list enforce_stf_deps_before(
 template <typename task_type>
 inline void enforce_stf_deps_after(logical_data_untyped& handle, const task_type& task, const access_mode mode)
 {
-  if (mode == access_mode::redux)
+  if (mode == access_mode::relaxed)
   {
     // no further action is required
     return;
@@ -2295,9 +2295,9 @@ public:
   }
 
   template <typename... Pack>
-  task_dep<T> redux(Pack&&... pack)
+  task_dep<T> relaxed(Pack&&... pack)
   {
-    return task_dep<T>(*this, access_mode::redux, ::std::forward<Pack>(pack)...);
+    return task_dep<T>(*this, access_mode::relaxed, ::std::forward<Pack>(pack)...);
   }
   ///@}
 };

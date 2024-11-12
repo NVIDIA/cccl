@@ -61,7 +61,7 @@ struct reference_is_assignable
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename OutputIterator, typename InputIterator>
-inline _CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<reference_is_assignable<InputIterator, OutputIterator>::value>
+inline _CCCL_HOST_DEVICE ::cuda::std::enable_if_t<reference_is_assignable<InputIterator, OutputIterator>::value>
 iter_assign(OutputIterator dst, InputIterator src)
 {
   *dst = *src;

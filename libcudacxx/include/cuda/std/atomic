@@ -358,7 +358,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void atomic_notify_all(atomic<_Tp>* __o) noexcept
 
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI
-__enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
+enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
 atomic_fetch_add(volatile atomic<_Tp>* __o, _Tp __op) noexcept
 {
   return __o->fetch_add(__op);
@@ -366,7 +366,7 @@ atomic_fetch_add(volatile atomic<_Tp>* __o, _Tp __op) noexcept
 
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI
-__enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
+enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
 atomic_fetch_add(atomic<_Tp>* __o, _Tp __op) noexcept
 {
   return __o->fetch_add(__op);
@@ -388,7 +388,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _Tp* atomic_fetch_add(atomic<_Tp*>* __o, ptrdiff_t __o
 
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI
-__enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
+enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
 atomic_fetch_add_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 {
   return __o->fetch_add(__op, __m);
@@ -396,7 +396,7 @@ atomic_fetch_add_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m)
 
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI
-__enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
+enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
 atomic_fetch_add_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 {
   return __o->fetch_add(__op, __m);
@@ -419,7 +419,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _Tp* atomic_fetch_add_explicit(atomic<_Tp*>* __o, ptrd
 
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI
-__enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
+enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
 atomic_fetch_sub(volatile atomic<_Tp>* __o, _Tp __op) noexcept
 {
   return __o->fetch_sub(__op);
@@ -427,7 +427,7 @@ atomic_fetch_sub(volatile atomic<_Tp>* __o, _Tp __op) noexcept
 
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI
-__enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
+enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
 atomic_fetch_sub(atomic<_Tp>* __o, _Tp __op) noexcept
 {
   return __o->fetch_sub(__op);
@@ -449,7 +449,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _Tp* atomic_fetch_sub(atomic<_Tp*>* __o, ptrdiff_t __o
 
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI
-__enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
+enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
 atomic_fetch_sub_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 {
   return __o->fetch_sub(__op, __m);
@@ -457,7 +457,7 @@ atomic_fetch_sub_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m)
 
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI
-__enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
+enable_if_t<(is_integral<_Tp>::value && !is_same<_Tp, bool>::value) || is_floating_point<_Tp>::value, _Tp>
 atomic_fetch_sub_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 {
   return __o->fetch_sub(__op, __m);
@@ -479,14 +479,14 @@ _LIBCUDACXX_HIDE_FROM_ABI _Tp* atomic_fetch_sub_explicit(atomic<_Tp*>* __o, ptrd
 // atomic_fetch_and
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI __enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
 atomic_fetch_and(volatile atomic<_Tp>* __o, _Tp __op) noexcept
 {
   return __o->fetch_and(__op);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI __enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
 atomic_fetch_and(atomic<_Tp>* __o, _Tp __op) noexcept
 {
   return __o->fetch_and(__op);
@@ -495,14 +495,14 @@ atomic_fetch_and(atomic<_Tp>* __o, _Tp __op) noexcept
 // atomic_fetch_and_explicit
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI __enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
 atomic_fetch_and_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 {
   return __o->fetch_and(__op, __m);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI __enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
 atomic_fetch_and_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 {
   return __o->fetch_and(__op, __m);
@@ -511,14 +511,14 @@ atomic_fetch_and_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 // atomic_fetch_or
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI __enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
 atomic_fetch_or(volatile atomic<_Tp>* __o, _Tp __op) noexcept
 {
   return __o->fetch_or(__op);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI __enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
 atomic_fetch_or(atomic<_Tp>* __o, _Tp __op) noexcept
 {
   return __o->fetch_or(__op);
@@ -527,14 +527,14 @@ atomic_fetch_or(atomic<_Tp>* __o, _Tp __op) noexcept
 // atomic_fetch_or_explicit
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI __enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
 atomic_fetch_or_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 {
   return __o->fetch_or(__op, __m);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI __enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
 atomic_fetch_or_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 {
   return __o->fetch_or(__op, __m);
@@ -543,14 +543,14 @@ atomic_fetch_or_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 // atomic_fetch_xor
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI __enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
 atomic_fetch_xor(volatile atomic<_Tp>* __o, _Tp __op) noexcept
 {
   return __o->fetch_xor(__op);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI __enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
 atomic_fetch_xor(atomic<_Tp>* __o, _Tp __op) noexcept
 {
   return __o->fetch_xor(__op);
@@ -559,14 +559,14 @@ atomic_fetch_xor(atomic<_Tp>* __o, _Tp __op) noexcept
 // atomic_fetch_xor_explicit
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI __enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
 atomic_fetch_xor_explicit(volatile atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 {
   return __o->fetch_xor(__op, __m);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI __enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_integral<_Tp>::value && !is_same<_Tp, bool>::value, _Tp>
 atomic_fetch_xor_explicit(atomic<_Tp>* __o, _Tp __op, memory_order __m) noexcept
 {
   return __o->fetch_xor(__op, __m);

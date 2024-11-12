@@ -44,22 +44,22 @@ struct scheduler_t
 {};
 
 template <class _Ty>
-using __sender_concept_t = typename __remove_ref_t<_Ty>::sender_concept;
+using __sender_concept_t = typename _CUDA_VSTD::remove_reference_t<_Ty>::sender_concept;
 
 template <class _Ty>
-using __receiver_concept_t = typename __remove_ref_t<_Ty>::receiver_concept;
+using __receiver_concept_t = typename _CUDA_VSTD::remove_reference_t<_Ty>::receiver_concept;
 
 template <class _Ty>
-using __scheduler_concept_t = typename __remove_ref_t<_Ty>::scheduler_concept;
+using __scheduler_concept_t = typename _CUDA_VSTD::remove_reference_t<_Ty>::scheduler_concept;
 
 template <class _Ty>
-inline constexpr bool __is_sender = __mvalid_q<__sender_concept_t, _Ty>;
+inline constexpr bool __is_sender = __type_valid_v<__sender_concept_t, _Ty>;
 
 template <class _Ty>
-inline constexpr bool __is_receiver = __mvalid_q<__receiver_concept_t, _Ty>;
+inline constexpr bool __is_receiver = __type_valid_v<__receiver_concept_t, _Ty>;
 
 template <class _Ty>
-inline constexpr bool __is_scheduler = __mvalid_q<__scheduler_concept_t, _Ty>;
+inline constexpr bool __is_scheduler = __type_valid_v<__scheduler_concept_t, _Ty>;
 
 _CCCL_GLOBAL_CONSTANT struct set_value_t
 {
@@ -133,7 +133,7 @@ _CCCL_GLOBAL_CONSTANT struct start_t
   template <class _OpState>
   _CUDAX_TRIVIAL_API auto operator()(_OpState& __opstate) const noexcept -> decltype(__opstate.start())
   {
-    static_assert(!__is_error<typename _OpState::completion_signatures>);
+    static_assert(!__type_is_error<typename _OpState::completion_signatures>);
     static_assert(_CUDA_VSTD::is_same_v<decltype(__opstate.start()), void>);
     static_assert(noexcept(__opstate.start()));
     __opstate.start();

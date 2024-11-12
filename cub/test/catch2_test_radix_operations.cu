@@ -34,7 +34,7 @@
 #include <limits>
 #include <type_traits>
 
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 template <typename KeyT>
 struct fundamental_extractor_t

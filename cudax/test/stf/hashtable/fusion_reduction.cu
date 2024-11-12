@@ -98,7 +98,7 @@ int main()
 
   for (size_t dev_id = 0; dev_id < 4; dev_id++)
   {
-    ctx.task(h_handle.redux(fusion_op))->*[&](auto stream, auto h) {
+    ctx.task(h_handle.relaxed(fusion_op))->*[&](auto stream, auto h) {
       EXPECT(h.get_capacity() == 2048);
       fill_table<<<32, 32, 0, stream>>>(dev_id, 10, h);
     };

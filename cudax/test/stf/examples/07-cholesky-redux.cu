@@ -263,7 +263,7 @@ void DGEMM(
 
   // If beta == 1.0 (we assume this is exactly 1.0), then this operation is
   // an accumulation with the add operator
-  auto dep_c = (beta == 1.0) ? C.handle(C_row, C_col).redux(redux_op) : C.handle(C_row, C_col).rw();
+  auto dep_c = (beta == 1.0) ? C.handle(C_row, C_col).relaxed(redux_op) : C.handle(C_row, C_col).rw();
   auto t     = ctx.task(exec_place::device(A.get_preferred_devid(C_row, C_col)),
                     A.handle(A_row, A_col).read(),
                     B.handle(B_row, B_col).read(),

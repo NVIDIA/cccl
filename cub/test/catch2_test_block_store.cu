@@ -31,7 +31,7 @@
 #include <cub/util_allocator.cuh>
 #include <cub/util_arch.cuh>
 
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 template <int ItemsPerThread, int ThreadsInBlock, cub::BlockStoreAlgorithm /* StoreAlgorithm */>
 struct output_idx

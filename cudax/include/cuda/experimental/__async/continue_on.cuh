@@ -147,7 +147,7 @@ private:
     using __scheduler_completions = //
       transform_completion_signatures<completion_signatures_of_t<schedule_result_t<_Sch>, __rcvr_t<_Rcvr, __result_t>*>,
                                       __async::completion_signatures<>,
-                                      __malways<__async::completion_signatures<>>::__f>;
+                                      _CUDA_VSTD::__type_always<__async::completion_signatures<>>::__call>;
 
     // The continue_on completions are the scheduler's error
     // and stopped completions, plus the sender's completions
@@ -244,7 +244,7 @@ struct continue_on_t::__sndr_t
     _CUDAX_API auto query(_Query) const //
       -> __query_result_t<_Query, env_of_t<_Sndr>>
     {
-      return __async::get_env(__sndr->__sndr).__query(_Query{});
+      return __async::get_env(__sndr->__sndr).query(_Query{});
     }
   };
 

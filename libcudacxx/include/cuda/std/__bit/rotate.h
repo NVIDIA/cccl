@@ -50,7 +50,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotr(_Tp __t, unsigned
 }
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, _Tp>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, _Tp>
 rotl(_Tp __t, unsigned int __cnt) noexcept
 {
   return __rotl(__t, __cnt);
@@ -58,7 +58,7 @@ rotl(_Tp __t, unsigned int __cnt) noexcept
 
 // rotr
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, _Tp>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, _Tp>
 rotr(_Tp __t, unsigned int __cnt) noexcept
 {
   return __rotr(__t, __cnt);

@@ -84,14 +84,14 @@ struct __ab_results
   _Tp __b;
 };
 
-template <class _Tp, typename = __enable_if_t<!__has_vector_type<_Tp>::value>>
+template <class _Tp, typename = enable_if_t<!__has_vector_type<_Tp>::value>>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __abcd_results<_Tp>
 __complex_calculate_partials(_Tp __a, _Tp __b, _Tp __c, _Tp __d) noexcept
 {
   return {__a * __c, __b * __d, __a * __d, __b * __c};
 }
 
-template <class _Tp, typename = __enable_if_t<!__has_vector_type<_Tp>::value>>
+template <class _Tp, typename = enable_if_t<!__has_vector_type<_Tp>::value>>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __ab_results<_Tp>
 __complex_piecewise_mul(_Tp __x1, _Tp __y1, _Tp __x2, _Tp __y2) noexcept
 {
@@ -99,7 +99,7 @@ __complex_piecewise_mul(_Tp __x1, _Tp __y1, _Tp __x2, _Tp __y2) noexcept
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __enable_if_t<__has_vector_type<_Tp>::value, __abcd_results<_Tp>>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 enable_if_t<__has_vector_type<_Tp>::value, __abcd_results<_Tp>>
 __complex_calculate_partials(_Tp __a, _Tp __b, _Tp __c, _Tp __d) noexcept
 {
   __abcd_results<_Tp> __ret;
@@ -122,7 +122,7 @@ __complex_calculate_partials(_Tp __a, _Tp __b, _Tp __c, _Tp __d) noexcept
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __enable_if_t<__has_vector_type<_Tp>::value, __ab_results<_Tp>>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 enable_if_t<__has_vector_type<_Tp>::value, __ab_results<_Tp>>
 __complex_piecewise_mul(_Tp __x1, _Tp __y1, _Tp __x2, _Tp __y2) noexcept
 {
   __ab_results<_Tp> __ret;
