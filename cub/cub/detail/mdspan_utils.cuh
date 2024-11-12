@@ -65,18 +65,10 @@ template <::cuda::std::size_t Rank, typename IndexType, ::cuda::std::size_t... E
 _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::make_unsigned_t<IndexType>
 sub_size(const ::cuda::std::extents<IndexType, Extents...>& ext, ::cuda::std::index_sequence<Indices...> = {})
 {
-  if constexpr (Rank >= sizeof...(Extents) /*ext.rank()*/)
-  {
-    return ::cuda::std::make_unsigned_t<IndexType>{1};
-  }
-  else if constexpr (sizeof...(Indices) == 0)
-  {
-    return sub_size<Rank>(ext, ::cuda::std::make_index_sequence<sizeof...(Extents) - Rank>{});
-  }
-  else
-  {
-    return (ext.extent(Rank + Indices) * ...);
-  }
+ ::cuda::std::make_unsigned_t<IndexType> s = 1;
+ for (IndexType i = Rank; i < sizeof...(Extents); i++)
+   s *= ext.extent(Rank + Indices);
+ return s;
 }
 
 // TODO: move to cuda::std
