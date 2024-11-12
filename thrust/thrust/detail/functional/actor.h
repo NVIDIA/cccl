@@ -182,7 +182,7 @@ struct value
 };
 
 template <typename T>
-_CCCL_HOST_DEVICE auto make_actor(T&& x) -> actor<value<::cuda::std::__decay_t<T>>>
+_CCCL_HOST_DEVICE auto make_actor(T&& x) -> actor<value<::cuda::std::decay_t<T>>>
 {
   return {{THRUST_FWD(x)}};
 }

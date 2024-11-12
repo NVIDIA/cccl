@@ -34,7 +34,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __has_single_bit(_Tp __t) noexcept
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, bool>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, bool>
 has_single_bit(_Tp __t) noexcept
 {
   return __has_single_bit(__t);

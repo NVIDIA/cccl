@@ -125,12 +125,12 @@ struct get_level_helper
 
 template <typename QueryLevel, typename Hierarchy>
 _CCCL_INLINE_VAR constexpr bool has_level =
-  detail::has_level_helper<QueryLevel, ::cuda::std::__remove_cvref_t<Hierarchy>>::value;
+  detail::has_level_helper<QueryLevel, ::cuda::std::remove_cvref_t<Hierarchy>>::value;
 
 template <typename QueryLevel, typename Hierarchy>
 _CCCL_INLINE_VAR constexpr bool has_level_or_unit =
-  detail::has_level_helper<QueryLevel, ::cuda::std::__remove_cvref_t<Hierarchy>>::value
-  || detail::has_unit<QueryLevel, ::cuda::std::__remove_cvref_t<Hierarchy>>::value;
+  detail::has_level_helper<QueryLevel, ::cuda::std::remove_cvref_t<Hierarchy>>::value
+  || detail::has_unit<QueryLevel, ::cuda::std::remove_cvref_t<Hierarchy>>::value;
 
 namespace detail
 {

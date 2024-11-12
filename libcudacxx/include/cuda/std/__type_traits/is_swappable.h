@@ -96,9 +96,9 @@ template <class _Tp>
 struct __is_nothrow_swappable;
 
 template <class _Tp>
-using __swap_result_t =
-  __enable_if_t<__detect_adl_swap::__can_define_swap<_Tp>::value && _CCCL_TRAIT(is_move_constructible, _Tp)
-                && _CCCL_TRAIT(is_move_assignable, _Tp)>;
+using __swap_result_t _CCCL_NODEBUG_ALIAS =
+  enable_if_t<__detect_adl_swap::__can_define_swap<_Tp>::value && _CCCL_TRAIT(is_move_constructible, _Tp)
+              && _CCCL_TRAIT(is_move_assignable, _Tp)>;
 
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __swap_result_t<_Tp> swap(_Tp& __x, _Tp& __y) noexcept(
@@ -106,7 +106,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __swap_result_t<_Tp> swap(_Tp& _
 
 template <class _Tp, size_t _Np>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14
-__enable_if_t<__detect_adl_swap::__has_no_adl_swap_array<_Tp, _Np>::value && __is_swappable<_Tp>::value>
+enable_if_t<__detect_adl_swap::__has_no_adl_swap_array<_Tp, _Np>::value && __is_swappable<_Tp>::value>
   swap(_Tp (&__a)[_Np], _Tp (&__b)[_Np]) noexcept(__is_nothrow_swappable<_Tp>::value);
 
 namespace __detail
@@ -154,7 +154,7 @@ template <class _Tp>
 struct __is_nothrow_swappable : public integral_constant<bool, __detail::__nothrow_swappable_with<_Tp&>::value>
 {};
 
-#if _CCCL_STD_VER > 2011
+#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 
 template <class _Tp, class _Up>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_swappable_with
@@ -163,9 +163,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_swappable_with
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_swappable
-    : public __conditional_t<__libcpp_is_referenceable<_Tp>::value,
-                             is_swappable_with<__add_lvalue_reference_t<_Tp>, __add_lvalue_reference_t<_Tp>>,
-                             false_type>
+    : public conditional_t<__libcpp_is_referenceable<_Tp>::value,
+                           is_swappable_with<add_lvalue_reference_t<_Tp>, add_lvalue_reference_t<_Tp>>,
+                           false_type>
 {};
 
 template <class _Tp, class _Up>
@@ -175,9 +175,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_swappable_with
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_swappable
-    : public __conditional_t<__libcpp_is_referenceable<_Tp>::value,
-                             is_nothrow_swappable_with<__add_lvalue_reference_t<_Tp>, __add_lvalue_reference_t<_Tp>>,
-                             false_type>
+    : public conditional_t<__libcpp_is_referenceable<_Tp>::value,
+                           is_nothrow_swappable_with<add_lvalue_reference_t<_Tp>, add_lvalue_reference_t<_Tp>>,
+                           false_type>
 {};
 
 template <class _Tp, class _Up>
@@ -192,7 +192,7 @@ _CCCL_INLINE_VAR constexpr bool is_nothrow_swappable_with_v = is_nothrow_swappab
 template <class _Tp>
 _CCCL_INLINE_VAR constexpr bool is_nothrow_swappable_v = is_nothrow_swappable<_Tp>::value;
 
-#endif // _CCCL_STD_VER > 2011
+#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

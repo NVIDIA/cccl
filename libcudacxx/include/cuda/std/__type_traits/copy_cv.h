@@ -42,36 +42,30 @@ using __apply_cv_fn = decltype(__apply_cv<_Tp>);
 template <class>
 struct __apply_cv
 {
-  using type _LIBCUDACXX_NODEBUG_TYPE = __apply_cvref_;
+  using type _CCCL_NODEBUG_ALIAS = __apply_cvref_;
 };
 template <class _Tp>
 struct __apply_cv<const _Tp>
 {
-  using type _LIBCUDACXX_NODEBUG_TYPE = __apply_cvref_c;
+  using type _CCCL_NODEBUG_ALIAS = __apply_cvref_c;
 };
 template <class _Tp>
 struct __apply_cv<volatile _Tp>
 {
-  using type _LIBCUDACXX_NODEBUG_TYPE = __apply_cvref_v;
+  using type _CCCL_NODEBUG_ALIAS = __apply_cvref_v;
 };
 template <class _Tp>
 struct __apply_cv<const volatile _Tp>
 {
-  using type _LIBCUDACXX_NODEBUG_TYPE = __apply_cvref_cv;
+  using type _CCCL_NODEBUG_ALIAS = __apply_cvref_cv;
 };
 
 template <class _Tp>
-using __apply_cv_fn _LIBCUDACXX_NODEBUG_TYPE = typename __apply_cv<_Tp>::type;
+using __apply_cv_fn _CCCL_NODEBUG_ALIAS = typename __apply_cv<_Tp>::type;
 #endif // _CCCL_NO_VARIABLE_TEMPLATES
 
 template <class _From, class _To>
 using __copy_cv_t = typename __apply_cv_fn<_From>::template __call<_To>;
-
-template <class _From, class _To>
-struct __copy_cv
-{
-  using type _LIBCUDACXX_NODEBUG_TYPE = __copy_cv_t<_From, _To>;
-};
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

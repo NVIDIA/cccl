@@ -74,8 +74,8 @@ namespace __expected
 template <class _Tp, class _Err>
 _CCCL_INLINE_VAR constexpr bool __valid_expected =
   !_CCCL_TRAIT(is_reference, _Tp) && !_CCCL_TRAIT(is_function, _Tp)
-  && !_CCCL_TRAIT(is_same, __remove_cv_t<_Tp>, in_place_t) && !_CCCL_TRAIT(is_same, __remove_cv_t<_Tp>, unexpect_t)
-  && !__unexpected::__is_unexpected<__remove_cv_t<_Tp>> && __unexpected::__valid_unexpected<_Err>;
+  && !_CCCL_TRAIT(is_same, remove_cv_t<_Tp>, in_place_t) && !_CCCL_TRAIT(is_same, remove_cv_t<_Tp>, unexpect_t)
+  && !__unexpected::__is_unexpected<remove_cv_t<_Tp>> && __unexpected::__valid_unexpected<_Err>;
 
 template <class _Tp>
 _CCCL_INLINE_VAR constexpr bool __is_expected = false;
@@ -227,8 +227,8 @@ public:
   }
 
   _LIBCUDACXX_TEMPLATE(class _Up = _Tp)
-  _LIBCUDACXX_REQUIRES((!_CCCL_TRAIT(is_same, __remove_cvref_t<_Up>, in_place_t)) _LIBCUDACXX_AND(!_CCCL_TRAIT(
-    is_same, expected, __remove_cvref_t<_Up>)) _LIBCUDACXX_AND(!__unexpected::__is_unexpected<__remove_cvref_t<_Up>>)
+  _LIBCUDACXX_REQUIRES((!_CCCL_TRAIT(is_same, remove_cvref_t<_Up>, in_place_t)) _LIBCUDACXX_AND(!_CCCL_TRAIT(
+    is_same, expected, remove_cvref_t<_Up>)) _LIBCUDACXX_AND(!__unexpected::__is_unexpected<remove_cvref_t<_Up>>)
                          _LIBCUDACXX_AND _CCCL_TRAIT(is_constructible, _Tp, _Up)
                            _LIBCUDACXX_AND _CCCL_TRAIT(is_convertible, _Up, _Tp))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr expected(_Up&& __u) noexcept(
@@ -237,8 +237,8 @@ public:
   {}
 
   _LIBCUDACXX_TEMPLATE(class _Up = _Tp)
-  _LIBCUDACXX_REQUIRES((!_CCCL_TRAIT(is_same, __remove_cvref_t<_Up>, in_place_t)) _LIBCUDACXX_AND(!_CCCL_TRAIT(
-    is_same, expected, __remove_cvref_t<_Up>)) _LIBCUDACXX_AND(!__unexpected::__is_unexpected<__remove_cvref_t<_Up>>)
+  _LIBCUDACXX_REQUIRES((!_CCCL_TRAIT(is_same, remove_cvref_t<_Up>, in_place_t)) _LIBCUDACXX_AND(!_CCCL_TRAIT(
+    is_same, expected, remove_cvref_t<_Up>)) _LIBCUDACXX_AND(!__unexpected::__is_unexpected<remove_cvref_t<_Up>>)
                          _LIBCUDACXX_AND _CCCL_TRAIT(is_constructible, _Tp, _Up)
                            _LIBCUDACXX_AND(!_CCCL_TRAIT(is_convertible, _Up, _Tp)))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit expected(_Up&& __u) noexcept(
@@ -345,8 +345,8 @@ public:
   // [expected.object.assign], assignment
   _LIBCUDACXX_TEMPLATE(class _Up = _Tp)
   _LIBCUDACXX_REQUIRES(
-    (!_CCCL_TRAIT(is_same, expected, __remove_cvref_t<_Up>))
-      _LIBCUDACXX_AND(!__unexpected::__is_unexpected<__remove_cvref_t<_Up>>)
+    (!_CCCL_TRAIT(is_same, expected, remove_cvref_t<_Up>))
+      _LIBCUDACXX_AND(!__unexpected::__is_unexpected<remove_cvref_t<_Up>>)
         _LIBCUDACXX_AND _CCCL_TRAIT(is_constructible, _Tp, _Up) _LIBCUDACXX_AND _CCCL_TRAIT(is_assignable, _Tp&, _Up)
           _LIBCUDACXX_AND(_CCCL_TRAIT(is_nothrow_constructible, _Tp, _Up)
                           || _CCCL_TRAIT(is_nothrow_move_constructible, _Tp)
@@ -621,7 +621,7 @@ public:
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_constructible, _Err2, _Err2&))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto and_then(_Fun&& __fun) &
   {
-    using _Res = __remove_cvref_t<invoke_result_t<_Fun, _Tp&>>;
+    using _Res = remove_cvref_t<invoke_result_t<_Fun, _Tp&>>;
 
     static_assert(__expected::__is_expected<_Res>, "Result of f(value()) must be a specialization of std::expected");
     static_assert(_CCCL_TRAIT(is_same, typename _Res::error_type, _Err),
@@ -641,7 +641,7 @@ public:
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_copy_constructible, _Err2))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto and_then(_Fun&& __fun) const&
   {
-    using _Res = __remove_cvref_t<invoke_result_t<_Fun, const _Tp&>>;
+    using _Res = remove_cvref_t<invoke_result_t<_Fun, const _Tp&>>;
 
     static_assert(__expected::__is_expected<_Res>, "Result of f(value()) must be a specialization of std::expected");
     static_assert(_CCCL_TRAIT(is_same, typename _Res::error_type, _Err),
@@ -661,7 +661,7 @@ public:
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_move_constructible, _Err2))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto and_then(_Fun&& __fun) &&
   {
-    using _Res = __remove_cvref_t<invoke_result_t<_Fun, _Tp>>;
+    using _Res = remove_cvref_t<invoke_result_t<_Fun, _Tp>>;
 
     static_assert(__expected::__is_expected<_Res>, "Result of f(value()) must be a specialization of std::expected");
     static_assert(_CCCL_TRAIT(is_same, typename _Res::error_type, _Err),
@@ -681,7 +681,7 @@ public:
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_constructible, _Err2, const _Err2))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto and_then(_Fun&& __fun) const&&
   {
-    using _Res = __remove_cvref_t<invoke_result_t<_Fun, const _Tp>>;
+    using _Res = remove_cvref_t<invoke_result_t<_Fun, const _Tp>>;
 
     static_assert(__expected::__is_expected<_Res>, "Result of f(value()) must be a specialization of std::expected");
     static_assert(_CCCL_TRAIT(is_same, typename _Res::error_type, _Err),
@@ -701,7 +701,7 @@ public:
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_constructible, _Tp2, _Tp2&))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto or_else(_Fun&& __fun) &
   {
-    using _Res = __remove_cvref_t<invoke_result_t<_Fun, _Err&>>;
+    using _Res = remove_cvref_t<invoke_result_t<_Fun, _Err&>>;
 
     static_assert(__expected::__is_expected<_Res>,
                   "Result of std::expected::or_else must be a specialization of std::expected");
@@ -722,7 +722,7 @@ public:
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_copy_constructible, _Tp2))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto or_else(_Fun&& __fun) const&
   {
-    using _Res = __remove_cvref_t<invoke_result_t<_Fun, const _Err&>>;
+    using _Res = remove_cvref_t<invoke_result_t<_Fun, const _Err&>>;
 
     static_assert(__expected::__is_expected<_Res>,
                   "Result of std::expected::or_else must be a specialization of std::expected");
@@ -743,7 +743,7 @@ public:
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_move_constructible, _Tp2))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto or_else(_Fun&& __fun) &&
   {
-    using _Res = __remove_cvref_t<invoke_result_t<_Fun, _Err>>;
+    using _Res = remove_cvref_t<invoke_result_t<_Fun, _Err>>;
 
     static_assert(__expected::__is_expected<_Res>,
                   "Result of std::expected::or_else must be a specialization of std::expected");
@@ -764,7 +764,7 @@ public:
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_constructible, _Tp2, const _Tp2))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto or_else(_Fun&& __fun) const&&
   {
-    using _Res = __remove_cvref_t<invoke_result_t<_Fun, const _Err>>;
+    using _Res = remove_cvref_t<invoke_result_t<_Fun, const _Err>>;
 
     static_assert(__expected::__is_expected<_Res>,
                   "Result of std::expected::or_else must be a specialization of std::expected");
@@ -783,11 +783,11 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_constructible, _Err2, _Err2&)
-                         _LIBCUDACXX_AND _CCCL_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun, _Tp2&>>, void))
+                         _LIBCUDACXX_AND _CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun, _Tp2&>>, void))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) &
   {
     static_assert(invocable<_Fun, _Tp&>, "std::expected::transform requires that F must be invocable with T.");
-    using _Res = __remove_cv_t<invoke_result_t<_Fun, _Tp&>>;
+    using _Res = remove_cv_t<invoke_result_t<_Fun, _Tp&>>;
 
     if (this->__has_val_)
     {
@@ -802,11 +802,11 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_constructible, _Err2, _Err2&)
-                         _LIBCUDACXX_AND(!_CCCL_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun, _Tp2&>>, void)))
+                         _LIBCUDACXX_AND(!_CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun, _Tp2&>>, void)))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) &
   {
     static_assert(invocable<_Fun, _Tp&>, "std::expected::transform requires that F must be invocable with T.");
-    using _Res = __remove_cv_t<invoke_result_t<_Fun, _Tp&>>;
+    using _Res = remove_cv_t<invoke_result_t<_Fun, _Tp&>>;
 
     static_assert(__invoke_constructible<_Fun, _Tp&>,
                   "std::expected::transform requires that the return type of F is constructible with the result of "
@@ -828,11 +828,11 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_copy_constructible, _Err2)
-                         _LIBCUDACXX_AND _CCCL_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun, const _Tp2&>>, void))
+                         _LIBCUDACXX_AND _CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun, const _Tp2&>>, void))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) const&
   {
     static_assert(invocable<_Fun, const _Tp&>, "std::expected::transform requires that F must be invocable with T.");
-    using _Res = __remove_cv_t<invoke_result_t<_Fun, const _Tp&>>;
+    using _Res = remove_cv_t<invoke_result_t<_Fun, const _Tp&>>;
 
     if (this->__has_val_)
     {
@@ -846,12 +846,12 @@ public:
   }
 
   _LIBCUDACXX_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
-  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_copy_constructible, _Err2) _LIBCUDACXX_AND(
-    !_CCCL_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun, const _Tp2&>>, void)))
+  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_copy_constructible, _Err2)
+                         _LIBCUDACXX_AND(!_CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun, const _Tp2&>>, void)))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) const&
   {
     static_assert(invocable<_Fun, const _Tp&>, "std::expected::transform requires that F must be invocable with T");
-    using _Res = __remove_cv_t<invoke_result_t<_Fun, const _Tp&>>;
+    using _Res = remove_cv_t<invoke_result_t<_Fun, const _Tp&>>;
 
     static_assert(__invoke_constructible<_Fun, const _Tp&>,
                   "std::expected::transform requires that the return type of F is constructible with the result of "
@@ -873,11 +873,11 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_move_constructible, _Err2)
-                         _LIBCUDACXX_AND _CCCL_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun, _Tp2>>, void))
+                         _LIBCUDACXX_AND _CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun, _Tp2>>, void))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) &&
   {
     static_assert(invocable<_Fun, _Tp>, "std::expected::transform requires that F must be invocable with T.");
-    using _Res = __remove_cv_t<invoke_result_t<_Fun, _Tp>>;
+    using _Res = remove_cv_t<invoke_result_t<_Fun, _Tp>>;
 
     if (this->__has_val_)
     {
@@ -891,11 +891,11 @@ public:
   }
   _LIBCUDACXX_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_move_constructible, _Err2)
-                         _LIBCUDACXX_AND(!_CCCL_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun, _Tp2>>, void)))
+                         _LIBCUDACXX_AND(!_CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun, _Tp2>>, void)))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) &&
   {
     static_assert(invocable<_Fun, _Tp>, "std::expected::transform requires that F must be invocable with T");
-    using _Res = __remove_cv_t<invoke_result_t<_Fun, _Tp>>;
+    using _Res = remove_cv_t<invoke_result_t<_Fun, _Tp>>;
 
     static_assert(__invoke_constructible<_Fun, _Tp>,
                   "std::expected::transform requires that the return type of F is constructible with the result of "
@@ -920,11 +920,11 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_constructible, _Err2, const _Err2)
-                         _LIBCUDACXX_AND _CCCL_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun, const _Tp2>>, void))
+                         _LIBCUDACXX_AND _CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun, const _Tp2>>, void))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) const&&
   {
     static_assert(invocable<_Fun, const _Tp>, "std::expected::transform requires that F must be invocable with T.");
-    using _Res = __remove_cv_t<invoke_result_t<_Fun, const _Tp>>;
+    using _Res = remove_cv_t<invoke_result_t<_Fun, const _Tp>>;
 
     if (this->__has_val_)
     {
@@ -939,11 +939,11 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Fun, class _Tp2 = _Tp, class _Err2 = _Err)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_constructible, _Err2, const _Err2)
-                         _LIBCUDACXX_AND(!_CCCL_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun, const _Tp2>>, void)))
+                         _LIBCUDACXX_AND(!_CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun, const _Tp2>>, void)))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) const&&
   {
     static_assert(invocable<_Fun, const _Tp>, "std::expected::transform requires that F must be invocable with T");
-    using _Res = __remove_cv_t<invoke_result_t<_Fun, const _Tp>>;
+    using _Res = remove_cv_t<invoke_result_t<_Fun, const _Tp>>;
 
     static_assert(__invoke_constructible<_Fun, const _Tp>,
                   "std::expected::transform requires that the return type of F is constructible with the result of "
@@ -971,7 +971,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform_error(_Fun&& __fun) &
   {
     static_assert(invocable<_Fun, _Err&>, "std::expected::transform_error requires that F must be invocable with E");
-    using _Res = __remove_cv_t<invoke_result_t<_Fun, _Err&>>;
+    using _Res = remove_cv_t<invoke_result_t<_Fun, _Err&>>;
 
     static_assert(__invoke_constructible<_Fun, _Err&>,
                   "std::expected::transform_error requires that the return type of F is constructible with the result "
@@ -997,7 +997,7 @@ public:
   {
     static_assert(invocable<_Fun, const _Err&>,
                   "std::expected::transform_error requires that F must be invocable with E");
-    using _Res = __remove_cv_t<invoke_result_t<_Fun, const _Err&>>;
+    using _Res = remove_cv_t<invoke_result_t<_Fun, const _Err&>>;
 
     static_assert(__invoke_constructible<_Fun, const _Err&>,
                   "std::expected::transform_error requires that the return type of F is constructible with the result "
@@ -1022,7 +1022,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform_error(_Fun&& __fun) &&
   {
     static_assert(invocable<_Fun, _Err>, "std::expected::transform_error requires that F must be invocable with E");
-    using _Res = __remove_cv_t<invoke_result_t<_Fun, _Err>>;
+    using _Res = remove_cv_t<invoke_result_t<_Fun, _Err>>;
 
     static_assert(__invoke_constructible<_Fun, _Err>,
                   "std::expected::transform_error requires that the return type of F is constructible with the result "
@@ -1051,7 +1051,7 @@ public:
   {
     static_assert(invocable<_Fun, const _Err>,
                   "std::expected::transform_error requires that F must be invocable with E");
-    using _Res = __remove_cv_t<invoke_result_t<_Fun, const _Err>>;
+    using _Res = remove_cv_t<invoke_result_t<_Fun, const _Err>>;
 
     static_assert(__invoke_constructible<_Fun, const _Err>,
                   "std::expected::transform_error requires that the return type of F is constructible with the result "
@@ -1486,7 +1486,7 @@ public:
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_constructible, _Err2, _Err2&))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto and_then(_Fun&& __fun) &
   {
-    using _Res = __remove_cvref_t<invoke_result_t<_Fun>>;
+    using _Res = remove_cvref_t<invoke_result_t<_Fun>>;
 
     static_assert(__expected::__is_expected<_Res>, "Result of f(value()) must be a specialization of std::expected");
     static_assert(_CCCL_TRAIT(is_same, typename _Res::error_type, _Err),
@@ -1506,7 +1506,7 @@ public:
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_copy_constructible, _Err2))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto and_then(_Fun&& __fun) const&
   {
-    using _Res = __remove_cvref_t<invoke_result_t<_Fun>>;
+    using _Res = remove_cvref_t<invoke_result_t<_Fun>>;
 
     static_assert(__expected::__is_expected<_Res>, "Result of f(value()) must be a specialization of std::expected");
     static_assert(_CCCL_TRAIT(is_same, typename _Res::error_type, _Err),
@@ -1526,7 +1526,7 @@ public:
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_move_constructible, _Err2))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto and_then(_Fun&& __fun) &&
   {
-    using _Res = __remove_cvref_t<invoke_result_t<_Fun>>;
+    using _Res = remove_cvref_t<invoke_result_t<_Fun>>;
 
     static_assert(__expected::__is_expected<_Res>, "Result of f(value()) must be a specialization of std::expected");
     static_assert(_CCCL_TRAIT(is_same, typename _Res::error_type, _Err),
@@ -1546,7 +1546,7 @@ public:
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_constructible, _Err2, const _Err2))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto and_then(_Fun&& __fun) const&&
   {
-    using _Res = __remove_cvref_t<invoke_result_t<_Fun>>;
+    using _Res = remove_cvref_t<invoke_result_t<_Fun>>;
 
     static_assert(__expected::__is_expected<_Res>, "Result of f(value()) must be a specialization of std::expected");
     static_assert(_CCCL_TRAIT(is_same, typename _Res::error_type, _Err),
@@ -1565,7 +1565,7 @@ public:
   template <class _Fun>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto or_else(_Fun&& __fun) &
   {
-    using _Res = __remove_cvref_t<invoke_result_t<_Fun, _Err&>>;
+    using _Res = remove_cvref_t<invoke_result_t<_Fun, _Err&>>;
 
     static_assert(__expected::__is_expected<_Res>,
                   "Result of std::expected::or_else must be a specialization of std::expected");
@@ -1585,7 +1585,7 @@ public:
   template <class _Fun>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto or_else(_Fun&& __fun) const&
   {
-    using _Res = __remove_cvref_t<invoke_result_t<_Fun, const _Err&>>;
+    using _Res = remove_cvref_t<invoke_result_t<_Fun, const _Err&>>;
 
     static_assert(__expected::__is_expected<_Res>,
                   "Result of std::expected::or_else must be a specialization of std::expected");
@@ -1605,7 +1605,7 @@ public:
   template <class _Fun>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto or_else(_Fun&& __fun) &&
   {
-    using _Res = __remove_cvref_t<invoke_result_t<_Fun, _Err>>;
+    using _Res = remove_cvref_t<invoke_result_t<_Fun, _Err>>;
 
     static_assert(__expected::__is_expected<_Res>,
                   "Result of std::expected::or_else must be a specialization of std::expected");
@@ -1625,7 +1625,7 @@ public:
   template <class _Fun>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto or_else(_Fun&& __fun) const&&
   {
-    using _Res = __remove_cvref_t<invoke_result_t<_Fun, const _Err>>;
+    using _Res = remove_cvref_t<invoke_result_t<_Fun, const _Err>>;
 
     static_assert(__expected::__is_expected<_Res>,
                   "Result of std::expected::or_else must be a specialization of std::expected");
@@ -1644,7 +1644,7 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Fun, class _Err2 = _Err)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_constructible, _Err2, _Err2&)
-                         _LIBCUDACXX_AND _CCCL_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun>>, void))
+                         _LIBCUDACXX_AND _CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun>>, void))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) &
   {
     static_assert(invocable<_Fun>, "std::expected::transform requires that F must be invocable with T.");
@@ -1661,11 +1661,11 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Fun, class _Err2 = _Err)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_constructible, _Err2, _Err2&)
-                         _LIBCUDACXX_AND(!_CCCL_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun>>, void)))
+                         _LIBCUDACXX_AND(!_CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun>>, void)))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) &
   {
     static_assert(invocable<_Fun>, "std::expected::transform requires that F must be invocable with T.");
-    using _Res = __remove_cv_t<invoke_result_t<_Fun>>;
+    using _Res = remove_cv_t<invoke_result_t<_Fun>>;
 
     static_assert(__invoke_constructible<_Fun>,
                   "std::expected::transform requires that the return type of F is constructible with the result of "
@@ -1686,7 +1686,7 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Fun, class _Err2 = _Err)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_copy_constructible, _Err2)
-                         _LIBCUDACXX_AND _CCCL_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun>>, void))
+                         _LIBCUDACXX_AND _CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun>>, void))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) const&
   {
     static_assert(invocable<_Fun>, "std::expected::transform requires that F must be invocable with T.");
@@ -1703,11 +1703,11 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Fun, class _Err2 = _Err)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_copy_constructible, _Err2)
-                         _LIBCUDACXX_AND(!_CCCL_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun>>, void)))
+                         _LIBCUDACXX_AND(!_CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun>>, void)))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) const&
   {
     static_assert(invocable<_Fun>, "std::expected::transform requires that F must be invocable with T");
-    using _Res = __remove_cv_t<invoke_result_t<_Fun>>;
+    using _Res = remove_cv_t<invoke_result_t<_Fun>>;
 
     static_assert(__invoke_constructible<_Fun>,
                   "std::expected::transform requires that the return type of F is constructible with the result of "
@@ -1728,7 +1728,7 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Fun, class _Err2 = _Err)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_move_constructible, _Err2)
-                         _LIBCUDACXX_AND _CCCL_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun>>, void))
+                         _LIBCUDACXX_AND _CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun>>, void))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) &&
   {
     static_assert(invocable<_Fun>, "std::expected::transform requires that F must be invocable with T.");
@@ -1744,11 +1744,11 @@ public:
   }
   _LIBCUDACXX_TEMPLATE(class _Fun, class _Err2 = _Err)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_move_constructible, _Err2)
-                         _LIBCUDACXX_AND(!_CCCL_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun>>, void)))
+                         _LIBCUDACXX_AND(!_CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun>>, void)))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) &&
   {
     static_assert(invocable<_Fun>, "std::expected::transform requires that F must be invocable with T");
-    using _Res = __remove_cv_t<invoke_result_t<_Fun>>;
+    using _Res = remove_cv_t<invoke_result_t<_Fun>>;
 
     static_assert(__invoke_constructible<_Fun>,
                   "std::expected::transform requires that the return type of F is constructible with the result of "
@@ -1769,7 +1769,7 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Fun, class _Err2 = _Err)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_constructible, _Err2, const _Err2)
-                         _LIBCUDACXX_AND _CCCL_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun>>, void))
+                         _LIBCUDACXX_AND _CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun>>, void))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) const&&
   {
     static_assert(invocable<_Fun>, "std::expected::transform requires that F must be invocable with T.");
@@ -1786,11 +1786,11 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Fun, class _Err2 = _Err)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_constructible, _Err2, const _Err2)
-                         _LIBCUDACXX_AND(!_CCCL_TRAIT(is_same, __remove_cv_t<invoke_result_t<_Fun>>, void)))
+                         _LIBCUDACXX_AND(!_CCCL_TRAIT(is_same, remove_cv_t<invoke_result_t<_Fun>>, void)))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Fun&& __fun) const&&
   {
     static_assert(invocable<_Fun>, "std::expected::transform requires that F must be invocable with T");
-    using _Res = __remove_cv_t<invoke_result_t<_Fun>>;
+    using _Res = remove_cv_t<invoke_result_t<_Fun>>;
 
     static_assert(__invoke_constructible<_Fun>,
                   "std::expected::transform requires that the return type of F is constructible with the result of "
@@ -1813,7 +1813,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform_error(_Fun&& __fun) &
   {
     static_assert(invocable<_Fun, _Err&>, "std::expected::transform_error requires that F must be invocable with E");
-    using _Res = __remove_cv_t<invoke_result_t<_Fun, _Err&>>;
+    using _Res = remove_cv_t<invoke_result_t<_Fun, _Err&>>;
 
     static_assert(__invoke_constructible<_Fun, _Err&>,
                   "std::expected::transform_error requires that the return type of F is constructible with the result "
@@ -1838,7 +1838,7 @@ public:
   {
     static_assert(invocable<_Fun, const _Err&>,
                   "std::expected::transform_error requires that F must be invocable with E");
-    using _Res = __remove_cv_t<invoke_result_t<_Fun, const _Err&>>;
+    using _Res = remove_cv_t<invoke_result_t<_Fun, const _Err&>>;
 
     static_assert(__invoke_constructible<_Fun, const _Err&>,
                   "std::expected::transform_error requires that the return type of F is constructible with the result "
@@ -1862,7 +1862,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform_error(_Fun&& __fun) &&
   {
     static_assert(invocable<_Fun, _Err>, "std::expected::transform_error requires that F must be invocable with E");
-    using _Res = __remove_cv_t<invoke_result_t<_Fun, _Err>>;
+    using _Res = remove_cv_t<invoke_result_t<_Fun, _Err>>;
 
     static_assert(__invoke_constructible<_Fun, _Err>,
                   "std::expected::transform_error requires that the return type of F is constructible with the result "
@@ -1890,7 +1890,7 @@ public:
   {
     static_assert(invocable<_Fun, const _Err>,
                   "std::expected::transform_error requires that F must be invocable with E");
-    using _Res = __remove_cv_t<invoke_result_t<_Fun, const _Err>>;
+    using _Res = remove_cv_t<invoke_result_t<_Fun, const _Err>>;
 
     static_assert(__invoke_constructible<_Fun, const _Err>,
                   "std::expected::transform_error requires that the return type of F is constructible with the result "

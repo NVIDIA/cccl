@@ -43,9 +43,9 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wclass-memaccess")
 template <
   class _To,
   class _From,
-  __enable_if_t<(sizeof(_To) == sizeof(_From)), int>                                                                = 0,
-  __enable_if_t<_CCCL_TRAIT(is_trivially_copyable, _To) || _CCCL_TRAIT(__is_extended_floating_point, _To), int>     = 0,
-  __enable_if_t<_CCCL_TRAIT(is_trivially_copyable, _From) || _CCCL_TRAIT(__is_extended_floating_point, _From), int> = 0>
+  enable_if_t<(sizeof(_To) == sizeof(_From)), int>                                                                = 0,
+  enable_if_t<_CCCL_TRAIT(is_trivially_copyable, _To) || _CCCL_TRAIT(__is_extended_floating_point, _To), int>     = 0,
+  enable_if_t<_CCCL_TRAIT(is_trivially_copyable, _From) || _CCCL_TRAIT(__is_extended_floating_point, _From), int> = 0>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST _To bit_cast(const _From& __from) noexcept
 {
 #if defined(_CCCL_BUILTIN_BIT_CAST)

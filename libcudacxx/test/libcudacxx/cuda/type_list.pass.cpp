@@ -89,8 +89,7 @@ struct ForwardFn
 };
 
 // __type
-static_assert(::cuda::std::is_same<::cuda::std::__type<::cuda::std::__type_identity<Incomplete>>, Incomplete>::value,
-              "");
+static_assert(::cuda::std::is_same<::cuda::std::__type<::cuda::std::type_identity<Incomplete>>, Incomplete>::value, "");
 
 // __type_call
 static_assert(::cuda::std::is_same<::cuda::std::__type_call<Fn, Incomplete>, Types<Incomplete>>::value, "");

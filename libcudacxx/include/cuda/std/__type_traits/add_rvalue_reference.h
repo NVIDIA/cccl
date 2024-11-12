@@ -27,36 +27,31 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_CCCL_BUILTIN_ADD_RVALUE_REFERENCE) && !defined(_LIBCUDACXX_USE_ADD_RVALUE_REFERENCE_FALLBACK)
 
 template <class _Tp>
-using __add_rvalue_reference_t = _CCCL_BUILTIN_ADD_RVALUE_REFERENCE(_Tp);
+using add_rvalue_reference_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_ADD_RVALUE_REFERENCE(_Tp);
 
 #else // ^^^ _CCCL_BUILTIN_ADD_RVALUE_REFERENCE ^^^ / vvv !_CCCL_BUILTIN_ADD_RVALUE_REFERENCE vvv
 
 template <class _Tp, bool = __libcpp_is_referenceable<_Tp>::value>
 struct __add_rvalue_reference_impl
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE _Tp type;
+  typedef _CCCL_NODEBUG_ALIAS _Tp type;
 };
 template <class _Tp>
 struct __add_rvalue_reference_impl<_Tp, true>
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE _Tp&& type;
+  typedef _CCCL_NODEBUG_ALIAS _Tp&& type;
 };
 
 template <class _Tp>
-using __add_rvalue_reference_t = typename __add_rvalue_reference_impl<_Tp>::type;
+using add_rvalue_reference_t _CCCL_NODEBUG_ALIAS = typename __add_rvalue_reference_impl<_Tp>::type;
 
 #endif // _CCCL_BUILTIN_ADD_RVALUE_REFERENCE
 
 template <class _Tp>
 struct add_rvalue_reference
 {
-  using type = __add_rvalue_reference_t<_Tp>;
+  using type = add_rvalue_reference_t<_Tp>;
 };
-
-#if _CCCL_STD_VER > 2011
-template <class _Tp>
-using add_rvalue_reference_t = __add_rvalue_reference_t<_Tp>;
-#endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
