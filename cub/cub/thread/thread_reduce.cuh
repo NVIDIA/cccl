@@ -382,12 +382,14 @@ ThreadReduceSequential(const Input& input, ReductionOp reduction_op)
   return retval;
 }
 
-template <typename AccumT, typename Input, typename ReductionOp>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
-ThreadReduceBinaryTree(const Input& input, ReductionOp reduction_op)
+/// Specialization for DPX reduction
+template <typename Input, typename ReductionOp>
+_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto
+ThreadReduceDpx(const Input& input, ReductionOp reduction_op) -> ::cuda::std::remove_cvref_t<decltype(input[0])>
 {
-  constexpr auto length = cub::detail::static_size_v<Input>();
-  auto array            = cub::detail::to_array<AccumT>(input);
+  using T              = ::cuda::std::remove_cvref_t<decltype(input[0])>;
+  constexpr int length = detail::static_size<Input>();
+  T array[length];
 #  pragma unroll
   for (int i = 1; i < length; i *= 2)
   {
@@ -426,9 +428,10 @@ ThreadReduceTernaryTree(const Input& input, ReductionOp reduction_op)
 // never reached. Protect instantion of ThreadReduceSimd with arbitrary types and operators
 template <typename Input,
           typename ReductionOp,
-          _CUB_TEMPLATE_REQUIRES(!cub::internal::enable_generic_simd_reduction<Input, ReductionOp>())>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto
-ThreadReduceSimd(const Input& input, ReductionOp) -> ::cuda::std::__remove_cvref_t<decltype(input[0])>
+          typename ValueT = ::cuda::std::remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>,
+          typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, ValueT>,
+          _CUB_TEMPLATE_REQUIRES(enable_dpx_reduction<Input, ReductionOp, AccumT>())>
+_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& input, ReductionOp reduction_op)
 {
   assert(false);
   return input[0];
@@ -436,55 +439,9 @@ ThreadReduceSimd(const Input& input, ReductionOp) -> ::cuda::std::__remove_cvref
 
 template <typename Input,
           typename ReductionOp,
-          _CUB_TEMPLATE_REQUIRES(cub::internal::enable_generic_simd_reduction<Input, ReductionOp>())>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto
-ThreadReduceSimd(const Input& input, ReductionOp reduction_op) -> ::cuda::std::__remove_cvref_t<decltype(input[0])>
-{
-  using cub::detail::unsafe_bitcast;
-  using T                       = ::cuda::std::__remove_cvref_t<decltype(input[0])>;
-  using SimdReduceOp            = cub::internal::cub_operator_to_simd_operator_t<ReductionOp, T>;
-  using SimdType                = simd_type_t<ReductionOp, T>;
-  constexpr auto length         = cub::detail::static_size_v<Input>();
-  constexpr auto simd_ratio     = sizeof(SimdType) / sizeof(T);
-  constexpr auto length_rounded = (length / simd_ratio) * simd_ratio; // TODO: replace with round_up()
-  using UnpackedType            = ::cuda::std::array<T, simd_ratio>;
-  using SimdArray               = ::cuda::std::array<SimdType, length / simd_ratio>;
-  static_assert(simd_ratio == 1 || simd_ratio == 2, "Only SIMD size <= 2 is supported");
-  T local_array[length_rounded];
-  UnrolledCopy<length_rounded>(input, local_array);
-  auto simd_input         = unsafe_bitcast<SimdArray>(local_array);
-  SimdType simd_reduction = cub::ThreadReduce(simd_input, SimdReduceOp{});
-  auto unpacked_values    = unsafe_bitcast<UnpackedType>(simd_reduction);
-  if _CCCL_CONSTEXPR_CXX17 (simd_ratio == 1)
-  {
-    return unpacked_values[0];
-  }
-  else // simd_ratio == 2
-  {
-    // Create a reversed copy of the SIMD reduction result and apply the SIMD operator.
-    // This avoids redundant instructions for converting to and from 32-bit register size
-    T unpacked_values_rev[] = {unpacked_values[1], unpacked_values[0]};
-    auto simd_reduction_rev = unsafe_bitcast<SimdType>(unpacked_values_rev);
-    SimdType result         = SimdReduceOp{}(simd_reduction, simd_reduction_rev);
-    // repeat the same optimization for the last element
-    if _CCCL_CONSTEXPR_CXX17 (length % simd_ratio == 1)
-    {
-      T tail[]       = {input[length - 1], T{}};
-      auto tail_simd = unsafe_bitcast<SimdType>(tail);
-      result         = SimdReduceOp{}(result, tail_simd);
-    }
-    return unsafe_bitcast<UnpackedType>(result)[0];
-  }
-  return input[0]; // nvcc 11.x warning workaround (never reached)
-}
-
-} // namespace internal
-
-/***********************************************************************************************************************
- * Reduction Interface/Dispatch (public)
- **********************************************************************************************************************/
-
-template <typename Input, typename ReductionOp, typename ValueT, typename AccumT>
+          typename ValueT = ::cuda::std::remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>,
+          typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, ValueT>,
+          _CUB_TEMPLATE_REQUIRES(!enable_dpx_reduction<Input, ReductionOp, AccumT>())>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& input, ReductionOp reduction_op)
 {
   static_assert(detail::is_fixed_size_random_access_range_t<Input>::value,
@@ -536,9 +493,9 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& 
 template <typename Input,
           typename ReductionOp,
           typename PrefixT,
-#  ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-          typename ValueT = ::cuda::std::__remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>,
-#  endif // !DOXYGEN_SHOULD_SKIP_THIS
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+          typename ValueT = ::cuda::std::remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>,
+#endif // !DOXYGEN_SHOULD_SKIP_THIS
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, ValueT, PrefixT>>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
 ThreadReduce(const Input& input, ReductionOp reduction_op, PrefixT prefix)
