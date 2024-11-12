@@ -54,7 +54,7 @@ public:
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! Applies the function object ``op`` to each index in the provided shape
+  //! Applies the function object ``op`` to each index in the provided shape.
   //! The algorithm is similar to
   //! `bulk <https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2022/p2300r5.html#design-sender-adaptor-bulk>`_
   //! from P2300.
