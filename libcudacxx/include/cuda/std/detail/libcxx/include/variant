@@ -1380,7 +1380,7 @@ struct __narrowing_check
 };
 
 template <class _Dest, class _Source>
-using __check_for_narrowing _CCCL_NODEBUG_ALIAS = typename _If<
+using __check_for_narrowing _CCCL_NODEBUG_ALIAS = typename conditional_t<
 #  ifdef _LIBCUDACXX_ENABLE_NARROWING_CONVERSIONS_IN_VARIANT
   false &&
 #  endif // _LIBCUDACXX_ENABLE_NARROWING_CONVERSIONS_IN_VARIANT
@@ -1555,11 +1555,11 @@ public:
   _CCCL_HIDE_FROM_ABI constexpr variant(variant&&)      = default;
 
   template <class _Arg>
-  using __match_construct =
-    _If<!_CCCL_TRAIT(is_same, remove_cvref_t<_Arg>, variant) && !__is_inplace_type<remove_cvref_t<_Arg>>::value //
-          && !__is_inplace_index<remove_cvref_t<_Arg>>::value,
-        typename __constraints::template __match_construct<_Arg>,
-        __variant_detail::__invalid_variant_constraints>;
+  using __match_construct = conditional_t<
+    !_CCCL_TRAIT(is_same, remove_cvref_t<_Arg>, variant) && !__is_inplace_type<remove_cvref_t<_Arg>>::value //
+      && !__is_inplace_index<remove_cvref_t<_Arg>>::value,
+    typename __constraints::template __match_construct<_Arg>,
+    __variant_detail::__invalid_variant_constraints>;
 
   // CTAD fails if we do not SFINAE the empty variant away first
   template <class _Arg,
@@ -1572,9 +1572,9 @@ public:
 
   template <size_t _Ip, class... _Args>
   using __variadic_construct =
-    _If<(_Ip < sizeof...(_Types)),
-        typename __constraints::template __variadic_construct<_Ip, _Args...>,
-        __variant_detail::__invalid_variant_constraints>;
+    conditional_t<(_Ip < sizeof...(_Types)),
+                  typename __constraints::template __variadic_construct<_Ip, _Args...>,
+                  __variant_detail::__invalid_variant_constraints>;
 
   template <size_t _Ip,
             class... _Args,
@@ -1587,9 +1587,9 @@ public:
 
   template <size_t _Ip, class _Up, class... _Args>
   using __variadic_ilist_construct =
-    _If<(_Ip < sizeof...(_Types)),
-        typename __constraints::template __variadic_ilist_construct<_Ip, _Up, _Args...>,
-        __variant_detail::__invalid_variant_constraints>;
+    conditional_t<(_Ip < sizeof...(_Types)),
+                  typename __constraints::template __variadic_ilist_construct<_Ip, _Up, _Args...>,
+                  __variant_detail::__invalid_variant_constraints>;
 
   template <size_t _Ip,
             class _Up,
@@ -1629,9 +1629,9 @@ public:
 
   template <class _Arg>
   using __match_assign =
-    _If<!_CCCL_TRAIT(is_same, remove_cvref_t<_Arg>, variant),
-        typename __constraints::template __match_assign<_Arg>,
-        __variant_detail::__invalid_variant_constraints>;
+    conditional_t<!_CCCL_TRAIT(is_same, remove_cvref_t<_Arg>, variant),
+                  typename __constraints::template __match_assign<_Arg>,
+                  __variant_detail::__invalid_variant_constraints>;
 
   template <class _Arg, class _Constraints = __match_assign<_Arg>, class = enable_if_t<_Constraints::__assignable>>
   _LIBCUDACXX_HIDE_FROM_ABI variant& operator=(_Arg&& __arg) noexcept(_Constraints::__nothrow_assignable)

@@ -473,7 +473,8 @@ template <class _Ip, class _Sp, subrange_kind _Kp>
 _CCCL_INLINE_VAR constexpr bool enable_borrowed_range<subrange<_Ip, _Sp, _Kp>> = true;
 
 template <class _Rp>
-using borrowed_subrange_t = enable_if_t<range<_Rp>, _If<borrowed_range<_Rp>, subrange<iterator_t<_Rp>>, dangling>>;
+using borrowed_subrange_t =
+  enable_if_t<range<_Rp>, conditional_t<borrowed_range<_Rp>, subrange<iterator_t<_Rp>>, dangling>>;
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

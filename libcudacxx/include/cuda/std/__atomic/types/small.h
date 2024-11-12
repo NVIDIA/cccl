@@ -33,7 +33,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // manipulated by PTX without any performance overhead
 template <typename _Tp>
-using __atomic_small_proxy_t = _If<_CCCL_TRAIT(is_signed, _Tp), int32_t, uint32_t>;
+using __atomic_small_proxy_t = conditional_t<_CCCL_TRAIT(is_signed, _Tp), int32_t, uint32_t>;
 
 // Arithmetic conversions to/from proxy types
 template <class _Tp, enable_if_t<_CCCL_TRAIT(is_arithmetic, _Tp), int> = 0>

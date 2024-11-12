@@ -145,9 +145,9 @@ struct AgentReduce
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
   using WrappedInputIteratorT =
-    ::cuda::std::_If<::cuda::std::is_pointer<InputIteratorT>::value,
-                     CacheModifiedInputIterator<AgentReducePolicy::LOAD_MODIFIER, InputT, OffsetT>,
-                     InputIteratorT>;
+    ::cuda::std::conditional_t<::cuda::std::is_pointer<InputIteratorT>::value,
+                               CacheModifiedInputIterator<AgentReducePolicy::LOAD_MODIFIER, InputT, OffsetT>,
+                               InputIteratorT>;
 
   /// Constants
   static constexpr int BLOCK_THREADS      = AgentReducePolicy::BLOCK_THREADS;

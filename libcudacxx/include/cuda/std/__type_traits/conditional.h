@@ -22,26 +22,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <bool>
-struct _IfImpl;
-
-template <>
-struct _IfImpl<true>
-{
-  template <class _IfRes, class _ElseRes>
-  using _Select _CCCL_NODEBUG_ALIAS = _IfRes;
-};
-
-template <>
-struct _IfImpl<false>
-{
-  template <class _IfRes, class _ElseRes>
-  using _Select _CCCL_NODEBUG_ALIAS = _ElseRes;
-};
-
-template <bool _Cond, class _IfRes, class _ElseRes>
-using _If _CCCL_NODEBUG_ALIAS = typename _IfImpl<_Cond>::template _Select<_IfRes, _ElseRes>;
-
 template <bool _Bp, class _If, class _Then>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional
 {
@@ -53,8 +33,35 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional<false, _If, _Then>
   typedef _Then type;
 };
 
-template <bool _Bp, class _If, class _Then>
-using conditional_t _CCCL_NODEBUG_ALIAS = typename conditional<_Bp, _If, _Then>::type;
+#if defined(_CCCL_COMPILER_MSVC)
+
+template <bool _Cond, class _If, class _Else>
+using conditional_t _CCCL_NODEBUG_ALIAS = typename conditional<_Cond, _If, _Else>::type;
+
+#else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
+
+// Optimized implementation of `conditional_t` instantiating only two classes
+template <bool>
+struct __conditional_impl;
+
+template <>
+struct __conditional_impl<true>
+{
+  template <class _If, class _Else>
+  using type _CCCL_NODEBUG_ALIAS = _If;
+};
+
+template <>
+struct __conditional_impl<false>
+{
+  template <class _If, class _Else>
+  using type _CCCL_NODEBUG_ALIAS = _Else;
+};
+
+template <bool _Cond, class _If, class _Else>
+using conditional_t _CCCL_NODEBUG_ALIAS = typename __conditional_impl<_Cond>::template type<_If, _Else>;
+
+#endif // !_CCCL_COMPILER_MSVC
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -76,11 +76,11 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <size_t _Capacity>
 using __inplace_vector_size_type =
-  _If<_Capacity <= numeric_limits<uint8_t>::max(),
+  conditional_t<_Capacity <= numeric_limits<uint8_t>::max(),
       uint8_t,
-      _If<_Capacity <= numeric_limits<uint16_t>::max(),
+      conditional_t<_Capacity <= numeric_limits<uint16_t>::max(),
           uint16_t,
-          _If<_Capacity <= numeric_limits<uint32_t>::max(), uint32_t, uint64_t>>>;
+          conditional_t<_Capacity <= numeric_limits<uint32_t>::max(), uint32_t, uint64_t>>>;
 
 enum class __inplace_vector_specialization
 {

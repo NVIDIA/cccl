@@ -208,9 +208,9 @@ struct __type_try_quote<_Fn, _Default>
 {
   template <class... _Ts>
   using __call _CCCL_NODEBUG_ALIAS =
-    typename _CUDA_VSTD::_If<__type_valid_v<_Fn, _Ts...>, //
-                             __type_try_quote<_Fn>,
-                             _CUDA_VSTD::__type_always<_Default>>::template __call<_Ts...>;
+    typename _CUDA_VSTD::conditional_t<__type_valid_v<_Fn, _Ts...>, //
+                                       __type_try_quote<_Fn>,
+                                       _CUDA_VSTD::__type_always<_Default>>::template __call<_Ts...>;
 };
 
 template <class _First, class _Second>

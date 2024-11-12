@@ -54,9 +54,9 @@ template <class _Iter>
 struct __move_iter_category_base<_Iter>
 {
   using iterator_category =
-    _If<derived_from<typename iterator_traits<_Iter>::iterator_category, random_access_iterator_tag>,
-        random_access_iterator_tag,
-        typename iterator_traits<_Iter>::iterator_category>;
+    conditional_t<derived_from<typename iterator_traits<_Iter>::iterator_category, random_access_iterator_tag>,
+                  random_access_iterator_tag,
+                  typename iterator_traits<_Iter>::iterator_category>;
 };
 
 template <class _Iter, class _Sent>
@@ -76,9 +76,9 @@ template <class _Iter>
 struct __move_iter_category_base<_Iter, enable_if_t<__has_iter_category<iterator_traits<_Iter>>>>
 {
   using iterator_category =
-    _If<derived_from<typename iterator_traits<_Iter>::iterator_category, random_access_iterator_tag>,
-        random_access_iterator_tag,
-        typename iterator_traits<_Iter>::iterator_category>;
+    conditional_t<derived_from<typename iterator_traits<_Iter>::iterator_category, random_access_iterator_tag>,
+                  random_access_iterator_tag,
+                  typename iterator_traits<_Iter>::iterator_category>;
 };
 
 template <class _Iter, class _Sent>
@@ -152,9 +152,9 @@ public:
   using reference       = iter_rvalue_reference_t<_Iter>;
 #else // ^^^ _CCCL_STD_VER > 2014 ^^^ / vvv _CCCL_STD_VER < 2017 vvv
   typedef _Iter iterator_type;
-  typedef _If<__is_cpp17_random_access_iterator<_Iter>::value,
-              random_access_iterator_tag,
-              typename iterator_traits<_Iter>::iterator_category>
+  typedef conditional_t<__is_cpp17_random_access_iterator<_Iter>::value,
+                        random_access_iterator_tag,
+                        typename iterator_traits<_Iter>::iterator_category>
     iterator_category;
   typedef typename iterator_traits<iterator_type>::value_type value_type;
   typedef typename iterator_traits<iterator_type>::difference_type difference_type;

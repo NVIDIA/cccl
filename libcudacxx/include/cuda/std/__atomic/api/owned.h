@@ -121,13 +121,13 @@ struct __atomic_pointer
 
 template <typename _Tp, thread_scope _Sco = thread_scope_system>
 using __atomic_impl =
-  _If<is_pointer<_Tp>::value,
-      __atomic_pointer<_Tp, __scope_to_tag<_Sco>>,
-      _If<is_floating_point<_Tp>::value,
-          __atomic_arithmetic<_Tp, __scope_to_tag<_Sco>>,
-          _If<is_integral<_Tp>::value,
-              __atomic_bitwise<_Tp, __scope_to_tag<_Sco>>,
-              __atomic_common<_Tp, __scope_to_tag<_Sco>>>>>;
+  conditional_t<is_pointer<_Tp>::value,
+                __atomic_pointer<_Tp, __scope_to_tag<_Sco>>,
+                conditional_t<is_floating_point<_Tp>::value,
+                              __atomic_arithmetic<_Tp, __scope_to_tag<_Sco>>,
+                              conditional_t<is_integral<_Tp>::value,
+                                            __atomic_bitwise<_Tp, __scope_to_tag<_Sco>>,
+                                            __atomic_common<_Tp, __scope_to_tag<_Sco>>>>>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

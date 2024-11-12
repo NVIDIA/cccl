@@ -372,7 +372,8 @@ template <class... _Properties>
 using _Filtered_vtable = typename _Filtered<_Properties...>::_Filtered_vtable::_Vtable;
 
 template <_WrapperType _Wrapper_type>
-using __alloc_object_storage_t = _CUDA_VSTD::_If<_Wrapper_type == _WrapperType::_Reference, void*, _AnyResourceStorage>;
+using __alloc_object_storage_t =
+  _CUDA_VSTD::conditional_t<_Wrapper_type == _WrapperType::_Reference, void*, _AnyResourceStorage>;
 
 template <class _Vtable, _WrapperType _Wrapper_type>
 struct _Alloc_base
@@ -461,12 +462,13 @@ _LIBCUDACXX_CONCEPT _Is_resource_base = _Is_resource_base_fn(static_cast<_Resour
 
 template <_AllocType _Alloc_type, _WrapperType _Wrapper_type>
 using _Resource_base =
-  _CUDA_VSTD::_If<_Alloc_type == _AllocType::_Default,
-                  _Alloc_base<_Alloc_vtable, _Wrapper_type>,
-                  _Async_alloc_base<_Async_alloc_vtable, _Wrapper_type>>;
+  _CUDA_VSTD::conditional_t<_Alloc_type == _AllocType::_Default,
+                            _Alloc_base<_Alloc_vtable, _Wrapper_type>,
+                            _Async_alloc_base<_Async_alloc_vtable, _Wrapper_type>>;
 
 template <_AllocType _Alloc_type>
-using _Vtable_store = _CUDA_VSTD::_If<_Alloc_type == _AllocType::_Default, _Alloc_vtable, _Async_alloc_vtable>;
+using _Vtable_store =
+  _CUDA_VSTD::conditional_t<_Alloc_type == _AllocType::_Default, _Alloc_vtable, _Async_alloc_vtable>;
 
 template <_AllocType _Alloc_type, _WrapperType _Wrapper_type, class _Resource>
 _CCCL_INLINE_VAR constexpr _Vtable_store<_Alloc_type> __alloc_vtable =

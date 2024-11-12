@@ -103,7 +103,7 @@ private:
 
     template <class _Ty>
     using __ensure_sender = //
-      _CUDA_VSTD::_If<__is_sender<_Ty> || __type_is_error<_Ty>, _Ty, __error_non_sender_return>;
+      _CUDA_VSTD::conditional_t<__is_sender<_Ty> || __type_is_error<_Ty>, _Ty, __error_non_sender_return>;
 
     template <class... _As>
     using __error_not_callable_with = //
@@ -158,8 +158,8 @@ private:
     // Don't try to compute the type of the variant of operation states
     // if the computation of the completion signatures failed.
     using __deferred_opstate_fn = _CUDA_VSTD::__type_bind_back<__type_try_quote<__opstate2_t>, _CvSndr, _Fn, _Rcvr>;
-    using __opstate_variant_fn =
-      _CUDA_VSTD::_If<__type_is_error<completion_signatures>, _CUDA_VSTD::__type_always<__empty>, __deferred_opstate_fn>;
+    using __opstate_variant_fn  = _CUDA_VSTD::
+      conditional_t<__type_is_error<completion_signatures>, _CUDA_VSTD::__type_always<__empty>, __deferred_opstate_fn>;
     using __opstate_variant_t = __type_try_call<__opstate_variant_fn>;
 
     _Rcvr __rcvr_;

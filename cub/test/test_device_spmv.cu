@@ -178,8 +178,7 @@ struct csr_matrix
 
   void print_internals(std::ostream& out) const
   {
-    out << (HostStorage ? "host" : "device") << "_csr_matrix"
-        << "(" << m_num_rows << ", " << m_num_columns << ")\n"
+    out << (HostStorage ? "host" : "device") << "_csr_matrix" << "(" << m_num_rows << ", " << m_num_columns << ")\n"
         << " - num_elems:   " << (m_num_rows * m_num_columns) << "\n"
         << " - num_nonzero: " << m_num_nonzeros << "\n"
         << " - row_offsets:\n     [";
@@ -207,7 +206,7 @@ struct csr_matrix
 
 private:
   template <typename VecValueT>
-  using vector_t = ::cuda::std::_If<HostStorage, c2h::host_vector<VecValueT>, c2h::device_vector<VecValueT>>;
+  using vector_t = ::cuda::std::conditional_t<HostStorage, c2h::host_vector<VecValueT>, c2h::device_vector<VecValueT>>;
 
   vector_t<ValueT> m_values;
   vector_t<int> m_row_offsets;

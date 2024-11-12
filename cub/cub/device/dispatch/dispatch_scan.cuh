@@ -234,11 +234,12 @@ template <typename InputIteratorT,
           typename ScanOpT,
           typename InitValueT,
           typename OffsetT,
-          typename AccumT         = ::cuda::std::__accumulator_t<ScanOpT,
-                                                                 cub::detail::value_t<InputIteratorT>,
-                                                                 ::cuda::std::_If<std::is_same<InitValueT, NullType>::value,
-                                                                                  cub::detail::value_t<InputIteratorT>,
-                                                                                  typename InitValueT::value_type>>,
+          typename AccumT =
+            ::cuda::std::__accumulator_t<ScanOpT,
+                                         cub::detail::value_t<InputIteratorT>,
+                                         ::cuda::std::conditional_t<std::is_same<InitValueT, NullType>::value,
+                                                                    cub::detail::value_t<InputIteratorT>,
+                                                                    typename InitValueT::value_type>>,
           typename SelectedPolicy = DeviceScanPolicy<AccumT, ScanOpT>,
           bool ForceInclusive     = false>
 struct DispatchScan : SelectedPolicy
