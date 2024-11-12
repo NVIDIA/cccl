@@ -32,7 +32,7 @@
 #include <climits>
 #include <type_traits>
 
-#include "cuda/std/__type_traits/enable_if.h"
+#include <cuda/std/type_traits>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
