@@ -301,7 +301,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE _CCCL_CONSTEXPR_CXX14 bool enable
   using cub::detail::is_one_of;
   using ::cuda::std::is_same;
   using T = ::cuda::std::remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>;
-  if _CCCL_CONSTEXPR_CXX17 (!is_same<T, AccumT>::value)
+  _CCCL_IF_CONSTEXPR (!is_same<T, AccumT>::value)
   {
     return false;
   }
@@ -376,7 +376,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE _CCCL_CONSTEXPR_CXX14 bool enable
   using ::cuda::std::is_same;
   using T               = ::cuda::std::remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>;
   constexpr auto length = cub::detail::static_size_v<Input>();
-  if _CCCL_CONSTEXPR_CXX17 (length < 6)
+  _CCCL_IF_CONSTEXPR (length < 6)
   {
     return false;
   }
@@ -506,7 +506,7 @@ ThreadReduceSimd(const Input& input, ReductionOp reduction_op) -> ::cuda::std::r
   auto simd_input         = unsafe_bitcast<SimdArray>(local_array);
   SimdType simd_reduction = cub::ThreadReduce(simd_input, SimdReduceOp{});
   auto unpacked_values    = unsafe_bitcast<UnpackedType>(simd_reduction);
-  if _CCCL_CONSTEXPR_CXX17 (simd_ratio == 1)
+  _CCCL_IF_CONSTEXPR (simd_ratio == 1)
   {
     return unpacked_values[0];
   }
@@ -518,7 +518,7 @@ ThreadReduceSimd(const Input& input, ReductionOp reduction_op) -> ::cuda::std::r
     auto simd_reduction_rev = unsafe_bitcast<SimdType>(unpacked_values_rev);
     SimdType result         = SimdReduceOp{}(simd_reduction, simd_reduction_rev);
     // repeat the same optimization for the last element
-    if _CCCL_CONSTEXPR_CXX17 (length % simd_ratio == 1)
+    _CCCL_IF_CONSTEXPR (length % simd_ratio == 1)
     {
       T tail[]       = {input[length - 1], T{}};
       auto tail_simd = unsafe_bitcast<SimdType>(tail);
