@@ -55,9 +55,6 @@ template <int Rank, typename ExtendType, typename IndexType = typename ExtendTyp
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE IndexType coordinate_at(
   IndexType index, ExtendType ext, fast_div_mod<IndexType> div_mod_sub_size, fast_div_mod<IndexType> div_mod_size)
 {
-#  if __CUDACC_VER_MAJOR__ == 11
-  _CCCL_NV_DIAG_SUPPRESS(940) // missing return statement at end of non-void function "lambda []()->U"
-#  endif // nvcc-11
   using U           = ::cuda::std::make_unsigned_t<IndexType>;
   auto get_sub_size = [&]() {
     if constexpr (cub::detail::is_sub_size_static<Rank + 1, ExtendType>())
@@ -68,6 +65,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE IndexType coordinate_at(
     {
       return div_mod_sub_size;
     }
+    _CCCL_UNREACHABLE();
   };
   auto get_ext_size = [&]() {
     if constexpr (ExtendType::static_extent(Rank) != ::cuda::std::dynamic_extent)
