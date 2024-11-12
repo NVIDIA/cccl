@@ -319,7 +319,7 @@ private:
       raking_ptr = smem_raking_ptr;
     }
 
-    return cub::ThreadReduce<RAKING_SEGMENT>(raking_ptr, ::cuda::std::plus<>{});
+    return cub::internal::ThreadReduce<RAKING_SEGMENT>(raking_ptr, ::cuda::std::plus<>{});
   }
 
   /// Performs exclusive downsweep raking scan
