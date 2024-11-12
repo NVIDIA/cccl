@@ -21,8 +21,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/conditional.h>
-
 #include <cuda/experimental/__async/cpos.cuh>
 #include <cuda/experimental/__async/env.cuh>
 #include <cuda/experimental/__async/exception.cuh>

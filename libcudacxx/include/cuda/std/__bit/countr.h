@@ -34,14 +34,14 @@ template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __countr_zero(_Tp __t) noexcept;
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<sizeof(_Tp) <= sizeof(uint32_t), int>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<sizeof(_Tp) <= sizeof(uint32_t), int>
 __countr_zero_dispatch(_Tp __t) noexcept
 {
   return __libcpp_ctz(static_cast<uint32_t>(__t));
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<sizeof(_Tp) == sizeof(uint64_t), int>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<sizeof(_Tp) == sizeof(uint64_t), int>
 __countr_zero_dispatch(_Tp __t) noexcept
 {
   return __libcpp_ctz(static_cast<uint64_t>(__t));
@@ -74,7 +74,7 @@ struct __countr_zero_rsh_impl<_Tp, 1>
 };
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<(sizeof(_Tp) > sizeof(uint64_t)), int>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<(sizeof(_Tp) > sizeof(uint64_t)), int>
 __countr_zero_dispatch(_Tp __t) noexcept
 {
   return __countr_zero_rsh_impl<_Tp>::__count(__t, 0);
@@ -96,14 +96,14 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __countr_one(_Tp __t) noexcept
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, int>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, int>
 countr_zero(_Tp __t) noexcept
 {
   return __countr_zero(__t);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, int>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, int>
 countr_one(_Tp __t) noexcept
 {
   return __countr_one(__t);

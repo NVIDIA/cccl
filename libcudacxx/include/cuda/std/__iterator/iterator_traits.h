@@ -178,7 +178,7 @@ struct __iter_concept_category_test
 struct __iter_concept_random_fallback
 {
   template <class _Iter>
-  using _Apply = __enable_if_t<__is_primary_template<iterator_traits<_Iter>>::value, random_access_iterator_tag>;
+  using _Apply = enable_if_t<__is_primary_template<iterator_traits<_Iter>>::value, random_access_iterator_tag>;
 };
 
 template <class _Iter, class _Tester>
@@ -811,7 +811,7 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits<_Tp*>
 {
   typedef ptrdiff_t difference_type;
-  typedef __remove_cv_t<_Tp> value_type;
+  typedef remove_cv_t<_Tp> value_type;
   typedef _Tp* pointer;
   typedef typename add_lvalue_reference<_Tp>::type reference;
   typedef random_access_iterator_tag iterator_category;

@@ -58,7 +58,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr unsigned long long __convert_to_integral(uns
 }
 
 template <typename _Fp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<is_floating_point<_Fp>::value, long long>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<is_floating_point<_Fp>::value, long long>
 __convert_to_integral(_Fp __val)
 {
   return __val;

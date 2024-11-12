@@ -29,29 +29,24 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp>
 struct remove_cv
 {
-  using type _LIBCUDACXX_NODEBUG_TYPE = _CCCL_BUILTIN_REMOVE_CV(_Tp);
+  using type _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_CV(_Tp);
 };
 
 template <class _Tp>
-using __remove_cv_t = _CCCL_BUILTIN_REMOVE_CV(_Tp);
+using remove_cv_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_CV(_Tp);
 
 #else
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_cv
 {
-  typedef __remove_volatile_t<__remove_const_t<_Tp>> type;
+  typedef remove_volatile_t<remove_const_t<_Tp>> type;
 };
 
 template <class _Tp>
-using __remove_cv_t = __remove_volatile_t<__remove_const_t<_Tp>>;
+using remove_cv_t _CCCL_NODEBUG_ALIAS = remove_volatile_t<remove_const_t<_Tp>>;
 
 #endif // defined(_CCCL_BUILTIN_REMOVE_CV) && !defined(_LIBCUDACXX_USE_REMOVE_CV_FALLBACK)
-
-#if _CCCL_STD_VER > 2011
-template <class _Tp>
-using remove_cv_t = __remove_cv_t<_Tp>;
-#endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

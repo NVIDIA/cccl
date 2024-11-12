@@ -1048,13 +1048,13 @@ public:
   using difference_type   = typename _Cp::difference_type;
   using value_type        = bool;
   using pointer           = __bit_iterator;
-  using reference         = __conditional_t<_IsConst, __bit_const_reference<_Cp>, __bit_reference<_Cp>>;
+  using reference         = conditional_t<_IsConst, __bit_const_reference<_Cp>, __bit_reference<_Cp>>;
   using iterator_category = random_access_iterator_tag;
 
 private:
   using __storage_type = typename _Cp::__storage_type;
   using __storage_pointer =
-    __conditional_t<_IsConst, typename _Cp::__const_storage_pointer, typename _Cp::__storage_pointer>;
+    conditional_t<_IsConst, typename _Cp::__const_storage_pointer, typename _Cp::__storage_pointer>;
 
   static const unsigned __bits_per_word = _Cp::__bits_per_word;
 
@@ -1069,7 +1069,7 @@ public:
 
   _CCCL_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __bit_iterator(const __bit_iterator<_Cp, _IsConst>& __it) = default;
 
-  template <bool _OtherIsConst, class = __enable_if_t<_IsConst == true && _OtherIsConst == false>>
+  template <bool _OtherIsConst, class = enable_if_t<_IsConst == true && _OtherIsConst == false>>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __bit_iterator(const __bit_iterator<_Cp, _OtherIsConst>& __it) noexcept
       : __seg_(__it.__seg_)
       , __ctz_(__it.__ctz_)

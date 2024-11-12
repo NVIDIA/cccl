@@ -558,7 +558,7 @@ write-only access (using the ``write()`` member of ``lX``). A write-only
 access will indeed allocate ``lX`` at the appropriate location, but it
 will not try to load a valid copy of it prior to executing the task.
 
-Using other access modes such as ``read()``, ``redux()`` or ``rw()``
+Using other access modes such as ``read()``, ``relaxed()`` or ``rw()``
 that attempt to provide a valid instance will result in an error.
 
 Similarly, it is possible to define a logical data from a slice shapes

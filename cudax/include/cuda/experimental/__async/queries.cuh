@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/enable_if.h>
+
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 #include <cuda/std/__memory/allocator.h>
 _CCCL_SUPPRESS_DEPRECATED_POP
@@ -41,17 +43,17 @@ template <class _Ty, class _Query>
 using __query_result_t = decltype(__query_result_<_Ty, _Query>());
 
 template <class _Ty, class _Query>
-inline constexpr bool __queryable = __mvalid_q<__query_result_t, _Ty, _Query>;
+inline constexpr bool __queryable = __type_valid_v<__query_result_t, _Ty, _Query>;
 
 #if defined(__CUDA_ARCH__)
 template <class _Ty, class _Query>
 inline constexpr bool __nothrow_queryable = true;
 #else
 template <class _Ty, class _Query>
-using __nothrow_queryable_ = __mif<noexcept(__declval<_Ty>().query(_Query()))>;
+using __nothrow_queryable_ = _CUDA_VSTD::enable_if_t<noexcept(__declval<_Ty>().query(_Query()))>;
 
 template <class _Ty, class _Query>
-inline constexpr bool __nothrow_queryable = __mvalid_q<__nothrow_queryable_, _Ty, _Query>;
+inline constexpr bool __nothrow_queryable = __type_valid_v<__nothrow_queryable_, _Ty, _Query>;
 #endif
 
 _CCCL_GLOBAL_CONSTANT struct get_allocator_t

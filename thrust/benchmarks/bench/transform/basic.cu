@@ -107,8 +107,10 @@ constexpr auto startB      = 2; // BabelStream: 0.2
 constexpr auto startC      = 3; // BabelStream: 0.1
 constexpr auto startScalar = 4; // BabelStream: 0.4
 
-using element_types    = nvbench::type_list<std::int8_t, std::int16_t, float, double, __int128>;
-auto array_size_powers = std::vector<std::int64_t>{25}; // BabelStream uses 2^25, H200 can fit 2^31
+using element_types = nvbench::type_list<std::int8_t, std::int16_t, float, double, __int128>;
+// Different benchmarks use a different number of buffers. H200/B200 can fit 2^31 elements for all benchmarks and types.
+// Upstream BabelStream uses 2^25. Allocation failure just skips the benchmark
+auto array_size_powers = std::vector<std::int64_t>{25, 31};
 
 template <typename T>
 static void mul(nvbench::state& state, nvbench::type_list<T>)
