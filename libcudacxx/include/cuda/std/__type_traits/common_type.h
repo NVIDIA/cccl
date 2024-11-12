@@ -90,7 +90,7 @@ struct __common_type2_imp : __common_type3<_Tp, _Up>
 // branches have diverging return types, this happens for extended floating point types
 template <class _Tp, class _Up>
 using __msvc_declval_workaround =
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER_MSVC
   enable_if_t<_CCCL_TRAIT(is_same, __cond_type<_Tp, _Up>, __cond_type<_Up, _Tp>)>;
 #else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
   void;

@@ -27,7 +27,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER_MSVC
 template <class _Tp, class = void>
 struct __is_primary_template : false_type
 {};

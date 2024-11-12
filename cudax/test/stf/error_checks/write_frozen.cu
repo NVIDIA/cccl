@@ -40,7 +40,7 @@ void cleanupRoutine(int /*unused*/)
 int main()
 {
   /* Setup an handler to catch the SIGABRT signal during the programming error */
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER_MSVC
   signal(SIGABRT, &cleanupRoutine);
 #else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC
   struct sigaction sigabrt_action

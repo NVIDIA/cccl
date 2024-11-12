@@ -51,7 +51,7 @@
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__utility/move.h>
 
-#if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER_MSVC_2017
 
 // MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
 _CCCL_DIAG_PUSH
@@ -297,7 +297,7 @@ public:
       : subrange(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::end(__range), __n)
   {}
 
-#  if (!defined(_CCCL_COMPILER_GCC) || _GNUC_VER >= 900)
+#  if (!_CCCL_COMPILER_GCC || _GNUC_VER >= 900)
   _LIBCUDACXX_TEMPLATE(class _Pair)
   _LIBCUDACXX_REQUIRES(__pair_like<_Pair> _LIBCUDACXX_AND __subrange_to_pair<_Iter, _Sent, _Kind, _Pair>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr operator _Pair() const
@@ -342,7 +342,7 @@ public:
     {
       return _CUDA_VSTD::__to_unsigned_like(__end_ - __begin_);
     }
-#  if defined(_CCCL_CUDACC_BELOW_11_3)
+#  if _CCCL_CUDACC_BELOW_11_3
     _CCCL_UNREACHABLE();
 #  endif // _CCCL_CUDACC_BELOW_11_3
   }
@@ -517,6 +517,6 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 _CCCL_DIAG_POP
 
-#endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER_MSVC_2017
 
 #endif // _LIBCUDACXX___RANGES_SUBRANGE_H

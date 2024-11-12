@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if !defined(_CCCL_COMPILER_MSVC_2017) && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
+#if !_CCCL_COMPILER_MSVC_2017 && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
 #  include <cuda/std/__concepts/same_as.h>
 #  include <cuda/std/__type_traits/remove_const_ref.h>
@@ -51,7 +51,7 @@ _CCCL_INLINE_VAR constexpr bool has_property<
   _CUDA_VSTD::void_t<decltype(get_property(_CUDA_VSTD::declval<const _Resource&>(), _CUDA_VSTD::declval<_Property>()))>> =
   true;
 
-#    if defined(_CCCL_COMPILER_NVHPC) // NVHPC has issues accepting this at compile time if it is in a variable template
+#    if _CCCL_COMPILER_NVHPC // NVHPC has issues accepting this at compile time if it is in a variable template
 template <class _Resource, class _Property, class = void>
 struct __has_property_impl
 {

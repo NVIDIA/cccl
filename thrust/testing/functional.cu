@@ -11,7 +11,7 @@ _CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
 
 // There is a unfortunate miscompilation of the gcc-11 vectorizer leading to OOB writes
 // Adding this attribute suffices that this miscompilation does not appear anymore
-#if defined(_CCCL_COMPILER_GCC) && __GNUC__ >= 11
+#if _CCCL_COMPILER_GCC && __GNUC__ >= 11
 #  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER __attribute__((optimize("no-tree-vectorize")))
 #else
 #  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
@@ -212,7 +212,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestIdentityFunctional()
   // value categories when casting to different type
   static_assert(::cuda::std::is_same<decltype(thrust::identity<int>{}(3.14)), int&&>::value, "");
   // unfortunately, old versions of MSVC pick the `const int&` overload instead of `int&&`
-#if defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION >= 1929
+#if _CCCL_COMPILER_MSVC && _CCCL_MSVC_VERSION >= 1929
   static_assert(::cuda::std::is_same<decltype(thrust::identity<int>{}(d)), int&&>::value, "");
   static_assert(::cuda::std::is_same<decltype(thrust::identity<int>{}(as_const(d))), int&&>::value, "");
 #endif

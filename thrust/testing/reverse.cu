@@ -55,7 +55,7 @@ DECLARE_UNITTEST(TestReverseDispatchImplicit);
 template <typename Vector>
 void TestReverseCopySimple()
 {
-#if defined(_CCCL_COMPILER_GCC) && THRUST_GCC_VERSION >= 80000 && THRUST_GCC_VERSION < 100000
+#if _CCCL_COMPILER_GCC && THRUST_GCC_VERSION >= 80000 && THRUST_GCC_VERSION < 100000
 
   if (typeid(Vector) == typeid(thrust::host_vector<custom_numeric>))
   {

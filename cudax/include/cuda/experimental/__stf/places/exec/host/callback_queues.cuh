@@ -32,7 +32,7 @@
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // do not document
 
-#  if !defined(_CCCL_COMPILER_MSVC)
+#  if !_CCCL_COMPILER_MSVC
 #    define STATEFUL_CALLBACKS
 
 namespace cuda::experimental::stf

@@ -93,7 +93,7 @@ using __completion = __completion_<__call_result_t<_Fn, _Ts...>, __nothrow_calla
 template <__disposition_t _Disposition>
 struct __upon_t
 {
-#if !defined(_CCCL_CUDA_COMPILER_NVCC)
+#if !_CCCL_CUDA_COMPILER_NVCC
 
 private:
 #endif // _CCCL_CUDA_COMPILER_NVCC

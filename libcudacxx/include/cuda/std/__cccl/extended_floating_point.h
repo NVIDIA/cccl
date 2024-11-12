@@ -30,7 +30,7 @@
 
 #if !defined(_CCCL_HAS_NVFP16)
 #  if __has_include(<cuda_fp16.h>)                                              \
-    && (defined(_CCCL_CUDA_COMPILER) || defined(LIBCUDACXX_ENABLE_HOST_NVFP16)) \
+    && (_CCCL_CUDA_COMPILER || defined(LIBCUDACXX_ENABLE_HOST_NVFP16)) \
     && !defined(CCCL_DISABLE_FP16_SUPPORT)
 #    define _CCCL_HAS_NVFP16 1
 #  endif

@@ -24,7 +24,7 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 
-#if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER_MSVC_2017
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 

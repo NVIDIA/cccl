@@ -39,8 +39,8 @@
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/cstddef>
 
-#if !defined(_CCCL_COMPILER_NVRTC)
-#  if defined(_CCCL_COMPILER_MSVC)
+#if !_CCCL_COMPILER_NVRTC
+#  if _CCCL_COMPILER_MSVC
 #    include <xutility> // for ::std::input_iterator_tag
 #  else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
 #    include <iterator> // for ::std::input_iterator_tag
@@ -118,7 +118,7 @@ template <class>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
 #endif // _CCCL_STD_VER <= 2014
 
-#if defined(_CCCL_COMPILER_NVRTC)
+#if _CCCL_COMPILER_NVRTC
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT input_iterator_tag
 {};

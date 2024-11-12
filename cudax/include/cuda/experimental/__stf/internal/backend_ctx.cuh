@@ -492,7 +492,7 @@ protected:
       return nullptr;
     }
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER_MSVC
     _CCCL_DIAG_PUSH
     _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
 #endif // _CCCL_COMPILER_MSVC
@@ -502,7 +502,7 @@ protected:
       abort();
       return event_list();
     }
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER_MSVC
     _CCCL_DIAG_POP
 #endif // _CCCL_COMPILER_MSVC
 

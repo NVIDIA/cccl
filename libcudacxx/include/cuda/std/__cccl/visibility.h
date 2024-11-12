@@ -32,26 +32,26 @@
 
 // For unknown reasons, nvc++ need to selectively disable this warning
 // We do not want to use our usual macro because that would have push / pop semantics
-#if defined(_CCCL_COMPILER_NVHPC)
+#if _CCCL_COMPILER_NVHPC
 #  pragma nv_diag_suppress 1407
 #endif // _CCCL_COMPILER_NVHPC
 
 // Enable us to hide kernels
-#if defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
+#if _CCCL_COMPILER_MSVC || _CCCL_COMPILER_NVRTC
 #  define _CCCL_VISIBILITY_HIDDEN
 #else // ^^^ _CCCL_COMPILER_NVRTC ^^^ / vvv _CCCL_COMPILER_NVRTC vvv
 #  define _CCCL_VISIBILITY_HIDDEN __attribute__((__visibility__("hidden")))
 #endif // !_CCCL_COMPILER_NVRTC
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER_MSVC
 #  define _CCCL_VISIBILITY_DEFAULT __declspec(dllimport)
-#elif defined(_CCCL_COMPILER_NVRTC) // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv _CCCL_COMPILER_NVRTC vvv
+#elif _CCCL_COMPILER_NVRTC // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv _CCCL_COMPILER_NVRTC vvv
 #  define _CCCL_VISIBILITY_DEFAULT
 #else // ^^^ _CCCL_COMPILER_NVRTC ^^^ / vvv !_CCCL_COMPILER_NVRTC vvv
 #  define _CCCL_VISIBILITY_DEFAULT __attribute__((__visibility__("default")))
 #endif // !_CCCL_COMPILER_NVRTC
 
-#if defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
+#if _CCCL_COMPILER_MSVC || _CCCL_COMPILER_NVRTC
 #  define _CCCL_TYPE_VISIBILITY_DEFAULT
 #elif _CCCL_HAS_ATTRIBUTE(__type_visibility__)
 #  define _CCCL_TYPE_VISIBILITY_DEFAULT __attribute__((__type_visibility__("default")))
@@ -59,7 +59,7 @@
 #  define _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_VISIBILITY_DEFAULT
 #endif // !_CCCL_COMPILER_NVRTC
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER_MSVC
 #  define _CCCL_FORCEINLINE __forceinline
 #else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv _CCCL_COMPILER_MSVC vvv
 #  define _CCCL_FORCEINLINE __inline__ __attribute__((__always_inline__))
@@ -72,9 +72,9 @@
 #  define _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
 #endif // !exclude_from_explicit_instantiation
 
-#if defined(_CCCL_COMPILER_ICC) // ICC has issues with visibility attributes on symbols with internal linkage
+#if _CCCL_COMPILER_ICC // ICC has issues with visibility attributes on symbols with internal linkage
 #  define _CCCL_HIDE_FROM_ABI inline
-#elif defined(_CCCL_COMPILER_NVHPC) // NVHPC has issues with visibility attributes on symbols with internal linkage
+#elif _CCCL_COMPILER_NVHPC // NVHPC has issues with visibility attributes on symbols with internal linkage
 #  define _CCCL_HIDE_FROM_ABI inline
 #else // ^^^ _CCCL_COMPILER_ICC ^^^ / vvv !_CCCL_COMPILER_ICC vvv
 #  define _CCCL_HIDE_FROM_ABI _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION inline

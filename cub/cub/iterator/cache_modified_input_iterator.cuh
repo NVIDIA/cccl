@@ -228,7 +228,7 @@ public:
   }
 
   /// ostream operator
-#if !defined(_CCCL_COMPILER_NVRTC)
+#if !_CCCL_COMPILER_NVRTC
   friend std::ostream& operator<<(std::ostream& os, const self_type& /*itr*/)
   {
     return os;

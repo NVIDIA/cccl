@@ -170,7 +170,7 @@ public:
 private:
   // MSVC incorrectly warning about returning a reference to a local/temporary here.
   // NVHPC breaks with push / pop within a class
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER_MSVC
   _CCCL_DIAG_PUSH
   _CCCL_DIAG_SUPPRESS_MSVC(4172)
 #endif // _CCCL_COMPILER_MSVC
@@ -181,7 +181,7 @@ private:
     return *(m_element_iterator + *this->base());
   }
 
-#if defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_COMPILER_MSVC_2017
   _CCCL_DIAG_POP
 #endif // _CCCL_COMPILER_MSVC_2017
 

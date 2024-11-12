@@ -66,19 +66,19 @@
 #define CUB_DEVICE_COMPILER_CLANG 4
 
 // figure out which host compiler we're using
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER_MSVC
 //! deprecated [Since 2.7]
 #  define CUB_HOST_COMPILER CUB_HOST_COMPILER_MSVC
 //! deprecated [Since 2.7]
 #  define CUB_MSVC_VERSION _CCCL_MSVC_VERSION
 //! deprecated [Since 2.7]
 #  define CUB_MSVC_VERSION_FULL _CCCL_MSVC_VERSION_FULL
-#elif defined(_CCCL_COMPILER_CLANG)
+#elif _CCCL_COMPILER_CLANG
 //! deprecated [Since 2.7]
 #  define CUB_HOST_COMPILER CUB_HOST_COMPILER_CLANG
 //! deprecated [Since 2.7]
 #  define CUB_CLANG_VERSION _CCCL_CLANG_VERSION
-#elif defined(_CCCL_COMPILER_GCC)
+#elif _CCCL_COMPILER_GCC
 //! deprecated [Since 2.7]
 #  define CUB_HOST_COMPILER CUB_HOST_COMPILER_GCC
 //! deprecated [Since 2.7]
@@ -86,18 +86,18 @@
 #endif
 
 // figure out which device compiler we're using
-#if defined(_CCCL_CUDA_COMPILER_NVCC) || defined(_CCCL_CUDA_COMPILER_NVHPC)
+#if _CCCL_CUDA_COMPILER_NVCC || _CCCL_CUDA_COMPILER_NVHPC
 //! deprecated [Since 2.7]
 #  define CUB_DEVICE_COMPILER CUB_DEVICE_COMPILER_NVCC
-#elif defined(_CCCL_COMPILER_MSVC)
+#elif _CCCL_COMPILER_MSVC
 //! deprecated [Since 2.7]
 #  define CUB_DEVICE_COMPILER CUB_DEVICE_COMPILER_MSVC
-#elif defined(_CCCL_COMPILER_GCC)
+#elif _CCCL_COMPILER_GCC
 //! deprecated [Since 2.7]
 #  define CUB_DEVICE_COMPILER CUB_DEVICE_COMPILER_GCC
-#elif defined(_CCCL_COMPILER_CLANG)
+#elif _CCCL_COMPILER_CLANG
 // CUDA-capable clang should behave similar to NVCC.
-#  if defined(_CCCL_CUDA_COMPILER_NVCC)
+#  if _CCCL_CUDA_COMPILER_NVCC
 //! deprecated [Since 2.7]
 #    define CUB_DEVICE_COMPILER CUB_DEVICE_COMPILER_NVCC
 #  else

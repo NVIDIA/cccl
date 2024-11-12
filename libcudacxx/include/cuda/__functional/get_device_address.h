@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_CUDA_COMPILER_CLANG
 #  include <cuda_runtime_api.h>
 #endif // _CCCL_CUDA_COMPILER_CLANG
 
@@ -38,7 +38,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _Tp* get_device_address(_Tp& __device_object)
 {
-#if defined(_CCCL_CUDA_COMPILER)
+#if _CCCL_CUDA_COMPILER
   NV_IF_ELSE_TARGET(
     NV_IS_DEVICE,
     (return _CUDA_VSTD::addressof(__device_object);),

@@ -22,7 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_CCCL_CUDA_COMPILER)
+#if _CCCL_CUDA_COMPILER
 #  if __cccl_ptx_isa >= 800
 
 #    include <cuda/__barrier/aligned_size.h>
@@ -50,7 +50,7 @@ _CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
   // incorrectly classified as not trivially copyable. Remove this assertion to allow for their usage with
   // memcpy_async when compiling with GCC 4.8.
   // FIXME: remove the #if once GCC 4.8 is no longer supported.
-#    if !defined(_CCCL_COMPILER_GCC) || _GNUC_VER > 408
+#    if !_CCCL_COMPILER_GCC || _GNUC_VER > 408
   static_assert(_CUDA_VSTD::is_trivially_copyable<_Tp>::value, "memcpy_async_tx requires a trivially copyable type");
 #    endif
   static_assert(16 <= _Alignment, "mempcy_async_tx expects arguments to be at least 16 byte aligned.");

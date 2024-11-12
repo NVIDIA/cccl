@@ -39,7 +39,7 @@ namespace cuda::experimental::stf
 {
 
 // Hack setenv on Windows
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER_MSVC
 /**
  * @brief Sets an environment variable, mimicking the behavior of `std::setenv` on Windows.
  *

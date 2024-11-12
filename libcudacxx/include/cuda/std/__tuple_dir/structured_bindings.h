@@ -23,7 +23,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
 
-#if !defined(_CCCL_COMPILER_NVRTC)
+#if !_CCCL_COMPILER_NVRTC
 // Fetch utility to get primary template for ::std::tuple_size necessary for the specialization of
 // ::std::tuple_size<cuda::std::tuple> to enable structured bindings.
 // See https://github.com/NVIDIA/libcudacxx/issues/316
@@ -44,7 +44,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
 #if _CCCL_STD_VER >= 2017
 namespace std
 {
-#  if defined(_CCCL_COMPILER_NVRTC)
+#  if _CCCL_COMPILER_NVRTC
 template <class... _Tp>
 struct tuple_size;
 
@@ -157,7 +157,7 @@ struct tuple_element<_Ip, const volatile _CUDA_VSTD::tuple<_Tp...>>
     : _CUDA_VSTD::tuple_element<_Ip, const volatile _CUDA_VSTD::tuple<_Tp...>>
 {};
 
-#  if !defined(_CCCL_COMPILER_MSVC_2017)
+#  if !_CCCL_COMPILER_MSVC_2017
 template <class _Ip, class _Sp, _CUDA_VRANGES::subrange_kind _Kp>
 struct tuple_size<_CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>
     : _CUDA_VSTD::tuple_size<_CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>>

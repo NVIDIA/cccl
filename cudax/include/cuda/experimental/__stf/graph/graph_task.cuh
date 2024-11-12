@@ -420,7 +420,7 @@ public:
     return mv(*this);
   }
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER_MSVC
   // TODO (miscco): figure out why MSVC is complaining about unreachable code here
   _CCCL_DIAG_PUSH
   _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
@@ -518,7 +518,7 @@ public:
       ::std::apply(f, tuple_prepend(mv(childGraph), typed_deps()));
     }
   }
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER_MSVC
   _CCCL_DIAG_POP
 #endif // _CCCL_COMPILER_MSVC
 

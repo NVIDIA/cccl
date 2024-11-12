@@ -450,7 +450,7 @@ struct __invoke_of
     : public enable_if<__invokable<_Fp, _Args...>::value, typename __invokable_r<void, _Fp, _Args...>::_Result>
 {
 #if defined(__NVCC__) && defined(__CUDACC_EXTENDED_LAMBDA__) && !defined(__CUDA_ARCH__)
-#  if defined(_CCCL_CUDACC_BELOW_12_3)
+#  if _CCCL_CUDACC_BELOW_12_3
   static_assert(!__nv_is_extended_device_lambda_closure_type(_Fp),
                 "Attempt to use an extended __device__ lambda in a context "
                 "that requires querying its return type in host code. Use a "

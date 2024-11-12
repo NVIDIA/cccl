@@ -56,7 +56,7 @@ template <class _Tp, size_t _Size>
 struct __tuple_like<array<_Tp, _Size>> : true_type
 {};
 
-#if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER_MSVC_2017
 template <class _Ip, class _Sp, _CUDA_VRANGES::subrange_kind _Kp>
 struct __tuple_like<_CUDA_VRANGES::subrange<_Ip, _Sp, _Kp>> : true_type
 {};

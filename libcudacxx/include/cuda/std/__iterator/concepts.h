@@ -405,7 +405,7 @@ template <class _Ip>
 _LIBCUDACXX_CONCEPT bidirectional_iterator = _LIBCUDACXX_FRAGMENT(__bidirectional_iterator_, _Ip);
 
 // [iterator.concept.random.access]
-#  if defined(_CCCL_COMPILER_MSVC_2017)
+#  if _CCCL_COMPILER_MSVC_2017
 // For whatever reasons MSVC2017 cannot check decltype(__n +  __j)
 template <class _Ip>
 _LIBCUDACXX_CONCEPT_FRAGMENT(

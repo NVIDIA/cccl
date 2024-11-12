@@ -24,7 +24,7 @@
 
 #include <cuda/std/cstddef>
 
-#if !defined(_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION) && !defined(_CCCL_COMPILER_NVRTC)
+#if !defined(_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION) && !_CCCL_COMPILER_NVRTC
 #  include <new> // for ::std::std::align_val_t
 #endif // !_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION !_CCCL_COMPILER_NVRTC
 
@@ -41,7 +41,7 @@
 #  define _LIBCUDACXX_HAS_NO_SIZED_DEALLOCATION
 #endif
 
-#if !defined(_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION) && !defined(_CCCL_COMPILER_NVRTC)
+#if !defined(_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION) && !_CCCL_COMPILER_NVRTC
 #  include <new> // for ::std::align_val_t
 #endif // !_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION !_CCCL_COMPILER_NVRTC
 

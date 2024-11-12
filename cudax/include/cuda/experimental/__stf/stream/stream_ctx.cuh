@@ -809,7 +809,7 @@ UNITTEST("movable stream_task")
 
 // FIXME : This test is causing some compiler errors with MSVC, so we disable
 // it on MSVC for now
-#  if !defined(_CCCL_COMPILER_MSVC)
+#  if !_CCCL_COMPILER_MSVC
 UNITTEST("logical_data_untyped moveable")
 {
   using namespace cuda::experimental::stf;

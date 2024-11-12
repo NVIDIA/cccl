@@ -23,7 +23,7 @@
 
 #include <cuda/__fwd/barrier.h>
 #include <cuda/__fwd/barrier_native_handle.h>
-#if defined(_CCCL_CUDA_COMPILER)
+#if _CCCL_CUDA_COMPILER
 #  include <cuda/__ptx/instructions/mbarrier_arrive.h>
 #  include <cuda/__ptx/ptx_dot_variants.h>
 #  include <cuda/__ptx/ptx_helper_functions.h>
@@ -38,7 +38,7 @@
 
 #include <nv/target>
 
-#if defined(_CCCL_COMPILER_NVRTC)
+#if _CCCL_COMPILER_NVRTC
 #  define _LIBCUDACXX_OFFSET_IS_ZERO(type, member) !(&(((type*) 0)->member))
 #else // ^^^ _CCCL_COMPILER_NVRTC ^^^ / vvv !_CCCL_COMPILER_NVRTC vvv
 #  define _LIBCUDACXX_OFFSET_IS_ZERO(type, member) !offsetof(type, member)

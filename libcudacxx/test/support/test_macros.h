@@ -82,12 +82,12 @@
 #  define TEST_COMPILER_EDG
 #endif
 
-#if defined(_CCCL_CUDA_COMPILER_NVCC)
+#if _CCCL_CUDA_COMPILER_NVCC
 #  define TEST_COMPILER_NVCC
 #  define TEST_COMPILER_EDG
-#elif defined(_CCCL_CUDA_COMPILER_NVHPC)
+#elif _CCCL_CUDA_COMPILER_NVHPC
 #  define TEST_COMPILER_NVHPC_CUDA
-#elif defined(_CCCL_CUDA_COMPILER_CLANG)
+#elif _CCCL_CUDA_COMPILER_CLANG
 #  define TEST_COMPILER_CLANG_CUDA
 #endif // no cuda compiler
 
@@ -145,8 +145,8 @@
 #  endif
 #endif
 
-#if TEST_HAS_BUILTIN(__builtin_is_constant_evaluated) || (defined(_CCCL_COMPILER_GCC) && _GNUC_VER >= 900) \
-  || (defined(_CCCL_COMPILER_MSVC) && _MSC_VER > 1924 && !defined(_CCCL_CUDACC_BELOW_11_3))
+#if TEST_HAS_BUILTIN(__builtin_is_constant_evaluated) || (_CCCL_COMPILER_GCC && _GNUC_VER >= 900) \
+  || (_CCCL_COMPILER_MSVC && _MSC_VER > 1924 && !_CCCL_CUDACC_BELOW_11_3)
 #  define TEST_IS_CONSTANT_EVALUATED() _CUDA_VSTD::__libcpp_is_constant_evaluated()
 #else
 #  define TEST_IS_CONSTANT_EVALUATED() false
@@ -243,8 +243,8 @@
 #endif
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
-#  if (defined(_CCCL_COMPILER_MSVC) && _HAS_EXCEPTIONS == 0) \
-    || (!defined(_CCCL_COMPILER_MSVC) && !__EXCEPTIONS) // Catches all non msvc based compilers
+#  if (_CCCL_COMPILER_MSVC && _HAS_EXCEPTIONS == 0) || (!_CCCL_COMPILER_MSVC && !__EXCEPTIONS) // Catches all non msvc
+                                                                                               // based compilers
 #    define TEST_HAS_NO_EXCEPTIONS
 #  endif
 #endif // !TEST_HAS_NO_EXCEPTIONS

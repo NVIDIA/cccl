@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if !defined(_CCCL_COMPILER_NVRTC)
+#if !_CCCL_COMPILER_NVRTC
 #  include <initializer_list>
 #endif // !_CCCL_COMPILER_NVRTC
 

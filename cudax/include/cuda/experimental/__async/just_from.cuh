@@ -58,7 +58,7 @@ struct _A_STOPPED_COMPLETION_MUST_HAVE_NO_ARGUMENTS;
 template <__disposition_t _Disposition>
 struct __just_from
 {
-#if !defined(_CCCL_CUDA_COMPILER_NVCC)
+#if !_CCCL_CUDA_COMPILER_NVCC
 
 private:
 #endif // _CCCL_CUDA_COMPILER_NVCC

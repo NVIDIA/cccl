@@ -44,7 +44,7 @@ namespace reserved
 template <typename T>
 constexpr ::std::string_view type_name_IMPL()
 {
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER_MSVC
   return __FUNCSIG__;
 #else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
   return __PRETTY_FUNCTION__;
@@ -73,7 +73,7 @@ inline constexpr ::std::pair<size_t, size_t> type_name_affixes = [] {
 template <class T>
 constexpr ::std::string_view type_name_impl()
 {
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER_MSVC
   constexpr ::std::string_view p = __FUNCSIG__;
   // MSVC does not provide constexpr methods so we make this utility much simpler and return __FUNCSIG__ directly
   return p;

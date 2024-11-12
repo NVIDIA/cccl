@@ -32,7 +32,7 @@ namespace cuda::experimental::__async
 {
 struct start_detached_t
 {
-#if !defined(_CCCL_CUDA_COMPILER_NVCC)
+#if !_CCCL_CUDA_COMPILER_NVCC
 
 private:
 #endif // _CCCL_CUDA_COMPILER_NVCC

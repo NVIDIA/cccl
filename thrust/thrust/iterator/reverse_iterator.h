@@ -163,7 +163,7 @@ private:
 public:
   /*! Default constructor does nothing.
    */
-#if defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_COMPILER_MSVC_2017
   _CCCL_HOST_DEVICE reverse_iterator() {}
 #else // ^^^ _CCCL_COMPILER_MSVC_2017 ^^^ / vvv !_CCCL_COMPILER_MSVC_2017 vvv
   reverse_iterator() = default;

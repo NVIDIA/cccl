@@ -21,9 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#if !defined(_CCCL_COMPILER_MSVC_2017) && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
+#if !_CCCL_COMPILER_MSVC_2017 && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
-#  if defined(_CCCL_CUDA_COMPILER_CLANG)
+#  if _CCCL_CUDA_COMPILER_CLANG
 #    include <cuda_runtime_api.h>
 #  endif // _CCCL_CUDA_COMPILER_CLANG
 

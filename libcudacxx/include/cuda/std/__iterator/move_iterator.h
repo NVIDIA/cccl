@@ -107,7 +107,7 @@ private:
   _Iter __current_;
 
 #if _CCCL_STD_VER >= 2017
-#  if !defined(_CCCL_COMPILER_MSVC_2017)
+#  if !_CCCL_COMPILER_MSVC_2017
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto __mi_get_iter_concept()
   {
     if constexpr (random_access_iterator<_Iter>)
@@ -134,7 +134,7 @@ private:
 public:
 #if _CCCL_STD_VER > 2014
   using iterator_type = _Iter;
-#  if defined(_CCCL_COMPILER_MSVC_2017)
+#  if _CCCL_COMPILER_MSVC_2017
   // clang-format off
   using iterator_concept = conditional_t<random_access_iterator<_Iter>, random_access_iterator_tag,
                            conditional_t<bidirectional_iterator<_Iter>, bidirectional_iterator_tag,
@@ -370,7 +370,7 @@ public:
     return _CUDA_VRANGES::iter_move(__i.__current_);
   }
 
-#  if defined(_CCCL_COMPILER_MSVC_2017) // MSVC2017 cannot find _Iter otherwise
+#  if _CCCL_COMPILER_MSVC_2017 // MSVC2017 cannot find _Iter otherwise
   template <class _Iter2, class _Iter1 = _Iter>
   _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto iter_swap(
     const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y) noexcept(__noexcept_swappable<_Iter1, _Iter2>)
@@ -392,7 +392,7 @@ public:
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(move_iterator);
 
 // Some compilers have issues determining _IsFancyPointer
-#if defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER_GCC || _CCCL_COMPILER_MSVC
 template <class _Iter>
 struct _IsFancyPointer<move_iterator<_Iter>> : _IsFancyPointer<_Iter>
 {};

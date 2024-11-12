@@ -37,7 +37,7 @@ _CCCL_DIAG_POP
 #  include <cuda/std/cmath>
 #  include <cuda/std/complex>
 
-#  if !defined(_CCCL_COMPILER_NVRTC)
+#  if !_CCCL_COMPILER_NVRTC
 #    include <sstream> // for std::basic_ostringstream
 #  endif // !_CCCL_COMPILER_NVRTC
 
@@ -146,7 +146,7 @@ public:
     return *this;
   }
 
-#  if !defined(_CCCL_COMPILER_NVRTC)
+#  if !_CCCL_COMPILER_NVRTC
   template <class _Up>
   _LIBCUDACXX_HIDE_FROM_ABI complex(const ::std::complex<_Up>& __other)
       : __repr_(_LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__other), _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__other))
@@ -295,7 +295,7 @@ _LIBCUDACXX_HIDE_FROM_ABI complex<__nv_bfloat16> acos(const complex<__nv_bfloat1
   return complex<__nv_bfloat16>{_CUDA_VSTD::acos(complex<float>{__x})};
 }
 
-#  if !defined(_CCCL_COMPILER_NVRTC)
+#  if !_CCCL_COMPILER_NVRTC
 template <class _CharT, class _Traits>
 ::std::basic_istream<_CharT, _Traits>&
 operator>>(::std::basic_istream<_CharT, _Traits>& __is, complex<__nv_bfloat16>& __x)

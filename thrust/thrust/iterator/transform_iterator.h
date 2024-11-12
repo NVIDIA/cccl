@@ -297,7 +297,7 @@ private:
 // MSVC 2013 and 2015 incorrectly warning about returning a reference to
 // a local/temporary here.
 // See goo.gl/LELTNp
-#if defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_COMPILER_MSVC_2017
   _CCCL_DIAG_PUSH
   _CCCL_DIAG_SUPPRESS_MSVC(4172)
 #endif // _CCCL_COMPILER_MSVC_2017
@@ -328,7 +328,7 @@ private:
     return m_f(x);
   }
 
-#if defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_COMPILER_MSVC_2017
   _CCCL_DIAG_POP
 #endif // _CCCL_COMPILER_MSVC_2017
 

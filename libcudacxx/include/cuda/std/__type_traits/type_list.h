@@ -413,7 +413,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_try_catch
 };
 
 // Implementation for indexing into a list of types:
-#  if defined(__cpp_pack_indexing) && !defined(_CCCL_CUDA_COMPILER_NVCC)
+#  if defined(__cpp_pack_indexing) && !_CCCL_CUDA_COMPILER_NVCC
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wc++26-extensions")
@@ -550,7 +550,7 @@ using __type_back = __type_at_c<_List::__size - 1, _List>;
 
 namespace __detail
 {
-#  if defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION < 1938
+#  if _CCCL_COMPILER_MSVC && _CCCL_MSVC_VERSION < 1938
 // A workaround for https://developercommunity.visualstudio.com/t/fatal-error-C1001:-Internal-compiler-err/10405847
 struct __type_concat_fn
 {

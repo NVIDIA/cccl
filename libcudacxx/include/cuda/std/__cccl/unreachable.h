@@ -24,25 +24,25 @@
 
 #include <cuda/std/__cccl/visibility.h>
 
-#if defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_CUDA_COMPILER_CLANG
 #  define _CCCL_UNREACHABLE() __builtin_unreachable()
 #elif defined(__CUDA_ARCH__)
-#  if defined(_CCCL_CUDACC_BELOW_11_2)
+#  if _CCCL_CUDACC_BELOW_11_2
 #    define _CCCL_UNREACHABLE() __trap()
-#  elif defined(_CCCL_CUDACC_BELOW_11_3)
+#  elif _CCCL_CUDACC_BELOW_11_3
 #    define _CCCL_UNREACHABLE() __builtin_assume(false)
 #  else
 #    define _CCCL_UNREACHABLE() __builtin_unreachable()
 #  endif // CUDACC above 11.4
 #else // ^^^ __CUDA_ARCH__ ^^^ / vvv !__CUDA_ARCH__ vvv
-#  if defined(_CCCL_COMPILER_MSVC_2017)
+#  if _CCCL_COMPILER_MSVC_2017
 template <class = void>
 _LIBCUDACXX_HIDE_FROM_ABI __declspec(noreturn) void __cccl_unreachable_fallback()
 {
   __assume(0);
 }
 #    define _CCCL_UNREACHABLE() __cccl_unreachable_fallback()
-#  elif defined(_CCCL_COMPILER_MSVC)
+#  elif _CCCL_COMPILER_MSVC
 #    define _CCCL_UNREACHABLE() __assume(0)
 #  else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
 #    define _CCCL_UNREACHABLE() __builtin_unreachable()

@@ -191,7 +191,7 @@ TEST_CASE("device_memory_resource construction", "[memory_resource]")
   }
 
   // Allocation handles are only supported after 11.2
-#if !defined(_CCCL_CUDACC_BELOW_11_2)
+#if !_CCCL_CUDACC_BELOW_11_2
   SECTION("Construct with allocation handle")
   {
     cuda::experimental::mr::memory_pool_properties props = {

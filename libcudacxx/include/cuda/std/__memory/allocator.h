@@ -33,7 +33,7 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/cstddef>
 
-#if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION) && !defined(_CCCL_COMPILER_NVRTC)
+#if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION) && !_CCCL_COMPILER_NVRTC
 #  include <memory>
 #endif // _CCCL_HAS_CONSTEXPR_ALLOCATION && !_CCCL_COMPILER_NVRTC
 

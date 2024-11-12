@@ -52,7 +52,7 @@ extern __fn_t<just_stopped_t>* __just_tag<__stopped, _Void>;
 template <__disposition_t _Disposition>
 struct __just
 {
-#if !defined(_CCCL_CUDA_COMPILER_NVCC)
+#if !_CCCL_CUDA_COMPILER_NVCC
 
 private:
 #endif // _CCCL_CUDA_COMPILER_NVCC

@@ -39,7 +39,7 @@ struct THE_CURRENT_ENVIRONMENT_LACKS_THIS_QUERY;
 
 struct read_env_t
 {
-#if !defined(_CCCL_CUDA_COMPILER_NVCC)
+#if !_CCCL_CUDA_COMPILER_NVCC
 
 private:
 #endif // _CCCL_CUDA_COMPILER_NVCC

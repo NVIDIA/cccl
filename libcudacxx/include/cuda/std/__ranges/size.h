@@ -36,7 +36,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-#if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER_MSVC_2017
 
 template <class>
 _CCCL_INLINE_VAR constexpr bool disable_sized_range = false;

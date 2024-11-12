@@ -45,7 +45,7 @@
 #endif // no system header
 
 // CUDA headers might not be present when using NVRTC, see NVIDIA/cccl#2095 for detail
-#if !defined(_CCCL_COMPILER_NVRTC)
+#if !_CCCL_COMPILER_NVRTC
 #  include <cuda_runtime_api.h>
 #endif // !_CCCL_COMPILER_NVRTC
 

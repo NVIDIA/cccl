@@ -48,7 +48,7 @@
 // * C++14 is availabl for cuda::std::optional
 // * NVTX3 uses module as an identifier, which trips up NVHPC
 #if __has_include(<nvtx3/nvToolsExt.h> ) && !defined(CCCL_DISABLE_NVTX) && !defined(NVTX_DISABLE) \
-&& _CCCL_STD_VER >= 2014 &&(!defined(_CCCL_COMPILER_NVHPC) || _CCCL_STD_VER <= 2017)
+&& _CCCL_STD_VER >= 2014 &&(!_CCCL_COMPILER_NVHPC || _CCCL_STD_VER <= 2017)
 // Include our NVTX3 C++ wrapper if not available from the CTK
 #  if __has_include(<nvtx3/nvtx3.hpp>) // TODO(bgruber): replace by a check for the first CTK version shipping the header
 #    include <nvtx3/nvtx3.hpp>
@@ -94,7 +94,7 @@ CUB_NAMESPACE_END
 
 #    define CUB_DETAIL_NVTX_RANGE_SCOPE(name) CUB_DETAIL_NVTX_RANGE_SCOPE_IF(true, name)
 #  else // NVTX3_CPP_DEFINITIONS_V1_0
-#    if defined(_CCCL_COMPILER_MSVC)
+#    if _CCCL_COMPILER_MSVC
 #      pragma message( \
         "warning: nvtx3.hpp is available but does not define the V1 API. This is odd. Please open a GitHub issue at: https://github.com/NVIDIA/cccl/issues.")
 #    else

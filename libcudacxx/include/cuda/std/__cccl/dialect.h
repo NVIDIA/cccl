@@ -22,7 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER_MSVC
 #  if _MSVC_LANG <= 201103L
 #    define _CCCL_STD_VER 2011
 #  elif _MSVC_LANG <= 201402L
@@ -85,7 +85,7 @@
 #endif // _CCCL_STD_VER <= 2014
 
 // In nvcc prior to 11.3 global variables could not be marked constexpr
-#if defined(_CCCL_CUDACC_BELOW_11_3)
+#if _CCCL_CUDACC_BELOW_11_3
 #  define _CCCL_CONSTEXPR_GLOBAL const
 #else // ^^^ _CCCL_CUDACC_BELOW_11_3 ^^^ / vvv !_CCCL_CUDACC_BELOW_11_3 vvv
 #  define _CCCL_CONSTEXPR_GLOBAL constexpr

@@ -22,7 +22,7 @@
 
 #include <cuda/std/__iterator/concepts.h>
 
-#if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER_MSVC_2017
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 

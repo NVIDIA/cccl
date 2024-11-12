@@ -33,7 +33,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-#if _CCCL_STD_VER > 2014 && !defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER > 2014 && !_CCCL_COMPILER_MSVC_2017
 
 template <class _Tp>
 _LIBCUDACXX_CONCEPT __can_borrow = is_lvalue_reference_v<_Tp> || enable_borrowed_range<remove_cvref_t<_Tp>>;
@@ -83,7 +83,7 @@ _LIBCUDACXX_CONCEPT __unqualified_begin = _LIBCUDACXX_FRAGMENT(__unqualified_beg
 struct __fn
 {
   // This has been made valid as a defect report for C++17 onwards, however gcc below 11.0 does not implement it
-#  if (!defined(_CCCL_COMPILER_GCC) || __GNUC__ >= 11)
+#  if (!_CCCL_COMPILER_GCC || __GNUC__ >= 11)
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES((sizeof(_Tp) >= 0)) // Disallow incomplete element types.
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp (&__t)[]) const noexcept

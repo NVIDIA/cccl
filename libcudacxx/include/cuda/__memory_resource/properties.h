@@ -24,7 +24,7 @@
 #include <cuda/std/__type_traits/type_set.h>
 #include <cuda/std/cstddef>
 
-#if !defined(_CCCL_COMPILER_MSVC_2017) && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
+#if !_CCCL_COMPILER_MSVC_2017 && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
 #  if _CCCL_STD_VER >= 2014
 

@@ -22,13 +22,13 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_CUDA_COMPILER_CLANG
 #  include <cuda_runtime_api.h>
 #endif // _CCCL_CUDA_COMPILER_CLANG
 
 #include <cuda/std/__exception/terminate.h>
 
-#if !defined(_CCCL_COMPILER_NVRTC)
+#if !_CCCL_COMPILER_NVRTC
 #  include <cstdio>
 #  include <stdexcept>
 #endif // !_CCCL_COMPILER_NVRTC
@@ -40,7 +40,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 /**
  * @brief Exception thrown when a CUDA error is encountered.
  */
-#if defined(_CCCL_CUDA_COMPILER)
+#if _CCCL_CUDA_COMPILER
 #  ifndef _CCCL_NO_EXCEPTIONS
 class cuda_error : public ::std::runtime_error
 {

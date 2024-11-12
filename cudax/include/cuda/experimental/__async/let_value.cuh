@@ -58,7 +58,7 @@ extern __fn_t<let_stopped_t>* __let_tag<__stopped, _Void>;
 template <__disposition_t _Disposition>
 struct __let
 {
-#if !defined(_CCCL_CUDA_COMPILER_NVCC)
+#if !_CCCL_CUDA_COMPILER_NVCC
 
 private:
 #endif // _CCCL_CUDA_COMPILER_NVCC

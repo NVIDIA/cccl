@@ -12,7 +12,7 @@
 #include <cuda/std/cassert>
 #include <cuda/std/cstdlib>
 
-#if !defined(_CCCL_COMPILER_NVRTC)
+#if !_CCCL_COMPILER_NVRTC
 #  include <new>
 #endif // !_CCCL_COMPILER_NVRTC
 

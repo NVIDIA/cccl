@@ -41,7 +41,7 @@ prev(_InputIter __x, typename iterator_traits<_InputIter>::difference_type __n =
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2014 && !defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER > 2014 && !_CCCL_COMPILER_MSVC_2017
 
 // [range.iter.op.prev]
 
@@ -81,6 +81,6 @@ _CCCL_GLOBAL_CONSTANT auto prev = __prev::__fn{};
 } // namespace __cpo
 _LIBCUDACXX_END_NAMESPACE_RANGES
 
-#endif // _CCCL_STD_VER > 2014 && !defined(_CCCL_COMPILER_MSVC_2017)
+#endif // _CCCL_STD_VER > 2014 && !_CCCL_COMPILER_MSVC_2017
 
 #endif // _LIBCUDACXX___ITERATOR_PREV_H

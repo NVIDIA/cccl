@@ -46,7 +46,7 @@ struct __sch_env_t
 
 _CCCL_GLOBAL_CONSTANT struct start_on_t
 {
-#if !defined(_CCCL_CUDA_COMPILER_NVCC)
+#if !_CCCL_CUDA_COMPILER_NVCC
 
 private:
 #endif // _CCCL_CUDA_COMPILER_NVCC
