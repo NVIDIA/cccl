@@ -47,10 +47,6 @@
 #  include <cuda/std/cstddef> // size_t
 #  include <cuda/std/type_traits> // make_unsigned_t
 
-#  if __CUDACC_VER_MAJOR__ == 11
-_CCCL_NV_DIAG_SUPPRESS(940) // missing return statement at end of non-void function "lambda []()->U"
-#  endif // __CUDACC_VER_MAJOR__ == 11
-
 CUB_NAMESPACE_BEGIN
 
 namespace detail
