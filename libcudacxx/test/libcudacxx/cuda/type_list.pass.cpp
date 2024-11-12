@@ -14,7 +14,8 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_identity.h>
 
-#if defined(_CCCL_CUDACC_BELOW_12_2) || defined(_CCCL_COMPILER_ICC)
+#if defined(_CCCL_COMPILER_ICC) || defined(_CCCL_CUDA_COMPILER_NVCC) || defined(_CCCL_COMPILER_NVRTC) \
+  || defined(_CCCL_CUDA_COMPILER_CLANG)
 // These compilers have trouble making substitution failures during
 // alias template instantiation non-fatal.
 #  define SKIP_SFINAE_TESTS
@@ -80,6 +81,13 @@ struct Fn2
   using __call = Types<T, U>;
 };
 
+template <class Fn>
+struct ForwardFn
+{
+  template <class... Ts>
+  using __call = ::cuda::std::__type_call<Fn, Ts...>;
+};
+
 // __type
 static_assert(::cuda::std::is_same<::cuda::std::__type<::cuda::std::__type_identity<Incomplete>>, Incomplete>::value,
               "");
@@ -92,6 +100,17 @@ static_assert(::cuda::std::is_same<::cuda::std::__type_call<Fn2, Incomplete, Emp
 static_assert(::cuda::std::is_same<::cuda::std::__type_call1<Fn1, Incomplete>, Types<Incomplete>>::value, "");
 static_assert(::cuda::std::is_same<::cuda::std::__type_call2<Fn2, Incomplete, Empty>, Types<Incomplete, Empty>>::value,
               "");
+
+// __type_indirect
+#if !defined(SKIP_SFINAE_TESTS)
+static_assert(!::cuda::std::__type_callable<ForwardFn<Fn2>, Incomplete, Empty>::value, "");
+static_assert(!::cuda::std::__type_callable<ForwardFn<::cuda::std::__type_indirect<Fn2>>, Incomplete>::value, "");
+#endif
+static_assert(::cuda::std::__type_callable<ForwardFn<::cuda::std::__type_indirect<Fn2>>, Incomplete, Empty>::value, "");
+static_assert(
+  ::cuda::std::is_same<::cuda::std::__type_call<ForwardFn<::cuda::std::__type_indirect<Fn2>>, Incomplete, Empty>,
+                       Types<Incomplete, Empty>>::value,
+  "");
 
 // __type_call_indirect
 template <class... Ts, class = ::cuda::std::__type_call_indirect<Fn2, Ts...>>
@@ -169,7 +188,7 @@ static_assert(::cuda::std::is_same<::cuda::std::__type_call<::cuda::std::__type_
                                    Types<Empty, Incomplete>>::value,
               "");
 
-// __type_bind_back
+// __type_bind_front
 static_assert(::cuda::std::is_same<::cuda::std::__type_call<::cuda::std::__type_bind_front<Fn, Incomplete>, Empty>,
                                    Types<Incomplete, Empty>>::value,
               "");
@@ -217,14 +236,14 @@ static_assert(::cuda::std::__type_index_c<1, int, Int<42>, double>::value == 42,
 static_assert(
   ::cuda::std::__type_index<::cuda::std::integral_constant<::cuda::std::size_t, 1>, int, Int<42>, double>::value == 42,
   "");
-static_assert(::cuda::std::__type_callable<::cuda::std::__type_quote_indirect<::cuda::std::__type_index>,
+static_assert(::cuda::std::__type_callable<::cuda::std::__type_indirect_quote<::cuda::std::__type_index>,
                                            ::cuda::std::integral_constant<::cuda::std::size_t, 1>,
                                            int,
                                            Int<42>>::value,
               "");
 
 #if !defined(SKIP_SFINAE_TESTS)
-static_assert(!::cuda::std::__type_callable<::cuda::std::__type_quote_indirect<::cuda::std::__type_index>,
+static_assert(!::cuda::std::__type_callable<::cuda::std::__type_indirect_quote<::cuda::std::__type_index>,
                                             ::cuda::std::integral_constant<::cuda::std::size_t, 1>,
                                             int>::value,
               "");
@@ -431,12 +450,12 @@ static_assert(::cuda::std::__type_at<::cuda::std::integral_constant<::cuda::std:
                                      ::cuda::std::__type_list<int, Int<42>, double>>::value
                 == 42,
               "");
-static_assert(::cuda::std::__type_callable<::cuda::std::__type_quote_indirect<::cuda::std::__type_at>,
+static_assert(::cuda::std::__type_callable<::cuda::std::__type_indirect_quote<::cuda::std::__type_at>,
                                            ::cuda::std::integral_constant<::cuda::std::size_t, 1>,
                                            ::cuda::std::__type_list<int, Int<42>>>::value,
               "");
 #if !defined(SKIP_SFINAE_TESTS)
-static_assert(!::cuda::std::__type_callable<::cuda::std::__type_quote_indirect<::cuda::std::__type_at>,
+static_assert(!::cuda::std::__type_callable<::cuda::std::__type_indirect_quote<::cuda::std::__type_at>,
                                             ::cuda::std::integral_constant<::cuda::std::size_t, 1>,
                                             ::cuda::std::__type_list<int>>::value,
               "");
