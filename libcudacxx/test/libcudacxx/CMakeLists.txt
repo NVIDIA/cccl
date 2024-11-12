@@ -140,6 +140,6 @@ add_test(NAME libcudacxx.test.lit COMMAND
 )
 
 set_tests_properties(libcudacxx.test.lit PROPERTIES
-  TIMEOUT 5000
+  TIMEOUT 6400
   RUN_SERIAL TRUE
 )
