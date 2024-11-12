@@ -25,6 +25,9 @@ class RawPointer:
     def host_address(self):
         return ctypes.byref(self.val)
 
+    def state_c_void_p(self):
+        return ctypes.cast(ctypes.pointer(self.val), ctypes.c_void_p)
+
     def size(self):
         return 8 # TODO should be using numba for user-defined types support
 
@@ -66,6 +69,9 @@ class CacheModifiedPointer:
     def host_address(self):
         return ctypes.byref(self.val)
 
+    def state_c_void_p(self):
+        return ctypes.cast(ctypes.pointer(self.val), ctypes.c_void_p)
+
     def size(self):
         return 8 # TODO should be using numba for user-defined types support
 
@@ -97,6 +103,9 @@ class ConstantIterator:
         # TODO should use numba instead for support of user-defined types
         return ctypes.byref(self.val)
 
+    def state_c_void_p(self):
+        return ctypes.cast(ctypes.pointer(self.val), ctypes.c_void_p)
+
     def size(self):
         return ctypes.sizeof(self.val) # TODO should be using numba for user-defined types support
 
@@ -124,6 +133,9 @@ class CountingIterator:
 
     def host_address(self):
         return ctypes.byref(self.count)
+
+    def state_c_void_p(self):
+        return ctypes.cast(ctypes.pointer(self.count), ctypes.c_void_p)
 
     def size(self):
         return ctypes.sizeof(self.count) # TODO should be using numba for user-defined types support
@@ -238,6 +250,9 @@ def cu_map(op, it):
 
         def host_address(self):
             return self.it.host_address() # TODO support stateful operators
+
+        def state_c_void_p(self):
+            return self.it.state_c_void_p()
 
         def size(self):
             return self.it.size() # TODO fix for stateful op
