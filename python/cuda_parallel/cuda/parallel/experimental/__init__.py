@@ -143,15 +143,11 @@ class _ReductionOp:
         return _CCCLOp(_CCCLOpKindEnum.STATELESS, self.name, ctypes.c_char_p(self.ltoir), len(self.ltoir), 1, 1, None)
 
 
-class _ExtractCtypesLtoirs:
-
-    def __init__(self, numba_cuda_compile_results):
-        self.numba_cuda_compile_results = numba_cuda_compile_results # keep alive
-        self.string_views_list = [] # keep alive
-        for ltoir, _ in numba_cuda_compile_results:
-            self.string_views.append(_CCCLStringView(ctypes.c_char_p(ltoir), len(ltoir)))
-        LTOIRSArrayType = _CCCLStringViews * len(self.string_views_list)
-        self.string_views_array = LTOIRSArrayType(*[ctypes.pointer(sv) for sv in self.string_views_list])
+def _extract_ctypes_ltoirs(numba_cuda_compile_results):
+    view_lst = [_CCCLStringView(ltoir, len(ltoir))
+                for ltoir, _ in numba_cuda_compile_results]
+    view_arr = (_CCCLStringView * len(view_lst))(*view_lst)
+    return ctypes.pointer(_CCCLStringViews(view_arr, len(view_arr)))
 
 
 def _itertools_iter_as_cccl_iter(result_numba_dtype, d_in):
@@ -163,7 +159,7 @@ def _itertools_iter_as_cccl_iter(result_numba_dtype, d_in):
     info = _type_to_info_from_numba_type(numba.int32)
     ltoirs = _extract_ctypes_ltoirs(d_in.ltoirs)
     # size alignment type advance dereference value_type state ltoirs
-    return _CCCLIterator(d_in.size(), d_in.alignment(), _CCCLIteratorKindEnum.ITERATOR, adv, drf, info, d_in.state_c_void_p(), ltoirs.string_views_array)
+    return _CCCLIterator(d_in.size(), d_in.alignment(), _CCCLIteratorKindEnum.ITERATOR, adv, drf, info, d_in.state_c_void_p(), ltoirs)
 
 
 def _get_cuda_path():
