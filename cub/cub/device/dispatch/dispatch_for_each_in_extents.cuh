@@ -103,7 +103,7 @@ struct dispatch_t : PolicyHubT
 
   dispatch_t(dispatch_t&&) = delete;
 
-  // InvokeVariadic is a workaround for an nvcc problem with variadic templates and index sequence
+  // InvokeVariadic is a workaround for an nvcc 11.x/12.x problem with variadic template kernel and index sequence
   template <::cuda::std::size_t... Ranks>
   _CCCL_NODISCARD CUB_RUNTIME_FUNCTION
   _CCCL_FORCEINLINE cudaError_t InvokeVariadic(::cuda::std::index_sequence<Ranks...>) const
