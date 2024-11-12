@@ -8,12 +8,12 @@ from .storage import Storage
 from .cmake import CMake
 
 
-def list_benches():
+def list_benches(algnames):
     print("### Benchmarks")
 
     config = Config()
 
-    for algname in config.benchmarks:
+    for algname in algnames:
         space_size = config.variant_space_size(algname)
         print("  * `{}`: {} variants: ".format(algname, space_size))
 
@@ -45,11 +45,11 @@ def parse_arguments():
                         help="Regex for benchmarks selection.")
     parser.add_argument('-a', '--args', action='append',
                         type=str, help="Parameter in the format `Param=Value`.")
-    parser.add_argument(
-        '--list-benches', action=argparse.BooleanOptionalAction, help="Show available benchmarks.")
-    parser.add_argument('--num-shards', type=int, default=1, help='Split benchmarks into M pieces and only run one')
-    parser.add_argument('--run-shard', type=int, default=0, help='Run shard N / M of benchmarks')
-    parser.add_argument('-P0', action=argparse.BooleanOptionalAction, help="Run P0 benchmarks")
+    parser.add_argument('-l', '--list-benches', action='store_true', help="Show available benchmarks.")
+    parser.add_argument('--num-shards', type=int, default=1,
+                        help='Split benchmarks into NUM_SHARDS pieces and only run one')
+    parser.add_argument('--run-shard', type=int, default=0, help='Run benchmark shard RUN_SHARD from NUM_SHARDS pieces')
+    parser.add_argument('-P0', action='store_true', help="Run P0 benchmarks")
     return parser.parse_args()
 
 
@@ -100,11 +100,12 @@ def search(seeker):
     if args.args:
         workload_sub_space = parse_sub_space(args.args)
 
+    algnames = filter_benchmarks(config.benchmarks, args)
     if args.list_benches:
-        list_benches()
+        list_benches(algnames)
         return
 
-    run_benches(filter_benchmarks(config.benchmarks, args), workload_sub_space, seeker)
+    run_benches(algnames, workload_sub_space, seeker)
 
 
 class MedianCenterEstimator:
