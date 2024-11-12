@@ -29,10 +29,10 @@
 
 #include <cub/config.cuh>
 
+#include <cuda/std/type_traits>
+
 #include <climits>
 #include <type_traits>
-
-#include <cuda/std/type_traits>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -76,7 +76,7 @@ struct larger_unsigned_type
 template <typename T>
 struct larger_unsigned_type<T, typename ::cuda::std::enable_if<(sizeof(T) < 4)>::type>
 {
-  using type = unsigned;
+  using type = ::cuda::std::uint32_t;
 };
 
 template <typename T>
@@ -167,13 +167,11 @@ struct fast_div_mod
     }
     constexpr int BitSize   = sizeof(T) * CHAR_BIT;
     constexpr int BitOffset = BitSize / 16;
-    int num_bits            = ::cuda::std::bit_width(udivisor) + !::cuda::std::has_single_bit(udivisor);
+    int num_bits            = ::cuda::std::bit_width(udivisor);
+    // without explicit power-of-two check, num_bits needs to add !::cuda::std::has_single_bit(udivisor)
     _multiplier  = static_cast<unsigned_t>(::cuda::ceil_div(larger_t{1} << (num_bits + BitSize - BitOffset), //
                                                            static_cast<larger_t>(divisor)));
     _shift_right = num_bits - BitOffset;
-    // printf("divisor =%lu\n", divisor);
-    // printf("num_bits =%d,  BitSize = %d, BitOffset = %d\n", num_bits, BitSize, BitOffset);
-    // printf("multiplier = %lu, shift_right = %u\n", _multiplier, _shift_right);
   }
 
   fast_div_mod(const fast_div_mod&) noexcept = default;
