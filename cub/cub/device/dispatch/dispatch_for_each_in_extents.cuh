@@ -109,8 +109,6 @@ struct dispatch_t : PolicyHubT
   _CCCL_FORCEINLINE cudaError_t InvokeVariadic(::cuda::std::index_sequence<Ranks...>) const
   {
     using max_policy_t = typename dispatch_t::MaxPolicy;
-    // using ext_index_type  = typename ExtentsType::index_type;
-    // using uext_index_type = ::cuda::std::make_unsigned_t<ext_index_type>;
     //  workaround for nvcc 11.1 bug vvv
     using ArrayType = ::cuda::std::array<fast_div_mod<ext_index_type>, sizeof...(Ranks)>;
     if (_size == 0)
