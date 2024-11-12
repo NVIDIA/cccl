@@ -37,7 +37,8 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_STD_VER >= 2017
+// check that mdspan is available
+#if (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020
 
 #  include <cub/detail/fast_modulo_division.cuh> // fast_div_mod
 
@@ -119,4 +120,4 @@ _CCCL_FORCEINLINE constexpr bool is_sub_size_static(::cuda::std::index_sequence<
 
 CUB_NAMESPACE_END
 
-#endif // _CCCL_STD_VER >= 2017
+#endif // if (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020

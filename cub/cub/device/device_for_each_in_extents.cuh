@@ -37,7 +37,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_STD_VER >= 2017
+#if (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020
 
 #  include <cub/detail/nvtx.cuh>
 #  include <cub/device/dispatch/dispatch_for_each_in_extents.cuh>
@@ -178,4 +178,4 @@ public:
 
 CUB_NAMESPACE_END
 
-#endif // _CCCL_STD_VER >= 2017
+#endif // (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020

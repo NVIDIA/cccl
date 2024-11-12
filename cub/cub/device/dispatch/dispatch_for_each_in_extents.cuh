@@ -39,7 +39,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_STD_VER >= 2017
+#if (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020
 
 #  include <cub/detail/mdspan_utils.cuh> // size(extent)
 #  include <cub/device/dispatch/kernels/for_each_in_extents_kernel.cuh>
@@ -173,4 +173,4 @@ struct dispatch_t : PolicyHubT
 
 CUB_NAMESPACE_END
 
-#endif // _CCCL_STD_VER >= 2017
+#endif // (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020

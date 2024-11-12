@@ -37,7 +37,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_STD_VER >= 2017
+#if (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020
 
 #  include <cub/detail/fast_modulo_division.cuh> // fast_div_mod
 #  include <cub/detail/mdspan_utils.cuh> // is_sub_size_static
@@ -99,4 +99,4 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void for_each_in_extents_kernel(
 
 CUB_NAMESPACE_END
 
-#endif // _CCCL_STD_VER >= 2017
+#endif // (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020

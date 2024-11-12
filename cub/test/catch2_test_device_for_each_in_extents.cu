@@ -26,7 +26,7 @@
  ******************************************************************************/
 #include <cub/config.cuh>
 
-#if _CCCL_STD_VER >= 2017
+#if (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020
 
 #  include <cub/device/device_for_each_in_extents.cuh>
 
@@ -125,7 +125,7 @@ using extents = c2h::type_list<cuda::std::extents<index_type, 5>, cuda::std::ext
 C2H_TEST("DeviceForEachInExtents static", "[ForEachInExtents][static][device]", index_types, extents)
 {
   using index_type   = c2h::get<0, TestType>;
-  using extent_type   = c2h::get<1, TestType>;
+  using extent_type  = c2h::get<1, TestType>;
   constexpr int rank = extent_type::rank();
   using data_t       = cuda::std::array<index_type, rank>;
   using store_op_t   = LinearStore<index_type, rank>;
@@ -213,4 +213,4 @@ C2H_TEST("DeviceForEachInExtents 4D static", "[ForEachInExtents][static][device]
   REQUIRE(h_output == h_output_gpu);
 }
 
-#endif // _CCCL_STD_VER >= 2017
+#endif // (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020
