@@ -58,14 +58,14 @@ namespace detail
  **********************************************************************************************************************/
 
 // Compute the submdspan size of a given rank
-template <::cuda::std::size_t Rank, typename IndexType, ::cuda::std::size_t... Extents, ::cuda::std::size_t... Indices>
+template <::cuda::std::size_t Rank, typename IndexType, ::cuda::std::size_t... Extents>
 _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::make_unsigned_t<IndexType>
-sub_size(const ::cuda::std::extents<IndexType, Extents...>& ext, ::cuda::std::index_sequence<Indices...> = {})
+sub_size(const ::cuda::std::extents<IndexType, Extents...>& ext)
 {
   ::cuda::std::make_unsigned_t<IndexType> s = 1;
   for (IndexType i = Rank; i < sizeof...(Extents); i++)
   {
-    s *= ext.extent(Rank + Indices);
+    s *= ext.extent(Rank + i);
   }
   return s;
 }
@@ -98,22 +98,18 @@ extents_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::s
 }
 
 // GCC <= 9 workaround: Extent must be passed as type only, even const Extent& doesn't work
-template <int Rank, typename Extent, ::cuda::std::size_t... Is>
-_CCCL_NODISCARD _CCCL_HOST_DEVICE
-_CCCL_FORCEINLINE constexpr bool is_sub_size_static(::cuda::std::index_sequence<Is...> = {})
+template <int Rank, typename Extents>
+_CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr bool is_sub_size_static()
 {
-  if constexpr (Rank >= Extent::rank())
+  using IndexType = typename Extents::index_type;
+  for (IndexType i = Rank; i < Extents::rank(); i++)
   {
-    return true;
+    if (Extents::static_extent(Rank + i) == ::cuda::std::dynamic_extent)
+    {
+      return false;
+    }
   }
-  else if constexpr (sizeof...(Is) == 0)
-  {
-    return is_sub_size_static<Rank, Extent>(::cuda::std::make_index_sequence<Extent::rank() - Rank>{});
-  }
-  else
-  {
-    return ((Extent::static_extent(Rank + Is) != ::cuda::std::dynamic_extent) && ...);
-  }
+  return true;
 }
 
 } // namespace detail
