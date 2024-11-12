@@ -78,7 +78,7 @@ CUB_NAMESPACE_BEGIN
 namespace detail::for_each_in_extents
 {
 
-// The dispatch layer is in the detail namespace until we figure out tuning API
+// The dispatch layer is in the detail namespace until we figure out the tuning API
 template <typename ExtentsType, typename OpType, typename PolicyHubT = policy_hub_t>
 struct dispatch_t : PolicyHubT
 {
