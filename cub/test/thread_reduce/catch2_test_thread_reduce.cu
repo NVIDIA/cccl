@@ -47,6 +47,8 @@
 #include "c2h/custom_type.cuh"
 #include "c2h/extended_types.cuh"
 #include "c2h/generators.cuh"
+#include "cuda/__functional/maximum.h"
+#include "cuda/__functional/minimum.h"
 
 /***********************************************************************************************************************
  * Thread Reduce Wrapper Kernels
@@ -174,13 +176,13 @@ struct max_operator
 };
 
 template <typename T>
-struct cub_operator_to_std<T, cub::Min>
+struct cub_operator_to_std<T, cuda::minimum<>>
 {
   using type = min_operator;
 };
 
 template <typename T>
-struct cub_operator_to_std<T, cub::Max>
+struct cub_operator_to_std<T, cuda::maximum<>>
 {
   using type = max_operator;
 };
@@ -241,7 +243,7 @@ struct cub_operator_to_identity<T, cuda::std::bit_xor<>>
 };
 
 template <typename T>
-struct cub_operator_to_identity<T, cub::Min>
+struct cub_operator_to_identity<T, cuda::minimum<>>
 {
   static constexpr T value()
   {
@@ -250,7 +252,7 @@ struct cub_operator_to_identity<T, cub::Min>
 };
 
 template <typename T>
-struct cub_operator_to_identity<T, cub::Max>
+struct cub_operator_to_identity<T, cuda::maximum<>>
 {
   static constexpr T value()
   {
@@ -288,10 +290,11 @@ using cub_operator_integral_list =
                  cuda::std::bit_and<>,
                  cuda::std::bit_or<>,
                  cuda::std::bit_xor<>,
-                 cub::Min,
-                 cub::Max>;
+                 cuda::minimum<>,
+                 cuda::maximum<>>;
 
-using cub_operator_fp_list = c2h::type_list<cuda::std::plus<>, cuda::std::multiplies<>, cub::Min, cub::Max>;
+using cub_operator_fp_list =
+  c2h::type_list<cuda::std::plus<>, cuda::std::multiplies<>, cuda::minimum<>, cuda::maximum<>>;
 
 /***********************************************************************************************************************
  * Verify results and kernel launch

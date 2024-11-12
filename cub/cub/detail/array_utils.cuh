@@ -69,7 +69,7 @@ template <typename CastType = void, typename Input>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::array<CastType, cub::detail::static_size_v<Input>()>
 to_array(const Input& input)
 {
-  using InputType = ::cuda::std::__remove_cvref_t<decltype(input[0])>;
+  using InputType = ::cuda::std::remove_cvref_t<decltype(input[0])>;
   using CastType1 = ::cuda::std::_If<::cuda::std::is_same<CastType, void>::value, InputType, CastType>;
   return to_array_impl<CastType1>(input, ::cuda::std::make_index_sequence<cub::detail::static_size_v<Input>()>{});
 }

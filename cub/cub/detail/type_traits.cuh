@@ -122,8 +122,7 @@ struct is_fixed_size_random_access_range<::cuda::std::span<T, N>, void> : ::cuda
 template <typename T, typename E, typename L, typename A>
 struct is_fixed_size_random_access_range<
   ::cuda::std::mdspan<T, E, L, A>,
-  ::cuda::std::__enable_if_t<E::rank == 1 && E::static_extent(0) != ::cuda::std::dynamic_extent>>
-    : ::cuda::std::true_type
+  ::cuda::std::enable_if_t<E::rank == 1 && E::static_extent(0) != ::cuda::std::dynamic_extent>> : ::cuda::std::true_type
 {};
 
 #endif // _CCCL_STD_VER >= 2014
@@ -162,7 +161,7 @@ struct static_size<::cuda::std::span<T, N>, void> : ::cuda::std::integral_consta
 
 template <typename T, typename E, typename L, typename A>
 struct static_size<::cuda::std::mdspan<T, E, L, A>,
-                   ::cuda::std::__enable_if_t<E::rank == 1 && E::static_extent(0) != ::cuda::std::dynamic_extent>>
+                   ::cuda::std::enable_if_t<E::rank == 1 && E::static_extent(0) != ::cuda::std::dynamic_extent>>
     : ::cuda::std::integral_constant<int, E::static_extent(1)>
 {};
 
