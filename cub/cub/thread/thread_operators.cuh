@@ -50,6 +50,7 @@
 #include <cub/detail/type_traits.cuh> // always_false
 #include <cub/util_type.cuh>
 
+#include <cuda/functional> // cuda::maximum, cuda::minimum
 #include <cuda/std/bit> // cuda::std::bit_cast
 #include <cuda/std/functional> // cuda::std::plus
 #include <cuda/std/type_traits> // cuda::std::common_type
@@ -395,6 +396,8 @@ CUB_DEPRECATED _CCCL_HOST_DEVICE BinaryFlip<BinaryOpT> MakeBinaryFlip(BinaryOpT 
 }
 _CCCL_SUPPRESS_DEPRECATED_POP
 
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+
 namespace internal
 {
 
@@ -407,9 +410,10 @@ struct SimdMin
 template <>
 struct SimdMin<::cuda::std::int16_t>
 {
-  using simd_type = unsigned;
+  using simd_type = ::cuda::std::uint32_t;
 
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t
+  operator()(::cuda::std::uint32_t a, ::cuda::std::uint32_t b) const
   {
     return __vmins2(a, b);
   }
@@ -418,15 +422,16 @@ struct SimdMin<::cuda::std::int16_t>
 template <>
 struct SimdMin<::cuda::std::uint16_t>
 {
-  using simd_type = unsigned;
+  using simd_type = ::cuda::std::uint32_t;
 
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t
+  operator()(::cuda::std::uint32_t a, ::cuda::std::uint32_t b) const
   {
     return __vminu2(a, b);
   }
 };
 
-#if defined(_CCCL_HAS_NVFP16)
+#  if defined(_CCCL_HAS_NVFP16)
 
 template <>
 struct SimdMin<__half>
@@ -442,14 +447,14 @@ struct SimdMin<__half>
   }
 };
 
-#endif // defined(_CCCL_HAS_NVFP16)
+#  endif // defined(_CCCL_HAS_NVFP16)
 
-#if defined(_CCCL_HAS_NVBF16)
+#  if defined(_CCCL_HAS_NVBF16)
 
 // NOTE: __halves2bfloat162 is not always available on older CUDA Toolkits for __CUDA_ARCH__ < 800
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 halves2bfloat162(__nv_bfloat16 a, __nv_bfloat16 b)
 {
-  unsigned tmp;
+  ::cuda::std::uint32_t tmp;
   auto a_uint16 = ::cuda::std::bit_cast<::cuda::std::uint16_t>(a);
   auto b_uint16 = ::cuda::std::bit_cast<::cuda::std::uint16_t>(b);
   asm("{mov.b32 %0, {%1,%2};}\n" : "=r"(tmp) : "h"(a_uint16), "h"(b_uint16));
@@ -473,7 +478,7 @@ struct SimdMin<__nv_bfloat16>
   }
 };
 
-#endif // defined(_CCCL_HAS_NVBF16)
+#  endif // defined(_CCCL_HAS_NVBF16)
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -486,9 +491,10 @@ struct SimdMax
 template <>
 struct SimdMax<::cuda::std::int16_t>
 {
-  using simd_type = unsigned;
+  using simd_type = ::cuda::std::uint32_t;
 
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t
+  operator()(::cuda::std::uint32_t a, ::cuda::std::uint32_t b) const
   {
     return __vmaxs2(a, b);
   }
@@ -497,15 +503,16 @@ struct SimdMax<::cuda::std::int16_t>
 template <>
 struct SimdMax<::cuda::std::uint16_t>
 {
-  using simd_type = unsigned;
+  using simd_type = ::cuda::std::uint32_t;
 
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t
+  operator()(::cuda::std::uint32_t a, ::cuda::std::uint32_t b) const
   {
     return __vmaxu2(a, b);
   }
 };
 
-#if defined(_CCCL_HAS_NVFP16)
+#  if defined(_CCCL_HAS_NVFP16)
 
 template <>
 struct SimdMax<__half>
@@ -521,9 +528,9 @@ struct SimdMax<__half>
   }
 };
 
-#endif // defined(_CCCL_HAS_NVFP16)
+#  endif // defined(_CCCL_HAS_NVFP16)
 
-#if defined(_CCCL_HAS_NVBF16)
+#  if defined(_CCCL_HAS_NVBF16)
 
 template <>
 struct SimdMax<__nv_bfloat16>
@@ -540,7 +547,7 @@ struct SimdMax<__nv_bfloat16>
   }
 };
 
-#endif // defined(_CCCL_HAS_NVBF16)
+#  endif // defined(_CCCL_HAS_NVBF16)
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -550,7 +557,7 @@ struct SimdSum
   static_assert(cub::detail::always_false<T>(), "Unsupported specialization");
 };
 
-#if defined(_CCCL_HAS_NVFP16)
+#  if defined(_CCCL_HAS_NVFP16)
 
 template <>
 struct SimdSum<__half>
@@ -566,9 +573,9 @@ struct SimdSum<__half>
   }
 };
 
-#endif // defined(_CCCL_HAS_NVFP16)
+#  endif // defined(_CCCL_HAS_NVFP16)
 
-#if defined(_CCCL_HAS_NVBF16)
+#  if defined(_CCCL_HAS_NVBF16)
 
 template <>
 struct SimdSum<__nv_bfloat16>
@@ -585,7 +592,7 @@ struct SimdSum<__nv_bfloat16>
   }
 };
 
-#endif // defined(_CCCL_HAS_NVBF16)
+#  endif // defined(_CCCL_HAS_NVBF16)
 
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -595,7 +602,7 @@ struct SimdMul
   static_assert(cub::detail::always_false<T>(), "Unsupported specialization");
 };
 
-#if defined(_CCCL_HAS_NVFP16)
+#  if defined(_CCCL_HAS_NVFP16)
 
 template <>
 struct SimdMul<__half>
@@ -611,9 +618,9 @@ struct SimdMul<__half>
   }
 };
 
-#endif // defined(_CCCL_HAS_NVFP16)
+#  endif // defined(_CCCL_HAS_NVFP16)
 
-#if defined(_CCCL_HAS_NVBF16)
+#  if defined(_CCCL_HAS_NVBF16)
 
 template <>
 struct SimdMul<__nv_bfloat16>
@@ -629,7 +636,7 @@ struct SimdMul<__nv_bfloat16>
   }
 };
 
-#endif // defined(_CCCL_HAS_NVBF16)
+#  endif // defined(_CCCL_HAS_NVBF16)
 
 //----------------------------------------------------------------------------------------------------------------------
 

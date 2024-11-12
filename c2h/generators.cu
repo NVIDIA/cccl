@@ -554,10 +554,12 @@ INSTANTIATE(char);
 
 #ifdef _CCCL_HAS_NVFP16
 INSTANTIATE(half_t);
+INSTANTIATE(__half);
 #endif // _CCCL_HAS_NVFP16
 
 #ifdef _CCCL_HAS_NVBF16
 INSTANTIATE(bfloat16_t);
+INSTANTIATE(__nv_bfloat16);
 #endif // _CCCL_HAS_NVBF16
 
 #undef INSTANTIATE_RND

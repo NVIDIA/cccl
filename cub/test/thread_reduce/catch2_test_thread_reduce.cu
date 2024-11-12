@@ -31,6 +31,7 @@
 
 #include <thrust/iterator/constant_iterator.h>
 
+#include <cuda/functional>
 #include <cuda/std/functional>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
@@ -43,12 +44,10 @@
 #include <tuple>
 #include <type_traits>
 
-#include "c2h/catch2_test_helper.cuh"
-#include "c2h/custom_type.cuh"
-#include "c2h/extended_types.cuh"
-#include "c2h/generators.cuh"
-#include "cuda/__functional/maximum.h"
-#include "cuda/__functional/minimum.h"
+#include "c2h/catch2_test_helper.h"
+#include "c2h/custom_type.h"
+#include "c2h/extended_types.h"
+#include "c2h/generators.h"
 
 /***********************************************************************************************************************
  * Thread Reduce Wrapper Kernels
@@ -157,34 +156,16 @@ struct cub_operator_to_std<T, cuda::std::bit_xor<>>
   using type = ::std::bit_xor<T>;
 };
 
-struct min_operator
-{
-  template <typename T>
-  const T& operator()(const T& valueA, const T& valueB)
-  {
-    return ::std::min(valueA, valueB);
-  }
-};
-
-struct max_operator
-{
-  template <typename T>
-  const T& operator()(const T& valueA, const T& valueB)
-  {
-    return ::std::max(valueA, valueB);
-  }
-};
-
 template <typename T>
 struct cub_operator_to_std<T, cuda::minimum<>>
 {
-  using type = min_operator;
+  using type = cuda::minimum<>;
 };
 
 template <typename T>
 struct cub_operator_to_std<T, cuda::maximum<>>
 {
-  using type = max_operator;
+  using type = cuda::maximum<>;
 };
 
 template <typename T, typename Operator>
