@@ -34,9 +34,9 @@
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.cuh>
-#include <c2h/custom_type.cuh>
-#include <c2h/extended_types.cuh>
+#include <c2h/catch2_test_helper.h>
+#include <c2h/custom_type.h>
+#include <c2h/extended_types.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_sum);

@@ -512,3 +512,9 @@ using cub_operator_to_dpx_t = typename CubOperatorToDpx<ReduceOp, T>::type;
 } // namespace internal
 
 CUB_NAMESPACE_END
+
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+template <typename F>
+struct proclaims_copyable_arguments<CUB_NS_QUALIFIER::InequalityWrapper<F>> : proclaims_copyable_arguments<F>
+{};
+_LIBCUDACXX_END_NAMESPACE_CUDA

@@ -27,16 +27,16 @@
 
 #pragma once
 
-#include <cub/util_type.cuh> // __CUDA_FP8_TYPES_EXIST__
+#include <thrust/detail/config/device_system.h>
 
 #include <limits>
 
-#include <c2h/custom_type.cuh>
-#include <c2h/vector.cuh>
+#include <c2h/custom_type.h>
+#include <c2h/vector.h>
 
-#if defined(__CUDA_FP8_TYPES_EXIST__)
-#  include <cuda_fp8.h>
-
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+#  include <cub/util_type.cuh> // for <cuda_fp8.h>
+#  if defined(__CUDA_FP8_TYPES_EXIST__)
 namespace std
 {
 template <>
@@ -69,7 +69,8 @@ public:
   }
 };
 } // namespace std
-#endif // defined(__CUDA_FP8_TYPES_EXIST__)
+#  endif // defined(__CUDA_FP8_TYPES_EXIST__)
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 
 namespace c2h
 {

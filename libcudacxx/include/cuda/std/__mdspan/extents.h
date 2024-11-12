@@ -169,7 +169,7 @@ private:
   }
 
   template <size_t... _Idxs>
-  __MDSPAN_FORCE_INLINE_FUNCTION static constexpr index_type
+  __MDSPAN_FORCE_INLINE_FUNCTION static constexpr size_t
   _static_extent_impl(size_t __n, _CUDA_VSTD::integer_sequence<size_t, _Idxs...>) noexcept
   {
     return __MDSPAN_FOLD_PLUS_RIGHT(((_Idxs == __n) ? _Extents : 0), /* + ... + */ 0);

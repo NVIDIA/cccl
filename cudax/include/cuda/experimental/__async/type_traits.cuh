@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 
 #include <cuda/experimental/__async/meta.cuh>
@@ -132,59 +133,16 @@ using __decay_t = typename decltype(__mdecay<_Ty>)::template __f<_Ty>;
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // __copy_cvref_t: For copying cvref from one type to another
-struct __cp
-{
-  template <class _Tp>
-  using __f = _Tp;
-};
+// TODO: This is a temporary implementation. We should merge this file and meta.cuh
+// with the facilities in <cuda/std/__type_traits/type_list.h>.
+template <class _Ty>
+using __cref_t = _Ty const&;
 
-struct __cpc
-{
-  template <class _Tp>
-  using __f = const _Tp;
-};
-
-struct __cplr
-{
-  template <class _Tp>
-  using __f = _Tp&;
-};
-
-struct __cprr
-{
-  template <class _Tp>
-  using __f = _Tp&&;
-};
-
-struct __cpclr
-{
-  template <class _Tp>
-  using __f = const _Tp&;
-};
-
-struct __cpcrr
-{
-  template <class _Tp>
-  using __f = const _Tp&&;
-};
-
-template <class>
-extern __cp __cpcvr;
-template <class _Tp>
-extern __cpc __cpcvr<const _Tp>;
-template <class _Tp>
-extern __cplr __cpcvr<_Tp&>;
-template <class _Tp>
-extern __cprr __cpcvr<_Tp&&>;
-template <class _Tp>
-extern __cpclr __cpcvr<const _Tp&>;
-template <class _Tp>
-extern __cpcrr __cpcvr<const _Tp&&>;
-template <class _Tp>
-using __copy_cvref_fn = decltype(__cpcvr<_Tp>);
+using __cp    = __midentity;
+using __cpclr = __mquote1<__cref_t>;
 
 template <class _From, class _To>
-using __copy_cvref_t = typename __copy_cvref_fn<_From>::template __f<_To>;
+using __copy_cvref_t = _CUDA_VSTD::__copy_cvref_t<_From, _To>;
 
 template <class _Fn, class... _As>
 using __call_result_t = decltype(__declval<_Fn>()(__declval<_As>()...));

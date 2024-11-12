@@ -34,8 +34,8 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
-#include <c2h/catch2_test_helper.cuh>
-#include <c2h/custom_type.cuh>
+#include <c2h/catch2_test_helper.h>
+#include <c2h/custom_type.h>
 
 template <int LOGICAL_WARP_THREADS, int TOTAL_WARPS, typename T, typename ActionT>
 __global__ void warp_reduce_kernel(T* in, T* out, ActionT action)
