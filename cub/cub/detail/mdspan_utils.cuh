@@ -49,7 +49,7 @@
 
 #  if __CUDACC_VER_MAJOR__ == 11
 _CCCL_NV_DIAG_SUPPRESS(940) // missing return statement at end of non-void function "lambda []()->U"
-#  endif // nvcc-11
+#  endif // __CUDACC_VER_MAJOR__ == 11
 
 CUB_NAMESPACE_BEGIN
 
@@ -65,10 +65,12 @@ template <::cuda::std::size_t Rank, typename IndexType, ::cuda::std::size_t... E
 _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::make_unsigned_t<IndexType>
 sub_size(const ::cuda::std::extents<IndexType, Extents...>& ext, ::cuda::std::index_sequence<Indices...> = {})
 {
- ::cuda::std::make_unsigned_t<IndexType> s = 1;
- for (IndexType i = Rank; i < sizeof...(Extents); i++)
-   s *= ext.extent(Rank + Indices);
- return s;
+  ::cuda::std::make_unsigned_t<IndexType> s = 1;
+  for (IndexType i = Rank; i < sizeof...(Extents); i++)
+  {
+    s *= ext.extent(Rank + Indices);
+  }
+  return s;
 }
 
 // TODO: move to cuda::std
