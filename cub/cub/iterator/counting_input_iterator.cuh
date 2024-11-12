@@ -48,7 +48,7 @@
 
 #include <cuda/std/iterator>
 
-#ifndef _CCCL_COMPILER_NVRTC
+#if !_CCCL_COMPILER_NVRTC
 #  include <thrust/iterator/iterator_facade.h>
 #  include <thrust/iterator/iterator_traits.h>
 
@@ -110,7 +110,7 @@ public:
   /// The type of a reference to an element the iterator can point to
   using reference = ValueType;
 
-#ifdef _CCCL_COMPILER_NVRTC
+#if _CCCL_COMPILER_NVRTC
   using iterator_category = ::cuda::std::random_access_iterator_tag;
 #else // _CCCL_COMPILER_NVRTC
   using iterator_category = typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
@@ -217,7 +217,7 @@ public:
   }
 
   /// ostream operator
-#ifndef _CCCL_COMPILER_NVRTC
+#if !_CCCL_COMPILER_NVRTC
   friend std::ostream& operator<<(std::ostream& os, const self_type& itr)
   {
     os << "[" << itr.val << "]";

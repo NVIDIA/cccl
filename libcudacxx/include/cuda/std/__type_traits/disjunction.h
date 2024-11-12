@@ -51,7 +51,7 @@ struct _OrImpl<false>
 template <class... _Args>
 using _Or _CCCL_NODEBUG_ALIAS = typename _OrImpl<sizeof...(_Args) != 0>::template _Result<false_type, _Args...>;
 
-#ifdef _CCCL_COMPILER_MSVC
+#if _CCCL_COMPILER_MSVC
 template <class... _Args>
 struct disjunction : false_type
 {};

@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#ifndef _CCCL_COMPILER_NVRTC
+#if !_CCCL_COMPILER_NVRTC
 #  include <cstdint>
 #else // ^^^ !_CCCL_COMPILER_NVRTC ^^^ / vvv _CCCL_COMPILER_NVRTC vvv
 typedef signed char int8_t;

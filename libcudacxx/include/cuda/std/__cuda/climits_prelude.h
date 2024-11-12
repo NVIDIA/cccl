@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#ifndef _CCCL_COMPILER_NVRTC
+#if !_CCCL_COMPILER_NVRTC
 #  include <climits>
 #  include <cstdint>
 

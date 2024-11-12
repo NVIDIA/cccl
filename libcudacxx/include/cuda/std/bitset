@@ -526,7 +526,7 @@ protected:
 
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 unsigned long to_ulong() const
   {
-#ifdef _CCCL_COMPILER_MSVC
+#if _CCCL_COMPILER_MSVC
     if (static_cast<unsigned long>(__first_.__data) != __first_.__data)
     {
       _CUDA_VSTD::__throw_overflow_error("bitset to_ulong overflow error");

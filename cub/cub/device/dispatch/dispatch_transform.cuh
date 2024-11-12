@@ -46,7 +46,7 @@ _CCCL_NV_DIAG_SUPPRESS(186)
 #include <cassert>
 
 // cooperative groups do not support NVHPC yet
-#ifndef _CCCL_CUDA_COMPILER_NVHPC
+#if !_CCCL_CUDA_COMPILER_NVHPC
 #  include <cooperative_groups.h>
 #  include <cooperative_groups/memcpy_async.h>
 #endif

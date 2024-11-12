@@ -43,7 +43,7 @@
 #  pragma system_header
 #endif // no system header
 
-#ifdef _CCCL_COMPILER_NVRTC
+#if _CCCL_COMPILER_NVRTC
 #  include <cuda/std/iterator>
 #else // _CCCL_COMPILER_NVRTC
 #  include <thrust/iterator/iterator_facade.h>
@@ -123,7 +123,7 @@ public:
   /// The type of a reference to an element the iterator can point to
   using reference = ValueType;
 
-#ifdef _CCCL_COMPILER_NVRTC
+#if _CCCL_COMPILER_NVRTC
   using iterator_category = ::cuda::std::random_access_iterator_tag;
 #else // _CCCL_COMPILER_NVRTC
   using iterator_category = typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<

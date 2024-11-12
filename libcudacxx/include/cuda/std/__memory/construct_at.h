@@ -38,12 +38,12 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
-#ifdef _CCCL_CUDA_COMPILER_CLANG
+#if _CCCL_CUDA_COMPILER_CLANG
 #  include <new>
 #endif // _CCCL_CUDA_COMPILER_CLANG
 
 #if _CCCL_STD_VER >= 2020 // need to backfill ::std::construct_at
-#  ifndef _CCCL_COMPILER_NVRTC
+#  if !_CCCL_COMPILER_NVRTC
 #    include <memory>
 #  endif // _CCCL_COMPILER_NVRTC
 

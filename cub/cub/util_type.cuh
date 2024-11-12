@@ -59,7 +59,7 @@ _CCCL_DIAG_POP
 #  endif // !_CCCL_CUDACC_BELOW_11_8
 #endif // _CCCL_HAS_NV_BF16
 
-#ifdef _CCCL_COMPILER_NVRTC
+#if _CCCL_COMPILER_NVRTC
 #  include <cuda/std/iterator>
 #else // !_CCCL_COMPILER_NVRTC
 #  include <iterator>
@@ -93,7 +93,7 @@ namespace detail
 // only defer to the libcu++ implementation for NVRTC.
 template <typename Iterator>
 using value_t =
-#  ifdef _CCCL_COMPILER_NVRTC
+#  if _CCCL_COMPILER_NVRTC
   typename ::cuda::std::iterator_traits<Iterator>::value_type;
 #  else // !_CCCL_COMPILER_NVRTC
   typename std::iterator_traits<Iterator>::value_type;

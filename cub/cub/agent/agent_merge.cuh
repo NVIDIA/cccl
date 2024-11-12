@@ -172,7 +172,7 @@ struct agent_t
 
     // if items are provided, merge them
     static constexpr bool have_items = !std::is_same<item_type, NullType>::value;
-#ifdef _CCCL_CUDACC_BELOW_11_8
+#if _CCCL_CUDACC_BELOW_11_8
     if (have_items) // nvcc 11.1 cannot handle #pragma unroll inside if constexpr but 11.8 can.
                     // nvcc versions between may work
 #else

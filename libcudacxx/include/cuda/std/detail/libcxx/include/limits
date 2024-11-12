@@ -428,7 +428,7 @@ protected:
   static constexpr bool has_signaling_NaN        = true;
   static constexpr float_denorm_style has_denorm = denorm_present;
   static constexpr bool has_denorm_loss          = false;
-#ifdef _CCCL_COMPILER_NVRTC
+#if _CCCL_COMPILER_NVRTC
   _LIBCUDACXX_HIDE_FROM_ABI static type infinity() noexcept
   {
     return __builtin_huge_valf();
@@ -516,7 +516,7 @@ protected:
   static constexpr bool has_signaling_NaN        = true;
   static constexpr float_denorm_style has_denorm = denorm_present;
   static constexpr bool has_denorm_loss          = false;
-#ifdef _CCCL_COMPILER_NVRTC
+#if _CCCL_COMPILER_NVRTC
   _LIBCUDACXX_HIDE_FROM_ABI static type infinity() noexcept
   {
     return __builtin_huge_val();

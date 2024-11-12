@@ -639,7 +639,7 @@ template <class _Type>
 struct __allocator_has_trivial_move_construct<allocator<_Type>, _Type> : true_type
 {};
 
-#ifndef _CCCL_COMPILER_GCC
+#if !_CCCL_COMPILER_GCC
 template <class _Alloc,
           class _Iter1,
           class _Iter2,

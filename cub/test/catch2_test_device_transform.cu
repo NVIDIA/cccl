@@ -178,7 +178,7 @@ struct alignas(Alignment) overaligned_addable_t
 
 using overaligned_types =
   c2h::type_list<overaligned_addable_t<32>
-#ifndef _CCCL_COMPILER_MSVC // error C2719: [...] formal parameter with requested alignment of 256 won't be aligned
+#if !_CCCL_COMPILER_MSVC // error C2719: [...] formal parameter with requested alignment of 256 won't be aligned
                  ,
                  overaligned_addable_t<256>
 #endif // _CCCL_COMPILER_MSVC

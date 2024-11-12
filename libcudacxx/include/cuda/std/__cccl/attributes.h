@@ -95,7 +95,7 @@
 #endif // !_CCCL_CUDACC_BELOW_11_3 && !_CCCL_COMPILER_CLANG
 
 // NVCC below 11.3 does not support attributes on alias declarations
-#ifdef _CCCL_CUDACC_BELOW_11_3
+#if _CCCL_CUDACC_BELOW_11_3
 #  define _CCCL_ALIAS_ATTRIBUTE(...)
 #else // ^^^ _CCCL_CUDACC_BELOW_11_3 ^^^ / vvv !_CCCL_CUDACC_BELOW_11_3 vvv
 #  define _CCCL_ALIAS_ATTRIBUTE(...) __VA_ARGS__

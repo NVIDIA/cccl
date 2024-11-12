@@ -350,7 +350,7 @@ private:
     T x;
     T y;
   }
-#ifdef _CCCL_COMPILER_ICC
+#if _CCCL_COMPILER_ICC
   __attribute__((aligned(sizeof(T) * 2)))
 #endif // _CCCL_COMPILER_ICC
   ;

@@ -330,7 +330,7 @@ long double    truncl(long double x);
 #  include <cuda/std/__cuda/cmath_nvbf16.h>
 #endif // _LIBCUDACXX_HAS_NVBF16
 
-#ifdef _CCCL_COMPILER_NVRTC
+#if _CCCL_COMPILER_NVRTC
 #  include <cuda/std/climits>
 #  define INFINITY __builtin_huge_val()
 #  define NAN      __builtin_nan()
@@ -396,7 +396,7 @@ using ::hypotf;
 using ::abs;
 #endif
 
-#ifndef _CCCL_COMPILER_NVRTC
+#if !_CCCL_COMPILER_NVRTC
 
 using ::fpclassify;
 using ::isgreater;

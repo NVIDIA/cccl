@@ -23,7 +23,7 @@
 
 _CCCL_PUSH_MACROS
 
-#ifndef _CCCL_COMPILER_NVRTC
+#if !_CCCL_COMPILER_NVRTC
 #  include <cfloat>
 
 #  include <float.h>

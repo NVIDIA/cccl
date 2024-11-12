@@ -23,7 +23,7 @@
 #endif // no system header
 
 // Enable us to selectively silence host compiler warnings
-#ifdef _CCCL_COMPILER_CLANG
+#if _CCCL_COMPILER_CLANG
 #  define _CCCL_DIAG_PUSH                _CCCL_PRAGMA(clang diagnostic push)
 #  define _CCCL_DIAG_POP                 _CCCL_PRAGMA(clang diagnostic pop)
 #  define _CCCL_DIAG_SUPPRESS_CLANG(str) _CCCL_PRAGMA(clang diagnostic ignored str)

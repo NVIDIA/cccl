@@ -30,7 +30,7 @@ using ::memcpy;
 using ::memset;
 using ::size_t;
 
-#ifndef _CCCL_COMPILER_NVRTC
+#if !_CCCL_COMPILER_NVRTC
 using ::memchr;
 using ::memcmp;
 using ::memmove;
