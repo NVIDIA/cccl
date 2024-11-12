@@ -24,7 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  ******************************************************************************/
-#include "c2h/utility.cuh"
+#include "c2h/utility.h"
 #define CCCL_ENABLE_DEVICE_ASSERTIONS
 #include <cub/config.cuh>
 
