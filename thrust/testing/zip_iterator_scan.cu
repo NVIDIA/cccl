@@ -38,27 +38,31 @@ struct TestZipIteratorScan
     device_vector<Tuple> d_result(n);
 
     // inclusive_scan (tuple output)
-    inclusive_scan(make_zip_iterator(make_tuple(h_data0.begin(), h_data1.begin())),
-                   make_zip_iterator(make_tuple(h_data0.end(), h_data1.end())),
-                   h_result.begin(),
-                   TuplePlus<Tuple>());
-    inclusive_scan(make_zip_iterator(make_tuple(d_data0.begin(), d_data1.begin())),
-                   make_zip_iterator(make_tuple(d_data0.end(), d_data1.end())),
-                   d_result.begin(),
-                   TuplePlus<Tuple>());
+    thrust::inclusive_scan(
+      make_zip_iterator(h_data0.begin(), h_data1.begin()),
+      make_zip_iterator(h_data0.end(), h_data1.end()),
+      h_result.begin(),
+      TuplePlus<Tuple>());
+    thrust::inclusive_scan(
+      make_zip_iterator(d_data0.begin(), d_data1.begin()),
+      make_zip_iterator(d_data0.end(), d_data1.end()),
+      d_result.begin(),
+      TuplePlus<Tuple>());
     ASSERT_EQUAL_QUIET(h_result, d_result);
 
     // exclusive_scan (tuple output)
-    exclusive_scan(make_zip_iterator(make_tuple(h_data0.begin(), h_data1.begin())),
-                   make_zip_iterator(make_tuple(h_data0.end(), h_data1.end())),
-                   h_result.begin(),
-                   make_tuple<T, T>(0, 0),
-                   TuplePlus<Tuple>());
-    exclusive_scan(make_zip_iterator(make_tuple(d_data0.begin(), d_data1.begin())),
-                   make_zip_iterator(make_tuple(d_data0.end(), d_data1.end())),
-                   d_result.begin(),
-                   make_tuple<T, T>(0, 0),
-                   TuplePlus<Tuple>());
+    thrust::exclusive_scan(
+      make_zip_iterator(h_data0.begin(), h_data1.begin()),
+      make_zip_iterator(h_data0.end(), h_data1.end()),
+      h_result.begin(),
+      make_tuple<T, T>(0, 0),
+      TuplePlus<Tuple>());
+    thrust::exclusive_scan(
+      make_zip_iterator(d_data0.begin(), d_data1.begin()),
+      make_zip_iterator(d_data0.end(), d_data1.end()),
+      d_result.begin(),
+      make_tuple<T, T>(0, 0),
+      TuplePlus<Tuple>());
     ASSERT_EQUAL_QUIET(h_result, d_result);
 
     host_vector<T> h_result0(n);
@@ -67,28 +71,32 @@ struct TestZipIteratorScan
     device_vector<T> d_result1(n);
 
     // inclusive_scan (zip_iterator output)
-    inclusive_scan(make_zip_iterator(make_tuple(h_data0.begin(), h_data1.begin())),
-                   make_zip_iterator(make_tuple(h_data0.end(), h_data1.end())),
-                   make_zip_iterator(make_tuple(h_result0.begin(), h_result1.begin())),
-                   TuplePlus<Tuple>());
-    inclusive_scan(make_zip_iterator(make_tuple(d_data0.begin(), d_data1.begin())),
-                   make_zip_iterator(make_tuple(d_data0.end(), d_data1.end())),
-                   make_zip_iterator(make_tuple(d_result0.begin(), d_result1.begin())),
-                   TuplePlus<Tuple>());
+    thrust::inclusive_scan(
+      make_zip_iterator(h_data0.begin(), h_data1.begin()),
+      make_zip_iterator(h_data0.end(), h_data1.end()),
+      make_zip_iterator(h_result0.begin(), h_result1.begin()),
+      TuplePlus<Tuple>());
+    thrust::inclusive_scan(
+      make_zip_iterator(d_data0.begin(), d_data1.begin()),
+      make_zip_iterator(d_data0.end(), d_data1.end()),
+      make_zip_iterator(d_result0.begin(), d_result1.begin()),
+      TuplePlus<Tuple>());
     ASSERT_EQUAL_QUIET(h_result0, d_result0);
     ASSERT_EQUAL_QUIET(h_result1, d_result1);
 
     // exclusive_scan (zip_iterator output)
-    exclusive_scan(make_zip_iterator(make_tuple(h_data0.begin(), h_data1.begin())),
-                   make_zip_iterator(make_tuple(h_data0.end(), h_data1.end())),
-                   make_zip_iterator(make_tuple(h_result0.begin(), h_result1.begin())),
-                   make_tuple<T, T>(0, 0),
-                   TuplePlus<Tuple>());
-    exclusive_scan(make_zip_iterator(make_tuple(d_data0.begin(), d_data1.begin())),
-                   make_zip_iterator(make_tuple(d_data0.end(), d_data1.end())),
-                   make_zip_iterator(make_tuple(d_result0.begin(), d_result1.begin())),
-                   make_tuple<T, T>(0, 0),
-                   TuplePlus<Tuple>());
+    thrust::exclusive_scan(
+      make_zip_iterator(h_data0.begin(), h_data1.begin()),
+      make_zip_iterator(h_data0.end(), h_data1.end()),
+      make_zip_iterator(h_result0.begin(), h_result1.begin()),
+      make_tuple<T, T>(0, 0),
+      TuplePlus<Tuple>());
+    thrust::exclusive_scan(
+      make_zip_iterator(d_data0.begin(), d_data1.begin()),
+      make_zip_iterator(d_data0.end(), d_data1.end()),
+      make_zip_iterator(d_result0.begin(), d_result1.begin()),
+      make_tuple<T, T>(0, 0),
+      TuplePlus<Tuple>());
     ASSERT_EQUAL_QUIET(h_result0, d_result0);
     ASSERT_EQUAL_QUIET(h_result1, d_result1);
   }
