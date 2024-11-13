@@ -138,7 +138,7 @@ template <typename... Levels>
 struct can_stack_checker
 {
   template <typename... LevelsShifted>
-  using can_stack = ::cuda::std::__fold_and<detail::can_stack_on_top<LevelsShifted, Levels>...>;
+  using can_stack = ::cuda::std::__fold_and<detail::can_rhs_stack_on_lhs<LevelsShifted, Levels>...>;
 };
 
 template <typename LUnit, typename L1, typename... Levels>
@@ -728,10 +728,10 @@ public:
   template <typename OtherUnit, typename... OtherLevels>
   constexpr auto combine(const hierarchy_dimensions_fragment<OtherUnit, OtherLevels...>& other)
   {
-    using this_top_level     = typename detail::get_first_level<Levels...>::level_type;
-    using this_bottom_level  = typename detail::get_last_level<Levels...>::level_type;
-    using other_top_level    = typename detail::get_first_level<OtherLevels...>::level_type;
-    using other_bottom_level = typename detail::get_last_level<OtherLevels...>::level_type;
+    using this_top_level     = __level_type_of<::cuda::std::__type_index_c<0, Levels...>>;
+    using this_bottom_level  = __level_type_of<::cuda::std::__type_index_c<sizeof...(Levels) - 1, Levels...>>;
+    using other_top_level    = __level_type_of<::cuda::std::__type_index_c<0, OtherLevels...>>;
+    using other_bottom_level = __level_type_of<::cuda::std::__type_index_c<sizeof...(OtherLevels) - 1, OtherLevels...>>;
     if constexpr (detail::can_rhs_stack_on_lhs<other_top_level, this_bottom_level>)
     {
       // Easily stackable case, example this is (grid), other is (cluster, block)
