@@ -220,6 +220,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __tuple_leaf_specialization __tuple_leaf_cho
 template <size_t _Ip, class _Hp, __tuple_leaf_specialization = __tuple_leaf_choose<_Hp>()>
 class __tuple_leaf;
 
+_CCCL_EXEC_CHECK_DISABLE
 template <size_t _Ip, class _Hp, __tuple_leaf_specialization _Ep>
 _LIBCUDACXX_HIDE_FROM_ABI void
 swap(__tuple_leaf<_Ip, _Hp, _Ep>& __x, __tuple_leaf<_Ip, _Hp, _Ep>& __y) noexcept(__is_nothrow_swappable<_Hp>::value)
@@ -246,25 +247,30 @@ class __tuple_leaf<_Ip, _Hp, __tuple_leaf_specialization::__default>
   }
 
 public:
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __tuple_leaf() noexcept(_CCCL_TRAIT(is_nothrow_default_constructible, _Hp))
       : __value_()
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __tuple_leaf(__tuple_leaf_default_constructor_tag) noexcept(
     _CCCL_TRAIT(is_nothrow_default_constructible, _Hp))
       : __value_()
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
   _LIBCUDACXX_HIDE_FROM_ABI __tuple_leaf(integral_constant<int, 0>, const _Alloc&)
       : __value_()
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
   _LIBCUDACXX_HIDE_FROM_ABI __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a)
       : __value_(allocator_arg_t(), __a)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
   _LIBCUDACXX_HIDE_FROM_ABI __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a)
       : __value_(__a)
@@ -273,27 +279,32 @@ public:
   template <class _Tp>
   using __can_forward = _And<_IsNotSame<remove_cvref_t<_Tp>, __tuple_leaf>, is_constructible<_Hp, _Tp>>;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, enable_if_t<__can_forward<_Tp>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI
   _CCCL_CONSTEXPR_CXX14 explicit __tuple_leaf(_Tp&& __t) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Hp, _Tp))
       : __value_(_CUDA_VSTD::forward<_Tp>(__t))
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
   _LIBCUDACXX_HIDE_FROM_ABI explicit __tuple_leaf(integral_constant<int, 0>, const _Alloc&, _Tp&& __t)
       : __value_(_CUDA_VSTD::forward<_Tp>(__t))
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
   _LIBCUDACXX_HIDE_FROM_ABI explicit __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a, _Tp&& __t)
       : __value_(allocator_arg_t(), __a, _CUDA_VSTD::forward<_Tp>(__t))
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
   _LIBCUDACXX_HIDE_FROM_ABI explicit __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a, _Tp&& __t)
       : __value_(_CUDA_VSTD::forward<_Tp>(__t), __a)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp>
   _LIBCUDACXX_HIDE_FROM_ABI __tuple_leaf& operator=(_Tp&& __t) noexcept(_CCCL_TRAIT(is_nothrow_assignable, _Hp&, _Tp))
   {
@@ -333,6 +344,7 @@ class __tuple_leaf<_Ip, _Hp, __tuple_leaf_specialization::__synthesize_assignmen
   }
 
 public:
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __tuple_leaf() noexcept(_CCCL_TRAIT(is_nothrow_default_constructible, _Hp))
       : __value_()
   {
@@ -342,6 +354,7 @@ public:
   template <class _Tp>
   using __can_forward = _And<_IsNotSame<remove_cvref_t<_Tp>, __tuple_leaf>, is_constructible<_Hp, _Tp>>;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, enable_if_t<__can_forward<_Tp>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI
   _CCCL_CONSTEXPR_CXX14 explicit __tuple_leaf(_Tp&& __t) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Hp, _Tp))
@@ -352,6 +365,7 @@ public:
                   "temporary whose lifetime has ended");
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
   _LIBCUDACXX_HIDE_FROM_ABI explicit __tuple_leaf(integral_constant<int, 0>, const _Alloc&, _Tp&& __t)
       : __value_(_CUDA_VSTD::forward<_Tp>(__t))
@@ -361,20 +375,25 @@ public:
                   "temporary whose lifetime has ended");
   }
 
-  _CCCL_HIDE_FROM_ABI __tuple_leaf(const __tuple_leaf& __t) = default;
-  _CCCL_HIDE_FROM_ABI __tuple_leaf(__tuple_leaf&& __t)      = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  __tuple_leaf(const __tuple_leaf& __t) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  __tuple_leaf(__tuple_leaf&& __t) = default;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __tuple_leaf& operator=(const __tuple_leaf& __t) noexcept
   {
     __value_ = __t.__value_;
     return *this;
   }
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __tuple_leaf& operator=(__tuple_leaf&& __t) noexcept
   {
     __value_ = _CUDA_VSTD::move(__t.__value_);
     return *this;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp>
   _LIBCUDACXX_HIDE_FROM_ABI __tuple_leaf& operator=(_Tp&& __t) noexcept(_CCCL_TRAIT(is_nothrow_assignable, _Hp&, _Tp))
   {
@@ -402,22 +421,27 @@ template <size_t _Ip, class _Hp>
 class __tuple_leaf<_Ip, _Hp, __tuple_leaf_specialization::__empty_non_final> : private _Hp
 {
 public:
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __tuple_leaf() noexcept(is_nothrow_default_constructible<_Hp>::value) {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __tuple_leaf(__tuple_leaf_default_constructor_tag) noexcept(
     _CCCL_TRAIT(is_nothrow_default_constructible, _Hp))
       : _Hp()
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
   _LIBCUDACXX_HIDE_FROM_ABI __tuple_leaf(integral_constant<int, 0>, const _Alloc&)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
   _LIBCUDACXX_HIDE_FROM_ABI __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a)
       : _Hp(allocator_arg_t(), __a)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
   _LIBCUDACXX_HIDE_FROM_ABI __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a)
       : _Hp(__a)
@@ -426,27 +450,32 @@ public:
   template <class _Tp>
   using __can_forward = _And<_IsNotSame<remove_cvref_t<_Tp>, __tuple_leaf>, is_constructible<_Hp, _Tp>>;
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, enable_if_t<__can_forward<_Tp>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI
   _CCCL_CONSTEXPR_CXX14 explicit __tuple_leaf(_Tp&& __t) noexcept((is_nothrow_constructible<_Hp, _Tp>::value))
       : _Hp(_CUDA_VSTD::forward<_Tp>(__t))
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
   _LIBCUDACXX_HIDE_FROM_ABI explicit __tuple_leaf(integral_constant<int, 0>, const _Alloc&, _Tp&& __t)
       : _Hp(_CUDA_VSTD::forward<_Tp>(__t))
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
   _LIBCUDACXX_HIDE_FROM_ABI explicit __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a, _Tp&& __t)
       : _Hp(allocator_arg_t(), __a, _CUDA_VSTD::forward<_Tp>(__t))
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
   _LIBCUDACXX_HIDE_FROM_ABI explicit __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a, _Tp&& __t)
       : _Hp(_CUDA_VSTD::forward<_Tp>(__t), __a)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, enable_if_t<_CCCL_TRAIT(is_assignable, _Hp&, const _Tp&), int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI __tuple_leaf&
   operator=(const _Tp& __t) noexcept(_CCCL_TRAIT(is_nothrow_assignable, _Hp&, const _Tp&))
@@ -455,6 +484,7 @@ public:
     return *this;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, enable_if_t<_CCCL_TRAIT(is_assignable, _Hp&, _Tp), int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI __tuple_leaf& operator=(_Tp&& __t) noexcept(_CCCL_TRAIT(is_nothrow_assignable, _Hp&, _Tp))
   {
@@ -462,6 +492,7 @@ public:
     return *this;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI int swap(__tuple_leaf& __t) noexcept(__is_nothrow_swappable<__tuple_leaf>::value)
   {
     _CUDA_VSTD::swap(*this, __t);
