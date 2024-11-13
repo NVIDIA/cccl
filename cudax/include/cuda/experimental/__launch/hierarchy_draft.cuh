@@ -153,7 +153,10 @@ struct level_finalizer<max_occupancy>
 {
   template <typename HierarchyBelow>
   _CCCL_NODISCARD meta_dims_finalized operator()(
-    void* fn, unsigned int dynamic_smem_bytes, [[maybe_unused]] const max_occupancy& dims, const HierarchyBelow& rest)
+    void* fn,
+    unsigned int dynamic_smem_bytes,
+    [[maybe_unused]] const max_occupancy& dims,
+    [[maybe_unused]] const HierarchyBelow& rest)
   {
     int block_size, dummy;
 
