@@ -106,10 +106,8 @@ CUB_NAMESPACE_END
 #    define CUB_DETAIL_NVTX_RANGE_SCOPE(name)
 #  endif // NVTX3_CPP_DEFINITIONS_V1_0
 #else // _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h> ) && !defined(CCCL_DISABLE_NVTX) && !defined(NVTX_DISABLE) &&
-      // _CCCL_STD_VER
-      // >= 2014
+      // _CCCL_STD_VER >= 2014
 #  define CUB_DETAIL_NVTX_RANGE_SCOPE_IF(condition, name)
 #  define CUB_DETAIL_NVTX_RANGE_SCOPE(name)
 #endif // _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h> ) && !defined(CCCL_DISABLE_NVTX) && !defined(NVTX_DISABLE) &&
-       // _CCCL_STD_VER
-       // >= 2014
+       // _CCCL_STD_VER >= 2014

@@ -33,7 +33,7 @@
 
 #if _CCCL_HAS_INCLUDE(<version>)
 #  include <version>
-#endif
+#endif // _CCCL_HAS_INCLUDE(<version>)
 
 #include <type_traits>
 
