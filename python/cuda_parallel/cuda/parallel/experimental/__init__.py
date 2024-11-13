@@ -132,7 +132,7 @@ def _host_array_to_value(array):
     return _CCCLValue(info, array.ctypes.data)
 
 
-class _ReductionOp:
+class _Op:
     def __init__(self, dtype, op):
         value_type = numba.from_dtype(dtype)
         self.ltoir, _ = cuda.compile(op, sig=value_type(
@@ -233,7 +233,6 @@ def _dtype_validation(dt1, dt2):
 
 class _Reduce:
     def __init__(self, d_in, d_out, op, init):
-        print("__init__ ENTRY", flush=True)
         self._ctor_d_in = d_in
         _, d_in_cccl = self.__handle_d_in(None, d_in)
         self._ctor_d_out_dtype = d_out.dtype
@@ -242,7 +241,7 @@ class _Reduce:
         cub_path, thrust_path, libcudacxx_path, cuda_include_path = _get_paths()
         bindings = _get_bindings()
         accum_t = init.dtype
-        self.op_wrapper = _ReductionOp(accum_t, op)
+        self.op_wrapper = _Op(accum_t, op)
         d_out_ptr = _device_array_to_pointer(d_out)
         self.build_result = _CCCLDeviceReduceBuildResult()
 
@@ -261,10 +260,8 @@ class _Reduce:
                                                   ctypes.c_char_p(cuda_include_path))
         if error != enums.CUDA_SUCCESS:
             raise ValueError('Error building reduce')
-        print("__init__ DONE", flush=True)
 
     def __call__(self, temp_storage, num_items, d_in, d_out, init):
-        print("__call__ ENTRY", flush=True)
         num_items, d_in_cccl = self.__handle_d_in(num_items, d_in)
         assert num_items is not None
         _dtype_validation(self._ctor_d_out_dtype, d_out.dtype)
@@ -279,7 +276,6 @@ class _Reduce:
             # TODO: switch to use gpumemoryview once it's ready
             d_temp_storage = temp_storage.__cuda_array_interface__["data"][0]
         d_out_ptr = _device_array_to_pointer(d_out)
-        print("BEFORE cccl_device_reduce() CALL", flush=True)
         error = bindings.cccl_device_reduce(self.build_result,
                                             d_temp_storage,
                                             ctypes.byref(temp_storage_bytes),
@@ -289,12 +285,9 @@ class _Reduce:
                                             self.op_wrapper.handle(),
                                             _host_array_to_value(init),
                                             None)
-        print(" AFTER cccl_device_reduce() CALL", flush=True)
         if error != enums.CUDA_SUCCESS:
-            print("__call__ ValueError('Error reducing')", flush=True)
             raise ValueError('Error reducing')
 
-        print("__call__ DONE", flush=True)
         return temp_storage_bytes.value
 
     def __del__(self):

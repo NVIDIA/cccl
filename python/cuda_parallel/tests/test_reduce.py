@@ -2,20 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-import ctypes
 import numpy
 import pytest
 import random
-import numba
-from numba import cuda
+import numba.cuda
+import numba.types
 import cuda.parallel.experimental as cudax
 from cuda.parallel.experimental import sentinel_iterators
-from numba.extending import register_jitable
-from llvmlite import ir
-from numba.core import cgutils
-from numba.core.typing import signature
-from numba.core.extending import intrinsic, overload
-from numba.core.errors import NumbaTypeError
 
 
 def random_int(shape, dtype):
@@ -42,15 +35,15 @@ def test_device_reduce(dtype):
 
     init_value = 42
     h_init = numpy.array([init_value], dtype=dtype)
-    d_output = cuda.device_array(1, dtype=dtype)
+    d_output = numba.cuda.device_array(1, dtype=dtype)
     reduce_into = cudax.reduce_into(d_output, d_output, op, h_init)
 
     for num_items_pow2 in type_to_problem_sizes(dtype):
         num_items = 2 ** num_items_pow2
         h_input = random_int(num_items, dtype)
-        d_input = cuda.to_device(h_input)
+        d_input = numba.cuda.to_device(h_input)
         temp_storage_size = reduce_into(None, None, d_input, d_output, h_init)
-        d_temp_storage = cuda.device_array(
+        d_temp_storage = numba.cuda.device_array(
             temp_storage_size, dtype=numpy.uint8)
         reduce_into(d_temp_storage, None, d_input, d_output, h_init)
         h_output = d_output.copy_to_host()
@@ -62,15 +55,15 @@ def test_complex_device_reduce():
         return a + b
 
     h_init = numpy.array([40.0 + 2.0j], dtype=complex)
-    d_output = cuda.device_array(1, dtype=complex)
+    d_output = numba.cuda.device_array(1, dtype=complex)
     reduce_into = cudax.reduce_into(d_output, d_output, op, h_init)
 
     for num_items in [42, 420000]:
         h_input = numpy.random.random(
             num_items) + 1j * numpy.random.random(num_items)
-        d_input = cuda.to_device(h_input)
+        d_input = numba.cuda.to_device(h_input)
         temp_storage_bytes = reduce_into(None, None, d_input, d_output, h_init)
-        d_temp_storage = cuda.device_array(temp_storage_bytes, numpy.uint8)
+        d_temp_storage = numba.cuda.device_array(temp_storage_bytes, numpy.uint8)
         reduce_into(d_temp_storage, None, d_input, d_output, h_init)
 
         result = d_output.copy_to_host()[0]
@@ -85,8 +78,8 @@ def test_device_reduce_dtype_mismatch():
     dtypes = [numpy.int32, numpy.int64]
     h_inits = [numpy.array([], dt) for dt in dtypes]
     h_inputs = [numpy.array([], dt) for dt in dtypes]
-    d_outputs = [cuda.device_array(1, dt) for dt in dtypes]
-    d_inputs = [cuda.to_device(h_inp) for h_inp in h_inputs]
+    d_outputs = [numba.cuda.device_array(1, dt) for dt in dtypes]
+    d_inputs = [numba.cuda.to_device(h_inp) for h_inp in h_inputs]
 
     reduce_into = cudax.reduce_into(d_inputs[0], d_outputs[0], min_op, h_inits[0])
 
@@ -136,18 +129,18 @@ def test_device_sum_sentinel_iterator(use_numpy_array, input_generator, num_item
 
     if use_numpy_array:
         h_input = numpy.array(l_input, dtype)
-        d_input = cuda.to_device(h_input)
+        d_input = numba.cuda.to_device(h_input)
     else:
         d_input = sentinel_iterator
 
-    d_output = cuda.device_array(1, dtype) # to store device sum
+    d_output = numba.cuda.device_array(1, dtype) # to store device sum
 
     h_init = numpy.array([start_sum_with], dtype)
 
     reduce_into = cudax.reduce_into(d_in=d_input, d_out=d_output, op=add_op, init=h_init)
 
     temp_storage_size = reduce_into(None, num_items, d_in=d_input, d_out=d_output, init=h_init)
-    d_temp_storage = cuda.device_array(temp_storage_size, dtype=numpy.uint8)
+    d_temp_storage = numba.cuda.device_array(temp_storage_size, dtype=numpy.uint8)
 
     reduce_into(d_temp_storage, num_items, d_input, d_output, h_init)
 

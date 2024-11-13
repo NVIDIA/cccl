@@ -232,7 +232,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
 
     const std::string op_src = make_kernel_user_binary_operator(accum_cpp, op);
 
-    const std::string combined_src = std::format(
+    const std::string src = std::format(
       "#include <cub/block/block_reduce.cuh>\n"
       "#include <cub/device/dispatch/kernels/reduce.cuh>\n"
       "struct __align__({1}) storage_t {{\n"
@@ -263,9 +263,11 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
       op_src, // 6
       policy.vector_load_length); // 7
 
+#if false // CCCL_DEBUGGING_SWITCH
     fflush(stderr);
-    printf("\nLOOOK CODE4NVRTC BEGIN  %s:%d\n%sLOOOK CODE4NVRTC END\n", __FILE__, __LINE__, combined_src.c_str());
+    printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", src.c_str());
     fflush(stdout);
+#endif
 
     std::string single_tile_kernel_name        = get_single_tile_kernel_name(input_it, output_it, op, init, false);
     std::string single_tile_second_kernel_name = get_single_tile_kernel_name(input_it, output_it, op, init, true);
@@ -311,7 +313,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
 
     nvrtc_cubin result =
       make_nvrtc_command_list()
-        .add_program(nvrtc_translation_unit{combined_src.c_str(), name})
+        .add_program(nvrtc_translation_unit{src.c_str(), name})
         .add_expression({single_tile_kernel_name})
         .add_expression({single_tile_second_kernel_name})
         .add_expression({reduction_kernel_name})
@@ -337,7 +339,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
   catch (const std::exception& exc)
   {
     fflush(stderr);
-    printf("\nLOOOK EXCEPTION %s  %s:%d\n", exc.what(), __FILE__, __LINE__);
+    printf("\nEXCEPTION in cccl_device_reduce_build(): %s\n", exc.what());
     fflush(stdout);
     error = CUDA_ERROR_UNKNOWN;
   }
@@ -401,10 +403,6 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce(
     CUdevice cu_device;
     check(cuCtxGetDevice(&cu_device));
 
-    fflush(stderr);
-    printf("\nLOOOK cccl_device_reduce num_items=%lu  %s:%d\n", (unsigned long) num_items, __FILE__, __LINE__);
-    printf("\nLOOOK cub::DispatchReduce<>::Dispatch() BEGIN  %s:%d\n", __FILE__, __LINE__);
-    fflush(stdout);
     cub::DispatchReduce<indirect_arg_t,
                         indirect_arg_t,
                         ::cuda::std::size_t,
@@ -428,14 +426,11 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce(
         {build},
         cub::CudaDriverLauncherFactory{cu_device, build.cc},
         {get_accumulator_type(op, d_in, init)});
-    fflush(stderr);
-    printf("\nLOOOK cub::DispatchReduce<>::Dispatch() DONE.  %s:%d\n", __FILE__, __LINE__);
-    fflush(stdout);
   }
   catch (const std::exception& exc)
   {
     fflush(stderr);
-    printf("\nLOOOK EXCEPTION %s  %s:%d\n", exc.what(), __FILE__, __LINE__);
+    printf("\nEXCEPTION in cccl_device_reduce(): %s\n", exc.what());
     fflush(stdout);
     error = CUDA_ERROR_UNKNOWN;
   }
@@ -464,7 +459,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_cleanup(cccl_device_reduce_bui
   catch (const std::exception& exc)
   {
     fflush(stderr);
-    printf("\nLOOOK EXCEPTION %s  %s:%d\n", exc.what(), __FILE__, __LINE__);
+    printf("\nEXCEPTION in cccl_device_reduce_cleanup(): %s\n", exc.what());
     fflush(stdout);
     return CUDA_ERROR_UNKNOWN;
   }
