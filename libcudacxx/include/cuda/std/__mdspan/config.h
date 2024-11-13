@@ -172,7 +172,8 @@ static_assert(__MDSPAN_CPLUSPLUS >= __MDSPAN_CXX_STD_14, "mdspan requires C++14 
 #    if (defined(__cpp_lib_integer_sequence) && __cpp_lib_integer_sequence >= 201304)                                 \
       || (!defined(__cpp_lib_integer_sequence) && __MDSPAN_HAS_CXX_14) /* as far as I can tell, libc++ seems to think \
                                                                           this is a C++11 feature... */               \
-      || (defined(__GLIBCXX__) && __GLIBCXX__ > 20150422 && __GNUC__ < 5 && !defined(__INTEL_CXX11_MODE__))
+      || (defined(__GLIBCXX__) && __GLIBCXX__ > 20150422 && _CCCL_GCC_VERSION < 50000                                 \
+          && !defined(__INTEL_CXX11_MODE__))
 // several compilers lie about integer_sequence working properly unless the C++14 standard is used
 #      define __MDSPAN_USE_INTEGER_SEQUENCE 1
 #    elif defined(__MDSPAN_COMPILER_APPLECLANG) && __MDSPAN_HAS_CXX_14
@@ -191,8 +192,8 @@ static_assert(__MDSPAN_CPLUSPLUS >= __MDSPAN_CXX_STD_14, "mdspan requires C++14 
 
 #  ifndef __MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION
 // GCC 10 is known not to work with CTAD for this case.
-#    if (defined(__MDSPAN_COMPILER_CLANG) || !defined(_CCCL_COMPILER_GCC) || __GNUC__ >= 11) \
-      && ((defined(__cpp_deduction_guides) && __cpp_deduction_guides >= 201703)              \
+#    if (defined(__MDSPAN_COMPILER_CLANG) || !defined(_CCCL_COMPILER_GCC) || _CCCL_GCC_VERSION >= 110000) \
+      && ((defined(__cpp_deduction_guides) && __cpp_deduction_guides >= 201703)                           \
           || (!defined(__cpp_deduction_guides) && __MDSPAN_HAS_CXX_17))
 #      define __MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION 1
 #    endif
@@ -200,8 +201,8 @@ static_assert(__MDSPAN_CPLUSPLUS >= __MDSPAN_CXX_STD_14, "mdspan requires C++14 
 
 #  ifndef __MDSPAN_USE_ALIAS_TEMPLATE_ARGUMENT_DEDUCTION
 // GCC 10 is known not to work with CTAD for this case.
-#    if (defined(__MDSPAN_COMPILER_CLANG) || !defined(_CCCL_COMPILER_GCC) || __GNUC__ >= 11) \
-      && ((defined(__cpp_deduction_guides) && __cpp_deduction_guides >= 201907)              \
+#    if (defined(__MDSPAN_COMPILER_CLANG) || !defined(_CCCL_COMPILER_GCC) || _CCCL_GCC_VERSION >= 110000) \
+      && ((defined(__cpp_deduction_guides) && __cpp_deduction_guides >= 201907)                           \
           || (!defined(__cpp_deduction_guides) && __MDSPAN_HAS_CXX_20))
 #      define __MDSPAN_USE_ALIAS_TEMPLATE_ARGUMENT_DEDUCTION 1
 #    endif
@@ -218,8 +219,8 @@ static_assert(__MDSPAN_CPLUSPLUS >= __MDSPAN_CXX_STD_14, "mdspan requires C++14 
 #  endif
 
 #  ifndef __MDSPAN_DEFAULTED_CONSTRUCTORS_INHERITANCE_WORKAROUND
-#    ifdef __GNUC__
-#      if __GNUC__ < 9
+#    if defined(_CCCL_COMPILER_GCC)
+#      if _CCCL_GCC_VERSION < 90000
 #        define __MDSPAN_DEFAULTED_CONSTRUCTORS_INHERITANCE_WORKAROUND 1
 #      endif
 #    endif

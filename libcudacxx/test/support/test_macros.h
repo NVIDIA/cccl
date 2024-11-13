@@ -145,7 +145,7 @@
 #  endif
 #endif
 
-#if TEST_HAS_BUILTIN(__builtin_is_constant_evaluated) || (defined(_CCCL_COMPILER_GCC) && _GNUC_VER >= 900) \
+#if TEST_HAS_BUILTIN(__builtin_is_constant_evaluated) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 90000) \
   || (defined(_CCCL_COMPILER_MSVC) && _MSC_VER > 1924 && !defined(_CCCL_CUDACC_BELOW_11_3))
 #  define TEST_IS_CONSTANT_EVALUATED() _CUDA_VSTD::__libcpp_is_constant_evaluated()
 #else

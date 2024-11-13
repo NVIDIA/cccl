@@ -60,7 +60,7 @@ struct TestFunc
       constexpr Atomic a{t};
       assert(a == t);
     }
-#if !defined(_GNUC_VER) || _GNUC_VER >= 409
+#if !defined(_CCCL_COMPILER_GCC) || _CCCL_GCC_VERSION >= 40900
     // TODO: Figure out why this is failing with GCC 4.8.2 on CentOS 7 only.
     {
       constexpr Atomic a = LIBCUDACXX_ATOMIC_VAR_INIT(t);

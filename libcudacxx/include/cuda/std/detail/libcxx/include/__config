@@ -28,12 +28,6 @@ extern "C++" {
 #  include <nv/target>
 }
 
-#  ifdef __GNUC__
-#    define _GNUC_VER (__GNUC__ * 100 + __GNUC_MINOR__)
-#  else
-#    define _GNUC_VER 0
-#  endif
-
 #  define _LIBCUDACXX_VERSION 10000
 
 #  ifndef _LIBCUDACXX_ABI_VERSION
@@ -385,13 +379,13 @@ typedef __char32_t char32_t;
 
 #  elif defined(_CCCL_COMPILER_GCC)
 
-#    if _GNUC_VER < 600
+#    if _CCCL_GCC_VERSION < 60000
 #      define _LIBCUDACXX_GCC_MATH_IN_STD
 #    endif
 
 // NVCC cannot properly handle some deductions occuring within NOEXCEPT
 // C++17 mode causes reference instatiation errors in tuple
-#    if (_GNUC_VER >= 702 && _GNUC_VER <= 805)
+#    if (_CCCL_GCC_VERSION >= 70200 && _CCCL_GCC_VERSION <= 80500)
 #      if defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_STD_VER == 2017
 #        define _LIBCUDACXX_NO_TUPLE_NOEXCEPT
 #      endif
@@ -862,7 +856,7 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 // macro is used to mark them as such, which suppresses the
 // '-Wctad-maybe-unsupported' compiler warning when CTAD is used in user code
 // with these classes.
-#  if (!defined(_CCCL_COMPILER_GCC) || __GNUC__ > 6) && _CCCL_STD_VER >= 2017
+#  if (!defined(_CCCL_COMPILER_GCC) || _CCCL_GCC_VERSION > 60000) && _CCCL_STD_VER >= 2017
 #    define _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(_ClassName) \
       template <class... _Tag>                              \
       _ClassName(typename _Tag::__allow_ctad...)->_ClassName<_Tag...>

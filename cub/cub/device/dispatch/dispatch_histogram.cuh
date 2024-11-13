@@ -847,7 +847,7 @@ public:
   {
 // GCC 14 rightfully warns that when a value-initialized array of this struct is copied using memcpy, uninitialized
 // bytes may be accessed. To avoid this, we add a dummy member, so value initialization actually initializes the memory.
-#if defined(_CCCL_COMPILER_GCC) && __GNUC__ >= 13
+#if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 130000
     char dummy;
 #endif
 
