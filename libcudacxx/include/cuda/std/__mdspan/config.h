@@ -56,10 +56,6 @@
 
 #if _CCCL_STD_VER > 2011
 
-#  ifndef __has_include
-#    define __has_include(x) 0
-#  endif
-
 #  ifdef _MSVC_LANG
 #    define __MDSPAN_CPLUSPLUS _MSVC_LANG
 #  else

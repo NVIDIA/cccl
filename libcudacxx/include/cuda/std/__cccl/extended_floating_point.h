@@ -23,24 +23,18 @@
 #endif // no system header
 
 #include <cuda/std/__cccl/diagnostic.h>
-
-#ifndef __has_include
-#  define __has_include(x) 0
-#endif // !__has_include
+#include <cuda/std/__cccl/preprocessor.h>
 
 #if !defined(_CCCL_HAS_NVFP16)
-#  if __has_include(<cuda_fp16.h>)                                              \
-    && (defined(_CCCL_CUDA_COMPILER) || defined(LIBCUDACXX_ENABLE_HOST_NVFP16)) \
-    && !defined(CCCL_DISABLE_FP16_SUPPORT)
+#  if _CCCL_HAS_INCLUDE(<cuda_fp16.h>) && (defined(_CCCL_CUDA_COMPILER) || defined(LIBCUDACXX_ENABLE_HOST_NVFP16)) \
+                        && !defined(CCCL_DISABLE_FP16_SUPPORT)
 #    define _CCCL_HAS_NVFP16 1
 #  endif
 #endif // !_CCCL_HAS_NVFP16
 
 #if !defined(_CCCL_HAS_NVBF16)
-#  if __has_include(<cuda_bf16.h>)         \
-    && defined(_CCCL_HAS_NVFP16)           \
-    && !defined(CCCL_DISABLE_BF16_SUPPORT) \
-    && !defined(CUB_DISABLE_BF16_SUPPORT)
+#  if _CCCL_HAS_INCLUDE(<cuda_bf16.h>) && defined(_CCCL_HAS_NVFP16) && !defined(CCCL_DISABLE_BF16_SUPPORT) \
+                        && !defined(CUB_DISABLE_BF16_SUPPORT)
 #    define _CCCL_HAS_NVBF16 1
 #  endif
 #endif // !_CCCL_HAS_NVBF16
