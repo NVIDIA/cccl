@@ -25,6 +25,7 @@
 #include <cuda/std/__cccl/attributes.h>
 #include <cuda/std/__cccl/builtin.h>
 #include <cuda/std/__cccl/execution_space.h>
+#include <cuda/std/__cccl/preprocessor.h>
 
 #if !_CCCL_COMPILER_NVRTC
 #  include <assert.h>
@@ -63,7 +64,7 @@
 //! _CCCL_ASSERT_IMPL_HOST should never be used directly
 #if _CCCL_COMPILER_NVRTC // There is no host standard library in nvrtc
 #  define _CCCL_ASSERT_IMPL_HOST(expression, message) ((void) 0)
-#elif __has_include(<yvals.h>) && _CCCL_COMPILER_MSVC // MSVC uses _STL_VERIFY from <yvals.h>
+#elif _CCCL_HAS_INCLUDE(<yvals.h>) && _CCCL_COMPILER_MSVC // MSVC uses _STL_VERIFY from <yvals.h>
 #  include <yvals.h>
 #  define _CCCL_ASSERT_IMPL_HOST(expression, message) _STL_VERIFY(expression, message)
 #else // ^^^ MSVC STL ^^^ / vvv !MSVC STL vvv

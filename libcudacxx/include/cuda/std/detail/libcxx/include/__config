@@ -98,10 +98,6 @@ extern "C++" {
 #    define __has_declspec_attribute(__x) 0
 #  endif
 
-#  ifndef __has_include
-#    define __has_include(...) 0
-#  endif
-
 #  if !_CCCL_CUDA_COMPILER_NVCC && !_CCCL_COMPILER_NVRTC
 // If NVCC is not being used <complex> can safely use `long double` without warnings
 #    define _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
@@ -700,7 +696,7 @@ typedef unsigned int char32_t;
     && !defined(_LIBCUDACXX_HAS_THREAD_API_WIN32) && !defined(_LIBCUDACXX_HAS_THREAD_API_EXTERNAL)
 #    if defined(__FreeBSD__) || defined(__Fuchsia__) || defined(__wasi__) || defined(__NetBSD__) || defined(__linux__) \
       || defined(__GNU__) || defined(__APPLE__) || defined(__CloudABI__) || defined(__sun__)                           \
-      || (defined(__MINGW32__) && __has_include(<pthread.h>))
+      || (defined(__MINGW32__) && _CCCL_HAS_INCLUDE(<pthread.h>))
 #      define _LIBCUDACXX_HAS_THREAD_API_PTHREAD
 #    elif defined(_LIBCUDACXX_WIN32API)
 #      define _LIBCUDACXX_HAS_THREAD_API_WIN32

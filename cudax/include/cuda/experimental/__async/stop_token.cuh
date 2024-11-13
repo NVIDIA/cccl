@@ -29,7 +29,7 @@
 #include <cuda/experimental/__async/utility.cuh>
 #include <cuda/experimental/__detail/config.cuh>
 
-#if __has_include(<stop_token>) && __cpp_lib_jthread >= 201911
+#if _CCCL_HAS_INCLUDE(<stop_token>) && __cpp_lib_jthread >= 201911
 #  include <stop_token>
 #endif
 
