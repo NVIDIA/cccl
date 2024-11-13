@@ -103,10 +103,6 @@ extern "C++" {
 #    define _LIBCUDACXX_HAS_STL_LITERALS
 #  endif
 
-#  if defined(_CCCL_COMPILER_GCC) && __cplusplus < 201103L
-#    error "libc++ does not support using GCC with C++03. Please enable C++11"
-#  endif
-
 // FIXME: ABI detection should be done via compiler builtin macros. This
 // is just a placeholder until Clang implements such macros. For now assume
 // that Windows compilers pretending to be MSVC++ target the Microsoft ABI,
