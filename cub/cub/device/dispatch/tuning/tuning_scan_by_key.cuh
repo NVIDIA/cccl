@@ -1039,7 +1039,7 @@ struct sm80_tuning<KeyT, __uint128_t, primitive_op::yes, key_size::_16, val_size
 } // namespace scan_by_key
 } // namespace detail
 
-template <typename KeysInputIteratorT, typename AccumT, typename ValueT = AccumT, typename ScanOpT = Sum>
+template <typename KeysInputIteratorT, typename AccumT, typename ValueT = AccumT, typename ScanOpT = ::cuda::std::plus<>>
 struct DeviceScanByKeyPolicy
 {
   using KeyT = cub::detail::value_t<KeysInputIteratorT>;

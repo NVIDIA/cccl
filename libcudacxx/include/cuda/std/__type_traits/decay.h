@@ -35,46 +35,44 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp>
 struct decay
 {
-  using type _LIBCUDACXX_NODEBUG_TYPE = _CCCL_BUILTIN_DECAY(_Tp);
+  using type _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_DECAY(_Tp);
 };
 
-#else
+template <class _Tp>
+using decay_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_DECAY(_Tp);
+
+#else // ^^^ _CCCL_BUILTIN_DECAY ^^^ / vvv !_CCCL_BUILTIN_DECAY vvv
 
 template <class _Up, bool>
 struct __decay_impl
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE __remove_cv_t<_Up> type;
+  typedef _CCCL_NODEBUG_ALIAS remove_cv_t<_Up> type;
 };
 
 template <class _Up>
 struct __decay_impl<_Up, true>
 {
 public:
-  typedef _LIBCUDACXX_NODEBUG_TYPE
-    __conditional_t<is_array<_Up>::value,
-                    __remove_extent_t<_Up>*,
-                    __conditional_t<is_function<_Up>::value, __add_pointer_t<_Up>, __remove_cv_t<_Up>>>
-      type;
+  typedef _CCCL_NODEBUG_ALIAS conditional_t<is_array<_Up>::value,
+                                            remove_extent_t<_Up>*,
+                                            conditional_t<is_function<_Up>::value, add_pointer_t<_Up>, remove_cv_t<_Up>>>
+    type;
 };
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT decay
 {
 private:
-  typedef _LIBCUDACXX_NODEBUG_TYPE __libcpp_remove_reference_t<_Tp> _Up;
+  typedef _CCCL_NODEBUG_ALIAS remove_reference_t<_Tp> _Up;
 
 public:
-  typedef _LIBCUDACXX_NODEBUG_TYPE typename __decay_impl<_Up, __libcpp_is_referenceable<_Up>::value>::type type;
+  typedef _CCCL_NODEBUG_ALIAS typename __decay_impl<_Up, __libcpp_is_referenceable<_Up>::value>::type type;
 };
-#endif // defined(_CCCL_BUILTIN_DECAY) && !defined(_LIBCUDACXX_USE_DECAY_FALLBACK)
 
 template <class _Tp>
-using __decay_t = typename decay<_Tp>::type;
+using decay_t _CCCL_NODEBUG_ALIAS = typename decay<_Tp>::type;
 
-#if _CCCL_STD_VER >= 2014
-template <class _Tp>
-using decay_t = typename decay<_Tp>::type;
-#endif // _CCCL_STD_VER >= 2014
+#endif // !_CCCL_BUILTIN_DECAY
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

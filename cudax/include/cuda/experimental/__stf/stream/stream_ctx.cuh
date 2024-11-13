@@ -1125,7 +1125,7 @@ UNITTEST("get logical_data from a task_dep")
   ctx.finalize();
 };
 
-#  ifdef __CUDACC__
+#  if defined(CUDASTF_CODE_GENERATION) && defined(__CUDACC__)
 namespace reserved
 {
 inline void unit_test_pfor()
@@ -1313,8 +1313,8 @@ UNITTEST("basic launch test")
 };
 
 } // end namespace reserved
-#  endif // UNITTESTED_FILE
+#  endif // defined(CUDASTF_CODE_GENERATION) && defined(__CUDACC__)
 
-#endif // __CUDACC__
+#endif // UNITTESTED_FILE
 
 } // namespace cuda::experimental::stf

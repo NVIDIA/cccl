@@ -118,7 +118,7 @@ __make_pretty_name_impl(char const (&__s)[_Mp], index_sequence<_Is...>) noexcept
 
 template <class _Tp, size_t _Np>
 _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr auto __make_pretty_name(integral_constant<size_t, _Np>) noexcept //
-  -> __enable_if_t<_Np == size_t(-1), __string_view>
+  -> enable_if_t<_Np == size_t(-1), __string_view>
 {
   using _TpName = __static_nameof<_Tp, sizeof(_CCCL_BUILTIN_PRETTY_FUNCTION())>;
   return __string_view(_TpName::value.__str_, _TpName::value.__len_);
@@ -126,7 +126,7 @@ _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr auto __make_pretty_name(integral
 
 template <class _Tp, size_t _Np>
 _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr auto __make_pretty_name(integral_constant<size_t, _Np>) noexcept //
-  -> __enable_if_t<_Np != size_t(-1), __sstring<_Np>>
+  -> enable_if_t<_Np != size_t(-1), __sstring<_Np>>
 {
   return _CUDA_VSTD::__make_pretty_name_impl<_Np>(_CCCL_BUILTIN_PRETTY_FUNCTION(), make_index_sequence<_Np>{});
 }
@@ -325,7 +325,7 @@ using __type_info_ref = __type_info_ref_;
 #  endif // defined(_CCCL_NO_TYPEID) || defined(_CCCL_USE_TYPEID_FALLBACK)
 
 #  define _CCCL_TYPEID_FALLBACK(...) \
-    _CUDA_VSTD::__type_info_ref(&_CUDA_VSTD::__type_info::__get_ti_for<_CUDA_VSTD::__remove_cv_t<__VA_ARGS__>>)
+    _CUDA_VSTD::__type_info_ref(&_CUDA_VSTD::__type_info::__get_ti_for<_CUDA_VSTD::remove_cv_t<__VA_ARGS__>>)
 
 #elif defined(_CCCL_BROKEN_MSVC_FUNCSIG) // ^^^ defined(__CUDA_ARCH__) ^^^
 
@@ -409,7 +409,7 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr __type_info const& __typeid() noex
   return __typeid_v<_Tp>;
 }
 
-#    define _CCCL_TYPEID_FALLBACK(...) _CUDA_VSTD::__typeid<_CUDA_VSTD::__remove_cv_t<__VA_ARGS__>>()
+#    define _CCCL_TYPEID_FALLBACK(...) _CUDA_VSTD::__typeid<_CUDA_VSTD::remove_cv_t<__VA_ARGS__>>()
 
 #  else // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES ^^^ / vvv _CCCL_NO_VARIABLE_TEMPLATES vvv
 
@@ -432,7 +432,7 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr __type_info const& __typeid() noex
   return __typeid_value<_Tp>::value;
 }
 
-#    define _CCCL_TYPEID_FALLBACK(...) _CUDA_VSTD::__typeid<_CUDA_VSTD::__remove_cv_t<__VA_ARGS__>>()
+#    define _CCCL_TYPEID_FALLBACK(...) _CUDA_VSTD::__typeid<_CUDA_VSTD::remove_cv_t<__VA_ARGS__>>()
 
 #  endif // _CCCL_NO_VARIABLE_TEMPLATES
 

@@ -100,7 +100,7 @@ using value_t =
   typename std::iterator_traits<Iterator>::value_type;
 #  endif // defined(_CCCL_COMPILER_NVRTC)
 
-template <typename It, typename FallbackT, bool = ::cuda::std::is_void<::cuda::std::__remove_pointer_t<It>>::value>
+template <typename It, typename FallbackT, bool = ::cuda::std::is_void<::cuda::std::remove_pointer_t<It>>::value>
 struct non_void_value_impl
 {
   using type = FallbackT;
@@ -240,7 +240,7 @@ struct Int2Type
  *     temp_storage_bytes,
  *     d_in,
  *     d_out,
- *     cub::Sum(),
+ *     cuda::std::plus<>{},
  *     init_value,
  *     num_items);
  * allocator.DeviceFree(d_intermediate_result);

@@ -30,7 +30,7 @@ template <template <class...> class, class...>
 _LIBCUDACXX_HIDE_FROM_ABI false_type __sfinae_test_impl(...);
 
 template <template <class...> class _Templ, class... _Args>
-using _IsValidExpansion _LIBCUDACXX_NODEBUG_TYPE = decltype(_CUDA_VSTD::__sfinae_test_impl<_Templ, _Args...>(0));
+using _IsValidExpansion _CCCL_NODEBUG_ALIAS = decltype(_CUDA_VSTD::__sfinae_test_impl<_Templ, _Args...>(0));
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

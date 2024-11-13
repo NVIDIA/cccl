@@ -23,6 +23,8 @@
 #  include <thrust/tuple.h>
 #  include <thrust/type_traits/integer_sequence.h>
 
+#  include <cuda/functional>
+
 THRUST_NAMESPACE_BEGIN
 
 /*! \addtogroup function_objects Function Objects
@@ -200,5 +202,11 @@ _CCCL_HOST_DEVICE zip_function<typename std::decay<Function>::type> make_zip_fun
  */
 
 THRUST_NAMESPACE_END
+
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+template <typename F>
+struct proclaims_copyable_arguments<THRUST_NS_QUALIFIER::zip_function<F>> : proclaims_copyable_arguments<F>
+{};
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
 #endif

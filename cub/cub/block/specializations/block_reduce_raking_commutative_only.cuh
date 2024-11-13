@@ -174,7 +174,7 @@ struct BlockReduceRakingCommutativeOnly
       {
         // Raking reduction in grid
         T* raking_segment = BlockRakingLayout::RakingPtr(temp_storage.default_storage.raking_grid, linear_tid);
-        partial           = internal::ThreadReduce<SEGMENT_LENGTH>(raking_segment, cub::Sum(), partial);
+        partial           = internal::ThreadReduce<SEGMENT_LENGTH>(raking_segment, ::cuda::std::plus<>{}, partial);
 
         // Warp reduction
         partial = WarpReduce(temp_storage.default_storage.warp_storage).Sum(partial);

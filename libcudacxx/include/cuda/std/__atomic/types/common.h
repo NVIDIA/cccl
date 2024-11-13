@@ -38,30 +38,29 @@ enum class __atomic_tag
 
 // Helpers to SFINAE on the tag inside the storage object
 template <typename _Sto>
-using __atomic_storage_is_base = __enable_if_t<__atomic_tag::__atomic_base_tag == __remove_cvref_t<_Sto>::__tag, int>;
+using __atomic_storage_is_base = enable_if_t<__atomic_tag::__atomic_base_tag == remove_cvref_t<_Sto>::__tag, int>;
 template <typename _Sto>
-using __atomic_storage_is_locked =
-  __enable_if_t<__atomic_tag::__atomic_locked_tag == __remove_cvref_t<_Sto>::__tag, int>;
+using __atomic_storage_is_locked = enable_if_t<__atomic_tag::__atomic_locked_tag == remove_cvref_t<_Sto>::__tag, int>;
 template <typename _Sto>
-using __atomic_storage_is_small = __enable_if_t<__atomic_tag::__atomic_small_tag == __remove_cvref_t<_Sto>::__tag, int>;
+using __atomic_storage_is_small = enable_if_t<__atomic_tag::__atomic_small_tag == remove_cvref_t<_Sto>::__tag, int>;
 
 template <typename _Tp>
 using __atomic_underlying_t = typename _Tp::__underlying_t;
 template <typename _Tp>
-using __atomic_underlying_remove_cv_t = __remove_cv_t<typename _Tp::__underlying_t>;
+using __atomic_underlying_remove_cv_t = remove_cv_t<typename _Tp::__underlying_t>;
 
 // [atomics.types.generic]p1 guarantees _Tp is trivially copyable. Because
 // the default operator= in an object is not volatile, a byte-by-byte copy
 // is required.
 template <typename _Tp, typename _Tv>
-_CCCL_HOST_DEVICE __enable_if_t<_CCCL_TRAIT(is_assignable, _Tp&, _Tv)>
+_CCCL_HOST_DEVICE enable_if_t<_CCCL_TRAIT(is_assignable, _Tp&, _Tv)>
 __atomic_assign_volatile(_Tp* __a_value, _Tv const& __val)
 {
   *__a_value = __val;
 }
 
 template <typename _Tp, typename _Tv>
-_CCCL_HOST_DEVICE __enable_if_t<_CCCL_TRAIT(is_assignable, _Tp&, _Tv)>
+_CCCL_HOST_DEVICE enable_if_t<_CCCL_TRAIT(is_assignable, _Tp&, _Tv)>
 __atomic_assign_volatile(_Tp volatile* __a_value, _Tv volatile const& __val)
 {
   volatile char* __to         = reinterpret_cast<volatile char*>(__a_value);

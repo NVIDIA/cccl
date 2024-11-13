@@ -21,6 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__utility/integer_sequence.h>
+
 #include <cuda/experimental/__async/meta.cuh>
 #include <cuda/experimental/__async/type_traits.cuh>
 #include <cuda/experimental/__detail/config.cuh>
@@ -48,7 +51,7 @@ template <class _Idx, class... _Ts>
 struct __tupl;
 
 template <size_t... _Idx, class... _Ts>
-struct __tupl<__mindices<_Idx...>, _Ts...> : __box<_Idx, _Ts>...
+struct __tupl<_CUDA_VSTD::index_sequence<_Idx...>, _Ts...> : __box<_Idx, _Ts>...
 {
   template <class _Fn, class _Self, class... _Us>
   _CUDAX_TRIVIAL_API static auto __apply(_Fn&& __fn, _Self&& __self, _Us&&... __us) //
@@ -63,7 +66,7 @@ struct __tupl<__mindices<_Idx...>, _Ts...> : __box<_Idx, _Ts>...
   template <class _Fn, class _Self, class... _Us>
   _CUDAX_TRIVIAL_API static auto __for_each(_Fn&& __fn, _Self&& __self, _Us&&... __us) //
     noexcept((__nothrow_callable<_Fn, _Us..., __copy_cvref_t<_Self, _Ts>>
-              && ...)) -> __mif<(__callable<_Fn, _Us..., __copy_cvref_t<_Self, _Ts>> && ...)>
+              && ...)) -> _CUDA_VSTD::enable_if_t<(__callable<_Fn, _Us..., __copy_cvref_t<_Self, _Ts>> && ...)>
   {
     return (
       static_cast<_Fn&&>(__fn)(static_cast<_Us&&>(__us)..., static_cast<_Self&&>(__self).__box<_Idx, _Ts>::__value_),
@@ -73,7 +76,7 @@ struct __tupl<__mindices<_Idx...>, _Ts...> : __box<_Idx, _Ts>...
 
 template <class... _Ts>
 _CUDAX_API __tupl(_Ts...) //
-  -> __tupl<__mmake_indices<sizeof...(_Ts)>, _Ts...>;
+  -> __tupl<_CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>, _Ts...>;
 
 template <class _Fn, class _Tupl, class... _Us>
 using __apply_result_t =
@@ -83,15 +86,15 @@ using __apply_result_t =
 template <class... _Ts>
 struct __mk_tuple_
 {
-  using __indices_t = __mmake_indices<sizeof...(_Ts)>;
+  using __indices_t = _CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>;
   using type        = __tupl<__indices_t, _Ts...>;
 };
 
 template <class... _Ts>
-using __tuple = __t<__mk_tuple_<_Ts...>>;
+using __tuple = typename __mk_tuple_<_Ts...>::type;
 #else
 template <class... _Ts>
-using __tuple = __tupl<__mmake_indices<sizeof...(_Ts)>, _Ts...>;
+using __tuple = __tupl<_CUDA_VSTD::make_index_sequence<sizeof...(_Ts)>, _Ts...>;
 #endif
 
 template <class... _Ts>

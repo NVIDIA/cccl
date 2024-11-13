@@ -186,7 +186,7 @@ struct UniqueAgent
 
     using BlockDiscontinuityItems = cub::BlockDiscontinuity<item_type, PtxPlan::BLOCK_THREADS, 1, 1, Arch::ver>;
 
-    using TilePrefixCallback = cub::TilePrefixCallbackOp<Size, cub::Sum, ScanTileState, Arch::ver>;
+    using TilePrefixCallback = cub::TilePrefixCallbackOp<Size, ::cuda::std::plus<>, ScanTileState, Arch::ver>;
     using BlockScan          = cub::BlockScan<Size, PtxPlan::BLOCK_THREADS, PtxPlan::SCAN_ALGORITHM, 1, 1, Arch::ver>;
 
     using shared_items_t = core::uninitialized_array<item_type, PtxPlan::ITEMS_PER_TILE>;
@@ -353,7 +353,7 @@ struct UniqueAgent
       }
       else
       {
-        TilePrefixCallback prefix_cb(tile_state, temp_storage.scan_storage.prefix, cub::Sum(), tile_idx);
+        TilePrefixCallback prefix_cb(tile_state, temp_storage.scan_storage.prefix, ::cuda::std::plus<>{}, tile_idx);
         BlockScan(temp_storage.scan_storage.scan).ExclusiveSum(selection_flags, selection_idx, prefix_cb);
 
         num_selections        = prefix_cb.GetInclusivePrefix();

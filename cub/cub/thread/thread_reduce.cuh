@@ -84,10 +84,10 @@ constexpr bool enable_dpx_reduction()
   using T = decltype(::cuda::std::declval<Input>()[0]);
   // TODO: use constexpr variable in C++14+
   using Length = ::cuda::std::integral_constant<int, detail::static_size<Input>()>;
-  return ((Length{} >= 9 && detail::are_same<ReductionOp, cub::Sum/*, std::plus<T>*/>()) || Length{} >= 10)
+  return ((Length{} >= 9 && detail::are_same<ReductionOp, ::cuda::std::plus<>/*, std::plus<T>*/>()) || Length{} >= 10)
             && detail::are_same<T, AccumT>()
             && detail::is_one_of<T, int16_t, uint16_t>()
-            && detail::is_one_of<ReductionOp, cub::Min, cub::Max, cub::Sum/*, std::plus<T>*/>();
+            && detail::is_one_of<ReductionOp,::cuda::minimum<>, ::cuda::maximum<>, ::cuda::std::plus<>/*, std::plus<T>*/>();
 }
 // clang-format on
 
@@ -131,9 +131,9 @@ ThreadReduceSequential(const Input& input, ReductionOp reduction_op)
 /// Specialization for DPX reduction
 template <typename Input, typename ReductionOp>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto
-ThreadReduceDpx(const Input& input, ReductionOp reduction_op) -> ::cuda::std::__remove_cvref_t<decltype(input[0])>
+ThreadReduceDpx(const Input& input, ReductionOp reduction_op) -> ::cuda::std::remove_cvref_t<decltype(input[0])>
 {
-  using T              = ::cuda::std::__remove_cvref_t<decltype(input[0])>;
+  using T              = ::cuda::std::remove_cvref_t<decltype(input[0])>;
   constexpr int length = detail::static_size<Input>();
   T array[length];
 #  pragma unroll
@@ -153,7 +153,7 @@ ThreadReduceDpx(const Input& input, ReductionOp reduction_op) -> ::cuda::std::__
 // DPX/Sequential dispatch
 template <typename Input,
           typename ReductionOp,
-          typename ValueT = ::cuda::std::__remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>,
+          typename ValueT = ::cuda::std::remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>,
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, ValueT>,
           _CUB_TEMPLATE_REQUIRES(enable_dpx_reduction<Input, ReductionOp, AccumT>())>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& input, ReductionOp reduction_op)
@@ -170,7 +170,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& 
 
 template <typename Input,
           typename ReductionOp,
-          typename ValueT = ::cuda::std::__remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>,
+          typename ValueT = ::cuda::std::remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>,
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, ValueT>,
           _CUB_TEMPLATE_REQUIRES(!enable_dpx_reduction<Input, ReductionOp, AccumT>())>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& input, ReductionOp reduction_op)
@@ -213,7 +213,7 @@ template <typename Input,
           typename ReductionOp,
           typename PrefixT,
 #ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-          typename ValueT = ::cuda::std::__remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>,
+          typename ValueT = ::cuda::std::remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>,
 #endif // !DOXYGEN_SHOULD_SKIP_THIS
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, ValueT, PrefixT>>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT

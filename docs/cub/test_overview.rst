@@ -19,8 +19,8 @@ This guide is focused on new tests.
 .. code-block:: c++
 
     #include <cub/block/block_scan.cuh>
-    #include <c2h/vector.cuh>
-    #include <c2h/catch2_test_helper.cuh>
+    #include <c2h/vector.h>
+    #include <c2h/catch2_test_helper.h>
 
 Directory and File Naming
 *************************************

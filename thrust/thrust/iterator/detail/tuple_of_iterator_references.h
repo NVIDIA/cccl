@@ -115,7 +115,7 @@ public:
     return *this;
   }
 
-  template <class... Us, ::cuda::std::__enable_if_t<sizeof...(Us) == sizeof...(Ts), int> = 0>
+  template <class... Us, ::cuda::std::enable_if_t<sizeof...(Us) == sizeof...(Ts), int> = 0>
   inline _CCCL_HOST_DEVICE constexpr operator thrust::tuple<Us...>() const
   {
     return __to_tuple<Us...>(typename ::cuda::std::__make_tuple_indices<sizeof...(Ts)>::type{});

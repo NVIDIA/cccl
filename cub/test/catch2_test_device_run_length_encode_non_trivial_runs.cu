@@ -40,7 +40,7 @@
 #include <numeric>
 
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRunLengthEncode::NonTrivialRuns, run_length_encode);
 
@@ -285,7 +285,7 @@ struct CustomDeviceRunLengthEncode
     cudaStream_t stream = 0)
   {
     using OffsetT    = int; // Signed integer type for global offsets
-    using EqualityOp = cub::Equality; // Default == operator
+    using EqualityOp = ::cuda::std::equal_to<>; // Default == operator
 
     return cub::DeviceRleDispatch<InputIteratorT,
                                   OffsetsOutputIteratorT,

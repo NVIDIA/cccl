@@ -45,10 +45,10 @@
 
 #include <cstdio>
 
-#include <c2h/catch2_test_helper.cuh>
-#include <c2h/cpu_timer.cuh>
-#include <c2h/extended_types.cuh>
-#include <c2h/utility.cuh>
+#include <c2h/catch2_test_helper.h>
+#include <c2h/cpu_timer.h>
+#include <c2h/extended_types.h>
+#include <c2h/utility.h>
 #include <catch2_test_launch_helper.h>
 #include <nv/target>
 

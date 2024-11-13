@@ -31,7 +31,7 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 C2H_TEST("Tests choose_offset", "[util][type]")
 {

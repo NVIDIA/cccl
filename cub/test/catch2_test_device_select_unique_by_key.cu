@@ -39,7 +39,7 @@
 #include <algorithm>
 
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 template <class T>
 inline T to_bound(const unsigned long long bound)
@@ -280,7 +280,8 @@ C2H_TEST("DeviceSelect::UniqueByKey works with iterators", "[device][select_uniq
   c2h::host_vector<val_type> reference_vals = vals_in;
   const auto zip_begin                      = thrust::make_zip_iterator(reference_keys.begin(), reference_vals.begin());
   const auto zip_end                        = thrust::make_zip_iterator(reference_keys.end(), reference_vals.end());
-  const auto boundary = std::unique(zip_begin, zip_end, project_first<cub::Equality>{cub::Equality{}});
+  const auto boundary =
+    std::unique(zip_begin, zip_end, project_first<::cuda::std::equal_to<>>{::cuda::std::equal_to<>{}});
   REQUIRE((boundary - zip_begin) == num_selected_out[0]);
 
   keys_out.resize(num_selected_out[0]);
@@ -321,7 +322,8 @@ C2H_TEST("DeviceSelect::UniqueByKey works with pointers", "[device][select_uniqu
   c2h::host_vector<val_type> reference_vals = vals_in;
   const auto zip_begin                      = thrust::make_zip_iterator(reference_keys.begin(), reference_vals.begin());
   const auto zip_end                        = thrust::make_zip_iterator(reference_keys.end(), reference_vals.end());
-  const auto boundary = std::unique(zip_begin, zip_end, project_first<cub::Equality>{cub::Equality{}});
+  const auto boundary =
+    std::unique(zip_begin, zip_end, project_first<::cuda::std::equal_to<>>{::cuda::std::equal_to<>{}});
   REQUIRE((boundary - zip_begin) == num_selected_out[0]);
 
   keys_out.resize(num_selected_out[0]);
@@ -377,7 +379,8 @@ C2H_TEST("DeviceSelect::UniqueByKey works with a different output type", "[devic
   c2h::host_vector<val_type> reference_vals = vals_in;
   const auto zip_begin                      = thrust::make_zip_iterator(reference_keys.begin(), reference_vals.begin());
   const auto zip_end                        = thrust::make_zip_iterator(reference_keys.end(), reference_vals.end());
-  const auto boundary = std::unique(zip_begin, zip_end, project_first<cub::Equality>{cub::Equality{}});
+  const auto boundary =
+    std::unique(zip_begin, zip_end, project_first<::cuda::std::equal_to<>>{::cuda::std::equal_to<>{}});
   REQUIRE((boundary - zip_begin) == num_selected_out[0]);
 
   keys_out.resize(num_selected_out[0]);
@@ -423,7 +426,8 @@ C2H_TEST("DeviceSelect::UniqueByKey works and uses vsmem for large types",
 
   const auto zip_begin = thrust::make_zip_iterator(reference_keys.begin(), reference_vals.begin());
   const auto zip_end   = thrust::make_zip_iterator(reference_keys.end(), reference_vals.end());
-  const auto boundary  = std::unique(zip_begin, zip_end, project_first<cub::Equality>{cub::Equality{}});
+  const auto boundary =
+    std::unique(zip_begin, zip_end, project_first<::cuda::std::equal_to<>>{::cuda::std::equal_to<>{}});
   REQUIRE((boundary - zip_begin) == num_selected_out[0]);
 
   keys_out.resize(num_selected_out[0]);

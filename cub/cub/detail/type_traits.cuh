@@ -50,7 +50,7 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 _CCCL_SUPPRESS_DEPRECATED_POP
 #include <cuda/std/type_traits>
 
-#define _CUB_TEMPLATE_REQUIRES(...) ::cuda::std::__enable_if_t<(__VA_ARGS__)>* = nullptr
+#define _CUB_TEMPLATE_REQUIRES(...) ::cuda::std::enable_if_t<(__VA_ARGS__)>* = nullptr
 
 CUB_NAMESPACE_BEGIN
 namespace detail

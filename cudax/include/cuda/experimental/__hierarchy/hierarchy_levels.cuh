@@ -11,6 +11,8 @@
 #ifndef _CUDAX__HIERARCHY_HIERARCHY_LEVELS
 #define _CUDAX__HIERARCHY_HIERARCHY_LEVELS
 
+#include <cuda/std/__type_traits/type_list.h>
+
 #include <cuda/experimental/__hierarchy/dimensions.cuh>
 
 #include <nv/target>
@@ -67,15 +69,6 @@ struct dimensions_query
   }
 };
 
-template <unsigned int Id, typename... Levels>
-using level_at_index = typename ::cuda::std::tuple_element<Id, ::cuda::std::__tuple_types<Levels...>>::type;
-
-template <typename... Levels>
-using get_first_level = level_at_index<0, Levels...>;
-
-template <typename... Levels>
-using get_last_level = level_at_index<sizeof...(Levels) - 1, Levels...>;
-
 } // namespace detail
 
 // Struct to represent levels allowed below or above a certain level,
@@ -83,13 +76,7 @@ using get_last_level = level_at_index<sizeof...(Levels) - 1, Levels...>;
 template <typename... Levels>
 struct allowed_levels
 {
-  using default_unit = typename detail::get_first_level<Levels...>;
-};
-
-template <>
-struct allowed_levels<>
-{
-  using default_unit = void;
+  using default_unit = ::cuda::std::__type_index_c<0, Levels..., void>;
 };
 
 namespace detail

@@ -52,7 +52,7 @@ struct __libcpp_trivial_destructor : public integral_constant<bool, is_scalar<_T
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_destructible
-    : public __libcpp_trivial_destructor<__remove_all_extents_t<_Tp>>
+    : public __libcpp_trivial_destructor<remove_all_extents_t<_Tp>>
 {};
 
 template <class _Tp>

@@ -38,8 +38,8 @@
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.cuh>
-#include <c2h/custom_type.cuh>
+#include <c2h/catch2_test_helper.h>
+#include <c2h/custom_type.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_sum);
@@ -86,7 +86,7 @@ C2H_TEST("Device segmented reduce works with fancy input iterators", "[reduce][d
   init_default_constant(default_constant);
   auto in_it = thrust::make_constant_iterator(default_constant);
 
-  using op_t   = cub::Sum;
+  using op_t   = ::cuda::std::plus<>;
   using init_t = output_t;
 
   // Binary reduction operator

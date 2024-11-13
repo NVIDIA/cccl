@@ -35,7 +35,7 @@
 
 #include <cuda/std/type_traits>
 
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 /******************************************************************************
  * HELPER CLASS FOR RUN-LENGTH DECODING TESTS

@@ -174,8 +174,9 @@ struct AgentUniqueByKey
   using BlockScanT = cub::BlockScan<OffsetT, BLOCK_THREADS, AgentUniqueByKeyPolicyT::SCAN_ALGORITHM>;
 
   // Parameterized BlockDiscontinuity type for items
-  using DelayConstructorT  = typename AgentUniqueByKeyPolicyT::detail::delay_constructor_t;
-  using TilePrefixCallback = cub::TilePrefixCallbackOp<OffsetT, cub::Sum, ScanTileStateT, 0, DelayConstructorT>;
+  using DelayConstructorT = typename AgentUniqueByKeyPolicyT::detail::delay_constructor_t;
+  using TilePrefixCallback =
+    cub::TilePrefixCallbackOp<OffsetT, ::cuda::std::plus<>, ScanTileStateT, 0, DelayConstructorT>;
 
   // Key exchange type
   using KeyExchangeT = KeyT[ITEMS_PER_TILE];
@@ -490,7 +491,7 @@ struct AgentUniqueByKey
     OffsetT num_selections        = 0;
     OffsetT num_selections_prefix = 0;
 
-    TilePrefixCallback prefix_cb(tile_state, temp_storage.scan_storage.prefix, cub::Sum(), tile_idx);
+    TilePrefixCallback prefix_cb(tile_state, temp_storage.scan_storage.prefix, ::cuda::std::plus<>{}, tile_idx);
     BlockScanT(temp_storage.scan_storage.scan).ExclusiveSum(selection_flags, selection_idx, prefix_cb);
 
     num_selections        = prefix_cb.GetInclusivePrefix();
