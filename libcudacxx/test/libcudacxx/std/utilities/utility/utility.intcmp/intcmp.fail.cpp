@@ -6,30 +6,28 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14, c++17
-
 // <utility>
 
 // template<class T, class U>
-//   constexpr bool cmp_equal(T t, U u) noexcept; // C++20
+//   constexpr bool cmp_equal(T t, U u) noexcept;
 
 // template<class T, class U>
-//   constexpr bool cmp_not_equal(T t, U u) noexcept; // C++20
+//   constexpr bool cmp_not_equal(T t, U u) noexcept;
 
 // template<class T, class U>
-//   constexpr bool cmp_less(T t, U u) noexcept; // C++20
+//   constexpr bool cmp_less(T t, U u) noexcept;
 
 // template<class T, class U>
-//   constexpr bool cmp_less_equal(T t, U u) noexcept; // C++20
+//   constexpr bool cmp_less_equal(T t, U u) noexcept;
 
 // template<class T, class U>
-//   constexpr bool cmp_greater(T t, U u) noexcept; // C++20
+//   constexpr bool cmp_greater(T t, U u) noexcept;
 
 // template<class T, class U>
-//   constexpr bool cmp_greater_equal(T t, U u) noexcept; // C++20
+//   constexpr bool cmp_greater_equal(T t, U u) noexcept;
 
 // template<class R, class T>
-//   constexpr bool in_range(T t) noexcept;      // C++20
+//   constexpr bool in_range(T t) noexcept;
 
 #include <cuda/std/cstddef>
 #include <cuda/std/utility>

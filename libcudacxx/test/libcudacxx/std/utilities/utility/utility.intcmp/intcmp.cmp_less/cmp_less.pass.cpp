@@ -6,12 +6,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14, c++17
-
 // <utility>
 
 // template<class T, class U>
-//   constexpr bool cmp_less(T t, U u) noexcept;          // C++20
+//   constexpr bool cmp_less(T t, U u) noexcept;
 
 #include <cuda/std/cassert>
 #include <cuda/std/limits>

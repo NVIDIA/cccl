@@ -6,12 +6,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14, c++17
-
 // <utility>
 
 // template<class R, class T>
-//   constexpr bool in_range(T t) noexcept;               // C++20
+//   constexpr bool in_range(T t) noexcept;
 
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
