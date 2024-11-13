@@ -54,8 +54,8 @@
 #include "nv/detail/__target_macros"
 
 #if defined(__NVCC_DIAG_PRAGMA_SUPPORT__) && defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
-#  pragma nv_diag_suppress 186
-#endif
+#  pragma nv_diag_suppress 186 // pointless comparison of unsigned integer with zero
+#endif // defined(__NVCC_DIAG_PRAGMA_SUPPORT__) && defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
 
 CUB_NAMESPACE_BEGIN
 
