@@ -3,34 +3,20 @@
 # 3.27.5 is the minimum for MSVC build with RDC=true.
 cmake_minimum_required(VERSION 3.15)
 
-# CXX is only needed for AppendOptionIfAvailable.
-project(CUB LANGUAGES NONE)
-
-# Determine whether CUB is the top-level project or included into
-# another project via add_subdirectory().
-if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
-  set(CUB_TOPLEVEL_PROJECT ON)
-endif ()
-
 # This must be done before any languages are enabled:
-if (CUB_TOPLEVEL_PROJECT)
+if (CCCL_ENABLE_CUB)
   cmake_minimum_required(VERSION 3.21)
 endif()
 
-# This must appear after our Compiler Hacks or else CMake will delete the cache
-# and reconfigure from scratch.
-# This must also appear before the installation rules, as it is required by the
+project(CUB LANGUAGES NONE)
+
+# This must appear before the installation rules, as it is required by the
 # GNUInstallDirs CMake module.
 enable_language(CXX)
 
-option(CUB_ENABLE_INSTALL_RULES "Enable installation of CUB" ${CUB_TOPLEVEL_PROJECT})
-if (CUB_ENABLE_INSTALL_RULES)
-  include(cmake/CubInstallRules.cmake)
-endif()
-
 # Support adding CUB to a parent project via add_subdirectory.
 # See examples/cmake/add_subdir/CMakeLists.txt for details.
-if (NOT CUB_TOPLEVEL_PROJECT)
+if (NOT CCCL_ENABLE_CUB)
   include(cmake/CubAddSubdir.cmake)
   return()
 endif()
@@ -65,11 +51,15 @@ if (NOT (CUB_ENABLE_HEADER_TESTING OR
   return()
 endif()
 
-include(cmake/AppendOptionIfAvailable.cmake)
 include(cmake/CubBuildCompilerTargets.cmake)
 include(cmake/CubBuildTargetList.cmake)
 include(cmake/CubCudaConfig.cmake)
 include(cmake/CubUtilities.cmake)
+
+if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  set(CUB_ENABLE_BENCHMARKS OFF)
+  set(CUB_ENABLE_TUNING OFF)
+endif()
 
 if ("" STREQUAL "${CMAKE_BUILD_TYPE}")
   set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Choose the type of build." FORCE)
@@ -82,11 +72,7 @@ endif ()
 
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Where to put build outputs. Use CMAKE_BINARY_DIR so they'll show up alongside
-# Thrust targets when building as part of Thrust.
-set(CUB_LIBRARY_OUTPUT_DIR "${CMAKE_BINARY_DIR}/lib")
-set(CUB_EXECUTABLE_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin")
-
+cub_build_compiler_targets()
 cub_build_target_list()
 
 if (CUB_ENABLE_HEADER_TESTING)

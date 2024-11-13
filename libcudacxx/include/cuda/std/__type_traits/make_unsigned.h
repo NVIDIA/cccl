@@ -20,8 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/apply_cv.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/is_enum.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_unsigned.h>
@@ -32,25 +32,22 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_MAKE_UNSIGNED) && !defined(_LIBCUDACXX_USE_MAKE_UNSIGNED_FALLBACK)
+#if defined(_CCCL_BUILTIN_MAKE_UNSIGNED) && !defined(_LIBCUDACXX_USE_MAKE_UNSIGNED_FALLBACK)
 
 template <class _Tp>
-using __make_unsigned_t = _LIBCUDACXX_MAKE_UNSIGNED(_Tp);
+using make_unsigned_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_MAKE_UNSIGNED(_Tp);
 
 #else
 typedef __type_list<unsigned char,
-                    __type_list<unsigned short,
-                                __type_list<unsigned int,
-                                            __type_list<unsigned long,
-                                                        __type_list<unsigned long long,
+                    unsigned short,
+                    unsigned int,
+                    unsigned long,
+                    unsigned long long
 #  ifndef _LIBCUDACXX_HAS_NO_INT128
-                                                                    __type_list<__uint128_t,
+                    ,
+                    __uint128_t
 #  endif
-                                                                                __nat
-#  ifndef _LIBCUDACXX_HAS_NO_INT128
-                                                                                >
-#  endif
-                                                                    >>>>>
+                    >
   __unsigned_types;
 
 template <class _Tp, bool = is_integral<_Tp>::value || is_enum<_Tp>::value>
@@ -60,7 +57,13 @@ struct __make_unsigned_impl
 template <class _Tp>
 struct __make_unsigned_impl<_Tp, true>
 {
-  typedef typename __find_first<__unsigned_types, sizeof(_Tp)>::type type;
+  struct __size_greater_equal_fn
+  {
+    template <class _Up>
+    using __call = bool_constant<(sizeof(_Tp) <= sizeof(_Up))>;
+  };
+
+  using type = __type_front<__type_find_if<__unsigned_types, __size_greater_equal_fn>>;
 };
 
 template <>
@@ -117,33 +120,27 @@ struct __make_unsigned_impl<__uint128_t, true>
 {
   typedef __uint128_t type;
 };
-#  endif
+#  endif // !_LIBCUDACXX_HAS_NO_INT128
 
 template <class _Tp>
-using __make_unsigned_t = typename __apply_cv<_Tp, typename __make_unsigned_impl<__remove_cv_t<_Tp>>::type>::type;
+using make_unsigned_t _CCCL_NODEBUG_ALIAS = __copy_cvref_t<_Tp, typename __make_unsigned_impl<remove_cv_t<_Tp>>::type>;
 
-#endif // defined(_LIBCUDACXX_MAKE_UNSIGNED) && !defined(_LIBCUDACXX_USE_MAKE_UNSIGNED_FALLBACK)
+#endif // defined(_CCCL_BUILTIN_MAKE_UNSIGNED) && !defined(_LIBCUDACXX_USE_MAKE_UNSIGNED_FALLBACK)
 
 template <class _Tp>
 struct make_unsigned
 {
-  using type _LIBCUDACXX_NODEBUG_TYPE = __make_unsigned_t<_Tp>;
+  using type _CCCL_NODEBUG_ALIAS = make_unsigned_t<_Tp>;
 };
 
-#if _CCCL_STD_VER > 2011
 template <class _Tp>
-using make_unsigned_t = __make_unsigned_t<_Tp>;
-#endif
-
-template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr __make_unsigned_t<_Tp>
-__to_unsigned_like(_Tp __x) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr make_unsigned_t<_Tp> __to_unsigned_like(_Tp __x) noexcept
 {
-  return static_cast<__make_unsigned_t<_Tp>>(__x);
+  return static_cast<make_unsigned_t<_Tp>>(__x);
 }
 
 template <class _Tp, class _Up>
-using __copy_unsigned_t = __conditional_t<is_unsigned<_Tp>::value, __make_unsigned_t<_Up>, _Up>;
+using __copy_unsigned_t _CCCL_NODEBUG_ALIAS = conditional_t<_CCCL_TRAIT(is_unsigned, _Tp), make_unsigned_t<_Up>, _Up>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

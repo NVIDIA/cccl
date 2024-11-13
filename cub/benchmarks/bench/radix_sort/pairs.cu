@@ -26,6 +26,7 @@
  ******************************************************************************/
 
 #include <cub/device/device_radix_sort.cuh>
+#include <cub/util_arch.cuh>
 
 #include <cuda/std/type_traits>
 
@@ -121,7 +122,7 @@ constexpr std::size_t max_temp_storage_size()
 template <typename KeyT, typename ValueT, typename OffsetT>
 constexpr bool fits_in_default_shared_memory()
 {
-  return max_temp_storage_size<KeyT, ValueT, OffsetT>() < 48 * 1024;
+  return max_temp_storage_size<KeyT, ValueT, OffsetT>() < cub::detail::max_smem_per_block;
 }
 #else // TUNE_BASE
 template <typename, typename, typename>

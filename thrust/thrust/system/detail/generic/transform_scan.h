@@ -53,6 +53,21 @@ template <typename ExecutionPolicy,
           typename OutputIterator,
           typename UnaryFunction,
           typename T,
+          typename BinaryFunction>
+_CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
+  thrust::execution_policy<ExecutionPolicy>& exec,
+  InputIterator first,
+  InputIterator last,
+  OutputIterator result,
+  UnaryFunction unary_op,
+  T init,
+  BinaryFunction binary_op);
+
+template <typename ExecutionPolicy,
+          typename InputIterator,
+          typename OutputIterator,
+          typename UnaryFunction,
+          typename T,
           typename AssociativeOperator>
 _CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
   thrust::execution_policy<ExecutionPolicy>& exec,

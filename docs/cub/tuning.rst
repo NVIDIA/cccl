@@ -37,7 +37,7 @@ Contributing Benchmarks
 
 There are a few constraints on benchmarks. First of all, all benchmarks in a single
 file should share type axes. Only alphabetical characters, numbers and underscore are allowed in the
-benchmark name.  The name of the file is represets the name of the algorithm.
+benchmark name.  The name of the file represents the name of the algorithm.
 For instance, the :code:`benchmarks/bench/radix_sort/keys.cu` file name is going to be transformed
 into :code:`cub.bench.radix_sort.keys` that's further used in the infrastructure.
 

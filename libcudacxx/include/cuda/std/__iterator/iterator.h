@@ -26,7 +26,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Category, class _Tp, class _Distance = ptrdiff_t, class _Pointer = _Tp*, class _Reference = _Tp&>
-struct _LIBCUDACXX_TEMPLATE_VIS _LIBCUDACXX_DEPRECATED_IN_CXX17 iterator
+struct _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED_IN_CXX17 iterator
 {
   typedef _Tp value_type;
   typedef _Distance difference_type;

@@ -7,7 +7,7 @@
 //===----------------------------------------------------------------------===//
 
 // UNSUPPORTED: nvrtc, pre-sm-70
-// XFAIL: clang && (!nvcc)
+// UNSUPPORTED: clang && (!nvcc)
 
 // uncomment for a really verbose output detailing what test steps are being launched
 // #define DEBUG_TESTERS
@@ -38,7 +38,7 @@ struct barrier_and_token
   {}
 };
 
-template <template <typename> typename Barrier>
+template <template <typename> class Barrier>
 struct barrier_and_token_with_completion
 {
   struct completion_t

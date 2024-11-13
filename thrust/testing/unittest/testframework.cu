@@ -280,10 +280,11 @@ bool UnitTestDriver::run_tests(std::vector<UnitTest*>& tests_to_run, const Argum
 {
   std::time_t start_time = std::time(0);
 
-  THRUST_DISABLE_MSVC_FORCING_VALUE_TO_BOOL_WARNING_BEGIN
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4800) // Forcing value to bool
   bool verbose = kwargs.count("verbose");
   bool concise = kwargs.count("concise");
-  THRUST_DISABLE_MSVC_FORCING_VALUE_TO_BOOL_WARNING_END
+  _CCCL_DIAG_POP
 
   std::vector<TestResult> test_results;
 

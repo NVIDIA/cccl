@@ -37,11 +37,11 @@ struct __is_scoped_enum_helper<_Tp, true> : public bool_constant<!is_convertible
 {};
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_scoped_enum : public __is_scoped_enum_helper<_Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_scoped_enum : public __is_scoped_enum_helper<_Tp>
 {};
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_scoped_enum_v = is_scoped_enum<_Tp>::value;
+_CCCL_INLINE_VAR constexpr bool is_scoped_enum_v = is_scoped_enum<_Tp>::value;
 #endif
 
 _LIBCUDACXX_END_NAMESPACE_STD

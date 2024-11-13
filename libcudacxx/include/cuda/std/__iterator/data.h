@@ -28,27 +28,30 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER > 2011
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Cont>
-constexpr _LIBCUDACXX_INLINE_VISIBILITY auto data(_Cont& __c) noexcept(noexcept(__c.data())) -> decltype(__c.data())
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+data(_Cont& __c) noexcept(noexcept(__c.data())) -> decltype(__c.data())
 {
   return __c.data();
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _Cont>
-constexpr _LIBCUDACXX_INLINE_VISIBILITY auto
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
 data(const _Cont& __c) noexcept(noexcept(__c.data())) -> decltype(__c.data())
 {
   return __c.data();
 }
 
 template <class _Tp, size_t _Sz>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr _Tp* data(_Tp (&__array)[_Sz]) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* data(_Tp (&__array)[_Sz]) noexcept
 {
   return __array;
 }
 
 template <class _Ep>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr const _Ep* data(initializer_list<_Ep> __il) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr const _Ep* data(initializer_list<_Ep> __il) noexcept
 {
   return __il.begin();
 }

@@ -55,7 +55,7 @@ THRUST_NAMESPACE_BEGIN
 namespace detail
 {
 
-using host_t = thrust::system::cpp::detail::par_t;
+using host_t = thrust::system::__THRUST_HOST_SYSTEM_NAMESPACE::detail::par_t;
 
 using device_t = thrust::system::__THRUST_DEVICE_SYSTEM_NAMESPACE::detail::par_t;
 

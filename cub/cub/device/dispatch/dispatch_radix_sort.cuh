@@ -190,17 +190,23 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicy::BLOCK_THREADS), 
 {
   // Parameterize the AgentScan type for the current configuration
   using AgentScanT =
-    AgentScan<typename ChainedPolicyT::ActivePolicy::ScanPolicy, OffsetT*, OffsetT*, cub::Sum, OffsetT, OffsetT, OffsetT>;
+    AgentScan<typename ChainedPolicyT::ActivePolicy::ScanPolicy,
+              OffsetT*,
+              OffsetT*,
+              ::cuda::std::plus<>,
+              OffsetT,
+              OffsetT,
+              OffsetT>;
 
   // Shared memory storage
   __shared__ typename AgentScanT::TempStorage temp_storage;
 
   // Block scan instance
-  AgentScanT block_scan(temp_storage, d_spine, d_spine, cub::Sum(), OffsetT(0));
+  AgentScanT block_scan(temp_storage, d_spine, d_spine, ::cuda::std::plus<>{}, OffsetT(0));
 
   // Process full input tiles
   int block_offset = 0;
-  BlockScanRunningPrefixOp<OffsetT, Sum> prefix_op(0, Sum());
+  BlockScanRunningPrefixOp<OffsetT, ::cuda::std::plus<>> prefix_op(0, ::cuda::std::plus<>{});
   while (block_offset + AgentScanT::TILE_ITEMS <= num_counts)
   {
     block_scan.template ConsumeTile<false, false>(block_offset, prefix_op);
@@ -2091,10 +2097,10 @@ struct DispatchRadixSort : SelectedPolicy
     // portions handle inputs with >=2**30 elements, due to the way lookback works
     // for testing purposes, one portion is <= 2**28 elements
     constexpr PortionOffsetT PORTION_SIZE = ((1 << 28) - 1) / ONESWEEP_TILE_ITEMS * ONESWEEP_TILE_ITEMS;
-    int num_passes                        = cub::DivideAndRoundUp(end_bit - begin_bit, RADIX_BITS);
-    OffsetT num_portions                  = static_cast<OffsetT>(cub::DivideAndRoundUp(num_items, PORTION_SIZE));
-    PortionOffsetT max_num_blocks         = cub::DivideAndRoundUp(
-      static_cast<int>(CUB_MIN(num_items, static_cast<OffsetT>(PORTION_SIZE))), ONESWEEP_TILE_ITEMS);
+    int num_passes                        = ::cuda::ceil_div(end_bit - begin_bit, RADIX_BITS);
+    OffsetT num_portions                  = static_cast<OffsetT>(::cuda::ceil_div(num_items, PORTION_SIZE));
+    PortionOffsetT max_num_blocks =
+      ::cuda::ceil_div(static_cast<int>(CUB_MIN(num_items, static_cast<OffsetT>(PORTION_SIZE))), ONESWEEP_TILE_ITEMS);
 
     size_t value_size         = KEYS_ONLY ? 0 : sizeof(ValueT);
     size_t allocation_sizes[] = {
@@ -2237,7 +2243,7 @@ struct DispatchRadixSort : SelectedPolicy
           PortionOffsetT portion_num_items = static_cast<PortionOffsetT>(
             CUB_MIN(num_items - portion * PORTION_SIZE, static_cast<OffsetT>(PORTION_SIZE)));
 
-          PortionOffsetT num_blocks = cub::DivideAndRoundUp(portion_num_items, ONESWEEP_TILE_ITEMS);
+          PortionOffsetT num_blocks = ::cuda::ceil_div(portion_num_items, ONESWEEP_TILE_ITEMS);
 
           error = CubDebug(cudaMemsetAsync(d_lookback, 0, num_blocks * RADIX_DIGITS * sizeof(AtomicOffsetT), stream));
           if (cudaSuccess != error)
@@ -2429,7 +2435,7 @@ struct DispatchRadixSort : SelectedPolicy
       // Pass planning.  Run passes of the alternate digit-size configuration until we have an even multiple of our
       // preferred digit size
       int num_bits           = end_bit - begin_bit;
-      int num_passes         = cub::DivideAndRoundUp(num_bits, pass_config.radix_bits);
+      int num_passes         = ::cuda::ceil_div(num_bits, pass_config.radix_bits);
       bool is_num_passes_odd = num_passes & 1;
       int max_alt_passes     = (num_passes * pass_config.radix_bits) - num_bits;
       int alt_end_bit        = CUB_MIN(end_bit, begin_bit + (max_alt_passes * alt_pass_config.radix_bits));
@@ -3055,7 +3061,7 @@ struct DispatchSegmentedRadixSort : SelectedPolicy
       int radix_bits         = ActivePolicyT::SegmentedPolicy::RADIX_BITS;
       int alt_radix_bits     = ActivePolicyT::AltSegmentedPolicy::RADIX_BITS;
       int num_bits           = end_bit - begin_bit;
-      int num_passes         = CUB_MAX(DivideAndRoundUp(num_bits, radix_bits), 1);
+      int num_passes         = CUB_MAX(::cuda::ceil_div(num_bits, radix_bits), 1);
       bool is_num_passes_odd = num_passes & 1;
       int max_alt_passes     = (num_passes * radix_bits) - num_bits;
       int alt_end_bit        = CUB_MIN(end_bit, begin_bit + (max_alt_passes * alt_radix_bits));

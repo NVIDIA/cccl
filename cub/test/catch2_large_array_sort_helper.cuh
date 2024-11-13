@@ -46,11 +46,11 @@
 #include <cstdint>
 #include <numeric>
 
-#include <c2h/cpu_timer.cuh>
-#include <c2h/device_policy.cuh>
-#include <c2h/generators.cuh> // seed_t
-#include <c2h/vector.cuh>
-#include <catch2_test_helper.h>
+#include <c2h/catch2_test_helper.h>
+#include <c2h/cpu_timer.h>
+#include <c2h/device_policy.h>
+#include <c2h/generators.h> // seed_t
+#include <c2h/vector.h>
 
 // #define DEBUG_TIMING
 
@@ -398,7 +398,7 @@ private:
     using summary_t = detail::summary<KeyType>;
 
     const std::size_t max_summary_mem = num_items * (sizeof(KeyType) + sizeof(ValueType));
-    const std::size_t max_summaries   = cub::DivideAndRoundUp(max_summary_mem, sizeof(summary_t));
+    const std::size_t max_summaries   = ::cuda::ceil_div(max_summary_mem, sizeof(summary_t));
     return max_summaries;
   }
 

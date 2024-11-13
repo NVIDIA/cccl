@@ -33,7 +33,7 @@ _CCCL_PUSH_MACROS
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Comp, class _Iter, class _Sent, class _Proj>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Iter
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Iter
 __min_element(_Iter __first, _Sent __last, _Comp __comp, _Proj& __proj)
 {
   if (__first == __last)
@@ -54,14 +54,14 @@ __min_element(_Iter __first, _Sent __last, _Comp __comp, _Proj& __proj)
 }
 
 template <class _Comp, class _Iter, class _Sent>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _Iter __min_element(_Iter __first, _Sent __last, _Comp __comp)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Iter __min_element(_Iter __first, _Sent __last, _Comp __comp)
 {
   auto __proj = __identity();
   return _CUDA_VSTD::__min_element<_Comp>(_CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __comp, __proj);
 }
 
 template <class _ForwardIterator, class _Compare>
-_CCCL_NODISCARD inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
 min_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
 {
   static_assert(__is_cpp17_input_iterator<_ForwardIterator>::value, "std::min_element requires a ForwardIterator");
@@ -73,7 +73,7 @@ min_element(_ForwardIterator __first, _ForwardIterator __last, _Compare __comp)
 }
 
 template <class _ForwardIterator>
-_CCCL_NODISCARD inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _ForwardIterator
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
 min_element(_ForwardIterator __first, _ForwardIterator __last)
 {
   return _CUDA_VSTD::min_element(__first, __last, __less{});

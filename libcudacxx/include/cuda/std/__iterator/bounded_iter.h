@@ -26,7 +26,6 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/detail/libcxx/include/__assert>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -40,7 +39,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // Arithmetic operations are allowed and the bounds of the resulting iterator
 // are not checked. Hence, it is possible to create an iterator pointing outside
 // its range, but it is not possible to dereference it.
-template <class _Iterator, class = __enable_if_t<__is_cpp17_contiguous_iterator<_Iterator>::value>>
+template <class _Iterator, class = enable_if_t<__is_cpp17_contiguous_iterator<_Iterator>::value>>
 struct __bounded_iter
 {
   using value_type        = typename iterator_traits<_Iterator>::value_type;
@@ -56,22 +55,21 @@ struct __bounded_iter
   //
   // Such an iterator does not point to any object and is conceptually out of bounds, so it is
   // not dereferenceable. Observing operations like comparison and assignment are valid.
-  __bounded_iter() = default;
+  _CCCL_HIDE_FROM_ABI __bounded_iter() = default;
 
-  __bounded_iter(__bounded_iter const&) = default;
-  __bounded_iter(__bounded_iter&&)      = default;
+  _CCCL_HIDE_FROM_ABI __bounded_iter(__bounded_iter const&) = default;
+  _CCCL_HIDE_FROM_ABI __bounded_iter(__bounded_iter&&)      = default;
 
-  template <class _OtherIterator, class = __enable_if_t<is_convertible<_OtherIterator, _Iterator>::value>>
-  _LIBCUDACXX_HIDE_FROM_ABI
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __bounded_iter(__bounded_iter<_OtherIterator> const& __other) noexcept
+  template <class _OtherIterator, class = enable_if_t<is_convertible<_OtherIterator, _Iterator>::value>>
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __bounded_iter(__bounded_iter<_OtherIterator> const& __other) noexcept
       : __current_(__other.__current_)
       , __begin_(__other.__begin_)
       , __end_(__other.__end_)
   {}
 
   // Assign a bounded iterator to another one, rebinding the bounds of the iterator as well.
-  __bounded_iter& operator=(__bounded_iter const&) = default;
-  __bounded_iter& operator=(__bounded_iter&&)      = default;
+  _CCCL_HIDE_FROM_ABI __bounded_iter& operator=(__bounded_iter const&) = default;
+  _CCCL_HIDE_FROM_ABI __bounded_iter& operator=(__bounded_iter&&)      = default;
 
 private:
   // Create an iterator wrapping the given iterator, and whose bounds are described
@@ -83,42 +81,39 @@ private:
   //
   // Since it is non-standard for iterators to have this constructor, __bounded_iter must
   // be created via `_CUDA_VSTD::__make_bounded_iter`.
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
+  _LIBCUDACXX_HIDE_FROM_ABI
   _CCCL_CONSTEXPR_CXX14 explicit __bounded_iter(_Iterator __current, _Iterator __begin, _Iterator __end)
       : __current_(__current)
       , __begin_(__begin)
       , __end_(__end)
   {
-    _LIBCUDACXX_ASSERT(__begin <= __end, "__bounded_iter(current, begin, end): [begin, end) is not a valid range");
+    _CCCL_ASSERT(__begin <= __end, "__bounded_iter(current, begin, end): [begin, end) is not a valid range");
   }
 
   template <class _It>
-  friend _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr __bounded_iter<_It>
-    __make_bounded_iter(_It, _It, _It);
+  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr __bounded_iter<_It> __make_bounded_iter(_It, _It, _It);
 
 public:
   // Dereference and indexing operations.
   //
   // These operations check that the iterator is dereferenceable, that is within [begin, end).
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reference operator*() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reference operator*() const noexcept
   {
-    _LIBCUDACXX_ASSERT(__in_bounds(__current_),
-                       "__bounded_iter::operator*: Attempt to dereference an out-of-range iterator");
+    _CCCL_ASSERT(__in_bounds(__current_), "__bounded_iter::operator*: Attempt to dereference an out-of-range iterator");
     return *__current_;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 pointer operator->() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pointer operator->() const noexcept
   {
-    _LIBCUDACXX_ASSERT(__in_bounds(__current_),
-                       "__bounded_iter::operator->: Attempt to dereference an out-of-range iterator");
+    _CCCL_ASSERT(__in_bounds(__current_),
+                 "__bounded_iter::operator->: Attempt to dereference an out-of-range iterator");
     return _CUDA_VSTD::__to_address(__current_);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 reference
-  operator[](difference_type __n) const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reference operator[](difference_type __n) const noexcept
   {
-    _LIBCUDACXX_ASSERT(__in_bounds(__current_ + __n),
-                       "__bounded_iter::operator[]: Attempt to index an iterator out-of-range");
+    _CCCL_ASSERT(__in_bounds(__current_ + __n),
+                 "__bounded_iter::operator[]: Attempt to index an iterator out-of-range");
     return __current_[__n];
   }
 
@@ -126,44 +121,43 @@ public:
   //
   // These operations do not check that the resulting iterator is within the bounds, since that
   // would make it impossible to create a past-the-end iterator.
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __bounded_iter& operator++() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __bounded_iter& operator++() noexcept
   {
     ++__current_;
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __bounded_iter operator++(int) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __bounded_iter operator++(int) noexcept
   {
     __bounded_iter __tmp(*this);
     ++*this;
     return __tmp;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __bounded_iter& operator--() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __bounded_iter& operator--() noexcept
   {
     --__current_;
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __bounded_iter operator--(int) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __bounded_iter operator--(int) noexcept
   {
     __bounded_iter __tmp(*this);
     --*this;
     return __tmp;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __bounded_iter&
-  operator+=(difference_type __n) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __bounded_iter& operator+=(difference_type __n) noexcept
   {
     __current_ += __n;
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 friend __bounded_iter
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 friend __bounded_iter
   operator+(__bounded_iter const& __self, difference_type __n) noexcept
   {
     __bounded_iter __tmp(__self);
     __tmp += __n;
     return __tmp;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 friend __bounded_iter
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 friend __bounded_iter
   operator+(difference_type __n, __bounded_iter const& __self) noexcept
   {
     __bounded_iter __tmp(__self);
@@ -171,20 +165,19 @@ public:
     return __tmp;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __bounded_iter&
-  operator-=(difference_type __n) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __bounded_iter& operator-=(difference_type __n) noexcept
   {
     __current_ -= __n;
     return *this;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 friend __bounded_iter
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 friend __bounded_iter
   operator-(__bounded_iter const& __self, difference_type __n) noexcept
   {
     __bounded_iter __tmp(__self);
     __tmp -= __n;
     return __tmp;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 friend difference_type
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 friend difference_type
   operator-(__bounded_iter const& __x, __bounded_iter const& __y) noexcept
   {
     return __x.__current_ - __y.__current_;
@@ -196,32 +189,32 @@ public:
   // The valid range for each iterator is also not considered as part of the comparison,
   // i.e. two iterators pointing to the same location will be considered equal even
   // if they have different validity ranges.
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr friend bool
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr friend bool
   operator==(__bounded_iter const& __x, __bounded_iter const& __y) noexcept
   {
     return __x.__current_ == __y.__current_;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr friend bool
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr friend bool
   operator!=(__bounded_iter const& __x, __bounded_iter const& __y) noexcept
   {
     return __x.__current_ != __y.__current_;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr friend bool
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr friend bool
   operator<(__bounded_iter const& __x, __bounded_iter const& __y) noexcept
   {
     return __x.__current_ < __y.__current_;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr friend bool
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr friend bool
   operator>(__bounded_iter const& __x, __bounded_iter const& __y) noexcept
   {
     return __x.__current_ > __y.__current_;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr friend bool
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr friend bool
   operator<=(__bounded_iter const& __x, __bounded_iter const& __y) noexcept
   {
     return __x.__current_ <= __y.__current_;
   }
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr friend bool
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr friend bool
   operator>=(__bounded_iter const& __x, __bounded_iter const& __y) noexcept
   {
     return __x.__current_ >= __y.__current_;
@@ -229,7 +222,7 @@ public:
 
 private:
   // Return whether the given iterator is in the bounds of this __bounded_iter.
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr bool __in_bounds(_Iterator const& __iter) const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __in_bounds(_Iterator const& __iter) const
   {
     return __iter >= __begin_ && __iter < __end_;
   }
@@ -241,8 +234,7 @@ private:
 };
 
 template <class _It>
-_LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr __bounded_iter<_It>
-__make_bounded_iter(_It __it, _It __begin, _It __end)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr __bounded_iter<_It> __make_bounded_iter(_It __it, _It __begin, _It __end)
 {
   return __bounded_iter<_It>(_CUDA_VSTD::move(__it), _CUDA_VSTD::move(__begin), _CUDA_VSTD::move(__end));
 }
@@ -260,8 +252,7 @@ struct pointer_traits<__bounded_iter<_Iterator>>
   using element_type    = typename pointer_traits<_Iterator>::element_type;
   using difference_type = typename pointer_traits<_Iterator>::difference_type;
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY constexpr static element_type*
-  to_address(pointer __it) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr static element_type* to_address(pointer __it) noexcept
   {
     return _CUDA_VSTD::__to_address(__it.__current_);
   }

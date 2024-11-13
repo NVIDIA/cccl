@@ -34,7 +34,7 @@ public:
     return static_cast<T*>(::operator new(n * sizeof(T)));
   }
 
-  __host__ __device__ void deallocate(T* p, cuda::std::size_t)
+  __host__ __device__ void deallocate(T* p, cuda::std::size_t) noexcept
   {
     return ::operator delete(static_cast<void*>(p));
   }
@@ -76,7 +76,7 @@ public:
     return static_cast<T*>(::operator new(n * sizeof(T)));
   }
 
-  __host__ __device__ void deallocate(T* p, cuda::std::size_t)
+  __host__ __device__ void deallocate(T* p, cuda::std::size_t) noexcept
   {
     return ::operator delete(static_cast<void*>(p));
   }
@@ -137,7 +137,7 @@ public:
     return static_cast<T*>(cuda::std::malloc(nbytes));
   }
 
-  __host__ __device__ void deallocate(T* p, cuda::std::size_t n)
+  __host__ __device__ void deallocate(T* p, cuda::std::size_t n) noexcept
   {
     const size_t nbytes = n * sizeof(T);
     ++malloc_allocator_base_dealloc_count;
@@ -585,7 +585,7 @@ public:
     return pointer(static_cast<T*>(::operator new(n * sizeof(T))));
   }
 
-  __host__ __device__ void deallocate(pointer p, cuda::std::ptrdiff_t)
+  __host__ __device__ void deallocate(pointer p, cuda::std::ptrdiff_t) noexcept
   {
     return ::operator delete(p.ptr_);
   }
@@ -617,7 +617,7 @@ public:
     return static_cast<T*>(::operator new(n * sizeof(T)));
   }
 
-  __host__ __device__ void deallocate(T* p, cuda::std::size_t)
+  __host__ __device__ void deallocate(T* p, cuda::std::size_t) noexcept
   {
     return ::operator delete(static_cast<void*>(p));
   }

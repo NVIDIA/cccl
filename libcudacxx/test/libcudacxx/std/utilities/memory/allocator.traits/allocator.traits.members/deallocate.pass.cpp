@@ -12,7 +12,7 @@
 // template <class Alloc>
 // struct allocator_traits
 // {
-//     static constexpr void deallocate(allocator_type& a, pointer p, size_type n);
+//     static constexpr void deallocate(allocator_type& a, pointer p, size_type n) noexcept;
 //     ...
 // };
 
@@ -32,7 +32,7 @@ struct A
       : called_(called)
   {}
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 void deallocate(value_type* p, cuda::std::size_t n)
+  __host__ __device__ TEST_CONSTEXPR_CXX20 void deallocate(value_type* p, cuda::std::size_t n) noexcept
   {
     assert(p == &storage);
     assert(n == 10);

@@ -11,6 +11,8 @@
 #ifndef _CUDAX__HIERARCHY_HIERARCHY_LEVELS
 #define _CUDAX__HIERARCHY_HIERARCHY_LEVELS
 
+#include <cuda/std/__type_traits/type_list.h>
+
 #include <cuda/experimental/__hierarchy/dimensions.cuh>
 
 #include <nv/target>
@@ -66,12 +68,6 @@ struct dimensions_query
     return hierarchy::extents<Unit, Level>();
   }
 };
-
-template <typename L1, typename... Levels>
-struct get_first_level_type
-{
-  using type = L1;
-};
 } // namespace detail
 
 // Struct to represent levels allowed below or above a certain level,
@@ -79,34 +75,28 @@ struct get_first_level_type
 template <typename... Levels>
 struct allowed_levels
 {
-  using default_unit = typename detail::get_first_level_type<Levels...>::type;
-};
-
-template <>
-struct allowed_levels<>
-{
-  using default_unit = void;
+  using default_unit = ::cuda::std::__type_index_c<0, Levels..., void>;
 };
 
 namespace detail
 {
 template <typename QueryLevel, typename AllowedLevels>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_level_allowed = false;
+_CCCL_INLINE_VAR constexpr bool is_level_allowed = false;
 
 template <typename QueryLevel, typename... Levels>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_level_allowed<QueryLevel, allowed_levels<Levels...>> =
+_CCCL_INLINE_VAR constexpr bool is_level_allowed<QueryLevel, allowed_levels<Levels...>> =
   ::cuda::std::disjunction_v<::cuda::std::is_same<QueryLevel, Levels>...>;
 
 template <typename L1, typename L2>
-_LIBCUDACXX_INLINE_VAR constexpr bool can_stack_on_top =
+_CCCL_INLINE_VAR constexpr bool can_stack_on_top =
   is_level_allowed<L1, typename L2::allowed_below> || is_level_allowed<L2, typename L1::allowed_above>;
 
 template <typename Unit, typename Level>
-_LIBCUDACXX_INLINE_VAR constexpr bool legal_unit_for_level =
+_CCCL_INLINE_VAR constexpr bool legal_unit_for_level =
   can_stack_on_top<Unit, Level> || legal_unit_for_level<Unit, typename Level::allowed_below::default_unit>;
 
 template <typename Unit>
-_LIBCUDACXX_INLINE_VAR constexpr bool legal_unit_for_level<Unit, void> = false;
+_CCCL_INLINE_VAR constexpr bool legal_unit_for_level<Unit, void> = false;
 } // namespace detail
 
 // Base type for all hierarchy levels
@@ -292,7 +282,7 @@ template <typename Unit, typename Level>
     return dims_product<typename Level::product_type>(
       extents_impl<SplitLevel, Level>(), extents_impl<Unit, SplitLevel>());
   }
-  _LIBCUDACXX_UNREACHABLE();
+  _CCCL_UNREACHABLE();
 }
 
 template <typename Unit, typename Level>
@@ -309,7 +299,7 @@ template <typename Unit, typename Level>
       dims_product<typename Level::product_type>(index_impl<SplitLevel, Level>(), extents_impl<Unit, SplitLevel>()),
       index_impl<Unit, SplitLevel>());
   }
-  _LIBCUDACXX_UNREACHABLE();
+  _CCCL_UNREACHABLE();
 }
 } // namespace detail
 

@@ -28,7 +28,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Compare, class _InputIterator1, class _InputIterator2, class _OutputIterator>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _OutputIterator __merge(
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _OutputIterator __merge(
   _InputIterator1 __first1,
   _InputIterator1 __last1,
   _InputIterator2 __first2,
@@ -57,7 +57,7 @@ _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _OutputIterator __merge(
 }
 
 template <class _InputIterator1, class _InputIterator2, class _OutputIterator, class _Compare>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _OutputIterator merge(
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _OutputIterator merge(
   _InputIterator1 __first1,
   _InputIterator1 __last1,
   _InputIterator2 __first2,
@@ -69,7 +69,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _OutputIterator merge
 }
 
 template <class _InputIterator1, class _InputIterator2, class _OutputIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _OutputIterator merge(
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _OutputIterator merge(
   _InputIterator1 __first1,
   _InputIterator1 __last1,
   _InputIterator2 __first2,

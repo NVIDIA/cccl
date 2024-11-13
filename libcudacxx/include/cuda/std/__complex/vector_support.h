@@ -24,6 +24,7 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
+#include <cuda/std/__type_traits/is_extended_floating_point.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
@@ -32,18 +33,9 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-struct __is_nvfp16 : false_type
-{};
-
-template <class _Tp>
-struct __is_nvbf16 : false_type
-{};
-
-template <class _Tp>
 struct __is_complex_float
 {
-  static constexpr auto value =
-    _CCCL_TRAIT(is_floating_point, _Tp) || __is_nvfp16<_Tp>::value || __is_nvbf16<_Tp>::value;
+  static constexpr auto value = _CCCL_TRAIT(is_floating_point, _Tp) || _CCCL_TRAIT(__is_extended_floating_point, _Tp);
 };
 
 template <class _Tp>
@@ -61,15 +53,6 @@ struct __complex_alignment : integral_constant<size_t, 2 * sizeof(_Tp)>
 #else
 #  define _LIBCUDACXX_COMPLEX_ALIGNAS
 #endif
-
-template <class _Dest, class _Source, class = void>
-struct __complex_can_implicitly_construct : false_type
-{};
-
-template <class _Dest, class _Source>
-struct __complex_can_implicitly_construct<_Dest, _Source, void_t<decltype(_Dest{_CUDA_VSTD::declval<_Source>()})>>
-    : true_type
-{};
 
 template <class _Tp>
 struct __type_to_vector;
@@ -101,22 +84,22 @@ struct __ab_results
   _Tp __b;
 };
 
-template <class _Tp, typename = __enable_if_t<!__has_vector_type<_Tp>::value>>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __abcd_results<_Tp>
+template <class _Tp, typename = enable_if_t<!__has_vector_type<_Tp>::value>>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __abcd_results<_Tp>
 __complex_calculate_partials(_Tp __a, _Tp __b, _Tp __c, _Tp __d) noexcept
 {
   return {__a * __c, __b * __d, __a * __d, __b * __c};
 }
 
-template <class _Tp, typename = __enable_if_t<!__has_vector_type<_Tp>::value>>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __ab_results<_Tp>
+template <class _Tp, typename = enable_if_t<!__has_vector_type<_Tp>::value>>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __ab_results<_Tp>
 __complex_piecewise_mul(_Tp __x1, _Tp __y1, _Tp __x2, _Tp __y2) noexcept
 {
   return {__x1 * __x2, __y1 * __y2};
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __enable_if_t<__has_vector_type<_Tp>::value, __abcd_results<_Tp>>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 enable_if_t<__has_vector_type<_Tp>::value, __abcd_results<_Tp>>
 __complex_calculate_partials(_Tp __a, _Tp __b, _Tp __c, _Tp __d) noexcept
 {
   __abcd_results<_Tp> __ret;
@@ -139,7 +122,7 @@ __complex_calculate_partials(_Tp __a, _Tp __b, _Tp __c, _Tp __d) noexcept
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 __enable_if_t<__has_vector_type<_Tp>::value, __ab_results<_Tp>>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 enable_if_t<__has_vector_type<_Tp>::value, __ab_results<_Tp>>
 __complex_piecewise_mul(_Tp __x1, _Tp __y1, _Tp __x2, _Tp __y2) noexcept
 {
   __ab_results<_Tp> __ret;

@@ -34,8 +34,8 @@
 #define TEST_CONCAT1(X, Y) X##Y
 #define TEST_CONCAT(X, Y)  TEST_CONCAT1(X, Y)
 
-#ifdef __has_feature
-#  define TEST_HAS_FEATURE(X) __has_feature(X)
+#ifdef _CCCL_HAS_FEATURE
+#  define TEST_HAS_FEATURE(X) _CCCL_HAS_FEATURE(X)
 #else
 #  define TEST_HAS_FEATURE(X) 0
 #endif
@@ -63,9 +63,7 @@
 #  define TEST_HAS_BUILTIN_IDENTIFIER(X) 0
 #endif
 
-#if defined(__INTEL_LLVM_COMPILER)
-#  define TEST_COMPILER_ICC_LLVM
-#elif defined(__INTEL_COMPILER)
+#if defined(__INTEL_COMPILER)
 #  define TEST_COMPILER_ICC
 #elif defined(__NVCOMPILER)
 #  define TEST_COMPILER_NVHPC
@@ -78,24 +76,20 @@
 #  define TEST_COMPILER_GCC
 #elif defined(_MSC_VER)
 #  define TEST_COMPILER_MSVC
-#elif defined(__IBMCPP__)
-#  define TEST_COMPILER_IBM
 #elif defined(__CUDACC_RTC__)
 #  define TEST_COMPILER_NVRTC
 #elif defined(__EDG__)
 #  define TEST_COMPILER_EDG
 #endif
 
-#if defined(__NVCC__)
-// This is not mutually exclusive with other compilers, as NVCC uses a host
-// compiler.
+#if defined(_CCCL_CUDA_COMPILER_NVCC)
 #  define TEST_COMPILER_NVCC
 #  define TEST_COMPILER_EDG
-#elif defined(_NVHPC_CUDA)
+#elif defined(_CCCL_CUDA_COMPILER_NVHPC)
 #  define TEST_COMPILER_NVHPC_CUDA
-#elif defined(__CUDA__) && defined(_LIBCUDACXX_COMPILER_CLANG)
+#elif defined(_CCCL_CUDA_COMPILER_CLANG)
 #  define TEST_COMPILER_CLANG_CUDA
-#endif
+#endif // no cuda compiler
 
 #if defined(__apple_build_version__)
 #  define TEST_APPLE_CLANG_VER (__clang_major__ * 100) + __clang_minor__
@@ -249,7 +243,7 @@
 #endif
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
-#  if !defined(LIBCUDACXX_ENABLE_EXCEPTIONS) || (defined(_CCCL_COMPILER_MSVC) && _HAS_EXCEPTIONS == 0) \
+#  if (defined(_CCCL_COMPILER_MSVC) && _HAS_EXCEPTIONS == 0) \
     || (!defined(_CCCL_COMPILER_MSVC) && !__EXCEPTIONS) // Catches all non msvc based compilers
 #    define TEST_HAS_NO_EXCEPTIONS
 #  endif
@@ -261,14 +255,6 @@
 
 #if TEST_HAS_FEATURE(address_sanitizer) || TEST_HAS_FEATURE(memory_sanitizer) || TEST_HAS_FEATURE(thread_sanitizer)
 #  define TEST_HAS_SANITIZERS
-#endif
-
-#if defined(TEST_COMPILER_MSVC)
-#  define TEST_NORETURN __declspec(noreturn)
-#elif __has_cpp_attribute(noreturn)
-#  define TEST_NORETURN [[noreturn]]
-#else
-#  define TEST_NORETURN __attribute__((noreturn))
 #endif
 
 #if defined(_LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION) \
@@ -319,6 +305,14 @@
 #  define TEST_NODISCARD [[nodiscard]]
 #else
 #  define TEST_NODISCARD
+#endif
+
+#if defined(TEST_COMPILER_MSVC)
+#  define TEST_NORETURN __declspec(noreturn)
+#elif __has_cpp_attribute(noreturn)
+#  define TEST_NORETURN [[noreturn]]
+#else
+#  define TEST_NORETURN __attribute__((noreturn))
 #endif
 
 #define TEST_IGNORE_NODISCARD (void)
@@ -449,17 +443,9 @@ __host__ __device__ constexpr bool unused(T&&...)
 #if defined(TEST_COMPILER_CLANG_CUDA)
 #  define TEST_NV_DIAG_SUPPRESS(WARNING)
 #elif defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
-#  if defined(TEST_COMPILER_MSVC)
-#    define TEST_NV_DIAG_SUPPRESS(WARNING) __pragma(_TEST_TOSTRING(nv_diag_suppress WARNING))
-#  else // ^^^ MSVC ^^^ / vvv not MSVC vvv
-#    define TEST_NV_DIAG_SUPPRESS(WARNING) _Pragma(_TEST_TOSTRING(nv_diag_suppress WARNING))
-#  endif // not MSVC
+#  define TEST_NV_DIAG_SUPPRESS(WARNING) _CCCL_PRAGMA(nv_diag_suppress WARNING)
 #else // ^^^ __NVCC_DIAG_PRAGMA_SUPPORT__ ^^^ / vvv !__NVCC_DIAG_PRAGMA_SUPPORT__ vvv
-#  if defined(TEST_COMPILER_MSVC)
-#    define TEST_NV_DIAG_SUPPRESS(WARNING) __pragma(_TEST_TOSTRING(diag_suppress WARNING))
-#  else // ^^^ MSVC ^^^ / vvv not MSVC vvv
-#    define TEST_NV_DIAG_SUPPRESS(WARNING) _Pragma(_TEST_TOSTRING(diag_suppress WARNING))
-#  endif // not MSVC
+#  define TEST_NV_DIAG_SUPPRESS(WARNING) _CCCL_PRAGMA(diag_suppress WARNING)
 #endif
 
 #define TEST_CONSTEXPR_GLOBAL _CCCL_CONSTEXPR_GLOBAL

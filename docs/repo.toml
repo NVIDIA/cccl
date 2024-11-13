@@ -25,7 +25,7 @@ sphinx_exclude_patterns = [
     "VERSION.md",
 ]
 
-project_build_order = [ "libcudacxx", "cudax", "cub", "thrust", "cccl", "cuda_cooperative" ]
+project_build_order = [ "libcudacxx", "cudax", "cub", "thrust", "cccl", "cuda_cooperative", "cuda_parallel" ]
 
 # deps can be used to link to other projects' documentation
 deps = [
@@ -33,6 +33,7 @@ deps = [
     [ "cub", "_build/docs/cub/latest" ],
     [ "thrust", "_build/docs/thrust/latest" ],
     [ "cuda_cooperative", "_build/docs/cuda_cooperative/latest" ],
+    [ "cuda_parallel", "_build/docs/cuda_parallel/latest" ],
 ]
 
 [repo_docs.projects.libcudacxx]
@@ -144,10 +145,19 @@ doxygen_predefined = [
     "_CCCL_DEVICE",
     "_CCCL_HOST_DEVICE",
     "_CCCL_FORCEINLINE",
+    "_CUB_TEMPLATE_REQUIRES(x)",
     "_CCCL_STD_VER",
+    "_CCCL_NODISCARD",
     "_CCCL_VISIBILITY_HIDDEN",
     "_CCCL_SUPPRESS_DEPRECATED_PUSH",
     "_CCCL_SUPPRESS_DEPRECATED_POP",
+    "_CCCL_DIAG_PUSH=",
+    "_CCCL_DIAG_POP=",
+    "_CCCL_DIAG_SUPPRESS_CLANG(x)=",
+    "_CCCL_DIAG_SUPPRESS_GCC(x)=",
+    "_CCCL_DIAG_SUPPRESS_ICC(x)=",
+    "_CCCL_DIAG_SUPPRESS_MSVC(x)=",
+    "_CCCL_DIAG_SUPPRESS_NVHPC(x)=",
     "DOXYGEN_SHOULD_SKIP_THIS",
     "DOXYGEN_ACTIVE",
     "__device__",
@@ -164,7 +174,10 @@ doxygen_predefined = [
     "CUB_STATIC_ASSERT(cond,msg)=",
     "CUB_RUNTIME_FUNCTION",
     "CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED",
-    "CUB_IGNORE_DEPRECATED_CPP_DIALECT"
+    "CUB_IGNORE_DEPRECATED_CPP_DIALECT",
+    "CUDASTF_HOST",
+    "CUDASTF_DEVICE",
+    "CUDASTF_HOST_DEVICE"
 ]
 
 # make sure to use ./fetch_imgs.sh
@@ -248,6 +261,16 @@ doxygen_predefined = [
   "_CCCL_STD_VER",
   "_CCCL_SUPPRESS_DEPRECATED_PUSH",
   "_CCCL_SUPPRESS_DEPRECATED_POP",
+  "_CCCL_DIAG_PUSH=",
+  "_CCCL_DIAG_POP=",
+  "_CCCL_DIAG_SUPPRESS_CLANG(x)=",
+  "_CCCL_DIAG_SUPPRESS_GCC(x)=",
+  "_CCCL_DIAG_SUPPRESS_ICC(x)=",
+  "_CCCL_DIAG_SUPPRESS_MSVC(x)=",
+  "_CCCL_DIAG_SUPPRESS_NVHPC(x)=",
+  "CUDASTF_HOST=",
+  "CUDASTF_DEVICE=",
+  "CUDASTF_HOST_DEVICE=",
   "DOXYGEN_SHOULD_SKIP_THIS",
   "DOXYGEN_ACTIVE",
   "_LIBCUDACXX_DEPRECATED_IN_CXX11",
@@ -304,6 +327,29 @@ python_paths = [
     "${root}/../python/cuda_cooperative"
 ]
 
+[repo_docs.projects.cuda_parallel]
+name = "cuda.parallel"
+docs_root = "cuda_parallel"
+logo = "../img/logo.png"
+
+repo_url         = "https://github.com/NVIDIA/cccl/python/cuda"
+social_media_set = ""
+social_media     = [
+    [ "github", "https://github.com/NVIDIA/cccl" ],
+]
+
+autodoc.mock_imports = [
+    "numba",
+    "pynvjitlink",
+    "cuda.nvrtc",
+    "llvmlite"
+]
+
+enhanced_search_enabled = true
+python_paths = [
+    "${root}/../python/cuda_parallel"
+]
+
 [repo_docs.projects.cudax]
 name = "Cudax: Experimental new features"
 docs_root = "cudax"
@@ -328,24 +374,72 @@ deps = [
 ]
 
 doxygen_input = [
-    "../../cudax/include/cuda/experimental/__container/*.h",
-    "../../cudax/include/cuda/experimental/__memory_resource/*.h",
+    "../../cudax/include/cuda/experimental/__container/*.cuh",
+    "../../cudax/include/cuda/experimental/__device/*.cuh",
+    "../../cudax/include/cuda/experimental/__event/*.cuh",
+    "../../cudax/include/cuda/experimental/__hierarchy/*.cuh",
+    "../../cudax/include/cuda/experimental/__launch/*.cuh",
+    "../../cudax/include/cuda/experimental/__memory_resource/*.cuh",
+    "../../cudax/include/cuda/experimental/__stream/*.cuh",
+    "../../cudax/include/cuda/experimental/stf.cuh",
+    "../../cudax/include/cuda/experimental/__stf/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/internal/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/utility/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/localization/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/allocators/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/graph/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/graph/internal/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/graph/interfaces/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/places/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/places/exec/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/places/exec/host/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/stream/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/stream/internal/*.cuh",
+    "../../cudax/include/cuda/experimental/__stf/stream/interfaces/*.cuh",
 ]
 
 doxygen_predefined = [
+  "__device__",
+  "__host__",
+  "__global__",
   "_CCCL_DEVICE=",
   "_CCCL_EXEC_CHECK_DISABLE=",
   "_CCCL_FORCEINLINE=",
+  "_CCCL_GLOBAL_CONSTANT=constexpr",
+  "_CCCL_HIDE_FROM_ABI=",
   "_CCCL_HOST=",
   "_CCCL_HOST_DEVICE=",
+  "_CCCL_IF_CONSTEXPR=if constexpr",
+  "_CCCL_INLINE_VAR=inline",
   "_CCCL_NODISCARD=[[nodiscard]]",
   "_CCCL_NODISCARD_FRIEND=",
   "_CCCL_STD_VER=2020",
+  "_CCCL_TRAIT(x, y)=x<y>::value",
   "_CUDA_VMR=cuda::mr",
   "_CUDA_VSTD=cuda::std",
-  "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE=",
+  "_CCCL_SUPPRESS_DEPRECATED_PUSH",
+  "_CCCL_SUPPRESS_DEPRECATED_POP",
+  "_CCCL_DIAG_PUSH=",
+  "_CCCL_DIAG_POP=",
+  "_CCCL_DIAG_SUPPRESS_CLANG(x)=",
+  "_CCCL_DIAG_SUPPRESS_GCC(x)=",
+  "_CCCL_DIAG_SUPPRESS_ICC(x)=",
+  "_CCCL_DIAG_SUPPRESS_MSVC(x)=",
+  "_CCCL_DIAG_SUPPRESS_NVHPC(x)=",
+  "_CUDAX_API",
+  "_CUDAX_HOST_API",
+  "_CUDAX_DEVICE_API",
+  "_CUDAX_TRIVIAL_API",
+  "_CUDAX_TRIVIAL_HOST_API",
+  "_CUDAX_TRIVIAL_DEVICE_API",
+  "_CUDAX_PUBLIC_API",
+  "_LIBCUDACXX_AND=&&",
   "_LIBCUDACXX_EAT_REST(x)=",
+  "_LIBCUDACXX_GLOBAL_CONSTANT=inline",
+  "_LIBCUDACXX_REQUIRES(x)= ::cuda::std::enable_if_t<x, int> = 0>",
+  "_LIBCUDACXX_TEMPLATE(x)=template<x, ",
   "_LIBCUDACXX_TRAILING_REQUIRES(x)=-> x _LIBCUDACXX_EAT_REST",
+  "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE=",
 ]
 
 # make sure to use ./fetch_imgs.sh
@@ -357,6 +451,8 @@ doxygen_conf_extra = """
   EXTENSION_MAPPING      = cuh=c++ cu=c++
   EXAMPLE_RECURSIVE      = NO
   EXAMPLE_PATTERNS       = *.cu
-  EXCLUDE_SYMBOLS        = "__*"
+  EXCLUDE_SYMBOLS        = "*detail*" "*RESERVED*" "*reserved*" "__*" "_A*" "_B*" "_C*" "_D*" "_E*" "_F*" "_G*" "_H*" "_I*" "_J*" "_K*" "_L*" "_M*" "_N*" "_O*" "_P*" "_Q*" "_R*" "_S*" "_T*" "_U*" "_V*" "_W*" "_X*" "_Y*" "_Z*" "UNITTEST"
   AUTOLINK_SUPPORT       = YES
+  FULL_PATH_NAMES        = YES
+  STRIP_FROM_PATH        = ../../cudax
 """

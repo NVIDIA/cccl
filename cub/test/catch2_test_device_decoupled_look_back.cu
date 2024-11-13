@@ -33,7 +33,7 @@
 
 #include <cassert>
 
-#include "catch2_test_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 template <class ScanTileStateT>
 __global__ void init_kernel(ScanTileStateT tile_state, int blocks_in_grid)
@@ -44,7 +44,7 @@ __global__ void init_kernel(ScanTileStateT tile_state, int blocks_in_grid)
 template <class MessageT>
 __global__ void decoupled_look_back_kernel(cub::ScanTileState<MessageT> tile_state, MessageT* tile_data)
 {
-  using scan_op_t         = cub::Sum;
+  using scan_op_t         = ::cuda::std::plus<>;
   using scan_tile_state_t = cub::ScanTileState<MessageT>;
   using tile_prefix_op    = cub::TilePrefixCallbackOp<MessageT, scan_op_t, scan_tile_state_t>;
   using temp_storage_t    = typename tile_prefix_op::TempStorage;
@@ -119,7 +119,7 @@ c2h::host_vector<MessageT> compute_reference(const c2h::device_vector<MessageT>&
   return reference;
 }
 
-CUB_TEST("Decoupled look-back works with various message types", "[decoupled look-back][device]", message_types)
+C2H_TEST("Decoupled look-back works with various message types", "[decoupled look-back][device]", message_types)
 {
   using message_t         = typename c2h::get<0, TestType>;
   using scan_tile_state_t = cub::ScanTileState<message_t>;
@@ -130,7 +130,7 @@ CUB_TEST("Decoupled look-back works with various message types", "[decoupled loo
   c2h::device_vector<message_t> tile_data(num_tiles);
   message_t* d_tile_data = thrust::raw_pointer_cast(tile_data.data());
 
-  c2h::gen(CUB_SEED(2), tile_data);
+  c2h::gen(C2H_SEED(2), tile_data);
   c2h::host_vector<message_t> reference = compute_reference(tile_data);
 
   // Query temporary storage requirements
@@ -147,7 +147,7 @@ CUB_TEST("Decoupled look-back works with various message types", "[decoupled loo
   REQUIRE(status == cudaSuccess);
 
   constexpr unsigned int threads_in_init_block = 256;
-  const unsigned int blocks_in_init_grid       = cub::DivideAndRoundUp(num_tiles, threads_in_init_block);
+  const unsigned int blocks_in_init_grid       = ::cuda::ceil_div(num_tiles, threads_in_init_block);
   init_kernel<<<blocks_in_init_grid, threads_in_init_block>>>(tile_status, num_tiles);
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());

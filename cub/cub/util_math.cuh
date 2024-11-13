@@ -42,6 +42,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/cmath>
 #include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
@@ -76,17 +77,16 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE OffsetT safe_add_bound_to_max(OffsetT lhs, O
  *
  * Effectively performs `(n + d - 1) / d`, but is robust against the case where
  * `(n + d - 1)` would overflow.
+ * deprecated [Since 2.8.0] `cub::DivideAndRoundUp` is deprecated. Use `cuda::ceil_div` instead.
  */
 template <typename NumeratorT, typename DenominatorT>
+CUB_DEPRECATED_BECAUSE("Use cuda::ceil_div instead")
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr NumeratorT DivideAndRoundUp(NumeratorT n, DenominatorT d)
 {
-  // TODO(bgruber): implement using ::cuda::ceil_div
   static_assert(
     cub::detail::is_integral_or_enum<NumeratorT>::value && cub::detail::is_integral_or_enum<DenominatorT>::value,
     "DivideAndRoundUp is only intended for integral types.");
-
-  // Static cast to undo integral promotion.
-  return static_cast<NumeratorT>(n / d + (n % d != 0 ? 1 : 0));
+  return ::cuda::ceil_div(n, d);
 }
 
 constexpr _CCCL_HOST_DEVICE int Nominal4BItemsToItemsCombined(int nominal_4b_items_per_thread, int combined_bytes)

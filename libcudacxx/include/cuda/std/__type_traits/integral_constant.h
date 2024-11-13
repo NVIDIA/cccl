@@ -23,21 +23,19 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp, _Tp __v>
-struct _LIBCUDACXX_TEMPLATE_VIS integral_constant
+struct _CCCL_TYPE_VISIBILITY_DEFAULT integral_constant
 {
   static constexpr const _Tp value = __v;
   typedef _Tp value_type;
   typedef integral_constant type;
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr operator value_type() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr operator value_type() const noexcept
   {
     return value;
   }
-#if _CCCL_STD_VER > 2011
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr value_type operator()() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type operator()() const noexcept
   {
     return value;
   }
-#endif
 };
 
 template <class _Tp, _Tp __v>
@@ -47,7 +45,7 @@ typedef integral_constant<bool, true> true_type;
 typedef integral_constant<bool, false> false_type;
 
 template <bool _Val>
-using _BoolConstant _LIBCUDACXX_DEPRECATED _LIBCUDACXX_NODEBUG_TYPE = integral_constant<bool, _Val>;
+using _BoolConstant _LIBCUDACXX_DEPRECATED _CCCL_NODEBUG_ALIAS = integral_constant<bool, _Val>;
 
 template <bool __b>
 using bool_constant = integral_constant<bool, __b>;

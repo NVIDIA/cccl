@@ -29,7 +29,7 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include "catch2_test_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 //! @file
 //! This file contains utilities for device-scope API tests
@@ -46,7 +46,7 @@
 //! // arguments as the CUB API. The wrapper name is provided as the second argument.
 //! DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, cub_reduce_sum);
 //!
-//! CUB_TEST("Reduce test", "[device][reduce]")
+//! C2H_TEST("Reduce test", "[device][reduce]")
 //! {
 //!   // ...
 //!   // Invoke the wrapper from the test. It'll allocate temporary storage and
@@ -74,7 +74,7 @@
 //! Consult with `test/catch2_test_cdp_wrapper.cu` for more usage examples.
 
 #if !defined(TEST_LAUNCH)
-#  error Test file should contain %PARAM% TEST_LAUNCH lid 0:1
+#  error Test file should contain %PARAM% TEST_LAUNCH lid 0:1:2
 #endif
 
 #define DECLARE_INVOCABLE(API, WRAPPED_API_NAME, TMPL_HEAD_OPT, TMPL_ARGS_OPT)                  \
@@ -91,7 +91,7 @@
 
 #define DECLARE_LAUNCH_WRAPPER(API, WRAPPED_API_NAME)                                                  \
   DECLARE_INVOCABLE(API, WRAPPED_API_NAME, , );                                                        \
-  _LIBCUDACXX_INLINE_VAR constexpr struct WRAPPED_API_NAME##_t                                         \
+  _CCCL_INLINE_VAR constexpr struct WRAPPED_API_NAME##_t                                               \
   {                                                                                                    \
     template <class... As>                                                                             \
     void operator()(As... args) const                                                                  \

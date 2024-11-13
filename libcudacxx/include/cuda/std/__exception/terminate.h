@@ -22,21 +22,17 @@
 #  pragma system_header
 #endif // no system header
 
-#if !defined(_CCCL_COMPILER_NVRTC)
-#  include <exception>
-#endif // !_CCCL_COMPILER_NVRTC
-
-#include <cuda/std/detail/libcxx/include/cstdlib>
+#include <cuda/std/cstdlib> // ::exit
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION // purposefully not using versioning namespace
 
-_CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __cccl_terminate() noexcept
+_CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void __cccl_terminate() noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (::std::exit(0);), (__trap();))
-  _LIBCUDACXX_UNREACHABLE();
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (::exit(-1);), (__trap();))
+  _CCCL_UNREACHABLE();
 }
 
 #if 0 // Expose once atomic is universally available
@@ -49,21 +45,21 @@ __device__
   static _LIBCUDACXX_SAFE_STATIC _CUDA_VSTD::atomic<terminate_handler>
     __cccl_terminate_handler{&__cccl_terminate};
 
-inline _LIBCUDACXX_INLINE_VISIBILITY terminate_handler set_terminate(terminate_handler __func) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI  terminate_handler set_terminate(terminate_handler __func) noexcept
 {
   return __cccl_terminate_handler.exchange(__func);
 }
-inline _LIBCUDACXX_INLINE_VISIBILITY terminate_handler get_terminate() noexcept
+_LIBCUDACXX_HIDE_FROM_ABI  terminate_handler get_terminate() noexcept
 {
   return __cccl_terminate_handler.load(__func);
 }
 
 #endif
 
-_CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void terminate() noexcept
+_CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void terminate() noexcept
 {
   __cccl_terminate();
-  _LIBCUDACXX_UNREACHABLE();
+  _CCCL_UNREACHABLE();
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION

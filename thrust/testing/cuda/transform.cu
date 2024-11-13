@@ -19,15 +19,9 @@ void TestTransformUnaryDevice(ExecutionPolicy exec)
 
   typename Vector::iterator iter;
 
-  Vector input(3);
+  Vector input{1, -2, 3};
   Vector output(3);
-  Vector result(3);
-  input[0]  = 1;
-  input[1]  = -2;
-  input[2]  = 3;
-  result[0] = -1;
-  result[1] = 2;
-  result[2] = -3;
+  Vector result{-1, 2, -3};
 
   thrust::device_vector<typename Vector::iterator> iter_vec(1);
 
@@ -79,19 +73,9 @@ void TestTransformIfUnaryNoStencilDevice(ExecutionPolicy exec)
 
   typename Vector::iterator iter;
 
-  Vector input(3);
-  Vector output(3);
-  Vector result(3);
-
-  input[0]  = 0;
-  input[1]  = -2;
-  input[2]  = 0;
-  output[0] = -1;
-  output[1] = -2;
-  output[2] = -3;
-  result[0] = -1;
-  result[1] = 2;
-  result[2] = -3;
+  Vector input{0, -2, 0};
+  Vector output{-1, -2, -3};
+  Vector result{-1, 2, -3};
 
   thrust::device_vector<typename Vector::iterator> iter_vec(1);
 
@@ -146,23 +130,10 @@ void TestTransformIfUnaryDevice(ExecutionPolicy exec)
 
   typename Vector::iterator iter;
 
-  Vector input(3);
-  Vector stencil(3);
-  Vector output(3);
-  Vector result(3);
-
-  input[0]   = 1;
-  input[1]   = -2;
-  input[2]   = 3;
-  output[0]  = 1;
-  output[1]  = 2;
-  output[2]  = 3;
-  stencil[0] = 1;
-  stencil[1] = 0;
-  stencil[2] = 1;
-  result[0]  = -1;
-  result[1]  = 2;
-  result[2]  = -3;
+  Vector input{1, -2, 3};
+  Vector stencil{1, 0, 1};
+  Vector output{1, 2, 3};
+  Vector result{-1, 2, -3};
 
   thrust::device_vector<typename Vector::iterator> iter_vec(1);
 
@@ -222,19 +193,10 @@ void TestTransformBinaryDevice(ExecutionPolicy exec)
 
   typename Vector::iterator iter;
 
-  Vector input1(3);
-  Vector input2(3);
+  Vector input1{1, -2, 3};
+  Vector input2{-4, 5, 6};
   Vector output(3);
-  Vector result(3);
-  input1[0] = 1;
-  input1[1] = -2;
-  input1[2] = 3;
-  input2[0] = -4;
-  input2[1] = 5;
-  input2[2] = 6;
-  result[0] = 5;
-  result[1] = -7;
-  result[2] = -3;
+  Vector result{5, -7, -3};
 
   thrust::device_vector<typename Vector::iterator> iter_vec(1);
 
@@ -291,27 +253,11 @@ void TestTransformIfBinaryDevice(ExecutionPolicy exec)
 
   typename Vector::iterator iter;
 
-  Vector input1(3);
-  Vector input2(3);
-  Vector stencil(3);
-  Vector output(3);
-  Vector result(3);
-
-  input1[0]  = 1;
-  input1[1]  = -2;
-  input1[2]  = 3;
-  input2[0]  = -4;
-  input2[1]  = 5;
-  input2[2]  = 6;
-  stencil[0] = 0;
-  stencil[1] = 1;
-  stencil[2] = 0;
-  output[0]  = 1;
-  output[1]  = 2;
-  output[2]  = 3;
-  result[0]  = 5;
-  result[1]  = 2;
-  result[2]  = -3;
+  Vector input1{1, -2, 3};
+  Vector input2{-4, 5, 6};
+  Vector stencil{0, 1, 0};
+  Vector output{1, 2, 3};
+  Vector result{5, 2, -3};
 
   thrust::identity<T> identity;
 
@@ -356,15 +302,9 @@ void TestTransformUnaryCudaStreams()
 
   Vector::iterator iter;
 
-  Vector input(3);
+  Vector input{1, -2, 3};
   Vector output(3);
-  Vector result(3);
-  input[0]  = 1;
-  input[1]  = -2;
-  input[2]  = 3;
-  result[0] = -1;
-  result[1] = 2;
-  result[2] = -3;
+  Vector result{-1, 2, -3};
 
   cudaStream_t s;
   cudaStreamCreate(&s);
@@ -386,19 +326,10 @@ void TestTransformBinaryCudaStreams()
 
   Vector::iterator iter;
 
-  Vector input1(3);
-  Vector input2(3);
+  Vector input1{1, -2, 3};
+  Vector input2{-4, 5, 6};
   Vector output(3);
-  Vector result(3);
-  input1[0] = 1;
-  input1[1] = -2;
-  input1[2] = 3;
-  input2[0] = -4;
-  input2[1] = 5;
-  input2[2] = 6;
-  result[0] = 5;
-  result[1] = -7;
-  result[2] = -3;
+  Vector result{5, -7, -3};
 
   cudaStream_t s;
   cudaStreamCreate(&s);
@@ -413,3 +344,80 @@ void TestTransformBinaryCudaStreams()
   cudaStreamDestroy(s);
 }
 DECLARE_UNITTEST(TestTransformBinaryCudaStreams);
+
+struct sum_five
+{
+  _CCCL_HOST_DEVICE auto
+  operator()(std::int8_t a, std::int16_t b, std::int32_t c, std::int64_t d, float e) const -> double
+  {
+    return a + b + c + d + e;
+  }
+};
+
+// The following test cannot be compiled because of a bug in the conversion of thrust::tuple on MSVC 2017
+#ifndef _CCCL_COMPILER_MSVC_2017
+// we specialize zip_function for sum_five, but do nothing in the call operator so the test below would fail if the
+// zip_function is actually called (and not unwrapped)
+THRUST_NAMESPACE_BEGIN
+template <>
+class zip_function<sum_five>
+{
+public:
+  _CCCL_HOST_DEVICE zip_function(sum_five func)
+      : func(func)
+  {}
+
+  _CCCL_HOST_DEVICE sum_five& underlying_function() const
+  {
+    return func;
+  }
+
+  template <typename Tuple>
+  _CCCL_HOST_DEVICE auto
+  operator()(Tuple&& t) const -> decltype(detail::zip_detail::apply(std::declval<sum_five>(), THRUST_FWD(t)))
+  {
+    // not calling func, so we would get a wrong result if we were called
+    return {};
+  }
+
+private:
+  mutable sum_five func;
+};
+THRUST_NAMESPACE_END
+
+// test that the cuda_cub backend of Thrust unwraps zip_iterators/zip_functions into their input streams
+void TestTransformZipIteratorUnwrapping()
+{
+  constexpr int num_items = 100;
+  thrust::device_vector<std::int8_t> a(num_items, 1);
+  thrust::device_vector<std::int16_t> b(num_items, 2);
+  thrust::device_vector<std::int32_t> c(num_items, 3);
+  thrust::device_vector<std::int64_t> d(num_items, 4);
+  thrust::device_vector<float> e(num_items, 5);
+
+  thrust::device_vector<double> result(num_items);
+  // SECTION("once") // TODO(bgruber): enable sections when we migrate to Catch2
+  {
+    const auto z = thrust::make_zip_iterator(a.begin(), b.begin(), c.begin(), d.begin(), e.begin());
+    thrust::transform(z, z + num_items, result.begin(), thrust::make_zip_function(sum_five{}));
+
+    // compute reference and verify
+    thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
+    ASSERT_EQUAL(reference, result);
+  }
+  // SECTION("trice")
+  {
+    const auto z = thrust::make_zip_iterator(
+      thrust::make_zip_iterator(thrust::make_zip_iterator(a.begin(), b.begin(), c.begin(), d.begin(), e.begin())));
+    thrust::transform(z,
+                      z + num_items,
+                      result.begin(),
+                      thrust::make_zip_function(thrust::make_zip_function(thrust::make_zip_function(sum_five{}))));
+
+    // compute reference and verify
+    thrust::device_vector<double> reference(num_items, 1 + 2 + 3 + 4 + 5);
+    ASSERT_EQUAL(reference, result);
+  }
+}
+DECLARE_UNITTEST(TestTransformZipIteratorUnwrapping);
+#endif // !_CCCL_COMPILER_MSVC_2017

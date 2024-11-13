@@ -24,42 +24,37 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_REMOVE_EXTENT) && !defined(_LIBCUDACXX_USE_REMOVE_EXTENT_FALLBACK)
+#if defined(_CCCL_BUILTIN_REMOVE_EXTENT) && !defined(_LIBCUDACXX_USE_REMOVE_EXTENT_FALLBACK)
 template <class _Tp>
 struct remove_extent
 {
-  using type _LIBCUDACXX_NODEBUG_TYPE = _LIBCUDACXX_REMOVE_EXTENT(_Tp);
+  using type _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_EXTENT(_Tp);
 };
 
 template <class _Tp>
-using __remove_extent_t = _LIBCUDACXX_REMOVE_EXTENT(_Tp);
+using remove_extent_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_EXTENT(_Tp);
 
 #else
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS remove_extent
+struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_extent
 {
   typedef _Tp type;
 };
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS remove_extent<_Tp[]>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_extent<_Tp[]>
 {
   typedef _Tp type;
 };
 template <class _Tp, size_t _Np>
-struct _LIBCUDACXX_TEMPLATE_VIS remove_extent<_Tp[_Np]>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_extent<_Tp[_Np]>
 {
   typedef _Tp type;
 };
 
 template <class _Tp>
-using __remove_extent_t = typename remove_extent<_Tp>::type;
+using remove_extent_t _CCCL_NODEBUG_ALIAS = typename remove_extent<_Tp>::type;
 
-#endif // defined(_LIBCUDACXX_REMOVE_EXTENT) && !defined(_LIBCUDACXX_USE_REMOVE_EXTENT_FALLBACK)
-
-#if _CCCL_STD_VER > 2011
-template <class _Tp>
-using remove_extent_t = __remove_extent_t<_Tp>;
-#endif
+#endif // defined(_CCCL_BUILTIN_REMOVE_EXTENT) && !defined(_LIBCUDACXX_USE_REMOVE_EXTENT_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

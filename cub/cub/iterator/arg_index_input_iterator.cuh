@@ -46,16 +46,11 @@
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_store.cuh>
 
+#include <thrust/iterator/iterator_facade.h>
+#include <thrust/iterator/iterator_traits.h>
 #include <thrust/version.h>
 
-#include <iostream>
-#include <iterator>
-
-#if (THRUST_VERSION >= 100700)
-// This iterator is compatible with Thrust API 1.7 and newer
-#  include <thrust/iterator/iterator_facade.h>
-#  include <thrust/iterator/iterator_traits.h>
-#endif // THRUST_VERSION
+#include <ostream>
 
 CUB_NAMESPACE_BEGIN
 
@@ -64,8 +59,8 @@ CUB_NAMESPACE_BEGIN
  *        indices (forming \p KeyValuePair tuples).
  *
  * @par Overview
- * - ArgIndexInputIteratorTwraps a random access input iterator @p itr of type @p InputIteratorT.
- *   Dereferencing an ArgIndexInputIteratorTat offset @p i produces a @p KeyValuePair value whose
+ * - ArgIndexInputIterator wraps a random access input iterator @p itr of type @p InputIteratorT.
+ *   Dereferencing an ArgIndexInputIterator at offset @p i produces a @p KeyValuePair value whose
  *   @p key field is @p i and whose @p value field is <tt>itr[i]</tt>.
  * - Can be used with any data type.
  * - Can be constructed, manipulated, and exchanged within and between host and device
@@ -74,7 +69,7 @@ CUB_NAMESPACE_BEGIN
  * - Compatible with Thrust API v1.7 or newer.
  *
  * @par Snippet
- * The code snippet below illustrates the use of @p ArgIndexInputIteratorTto
+ * The code snippet below illustrates the use of @p ArgIndexInputIterator to
  * dereference an array of doubles
  * @par
  * @code
@@ -87,17 +82,16 @@ CUB_NAMESPACE_BEGIN
  * cub::ArgIndexInputIterator<double*> itr(d_in);
  *
  * // Within device code:
- * using Tuple = typename cub::ArgIndexInputIterator<double*>::value_type;
- * Tuple item_offset_pair.key = *itr;
- * printf("%f @ %d\n",
- *   item_offset_pair.value,
- *   item_offset_pair.key);   // 8.0 @ 0
+ * cub::ArgIndexInputIterator<double*>::value_type tup = *itr;
+ * printf("%f @ %ld\n",
+ *   tup.value,
+ *   tup.key);   // 8.0 @ 0
  *
  * itr = itr + 6;
- * item_offset_pair.key = *itr;
- * printf("%f @ %d\n",
- *   item_offset_pair.value,
- *   item_offset_pair.key);   // 9.0 @ 6
+ * tup = *itr;
+ * printf("%f @ %ld\n",
+ *   tup.value,
+ *   tup.key);   // 9.0 @ 6
  *
  * @endcode
  *
@@ -133,19 +127,12 @@ public:
   /// The type of a reference to an element the iterator can point to
   using reference = value_type;
 
-#if (THRUST_VERSION >= 100700)
-  // Use Thrust's iterator categories so we can use these iterators in Thrust 1.7 (or newer) methods
-
   /// The iterator category
   using iterator_category = typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
     THRUST_NS_QUALIFIER::any_system_tag,
     THRUST_NS_QUALIFIER::random_access_traversal_tag,
     value_type,
     reference>::type;
-#else
-  /// The iterator category
-  using iterator_category = std::random_access_iterator_tag;
-#endif // THRUST_VERSION
 
 private:
   InputIteratorT itr;

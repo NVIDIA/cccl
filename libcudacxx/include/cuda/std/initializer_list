@@ -1,9 +1,10 @@
 //===----------------------------------------------------------------------===//
 //
-// Part of the CUDA Toolkit, under the Apache License v2.0 with LLVM Exceptions.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -20,10 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
-_CCCL_PUSH_MACROS
+#if !defined(_CCCL_COMPILER_NVRTC)
+#  include <initializer_list>
+#endif // !_CCCL_COMPILER_NVRTC
 
-#include <cuda/std/detail/libcxx/include/initializer_list>
-
-_CCCL_POP_MACROS
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
+using ::std::initializer_list;
+_LIBCUDACXX_END_NAMESPACE_STD
 
 #endif // _CUDA_STD_INITIALIZER_LIST

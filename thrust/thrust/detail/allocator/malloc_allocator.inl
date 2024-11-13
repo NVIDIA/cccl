@@ -55,8 +55,8 @@ malloc_allocator<T, System, Pointer>::allocate(typename malloc_allocator<T, Syst
 } // end malloc_allocator::allocate()
 
 template <typename T, typename System, typename Pointer>
-void malloc_allocator<T, System, Pointer>::deallocate(
-  typename malloc_allocator<T, System, Pointer>::pointer p, typename malloc_allocator<T, System, Pointer>::size_type)
+void malloc_allocator<T, System, Pointer>::deallocate(typename malloc_allocator<T, System, Pointer>::pointer p,
+                                                      typename malloc_allocator<T, System, Pointer>::size_type) noexcept
 {
   using thrust::system::detail::generic::select_system;
 

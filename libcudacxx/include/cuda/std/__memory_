@@ -4,12 +4,12 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD_MEMORY
-#define _CUDA_STD_MEMORY
+#ifndef _CUDA_STD___MEMORY_
+#define _CUDA_STD___MEMORY_
 
 #include <cuda/std/detail/__config>
 
@@ -21,10 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
-_CCCL_PUSH_MACROS
+#include <cuda/std/__memory/allocate_at_least.h>
+#include <cuda/std/__memory/allocation_guard.h>
+#include <cuda/std/__memory/allocator.h>
+#include <cuda/std/__memory/allocator_arg_t.h>
+#include <cuda/std/__memory/allocator_traits.h>
+#include <cuda/std/__memory/temporary_buffer.h>
+#include <cuda/std/__memory/unique_ptr.h>
+#include <cuda/std/__memory/uses_allocator.h>
+#include <cuda/std/memory>
 
-#include <cuda/std/detail/libcxx/include/memory>
-
-_CCCL_POP_MACROS
-
-#endif // _CUDA_STD_MEMORY
+#endif // _CUDA_STD___MEMORY_

@@ -34,11 +34,11 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <typename _Tp, typename _Sco>
 struct __atomic_common
 {
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __atomic_common(_Tp __v)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __atomic_common(_Tp __v)
       : __a(__v)
   {}
 
-  constexpr inline __atomic_common() = default;
+  _CCCL_HIDE_FROM_ABI constexpr __atomic_common() = default;
 
   __atomic_storage_t<_Tp> __a;
 
@@ -53,11 +53,11 @@ struct __atomic_common
 template <typename _Tp, typename _Sco>
 struct __atomic_arithmetic
 {
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __atomic_arithmetic(_Tp __v)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __atomic_arithmetic(_Tp __v)
       : __a(__v)
   {}
 
-  constexpr inline __atomic_arithmetic() = default;
+  _CCCL_HIDE_FROM_ABI constexpr __atomic_arithmetic() = default;
 
   __atomic_storage_t<_Tp> __a;
 
@@ -75,11 +75,11 @@ struct __atomic_arithmetic
 template <typename _Tp, typename _Sco>
 struct __atomic_bitwise
 {
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __atomic_bitwise(_Tp __v)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __atomic_bitwise(_Tp __v)
       : __a(__v)
   {}
 
-  constexpr inline __atomic_bitwise() = default;
+  _CCCL_HIDE_FROM_ABI constexpr __atomic_bitwise() = default;
 
   __atomic_storage_t<_Tp> __a;
 
@@ -100,11 +100,11 @@ struct __atomic_bitwise
 template <typename _Tp, typename _Sco>
 struct __atomic_pointer
 {
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __atomic_pointer(_Tp __v)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __atomic_pointer(_Tp __v)
       : __a(__v)
   {}
 
-  constexpr inline __atomic_pointer() = default;
+  _CCCL_HIDE_FROM_ABI constexpr __atomic_pointer() = default;
 
   __atomic_storage_t<_Tp> __a;
 

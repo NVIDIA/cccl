@@ -31,8 +31,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _AlgPolicy, class _BidirectionalIterator, class _OutputIterator>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY
-_CCCL_CONSTEXPR_CXX14 pair<_BidirectionalIterator, _OutputIterator>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_BidirectionalIterator, _OutputIterator>
 __move_backward(_BidirectionalIterator __first, _BidirectionalIterator __last, _OutputIterator __result)
 {
   while (__first != __last)
@@ -45,9 +44,9 @@ __move_backward(_BidirectionalIterator __first, _BidirectionalIterator __last, _
 template <class _AlgPolicy,
           class _Tp,
           class _Up,
-          __enable_if_t<_CCCL_TRAIT(is_same, __remove_const_t<_Tp>, _Up), int> = 0,
-          __enable_if_t<_CCCL_TRAIT(is_trivially_copyable, _Up), int>          = 0>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 pair<_Tp*, _Up*>
+          enable_if_t<_CCCL_TRAIT(is_same, remove_const_t<_Tp>, _Up), int> = 0,
+          enable_if_t<_CCCL_TRAIT(is_trivially_copyable, _Up), int>        = 0>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_Tp*, _Up*>
 __move_backward(_Tp* __first, _Tp* __last, _Up* __result)
 {
   const ptrdiff_t __n = __last - __first;
@@ -66,7 +65,7 @@ __move_backward(_Tp* __first, _Tp* __last, _Up* __result)
 }
 
 template <class _BidirectionalIterator1, class _BidirectionalIterator2>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _BidirectionalIterator2
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _BidirectionalIterator2
 move_backward(_BidirectionalIterator1 __first, _BidirectionalIterator1 __last, _BidirectionalIterator2 __result)
 {
   return _CUDA_VSTD::__move_backward<_ClassicAlgPolicy>(

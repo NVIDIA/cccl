@@ -24,41 +24,29 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_IS_FINAL)
+#if defined(_CCCL_BUILTIN_IS_FINAL)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS __libcpp_is_final : public integral_constant<bool, _LIBCUDACXX_IS_FINAL(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_final : public integral_constant<bool, _CCCL_BUILTIN_IS_FINAL(_Tp)>
 {};
 
-#  if _CCCL_STD_VER > 2011
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_final : public integral_constant<bool, _LIBCUDACXX_IS_FINAL(_Tp)>
-{};
-#  endif
+_CCCL_INLINE_VAR constexpr bool is_final_v = _CCCL_BUILTIN_IS_FINAL(_Tp);
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
-template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_final_v = _LIBCUDACXX_IS_FINAL(_Tp);
-#  endif
-
-#else
+#else // ^^^ _CCCL_BUILTIN_IS_FINAL ^^^ / vvv !_CCCL_BUILTIN_IS_FINAL vvv
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS __libcpp_is_final : public false_type
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_final : public false_type
 {};
 
-#  if _CCCL_STD_VER > 2011
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_final : public false_type
-{};
-#  endif
+_CCCL_INLINE_VAR constexpr bool is_final_v = false;
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
-template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_final_v = false;
-#  endif
-
-#endif // defined(_LIBCUDACXX_IS_FINAL)
+#endif // !_CCCL_BUILTIN_IS_FINAL
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

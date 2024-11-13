@@ -78,7 +78,7 @@ public:
     return (T*) n;
   }
 
-  __device__ __host__ void deallocate(T* p, cuda::std::size_t n)
+  __device__ __host__ void deallocate(T* p, cuda::std::size_t n) noexcept
   {
     deallocate_called() = cuda::std::pair<T*, cuda::std::size_t>(p, n);
   }
@@ -217,7 +217,7 @@ public:
   }
 
   template <class U>
-  __device__ __host__ void destroy(U* p)
+  __device__ __host__ void destroy(U* p) noexcept
   {
     p->~U();
     destroy_called() = true;

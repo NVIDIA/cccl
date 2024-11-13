@@ -213,25 +213,25 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT::BLOCK_TH
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
-template <
-  typename KeysInputIteratorT,
-  typename UniqueOutputIteratorT,
-  typename ValuesInputIteratorT,
-  typename AggregatesOutputIteratorT,
-  typename NumRunsOutputIteratorT,
-  typename EqualityOpT,
-  typename ReductionOpT,
-  typename OffsetT,
-  typename AccumT = //
-  detail::
-    accumulator_t<ReductionOpT, cub::detail::value_t<ValuesInputIteratorT>, cub::detail::value_t<ValuesInputIteratorT>>,
-  typename SelectedPolicy = //
-  detail::device_reduce_by_key_policy_hub< //
-    ReductionOpT, //
-    AccumT, //
-    cub::detail::non_void_value_t< //
-      UniqueOutputIteratorT, //
-      cub::detail::value_t<KeysInputIteratorT>>>>
+template <typename KeysInputIteratorT,
+          typename UniqueOutputIteratorT,
+          typename ValuesInputIteratorT,
+          typename AggregatesOutputIteratorT,
+          typename NumRunsOutputIteratorT,
+          typename EqualityOpT,
+          typename ReductionOpT,
+          typename OffsetT,
+          typename AccumT = //
+          ::cuda::std::__accumulator_t<ReductionOpT,
+                                       cub::detail::value_t<ValuesInputIteratorT>,
+                                       cub::detail::value_t<ValuesInputIteratorT>>,
+          typename SelectedPolicy = //
+          detail::device_reduce_by_key_policy_hub< //
+            ReductionOpT, //
+            AccumT, //
+            cub::detail::non_void_value_t< //
+              UniqueOutputIteratorT, //
+              cub::detail::value_t<KeysInputIteratorT>>>>
 struct DispatchReduceByKey
 {
   //-------------------------------------------------------------------------
@@ -308,7 +308,7 @@ struct DispatchReduceByKey
 
       // Number of input tiles
       int tile_size = block_threads * items_per_thread;
-      int num_tiles = static_cast<int>(cub::DivideAndRoundUp(num_items, tile_size));
+      int num_tiles = static_cast<int>(::cuda::ceil_div(num_items, tile_size));
 
       // Specify temporary storage allocation requirements
       size_t allocation_sizes[1];
@@ -344,7 +344,7 @@ struct DispatchReduceByKey
       }
 
       // Log init_kernel configuration
-      int init_grid_size = CUB_MAX(1, cub::DivideAndRoundUp(num_tiles, INIT_KERNEL_THREADS));
+      int init_grid_size = CUB_MAX(1, ::cuda::ceil_div(num_tiles, INIT_KERNEL_THREADS));
 
 #ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
       _CubLog("Invoking init_kernel<<<%d, %d, 0, %lld>>>()\n", init_grid_size, INIT_KERNEL_THREADS, (long long) stream);

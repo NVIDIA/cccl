@@ -244,7 +244,7 @@ struct __block_desc_t
 
   _CCCL_HOST_DEVICE constexpr std::uint64_t __get_descriptor() const noexcept
   {
-#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
     return cuda::std::is_constant_evaluated() ? __get_descriptor_cexpr() : __get_descriptor_non_cexpr();
 #else
     return __get_descriptor_cexpr();
@@ -377,7 +377,7 @@ struct __interleave_descriptor_t
 
   _CCCL_HOST_DEVICE constexpr std::uint64_t __get_descriptor() const noexcept
   {
-#if defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+#if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
     return cuda::std::is_constant_evaluated() ? __get_descriptor_cexpr() : __get_descriptor_non_cexpr();
 #else
     return __get_descriptor_cexpr();

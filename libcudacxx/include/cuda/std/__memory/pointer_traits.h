@@ -49,7 +49,7 @@ struct __pointer_traits_element_type;
 template <class _Ptr>
 struct __pointer_traits_element_type<_Ptr, true>
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE typename _Ptr::element_type type;
+  typedef _CCCL_NODEBUG_ALIAS typename _Ptr::element_type type;
 };
 
 #ifndef _LIBCUDACXX_HAS_NO_VARIADICS
@@ -57,13 +57,13 @@ struct __pointer_traits_element_type<_Ptr, true>
 template <template <class, class...> class _Sp, class _Tp, class... _Args>
 struct __pointer_traits_element_type<_Sp<_Tp, _Args...>, true>
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE typename _Sp<_Tp, _Args...>::element_type type;
+  typedef _CCCL_NODEBUG_ALIAS typename _Sp<_Tp, _Args...>::element_type type;
 };
 
 template <template <class, class...> class _Sp, class _Tp, class... _Args>
 struct __pointer_traits_element_type<_Sp<_Tp, _Args...>, false>
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE _Tp type;
+  typedef _CCCL_NODEBUG_ALIAS _Tp type;
 };
 
 #else // _LIBCUDACXX_HAS_NO_VARIADICS
@@ -129,13 +129,13 @@ struct __has_difference_type<_Tp, void_t<typename _Tp::difference_type>> : true_
 template <class _Ptr, bool = __has_difference_type<_Ptr>::value>
 struct __pointer_traits_difference_type
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE ptrdiff_t type;
+  typedef _CCCL_NODEBUG_ALIAS ptrdiff_t type;
 };
 
 template <class _Ptr>
 struct __pointer_traits_difference_type<_Ptr, true>
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE typename _Ptr::difference_type type;
+  typedef _CCCL_NODEBUG_ALIAS typename _Ptr::difference_type type;
 };
 
 template <class _Tp, class _Up>
@@ -143,10 +143,10 @@ struct __has_rebind
 {
 private:
   template <class _Xp>
-  _LIBCUDACXX_INLINE_VISIBILITY static false_type __test(...);
+  _LIBCUDACXX_HIDE_FROM_ABI static false_type __test(...);
   _CCCL_SUPPRESS_DEPRECATED_PUSH
   template <class _Xp>
-  _LIBCUDACXX_INLINE_VISIBILITY static true_type __test(typename _Xp::template rebind<_Up>* = 0);
+  _LIBCUDACXX_HIDE_FROM_ABI static true_type __test(typename _Xp::template rebind<_Up>* = 0);
   _CCCL_SUPPRESS_DEPRECATED_POP
 
 public:
@@ -156,7 +156,7 @@ public:
 template <class _Tp, class _Up, bool = __has_rebind<_Tp, _Up>::value>
 struct __pointer_traits_rebind
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE typename _Tp::template rebind<_Up> type;
+  typedef _CCCL_NODEBUG_ALIAS typename _Tp::template rebind<_Up> type;
 };
 
 #ifndef _LIBCUDACXX_HAS_NO_VARIADICS
@@ -164,7 +164,7 @@ struct __pointer_traits_rebind
 template <template <class, class...> class _Sp, class _Tp, class... _Args, class _Up>
 struct __pointer_traits_rebind<_Sp<_Tp, _Args...>, _Up, true>
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE typename _Sp<_Tp, _Args...>::template rebind<_Up> type;
+  typedef _CCCL_NODEBUG_ALIAS typename _Sp<_Tp, _Args...>::template rebind<_Up> type;
 };
 
 template <template <class, class...> class _Sp, class _Tp, class... _Args, class _Up>
@@ -226,7 +226,7 @@ struct __pointer_traits_rebind<_Sp<_Tp, _A0, _A1, _A2>, _Up, false>
 #endif // _LIBCUDACXX_HAS_NO_VARIADICS
 
 template <class _Ptr>
-struct _LIBCUDACXX_TEMPLATE_VIS pointer_traits
+struct _CCCL_TYPE_VISIBILITY_DEFAULT pointer_traits
 {
   typedef _Ptr pointer;
   typedef typename __pointer_traits_element_type<pointer>::type element_type;
@@ -240,15 +240,15 @@ private:
   {};
 
 public:
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 static pointer
-  pointer_to(__conditional_t<is_void<element_type>::value, __nat, element_type>& __r)
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 static pointer
+  pointer_to(conditional_t<is_void<element_type>::value, __nat, element_type>& __r)
   {
     return pointer::pointer_to(__r);
   }
 };
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS pointer_traits<_Tp*>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT pointer_traits<_Tp*>
 {
   typedef _Tp* pointer;
   typedef _Tp element_type;
@@ -262,8 +262,8 @@ private:
   {};
 
 public:
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 static pointer
-  pointer_to(__conditional_t<is_void<element_type>::value, __nat, element_type>& __r) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 static pointer
+  pointer_to(conditional_t<is_void<element_type>::value, __nat, element_type>& __r) noexcept
   {
     return _CUDA_VSTD::addressof(__r);
   }
@@ -281,7 +281,7 @@ template <class _Pointer, class = void>
 struct __to_address_helper;
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr _Tp* __to_address(_Tp* __p) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* __to_address(_Tp* __p) noexcept
 {
   static_assert(!is_function<_Tp>::value, "_Tp is a function type");
   return __p;
@@ -311,9 +311,8 @@ struct _IsFancyPointer
 };
 
 // enable_if is needed here to avoid instantiating checks for fancy pointers on raw pointers
-template <class _Pointer, class = __enable_if_t<_And<is_class<_Pointer>, _IsFancyPointer<_Pointer>>::value>>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr __decay_t<
-  decltype(__to_address_helper<_Pointer>::__call(declval<const _Pointer&>()))>
+template <class _Pointer, class = enable_if_t<_And<is_class<_Pointer>, _IsFancyPointer<_Pointer>>::value>>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr decay_t<decltype(__to_address_helper<_Pointer>::__call(declval<const _Pointer&>()))>
 __to_address(const _Pointer& __p) noexcept
 {
   return __to_address_helper<_Pointer>::__call(__p);
@@ -322,8 +321,7 @@ __to_address(const _Pointer& __p) noexcept
 template <class _Pointer, class>
 struct __to_address_helper
 {
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr static decltype(_CUDA_VSTD::__to_address(
-    declval<const _Pointer&>().operator->()))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr static decltype(_CUDA_VSTD::__to_address(declval<const _Pointer&>().operator->()))
   __call(const _Pointer& __p) noexcept
   {
     return _CUDA_VSTD::__to_address(__p.operator->());
@@ -333,8 +331,7 @@ struct __to_address_helper
 template <class _Pointer>
 struct __to_address_helper<_Pointer, decltype((void) pointer_traits<_Pointer>::to_address(declval<const _Pointer&>()))>
 {
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr static decltype(pointer_traits<_Pointer>::to_address(
-    declval<const _Pointer&>()))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr static decltype(pointer_traits<_Pointer>::to_address(declval<const _Pointer&>()))
   __call(const _Pointer& __p) noexcept
   {
     return pointer_traits<_Pointer>::to_address(__p);
@@ -343,13 +340,13 @@ struct __to_address_helper<_Pointer, decltype((void) pointer_traits<_Pointer>::t
 
 #if _CCCL_STD_VER > 2011
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr auto to_address(_Tp* __p) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr auto to_address(_Tp* __p) noexcept
 {
   return _CUDA_VSTD::__to_address(__p);
 }
 
 template <class _Pointer>
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr auto
+_LIBCUDACXX_HIDE_FROM_ABI constexpr auto
 to_address(const _Pointer& __p) noexcept -> decltype(_CUDA_VSTD::__to_address(__p))
 {
   return _CUDA_VSTD::__to_address(__p);

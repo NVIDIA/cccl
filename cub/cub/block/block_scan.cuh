@@ -350,7 +350,7 @@ public:
   {
     T initial_value{};
 
-    ExclusiveScan(input, output, initial_value, cub::Sum());
+    ExclusiveScan(input, output, initial_value, ::cuda::std::plus<>{});
   }
 
   //! @rst
@@ -407,7 +407,7 @@ public:
   {
     T initial_value{};
 
-    ExclusiveScan(input, output, initial_value, cub::Sum(), block_aggregate);
+    ExclusiveScan(input, output, initial_value, ::cuda::std::plus<>{}, block_aggregate);
   }
 
   //! @rst
@@ -506,7 +506,7 @@ public:
   template <typename BlockPrefixCallbackOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveSum(T input, T& output, BlockPrefixCallbackOp& block_prefix_callback_op)
   {
-    ExclusiveScan(input, output, cub::Sum(), block_prefix_callback_op);
+    ExclusiveScan(input, output, ::cuda::std::plus<>{}, block_prefix_callback_op);
   }
 
   //! @} end member group
@@ -569,7 +569,7 @@ public:
   {
     T initial_value{};
 
-    ExclusiveScan(input, output, initial_value, cub::Sum());
+    ExclusiveScan(input, output, initial_value, ::cuda::std::plus<>{});
   }
 
   //! @rst
@@ -636,7 +636,7 @@ public:
     // Reduce consecutive thread items in registers
     T initial_value{};
 
-    ExclusiveScan(input, output, initial_value, cub::Sum(), block_aggregate);
+    ExclusiveScan(input, output, initial_value, ::cuda::std::plus<>{}, block_aggregate);
   }
 
   //! @rst
@@ -755,7 +755,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveSum(
     T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], BlockPrefixCallbackOp& block_prefix_callback_op)
   {
-    ExclusiveScan(input, output, cub::Sum(), block_prefix_callback_op);
+    ExclusiveScan(input, output, ::cuda::std::plus<>{}, block_prefix_callback_op);
   }
 
   //! @} end member group // Exclusive prefix sums
@@ -793,7 +793,7 @@ public:
   //!        ...
   //!
   //!        // Collectively compute the block-wide exclusive prefix max scan
-  //!        BlockScan(temp_storage).ExclusiveScan(thread_data, thread_data, INT_MIN, cub::Max());
+  //!        BlockScan(temp_storage).ExclusiveScan(thread_data, thread_data, INT_MIN, cuda::maximum<>{});
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is ``0, -1, 2, -3, ..., 126, -127``.
   //! The corresponding output ``thread_data`` in those threads will be ``INT_MIN, 0, 0, 2, ..., 124, 126``.
@@ -855,7 +855,8 @@ public:
   //!
   //!        // Collectively compute the block-wide exclusive prefix max scan
   //!        int block_aggregate;
-  //!        BlockScan(temp_storage).ExclusiveScan(thread_data, thread_data, INT_MIN, cub::Max(), block_aggregate);
+  //!        BlockScan(temp_storage).ExclusiveScan(thread_data, thread_data, INT_MIN, cuda::maximum<>{},
+  //!        block_aggregate);
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is ``0, -1, 2, -3, ..., 126, -127``.
   //! The corresponding output ``thread_data`` in those threads will be ``INT_MIN, 0, 0, 2, ..., 124, 126``.
@@ -955,7 +956,7 @@ public:
   //!
   //!            // Collectively compute the block-wide exclusive prefix max scan
   //!            BlockScan(temp_storage).ExclusiveScan(
-  //!                thread_data, thread_data, INT_MIN, cub::Max(), prefix_op);
+  //!                thread_data, thread_data, INT_MIN, cuda::maximum<>{}, prefix_op);
   //!            CTA_SYNC();
   //!
   //!            // Store scanned items to output segment
@@ -1032,7 +1033,7 @@ public:
   //!        ...
   //!
   //!        // Collectively compute the block-wide exclusive prefix max scan
-  //!        BlockScan(temp_storage).ExclusiveScan(thread_data, thread_data, INT_MIN, cub::Max());
+  //!        BlockScan(temp_storage).ExclusiveScan(thread_data, thread_data, INT_MIN, cuda::maximum<>{});
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [0,-1,2,-3], [4,-5,6,-7], ..., [508,-509,510,-511] }``.
@@ -1066,7 +1067,7 @@ public:
   ExclusiveScan(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], T initial_value, ScanOp scan_op)
   {
     // Reduce consecutive thread items in registers
-    T thread_prefix = internal::ThreadReduce(input, scan_op);
+    T thread_prefix = cub::ThreadReduce(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_prefix, thread_prefix, initial_value, scan_op);
@@ -1110,7 +1111,8 @@ public:
   //!
   //!        // Collectively compute the block-wide exclusive prefix max scan
   //!        int block_aggregate;
-  //!        BlockScan(temp_storage).ExclusiveScan(thread_data, thread_data, INT_MIN, cub::Max(), block_aggregate);
+  //!        BlockScan(temp_storage).ExclusiveScan(thread_data, thread_data, INT_MIN, cuda::maximum<>{},
+  //!        block_aggregate);
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [0,-1,2,-3], [4,-5,6,-7], ..., [508,-509,510,-511] }``.
@@ -1147,7 +1149,7 @@ public:
     T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], T initial_value, ScanOp scan_op, T& block_aggregate)
   {
     // Reduce consecutive thread items in registers
-    T thread_prefix = internal::ThreadReduce(input, scan_op);
+    T thread_prefix = cub::ThreadReduce(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_prefix, thread_prefix, initial_value, scan_op, block_aggregate);
@@ -1232,7 +1234,7 @@ public:
   //!
   //!            // Collectively compute the block-wide exclusive prefix max scan
   //!            BlockScan(temp_storage.scan).ExclusiveScan(
-  //!                thread_data, thread_data, INT_MIN, cub::Max(), prefix_op);
+  //!                thread_data, thread_data, INT_MIN, cuda::maximum<>{}, prefix_op);
   //!            CTA_SYNC();
   //!
   //!            // Store scanned items to output segment
@@ -1279,7 +1281,7 @@ public:
     BlockPrefixCallbackOp& block_prefix_callback_op)
   {
     // Reduce consecutive thread items in registers
-    T thread_prefix = internal::ThreadReduce(input, scan_op);
+    T thread_prefix = cub::ThreadReduce(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_prefix, thread_prefix, scan_op, block_prefix_callback_op);
@@ -1389,7 +1391,7 @@ public:
   ExclusiveScan(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], ScanOp scan_op)
   {
     // Reduce consecutive thread items in registers
-    T thread_partial = internal::ThreadReduce(input, scan_op);
+    T thread_partial = cub::ThreadReduce(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_partial, thread_partial, scan_op);
@@ -1433,7 +1435,7 @@ public:
   ExclusiveScan(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], ScanOp scan_op, T& block_aggregate)
   {
     // Reduce consecutive thread items in registers
-    T thread_partial = internal::ThreadReduce(input, scan_op);
+    T thread_partial = cub::ThreadReduce(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_partial, thread_partial, scan_op, block_aggregate);
@@ -1492,7 +1494,7 @@ public:
   //!   Calling thread's output item (may be aliased to `input`)
   _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveSum(T input, T& output)
   {
-    InclusiveScan(input, output, cub::Sum());
+    InclusiveScan(input, output, ::cuda::std::plus<>{});
   }
 
   //! @rst
@@ -1545,7 +1547,7 @@ public:
   //!   block-wide aggregate reduction of input items
   _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveSum(T input, T& output, T& block_aggregate)
   {
-    InclusiveScan(input, output, cub::Sum(), block_aggregate);
+    InclusiveScan(input, output, ::cuda::std::plus<>{}, block_aggregate);
   }
 
   //! @rst
@@ -1645,7 +1647,7 @@ public:
   template <typename BlockPrefixCallbackOp>
   _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveSum(T input, T& output, BlockPrefixCallbackOp& block_prefix_callback_op)
   {
-    InclusiveScan(input, output, cub::Sum(), block_prefix_callback_op);
+    InclusiveScan(input, output, ::cuda::std::plus<>{}, block_prefix_callback_op);
   }
 
   //! @}  end member group
@@ -1710,8 +1712,8 @@ public:
     else
     {
       // Reduce consecutive thread items in registers
-      Sum scan_op;
-      T thread_prefix = internal::ThreadReduce(input, scan_op);
+      ::cuda::std::plus<> scan_op;
+      T thread_prefix = cub::ThreadReduce(input, scan_op);
 
       // Exclusive thread block-scan
       ExclusiveSum(thread_prefix, thread_prefix);
@@ -1768,9 +1770,6 @@ public:
   //! @tparam ITEMS_PER_THREAD
   //!   **[inferred]** The number of consecutive items partitioned onto each thread.
   //!
-  //! @tparam ScanOp
-  //!   **[inferred]** Binary scan functor type having member `T operator()(const T &a, const T &b)`
-  //!
   //! @param[in] input
   //!   Calling thread's input items
   //!
@@ -1790,8 +1789,8 @@ public:
     else
     {
       // Reduce consecutive thread items in registers
-      Sum scan_op;
-      T thread_prefix = internal::ThreadReduce(input, scan_op);
+      ::cuda::std::plus<> scan_op;
+      T thread_prefix = cub::ThreadReduce(input, scan_op);
 
       // Exclusive thread block-scan
       ExclusiveSum(thread_prefix, thread_prefix, block_aggregate);
@@ -1922,8 +1921,8 @@ public:
     else
     {
       // Reduce consecutive thread items in registers
-      Sum scan_op;
-      T thread_prefix = internal::ThreadReduce(input, scan_op);
+      ::cuda::std::plus<> scan_op;
+      T thread_prefix = cub::ThreadReduce(input, scan_op);
 
       // Exclusive thread block-scan
       ExclusiveSum(thread_prefix, thread_prefix, block_prefix_callback_op);
@@ -1968,7 +1967,7 @@ public:
   //!        ...
   //!
   //!        // Collectively compute the block-wide inclusive prefix max scan
-  //!        BlockScan(temp_storage).InclusiveScan(thread_data, thread_data, cub::Max());
+  //!        BlockScan(temp_storage).InclusiveScan(thread_data, thread_data, cuda::maximum<>{});
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``0, -1, 2, -3, ..., 126, -127``. The corresponding output ``thread_data``
@@ -2026,7 +2025,7 @@ public:
   //!
   //!        // Collectively compute the block-wide inclusive prefix max scan
   //!        int block_aggregate;
-  //!        BlockScan(temp_storage).InclusiveScan(thread_data, thread_data, cub::Max(), block_aggregate);
+  //!        BlockScan(temp_storage).InclusiveScan(thread_data, thread_data, cuda::maximum<>{}, block_aggregate);
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``0, -1, 2, -3, ..., 126, -127``. The corresponding output ``thread_data``
@@ -2123,7 +2122,7 @@ public:
   //!
   //!            // Collectively compute the block-wide inclusive prefix max scan
   //!            BlockScan(temp_storage).InclusiveScan(
-  //!                thread_data, thread_data, cub::Max(), prefix_op);
+  //!                thread_data, thread_data, cuda::maximum<>{}, prefix_op);
   //!            CTA_SYNC();
   //!
   //!            // Store scanned items to output segment
@@ -2201,7 +2200,7 @@ public:
   //!        ...
   //!
   //!        // Collectively compute the block-wide inclusive prefix max scan
-  //!        BlockScan(temp_storage).InclusiveScan(thread_data, thread_data, cub::Max());
+  //!        BlockScan(temp_storage).InclusiveScan(thread_data, thread_data, cuda::maximum<>{});
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [0,-1,2,-3], [4,-5,6,-7], ..., [508,-509,510,-511] }``.
@@ -2235,7 +2234,7 @@ public:
     else
     {
       // Reduce consecutive thread items in registers
-      T thread_prefix = internal::ThreadReduce(input, scan_op);
+      T thread_prefix = cub::ThreadReduce(input, scan_op);
 
       // Exclusive thread block-scan
       ExclusiveScan(thread_prefix, thread_prefix, scan_op);
@@ -2292,7 +2291,7 @@ public:
   InclusiveScan(T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], T initial_value, ScanOp scan_op)
   {
     // Reduce consecutive thread items in registers
-    T thread_prefix = internal::ThreadReduce(input, scan_op);
+    T thread_prefix = cub::ThreadReduce(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_prefix, thread_prefix, initial_value, scan_op);
@@ -2336,7 +2335,7 @@ public:
   //!
   //!        // Collectively compute the block-wide inclusive prefix max scan
   //!        int block_aggregate;
-  //!        BlockScan(temp_storage).InclusiveScan(thread_data, thread_data, cub::Max(), block_aggregate);
+  //!        BlockScan(temp_storage).InclusiveScan(thread_data, thread_data, cuda::maximum<>{}, block_aggregate);
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{ [0,-1,2,-3], [4,-5,6,-7], ..., [508,-509,510,-511] }``.
@@ -2374,7 +2373,7 @@ public:
     else
     {
       // Reduce consecutive thread items in registers
-      T thread_prefix = internal::ThreadReduce(input, scan_op);
+      T thread_prefix = cub::ThreadReduce(input, scan_op);
 
       // Exclusive thread block-scan (with no initial value)
       ExclusiveScan(thread_prefix, thread_prefix, scan_op, block_aggregate);
@@ -2437,7 +2436,7 @@ public:
     T (&input)[ITEMS_PER_THREAD], T (&output)[ITEMS_PER_THREAD], T initial_value, ScanOp scan_op, T& block_aggregate)
   {
     // Reduce consecutive thread items in registers
-    T thread_prefix = internal::ThreadReduce(input, scan_op);
+    T thread_prefix = cub::ThreadReduce(input, scan_op);
 
     // Exclusive thread block-scan
     ExclusiveScan(thread_prefix, thread_prefix, initial_value, scan_op, block_aggregate);
@@ -2521,7 +2520,7 @@ public:
   //!
   //!            // Collectively compute the block-wide inclusive prefix max scan
   //!            BlockScan(temp_storage.scan).InclusiveScan(
-  //!                thread_data, thread_data, cub::Max(), prefix_op);
+  //!                thread_data, thread_data, cuda::maximum<>{}, prefix_op);
   //!            CTA_SYNC();
   //!
   //!            // Store scanned items to output segment
@@ -2573,7 +2572,7 @@ public:
     else
     {
       // Reduce consecutive thread items in registers
-      T thread_prefix = internal::ThreadReduce(input, scan_op);
+      T thread_prefix = cub::ThreadReduce(input, scan_op);
 
       // Exclusive thread block-scan
       ExclusiveScan(thread_prefix, thread_prefix, scan_op, block_prefix_callback_op);

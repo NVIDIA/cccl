@@ -79,52 +79,35 @@ void TestUninitializedFillPOD()
 {
   using T = typename Vector::value_type;
 
-  Vector v(5);
-  v[0] = 0;
-  v[1] = 1;
-  v[2] = 2;
-  v[3] = 3;
-  v[4] = 4;
+  Vector v{0, 1, 2, 3, 4};
 
   T exemplar(7);
 
   thrust::uninitialized_fill(v.begin() + 1, v.begin() + 4, exemplar);
 
-  ASSERT_EQUAL(v[0], 0);
-  ASSERT_EQUAL(v[1], exemplar);
-  ASSERT_EQUAL(v[2], exemplar);
-  ASSERT_EQUAL(v[3], exemplar);
-  ASSERT_EQUAL(v[4], 4);
+  Vector ref{0, exemplar, exemplar, exemplar, 4};
+  ASSERT_EQUAL(v, ref);
 
   exemplar = 8;
 
   thrust::uninitialized_fill(v.begin() + 0, v.begin() + 3, exemplar);
 
-  ASSERT_EQUAL(v[0], exemplar);
-  ASSERT_EQUAL(v[1], exemplar);
-  ASSERT_EQUAL(v[2], exemplar);
-  ASSERT_EQUAL(v[3], 7);
-  ASSERT_EQUAL(v[4], 4);
+  ref = {exemplar, exemplar, exemplar, 7, 4};
+  ASSERT_EQUAL(v, ref);
 
   exemplar = 9;
 
   thrust::uninitialized_fill(v.begin() + 2, v.end(), exemplar);
 
-  ASSERT_EQUAL(v[0], 8);
-  ASSERT_EQUAL(v[1], 8);
-  ASSERT_EQUAL(v[2], exemplar);
-  ASSERT_EQUAL(v[3], exemplar);
-  ASSERT_EQUAL(v[4], 9);
+  ref = {8, 8, exemplar, exemplar, 9};
+  ASSERT_EQUAL(v, ref);
 
   exemplar = 1;
 
   thrust::uninitialized_fill(v.begin(), v.end(), exemplar);
 
-  ASSERT_EQUAL(v[0], exemplar);
-  ASSERT_EQUAL(v[1], exemplar);
-  ASSERT_EQUAL(v[2], exemplar);
-  ASSERT_EQUAL(v[3], exemplar);
-  ASSERT_EQUAL(v[4], exemplar);
+  ref = {exemplar, exemplar, exemplar, exemplar, exemplar};
+  ASSERT_EQUAL(v, ref);
 }
 DECLARE_VECTOR_UNITTEST(TestUninitializedFillPOD);
 
@@ -189,55 +172,34 @@ void TestUninitializedFillNPOD()
 {
   using T = typename Vector::value_type;
 
-  Vector v(5);
-  v[0] = 0;
-  v[1] = 1;
-  v[2] = 2;
-  v[3] = 3;
-  v[4] = 4;
+  Vector v{0, 1, 2, 3, 4};
 
   T exemplar(7);
 
   typename Vector::iterator iter = thrust::uninitialized_fill_n(v.begin() + 1, 3, exemplar);
 
-  ASSERT_EQUAL(v[0], 0);
-  ASSERT_EQUAL(v[1], exemplar);
-  ASSERT_EQUAL(v[2], exemplar);
-  ASSERT_EQUAL(v[3], exemplar);
-  ASSERT_EQUAL(v[4], 4);
+  Vector ref{0, exemplar, exemplar, exemplar, 4};
   ASSERT_EQUAL_QUIET(v.begin() + 4, iter);
 
   exemplar = 8;
 
   iter = thrust::uninitialized_fill_n(v.begin() + 0, 3, exemplar);
 
-  ASSERT_EQUAL(v[0], exemplar);
-  ASSERT_EQUAL(v[1], exemplar);
-  ASSERT_EQUAL(v[2], exemplar);
-  ASSERT_EQUAL(v[3], 7);
-  ASSERT_EQUAL(v[4], 4);
+  ref = {exemplar, exemplar, exemplar, 7, 4};
   ASSERT_EQUAL_QUIET(v.begin() + 3, iter);
 
   exemplar = 9;
 
   iter = thrust::uninitialized_fill_n(v.begin() + 2, 3, exemplar);
 
-  ASSERT_EQUAL(v[0], 8);
-  ASSERT_EQUAL(v[1], 8);
-  ASSERT_EQUAL(v[2], exemplar);
-  ASSERT_EQUAL(v[3], exemplar);
-  ASSERT_EQUAL(v[4], 9);
+  ref = {8, 8, exemplar, exemplar, 9};
   ASSERT_EQUAL_QUIET(v.end(), iter);
 
   exemplar = 1;
 
   iter = thrust::uninitialized_fill_n(v.begin(), v.size(), exemplar);
 
-  ASSERT_EQUAL(v[0], exemplar);
-  ASSERT_EQUAL(v[1], exemplar);
-  ASSERT_EQUAL(v[2], exemplar);
-  ASSERT_EQUAL(v[3], exemplar);
-  ASSERT_EQUAL(v[4], exemplar);
+  ref = {exemplar, exemplar, exemplar, exemplar, exemplar};
   ASSERT_EQUAL_QUIET(v.end(), iter);
 }
 DECLARE_VECTOR_UNITTEST(TestUninitializedFillNPOD);

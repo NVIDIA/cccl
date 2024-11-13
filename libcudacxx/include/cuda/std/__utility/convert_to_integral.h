@@ -27,50 +27,50 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __convert_to_integral(int __val)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __convert_to_integral(int __val)
 {
   return __val;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr unsigned __convert_to_integral(unsigned __val)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr unsigned __convert_to_integral(unsigned __val)
 {
   return __val;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr long __convert_to_integral(long __val)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr long __convert_to_integral(long __val)
 {
   return __val;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr unsigned long __convert_to_integral(unsigned long __val)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr unsigned long __convert_to_integral(unsigned long __val)
 {
   return __val;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr long long __convert_to_integral(long long __val)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr long long __convert_to_integral(long long __val)
 {
   return __val;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr unsigned long long __convert_to_integral(unsigned long long __val)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr unsigned long long __convert_to_integral(unsigned long long __val)
 {
   return __val;
 }
 
 template <typename _Fp>
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<is_floating_point<_Fp>::value, long long>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<is_floating_point<_Fp>::value, long long>
 __convert_to_integral(_Fp __val)
 {
   return __val;
 }
 
 #ifndef _LIBCUDACXX_HAS_NO_INT128
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr __int128_t __convert_to_integral(__int128_t __val)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr __int128_t __convert_to_integral(__int128_t __val)
 {
   return __val;
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr __uint128_t __convert_to_integral(__uint128_t __val)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr __uint128_t __convert_to_integral(__uint128_t __val)
 {
   return __val;
 }
@@ -88,7 +88,7 @@ struct __sfinae_underlying_type<_Tp, false>
 {};
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr typename __sfinae_underlying_type<_Tp>::__promoted_type
+_LIBCUDACXX_HIDE_FROM_ABI constexpr typename __sfinae_underlying_type<_Tp>::__promoted_type
 __convert_to_integral(_Tp __val)
 {
   return __val;

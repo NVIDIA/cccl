@@ -65,7 +65,7 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
   OutputIterator result,
   Predicate pred)
 {
-  THRUST_DISABLE_MSVC_POSSIBLE_LOSS_OF_DATA_WARNING(IndexType n = thrust::distance(first, last));
+  const auto n = static_cast<IndexType>(thrust::distance(first, last));
 
   // compute {0,1} predicates
   thrust::detail::temporary_array<IndexType, DerivedPolicy> predicates(exec, n);
@@ -134,7 +134,7 @@ _CCCL_HOST_DEVICE OutputIterator copy_if(
 
   // create an unsigned version of n (we know n is positive from the comparison above)
   // to avoid a warning in the compare below
-  ::cuda::std::__make_unsigned_t<difference_type> unsigned_n(n);
+  ::cuda::std::make_unsigned_t<difference_type> unsigned_n(n);
 
   // use 32-bit indices when possible (almost always)
   if (sizeof(difference_type) > sizeof(unsigned int)

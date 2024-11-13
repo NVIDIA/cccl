@@ -24,7 +24,7 @@ To demonstrate, the following example defines several resources, only some of wh
 
    struct valid_resource {
      void* allocate(std::size_t, std::size_t) { return nullptr; }
-     void deallocate(void*, std::size_t, std::size_t) {}
+     void deallocate(void*, std::size_t, std::size_t) noexcept {}
      bool operator==(const valid_resource&) const { return true; }
      // NOTE: C++20 thankfully added operator rewrite rules so defining operator!= is not required.
      // However, if compiled with C++14 / C++17, operator != must also be defined.
@@ -35,34 +35,34 @@ To demonstrate, the following example defines several resources, only some of wh
    struct invalid_argument {};
    struct invalid_allocate_argument {
      void* allocate(invalid_argument, std::size_t) { return nullptr; }
-     void deallocate(void*, std::size_t, std::size_t) {}
+     void deallocate(void*, std::size_t, std::size_t) noexcept {}
      bool operator==(const invalid_allocate_argument&) { return true; }
    };
    static_assert(!cuda::mr::resource<invalid_allocate_argument>, "");
 
    struct invalid_allocate_return {
      int allocate(std::size_t, std::size_t) { return 42; }
-     void deallocate(void*, std::size_t, std::size_t) {}
+     void deallocate(void*, std::size_t, std::size_t) noexcept {}
      bool operator==(const invalid_allocate_return&) { return true; }
    };
    static_assert(!cuda::mr::resource<invalid_allocate_return>, "");
 
    struct invalid_deallocate_argument {
      void* allocate(std::size_t, std::size_t) { return nullptr; }
-     void deallocate(void*, invalid_argument, std::size_t) {}
+     void deallocate(void*, invalid_argument, std::size_t) noexcept {}
      bool operator==(const invalid_deallocate_argument&) { return true; }
    };
    static_assert(!cuda::mr::resource<invalid_deallocate_argument>, "");
 
    struct non_comparable {
      void* allocate(std::size_t, std::size_t) { return nullptr; }
-     void deallocate(void*, std::size_t, std::size_t) {}
+     void deallocate(void*, std::size_t, std::size_t) noexcept {}
    };
    static_assert(!cuda::mr::resource<non_comparable>, "");
 
    struct non_eq_comparable {
      void* allocate(std::size_t, std::size_t) { return nullptr; }
-     void deallocate(void*, std::size_t, std::size_t) {}
+     void deallocate(void*, std::size_t, std::size_t) noexcept {}
      bool operator!=(const non_eq_comparable&) { return false; }
    };
    static_assert(!cuda::mr::resource<non_eq_comparable>, "");
@@ -75,7 +75,7 @@ In addition to the `std::pmr::memory_resource <https://en.cppreference.com/w/cpp
 
    struct valid_resource {
      void* allocate(std::size_t, std::size_t) { return nullptr; }
-     void deallocate(void*, std::size_t, std::size_t) {}
+     void deallocate(void*, std::size_t, std::size_t) noexcept {}
      void* allocate_async(std::size_t, std::size_t, cuda::stream_ref) { return nullptr; }
      void deallocate_async(void*, std::size_t, std::size_t, cuda::stream_ref) {}
      bool operator==(const valid_resource&) const { return true; }
@@ -109,7 +109,7 @@ concept. The ``{async_}resource_with`` concept allows checking resources for arb
    };
    struct my_memory_resource {
        void* allocate(std::size_t, std::size_t) { return nullptr; }
-       void deallocate(void*, std::size_t, std::size_t) {}
+       void deallocate(void*, std::size_t, std::size_t) noexcept {}
        bool operator==(const my_memory_resource&) const { return true; }
        bool operator!=(const my_memory_resource&) const { return false; }
 

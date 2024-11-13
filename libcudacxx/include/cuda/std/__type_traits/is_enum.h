@@ -34,21 +34,21 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_IS_ENUM) && !defined(_LIBCUDACXX_USE_IS_ENUM_FALLBACK)
+#if defined(_CCCL_BUILTIN_IS_ENUM) && !defined(_LIBCUDACXX_USE_IS_ENUM_FALLBACK)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_enum : public integral_constant<bool, _LIBCUDACXX_IS_ENUM(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_enum : public integral_constant<bool, _CCCL_BUILTIN_IS_ENUM(_Tp)>
 {};
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_enum_v = _LIBCUDACXX_IS_ENUM(_Tp);
-#  endif
+_CCCL_INLINE_VAR constexpr bool is_enum_v = _CCCL_BUILTIN_IS_ENUM(_Tp);
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #else
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_enum
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_enum
     : public integral_constant<
         bool,
         !is_void<_Tp>::value && !is_integral<_Tp>::value && !is_floating_point<_Tp>::value && !is_array<_Tp>::value
@@ -56,12 +56,12 @@ struct _LIBCUDACXX_TEMPLATE_VIS is_enum
           && !is_union<_Tp>::value && !is_class<_Tp>::value && !is_function<_Tp>::value>
 {};
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_enum_v = is_enum<_Tp>::value;
-#  endif
+_CCCL_INLINE_VAR constexpr bool is_enum_v = is_enum<_Tp>::value;
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
-#endif // defined(_LIBCUDACXX_IS_ENUM) && !defined(_LIBCUDACXX_USE_IS_ENUM_FALLBACK)
+#endif // defined(_CCCL_BUILTIN_IS_ENUM) && !defined(_LIBCUDACXX_USE_IS_ENUM_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

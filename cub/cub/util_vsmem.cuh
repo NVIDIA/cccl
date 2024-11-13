@@ -42,6 +42,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_ptx.cuh>
 #include <cub/util_type.cuh>
@@ -66,10 +67,6 @@ struct vsmem_t
 {
   void* gmem_ptr;
 };
-
-// The maximum amount of static shared memory available per thread block
-// Note that in contrast to dynamic shared memory, static shared memory is still limited to 48 KB
-static constexpr std::size_t max_smem_per_block = 48 * 1024;
 
 /**
  * @brief Class template that helps to prevent exceeding the available shared memory per thread block.

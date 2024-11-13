@@ -19,7 +19,7 @@ __managed__ bool kernel_run_proof = false;
 void check_kernel_run(cudaStream_t stream)
 {
   CUDART(cudaStreamSynchronize(stream));
-  CHECK(kernel_run_proof);
+  CUDAX_CHECK(kernel_run_proof);
   kernel_run_proof = false;
 }
 
@@ -119,7 +119,7 @@ struct launch_transform_to_int_convertible
         , value_(value)
     {
       // Check that the constructor runs before the kernel is launched
-      CHECK_FALSE(kernel_run_proof);
+      CUDAX_CHECK_FALSE(kernel_run_proof);
     }
 
     // Immovable to ensure that __launch_transform doesn't copy the returned
@@ -130,7 +130,7 @@ struct launch_transform_to_int_convertible
     {
       // Check that the destructor runs after the kernel is launched
       CUDART(cudaStreamSynchronize(stream_));
-      CHECK(kernel_run_proof);
+      CUDAX_CHECK(kernel_run_proof);
     }
 
     using __as_kernel_arg = int;

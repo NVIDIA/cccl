@@ -144,5 +144,4 @@ foreach(thrust_target IN LISTS THRUST_TARGETS)
   endforeach()
 endforeach()
 
-add_subdirectory(cmake)
 add_subdirectory(cuda)

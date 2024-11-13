@@ -61,9 +61,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER >= 2014 && defined(_LIBCUDACXX_IS_CONSTANT_EVALUATED)
+#if TEST_STD_VER >= 2014 && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   static_assert(test(), "");
-#endif // TEST_STD_VER >= 2014 && _LIBCUDACXX_IS_CONSTANT_EVALUATED
+#endif // TEST_STD_VER >= 2014 && _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 
   return 0;
 }

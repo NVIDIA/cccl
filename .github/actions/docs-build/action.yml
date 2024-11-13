@@ -38,6 +38,8 @@ runs:
         cp -rf ./docs/_build/docs/cudax/latest/* _site/cudax
         mkdir _site/cuda_cooperative
         cp -rf ./docs/_build/docs/cuda_cooperative/latest/* _site/cuda_cooperative
+        mkdir _site/cuda_parallel
+        cp -rf ./docs/_build/docs/cuda_parallel/latest/* _site/cuda_parallel
         ./docs/scrape_docs.bash ./_site
 
     # Update docs as workflow artifact:

@@ -24,9 +24,9 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  ******************************************************************************/
-
 #pragma once
 
+// #define CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT
 #include <cub/device/device_segmented_sort.cuh>
 
 #include <thrust/device_ptr.h>
@@ -45,27 +45,12 @@
 
 #include <cstdio>
 
-#include <c2h/cpu_timer.cuh>
-#include <c2h/utility.cuh>
-#include <catch2_test_helper.h>
+#include <c2h/catch2_test_helper.h>
+#include <c2h/cpu_timer.h>
+#include <c2h/extended_types.h>
+#include <c2h/utility.h>
 #include <catch2_test_launch_helper.h>
 #include <nv/target>
-
-#define TEST_HALF_T _CCCL_HAS_NVFP16
-
-#define TEST_BF_T _CCCL_HAS_NVBF16
-
-#if TEST_HALF_T
-#  include <cuda_fp16.h>
-
-#  include <half.h>
-#endif
-
-#if TEST_BF_T
-#  include <cuda_bf16.h>
-
-#  include <bfloat16.h>
-#endif
 
 #define MAKE_SEED_MOD_FUNCTION(name, xor_mask)                  \
   inline c2h::seed_t make_##name##_seed(const c2h::seed_t seed) \
@@ -1374,7 +1359,7 @@ inline c2h::device_vector<int>
 generate_random_offsets(c2h::seed_t seed, int max_items, int max_segment, int num_segments)
 {
   C2H_TIME_SCOPE("generate_random_offsets");
-  const int expected_segment_length = cub::DivideAndRoundUp(max_items, num_segments);
+  const int expected_segment_length = ::cuda::ceil_div(max_items, num_segments);
   const int max_segment_length      = CUB_MIN(max_segment, (expected_segment_length * 2) + 1);
 
   c2h::device_vector<int> offsets(num_segments + 1);

@@ -10,52 +10,6 @@
 #ifndef _LIBCUDACXX_CSTRING
 #define _LIBCUDACXX_CSTRING
 
-/*
-    cstring synopsis
-
-Macros:
-
-    NULL
-
-namespace std
-{
-
-Types:
-
-    size_t
-
-void* memcpy(void* restrict s1, const void* restrict s2, size_t n);
-void* memmove(void* s1, const void* s2, size_t n);
-char* strcpy (char* restrict s1, const char* restrict s2);
-char* strncpy(char* restrict s1, const char* restrict s2, size_t n);
-char* strcat (char* restrict s1, const char* restrict s2);
-char* strncat(char* restrict s1, const char* restrict s2, size_t n);
-int memcmp(const void* s1, const void* s2, size_t n);
-int strcmp (const char* s1, const char* s2);
-int strncmp(const char* s1, const char* s2, size_t n);
-int strcoll(const char* s1, const char* s2);
-size_t strxfrm(char* restrict s1, const char* restrict s2, size_t n);
-const void* memchr(const void* s, int c, size_t n);
-      void* memchr(      void* s, int c, size_t n);
-const char* strchr(const char* s, int c);
-      char* strchr(      char* s, int c);
-size_t strcspn(const char* s1, const char* s2);
-const char* strpbrk(const char* s1, const char* s2);
-      char* strpbrk(      char* s1, const char* s2);
-const char* strrchr(const char* s, int c);
-      char* strrchr(      char* s, int c);
-size_t strspn(const char* s1, const char* s2);
-const char* strstr(const char* s1, const char* s2);
-      char* strstr(      char* s1, const char* s2);
-char* strtok(char* restrict s1, const char* restrict s2);
-void* memset(void* s, int c, size_t n);
-char* strerror(int errnum);
-size_t strlen(const char* s);
-
-}  // std
-
-*/
-
 #include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -66,11 +20,9 @@ size_t strlen(const char* s);
 #  pragma system_header
 #endif // no system header
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if !defined(_CCCL_COMPILER_NVRTC)
 #  include <cstring>
-#else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
-#  include <cuda/std/detail/libcxx/include/string.h>
-#endif // !_CCCL_COMPILER_MSVC
+#endif // !_CCCL_COMPILER_NVRTC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -98,7 +50,7 @@ using ::strstr;
 using ::strxfrm;
 #  ifndef _LIBCUDACXX_HAS_NO_THREAD_UNSAFE_C_FUNCTIONS
 using ::strtok;
-#  endif
+#  endif // _LIBCUDACXX_HAS_NO_THREAD_UNSAFE_C_FUNCTIONS
 using ::strerror;
 using ::strlen;
 #endif // _CCCL_COMPILER_NVRTC

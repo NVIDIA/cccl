@@ -45,8 +45,6 @@
 
 #include <thrust/system/cuda/detail/core/util.h>
 
-#include <cuda/std/cstdlib>
-
 #include <nv/target>
 
 CUB_NAMESPACE_BEGIN
@@ -122,7 +120,7 @@ class AgentSubWarpSort
       {
         return lhs < rhs;
       }
-      _LIBCUDACXX_UNREACHABLE();
+      _CCCL_UNREACHABLE();
     }
 
 #if defined(__CUDA_FP16_TYPES_EXIST__)
@@ -137,7 +135,7 @@ class AgentSubWarpSort
       {
         NV_IF_TARGET(NV_PROVIDES_SM_53, (return __hlt(lhs, rhs);), (return __half2float(lhs) < __half2float(rhs);));
       }
-      _LIBCUDACXX_UNREACHABLE();
+      _CCCL_UNREACHABLE();
     }
 #endif // __CUDA_FP16_TYPES_EXIST__
   };

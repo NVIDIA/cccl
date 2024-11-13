@@ -31,7 +31,7 @@ template <>
 struct _OrImpl<true>
 {
   template <class _Res, class _First, class... _Rest>
-  using _Result _LIBCUDACXX_NODEBUG_TYPE =
+  using _Result _CCCL_NODEBUG_ALIAS =
     typename _OrImpl<!bool(_First::value) && sizeof...(_Rest) != 0>::template _Result<_First, _Rest...>;
 };
 
@@ -49,7 +49,7 @@ struct _OrImpl<false>
 // If you want to defer the evaluation of `_Or<_Pred...>` itself, use `_Lazy<_Or, _Pred...>`
 // or `disjunction<_Pred...>` directly.
 template <class... _Args>
-using _Or _LIBCUDACXX_NODEBUG_TYPE = typename _OrImpl<sizeof...(_Args) != 0>::template _Result<false_type, _Args...>;
+using _Or _CCCL_NODEBUG_ALIAS = typename _OrImpl<sizeof...(_Args) != 0>::template _Result<false_type, _Args...>;
 
 #ifdef _CCCL_COMPILER_MSVC
 template <class... _Args>
@@ -65,10 +65,10 @@ struct disjunction : _Or<_Args...>
 {};
 #endif // !MSVC
 
-#if _CCCL_STD_VER >= 2014 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class... _Args>
-_LIBCUDACXX_INLINE_VAR constexpr bool disjunction_v = _Or<_Args...>::value;
-#endif // _CCCL_STD_VER >= 2014
+_CCCL_INLINE_VAR constexpr bool disjunction_v = _Or<_Args...>::value;
+#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

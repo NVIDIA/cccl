@@ -25,7 +25,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _CharT>
-struct _LIBCUDACXX_TEMPLATE_VIS char_traits;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits;
 template <>
 struct char_traits<char>;
 
@@ -45,10 +45,10 @@ struct char_traits<wchar_t>;
 #endif
 
 template <class _Tp>
-class _LIBCUDACXX_TEMPLATE_VIS allocator;
+class _CCCL_TYPE_VISIBILITY_DEFAULT allocator;
 
 template <class _CharT, class _Traits = char_traits<_CharT>, class _Allocator = allocator<_CharT>>
-class _LIBCUDACXX_TEMPLATE_VIS basic_string;
+class _CCCL_TYPE_VISIBILITY_DEFAULT basic_string;
 
 using string = basic_string<char>;
 

@@ -25,13 +25,13 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_abstract : public integral_constant<bool, __is_abstract(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_abstract : public integral_constant<bool, __is_abstract(_Tp)>
 {};
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_abstract_v = __is_abstract(_Tp);
-#endif
+_CCCL_INLINE_VAR constexpr bool is_abstract_v = __is_abstract(_Tp);
+#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

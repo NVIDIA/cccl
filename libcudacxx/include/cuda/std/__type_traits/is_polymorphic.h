@@ -27,36 +27,36 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_IS_POLYMORPHIC) && !defined(_LIBCUDACXX_USE_IS_POLYMORPHIC_FALLBACK)
+#if defined(_CCCL_BUILTIN_IS_POLYMORPHIC) && !defined(_LIBCUDACXX_USE_IS_POLYMORPHIC_FALLBACK)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_polymorphic : public integral_constant<bool, _LIBCUDACXX_IS_POLYMORPHIC(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_polymorphic : public integral_constant<bool, _CCCL_BUILTIN_IS_POLYMORPHIC(_Tp)>
 {};
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_polymorphic_v = _LIBCUDACXX_IS_POLYMORPHIC(_Tp);
-#  endif
+_CCCL_INLINE_VAR constexpr bool is_polymorphic_v = _CCCL_BUILTIN_IS_POLYMORPHIC(_Tp);
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #else
 
 template <typename _Tp>
 _CCCL_HOST_DEVICE char& __is_polymorphic_impl(
-  __enable_if_t<sizeof((_Tp*) dynamic_cast<const volatile void*>(_CUDA_VSTD::declval<_Tp*>())) != 0, int>);
+  enable_if_t<sizeof((_Tp*) dynamic_cast<const volatile void*>(_CUDA_VSTD::declval<_Tp*>())) != 0, int>);
 template <typename _Tp>
 _CCCL_HOST_DEVICE __two& __is_polymorphic_impl(...);
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_polymorphic
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_polymorphic
     : public integral_constant<bool, sizeof(__is_polymorphic_impl<_Tp>(0)) == 1>
 {};
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_polymorphic_v = is_polymorphic<_Tp>::value;
-#  endif
+_CCCL_INLINE_VAR constexpr bool is_polymorphic_v = is_polymorphic<_Tp>::value;
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
-#endif // defined(_LIBCUDACXX_IS_POLYMORPHIC) && !defined(_LIBCUDACXX_USE_IS_POLYMORPHIC_FALLBACK)
+#endif // defined(_CCCL_BUILTIN_IS_POLYMORPHIC) && !defined(_LIBCUDACXX_USE_IS_POLYMORPHIC_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

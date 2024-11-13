@@ -334,12 +334,19 @@ def lookup_supported_stds(matrix_job):
     if 'project' in matrix_job:
         project = get_project(matrix_job['project'])
         stds = stds & set(project['stds'])
+    if len(stds) == 0:
+        raise Exception(error_message_with_matrix_job(matrix_job, "No supported stds found."))
     return sorted(list(stds))
 
 
 def is_windows(matrix_job):
     host_compiler = get_host_compiler(matrix_job['cxx'])
     return host_compiler['container_tag'] == 'cl'
+
+
+def is_nvhpc(matrix_job):
+    host_compiler = get_host_compiler(matrix_job['cxx'])
+    return host_compiler['container_tag'] == "nvhpc"
 
 
 def generate_dispatch_group_name(matrix_job):
@@ -408,6 +415,9 @@ def generate_dispatch_job_image(matrix_job, job_type):
 
     if is_windows(matrix_job):
         return f"rapidsai/devcontainers:{devcontainer_version}-cuda{ctk}-{host_compiler}"
+
+    if is_nvhpc(matrix_job):
+        return f"rapidsai/devcontainers:{devcontainer_version}-cpp-{host_compiler}"
 
     return f"rapidsai/devcontainers:{devcontainer_version}-cpp-{host_compiler}-cuda{ctk}"
 
@@ -580,6 +590,14 @@ def remove_dispatch_job_from_container(job, container):
     return False
 
 
+def index_of_dispatch_job_in_container(job, container):
+    "Find the index of a dispatch job in a container, using compare_dispatch_jobs."
+    for idx, job2 in enumerate(container):
+        if compare_dispatch_jobs(job, job2):
+            return idx
+    return None
+
+
 def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
     workflow_dispatch_groups = copy.deepcopy(workflow_dispatch_groups_orig)
 
@@ -614,22 +632,22 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
             producer = producers[0]
 
             if dispatch_job_in_container(producer, merged_producers):
-                producer_index = merged_producers.index(producers)
+                producer_index = index_of_dispatch_job_in_container(producer, merged_producers)
                 matching_consumers = merged_consumers[producer_index]
 
                 producer_name = producer['name']
-                print(f"::notice file=ci/matrix.yaml::Merging consumers for duplicate producer '{producer_name}' in '{group_name}'",
+                print(f"::notice::Merging consumers for duplicate producer '{producer_name}' in '{group_name}'",
                       file=sys.stderr)
                 consumer_names = ", ".join([consumer['name'] for consumer in matching_consumers])
-                print(f"::notice file=ci/matrix.yaml::Original consumers: {consumer_names}", file=sys.stderr)
+                print(f"::notice::Original consumers: {consumer_names}", file=sys.stderr)
                 consumer_names = ", ".join([consumer['name'] for consumer in consumers])
-                print(f"::notice file=ci/matrix.yaml::Duplicate consumers: {consumer_names}", file=sys.stderr)
+                print(f"::notice::Duplicate consumers: {consumer_names}", file=sys.stderr)
                 # Merge if unique:
                 for consumer in consumers:
                     if not dispatch_job_in_container(consumer, matching_consumers):
                         matching_consumers.append(consumer)
                 consumer_names = ", ".join([consumer['name'] for consumer in matching_consumers])
-                print(f"::notice file=ci/matrix.yaml::Merged consumers: {consumer_names}", file=sys.stderr)
+                print(f"::notice::Merged consumers: {consumer_names}", file=sys.stderr)
             else:
                 merged_producers.append(producer)
                 merged_consumers.append(consumers)
@@ -645,7 +663,7 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
         unique_standalone_jobs = []
         for job_json in standalone_jobs:
             if dispatch_job_in_container(job_json, unique_standalone_jobs):
-                print(f"::notice file=ci/matrix.yaml::Removing duplicate standalone job '{job_json['name']}' in '{group_name}'",
+                print(f"::notice::Removing duplicate standalone job '{job_json['name']}' in '{group_name}'",
                       file=sys.stderr)
             else:
                 unique_standalone_jobs.append(job_json)
@@ -655,12 +673,12 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
         for two_stage_job in two_stage_jobs:
             for producer in two_stage_job['producers']:
                 if remove_dispatch_job_from_container(producer, unique_standalone_jobs):
-                    print(f"::notice file=ci/matrix.yaml::Removing standalone job '{producer['name']}' " +
+                    print(f"::notice::Removing standalone job '{producer['name']}' " +
                           f"as it appears as a producer in '{group_name}'",
                           file=sys.stderr)
             for consumer in two_stage_job['consumers']:
                 if remove_dispatch_job_from_container(producer, unique_standalone_jobs):
-                    print(f"::notice file=ci/matrix.yaml::Removing standalone job '{consumer['name']}' " +
+                    print(f"::notice::Removing standalone job '{consumer['name']}' " +
                           f"as it appears as a consumer in '{group_name}'",
                           file=sys.stderr)
         standalone_jobs = list(unique_standalone_jobs)
@@ -856,8 +874,20 @@ def set_derived_tags(matrix_job):
         gpu = get_gpu(matrix_job['gpu'])
         matrix_job['sm'] = gpu['sm']
 
-    if 'std' in matrix_job and matrix_job['std'] == 'all':
-        matrix_job['std'] = lookup_supported_stds(matrix_job)
+    if 'std' in matrix_job:
+        if matrix_job['std'] == 'all':
+            matrix_job['std'] = lookup_supported_stds(matrix_job)
+        elif matrix_job['std'] == 'min':
+            matrix_job['std'] = min(lookup_supported_stds(matrix_job))
+        elif matrix_job['std'] == 'max':
+            matrix_job['std'] = max(lookup_supported_stds(matrix_job))
+        elif matrix_job['std'] == 'minmax':
+            stds = lookup_supported_stds(matrix_job)
+            if len(stds) == 1:
+                matrix_job['std'] = stds[0]
+            else:
+                matrix_job['std'] = [min(stds), max(stds)]
+
 
     # Add all deps before applying project job maps:
     for job in matrix_job['jobs']:

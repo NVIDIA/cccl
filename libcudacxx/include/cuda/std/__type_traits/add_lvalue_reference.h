@@ -24,39 +24,34 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_ADD_LVALUE_REFERENCE) && !defined(_LIBCUDACXX_USE_ADD_LVALUE_REFERENCE_FALLBACK)
+#if defined(_CCCL_BUILTIN_ADD_LVALUE_REFERENCE) && !defined(_LIBCUDACXX_USE_ADD_LVALUE_REFERENCE_FALLBACK)
 
 template <class _Tp>
-using __add_lvalue_reference_t = _LIBCUDACXX_ADD_LVALUE_REFERENCE(_Tp);
+using add_lvalue_reference_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_ADD_LVALUE_REFERENCE(_Tp);
 
-#else
+#else // ^^^ _CCCL_BUILTIN_ADD_LVALUE_REFERENCE ^^^ / vvv !_CCCL_BUILTIN_ADD_LVALUE_REFERENCE vvv
 
 template <class _Tp, bool = __libcpp_is_referenceable<_Tp>::value>
 struct __add_lvalue_reference_impl
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE _Tp type;
+  typedef _CCCL_NODEBUG_ALIAS _Tp type;
 };
 template <class _Tp>
 struct __add_lvalue_reference_impl<_Tp, true>
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE _Tp& type;
+  typedef _CCCL_NODEBUG_ALIAS _Tp& type;
 };
 
 template <class _Tp>
-using __add_lvalue_reference_t = typename __add_lvalue_reference_impl<_Tp>::type;
+using add_lvalue_reference_t _CCCL_NODEBUG_ALIAS = typename __add_lvalue_reference_impl<_Tp>::type;
 
-#endif // defined(_LIBCUDACXX_ADD_LVALUE_REFERENCE) && !defined(_LIBCUDACXX_USE_ADD_LVALUE_REFERENCE_FALLBACK)
+#endif // !_CCCL_BUILTIN_ADD_LVALUE_REFERENCE
 
 template <class _Tp>
 struct add_lvalue_reference
 {
-  using type _LIBCUDACXX_NODEBUG_TYPE = __add_lvalue_reference_t<_Tp>;
+  using type _CCCL_NODEBUG_ALIAS = add_lvalue_reference_t<_Tp>;
 };
-
-#if _CCCL_STD_VER > 2011
-template <class _Tp>
-using add_lvalue_reference_t = __add_lvalue_reference_t<_Tp>;
-#endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -111,87 +111,11 @@ int main() {
 
 [See it on Godbolt](https://godbolt.org/z/be54efaKj)
 
-## Getting The Thrust Source Code
+## Getting The Thrust Source Code & Developing Thrust
 
-Thrust is a header-only library; there is no need to build or install the project unless you want to run the Thrust unit tests.
-The CUDA Toolkit provides a recent release of the Thrust source code in `include/thrust`. This will be suitable for most users.
-Users that wish to contribute to Thrust or try out newer features should recursively clone the Thrust Github repository:
+Thrust started as a stand-alone project, but as of March 2024 Thrust is a part of the
+CUDA Core Compute Libraries (CCCL). Please refer to the [CCCL Getting Started section] and the
+[Contributing Guide] for instructions on how to get started developing the CCCL sources.
 
-```bash
-git clone --recursive https://github.com/NVIDIA/thrust.git
-```
-
-## Using Thrust From Your Project
-
-For CMake-based projects, we provide a CMake package for use with `find_package`. See :ref:`CMake Options <cmake-options>` for more information.
-Thrust can also be added via `add_subdirectory` or tools like the [CMake Package Manager](https://github.com/cpm-cmake/CPM.cmake).
-
-For non-CMake projects, compile with:
-
-- The Thrust include path (`-I<thrust repo root>`)
-- The libcu++ include path (`-I<thrust repo root>/dependencies/libcudacxx/`)
-- The CUB include path, if using the CUDA device system (`-I<thrust repo root>/dependencies/cub/`)
-- By default, the CPP host system and CUDA device system are used.
-  These can be changed using compiler definitions:
-  - `-DTHRUST_HOST_SYSTEM=THRUST_HOST_SYSTEM_XXX`,
-     where `XXX` is `CPP` (serial, default), `OMP` (OpenMP), or `TBB` (Intel TBB)
-  - `-DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_XXX`, where `XXX` is
-    `CPP`, `OMP`, `TBB`, or `CUDA` (default).
-
-## Developing Thrust
-
-Thrust uses the [CMake build system] to build unit tests, examples, and header tests.
-To build Thrust as a developer, it is recommended that you use our containerized development system:
-
-```bash
-# Clone Thrust and CUB repos recursively:
-git clone --recursive https://github.com/NVIDIA/thrust.git
-cd thrust
-
-# Build and run tests and examples:
-ci/local/build.bash
-```
-
-That does the equivalent of the following, but in a clean containerized environment which has all dependencies installed:
-
-```bash
-# Clone Thrust and CUB repos recursively:
-git clone --recursive https://github.com/NVIDIA/thrust.git
-cd thrust
-
-# Create build directory:
-mkdir build
-cd build
-
-# Configure -- use one of the following:
-cmake ..   # Command line interface.
-ccmake ..  # ncurses GUI (Linux only).
-cmake-gui  # Graphical UI, set source/build directories in the app.
-
-# Build:
-cmake --build . -j ${NUM_JOBS} # Invokes make (or ninja, etc).
-
-# Run tests and examples:
-ctest
-```
-
-By default, a serial `CPP` host system, `CUDA` accelerated device system, and C++14 standard are used.
-This can be changed in CMake and via flags to `ci/local/build.bash`
-
-More information on configuring your Thrust build and creating a pull request can be found in the [contributing section].
-
-## Licensing
-
-Thrust is an open source project developed on [GitHub].
-Thrust is distributed under the [Apache License v2.0 with LLVM Exceptions].
-Some parts are distributed under the [Apache License v2.0] and the [Boost License v1.0].
-
-[GitHub]: https://github.com/NVIDIA/cccl/tree/main/thrust
-
-[contributing section]: https://nvidia.github.io/cccl/thrust/contributing.html
-
-[CMake build system]: https://cmake.org
-
-[Apache License v2.0 with LLVM Exceptions]: https://llvm.org/LICENSE.txt
-[Apache License v2.0]: https://www.apache.org/licenses/LICENSE-2.0.txt
-[Boost License v1.0]: https://www.boost.org/LICENSE_1_0.txt
+[CCCL Getting Started]: https://github.com/NVIDIA/cccl?tab=readme-ov-file#getting-started
+[Contributing Guide]: https://github.com/NVIDIA/cccl/blob/main/CONTRIBUTING.md

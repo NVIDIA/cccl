@@ -76,8 +76,8 @@ static void reduce(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
   using vals_input_it_t            = const ValueT*;
   using aggregate_output_it_t      = ValueT*;
   using num_runs_output_iterator_t = OffsetT*;
-  using equality_op_t              = cub::Equality;
-  using reduction_op_t             = cub::Sum;
+  using equality_op_t              = ::cuda::std::equal_to<>;
+  using reduction_op_t             = ::cuda::std::plus<>;
   using accum_t                    = ValueT;
   using offset_t                   = OffsetT;
 

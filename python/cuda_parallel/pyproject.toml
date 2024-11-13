@@ -1,0 +1,7 @@
+# Copyright (c) 2024, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
+[build-system]
+requires = ["packaging", "setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"

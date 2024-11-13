@@ -23,7 +23,6 @@
 #include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__utility/exchange.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/detail/libcxx/include/__assert>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -47,7 +46,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // less common, especially one that tries to catch an exception through -fno-exceptions code.
 //
 // __exception_guard can help greatly simplify code that would normally be cluttered by
-// `#if _LIBCUDACXX_NO_EXCEPTIONS`. For example:
+// `#if _CCCL_NO_EXCEPTIONS`. For example:
 //
 //    template <class Iterator, class Size, class OutputIterator>
 //    Iterator uninitialized_copy_n(Iterator iter, Size n, OutputIterator out) {
@@ -69,12 +68,12 @@ struct __exception_guard_exceptions
 {
   __exception_guard_exceptions() = delete;
 
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 explicit __exception_guard_exceptions(_Rollback __rollback)
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 explicit __exception_guard_exceptions(_Rollback __rollback)
       : __rollback_(_CUDA_VSTD::move(__rollback))
       , __completed_(false)
   {}
 
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 __exception_guard_exceptions(
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __exception_guard_exceptions(
     __exception_guard_exceptions&& __other) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Rollback))
       : __rollback_(_CUDA_VSTD::move(__other.__rollback_))
       , __completed_(__other.__completed_)
@@ -86,12 +85,12 @@ struct __exception_guard_exceptions
   __exception_guard_exceptions& operator=(__exception_guard_exceptions const&) = delete;
   __exception_guard_exceptions& operator=(__exception_guard_exceptions&&)      = delete;
 
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void __complete() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void __complete() noexcept
   {
     __completed_ = true;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 ~__exception_guard_exceptions()
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 ~__exception_guard_exceptions()
   {
     if (!__completed_)
     {
@@ -110,11 +109,10 @@ template <class _Rollback>
 struct __exception_guard_noexceptions
 {
   __exception_guard_noexceptions() = delete;
-  _LIBCUDACXX_INLINE_VISIBILITY
-  _CCCL_CONSTEXPR_CXX20 _LIBCUDACXX_NODEBUG_TYPE explicit __exception_guard_noexceptions(_Rollback)
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG_ALIAS explicit __exception_guard_noexceptions(_Rollback)
   {}
 
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 _LIBCUDACXX_NODEBUG_TYPE __exception_guard_noexceptions(
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG_ALIAS __exception_guard_noexceptions(
     __exception_guard_noexceptions&& __other) noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Rollback))
       : __completed_(__other.__completed_)
   {
@@ -125,14 +123,14 @@ struct __exception_guard_noexceptions
   __exception_guard_noexceptions& operator=(__exception_guard_noexceptions const&) = delete;
   __exception_guard_noexceptions& operator=(__exception_guard_noexceptions&&)      = delete;
 
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 _LIBCUDACXX_NODEBUG_TYPE void __complete() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG_ALIAS void __complete() noexcept
   {
     __completed_ = true;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 _LIBCUDACXX_NODEBUG_TYPE ~__exception_guard_noexceptions()
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _CCCL_NODEBUG_ALIAS ~__exception_guard_noexceptions()
   {
-    _LIBCUDACXX_ASSERT(__completed_, "__exception_guard not completed with exceptions disabled");
+    _CCCL_ASSERT(__completed_, "__exception_guard not completed with exceptions disabled");
   }
 
 private:
@@ -141,16 +139,16 @@ private:
 
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(__exception_guard_noexceptions);
 
-#ifdef _LIBCUDACXX_NO_EXCEPTIONS
+#ifdef _CCCL_NO_EXCEPTIONS
 template <class _Rollback>
 using __exception_guard = __exception_guard_noexceptions<_Rollback>;
-#else
+#else // ^^^ _CCCL_NO_EXCEPTIONS ^^^ / vvv !_CCCL_NO_EXCEPTIONS vvv
 template <class _Rollback>
 using __exception_guard = __exception_guard_exceptions<_Rollback>;
-#endif
+#endif // !_CCCL_NO_EXCEPTIONS
 
 template <class _Rollback>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr __exception_guard<_Rollback> __make_exception_guard(_Rollback __rollback)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr __exception_guard<_Rollback> __make_exception_guard(_Rollback __rollback)
 {
   return __exception_guard<_Rollback>(_CUDA_VSTD::move(__rollback));
 }

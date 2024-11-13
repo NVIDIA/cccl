@@ -223,7 +223,7 @@ struct AgentRadixSortHistogram
 #pragma unroll
       for (int pass = 0; pass < num_passes; ++pass)
       {
-        OffsetT count = internal::ThreadReduce(s.bins[pass][bin], Sum());
+        OffsetT count = cub::ThreadReduce(s.bins[pass][bin], ::cuda::std::plus<>{});
         if (count > 0)
         {
           // Using cuda::atomic<> here would also require using it in
@@ -242,7 +242,7 @@ struct AgentRadixSortHistogram
     // Within a portion, avoid overflowing (u)int32 counters.
     // Between portions, accumulate results in global memory.
     constexpr OffsetT MAX_PORTION_SIZE = 1 << 30;
-    OffsetT num_portions               = cub::DivideAndRoundUp(num_items, MAX_PORTION_SIZE);
+    OffsetT num_portions               = ::cuda::ceil_div(num_items, MAX_PORTION_SIZE);
     for (OffsetT portion = 0; portion < num_portions; ++portion)
     {
       // Reset the counters.

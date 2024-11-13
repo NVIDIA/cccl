@@ -9,6 +9,8 @@
 #include <unittest/assertions.h>
 #include <unittest/unittest.h>
 
+_CCCL_DIAG_SUPPRESS_MSVC(4244) // conversion from 'const T1' to 'const T', possible loss of data
+
 /*
    The following tests do not check for the numerical accuracy of the operations.
    That is tested in a separate program (complex_accuracy.cpp) which requires mpfr,
@@ -584,7 +586,7 @@ struct TestComplexPowerFunctions
     {
       using T0       = T;
       using T1       = other_floating_point_type_t<T0>;
-      using promoted = ::cuda::std::__common_type_t<T0, T1>;
+      using promoted = ::cuda::std::common_type_t<T0, T1>;
 
       thrust::host_vector<T0> data = unittest::random_samples<T0>(4);
 

@@ -34,7 +34,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _AlgPolicy, class _Comp, class _InIter1, class _Sent1, class _InIter2, class _Sent2, class _OutIter>
-_LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 pair<__remove_cvref_t<_InIter1>, __remove_cvref_t<_OutIter>>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<remove_cvref_t<_InIter1>, remove_cvref_t<_OutIter>>
 __set_difference(
   _InIter1&& __first1, _Sent1&& __last1, _InIter2&& __first2, _Sent2&& __last2, _OutIter&& __result, _Comp&& __comp)
 {
@@ -61,7 +61,7 @@ __set_difference(
 }
 
 template <class _InputIterator1, class _InputIterator2, class _OutputIterator, class _Compare>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _OutputIterator set_difference(
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _OutputIterator set_difference(
   _InputIterator1 __first1,
   _InputIterator1 __last1,
   _InputIterator2 __first2,
@@ -75,7 +75,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _OutputIterator set_d
 }
 
 template <class _InputIterator1, class _InputIterator2, class _OutputIterator>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _OutputIterator set_difference(
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _OutputIterator set_difference(
   _InputIterator1 __first1,
   _InputIterator1 __last1,
   _InputIterator2 __first2,

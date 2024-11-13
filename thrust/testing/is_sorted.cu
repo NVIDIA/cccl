@@ -8,11 +8,7 @@ void TestIsSortedSimple()
 {
   using T = typename Vector::value_type;
 
-  Vector v(4);
-  v[0] = 0;
-  v[1] = 5;
-  v[2] = 8;
-  v[3] = 0;
+  Vector v{0, 5, 8, 0};
 
   ASSERT_EQUAL(thrust::is_sorted(v.begin(), v.begin() + 0), true);
   ASSERT_EQUAL(thrust::is_sorted(v.begin(), v.begin() + 1), true);
@@ -40,18 +36,7 @@ DECLARE_VECTOR_UNITTEST(TestIsSortedSimple);
 template <class Vector>
 void TestIsSortedRepeatedElements()
 {
-  Vector v(10);
-
-  v[0] = 0;
-  v[1] = 1;
-  v[2] = 1;
-  v[3] = 2;
-  v[4] = 3;
-  v[5] = 4;
-  v[6] = 5;
-  v[7] = 5;
-  v[8] = 5;
-  v[9] = 6;
+  Vector v{0, 1, 1, 2, 3, 4, 5, 5, 5, 6};
 
   ASSERT_EQUAL(true, thrust::is_sorted(v.begin(), v.end()));
 }

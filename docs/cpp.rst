@@ -43,7 +43,7 @@ be better served by unifying them into a single repository.
   OpenMP).
 
 - `Cuda Experimental <https://nvidia.github.io/cccl/cudax/>`__
-  is a library of exerimental features that are still in the design process.
+  is a library of experimental features that are still in the design process.
 
 The main goal of the CCCL C++ libraries is to fill a similar role that the
 Standard C++ Library fills for Standard C++: provide general-purpose,

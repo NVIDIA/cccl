@@ -30,7 +30,7 @@ _CCCL_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type,
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-inline _LIBCUDACXX_INLINE_VISIBILITY void* align(size_t __alignment, size_t __size, void*& __ptr, size_t& __space)
+_LIBCUDACXX_HIDE_FROM_ABI void* align(size_t __alignment, size_t __size, void*& __ptr, size_t& __space)
 {
   if (__space < __size)
   {

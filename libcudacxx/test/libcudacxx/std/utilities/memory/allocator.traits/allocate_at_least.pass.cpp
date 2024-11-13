@@ -33,7 +33,7 @@ struct no_allocate_at_least
   {
     return &t;
   }
-  constexpr void deallocate(T*, cuda::std::size_t) {}
+  constexpr void deallocate(T*, cuda::std::size_t) noexcept {}
 };
 
 template <class T>
@@ -47,7 +47,7 @@ struct has_allocate_at_least
   {
     return &t1;
   }
-  constexpr void deallocate(T*, cuda::std::size_t) {}
+  constexpr void deallocate(T*, cuda::std::size_t) noexcept {}
   constexpr cuda::std::allocation_result<T*> allocate_at_least(cuda::std::size_t)
   {
     return {&t2, 2};

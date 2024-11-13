@@ -85,7 +85,6 @@ architectures:
 
 -  aarch64.
 -  x86-64.
--  ppc64le.
 
 Host Operating Systems
 ~~~~~~~~~~~~~~~~~~~~~~

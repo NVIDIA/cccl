@@ -350,7 +350,7 @@ public:
     return static_cast<T*>(::operator new(n * sizeof(T)));
   }
 
-  void deallocate(T* p, std::size_t)
+  void deallocate(T* p, std::size_t) noexcept
   {
     return ::operator delete(static_cast<void*>(p));
   }
@@ -367,7 +367,7 @@ public:
   }
 
   template <class Up>
-  void destroy(Up* p)
+  void destroy(Up* p) noexcept
   {
     static_assert((std::is_same<Up, AllowConstructT>::value), "Only allowed to destroy Up");
     {

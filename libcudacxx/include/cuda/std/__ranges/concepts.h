@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/constructible.h>
+#include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/movable.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__iterator/concepts.h>
@@ -125,10 +126,10 @@ template <class _Tp>
 concept common_range = range<_Tp> && same_as<iterator_t<_Tp>, sentinel_t<_Tp>>;
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_std_initializer_list = false;
+_CCCL_INLINE_VAR constexpr bool __is_std_initializer_list = false;
 
 template <class _Ep>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_std_initializer_list<initializer_list<_Ep>> = true;
+_CCCL_INLINE_VAR constexpr bool __is_std_initializer_list<initializer_list<_Ep>> = true;
 
 template <class _Tp>
 concept viewable_range =
@@ -268,10 +269,10 @@ template <class _Tp>
 _LIBCUDACXX_CONCEPT common_range = _LIBCUDACXX_FRAGMENT(__common_range_, _Tp);
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_std_initializer_list = false;
+_CCCL_INLINE_VAR constexpr bool __is_std_initializer_list = false;
 
 template <class _Ep>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_std_initializer_list<initializer_list<_Ep>> = true;
+_CCCL_INLINE_VAR constexpr bool __is_std_initializer_list<initializer_list<_Ep>> = true;
 
 template <class _Tp>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
@@ -287,6 +288,20 @@ template <class _Tp>
 _LIBCUDACXX_CONCEPT viewable_range = _LIBCUDACXX_FRAGMENT(__viewable_range_, _Tp);
 
 #  endif // _CCCL_STD_VER >= 2017
+
+//[container.intro.reqmts]
+#  if _CCCL_STD_VER >= 2020
+template <class _Range, class _Tp>
+concept __container_compatible_range = input_range<_Range> && convertible_to<range_reference_t<_Range>, _Tp>;
+#  else // ^^^ C++20 ^^^ / vvv C++17 vvv
+template <class _Range, class _Tp>
+_LIBCUDACXX_CONCEPT_FRAGMENT(
+  __container_compatible_range_,
+  requires()(requires(input_range<_Range>), requires(convertible_to<range_reference_t<_Range>, _Tp>)));
+
+template <class _Range, class _Tp>
+_LIBCUDACXX_CONCEPT __container_compatible_range = _LIBCUDACXX_FRAGMENT(__container_compatible_range_, _Range, _Tp);
+#  endif // _CCCL_STD_VER <= 2017
 
 #endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER_MSVC_2017
 

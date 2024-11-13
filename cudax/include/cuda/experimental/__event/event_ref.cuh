@@ -74,8 +74,8 @@ public:
   //! @throws cuda_error if the event record fails
   void record(stream_ref __stream) const
   {
-    assert(__event_ != nullptr);
-    assert(__stream.get() != nullptr);
+    _CCCL_ASSERT(__event_ != nullptr, "cuda::experimental::event_ref::record no event set");
+    _CCCL_ASSERT(__stream.get() != nullptr, "cuda::experimental::event_ref::record invalid stream passed");
     // Need to use driver API, cudaEventRecord will push dev 0 if stack is empty
     detail::driver::eventRecord(__event_, __stream.get());
   }
@@ -86,8 +86,31 @@ public:
   //! @throws cuda_error if waiting for the event fails
   void wait() const
   {
-    assert(__event_ != nullptr);
+    _CCCL_ASSERT(__event_ != nullptr, "cuda::experimental::event_ref::wait no event set");
     _CCCL_TRY_CUDA_API(::cudaEventSynchronize, "Failed to wait for CUDA event", __event_);
+  }
+
+  //! @brief Checks if all the work in the stream prior to the record of the event has completed.
+  //!
+  //! If is_done returns true, calling wait() on this event will return immediately
+  //!
+  //! @throws cuda_error if the event query fails
+  _CCCL_NODISCARD bool is_done() const
+  {
+    _CCCL_ASSERT(__event_ != nullptr, "cuda::experimental::event_ref::wait no event set");
+    cudaError_t __status = ::cudaEventQuery(__event_);
+    if (__status == cudaSuccess)
+    {
+      return true;
+    }
+    else if (__status == cudaErrorNotReady)
+    {
+      return false;
+    }
+    else
+    {
+      ::cuda::__throw_cuda_error(__status, "Failed to query CUDA event");
+    }
   }
 
   //! @brief Retrieve the native `cudaEvent_t` handle.

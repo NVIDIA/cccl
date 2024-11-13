@@ -1,6 +1,6 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2022, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2011-2024, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -319,13 +319,13 @@ struct DeviceReduce
 
     using InitT = OutputT;
 
-    return DispatchReduce<InputIteratorT, OutputIteratorT, OffsetT, cub::Sum, InitT>::Dispatch(
+    return DispatchReduce<InputIteratorT, OutputIteratorT, OffsetT, ::cuda::std::plus<>, InitT>::Dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
       d_out,
       static_cast<OffsetT>(num_items),
-      cub::Sum(),
+      ::cuda::std::plus<>{},
       InitT{}, // zero-initialize
       stream);
   }
@@ -442,13 +442,13 @@ struct DeviceReduce
 
     using InitT = InputT;
 
-    return DispatchReduce<InputIteratorT, OutputIteratorT, OffsetT, cub::Min, InitT>::Dispatch(
+    return DispatchReduce<InputIteratorT, OutputIteratorT, OffsetT, ::cuda::minimum<>, InitT>::Dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
       d_out,
       static_cast<OffsetT>(num_items),
-      cub::Min(),
+      ::cuda::minimum<>{},
       // replace with
       // std::numeric_limits<T>::max() when
       // C++11 support is more prevalent
@@ -700,13 +700,13 @@ struct DeviceReduce
 
     using InitT = InputT;
 
-    return DispatchReduce<InputIteratorT, OutputIteratorT, OffsetT, cub::Max, InitT>::Dispatch(
+    return DispatchReduce<InputIteratorT, OutputIteratorT, OffsetT, ::cuda::maximum<>, InitT>::Dispatch(
       d_temp_storage,
       temp_storage_bytes,
       d_in,
       d_out,
       static_cast<OffsetT>(num_items),
-      cub::Max(),
+      ::cuda::maximum<>{},
       // replace with
       // std::numeric_limits<T>::lowest()
       // when C++11 support is more
@@ -908,7 +908,7 @@ struct DeviceReduce
   //!      in.begin(),
   //!      out.begin(),
   //!      in.size(),
-  //!      cub::Sum{},
+  //!      cuda::std::plus<>{},
   //!      square_t{},
   //!      init);
   //!
@@ -921,7 +921,7 @@ struct DeviceReduce
   //!      in.begin(),
   //!      out.begin(),
   //!      in.size(),
-  //!      cub::Sum{},
+  //!      cuda::std::plus<>{},
   //!      square_t{},
   //!      init);
   //!
@@ -1172,7 +1172,7 @@ struct DeviceReduce
     // Selection op (not used)
 
     // Default == operator
-    using EqualityOp = Equality;
+    using EqualityOp = ::cuda::std::equal_to<>;
 
     return DispatchReduceByKey<
       KeysInputIteratorT,

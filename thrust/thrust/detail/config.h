@@ -19,8 +19,8 @@
 
 #pragma once
 
-#include <thrust/detail/config/config.h>
-#include <thrust/version.h>
+#include <thrust/detail/config/config.h> // IWYU pragma: export
+#include <thrust/version.h> // IWYU pragma: export
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header

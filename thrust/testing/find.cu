@@ -52,12 +52,7 @@ struct less_than_value_pred
 template <class Vector>
 void TestFindSimple()
 {
-  Vector vec(5);
-  vec[0] = 1;
-  vec[1] = 2;
-  vec[2] = 3;
-  vec[3] = 3;
-  vec[4] = 5;
+  Vector vec{1, 2, 3, 3, 5};
 
   ASSERT_EQUAL(thrust::find(vec.begin(), vec.end(), 0) - vec.begin(), 5);
   ASSERT_EQUAL(thrust::find(vec.begin(), vec.end(), 1) - vec.begin(), 0);
@@ -108,12 +103,7 @@ void TestFindIfSimple()
 {
   using T = typename Vector::value_type;
 
-  Vector vec(5);
-  vec[0] = 1;
-  vec[1] = 2;
-  vec[2] = 3;
-  vec[3] = 3;
-  vec[4] = 5;
+  Vector vec{1, 2, 3, 3, 5};
 
   ASSERT_EQUAL(thrust::find_if(vec.begin(), vec.end(), equal_to_value_pred<T>(0)) - vec.begin(), 5);
   ASSERT_EQUAL(thrust::find_if(vec.begin(), vec.end(), equal_to_value_pred<T>(1)) - vec.begin(), 0);
@@ -164,12 +154,7 @@ void TestFindIfNotSimple()
 {
   using T = typename Vector::value_type;
 
-  Vector vec(5);
-  vec[0] = 0;
-  vec[1] = 1;
-  vec[2] = 2;
-  vec[3] = 3;
-  vec[4] = 4;
+  Vector vec{0, 1, 2, 3, 4};
 
   ASSERT_EQUAL(0, thrust::find_if_not(vec.begin(), vec.end(), less_than_value_pred<T>(0)) - vec.begin());
   ASSERT_EQUAL(1, thrust::find_if_not(vec.begin(), vec.end(), less_than_value_pred<T>(1)) - vec.begin());

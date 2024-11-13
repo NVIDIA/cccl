@@ -7,6 +7,34 @@
 
 template <typename input_value_type,
           typename output_value_type   = input_value_type,
+          typename value_type          = input_value_type,
+          typename alternate_binary_op = thrust::maximum<>>
+struct simple_init_invoker
+    : testing::async::mixin::input::device_vector<input_value_type>
+    , testing::async::mixin::output::device_vector<output_value_type>
+    , testing::async::inclusive_scan::mixin::postfix_args_init::all_overloads<value_type, alternate_binary_op>
+    , testing::async::inclusive_scan::mixin::invoke_reference::host_synchronous<input_value_type, output_value_type>
+    , testing::async::inclusive_scan::mixin::invoke_async::simple
+    , testing::async::mixin::compare_outputs::assert_almost_equal_if_fp_quiet
+{
+  static std::string description()
+  {
+    return "simple invocation with device vectors and initial value";
+  }
+};
+
+template <typename T>
+struct test_simple_init
+{
+  void operator()(std::size_t num_values) const
+  {
+    testing::async::test_policy_overloads<simple_init_invoker<T>>::run(num_values);
+  }
+};
+DECLARE_GENERIC_SIZED_UNITTEST_WITH_TYPES(test_simple_init, NumericTypes);
+
+template <typename input_value_type,
+          typename output_value_type   = input_value_type,
           typename alternate_binary_op = thrust::maximum<>>
 struct simple_invoker
     : testing::async::mixin::input::device_vector<input_value_type>

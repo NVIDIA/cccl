@@ -24,13 +24,21 @@
 #include <cuda/std/__cccl/attributes.h>
 #include <cuda/std/__cuda/api_wrapper.h>
 
-#include <cuda/experimental/__device/device.cuh>
+#include <cuda/experimental/__device/device_ref.cuh>
 
 namespace cuda::experimental
 {
 
 namespace detail
 {
+
+_CCCL_NODISCARD inline int __get_attr_impl(::cudaDeviceAttr __attr, int __dev)
+{
+  int __value = 0;
+  _CCCL_TRY_CUDA_API(::cudaDeviceGetAttribute, "failed to get device attribute", &__value, __attr, __dev);
+  return __value;
+}
+
 template <::cudaDeviceAttr _Attr>
 struct __dev_attr
 {
@@ -43,7 +51,7 @@ struct __dev_attr
 
   _CCCL_NODISCARD type operator()(device_ref __dev_id) const
   {
-    return __dev_id.attr<_Attr>();
+    return __get_attr_impl(_Attr, __dev_id.get());
   }
 };
 
@@ -59,7 +67,7 @@ struct __dev_attr_with_type
 
   _CCCL_NODISCARD type operator()(device_ref __dev_id) const
   {
-    return __dev_id.attr<_Attr>();
+    return static_cast<type>(__get_attr_impl(_Attr, __dev_id.get()));
   }
 };
 
@@ -249,9 +257,8 @@ struct __dev_attr<::cudaDevAttrNumaConfig> //
   static constexpr type numa_node = ::cudaDeviceNumaConfigNumaNode;
 };
 #endif
-} // namespace detail
 
-struct device::attrs
+struct __device_attrs
 {
   // Maximum number of threads per block
   using max_threads_per_block_t = detail::__dev_attr<::cudaDevAttrMaxThreadsPerBlock>;
@@ -473,8 +480,8 @@ struct device::attrs
   static constexpr gpu_overlap_t gpu_overlap{};
 
   // Number of multiprocessors on the device
-  using multi_processor_count_t = detail::__dev_attr<::cudaDevAttrMultiProcessorCount>;
-  static constexpr multi_processor_count_t multi_processor_count{};
+  using multiprocessor_count_t = detail::__dev_attr<::cudaDevAttrMultiProcessorCount>;
+  static constexpr multiprocessor_count_t multiprocessor_count{};
 
   // true if there is a run time limit for kernels executed on the device, or
   // false if not
@@ -485,7 +492,7 @@ struct device::attrs
   using integrated_t = detail::__dev_attr<::cudaDevAttrIntegrated>;
   static constexpr integrated_t integrated{};
 
-  // true if the d
+  // true if the device can map host memory into CUDA address space
   using can_map_host_memory_t = detail::__dev_attr<::cudaDevAttrCanMapHostMemory>;
   static constexpr can_map_host_memory_t can_map_host_memory{};
 
@@ -531,8 +538,8 @@ struct device::attrs
   static constexpr l2_cache_size_t l2_cache_size{};
 
   // Maximum resident threads per multiprocessor
-  using max_threads_per_multi_processor_t = detail::__dev_attr<::cudaDevAttrMaxThreadsPerMultiProcessor>;
-  static constexpr max_threads_per_multi_processor_t max_threads_per_multi_processor{};
+  using max_threads_per_multiprocessor_t = detail::__dev_attr<::cudaDevAttrMaxThreadsPerMultiProcessor>;
+  static constexpr max_threads_per_multiprocessor_t max_threads_per_multiprocessor{};
 
   // true if the device shares a unified address space with the host, or false
   // if not
@@ -644,7 +651,7 @@ struct device::attrs
   static constexpr direct_managed_mem_access_from_host_t direct_managed_mem_access_from_host{};
 
   // Maximum per block shared memory size on the device. This value can be opted
-  // into when using cudaFuncSetAttribute
+  // into when using dynamic_shared_memory with NonPortableSize set to true
   using max_shared_memory_per_block_optin_t = detail::__dev_attr<::cudaDevAttrMaxSharedMemoryPerBlockOptin>;
   static constexpr max_shared_memory_per_block_optin_t max_shared_memory_per_block_optin{};
 
@@ -715,7 +722,21 @@ struct device::attrs
   static constexpr numa_id_t numa_id{};
 
 #endif // CUDART_VERSION >= 12020
+
+  // Combines major and minor compute capability in a 100 * major + 10 * minor format, allows to query full compute
+  // capability in a single query
+  struct compute_capability_t
+  {
+    _CCCL_NODISCARD int operator()(device_ref __dev_id) const
+    {
+      return 100 * compute_capability_major(__dev_id) + 10 * compute_capability_minor(__dev_id);
+    }
+  };
+  static constexpr compute_capability_t compute_capability{};
 };
+
+} // namespace detail
+
 } // namespace cuda::experimental
 
 #endif // _CUDAX__DEVICE_ATTRIBUTES_

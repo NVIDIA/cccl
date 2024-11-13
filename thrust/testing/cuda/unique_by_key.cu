@@ -17,30 +17,14 @@ template <typename Vector>
 void initialize_keys(Vector& keys)
 {
   keys.resize(9);
-  keys[0] = 11;
-  keys[1] = 11;
-  keys[2] = 21;
-  keys[3] = 20;
-  keys[4] = 21;
-  keys[5] = 21;
-  keys[6] = 21;
-  keys[7] = 37;
-  keys[8] = 37;
+  keys = {11, 11, 21, 20, 21, 21, 21, 37, 37};
 }
 
 template <typename Vector>
 void initialize_values(Vector& values)
 {
   values.resize(9);
-  values[0] = 0;
-  values[1] = 1;
-  values[2] = 2;
-  values[3] = 3;
-  values[4] = 4;
-  values[5] = 5;
-  values[6] = 6;
-  values[7] = 7;
-  values[8] = 8;
+  values = {0, 1, 2, 3, 4, 5, 6, 7, 8};
 }
 
 #ifdef THRUST_TEST_DEVICE_SIDE
@@ -89,18 +73,14 @@ void TestUniqueByKeyDevice(ExecutionPolicy exec)
   new_last = new_last_vec[0];
 
   ASSERT_EQUAL(new_last.first - keys.begin(), 5);
-  ASSERT_EQUAL(new_last.second - values.begin(), 5);
-  ASSERT_EQUAL(keys[0], 11);
-  ASSERT_EQUAL(keys[1], 21);
-  ASSERT_EQUAL(keys[2], 20);
-  ASSERT_EQUAL(keys[3], 21);
-  ASSERT_EQUAL(keys[4], 37);
+  keys.erase(new_last.first, keys.end());
+  Vector keys_ref{11, 21, 20, 21, 37};
+  ASSERT_EQUAL(keys, keys_ref);
 
-  ASSERT_EQUAL(values[0], 0);
-  ASSERT_EQUAL(values[1], 2);
-  ASSERT_EQUAL(values[2], 3);
-  ASSERT_EQUAL(values[3], 4);
-  ASSERT_EQUAL(values[4], 7);
+  ASSERT_EQUAL(new_last.second - values.begin(), 5);
+  values.erase(new_last.second, values.end());
+  Vector values_ref{0, 2, 3, 4, 7};
+  ASSERT_EQUAL(values, values_ref);
 
   // test BinaryPredicate
   initialize_keys(keys);
@@ -116,14 +96,14 @@ void TestUniqueByKeyDevice(ExecutionPolicy exec)
   new_last = new_last_vec[0];
 
   ASSERT_EQUAL(new_last.first - keys.begin(), 3);
-  ASSERT_EQUAL(new_last.second - values.begin(), 3);
-  ASSERT_EQUAL(keys[0], 11);
-  ASSERT_EQUAL(keys[1], 21);
-  ASSERT_EQUAL(keys[2], 37);
+  keys.erase(new_last.first, keys.end());
+  keys_ref = {11, 21, 37};
+  ASSERT_EQUAL(keys, keys_ref);
 
-  ASSERT_EQUAL(values[0], 0);
-  ASSERT_EQUAL(values[1], 2);
-  ASSERT_EQUAL(values[2], 7);
+  ASSERT_EQUAL(new_last.second - values.begin(), 3);
+  values.erase(new_last.second, values.end());
+  values_ref = {0, 2, 7};
+  ASSERT_EQUAL(values, values_ref);
 }
 
 void TestUniqueByKeyDeviceSeq()
@@ -170,18 +150,14 @@ void TestUniqueByKeyCudaStreams(ExecutionPolicy policy)
   cudaStreamSynchronize(s);
 
   ASSERT_EQUAL(new_last.first - keys.begin(), 5);
-  ASSERT_EQUAL(new_last.second - values.begin(), 5);
-  ASSERT_EQUAL(keys[0], 11);
-  ASSERT_EQUAL(keys[1], 21);
-  ASSERT_EQUAL(keys[2], 20);
-  ASSERT_EQUAL(keys[3], 21);
-  ASSERT_EQUAL(keys[4], 37);
+  keys.erase(new_last.first, keys.end());
+  Vector keys_ref{11, 21, 20, 21, 37};
+  ASSERT_EQUAL(keys, keys_ref);
 
-  ASSERT_EQUAL(values[0], 0);
-  ASSERT_EQUAL(values[1], 2);
-  ASSERT_EQUAL(values[2], 3);
-  ASSERT_EQUAL(values[3], 4);
-  ASSERT_EQUAL(values[4], 7);
+  ASSERT_EQUAL(new_last.second - values.begin(), 5);
+  values.erase(new_last.second, values.end());
+  Vector values_ref{0, 2, 3, 4, 7};
+  ASSERT_EQUAL(values, values_ref);
 
   // test BinaryPredicate
   initialize_keys(keys);
@@ -190,14 +166,14 @@ void TestUniqueByKeyCudaStreams(ExecutionPolicy policy)
   new_last = thrust::unique_by_key(streampolicy, keys.begin(), keys.end(), values.begin(), is_equal_div_10_unique<T>());
 
   ASSERT_EQUAL(new_last.first - keys.begin(), 3);
-  ASSERT_EQUAL(new_last.second - values.begin(), 3);
-  ASSERT_EQUAL(keys[0], 11);
-  ASSERT_EQUAL(keys[1], 21);
-  ASSERT_EQUAL(keys[2], 37);
+  keys.erase(new_last.first, keys.end());
+  keys_ref = {11, 21, 37};
+  ASSERT_EQUAL(keys, keys_ref);
 
-  ASSERT_EQUAL(values[0], 0);
-  ASSERT_EQUAL(values[1], 2);
-  ASSERT_EQUAL(values[2], 7);
+  ASSERT_EQUAL(new_last.second - values.begin(), 3);
+  values.erase(new_last.second, values.end());
+  values_ref = {0, 2, 7};
+  ASSERT_EQUAL(values, values_ref);
 
   cudaStreamDestroy(s);
 }
@@ -283,18 +259,14 @@ void TestUniqueCopyByKeyDevice(ExecutionPolicy exec)
   new_last = new_last_vec[0];
 
   ASSERT_EQUAL(new_last.first - output_keys.begin(), 5);
-  ASSERT_EQUAL(new_last.second - output_values.begin(), 5);
-  ASSERT_EQUAL(output_keys[0], 11);
-  ASSERT_EQUAL(output_keys[1], 21);
-  ASSERT_EQUAL(output_keys[2], 20);
-  ASSERT_EQUAL(output_keys[3], 21);
-  ASSERT_EQUAL(output_keys[4], 37);
+  output_keys.erase(new_last.first, output_keys.end());
+  Vector keys_ref{11, 21, 20, 21, 37};
+  ASSERT_EQUAL(output_keys, keys_ref);
 
-  ASSERT_EQUAL(output_values[0], 0);
-  ASSERT_EQUAL(output_values[1], 2);
-  ASSERT_EQUAL(output_values[2], 3);
-  ASSERT_EQUAL(output_values[3], 4);
-  ASSERT_EQUAL(output_values[4], 7);
+  ASSERT_EQUAL(new_last.second - output_values.begin(), 5);
+  output_values.erase(new_last.second, output_values.end());
+  Vector values_ref{0, 2, 3, 4, 7};
+  ASSERT_EQUAL(output_values, values_ref);
 
   // test BinaryPredicate
   initialize_keys(keys);
@@ -317,14 +289,15 @@ void TestUniqueCopyByKeyDevice(ExecutionPolicy exec)
   new_last = new_last_vec[0];
 
   ASSERT_EQUAL(new_last.first - output_keys.begin(), 3);
-  ASSERT_EQUAL(new_last.second - output_values.begin(), 3);
-  ASSERT_EQUAL(output_keys[0], 11);
-  ASSERT_EQUAL(output_keys[1], 21);
-  ASSERT_EQUAL(output_keys[2], 37);
 
-  ASSERT_EQUAL(output_values[0], 0);
-  ASSERT_EQUAL(output_values[1], 2);
-  ASSERT_EQUAL(output_values[2], 7);
+  output_keys.erase(new_last.first, output_keys.end());
+  keys_ref = {11, 21, 37};
+  ASSERT_EQUAL(output_keys, keys_ref);
+
+  ASSERT_EQUAL(new_last.second - output_values.begin(), 3);
+  output_values.erase(new_last.second, output_values.end());
+  values_ref = {0, 2, 7};
+  ASSERT_EQUAL(output_values, values_ref);
 }
 
 void TestUniqueCopyByKeyDeviceSeq()
@@ -375,18 +348,14 @@ void TestUniqueCopyByKeyCudaStreams(ExecutionPolicy policy)
   cudaStreamSynchronize(s);
 
   ASSERT_EQUAL(new_last.first - output_keys.begin(), 5);
-  ASSERT_EQUAL(new_last.second - output_values.begin(), 5);
-  ASSERT_EQUAL(output_keys[0], 11);
-  ASSERT_EQUAL(output_keys[1], 21);
-  ASSERT_EQUAL(output_keys[2], 20);
-  ASSERT_EQUAL(output_keys[3], 21);
-  ASSERT_EQUAL(output_keys[4], 37);
+  output_keys.erase(new_last.first, output_keys.end());
+  Vector keys_ref{11, 21, 20, 21, 37};
+  ASSERT_EQUAL(output_keys, keys_ref);
 
-  ASSERT_EQUAL(output_values[0], 0);
-  ASSERT_EQUAL(output_values[1], 2);
-  ASSERT_EQUAL(output_values[2], 3);
-  ASSERT_EQUAL(output_values[3], 4);
-  ASSERT_EQUAL(output_values[4], 7);
+  ASSERT_EQUAL(new_last.second - output_values.begin(), 5);
+  output_values.erase(new_last.second, output_values.end());
+  Vector values_ref{0, 2, 3, 4, 7};
+  ASSERT_EQUAL(output_values, values_ref);
 
   // test BinaryPredicate
   initialize_keys(keys);
@@ -403,14 +372,14 @@ void TestUniqueCopyByKeyCudaStreams(ExecutionPolicy policy)
   cudaStreamSynchronize(s);
 
   ASSERT_EQUAL(new_last.first - output_keys.begin(), 3);
-  ASSERT_EQUAL(new_last.second - output_values.begin(), 3);
-  ASSERT_EQUAL(output_keys[0], 11);
-  ASSERT_EQUAL(output_keys[1], 21);
-  ASSERT_EQUAL(output_keys[2], 37);
+  output_keys.erase(new_last.first, output_keys.end());
+  keys_ref = {11, 21, 37};
+  ASSERT_EQUAL(output_keys, keys_ref);
 
-  ASSERT_EQUAL(output_values[0], 0);
-  ASSERT_EQUAL(output_values[1], 2);
-  ASSERT_EQUAL(output_values[2], 7);
+  ASSERT_EQUAL(new_last.second - output_values.begin(), 3);
+  output_values.erase(new_last.second, output_values.end());
+  values_ref = {0, 2, 7};
+  ASSERT_EQUAL(output_values, values_ref);
 
   cudaStreamDestroy(s);
 }

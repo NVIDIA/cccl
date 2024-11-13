@@ -79,9 +79,6 @@ function(thrust_add_test target_name_var test_name test_src thrust_target)
     target_compile_definitions(${test_target} PRIVATE THRUST_TEST_DEVICE_SIDE)
   endif()
 
-  # Ensure that we build our tests without treating ourself as system header
-  target_compile_definitions(${test_target} PRIVATE "_CCCL_NO_SYSTEM_HEADER")
-
   thrust_fix_clang_nvcc_build_for(${test_target})
 
   # Add to the active configuration's meta target

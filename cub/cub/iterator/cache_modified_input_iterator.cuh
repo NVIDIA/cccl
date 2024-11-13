@@ -43,21 +43,18 @@
 #  pragma system_header
 #endif // no system header
 
-#if !defined(_CCCL_COMPILER_NVRTC)
+#ifdef _CCCL_COMPILER_NVRTC
+#  include <cuda/std/iterator>
+#else // _CCCL_COMPILER_NVRTC
+#  include <thrust/iterator/iterator_facade.h>
+#  include <thrust/iterator/iterator_traits.h>
+
 #  include <iostream>
 #  include <iterator>
-#else
-#  include <cuda/std/iterator>
-#endif
+#endif // _CCCL_COMPILER_NVRTC
 
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_store.cuh>
-
-#if (THRUST_VERSION >= 100700)
-// This iterator is compatible with Thrust API 1.7 and newer
-#  include <thrust/iterator/iterator_facade.h>
-#  include <thrust/iterator/iterator_traits.h>
-#endif // THRUST_VERSION
 
 CUB_NAMESPACE_BEGIN
 
@@ -126,20 +123,15 @@ public:
   /// The type of a reference to an element the iterator can point to
   using reference = ValueType;
 
-#if !defined(_CCCL_COMPILER_NVRTC)
-#  if (THRUST_VERSION >= 100700)
-  // Use Thrust's iterator categories so we can use these iterators in Thrust 1.7 (or newer) methods
+#ifdef _CCCL_COMPILER_NVRTC
+  using iterator_category = ::cuda::std::random_access_iterator_tag;
+#else // _CCCL_COMPILER_NVRTC
   using iterator_category = typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
     THRUST_NS_QUALIFIER::device_system_tag,
     THRUST_NS_QUALIFIER::random_access_traversal_tag,
     value_type,
     reference>::type;
-#  else // THRUST_VERSION < 100700
-  using iterator_category = std::random_access_iterator_tag;
-#  endif // THRUST_VERSION
-#else // defined(_CCCL_COMPILER_NVRTC)
-  using iterator_category = ::cuda::std::random_access_iterator_tag;
-#endif // defined(_CCCL_COMPILER_NVRTC)
+#endif // _CCCL_COMPILER_NVRTC
 
 public:
   /// Wrapped native pointer

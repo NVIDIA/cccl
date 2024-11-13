@@ -26,41 +26,42 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_ARRAY_EXTENT) && !defined(_LIBCUDACXX_USE_ARRAY_EXTENT_FALLBACK)
+#if defined(_CCCL_BUILTIN_ARRAY_EXTENT) && !defined(_LIBCUDACXX_USE_ARRAY_EXTENT_FALLBACK)
 
 template <class _Tp, size_t _Dim = 0>
-struct _LIBCUDACXX_TEMPLATE_VIS extent : integral_constant<size_t, _LIBCUDACXX_ARRAY_EXTENT(_Tp, _Dim)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT extent : integral_constant<size_t, _CCCL_BUILTIN_ARRAY_EXTENT(_Tp, _Dim)>
 {};
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp, unsigned _Ip = 0>
-_LIBCUDACXX_INLINE_VAR constexpr size_t extent_v = _LIBCUDACXX_ARRAY_EXTENT(_Tp, _Ip);
-#  endif
+_CCCL_INLINE_VAR constexpr size_t extent_v = _CCCL_BUILTIN_ARRAY_EXTENT(_Tp, _Ip);
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
-#else
+#else // ^^^ _CCCL_BUILTIN_ARRAY_EXTENT ^^^ / vvv !_CCCL_BUILTIN_ARRAY_EXTENT vvv
 
 template <class _Tp, unsigned _Ip = 0>
-struct _LIBCUDACXX_TEMPLATE_VIS extent : public integral_constant<size_t, 0>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT extent : public integral_constant<size_t, 0>
 {};
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS extent<_Tp[], 0> : public integral_constant<size_t, 0>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT extent<_Tp[], 0> : public integral_constant<size_t, 0>
 {};
 template <class _Tp, unsigned _Ip>
-struct _LIBCUDACXX_TEMPLATE_VIS extent<_Tp[], _Ip> : public integral_constant<size_t, extent<_Tp, _Ip - 1>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT extent<_Tp[], _Ip> : public integral_constant<size_t, extent<_Tp, _Ip - 1>::value>
 {};
 template <class _Tp, size_t _Np>
-struct _LIBCUDACXX_TEMPLATE_VIS extent<_Tp[_Np], 0> : public integral_constant<size_t, _Np>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT extent<_Tp[_Np], 0> : public integral_constant<size_t, _Np>
 {};
 template <class _Tp, size_t _Np, unsigned _Ip>
-struct _LIBCUDACXX_TEMPLATE_VIS extent<_Tp[_Np], _Ip> : public integral_constant<size_t, extent<_Tp, _Ip - 1>::value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT extent<_Tp[_Np], _Ip>
+    : public integral_constant<size_t, extent<_Tp, _Ip - 1>::value>
 {};
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp, unsigned _Ip = 0>
-_LIBCUDACXX_INLINE_VAR constexpr size_t extent_v = extent<_Tp, _Ip>::value;
-#  endif
+_CCCL_INLINE_VAR constexpr size_t extent_v = extent<_Tp, _Ip>::value;
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
-#endif // defined(_LIBCUDACXX_ARRAY_EXTENT) && !defined(_LIBCUDACXX_USE_ARRAY_EXTENT_FALLBACK)
+#endif // !_CCCL_BUILTIN_ARRAY_EXTENT
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

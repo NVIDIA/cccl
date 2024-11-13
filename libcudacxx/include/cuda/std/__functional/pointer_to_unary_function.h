@@ -30,23 +30,23 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 template <class _Arg, class _Result>
-class _LIBCUDACXX_TEMPLATE_VIS
+class _CCCL_TYPE_VISIBILITY_DEFAULT
 _LIBCUDACXX_DEPRECATED_IN_CXX11 pointer_to_unary_function : public __unary_function<_Arg, _Result>
 {
   _Result (*__f_)(_Arg);
 
 public:
-  _LIBCUDACXX_INLINE_VISIBILITY explicit pointer_to_unary_function(_Result (*__f)(_Arg))
+  _LIBCUDACXX_HIDE_FROM_ABI explicit pointer_to_unary_function(_Result (*__f)(_Arg))
       : __f_(__f)
   {}
-  _LIBCUDACXX_INLINE_VISIBILITY _Result operator()(_Arg __x) const
+  _LIBCUDACXX_HIDE_FROM_ABI _Result operator()(_Arg __x) const
   {
     return __f_(__x);
   }
 };
 
 template <class _Arg, class _Result>
-_LIBCUDACXX_DEPRECATED_IN_CXX11 inline _LIBCUDACXX_INLINE_VISIBILITY pointer_to_unary_function<_Arg, _Result>
+_LIBCUDACXX_DEPRECATED_IN_CXX11 _LIBCUDACXX_HIDE_FROM_ABI pointer_to_unary_function<_Arg, _Result>
 ptr_fun(_Result (*__f)(_Arg))
 {
   return pointer_to_unary_function<_Arg, _Result>(__f);

@@ -32,7 +32,8 @@
 #include <thrust/iterator/detail/discard_iterator_base.h>
 #include <thrust/iterator/iterator_facade.h>
 
-THRUST_DISABLE_MSVC_POSSIBLE_LOSS_OF_DATA_WARNING_BEGIN
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
 
 THRUST_NAMESPACE_BEGIN
 
@@ -162,4 +163,4 @@ make_discard_iterator(discard_iterator<>::difference_type i = discard_iterator<>
 
 THRUST_NAMESPACE_END
 
-THRUST_DISABLE_MSVC_POSSIBLE_LOSS_OF_DATA_WARNING_END
+_CCCL_DIAG_POP

@@ -37,9 +37,9 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
-#if defined(_LIBCUDACXX_COMPILER_MSVC)
+#if defined(_CCCL_COMPILER_MSVC)
 _CCCL_NV_DIAG_SUPPRESS(461) // nonstandard cast to array type ignored
-#endif // _LIBCUDACXX_COMPILER_MSVC
+#endif // _CCCL_COMPILER_MSVC
 
 #if _CCCL_STD_VER > 2011
 
@@ -95,11 +95,11 @@ _CCCL_NV_DIAG_DEFAULT(2642)
 
 #  else
 template <class _Tp, class _Up, size_t _Size, class = void>
-_LIBCUDACXX_INLINE_VAR constexpr bool __swappable_arrays = false;
+_CCCL_INLINE_VAR constexpr bool __swappable_arrays = false;
 #  endif // _CCCL_STD_VER < 2020 || defined(_CCCL_COMPILER_NVHPC)
 
 template <class _Tp, class _Up, class = void>
-_LIBCUDACXX_INLINE_VAR constexpr bool __noexcept_swappable_arrays = false;
+_CCCL_INLINE_VAR constexpr bool __noexcept_swappable_arrays = false;
 
 struct __fn
 {
@@ -107,7 +107,7 @@ struct __fn
   // *The name `swap` is used here unqualified.
   _LIBCUDACXX_TEMPLATE(class _Tp, class _Up)
   _LIBCUDACXX_REQUIRES(__unqualified_swappable_with<_Tp, _Up>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr void operator()(_Tp&& __t, _Up&& __u) const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_Tp&& __t, _Up&& __u) const
     noexcept(noexcept(swap(_CUDA_VSTD::forward<_Tp>(__t), _CUDA_VSTD::forward<_Up>(__u))))
   {
     swap(_CUDA_VSTD::forward<_Tp>(__t), _CUDA_VSTD::forward<_Up>(__u));
@@ -116,7 +116,7 @@ struct __fn
   // 2.2   Otherwise, if `E1` and `E2` are lvalues of array types with equal extent and...
   _LIBCUDACXX_TEMPLATE(class _Tp, class _Up, size_t _Size)
   _LIBCUDACXX_REQUIRES(__swappable_arrays<_Tp, _Up, _Size>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr void operator()(_Tp (&__t)[_Size], _Up (&__u)[_Size]) const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_Tp (&__t)[_Size], _Up (&__u)[_Size]) const
     noexcept(__noexcept_swappable_arrays<_Tp, _Up>)
   {
     // TODO(cjdb): replace with `_CUDA_VRANGES::swap_ranges`.
@@ -129,7 +129,7 @@ struct __fn
   // 2.3   Otherwise, if `E1` and `E2` are lvalues of the same type `T` that models...
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES(__exchangeable<_Tp>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr void operator()(_Tp& __x, _Tp& __y) const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_Tp& __x, _Tp& __y) const
     noexcept(_CCCL_TRAIT(is_nothrow_move_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
   {
     __y = _CUDA_VSTD::exchange(__x, _CUDA_VSTD::move(__y));
@@ -146,12 +146,12 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
     (__swap(__t[0], __u[0]))));
 
 template <class _Tp, class _Up, size_t _Size>
-_LIBCUDACXX_INLINE_VAR constexpr bool __swappable_arrays<_Tp, _Up, _Size, void_t<type_identity_t<_Tp>>> =
+_CCCL_INLINE_VAR constexpr bool __swappable_arrays<_Tp, _Up, _Size, void_t<type_identity_t<_Tp>>> =
   _LIBCUDACXX_FRAGMENT(__swappable_arrays_, _Tp, _Up, _CUDA_VSTD::integral_constant<size_t, _Size>);
 #  endif // _CCCL_STD_VER < 2020 || defined(_CCCL_COMPILER_NVHPC)
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VAR constexpr bool __noexcept_swappable_arrays<_Tp, _Up, void_t<type_identity_t<_Tp>>> =
+_CCCL_INLINE_VAR constexpr bool __noexcept_swappable_arrays<_Tp, _Up, void_t<type_identity_t<_Tp>>> =
   noexcept(__swap::__fn{}(_CUDA_VSTD::declval<_Tp&>(), _CUDA_VSTD::declval<_Up&>()));
 
 _LIBCUDACXX_END_NAMESPACE_CPO
@@ -200,8 +200,8 @@ _LIBCUDACXX_END_NAMESPACE_STD
 
 #endif // _CCCL_STD_VER > 2011
 
-#if defined(_LIBCUDACXX_COMPILER_MSVC)
+#if defined(_CCCL_COMPILER_MSVC)
 _CCCL_NV_DIAG_DEFAULT(461) // nonstandard cast to array type ignored
-#endif // _LIBCUDACXX_COMPILER_MSVC
+#endif // _CCCL_COMPILER_MSVC
 
 #endif // _LIBCUDACXX___CONCEPTS_SWAPPABLE_H

@@ -24,7 +24,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  ******************************************************************************/
-
 #include "insert_nested_NVTX_range_guard.h"
 // above header needs to be included first
 
@@ -34,11 +33,11 @@
 
 #include <cstdint>
 
-#include "c2h/custom_type.cuh"
-#include "c2h/extended_types.cuh"
 #include "catch2_test_device_reduce.cuh"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/custom_type.h>
+#include <c2h/extended_types.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, device_sum);
@@ -48,7 +47,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Max, device_max);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
-// %PARAM% TEST_TYPES types 0:1:2:3
+// %PARAM% TEST_TYPES types 0:1:2:3:4
 
 // List of types to test
 using custom_t =
@@ -72,9 +71,13 @@ type_pair<custom_t>
 #endif
 #if TEST_BF_T
 , type_pair<bfloat16_t> // testing bf16
-#endif
+
 >;
+#endif
 // clang-format on
+#elif TEST_TYPES == 4
+// DPX SIMD instructions
+using full_type_list = c2h::type_list<type_pair<std::uint16_t>, type_pair<std::int16_t>>;
 #endif
 
 /**
@@ -88,7 +91,7 @@ enum class gen_data_t : int
   GEN_TYPE_CONST
 };
 
-CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", full_type_list)
+C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", full_type_list)
 {
   using params   = params_t<TestType>;
   using item_t   = typename params::item_t;
@@ -114,7 +117,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
   c2h::device_vector<item_t> in_items(num_items);
   if (data_gen_mode == gen_data_t::GEN_TYPE_RANDOM)
   {
-    c2h::gen(CUB_SEED(2), in_items);
+    c2h::gen(C2H_SEED(2), in_items);
   }
   else
   {
@@ -124,15 +127,16 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
   }
   auto d_in_it = thrust::raw_pointer_cast(in_items.data());
 
+#if TEST_TYPES != 4
   SECTION("reduce")
   {
-    using op_t = cub::Sum;
+    using op_t = ::cuda::std::plus<>;
 
     // Binary reduction operator
     auto reduction_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
 
     // Prepare verification data
-    using accum_t = cub::detail::accumulator_t<op_t, output_t, item_t>;
+    using accum_t = ::cuda::std::__accumulator_t<op_t, item_t, output_t>;
     output_t expected_result =
       static_cast<output_t>(compute_single_problem_reference(in_items, reduction_op, accum_t{}));
 
@@ -145,14 +149,15 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
     // Verify result
     REQUIRE(expected_result == out_result[0]);
   }
+#endif // TEST_TYPES != 4
 
 // Skip DeviceReduce::Sum tests for extended floating-point types because of unbounded epsilon due
 // to pseudo associativity of the addition operation over floating point numbers
 #if TEST_TYPES != 3
   SECTION("sum")
   {
-    using op_t    = cub::Sum;
-    using accum_t = cub::detail::accumulator_t<op_t, output_t, item_t>;
+    using op_t    = ::cuda::std::plus<>;
+    using accum_t = ::cuda::std::__accumulator_t<op_t, item_t, output_t>;
 
     // Prepare verification data
     output_t expected_result = static_cast<output_t>(compute_single_problem_reference(in_items, op_t{}, accum_t{}));
@@ -197,6 +202,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
     REQUIRE(expected_result == out_result[0]);
   }
 
+#if TEST_TYPES != 4
   SECTION("argmax")
   {
     // Prepare verification data
@@ -233,4 +239,5 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
     REQUIRE(expected_result[0] == gpu_value);
     REQUIRE((expected_result - host_items.cbegin()) == gpu_result.key);
   }
+#endif
 }

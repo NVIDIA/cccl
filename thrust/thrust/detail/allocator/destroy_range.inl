@@ -79,12 +79,12 @@ struct destroy_via_allocator
 {
   Allocator& a;
 
-  _CCCL_HOST_DEVICE destroy_via_allocator(Allocator& a)
+  _CCCL_HOST_DEVICE destroy_via_allocator(Allocator& a) noexcept
       : a(a)
   {}
 
   template <typename T>
-  inline _CCCL_HOST_DEVICE void operator()(T& x)
+  inline _CCCL_HOST_DEVICE void operator()(T& x) noexcept
   {
     allocator_traits<Allocator>::destroy(a, &x);
   }
@@ -93,7 +93,7 @@ struct destroy_via_allocator
 // destroy_range case 1: destroy via allocator
 template <typename Allocator, typename Pointer, typename Size>
 _CCCL_HOST_DEVICE typename enable_if_destroy_range_case1<Allocator, Pointer>::type
-destroy_range(Allocator& a, Pointer p, Size n)
+destroy_range(Allocator& a, Pointer p, Size n) noexcept
 {
   thrust::for_each_n(allocator_system<Allocator>::get(a), p, n, destroy_via_allocator<Allocator>(a));
 }
@@ -103,7 +103,7 @@ struct gozer
 {
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T>
-  inline _CCCL_HOST_DEVICE void operator()(T& x)
+  inline _CCCL_HOST_DEVICE void operator()(T& x) noexcept
   {
     x.~T();
   }
@@ -112,7 +112,7 @@ struct gozer
 // destroy_range case 2: destroy without the allocator
 template <typename Allocator, typename Pointer, typename Size>
 _CCCL_HOST_DEVICE typename enable_if_destroy_range_case2<Allocator, Pointer>::type
-destroy_range(Allocator& a, Pointer p, Size n)
+destroy_range(Allocator& a, Pointer p, Size n) noexcept
 {
   thrust::for_each_n(allocator_system<Allocator>::get(a), p, n, gozer());
 }
@@ -120,7 +120,7 @@ destroy_range(Allocator& a, Pointer p, Size n)
 // destroy_range case 3: no-op
 template <typename Allocator, typename Pointer, typename Size>
 _CCCL_HOST_DEVICE typename enable_if_destroy_range_case3<Allocator, Pointer>::type
-destroy_range(Allocator&, Pointer, Size)
+destroy_range(Allocator&, Pointer, Size) noexcept
 {
   // no op
 }
@@ -128,7 +128,7 @@ destroy_range(Allocator&, Pointer, Size)
 } // namespace allocator_traits_detail
 
 template <typename Allocator, typename Pointer, typename Size>
-_CCCL_HOST_DEVICE void destroy_range(Allocator& a, Pointer p, Size n)
+_CCCL_HOST_DEVICE void destroy_range(Allocator& a, Pointer p, Size n) noexcept
 {
   return allocator_traits_detail::destroy_range(a, p, n);
 }

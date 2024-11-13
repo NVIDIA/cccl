@@ -42,17 +42,15 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Iter, bool = __is_cpp17_contiguous_iterator<_Iter>::value>
 struct __unwrap_iter_impl
 {
-  static _LIBCUDACXX_INLINE_VISIBILITY constexpr _Iter __rewrap(_Iter, _Iter __iter)
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr _Iter __rewrap(_Iter, _Iter __iter)
   {
     return __iter;
   }
-  static _LIBCUDACXX_INLINE_VISIBILITY constexpr _Iter __unwrap(_Iter __i) noexcept
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr _Iter __unwrap(_Iter __i) noexcept
   {
     return __i;
   }
 };
-
-#ifndef _LIBCUDACXX_ENABLE_DEBUG_MODE
 
 // It's a contiguous iterator, so we can use a raw pointer instead
 template <class _Iter>
@@ -60,30 +58,26 @@ struct __unwrap_iter_impl<_Iter, true>
 {
   using _ToAddressT = decltype(_CUDA_VSTD::__to_address(_CUDA_VSTD::declval<_Iter>()));
 
-  static _LIBCUDACXX_INLINE_VISIBILITY constexpr _Iter __rewrap(_Iter __orig_iter, _ToAddressT __unwrapped_iter)
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr _Iter __rewrap(_Iter __orig_iter, _ToAddressT __unwrapped_iter)
   {
     return __orig_iter + (__unwrapped_iter - _CUDA_VSTD::__to_address(__orig_iter));
   }
 
-  static _LIBCUDACXX_INLINE_VISIBILITY constexpr _ToAddressT __unwrap(_Iter __i) noexcept
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr _ToAddressT __unwrap(_Iter __i) noexcept
   {
     return _CUDA_VSTD::__to_address(__i);
   }
 };
 
-#endif // !_LIBCUDACXX_ENABLE_DEBUG_MODE
-
-template <class _Iter,
-          class _Impl                                             = __unwrap_iter_impl<_Iter>,
-          __enable_if_t<is_copy_constructible<_Iter>::value, int> = 0>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 decltype(_Impl::__unwrap(_CUDA_VSTD::declval<_Iter>()))
+template <class _Iter, class _Impl = __unwrap_iter_impl<_Iter>, enable_if_t<is_copy_constructible<_Iter>::value, int> = 0>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 decltype(_Impl::__unwrap(_CUDA_VSTD::declval<_Iter>()))
 __unwrap_iter(_Iter __i) noexcept
 {
   return _Impl::__unwrap(__i);
 }
 
 template <class _OrigIter, class _Iter, class _Impl = __unwrap_iter_impl<_OrigIter>>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr _OrigIter __rewrap_iter(_OrigIter __orig_iter, _Iter __iter) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _OrigIter __rewrap_iter(_OrigIter __orig_iter, _Iter __iter) noexcept
 {
   return _Impl::__rewrap(_CUDA_VSTD::move(__orig_iter), _CUDA_VSTD::move(__iter));
 }

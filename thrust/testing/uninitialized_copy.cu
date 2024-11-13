@@ -79,42 +79,26 @@ DECLARE_UNITTEST(TestUninitializedCopyNDispatchImplicit);
 template <class Vector>
 void TestUninitializedCopySimplePOD()
 {
-  Vector v1(5);
-  v1[0] = 0;
-  v1[1] = 1;
-  v1[2] = 2;
-  v1[3] = 3;
-  v1[4] = 4;
+  Vector v1{0, 1, 2, 3, 4};
 
   // copy to Vector
   Vector v2(5);
   thrust::uninitialized_copy(v1.begin(), v1.end(), v2.begin());
-  ASSERT_EQUAL(v2[0], 0);
-  ASSERT_EQUAL(v2[1], 1);
-  ASSERT_EQUAL(v2[2], 2);
-  ASSERT_EQUAL(v2[3], 3);
-  ASSERT_EQUAL(v2[4], 4);
+  Vector ref{0, 1, 2, 3, 4};
+  ASSERT_EQUAL(v2, ref);
 }
 DECLARE_VECTOR_UNITTEST(TestUninitializedCopySimplePOD);
 
 template <typename Vector>
 void TestUninitializedCopyNSimplePOD()
 {
-  Vector v1(5);
-  v1[0] = 0;
-  v1[1] = 1;
-  v1[2] = 2;
-  v1[3] = 3;
-  v1[4] = 4;
+  Vector v1{0, 1, 2, 3, 4};
 
   // copy to Vector
   Vector v2(5);
   thrust::uninitialized_copy_n(v1.begin(), v1.size(), v2.begin());
-  ASSERT_EQUAL(v2[0], 0);
-  ASSERT_EQUAL(v2[1], 1);
-  ASSERT_EQUAL(v2[2], 2);
-  ASSERT_EQUAL(v2[3], 3);
-  ASSERT_EQUAL(v2[4], 4);
+  Vector ref{0, 1, 2, 3, 4};
+  ASSERT_EQUAL(v2, ref);
 }
 DECLARE_VECTOR_UNITTEST(TestUninitializedCopyNSimplePOD);
 

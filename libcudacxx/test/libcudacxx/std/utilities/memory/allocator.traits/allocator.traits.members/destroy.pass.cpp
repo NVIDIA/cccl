@@ -36,7 +36,7 @@ struct NoDestroy
     return cuda::std::allocator<T>().allocate(n);
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 void deallocate(T* p, cuda::std::size_t n)
+  __host__ __device__ TEST_CONSTEXPR_CXX20 void deallocate(T* p, cuda::std::size_t n) noexcept
   {
     return cuda::std::allocator<T>().deallocate(p, n);
   }
@@ -58,7 +58,7 @@ struct CountDestroy
     return &storage;
   }
 
-  __host__ __device__ TEST_CONSTEXPR_CXX20 void deallocate(T* p, cuda::std::size_t n) {}
+  __host__ __device__ TEST_CONSTEXPR_CXX20 void deallocate(T* p, cuda::std::size_t n) noexcept {}
 
   template <class U, class... Args>
   __host__ __device__ TEST_CONSTEXPR_CXX20 void construct(U* p, Args&&... args)
@@ -68,7 +68,7 @@ struct CountDestroy
   }
 
   template <class U>
-  __host__ __device__ TEST_CONSTEXPR_CXX20 void destroy(U* p)
+  __host__ __device__ TEST_CONSTEXPR_CXX20 void destroy(U* p) noexcept
   {
     assert(p == nullptr);
     ++*counter_;

@@ -25,7 +25,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct unexpect_t
 {
-  explicit unexpect_t() = default;
+  _CCCL_HIDE_FROM_ABI explicit unexpect_t() = default;
 };
 
 _CCCL_GLOBAL_CONSTANT unexpect_t unexpect{};

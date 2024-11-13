@@ -26,30 +26,39 @@
 
 #if defined(_CCCL_COMPILER_MSVC)
 #  include <intrin.h>
-#endif
+
+#  if defined(_M_ARM64)
+#    define _LIBCUDACXX_MSVC_POPC(x)   _CountOneBits(x)
+#    define _LIBCUDACXX_MSVC_POPC64(x) _CountOneBits64(x)
+#  else // ^^^ _M_ARM64 ^^^ / vvv !_M_ARM64 vvv
+#    define _LIBCUDACXX_MSVC_POPC(x)   __popcnt(x)
+#    define _LIBCUDACXX_MSVC_POPC64(x) __popcnt64(x)
+#  endif // !_M_ARM64
+
+#endif // _CCCL_COMPILER_MSVC
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __fallback_popc8(uint64_t __x)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __fallback_popc8(uint64_t __x)
 {
   return static_cast<int>((__x * 0x0101010101010101) >> 56);
 }
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __fallback_popc16(uint64_t __x)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __fallback_popc16(uint64_t __x)
 {
   return __fallback_popc8((__x + (__x >> 4)) & 0x0f0f0f0f0f0f0f0f);
 }
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __fallback_popc32(uint64_t __x)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __fallback_popc32(uint64_t __x)
 {
   return __fallback_popc16((__x & 0x3333333333333333) + ((__x >> 2) & 0x3333333333333333));
 }
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __fallback_popc64(uint64_t __x)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __fallback_popc64(uint64_t __x)
 {
   return __fallback_popc32(__x - ((__x >> 1) & 0x5555555555555555));
 }
 
 #if !defined(_CCCL_COMPILER_MSVC)
 
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __constexpr_popcount(uint32_t __x) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_popcount(uint32_t __x) noexcept
 {
 #  if defined(__CUDA_ARCH__)
   return __fallback_popc64(static_cast<uint64_t>(__x)); // no device constexpr builtins
@@ -58,7 +67,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __constexpr_popcount(uint32_t
 #  endif
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __constexpr_popcount(uint64_t __x) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_popcount(uint64_t __x) noexcept
 {
 #  if defined(__CUDA_ARCH__)
   return __fallback_popc64(static_cast<uint64_t>(__x)); // no device constexpr builtins
@@ -67,7 +76,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __constexpr_popcount(uint64_t
 #  endif
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_popc(uint32_t __x) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __libcpp_popc(uint32_t __x) noexcept
 {
 #  if _CCCL_STD_VER >= 2014
   if (!__libcpp_default_is_constant_evaluated())
@@ -78,7 +87,7 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_popc(uint32_t __x) n
   return __constexpr_popcount(static_cast<uint64_t>(__x));
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_popc(uint64_t __x) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __libcpp_popc(uint64_t __x) noexcept
 {
 #  if _CCCL_STD_VER >= 2014
   if (!__libcpp_default_is_constant_evaluated())
@@ -91,21 +100,21 @@ inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_popc(uint64_t __x) n
 
 #else // defined(_CCCL_COMPILER_MSVC)
 
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_popc(uint32_t __x)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __libcpp_popc(uint32_t __x)
 {
   if (!__libcpp_default_is_constant_evaluated())
   {
-    NV_IF_TARGET(NV_IS_HOST, (return static_cast<int>(__popcnt(__x));))
+    NV_IF_TARGET(NV_IS_HOST, (return static_cast<int>(_LIBCUDACXX_MSVC_POPC(__x));))
   }
 
   return __fallback_popc64(static_cast<uint64_t>(__x));
 }
 
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr int __libcpp_popc(uint64_t __x)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __libcpp_popc(uint64_t __x)
 {
   if (!__libcpp_default_is_constant_evaluated())
   {
-    NV_IF_TARGET(NV_IS_HOST, (return static_cast<int>(__popcnt64(__x));))
+    NV_IF_TARGET(NV_IS_HOST, (return static_cast<int>(_LIBCUDACXX_MSVC_POPC64(__x));))
   }
 
   return __fallback_popc64(static_cast<uint64_t>(__x));

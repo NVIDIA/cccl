@@ -137,7 +137,7 @@ public:
    *  \param p pointer returned by a previous call to \p allocate
    *  \param n number of elements, passed as an argument to the \p allocate call that produced \p p
    */
-  _CCCL_HOST void deallocate(pointer p, size_type n)
+  _CCCL_HOST void deallocate(pointer p, size_type n) noexcept
   {
     return mem_res->do_deallocate(p, n * sizeof(T), alignof(T));
   }

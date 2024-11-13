@@ -112,6 +112,27 @@ struct inclusive_scan_fn final
       THRUST_FWD(out),
       thrust::plus<>{}))
 
+      template <typename DerivedPolicy,
+                typename ForwardIt,
+                typename Sentinel,
+                typename OutputIt,
+                typename InitialValueType,
+                typename BinaryOp>
+      auto operator()(thrust::detail::execution_policy_base<DerivedPolicy> const& exec,
+                      ForwardIt&& first,
+                      Sentinel&& last,
+                      OutputIt&& out,
+                      InitialValueType&& init,
+                      BinaryOp&& op) const
+    // ADL dispatch.
+    THRUST_RETURNS(async_inclusive_scan(
+      thrust::detail::derived_cast(thrust::detail::strip_const(exec)),
+      THRUST_FWD(first),
+      THRUST_FWD(last),
+      THRUST_FWD(out),
+      THRUST_FWD(init),
+      THRUST_FWD(op)))
+
       template <typename ForwardIt,
                 typename Sentinel,
                 typename OutputIt,
@@ -137,6 +158,23 @@ struct inclusive_scan_fn final
       THRUST_FWD(last),
       THRUST_FWD(out),
       thrust::plus<>{}))
+
+      template <typename ForwardIt,
+                typename Sentinel,
+                typename OutputIt,
+                typename InitialValueType,
+                typename BinaryOp,
+                typename = std::enable_if_t<!is_execution_policy_v<remove_cvref_t<ForwardIt>>>>
+      auto operator()(ForwardIt&& first, Sentinel&& last, OutputIt&& out, InitialValueType&& init, BinaryOp&& op) const
+    // ADL dispatch.
+    THRUST_RETURNS(async_inclusive_scan(
+      thrust::detail::select_system(iterator_system_t<remove_cvref_t<ForwardIt>>{},
+                                    iterator_system_t<remove_cvref_t<OutputIt>>{}),
+      THRUST_FWD(first),
+      THRUST_FWD(last),
+      THRUST_FWD(out),
+      THRUST_FWD(init),
+      THRUST_FWD(op)))
 };
 
 } // namespace inclusive_scan_detail

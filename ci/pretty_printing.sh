@@ -97,6 +97,10 @@ function print_time_summary() {
         fi
     done
 
+    if [ "$max_length" -eq 0 ]; then
+        return
+    fi
+
     echo "Time Summary:"
     for group in "${!command_durations[@]}"; do
         printf "%-${max_length}s : %s seconds\n" "$group" "${command_durations[$group]}"

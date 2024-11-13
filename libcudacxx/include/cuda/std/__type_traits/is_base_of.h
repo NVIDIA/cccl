@@ -28,32 +28,32 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_IS_BASE_OF) && !defined(_LIBCUDACXX_USE_IS_BASE_OF_FALLBACK)
+#if defined(_CCCL_BUILTIN_IS_BASE_OF) && !defined(_LIBCUDACXX_USE_IS_BASE_OF_FALLBACK)
 
 template <class _Bp, class _Dp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_base_of : public integral_constant<bool, _LIBCUDACXX_IS_BASE_OF(_Bp, _Dp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_base_of : public integral_constant<bool, _CCCL_BUILTIN_IS_BASE_OF(_Bp, _Dp)>
 {};
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Bp, class _Dp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_base_of_v = _LIBCUDACXX_IS_BASE_OF(_Bp, _Dp);
-#  endif
+_CCCL_INLINE_VAR constexpr bool is_base_of_v = _CCCL_BUILTIN_IS_BASE_OF(_Bp, _Dp);
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
-#else // defined(_LIBCUDACXX_IS_BASE_OF) && !defined(_LIBCUDACXX_USE_IS_BASE_OF_FALLBACK)
+#else // defined(_CCCL_BUILTIN_IS_BASE_OF) && !defined(_LIBCUDACXX_USE_IS_BASE_OF_FALLBACK)
 
 namespace __is_base_of_imp
 {
 template <class _Tp>
 struct _Dst
 {
-  _LIBCUDACXX_INLINE_VISIBILITY _Dst(const volatile _Tp&);
+  _LIBCUDACXX_HIDE_FROM_ABI _Dst(const volatile _Tp&);
 };
 template <class _Tp>
 struct _Src
 {
-  _LIBCUDACXX_INLINE_VISIBILITY operator const volatile _Tp&();
+  _LIBCUDACXX_HIDE_FROM_ABI operator const volatile _Tp&();
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY operator const _Dst<_Up>&();
+  _LIBCUDACXX_HIDE_FROM_ABI operator const _Dst<_Up>&();
 };
 template <size_t>
 struct __one
@@ -67,16 +67,16 @@ _CCCL_HOST_DEVICE __two __test(...);
 } // namespace __is_base_of_imp
 
 template <class _Bp, class _Dp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_base_of
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_base_of
     : public integral_constant<bool, is_class<_Bp>::value && sizeof(__is_base_of_imp::__test<_Bp, _Dp>(0)) == 2>
 {};
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Bp, class _Dp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_base_of_v = is_base_of<_Bp, _Dp>::value;
-#  endif
+_CCCL_INLINE_VAR constexpr bool is_base_of_v = is_base_of<_Bp, _Dp>::value;
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
-#endif // defined(_LIBCUDACXX_IS_BASE_OF) && !defined(_LIBCUDACXX_USE_IS_BASE_OF_FALLBACK)
+#endif // defined(_CCCL_BUILTIN_IS_BASE_OF) && !defined(_LIBCUDACXX_USE_IS_BASE_OF_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

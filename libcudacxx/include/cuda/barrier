@@ -21,6 +21,22 @@
 #  pragma system_header
 #endif // no system header
 
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 700
+#  error "CUDA synchronization primitives are only supported for sm_70 and up."
+#endif // __CUDA_ARCH__ < 700
+
+#ifdef _LIBCUDACXX_HAS_NO_THREADS
+#  error <cuda/barrier> is not supported on this single threaded system
+#endif // _LIBCUDACXX_HAS_NO_THREADS
+
+#include <cuda/__barrier/aligned_size.h>
+#include <cuda/__barrier/barrier.h>
+#include <cuda/__barrier/barrier_arrive_tx.h>
+#include <cuda/__barrier/barrier_block_scope.h>
+#include <cuda/__barrier/barrier_expect_tx.h>
+#include <cuda/__barrier/barrier_thread_scope.h>
+#include <cuda/__memcpy_async/memcpy_async.h>
+#include <cuda/__memcpy_async/memcpy_async_tx.h>
 #include <cuda/ptx>
 #include <cuda/std/barrier>
 
@@ -57,9 +73,9 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE_EXPERIMENTAL
 inline _CCCL_DEVICE void cp_async_bulk_global_to_shared(
   void* __dest, const void* __src, _CUDA_VSTD::uint32_t __size, ::cuda::barrier<::cuda::thread_scope_block>& __bar)
 {
-  _LIBCUDACXX_DEBUG_ASSERT(__size % 16 == 0, "Size must be multiple of 16.");
-  _LIBCUDACXX_DEBUG_ASSERT(__isShared(__dest), "Destination must be shared memory address.");
-  _LIBCUDACXX_DEBUG_ASSERT(__isGlobal(__src), "Source must be global memory address.");
+  _CCCL_ASSERT(__size % 16 == 0, "Size must be multiple of 16.");
+  _CCCL_ASSERT(__isShared(__dest), "Destination must be shared memory address.");
+  _CCCL_ASSERT(__isGlobal(__src), "Source must be global memory address.");
 
   _CUDA_VPTX::cp_async_bulk(
     _CUDA_VPTX::space_cluster,
@@ -73,9 +89,9 @@ inline _CCCL_DEVICE void cp_async_bulk_global_to_shared(
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk
 inline _CCCL_DEVICE void cp_async_bulk_shared_to_global(void* __dest, const void* __src, _CUDA_VSTD::uint32_t __size)
 {
-  _LIBCUDACXX_DEBUG_ASSERT(__size % 16 == 0, "Size must be multiple of 16.");
-  _LIBCUDACXX_DEBUG_ASSERT(__isGlobal(__dest), "Destination must be global memory address.");
-  _LIBCUDACXX_DEBUG_ASSERT(__isShared(__src), "Source must be shared memory address.");
+  _CCCL_ASSERT(__size % 16 == 0, "Size must be multiple of 16.");
+  _CCCL_ASSERT(__isGlobal(__dest), "Destination must be global memory address.");
+  _CCCL_ASSERT(__isShared(__src), "Source must be shared memory address.");
 
   _CUDA_VPTX::cp_async_bulk(_CUDA_VPTX::space_global, _CUDA_VPTX::space_shared, __dest, __src, __size);
 }

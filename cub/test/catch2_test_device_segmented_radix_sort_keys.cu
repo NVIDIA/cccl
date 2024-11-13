@@ -24,11 +24,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  ******************************************************************************/
-
 #include "insert_nested_NVTX_range_guard.h"
 // above header needs to be included first
 
 #include <cub/device/device_segmented_radix_sort.cuh>
+#include <cub/device/dispatch/dispatch_radix_sort.cuh> // DispatchSegmentedRadixSort
 #include <cub/util_type.cuh>
 
 #include <thrust/functional.h>
@@ -43,15 +43,67 @@
 #include <limits>
 
 #include "catch2_radix_sort_helper.cuh"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
+
+// TODO replace with DeviceSegmentedRadixSort::SortKeys interface once https://github.com/NVIDIA/cccl/issues/50 is
+// addressed Temporary wrapper that allows specializing the DeviceSegmentedRadixSort algorithm for different offset
+// types
+template <bool IS_DESCENDING, typename KeyT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT, typename NumItemsT>
+CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_radix_sort_wrapper(
+  void* d_temp_storage,
+  size_t& temp_storage_bytes,
+  const KeyT* d_keys_in,
+  KeyT* d_keys_out,
+  NumItemsT num_items,
+  NumItemsT num_segments,
+  BeginOffsetIteratorT d_begin_offsets,
+  EndOffsetIteratorT d_end_offsets,
+  bool* selector,
+  int begin_bit       = 0,
+  int end_bit         = sizeof(KeyT) * 8,
+  bool is_overwrite   = true,
+  cudaStream_t stream = 0)
+{
+  cub::DoubleBuffer<cub::NullType> d_values;
+  cub::DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
+  auto status = cub::DispatchSegmentedRadixSort<
+    IS_DESCENDING,
+    KeyT,
+    cub::NullType,
+    BeginOffsetIteratorT,
+    EndOffsetIteratorT, //
+    NumItemsT>::Dispatch(d_temp_storage,
+                         temp_storage_bytes,
+                         d_keys,
+                         d_values,
+                         num_items,
+                         num_segments,
+                         d_begin_offsets,
+                         d_end_offsets,
+                         begin_bit,
+                         end_bit,
+                         is_overwrite,
+                         stream);
+  if (status != cudaSuccess)
+  {
+    return status;
+  }
+  if (is_overwrite)
+  {
+    // Only write to selector in the DoubleBuffer invocation
+    *selector = d_keys.Current() != d_keys_out;
+  }
+  return cudaSuccess;
+}
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
+// %PARAM% TEST_KEY_BITS key_bits 8:16:32:64
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortKeys, sort_keys);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortKeysDescending, sort_keys_descending);
-
-// %PARAM% TEST_KEY_BITS key_bits 8:16:32:64
+DECLARE_LAUNCH_WRAPPER(dispatch_segmented_radix_sort_wrapper<true>, dispatch_segmented_radix_sort_descending);
+DECLARE_LAUNCH_WRAPPER(dispatch_segmented_radix_sort_wrapper<false>, dispatch_segmented_radix_sort);
 
 // TODO:
 // - int128
@@ -62,6 +114,7 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedRadixSort::SortKeysDescending, sort_k
 using key_types            = c2h::type_list<cuda::std::uint8_t, cuda::std::int8_t, bool, char>;
 using bit_window_key_types = c2h::type_list<cuda::std::uint8_t, cuda::std::int8_t, char>;
 #  define NO_FP_KEY_TYPES
+#  define SINGLE_TEST_CASE_INSTANTIATION
 #elif TEST_KEY_BITS == 16
 // clang-format off
 using key_types = c2h::type_list<
@@ -90,10 +143,7 @@ using fp_key_types         = c2h::type_list<double>;
 // Used for tests that just need a single type for testing:
 using single_key_type = c2h::type_list<c2h::get<0, key_types>>;
 
-// Index types used for OffsetsT testing
-using offset_types = c2h::type_list<cuda::std::int32_t, cuda::std::uint64_t>;
-
-CUB_TEST("DeviceSegmentedRadixSort::SortKeys: basic testing",
+C2H_TEST("DeviceSegmentedRadixSort::SortKeys: basic testing",
          "[keys][segmented][radix][sort][device]",
          key_types,
          offset_types)
@@ -108,14 +158,14 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: basic testing",
 
   c2h::device_vector<key_t> in_keys(num_items);
   const int num_key_seeds = 1;
-  c2h::gen(CUB_SEED(num_key_seeds), in_keys);
+  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
   // Initialize the output keys using the input keys since not all items
   // may belong to a segment.
   c2h::device_vector<key_t> out_keys(in_keys);
 
   c2h::device_vector<offset_t> offsets(num_segments + 1);
   const int num_segment_seeds = 1;
-  generate_segment_offsets(CUB_SEED(num_segment_seeds), offsets, static_cast<offset_t>(num_items));
+  generate_segment_offsets(C2H_SEED(num_segment_seeds), offsets, static_cast<offset_t>(num_items));
 
   const bool is_descending = GENERATE(false, true);
 
@@ -153,7 +203,9 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: basic testing",
   REQUIRE((ref_keys == out_keys) == true);
 }
 
-CUB_TEST("DeviceSegmentedRadixSort::SortKeys: empty data", "[keys][segmented][radix][sort][device]", single_key_type)
+#if defined(SINGLE_TEST_CASE_INSTANTIATION)
+
+C2H_TEST("DeviceSegmentedRadixSort::SortKeys: empty data", "[keys][segmented][radix][sort][device]", single_key_type)
 {
   using key_t    = c2h::get<0, TestType>;
   using offset_t = cuda::std::int32_t;
@@ -163,7 +215,7 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: empty data", "[keys][segmented][ra
 
   c2h::device_vector<key_t> in_keys(num_items);
   const int num_key_seeds = 1;
-  c2h::gen(CUB_SEED(num_key_seeds), in_keys);
+  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
   // Initialize the output keys using the input keys since not all items
   // may belong to a segment.
   c2h::device_vector<key_t> out_keys(in_keys);
@@ -207,7 +259,9 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: empty data", "[keys][segmented][ra
   REQUIRE((ref_keys == out_keys) == true);
 }
 
-CUB_TEST("DeviceSegmentedRadixSort::SortKeys: bit windows",
+#endif // defined(SINGLE_TEST_CASE_INSTANTIATION)
+
+C2H_TEST("DeviceSegmentedRadixSort::SortKeys: bit windows",
          "[keys][segmented][radix][sort][device]",
          bit_window_key_types)
 {
@@ -221,14 +275,14 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: bit windows",
 
   c2h::device_vector<key_t> in_keys(num_items);
   const int num_key_seeds = 1;
-  c2h::gen(CUB_SEED(num_key_seeds), in_keys);
+  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
   // Initialize the output keys using the input keys since not all items
   // may belong to a segment.
   c2h::device_vector<key_t> out_keys(in_keys);
 
   c2h::device_vector<offset_t> offsets(num_segments + 1);
   const int num_segment_seeds = 1;
-  generate_segment_offsets(CUB_SEED(num_segment_seeds), offsets, static_cast<offset_t>(num_items));
+  generate_segment_offsets(C2H_SEED(num_segment_seeds), offsets, static_cast<offset_t>(num_items));
 
   constexpr int num_bits = sizeof(key_t) * CHAR_BIT;
   // Explicitly use values<>({}) to workaround bug catchorg/Catch2#2040:
@@ -276,7 +330,9 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: bit windows",
   REQUIRE((ref_keys == out_keys) == true);
 }
 
-CUB_TEST("DeviceSegmentedRadixSort::SortKeys: large segments", "[keys][segmented][radix][sort][device]", single_key_type)
+#if defined(SINGLE_TEST_CASE_INSTANTIATION)
+
+C2H_TEST("DeviceSegmentedRadixSort::SortKeys: large segments", "[keys][segmented][radix][sort][device]", single_key_type)
 {
   using key_t    = c2h::get<0, TestType>;
   using offset_t = cuda::std::int32_t;
@@ -289,7 +345,7 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: large segments", "[keys][segmented
   c2h::device_vector<key_t> in_keys(num_items);
   c2h::device_vector<key_t> out_keys(num_items);
   const int num_key_seeds = 1;
-  c2h::gen(CUB_SEED(num_key_seeds), in_keys);
+  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
 
   c2h::device_vector<offset_t> offsets(3);
   offsets[0] = 0;
@@ -332,7 +388,7 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: large segments", "[keys][segmented
   REQUIRE((ref_keys == out_keys) == true);
 }
 
-CUB_TEST("DeviceSegmentedRadixSort::SortKeys: DoubleBuffer API",
+C2H_TEST("DeviceSegmentedRadixSort::SortKeys: DoubleBuffer API",
          "[keys][segmented][radix][sort][device]",
          single_key_type)
 {
@@ -346,14 +402,14 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: DoubleBuffer API",
 
   c2h::device_vector<key_t> in_keys(num_items);
   const int num_key_seeds = 1;
-  c2h::gen(CUB_SEED(num_key_seeds), in_keys);
+  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
   // Initialize the output keys using the input keys since not all items
   // may belong to a segment.
   c2h::device_vector<key_t> out_keys(in_keys);
 
   c2h::device_vector<offset_t> offsets(num_segments + 1);
   const int num_segment_seeds = 1;
-  generate_segment_offsets(CUB_SEED(num_segment_seeds), offsets, static_cast<offset_t>(num_items));
+  generate_segment_offsets(C2H_SEED(num_segment_seeds), offsets, static_cast<offset_t>(num_items));
 
   const bool is_descending = GENERATE(false, true);
 
@@ -384,7 +440,7 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: DoubleBuffer API",
   REQUIRE((ref_keys == keys) == true);
 }
 
-CUB_TEST("DeviceSegmentedRadixSort::SortKeys: unspecified ranges",
+C2H_TEST("DeviceSegmentedRadixSort::SortKeys: unspecified ranges",
          "[keys][segmented][radix][sort][device]",
          single_key_type)
 {
@@ -398,14 +454,14 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: unspecified ranges",
 
   c2h::device_vector<key_t> in_keys(num_items);
   const int num_key_seeds = 1;
-  c2h::gen(CUB_SEED(num_key_seeds), in_keys);
+  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
   // Initialize the output keys using the input keys since not all items
   // will belong to a segment.
   c2h::device_vector<key_t> out_keys(in_keys);
 
   c2h::device_vector<offset_t> begin_offsets(num_segments + 1);
   const int num_segment_seeds = 1;
-  generate_segment_offsets(CUB_SEED(num_segment_seeds), begin_offsets, static_cast<offset_t>(num_items));
+  generate_segment_offsets(C2H_SEED(num_segment_seeds), begin_offsets, static_cast<offset_t>(num_items));
 
   // Create separate begin/end offsets arrays and remove some of the segments by
   // setting both offsets to 0.
@@ -415,7 +471,7 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: unspecified ranges",
   {
     std::size_t num_empty_segments = num_segments / 16;
     c2h::device_vector<std::size_t> indices(num_empty_segments);
-    c2h::gen(CUB_SEED(1), indices, std::size_t{0}, num_segments - 1);
+    c2h::gen(C2H_SEED(1), indices, std::size_t{0}, num_segments - 1);
     auto begin = thrust::make_constant_iterator(key_t{0});
     auto end   = begin + num_empty_segments;
     thrust::scatter(c2h::device_policy, begin, end, indices.cbegin(), begin_offsets.begin());
@@ -457,3 +513,158 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: unspecified ranges",
 
   REQUIRE((ref_keys == out_keys) == true);
 }
+
+#  if defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
+
+C2H_TEST("DeviceSegmentedRadixSort::SortKeys: very large num. items and num. segments",
+         "[keys][segmented][radix][sort][device]",
+         all_offset_types)
+try
+{
+  using key_t                      = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
+  using offset_t                   = c2h::get<0, TestType>;
+  constexpr std::size_t step       = 500;
+  using segment_iterator_t         = segment_iterator<offset_t, step>;
+  constexpr std::size_t uint32_max = ::cuda::std::numeric_limits<std::uint32_t>::max();
+  constexpr int num_key_seeds      = 1;
+  const bool is_descending         = GENERATE(false, true);
+  const bool is_overwrite          = GENERATE(false, true);
+  constexpr std::size_t num_items =
+    (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : ::cuda::std::numeric_limits<offset_t>::max();
+  const std::size_t num_segments = ::cuda::ceil_div(num_items, step);
+  CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments, is_descending, is_overwrite);
+
+  c2h::device_vector<key_t> in_keys(num_items);
+  c2h::device_vector<key_t> out_keys(num_items);
+  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
+  auto offsets =
+    thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{0}), segment_iterator_t{num_items});
+  auto offsets_plus_1 = offsets + 1;
+  // Allocate host/device-accessible memory to communicate the selected output buffer
+  bool* selector_ptr = nullptr;
+  if (is_overwrite)
+  {
+    REQUIRE(cudaSuccess == cudaMallocHost(&selector_ptr, sizeof(*selector_ptr)));
+  }
+
+  auto ref_keys     = segmented_radix_sort_reference(in_keys, is_descending, num_segments, offsets, offsets_plus_1);
+  auto out_keys_ptr = thrust::raw_pointer_cast(out_keys.data());
+  if (is_descending)
+  {
+    dispatch_segmented_radix_sort_descending(
+      thrust::raw_pointer_cast(in_keys.data()),
+      out_keys_ptr,
+      static_cast<offset_t>(num_items),
+      static_cast<offset_t>(num_segments),
+      offsets,
+      offsets_plus_1,
+      selector_ptr,
+      begin_bit<key_t>(),
+      end_bit<key_t>(),
+      is_overwrite);
+  }
+  else
+  {
+    dispatch_segmented_radix_sort(
+      thrust::raw_pointer_cast(in_keys.data()),
+      out_keys_ptr,
+      static_cast<offset_t>(num_items),
+      static_cast<offset_t>(num_segments),
+      offsets,
+      offsets_plus_1,
+      selector_ptr,
+      begin_bit<key_t>(),
+      end_bit<key_t>(),
+      is_overwrite);
+  }
+  if (is_overwrite)
+  {
+    if (*selector_ptr)
+    {
+      std::swap(out_keys, in_keys);
+    }
+    REQUIRE(cudaSuccess == cudaFreeHost(selector_ptr));
+  }
+  REQUIRE(ref_keys == out_keys);
+}
+catch (std::bad_alloc& e)
+{
+  std::cerr << "Skipping segmented radix sort test, unsufficient GPU memory. " << e.what() << "\n";
+}
+
+C2H_TEST("DeviceSegmentedRadixSort::SortKeys: very large segments",
+         "[keys][segmented][radix][sort][device]",
+         all_offset_types)
+try
+{
+  using key_t                      = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
+  using offset_t                   = c2h::get<0, TestType>;
+  constexpr std::size_t uint32_max = ::cuda::std::numeric_limits<std::uint32_t>::max();
+  constexpr int num_key_seeds      = 1;
+  const bool is_descending         = GENERATE(false, true);
+  const bool is_overwrite          = GENERATE(false, true);
+  constexpr std::size_t num_items =
+    (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : ::cuda::std::numeric_limits<offset_t>::max();
+  const std::size_t num_segments = 2;
+  CAPTURE(c2h::type_name<offset_t>(), num_items, is_descending, is_overwrite);
+
+  c2h::device_vector<key_t> in_keys(num_items);
+  c2h::device_vector<key_t> out_keys(num_items);
+  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
+  c2h::device_vector<offset_t> offsets(num_segments + 1);
+  offsets[0] = 0;
+  offsets[1] = static_cast<offset_t>(num_items);
+  offsets[2] = static_cast<offset_t>(num_items);
+  // Allocate host/device-accessible memory to communicate the selected output buffer
+  bool* selector_ptr = nullptr;
+  if (is_overwrite)
+  {
+    REQUIRE(cudaSuccess == cudaMallocHost(&selector_ptr, sizeof(*selector_ptr)));
+  }
+  auto ref_keys     = segmented_radix_sort_reference(in_keys, is_descending, offsets);
+  auto out_keys_ptr = thrust::raw_pointer_cast(out_keys.data());
+  if (is_descending)
+  {
+    dispatch_segmented_radix_sort_descending(
+      thrust::raw_pointer_cast(in_keys.data()),
+      out_keys_ptr,
+      static_cast<offset_t>(num_items),
+      static_cast<offset_t>(num_segments),
+      thrust::raw_pointer_cast(offsets.data()),
+      offsets.cbegin() + 1,
+      selector_ptr,
+      begin_bit<key_t>(),
+      end_bit<key_t>(),
+      is_overwrite);
+  }
+  else
+  {
+    dispatch_segmented_radix_sort(
+      thrust::raw_pointer_cast(in_keys.data()),
+      out_keys_ptr,
+      static_cast<offset_t>(num_items),
+      static_cast<offset_t>(num_segments),
+      thrust::raw_pointer_cast(offsets.data()),
+      offsets.cbegin() + 1,
+      selector_ptr,
+      begin_bit<key_t>(),
+      end_bit<key_t>(),
+      is_overwrite);
+  }
+  if (is_overwrite)
+  {
+    if (*selector_ptr)
+    {
+      std::swap(out_keys, in_keys);
+    }
+    REQUIRE(cudaSuccess == cudaFreeHost(selector_ptr));
+  }
+  REQUIRE(ref_keys == out_keys);
+}
+catch (std::bad_alloc& e)
+{
+  std::cerr << "Skipping segmented radix sort test, unsufficient GPU memory. " << e.what() << "\n";
+}
+
+#  endif // defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
+#endif // defined(SINGLE_TEST_CASE_INSTANTIATION)

@@ -27,14 +27,14 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_copy_assignable
-    : public is_assignable<__add_lvalue_reference_t<_Tp>, __add_lvalue_reference_t<typename add_const<_Tp>::type>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_copy_assignable
+    : public is_assignable<add_lvalue_reference_t<_Tp>, add_lvalue_reference_t<typename add_const<_Tp>::type>>
 {};
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_copy_assignable_v = is_copy_assignable<_Tp>::value;
-#endif
+_CCCL_INLINE_VAR constexpr bool is_copy_assignable_v = is_copy_assignable<_Tp>::value;
+#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

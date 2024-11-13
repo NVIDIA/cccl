@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -21,10 +21,17 @@
 #  pragma system_header
 #endif // no system header
 
-_CCCL_PUSH_MACROS
-
-#include <cuda/std/detail/libcxx/include/mdspan>
-
-_CCCL_POP_MACROS
+#include <cuda/std/__mdspan/default_accessor.h>
+#include <cuda/std/__mdspan/dynamic_extent.h>
+#include <cuda/std/__mdspan/extents.h>
+#include <cuda/std/__mdspan/full_extent_t.h>
+#include <cuda/std/__mdspan/layout_left.h>
+#include <cuda/std/__mdspan/layout_right.h>
+#include <cuda/std/__mdspan/layout_stride.h>
+#include <cuda/std/__mdspan/macros.h>
+#include <cuda/std/__mdspan/mdspan.h>
+#include <cuda/std/__mdspan/static_array.h>
+#include <cuda/std/__mdspan/submdspan.h>
+#include <cuda/std/version>
 
 #endif // _CUDA_STD_MDSPAN

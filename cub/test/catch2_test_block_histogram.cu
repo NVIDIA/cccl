@@ -37,7 +37,7 @@
 #include <limits>
 #include <string>
 
-#include "catch2_test_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 template <int BINS,
           int BLOCK_THREADS,
@@ -91,7 +91,7 @@ struct params_t
   static constexpr cub::BlockHistogramAlgorithm algorithm = c2h::get<4, TestType>::value;
 };
 
-CUB_TEST("Block histogram can be computed with uniform input",
+C2H_TEST("Block histogram can be computed with uniform input",
          "[histogram][block]",
          types,
          items_per_thread,
@@ -131,7 +131,7 @@ c2h::host_vector<int> compute_host_reference(int bins, const c2h::host_vector<Sa
   return h_reference;
 }
 
-CUB_TEST("Block histogram can be computed with modulo input",
+C2H_TEST("Block histogram can be computed with modulo input",
          "[histogram][block]",
          types,
          items_per_thread,
@@ -158,7 +158,7 @@ CUB_TEST("Block histogram can be computed with modulo input",
   REQUIRE(h_reference == d_histogram);
 }
 
-CUB_TEST("Block histogram can be computed with random input",
+C2H_TEST("Block histogram can be computed with random input",
          "[histogram][block]",
          types,
          items_per_thread,
@@ -177,7 +177,7 @@ CUB_TEST("Block histogram can be computed with random input",
   const sample_t max_bin = static_cast<sample_t>(std::min(
     static_cast<std::int32_t>(std::numeric_limits<sample_t>::max()), static_cast<std::int32_t>(params::bins - 1)));
 
-  c2h::gen(CUB_SEED(10), d_samples, min_bin, max_bin);
+  c2h::gen(C2H_SEED(10), d_samples, min_bin, max_bin);
 
   c2h::host_vector<sample_t> h_samples = d_samples;
   auto h_reference                     = compute_host_reference(params::bins, h_samples);

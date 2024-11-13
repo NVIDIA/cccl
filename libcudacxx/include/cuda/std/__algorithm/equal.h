@@ -27,8 +27,9 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _InputIterator1, class _InputIterator2, class _BinaryPredicate>
-_CCCL_NODISCARD inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 equal(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _BinaryPredicate __pred)
 {
   for (; __first1 != __last1; ++__first1, (void) ++__first2)
@@ -42,14 +43,15 @@ equal(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first
 }
 
 template <class _InputIterator1, class _InputIterator2>
-_CCCL_NODISCARD inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 equal(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2)
 {
   return _CUDA_VSTD::equal(__first1, __last1, __first2, __equal_to{});
 }
 
+_CCCL_EXEC_CHECK_DISABLE
 template <class _BinaryPredicate, class _InputIterator1, class _InputIterator2>
-_CCCL_NODISCARD inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool __equal(
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool __equal(
   _InputIterator1 __first1,
   _InputIterator1 __last1,
   _InputIterator2 __first2,
@@ -69,7 +71,7 @@ _CCCL_NODISCARD inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _
 }
 
 template <class _BinaryPredicate, class _RandomAccessIterator1, class _RandomAccessIterator2>
-_CCCL_NODISCARD inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool __equal(
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool __equal(
   _RandomAccessIterator1 __first1,
   _RandomAccessIterator1 __last1,
   _RandomAccessIterator2 __first2,
@@ -82,19 +84,19 @@ _CCCL_NODISCARD inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _
   {
     return false;
   }
-  return _CUDA_VSTD::equal<_RandomAccessIterator1, _RandomAccessIterator2, __add_lvalue_reference_t<_BinaryPredicate>>(
+  return _CUDA_VSTD::equal<_RandomAccessIterator1, _RandomAccessIterator2, add_lvalue_reference_t<_BinaryPredicate>>(
     __first1, __last1, __first2, __pred);
 }
 
 template <class _InputIterator1, class _InputIterator2, class _BinaryPredicate>
-_CCCL_NODISCARD inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 equal(_InputIterator1 __first1,
       _InputIterator1 __last1,
       _InputIterator2 __first2,
       _InputIterator2 __last2,
       _BinaryPredicate __pred)
 {
-  return _CUDA_VSTD::__equal<__add_lvalue_reference_t<_BinaryPredicate>>(
+  return _CUDA_VSTD::__equal<add_lvalue_reference_t<_BinaryPredicate>>(
     __first1,
     __last1,
     __first2,
@@ -105,7 +107,7 @@ equal(_InputIterator1 __first1,
 }
 
 template <class _InputIterator1, class _InputIterator2>
-_CCCL_NODISCARD inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 bool
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 equal(_InputIterator1 __first1, _InputIterator1 __last1, _InputIterator2 __first2, _InputIterator2 __last2)
 {
   return _CUDA_VSTD::__equal(

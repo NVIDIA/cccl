@@ -147,8 +147,9 @@ runs:
           --host ${{inputs.host}} \
           "${gpu_request[@]}" \
           --env "CI=$CI" \
-          --env "VAULT_HOST=" \
+          --env "AWS_ROLE_ARN=" \
           --env "COMMAND=$COMMAND" \
+          --env "SCCACHE_IDLE_TIMEOUT=0" \
           --env "GITHUB_ENV=$GITHUB_ENV" \
           --env "GITHUB_SHA=$GITHUB_SHA" \
           --env "GITHUB_PATH=$GITHUB_PATH" \

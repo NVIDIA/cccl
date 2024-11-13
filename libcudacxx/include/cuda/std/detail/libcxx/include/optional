@@ -198,10 +198,6 @@ template<class T>
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
-#include <cuda/std/cstdlib>
-#include <cuda/std/detail/libcxx/include/__assert> // all public C++ headers provide the assertion handler
-#include <cuda/std/detail/libcxx/include/__availability>
-#include <cuda/std/detail/libcxx/include/__verbose_abort>
 #include <cuda/std/initializer_list>
 
 // standard-mandated includes
@@ -214,7 +210,7 @@ template<class T>
 
 _CCCL_PUSH_MACROS
 
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#ifndef _CCCL_NO_EXCEPTIONS
 #  ifdef __cpp_lib_optional
 #    include <optional>
 #  else // ^^^ __cpp_lib_optional ^^^ / vvv !__cpp_lib_optional vvv
@@ -228,7 +224,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION
 using ::std::bad_optional_access;
 
 #  else // ^^^ __cpp_lib_optional ^^^ / vvv !__cpp_lib_optional vvv
-class _LIBCUDACXX_TYPE_VIS _LIBCUDACXX_AVAILABILITY_BAD_OPTIONAL_ACCESS bad_optional_access : public ::std::exception
+class _CCCL_TYPE_VISIBILITY_DEFAULT bad_optional_access : public ::std::exception
 {
 public:
   const char* what() const noexcept override
@@ -240,29 +236,29 @@ public:
 
 _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
 
-#endif // _LIBCUDACXX_NO_EXCEPTIONS
+#endif // !_CCCL_NO_EXCEPTIONS
 
 #if _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_CCCL_NORETURN inline _LIBCUDACXX_INLINE_VISIBILITY void __throw_bad_optional_access()
+_CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void __throw_bad_optional_access()
 {
-#  ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#  ifndef _CCCL_NO_EXCEPTIONS
   NV_IF_ELSE_TARGET(
     NV_IS_HOST, (throw _CUDA_VSTD_NOVERSION::bad_optional_access();), (_CUDA_VSTD_NOVERSION::terminate();))
-#  else
+#  else // ^^^ _CCCL_NO_EXCEPTIONS ^^^ / vvv !_CCCL_NO_EXCEPTIONS vvv
   _CUDA_VSTD_NOVERSION::terminate();
-#  endif // !_LIBCUDACXX_NO_EXCEPTIONS
+#  endif // !_CCCL_NO_EXCEPTIONS
 }
 
 struct nullopt_t
 {
   struct __secret_tag
   {
-    explicit __secret_tag() = default;
+    _CCCL_HIDE_FROM_ABI explicit __secret_tag() = default;
   };
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit nullopt_t(__secret_tag, __secret_tag) noexcept {}
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit nullopt_t(__secret_tag, __secret_tag) noexcept {}
 };
 
 _CCCL_GLOBAL_CONSTANT nullopt_t nullopt{nullopt_t::__secret_tag{}, nullopt_t::__secret_tag{}};
@@ -282,12 +278,12 @@ struct __optional_destruct_base<_Tp, false>
   union
   {
     char __null_state_;
-    __remove_cv_t<value_type> __val_;
+    remove_cv_t<value_type> __val_;
   };
   bool __engaged_;
 
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 ~__optional_destruct_base()
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 ~__optional_destruct_base()
   {
     if (__engaged_)
     {
@@ -295,26 +291,26 @@ struct __optional_destruct_base<_Tp, false>
     }
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __optional_destruct_base() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __optional_destruct_base() noexcept
       : __null_state_()
       , __engaged_(false)
   {}
 
   template <class... _Args>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit __optional_destruct_base(in_place_t, _Args&&... __args)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __optional_destruct_base(in_place_t, _Args&&... __args)
       : __val_(_CUDA_VSTD::forward<_Args>(__args)...)
       , __engaged_(true)
   {}
 
   template <class _Fp, class... _Args>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __optional_destruct_base(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __optional_destruct_base(
     __optional_construct_from_invoke_tag, _Fp&& __f, _Args&&... __args)
       : __val_(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fp>(__f), _CUDA_VSTD::forward<_Args>(__args)...))
       , __engaged_(true)
   {}
 
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void reset() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void reset() noexcept
   {
     if (__engaged_)
     {
@@ -333,29 +329,29 @@ struct __optional_destruct_base<_Tp, true>
   union
   {
     char __null_state_;
-    __remove_cv_t<value_type> __val_;
+    remove_cv_t<value_type> __val_;
   };
   bool __engaged_;
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __optional_destruct_base() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __optional_destruct_base() noexcept
       : __null_state_()
       , __engaged_(false)
   {}
 
   template <class... _Args>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit __optional_destruct_base(in_place_t, _Args&&... __args)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __optional_destruct_base(in_place_t, _Args&&... __args)
       : __val_(_CUDA_VSTD::forward<_Args>(__args)...)
       , __engaged_(true)
   {}
 
   template <class _Fp, class... _Args>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __optional_destruct_base(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __optional_destruct_base(
     __optional_construct_from_invoke_tag, _Fp&& __f, _Args&&... __args)
       : __val_(_CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fp>(__f), _CUDA_VSTD::forward<_Args>(__args)...))
       , __engaged_(true)
   {}
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr void reset() noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void reset() noexcept
   {
     if (__engaged_)
     {
@@ -371,32 +367,32 @@ struct __optional_storage_base : __optional_destruct_base<_Tp>
 
   using value_type = _Tp;
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr bool has_value() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr bool has_value() const noexcept
   {
     return this->__engaged_;
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr value_type& __get() & noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type& __get() & noexcept
   {
     return this->__val_;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr const value_type& __get() const& noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr const value_type& __get() const& noexcept
   {
     return this->__val_;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr value_type&& __get() && noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type&& __get() && noexcept
   {
     return _CUDA_VSTD::move(this->__val_);
   }
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr const value_type&& __get() const&& noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr const value_type&& __get() const&& noexcept
   {
     return _CUDA_VSTD::move(this->__val_);
   }
 
   template <class... _Args>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 void __construct(_Args&&... __args)
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void __construct(_Args&&... __args)
   {
-    _LIBCUDACXX_ASSERT(!has_value(), "__construct called for engaged __optional_storage");
+    _CCCL_ASSERT(!has_value(), "__construct called for engaged __optional_storage");
 #  if _CCCL_STD_VER > 2017
     _CUDA_VSTD::construct_at(_CUDA_VSTD::addressof(this->__val_), _CUDA_VSTD::forward<_Args>(__args)...);
 #  else
@@ -406,7 +402,7 @@ struct __optional_storage_base : __optional_destruct_base<_Tp>
   }
 
   template <class _That>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr void __construct_from(_That&& __opt)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void __construct_from(_That&& __opt)
   {
     if (__opt.has_value())
     {
@@ -415,7 +411,7 @@ struct __optional_storage_base : __optional_destruct_base<_Tp>
   }
 
   template <class _That>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr void __assign_from(_That&& __opt)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void __assign_from(_That&& __opt)
   {
     if (this->__engaged_ == __opt.has_value())
     {
@@ -439,7 +435,7 @@ struct __optional_storage_base : __optional_destruct_base<_Tp>
 };
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr __smf_availability __optional_can_copy_construct =
+_CCCL_INLINE_VAR constexpr __smf_availability __optional_can_copy_construct =
   _CCCL_TRAIT(is_trivially_copy_constructible, _Tp) ? __smf_availability::__trivial
   : _CCCL_TRAIT(is_copy_constructible, _Tp)
     ? __smf_availability::__available
@@ -459,29 +455,29 @@ struct __optional_copy_base<_Tp, __smf_availability::__available> : __optional_s
   // This ctor shouldn't need to initialize the base explicitly, but g++ 9 considers it to be uninitialized
   // during constexpr evaluation if it isn't initialized explicitly. This can be replaced with the pattern
   // below, in __optional_move_base, once g++ 9 falls off our support matrix.
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __optional_copy_base(const __optional_copy_base& __opt)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __optional_copy_base(const __optional_copy_base& __opt)
       : __base()
   {
     this->__construct_from(__opt);
   }
 
-  __optional_copy_base(__optional_copy_base&&)                 = default;
-  __optional_copy_base& operator=(const __optional_copy_base&) = default;
-  __optional_copy_base& operator=(__optional_copy_base&&)      = default;
+  _CCCL_HIDE_FROM_ABI __optional_copy_base(__optional_copy_base&&)                 = default;
+  _CCCL_HIDE_FROM_ABI __optional_copy_base& operator=(const __optional_copy_base&) = default;
+  _CCCL_HIDE_FROM_ABI __optional_copy_base& operator=(__optional_copy_base&&)      = default;
 };
 
 template <class _Tp>
 struct __optional_copy_base<_Tp, __smf_availability::__deleted> : __optional_storage_base<_Tp>
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__optional_copy_base, __optional_storage_base, _Tp);
-  __optional_copy_base(const __optional_copy_base&)            = delete;
-  __optional_copy_base(__optional_copy_base&&)                 = default;
-  __optional_copy_base& operator=(const __optional_copy_base&) = default;
-  __optional_copy_base& operator=(__optional_copy_base&&)      = default;
+  _CCCL_HIDE_FROM_ABI __optional_copy_base(const __optional_copy_base&)            = delete;
+  _CCCL_HIDE_FROM_ABI __optional_copy_base(__optional_copy_base&&)                 = default;
+  _CCCL_HIDE_FROM_ABI __optional_copy_base& operator=(const __optional_copy_base&) = default;
+  _CCCL_HIDE_FROM_ABI __optional_copy_base& operator=(__optional_copy_base&&)      = default;
 };
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr __smf_availability __optional_can_move_construct =
+_CCCL_INLINE_VAR constexpr __smf_availability __optional_can_move_construct =
   _CCCL_TRAIT(is_trivially_move_constructible, _Tp) ? __smf_availability::__trivial
   : _CCCL_TRAIT(is_move_constructible, _Tp)
     ? __smf_availability::__available
@@ -498,16 +494,16 @@ struct __optional_move_base<_Tp, __smf_availability::__available> : __optional_c
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__optional_move_base, __optional_copy_base, _Tp);
 
-  __optional_move_base(const __optional_move_base&) = default;
+  _CCCL_HIDE_FROM_ABI __optional_move_base(const __optional_move_base&) = default;
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __optional_move_base(__optional_move_base&& __opt) noexcept(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __optional_move_base(__optional_move_base&& __opt) noexcept(
     _CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
   {
     this->__construct_from(_CUDA_VSTD::move(__opt));
   }
 
-  __optional_move_base& operator=(const __optional_move_base&) = default;
-  __optional_move_base& operator=(__optional_move_base&&)      = default;
+  _CCCL_HIDE_FROM_ABI __optional_move_base& operator=(const __optional_move_base&) = default;
+  _CCCL_HIDE_FROM_ABI __optional_move_base& operator=(__optional_move_base&&)      = default;
 };
 
 template <class _Tp>
@@ -515,14 +511,14 @@ struct __optional_move_base<_Tp, __smf_availability::__deleted> : __optional_cop
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__optional_move_base, __optional_copy_base, _Tp);
 
-  __optional_move_base(const __optional_move_base&)            = default;
-  __optional_move_base(__optional_move_base&&)                 = delete;
-  __optional_move_base& operator=(const __optional_move_base&) = default;
-  __optional_move_base& operator=(__optional_move_base&&)      = default;
+  _CCCL_HIDE_FROM_ABI __optional_move_base(const __optional_move_base&)            = default;
+  _CCCL_HIDE_FROM_ABI __optional_move_base(__optional_move_base&&)                 = delete;
+  _CCCL_HIDE_FROM_ABI __optional_move_base& operator=(const __optional_move_base&) = default;
+  _CCCL_HIDE_FROM_ABI __optional_move_base& operator=(__optional_move_base&&)      = default;
 };
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr __smf_availability __optional_can_copy_assign =
+_CCCL_INLINE_VAR constexpr __smf_availability __optional_can_copy_assign =
   _CCCL_TRAIT(is_trivially_destructible, _Tp) && _CCCL_TRAIT(is_trivially_copy_constructible, _Tp)
       && _CCCL_TRAIT(is_trivially_copy_assignable, _Tp)
     ? __smf_availability::__trivial
@@ -541,11 +537,10 @@ struct __optional_copy_assign_base<_Tp, __smf_availability::__available> : __opt
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__optional_copy_assign_base, __optional_move_base, _Tp);
 
-  __optional_copy_assign_base(const __optional_copy_assign_base&) = default;
-  __optional_copy_assign_base(__optional_copy_assign_base&&)      = default;
+  _CCCL_HIDE_FROM_ABI __optional_copy_assign_base(const __optional_copy_assign_base&) = default;
+  _CCCL_HIDE_FROM_ABI __optional_copy_assign_base(__optional_copy_assign_base&&)      = default;
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __optional_copy_assign_base&
-  operator=(const __optional_copy_assign_base& __opt)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __optional_copy_assign_base& operator=(const __optional_copy_assign_base& __opt)
   {
     this->__assign_from(__opt);
     return *this;
@@ -559,14 +554,14 @@ struct __optional_copy_assign_base<_Tp, __smf_availability::__deleted> : __optio
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__optional_copy_assign_base, __optional_move_base, _Tp);
 
-  __optional_copy_assign_base(const __optional_copy_assign_base&)            = default;
-  __optional_copy_assign_base(__optional_copy_assign_base&&)                 = default;
-  __optional_copy_assign_base& operator=(const __optional_copy_assign_base&) = delete;
-  __optional_copy_assign_base& operator=(__optional_copy_assign_base&&)      = default;
+  _CCCL_HIDE_FROM_ABI __optional_copy_assign_base(const __optional_copy_assign_base&)            = default;
+  _CCCL_HIDE_FROM_ABI __optional_copy_assign_base(__optional_copy_assign_base&&)                 = default;
+  _CCCL_HIDE_FROM_ABI __optional_copy_assign_base& operator=(const __optional_copy_assign_base&) = delete;
+  _CCCL_HIDE_FROM_ABI __optional_copy_assign_base& operator=(__optional_copy_assign_base&&)      = default;
 };
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr __smf_availability __optional_can_move_assign =
+_CCCL_INLINE_VAR constexpr __smf_availability __optional_can_move_assign =
   _CCCL_TRAIT(is_trivially_destructible, _Tp) && _CCCL_TRAIT(is_trivially_move_constructible, _Tp)
       && _CCCL_TRAIT(is_trivially_move_assignable, _Tp)
     ? __smf_availability::__trivial
@@ -585,11 +580,11 @@ struct __optional_move_assign_base<_Tp, __smf_availability::__available> : __opt
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__optional_move_assign_base, __optional_copy_assign_base, _Tp);
 
-  __optional_move_assign_base(const __optional_move_assign_base& __opt)      = default;
-  __optional_move_assign_base(__optional_move_assign_base&&)                 = default;
-  __optional_move_assign_base& operator=(const __optional_move_assign_base&) = default;
+  _CCCL_HIDE_FROM_ABI __optional_move_assign_base(const __optional_move_assign_base& __opt)      = default;
+  _CCCL_HIDE_FROM_ABI __optional_move_assign_base(__optional_move_assign_base&&)                 = default;
+  _CCCL_HIDE_FROM_ABI __optional_move_assign_base& operator=(const __optional_move_assign_base&) = default;
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr __optional_move_assign_base&
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __optional_move_assign_base&
   operator=(__optional_move_assign_base&& __opt) noexcept(
     _CCCL_TRAIT(is_nothrow_move_assignable, _Tp) && _CCCL_TRAIT(is_nothrow_move_constructible, _Tp))
   {
@@ -603,10 +598,10 @@ struct __optional_move_assign_base<_Tp, __smf_availability::__deleted> : __optio
 {
   _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__optional_move_assign_base, __optional_copy_assign_base, _Tp);
 
-  __optional_move_assign_base(const __optional_move_assign_base& __opt)      = default;
-  __optional_move_assign_base(__optional_move_assign_base&&)                 = default;
-  __optional_move_assign_base& operator=(const __optional_move_assign_base&) = default;
-  __optional_move_assign_base& operator=(__optional_move_assign_base&&)      = delete;
+  _CCCL_HIDE_FROM_ABI __optional_move_assign_base(const __optional_move_assign_base& __opt)      = default;
+  _CCCL_HIDE_FROM_ABI __optional_move_assign_base(__optional_move_assign_base&&)                 = default;
+  _CCCL_HIDE_FROM_ABI __optional_move_assign_base& operator=(const __optional_move_assign_base&) = default;
+  _CCCL_HIDE_FROM_ABI __optional_move_assign_base& operator=(__optional_move_assign_base&&)      = delete;
 };
 
 template <class _Tp>
@@ -638,33 +633,32 @@ using __opt_check_assignable_from_opt =
       is_assignable<_Tp&, _Opt const&&>>;
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VAR constexpr bool __opt_is_implictly_constructible =
+_CCCL_INLINE_VAR constexpr bool __opt_is_implictly_constructible =
   _CCCL_TRAIT(is_constructible, _Tp, _Up) && _CCCL_TRAIT(is_convertible, _Up, _Tp);
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VAR constexpr bool __opt_is_explictly_constructible =
+_CCCL_INLINE_VAR constexpr bool __opt_is_explictly_constructible =
   _CCCL_TRAIT(is_constructible, _Tp, _Up) && !_CCCL_TRAIT(is_convertible, _Up, _Tp);
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VAR constexpr bool __opt_is_constructible_from_U =
-  !_CCCL_TRAIT(is_same, __remove_cvref_t<_Up>, in_place_t)
-  && !_CCCL_TRAIT(is_same, __remove_cvref_t<_Up>, optional<_Tp>);
+_CCCL_INLINE_VAR constexpr bool __opt_is_constructible_from_U =
+  !_CCCL_TRAIT(is_same, remove_cvref_t<_Up>, in_place_t) && !_CCCL_TRAIT(is_same, remove_cvref_t<_Up>, optional<_Tp>);
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VAR constexpr bool __opt_is_constructible_from_opt =
+_CCCL_INLINE_VAR constexpr bool __opt_is_constructible_from_opt =
   !_CCCL_TRAIT(is_same, _Up, _Tp) && !__opt_check_constructible_from_opt<_Tp, _Up>::value;
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VAR constexpr bool __opt_is_assignable =
+_CCCL_INLINE_VAR constexpr bool __opt_is_assignable =
   _CCCL_TRAIT(is_constructible, _Tp, _Up) && _CCCL_TRAIT(is_assignable, _Tp&, _Up);
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VAR constexpr bool __opt_is_assignable_from_U =
-  !_CCCL_TRAIT(is_same, __remove_cvref_t<_Up>, optional<_Tp>)
-  && (!_CCCL_TRAIT(is_same, __remove_cvref_t<_Up>, _Tp) || !_CCCL_TRAIT(is_scalar, _Tp));
+_CCCL_INLINE_VAR constexpr bool __opt_is_assignable_from_U =
+  !_CCCL_TRAIT(is_same, remove_cvref_t<_Up>, optional<_Tp>)
+  && (!_CCCL_TRAIT(is_same, remove_cvref_t<_Up>, _Tp) || !_CCCL_TRAIT(is_scalar, _Tp));
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VAR constexpr bool __opt_is_assignable_from_opt =
+_CCCL_INLINE_VAR constexpr bool __opt_is_assignable_from_opt =
   !_CCCL_TRAIT(is_same, _Up, _Tp) && !__opt_check_constructible_from_opt<_Tp, _Up>::value
   && !__opt_check_assignable_from_opt<_Tp, _Up>::value;
 
@@ -681,9 +675,9 @@ public:
 
 private:
   // Disable the reference extension using this static assert.
-  static_assert(!_CCCL_TRAIT(is_same, __remove_cvref_t<value_type>, in_place_t),
+  static_assert(!_CCCL_TRAIT(is_same, remove_cvref_t<value_type>, in_place_t),
                 "instantiation of optional with in_place_t is ill-formed");
-  static_assert(!_CCCL_TRAIT(is_same, __remove_cvref_t<value_type>, nullopt_t),
+  static_assert(!_CCCL_TRAIT(is_same, remove_cvref_t<value_type>, nullopt_t),
                 "instantiation of optional with nullopt_t is ill-formed");
   static_assert(!_CCCL_TRAIT(is_reference, value_type),
                 "instantiation of optional with a reference type is ill-formed");
@@ -692,42 +686,42 @@ private:
   static_assert(!_CCCL_TRAIT(is_array, value_type), "instantiation of optional with an array type is ill-formed");
 
 public:
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr optional() noexcept {}
-  constexpr optional(const optional&) = default;
-  constexpr optional(optional&&)      = default;
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr optional(nullopt_t) noexcept {}
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr optional() noexcept {}
+  _CCCL_HIDE_FROM_ABI constexpr optional(const optional&) = default;
+  _CCCL_HIDE_FROM_ABI constexpr optional(optional&&)      = default;
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr optional(nullopt_t) noexcept {}
 
   _LIBCUDACXX_TEMPLATE(class _In_place_t, class... _Args)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_same, _In_place_t, in_place_t)
                          _LIBCUDACXX_AND _CCCL_TRAIT(is_constructible, value_type, _Args...))
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit optional(_In_place_t, _Args&&... __args)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit optional(_In_place_t, _Args&&... __args)
       : __base(in_place, _CUDA_VSTD::forward<_Args>(__args)...)
   {}
 
   _LIBCUDACXX_TEMPLATE(class _Up, class... _Args)
   _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_constructible, value_type, initializer_list<_Up>&, _Args...))
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit optional(in_place_t, initializer_list<_Up> __il, _Args&&... __args)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit optional(in_place_t, initializer_list<_Up> __il, _Args&&... __args)
       : __base(in_place, __il, _CUDA_VSTD::forward<_Args>(__args)...)
   {}
 
   _LIBCUDACXX_TEMPLATE(class _Up = value_type)
   _LIBCUDACXX_REQUIRES(
     __opt_is_constructible_from_U<_Tp, _Up> _LIBCUDACXX_AND __opt_is_implictly_constructible<_Tp, _Up>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr optional(_Up&& __v)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr optional(_Up&& __v)
       : __base(in_place, _CUDA_VSTD::forward<_Up>(__v))
   {}
 
   _LIBCUDACXX_TEMPLATE(class _Up)
   _LIBCUDACXX_REQUIRES(
     __opt_is_constructible_from_U<_Tp, _Up> _LIBCUDACXX_AND __opt_is_explictly_constructible<_Tp, _Up>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit optional(_Up&& __v)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit optional(_Up&& __v)
       : __base(in_place, _CUDA_VSTD::forward<_Up>(__v))
   {}
 
   _LIBCUDACXX_TEMPLATE(class _Up)
   _LIBCUDACXX_REQUIRES(
     __opt_is_constructible_from_opt<_Tp, _Up> _LIBCUDACXX_AND __opt_is_implictly_constructible<_Tp, const _Up&>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr optional(const optional<_Up>& __v)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr optional(const optional<_Up>& __v)
   {
     this->__construct_from(__v);
   }
@@ -735,7 +729,7 @@ public:
   _LIBCUDACXX_TEMPLATE(class _Up)
   _LIBCUDACXX_REQUIRES(
     __opt_is_constructible_from_opt<_Tp, _Up> _LIBCUDACXX_AND __opt_is_explictly_constructible<_Tp, const _Up&>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit optional(const optional<_Up>& __v)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit optional(const optional<_Up>& __v)
   {
     this->__construct_from(__v);
   }
@@ -743,7 +737,7 @@ public:
   _LIBCUDACXX_TEMPLATE(class _Up)
   _LIBCUDACXX_REQUIRES(
     __opt_is_constructible_from_opt<_Tp, _Up> _LIBCUDACXX_AND __opt_is_implictly_constructible<_Tp, _Up>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr optional(optional<_Up>&& __v)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr optional(optional<_Up>&& __v)
   {
     this->__construct_from(_CUDA_VSTD::move(__v));
   }
@@ -751,21 +745,21 @@ public:
   _LIBCUDACXX_TEMPLATE(class _Up)
   _LIBCUDACXX_REQUIRES(
     __opt_is_constructible_from_opt<_Tp, _Up> _LIBCUDACXX_AND __opt_is_explictly_constructible<_Tp, _Up>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit optional(optional<_Up>&& __v)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit optional(optional<_Up>&& __v)
   {
     this->__construct_from(_CUDA_VSTD::move(__v));
   }
 
 private:
   template <class _Fp, class... _Args>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit optional(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit optional(
     __optional_construct_from_invoke_tag, _Fp&& __f, _Args&&... __args)
       : __base(
           __optional_construct_from_invoke_tag{}, _CUDA_VSTD::forward<_Fp>(__f), _CUDA_VSTD::forward<_Args>(__args)...)
   {}
 
 public:
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr optional& operator=(nullopt_t) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr optional& operator=(nullopt_t) noexcept
   {
     reset();
     return *this;
@@ -776,7 +770,7 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Up = value_type)
   _LIBCUDACXX_REQUIRES(__opt_is_assignable_from_U<_Tp, _Up> _LIBCUDACXX_AND __opt_is_assignable<_Tp, _Up>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr optional& operator=(_Up&& __v)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr optional& operator=(_Up&& __v)
   {
     if (this->has_value())
     {
@@ -791,7 +785,7 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Up)
   _LIBCUDACXX_REQUIRES(__opt_is_assignable_from_opt<_Tp, _Up> _LIBCUDACXX_AND __opt_is_assignable<_Tp, const _Up&>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr optional& operator=(const optional<_Up>& __v)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr optional& operator=(const optional<_Up>& __v)
   {
     this->__assign_from(__v);
     return *this;
@@ -799,14 +793,14 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Up)
   _LIBCUDACXX_REQUIRES(__opt_is_assignable_from_opt<_Tp, _Up> _LIBCUDACXX_AND __opt_is_assignable<_Tp, _Up>)
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr optional& operator=(optional<_Up>&& __v)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr optional& operator=(optional<_Up>&& __v)
   {
     this->__assign_from(_CUDA_VSTD::move(__v));
     return *this;
   }
 
-  template <class... _Args, __enable_if_t<_CCCL_TRAIT(is_constructible, value_type, _Args...), int> = 0>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr _Tp& emplace(_Args&&... __args)
+  template <class... _Args, enable_if_t<_CCCL_TRAIT(is_constructible, value_type, _Args...), int> = 0>
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp& emplace(_Args&&... __args)
   {
     reset();
     this->__construct(_CUDA_VSTD::forward<_Args>(__args)...);
@@ -815,15 +809,15 @@ public:
 
   template <class _Up,
             class... _Args,
-            __enable_if_t<_CCCL_TRAIT(is_constructible, value_type, initializer_list<_Up>&, _Args...), int> = 0>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr _Tp& emplace(initializer_list<_Up> __il, _Args&&... __args)
+            enable_if_t<_CCCL_TRAIT(is_constructible, value_type, initializer_list<_Up>&, _Args...), int> = 0>
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp& emplace(initializer_list<_Up> __il, _Args&&... __args)
   {
     reset();
     this->__construct(__il, _CUDA_VSTD::forward<_Args>(__args)...);
     return this->__get();
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr void swap(optional& __opt) noexcept(
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr void swap(optional& __opt) noexcept(
     _CCCL_TRAIT(is_nothrow_move_constructible, value_type) && _CCCL_TRAIT(is_nothrow_swappable, value_type))
   {
     if (this->has_value() == __opt.has_value())
@@ -849,43 +843,43 @@ public:
     }
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr add_pointer_t<value_type const> operator->() const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr add_pointer_t<value_type const> operator->() const
   {
-    _LIBCUDACXX_ASSERT(this->has_value(), "optional operator-> called on a disengaged value");
+    _CCCL_ASSERT(this->has_value(), "optional operator-> called on a disengaged value");
     return _CUDA_VSTD::addressof(this->__get());
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr add_pointer_t<value_type> operator->()
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr add_pointer_t<value_type> operator->()
   {
-    _LIBCUDACXX_ASSERT(this->has_value(), "optional operator-> called on a disengaged value");
+    _CCCL_ASSERT(this->has_value(), "optional operator-> called on a disengaged value");
     return _CUDA_VSTD::addressof(this->__get());
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr const value_type& operator*() const& noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr const value_type& operator*() const& noexcept
   {
-    _LIBCUDACXX_ASSERT(this->has_value(), "optional operator* called on a disengaged value");
+    _CCCL_ASSERT(this->has_value(), "optional operator* called on a disengaged value");
     return this->__get();
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr value_type& operator*() & noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type& operator*() & noexcept
   {
-    _LIBCUDACXX_ASSERT(this->has_value(), "optional operator* called on a disengaged value");
+    _CCCL_ASSERT(this->has_value(), "optional operator* called on a disengaged value");
     return this->__get();
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr value_type&& operator*() && noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type&& operator*() && noexcept
   {
-    _LIBCUDACXX_ASSERT(this->has_value(), "optional operator* called on a disengaged value");
+    _CCCL_ASSERT(this->has_value(), "optional operator* called on a disengaged value");
     return _CUDA_VSTD::move(this->__get());
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr const value_type&& operator*() const&& noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr const value_type&& operator*() const&& noexcept
   {
-    _LIBCUDACXX_ASSERT(this->has_value(), "optional operator* called on a disengaged value");
+    _CCCL_ASSERT(this->has_value(), "optional operator* called on a disengaged value");
     return _CUDA_VSTD::move(this->__get());
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr explicit operator bool() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit operator bool() const noexcept
   {
     return has_value();
   }
@@ -893,8 +887,7 @@ public:
   using __base::__get;
   using __base::has_value;
 
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_AVAILABILITY_THROW_BAD_OPTIONAL_ACCESS constexpr value_type const&
-  value() const&
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type const& value() const&
   {
     if (!this->has_value())
     {
@@ -903,7 +896,7 @@ public:
     return this->__get();
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_AVAILABILITY_THROW_BAD_OPTIONAL_ACCESS constexpr value_type& value() &
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type& value() &
   {
     if (!this->has_value())
     {
@@ -912,7 +905,7 @@ public:
     return this->__get();
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_AVAILABILITY_THROW_BAD_OPTIONAL_ACCESS constexpr value_type&& value() &&
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type&& value() &&
   {
     if (!this->has_value())
     {
@@ -921,8 +914,7 @@ public:
     return _CUDA_VSTD::move(this->__get());
   }
 
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_AVAILABILITY_THROW_BAD_OPTIONAL_ACCESS constexpr value_type const&&
-  value() const&&
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type const&& value() const&&
   {
     if (!this->has_value())
     {
@@ -932,7 +924,7 @@ public:
   }
 
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr value_type value_or(_Up&& __v) const&
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type value_or(_Up&& __v) const&
   {
     static_assert(_CCCL_TRAIT(is_copy_constructible, value_type),
                   "optional<T>::value_or: T must be copy constructible");
@@ -941,7 +933,7 @@ public:
   }
 
   template <class _Up>
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr value_type value_or(_Up&& __v) &&
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type value_or(_Up&& __v) &&
   {
     static_assert(_CCCL_TRAIT(is_move_constructible, value_type),
                   "optional<T>::value_or: T must be move constructible");
@@ -950,7 +942,7 @@ public:
   }
 
   template <class _Func>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_AVAILABILITY_THROW_BAD_OPTIONAL_ACCESS constexpr auto and_then(_Func&& __f) &
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto and_then(_Func&& __f) &
   {
     using _Up = invoke_result_t<_Func, value_type&>;
     static_assert(__is_std_optional<remove_cvref_t<_Up>>::value,
@@ -963,8 +955,7 @@ public:
   }
 
   template <class _Func>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_AVAILABILITY_THROW_BAD_OPTIONAL_ACCESS constexpr auto
-  and_then(_Func&& __f) const&
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto and_then(_Func&& __f) const&
   {
     using _Up = invoke_result_t<_Func, const value_type&>;
     static_assert(__is_std_optional<remove_cvref_t<_Up>>::value,
@@ -977,8 +968,7 @@ public:
   }
 
   template <class _Func>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_AVAILABILITY_THROW_BAD_OPTIONAL_ACCESS constexpr auto
-  and_then(_Func&& __f) &&
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto and_then(_Func&& __f) &&
   {
     using _Up = invoke_result_t<_Func, value_type&&>;
     static_assert(__is_std_optional<remove_cvref_t<_Up>>::value,
@@ -991,8 +981,7 @@ public:
   }
 
   template <class _Func>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_AVAILABILITY_THROW_BAD_OPTIONAL_ACCESS constexpr auto
-  and_then(_Func&& __f) const&&
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto and_then(_Func&& __f) const&&
   {
     using _Up = invoke_result_t<_Func, const value_type&&>;
     static_assert(__is_std_optional<remove_cvref_t<_Up>>::value,
@@ -1005,8 +994,7 @@ public:
   }
 
   template <class _Func>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_AVAILABILITY_THROW_BAD_OPTIONAL_ACCESS constexpr auto
-  transform(_Func&& __f) &
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Func&& __f) &
   {
     using _Up = remove_cv_t<invoke_result_t<_Func, value_type&>>;
     static_assert(!_CCCL_TRAIT(is_array, _Up), "Result of f(value()) should not be an Array");
@@ -1021,8 +1009,7 @@ public:
   }
 
   template <class _Func>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_AVAILABILITY_THROW_BAD_OPTIONAL_ACCESS constexpr auto
-  transform(_Func&& __f) const&
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Func&& __f) const&
   {
     using _Up = remove_cv_t<invoke_result_t<_Func, const value_type&>>;
     static_assert(!_CCCL_TRAIT(is_array, _Up), "Result of f(value()) should not be an Array");
@@ -1037,8 +1024,7 @@ public:
   }
 
   template <class _Func>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_AVAILABILITY_THROW_BAD_OPTIONAL_ACCESS constexpr auto
-  transform(_Func&& __f) &&
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Func&& __f) &&
   {
     using _Up = remove_cv_t<invoke_result_t<_Func, value_type&&>>;
     static_assert(!_CCCL_TRAIT(is_array, _Up), "Result of f(std::move(value())) should not be an Array");
@@ -1056,8 +1042,7 @@ public:
   }
 
   template <class _Func>
-  _LIBCUDACXX_INLINE_VISIBILITY _LIBCUDACXX_AVAILABILITY_THROW_BAD_OPTIONAL_ACCESS constexpr auto
-  transform(_Func&& __f) const&&
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto transform(_Func&& __f) const&&
   {
     using _Up = remove_cvref_t<invoke_result_t<_Func, const value_type&&>>;
     static_assert(!_CCCL_TRAIT(is_array, _Up), "Result of f(std::move(value())) should not be an Array");
@@ -1076,7 +1061,7 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Func, class _Tp2 = _Tp)
   _LIBCUDACXX_REQUIRES(invocable<_Func> _LIBCUDACXX_AND _CCCL_TRAIT(is_copy_constructible, _Tp2))
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr optional or_else(_Func&& __f) const&
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr optional or_else(_Func&& __f) const&
   {
     static_assert(_CCCL_TRAIT(is_same, remove_cvref_t<invoke_result_t<_Func>>, optional),
                   "Result of f() should be the same type as this optional");
@@ -1089,7 +1074,7 @@ public:
 
   _LIBCUDACXX_TEMPLATE(class _Func, class _Tp2 = _Tp)
   _LIBCUDACXX_REQUIRES(invocable<_Func> _LIBCUDACXX_AND _CCCL_TRAIT(is_move_constructible, _Tp2))
-  _LIBCUDACXX_INLINE_VISIBILITY constexpr optional or_else(_Func&& __f) &&
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr optional or_else(_Func&& __f) &&
   {
     static_assert(_CCCL_TRAIT(is_same, remove_cvref_t<invoke_result_t<_Func>>, optional),
                   "Result of f() should be the same type as this optional");
@@ -1110,7 +1095,7 @@ _CCCL_HOST_DEVICE optional(_Tp) -> optional<_Tp>;
 
 // Comparisons between optionals
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() == declval<const _Up&>()), bool),
   bool>
 operator==(const optional<_Tp>& __x, const optional<_Up>& __y)
@@ -1127,7 +1112,7 @@ operator==(const optional<_Tp>& __x, const optional<_Up>& __y)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() != declval<const _Up&>()), bool),
   bool>
 operator!=(const optional<_Tp>& __x, const optional<_Up>& __y)
@@ -1144,7 +1129,7 @@ operator!=(const optional<_Tp>& __x, const optional<_Up>& __y)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() < declval<const _Up&>()), bool),
   bool>
 operator<(const optional<_Tp>& __x, const optional<_Up>& __y)
@@ -1161,7 +1146,7 @@ operator<(const optional<_Tp>& __x, const optional<_Up>& __y)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() > declval<const _Up&>()), bool),
   bool>
 operator>(const optional<_Tp>& __x, const optional<_Up>& __y)
@@ -1178,7 +1163,7 @@ operator>(const optional<_Tp>& __x, const optional<_Up>& __y)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() <= declval<const _Up&>()), bool),
   bool>
 operator<=(const optional<_Tp>& __x, const optional<_Up>& __y)
@@ -1195,7 +1180,7 @@ operator<=(const optional<_Tp>& __x, const optional<_Up>& __y)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() >= declval<const _Up&>()), bool),
   bool>
 operator>=(const optional<_Tp>& __x, const optional<_Up>& __y)
@@ -1213,80 +1198,80 @@ operator>=(const optional<_Tp>& __x, const optional<_Up>& __y)
 
 // Comparisons with nullopt
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator==(const optional<_Tp>& __x, nullopt_t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const optional<_Tp>& __x, nullopt_t) noexcept
 {
   return !static_cast<bool>(__x);
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator==(nullopt_t, const optional<_Tp>& __x) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(nullopt_t, const optional<_Tp>& __x) noexcept
 {
   return !static_cast<bool>(__x);
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator!=(const optional<_Tp>& __x, nullopt_t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator!=(const optional<_Tp>& __x, nullopt_t) noexcept
 {
   return static_cast<bool>(__x);
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator!=(nullopt_t, const optional<_Tp>& __x) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator!=(nullopt_t, const optional<_Tp>& __x) noexcept
 {
   return static_cast<bool>(__x);
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator<(const optional<_Tp>&, nullopt_t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator<(const optional<_Tp>&, nullopt_t) noexcept
 {
   return false;
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator<(nullopt_t, const optional<_Tp>& __x) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator<(nullopt_t, const optional<_Tp>& __x) noexcept
 {
   return static_cast<bool>(__x);
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator<=(const optional<_Tp>& __x, nullopt_t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator<=(const optional<_Tp>& __x, nullopt_t) noexcept
 {
   return !static_cast<bool>(__x);
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator<=(nullopt_t, const optional<_Tp>&) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator<=(nullopt_t, const optional<_Tp>&) noexcept
 {
   return true;
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator>(const optional<_Tp>& __x, nullopt_t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator>(const optional<_Tp>& __x, nullopt_t) noexcept
 {
   return static_cast<bool>(__x);
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator>(nullopt_t, const optional<_Tp>&) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator>(nullopt_t, const optional<_Tp>&) noexcept
 {
   return false;
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator>=(const optional<_Tp>&, nullopt_t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator>=(const optional<_Tp>&, nullopt_t) noexcept
 {
   return true;
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr bool operator>=(nullopt_t, const optional<_Tp>& __x) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator>=(nullopt_t, const optional<_Tp>& __x) noexcept
 {
   return !static_cast<bool>(__x);
 }
 
 // Comparisons with T
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() == declval<const _Up&>()), bool),
   bool>
 operator==(const optional<_Tp>& __x, const _Up& __v)
@@ -1295,7 +1280,7 @@ operator==(const optional<_Tp>& __x, const _Up& __v)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() == declval<const _Up&>()), bool),
   bool>
 operator==(const _Tp& __v, const optional<_Up>& __x)
@@ -1304,7 +1289,7 @@ operator==(const _Tp& __v, const optional<_Up>& __x)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() != declval<const _Up&>()), bool),
   bool>
 operator!=(const optional<_Tp>& __x, const _Up& __v)
@@ -1313,7 +1298,7 @@ operator!=(const optional<_Tp>& __x, const _Up& __v)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() != declval<const _Up&>()), bool),
   bool>
 operator!=(const _Tp& __v, const optional<_Up>& __x)
@@ -1322,7 +1307,7 @@ operator!=(const _Tp& __v, const optional<_Up>& __x)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() < declval<const _Up&>()), bool),
   bool>
 operator<(const optional<_Tp>& __x, const _Up& __v)
@@ -1331,7 +1316,7 @@ operator<(const optional<_Tp>& __x, const _Up& __v)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() < declval<const _Up&>()), bool),
   bool>
 operator<(const _Tp& __v, const optional<_Up>& __x)
@@ -1340,7 +1325,7 @@ operator<(const _Tp& __v, const optional<_Up>& __x)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() <= declval<const _Up&>()), bool),
   bool>
 operator<=(const optional<_Tp>& __x, const _Up& __v)
@@ -1349,7 +1334,7 @@ operator<=(const optional<_Tp>& __x, const _Up& __v)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() <= declval<const _Up&>()), bool),
   bool>
 operator<=(const _Tp& __v, const optional<_Up>& __x)
@@ -1358,7 +1343,7 @@ operator<=(const _Tp& __v, const optional<_Up>& __x)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() > declval<const _Up&>()), bool),
   bool>
 operator>(const optional<_Tp>& __x, const _Up& __v)
@@ -1367,7 +1352,7 @@ operator>(const optional<_Tp>& __x, const _Up& __v)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() > declval<const _Up&>()), bool),
   bool>
 operator>(const _Tp& __v, const optional<_Up>& __x)
@@ -1376,7 +1361,7 @@ operator>(const _Tp& __v, const optional<_Up>& __x)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() >= declval<const _Up&>()), bool),
   bool>
 operator>=(const optional<_Tp>& __x, const _Up& __v)
@@ -1385,7 +1370,7 @@ operator>=(const optional<_Tp>& __x, const _Up& __v)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() >= declval<const _Up&>()), bool),
   bool>
 operator>=(const _Tp& __v, const optional<_Up>& __x)
@@ -1394,7 +1379,7 @@ operator>=(const _Tp& __v, const optional<_Up>& __x)
 }
 
 template <class _Tp>
-inline _LIBCUDACXX_INLINE_VISIBILITY constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_move_constructible, _Tp) && _CCCL_TRAIT(is_swappable, _Tp),
   void>
 swap(optional<_Tp>& __x, optional<_Tp>& __y) noexcept(noexcept(__x.swap(__y)))
@@ -1403,33 +1388,33 @@ swap(optional<_Tp>& __x, optional<_Tp>& __y) noexcept(noexcept(__x.swap(__y)))
 }
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr optional<decay_t<_Tp>> make_optional(_Tp&& __v)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr optional<decay_t<_Tp>> make_optional(_Tp&& __v)
 {
   return optional<decay_t<_Tp>>(_CUDA_VSTD::forward<_Tp>(__v));
 }
 
 template <class _Tp, class... _Args>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr optional<_Tp> make_optional(_Args&&... __args)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr optional<_Tp> make_optional(_Args&&... __args)
 {
   return optional<_Tp>(in_place, _CUDA_VSTD::forward<_Args>(__args)...);
 }
 
 template <class _Tp, class _Up, class... _Args>
-_LIBCUDACXX_INLINE_VISIBILITY constexpr optional<_Tp> make_optional(initializer_list<_Up> __il, _Args&&... __args)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr optional<_Tp> make_optional(initializer_list<_Up> __il, _Args&&... __args)
 {
   return optional<_Tp>(in_place, __il, _CUDA_VSTD::forward<_Args>(__args)...);
 }
 
 #  ifndef __cuda_std__
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS hash<__enable_hash_helper<optional<_Tp>, remove_const_t<_Tp>>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<__enable_hash_helper<optional<_Tp>, remove_const_t<_Tp>>>
 {
 #    if _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_BINDER_TYPEDEFS)
   _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef optional<_Tp> argument_type;
   _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef size_t result_type;
 #    endif
 
-  _LIBCUDACXX_INLINE_VISIBILITY size_t operator()(const optional<_Tp>& __opt) const
+  _LIBCUDACXX_HIDE_FROM_ABI size_t operator()(const optional<_Tp>& __opt) const
   {
     return static_cast<bool>(__opt) ? hash<remove_const_t<_Tp>>()(*__opt) : 0;
   }

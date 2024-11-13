@@ -50,7 +50,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
 struct is_bind_expression
-    : _If<_IsSame<_Tp, __remove_cvref_t<_Tp>>::value, false_type, is_bind_expression<__remove_cvref_t<_Tp>>>
+    : _If<_IsSame<_Tp, remove_cvref_t<_Tp>>::value, false_type, is_bind_expression<remove_cvref_t<_Tp>>>
 {};
 
 #  if _CCCL_STD_VER > 2014
@@ -60,7 +60,7 @@ inline constexpr size_t is_bind_expression_v = is_bind_expression<_Tp>::value;
 
 template <class _Tp>
 struct is_placeholder
-    : _If<_IsSame<_Tp, __remove_cvref_t<_Tp>>::value, integral_constant<int, 0>, is_placeholder<__remove_cvref_t<_Tp>>>
+    : _If<_IsSame<_Tp, remove_cvref_t<_Tp>>::value, integral_constant<int, 0>, is_placeholder<remove_cvref_t<_Tp>>>
 {};
 
 #  if _CCCL_STD_VER > 2014
@@ -76,27 +76,27 @@ struct __ph
 {};
 
 #  if defined(_LIBCUDACXX_BUILDING_LIBRARY)
-_LIBCUDACXX_INLINE_VISIBILITY extern const __ph<1> _1;
-_LIBCUDACXX_INLINE_VISIBILITY extern const __ph<2> _2;
-_LIBCUDACXX_INLINE_VISIBILITY extern const __ph<3> _3;
-_LIBCUDACXX_INLINE_VISIBILITY extern const __ph<4> _4;
-_LIBCUDACXX_INLINE_VISIBILITY extern const __ph<5> _5;
-_LIBCUDACXX_INLINE_VISIBILITY extern const __ph<6> _6;
-_LIBCUDACXX_INLINE_VISIBILITY extern const __ph<7> _7;
-_LIBCUDACXX_INLINE_VISIBILITY extern const __ph<8> _8;
-_LIBCUDACXX_INLINE_VISIBILITY extern const __ph<9> _9;
-_LIBCUDACXX_INLINE_VISIBILITY extern const __ph<10> _10;
+_LIBCUDACXX_HIDE_FROM_ABI extern const __ph<1> _1;
+_LIBCUDACXX_HIDE_FROM_ABI extern const __ph<2> _2;
+_LIBCUDACXX_HIDE_FROM_ABI extern const __ph<3> _3;
+_LIBCUDACXX_HIDE_FROM_ABI extern const __ph<4> _4;
+_LIBCUDACXX_HIDE_FROM_ABI extern const __ph<5> _5;
+_LIBCUDACXX_HIDE_FROM_ABI extern const __ph<6> _6;
+_LIBCUDACXX_HIDE_FROM_ABI extern const __ph<7> _7;
+_LIBCUDACXX_HIDE_FROM_ABI extern const __ph<8> _8;
+_LIBCUDACXX_HIDE_FROM_ABI extern const __ph<9> _9;
+_LIBCUDACXX_HIDE_FROM_ABI extern const __ph<10> _10;
 #  else
-/* _LIBCUDACXX_INLINE_VAR */ constexpr __ph<1> _1{};
-/* _LIBCUDACXX_INLINE_VAR */ constexpr __ph<2> _2{};
-/* _LIBCUDACXX_INLINE_VAR */ constexpr __ph<3> _3{};
-/* _LIBCUDACXX_INLINE_VAR */ constexpr __ph<4> _4{};
-/* _LIBCUDACXX_INLINE_VAR */ constexpr __ph<5> _5{};
-/* _LIBCUDACXX_INLINE_VAR */ constexpr __ph<6> _6{};
-/* _LIBCUDACXX_INLINE_VAR */ constexpr __ph<7> _7{};
-/* _LIBCUDACXX_INLINE_VAR */ constexpr __ph<8> _8{};
-/* _LIBCUDACXX_INLINE_VAR */ constexpr __ph<9> _9{};
-/* _LIBCUDACXX_INLINE_VAR */ constexpr __ph<10> _10{};
+/* _CCCL_INLINE_VAR */ constexpr __ph<1> _1{};
+/* _CCCL_INLINE_VAR */ constexpr __ph<2> _2{};
+/* _CCCL_INLINE_VAR */ constexpr __ph<3> _3{};
+/* _CCCL_INLINE_VAR */ constexpr __ph<4> _4{};
+/* _CCCL_INLINE_VAR */ constexpr __ph<5> _5{};
+/* _CCCL_INLINE_VAR */ constexpr __ph<6> _6{};
+/* _CCCL_INLINE_VAR */ constexpr __ph<7> _7{};
+/* _CCCL_INLINE_VAR */ constexpr __ph<8> _8{};
+/* _CCCL_INLINE_VAR */ constexpr __ph<9> _9{};
+/* _CCCL_INLINE_VAR */ constexpr __ph<10> _10{};
 #  endif // defined(_LIBCUDACXX_BUILDING_LIBRARY)
 
 } // namespace placeholders
@@ -106,20 +106,20 @@ struct is_placeholder<placeholders::__ph<_Np>> : public integral_constant<int, _
 {};
 
 template <class _Tp, class _Uj>
-inline _LIBCUDACXX_INLINE_VISIBILITY _Tp& __mu(reference_wrapper<_Tp> __t, _Uj&)
+_LIBCUDACXX_HIDE_FROM_ABI _Tp& __mu(reference_wrapper<_Tp> __t, _Uj&)
 {
   return __t.get();
 }
 
 template <class _Ti, class... _Uj, size_t... _Indx>
-inline _LIBCUDACXX_INLINE_VISIBILITY typename __invoke_of<_Ti&, _Uj...>::type
+_LIBCUDACXX_HIDE_FROM_ABI typename __invoke_of<_Ti&, _Uj...>::type
 __mu_expand(_Ti& __ti, tuple<_Uj...>& __uj, __tuple_indices<_Indx...>)
 {
   return __ti(_CUDA_VSTD::forward<_Uj>(_CUDA_VSTD::get<_Indx>(__uj))...);
 }
 
 template <class _Ti, class... _Uj>
-inline _LIBCUDACXX_INLINE_VISIBILITY __enable_if_t<is_bind_expression<_Ti>::value, __invoke_of<_Ti&, _Uj...>>
+_LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_bind_expression<_Ti>::value, __invoke_of<_Ti&, _Uj...>>
 __mu(_Ti& __ti, tuple<_Uj...>& __uj)
 {
   typedef __make_tuple_indices_t<sizeof...(_Uj)> __indices;
@@ -137,8 +137,8 @@ struct __mu_return2<true, _Ti, _Uj>
 };
 
 template <class _Ti, class _Uj>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-__enable_if_t<0 < is_placeholder<_Ti>::value, typename __mu_return2<0 < is_placeholder<_Ti>::value, _Ti, _Uj>::type>
+_LIBCUDACXX_HIDE_FROM_ABI
+enable_if_t<0 < is_placeholder<_Ti>::value, typename __mu_return2<0 < is_placeholder<_Ti>::value, _Ti, _Uj>::type>
 __mu(_Ti&, _Uj& __uj)
 {
   const size_t _Indx = is_placeholder<_Ti>::value - 1;
@@ -146,9 +146,9 @@ __mu(_Ti&, _Uj& __uj)
 }
 
 template <class _Ti, class _Uj>
-inline _LIBCUDACXX_INLINE_VISIBILITY
-__enable_if_t<!is_bind_expression<_Ti>::value && is_placeholder<_Ti>::value == 0 && !__is_reference_wrapper<_Ti>::value,
-              _Ti&>
+_LIBCUDACXX_HIDE_FROM_ABI
+enable_if_t<!is_bind_expression<_Ti>::value && is_placeholder<_Ti>::value == 0 && !__is_reference_wrapper<_Ti>::value,
+            _Ti&>
 __mu(_Ti& __ti, _Uj&)
 {
   return __ti;
@@ -239,18 +239,18 @@ template <class _Fp, class _BoundArgs, class _TupleUj>
 using __bind_return_t = typename __bind_return<_Fp, _BoundArgs, _TupleUj>::type;
 
 template <class _Fp, class _BoundArgs, size_t... _Indx, class _Args>
-inline _LIBCUDACXX_INLINE_VISIBILITY __bind_return_t<_Fp, _BoundArgs, _Args>
+_LIBCUDACXX_HIDE_FROM_ABI __bind_return_t<_Fp, _BoundArgs, _Args>
 __apply_functor(_Fp& __f, _BoundArgs& __bound_args, __tuple_indices<_Indx...>, _Args&& __args)
 {
   return _CUDA_VSTD::__invoke(__f, _CUDA_VSTD::__mu(_CUDA_VSTD::get<_Indx>(__bound_args), __args)...);
 }
 
 template <class _Fp, class... _BoundArgs>
-class __bind : public __weak_result_type<__decay_t<_Fp>>
+class __bind : public __weak_result_type<decay_t<_Fp>>
 {
 protected:
-  typedef __decay_t<_Fp> _Fd;
-  typedef tuple<__decay_t<_BoundArgs>...> _Td;
+  typedef decay_t<_Fp> _Fd;
+  typedef tuple<decay_t<_BoundArgs>...> _Td;
 
 private:
   _Fd __f_;
@@ -261,15 +261,14 @@ private:
 public:
   template <class _Gp,
             class... _BA,
-            class = __enable_if_t<is_constructible<_Fd, _Gp>::value
-                                  && !is_same<__libcpp_remove_reference_t<_Gp>, __bind>::value>>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 explicit __bind(_Gp&& __f, _BA&&... __bound_args)
+            class = enable_if_t<is_constructible<_Fd, _Gp>::value && !is_same<remove_reference_t<_Gp>, __bind>::value>>
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 explicit __bind(_Gp&& __f, _BA&&... __bound_args)
       : __f_(_CUDA_VSTD::forward<_Gp>(__f))
       , __bound_args_(_CUDA_VSTD::forward<_BA>(__bound_args)...)
   {}
 
   template <class... _Args>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 __bind_return_t<_Fd, _Td, tuple<_Args&&...>>
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __bind_return_t<_Fd, _Td, tuple<_Args&&...>>
   operator()(_Args&&... __args)
   {
     return _CUDA_VSTD::__apply_functor(
@@ -277,7 +276,7 @@ public:
   }
 
   template <class... _Args>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 __bind_return_t<const _Fd, const _Td, tuple<_Args&&...>>
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __bind_return_t<const _Fd, const _Td, tuple<_Args&&...>>
   operator()(_Args&&... __args) const
   {
     return _CUDA_VSTD::__apply_functor(
@@ -301,16 +300,15 @@ public:
 
   template <class _Gp,
             class... _BA,
-            class = __enable_if_t<is_constructible<_Fd, _Gp>::value
-                                  && !is_same<__libcpp_remove_reference_t<_Gp>, __bind_r>::value>>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 explicit __bind_r(_Gp&& __f, _BA&&... __bound_args)
+            class = enable_if_t<is_constructible<_Fd, _Gp>::value && !is_same<remove_reference_t<_Gp>, __bind_r>::value>>
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 explicit __bind_r(_Gp&& __f, _BA&&... __bound_args)
       : base(_CUDA_VSTD::forward<_Gp>(__f), _CUDA_VSTD::forward<_BA>(__bound_args)...)
   {}
 
   template <class... _Args>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
-  __enable_if_t<is_convertible<__bind_return_t<_Fd, _Td, tuple<_Args&&...>>, result_type>::value || is_void<_Rp>::value,
-                result_type>
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20
+  enable_if_t<is_convertible<__bind_return_t<_Fd, _Td, tuple<_Args&&...>>, result_type>::value || is_void<_Rp>::value,
+              result_type>
   operator()(_Args&&... __args)
   {
     typedef __invoke_void_return_wrapper<_Rp> _Invoker;
@@ -318,7 +316,7 @@ public:
   }
 
   template <class... _Args>
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 __enable_if_t<
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 enable_if_t<
     is_convertible<__bind_return_t<const _Fd, const _Td, tuple<_Args&&...>>, result_type>::value || is_void<_Rp>::value,
     result_type>
   operator()(_Args&&... __args) const
@@ -333,15 +331,14 @@ struct is_bind_expression<__bind_r<_Rp, _Fp, _BoundArgs...>> : public true_type
 {};
 
 template <class _Fp, class... _BoundArgs>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 __bind<_Fp, _BoundArgs...>
-bind(_Fp&& __f, _BoundArgs&&... __bound_args)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __bind<_Fp, _BoundArgs...> bind(_Fp&& __f, _BoundArgs&&... __bound_args)
 {
   typedef __bind<_Fp, _BoundArgs...> type;
   return type(_CUDA_VSTD::forward<_Fp>(__f), _CUDA_VSTD::forward<_BoundArgs>(__bound_args)...);
 }
 
 template <class _Rp, class _Fp, class... _BoundArgs>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 __bind_r<_Rp, _Fp, _BoundArgs...>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __bind_r<_Rp, _Fp, _BoundArgs...>
 bind(_Fp&& __f, _BoundArgs&&... __bound_args)
 {
   typedef __bind_r<_Rp, _Fp, _BoundArgs...> type;

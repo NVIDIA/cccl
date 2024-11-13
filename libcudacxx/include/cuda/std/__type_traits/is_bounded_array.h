@@ -26,25 +26,23 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class>
-struct _LIBCUDACXX_TEMPLATE_VIS __libcpp_is_bounded_array : false_type
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __libcpp_is_bounded_array : false_type
 {};
 template <class _Tp, size_t _Np>
-struct _LIBCUDACXX_TEMPLATE_VIS __libcpp_is_bounded_array<_Tp[_Np]> : true_type
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __libcpp_is_bounded_array<_Tp[_Np]> : true_type
 {};
-
-#if _CCCL_STD_VER > 2011
 
 template <class>
-struct _LIBCUDACXX_TEMPLATE_VIS is_bounded_array : false_type
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_bounded_array : false_type
 {};
 template <class _Tp, size_t _Np>
-struct _LIBCUDACXX_TEMPLATE_VIS is_bounded_array<_Tp[_Np]> : true_type
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_bounded_array<_Tp[_Np]> : true_type
 {};
 
+#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_bounded_array_v = is_bounded_array<_Tp>::value;
-
-#endif
+_CCCL_INLINE_VAR constexpr bool is_bounded_array_v = is_bounded_array<_Tp>::value;
+#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

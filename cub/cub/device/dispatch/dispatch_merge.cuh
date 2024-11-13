@@ -25,8 +25,8 @@ namespace detail
 {
 namespace merge
 {
-_LIBCUDACXX_INLINE_VAR constexpr int fallback_BLOCK_THREADS    = 64;
-_LIBCUDACXX_INLINE_VAR constexpr int fallback_ITEMS_PER_THREAD = 1;
+_CCCL_INLINE_VAR constexpr int fallback_BLOCK_THREADS    = 64;
+_CCCL_INLINE_VAR constexpr int fallback_ITEMS_PER_THREAD = 1;
 
 template <typename DefaultPolicy, class... Args>
 class choose_merge_agent
@@ -40,7 +40,7 @@ class choose_merge_agent
                                     && sizeof(typename fallback_agent_t::TempStorage) <= max_smem_per_block;
 
 public:
-  using type = ::cuda::std::__conditional_t<use_fallback, fallback_agent_t, default_agent_t>;
+  using type = ::cuda::std::conditional_t<use_fallback, fallback_agent_t, default_agent_t>;
 };
 
 // Computes the merge path intersections at equally wide intervals. The approach is outlined in the paper:
@@ -238,7 +238,7 @@ struct dispatch_t
       typename choose_merge_agent<merge_policy_t, KeyIt1, ValueIt1, KeyIt2, ValueIt2, KeyIt3, ValueIt3, Offset, CompareOp>::
         type;
 
-    const auto num_tiles = cub::DivideAndRoundUp(num_items1 + num_items2, agent_t::policy::ITEMS_PER_TILE);
+    const auto num_tiles = ::cuda::ceil_div(num_items1 + num_items2, agent_t::policy::ITEMS_PER_TILE);
     void* allocations[2] = {nullptr, nullptr};
     {
       const std::size_t merge_partitions_size      = (1 + num_tiles) * sizeof(Offset);
@@ -263,8 +263,7 @@ struct dispatch_t
     {
       const Offset num_partitions               = num_tiles + 1;
       constexpr int threads_per_partition_block = 256; // TODO(bgruber): no policy?
-      const int partition_grid_size =
-        static_cast<int>(cub::DivideAndRoundUp(num_partitions, threads_per_partition_block));
+      const int partition_grid_size = static_cast<int>(::cuda::ceil_div(num_partitions, threads_per_partition_block));
 
       auto error = CubDebug(
         THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(

@@ -391,12 +391,7 @@ constexpr double CephesFunctions::C[];
 template <typename Vector>
 void TestShuffleSimple()
 {
-  Vector data(5);
-  data[0] = 0;
-  data[1] = 1;
-  data[2] = 2;
-  data[3] = 3;
-  data[4] = 4;
+  Vector data{0, 1, 2, 3, 4};
   Vector shuffled(data.begin(), data.end());
   thrust::default_random_engine g(2);
   thrust::shuffle(shuffled.begin(), shuffled.end(), g);
@@ -410,12 +405,7 @@ DECLARE_VECTOR_UNITTEST(TestShuffleSimple);
 template <typename Vector>
 void TestShuffleCopySimple()
 {
-  Vector data(5);
-  data[0] = 0;
-  data[1] = 1;
-  data[2] = 2;
-  data[3] = 3;
-  data[4] = 4;
+  Vector data{0, 1, 2, 3, 4};
   Vector shuffled(5);
   thrust::default_random_engine g(2);
   thrust::shuffle_copy(data.begin(), data.end(), shuffled.begin(), g);

@@ -24,25 +24,25 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_HAS_VIRTUAL_DESTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_VIRTUAL_DESTRUCTOR_FALLBACK)
+#if defined(_CCCL_BUILTIN_HAS_VIRTUAL_DESTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_VIRTUAL_DESTRUCTOR_FALLBACK)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS has_virtual_destructor
-    : public integral_constant<bool, _LIBCUDACXX_HAS_VIRTUAL_DESTRUCTOR(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT has_virtual_destructor
+    : public integral_constant<bool, _CCCL_BUILTIN_HAS_VIRTUAL_DESTRUCTOR(_Tp)>
 {};
 
 #else
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS has_virtual_destructor : public false_type
+struct _CCCL_TYPE_VISIBILITY_DEFAULT has_virtual_destructor : public false_type
 {};
 
-#endif // defined(_LIBCUDACXX_HAS_VIRTUAL_DESTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_VIRTUAL_DESTRUCTOR_FALLBACK)
+#endif // defined(_CCCL_BUILTIN_HAS_VIRTUAL_DESTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_VIRTUAL_DESTRUCTOR_FALLBACK)
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool has_virtual_destructor_v = has_virtual_destructor<_Tp>::value;
-#endif
+_CCCL_INLINE_VAR constexpr bool has_virtual_destructor_v = has_virtual_destructor<_Tp>::value;
+#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

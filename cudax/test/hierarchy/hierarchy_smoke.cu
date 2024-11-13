@@ -62,6 +62,10 @@ struct basic_test_single_dim
 
     static_assert(dimensions_dyn.static_count(cudax::thread, cudax::block) == cuda::std::dynamic_extent);
     static_assert(dimensions_dyn.static_count(cudax::thread, cudax::grid) == cuda::std::dynamic_extent);
+
+    // Test that we can also drop the empty parens in the level constructors:
+    auto dimensions2 = cudax::make_hierarchy(cudax::block_dims<block_size>, cudax::grid_dims<grid_size>);
+    CUDAX_REQUIRE(dimensions == dimensions2);
   }
 };
 

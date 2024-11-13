@@ -34,17 +34,17 @@ struct __is_nullptr_t_impl<nullptr_t> : public true_type
 {};
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS __is_nullptr_t : public __is_nullptr_t_impl<__remove_cv_t<_Tp>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __is_nullptr_t : public __is_nullptr_t_impl<remove_cv_t<_Tp>>
 {};
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_null_pointer : public __is_nullptr_t_impl<__remove_cv_t<_Tp>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_null_pointer : public __is_nullptr_t_impl<remove_cv_t<_Tp>>
 {};
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_null_pointer_v = is_null_pointer<_Tp>::value;
-#endif // _CCCL_STD_VER > 2011
+_CCCL_INLINE_VAR constexpr bool is_null_pointer_v = is_null_pointer<_Tp>::value;
+#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

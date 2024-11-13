@@ -34,7 +34,7 @@ using __insert_iterator_iter_t = typename _Container::iterator;
 
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 template <class _Container>
-class _LIBCUDACXX_TEMPLATE_VIS insert_iterator
+class _CCCL_TYPE_VISIBILITY_DEFAULT insert_iterator
 #if _CCCL_STD_VER <= 2014 || !defined(_LIBCUDACXX_ABI_NO_ITERATOR_BASES)
     : public iterator<output_iterator_tag, void, void, void, void>
 #endif
@@ -57,41 +57,40 @@ public:
   typedef void reference;
   typedef _Container container_type;
 
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20
   insert_iterator(_Container& __x, __insert_iterator_iter_t<_Container> __i)
       : container(_CUDA_VSTD::addressof(__x))
       , iter(__i)
   {}
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 insert_iterator&
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 insert_iterator&
   operator=(const typename _Container::value_type& __value)
   {
     iter = container->insert(iter, __value);
     ++iter;
     return *this;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 insert_iterator&
-  operator=(typename _Container::value_type&& __value)
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 insert_iterator& operator=(typename _Container::value_type&& __value)
   {
     iter = container->insert(iter, _CUDA_VSTD::move(__value));
     ++iter;
     return *this;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 insert_iterator& operator*()
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 insert_iterator& operator*()
   {
     return *this;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 insert_iterator& operator++()
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 insert_iterator& operator++()
   {
     return *this;
   }
-  _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 insert_iterator& operator++(int)
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 insert_iterator& operator++(int)
   {
     return *this;
   }
 };
 
 template <class _Container>
-inline _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX20 insert_iterator<_Container>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 insert_iterator<_Container>
 inserter(_Container& __x, __insert_iterator_iter_t<_Container> __i)
 {
   return insert_iterator<_Container>(__x, __i);

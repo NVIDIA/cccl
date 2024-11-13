@@ -30,16 +30,16 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_IS_SCALAR) && !defined(_LIBCUDACXX_USE_IS_SCALAR_FALLBACK)
+#if defined(_CCCL_BUILTIN_IS_SCALAR) && !defined(_LIBCUDACXX_USE_IS_SCALAR_FALLBACK)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_scalar : public integral_constant<bool, _LIBCUDACXX_IS_SCALAR(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_scalar : public integral_constant<bool, _CCCL_BUILTIN_IS_SCALAR(_Tp)>
 {};
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_scalar_v = _LIBCUDACXX_IS_SCALAR(_Tp);
-#  endif
+_CCCL_INLINE_VAR constexpr bool is_scalar_v = _CCCL_BUILTIN_IS_SCALAR(_Tp);
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #else
 
@@ -53,22 +53,22 @@ struct __is_block<_Rp (^)(_Args...)> : true_type
 #  endif
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_scalar
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_scalar
     : public integral_constant<bool,
                                is_arithmetic<_Tp>::value || is_member_pointer<_Tp>::value || is_pointer<_Tp>::value
                                  || __is_nullptr_t<_Tp>::value || __is_block<_Tp>::value || is_enum<_Tp>::value>
 {};
 
 template <>
-struct _LIBCUDACXX_TEMPLATE_VIS is_scalar<nullptr_t> : public true_type
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_scalar<nullptr_t> : public true_type
 {};
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_scalar_v = is_scalar<_Tp>::value;
-#  endif
+_CCCL_INLINE_VAR constexpr bool is_scalar_v = is_scalar<_Tp>::value;
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
-#endif // defined(_LIBCUDACXX_IS_SCALAR) && !defined(_LIBCUDACXX_USE_IS_SCALAR_FALLBACK)
+#endif // defined(_CCCL_BUILTIN_IS_SCALAR) && !defined(_LIBCUDACXX_USE_IS_SCALAR_FALLBACK)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

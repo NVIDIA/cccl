@@ -168,10 +168,12 @@ public:
    */
 
 private:
-  // MSVC 2013 and 2015 incorrectly warning about returning a reference to
-  // a local/temporary here.
-  // See goo.gl/LELTNp
-  THRUST_DISABLE_MSVC_WARNING_BEGIN(4172)
+  // MSVC incorrectly warning about returning a reference to a local/temporary here.
+  // NVHPC breaks with push / pop within a class
+#if defined(_CCCL_COMPILER_MSVC)
+  _CCCL_DIAG_PUSH
+  _CCCL_DIAG_SUPPRESS_MSVC(4172)
+#endif // _CCCL_COMPILER_MSVC
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE typename super_t::reference dereference() const
@@ -179,7 +181,9 @@ private:
     return *(m_element_iterator + *this->base());
   }
 
-  THRUST_DISABLE_MSVC_WARNING_END(4172)
+#if defined(_CCCL_COMPILER_MSVC_2017)
+  _CCCL_DIAG_POP
+#endif // _CCCL_COMPILER_MSVC_2017
 
   // make friends for the copy constructor
   template <typename, typename>

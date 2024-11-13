@@ -56,10 +56,6 @@
 
 #if _CCCL_STD_VER > 2011
 
-#  ifndef __has_include
-#    define __has_include(x) 0
-#  endif
-
 #  ifdef _MSVC_LANG
 #    define __MDSPAN_CPLUSPLUS _MSVC_LANG
 #  else
@@ -114,10 +110,6 @@ static_assert(__MDSPAN_CPLUSPLUS >= __MDSPAN_CXX_STD_14, "mdspan requires C++14 
 #    if defined(__HIPCC__)
 #      define __MDSPAN_HAS_HIP __HIPCC__
 #    endif
-#  endif
-
-#  ifndef __has_cpp_attribute
-#    define __has_cpp_attribute(x) 0
 #  endif
 
 #  ifndef __MDSPAN_PRESERVE_STANDARD_LAYOUT

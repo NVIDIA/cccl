@@ -154,7 +154,7 @@ public:
    *  \note Memory deallocated by this function must previously have been
    *        allocated with \p allocate.
    */
-  _CCCL_HOST inline void deallocate(pointer p, size_type cnt)
+  _CCCL_HOST inline void deallocate(pointer p, size_type cnt) noexcept
   {
     // silence unused parameter warning while still leaving the parameter name for Doxygen
     (void) (cnt);

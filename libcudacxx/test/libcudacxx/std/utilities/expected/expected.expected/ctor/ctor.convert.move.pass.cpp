@@ -228,9 +228,9 @@ void test_exceptions()
 int main(int, char**)
 {
   test();
-#if TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
+#if TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
   static_assert(test(), "");
-#endif // TEST_STD_VER > 2017 && defined(_LIBCUDACXX_ADDRESSOF)
+#endif // TEST_STD_VER > 2017 && defined(_CCCL_BUILTIN_ADDRESSOF)
 #ifndef TEST_HAS_NO_EXCEPTIONS
   NV_IF_TARGET(NV_IS_HOST, (test_exceptions();))
 #endif // !TEST_HAS_NO_EXCEPTIONS

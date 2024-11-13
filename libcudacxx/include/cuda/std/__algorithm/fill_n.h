@@ -26,7 +26,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _OutputIterator, class _Size, class _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _OutputIterator
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _OutputIterator
 __fill_n(_OutputIterator __first, _Size __n, const _Tp& __value_)
 {
   for (; __n > 0; ++__first, (void) --__n)
@@ -37,7 +37,7 @@ __fill_n(_OutputIterator __first, _Size __n, const _Tp& __value_)
 }
 
 template <class _OutputIterator, class _Size, class _Tp>
-inline _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_INLINE_VISIBILITY _CCCL_CONSTEXPR_CXX14 _OutputIterator
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _OutputIterator
 fill_n(_OutputIterator __first, _Size __n, const _Tp& __value_)
 {
   return _CUDA_VSTD::__fill_n(__first, __convert_to_integral(__n), __value_);

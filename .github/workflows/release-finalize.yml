@@ -1,0 +1,192 @@
+# SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: "Release: 3. Create Final Release"
+
+# This workflow must be started on an release candidate tag.
+
+on:
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    permissions:
+      contents: write
+    outputs:
+      rc_tag: ${{ steps.prepare.outputs.rc_tag }}
+      release_tag: ${{ steps.prepare.outputs.release_tag }}
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+
+      - name: Prepare environment
+        id: prepare
+        run: |
+          log_and_export_vars() {
+            for var in "$@"; do
+              printf "%-15s %s\n" "$var:" "${!var}" | tee -a $GITHUB_STEP_SUMMARY
+              echo "${var}=${!var}" | tee -a $GITHUB_ENV | tee -a $GITHUB_OUTPUT
+            done
+          }
+
+          # The ref must match a release candidate tag. Parse version info:
+          tag_regex="^refs/tags/v([0-9]+)\.([0-9]+)\.([0-9]+)-rc([0-9]+)$"
+          if [[ "${GITHUB_REF}" =~ ${tag_regex} ]]; then
+            major_version=${BASH_REMATCH[1]}
+            minor_version=${BASH_REMATCH[2]}
+            patch_version=${BASH_REMATCH[3]}
+            rc=${BASH_REMATCH[4]}
+          else
+            echo "::error::Invalid ref: ${GITHUB_REF}. Must be a release candidate tag (vX.Y.Z-rcN)."
+            exit 1
+          fi
+          full_version="${major_version}.${minor_version}.${patch_version}"
+          release_tag="v${full_version}"
+          rc_tag="${release_tag}-rc${rc}"
+          repo_version=$(jq -r .full cccl-version.json)
+
+          log_and_export_vars full_version major_version minor_version patch_version rc release_tag rc_tag repo_version
+
+          if [[ "${repo_version}" != "${full_version}" ]]; then
+            echo "::error::cccl-version.json (${repo_version}) does not match release candidate tag (${rc_tag})."
+            exit 1
+          fi
+
+          # Ensure that there is no final release tag (vX.Y.Z) for the requested version.
+          release_tag_escaped=$(echo "${release_tag}" | sed 's/\./\\./g')
+          if git ls-remote --tags origin | grep -q "refs/tags/${release_tag_escaped}$"; then
+            echo "::error::Final release tag ${release_tag} already exists."
+            exit 1
+          fi
+
+      - name: Generate archives
+        id: archive
+        run: |
+          source_base=cccl-src-${release_tag}
+          package_base=cccl-${release_tag}
+
+          echo "::group::Preparing source"
+          declare -a source_exclude=(
+            .aws
+            .cache
+            .config
+            .local
+            .git
+            .vscode
+            build
+            archives
+            ${source_base}
+            ${package_base}
+          )
+          mkdir ${source_base}
+          rsync -av ${source_exclude[*]/#/--exclude=} . ${source_base}
+          echo "::endgroup::"
+
+          ci/install_cccl.sh "${package_base}"
+
+          mkdir archives
+
+          source_tarball=${PWD}/archives/${source_base}.tar.gz
+          source_zipfile=${PWD}/archives/${source_base}.zip
+          package_tarball=${PWD}/archives/${package_base}.tar.gz
+          package_zipfile=${PWD}/archives/${package_base}.zip
+
+          echo "source_tarball=${source_tarball}" >> $GITHUB_ENV
+          echo "source_zipfile=${source_zipfile}" >> $GITHUB_ENV
+          echo "package_tarball=${package_tarball}" >> $GITHUB_ENV
+          echo "package_zipfile=${package_zipfile}" >> $GITHUB_ENV
+
+          echo "::group::Archiving: ${source_tarball}"
+          tar -cvzf ${source_tarball} ${source_base}
+          echo "::endgroup::"
+
+          echo "::group::Archiving: ${source_zipfile}"
+          zip -rv9 ${source_zipfile} ${source_base}
+          echo "::endgroup::"
+
+          echo "::group::Archiving: ${package_tarball}"
+          tar -cvzf ${package_tarball} ${package_base}
+          echo "::endgroup::"
+
+          echo "::group::Archiving: ${package_zipfile}"
+          zip -rv9 ${package_zipfile} ${package_base}
+          echo "::endgroup::"
+
+          echo "::group::Archive vs Source Sizes"
+          echo "Sources:" | tee -a $GITHUB_STEP_SUMMARY
+          du -sh ${source_base} ${source_tarball} ${source_zipfile} | tee -a $GITHUB_STEP_SUMMARY
+          echo "Installation Packages:" | tee -a $GITHUB_STEP_SUMMARY
+          du -sh ${package_base} ${package_tarball} ${package_zipfile} | tee -a $GITHUB_STEP_SUMMARY
+          echo "::endgroup::"
+
+          rm -rf ${source_base} ${package_base}
+
+      - name: Tag
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+
+          git tag -a -m "CCCL Release ${release_tag}" ${release_tag} ${rc_tag}
+          git push origin ${release_tag}
+          echo "Tagged release ${release_tag} from ${rc_tag}." | tee -a $GITHUB_STEP_SUMMARY
+
+      - name: Draft Github Release
+        run: |
+          gh release create ${release_tag} \
+            --draft \
+            --generate-notes \
+            --title "${release_tag}" \
+            "${source_zipfile}#Source Archive (zip)" \
+            "${source_tarball}#Source Archive (tar.gz)" \
+            "${package_zipfile}#Installation Archive (zip)" \
+            "${package_tarball}#Installation Archive (tar.gz)"
+
+      - name: Notify Slack
+        if: ${{ success() }}
+        uses: slackapi/slack-github-action@v1.26.0
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
+          SUMMARY_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+          RC_TAG: ${{ steps.prepare.outputs.rc_tag }}
+          RELEASE_TAG: ${{ steps.prepare.outputs.release_tag }}
+          RELEASE_URL: https://github.com/${{github.repository}}/releases/tag/${{ steps.prepare.outputs.release_tag }}
+        with:
+          channel-id: ${{ secrets.SLACK_CHANNEL_RELEASE_LOG }}
+          slack-message: |
+            Release `${{ env.RELEASE_TAG }}` has been created from `${{ env.RC_TAG }}`.
+
+            A draft Github release has been prepared at ${{ env.RELEASE_URL }}.
+
+            Workflow summary: ${{ env.SUMMARY_URL }}
+
+      - name: Notify Slack (failure)
+        if: ${{ failure() }}
+        uses: slackapi/slack-github-action@v1.26.0
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
+          SUMMARY_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+        with:
+          channel-id: ${{ secrets.SLACK_CHANNEL_RELEASE_LOG }}
+          slack-message: |
+            An error has occurred while creating a release from ${{ github.ref }}.
+
+            Details: ${{ env.SUMMARY_URL }}

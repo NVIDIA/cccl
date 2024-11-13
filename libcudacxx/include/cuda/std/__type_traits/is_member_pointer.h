@@ -26,30 +26,31 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_LIBCUDACXX_IS_MEMBER_POINTER) && !defined(_LIBCUDACXX_USE_IS_MEMBER_POINTER_FALLBACK)
+#if defined(_CCCL_BUILTIN_IS_MEMBER_POINTER) && !defined(_LIBCUDACXX_USE_IS_MEMBER_POINTER_FALLBACK)
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_member_pointer : public integral_constant<bool, _LIBCUDACXX_IS_MEMBER_POINTER(_Tp)>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_member_pointer
+    : public integral_constant<bool, _CCCL_BUILTIN_IS_MEMBER_POINTER(_Tp)>
 {};
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_member_pointer_v = _LIBCUDACXX_IS_MEMBER_POINTER(_Tp);
-#  endif
+_CCCL_INLINE_VAR constexpr bool is_member_pointer_v = _CCCL_BUILTIN_IS_MEMBER_POINTER(_Tp);
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
-#else
+#else // ^^^ _CCCL_BUILTIN_IS_MEMBER_POINTER ^^^ / vvv !_CCCL_BUILTIN_IS_MEMBER_POINTER vvv
 
 template <class _Tp>
-struct _LIBCUDACXX_TEMPLATE_VIS is_member_pointer
-    : public integral_constant<bool, __libcpp_is_member_pointer<__remove_cv_t<_Tp>>::__is_member>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_member_pointer
+    : public integral_constant<bool, __libcpp_is_member_pointer<remove_cv_t<_Tp>>::__is_member>
 {};
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_member_pointer_v = is_member_pointer<_Tp>::value;
-#  endif
+_CCCL_INLINE_VAR constexpr bool is_member_pointer_v = is_member_pointer<_Tp>::value;
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
-#endif // defined(_LIBCUDACXX_IS_MEMBER_POINTER) && !defined(_LIBCUDACXX_USE_IS_MEMBER_POINTER_FALLBACK)
+#endif // !_CCCL_BUILTIN_IS_MEMBER_POINTER
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
