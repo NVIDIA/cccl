@@ -26,10 +26,6 @@
  ******************************************************************************/
 #include <cub/config.cuh>
 
-#include <utility>
-
-#include "cuda/std/__utility/integer_sequence.h"
-
 #if (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020
 
 #  include <cub/device/device_for_each_in_extents.cuh>
@@ -37,6 +33,8 @@
 #  include <thrust/detail/raw_pointer_cast.h>
 
 #  include <cuda/std/array>
+#  include <cuda/std/mdspan>
+#  include <cuda/std/span>
 
 #  include "c2h/catch2_test_helper.h"
 #  include "c2h/utility.h"
