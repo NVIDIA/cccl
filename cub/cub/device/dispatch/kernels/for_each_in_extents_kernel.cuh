@@ -90,8 +90,15 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void for_each_in_extents_kernel(
   auto id = threadIdx.x + blockIdx.x * blockDim.x;
   if (id < cub::detail::size(ext))
   {
-    auto id1 = static_cast<typename ExtendType::index_type>(id);
-    func(id1, coordinate_at<Ranks>(id1, ext, sub_sizes_div_array[Ranks], extents_mod_array[Ranks])...);
+    if constexpr (sizeof...(Ranks) == 0)
+    {
+      func(0);
+    }
+    else
+    {
+      auto id1 = static_cast<typename ExtendType::index_type>(id);
+      func(id1, coordinate_at<Ranks>(id1, ext, sub_sizes_div_array[Ranks], extents_mod_array[Ranks])...);
+    }
   }
 }
 

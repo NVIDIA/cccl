@@ -26,6 +26,10 @@
  ******************************************************************************/
 #include <cub/config.cuh>
 
+#include <utility>
+
+#include "cuda/std/__utility/integer_sequence.h"
+
 #if (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020
 
 #  include <cub/device/device_for_each_in_extents.cuh>
@@ -34,8 +38,8 @@
 
 #  include <cuda/std/array>
 
-#  include "c2h/catch2_test_helper.cuh"
-#  include "c2h/utility.cuh"
+#  include "c2h/catch2_test_helper.h"
+#  include "c2h/utility.h"
 #  include "catch2_test_launch_helper.h"
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -81,6 +85,7 @@ template <typename IndexType, int Size>
 struct LinearStore
 {
   using data_t = cuda::std::array<IndexType, Size>;
+
   cuda::std::span<data_t> d_output_raw;
 
   template <typename... TArgs>
@@ -109,7 +114,7 @@ using index_types =
 #  endif
                  >;
 
-using index_types_dyn =
+using index_types_dynamic =
   c2h::type_list<int16_t,
                  uint16_t,
                  int32_t,
@@ -121,18 +126,34 @@ using index_types_dyn =
 #  endif
                  >;
 
-using extents = c2h::type_list<cuda::std::extents<index_type, 5>, cuda::std::extents<index_type, 5, 3>, ...>;
-C2H_TEST("DeviceForEachInExtents static", "[ForEachInExtents][static][device]", index_types, extents)
+using dimensions =
+  c2h::type_list<cuda::std::index_sequence<>,
+                 cuda::std::index_sequence<5>,
+                 cuda::std::index_sequence<5, 3>,
+                 cuda::std::index_sequence<5, 3, 4>,
+                 cuda::std::index_sequence<3, 2, 6, 5>>;
+
+template <typename IndexType, typename Dimensions>
+struct build_extents;
+
+template <typename IndexType, size_t... Dimensions>
+struct build_extents<IndexType, cuda::std::index_sequence<Dimensions...>>
+{
+  using type = cuda::std::extents<IndexType, Dimensions...>;
+};
+
+C2H_TEST("DeviceForEachInExtents static", "[ForEachInExtents][static][device]", index_types, dimensions)
 {
   using index_type   = c2h::get<0, TestType>;
-  using extent_type  = c2h::get<1, TestType>;
+  using dimensions   = c2h::get<1, TestType>;
+  using extent_type  = typename build_extents<index_type, dimensions>::type;
   constexpr int rank = extent_type::rank();
   using data_t       = cuda::std::array<index_type, rank>;
   using store_op_t   = LinearStore<index_type, rank>;
   extent_type ext{};
   c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
   c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
-  auto d_output_raw = thrust::raw_pointer_cast(d_output.data());
+  auto d_output_raw = cuda::std::span{thrust::raw_pointer_cast(d_output.data()), cub::detail::size(ext)};
   CAPTURE(c2h::type_name<index_type>());
 
   device_for_each_in_extents(ext, store_op_t{d_output_raw});
@@ -141,42 +162,7 @@ C2H_TEST("DeviceForEachInExtents static", "[ForEachInExtents][static][device]", 
   REQUIRE(h_output == h_output_gpu);
 }
 
-C2H_TEST("DeviceForEachInExtents 1D static", "[ForEachInExtents][static][device]", index_types)
-{
-  constexpr int rank = 1;
-  using index_type   = c2h::get<0, TestType>;
-  using data_t       = cuda::std::array<index_type, rank>;
-  using store_op_t   = LinearStore<index_type, rank>;
-  cuda::std::extents<index_type, 5> ext{};
-  c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
-  c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
-  auto d_output_raw = thrust::raw_pointer_cast(d_output.data());
-
-  device_for_each_in_extents(ext, store_op_t{d_output_raw});
-  c2h::host_vector<data_t> h_output_gpu = d_output;
-  fill_linear(h_output, ext);
-  REQUIRE(h_output == h_output_gpu);
-}
-
-C2H_TEST("DeviceForEachInExtents 3D static", "[ForEachInExtents][static][device]", index_types)
-{
-  constexpr int rank = 3;
-  using index_type   = c2h::get<0, TestType>;
-  using data_t       = cuda::std::array<index_type, rank>;
-  using store_op_t   = LinearStore<index_type, rank>;
-  cuda::std::extents<index_type, 5, 3, 4> ext{};
-  c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
-  c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
-  auto d_output_raw = thrust::raw_pointer_cast(d_output.data());
-  CAPTURE(c2h::type_name<index_type>());
-
-  device_for_each_in_extents(ext, store_op_t{d_output_raw});
-  c2h::host_vector<data_t> h_output_gpu = d_output;
-  fill_linear(h_output, ext);
-  REQUIRE(h_output == h_output_gpu);
-}
-
-C2H_TEST("DeviceForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][device]", index_types_dyn)
+C2H_TEST("DeviceForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][device]", index_types_dynamic)
 {
   constexpr int rank = 3;
   using index_type   = c2h::get<0, TestType>;
@@ -188,24 +174,8 @@ C2H_TEST("DeviceForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][devic
   cuda::std::dextents<index_type, 3> ext{X, Y, Z};
   c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
   c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
-  auto d_output_raw = thrust::raw_pointer_cast(d_output.data());
+  auto d_output_raw = cuda::std::span{thrust::raw_pointer_cast(d_output.data()), cub::detail::size(ext)};
   CAPTURE(c2h::type_name<index_type>(), X, Y, Z);
-
-  device_for_each_in_extents(ext, store_op_t{d_output_raw});
-  c2h::host_vector<data_t> h_output_gpu = d_output;
-  fill_linear(h_output, ext);
-  REQUIRE(h_output == h_output_gpu);
-}
-
-C2H_TEST("DeviceForEachInExtents 4D static", "[ForEachInExtents][static][device]")
-{
-  constexpr int rank = 4;
-  using data_t       = cuda::std::array<int, rank>;
-  using store_op_t   = LinearStore<int, rank>;
-  cuda::std::extents<int, 3, 2, 6, 5> ext{};
-  c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
-  c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
-  auto d_output_raw = thrust::raw_pointer_cast(d_output.data());
 
   device_for_each_in_extents(ext, store_op_t{d_output_raw});
   c2h::host_vector<data_t> h_output_gpu = d_output;
