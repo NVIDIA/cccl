@@ -14,10 +14,10 @@ how many threads participate,
 and on which thread(s) the result is valid.
 
 These layers naturally build on each other.
-For example, :cpp:struct:`WarpReduce <cub::WarpReduce>` uses :cpp:func:`ThreadReduce <cub::internal::ThreadReduce>`,
+For example, :cpp:struct:`WarpReduce <cub::WarpReduce>` uses :cpp:func:`ThreadReduce <cub::ThreadReduce>`,
 :cpp:struct:`BlockReduce <cub::BlockReduce>` uses :cpp:struct:`WarpReduce <cub::WarpReduce>`, etc.
 
-:cpp:func:`ThreadReduce <cub::internal::ThreadReduce>`
+:cpp:func:`ThreadReduce <cub::ThreadReduce>`
 
    - A normal function invoked and executed sequentially by a single thread that returns a valid result on that thread
    - Single thread functions are usually an implementation detail and not exposed in CUB's public API
@@ -46,7 +46,7 @@ The table below provides a summary of these functions:
       - parallel execution
       - max threads
       - valid result in
-    * - :cpp:func:`ThreadReduce <cub::internal::ThreadReduce>`
+    * - :cpp:func:`ThreadReduce <cub::ThreadReduce>`
       - :math:`-`
       - :math:`-`
       - :math:`1`

@@ -22,6 +22,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/builtin.h>
+
 // NOTE: some compilers support the `typeid` feature but not the `dynamic_cast`
 // feature. This is why we have separate macros for each.
 
@@ -41,7 +43,7 @@
 #      define _CCCL_NO_RTTI
 #    endif
 #  elif _CCCL_COMPILER_CLANG
-#    if !__has_feature(cxx_rtti)
+#    if !_CCCL_HAS_FEATURE(cxx_rtti)
 #      define _CCCL_NO_RTTI
 #    endif
 #  else
@@ -66,7 +68,7 @@
 #  elif _CCCL_COMPILER_MSVC
 // No-op, MSVC always supports typeid even when RTTI is disabled
 #  elif _CCCL_COMPILER_CLANG
-#    if !__has_feature(cxx_rtti)
+#    if !_CCCL_HAS_FEATURE(cxx_rtti)
 #      define _CCCL_NO_TYPEID
 #    endif
 #  else
