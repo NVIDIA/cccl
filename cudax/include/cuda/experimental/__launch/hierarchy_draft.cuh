@@ -136,8 +136,11 @@ template <typename Unit>
 struct level_finalizer<at_least<Unit>>
 {
   template <typename HierarchyBelow>
-  _CCCL_NODISCARD meta_dims_finalized
-  operator()(void* fn, unsigned int dynamic_smem_bytes, const at_least<Unit>& dims, const HierarchyBelow& rest)
+  _CCCL_NODISCARD meta_dims_finalized operator()(
+    [[maybe_unused]] void* fn,
+    [[maybe_unused]] unsigned int dynamic_smem_bytes,
+    const at_least<Unit>& dims,
+    const HierarchyBelow& rest)
   {
     auto tmp_hierarchy         = hierarchy_dimensions_fragment(thread, rest);
     auto count_of_below_levels = tmp_hierarchy.count(Unit());
@@ -149,8 +152,8 @@ template <>
 struct level_finalizer<max_occupancy>
 {
   template <typename HierarchyBelow>
-  _CCCL_NODISCARD meta_dims_finalized
-  operator()(void* fn, unsigned int dynamic_smem_bytes, const max_occupancy& dims, const HierarchyBelow& rest)
+  _CCCL_NODISCARD meta_dims_finalized operator()(
+    void* fn, unsigned int dynamic_smem_bytes, [[maybe_unused]] const max_occupancy& dims, const HierarchyBelow& rest)
   {
     int block_size, dummy;
 
@@ -170,8 +173,8 @@ template <>
 struct level_finalizer<max_coresident>
 {
   template <typename HierarchyBelow>
-  _CCCL_NODISCARD meta_dims_finalized
-  operator()(void* fn, unsigned int dynamic_smem_bytes, const max_coresident& dims, const HierarchyBelow& rest)
+  _CCCL_NODISCARD meta_dims_finalized operator()(
+    void* fn, unsigned int dynamic_smem_bytes, [[maybe_unused]] const max_coresident& dims, const HierarchyBelow& rest)
   {
     int num_sms = 0, num_blocks_per_sm = 0;
     int device;
