@@ -46,6 +46,9 @@
 #  define __cccl_lib_is_null_pointer            201309L
 #  define __cccl_lib_make_reverse_iterator      201402L
 // # define __cccl_lib_make_unique                          201304L
+#  if !defined(_CCCL_COMPILER_MSVC) || _CCCL_STD_VER >= 2020
+#    define __cccl_lib_mdspan 202207L
+#  endif // _CCCL_COMPILER_MSVC && _CCCL_STD_VER >= 2020
 #  define __cccl_lib_null_iterators 201304L
 #  define __cccl_lib_optional       202110L
 // # define __cccl_lib_quoted_string_io                     201304L
@@ -122,9 +125,6 @@
 #  define __cccl_lib_unordered_map_try_emplace     201411L
 #  define __cccl_lib_variant                       201606L
 #  define __cccl_lib_void_t                        201411L
-#  if !defined(_CCCL_COMPILER_MSVC) || _CCCL_STD_VER >= 2020
-#    define __cpp_lib_mdspan 202207L
-#  endif // _CCCL_COMPILER_MSVC && _CCCL_STD_VER >= 2020
 #endif // _CCCL_STD_VER >= 2017
 
 #if _CCCL_STD_VER >= 2020
