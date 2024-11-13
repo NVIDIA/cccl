@@ -61,7 +61,7 @@ struct __is_safe_integral_cmp
 struct __cmp_equal_impl
 {
   template <class _Tp, class _Up, enable_if_t<is_signed<_Tp>::value && is_signed<_Up>::value, int> = 0>
-  static constexpr bool __do_cmp(_Tp __t, _Up __u) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __do_cmp(_Tp __t, _Up __u) noexcept
   {
     return __t == __u;
   }
@@ -71,13 +71,13 @@ struct __cmp_equal_impl
     class _Up,
     enable_if_t<(is_signed<_Tp>::value && !is_signed<_Up>::value) || (!is_signed<_Tp>::value && is_signed<_Up>::value),
                 int> = 0>
-  static constexpr bool __do_cmp(_Tp __t, _Up __u) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __do_cmp(_Tp __t, _Up __u) noexcept
   {
     return __t < 0 ? false : make_unsigned_t<_Tp>(__t) == __u;
   }
 
   template <class _Tp, class _Up, enable_if_t<!is_signed<_Tp>::value && !is_signed<_Up>::value, int> = 0>
-  static constexpr bool __do_cmp(_Tp __t, _Up __u) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __do_cmp(_Tp __t, _Up __u) noexcept
   {
     return __u < 0 ? false : __t == make_unsigned_t<_Up>(__u);
   }
@@ -102,7 +102,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_not_equal(_Tp __t, _Up __u) noexcep
 struct __cmp_less_impl
 {
   template <class _Tp, class _Up, enable_if_t<is_signed<_Tp>::value && is_signed<_Up>::value, int> = 0>
-  static constexpr bool __do_cmp(_Tp __t, _Up __u) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __do_cmp(_Tp __t, _Up __u) noexcept
   {
     return __t < __u;
   }
@@ -112,13 +112,13 @@ struct __cmp_less_impl
     class _Up,
     enable_if_t<(is_signed<_Tp>::value && !is_signed<_Up>::value) || (!is_signed<_Tp>::value && is_signed<_Up>::value),
                 int> = 0>
-  static constexpr bool __do_cmp(_Tp __t, _Up __u) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __do_cmp(_Tp __t, _Up __u) noexcept
   {
     return __t < 0 ? true : make_unsigned_t<_Tp>(__t) < __u;
   }
 
   template <class _Tp, class _Up, enable_if_t<!is_signed<_Tp>::value && !is_signed<_Up>::value, int> = 0>
-  static constexpr bool __do_cmp(_Tp __t, _Up __u) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __do_cmp(_Tp __t, _Up __u) noexcept
   {
     return __u < 0 ? false : __t < make_unsigned_t<_Up>(__u);
   }
