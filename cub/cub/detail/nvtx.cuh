@@ -51,8 +51,8 @@
                       && _CCCL_STD_VER >= 2014                                                       \
                       && (!defined(_CCCL_COMPILER_NVHPC) || _CCCL_STD_VER <= 2017)
 // Include our NVTX3 C++ wrapper if not available from the CTK
-#  if _CCCL_HAS_INCLUDE(<nvtx3/nvtx3.hpp>) // TODO(bgruber): replace by a check for the first CTK version shipping the
-// header
+// TODO(bgruber): replace by a check for the first CTK version shipping the header
+#  if _CCCL_HAS_INCLUDE(<nvtx3/nvtx3.hpp>) 
 #    include <nvtx3/nvtx3.hpp>
 #  else // _CCCL_HAS_INCLUDE(<nvtx3/nvtx3.hpp>)
 #    include "nvtx3.hpp"
