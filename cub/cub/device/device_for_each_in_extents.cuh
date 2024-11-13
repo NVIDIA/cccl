@@ -110,7 +110,6 @@ public:
     OpType op,
     cudaStream_t stream = {})
   {
-    static_assert(sizeof...(Extents) > 0, "Extents must have at least one dimension");
     // TODO: check dimensions overflows
     if (d_temp_storage == nullptr)
     {
@@ -169,7 +168,6 @@ public:
   ForEachInExtents(const ::cuda::std::extents<IndexType, Extents...>& ext, OpType op, cudaStream_t stream = {})
   {
     using ExtentsType = ::cuda::std::extents<IndexType, Extents...>;
-    static_assert(sizeof...(Extents) > 0, "Extents must have at least one dimension");
     // TODO: check dimensions overflows
     CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceForEachInExtents::ForEachInExtents");
     return detail::for_each_in_extents::dispatch_t<ExtentsType, OpType>::dispatch(ext, op, stream);
