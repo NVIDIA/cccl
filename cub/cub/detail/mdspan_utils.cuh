@@ -43,10 +43,10 @@
 #  include <cub/detail/fast_modulo_division.cuh> // fast_div_mod
 
 #  include <cuda/std/__mdspan/extents.h> // std::extents
-#  include <cuda/std/__utility/integer_sequence.h> // ::cuda::std::index_sequence
 #  include <cuda/std/array> // std::array
 #  include <cuda/std/cstddef> // size_t
 #  include <cuda/std/type_traits> // make_unsigned_t
+#  include <cuda/std/utility> // ::cuda::std::index_sequence
 
 CUB_NAMESPACE_BEGIN
 

@@ -76,6 +76,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE IndexType coordinate_at(
     {
       return div_mod_size;
     }
+    _CCCL_UNREACHABLE();
   };
   return (index / get_sub_size()) % get_ext_size();
 }

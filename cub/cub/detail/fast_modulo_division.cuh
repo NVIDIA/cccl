@@ -167,8 +167,8 @@ struct fast_div_mod
     }
     constexpr int BitSize   = sizeof(T) * CHAR_BIT;
     constexpr int BitOffset = BitSize / 16;
-    int num_bits            = ::cuda::std::bit_width(udivisor);
-    // without explicit power-of-two check, num_bits needs to add !::cuda::std::has_single_bit(udivisor)
+    int num_bits            = ::cuda::std::bit_width(udivisor) + 1;
+    // without explicit power-of-two check, num_bits needs to replace +1 with !::cuda::std::has_single_bit(udivisor)
     _multiplier  = static_cast<unsigned_t>(::cuda::ceil_div(larger_t{1} << (num_bits + BitSize - BitOffset), //
                                                            static_cast<larger_t>(divisor)));
     _shift_right = num_bits - BitOffset;
