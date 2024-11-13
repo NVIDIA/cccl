@@ -677,11 +677,6 @@ typedef unsigned int char32_t;
 #    define _LIBCUDACXX_EXPLICIT_MOVE(x) (x)
 #  endif
 
-#  ifndef _LIBCUDACXX_HAS_NO_ASAN
-extern "C" _LIBCUDACXX_HIDE_FROM_ABI void
-__sanitizer_annotate_contiguous_container(const void*, const void*, const void*, const void*);
-#  endif
-
 // Thread API
 #  ifndef _LIBCUDACXX_HAS_THREAD_API_EXTERNAL
 #    if defined(_CCCL_COMPILER_NVRTC) || defined(__EMSCRIPTEN__)
