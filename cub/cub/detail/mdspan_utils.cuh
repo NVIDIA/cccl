@@ -57,15 +57,19 @@ namespace detail
  * Utilities
  **********************************************************************************************************************/
 
+#  if defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
+#    pragma nv_diag_suppress 186 // pointless comparison of unsigned integer with zero
+#  endif // defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
+
 // Compute the submdspan size of a given rank
 template <::cuda::std::size_t Rank, typename IndexType, ::cuda::std::size_t... Extents>
 _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::make_unsigned_t<IndexType>
 sub_size(const ::cuda::std::extents<IndexType, Extents...>& ext)
 {
   ::cuda::std::make_unsigned_t<IndexType> s = 1;
-  for (IndexType i = Rank; i < sizeof...(Extents); i++)
+  for (IndexType i = Rank; i < IndexType{sizeof...(Extents)}; i++) // <- pointless comparison with zero-rank extent
   {
-    s *= ext.extent(Rank + i);
+    s *= ext.extent(i);
   }
   return s;
 }
@@ -104,7 +108,7 @@ _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr bool is_sub_size_s
   using IndexType = typename Extents::index_type;
   for (IndexType i = Rank; i < Extents::rank(); i++)
   {
-    if (Extents::static_extent(Rank + i) == ::cuda::std::dynamic_extent)
+    if (Extents::static_extent(i) == ::cuda::std::dynamic_extent)
     {
       return false;
     }
