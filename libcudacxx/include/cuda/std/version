@@ -23,7 +23,7 @@
 
 // We need to define our own macros to not conflict with the host stl.
 // At the same time we want bring in all feature test macros from host
-#if __has_include(<version>) // <version> should be the smallest include possible
+#if _CCCL_HAS_INCLUDE(<version>) // <version> should be the smallest include possible
 #  include <version>
 #elif !defined(_CCCL_COMPILER_NVRTC)
 #  include <ciso646> // otherwise go for the smallest possible header
@@ -48,6 +48,9 @@
 #  define __cccl_lib_is_null_pointer            201309L
 #  define __cccl_lib_make_reverse_iterator      201402L
 // # define __cccl_lib_make_unique                          201304L
+#  if !defined(_CCCL_COMPILER_MSVC) || _CCCL_STD_VER >= 2020
+#    define __cccl_lib_mdspan 202207L
+#  endif // _CCCL_COMPILER_MSVC && _CCCL_STD_VER >= 2020
 #  define __cccl_lib_null_iterators 201304L
 #  define __cccl_lib_optional       202110L
 // # define __cccl_lib_quoted_string_io                     201304L
