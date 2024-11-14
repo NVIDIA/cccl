@@ -24,8 +24,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  ******************************************************************************/
-#define _CCCL_ENABLE_DEVICE_ASSERTIONS
-#define CUB_DETAIL_DEBUG_ENABLE_LOG
 #include <cub/config.cuh>
 
 #if __cccl_lib_mdspan
@@ -116,16 +114,16 @@ using index_types =
 
 // int8_t/uint8_t are not enabled because they easily overflow
 using index_types_dynamic =
-  c2h::type_list</*int16_t,
+  c2h::type_list<int16_t,
                  uint16_t,
-                 int32_t,*/
-                 uint32_t/*
+                 int32_t,
+                 uint32_t
 #  if CUB_IS_INT128_ENABLED
                  ,
                  int64_t,
                  uint64_t
 #  endif
-               */  >;
+                 >;
 
 using dimensions =
   c2h::type_list<cuda::std::index_sequence<>,
