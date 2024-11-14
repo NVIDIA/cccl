@@ -32,9 +32,9 @@
 
 // For unknown reasons, nvc++ need to selectively disable this warning
 // We do not want to use our usual macro because that would have push / pop semantics
-#if defined(_CCCL_COMPILER_NVHPC)
+#if _CCCL_COMPILER(NVHPC)
 #  pragma nv_diag_suppress 1407
-#endif // _CCCL_COMPILER_NVHPC
+#endif // _CCCL_COMPILER(NVHPC)
 
 // Enable us to hide kernels
 #if defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
@@ -74,7 +74,7 @@
 
 #if defined(_CCCL_COMPILER_ICC) // ICC has issues with visibility attributes on symbols with internal linkage
 #  define _CCCL_HIDE_FROM_ABI inline
-#elif defined(_CCCL_COMPILER_NVHPC) // NVHPC has issues with visibility attributes on symbols with internal linkage
+#elif _CCCL_COMPILER(NVHPC) // NVHPC has issues with visibility attributes on symbols with internal linkage
 #  define _CCCL_HIDE_FROM_ABI inline
 #else // ^^^ _CCCL_COMPILER_ICC ^^^ / vvv !_CCCL_COMPILER_ICC vvv
 #  define _CCCL_HIDE_FROM_ABI _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION inline
