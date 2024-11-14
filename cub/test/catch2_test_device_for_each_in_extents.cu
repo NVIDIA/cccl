@@ -140,7 +140,7 @@ struct build_extents<IndexType, cuda::std::index_sequence<Dimensions...>>
 {
   using type = cuda::std::extents<IndexType, Dimensions...>;
 };
-#  if 0
+
 C2H_TEST("DeviceForEachInExtents static", "[ForEachInExtents][static][device]", index_types, dimensions)
 {
   using index_type   = c2h::get<0, TestType>;
@@ -160,7 +160,6 @@ C2H_TEST("DeviceForEachInExtents static", "[ForEachInExtents][static][device]", 
   fill_linear(h_output, ext);
   REQUIRE(h_output == h_output_gpu);
 }
-#  endif
 
 C2H_TEST("DeviceForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][device]", index_types_dynamic)
 {
