@@ -29,11 +29,6 @@
 
 #include <cub/config.cuh>
 
-#include <cuda/std/type_traits>
-
-#include <climits>
-#include <type_traits>
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -42,18 +37,18 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/__cmath/ceil_div.h> // cuda::std::ceil_div
-#include <cuda/std/__bit/has_single_bit.h> // std::has_single_bit
-#include <cuda/std/__bit/integral.h> // std::bit_width
+#include <cuda/cmath> // cuda::std::ceil_div
+#include <cuda/std/bit> // std::has_single_bit
 #include <cuda/std/climits> // CHAR_BIT
 #include <cuda/std/cstdint> // uint64_t
+#include <cuda/std/limits> // numeric_limits
+#include <cuda/std/type_traits> // std::is_integral
 
 #include "cub/util_type.cuh" // CUB_IS_INT128_ENABLED
-#include "cuda/std/__type_traits/is_integral.h"
 
 #if defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
 _CCCL_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
-#endif // defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
+#endif // CCCL_ENABLE_DEVICE_ASSERTIONS
 
 CUB_NAMESPACE_BEGIN
 
@@ -102,29 +97,35 @@ using implicit_prom_t = decltype(+T{});
 template <typename T>
 using unsigned_implicit_prom_t = typename ::cuda::std::make_unsigned<implicit_prom_t<T>>::type;
 
+template <typename T>
+struct supported_integral
+    : ::cuda::std::bool_constant<::cuda::std::is_integral<T>::value && !::cuda::std::is_same<T, bool>::value
+                                 && (sizeof(T) <= 8)>
+
+{};
+
 /***********************************************************************************************************************
  * Extract higher bits after multiplication
  **********************************************************************************************************************/
 
-template <typename T, typename R>
+template <unsigned NumBits, typename T, typename R>
 _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned_implicit_prom_t<T>
 multiply_extract_higher_bits(T value, R multiplier)
 {
-  static_assert(::cuda::std::is_integral<T>::value && !::cuda::std::is_same<T, bool>::value, "unsupported type");
-  static_assert(::cuda::std::is_integral<R>::value && !::cuda::std::is_same<R, bool>::value, "unsupported type");
+  static_assert(supported_integral<T>::value, "unsupported type");
+  static_assert(supported_integral<R>::value, "unsupported type");
   _CCCL_ASSERT(value >= 0, "value must be non-negative");
   _CCCL_ASSERT(multiplier >= 0, "multiplier must be non-negative");
-  using unsigned_t           = unsigned_implicit_prom_t<T>;
-  using larger_t             = larger_unsigned_type_t<T>;
-  constexpr unsigned BitSize = sizeof(T) * CHAR_BIT;
+  using unsigned_t = unsigned_implicit_prom_t<T>;
+  using larger_t   = larger_unsigned_type_t<T>;
   // clang-format off
   NV_IF_TARGET(
     NV_IS_HOST,
-      (return static_cast<unsigned_t>((static_cast<larger_t>(value) * multiplier) >> BitSize);),
+      (return static_cast<unsigned_t>((static_cast<larger_t>(value) * multiplier) >> NumBits);),
     //NV_IS_DEVICE
       (return (sizeof(T) == 8)
         ? static_cast<unsigned_t>(__umul64hi(value, multiplier))
-        : static_cast<unsigned_t>((static_cast<larger_t>(value) * multiplier) >> BitSize);));
+        : static_cast<unsigned_t>((static_cast<larger_t>(value) * multiplier) >> NumBits);));
   // clang-format on
 }
 
@@ -133,18 +134,21 @@ multiply_extract_higher_bits(T value, R multiplier)
  **********************************************************************************************************************/
 
 template <typename T>
-struct fast_div_mod
+class fast_div_mod
 {
-  static_assert(::cuda::std::is_integral<T>::value && !::cuda::std::is_same<T, bool>::value, "unsupported type");
+  static_assert(supported_integral<T>::value, "unsupported type");
 
-  using unsigned_t = unsigned_implicit_prom_t<T>;
-  using prom_t     = implicit_prom_t<T>;
-  using larger_t   = larger_unsigned_type_t<T>;
+  using prom_t                 = implicit_prom_t<T>;
+  using unsigned_t             = unsigned_implicit_prom_t<T>;
+  static constexpr int BitSize = sizeof(T) * CHAR_BIT;
 
+public:
+  template <typename U, typename R>
   struct result
   {
-    prom_t quotient;
-    prom_t remainder;
+    using Common = decltype(R{} / T{});
+    Common quotient;
+    Common remainder;
   };
 
   fast_div_mod() = delete;
@@ -152,8 +156,10 @@ struct fast_div_mod
   _CCCL_NODISCARD _CCCL_HOST_DEVICE explicit fast_div_mod(T divisor) noexcept
       : _divisor{static_cast<prom_t>(divisor)}
   {
+    using larger_t = larger_unsigned_type_t<T>;
     _CCCL_ASSERT(divisor > 0, "divisor must be positive");
     auto udivisor = static_cast<unsigned_t>(divisor);
+    // the following branches are needed to avoid negative shift
     if (::cuda::std::has_single_bit(udivisor)) // power of two
     {
       _shift_right = ::cuda::std::bit_width(udivisor) - 1;
@@ -163,7 +169,6 @@ struct fast_div_mod
     {
       return;
     }
-    constexpr int BitSize   = sizeof(T) * CHAR_BIT;
     constexpr int BitOffset = BitSize / 16;
     int num_bits            = ::cuda::std::bit_width(udivisor) + 1;
     // without explicit power-of-two check, num_bits needs to replace +1 with !::cuda::std::has_single_bit(udivisor)
@@ -176,32 +181,39 @@ struct fast_div_mod
 
   fast_div_mod(fast_div_mod&&) noexcept = default;
 
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE result operator()(T dividend) const noexcept
+  template <typename R>
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE result<T, R> operator()(R dividend) const noexcept
   {
+    static_assert(supported_integral<R>::value, "unsupported type");
+    using Common   = decltype(R{} / T{});
+    using UCommon  = ::cuda::std::make_unsigned_t<Common>;
+    using result_t = result<T, R>;
     _CCCL_ASSERT(dividend >= 0, "divisor must be non-negative");
-    // the following branches are needed to avoid negative shift
+    auto udividend = static_cast<UCommon>(dividend);
     if (_divisor == 1)
     {
-      return result{dividend, 0};
+      return result_t{static_cast<Common>(dividend), Common{}};
     }
     if (sizeof(T) == 8 && _divisor == 3)
     {
-      return result{static_cast<prom_t>(dividend / unsigned_t{3}), static_cast<prom_t>(dividend % unsigned_t{3})};
+      return result_t{static_cast<Common>(udividend / 3), static_cast<Common>(udividend % 3)};
     }
-    auto quotient =
-      ((_multiplier == 0) ? dividend : multiply_extract_higher_bits(dividend, _multiplier)) >> _shift_right;
-    auto remainder = dividend - (quotient * _divisor);
+    auto higher_bits = (_multiplier == 0) ? udividend : multiply_extract_higher_bits<BitSize>(dividend, _multiplier);
+    auto quotient    = higher_bits >> _shift_right;
+    auto remainder   = udividend - (quotient * _divisor);
     _CCCL_ASSERT(quotient == dividend / _divisor, "wrong quotient");
-    _CCCL_ASSERT(remainder >= 0 && remainder < _divisor, "remainder out of range");
-    return result{static_cast<prom_t>(quotient), static_cast<prom_t>(remainder)};
+    _CCCL_ASSERT(remainder < _divisor, "remainder out of range");
+    return result_t{static_cast<Common>(quotient), static_cast<Common>(remainder)};
   }
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE friend prom_t operator/(T dividend, fast_div_mod div) noexcept
+  template <typename R>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE friend decltype(R{} / T{}) operator/(R dividend, fast_div_mod div) noexcept
   {
     return div(dividend).quotient;
   }
 
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE friend prom_t operator%(T dividend, fast_div_mod div) noexcept
+  template <typename R>
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE friend decltype(R{} / T{}) operator%(R dividend, fast_div_mod div) noexcept
   {
     return div(dividend).remainder;
   }
@@ -217,5 +229,5 @@ private:
 CUB_NAMESPACE_END
 
 #if defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
-_CCCL_NV_DIAG_DEFAULT(186) // pointless comparison of unsigned integer with zero
-#endif // defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
+_CCCL_NV_DIAG_DEFAULT(186)
+#endif // CCCL_ENABLE_DEVICE_ASSERTIONS

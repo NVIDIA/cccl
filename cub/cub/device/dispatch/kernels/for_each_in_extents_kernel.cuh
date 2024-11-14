@@ -51,12 +51,13 @@ CUB_NAMESPACE_BEGIN
 namespace detail::for_each_in_extents
 {
 
-template <int Rank, typename ExtendType, typename IndexType = typename ExtendType::index_type>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE IndexType coordinate_at(
-  IndexType index, ExtendType ext, fast_div_mod<IndexType> div_mod_sub_size, fast_div_mod<IndexType> div_mod_size)
+template <int Rank, typename IndexType, typename ExtendType, typename FastDivModType>
+_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE IndexType
+coordinate_at(IndexType index, ExtendType ext, FastDivModType div_mod_sub_size, FastDivModType div_mod_size)
 {
-  using U           = ::cuda::std::make_unsigned_t<IndexType>;
-  auto get_sub_size = [&]() {
+  using extent_index_type = typename ExtendType::index_type;
+  using U                 = ::cuda::std::make_unsigned_t<IndexType>;
+  auto get_sub_size       = [&]() {
     if constexpr (cub::detail::is_sub_size_static<Rank + 1, ExtendType>())
     {
       return sub_size<Rank + 1>(ext);
@@ -78,17 +79,26 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE IndexType coordinate_at(
     }
     _CCCL_UNREACHABLE();
   };
-  return (index / get_sub_size()) % get_ext_size();
+  return static_cast<extent_index_type>(index / get_sub_size() % get_ext_size());
 }
 
-template <typename Func, typename ExtendType, typename FastDivModArrayType, ::cuda::std::size_t... Ranks>
-CUB_DETAIL_KERNEL_ATTRIBUTES void for_each_in_extents_kernel(
-  Func func,
-  _CCCL_GRID_CONSTANT const ExtendType ext,
-  _CCCL_GRID_CONSTANT const FastDivModArrayType sub_sizes_div_array,
-  _CCCL_GRID_CONSTANT const FastDivModArrayType extents_mod_array)
+template <typename ChainedPolicyT,
+          typename Func,
+          typename ExtendType,
+          typename FastDivModArrayType,
+          ::cuda::std::size_t... Ranks>
+__launch_bounds__(ChainedPolicyT::ActivePolicy::for_policy_t::block_threads) //
+  CUB_DETAIL_KERNEL_ATTRIBUTES void static_kernel(
+    Func func,
+    _CCCL_GRID_CONSTANT const ExtendType ext,
+    _CCCL_GRID_CONSTANT const FastDivModArrayType sub_sizes_div_array,
+    _CCCL_GRID_CONSTANT const FastDivModArrayType extents_mod_array)
 {
-  auto id = threadIdx.x + blockIdx.x * blockDim.x;
+  using active_policy_t        = typename ChainedPolicyT::ActivePolicy::for_policy_t;
+  using extent_index_type      = typename ExtendType::index_type;
+  using OffsetT                = decltype(+extent_index_type{});
+  constexpr auto block_threads = OffsetT{active_policy_t::block_threads};
+  auto id                      = threadIdx.x + blockIdx.x * block_threads;
   if (id < cub::detail::size(ext))
   {
     if constexpr (sizeof...(Ranks) == 0)
@@ -97,10 +107,25 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void for_each_in_extents_kernel(
     }
     else
     {
-      auto id1 = static_cast<typename ExtendType::index_type>(id);
-      func(id1, coordinate_at<Ranks>(id1, ext, sub_sizes_div_array[Ranks], extents_mod_array[Ranks])...);
+      func(id,
+           coordinate_at<Ranks>(
+             static_cast<extent_index_type>(id), ext, sub_sizes_div_array[Ranks], extents_mod_array[Ranks])...);
     }
   }
+}
+
+template <typename ChainedPolicyT,
+          typename Func,
+          typename ExtendType,
+          typename FastDivModArrayType,
+          ::cuda::std::size_t... Ranks>
+CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(
+  Func func,
+  _CCCL_GRID_CONSTANT const ExtendType ext,
+  _CCCL_GRID_CONSTANT const FastDivModArrayType sub_sizes_div_array,
+  _CCCL_GRID_CONSTANT const FastDivModArrayType extents_mod_array)
+{
+  _CCCL_ASSERT(false, "not implemented");
 }
 
 } // namespace detail::for_each_in_extents
