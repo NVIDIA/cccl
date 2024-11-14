@@ -64,7 +64,7 @@ template <class _Tp,
           enable_if_t<__is_safe_integral_cmp<_Tp>::value && __is_safe_integral_cmp<_Up>::value, int> = 0>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_equal(_Tp __t, _Up __u) noexcept
 {
-  _CCCL_IF_CONSTEXPR (_CCCL_TRAIT(is_signed, Tp) == _CCCL_TRAIT(is_signed, _Up))
+  _CCCL_IF_CONSTEXPR (_CCCL_TRAIT(is_signed, _Tp) == _CCCL_TRAIT(is_signed, _Up))
   {
     return __t == __u;
   }
