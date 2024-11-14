@@ -52,7 +52,7 @@ namespace detail::for_each_in_extents
 {
 
 template <int Rank, typename IndexType, typename ExtendType, typename FastDivModType>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE IndexType
+_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto
 coordinate_at(IndexType index, ExtendType ext, FastDivModType div_mod_sub_size, FastDivModType div_mod_size)
 {
   using extent_index_type = typename ExtendType::index_type;
@@ -79,7 +79,7 @@ coordinate_at(IndexType index, ExtendType ext, FastDivModType div_mod_sub_size, 
     }
     _CCCL_UNREACHABLE();
   };
-  return static_cast<extent_index_type>(index / get_sub_size() % get_ext_size());
+  return static_cast<extent_index_type>((index / get_sub_size()) % get_ext_size());
 }
 
 template <typename IndexType,
@@ -89,13 +89,14 @@ template <typename IndexType,
           ::cuda::std::size_t... Ranks>
 _CCCL_DEVICE _CCCL_FORCEINLINE void computation(
   IndexType id,
+  IndexType stride,
   Func func,
   ExtendType ext,
   FastDivModArrayType sub_sizes_div_array,
   FastDivModArrayType extents_mod_array)
 {
   using extent_index_type = typename ExtendType::index_type;
-  if (id < cub::detail::size(ext))
+  for (auto i = id; i < cub::detail::size(ext); i += stride)
   {
     if constexpr (sizeof...(Ranks) == 0)
     {
@@ -103,12 +104,14 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void computation(
     }
     else
     {
-      func(id,
-           coordinate_at<Ranks>(
-             static_cast<extent_index_type>(id), ext, sub_sizes_div_array[Ranks], extents_mod_array[Ranks])...);
+      func(i, coordinate_at<Ranks>(i, ext, sub_sizes_div_array[Ranks], extents_mod_array[Ranks])...);
     }
   }
 }
+
+/***********************************************************************************************************************
+ * Kernel entry points
+ **********************************************************************************************************************/
 
 template <typename ChainedPolicyT,
           typename Func,
@@ -126,9 +129,11 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::for_policy_t::block_threads) //
   using extent_index_type      = typename ExtendType::index_type;
   using OffsetT                = decltype(+extent_index_type{});
   constexpr auto block_threads = OffsetT{active_policy_t::block_threads};
-  auto id                      = threadIdx.x + blockIdx.x * block_threads;
+  constexpr auto stride        = OffsetT{block_threads * active_policy_t::items_per_thread};
+  auto stride1                 = (stride >= cub::detail::size(ext)) ? block_threads : stride;
+  auto id                      = static_cast<OffsetT>(threadIdx.x + blockIdx.x * block_threads);
   computation<OffsetT, Func, ExtendType, FastDivModArrayType, Ranks...>(
-    id, func, ext, sub_sizes_div_array, extents_mod_array);
+    id, stride1, func, ext, sub_sizes_div_array, extents_mod_array);
 }
 
 template <typename ChainedPolicyT,
@@ -142,11 +147,15 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(
   _CCCL_GRID_CONSTANT const FastDivModArrayType sub_sizes_div_array,
   _CCCL_GRID_CONSTANT const FastDivModArrayType extents_mod_array)
 {
+  using active_policy_t   = typename ChainedPolicyT::ActivePolicy::for_policy_t;
   using extent_index_type = typename ExtendType::index_type;
   using OffsetT           = decltype(+extent_index_type{});
-  auto id                 = threadIdx.x + blockIdx.x * static_cast<OffsetT>(blockDim.x);
+  auto block_threads      = OffsetT{blockDim.x};
+  auto stride             = static_cast<OffsetT>(blockDim.x * active_policy_t::items_per_thread);
+  auto stride1            = (stride >= cub::detail::size(ext)) ? block_threads : stride;
+  auto id                 = static_cast<OffsetT>(threadIdx.x + blockIdx.x * blockDim.x);
   computation<OffsetT, Func, ExtendType, FastDivModArrayType, Ranks...>(
-    id, func, ext, sub_sizes_div_array, extents_mod_array);
+    id, stride, func, ext, sub_sizes_div_array, extents_mod_array);
 }
 
 } // namespace detail::for_each_in_extents

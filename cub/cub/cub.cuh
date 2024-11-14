@@ -62,7 +62,6 @@
 #include <cub/device/device_adjacent_difference.cuh>
 #include <cub/device/device_copy.cuh>
 #include <cub/device/device_for.cuh>
-#include <cub/device/device_for_each_in_extents.cuh>
 #include <cub/device/device_histogram.cuh>
 #include <cub/device/device_memcpy.cuh>
 #include <cub/device/device_merge.cuh>

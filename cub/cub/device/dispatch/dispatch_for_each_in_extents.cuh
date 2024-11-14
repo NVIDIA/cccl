@@ -111,14 +111,20 @@ public:
   _CCCL_NODISCARD CUB_RUNTIME_FUNCTION
   _CCCL_FORCEINLINE cudaError_t InvokeVariadic(::cuda::std::true_type, ::cuda::std::index_sequence<Ranks...>) const
   {
-    ArrayType sub_sizes_div_array    = cub::detail::sub_sizes_fast_div_mod(_ext, seq);
-    ArrayType extents_div_array      = cub::detail::extents_fast_div_mod(_ext, seq);
-    constexpr unsigned block_threads = ::cuda::std::min(size_t{ActivePolicyT::for_policy_t::block_threads}, max_index);
-    unsigned num_cta                 = ::cuda::ceil_div(_size, block_threads);
+    ArrayType sub_sizes_div_array = cub::detail::sub_sizes_fast_div_mod(_ext, seq);
+    ArrayType extents_div_array   = cub::detail::extents_fast_div_mod(_ext, seq);
+    // constexpr unsigned block_threads = ::cuda::std::min(size_t{ActivePolicyT::for_policy_t::block_threads},
+    // max_index);
+    constexpr unsigned block_threads    = ActivePolicyT::for_policy_t::block_threads;
+    constexpr unsigned items_per_thread = ActivePolicyT::for_policy_t::items_per_thread;
+    unsigned num_cta                    = ::cuda::ceil_div(_size, block_threads * items_per_thread);
 
 #  ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
-    _CubLog(
-      "Invoking detail::for_each_in_extents::static_kernel<<<%u, %u, 0, %p>>>()\n", num_cta, block_threads, _stream);
+    _CubLog("Invoking detail::for_each_in_extents::static_kernel<<<%u, %u, 0, %p>>>(), items_per_thread: %u\n",
+            num_cta,
+            block_threads,
+            _stream,
+            items_per_thread);
 #  endif
     auto status =
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(num_cta, block_threads, 0, _stream)
@@ -137,9 +143,10 @@ public:
   _CCCL_NODISCARD CUB_RUNTIME_FUNCTION
   _CCCL_FORCEINLINE cudaError_t InvokeVariadic(::cuda::std::false_type, ::cuda::std::index_sequence<Ranks...>) const
   {
-    ArrayType sub_sizes_div_array = cub::detail::sub_sizes_fast_div_mod(_ext, seq);
-    ArrayType extents_div_array   = cub::detail::extents_fast_div_mod(_ext, seq);
-    auto kernel                   = detail::for_each_in_extents::
+    ArrayType sub_sizes_div_array       = cub::detail::sub_sizes_fast_div_mod(_ext, seq);
+    ArrayType extents_div_array         = cub::detail::extents_fast_div_mod(_ext, seq);
+    constexpr unsigned items_per_thread = ActivePolicyT::for_policy_t::items_per_thread;
+    auto kernel                         = detail::for_each_in_extents::
       dynamic_kernel<max_policy_t, IndexType, OpType, decltype(sub_sizes_div_array), UnsigndIndexType, Ranks...>;
 
     unsigned block_threads = 256;
@@ -148,12 +155,15 @@ public:
                  (int _{}; //
                   status = cudaOccupancyMaxPotentialBlockSize(&_, &block_threads, kernel);));
     _CUB_RETURN_IF_ERROR(status)
-    block_threads    = ::cuda::std::min(size_t{block_threads}, max_index);
+    // block_threads    = ::cuda::std::min(size_t{block_threads}, max_index);
     unsigned num_cta = ::cuda::ceil_div(_size, block_threads);
 
 #  ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
-    _CubLog(
-      "Invoking detail::for_each_in_extents::dynamic_kernel<<<%u, %u, 0, %p>>>()\n", num_cta, block_threads, _stream);
+    _CubLog("Invoking detail::for_each_in_extents::dynamic_kernel<<<%u, %u, 0, %p>>>(), items_per_thread: %u\n",
+            num_cta,
+            block_threads,
+            _stream,
+            items_per_thread);
 #  endif
     status = THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(num_cta, block_threads, 0, _stream)
                .doit(kernel, _op, _ext, sub_sizes_div_array, extents_div_array);
