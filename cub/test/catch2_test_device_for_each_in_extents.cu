@@ -28,7 +28,7 @@
 
 #if __cccl_lib_mdspan
 
-#  include <cub/device/device_for_each_in_extents.cuh>
+#  include <cub/device/device_for.cuh>
 
 #  include <thrust/detail/raw_pointer_cast.h>
 
@@ -42,7 +42,7 @@
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
-DECLARE_LAUNCH_WRAPPER(cub::DeviceForEachInExtents::ForEachInExtents, device_for_each_in_extents);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceFor::ForEachInExtents, device_for_each_in_extents);
 
 /***********************************************************************************************************************
  * UTLILITIES

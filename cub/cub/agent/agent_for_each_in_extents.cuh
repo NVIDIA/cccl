@@ -37,7 +37,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020
+#if __cccl_lib_mdspan
 
 CUB_NAMESPACE_BEGIN
 
@@ -55,4 +55,4 @@ struct policy_t
 
 CUB_NAMESPACE_END
 
-#endif // (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020
+#endif // __cccl_lib_mdspan
