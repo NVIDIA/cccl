@@ -162,9 +162,9 @@ struct AgentScan
   // Wrap the native input pointer with CacheModifiedInputIterator
   // or directly use the supplied input iterator type
   using WrappedInputIteratorT =
-    ::cuda::std::_If<std::is_pointer<InputIteratorT>::value,
-                     CacheModifiedInputIterator<AgentScanPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
-                     InputIteratorT>;
+    ::cuda::std::conditional_t<std::is_pointer<InputIteratorT>::value,
+                               CacheModifiedInputIterator<AgentScanPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
+                               InputIteratorT>;
 
   // Constants
   enum

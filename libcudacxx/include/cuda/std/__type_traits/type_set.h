@@ -66,7 +66,7 @@ struct __tupl<_Ty, _Ts...>
 {
   template <class _Uy>
   using __maybe_insert _CCCL_NODEBUG_ALIAS =
-    _If<_CCCL_TRAIT(__type_set_contains, __tupl, _Uy), __tupl, __tupl<_Uy, _Ty, _Ts...>>;
+    conditional_t<_CCCL_TRAIT(__type_set_contains, __tupl, _Uy), __tupl, __tupl<_Uy, _Ty, _Ts...>>;
 
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr size_t __size() noexcept
   {

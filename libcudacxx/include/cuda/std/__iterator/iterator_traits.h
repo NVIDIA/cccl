@@ -147,9 +147,9 @@ using random_access_iterator_tag = ::std::random_access_iterator_tag;
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __contiguous_iterator_tag_backfill : public ::std::random_access_iterator_tag
 {};
 using contiguous_iterator_tag =
-  _If<::std::__cccl_std_contiguous_iterator_tag_exists::value,
-      ::std::contiguous_iterator_tag,
-      __contiguous_iterator_tag_backfill>;
+  conditional_t<::std::__cccl_std_contiguous_iterator_tag_exists::value,
+                ::std::contiguous_iterator_tag,
+                __contiguous_iterator_tag_backfill>;
 #  elif _CCCL_STD_VER >= 2014
 struct _CCCL_TYPE_VISIBILITY_DEFAULT contiguous_iterator_tag : public random_access_iterator_tag
 {};
@@ -160,7 +160,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT contiguous_iterator_tag : public random_acc
 template <class _Iter>
 struct __iter_traits_cache
 {
-  using type = _If<__is_primary_template<iterator_traits<_Iter>>::value, _Iter, iterator_traits<_Iter>>;
+  using type = conditional_t<__is_primary_template<iterator_traits<_Iter>>::value, _Iter, iterator_traits<_Iter>>;
 };
 template <class _Iter>
 using _ITER_TRAITS = typename __iter_traits_cache<_Iter>::type;

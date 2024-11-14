@@ -651,7 +651,7 @@ struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIterator
     static constexpr bool use_fallback =
       RequiresStableAddress || !can_memcpy || no_input_streams || exhaust_smem || any_type_is_overalinged;
     static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Algorithm::ublkcp;
-    using algo_policy               = ::cuda::std::_If<use_fallback, prefetch_policy_t<256>, async_policy>;
+    using algo_policy               = ::cuda::std::conditional_t<use_fallback, prefetch_policy_t<256>, async_policy>;
   };
 
   using max_policy = policy900;

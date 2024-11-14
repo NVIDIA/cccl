@@ -39,8 +39,9 @@
 #include <thrust/system/detail/generic/select_system.h>
 #include <thrust/type_traits/remove_cvref.h>
 
+#include <cuda/std/type_traits>
+
 #include <ostream>
-#include <type_traits>
 
 THRUST_NAMESPACE_BEGIN
 
@@ -57,7 +58,8 @@ template <typename Element, typename Pointer, typename Derived>
 class reference
 {
 private:
-  using derived_type = typename std::conditional<std::is_same<Derived, use_default>::value, reference, Derived>::type;
+  using derived_type =
+    ::cuda::std::conditional_t<_CCCL_TRAIT(::cuda::std::is_same, Derived, use_default), reference, Derived>;
 
 public:
   using pointer    = Pointer;
@@ -82,8 +84,9 @@ public:
     /*! \cond
      */
     ,
-    typename std::enable_if<std::is_convertible<typename reference<OtherElement, OtherPointer, OtherDerived>::pointer,
-                                                pointer>::value>::type* = nullptr
+    ::cuda::std::enable_if_t<_CCCL_TRAIT(
+      ::cuda::std::is_convertible, typename reference<OtherElement, OtherPointer, OtherDerived>::pointer, pointer)>* =
+      nullptr
     /*! \endcond
      */
     )
@@ -128,14 +131,15 @@ public:
   _CCCL_HOST_DEVICE
   /*! \cond
    */
-  typename std::enable_if<
-    std::is_convertible<typename reference<OtherElement, OtherPointer, OtherDerived>::pointer, pointer>::value,
+  ::cuda::std::enable_if_t<
+    _CCCL_TRAIT(
+      ::cuda::std::is_convertible, typename reference<OtherElement, OtherPointer, OtherDerived>::pointer, pointer),
     /*! \endcond
      */
     derived_type&
     /*! \cond
      */
-    >::type
+    >
   /*! \endcond
    */
   operator=(reference<OtherElement, OtherPointer, OtherDerived> const& other)
@@ -201,7 +205,7 @@ public:
   {
     value_type tmp    = *this;
     value_type result = tmp++;
-    *this             = std::move(tmp);
+    *this             = ::cuda::std::move(tmp);
     return result;
   }
 
@@ -212,7 +216,7 @@ public:
     // system, is to get a copy of it, modify the copy, and then update it.
     value_type tmp = *this;
     --tmp;
-    *this = std::move(tmp);
+    *this = ::cuda::std::move(tmp);
     return derived();
   }
 
@@ -220,7 +224,7 @@ public:
   {
     value_type tmp    = *this;
     value_type result = tmp--;
-    *this             = std::move(tmp);
+    *this             = ::cuda::std::move(tmp);
     return derived();
   }
 

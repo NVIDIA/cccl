@@ -612,9 +612,9 @@ public:
       // Wrap the native input pointer with CacheModifiedInputIterator
       // or Directly use the supplied input iterator type
       using WrappedLevelIteratorT =
-        ::cuda::std::_If<std::is_pointer<LevelIteratorT>::value,
-                         CacheModifiedInputIterator<LOAD_MODIFIER, LevelT, OffsetT>,
-                         LevelIteratorT>;
+        ::cuda::std::conditional_t<std::is_pointer<LevelIteratorT>::value,
+                                   CacheModifiedInputIterator<LOAD_MODIFIER, LevelT, OffsetT>,
+                                   LevelIteratorT>;
 
       WrappedLevelIteratorT wrapped_levels(d_levels);
 
@@ -648,11 +648,11 @@ public:
     // rule: 2^l * 2^r = 2^(l + r) to determine a sufficiently large type to hold the
     // multiplication result.
     // If CommonT used to be a 128-bit wide integral type already, we use CommonT's arithmetic
-    using IntArithmeticT = ::cuda::std::_If< //
+    using IntArithmeticT = ::cuda::std::conditional_t< //
       sizeof(SampleT) + sizeof(CommonT) <= sizeof(uint32_t), //
       uint32_t, //
 #if CUB_IS_INT128_ENABLED
-      ::cuda::std::_If< //
+      ::cuda::std::conditional_t< //
         (::cuda::std::is_same<CommonT, __int128_t>::value || //
          ::cuda::std::is_same<CommonT, __uint128_t>::value), //
         CommonT, //
@@ -666,9 +666,10 @@ public:
     template <typename T>
     using is_integral_excl_int128 =
 #if CUB_IS_INT128_ENABLED
-      ::cuda::std::_If<::cuda::std::is_same<T, __int128_t>::value&& ::cuda::std::is_same<T, __uint128_t>::value,
-                       ::cuda::std::false_type,
-                       ::cuda::std::is_integral<T>>;
+      ::cuda::std::conditional_t<
+        ::cuda::std::is_same<T, __int128_t>::value&& ::cuda::std::is_same<T, __uint128_t>::value,
+        ::cuda::std::false_type,
+        ::cuda::std::is_integral<T>>;
 #else // ^^^ CUB_IS_INT128_ENABLED ^^^ / vvv !CUB_IS_INT128_ENABLED vvv
       ::cuda::std::is_integral<T>;
 #endif // !CUB_IS_INT128_ENABLED

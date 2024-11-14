@@ -89,7 +89,7 @@ struct __is_narrowing_impl<_To, _From, void_t<decltype(_To{_CUDA_VSTD::declval<_
 {};
 
 template <class _Tp, class... _Args>
-using __is_narrowing = _If<_CCCL_TRAIT(is_arithmetic, _Tp), __is_narrowing_impl<_Tp, _Args...>, false_type>;
+using __is_narrowing = conditional_t<_CCCL_TRAIT(is_arithmetic, _Tp), __is_narrowing_impl<_Tp, _Args...>, false_type>;
 
 // The destination type must be trivially constructible from the arguments and also trivially assignable, because we
 // technically move assign in the optimization

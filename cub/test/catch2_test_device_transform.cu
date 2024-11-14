@@ -32,9 +32,9 @@ struct policy_hub_for_alg
     static constexpr int min_bif         = 64 * 1024;
     static constexpr Algorithm algorithm = Alg;
     using algo_policy =
-      ::cuda::std::_If<Alg == Algorithm::prefetch,
-                       cub::detail::transform::prefetch_policy_t<256>,
-                       cub::detail::transform::async_copy_policy_t<256>>;
+      ::cuda::std::conditional_t<Alg == Algorithm::prefetch,
+                                 cub::detail::transform::prefetch_policy_t<256>,
+                                 cub::detail::transform::async_copy_policy_t<256>>;
   };
 };
 

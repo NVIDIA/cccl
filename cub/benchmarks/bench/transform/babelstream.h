@@ -21,9 +21,9 @@ struct policy_hub_t
     static constexpr int min_bif    = cub::detail::transform::arch_to_min_bytes_in_flight(__CUDA_ARCH_LIST__);
     static constexpr auto algorithm = static_cast<cub::detail::transform::Algorithm>(TUNE_ALGORITHM);
     using algo_policy =
-      ::cuda::std::_If<algorithm == cub::detail::transform::Algorithm::prefetch,
-                       cub::detail::transform::prefetch_policy_t<TUNE_THREADS>,
-                       cub::detail::transform::async_copy_policy_t<TUNE_THREADS>>;
+      ::cuda::std::conditional_t<algorithm == cub::detail::transform::Algorithm::prefetch,
+                                 cub::detail::transform::prefetch_policy_t<TUNE_THREADS>,
+                                 cub::detail::transform::async_copy_policy_t<TUNE_THREADS>>;
   };
 };
 #endif

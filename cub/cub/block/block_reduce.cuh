@@ -256,11 +256,11 @@ private:
 
   /// Internal specialization type
   using InternalBlockReduce =
-    ::cuda::std::_If<ALGORITHM == BLOCK_REDUCE_WARP_REDUCTIONS,
-                     WarpReductions,
-                     ::cuda::std::_If<ALGORITHM == BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY,
-                                      RakingCommutativeOnly,
-                                      Raking>>; // BlockReduceRaking
+    ::cuda::std::conditional_t<ALGORITHM == BLOCK_REDUCE_WARP_REDUCTIONS,
+                               WarpReductions,
+                               ::cuda::std::conditional_t<ALGORITHM == BLOCK_REDUCE_RAKING_COMMUTATIVE_ONLY,
+                                                          RakingCommutativeOnly,
+                                                          Raking>>; // BlockReduceRaking
 
   /// Shared memory storage layout type for BlockReduce
   using _TempStorage = typename InternalBlockReduce::TempStorage;

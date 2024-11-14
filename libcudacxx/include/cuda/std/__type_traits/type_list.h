@@ -418,7 +418,8 @@ template <class _TryFn, class _CatchFn>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_try_catch
 {
   template <class... _Ts>
-  using __call _CCCL_NODEBUG_ALIAS = __type_call<_If<__type_callable<_TryFn, _Ts...>::value, _TryFn, _CatchFn>, _Ts...>;
+  using __call _CCCL_NODEBUG_ALIAS =
+    __type_call<conditional_t<__type_callable<_TryFn, _Ts...>::value, _TryFn, _CatchFn>, _Ts...>;
 };
 
 // Implementation for indexing into a list of types:
@@ -838,7 +839,7 @@ template <class _Ty>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_remove_fn
 {
   template <class _Uy>
-  using __call _CCCL_NODEBUG_ALIAS = _If<_CCCL_TRAIT(is_same, _Ty, _Uy), __type_list<>, __type_list<_Uy>>;
+  using __call _CCCL_NODEBUG_ALIAS = conditional_t<_CCCL_TRAIT(is_same, _Ty, _Uy), __type_list<>, __type_list<_Uy>>;
 };
 } // namespace __detail
 
@@ -852,7 +853,7 @@ template <class _Fn>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_remove_if_fn
 {
   template <class _Uy>
-  using __call _CCCL_NODEBUG_ALIAS = _If<__type_call1<_Fn, _Uy>::value, __type_list<>, __type_list<_Uy>>;
+  using __call _CCCL_NODEBUG_ALIAS = conditional_t<__type_call1<_Fn, _Uy>::value, __type_list<>, __type_list<_Uy>>;
 };
 } // namespace __detail
 

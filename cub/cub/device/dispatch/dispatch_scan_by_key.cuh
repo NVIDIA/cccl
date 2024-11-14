@@ -231,7 +231,8 @@ template <
   typename AccumT = ::cuda::std::__accumulator_t<
     ScanOpT,
     cub::detail::value_t<ValuesInputIteratorT>,
-    ::cuda::std::_If<std::is_same<InitValueT, NullType>::value, cub::detail::value_t<ValuesInputIteratorT>, InitValueT>>,
+    ::cuda::std::
+      conditional_t<std::is_same<InitValueT, NullType>::value, cub::detail::value_t<ValuesInputIteratorT>, InitValueT>>,
   typename SelectedPolicy =
     DeviceScanByKeyPolicy<KeysInputIteratorT, AccumT, cub::detail::value_t<ValuesInputIteratorT>, ScanOpT>>
 struct DispatchScanByKey : SelectedPolicy

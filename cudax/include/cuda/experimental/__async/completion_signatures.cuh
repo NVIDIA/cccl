@@ -282,7 +282,7 @@ inline constexpr bool sends_stopped = //
 using __eptr_completion = completion_signatures<set_error_t(::std::exception_ptr)>;
 
 template <bool _NoExcept>
-using __eptr_completion_if = _CUDA_VSTD::_If<_NoExcept, completion_signatures<>, __eptr_completion>;
+using __eptr_completion_if = _CUDA_VSTD::conditional_t<_NoExcept, completion_signatures<>, __eptr_completion>;
 
 template <class>
 inline constexpr bool __is_completion_signatures = false;
@@ -335,7 +335,8 @@ auto completions_of(_Sndr&&,
 
 template <bool _PotentiallyThrowing>
 auto eptr_completion_if()
-  -> _CUDA_VSTD::_If<_PotentiallyThrowing, __csig::__sigs<set_error_t(::std::exception_ptr)>, __csig::__sigs<>>&;
+  -> _CUDA_VSTD::
+    conditional_t<_PotentiallyThrowing, __csig::__sigs<set_error_t(::std::exception_ptr)>, __csig::__sigs<>>&;
 } // namespace meta
 } // namespace cuda::experimental::__async
 

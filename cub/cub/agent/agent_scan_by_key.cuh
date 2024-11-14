@@ -155,14 +155,14 @@ struct AgentScanByKey
   static constexpr int ITEMS_PER_TILE   = BLOCK_THREADS * ITEMS_PER_THREAD;
 
   using WrappedKeysInputIteratorT =
-    ::cuda::std::_If<std::is_pointer<KeysInputIteratorT>::value,
-                     CacheModifiedInputIterator<AgentScanByKeyPolicyT::LOAD_MODIFIER, KeyT, OffsetT>,
-                     KeysInputIteratorT>;
+    ::cuda::std::conditional_t<std::is_pointer<KeysInputIteratorT>::value,
+                               CacheModifiedInputIterator<AgentScanByKeyPolicyT::LOAD_MODIFIER, KeyT, OffsetT>,
+                               KeysInputIteratorT>;
 
   using WrappedValuesInputIteratorT =
-    ::cuda::std::_If<std::is_pointer<ValuesInputIteratorT>::value,
-                     CacheModifiedInputIterator<AgentScanByKeyPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
-                     ValuesInputIteratorT>;
+    ::cuda::std::conditional_t<std::is_pointer<ValuesInputIteratorT>::value,
+                               CacheModifiedInputIterator<AgentScanByKeyPolicyT::LOAD_MODIFIER, InputT, OffsetT>,
+                               ValuesInputIteratorT>;
 
   using BlockLoadKeysT = BlockLoad<KeyT, BLOCK_THREADS, ITEMS_PER_THREAD, AgentScanByKeyPolicyT::LOAD_ALGORITHM>;
 
