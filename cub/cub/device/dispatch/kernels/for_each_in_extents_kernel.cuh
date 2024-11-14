@@ -56,7 +56,6 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE IndexType
 coordinate_at(IndexType index, ExtendType ext, FastDivModType div_mod_sub_size, FastDivModType div_mod_size)
 {
   using extent_index_type = typename ExtendType::index_type;
-  using U                 = ::cuda::std::make_unsigned_t<IndexType>;
   auto get_sub_size       = [&]() {
     if constexpr (cub::detail::is_sub_size_static<Rank + 1, ExtendType>())
     {
@@ -71,6 +70,7 @@ coordinate_at(IndexType index, ExtendType ext, FastDivModType div_mod_sub_size, 
   auto get_ext_size = [&]() {
     if constexpr (ExtendType::static_extent(Rank) != ::cuda::std::dynamic_extent)
     {
+      using U = ::cuda::std::make_unsigned_t<IndexType>;
       return static_cast<U>(ext.static_extent(Rank));
     }
     else
@@ -82,23 +82,19 @@ coordinate_at(IndexType index, ExtendType ext, FastDivModType div_mod_sub_size, 
   return static_cast<extent_index_type>(index / get_sub_size() % get_ext_size());
 }
 
-template <typename ChainedPolicyT,
+template <typename IndexType,
           typename Func,
           typename ExtendType,
-          typename FastDivModArrayType,
+          typename FastDivModArrayType, //
           ::cuda::std::size_t... Ranks>
-__launch_bounds__(ChainedPolicyT::ActivePolicy::for_policy_t::block_threads) //
-  CUB_DETAIL_KERNEL_ATTRIBUTES void static_kernel(
-    Func func,
-    _CCCL_GRID_CONSTANT const ExtendType ext,
-    _CCCL_GRID_CONSTANT const FastDivModArrayType sub_sizes_div_array,
-    _CCCL_GRID_CONSTANT const FastDivModArrayType extents_mod_array)
+_CCCL_DEVICE _CCCL_FORCEINLINE void computation(
+  IndexType id,
+  Func func,
+  ExtendType ext,
+  FastDivModArrayType sub_sizes_div_array,
+  FastDivModArrayType extents_mod_array)
 {
-  using active_policy_t        = typename ChainedPolicyT::ActivePolicy::for_policy_t;
-  using extent_index_type      = typename ExtendType::index_type;
-  using OffsetT                = decltype(+extent_index_type{});
-  constexpr auto block_threads = OffsetT{active_policy_t::block_threads};
-  auto id                      = threadIdx.x + blockIdx.x * block_threads;
+  using extent_index_type = typename ExtendType::index_type;
   if (id < cub::detail::size(ext))
   {
     if constexpr (sizeof...(Ranks) == 0)
@@ -119,13 +115,38 @@ template <typename ChainedPolicyT,
           typename ExtendType,
           typename FastDivModArrayType,
           ::cuda::std::size_t... Ranks>
+__launch_bounds__(ChainedPolicyT::ActivePolicy::for_policy_t::block_threads) //
+  CUB_DETAIL_KERNEL_ATTRIBUTES void static_kernel(
+    Func func,
+    _CCCL_GRID_CONSTANT const ExtendType ext,
+    _CCCL_GRID_CONSTANT const FastDivModArrayType sub_sizes_div_array,
+    _CCCL_GRID_CONSTANT const FastDivModArrayType extents_mod_array)
+{
+  using active_policy_t        = typename ChainedPolicyT::ActivePolicy::for_policy_t;
+  using extent_index_type      = typename ExtendType::index_type;
+  using OffsetT                = decltype(+extent_index_type{});
+  constexpr auto block_threads = OffsetT{active_policy_t::block_threads};
+  auto id                      = threadIdx.x + blockIdx.x * block_threads;
+  computation<OffsetT, Func, ExtendType, FastDivModArrayType, Ranks...>(
+    id, func, ext, sub_sizes_div_array, extents_mod_array);
+}
+
+template <typename ChainedPolicyT,
+          typename Func,
+          typename ExtendType,
+          typename FastDivModArrayType,
+          ::cuda::std::size_t... Ranks>
 CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(
   Func func,
   _CCCL_GRID_CONSTANT const ExtendType ext,
   _CCCL_GRID_CONSTANT const FastDivModArrayType sub_sizes_div_array,
   _CCCL_GRID_CONSTANT const FastDivModArrayType extents_mod_array)
 {
-  _CCCL_ASSERT(false, "not implemented");
+  using extent_index_type = typename ExtendType::index_type;
+  using OffsetT           = decltype(+extent_index_type{});
+  auto id                 = threadIdx.x + blockIdx.x * static_cast<OffsetT>(blockDim.x);
+  computation<OffsetT, Func, ExtendType, FastDivModArrayType, Ranks...>(
+    id, func, ext, sub_sizes_div_array, extents_mod_array);
 }
 
 } // namespace detail::for_each_in_extents
