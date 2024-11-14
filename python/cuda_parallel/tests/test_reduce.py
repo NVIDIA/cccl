@@ -117,7 +117,7 @@ def test_device_sum_sentinel_iterator(use_numpy_array, input_generator, num_item
         rng = random.Random(0)
         l_input = [rng.randrange(100) for _ in range(num_items)]
         streamed_input_devarr = numba.cuda.to_device(numpy.array(l_input, dtype=numpy.int32))
-        sentinel_iterator = sentinel_iterators.cache(streamed_input_devarr, 'stream')
+        sentinel_iterator = sentinel_iterators.cache(streamed_input_devarr, dtype=numba.types.int32, modifier='stream')
     else:
         raise RuntimeError("Unexpected input_generator")
 

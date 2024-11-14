@@ -12,8 +12,10 @@ import numba.cuda
 class RawPointer:
     def __init__(self, ptr, dtype):
         self.val = ctypes.c_void_p(ptr)
-        self.ltoirs = [numba.cuda.compile(RawPointer.pointer_advance, sig=numba.types.void(numba.types.CPointer(numba.types.uint64), dtype), output='ltoir'),
-                       numba.cuda.compile(RawPointer.pointer_dereference, sig=dtype(numba.types.CPointer(numba.types.CPointer(dtype))), output='ltoir')]
+        data_as_dtype_pp = numba.types.CPointer(numba.types.CPointer(dtype))
+        data_as_uint64_p = numba.types.CPointer(numba.types.uint64)
+        self.ltoirs = [numba.cuda.compile(RawPointer.pointer_advance, sig=numba.types.void(data_as_uint64_p, numba.types.uint64), output='ltoir'),
+                       numba.cuda.compile(RawPointer.pointer_dereference, sig=dtype(data_as_dtype_pp), output='ltoir')]
         self.prefix = 'pointer'
 
     def pointer_advance(this, distance):
@@ -54,10 +56,12 @@ def ldcs(typingctx, base):
 
 
 class CacheModifiedPointer:
-    def __init__(self, ptr): # TODO Showcasing the case of int32, need dtype with at least primitive types, ideally any numba type
+    def __init__(self, ptr, dtype):
         self.val = ctypes.c_void_p(ptr)
-        self.ltoirs = [numba.cuda.compile(CacheModifiedPointer.cache_advance, sig=numba.types.void(numba.types.CPointer(numba.types.uint64), numba.types.int32), output='ltoir'),
-                       numba.cuda.compile(CacheModifiedPointer.cache_dereference, sig=numba.types.int32(numba.types.CPointer(numba.types.CPointer(numba.types.int32))), output='ltoir')]
+        data_as_dtype_pp = numba.types.CPointer(numba.types.CPointer(dtype))
+        data_as_uint64_p = numba.types.CPointer(numba.types.uint64)
+        self.ltoirs = [numba.cuda.compile(CacheModifiedPointer.cache_advance, sig=numba.types.void(data_as_uint64_p, numba.types.uint64), output='ltoir'),
+                       numba.cuda.compile(CacheModifiedPointer.cache_dereference, sig=dtype(data_as_dtype_pp), output='ltoir')]
         self.prefix = 'cache'
 
     def cache_advance(this, distance):
@@ -79,10 +83,10 @@ class CacheModifiedPointer:
         return 8 # TODO should be using numba for user-defined types support
 
 
-def cache(container, modifier='stream'):
+def cache(container, dtype, modifier):
     if modifier != 'stream':
         raise NotImplementedError("Only stream modifier is supported")
-    return CacheModifiedPointer(container.device_ctypes_pointer.value)
+    return CacheModifiedPointer(container.device_ctypes_pointer.value, dtype)
 
 
 class ConstantIterator:
