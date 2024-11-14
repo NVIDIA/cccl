@@ -114,6 +114,9 @@ using __nothrow_copyable_ = _CUDA_VSTD::enable_if_t<noexcept(_Ty(__declval<const
 template <class... _As>
 inline constexpr bool __nothrow_copyable = (__type_valid_v<__nothrow_copyable_, _As> && ...);
 #endif
+
+template <class... _As>
+using __nothrow_decay_copyable_t = _CUDA_VSTD::bool_constant<__nothrow_decay_copyable<_As...>>;
 } // namespace cuda::experimental::__async
 
 #include <cuda/experimental/__async/epilogue.cuh>

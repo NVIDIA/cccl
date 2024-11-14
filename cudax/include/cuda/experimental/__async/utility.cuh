@@ -40,8 +40,7 @@ struct __ignore
   _CUDAX_API constexpr __ignore(_As&&...) noexcept {};
 };
 
-template <class...>
-struct __undefined;
+using _CUDA_VSTD::__undefined; // NOLINT: misc-unused-using-decls
 
 struct __empty
 {};
