@@ -52,6 +52,7 @@
     _CCCL_COMPILER_COMPARE_VERSION_3,     \
     _CCCL_COMPILER_COMPARE_BAD_ARG_COUNT, \
     _CCCL_COMPILER_COMPARE_VERSION_1)
+// Fixme for MSVC without /Zc:preprocessor option
 #define _CCCL_COMPILER(...) _CCCL_COMPILER_SELECT(_CCCL_COMPILER_##__VA_ARGS__)(_CCCL_COMPILER_##__VA_ARGS__)
 
 // Convenient shortcut to determine which version of MSVC we are dealing with
