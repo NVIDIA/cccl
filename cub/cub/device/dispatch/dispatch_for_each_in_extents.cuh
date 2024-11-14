@@ -90,6 +90,8 @@ class dispatch_t : PolicyHubT
 
   static constexpr auto seq = ::cuda::std::make_index_sequence<ExtentsType::rank()>{};
 
+  static constexpr size_t max_index = ::cuda::std::numeric_limits<IndexType>::max();
+
 public:
   dispatch_t() = delete;
 
@@ -109,9 +111,9 @@ public:
   _CCCL_NODISCARD CUB_RUNTIME_FUNCTION
   _CCCL_FORCEINLINE cudaError_t InvokeVariadic(::cuda::std::true_type, ::cuda::std::index_sequence<Ranks...>) const
   {
-    constexpr unsigned block_threads = ActivePolicyT::for_policy_t::block_threads;
     ArrayType sub_sizes_div_array    = cub::detail::sub_sizes_fast_div_mod(_ext, seq);
     ArrayType extents_div_array      = cub::detail::extents_fast_div_mod(_ext, seq);
+    constexpr unsigned block_threads = ::cuda::std::min(size_t{ActivePolicyT::for_policy_t::block_threads}, max_index);
     unsigned num_cta                 = ::cuda::ceil_div(_size, block_threads);
 
 #  ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
@@ -137,17 +139,17 @@ public:
   {
     ArrayType sub_sizes_div_array = cub::detail::sub_sizes_fast_div_mod(_ext, seq);
     ArrayType extents_div_array   = cub::detail::extents_fast_div_mod(_ext, seq);
-    unsigned block_threads        = 256;
-    unsigned num_cta              = ::cuda::ceil_div(_size, block_threads);
-
-    [[maybe_unused]] auto kernel = detail::for_each_in_extents::
+    auto kernel                   = detail::for_each_in_extents::
       dynamic_kernel<max_policy_t, IndexType, OpType, decltype(sub_sizes_div_array), UnsigndIndexType, Ranks...>;
 
-    cudaError_t status = cudaSuccess;
+    unsigned block_threads = 256;
+    cudaError_t status     = cudaSuccess;
     NV_IF_TARGET(NV_IS_HOST,
                  (int _{}; //
                   status = cudaOccupancyMaxPotentialBlockSize(&_, &block_threads, kernel);));
     _CUB_RETURN_IF_ERROR(status)
+    block_threads    = ::cuda::std::min(size_t{block_threads}, max_index);
+    unsigned num_cta = ::cuda::ceil_div(_size, block_threads);
 
 #  ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
     _CubLog(
@@ -160,16 +162,16 @@ public:
     return cudaSuccess;
   }
 
-  template <bool StaticBlockSize>
+  template <typename ActivePolicyT, bool StaticBlockSize>
   _CCCL_NODISCARD CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
   Invoke(::cuda::std::bool_constant<StaticBlockSize> v) const
   {
     constexpr auto seq = ::cuda::std::make_index_sequence<ExtentsType::rank()>{};
-    return InvokeVariadic(v, seq);
+    return InvokeVariadic<ActivePolicyT>(v, seq);
   }
 
   template <typename ActivePolicyT>
-  CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke() const
+  _CCCL_NODISCARD CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke() const
   {
     if (_size == 0)
     {
