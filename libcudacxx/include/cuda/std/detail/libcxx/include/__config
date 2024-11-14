@@ -46,7 +46,7 @@ extern "C++" {
 #    error libcu++ requires C++11 or later
 #  endif
 
-#  if (defined(_CCCL_COMPILER_NVHPC) && defined(__linux__)) || defined(_CCCL_COMPILER_NVRTC)
+#  if (_CCCL_COMPILER(NVHPC) && defined(__linux__)) || defined(_CCCL_COMPILER_NVRTC)
 #    ifndef __ELF__
 #      define __ELF__
 #    endif // !__ELF__
@@ -424,7 +424,7 @@ typedef __char32_t char32_t;
 
 #    define _LIBCUDACXX_HAS_NO_VECTOR_EXTENSION
 
-#  elif defined(_CCCL_COMPILER_NVRTC) || defined(_CCCL_COMPILER_NVHPC)
+#  elif defined(_CCCL_COMPILER_NVRTC) || _CCCL_COMPILER(NVHPC)
 
 #    define _LIBCUDACXX_DISABLE_EXTENSION_WARNING
 
@@ -748,14 +748,14 @@ typedef unsigned int char32_t;
 #    define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
 #  elif defined(_CCCL_COMPILER_GCC)
 #    define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
-#  elif defined(_CCCL_COMPILER_NVHPC)
+#  elif _CCCL_COMPILER(NVHPC)
 #    define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
 #  elif defined(_CCCL_COMPILER_MSVC)
 #    define _LIBCUDACXX_HAS_MSVC_ATOMIC_IMPL
 #  endif
 
 // CUDA Atomics supersede host atomics in order to insert the host/device dispatch layer
-#  if defined(_CCCL_CUDA_COMPILER_NVCC) || defined(_CCCL_COMPILER_NVRTC) || defined(_CCCL_COMPILER_NVHPC) \
+#  if defined(_CCCL_CUDA_COMPILER_NVCC) || defined(_CCCL_COMPILER_NVRTC) || _CCCL_COMPILER(NVHPC) \
     || defined(_CCCL_CUDACC)
 #    define _LIBCUDACXX_HAS_CUDA_ATOMIC_IMPL
 #  endif
