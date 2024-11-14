@@ -54,11 +54,12 @@ def parse_arguments():
 
 
 def filter_benchmark_space_for_p0(algname, ct_space, rt_values):
-    if algname == 'cub.bench.merge_sort.pairs':
+    if algname == 'cub.bench.merge_sort.pairs' or algname == 'cub.bench.radix_sort.pairs':
         ct_space = list(filter(lambda variant: not (("OffsetT{ct}=I64" in variant) or ("KeyT{ct}=I16" in variant) or (
                 "ValueT{ct}=I16" in variant) or ("KeyT{ct}=I128" in variant) or ("ValueT{ct}=I128" in variant)),
                                ct_space))
 
+    if algname == 'cub.bench.merge_sort.pairs':
         for subbench in rt_values:
             for axis in rt_values[subbench]:
                 if axis == "Entropy":
