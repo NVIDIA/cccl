@@ -47,6 +47,9 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class... _Ts>
 struct __type_list;
 
+template <class...>
+struct __undefined; // leave this undefined
+
 template <class _Ty>
 using __type = typename _Ty::type;
 
@@ -326,16 +329,22 @@ using __type_push_front = __type_call1<_List, __type_bind_front_quote<__type_lis
 namespace __detail
 {
 template <template <class...> class _Fn, class... _Ts>
-_LIBCUDACXX_HIDE_FROM_ABI auto __as_type_list_fn(_Fn<_Ts...>*) -> __type_list<_Ts...>;
+_LIBCUDACXX_HIDE_FROM_ABI auto __as_type_list_fn(__undefined<_Fn<_Ts...>>*) //
+  -> __type_list<_Ts...>;
 
 template <template <class _Ty, _Ty...> class _Fn, class _Ty, _Ty... _Us>
-_LIBCUDACXX_HIDE_FROM_ABI auto __as_type_list_fn(_Fn<_Ty, _Us...>*) -> __type_list<integral_constant<_Ty, _Us>...>;
+_LIBCUDACXX_HIDE_FROM_ABI auto __as_type_list_fn(__undefined<_Fn<_Ty, _Us...>>*) //
+  -> __type_list<integral_constant<_Ty, _Us>...>;
+
+template <class _Ret, class... _Args>
+_LIBCUDACXX_HIDE_FROM_ABI auto __as_type_list_fn(__undefined<_Ret(_Args...)>*) //
+  -> __type_list<_Args...>;
 } // namespace __detail
 
 //! \brief Given a type that is a specialization of a class template, return a
 //! type list of the template arguments.
 template <class _List>
-using __as_type_list = decltype(__detail::__as_type_list_fn(static_cast<_List*>(nullptr)));
+using __as_type_list = decltype(__detail::__as_type_list_fn(static_cast<__undefined<_List>*>(nullptr)));
 
 //! \brief Given a type that is a specialization of a class template and a
 //! meta-callable, invoke the callable with the template arguments.

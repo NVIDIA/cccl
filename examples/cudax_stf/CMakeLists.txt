@@ -35,11 +35,6 @@ if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
   set(CMAKE_CUDA_ARCHITECTURES native)
 endif()
 
-# Default to building for the GPU on the current system
-if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-  set(CMAKE_CUDA_ARCHITECTURES native)
-endif()
-
 # If you're building an executable
 add_executable(simple_stf simple_stf.cu)
 

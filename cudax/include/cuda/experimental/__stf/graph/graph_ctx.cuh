@@ -763,7 +763,7 @@ UNITTEST("set_symbol on graph_task and graph_task<>")
   ctx.finalize();
 };
 
-#  if defined(CUDASTF_CODE_GENERATION) && defined(__CUDACC__)
+#  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 namespace reserved
 {
 
@@ -1028,7 +1028,7 @@ UNITTEST("create many graph ctxs")
 
 } // end namespace reserved
 
-#  endif // defined(CUDASTF_CODE_GENERATION) && defined(__CUDACC__)
+#  endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 
 #endif // UNITTESTED_FILE
 } // end namespace cuda::experimental::stf
