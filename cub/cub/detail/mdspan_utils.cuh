@@ -37,8 +37,7 @@
 #  pragma system_header
 #endif // no system header
 
-// check that mdspan is available
-#if (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020
+#if __cccl_lib_mdspan
 
 #  include <cub/detail/fast_modulo_division.cuh> // fast_div_mod
 
@@ -53,13 +52,7 @@ CUB_NAMESPACE_BEGIN
 namespace detail
 {
 
-/***********************************************************************************************************************
- * Utilities
- **********************************************************************************************************************/
-
-#  if defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
-#    pragma nv_diag_suppress 186 // pointless comparison of unsigned integer with zero
-#  endif // defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
+_CCCL_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
 
 // Compute the submdspan size of a given rank
 template <::cuda::std::size_t Rank, typename IndexType, ::cuda::std::size_t... Extents>
@@ -73,6 +66,8 @@ sub_size(const ::cuda::std::extents<IndexType, Extents...>& ext)
   }
   return s;
 }
+
+_CCCL_NV_DIAG_DEFAULT(186)
 
 // TODO: move to cuda::std
 template <typename IndexType, ::cuda::std::size_t... Extents>
@@ -101,7 +96,7 @@ extents_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::s
   return ::cuda::std::array<fast_mod_div_t, sizeof...(Ranks)>{fast_mod_div_t(ext.extent(Ranks))...};
 }
 
-// GCC <= 9 workaround: Extent must be passed as type only, even const Extent& doesn't work
+// GCC <= 9 constexpr workaround: Extent must be passed as type only, even const Extent& doesn't work
 template <int Rank, typename Extents>
 _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr bool is_sub_size_static()
 {
@@ -120,4 +115,4 @@ _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr bool is_sub_size_s
 
 CUB_NAMESPACE_END
 
-#endif // if (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020
+#endif // if __cccl_lib_mdspan

@@ -37,7 +37,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020
+#if __cccl_lib_mdspan
 
 #  include <cub/agent/agent_for_each_in_extents.cuh> // policy_t
 #  include <cub/util_device.cuh> // ChainedPolicy
@@ -61,4 +61,4 @@ struct policy_hub_t
 
 CUB_NAMESPACE_END
 
-#endif // (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020
+#endif // __cccl_lib_mdspan

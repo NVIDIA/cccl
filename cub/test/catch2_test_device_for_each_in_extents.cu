@@ -26,7 +26,7 @@
  ******************************************************************************/
 #include <cub/config.cuh>
 
-#if (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020
+#if __cccl_lib_mdspan
 
 #  include <cub/device/device_for_each_in_extents.cuh>
 
@@ -183,4 +183,4 @@ C2H_TEST("DeviceForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][devic
   REQUIRE(h_output == h_output_gpu);
 }
 
-#endif // (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020
+#endif // __cccl_lib_mdspan

@@ -37,7 +37,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020
+#if __cccl_lib_mdspan
 
 #  include <cub/detail/fast_modulo_division.cuh> // fast_div_mod
 #  include <cub/detail/mdspan_utils.cuh> // is_sub_size_static
@@ -59,7 +59,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE IndexType coordinate_at(
   auto get_sub_size = [&]() {
     if constexpr (cub::detail::is_sub_size_static<Rank + 1, ExtendType>())
     {
-      return static_cast<U>(sub_size<Rank + 1>(ext));
+      return sub_size<Rank + 1>(ext);
     }
     else
     {
@@ -107,4 +107,4 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void for_each_in_extents_kernel(
 
 CUB_NAMESPACE_END
 
-#endif // (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020
+#endif // __cccl_lib_mdspan

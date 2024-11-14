@@ -49,13 +49,11 @@
 #include <cuda/std/cstdint> // uint64_t
 
 #include "cub/util_type.cuh" // CUB_IS_INT128_ENABLED
-#include "cuda/std/__cccl/assert.h"
 #include "cuda/std/__type_traits/is_integral.h"
-#include "nv/detail/__target_macros"
 
-#if defined(__NVCC_DIAG_PRAGMA_SUPPORT__) && defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
-#  pragma nv_diag_suppress 186 // pointless comparison of unsigned integer with zero
-#endif // defined(__NVCC_DIAG_PRAGMA_SUPPORT__) && defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
+#if defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
+_CCCL_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
+#endif // defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
 
 CUB_NAMESPACE_BEGIN
 
@@ -217,3 +215,7 @@ private:
 } // namespace detail
 
 CUB_NAMESPACE_END
+
+#if defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
+_CCCL_NV_DIAG_DEFAULT(186) // pointless comparison of unsigned integer with zero
+#endif // defined(CCCL_ENABLE_DEVICE_ASSERTIONS)

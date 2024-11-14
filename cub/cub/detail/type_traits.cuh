@@ -49,9 +49,9 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 #include <cuda/std/functional>
 _CCCL_SUPPRESS_DEPRECATED_POP
 #include <cuda/std/array>
-#if (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020
+#if __cccl_lib_mdspan
 #  include <cuda/std/mdspan>
-#endif // (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020
+#endif // __cccl_lib_mdspan
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 
@@ -121,7 +121,7 @@ template <typename T, ::cuda::std::size_t N>
 struct is_fixed_size_random_access_range<::cuda::std::span<T, N>, void> : ::cuda::std::true_type
 {};
 
-#  if (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020
+#  if __cccl_lib_mdspan
 
 template <typename T, typename E, typename L, typename A>
 struct is_fixed_size_random_access_range<
@@ -129,7 +129,7 @@ struct is_fixed_size_random_access_range<
   ::cuda::std::enable_if_t<E::rank == 1 && E::static_extent(0) != ::cuda::std::dynamic_extent>> : ::cuda::std::true_type
 {};
 
-#  endif // (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020
+#  endif // __cccl_lib_mdspan
 #endif // _CCCL_STD_VER >= 2014
 
 template <typename T>
@@ -164,7 +164,7 @@ template <typename T, ::cuda::std::size_t N>
 struct static_size<::cuda::std::span<T, N>, void> : ::cuda::std::integral_constant<int, N>
 {};
 
-#  if (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020
+#  if __cccl_lib_mdspan
 
 template <typename T, typename E, typename L, typename A>
 struct static_size<::cuda::std::mdspan<T, E, L, A>,
@@ -172,7 +172,7 @@ struct static_size<::cuda::std::mdspan<T, E, L, A>,
     : ::cuda::std::integral_constant<int, E::static_extent(1)>
 {};
 
-#  endif // (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020
+#  endif // __cccl_lib_mdspan
 #endif // _CCCL_STD_VER >= 2014
 
 template <typename T>
