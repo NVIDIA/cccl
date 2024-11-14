@@ -35,60 +35,47 @@ _CCCL_PUSH_MACROS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+#if _CCCL_STD_VER >= 2014
 template <class _Tp, class... _Up>
 struct _IsSameAsAny : _Or<_IsSame<_Tp, _Up>...>
 {};
 
 template <class _Tp>
 struct __is_safe_integral_cmp
-    : bool_constant<is_integral<_Tp>::value
+    : bool_constant<_CCCL_TRAIT(is_integral, _Tp)
                     && !_IsSameAsAny<_Tp,
                                      bool,
                                      char,
                                      char16_t,
                                      char32_t
-#ifndef _LIBCUDACXX_NO_HAS_CHAR8_T
+#  ifndef _LIBCUDACXX_NO_HAS_CHAR8_T
                                      ,
                                      char8_t
-#endif
-#ifndef _LIBCUDACXX_HAS_NO_WIDE_CHARACTERS
+#  endif
+#  ifndef _LIBCUDACXX_HAS_NO_WIDE_CHARACTERS
                                      ,
                                      wchar_t
-#endif
+#  endif
                                      >::value>
 {};
-
-struct __cmp_equal_impl
-{
-  template <class _Tp, class _Up, enable_if_t<is_signed<_Tp>::value && is_signed<_Up>::value, int> = 0>
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __do_cmp(_Tp __t, _Up __u) noexcept
-  {
-    return __t == __u;
-  }
-
-  template <
-    class _Tp,
-    class _Up,
-    enable_if_t<(is_signed<_Tp>::value && !is_signed<_Up>::value) || (!is_signed<_Tp>::value && is_signed<_Up>::value),
-                int> = 0>
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __do_cmp(_Tp __t, _Up __u) noexcept
-  {
-    return __t < 0 ? false : make_unsigned_t<_Tp>(__t) == __u;
-  }
-
-  template <class _Tp, class _Up, enable_if_t<!is_signed<_Tp>::value && !is_signed<_Up>::value, int> = 0>
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __do_cmp(_Tp __t, _Up __u) noexcept
-  {
-    return __u < 0 ? false : __t == make_unsigned_t<_Up>(__u);
-  }
-};
 
 template <class _Tp,
           class _Up,
           enable_if_t<__is_safe_integral_cmp<_Tp>::value && __is_safe_integral_cmp<_Up>::value, int> = 0>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_equal(_Tp __t, _Up __u) noexcept
 {
-  return __cmp_equal_impl::__do_cmp(__t, __u);
+  _CCCL_IF_CONSTEXPR (_CCCL_TRAIT(is_signed, Tp) == _CCCL_TRAIT(is_signed, _Up))
+  {
+    return __t == __u;
+  }
+  _CCCL_ELSE_IF_CONSTEXPR (_CCCL_TRAIT(is_signed, _Tp))
+  {
+    return __t < 0 ? false : make_unsigned_t<_Tp>(__t) == __u;
+  }
+  else
+  {
+    return __u < 0 ? false : __t == make_unsigned_t<_Up>(__u);
+  }
 }
 
 template <class _Tp,
@@ -99,37 +86,23 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_not_equal(_Tp __t, _Up __u) noexcep
   return !_CUDA_VSTD::cmp_equal(__t, __u);
 }
 
-struct __cmp_less_impl
-{
-  template <class _Tp, class _Up, enable_if_t<is_signed<_Tp>::value && is_signed<_Up>::value, int> = 0>
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __do_cmp(_Tp __t, _Up __u) noexcept
-  {
-    return __t < __u;
-  }
-
-  template <
-    class _Tp,
-    class _Up,
-    enable_if_t<(is_signed<_Tp>::value && !is_signed<_Up>::value) || (!is_signed<_Tp>::value && is_signed<_Up>::value),
-                int> = 0>
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __do_cmp(_Tp __t, _Up __u) noexcept
-  {
-    return __t < 0 ? true : make_unsigned_t<_Tp>(__t) < __u;
-  }
-
-  template <class _Tp, class _Up, enable_if_t<!is_signed<_Tp>::value && !is_signed<_Up>::value, int> = 0>
-  _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __do_cmp(_Tp __t, _Up __u) noexcept
-  {
-    return __u < 0 ? false : __t < make_unsigned_t<_Up>(__u);
-  }
-};
-
 template <class _Tp,
           class _Up,
           enable_if_t<__is_safe_integral_cmp<_Tp>::value && __is_safe_integral_cmp<_Up>::value, int> = 0>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_less(_Tp __t, _Up __u) noexcept
 {
-  return __cmp_less_impl::__do_cmp(__t, __u);
+  _CCCL_IF_CONSTEXPR (_CCCL_TRAIT(is_signed, _Tp) == _CCCL_TRAIT(is_signed, _Up))
+  {
+    return __t < __u;
+  }
+  _CCCL_ELSE_IF_CONSTEXPR (_CCCL_TRAIT(is_signed, _Tp))
+  {
+    return __t < 0 ? true : make_unsigned_t<_Tp>(__t) < __u;
+  }
+  else
+  {
+    return __u < 0 ? false : __t < make_unsigned_t<_Up>(__u);
+  }
 }
 
 template <class _Tp,
@@ -164,6 +137,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool in_range(_Up __u) noexcept
   return _CUDA_VSTD::cmp_less_equal(__u, numeric_limits<_Tp>::max())
       && _CUDA_VSTD::cmp_greater_equal(__u, numeric_limits<_Tp>::min());
 }
+#endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
