@@ -11,6 +11,12 @@
 #ifndef __CCCL_PREPROCESSOR_H
 #define __CCCL_PREPROCESSOR_H
 
+#ifdef __has_include
+#  define _CCCL_HAS_INCLUDE(_X) __has_include(_X)
+#else
+#  define _CCCL_HAS_INCLUDE(_X) 0
+#endif
+
 #define _CCCL_PP_EXPAND(...)   __VA_ARGS__
 #define _CCCL_PP_EVAL(_M, ...) _M(__VA_ARGS__)
 #define _CCCL_PP_EAT(...)
