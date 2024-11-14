@@ -16,7 +16,8 @@ function(cudax_stf_configure_target target_name)
     target_compile_options(${target_name} PRIVATE
       $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
     )
-    target_compile_definitions(${target_name} PRIVATE "CUDASTF_CODE_GENERATION")
+  else()
+    target_compile_definitions(${target_name} PRIVATE "CUDASTF_DISABLE_CODE_GENERATION")
   endif()
 
   target_compile_options(${target_name} PRIVATE
