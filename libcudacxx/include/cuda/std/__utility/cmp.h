@@ -36,6 +36,19 @@ _CCCL_PUSH_MACROS
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER >= 2014
+
+_CCCL_DIAG_PUSH
+
+// Suppress NVHPC's warnings about signed/unsigned comparisons when -Wsign-compare is specified
+// TODO: find out the warning number
+// _CCCL_DIAG_SUPPRESS_NVHPC()
+
+// Suppress MSVC's warnings about signed/unsigned comparisons
+// C4018: 'token' : signed/unsigned mismatch
+// C4127: conditional expression is constant
+// C4389: 'equality-operator' : signed/unsigned mismatch
+_CCCL_DIAG_SUPPRESS_MSVC(4018 4127 4389)
+
 template <class _Tp, class... _Up>
 struct _IsSameAsAny : _Or<_IsSame<_Tp, _Up>...>
 {};
@@ -137,6 +150,9 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool in_range(_Up __u) noexcept
   return _CUDA_VSTD::cmp_less_equal(__u, numeric_limits<_Tp>::max())
       && _CUDA_VSTD::cmp_greater_equal(__u, numeric_limits<_Tp>::min());
 }
+
+_CCCL_DIAG_POP
+
 #endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
