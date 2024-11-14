@@ -83,7 +83,7 @@ template <class _Tp>
 _LIBCUDACXX_CONCEPT __exchangeable = _LIBCUDACXX_FRAGMENT(__exchangeable_, _Tp);
 #  endif // _CCCL_STD_VER < 2020
 
-#  if _CCCL_STD_VER > 2017 && !defined(_CCCL_COMPILER_NVHPC) // nvbug4051640
+#  if _CCCL_STD_VER > 2017 && !_CCCL_COMPILER(NVHPC) // nvbug4051640
 struct __fn;
 
 _CCCL_NV_DIAG_SUPPRESS(2642)
@@ -96,7 +96,7 @@ _CCCL_NV_DIAG_DEFAULT(2642)
 #  else
 template <class _Tp, class _Up, size_t _Size, class = void>
 _CCCL_INLINE_VAR constexpr bool __swappable_arrays = false;
-#  endif // _CCCL_STD_VER < 2020 || defined(_CCCL_COMPILER_NVHPC)
+#  endif // _CCCL_STD_VER < 2020 || _CCCL_COMPILER(NVHPC)
 
 template <class _Tp, class _Up, class = void>
 _CCCL_INLINE_VAR constexpr bool __noexcept_swappable_arrays = false;
@@ -136,7 +136,7 @@ struct __fn
   }
 };
 
-#  if _CCCL_STD_VER < 2020 || defined(_CCCL_COMPILER_NVHPC)
+#  if _CCCL_STD_VER < 2020 || _CCCL_COMPILER(NVHPC)
 template <class _Tp, class _Up, class _Size>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __swappable_arrays_,
@@ -148,7 +148,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 template <class _Tp, class _Up, size_t _Size>
 _CCCL_INLINE_VAR constexpr bool __swappable_arrays<_Tp, _Up, _Size, void_t<type_identity_t<_Tp>>> =
   _LIBCUDACXX_FRAGMENT(__swappable_arrays_, _Tp, _Up, _CUDA_VSTD::integral_constant<size_t, _Size>);
-#  endif // _CCCL_STD_VER < 2020 || defined(_CCCL_COMPILER_NVHPC)
+#  endif // _CCCL_STD_VER < 2020 || _CCCL_COMPILER(NVHPC)
 
 template <class _Tp, class _Up>
 _CCCL_INLINE_VAR constexpr bool __noexcept_swappable_arrays<_Tp, _Up, void_t<type_identity_t<_Tp>>> =

@@ -98,7 +98,7 @@
 
 // nvhpc has a bug where it supports __builtin_addressof but does not mark it via _CCCL_CHECK_BUILTIN
 #if _CCCL_CHECK_BUILTIN(builtin_addressof) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 70000) \
-  || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVHPC)
+  || defined(_CCCL_COMPILER_MSVC) || _CCCL_COMPILER(NVHPC)
 #  define _CCCL_BUILTIN_ADDRESSOF(...) __builtin_addressof(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_addressof)
 
@@ -180,7 +180,7 @@
 
 // NVCC and NVRTC in C++11 mode freaks out about `__builtin_is_constant_evaluated`.
 #if _CCCL_STD_VER < 2014 \
-  && (defined(_CCCL_CUDA_COMPILER_NVCC) || defined(_CCCL_COMPILER_NVRTC) || defined(_CCCL_COMPILER_NVHPC))
+  && (defined(_CCCL_CUDA_COMPILER_NVCC) || defined(_CCCL_COMPILER_NVRTC) || _CCCL_COMPILER(NVHPC))
 #  undef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #endif // _CCCL_STD_VER < 2014 && _CCCL_CUDA_COMPILER_NVCC
 

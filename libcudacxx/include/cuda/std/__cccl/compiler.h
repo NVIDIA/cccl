@@ -11,6 +11,8 @@
 #ifndef __CCCL_COMPILER_H
 #define __CCCL_COMPILER_H
 
+#define _CCCL_COMPILER_MAKE_VERSION(_MAJOR, _MINOR) (_MAJOR * 100 + _MINOR)
+
 // Determine the host compiler and its version
 #if defined(__INTEL_COMPILER)
 #  define _CCCL_COMPILER_ICC
@@ -19,7 +21,7 @@
       "Support for the Intel C++ Compiler Classic is deprecated and will eventually be removed. Define CCCL_SUPPRESS_ICC_DEPRECATION_WARNING to suppress this warning"
 #  endif // CCCL_SUPPRESS_ICC_DEPRECATION_WARNING
 #elif defined(__NVCOMPILER)
-#  define _CCCL_COMPILER_NVHPC
+#  define _CCCL_COMPILER_NVHPC _CCCL_COMPILER_MAKE_VERSION(__NVCOMPILER_MAJOR__, __NVCOMPILER_MINOR__)
 #  define _CCCL_COMPILER_NVHPC_VERSION \
     (__NVCOMPILER_MAJOR__ * 10000 + __NVCOMPILER_MINOR__ * 100 + __NVCOMPILER_PATCHLEVEL__)
 #elif defined(__clang__)
@@ -35,6 +37,21 @@
 #elif defined(__CUDACC_RTC__)
 #  define _CCCL_COMPILER_NVRTC
 #endif
+
+#define _CCCL_COMPARE_VERSION_1(_COMP)              _COMP
+#define _CCCL_COMPARE_VERSION_3(_COMP, _OP, _MAJOR) (_COMP && (_COMP _OP _CCCL_COMPILER_MAKE_VERSION(_MAJOR, 0)))
+#define _CCCL_COMPARE_VERSION_4(_COMP, _OP, _MAJOR, _MINOR) \
+  (_COMP && (_COMP _OP _CCCL_COMPILER_MAKE_VERSION(_MAJOR, _MINOR)))
+
+#define _CCCL_COMPILER_SELECT_COUNT(_ARG1, _ARG2, _ARG3, _ARG4, _ARG5, ...) _ARG5
+#define _CCCL_COMPILER_SELECT(...) \
+  _CCCL_COMPILER_SELECT_COUNT(     \
+    __VA_ARGS__,                   \
+    _CCCL_COMPARE_VERSION_4,       \
+    _CCCL_COMPARE_VERSION_3,       \
+    _CCCL_COMPARE_BAD_ARG_COUNT,   \
+    _CCCL_COMPARE_VERSION_1)
+#define _CCCL_COMPILER(...) _CCCL_COMPILER_SELECT(_CCCL_COMPILER_##__VA_ARGS__)(_CCCL_COMPILER_##__VA_ARGS__)
 
 // Convenient shortcut to determine which version of MSVC we are dealing with
 #if defined(_CCCL_COMPILER_MSVC)

@@ -314,9 +314,9 @@ long double    truncl(long double x);
 #  include <math.h>
 #endif // !_CCCL_COMPILER_NVRTC
 
-#if defined(_CCCL_COMPILER_NVHPC)
+#if _CCCL_COMPILER(NVHPC)
 #  include <cmath>
-#endif // _CCCL_COMPILER_NVHPC
+#endif // _CCCL_COMPILER(NVHPC)
 
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>

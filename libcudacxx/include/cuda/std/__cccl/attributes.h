@@ -43,7 +43,7 @@
 #  define _CCCL_FALLTHROUGH() ((void) 0)
 #elif _CCCL_HAS_CPP_ATTRIBUTE(clang::fallthrough)
 #  define _CCCL_FALLTHROUGH() [[clang::fallthrough]]
-#elif defined(_CCCL_COMPILER_NVHPC)
+#elif _CCCL_COMPILER(NVHPC)
 #  define _CCCL_FALLTHROUGH()
 #elif _CCCL_HAS_ATTRIBUTE(fallthough) || _GNUC_VER >= 700
 #  define _CCCL_FALLTHROUGH() __attribute__((__fallthrough__))
