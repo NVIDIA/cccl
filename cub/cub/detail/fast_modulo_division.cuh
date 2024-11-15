@@ -129,12 +129,13 @@ multiply_extract_higher_bits(T value, R multiplier)
  * Fast Modulo/Division based on Precomputation
  **********************************************************************************************************************/
 
-template <typename T>
+template <typename T1>
 class fast_div_mod
 {
-  static_assert(supported_integral<T>::value, "unsupported type");
+  static_assert(supported_integral<T1>::value, "unsupported type");
 
-  using prom_t     = implicit_prom_t<T>;
+  // uint16_t is a special case that would requires complex logic. Workaround: convert to unsigned
+  using T          = ::cuda::std::conditional_t<::cuda::std::is_same<T1, ::cuda::std::uint16_t>::value, unsigned, T1>;
   using unsigned_t = unsigned_implicit_prom_t<T>;
 
 public:
@@ -149,7 +150,7 @@ public:
   fast_div_mod() = delete;
 
   _CCCL_NODISCARD _CCCL_HOST_DEVICE explicit fast_div_mod(T divisor) noexcept
-      : _divisor{static_cast<prom_t>(divisor)}
+      : _divisor{static_cast<unsigned_t>(divisor)}
   {
     using larger_t = larger_unsigned_type_t<T>;
     _CCCL_ASSERT(divisor > 0, "divisor must be positive");
@@ -164,18 +165,15 @@ public:
     {
       return;
     }
-    constexpr int BitSize   = sizeof(T) * CHAR_BIT;
-    constexpr int BitOffset = BitSize / 16;
+    constexpr int BitSize   = sizeof(T) * CHAR_BIT; // 32
+    constexpr int BitOffset = BitSize / 16; // 2
     int num_bits            = ::cuda::std::bit_width(udivisor) + 1;
+    _CCCL_ASSERT(static_cast<size_t>(num_bits + BitSize - BitOffset) < sizeof(larger_t) * CHAR_BIT, "overflow error");
     // without explicit power-of-two check, num_bits needs to replace +1 with !::cuda::std::has_single_bit(udivisor)
     _multiplier  = static_cast<unsigned_t>(::cuda::ceil_div(larger_t{1} << (num_bits + BitSize - BitOffset), //
                                                            static_cast<larger_t>(divisor)));
     _shift_right = num_bits - BitOffset;
-    // printf(">: %d, | %d,  %u, %u\n",
-    //        (num_bits + BitSize - BitOffset),
-    //        larger_t{1} << (num_bits + BitSize - BitOffset),
-    //        _multiplier,
-    //        _shift_right);
+    _CCCL_ASSERT(_multiplier != 0, "overflow error");
   }
 
   fast_div_mod(const fast_div_mod&) noexcept = default;
@@ -195,15 +193,20 @@ public:
     {
       return result_t{static_cast<common_t>(dividend), common_t{}};
     }
-    if (sizeof(T) == 8 && _divisor == 3)
+    else if (_divisor > unsigned_t{::cuda::std::numeric_limits<T>::max() / 2})
+    {
+      auto quotient = udividend >= static_cast<ucommon_t>(_divisor);
+      return result_t{static_cast<common_t>(quotient), static_cast<common_t>(udividend - (quotient * _divisor))};
+    }
+    else if (sizeof(T) == 8 && _divisor == 3)
     {
       return result_t{static_cast<common_t>(udividend / 3), static_cast<common_t>(udividend % 3)};
     }
     auto higher_bits = (_multiplier == 0) ? udividend : multiply_extract_higher_bits<T>(dividend, _multiplier);
     auto quotient    = higher_bits >> _shift_right;
     auto remainder   = udividend - (quotient * _divisor);
-    _CCCL_ASSERT(quotient == dividend / _divisor, "wrong quotient");
-    _CCCL_ASSERT(remainder < _divisor, "remainder out of range");
+    _CCCL_ASSERT(quotient == udividend / _divisor, "wrong quotient");
+    _CCCL_ASSERT(remainder < (ucommon_t) _divisor, "remainder out of range");
     return result_t{static_cast<common_t>(quotient), static_cast<common_t>(remainder)};
   }
 
@@ -220,7 +223,7 @@ public:
   }
 
 private:
-  prom_t _divisor        = 1;
+  unsigned_t _divisor    = 1;
   unsigned_t _multiplier = 0;
   unsigned _shift_right  = 0;
 };
