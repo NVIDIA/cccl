@@ -50,7 +50,7 @@ namespace reserved
  * @param f The function to execute.
  * @param p The additional parameters to pass to the function `f`.
  */
-template <typename F, typename shape_t, typename tuple_args>
+template <typename F, typename shape_t, typename tuple_args, typename tuple_ops>
 __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tuple_args targs)
 {
   size_t i          = blockIdx.x * blockDim.x + threadIdx.x;
@@ -345,7 +345,7 @@ public:
       // limit. We choose to dimension the kernel of the parallel loop to
       // optimize occupancy.
       reserved::compute_kernel_limits(
-        &reserved::loop<Fun_no_ref, sub_shape_t, deps_tup_t>,
+        &reserved::loop<Fun_no_ref, sub_shape_t, deps_tup_t, ops_t>,
         min_grid_size,
         max_block_size,
         0,
@@ -370,6 +370,14 @@ public:
     // TODO: improve this
     size_t blocks = ::std::min(min_blocks * 3 / 2, max_blocks);
 
+#if 0
+    constexpr size_t num_deps = ::std::tuple_size<ops_t>::value;
+    constexpr size_t num_none = count_type_v<task_dep_op_none, ops_t>;
+    fprintf(stderr, "number of none in type %zu total number %zu\n", num_none, num_deps);
+
+    constexpr bool need_reduction = (::std::tuple_size<ops_t>::value != count_type_v<task_dep_op_none, ops_t>);
+#endif
+
     // Create a tuple with all instances (eg. tuple<slice<double>, slice<int>>)
     deps_tup_t arg_instances = ::std::apply([&](const auto&... d) {
         return ::std::make_tuple(d.instance(t)...);
@@ -377,7 +385,7 @@ public:
 
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
-      reserved::loop<Fun_no_ref><<<static_cast<int>(blocks), static_cast<int>(block_size), 0, t.get_stream()>>>(
+        reserved::loop<Fun_no_ref, sub_shape_t, deps_tup_t, ops_t><<<static_cast<int>(blocks), static_cast<int>(block_size), 0, t.get_stream()>>>(
         static_cast<int>(n), sub_shape, mv(f), arg_instances);
     }
     else if constexpr (::std::is_same_v<context, graph_ctx>)
@@ -385,7 +393,7 @@ public:
       // Put this kernel node in the child graph that implements the graph_task<>
       cudaKernelNodeParams kernel_params;
 
-      kernel_params.func = (void*) reserved::loop<Fun_no_ref, sub_shape_t, deps_tup_t>;
+      kernel_params.func = (void*) reserved::loop<Fun_no_ref, sub_shape_t, deps_tup_t, ops_t>;
 
       kernel_params.gridDim  = dim3(static_cast<int>(blocks));
       kernel_params.blockDim = dim3(static_cast<int>(block_size));
