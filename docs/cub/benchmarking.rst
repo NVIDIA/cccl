@@ -189,7 +189,7 @@ We can then run the full benchmark suite from the build directory with:
 
 .. code-block:: bash
 
-    PYTHONPATH=../benchmarks/scripts ../benchmarks/scripts/run.py
+    ../benchmarks/scripts/run.py
 
 You can expect the output to look like this:
 
