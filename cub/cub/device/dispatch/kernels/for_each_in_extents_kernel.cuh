@@ -41,6 +41,7 @@
 
 #  include <cub/detail/fast_modulo_division.cuh> // fast_div_mod
 #  include <cub/detail/mdspan_utils.cuh> // is_sub_size_static
+#  include <cub/detail/type_traits.cuh>
 
 #  include <cuda/std/__mdspan/extents.h> // dynamic_extent
 #  include <cuda/std/__utility/integer_sequence.h> // index_sequence
@@ -48,38 +49,57 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::for_each_in_extents
+namespace detail
 {
+namespace for_each_in_extents
+{
+
+template <int Rank,
+          typename ExtendType,
+          typename FastDivModType,
+          _CUB_TEMPLATE_REQUIRES(ExtendType::static_extent(Rank) != ::cuda::std::dynamic_extent)>
+_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto get_extent_size(ExtendType ext, FastDivModType extent_size)
+{
+  using extent_index_type = typename ExtendType::index_type;
+  using IndexType         = decltype(+extent_index_type{});
+  using U                 = ::cuda::std::make_unsigned_t<IndexType>;
+  return static_cast<U>(ext.static_extent(Rank));
+}
+
+template <int Rank,
+          typename ExtendType,
+          typename FastDivModType,
+          _CUB_TEMPLATE_REQUIRES(ExtendType::static_extent(Rank) == ::cuda::std::dynamic_extent)>
+_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto get_extent_size(ExtendType ext, FastDivModType extent_size)
+{
+  return extent_size;
+}
+
+template <int Rank,
+          typename ExtendType,
+          typename FastDivModType,
+          _CUB_TEMPLATE_REQUIRES(cub::detail::is_sub_size_static<Rank + 1, ExtendType>())>
+_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto get_extents_sub_size(ExtendType ext, FastDivModType extent_size)
+{
+  return sub_size<Rank + 1>(ext);
+}
+
+template <int Rank,
+          typename ExtendType,
+          typename FastDivModType,
+          _CUB_TEMPLATE_REQUIRES(!cub::detail::is_sub_size_static<Rank + 1, ExtendType>())>
+_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto get_extents_sub_size(ExtendType ext, FastDivModType extents_sub_size)
+{
+  return extents_sub_size;
+}
 
 template <int Rank, typename IndexType, typename ExtendType, typename FastDivModType>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto
-coordinate_at(IndexType index, ExtendType ext, FastDivModType div_mod_sub_size, FastDivModType div_mod_size)
+coordinate_at(IndexType index, ExtendType ext, FastDivModType extents_sub_size, FastDivModType extent_size)
 {
   using extent_index_type = typename ExtendType::index_type;
-  auto get_sub_size       = [&]() {
-    if constexpr (cub::detail::is_sub_size_static<Rank + 1, ExtendType>())
-    {
-      return sub_size<Rank + 1>(ext);
-    }
-    else
-    {
-      return div_mod_sub_size;
-    }
-    _CCCL_UNREACHABLE();
-  };
-  auto get_ext_size = [&]() {
-    if constexpr (ExtendType::static_extent(Rank) != ::cuda::std::dynamic_extent)
-    {
-      using U = ::cuda::std::make_unsigned_t<IndexType>;
-      return static_cast<U>(ext.static_extent(Rank));
-    }
-    else
-    {
-      return div_mod_size;
-    }
-    _CCCL_UNREACHABLE();
-  };
-  return static_cast<extent_index_type>((index / get_sub_size()) % get_ext_size());
+  return static_cast<extent_index_type>(
+    (index / get_extents_sub_size<Rank>(ext, extents_sub_size)) % get_extent_size<Rank>(ext, extent_size));
 }
 
 template <typename IndexType,
@@ -98,14 +118,23 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void computation(
   using extent_index_type = typename ExtendType::index_type;
   for (auto i = id; i < cub::detail::size(ext); i += stride)
   {
-    if constexpr (sizeof...(Ranks) == 0)
-    {
-      func(0);
-    }
-    else
-    {
-      func(i, coordinate_at<Ranks>(i, ext, sub_sizes_div_array[Ranks], extents_mod_array[Ranks])...);
-    }
+    func(i, coordinate_at<Ranks>(i, ext, sub_sizes_div_array[Ranks], extents_mod_array[Ranks])...);
+  }
+}
+
+template <typename IndexType, typename Func, typename ExtendType, typename FastDivModArrayType>
+_CCCL_DEVICE _CCCL_FORCEINLINE void computation(
+  IndexType id,
+  IndexType stride,
+  Func func,
+  ExtendType ext,
+  FastDivModArrayType sub_sizes_div_array,
+  FastDivModArrayType extents_mod_array)
+{
+  using extent_index_type = typename ExtendType::index_type;
+  if (id == 0)
+  {
+    func(0);
   }
 }
 
@@ -158,7 +187,8 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(
     id, stride, func, ext, sub_sizes_div_array, extents_mod_array);
 }
 
-} // namespace detail::for_each_in_extents
+} // namespace for_each_in_extents
+} // namespace detail
 
 CUB_NAMESPACE_END
 

@@ -45,26 +45,30 @@
 DECLARE_LAUNCH_WRAPPER(cub::DeviceFor::ForEachInExtents, device_for_each_in_extents);
 
 /***********************************************************************************************************************
- * UTLILITIES
+ * Host reference
  **********************************************************************************************************************/
 
-template <typename T, typename IndexType, int Rank = 0, size_t... Extents, typename... IndicesType>
-static void fill_linear_impl(
-  c2h::host_vector<T>& vector,
-  [[maybe_unused]] const cuda::std::extents<IndexType, Extents...>& ext,
-  size_t& pos,
-  IndicesType... indices)
+template <int Rank = 0,
+          typename T,
+          typename ExtentType,
+          _CUB_TEMPLATE_REQUIRES(Rank == ExtentType::rank()),
+          typename... IndicesType>
+static void fill_linear_impl(c2h::host_vector<T>& vector, const ExtentType&, size_t& pos, IndicesType... indices)
 {
-  if constexpr (Rank < sizeof...(Extents) /*ext.rank()*/)
+  vector[pos++] = {indices...};
+}
+
+template <int Rank = 0,
+          typename T,
+          typename ExtentType,
+          _CUB_TEMPLATE_REQUIRES(Rank < ExtentType::rank()),
+          typename... IndicesType>
+static void fill_linear_impl(c2h::host_vector<T>& vector, const ExtentType& ext, size_t& pos, IndicesType... indices)
+{
+  using IndexType = typename ExtentType::index_type;
+  for (IndexType i = 0; i < ext.extent(Rank); ++i)
   {
-    for (IndexType i = 0; i < ext.extent(Rank); ++i)
-    {
-      fill_linear_impl<T, IndexType, Rank + 1>(vector, ext, pos, indices..., i);
-    }
-  }
-  else
-  {
-    vector[pos++] = {indices...};
+    fill_linear_impl<Rank + 1>(vector, ext, pos, indices..., i);
   }
 }
 
@@ -89,7 +93,7 @@ struct LinearStore
   template <typename... TArgs>
   __device__ void operator()(IndexType idx, TArgs... args)
   {
-    static_assert(sizeof...(TArgs) == Size);
+    static_assert(sizeof...(TArgs) == Size, "wrong number of arguments");
     d_output_raw[idx] = {args...};
   }
 };
@@ -167,9 +171,9 @@ C2H_TEST("DeviceForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][devic
   using index_type   = c2h::get<0, TestType>;
   using data_t       = cuda::std::array<index_type, rank>;
   using store_op_t   = LinearStore<index_type, rank>;
-  auto X             = GENERATE(take(2, random(2, 10)));
-  auto Y             = GENERATE(take(1, random(2, 10)));
-  auto Z             = GENERATE(take(1, random(2, 10)));
+  auto X             = GENERATE(take(3, random(2, 10)));
+  auto Y             = GENERATE(take(3, random(2, 10)));
+  auto Z             = GENERATE(take(3, random(2, 10)));
   cuda::std::dextents<index_type, 3> ext{X, Y, Z};
   c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
   c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
