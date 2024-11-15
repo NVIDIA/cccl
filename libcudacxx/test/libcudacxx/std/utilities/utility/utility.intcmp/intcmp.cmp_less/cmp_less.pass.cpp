@@ -6,8 +6,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++11
-
 // <utility>
 
 // template<class T, class U>
@@ -103,6 +101,8 @@ int main(int, char**)
 {
   ASSERT_NOEXCEPT(cuda::std::cmp_less(0, 1));
   test();
+#if TEST_STD_VER >= 2014
   static_assert(test(), "");
+#endif // TEST_STD_VER >= 2014
   return 0;
 }
