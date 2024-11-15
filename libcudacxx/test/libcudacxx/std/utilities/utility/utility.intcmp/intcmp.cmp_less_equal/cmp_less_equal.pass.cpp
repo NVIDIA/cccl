@@ -6,6 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: c++11
+
 // <utility>
 
 //   constexpr bool cmp_less_equal(T t, U u) noexcept;

@@ -29,8 +29,6 @@
 #  include <ciso646> // otherwise go for the smallest possible header
 #endif
 
-#define __cccl_lib_integer_comparison_functions 202002L
-
 #if _CCCL_STD_VER >= 2014
 #  define __cccl_lib_bit_cast     201806L
 #  define __cccl_lib_chrono_udls  201304L
@@ -42,11 +40,12 @@
 #  define __cccl_lib_exchange_function 201304L
 #  define __cccl_lib_expected          202211L
 // # define __cccl_lib_generic_associative_lookup           201304L
-#  define __cccl_lib_integer_sequence           201304L
-#  define __cccl_lib_integral_constant_callable 201304L
-#  define __cccl_lib_is_final                   201402L
-#  define __cccl_lib_is_null_pointer            201309L
-#  define __cccl_lib_make_reverse_iterator      201402L
+#  define __cccl_lib_integer_sequence             201304L
+#  define __cccl_lib_integer_comparison_functions 202002L
+#  define __cccl_lib_integral_constant_callable   201304L
+#  define __cccl_lib_is_final                     201402L
+#  define __cccl_lib_is_null_pointer              201309L
+#  define __cccl_lib_make_reverse_iterator        201402L
 // # define __cccl_lib_make_unique                          201304L
 #  if !defined(_CCCL_COMPILER_MSVC) || _CCCL_STD_VER >= 2020
 #    define __cccl_lib_mdspan 202207L

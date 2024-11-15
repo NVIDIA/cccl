@@ -6,6 +6,8 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: c++11
+
 // <utility>
 
 //   constexpr bool cmp_greater(T t, U u) noexcept;
