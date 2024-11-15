@@ -1,5 +1,6 @@
 CUB Benchmarks
 *************************************
+
 .. TODO(bgruber): this guide applies to Thrust as well. We should rename it to "CCCL Benchmarks" and move it out of CUB
 
 CUB comes with a set of `NVBench <https://github.com/NVIDIA/nvbench>`_-based benchmarks for its algorithms,
@@ -81,7 +82,7 @@ By default, NVBench will print the benchmark results to the terminal as Markdown
 `--md base.md` will save the Markdown output to a file as well,
 so you can easily view the results later without having to parse the JSON.
 More information on what command line options are available can be found in the
-`NVBench documentation <https://github.com/NVIDIA/nvbench/blob/main/docs/cli_help.md>`_.
+`NVBench documentation <https://github.com/NVIDIA/nvbench/blob/main/docs/cli_help.md>`__.
 
 The expected terminal output is something along the following lines (also saved to `base.md`),
 shortened for brevity:
@@ -111,7 +112,7 @@ If you are only interested in a subset of workloads, you can restrict benchmarki
         -a 'Elements{io}[pow2]=[24,28]'\
 
 The `-a` option allows you to restrict the values for each axis available for the benchmark.
-See the `NVBench documentation <https://github.com/NVIDIA/nvbench/blob/main/docs/cli_help_axis.md>`_.
+See the `NVBench documentation <https://github.com/NVIDIA/nvbench/blob/main/docs/cli_help_axis.md>`__.
 for more information on how to specify the axis values.
 If the specified axis does not exist, the benchmark will terminate with an error.
 
@@ -221,7 +222,7 @@ It's also possible to benchmark a subset of algorithms and workloads:
 
 The `-R` option allows you to specify a regular expression for selecting benchmarks.
 The `-a` restricts the values for an axis across all benchmarks
-See the `NVBench documentation <https://github.com/NVIDIA/nvbench/blob/main/docs/cli_help_axis.md>`_.
+See the `NVBench documentation <https://github.com/NVIDIA/nvbench/blob/main/docs/cli_help_axis.md>`__.
 for more information on how to specify the axis values.
 Contrary to running a benchmark directly,
 the tuning infrastructure will just ignore an axis value if a benchmark does not support,
