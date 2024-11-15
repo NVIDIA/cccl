@@ -1,26 +1,73 @@
 CUB Benchmarks
 *************************************
+.. TODO(bgruber): this guide applies to Thrust as well. We should rename it to "CCCL Benchmarks" and move it out of CUB
+
+CUB comes with a set of `NVBench <https://github.com/NVIDIA/nvbench>`_-based benchmarks for its algorithms,
+which can be used to measure the performance of CUB on your system on a variety of workloads.
+The integration with NVBench allows to archive and compare benchmark results,
+which is useful for continuous performance testing, detecting regressions, tuning, and optimization.
+This guide gives an introduction into CUB's benchmarking infrastructure.
+
+Building benchmarks
+--------------------------------------------------------------------------------
+
+CUB benchmarks are build as part of the CCCL CMake infrastructure.
+Starting from scratch:
+
+.. code-block:: bash
+
+    git clone https://github.com/NVIDIA/cccl.git
+    cd cccl
+    mkdir build
+    cd build
+    cmake ..\
+        -GNinja\
+        -DCCCL_ENABLE_BENCHMARKS=YES\
+        -DCCCL_ENABLE_CUB=YES\
+        -DCCCL_ENABLE_THRUST=NO\
+        -DCCCL_ENABLE_LIBCUDACXX=NO\
+        -DCUB_ENABLE_RDC_TESTS=NO\
+        -DCMAKE_BUILD_TYPE=Release\
+        -DCMAKE_CUDA_ARCHITECTURES=90 # TODO: Set your GPU architecture
+
+You clone the repository, create a build directory and configure the build with CMake.
+It's important that you enable benchmarks (`CCCL_ENABLE_BENCHMARKS=ON`),
+build in Release mode (`CMAKE_BUILD_TYPE=Release`),
+and set the GPU architecture to match your system (`CMAKE_CUDA_ARCHITECTURES=XX`).
+This <website `https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/`>_
+contains a great table listing the architectures for different brands of GPUs.
+.. TODO(bgruber): do we have a public NVIDIA maintained table I can link here instead?
+We use Ninja as CMake generator in this guide, but you can use any other generator you prefer.
+
+You can then proceed to build the benchmarks.
+
+You can list the available cmake build targets with, if you intend to only build selected benchmarks:
+
+.. code-block:: bash
+
+    ninja -t targets | grep '\.bench\.'
+    cub.bench.adjacent_difference.subtract_left.base: phony
+    cub.bench.copy.memcpy.base: phony
+    ...
+    cub.bench.transform.babelstream3.base: phony
+    cub.bench.transform_reduce.sum.base: phony
+
+We also provide a target to build all benchmarks:
+
+.. code-block:: bash
+
+    ninja cub.all.benches
+
+
+Running all benchmarks
+--------------------------------------------------------------------------------
 
 This file contains instructions on how to run all CUB benchmarks using CUB tuning infrastructure.
 
 .. code-block:: bash
 
-    pip3 install --user fpzip pandas scipy
-    git clone https://github.com/NVIDIA/cccl.git
-    cmake -B build -DCCCL_ENABLE_THRUST=OFF\
-             -DCCCL_ENABLE_LIBCUDACXX=OFF\
-             -DCCCL_ENABLE_CUB=ON\
-             -DCCCL_ENABLE_BENCHMARKS=YES\
-             -DCUB_ENABLE_DIALECT_CPP11=OFF\
-             -DCUB_ENABLE_DIALECT_CPP14=OFF\
-             -DCUB_ENABLE_DIALECT_CPP17=ON\
-             -DCUB_ENABLE_DIALECT_CPP20=OFF\
-             -DCUB_ENABLE_RDC_TESTS=OFF\
-             -DCUB_ENABLE_TUNING=YES\
-             -DCMAKE_BUILD_TYPE=Release\
-             -DCMAKE_CUDA_ARCHITECTURES="89;90"
-    cd build
-    ../cub/benchmarks/scripts/run.py
+    pip install --user fpzip pandas scipy
+    ../benchmarks/scripts/run.py
 
 
 Expected output for the command above is:
@@ -28,7 +75,7 @@ Expected output for the command above is:
 
 .. code-block:: bash
 
-    ../cub/benchmarks/scripts/run.py
+    ../benchmarks/scripts/run.py
     &&&& RUNNING bench
     ctk:  12.2.140
     cub:  812ba98d1
@@ -43,7 +90,7 @@ It's also possible to benchmark a subset of algorithms and workloads:
 
 .. code-block:: bash
 
-    ../cub/benchmarks/scripts/run.py -R '.*scan.exclusive.sum.*' -a 'Elements{io}[pow2]=[24,28]' -a 'T{ct}=I32'
+    ../benchmarks/scripts/run.py -R '.*scan.exclusive.sum.*' -a 'Elements{io}[pow2]=[24,28]' -a 'T{ct}=I32'
     &&&& RUNNING bench
     ctk:  12.2.140
     cub:  812ba98d1
