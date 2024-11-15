@@ -97,14 +97,15 @@ namespace cuda::experimental::mr
 //! concept. Copies all share ownership of the underlying ``impl`` object.
 //!
 //! @note ``shared_resource`` satisfies the ``cuda::mr::async_resource`` concept
-//!     iff \tparam _Resource satisfies it.
+//! iff \tparam _Resource satisfies it.
+//!
 //! @tparam _Resource The resource type to hold, or the derived type when using
-//!     ``shared_resource`` as a mixin. When used directly, \c _Resource must
-//!     satisfy the :ref:`resource <libcudacxx-extended-api-memory-resources-resource>`
-//!     concept. When used as a mixin, there must be an accessible nested type
-//!     ``_Resource::impl`` that satisfies the
-//!     :ref:`resource <libcudacxx-extended-api-memory-resources-resource>`
-//!     concept.
+//! ``shared_resource`` as a mixin. When used directly, \c _Resource must
+//! satisfy the :ref:`resource <libcudacxx-extended-api-memory-resources-resource>`
+//! concept. When used as a mixin, there must be an accessible nested type
+//! ``_Resource::impl`` that satisfies the
+//! :ref:`resource <libcudacxx-extended-api-memory-resources-resource>`
+//! concept.
 //! @endrst
 template <class _Resource>
 struct shared_resource
