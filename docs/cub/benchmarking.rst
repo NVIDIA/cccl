@@ -59,6 +59,50 @@ We also provide a target to build all benchmarks:
     ninja cub.all.benches
 
 
+Running a benchmark
+--------------------------------------------------------------------------------
+
+After we built a benchmark, we can run it as follows:
+
+.. code-block:: bash
+
+    ./bin/cub.bench.adjacent_difference.subtract_left.base\
+        -d 0\
+        --stopping-criterion entropy\
+        --json base.json\
+        --md base.md
+
+In this command, `-d 0` indicates that we want to run on GPU 0 on our system.
+Setting `--stopping-criterion entropy` is advisable since it reduces runtime
+and increase confidence in the resulting data.
+It's not set as default yet, because NVBench is still evaluating it.
+By default, NVBench will print the benchmark results to the terminal as Markdown.
+`--json base.json` will save the detailed results in a JSON file as well for later use.
+`--md base.md` will save the Markdown output to a file as well,
+so you can easily view the results later without having to parse the JSON.
+More information on what command line options are available can be found in the
+`NVBench documentation <https://github.com/NVIDIA/nvbench/blob/main/docs/cli_help.md>`_.
+
+The expected terminal output is something along the following lines (also saved to `base.md`):
+
+.. code-block:: bash
+
+    TODO
+
+If you are only interested in a subset of workloads, you can restrict benchmarking as follows:
+
+.. code-block:: bash
+
+    ./bin/cub.bench.adjacent_difference.subtract_left.base ...\
+        -a 'T{ct}=I32'\
+        -a 'OffsetT{ct}=I32'\
+        -a 'Elements{io}[pow2]=[24,28]'\
+
+The `-a` option allows you to restrict the values for each axis available for the benchmark.
+See the `NVBench documentation <https://github.com/NVIDIA/nvbench/blob/main/docs/cli_help_axis.md>`_.
+for more information on how to specify the axis values.
+
+
 Running all benchmarks
 --------------------------------------------------------------------------------
 
