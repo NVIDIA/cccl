@@ -176,6 +176,8 @@ private:
 template <typename T>
 class logical_data;
 
+class task_dep_op_none {};
+
 /**
  * @brief Type storing dependency information for one data item, including the data type
  *
@@ -209,6 +211,31 @@ public:
    * @return decltype(auto) `T&` or `T`
    */
   decltype(auto) instance(task&) const;
+};
+
+#if 0
+template <typename T, typename Op>
+class task_dep_op : public task_dep<T> {
+public:
+    using task_dep_t = task_dep<T>;
+    using op_t = Op;
+
+    template <typename... Args>
+    task_dep_op(Args&&... args) : task_dep<T>(::std::forward<Args>(args)...) {}
+};
+#endif
+
+// task_dep_op derived class using std::pair<T, Op>
+template <typename Pair>
+class task_dep_op : public task_dep<typename Pair::first_type> {
+public:
+    using dep_type = typename Pair::first_type;
+    using task_dep_type = task_dep<dep_type>;
+    using op_type = typename Pair::second_type;
+
+    // Constructor that forwards to task_dep's constructor
+    template <typename... Args>
+    task_dep_op(Args&&... args) : task_dep<dep_type>(std::forward<Args>(args)...) {}
 };
 
 // A vector of dependencies

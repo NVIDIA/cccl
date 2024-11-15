@@ -81,17 +81,25 @@ __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tup
  *
  * @tparam deps_t
  */
-template <typename context, typename shape_t, typename partitioner_t, typename... deps_t>
+template <typename context, typename shape_t, typename partitioner_t, typename... deps_ops_t>
 class parallel_for_scope
 {
+//  using deps_t = typename reserved::extract_all_first_types<deps_ops_t...>::type;
+  // tuple<slice<double>, slice<int>> ...
+  using deps_tup_t = ::std::tuple<typename deps_ops_t::first_type...>;
+//  // tuple<task_dep<slice<double>>, task_dep<slice<int>>> ...
+//  using task_deps_t = ::std::tuple<typename deps_ops_t::task_dep_type...>;
+  // tuple<none, none, sum, none> ...
+  using ops_t = ::std::tuple<typename deps_ops_t::second_type...>;
+
 public:
   /// @brief Constructor
   /// @param ctx Reference to context (it will not be copied, so careful with lifetimes)
   /// @param e_place Execution place for this parallel_for
   /// @param shape Shape to iterate
   /// @param ...deps Dependencies
-  parallel_for_scope(context& ctx, exec_place e_place, shape_t shape, task_dep<deps_t>... deps)
-      : deps{deps...}
+  parallel_for_scope(context& ctx, exec_place e_place, shape_t shape, task_dep_op<deps_ops_t>&&... deps)
+      : deps(::std::make_tuple(::std::forward<task_dep_op<deps_ops_t>>(deps)...))
       , ctx(ctx)
       , e_place(mv(e_place))
       , shape(mv(shape))
@@ -103,6 +111,7 @@ public:
   parallel_for_scope(parallel_for_scope&&)                 = default;
   parallel_for_scope& operator=(const parallel_for_scope&) = delete;
 
+#if 0
   /**
    * @brief Retrieves the task dependencies in an untyped vector.
    *
@@ -112,6 +121,7 @@ public:
   {
     return deps;
   }
+#endif
 
   /**
    * @brief Retrieves the symbol associated with the task.
@@ -335,7 +345,7 @@ public:
       // limit. We choose to dimension the kernel of the parallel loop to
       // optimize occupancy.
       reserved::compute_kernel_limits(
-        &reserved::loop<Fun_no_ref, sub_shape_t, ::std::tuple<deps_t...>>,
+        &reserved::loop<Fun_no_ref, sub_shape_t, deps_tup_t>,
         min_grid_size,
         max_block_size,
         0,
@@ -360,22 +370,26 @@ public:
     // TODO: improve this
     size_t blocks = ::std::min(min_blocks * 3 / 2, max_blocks);
 
+    // Create a tuple with all instances (eg. tuple<slice<double>, slice<int>>)
+    deps_tup_t arg_instances = ::std::apply([&](const auto&... d) {
+        return ::std::make_tuple(d.instance(t)...);
+    }, deps);
+
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
       reserved::loop<Fun_no_ref><<<static_cast<int>(blocks), static_cast<int>(block_size), 0, t.get_stream()>>>(
-        static_cast<int>(n), sub_shape, mv(f), deps.instance(t));
+        static_cast<int>(n), sub_shape, mv(f), arg_instances);
     }
     else if constexpr (::std::is_same_v<context, graph_ctx>)
     {
       // Put this kernel node in the child graph that implements the graph_task<>
       cudaKernelNodeParams kernel_params;
 
-      kernel_params.func = (void*) reserved::loop<Fun_no_ref, sub_shape_t, ::std::tuple<deps_t...>>;
+      kernel_params.func = (void*) reserved::loop<Fun_no_ref, sub_shape_t, deps_tup_t>;
 
       kernel_params.gridDim  = dim3(static_cast<int>(blocks));
       kernel_params.blockDim = dim3(static_cast<int>(block_size));
 
-      auto arg_instances = deps.instance(t);
       // It is ok to use reference to local variables because the arguments
       // will be used directly when calling cudaGraphAddKernelNode
       void* kernelArgs[]         = {&n, const_cast<void*>(static_cast<const void*>(&sub_shape)), &f, &arg_instances};
@@ -404,11 +418,18 @@ public:
   {
     const size_t n = shape.size();
 
+    // Tuple <tuple<instances...>, size_t , fun, shape>
+    using args_t = ::std::tuple<deps_tup_t, size_t, Fun &&, sub_shape_t>;
+
+    // Create a tuple with all instances (eg. tuple<slice<double>, slice<int>>)
+    deps_tup_t instances = ::std::apply([&](const auto&... d) {
+        return ::std::make_tuple(d.instance(t)...);
+    }, deps);
+
     // Wrap this for_each_n call in a host callback launched in CUDA stream associated with that task
     // To do so, we pack all argument in a dynamically allocated tuple
     // that will be deleted by the callback
-    auto args =
-      new ::std::tuple<decltype(deps.instance(t)), size_t, Fun&&, sub_shape_t>(deps.instance(t), n, mv(f), shape);
+    auto args = new args_t(mv(instances), n, mv(f), shape);
 
     // The function which the host callback will execute
     auto host_func = [](void* untyped_args) {
@@ -423,7 +444,7 @@ public:
       Fun&& f                  = mv(::std::get<2>(*p));
       const sub_shape_t& shape = ::std::get<3>(*p);
 
-      auto explode_coords = [&](size_t i, deps_t... data) {
+      auto explode_coords = [&](size_t i, typename deps_ops_t::first_type... data) {
         auto h = [&](auto... coords) {
           f(coords..., data...);
         };
@@ -458,7 +479,9 @@ public:
   }
 
 private:
-  task_dep_vector<deps_t...> deps;
+//  task_dep_vector<deps_t...> deps;
+//  task_dep_vector<typename deps_ops_t::first_type...> deps;
+  ::std::tuple<task_dep_op<deps_ops_t>...> deps;
   context& ctx;
   exec_place e_place;
   ::std::string symbol;

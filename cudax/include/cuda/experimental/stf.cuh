@@ -361,8 +361,8 @@ public:
   /*
    * parallel_for : apply an operation over a shaped index space
    */
-  template <typename S, typename... Deps>
-  auto parallel_for(exec_place e_place, S shape, task_dep<Deps>... deps)
+  template <typename S,typename ... Deps>
+  auto parallel_for(exec_place e_place, S shape, task_dep_op<Deps>... deps)
   {
     EXPECT(payload.index() != ::std::variant_npos, "Context is not initialized.");
     using result_t = unified_scope<reserved::parallel_for_scope<stream_ctx, S, null_partition, Deps...>,
@@ -375,7 +375,7 @@ public:
   }
 
   template <typename partitioner_t, typename S, typename... Deps>
-  auto parallel_for(partitioner_t p, exec_place e_place, S shape, task_dep<Deps>... deps)
+  auto parallel_for(partitioner_t p, exec_place e_place, S shape, task_dep_op<Deps>... deps)
   {
     EXPECT(payload.index() != ::std::variant_npos, "Context is not initialized.");
     using result_t = unified_scope<reserved::parallel_for_scope<stream_ctx, S, partitioner_t, Deps...>,
@@ -388,7 +388,7 @@ public:
   }
 
   template <typename S, typename... Deps>
-  auto parallel_for(S shape, task_dep<Deps>... deps)
+  auto parallel_for(S shape, task_dep_op<Deps>... deps)
   {
     return parallel_for(default_exec_place(), mv(shape), mv(deps)...);
   }
