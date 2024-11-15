@@ -29,8 +29,6 @@
 
 #include <cub/config.cuh>
 
-#include <limits>
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -75,7 +73,9 @@
 
 CUB_NAMESPACE_BEGIN
 
-namespace detail::for_each_in_extents
+namespace detail
+{
+namespace for_each_in_extents
 {
 
 // The dispatch layer is in the detail namespace until we figure out the tuning API
@@ -111,10 +111,8 @@ public:
   _CCCL_NODISCARD CUB_RUNTIME_FUNCTION
   _CCCL_FORCEINLINE cudaError_t InvokeVariadic(::cuda::std::true_type, ::cuda::std::index_sequence<Ranks...>) const
   {
-    ArrayType sub_sizes_div_array = cub::detail::sub_sizes_fast_div_mod(_ext, seq);
-    ArrayType extents_div_array   = cub::detail::extents_fast_div_mod(_ext, seq);
-    // constexpr unsigned block_threads = ::cuda::std::min(size_t{ActivePolicyT::for_policy_t::block_threads},
-    // max_index);
+    ArrayType sub_sizes_div_array       = cub::detail::sub_sizes_fast_div_mod(_ext, seq);
+    ArrayType extents_div_array         = cub::detail::extents_fast_div_mod(_ext, seq);
     constexpr unsigned block_threads    = ActivePolicyT::for_policy_t::block_threads;
     constexpr unsigned items_per_thread = ActivePolicyT::for_policy_t::items_per_thread;
     unsigned num_cta                    = ::cuda::ceil_div(_size, block_threads * items_per_thread);
@@ -155,7 +153,6 @@ public:
                  (int _{}; //
                   status = cudaOccupancyMaxPotentialBlockSize(&_, &block_threads, kernel);));
     _CUB_RETURN_IF_ERROR(status)
-    // block_threads    = ::cuda::std::min(size_t{block_threads}, max_index);
     unsigned num_cta = ::cuda::ceil_div(_size, block_threads);
 
 #  ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
@@ -208,7 +205,8 @@ private:
   UnsigndIndexType _size;
 };
 
-} // namespace detail::for_each_in_extents
+} // namespace for_each_in_extents
+} // namespace detail
 
 CUB_NAMESPACE_END
 
