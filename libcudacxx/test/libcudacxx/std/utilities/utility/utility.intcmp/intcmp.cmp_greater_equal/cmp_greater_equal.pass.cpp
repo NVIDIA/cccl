@@ -22,11 +22,11 @@ struct Tuple
 {
   T min = cuda::std::numeric_limits<T>::min();
   T max = cuda::std::numeric_limits<T>::max();
-  T mid = cuda::std::is_signed_v<T> ? T(-1) : max >> 1;
+  T mid = cuda::std::is_signed<T>::value ? T(-1) : max >> 1;
 };
 
 template <typename T>
-__host__ __device__ constexpr void test1()
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test1()
 {
   constexpr Tuple<T> tup{};
   assert(!cuda::std::cmp_greater_equal(T(0), T(1)));
@@ -44,14 +44,14 @@ __host__ __device__ constexpr void test1()
   assert(cuda::std::cmp_greater_equal(tup.max, 1));
   assert(cuda::std::cmp_greater_equal(1, tup.min));
   assert(cuda::std::cmp_greater_equal(T(-1), T(-1)));
-  assert(cuda::std::cmp_greater_equal(-2, tup.min) == cuda::std::is_signed_v<T>);
-  assert(cuda::std::cmp_greater_equal(tup.min, -2) == cuda::std::is_unsigned_v<T>);
+  assert(cuda::std::cmp_greater_equal(-2, tup.min) == cuda::std::is_signed<T>::value);
+  assert(cuda::std::cmp_greater_equal(tup.min, -2) == cuda::std::is_unsigned<T>::value);
   assert(!cuda::std::cmp_greater_equal(-2, tup.max));
   assert(cuda::std::cmp_greater_equal(tup.max, -2));
 }
 
 template <typename T, typename U>
-__host__ __device__ constexpr void test2()
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test2()
 {
   assert(!cuda::std::cmp_greater_equal(T(0), U(1)));
   assert(cuda::std::cmp_greater_equal(T(1), U(0)));
@@ -60,7 +60,7 @@ __host__ __device__ constexpr void test2()
 }
 
 template <class T>
-__host__ __device__ constexpr void test()
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
 {
   test1<T>();
 #ifndef TEST_HAS_NO_INT128_T
@@ -79,7 +79,7 @@ __host__ __device__ constexpr void test()
   test2<T, signed char>();
 }
 
-__host__ __device__ constexpr bool test()
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 {
 #ifndef TEST_HAS_NO_INT128_T
   test<__int128_t>();

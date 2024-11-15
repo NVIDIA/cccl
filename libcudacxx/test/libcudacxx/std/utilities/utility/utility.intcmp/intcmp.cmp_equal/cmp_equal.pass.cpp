@@ -24,11 +24,11 @@ struct Tuple
 {
   T min = cuda::std::numeric_limits<T>::min();
   T max = cuda::std::numeric_limits<T>::max();
-  T mid = cuda::std::is_signed_v<T> ? T(-1) : max >> 1;
+  T mid = cuda::std::is_signed<T>::value ? T(-1) : max >> 1;
 };
 
 template <typename T>
-__host__ __device__ constexpr void test1()
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test1()
 {
   constexpr Tuple<T> tup{};
   assert(cuda::std::cmp_equal(T(0), T(0)));
@@ -53,7 +53,7 @@ __host__ __device__ constexpr void test1()
 }
 
 template <typename T, typename U>
-__host__ __device__ constexpr void test2()
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test2()
 {
   constexpr Tuple<T> ttup{};
   constexpr Tuple<U> utup{};
@@ -68,7 +68,7 @@ __host__ __device__ constexpr void test2()
 }
 
 template <class T>
-__host__ __device__ constexpr void test()
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test()
 {
   test1<T>();
 #ifndef TEST_HAS_NO_INT128_T
@@ -87,7 +87,7 @@ __host__ __device__ constexpr void test()
   test2<T, signed char>();
 }
 
-__host__ __device__ constexpr bool test()
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 {
 #ifndef TEST_HAS_NO_INT128_T
   test<__int128_t>();

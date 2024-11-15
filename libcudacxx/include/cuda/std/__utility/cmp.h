@@ -58,8 +58,8 @@ struct __is_safe_integral_cmp
                                          >::value>
 {};
 
-_LIBCUDACXX_TEMPLATE(class _Tp, class _Up)
-_LIBCUDACXX_REQUIRES(__is_safe_integral_cmp<_Tp>::value _LIBCUDACXX_AND __is_safe_integral_cmp<_Up>::value)
+_CCCL_TEMPLATE(class _Tp, class _Up)
+_CCCL_REQUIRES(__is_safe_integral_cmp<_Tp>::value _CCCL_AND __is_safe_integral_cmp<_Up>::value)
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_equal(_Tp __t, _Up __u) noexcept
 {
 #if _CCCL_STD_VER >= 2017
@@ -83,15 +83,15 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_equal(_Tp __t, _Up __u) noexcept
 #endif // _CCCL_STD_VER <= 2014
 }
 
-_LIBCUDACXX_TEMPLATE(class _Tp, class _Up)
-_LIBCUDACXX_REQUIRES(__is_safe_integral_cmp<_Tp>::value _LIBCUDACXX_AND __is_safe_integral_cmp<_Up>::value)
+_CCCL_TEMPLATE(class _Tp, class _Up)
+_CCCL_REQUIRES(__is_safe_integral_cmp<_Tp>::value _CCCL_AND __is_safe_integral_cmp<_Up>::value)
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_not_equal(_Tp __t, _Up __u) noexcept
 {
   return !_CUDA_VSTD::cmp_equal(__t, __u);
 }
 
-_LIBCUDACXX_TEMPLATE(class _Tp, class _Up)
-_LIBCUDACXX_REQUIRES(__is_safe_integral_cmp<_Tp>::value _LIBCUDACXX_AND __is_safe_integral_cmp<_Up>::value)
+_CCCL_TEMPLATE(class _Tp, class _Up)
+_CCCL_REQUIRES(__is_safe_integral_cmp<_Tp>::value _CCCL_AND __is_safe_integral_cmp<_Up>::value)
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_less(_Tp __t, _Up __u) noexcept
 {
 #if _CCCL_STD_VER >= 2017
@@ -115,29 +115,29 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_less(_Tp __t, _Up __u) noexcept
 #endif // _CCCL_STD_VER <= 2014
 }
 
-_LIBCUDACXX_TEMPLATE(class _Tp, class _Up)
-_LIBCUDACXX_REQUIRES(__is_safe_integral_cmp<_Tp>::value _LIBCUDACXX_AND __is_safe_integral_cmp<_Up>::value)
+_CCCL_TEMPLATE(class _Tp, class _Up)
+_CCCL_REQUIRES(__is_safe_integral_cmp<_Tp>::value _CCCL_AND __is_safe_integral_cmp<_Up>::value)
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_greater(_Tp __t, _Up __u) noexcept
 {
   return _CUDA_VSTD::cmp_less(__u, __t);
 }
 
-_LIBCUDACXX_TEMPLATE(class _Tp, class _Up)
-_LIBCUDACXX_REQUIRES(__is_safe_integral_cmp<_Tp>::value _LIBCUDACXX_AND __is_safe_integral_cmp<_Up>::value)
+_CCCL_TEMPLATE(class _Tp, class _Up)
+_CCCL_REQUIRES(__is_safe_integral_cmp<_Tp>::value _CCCL_AND __is_safe_integral_cmp<_Up>::value)
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_less_equal(_Tp __t, _Up __u) noexcept
 {
   return !_CUDA_VSTD::cmp_greater(__t, __u);
 }
 
-_LIBCUDACXX_TEMPLATE(class _Tp, class _Up)
-_LIBCUDACXX_REQUIRES(__is_safe_integral_cmp<_Tp>::value _LIBCUDACXX_AND __is_safe_integral_cmp<_Up>::value)
+_CCCL_TEMPLATE(class _Tp, class _Up)
+_CCCL_REQUIRES(__is_safe_integral_cmp<_Tp>::value _CCCL_AND __is_safe_integral_cmp<_Up>::value)
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_greater_equal(_Tp __t, _Up __u) noexcept
 {
   return !_CUDA_VSTD::cmp_less(__t, __u);
 }
 
-_LIBCUDACXX_TEMPLATE(class _Tp, class _Up)
-_LIBCUDACXX_REQUIRES(__is_safe_integral_cmp<_Tp>::value _LIBCUDACXX_AND __is_safe_integral_cmp<_Up>::value)
+_CCCL_TEMPLATE(class _Tp, class _Up)
+_CCCL_REQUIRES(__is_safe_integral_cmp<_Tp>::value _CCCL_AND __is_safe_integral_cmp<_Up>::value)
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool in_range(_Up __u) noexcept
 {
   return _CUDA_VSTD::cmp_less_equal(__u, numeric_limits<_Tp>::max())

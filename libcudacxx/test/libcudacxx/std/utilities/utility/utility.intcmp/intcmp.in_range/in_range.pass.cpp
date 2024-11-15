@@ -24,11 +24,11 @@ struct Tuple
 {
   T min = cuda::std::numeric_limits<T>::min();
   T max = cuda::std::numeric_limits<T>::max();
-  T mid = cuda::std::is_signed_v<T> ? T(-1) : max >> 1;
+  T mid = cuda::std::is_signed<T>::value ? T(-1) : max >> 1;
 };
 
 template <typename T>
-__host__ __device__ constexpr void test_in_range1()
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test_in_range1()
 {
   constexpr Tuple<T> tup{};
   assert(cuda::std::in_range<T>(tup.min));
@@ -40,7 +40,7 @@ __host__ __device__ constexpr void test_in_range1()
   assert(cuda::std::in_range<T>(tup.mid + 1));
 }
 
-__host__ __device__ constexpr void test_in_range()
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test_in_range()
 {
   constexpr Tuple<uint8_t> utup8{};
   constexpr Tuple<int8_t> stup8{};
@@ -52,7 +52,7 @@ __host__ __device__ constexpr void test_in_range()
   assert(!cuda::std::in_range<uint8_t>(-1));
 }
 
-__host__ __device__ constexpr bool test()
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 {
   test_in_range();
 #ifndef TEST_HAS_NO_INT128_T
