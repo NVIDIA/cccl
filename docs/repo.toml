@@ -435,12 +435,12 @@ doxygen_predefined = [
   "_CUDAX_TRIVIAL_HOST_API",
   "_CUDAX_TRIVIAL_DEVICE_API",
   "_CUDAX_PUBLIC_API",
-  "_LIBCUDACXX_AND=&&",
+  "_CCCL_AND=&&",
   "_LIBCUDACXX_EAT_REST(x)=",
   "_LIBCUDACXX_GLOBAL_CONSTANT=inline",
-  "_LIBCUDACXX_REQUIRES(x)= ::cuda::std::enable_if_t<x, int> = 0>",
-  "_LIBCUDACXX_TEMPLATE(x)=template<x, ",
-  "_LIBCUDACXX_TRAILING_REQUIRES(x)=-> x _LIBCUDACXX_EAT_REST",
+  "_CCCL_REQUIRES(x)= ::cuda::std::enable_if_t<x, int> = 0>",
+  "_CCCL_TEMPLATE(x)=template<x, ",
+  "_CCCL_TRAILING_REQUIRES(x)=-> x _LIBCUDACXX_EAT_REST",
   "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE=",
 ]
 

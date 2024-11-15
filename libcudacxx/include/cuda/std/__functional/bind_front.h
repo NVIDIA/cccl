@@ -68,8 +68,8 @@ _LIBCUDACXX_CONCEPT __can_bind_front =
   is_constructible_v<decay_t<_Fn>, _Fn> && is_move_constructible_v<decay_t<_Fn>>
   && (is_constructible_v<decay_t<_Args>, _Args> && ...) && (is_move_constructible_v<decay_t<_Args>> && ...);
 
-_LIBCUDACXX_TEMPLATE(class _Fn, class... _Args)
-_LIBCUDACXX_REQUIRES(__can_bind_front<_Fn, _Args...>)
+_CCCL_TEMPLATE(class _Fn, class... _Args)
+_CCCL_REQUIRES(__can_bind_front<_Fn, _Args...>)
 _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
 bind_front(_Fn&& __f, _Args&&... __args) noexcept(is_nothrow_constructible_v<tuple<decay_t<_Args>...>, _Args&&...>)
 {
