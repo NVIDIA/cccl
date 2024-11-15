@@ -113,6 +113,7 @@ If you are only interested in a subset of workloads, you can restrict benchmarki
 The `-a` option allows you to restrict the values for each axis available for the benchmark.
 See the `NVBench documentation <https://github.com/NVIDIA/nvbench/blob/main/docs/cli_help_axis.md>`_.
 for more information on how to specify the axis values.
+If the specified axis does not exist, the benchmark will terminate with an error.
 
 
 Comparing benchmark results
@@ -169,23 +170,30 @@ This will generate one JSON and one Markdown file for each benchmark.
 You can archive those files for later comparison or analysis.
 
 
-Running all benchmarks via tuning scripts
+Running all benchmarks via tuning scripts (alternative)
 --------------------------------------------------------------------------------
 
-This file contains instructions on how to run all CUB benchmarks using CUB tuning infrastructure.
+The benchmark suite can also be run using the :ref:`tuning <cub-tuning>` infrastructure.
+The tuning infrastructure handles building benchmarks itself, because it records the build times.
+Therefore, it's critical that you run it in a clean build directory without any build artifacts.
+Running cmake is enough. Alternatively, you can also clean your build directory with.
+Furthermore, the tuning scripts require some additional python dependencies, which you have to install.
 
 .. code-block:: bash
 
+    ninja clean
     pip install --user fpzip pandas scipy
-    ../benchmarks/scripts/run.py
 
-
-Expected output for the command above is:
-
+We can then run the full benchmark suite from the build directory with:
 
 .. code-block:: bash
 
-    ../benchmarks/scripts/run.py
+    PYTHONPATH=../benchmarks/scripts ../benchmarks/scripts/run.py
+
+You can expect the output to look like this:
+
+.. code-block:: bash
+
     &&&& RUNNING bench
     ctk:  12.2.140
     cub:  812ba98d1
@@ -195,6 +203,8 @@ Expected output for the command above is:
     &&&& PERF cub_bench_adjacent_difference_subtract_left_base_T_ct__I32___OffsetT_ct__I32___Elements_io__pow2__28 0.002673664130270481 -sec
     ...
 
+The tuning infrastructure will build and execute all benchmarks and their variants one after each other,
+reporting the time it seconds it took to execute the benchmark executable.
 
 It's also possible to benchmark a subset of algorithms and workloads:
 
@@ -202,8 +212,53 @@ It's also possible to benchmark a subset of algorithms and workloads:
 
     ../benchmarks/scripts/run.py -R '.*scan.exclusive.sum.*' -a 'Elements{io}[pow2]=[24,28]' -a 'T{ct}=I32'
     &&&& RUNNING bench
-    ctk:  12.2.140
-    cub:  812ba98d1
-    &&&& PERF cub_bench_scan_exclusive_sum_base_T_ct__I32___OffsetT_ct__I32___Elements_io__pow2__24 0.00016899200272746384 -sec
-    &&&& PERF cub_bench_scan_exclusive_sum_base_T_ct__I32___OffsetT_ct__I32___Elements_io__pow2__28 0.002696000039577484 -sec
+     ctk:  12.6.77
+    cccl:  v2.7.0-rc0-265-g32aa6aa5a
+    &&&& PERF cub_bench_scan_exclusive_sum_base_T_ct__I32___OffsetT_ct__U32___Elements_io__pow2__28 0.003194367978721857 -sec
+    &&&& PERF cub_bench_scan_exclusive_sum_base_T_ct__I32___OffsetT_ct__U64___Elements_io__pow2__28 0.00319383991882205 -sec
     &&&& PASSED bench
+
+
+The `-R` option allows you to specify a regular expression for selecting benchmarks.
+The `-a` restricts the values for an axis across all benchmarks
+See the `NVBench documentation <https://github.com/NVIDIA/nvbench/blob/main/docs/cli_help_axis.md>`_.
+for more information on how to specify the axis values.
+Contrary to running a benchmark directly,
+the tuning infrastructure will just ignore an axis value if a benchmark does not support,
+run the benchmark regardless, and continue.
+
+The tuning infrastructure stores results in an SQLite database called `cccl_meta_bench.db` in the build directory.
+This database persists across tuning runs.
+If you interrupt the benchmark script and then launch it again, only missing benchmark variants will be run.
+The resulting database contains all samples, which can be extracted into JSON files:
+
+.. code-block:: bash
+
+    ../benchmarks/scripts/analyze.py -o ./cccl_meta_bench.db
+
+This will create a JSON file for each benchmark variant next to the database.
+For example:
+
+.. code-block:: bash
+
+    cat cub_bench_scan_exclusive_sum_base_T_ct__I32___OffsetT_ct__U32___Elements_io__pow2__28.json
+    [
+      {
+        "variant": "base ()",
+        "elapsed": 2.6299014091,
+        "center": 0.003194368,
+        "bw": 0.8754671386,
+        "samples": [
+          0.003152896,
+          0.0031549439,
+          ...
+        ],
+        "Elements{io}[pow2]": "28",
+        "base_samples": [
+          0.003152896,
+          0.0031549439,
+          ...
+        ],
+        "speedup": 1
+      }
+    ]
