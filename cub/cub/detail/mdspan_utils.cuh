@@ -53,12 +53,12 @@ namespace detail
 {
 
 // Compute the submdspan size of a given rank
-template <::cuda::std::size_t Rank, typename IndexType, ::cuda::std::size_t... Extents>
+template <::cuda::std::size_t Rank, typename IndexType, ::cuda::std::size_t Extent0, ::cuda::std::size_t... Extents>
 _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::make_unsigned_t<IndexType>
-sub_size(const ::cuda::std::extents<IndexType, Extents...>& ext)
+sub_size(const ::cuda::std::extents<IndexType, Extent0, Extents...>& ext)
 {
   ::cuda::std::make_unsigned_t<IndexType> s = 1;
-  for (IndexType i = Rank; i < IndexType{sizeof...(Extents)}; i++) // <- pointless comparison with zero-rank extent
+  for (IndexType i = Rank; i < IndexType{1 + sizeof...(Extents)}; i++) // <- pointless comparison with zero-rank extent
   {
     s *= ext.extent(i);
   }
