@@ -28,16 +28,20 @@
 #include "insert_nested_NVTX_range_guard.h"
 // above header needs to be included first
 
-#include <cub/device/device_for.cuh>
+#include <cub/config.cuh>
 
-#include <thrust/detail/raw_pointer_cast.h>
-#include <thrust/device_vector.h>
+#if __cccl_lib_mdspan
 
-#include <cuda/std/array>
-#include <cuda/std/mdspan>
-#include <cuda/std/span>
+#  include <cub/device/device_for.cuh>
 
-#include <c2h/catch2_test_helper.h>
+#  include <thrust/detail/raw_pointer_cast.h>
+#  include <thrust/device_vector.h>
+
+#  include <cuda/std/array>
+#  include <cuda/std/mdspan>
+#  include <cuda/std/span>
+
+#  include <c2h/catch2_test_helper.h>
 
 // example-begin for-each-in-extents-op
 struct linear_store_3D
@@ -73,3 +77,5 @@ C2H_TEST("Device ForEachInExtents", "[ForEachInExtents][device]")
   // example-end for-each-in-extents-example
 }
 // clang-format on
+
+#endif // __cccl_lib_mdspan
