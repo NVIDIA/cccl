@@ -33,9 +33,6 @@
 #  include "c2h/utility.h"
 #  include "catch2_test_launch_helper.h"
 
-// %PARAM% TEST_LAUNCH lid 0:1:2
-
-DECLARE_LAUNCH_WRAPPER(cub::DeviceFor::ForEachInExtents, device_for_each_in_extents);
 
 /***********************************************************************************************************************
  * TEST CASES
