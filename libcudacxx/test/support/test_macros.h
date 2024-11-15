@@ -15,7 +15,9 @@
 // minimal header possible. If we're testing libc++, we should use `<__config>`.
 // If <__config> isn't available, fall back to <ciso646>.
 #ifdef __has_include
-#  if __has_include("<__config>")
+#  if __has_include(<cuda/__cccl_config>)
+#    include <cuda/__cccl_config>
+#  elif __has_include("<__config>")
 #    include <__config>
 #    define TEST_IMP_INCLUDED_HEADER
 #  endif
@@ -451,12 +453,14 @@ __host__ __device__ constexpr bool unused(T&&...)
 #define TEST_CONSTEXPR_GLOBAL _CCCL_CONSTEXPR_GLOBAL
 
 // Some convenience macros for checking nvcc versions
-#if defined(__CUDACC__) && _CCCL_CUDACC_BELOW(11, 3)
-#  define TEST_COMPILER_CUDACC_BELOW_11_3
-#endif // defined(__CUDACC__) && _CCCL_CUDACC_BELOW(11, 3)
-#if defined(__CUDACC__) && _CCCL_CUDACC_BELOW(12, 3)
-#  define TEST_COMPILER_CUDACC_BELOW_12_3
-#endif // defined(__CUDACC__) && _CCCL_CUDACC_BELOW(12, 3)
+#if defined(_CCCL_CUDACC)
+#  if _CCCL_CUDACC_BELOW(11, 3)
+#    define TEST_COMPILER_CUDACC_BELOW_11_3
+#  endif // _CCCL_CUDACC_BELOW(11, 3)
+#  if _CCCL_CUDACC_BELOW(12, 3)
+#    define TEST_COMPILER_CUDACC_BELOW_12_3
+#  endif // _CCCL_CUDACC_BELOW(12, 3)
+#endif // _CCCL_CUDACC
 
 #if defined(TEST_COMPILER_MSVC)
 #  if _MSC_VER < 1920
