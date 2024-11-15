@@ -98,11 +98,9 @@ template <typename T>
 using unsigned_implicit_prom_t = typename ::cuda::std::make_unsigned<implicit_prom_t<T>>::type;
 
 template <typename T>
-struct supported_integral
-    : ::cuda::std::bool_constant<::cuda::std::is_integral<T>::value && !::cuda::std::is_same<T, bool>::value
-                                 && (sizeof(T) <= 8)>
-
-{};
+using supported_integral =
+     ::cuda::std::bool_constant<::cuda::std::is_integral<T>::value && !::cuda::std::is_same<T, bool>::value
+                                 && (sizeof(T) <= 8)>;
 
 /***********************************************************************************************************************
  * Extract higher bits after multiplication
