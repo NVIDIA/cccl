@@ -59,7 +59,7 @@ template <int Rank,
           typename ExtendType,
           typename FastDivModType,
           _CUB_TEMPLATE_REQUIRES(ExtendType::static_extent(Rank) != ::cuda::std::dynamic_extent)>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto get_extent_size(ExtendType ext, FastDivModType extent_size)
+_CCCL_DEVICE _CCCL_FORCEINLINE auto get_extent_size(ExtendType ext, FastDivModType extent_size)
 {
   using extent_index_type   = typename ExtendType::index_type;
   using index_type          = implicit_prom_t<extent_index_type>;
@@ -71,7 +71,7 @@ template <int Rank,
           typename ExtendType,
           typename FastDivModType,
           _CUB_TEMPLATE_REQUIRES(ExtendType::static_extent(Rank) == ::cuda::std::dynamic_extent)>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto get_extent_size(ExtendType ext, FastDivModType extent_size)
+_CCCL_DEVICE _CCCL_FORCEINLINE auto get_extent_size(ExtendType ext, FastDivModType extent_size)
 {
   return extent_size;
 }
@@ -80,7 +80,7 @@ template <int Rank,
           typename ExtendType,
           typename FastDivModType,
           _CUB_TEMPLATE_REQUIRES(cub::detail::is_sub_size_static<Rank + 1, ExtendType>())>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto get_extents_sub_size(ExtendType ext, FastDivModType extents_sub_size)
+_CCCL_DEVICE _CCCL_FORCEINLINE auto get_extents_sub_size(ExtendType ext, FastDivModType extents_sub_size)
 {
   return sub_size<Rank + 1>(ext);
 }
@@ -89,13 +89,13 @@ template <int Rank,
           typename ExtendType,
           typename FastDivModType,
           _CUB_TEMPLATE_REQUIRES(!cub::detail::is_sub_size_static<Rank + 1, ExtendType>())>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto get_extents_sub_size(ExtendType ext, FastDivModType extents_sub_size)
+_CCCL_DEVICE _CCCL_FORCEINLINE auto get_extents_sub_size(ExtendType ext, FastDivModType extents_sub_size)
 {
   return extents_sub_size;
 }
 
 template <int Rank, typename IndexType, typename ExtendType, typename FastDivModType>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto
+_CCCL_DEVICE _CCCL_FORCEINLINE auto
 coordinate_at(IndexType index, ExtendType ext, FastDivModType extents_sub_size, FastDivModType extent_size)
 {
   using extent_index_type = typename ExtendType::index_type;
@@ -157,6 +157,11 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::for_policy_t::block_threads) //
   constexpr auto stride        = offset_t{block_threads * active_policy_t::items_per_thread};
   auto stride1                 = (stride >= cub::detail::size(ext)) ? block_threads : stride;
   auto id                      = static_cast<offset_t>(threadIdx.x + blockIdx.x * block_threads);
+  // nvcc 11.x + GCC6/7/8/9 raises unused parameter warning
+  static_cast<void>(func);
+  static_cast<void>(ext);
+  static_cast<void>(sub_sizes_div_array);
+  static_cast<void>(extents_mod_array);
   computation<offset_t, Func, ExtendType, FastDivModArrayType, Ranks...>(
     id, stride1, func, ext, sub_sizes_div_array, extents_mod_array);
 }

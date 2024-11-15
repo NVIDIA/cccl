@@ -65,7 +65,7 @@ sub_size(const ::cuda::std::extents<IndexType, Extents...>& ext)
   return s;
 }
 
-// avoid pointless comparison of unsigned integer with zero (CUDA 11.x doesn't support nv_diag warning suppression)
+// avoid pointless comparison of unsigned integer with zero (nvcc 11.x doesn't support nv_diag warning suppression)
 template <::cuda::std::size_t Rank, typename IndexType>
 _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::make_unsigned_t<IndexType>
 sub_size(const ::cuda::std::extents<IndexType>&)

@@ -153,7 +153,7 @@ public:
                  (int _{}; //
                   status = cudaOccupancyMaxPotentialBlockSize(&_, &block_threads, kernel);));
     _CUB_RETURN_IF_ERROR(status)
-    unsigned num_cta = ::cuda::ceil_div(_size, block_threads);
+    unsigned num_cta = ::cuda::ceil_div(_size, block_threads * items_per_thread);
 
 #  ifdef CUB_DETAIL_DEBUG_ENABLE_LOG
     _CubLog("Invoking detail::for_each_in_extents::dynamic_kernel<<<%u, %u, 0, %p>>>(), items_per_thread: %u\n",
