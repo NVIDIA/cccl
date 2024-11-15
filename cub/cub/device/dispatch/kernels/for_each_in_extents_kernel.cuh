@@ -29,6 +29,8 @@
 
 #include <cub/config.cuh>
 
+#include "cuda/std/__type_traits/enable_if.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -107,7 +109,7 @@ template <typename IndexType,
           typename ExtendType,
           typename FastDivModArrayType, //
           ::cuda::std::size_t... Ranks>
-_CCCL_DEVICE _CCCL_FORCEINLINE void computation(
+_CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<(ExtendType::rank() > 0)> computation(
   IndexType id,
   IndexType stride,
   Func func,
@@ -123,13 +125,8 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void computation(
 }
 
 template <typename IndexType, typename Func, typename ExtendType, typename FastDivModArrayType>
-_CCCL_DEVICE _CCCL_FORCEINLINE void computation(
-  IndexType id,
-  IndexType stride,
-  Func func,
-  ExtendType ext,
-  FastDivModArrayType sub_sizes_div_array,
-  FastDivModArrayType extents_mod_array)
+_CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::enable_if_t<ExtendType::rank() == 0>
+computation(IndexType id, IndexType, Func func, ExtendType, FastDivModArrayType, FastDivModArrayType)
 {
   using extent_index_type = typename ExtendType::index_type;
   if (id == 0)
