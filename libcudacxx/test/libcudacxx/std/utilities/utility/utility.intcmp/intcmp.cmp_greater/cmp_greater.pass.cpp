@@ -28,7 +28,7 @@ struct Tuple
 };
 
 template <typename T>
-__host__ __device__ constexpr void test_cmp_greater1()
+__host__ __device__ constexpr void test1()
 {
   constexpr Tuple<T> tup{};
   assert(!cuda::std::cmp_greater(T(0), T(1)));
@@ -53,50 +53,48 @@ __host__ __device__ constexpr void test_cmp_greater1()
 }
 
 template <typename T, typename U>
-__host__ __device__ constexpr void test_cmp_greater2()
+__host__ __device__ constexpr void test2()
 {
   assert(!cuda::std::cmp_greater(T(0), U(1)));
   assert(cuda::std::cmp_greater(T(1), U(0)));
 }
 
-template <class... Ts>
-__host__ __device__ constexpr void test1(const cuda::std::tuple<Ts...>&)
+template <class T>
+__host__ __device__ constexpr void test()
 {
-  (test_cmp_greater1<Ts>(), ...);
-}
-
-template <class T, class... Us>
-__host__ __device__ constexpr void test2_impl(const cuda::std::tuple<Us...>&)
-{
-  (test_cmp_greater2<T, Us>(), ...);
-}
-
-template <class... Ts, class UTuple>
-__host__ __device__ constexpr void test2(const cuda::std::tuple<Ts...>&, const UTuple& utuple)
-{
-  (test2_impl<Ts>(utuple), ...);
+  test1<T>();
+#ifndef TEST_HAS_NO_INT128_T
+  test2<T, __int128_t>();
+  test2<T, __uint128_t>();
+#endif // TEST_HAS_NO_INT128_T
+  test2<T, unsigned long long>();
+  test2<T, long long>();
+  test2<T, unsigned long>();
+  test2<T, long>();
+  test2<T, unsigned int>();
+  test2<T, int>();
+  test2<T, unsigned short>();
+  test2<T, short>();
+  test2<T, unsigned char>();
+  test2<T, signed char>();
 }
 
 __host__ __device__ constexpr bool test()
 {
-  cuda::std::tuple<
 #ifndef TEST_HAS_NO_INT128_T
-    __int128_t,
-    __uint128_t,
-#endif
-    unsigned long long,
-    long long,
-    unsigned long,
-    long,
-    unsigned int,
-    int,
-    unsigned short,
-    short,
-    unsigned char,
-    signed char>
-    types;
-  test1(types);
-  test2(types, types);
+  test<__int128_t>();
+  test<__uint128_t>();
+#endif // TEST_HAS_NO_INT128_T
+  test<unsigned long long>();
+  test<long long>();
+  test<unsigned long>();
+  test<long>();
+  test<unsigned int>();
+  test<int>();
+  test<unsigned short>();
+  test<short>();
+  test<unsigned char>();
+  test<signed char>();
   return true;
 }
 
