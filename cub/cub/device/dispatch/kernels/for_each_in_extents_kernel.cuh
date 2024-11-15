@@ -81,7 +81,7 @@ template <int Rank,
           typename ExtendType,
           typename FastDivModType,
           _CUB_TEMPLATE_REQUIRES(cub::detail::is_sub_size_static<Rank + 1, ExtendType>())>
-_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto get_extents_sub_size(ExtendType ext, FastDivModType extent_size)
+_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto get_extents_sub_size(ExtendType ext, FastDivModType extents_sub_size)
 {
   return sub_size<Rank + 1>(ext);
 }
