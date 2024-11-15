@@ -85,11 +85,11 @@
 #endif // _CCCL_STD_VER <= 2014
 
 // In nvcc prior to 11.3 global variables could not be marked constexpr
-#if defined(_CCCL_CUDACC_BELOW_11_3)
+#if _CCCL_CUDACC_BELOW(11, 3)
 #  define _CCCL_CONSTEXPR_GLOBAL const
-#else // ^^^ _CCCL_CUDACC_BELOW_11_3 ^^^ / vvv !_CCCL_CUDACC_BELOW_11_3 vvv
+#else // ^^^ _CCCL_CUDACC_BELOW(11, 3) ^^^ / vvv _CCCL_CUDACC_AT_LEAST(11, 3) vvv
 #  define _CCCL_CONSTEXPR_GLOBAL constexpr
-#endif // !_CCCL_CUDACC_BELOW_11_3
+#endif // _CCCL_CUDACC_AT_LEAST(11, 3)
 
 // Inline variables are only available from C++17 onwards
 #if _CCCL_STD_VER >= 2017 && defined(__cpp_inline_variables) && (__cpp_inline_variables >= 201606L)

@@ -627,7 +627,7 @@ struct __partially_static_sizes_tagged
   using __tag_t = _Tag;
   using __psa_impl_t =
     __standard_layout_psa<_Tag, T, _static_t, _CUDA_VSTD::integer_sequence<_static_t, __values_or_sentinals...>>;
-#    if defined(_CCCL_COMPILER_NVRTC) || defined(_CCCL_CUDACC_BELOW_11_3)
+#    if defined(_CCCL_COMPILER_NVRTC) || _CCCL_CUDACC_BELOW(11, 3)
   template <class... _Args, enable_if_t<_CCCL_TRAIT(is_constructible, __psa_impl_t, _Args...), int> = 0>
   __MDSPAN_FORCE_INLINE_FUNCTION constexpr __partially_static_sizes_tagged(_Args&&... __args) noexcept(
     noexcept(__psa_impl_t(_CUDA_VSTD::declval<_Args>()...)))
@@ -680,7 +680,7 @@ private:
   {}
 
 public:
-#    if defined(_CCCL_COMPILER_NVRTC) || defined(_CCCL_CUDACC_BELOW_11_3)
+#    if defined(_CCCL_COMPILER_NVRTC) || _CCCL_CUDACC_BELOW(11, 3)
   template <class... _Args, enable_if_t<_CCCL_TRAIT(is_constructible, __base_t, _Args...), int> = 0>
   __MDSPAN_FORCE_INLINE_FUNCTION constexpr __partially_static_sizes(_Args&&... __args) noexcept(
     noexcept(__base_t(_CUDA_VSTD::declval<_Args>()...)))

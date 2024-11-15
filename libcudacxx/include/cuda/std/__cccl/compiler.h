@@ -82,50 +82,19 @@
 // clang-cuda does not define __CUDACC_VER_MAJOR__ and friends. They are instead retrieved from the CUDA_VERSION macro
 // defined in "cuda.h". clang-cuda automatically pre-includes "__clang_cuda_runtime_wrapper.h" which includes "cuda.h"
 #if defined(_CCCL_CUDA_COMPILER_CLANG)
-#  define _CCCL_CUDACC
+#  define _CCCL_CUDACC           1
 #  define _CCCL_CUDACC_VER_MAJOR CUDA_VERSION / 1000
 #  define _CCCL_CUDACC_VER_MINOR (CUDA_VERSION % 1000) / 10
-#  define _CCCL_CUDACC_VER_BUILD 0
-#  define _CCCL_CUDACC_VER       CUDA_VERSION * 100
+#  define _CCCL_CUDACC_VER       CUDA_VERSION
 #elif defined(_CCCL_CUDA_COMPILER)
-#  define _CCCL_CUDACC
+#  define _CCCL_CUDACC           1
 #  define _CCCL_CUDACC_VER_MAJOR __CUDACC_VER_MAJOR__
 #  define _CCCL_CUDACC_VER_MINOR __CUDACC_VER_MINOR__
-#  define _CCCL_CUDACC_VER_BUILD __CUDACC_VER_BUILD__
-#  define _CCCL_CUDACC_VER       _CCCL_CUDACC_VER_MAJOR * 100000 + _CCCL_CUDACC_VER_MINOR * 1000 + _CCCL_CUDACC_VER_BUILD
+#  define _CCCL_CUDACC_VER       _CCCL_CUDACC_VER_MAJOR * 1000 + _CCCL_CUDACC_VER_MINOR * 10
 #endif // _CCCL_CUDA_COMPILER
 
-// Some convenience macros to filter CUDACC versions
-#if defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1102000
-#  define _CCCL_CUDACC_BELOW_11_2
-#endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1102000
-#if defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1103000
-#  define _CCCL_CUDACC_BELOW_11_3
-#endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1103000
-#if defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1104000
-#  define _CCCL_CUDACC_BELOW_11_4
-#endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1104000
-#if defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1107000
-#  define _CCCL_CUDACC_BELOW_11_7
-#endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1107000
-#if defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1108000
-#  define _CCCL_CUDACC_BELOW_11_8
-#endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1108000
-#if defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1200000
-#  define _CCCL_CUDACC_BELOW_12_0
-#endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1200000
-#if defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1202000
-#  define _CCCL_CUDACC_BELOW_12_2
-#endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1202000
-#if defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1203000
-#  define _CCCL_CUDACC_BELOW_12_3
-#endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1203000
-#if defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1204000
-#  define _CCCL_CUDACC_BELOW_12_4
-#endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1204000
-#if defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1205000
-#  define _CCCL_CUDACC_BELOW_12_5
-#endif // defined(_CCCL_CUDACC) && _CCCL_CUDACC_VER < 1205000
+#define _CCCL_CUDACC_BELOW(_MAJOR, _MINOR)    (_CCCL_CUDACC && _CCCL_CUDACC_VER < (_MAJOR * 1000 + _MINOR * 10))
+#define _CCCL_CUDACC_AT_LEAST(_MAJOR, _MINOR) (_CCCL_CUDACC && !_CCCL_CUDACC_BELOW(_MAJOR, _MINOR))
 
 // Convert parameter to string
 #define _CCCL_TO_STRING2(_STR) #_STR
