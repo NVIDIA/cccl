@@ -37,12 +37,15 @@
 #endif
 
 #include <cuda/__memory_resource/resource.h>
-#include <cuda/std/__new_>
-#include <cuda/std/__type_traits/is_swappable.h>
-#include <cuda/std/__utility/exchange.h>
+#include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/atomic>
+#include <cuda/std/__utility/swap.h>
+#include <cuda/stream_ref>
+
+#include <cuda/experimental/__detail/config.cuh>
+
+#include <memory>
 
 namespace cuda::experimental::mr
 {
@@ -53,95 +56,80 @@ namespace cuda::experimental::mr
 //! Resource wrapper to share ownership of a resource
 //! --------------------------------------------------
 //!
-//! ``shared_resource`` holds a reference counted instance of a memory resource. This allows
-//! the user to pass a resource around with reference semantics while avoiding lifetime issues.
+//! ``shared_resource`` holds a reference counted instance of a memory resource.
+//! This allows the user to pass a resource around with reference semantics while
+//! avoiding lifetime issues. It can be used directly, like so:
 //!
-//! @note ``shared_resource`` satisfies the ``cuda::mr::async_resource`` concept iff \tparam _Resource satisfies it.
-//! @tparam _Resource The resource type to hold.
+//! @code{.cpp}
+//! auto mr = shared_resource< MyCustomResource >{ args... };
+//! @endcode
+//!
+//! It can also be used as a mixin when defining a custom resource. When used
+//! as a mixin, the implementation of the resource should be in a nested type
+//! named ``impl`` as shown below.
+//!
+//! @code{.cpp}
+//! struct MyCustomSharedResource : shared_resource< MyCustomSharedResource >
+//! {
+//!   MyCustomSharedResource( Arg arg )
+//!       : shared_resource( arg )
+//!   {}
+//!
+//! private:
+//!   friend shared_resource;
+//!
+//!   struct impl // put the implementation of the resource here
+//!   {
+//!     impl( Arg arg )
+//!     impl(impl&&) = delete; // immovable impls are ok
+//!
+//!     void* allocate(size_t, size_t);
+//!     void deallocate(void*, size_t, size_t);
+//!     bool operator==(const impl&) const = default;
+//!
+//!   private:
+//!     Arg arg;
+//!   };
+//! };
+//! @endcode
+//!
+//! Instances of ``MyCustomSharedResource`` satisfy the ``cuda::mr::resource``
+//! concept. Copies all share ownership of the underlying ``impl`` object.
+//!
+//! @note ``shared_resource`` satisfies the ``cuda::mr::async_resource`` concept
+//!     iff \tparam _Resource satisfies it.
+//! @tparam _Resource The resource type to hold, or the derived type when using
+//!     ``shared_resource`` as a mixin. When used directly, \c _Resource must
+//!     satisfy the :ref:`resource <libcudacxx-extended-api-memory-resources-resource>`
+//!     concept. When used as a mixin, there must be an accessible nested type
+//!     ``_Resource::impl`` that satisfies the
+//!     :ref:`resource <libcudacxx-extended-api-memory-resources-resource>`
+//!     concept.
 //! @endrst
 template <class _Resource>
 struct shared_resource
 {
-  static_assert(_CUDA_VMR::resource<_Resource>, "");
-
   //! @brief Constructs a \c shared_resource refering to an object of type \c _Resource
   //! that has been constructed with arguments \c __args. The \c _Resource object is
   //! dynamically allocated with \c new.
   //! @param __args The arguments to be passed to the \c _Resource constructor.
   template <class... _Args>
-  explicit shared_resource(_Args&&... __args)
-      : __control_block(new _Control_block{_Resource{_CUDA_VSTD::forward<_Args>(__args)...}, 1})
-  {}
-
-  //! @brief Copy-constructs a \c shared_resource object resulting in an copy that shares
-  //! ownership of the wrapped resource with \c __other.
-  //! @param __other The \c shared_resource object to copy from.
-  shared_resource(const shared_resource& __other) noexcept
-      : __control_block(__other.__control_block)
+  _CUDAX_HOST_API explicit shared_resource(_Args&&... __args)
+      : __pimpl_(::std::make_shared<__impl>(_CUDA_VSTD::forward<_Args>(__args)...))
   {
-    if (__control_block)
-    {
-      __control_block->__ref_count.fetch_add(1, _CUDA_VSTD::memory_order_relaxed);
-    }
-  }
-
-  //! @brief Move-constructs a \c shared_resource assuming ownership of the resource stored
-  //! in \c __other.
-  //! @param __other The \c shared_resource object to move from.
-  //! @post \c __other is left in a valid but unspecified state.
-  shared_resource(shared_resource&& __other) noexcept
-      : __control_block(_CUDA_VSTD::exchange(__other.__control_block, nullptr))
-  {}
-
-  //! @brief Releases the reference held by this \c shared_resource object. If this is the
-  //! last reference to the wrapped resource, the resource is deleted.
-  ~shared_resource()
-  {
-    if (__control_block && __control_block->__ref_count.fetch_sub(1, _CUDA_VSTD::memory_order_acq_rel) == 1)
-    {
-      delete __control_block;
-    }
-  }
-
-  //! @brief Copy-assigns from \c __other. Self-assignment is a no-op. Otherwise, the reference
-  //! held by this \c shared_resource object is released and a new reference is acquired to the
-  //! wrapped resource of \c __other, if any.
-  //! @param __other The \c shared_resource object to copy from.
-  shared_resource& operator=(const shared_resource& __other) noexcept
-  {
-    if (this != &__other)
-    {
-      shared_resource(__other).swap(*this);
-    }
-
-    return *this;
-  }
-
-  //! @brief Move-assigns from \c __other. Self-assignment is a no-op. Otherwise, the reference
-  //! held by this \c shared_resource object is released, while the reference held by \c __other
-  //! is transferred to this object.
-  //! @param __other The \c shared_resource object to move from.
-  /// @post \c __other is left in a valid but unspecified state.
-  shared_resource& operator=(shared_resource&& __other) noexcept
-  {
-    if (this != &__other)
-    {
-      shared_resource(_CUDA_VSTD::move(__other)).swap(*this);
-    }
-
-    return *this;
+    static_assert(_CUDA_VMR::resource<_Resource>, "The Resource type does not satisfy the cuda::mr::resource concept.");
   }
 
   //! @brief Swaps a \c shared_resource with another one.
   //! @param __other The other \c shared_resource.
-  void swap(shared_resource& __other) noexcept
+  _CUDAX_HOST_API void swap(shared_resource& __other) noexcept
   {
-    _CUDA_VSTD::swap(__control_block, __other.__control_block);
+    __pimpl_.swap(__other.__pimpl_);
   }
 
   //! @brief Swaps a \c shared_resource with another one.
   //! @param __other The other \c shared_resource.
-  friend void swap(shared_resource& __left, shared_resource& __right) noexcept
+  _CUDAX_TRIVIAL_HOST_API friend void swap(shared_resource& __left, shared_resource& __right) noexcept
   {
     __left.swap(__right);
   }
@@ -150,18 +138,19 @@ struct shared_resource
   //! @param __bytes The size in bytes of the allocation.
   //! @param __alignment The requested alignment of the allocation.
   //! @return Pointer to the newly allocated memory
-  _CCCL_NODISCARD void* allocate(size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
+  _CCCL_NODISCARD _CUDAX_HOST_API void* allocate(size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t))
   {
-    return __control_block->__resource.allocate(__bytes, __alignment);
+    return __pimpl_->allocate(__bytes, __alignment);
   }
 
   //! @brief Deallocate memory pointed to by \p __ptr using the stored resource.
   //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate`
   //! @param __bytes The number of bytes that was passed to the `allocate` call that returned \p __ptr.
   //! @param __alignment The alignment that was passed to the `allocate` call that returned \p __ptr.
-  void deallocate(void* __ptr, size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t)) noexcept
+  _CUDAX_HOST_API void
+  deallocate(void* __ptr, size_t __bytes, size_t __alignment = alignof(_CUDA_VSTD::max_align_t)) noexcept
   {
-    __control_block->__resource.deallocate(__ptr, __bytes, __alignment);
+    __pimpl_->deallocate(__ptr, __bytes, __alignment);
   }
 
   //! @brief Enqueues an allocation of memory of size at least \p __bytes using
@@ -174,9 +163,9 @@ struct shared_resource
   //! operation has completed.
   _LIBCUDACXX_TEMPLATE(class _ThisResource = _Resource)
   _LIBCUDACXX_REQUIRES(_CUDA_VMR::async_resource<_ThisResource>)
-  _CCCL_NODISCARD void* async_allocate(size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
+  _CCCL_NODISCARD _CUDAX_HOST_API void* async_allocate(size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
   {
-    return this->__control_block->__resource.async_allocate(__bytes, __alignment, __stream);
+    return this->__pimpl_->async_allocate(__bytes, __alignment, __stream);
   }
 
   //! @brief Enqueues the deallocation of memory pointed to by \c __ptr. The deallocation is
@@ -190,35 +179,35 @@ struct shared_resource
   //! operation has completed.
   _LIBCUDACXX_TEMPLATE(class _ThisResource = _Resource)
   _LIBCUDACXX_REQUIRES(_CUDA_VMR::async_resource<_ThisResource>)
-  void async_deallocate(void* __ptr, size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
+  _CUDAX_HOST_API void async_deallocate(void* __ptr, size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
   {
-    this->__control_block->__resource.async_deallocate(__ptr, __bytes, __alignment, __stream);
+    this->__pimpl_->async_deallocate(__ptr, __bytes, __alignment, __stream);
   }
 
   //! @brief Equality comparison between two \c shared_resource
   //! @param __lhs The first \c shared_resource
   //! @param __rhs The other \c shared_resource
   //! @return Checks whether the objects refer to resources that compare equal.
-  _CCCL_NODISCARD_FRIEND bool operator==(const shared_resource& __lhs, const shared_resource& __rhs)
+  _CCCL_NODISCARD_FRIEND _CUDAX_HOST_API bool operator==(const shared_resource& __lhs, const shared_resource& __rhs)
   {
-    if (__lhs.__control_block == __rhs.__control_block)
+    if (__lhs.__pimpl_ == __rhs.__pimpl_)
     {
       return true;
     }
 
-    if (__lhs.__control_block == nullptr || __rhs.__control_block == nullptr)
+    if (__lhs.__pimpl_ == nullptr || __rhs.__pimpl_ == nullptr)
     {
       return false;
     }
 
-    return __lhs.__control_block->__resource == __rhs.__control_block->__resource;
+    return *__lhs.__pimpl_ == *__rhs.__pimpl_;
   }
 
   //! @brief Equality comparison between two \c shared_resource
   //! @param __lhs The first \c shared_resource
   //! @param __rhs The other \c shared_resource
   //! @return Checks whether the objects refer to resources that compare unequal.
-  _CCCL_NODISCARD_FRIEND bool operator!=(const shared_resource& __lhs, const shared_resource& __rhs)
+  _CCCL_NODISCARD_FRIEND _CUDAX_HOST_API bool operator!=(const shared_resource& __lhs, const shared_resource& __rhs)
   {
     return !(__lhs == __rhs);
   }
@@ -226,26 +215,59 @@ struct shared_resource
   //! @brief Forwards the stateless properties
   _LIBCUDACXX_TEMPLATE(class _Property)
   _LIBCUDACXX_REQUIRES((!property_with_value<_Property>) _LIBCUDACXX_AND(has_property<_Resource, _Property>))
-  friend void get_property(const shared_resource&, _Property) noexcept {}
+  _CUDAX_HOST_API friend void get_property(const shared_resource&, _Property) noexcept {}
 
   //! @brief Forwards the stateful properties
   _LIBCUDACXX_TEMPLATE(class _Property)
   _LIBCUDACXX_REQUIRES(property_with_value<_Property> _LIBCUDACXX_AND(has_property<_Resource, _Property>))
-  _CCCL_NODISCARD_FRIEND __property_value_t<_Property> get_property(const shared_resource& __self, _Property) noexcept
+  _CCCL_NODISCARD_FRIEND _CUDAX_HOST_API __property_value_t<_Property>
+  get_property(const shared_resource& __self, _Property) noexcept
   {
-    return get_property(__self.__control_block->__resource, _Property{});
+    return get_property(*__self.__pimpl_, _Property{});
   }
 
 private:
-  // Use a custom shared_ptr implementation because (a) we don't need to support weak_ptr so we only
-  // need one pointer, not two, and (b) this implementation can work on device also.
-  struct _Control_block
+  template <class T, class = typename T::impl>
+  _CUDAX_HOST_API static _CUDA_VSTD::true_type __impl_test(int);
+  template <class T>
+  _CUDAX_HOST_API static _CUDA_VSTD::false_type __impl_test(long);
+
+  template <class T>
+  using __has_impl = decltype(shared_resource::__impl_test<T>(0));
+
+  template <bool HasImpl, class = void>
+  struct __impl_base : _Resource::impl
   {
-    _Resource __resource;
-    _CUDA_VSTD::atomic<int> __ref_count;
+    template <class... _Args>
+    _CUDAX_TRIVIAL_HOST_API __impl_base(_Args&&... __args)
+        : _Resource::impl(_CUDA_VSTD::forward<_Args>(__args)...)
+    {}
   };
 
-  _Control_block* __control_block;
+  template <class T>
+  struct __impl_base<false, T> : _Resource
+  {
+    static_assert(!_CUDA_VSTD::is_base_of_v<shared_resource, _Resource>,
+                  "It looks like shared_resource is being used as a mixin, but the specified Resource does not have an "
+                  "accessible nested type Resource::impl");
+
+    template <class... _Args>
+    _CUDAX_TRIVIAL_HOST_API __impl_base(_Args&&... __args)
+        : _Resource(_CUDA_VSTD::forward<_Args>(__args)...)
+    {}
+  };
+
+  struct __impl
+      : __impl_base<__has_impl<_Resource>::value>
+      , ::std::enable_shared_from_this<__impl>
+  {
+    template <class... _Args>
+    _CUDAX_TRIVIAL_HOST_API __impl(_Args&&... __args)
+        : __impl::__impl_base(_CUDA_VSTD::forward<_Args>(__args)...)
+    {}
+  };
+
+  ::std::shared_ptr<__impl> __pimpl_;
 };
 
 //! @rst
@@ -262,7 +284,7 @@ private:
 //!
 //! @endrst
 template <class _Resource, class... _Args>
-auto make_shared_resource(_Args&&... __args) -> shared_resource<_Resource>
+_CUDAX_HOST_API auto make_shared_resource(_Args&&... __args) -> shared_resource<_Resource>
 {
   static_assert(_CUDA_VMR::resource<_Resource>, "_Resource does not satisfy the cuda::mr::resource concept");
   return shared_resource<_Resource>{_CUDA_VSTD::forward<_Args>(__args)...};

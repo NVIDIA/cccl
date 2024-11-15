@@ -167,3 +167,63 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource
   // Reset the counters:
   this->counts = Counts();
 }
+
+// Test using shared_resource as a mixin
+struct shared_test_resource : cudax::mr::shared_resource<shared_test_resource>
+{
+  explicit shared_test_resource(void* pv)
+      : shared_resource(pv)
+  {}
+
+  static int instance_count;
+
+private:
+  friend shared_resource;
+
+  struct impl
+  {
+    impl(void* pv)
+        : pv_(pv)
+    {
+      ++instance_count;
+    }
+    ~impl()
+    {
+      --instance_count;
+    }
+    impl(impl&&) = delete;
+
+    void* allocate(size_t, size_t)
+    {
+      return pv_;
+    }
+
+    void deallocate(void*, size_t, size_t) {}
+
+    friend bool operator==(const impl& lhs, const impl& rhs) noexcept
+    {
+      return lhs.pv_ == rhs.pv_;
+    }
+
+    void* pv_;
+  };
+};
+
+int shared_test_resource::instance_count = 0;
+
+TEST_CASE("shared_resource mixin", "[container][resource]")
+{
+  static_assert(cuda::mr::resource<shared_test_resource>);
+  static_assert(!cuda::mr::async_resource<shared_test_resource>);
+  {
+    shared_test_resource mr(&mr);
+    CHECK(shared_test_resource::instance_count == 1);
+    CHECK(mr.allocate(0, 0) == &mr);
+    shared_test_resource copy = mr;
+    CHECK(shared_test_resource::instance_count == 1);
+    CHECK(copy == mr);
+    CHECK(!(mr != copy));
+    CHECK(mr != shared_test_resource(nullptr));
+  }
+  CHECK(shared_test_resource::instance_count == 0);
+}
