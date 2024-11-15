@@ -52,8 +52,6 @@ CUB_NAMESPACE_BEGIN
 namespace detail
 {
 
-_CCCL_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
-
 // Compute the submdspan size of a given rank
 template <::cuda::std::size_t Rank, typename IndexType, ::cuda::std::size_t... Extents>
 _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::make_unsigned_t<IndexType>
@@ -67,7 +65,13 @@ sub_size(const ::cuda::std::extents<IndexType, Extents...>& ext)
   return s;
 }
 
-_CCCL_NV_DIAG_DEFAULT(186)
+// avoid pointless comparison of unsigned integer with zero (CUDA 11.x doesn't support nv_diag warning suppression)
+template <::cuda::std::size_t Rank, typename IndexType>
+_CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::make_unsigned_t<IndexType>
+sub_size(const ::cuda::std::extents<IndexType>&)
+{
+  return ::cuda::std::make_unsigned_t<IndexType>{1};
+}
 
 // TODO: move to cuda::std
 template <typename IndexType, ::cuda::std::size_t... Extents>
