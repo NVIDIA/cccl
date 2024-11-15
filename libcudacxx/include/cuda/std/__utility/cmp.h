@@ -34,6 +34,9 @@
 
 _CCCL_PUSH_MACROS
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4389) // signed/unsigned mismatch
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp, class... _Up>
@@ -145,6 +148,8 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool in_range(_Up __u) noexcept
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+_CCCL_DIAG_POP
 
 _CCCL_POP_MACROS
 
