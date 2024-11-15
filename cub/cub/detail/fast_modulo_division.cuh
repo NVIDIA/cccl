@@ -108,16 +108,17 @@ struct supported_integral
  * Extract higher bits after multiplication
  **********************************************************************************************************************/
 
-template <unsigned NumBits, typename T, typename R>
-_CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned_implicit_prom_t<T>
+template <typename DivisorType, typename T, typename R>
+_CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE unsigned_implicit_prom_t<DivisorType>
 multiply_extract_higher_bits(T value, R multiplier)
 {
   static_assert(supported_integral<T>::value, "unsupported type");
   static_assert(supported_integral<R>::value, "unsupported type");
   _CCCL_ASSERT(value >= 0, "value must be non-negative");
   _CCCL_ASSERT(multiplier >= 0, "multiplier must be non-negative");
-  using unsigned_t = unsigned_implicit_prom_t<T>;
-  using larger_t   = larger_unsigned_type_t<T>;
+  static constexpr int NumBits = sizeof(DivisorType) * CHAR_BIT;
+  using unsigned_t             = unsigned_implicit_prom_t<DivisorType>;
+  using larger_t               = larger_unsigned_type_t<DivisorType>;
   // clang-format off
   NV_IF_TARGET(
     NV_IS_HOST,
@@ -138,9 +139,8 @@ class fast_div_mod
 {
   static_assert(supported_integral<T>::value, "unsupported type");
 
-  using prom_t                 = implicit_prom_t<T>;
-  using unsigned_t             = unsigned_implicit_prom_t<T>;
-  static constexpr int BitSize = sizeof(T) * CHAR_BIT;
+  using prom_t     = implicit_prom_t<T>;
+  using unsigned_t = unsigned_implicit_prom_t<T>;
 
 public:
   template <typename U, typename R>
@@ -169,6 +169,7 @@ public:
     {
       return;
     }
+    constexpr int BitSize   = sizeof(T) * CHAR_BIT;
     constexpr int BitOffset = BitSize / 16;
     int num_bits            = ::cuda::std::bit_width(udivisor) + 1;
     // without explicit power-of-two check, num_bits needs to replace +1 with !::cuda::std::has_single_bit(udivisor)
@@ -198,7 +199,7 @@ public:
     {
       return result_t{static_cast<Common>(udividend / 3), static_cast<Common>(udividend % 3)};
     }
-    auto higher_bits = (_multiplier == 0) ? udividend : multiply_extract_higher_bits<BitSize>(dividend, _multiplier);
+    auto higher_bits = (_multiplier == 0) ? udividend : multiply_extract_higher_bits<T>(dividend, _multiplier);
     auto quotient    = higher_bits >> _shift_right;
     auto remainder   = udividend - (quotient * _divisor);
     _CCCL_ASSERT(quotient == dividend / _divisor, "wrong quotient");
