@@ -103,6 +103,35 @@ See the `NVBench documentation <https://github.com/NVIDIA/nvbench/blob/main/docs
 for more information on how to specify the axis values.
 
 
+Comparing benchmark results
+--------------------------------------------------------------------------------
+
+Let's say you have a modification that you'd like to benchmark.
+To compare the performance you have to build and run the benchmark as described above for the unmodified code,
+saving the results to a JSON file, e.g. `base.json`.
+Then, you apply your code changes (e.g., switch to a different branch, git stash pop, apply a patch file, etc.),
+rebuild and rerun the benchmark, saving the results to a different JSON file, e.g. `new.json`.
+
+You can now compare the two result JSON files using, assuming you are still in your build directory:
+
+.. code-block:: bash
+
+    PYTHONPATH=./_deps/nvbench-src/scripts ./_deps/nvbench-src/scripts/nvbench_compare.py base.json new.json
+
+The `PYTHONPATH` environment variable may not be necessary in all cases.
+The script will print a Markdown report, showing the runtime differences between each variant of the two benchmark run:
+
+.. code-block:: bash
+
+    TODO
+
+In addition to showing the absolute and relative runtime difference,
+NVBench reports the noise of the measurements,
+which corresponds to the relative standard deviation.
+It then reports with statistical significance in the `Status` column
+how the runtime changed from the base to the new version.
+
+
 Running all benchmarks
 --------------------------------------------------------------------------------
 
