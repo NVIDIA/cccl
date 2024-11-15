@@ -849,7 +849,7 @@ public:
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! Unfold a multi-dimensional extents into
+  //! Iterate through a multi-dimensional extents into
   //!
   //! - a single linear index that represents the current iteration
   //! - indices of each extent dimension
@@ -864,17 +864,17 @@ public:
   //! The following code snippet demonstrates how to use ``ForEachInExtents`` to tabulate a 3D array with its
   //! coordinates.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_each_in_extents_api.cu
   //!     :language: c++
   //!     :dedent:
-  //!     :start-after: example-begin bulk-square-t
-  //!     :end-before: example-end bulk-square-t
+  //!     :start-after: example-begin for-each-in-extents-op
+  //!     :end-before: example-end for-each-in-extents-op
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_each_in_extents_api.cu
   //!     :language: c++
   //!     :dedent:
-  //!     :start-after: example-begin bulk-wo-temp-storage
-  //!     :end-before: example-end bulk-wo-temp-storage
+  //!     :start-after:example-begin for-each-in-extents-example
+  //!     :end-before: example-end for-each-in-extents-example
   //!
   //! @endrst
   //!
@@ -927,12 +927,12 @@ public:
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
-  //! Unfold a multi-dimensional extents into
+  //! Iterate through a multi-dimensional extents producing
   //!
   //! - a single linear index that represents the current iteration
-  //! - indices of each extent dimension
+  //! - list of indices containing the coordinates for each extent dimension
   //!
-  //! Then apply a function object to the results.
+  //! Then apply a function object to each tuple of linear index and multidimensional coordinate list.
   //!
   //! - The return value of ``op``, if any, is ignored.
   //!
@@ -942,17 +942,17 @@ public:
   //! The following code snippet demonstrates how to use ``ForEachInExtents`` to tabulate a 3D array with its
   //! coordinates.
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_each_in_extents_api.cu
   //!     :language: c++
   //!     :dedent:
-  //!     :start-after: example-begin bulk-square-t
-  //!     :end-before: example-end bulk-square-t
+  //!     :start-after: example-begin for-each-in-extents-op
+  //!     :end-before: example-end for-each-in-extents-op
   //!
-  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_api.cu
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_each_in_extents_api.cu
   //!     :language: c++
   //!     :dedent:
-  //!     :start-after: example-begin bulk-wo-temp-storage
-  //!     :end-before: example-end bulk-wo-temp-storage
+  //!     :start-after:example-begin for-each-in-extents-example
+  //!     :end-before: example-end for-each-in-extents-example
   //!
   //! @endrst
   //!
