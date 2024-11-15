@@ -234,6 +234,16 @@ public:
     }
   }
 
+  /// Add a tuple of dependencies
+  template <typename ...Args>
+  void add_deps(::std::tuple<Args...> &deps_tuple)
+  {
+    ::std::apply([this](const auto &... deps) {
+        // Call add_deps on each dep using a fold expression
+        (add_deps(deps), ...);
+    }, deps_tuple);
+  }
+
   /// Get the dependencies of the task
   const task_dep_vector_untyped& get_task_deps() const
   {
