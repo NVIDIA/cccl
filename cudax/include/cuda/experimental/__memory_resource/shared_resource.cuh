@@ -121,7 +121,7 @@ struct shared_resource
   //! held by this \c shared_resource object is released, while the reference held by \c __other
   //! is transferred to this object.
   //! @param __other The \c shared_resource object to move from.
-  /// @post \c __other is left in a valid but unspecified state.
+  //! @post \c __other is left in a valid but unspecified state.
   shared_resource& operator=(shared_resource&& __other) noexcept
   {
     if (this != &__other)

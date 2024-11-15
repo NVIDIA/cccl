@@ -20,6 +20,8 @@
 #include <catch2/catch.hpp>
 #include <utility.cuh>
 
+#ifndef __CUDA_ARCH__
+
 namespace cudax = cuda::experimental;
 
 using managed_resource = cudax::managed_memory_resource;
@@ -97,7 +99,7 @@ TEST_CASE("managed_memory_resource allocation", "[memory_resource]")
     res.deallocate_async(ptr, 42, 4, stream);
   }
 
-#ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#  ifndef _LIBCUDACXX_NO_EXCEPTIONS
   { // allocate with too small alignment
     while (true)
     {
@@ -160,7 +162,7 @@ TEST_CASE("managed_memory_resource allocation", "[memory_resource]")
       CHECK(false);
     }
   }
-#endif // _LIBCUDACXX_NO_EXCEPTIONS
+#  endif // _LIBCUDACXX_NO_EXCEPTIONS
 }
 
 enum class AccessibilityType
@@ -226,7 +228,7 @@ TEST_CASE("managed_memory_resource comparison", "[memory_resource]")
 
   { // comparison against a managed_memory_resource wrapped inside a resource_ref<device_accessible>
     managed_resource second{};
-    cuda::mr::resource_ref<cuda::mr::device_accessible> second_ref{second};
+    cuda::mr::resource_ref<cudax::device_accessible> second_ref{second};
     CHECK(first == second_ref);
     CHECK(!(first != second_ref));
     CHECK(second_ref == first);
@@ -235,7 +237,7 @@ TEST_CASE("managed_memory_resource comparison", "[memory_resource]")
 
   { // comparison against a managed_memory_resource wrapped inside a async_resource_ref
     managed_resource second{};
-    cuda::mr::async_resource_ref<cuda::mr::device_accessible> second_ref{second};
+    cuda::mr::async_resource_ref<cudax::device_accessible> second_ref{second};
 
     CHECK(first == second_ref);
     CHECK(!(first != second_ref));
@@ -271,3 +273,5 @@ TEST_CASE("managed_memory_resource comparison", "[memory_resource]")
     CHECK(device_async_resource != first);
   }
 }
+
+#endif // __CUDA_ARCH__
