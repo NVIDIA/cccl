@@ -132,7 +132,27 @@ It then reports with statistical significance in the `Status` column
 how the runtime changed from the base to the new version.
 
 
-Running all benchmarks
+Running all benchmarks directly from the command line
+--------------------------------------------------------------------------------
+
+To get a full snapshot of CUB's performance, you can run all benchmarks and save the results.
+For example:
+
+.. code-block:: bash
+
+    ninja cub.all.benches
+    benchmarks=$(ls bin | grep cub.bench); n=$(echo $benchmarks | wc -w); i=1; \
+    for b in $benchmarks; do \
+      echo "=== Running $b ($i/$n) ==="; \
+      ./bin/$b -d 0 --stopping-criterion entropy --json $b.json --md $b.md; \
+      ((i++)); \
+    done
+
+This will generate one JSON and one Markdown file for each benchmark.
+You can archive those files for later comparison or analysis.
+
+
+Running all benchmarks via tuning scripts
 --------------------------------------------------------------------------------
 
 This file contains instructions on how to run all CUB benchmarks using CUB tuning infrastructure.
