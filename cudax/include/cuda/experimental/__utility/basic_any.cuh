@@ -560,11 +560,11 @@ namespace cuda::experimental
 template <class _Interface>
 struct __ireference;
 
-template <class _Interface>
+template <class _Interface, class _Select = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any;
 
-template <class _Interface>
-struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>>;
+template <class _Interface, class _Select>
+struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>, _Select>;
 
 template <class _Interface>
 struct basic_any<_Interface*>;
@@ -2099,7 +2099,7 @@ struct __basic_any_base<_Interface, 2> : __interface_of<_Interface> // copyable 
   }
 
 private:
-  template <class>
+  template <class, class>
   friend struct basic_any;
   friend struct __basic_any_access;
 
@@ -2134,7 +2134,7 @@ struct __basic_any_base<_Interface, 0> : __basic_any_base<_Interface, 2> // immo
 ///
 /// basic_any
 ///
-template <class _Interface>
+template <class _Interface, class>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any : __basic_any_base<_Interface>
 {
 private:
@@ -2351,7 +2351,7 @@ public:
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 
 private:
-  template <class>
+  template <class, class>
   friend struct basic_any;
   friend struct __basic_any_access;
   template <class, int>
@@ -2501,8 +2501,8 @@ _CCCL_NV_DIAG_SUPPRESS(554)
 ///
 /// basic_any<__ireference<_Interface>>
 ///
-template <class _Interface>
-struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>>
+template <class _Interface, class Select>
+struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>, Select>
     : __interface_of<__ireference<_Interface>>
 #if !defined(__cpp_concepts)
     , __basic_any_reference_conversion_base<_Interface>
@@ -2549,7 +2549,7 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>>
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 
 private:
-  template <class>
+  template <class, class>
   friend struct basic_any;
   friend struct __basic_any_access;
 
@@ -2632,11 +2632,11 @@ _CCCL_DIAG_POP
 /// basic_any<_Interface&>
 ///
 template <class _Interface>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__ireference<_Interface>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__ireference<_Interface>, int>
 {
   static_assert(_CUDA_VSTD::is_class_v<_Interface>, "expecting a class type");
-  using typename basic_any<__ireference<_Interface>>::interface_type;
-  using basic_any<__ireference<_Interface>>::__is_const_ref;
+  using typename basic_any<__ireference<_Interface>, int>::interface_type;
+  using basic_any<__ireference<_Interface>, int>::__is_const_ref;
 
   _CUDAX_API basic_any(basic_any const& __other) noexcept
   {
@@ -2697,7 +2697,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__irefer
   }
 
 private:
-  template <class>
+  template <class, class>
   friend struct basic_any;
   friend struct __basic_any_access;
 
@@ -2906,7 +2906,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
 #endif // DOXYGEN_SHOULD_SKIP_THIS
 
 private:
-  template <class>
+  template <class, class>
   friend struct basic_any;
   friend struct __basic_any_access;
 
