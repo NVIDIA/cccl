@@ -3,8 +3,6 @@
 #
 # Provided by NVIDIA under the same license as the associated Thrust library.
 #
-# Reply-To: Allison Piper <alliepiper16@gmail.com>
-#
 # *****************************************************************************
 # **     The following is a short reference to using Thrust from CMake.      **
 # ** For more details, see the README.md in the same directory as this file. **
@@ -62,18 +60,7 @@
 #   IGNORE_CUB_VERSION            # Skip configure-time and compile-time CUB version checks
 # )
 #
-# # DISPATCH options [Advanced]:
-# #
-# # Controls how Thrust handles large (>2^32 element) inputs. The default is `Dynamic`.
-# # This only applies when DEVICE=CUDA.
-# #
-# # - `Dynamic` lets Thrust choose the index type based on input size, allowing
-# #   large inputs and optimal performance at the cost of increased compile time and binary size,
-# #   as Thrust will compile each kernel twice, once for 32 bit and once for 64 bit.
-# # - `Force32bit` forces Thrust to use a 32 bit offset type. This improves compile time and
-# #   binary size but limits the input size.
-# # - `Force64bit` forces Thrust to use a 64 bit offset type. This improves compile time and
-# #   binary size and allows large input sizes. However, it might degrade runtime performance.
+# # DISPATCH options (See README):
 # thrust_create_target(TargetName DISPATCH Dynamic)
 # thrust_create_target(TargetName DISPATCH Force32bit)
 # thrust_create_target(TargetName DISPATCH Force64bit)
