@@ -22,7 +22,7 @@
 #endif // no system header
 
 // cudaMallocAsync was introduced in CTK 11.2
-#if !defined(_CCCL_COMPILER_MSVC_2017) && !defined(_CCCL_CUDACC_BELOW_11_2)
+#if !defined(_CCCL_COMPILER_MSVC_2017) && _CCCL_CUDACC_AT_LEAST(11, 2)
 
 #  if defined(_CCCL_CUDA_COMPILER_CLANG)
 #    include <cuda_runtime.h>
@@ -417,6 +417,6 @@ static_assert(_CUDA_VMR::resource_with<device_memory_resource, _CUDA_VMR::device
 
 #  endif // _CCCL_STD_VER >= 2014
 
-#endif // !_CCCL_COMPILER_MSVC_2017 && !_CCCL_CUDACC_BELOW_11_2
+#endif // !_CCCL_COMPILER_MSVC_2017 && _CCCL_CUDACC_AT_LEAST(11, 2)
 
 #endif //_CUDAX__MEMORY_RESOURCE_CUDA_DEVICE_MEMORY_RESOURCE

@@ -92,9 +92,9 @@
 #endif // _CCCL_HAS_BUILTIN(__builtin_assume_aligned)
 
 // NVCC below 11.2 treats this as a host only function
-#if defined(_CCCL_CUDACC_BELOW_11_2)
+#if _CCCL_CUDACC_BELOW(11, 2)
 #  undef _CCCL_BUILTIN_ASSUME_ALIGNED
-#endif // _CCCL_CUDACC_BELOW_11_2
+#endif // _CCCL_CUDACC_BELOW(11, 2)
 
 // nvhpc has a bug where it supports __builtin_addressof but does not mark it via _CCCL_CHECK_BUILTIN
 #if _CCCL_CHECK_BUILTIN(builtin_addressof) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 70000) \
@@ -107,14 +107,14 @@
 #endif // _CCCL_CHECK_BUILTIN(builtin_assume)
 
 // NVCC prior to 11.2 cannot handle __builtin_assume
-#if defined(_CCCL_CUDACC_BELOW_11_2)
+#if _CCCL_CUDACC_BELOW(11, 2)
 #  undef _CCCL_BUILTIN_ASSUME
-#endif // _CCCL_CUDACC_BELOW_11_2
+#endif // _CCCL_CUDACC_BELOW(11, 2)
 
 // NVCC prior to 11.2 does not understand __builtin_assume
-#if defined(_CCCL_CUDACC_BELOW_11_2)
+#if _CCCL_CUDACC_BELOW(11, 2)
 #  undef _CCCL_BUILTIN_ASSUME
-#endif // _CCCL_CUDACC_BELOW_11_2
+#endif // _CCCL_CUDACC_BELOW(11, 2)
 
 // MSVC supports __builtin_bit_cast from 19.25 on
 #if _CCCL_CHECK_BUILTIN(builtin_bit_cast) || (defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION > 1925)
@@ -123,7 +123,7 @@
 
 // clang prior to clang-10 supports __builtin_bit_cast but it is not a constant expression
 // NVCC prior to 11.7 cannot parse __builtin_bit_cast
-#if (defined(_CCCL_COMPILER_CLANG) && _CCCL_CLANG_VERSION < 100000) || defined(_CCCL_CUDACC_BELOW_11_7)
+#if (defined(_CCCL_COMPILER_CLANG) && _CCCL_CLANG_VERSION < 100000) || _CCCL_CUDACC_BELOW(11, 7)
 #  undef _CCCL_BUILTIN_BIT_CAST
 #endif // clang < 10 || nvcc < 11.7
 
@@ -134,10 +134,10 @@
 #endif // !_CCCL_HAS_BUILTIN(__builtin_COLUMN)
 
 // NVCC below 11.3 cannot handle __builtin_COLUMN
-#if defined(_CCCL_CUDACC_BELOW_11_3)
+#if _CCCL_CUDACC_BELOW(11, 3)
 #  undef _CCCL_BUILTIN_COLUMN
 #  define _CCCL_BUILTIN_COLUMN() 0
-#endif // _CCCL_CUDACC_BELOW_11_3
+#endif // _CCCL_CUDACC_BELOW(11, 3)
 
 #if _CCCL_CHECK_BUILTIN(builtin_contant_p) || defined(_CCCL_COMPILER_GCC)
 #  define _CCCL_BUILTIN_CONSTANT_P(...) __builtin_constant_p(__VA_ARGS__)
@@ -155,10 +155,10 @@
 #endif // !_CCCL_HAS_BUILTIN(__builtin_LINE)
 
 // NVCC below 11.3 cannot handle __builtin_FILE
-#if defined(_CCCL_CUDACC_BELOW_11_3)
+#if _CCCL_CUDACC_BELOW(11, 3)
 #  undef _CCCL_BUILTIN_FILE
 #  define _CCCL_BUILTIN_FILE() __FILE__
-#endif // _CCCL_CUDACC_BELOW_11_3
+#endif // _CCCL_CUDACC_BELOW(11, 3)
 
 #if _CCCL_HAS_BUILTIN(__builtin_FUNCTION) || defined(_CCCL_COMPILER_GCC) \
   || (defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION >= 1927)
@@ -168,13 +168,13 @@
 #endif // !_CCCL_HAS_BUILTIN(__builtin_FUNCTION)
 
 // NVCC below 11.3 cannot handle __builtin_FUNCTION
-#if defined(_CCCL_CUDACC_BELOW_11_3)
+#if _CCCL_CUDACC_BELOW(11, 3)
 #  undef _CCCL_BUILTIN_FUNCTION
 #  define _CCCL_BUILTIN_FUNCTION() "__builtin_FUNCTION is unsupported"
-#endif // _CCCL_CUDACC_BELOW_11_3
+#endif // _CCCL_CUDACC_BELOW(11, 3)
 
 #if _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 90000) \
-  || (defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION > 1924 && !defined(_CCCL_CUDACC_BELOW_11_3))
+  || (defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION > 1924 && _CCCL_CUDACC_AT_LEAST(11, 3))
 #  define _CCCL_BUILTIN_IS_CONSTANT_EVALUATED(...) __builtin_is_constant_evaluated(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated)
 
@@ -190,7 +190,7 @@
 
 // NVCC prior to 11.3 and clang prior to clang-10 accept __builtin_launder but break with a compiler error about an
 // invalid return type
-#if (defined(_CCCL_COMPILER_CLANG) && _CCCL_CLANG_VERSION < 100000) || defined(_CCCL_CUDACC_BELOW_11_3)
+#if (defined(_CCCL_COMPILER_CLANG) && _CCCL_CLANG_VERSION < 100000) || _CCCL_CUDACC_BELOW(11, 3)
 #  undef _CCCL_BUILTIN_LAUNDER
 #endif // clang < 10 || nvcc < 11.3
 
@@ -202,10 +202,10 @@
 #endif // !_CCCL_HAS_BUILTIN(__builtin_LINE)
 
 // NVCC below 11.3 cannot handle __builtin_LINE
-#if defined(_CCCL_CUDACC_BELOW_11_3)
+#if _CCCL_CUDACC_BELOW(11, 3)
 #  undef _CCCL_BUILTIN_LINE
 #  define _CCCL_BUILTIN_LINE() __LINE__
-#endif // _CCCL_CUDACC_BELOW_11_3
+#endif // _CCCL_CUDACC_BELOW(11, 3)
 
 #if _CCCL_CHECK_BUILTIN(__builtin_operator_new) && _CCCL_CHECK_BUILTIN(__builtin_operator_delete) \
   && defined(_CCCL_CUDA_COMPILER_CLANG)
@@ -353,9 +353,9 @@
 #endif // _CCCL_CHECK_BUILTIN(is_lvalue_reference)
 
 // NVCC prior to 11.3 cannot parse __is_lvalue_reference
-#if defined(_CCCL_CUDACC_BELOW_11_3)
+#if _CCCL_CUDACC_BELOW(11, 3)
 #  undef _CCCL_BUILTIN_IS_LVALUE_REFERENCE
-#endif // _CCCL_CUDACC_BELOW_11_3
+#endif // _CCCL_CUDACC_BELOW(11, 3)
 
 #if _CCCL_HAS_BUILTIN(__is_member_function_pointer)
 #  define _CCCL_BUILTIN_IS_MEMBER_FUNCTION_POINTER(...) __is_member_function_pointer(__VA_ARGS__)
@@ -386,9 +386,9 @@
 #endif // _CCCL_CHECK_BUILTIN(is_object)
 
 // NVCC prior to 11.3 cannot parse __is_object
-#if defined(_CCCL_CUDACC_BELOW_11_3)
+#if _CCCL_CUDACC_BELOW(11, 3)
 #  undef _CCCL_BUILTIN_IS_OBJECT
-#endif // _CCCL_CUDACC_BELOW_11_3
+#endif // _CCCL_CUDACC_BELOW(11, 3)
 
 #if _CCCL_CHECK_BUILTIN(is_pod) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 40300) \
   || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
@@ -471,9 +471,9 @@
 #endif // _CCCL_CHECK_BUILTIN(is_unsigned)
 
 // NVCC prior to 11.3 cannot parse __is_unsigned
-#if defined(_CCCL_CUDACC_BELOW_11_3)
+#if _CCCL_CUDACC_BELOW(11, 3)
 #  undef _CCCL_BUILTIN_IS_UNSIGNED
-#endif // _CCCL_CUDACC_BELOW_11_3
+#endif // _CCCL_CUDACC_BELOW(11, 3)
 
 // Disabled due to libstdc++ conflict
 #if 0 // _CCCL_HAS_BUILTIN(__is_void)
@@ -550,9 +550,9 @@
 #endif // _CCCL_HAS_BUILTIN(__type_pack_element)
 
 // NVCC prior to 12.2 have trouble with pack expansion into __type_pack_element in an alias template
-#if defined(_CCCL_CUDACC_BELOW_12_2)
+#if _CCCL_CUDACC_BELOW(12, 2)
 #  undef _CCCL_BUILTIN_TYPE_PACK_ELEMENT
-#endif // _CCCL_CUDACC_BELOW_12_2
+#endif // _CCCL_CUDACC_BELOW(12, 2)
 
 #if _CCCL_CHECK_BUILTIN(underlying_type) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 40700) \
   || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
@@ -561,7 +561,7 @@
 
 #if defined(_CCCL_COMPILER_MSVC)
 #  // To use __builtin_FUNCSIG(), both MSVC and nvcc need to support it
-#  if _CCCL_MSVC_VERSION >= 1935 && !defined(_CCCL_CUDACC_BELOW_12_3)
+#  if _CCCL_MSVC_VERSION >= 1935 && _CCCL_CUDACC_AT_LEAST(12, 3)
 #    define _CCCL_BUILTIN_PRETTY_FUNCTION() __builtin_FUNCSIG()
 #  else // ^^^ _CCCL_MSVC_VERSION >= 1935 ^^^ / vvv _CCCL_MSVC_VERSION < 1935 vvv
 #    define _CCCL_BUILTIN_PRETTY_FUNCTION() __FUNCSIG__
