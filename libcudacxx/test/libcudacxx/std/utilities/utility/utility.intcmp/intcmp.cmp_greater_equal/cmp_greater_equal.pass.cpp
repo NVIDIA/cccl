@@ -23,6 +23,8 @@ struct Tuple
   T min = cuda::std::numeric_limits<T>::min();
   T max = cuda::std::numeric_limits<T>::max();
   T mid = cuda::std::is_signed<T>::value ? T(-1) : max >> 1;
+
+  __host__ __device__ constexpr Tuple() noexcept {}
 };
 
 template <typename T>
