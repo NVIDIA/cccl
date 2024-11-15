@@ -46,9 +46,6 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   state.add_element_count(needles);
 
   caching_allocator_t alloc;
-  thrust::lower_bound(
-    policy(alloc), data.begin(), data.begin() + elements, data.begin() + elements, data.end(), result.begin());
-
   state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
     thrust::lower_bound(
       policy(alloc, launch), data.begin(), data.begin() + elements, data.begin() + elements, data.end(), result.begin());

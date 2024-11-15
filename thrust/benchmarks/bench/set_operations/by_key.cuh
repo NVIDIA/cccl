@@ -53,6 +53,7 @@ static void basic(nvbench::state& state, nvbench::type_list<KeyT, ValueT>, OpT o
   thrust::sort(in_keys.begin() + elements_in_A, in_keys.end());
 
   caching_allocator_t alloc;
+  // not a warm-up run, we need to run once to determine the size of the output
   auto result_ends = op(
     policy(alloc),
     in_keys.cbegin(),
