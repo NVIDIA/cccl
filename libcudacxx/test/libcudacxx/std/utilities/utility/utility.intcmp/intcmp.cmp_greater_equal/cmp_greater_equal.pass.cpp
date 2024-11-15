@@ -22,28 +22,15 @@
 template <typename T>
 struct Tuple
 {
-  T min;
-  T max;
-  T mid;
-  __host__ __device__ constexpr Tuple()
-  {
-    min = cuda::std::numeric_limits<T>::min();
-    max = cuda::std::numeric_limits<T>::max();
-    if constexpr (cuda::std::is_signed_v<T>)
-    {
-      mid = T(-1);
-    }
-    else
-    {
-      mid = max >> 1;
-    }
-  }
+  T min = cuda::std::numeric_limits<T>::min();
+  T max = cuda::std::numeric_limits<T>::max();
+  T mid = cuda::std::is_signed_v<T> ? T(-1) : max >> 1;
 };
 
 template <typename T>
 __host__ __device__ constexpr void test_cmp_greater_equal1()
 {
-  constexpr Tuple<T> tup;
+  constexpr Tuple<T> tup{};
   assert(!cuda::std::cmp_greater_equal(T(0), T(1)));
   assert(!cuda::std::cmp_greater_equal(T(1), T(2)));
   assert(!cuda::std::cmp_greater_equal(tup.min, tup.max));
@@ -119,6 +106,6 @@ int main(int, char**)
 {
   ASSERT_NOEXCEPT(cuda::std::cmp_greater_equal(1, 0));
   test();
-  static_assert(test());
+  static_assert(test(), "");
   return 0;
 }
