@@ -24,6 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  ******************************************************************************/
+#define CCCL_ENABLE_DEVICE_ASSERTIONS 1
 #include <cub/config.cuh>
 
 #if __cccl_lib_mdspan
@@ -54,28 +55,32 @@ using index_types =
 #  endif
                  >;
 
-C2H_TEST("FastDivMod", "[FastDivMod][Random]", index_types)
+C2H_TEST("FastDivMod random", "[FastDivMod][Random]", index_types)
 {
   using cub::detail::fast_div_mod;
   using index_type         = c2h::get<0, TestType>;
   constexpr auto max_value = cuda::std::numeric_limits<index_type>::max();
-  auto divisor             = GENERATE(take(100, random(index_type{1}, max_value)));
-  auto dividend            = GENERATE(take(100, random(index_type{1}, max_value)));
+  auto divisor             = GENERATE(take(20, random(index_type{1}, max_value)));
+  auto dividend            = GENERATE(take(20, random(index_type{1}, max_value)));
   fast_div_mod<index_type> div_mod(divisor);
-  static_cast<void>(div_mod(dividend));
+  CAPTURE(c2h::type_name<index_type>(), divisor, dividend);
+  REQUIRE(dividend / divisor == div_mod(dividend).quotient);
+  REQUIRE(dividend % divisor == div_mod(dividend).remainder);
 }
 
-C2H_TEST("FastDivMod", "[FastDivMod][EdgeCases]", index_types)
+C2H_TEST("FastDivMod edge cases", "[FastDivMod][EdgeCases]", index_types)
 {
   using cub::detail::fast_div_mod;
   using index_type         = c2h::get<0, TestType>;
   constexpr auto max_value = cuda::std::numeric_limits<index_type>::max();
   // divisor/dividend == max
   fast_div_mod<index_type> div_mod_max(max_value);
-  static_cast<void>(div_mod_max(max_value));
-  // divisor == 0, /dividend == max
-  fast_div_mod<index_type> div_mod_min(max_value);
-  static_cast<void>(div_mod_min(10));
+  REQUIRE(max_value / max_value == div_mod_max(max_value).quotient);
+  REQUIRE(max_value % max_value == div_mod_max(max_value).remainder);
+  // divisor == 10, dividend == 0
+  fast_div_mod<index_type> div_mod_min(10);
+  REQUIRE(0 / 10 == div_mod_min(0).quotient);
+  REQUIRE(0 % 10 == div_mod_min(0).remainder);
 }
 
 #endif // __cccl_lib_mdspan
