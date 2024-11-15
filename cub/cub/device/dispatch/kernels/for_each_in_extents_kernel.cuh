@@ -63,7 +63,7 @@ template <int Rank,
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto get_extent_size(ExtendType ext, FastDivModType extent_size)
 {
   using extent_index_type = typename ExtendType::index_type;
-  using IndexType         = decltype(+extent_index_type{});
+  using IndexType         = implicit_prom_t<extent_index_type>;
   using U                 = ::cuda::std::make_unsigned_t<IndexType>;
   return static_cast<U>(ext.static_extent(Rank));
 }
