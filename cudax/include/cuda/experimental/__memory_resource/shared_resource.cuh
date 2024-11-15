@@ -61,14 +61,15 @@ namespace cuda::experimental::mr
 //! avoiding lifetime issues. It can be used directly, like so:
 //!
 //! .. code-block:: cpp
-//!   auto mr = shared_resource< MyCustomResource >{ args... };
 //!
+//!   auto mr = shared_resource< MyCustomResource >{ args... };
 //!
 //! It can also be used as a mixin when defining a custom resource. When used
 //! as a mixin, the implementation of the resource should be in a nested type
 //! named ``impl`` as shown below.
 //!
 //! .. code-block:: cpp
+//!
 //!   struct MyCustomSharedResource : shared_resource< MyCustomSharedResource >
 //!   {
 //!     MyCustomSharedResource( Arg arg )

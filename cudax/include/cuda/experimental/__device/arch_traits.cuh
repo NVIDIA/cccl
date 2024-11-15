@@ -329,7 +329,6 @@ _CCCL_HOST_DEVICE inline constexpr arch_traits_t arch_traits(unsigned int __sm_v
   switch (__sm_version)
   {
     case 600:
-    case 610:
       return detail::sm_600_traits;
     case 700:
       return detail::sm_700_traits;
