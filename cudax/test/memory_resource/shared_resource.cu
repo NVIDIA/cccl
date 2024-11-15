@@ -216,9 +216,10 @@ TEST_CASE("shared_resource mixin", "[container][resource]")
   static_assert(cuda::mr::resource<shared_test_resource>);
   static_assert(!cuda::mr::async_resource<shared_test_resource>);
   {
-    shared_test_resource mr(&mr);
+    int i = 0;
+    shared_test_resource mr(&i);
     CHECK(shared_test_resource::instance_count == 1);
-    CHECK(mr.allocate(0, 0) == &mr);
+    CHECK(mr.allocate(0, 0) == &i);
     shared_test_resource copy = mr;
     CHECK(shared_test_resource::instance_count == 1);
     CHECK(copy == mr);

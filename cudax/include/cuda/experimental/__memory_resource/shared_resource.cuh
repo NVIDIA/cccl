@@ -227,13 +227,13 @@ struct shared_resource
   }
 
 private:
-  template <class T, class = typename T::impl>
+  template <class _Ty, class _Uy = typename _Ty::impl>
   _CUDAX_HOST_API static _CUDA_VSTD::true_type __impl_test(int);
-  template <class T>
+  template <class _Ty>
   _CUDAX_HOST_API static _CUDA_VSTD::false_type __impl_test(long);
 
-  template <class T>
-  using __has_impl = decltype(shared_resource::__impl_test<T>(0));
+  template <class _Ty>
+  using __has_impl = decltype(shared_resource::__impl_test<_Ty>(0));
 
   template <bool HasImpl, class = void>
   struct __impl_base : _Resource::impl
@@ -244,8 +244,8 @@ private:
     {}
   };
 
-  template <class T>
-  struct __impl_base<false, T> : _Resource
+  template <class _Ty>
+  struct __impl_base<false, _Ty> : _Resource
   {
     static_assert(!_CUDA_VSTD::is_base_of_v<shared_resource, _Resource>,
                   "It looks like shared_resource is being used as a mixin, but the specified Resource does not have an "
