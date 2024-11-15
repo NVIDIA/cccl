@@ -60,38 +60,37 @@ namespace cuda::experimental::mr
 //! This allows the user to pass a resource around with reference semantics while
 //! avoiding lifetime issues. It can be used directly, like so:
 //!
-//! @code{.cpp}
-//! auto mr = shared_resource< MyCustomResource >{ args... };
-//! @endcode
+//! .. code-block:: cpp
+//!   auto mr = shared_resource< MyCustomResource >{ args... };
+//!
 //!
 //! It can also be used as a mixin when defining a custom resource. When used
 //! as a mixin, the implementation of the resource should be in a nested type
 //! named ``impl`` as shown below.
 //!
-//! @code{.cpp}
-//! struct MyCustomSharedResource : shared_resource< MyCustomSharedResource >
-//! {
-//!   MyCustomSharedResource( Arg arg )
-//!       : shared_resource( arg )
-//!   {}
-//!
-//! private:
-//!   friend shared_resource;
-//!
-//!   struct impl // put the implementation of the resource here
+//! .. code-block:: cpp
+//!   struct MyCustomSharedResource : shared_resource< MyCustomSharedResource >
 //!   {
-//!     impl( Arg arg )
-//!     impl(impl&&) = delete; // immovable impls are ok
-//!
-//!     void* allocate(size_t, size_t);
-//!     void deallocate(void*, size_t, size_t);
-//!     bool operator==(const impl&) const = default;
+//!     MyCustomSharedResource( Arg arg )
+//!         : shared_resource( arg )
+//!     {}
 //!
 //!   private:
-//!     Arg arg;
+//!     friend shared_resource;
+//!
+//!     struct impl // put the implementation of the resource here
+//!     {
+//!       impl( Arg arg )
+//!       impl(impl&&) = delete; // immovable impls are ok
+//!
+//!       void* allocate(size_t, size_t);
+//!       void deallocate(void*, size_t, size_t);
+//!       bool operator==(const impl&) const = default;
+//!
+//!     private:
+//!       Arg arg;
+//!     };
 //!   };
-//! };
-//! @endcode
 //!
 //! Instances of ``MyCustomSharedResource`` satisfy the ``cuda::mr::resource``
 //! concept. Copies all share ownership of the underlying ``impl`` object.
@@ -228,8 +227,8 @@ struct shared_resource
   }
 
 private:
-  template <class _Ty, class _Uy = typename _Ty::impl>
-  _CUDAX_HOST_API static _CUDA_VSTD::true_type __impl_test(int);
+  template <class _Ty>
+  _CUDAX_HOST_API static _CUDA_VSTD::true_type __impl_test(int, typename _Ty::impl* = nullptr);
   template <class _Ty>
   _CUDAX_HOST_API static _CUDA_VSTD::false_type __impl_test(long);
 
