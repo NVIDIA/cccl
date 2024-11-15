@@ -67,7 +67,7 @@ struct larger_unsigned_type
 };
 
 template <typename T>
-struct larger_unsigned_type<T, typename ::cuda::std::enable_if<(sizeof(T) < 4)>::type>
+struct larger_unsigned_type<T, ::cuda::std::__enable_if_t<(sizeof(T) < 4)>>
 {
   using type = ::cuda::std::uint32_t;
 };
