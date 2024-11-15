@@ -580,4 +580,19 @@ struct has_ostream_operator<T, decltype(void(::std::declval<::std::ostream&>() <
 
 } // end namespace reserved
 
+template <typename T, typename Tuple>
+struct count_type;
+
+template <typename T, typename... Args>
+struct count_type<T, ::std::tuple<Args...>> {
+    static constexpr std::size_t value = (::std::size_t(0) + ... + ::std::is_same<T, Args>::value);
+};
+
+/**
+ * @brief Given a tuple<T1, ...Tk>, this counts the number of Ti which are equal to T
+ */
+template <typename T, typename Tuple>
+constexpr ::std::size_t count_type_v = count_type<T, Tuple>::value;
+
+
 } // namespace cuda::experimental::stf
