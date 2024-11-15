@@ -17,6 +17,7 @@ set(stf_example_sources
 # Examples which rely on code generation (parallel_for or launch)
 set(stf_example_codegen_sources
   01-axpy-parallel_for.cu
+  01-axpy-reduce.cu
   01-axpy-launch.cu
   binary_fhe.cu
   cfd.cu

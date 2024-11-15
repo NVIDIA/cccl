@@ -819,7 +819,8 @@ public:
       }
 
       case access_mode::rw:
-      case access_mode::write: {
+      case access_mode::write:
+      case access_mode::reduce: {
         switch (current_msir)
         {
           case reserved::msir_state_id::modified:
@@ -886,7 +887,7 @@ public:
             else
             {
               // Write only
-              assert(mode == access_mode::write);
+              assert(mode == access_mode::write || mode == access_mode::reduce);
             }
 
             // Clear and all copies which become invalid, keep prereqs
@@ -2279,25 +2280,31 @@ public:
   {
     using U = readonly_type_of<T>;
     // The constness of *this implies that access mode is read
-    return task_dep<U>(*this, /* access_mode::read, */ ::std::forward<Pack>(pack)...);
+    return task_dep_op<::std::pair<U, task_dep_op_none>>(*this, /* access_mode::read, */ ::std::forward<Pack>(pack)...);
   }
 
   template <typename... Pack>
-  task_dep<T> write(Pack&&... pack)
+  auto write(Pack&&... pack)
   {
-    return task_dep<T>(*this, access_mode::write, ::std::forward<Pack>(pack)...);
+    return task_dep_op<::std::pair<T, task_dep_op_none>>(*this, access_mode::write, ::std::forward<Pack>(pack)...);
   }
 
   template <typename... Pack>
-  task_dep<T> rw(Pack&&... pack)
+  auto rw(Pack&&... pack)
   {
-    return task_dep<T>(*this, access_mode::rw, ::std::forward<Pack>(pack)...);
+    return task_dep_op<::std::pair<T, task_dep_op_none>>(*this, access_mode::rw, ::std::forward<Pack>(pack)...);
   }
 
   template <typename... Pack>
-  task_dep<T> relaxed(Pack&&... pack)
+  auto relaxed(Pack&&... pack)
   {
-    return task_dep<T>(*this, access_mode::relaxed, ::std::forward<Pack>(pack)...);
+    return task_dep_op<::std::pair<T, task_dep_op_none>>(*this, access_mode::relaxed, ::std::forward<Pack>(pack)...);
+  }
+
+  template <typename Op, typename... Pack>
+  auto reduce(Op, Pack&&... pack)
+  {
+    return task_dep_op<::std::pair<T, Op>>(*this, access_mode::reduce, ::std::forward<Pack>(pack)...);
   }
   ///@}
 };
