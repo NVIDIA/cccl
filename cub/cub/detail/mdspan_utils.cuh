@@ -41,7 +41,7 @@
 
 #  include <cub/detail/fast_modulo_division.cuh> // fast_div_mod
 
-#  include <cuda/std/__mdspan/extents.h> // std::extents
+#  include <cuda/std/mdspan>
 #  include <cuda/std/array> // std::array
 #  include <cuda/std/cstddef> // size_t
 #  include <cuda/std/type_traits> // make_unsigned_t
