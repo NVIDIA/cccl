@@ -10,12 +10,12 @@ This file contains instructions on how to run all CUB benchmarks using CUB tunin
     cmake -B build -DCCCL_ENABLE_THRUST=OFF\
              -DCCCL_ENABLE_LIBCUDACXX=OFF\
              -DCCCL_ENABLE_CUB=ON\
+             -DCCCL_ENABLE_BENCHMARKS=YES\
              -DCUB_ENABLE_DIALECT_CPP11=OFF\
              -DCUB_ENABLE_DIALECT_CPP14=OFF\
              -DCUB_ENABLE_DIALECT_CPP17=ON\
              -DCUB_ENABLE_DIALECT_CPP20=OFF\
              -DCUB_ENABLE_RDC_TESTS=OFF\
-             -DCUB_ENABLE_BENCHMARKS=YES\
              -DCUB_ENABLE_TUNING=YES\
              -DCMAKE_BUILD_TYPE=Release\
              -DCMAKE_CUDA_ARCHITECTURES="89;90"

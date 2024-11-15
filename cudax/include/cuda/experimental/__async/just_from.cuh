@@ -66,9 +66,9 @@ private:
   using _JustTag = decltype(__detail::__just_from_tag<_Disposition>());
   using _SetTag  = decltype(__detail::__set_tag<_Disposition>());
 
-  using __diag_t = _CUDA_VSTD::_If<_CUDA_VSTD::is_same_v<_SetTag, set_error_t>,
-                                   _AN_ERROR_COMPLETION_MUST_HAVE_EXACTLY_ONE_ERROR_ARGUMENT,
-                                   _A_STOPPED_COMPLETION_MUST_HAVE_NO_ARGUMENTS>;
+  using __diag_t = _CUDA_VSTD::conditional_t<_CUDA_VSTD::is_same_v<_SetTag, set_error_t>,
+                                             _AN_ERROR_COMPLETION_MUST_HAVE_EXACTLY_ONE_ERROR_ARGUMENT,
+                                             _A_STOPPED_COMPLETION_MUST_HAVE_NO_ARGUMENTS>;
 
   template <class... _Ts>
   using __error_t =
@@ -78,8 +78,9 @@ private:
   {
     template <class... _Ts>
     auto operator()(_Ts&&... __ts) const noexcept
-      -> _CUDA_VSTD::
-        _If<__is_valid_signature<_SetTag(_Ts...)>, completion_signatures<_SetTag(_Ts...)>, __error_t<_Ts...>>;
+      -> _CUDA_VSTD::conditional_t<__signature_disposition<_SetTag(_Ts...)> != __invalid_disposition,
+                                   completion_signatures<_SetTag(_Ts...)>,
+                                   __error_t<_Ts...>>;
   };
 
   template <class _Rcvr = receiver_archetype>

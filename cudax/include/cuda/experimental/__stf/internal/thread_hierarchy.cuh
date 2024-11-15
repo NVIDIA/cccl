@@ -419,7 +419,7 @@ private:
 };
 
 #ifdef UNITTESTED_FILE
-#  if defined(CUDASTF_CODE_GENERATION) && defined(__CUDACC__)
+#  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 namespace reserved
 {
 template <auto... spec>
@@ -525,7 +525,7 @@ UNITTEST("thread hierarchy inner sync")
   cuda_safe_call(cudaDeviceSynchronize());
 };
 
-#  endif // defined(CUDASTF_CODE_GENERATION) && defined(__CUDACC__)
+#  endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 #endif // UNITTESTED_FILE
 
 } // end namespace cuda::experimental::stf

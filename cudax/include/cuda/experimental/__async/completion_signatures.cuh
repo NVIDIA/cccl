@@ -27,28 +27,37 @@
 
 #include <cuda/experimental/__async/cpos.cuh>
 #include <cuda/experimental/__async/exception.cuh>
+#include <cuda/experimental/__async/type_traits.cuh>
 
 #include <cuda/experimental/__async/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
 // A typelist for completion signatures
-template <class... _Ts>
+template <class... _Sigs>
 struct completion_signatures
-{};
+{
+  struct __partitioned;
+};
 
-// A metafunction to determine if a type is a completion signature
+template <class _CompletionSignatures>
+using __partitioned_completions_of = typename _CompletionSignatures::__partitioned;
+
+constexpr int __invalid_disposition = -1;
+
+// A metafunction to determine whether a type is a completion signature, and if
+// so, what its disposition is.
 template <class>
-inline constexpr bool __is_valid_signature = false;
+inline constexpr int __signature_disposition = __invalid_disposition;
 
 template <class... _Ts>
-inline constexpr bool __is_valid_signature<set_value_t(_Ts...)> = true;
+inline constexpr __disposition_t __signature_disposition<set_value_t(_Ts...)> = __disposition_t::__value;
 
 template <class _Error>
-inline constexpr bool __is_valid_signature<set_error_t(_Error)> = true;
+inline constexpr __disposition_t __signature_disposition<set_error_t(_Error)> = __disposition_t::__error;
 
 template <>
-inline constexpr bool __is_valid_signature<set_stopped_t()> = true;
+inline constexpr __disposition_t __signature_disposition<set_stopped_t()> = __disposition_t::__stopped;
 
 // The implementation of transform_completion_signatures starts here
 template <class _Sig, template <class...> class _Vy, template <class...> class _Ey, class _Sy>
@@ -188,21 +197,105 @@ template <class _Sigs,
 using __gather_completion_signatures =
   typename __gather_sigs_fn<_WantedTag>::template __call<_Sigs, _Then, _Else, _Variant, _More...>;
 
+// __partitioned_completions is a cache of completion signatures for fast
+// access. The completion_signatures<Sigs...>::__partitioned nested struct
+// inherits from __partitioned_completions. If the cache is never accessed,
+// it is never instantiated.
+template <class _ValueTuplesList = _CUDA_VSTD::__type_list<>,
+          class _ErrorsList      = _CUDA_VSTD::__type_list<>,
+          bool _HasStopped       = false>
+struct __partitioned_completions;
+
+template <class... _ValueTuples, class... _Errors, bool _HasStopped>
+struct __partitioned_completions<_CUDA_VSTD::__type_list<_ValueTuples...>,
+                                 _CUDA_VSTD::__type_list<_Errors...>,
+                                 _HasStopped>
+{
+  using __stopped_sigs =
+    _CUDA_VSTD::conditional_t<_HasStopped, _CUDA_VSTD::__type_list<set_stopped_t()>, _CUDA_VSTD::__type_list<>>;
+
+  template <template <class...> class _Tuple, template <class...> class _Variant>
+  using __value_types = _Variant<_CUDA_VSTD::__type_call1<_ValueTuples, _CUDA_VSTD::__type_quote<_Tuple>>...>;
+
+  template <template <class...> class _Variant>
+  using __error_types = _Variant<_Errors...>;
+
+  template <template <class...> class _Variant, class _Type>
+  using __stopped_types = _CUDA_VSTD::__type_call1<
+    _CUDA_VSTD::conditional_t<_HasStopped, _CUDA_VSTD::__type_list<_Type>, _CUDA_VSTD::__type_list<>>,
+    _CUDA_VSTD::__type_quote<_Variant>>;
+
+  using __count_values  = _CUDA_VSTD::integral_constant<size_t, sizeof...(_ValueTuples)>;
+  using __count_errors  = _CUDA_VSTD::integral_constant<size_t, sizeof...(_Errors)>;
+  using __count_stopped = _CUDA_VSTD::integral_constant<size_t, _HasStopped>;
+
+  struct __nothrow_decay_copyable
+  {
+    // These aliases are placed in a separate struct to avoid computing them
+    // if they are not needed.
+    using __fn     = _CUDA_VSTD::__type_quote<__nothrow_decay_copyable_t>;
+    using __values = _CUDA_VSTD::_And<_CUDA_VSTD::__type_call1<_ValueTuples, __fn>...>;
+    using __errors = __nothrow_decay_copyable_t<_Errors...>;
+    using __all    = _CUDA_VSTD::_And<__values, __errors>;
+  };
+};
+
+// The following overload set of operator* is used to build up the cache of
+// completion signatures. We fold over operator*, accumulating the completion
+// signatures in the cache. `__undefined` is used here to prevent the
+// instantiation of the intermediate types.
+
+template <class... _ValueTuples, class... _Errors, bool _HasStopped, class... _Values>
+auto operator*(__undefined<__partitioned_completions<_CUDA_VSTD::__type_list<_ValueTuples...>,
+                                                     _CUDA_VSTD::__type_list<_Errors...>,
+                                                     _HasStopped>>&,
+               set_value_t (*)(_Values...))
+  -> __undefined<__partitioned_completions<_CUDA_VSTD::__type_list<_ValueTuples..., _CUDA_VSTD::__type_list<_Values...>>,
+                                           _CUDA_VSTD::__type_list<_Errors...>,
+                                           _HasStopped>>&;
+
+template <class... _ValueTuples, class... _Errors, bool _HasStopped, class _Error>
+auto operator*(__undefined<__partitioned_completions<_CUDA_VSTD::__type_list<_ValueTuples...>,
+                                                     _CUDA_VSTD::__type_list<_Errors...>,
+                                                     _HasStopped>>&,
+               set_error_t (*)(_Error))
+  -> __undefined<__partitioned_completions<_CUDA_VSTD::__type_list<_ValueTuples...>,
+                                           _CUDA_VSTD::__type_list<_Errors..., _Error>,
+                                           _HasStopped>>&;
+
+template <class... _ValueTuples, class... _Errors>
+auto operator*(__undefined<__partitioned_completions<_CUDA_VSTD::__type_list<_ValueTuples...>, //
+                                                     _CUDA_VSTD::__type_list<_Errors...>,
+                                                     false>>&,
+               set_stopped_t (*)())
+  -> __undefined<__partitioned_completions<_CUDA_VSTD::__type_list<_ValueTuples...>, //
+                                           _CUDA_VSTD::__type_list<_Errors...>,
+                                           true>>&;
+
+// This unary overload is used to extract the cache from the `__undefined` type.
+template <class... _ValueTuples, class... _Errors, bool _HasStopped>
+auto operator*(__undefined<__partitioned_completions<_CUDA_VSTD::__type_list<_ValueTuples...>,
+                                                     _CUDA_VSTD::__type_list<_Errors...>,
+                                                     _HasStopped>>&)
+  -> __partitioned_completions<_CUDA_VSTD::__type_list<_ValueTuples...>, //
+                               _CUDA_VSTD::__type_list<_Errors...>,
+                               _HasStopped>;
+
+template <class... _Sigs>
+using __partition_completions =
+  decltype(*(__declval<__undefined<__partitioned_completions<>>&>() * ... * static_cast<_Sigs*>(nullptr)));
+
+// Here we give the completion_signatures<Sigs...> type a nested struct that
+// contains the fast lookup cache of completion signatures.
+template <class... _Sigs>
+struct completion_signatures<_Sigs...>::__partitioned : __partition_completions<_Sigs...>
+{};
+
 template <class... _Ts>
 using __set_value_transform_t = completion_signatures<set_value_t(_Ts...)>;
 
 template <class _Ty>
 using __set_error_transform_t = completion_signatures<set_error_t(_Ty)>;
-
-template <class... _Ts, class... _Us>
-auto operator*(_CUDA_VSTD::__type_set<_Ts...>&, __undefined<completion_signatures<_Us...>>&)
-  -> _CUDA_VSTD::__type_set_insert<_CUDA_VSTD::__type_set<_Ts...>, _Us...>&;
-
-template <class... _Ts, class... _What>
-auto operator*(_CUDA_VSTD::__type_set<_Ts...>&, __undefined<_ERROR<_What...>>&) -> _ERROR<_What...>&;
-
-template <class... _What, class... _Us>
-auto operator*(_ERROR<_What...>&, __undefined<completion_signatures<_Us...>>&) -> _ERROR<_What...>&;
 
 template <class... _Sigs>
 using __concat_completion_signatures = //
@@ -238,51 +331,32 @@ using transform_completion_signatures_of = //
                                   _ErrorTransform,
                                   _StoppedSigs>;
 
-template <class _Sigs,
-          template <class...>
-          class _Tuple,
-          template <class...>
-          class _Variant>
-using __value_types = //
-  __transform_completion_signatures<_Sigs,
-                                    __type_compose_quote<_CUDA_VSTD::__type_list, _Tuple>::template __call,
-                                    _CUDA_VSTD::__type_always<_CUDA_VSTD::__type_list<>>::__call,
-                                    _CUDA_VSTD::__type_list<>,
-                                    __type_concat_into_quote<_Variant>::template __call>;
+template <class _Sigs, template <class...> class _Tuple, template <class...> class _Variant>
+using __value_types = typename _Sigs::__partitioned::template __value_types<_Tuple, _Variant>;
 
 template <class _Sndr, class _Rcvr, template <class...> class _Tuple, template <class...> class _Variant>
 using value_types_of_t =
   __value_types<completion_signatures_of_t<_Sndr, _Rcvr>, _Tuple, __type_try_quote<_Variant>::template __call>;
 
-template <class _Sigs,
-          template <class...>
-          class _Variant>
-using __error_types = //
-  __transform_completion_signatures<_Sigs,
-                                    _CUDA_VSTD::__type_always<_CUDA_VSTD::__type_list<>>::__call,
-                                    _CUDA_VSTD::__type_list,
-                                    _CUDA_VSTD::__type_list<>,
-                                    __type_concat_into_quote<_Variant>::template __call>;
+template <class _Sigs, template <class...> class _Variant>
+using __error_types = typename _Sigs::__partitioned::template __error_types<_Variant>;
 
 template <class _Sndr, class _Rcvr, template <class...> class _Variant>
 using error_types_of_t = __error_types<completion_signatures_of_t<_Sndr, _Rcvr>, _Variant>;
 
+template <class _Sigs, template <class...> class _Variant, class _Type>
+using __stopped_types = typename _Sigs::__partitioned::template __stopped_types<_Variant, _Type>;
+
 template <class _Sigs>
-inline constexpr bool __sends_stopped = //
-  __transform_completion_signatures<_Sigs,
-                                    _CUDA_VSTD::__type_always<_CUDA_VSTD::false_type>::__call,
-                                    _CUDA_VSTD::__type_always<_CUDA_VSTD::false_type>::__call,
-                                    _CUDA_VSTD::true_type,
-                                    _CUDA_VSTD::_Or>::value;
+inline constexpr bool __sends_stopped = _Sigs::__partitioned::__count_stopped::value != 0;
 
 template <class _Sndr, class _Rcvr = receiver_archetype>
-inline constexpr bool sends_stopped = //
-  __sends_stopped<completion_signatures_of_t<_Sndr, _Rcvr>>;
+inline constexpr bool sends_stopped = __sends_stopped<completion_signatures_of_t<_Sndr, _Rcvr>>;
 
 using __eptr_completion = completion_signatures<set_error_t(::std::exception_ptr)>;
 
 template <bool _NoExcept>
-using __eptr_completion_if = _CUDA_VSTD::_If<_NoExcept, completion_signatures<>, __eptr_completion>;
+using __eptr_completion_unless = _CUDA_VSTD::conditional_t<_NoExcept, completion_signatures<>, __eptr_completion>;
 
 template <class>
 inline constexpr bool __is_completion_signatures = false;
@@ -335,7 +409,8 @@ auto completions_of(_Sndr&&,
 
 template <bool _PotentiallyThrowing>
 auto eptr_completion_if()
-  -> _CUDA_VSTD::_If<_PotentiallyThrowing, __csig::__sigs<set_error_t(::std::exception_ptr)>, __csig::__sigs<>>&;
+  -> _CUDA_VSTD::
+    conditional_t<_PotentiallyThrowing, __csig::__sigs<set_error_t(::std::exception_ptr)>, __csig::__sigs<>>&;
 } // namespace meta
 } // namespace cuda::experimental::__async
 

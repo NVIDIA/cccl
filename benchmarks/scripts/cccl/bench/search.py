@@ -53,12 +53,29 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def run_benches(algnames, sub_space, seeker):
+def filter_benchmark_space_for_p0(algname, ct_space, rt_values):
+    if algname in ['cub.bench.merge_sort.pairs', 'cub.bench.radix_sort.pairs', 'cub.bench.select.unique_by_key']:
+        ct_space = list(filter(lambda variant: not (("OffsetT{ct}=I64" in variant) or ("KeyT{ct}=I16" in variant) or (
+                "ValueT{ct}=I16" in variant) or ("KeyT{ct}=I128" in variant) or ("ValueT{ct}=I128" in variant)),
+                               ct_space))
+
+    if algname == 'cub.bench.merge_sort.pairs':
+        for subbench in rt_values:
+            for axis in rt_values[subbench]:
+                if axis == "Entropy":
+                    rt_values[subbench][axis] = ['1.000']
+
+    return ct_space, rt_values
+
+
+def run_benches(algnames, sub_space, seeker, args):
     for algname in algnames:
         try:
             bench = BaseBench(algname)
             ct_space = bench.ct_workload_space(sub_space)
             rt_values = bench.rt_axes_values(sub_space)
+            if args.P0:
+                ct_space, rt_values = filter_benchmark_space_for_p0(algname, ct_space, rt_values)
             seeker(algname, ct_space, rt_values)
         except Exception as e:
             print("#### ERROR exception occured while running {}: '{}'".format(algname, e))
@@ -105,7 +122,7 @@ def search(seeker):
         list_benches(algnames)
         return
 
-    run_benches(algnames, workload_sub_space, seeker)
+    run_benches(algnames, workload_sub_space, seeker, args)
 
 
 class MedianCenterEstimator:

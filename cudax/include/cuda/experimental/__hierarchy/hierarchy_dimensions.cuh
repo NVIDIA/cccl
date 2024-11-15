@@ -165,9 +165,13 @@ struct __make_hierarchy_fragment
   template <typename... Levels>
   _CCCL_NODISCARD _CUDAX_API constexpr auto operator()(const Levels&... ls) const noexcept
   {
-    if constexpr (__can_stack<LUnit, Levels...>)
+    using UnitOrDefault = ::cuda::std::conditional_t<
+      ::cuda::std::is_same_v<void, LUnit>,
+      __default_unit_below<::cuda::std::__type_index_c<sizeof...(Levels) - 1, __level_type_of<Levels>...>>,
+      LUnit>;
+    if constexpr (__can_stack<UnitOrDefault, Levels...>)
     {
-      return hierarchy_dimensions_fragment(LUnit{}, ls...);
+      return hierarchy_dimensions_fragment(UnitOrDefault{}, ls...);
     }
     else if constexpr (!Reversed)
     {
@@ -175,7 +179,7 @@ struct __make_hierarchy_fragment
     }
     else
     {
-      static_assert(__can_stack<LUnit, Levels...>,
+      static_assert(__can_stack<UnitOrDefault, Levels...>,
                     "Provided levels can't create a valid hierarchy when stacked in the provided order or reversed");
     }
   }
@@ -763,7 +767,7 @@ constexpr auto _CCCL_HOST get_launch_dimensions(const hierarchy_dimensions<Level
  This could have been a single function with make_hierarchy and first template
  argument defauled, but then the above TODO would be impossible and the current
  name makes more sense */
-template <typename LUnit, typename L1, typename... Levels>
+template <typename LUnit = void, typename L1, typename... Levels>
 constexpr auto make_hierarchy_fragment(L1 l1, Levels... ls) noexcept
 {
   return detail::__make_hierarchy_fragment<LUnit>()(detail::__as_level(l1), detail::__as_level(ls)...);
@@ -815,7 +819,7 @@ _CUDAX_API constexpr auto operator&(const hierarchy_dimensions_fragment<LUnit, L
   {
     static_assert(detail::can_stack_on_top<__level_type_of<NewLevel>, bottom_level>,
                   "Not supported order of levels in hierarchy");
-    using NewUnit = typename __level_type_of<NewLevel>::allowed_below::default_unit;
+    using NewUnit = detail::__default_unit_below<__level_type_of<NewLevel>>;
     return hierarchy_dimensions_fragment<NewUnit, Levels..., NewLevel>(
       ::cuda::std::tuple_cat(ls.levels, ::cuda::std::make_tuple(new_level)));
   }

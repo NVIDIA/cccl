@@ -54,15 +54,15 @@ private:
 
   template <class... _Ts>
   using __set_value_completion =
-    _CUDA_VSTD::_If<__nothrow_decay_copyable<_Ts...>,
-                    completion_signatures<set_value_t(__decay_t<_Ts>...)>,
-                    completion_signatures<set_value_t(__decay_t<_Ts>...), set_error_t(::std::exception_ptr)>>;
+    _CUDA_VSTD::conditional_t<__nothrow_decay_copyable<_Ts...>,
+                              completion_signatures<set_value_t(__decay_t<_Ts>...)>,
+                              completion_signatures<set_value_t(__decay_t<_Ts>...), set_error_t(::std::exception_ptr)>>;
 
   template <class _Error>
   using __set_error_completion =
-    _CUDA_VSTD::_If<__nothrow_decay_copyable<_Error>,
-                    completion_signatures<set_error_t(__decay_t<_Error>)>,
-                    completion_signatures<set_error_t(__decay_t<_Error>), set_error_t(::std::exception_ptr)>>;
+    _CUDA_VSTD::conditional_t<__nothrow_decay_copyable<_Error>,
+                              completion_signatures<set_error_t(__decay_t<_Error>)>,
+                              completion_signatures<set_error_t(__decay_t<_Error>), set_error_t(::std::exception_ptr)>>;
 
   template <class _Rcvr, class _Result>
   struct __rcvr_t
