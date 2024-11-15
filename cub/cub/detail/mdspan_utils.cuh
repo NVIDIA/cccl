@@ -41,9 +41,9 @@
 
 #  include <cub/detail/fast_modulo_division.cuh> // fast_div_mod
 
-#  include <cuda/std/mdspan>
 #  include <cuda/std/array> // std::array
 #  include <cuda/std/cstddef> // size_t
+#  include <cuda/std/mdspan>
 #  include <cuda/std/type_traits> // make_unsigned_t
 #  include <cuda/std/utility> // ::cuda::std::index_sequence
 
@@ -100,8 +100,8 @@ extents_fast_div_mod(const ::cuda::std::extents<IndexType, E...>& ext, ::cuda::s
 template <int Rank, typename Extents>
 _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr bool is_sub_size_static()
 {
-  using IndexType = typename Extents::index_type;
-  for (IndexType i = Rank; i < Extents::rank(); i++)
+  using index_type = typename Extents::index_type;
+  for (index_type i = Rank; i < Extents::rank(); i++)
   {
     if (Extents::static_extent(i) == ::cuda::std::dynamic_extent)
     {
