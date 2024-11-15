@@ -53,7 +53,7 @@ private:
   struct __completions_fn
   {
     template <class _Query, class _Env>
-    using __call = _CUDA_VSTD::_If<
+    using __call = _CUDA_VSTD::conditional_t<
       __nothrow_callable<_Query, _Env>,
       completion_signatures<set_value_t(__call_result_t<_Query, _Env>)>,
       completion_signatures<set_value_t(__call_result_t<_Query, _Env>), set_error_t(::std::exception_ptr)>>;
@@ -64,11 +64,11 @@ private:
   {
     using operation_state_concept = operation_state_t;
     using completion_signatures   = //
-      _CUDA_VSTD::__type_call<
-        _CUDA_VSTD::
-          _If<__callable<_Query, env_of_t<_Rcvr>>, __completions_fn, __error_env_lacks_query<_Query, env_of_t<_Rcvr>>>,
-        _Query,
-        env_of_t<_Rcvr>>;
+      _CUDA_VSTD::__type_call<_CUDA_VSTD::conditional_t<__callable<_Query, env_of_t<_Rcvr>>,
+                                                        __completions_fn,
+                                                        __error_env_lacks_query<_Query, env_of_t<_Rcvr>>>,
+                              _Query,
+                              env_of_t<_Rcvr>>;
 
     _Rcvr __rcvr_;
 

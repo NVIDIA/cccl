@@ -460,7 +460,7 @@ using _Requires_expr_impl = //
 // _CUDA_VSTD macro is fully qualified.
 namespace _Vstd = _CUDA_VSTD; // NOLINT(misc-unused-alias-decls)
 
-#  if defined(_CCCL_CUDACC_BELOW_12_2)
+#  if _CCCL_CUDACC_BELOW(12, 2)
 #    define _LIBCUDACXX_CONCEPT_VSTD _Concept::_Vstd // must not be fully qualified
 #  else
 #    define _LIBCUDACXX_CONCEPT_VSTD _CUDA_VSTD

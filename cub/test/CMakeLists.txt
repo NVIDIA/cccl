@@ -102,7 +102,7 @@ foreach(cub_target IN LISTS CUB_TARGETS)
   add_dependencies(${config_prefix}.all ${config_meta_target})
 endforeach()
 
-file(GLOB test_srcs
+file(GLOB_RECURSE test_srcs
   RELATIVE "${CUB_SOURCE_DIR}/test"
   CONFIGURE_DEPENDS
   test_*.cu
