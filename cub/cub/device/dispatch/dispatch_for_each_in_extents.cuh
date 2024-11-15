@@ -82,15 +82,15 @@ namespace for_each_in_extents
 template <typename ExtentsType, typename OpType, typename PolicyHubT = cub::detail::for_each::policy_hub_t>
 class dispatch_t : PolicyHubT
 {
-  using IndexType        = typename ExtentsType::index_type;
-  using UnsigndIndexType = ::cuda::std::make_unsigned_t<IndexType>;
-  using max_policy_t     = typename dispatch_t::MaxPolicy;
+  using index_type          = typename ExtentsType::index_type;
+  using unsigned_index_type = ::cuda::std::make_unsigned_t<index_type>;
+  using max_policy_t        = typename dispatch_t::MaxPolicy;
   //  workaround for nvcc 11.1 bug related to deduction guides, vvv
-  using ArrayType = ::cuda::std::array<fast_div_mod<IndexType>, ExtentsType::rank()>;
+  using array_type = ::cuda::std::array<fast_div_mod<index_type>, ExtentsType::rank()>;
 
   static constexpr auto seq = ::cuda::std::make_index_sequence<ExtentsType::rank()>{};
 
-  static constexpr size_t max_index = ::cuda::std::numeric_limits<IndexType>::max();
+  static constexpr size_t max_index = ::cuda::std::numeric_limits<index_type>::max();
 
 public:
   dispatch_t() = delete;
@@ -111,8 +111,8 @@ public:
   _CCCL_NODISCARD CUB_RUNTIME_FUNCTION
   _CCCL_FORCEINLINE cudaError_t InvokeVariadic(::cuda::std::true_type, ::cuda::std::index_sequence<Ranks...>) const
   {
-    ArrayType sub_sizes_div_array       = cub::detail::sub_sizes_fast_div_mod(_ext, seq);
-    ArrayType extents_div_array         = cub::detail::extents_fast_div_mod(_ext, seq);
+    array_type sub_sizes_div_array      = cub::detail::sub_sizes_fast_div_mod(_ext, seq);
+    array_type extents_div_array        = cub::detail::extents_fast_div_mod(_ext, seq);
     constexpr unsigned block_threads    = ActivePolicyT::for_policy_t::block_threads;
     constexpr unsigned items_per_thread = ActivePolicyT::for_policy_t::items_per_thread;
     unsigned num_cta                    = ::cuda::ceil_div(_size, block_threads * items_per_thread);
@@ -141,11 +141,11 @@ public:
   _CCCL_NODISCARD CUB_RUNTIME_FUNCTION
   _CCCL_FORCEINLINE cudaError_t InvokeVariadic(::cuda::std::false_type, ::cuda::std::index_sequence<Ranks...>) const
   {
-    ArrayType sub_sizes_div_array       = cub::detail::sub_sizes_fast_div_mod(_ext, seq);
-    ArrayType extents_div_array         = cub::detail::extents_fast_div_mod(_ext, seq);
+    array_type sub_sizes_div_array      = cub::detail::sub_sizes_fast_div_mod(_ext, seq);
+    array_type extents_div_array        = cub::detail::extents_fast_div_mod(_ext, seq);
     constexpr unsigned items_per_thread = ActivePolicyT::for_policy_t::items_per_thread;
     auto kernel                         = detail::for_each_in_extents::
-      dynamic_kernel<max_policy_t, IndexType, OpType, decltype(sub_sizes_div_array), UnsigndIndexType, Ranks...>;
+      dynamic_kernel<max_policy_t, index_type, OpType, decltype(sub_sizes_div_array), unsigned_index_type, Ranks...>;
 
     unsigned block_threads = 256;
     cudaError_t status     = cudaSuccess;
@@ -201,7 +201,7 @@ private:
   ExtentsType _ext;
   OpType _op;
   cudaStream_t _stream;
-  UnsigndIndexType _size;
+  unsigned_index_type _size;
 };
 
 } // namespace for_each_in_extents

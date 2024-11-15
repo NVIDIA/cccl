@@ -920,7 +920,7 @@ public:
       temp_storage_bytes = 1;
       return cudaSuccess;
     }
-    return DeviceFor::ForEachInExtents(extents, op, stream);
+    return ForEachInExtents(extents, op, stream);
   }
 
   //! @rst
@@ -980,11 +980,11 @@ public:
   CUB_RUNTIME_FUNCTION static cudaError_t
   ForEachInExtents(const ::cuda::std::extents<IndexType, Extents...>& extents, OpType op, cudaStream_t stream = {})
   {
-    using ExtentsType = ::cuda::std::extents<IndexType, Extents...>;
+    using extents_type = ::cuda::std::extents<IndexType, Extents...>;
     // TODO: check dimensions overflows
-    // TODO: check tha arity of OpType is equal to sizeof...(ExtentsType)
+    // TODO: check tha arity of OpType is equal to sizeof...(extents_type)
     CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachInExtents");
-    return detail::for_each_in_extents::dispatch_t<ExtentsType, OpType>::dispatch(extents, op, stream);
+    return detail::for_each_in_extents::dispatch_t<extents_type, OpType>::dispatch(extents, op, stream);
   }
 
 #endif // __cccl_lib_mdspan

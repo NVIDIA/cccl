@@ -181,6 +181,9 @@ _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::size_
   return static_size<T>::value;
 }
 
+template <typename T>
+using implicit_prom_t = decltype(+T{});
+
 } // namespace detail
 
 CUB_NAMESPACE_END

@@ -44,6 +44,7 @@
 #include <cuda/std/limits> // numeric_limits
 #include <cuda/std/type_traits> // std::is_integral
 
+#include "cub/detail/type_traits.cuh" // implicit_prom_t
 #include "cub/util_type.cuh" // CUB_IS_INT128_ENABLED
 
 #if defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
@@ -67,7 +68,7 @@ struct larger_unsigned_type
 };
 
 template <typename T>
-struct larger_unsigned_type<T, ::cuda::std::__enable_if_t<(sizeof(T) < 4)>>
+struct larger_unsigned_type<T, typename ::cuda::std::enable_if<(sizeof(T) < 4)>::type>
 {
   using type = ::cuda::std::uint32_t;
 };
@@ -92,15 +93,11 @@ template <typename T>
 using larger_unsigned_type_t = typename larger_unsigned_type<T>::type;
 
 template <typename T>
-using implicit_prom_t = decltype(+T{});
-
-template <typename T>
 using unsigned_implicit_prom_t = typename ::cuda::std::make_unsigned<implicit_prom_t<T>>::type;
 
 template <typename T>
-using supported_integral =
-     ::cuda::std::bool_constant<::cuda::std::is_integral<T>::value && !::cuda::std::is_same<T, bool>::value
-                                 && (sizeof(T) <= 8)>;
+using supported_integral = ::cuda::std::bool_constant<
+  ::cuda::std::is_integral<T>::value && !::cuda::std::is_same<T, bool>::value && (sizeof(T) <= 8)>;
 
 /***********************************************************************************************************************
  * Extract higher bits after multiplication
@@ -144,9 +141,9 @@ public:
   template <typename R>
   struct result
   {
-    using Common = decltype(R{} / T{});
-    Common quotient;
-    Common remainder;
+    using common_t = decltype(R{} / T{});
+    common_t quotient;
+    common_t remainder;
   };
 
   fast_div_mod() = delete;
@@ -174,6 +171,11 @@ public:
     _multiplier  = static_cast<unsigned_t>(::cuda::ceil_div(larger_t{1} << (num_bits + BitSize - BitOffset), //
                                                            static_cast<larger_t>(divisor)));
     _shift_right = num_bits - BitOffset;
+    // printf(">: %d, | %d,  %u, %u\n",
+    //        (num_bits + BitSize - BitOffset),
+    //        larger_t{1} << (num_bits + BitSize - BitOffset),
+    //        _multiplier,
+    //        _shift_right);
   }
 
   fast_div_mod(const fast_div_mod&) noexcept = default;
@@ -181,38 +183,38 @@ public:
   fast_div_mod(fast_div_mod&&) noexcept = default;
 
   template <typename R>
-  _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE result<T, R> operator()(R dividend) const noexcept
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE result<R> operator()(R dividend) const noexcept
   {
     static_assert(supported_integral<R>::value, "unsupported type");
-    using Common   = decltype(R{} / T{});
-    using UCommon  = ::cuda::std::make_unsigned_t<Common>;
-    using result_t = result<T, R>;
+    using common_t  = decltype(R{} / T{});
+    using ucommon_t = ::cuda::std::make_unsigned_t<common_t>;
+    using result_t  = result<R>;
     _CCCL_ASSERT(dividend >= 0, "divisor must be non-negative");
-    auto udividend = static_cast<UCommon>(dividend);
+    auto udividend = static_cast<ucommon_t>(dividend);
     if (_divisor == 1)
     {
-      return result_t{static_cast<Common>(dividend), Common{}};
+      return result_t{static_cast<common_t>(dividend), common_t{}};
     }
     if (sizeof(T) == 8 && _divisor == 3)
     {
-      return result_t{static_cast<Common>(udividend / 3), static_cast<Common>(udividend % 3)};
+      return result_t{static_cast<common_t>(udividend / 3), static_cast<common_t>(udividend % 3)};
     }
     auto higher_bits = (_multiplier == 0) ? udividend : multiply_extract_higher_bits<T>(dividend, _multiplier);
     auto quotient    = higher_bits >> _shift_right;
     auto remainder   = udividend - (quotient * _divisor);
     _CCCL_ASSERT(quotient == dividend / _divisor, "wrong quotient");
     _CCCL_ASSERT(remainder < _divisor, "remainder out of range");
-    return result_t{static_cast<Common>(quotient), static_cast<Common>(remainder)};
+    return result_t{static_cast<common_t>(quotient), static_cast<common_t>(remainder)};
   }
 
   template <typename R>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE friend decltype(R{} / T{}) operator/(R dividend, fast_div_mod div) noexcept
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE friend implicit_prom_t<T> operator/(R dividend, fast_div_mod div) noexcept
   {
     return div(dividend).quotient;
   }
 
   template <typename R>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE friend decltype(R{} / T{}) operator%(R dividend, fast_div_mod div) noexcept
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE friend implicit_prom_t<T> operator%(R dividend, fast_div_mod div) noexcept
   {
     return div(dividend).remainder;
   }

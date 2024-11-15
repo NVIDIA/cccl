@@ -29,8 +29,6 @@
 
 #include <cub/config.cuh>
 
-#include "cuda/std/__type_traits/enable_if.h"
-
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -43,11 +41,12 @@
 
 #  include <cub/detail/fast_modulo_division.cuh> // fast_div_mod
 #  include <cub/detail/mdspan_utils.cuh> // is_sub_size_static
-#  include <cub/detail/type_traits.cuh>
+#  include <cub/detail/type_traits.cuh> // implicit_prom_t
 
-#  include <cuda/std/__mdspan/extents.h> // dynamic_extent
-#  include <cuda/std/__utility/integer_sequence.h> // index_sequence
 #  include <cuda/std/cstddef> // size_t
+#  include <cuda/std/mdspan> // dynamic_extent
+#  include <cuda/std/type_traits> // enable_if
+#  include <cuda/std/utility> // index_sequence
 
 CUB_NAMESPACE_BEGIN
 
@@ -62,10 +61,10 @@ template <int Rank,
           _CUB_TEMPLATE_REQUIRES(ExtendType::static_extent(Rank) != ::cuda::std::dynamic_extent)>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto get_extent_size(ExtendType ext, FastDivModType extent_size)
 {
-  using extent_index_type = typename ExtendType::index_type;
-  using IndexType         = implicit_prom_t<extent_index_type>;
-  using U                 = ::cuda::std::make_unsigned_t<IndexType>;
-  return static_cast<U>(ext.static_extent(Rank));
+  using extent_index_type   = typename ExtendType::index_type;
+  using index_type          = implicit_prom_t<extent_index_type>;
+  using unsigned_index_type = ::cuda::std::make_unsigned_t<index_type>;
+  return static_cast<unsigned_index_type>(ext.static_extent(Rank));
 }
 
 template <int Rank,
@@ -153,12 +152,12 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::for_policy_t::block_threads) //
 {
   using active_policy_t        = typename ChainedPolicyT::ActivePolicy::for_policy_t;
   using extent_index_type      = typename ExtendType::index_type;
-  using OffsetT                = decltype(+extent_index_type{});
-  constexpr auto block_threads = OffsetT{active_policy_t::block_threads};
-  constexpr auto stride        = OffsetT{block_threads * active_policy_t::items_per_thread};
+  using offset_t               = implicit_prom_t<extent_index_type>;
+  constexpr auto block_threads = offset_t{active_policy_t::block_threads};
+  constexpr auto stride        = offset_t{block_threads * active_policy_t::items_per_thread};
   auto stride1                 = (stride >= cub::detail::size(ext)) ? block_threads : stride;
-  auto id                      = static_cast<OffsetT>(threadIdx.x + blockIdx.x * block_threads);
-  computation<OffsetT, Func, ExtendType, FastDivModArrayType, Ranks...>(
+  auto id                      = static_cast<offset_t>(threadIdx.x + blockIdx.x * block_threads);
+  computation<offset_t, Func, ExtendType, FastDivModArrayType, Ranks...>(
     id, stride1, func, ext, sub_sizes_div_array, extents_mod_array);
 }
 
@@ -175,12 +174,12 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void dynamic_kernel(
 {
   using active_policy_t   = typename ChainedPolicyT::ActivePolicy::for_policy_t;
   using extent_index_type = typename ExtendType::index_type;
-  using OffsetT           = decltype(+extent_index_type{});
-  auto block_threads      = OffsetT{blockDim.x};
-  auto stride             = static_cast<OffsetT>(blockDim.x * active_policy_t::items_per_thread);
+  using offset_t          = implicit_prom_t<extent_index_type>;
+  auto block_threads      = offset_t{blockDim.x};
+  auto stride             = static_cast<offset_t>(blockDim.x * active_policy_t::items_per_thread);
   auto stride1            = (stride >= cub::detail::size(ext)) ? block_threads : stride;
-  auto id                 = static_cast<OffsetT>(threadIdx.x + blockIdx.x * blockDim.x);
-  computation<OffsetT, Func, ExtendType, FastDivModArrayType, Ranks...>(
+  auto id                 = static_cast<offset_t>(threadIdx.x + blockIdx.x * blockDim.x);
+  computation<offset_t, Func, ExtendType, FastDivModArrayType, Ranks...>(
     id, stride, func, ext, sub_sizes_div_array, extents_mod_array);
 }
 
