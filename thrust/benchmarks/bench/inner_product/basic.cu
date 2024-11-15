@@ -45,8 +45,6 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_writes<T>(1);
 
   caching_allocator_t alloc;
-  thrust::inner_product(policy(alloc), lhs.begin(), lhs.end(), rhs.begin(), T{0});
-
   state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
     thrust::inner_product(policy(alloc, launch), lhs.begin(), lhs.end(), rhs.begin(), T{0});
   });
