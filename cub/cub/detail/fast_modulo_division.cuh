@@ -143,7 +143,7 @@ class fast_div_mod
   using unsigned_t = unsigned_implicit_prom_t<T>;
 
 public:
-  template <typename U, typename R>
+  template <typename R>
   struct result
   {
     using Common = decltype(R{} / T{});
