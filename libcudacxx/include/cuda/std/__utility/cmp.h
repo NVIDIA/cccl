@@ -50,6 +50,9 @@ _CCCL_DIAG_PUSH
 // C4389: 'equality-operator' : signed/unsigned mismatch
 _CCCL_DIAG_SUPPRESS_MSVC(4018 4127 4389)
 
+// pointless comparison of unsigned integer with zero
+_CCCL_NV_DIAG_SUPPRESS(186)
+
 template <class _Tp, class... _Up>
 using __is_same_as_any = __fold_or<_CCCL_TRAIT(is_same, _Tp, _Up)...>;
 
@@ -143,6 +146,8 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool in_range(_Up __u) noexcept
   return _CUDA_VSTD::cmp_less_equal(__u, numeric_limits<_Tp>::max())
       && _CUDA_VSTD::cmp_greater_equal(__u, numeric_limits<_Tp>::min());
 }
+
+_CCCL_NV_DIAG_DEFAULT(186)
 
 _CCCL_DIAG_POP
 
