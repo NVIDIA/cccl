@@ -92,24 +92,24 @@ _LIBCUDACXX_CONCEPT __just_deref = _LIBCUDACXX_FRAGMENT(__just_deref_, _Tp);
 
 struct __fn
 {
-  _LIBCUDACXX_TEMPLATE(class _Ip)
-  _LIBCUDACXX_REQUIRES(__unqualified_iter_move<_Ip>)
+  _CCCL_TEMPLATE(class _Ip)
+  _CCCL_REQUIRES(__unqualified_iter_move<_Ip>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) operator()(_Ip&& __i) const
     noexcept(noexcept(iter_move(_CUDA_VSTD::forward<_Ip>(__i))))
   {
     return iter_move(_CUDA_VSTD::forward<_Ip>(__i));
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Ip)
-  _LIBCUDACXX_REQUIRES(__move_deref<_Ip>)
+  _CCCL_TEMPLATE(class _Ip)
+  _CCCL_REQUIRES(__move_deref<_Ip>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Ip&& __i) const noexcept(noexcept(
     _CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i)))) -> decltype(_CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i)))
   {
     return _CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i));
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Ip)
-  _LIBCUDACXX_REQUIRES(__just_deref<_Ip>)
+  _CCCL_TEMPLATE(class _Ip)
+  _CCCL_REQUIRES(__just_deref<_Ip>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Ip&& __i) const
     noexcept(noexcept(*_CUDA_VSTD::forward<_Ip>(__i))) -> decltype(*_CUDA_VSTD::forward<_Ip>(__i))
   {

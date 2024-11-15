@@ -78,16 +78,16 @@ _LIBCUDACXX_CONCEPT __ranges_begin_invocable = _LIBCUDACXX_FRAGMENT(__ranges_beg
 struct __fn
 {
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(__member_data<_Tp>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(__member_data<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(__t.data()))
   {
     return __t.data();
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(__ranges_begin_invocable<_Tp>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(__ranges_begin_invocable<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_CUDA_VSTD::to_address(_CUDA_VRANGES::begin(__t))))
   {
@@ -106,8 +106,8 @@ _CCCL_GLOBAL_CONSTANT auto data = __data::__fn{};
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__cdata)
 struct __fn
 {
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(is_lvalue_reference_v<_Tp&&>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(is_lvalue_reference_v<_Tp&&>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_CUDA_VRANGES::data(static_cast<const remove_reference_t<_Tp>&>(__t))))
       -> decltype(_CUDA_VRANGES::data(static_cast<const remove_reference_t<_Tp>&>(__t)))
@@ -115,8 +115,8 @@ struct __fn
     return _CUDA_VRANGES::data(static_cast<const remove_reference_t<_Tp>&>(__t));
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(is_rvalue_reference_v<_Tp&&>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(is_rvalue_reference_v<_Tp&&>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(
     _CUDA_VRANGES::data(static_cast<const _Tp&&>(__t)))) -> decltype(_CUDA_VRANGES::data(static_cast<const _Tp&&>(__t)))
   {
