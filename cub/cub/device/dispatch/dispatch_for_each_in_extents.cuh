@@ -173,7 +173,6 @@ public:
   _CCCL_NODISCARD CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t
   Invoke(::cuda::std::bool_constant<StaticBlockSize> v) const
   {
-    constexpr auto seq = ::cuda::std::make_index_sequence<ExtentsType::rank()>{};
     return InvokeVariadic<ActivePolicyT>(v, seq);
   }
 
