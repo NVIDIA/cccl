@@ -179,7 +179,7 @@ Search Process
 To get started with tuning / benchmarking, you need to configure CMake. The following options are
 available:
 
-* :code:`CUB_ENABLE_BENCHMARKS` - enable bases (default: OFF).
+* :code:`CCCL_ENABLE_BENCHMARKS` - enable bases (default: OFF).
 * :code:`CUB_ENABLE_TUNING` - enable variants (default: OFF).
 
 Having configured CMake, you can start the search process. Note that the search has to be started
@@ -188,7 +188,7 @@ from the build directory.
 .. code:: bash
 
   $ cd build
-  $ cmake -DThrust_DIR=path-to-thrust/thrust/cmake -DCUB_ENABLE_TUNING=YES -DCUB_ENABLE_BENCHMARKS=YES -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES="90" ..
+  $ cmake -DThrust_DIR=path-to-thrust/thrust/cmake -DCUB_ENABLE_TUNING=YES -DCCCL_ENABLE_BENCHMARKS=YES -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES="90" ..
   $ ../benchmarks/scripts/search.py -a "T{ct}=[I8,I16]" -R ".*algname.*"
 
 Both :code:`-a` and :code:`-R` options are optional. The first one is used to specify types to tune
