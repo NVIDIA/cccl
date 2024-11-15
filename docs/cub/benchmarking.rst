@@ -83,11 +83,23 @@ so you can easily view the results later without having to parse the JSON.
 More information on what command line options are available can be found in the
 `NVBench documentation <https://github.com/NVIDIA/nvbench/blob/main/docs/cli_help.md>`_.
 
-The expected terminal output is something along the following lines (also saved to `base.md`):
+The expected terminal output is something along the following lines (also saved to `base.md`),
+shortened for brevity:
 
 .. code-block:: bash
 
-    TODO
+    # Log
+    Run:  [1/8] base [Device=0 T{ct}=I32 OffsetT{ct}=I32 Elements{io}=2^16]
+    Pass: Cold: 0.004571ms GPU, 0.009322ms CPU, 0.00s total GPU, 0.01s total wall, 334x
+    Run:  [2/8] base [Device=0 T{ct}=I32 OffsetT{ct}=I32 Elements{io}=2^20]
+    Pass: Cold: 0.015161ms GPU, 0.023367ms CPU, 0.01s total GPU, 0.02s total wall, 430x
+    ...
+    # Benchmark Results
+    | T{ct} | OffsetT{ct} |   Elements{io}   | Samples |  CPU Time  |  Noise  |  GPU Time  | Noise  | Elem/s  | GlobalMem BW | BWUtil |
+    |-------|-------------|------------------|---------|------------|---------|------------|--------|---------|--------------|--------|
+    |   I32 |         I32 |     2^16 = 65536 |    334x |   9.322 us | 104.44% |   4.571 us | 10.87% | 14.337G | 114.696 GB/s | 14.93% |
+    |   I32 |         I32 |   2^20 = 1048576 |    430x |  23.367 us | 327.68% |  15.161 us |  3.47% | 69.161G | 553.285 GB/s | 72.03% |
+    ...
 
 If you are only interested in a subset of workloads, you can restrict benchmarking as follows:
 
@@ -119,11 +131,16 @@ You can now compare the two result JSON files using, assuming you are still in y
     PYTHONPATH=./_deps/nvbench-src/scripts ./_deps/nvbench-src/scripts/nvbench_compare.py base.json new.json
 
 The `PYTHONPATH` environment variable may not be necessary in all cases.
-The script will print a Markdown report, showing the runtime differences between each variant of the two benchmark run:
+The script will print a Markdown report showing the runtime differences between each variant of the two benchmark run.
+This could look like this, again shortened for brevity:
 
 .. code-block:: bash
 
-    TODO
+    |  T{ct}  |  OffsetT{ct}  |  Elements{io}  |   Ref Time |   Ref Noise |   Cmp Time |   Cmp Noise |       Diff |   %Diff |  Status  |
+    |---------|---------------|----------------|------------|-------------|------------|-------------|------------|---------|----------|
+    |   I32   |      I32      |      2^16      |   4.571 us |      10.87% |   4.096 us |       0.00% |  -0.475 us | -10.39% |   FAIL   |
+    |   I32   |      I32      |      2^20      |  15.161 us |       3.47% |  15.143 us |       3.55% |  -0.018 us |  -0.12% |   PASS   |
+    ...
 
 In addition to showing the absolute and relative runtime difference,
 NVBench reports the noise of the measurements,
