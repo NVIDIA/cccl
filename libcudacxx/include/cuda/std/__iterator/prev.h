@@ -49,24 +49,24 @@ _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__prev)
 struct __fn
 {
-  _LIBCUDACXX_TEMPLATE(class _Ip)
-  _LIBCUDACXX_REQUIRES(bidirectional_iterator<_Ip>)
+  _CCCL_TEMPLATE(class _Ip)
+  _CCCL_REQUIRES(bidirectional_iterator<_Ip>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _Ip operator()(_Ip __x) const
   {
     --__x;
     return __x;
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Ip)
-  _LIBCUDACXX_REQUIRES(bidirectional_iterator<_Ip>)
+  _CCCL_TEMPLATE(class _Ip)
+  _CCCL_REQUIRES(bidirectional_iterator<_Ip>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n) const
   {
     _CUDA_VRANGES::advance(__x, -__n);
     return __x;
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Ip)
-  _LIBCUDACXX_REQUIRES(bidirectional_iterator<_Ip>)
+  _CCCL_TEMPLATE(class _Ip)
+  _CCCL_REQUIRES(bidirectional_iterator<_Ip>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n, _Ip __bound_iter) const
   {
     _CUDA_VRANGES::advance(__x, -__n, __bound_iter);

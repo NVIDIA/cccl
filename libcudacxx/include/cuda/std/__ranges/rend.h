@@ -106,8 +106,8 @@ class __fn
 {
 public:
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(__member_rend<_Tp>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(__member_rend<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(__t.rend())))
   {
@@ -115,8 +115,8 @@ public:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(__unqualified_rend<_Tp>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(__unqualified_rend<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(rend(__t))))
   {
@@ -124,16 +124,16 @@ public:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(__can_reverse<_Tp>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(__can_reverse<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_CUDA_VRANGES::begin(__t)))
   {
     return _CUDA_VSTD::make_reverse_iterator(_CUDA_VRANGES::begin(__t));
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES((!__member_rend<_Tp> && !__unqualified_rend<_Tp> && !__can_reverse<_Tp>) )
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES((!__member_rend<_Tp> && !__unqualified_rend<_Tp> && !__can_reverse<_Tp>) )
   void operator()(_Tp&&) const = delete;
 };
 _LIBCUDACXX_END_NAMESPACE_CPO
@@ -149,8 +149,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__crend)
 struct __fn
 {
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(is_lvalue_reference_v<_Tp&&>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(is_lvalue_reference_v<_Tp&&>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_CUDA_VRANGES::rend(static_cast<const remove_reference_t<_Tp>&>(__t))))
       -> decltype(_CUDA_VRANGES::rend(static_cast<const remove_reference_t<_Tp>&>(__t)))
@@ -159,8 +159,8 @@ struct __fn
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(is_rvalue_reference_v<_Tp&&>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(is_rvalue_reference_v<_Tp&&>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(
     _CUDA_VRANGES::rend(static_cast<const _Tp&&>(__t)))) -> decltype(_CUDA_VRANGES::rend(static_cast<const _Tp&&>(__t)))
   {

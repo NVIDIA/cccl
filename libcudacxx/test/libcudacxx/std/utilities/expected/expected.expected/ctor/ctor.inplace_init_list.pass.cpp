@@ -73,8 +73,8 @@ struct Data
   int vec_[N] = {};
   cuda::std::tuple<Ts...> tuple_;
 
-  _LIBCUDACXX_TEMPLATE(class... Us)
-  _LIBCUDACXX_REQUIRES(cuda::std::is_constructible<cuda::std::tuple<Ts...>, Us&&...>::value)
+  _CCCL_TEMPLATE(class... Us)
+  _CCCL_REQUIRES(cuda::std::is_constructible<cuda::std::tuple<Ts...>, Us&&...>::value)
   __host__ __device__ constexpr Data(cuda::std::initializer_list<int> il, Us&&... us)
       : tuple_(cuda::std::forward<Us>(us)...)
   {

@@ -139,15 +139,15 @@ template <class _Derived, class _Upstream>
 struct __fn
 {
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_TEMPLATE(class _Property)
-  _LIBCUDACXX_REQUIRES((!property_with_value<_Property>) _LIBCUDACXX_AND has_property<_Upstream, _Property>)
+  _CCCL_TEMPLATE(class _Property)
+  _CCCL_REQUIRES((!property_with_value<_Property>) _CCCL_AND has_property<_Upstream, _Property>)
   _LIBCUDACXX_HIDE_FROM_ABI friend constexpr void get_property(const _Derived&, _Property) noexcept {}
 
   // The indirection is needed, otherwise the compiler might believe that _Derived is an incomplete type
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_TEMPLATE(class _Property, class _Derived2 = _Derived)
-  _LIBCUDACXX_REQUIRES(property_with_value<_Property> _LIBCUDACXX_AND has_property<_Upstream, _Property> _LIBCUDACXX_AND
-                         __has_upstream_resource<_Derived2, _Upstream>)
+  _CCCL_TEMPLATE(class _Property, class _Derived2 = _Derived)
+  _CCCL_REQUIRES(property_with_value<_Property> _CCCL_AND has_property<_Upstream, _Property> _CCCL_AND
+                   __has_upstream_resource<_Derived2, _Upstream>)
   _LIBCUDACXX_HIDE_FROM_ABI friend constexpr __property_value_t<_Property>
   get_property(const _Derived& __res, _Property __prop)
   {
