@@ -450,13 +450,13 @@ struct __invoke_of
     : public enable_if<__invokable<_Fp, _Args...>::value, typename __invokable_r<void, _Fp, _Args...>::_Result>
 {
 #if defined(__NVCC__) && defined(__CUDACC_EXTENDED_LAMBDA__) && !defined(__CUDA_ARCH__)
-#  if defined(_CCCL_CUDACC_BELOW_12_3)
+#  if _CCCL_CUDACC_BELOW(12, 3)
   static_assert(!__nv_is_extended_device_lambda_closure_type(_Fp),
                 "Attempt to use an extended __device__ lambda in a context "
                 "that requires querying its return type in host code. Use a "
                 "named function object, an extended __host__ __device__ lambda, or "
                 "cuda::proclaim_return_type instead.");
-#  else // ^^^ _CCCL_CUDACC_BELOW_12_3 ^^^ / vvv !_CCCL_CUDACC_BELOW_12_3 vvv
+#  else // ^^^ _CCCL_CUDACC_BELOW(12, 3) ^^^ / vvv _CCCL_CUDACC_AT_LEAST(12, 3) vvv
   static_assert(
     !__nv_is_extended_device_lambda_closure_type(_Fp) || __nv_is_extended_host_device_lambda_closure_type(_Fp)
       || __nv_is_extended_device_lambda_with_preserved_return_type(_Fp),
@@ -465,7 +465,7 @@ struct __invoke_of
     "named function object, an extended __host__ __device__ lambda, "
     "cuda::proclaim_return_type, or an extended __device__ lambda "
     "with a trailing return type instead ([] __device__ (...) -> RETURN_TYPE {...}).");
-#  endif // !_CCCL_CUDACC_BELOW_12_3
+#  endif // _CCCL_CUDACC_AT_LEAST(12, 3)
 #endif
 };
 

@@ -146,7 +146,7 @@
 #endif
 
 #if TEST_HAS_BUILTIN(__builtin_is_constant_evaluated) || (defined(_CCCL_COMPILER_GCC) && _GNUC_VER >= 900) \
-  || (defined(_CCCL_COMPILER_MSVC) && _MSC_VER > 1924 && !defined(_CCCL_CUDACC_BELOW_11_3))
+  || (defined(_CCCL_COMPILER_MSVC) && _MSC_VER > 1924 && _CCCL_CUDACC_AT_LEAST(11, 3))
 #  define TEST_IS_CONSTANT_EVALUATED() _CUDA_VSTD::__libcpp_is_constant_evaluated()
 #else
 #  define TEST_IS_CONSTANT_EVALUATED() false
@@ -451,12 +451,12 @@ __host__ __device__ constexpr bool unused(T&&...)
 #define TEST_CONSTEXPR_GLOBAL _CCCL_CONSTEXPR_GLOBAL
 
 // Some convenience macros for checking nvcc versions
-#if defined(__CUDACC__) && _CCCL_CUDACC_VER < 1103000
+#if defined(__CUDACC__) && _CCCL_CUDACC_BELOW(11, 3)
 #  define TEST_COMPILER_CUDACC_BELOW_11_3
-#endif // defined(__CUDACC__) && _CCCL_CUDACC_VER < 1103000
-#if defined(__CUDACC__) && _CCCL_CUDACC_VER < 1203000
+#endif // defined(__CUDACC__) && _CCCL_CUDACC_BELOW(11, 3)
+#if defined(__CUDACC__) && _CCCL_CUDACC_BELOW(12, 3)
 #  define TEST_COMPILER_CUDACC_BELOW_12_3
-#endif // defined(__CUDACC__) && _CCCL_CUDACC_VER < 1203000
+#endif // defined(__CUDACC__) && _CCCL_CUDACC_BELOW(12, 3)
 
 #if defined(TEST_COMPILER_MSVC)
 #  if _MSC_VER < 1920

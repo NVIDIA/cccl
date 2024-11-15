@@ -624,7 +624,7 @@ template <class _A1>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<is_floating_point<_A1>::value, bool>
 __constexpr_isnan(_A1 __lcpp_x) noexcept
 {
-#if defined(_CCCL_CUDACC_BELOW_11_8)
+#if _CCCL_CUDACC_BELOW(11, 8)
   return __isnan(__lcpp_x);
 #elif defined(_CCCL_BUILTIN_ISNAN)
   // nvcc at times has issues determining the type of __lcpp_x
@@ -645,7 +645,7 @@ template <class _A1>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<is_floating_point<_A1>::value, bool>
 __constexpr_isinf(_A1 __lcpp_x) noexcept
 {
-#if defined(_CCCL_CUDACC_BELOW_11_8)
+#if _CCCL_CUDACC_BELOW(11, 8)
   return __isinf(__lcpp_x);
 #elif defined(_CCCL_BUILTIN_ISINF)
   // nvcc at times has issues determining the type of __lcpp_x
@@ -666,7 +666,7 @@ template <class _A1>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<is_floating_point<_A1>::value, bool>
 __constexpr_isfinite(_A1 __lcpp_x) noexcept
 {
-#if defined(_CCCL_CUDACC_BELOW_11_8)
+#if _CCCL_CUDACC_BELOW(11, 8)
   return !__isinf(__lcpp_x) && !__isnan(__lcpp_x);
 #elif defined(_CCCL_BUILTIN_ISFINITE)
   // nvcc at times has issues determining the type of __lcpp_x
