@@ -25,15 +25,17 @@
  *
  ******************************************************************************/
 
-#include "cuda/std/__mdspan/extents.h"
 #include "insert_nested_NVTX_range_guard.h"
 // above header needs to be included first
 
 #include <cub/device/device_for.cuh>
 
-#include <thrust/count.h>
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
+
+#include <cuda/std/array>
+#include <cuda/std/mdspan>
+#include <cuda/std/span>
 
 #include <c2h/catch2_test_helper.h>
 
