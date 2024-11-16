@@ -30,7 +30,21 @@ def is_finite(x):
     return True
 
 
-def alg_dfs(files, min_elements_pow2=0):
+def filter_by_problem_size(df):
+    min_elements_pow2 = 28
+    if 'Elements{io}[pow2]' in df.columns:
+        df['Elements{io}[pow2]'] = df['Elements{io}[pow2]'].astype(int)
+        df = df[df['Elements{io}[pow2]'] >= min_elements_pow2]
+    return df
+
+
+def filter_by_offset_type(df):
+    if 'OffsetT{ct}' in df.columns:
+        df = df[(df['OffsetT{ct}'] == 'I32') | (df['OffsetT{ct}'] == 'U32')]
+    return df
+
+
+def alg_dfs(files):
     result = {}
     for file in files:
         storage = cccl.bench.StorageBase(file)
@@ -40,9 +54,7 @@ def alg_dfs(files, min_elements_pow2=0):
                 df = storage.alg_to_df(algname, subbench)
                 df = df.map(lambda x: x if is_finite(x) else np.nan)
                 df = df.dropna(subset=['center'], how='all')
-                if 'Elements{io}[pow2]' in df.columns:
-                    df['Elements{io}[pow2]'] = df['Elements{io}[pow2]'].astype(int)
-                    df = df[df['Elements{io}[pow2]'] >= min_elements_pow2]
+                df = filter_by_offset_type(filter_by_problem_size(df))
                 df = df.filter(items=['ctk', 'cccl', 'gpu', 'variant', 'bw'])
                 df['variant'] = df['variant'].astype(str) + " ({})".format(file)
                 df['bw'] = df['bw'] * 100
@@ -96,10 +108,10 @@ def parse_args():
     parser.add_argument('--box', type=bool, default=False, help='Plot box instead of bar.')
     return parser.parse_args()
 
+
 def sol():
     args = parse_args()
-    min_elements_pow2 = 28
-    plot_sol(alg_bws(alg_dfs(args.files, min_elements_pow2)), args.box)
+    plot_sol(alg_bws(alg_dfs(args.files)), args.box)
 
 
 if __name__ == "__main__":
