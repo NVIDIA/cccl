@@ -79,19 +79,27 @@ def file_exists(value):
     return value
 
 
-def plot_sol(medians):
-    ax = sns.boxenplot(data=medians, x='alg', y='bw', hue='hue')
+def plot_sol(medians, box):
+    if box:
+        ax = sns.boxenplot(data=medians, x='alg', y='bw', hue='hue')
+    else:
+        ax = sns.barplot(data=medians, x='alg', y='bw', hue='hue', errorbar=lambda x: (x.min(), x.max()))
     for container in ax.containers:
         ax.bar_label(container, fmt='%.1f')
     ax.set_xticklabels(ax.get_xticklabels(), rotation=15, rotation_mode='anchor', ha='right')
     plt.show()
 
 
-def sol():
-    min_elements_pow2 = 28
+def parse_args():
     parser = argparse.ArgumentParser(description="Analyze benchmark results.")
     parser.add_argument('files', type=file_exists, nargs='+', help='At least one file is required.')
-    plot_sol(alg_bws(alg_dfs(parser.parse_args().files, min_elements_pow2)))
+    parser.add_argument('--box', type=bool, default=False, help='Plot box instead of bar.')
+    return parser.parse_args()
+
+def sol():
+    args = parse_args()
+    min_elements_pow2 = 28
+    plot_sol(alg_bws(alg_dfs(args.files, min_elements_pow2)), args.box)
 
 
 if __name__ == "__main__":
