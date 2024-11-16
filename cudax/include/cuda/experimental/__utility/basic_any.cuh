@@ -30,9 +30,11 @@
 #include <cuda/std/__concepts/__concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/copyable.h>
+#include <cuda/std/__concepts/derived_from.h>
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/movable.h>
 #include <cuda/std/__concepts/regular.h>
+#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__exception/terminate.h>
 #include <cuda/std/__new/launder.h>
 #include <cuda/std/__type_traits/conditional.h>
@@ -2200,16 +2202,16 @@ public:
 
   // Conversions between compatible basic_any objects handled here:
   _LIBCUDACXX_TEMPLATE(class _SrcInterface)
-  _LIBCUDACXX_REQUIRES(_CUDA_VSTD::_IsNotSame<_SrcInterface, _Interface>::value _LIBCUDACXX_AND
-                         __any_convertible_to<basic_any<_SrcInterface>, basic_any>)
+  _LIBCUDACXX_REQUIRES((!_CUDA_VSTD::same_as<_SrcInterface, _Interface>)
+                         _LIBCUDACXX_AND __any_convertible_to<basic_any<_SrcInterface>, basic_any>)
   _CUDAX_API basic_any(basic_any<_SrcInterface>&& __src)
   {
     __convert_from(_CUDA_VSTD::move(__src));
   }
 
   _LIBCUDACXX_TEMPLATE(class _SrcInterface)
-  _LIBCUDACXX_REQUIRES(_CUDA_VSTD::_IsNotSame<_SrcInterface, _Interface>::value _LIBCUDACXX_AND
-                         __any_convertible_to<basic_any<_SrcInterface> const&, basic_any>)
+  _LIBCUDACXX_REQUIRES((!_CUDA_VSTD::same_as<_SrcInterface, _Interface>)
+                         _LIBCUDACXX_AND __any_convertible_to<basic_any<_SrcInterface> const&, basic_any>)
   _CUDAX_API basic_any(basic_any<_SrcInterface> const& __src)
   {
     __convert_from(__src);
@@ -2239,16 +2241,16 @@ public:
 
   // Assignment from a compatible basic_any object handled here:
   _LIBCUDACXX_TEMPLATE(class _SrcInterface)
-  _LIBCUDACXX_REQUIRES(_CUDA_VSTD::_IsNotSame<_SrcInterface, _Interface>::value _LIBCUDACXX_AND
-                         __any_convertible_to<basic_any<_SrcInterface>, basic_any>)
+  _LIBCUDACXX_REQUIRES((!_CUDA_VSTD::same_as<_SrcInterface, _Interface>)
+                         _LIBCUDACXX_AND __any_convertible_to<basic_any<_SrcInterface>, basic_any>)
   _CUDAX_API basic_any& operator=(basic_any<_SrcInterface>&& __src)
   {
     return __assign_from(_CUDA_VSTD::move(__src));
   }
 
   _LIBCUDACXX_TEMPLATE(class _SrcInterface)
-  _LIBCUDACXX_REQUIRES(_CUDA_VSTD::_IsNotSame<_SrcInterface, _Interface>::value _LIBCUDACXX_AND
-                         __any_convertible_to<basic_any<_SrcInterface> const&, basic_any>)
+  _LIBCUDACXX_REQUIRES((!_CUDA_VSTD::same_as<_SrcInterface, _Interface>)
+                         _LIBCUDACXX_AND __any_convertible_to<basic_any<_SrcInterface> const&, basic_any>)
   _CUDAX_API basic_any& operator=(basic_any<_SrcInterface> const& __src)
   {
     return __assign_from(__src);
@@ -2657,7 +2659,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__irefer
   basic_any(_Tp const&&) = delete;
 
   _LIBCUDACXX_TEMPLATE(class _SrcInterface)
-  _LIBCUDACXX_REQUIRES(_CUDA_VSTD::_IsNotSame<_SrcInterface, _Interface&>::value _LIBCUDACXX_AND //
+  _LIBCUDACXX_REQUIRES((!_CUDA_VSTD::same_as<_SrcInterface, _Interface&>) _LIBCUDACXX_AND //
                        (!__is_value_v<_SrcInterface>)
                          _LIBCUDACXX_AND __any_convertible_to<basic_any<_SrcInterface>, basic_any>)
   _CUDAX_API basic_any(basic_any<_SrcInterface>&& __src) noexcept
@@ -2666,16 +2668,16 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__irefer
   }
 
   _LIBCUDACXX_TEMPLATE(class _SrcInterface)
-  _LIBCUDACXX_REQUIRES(_CUDA_VSTD::_IsNotSame<_SrcInterface, _Interface&>::value _LIBCUDACXX_AND
-                         __any_convertible_to<basic_any<_SrcInterface>&, basic_any>)
+  _LIBCUDACXX_REQUIRES((!_CUDA_VSTD::same_as<_SrcInterface, _Interface&>)
+                         _LIBCUDACXX_AND __any_convertible_to<basic_any<_SrcInterface>&, basic_any>)
   _CUDAX_API basic_any(basic_any<_SrcInterface>& __src) noexcept
   {
     this->__set_ref(__src.__get_vptr(), __src.__get_optr());
   }
 
   _LIBCUDACXX_TEMPLATE(class _SrcInterface)
-  _LIBCUDACXX_REQUIRES(_CUDA_VSTD::_IsNotSame<_SrcInterface, _Interface&>::value _LIBCUDACXX_AND
-                         __any_convertible_to<basic_any<_SrcInterface> const&, basic_any>)
+  _LIBCUDACXX_REQUIRES((!_CUDA_VSTD::same_as<_SrcInterface, _Interface&>)
+                         _LIBCUDACXX_AND __any_convertible_to<basic_any<_SrcInterface> const&, basic_any>)
   _CUDAX_API basic_any(basic_any<_SrcInterface> const& __src) noexcept
   {
     this->__set_ref(__src.__get_vptr(), __src.__get_optr());
@@ -2734,8 +2736,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
   }
 
   _LIBCUDACXX_TEMPLATE(class _OtherInterface)
-  _LIBCUDACXX_REQUIRES(_CUDA_VSTD::_IsNotSame<_OtherInterface, _Interface>::value _LIBCUDACXX_AND
-                         __any_convertible_to<basic_any<_OtherInterface*>, basic_any<_Interface*>>)
+  _LIBCUDACXX_REQUIRES((!_CUDA_VSTD::same_as<_OtherInterface, _Interface>)
+                         _LIBCUDACXX_AND __any_convertible_to<basic_any<_OtherInterface*>, basic_any<_Interface*>>)
   _CUDAX_API basic_any(basic_any<_OtherInterface*> const& __other) noexcept
   {
     __convert_from(__other);
@@ -2757,8 +2759,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
 
   _LIBCUDACXX_TEMPLATE(template <class...> class _OtherInterface, class _Super)
   _LIBCUDACXX_REQUIRES(__is_interface<_OtherInterface<_Super>> _LIBCUDACXX_AND
-                         _CUDA_VSTD::is_base_of_v<_OtherInterface<_Super>, basic_any<_Super>> _LIBCUDACXX_AND
-                           _CUDA_VSTD::is_same_v<__normalized_interface_of<basic_any<_Super>*>, _Interface*>)
+                         _CUDA_VSTD::derived_from<basic_any<_Super>, _OtherInterface<_Super>> _LIBCUDACXX_AND
+                           _CUDA_VSTD::same_as<__normalized_interface_of<basic_any<_Super>*>, _Interface*>)
   _CUDAX_API explicit basic_any(_OtherInterface<_Super>* __self) noexcept
   {
     __convert_from(basic_any_from(__self));
@@ -2766,8 +2768,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
 
   _LIBCUDACXX_TEMPLATE(template <class...> class _OtherInterface, class _Super)
   _LIBCUDACXX_REQUIRES(__is_interface<_OtherInterface<_Super>> _LIBCUDACXX_AND
-                         _CUDA_VSTD::is_base_of_v<_OtherInterface<_Super>, basic_any<_Super>> _LIBCUDACXX_AND
-                           _CUDA_VSTD::is_same_v<__normalized_interface_of<basic_any<_Super> const*>, _Interface*>)
+                         _CUDA_VSTD::derived_from<basic_any<_Super>, _OtherInterface<_Super>> _LIBCUDACXX_AND
+                           _CUDA_VSTD::same_as<__normalized_interface_of<basic_any<_Super> const*>, _Interface*>)
   _CUDAX_API explicit basic_any(_OtherInterface<_Super> const* __self) noexcept
   {
     __convert_from(basic_any_from(__self));
@@ -2800,8 +2802,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
   }
 
   _LIBCUDACXX_TEMPLATE(class _OtherInterface)
-  _LIBCUDACXX_REQUIRES(_CUDA_VSTD::_IsNotSame<_OtherInterface, _Interface>::value _LIBCUDACXX_AND
-                         __any_convertible_to<basic_any<_OtherInterface*>, basic_any<_Interface*>>)
+  _LIBCUDACXX_REQUIRES((!_CUDA_VSTD::same_as<_OtherInterface, _Interface>)
+                         _LIBCUDACXX_AND __any_convertible_to<basic_any<_OtherInterface*>, basic_any<_Interface*>>)
   _CUDAX_API basic_any& operator=(basic_any<_OtherInterface*> const& __other) noexcept
   {
     __convert_from(__other);
