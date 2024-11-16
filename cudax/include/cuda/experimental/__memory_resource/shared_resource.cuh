@@ -236,7 +236,7 @@ private:
   _CUDAX_HOST_API static _CUDA_VSTD::false_type __impl_test(long);
 
   template <class _Ty>
-  using __has_impl = decltype(shared_resource::__impl_test<_Ty>(0));
+  static constexpr bool __has_impl = decltype(shared_resource::__impl_test<_Ty>(0))::value;
 
   template <bool HasImpl, class = void>
   struct __impl_base : _Resource::impl
@@ -261,7 +261,7 @@ private:
   };
 
   struct __impl
-      : __impl_base<__has_impl<_Resource>::value>
+      : __impl_base<__has_impl<_Resource>>
       , ::std::enable_shared_from_this<__impl>
   {
     template <class... _Args>
