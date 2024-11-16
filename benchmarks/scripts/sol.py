@@ -85,12 +85,11 @@ def file_exists(value):
 
 
 def plot_sol(medians):
-    plt.figure(figsize=(14, 10))
     ax = sns.barplot(data=medians, x='alg', y='bw', hue='hue')
     for container in ax.containers:
         ax.bar_label(container, fmt='%.1f')
         ax.set_xticklabels(ax.get_xticklabels(), rotation=15, rotation_mode='anchor', ha='right')
-    plt.savefig('sol.png')
+    plt.show()
 
 
 def sol():
