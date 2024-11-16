@@ -138,6 +138,13 @@ computation(IndexType id, IndexType, Func func, ExtendType, FastDivModArrayType,
  * Kernel entry points
  **********************************************************************************************************************/
 
+// GCC6/7/8/9 raises unused parameter warning
+#  if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 100000
+#    define _CUB_UNUSED_ATTRIBUTE __attribute__((unused))
+#  else
+#    define _CUB_UNUSED_ATTRIBUTE
+#  endif
+
 template <typename ChainedPolicyT,
           typename Func,
           typename ExtendType,
@@ -145,10 +152,10 @@ template <typename ChainedPolicyT,
           ::cuda::std::size_t... Ranks>
 __launch_bounds__(ChainedPolicyT::ActivePolicy::for_policy_t::block_threads) //
   CUB_DETAIL_KERNEL_ATTRIBUTES void static_kernel(
-    Func func,
-    _CCCL_GRID_CONSTANT const ExtendType ext,
-    _CCCL_GRID_CONSTANT const FastDivModArrayType sub_sizes_div_array,
-    _CCCL_GRID_CONSTANT const FastDivModArrayType extents_mod_array)
+    Func func _CUB_UNUSED_ATTRIBUTE,
+    _CCCL_GRID_CONSTANT const ExtendType ext _CUB_UNUSED_ATTRIBUTE,
+    _CCCL_GRID_CONSTANT const FastDivModArrayType sub_sizes_div_array _CUB_UNUSED_ATTRIBUTE,
+    _CCCL_GRID_CONSTANT const FastDivModArrayType extents_mod_array _CUB_UNUSED_ATTRIBUTE)
 {
   using active_policy_t        = typename ChainedPolicyT::ActivePolicy::for_policy_t;
   using extent_index_type      = typename ExtendType::index_type;
@@ -157,11 +164,6 @@ __launch_bounds__(ChainedPolicyT::ActivePolicy::for_policy_t::block_threads) //
   constexpr auto stride        = offset_t{block_threads * active_policy_t::items_per_thread};
   auto stride1                 = (stride >= cub::detail::size(ext)) ? block_threads : stride;
   auto id                      = static_cast<offset_t>(threadIdx.x + blockIdx.x * block_threads);
-  // nvcc 11.x + GCC6/7/8/9 raises unused parameter warning
-  static_cast<void>(func);
-  static_cast<void>(ext);
-  static_cast<void>(sub_sizes_div_array);
-  static_cast<void>(extents_mod_array);
   computation<offset_t, Func, ExtendType, FastDivModArrayType, Ranks...>(
     id, stride1, func, ext, sub_sizes_div_array, extents_mod_array);
 }
