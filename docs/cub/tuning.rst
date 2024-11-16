@@ -1,3 +1,5 @@
+.. _cub-tuning:
+
 CUB Tuning Infrastructure
 ================================================================================
 
@@ -168,9 +170,29 @@ construct:
   #endif
 
 
-This logic is automatically applied to :code:`all_types`, :code:`offset_types`, and
-:code:`fundamental_types` lists when you use matching names for the axes. You can define
-your own axis names and use the logic above for them (see sort pairs example).
+This logic is already implemented if you use any of the following predefined type lists:
+
+.. list-table:: Predefined type lists
+   :header-rows: 1
+
+   * - Axis name
+     - C++ identifier
+     - Included types
+   * - :code:`T{ct}`
+     - :code:`integral_types`
+     - :code:`int8_t, int16_t, int32_t, int64_t`
+   * - :code:`T{ct}`
+     - :code:`fundamental_types`
+     - :code:`integral_types` and :code:`int128_t, float, double`
+   * - :code:`T{ct}`
+     - :code:`all_types`
+     - :code:`fundamental_types` and :code:`complex`
+   * - :code:`OffsetT{ct}`
+     - :code:`offset_types`
+     - :code:`int32_t, int64_t`
+
+
+But you are free to define your own axis names and use the logic above for them (see sort pairs example).
 
 
 Search Process
@@ -179,7 +201,7 @@ Search Process
 To get started with tuning / benchmarking, you need to configure CMake. The following options are
 available:
 
-* :code:`CUB_ENABLE_BENCHMARKS` - enable bases (default: OFF).
+* :code:`CCCL_ENABLE_BENCHMARKS` - enable bases (default: OFF).
 * :code:`CUB_ENABLE_TUNING` - enable variants (default: OFF).
 
 Having configured CMake, you can start the search process. Note that the search has to be started
@@ -188,7 +210,7 @@ from the build directory.
 .. code:: bash
 
   $ cd build
-  $ cmake -DThrust_DIR=path-to-thrust/thrust/cmake -DCUB_ENABLE_TUNING=YES -DCUB_ENABLE_BENCHMARKS=YES -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES="90" ..
+  $ cmake -DThrust_DIR=path-to-thrust/thrust/cmake -DCUB_ENABLE_TUNING=YES -DCCCL_ENABLE_BENCHMARKS=YES -DCMAKE_BUILD_TYPE=Release -DCMAKE_CUDA_ARCHITECTURES="90" ..
   $ ../benchmarks/scripts/search.py -a "T{ct}=[I8,I16]" -R ".*algname.*"
 
 Both :code:`-a` and :code:`-R` options are optional. The first one is used to specify types to tune

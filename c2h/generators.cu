@@ -305,7 +305,7 @@ struct count_to_item_t
   __device__ T operator()(CounterT id)
   {
     // This has to be a type for which extended floating point types like __nv_fp8_e5m2 provide an overload
-    return static_cast<T>(static_cast<unsigned long long int>(id) % n);
+    return static_cast<T>(static_cast<float>(static_cast<unsigned long long int>(id) % n));
   }
 };
 
@@ -554,10 +554,12 @@ INSTANTIATE(char);
 
 #ifdef _CCCL_HAS_NVFP16
 INSTANTIATE(half_t);
+INSTANTIATE(__half);
 #endif // _CCCL_HAS_NVFP16
 
 #ifdef _CCCL_HAS_NVBF16
 INSTANTIATE(bfloat16_t);
+INSTANTIATE(__nv_bfloat16);
 #endif // _CCCL_HAS_NVBF16
 
 #undef INSTANTIATE_RND

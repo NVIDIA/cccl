@@ -287,7 +287,7 @@ template <typename ForwardIterator, typename InputIterator, typename Predicate>
 ForwardIterator partition(ForwardIterator first, ForwardIterator last, InputIterator stencil, Predicate pred);
 
 /*! \p partition_copy differs from \p partition only in that the reordered
- *  sequence is written to difference output sequences, rather than in place.
+ *  sequence is written to different output sequences, rather than in place.
  *
  *  \p partition_copy copies the elements <tt>[first, last)</tt> based on the
  *  function object \p pred. All of the elements that satisfy \p pred are copied
@@ -369,7 +369,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> partition_copy(
   Predicate pred);
 
 /*! \p partition_copy differs from \p partition only in that the reordered
- *  sequence is written to difference output sequences, rather than in place.
+ *  sequence is written to different output sequences, rather than in place.
  *
  *  \p partition_copy copies the elements <tt>[first, last)</tt> based on the
  *  function object \p pred. All of the elements that satisfy \p pred are copied
@@ -436,7 +436,7 @@ thrust::pair<OutputIterator1, OutputIterator2> partition_copy(
   InputIterator first, InputIterator last, OutputIterator1 out_true, OutputIterator2 out_false, Predicate pred);
 
 /*! \p partition_copy differs from \p partition only in that the reordered
- *  sequence is written to difference output sequences, rather than in place.
+ *  sequence is written to different output sequences, rather than in place.
  *
  *  \p partition_copy copies the elements <tt>[first, last)</tt> based on the
  *  function object \p pred which is applied to a range of stencil elements. All of the elements
@@ -517,7 +517,7 @@ _CCCL_HOST_DEVICE thrust::pair<OutputIterator1, OutputIterator2> partition_copy(
   Predicate pred);
 
 /*! \p partition_copy differs from \p partition only in that the reordered
- *  sequence is written to difference output sequences, rather than in place.
+ *  sequence is written to different output sequences, rather than in place.
  *
  *  \p partition_copy copies the elements <tt>[first, last)</tt> based on the
  *  function object \p pred which is applied to a range of stencil elements. All of the elements

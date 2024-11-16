@@ -36,7 +36,7 @@ namespace cuda::experimental::__async
 {
 #if defined(__CUDA_ARCH__)
 using __thread_id = int;
-#elif defined(_CCCL_COMPILER_NVHPC)
+#elif _CCCL_COMPILER(NVHPC)
 struct __thread_id
 {
   union
