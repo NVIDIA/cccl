@@ -44,6 +44,17 @@ def filter_by_offset_type(df):
     return df
 
 
+def filter_by_type(df):
+    if 'T{ct}' in df:
+        # df = df[df['T{ct}'].str.contains('64')]
+        df = df[~df['T{ct}'].str.contains('C')]
+    elif 'KeyT{ct}' in df:
+        print(df)
+        # df = df[df['KeyT{ct}'].str.contains('64')]
+        df = df[~df['KeyT{ct}'].str.contains('C')]
+    return df
+
+
 def alg_dfs(files):
     result = {}
     for file in files:
@@ -54,7 +65,7 @@ def alg_dfs(files):
                 df = storage.alg_to_df(algname, subbench)
                 df = df.map(lambda x: x if is_finite(x) else np.nan)
                 df = df.dropna(subset=['center'], how='all')
-                df = filter_by_offset_type(filter_by_problem_size(df))
+                df = filter_by_type(filter_by_offset_type(filter_by_problem_size(df)))
                 df = df.filter(items=['ctk', 'cccl', 'gpu', 'variant', 'bw'])
                 df['variant'] = df['variant'].astype(str) + " ({})".format(file)
                 df['bw'] = df['bw'] * 100
