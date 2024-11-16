@@ -14,8 +14,8 @@
 #include <cuda/std/span>
 #include <cuda/std/tuple>
 
-#include <cuda/experimental/__device/device_ref.cuh>
 #include <cuda/experimental/__detail/utility.cuh>
+#include <cuda/experimental/__device/device_ref.cuh>
 #include <cuda/experimental/hierarchy.cuh>
 
 #if _CCCL_STD_VER >= 2017
