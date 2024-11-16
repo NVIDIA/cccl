@@ -74,7 +74,7 @@ def alg_dfs(file):
             result[fused_algname] = pd.concat([result[fused_algname], subbench_df])
         else:
             result[fused_algname] = subbench_df
-    
+
     for algname in result:
         if result[algname]['cccl'].nunique() != 1:
             raise ValueError(f"Multiple CCCL versions in one db '{algname}'")
