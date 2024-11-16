@@ -338,8 +338,8 @@ void meta_dims_test()
   SECTION("Just at least")
   {
     constexpr unsigned int block_size = 256, grid_size = 4;
-    auto dims = cudax::make_hierarchy(
-      cudax::block_dims<block_size>(), cudax::grid_dims(cudax::at_least{block_size * grid_size}, cudax::thread));
+    auto dims =
+      cudax::make_hierarchy(cudax::block_dims<block_size>(), cudax::grid_dims(block_size * grid_size, cudax::thread));
 
     // Won't work until finalized
     // dims.count();
@@ -361,10 +361,24 @@ void meta_dims_test()
   {
     // Not the best usage, but should work too
     constexpr unsigned int block_size = 256, grid_size = 4;
-    auto dims = cudax::make_hierarchy(
-      cudax::block_dims<block_size>(), cudax::grid_dims(cudax::at_least{grid_size}, cudax::block));
+    auto dims = cudax::make_hierarchy(cudax::block_dims<block_size>(), cudax::grid_dims(grid_size, cudax::block));
 
     cudax::launch(stream, dims, check_expected_counts, block_size, grid_size);
+  }
+
+  SECTION("Wrong dims")
+  {
+    try
+    {
+      auto dims                       = cudax::make_hierarchy(cudax::grid_dims(7, cudax::thread), cudax::block_dims(3));
+      [[maybe_unused]] auto finalized = dims.finalize(stream.device(), empty_kernel);
+      CUDAX_REQUIRE(false);
+    }
+    catch (std::invalid_argument&)
+    {};
+
+    auto dims = cudax::make_hierarchy(cudax::grid_dims(cudax::at_least{7}, cudax::thread), cudax::block_dims(3));
+    [[maybe_unused]] auto finalized = dims.finalize(stream.device(), empty_kernel);
   }
 
   SECTION("At least + best occupancy")
@@ -372,6 +386,8 @@ void meta_dims_test()
     unsigned int target_count = 4420;
     auto dims =
       cudax::make_hierarchy(cudax::auto_block_dims(), cudax::grid_dims(cudax::at_least{target_count}, cudax::thread));
+
+    static_assert(cuda::std::is_same_v<decltype(dims), decltype(cudax::distribute(target_count))>);
 
     auto dims_finalized = dims.finalize(stream.device(), empty_kernel);
     static_assert(::cuda::std::is_same_v<::cudax::finalized_t<decltype(dims)>, decltype(dims_finalized)>);
@@ -455,6 +471,17 @@ void meta_dims_test()
                   shared_memory_expected_counts<>,
                   config_finalized.dims.count(cudax::thread, cudax::block),
                   config_finalized.dims.count(cudax::block));
+  }
+  SECTION("Oversubscribe and undersubscribe")
+  {
+    auto dims = cudax::make_hierarchy(cudax::fill_device(1.5), cudax::auto_block_dims());
+    cudax::launch(stream, dims, empty_kernel, 1);
+
+    auto dims_but_larger = cudax::make_hierarchy(cudax::fill_device(5), cudax::auto_block_dims());
+    cudax::launch(stream, dims_but_larger, empty_kernel, 1);
+
+    auto dims_but_smaller = cudax::make_hierarchy(cudax::fill_device(0.5), cudax::auto_block_dims());
+    cudax::launch(stream, dims_but_smaller, empty_kernel, 1);
   }
   stream.wait();
 }

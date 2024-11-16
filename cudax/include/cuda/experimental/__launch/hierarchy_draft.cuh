@@ -150,7 +150,7 @@ _CCCL_NODISCARD __meta_dims_finalized __level_finalize(
     ::cuda::__throw_cuda_error(__status, "Failed to query functions maximal occupancy");
   }
 
-  int __cnt = (__num_sms * __num_blocks_per_sm / __block_multiplier * __dims.__fill_coef);
+  int __cnt = static_cast<int>((__num_sms * __num_blocks_per_sm / __block_multiplier * __dims.__fill_coef));
   if (__cnt == 0)
   {
     _CUDA_VSTD::__throw_invalid_argument("Not able to run any blocks with this configuration");
@@ -418,6 +418,7 @@ _CCCL_NODISCARD auto kernel_config<_Dimensions, _Options...>::finalize(device_re
  * This function will return a hierarchy with at least the requested number of threads,
  * The rest of the hierarchy is not specified, but it will be a valid hierarchy that
  * can be used to launch a kernel.
+ * Requires finalization before any queries.
  *
  * @par Snippet
  * @code
