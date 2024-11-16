@@ -93,9 +93,10 @@ def plot_sol(medians):
 
 
 def sol():
+    min_elements_pow2 = 28
     parser = argparse.ArgumentParser(description="Analyze benchmark results.")
     parser.add_argument('files', type=file_exists, nargs='+', help='At least one file is required.')
-    plot_sol(alg_bws(alg_dfs(parser.parse_args().files)))
+    plot_sol(alg_bws(alg_dfs(parser.parse_args().files, min_elements_pow2)))
 
 
 if __name__ == "__main__":
