@@ -229,7 +229,9 @@ struct shared_resource
 
 private:
   template <class _Ty>
-  _CUDAX_HOST_API static _CUDA_VSTD::true_type __impl_test(int, typename _Ty::impl* = nullptr);
+  using __impl_of = typename _Ty::impl;
+  template <class _Ty>
+  _CUDAX_HOST_API static _CUDA_VSTD::true_type __impl_test(int, __impl_of<_Ty>* = nullptr);
   template <class _Ty>
   _CUDAX_HOST_API static _CUDA_VSTD::false_type __impl_test(long);
 
