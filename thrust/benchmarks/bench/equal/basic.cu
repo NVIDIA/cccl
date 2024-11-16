@@ -24,7 +24,6 @@ static void benchmark(nvbench::state& state, nvbench::type_list<T>)
                                                                                  // of `elements` corresponds to the
                                                                                  // actual elements read in an early
                                                                                  // exit
-  do_not_optimize(thrust::equal(policy(alloc), a.begin(), a.end(), b.begin()));
   state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
     do_not_optimize(thrust::equal(policy(alloc, launch), a.begin(), a.end(), b.begin()));
   });
