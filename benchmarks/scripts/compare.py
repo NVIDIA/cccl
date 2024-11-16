@@ -102,6 +102,7 @@ def compare():
     compare_df = alg_dfs(args.compare)
     for alg in reference_df.keys() & compare_df.keys():
         print()
+        print()
         print(f'# {alg}')
         merge_columns = [col for col in reference_df[alg].columns if col not in ['Noise', 'Mean']]
         df = pd.merge(reference_df[alg], compare_df[alg], on=merge_columns, suffixes=('Ref', 'Cmp'))
@@ -116,6 +117,7 @@ def compare():
             case_df = case_df.drop(columns=['ctk', 'gpu', 'variant'])
             print()
             print(f'## CTK {ctk_version} GPU {gpu} ({variant})')
+            print()
             print(case_df.to_markdown(index=False))
 
 
