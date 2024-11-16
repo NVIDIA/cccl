@@ -31,20 +31,12 @@ def is_finite(x):
 
 
 def alg_dfs(files, min_elements_pow2=0):
-    storages = {}
-    algnames = set()
-    filenames_map = get_filenames_map(files)
+    result = {}
     for file in files:
         storage = cccl.bench.StorageBase(file)
-        algnames.update(storage.algnames())
-        storages[filenames_map[file]] = storage
-
-    result = {}
-    for algname in algnames:
-        for subbench in storage.subbenches(algname):
-            subbench_df = None
-            for file in storages:
-                storage = storages[file]
+        for algname in storage.algnames():
+            for subbench in storage.subbenches(algname):
+                subbench_df = None
                 df = storage.alg_to_df(algname, subbench)
                 df = df.map(lambda x: x if is_finite(x) else np.nan)
                 df = df.dropna(subset=['center'], how='all')
@@ -58,7 +50,11 @@ def alg_dfs(files, min_elements_pow2=0):
                     subbench_df = df
                 else:
                     subbench_df = pd.concat([subbench_df, df])
-            result[algname + '.' + subbench] = subbench_df
+            fused_algname = algname + '.' + subbench
+            if fused_algname in result:
+                result[fused_algname] = pd.concat([result[fused_algname], subbench_df])
+            else:
+                result[fused_algname] = subbench_df
 
     return result
 
