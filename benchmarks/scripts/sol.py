@@ -64,11 +64,10 @@ def alg_bws(dfs):
     for algname in dfs:
         df = dfs[algname]
         df['alg'] = algname
-        median = df.groupby([col for col in df.columns if col != 'bw'])['bw'].median().reset_index()
-        if medians is None:
-            medians = median
+        if df is None:
+            medians = df
         else:
-            medians = pd.concat([medians, median])
+            medians = pd.concat([medians, df])
     medians['hue'] = medians['ctk'].astype(str) + ' ' + medians['cccl'].astype(
         str) + ' ' + medians['gpu'].astype(str) + ' ' + medians['variant']
     return medians.drop(columns=['ctk', 'cccl', 'gpu', 'variant'])
@@ -81,10 +80,10 @@ def file_exists(value):
 
 
 def plot_sol(medians):
-    ax = sns.barplot(data=medians, x='alg', y='bw', hue='hue')
+    ax = sns.boxenplot(data=medians, x='alg', y='bw', hue='hue')
     for container in ax.containers:
         ax.bar_label(container, fmt='%.1f')
-        ax.set_xticklabels(ax.get_xticklabels(), rotation=15, rotation_mode='anchor', ha='right')
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=15, rotation_mode='anchor', ha='right')
     plt.show()
 
 
