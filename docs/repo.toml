@@ -402,6 +402,8 @@ doxygen_predefined = [
   "__device__",
   "__host__",
   "__global__",
+  "_CCCL_CUDACC_AT_LEAST(x, y)=1",
+  "_CCCL_CUDACC_BELOW(x, y)=0",
   "_CCCL_DEVICE=",
   "_CCCL_EXEC_CHECK_DISABLE=",
   "_CCCL_FORCEINLINE=",

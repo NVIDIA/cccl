@@ -50,6 +50,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T>, OpT op)
   thrust::sort(input.begin() + elements_in_A, input.end());
 
   caching_allocator_t alloc;
+  // not a warm-up run, we need to run once to determine the size of the output
   const auto result_ends =
     op(policy(alloc),
        input.cbegin(),

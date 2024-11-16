@@ -1125,7 +1125,7 @@ UNITTEST("get logical_data from a task_dep")
   ctx.finalize();
 };
 
-#  if defined(CUDASTF_CODE_GENERATION) && defined(__CUDACC__)
+#  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 namespace reserved
 {
 inline void unit_test_pfor()
@@ -1313,7 +1313,7 @@ UNITTEST("basic launch test")
 };
 
 } // end namespace reserved
-#  endif // defined(CUDASTF_CODE_GENERATION) && defined(__CUDACC__)
+#  endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 
 #endif // UNITTESTED_FILE
 
