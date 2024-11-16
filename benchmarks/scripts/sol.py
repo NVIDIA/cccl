@@ -105,7 +105,7 @@ def plot_sol(medians, box):
 def parse_args():
     parser = argparse.ArgumentParser(description="Analyze benchmark results.")
     parser.add_argument('files', type=file_exists, nargs='+', help='At least one file is required.')
-    parser.add_argument('--box', type=bool, default=False, help='Plot box instead of bar.')
+    parser.add_argument('--box', action='store_true', help='Plot box instead of bar.')
     return parser.parse_args()
 
 
