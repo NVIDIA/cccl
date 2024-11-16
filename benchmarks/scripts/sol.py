@@ -49,7 +49,6 @@ def filter_by_type(df):
         # df = df[df['T{ct}'].str.contains('64')]
         df = df[~df['T{ct}'].str.contains('C')]
     elif 'KeyT{ct}' in df:
-        print(df)
         # df = df[df['KeyT{ct}'].str.contains('64')]
         df = df[~df['KeyT{ct}'].str.contains('C')]
     return df
