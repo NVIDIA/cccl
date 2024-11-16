@@ -21,6 +21,7 @@
 #include <cuda/std/tuple>
 
 #include <cuda/experimental/__detail/config.cuh>
+#include <cuda/experimental/__device/device_ref.cuh>
 #include <cuda/experimental/__hierarchy/level_dimensions.cuh>
 
 #include <nv/target>
@@ -738,6 +739,47 @@ public:
     static_assert(has_level<Level, hierarchy_dimensions_fragment<BottomUnit, Levels...>>);
 
     return ::cuda::std::apply(detail::get_level_helper<Level>{}, levels);
+  }
+
+  /**
+   * @brief Returns a hierarchy updated to replace meta dimsnions with concrete dimensions
+   *
+   * This function will create a new hierarchy finalized for the passed in device and kernel. Each level in
+   * the hierarchy will be replaced with concrete dimensions if they are meta dimensions
+   * or passed through otherwise.
+   *
+   * @param device
+   * Device to finalize the dimensions for, for example in case of fill_device meta dimensions
+   *
+   * @param kernel
+   * Kernel that the hierarchy is intended for
+   *
+   * @tparam Args
+   * Types of kernel arguments, need to be explicitly specified only for a kernel functor
+   */
+  template <typename... Args, typename Kernel>
+  _CCCL_NODISCARD auto finalize(device_ref device, const Kernel& kernel);
+
+  /**
+   * @brief Returns a hierarchy updated to replace meta dimsnions with concrete dimensions
+   *
+   * This function will create a new hierarchy finalized for the passed in device and kernel. Each level in
+   * the hierarchy will be replaced with concrete dimensions if they are meta dimensions
+   * or passed through otherwise.
+   *
+   * @param device
+   * Device to finalize the dimensions for, for example in case of fill_device meta dimensions
+   *
+   * @param kernel
+   * Kernel that the hierarchy is intended for
+   *
+   * @param args
+   * Arguments that the kernel will be launched with, needed only if called with a kernel functor
+   */
+  template <typename... Args, typename Kernel>
+  _CCCL_NODISCARD auto finalize(device_ref device, const Kernel& kernel, [[maybe_unused]] const Args&... args)
+  {
+    return finalize<Args...>(device, kernel);
   }
 };
 

@@ -14,6 +14,7 @@
 #include <cuda/std/span>
 #include <cuda/std/tuple>
 
+#include <cuda/experimental/__device/device_ref.cuh>
 #include <cuda/experimental/hierarchy.cuh>
 
 #if _CCCL_STD_VER >= 2017
@@ -76,7 +77,7 @@ struct find_option_in_tuple_impl
 };
 
 template <detail::launch_option_kind Kind, typename... Options>
-_CCCL_HOST_DEVICE const auto find_option_in_tuple(const ::cuda::std::tuple<Options...>& tuple)
+_CCCL_HOST_DEVICE auto find_option_in_tuple(const ::cuda::std::tuple<Options...>& tuple)
 {
   return ::cuda::std::apply(find_option_in_tuple_impl<Kind>(), tuple);
 }
@@ -346,10 +347,10 @@ struct kernel_config
 
   constexpr kernel_config(const Dimensions& dims, const Options&... opts)
       : dims(dims)
-      , options(opts...) {};
+      , options(opts...){};
   constexpr kernel_config(const Dimensions& dims, const ::cuda::std::tuple<Options...>& opts)
       : dims(dims)
-      , options(opts) {};
+      , options(opts){};
 
   /**
    * @brief Add a new option to this configuration
@@ -365,6 +366,47 @@ struct kernel_config
   {
     return kernel_config<Dimensions, Options..., NewOptions...>(
       dims, ::cuda::std::tuple_cat(options, ::cuda::std::make_tuple(new_options...)));
+  }
+
+  /**
+   * @brief Returns a configuration with the hierarchy updated to replace meta dimsnions with concrete dimensions
+   *
+   * This function will create a new kernel_configuration finalized for the passed in device and kernel. Each level in
+   * the hierarchy contained in the configuration will be replaced with concrete dimensions if they are meta dimensions
+   * or passed through otherwise.
+   *
+   * @param device
+   * Device to finalize the dimensions for, for example in case of fill_device meta dimensions
+   *
+   * @param kernel
+   * Kernel that the configuration is intended for
+   *
+   * @tparam Args
+   * Types of kernel arguments, need to be explicitly specified only for a kernel functor
+   */
+  template <typename... Args, typename Kernel>
+  _CCCL_NODISCARD auto finalize(device_ref device, const Kernel& kernel);
+
+  /**
+   * @brief Returns a configuration with the hierarchy updated to replace meta dimsnions with concrete dimensions
+   *
+   * This function will create a new kernel_configuration finalized for the passed in device and kernel. Each level in
+   * the hierarchy contained in the configuration will be replaced with concrete dimensions if they are meta dimensions
+   * or passed through otherwise.
+   *
+   * @param device
+   * Device to finalize the dimensions for, for example in case of fill_device meta dimensions
+   *
+   * @param kernel
+   * Kernel that the configuration is intended for
+   *
+   * @param args
+   * Arguments that the kernel will be launched with, needed only if called with a kernel functor
+   */
+  template <typename... Args, typename Kernel>
+  _CCCL_NODISCARD auto finalize(device_ref device, const Kernel& kernel, [[maybe_unused]] const Args&... args)
+  {
+    return finalize<Args...>(device, kernel);
   }
 };
 

@@ -109,8 +109,6 @@ launch_impl(::cuda::stream_ref stream, Config conf, const Kernel& kernel_fn, con
  * @param args
  * arguments to be passed into the kernel functor
  */
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4180) // qualifier applied to function type has no meaning; ignored in is_function
 template <typename... Args,
           typename... Config,
           typename Dimensions,
@@ -125,8 +123,8 @@ void launch(
   if constexpr (::cuda::std::is_invocable_v<Kernel, finalized_conf_t, as_kernel_arg_t<Args>...>
                 || __nv_is_extended_device_lambda_closure_type(Kernel))
   {
-    auto launcher  = detail::kernel_launcher<finalized_conf_t, Kernel, as_kernel_arg_t<Args>...>;
-    auto finalized = detail::finalize_no_device_set(stream, conf, launcher);
+    auto launcher  = __kernel_launcher<finalized_conf_t, Kernel, as_kernel_arg_t<Args>...>;
+    auto finalized = __finalize_no_device_set(conf, launcher);
     status         = detail::launch_impl(
       stream,
       finalized,
@@ -138,17 +136,13 @@ void launch(
   else
   {
     static_assert(::cuda::std::is_invocable_v<Kernel, as_kernel_arg_t<Args>...>);
-    auto launcher  = detail::kernel_launcher_no_config<Kernel, as_kernel_arg_t<Args>...>;
-    auto finalized = detail::finalize_no_device_set(stream, conf, launcher);
+    auto launcher  = __kernel_launcher_no_config<Kernel, as_kernel_arg_t<Args>...>;
+    auto finalized = __finalize_no_device_set(conf, launcher);
     status         = detail::launch_impl(
       stream,
-
       finalized,
-
       launcher,
-
       kernel,
-
       static_cast<as_kernel_arg_t<Args>>(detail::__launch_transform(stream, std::forward<Args>(args)))...);
   }
   if (status != cudaSuccess)
@@ -210,8 +204,8 @@ void launch(::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& di
   if constexpr (::cuda::std::is_invocable_v<Kernel, finalized_dims_t, as_kernel_arg_t<Args>...>
                 || __nv_is_extended_device_lambda_closure_type(Kernel))
   {
-    auto launcher  = detail::kernel_launcher<finalized_dims_t, Kernel, as_kernel_arg_t<Args>...>;
-    auto finalized = detail::finalize_no_device_set(stream, dims, launcher);
+    auto launcher  = __kernel_launcher<finalized_dims_t, Kernel, as_kernel_arg_t<Args>...>;
+    auto finalized = __finalize_no_device_set(dims, launcher);
     status         = detail::launch_impl(
       stream,
       kernel_config(finalized),
@@ -223,8 +217,8 @@ void launch(::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& di
   else
   {
     static_assert(::cuda::std::is_invocable_v<Kernel, as_kernel_arg_t<Args>...>);
-    auto launcher  = detail::kernel_launcher_no_config<Kernel, as_kernel_arg_t<Args>...>;
-    auto finalized = detail::finalize_no_device_set(stream, dims, launcher);
+    auto launcher  = __kernel_launcher_no_config<Kernel, as_kernel_arg_t<Args>...>;
+    auto finalized = __finalize_no_device_set(dims, launcher);
     status         = detail::launch_impl(
       stream,
       kernel_config(finalized),
@@ -237,7 +231,6 @@ void launch(::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& di
     ::cuda::__throw_cuda_error(status, "Failed to launch a kernel");
   }
 }
-_CCCL_DIAG_POP
 
 /**
  * @brief Launch a kernel function with specified configuration and arguments
@@ -290,7 +283,7 @@ void launch(::cuda::stream_ref stream,
             ActArgs&&... args)
 {
   __ensure_current_device __dev_setter(stream);
-  auto finalized     = detail::finalize_no_device_set(stream, conf, kernel);
+  auto finalized     = __finalize_no_device_set(conf, kernel);
   cudaError_t status = detail::launch_impl(
     stream, //
     finalized,
@@ -353,7 +346,7 @@ void launch(::cuda::stream_ref stream,
             ActArgs&&... args)
 {
   __ensure_current_device __dev_setter(stream);
-  auto finalized     = detail::finalize_no_device_set(stream, dims, kernel);
+  auto finalized     = __finalize_no_device_set(dims, kernel);
   cudaError_t status = detail::launch_impl(
     stream,
     kernel_config(finalized),
@@ -417,7 +410,7 @@ void launch(::cuda::stream_ref stream,
             ActArgs&&... args)
 {
   __ensure_current_device __dev_setter(stream);
-  auto finalized     = detail::finalize_no_device_set(stream, conf, kernel);
+  auto finalized     = __finalize_no_device_set(conf, kernel);
   cudaError_t status = detail::launch_impl(
     stream, //
     finalized,
@@ -477,7 +470,7 @@ void launch(
   ::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& dims, void (*kernel)(ExpArgs...), ActArgs&&... args)
 {
   __ensure_current_device __dev_setter(stream);
-  auto finalized     = detail::finalize_no_device_set(stream, dims, kernel);
+  auto finalized     = __finalize_no_device_set(dims, kernel);
   cudaError_t status = detail::launch_impl(
     stream,
     kernel_config(finalized),

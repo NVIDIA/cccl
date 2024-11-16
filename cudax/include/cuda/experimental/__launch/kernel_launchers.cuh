@@ -16,35 +16,35 @@
 #include <cuda/std/__functional/invoke.h>
 
 #if _CCCL_STD_VER >= 2017
-namespace cuda::experimental::detail
+namespace cuda::experimental
 {
 template <typename Config, typename Kernel, typename... Args>
-__global__ void kernel_launcher(const Config conf, Kernel kernel_fn, Args... args)
+__global__ void __kernel_launcher(const Config conf, Kernel kernel_fn, Args... args)
 {
   kernel_fn(conf, args...);
 }
 
 template <typename Kernel, typename... Args>
-__global__ void kernel_launcher_no_config(Kernel kernel_fn, Args... args)
+__global__ void __kernel_launcher_no_config(Kernel kernel_fn, Args... args)
 {
   kernel_fn(args...);
 }
 
 template <typename Kernel, typename ConfOrDims, typename... Args>
-_CCCL_NODISCARD auto get_kernel_launcher()
+_CCCL_NODISCARD auto __get_kernel_launcher()
 {
   if constexpr (::cuda::std::is_invocable_v<Kernel, ConfOrDims, Args...>
                 || __nv_is_extended_device_lambda_closure_type(Kernel))
   {
-    return detail::kernel_launcher<ConfOrDims, Kernel, Args...>;
+    return __kernel_launcher<ConfOrDims, Kernel, Args...>;
   }
   else
   {
     static_assert(::cuda::std::is_invocable_v<Kernel, Args...>);
-    auto launcher = detail::kernel_launcher_no_config<Kernel, Args...>;
+    return __kernel_launcher_no_config<Kernel, Args...>;
   }
 }
-} // namespace cuda::experimental::detail
+} // namespace cuda::experimental
 
 #endif
 #endif
