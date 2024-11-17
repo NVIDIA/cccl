@@ -605,10 +605,10 @@ struct common_type<pair<_T1, _T2>, pair<_U1, _U2>>
 #endif // _CCCL_STD_VER >= 2023
 
 template <class _T1, class _T2>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20
-  enable_if_t<__is_swappable<_T1>::value && __is_swappable<_T2>::value, void>
-  swap(pair<_T1, _T2>& __x,
-       pair<_T1, _T2>& __y) noexcept((__is_nothrow_swappable<_T1>::value && __is_nothrow_swappable<_T2>::value))
+_LIBCUDACXX_HIDE_FROM_ABI
+_CCCL_CONSTEXPR_CXX20 enable_if_t<__is_swappable<_T1>::value && __is_swappable<_T2>::value, void>
+swap(pair<_T1, _T2>& __x,
+     pair<_T1, _T2>& __y) noexcept((__is_nothrow_swappable<_T1>::value && __is_nothrow_swappable<_T2>::value))
 {
   __x.swap(__y);
 }
@@ -624,9 +624,9 @@ swap(const pair<_T1, _T2>& __x, const pair<_T1, _T2>& __y) noexcept(noexcept(__x
 #endif // _CCCL_STD_VER >= 2023
 
 template <class _T1, class _T2>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14
-  pair<typename __unwrap_ref_decay<_T1>::type, typename __unwrap_ref_decay<_T2>::type>
-  make_pair(_T1&& __t1, _T2&& __t2)
+_LIBCUDACXX_HIDE_FROM_ABI
+_CCCL_CONSTEXPR_CXX14 pair<typename __unwrap_ref_decay<_T1>::type, typename __unwrap_ref_decay<_T2>::type>
+make_pair(_T1&& __t1, _T2&& __t2)
 {
   return pair<typename __unwrap_ref_decay<_T1>::type, typename __unwrap_ref_decay<_T2>::type>(
     _CUDA_VSTD::forward<_T1>(__t1), _CUDA_VSTD::forward<_T2>(__t2));
