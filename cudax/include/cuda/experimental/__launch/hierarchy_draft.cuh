@@ -104,11 +104,13 @@ _CCCL_NODISCARD __meta_dims_finalized __level_finalize(
 {
   int __block_size, __dummy;
 
-  cudaError_t __status = cudaOccupancyMaxPotentialBlockSize(&__dummy, &__block_size, __fn, __dynamic_smem_bytes);
-  if (__status != cudaSuccess)
-  {
-    ::cuda::__throw_cuda_error(__status, "Failed to query optimal block size");
-  }
+  _CCCL_TRY_CUDA_API(
+    cudaOccupancyMaxPotentialBlockSize,
+    "Failed to query optimal block size",
+    &__dummy,
+    &__block_size,
+    __fn,
+    __dynamic_smem_bytes);
 
   // TODO if there ever is a level below block_level, we need to divide here (and round down?)
   // for now just static assert to make it not supported
@@ -137,18 +139,16 @@ _CCCL_NODISCARD __meta_dims_finalized __level_finalize(
 
   // Device will be properly set outside of this function
   _CCCL_TRY_CUDA_API(cudaGetDevice, "Could not get __device", &__device);
-  cudaError_t __status = cudaDeviceGetAttribute(&__num_sms, cudaDevAttrMultiProcessorCount, __device);
-  if (__status != cudaSuccess)
-  {
-    ::cuda::__throw_cuda_error(__status, "Failed to query __device attributes");
-  }
+  _CCCL_TRY_CUDA_API(
+    cudaDeviceGetAttribute, "Failed to query __device attributes", &__num_sms, cudaDevAttrMultiProcessorCount, __device);
 
-  __status =
-    cudaOccupancyMaxActiveBlocksPerMultiprocessor(&__num_blocks_per_sm, __fn, __block_size, __dynamic_smem_bytes);
-  if (__status != cudaSuccess)
-  {
-    ::cuda::__throw_cuda_error(__status, "Failed to query functions maximal occupancy");
-  }
+  _CCCL_TRY_CUDA_API(
+    cudaOccupancyMaxActiveBlocksPerMultiprocessor,
+    "Failed to query functions maximal occupancy",
+    &__num_blocks_per_sm,
+    __fn,
+    __block_size,
+    __dynamic_smem_bytes);
 
   int __cnt = static_cast<int>((__num_sms * __num_blocks_per_sm / __block_multiplier * __dims.__fill_coef));
   if (__cnt == 0)
@@ -436,5 +436,5 @@ _CCCL_NODISCARD inline auto distribute(int __num_elements) noexcept
 }
 
 } // namespace cuda::experimental
-#endif
-#endif
+#endif // _CCCL_STD_VER >= 2017
+#endif // !_CUDAX__LAUNCH_HIERARCHY_DRAFT

@@ -46,5 +46,5 @@ _CCCL_NODISCARD auto __get_kernel_launcher()
 }
 } // namespace cuda::experimental
 
-#endif
-#endif
+#endif // _CCCL_STD_VER >= 2017
+#endif // !_CUDAX__LAUNCH_KERNEL_LAUNCHERS
