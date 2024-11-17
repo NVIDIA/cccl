@@ -454,7 +454,7 @@ private:
     template <typename... Selected>
     _CCCL_NODISCARD _CUDAX_API constexpr auto operator()(const Selected&... levels) const noexcept
     {
-      return hierarchy_dimensions_fragment<Unit, Selected...>(std::make_tuple(levels...));
+      return hierarchy_dimensions_fragment<Unit, Selected...>(::cuda::std::make_tuple(levels...));
     }
   };
 
@@ -746,7 +746,7 @@ public:
   }
 
   /**
-   * @brief Returns a hierarchy updated to replace meta dimsnions with concrete dimensions
+   * @brief Returns a hierarchy updated to replace meta dimensions with concrete dimensions
    *
    * This function will create a new hierarchy finalized for the passed in device and kernel. Each level in
    * the hierarchy will be replaced with concrete dimensions if they are meta dimensions
@@ -765,7 +765,7 @@ public:
   _CCCL_NODISCARD auto finalize(device_ref device, const Kernel& kernel);
 
   /**
-   * @brief Returns a hierarchy updated to replace meta dimsnions with concrete dimensions
+   * @brief Returns a hierarchy updated to replace meta dimensions with concrete dimensions
    *
    * This function will create a new hierarchy finalized for the passed in device and kernel. Each level in
    * the hierarchy will be replaced with concrete dimensions if they are meta dimensions
