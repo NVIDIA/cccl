@@ -11,7 +11,7 @@
 #ifndef __CUDAX_DETAIL_UTILITY_H
 #define __CUDAX_DETAIL_UTILITY_H
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/__utility/declval.h>
 
 namespace cuda::experimental
 {
@@ -56,6 +56,11 @@ template <template <class...> class _Template, class... _Args>
 inline constexpr bool __is_specialization_of<_Template<_Args...>, _Template> = true;
 
 } // namespace detail
+
+template <class _Tp>
+using __identity_t _CCCL_NODEBUG_ALIAS = _Tp;
+
+using _CUDA_VSTD::declval;
 
 struct uninit_t
 {
