@@ -33,7 +33,7 @@
 #  define _CCCL_MSVC_VERSION      _MSC_VER
 #  define _CCCL_MSVC_VERSION_FULL _MSC_FULL_VER
 #elif defined(__CUDACC_RTC__)
-#  define _CCCL_COMPILER_NVRTC
+#  define _CCCL_COMPILER(NVRTC) _CCCL_CUDACC_VER_MAJOR * 1000 + _CCCL_CUDACC_VER_MINOR * 10
 #endif
 
 #define _CCCL_COMPILER_COMPARE_VERSION_1(_COMP)              _COMP
@@ -75,7 +75,7 @@
 
 // Shorthand to check whether there is a cuda compiler available
 #if defined(_CCCL_CUDA_COMPILER_NVCC) || defined(_CCCL_CUDA_COMPILER_NVHPC) || defined(_CCCL_CUDA_COMPILER_CLANG) \
-  || defined(_CCCL_COMPILER_NVRTC)
+  || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_CUDA_COMPILER
 #endif // cuda compiler available
 

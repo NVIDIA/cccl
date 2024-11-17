@@ -834,9 +834,9 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 #endif // no system header
 
 #ifdef __cuda_std__
-#  ifndef _CCCL_COMPILER_NVRTC
+#  if !_CCCL_COMPILER(NVRTC)
 #    include <chrono>
-#  endif // _CCCL_COMPILER_NVRTC
+#  endif // _CCCL_COMPILER(NVRTC)
 #endif // __cuda_std__
 
 #include <cuda/std/__type_traits/common_type.h>
@@ -1452,7 +1452,7 @@ public:
 
 template <class _Clock, class _Duration1, class _Duration2>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT
-common_type<chrono::time_point<_Clock, _Duration1>, chrono::time_point<_Clock, _Duration2>>
+  common_type<chrono::time_point<_Clock, _Duration1>, chrono::time_point<_Clock, _Duration2>>
 {
   typedef chrono::time_point<_Clock, typename common_type<_Duration1, _Duration2>::type> type;
 };
@@ -1554,9 +1554,9 @@ operator>=(const time_point<_Clock, _Duration1>& __lhs, const time_point<_Clock,
 // time_point operator+(time_point x, duration y);
 
 template <class _Clock, class _Duration1, class _Rep2, class _Period2>
-_LIBCUDACXX_HIDE_FROM_ABI
-_CCCL_CONSTEXPR_CXX14 time_point<_Clock, typename common_type<_Duration1, duration<_Rep2, _Period2>>::type>
-operator+(const time_point<_Clock, _Duration1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14
+  time_point<_Clock, typename common_type<_Duration1, duration<_Rep2, _Period2>>::type>
+  operator+(const time_point<_Clock, _Duration1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
 {
   typedef time_point<_Clock, typename common_type<_Duration1, duration<_Rep2, _Period2>>::type> _Tr;
   return _Tr(__lhs.time_since_epoch() + __rhs);
@@ -1565,9 +1565,9 @@ operator+(const time_point<_Clock, _Duration1>& __lhs, const duration<_Rep2, _Pe
 // time_point operator+(duration x, time_point y);
 
 template <class _Rep1, class _Period1, class _Clock, class _Duration2>
-_LIBCUDACXX_HIDE_FROM_ABI
-_CCCL_CONSTEXPR_CXX14 time_point<_Clock, typename common_type<duration<_Rep1, _Period1>, _Duration2>::type>
-operator+(const duration<_Rep1, _Period1>& __lhs, const time_point<_Clock, _Duration2>& __rhs)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14
+  time_point<_Clock, typename common_type<duration<_Rep1, _Period1>, _Duration2>::type>
+  operator+(const duration<_Rep1, _Period1>& __lhs, const time_point<_Clock, _Duration2>& __rhs)
 {
   return __rhs + __lhs;
 }
@@ -1575,9 +1575,9 @@ operator+(const duration<_Rep1, _Period1>& __lhs, const time_point<_Clock, _Dura
 // time_point operator-(time_point x, duration y);
 
 template <class _Clock, class _Duration1, class _Rep2, class _Period2>
-_LIBCUDACXX_HIDE_FROM_ABI
-_CCCL_CONSTEXPR_CXX14 time_point<_Clock, typename common_type<_Duration1, duration<_Rep2, _Period2>>::type>
-operator-(const time_point<_Clock, _Duration1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14
+  time_point<_Clock, typename common_type<_Duration1, duration<_Rep2, _Period2>>::type>
+  operator-(const time_point<_Clock, _Duration1>& __lhs, const duration<_Rep2, _Period2>& __rhs)
 {
   typedef time_point<_Clock, typename common_type<_Duration1, duration<_Rep2, _Period2>>::type> _Ret;
   return _Ret(__lhs.time_since_epoch() - __rhs);

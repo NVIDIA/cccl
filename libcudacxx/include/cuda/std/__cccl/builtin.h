@@ -179,8 +179,7 @@
 #endif // _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated)
 
 // NVCC and NVRTC in C++11 mode freaks out about `__builtin_is_constant_evaluated`.
-#if _CCCL_STD_VER < 2014 \
-  && (defined(_CCCL_CUDA_COMPILER_NVCC) || defined(_CCCL_COMPILER_NVRTC) || _CCCL_COMPILER(NVHPC))
+#if _CCCL_STD_VER < 2014 && (defined(_CCCL_CUDA_COMPILER_NVCC) || _CCCL_COMPILER(NVRTC) || _CCCL_COMPILER(NVHPC))
 #  undef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #endif // _CCCL_STD_VER < 2014 && _CCCL_CUDA_COMPILER_NVCC
 
@@ -218,27 +217,27 @@
 #endif // _CCCL_HAS_BUILTIN(__decay) && clang-cuda
 
 #if _CCCL_CHECK_BUILTIN(has_nothrow_assign) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 40300) \
-  || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
+  || defined(_CCCL_COMPILER_MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_HAS_NOTHROW_ASSIGN(...) __has_nothrow_assign(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(has_nothrow_assign) && gcc >= 4.3
 
 #if _CCCL_CHECK_BUILTIN(has_nothrow_constructor) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 40300) \
-  || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
+  || defined(_CCCL_COMPILER_MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_HAS_NOTHROW_CONSTRUCTOR(...) __has_nothrow_constructor(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(has_nothrow_constructor) && gcc >= 4.3
 
 #if _CCCL_CHECK_BUILTIN(has_nothrow_copy) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 40300) \
-  || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
+  || defined(_CCCL_COMPILER_MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_HAS_NOTHROW_COPY(...) __has_nothrow_copy(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(has_nothrow_copy) && gcc >= 4.3
 
 #if _CCCL_CHECK_BUILTIN(has_trivial_constructor) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 40300) \
-  || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
+  || defined(_CCCL_COMPILER_MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_HAS_TRIVIAL_CONSTRUCTOR(...) __has_trivial_constructor(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(has_trivial_constructor) && gcc >= 4.3
 
 #if _CCCL_CHECK_BUILTIN(has_trivial_destructor) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 40300) \
-  || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
+  || defined(_CCCL_COMPILER_MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_HAS_TRIVIAL_DESTRUCTOR(...) __has_trivial_destructor(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(has_trivial_destructor) && gcc >= 4.3
 
@@ -248,7 +247,7 @@
 #endif // _CCCL_CHECK_BUILTIN(has_unique_object_representations) && gcc >= 7.0
 
 #if _CCCL_CHECK_BUILTIN(has_virtual_destructor) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 40300) \
-  || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
+  || defined(_CCCL_COMPILER_MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_HAS_VIRTUAL_DESTRUCTOR(...) __has_virtual_destructor(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(has_virtual_destructor) && gcc >= 4.3
 
@@ -257,7 +256,7 @@
 #endif // _CCCL_HAS_BUILTIN(__integer_pack)
 
 #if _CCCL_CHECK_BUILTIN(is_aggregate) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 70000) \
-  || (defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION > 1914) || defined(_CCCL_COMPILER_NVRTC)
+  || (defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION > 1914) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_AGGREGATE(...) __is_aggregate(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_aggregate) && gcc >= 7.0
 
@@ -276,12 +275,12 @@
 #endif // _CCCL_CHECK_BUILTIN(is_assignable) && gcc >= 9.0
 
 #if _CCCL_CHECK_BUILTIN(is_base_of) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 40300) \
-  || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
+  || defined(_CCCL_COMPILER_MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_BASE_OF(...) __is_base_of(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_base_of) && gcc >= 4.3
 
 #if _CCCL_CHECK_BUILTIN(is_class) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 40300) \
-  || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
+  || defined(_CCCL_COMPILER_MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_CLASS(...) __is_class(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_class) && gcc >= 4.3
 
@@ -294,11 +293,11 @@
 #endif // _CCCL_HAS_BUILTIN(__is_const)
 
 #if _CCCL_CHECK_BUILTIN(is_constructible) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 80000) \
-  || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
+  || defined(_CCCL_COMPILER_MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_CONSTRUCTIBLE(...) __is_constructible(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_constructible) && gcc >= 8.0
 
-#if _CCCL_CHECK_BUILTIN(is_convertible_to) || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
+#if _CCCL_CHECK_BUILTIN(is_convertible_to) || defined(_CCCL_COMPILER_MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_CONVERTIBLE_TO(...) __is_convertible_to(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_convertible_to)
 
@@ -307,17 +306,17 @@
 #endif // _CCCL_CHECK_BUILTIN(is_destructible)
 
 #if _CCCL_CHECK_BUILTIN(is_empty) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 40300) \
-  || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
+  || defined(_CCCL_COMPILER_MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_EMPTY(...) __is_empty(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_empty) && gcc >= 4.3
 
 #if _CCCL_CHECK_BUILTIN(is_enum) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 40300) \
-  || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
+  || defined(_CCCL_COMPILER_MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_ENUM(...) __is_enum(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_enum) && gcc >= 4.3
 
 #if _CCCL_CHECK_BUILTIN(is_final) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 40700) \
-  || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
+  || defined(_CCCL_COMPILER_MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_FINAL(...) __is_final(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_final) && gcc >= 4.7
 
@@ -344,7 +343,7 @@
 #endif // _CCCL_HAS_BUILTIN(__is_integral)
 
 #if _CCCL_CHECK_BUILTIN(is_literal_type) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 40600) \
-  || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
+  || defined(_CCCL_COMPILER_MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_LITERAL(...) __is_literal_type(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_literal_type) && gcc >= 4.6
 
@@ -369,15 +368,15 @@
 #  define _CCCL_BUILTIN_IS_MEMBER_POINTER(...) __is_member_pointer(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__is_member_pointer)
 
-#if _CCCL_CHECK_BUILTIN(is_nothrow_assignable) || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
+#if _CCCL_CHECK_BUILTIN(is_nothrow_assignable) || defined(_CCCL_COMPILER_MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE(...) __is_nothrow_assignable(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_nothrow_assignable)
 
-#if _CCCL_CHECK_BUILTIN(is_nothrow_constructible) || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
+#if _CCCL_CHECK_BUILTIN(is_nothrow_constructible) || defined(_CCCL_COMPILER_MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_NOTHROW_CONSTRUCTIBLE(...) __is_nothrow_constructible(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_nothrow_constructible)
 
-#if _CCCL_CHECK_BUILTIN(is_nothrow_destructible) || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
+#if _CCCL_CHECK_BUILTIN(is_nothrow_destructible) || defined(_CCCL_COMPILER_MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_NOTHROW_DESTRUCTIBLE(...) __is_nothrow_destructible(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_nothrow_destructible)
 
@@ -391,7 +390,7 @@
 #endif // _CCCL_CUDACC_BELOW(11, 3)
 
 #if _CCCL_CHECK_BUILTIN(is_pod) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 40300) \
-  || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
+  || defined(_CCCL_COMPILER_MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_POD(...) __is_pod(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_pod) && gcc >= 4.3
 
@@ -401,7 +400,7 @@
 #endif // _CCCL_HAS_BUILTIN(__is_pointer)
 
 #if _CCCL_CHECK_BUILTIN(is_polymorphic) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 40300) \
-  || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
+  || defined(_CCCL_COMPILER_MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_POLYMORPHIC(...) __is_polymorphic(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_polymorphic) && gcc >= 4.3
 
@@ -433,27 +432,27 @@
 #endif // _CCCL_HAS_BUILTIN(__is_signed)
 
 #if _CCCL_CHECK_BUILTIN(is_standard_layout) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 40700) \
-  || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
+  || defined(_CCCL_COMPILER_MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_STANDARD_LAYOUT(...) __is_standard_layout(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_standard_layout) && gcc >= 4.7
 
 #if _CCCL_CHECK_BUILTIN(is_trivial) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 40500) \
-  || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
+  || defined(_CCCL_COMPILER_MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_TRIVIAL(...) __is_trivial(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_trivial) && gcc >= 4.5
 
 #if _CCCL_CHECK_BUILTIN(is_trivially_assignable) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 50100) \
-  || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
+  || defined(_CCCL_COMPILER_MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_TRIVIALLY_ASSIGNABLE(...) __is_trivially_assignable(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_trivially_assignable) && gcc >= 5.1
 
 #if _CCCL_CHECK_BUILTIN(is_trivially_constructible) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 50100) \
-  || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
+  || defined(_CCCL_COMPILER_MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE(...) __is_trivially_constructible(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_trivially_constructible) && gcc >= 5.1
 
 #if _CCCL_CHECK_BUILTIN(is_trivially_copyable) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 50100) \
-  || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
+  || defined(_CCCL_COMPILER_MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_TRIVIALLY_COPYABLE(...) __is_trivially_copyable(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_trivially_copyable) && gcc >= 5.1
 
@@ -462,7 +461,7 @@
 #endif // _CCCL_CHECK_BUILTIN(is_trivially_destructible)
 
 #if _CCCL_CHECK_BUILTIN(is_union) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 40300) \
-  || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
+  || defined(_CCCL_COMPILER_MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_UNION(...) __is_union(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_union) && gcc >= 4.3
 
@@ -555,7 +554,7 @@
 #endif // _CCCL_CUDACC_BELOW(12, 2)
 
 #if _CCCL_CHECK_BUILTIN(underlying_type) || (defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION >= 40700) \
-  || defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
+  || defined(_CCCL_COMPILER_MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_UNDERLYING_TYPE(...) __underlying_type(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(underlying_type) && gcc >= 4.7
 
@@ -574,8 +573,7 @@
 // GCC's builtin_strlen isn't reliable at constexpr time
 // MSVC does not expose builtin_strlen before C++17
 // NVRTC does not expose builtin_strlen
-#if !defined(_CCCL_COMPILER_GCC) && !defined(_CCCL_COMPILER_NVRTC) \
-  && !(defined(_CCCL_COMPILER_MSVC) && _CCCL_STD_VER < 2017)
+#if !defined(_CCCL_COMPILER_GCC) && !_CCCL_COMPILER(NVRTC) && !(defined(_CCCL_COMPILER_MSVC) && _CCCL_STD_VER < 2017)
 #  define _CCCL_BUILTIN_STRLEN(...) __builtin_strlen(__VA_ARGS__)
 #endif
 
