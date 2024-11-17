@@ -45,6 +45,7 @@ static void basic(nvbench::state& state, nvbench::type_list<KeyT, ValueT>)
   thrust::device_vector<ValueT> out_vals(elements);
 
   caching_allocator_t alloc;
+  // not a warm-up run, we need to run once to determine the size of the output
   const auto [new_key_end, new_val_end] = thrust::unique_by_key_copy(
     policy(alloc), in_keys.cbegin(), in_keys.cend(), in_vals.cbegin(), out_keys.begin(), out_vals.begin());
 

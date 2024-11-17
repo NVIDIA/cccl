@@ -43,6 +43,7 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   thrust::device_vector<T> output(elements);
 
   caching_allocator_t alloc;
+  // not a warm-up run, we need to run once to determine the size of the output
   const auto new_end             = thrust::unique_copy(policy(alloc), input.cbegin(), input.cend(), output.begin());
   const std::size_t unique_items = thrust::distance(output.begin(), new_end);
 

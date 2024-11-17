@@ -53,8 +53,7 @@ void __copy_bytes_impl(stream_ref __stream, _CUDA_VSTD::span<_SrcTy> __src, _CUD
 
 //! @brief Launches a bytewise memory copy from source to destination into the provided stream.
 //!
-//! Both source and destination needs to either be a `contiguous_range` or implicitly
-//! implicitly/launch transform to one.
+//! Both source and destination needs to either be a `contiguous_range` or implicitly/launch transform to one.
 //! Both source and destination type is required to be trivially copyable.
 //!
 //! This call might be synchronous if either source or destination is pagable host memory.
