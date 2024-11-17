@@ -72,13 +72,13 @@
 #  define _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
 #endif // !exclude_from_explicit_instantiation
 
-#if defined(_CCCL_COMPILER_ICC) // ICC has issues with visibility attributes on symbols with internal linkage
+#if _CCCL_COMPILER(ICC) // ICC has issues with visibility attributes on symbols with internal linkage
 #  define _CCCL_HIDE_FROM_ABI inline
 #elif _CCCL_COMPILER(NVHPC) // NVHPC has issues with visibility attributes on symbols with internal linkage
 #  define _CCCL_HIDE_FROM_ABI inline
-#else // ^^^ _CCCL_COMPILER_ICC ^^^ / vvv !_CCCL_COMPILER_ICC vvv
+#else // ^^^ _CCCL_COMPILER(ICC) ^^^ / vvv !_CCCL_COMPILER(ICC) vvv
 #  define _CCCL_HIDE_FROM_ABI _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION inline
-#endif // !_CCCL_COMPILER_ICC
+#endif // !_CCCL_COMPILER(ICC)
 
 //! Defined here to supress any warnings from the definition
 #define _LIBCUDACXX_HIDE_FROM_ABI _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE
