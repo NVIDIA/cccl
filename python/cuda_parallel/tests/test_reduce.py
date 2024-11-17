@@ -8,7 +8,7 @@ import random
 import numba.cuda
 import numba.types
 import cuda.parallel.experimental as cudax
-from cuda.parallel.experimental import sentinel_iterators
+from cuda.parallel.experimental import iterators
 
 
 def random_int(shape, dtype):
@@ -95,29 +95,29 @@ def mul2(val):
 @pytest.mark.parametrize("use_numpy_array", [True, False])
 @pytest.mark.parametrize("input_generator", ["constant", "counting", "map_mul2",
                                              "raw_pointer", "streamed_input"])
-def test_device_sum_sentinel_iterator(use_numpy_array, input_generator, num_items=3, start_sum_with=10):
+def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, start_sum_with=10):
     def add_op(a, b):
         return a + b
 
     if input_generator == "constant":
         l_input = [42 for distance in range(num_items)]
-        sentinel_iterator = sentinel_iterators.repeat(42)
+        i_input = iterators.repeat(42)
     elif input_generator == "counting":
         l_input = [start_sum_with + distance for distance in range(num_items)]
-        sentinel_iterator = sentinel_iterators.count(start_sum_with)
+        i_input = iterators.count(start_sum_with)
     elif input_generator == "map_mul2":
         l_input = [2 * (start_sum_with + distance) for distance in range(num_items)]
-        sentinel_iterator = sentinel_iterators.cu_map(mul2, sentinel_iterators.count(start_sum_with))
+        i_input = iterators.cu_map(mul2, iterators.count(start_sum_with))
     elif input_generator == "raw_pointer":
         rng = random.Random(0)
         l_input = [rng.randrange(100) for _ in range(num_items)]
         raw_pointer_devarr = numba.cuda.to_device(numpy.array(l_input, dtype=numpy.int32))
-        sentinel_iterator = sentinel_iterators.pointer(raw_pointer_devarr, numba.types.int32)
+        i_input = iterators.pointer(raw_pointer_devarr, numba.types.int32)
     elif input_generator == "streamed_input":
         rng = random.Random(0)
         l_input = [rng.randrange(100) for _ in range(num_items)]
         streamed_input_devarr = numba.cuda.to_device(numpy.array(l_input, dtype=numpy.int32))
-        sentinel_iterator = sentinel_iterators.cache(streamed_input_devarr, dtype=numba.types.int32, modifier='stream')
+        i_input = iterators.cache(streamed_input_devarr, dtype=numba.types.int32, modifier='stream')
     else:
         raise RuntimeError("Unexpected input_generator")
 
@@ -131,7 +131,7 @@ def test_device_sum_sentinel_iterator(use_numpy_array, input_generator, num_item
         h_input = numpy.array(l_input, dtype)
         d_input = numba.cuda.to_device(h_input)
     else:
-        d_input = sentinel_iterator
+        d_input = i_input
 
     d_output = numba.cuda.device_array(1, dtype) # to store device sum
 
