@@ -9,10 +9,10 @@
 #include <thrust/tuple.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
-#if defined(THRUST_GCC_VERSION) && THRUST_GCC_VERSION >= 70000
+#if _CCCL_COMPILER(GCC, >=, 7)
 // This header pulls in an unsuppressable warning on GCC 6
 #  include <cuda/std/complex>
-#endif // defined(THRUST_GCC_VERSION) && THRUST_GCC_VERSION >= 70000
+#endif // _CCCL_COMPILER(GCC, >=, 7)
 #include <cuda/std/tuple>
 #include <cuda/std/utility>
 
@@ -178,7 +178,7 @@ void TestTriviallyRelocatable()
   static_assert(thrust::is_trivially_relocatable<__int128>::value, "");
 #  endif // _LIBCUDACXX_HAS_NO_INT128
 #endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-#if defined(THRUST_GCC_VERSION) && THRUST_GCC_VERSION >= 70000
+#if _CCCL_COMPILER(GCC, >=, 7)
   static_assert(thrust::is_trivially_relocatable<thrust::complex<float>>::value, "");
   static_assert(thrust::is_trivially_relocatable<::cuda::std::complex<float>>::value, "");
   static_assert(thrust::is_trivially_relocatable<thrust::pair<int, thrust::complex<float>>>::value, "");
@@ -186,7 +186,7 @@ void TestTriviallyRelocatable()
   static_assert(thrust::is_trivially_relocatable<thrust::tuple<int, thrust::complex<float>, char>>::value, "");
   static_assert(thrust::is_trivially_relocatable<::cuda::std::tuple<int, ::cuda::std::complex<float>, char>>::value,
                 "");
-#endif // defined(THRUST_GCC_VERSION) && THRUST_GCC_VERSION >= 70000
+#endif // _CCCL_COMPILER(GCC, >=, 7)
   static_assert(thrust::is_trivially_relocatable<
                   ::cuda::std::tuple<thrust::pair<int, thrust::tuple<int, ::cuda::std::tuple<>>>,
                                      thrust::tuple<::cuda::std::pair<int, thrust::tuple<>>, int>>>::value,

@@ -53,9 +53,9 @@
 #  endif // _DEBUG
 
 // gcc case
-#elif defined(_CCCL_COMPILER_GCC)
+#elif _CCCL_COMPILER(GCC)
 
-#  if THRUST_GCC_VERSION >= 40200 // atomic built-ins were introduced ~4.2
+#  if _CCCL_COMPILER(GCC, >=, 4, 2) // atomic built-ins were introduced ~4.2
 #    define __thrust_compiler_fence() __sync_synchronize()
 #  else
 // allow the code to compile without any guarantees
@@ -63,7 +63,7 @@
       do                              \
       {                               \
       } while (0)
-#  endif // THRUST_GCC_VERSION
+#  endif // _CCCL_COMPILER(GCC, >=, 4, 2)
 
 // unknown case
 #elif defined(_CCCL_COMPILER_CLANG)

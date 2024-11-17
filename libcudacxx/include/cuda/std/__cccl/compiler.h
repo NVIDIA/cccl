@@ -26,8 +26,7 @@
 #  define _CCCL_COMPILER_CLANG
 #  define _CCCL_CLANG_VERSION (__clang_major__ * 10000 + __clang_minor__ * 100 + __clang_patchlevel__)
 #elif defined(__GNUC__)
-#  define _CCCL_COMPILER_GCC
-#  define _CCCL_GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
+#  define _CCCL_COMPILER_GCC _CCCL_COMPILER_MAKE_VERSION(__GNUC__, __GNUC_MINOR__)
 #elif defined(_MSC_VER)
 #  define _CCCL_COMPILER_MSVC
 #  define _CCCL_MSVC_VERSION      _MSC_VER
