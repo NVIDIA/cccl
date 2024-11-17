@@ -922,8 +922,23 @@ using __overrides_for = typename _Interface::template overrides<_Tp>;
 template <class _Interface>
 using __vtable_for = typename __overrides_for<_Interface>::__vtable;
 
+#if _CCCL_COMPILER(NVHPC)
+
+template <class _Interface>
+struct __vptr_for_impl
+{
+  using type = typename _Interface::template overrides<__remove_ireference_t<_Interface>>::__vptr_t;
+};
+
+template <class _Interface>
+using __vptr_for = typename __vptr_for_impl<_Interface>::type;
+
+#else
+
 template <class _Interface>
 using __vptr_for = typename __overrides_for<_Interface>::__vptr_t;
+
+#endif
 
 ///
 /// semi-regular overrides
@@ -1429,8 +1444,10 @@ struct __has_base_fn
 template <class... _Bases>
 struct __has_base_fn<__iset<_Bases...>>
 {
+  using __bases_set = __iset<_Bases...>;
+
   template <class... _Interfaces>
-  using __call _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::bool_constant<(__subsumes<__iset<_Bases...>, _Interfaces> || ...)>;
+  using __call _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::bool_constant<(__subsumes<__bases_set, _Interfaces> || ...)>;
 };
 
 template <class _Derived, class _Base, class = void>
