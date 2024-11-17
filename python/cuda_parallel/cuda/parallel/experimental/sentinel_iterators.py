@@ -9,17 +9,37 @@ import numba
 import numba.cuda
 
 
+def _sizeof_numba_type(numba_type):
+    mapping = {
+        types.int8: 1,
+        types.int16: 2,
+        types.int32: 4,
+        types.int64: 8,
+        types.uint8: 1,
+        types.uint16: 2,
+        types.uint32: 4,
+        types.uint64: 8,
+        types.float32: 4,
+        types.float64: 8,
+    }
+    return mapping[numba_type]
+
+
 class RawPointer:
     def __init__(self, ptr, dtype):
         self.val = ctypes.c_void_p(ptr)
         data_as_dtype_pp = numba.types.CPointer(numba.types.CPointer(dtype))
         data_as_uint64_p = numba.types.CPointer(numba.types.uint64)
-        self.ltoirs = [numba.cuda.compile(RawPointer.pointer_advance, sig=numba.types.void(data_as_uint64_p, numba.types.uint64), output='ltoir'),
+        self.ltoirs = [numba.cuda.compile(RawPointer.pointer_advance_sizeof(dtype), sig=numba.types.void(data_as_uint64_p, numba.types.uint64), output='ltoir'),
                        numba.cuda.compile(RawPointer.pointer_dereference, sig=dtype(data_as_dtype_pp), output='ltoir')]
         self.prefix = 'pointer'
 
-    def pointer_advance(this, distance):
-        this[0] = this[0] + numba.types.uint64(4 * distance) # TODO Showcasing the case of int32, need dtype with at least primitive types, ideally any numba type
+    @staticmethod
+    def pointer_advance_sizeof(numba_type):
+        sizeof_dtype = _sizeof_numba_type(numba_type)
+        def pointer_advance(this, distance):
+            this[0] = this[0] + distance * sizeof_dtype
+        return pointer_advance
 
     def pointer_dereference(this):
         return this[0][0]
@@ -60,12 +80,16 @@ class CacheModifiedPointer:
         self.val = ctypes.c_void_p(ptr)
         data_as_dtype_pp = numba.types.CPointer(numba.types.CPointer(dtype))
         data_as_uint64_p = numba.types.CPointer(numba.types.uint64)
-        self.ltoirs = [numba.cuda.compile(CacheModifiedPointer.cache_advance, sig=numba.types.void(data_as_uint64_p, numba.types.uint64), output='ltoir'),
+        self.ltoirs = [numba.cuda.compile(CacheModifiedPointer.cache_advance_sizeof(dtype), sig=numba.types.void(data_as_uint64_p, numba.types.uint64), output='ltoir'),
                        numba.cuda.compile(CacheModifiedPointer.cache_dereference, sig=dtype(data_as_dtype_pp), output='ltoir')]
         self.prefix = 'cache'
 
-    def cache_advance(this, distance):
-        this[0] = this[0] + numba.types.uint64(4 * distance) # TODO Showcasing the case of int32, need dtype with at least primitive types, ideally any numba type
+    @staticmethod
+    def cache_advance_sizeof(numba_type):
+        sizeof_dtype = _sizeof_numba_type(numba_type)
+        def cache_advance(this, distance):
+            this[0] = this[0] + distance * sizeof_dtype
+        return cache_advance
 
     def cache_dereference(this):
         return ldcs(this[0])
