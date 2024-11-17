@@ -22,10 +22,9 @@ constexpr std::string_view format_template = R"XXX(
 #define VALUE_T {3}
 #define DEREF {4}
 #define ADVANCE {5}
-#define ADVANCE_MULTIPLY_DIFF_WITH_SIZEOF_VALUE_T {6}
 
 // Kernel Source
-{7}
+{6}
 
 #undef DIFF_T
 #undef OP_ALIGNMENT
@@ -33,7 +32,6 @@ constexpr std::string_view format_template = R"XXX(
 #undef VALUE_T
 #undef DEREF
 #undef ADVANCE
-#undef ADVANCE_MULTIPLY_DIFF_WITH_SIZEOF_VALUE_T
 )XXX";
 
 std::string make_kernel_input_iterator(
@@ -42,8 +40,7 @@ std::string make_kernel_input_iterator(
   size_t size,
   std::string_view value_t,
   std::string_view deref,
-  std::string_view advance,
-  int advance_multiply_diff_with_sizeof_value_t)
+  std::string_view advance)
 {
   constexpr std::string_view iter_def = R"XXX(
 extern "C" __device__ VALUE_T DEREF(const void *self_ptr);
@@ -56,9 +53,6 @@ struct __align__(OP_ALIGNMENT) input_iterator_state_t {
   using reference = VALUE_T&;
   __device__ inline value_type operator*() const { return DEREF(data); }
   __device__ inline input_iterator_state_t& operator+=(difference_type diff) {
-      if (ADVANCE_MULTIPLY_DIFF_WITH_SIZEOF_VALUE_T) {
-        diff *= sizeof(value_type);
-      }
       ADVANCE(data, diff);
       return *this;
   }
@@ -74,16 +68,7 @@ struct __align__(OP_ALIGNMENT) input_iterator_state_t {
 };
 )XXX";
 
-  return std::format(
-    format_template,
-    diff_t,
-    alignment,
-    size,
-    value_t,
-    deref,
-    advance,
-    advance_multiply_diff_with_sizeof_value_t,
-    iter_def);
+  return std::format(format_template, diff_t, alignment, size, value_t, deref, advance, iter_def);
 };
 
 std::string make_kernel_input_iterator(std::string_view offset_t, std::string_view input_value_t, cccl_iterator_t iter)
@@ -94,13 +79,7 @@ std::string make_kernel_input_iterator(std::string_view offset_t, std::string_vi
   }
 
   return make_kernel_input_iterator(
-    offset_t,
-    iter.alignment,
-    iter.size,
-    input_value_t,
-    iter.dereference.name,
-    iter.advance.name,
-    iter.advance_multiply_diff_with_sizeof_value_t);
+    offset_t, iter.alignment, iter.size, input_value_t, iter.dereference.name, iter.advance.name);
 }
 
 std::string make_kernel_output_iterator(
@@ -109,8 +88,7 @@ std::string make_kernel_output_iterator(
   size_t size,
   std::string_view value_t,
   std::string_view deref,
-  std::string_view advance,
-  int advance_multiply_diff_with_sizeof_value_t)
+  std::string_view advance)
 {
   constexpr std::string_view iter_def = R"XXX(
 extern "C" __device__ void DEREF(const void *self_ptr, VALUE_T x);
@@ -150,16 +128,7 @@ struct output_iterator_t {
 };
 )XXX";
 
-  return std::format(
-    format_template,
-    diff_t,
-    alignment,
-    size,
-    value_t,
-    deref,
-    advance,
-    advance_multiply_diff_with_sizeof_value_t,
-    iter_def);
+  return std::format(format_template, diff_t, alignment, size, value_t, deref, advance, iter_def);
 };
 
 std::string make_kernel_output_iterator(std::string_view offset_t, std::string_view input_value_t, cccl_iterator_t iter)
@@ -170,13 +139,7 @@ std::string make_kernel_output_iterator(std::string_view offset_t, std::string_v
   }
 
   return make_kernel_output_iterator(
-    offset_t,
-    iter.alignment,
-    iter.size,
-    input_value_t,
-    iter.dereference.name,
-    iter.advance.name,
-    iter.advance_multiply_diff_with_sizeof_value_t);
+    offset_t, iter.alignment, iter.size, input_value_t, iter.dereference.name, iter.advance.name);
 }
 
 std::string make_kernel_inout_iterator(

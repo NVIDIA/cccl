@@ -17,10 +17,9 @@ class RawPointer:
         self.ltoirs = [numba.cuda.compile(RawPointer.pointer_advance, sig=numba.types.void(data_as_uint64_p, numba.types.uint64), output='ltoir'),
                        numba.cuda.compile(RawPointer.pointer_dereference, sig=dtype(data_as_dtype_pp), output='ltoir')]
         self.prefix = 'pointer'
-        self.advance_multiply_diff_with_sizeof_value_t = 1
 
     def pointer_advance(this, distance):
-        this[0] = this[0] + distance
+        this[0] = this[0] + numba.types.uint64(4 * distance) # TODO Showcasing the case of int32, need dtype with at least primitive types, ideally any numba type
 
     def pointer_dereference(this):
         return this[0][0]
@@ -64,10 +63,9 @@ class CacheModifiedPointer:
         self.ltoirs = [numba.cuda.compile(CacheModifiedPointer.cache_advance, sig=numba.types.void(data_as_uint64_p, numba.types.uint64), output='ltoir'),
                        numba.cuda.compile(CacheModifiedPointer.cache_dereference, sig=dtype(data_as_dtype_pp), output='ltoir')]
         self.prefix = 'cache'
-        self.advance_multiply_diff_with_sizeof_value_t = 1
 
     def cache_advance(this, distance):
-        this[0] = this[0] + distance
+        this[0] = this[0] + numba.types.uint64(4 * distance) # TODO Showcasing the case of int32, need dtype with at least primitive types, ideally any numba type
 
     def cache_dereference(this):
         return ldcs(this[0])

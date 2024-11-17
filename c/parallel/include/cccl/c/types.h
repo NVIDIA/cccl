@@ -92,6 +92,5 @@ struct cccl_iterator_t
   cccl_op_t dereference;
   cccl_type_info value_type;
   void* state;
-  cccl_string_views* ltoirs                     = nullptr;
-  int advance_multiply_diff_with_sizeof_value_t = 0;
+  cccl_string_views* ltoirs = nullptr;
 };

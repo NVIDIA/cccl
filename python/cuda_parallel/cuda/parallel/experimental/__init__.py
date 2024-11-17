@@ -96,8 +96,7 @@ class _CCCLIterator(ctypes.Structure):
                 ("dereference", _CCCLOp),
                 ("value_type", _TypeInfo),
                 ("state", ctypes.c_void_p),
-                ("ltoirs", ctypes.POINTER(_CCCLStringViews)),
-                ("advance_multiply_diff_with_sizeof_value_t", ctypes.c_int)]
+                ("ltoirs", ctypes.POINTER(_CCCLStringViews))]
 
 
 # MUST match `cccl_value_t` in c/include/cccl/c/types.h
@@ -124,7 +123,7 @@ def _device_array_to_pointer(array):
     info = _type_to_info(dtype)
     # Note: this is slightly slower, but supports all ndarray-like objects as long as they support CAI
     # TODO: switch to use gpumemoryview once it's ready
-    return _CCCLIterator(1, 1, _CCCLIteratorKindEnum.POINTER, _CCCLOp(), _CCCLOp(), info, array.__cuda_array_interface__["data"][0], None, 0)
+    return _CCCLIterator(1, 1, _CCCLIteratorKindEnum.POINTER, _CCCLOp(), _CCCLOp(), info, array.__cuda_array_interface__["data"][0], None)
 
 
 def _host_array_to_value(array):
@@ -159,9 +158,8 @@ def _itertools_iter_as_cccl_iter(result_numba_dtype, d_in):
     drf = _CCCLOp(_CCCLOpKindEnum.STATELESS, prefix_name("dereference"), None, 0, 1, 1, None)
     info = _type_to_info_from_numba_type(numba.int32)
     ltoirs = _extract_ctypes_ltoirs(d_in.ltoirs)
-    # size alignment type advance dereference value_type state ltoirs advance_multiply_diff_with_sizeof_value_t
-    return _CCCLIterator(d_in.size(), d_in.alignment(), _CCCLIteratorKindEnum.ITERATOR, adv, drf, info, d_in.state_c_void_p(), ltoirs,
-                         getattr(d_in, "advance_multiply_diff_with_sizeof_value_t", 0))
+    # size alignment type advance dereference value_type state ltoirs
+    return _CCCLIterator(d_in.size(), d_in.alignment(), _CCCLIteratorKindEnum.ITERATOR, adv, drf, info, d_in.state_c_void_p(), ltoirs)
 
 
 def _get_cuda_path():
