@@ -15,7 +15,7 @@
 
 // Determine the host compiler and its version
 #if defined(__INTEL_COMPILER)
-#  define _CCCL_COMPILER_ICC
+#  define _CCCL_COMPILER_ICC 1
 #  ifndef CCCL_SUPPRESS_ICC_DEPRECATION_WARNING
 #    warning \
       "Support for the Intel C++ Compiler Classic is deprecated and will eventually be removed. Define CCCL_SUPPRESS_ICC_DEPRECATION_WARNING to suppress this warning"
