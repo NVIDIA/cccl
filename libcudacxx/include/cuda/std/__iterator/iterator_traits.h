@@ -39,7 +39,7 @@
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/cstddef>
 
-#if !defined(_CCCL_COMPILER_NVRTC)
+#if !_CCCL_COMPILER(NVRTC)
 #  if defined(_CCCL_COMPILER_MSVC)
 #    include <xutility> // for ::std::input_iterator_tag
 #  else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
@@ -63,7 +63,7 @@ struct __cccl_std_contiguous_iterator_tag_exists : __cccl_type_is_defined<struct
 } // namespace std
 #  endif // _CCCL_STD_VER >= 2020
 
-#endif // !_CCCL_COMPILER_NVRTC
+#endif // !_CCCL_COMPILER(NVRTC)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -77,7 +77,9 @@ concept __can_reference = requires { typename __with_reference<_Tp>; };
 
 template <class _Tp>
 concept __dereferenceable = requires(_Tp& __t) {
-  { *__t } -> __can_reference; // not required to be equality-preserving
+  {
+    *__t
+  } -> __can_reference; // not required to be equality-preserving
 };
 
 // [iterator.traits]
@@ -118,7 +120,7 @@ template <class>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
 #endif // _CCCL_STD_VER <= 2014
 
-#if defined(_CCCL_COMPILER_NVRTC)
+#if _CCCL_COMPILER(NVRTC)
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT input_iterator_tag
 {};
@@ -135,7 +137,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT contiguous_iterator_tag : public random_acc
 {};
 #  endif // _CCCL_STD_VER >= 2014
 
-#else // ^^^ _CCCL_COMPILER_NVRTC ^^^ / vvv !_CCCL_COMPILER_NVRTC vvv
+#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ / vvv !_CCCL_COMPILER(NVRTC) vvv
 
 using input_iterator_tag         = ::std::input_iterator_tag;
 using output_iterator_tag        = ::std::output_iterator_tag;
@@ -155,7 +157,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT contiguous_iterator_tag : public random_acc
 {};
 #  endif // _CCCL_STD_VER >= 2014
 
-#endif // !_CCCL_COMPILER_NVRTC
+#endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _Iter>
 struct __iter_traits_cache
@@ -251,9 +253,15 @@ namespace __iterator_traits_detail
 {
 template <class _Ip>
 concept __cpp17_iterator = requires(_Ip __i) {
-  { *__i } -> __can_reference;
-  { ++__i } -> same_as<_Ip&>;
-  { *__i++ } -> __can_reference;
+  {
+    *__i
+  } -> __can_reference;
+  {
+    ++__i
+  } -> same_as<_Ip&>;
+  {
+    *__i++
+  } -> __can_reference;
 } && copyable<_Ip>;
 
 template <class _Ip>
@@ -270,28 +278,52 @@ concept __cpp17_forward_iterator =
   __cpp17_input_iterator<_Ip> && constructible_from<_Ip> && is_lvalue_reference_v<iter_reference_t<_Ip>>
   && same_as<remove_cvref_t<iter_reference_t<_Ip>>, typename indirectly_readable_traits<_Ip>::value_type>
   && requires(_Ip __i) {
-       { __i++ } -> convertible_to<_Ip const&>;
-       { *__i++ } -> same_as<iter_reference_t<_Ip>>;
+       {
+         __i++
+       } -> convertible_to<_Ip const&>;
+       {
+         *__i++
+       } -> same_as<iter_reference_t<_Ip>>;
      };
 
 template <class _Ip>
 concept __cpp17_bidirectional_iterator = __cpp17_forward_iterator<_Ip> && requires(_Ip __i) {
-  { --__i } -> same_as<_Ip&>;
-  { __i-- } -> convertible_to<_Ip const&>;
-  { *__i-- } -> same_as<iter_reference_t<_Ip>>;
+  {
+    --__i
+  } -> same_as<_Ip&>;
+  {
+    __i--
+  } -> convertible_to<_Ip const&>;
+  {
+    *__i--
+  } -> same_as<iter_reference_t<_Ip>>;
 };
 
 template <class _Ip>
 concept __cpp17_random_access_iterator =
   __cpp17_bidirectional_iterator<_Ip> && totally_ordered<_Ip>
   && requires(_Ip __i, typename incrementable_traits<_Ip>::difference_type __n) {
-       { __i += __n } -> same_as<_Ip&>;
-       { __i -= __n } -> same_as<_Ip&>;
-       { __i + __n } -> same_as<_Ip>;
-       { __n + __i } -> same_as<_Ip>;
-       { __i - __n } -> same_as<_Ip>;
-       { __i - __i } -> same_as<decltype(__n)>; // NOLINT(misc-redundant-expression) ; This is llvm.org/PR54114
-       { __i[__n] } -> convertible_to<iter_reference_t<_Ip>>;
+       {
+         __i += __n
+       } -> same_as<_Ip&>;
+       {
+         __i -= __n
+       } -> same_as<_Ip&>;
+       {
+         __i + __n
+       } -> same_as<_Ip>;
+       {
+         __n + __i
+       } -> same_as<_Ip>;
+       {
+         __i - __n
+       } -> same_as<_Ip>;
+       {
+         __i - __i
+       } -> same_as<decltype(__n)>; // NOLINT(misc-redundant-expression) ; This is llvm.org/PR54114
+       {
+         __i[__n]
+       } -> convertible_to<iter_reference_t<_Ip>>;
      };
 } // namespace __iterator_traits_detail
 

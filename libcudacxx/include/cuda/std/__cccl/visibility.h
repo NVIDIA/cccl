@@ -37,27 +37,27 @@
 #endif // _CCCL_COMPILER(NVHPC)
 
 // Enable us to hide kernels
-#if defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
+#if defined(_CCCL_COMPILER_MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_VISIBILITY_HIDDEN
-#else // ^^^ _CCCL_COMPILER_NVRTC ^^^ / vvv _CCCL_COMPILER_NVRTC vvv
+#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ / vvv _CCCL_COMPILER(NVRTC) vvv
 #  define _CCCL_VISIBILITY_HIDDEN __attribute__((__visibility__("hidden")))
-#endif // !_CCCL_COMPILER_NVRTC
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #if defined(_CCCL_COMPILER_MSVC)
 #  define _CCCL_VISIBILITY_DEFAULT __declspec(dllimport)
-#elif defined(_CCCL_COMPILER_NVRTC) // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv _CCCL_COMPILER_NVRTC vvv
+#elif _CCCL_COMPILER(NVRTC) // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv _CCCL_COMPILER(NVRTC) vvv
 #  define _CCCL_VISIBILITY_DEFAULT
-#else // ^^^ _CCCL_COMPILER_NVRTC ^^^ / vvv !_CCCL_COMPILER_NVRTC vvv
+#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ / vvv !_CCCL_COMPILER(NVRTC) vvv
 #  define _CCCL_VISIBILITY_DEFAULT __attribute__((__visibility__("default")))
-#endif // !_CCCL_COMPILER_NVRTC
+#endif // !_CCCL_COMPILER(NVRTC)
 
-#if defined(_CCCL_COMPILER_MSVC) || defined(_CCCL_COMPILER_NVRTC)
+#if defined(_CCCL_COMPILER_MSVC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_TYPE_VISIBILITY_DEFAULT
 #elif _CCCL_HAS_ATTRIBUTE(__type_visibility__)
 #  define _CCCL_TYPE_VISIBILITY_DEFAULT __attribute__((__type_visibility__("default")))
 #else // ^^^ _CCCL_HAS_ATTRIBUTE(__type_visibility__) ^^^ / vvv !_CCCL_HAS_ATTRIBUTE(__type_visibility__) vvv
 #  define _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_VISIBILITY_DEFAULT
-#endif // !_CCCL_COMPILER_NVRTC
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #if defined(_CCCL_COMPILER_MSVC)
 #  define _CCCL_FORCEINLINE __forceinline
