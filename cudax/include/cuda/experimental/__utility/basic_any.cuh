@@ -559,10 +559,13 @@ _CCCL_NODISCARD _CUDAX_API constexpr _Tp __constant_war(_Tp __val) noexcept
 
 namespace cuda::experimental
 {
+struct __primary;
+struct __secondary;
+
 template <class _Interface>
 struct __ireference;
 
-template <class _Interface, class _Select = void>
+template <class _Interface, class _Select = __primary>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any;
 
 template <class _Interface, class _Select>
@@ -2634,11 +2637,11 @@ _CCCL_DIAG_POP
 /// basic_any<_Interface&>
 ///
 template <class _Interface>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__ireference<_Interface>, int>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__ireference<_Interface>, __secondary>
 {
   static_assert(_CUDA_VSTD::is_class_v<_Interface>, "expecting a class type");
-  using typename basic_any<__ireference<_Interface>, int>::interface_type;
-  using basic_any<__ireference<_Interface>, int>::__is_const_ref;
+  using typename basic_any<__ireference<_Interface>, __secondary>::interface_type;
+  using basic_any<__ireference<_Interface>, __secondary>::__is_const_ref;
 
   _CUDAX_API basic_any(basic_any const& __other) noexcept
   {
@@ -2654,30 +2657,43 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__irefer
     this->__set_ref(__vptr, &__obj);
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES((!__is_basic_any<_Tp>) )
+#if defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_STD_VER >= 2020
+// For some reason, the constructor overloads below give nvcc fits when
+// constrained with c++20 requires clauses. So we fall back to good ol'
+// enable_if.
+#  define _CUDAX_TEMPLATE(...) template <__VA_ARGS__,
+#  define _CUDAX_REQUIRES(...) _CUDA_VSTD::enable_if_t<__VA_ARGS__, int> = 0 >
+#  define _CUDAX_AND           , int > = 0, _CUDA_VSTD::enable_if_t <
+#else
+#  define _CUDAX_TEMPLATE _LIBCUDACXX_TEMPLATE
+#  define _CUDAX_REQUIRES _LIBCUDACXX_REQUIRES
+#  define _CUDAX_AND      _LIBCUDACXX_AND
+#endif
+
+  _CUDAX_TEMPLATE(class _Tp)
+  _CUDAX_REQUIRES((!__is_basic_any<_Tp>) )
   basic_any(_Tp const&&) = delete;
 
-  _LIBCUDACXX_TEMPLATE(class _SrcInterface)
-  _LIBCUDACXX_REQUIRES((!_CUDA_VSTD::same_as<_SrcInterface, _Interface&>) _LIBCUDACXX_AND //
-                       (!__is_value_v<_SrcInterface>)
-                         _LIBCUDACXX_AND __any_convertible_to<basic_any<_SrcInterface>, basic_any>)
+  _CUDAX_TEMPLATE(class _SrcInterface)
+  _CUDAX_REQUIRES((!_CUDA_VSTD::same_as<_SrcInterface, _Interface&>) _CUDAX_AND //
+                  (!__is_value_v<_SrcInterface>) _CUDAX_AND //
+                    __any_convertible_to<basic_any<_SrcInterface>, basic_any>)
   _CUDAX_API basic_any(basic_any<_SrcInterface>&& __src) noexcept
   {
     this->__set_ref(__src.__get_vptr(), __src.__get_optr());
   }
 
-  _LIBCUDACXX_TEMPLATE(class _SrcInterface)
-  _LIBCUDACXX_REQUIRES((!_CUDA_VSTD::same_as<_SrcInterface, _Interface&>)
-                         _LIBCUDACXX_AND __any_convertible_to<basic_any<_SrcInterface>&, basic_any>)
+  _CUDAX_TEMPLATE(class _SrcInterface)
+  _CUDAX_REQUIRES((!_CUDA_VSTD::same_as<_SrcInterface, _Interface&>) _CUDAX_AND //
+                    __any_convertible_to<basic_any<_SrcInterface>&, basic_any>)
   _CUDAX_API basic_any(basic_any<_SrcInterface>& __src) noexcept
   {
     this->__set_ref(__src.__get_vptr(), __src.__get_optr());
   }
 
-  _LIBCUDACXX_TEMPLATE(class _SrcInterface)
-  _LIBCUDACXX_REQUIRES((!_CUDA_VSTD::same_as<_SrcInterface, _Interface&>)
-                         _LIBCUDACXX_AND __any_convertible_to<basic_any<_SrcInterface> const&, basic_any>)
+  _CUDAX_TEMPLATE(class _SrcInterface)
+  _CUDAX_REQUIRES((!_CUDA_VSTD::same_as<_SrcInterface, _Interface&>) _CUDAX_AND //
+                    __any_convertible_to<basic_any<_SrcInterface> const&, basic_any>)
   _CUDAX_API basic_any(basic_any<_SrcInterface> const& __src) noexcept
   {
     this->__set_ref(__src.__get_vptr(), __src.__get_optr());
@@ -2686,9 +2702,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__irefer
   // A temporary value cannot bind to a basic_any reference.
   // TODO: find another way to support APIs that take by reference and want
   // implicit conversion from prvalues.
-  _LIBCUDACXX_TEMPLATE(class _SrcInterface)
-  _LIBCUDACXX_REQUIRES(__is_value_v<_SrcInterface>) //
+  _CUDAX_TEMPLATE(class _SrcInterface)
+  _CUDAX_REQUIRES(__is_value_v<_SrcInterface>) //
   basic_any(basic_any<_SrcInterface> const&&) = delete;
+
+#undef _CUDAX_AND
+#undef _CUDAX_REQUIRES
+#undef _CUDAX_TEMPLATE
 
   basic_any& operator=(basic_any&&)      = delete;
   basic_any& operator=(basic_any const&) = delete;
