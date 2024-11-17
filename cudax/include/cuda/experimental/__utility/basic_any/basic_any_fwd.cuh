@@ -23,6 +23,7 @@
 
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/detail/libcxx/include/cstddef> // for max_align_t
+#include <cuda/std/detail/libcxx/include/cstdint> // for uint8_t
 
 #include <cuda/experimental/__detail/config.cuh> // IWYU pragma: keep export
 #include <cuda/experimental/__detail/utility.cuh> // IWYU pragma: keep export
