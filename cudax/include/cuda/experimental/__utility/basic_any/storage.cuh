@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__type_traits/is_nothrow_move_constructible.h>
 #include <cuda/std/__utility/swap.h>
 
 #include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>

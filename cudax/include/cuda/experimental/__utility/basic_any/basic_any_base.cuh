@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/detail/libcxx/include/cstddef> // for byte
 
 #include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
 #include <cuda/experimental/__utility/basic_any/interfaces.cuh>

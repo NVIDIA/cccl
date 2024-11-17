@@ -27,10 +27,11 @@
 #include <cuda/std/__type_traits/is_const.h>
 #include <cuda/std/__type_traits/maybe_const.h>
 #include <cuda/std/__type_traits/remove_const.h>
-// #include <cuda/std/__type_traits/remove_reference.h>
-// #include <cuda/std/__utility/typeid.h>
+#include <cuda/std/__type_traits/remove_pointer.h>
+#include <cuda/std/__utility/typeid.h>
 
 #include <cuda/experimental/__utility/basic_any/basic_any_base.cuh>
+#include <cuda/experimental/__utility/basic_any/basic_any_from.cuh>
 #include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
 #include <cuda/experimental/__utility/basic_any/basic_any_ref.cuh>
 #include <cuda/experimental/__utility/basic_any/conversions.cuh>
