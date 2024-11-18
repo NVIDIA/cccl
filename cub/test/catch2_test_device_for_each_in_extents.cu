@@ -129,12 +129,14 @@ using index_types_dynamic =
 #  endif
                  >;
 
-using dimensions =
-  c2h::type_list<cuda::std::index_sequence<>,
-                 cuda::std::index_sequence<5>,
-                 cuda::std::index_sequence<5, 3>,
-                 cuda::std::index_sequence<5, 3, 4>,
-                 cuda::std::index_sequence<3, 2, 5, 4>>;
+using dimensions = c2h::type_list<
+#  if defined(_CCCL_COMPILER_MSVC)
+  cuda::std::index_sequence<>,
+#  endif
+  cuda::std::index_sequence<5>,
+  cuda::std::index_sequence<5, 3>,
+  cuda::std::index_sequence<5, 3, 4>,
+  cuda::std::index_sequence<3, 2, 5, 4>>;
 
 template <typename IndexType, typename Dimensions>
 struct build_extents;
