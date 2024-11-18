@@ -665,7 +665,7 @@ __uninitialized_allocator_move_if_noexcept(_Alloc&, _Iter1 __first1, _Iter1 __la
     return _CUDA_VSTD::move(__first1, __last1, __first2);
   }
 }
-#endif // _CCCL_COMPILER(GCC)
+#endif // !_CCCL_COMPILER(GCC)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
