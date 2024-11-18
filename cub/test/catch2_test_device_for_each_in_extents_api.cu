@@ -71,8 +71,9 @@ C2H_TEST("Device ForEachInExtents", "[ForEachInExtents][device]")
   cub::DeviceFor::ForEachInExtents(ext, linear_store_3D{d_output_raw});
 
   c2h::host_vector<data_t> expected = {{0, 0, 0}, {0, 0, 1}, {0, 1, 0}, {0, 1, 1},
-                                       {1, 0, 0}, {1, 0, 1}, {1, 0, 2}, {1, 1, 0},
-                                       {2, 0, 0}, {2, 0, 1}, {2, 0, 2}, {2, 1, 0}};
+                                       {1, 0, 0}, {1, 0, 1}, {1, 1, 0}, {1, 1, 1},
+                                       {2, 0, 0}, {2, 0, 1}, {2, 1, 0}, {2, 1, 1}};
+  h_output = d_output;
   REQUIRE(h_output == expected);
   // example-end for-each-in-extents-example
 }
