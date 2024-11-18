@@ -32,6 +32,7 @@
 #include <cuda/std/__type_traits/remove_cvref.h>
 #include <cuda/std/__utility/auto_cast.h>
 #include <cuda/std/__utility/declval.h>
+#include <cuda/std/__utility/unreachable.h>
 #include <cuda/std/cstddef>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
@@ -191,7 +192,7 @@ struct __fn
     {
       return static_cast<_Signed>(_CUDA_VRANGES::size(__t));
     }
-    _CCCL_UNREACHABLE();
+    ::cuda::std::unreachable();
   }
 };
 _LIBCUDACXX_END_NAMESPACE_CPO

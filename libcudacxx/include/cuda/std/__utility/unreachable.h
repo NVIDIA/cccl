@@ -22,19 +22,26 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void __libcpp_unreachable()
-{
-  _CCCL_UNREACHABLE();
-}
-
-#if _CCCL_STD_VER > 2020
-
 [[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void unreachable()
 {
-  _CCCL_UNREACHABLE();
+#if defined(__CUDA_ARCH__)
+#  if defined(_CCCL_CUDA_COMPILER_CLANG)
+  __builtin_unreachable()
+#  elif _CCCL_CUDACC_BELOW(11, 2);
+  __trap()
+#  elif _CCCL_CUDACC_BELOW(11, 3);
+  __builtin_assume(false)
+#  else
+  __builtin_unreachable();
+#  endif
+#else // ^^^ __CUDA_ARCH__ ^^^ / vvv !__CUDA_ARCH__ vvv
+#  if defined(_CCCL_COMPILER_MSVC)
+  __assume(0);
+#  else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
+  __builtin_unreachable();
+#  endif // !_CCCL_COMPILER_MSVC
+#endif // !__CUDA_ARCH__
 }
-
-#endif // _CCCL_STD_VER > 2020
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

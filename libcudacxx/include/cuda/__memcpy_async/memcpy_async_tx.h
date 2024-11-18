@@ -34,6 +34,7 @@
 #    include <cuda/__ptx/ptx_helper_functions.h>
 #    include <cuda/std/__atomic/scopes.h>
 #    include <cuda/std/__type_traits/is_trivially_copyable.h>
+#    include <cuda/std/__utility/unreachable.h>
 #    include <cuda/std/cstdint>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_DEVICE
@@ -75,7 +76,7 @@ _CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
         // or from shared to remote cluster dsmem. To copy to remote
         // dsmem, we need to arrive on a cluster-scoped barrier, which
         // is not yet implemented. So we trap in this case as well.
-        _CCCL_UNREACHABLE();
+        ::cuda::std::unreachable();
       }),
     (__cuda_ptx_memcpy_async_tx_is_not_supported_before_SM_90__();));
 

@@ -20,6 +20,7 @@
 #include <cuda/std/type_traits>
 // #include <cuda/std/string>
 #include <cuda/std/cassert>
+#include <cuda/std/utility>
 
 #include "test_macros.h"
 // #include "type_id.h"
@@ -505,7 +506,7 @@ void throws_in_constructor_test()
     bool operator()() const
     {
       assert(false);
-      _CCCL_UNREACHABLE();
+      ::cuda::std::unreachable();
     }
   };
   {

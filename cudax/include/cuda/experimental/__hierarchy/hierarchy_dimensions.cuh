@@ -17,6 +17,7 @@
 #include <cuda/std/__type_traits/type_list.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/__utility/unreachable.h>
 #include <cuda/std/span>
 #include <cuda/std/tuple>
 
@@ -79,7 +80,7 @@ _CCCL_NODISCARD _CUDAX_API constexpr auto fool_compiler(const dimensions<T, Exte
   {
     return ex;
   }
-  _CCCL_UNREACHABLE();
+  ::cuda::std::unreachable();
 }
 
 template <typename QueryLevel, typename Hierarchy>
@@ -118,7 +119,7 @@ struct get_level_helper
     {
       return (*this)(levels...);
     }
-    _CCCL_UNREACHABLE();
+    ::cuda::std::unreachable();
   }
 };
 } // namespace detail

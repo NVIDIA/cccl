@@ -29,6 +29,7 @@
 #include <cuda/std/__ranges/size.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
+#include <cuda/std/__utility/unreachable.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -92,7 +93,7 @@ struct __fn
     {
       return __last - decay_t<_Ip>(__first);
     }
-    _CCCL_UNREACHABLE();
+    ::cuda::std::unreachable();
   }
 
   _LIBCUDACXX_TEMPLATE(class _Rp)
@@ -107,7 +108,7 @@ struct __fn
     {
       return operator()(_CUDA_VRANGES::begin(__r), _CUDA_VRANGES::end(__r));
     }
-    _CCCL_UNREACHABLE();
+    ::cuda::std::unreachable();
   }
 };
 _LIBCUDACXX_END_NAMESPACE_CPO

@@ -3,6 +3,8 @@
 #include <thrust/sort.h>
 #include <thrust/unique.h>
 
+#include <cuda/std/utility>
+
 #include <unittest/unittest.h>
 
 template <typename T, typename CompareOp, typename... Args>
@@ -18,7 +20,7 @@ auto call_merge(Args&&... args) -> decltype(thrust::merge(std::forward<Args>(arg
     using C = ::cuda::std::conditional_t<::cuda::std::is_void<CompareOp>::value, thrust::less<T>, CompareOp>;
     return thrust::merge(std::forward<Args>(args)..., C{});
   }
-  _CCCL_UNREACHABLE();
+  ::cuda::std::unreachable();
 }
 
 template <typename U, typename CompareOp = void>

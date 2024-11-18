@@ -22,6 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__utility/unreachable.h>
 #include <cuda/std/cstdlib> // ::exit
 
 _CCCL_DIAG_PUSH
@@ -32,7 +33,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION // purposefully not using versioning n
 _CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void __cccl_terminate() noexcept
 {
   NV_IF_ELSE_TARGET(NV_IS_HOST, (::exit(-1);), (__trap();))
-  _CCCL_UNREACHABLE();
+  ::cuda::std::unreachable();
 }
 
 #if 0 // Expose once atomic is universally available
@@ -59,7 +60,7 @@ _LIBCUDACXX_HIDE_FROM_ABI  terminate_handler get_terminate() noexcept
 _CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void terminate() noexcept
 {
   __cccl_terminate();
-  _CCCL_UNREACHABLE();
+  ::cuda::std::unreachable();
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
