@@ -49,11 +49,11 @@ namespace cuda::experimental
 // Need a type that goes through all launch_transform steps, but is not a contiguous_range
 struct weird_buffer
 {
-  const cuda::mr::pinned_memory_resource& resource;
+  const mr::pinned_memory_resource& resource;
   int* data;
   std::size_t size;
 
-  weird_buffer(const cuda::mr::pinned_memory_resource& res, std::size_t s)
+  weird_buffer(const mr::pinned_memory_resource& res, std::size_t s)
       : resource(res)
       , data((int*) res.allocate(s * sizeof(int)))
       , size(s)

@@ -187,15 +187,15 @@ public:
 #  else // ^^^ C++20 ^^^ / vvv C++17
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator==(managed_memory_resource const& __lhs, _Resource const& __rhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<managed_memory_resource, _Resource>&&
-                                          has_property<_Resource, mr::device_accessible>)
+    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<managed_memory_resource, _Resource>&&
+                                    has_property<_Resource, mr::device_accessible>)
   {
     return _CUDA_VMR::resource_ref<mr::device_accessible>{const_cast<managed_memory_resource&>(__lhs)}
         == _CUDA_VMR::resource_ref<mr::device_accessible>{const_cast<_Resource&>(__rhs)};
   }
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator==(managed_memory_resource const& __lhs, _Resource const& __rhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(
+    _CCCL_TRAILING_REQUIRES(bool)(
       _CUDA_VMR::__different_resource<managed_memory_resource, _Resource>
       && !has_property<_Resource, mr::device_accessible> && has_property<_Resource, mr::device_accessible>)
   {
@@ -204,7 +204,7 @@ public:
   }
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator==(managed_memory_resource const&, _Resource const&) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(
+    _CCCL_TRAILING_REQUIRES(bool)(
       _CUDA_VMR::__different_resource<managed_memory_resource, _Resource>
       && !has_property<_Resource, mr::device_accessible> && !has_property<_Resource, mr::device_accessible>)
   {
@@ -213,21 +213,21 @@ public:
 
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator==(_Resource const& __lhs, managed_memory_resource const& __rhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<managed_memory_resource, _Resource>)
+    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<managed_memory_resource, _Resource>)
   {
     return __rhs == __lhs;
   }
 
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator!=(managed_memory_resource const& __lhs, _Resource const& __rhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<managed_memory_resource, _Resource>)
+    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<managed_memory_resource, _Resource>)
   {
     return !(__lhs == __rhs);
   }
 
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator!=(_Resource const& __rhs, managed_memory_resource const& __lhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<managed_memory_resource, _Resource>)
+    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<managed_memory_resource, _Resource>)
   {
     return !(__rhs == __lhs);
   }

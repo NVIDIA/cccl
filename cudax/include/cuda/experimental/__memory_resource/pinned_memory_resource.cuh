@@ -188,7 +188,7 @@ public:
 #  else // ^^^ C++20 ^^^ / vvv C++17
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator==(pinned_memory_resource const& __lhs, _Resource const& __rhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(
+    _CCCL_TRAILING_REQUIRES(bool)(
       _CUDA_VMR::__different_resource<pinned_memory_resource,
                                       _Resource>&& ::cuda::has_property<_Resource, device_accessible>)
   {
@@ -197,7 +197,7 @@ public:
   }
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator==(pinned_memory_resource const& __lhs, _Resource const& __rhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(
+    _CCCL_TRAILING_REQUIRES(bool)(
       _CUDA_VMR::__different_resource<pinned_memory_resource, _Resource>
       && !::cuda::has_property<_Resource, device_accessible> && ::cuda::has_property<_Resource, device_accessible>)
   {
@@ -206,7 +206,7 @@ public:
   }
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator==(pinned_memory_resource const&, _Resource const&) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(
+    _CCCL_TRAILING_REQUIRES(bool)(
       _CUDA_VMR::__different_resource<pinned_memory_resource, _Resource>
       && !::cuda::has_property<_Resource, device_accessible> && !::cuda::has_property<_Resource, device_accessible>)
   {
@@ -215,21 +215,21 @@ public:
 
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator==(_Resource const& __lhs, pinned_memory_resource const& __rhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<pinned_memory_resource, _Resource>)
+    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<pinned_memory_resource, _Resource>)
   {
     return __rhs == __lhs;
   }
 
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator!=(pinned_memory_resource const& __lhs, _Resource const& __rhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<pinned_memory_resource, _Resource>)
+    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<pinned_memory_resource, _Resource>)
   {
     return !(__lhs == __rhs);
   }
 
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator!=(_Resource const& __rhs, pinned_memory_resource const& __lhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<pinned_memory_resource, _Resource>)
+    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<pinned_memory_resource, _Resource>)
   {
     return !(__rhs == __lhs);
   }
