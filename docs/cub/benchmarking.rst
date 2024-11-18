@@ -27,9 +27,11 @@ You clone the repository, create a build directory and configure the build with 
 It's important that you enable benchmarks (`CCCL_ENABLE_BENCHMARKS=ON`),
 build in Release mode (`CMAKE_BUILD_TYPE=Release`),
 and set the GPU architecture to match your system (`CMAKE_CUDA_ARCHITECTURES=XX`).
-This <website `https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/`>_
+This `website <https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/>`_
 contains a great table listing the architectures for different brands of GPUs.
+
 .. TODO(bgruber): do we have a public NVIDIA maintained table I can link here instead?
+
 We use Ninja as CMake generator in this guide, but you can use any other generator you prefer.
 
 You can then proceed to build the benchmarks.
