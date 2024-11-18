@@ -52,12 +52,14 @@ enum class e_bool : cuda::std::uint8_t
   t = 1
 };
 
+#if !defined(TEST_COMPILER_GCC) || TEST_GCC_VER >= 903
 struct WithBitfieldEnums
 {
   e_default e1 : 3;
   e_ushort e2  : 6;
   e_bool e3    : 1;
 };
+#endif // !defined(TEST_COMPILER_GCC) || TEST_GCC_VER >= 903
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 {
@@ -86,6 +88,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
   assert(cuda::std::numeric_limits<int>::min() == cuda::std::to_underlying(enum_min));
   assert(cuda::std::numeric_limits<int>::max() == cuda::std::to_underlying(enum_max));
 
+#if !defined(TEST_COMPILER_GCC) || TEST_GCC_VER >= 903
   WithBitfieldEnums bf{};
   bf.e1 = static_cast<e_default>(3);
   bf.e2 = e_ushort::e;
@@ -93,6 +96,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
   assert(3 == cuda::std::to_underlying(bf.e1));
   assert(25 == cuda::std::to_underlying(bf.e2));
   assert(1 == cuda::std::to_underlying(bf.e3));
+#endif // !defined(TEST_COMPILER_GCC) || TEST_GCC_VER >= 903
 
   return true;
 }
