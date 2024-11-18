@@ -433,8 +433,10 @@ void TestReduceByKeyWithBigIndexesHelper(int magnitude)
 void TestReduceByKeyWithBigIndexes()
 {
   TestReduceByKeyWithBigIndexesHelper(30);
+#ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
   TestReduceByKeyWithBigIndexesHelper(31);
   TestReduceByKeyWithBigIndexesHelper(32);
   TestReduceByKeyWithBigIndexesHelper(33);
+#endif
 }
 DECLARE_UNITTEST(TestReduceByKeyWithBigIndexes);

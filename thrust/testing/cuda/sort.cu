@@ -251,9 +251,14 @@ void TestSortWithMagnitude(int magnitude)
 
 void TestSortWithLargeNumberOfItems()
 {
-  TestSortWithMagnitude(39);
+  TestSortWithMagnitude(30);
+  // These still require 64-bit dispatches when magnitude < 32.
+#ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
+  TestSortWithMagnitude(31);
   TestSortWithMagnitude(32);
   TestSortWithMagnitude(33);
+  TestSortWithMagnitude(39);
+#endif
 }
 DECLARE_UNITTEST(TestSortWithLargeNumberOfItems);
 
