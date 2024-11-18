@@ -1,5 +1,10 @@
 #!/bin/bash
 
+source /opt/devcontainer/bin/update-envvars.sh
+unset_envvar "CMAKE_C_COMPILER_LAUNCHER"
+unset_envvar "CMAKE_CXX_COMPILER_LAUNCHER"
+unset_envvar "CMAKE_CUDA_COMPILER_LAUNCHER"
+
 source "$(dirname "$0")/build_common.sh"
 
 print_environment_details

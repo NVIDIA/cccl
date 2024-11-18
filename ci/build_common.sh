@@ -204,12 +204,9 @@ function configure_preset()
     return $status
 }
 
-function build_preset() {
-    local BUILD_NAME=$1
-    local PRESET=$2
-    local green="1;32"
-    local red="1;31"
-    local GROUP_NAME="🏗️  Build ${BUILD_NAME}"
+function build_preset_with_sccache() {
+    local PRESET=$1
+    local GROUP_NAME=$2
 
     if $CONFIGURE_ONLY; then
         return 0
@@ -250,6 +247,29 @@ function build_preset() {
     fi
 
     return $status
+}
+
+function build_preset_without_sccache() {
+    local PRESET=$1
+    local GROUP_NAME=$2
+
+    pushd .. > /dev/null
+    run_command "$GROUP_NAME" cmake --build --preset=$PRESET -v
+    status=$?
+    popd > /dev/null
+
+    return $status
+}
+
+function build_preset() {
+    local BUILD_NAME=$1
+    local PRESET=$2
+    local GROUP_NAME="🏗️  Build ${BUILD_NAME}"
+    if [ -z ${SCCACHE_BUCKET:-} ]; then
+        build_preset_without_sccache $PRESET $GROUP_NAME
+    else
+        build_preset_with_sccache $PRESET $GROUP_NAME
+    fi
 }
 
 function test_preset()
