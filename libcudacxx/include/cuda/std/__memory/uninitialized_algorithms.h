@@ -639,7 +639,7 @@ template <class _Type>
 struct __allocator_has_trivial_move_construct<allocator<_Type>, _Type> : true_type
 {};
 
-#ifndef _CCCL_COMPILER_GCC
+#if !_CCCL_COMPILER(GCC)
 template <class _Alloc,
           class _Iter1,
           class _Iter2,
@@ -665,7 +665,7 @@ __uninitialized_allocator_move_if_noexcept(_Alloc&, _Iter1 __first1, _Iter1 __la
     return _CUDA_VSTD::move(__first1, __last1, __first2);
   }
 }
-#endif // _CCCL_COMPILER_GCC
+#endif // !_CCCL_COMPILER(GCC)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

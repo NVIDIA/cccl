@@ -392,11 +392,11 @@ public:
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(move_iterator);
 
 // Some compilers have issues determining _IsFancyPointer
-#if defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(GCC) || defined(_CCCL_COMPILER_MSVC)
 template <class _Iter>
 struct _IsFancyPointer<move_iterator<_Iter>> : _IsFancyPointer<_Iter>
 {};
-#endif // _CCCL_COMPILER_GCC || _CCCL_COMPILER_MSVC
+#endif // _CCCL_COMPILER(GCC) || _CCCL_COMPILER_MSVC
 
 template <class _Iter1, class _Iter2>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool

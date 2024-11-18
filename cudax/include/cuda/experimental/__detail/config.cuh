@@ -53,11 +53,11 @@
 #define _CUDAX_TRIVIAL_DEVICE_API _CUDAX_DEVICE_API _CCCL_FORCEINLINE _CUDAX_ARTIFICIAL _LIBCUDACXX_NODEBUG
 
 // GCC struggles with guaranteed copy elision of immovable types.
-#if defined(_CCCL_COMPILER_GCC)
+#if _CCCL_COMPILER(GCC)
 #  define _CUDAX_IMMOVABLE(_XP) _XP(_XP&&)
-#else // ^^^ _CCCL_COMPILER_GCC ^^^ / vvv !_CCCL_COMPILER_GCC vvv
+#else // ^^^ _CCCL_COMPILER(GCC) ^^^ / vvv !_CCCL_COMPILER(GCC) vvv
 #  define _CUDAX_IMMOVABLE(_XP) _XP(_XP&&) = delete
-#endif // !_CCCL_COMPILER_GCC
+#endif // !_CCCL_COMPILER(GCC)
 
 namespace cuda::experimental
 {

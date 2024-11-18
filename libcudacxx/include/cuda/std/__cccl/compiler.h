@@ -26,8 +26,7 @@
 #  define _CCCL_COMPILER_CLANG
 #  define _CCCL_CLANG_VERSION (__clang_major__ * 10000 + __clang_minor__ * 100 + __clang_patchlevel__)
 #elif defined(__GNUC__)
-#  define _CCCL_COMPILER_GCC
-#  define _CCCL_GCC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
+#  define _CCCL_COMPILER_GCC _CCCL_COMPILER_MAKE_VERSION(__GNUC__, __GNUC_MINOR__)
 #elif defined(_MSC_VER)
 #  define _CCCL_COMPILER_MSVC
 #  define _CCCL_MSVC_VERSION      _MSC_VER
@@ -42,15 +41,16 @@
   (_COMP && (_COMP _OP _CCCL_COMPILER_MAKE_VERSION(_MAJOR, _MINOR)))
 
 #define _CCCL_COMPILER_SELECT_COUNT(_ARG1, _ARG2, _ARG3, _ARG4, _ARG5, ...) _ARG5
-#define _CCCL_COMPILER_SELECT(...)        \
-  _CCCL_COMPILER_SELECT_COUNT(            \
-    __VA_ARGS__,                          \
-    _CCCL_COMPILER_COMPARE_VERSION_4,     \
-    _CCCL_COMPILER_COMPARE_VERSION_3,     \
-    _CCCL_COMPILER_COMPARE_BAD_ARG_COUNT, \
-    _CCCL_COMPILER_COMPARE_VERSION_1,     \
-    _CCCL_COMPILER_COMPARE_BAD_ARG_COUNT)
-// Fixme for MSVC without /Zc:preprocessor option
+#define _CCCL_COMPILER_SELECT2(_ARGS)                                       _CCCL_COMPILER_SELECT_COUNT _ARGS
+// MSVC traditonal preprocessor requires an extra level of indirection
+#define _CCCL_COMPILER_SELECT(...)         \
+  _CCCL_COMPILER_SELECT2(                  \
+    (__VA_ARGS__,                          \
+     _CCCL_COMPILER_COMPARE_VERSION_4,     \
+     _CCCL_COMPILER_COMPARE_VERSION_3,     \
+     _CCCL_COMPILER_COMPARE_BAD_ARG_COUNT, \
+     _CCCL_COMPILER_COMPARE_VERSION_1,     \
+     _CCCL_COMPILER_COMPARE_BAD_ARG_COUNT))
 #define _CCCL_COMPILER(...) _CCCL_COMPILER_SELECT(_CCCL_COMPILER_##__VA_ARGS__)(_CCCL_COMPILER_##__VA_ARGS__)
 
 // Convenient shortcut to determine which version of MSVC we are dealing with

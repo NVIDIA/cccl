@@ -23,7 +23,7 @@
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
 #include <cuda/std/__type_traits/add_rvalue_reference.h>
 
-#if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 70000
+#if _CCCL_COMPILER(GCC, <, 7)
 #  define _CCCL_ADD_LVALUE_REFERENCE_WAR(_Tp) add_lvalue_reference_t<_Tp>
 #  define _CCCL_ADD_RVALUE_REFERENCE_WAR(_Tp) add_rvalue_reference_t<_Tp>
 #else

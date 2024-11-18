@@ -96,7 +96,7 @@ using _CCCL_TYPEID_ONLY_SUPPORTS_TYPES = _Tp;
 // Instead, arrange things so that the pretty name gets stored in a class static
 // data member, where it can be referenced from other constexpr contexts.
 
-#if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 90000
+#if _CCCL_COMPILER(GCC, <, 9)
 
 template <size_t _Np>
 struct __sstring
@@ -144,7 +144,7 @@ template <class _Tp, size_t _Np>
 constexpr __sstring<_Np> __static_nameof<_Tp, _Np>::value;
 #  endif // _CCCL_NO_INLINE_VARIABLES
 
-#endif // _CCCL_GCC_VERSION < 90000
+#endif // _CCCL_COMPILER(GCC, <, 9)
 
 template <class _Tp>
 struct __pretty_name_begin
@@ -171,7 +171,7 @@ __find_pretty_name(__string_view __sv) noexcept
 template <class _Tp>
 _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __string_view __pretty_nameof_helper() noexcept
 {
-#if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 90000 && !defined(__CUDA_ARCH__)
+#if _CCCL_COMPILER(GCC, <, 9) && !defined(__CUDA_ARCH__)
   return _CUDA_VSTD::__find_pretty_name(_CUDA_VSTD::__make_pretty_name<_Tp>(integral_constant<size_t, size_t(-1)>{}));
 #else // ^^^ gcc < 9 ^^^^/ vvv other compiler vvv
   return _CUDA_VSTD::__find_pretty_name(_CUDA_VSTD::__string_view(_CCCL_BUILTIN_PRETTY_FUNCTION()));
@@ -185,7 +185,7 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __string_view __
 }
 
 // In device code with old versions of gcc, we cannot have nice things.
-#if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 90000 && defined(__CUDA_ARCH__)
+#if _CCCL_COMPILER(GCC, <, 9) && defined(__CUDA_ARCH__)
 #  define _CCCL_NO_CONSTEXPR_PRETTY_NAMEOF
 #endif
 

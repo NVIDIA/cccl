@@ -83,14 +83,14 @@ _LIBCUDACXX_CONCEPT __unqualified_begin = _LIBCUDACXX_FRAGMENT(__unqualified_beg
 struct __fn
 {
   // This has been made valid as a defect report for C++17 onwards, however gcc below 11.0 does not implement it
-#  if (!defined(_CCCL_COMPILER_GCC) || __GNUC__ >= 11)
+#  if (!_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 11))
   _LIBCUDACXX_TEMPLATE(class _Tp)
   _LIBCUDACXX_REQUIRES((sizeof(_Tp) >= 0)) // Disallow incomplete element types.
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp (&__t)[]) const noexcept
   {
     return __t + 0;
   }
-#  endif // (!defined(__GNUC__) || __GNUC__ >= 11)
+#  endif // (!_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 11))
 
   _LIBCUDACXX_TEMPLATE(class _Tp, size_t _Np)
   _LIBCUDACXX_REQUIRES((sizeof(_Tp) >= 0)) // Disallow incomplete element types.

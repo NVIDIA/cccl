@@ -3540,7 +3540,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr hours make24(const hours& __h, bool __is_pm)
 // but have no way of disabling that. Use the system_header pragma on those GCC versions
 // for the remainder of this file, even if it has been requested to disable the pragma
 // earlier.
-#  if defined(_CCCL_COMPILER_GCC) && (__GNUC__ == 5 || __GNUC__ == 6)
+#  if _CCCL_COMPILER(GCC, >=, 5) && _CCCL_COMPILER(GCC, <, 7)
 #    pragma GCC system_header
 #  endif
 
