@@ -32,6 +32,7 @@
 #include <cuda/std/span>
 
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
+#include <cuda/experimental/__memory_resource/properties.cuh>
 
 #if _CCCL_STD_VER >= 2014 && !_CCCL_COMPILER(MSVC2017) && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
@@ -102,23 +103,23 @@ private:
   }
 
   //! @brief Causes the buffer to be treated as a span when passed to cudax::launch.
-  //! @pre The buffer must have the cuda::mr::device_accessible property.
+  //! @pre The buffer must have the cuda::mr::mr::device_accessible property.
   template <class _Tp2 = _Tp>
   _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI auto
   __cudax_launch_transform(::cuda::stream_ref, uninitialized_buffer& __self) noexcept
     _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<_Tp>)(
-      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<_CUDA_VMR::device_accessible, _Properties...>)
+      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<mr::device_accessible, _Properties...>)
   {
     return {__self.__get_data(), __self.size()};
   }
 
   //! @brief Causes the buffer to be treated as a span when passed to cudax::launch
-  //! @pre The buffer must have the cuda::mr::device_accessible property.
+  //! @pre The buffer must have the cuda::mr::mr::device_accessible property.
   template <class _Tp2 = _Tp>
   _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI auto
   __cudax_launch_transform(::cuda::stream_ref, const uninitialized_buffer& __self) noexcept
     _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<const _Tp>)(
-      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<_CUDA_VMR::device_accessible, _Properties...>)
+      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<mr::device_accessible, _Properties...>)
   {
     return {__self.__get_data(), __self.size()};
   }
@@ -259,7 +260,7 @@ public:
 };
 
 template <class _Tp>
-using uninitialized_device_buffer = uninitialized_buffer<_Tp, _CUDA_VMR::device_accessible>;
+using uninitialized_device_buffer = uninitialized_buffer<_Tp, mr::device_accessible>;
 
 } // namespace cuda::experimental
 
