@@ -56,10 +56,10 @@ C2H_TEST("FastDivMod random", "[FastDivMod][Random]", index_types)
 {
   using cub::detail::fast_div_mod;
   using index_type         = c2h::get<0, TestType>;
-  constexpr auto max_value = cuda::std::numeric_limits<index_type>::max();
-  auto dividend            = GENERATE_COPY(take(20, random(index_type{1}, max_value)));
-  auto divisor             = GENERATE_COPY(take(20, random(index_type{1}, max_value)));
-  fast_div_mod<index_type> div_mod(divisor);
+  constexpr auto max_value = +cuda::std::numeric_limits<index_type>::max();
+  auto dividend            = GENERATE_COPY(take(20, random(+index_type{1}, max_value)));
+  auto divisor             = GENERATE_COPY(take(20, random(+index_type{1}, max_value)));
+  fast_div_mod<index_type> div_mod(static_cast<index_type>(divisor));
   CAPTURE(c2h::type_name<index_type>(), dividend, divisor);
   REQUIRE(dividend / divisor == div_mod(dividend).quotient);
   REQUIRE(dividend % divisor == div_mod(dividend).remainder);

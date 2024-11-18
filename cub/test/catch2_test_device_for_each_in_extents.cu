@@ -147,12 +147,12 @@ struct build_extents<IndexType, cuda::std::index_sequence<Dimensions...>>
 
 C2H_TEST("DeviceForEachInExtents static", "[ForEachInExtents][static][device]", index_types, dimensions)
 {
-  using index_type   = c2h::get<0, TestType>;
-  using dims         = c2h::get<1, TestType>;
-  using extent_type  = typename build_extents<index_type, dims>::type;
-  constexpr int rank = extent_type::rank();
-  using data_t       = cuda::std::array<index_type, rank>;
-  using store_op_t   = LinearStore<index_type, rank>;
+  using index_type    = c2h::get<0, TestType>;
+  using dims          = c2h::get<1, TestType>;
+  using extent_type   = typename build_extents<index_type, dims>::type;
+  constexpr auto rank = extent_type::rank();
+  using data_t        = cuda::std::array<index_type, rank>;
+  using store_op_t    = LinearStore<index_type, rank>;
   extent_type ext{};
   c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
   c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
