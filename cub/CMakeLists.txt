@@ -50,7 +50,8 @@ option(CUB_IGNORE_DEPRECATED_API
 # need the install rules. See GH issue NVIDIA/thrust#1211.
 if (NOT (CUB_ENABLE_HEADER_TESTING OR
          CUB_ENABLE_TESTING OR
-         CUB_ENABLE_EXAMPLES))
+         CUB_ENABLE_EXAMPLES OR
+         CCCL_ENABLE_BENCHMARKS))
   return()
 endif()
 
