@@ -162,17 +162,17 @@ def repeat(value, ntype):
 
 
 class CountingIterator:
-    def __init__(self, count): # TODO Showcasing the case of int32, need dtype
-        thisty = numba.types.CPointer(numba.types.int32)
-        self.count = ctypes.c_int32(count)
-        self.ltoirs = [numba.cuda.compile(CountingIterator.count_int32_advance, sig=numba.types.void(thisty, numba.types.int32), output='ltoir'),
-                       numba.cuda.compile(CountingIterator.count_int32_dereference, sig=numba.types.int32(thisty), output='ltoir')]
-        self.prefix = 'count_int32'
+    def __init__(self, count, ntype):
+        thisty = numba.types.CPointer(ntype)
+        self.count = _ctypes_type_given_numba_type(ntype)(count)
+        self.prefix = 'count_' + ntype.name
+        self.ltoirs = [numba.cuda.compile(CountingIterator.count_advance, sig=numba.types.void(thisty, ntype), abi_info={"abi_name": self.prefix + "_advance"}, output='ltoir'),
+                       numba.cuda.compile(CountingIterator.count_dereference, sig=ntype(thisty), abi_info={"abi_name": self.prefix + "_dereference"}, output='ltoir')]
 
-    def count_int32_advance(this, diff):
+    def count_advance(this, diff):
         this[0] += diff
 
-    def count_int32_dereference(this):
+    def count_dereference(this):
         return this[0]
 
     def host_address(self):
@@ -188,8 +188,8 @@ class CountingIterator:
         return ctypes.alignment(self.count) # TODO should be using numba for user-defined types support
 
 
-def count(offset):
-    return CountingIterator(offset)
+def count(offset, ntype):
+    return CountingIterator(offset, ntype)
 
 
 def cu_map(op, it):

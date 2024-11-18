@@ -104,15 +104,15 @@ def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, sta
         i_input = iterators.repeat(42, ntype=numba.types.int32)
     elif input_generator == "counting":
         l_input = [start_sum_with + distance for distance in range(num_items)]
-        i_input = iterators.count(start_sum_with)
+        i_input = iterators.count(start_sum_with, ntype=numba.types.int32)
     elif input_generator == "map_mul2":
         l_input = [2 * (start_sum_with + distance) for distance in range(num_items)]
-        i_input = iterators.cu_map(mul2, iterators.count(start_sum_with))
+        i_input = iterators.cu_map(mul2, iterators.count(start_sum_with, ntype=numba.types.int32))
     elif input_generator == "raw_pointer":
         rng = random.Random(0)
         l_input = [rng.randrange(100) for _ in range(num_items)]
         raw_pointer_devarr = numba.cuda.to_device(numpy.array(l_input, dtype=numpy.int32))
-        i_input = iterators.pointer(raw_pointer_devarr, numba.types.int32)
+        i_input = iterators.pointer(raw_pointer_devarr, ntype=numba.types.int32)
     elif input_generator == "streamed_input":
         rng = random.Random(0)
         l_input = [rng.randrange(100) for _ in range(num_items)]
