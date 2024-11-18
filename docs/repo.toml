@@ -439,6 +439,8 @@ doxygen_predefined = [
   "_LIBCUDACXX_REQUIRES(x)= ::cuda::std::enable_if_t<x, int> = 0>",
   "_LIBCUDACXX_TEMPLATE(x)=template<x, ",
   "_LIBCUDACXX_TRAILING_REQUIRES(x)=-> x _LIBCUDACXX_EAT_REST",
+  "DOXYGEN_ACTIVE",
+  "DOXYGEN_SHOULD_SKIP_THIS",
   "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE=",
 ]
 

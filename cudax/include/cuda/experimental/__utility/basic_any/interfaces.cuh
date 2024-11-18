@@ -38,24 +38,9 @@
 namespace cuda::experimental
 {
 ///
-/// __ireference
-///
-/// Note: a `basic_any<__ireference<_Interface>>&&` is an rvalue reference, whereas
-/// a `basic_any<_Interface&>&&` is an lvalue reference.
-template <class _Interface>
-struct __ireference : _Interface
-{
-  static_assert(_CUDA_VSTD::is_class_v<_Interface>, "expected a class type");
-  static constexpr size_t __size_      = sizeof(void*);
-  static constexpr size_t __align_     = alignof(void*);
-  static constexpr bool __is_const_ref = _CUDA_VSTD::is_const_v<_Interface>;
-
-  using interface _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::remove_const_t<_Interface>;
-};
-
-///
 /// Interface type traits
 ///
+// The primary __remove_ireference_v template is defined in basic_any_fwd.cuh.
 template <class _Interface>
 extern _Interface __remove_ireference_v<_Interface const>;
 
@@ -85,10 +70,12 @@ inline constexpr bool __is_lvalue_reference_v<_Interface&> = true;
 ///             and iunknown.
 ///
 template <class _Interface, class _Fn>
-using __bases_of _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_call<
-  _CUDA_VSTD::__type_concat<_CUDA_VSTD::__type_list<iunknown, _CUDA_VSTD::remove_const_t<_Interface>>,
-                            typename _Interface::template __ibases<__make_type_list>>,
-  _Fn>;
+using __bases_of _CCCL_NODEBUG_ALIAS = //
+  _CUDA_VSTD::__type_call< //
+    _CUDA_VSTD::__type_concat< //
+      _CUDA_VSTD::__type_list<iunknown, _CUDA_VSTD::remove_const_t<_Interface>>,
+      typename _Interface::template __ibases<__make_type_list>>,
+    _Fn>;
 
 ///
 /// interface subsumption
@@ -156,9 +143,8 @@ struct interface<_Interface, extends<_Bases...>, Size, Align>
   using __rebind _CCCL_NODEBUG_ALIAS = _Interface<_Super...>;
 
   template <class _Fn>
-  using __ibases _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_call<
-    _CUDA_VSTD::__type_concat<__bases_of<_Bases, _CUDA_VSTD::__type_quote<_CUDA_VSTD::__type_list>>...>,
-    _Fn>;
+  using __ibases _CCCL_NODEBUG_ALIAS =
+    _CUDA_VSTD::__type_call<_CUDA_VSTD::__type_concat<__bases_of<_Bases, __make_type_list>...>, _Fn>;
 
   template <class _Tp>
   using overrides _CCCL_NODEBUG_ALIAS = overrides_for<_Tp>;
@@ -167,8 +153,8 @@ struct interface<_Interface, extends<_Bases...>, Size, Align>
 ///
 /// __is_interface
 ///
-template <template <class...> class _Interface, class Extends, size_t Size, size_t Align>
-_CUDAX_API auto __is_interface_test(interface<_Interface, Extends, Size, Align> const&) -> void;
+template <template <class...> class _Interface, class _Extends, size_t _Size, size_t _Align>
+_CUDAX_API auto __is_interface_test(interface<_Interface, _Extends, _Size, _Align> const&) -> void;
 
 // clang-format off
 template <class _Tp>
@@ -185,12 +171,12 @@ _LIBCUDACXX_CONCEPT __is_interface =
 /// Given an interface, return a list that contains the interface and all its
 /// bases, but with duplicates removed.
 ///
-template <class _Interface, class _Fn = _CUDA_VSTD::__type_quote<_CUDA_VSTD::__type_list>>
+template <class _Interface, class _Fn = __make_type_list>
 using __unique_interfaces _CCCL_NODEBUG_ALIAS =
   _CUDA_VSTD::__type_apply<_Fn, __bases_of<_Interface, _CUDA_VSTD::__type_quote<_CUDA_VSTD::__make_type_set>>>;
 
 ///
-/// __index_of: find the index of an interface in a list of unique interfaces
+/// __index_of_base: find the index of an interface in a list of unique interfaces
 ///
 _CCCL_NODISCARD _CUDAX_API constexpr size_t __find_index(_CUDA_VSTD::initializer_list<bool> __il)
 {
@@ -199,7 +185,7 @@ _CCCL_NODISCARD _CUDAX_API constexpr size_t __find_index(_CUDA_VSTD::initializer
 }
 
 template <class _Interface>
-struct __find_index_of
+struct __find_index_of_base
 {
   template <class... _Interfaces>
   static constexpr size_t __index = __find_index({__subsumes<_Interface, _Interfaces>...});
@@ -209,14 +195,8 @@ struct __find_index_of
 };
 
 template <class _Interface, class _Super>
-using __index_of _CCCL_NODEBUG_ALIAS =
-  _CUDA_VSTD::__type_apply<__find_index_of<_Interface>, __unique_interfaces<_Super>>;
-
-///
-/// __iunknown: Logically, the root of all interfaces.
-///
-struct iunknown : interface<_CUDA_VSTD::__type_always<iunknown>::__call>
-{};
+using __index_of_base _CCCL_NODEBUG_ALIAS =
+  _CUDA_VSTD::__type_apply<__find_index_of_base<_Interface>, __unique_interfaces<_Super>>;
 
 template <class...>
 struct __iempty : interface<__iempty>

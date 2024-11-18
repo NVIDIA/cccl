@@ -235,12 +235,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
     return __ref_.__vptr_ != nullptr;
   }
 
-#if !defined(DOXYGEN_SHOULD_SKIP_THIS) // Do not document
+#if !defined(DOXYGEN_ACTIVE) // Do not document
   _CCCL_NODISCARD _CUDAX_TRIVIAL_API static constexpr bool __in_situ() noexcept
   {
     return true;
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // DOXYGEN_ACTIVE
 
 private:
   template <class, class>

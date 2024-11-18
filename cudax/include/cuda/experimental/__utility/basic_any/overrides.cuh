@@ -33,11 +33,11 @@ using __overrides_for _CCCL_NODEBUG_ALIAS = typename _Interface::template overri
 ///
 /// overrides_for
 ///
-template <class _InterfaceOrModel, auto... _Mbrs>
+template <class _InterfaceOrModel, auto... _VirtualFnsOrOverrides>
 struct overrides_for
 {
   static_assert(!_CUDA_VSTD::is_const_v<_InterfaceOrModel>, "expected a class type");
-  using __vtable _CCCL_NODEBUG_ALIAS = __basic_vtable<_InterfaceOrModel, _Mbrs...>;
+  using __vtable _CCCL_NODEBUG_ALIAS = __basic_vtable<_InterfaceOrModel, _VirtualFnsOrOverrides...>;
   using __vptr_t _CCCL_NODEBUG_ALIAS = __vtable const*;
 };
 

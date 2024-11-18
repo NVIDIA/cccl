@@ -34,12 +34,11 @@
 
 namespace cuda::experimental
 {
-template <class _Tp>
-_CUDAX_API void __dtor_fn(void* __pv, bool __small) noexcept
-{
-  __small ? static_cast<_Tp*>(__pv)->~_Tp() //
-          : delete *static_cast<_Tp**>(__pv);
-}
+///
+/// __iunknown: Logically, the root of all interfaces.
+///
+struct iunknown : interface<_CUDA_VSTD::__type_always<iunknown>::__call>
+{};
 
 ///
 /// bad_any_cast
@@ -107,6 +106,13 @@ struct __object_metadata
 template <class _Tp>
 inline constexpr __object_metadata __object_metadata_v = {
   sizeof(_Tp), alignof(_Tp), &_CCCL_TYPEID(_Tp), &_CCCL_TYPEID(_Tp*), &_CCCL_TYPEID(_Tp const*)};
+
+template <class _Tp>
+_CUDAX_API void __dtor_fn(void* __pv, bool __small) noexcept
+{
+  __small ? static_cast<_Tp*>(__pv)->~_Tp() //
+          : delete *static_cast<_Tp**>(__pv);
+}
 
 // All vtables have an rtti sub-object. This object has several responsibilities:
 // * It contains the destructor for the type-erased object.

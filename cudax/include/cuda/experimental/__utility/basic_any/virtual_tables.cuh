@@ -86,7 +86,7 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __basic_vtable
   template <class _Other>
   _CCCL_NODISCARD _CUDAX_API __vptr_for<_Other> __query_interface(_Other) const noexcept
   {
-    constexpr size_t __index = __index_of<_Other, interface>::value;
+    constexpr size_t __index = __index_of_base<_Other, interface>::value;
     static_assert(__index < __cbases);
     return static_cast<__vptr_for<_Other>>(__vptr_map_[__index]);
   }

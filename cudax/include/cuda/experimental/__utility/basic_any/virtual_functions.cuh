@@ -35,11 +35,11 @@ namespace cuda::experimental
 ///
 /// __override_tag
 ///
-template <class _Tp, auto _Mbr>
+template <class _Tp, auto _Override>
 struct __override_tag_;
 
-template <class _Tp, auto _Mbr>
-using __override_tag _CCCL_NODEBUG_ALIAS = __override_tag_<_Tp, _Mbr>*;
+template <class _Tp, auto _Override>
+using __override_tag _CCCL_NODEBUG_ALIAS = __override_tag_<_Tp, _Override>*;
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wstrict-aliasing")
@@ -47,8 +47,8 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wstrict-aliasing")
 template <class _Fn, class _Cp>
 _CUDAX_API auto __class_of_(_Fn _Cp::*) -> _Cp;
 
-template <class _Mbr>
-using __class_of _CCCL_NODEBUG_ALIAS = decltype(__cudax::__class_of_(_Mbr()));
+template <class _Fn>
+using __class_of _CCCL_NODEBUG_ALIAS = decltype(__cudax::__class_of_(_Fn()));
 
 /// We use a C-style cast instead of a static_cast because a C-style cast will
 /// ignore accessibility, letting us cast to a private base class.
@@ -90,50 +90,50 @@ _CCCL_NODISCARD _CUDAX_API _Ret __override_fn_([[maybe_unused]] _CUDA_VSTD::__ma
 
 _CCCL_DIAG_POP
 
-template <class _Fn, class _Tp = void, auto _Mbr = 0>
+template <class _Fn, class _Tp = void, auto _Override = 0>
 extern _CUDA_VSTD::__undefined<_Fn> __virtual_override_fn;
 
-template <class _Tp, auto _Mbr, class _Ret, class _Cp, class... _Args>
+template <class _Tp, auto _Override, class _Ret, class _Cp, class... _Args>
 inline constexpr __identity_t<_Ret (*)(void*, _Args...)> //
-  __virtual_override_fn<_Ret (*)(_Cp&, _Args...), _Tp, _Mbr> = //
-  &__override_fn_<_Tp, _Mbr, _Ret, false, false, _Args...>;
+  __virtual_override_fn<_Ret (*)(_Cp&, _Args...), _Tp, _Override> = //
+  &__override_fn_<_Tp, _Override, _Ret, false, false, _Args...>;
 
-template <class _Tp, auto _Mbr, class _Ret, class _Cp, class... _Args>
+template <class _Tp, auto _Override, class _Ret, class _Cp, class... _Args>
 inline constexpr __identity_t<_Ret (*)(void const*, _Args...)>
-  __virtual_override_fn<_Ret (*)(_Cp const&, _Args...), _Tp, _Mbr> =
-    &__override_fn_<_Tp, _Mbr, _Ret, true, false, _Args...>;
+  __virtual_override_fn<_Ret (*)(_Cp const&, _Args...), _Tp, _Override> =
+    &__override_fn_<_Tp, _Override, _Ret, true, false, _Args...>;
 
-template <class _Tp, auto _Mbr, class _Ret, class _Cp, class... _Args>
+template <class _Tp, auto _Override, class _Ret, class _Cp, class... _Args>
 inline constexpr __identity_t<_Ret (*)(void*, _Args...) noexcept>
-  __virtual_override_fn<_Ret (*)(_Cp&, _Args...) noexcept, _Tp, _Mbr> =
-    &__override_fn_<_Tp, _Mbr, _Ret, false, true, _Args...>;
+  __virtual_override_fn<_Ret (*)(_Cp&, _Args...) noexcept, _Tp, _Override> =
+    &__override_fn_<_Tp, _Override, _Ret, false, true, _Args...>;
 
-template <class _Tp, auto _Mbr, class _Ret, class _Cp, class... _Args>
+template <class _Tp, auto _Override, class _Ret, class _Cp, class... _Args>
 inline constexpr __identity_t<_Ret (*)(void const*, _Args...) noexcept>
-  __virtual_override_fn<_Ret (*)(_Cp const&, _Args...) noexcept, _Tp, _Mbr> =
-    &__override_fn_<_Tp, _Mbr, _Ret, true, true, _Args...>;
+  __virtual_override_fn<_Ret (*)(_Cp const&, _Args...) noexcept, _Tp, _Override> =
+    &__override_fn_<_Tp, _Override, _Ret, true, true, _Args...>;
 
 // TODO: Add support for member functions with reference qualifiers.
 
-template <class _Tp, auto _Mbr, class _Ret, class _Cp, class... _Args>
+template <class _Tp, auto _Override, class _Ret, class _Cp, class... _Args>
 inline constexpr __identity_t<_Ret (*)(void*, _Args...)> //
-  __virtual_override_fn<_Ret (_Cp::*)(_Args...), _Tp, _Mbr> = //
-  &__override_fn_<_Tp, _Mbr, _Ret, false, false, _Args...>;
+  __virtual_override_fn<_Ret (_Cp::*)(_Args...), _Tp, _Override> = //
+  &__override_fn_<_Tp, _Override, _Ret, false, false, _Args...>;
 
-template <class _Tp, auto _Mbr, class _Ret, class _Cp, class... _Args>
+template <class _Tp, auto _Override, class _Ret, class _Cp, class... _Args>
 inline constexpr __identity_t<_Ret (*)(void const*, _Args...)> //
-  __virtual_override_fn<_Ret (_Cp::*)(_Args...) const, _Tp, _Mbr> =
-    &__override_fn_<_Tp, _Mbr, _Ret, true, false, _Args...>;
+  __virtual_override_fn<_Ret (_Cp::*)(_Args...) const, _Tp, _Override> =
+    &__override_fn_<_Tp, _Override, _Ret, true, false, _Args...>;
 
-template <class _Tp, auto _Mbr, class _Ret, class _Cp, class... _Args>
+template <class _Tp, auto _Override, class _Ret, class _Cp, class... _Args>
 inline constexpr __identity_t<_Ret (*)(void*, _Args...) noexcept>
-  __virtual_override_fn<_Ret (_Cp::*)(_Args...) noexcept, _Tp, _Mbr> =
-    &__override_fn_<_Tp, _Mbr, _Ret, false, true, _Args...>;
+  __virtual_override_fn<_Ret (_Cp::*)(_Args...) noexcept, _Tp, _Override> =
+    &__override_fn_<_Tp, _Override, _Ret, false, true, _Args...>;
 
-template <class _Tp, auto _Mbr, class _Ret, class _Cp, class... _Args>
+template <class _Tp, auto _Override, class _Ret, class _Cp, class... _Args>
 inline constexpr __identity_t<_Ret (*)(void const*, _Args...) noexcept>
-  __virtual_override_fn<_Ret (_Cp::*)(_Args...) const noexcept, _Tp, _Mbr> =
-    &__override_fn_<_Tp, _Mbr, _Ret, true, true, _Args...>;
+  __virtual_override_fn<_Ret (_Cp::*)(_Args...) const noexcept, _Tp, _Override> =
+    &__override_fn_<_Tp, _Override, _Ret, true, true, _Args...>;
 
 template <class _Ret, class... _Args>
 _CUDAX_API _Ret __get_virtual_result(_Ret (*)(_Args...));
@@ -159,9 +159,9 @@ struct __virtual_fn
   static constexpr bool __const_fn   = decltype(__cudax::__is_virtual_const(__function_t{}))::value;
   static constexpr bool __nothrow_fn = noexcept(__cudax::__get_virtual_result(__function_t{}));
 
-  template <class _Tp, auto _Mbr>
-  _CUDAX_API constexpr __virtual_fn(__override_tag<_Tp, _Mbr>) noexcept
-      : __fn_(__virtual_override_fn<decltype(_Fn), _Tp, _Mbr>)
+  template <class _Tp, auto _Override>
+  _CUDAX_API constexpr __virtual_fn(__override_tag<_Tp, _Override>) noexcept
+      : __fn_(__virtual_override_fn<decltype(_Fn), _Tp, _Override>)
   {}
 
   __function_t __fn_;

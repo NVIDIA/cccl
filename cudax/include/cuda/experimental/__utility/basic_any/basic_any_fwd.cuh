@@ -57,13 +57,13 @@ struct basic_any<_Interface*>;
 template <class _Interface>
 struct basic_any<_Interface&>;
 
-template <class _InterfaceOrModel, auto... _Mbrs>
+template <class _InterfaceOrModel, auto... _VirtualFnsOrOverrides>
 struct overrides_for;
-
-struct __rtti_base;
 
 template <class _Interface, auto... _Mbrs>
 struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __basic_vtable;
+
+struct __rtti_base;
 
 struct __rtti;
 
