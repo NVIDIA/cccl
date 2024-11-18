@@ -86,7 +86,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
   assert(cuda::std::numeric_limits<int>::min() == cuda::std::to_underlying(enum_min));
   assert(cuda::std::numeric_limits<int>::max() == cuda::std::to_underlying(enum_max));
 
-  WithBitfieldEnums bf;
+  WithBitfieldEnums bf{};
   bf.e1 = static_cast<e_default>(3);
   bf.e2 = e_ushort::e;
   bf.e3 = e_bool::t;
