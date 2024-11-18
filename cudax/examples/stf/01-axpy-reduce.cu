@@ -55,16 +55,16 @@ int main()
 
   /* Compute Y = Y + alpha X */
   //ctx.parallel_for(lY.shape(), lX.read(), lY.rw(), lsum.write(), lsum2.template reduce<sum>())->*[alpha] __device__(size_t i, auto dX, auto dY, auto sum, auto sum2) {
-  ctx.parallel_for(lY.shape(), lX.read(), lY.rw(), lsum.write(), lsum2.reduce(sum{}))->*[alpha] __device__(size_t i, auto dX, auto dY, auto sum, scalar<double> &sum2) {
+  ctx.parallel_for(lY.shape(), lX.read(), lY.rw(), lsum.write(), lsum2.reduce(sum{}))->*[alpha] __device__(size_t i, auto dX, auto dY, auto sum, double &sum2) {
     dY(i) += alpha * dX(i);
-    sum2.val += dY(i);
-    printf("SUM2 %p\n", &sum2.val);
+    sum2 += dY(i);
+    printf("SUM2 %p\n", &sum2);
     atomicAdd(sum.data_handle(), dY(i));
   };
 
   ctx.host_launch(lsum.read(), lsum2.read())->*[](auto sum, scalar<double> sum2) {
       fprintf(stderr, "REF SUM ... %lf\n", sum(0));
-      fprintf(stderr, "REDUX SUM2 ... %lf\n", sum2.val);
+      fprintf(stderr, "REDUX SUM2 ... %lf\n", *(sum2.addr));
   };
 
   ctx.finalize();

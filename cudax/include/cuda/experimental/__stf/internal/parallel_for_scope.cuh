@@ -87,7 +87,7 @@ struct EmptyType {};
 // Create SelectType Using Partial Specialization
 template <typename Oi, typename Ai>
 struct SelectType {
-    using type = Ai; // Default case
+    using type = typename owning_container_of<Ai>::type; // Default case
 };
 
 template <typename Ai>
@@ -147,7 +147,8 @@ __device__ decltype(auto) select_element(const OpsTuple& /*ops*/, ArgsTuple& tar
 // make_targs_aux_impl: Constructs targs_aux by selecting elements based on OpsTuple
 template <typename OpsTuple, typename ArgsTuple, typename ReduxTuple, std::size_t... Is>
 __device__ auto make_targs_aux_impl(const OpsTuple& ops, ArgsTuple& targs, ReduxTuple& redux_tuple, ::std::index_sequence<Is...>) {
-    return tuple_refs_t<ArgsTuple>(
+    // We do not use make_tuple to preserve references
+    return  ::std::forward_as_tuple(
         select_element<Is>(ops, targs, redux_tuple)...
     );
 }
@@ -173,6 +174,8 @@ __global__ void loop_redux(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F 
 
   // Transform the tuple of arguments into a tuple which either contain arguments, or local reduction variables
   auto targs_aux = make_targs_aux(tuple_ops{}, targs, per_block_redux_buffer[threadIdx.x]);
+
+  //print_type_name_and_fail<decltype(targs_aux)>{};
 
   // Help the compiler which may not detect that a device lambda is calling a device lambda
   CUDASTF_NO_DEVICE_STACK
@@ -383,7 +386,10 @@ public:
                           is_extended_device_lambda_closure_type = __nv_is_extended_device_lambda_closure_type(Fun);
 #  endif
 
-    if constexpr (is_extended_host_device_lambda_closure_type)
+    // TODO redo cascade of tests
+    if constexpr (need_reduction) {
+        do_parallel_for_redux(f, e_place, shape, t);
+    } else if constexpr (is_extended_host_device_lambda_closure_type)
     {
       // Can run on both - decide dynamically
       if (e_place == exec_place::host)
