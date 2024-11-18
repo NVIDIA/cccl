@@ -506,7 +506,7 @@ void throws_in_constructor_test()
     bool operator()() const
     {
       assert(false);
-      ::cuda::std::unreachable();
+      cuda::std::unreachable();
     }
   };
   {

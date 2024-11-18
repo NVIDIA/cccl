@@ -227,7 +227,7 @@ public:
       }
       return __n;
     }
-    ::cuda::std::unreachable();
+    _CUDA_VSTD::unreachable();
   }
 };
 _LIBCUDACXX_END_NAMESPACE_CPO

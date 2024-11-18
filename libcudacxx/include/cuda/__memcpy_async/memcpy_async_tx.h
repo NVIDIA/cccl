@@ -76,7 +76,7 @@ _CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
         // or from shared to remote cluster dsmem. To copy to remote
         // dsmem, we need to arrive on a cluster-scoped barrier, which
         // is not yet implemented. So we trap in this case as well.
-        ::cuda::std::unreachable();
+        _CUDA_VSTD::unreachable();
       }),
     (__cuda_ptx_memcpy_async_tx_is_not_supported_before_SM_90__();));
 

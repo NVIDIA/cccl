@@ -127,7 +127,7 @@ private:
     {
       return input_iterator_tag{};
     }
-    ::cuda::std::unreachable();
+    _CUDA_VSTD::unreachable();
   }
 #  endif // !_CCCL_COMPILER_MSVC_2017
 #endif // _CCCL_STD_VER >= 2017
