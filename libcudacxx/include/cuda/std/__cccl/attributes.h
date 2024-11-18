@@ -39,7 +39,7 @@
 // Use a function like macro to imply that it must be followed by a semicolon
 #if _CCCL_STD_VER >= 2017 && _CCCL_HAS_CPP_ATTRIBUTE(fallthrough)
 #  define _CCCL_FALLTHROUGH() [[fallthrough]]
-#elif defined(_CCCL_COMPILER_NVRTC)
+#elif _CCCL_COMPILER(NVRTC)
 #  define _CCCL_FALLTHROUGH() ((void) 0)
 #elif _CCCL_HAS_CPP_ATTRIBUTE(clang::fallthrough)
 #  define _CCCL_FALLTHROUGH() [[clang::fallthrough]]

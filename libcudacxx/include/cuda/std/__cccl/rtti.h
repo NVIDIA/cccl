@@ -32,11 +32,11 @@
 #    define _CCCL_NO_RTTI
 #  elif defined(__CUDA_ARCH__)
 #    define _CCCL_NO_RTTI // No RTTI in CUDA device code
-#  elif defined(_CCCL_COMPILER_ICC)
+#  elif _CCCL_COMPILER(ICC)
 #    if __RTTI == 0 && __INTEL_RTTI__ == 0 && __GXX_RTTI == 0 && _CPPRTTI == 0
 #      define _CCCL_NO_RTTI
 #    endif
-#  elif defined(_CCCL_COMPILER_NVRTC)
+#  elif _CCCL_COMPILER(NVRTC)
 #    define _CCCL_NO_RTTI
 #  elif defined(_CCCL_COMPILER_MSVC)
 #    if _CPPRTTI == 0
@@ -58,12 +58,12 @@
 #    define _CCCL_NO_TYPEID
 #  elif defined(__CUDA_ARCH__)
 #    define _CCCL_NO_TYPEID // No typeid in CUDA device code
-#  elif defined(_CCCL_COMPILER_ICC)
+#  elif _CCCL_COMPILER(ICC)
 // when emulating MSVC, typeid is available even when RTTI is disabled
 #    if !defined(_MSC_VER) && __RTTI == 0 && __INTEL_RTTI__ == 0 && __GXX_RTTI == 0 && _CPPRTTI == 0
 #      define _CCCL_NO_TYPEID
 #    endif
-#  elif defined(_CCCL_COMPILER_NVRTC)
+#  elif _CCCL_COMPILER(NVRTC)
 #    define _CCCL_NO_TYPEID
 #  elif defined(_CCCL_COMPILER_MSVC)
 // No-op, MSVC always supports typeid even when RTTI is disabled

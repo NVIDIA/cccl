@@ -39,7 +39,7 @@
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/cstddef>
 
-#if !defined(_CCCL_COMPILER_NVRTC)
+#if !_CCCL_COMPILER(NVRTC)
 #  if defined(_CCCL_COMPILER_MSVC)
 #    include <xutility> // for ::std::input_iterator_tag
 #  else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
@@ -63,7 +63,7 @@ struct __cccl_std_contiguous_iterator_tag_exists : __cccl_type_is_defined<struct
 } // namespace std
 #  endif // _CCCL_STD_VER >= 2020
 
-#endif // !_CCCL_COMPILER_NVRTC
+#endif // !_CCCL_COMPILER(NVRTC)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -118,7 +118,7 @@ template <class>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
 #endif // _CCCL_STD_VER <= 2014
 
-#if defined(_CCCL_COMPILER_NVRTC)
+#if _CCCL_COMPILER(NVRTC)
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT input_iterator_tag
 {};
@@ -135,7 +135,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT contiguous_iterator_tag : public random_acc
 {};
 #  endif // _CCCL_STD_VER >= 2014
 
-#else // ^^^ _CCCL_COMPILER_NVRTC ^^^ / vvv !_CCCL_COMPILER_NVRTC vvv
+#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ / vvv !_CCCL_COMPILER(NVRTC) vvv
 
 using input_iterator_tag         = ::std::input_iterator_tag;
 using output_iterator_tag        = ::std::output_iterator_tag;
@@ -155,7 +155,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT contiguous_iterator_tag : public random_acc
 {};
 #  endif // _CCCL_STD_VER >= 2014
 
-#endif // !_CCCL_COMPILER_NVRTC
+#endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _Iter>
 struct __iter_traits_cache

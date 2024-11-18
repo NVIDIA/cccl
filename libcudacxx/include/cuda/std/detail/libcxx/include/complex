@@ -256,13 +256,13 @@ template<class T> complex<T> tanh (const complex<T>&);
 #include <cuda/std/version>
 
 // Compatability helpers for thrust to convert between `std::complex` and `cuda::std::complex`
-#if !defined(_CCCL_COMPILER_NVRTC)
+#if !_CCCL_COMPILER(NVRTC)
 #  include <complex>
 #  include <sstream> // for std::basic_ostringstream
 
 #  define _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__c) reinterpret_cast<const _Up(&)[2]>(__c)[0]
 #  define _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__c) reinterpret_cast<const _Up(&)[2]>(__c)[1]
-#endif // !_CCCL_COMPILER_NVRTC
+#endif // !_CCCL_COMPILER(NVRTC)
 
 _CCCL_PUSH_MACROS
 
@@ -324,7 +324,7 @@ public:
     return *this;
   }
 
-#if !defined(_CCCL_COMPILER_NVRTC)
+#if !_CCCL_COMPILER(NVRTC)
   template <class _Up>
   _LIBCUDACXX_HIDE_FROM_ABI complex(const ::std::complex<_Up>& __other)
       : __re_(_LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__other))
@@ -343,7 +343,7 @@ public:
   {
     return {__re_, __im_};
   }
-#endif // !_CCCL_COMPILER_NVRTC
+#endif // !_CCCL_COMPILER(NVRTC)
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type real() const
   {
@@ -794,7 +794,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator!=(const _Tp& __x, 
 }
 #endif // _CCCL_STD_VER <= 2017
 
-#if !defined(_CCCL_COMPILER_NVRTC)
+#if !_CCCL_COMPILER(NVRTC)
 template <class _Tp, class _Up>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator==(const complex<_Tp>& __x, const ::std::complex<_Up>& __y)
 {
@@ -822,7 +822,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator!=(const ::std::com
   return !(__x == __y);
 }
 #  endif // _CCCL_STD_VER <= 2017
-#endif // !_CCCL_COMPILER_NVRTC
+#endif // !_CCCL_COMPILER(NVRTC)
 
 // real
 
@@ -1418,7 +1418,7 @@ _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> tan(const complex<_Tp>& __x)
   return complex<_Tp>(__z.imag(), -__z.real());
 }
 
-#if !defined(_CCCL_COMPILER_NVRTC)
+#if !_CCCL_COMPILER(NVRTC)
 template <class _Tp, class _CharT, class _Traits>
 ::std::basic_istream<_CharT, _Traits>& operator>>(::std::basic_istream<_CharT, _Traits>& __is, complex<_Tp>& __x)
 {
@@ -1433,7 +1433,7 @@ template <class _Tp, class _CharT, class _Traits>
 {
   return __os << static_cast<::std::complex<_Tp>>(__x);
 }
-#endif // !_CCCL_COMPILER_NVRTC
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #if _CCCL_STD_VER > 2011 && defined(_LIBCUDACXX_HAS_STL_LITERALS)
 // Literal suffix for complex number literals [complex.literals]

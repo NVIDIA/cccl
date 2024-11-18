@@ -43,15 +43,15 @@
 #  pragma system_header
 #endif // no system header
 
-#ifdef _CCCL_COMPILER_NVRTC
+#if _CCCL_COMPILER(NVRTC)
 #  include <cuda/std/iterator>
-#else // _CCCL_COMPILER_NVRTC
+#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ // vvv !_CCCL_COMPILER(NVRTC) vvv
 #  include <thrust/iterator/iterator_facade.h>
 #  include <thrust/iterator/iterator_traits.h>
 
 #  include <iostream>
 #  include <iterator>
-#endif // _CCCL_COMPILER_NVRTC
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_store.cuh>
@@ -123,15 +123,15 @@ public:
   /// The type of a reference to an element the iterator can point to
   using reference = ValueType;
 
-#ifdef _CCCL_COMPILER_NVRTC
+#if _CCCL_COMPILER(NVRTC)
   using iterator_category = ::cuda::std::random_access_iterator_tag;
-#else // _CCCL_COMPILER_NVRTC
+#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ // vvv !_CCCL_COMPILER(NVRTC) vvv
   using iterator_category = typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
     THRUST_NS_QUALIFIER::device_system_tag,
     THRUST_NS_QUALIFIER::random_access_traversal_tag,
     value_type,
     reference>::type;
-#endif // _CCCL_COMPILER_NVRTC
+#endif // _CCCL_COMPILER(NVRTC)
 
 public:
   /// Wrapped native pointer
@@ -228,12 +228,12 @@ public:
   }
 
   /// ostream operator
-#if !defined(_CCCL_COMPILER_NVRTC)
+#if !_CCCL_COMPILER(NVRTC)
   friend std::ostream& operator<<(std::ostream& os, const self_type& /*itr*/)
   {
     return os;
   }
-#endif
+#endif // !_CCCL_COMPILER(NVRTC)
 };
 
 CUB_NAMESPACE_END
