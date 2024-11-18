@@ -199,7 +199,7 @@ You can expect the output to look like this:
     ...
 
 The tuning infrastructure will build and execute all benchmarks and their variants one after each other,
-reporting the time it seconds it took to execute the benchmark executable.
+reporting the time in seconds it took to execute the benchmark executable.
 
 It's also possible to benchmark a subset of algorithms and workloads:
 
