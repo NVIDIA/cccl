@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14, c++17, c++20
-
 #include <cuda/std/utility>
 
 [[noreturn]] void unreachable()
