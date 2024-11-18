@@ -40,7 +40,7 @@
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__memory_resource/resource.h>
 #include <cuda/__memory_resource/resource_ref.h>
-#include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__new_>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>

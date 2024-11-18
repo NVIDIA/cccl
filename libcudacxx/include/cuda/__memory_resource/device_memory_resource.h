@@ -31,7 +31,7 @@
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__memory_resource/resource.h>
 #  include <cuda/__memory_resource/resource_ref.h>
-#  include <cuda/std/__concepts/__concept_macros.h>
+#  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__cuda/api_wrapper.h>
 #  include <cuda/std/__cuda/ensure_current_device.h>
 #  include <cuda/std/detail/libcxx/include/stdexcept>

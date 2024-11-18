@@ -20,8 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
 #include <cuda/std/__concepts/assignable.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/movable.h>
 

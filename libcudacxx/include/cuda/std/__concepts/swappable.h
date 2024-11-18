@@ -20,10 +20,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
 #include <cuda/std/__concepts/assignable.h>
 #include <cuda/std/__concepts/class_or_enum.h>
 #include <cuda/std/__concepts/common_reference_with.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__type_traits/extent.h>
 #include <cuda/std/__type_traits/integral_constant.h>
