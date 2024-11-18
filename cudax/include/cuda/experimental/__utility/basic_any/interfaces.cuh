@@ -98,6 +98,8 @@ inline constexpr bool __subsumes<__iset<_Subset...>, __iset<_Superset...>> =
 ///
 /// An interface \c A is considered an extension of another \c B if \c B
 /// can be found by recursively searching the base interfaces of \c A.
+/// `iset<As...>` is an extension of `iset<Bs...>` if `Bs...` is a subset
+/// of `As...`.
 ///
 /// \note An interface is considered an extension of itself.
 ///
