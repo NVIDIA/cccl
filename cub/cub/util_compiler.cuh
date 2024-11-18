@@ -78,11 +78,11 @@
 #  define CUB_HOST_COMPILER CUB_HOST_COMPILER_CLANG
 //! deprecated [Since 2.7]
 #  define CUB_CLANG_VERSION _CCCL_CLANG_VERSION
-#elif defined(_CCCL_COMPILER_GCC)
+#elif _CCCL_COMPILER(GCC)
 //! deprecated [Since 2.7]
 #  define CUB_HOST_COMPILER CUB_HOST_COMPILER_GCC
 //! deprecated [Since 2.7]
-#  define CUB_GCC_VERSION   _CCCL_GCC_VERSION
+#  define CUB_GCC_VERSION   (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
 #endif
 
 // figure out which device compiler we're using
@@ -92,7 +92,7 @@
 #elif defined(_CCCL_COMPILER_MSVC)
 //! deprecated [Since 2.7]
 #  define CUB_DEVICE_COMPILER CUB_DEVICE_COMPILER_MSVC
-#elif defined(_CCCL_COMPILER_GCC)
+#elif _CCCL_COMPILER(GCC)
 //! deprecated [Since 2.7]
 #  define CUB_DEVICE_COMPILER CUB_DEVICE_COMPILER_GCC
 #elif defined(_CCCL_COMPILER_CLANG)

@@ -37,7 +37,7 @@
 #include <limits>
 #include <string>
 
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 template <int BINS,
           int BLOCK_THREADS,

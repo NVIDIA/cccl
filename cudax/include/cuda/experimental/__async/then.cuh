@@ -58,32 +58,33 @@ template <bool IsVoid, bool _Nothrow>
 struct __completion_fn
 { // non-void, potentially throwing case
   template <class _Result>
-  using __f = completion_signatures<set_value_t(_Result), set_error_t(::std::exception_ptr)>;
+  using __call = completion_signatures<set_value_t(_Result), set_error_t(::std::exception_ptr)>;
 };
 
 template <>
 struct __completion_fn<true, false>
 { // void, potentially throwing case
   template <class>
-  using __f = completion_signatures<set_value_t(), set_error_t(::std::exception_ptr)>;
+  using __call = completion_signatures<set_value_t(), set_error_t(::std::exception_ptr)>;
 };
 
 template <>
 struct __completion_fn<false, true>
 { // non-void, non-throwing case
   template <class _Result>
-  using __f = completion_signatures<set_value_t(_Result)>;
+  using __call = completion_signatures<set_value_t(_Result)>;
 };
 
 template <>
 struct __completion_fn<true, true>
 { // void, non-throwing case
   template <class>
-  using __f = completion_signatures<set_value_t()>;
+  using __call = completion_signatures<set_value_t()>;
 };
 
 template <class _Result, bool _Nothrow>
-using __completion_ = __minvoke1<__completion_fn<_CUDA_VSTD::is_same_v<_Result, void>, _Nothrow>, _Result>;
+using __completion_ =
+  _CUDA_VSTD::__type_call1<__completion_fn<_CUDA_VSTD::is_same_v<_Result, void>, _Nothrow>, _Result>;
 
 template <class _Fn, class... _Ts>
 using __completion = __completion_<__call_result_t<_Fn, _Ts...>, __nothrow_callable<_Fn, _Ts...>>;
@@ -111,16 +112,17 @@ private:
   struct __transform_completion
   {
     template <class... _Ts>
-    using __f = __minvoke<__mtry_quote<__upon::__completion, __error_not_callable<_Fn, _Ts...>>, _Fn, _Ts...>;
+    using __call =
+      _CUDA_VSTD::__type_call<__type_try_quote<__upon::__completion, __error_not_callable<_Fn, _Ts...>>, _Fn, _Ts...>;
   };
 
   template <class _CvSndr, class _Fn, class _Rcvr>
   using __completions =
     __gather_completion_signatures<completion_signatures_of_t<_CvSndr, _Rcvr>,
                                    _SetTag,
-                                   __transform_completion<_Fn>::template __f,
+                                   __transform_completion<_Fn>::template __call,
                                    __default_completions,
-                                   __mtry_quote<__concat_completion_signatures>::__f>;
+                                   __type_try_quote<__concat_completion_signatures>::__call>;
 
   template <class _Rcvr, class _CvSndr, class _Fn>
   struct __opstate_t

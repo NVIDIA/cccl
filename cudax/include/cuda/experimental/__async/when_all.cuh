@@ -21,6 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/conjunction.h>
+#include <cuda/std/__type_traits/integral_constant.h>
+#include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/atomic>
 
 #include <cuda/experimental/__async/completion_signatures.cuh>
@@ -62,16 +65,16 @@ using __tombstone = _ERROR<_WHERE(_IN_ALGORITHM, when_all_t), _WHAT(_SENDER_HAS_
 template <class _Bool>
 struct __all_nothrow_decay_copyable
 {
-  static_assert(_CUDA_VSTD::is_same_v<_Bool, __mtrue>);
+  static_assert(_CUDA_VSTD::is_same_v<_Bool, _CUDA_VSTD::true_type>);
   template <class... _Ts>
-  using __f = __mbool<__nothrow_decay_copyable<_Ts...>>;
+  using __call = _CUDA_VSTD::bool_constant<__nothrow_decay_copyable<_Ts...>>;
 };
 
 template <>
-struct __all_nothrow_decay_copyable<__mfalse>
+struct __all_nothrow_decay_copyable<_CUDA_VSTD::false_type>
 {
   template <class... _Ts>
-  using __f = __mfalse;
+  using __call = _CUDA_VSTD::false_type;
 };
 
 //////////////////////////////////////////////////////////////////////////////////////
@@ -95,25 +98,25 @@ struct __reduce_completions;
 template <class... _What>
 struct __reduce_completions<_ERROR<_What...>&>
 {
-  using type = __mpair<_ERROR<_What...>, __moffsets<>>;
+  using type = __type_pair<_ERROR<_What...>, __moffsets<>>;
 };
 
 template <class _ValsOK, class _ErrsOK, class _Offsets, class... _Sigs>
 struct __reduce_completions<__completion_metadata<_ValsOK, _ErrsOK, _Offsets, _Sigs...>&>
 {
-  using type = __mpair< //
+  using type = __type_pair< //
     __concat_completion_signatures<completion_signatures<_Sigs..., set_error_t(::std::exception_ptr)>>,
     _Offsets>;
 };
 
 template <class _Offsets, class... _Sigs>
-struct __reduce_completions<__completion_metadata<__mtrue, __mtrue, _Offsets, _Sigs...>&>
+struct __reduce_completions<__completion_metadata<_CUDA_VSTD::true_type, _CUDA_VSTD::true_type, _Offsets, _Sigs...>&>
 {
-  using type = __mpair<__concat_completion_signatures<completion_signatures<_Sigs...>>, _Offsets>;
+  using type = __type_pair<__concat_completion_signatures<completion_signatures<_Sigs...>>, _Offsets>;
 };
 
 template <class _Ty>
-using __reduce_completions_t = __t<__reduce_completions<_Ty>>;
+using __reduce_completions_t = typename __reduce_completions<_Ty>::type;
 
 //////////////////////////////////////////////////////////////////////////////////////
 // __append_completion
@@ -127,7 +130,7 @@ extern __undefined<_Metadata> __append_completion;
 
 template <class _ValsOK, class _ErrsOK, class... _Sigs, class _Tag, class... _As>
 extern __completion_metadata<_ValsOK,
-                             __minvoke<__all_nothrow_decay_copyable<_ErrsOK>, _As...>,
+                             _CUDA_VSTD::__type_call<__all_nothrow_decay_copyable<_ErrsOK>, _As...>,
                              __moffsets<>,
                              _Sigs...,
                              _Tag(__decay_t<_As>...)>&
@@ -137,7 +140,7 @@ extern __completion_metadata<_ValsOK,
 // signature.
 template <class _ValsOK, class _ErrsOK, class... _Sigs, class... _As>
 extern __completion_metadata<
-  __minvoke<__all_nothrow_decay_copyable<_ValsOK>, _As...>,
+  _CUDA_VSTD::__type_call<__all_nothrow_decay_copyable<_ValsOK>, _As...>,
   _ErrsOK,
   __moffsets<>,
   set_value_t(__decay_t<_As>...), // Insert the value signature at the front
@@ -163,7 +166,7 @@ template <class _Metadata, class _Sig>
 auto operator|(_Metadata&, _Sig*) -> decltype(__append_completion<_Metadata, _Sig>);
 
 // The initial value of the fold expression:
-using __inner_fold_init = __completion_metadata<__mtrue, __mtrue, __moffsets<>>;
+using __inner_fold_init = __completion_metadata<_CUDA_VSTD::true_type, _CUDA_VSTD::true_type, __moffsets<>>;
 
 template <class... _Sigs>
 using __collect_inner = //
@@ -193,9 +196,13 @@ template <class _LeftValsOK,
           class _RightValsOK,
           class _RightErrsOK,
           class... _RightSigs>
-extern __completion_metadata<__mtrue, __mand<_LeftErrsOK, _RightErrsOK>, __moffsets<>, _LeftSigs..., _RightSigs...>&
-  __merge_metadata<__completion_metadata<_LeftValsOK, _LeftErrsOK, _Offsets, _LeftSigs...>,
-                   __completion_metadata<_RightValsOK, _RightErrsOK, __moffsets<>, _RightSigs...>>;
+extern __completion_metadata<
+  _CUDA_VSTD::true_type,
+  _CUDA_VSTD::_And<_LeftErrsOK, _RightErrsOK>,
+  __moffsets<>,
+  _LeftSigs...,
+  _RightSigs...>& __merge_metadata<__completion_metadata<_LeftValsOK, _LeftErrsOK, _Offsets, _LeftSigs...>,
+                                   __completion_metadata<_RightValsOK, _RightErrsOK, __moffsets<>, _RightSigs...>>;
 
 // The following two specializations are selected when one of the metadata
 // structs is for a sender with no value completions. In that case, the
@@ -209,8 +216,8 @@ template <class _LeftValsOK,
           class _RightValsOK,
           class _RightErrsOK,
           class... _RightSigs>
-extern __completion_metadata<__mtrue, // There will be no value completion, so values need not be copied.
-                             __mand<_LeftErrsOK, _RightErrsOK>,
+extern __completion_metadata<_CUDA_VSTD::true_type, // There will be no value completion, so values need not be copied.
+                             _CUDA_VSTD::_And<_LeftErrsOK, _RightErrsOK>,
                              __moffsets<>,
                              _LeftSigs...,
                              _RightSigs...>&
@@ -225,8 +232,8 @@ template <class _LeftValsOK,
           class _RightErrsOK,
           class... _As,
           class... _RightSigs>
-extern __completion_metadata<__mtrue, // There will be no value completion, so values need not be copied.
-                             __mand<_LeftErrsOK, _RightErrsOK>,
+extern __completion_metadata<_CUDA_VSTD::true_type, // There will be no value completion, so values need not be copied.
+                             _CUDA_VSTD::_And<_LeftErrsOK, _RightErrsOK>,
                              __moffsets<>,
                              _LeftSigs...,
                              _RightSigs...>&
@@ -258,8 +265,8 @@ template <class _LeftValsOK,
           class _RightErrsOK,
           class... _Bs,
           class... _RightSigs>
-extern __completion_metadata<__mand<_LeftValsOK, _RightValsOK>,
-                             __mand<_LeftErrsOK, _RightErrsOK>,
+extern __completion_metadata<_CUDA_VSTD::_And<_LeftValsOK, _RightValsOK>,
+                             _CUDA_VSTD::_And<_LeftErrsOK, _RightErrsOK>,
                              __append_offset<sizeof...(_Bs), _Offsets...>,
                              set_value_t(_As..., _Bs...), // Concatenate the value types.
                              _LeftSigs...,
@@ -278,7 +285,8 @@ template <class _Meta1, class _Meta2>
 auto operator&(_Meta1&, _Meta2&) -> decltype(__merge_metadata<_Meta1, _Meta2>);
 
 // The initial value for the fold.
-using __outer_fold_init = __completion_metadata<__mtrue, __mtrue, __moffsets<0ul>, set_value_t(), set_stopped_t()>;
+using __outer_fold_init =
+  __completion_metadata<_CUDA_VSTD::true_type, _CUDA_VSTD::true_type, __moffsets<0ul>, set_value_t(), set_stopped_t()>;
 
 template <class... _Sigs>
 using __collect_outer = //
@@ -287,7 +295,7 @@ using __collect_outer = //
 // Extract the first template parameter of the __state_t specialization.
 // The first template parameter is the receiver type.
 template <class _State>
-using __rcvr_from_state_t = __mapply<__mpoly_q<__mfront>, _State>;
+using __rcvr_from_state_t = _CUDA_VSTD::__type_apply<_CUDA_VSTD::__detail::__type_at_fn<0>, _State>;
 
 /// The receivers connected to the when_all's sub-operations expose this as
 /// their environment. Its `get_stop_token` query returns the token from
@@ -301,7 +309,7 @@ struct __env_t
 
   __state_t& __state_;
 
-  _CUDAX_API inplace_stop_token __query(get_stop_token_t) const noexcept
+  _CUDAX_API inplace_stop_token query(get_stop_token_t) const noexcept
   {
     return __state_.__stop_token_;
   }
@@ -309,7 +317,7 @@ struct __env_t
   template <class _Tag>
   _CUDAX_API auto query(_Tag) const noexcept -> __query_result_t<_Tag, env_of_t<__rcvr_t>>
   {
-    return __async::get_env(__state_.__rcvr_).__query(_Tag());
+    return __async::get_env(__state_.__rcvr_).query(_Tag());
   }
 };
 
@@ -324,7 +332,7 @@ struct __rcvr_t
   template <class... _Ts>
   _CUDAX_TRIVIAL_API void set_value(_Ts&&... __ts) noexcept
   {
-    constexpr auto idx = __mmake_indices<sizeof...(_Ts)>();
+    constexpr _CUDA_VSTD::index_sequence_for<_Ts...>* idx = nullptr;
     __state_.template __set_value<_Index>(idx, static_cast<_Ts&&>(__ts)...);
     __state_.__arrive();
   }
@@ -350,11 +358,12 @@ struct __rcvr_t
 
 template <class _CvSndr, size_t _Idx, class _StateZip>
 using __inner_completions_ = //
-  __mapply_q<__collect_inner, completion_signatures_of_t<_CvSndr, __rcvr_t<_StateZip, _Idx>>>;
+  _CUDA_VSTD::__type_apply<_CUDA_VSTD::__type_quote<__collect_inner>,
+                           completion_signatures_of_t<_CvSndr, __rcvr_t<_StateZip, _Idx>>>;
 
 template <class _CvSndr, size_t _Idx, class _StateZip>
 using __inner_completions = //
-  __midentity_or_error_with< //
+  __type_self_or_error_with< //
     __inner_completions_<_CvSndr, _Idx, _StateZip>, //
     _WITH_SENDER(_CvSndr)>;
 
@@ -374,16 +383,17 @@ template <class _Rcvr, class _CvFn, class _Sndrs>
 struct __state_t;
 
 template <class _Rcvr, class _CvFn, size_t... _Idx, class... _Sndrs>
-struct __state_t<_Rcvr, _CvFn, __tupl<__mindices<_Idx...>, _Sndrs...>>
+struct __state_t<_Rcvr, _CvFn, __tupl<_CUDA_VSTD::index_sequence<_Idx...>, _Sndrs...>>
 {
   using __completions_offsets_pair_t = //
     __collect_outer< //
-      __inner_completions<__minvoke1<_CvFn, _Sndrs>, _Idx, __zip<__state_t>>...>;
-  using __completions_t = __mfirst<__completions_offsets_pair_t>;
-  using __indices_t     = __mindices<_Idx...>;
-  using __offsets_t     = __msecond<__completions_offsets_pair_t>;
-  using __values_t      = __value_types<__completions_t, __lazy_tuple, __mpoly<__msingle_or<__nil>>::__f>;
-  using __errors_t      = __error_types<__completions_t, __variant>;
+      __inner_completions<_CUDA_VSTD::__type_call1<_CvFn, _Sndrs>, _Idx, __zip<__state_t>>...>;
+  using __completions_t = __type_first<__completions_offsets_pair_t>;
+  using __indices_t     = _CUDA_VSTD::index_sequence<_Idx...>;
+  using __offsets_t     = __type_second<__completions_offsets_pair_t>;
+  using __values_t =
+    __value_types<__completions_t, __lazy_tuple, _CUDA_VSTD::__type_indirect<__type_self_or<__nil>>::__call>;
+  using __errors_t = __error_types<__completions_t, __variant>;
 
   using __stop_tok_t      = stop_token_of_t<env_of_t<_Rcvr>>;
   using __stop_callback_t = stop_callback_for_t<__stop_tok_t, __on_stop_request>;
@@ -407,7 +417,7 @@ struct __state_t<_Rcvr, _CvFn, __tupl<__mindices<_Idx...>, _Sndrs...>>
   }
 
   template <size_t _Index, size_t... _Jdx, class... _Ts>
-  _CUDAX_API void __set_value(__mindices<_Jdx...>, [[maybe_unused]] _Ts&&... __ts) noexcept
+  _CUDAX_API void __set_value(_CUDA_VSTD::index_sequence<_Jdx...>*, [[maybe_unused]] _Ts&&... __ts) noexcept
   {
     [[maybe_unused]] constexpr size_t _Offset = __offset_for<_Index>(static_cast<__offsets_t*>(nullptr));
     if constexpr (!_CUDA_VSTD::is_same_v<__values_t, __nil>)
@@ -514,11 +524,11 @@ struct __state_t<_Rcvr, _CvFn, __tupl<__mindices<_Idx...>, _Sndrs...>>
 
 /// The operation state for when_all
 template <class _Rcvr, class _CvFn, size_t... _Idx, class... _Sndrs>
-struct __opstate_t<_Rcvr, _CvFn, __tupl<__mindices<_Idx...>, _Sndrs...>>
+struct __opstate_t<_Rcvr, _CvFn, __tupl<_CUDA_VSTD::index_sequence<_Idx...>, _Sndrs...>>
 {
   using operation_state_concept = operation_state_t;
-  using __sndrs_t               = __minvoke<_CvFn, __tuple<_Sndrs...>>;
-  using __state_t               = __when_all::__state_t<_Rcvr, _CvFn, __tupl<__mindices<_Idx...>, _Sndrs...>>;
+  using __sndrs_t               = _CUDA_VSTD::__type_call<_CvFn, __tuple<_Sndrs...>>;
+  using __state_t = __when_all::__state_t<_Rcvr, _CvFn, __tupl<_CUDA_VSTD::index_sequence<_Idx...>, _Sndrs...>>;
 
   using completion_signatures = typename __state_t::__completions_t;
   using __offsets_t           = typename __state_t::__offsets_t;
@@ -622,8 +632,7 @@ struct __when_all::__sndr_t
   }
 
   template <class _Rcvr>
-  _CUDAX_API auto connect(_Rcvr __rcvr) const& //
-    -> __opstate_t<_Rcvr, __cpclr, __sndrs_t>
+  _CUDAX_API auto connect(_Rcvr __rcvr) const& -> __opstate_t<_Rcvr, __cpclr, __sndrs_t>
   {
     return __opstate_t<_Rcvr, __cpclr, __sndrs_t>(__sndrs_, static_cast<_Rcvr&&>(__rcvr));
   }

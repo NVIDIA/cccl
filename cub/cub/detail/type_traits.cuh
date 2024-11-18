@@ -48,9 +48,14 @@
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 #include <cuda/std/functional>
 _CCCL_SUPPRESS_DEPRECATED_POP
+#include <cuda/std/array>
+#if (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020
+#  include <cuda/std/mdspan>
+#endif // (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020
+#include <cuda/std/span>
 #include <cuda/std/type_traits>
 
-#define _CUB_TEMPLATE_REQUIRES(...) ::cuda::std::__enable_if_t<(__VA_ARGS__)>* = nullptr
+#define _CUB_TEMPLATE_REQUIRES(...) ::cuda::std::enable_if_t<(__VA_ARGS__)>* = nullptr
 
 CUB_NAMESPACE_BEGIN
 namespace detail
@@ -65,19 +70,19 @@ using invoke_result_t =
 #endif
 
 template <typename T, typename... TArgs>
-_CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr bool are_same()
+_CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr bool are_same()
 {
   return ::cuda::std::conjunction<::cuda::std::is_same<T, TArgs>...>::value;
 }
 
 template <typename T, typename... TArgs>
-_CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr bool is_one_of()
+_CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr bool is_one_of()
 {
   return ::cuda::std::disjunction<::cuda::std::is_same<T, TArgs>...>::value;
 }
 
 template <typename...>
-_CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr bool always_false()
+_CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr bool always_false()
 {
   return false;
 }
@@ -95,70 +100,87 @@ struct has_binary_call_operator<
 {};
 
 /***********************************************************************************************************************
- * Array like type traits
+ * Array-like type traits
  **********************************************************************************************************************/
 
 template <typename T, typename = void>
-struct has_subscript : ::cuda::std::false_type
-{};
-
-template <typename T>
-struct has_subscript<T, ::cuda::std::void_t<decltype(::cuda::std::declval<T>()[0])>> : ::cuda::std::true_type
-{};
-
-template <typename T>
-using has_subscript_t = typename has_subscript<T>::type;
-
-template <typename T, typename = void>
-struct has_size : ::cuda::std::false_type
-{};
-
-// TODO: use ::cuda::std::size(::cuda::std::declval<T>()) when std::size will be available in libcu++
-template <typename T>
-struct has_size<T, ::cuda::std::void_t<decltype(::cuda::std::declval<T>().size())>> : ::cuda::std::true_type
+struct is_fixed_size_random_access_range : ::cuda::std::false_type
 {};
 
 template <typename T, ::cuda::std::size_t N>
-struct has_size<T[N], void> : ::cuda::std::true_type
+struct is_fixed_size_random_access_range<T[N], void> : ::cuda::std::true_type
 {};
 
+template <typename T, ::cuda::std::size_t N>
+struct is_fixed_size_random_access_range<::cuda::std::array<T, N>, void> : ::cuda::std::true_type
+{};
+
+#if _CCCL_STD_VER >= 2014
+
+template <typename T, ::cuda::std::size_t N>
+struct is_fixed_size_random_access_range<::cuda::std::span<T, N>, void> : ::cuda::std::true_type
+{};
+
+#  if (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020
+
+template <typename T, typename E, typename L, typename A>
+struct is_fixed_size_random_access_range<
+  ::cuda::std::mdspan<T, E, L, A>,
+  ::cuda::std::enable_if_t<E::rank == 1 && E::static_extent(0) != ::cuda::std::dynamic_extent>> : ::cuda::std::true_type
+{};
+
+#  endif // (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020
+#endif // _CCCL_STD_VER >= 2014
+
 template <typename T>
-using has_size_t = typename has_size<T>::type;
+using is_fixed_size_random_access_range_t = typename is_fixed_size_random_access_range<T>::type;
 
 /***********************************************************************************************************************
- * StaticSize: a type trait that returns the number of elements in an Array-like type
+ * static_size: a type trait that returns the number of elements in an Array-like type
  **********************************************************************************************************************/
-// StaticSize is useful where size(obj) cannot be checked at compile time
+// static_size is useful where size(obj) cannot be checked at compile time
 // e.g.
 // using Array = NonTriviallyConstructible[8];
 // std::size(Array{})   // compile error
 // static_size<Array>() // ok
 
 template <typename T, typename = void>
-struct StaticSize
+struct static_size
 {
-  static_assert(detail::always_false<T>(), "StaticSize not supported for this type");
-};
-
-template <typename T>
-struct StaticSize<T,
-                  ::cuda::std::void_t<decltype(::cuda::std::integral_constant<int, ::cuda::std::declval<T>().size()>{})>>
-{
-  static_assert(::cuda::std::is_trivially_constructible<T>::value, "T must be trivially constructible");
-  static constexpr auto value = T{}.size();
+  static_assert(cub::detail::always_false<T>(), "static_size not supported for this type");
 };
 
 template <typename T, ::cuda::std::size_t N>
-struct StaticSize<T[N], void>
-{
-  static constexpr auto value = N;
-};
+struct static_size<T[N], void> : ::cuda::std::integral_constant<int, N>
+{};
+
+template <typename T, ::cuda::std::size_t N>
+struct static_size<::cuda::std::array<T, N>, void> : ::cuda::std::integral_constant<int, N>
+{};
+
+#if _CCCL_STD_VER >= 2014
+
+template <typename T, ::cuda::std::size_t N>
+struct static_size<::cuda::std::span<T, N>, void> : ::cuda::std::integral_constant<int, N>
+{};
+
+#  if (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020
+
+template <typename T, typename E, typename L, typename A>
+struct static_size<::cuda::std::mdspan<T, E, L, A>,
+                   ::cuda::std::enable_if_t<E::rank == 1 && E::static_extent(0) != ::cuda::std::dynamic_extent>>
+    : ::cuda::std::integral_constant<int, E::static_extent(1)>
+{};
+
+#  endif // (_CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC)) || _CCCL_STD_VER >= 2020
+#endif // _CCCL_STD_VER >= 2014
 
 template <typename T>
-_CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::size_t static_size()
+_CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::size_t static_size_v()
 {
-  return StaticSize<T>::value;
+  return static_size<T>::value;
 }
 
 } // namespace detail
+
 CUB_NAMESPACE_END

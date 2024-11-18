@@ -76,9 +76,9 @@ struct raw_reference_impl : ::cuda::std::add_lvalue_reference<T>
 {};
 
 template <typename T>
-struct raw_reference_impl<T, ::cuda::std::__enable_if_t<is_wrapped_reference<::cuda::std::__remove_cv_t<T>>::value>>
+struct raw_reference_impl<T, ::cuda::std::enable_if_t<is_wrapped_reference<::cuda::std::remove_cv_t<T>>::value>>
 {
-  using type = ::cuda::std::__add_lvalue_reference_t<typename pointer_element<typename T::pointer>::type>;
+  using type = ::cuda::std::add_lvalue_reference_t<typename pointer_element<typename T::pointer>::type>;
 };
 
 } // namespace raw_reference_detail
@@ -105,7 +105,7 @@ namespace raw_reference_detail
 // wrapped references are unwrapped using raw_reference, otherwise, return T
 template <typename T>
 struct raw_reference_tuple_helper
-    : eval_if<is_unwrappable<::cuda::std::__remove_cv_t<T>>::value, raw_reference<T>, identity_<T>>
+    : eval_if<is_unwrappable<::cuda::std::remove_cv_t<T>>::value, raw_reference<T>, identity_<T>>
 {};
 
 // recurse on tuples
@@ -185,7 +185,7 @@ struct raw_reference_caster
   template <typename... Ts>
   _CCCL_HOST_DEVICE typename detail::raw_reference<thrust::detail::tuple_of_iterator_references<Ts...>>::type
   operator()(thrust::detail::tuple_of_iterator_references<Ts...> t,
-             ::cuda::std::__enable_if_t<is_unwrappable<thrust::detail::tuple_of_iterator_references<Ts...>>::value>* = 0)
+             ::cuda::std::enable_if_t<is_unwrappable<thrust::detail::tuple_of_iterator_references<Ts...>>::value>* = 0)
   {
     return thrust::raw_reference_cast(t);
   }

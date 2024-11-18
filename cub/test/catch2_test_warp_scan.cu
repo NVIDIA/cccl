@@ -28,7 +28,7 @@
 #include <cub/util_macro.cuh>
 #include <cub/warp/warp_scan.cuh>
 
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 template <int LOGICAL_WARP_THREADS, int TOTAL_WARPS, class T, class ActionT>
 __global__ void warp_combine_scan_kernel(T* in, T* inclusive_out, T* exclusive_out, ActionT action)
@@ -160,11 +160,11 @@ struct min_op_t
   {
     _CCCL_IF_CONSTEXPR (Mode == scan_mode::exclusive)
     {
-      scan.ExclusiveScan(thread_data, thread_data, cub::Min{});
+      scan.ExclusiveScan(thread_data, thread_data, ::cuda::minimum<>{});
     }
     else
     {
-      scan.InclusiveScan(thread_data, thread_data, cub::Min{});
+      scan.InclusiveScan(thread_data, thread_data, ::cuda::minimum<>{});
     }
   }
 };
@@ -182,11 +182,11 @@ struct min_aggregate_op_t
 
     _CCCL_IF_CONSTEXPR (Mode == scan_mode::exclusive)
     {
-      scan.ExclusiveScan(thread_data, thread_data, cub::Min{}, warp_aggregate);
+      scan.ExclusiveScan(thread_data, thread_data, ::cuda::minimum<>{}, warp_aggregate);
     }
     else
     {
-      scan.InclusiveScan(thread_data, thread_data, cub::Min{}, warp_aggregate);
+      scan.InclusiveScan(thread_data, thread_data, ::cuda::minimum<>{}, warp_aggregate);
     }
 
     const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
@@ -207,11 +207,11 @@ struct min_init_value_op_t
   {
     _CCCL_IF_CONSTEXPR (Mode == scan_mode::exclusive)
     {
-      scan.ExclusiveScan(thread_data, thread_data, initial_value, cub::Min{});
+      scan.ExclusiveScan(thread_data, thread_data, initial_value, ::cuda::minimum<>{});
     }
     else
     {
-      scan.InclusiveScan(thread_data, thread_data, initial_value, cub::Min{});
+      scan.InclusiveScan(thread_data, thread_data, initial_value, ::cuda::minimum<>{});
     }
   }
 };
@@ -230,11 +230,11 @@ struct min_init_value_aggregate_op_t
 
     _CCCL_IF_CONSTEXPR (Mode == scan_mode::exclusive)
     {
-      scan.ExclusiveScan(thread_data, thread_data, initial_value, cub::Min{}, warp_aggregate);
+      scan.ExclusiveScan(thread_data, thread_data, initial_value, ::cuda::minimum<>{}, warp_aggregate);
     }
     else
     {
-      scan.InclusiveScan(thread_data, thread_data, initial_value, cub::Min{}, warp_aggregate);
+      scan.InclusiveScan(thread_data, thread_data, initial_value, ::cuda::minimum<>{}, warp_aggregate);
     }
 
     const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
@@ -251,7 +251,7 @@ struct min_scan_op_t
   template <class T, class WarpScanT>
   __device__ void operator()(WarpScanT& scan, T& thread_data, T& inclusive_output, T& exclusive_output) const
   {
-    scan.Scan(thread_data, inclusive_output, exclusive_output, cub::Min{});
+    scan.Scan(thread_data, inclusive_output, exclusive_output, ::cuda::minimum<>{});
   }
 };
 
@@ -262,7 +262,7 @@ struct min_init_value_scan_op_t
   template <class WarpScanT>
   __device__ void operator()(WarpScanT& scan, T& thread_data, T& inclusive_output, T& exclusive_output) const
   {
-    scan.Scan(thread_data, inclusive_output, exclusive_output, initial_value, cub::Min{});
+    scan.Scan(thread_data, inclusive_output, exclusive_output, initial_value, ::cuda::minimum<>{});
   }
 };
 

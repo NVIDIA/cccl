@@ -260,7 +260,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char>
 
   _LIBCUDACXX_HIDE_FROM_ABI static size_t _CCCL_CONSTEXPR_CXX14 length(const char_type* __s) noexcept
   {
-#if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 130000
+#if _CCCL_COMPILER(GCC, <, 13)
     // absurd workaround for GCC "internal compiler error: in cxx_eval_array_reference"
     if (__libcpp_is_constant_evaluated())
       ;

@@ -57,7 +57,7 @@ private:
       return __loop_->get_scheduler();
     }
 
-    _CUDAX_API auto query(get_delegatee_scheduler_t) const noexcept
+    _CUDAX_API auto query(get_delegation_scheduler_t) const noexcept
     {
       return __loop_->get_scheduler();
     }
@@ -114,7 +114,7 @@ private:
       }
     };
 
-    using __values_t = value_types_of_t<_Sndr, __rcvr_t, _CUDA_VSTD::tuple, __midentity::__f>;
+    using __values_t = value_types_of_t<_Sndr, __rcvr_t, _CUDA_VSTD::tuple, _CUDA_VSTD::__type_self_t>;
 
     _CUDA_VSTD::optional<__values_t>* __values_;
     ::std::exception_ptr __eptr_;
@@ -144,7 +144,7 @@ public:
     /// `sync_wait` connects and starts the given sender, and then drives a
     ///         `run_loop` instance until the sender completes. Additional work
     ///         can be delegated to the `run_loop` by scheduling work on the
-    ///         scheduler returned by calling `get_delegatee_scheduler` on the
+    ///         scheduler returned by calling `get_delegation_scheduler` on the
     ///         receiver's environment.
     ///
     /// @pre The sender must have a exactly one value completion signature. That

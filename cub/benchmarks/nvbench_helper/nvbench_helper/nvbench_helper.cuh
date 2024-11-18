@@ -61,6 +61,7 @@ using integral_types    = nvbench::type_list<TUNE_T>;
 using fundamental_types = nvbench::type_list<TUNE_T>;
 using all_types         = nvbench::type_list<TUNE_T>;
 #else
+// keep those lists in sync with the documentation in tuning.rst
 using integral_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t>;
 
 using fundamental_types =
@@ -392,7 +393,7 @@ struct gen_t
     T min               = std::numeric_limits<T>::min,
     T max               = std::numeric_limits<T>::max()) const
   {
-    return {seed_t{}, elements, entropy, min, max};
+    return {{seed_t{}, elements, entropy}, min, max};
   }
 
   gen_uniform_t uniform{};

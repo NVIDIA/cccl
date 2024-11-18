@@ -317,15 +317,15 @@ __launch_bounds__(int(AgentSegmentFixupPolicyT::BLOCK_THREADS))
     AgentSegmentFixup<AgentSegmentFixupPolicyT,
                       PairsInputIteratorT,
                       AggregatesOutputIteratorT,
-                      cub::Equality,
-                      cub::Sum,
+                      ::cuda::std::equal_to<>,
+                      ::cuda::std::plus<>,
                       OffsetT>;
 
   // Shared memory for AgentSegmentFixup
   __shared__ typename AgentSegmentFixupT::TempStorage temp_storage;
 
   // Process tiles
-  AgentSegmentFixupT(temp_storage, d_pairs_in, d_aggregates_out, cub::Equality(), cub::Sum())
+  AgentSegmentFixupT(temp_storage, d_pairs_in, d_aggregates_out, ::cuda::std::equal_to<>{}, ::cuda::std::plus<>{})
     .ConsumeRange(num_items, num_tiles, tile_state);
 }
 

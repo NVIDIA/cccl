@@ -85,10 +85,10 @@ enum class _AllocType
 struct _Alloc_vtable
 {
   using _AllocFn   = void* (*) (void*, size_t, size_t);
-  using _DeallocFn = void (*)(void*, void*, size_t, size_t) _LIBCUDACXX_FUNCTION_TYPE_NOEXCEPT;
+  using _DeallocFn = void (*)(void*, void*, size_t, size_t) _CCCL_FUNCTION_TYPE_NOEXCEPT;
   using _EqualFn   = bool (*)(void*, void*);
-  using _DestroyFn = void (*)(_AnyResourceStorage*) _LIBCUDACXX_FUNCTION_TYPE_NOEXCEPT;
-  using _MoveFn    = void (*)(_AnyResourceStorage*, _AnyResourceStorage*) _LIBCUDACXX_FUNCTION_TYPE_NOEXCEPT;
+  using _DestroyFn = void (*)(_AnyResourceStorage*) _CCCL_FUNCTION_TYPE_NOEXCEPT;
+  using _MoveFn    = void (*)(_AnyResourceStorage*, _AnyResourceStorage*) _CCCL_FUNCTION_TYPE_NOEXCEPT;
   using _CopyFn    = void (*)(_AnyResourceStorage*, const _AnyResourceStorage*);
 
   bool __is_small;

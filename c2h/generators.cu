@@ -44,12 +44,12 @@
 
 #include <cstdint>
 
-#include <c2h/custom_type.cuh>
-#include <c2h/device_policy.cuh>
-#include <c2h/extended_types.cuh>
-#include <c2h/fill_striped.cuh>
-#include <c2h/generators.cuh>
-#include <c2h/vector.cuh>
+#include <c2h/custom_type.h>
+#include <c2h/device_policy.h>
+#include <c2h/extended_types.h>
+#include <c2h/fill_striped.h>
+#include <c2h/generators.h>
+#include <c2h/vector.h>
 
 #if C2H_HAS_CURAND
 #  include <curand.h>
@@ -118,7 +118,30 @@ private:
   c2h::device_vector<float> m_distribution;
 };
 
-template <typename T, cub::Category = cub::Traits<T>::CATEGORY>
+// TODO(bgruber): modelled after cub::Traits. We should generalize this somewhere into libcu++.
+template <typename T>
+struct is_floating_point : ::cuda::std::is_floating_point<T>
+{};
+#ifdef _CCCL_HAS_NVFP16
+template <>
+struct is_floating_point<__half> : ::cuda::std::true_type
+{};
+#endif // _CCCL_HAS_NVFP16
+#ifdef _CCCL_HAS_NVBF16
+template <>
+struct is_floating_point<__nv_bfloat16> : ::cuda::std::true_type
+{};
+#endif // _CCCL_HAS_NVBF16
+#ifdef __CUDA_FP8_TYPES_EXIST__
+template <>
+struct is_floating_point<__nv_fp8_e4m3> : ::cuda::std::true_type
+{};
+template <>
+struct is_floating_point<__nv_fp8_e5m2> : ::cuda::std::true_type
+{};
+#endif // __CUDA_FP8_TYPES_EXIST__
+
+template <typename T, bool = is_floating_point<T>::value>
 struct random_to_item_t
 {
   float m_min;
@@ -136,7 +159,7 @@ struct random_to_item_t
 };
 
 template <typename T>
-struct random_to_item_t<T, cub::FLOATING_POINT>
+struct random_to_item_t<T, true>
 {
   using storage_t = ::cuda::std::_If<(sizeof(T) > 4), double, float>;
   storage_t m_min;
@@ -182,6 +205,7 @@ RANDOM_TO_VEC_ITEM_SPEC(0, x);
 RANDOM_TO_VEC_ITEM_SPEC(1, y);
 RANDOM_TO_VEC_ITEM_SPEC(2, z);
 RANDOM_TO_VEC_ITEM_SPEC(3, w);
+#undef RANDOM_TO_VEC_ITEM_SPEC
 
 generator_t::generator_t()
 {
@@ -281,7 +305,7 @@ struct count_to_item_t
   __device__ T operator()(CounterT id)
   {
     // This has to be a type for which extended floating point types like __nv_fp8_e5m2 provide an overload
-    return static_cast<T>(static_cast<unsigned long long int>(id) % n);
+    return static_cast<T>(static_cast<float>(static_cast<unsigned long long int>(id) % n));
   }
 };
 
@@ -413,17 +437,37 @@ void init_key_segments(const c2h::device_vector<OffsetT>& segment_offsets, KeyT*
   auto d_range_dsts  = thrust::make_transform_iterator(d_offsets, dst_transform_op);
   auto d_range_sizes = thrust::make_transform_iterator(iota, offset_to_size_t<OffsetT>{d_offsets});
 
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
   std::uint8_t* d_temp_storage   = nullptr;
   std::size_t temp_storage_bytes = 0;
+  // TODO(bgruber): replace by a non-CUB implementation
   cub::DeviceCopy::Batched(
     d_temp_storage, temp_storage_bytes, d_range_srcs, d_range_dsts, d_range_sizes, total_segments);
 
   c2h::device_vector<std::uint8_t> temp_storage(temp_storage_bytes);
   d_temp_storage = thrust::raw_pointer_cast(temp_storage.data());
 
+  // TODO(bgruber): replace by a non-CUB implementation
   cub::DeviceCopy::Batched(
     d_temp_storage, temp_storage_bytes, d_range_srcs, d_range_dsts, d_range_sizes, total_segments);
   cudaDeviceSynchronize();
+#else // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+  static_assert(sizeof(OffsetT) == 0, "Need to implement a non-CUB version of cub::DeviceCopy::Batched");
+  // TODO(bgruber): implement and *test* a non-CUB version, here is a sketch:
+  // thrust::for_each(
+  //   thrust::device,
+  //   thrust::counting_iterator<OffsetT>{0},
+  //   thrust::counting_iterator<OffsetT>{total_segments},
+  //   [&](OffsetT i) {
+  //     const auto value = d_range_srcs[i];
+  //     const auto start = d_range_sizes[i];
+  //     const auto end   = d_range_sizes[i + 1];
+  //     for (auto j = start; j < end; ++j)
+  //     {
+  //       d_range_dsts[j] = value;
+  //     }
+  //   });
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 }
 
 template void init_key_segments(
@@ -434,15 +478,15 @@ template void
 init_key_segments(const c2h::device_vector<std::uint32_t>& segment_offsets, float* out, std::size_t element_size);
 template void init_key_segments(
   const c2h::device_vector<std::uint32_t>& segment_offsets, custom_type_state_t* out, std::size_t element_size);
-#ifdef TEST_HALF_T
+#ifdef _CCCL_HAS_NVFP16
 template void
 init_key_segments(const c2h::device_vector<std::uint32_t>& segment_offsets, half_t* out, std::size_t element_size);
-#endif
+#endif // _CCCL_HAS_NVFP16
 
-#ifdef TEST_BF_T
+#ifdef _CCCL_HAS_NVBF16
 template void
 init_key_segments(const c2h::device_vector<std::uint32_t>& segment_offsets, bfloat16_t* out, std::size_t element_size);
-#endif
+#endif // _CCCL_HAS_NVBF16
 } // namespace detail
 
 template <typename T>
@@ -482,7 +526,6 @@ void gen(modulo_t mod, c2h::device_vector<T>& data)
 }
 
 #define INSTANTIATE_RND(TYPE) template void gen<TYPE>(seed_t, c2h::device_vector<TYPE> & data, TYPE min, TYPE max)
-
 #define INSTANTIATE_MOD(TYPE) template void gen<TYPE>(modulo_t, c2h::device_vector<TYPE> & data)
 
 #define INSTANTIATE(TYPE) \
@@ -509,14 +552,21 @@ INSTANTIATE(double);
 INSTANTIATE(bool);
 INSTANTIATE(char);
 
-#ifdef TEST_HALF_T
+#ifdef _CCCL_HAS_NVFP16
 INSTANTIATE(half_t);
-#endif
+INSTANTIATE(__half);
+#endif // _CCCL_HAS_NVFP16
 
-#ifdef TEST_BF_T
+#ifdef _CCCL_HAS_NVBF16
 INSTANTIATE(bfloat16_t);
-#endif
+INSTANTIATE(__nv_bfloat16);
+#endif // _CCCL_HAS_NVBF16
 
+#undef INSTANTIATE_RND
+#undef INSTANTIATE_MOD
+#undef INSTANTIATE
+
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 template <typename T, int VecItem>
 struct vec_gen_helper_t;
 
@@ -546,14 +596,14 @@ struct vec_gen_helper_t
   }
 };
 
-#define VEC_SPECIALIZATION(TYPE, SIZE)                                                                     \
-  template <>                                                                                              \
-  void gen<TYPE##SIZE>(seed_t seed, c2h::device_vector<TYPE##SIZE> & data, TYPE##SIZE min, TYPE##SIZE max) \
-  {                                                                                                        \
-    generator_t& generator = generator_t::instance();                                                      \
-    generator.prepare_random_generator(seed, data.size());                                                 \
-    vec_gen_helper_t<TYPE##SIZE, SIZE - 1>::gen(data, min, max);                                           \
-  }
+#  define VEC_SPECIALIZATION(TYPE, SIZE)                                                                     \
+    template <>                                                                                              \
+    void gen<TYPE##SIZE>(seed_t seed, c2h::device_vector<TYPE##SIZE> & data, TYPE##SIZE min, TYPE##SIZE max) \
+    {                                                                                                        \
+      generator_t& generator = generator_t::instance();                                                      \
+      generator.prepare_random_generator(seed, data.size());                                                 \
+      vec_gen_helper_t<TYPE##SIZE, SIZE - 1>::gen(data, min, max);                                           \
+    }
 
 VEC_SPECIALIZATION(char, 2);
 VEC_SPECIALIZATION(char, 3);
@@ -620,19 +670,16 @@ struct vec_gen_t
   }
 };
 
-#define VEC_GEN_MOD_SPECIALIZATION(VEC_TYPE, SCALAR_TYPE)                                                        \
-  template <>                                                                                                    \
-  void gen<VEC_TYPE>(modulo_t mod, c2h::device_vector<VEC_TYPE> & data)                                          \
-  {                                                                                                              \
-    thrust::tabulate(c2h::device_policy, data.begin(), data.end(), vec_gen_t<VEC_TYPE, SCALAR_TYPE>{mod.get()}); \
-  }
+#  define VEC_GEN_MOD_SPECIALIZATION(VEC_TYPE, SCALAR_TYPE)                                                        \
+    template <>                                                                                                    \
+    void gen<VEC_TYPE>(modulo_t mod, c2h::device_vector<VEC_TYPE> & data)                                          \
+    {                                                                                                              \
+      thrust::tabulate(c2h::device_policy, data.begin(), data.end(), vec_gen_t<VEC_TYPE, SCALAR_TYPE>{mod.get()}); \
+    }
 
 VEC_GEN_MOD_SPECIALIZATION(short2, short);
-
 VEC_GEN_MOD_SPECIALIZATION(uchar3, unsigned char);
-
 VEC_GEN_MOD_SPECIALIZATION(ulonglong4, unsigned long long);
-
 VEC_GEN_MOD_SPECIALIZATION(ushort4, unsigned short);
-
+#endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 } // namespace c2h

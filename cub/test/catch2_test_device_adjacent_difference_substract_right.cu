@@ -36,8 +36,8 @@
 #include <numeric>
 
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.cuh>
-#include <c2h/custom_type.cuh>
+#include <c2h/catch2_test_helper.h>
+#include <c2h/custom_type.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceAdjacentDifference::SubtractRight, adjacent_difference_subtract_right);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceAdjacentDifference::SubtractRightCopy, adjacent_difference_subtract_right_copy);
@@ -61,7 +61,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRight can run with empty input", "[d
   constexpr int num_items = 0;
   c2h::device_vector<type> in(num_items);
 
-  adjacent_difference_subtract_right(in.begin(), num_items, cub::Difference{});
+  adjacent_difference_subtract_right(in.begin(), num_items, ::cuda::std::minus<>{});
 }
 
 C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy can run with empty input", "[device][adjacent_difference]", types)
@@ -72,7 +72,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy can run with empty input",
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
 
-  adjacent_difference_subtract_right_copy(in.begin(), out.begin(), num_items, cub::Difference{});
+  adjacent_difference_subtract_right_copy(in.begin(), out.begin(), num_items, ::cuda::std::minus<>{});
 }
 
 C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy does not change the input", "[device][adjacent_difference]", types)
@@ -84,7 +84,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy does not change the input"
   c2h::gen(C2H_SEED(2), in);
 
   c2h::device_vector<type> reference = in;
-  adjacent_difference_subtract_right_copy(in.begin(), thrust::discard_iterator<>(), num_items, cub::Difference{});
+  adjacent_difference_subtract_right_copy(in.begin(), thrust::discard_iterator<>(), num_items, ::cuda::std::minus<>{});
 
   REQUIRE(reference == in);
 }
@@ -92,7 +92,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy does not change the input"
 template <class T>
 struct ref_diff
 {
-  template <class T2, cuda::std::__enable_if_t<cuda::std::is_same<T, T2>::value, int> = 0>
+  template <class T2, cuda::std::enable_if_t<cuda::std::is_same<T, T2>::value, int> = 0>
   __host__ __device__ constexpr T2 operator()(const T2& lhs, const T2& rhs) const noexcept
   {
     return rhs - lhs;
@@ -129,7 +129,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRight works with iterators", "[devic
   std::rotate(reference.begin(), reference.begin() + 1, reference.end());
   reference.back() = h_in.back();
 
-  adjacent_difference_subtract_right(in.begin(), num_items, cub::Difference{});
+  adjacent_difference_subtract_right(in.begin(), num_items, ::cuda::std::minus<>{});
 
   REQUIRE(reference == in);
 }
@@ -149,7 +149,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy works with iterators", "[d
   std::rotate(reference.begin(), reference.begin() + 1, reference.end());
   reference.back() = h_in.back();
 
-  adjacent_difference_subtract_right_copy(in.begin(), out.begin(), num_items, cub::Difference{});
+  adjacent_difference_subtract_right_copy(in.begin(), out.begin(), num_items, ::cuda::std::minus<>{});
 
   REQUIRE(reference == out);
 }
@@ -168,7 +168,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRight works with pointers", "[device
   std::rotate(reference.begin(), reference.begin() + 1, reference.end());
   reference.back() = h_in.back();
 
-  adjacent_difference_subtract_right(thrust::raw_pointer_cast(in.data()), num_items, cub::Difference{});
+  adjacent_difference_subtract_right(thrust::raw_pointer_cast(in.data()), num_items, ::cuda::std::minus<>{});
 
   REQUIRE(reference == in);
 }
@@ -189,7 +189,7 @@ C2H_TEST("DeviceAdjacentDifference::SubtractRightCopy works with pointers", "[de
   reference.back() = h_in.back();
 
   adjacent_difference_subtract_right_copy(
-    thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), num_items, cub::Difference{});
+    thrust::raw_pointer_cast(in.data()), thrust::raw_pointer_cast(out.data()), num_items, ::cuda::std::minus<>{});
 
   REQUIRE(reference == out);
 }

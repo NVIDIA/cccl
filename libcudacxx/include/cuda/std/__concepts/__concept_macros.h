@@ -298,7 +298,7 @@
       (_REQ),
 #    define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_REQUIRES_requires(...) _Concept::_Requires<__VA_ARGS__>
 #    define _LIBCUDACXX_CONCEPT_FRAGMENT_REQS_REQUIRES_typename(...) static_cast<_Concept::_Tag<__VA_ARGS__>*>(nullptr)
-#    if defined(_CCCL_COMPILER_GCC) && (_CCCL_GCC_VERSION < 140000)
+#    if _CCCL_COMPILER(GCC, <, 14)
 // GCC < 14 can't mangle noexcept expressions, so just check that the
 // expression is well-formed.
 // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=70790
@@ -460,7 +460,7 @@ using _Requires_expr_impl = //
 // _CUDA_VSTD macro is fully qualified.
 namespace _Vstd = _CUDA_VSTD; // NOLINT(misc-unused-alias-decls)
 
-#  if defined(_CCCL_CUDACC_BELOW_12_2)
+#  if _CCCL_CUDACC_BELOW(12, 2)
 #    define _LIBCUDACXX_CONCEPT_VSTD _Concept::_Vstd // must not be fully qualified
 #  else
 #    define _LIBCUDACXX_CONCEPT_VSTD _CUDA_VSTD

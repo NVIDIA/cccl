@@ -53,13 +53,12 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Int>
 struct __avoid_promotions
 {
-  using __base = __conditional_t<(sizeof(_Int) >= sizeof(int)),
-                                 _Int,
-                                 __conditional_t<is_unsigned<_Int>::value, unsigned int, signed int>>;
+  using __base =
+    conditional_t<(sizeof(_Int) >= sizeof(int)), _Int, conditional_t<is_unsigned<_Int>::value, unsigned int, signed int>>;
 
   _CCCL_HIDE_FROM_ABI constexpr __avoid_promotions() = default;
 
-  template <class _Tp, typename = __enable_if_t<_CCCL_TRAIT(is_integral, _Tp)>>
+  template <class _Tp, typename = enable_if_t<_CCCL_TRAIT(is_integral, _Tp)>>
   _CCCL_HOST_DEVICE constexpr __avoid_promotions(_Tp __i)
       : __data(static_cast<_Int>(__i))
   {}
@@ -439,7 +438,7 @@ class __bitset<1, _Size>
 public:
   typedef ptrdiff_t difference_type;
   typedef size_t size_type;
-  typedef __avoid_promotions<__conditional_t<_Size <= 8, uint8_t, __conditional_t<_Size <= 16, uint16_t, uint32_t>>>
+  typedef __avoid_promotions<conditional_t<_Size <= 8, uint8_t, conditional_t<_Size <= 16, uint16_t, uint32_t>>>
     __storage_type;
 
 protected:
@@ -674,7 +673,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr bitset(unsigned long long __v) noexcept
       : base(__v)
   {}
-  template <class _CharT, class = __enable_if_t<_IsCharLikeType<_CharT>::value>>
+  template <class _CharT, class = enable_if_t<_IsCharLikeType<_CharT>::value>>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 explicit bitset(
     const _CharT* __str, size_t __n = static_cast<size_t>(-1), _CharT __zero = _CharT('0'), _CharT __one = _CharT('1'))
   {

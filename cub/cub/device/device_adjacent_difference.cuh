@@ -247,7 +247,7 @@ public:
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
-            typename DifferenceOpT = cub::Difference,
+            typename DifferenceOpT = ::cuda::std::minus<>,
             typename NumItemsT     = std::uint32_t>
   static CUB_RUNTIME_FUNCTION cudaError_t SubtractLeftCopy(
     void* d_temp_storage,
@@ -378,7 +378,9 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename RandomAccessIteratorT, typename DifferenceOpT = cub::Difference, typename NumItemsT = std::uint32_t>
+  template <typename RandomAccessIteratorT,
+            typename DifferenceOpT = ::cuda::std::minus<>,
+            typename NumItemsT     = std::uint32_t>
   static CUB_RUNTIME_FUNCTION cudaError_t SubtractLeft(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,
@@ -523,7 +525,7 @@ public:
   //!   @endrst
   template <typename InputIteratorT,
             typename OutputIteratorT,
-            typename DifferenceOpT = cub::Difference,
+            typename DifferenceOpT = ::cuda::std::minus<>,
             typename NumItemsT     = std::uint32_t>
   static CUB_RUNTIME_FUNCTION cudaError_t SubtractRightCopy(
     void* d_temp_storage,
@@ -643,7 +645,9 @@ public:
   //!   @rst
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
-  template <typename RandomAccessIteratorT, typename DifferenceOpT = cub::Difference, typename NumItemsT = std::uint32_t>
+  template <typename RandomAccessIteratorT,
+            typename DifferenceOpT = ::cuda::std::minus<>,
+            typename NumItemsT     = std::uint32_t>
   static CUB_RUNTIME_FUNCTION cudaError_t SubtractRight(
     void* d_temp_storage,
     std::size_t& temp_storage_bytes,

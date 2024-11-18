@@ -45,6 +45,8 @@
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/functional>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail
@@ -263,7 +265,7 @@ struct sm80_tuning<__uint128_t, primitive_op::yes, primitive_accum::no, accum_si
 } // namespace scan
 } // namespace detail
 
-template <typename AccumT, typename ScanOpT = Sum>
+template <typename AccumT, typename ScanOpT = ::cuda::std::plus<>>
 struct DeviceScanPolicy
 {
   // For large values, use timesliced loads/stores to fit shared memory.

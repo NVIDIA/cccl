@@ -297,14 +297,14 @@ public:
       : subrange(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::end(__range), __n)
   {}
 
-#  if (!defined(_CCCL_COMPILER_GCC) || _GNUC_VER >= 900)
+#  if (!_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 9))
   _LIBCUDACXX_TEMPLATE(class _Pair)
   _LIBCUDACXX_REQUIRES(__pair_like<_Pair> _LIBCUDACXX_AND __subrange_to_pair<_Iter, _Sent, _Kind, _Pair>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr operator _Pair() const
   {
     return _Pair(__begin_, __end_);
   }
-#  endif // !(_CCCL_COMPILER_GCC < 9)
+#  endif // (!_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 9))
 
   _LIBCUDACXX_TEMPLATE(class _It = _Iter)
   _LIBCUDACXX_REQUIRES(copyable<_It>)
@@ -342,9 +342,9 @@ public:
     {
       return _CUDA_VSTD::__to_unsigned_like(__end_ - __begin_);
     }
-#  if defined(_CCCL_CUDACC_BELOW_11_3)
+#  if _CCCL_CUDACC_BELOW(11, 3)
     _CCCL_UNREACHABLE();
-#  endif // _CCCL_CUDACC_BELOW_11_3
+#  endif // _CCCL_CUDACC_BELOW(11, 3)
   }
 
   _LIBCUDACXX_TEMPLATE(class _It = _Iter)
