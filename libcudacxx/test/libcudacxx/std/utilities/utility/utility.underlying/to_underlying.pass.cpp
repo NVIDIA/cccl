@@ -7,8 +7,6 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++11
-
 // [utility.underlying], to_underlying
 // template <class T>
 //     constexpr underlying_type_t<T> to_underlying( T value ) noexcept;
@@ -61,7 +59,7 @@ struct WithBitfieldEnums
   e_bool e3    : 1;
 };
 
-__host__ __device__ constexpr bool test()
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 {
   ASSERT_NOEXCEPT(cuda::std::to_underlying(e_default::a));
   ASSERT_SAME_TYPE(int, decltype(cuda::std::to_underlying(e_default::a)));
@@ -102,7 +100,10 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test());
+
+#if TEST_STD_VER >= 14
+  static_assert(test(), "");
+#endif
 
   return 0;
 }
