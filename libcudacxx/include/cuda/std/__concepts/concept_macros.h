@@ -24,7 +24,47 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_STD_VER > 2011
+////////////////////////////////////////////////////////////////////////////////
+// _CCCL_TEMPLATE
+// Usage:
+//   _CCCL_TEMPLATE(typename A, typename _Bp)
+//     _CCCL_REQUIRES( Concept1<A> _CCCL_AND Concept2<_Bp>)
+//   void foo(A a, _Bp b)
+//   {}
+
+// Barebones enable if implementation to use outside of cuda::std
+template <bool>
+struct __cccl_select
+{};
+
+template <>
+struct __cccl_select<true>
+{
+  template <class _Tp>
+  using type = _Tp;
+};
+
+template <bool _Bp, class _Tp = void>
+using __cccl_enable_if_t = typename __cccl_select<_Bp>::template type<_Tp>;
+
+template <class _Tp, bool _Bp>
+using __cccl_requires_t = typename __cccl_select<_Bp>::template type<_Tp>;
+
+#if (defined(__cpp_concepts) && _CCCL_STD_VER >= 2020)
+#  define _CCCL_TEMPLATE(...)               template <__VA_ARGS__>
+#  define _CCCL_REQUIRES(...)               requires __VA_ARGS__
+#  define _CCCL_AND                         &&
+#  define _CCCL_TRAILING_REQUIRES_AUX_(...) requires __VA_ARGS__
+#  define _CCCL_TRAILING_REQUIRES(...)      ->__VA_ARGS__ _CCCL_TRAILING_REQUIRES_AUX_
+#else // ^^^ __cpp_concepts ^^^ / vvv !__cpp_concepts vvv
+#  define _CCCL_TEMPLATE(...)               template <__VA_ARGS__
+#  define _CCCL_REQUIRES(...)               , bool _CCCL_true_ = true, __cccl_enable_if_t < __VA_ARGS__ && _CCCL_true_, int > = 0 >
+#  define _CCCL_AND                         &&_CCCL_true_, int > = 0, __cccl_enable_if_t <
+#  define _CCCL_TRAILING_REQUIRES_AUX_(...) , __VA_ARGS__ >
+#  define _CCCL_TRAILING_REQUIRES(...)      ->__cccl_requires_t < __VA_ARGS__ _CCCL_TRAILING_REQUIRES_AUX_
+#endif // !__cpp_concepts
+
+#if _CCCL_STD_VER >= 2014
 
 #  define _LIBCUDACXX_PP_CAT_(_Xp, ...) _Xp##__VA_ARGS__
 #  define _LIBCUDACXX_PP_CAT(_Xp, ...)  _LIBCUDACXX_PP_CAT_(_Xp, __VA_ARGS__)
@@ -444,6 +484,6 @@ namespace _Vstd = _CUDA_VSTD; // NOLINT(misc-unused-alias-decls)
 #  endif
 } // namespace _Concept
 
-#endif // _CCCL_STD_VER > 2011
+#endif // _CCCL_STD_VER >= 2014
 
 #endif //_CUDA___CONCEPTS
