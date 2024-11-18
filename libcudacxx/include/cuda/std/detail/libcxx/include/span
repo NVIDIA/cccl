@@ -369,7 +369,7 @@ public:
   }
 #  endif // !_CCCL_SPAN_USES_RANGES
 
-#  if defined(_CCCL_COMPILER_NVRTC) || defined(_CCCL_COMPILER_MSVC_2017)
+#  if _CCCL_COMPILER(NVRTC) || defined(_CCCL_COMPILER_MSVC_2017)
   template <size_t _Sz = _Extent, enable_if_t<_Sz != 0, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr span(type_identity_t<element_type> (&__arr)[_Sz]) noexcept
       : __data_{__arr}
@@ -378,7 +378,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr span(type_identity_t<element_type> (&__arr)[_Extent]) noexcept
       : __data_{__arr}
   {}
-#  endif // !_CCCL_COMPILER_NVRTC && !_CCCL_COMPILER_MSVC_2017
+#  endif // !_CCCL_COMPILER(NVRTC) && !_CCCL_COMPILER_MSVC_2017
 
   _LIBCUDACXX_TEMPLATE(class _OtherElementType)
   _LIBCUDACXX_REQUIRES(__span_array_convertible<_OtherElementType, element_type>)

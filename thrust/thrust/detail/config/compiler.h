@@ -62,7 +62,7 @@
 #  define THRUST_MSVC_VERSION _CCCL_MSVC_VERSION
 //! deprecated [Since 2.7]
 #  define THRUST_MSVC_VERSION_FULL _CCCL_MSVC_VERSION_FULL
-#elif defined(_CCCL_COMPILER_ICC)
+#elif _CCCL_COMPILER(ICC)
 //! deprecated [Since 2.7]
 #  define THRUST_HOST_COMPILER THRUST_HOST_COMPILER_INTEL
 #elif defined(_CCCL_COMPILER_CLANG)
@@ -70,12 +70,12 @@
 #  define THRUST_HOST_COMPILER THRUST_HOST_COMPILER_CLANG
 //! deprecated [Since 2.7]
 #  define THRUST_CLANG_VERSION _CCCL_CLANG_VERSION
-#elif defined(_CCCL_COMPILER_GCC)
+#elif _CCCL_COMPILER(GCC)
 //! deprecated [Since 2.7]
 #  define THRUST_HOST_COMPILER THRUST_HOST_COMPILER_GCC
 //! deprecated [Since 2.7]
-#  define THRUST_GCC_VERSION   _CCCL_GCC_VERSION
-#  if (THRUST_GCC_VERSION >= 50000)
+#  define THRUST_GCC_VERSION   (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
+#  if _CCCL_COMPILER(GCC, >=, 5)
 //! deprecated [Since 2.7]
 #    define THRUST_MODERN_GCC
 #  else
@@ -94,7 +94,7 @@
 #elif defined(_CCCL_COMPILER_MSVC)
 //! deprecated [Since 2.7]
 #  define THRUST_DEVICE_COMPILER THRUST_DEVICE_COMPILER_MSVC
-#elif defined(_CCCL_COMPILER_GCC)
+#elif _CCCL_COMPILER(GCC)
 //! deprecated [Since 2.7]
 #  define THRUST_DEVICE_COMPILER THRUST_DEVICE_COMPILER_GCC
 #elif defined(_CCCL_COMPILER_CLANG)

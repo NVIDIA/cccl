@@ -446,7 +446,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __bit_iterator<_Cp, false> __cop
     if (__n > 0)
     {
       __storage_type __m = ~__storage_type(0) << (__bits_per_word - __n);
-#if defined(_CCCL_COMPILER_GCC) && _GNUC_VER < 900
+#if _CCCL_COMPILER(GCC, <, 9)
       // workaround for GCC pre-9 being really bad at tracking one-past-the-end pointers at constexpr
       // can't check for is-constant-evaluated, because GCC pre-9 also lacks _that_.
       if (__last.__seg_ == __first.__seg_ + 1)
@@ -461,7 +461,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __bit_iterator<_Cp, false> __cop
       --__last.__seg_;
 #endif // !GCC || GCC >= 9
       __storage_type __b = *__last.__seg_ & __m;
-#if defined(_CCCL_COMPILER_GCC) && _GNUC_VER < 900
+#if _CCCL_COMPILER(GCC, <, 9)
       // workaround for GCC pre-9 being really bad at tracking one-past-the-end pointers at constexpr
       // can't check for is-constant-evaluated, because GCC pre-9 also lacks _that_.
       if (__result.__seg_ == __first.__seg_ + 1)
@@ -527,7 +527,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __bit_iterator<_Cp, false> __cop
       if (__dn > 0)
       {
         // __result.__ctz_ == 0
-#if defined(_CCCL_COMPILER_GCC) && _GNUC_VER < 900
+#if _CCCL_COMPILER(GCC, <, 9)
         // workaround for GCC pre-9 being really bad at tracking one-past-the-end pointers at constexpr
         // can't check for is-constant-evaluated, because GCC pre-9 also lacks _that_.
         if (__result.__seg_ == __first.__seg_ + 1)
@@ -1166,7 +1166,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 friend difference_type
   operator-(const __bit_iterator& __x, const __bit_iterator& __y)
   {
-#if defined(_CCCL_COMPILER_GCC) && _GNUC_VER >= 800 && _GNUC_VER < 900
+#if _CCCL_COMPILER(GCC, >=, 8) && _CCCL_COMPILER(GCC, <, 9)
     if (__y.__seg_ && __y.__seg_ != __x.__seg_)
     {
       return (__x.__seg_ == __y.__seg_ + 1 ? 1 : __x.__seg_ - __y.__seg_) * __bits_per_word + __x.__ctz_ - __y.__ctz_;

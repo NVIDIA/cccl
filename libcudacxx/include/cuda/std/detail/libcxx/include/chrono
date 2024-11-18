@@ -834,9 +834,9 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 #endif // no system header
 
 #ifdef __cuda_std__
-#  ifndef _CCCL_COMPILER_NVRTC
+#  if !_CCCL_COMPILER(NVRTC)
 #    include <chrono>
-#  endif // _CCCL_COMPILER_NVRTC
+#  endif // _CCCL_COMPILER(NVRTC)
 #endif // __cuda_std__
 
 #include <cuda/std/__type_traits/common_type.h>
@@ -3540,7 +3540,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr hours make24(const hours& __h, bool __is_pm)
 // but have no way of disabling that. Use the system_header pragma on those GCC versions
 // for the remainder of this file, even if it has been requested to disable the pragma
 // earlier.
-#  if defined(_CCCL_COMPILER_GCC) && (__GNUC__ == 5 || __GNUC__ == 6)
+#  if _CCCL_COMPILER(GCC, >=, 5) && _CCCL_COMPILER(GCC, <, 7)
 #    pragma GCC system_header
 #  endif
 

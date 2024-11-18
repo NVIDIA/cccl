@@ -208,10 +208,10 @@ struct test_async_copy_counting_iterator_input_to_host_vector
 
       ASSERT_EQUAL(d0, d1);
 
-#  if defined(_CCCL_COMPILER_ICC)
+#  if _CCCL_COMPILER(ICC)
       // ICC fails this for some unknown reason - see #1468.
       KNOWN_FAILURE;
-#  endif
+#  endif // _CCCL_COMPILER(ICC)
     }
   };
 };

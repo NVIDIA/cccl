@@ -21,15 +21,7 @@ Starting from scratch:
     cd cccl
     mkdir build
     cd build
-    cmake ..\
-        -GNinja\
-        -DCCCL_ENABLE_BENCHMARKS=YES\
-        -DCCCL_ENABLE_CUB=YES\
-        -DCCCL_ENABLE_THRUST=NO\
-        -DCCCL_ENABLE_LIBCUDACXX=NO\
-        -DCUB_ENABLE_RDC_TESTS=NO\
-        -DCMAKE_BUILD_TYPE=Release\
-        -DCMAKE_CUDA_ARCHITECTURES=90 # TODO: Set your GPU architecture
+    cmake .. --preset=cub-benchmark -DCMAKE_CUDA_ARCHITECTURES=90 # TODO: Set your GPU architecture
 
 You clone the repository, create a build directory and configure the build with CMake.
 It's important that you enable benchmarks (`CCCL_ENABLE_BENCHMARKS=ON`),
