@@ -43,11 +43,13 @@ template <typename T>
 struct graphed_interface_of;
 
 template <typename T>
+struct owning_container_of;
+
+template <typename T>
 class scalar
 {
 public:
-    // TODO operator () ...
-    T val;
+    T *addr;
 };
 
 /**
@@ -92,12 +94,49 @@ public:
   {}
 
   /// Copy the content of an instance to another instance : this is a no-op
-  void stream_data_copy(const data_place&, instance_id_t, const data_place&, instance_id_t, cudaStream_t) override {}
-
-  /// Pretend we allocate an instance on a specific data place : we do not do any allocation here
-  void stream_data_allocate(
-    backend_ctx_untyped&, const data_place&, instance_id_t, ::std::ptrdiff_t& s, void**, cudaStream_t) override
+  void stream_data_copy(const data_place& dst_memory_node, instance_id_t dst_instance_id, const data_place& src_memory_node, instance_id_t src_instance_id, cudaStream_t stream) override
   {
+    assert(src_memory_node != dst_memory_node);
+
+    cudaMemcpyKind kind = cudaMemcpyDeviceToDevice;
+    if (src_memory_node == data_place::host)
+    {
+      kind = cudaMemcpyHostToDevice;
+    }
+
+    if (dst_memory_node == data_place::host)
+    {
+      kind = cudaMemcpyDeviceToHost;
+    }
+
+    const scalar<T>& src_instance = this->instance(src_instance_id);
+    const scalar<T>& dst_instance = this->instance(dst_instance_id);
+
+    size_t sz = sizeof(T);
+
+    cuda_safe_call(cudaMemcpyAsync((void*) dst_instance.addr, (void*) src_instance.addr, sz, kind, stream));
+  }
+
+
+
+  void stream_data_allocate(
+    backend_ctx_untyped&, const data_place& memory_node, instance_id_t instance_id, ::std::ptrdiff_t& s, void**, cudaStream_t stream) override
+  {
+    scalar<T> &instance = this->instance(instance_id);
+    T* base_ptr;
+
+    if (memory_node == data_place::host)
+    {
+        // Fallback to a synchronous method as there is no asynchronous host allocation API
+        cuda_safe_call(cudaStreamSynchronize(stream));
+        cuda_safe_call(cudaHostAlloc(&base_ptr, sizeof(T), cudaHostAllocMapped));
+    }
+    else {
+        cuda_safe_call(cudaMallocAsync(&base_ptr, sizeof(T), stream));
+    }
+
+    instance.addr = base_ptr;
+
     s = sizeof(T);
   }
 
@@ -194,6 +233,12 @@ template <typename T>
 struct graphed_interface_of<scalar<T>>
 {
   using type = scalar_graph_interface<T>;
+};
+
+template <typename T>
+struct owning_container_of<scalar<T>>
+{
+  using type = T;
 };
 
 /**
