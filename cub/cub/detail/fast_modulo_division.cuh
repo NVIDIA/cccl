@@ -134,15 +134,15 @@ class fast_div_mod
 {
   static_assert(supported_integral<T1>::value, "unsupported type");
 
-  // uint16_t is a special case that would requires complex logic. Workaround: convert to unsigned
-  using T          = ::cuda::std::conditional_t<::cuda::std::is_same<T1, ::cuda::std::uint16_t>::value, unsigned, T1>;
+  // uint16_t is a special case that would requires complex logic. Workaround: convert to int
+  using T          = ::cuda::std::conditional_t<::cuda::std::is_same<T1, ::cuda::std::uint16_t>::value, int, T1>;
   using unsigned_t = unsigned_implicit_prom_t<T>;
 
 public:
   template <typename R>
   struct result
   {
-    using common_t = decltype(R{} / T1{});
+    using common_t = decltype(R{} / T{});
     common_t quotient;
     common_t remainder;
   };
