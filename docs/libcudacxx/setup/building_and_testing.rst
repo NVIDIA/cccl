@@ -3,17 +3,11 @@
 Building & Testing libcu++
 ==========================
 
-\*nix Systems, Native Build/Test
---------------------------------
-
-The procedure is demonstrated for NVCC + GCC in C++11 mode on a
-Debian-like Linux systems; the same basic steps are required on all
-other platforms.
-
 Step 0: Install Build Requirements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In a Bash shell:
+================
 
 .. code:: bash
 
@@ -27,122 +21,8 @@ In a Bash shell:
    apt-get -y install python-pip
    pip install lit
 
-   # Env vars that should be set, or kept in mind for use later
-   export LIBCUDACXX_ROOT=/path/to/libcudacxx # Git repo root.
-
-Step 1: Generate the Build Files
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-In a Bash shell:
-
-.. code:: bash
-
-   cd ${LIBCUDACXX_ROOT}
-   cmake \
-       -S ./ \
-       -B build \
-       -DCMAKE_CXX_COMPILER=$CXX \
-       -DCMAKE_CUDA_COMPILER=$TOOLKIT/bin/nvcc \
-       -DLIBCUDACXX_ENABLE_LIBCUDACXX_TESTS=ON
-
-Step 2: Build & Run the Tests
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-In a Bash shell:
-
-.. code:: bash
-
-   cd ${LIBCUDACXX_ROOT}/build # build directory of this repo
-   ../utils/nvidia/linux/perform_tests.bash --skip-libcxx-tests
-
-\*nix Systems, Cross Build/Test
--------------------------------
-
-The procedure is demonstrated for NVCC + GCC cross compiler in C++14
-mode on a Debian-like Linux systems targeting an aarch64 L4T system; the
-same basic steps are required on all other platforms.
-
-Step 0: Install Build Prerequisites
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Follow Step 0 for \*nix native builds/tests.
-
-.. _step-1-generate-the-build-files-1:
-
-Step 1: Generate the Build Files
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-In a Bash shell:
-
-.. code:: bash
-
-   export HOST=executor.nvidia.com
-   export USERNAME=ubuntu
-
-   cd ${LIBCUDACXX_ROOT}
-   cmake \
-     -S ./ \
-     -B build \
-     -DCMAKE_CUDA_COMPILER=$TOOLKIT/bin/nvcc \
-     -DCMAKE_CXX_COMPILER=aarch64-linux-gnu-g++ \
-     -DLIBCUDACXX_ENABLE_LIBCUDACXX_TESTS=ON \
-     -DLIBCXX_EXECUTOR="SSHExecutor(host='${HOST}', username='${USERNAME}')"
-
-Ensure that you can SSH to the target system from the host system
-without inputing a password (e.g. use SSH keys).
-
-.. _step-2-build-run-the-tests-1:
-
-Step 2: Build & Run the Tests
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Follow Step 2 for \*nix native builds/tests.
-
-\*nix Systems, NVRTC Build/Test
--------------------------------
-
-The procedure is demonstrated for NVRTC in C++11 mode on a Debian-like
-Linux systems; the same basic steps are required on all other platforms.
-
-.. _step-0-install-build-prerequisites-1:
-
-Step 0: Install Build Prerequisites
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Follow Step 0 for \*nix native builds/tests.
-
-.. _step-1-generate-the-build-files-2:
-
-Step 1: Generate the Build Files
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-In a Bash shell:
-
-.. code:: bash
-
-   cd ${LIBCUDACXX_ROOT}
-   cmake \
-     -S ./ \
-     -B build \
-     -DCMAKE_CXX_COMPILER=$CC \
-     -DCMAKE_CUDA_COMPILER=$TOOLKIT/bin/nvcc \
-     -DLIBCUDACXX_ENABLE_LIBCUDACXX_TESTS=ON \
-     -DLIBCUDACXX_TEST_WITH_NVRTC=ON
-
-.. _step-2-build-run-the-tests-2:
-
-Step 2: Build & Run the Tests
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Follow Step 2 for \*nix native builds/tests.
-
 Windows, Native Build/Test
---------------------------
-
-.. _step-0-install-build-requirements-1:
-
-Step 0: Install Build Requirements
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+===========================
 
 `Install Python <https://www.python.org/downloads/windows>`_.
 
@@ -152,51 +32,96 @@ script <https://bootstrap.pypa.io/get-pip.py>`_ and run it.
 Install the LLVM Integrated Tester (``lit``) using a Visual Studio
 command prompt:
 
-.. code:: bat
+.. code:: bash
 
    pip install lit
 
-Step 0.5: Launching a Build Environment
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Step 1: Use the build scripts:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Visual Studio comes with a few build environments that are appropriate
-to use.
+We provide build scripts for the most common test cases that should suit the majority of use cases.
 
-The ``x64 Native Tools Command Prompt`` and other similarly named
-environments will work.
+In a Bash shell on Unix systems:
 
-If Powershell is desired, it would be best to launch it from within the
-native tools. This helps avoid configuration step issues.
+.. code:: bash
 
-.. _step-1-generate-the-build-files-3:
+   ./ci/test_libcudacxx.sh
 
-Step 1: Generate the Build Files
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+On Windows in ``x64 Native Tools Command Prompt``
 
-In a Visual Studio command prompt:
+.. code:: bash
 
-.. code:: bat
+   ./ci/windows/build_libcudacxx.ps1
 
-   set LIBCUDACXX_ROOT=\path\to\libcudacxx # Helpful env var pointing to the git repo root.
-   cd %LIBCUDACXX_ROOT%
+This should cover most users needs, but offers less flexibility. Optionally one can directly invoke cmake
 
-   cmake ^
-     -S ./ ^
-     -B build ^
-     -G "Ninja" ^
-     -DCMAKE_CXX_COMPILER=cl ^
-     -DCMAKE_CUDA_COMPILER=nvcc ^
-     -DCMAKE_CUDA_COMPILER_FORCED=ON ^
-     -DLIBCUDACXX_ENABLE_LIBCUDACXX_TESTS=ON
+Optionally Step 2: Manually generate the Build Files:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. _step-2-build-run-the-tests-3:
+In a Bash shell or ``x64 Native Tools Command Prompt`` within the CCCL repository:
 
-Step 2: Build & Run the Tests
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. code:: bash
 
-``SM_ARCH`` can be set to any integer value (Ex: “80”, “86”)
+   cmake --preset libcudacxx-cpp17
 
-.. code:: bat
+Optionally Step 3: Build & Run the Tests
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-   set LIBCUDACXX_SITE_CONFIG=%LIBCUDACXX_ROOT%\build\test\lit.site.cfg
-   lit %LIBCUDACXX_ROOT%\test -Dcompute_archs=%SM_ARCH% -sv --no-progress-bar
+In a Bash shell or ``x64 Native Tools Command Prompt`` within the CCCL repository:
+
+.. code:: bash
+
+   cmake --build --preset libcudacxx-cpp17
+   ctest --preset libcudacxx-lit-cpp17
+
+This will build and run all available tests for that standard mode. However, usually only a subset of the full test
+suite is relevant to a given PR. So rather than running all tests via ``ctest`` one can use lit to run a
+subset of the test suite.
+
+Optionally Step 4: Passing cmake options:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+It is also possible to pass individual options to the cmake configuration. For example
+
+.. code:: bash
+
+   cmake --preset libcudacxx-nvrtc-cpp17 -DCMAKE_CUDA_ARCHITECTURES="86"
+   cmake --build --preset libcudacxx-cpp17
+   ctest --preset libcudacxx-lit-cpp17
+
+Optionally Step 5: Build a subset of the test suite:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code:: bash
+
+   cd build
+   lit libcudacxx-cpp17/RELATIVE_PATH_TO_TEST_OR_SUBFOLDER -sv
+
+This will build and run all tests within ``RELATIVE_PATH_TO_TEST_OR_SUBFOLDER`` which must be a valid path within the CCCL.
+Note that the name of the top level folder is the same as the name of the preset.
+
+If only building the tests is desired one can pass ``-Dexecutor="NoopExecutor()"`` to the lit invocation.
+.. code:: bash
+
+   cd build
+   lit libcudacxx-cpp17/RELATIVE_PATH_TO_TEST_OR_SUBFOLDER -sv -Dexecutor="NoopExecutor()"
+
+Finally different standard modes can be tested by passing e.g ``--param=std=c++20``
+
+NVRTC Build/Test:
+=================
+
+NVRTC tests can be build and tested the same way as the other tests
+
+.. code:: bash
+
+   cmake --preset libcudacxx-nvrtc-cpp17
+   cmake --build --preset libcudacxx-cpp17
+   ctest --preset libcudacxx-lit-cpp17
+
+If you want to run individual tests its again
+
+.. code:: bash
+
+   cd build
+   lit libcudacxx-nvrtc-cpp17/RELATIVE_PATH_TO_TEST_OR_SUBFOLDER -sv
