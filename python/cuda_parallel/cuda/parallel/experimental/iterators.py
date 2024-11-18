@@ -25,6 +25,22 @@ def _sizeof_numba_type(numba_type):
     return mapping[numba_type]
 
 
+def _ctypes_type_given_numba_type(numba_type):
+    mapping = {
+        types.int8: ctypes.c_int8,
+        types.int16: ctypes.c_int16,
+        types.int32: ctypes.c_int32,
+        types.int64: ctypes.c_int64,
+        types.uint8: ctypes.c_uint8,
+        types.uint16: ctypes.c_uint16,
+        types.uint32: ctypes.c_uint32,
+        types.uint64: ctypes.c_uint64,
+        types.float32: ctypes.c_float,
+        types.float64: ctypes.c_double,
+    }
+    return mapping[numba_type]
+
+
 class RawPointer:
     def __init__(self, ptr, dtype):
         self.val = ctypes.c_void_p(ptr)
@@ -114,17 +130,17 @@ def cache(container, dtype, modifier):
 
 
 class ConstantIterator:
-    def __init__(self, val): # TODO Showcasing the case of int32, need dtype with at least primitive types, ideally any numba type
-        thisty = numba.types.CPointer(numba.types.int32)
-        self.val = ctypes.c_int32(val)
-        self.ltoirs = [numba.cuda.compile(ConstantIterator.constant_int32_advance, sig=numba.types.void(thisty, numba.types.int32), output='ltoir'),
-                       numba.cuda.compile(ConstantIterator.constant_int32_dereference, sig=numba.types.int32(thisty), output='ltoir')]
-        self.prefix = 'constant_int32'
+    def __init__(self, val, dtype):
+        thisty = numba.types.CPointer(dtype)
+        self.val = _ctypes_type_given_numba_type(dtype)(val)
+        self.prefix = 'constant_' + dtype.name
+        self.ltoirs = [numba.cuda.compile(ConstantIterator.constant_advance, sig=numba.types.void(thisty, dtype), abi_info={"abi_name": self.prefix + "_advance"}, output='ltoir'),
+                       numba.cuda.compile(ConstantIterator.constant_dereference, sig=dtype(thisty), abi_info={"abi_name": self.prefix + "_dereference"}, output='ltoir')]
 
-    def constant_int32_advance(this, _):
+    def constant_advance(this, _):
         pass
 
-    def constant_int32_dereference(this):
+    def constant_dereference(this):
         return this[0]
 
     def host_address(self):
@@ -141,8 +157,8 @@ class ConstantIterator:
         return ctypes.alignment(self.val) # TODO should be using numba for user-defined types support
 
 
-def repeat(value):
-    return ConstantIterator(value)
+def repeat(value, dtype):
+    return ConstantIterator(value, dtype)
 
 
 class CountingIterator:

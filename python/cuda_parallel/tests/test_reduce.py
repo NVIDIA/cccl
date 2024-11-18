@@ -101,7 +101,7 @@ def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, sta
 
     if input_generator == "constant":
         l_input = [42 for distance in range(num_items)]
-        i_input = iterators.repeat(42)
+        i_input = iterators.repeat(42, dtype=numba.types.int32)
     elif input_generator == "counting":
         l_input = [start_sum_with + distance for distance in range(num_items)]
         i_input = iterators.count(start_sum_with)
