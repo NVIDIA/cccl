@@ -174,13 +174,10 @@ Therefore, it's critical that you run it in a clean build directory without any 
 Running cmake is enough. Alternatively, you can also clean your build directory with.
 Furthermore, the tuning scripts require some additional python dependencies, which you have to install.
 
-<<<<<<< Updated upstream
-=======
 To select the appropriate CUDA GPU, first identify the GPU ID by running `nvidia-smi`, then set the
 desired GPU using `export CUDA_VISIBLE_DEVICES=x`, where `x` is the ID of the GPU you want to use (e.g., `1`).
 This ensures your application uses only the specified GPU.
 
->>>>>>> Stashed changes
 .. code-block:: bash
 
     ninja clean
