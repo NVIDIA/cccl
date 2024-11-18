@@ -174,6 +174,13 @@ Therefore, it's critical that you run it in a clean build directory without any 
 Running cmake is enough. Alternatively, you can also clean your build directory with.
 Furthermore, the tuning scripts require some additional python dependencies, which you have to install.
 
+<<<<<<< Updated upstream
+=======
+To select the appropriate CUDA GPU, first identify the GPU ID by running `nvidia-smi`, then set the
+desired GPU using `export CUDA_VISIBLE_DEVICES=x`, where `x` is the ID of the GPU you want to use (e.g., `1`).
+This ensures your application uses only the specified GPU.
+
+>>>>>>> Stashed changes
 .. code-block:: bash
 
     ninja clean
@@ -183,7 +190,7 @@ We can then run the full benchmark suite from the build directory with:
 
 .. code-block:: bash
 
-    ../benchmarks/scripts/run.py
+    <root_dir_to_cccl>/cccl/benchmarks/scripts/run.py
 
 You can expect the output to look like this:
 
@@ -205,7 +212,7 @@ It's also possible to benchmark a subset of algorithms and workloads:
 
 .. code-block:: bash
 
-    ../benchmarks/scripts/run.py -R '.*scan.exclusive.sum.*' -a 'Elements{io}[pow2]=[24,28]' -a 'T{ct}=I32'
+    <root_dir_to_cccl>/cccl/benchmarks/scripts/run.py -R '.*scan.exclusive.sum.*' -a 'Elements{io}[pow2]=[24,28]' -a 'T{ct}=I32'
     &&&& RUNNING bench
      ctk:  12.6.77
     cccl:  v2.7.0-rc0-265-g32aa6aa5a
@@ -229,7 +236,7 @@ The resulting database contains all samples, which can be extracted into JSON fi
 
 .. code-block:: bash
 
-    ../benchmarks/scripts/analyze.py -o ./cccl_meta_bench.db
+    <root_dir_to_cccl>/cccl/benchmarks/scripts/analyze.py -o ./cccl_meta_bench.db
 
 This will create a JSON file for each benchmark variant next to the database.
 For example:
