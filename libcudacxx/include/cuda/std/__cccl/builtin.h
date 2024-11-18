@@ -254,6 +254,7 @@
 #  define _CCCL_BUILTIN_INTEGER_PACK(...) __integer_pack(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__integer_pack)
 
+
 #if _CCCL_CHECK_BUILTIN(is_aggregate) || _CCCL_COMPILER(GCC, >=, 7) \
   || (defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION > 1914) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_IS_AGGREGATE(...) __is_aggregate(__VA_ARGS__)
@@ -315,6 +316,7 @@
 
 #if _CCCL_CHECK_BUILTIN(is_final) || _CCCL_COMPILER(GCC, >=, 4, 7) || defined(_CCCL_COMPILER_MSVC) \
   || _CCCL_COMPILER(NVRTC)
+
 #  define _CCCL_BUILTIN_IS_FINAL(...) __is_final(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_final) && gcc >= 4.7
 
@@ -451,6 +453,7 @@
 
 #if _CCCL_CHECK_BUILTIN(is_trivially_copyable) || _CCCL_COMPILER(GCC, >=, 5, 1) || defined(_CCCL_COMPILER_MSVC) \
   || _CCCL_COMPILER(NVRTC)
+
 #  define _CCCL_BUILTIN_IS_TRIVIALLY_COPYABLE(...) __is_trivially_copyable(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_trivially_copyable) && gcc >= 5.1
 
