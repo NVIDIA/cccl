@@ -29,6 +29,8 @@
 #  include <ciso646> // otherwise go for the smallest possible header
 #endif // !_CCCL_COMPILER(NVRTC)
 
+#define __cccl_lib_unreachable 202202L
+
 #if _CCCL_STD_VER >= 2014
 #  define __cccl_lib_bit_cast     201806L
 #  define __cccl_lib_chrono_udls  201304L
@@ -245,7 +247,6 @@
 // # define __cccl_lib_string_contains                      202011L
 // # define __cccl_lib_string_resize_and_overwrite          202110L
 #  define __cccl_lib_to_underlying 202102L
-#  define __cccl_lib_unreachable   202202L
 
 #endif // _CCCL_STD_VER >= 2023
 
