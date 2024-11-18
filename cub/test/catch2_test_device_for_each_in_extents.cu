@@ -130,7 +130,7 @@ using index_types_dynamic =
                  >;
 
 using dimensions = c2h::type_list<
-#  if defined(_CCCL_COMPILER_MSVC)
+#  if !defined(_CCCL_COMPILER_MSVC)
   cuda::std::index_sequence<>,
 #  endif
   cuda::std::index_sequence<5>,
