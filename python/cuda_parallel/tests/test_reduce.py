@@ -101,7 +101,7 @@ def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, sta
 
     if input_generator == "constant":
         l_input = [42 for distance in range(num_items)]
-        i_input = iterators.repeat(42, dtype=numba.types.int32)
+        i_input = iterators.repeat(42, ntype=numba.types.int32)
     elif input_generator == "counting":
         l_input = [start_sum_with + distance for distance in range(num_items)]
         i_input = iterators.count(start_sum_with)
@@ -117,7 +117,7 @@ def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, sta
         rng = random.Random(0)
         l_input = [rng.randrange(100) for _ in range(num_items)]
         streamed_input_devarr = numba.cuda.to_device(numpy.array(l_input, dtype=numpy.int32))
-        i_input = iterators.cache(streamed_input_devarr, dtype=numba.types.int32, modifier='stream')
+        i_input = iterators.cache(streamed_input_devarr, ntype=numba.types.int32, modifier='stream')
     else:
         raise RuntimeError("Unexpected input_generator")
 

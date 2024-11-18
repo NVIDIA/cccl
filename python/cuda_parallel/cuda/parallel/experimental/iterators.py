@@ -9,7 +9,7 @@ import numba
 import numba.cuda
 
 
-def _sizeof_numba_type(numba_type):
+def _sizeof_numba_type(ntype):
     mapping = {
         types.int8: 1,
         types.int16: 2,
@@ -22,10 +22,10 @@ def _sizeof_numba_type(numba_type):
         types.float32: 4,
         types.float64: 8,
     }
-    return mapping[numba_type]
+    return mapping[ntype]
 
 
-def _ctypes_type_given_numba_type(numba_type):
+def _ctypes_type_given_numba_type(ntype):
     mapping = {
         types.int8: ctypes.c_int8,
         types.int16: ctypes.c_int16,
@@ -38,23 +38,23 @@ def _ctypes_type_given_numba_type(numba_type):
         types.float32: ctypes.c_float,
         types.float64: ctypes.c_double,
     }
-    return mapping[numba_type]
+    return mapping[ntype]
 
 
 class RawPointer:
-    def __init__(self, ptr, dtype):
+    def __init__(self, ptr, ntype):
         self.val = ctypes.c_void_p(ptr)
-        data_as_dtype_pp = numba.types.CPointer(numba.types.CPointer(dtype))
+        data_as_ntype_pp = numba.types.CPointer(numba.types.CPointer(ntype))
         data_as_uint64_p = numba.types.CPointer(numba.types.uint64)
-        self.ltoirs = [numba.cuda.compile(RawPointer.pointer_advance_sizeof(dtype), sig=numba.types.void(data_as_uint64_p, numba.types.uint64), output='ltoir'),
-                       numba.cuda.compile(RawPointer.pointer_dereference, sig=dtype(data_as_dtype_pp), output='ltoir')]
+        self.ltoirs = [numba.cuda.compile(RawPointer.pointer_advance_sizeof(ntype), sig=numba.types.void(data_as_uint64_p, numba.types.uint64), output='ltoir'),
+                       numba.cuda.compile(RawPointer.pointer_dereference, sig=ntype(data_as_ntype_pp), output='ltoir')]
         self.prefix = 'pointer'
 
     @staticmethod
-    def pointer_advance_sizeof(numba_type):
-        sizeof_dtype = _sizeof_numba_type(numba_type)
+    def pointer_advance_sizeof(ntype):
+        sizeof_ntype = _sizeof_numba_type(ntype)
         def pointer_advance(this, distance):
-            this[0] = this[0] + distance * sizeof_dtype
+            this[0] = this[0] + distance * sizeof_ntype
         return pointer_advance
 
     def pointer_dereference(this):
@@ -73,8 +73,8 @@ class RawPointer:
         return 8 # TODO should be using numba for user-defined types support
 
 
-def pointer(container, dtype):
-    return RawPointer(container.device_ctypes_pointer.value, dtype)
+def pointer(container, ntype):
+    return RawPointer(container.device_ctypes_pointer.value, ntype)
 
 
 @intrinsic
@@ -92,19 +92,19 @@ def ldcs(typingctx, base):
 
 
 class CacheModifiedPointer:
-    def __init__(self, ptr, dtype):
+    def __init__(self, ptr, ntype):
         self.val = ctypes.c_void_p(ptr)
-        data_as_dtype_pp = numba.types.CPointer(numba.types.CPointer(dtype))
+        data_as_ntype_pp = numba.types.CPointer(numba.types.CPointer(ntype))
         data_as_uint64_p = numba.types.CPointer(numba.types.uint64)
-        self.ltoirs = [numba.cuda.compile(CacheModifiedPointer.cache_advance_sizeof(dtype), sig=numba.types.void(data_as_uint64_p, numba.types.uint64), output='ltoir'),
-                       numba.cuda.compile(CacheModifiedPointer.cache_dereference, sig=dtype(data_as_dtype_pp), output='ltoir')]
+        self.ltoirs = [numba.cuda.compile(CacheModifiedPointer.cache_advance_sizeof(ntype), sig=numba.types.void(data_as_uint64_p, numba.types.uint64), output='ltoir'),
+                       numba.cuda.compile(CacheModifiedPointer.cache_dereference, sig=ntype(data_as_ntype_pp), output='ltoir')]
         self.prefix = 'cache'
 
     @staticmethod
-    def cache_advance_sizeof(numba_type):
-        sizeof_dtype = _sizeof_numba_type(numba_type)
+    def cache_advance_sizeof(ntype):
+        sizeof_ntype = _sizeof_numba_type(ntype)
         def cache_advance(this, distance):
-            this[0] = this[0] + distance * sizeof_dtype
+            this[0] = this[0] + distance * sizeof_ntype
         return cache_advance
 
     def cache_dereference(this):
@@ -123,19 +123,19 @@ class CacheModifiedPointer:
         return 8 # TODO should be using numba for user-defined types support
 
 
-def cache(container, dtype, modifier):
+def cache(container, ntype, modifier):
     if modifier != 'stream':
         raise NotImplementedError("Only stream modifier is supported")
-    return CacheModifiedPointer(container.device_ctypes_pointer.value, dtype)
+    return CacheModifiedPointer(container.device_ctypes_pointer.value, ntype)
 
 
 class ConstantIterator:
-    def __init__(self, val, dtype):
-        thisty = numba.types.CPointer(dtype)
-        self.val = _ctypes_type_given_numba_type(dtype)(val)
-        self.prefix = 'constant_' + dtype.name
-        self.ltoirs = [numba.cuda.compile(ConstantIterator.constant_advance, sig=numba.types.void(thisty, dtype), abi_info={"abi_name": self.prefix + "_advance"}, output='ltoir'),
-                       numba.cuda.compile(ConstantIterator.constant_dereference, sig=dtype(thisty), abi_info={"abi_name": self.prefix + "_dereference"}, output='ltoir')]
+    def __init__(self, val, ntype):
+        thisty = numba.types.CPointer(ntype)
+        self.val = _ctypes_type_given_numba_type(ntype)(val)
+        self.prefix = 'constant_' + ntype.name
+        self.ltoirs = [numba.cuda.compile(ConstantIterator.constant_advance, sig=numba.types.void(thisty, ntype), abi_info={"abi_name": self.prefix + "_advance"}, output='ltoir'),
+                       numba.cuda.compile(ConstantIterator.constant_dereference, sig=ntype(thisty), abi_info={"abi_name": self.prefix + "_dereference"}, output='ltoir')]
 
     def constant_advance(this, _):
         pass
@@ -157,8 +157,8 @@ class ConstantIterator:
         return ctypes.alignment(self.val) # TODO should be using numba for user-defined types support
 
 
-def repeat(value, dtype):
-    return ConstantIterator(value, dtype)
+def repeat(value, ntype):
+    return ConstantIterator(value, ntype)
 
 
 class CountingIterator:
