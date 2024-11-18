@@ -26,7 +26,8 @@
  ******************************************************************************/
 #include <cub/config.cuh>
 
-#if __cccl_lib_mdspan
+// TODO: remove _CCCL_COMPILER_MSVC check after MSVC bug related to vector comparison is fixed
+#if __cccl_lib_mdspan && !defined(_CCCL_COMPILER_MSVC)
 
 #  include <cub/device/device_for.cuh>
 
@@ -129,14 +130,12 @@ using index_types_dynamic =
 #  endif
                  >;
 
-using dimensions = c2h::type_list<
-#  if !defined(_CCCL_COMPILER_MSVC)
-  cuda::std::index_sequence<>,
-#  endif
-  cuda::std::index_sequence<5>,
-  cuda::std::index_sequence<5, 3>,
-  cuda::std::index_sequence<5, 3, 4>,
-  cuda::std::index_sequence<3, 2, 5, 4>>;
+using dimensions =
+  c2h::type_list<cuda::std::index_sequence<>,
+                 cuda::std::index_sequence<5>,
+                 cuda::std::index_sequence<5, 3>,
+                 cuda::std::index_sequence<5, 3, 4>,
+                 cuda::std::index_sequence<3, 2, 5, 4>>;
 
 template <typename IndexType, typename Dimensions>
 struct build_extents;
@@ -188,4 +187,4 @@ C2H_TEST("DeviceForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][devic
   REQUIRE(h_output == h_output_gpu);
 }
 
-#endif // __cccl_lib_mdspan
+#endif // __cccl_lib_mdspan && !defined(_CCCL_COMPILER_MSVC)
