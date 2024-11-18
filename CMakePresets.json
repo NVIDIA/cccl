@@ -371,6 +371,44 @@
         "CCCL_ENABLE_EXAMPLES": true,
         "CCCL_ENABLE_TESTING": true
       }
+    },
+    {
+      "name": "cub-benchmark",
+      "displayName": "CUB benchmarking",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CCCL_ENABLE_BENCHMARKS": true,
+        "CCCL_ENABLE_CUB": true,
+        "CCCL_ENABLE_THRUST": false,
+        "CCCL_ENABLE_LIBCUDACXX": false,
+        "CCCL_ENABLE_CUDAX": false,
+        "CCCL_ENABLE_C": false,
+        "CCCL_ENABLE_TESTING": false,
+        "CCCL_ENABLE_EXAMPLES": false,
+        "CUB_ENABLE_EXAMPLES": false,
+        "CUB_ENABLE_TESTING": false,
+        "CUB_ENABLE_HEADER_TESTING": false
+      }
+    },
+    {
+      "name": "cub-tune",
+      "displayName": "CUB tuning",
+      "inherits": "cub-benchmark",
+      "cacheVariables": {
+        "CUB_ENABLE_TUNING": true
+      }
+    },
+    {
+      "name": "benchmark",
+      "displayName": "CUB/Thrust benchmarking",
+      "inherits": "cub-benchmark",
+      "cacheVariables": {
+        "CCCL_ENABLE_THRUST": true,
+        "THRUST_ENABLE_EXAMPLES": false,
+        "THRUST_ENABLE_TESTING": false,
+        "THRUST_ENABLE_HEADER_TESTING": false
+      }
     }
   ],
   "buildPresets": [

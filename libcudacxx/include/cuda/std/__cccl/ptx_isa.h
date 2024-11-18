@@ -99,12 +99,12 @@
 #endif // __cccl_ptx_isa >= 800
 
 // NVRTC uses its own <nv/target> header, so we need to manually tell it when we expect SM90a to be available
-#if defined(_CCCL_COMPILER_NVRTC) && !defined(NV_HAS_FEATURE_SM_90a)
+#if _CCCL_COMPILER(NVRTC) && !defined(NV_HAS_FEATURE_SM_90a)
 #  if (defined(__CUDA_ARCH__) && (__CUDA_ARCH__ >= 900) && defined(__CUDA_ARCH_FEAT_SM90_ALL))
 #    define NV_HAS_FEATURE_SM_90a NV_PROVIDES_SM_90
 #  else // ^^^ SM90a ^^^ / vvv !SM90a vvv
 #    define NV_HAS_FEATURE_SM_90a NV_NO_TARGET
 #  endif //
-#endif // _CCCL_COMPILER_NVRTC && !NV_HAS_FEATURE_SM_90a
+#endif // _CCCL_COMPILER(NVRTC) && !NV_HAS_FEATURE_SM_90a
 
 #endif // __CCCL_PTX_ISA_H_

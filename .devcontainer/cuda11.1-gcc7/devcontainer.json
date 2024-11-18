@@ -19,7 +19,8 @@
     "CCCL_CUDA_VERSION": "11.1",
     "CCCL_HOST_COMPILER": "gcc",
     "CCCL_HOST_COMPILER_VERSION": "7",
-    "CCCL_BUILD_INFIX": "cuda11.1-gcc7"
+    "CCCL_BUILD_INFIX": "cuda11.1-gcc7",
+    "CCCL_CUDA_EXTENDED": "false"
   },
   "workspaceFolder": "/home/coder/${localWorkspaceFolderBasename}",
   "workspaceMount": "source=${localWorkspaceFolder},target=/home/coder/${localWorkspaceFolderBasename},type=bind,consistency=consistent",

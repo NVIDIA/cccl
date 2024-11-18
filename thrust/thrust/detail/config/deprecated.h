@@ -49,7 +49,7 @@
 #elif defined(_CCCL_COMPILER_CLANG)
 #  define THRUST_DEPRECATED              __attribute__((deprecated))
 #  define THRUST_DEPRECATED_BECAUSE(MSG) __attribute__((deprecated(MSG)))
-#elif defined(_CCCL_COMPILER_GCC)
+#elif _CCCL_COMPILER(GCC)
 #  define THRUST_DEPRECATED              __attribute__((deprecated))
 #  define THRUST_DEPRECATED_BECAUSE(MSG) __attribute__((deprecated(MSG)))
 #else

@@ -48,7 +48,7 @@ template <class _Fn>
 struct __not_fn_t : __perfect_forward<__not_fn_op, _Fn>
 {
   using __base = __perfect_forward<__not_fn_op, _Fn>;
-#  if defined(_CCCL_COMPILER_NVRTC) // nvbug 3961621
+#  if _CCCL_COMPILER(NVRTC) // nvbug 3961621
   _CCCL_HIDE_FROM_ABI constexpr __not_fn_t() noexcept = default;
 
   _LIBCUDACXX_TEMPLATE(class _OrigFn)

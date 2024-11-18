@@ -199,6 +199,7 @@ def _get_bindings():
 def _get_paths():
     global _paths
     if _paths is None:
+        # Using `.parent` for compatibility with pip install --editable:
         include_path = importlib.resources.files(
             'cuda.parallel').parent.joinpath('_include')
         include_path_str = str(include_path)
