@@ -103,7 +103,7 @@ int main(int, char**)
 
 #if TEST_STD_VER >= 14
   static_assert(test(), "");
-#endif
+#endif // TEST_STD_VER >= 14
 
   return 0;
 }
