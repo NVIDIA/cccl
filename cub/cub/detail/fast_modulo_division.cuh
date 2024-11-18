@@ -142,7 +142,7 @@ public:
   template <typename R>
   struct result
   {
-    using common_t = decltype(R{} / T{});
+    using common_t = decltype(R{} / T1{});
     common_t quotient;
     common_t remainder;
   };
