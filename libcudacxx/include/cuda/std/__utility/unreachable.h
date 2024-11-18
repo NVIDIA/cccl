@@ -22,7 +22,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-[[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void unreachable()
+_CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void unreachable()
 {
 #if defined(__CUDA_ARCH__)
 #  if defined(_CCCL_CUDA_COMPILER_CLANG)
