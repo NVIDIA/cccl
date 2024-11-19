@@ -129,6 +129,9 @@ multiply_extract_higher_bits(T value, R multiplier)
  * Fast Modulo/Division based on Precomputation
  **********************************************************************************************************************/
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4127) /* conditional expression is constant */
+
 template <typename T1>
 class fast_div_mod
 {
@@ -227,6 +230,7 @@ private:
   unsigned_t _multiplier = 0;
   unsigned _shift_right  = 0;
 };
+_CCCL_DIAG_POP
 
 } // namespace detail
 
