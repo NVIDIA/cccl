@@ -41,14 +41,18 @@ def _ctypes_type_given_numba_type(ntype):
     return mapping[ntype]
 
 
+def _ncc(funcname, pyfunc, sig, prefix):
+    return numba.cuda.compile(pyfunc=pyfunc, sig=sig, abi_info={"abi_name": f"{prefix}_{funcname}"}, output='ltoir')
+
+
 class RawPointer:
     def __init__(self, ptr, ntype):
         self.val = ctypes.c_void_p(ptr)
         data_as_ntype_pp = numba.types.CPointer(numba.types.CPointer(ntype))
         data_as_uint64_p = numba.types.CPointer(numba.types.uint64)
-        self.ltoirs = [numba.cuda.compile(RawPointer.pointer_advance_sizeof(ntype), sig=numba.types.void(data_as_uint64_p, numba.types.uint64), output='ltoir'),
-                       numba.cuda.compile(RawPointer.pointer_dereference, sig=ntype(data_as_ntype_pp), output='ltoir')]
-        self.prefix = 'pointer'
+        self.prefix = 'pointer_' + ntype.name
+        self.ltoirs = [_ncc("advance", RawPointer.pointer_advance_sizeof(ntype), numba.types.void(data_as_uint64_p, numba.types.uint64), self.prefix),
+                       _ncc("dereference", RawPointer.pointer_dereference, ntype(data_as_ntype_pp), self.prefix)]
 
     @staticmethod
     def pointer_advance_sizeof(ntype):
@@ -96,9 +100,9 @@ class CacheModifiedPointer:
         self.val = ctypes.c_void_p(ptr)
         data_as_ntype_pp = numba.types.CPointer(numba.types.CPointer(ntype))
         data_as_uint64_p = numba.types.CPointer(numba.types.uint64)
-        self.ltoirs = [numba.cuda.compile(CacheModifiedPointer.cache_advance_sizeof(ntype), sig=numba.types.void(data_as_uint64_p, numba.types.uint64), output='ltoir'),
-                       numba.cuda.compile(CacheModifiedPointer.cache_dereference, sig=ntype(data_as_ntype_pp), output='ltoir')]
-        self.prefix = 'cache'
+        self.prefix = 'cache' + ntype.name
+        self.ltoirs = [_ncc("advance", CacheModifiedPointer.cache_advance_sizeof(ntype), numba.types.void(data_as_uint64_p, numba.types.uint64), self.prefix),
+                       _ncc("dereference", CacheModifiedPointer.cache_dereference, ntype(data_as_ntype_pp), self.prefix)]
 
     @staticmethod
     def cache_advance_sizeof(ntype):
@@ -134,8 +138,8 @@ class ConstantIterator:
         thisty = numba.types.CPointer(ntype)
         self.val = _ctypes_type_given_numba_type(ntype)(val)
         self.prefix = 'constant_' + ntype.name
-        self.ltoirs = [numba.cuda.compile(ConstantIterator.constant_advance, sig=numba.types.void(thisty, ntype), abi_info={"abi_name": self.prefix + "_advance"}, output='ltoir'),
-                       numba.cuda.compile(ConstantIterator.constant_dereference, sig=ntype(thisty), abi_info={"abi_name": self.prefix + "_dereference"}, output='ltoir')]
+        self.ltoirs = [_ncc("advance", ConstantIterator.constant_advance, numba.types.void(thisty, ntype), self.prefix),
+                       _ncc("dereference", ConstantIterator.constant_dereference, ntype(thisty), self.prefix)]
 
     def constant_advance(this, _):
         pass
@@ -166,8 +170,8 @@ class CountingIterator:
         thisty = numba.types.CPointer(ntype)
         self.count = _ctypes_type_given_numba_type(ntype)(count)
         self.prefix = 'count_' + ntype.name
-        self.ltoirs = [numba.cuda.compile(CountingIterator.count_advance, sig=numba.types.void(thisty, ntype), abi_info={"abi_name": self.prefix + "_advance"}, output='ltoir'),
-                       numba.cuda.compile(CountingIterator.count_dereference, sig=ntype(thisty), abi_info={"abi_name": self.prefix + "_dereference"}, output='ltoir')]
+        self.ltoirs = [_ncc("advance", CountingIterator.count_advance, numba.types.void(thisty, ntype), self.prefix),
+                       _ncc("dereference", CountingIterator.count_dereference, ntype(thisty), self.prefix)]
 
     def count_advance(this, diff):
         this[0] += diff
@@ -282,8 +286,8 @@ def cu_map(op, it):
             self.it = it # TODO support row pointers
             self.op = op
             self.prefix = f'transform_{it.prefix}_{op.__name__}'
-            self.ltoirs = it.ltoirs + [numba.cuda.compile(TransformIterator.transform_advance, sig=numba.types.void(numba.types.CPointer(numba.types.char), numba.types.int32), output='ltoir', abi_info={"abi_name": f"{self.prefix}_advance"}),
-                                       numba.cuda.compile(TransformIterator.transform_dereference, sig=numba.types.int32(numba.types.CPointer(numba.types.char)), output='ltoir', abi_info={"abi_name": f"{self.prefix}_dereference"}),
+            self.ltoirs = it.ltoirs + [_ncc("advance", TransformIterator.transform_advance, numba.types.void(numba.types.CPointer(numba.types.char), numba.types.int32), self.prefix),
+                                       _ncc("dereference", TransformIterator.transform_dereference, numba.types.int32(numba.types.CPointer(numba.types.char)), self.prefix),
                                        numba.cuda.compile(op, sig=numba.types.int32(numba.types.int32), output='ltoir')]
 
         def transform_advance(it_state_ptr, diff):
