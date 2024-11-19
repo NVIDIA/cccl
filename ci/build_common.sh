@@ -132,7 +132,7 @@ print_environment_details() {
       TBB_ROOT
 
   echo "Current commit is:"
-  git log -1 || echo "Not a repository"
+  git log -1 --format=short || echo "Not a repository"
 
   if command -v nvidia-smi &> /dev/null; then
     nvidia-smi

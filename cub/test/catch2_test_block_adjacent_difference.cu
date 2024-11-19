@@ -27,7 +27,7 @@
 
 #include <cub/block/block_adjacent_difference.cuh>
 
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 template <int ThreadsInBlock, int ItemsPerThread, class T, class ActionT>
 __global__ void block_adj_diff_kernel(T* data, ActionT action, bool in_place)

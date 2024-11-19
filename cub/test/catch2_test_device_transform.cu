@@ -16,9 +16,9 @@
 #include <sstream>
 
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.cuh>
-#include <c2h/custom_type.cuh>
-#include <c2h/test_util_vec.cuh>
+#include <c2h/catch2_test_helper.h>
+#include <c2h/custom_type.h>
+#include <c2h/test_util_vec.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -553,4 +553,13 @@ C2H_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][device_transfo
   CHECK(make_aligned_base_ptr(&arr[127], 128) == aligned_base_ptr<int>{reinterpret_cast<char*>(&arr[96]), 124});
   CHECK(make_aligned_base_ptr(&arr[128], 128) == aligned_base_ptr<int>{reinterpret_cast<char*>(&arr[128]), 0});
   CHECK(make_aligned_base_ptr(&arr[129], 128) == aligned_base_ptr<int>{reinterpret_cast<char*>(&arr[128]), 4});
+}
+
+C2H_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][device_transform]")
+{
+  using It         = thrust::reverse_iterator<thrust::detail::normal_iterator<thrust::device_ptr<int>>>;
+  using kernel_arg = cub::detail::transform::kernel_arg<It>;
+
+  STATIC_REQUIRE(::cuda::std::is_constructible<kernel_arg>::value);
+  STATIC_REQUIRE(::cuda::std::is_copy_constructible<kernel_arg>::value);
 }

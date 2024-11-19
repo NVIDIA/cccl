@@ -29,7 +29,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <typename, typename _Tp>
 struct __select_2nd
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE _Tp type;
+  typedef _CCCL_NODEBUG_ALIAS _Tp type;
 };
 
 #if defined(_CCCL_BUILTIN_IS_ASSIGNABLE) && !defined(_LIBCUDACXX_USE_IS_ASSIGNABLE_FALLBACK)

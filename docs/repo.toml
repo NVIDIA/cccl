@@ -402,10 +402,13 @@ doxygen_predefined = [
   "__device__",
   "__host__",
   "__global__",
+  "_CCCL_CUDACC_AT_LEAST(x, y)=1",
+  "_CCCL_CUDACC_BELOW(x, y)=0",
   "_CCCL_DEVICE=",
   "_CCCL_EXEC_CHECK_DISABLE=",
   "_CCCL_FORCEINLINE=",
   "_CCCL_GLOBAL_CONSTANT=constexpr",
+  "_CCCL_HIDE_FROM_ABI=",
   "_CCCL_HOST=",
   "_CCCL_HOST_DEVICE=",
   "_CCCL_IF_CONSTEXPR=if constexpr",
@@ -425,13 +428,22 @@ doxygen_predefined = [
   "_CCCL_DIAG_SUPPRESS_ICC(x)=",
   "_CCCL_DIAG_SUPPRESS_MSVC(x)=",
   "_CCCL_DIAG_SUPPRESS_NVHPC(x)=",
+  "_CUDAX_API",
+  "_CUDAX_HOST_API",
+  "_CUDAX_DEVICE_API",
+  "_CUDAX_TRIVIAL_API",
+  "_CUDAX_TRIVIAL_HOST_API",
+  "_CUDAX_TRIVIAL_DEVICE_API",
+  "_CUDAX_PUBLIC_API",
   "_LIBCUDACXX_AND=&&",
   "_LIBCUDACXX_EAT_REST(x)=",
   "_LIBCUDACXX_GLOBAL_CONSTANT=inline",
-  "_LIBCUDACXX_REQUIRES(x)= ::cuda::std::__enable_if_t<x, int> = 0>",
+  "_LIBCUDACXX_REQUIRES(x)= ::cuda::std::enable_if_t<x, int> = 0>",
   "_LIBCUDACXX_TEMPLATE(x)=template<x, ",
   "_LIBCUDACXX_TRAILING_REQUIRES(x)=-> x _LIBCUDACXX_EAT_REST",
   "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE=",
+  "DOXYGEN_SHOULD_SKIP_THIS",
+  "DOXYGEN_ACTIVE",
 ]
 
 # make sure to use ./fetch_imgs.sh
@@ -443,7 +455,7 @@ doxygen_conf_extra = """
   EXTENSION_MAPPING      = cuh=c++ cu=c++
   EXAMPLE_RECURSIVE      = NO
   EXAMPLE_PATTERNS       = *.cu
-  EXCLUDE_SYMBOLS        = "*detail*" "*RESERVED*" "*reserved*" "__*" "_A*" "_B*" "_C*" "_D*" "_E*" "_F*" "_G*" "_H*" "_I*" "_J*" "_K*" "_L*" "_M*" "_N*" "_O*" "_P*" "_Q*" "_R*" "_S*" "_T*" "_U*" "_V*" "_W*" "_X*" "_Y*" "_Z*" "UNITTEST"
+  EXCLUDE_SYMBOLS        = "*detail*" "*RESERVED*" "*reserved*" "*__*" "_A*" "_B*" "_C*" "_D*" "_E*" "_F*" "_G*" "_H*" "_I*" "_J*" "_K*" "_L*" "_M*" "_N*" "_O*" "_P*" "_Q*" "_R*" "_S*" "_T*" "_U*" "_V*" "_W*" "_X*" "_Y*" "_Z*" "UNITTEST"
   AUTOLINK_SUPPORT       = YES
   FULL_PATH_NAMES        = YES
   STRIP_FROM_PATH        = ../../cudax

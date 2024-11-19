@@ -160,8 +160,7 @@ public:
   typedef typename iterator_traits<iterator_type>::difference_type difference_type;
   typedef iterator_type pointer;
   typedef typename iterator_traits<iterator_type>::reference __reference;
-  typedef __conditional_t<is_reference<__reference>::value, __libcpp_remove_reference_t<__reference>&&, __reference>
-    reference;
+  typedef conditional_t<is_reference<__reference>::value, remove_reference_t<__reference>&&, __reference> reference;
 #endif // _CCCL_STD_VER < 2017
 
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 explicit move_iterator(_Iter __i)
@@ -246,14 +245,14 @@ public:
       : __current_()
   {}
 
-  template <class _Up, class = __enable_if_t<!is_same<_Up, _Iter>::value && is_convertible<const _Up&, _Iter>::value>>
+  template <class _Up, class = enable_if_t<!is_same<_Up, _Iter>::value && is_convertible<const _Up&, _Iter>::value>>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 move_iterator(const move_iterator<_Up>& __u)
       : __current_(__u.base())
   {}
 
   template <class _Up,
-            class = __enable_if_t<!is_same<_Up, _Iter>::value && is_convertible<const _Up&, _Iter>::value
-                                  && is_assignable<_Iter&, const _Up&>::value>>
+            class = enable_if_t<!is_same<_Up, _Iter>::value && is_convertible<const _Up&, _Iter>::value
+                                && is_assignable<_Iter&, const _Up&>::value>>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 move_iterator& operator=(const move_iterator<_Up>& __u)
   {
     __current_ = __u.base();
@@ -393,11 +392,11 @@ public:
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(move_iterator);
 
 // Some compilers have issues determining _IsFancyPointer
-#if defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(GCC) || defined(_CCCL_COMPILER_MSVC)
 template <class _Iter>
 struct _IsFancyPointer<move_iterator<_Iter>> : _IsFancyPointer<_Iter>
 {};
-#endif // _CCCL_COMPILER_GCC || _CCCL_COMPILER_MSVC
+#endif // _CCCL_COMPILER(GCC) || _CCCL_COMPILER_MSVC
 
 template <class _Iter1, class _Iter2>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool

@@ -334,7 +334,7 @@ uninitialized_move_n(_InputIterator __ifirst, _Size __n, _ForwardIterator __ofir
 //
 // This function assumes that destructors do not throw, and that the allocator is bound to
 // the correct type.
-template <class _Alloc, class _BidirIter, __enable_if_t<__is_cpp17_bidirectional_iterator<_BidirIter>::value, int> = 0>
+template <class _Alloc, class _BidirIter, enable_if_t<__is_cpp17_bidirectional_iterator<_BidirIter>::value, int> = 0>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
 __allocator_destroy_multidimensional(_Alloc& __alloc, _BidirIter __first, _BidirIter __last) noexcept
 {
@@ -352,7 +352,7 @@ __allocator_destroy_multidimensional(_Alloc& __alloc, _BidirIter __first, _Bidir
     static_assert(!__libcpp_is_unbounded_array<_ValueType>::value,
                   "arrays of unbounded arrays don't exist, but if they did we would mess up here");
 
-    using _Element = __remove_extent_t<_ValueType>;
+    using _Element = remove_extent_t<_ValueType>;
     __allocator_traits_rebind_t<_Alloc, _Element> __elem_alloc(__alloc);
     do
     {
@@ -387,7 +387,7 @@ __allocator_construct_at_multidimensional(_Alloc& __alloc, _Tp* __loc)
 
   _CCCL_IF_CONSTEXPR (_CCCL_TRAIT(is_array, _Tp))
   {
-    using _Element = __remove_extent_t<_Tp>;
+    using _Element = remove_extent_t<_Tp>;
     __allocator_traits_rebind_t<_Alloc, _Element> __elem_alloc(__alloc);
     size_t __i   = 0;
     _Tp& __array = *__loc;
@@ -432,7 +432,7 @@ __allocator_construct_at_multidimensional(_Alloc& __alloc, _Tp* __loc, _Arg cons
                   "Provided non-array initialization argument to __allocator_construct_at_multidimensional when "
                   "trying to construct an array.");
 
-    using _Element = __remove_extent_t<_Tp>;
+    using _Element = remove_extent_t<_Tp>;
     __allocator_traits_rebind_t<_Alloc, _Element> __elem_alloc(__alloc);
     size_t __i   = 0;
     _Tp& __array = *__loc;
@@ -566,12 +566,12 @@ struct __allocator_has_trivial_copy_construct<allocator<_Type>, _Type> : true_ty
 template <
   class _Alloc,
   class _In,
-  class _RawTypeIn = __remove_const_t<_In>,
+  class _RawTypeIn = remove_const_t<_In>,
   class _Out,
-  __enable_if_t<
+  enable_if_t<
     // using _RawTypeIn because of the allocator<T const> extension
     _CCCL_TRAIT(is_trivially_copy_constructible, _RawTypeIn) && _CCCL_TRAIT(is_trivially_copy_assignable, _RawTypeIn)
-    && _CCCL_TRAIT(is_same, __remove_const_t<_In>, __remove_const_t<_Out>)
+    && _CCCL_TRAIT(is_same, remove_const_t<_In>, remove_const_t<_Out>)
     && __allocator_has_trivial_copy_construct<_Alloc, _RawTypeIn>::value>* = nullptr>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _Out*
 __uninitialized_allocator_copy_impl(_Alloc&, _In* __first1, _In* __last1, _Out* __first2)
@@ -639,14 +639,14 @@ template <class _Type>
 struct __allocator_has_trivial_move_construct<allocator<_Type>, _Type> : true_type
 {};
 
-#ifndef _CCCL_COMPILER_GCC
+#if !_CCCL_COMPILER(GCC)
 template <class _Alloc,
           class _Iter1,
           class _Iter2,
           class _Type = typename iterator_traits<_Iter1>::value_type,
-          class       = __enable_if_t<_CCCL_TRAIT(is_trivially_move_constructible, _Type)
-                                      && _CCCL_TRAIT(is_trivially_move_assignable, _Type)
-                                      && __allocator_has_trivial_move_construct<_Alloc, _Type>::value>>
+          class       = enable_if_t<_CCCL_TRAIT(is_trivially_move_constructible, _Type)
+                                    && _CCCL_TRAIT(is_trivially_move_assignable, _Type)
+                                    && __allocator_has_trivial_move_construct<_Alloc, _Type>::value>>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _Iter2
 __uninitialized_allocator_move_if_noexcept(_Alloc&, _Iter1 __first1, _Iter1 __last1, _Iter2 __first2)
 {
@@ -665,7 +665,7 @@ __uninitialized_allocator_move_if_noexcept(_Alloc&, _Iter1 __first1, _Iter1 __la
     return _CUDA_VSTD::move(__first1, __last1, __first2);
   }
 }
-#endif // _CCCL_COMPILER_GCC
+#endif // !_CCCL_COMPILER(GCC)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

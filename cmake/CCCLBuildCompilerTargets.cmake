@@ -52,8 +52,10 @@ function(cccl_build_compiler_targets)
   set(cxx_compile_definitions)
 
   list(APPEND cuda_compile_options "-Xcudafe=--display_error_number")
-  list(APPEND cuda_compile_options "-Xcudafe=--promote_warnings")
   list(APPEND cuda_compile_options "-Wno-deprecated-gpu-targets")
+  if (CCCL_ENABLE_WERROR)
+    list(APPEND cuda_compile_options "-Xcudafe=--promote_warnings")
+  endif()
 
   # Ensure that we build our tests without treating ourself as system header
   list(APPEND cxx_compile_definitions "_CCCL_NO_SYSTEM_HEADER")

@@ -21,15 +21,15 @@
 
 namespace cudax = cuda::experimental;
 
-static_assert(!cuda::std::is_trivial<cudax::mr::async_memory_resource>::value, "");
-static_assert(!cuda::std::is_trivially_default_constructible<cudax::mr::async_memory_resource>::value, "");
-static_assert(cuda::std::is_default_constructible<cudax::mr::async_memory_resource>::value, "");
-static_assert(cuda::std::is_copy_constructible<cudax::mr::async_memory_resource>::value, "");
-static_assert(cuda::std::is_move_constructible<cudax::mr::async_memory_resource>::value, "");
-static_assert(cuda::std::is_copy_assignable<cudax::mr::async_memory_resource>::value, "");
-static_assert(cuda::std::is_move_assignable<cudax::mr::async_memory_resource>::value, "");
-static_assert(cuda::std::is_trivially_destructible<cudax::mr::async_memory_resource>::value, "");
-static_assert(!cuda::std::is_empty<cudax::mr::async_memory_resource>::value, "");
+static_assert(!cuda::std::is_trivial<cudax::mr::device_memory_resource>::value, "");
+static_assert(!cuda::std::is_trivially_default_constructible<cudax::mr::device_memory_resource>::value, "");
+static_assert(cuda::std::is_default_constructible<cudax::mr::device_memory_resource>::value, "");
+static_assert(cuda::std::is_copy_constructible<cudax::mr::device_memory_resource>::value, "");
+static_assert(cuda::std::is_move_constructible<cudax::mr::device_memory_resource>::value, "");
+static_assert(cuda::std::is_copy_assignable<cudax::mr::device_memory_resource>::value, "");
+static_assert(cuda::std::is_move_assignable<cudax::mr::device_memory_resource>::value, "");
+static_assert(cuda::std::is_trivially_destructible<cudax::mr::device_memory_resource>::value, "");
+static_assert(!cuda::std::is_empty<cudax::mr::device_memory_resource>::value, "");
 
 static bool ensure_release_threshold(::cudaMemPool_t pool, const size_t expected_threshold)
 {
@@ -67,7 +67,7 @@ static bool ensure_export_handle(::cudaMemPool_t pool, const ::cudaMemAllocation
   return allocation_handle == ::cudaMemHandleTypeNone ? status == ::cudaErrorInvalidValue : status == ::cudaSuccess;
 }
 
-TEST_CASE("async_memory_resource construction", "[memory_resource]")
+TEST_CASE("device_memory_resource construction", "[memory_resource]")
 {
   int current_device{};
   {
@@ -87,7 +87,7 @@ TEST_CASE("async_memory_resource construction", "[memory_resource]")
                        current_device);
   }
 
-  using async_resource = cuda::experimental::mr::async_memory_resource;
+  using async_resource = cuda::experimental::mr::device_memory_resource;
   SECTION("Default construction")
   {
     {
@@ -99,7 +99,7 @@ TEST_CASE("async_memory_resource construction", "[memory_resource]")
     void* ptr{nullptr};
     _CCCL_TRY_CUDA_API(
       ::cudaMallocAsync,
-      "Failed to allocate with pool passed to cuda::experimental::mr::async_memory_resource",
+      "Failed to allocate with pool passed to cuda::experimental::mr::device_memory_resource",
       &ptr,
       42,
       current_default_pool,
@@ -108,7 +108,7 @@ TEST_CASE("async_memory_resource construction", "[memory_resource]")
 
     _CCCL_ASSERT_CUDA_API(
       ::cudaFreeAsync,
-      "Failed to deallocate with pool passed to cuda::experimental::mr::async_memory_resource",
+      "Failed to deallocate with pool passed to cuda::experimental::mr::device_memory_resource",
       ptr,
       ::cudaStream_t{0});
   }
@@ -133,7 +133,7 @@ TEST_CASE("async_memory_resource construction", "[memory_resource]")
     void* ptr{nullptr};
     _CCCL_TRY_CUDA_API(
       ::cudaMallocAsync,
-      "Failed to allocate with pool passed to cuda::experimental::mr::async_memory_resource",
+      "Failed to allocate with pool passed to cuda::experimental::mr::device_memory_resource",
       &ptr,
       42,
       current_default_pool,
@@ -142,17 +142,17 @@ TEST_CASE("async_memory_resource construction", "[memory_resource]")
 
     _CCCL_ASSERT_CUDA_API(
       ::cudaFreeAsync,
-      "Failed to deallocate with pool passed to cuda::experimental::mr::async_memory_resource",
+      "Failed to deallocate with pool passed to cuda::experimental::mr::device_memory_resource",
       ptr,
       ::cudaStream_t{0});
   }
 
   SECTION("Construct with initial pool size")
   {
-    cuda::experimental::mr::async_memory_pool_properties props = {
+    cuda::experimental::mr::memory_pool_properties props = {
       42,
     };
-    cuda::experimental::mr::async_memory_pool pool{current_device, props};
+    cuda::experimental::mr::device_memory_pool pool{current_device, props};
     async_resource from_initial_pool_size{pool};
 
     ::cudaMemPool_t get = from_initial_pool_size.get();
@@ -170,11 +170,11 @@ TEST_CASE("async_memory_resource construction", "[memory_resource]")
 
   SECTION("Construct with release threshold")
   {
-    cuda::experimental::mr::async_memory_pool_properties props = {
+    cuda::experimental::mr::memory_pool_properties props = {
       42,
       20,
     };
-    cuda::experimental::mr::async_memory_pool pool{current_device, props};
+    cuda::experimental::mr::device_memory_pool pool{current_device, props};
     async_resource with_threshold{pool};
 
     ::cudaMemPool_t get = with_threshold.get();
@@ -191,15 +191,15 @@ TEST_CASE("async_memory_resource construction", "[memory_resource]")
   }
 
   // Allocation handles are only supported after 11.2
-#if !defined(_CCCL_CUDACC_BELOW_11_2)
+#if _CCCL_CUDACC_AT_LEAST(11, 2)
   SECTION("Construct with allocation handle")
   {
-    cuda::experimental::mr::async_memory_pool_properties props = {
+    cuda::experimental::mr::memory_pool_properties props = {
       42,
       20,
       cuda::experimental::mr::cudaMemAllocationHandleType::cudaMemHandleTypePosixFileDescriptor,
     };
-    cuda::experimental::mr::async_memory_pool pool{current_device, props};
+    cuda::experimental::mr::device_memory_pool pool{current_device, props};
     async_resource with_allocation_handle{pool};
 
     ::cudaMemPool_t get = with_allocation_handle.get();
@@ -214,7 +214,7 @@ TEST_CASE("async_memory_resource construction", "[memory_resource]")
     // Ensure that we disable export
     CHECK(ensure_export_handle(get, static_cast<cudaMemAllocationHandleType>(props.allocation_handle_type)));
   }
-#endif // !_CCCL_CUDACC_BELOW_11_2
+#endif // _CCCL_CUDACC_AT_LEAST(11, 2)
 }
 
 static void ensure_device_ptr(void* ptr)
@@ -226,9 +226,9 @@ static void ensure_device_ptr(void* ptr)
   CHECK(attributes.type == cudaMemoryTypeDevice);
 }
 
-TEST_CASE("async_memory_resource allocation", "[memory_resource]")
+TEST_CASE("device_memory_resource allocation", "[memory_resource]")
 {
-  cuda::experimental::mr::async_memory_resource res{};
+  cuda::experimental::mr::device_memory_resource res{};
 
   { // allocate / deallocate
     auto* ptr = res.allocate(42);
@@ -397,21 +397,21 @@ static_assert(cuda::mr::async_resource<async_resource<AccessibilityType::Device>
 static_assert(cuda::mr::async_resource_with<async_resource<AccessibilityType::Device>, cuda::mr::device_accessible>,
               "");
 
-TEST_CASE("async_memory_resource comparison", "[memory_resource]")
+TEST_CASE("device_memory_resource comparison", "[memory_resource]")
 {
   int current_device{};
   {
     _CCCL_TRY_CUDA_API(::cudaGetDevice, "Failed to query current device with cudaGetDevice.", &current_device);
   }
 
-  cuda::experimental::mr::async_memory_resource first{};
-  { // comparison against a plain async_memory_resource
-    cuda::experimental::mr::async_memory_resource second{};
+  cuda::experimental::mr::device_memory_resource first{};
+  { // comparison against a plain device_memory_resource
+    cuda::experimental::mr::device_memory_resource second{};
     CHECK(first == second);
     CHECK(!(first != second));
   }
 
-  { // comparison against a plain async_memory_resource with a different pool
+  { // comparison against a plain device_memory_resource with a different pool
     cudaMemPool_t cuda_pool_handle{};
     {
       ::cudaMemPoolProps pool_properties{};
@@ -421,13 +421,13 @@ TEST_CASE("async_memory_resource comparison", "[memory_resource]")
       pool_properties.location.id   = current_device;
       _CCCL_TRY_CUDA_API(::cudaMemPoolCreate, "Failed to call cudaMemPoolCreate", &cuda_pool_handle, &pool_properties);
     }
-    cuda::experimental::mr::async_memory_resource second{cuda_pool_handle};
+    cuda::experimental::mr::device_memory_resource second{cuda_pool_handle};
     CHECK(first != second);
     CHECK(!(first == second));
   }
 
-  { // comparison against a async_memory_resource wrapped inside a resource_ref<device_accessible>
-    cuda::experimental::mr::async_memory_resource second{};
+  { // comparison against a device_memory_resource wrapped inside a resource_ref<device_accessible>
+    cuda::experimental::mr::device_memory_resource second{};
     cuda::mr::resource_ref<cuda::mr::device_accessible> second_ref{second};
     CHECK(first == second_ref);
     CHECK(!(first != second_ref));
@@ -435,8 +435,8 @@ TEST_CASE("async_memory_resource comparison", "[memory_resource]")
     CHECK(!(second_ref != first));
   }
 
-  { // comparison against a async_memory_resource wrapped inside a async_resource_ref
-    cuda::experimental::mr::async_memory_resource second{};
+  { // comparison against a device_memory_resource wrapped inside a async_resource_ref
+    cuda::experimental::mr::device_memory_resource second{};
     cuda::mr::async_resource_ref<cuda::mr::device_accessible> second_ref{second};
 
     CHECK(first == second_ref);
@@ -481,8 +481,8 @@ TEST_CASE("Async memory resource peer access")
     auto peers = cudax::devices[0].get_peers();
     if (peers.size() > 0)
     {
-      cudax::mr::async_memory_pool pool{cudax::devices[0]};
-      cudax::mr::async_memory_resource resource{pool};
+      cudax::mr::device_memory_pool pool{cudax::devices[0]};
+      cudax::mr::device_memory_resource resource{pool};
       cudax::stream stream{peers.front()};
       CUDAX_CHECK(resource.is_accessible_from(cudax::devices[0]));
 
@@ -497,17 +497,17 @@ TEST_CASE("Async memory resource peer access")
         resource.deallocate(ptr2, sizeof(int));
       };
 
-      resource.enable_peer_access(peers);
+      resource.enable_peer_access_from(peers);
 
       CUDAX_CHECK(pool.is_accessible_from(peers.front()));
       CUDAX_CHECK(resource.is_accessible_from(peers.front()));
       allocate_and_check_access(resource);
 
-      cudax::mr::async_memory_resource another_resource{pool};
+      cudax::mr::device_memory_resource another_resource{pool};
       CUDAX_CHECK(another_resource.is_accessible_from(peers.front()));
       allocate_and_check_access(another_resource);
 
-      resource.disable_peer_access(peers.front());
+      resource.disable_peer_access_from(peers.front());
       CUDAX_CHECK(!resource.is_accessible_from(peers.front()));
       CUDAX_CHECK(!another_resource.is_accessible_from(peers.front()));
 
@@ -516,21 +516,21 @@ TEST_CASE("Async memory resource peer access")
         CUDAX_CHECK(resource.is_accessible_from(peers[1]));
       }
 
-      resource.disable_peer_access(peers);
+      resource.disable_peer_access_from(peers);
 
-      resource.enable_peer_access(peers.front());
+      resource.enable_peer_access_from(peers.front());
       CUDAX_CHECK(resource.is_accessible_from(peers.front()));
       CUDAX_CHECK(another_resource.is_accessible_from(peers.front()));
 
       // Check if enable can include the device on which the pool resides
       peers.push_back(cudax::devices[0]);
-      resource.enable_peer_access(peers);
+      resource.enable_peer_access_from(peers);
 
       // Check the resource using the default pool
-      cudax::mr::async_memory_resource default_pool_resource{};
-      cudax::mr::async_memory_resource another_default_pool_resource{};
+      cudax::mr::device_memory_resource default_pool_resource{};
+      cudax::mr::device_memory_resource another_default_pool_resource{};
 
-      default_pool_resource.enable_peer_access(peers.front());
+      default_pool_resource.enable_peer_access_from(peers.front());
 
       CUDAX_CHECK(default_pool_resource.is_accessible_from(peers.front()));
       allocate_and_check_access(default_pool_resource);

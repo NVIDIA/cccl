@@ -35,8 +35,8 @@
 
 #include <algorithm>
 
-#include <c2h/catch2_test_helper.cuh>
-#include <c2h/custom_type.cuh>
+#include <c2h/catch2_test_helper.h>
+#include <c2h/custom_type.h>
 
 struct CustomLess
 {

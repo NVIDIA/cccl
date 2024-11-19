@@ -212,7 +212,7 @@ public:
       calibrate = needs_calibration;
     }
 
-    return dot.is_tracing() || (calibrate && statistics.is_calibrating());
+    return dot.is_timing() || (calibrate && statistics.is_calibrating());
   }
 
   /**

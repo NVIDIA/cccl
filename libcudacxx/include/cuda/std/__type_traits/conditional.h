@@ -29,18 +29,18 @@ template <>
 struct _IfImpl<true>
 {
   template <class _IfRes, class _ElseRes>
-  using _Select _LIBCUDACXX_NODEBUG_TYPE = _IfRes;
+  using _Select _CCCL_NODEBUG_ALIAS = _IfRes;
 };
 
 template <>
 struct _IfImpl<false>
 {
   template <class _IfRes, class _ElseRes>
-  using _Select _LIBCUDACXX_NODEBUG_TYPE = _ElseRes;
+  using _Select _CCCL_NODEBUG_ALIAS = _ElseRes;
 };
 
 template <bool _Cond, class _IfRes, class _ElseRes>
-using _If _LIBCUDACXX_NODEBUG_TYPE = typename _IfImpl<_Cond>::template _Select<_IfRes, _ElseRes>;
+using _If _CCCL_NODEBUG_ALIAS = typename _IfImpl<_Cond>::template _Select<_IfRes, _ElseRes>;
 
 template <bool _Bp, class _If, class _Then>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional
@@ -53,14 +53,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT conditional<false, _If, _Then>
   typedef _Then type;
 };
 
-#if _CCCL_STD_VER > 2011
-template <bool _Bp, class _IfRes, class _ElseRes>
-using conditional_t = typename conditional<_Bp, _IfRes, _ElseRes>::type;
-#endif
-
-// Helper so we can use "conditional_t" in all language versions.
 template <bool _Bp, class _If, class _Then>
-using __conditional_t = typename conditional<_Bp, _If, _Then>::type;
+using conditional_t _CCCL_NODEBUG_ALIAS = typename conditional<_Bp, _If, _Then>::type;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

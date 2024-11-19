@@ -52,6 +52,12 @@ AttributeMacros: [
                   '_LIBCUDACXX_DEPRECATED_IN_CXX20',
                   '_LIBCUDACXX_DEPRECATED',
                   '_LIBCUDACXX_HIDE_FROM_ABI',
+                  '_CUDAX_API',
+                  '_CUDAX_HOST_API',
+                  '_CUDAX_DEVICE_API',
+                  '_CUDAX_TRIVIAL_API',
+                  '_CUDAX_TRIVIAL_HOST_API',
+                  '_CUDAX_TRIVIAL_DEVICE_API',
                  ]
 BinPackArguments: false
 BinPackParameters: false
@@ -124,6 +130,8 @@ MaxEmptyLinesToKeep: 1
 Macros:
 - _LIBCUDACXX_TEMPLATE(...)=template<...>
 - _LIBCUDACXX_REQUIRES(...)=requires (...)
+WhitespaceSensitiveMacros:
+- _CCCL_HAS_INCLUDE
 NamespaceIndentation: None
 PackConstructorInitializers: Never
 PenaltyBreakAssignment: 30

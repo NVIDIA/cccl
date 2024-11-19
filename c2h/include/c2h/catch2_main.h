@@ -27,6 +27,8 @@
 
 #pragma once
 
+#include <thrust/detail/config/device_system.h>
+
 #include <iostream>
 
 //! @file
@@ -41,16 +43,19 @@
 #include <catch2/catch.hpp>
 
 #if defined(CUB_CONFIG_MAIN)
-#  include <c2h/catch2_runner_helper.cuh>
+#  if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
+#    include <c2h/catch2_runner_helper.h>
 
-#  if !defined(CUB_EXCLUDE_CATCH2_HELPER_IMPL)
-#    include "catch2_runner_helper.inl"
-#  endif
+#    ifndef CUB_EXCLUDE_CATCH2_HELPER_IMPL
+#      include "catch2_runner_helper.inl"
+#    endif // !CUB_EXCLUDE_CATCH2_HELPER_IMPL
+#  endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
 
 int main(int argc, char* argv[])
 {
   Catch::Session session;
 
+#  if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
   int device_id{};
 
   // Build a new parser on top of Catch's
@@ -65,6 +70,7 @@ int main(int argc, char* argv[])
   }
 
   set_device(device_id);
+#  endif // THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
   return session.run(argc, argv);
 }
 #endif

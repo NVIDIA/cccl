@@ -448,7 +448,7 @@ void dep_allocate(
     }
 
     // After allocating a reduction instance, we need to initialize it
-    if (mode == access_mode::redux)
+    if (mode == access_mode::relaxed)
     {
       assert(eplace.has_value());
       // We have just allocated a new piece of data to perform

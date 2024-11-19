@@ -24,12 +24,12 @@
 #include <cuda/std/__type_traits/conditional.h>
 
 #include <cuda/experimental/__async/completion_signatures.cuh>
-#include <cuda/experimental/__async/config.cuh>
 #include <cuda/experimental/__async/cpos.cuh>
 #include <cuda/experimental/__async/env.cuh>
 #include <cuda/experimental/__async/exception.cuh>
 #include <cuda/experimental/__async/queries.cuh>
 #include <cuda/experimental/__async/utility.cuh>
+#include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/prologue.cuh>
 
@@ -53,7 +53,7 @@ private:
   struct __completions_fn
   {
     template <class _Query, class _Env>
-    using __f = _CUDA_VSTD::_If<
+    using __call = _CUDA_VSTD::conditional_t<
       __nothrow_callable<_Query, _Env>,
       completion_signatures<set_value_t(__call_result_t<_Query, _Env>)>,
       completion_signatures<set_value_t(__call_result_t<_Query, _Env>), set_error_t(::std::exception_ptr)>>;
@@ -64,21 +64,21 @@ private:
   {
     using operation_state_concept = operation_state_t;
     using completion_signatures   = //
-      __minvoke<
-        _CUDA_VSTD::
-          _If<__callable<_Query, env_of_t<_Rcvr>>, __completions_fn, __error_env_lacks_query<_Query, env_of_t<_Rcvr>>>,
-        _Query,
-        env_of_t<_Rcvr>>;
+      _CUDA_VSTD::__type_call<_CUDA_VSTD::conditional_t<__callable<_Query, env_of_t<_Rcvr>>,
+                                                        __completions_fn,
+                                                        __error_env_lacks_query<_Query, env_of_t<_Rcvr>>>,
+                              _Query,
+                              env_of_t<_Rcvr>>;
 
     _Rcvr __rcvr_;
 
-    _CCCL_HOST_DEVICE explicit __opstate_t(_Rcvr __rcvr)
+    _CUDAX_API explicit __opstate_t(_Rcvr __rcvr)
         : __rcvr_(static_cast<_Rcvr&&>(__rcvr))
     {}
 
     _CUDAX_IMMOVABLE(__opstate_t);
 
-    _CCCL_HOST_DEVICE void start() noexcept
+    _CUDAX_API void start() noexcept
     {
       // If the query invocation is noexcept, call it directly. Otherwise,
       // wrap it in a try-catch block and forward the exception to the
@@ -110,8 +110,8 @@ private:
   {
     using operation_state_concept = operation_state_t;
     using completion_signatures   = dependent_completions;
-    _CCCL_HOST_DEVICE explicit __opstate_t(receiver_archetype);
-    _CCCL_HOST_DEVICE void start() noexcept;
+    _CUDAX_API explicit __opstate_t(receiver_archetype);
+    _CUDAX_API void start() noexcept;
   };
 
   template <class _Query>
@@ -122,7 +122,7 @@ public:
   /// invokes the query with the receiver's environment and forwards the result
   /// to the receiver's `set_value` member.
   template <class _Query>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE constexpr __sndr_t<_Query> operator()(_Query) const noexcept;
+  _CUDAX_TRIVIAL_API constexpr __sndr_t<_Query> operator()(_Query) const noexcept;
 };
 
 template <class _Query>
@@ -133,15 +133,14 @@ struct read_env_t::__sndr_t
   _CCCL_NO_UNIQUE_ADDRESS _Query __query;
 
   template <class _Rcvr>
-  _CCCL_HOST_DEVICE auto connect(_Rcvr __rcvr) const noexcept(__nothrow_movable<_Rcvr>) -> __opstate_t<_Rcvr, _Query>
+  _CUDAX_API auto connect(_Rcvr __rcvr) const noexcept(__nothrow_movable<_Rcvr>) -> __opstate_t<_Rcvr, _Query>
   {
     return __opstate_t<_Rcvr, _Query>{static_cast<_Rcvr&&>(__rcvr)};
   }
 };
 
 template <class _Query>
-_CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE constexpr read_env_t::__sndr_t<_Query>
-read_env_t::operator()(_Query __query) const noexcept
+_CUDAX_TRIVIAL_API constexpr read_env_t::__sndr_t<_Query> read_env_t::operator()(_Query __query) const noexcept
 {
   return __sndr_t<_Query>{{}, __query};
 }

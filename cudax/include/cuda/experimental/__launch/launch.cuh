@@ -41,6 +41,8 @@ template <typename Config, typename Kernel, typename... Args>
 _CCCL_NODISCARD cudaError_t
 launch_impl(::cuda::stream_ref stream, Config conf, const Kernel& kernel_fn, const Args&... args)
 {
+  static_assert(!::cuda::std::is_same_v<decltype(conf.dims), uninit_t>,
+                "Can't launch a configuration without hierarchy dimensions");
   cudaLaunchConfig_t config{};
   cudaError_t status                      = cudaSuccess;
   constexpr bool has_cluster_level        = has_level<cluster_level, decltype(conf.dims)>;
@@ -119,7 +121,7 @@ launch_impl(::cuda::stream_ref stream, Config conf, const Kernel& kernel_fn, con
  */
 template <typename... Args, typename... Config, typename Dimensions, typename Kernel>
 void launch(
-  ::cuda::stream_ref stream, const kernel_config<Dimensions, Config...>& conf, const Kernel& kernel, Args... args)
+  ::cuda::stream_ref stream, const kernel_config<Dimensions, Config...>& conf, const Kernel& kernel, Args&&... args)
 {
   __ensure_current_device __dev_setter(stream);
   cudaError_t status;
@@ -132,14 +134,18 @@ void launch(
       launcher,
       conf,
       kernel,
-      static_cast<as_kernel_arg_t<Args>>(detail::__launch_transform(stream, args))...);
+      static_cast<as_kernel_arg_t<Args>>(detail::__launch_transform(stream, std::forward<Args>(args)))...);
   }
   else
   {
     static_assert(::cuda::std::is_invocable_v<Kernel, as_kernel_arg_t<Args>...>);
     auto launcher = detail::kernel_launcher_no_config<Kernel, as_kernel_arg_t<Args>...>;
     status        = detail::launch_impl(
-      stream, conf, launcher, kernel, static_cast<as_kernel_arg_t<Args>>(detail::__launch_transform(stream, args))...);
+      stream,
+      conf,
+      launcher,
+      kernel,
+      static_cast<as_kernel_arg_t<Args>>(detail::__launch_transform(stream, std::forward<Args>(args)))...);
   }
   if (status != cudaSuccess)
   {
@@ -189,7 +195,7 @@ void launch(
  * arguments to be passed into the kernel functor
  */
 template <typename... Args, typename... Levels, typename Kernel>
-void launch(::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& dims, const Kernel& kernel, Args... args)
+void launch(::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& dims, const Kernel& kernel, Args&&... args)
 {
   __ensure_current_device __dev_setter(stream);
   cudaError_t status;
@@ -202,7 +208,7 @@ void launch(::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& di
       launcher,
       dims,
       kernel,
-      static_cast<as_kernel_arg_t<Args>>(detail::__launch_transform(stream, args))...);
+      static_cast<as_kernel_arg_t<Args>>(detail::__launch_transform(stream, std::forward<Args>(args)))...);
   }
   else
   {
@@ -213,7 +219,7 @@ void launch(::cuda::stream_ref stream, const hierarchy_dimensions<Levels...>& di
       kernel_config(dims),
       launcher,
       kernel,
-      static_cast<as_kernel_arg_t<Args>>(detail::__launch_transform(stream, args))...);
+      static_cast<as_kernel_arg_t<Args>>(detail::__launch_transform(stream, std::forward<Args>(args)))...);
   }
   if (status != cudaSuccess)
   {

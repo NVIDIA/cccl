@@ -56,7 +56,7 @@ generate(thrust::execution_policy<ExecutionPolicy>& exec, ForwardIterator first,
   // functionality.
   THRUST_STATIC_ASSERT_MSG(
     !::cuda::std::is_const<
-      ::cuda::std::__libcpp_remove_reference_t<typename thrust::iterator_traits<ForwardIterator>::reference>>::value,
+      ::cuda::std::remove_reference_t<typename thrust::iterator_traits<ForwardIterator>::reference>>::value,
     "generating to `const` iterators is not allowed");
   thrust::for_each(exec, first, last, typename thrust::detail::generate_functor<ExecutionPolicy, Generator>::type(gen));
 } // end generate()
@@ -78,7 +78,7 @@ generate_n(thrust::execution_policy<ExecutionPolicy>& exec, OutputIterator first
   // functionality.
   THRUST_STATIC_ASSERT_MSG(
     !::cuda::std::is_const<
-      ::cuda::std::__libcpp_remove_reference_t<typename thrust::iterator_traits<OutputIterator>::reference>>::value,
+      ::cuda::std::remove_reference_t<typename thrust::iterator_traits<OutputIterator>::reference>>::value,
     "generating to `const` iterators is not allowed");
   return thrust::for_each_n(
     exec, first, n, typename thrust::detail::generate_functor<ExecutionPolicy, Generator>::type(gen));

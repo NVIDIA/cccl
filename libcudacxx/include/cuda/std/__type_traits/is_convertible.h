@@ -136,8 +136,7 @@ struct __is_array_function_or_void<_Tp, false, false, true>
 };
 } // namespace __is_convertible_imp
 
-template <class _Tp,
-          unsigned = __is_convertible_imp::__is_array_function_or_void<__libcpp_remove_reference_t<_Tp>>::value>
+template <class _Tp, unsigned = __is_convertible_imp::__is_array_function_or_void<remove_reference_t<_Tp>>::value>
 struct __is_convertible_check
 {
   static const size_t __v = 0;

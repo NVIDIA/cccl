@@ -254,7 +254,7 @@ private:
   using __base_t = typename __partially_static_array_impl_maker<_Tp, _static_t, _ValsSeq, __sentinal>::__impl_base;
 
 public:
-#    if defined(_CCCL_COMPILER_NVRTC) || defined(_CCCL_CUDACC_BELOW_11_3)
+#    if _CCCL_COMPILER(NVRTC) || _CCCL_CUDACC_BELOW(11, 3)
   _CCCL_HIDE_FROM_ABI constexpr __partially_static_array_with_sentinal() = default;
 
   template <class... _Args>
@@ -262,9 +262,9 @@ public:
     noexcept(__base_t(_CUDA_VSTD::declval<_Args>()...)))
       : __base_t(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
-#    else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
+#    else // ^^^ _CCCL_COMPILER(NVRTC) || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER(NVRTC) || nvcc >= 11.3 vvv
   using __base_t::__base_t;
-#    endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
+#    endif // !_CCCL_COMPILER(NVRTC) || nvcc >= 11.3
 };
 
 //==============================================================================
@@ -282,7 +282,7 @@ private:
                                            _CUDA_VSTD::integer_sequence<_static_t, __values_or_sentinals...>>;
 
 public:
-#    if defined(_CCCL_COMPILER_NVRTC) || defined(_CCCL_CUDACC_BELOW_11_3)
+#    if _CCCL_COMPILER(NVRTC) || _CCCL_CUDACC_BELOW(11, 3)
   _CCCL_HIDE_FROM_ABI constexpr __partially_static_sizes() = default;
 
   template <class... _Args>
@@ -290,9 +290,9 @@ public:
     noexcept(__base_t(_CUDA_VSTD::declval<_Args>()...)))
       : __base_t(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
-#    else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
+#    else // ^^^ _CCCL_COMPILER(NVRTC) || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER(NVRTC) || nvcc >= 11.3 vvv
   using __base_t::__base_t;
-#    endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
+#    endif // !_CCCL_COMPILER(NVRTC) || nvcc >= 11.3
   template <class _UTag>
   __MDSPAN_FORCE_INLINE_FUNCTION constexpr __partially_static_sizes<T, _static_t, __values_or_sentinals...>
   __with_tag() const noexcept

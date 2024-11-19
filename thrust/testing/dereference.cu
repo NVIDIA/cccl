@@ -71,6 +71,32 @@ void TestDeviceDereferenceTransformIterator()
 }
 DECLARE_UNITTEST(TestDeviceDereferenceTransformIterator);
 
+void TestDeviceDereferenceTransformIteratorInputConversion()
+{
+  thrust::device_vector<int> input = unittest::random_integers<int>(100);
+  thrust::device_vector<double> output(input.size(), 0);
+
+  simple_copy(thrust::make_transform_iterator(input.begin(), thrust::identity<double>()),
+              thrust::make_transform_iterator(input.end(), thrust::identity<double>()),
+              output.begin());
+
+  ASSERT_EQUAL(input == output, true);
+}
+DECLARE_UNITTEST(TestDeviceDereferenceTransformIteratorInputConversion);
+
+void TestDeviceDereferenceTransformIteratorOutputConversion()
+{
+  thrust::device_vector<int> input = unittest::random_integers<int>(100);
+  thrust::device_vector<double> output(input.size(), 0);
+
+  simple_copy(thrust::make_transform_iterator(input.begin(), thrust::identity<int>()),
+              thrust::make_transform_iterator(input.end(), thrust::identity<int>()),
+              output.begin());
+
+  ASSERT_EQUAL(input == output, true);
+}
+DECLARE_UNITTEST(TestDeviceDereferenceTransformIteratorOutputConversion);
+
 void TestDeviceDereferenceCountingIterator()
 {
   thrust::counting_iterator<int> first(1);

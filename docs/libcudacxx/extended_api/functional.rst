@@ -18,6 +18,10 @@ Function wrapper
      - Creates a forwarding call wrapper that proclaims return type
      - libcu++ 1.9.0 / CCCL 2.0.0 / CUDA 11.8
 
+   * - ``cuda::proclaim_copyable_arguments``
+     - Creates a forwarding call wrapper that proclaims that arguments can be freely copied before an invocation of the wrapped callable
+     - CCCL 2.8.0
+
    * - :ref:`cuda::get_device_address <libcudacxx-extended-api-functional-get-device-address>`
      - Returns a valid address to a device object
      - CCCL 2.8.0

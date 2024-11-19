@@ -826,7 +826,7 @@ public:
 
 private:
   typedef typename _Engine::result_type _Engine_result_type;
-  typedef __conditional_t<sizeof(_Engine_result_type) <= sizeof(result_type), result_type, _Engine_result_type>
+  typedef conditional_t<sizeof(_Engine_result_type) <= sizeof(result_type), result_type, _Engine_result_type>
     _Working_result_type;
 
   _Engine& __e_;
@@ -1058,7 +1058,7 @@ template <class _URNG>
 typename uniform_int_distribution<_IntType>::result_type uniform_int_distribution<_IntType>::operator()(
   _URNG& __g, const param_type& __p) _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK
 {
-  typedef __conditional_t<sizeof(result_type) <= sizeof(uint32_t), uint32_t, uint64_t> _UIntType;
+  typedef conditional_t<sizeof(result_type) <= sizeof(uint32_t), uint32_t, uint64_t> _UIntType;
   const _UIntType _Rp = _UIntType(__p.b()) - _UIntType(__p.a()) + _UIntType(1);
   if (_Rp == 1)
   {
@@ -1256,7 +1256,7 @@ _CCCL_HOST_DEVICE _ForwardIterator __stable_partition(
   // recurse on [__first, __m), *__first know to be false
   // F?????????????????
   // f       m         l
-  typedef __add_lvalue_reference_t<_Predicate> _PredRef;
+  typedef add_lvalue_reference_t<_Predicate> _PredRef;
   _ForwardIterator __first_false = __stable_partition<_PredRef>(__first, __m, __pred, __len2, __p, __fit);
   // TTTFFFFF??????????
   // f  ff   m         l
@@ -1313,7 +1313,7 @@ __stable_partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate
     __p = _CUDA_VSTD::get_temporary_buffer<value_type>(__len);
     __h.reset(__p.first);
   }
-  return __stable_partition<__add_lvalue_reference_t<_Predicate>>(
+  return __stable_partition<add_lvalue_reference_t<_Predicate>>(
     __first, __last, __pred, __len, __p, forward_iterator_tag());
 }
 
@@ -1406,7 +1406,7 @@ _CCCL_HOST_DEVICE _BidirectionalIterator __stable_partition(
   }
   // F???TFFF?????????T
   // f   m1  m        l
-  typedef __add_lvalue_reference_t<_Predicate> _PredRef;
+  typedef add_lvalue_reference_t<_Predicate> _PredRef;
   __first_false = __stable_partition<_PredRef>(__first, __m1, __pred, __len_half, __p, __bit);
 __first_half_done:
   // TTTFFFFF?????????T
@@ -1476,7 +1476,7 @@ _CCCL_HOST_DEVICE _BidirectionalIterator __stable_partition(
     __p = _CUDA_VSTD::get_temporary_buffer<value_type>(__len);
     __h.reset(__p.first);
   }
-  return __stable_partition<__add_lvalue_reference_t<_Predicate>>(
+  return __stable_partition<add_lvalue_reference_t<_Predicate>>(
     __first, __last, __pred, __len, __p, bidirectional_iterator_tag());
 }
 
@@ -1484,7 +1484,7 @@ template <class _ForwardIterator, class _Predicate>
 _LIBCUDACXX_HIDE_FROM_ABI _ForwardIterator
 stable_partition(_ForwardIterator __first, _ForwardIterator __last, _Predicate __pred)
 {
-  return __stable_partition<__add_lvalue_reference_t<_Predicate>>(
+  return __stable_partition<add_lvalue_reference_t<_Predicate>>(
     __first, __last, __pred, typename iterator_traits<_ForwardIterator>::iterator_category());
 }
 
@@ -1596,7 +1596,7 @@ _CCCL_HOST_DEVICE void __selection_sort(_BirdirectionalIterator __first, _Birdir
   for (--__lm1; __first != __lm1; ++__first)
   {
     _BirdirectionalIterator __i =
-      _CUDA_VSTD::min_element<_BirdirectionalIterator, __add_lvalue_reference_t<_Compare>>(__first, __last, __comp);
+      _CUDA_VSTD::min_element<_BirdirectionalIterator, add_lvalue_reference_t<_Compare>>(__first, __last, __comp);
     if (__i != __first)
     {
       swap(*__first, *__i);
@@ -1979,7 +1979,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void sort(__wrap_iter<_Tp*> __first, __wrap_iter<_Tp*>
 template <class _Tp, class _Compare>
 _LIBCUDACXX_HIDE_FROM_ABI void sort(__wrap_iter<_Tp*> __first, __wrap_iter<_Tp*> __last, _Compare __comp)
 {
-  typedef __add_lvalue_reference_t<_Compare> _Comp_ref;
+  typedef add_lvalue_reference_t<_Compare> _Comp_ref;
   _CUDA_VSTD::sort<_Tp*, _Comp_ref>(__first.base(), __last.base(), __comp);
 }
 

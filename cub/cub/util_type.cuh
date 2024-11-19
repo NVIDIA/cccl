@@ -51,19 +51,19 @@
 #include <cuda/std/type_traits>
 
 #if defined(_CCCL_HAS_NVBF16)
-#  if !defined(_CCCL_CUDACC_BELOW_11_8)
+#  if _CCCL_CUDACC_AT_LEAST(11, 8)
 // cuda_fp8.h resets default for C4127, so we have to guard the inclusion
 _CCCL_DIAG_PUSH
 #    include <cuda_fp8.h>
 _CCCL_DIAG_POP
-#  endif // !_CCCL_CUDACC_BELOW_11_8
+#  endif // _CCCL_CUDACC_AT_LEAST(11, 8)
 #endif // _CCCL_HAS_NV_BF16
 
-#ifdef _CCCL_COMPILER_NVRTC
+#if _CCCL_COMPILER(NVRTC)
 #  include <cuda/std/iterator>
-#else // !defined(_CCCL_COMPILER_NVRTC)
+#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ // vvv !_CCCL_COMPILER(NVRTC) vvv
 #  include <iterator>
-#endif // defined(_CCCL_COMPILER_NVRTC)
+#endif // _CCCL_COMPILER(NVRTC)
 
 CUB_NAMESPACE_BEGIN
 
@@ -73,12 +73,11 @@ CUB_NAMESPACE_BEGIN
 #      define CUB_IS_INT128_ENABLED 1
 #    endif // !defined(__CUDACC_RTC_INT128__)
 #  else // !defined(__CUDACC_RTC__)
-#    if _CCCL_CUDACC_VER >= 1105000
-#      if defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_CLANG) || defined(_CCCL_COMPILER_ICC) \
-        || defined(_CCCL_COMPILER_NVHPC)
+#    if _CCCL_CUDACC_AT_LEAST(11, 5)
+#      if _CCCL_COMPILER(GCC) || defined(_CCCL_COMPILER_CLANG) || _CCCL_COMPILER(ICC) || _CCCL_COMPILER(NVHPC)
 #        define CUB_IS_INT128_ENABLED 1
 #      endif // GCC || CLANG || ICC || NVHPC
-#    endif // CTK >= 11.5
+#    endif // _CCCL_CUDACC_AT_LEAST(11, 5)
 #  endif // !defined(__CUDACC_RTC__)
 #endif // !defined(CUB_IS_INT128_ENABLED)
 
@@ -94,13 +93,13 @@ namespace detail
 // only defer to the libcu++ implementation for NVRTC.
 template <typename Iterator>
 using value_t =
-#  ifdef _CCCL_COMPILER_NVRTC
+#  if _CCCL_COMPILER(NVRTC)
   typename ::cuda::std::iterator_traits<Iterator>::value_type;
-#  else // !defined(_CCCL_COMPILER_NVRTC)
+#  else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ // vvv !_CCCL_COMPILER(NVRTC) vvv
   typename std::iterator_traits<Iterator>::value_type;
-#  endif // defined(_CCCL_COMPILER_NVRTC)
+#  endif // !_CCCL_COMPILER(NVRTC)
 
-template <typename It, typename FallbackT, bool = ::cuda::std::is_void<::cuda::std::__remove_pointer_t<It>>::value>
+template <typename It, typename FallbackT, bool = ::cuda::std::is_void<::cuda::std::remove_pointer_t<It>>::value>
 struct non_void_value_impl
 {
   using type = FallbackT;
@@ -240,7 +239,7 @@ struct Int2Type
  *     temp_storage_bytes,
  *     d_in,
  *     d_out,
- *     cub::Sum(),
+ *     cuda::std::plus<>{},
  *     init_value,
  *     num_items);
  * allocator.DeviceFree(d_intermediate_result);
@@ -657,14 +656,7 @@ struct Uninitialized
 /**
  * \brief A key identifier paired with a corresponding value
  */
-template <typename _Key,
-          typename _Value
-#  if defined(_WIN32) && !defined(_WIN64)
-          ,
-          bool KeyIsLT = (AlignBytes<_Key>::ALIGN_BYTES < AlignBytes<_Value>::ALIGN_BYTES),
-          bool ValIsLT = (AlignBytes<_Value>::ALIGN_BYTES < AlignBytes<_Key>::ALIGN_BYTES)
-#  endif // #if defined(_WIN32) && !defined(_WIN64)
-          >
+template <typename _Key, typename _Value>
 struct KeyValuePair
 {
   using Key   = _Key; ///< Key data type
@@ -688,80 +680,6 @@ struct KeyValuePair
     return (value != b.value) || (key != b.key);
   }
 };
-
-#  if defined(_WIN32) && !defined(_WIN64)
-
-/**
- * Win32 won't do 16B alignment.  This can present two problems for
- * should-be-16B-aligned (but actually 8B aligned) built-in and intrinsics members:
- * 1) If a smaller-aligned item were to be listed first, the host compiler places the
- *    should-be-16B item at too early an offset (and disagrees with device compiler)
- * 2) Or, if a smaller-aligned item lists second, the host compiler gets the size
- *    of the struct wrong (and disagrees with device compiler)
- *
- * So we put the larger-should-be-aligned item first, and explicitly pad the
- * end of the struct
- */
-
-/// Smaller key specialization
-template <typename K, typename V>
-struct KeyValuePair<K, V, true, false>
-{
-  using Key   = K;
-  using Value = V;
-
-  using Pad = char[AlignBytes<V>::ALIGN_BYTES - AlignBytes<K>::ALIGN_BYTES];
-
-  Value value; // Value has larger would-be alignment and goes first
-  Key key;
-  Pad pad;
-
-  /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePair() {}
-
-  /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePair(Key const& key, Value const& value)
-      : key(key)
-      , value(value)
-  {}
-
-  /// Inequality operator
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const KeyValuePair& b)
-  {
-    return (value != b.value) || (key != b.key);
-  }
-};
-
-/// Smaller value specialization
-template <typename K, typename V>
-struct KeyValuePair<K, V, false, true>
-{
-  using Key   = K;
-  using Value = V;
-
-  using Pad = char[AlignBytes<K>::ALIGN_BYTES - AlignBytes<V>::ALIGN_BYTES];
-
-  Key key; // Key has larger would-be alignment and goes first
-  Value value;
-  Pad pad;
-
-  /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePair() {}
-
-  /// Constructor
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE KeyValuePair(Key const& key, Value const& value)
-      : key(key)
-      , value(value)
-  {}
-
-  /// Inequality operator
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator!=(const KeyValuePair& b)
-  {
-    return (value != b.value) || (key != b.key);
-  }
-};
-
-#  endif // #if defined(_WIN32) && !defined(_WIN64)
 
 /**
  * \brief A wrapper for passing simple static arrays as kernel parameters

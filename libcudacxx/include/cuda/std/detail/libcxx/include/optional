@@ -278,7 +278,7 @@ struct __optional_destruct_base<_Tp, false>
   union
   {
     char __null_state_;
-    __remove_cv_t<value_type> __val_;
+    remove_cv_t<value_type> __val_;
   };
   bool __engaged_;
 
@@ -329,7 +329,7 @@ struct __optional_destruct_base<_Tp, true>
   union
   {
     char __null_state_;
-    __remove_cv_t<value_type> __val_;
+    remove_cv_t<value_type> __val_;
   };
   bool __engaged_;
 
@@ -642,8 +642,7 @@ _CCCL_INLINE_VAR constexpr bool __opt_is_explictly_constructible =
 
 template <class _Tp, class _Up>
 _CCCL_INLINE_VAR constexpr bool __opt_is_constructible_from_U =
-  !_CCCL_TRAIT(is_same, __remove_cvref_t<_Up>, in_place_t)
-  && !_CCCL_TRAIT(is_same, __remove_cvref_t<_Up>, optional<_Tp>);
+  !_CCCL_TRAIT(is_same, remove_cvref_t<_Up>, in_place_t) && !_CCCL_TRAIT(is_same, remove_cvref_t<_Up>, optional<_Tp>);
 
 template <class _Tp, class _Up>
 _CCCL_INLINE_VAR constexpr bool __opt_is_constructible_from_opt =
@@ -655,8 +654,8 @@ _CCCL_INLINE_VAR constexpr bool __opt_is_assignable =
 
 template <class _Tp, class _Up>
 _CCCL_INLINE_VAR constexpr bool __opt_is_assignable_from_U =
-  !_CCCL_TRAIT(is_same, __remove_cvref_t<_Up>, optional<_Tp>)
-  && (!_CCCL_TRAIT(is_same, __remove_cvref_t<_Up>, _Tp) || !_CCCL_TRAIT(is_scalar, _Tp));
+  !_CCCL_TRAIT(is_same, remove_cvref_t<_Up>, optional<_Tp>)
+  && (!_CCCL_TRAIT(is_same, remove_cvref_t<_Up>, _Tp) || !_CCCL_TRAIT(is_scalar, _Tp));
 
 template <class _Tp, class _Up>
 _CCCL_INLINE_VAR constexpr bool __opt_is_assignable_from_opt =
@@ -676,9 +675,9 @@ public:
 
 private:
   // Disable the reference extension using this static assert.
-  static_assert(!_CCCL_TRAIT(is_same, __remove_cvref_t<value_type>, in_place_t),
+  static_assert(!_CCCL_TRAIT(is_same, remove_cvref_t<value_type>, in_place_t),
                 "instantiation of optional with in_place_t is ill-formed");
-  static_assert(!_CCCL_TRAIT(is_same, __remove_cvref_t<value_type>, nullopt_t),
+  static_assert(!_CCCL_TRAIT(is_same, remove_cvref_t<value_type>, nullopt_t),
                 "instantiation of optional with nullopt_t is ill-formed");
   static_assert(!_CCCL_TRAIT(is_reference, value_type),
                 "instantiation of optional with a reference type is ill-formed");
@@ -800,7 +799,7 @@ public:
     return *this;
   }
 
-  template <class... _Args, __enable_if_t<_CCCL_TRAIT(is_constructible, value_type, _Args...), int> = 0>
+  template <class... _Args, enable_if_t<_CCCL_TRAIT(is_constructible, value_type, _Args...), int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp& emplace(_Args&&... __args)
   {
     reset();
@@ -810,7 +809,7 @@ public:
 
   template <class _Up,
             class... _Args,
-            __enable_if_t<_CCCL_TRAIT(is_constructible, value_type, initializer_list<_Up>&, _Args...), int> = 0>
+            enable_if_t<_CCCL_TRAIT(is_constructible, value_type, initializer_list<_Up>&, _Args...), int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp& emplace(initializer_list<_Up> __il, _Args&&... __args)
   {
     reset();
@@ -1096,7 +1095,7 @@ _CCCL_HOST_DEVICE optional(_Tp) -> optional<_Tp>;
 
 // Comparisons between optionals
 template <class _Tp, class _Up>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() == declval<const _Up&>()), bool),
   bool>
 operator==(const optional<_Tp>& __x, const optional<_Up>& __y)
@@ -1113,7 +1112,7 @@ operator==(const optional<_Tp>& __x, const optional<_Up>& __y)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() != declval<const _Up&>()), bool),
   bool>
 operator!=(const optional<_Tp>& __x, const optional<_Up>& __y)
@@ -1130,7 +1129,7 @@ operator!=(const optional<_Tp>& __x, const optional<_Up>& __y)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() < declval<const _Up&>()), bool),
   bool>
 operator<(const optional<_Tp>& __x, const optional<_Up>& __y)
@@ -1147,7 +1146,7 @@ operator<(const optional<_Tp>& __x, const optional<_Up>& __y)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() > declval<const _Up&>()), bool),
   bool>
 operator>(const optional<_Tp>& __x, const optional<_Up>& __y)
@@ -1164,7 +1163,7 @@ operator>(const optional<_Tp>& __x, const optional<_Up>& __y)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() <= declval<const _Up&>()), bool),
   bool>
 operator<=(const optional<_Tp>& __x, const optional<_Up>& __y)
@@ -1181,7 +1180,7 @@ operator<=(const optional<_Tp>& __x, const optional<_Up>& __y)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() >= declval<const _Up&>()), bool),
   bool>
 operator>=(const optional<_Tp>& __x, const optional<_Up>& __y)
@@ -1272,7 +1271,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator>=(nullopt_t, const optional<_T
 
 // Comparisons with T
 template <class _Tp, class _Up>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() == declval<const _Up&>()), bool),
   bool>
 operator==(const optional<_Tp>& __x, const _Up& __v)
@@ -1281,7 +1280,7 @@ operator==(const optional<_Tp>& __x, const _Up& __v)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() == declval<const _Up&>()), bool),
   bool>
 operator==(const _Tp& __v, const optional<_Up>& __x)
@@ -1290,7 +1289,7 @@ operator==(const _Tp& __v, const optional<_Up>& __x)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() != declval<const _Up&>()), bool),
   bool>
 operator!=(const optional<_Tp>& __x, const _Up& __v)
@@ -1299,7 +1298,7 @@ operator!=(const optional<_Tp>& __x, const _Up& __v)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() != declval<const _Up&>()), bool),
   bool>
 operator!=(const _Tp& __v, const optional<_Up>& __x)
@@ -1308,7 +1307,7 @@ operator!=(const _Tp& __v, const optional<_Up>& __x)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() < declval<const _Up&>()), bool),
   bool>
 operator<(const optional<_Tp>& __x, const _Up& __v)
@@ -1317,7 +1316,7 @@ operator<(const optional<_Tp>& __x, const _Up& __v)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() < declval<const _Up&>()), bool),
   bool>
 operator<(const _Tp& __v, const optional<_Up>& __x)
@@ -1326,7 +1325,7 @@ operator<(const _Tp& __v, const optional<_Up>& __x)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() <= declval<const _Up&>()), bool),
   bool>
 operator<=(const optional<_Tp>& __x, const _Up& __v)
@@ -1335,7 +1334,7 @@ operator<=(const optional<_Tp>& __x, const _Up& __v)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() <= declval<const _Up&>()), bool),
   bool>
 operator<=(const _Tp& __v, const optional<_Up>& __x)
@@ -1344,7 +1343,7 @@ operator<=(const _Tp& __v, const optional<_Up>& __x)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() > declval<const _Up&>()), bool),
   bool>
 operator>(const optional<_Tp>& __x, const _Up& __v)
@@ -1353,7 +1352,7 @@ operator>(const optional<_Tp>& __x, const _Up& __v)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() > declval<const _Up&>()), bool),
   bool>
 operator>(const _Tp& __v, const optional<_Up>& __x)
@@ -1362,7 +1361,7 @@ operator>(const _Tp& __v, const optional<_Up>& __x)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() >= declval<const _Up&>()), bool),
   bool>
 operator>=(const optional<_Tp>& __x, const _Up& __v)
@@ -1371,7 +1370,7 @@ operator>=(const optional<_Tp>& __x, const _Up& __v)
 }
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_convertible, decltype(declval<const _Tp&>() >= declval<const _Up&>()), bool),
   bool>
 operator>=(const _Tp& __v, const optional<_Up>& __x)
@@ -1380,7 +1379,7 @@ operator>=(const _Tp& __v, const optional<_Up>& __x)
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   _CCCL_TRAIT(is_move_constructible, _Tp) && _CCCL_TRAIT(is_swappable, _Tp),
   void>
 swap(optional<_Tp>& __x, optional<_Tp>& __y) noexcept(noexcept(__x.swap(__y)))

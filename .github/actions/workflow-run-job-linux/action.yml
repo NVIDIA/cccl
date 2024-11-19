@@ -151,7 +151,7 @@ runs:
           --docker \
           --cuda ${{inputs.cuda}} \
           --host ${{inputs.host}} \
-          "${cuda_ext_request:-}" \
+          ${cuda_ext_request:-} \
           "${gpu_request[@]}" \
           --env "CI=$CI" \
           --env "AWS_ROLE_ARN=" \
