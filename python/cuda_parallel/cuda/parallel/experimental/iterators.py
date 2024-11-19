@@ -1,10 +1,11 @@
+import ctypes
+import operator
+
 from numba.core import cgutils
 from llvmlite import ir
 from numba import types
 from numba.core.typing import signature
 from numba.core.extending import intrinsic, overload
-
-import ctypes
 import numba
 import numba.cuda
 
@@ -50,17 +51,44 @@ def _ncc(funcname, pyfunc, sig, prefix):
     )
 
 
+def sizeof_pointee(context, ptr):
+    size = context.get_abi_sizeof(ptr.type.pointee)
+    return ir.Constant(ir.IntType(64), size)
+
+
+@intrinsic
+def pointer_add_intrinsic(context, ptr, offset):
+    def codegen(context, builder, sig, args):
+        ptr, index = args
+        base = builder.ptrtoint(ptr, ir.IntType(64))
+        offset = builder.mul(index, sizeof_pointee(context, ptr))
+        result = builder.add(base, offset)
+        return builder.inttoptr(result, ptr.type)
+
+    return ptr(ptr, offset), codegen
+
+
+@overload(operator.add)
+def pointer_add(ptr, offset):
+    if not isinstance(ptr, types.CPointer) or not isinstance(offset, types.Integer):
+        return
+
+    def impl(ptr, offset):
+        return pointer_add_intrinsic(ptr, offset)
+
+    return impl
+
+
 class RawPointer:
     def __init__(self, ptr, ntype):
         self.val = ctypes.c_void_p(ptr)
         data_as_ntype_pp = numba.types.CPointer(numba.types.CPointer(ntype))
-        data_as_uint64_p = numba.types.CPointer(numba.types.uint64)
         self.prefix = "pointer_" + ntype.name
         self.ltoirs = [
             _ncc(
                 "advance",
-                RawPointer.pointer_advance_sizeof(ntype),
-                numba.types.void(data_as_uint64_p, numba.types.uint64),
+                RawPointer.pointer_advance,
+                numba.types.void(data_as_ntype_pp, numba.types.uint64),
                 self.prefix,
             ),
             _ncc(
@@ -71,14 +99,8 @@ class RawPointer:
             ),
         ]
 
-    @staticmethod
-    def pointer_advance_sizeof(ntype):
-        sizeof_ntype = _sizeof_numba_type(ntype)
-
-        def pointer_advance(this, distance):
-            this[0] = this[0] + distance * sizeof_ntype
-
-        return pointer_advance
+    def pointer_advance(this, distance):
+        this[0] = this[0] + distance
 
     def pointer_dereference(this):
         return this[0][0]
@@ -126,13 +148,12 @@ class CacheModifiedPointer:
         self.val = ctypes.c_void_p(ptr)
         self.ntype = ntype
         data_as_ntype_pp = numba.types.CPointer(numba.types.CPointer(ntype))
-        data_as_uint64_p = numba.types.CPointer(numba.types.uint64)
         self.prefix = "cache" + ntype.name
         self.ltoirs = [
             _ncc(
                 "advance",
-                CacheModifiedPointer.cache_advance_sizeof(ntype),
-                numba.types.void(data_as_uint64_p, numba.types.uint64),
+                CacheModifiedPointer.cache_advance,
+                numba.types.void(data_as_ntype_pp, numba.types.uint64),
                 self.prefix,
             ),
             _ncc(
@@ -143,14 +164,8 @@ class CacheModifiedPointer:
             ),
         ]
 
-    @staticmethod
-    def cache_advance_sizeof(ntype):
-        sizeof_ntype = _sizeof_numba_type(ntype)
-
-        def cache_advance(this, distance):
-            this[0] = this[0] + distance * sizeof_ntype
-
-        return cache_advance
+    def cache_advance(this, distance):
+        this[0] = this[0] + distance
 
     @staticmethod
     def cache_cache_dereference_bitwidth(ntype):
