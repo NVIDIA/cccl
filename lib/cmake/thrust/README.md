@@ -44,8 +44,8 @@ The `DISPATCH` option allows users to select the tradeoff of compile-time / bina
 vs. performance vs. scalability when given large inputs that require 64-bit offset types.
 This currently only applies when DEVICE=CUDA.
 
-- `Dynamic` Compiles each kernel twice, once for 32-bit offsets and again for 64-bit offsets,
-  and chooses dynamically using the input size at runtime.
+- `Dynamic` May compile each kernel twice, once for 32-bit offsets and again for 64-bit
+  offsets, and choose dynamically using the input size at runtime.
   This significantly increases compile-time and binary-size, but provides optimal performance
   for small input sizes while also supporting 64-bit indexed workloads.
 - `Force32bit` forces Thrust to use a 32 bit offset type. This improves compile time and

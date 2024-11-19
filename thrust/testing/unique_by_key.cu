@@ -450,7 +450,7 @@ struct TestUniqueCopyByKeyLargeOutCount
 };
 SimpleUnitTest<TestUniqueCopyByKeyLargeOutCount, IntegralTypes> TestUniqueCopyByKeyLargeOutCountInstance;
 
-#  endif // force 32-bit dispatch
+#  endif // THRUST_FORCE_32_BIT_OFFSET_TYPE
 
 #endif // non-OpenMP backend
 
