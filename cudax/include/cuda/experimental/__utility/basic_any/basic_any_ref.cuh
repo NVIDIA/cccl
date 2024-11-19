@@ -260,14 +260,16 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__irefer
   using basic_any<__ireference<_Interface>, __secondary>::__is_const_ref;
 
   _CUDAX_HOST_API basic_any(basic_any const& __other) noexcept
+      : basic_any<__ireference<_Interface>, __secondary>()
   {
     this->__set_ref(__other.__get_vptr(), __other.__get_optr());
   }
 
   _LIBCUDACXX_TEMPLATE(class _Tp, class _Up = _CUDA_VSTD::remove_const_t<_Tp>)
-  _LIBCUDACXX_REQUIRES((!__is_basic_any<_Tp>) /*_LIBCUDACXX_AND __satisfies<_Up, interface_type> _LIBCUDACXX_AND(
-    __is_const_ref || !_CUDA_VSTD::is_const_v<_Tp>)*/)
+  _LIBCUDACXX_REQUIRES((!__is_basic_any<_Tp>) _LIBCUDACXX_AND __satisfies<_Up, interface_type> _LIBCUDACXX_AND(
+    __is_const_ref || !_CUDA_VSTD::is_const_v<_Tp>))
   _CUDAX_HOST_API basic_any(_Tp& __obj) noexcept
+      : basic_any<__ireference<_Interface>, __secondary>()
   {
     __vptr_for<interface_type> const __vptr = &__vtable_for_v<interface_type, _Up>;
     this->__set_ref(__vptr, &__obj);
@@ -295,6 +297,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__irefer
                   (!__is_value_v<_SrcInterface>) _CUDAX_AND //
                     __any_convertible_to<basic_any<_SrcInterface>, basic_any>)
   _CUDAX_HOST_API basic_any(basic_any<_SrcInterface>&& __src) noexcept
+      : basic_any<__ireference<_Interface>, __secondary>()
   {
     this->__set_ref(__src.__get_vptr(), __src.__get_optr());
   }
@@ -303,6 +306,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__irefer
   _CUDAX_REQUIRES((!_CUDA_VSTD::same_as<_SrcInterface, _Interface&>) _CUDAX_AND //
                     __any_convertible_to<basic_any<_SrcInterface>&, basic_any>)
   _CUDAX_HOST_API basic_any(basic_any<_SrcInterface>& __src) noexcept
+      : basic_any<__ireference<_Interface>, __secondary>()
   {
     this->__set_ref(__src.__get_vptr(), __src.__get_optr());
   }
@@ -311,6 +315,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__irefer
   _CUDAX_REQUIRES((!_CUDA_VSTD::same_as<_SrcInterface, _Interface&>) _CUDAX_AND //
                     __any_convertible_to<basic_any<_SrcInterface> const&, basic_any>)
   _CUDAX_HOST_API basic_any(basic_any<_SrcInterface> const& __src) noexcept
+      : basic_any<__ireference<_Interface>, __secondary>()
   {
     this->__set_ref(__src.__get_vptr(), __src.__get_optr());
   }
