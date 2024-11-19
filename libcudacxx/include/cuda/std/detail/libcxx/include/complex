@@ -1453,7 +1453,7 @@ template <class _Tp>
 struct __get_complex_impl
 {
   template <size_t _Index>
-  static _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp& get(complex<_Tp>& __z) noexcept
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp& get(complex<_Tp>& __z) noexcept
   {
 #if _CCCL_STD_VER >= 2017
     _CCCL_IF_CONSTEXPR (_Index == 0)

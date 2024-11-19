@@ -21,6 +21,7 @@
 #endif // no system header
 
 #include <cuda/std/__fwd/array.h>
+#include <cuda/std/__fwd/complex.h>
 #include <cuda/std/__fwd/pair.h>
 #include <cuda/std/__fwd/subrange.h>
 #include <cuda/std/__fwd/tuple.h>
@@ -54,6 +55,10 @@ struct __tuple_like<pair<_T1, _T2>> : true_type
 
 template <class _Tp, size_t _Size>
 struct __tuple_like<array<_Tp, _Size>> : true_type
+{};
+
+template <class _Tp>
+struct __tuple_like<complex<_Tp>> : true_type
 {};
 
 #if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)

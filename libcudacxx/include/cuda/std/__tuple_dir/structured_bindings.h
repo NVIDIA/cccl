@@ -31,6 +31,7 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")
 #endif // !_CCCL_COMPILER(NVRTC)
 
 #include <cuda/std/__fwd/array.h>
+#include <cuda/std/__fwd/complex.h>
 #include <cuda/std/__fwd/pair.h>
 #include <cuda/std/__fwd/subrange.h>
 #include <cuda/std/__fwd/tuple.h>
@@ -85,6 +86,41 @@ struct tuple_element<_Ip, volatile _CUDA_VSTD::array<_Tp, _Size>>
 template <size_t _Ip, class _Tp, size_t _Size>
 struct tuple_element<_Ip, const volatile _CUDA_VSTD::array<_Tp, _Size>>
     : _CUDA_VSTD::tuple_element<_Ip, const volatile _CUDA_VSTD::array<_Tp, _Size>>
+{};
+
+template <class _Tp>
+struct tuple_size<_CUDA_VSTD::complex<_Tp>> : _CUDA_VSTD::integral_constant<size_t, 2>
+{};
+
+template <class _Tp>
+struct tuple_size<const _CUDA_VSTD::complex<_Tp>> : _CUDA_VSTD::integral_constant<size_t, 2>
+{};
+
+template <class _Tp>
+struct tuple_size<volatile _CUDA_VSTD::complex<_Tp>> : _CUDA_VSTD::integral_constant<size_t, 2>
+{};
+
+template <class _Tp>
+struct tuple_size<const volatile _CUDA_VSTD::complex<_Tp>> : _CUDA_VSTD::integral_constant<size_t, 2>
+{};
+
+template <size_t _Ip, class _Tp>
+struct tuple_element<_Ip, _CUDA_VSTD::complex<_Tp>> : _CUDA_VSTD::tuple_element<_Ip, _CUDA_VSTD::complex<_Tp>>
+{};
+
+template <size_t _Ip, class _Tp>
+struct tuple_element<_Ip, const _CUDA_VSTD::complex<_Tp>>
+    : _CUDA_VSTD::tuple_element<_Ip, const _CUDA_VSTD::complex<_Tp>>
+{};
+
+template <size_t _Ip, class _Tp>
+struct tuple_element<_Ip, volatile _CUDA_VSTD::complex<_Tp>>
+    : _CUDA_VSTD::tuple_element<_Ip, volatile _CUDA_VSTD::complex<_Tp>>
+{};
+
+template <size_t _Ip, class _Tp>
+struct tuple_element<_Ip, const volatile _CUDA_VSTD::complex<_Tp>>
+    : _CUDA_VSTD::tuple_element<_Ip, const volatile _CUDA_VSTD::complex<_Tp>>
 {};
 
 template <class _Tp, class _Up>
