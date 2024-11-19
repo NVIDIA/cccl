@@ -119,8 +119,10 @@ void TestCountWithBigIndexesHelper(int magnitude)
 void TestCountWithBigIndexes()
 {
   TestCountWithBigIndexesHelper(30);
+#ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
   TestCountWithBigIndexesHelper(31);
   TestCountWithBigIndexesHelper(32);
   TestCountWithBigIndexesHelper(33);
+#endif
 }
 DECLARE_UNITTEST(TestCountWithBigIndexes);
