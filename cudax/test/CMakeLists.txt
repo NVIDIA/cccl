@@ -86,6 +86,10 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   )
   target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
 
+  cudax_add_catch2_test(test_target execution ${cn_target}
+    execution/policies/policies.cu
+  )
+
   cudax_add_catch2_test(test_target stream ${cn_target}
     stream/get_stream.cu
     stream/stream_smoke.cu
@@ -131,7 +135,8 @@ foreach(cn_target IN LISTS cudax_TARGETS)
 endforeach()
 
 # FIXME: Enable MSVC
-if (NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}" AND
+if (cudax_ENABLE_CUDASTF AND
+    NOT "MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}" AND
     NOT "NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
   # STF tests are handled separately:
   add_subdirectory(stf)

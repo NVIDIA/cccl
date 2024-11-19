@@ -39,7 +39,7 @@ struct __libcpp_is_floating_point<long double> : public true_type
 {};
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_floating_point : public __libcpp_is_floating_point<__remove_cv_t<_Tp>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_floating_point : public __libcpp_is_floating_point<remove_cv_t<_Tp>>
 {};
 
 #if !defined(_CCCL_NO_VARIABLE_TEMPLATES)

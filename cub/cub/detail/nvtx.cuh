@@ -47,14 +47,16 @@
 // * NVTX is not explicitly disabled (via CCCL_DISABLE_NVTX or NVTX_DISABLE)
 // * C++14 is availabl for cuda::std::optional
 // * NVTX3 uses module as an identifier, which trips up NVHPC
-#if __has_include(<nvtx3/nvToolsExt.h> ) && !defined(CCCL_DISABLE_NVTX) && !defined(NVTX_DISABLE) \
-&& _CCCL_STD_VER >= 2014 &&(!defined(_CCCL_COMPILER_NVHPC) || _CCCL_STD_VER <= 2017)
+#if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && !defined(CCCL_DISABLE_NVTX) && !defined(NVTX_DISABLE) \
+                      && _CCCL_STD_VER >= 2014                                                       \
+                      && (!_CCCL_COMPILER(NVHPC) || _CCCL_STD_VER <= 2017)
 // Include our NVTX3 C++ wrapper if not available from the CTK
-#  if __has_include(<nvtx3/nvtx3.hpp>) // TODO(bgruber): replace by a check for the first CTK version shipping the header
+// TODO(bgruber): replace by a check for the first CTK version shipping the header
+#  if _CCCL_HAS_INCLUDE(<nvtx3/nvtx3.hpp>)
 #    include <nvtx3/nvtx3.hpp>
-#  else // __has_include(<nvtx3/nvtx3.hpp>)
+#  else // _CCCL_HAS_INCLUDE(<nvtx3/nvtx3.hpp>)
 #    include "nvtx3.hpp"
-#  endif // __has_include(<nvtx3/nvtx3.hpp>)
+#  endif // _CCCL_HAS_INCLUDE(<nvtx3/nvtx3.hpp>)
 
 // We expect the NVTX3 V1 C++ API to be available when nvtx3.hpp is available. This should work, because newer versions
 // of NVTX3 will continue to declare previous API versions. See also:
@@ -103,9 +105,9 @@ CUB_NAMESPACE_END
 #    define CUB_DETAIL_NVTX_RANGE_SCOPE_IF(condition, name)
 #    define CUB_DETAIL_NVTX_RANGE_SCOPE(name)
 #  endif // NVTX3_CPP_DEFINITIONS_V1_0
-#else // __has_include(<nvtx3/nvToolsExt.h> ) && !defined(CCCL_DISABLE_NVTX) && !defined(NVTX_DISABLE) && _CCCL_STD_VER
-      // >= 2014
+#else // _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h> ) && !defined(CCCL_DISABLE_NVTX) && !defined(NVTX_DISABLE) &&
+      // _CCCL_STD_VER >= 2014
 #  define CUB_DETAIL_NVTX_RANGE_SCOPE_IF(condition, name)
 #  define CUB_DETAIL_NVTX_RANGE_SCOPE(name)
-#endif // __has_include(<nvtx3/nvToolsExt.h> ) && !defined(CCCL_DISABLE_NVTX) && !defined(NVTX_DISABLE) && _CCCL_STD_VER
-       // >= 2014
+#endif // _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h> ) && !defined(CCCL_DISABLE_NVTX) && !defined(NVTX_DISABLE) &&
+       // _CCCL_STD_VER >= 2014

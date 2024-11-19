@@ -37,13 +37,13 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr uint32_t __bit_log2(_Tp __t) noexcept
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<sizeof(_Tp) >= sizeof(uint32_t), _Tp> __ceil2(_Tp __t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<sizeof(_Tp) >= sizeof(uint32_t), _Tp> __ceil2(_Tp __t) noexcept
 {
   return _Tp{1} << (numeric_limits<_Tp>::digits - __countl_zero((_Tp) (__t - 1u)));
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<sizeof(_Tp) < sizeof(uint32_t), _Tp> __ceil2(_Tp __t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<sizeof(_Tp) < sizeof(uint32_t), _Tp> __ceil2(_Tp __t) noexcept
 {
   return (_Tp) ((1u << ((numeric_limits<_Tp>::digits - __countl_zero((_Tp) (__t - 1u)))
                         + (numeric_limits<unsigned>::digits - numeric_limits<_Tp>::digits)))
@@ -51,24 +51,23 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<sizeof(_Tp) < sizeof(uint32_t)
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, _Tp>
 bit_floor(_Tp __t) noexcept
 {
   return __t == 0 ? 0 : static_cast<_Tp>(_Tp{1} << __bit_log2(__t));
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, _Tp>
-bit_ceil(_Tp __t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, _Tp> bit_ceil(_Tp __t) noexcept
 {
   return (__t < 2) ? 1 : static_cast<_Tp>(__ceil2(__t));
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, int>
 bit_width(_Tp __t) noexcept
 {
-  return __t == 0 ? 0 : static_cast<_Tp>(__bit_log2(__t) + 1);
+  return __t == 0 ? 0 : static_cast<int>(__bit_log2(__t) + 1);
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD

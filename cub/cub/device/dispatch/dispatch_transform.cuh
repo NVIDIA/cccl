@@ -13,12 +13,12 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_CCCL_CUDA_COMPILER) && _CCCL_CUDACC_VER < 1105000
+#if defined(_CCCL_CUDA_COMPILER) && _CCCL_CUDACC_BELOW(11, 5)
 _CCCL_NV_DIAG_SUPPRESS(186)
 #  include <cuda_pipeline_primitives.h>
 // we cannot re-enable the warning here, because it is triggered outside the translation unit
 // see also: https://godbolt.org/z/1x8b4hn3G
-#endif // defined(_CCCL_CUDA_COMPILER) && _CCCL_CUDACC_VER < 1105000
+#endif // defined(_CCCL_CUDA_COMPILER) && _CCCL_CUDACC_BELOW(11, 5)
 
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/util_arch.cuh>
@@ -55,9 +55,9 @@ CUB_NAMESPACE_BEGIN
 
 // The ublkcp kernel needs PTX features that are only available and understood by nvcc >=12.
 // Also, cooperative groups do not support NVHPC yet.
-#if _CCCL_CUDACC_VER_MAJOR >= 12 && !defined(_CCCL_CUDA_COMPILER_NVHPC)
+#if _CCCL_CUDACC_AT_LEAST(12, 0) && !defined(_CCCL_CUDA_COMPILER_NVHPC)
 #  define _CUB_HAS_TRANSFORM_UBLKCP
-#endif // _CCCL_CUDACC_VER_MAJOR >= 12 && !defined(_CCCL_CUDA_COMPILER_NVHPC)
+#endif // _CCCL_CUDACC_AT_LEAST(12, 0) && !defined(_CCCL_CUDA_COMPILER_NVHPC)
 
 namespace detail
 {
@@ -147,7 +147,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(const T* addr, int tile_size)
 // TODO(miscco): we should probably constrain It to not be a contiguous iterator in C++17 (and change the overload
 // above to accept any contiguous iterator)
 // overload for any iterator that is not a pointer, do nothing
-template <int, typename It, ::cuda::std::__enable_if_t<!::cuda::std::is_pointer<It>::value, int> = 0>
+template <int, typename It, ::cuda::std::enable_if_t<!::cuda::std::is_pointer<It>::value, int> = 0>
 _CCCL_DEVICE _CCCL_FORCEINLINE void prefetch_tile(It, int)
 {}
 
@@ -186,28 +186,30 @@ _CCCL_DEVICE void transform_kernel_impl(
     (void) &dummy; // nvcc 11.1 needs extra strong unused warning suppression
   }
 
-#define PREFETCH_AGENT(full_tile)                                                                                  \
-  /* ahendriksen: various unrolling yields less <1% gains at much higher compile-time cost */                      \
-  /* bgruber: but A6000 and H100 show small gains without pragma */                                                \
-  /*_Pragma("unroll 1")*/ for (int j = 0; j < num_elem_per_thread; ++j)                                            \
-  {                                                                                                                \
-    const int idx = j * block_dim + threadIdx.x;                                                                   \
-    if (full_tile || idx < tile_size)                                                                              \
-    {                                                                                                              \
-      /* we have to unwrap Thrust's proxy references here for backward compatibility (try zip_iterator.cu test) */ \
-      out[idx] = f(THRUST_NS_QUALIFIER::raw_reference_cast(ins[idx])...);                                          \
-    }                                                                                                              \
-  }
-
+  // TODO(bgruber): use `auto full_tile` and pass true_type/false_type in C++14 to strengthen the compile-time intent
+  auto process_tile = [&](bool full_tile) {
+    // ahendriksen: various unrolling yields less <1% gains at much higher compile-time cost
+    // bgruber: but A6000 and H100 show small gains without pragma
+    //_Pragma("unroll 1")
+    for (int j = 0; j < num_elem_per_thread; ++j)
+    {
+      const int idx = j * block_dim + threadIdx.x;
+      if (full_tile || idx < tile_size)
+      {
+        // we have to unwrap Thrust's proxy references here for backward compatibility (try zip_iterator.cu test)
+        out[idx] = f(THRUST_NS_QUALIFIER::raw_reference_cast(ins[idx])...);
+      }
+    }
+  };
+  // explicitly calling the lambda on literal true/false lets the compiler emit the lambda twice
   if (tile_stride == tile_size)
   {
-    PREFETCH_AGENT(true);
+    process_tile(true);
   }
   else
   {
-    PREFETCH_AGENT(false);
+    process_tile(false);
   }
-#undef PREFETCH_AGENT
 }
 
 template <int BlockThreads>
@@ -232,12 +234,12 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto poor_apply(F&& f, Tuple&& t)
   -> decltype(poor_apply_impl(
     ::cuda::std::forward<F>(f),
     ::cuda::std::forward<Tuple>(t),
-    ::cuda::std::make_index_sequence<::cuda::std::tuple_size<::cuda::std::__libcpp_remove_reference_t<Tuple>>::value>{}))
+    ::cuda::std::make_index_sequence<::cuda::std::tuple_size<::cuda::std::remove_reference_t<Tuple>>::value>{}))
 {
   return poor_apply_impl(
     ::cuda::std::forward<F>(f),
     ::cuda::std::forward<Tuple>(t),
-    ::cuda::std::make_index_sequence<::cuda::std::tuple_size<::cuda::std::__libcpp_remove_reference_t<Tuple>>::value>{});
+    ::cuda::std::make_index_sequence<::cuda::std::tuple_size<::cuda::std::remove_reference_t<Tuple>>::value>{});
 }
 
 // mult must be a power of 2
@@ -245,7 +247,7 @@ template <typename Integral>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto round_up_to_po2_multiple(Integral x, Integral mult) -> Integral
 {
 #if _CCCL_STD_VER > 2011
-  _CCCL_ASSERT(::cuda::std::has_single_bit(static_cast<::cuda::std::__make_unsigned_t<Integral>>(mult)), "");
+  _CCCL_ASSERT(::cuda::std::has_single_bit(static_cast<::cuda::std::make_unsigned_t<Integral>>(mult)), "");
 #endif // _CCCL_STD_VER > 2011
   return (x + mult - 1) & ~(mult - 1);
 }
@@ -447,34 +449,34 @@ _CCCL_DEVICE void transform_kernel_ublkcp(
   // move the whole index and iterator to the block/thread index, to reduce arithmetic in the loops below
   out += offset;
 
-  // note: I tried expressing the UBLKCP_AGENT as a function object but it adds a lot of code to handle the variadics
-  // TODO(bgruber): use a polymorphic lambda in C++14
-#  define UBLKCP_AGENT(full_tile)                                                                            \
-    /* Unroll 1 tends to improve performance, especially for smaller data types (confirmed by benchmark) */  \
-    _CCCL_PRAGMA(unroll 1)                                                                                   \
-    for (int j = 0; j < num_elem_per_thread; ++j)                                                            \
-    {                                                                                                        \
-      const int idx = j * block_dim + threadIdx.x;                                                           \
-      if (full_tile || idx < tile_size)                                                                      \
-      {                                                                                                      \
-        int smem_offset = 0;                                                                                 \
-        /* need to expand into a tuple for guaranteed order of evaluation*/                                  \
-        out[idx] = poor_apply(                                                                               \
-          [&](const InTs&... values) {                                                                       \
-            return f(values...);                                                                             \
-          },                                                                                                 \
-          ::cuda::std::tuple<InTs...>{fetch_operand(tile_stride, smem, smem_offset, idx, aligned_ptrs)...}); \
-      }                                                                                                      \
+  // TODO(bgruber): use `auto full_tile` and pass true_type/false_type in C++14 to strengthen the compile-time intent
+  auto process_tile = [&](bool full_tile) {
+    // Unroll 1 tends to improve performance, especially for smaller data types (confirmed by benchmark)
+    _CCCL_PRAGMA(unroll 1)
+    for (int j = 0; j < num_elem_per_thread; ++j)
+    {
+      const int idx = j * block_dim + threadIdx.x;
+      if (full_tile || idx < tile_size)
+      {
+        int smem_offset = 0;
+        // need to expand into a tuple for guaranteed order of evaluation
+        out[idx] = poor_apply(
+          [&](const InTs&... values) {
+            return f(values...);
+          },
+          ::cuda::std::tuple<InTs...>{fetch_operand(tile_stride, smem, smem_offset, idx, aligned_ptrs)...});
+      }
     }
+  };
+  // explicitly calling the lambda on literal true/false lets the compiler emit the lambda twice
   if (tile_stride == tile_size)
   {
-    UBLKCP_AGENT(true);
+    process_tile(true);
   }
   else
   {
-    UBLKCP_AGENT(false);
+    process_tile(false);
   }
-#  undef UBLKCP_AGENT
 }
 
 template <typename BulkCopyPolicy, typename Offset, typename F, typename RandomAccessIteratorOut, typename... InTs>
@@ -544,7 +546,7 @@ using needs_aligned_ptr_t =
                              >;
 
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
-template <Algorithm Alg, typename It, ::cuda::std::__enable_if_t<needs_aligned_ptr_t<Alg>::value, int> = 0>
+template <Algorithm Alg, typename It, ::cuda::std::enable_if_t<needs_aligned_ptr_t<Alg>::value, int> = 0>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto select_kernel_arg(
   ::cuda::std::integral_constant<Algorithm, Alg>, kernel_arg<It>&& arg) -> aligned_base_ptr<value_t<It>>&&
 {
@@ -552,7 +554,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto select_kernel_arg(
 }
 #endif // _CUB_HAS_TRANSFORM_UBLKCP
 
-template <Algorithm Alg, typename It, ::cuda::std::__enable_if_t<!needs_aligned_ptr_t<Alg>::value, int> = 0>
+template <Algorithm Alg, typename It, ::cuda::std::enable_if_t<!needs_aligned_ptr_t<Alg>::value, int> = 0>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto
 select_kernel_arg(::cuda::std::integral_constant<Algorithm, Alg>, kernel_arg<It>&& arg) -> It&&
 {

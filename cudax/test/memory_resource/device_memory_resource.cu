@@ -191,7 +191,7 @@ TEST_CASE("device_memory_resource construction", "[memory_resource]")
   }
 
   // Allocation handles are only supported after 11.2
-#if !defined(_CCCL_CUDACC_BELOW_11_2)
+#if _CCCL_CUDACC_AT_LEAST(11, 2)
   SECTION("Construct with allocation handle")
   {
     cuda::experimental::mr::memory_pool_properties props = {
@@ -214,7 +214,7 @@ TEST_CASE("device_memory_resource construction", "[memory_resource]")
     // Ensure that we disable export
     CHECK(ensure_export_handle(get, static_cast<cudaMemAllocationHandleType>(props.allocation_handle_type)));
   }
-#endif // !_CCCL_CUDACC_BELOW_11_2
+#endif // _CCCL_CUDACC_AT_LEAST(11, 2)
 }
 
 static void ensure_device_ptr(void* ptr)
@@ -497,7 +497,7 @@ TEST_CASE("Async memory resource peer access")
         resource.deallocate(ptr2, sizeof(int));
       };
 
-      resource.enable_peer_access(peers);
+      resource.enable_peer_access_from(peers);
 
       CUDAX_CHECK(pool.is_accessible_from(peers.front()));
       CUDAX_CHECK(resource.is_accessible_from(peers.front()));
@@ -507,7 +507,7 @@ TEST_CASE("Async memory resource peer access")
       CUDAX_CHECK(another_resource.is_accessible_from(peers.front()));
       allocate_and_check_access(another_resource);
 
-      resource.disable_peer_access(peers.front());
+      resource.disable_peer_access_from(peers.front());
       CUDAX_CHECK(!resource.is_accessible_from(peers.front()));
       CUDAX_CHECK(!another_resource.is_accessible_from(peers.front()));
 
@@ -516,21 +516,21 @@ TEST_CASE("Async memory resource peer access")
         CUDAX_CHECK(resource.is_accessible_from(peers[1]));
       }
 
-      resource.disable_peer_access(peers);
+      resource.disable_peer_access_from(peers);
 
-      resource.enable_peer_access(peers.front());
+      resource.enable_peer_access_from(peers.front());
       CUDAX_CHECK(resource.is_accessible_from(peers.front()));
       CUDAX_CHECK(another_resource.is_accessible_from(peers.front()));
 
       // Check if enable can include the device on which the pool resides
       peers.push_back(cudax::devices[0]);
-      resource.enable_peer_access(peers);
+      resource.enable_peer_access_from(peers);
 
       // Check the resource using the default pool
       cudax::mr::device_memory_resource default_pool_resource{};
       cudax::mr::device_memory_resource another_default_pool_resource{};
 
-      default_pool_resource.enable_peer_access(peers.front());
+      default_pool_resource.enable_peer_access_from(peers.front());
 
       CUDAX_CHECK(default_pool_resource.is_accessible_from(peers.front()));
       allocate_and_check_access(default_pool_resource);

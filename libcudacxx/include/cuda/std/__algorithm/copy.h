@@ -50,7 +50,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool __dispatch_memmove(_Up* __r
   // This is a pessimisation, but there's no way to do the code path detection correctly before GCC 9.0.
   // __builtin_memmove is also illegal in constexpr there, so... just always assume we are constant evaluated,
   // and let the optimizer *maybe* recover some of the perf.
-#if defined(_CCCL_COMPILER_GCC) && _GNUC_VER < 900
+#if _CCCL_COMPILER(GCC, <, 9)
   return false;
 #endif
 
@@ -103,8 +103,8 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool __constexpr_tail_overlap(_T
 template <class _AlgPolicy,
           class _Tp,
           class _Up,
-          __enable_if_t<_CCCL_TRAIT(is_same, __remove_const_t<_Tp>, _Up), int> = 0,
-          __enable_if_t<_CCCL_TRAIT(is_trivially_copyable, _Up), int>          = 0>
+          enable_if_t<_CCCL_TRAIT(is_same, remove_const_t<_Tp>, _Up), int> = 0,
+          enable_if_t<_CCCL_TRAIT(is_trivially_copyable, _Up), int>        = 0>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_Tp*, _Up*> __copy(_Tp* __first, _Tp* __last, _Up* __result)
 {
   const ptrdiff_t __n = __last - __first;

@@ -144,7 +144,7 @@ TEST_CASE("device_memory_pool construction", "[memory_resource]")
   }
 
   // Allocation handles are only supported after 11.2
-#if !defined(_CCCL_CUDACC_BELOW_11_2)
+#if _CCCL_CUDACC_AT_LEAST(11, 2)
   SECTION("Construct with allocation handle")
   {
     cudax::mr::memory_pool_properties props = {
@@ -163,7 +163,7 @@ TEST_CASE("device_memory_pool construction", "[memory_resource]")
     // Ensure that we disable export
     CHECK(ensure_export_handle(get, static_cast<cudaMemAllocationHandleType>(props.allocation_handle_type)));
   }
-#endif // !_CCCL_CUDACC_BELOW_11_2
+#endif // _CCCL_CUDACC_AT_LEAST(11, 2)
 
   SECTION("Take ownership of native handle")
   {
@@ -479,10 +479,10 @@ TEST_CASE("device_memory_pool accessors", "[memory_resource]")
         cudax::mr::device_memory_pool pool{cudax::devices[0]};
         CUDAX_CHECK(pool.is_accessible_from(cudax::devices[0]));
 
-        pool.enable_peer_access(peers);
+        pool.enable_peer_access_from(peers);
         CUDAX_CHECK(pool.is_accessible_from(peers.front()));
 
-        pool.disable_peer_access(peers.front());
+        pool.disable_peer_access_from(peers.front());
         CUDAX_CHECK(!pool.is_accessible_from(peers.front()));
 
         if (peers.size() > 1)

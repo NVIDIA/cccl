@@ -82,7 +82,7 @@ private:
   struct __opstate_fn
   {
     template <class... _As>
-    using __f = connect_result_t<__call_result_t<_Fn, __decay_t<_As>&...>, __rcvr_ref_t<_Rcvr&>>;
+    using __call = connect_result_t<__call_result_t<_Fn, __decay_t<_As>&...>, __rcvr_ref_t<_Rcvr&>>;
   };
 
   /// @brief Computes the type of a variant of operation states to hold
@@ -91,7 +91,7 @@ private:
   using __opstate2_t =
     __gather_completion_signatures<completion_signatures_of_t<_CvSndr, _Rcvr>,
                                    _SetTag,
-                                   __opstate_fn<_Fn, _Rcvr>::template __f,
+                                   __opstate_fn<_Fn, _Rcvr>::template __call,
                                    __empty_tuple,
                                    __variant>;
 
@@ -103,7 +103,7 @@ private:
 
     template <class _Ty>
     using __ensure_sender = //
-      _CUDA_VSTD::_If<__is_sender<_Ty> || __is_error<_Ty>, _Ty, __error_non_sender_return>;
+      _CUDA_VSTD::conditional_t<__is_sender<_Ty> || __type_is_error<_Ty>, _Ty, __error_non_sender_return>;
 
     template <class... _As>
     using __error_not_callable_with = //
@@ -116,27 +116,27 @@ private:
     // predecessor sender's results. If the function is not callable with
     // the results, it returns an _ERROR.
     template <class... _As>
-    using __call_result =
-      __minvoke<__mtry_quote<__call_result_t, __error_not_callable_with<_As...>>, _Fn, __decay_t<_As>&...>;
+    using __call_result = _CUDA_VSTD::
+      __type_call<__type_try_quote<__call_result_t, __error_not_callable_with<_As...>>, _Fn, __decay_t<_As>&...>;
 
     // This computes the completion signatures of sender returned by the
     // function when called with the given arguments. It returns an _ERROR if
     // the function is not callable with the arguments or if the function
     // returns a non-sender.
     template <class... _As>
-    using __f =
-      __mtry_invoke_q<completion_signatures_of_t, __ensure_sender<__call_result<_As...>>, __rcvr_ref_t<_Rcvr&>>;
+    using __call =
+      __type_try_call_quote<completion_signatures_of_t, __ensure_sender<__call_result<_As...>>, __rcvr_ref_t<_Rcvr&>>;
   };
 
   /// @brief Computes the completion signatures of the
   /// `let_(value|error|stopped)` sender.
   template <class _CvSndr, class _Fn, class _Rcvr>
-  using __completions =
-    __gather_completion_signatures<completion_signatures_of_t<_CvSndr, _Rcvr>,
-                                   _SetTag,
-                                   __completions_fn<_Fn, _Rcvr>::template __f,
-                                   __default_completions,
-                                   __mbind_front<__mtry_quote<__concat_completion_signatures>, __eptr_completion>::__f>;
+  using __completions = __gather_completion_signatures<
+    completion_signatures_of_t<_CvSndr, _Rcvr>,
+    _SetTag,
+    __completions_fn<_Fn, _Rcvr>::template __call,
+    __default_completions,
+    _CUDA_VSTD::__type_bind_front<__type_try_quote<__concat_completion_signatures>, __eptr_completion>::__call>;
 
   /// @brief The `let_(value|error|stopped)` operation state.
   /// @tparam _CvSndr The cvref-qualified predecessor sender type.
@@ -157,10 +157,10 @@ private:
 
     // Don't try to compute the type of the variant of operation states
     // if the computation of the completion signatures failed.
-    using __deferred_opstate_fn = __mbind_back<__mtry_quote<__opstate2_t>, _CvSndr, _Fn, _Rcvr>;
-    using __opstate_variant_fn =
-      _CUDA_VSTD::_If<__is_error<completion_signatures>, __malways<__empty>, __deferred_opstate_fn>;
-    using __opstate_variant_t = __mtry_invoke<__opstate_variant_fn>;
+    using __deferred_opstate_fn = _CUDA_VSTD::__type_bind_back<__type_try_quote<__opstate2_t>, _CvSndr, _Fn, _Rcvr>;
+    using __opstate_variant_fn  = _CUDA_VSTD::
+      conditional_t<__type_is_error<completion_signatures>, _CUDA_VSTD::__type_always<__empty>, __deferred_opstate_fn>;
+    using __opstate_variant_t = __type_try_call<__opstate_variant_fn>;
 
     _Rcvr __rcvr_;
     _Fn __fn_;
@@ -190,7 +190,7 @@ private:
             // Store the results so the lvalue refs we pass to the function
             // will be valid for the duration of the async op.
             auto& __tupl = __result_.template __emplace<__decayed_tuple<_As...>>(static_cast<_As&&>(__as)...);
-            if constexpr (!__is_error<completion_signatures>)
+            if constexpr (!__type_is_error<completion_signatures>)
             {
               // Call the function with the results and connect the resulting
               // sender, storing the operation state in __opstate2_.

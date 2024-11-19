@@ -85,11 +85,11 @@
 #endif // _CCCL_STD_VER <= 2014
 
 // In nvcc prior to 11.3 global variables could not be marked constexpr
-#if defined(_CCCL_CUDACC_BELOW_11_3)
+#if _CCCL_CUDACC_BELOW(11, 3)
 #  define _CCCL_CONSTEXPR_GLOBAL const
-#else // ^^^ _CCCL_CUDACC_BELOW_11_3 ^^^ / vvv !_CCCL_CUDACC_BELOW_11_3 vvv
+#else // ^^^ _CCCL_CUDACC_BELOW(11, 3) ^^^ / vvv _CCCL_CUDACC_AT_LEAST(11, 3) vvv
 #  define _CCCL_CONSTEXPR_GLOBAL constexpr
-#endif // !_CCCL_CUDACC_BELOW_11_3
+#endif // _CCCL_CUDACC_AT_LEAST(11, 3)
 
 // Inline variables are only available from C++17 onwards
 #if _CCCL_STD_VER >= 2017 && defined(__cpp_inline_variables) && (__cpp_inline_variables >= 201606L)
@@ -103,6 +103,14 @@
 #if _CCCL_STD_VER <= 2011 || !defined(__cpp_variable_templates) || (__cpp_variable_templates < 201304L)
 #  define _CCCL_NO_VARIABLE_TEMPLATES
 #endif // _CCCL_STD_VER <= 2011
+
+// noexcept function types are only available from C++17 onwards
+#if _CCCL_STD_VER >= 2017 && defined(__cpp_noexcept_function_type) && (__cpp_noexcept_function_type >= 201510L)
+#  define _CCCL_FUNCTION_TYPE_NOEXCEPT noexcept
+#else // ^^^ C++17 ^^^ / vvv C++14 vvv
+#  define _CCCL_NO_NOEXCEPT_FUNCTION_TYPE
+#  define _CCCL_FUNCTION_TYPE_NOEXCEPT
+#endif // _CCCL_STD_VER <= 2014
 
 // Variable templates are more efficient most of the time, so we want to use them rather than structs when possible
 #if defined(_CCCL_NO_VARIABLE_TEMPLATES)

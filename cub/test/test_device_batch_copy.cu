@@ -46,7 +46,7 @@
 #include <vector>
 
 #include "test_util.h"
-#include <c2h/vector.cuh>
+#include <c2h/vector.h>
 
 /**
  * @brief Host-side random data generation

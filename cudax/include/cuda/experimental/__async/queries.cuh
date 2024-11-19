@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/enable_if.h>
+
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 #include <cuda/std/__memory/allocator.h>
 _CCCL_SUPPRESS_DEPRECATED_POP
@@ -35,33 +37,33 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 namespace cuda::experimental::__async
 {
 template <class _Ty, class _Query>
-auto __query_result_() -> decltype(__declval<_Ty>().__query(_Query()));
+auto __query_result_() -> decltype(__declval<_Ty>().query(_Query()));
 
 template <class _Ty, class _Query>
 using __query_result_t = decltype(__query_result_<_Ty, _Query>());
 
 template <class _Ty, class _Query>
-inline constexpr bool __queryable = __mvalid_q<__query_result_t, _Ty, _Query>;
+inline constexpr bool __queryable = __type_valid_v<__query_result_t, _Ty, _Query>;
 
 #if defined(__CUDA_ARCH__)
 template <class _Ty, class _Query>
 inline constexpr bool __nothrow_queryable = true;
 #else
 template <class _Ty, class _Query>
-using __nothrow_queryable_ = __mif<noexcept(__declval<_Ty>().__query(_Query()))>;
+using __nothrow_queryable_ = _CUDA_VSTD::enable_if_t<noexcept(__declval<_Ty>().query(_Query()))>;
 
 template <class _Ty, class _Query>
-inline constexpr bool __nothrow_queryable = __mvalid_q<__nothrow_queryable_, _Ty, _Query>;
+inline constexpr bool __nothrow_queryable = __type_valid_v<__nothrow_queryable_, _Ty, _Query>;
 #endif
 
 _CCCL_GLOBAL_CONSTANT struct get_allocator_t
 {
   template <class _Env>
   _CUDAX_API auto operator()(const _Env& __env) const noexcept //
-    -> decltype(__env.__query(*this))
+    -> decltype(__env.query(*this))
   {
-    static_assert(noexcept(__env.__query(*this)));
-    return __env.__query(*this);
+    static_assert(noexcept(__env.query(*this)));
+    return __env.query(*this);
   }
 
   _CUDAX_API auto operator()(__ignore) const noexcept -> _CUDA_VSTD::allocator<void>
@@ -74,10 +76,10 @@ _CCCL_GLOBAL_CONSTANT struct get_stop_token_t
 {
   template <class _Env>
   _CUDAX_API auto operator()(const _Env& __env) const noexcept //
-    -> decltype(__env.__query(*this))
+    -> decltype(__env.query(*this))
   {
-    static_assert(noexcept(__env.__query(*this)));
-    return __env.__query(*this);
+    static_assert(noexcept(__env.query(*this)));
+    return __env.query(*this);
   }
 
   _CUDAX_API auto operator()(__ignore) const noexcept -> never_stop_token
@@ -94,10 +96,10 @@ struct get_completion_scheduler_t
 {
   template <class _Env>
   _CUDAX_API auto operator()(const _Env& __env) const noexcept //
-    -> decltype(__env.__query(*this))
+    -> decltype(__env.query(*this))
   {
-    static_assert(noexcept(__env.__query(*this)));
-    return __env.__query(*this);
+    static_assert(noexcept(__env.query(*this)));
+    return __env.query(*this);
   }
 };
 
@@ -108,23 +110,23 @@ _CCCL_GLOBAL_CONSTANT struct get_scheduler_t
 {
   template <class _Env>
   _CUDAX_API auto operator()(const _Env& __env) const noexcept //
-    -> decltype(__env.__query(*this))
+    -> decltype(__env.query(*this))
   {
-    static_assert(noexcept(__env.__query(*this)));
-    return __env.__query(*this);
+    static_assert(noexcept(__env.query(*this)));
+    return __env.query(*this);
   }
 } get_scheduler{};
 
-_CCCL_GLOBAL_CONSTANT struct get_delegatee_scheduler_t
+_CCCL_GLOBAL_CONSTANT struct get_delegation_scheduler_t
 {
   template <class _Env>
   _CUDAX_API auto operator()(const _Env& __env) const noexcept //
-    -> decltype(__env.__query(*this))
+    -> decltype(__env.query(*this))
   {
-    static_assert(noexcept(__env.__query(*this)));
-    return __env.__query(*this);
+    static_assert(noexcept(__env.query(*this)));
+    return __env.query(*this);
   }
-} get_delegatee_scheduler{};
+} get_delegation_scheduler{};
 
 enum class forward_progress_guarantee
 {
@@ -137,10 +139,10 @@ _CCCL_GLOBAL_CONSTANT struct get_forward_progress_guarantee_t
 {
   template <class _Sch>
   _CUDAX_API auto operator()(const _Sch& __sch) const noexcept //
-    -> decltype(__async::__decay_copy(__sch.__query(*this)))
+    -> decltype(__async::__decay_copy(__sch.query(*this)))
   {
-    static_assert(noexcept(__sch.__query(*this)));
-    return __sch.__query(*this);
+    static_assert(noexcept(__sch.query(*this)));
+    return __sch.query(*this);
   }
 
   _CUDAX_API auto operator()(__ignore) const noexcept -> forward_progress_guarantee
@@ -153,7 +155,7 @@ _CCCL_GLOBAL_CONSTANT struct get_domain_t
 {
   template <class _Sch>
   _CUDAX_API constexpr auto operator()(const _Sch& __sch) const noexcept //
-    -> decltype(__async::__decay_copy(__sch.__query(*this)))
+    -> decltype(__async::__decay_copy(__sch.query(*this)))
   {
     return {};
   }

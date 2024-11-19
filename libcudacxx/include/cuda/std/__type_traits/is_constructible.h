@@ -51,8 +51,8 @@ template <class _To, class _From>
 struct __is_invalid_base_to_derived_cast
 {
   static_assert(is_reference<_To>::value, "Wrong specialization");
-  using _RawFrom = __remove_cvref_t<_From>;
-  using _RawTo   = __remove_cvref_t<_To>;
+  using _RawFrom = remove_cvref_t<_From>;
+  using _RawTo   = remove_cvref_t<_To>;
   static const bool value =
     _And<_IsNotSame<_RawFrom, _RawTo>, is_base_of<_RawFrom, _RawTo>, _Not<__libcpp_is_constructible<_RawTo, _From>>>::
       value;
@@ -67,8 +67,8 @@ struct __is_invalid_lvalue_to_rvalue_cast : false_type
 template <class _ToRef, class _FromRef>
 struct __is_invalid_lvalue_to_rvalue_cast<_ToRef&&, _FromRef&>
 {
-  using _RawFrom = __remove_cvref_t<_FromRef>;
-  using _RawTo   = __remove_cvref_t<_ToRef>;
+  using _RawFrom = remove_cvref_t<_FromRef>;
+  using _RawTo   = remove_cvref_t<_ToRef>;
   static const bool value =
     _And<_Not<is_function<_RawTo>>, _Or<_IsSame<_RawFrom, _RawTo>, is_base_of<_RawTo, _RawFrom>>>::value;
 };
@@ -119,7 +119,7 @@ struct __is_default_constructible<_Tp[], false> : false_type
 {};
 
 template <class _Tp, size_t _Nx>
-struct __is_default_constructible<_Tp[_Nx], false> : __is_default_constructible<__remove_all_extents_t<_Tp>>
+struct __is_default_constructible<_Tp[_Nx], false> : __is_default_constructible<remove_all_extents_t<_Tp>>
 {};
 
 template <class _Tp, class... _Args>

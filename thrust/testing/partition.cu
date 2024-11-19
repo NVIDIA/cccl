@@ -7,7 +7,7 @@
 
 #include <unittest/unittest.h>
 
-#if defined(THRUST_GCC_VERSION) && THRUST_GCC_VERSION >= 110000 && THRUST_GCC_VERSION < 120000
+#if _CCCL_COMPILER(GCC, >=, 11) && _CCCL_COMPILER(GCC, <, 12)
 #  define WAIVE_GCC11_FAILURES
 #endif
 

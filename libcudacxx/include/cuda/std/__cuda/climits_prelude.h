@@ -21,12 +21,12 @@
 #  pragma system_header
 #endif // no system header
 
-#ifndef _CCCL_COMPILER_NVRTC
+#if !_CCCL_COMPILER(NVRTC)
 #  include <climits>
 #  include <cstdint>
 
 #  include <limits.h>
-#else // ^^^ !_CCCL_COMPILER_NVRTC ^^^ / vvv _CCCL_COMPILER_NVRTC vvv
+#else // ^^^ !_CCCL_COMPILER(NVRTC) ^^^ / vvv _CCCL_COMPILER(NVRTC) vvv
 #  define CHAR_BIT 8
 
 #  define SCHAR_MIN         (-128)
@@ -100,6 +100,6 @@ static _CCCL_DEVICE _CCCL_FORCEINLINE _To __cowchild_cast(_From __from)
 #  define __builtin_huge_val()     __cowchild_cast<double>(0x7ff0000000000000)
 #  define __builtin_nan(__dummy)   __cowchild_cast<double>(0x7ff8000000000000)
 #  define __builtin_nans(__dummy)  __cowchild_cast<double>(0x7ff4000000000000)
-#endif // _CCCL_COMPILER_NVRTC
+#endif // _CCCL_COMPILER(NVRTC)
 
 #endif // _LIBCUDACXX___CUDA_CLIMITS_PRELUDE_H

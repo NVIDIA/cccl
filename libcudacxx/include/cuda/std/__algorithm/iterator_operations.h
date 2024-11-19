@@ -111,14 +111,14 @@ struct _IterOps<_ClassicAlgPolicy>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 static void __validate_iter_reference()
   {
     static_assert(
-      is_same<__deref_t<_Iter>, typename iterator_traits<__remove_cvref_t<_Iter>>::reference>::value,
+      is_same<__deref_t<_Iter>, typename iterator_traits<remove_cvref_t<_Iter>>::reference>::value,
       "It looks like your iterator's `iterator_traits<It>::reference` does not match the return type of "
       "dereferencing the iterator, i.e., calling `*it`. This is undefined behavior according to [input.iterators] "
       "and can lead to dangling reference issues at runtime, so we are flagging this.");
   }
 
   // iter_move
-  template <class _Iter, __enable_if_t<is_reference<__deref_t<_Iter>>::value, int> = 0>
+  template <class _Iter, enable_if_t<is_reference<__deref_t<_Iter>>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 static
     // If the result of dereferencing `_Iter` is a reference type, deduce the result of calling `_CUDA_VSTD::move` on
     // it. Note that the C++03 mode doesn't support `decltype(auto)` as the return type.
@@ -130,7 +130,7 @@ struct _IterOps<_ClassicAlgPolicy>
     return _CUDA_VSTD::move(*_CUDA_VSTD::forward<_Iter>(__i));
   }
 
-  template <class _Iter, __enable_if_t<!is_reference<__deref_t<_Iter>>::value, int> = 0>
+  template <class _Iter, enable_if_t<!is_reference<__deref_t<_Iter>>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 static
     // If the result of dereferencing `_Iter` is a value type, deduce the return value of this function to also be a
     // value -- otherwise, after `operator*` returns a temporary, this function would return a dangling reference to
@@ -158,16 +158,16 @@ struct _IterOps<_ClassicAlgPolicy>
   }
 
   template <class _Iter>
-  _LIBCUDACXX_HIDE_FROM_ABI static _CCCL_CONSTEXPR_CXX14 __remove_cvref_t<_Iter>
-  next(_Iter&& __it, __difference_type<__remove_cvref_t<_Iter>> __n = 1)
+  _LIBCUDACXX_HIDE_FROM_ABI static _CCCL_CONSTEXPR_CXX14 remove_cvref_t<_Iter>
+  next(_Iter&& __it, __difference_type<remove_cvref_t<_Iter>> __n = 1)
   {
     return _CUDA_VSTD::next(_CUDA_VSTD::forward<_Iter>(__it), __n);
   }
 
   // prev
   template <class _Iter>
-  _LIBCUDACXX_HIDE_FROM_ABI static _CCCL_CONSTEXPR_CXX14 __remove_cvref_t<_Iter>
-  prev(_Iter&& __iter, __difference_type<__remove_cvref_t<_Iter>> __n = 1)
+  _LIBCUDACXX_HIDE_FROM_ABI static _CCCL_CONSTEXPR_CXX14 remove_cvref_t<_Iter>
+  prev(_Iter&& __iter, __difference_type<remove_cvref_t<_Iter>> __n = 1)
   {
     return _CUDA_VSTD::prev(_CUDA_VSTD::forward<_Iter>(__iter), __n);
   }

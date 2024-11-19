@@ -319,7 +319,7 @@ private:
       raking_ptr = smem_raking_ptr;
     }
 
-    return internal::ThreadReduce<RAKING_SEGMENT>(raking_ptr, ::cuda::std::plus<>{});
+    return cub::internal::ThreadReduce<RAKING_SEGMENT>(raking_ptr, ::cuda::std::plus<>{});
   }
 
   /// Performs exclusive downsweep raking scan
@@ -1000,7 +1000,7 @@ struct BlockRadixRankMatchEarlyCounts
         for (int u = 0; u < WARP_BINS_PER_THREAD; ++u)
         {
           int bin = lane + u * WARP_THREADS;
-          bins[u] = internal::ThreadReduce(warp_histograms[bin], ::cuda::std::plus<>{});
+          bins[u] = cub::ThreadReduce(warp_histograms[bin], ::cuda::std::plus<>{});
         }
         CTA_SYNC();
 

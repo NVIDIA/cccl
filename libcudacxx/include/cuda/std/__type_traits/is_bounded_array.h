@@ -32,8 +32,6 @@ template <class _Tp, size_t _Np>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __libcpp_is_bounded_array<_Tp[_Np]> : true_type
 {};
 
-#if _CCCL_STD_VER > 2011
-
 template <class>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_bounded_array : false_type
 {};
@@ -41,10 +39,10 @@ template <class _Tp, size_t _Np>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_bounded_array<_Tp[_Np]> : true_type
 {};
 
+#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _CCCL_INLINE_VAR constexpr bool is_bounded_array_v = is_bounded_array<_Tp>::value;
-
-#endif
+#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

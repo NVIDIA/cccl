@@ -28,10 +28,10 @@
 
 #include <cuda/std/__exception/terminate.h>
 
-#if !defined(_CCCL_COMPILER_NVRTC)
+#if !_CCCL_COMPILER(NVRTC)
 #  include <cstdio>
 #  include <stdexcept>
-#endif // !_CCCL_COMPILER_NVRTC
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #include <nv/target>
 

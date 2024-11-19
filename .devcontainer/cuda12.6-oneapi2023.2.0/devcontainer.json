@@ -19,7 +19,8 @@
     "CCCL_CUDA_VERSION": "12.6",
     "CCCL_HOST_COMPILER": "oneapi",
     "CCCL_HOST_COMPILER_VERSION": "2023.2.0",
-    "CCCL_BUILD_INFIX": "cuda12.6-oneapi2023.2.0"
+    "CCCL_BUILD_INFIX": "cuda12.6-oneapi2023.2.0",
+    "CCCL_CUDA_EXTENDED": "false"
   },
   "workspaceFolder": "/home/coder/${localWorkspaceFolderBasename}",
   "workspaceMount": "source=${localWorkspaceFolder},target=/home/coder/${localWorkspaceFolderBasename},type=bind,consistency=consistent",

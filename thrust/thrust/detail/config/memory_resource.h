@@ -34,10 +34,10 @@
 #define THRUST_MR_DEFAULT_ALIGNMENT alignof(THRUST_NS_QUALIFIER::detail::max_align_t)
 
 #if _CCCL_STD_VER >= 2017
-#  if __has_include(<memory_resource>)
+#  if _CCCL_HAS_INCLUDE(<memory_resource>)
 #    define THRUST_MR_STD_MR_HEADER <memory_resource>
 #    define THRUST_MR_STD_MR_NS     std::pmr
-#  elif __has_include(<experimental/memory_resource>)
+#  elif _CCCL_HAS_INCLUDE(<experimental/memory_resource>)
 #    define THRUST_MR_STD_MR_HEADER <experimental/memory_resource>
 #    define THRUST_MR_STD_MR_NS     std::experimental::pmr
 #  endif

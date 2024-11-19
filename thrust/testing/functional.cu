@@ -11,7 +11,7 @@ _CCCL_DIAG_SUPPRESS_MSVC(4244 4267) // possible loss of data
 
 // There is a unfortunate miscompilation of the gcc-11 vectorizer leading to OOB writes
 // Adding this attribute suffices that this miscompilation does not appear anymore
-#if defined(_CCCL_COMPILER_GCC) && __GNUC__ >= 11
+#if _CCCL_COMPILER(GCC, >=, 11)
 #  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER __attribute__((optimize("no-tree-vectorize")))
 #else
 #  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
@@ -180,21 +180,58 @@ DECLARE_UNARY_ARITHMETIC_FUNCTIONAL_UNITTEST(negate, Negate);
 _CCCL_DIAG_POP
 DECLARE_UNARY_LOGICAL_FUNCTIONAL_UNITTEST(logical_not, LogicalNot);
 
+// TODO(bgruber): replace by cuda::std::as_const in C++14
+template <class _Tp>
+typename ::cuda::std::add_const<_Tp>::type& as_const(_Tp& __t) noexcept
+{
+  return __t;
+}
+
 // Ad-hoc testing for other functionals
-template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestIdentityFunctional()
 {
+  int i    = 42;
+  double d = 3.14;
+
+  // pass through
+  ASSERT_EQUAL(thrust::identity<int>{}(i), 42);
+  ASSERT_EQUAL(thrust::identity<int>{}(d), 3);
+
+  // modification through
+  thrust::identity<int>{}(i) = 1337;
+  ASSERT_EQUAL(i, 1337);
+
+  // value categories and const
+  static_assert(::cuda::std::is_same<decltype(thrust::identity<int>{}(42)), int&&>::value, "");
+  static_assert(::cuda::std::is_same<decltype(thrust::identity<int>{}(i)), int&>::value, "");
+  static_assert(::cuda::std::is_same<decltype(thrust::identity<int>{}(as_const(i))), const int&>::value, "");
+  static_assert(::cuda::std::is_same<decltype(thrust::identity<int>{}(::cuda::std::move(i))), int&&>::value, "");
+  static_assert(::cuda::std::is_same<decltype(thrust::identity<int>{}(static_cast<const int&&>(i))), const int&>::value,
+                "");
+
+  // value categories when casting to different type
+  static_assert(::cuda::std::is_same<decltype(thrust::identity<int>{}(3.14)), int&&>::value, "");
+  // unfortunately, old versions of MSVC pick the `const int&` overload instead of `int&&`
+#if defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION >= 1929
+  static_assert(::cuda::std::is_same<decltype(thrust::identity<int>{}(d)), int&&>::value, "");
+  static_assert(::cuda::std::is_same<decltype(thrust::identity<int>{}(as_const(d))), int&&>::value, "");
+#endif
+  static_assert(::cuda::std::is_same<decltype(thrust::identity<int>{}(::cuda::std::move(d))), int&&>::value, "");
+  static_assert(::cuda::std::is_same<decltype(thrust::identity<int>{}(static_cast<const double&&>(d))), int&&>::value,
+                "");
+}
+DECLARE_UNITTEST(TestIdentityFunctional);
+
+template <class Vector>
+THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestIdentityFunctionalVector()
+{
   using T = typename Vector::value_type;
-
   Vector input{0, 1, 2, 3};
-
   Vector output(4);
-
   thrust::transform(input.begin(), input.end(), output.begin(), thrust::identity<T>());
-
   ASSERT_EQUAL(input, output);
 }
-DECLARE_VECTOR_UNITTEST(TestIdentityFunctional);
+DECLARE_VECTOR_UNITTEST(TestIdentityFunctionalVector);
 
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestProject1stFunctional()
@@ -283,9 +320,8 @@ DECLARE_INTEGRAL_VECTOR_UNITTEST(TestNot1);
 // - GCC 11
 // - CPP system for both host and device
 // - C++11 dialect
-#if !(defined(THRUST_GCC_VERSION) && THRUST_GCC_VERSION >= 110000 && THRUST_GCC_VERSION < 120000          \
-      && THRUST_HOST_SYSTEM == THRUST_HOST_SYSTEM_CPP && THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CPP \
-      && _CCCL_STD_VER == 2011)
+#if !(_CCCL_COMPILER(GCC, >=, 11) && _CCCL_COMPILER(GCC, <, 12) && THRUST_HOST_SYSTEM == THRUST_HOST_SYSTEM_CPP \
+      && THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CPP && _CCCL_STD_VER == 2011)
 
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestNot2()
