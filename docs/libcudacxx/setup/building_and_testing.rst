@@ -53,7 +53,16 @@ On Windows in ``x64 Native Tools Command Prompt``
 
    ./ci/windows/build_libcudacxx.ps1
 
-This should cover most users needs, but offers less flexibility. Optionally one can directly invoke cmake
+This should cover most users needs and can be adopted to work with different inputs:
+
+.. code:: bash
+
+    -cxx  Selects the host compiler
+    -std  Selects the C++ standard mode
+    -cuda Selects the cuda compiler
+    -arch Selects the cuda architectures
+
+Optionally one can directly invoke cmake
 
 Optionally Step 2: Manually generate the Build Files:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
