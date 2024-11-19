@@ -84,8 +84,8 @@ public:
   //! @returns Pointer to the newly allocated memory.
   _CCCL_NODISCARD void* allocate_async(const size_t __bytes, const size_t __alignment, const ::cuda::stream_ref __stream)
   {
-    return allocate(__bytes, __alignment);
     (void) __stream;
+    return allocate(__bytes, __alignment);
   }
 
   //! @brief Allocate CUDA unified memory of size at least \p __bytes.
@@ -95,8 +95,8 @@ public:
   //! @returns Pointer to the newly allocated memory.
   _CCCL_NODISCARD void* allocate_async(const size_t __bytes, const ::cuda::stream_ref __stream)
   {
-    return allocate(__bytes);
     (void) __stream;
+    return allocate(__bytes);
   }
 
   //! @brief Deallocate memory pointed to by \p __ptr.
