@@ -93,14 +93,20 @@ def mul2(val):
 
 
 @pytest.mark.parametrize("use_numpy_array", [True, False])
-@pytest.mark.parametrize("input_generator", ["raw_pointer", "streamed_input",
+@pytest.mark.parametrize("input_generator", ["raw_pointer_int16", "raw_pointer_int32",
+                                             "streamed_input",
                                              "constant", "counting",
                                              "map_mul2"])
 def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, start_sum_with=10):
     def add_op(a, b):
         return a + b
 
-    if input_generator == "raw_pointer":
+    if input_generator == "raw_pointer_int16":
+        rng = random.Random(0)
+        l_input = [rng.randrange(100) for _ in range(num_items)]
+        raw_pointer_devarr = numba.cuda.to_device(numpy.array(l_input, dtype=numpy.int16))
+        i_input = iterators.pointer(raw_pointer_devarr, ntype=numba.types.int16)
+    elif input_generator == "raw_pointer_int32":
         rng = random.Random(0)
         l_input = [rng.randrange(100) for _ in range(num_items)]
         raw_pointer_devarr = numba.cuda.to_device(numpy.array(l_input, dtype=numpy.int32))
