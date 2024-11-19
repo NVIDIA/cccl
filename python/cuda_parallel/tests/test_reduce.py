@@ -93,34 +93,41 @@ def mul2(val):
 
 
 @pytest.mark.parametrize("use_numpy_array", [True, False])
-@pytest.mark.parametrize("input_generator", ["raw_pointer_int16", "raw_pointer_int32",
-                                             "streamed_input_int16", "streamed_input_int32",
-                                             "constant", "counting",
+@pytest.mark.parametrize("input_generator", ["raw_pointer_int16",
+                                             "raw_pointer_uint16",
+                                             "raw_pointer_int32",
+                                             "raw_pointer_uint32",
+                                             "raw_pointer_int64",
+                                             "raw_pointer_uint64",
+                                             "streamed_input_int16",
+                                             "streamed_input_uint16",
+                                             "streamed_input_int32",
+                                             "streamed_input_uint32",
+                                             # "streamed_input_int64",
+                                             # "streamed_input_uint64",
+                                             "constant",
+                                             "counting",
                                              "map_mul2"])
 def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, start_sum_with=10):
     def add_op(a, b):
         return a + b
 
-    if input_generator == "raw_pointer_int16":
+    def dtype_ntype():
+        intty = input_generator.split("_")[-1]
+        return getattr(numpy, intty), getattr(numba.types, intty)
+
+    if input_generator.startswith("raw_pointer_"):
         rng = random.Random(0)
         l_input = [rng.randrange(100) for _ in range(num_items)]
-        raw_pointer_devarr = numba.cuda.to_device(numpy.array(l_input, dtype=numpy.int16))
-        i_input = iterators.pointer(raw_pointer_devarr, ntype=numba.types.int16)
-    elif input_generator == "raw_pointer_int32":
+        dtype, ntype = dtype_ntype()
+        raw_pointer_devarr = numba.cuda.to_device(numpy.array(l_input, dtype=dtype))
+        i_input = iterators.pointer(raw_pointer_devarr, ntype=ntype)
+    elif input_generator.startswith("streamed_input_"):
         rng = random.Random(0)
         l_input = [rng.randrange(100) for _ in range(num_items)]
-        raw_pointer_devarr = numba.cuda.to_device(numpy.array(l_input, dtype=numpy.int32))
-        i_input = iterators.pointer(raw_pointer_devarr, ntype=numba.types.int32)
-    elif input_generator == "streamed_input_int16":
-        rng = random.Random(0)
-        l_input = [rng.randrange(100) for _ in range(num_items)]
-        streamed_input_devarr = numba.cuda.to_device(numpy.array(l_input, dtype=numpy.int16))
-        i_input = iterators.cache(streamed_input_devarr, ntype=numba.types.int16, modifier='stream')
-    elif input_generator == "streamed_input_int32":
-        rng = random.Random(0)
-        l_input = [rng.randrange(100) for _ in range(num_items)]
-        streamed_input_devarr = numba.cuda.to_device(numpy.array(l_input, dtype=numpy.int32))
-        i_input = iterators.cache(streamed_input_devarr, ntype=numba.types.int32, modifier='stream')
+        dtype, ntype = dtype_ntype()
+        streamed_input_devarr = numba.cuda.to_device(numpy.array(l_input, dtype=dtype))
+        i_input = iterators.cache(streamed_input_devarr, ntype=ntype, modifier='stream')
     elif input_generator == "constant":
         l_input = [42 for distance in range(num_items)]
         i_input = iterators.repeat(42, ntype=numba.types.int32)
