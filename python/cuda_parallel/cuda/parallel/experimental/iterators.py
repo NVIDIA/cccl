@@ -25,6 +25,22 @@ def _sizeof_numba_type(ntype):
     return mapping[ntype]
 
 
+def _numba_type_as_ir_type(ntype):
+    mapping = {
+        types.int8: "s8",
+        types.int16: "s16",
+        types.int32: "s32",
+        types.int64: "s64",
+        types.uint8: "u8",
+        types.uint16: "u16",
+        types.uint32: "u32",
+        types.uint64: "u64",
+        # types.float32: '?',
+        # types.float64: '?',
+    }
+    return mapping[ntype]
+
+
 def _ctypes_type_given_numba_type(ntype):
     mapping = {
         types.int8: ctypes.c_int8,
@@ -42,6 +58,14 @@ def _ctypes_type_given_numba_type(ntype):
 
 
 def _ncc(funcname, pyfunc, sig, prefix):
+    ptx, _ = numba.cuda.compile(
+        pyfunc=pyfunc,
+        sig=sig,
+        abi_info={"abi_name": f"{prefix}_{funcname}"},
+        output="ptx",
+    )
+    if funcname == "dereference":
+        print("\nLOOOK", funcname, ptx, flush=True)
     return numba.cuda.compile(
         pyfunc=pyfunc,
         sig=sig,
@@ -102,6 +126,7 @@ def pointer(container, ntype):
 
 def make_ldcs(ntype):
     bitwidth = _sizeof_numba_type(ntype) * 8
+    irty = _numba_type_as_ir_type(ntype)
 
     @intrinsic
     def ldcs(typingctx, base):
@@ -111,9 +136,7 @@ def make_ldcs(ntype):
             intbw = ir.IntType(bitwidth)  # TODO: unsigned
             intbw_ptr = intbw.as_pointer()
             ldcs_type = ir.FunctionType(intbw, [intbw_ptr])
-            ldcs = ir.InlineAsm(
-                ldcs_type, f"ld.global.cs.b{bitwidth} $0, [$1];", "=r, l"
-            )
+            ldcs = ir.InlineAsm(ldcs_type, f"ld.global.cs.{irty} $0, [$1];", "=r, l")
             return builder.call(ldcs, args)
 
         return signature, codegen
