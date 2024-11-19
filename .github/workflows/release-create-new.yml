@@ -107,9 +107,10 @@ jobs:
           git show --oneline --no-patch HEAD | tee -a $GITHUB_STEP_SUMMARY
 
       - name: Update version numbers in main
-        id: update_main
-        run: |
-          gh workflow run update-branch-version.yml --ref main -f new_version="$main_version" -f target_branch="main" | tee -a $GITHUB_STEP_SUMMARY
+        uses: ./.github/actions/version-update
+        with:
+          new_version: ${{ inputs.main_version }}
+          target_branch: "main"
 
       - name: Notify Slack
         if: ${{ success()}}
