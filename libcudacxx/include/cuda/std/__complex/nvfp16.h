@@ -27,6 +27,7 @@
 
 #  include <cuda/std/__complex/vector_support.h>
 #  include <cuda/std/__cuda/cmath_nvfp16.h>
+#  include <cuda/std/__fwd/get.h>
 #  include <cuda/std/__type_traits/enable_if.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
 #  include <cuda/std/__type_traits/is_constructible.h>
@@ -231,6 +232,64 @@ public:
   {
     return __hbeq2(__lhs.__repr_, __rhs.__repr_);
   }
+
+#  if _CCCL_STD_VER >= 2014
+  template <size_t _Index>
+  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type& get(complex& __z) noexcept
+  {
+    static_assert(_Index < 2, "Index value is out of range");
+    if constexpr (_Index == 0)
+    {
+      return __z.__repr_.x;
+    }
+    else
+    {
+      return __z.__repr_.y;
+    }
+  }
+
+  template <size_t _Index>
+  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type&& get(complex&& __z) noexcept
+  {
+    static_assert(_Index < 2, "Index value is out of range");
+    if constexpr (_Index == 0)
+    {
+      return _CUDA_VSTD::move(__z.__repr_.x);
+    }
+    else
+    {
+      return _CUDA_VSTD::move(__z.__repr_.y);
+    }
+  }
+
+  template <size_t _Index>
+  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr const value_type& get(const complex& __z) noexcept
+  {
+    static_assert(_Index < 2, "Index value is out of range");
+    if constexpr (_Index == 0)
+    {
+      return __z.__repr_.x;
+    }
+    else
+    {
+      return __z.__repr_.y;
+    }
+  }
+
+  template <size_t _Index>
+  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr const value_type&& get(const complex&& __z) noexcept
+  {
+    static_assert(_Index < 2, "Index value is out of range");
+    if constexpr (_Index == 0)
+    {
+      return _CUDA_VSTD::move(__z.__repr_.x);
+    }
+    else
+    {
+      return _CUDA_VSTD::move(__z.__repr_.y);
+    }
+  }
+#  endif // _CCCL_STD_VER >= 2014
 };
 
 template <> // complex<float>

@@ -228,6 +228,20 @@ template<class T> complex<T> sqrt (const complex<T>&);
 template<class T> complex<T> tan (const complex<T>&);
 template<class T> complex<T> tanh (const complex<T>&);
 
+// [complex.tuple], tuple interface
+template<class T> struct tuple_size;                               // Since C++26
+template<size_t I, class T> struct tuple_element;                  // Since C++26
+template<class T> struct tuple_size<complex<T>>;                   // Since C++26
+template<size_t I, class T> struct tuple_element<I, complex<T>>;   // Since C++26
+template<size_t I, class T>
+  constexpr T& get(complex<T>&) noexcept;                          // Since C++26
+template<size_t I, class T>
+  constexpr T&& get(complex<T>&&) noexcept;                        // Since C++26
+template<size_t I, class T>
+  constexpr const T& get(const complex<T>&) noexcept;              // Since C++26
+template<size_t I, class T>
+  constexpr const T&& get(const complex<T>&&) noexcept;            // Since C++26
+
 }  // std
 
 */
@@ -243,6 +257,9 @@ template<class T> complex<T> tanh (const complex<T>&);
 #endif // no system header
 
 #include <cuda/std/__complex/vector_support.h>
+#include <cuda/std/__fwd/get.h>
+#include <cuda/std/__tuple_dir/tuple_element.h>
+#include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
@@ -419,6 +436,64 @@ public:
     __im_ -= __c.imag();
     return *this;
   }
+
+#if _CCCL_STD_VER >= 2014
+  template <size_t _Index>
+  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type& get(complex& __z) noexcept
+  {
+    static_assert(_Index < 2, "Index value is out of range");
+    if constexpr (_Index == 0)
+    {
+      return __z.__re_;
+    }
+    else
+    {
+      return __z.__im_;
+    }
+  }
+
+  template <size_t _Index>
+  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type&& get(complex&& __z) noexcept
+  {
+    static_assert(_Index < 2, "Index value is out of range");
+    if constexpr (_Index == 0)
+    {
+      return _CUDA_VSTD::move(__z.__re_);
+    }
+    else
+    {
+      return _CUDA_VSTD::move(__z.__im_);
+    }
+  }
+
+  template <size_t _Index>
+  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr const value_type& get(const complex& __z) noexcept
+  {
+    static_assert(_Index < 2, "Index value is out of range");
+    if constexpr (_Index == 0)
+    {
+      return __z.__re_;
+    }
+    else
+    {
+      return __z.__im_;
+    }
+  }
+
+  template <size_t _Index>
+  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr const value_type&& get(const complex&& __z) noexcept
+  {
+    static_assert(_Index < 2, "Index value is out of range");
+    if constexpr (_Index == 0)
+    {
+      return _CUDA_VSTD::move(__z.__re_);
+    }
+    else
+    {
+      return _CUDA_VSTD::move(__z.__im_);
+    }
+  }
+#endif // _CCCL_STD_VER >= 2014
 };
 
 template <class>
@@ -1417,6 +1492,19 @@ _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> tan(const complex<_Tp>& __x)
   complex<_Tp> __z = _CUDA_VSTD::tanh(complex<_Tp>(-__x.imag(), __x.real()));
   return complex<_Tp>(__z.imag(), -__z.real());
 }
+
+#if _CCCL_STD_VER >= 2014
+template <class _Tp>
+struct tuple_size<complex<_Tp>> : _CUDA_VSTD::integral_constant<size_t, 2>
+{};
+
+template <size_t _Index, class _Tp>
+struct tuple_element<_Index, complex<_Tp>>
+{
+  static_assert(_Index < 2, "Index value is out of range");
+  using type = _Tp;
+};
+#endif // _CCCL_STD_VER >= 2014
 
 #if !_CCCL_COMPILER(NVRTC)
 template <class _Tp, class _CharT, class _Traits>
