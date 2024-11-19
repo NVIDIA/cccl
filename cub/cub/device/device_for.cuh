@@ -858,6 +858,8 @@ public:
   //!
   //! - The return value of ``op``, if any, is ignored.
   //!
+  //! **Note**: ``DeviceFor::ForEachInExtents`` supports integral index type up to 64-bits.
+  //!
   //! A Simple Example
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //!
@@ -935,6 +937,8 @@ public:
   //! Then apply a function object to each tuple of linear index and multidimensional coordinate list.
   //!
   //! - The return value of ``op``, if any, is ignored.
+  //!
+  //! **Note**: ``DeviceFor::ForEachInExtents`` supports integral index type up to 64-bits.
   //!
   //! A Simple Example
   //! +++++++++++++++++++++++++++++++++++++++++++++
