@@ -87,16 +87,12 @@ private:
   using BlockLoadRunLengthsT =
     cub::BlockLoad<RunLengthT, BLOCK_DIM_X, RUNS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
-  using BlockStoreDecodedItemT = cub::
-    BlockStore<RunItemT, BLOCK_DIM_X, DECODED_ITEMS_PER_THREAD, cub::BLOCK_STORE_WARP_TRANSPOSE, BLOCK_DIM_Y, BLOCK_DIM_Z>;
-
+  // These must both use BLOCK_STORE_DIRECT. They're called in a loop with RunLengthDecode and must not
+  // use shmem so that we can test repeatedly calling RLD without synchronizing.
+  using BlockStoreDecodedItemT =
+    cub::BlockStore<RunItemT, BLOCK_DIM_X, DECODED_ITEMS_PER_THREAD, cub::BLOCK_STORE_DIRECT, BLOCK_DIM_Y, BLOCK_DIM_Z>;
   using BlockStoreRelativeOffsetT =
-    cub::BlockStore<RunLengthT,
-                    BLOCK_DIM_X,
-                    DECODED_ITEMS_PER_THREAD,
-                    cub::BLOCK_STORE_WARP_TRANSPOSE,
-                    BLOCK_DIM_Y,
-                    BLOCK_DIM_Z>;
+    cub::BlockStore<RunLengthT, BLOCK_DIM_X, DECODED_ITEMS_PER_THREAD, cub::BLOCK_STORE_DIRECT, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
   __device__ __forceinline__ BlockRunLengthDecodeT InitBlockRunLengthDecode(
     RunItemT (&unique_items)[RUNS_PER_THREAD],
@@ -234,6 +230,7 @@ public:
       // decoding
       uint32_t num_valid_items = decoded_size - decoded_window_offset;
       run_length_decode.RunLengthDecode(decoded_items, relative_offsets, decoded_window_offset);
+
       BlockStoreDecodedItemT(temp_storage.decode.store_decoded_runs_storage)
         .Store(d_block_decoded_out + decoded_window_offset, decoded_items, num_valid_items);
 

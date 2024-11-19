@@ -28,12 +28,6 @@ extern "C++" {
 #  include <nv/target>
 }
 
-#  ifdef __GNUC__
-#    define _GNUC_VER (__GNUC__ * 100 + __GNUC_MINOR__)
-#  else
-#    define _GNUC_VER 0
-#  endif
-
 #  define _LIBCUDACXX_VERSION 10000
 
 #  ifndef _LIBCUDACXX_ABI_VERSION
@@ -105,7 +99,7 @@ extern "C++" {
 #    define _LIBCUDACXX_HAS_STL_LITERALS
 #  endif
 
-#  if defined(_CCCL_COMPILER_GCC) && __cplusplus < 201103L
+#  if _CCCL_COMPILER(GCC) && __cplusplus < 201103L
 #    error "libc++ does not support using GCC with C++03. Please enable C++11"
 #  endif
 
@@ -258,7 +252,7 @@ extern "C++" {
 #    endif
 #  endif // !defined(_LIBCUDACXX_LITTLE_ENDIAN) && !defined(_LIBCUDACXX_BIG_ENDIAN)
 
-#  if _CCCL_HAS_ATTRIBUTE(__no_sanitize__) && !defined(_CCCL_COMPILER_GCC)
+#  if _CCCL_HAS_ATTRIBUTE(__no_sanitize__) && !_CCCL_COMPILER(GCC)
 #    define _LIBCUDACXX_NO_CFI __attribute__((__no_sanitize__("cfi")))
 #  else
 #    define _LIBCUDACXX_NO_CFI
@@ -321,11 +315,11 @@ extern "C++" {
 
 #  if defined(_CCCL_CUDA_COMPILER)
 #    define _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(size, ptr) (size <= 8)
-#  elif defined(_CCCL_COMPILER_CLANG) || defined(_CCCL_COMPILER_GCC)
+#  elif _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(GCC)
 #    define _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(...) __atomic_always_lock_free(__VA_ARGS__)
 #  endif // _CCCL_CUDA_COMPILER
 
-#  if defined(_CCCL_COMPILER_CLANG)
+#  if _CCCL_COMPILER(CLANG)
 
 // _LIBCUDACXX_ALTERNATE_STRING_LAYOUT is an old name for
 // _LIBCUDACXX_ABI_ALTERNATE_STRING_LAYOUT left here for backward compatibility.
@@ -379,15 +373,15 @@ typedef __char32_t char32_t;
 
 #    define _LIBCUDACXX_DISABLE_EXTENSION_WARNING __extension__
 
-#  elif defined(_CCCL_COMPILER_GCC)
+#  elif _CCCL_COMPILER(GCC)
 
-#    if _GNUC_VER < 600
+#    if _CCCL_COMPILER(GCC, <, 6)
 #      define _LIBCUDACXX_GCC_MATH_IN_STD
 #    endif
 
 // NVCC cannot properly handle some deductions occuring within NOEXCEPT
 // C++17 mode causes reference instatiation errors in tuple
-#    if (_GNUC_VER >= 702 && _GNUC_VER <= 805)
+#    if (_CCCL_COMPILER(GCC, >=, 7, 2) && _CCCL_COMPILER(GCC, <=, 8, 5))
 #      if defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_STD_VER == 2017
 #        define _LIBCUDACXX_NO_TUPLE_NOEXCEPT
 #      endif
@@ -449,11 +443,11 @@ typedef __char32_t char32_t;
 #  endif // _LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP
 
 #  ifndef _LIBCUDACXX_HAS_NO_ASAN
-#    if defined(_CCCL_COMPILER_GCC)
+#    if _CCCL_COMPILER(GCC)
 #      if !defined(__SANITIZE_ADDRESS__)
 #        define _LIBCUDACXX_HAS_NO_ASAN
 #      endif // !__SANITIZE_ADDRESS__
-#    elif defined(_CCCL_COMPILER_CLANG)
+#    elif _CCCL_COMPILER(CLANG)
 #      if !_CCCL_HAS_FEATURE(address_sanitizer)
 #        define _LIBCUDACXX_HAS_NO_ASAN
 #      endif // !_CCCL_HAS_FEATURE(address_sanitizer)
@@ -576,13 +570,13 @@ typedef unsigned short char16_t;
 typedef unsigned int char32_t;
 #  endif // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
 
-#  if defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_CLANG)
+#  if _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG)
 #    define _LIBCUDACXX_NOALIAS __attribute__((__malloc__))
 #  else
 #    define _LIBCUDACXX_NOALIAS
 #  endif
 
-#  if _CCCL_HAS_FEATURE(cxx_explicit_conversions) || defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_CLANG)
+#  if _CCCL_HAS_FEATURE(cxx_explicit_conversions) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG)
 #    define _LIBCUDACXX_EXPLICIT explicit
 #  else
 #    define _LIBCUDACXX_EXPLICIT
@@ -744,9 +738,9 @@ typedef unsigned int char32_t;
 // #  define _LIBCUDACXX_HAS_C_ATOMIC_IMP
 #  if _CCCL_COMPILER(ICC)
 #    define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
-#  elif defined(_CCCL_COMPILER_CLANG)
+#  elif _CCCL_COMPILER(CLANG)
 #    define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
-#  elif defined(_CCCL_COMPILER_GCC)
+#  elif _CCCL_COMPILER(GCC)
 #    define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
 #  elif _CCCL_COMPILER(NVHPC)
 #    define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
@@ -852,7 +846,7 @@ typedef unsigned int char32_t;
 // macro is used to mark them as such, which suppresses the
 // '-Wctad-maybe-unsupported' compiler warning when CTAD is used in user code
 // with these classes.
-#  if (!defined(_CCCL_COMPILER_GCC) || __GNUC__ > 6) && _CCCL_STD_VER >= 2017
+#  if (!_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >, 6)) && _CCCL_STD_VER >= 2017
 #    define _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(_ClassName) \
       template <class... _Tag>                              \
       _ClassName(typename _Tag::__allow_ctad...)->_ClassName<_Tag...>
@@ -882,7 +876,7 @@ typedef unsigned int char32_t;
 
 // NVRTC has a bug that prevented the use of delegated constructors, as it did not accept execution space annotations.
 // This creates a whole lot of boilerplate that we can avoid through a macro (see nvbug3961621)
-#  if _CCCL_COMPILER(NVRTC) || (_CCCL_CUDACC_BELOW(11, 3) && defined(_CCCL_COMPILER_CLANG))
+#  if _CCCL_COMPILER(NVRTC) || (_CCCL_CUDACC_BELOW(11, 3) && _CCCL_COMPILER(CLANG))
 #    define _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__class, __baseclass, ...)                               \
       using __base = __baseclass<__VA_ARGS__>;                                                         \
       template <class... _Args, enable_if_t<_CCCL_TRAIT(is_constructible, __base, _Args...), int> = 0> \

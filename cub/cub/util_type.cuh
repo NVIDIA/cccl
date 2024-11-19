@@ -74,7 +74,7 @@ CUB_NAMESPACE_BEGIN
 #    endif // !defined(__CUDACC_RTC_INT128__)
 #  else // !defined(__CUDACC_RTC__)
 #    if _CCCL_CUDACC_AT_LEAST(11, 5)
-#      if defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_CLANG) || _CCCL_COMPILER(ICC) || _CCCL_COMPILER(NVHPC)
+#      if _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(ICC) || _CCCL_COMPILER(NVHPC)
 #        define CUB_IS_INT128_ENABLED 1
 #      endif // GCC || CLANG || ICC || NVHPC
 #    endif // _CCCL_CUDACC_AT_LEAST(11, 5)
