@@ -89,38 +89,11 @@ struct tuple_element<_Ip, const volatile _CUDA_VSTD::array<_Tp, _Size>>
 {};
 
 template <class _Tp>
-struct tuple_size<_CUDA_VSTD::complex<_Tp>> : _CUDA_VSTD::integral_constant<size_t, 2>
-{};
-
-template <class _Tp>
-struct tuple_size<const _CUDA_VSTD::complex<_Tp>> : _CUDA_VSTD::integral_constant<size_t, 2>
-{};
-
-template <class _Tp>
-struct tuple_size<volatile _CUDA_VSTD::complex<_Tp>> : _CUDA_VSTD::integral_constant<size_t, 2>
-{};
-
-template <class _Tp>
-struct tuple_size<const volatile _CUDA_VSTD::complex<_Tp>> : _CUDA_VSTD::integral_constant<size_t, 2>
+struct tuple_size<_CUDA_VSTD::complex<_Tp>> : _CUDA_VSTD::tuple_size<_CUDA_VSTD::complex<_Tp>>
 {};
 
 template <size_t _Ip, class _Tp>
 struct tuple_element<_Ip, _CUDA_VSTD::complex<_Tp>> : _CUDA_VSTD::tuple_element<_Ip, _CUDA_VSTD::complex<_Tp>>
-{};
-
-template <size_t _Ip, class _Tp>
-struct tuple_element<_Ip, const _CUDA_VSTD::complex<_Tp>>
-    : _CUDA_VSTD::tuple_element<_Ip, const _CUDA_VSTD::complex<_Tp>>
-{};
-
-template <size_t _Ip, class _Tp>
-struct tuple_element<_Ip, volatile _CUDA_VSTD::complex<_Tp>>
-    : _CUDA_VSTD::tuple_element<_Ip, volatile _CUDA_VSTD::complex<_Tp>>
-{};
-
-template <size_t _Ip, class _Tp>
-struct tuple_element<_Ip, const volatile _CUDA_VSTD::complex<_Tp>>
-    : _CUDA_VSTD::tuple_element<_Ip, const volatile _CUDA_VSTD::complex<_Tp>>
 {};
 
 template <class _Tp, class _Up>

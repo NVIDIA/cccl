@@ -305,69 +305,25 @@ struct __get_complex_impl<__nv_bfloat16>
   template <size_t _Index>
   static _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_bfloat16& get(complex<__nv_bfloat16>& __z) noexcept
   {
-#  if _CCCL_STD_VER >= 2017
-    _CCCL_IF_CONSTEXPR (_Index == 0)
-    {
-      return __z.__repr_.x;
-    }
-    else
-    {
-      return __z.__repr_.y;
-    }
-#  else
     return (_Index == 0) ? __z.__repr_.x : __z.__repr_.y;
-#  endif
   }
 
   template <size_t _Index>
   static _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_bfloat16&& get(complex<__nv_bfloat16>&& __z) noexcept
   {
-#  if _CCCL_STD_VER >= 2017
-    _CCCL_IF_CONSTEXPR (_Index == 0)
-    {
-      return _CUDA_VSTD::move(__z.__repr_.x);
-    }
-    else
-    {
-      return _CUDA_VSTD::move(__z.__repr_.y);
-    }
-#  else
     return (_Index == 0) ? _CUDA_VSTD::move(__z.__repr_.x) : _CUDA_VSTD::move(__z.__repr_.y);
-#  endif
   }
 
   template <size_t _Index>
   static _LIBCUDACXX_HIDE_FROM_ABI constexpr const __nv_bfloat16& get(const complex<__nv_bfloat16>& __z) noexcept
   {
-#  if _CCCL_STD_VER >= 2017
-    _CCCL_IF_CONSTEXPR (_Index == 0)
-    {
-      return __z.__repr_.x;
-    }
-    else
-    {
-      return __z.__repr_.y;
-    }
-#  else
     return (_Index == 0) ? __z.__repr_.x : __z.__repr_.y;
-#  endif
   }
 
   template <size_t _Index>
   static _LIBCUDACXX_HIDE_FROM_ABI constexpr const __nv_bfloat16&& get(const complex<__nv_bfloat16>&& __z) noexcept
   {
-#  if _CCCL_STD_VER >= 2017
-    _CCCL_IF_CONSTEXPR (_Index == 0)
-    {
-      return _CUDA_VSTD::move(__z.__repr_.x);
-    }
-    else
-    {
-      return _CUDA_VSTD::move(__z.__repr_.y);
-    }
-#  else
     return (_Index == 0) ? _CUDA_VSTD::move(__z.__repr_.x) : _CUDA_VSTD::move(__z.__repr_.y);
-#  endif
   }
 };
 
