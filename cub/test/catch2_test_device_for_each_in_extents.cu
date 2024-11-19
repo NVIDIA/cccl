@@ -138,13 +138,9 @@ using dimensions =
                  cuda::std::index_sequence<3, 2, 5, 4>>;
 
 template <typename IndexType, typename Dimensions>
-struct build_extents;
-
-template <typename IndexType, size_t... Dimensions>
-struct build_extents<IndexType, cuda::std::index_sequence<Dimensions...>>
-{
-  using type = cuda::std::extents<IndexType, Dimensions...>;
-};
+auto build_extents(IndexType, cuda::std::index_sequence<Dimensions...>) -> cuda::std::extents<IndexType, Dimensions...> {
+  return {};
+}
 
 C2H_TEST("DeviceForEachInExtents static", "[ForEachInExtents][static][device]", index_types, dimensions)
 {
