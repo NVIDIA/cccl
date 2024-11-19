@@ -174,25 +174,25 @@ struct shared_resource
   //! operation has completed.
   _LIBCUDACXX_TEMPLATE(class _ThisResource = _Resource)
   _LIBCUDACXX_REQUIRES(_CUDA_VMR::async_resource<_ThisResource>)
-  _CCCL_NODISCARD void* async_allocate(size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
+  _CCCL_NODISCARD void* allocate_async(size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
   {
-    return this->__control_block->__resource.async_allocate(__bytes, __alignment, __stream);
+    return this->__control_block->__resource.allocate_async(__bytes, __alignment, __stream);
   }
 
   //! @brief Enqueues the deallocation of memory pointed to by \c __ptr. The deallocation is
   //! performed asynchronously on stream \c __stream.
   //! @pre \c _Resource must satisfy \c async_resource.
-  //! @param __bytes The number of bytes that was passed to the `async_allocate` call that returned
+  //! @param __bytes The number of bytes that was passed to the `allocate_async` call that returned
   //! \p __ptr.
-  //! @param __alignment The alignment that was passed to the `async_allocate` call that returned
+  //! @param __alignment The alignment that was passed to the `allocate_async` call that returned
   //! \p __ptr.
   //! @note The caller is responsible for ensuring that the memory is not accessed after the
   //! operation has completed.
   _LIBCUDACXX_TEMPLATE(class _ThisResource = _Resource)
   _LIBCUDACXX_REQUIRES(_CUDA_VMR::async_resource<_ThisResource>)
-  void async_deallocate(void* __ptr, size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
+  void deallocate_async(void* __ptr, size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
   {
-    this->__control_block->__resource.async_deallocate(__ptr, __bytes, __alignment, __stream);
+    this->__control_block->__resource.deallocate_async(__ptr, __bytes, __alignment, __stream);
   }
 
   //! @brief Equality comparison between two \c shared_resource

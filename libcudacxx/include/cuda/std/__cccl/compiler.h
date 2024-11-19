@@ -23,8 +23,7 @@
 #elif defined(__NVCOMPILER)
 #  define _CCCL_COMPILER_NVHPC _CCCL_COMPILER_MAKE_VERSION(__NVCOMPILER_MAJOR__, __NVCOMPILER_MINOR__)
 #elif defined(__clang__)
-#  define _CCCL_COMPILER_CLANG
-#  define _CCCL_CLANG_VERSION (__clang_major__ * 10000 + __clang_minor__ * 100 + __clang_patchlevel__)
+#  define _CCCL_COMPILER_CLANG _CCCL_COMPILER_MAKE_VERSION(__clang_major__, __clang_minor__)
 #elif defined(__GNUC__)
 #  define _CCCL_COMPILER_GCC _CCCL_COMPILER_MAKE_VERSION(__GNUC__, __GNUC_MINOR__)
 #elif defined(_MSC_VER)
@@ -69,7 +68,7 @@
 #  define _CCCL_CUDA_COMPILER_NVCC
 #elif defined(_NVHPC_CUDA)
 #  define _CCCL_CUDA_COMPILER_NVHPC
-#elif defined(__CUDA__) && defined(_CCCL_COMPILER_CLANG)
+#elif defined(__CUDA__) && _CCCL_COMPILER(CLANG)
 #  define _CCCL_CUDA_COMPILER_CLANG
 #endif
 
