@@ -100,23 +100,31 @@ def pointer(container, ntype):
     return RawPointer(container.device_ctypes_pointer.value, ntype)
 
 
-@intrinsic
-def ldcs(typingctx, base):
-    signature = types.int32(types.CPointer(types.int32))
+def make_ldcs(ntype):
+    bitwidth = _sizeof_numba_type(ntype) * 8
 
-    def codegen(context, builder, sig, args):
-        int32 = ir.IntType(32)
-        int32_ptr = int32.as_pointer()
-        ldcs_type = ir.FunctionType(int32, [int32_ptr])
-        ldcs = ir.InlineAsm(ldcs_type, "ld.global.cs.b32 $0, [$1];", "=r, l")
-        return builder.call(ldcs, args)
+    @intrinsic
+    def ldcs(typingctx, base):
+        signature = ntype(types.CPointer(ntype))
 
-    return signature, codegen
+        def codegen(context, builder, sig, args):
+            intbw = ir.IntType(bitwidth)  # TODO: unsigned
+            intbw_ptr = intbw.as_pointer()
+            ldcs_type = ir.FunctionType(intbw, [intbw_ptr])
+            ldcs = ir.InlineAsm(
+                ldcs_type, f"ld.global.cs.b{bitwidth} $0, [$1];", "=r, l"
+            )
+            return builder.call(ldcs, args)
+
+        return signature, codegen
+
+    return ldcs
 
 
 class CacheModifiedPointer:
     def __init__(self, ptr, ntype):
         self.val = ctypes.c_void_p(ptr)
+        self.ntype = ntype
         data_as_ntype_pp = numba.types.CPointer(numba.types.CPointer(ntype))
         data_as_uint64_p = numba.types.CPointer(numba.types.uint64)
         self.prefix = "cache" + ntype.name
@@ -129,7 +137,7 @@ class CacheModifiedPointer:
             ),
             _ncc(
                 "dereference",
-                CacheModifiedPointer.cache_dereference,
+                CacheModifiedPointer.cache_cache_dereference_bitwidth(ntype),
                 ntype(data_as_ntype_pp),
                 self.prefix,
             ),
@@ -144,8 +152,14 @@ class CacheModifiedPointer:
 
         return cache_advance
 
-    def cache_dereference(this):
-        return ldcs(this[0])
+    @staticmethod
+    def cache_cache_dereference_bitwidth(ntype):
+        ldcs = make_ldcs(ntype)
+
+        def cache_dereference(this):
+            return ldcs(this[0])
+
+        return cache_dereference
 
     def host_address(self):
         return ctypes.byref(self.val)

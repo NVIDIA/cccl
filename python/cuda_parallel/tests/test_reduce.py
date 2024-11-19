@@ -94,7 +94,7 @@ def mul2(val):
 
 @pytest.mark.parametrize("use_numpy_array", [True, False])
 @pytest.mark.parametrize("input_generator", ["raw_pointer_int16", "raw_pointer_int32",
-                                             "streamed_input",
+                                             "streamed_input_int16", "streamed_input_int32",
                                              "constant", "counting",
                                              "map_mul2"])
 def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, start_sum_with=10):
@@ -111,7 +111,12 @@ def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, sta
         l_input = [rng.randrange(100) for _ in range(num_items)]
         raw_pointer_devarr = numba.cuda.to_device(numpy.array(l_input, dtype=numpy.int32))
         i_input = iterators.pointer(raw_pointer_devarr, ntype=numba.types.int32)
-    elif input_generator == "streamed_input":
+    elif input_generator == "streamed_input_int16":
+        rng = random.Random(0)
+        l_input = [rng.randrange(100) for _ in range(num_items)]
+        streamed_input_devarr = numba.cuda.to_device(numpy.array(l_input, dtype=numpy.int16))
+        i_input = iterators.cache(streamed_input_devarr, ntype=numba.types.int16, modifier='stream')
+    elif input_generator == "streamed_input_int32":
         rng = random.Random(0)
         l_input = [rng.randrange(100) for _ in range(num_items)]
         streamed_input_devarr = numba.cuda.to_device(numpy.array(l_input, dtype=numpy.int32))
