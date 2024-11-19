@@ -123,7 +123,7 @@
 
 // clang prior to clang-10 supports __builtin_bit_cast but it is not a constant expression
 // NVCC prior to 11.7 cannot parse __builtin_bit_cast
-#if (defined(_CCCL_COMPILER_CLANG) && _CCCL_CLANG_VERSION < 100000) || _CCCL_CUDACC_BELOW(11, 7)
+#if _CCCL_COMPILER(CLANG, <, 10) || _CCCL_CUDACC_BELOW(11, 7)
 #  undef _CCCL_BUILTIN_BIT_CAST
 #endif // clang < 10 || nvcc < 11.7
 
@@ -189,7 +189,7 @@
 
 // NVCC prior to 11.3 and clang prior to clang-10 accept __builtin_launder but break with a compiler error about an
 // invalid return type
-#if (defined(_CCCL_COMPILER_CLANG) && _CCCL_CLANG_VERSION < 100000) || _CCCL_CUDACC_BELOW(11, 3)
+#if _CCCL_COMPILER(CLANG, <, 10) || _CCCL_CUDACC_BELOW(11, 3)
 #  undef _CCCL_BUILTIN_LAUNDER
 #endif // clang < 10 || nvcc < 11.3
 
@@ -264,7 +264,7 @@
 #endif // _CCCL_CHECK_BUILTIN(is_array)
 
 // clang prior to clang-19 gives wrong results for __is_array of _Tp[0]
-#if defined(_CCCL_COMPILER_CLANG) && _CCCL_CLANG_VERSION < 190000
+#if _CCCL_COMPILER(CLANG, <, 19)
 #  undef _CCCL_BUILTIN_IS_ARRAY
 #endif // clang < 19
 
@@ -333,7 +333,7 @@
 #endif // _CCCL_CHECK_BUILTIN(is_fundamental)
 
 // clang prior to clang-10 gives wrong results for __is_fundamental
-#if defined(_CCCL_COMPILER_CLANG) && _CCCL_CLANG_VERSION < 100000
+#if _CCCL_COMPILER(CLANG, <, 10)
 #  undef _CCCL_BUILTIN_IS_FUNDAMENTAL
 #endif // clang < 10
 
