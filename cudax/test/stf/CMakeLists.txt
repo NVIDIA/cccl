@@ -136,7 +136,6 @@ set(stf_test_mathlib_sources
   cuda-samples/0_Introduction/vectorAdd/vectorAdd_cudastf.cu
   # Reduce compilation time by not adding this (useless) example
   # cuda-samples/0_Introduction/vectorAdd/vectorAdd
-  cuda-samples/3_CUDA_Features/jacobiCudaGraphs/jacobi.cu
   cuda-samples/3_CUDA_Features/jacobiCudaGraphs/jacobi_cudastf.cu
   cuda-samples/4_CUDA_Libraries/conjugateGradientMultiDeviceCG/conjugateGradientMultiDeviceCG_custf.cu
   cuda-samples/5_Domain_Specific/MonteCarloMultiGPU_cudastf/MonteCarloMultiGPU.cu
