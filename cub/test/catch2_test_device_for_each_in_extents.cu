@@ -26,7 +26,8 @@
  ******************************************************************************/
 #include <cub/config.cuh>
 
-// TODO: remove _CCCL_COMPILER_MSVC check after MSVC bug related to vector comparison is fixed
+// TODO: remove _CCCL_COMPILER_MSVC check after MSVC bug related to vector comparison is fixed:
+//       "error C3546: '...': there are no parameter packs available to expand"
 #if __cccl_lib_mdspan && !defined(_CCCL_COMPILER_MSVC)
 
 #  include <cub/device/device_for.cuh>
@@ -137,8 +138,10 @@ using dimensions =
                  cuda::std::index_sequence<5, 3, 4>,
                  cuda::std::index_sequence<3, 2, 5, 4>>;
 
-template <typename IndexType, typename Dimensions>
-auto build_extents(IndexType, cuda::std::index_sequence<Dimensions...>) -> cuda::std::extents<IndexType, Dimensions...> {
+template <typename IndexType, size_t... Dimensions>
+auto build_static_extents(IndexType,
+                          cuda::std::index_sequence<Dimensions...>) -> cuda::std::extents<IndexType, Dimensions...>
+{
   return {};
 }
 
@@ -146,11 +149,10 @@ C2H_TEST("DeviceForEachInExtents static", "[ForEachInExtents][static][device]", 
 {
   using index_type    = c2h::get<0, TestType>;
   using dims          = c2h::get<1, TestType>;
-  using extent_type   = typename build_extents<index_type, dims>::type;
-  constexpr auto rank = extent_type::rank();
+  auto ext            = build_static_extents(index_type{}, dims{});
+  constexpr auto rank = ext.rank();
   using data_t        = cuda::std::array<index_type, rank>;
   using store_op_t    = LinearStore<index_type, rank>;
-  extent_type ext{};
   c2h::device_vector<data_t> d_output(cub::detail::size(ext), data_t{});
   c2h::host_vector<data_t> h_output(cub::detail::size(ext), data_t{});
   auto d_output_raw = cuda::std::span<data_t>{thrust::raw_pointer_cast(d_output.data()), cub::detail::size(ext)};
