@@ -33,9 +33,9 @@
 // `__attribute__((visibility("hidden")))`, and if the address appears, say, in
 // the type of a member of a class that is declared
 // `__attribute__((visibility("default")))`, GCC complains bitterly. So we
-// avoid declaring those functions `hidden`. Instead of the typical `_CUDAX_API`
+// avoid declaring those functions `hidden`. Instead of the typical `_CUDAX_HOST_API`
 // macro, we use `_CUDAX_PUBLIC_API` for those functions.
-#define _CUDAX_PUBLIC_API _CCCL_HOST_DEVICE
+#define _CUDAX_PUBLIC_API _CCCL_HOST
 
 namespace cuda::experimental
 {
@@ -111,7 +111,7 @@ constexpr size_t __default_buffer_align = alignof(_CUDA_VSTD::max_align_t);
 
 using __make_type_list _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__type_quote<_CUDA_VSTD::__type_list>;
 
-_CCCL_NORETURN _CUDAX_API void __throw_bad_any_cast();
+_CCCL_NORETURN _CUDAX_HOST_API void __throw_bad_any_cast();
 
 enum class __vtable_kind : uint8_t
 {

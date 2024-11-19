@@ -33,24 +33,24 @@ struct __base_vptr
 {
   __base_vptr() = default;
 
-  _CUDAX_TRIVIAL_API constexpr __base_vptr(__rtti_base const* __vptr) noexcept
+  _CUDAX_TRIVIAL_HOST_API constexpr __base_vptr(__rtti_base const* __vptr) noexcept
       : __vptr_(__vptr)
   {}
 
   template <class _VTable>
-  _CCCL_NODISCARD _CUDAX_TRIVIAL_API explicit constexpr operator _VTable const*() const noexcept
+  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API explicit constexpr operator _VTable const*() const noexcept
   {
     auto const* __vptr = static_cast<_VTable const*>(__vptr_);
     _CCCL_ASSERT(_CCCL_TYPEID(_VTable) == *__vptr->__typeid_, "bad vtable cast detected");
     return __vptr;
   }
 
-  _CCCL_NODISCARD _CUDAX_TRIVIAL_API explicit constexpr operator bool() const noexcept
+  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API explicit constexpr operator bool() const noexcept
   {
     return __vptr_ != nullptr;
   }
 
-  _CCCL_NODISCARD _CUDAX_TRIVIAL_API constexpr __rtti_base const* operator->() const noexcept
+  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API constexpr __rtti_base const* operator->() const noexcept
   {
     return __vptr_;
   }
@@ -58,12 +58,12 @@ struct __base_vptr
 #if defined(__cpp_lib_three_way_comparison)
   bool operator==(__base_vptr const& __other) const noexcept = default;
 #else
-  _CCCL_NODISCARD_FRIEND _CUDAX_API constexpr bool operator==(__base_vptr __lhs, __base_vptr __rhs) noexcept
+  _CCCL_NODISCARD_FRIEND _CUDAX_HOST_API constexpr bool operator==(__base_vptr __lhs, __base_vptr __rhs) noexcept
   {
     return __lhs.__vptr_ == __rhs.__vptr_;
   }
 
-  _CCCL_NODISCARD_FRIEND _CUDAX_API constexpr bool operator!=(__base_vptr __lhs, __base_vptr __rhs) noexcept
+  _CCCL_NODISCARD_FRIEND _CUDAX_HOST_API constexpr bool operator!=(__base_vptr __lhs, __base_vptr __rhs) noexcept
   {
     return !(__lhs == __rhs);
   }

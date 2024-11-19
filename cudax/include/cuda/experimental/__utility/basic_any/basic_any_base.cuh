@@ -32,11 +32,11 @@
 namespace cuda::experimental
 {
 template <class _Interface>
-_CUDAX_API auto __is_basic_any_test(basic_any<_Interface>&&) -> basic_any<_Interface>&&;
+_CUDAX_HOST_API auto __is_basic_any_test(basic_any<_Interface>&&) -> basic_any<_Interface>&&;
 template <class _Interface>
-_CUDAX_API auto __is_basic_any_test(basic_any<_Interface>&) -> basic_any<_Interface>&;
+_CUDAX_HOST_API auto __is_basic_any_test(basic_any<_Interface>&) -> basic_any<_Interface>&;
 template <class _Interface>
-_CUDAX_API auto __is_basic_any_test(basic_any<_Interface> const&) -> basic_any<_Interface> const&;
+_CUDAX_HOST_API auto __is_basic_any_test(basic_any<_Interface> const&) -> basic_any<_Interface> const&;
 
 // clang-format off
 template <class _Tp>
@@ -73,23 +73,23 @@ struct __basic_any_base<_Interface, 2> : __interface_of<_Interface> // copyable 
 {
   __basic_any_base() = default;
 
-  _CUDAX_API __basic_any_base(__basic_any_base&& __other) noexcept
+  _CUDAX_HOST_API __basic_any_base(__basic_any_base&& __other) noexcept
   {
     static_cast<basic_any<_Interface>*>(this)->__convert_from(static_cast<basic_any<_Interface>&&>(__other));
   }
 
-  _CUDAX_API __basic_any_base(__basic_any_base const& __other)
+  _CUDAX_HOST_API __basic_any_base(__basic_any_base const& __other)
   {
     static_cast<basic_any<_Interface>*>(this)->__convert_from(static_cast<basic_any<_Interface> const&>(__other));
   }
 
-  _CUDAX_API __basic_any_base& operator=(__basic_any_base&& __other) noexcept
+  _CUDAX_HOST_API __basic_any_base& operator=(__basic_any_base&& __other) noexcept
   {
     static_cast<basic_any<_Interface>*>(this)->__assign_from(static_cast<basic_any<_Interface>&&>(__other));
     return *this;
   }
 
-  _CUDAX_API __basic_any_base& operator=(__basic_any_base const& __other)
+  _CUDAX_HOST_API __basic_any_base& operator=(__basic_any_base const& __other)
   {
     static_cast<basic_any<_Interface>*>(this)->__assign_from(static_cast<basic_any<_Interface> const&>(__other));
     return *this;

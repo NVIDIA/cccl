@@ -67,7 +67,7 @@ struct __ireference : _Interface
 template <class _Interface>
 struct __basic_any_reference_conversion_base
 {
-  _CCCL_NODISCARD _CUDAX_API operator basic_any<__ireference<_Interface const>>() const noexcept
+  _CCCL_NODISCARD _CUDAX_HOST_API operator basic_any<__ireference<_Interface const>>() const noexcept
   {
     return basic_any<__ireference<_Interface const>>(static_cast<basic_any<__ireference<_Interface>> const&>(*this));
   }
@@ -114,7 +114,7 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>, Sele
 #if defined(__cpp_concepts)
   /// \brief A non-const basic_any reference can be implicitly converted to a
   /// const basic_any reference.
-  _CCCL_NODISCARD _CUDAX_API operator basic_any<__ireference<_Interface const>>() const noexcept
+  _CCCL_NODISCARD _CUDAX_HOST_API operator basic_any<__ireference<_Interface const>>() const noexcept
     requires(!__is_const_ref)
   {
     return basic_any<__ireference<_Interface const>>(*this);
@@ -123,14 +123,14 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>, Sele
 
   /// \brief Returns a const reference to the type_info for the decayed type
   /// of the type-erased object.
-  _CCCL_NODISCARD _CUDAX_API _CUDA_VSTD::__type_info_ref type() const noexcept
+  _CCCL_NODISCARD _CUDAX_HOST_API _CUDA_VSTD::__type_info_ref type() const noexcept
   {
     return *__get_rtti()->__object_info_->__object_typeid_;
   }
 
   /// \brief Returns a const reference to the type_info for the decayed type
   /// of the type-erased object.
-  _CCCL_NODISCARD _CUDAX_API _CUDA_VSTD::__type_info_ref interface() const noexcept
+  _CCCL_NODISCARD _CUDAX_HOST_API _CUDA_VSTD::__type_info_ref interface() const noexcept
   {
     return *__get_rtti()->__interface_typeid_;
   }
@@ -141,13 +141,13 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>, Sele
   /// The dynamic interface is the interface that was used to construct the
   /// object, which may be different from the current object's interface if
   /// there was a conversion.
-  _CCCL_NODISCARD _CUDAX_TRIVIAL_API static constexpr bool has_value() noexcept
+  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API static constexpr bool has_value() noexcept
   {
     return true;
   }
 
 #if !defined(DOXYGEN_ACTIVE) // Do not document
-  _CCCL_NODISCARD _CUDAX_TRIVIAL_API static constexpr bool __in_situ() noexcept
+  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API static constexpr bool __in_situ() noexcept
   {
     return true;
   }
@@ -162,28 +162,29 @@ private:
 
   /// \brief Constructs a \c basic_any<__ireference<_Interface>> from an lvalue
   /// reference to a \c basic_any<_Interface>.
-  _CUDAX_API explicit basic_any(_CUDA_VSTD::__maybe_const<__is_const_ref, basic_any<interface_type>>& __other) noexcept
+  _CUDAX_HOST_API explicit basic_any(
+    _CUDA_VSTD::__maybe_const<__is_const_ref, basic_any<interface_type>>& __other) noexcept
   {
     this->__set_ref(__other.__get_vptr(), __other.__get_optr());
   }
 
   /// \brief Constructs a \c basic_any<__ireference<_Interface>> from a
   /// vtable pointer and an object pointer.
-  _CUDAX_API basic_any(__vptr_for<interface_type> __vptr,
-                       _CUDA_VSTD::__maybe_const<__is_const_ref, void>* __optr) noexcept
+  _CUDAX_HOST_API basic_any(__vptr_for<interface_type> __vptr,
+                            _CUDA_VSTD::__maybe_const<__is_const_ref, void>* __optr) noexcept
       : __vptr_(__vptr)
       , __optr_(__optr)
   {}
 
   /// \brief No-op.
-  _CUDAX_TRIVIAL_API void reset() noexcept {}
+  _CUDAX_TRIVIAL_HOST_API void reset() noexcept {}
 
   /// \brief No-op.
-  _CUDAX_TRIVIAL_API void __release() {}
+  _CUDAX_TRIVIAL_HOST_API void __release() {}
 
   /// \brief Rebinds the reference with a vtable pointer and object pointer.
-  _CUDAX_API void __set_ref(__vptr_for<interface_type> __vptr,
-                            _CUDA_VSTD::__maybe_const<__is_const_ref, void>* __obj) noexcept
+  _CUDAX_HOST_API void __set_ref(__vptr_for<interface_type> __vptr,
+                                 _CUDA_VSTD::__maybe_const<__is_const_ref, void>* __obj) noexcept
   {
     __vptr_ = __vptr;
     __optr_ = __vptr_ ? __obj : nullptr;
@@ -193,7 +194,7 @@ private:
   /// interface and object pointer. The vtable pointer is cast to the correct
   /// type. If the cast fails, the reference is set to null.
   template <class _VTable>
-  _CUDAX_API void __set_ref(_VTable const* __other, _CUDA_VSTD::__maybe_const<__is_const_ref, void>* __obj) noexcept
+  _CUDAX_HOST_API void __set_ref(_VTable const* __other, _CUDA_VSTD::__maybe_const<__is_const_ref, void>* __obj) noexcept
   {
     using _OtherInterface = typename _VTable::interface;
     __vptr_               = __try_vptr_cast<_OtherInterface, interface_type>(__other);
@@ -206,8 +207,8 @@ private:
   /// \c Is... is a subset of `Interfaces...`. Otherwise, the cast succeeds
   /// if the \c _Interface is a base of one of `Interfaces...`.
   template <class... _Interfaces>
-  _CUDAX_API void __set_ref(__iset_vptr<_Interfaces...> __other,
-                            _CUDA_VSTD::__maybe_const<__is_const_ref, void>* __obj) noexcept
+  _CUDAX_HOST_API void
+  __set_ref(__iset_vptr<_Interfaces...> __other, _CUDA_VSTD::__maybe_const<__is_const_ref, void>* __obj) noexcept
   {
     using _OtherInterface = __iset<_Interfaces...>;
     __vptr_               = __try_vptr_cast<_OtherInterface, interface_type>(__other);
@@ -215,7 +216,7 @@ private:
   }
 
   template <class _SrcCvAny>
-  _CUDAX_API void __convert_from(_SrcCvAny&& __from)
+  _CUDAX_HOST_API void __convert_from(_SrcCvAny&& __from)
   {
     using __src_interface_t _CCCL_NODEBUG_ALIAS = typename _CUDA_VSTD::remove_reference_t<_SrcCvAny>::interface_type;
     if (!__from.has_value())
@@ -226,17 +227,17 @@ private:
     __set_ref(__to_vptr, __from.__get_optr());
   }
 
-  _CUDAX_TRIVIAL_API _CUDA_VSTD::__maybe_const<__is_const_ref, void>* __get_optr() const noexcept
+  _CUDAX_TRIVIAL_HOST_API _CUDA_VSTD::__maybe_const<__is_const_ref, void>* __get_optr() const noexcept
   {
     return __optr_;
   }
 
-  _CUDAX_TRIVIAL_API __vptr_for<interface_type> __get_vptr() const noexcept
+  _CUDAX_TRIVIAL_HOST_API __vptr_for<interface_type> __get_vptr() const noexcept
   {
     return __vptr_;
   }
 
-  _CUDAX_TRIVIAL_API __rtti const* __get_rtti() const noexcept
+  _CUDAX_TRIVIAL_HOST_API __rtti const* __get_rtti() const noexcept
   {
     return __vptr_->__query_interface(iunknown());
   }
@@ -258,15 +259,15 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__irefer
   using typename basic_any<__ireference<_Interface>, __secondary>::interface_type;
   using basic_any<__ireference<_Interface>, __secondary>::__is_const_ref;
 
-  _CUDAX_API basic_any(basic_any const& __other) noexcept
+  _CUDAX_HOST_API basic_any(basic_any const& __other) noexcept
   {
     this->__set_ref(__other.__get_vptr(), __other.__get_optr());
   }
 
   _LIBCUDACXX_TEMPLATE(class _Tp, class _Up = _CUDA_VSTD::remove_const_t<_Tp>)
-  _LIBCUDACXX_REQUIRES((!__is_basic_any<_Tp>) _LIBCUDACXX_AND __satisfies<_Up, interface_type> _LIBCUDACXX_AND(
-    __is_const_ref || !_CUDA_VSTD::is_const_v<_Tp>))
-  _CUDAX_API basic_any(_Tp& __obj) noexcept
+  _LIBCUDACXX_REQUIRES((!__is_basic_any<_Tp>) /*_LIBCUDACXX_AND __satisfies<_Up, interface_type> _LIBCUDACXX_AND(
+    __is_const_ref || !_CUDA_VSTD::is_const_v<_Tp>)*/)
+  _CUDAX_HOST_API basic_any(_Tp& __obj) noexcept
   {
     __vptr_for<interface_type> const __vptr = &__vtable_for_v<interface_type, _Up>;
     this->__set_ref(__vptr, &__obj);
@@ -293,7 +294,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__irefer
   _CUDAX_REQUIRES((!_CUDA_VSTD::same_as<_SrcInterface, _Interface&>) _CUDAX_AND //
                   (!__is_value_v<_SrcInterface>) _CUDAX_AND //
                     __any_convertible_to<basic_any<_SrcInterface>, basic_any>)
-  _CUDAX_API basic_any(basic_any<_SrcInterface>&& __src) noexcept
+  _CUDAX_HOST_API basic_any(basic_any<_SrcInterface>&& __src) noexcept
   {
     this->__set_ref(__src.__get_vptr(), __src.__get_optr());
   }
@@ -301,7 +302,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__irefer
   _CUDAX_TEMPLATE(class _SrcInterface)
   _CUDAX_REQUIRES((!_CUDA_VSTD::same_as<_SrcInterface, _Interface&>) _CUDAX_AND //
                     __any_convertible_to<basic_any<_SrcInterface>&, basic_any>)
-  _CUDAX_API basic_any(basic_any<_SrcInterface>& __src) noexcept
+  _CUDAX_HOST_API basic_any(basic_any<_SrcInterface>& __src) noexcept
   {
     this->__set_ref(__src.__get_vptr(), __src.__get_optr());
   }
@@ -309,7 +310,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__irefer
   _CUDAX_TEMPLATE(class _SrcInterface)
   _CUDAX_REQUIRES((!_CUDA_VSTD::same_as<_SrcInterface, _Interface&>) _CUDAX_AND //
                     __any_convertible_to<basic_any<_SrcInterface> const&, basic_any>)
-  _CUDAX_API basic_any(basic_any<_SrcInterface> const& __src) noexcept
+  _CUDAX_HOST_API basic_any(basic_any<_SrcInterface> const& __src) noexcept
   {
     this->__set_ref(__src.__get_vptr(), __src.__get_optr());
   }
@@ -328,7 +329,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__irefer
   basic_any& operator=(basic_any&&)      = delete;
   basic_any& operator=(basic_any const&) = delete;
 
-  _CUDAX_TRIVIAL_API basic_any<__ireference<_Interface>>&& move() & noexcept
+  _CUDAX_TRIVIAL_HOST_API basic_any<__ireference<_Interface>>&& move() & noexcept
   {
     return _CUDA_VSTD::move(*this);
   }

@@ -51,7 +51,7 @@ inline constexpr bool __valid_any_cast<_Interface*, _Tp*> =
 ///
 _LIBCUDACXX_TEMPLATE(class _Tp, class _Interface)
 _LIBCUDACXX_REQUIRES(__satisfies<_Tp, _Interface> || _CUDA_VSTD::is_void_v<_Tp>)
-_CCCL_NODISCARD _CUDAX_API _Tp* any_cast(basic_any<_Interface>* __self) noexcept
+_CCCL_NODISCARD _CUDAX_HOST_API _Tp* any_cast(basic_any<_Interface>* __self) noexcept
 {
   static_assert(__valid_any_cast<_Interface, _Tp>);
   if (__self && (_CUDA_VSTD::is_void_v<_Tp> || __self->type() == _CCCL_TYPEID(_Tp)))
@@ -63,7 +63,7 @@ _CCCL_NODISCARD _CUDAX_API _Tp* any_cast(basic_any<_Interface>* __self) noexcept
 
 _LIBCUDACXX_TEMPLATE(class _Tp, class _Interface)
 _LIBCUDACXX_REQUIRES(__satisfies<_Tp, _Interface> || _CUDA_VSTD::is_void_v<_Tp>)
-_CCCL_NODISCARD _CUDAX_API _Tp const* any_cast(basic_any<_Interface> const* __self) noexcept
+_CCCL_NODISCARD _CUDAX_HOST_API _Tp const* any_cast(basic_any<_Interface> const* __self) noexcept
 {
   static_assert(__valid_any_cast<_Interface, _Tp>);
   if (__self && (_CUDA_VSTD::is_void_v<_Tp> || __self->type() == _CCCL_TYPEID(_Tp)))

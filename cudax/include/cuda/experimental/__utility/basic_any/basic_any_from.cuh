@@ -32,26 +32,26 @@ namespace cuda::experimental
 /// a pointer or a reference to the full `basic_any` object.
 ///
 template <template <class...> class _Interface, class _Super>
-_CCCL_NODISCARD _CUDAX_TRIVIAL_API auto basic_any_from(_Interface<_Super>&& __self) noexcept -> basic_any<_Super>&&
+_CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API auto basic_any_from(_Interface<_Super>&& __self) noexcept -> basic_any<_Super>&&
 {
   return static_cast<basic_any<_Super>&&>(__self);
 }
 
 template <template <class...> class _Interface, class _Super>
-_CCCL_NODISCARD _CUDAX_TRIVIAL_API auto basic_any_from(_Interface<_Super>& __self) noexcept -> basic_any<_Super>&
+_CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API auto basic_any_from(_Interface<_Super>& __self) noexcept -> basic_any<_Super>&
 {
   return static_cast<basic_any<_Super>&>(__self);
 }
 
 template <template <class...> class _Interface, class _Super>
-_CCCL_NODISCARD _CUDAX_TRIVIAL_API auto
+_CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API auto
 basic_any_from(_Interface<_Super> const& __self) noexcept -> basic_any<_Super> const&
 {
   return static_cast<basic_any<_Super> const&>(__self);
 }
 
 template <template <class...> class _Interface>
-_CCCL_NODISCARD _CUDAX_API auto basic_any_from(_Interface<> const&) noexcept -> basic_any<_Interface<>> const&
+_CCCL_NODISCARD _CUDAX_HOST_API auto basic_any_from(_Interface<> const&) noexcept -> basic_any<_Interface<>> const&
 {
   // This overload is selected when called from the thunk of an unspecialized
   // interface; e.g., `icat<>` rather than `icat<ialley_cat<>>`. The thunks of
@@ -60,20 +60,20 @@ _CCCL_NODISCARD _CUDAX_API auto basic_any_from(_Interface<> const&) noexcept -> 
 }
 
 template <template <class...> class _Interface, class _Super>
-_CCCL_NODISCARD _CUDAX_TRIVIAL_API auto basic_any_from(_Interface<_Super>* __self) noexcept -> basic_any<_Super>*
+_CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API auto basic_any_from(_Interface<_Super>* __self) noexcept -> basic_any<_Super>*
 {
   return static_cast<basic_any<_Super>*>(__self);
 }
 
 template <template <class...> class _Interface, class _Super>
-_CCCL_NODISCARD _CUDAX_TRIVIAL_API auto
+_CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API auto
 basic_any_from(_Interface<_Super> const* __self) noexcept -> basic_any<_Super> const*
 {
   return static_cast<basic_any<_Super> const*>(__self);
 }
 
 template <template <class...> class _Interface>
-_CCCL_NODISCARD _CUDAX_API auto basic_any_from(_Interface<> const*) noexcept -> basic_any<_Interface<>> const*
+_CCCL_NODISCARD _CUDAX_HOST_API auto basic_any_from(_Interface<> const*) noexcept -> basic_any<_Interface<>> const*
 {
   // See comment above about the use of `basic_any_from` in the thunks of
   // unspecialized interfaces.

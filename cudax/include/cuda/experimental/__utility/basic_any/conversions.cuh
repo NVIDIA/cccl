@@ -46,21 +46,21 @@ struct __immovable_archetype
   __immovable_archetype(__immovable_archetype&&) = delete;
 
   template <class _Value>
-  _CUDAX_API __immovable_archetype(_Value) noexcept;
+  _CUDAX_HOST_API __immovable_archetype(_Value) noexcept;
   template <class _Value>
-  _CUDAX_API __immovable_archetype(_Value*) = delete;
+  _CUDAX_HOST_API __immovable_archetype(_Value*) = delete;
 };
 
 struct __movable_archetype : __immovable_archetype
 {
   __movable_archetype() = default;
-  _CUDAX_API __movable_archetype(__movable_archetype&&) noexcept;
+  _CUDAX_HOST_API __movable_archetype(__movable_archetype&&) noexcept;
 };
 
 struct __copyable_archetype : __movable_archetype
 {
   __copyable_archetype() = default;
-  _CUDAX_API __copyable_archetype(__copyable_archetype const&);
+  _CUDAX_HOST_API __copyable_archetype(__copyable_archetype const&);
 };
 
 template <class _Interface>
@@ -70,47 +70,47 @@ using _archetype_base = _CUDA_VSTD::conditional_t<
   _CUDA_VSTD::conditional_t<extension_of<_Interface, imovable<>>, __movable_archetype, __immovable_archetype>>;
 
 template <class _Interface>
-_CUDAX_API auto __interface_from(basic_any<_Interface>&&) -> _Interface;
+_CUDAX_HOST_API auto __interface_from(basic_any<_Interface>&&) -> _Interface;
 template <class _Interface>
-_CUDAX_API auto __interface_from(basic_any<__ireference<_Interface>>&&) -> _Interface;
+_CUDAX_HOST_API auto __interface_from(basic_any<__ireference<_Interface>>&&) -> _Interface;
 template <class _Interface>
-_CUDAX_API auto __interface_from(basic_any<_Interface>&) -> _Interface&;
+_CUDAX_HOST_API auto __interface_from(basic_any<_Interface>&) -> _Interface&;
 template <class _Interface>
-_CUDAX_API auto __interface_from(basic_any<_Interface> const&) -> _Interface const&;
+_CUDAX_HOST_API auto __interface_from(basic_any<_Interface> const&) -> _Interface const&;
 template <class _Interface>
-_CUDAX_API auto __interface_from(basic_any<_Interface>*) -> _Interface*;
+_CUDAX_HOST_API auto __interface_from(basic_any<_Interface>*) -> _Interface*;
 template <class _Interface>
-_CUDAX_API auto __interface_from(basic_any<_Interface> const*) -> _Interface const*;
+_CUDAX_HOST_API auto __interface_from(basic_any<_Interface> const*) -> _Interface const*;
 template <class _Interface>
-_CUDAX_API auto __interface_from(basic_any<__ireference<_Interface>>*) -> _Interface*;
+_CUDAX_HOST_API auto __interface_from(basic_any<__ireference<_Interface>>*) -> _Interface*;
 template <class _Interface>
-_CUDAX_API auto __interface_from(basic_any<__ireference<_Interface>> const*) -> _Interface*;
+_CUDAX_HOST_API auto __interface_from(basic_any<__ireference<_Interface>> const*) -> _Interface*;
 
 template <class _Interface>
-_CUDAX_API auto __as_archetype(_Interface&&) -> _archetype_base<_Interface>;
+_CUDAX_HOST_API auto __as_archetype(_Interface&&) -> _archetype_base<_Interface>;
 template <class _Interface>
-_CUDAX_API auto __as_archetype(_Interface&) -> _archetype_base<_Interface>&;
+_CUDAX_HOST_API auto __as_archetype(_Interface&) -> _archetype_base<_Interface>&;
 template <class _Interface>
-_CUDAX_API auto __as_archetype(_Interface const&) -> _archetype_base<_Interface> const&;
+_CUDAX_HOST_API auto __as_archetype(_Interface const&) -> _archetype_base<_Interface> const&;
 template <class _Interface>
-_CUDAX_API auto __as_archetype(_Interface*) -> _archetype_base<_Interface>*;
+_CUDAX_HOST_API auto __as_archetype(_Interface*) -> _archetype_base<_Interface>*;
 template <class _Interface>
-_CUDAX_API auto __as_archetype(_Interface const*) -> _archetype_base<_Interface> const*;
+_CUDAX_HOST_API auto __as_archetype(_Interface const*) -> _archetype_base<_Interface> const*;
 template <class _Interface>
-_CUDAX_API auto __as_archetype(__ireference<_Interface>) -> _archetype_base<_Interface>&;
+_CUDAX_HOST_API auto __as_archetype(__ireference<_Interface>) -> _archetype_base<_Interface>&;
 template <class _Interface>
-_CUDAX_API auto __as_archetype(__ireference<_Interface const>) -> _archetype_base<_Interface> const&;
+_CUDAX_HOST_API auto __as_archetype(__ireference<_Interface const>) -> _archetype_base<_Interface> const&;
 
 template <class _Interface>
-_CUDAX_API auto __as_immovable(_Interface&&) -> __immovable_archetype;
+_CUDAX_HOST_API auto __as_immovable(_Interface&&) -> __immovable_archetype;
 template <class _Interface>
-_CUDAX_API auto __as_immovable(_Interface&) -> __immovable_archetype&;
+_CUDAX_HOST_API auto __as_immovable(_Interface&) -> __immovable_archetype&;
 template <class _Interface>
-_CUDAX_API auto __as_immovable(_Interface const&) -> __immovable_archetype const&;
+_CUDAX_HOST_API auto __as_immovable(_Interface const&) -> __immovable_archetype const&;
 template <class _Interface>
-_CUDAX_API auto __as_immovable(_Interface*) -> __immovable_archetype*;
+_CUDAX_HOST_API auto __as_immovable(_Interface*) -> __immovable_archetype*;
 template <class _Interface>
-_CUDAX_API auto __as_immovable(_Interface const*) -> __immovable_archetype const*;
+_CUDAX_HOST_API auto __as_immovable(_Interface const*) -> __immovable_archetype const*;
 
 template <class CvAny>
 using __normalized_interface_of _CCCL_NODEBUG_ALIAS = decltype(__cudax::__interface_from(declval<CvAny>()));

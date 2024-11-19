@@ -156,7 +156,7 @@ struct interface<_Interface, extends<_Bases...>, Size, Align>
 /// __is_interface
 ///
 template <template <class...> class _Interface, class _Extends, size_t _Size, size_t _Align>
-_CUDAX_API auto __is_interface_test(interface<_Interface, _Extends, _Size, _Align> const&) -> void;
+_CUDAX_HOST_API auto __is_interface_test(interface<_Interface, _Extends, _Size, _Align> const&) -> void;
 
 // clang-format off
 template <class _Tp>
@@ -180,7 +180,7 @@ using __unique_interfaces _CCCL_NODEBUG_ALIAS =
 ///
 /// __index_of_base: find the index of an interface in a list of unique interfaces
 ///
-_CCCL_NODISCARD _CUDAX_API constexpr size_t __find_index(_CUDA_VSTD::initializer_list<bool> __il)
+_CCCL_NODISCARD _CUDAX_HOST_API constexpr size_t __find_index(_CUDA_VSTD::initializer_list<bool> __il)
 {
   auto __it = _CUDA_VSTD::find(__il.begin(), __il.end(), true);
   return static_cast<size_t>(__it - __il.begin());
@@ -317,19 +317,19 @@ template <template <class...> class _Interface>
 struct __interface_cast_fn<_Interface<>>
 {
   template <class _Super>
-  _CCCL_NODISCARD _CUDAX_TRIVIAL_API _Interface<_Super>&& operator()(_Interface<_Super>&& __self) const noexcept
+  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API _Interface<_Super>&& operator()(_Interface<_Super>&& __self) const noexcept
   {
     return _CUDA_VSTD::move(__self);
   }
 
   template <class _Super>
-  _CCCL_NODISCARD _CUDAX_TRIVIAL_API _Interface<_Super>& operator()(_Interface<_Super>& __self) const noexcept
+  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API _Interface<_Super>& operator()(_Interface<_Super>& __self) const noexcept
   {
     return __self;
   }
 
   template <class _Super>
-  _CCCL_NODISCARD _CUDAX_TRIVIAL_API _Interface<_Super> const& operator()(_Interface<_Super> const& __self) noexcept
+  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API _Interface<_Super> const& operator()(_Interface<_Super> const& __self) noexcept
   {
     return __self;
   }
@@ -338,7 +338,7 @@ struct __interface_cast_fn<_Interface<>>
 _LIBCUDACXX_TEMPLATE(template <class...> class _Interface, class Object)
 _LIBCUDACXX_REQUIRES(
   __is_interface<_Interface<>> _LIBCUDACXX_AND _CUDA_VSTD::__is_callable_v<__interface_cast_fn<_Interface<>>, Object>)
-_CCCL_NODISCARD _CUDAX_TRIVIAL_API decltype(auto) __interface_cast(Object&& __obj) noexcept
+_CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API decltype(auto) __interface_cast(Object&& __obj) noexcept
 {
   return __interface_cast_fn<_Interface<>>{}(_CUDA_VSTD::forward<Object>(__obj));
 }
@@ -346,7 +346,7 @@ _CCCL_NODISCARD _CUDAX_TRIVIAL_API decltype(auto) __interface_cast(Object&& __ob
 _LIBCUDACXX_TEMPLATE(class _Interface, class Object)
 _LIBCUDACXX_REQUIRES(
   __is_interface<_Interface> _LIBCUDACXX_AND _CUDA_VSTD::__is_callable_v<__interface_cast_fn<_Interface>, Object>)
-_CCCL_NODISCARD _CUDAX_TRIVIAL_API decltype(auto) __interface_cast(Object&& __obj) noexcept
+_CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API decltype(auto) __interface_cast(Object&& __obj) noexcept
 {
   return __interface_cast_fn<_Interface>{}(_CUDA_VSTD::forward<Object>(__obj));
 }

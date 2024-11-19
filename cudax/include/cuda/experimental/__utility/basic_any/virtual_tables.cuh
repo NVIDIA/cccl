@@ -46,25 +46,26 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __basic_vtable
   static constexpr size_t __cbases    = _CUDA_VSTD::__type_list_size<__unique_interfaces<interface>>::value;
 
   template <class _VPtr, class _Tp, auto... _OtherMembers, class... _Interfaces>
-  _CUDAX_API constexpr __basic_vtable(_VPtr __vptr, overrides_for<_Tp, _OtherMembers...>, __tag<_Interfaces...>) noexcept
+  _CUDAX_HOST_API constexpr __basic_vtable(
+    _VPtr __vptr, overrides_for<_Tp, _OtherMembers...>, __tag<_Interfaces...>) noexcept
       : __rtti_base{__vtable_kind::__normal, __cbases, _CCCL_TYPEID(__basic_vtable)}
       , __virtual_fn<_Mbrs>{__override_tag<_Tp, _OtherMembers>{}}...
       , __vptr_map_{__base_vptr{__vptr->__query_interface(_Interfaces())}...}
   {}
 
   template <class _Tp, class _VPtr>
-  _CUDAX_API constexpr __basic_vtable(__tag<_Tp>, _VPtr __vptr) noexcept
+  _CUDAX_HOST_API constexpr __basic_vtable(__tag<_Tp>, _VPtr __vptr) noexcept
       : __basic_vtable{
           __vptr, __overrides_for<interface, _Tp>(), __unique_interfaces<interface, _CUDA_VSTD::__type_quote<__tag>>()}
   {}
 
-  _CCCL_NODISCARD _CUDAX_API __vptr_for<interface> __query_interface(interface) const noexcept
+  _CCCL_NODISCARD _CUDAX_HOST_API __vptr_for<interface> __query_interface(interface) const noexcept
   {
     return this;
   }
 
   template <class... _Others>
-  _CCCL_NODISCARD _CUDAX_API __vptr_for<__iset<_Others...>> __query_interface(__iset<_Others...>) const noexcept
+  _CCCL_NODISCARD _CUDAX_HOST_API __vptr_for<__iset<_Others...>> __query_interface(__iset<_Others...>) const noexcept
   {
     using __remainder _CCCL_NODEBUG_ALIAS =
       _CUDA_VSTD::__type_list_size<_CUDA_VSTD::__type_find<__unique_interfaces<interface>, __iset<_Others...>>>;
@@ -84,7 +85,7 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __basic_vtable
   }
 
   template <class _Other>
-  _CCCL_NODISCARD _CUDAX_API __vptr_for<_Other> __query_interface(_Other) const noexcept
+  _CCCL_NODISCARD _CUDAX_HOST_API __vptr_for<_Other> __query_interface(_Other) const noexcept
   {
     constexpr size_t __index = __index_of_base<_Other, interface>::value;
     static_assert(__index < __cbases);
@@ -106,7 +107,7 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __vtable_tuple
   static_assert((_CUDA_VSTD::is_class_v<_Interfaces> && ...), "expected class types");
 
   template <class _Tp, class _Super>
-  _CUDAX_API constexpr __vtable_tuple(__tag<_Tp, _Super> __type) noexcept
+  _CUDAX_HOST_API constexpr __vtable_tuple(__tag<_Tp, _Super> __type) noexcept
       : __rtti_ex<sizeof...(_Interfaces)>{__type, __tag<_Interfaces...>(), this}
 #ifdef _CCCL_COMPILER_MSVC
       // workaround for MSVC bug
@@ -120,7 +121,7 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __vtable_tuple
 
   _LIBCUDACXX_TEMPLATE(class _Interface)
   _LIBCUDACXX_REQUIRES(_CUDA_VSTD::__is_included_in_v<_Interface, _Interfaces...>)
-  _CCCL_NODISCARD _CUDAX_API constexpr __vptr_for<_Interface> __query_interface(_Interface) const noexcept
+  _CCCL_NODISCARD _CUDAX_HOST_API constexpr __vptr_for<_Interface> __query_interface(_Interface) const noexcept
   {
     return static_cast<__vptr_for<_Interface>>(this);
   }

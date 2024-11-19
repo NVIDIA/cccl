@@ -40,7 +40,7 @@ struct __dynamic_any_cast_fn
   /// \c basic_any<_DstInterface>.
   _LIBCUDACXX_TEMPLATE(class _SrcInterface)
   _LIBCUDACXX_REQUIRES(__any_castable_to<basic_any<_SrcInterface>, basic_any<_DstInterface>>)
-  _CCCL_NODISCARD _CUDAX_API auto operator()(basic_any<_SrcInterface>&& __src) const -> basic_any<_DstInterface>
+  _CCCL_NODISCARD _CUDAX_HOST_API auto operator()(basic_any<_SrcInterface>&& __src) const -> basic_any<_DstInterface>
   {
     auto __dst = __basic_any_access::__make<_DstInterface>();
     __basic_any_access::__cast_to(_CUDA_VSTD::move(__src), __dst);
@@ -51,7 +51,7 @@ struct __dynamic_any_cast_fn
   /// \c basic_any<_DstInterface>.
   _LIBCUDACXX_TEMPLATE(class _SrcInterface)
   _LIBCUDACXX_REQUIRES(__any_castable_to<basic_any<_SrcInterface>&, basic_any<_DstInterface>>)
-  _CCCL_NODISCARD _CUDAX_API auto operator()(basic_any<_SrcInterface>& __src) const -> basic_any<_DstInterface>
+  _CCCL_NODISCARD _CUDAX_HOST_API auto operator()(basic_any<_SrcInterface>& __src) const -> basic_any<_DstInterface>
   {
     auto __dst = __basic_any_access::__make<_DstInterface>();
     __basic_any_access::__cast_to(__src, __dst);
@@ -62,7 +62,8 @@ struct __dynamic_any_cast_fn
   /// \c basic_any<_DstInterface>.
   _LIBCUDACXX_TEMPLATE(class _SrcInterface)
   _LIBCUDACXX_REQUIRES(__any_castable_to<basic_any<_SrcInterface> const&, basic_any<_DstInterface>>)
-  _CCCL_NODISCARD _CUDAX_API auto operator()(basic_any<_SrcInterface> const& __src) const -> basic_any<_DstInterface>
+  _CCCL_NODISCARD _CUDAX_HOST_API auto
+  operator()(basic_any<_SrcInterface> const& __src) const -> basic_any<_DstInterface>
   {
     auto __dst = __basic_any_access::__make<_DstInterface>();
     __basic_any_access::__cast_to(__src, __dst);
@@ -73,7 +74,7 @@ struct __dynamic_any_cast_fn
   /// \c basic_any<_DstInterface>.
   _LIBCUDACXX_TEMPLATE(class _SrcInterface)
   _LIBCUDACXX_REQUIRES(__any_castable_to<basic_any<_SrcInterface>*, basic_any<_DstInterface>>)
-  _CCCL_NODISCARD _CUDAX_API auto operator()(basic_any<_SrcInterface>* __src) const -> basic_any<_DstInterface>
+  _CCCL_NODISCARD _CUDAX_HOST_API auto operator()(basic_any<_SrcInterface>* __src) const -> basic_any<_DstInterface>
   {
     auto __dst = __basic_any_access::__make<_DstInterface>();
     __basic_any_access::__cast_to(__src, __dst);
@@ -84,7 +85,8 @@ struct __dynamic_any_cast_fn
   /// \c basic_any<_DstInterface>.
   _LIBCUDACXX_TEMPLATE(class _SrcInterface)
   _LIBCUDACXX_REQUIRES(__any_castable_to<basic_any<_SrcInterface> const*, basic_any<_DstInterface>>)
-  _CCCL_NODISCARD _CUDAX_API auto operator()(basic_any<_SrcInterface> const* __src) const -> basic_any<_DstInterface>
+  _CCCL_NODISCARD _CUDAX_HOST_API auto
+  operator()(basic_any<_SrcInterface> const* __src) const -> basic_any<_DstInterface>
   {
     auto __dst = __basic_any_access::__make<_DstInterface>();
     __basic_any_access::__cast_to(__src, __dst);

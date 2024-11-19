@@ -31,17 +31,17 @@ struct __tagged_ptr;
 template <class _Tp>
 struct __tagged_ptr<_Tp*>
 {
-  _CUDAX_API void __set(_Tp* __pv, bool __flag) noexcept
+  _CUDAX_HOST_API void __set(_Tp* __pv, bool __flag) noexcept
   {
     __ptr_ = reinterpret_cast<uintptr_t>(__pv) | uintptr_t(__flag);
   }
 
-  _CCCL_NODISCARD _CUDAX_API _Tp* __get() const noexcept
+  _CCCL_NODISCARD _CUDAX_HOST_API _Tp* __get() const noexcept
   {
     return reinterpret_cast<_Tp*>(__ptr_ & ~uintptr_t(1));
   }
 
-  _CCCL_NODISCARD _CUDAX_API bool __flag() const noexcept
+  _CCCL_NODISCARD _CUDAX_HOST_API bool __flag() const noexcept
   {
     return static_cast<bool>(__ptr_ & uintptr_t(1));
   }
