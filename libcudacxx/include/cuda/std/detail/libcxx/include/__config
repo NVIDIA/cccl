@@ -115,7 +115,7 @@ extern "C++" {
 #  elif defined(_LIBCUDACXX_ABI_FORCE_MICROSOFT)
 #    define _LIBCUDACXX_ABI_MICROSOFT
 #  else
-#    if defined(_WIN32) && defined(_CCCL_COMPILER_MSVC)
+#    if defined(_WIN32) && _CCCL_COMPILER(MSVC)
 #      define _LIBCUDACXX_ABI_MICROSOFT
 #    else
 #      define _LIBCUDACXX_ABI_ITANIUM
@@ -186,7 +186,7 @@ extern "C++" {
 #    define _LIBCUDACXX_MSVCRT_LIKE
 // If mingw not explicitly detected, assume using MS C runtime only if
 // a MS compatibility version is specified.
-#    if defined(_CCCL_COMPILER_MSVC) && !defined(__MINGW32__)
+#    if _CCCL_COMPILER(MSVC) && !defined(__MINGW32__)
 #      define _LIBCUDACXX_MSVCRT // Using Microsoft's C Runtime library
 #    endif
 #    if (defined(_M_AMD64) || defined(__x86_64__)) || (defined(_M_ARM) || defined(__arm__))
@@ -287,14 +287,14 @@ extern "C++" {
 #    define __alignof(x) alignof(x)
 #  endif // _CCCL_COMPILER(NVRTC)
 
-#  if defined(_CCCL_COMPILER_MSVC)
+#  if _CCCL_COMPILER(MSVC)
 #    define __alignof__ __alignof
 #  endif
 
 #  define _LIBCUDACXX_ALIGNOF(_Tp)           alignof(_Tp)
 #  define _LIBCUDACXX_PREFERRED_ALIGNOF(_Tp) __alignof(_Tp)
 
-#  if defined(_CCCL_COMPILER_MSVC)
+#  if _CCCL_COMPILER(MSVC)
 #    define _CCCL_ALIGNAS_TYPE(x) alignas(x)
 #    define _CCCL_ALIGNAS(x)      __declspec(align(x))
 #  elif _CCCL_HAS_FEATURE(cxx_alignas)
@@ -303,7 +303,7 @@ extern "C++" {
 #  else
 #    define _CCCL_ALIGNAS_TYPE(x) __attribute__((__aligned__(_LIBCUDACXX_ALIGNOF(x))))
 #    define _CCCL_ALIGNAS(x)      __attribute__((__aligned__(x)))
-#  endif // !_CCCL_COMPILER_MSVC && !_CCCL_HAS_FEATURE(cxx_alignas)
+#  endif // !_CCCL_COMPILER(MSVC) && !_CCCL_HAS_FEATURE(cxx_alignas)
 
 // This is wrapped in __CUDA_ARCH__ to prevent error: "ignoring '#pragma unroll'
 // [-Werror=unknown-pragmas]"
@@ -389,7 +389,7 @@ typedef __char32_t char32_t;
 
 #    define _LIBCUDACXX_DISABLE_EXTENSION_WARNING __extension__
 
-#  elif defined(_CCCL_COMPILER_MSVC)
+#  elif _CCCL_COMPILER(MSVC)
 
 #    define _LIBCUDACXX_WARNING(x) _CCCL_PRAGMA(message(__FILE__ "(" _CCCL_TO_STRING(__LINE__) ") : warning note: " x))
 
@@ -461,7 +461,7 @@ typedef __char32_t char32_t;
 #  endif // _LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS
 
 #  ifndef _LIBCUDACXX_HAS_NO_INT128
-#    if defined(_CCCL_COMPILER_MSVC) || (_CCCL_COMPILER(NVRTC) && !defined(__CUDACC_RTC_INT128__)) \
+#    if _CCCL_COMPILER(MSVC) || (_CCCL_COMPILER(NVRTC) && !defined(__CUDACC_RTC_INT128__)) \
       || (defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_CUDACC_BELOW(11, 5)) || !defined(__SIZEOF_INT128__)
 #      define _LIBCUDACXX_HAS_NO_INT128
 #    endif
@@ -605,7 +605,7 @@ typedef unsigned int char32_t;
 
 // If we are getting operator new from the MSVC CRT, then allocation overloads
 // for align_val_t were added in 19.12, aka VS 2017 version 15.3.
-#  if defined(_LIBCUDACXX_MSVCRT) && defined(_CCCL_COMPILER_MSVC) && _MSC_VER < 1912
+#  if defined(_LIBCUDACXX_MSVCRT) && _CCCL_COMPILER(MSVC, <, 19, 12)
 #    define _LIBCUDACXX_HAS_NO_LIBRARY_ALIGNED_ALLOCATION
 #  elif defined(_LIBCUDACXX_ABI_VCRUNTIME) && !defined(__cpp_aligned_new)
 // We're deferring to Microsoft's STL to provide aligned new et al. We don't
@@ -681,7 +681,7 @@ typedef unsigned int char32_t;
 #  endif // _LIBCUDACXX_HAS_THREAD_API_CUDA
 
 #  ifndef _LIBCUDACXX_HAS_THREAD_API_WIN32
-#    if defined(_CCCL_COMPILER_MSVC) && !defined(_LIBCUDACXX_HAS_THREAD_API_CUDA)
+#    if _CCCL_COMPILER(MSVC) && !defined(_LIBCUDACXX_HAS_THREAD_API_CUDA)
 #      define _LIBCUDACXX_HAS_THREAD_API_WIN32
 #    endif
 #  endif // _LIBCUDACXX_HAS_THREAD_API_WIN32
@@ -744,7 +744,7 @@ typedef unsigned int char32_t;
 #    define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
 #  elif _CCCL_COMPILER(NVHPC)
 #    define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
-#  elif defined(_CCCL_COMPILER_MSVC)
+#  elif _CCCL_COMPILER(MSVC)
 #    define _LIBCUDACXX_HAS_MSVC_ATOMIC_IMPL
 #  endif
 
@@ -800,7 +800,7 @@ typedef unsigned int char32_t;
 #    define _LIBCUDACXX_PREFERRED_NAME(x)
 #  endif
 
-#  if defined(_LIBCUDACXX_ABI_MICROSOFT) && (defined(_CCCL_COMPILER_MSVC) || __has_declspec_attribute(empty_bases))
+#  if defined(_LIBCUDACXX_ABI_MICROSOFT) && (_CCCL_COMPILER(MSVC) || __has_declspec_attribute(empty_bases))
 #    define _LIBCUDACXX_DECLSPEC_EMPTY_BASES __declspec(empty_bases)
 #  else
 #    define _LIBCUDACXX_DECLSPEC_EMPTY_BASES
@@ -822,7 +822,7 @@ typedef unsigned int char32_t;
 #    define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
 #  elif _CCCL_COMPILER(NVRTC)
 #    define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
-#  elif defined(_CCCL_COMPILER_MSVC)
+#  elif _CCCL_COMPILER(MSVC)
 #    define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
 #  elif _CCCL_CUDACC_BELOW(11, 8)
 #    define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS

@@ -559,7 +559,7 @@ using __type_back = __type_at_c<_List::__size - 1, _List>;
 
 namespace __detail
 {
-#  if defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION < 1938
+#  if _CCCL_COMPILER(MSVC, <, 19, 38)
 // A workaround for https://developercommunity.visualstudio.com/t/fatal-error-C1001:-Internal-compiler-err/10405847
 struct __type_concat_fn
 {
@@ -586,7 +586,7 @@ struct __type_concat_fn
   template <class... _Lists>
   using __call _CCCL_NODEBUG_ALIAS = __type<__trait<_Lists...>>;
 };
-#  else // ^^^ _CCCL_COMPILER_MSVC < 19.38 ^^^ / vvv !(_CCCL_COMPILER_MSVC < 19.38) vvv
+#  else // ^^^ _CCCL_COMPILER(MSVC, <, 19, 38) ^^^ / vvv _CCCL_COMPILER(MSVC, >=, 19, 38) vvv
 template <size_t _Count>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_concat_fn
 {
@@ -646,7 +646,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_concat_fn
     __type_list_ptr<>{nullptr},
     __type_list_ptr<>{nullptr}));
 };
-#  endif // !(_CCCL_COMPILER_MSVC < 19.38)
+#  endif // _CCCL_COMPILER(MSVC, >=, 19, 38)
 } // namespace __detail
 
 //! \brief Concatenate a list of type lists into a single type list.

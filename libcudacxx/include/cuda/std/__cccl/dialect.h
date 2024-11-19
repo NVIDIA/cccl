@@ -22,7 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
 #  if _MSVC_LANG <= 201103L
 #    define _CCCL_STD_VER 2011
 #  elif _MSVC_LANG <= 201402L
@@ -34,7 +34,7 @@
 #  else
 #    define _CCCL_STD_VER 2023 // current year, or date of c++2b ratification
 #  endif
-#else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 #  if __cplusplus <= 199711L
 #    define _CCCL_STD_VER 2003
 #  elif __cplusplus <= 201103L
@@ -50,7 +50,7 @@
 #  else
 #    define _CCCL_STD_VER 2024 // current year, or date of c++2c ratification
 #  endif
-#endif // !_CCCL_COMPILER_MSVC
+#endif // !_CCCL_COMPILER(MSVC)
 
 #if _CCCL_STD_VER >= 2014
 #  define _CCCL_CONSTEXPR_CXX14 constexpr

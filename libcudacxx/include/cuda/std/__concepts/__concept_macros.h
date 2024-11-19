@@ -435,7 +435,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool _Is_true()
   return true;
 }
 
-#  if _CCCL_COMPILER(CLANG) || defined(_CCCL_COMPILER_MSVC)
+#  if _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(MSVC)
 template <bool _Bp>
 _LIBCUDACXX_HIDE_FROM_ABI _Concept::_Enable_if_t<_Bp> _Requires()
 {}

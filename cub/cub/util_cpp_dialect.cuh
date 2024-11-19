@@ -80,7 +80,7 @@
 #  define CUB_CPP_DIALECT _CCCL_STD_VER
 
 // Define CUB_COMPILER_DEPRECATION macro:
-#  if defined(_CCCL_COMPILER_MSVC)
+#  if _CCCL_COMPILER(MSVC)
 #    define CUB_COMP_DEPR_IMPL(msg) _CCCL_PRAGMA(message(__FILE__ ":" _CCCL_TO_STRING(__LINE__) ": warning: " #msg))
 #  else // clang / gcc:
 #    define CUB_COMP_DEPR_IMPL(msg) _CCCL_PRAGMA(GCC warning #msg)
@@ -101,10 +101,10 @@
 CUB_COMPILER_DEPRECATION(GCC 5.0);
 #    elif _CCCL_COMPILER(CLANG, <, 7)
 CUB_COMPILER_DEPRECATION(Clang 7.0);
-#    elif defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION < 1910
+#    elif _CCCL_COMPILER(MSVC, <, 19, 10)
 // <2017. Hard upgrade message:
 CUB_COMPILER_DEPRECATION(MSVC 2019(19.20 / 16.0 / 14.20));
-#    elif defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION < 1920
+#    elif _CCCL_COMPILER(MSVC2017)
 // >=2017, <2019. Soft deprecation message:
 CUB_COMPILER_DEPRECATION_SOFT(MSVC 2019(19.20 / 16.0 / 14.20), MSVC 2017);
 #    endif

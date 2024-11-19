@@ -202,9 +202,9 @@ template <class _From, class _To>
 _LIBCUDACXX_CONCEPT __span_array_convertible = _CCCL_TRAIT(is_convertible, _From (*)[], _To (*)[]);
 
 // We want to ensure that span interacts nicely with containers that might not have had the ranges treatment
-#  if defined(__cpp_lib_ranges) && !defined(_CCCL_COMPILER_MSVC_2017)
+#  if defined(__cpp_lib_ranges) && !_CCCL_COMPILER(MSVC2017)
 #    define _CCCL_SPAN_USES_RANGES
-#  endif // __cpp_lib_ranges && !_CCCL_COMPILER_MSVC_2017
+#  endif // __cpp_lib_ranges && !_CCCL_COMPILER(MSVC2017)
 
 #  if defined(_CCCL_SPAN_USES_RANGES)
 template <class _Range, class _ElementType>
@@ -369,7 +369,7 @@ public:
   }
 #  endif // !_CCCL_SPAN_USES_RANGES
 
-#  if _CCCL_COMPILER(NVRTC) || defined(_CCCL_COMPILER_MSVC_2017)
+#  if _CCCL_COMPILER(NVRTC) || _CCCL_COMPILER(MSVC2017)
   template <size_t _Sz = _Extent, enable_if_t<_Sz != 0, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr span(type_identity_t<element_type> (&__arr)[_Sz]) noexcept
       : __data_{__arr}
@@ -378,7 +378,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr span(type_identity_t<element_type> (&__arr)[_Extent]) noexcept
       : __data_{__arr}
   {}
-#  endif // !_CCCL_COMPILER(NVRTC) && !_CCCL_COMPILER_MSVC_2017
+#  endif // !_CCCL_COMPILER(NVRTC) && !_CCCL_COMPILER(MSVC2017)
 
   _LIBCUDACXX_TEMPLATE(class _OtherElementType)
   _LIBCUDACXX_REQUIRES(__span_array_convertible<_OtherElementType, element_type>)
@@ -841,7 +841,7 @@ _CCCL_HOST_DEVICE span(const _Container&) -> span<const typename _Container::val
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 template <class _Tp, size_t _Extent>
 _CCCL_INLINE_VAR constexpr bool enable_borrowed_range<span<_Tp, _Extent>> = true;
@@ -849,6 +849,6 @@ _CCCL_INLINE_VAR constexpr bool enable_borrowed_range<span<_Tp, _Extent>> = true
 template <class _Tp, size_t _Extent>
 _CCCL_INLINE_VAR constexpr bool enable_view<span<_Tp, _Extent>> = true;
 _LIBCUDACXX_END_NAMESPACE_RANGES
-#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER_MSVC_2017
+#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
 #endif // _LIBCUDACXX_SPAN

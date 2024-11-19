@@ -35,12 +35,12 @@ _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
 // are only ever found through ADL
 
 struct unreachable_sentinel_t
-#  ifdef _CCCL_COMPILER_MSVC
+#  if _CCCL_COMPILER(MSVC)
   ;
 namespace __unreachable_sentinel_detail
 {
 struct __unreachable_base
-#  endif // _CCCL_COMPILER_MSVC
+#  endif // _CCCL_COMPILER(MSVC)
 {
   _LIBCUDACXX_TEMPLATE(class _Iter)
   _LIBCUDACXX_REQUIRES(weakly_incrementable<_Iter>)
@@ -74,11 +74,11 @@ struct __unreachable_base
 #  endif // _CCCL_STD_VER < 2020
 };
 
-#  ifdef _CCCL_COMPILER_MSVC
+#  if _CCCL_COMPILER(MSVC)
 } // namespace __unreachable_sentinel_detail
 struct unreachable_sentinel_t : __unreachable_sentinel_detail::__unreachable_base
 {};
-#  endif // _CCCL_COMPILER_MSVC
+#  endif // _CCCL_COMPILER(MSVC)
 
 _LIBCUDACXX_END_NAMESPACE_RANGES_ABI
 
