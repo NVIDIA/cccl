@@ -42,7 +42,12 @@ def _ctypes_type_given_numba_type(ntype):
 
 
 def _ncc(funcname, pyfunc, sig, prefix):
-    return numba.cuda.compile(pyfunc=pyfunc, sig=sig, abi_info={"abi_name": f"{prefix}_{funcname}"}, output='ltoir')
+    return numba.cuda.compile(
+        pyfunc=pyfunc,
+        sig=sig,
+        abi_info={"abi_name": f"{prefix}_{funcname}"},
+        output="ltoir",
+    )
 
 
 class RawPointer:
@@ -50,15 +55,29 @@ class RawPointer:
         self.val = ctypes.c_void_p(ptr)
         data_as_ntype_pp = numba.types.CPointer(numba.types.CPointer(ntype))
         data_as_uint64_p = numba.types.CPointer(numba.types.uint64)
-        self.prefix = 'pointer_' + ntype.name
-        self.ltoirs = [_ncc("advance", RawPointer.pointer_advance_sizeof(ntype), numba.types.void(data_as_uint64_p, numba.types.uint64), self.prefix),
-                       _ncc("dereference", RawPointer.pointer_dereference, ntype(data_as_ntype_pp), self.prefix)]
+        self.prefix = "pointer_" + ntype.name
+        self.ltoirs = [
+            _ncc(
+                "advance",
+                RawPointer.pointer_advance_sizeof(ntype),
+                numba.types.void(data_as_uint64_p, numba.types.uint64),
+                self.prefix,
+            ),
+            _ncc(
+                "dereference",
+                RawPointer.pointer_dereference,
+                ntype(data_as_ntype_pp),
+                self.prefix,
+            ),
+        ]
 
     @staticmethod
     def pointer_advance_sizeof(ntype):
         sizeof_ntype = _sizeof_numba_type(ntype)
+
         def pointer_advance(this, distance):
             this[0] = this[0] + distance * sizeof_ntype
+
         return pointer_advance
 
     def pointer_dereference(this):
@@ -71,10 +90,10 @@ class RawPointer:
         return ctypes.cast(ctypes.pointer(self.val), ctypes.c_void_p)
 
     def size(self):
-        return 8 # TODO should be using numba for user-defined types support
+        return 8  # TODO should be using numba for user-defined types support
 
     def alignment(self):
-        return 8 # TODO should be using numba for user-defined types support
+        return 8  # TODO should be using numba for user-defined types support
 
 
 def pointer(container, ntype):
@@ -100,15 +119,29 @@ class CacheModifiedPointer:
         self.val = ctypes.c_void_p(ptr)
         data_as_ntype_pp = numba.types.CPointer(numba.types.CPointer(ntype))
         data_as_uint64_p = numba.types.CPointer(numba.types.uint64)
-        self.prefix = 'cache' + ntype.name
-        self.ltoirs = [_ncc("advance", CacheModifiedPointer.cache_advance_sizeof(ntype), numba.types.void(data_as_uint64_p, numba.types.uint64), self.prefix),
-                       _ncc("dereference", CacheModifiedPointer.cache_dereference, ntype(data_as_ntype_pp), self.prefix)]
+        self.prefix = "cache" + ntype.name
+        self.ltoirs = [
+            _ncc(
+                "advance",
+                CacheModifiedPointer.cache_advance_sizeof(ntype),
+                numba.types.void(data_as_uint64_p, numba.types.uint64),
+                self.prefix,
+            ),
+            _ncc(
+                "dereference",
+                CacheModifiedPointer.cache_dereference,
+                ntype(data_as_ntype_pp),
+                self.prefix,
+            ),
+        ]
 
     @staticmethod
     def cache_advance_sizeof(ntype):
         sizeof_ntype = _sizeof_numba_type(ntype)
+
         def cache_advance(this, distance):
             this[0] = this[0] + distance * sizeof_ntype
+
         return cache_advance
 
     def cache_dereference(this):
@@ -121,14 +154,14 @@ class CacheModifiedPointer:
         return ctypes.cast(ctypes.pointer(self.val), ctypes.c_void_p)
 
     def size(self):
-        return 8 # TODO should be using numba for user-defined types support
+        return 8  # TODO should be using numba for user-defined types support
 
     def alignment(self):
-        return 8 # TODO should be using numba for user-defined types support
+        return 8  # TODO should be using numba for user-defined types support
 
 
 def cache(container, ntype, modifier):
-    if modifier != 'stream':
+    if modifier != "stream":
         raise NotImplementedError("Only stream modifier is supported")
     return CacheModifiedPointer(container.device_ctypes_pointer.value, ntype)
 
@@ -137,9 +170,21 @@ class ConstantIterator:
     def __init__(self, val, ntype):
         thisty = numba.types.CPointer(ntype)
         self.val = _ctypes_type_given_numba_type(ntype)(val)
-        self.prefix = 'constant_' + ntype.name
-        self.ltoirs = [_ncc("advance", ConstantIterator.constant_advance, numba.types.void(thisty, ntype), self.prefix),
-                       _ncc("dereference", ConstantIterator.constant_dereference, ntype(thisty), self.prefix)]
+        self.prefix = "constant_" + ntype.name
+        self.ltoirs = [
+            _ncc(
+                "advance",
+                ConstantIterator.constant_advance,
+                numba.types.void(thisty, ntype),
+                self.prefix,
+            ),
+            _ncc(
+                "dereference",
+                ConstantIterator.constant_dereference,
+                ntype(thisty),
+                self.prefix,
+            ),
+        ]
 
     def constant_advance(this, _):
         pass
@@ -155,10 +200,14 @@ class ConstantIterator:
         return ctypes.cast(ctypes.pointer(self.val), ctypes.c_void_p)
 
     def size(self):
-        return ctypes.sizeof(self.val) # TODO should be using numba for user-defined types support
+        return ctypes.sizeof(
+            self.val
+        )  # TODO should be using numba for user-defined types support
 
     def alignment(self):
-        return ctypes.alignment(self.val) # TODO should be using numba for user-defined types support
+        return ctypes.alignment(
+            self.val
+        )  # TODO should be using numba for user-defined types support
 
 
 def repeat(value, ntype):
@@ -169,9 +218,21 @@ class CountingIterator:
     def __init__(self, count, ntype):
         thisty = numba.types.CPointer(ntype)
         self.count = _ctypes_type_given_numba_type(ntype)(count)
-        self.prefix = 'count_' + ntype.name
-        self.ltoirs = [_ncc("advance", CountingIterator.count_advance, numba.types.void(thisty, ntype), self.prefix),
-                       _ncc("dereference", CountingIterator.count_dereference, ntype(thisty), self.prefix)]
+        self.prefix = "count_" + ntype.name
+        self.ltoirs = [
+            _ncc(
+                "advance",
+                CountingIterator.count_advance,
+                numba.types.void(thisty, ntype),
+                self.prefix,
+            ),
+            _ncc(
+                "dereference",
+                CountingIterator.count_dereference,
+                ntype(thisty),
+                self.prefix,
+            ),
+        ]
 
     def count_advance(this, diff):
         this[0] += diff
@@ -186,10 +247,14 @@ class CountingIterator:
         return ctypes.cast(ctypes.pointer(self.count), ctypes.c_void_p)
 
     def size(self):
-        return ctypes.sizeof(self.count) # TODO should be using numba for user-defined types support
+        return ctypes.sizeof(
+            self.count
+        )  # TODO should be using numba for user-defined types support
 
     def alignment(self):
-        return ctypes.alignment(self.count) # TODO should be using numba for user-defined types support
+        return ctypes.alignment(
+            self.count
+        )  # TODO should be using numba for user-defined types support
 
 
 def count(offset, ntype):
@@ -207,22 +272,24 @@ def cu_map(op, it):
 
         def codegen(context, builder, sig, args):
             state_ptr, dist = args
-            fnty = ir.FunctionType(ir.VoidType(), (ir.PointerType(ir.IntType(8)), ir.IntType(32)))
+            fnty = ir.FunctionType(
+                ir.VoidType(), (ir.PointerType(ir.IntType(8)), ir.IntType(32))
+            )
             fn = cgutils.get_or_insert_function(builder.module, fnty, name)
             builder.call(fn, (state_ptr, dist))
 
         return signature(retty, statety, distty), codegen
-
 
     def advance_codegen(func_to_overload, name):
         @intrinsic
         def intrinsic_impl(typingctx, it_state_ptr, diff):
             return make_advance_codegen(name)
 
-        @overload(func_to_overload, target='cuda')
+        @overload(func_to_overload, target="cuda")
         def impl(it_state_ptr, diff):
             def impl(it_state_ptr, diff):
                 return intrinsic_impl(it_state_ptr, diff)
+
             return impl
 
     def source_dereference(it_state_ptr):
@@ -233,23 +300,23 @@ def cu_map(op, it):
         statety = types.CPointer(types.int8)
 
         def codegen(context, builder, sig, args):
-            state_ptr, = args
+            (state_ptr,) = args
             fnty = ir.FunctionType(ir.IntType(32), (ir.PointerType(ir.IntType(8)),))
             fn = cgutils.get_or_insert_function(builder.module, fnty, name)
             return builder.call(fn, (state_ptr,))
 
         return signature(retty, statety), codegen
 
-
     def dereference_codegen(func_to_overload, name):
         @intrinsic
         def intrinsic_impl(typingctx, it_state_ptr):
             return make_dereference_codegen(name)
 
-        @overload(func_to_overload, target='cuda')
+        @overload(func_to_overload, target="cuda")
         def impl(it_state_ptr):
             def impl(it_state_ptr):
                 return intrinsic_impl(it_state_ptr)
+
             return impl
 
     def make_op_codegen(name):
@@ -257,56 +324,70 @@ def cu_map(op, it):
         valty = types.int32
 
         def codegen(context, builder, sig, args):
-            val, = args
+            (val,) = args
             fnty = ir.FunctionType(ir.IntType(32), (ir.IntType(32),))
             fn = cgutils.get_or_insert_function(builder.module, fnty, name)
             return builder.call(fn, (val,))
 
         return signature(retty, valty), codegen
 
-
     def op_codegen(func_to_overload, name):
         @intrinsic
         def intrinsic_impl(typingctx, val):
             return make_op_codegen(name)
 
-        @overload(func_to_overload, target='cuda')
+        @overload(func_to_overload, target="cuda")
         def impl(val):
             def impl(val):
                 return intrinsic_impl(val)
+
             return impl
 
     advance_codegen(source_advance, f"{it.prefix}_advance")
     dereference_codegen(source_dereference, f"{it.prefix}_dereference")
     op_codegen(op, op.__name__)
 
-
     class TransformIterator:
         def __init__(self, it, op):
-            self.it = it # TODO support row pointers
+            self.it = it  # TODO support row pointers
             self.op = op
-            self.prefix = f'transform_{it.prefix}_{op.__name__}'
-            self.ltoirs = it.ltoirs + [_ncc("advance", TransformIterator.transform_advance, numba.types.void(numba.types.CPointer(numba.types.char), numba.types.int32), self.prefix),
-                                       _ncc("dereference", TransformIterator.transform_dereference, numba.types.int32(numba.types.CPointer(numba.types.char)), self.prefix),
-                                       numba.cuda.compile(op, sig=numba.types.int32(numba.types.int32), output='ltoir')]
+            self.prefix = f"transform_{it.prefix}_{op.__name__}"
+            self.ltoirs = it.ltoirs + [
+                _ncc(
+                    "advance",
+                    TransformIterator.transform_advance,
+                    numba.types.void(
+                        numba.types.CPointer(numba.types.char), numba.types.int32
+                    ),
+                    self.prefix,
+                ),
+                _ncc(
+                    "dereference",
+                    TransformIterator.transform_dereference,
+                    numba.types.int32(numba.types.CPointer(numba.types.char)),
+                    self.prefix,
+                ),
+                numba.cuda.compile(
+                    op, sig=numba.types.int32(numba.types.int32), output="ltoir"
+                ),
+            ]
 
         def transform_advance(it_state_ptr, diff):
-            source_advance(it_state_ptr, diff) # just a function call
+            source_advance(it_state_ptr, diff)  # just a function call
 
         def transform_dereference(it_state_ptr):
-            return op(source_dereference(it_state_ptr)) # just a function call
+            return op(source_dereference(it_state_ptr))  # just a function call
 
         def host_address(self):
-            return self.it.host_address() # TODO support stateful operators
+            return self.it.host_address()  # TODO support stateful operators
 
         def state_c_void_p(self):
             return self.it.state_c_void_p()
 
         def size(self):
-            return self.it.size() # TODO fix for stateful op
+            return self.it.size()  # TODO fix for stateful op
 
         def alignment(self):
-            return self.it.alignment() # TODO fix for stateful op
-
+            return self.it.alignment()  # TODO fix for stateful op
 
     return TransformIterator(it, op)
