@@ -113,6 +113,9 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_ALIGNAS(alignof(__nv_bfloat162)) compl
   template <class _Up>
   friend class complex;
 
+  template <class _Up>
+  friend struct __get_complex_impl;
+
 public:
   using value_type = __nv_bfloat16;
 
@@ -235,64 +238,6 @@ public:
   {
     return __hbeq2(__lhs.__repr_, __rhs.__repr_);
   }
-
-#  if _CCCL_STD_VER >= 2014
-  template <size_t _Index>
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type& get(complex& __z) noexcept
-  {
-    static_assert(_Index < 2, "Index value is out of range");
-    if constexpr (_Index == 0)
-    {
-      return __z.__repr_.x;
-    }
-    else
-    {
-      return __z.__repr_.y;
-    }
-  }
-
-  template <size_t _Index>
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type&& get(complex&& __z) noexcept
-  {
-    static_assert(_Index < 2, "Index value is out of range");
-    if constexpr (_Index == 0)
-    {
-      return _CUDA_VSTD::move(__z.__repr_.x);
-    }
-    else
-    {
-      return _CUDA_VSTD::move(__z.__repr_.y);
-    }
-  }
-
-  template <size_t _Index>
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr const value_type& get(const complex& __z) noexcept
-  {
-    static_assert(_Index < 2, "Index value is out of range");
-    if constexpr (_Index == 0)
-    {
-      return __z.__repr_.x;
-    }
-    else
-    {
-      return __z.__repr_.y;
-    }
-  }
-
-  template <size_t _Index>
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr const value_type&& get(const complex&& __z) noexcept
-  {
-    static_assert(_Index < 2, "Index value is out of range");
-    if constexpr (_Index == 0)
-    {
-      return _CUDA_VSTD::move(__z.__repr_.x);
-    }
-    else
-    {
-      return _CUDA_VSTD::move(__z.__repr_.y);
-    }
-  }
-#  endif // _CCCL_STD_VER >= 2014
 };
 
 template <> // complex<float>
@@ -353,6 +298,78 @@ _LIBCUDACXX_HIDE_FROM_ABI complex<__nv_bfloat16> acos(const complex<__nv_bfloat1
 {
   return complex<__nv_bfloat16>{_CUDA_VSTD::acos(complex<float>{__x})};
 }
+
+template <>
+struct __get_complex_impl<__nv_bfloat16>
+{
+  template <size_t _Index>
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_bfloat16& get(complex<__nv_bfloat16>& __z) noexcept
+  {
+#  if _CCCL_STD_VER >= 2017
+    _CCCL_IF_CONSTEXPR (_Index == 0)
+    {
+      return __z.__repr_.x;
+    }
+    else
+    {
+      return __z.__repr_.y;
+    }
+#  else
+    return (_Index == 0) ? __z.__repr_.x : __z.__repr_.y;
+#  endif
+  }
+
+  template <size_t _Index>
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_bfloat16&& get(complex<__nv_bfloat16>&& __z) noexcept
+  {
+#  if _CCCL_STD_VER >= 2017
+    _CCCL_IF_CONSTEXPR (_Index == 0)
+    {
+      return _CUDA_VSTD::move(__z.__repr_.x);
+    }
+    else
+    {
+      return _CUDA_VSTD::move(__z.__repr_.y);
+    }
+#  else
+    return (_Index == 0) ? _CUDA_VSTD::move(__z.__repr_.x) : _CUDA_VSTD::move(__z.__repr_.y);
+#  endif
+  }
+
+  template <size_t _Index>
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr const __nv_bfloat16& get(const complex<__nv_bfloat16>& __z) noexcept
+  {
+#  if _CCCL_STD_VER >= 2017
+    _CCCL_IF_CONSTEXPR (_Index == 0)
+    {
+      return __z.__repr_.x;
+    }
+    else
+    {
+      return __z.__repr_.y;
+    }
+#  else
+    return (_Index == 0) ? __z.__repr_.x : __z.__repr_.y;
+#  endif
+  }
+
+  template <size_t _Index>
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr const __nv_bfloat16&& get(const complex<__nv_bfloat16>&& __z) noexcept
+  {
+#  if _CCCL_STD_VER >= 2017
+    _CCCL_IF_CONSTEXPR (_Index == 0)
+    {
+      return _CUDA_VSTD::move(__z.__repr_.x);
+    }
+    else
+    {
+      return _CUDA_VSTD::move(__z.__repr_.y);
+    }
+#  else
+    return (_Index == 0) ? _CUDA_VSTD::move(__z.__repr_.x) : _CUDA_VSTD::move(__z.__repr_.y);
+#  endif
+  }
+};
 
 #  if !_CCCL_COMPILER(NVRTC)
 template <class _CharT, class _Traits>

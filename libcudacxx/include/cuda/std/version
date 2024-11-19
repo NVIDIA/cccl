@@ -29,6 +29,8 @@
 #  include <ciso646> // otherwise go for the smallest possible header
 #endif // !_CCCL_COMPILER(NVRTC)
 
+// #  define __cpp_lib_tuple_like                    202311L // P2819R2 is implemented, but P2165R4 is not yet
+
 #if _CCCL_STD_VER >= 2014
 #  define __cccl_lib_bit_cast     201806L
 #  define __cccl_lib_chrono_udls  201304L
@@ -64,7 +66,6 @@
 #  define __cccl_lib_transparent_operators        201210L
 #  define __cccl_lib_tuple_element_t              201402L
 #  define __cccl_lib_tuples_by_type               201304L
-// #  define __cpp_lib_tuple_like                    202311L // P2819R2 is implemented, but P2165R4 is not yet
 #endif // _CCCL_STD_VER >= 2014
 
 #if _CCCL_STD_VER >= 2017
