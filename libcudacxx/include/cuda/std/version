@@ -30,7 +30,7 @@
 #endif // !_CCCL_COMPILER(NVRTC)
 
 #define __cccl_lib_to_underlying 202102L
-#define __cccl_lib_unreachable 202202L
+#define __cccl_lib_unreachable   202202L
 
 #if _CCCL_STD_VER >= 2014
 #  define __cccl_lib_bit_cast     201806L
