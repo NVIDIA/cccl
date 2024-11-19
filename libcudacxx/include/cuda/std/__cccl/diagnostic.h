@@ -23,7 +23,7 @@
 #endif // no system header
 
 // Enable us to selectively silence host compiler warnings
-#ifdef _CCCL_COMPILER_CLANG
+#if _CCCL_COMPILER(CLANG)
 #  define _CCCL_DIAG_PUSH                _CCCL_PRAGMA(clang diagnostic push)
 #  define _CCCL_DIAG_POP                 _CCCL_PRAGMA(clang diagnostic pop)
 #  define _CCCL_DIAG_SUPPRESS_CLANG(str) _CCCL_PRAGMA(clang diagnostic ignored str)
@@ -74,7 +74,7 @@
 #endif
 
 // Convenient shortcuts to silence common warnings
-#if defined(_CCCL_COMPILER_CLANG)
+#if _CCCL_COMPILER(CLANG)
 #  define _CCCL_SUPPRESS_DEPRECATED_PUSH      \
     _CCCL_DIAG_PUSH                           \
     _CCCL_DIAG_SUPPRESS_CLANG("-Wdeprecated") \
@@ -101,11 +101,11 @@
     _CCCL_DIAG_PUSH                      \
     _CCCL_DIAG_SUPPRESS_MSVC(4996)
 #  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_DIAG_POP
-#else // !_CCCL_COMPILER_CLANG && !_CCCL_COMPILER(ICC) && && !_CCCL_COMPILER(GCC) && !_CCCL_COMPILER(NVHPC) &&
+#else // !_CCCL_COMPILER(CLANG) && !_CCCL_COMPILER(ICC) && && !_CCCL_COMPILER(GCC) && !_CCCL_COMPILER(NVHPC) &&
       // !_CCCL_COMPILER_MSVC
 #  define _CCCL_SUPPRESS_DEPRECATED_PUSH
 #  define _CCCL_SUPPRESS_DEPRECATED_POP
-#endif // !_CCCL_COMPILER_CLANG && !_CCCL_COMPILER(ICC) && && !_CCCL_COMPILER(GCC) && !_CCCL_COMPILER(NVHPC) &&
+#endif // !_CCCL_COMPILER(CLANG) && !_CCCL_COMPILER(ICC) && && !_CCCL_COMPILER(GCC) && !_CCCL_COMPILER(NVHPC) &&
        // !_CCCL_COMPILER_MSVC
 
 // Enable us to selectively silence cuda compiler warnings
