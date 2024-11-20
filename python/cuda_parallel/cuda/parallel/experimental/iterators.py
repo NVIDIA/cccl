@@ -122,25 +122,22 @@ def pointer(container, ntype):
     return RawPointer(container.device_ctypes_pointer.value, ntype)
 
 
-def make_ldcs(ntype):
-    bitwidth = _sizeof_numba_type(ntype) * 8
+@intrinsic
+def ldcs(typingctx, base):
+    def codegen(context, builder, sig, args):
+        bw = sig.return_type.bitwidth
+        ibw = ir.IntType(bw)
+        ibw_ptr = ibw.as_pointer()
+        ftype = ir.FunctionType(ibw, [ibw_ptr])
+        asm = f"ld.global.cs.b{bw} $0, [$1];"
+        if bw < 64:
+            constraint = "=r, l"
+        else:
+            constraint = "=l, l"
+        ldcs = ir.InlineAsm(ftype, asm, constraint)
+        return builder.call(ldcs, args)
 
-    @intrinsic
-    def ldcs(typingctx, base):
-        def codegen(context, builder, sig, args):
-            intbw = ir.IntType(bitwidth)  # TODO: unsigned
-            intbw_ptr = intbw.as_pointer()
-            ldcs_type = ir.FunctionType(intbw, [intbw_ptr])
-            ldcs = ir.InlineAsm(
-                ldcs_type,
-                f"ld.global.cs.b{bitwidth} $0, [$1];",
-                f"={'r' if bitwidth < 64 else 'l'}, l",
-            )
-            return builder.call(ldcs, args)
-
-        return base.dtype(base), codegen
-
-    return ldcs
+    return base.dtype(base), codegen
 
 
 class CacheModifiedPointer:
@@ -158,7 +155,7 @@ class CacheModifiedPointer:
             ),
             _ncc(
                 "dereference",
-                CacheModifiedPointer.cache_cache_dereference_bitwidth(ntype),
+                CacheModifiedPointer.cache_dereference,
                 ntype(data_as_ntype_pp),
                 self.prefix,
             ),
@@ -167,14 +164,8 @@ class CacheModifiedPointer:
     def cache_advance(this, distance):
         this[0] = this[0] + distance
 
-    @staticmethod
-    def cache_cache_dereference_bitwidth(ntype):
-        ldcs = make_ldcs(ntype)
-
-        def cache_dereference(this):
-            return ldcs(this[0])
-
-        return cache_dereference
+    def cache_dereference(this):
+        return ldcs(this[0])
 
     def host_address(self):
         return ctypes.byref(self.val)
