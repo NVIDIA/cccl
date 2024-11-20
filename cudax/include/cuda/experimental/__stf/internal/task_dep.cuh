@@ -176,11 +176,13 @@ private:
 template <typename T>
 class logical_data;
 
-class task_dep_op_none {
+class task_dep_op_none
+{
 public:
-    // no-op operator
-    template <typename T>
-    static __host__ __device__ void apply_op(T &, const T &) {}
+  // no-op operator
+  template <typename T>
+  static __host__ __device__ void apply_op(T&, const T&)
+  {}
 };
 
 /**
@@ -232,15 +234,18 @@ public:
 
 // task_dep_op derived class using std::pair<T, Op>
 template <typename Pair>
-class task_dep_op : public task_dep<typename Pair::first_type> {
+class task_dep_op : public task_dep<typename Pair::first_type>
+{
 public:
-    using dep_type = typename Pair::first_type;
-    using task_dep_type = task_dep<dep_type>;
-    using op_type = typename Pair::second_type;
+  using dep_type      = typename Pair::first_type;
+  using task_dep_type = task_dep<dep_type>;
+  using op_type       = typename Pair::second_type;
 
-    // Constructor that forwards to task_dep's constructor
-    template <typename... Args>
-    task_dep_op(Args&&... args) : task_dep<dep_type>(std::forward<Args>(args)...) {}
+  // Constructor that forwards to task_dep's constructor
+  template <typename... Args>
+  task_dep_op(Args&&... args)
+      : task_dep<dep_type>(std::forward<Args>(args)...)
+  {}
 };
 
 // A vector of dependencies

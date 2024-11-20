@@ -21,9 +21,9 @@
 #include <cuda/experimental/__stf/allocators/pooled_allocator.cuh>
 #include <cuda/experimental/__stf/allocators/uncached_allocator.cuh>
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
+#include <cuda/experimental/__stf/internal/scalar_interface.cuh>
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
-#include <cuda/experimental/__stf/internal/scalar_interface.cuh>
 #include <cuda/experimental/__stf/places/exec/cuda_stream.cuh>
 #include <cuda/experimental/__stf/places/inner_shape.cuh>
 #include <cuda/experimental/__stf/stream/stream_ctx.cuh>
@@ -362,7 +362,7 @@ public:
   /*
    * parallel_for : apply an operation over a shaped index space
    */
-  template <typename S,typename ... Deps>
+  template <typename S, typename... Deps>
   auto parallel_for(exec_place e_place, S shape, task_dep_op<Deps>... deps)
   {
     EXPECT(payload.index() != ::std::variant_npos, "Context is not initialized.");

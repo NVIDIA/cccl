@@ -235,13 +235,15 @@ public:
   }
 
   /// Add a tuple of dependencies
-  template <typename ...Args>
-  void add_deps(::std::tuple<Args...> &deps_tuple)
+  template <typename... Args>
+  void add_deps(::std::tuple<Args...>& deps_tuple)
   {
-    ::std::apply([this](const auto &... deps) {
+    ::std::apply(
+      [this](const auto&... deps) {
         // Call add_deps on each dep using a fold expression
         (add_deps(deps), ...);
-    }, deps_tuple);
+      },
+      deps_tuple);
   }
 
   /// Get the dependencies of the task
