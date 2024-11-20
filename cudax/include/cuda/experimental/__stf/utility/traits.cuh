@@ -584,8 +584,9 @@ template <typename T, typename Tuple>
 struct count_type;
 
 template <typename T, typename... Args>
-struct count_type<T, ::std::tuple<Args...>> {
-    static constexpr std::size_t value = (::std::size_t(0) + ... + ::std::is_same<T, Args>::value);
+struct count_type<T, ::std::tuple<Args...>>
+{
+  static constexpr std::size_t value = (::std::size_t(0) + ... + ::std::is_same<T, Args>::value);
 };
 
 /**
@@ -593,6 +594,5 @@ struct count_type<T, ::std::tuple<Args...>> {
  */
 template <typename T, typename Tuple>
 constexpr ::std::size_t count_type_v = count_type<T, Tuple>::value;
-
 
 } // namespace cuda::experimental::stf

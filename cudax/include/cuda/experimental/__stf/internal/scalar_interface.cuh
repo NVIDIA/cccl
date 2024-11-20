@@ -49,7 +49,7 @@ template <typename T>
 class scalar
 {
 public:
-    T *addr;
+  T* addr;
 };
 
 /**
@@ -94,7 +94,12 @@ public:
   {}
 
   /// Copy the content of an instance to another instance : this is a no-op
-  void stream_data_copy(const data_place& dst_memory_node, instance_id_t dst_instance_id, const data_place& src_memory_node, instance_id_t src_instance_id, cudaStream_t stream) override
+  void stream_data_copy(
+    const data_place& dst_memory_node,
+    instance_id_t dst_instance_id,
+    const data_place& src_memory_node,
+    instance_id_t src_instance_id,
+    cudaStream_t stream) override
   {
     assert(src_memory_node != dst_memory_node);
 
@@ -117,22 +122,26 @@ public:
     cuda_safe_call(cudaMemcpyAsync((void*) dst_instance.addr, (void*) src_instance.addr, sz, kind, stream));
   }
 
-
-
   void stream_data_allocate(
-    backend_ctx_untyped&, const data_place& memory_node, instance_id_t instance_id, ::std::ptrdiff_t& s, void**, cudaStream_t stream) override
+    backend_ctx_untyped&,
+    const data_place& memory_node,
+    instance_id_t instance_id,
+    ::std::ptrdiff_t& s,
+    void**,
+    cudaStream_t stream) override
   {
-    scalar<T> &instance = this->instance(instance_id);
+    scalar<T>& instance = this->instance(instance_id);
     T* base_ptr;
 
     if (memory_node == data_place::host)
     {
-        // Fallback to a synchronous method as there is no asynchronous host allocation API
-        cuda_safe_call(cudaStreamSynchronize(stream));
-        cuda_safe_call(cudaHostAlloc(&base_ptr, sizeof(T), cudaHostAllocMapped));
+      // Fallback to a synchronous method as there is no asynchronous host allocation API
+      cuda_safe_call(cudaStreamSynchronize(stream));
+      cuda_safe_call(cudaHostAlloc(&base_ptr, sizeof(T), cudaHostAllocMapped));
     }
-    else {
-        cuda_safe_call(cudaMallocAsync(&base_ptr, sizeof(T), stream));
+    else
+    {
+      cuda_safe_call(cudaMallocAsync(&base_ptr, sizeof(T), stream));
     }
 
     instance.addr = base_ptr;
@@ -240,8 +249,9 @@ struct owning_container_of<scalar<T>>
 {
   using type = T;
 
-  __host__ __device__ static void fill(scalar<T> &s, const T &val) {
-      *s.addr = val;
+  __host__ __device__ static void fill(scalar<T>& s, const T& val)
+  {
+    *s.addr = val;
   }
 };
 
