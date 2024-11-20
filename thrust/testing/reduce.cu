@@ -200,8 +200,10 @@ void TestReduceWithBigIndexesHelper(int magnitude)
 void TestReduceWithBigIndexes()
 {
   TestReduceWithBigIndexesHelper(30);
+#ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
   TestReduceWithBigIndexesHelper(31);
   TestReduceWithBigIndexesHelper(32);
   TestReduceWithBigIndexesHelper(33);
+#endif
 }
 DECLARE_UNITTEST(TestReduceWithBigIndexes);
