@@ -308,7 +308,7 @@ struct __get_complex_impl<__half>
   template <size_t _Index>
   static _LIBCUDACXX_HIDE_FROM_ABI constexpr __half&& get(complex<__half>&& __z) noexcept
   {
-    return (_Index == 0) ? _CUDA_VSTD::move(__z.__repr_.x) : _CUDA_VSTD::move(__z.__repr_.y);
+    return _CUDA_VSTD::move((_Index == 0) ? __z.__repr_.x : __z.__repr_.y);
   }
 
   template <size_t _Index>
@@ -320,7 +320,7 @@ struct __get_complex_impl<__half>
   template <size_t _Index>
   static _LIBCUDACXX_HIDE_FROM_ABI constexpr const __half&& get(const complex<__half>&& __z) noexcept
   {
-    return (_Index == 0) ? _CUDA_VSTD::move(__z.__repr_.x) : _CUDA_VSTD::move(__z.__repr_.y);
+    return _CUDA_VSTD::move((_Index == 0) ? __z.__repr_.x : __z.__repr_.y);
   }
 };
 
