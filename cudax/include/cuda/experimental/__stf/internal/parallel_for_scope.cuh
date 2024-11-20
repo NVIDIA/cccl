@@ -187,6 +187,11 @@ public:
         );
     }
 
+    __device__ void init() {
+        constexpr size_t N = ::std::tuple_size<tuple_args>::value;
+        return init_impl(::std::make_index_sequence<N>{});
+    }
+
     template <typename Tuple>
     __device__ void apply_op(const Tuple& src) {
         constexpr size_t N = ::std::tuple_size<tuple_ops>::value;
@@ -224,8 +229,6 @@ private:
         if constexpr (::std::is_same_v<OpType, task_dep_op_none>) {
             return ::std::get<Is>(targs); // Return reference to targs[i]
         } else {
-           // TODO move to a separate init ...
-            OpType::init_op(::std::get<Is>(tup));
             return ::std::get<Is>(tup); // Return reference to redux_buffer[i]
         }
     }
@@ -238,6 +241,19 @@ private:
         );
     }
 
+    // Call the init_op method if this is reduction operator
+    template <size_t Is>
+    __device__ decltype(auto) init_element() {
+        using OpType = typename ::std::tuple_element<Is, tuple_ops>::type;
+        if constexpr (!::std::is_same_v<OpType, task_dep_op_none>) {
+            OpType::init_op(::std::get<Is>(tup));
+        }
+    }
+
+    template <::std::size_t... Is>
+    __device__ void init_impl(::std::index_sequence<Is...>) {
+        (init_element<Is>(), ...);
+    }
 
     /* This tuple contains either EmptyType for non reduction variables, or the owning type for a reduction variable. 
      * if tuple_args = tuple<slice<double>, scalar<int>, slice<int>> and tuple_ops=tuple<none, sum<int>, none>
@@ -260,6 +276,9 @@ __global__ void loop_redux(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F 
   // This tuple in shared memory contains either an empty type for "regular"
   // arguments, or an owning local variable for reduction variables.
   extern __shared__ arg_wrapper<tuple_args, tuple_ops> per_block_redux_buffer[];
+
+  // This will initialize reduction variables with the null value of the operator
+  per_block_redux_buffer[threadIdx.x].init();
 
   // Return a tuple with either arguments, or references to the owning type in the reduction buffer stored in shared memory
   auto targs_aux = per_block_redux_buffer[threadIdx.x].make_targs_aux(targs);
@@ -295,7 +314,6 @@ __global__ void loop_redux(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F 
   // Write the block's result to the output array
   if (tid == 0) {
      tuple_set_op<tuple_ops>(redux_buffer[blockIdx.x], per_block_redux_buffer[0].get());
-     printf("INTERMEDIATE blockIdx.x %d -> %lf\n", blockIdx.x, ::std::get<3>(redux_buffer[blockIdx.x]));
   }
 }
 
