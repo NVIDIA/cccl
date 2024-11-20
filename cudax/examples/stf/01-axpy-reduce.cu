@@ -30,30 +30,34 @@ double Y0(int i)
 }
 
 template <typename T>
-class sum {
+class sum
+{
 public:
-    static __host__ __device__ void init_op(T &dst) {
-        dst = static_cast<T>(0);
-    }
+  static __host__ __device__ void init_op(T& dst)
+  {
+    dst = static_cast<T>(0);
+  }
 
-    static __host__ __device__ void apply_op(T &dst, const T &src) {
-        dst += src;
-    }
+  static __host__ __device__ void apply_op(T& dst, const T& src)
+  {
+    dst += src;
+  }
 };
 
 template <typename T>
-class maxval {
+class maxval
+{
 public:
-    static __host__ __device__ void init_op(T &dst) {
-        dst = ::std::numeric_limits<T>::lowest();
-    }
+  static __host__ __device__ void init_op(T& dst)
+  {
+    dst = ::std::numeric_limits<T>::lowest();
+  }
 
-    static __host__ __device__ void apply_op(T &dst, const T &src) {
-        dst = ::std::max(dst, src);
-    }
+  static __host__ __device__ void apply_op(T& dst, const T& src)
+  {
+    dst = ::std::max(dst, src);
+  }
 };
-
-
 
 int main()
 {
@@ -72,23 +76,25 @@ int main()
   auto lX = ctx.logical_data(X);
   auto lY = ctx.logical_data(Y);
 
-  auto lsum = ctx.logical_data(shape_of<slice<double>>(1));
+  auto lsum  = ctx.logical_data(shape_of<slice<double>>(1));
   auto lsum2 = ctx.logical_data(shape_of<scalar<double>>());
-  auto lmax = ctx.logical_data(shape_of<scalar<double>>());
+  auto lmax  = ctx.logical_data(shape_of<scalar<double>>());
 
   /* Compute Y = Y + alpha X */
-  ctx.parallel_for(lY.shape(), lX.read(), lY.rw(), lsum.write(), lsum2.reduce(sum<double>{}), lmax.reduce(maxval<double>{}))->*[alpha] __device__(size_t i, auto dX, auto dY, auto sum, double &sum2, double &maxval) {
-    dY(i) += alpha * dX(i);
-    sum2 += dY(i);
-    maxval = ::std::max(dY(i), maxval);
-    atomicAdd(sum.data_handle(), dY(i));
-  };
+  ctx.parallel_for(
+    lY.shape(), lX.read(), lY.rw(), lsum.write(), lsum2.reduce(sum<double>{}), lmax.reduce(maxval<double>{}))
+      ->*[alpha] __device__(size_t i, auto dX, auto dY, auto sum, double& sum2, double& maxval) {
+            dY(i) += alpha * dX(i);
+            sum2 += dY(i);
+            maxval = ::std::max(dY(i), maxval);
+            atomicAdd(sum.data_handle(), dY(i));
+          };
 
   ctx.host_launch(lsum.read(), lsum2.read(), lmax.read())->*[](auto sum, scalar<double> sum2, scalar<double> max) {
-      fprintf(stderr, "REF SUM ... %lf\n", sum(0));
-      fprintf(stderr, "REDUX SUM2 ... %lf\n", *(sum2.addr));
-      fprintf(stderr, "MAX VAL ... %lf\n", *(max.addr));
-      assert(fabs(sum(0) - *(sum2.addr)) < 0.0001);
+    fprintf(stderr, "REF SUM ... %lf\n", sum(0));
+    fprintf(stderr, "REDUX SUM2 ... %lf\n", *(sum2.addr));
+    fprintf(stderr, "MAX VAL ... %lf\n", *(max.addr));
+    assert(fabs(sum(0) - *(sum2.addr)) < 0.0001);
   };
 
   ctx.finalize();
@@ -98,5 +104,4 @@ int main()
     assert(fabs(Y[i] - (Y0(i) + alpha * X0(i))) < 0.0001);
     assert(fabs(X[i] - X0(i)) < 0.0001);
   }
-
 }
