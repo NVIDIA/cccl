@@ -239,6 +239,10 @@ template <typename T>
 struct owning_container_of<scalar<T>>
 {
   using type = T;
+
+  __host__ __device__ static void fill(scalar<T> &s, const T &val) {
+      *s.addr = val;
+  }
 };
 
 /**
