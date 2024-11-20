@@ -10,7 +10,9 @@
 #include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
-static_assert(cuda::std::is_same_v<decltype(cuda::std::unreachable()), void>);
+#include "test_macros.h"
+
+ASSERT_SAME_TYPE(void, decltype(cuda::std::unreachable()));
 
 int main(int, char**)
 {
