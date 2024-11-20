@@ -173,6 +173,7 @@ struct static_size<::cuda::std::mdspan<T, E, L, A>,
 {};
 
 #  endif // __cccl_lib_mdspan
+#endif // _CCCL_STD_VER >= 2014
 
 template <typename T>
 _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::size_t static_size_v()
