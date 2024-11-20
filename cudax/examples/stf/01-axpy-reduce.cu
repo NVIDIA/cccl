@@ -29,8 +29,12 @@ double Y0(int i)
   return cos((double) i);
 }
 
+template <typename T>
 class sum {
 public:
+    static __host__ __device__ void apply_op(T &dst, const T &src) {
+        dst += src;
+    }
 };
 
 int main()
@@ -55,11 +59,15 @@ int main()
 
   /* Compute Y = Y + alpha X */
   //ctx.parallel_for(lY.shape(), lX.read(), lY.rw(), lsum.write(), lsum2.template reduce<sum>())->*[alpha] __device__(size_t i, auto dX, auto dY, auto sum, auto sum2) {
-  ctx.parallel_for(lY.shape(), lX.read(), lY.rw(), lsum.write(), lsum2.reduce(sum{}))->*[alpha] __device__(size_t i, auto dX, auto dY, auto sum, double &sum2) {
+  ctx.parallel_for(lY.shape(), lX.read(), lY.rw(), lsum.write(), lsum2.reduce(sum<double>{}))->*[alpha] __device__(size_t i, auto dX, auto dY, auto sum, double &sum2) {
     dY(i) += alpha * dX(i);
+    printf("BEFORE pfor tid %d double sum2 %lf\n", threadIdx.x, sum2);
     sum2 += dY(i);
-    printf("SUM2 %p\n", &sum2);
     atomicAdd(sum.data_handle(), dY(i));
+    //sum2 += 1.0;
+    //atomicAdd(sum.data_handle(), 1.0);
+    //printf("SUM2 %p\n", &sum2);
+    printf("AFTER pfor tid %d double sum2 %lf\n", threadIdx.x, sum2);
   };
 
   ctx.host_launch(lsum.read(), lsum2.read())->*[](auto sum, scalar<double> sum2) {

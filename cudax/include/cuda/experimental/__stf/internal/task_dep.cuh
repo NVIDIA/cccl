@@ -176,7 +176,12 @@ private:
 template <typename T>
 class logical_data;
 
-class task_dep_op_none {};
+class task_dep_op_none {
+public:
+    // no-op operator
+    template <typename T>
+    static __host__ __device__ void apply_op(T &, const T &) {}
+};
 
 /**
  * @brief Type storing dependency information for one data item, including the data type
