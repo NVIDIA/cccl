@@ -127,8 +127,6 @@ def make_ldcs(ntype):
 
     @intrinsic
     def ldcs(typingctx, base):
-        signature = ntype(types.CPointer(ntype))
-
         def codegen(context, builder, sig, args):
             intbw = ir.IntType(bitwidth)  # TODO: unsigned
             intbw_ptr = intbw.as_pointer()
@@ -138,7 +136,7 @@ def make_ldcs(ntype):
             )
             return builder.call(ldcs, args)
 
-        return signature, codegen
+        return base.dtype(base), codegen
 
     return ldcs
 
