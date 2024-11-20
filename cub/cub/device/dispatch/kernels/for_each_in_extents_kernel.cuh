@@ -139,7 +139,7 @@ computation(IndexType id, IndexType, Func func, ExtendType, FastDivModArrayType,
  **********************************************************************************************************************/
 
 // GCC6/7/8/9 raises unused parameter warning
-#  if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 100000
+#  if _CCCL_COMPILER(GCC, <, 10)
 #    define _CUB_UNUSED_ATTRIBUTE __attribute__((unused))
 #  else
 #    define _CUB_UNUSED_ATTRIBUTE
