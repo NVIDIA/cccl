@@ -227,10 +227,12 @@ void TestSetDifferenceWithBigIndexesHelper(int magnitude)
 
 void TestSetDifferenceWithBigIndexes()
 {
+#  ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
   TestSetDifferenceWithBigIndexesHelper(30);
   TestSetDifferenceWithBigIndexesHelper(31);
   TestSetDifferenceWithBigIndexesHelper(32);
   TestSetDifferenceWithBigIndexesHelper(33);
+#  endif
 }
 DECLARE_UNITTEST(TestSetDifferenceWithBigIndexes);
 #endif
