@@ -131,9 +131,11 @@ void TestInnerProductWithBigIndexesHelper(int magnitude)
 void TestInnerProductWithBigIndexes()
 {
   TestInnerProductWithBigIndexesHelper(30);
+#ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
   TestInnerProductWithBigIndexesHelper(31);
   TestInnerProductWithBigIndexesHelper(32);
   TestInnerProductWithBigIndexesHelper(33);
+#endif
 }
 DECLARE_UNITTEST(TestInnerProductWithBigIndexes);
 

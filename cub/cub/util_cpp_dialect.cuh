@@ -99,7 +99,7 @@
 // Compiler checks:
 #    if _CCCL_COMPILER(GCC, <, 5)
 CUB_COMPILER_DEPRECATION(GCC 5.0);
-#    elif defined(_CCCL_COMPILER_CLANG) && _CCCL_CLANG_VERSION < 70000
+#    elif _CCCL_COMPILER(CLANG, <, 7)
 CUB_COMPILER_DEPRECATION(Clang 7.0);
 #    elif defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION < 1910
 // <2017. Hard upgrade message:

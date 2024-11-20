@@ -315,11 +315,11 @@ extern "C++" {
 
 #  if defined(_CCCL_CUDA_COMPILER)
 #    define _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(size, ptr) (size <= 8)
-#  elif defined(_CCCL_COMPILER_CLANG) || _CCCL_COMPILER(GCC)
+#  elif _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(GCC)
 #    define _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(...) __atomic_always_lock_free(__VA_ARGS__)
 #  endif // _CCCL_CUDA_COMPILER
 
-#  if defined(_CCCL_COMPILER_CLANG)
+#  if _CCCL_COMPILER(CLANG)
 
 // _LIBCUDACXX_ALTERNATE_STRING_LAYOUT is an old name for
 // _LIBCUDACXX_ABI_ALTERNATE_STRING_LAYOUT left here for backward compatibility.
@@ -447,7 +447,7 @@ typedef __char32_t char32_t;
 #      if !defined(__SANITIZE_ADDRESS__)
 #        define _LIBCUDACXX_HAS_NO_ASAN
 #      endif // !__SANITIZE_ADDRESS__
-#    elif defined(_CCCL_COMPILER_CLANG)
+#    elif _CCCL_COMPILER(CLANG)
 #      if !_CCCL_HAS_FEATURE(address_sanitizer)
 #        define _LIBCUDACXX_HAS_NO_ASAN
 #      endif // !_CCCL_HAS_FEATURE(address_sanitizer)
@@ -570,13 +570,13 @@ typedef unsigned short char16_t;
 typedef unsigned int char32_t;
 #  endif // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
 
-#  if _CCCL_COMPILER(GCC) || defined(_CCCL_COMPILER_CLANG)
+#  if _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG)
 #    define _LIBCUDACXX_NOALIAS __attribute__((__malloc__))
 #  else
 #    define _LIBCUDACXX_NOALIAS
 #  endif
 
-#  if _CCCL_HAS_FEATURE(cxx_explicit_conversions) || _CCCL_COMPILER(GCC) || defined(_CCCL_COMPILER_CLANG)
+#  if _CCCL_HAS_FEATURE(cxx_explicit_conversions) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG)
 #    define _LIBCUDACXX_EXPLICIT explicit
 #  else
 #    define _LIBCUDACXX_EXPLICIT
@@ -738,7 +738,7 @@ typedef unsigned int char32_t;
 // #  define _LIBCUDACXX_HAS_C_ATOMIC_IMP
 #  if _CCCL_COMPILER(ICC)
 #    define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
-#  elif defined(_CCCL_COMPILER_CLANG)
+#  elif _CCCL_COMPILER(CLANG)
 #    define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
 #  elif _CCCL_COMPILER(GCC)
 #    define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
@@ -876,7 +876,7 @@ typedef unsigned int char32_t;
 
 // NVRTC has a bug that prevented the use of delegated constructors, as it did not accept execution space annotations.
 // This creates a whole lot of boilerplate that we can avoid through a macro (see nvbug3961621)
-#  if _CCCL_COMPILER(NVRTC) || (_CCCL_CUDACC_BELOW(11, 3) && defined(_CCCL_COMPILER_CLANG))
+#  if _CCCL_COMPILER(NVRTC) || (_CCCL_CUDACC_BELOW(11, 3) && _CCCL_COMPILER(CLANG))
 #    define _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__class, __baseclass, ...)                               \
       using __base = __baseclass<__VA_ARGS__>;                                                         \
       template <class... _Args, enable_if_t<_CCCL_TRAIT(is_constructible, __base, _Args...), int> = 0> \
