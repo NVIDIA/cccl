@@ -126,55 +126,6 @@ struct tuple_refs<::std::tuple<Ts...>> {
 template <typename Tuple>
 using tuple_refs_t = typename tuple_refs<Tuple>::type;
 
-// Helper function to select and return the correct element
-template <size_t Is, typename OpsTuple, typename ArgsTuple, typename ReduxTuple>
-__device__ decltype(auto) select_element(const OpsTuple& /*ops*/, ArgsTuple& targs, ReduxTuple& redux_tuple) {
-    using OpType = typename ::std::tuple_element<Is, OpsTuple>::type;
-    if constexpr (::std::is_same_v<OpType, task_dep_op_none>) {
-        return ::std::get<Is>(targs); // Return reference to targs[i]
-    } else {
-        return ::std::get<Is>(redux_tuple); // Return reference to redux_buffer[i]
-    }
-}
-
-// make_targs_aux_impl: Constructs targs_aux by selecting elements based on OpsTuple
-template <typename OpsTuple, typename ArgsTuple, typename ReduxTuple, std::size_t... Is>
-__device__ auto make_targs_aux_impl(const OpsTuple& ops, ArgsTuple& targs, ReduxTuple& redux_tuple, ::std::index_sequence<Is...>) {
-    // We do not use make_tuple to preserve references
-    return  ::std::forward_as_tuple(
-        select_element<Is>(ops, targs, redux_tuple)...
-    );
-}
-
-// make_targs_aux: Public interface to construct targs_aux
-template <typename OpsTuple, typename ArgsTuple, typename ReduxTuple>
-__device__ auto make_targs_aux(const OpsTuple& ops, ArgsTuple& targs, ReduxTuple& redux_tuple) {
-    constexpr size_t N = ::std::tuple_size<ArgsTuple>::value;
-    return make_targs_aux_impl<OpsTuple, ArgsTuple, ReduxTuple>(
-        ops, targs, redux_tuple, ::std::make_index_sequence<N>{}
-    );
-}
-
-// Helper function: processes the i-th element of dst and src
-template <typename tuple_ops, size_t I, typename Tuple>
-__device__ void apply_op_impl(Tuple& dst, const Tuple& src) {
-    using ElementType = ::std::tuple_element_t<I, tuple_ops>;
-    // TODO add is invocable test on type
-    ElementType::apply_op(::std::get<I>(dst), ::std::get<I>(src));
-}
-
-// Main function: applies apply_op to every element of the tuple
-template <typename tuple_ops, typename... Args, size_t... I>
-__device__ void apply_op_impl(::std::tuple<Args...>& dst, const ::std::tuple<Args...>& src, ::std::index_sequence<I...>) {
-    // Expand the indices and call apply_op_impl for each index
-    (apply_op_impl<tuple_ops, I>(dst, src), ...);
-}
-
-template <typename tuple_ops, typename... Args>
-__device__ void tuple_apply_op(::std::tuple<Args...>& dst, const ::std::tuple<Args...>& src) {
-    apply_op_impl<tuple_ops>(dst, src, ::std::make_index_sequence<sizeof...(Args)>{});
-}
-
 
 // Helper function: processes the i-th element of dst and src
 template <typename tuple_ops, size_t I, typename Tuple>
@@ -184,16 +135,120 @@ __device__ void apply_set_impl(Tuple& dst, const Tuple& src) {
 }
 
 // Main function: applies apply_op to every element of the tuple
-template <typename tuple_ops, typename... Args, size_t... I>
-__device__ void apply_set_impl(::std::tuple<Args...>& dst, const ::std::tuple<Args...>& src, ::std::index_sequence<I...>) {
-    // Expand the indices and call apply_op_impl for each index
+template <typename tuple_ops, typename Tuple, size_t... I>
+__device__ void apply_set_impl(Tuple& dst, const Tuple& src, ::std::index_sequence<I...>) {
     (apply_set_impl<tuple_ops, I>(dst, src), ...);
 }
 
-template <typename tuple_ops, typename... Args>
-__device__ void tuple_set_op(::std::tuple<Args...>& dst, const ::std::tuple<Args...>& src) {
-    apply_set_impl<tuple_ops>(dst, src, ::std::make_index_sequence<sizeof...(Args)>{});
+template <typename tuple_ops, typename Tuple>
+__device__ void tuple_set_op(Tuple& dst, const Tuple& src) {
+    constexpr size_t N = ::std::tuple_size<Tuple>::value;
+    apply_set_impl<tuple_ops>(dst, src, ::std::make_index_sequence<N>{});
 }
+
+template <typename tuple_ops, typename tuple_args, typename Tuple, size_t Is>
+__device__ void fill_results_impl_i(tuple_args& targs, const Tuple& t) {
+    using op_is = typename ::std::tuple_element<Is, tuple_ops>::type;
+    if constexpr (!std::is_same_v<op_is, task_dep_op_none>) {
+        using arg_is = typename ::std::tuple_element<Is, tuple_args>::type;
+        owning_container_of<arg_is>::fill(::std::get<Is>(targs), ::std::get<Is>(t));
+    }
+}
+
+template <typename tuple_ops, typename tuple_args, typename Tuple, size_t... I>
+__device__ void fill_results_impl(tuple_args& targs, const Tuple& t, ::std::index_sequence<I...>) {
+    (fill_results_impl_i<tuple_ops, tuple_args, Tuple, I>(targs, t), ...);
+}
+
+template <typename tuple_ops, typename tuple_args, typename Tuple>
+__device__ void fill_results(tuple_args& targs, const Tuple &t) {
+    constexpr size_t N = ::std::tuple_size<tuple_args>::value;
+    fill_results_impl<tuple_ops>(targs, t, ::std::make_index_sequence<N>{});
+}
+
+
+/**
+ * @brief This wraps tuple of arguments and operators into a class that stores
+ * a tuple of arguments which include local variables for reductions.
+ *
+ * Providing a dedicated class makes it possible to implement reduction, copy
+ * or init operators directly on top of the tuple, which was tedious otherwise.
+ */
+template <typename tuple_args, typename tuple_ops>
+class arg_wrapper {
+public:
+//    __host__ __device__ arg_wrapper() = default;
+
+    // This will return a tuple which matches the argument passed to the lambda, either an instance or an owning type for reduction variables
+    __device__ auto make_targs_aux(tuple_args& targs) {
+        constexpr size_t N = ::std::tuple_size<tuple_args>::value;
+        return make_targs_aux_impl(
+            targs, ::std::make_index_sequence<N>{}
+        );
+    }
+
+    template <typename Tuple>
+    __device__ void apply_op(const Tuple& src) {
+        constexpr size_t N = ::std::tuple_size<tuple_ops>::value;
+        apply_op_impl(src, ::std::make_index_sequence<N>{});
+    }
+
+    __device__ auto &get() {
+       return tup;
+    }
+
+    __device__ const auto &get() const {
+       return tup;
+    }
+
+private:
+    // Helper function: processes the i-th element of dst and this->tup
+    template <size_t I, typename Tuple>
+    __device__ void apply_op_impl_i(const Tuple& src) {
+        using ElementType = ::std::tuple_element_t<I, tuple_ops>;
+        // TODO add is invocable test on type
+        ElementType::apply_op(::std::get<I>(tup), ::std::get<I>(src));
+    }
+    
+    // Main function: applies apply_op to every element of the tuple
+    template <typename Tuple, ::std::size_t... I>
+    __device__ void apply_op_impl(const Tuple& src, ::std::index_sequence<I...>) {
+        // Expand the indices and call apply_op_impl_i for each index
+        (apply_op_impl_i<I>(src), ...);
+    }
+
+    // Helper function to select and return the correct element
+    template <size_t Is>
+    __device__ decltype(auto) select_element(tuple_args& targs) {
+        using OpType = typename ::std::tuple_element<Is, tuple_ops>::type;
+        if constexpr (::std::is_same_v<OpType, task_dep_op_none>) {
+            return ::std::get<Is>(targs); // Return reference to targs[i]
+        } else {
+           // TODO move to a separate init ...
+            OpType::init_op(::std::get<Is>(tup));
+            return ::std::get<Is>(tup); // Return reference to redux_buffer[i]
+        }
+    }
+
+    template <::std::size_t... Is>
+    __device__ auto make_targs_aux_impl(tuple_args& targs, ::std::index_sequence<Is...>) {
+        // We do not use make_tuple to preserve references
+        return  ::std::forward_as_tuple(
+            select_element<Is>(targs)...
+        );
+    }
+
+
+    /* This tuple contains either EmptyType for non reduction variables, or the owning type for a reduction variable. 
+     * if tuple_args = tuple<slice<double>, scalar<int>, slice<int>> and tuple_ops=tuple<none, sum<int>, none>
+     * this will correspond to tuple<EmptyType, int, EmptyType>.
+     *
+     * So we can store that tuple in shared memory to perform per-block reduction operations.
+     */
+    B_Tuple_t<tuple_args, tuple_ops> tup;
+};
+
+
 
 /* the redux_buffer is an array of tuples which sizes corresponds to the number of CUDA blocks */
 template <typename F, typename shape_t, typename tuple_args, typename tuple_ops>
@@ -202,14 +257,12 @@ __global__ void loop_redux(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F 
   size_t i          = blockIdx.x * blockDim.x + threadIdx.x;
   const size_t step = blockDim.x * gridDim.x;
 
-  // A buffer with a tuple of variables per CUDA thread, which is then reduced
-  extern __shared__ B_Tuple_t<tuple_args, tuple_ops> per_block_redux_buffer[];
+  // This tuple in shared memory contains either an empty type for "regular"
+  // arguments, or an owning local variable for reduction variables.
+  extern __shared__ arg_wrapper<tuple_args, tuple_ops> per_block_redux_buffer[];
 
-  // Transform the tuple of arguments into a tuple which either contain arguments, or local reduction variables
-  auto targs_aux = make_targs_aux(tuple_ops{}, targs, per_block_redux_buffer[threadIdx.x]);
-
-  //printf("sizeof(EmptyType) %ld alignof(EmptyType) %ld alignof(B_Tuple_t<tuple_args, tuple_ops>) %ld\n", sizeof(EmptyType), alignof(EmptyType), alignof(B_Tuple_t<tuple_args, tuple_ops>));
-//  print_type_name_and_fail<B_Tuple_t<tuple_args, tuple_ops>>{};
+  // Return a tuple with either arguments, or references to the owning type in the reduction buffer stored in shared memory
+  auto targs_aux = per_block_redux_buffer[threadIdx.x].make_targs_aux(targs);
 
   // Help the compiler which may not detect that a device lambda is calling a device lambda
   CUDASTF_NO_DEVICE_STACK
@@ -224,7 +277,7 @@ __global__ void loop_redux(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F 
       ::std::apply(explode_coords, shape.index_to_coords(i));
     }
   };
-  ::std::apply(explode_args, mv(targs_aux));
+  ::std::apply(explode_args, targs_aux);
 
   /* Perform block-wide reductions */
   __syncthreads();
@@ -233,14 +286,15 @@ __global__ void loop_redux(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F 
   for (unsigned int stride = 1; stride < blockDim.x; stride *= 2) {
       unsigned int index = 2 * stride * tid; // Target index for this thread
       if (index + stride < blockDim.x) {
-          tuple_apply_op<tuple_ops>(per_block_redux_buffer[index], per_block_redux_buffer[index + stride]);
+          const auto &src = per_block_redux_buffer[index+stride].get();
+          per_block_redux_buffer[index].apply_op(src);
       }
       __syncthreads();
   }
 
   // Write the block's result to the output array
   if (tid == 0) {
-     tuple_set_op<tuple_ops>(redux_buffer[blockIdx.x], per_block_redux_buffer[0]);
+     tuple_set_op<tuple_ops>(redux_buffer[blockIdx.x], per_block_redux_buffer[0].get());
      printf("INTERMEDIATE blockIdx.x %d -> %lf\n", blockIdx.x, ::std::get<3>(redux_buffer[blockIdx.x]));
   }
 }
@@ -248,16 +302,18 @@ __global__ void loop_redux(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F 
 template <typename tuple_args, typename tuple_ops>
 __global__ void loop_redux_finalize(tuple_args targs, B_Tuple_t<tuple_args, tuple_ops> *redux_buffer, size_t nredux_buffer)
 {
-    extern __shared__ B_Tuple_t<tuple_args, tuple_ops> per_block_redux_buffer[];
-
-    // TODO ... reduction from redux_buffers to targs entries
+  //  extern __shared__ B_Tuple_t<tuple_args, tuple_ops> per_block_redux_buffer[];
+     extern __shared__ arg_wrapper<tuple_args, tuple_ops> per_block_redux_buffer[];
 
     unsigned int tid = threadIdx.x;
 
     // Load partial results into shared memory
-//    per_block_redux_buffer[tid] = (tid < nredux_buffer) ? redux_buffer[tid] : 0.0;
+    // TODO support a different number of thread/block by making a loop here
+    // which either sets or apply the op, this currently assume there is a
+    // single value to read (ie. that there are more threads than the block
+    // size of the previous kernel)
     if (tid < nredux_buffer) {
-        tuple_set_op<tuple_ops>(per_block_redux_buffer[tid], redux_buffer[tid]);
+        tuple_set_op<tuple_ops>(per_block_redux_buffer[tid].get(), redux_buffer[tid]);
     }
 
     __syncthreads();
@@ -266,7 +322,7 @@ __global__ void loop_redux_finalize(tuple_args targs, B_Tuple_t<tuple_args, tupl
     for (unsigned int stride = 1; stride < blockDim.x; stride *= 2) {
         unsigned int index = 2 * stride * tid; // Target index for this thread
         if (index + stride < blockDim.x) {
-            tuple_apply_op<tuple_ops>(per_block_redux_buffer[index], per_block_redux_buffer[index + stride]);
+            per_block_redux_buffer[index].apply_op(per_block_redux_buffer[index + stride].get());
         }
         __syncthreads();
     }
@@ -276,7 +332,12 @@ __global__ void loop_redux_finalize(tuple_args targs, B_Tuple_t<tuple_args, tupl
       //  d_out[0] = sdata[0];
       // dump output (similar to how we create targs_aux)
       // TODO hardcoded !!!!
-      *(::std::get<3>(targs).addr) = ::std::get<3>(per_block_redux_buffer[0]);
+//      *(::std::get<3>(targs).addr) = ::std::get<3>(per_block_redux_buffer[0].get());
+//      auto arg3 = ::std::get<3>(targs);
+//      owning_container_of<decltype(arg3)>::fill(arg3, ::std::get<3>(per_block_redux_buffer[0].get()));
+      // For every argument which was associated to a reduction operator, we fill the value with the result of the reduction.
+      fill_results<tuple_ops>(targs, per_block_redux_buffer[0].get());
+
     }
 }
 
@@ -604,6 +665,8 @@ public:
         B_Tuple_t<deps_tup_t, ops_t> *d_redux_buffer;
 
         cuda_safe_call(cudaMallocAsync(&d_redux_buffer, 2*blocks*sizeof(B_Tuple_t<deps_tup_t, ops_t>), stream));
+
+        // TODO optimize the case where there was a single block to write to result ??
 
         size_t dynamic_shared_mem = 2*block_size * sizeof(B_Tuple_t<deps_tup_t, ops_t>);
         //fprintf(stderr, "dynamic shared mem = %zu = block size %zu * sizeof(B_Tuple_t<deps_tup_t, ops_t>) %ld\n", dynamic_shared_mem, block_size, sizeof(B_Tuple_t<deps_tup_t, ops_t>));
