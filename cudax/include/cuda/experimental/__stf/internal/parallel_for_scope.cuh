@@ -78,7 +78,8 @@ __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tup
  * This will serve for some Empty Base Optimization (EBO) so that we can create
  * a tuple of args where args which need no reduction do not require storage.
  */
-struct EmptyType {};
+struct EmptyType {
+};
 
 /**
  * Transform a combination of tuple<A1,..., An> and tuple<O1, ..., On> into a tuple where the entries are either empty types for non reduction variables, or Ai.
@@ -125,14 +126,6 @@ struct tuple_refs<::std::tuple<Ts...>> {
 template <typename Tuple>
 using tuple_refs_t = typename tuple_refs<Tuple>::type;
 
-template <typename tuple_args, typename tuple_ops>
-__global__ void loop_redux_finalize(tuple_args targs, B_Tuple_t<tuple_args, tuple_ops> *redux_buffer)
-{
-    extern __shared__ B_Tuple_t<tuple_args, tuple_ops> per_block_redux_buffer[];
-
-    // TODO ... reduction from redux_buffers to targs entries
-}
-
 // Helper function to select and return the correct element
 template <size_t Is, typename OpsTuple, typename ArgsTuple, typename ReduxTuple>
 __device__ decltype(auto) select_element(const OpsTuple& /*ops*/, ArgsTuple& targs, ReduxTuple& redux_tuple) {
@@ -162,6 +155,46 @@ __device__ auto make_targs_aux(const OpsTuple& ops, ArgsTuple& targs, ReduxTuple
     );
 }
 
+// Helper function: processes the i-th element of dst and src
+template <typename tuple_ops, size_t I, typename Tuple>
+__device__ void apply_op_impl(Tuple& dst, const Tuple& src) {
+    using ElementType = ::std::tuple_element_t<I, tuple_ops>;
+    // TODO add is invocable test on type
+    ElementType::apply_op(::std::get<I>(dst), ::std::get<I>(src));
+}
+
+// Main function: applies apply_op to every element of the tuple
+template <typename tuple_ops, typename... Args, size_t... I>
+__device__ void apply_op_impl(::std::tuple<Args...>& dst, const ::std::tuple<Args...>& src, ::std::index_sequence<I...>) {
+    // Expand the indices and call apply_op_impl for each index
+    (apply_op_impl<tuple_ops, I>(dst, src), ...);
+}
+
+template <typename tuple_ops, typename... Args>
+__device__ void tuple_apply_op(::std::tuple<Args...>& dst, const ::std::tuple<Args...>& src) {
+    apply_op_impl<tuple_ops>(dst, src, ::std::make_index_sequence<sizeof...(Args)>{});
+}
+
+
+// Helper function: processes the i-th element of dst and src
+template <typename tuple_ops, size_t I, typename Tuple>
+__device__ void apply_set_impl(Tuple& dst, const Tuple& src) {
+    //using ElementType = ::std::tuple_element_t<I, tuple_ops>;
+    ::std::get<I>(dst) = ::std::get<I>(src);
+}
+
+// Main function: applies apply_op to every element of the tuple
+template <typename tuple_ops, typename... Args, size_t... I>
+__device__ void apply_set_impl(::std::tuple<Args...>& dst, const ::std::tuple<Args...>& src, ::std::index_sequence<I...>) {
+    // Expand the indices and call apply_op_impl for each index
+    (apply_set_impl<tuple_ops, I>(dst, src), ...);
+}
+
+template <typename tuple_ops, typename... Args>
+__device__ void tuple_set_op(::std::tuple<Args...>& dst, const ::std::tuple<Args...>& src) {
+    apply_set_impl<tuple_ops>(dst, src, ::std::make_index_sequence<sizeof...(Args)>{});
+}
+
 /* the redux_buffer is an array of tuples which sizes corresponds to the number of CUDA blocks */
 template <typename F, typename shape_t, typename tuple_args, typename tuple_ops>
 __global__ void loop_redux(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tuple_args targs, B_Tuple_t<tuple_args, tuple_ops> *redux_buffer)
@@ -175,7 +208,8 @@ __global__ void loop_redux(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F 
   // Transform the tuple of arguments into a tuple which either contain arguments, or local reduction variables
   auto targs_aux = make_targs_aux(tuple_ops{}, targs, per_block_redux_buffer[threadIdx.x]);
 
-  //print_type_name_and_fail<decltype(targs_aux)>{};
+  //printf("sizeof(EmptyType) %ld alignof(EmptyType) %ld alignof(B_Tuple_t<tuple_args, tuple_ops>) %ld\n", sizeof(EmptyType), alignof(EmptyType), alignof(B_Tuple_t<tuple_args, tuple_ops>));
+//  print_type_name_and_fail<B_Tuple_t<tuple_args, tuple_ops>>{};
 
   // Help the compiler which may not detect that a device lambda is calling a device lambda
   CUDASTF_NO_DEVICE_STACK
@@ -191,7 +225,62 @@ __global__ void loop_redux(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F 
     }
   };
   ::std::apply(explode_args, mv(targs_aux));
+
+  /* Perform block-wide reductions */
+  __syncthreads();
+
+  unsigned int tid = threadIdx.x;
+  for (unsigned int stride = 1; stride < blockDim.x; stride *= 2) {
+      unsigned int index = 2 * stride * tid; // Target index for this thread
+      if (index + stride < blockDim.x) {
+          tuple_apply_op<tuple_ops>(per_block_redux_buffer[index], per_block_redux_buffer[index + stride]);
+      }
+      __syncthreads();
+  }
+
+  // Write the block's result to the output array
+  if (tid == 0) {
+     tuple_set_op<tuple_ops>(redux_buffer[blockIdx.x], per_block_redux_buffer[0]);
+     printf("INTERMEDIATE blockIdx.x %d -> %lf\n", blockIdx.x, ::std::get<3>(redux_buffer[blockIdx.x]));
+  }
 }
+
+template <typename tuple_args, typename tuple_ops>
+__global__ void loop_redux_finalize(tuple_args targs, B_Tuple_t<tuple_args, tuple_ops> *redux_buffer, size_t nredux_buffer)
+{
+    extern __shared__ B_Tuple_t<tuple_args, tuple_ops> per_block_redux_buffer[];
+
+    // TODO ... reduction from redux_buffers to targs entries
+
+    unsigned int tid = threadIdx.x;
+
+    // Load partial results into shared memory
+//    per_block_redux_buffer[tid] = (tid < nredux_buffer) ? redux_buffer[tid] : 0.0;
+    if (tid < nredux_buffer) {
+        tuple_set_op<tuple_ops>(per_block_redux_buffer[tid], redux_buffer[tid]);
+    }
+
+    __syncthreads();
+
+    // Perform reduction in shared memory
+    for (unsigned int stride = 1; stride < blockDim.x; stride *= 2) {
+        unsigned int index = 2 * stride * tid; // Target index for this thread
+        if (index + stride < blockDim.x) {
+            tuple_apply_op<tuple_ops>(per_block_redux_buffer[index], per_block_redux_buffer[index + stride]);
+        }
+        __syncthreads();
+    }
+
+    // Write the final result
+    if (tid == 0) {
+      //  d_out[0] = sdata[0];
+      // dump output (similar to how we create targs_aux)
+      // TODO hardcoded !!!!
+      *(::std::get<3>(targs).addr) = ::std::get<3>(per_block_redux_buffer[0]);
+    }
+}
+
+
 
 /**
  * @brief Supporting class for the parallel_for construct
@@ -389,6 +478,7 @@ public:
     // TODO redo cascade of tests
     if constexpr (need_reduction) {
         do_parallel_for_redux(f, e_place, shape, t);
+        return;
     } else if constexpr (is_extended_host_device_lambda_closure_type)
     {
       // Can run on both - decide dynamically
@@ -513,15 +603,20 @@ public:
         // One tuple per CUDA block
         B_Tuple_t<deps_tup_t, ops_t> *d_redux_buffer;
 
-        cuda_safe_call(cudaMallocAsync(&d_redux_buffer, blocks*sizeof(B_Tuple_t<deps_tup_t, ops_t>), stream));
+        cuda_safe_call(cudaMallocAsync(&d_redux_buffer, 2*blocks*sizeof(B_Tuple_t<deps_tup_t, ops_t>), stream));
 
-        size_t dynamic_shared_mem = block_size * sizeof(B_Tuple_t<deps_tup_t, ops_t>);
+        size_t dynamic_shared_mem = 2*block_size * sizeof(B_Tuple_t<deps_tup_t, ops_t>);
+        //fprintf(stderr, "dynamic shared mem = %zu = block size %zu * sizeof(B_Tuple_t<deps_tup_t, ops_t>) %ld\n", dynamic_shared_mem, block_size, sizeof(B_Tuple_t<deps_tup_t, ops_t>));
+        //printf("HOST SIZEOF EMPTY %ld \n", sizeof(EmptyType));
         reserved::loop_redux<Fun_no_ref, sub_shape_t, deps_tup_t, ops_t><<<static_cast<int>(blocks), static_cast<int>(block_size), dynamic_shared_mem, stream>>>(
         static_cast<int>(n), sub_shape, mv(f), arg_instances, d_redux_buffer);
 
+        fprintf(stderr, "loop redux %zu blocks, %zu threads\n", blocks, block_size);
+
         // TODO optimize that 128 hardcoded value
-        size_t dynamic_shared_mem_finalize = 128*sizeof(B_Tuple_t<deps_tup_t, ops_t>);
-        reserved::loop_redux_finalize<deps_tup_t, ops_t><<<1, 128, dynamic_shared_mem_finalize, stream>>>(arg_instances, d_redux_buffer);
+        size_t finalize_block_size = block_size;
+        size_t dynamic_shared_mem_finalize = 2*finalize_block_size*sizeof(B_Tuple_t<deps_tup_t, ops_t>);
+        reserved::loop_redux_finalize<deps_tup_t, ops_t><<<1, finalize_block_size, dynamic_shared_mem_finalize, stream>>>(arg_instances, d_redux_buffer, block_size);
 
         cuda_safe_call(cudaFreeAsync(d_redux_buffer, stream));
     }
