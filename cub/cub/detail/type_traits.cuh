@@ -130,6 +130,7 @@ struct is_fixed_size_random_access_range<
 {};
 
 #  endif // __cccl_lib_mdspan
+#endif // _CCCL_STD_VER >= 2014
 
 template <typename T>
 using is_fixed_size_random_access_range_t = typename is_fixed_size_random_access_range<T>::type;
@@ -157,13 +158,13 @@ template <typename T, ::cuda::std::size_t N>
 struct static_size<::cuda::std::array<T, N>, void> : ::cuda::std::integral_constant<int, N>
 {};
 
-#  if _CCCL_STD_VER >= 2014
+#if _CCCL_STD_VER >= 2014
 
 template <typename T, ::cuda::std::size_t N>
 struct static_size<::cuda::std::span<T, N>, void> : ::cuda::std::integral_constant<int, N>
 {};
 
-#    if __cccl_lib_mdspan
+#  if __cccl_lib_mdspan
 
 template <typename T, typename E, typename L, typename A>
 struct static_size<::cuda::std::mdspan<T, E, L, A>,
@@ -171,7 +172,7 @@ struct static_size<::cuda::std::mdspan<T, E, L, A>,
     : ::cuda::std::integral_constant<int, E::static_extent(1)>
 {};
 
-#    endif // __cccl_lib_mdspan
+#  endif // __cccl_lib_mdspan
 
 template <typename T>
 _CCCL_NODISCARD _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr ::cuda::std::size_t static_size_v()
