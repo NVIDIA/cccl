@@ -111,22 +111,23 @@ TEST_CONSTEXPR_CXX14 __host__ __device__ void test()
   }
 #endif // TEST_STD_VER >= 2017
 
-  // `get()` allows using `complex` with ranges
-  // {
-  //   cuda::std::complex<T> arr[]{{T{27}, T{28}}, {T{82}, T{94}}};
+  // TODO: Re-enable this test when we have cuda::ranges::views
+  // #if TEST_STD_VER >= 2017
+  //   // `get()` allows using `complex` with ranges
+  //   {
+  //     cuda::std::complex<T> arr[]{{T{27}, T{28}}, {T{82}, T{94}}};
 
-  //   std::same_as<cuda::std::vector<T>> decltype(auto) reals{
-  //       arr | std::views::elements<0> | cuda::std::ranges::to<cuda::std::vector<T>>()};
-  //   assert(reals.size() == 2);
-  //   assert(reals[0] == T{27});
-  //   assert(reals[1] == T{82});
+  //     auto reals = arr | cuda::std::views::elements<0>;
+  //     ASSERT_SAME_AS(T, cuda::std::ranges::range_value_t<decltype(reals)>);
+  //     assert(cuda::std::ranges::size(reals) == 2);
+  //     assert(cuda::std::ranges::equal(reals, std::array<T, 2>{27, 82}));
 
-  //   std::same_as<std::vector<T>> decltype(auto) imags{
-  //       arr | std::views::elements<1> | cuda::std::ranges::to<cuda::std::vector<T>>()};
-  //   assert(imags.size() == 2);
-  //   assert(imags[0] == T{28});
-  //   assert(imags[1] == T{94});
-  // }
+  //     auto imags = arr | cuda::std::views::elements<0>;
+  //     ASSERT_SAME_AS(T, cuda::std::ranges::range_value_t<decltype(imags)>);
+  //     assert(cuda::std::ranges::size(imags) == 2);
+  //     assert(cuda::std::ranges::equal(imags, std::array<T, 2>{28, 94}));
+  //   }
+  // #endif // TEST_STD_VER >= 2017
 }
 
 __host__ __device__ bool test()
