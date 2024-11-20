@@ -41,6 +41,7 @@ set(stf_example_codegen_sources
   mandelbrot.cu
   standalone-launches.cu
   word_count.cu
+  word_count_reduce.cu
 )
 
 # Examples using CUBLAS, CUSOLVER...
