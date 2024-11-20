@@ -132,7 +132,9 @@ def make_ldcs(ntype):
             intbw_ptr = intbw.as_pointer()
             ldcs_type = ir.FunctionType(intbw, [intbw_ptr])
             ldcs = ir.InlineAsm(
-                ldcs_type, f"ld.global.cs.b{bitwidth} $0, [$1];", "=r, l"
+                ldcs_type,
+                f"ld.global.cs.b{bitwidth} $0, [$1];",
+                f"={'r' if bitwidth < 64 else 'l'}, l",
             )
             return builder.call(ldcs, args)
 

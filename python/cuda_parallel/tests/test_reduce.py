@@ -103,8 +103,8 @@ def mul2(val):
                                              "streamed_input_uint16",
                                              "streamed_input_int32",
                                              "streamed_input_uint32",
-                                             # "streamed_input_int64",
-                                             # "streamed_input_uint64",
+                                             "streamed_input_int64",
+                                             "streamed_input_uint64",
                                              "constant",
                                              "counting",
                                              "map_mul2"])
