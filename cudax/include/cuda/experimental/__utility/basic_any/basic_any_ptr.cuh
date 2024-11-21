@@ -39,6 +39,9 @@
 #include <cuda/experimental/__utility/basic_any/rtti.cuh>
 #include <cuda/experimental/__utility/basic_any/virtual_tables.cuh>
 
+_CCCL_PUSH_MACROS
+#undef interface
+
 namespace cuda::experimental
 {
 ///
@@ -297,5 +300,7 @@ _CUDAX_PUBLIC_API basic_any(_Interface<_Super> const*) //
   -> basic_any<__normalized_interface_of<basic_any<_Super> const*>>;
 
 } // namespace cuda::experimental
+
+_CCCL_POP_MACROS
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_BASIC_ANY_PTR_H

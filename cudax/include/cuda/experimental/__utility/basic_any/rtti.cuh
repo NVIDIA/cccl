@@ -32,6 +32,9 @@
 
 #include <nv/target>
 
+_CCCL_PUSH_MACROS
+#undef interface
+
 namespace cuda::experimental
 {
 ///
@@ -242,5 +245,7 @@ _CCCL_NODISCARD _CUDAX_HOST_API auto __vptr_cast(__vptr_for<_SrcInterface> __src
 }
 
 } // namespace cuda::experimental
+
+_CCCL_POP_MACROS
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_RTTI_H

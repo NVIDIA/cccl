@@ -35,6 +35,9 @@
 #include <cuda/experimental/__utility/basic_any/iset.cuh>
 #include <cuda/experimental/__utility/basic_any/rtti.cuh>
 
+_CCCL_PUSH_MACROS
+#undef interface
+
 namespace cuda::experimental
 {
 ///
@@ -348,5 +351,7 @@ private:
 };
 
 } // namespace cuda::experimental
+
+_CCCL_POP_MACROS
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_BASIC_ANY_REF_H

@@ -25,6 +25,9 @@
 
 #include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
 
+_CCCL_PUSH_MACROS
+#undef interface
+
 namespace cuda::experimental
 {
 template <class _Interface, class _Tp = __remove_ireference_t<_Interface>>
@@ -56,5 +59,7 @@ struct overrides_for<iunknown>
 };
 
 } // namespace cuda::experimental
+
+_CCCL_POP_MACROS
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_OVERRIDES_H

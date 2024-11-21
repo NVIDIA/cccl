@@ -27,6 +27,9 @@
 
 #include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
 
+_CCCL_PUSH_MACROS
+#undef interface
+
 namespace cuda::experimental
 {
 _CCCL_NODISCARD _CUDAX_HOST_API inline constexpr size_t __buffer_size(size_t __size)
@@ -65,5 +68,7 @@ _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API constexpr bool __ptr_eq(detail::__ignore
 }
 
 } // namespace cuda::experimental
+
+_CCCL_POP_MACROS
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_STORAGE_H

@@ -29,6 +29,9 @@
 #include <cuda/experimental/__utility/basic_any/virtual_functions.cuh>
 #include <cuda/experimental/__utility/basic_any/virtual_ptrs.cuh>
 
+_CCCL_PUSH_MACROS
+#undef interface
+
 namespace cuda::experimental
 {
 template <class _Interface>
@@ -138,5 +141,7 @@ template <class _Interface, class _Tp>
 inline constexpr __vtable<_Interface> __vtable_for_v{__tag<_Tp, _Interface>()};
 
 } // namespace cuda::experimental
+
+_CCCL_POP_MACROS
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_VIRTUAL_TABLES_H

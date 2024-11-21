@@ -23,6 +23,9 @@
 
 #include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
 
+_CCCL_PUSH_MACROS
+#undef interface
+
 namespace cuda::experimental
 {
 ///
@@ -80,5 +83,7 @@ _CCCL_NODISCARD _CUDAX_HOST_API auto basic_any_from(_Interface<> const*) noexcep
   _CCCL_UNREACHABLE();
 }
 } // namespace cuda::experimental
+
+_CCCL_POP_MACROS
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_BASIC_ANY_FROM_H

@@ -29,6 +29,9 @@
 #include <cuda/experimental/__utility/basic_any/tagged_ptr.cuh>
 #include <cuda/experimental/__utility/basic_any/virtual_tables.cuh>
 
+_CCCL_PUSH_MACROS
+#undef interface
+
 namespace cuda::experimental
 {
 ///
@@ -135,5 +138,7 @@ struct __tagged_ptr<__iset_vptr<_Interfaces...>>
 };
 
 } // namespace cuda::experimental
+
+_CCCL_POP_MACROS
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_ISET_H

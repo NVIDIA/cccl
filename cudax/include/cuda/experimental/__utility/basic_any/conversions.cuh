@@ -30,6 +30,9 @@
 #include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
 #include <cuda/experimental/__utility/basic_any/interfaces.cuh>
 
+_CCCL_PUSH_MACROS
+#undef interface
+
 namespace cuda::experimental
 {
 ///
@@ -140,5 +143,7 @@ _LIBCUDACXX_CONCEPT __any_convertible_to =
                typename _CUDA_VSTD::remove_reference_t<_DstCvAny>::interface_type>;
 
 } // namespace cuda::experimental
+
+_CCCL_POP_MACROS
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_CONVERSIONS_H

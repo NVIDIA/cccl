@@ -37,6 +37,9 @@
 // macro, we use `_CUDAX_PUBLIC_API` for those functions.
 #define _CUDAX_PUBLIC_API _CCCL_HOST
 
+_CCCL_PUSH_MACROS
+#undef interface
+
 namespace cuda::experimental
 {
 struct __primary;
@@ -128,5 +131,7 @@ template <class _Interface>
 using __remove_ireference_t _CCCL_NODEBUG_ALIAS = decltype(__remove_ireference_v<_Interface>);
 
 } // namespace cuda::experimental
+
+_CCCL_POP_MACROS
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_FWD_H

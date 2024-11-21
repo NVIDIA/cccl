@@ -29,6 +29,9 @@
 #include <cuda/experimental/__utility/basic_any/storage.cuh>
 #include <cuda/experimental/__utility/basic_any/tagged_ptr.cuh>
 
+_CCCL_PUSH_MACROS
+#undef interface
+
 namespace cuda::experimental
 {
 template <class _Interface>
@@ -129,5 +132,7 @@ struct __basic_any_base<_Interface, 0> : __basic_any_base<_Interface, 2> // immo
 #endif
 
 } // namespace cuda::experimental
+
+_CCCL_POP_MACROS
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_BASIC_ANY_BASE_H

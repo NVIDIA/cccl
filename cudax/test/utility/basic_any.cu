@@ -16,6 +16,7 @@
 
 // basic_any is not yet supported in device code because of nvbugs/4886070
 #ifndef __CUDA_ARCH__
+#  undef interface
 
 using immovable = cudax::detail::__immovable;
 

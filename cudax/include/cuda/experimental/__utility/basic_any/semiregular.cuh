@@ -34,6 +34,9 @@
 #include <cuda/experimental/__utility/basic_any/storage.cuh>
 #include <cuda/experimental/__utility/basic_any/virtcall.cuh>
 
+_CCCL_PUSH_MACROS
+#undef interface
+
 #if defined(_CCCL_CUDA_COMPILER_NVCC) || defined(_CCCL_CUDA_COMPILER_NVHPC)
 // WAR for NVBUG #4924416
 #  define _CUDAX_FNPTR_CONSTANT_WAR(...) ::cuda::experimental::__constant_war(__VA_ARGS__)
@@ -173,5 +176,7 @@ struct iequality_comparable : interface<iequality_comparable>
 };
 
 } // namespace cuda::experimental
+
+_CCCL_POP_MACROS
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_SEMIREGULAR_H

@@ -28,6 +28,9 @@
 #include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
 #include <cuda/experimental/__utility/basic_any/conversions.cuh>
 
+_CCCL_PUSH_MACROS
+#undef interface
+
 namespace cuda::experimental
 {
 ///
@@ -104,5 +107,7 @@ template <class _DstInterface>
 inline constexpr __dynamic_any_cast_fn<_DstInterface> dynamic_any_cast{};
 
 } // namespace cuda::experimental
+
+_CCCL_POP_MACROS
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_DYNAMIC_ANY_CAST_H

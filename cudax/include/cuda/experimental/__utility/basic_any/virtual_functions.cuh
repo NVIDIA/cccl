@@ -30,6 +30,9 @@
 
 #include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
 
+_CCCL_PUSH_MACROS
+#undef interface
+
 namespace cuda::experimental
 {
 ///
@@ -168,5 +171,7 @@ struct __virtual_fn
 };
 
 } // namespace cuda::experimental
+
+_CCCL_POP_MACROS
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_VIRUAL_FUNCTIONS_H

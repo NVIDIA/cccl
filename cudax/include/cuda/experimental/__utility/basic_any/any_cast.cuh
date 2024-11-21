@@ -31,6 +31,9 @@
 #include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
 #include <cuda/experimental/__utility/basic_any/interfaces.cuh>
 
+_CCCL_PUSH_MACROS
+#undef interface
+
 namespace cuda::experimental
 {
 ///
@@ -76,5 +79,7 @@ _CCCL_NODISCARD _CUDAX_HOST_API _Tp const* any_cast(basic_any<_Interface> const*
 // TODO: implement the same overloads as for std::any_cast
 
 } // namespace cuda::experimental
+
+_CCCL_POP_MACROS
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_ANY_CAST_H

@@ -23,6 +23,9 @@
 
 #include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
 
+_CCCL_PUSH_MACROS
+#undef interface
+
 namespace cuda::experimental
 {
 template <class _Ptr>
@@ -50,5 +53,7 @@ struct __tagged_ptr<_Tp*>
 };
 
 } // namespace cuda::experimental
+
+_CCCL_POP_MACROS
 
 #endif // __CUDAX_DETAIL_BASIC_ANY_TAGGED_PTR_H
