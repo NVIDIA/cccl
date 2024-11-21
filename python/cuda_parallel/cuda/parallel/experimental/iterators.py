@@ -125,23 +125,29 @@ def pointer(container, ntype):
     return RawPointer(container.device_ctypes_pointer.value, ntype)
 
 
+def _ir_type_given_numba_type(ntype):
+    bw = ntype.bitwidth
+    irt = None
+    if isinstance(ntype, numba.core.types.scalars.Integer):
+        irt = ir.IntType(bw)
+    elif isinstance(ntype, numba.core.types.scalars.Float):
+        if bw == 16:
+            irt = ir.IntType(16)  # ir.HalfType() does not work here.
+        elif bw == 32:
+            irt = ir.FloatType()
+        elif bw == 64:
+            irt = ir.DoubleType()
+    return irt
+
+
 @intrinsic
 def ldcs(typingctx, base):
     def codegen(context, builder, sig, args):
-        bw = sig.return_type.bitwidth
-        rt = None
-        if isinstance(sig.return_type, numba.core.types.scalars.Integer):
-            rt = ir.IntType(bw)
-        elif isinstance(sig.return_type, numba.core.types.scalars.Float):
-            if bw == 16:
-                rt = ir.IntType(16)  # ir.HalfType() does not work here.
-            elif bw == 32:
-                rt = ir.FloatType()
-            elif bw == 64:
-                rt = ir.DoubleType()
+        rt = _ir_type_given_numba_type(sig.return_type)
         if rt is None:
             raise RuntimeError(f"Unsupported: {type(sig.return_type)=}")
         ftype = ir.FunctionType(rt, [rt.as_pointer()])
+        bw = sig.return_type.bitwidth
         asm = f"ld.global.cs.b{bw} $0, [$1];"
         if bw < 64:
             constraint = "=r, l"
@@ -296,7 +302,14 @@ def count(offset, ntype):
     return CountingIterator(offset, ntype)
 
 
-def cu_map(op, it):
+def cu_map(op, it, op_return_ntype):
+    op_return_ntype_ir = _ir_type_given_numba_type(op_return_ntype)
+    if op_return_ntype_ir is None:
+        raise RuntimeError(f"Unsupported: {type(op_return_ntype)=}")
+    it_ntype_ir = _ir_type_given_numba_type(it.ntype)
+    if it_ntype_ir is None:
+        raise RuntimeError(f"Unsupported: {type(it.ntype)=}")
+
     def source_advance(it_state_ptr, diff):
         pass
 
@@ -331,16 +344,15 @@ def cu_map(op, it):
         pass
 
     def make_dereference_codegen(name):
-        retty = types.int32
         statety = types.CPointer(types.int8)
 
         def codegen(context, builder, sig, args):
             (state_ptr,) = args
-            fnty = ir.FunctionType(ir.IntType(32), (ir.PointerType(ir.IntType(8)),))
+            fnty = ir.FunctionType(op_return_ntype_ir, (ir.PointerType(ir.IntType(8)),))
             fn = cgutils.get_or_insert_function(builder.module, fnty, name)
             return builder.call(fn, (state_ptr,))
 
-        return signature(retty, statety), codegen
+        return signature(op_return_ntype, statety), codegen
 
     def dereference_codegen(func_to_overload, name):
         @intrinsic
@@ -355,16 +367,13 @@ def cu_map(op, it):
             return impl
 
     def make_op_codegen(name):
-        retty = types.int32
-        valty = types.int32
-
         def codegen(context, builder, sig, args):
             (val,) = args
-            fnty = ir.FunctionType(ir.IntType(32), (ir.IntType(32),))
+            fnty = ir.FunctionType(op_return_ntype_ir, (it_ntype_ir,))
             fn = cgutils.get_or_insert_function(builder.module, fnty, name)
             return builder.call(fn, (val,))
 
-        return signature(retty, valty), codegen
+        return signature(op_return_ntype, it.ntype), codegen
 
     def op_codegen(func_to_overload, name):
         @intrinsic
@@ -386,7 +395,7 @@ def cu_map(op, it):
         def __init__(self, it, op):
             self.it = it  # TODO support row pointers
             self.op = op
-            self.ntype = numba.types.int32
+            self.ntype = op_return_ntype
             self.prefix = f"transform_{it.prefix}_{op.__name__}"
             self.ltoirs = it.ltoirs + [
                 _ncc(
@@ -400,12 +409,10 @@ def cu_map(op, it):
                 _ncc(
                     "dereference",
                     TransformIterator.transform_dereference,
-                    numba.types.int32(numba.types.CPointer(numba.types.char)),
+                    op_return_ntype(numba.types.CPointer(numba.types.char)),
                     self.prefix,
                 ),
-                numba.cuda.compile(
-                    op, sig=numba.types.int32(numba.types.int32), output="ltoir"
-                ),
+                numba.cuda.compile(op, sig=op_return_ntype(it.ntype), output="ltoir"),
             ]
 
         def transform_advance(it_state_ptr, diff):

@@ -161,7 +161,10 @@ def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, sta
     elif input_generator == "map_mul2":
         l_input = [2 * (start_sum_with + distance) for distance in range(num_items)]
         dtype, ntype = numpy.int32, numba.types.int32
-        i_input = iterators.cu_map(mul2, iterators.count(start_sum_with, ntype=ntype))
+        i_input = iterators.cu_map(
+            mul2,
+            iterators.count(start_sum_with, ntype=ntype),
+            op_return_ntype=ntype)
     else:
         raise RuntimeError("Unexpected input_generator")
 
