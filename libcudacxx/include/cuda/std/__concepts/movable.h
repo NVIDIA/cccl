@@ -37,7 +37,7 @@ concept movable = is_object_v<_Tp> && move_constructible<_Tp> && assignable_from
 
 // [concepts.object]
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   _Movable_,
   requires()(requires(is_object_v<_Tp>),
              requires(move_constructible<_Tp>),
@@ -45,7 +45,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
              requires(swappable<_Tp>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT movable = _LIBCUDACXX_FRAGMENT(_Movable_, _Tp);
+_CCCL_CONCEPT movable = _CCCL_FRAGMENT(_Movable_, _Tp);
 
 #endif // _CCCL_STD_VER > 2011
 

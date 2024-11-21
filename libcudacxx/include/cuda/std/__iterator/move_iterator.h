@@ -82,12 +82,12 @@ struct __move_iter_category_base<_Iter, enable_if_t<__has_iter_category<iterator
 };
 
 template <class _Iter, class _Sent>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __move_iter_comparable_,
   requires()(requires(convertible_to<decltype(declval<const _Iter&>() == declval<_Sent>()), bool>)));
 
 template <class _Iter, class _Sent>
-_LIBCUDACXX_CONCEPT __move_iter_comparable = _LIBCUDACXX_FRAGMENT(__move_iter_comparable_, _Iter, _Sent);
+_CCCL_CONCEPT __move_iter_comparable = _CCCL_FRAGMENT(__move_iter_comparable_, _Iter, _Sent);
 
 template <class _Iter>
 _CCCL_INLINE_VAR constexpr bool __noexcept_move_iter_iter_move =

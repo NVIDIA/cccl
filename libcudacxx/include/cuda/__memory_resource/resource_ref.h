@@ -457,7 +457,7 @@ constexpr bool _Is_resource_base_fn(...) noexcept
 }
 
 template <class _Resource>
-_LIBCUDACXX_CONCEPT _Is_resource_base = _Is_resource_base_fn(static_cast<_Resource*>(nullptr));
+_CCCL_CONCEPT _Is_resource_base = _Is_resource_base_fn(static_cast<_Resource*>(nullptr));
 
 template <_AllocType _Alloc_type, _WrapperType _Wrapper_type>
 using _Resource_base =

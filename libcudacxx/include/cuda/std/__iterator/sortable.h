@@ -37,12 +37,12 @@ concept sortable = permutable<_Iter> && indirect_strict_weak_order<_Comp, projec
 #elif _CCCL_STD_VER > 2014
 
 template <class _Iter, class _Comp, class _Proj>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __sortable_,
   requires()(requires(permutable<_Iter>), requires(indirect_strict_weak_order<_Comp, projected<_Iter, _Proj>>)));
 
 template <class _Iter, class _Comp = _CUDA_VRANGES::less, class _Proj = identity>
-_LIBCUDACXX_CONCEPT sortable = _LIBCUDACXX_FRAGMENT(__sortable_, _Iter, _Comp, _Proj);
+_CCCL_CONCEPT sortable = _CCCL_FRAGMENT(__sortable_, _Iter, _Comp, _Proj);
 
 #endif // _CCCL_STD_VER > 2014
 
