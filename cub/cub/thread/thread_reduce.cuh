@@ -74,7 +74,7 @@ CUB_NAMESPACE_BEGIN
 //!
 //! .. code-block:: c++
 //!
-//!    template <typename Input,
+//!    _LIBCUDACXX_TEMPLATE(typename Input,
 //!              typename ReductionOp,
 //!              typename PrefixT,
 //!              typename ValueT = ::cuda::std::remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>,
@@ -471,9 +471,8 @@ ThreadReduceTernaryTree(const Input& input, ReductionOp reduction_op)
  **********************************************************************************************************************/
 
 // never reached. Protect instantion of ThreadReduceSimd with arbitrary types and operators
-template <typename Input,
-          typename ReductionOp,
-          _CUB_TEMPLATE_REQUIRES(!cub::internal::enable_generic_simd_reduction<Input, ReductionOp>())>
+_LIBCUDACXX_TEMPLATE(typename Input, typename ReductionOp)
+_LIBCUDACXX_REQUIRES((!cub::internal::enable_generic_simd_reduction<Input, ReductionOp>()))
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto
 ThreadReduceSimd(const Input& input, ReductionOp) -> ::cuda::std::remove_cvref_t<decltype(input[0])>
 {
@@ -481,9 +480,8 @@ ThreadReduceSimd(const Input& input, ReductionOp) -> ::cuda::std::remove_cvref_t
   return input[0];
 }
 
-template <typename Input,
-          typename ReductionOp,
-          _CUB_TEMPLATE_REQUIRES(cub::internal::enable_generic_simd_reduction<Input, ReductionOp>())>
+_LIBCUDACXX_TEMPLATE(typename Input, typename ReductionOp)
+_LIBCUDACXX_REQUIRES(cub::internal::enable_generic_simd_reduction<Input, ReductionOp>())
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto
 ThreadReduceSimd(const Input& input, ReductionOp reduction_op) -> ::cuda::std::remove_cvref_t<decltype(input[0])>
 {
@@ -675,12 +673,12 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const T* inpu
  *
  * @return Aggregate of type <tt>cuda::std::__accumulator_t<ReductionOp, T, PrefixT></tt>
  */
-template <int Length,
-          typename T,
-          typename ReductionOp,
-          typename PrefixT,
-          typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, T, PrefixT>,
-          _CUB_TEMPLATE_REQUIRES(Length > 0)>
+_LIBCUDACXX_TEMPLATE(int Length,
+                     typename T,
+                     typename ReductionOp,
+                     typename PrefixT,
+                     typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, T, PrefixT>)
+_LIBCUDACXX_REQUIRES((Length > 0))
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT
 ThreadReduce(const T* input, ReductionOp reduction_op, PrefixT prefix)
 {
@@ -690,7 +688,8 @@ ThreadReduce(const T* input, ReductionOp reduction_op, PrefixT prefix)
   return cub::ThreadReduce(*array, reduction_op, prefix);
 }
 
-template <int Length, typename T, typename ReductionOp, typename PrefixT, _CUB_TEMPLATE_REQUIRES(Length == 0)>
+_LIBCUDACXX_TEMPLATE(int Length, typename T, typename ReductionOp, typename PrefixT)
+_LIBCUDACXX_REQUIRES((Length == 0))
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadReduce(const T*, ReductionOp, PrefixT prefix)
 {
   return prefix;

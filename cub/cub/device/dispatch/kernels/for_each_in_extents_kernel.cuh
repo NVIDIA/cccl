@@ -55,10 +55,8 @@ namespace detail
 namespace for_each_in_extents
 {
 
-template <int Rank,
-          typename ExtendType,
-          typename FastDivModType,
-          _CUB_TEMPLATE_REQUIRES(ExtendType::static_extent(Rank) != ::cuda::std::dynamic_extent)>
+_LIBCUDACXX_TEMPLATE(int Rank, typename ExtendType, typename FastDivModType)
+_LIBCUDACXX_REQUIRES(ExtendType::static_extent(Rank) != ::cuda::std::dynamic_extent)
 _CCCL_DEVICE _CCCL_FORCEINLINE auto get_extent_size(ExtendType ext, FastDivModType extent_size)
 {
   using extent_index_type   = typename ExtendType::index_type;
@@ -67,28 +65,22 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto get_extent_size(ExtendType ext, FastDivModTy
   return static_cast<unsigned_index_type>(ext.static_extent(Rank));
 }
 
-template <int Rank,
-          typename ExtendType,
-          typename FastDivModType,
-          _CUB_TEMPLATE_REQUIRES(ExtendType::static_extent(Rank) == ::cuda::std::dynamic_extent)>
+_LIBCUDACXX_TEMPLATE(int Rank, typename ExtendType, typename FastDivModType)
+_LIBCUDACXX_REQUIRES(ExtendType::static_extent(Rank) == ::cuda::std::dynamic_extent)
 _CCCL_DEVICE _CCCL_FORCEINLINE auto get_extent_size(ExtendType ext, FastDivModType extent_size)
 {
   return extent_size;
 }
 
-template <int Rank,
-          typename ExtendType,
-          typename FastDivModType,
-          _CUB_TEMPLATE_REQUIRES(cub::detail::is_sub_size_static<Rank + 1, ExtendType>())>
+_LIBCUDACXX_TEMPLATE(int Rank, typename ExtendType, typename FastDivModType)
+_LIBCUDACXX_REQUIRES(cub::detail::is_sub_size_static<Rank + 1, ExtendType>())
 _CCCL_DEVICE _CCCL_FORCEINLINE auto get_extents_sub_size(ExtendType ext, FastDivModType extents_sub_size)
 {
   return sub_size<Rank + 1>(ext);
 }
 
-template <int Rank,
-          typename ExtendType,
-          typename FastDivModType,
-          _CUB_TEMPLATE_REQUIRES(!cub::detail::is_sub_size_static<Rank + 1, ExtendType>())>
+_LIBCUDACXX_TEMPLATE(int Rank, typename ExtendType, typename FastDivModType)
+_LIBCUDACXX_REQUIRES((!cub::detail::is_sub_size_static<Rank + 1, ExtendType>()))
 _CCCL_DEVICE _CCCL_FORCEINLINE auto get_extents_sub_size(ExtendType ext, FastDivModType extents_sub_size)
 {
   return extents_sub_size;
