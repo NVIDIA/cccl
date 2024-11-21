@@ -118,7 +118,7 @@ def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, sta
 
     def dtype_ntype():
         intty = input_generator.split("_")[-1]
-        return getattr(numpy, intty), getattr(numba.types, intty)
+        return numpy.dtype(intty), getattr(numba.types, intty)
 
     if input_generator.startswith("raw_pointer_"):
         rng = random.Random(0)
