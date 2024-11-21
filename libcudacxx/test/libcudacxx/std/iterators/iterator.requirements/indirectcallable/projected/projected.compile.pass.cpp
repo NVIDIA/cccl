@@ -60,10 +60,10 @@ template <class I, class F>
 constexpr bool projectable = requires { typename cuda::std::projected<I, F>; };
 #else
 template <class I, class F>
-_LIBCUDACXX_CONCEPT_FRAGMENT(projectable_, requires()(typename(cuda::std::projected<I, F>)));
+_CCCL_CONCEPT_FRAGMENT(projectable_, requires()(typename(cuda::std::projected<I, F>)));
 
 template <class I, class F>
-_LIBCUDACXX_CONCEPT projectable = _LIBCUDACXX_FRAGMENT(projectable_, I, F);
+_CCCL_CONCEPT projectable = _CCCL_FRAGMENT(projectable_, I, F);
 #endif
 
 static_assert(!projectable<int, void (*)(int)>); // int isn't indirectly_readable

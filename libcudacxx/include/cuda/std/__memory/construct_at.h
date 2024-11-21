@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__iterator/access.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/voidify.h>

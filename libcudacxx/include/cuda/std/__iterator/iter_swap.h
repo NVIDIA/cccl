@@ -54,16 +54,16 @@ concept __moveable_storable = !__unqualified_iter_swap<_T1, _T2> && !__readable_
                            && indirectly_movable_storable<_T1, _T2> && indirectly_movable_storable<_T2, _T1>;
 #  else
 template <class _T1, class _T2>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __unqualified_iter_swap_,
   requires(_T1&& __x, _T2&& __y)(requires(__class_or_enum<remove_cvref_t<_T1>> || __class_or_enum<remove_cvref_t<_T2>>),
                                  ((void) iter_swap(_CUDA_VSTD::forward<_T1>(__x), _CUDA_VSTD::forward<_T2>(__y)))));
 
 template <class _T1, class _T2>
-_LIBCUDACXX_CONCEPT __unqualified_iter_swap = _LIBCUDACXX_FRAGMENT(__unqualified_iter_swap_, _T1, _T2);
+_CCCL_CONCEPT __unqualified_iter_swap = _CCCL_FRAGMENT(__unqualified_iter_swap_, _T1, _T2);
 
 template <class _T1, class _T2>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __readable_swappable_,
   requires()(requires(!__unqualified_iter_swap<_T1, _T2>),
              requires(indirectly_readable<_T1>),
@@ -71,10 +71,10 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
              requires(swappable_with<iter_reference_t<_T1>, iter_reference_t<_T2>>)));
 
 template <class _T1, class _T2>
-_LIBCUDACXX_CONCEPT __readable_swappable = _LIBCUDACXX_FRAGMENT(__readable_swappable_, _T1, _T2);
+_CCCL_CONCEPT __readable_swappable = _CCCL_FRAGMENT(__readable_swappable_, _T1, _T2);
 
 template <class _T1, class _T2>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __moveable_storable_,
   requires()(requires(!__unqualified_iter_swap<_T1, _T2>),
              requires(!__readable_swappable<_T1, _T2>),
@@ -82,29 +82,29 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
              requires(indirectly_movable_storable<_T2, _T1>)));
 
 template <class _T1, class _T2>
-_LIBCUDACXX_CONCEPT __moveable_storable = _LIBCUDACXX_FRAGMENT(__moveable_storable_, _T1, _T2);
+_CCCL_CONCEPT __moveable_storable = _CCCL_FRAGMENT(__moveable_storable_, _T1, _T2);
 #  endif // _CCCL_STD_VER > 2011
 
 struct __fn
 {
-  _LIBCUDACXX_TEMPLATE(class _T1, class _T2)
-  _LIBCUDACXX_REQUIRES(__unqualified_iter_swap<_T1, _T2>)
+  _CCCL_TEMPLATE(class _T1, class _T2)
+  _CCCL_REQUIRES(__unqualified_iter_swap<_T1, _T2>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_T1&& __x, _T2&& __y) const
     noexcept(noexcept(iter_swap(_CUDA_VSTD::forward<_T1>(__x), _CUDA_VSTD::forward<_T2>(__y))))
   {
     (void) iter_swap(_CUDA_VSTD::forward<_T1>(__x), _CUDA_VSTD::forward<_T2>(__y));
   }
 
-  _LIBCUDACXX_TEMPLATE(class _T1, class _T2)
-  _LIBCUDACXX_REQUIRES(__readable_swappable<_T1, _T2>)
+  _CCCL_TEMPLATE(class _T1, class _T2)
+  _CCCL_REQUIRES(__readable_swappable<_T1, _T2>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_T1&& __x, _T2&& __y) const
     noexcept(noexcept(_CUDA_VRANGES::swap(*_CUDA_VSTD::forward<_T1>(__x), *_CUDA_VSTD::forward<_T2>(__y))))
   {
     _CUDA_VRANGES::swap(*_CUDA_VSTD::forward<_T1>(__x), *_CUDA_VSTD::forward<_T2>(__y));
   }
 
-  _LIBCUDACXX_TEMPLATE(class _T1, class _T2)
-  _LIBCUDACXX_REQUIRES(__moveable_storable<_T2, _T1>)
+  _CCCL_TEMPLATE(class _T1, class _T2)
+  _CCCL_REQUIRES(__moveable_storable<_T2, _T1>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_T1&& __x, _T2&& __y) const
     noexcept(noexcept(iter_value_t<_T2>(_CUDA_VRANGES::iter_move(__y)))
              && noexcept(*__y = _CUDA_VRANGES::iter_move(__x))
@@ -135,7 +135,7 @@ concept indirectly_swappable =
   };
 #  else
 template <class _I1, class _I2>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __indirectly_swappable_,
   requires(const _I1 __i1, const _I2 __i2)(
     requires(indirectly_readable<_I1>),
@@ -146,7 +146,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
     (_CUDA_VRANGES::iter_swap(__i2, __i1))));
 
 template <class _I1, class _I2 = _I1>
-_LIBCUDACXX_CONCEPT indirectly_swappable = _LIBCUDACXX_FRAGMENT(__indirectly_swappable_, _I1, _I2);
+_CCCL_CONCEPT indirectly_swappable = _CCCL_FRAGMENT(__indirectly_swappable_, _I1, _I2);
 #  endif // _CCCL_STD_VER > 2017
 
 template <class _I1, class _I2 = _I1, class = void>
