@@ -11,8 +11,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA___CONCEPTS_CONCEPT_MACROS
-#define _CUDA___CONCEPTS_CONCEPT_MACROS
+#ifndef _CUDA___CONCEPTS
+#define _CUDA___CONCEPTS
 
 #include <cuda/std/detail/__config>
 
@@ -23,10 +23,6 @@
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
 #  pragma system_header
 #endif // no system header
-
-// So that we can refer to the ::cuda::std namespace below
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
-_LIBCUDACXX_END_NAMESPACE_STD
 
 ////////////////////////////////////////////////////////////////////////////////
 // _CCCL_TEMPLATE
@@ -54,37 +50,24 @@ using __cccl_enable_if_t = typename __cccl_select<_Bp>::template type<_Tp>;
 template <class _Tp, bool _Bp>
 using __cccl_requires_t = typename __cccl_select<_Bp>::template type<_Tp>;
 
-template <unsigned _Np>
-using __cccl_char_array = char[_Np];
-
-// clang-format off
 #if (defined(__cpp_concepts) && _CCCL_STD_VER >= 2020) || defined(_CCCL_DOXYGEN_INVOKED)
 #  define _CCCL_TEMPLATE(...)               template <__VA_ARGS__>
 #  define _CCCL_REQUIRES(...)               requires __VA_ARGS__
 #  define _CCCL_AND                         &&
 #  define _CCCL_TRAILING_REQUIRES_AUX_(...) requires __VA_ARGS__
-#  define _CCCL_TRAILING_REQUIRES(...)      -> __VA_ARGS__ _CCCL_TRAILING_REQUIRES_AUX_
+#  define _CCCL_TRAILING_REQUIRES(...)      ->__VA_ARGS__ _CCCL_TRAILING_REQUIRES_AUX_
 #else // ^^^ __cpp_concepts ^^^ / vvv !__cpp_concepts vvv
 #  define _CCCL_TEMPLATE(...)               template <__VA_ARGS__
-#  define _CCCL_REQUIRES(...)               , __cccl_char_array<__LINE__>* __cccl_null_ = nullptr \
-                                            , __cccl_enable_if_t<__VA_ARGS__ && (__cccl_null_ == nullptr), int> = 0>
-#  define _CCCL_AND                         && (__cccl_null_ == nullptr), int> = 0, __cccl_enable_if_t<
-#  define _CCCL_TRAILING_REQUIRES_AUX_(...) , __VA_ARGS__>
-#  define _CCCL_TRAILING_REQUIRES(...)      -> __cccl_requires_t<__VA_ARGS__ _CCCL_TRAILING_REQUIRES_AUX_
+#  define _CCCL_REQUIRES(...)               , bool __cccl_true_ = true, __cccl_enable_if_t < __VA_ARGS__ && __cccl_true_, int > = 0 >
+#  define _CCCL_AND                         &&__cccl_true_, int > = 0, __cccl_enable_if_t <
+#  define _CCCL_TRAILING_REQUIRES_AUX_(...) , __VA_ARGS__ >
+#  define _CCCL_TRAILING_REQUIRES(...)      ->__cccl_requires_t < __VA_ARGS__ _CCCL_TRAILING_REQUIRES_AUX_
 #endif // !__cpp_concepts
-// clang-format on
 
 #if _CCCL_STD_VER >= 2014
 
 template <class...>
 struct __cccl_tag;
-
-template <class _Tp, class... _Args>
-_LIBCUDACXX_HIDE_FROM_ABI auto __cccl_make_dependent(_Tp*, __cccl_tag<_Args...>*) -> _Tp;
-
-template <class _Impl, class... _Args>
-using __requires_expr_impl =
-  decltype(__cccl_make_dependent(static_cast<_Impl*>(nullptr), static_cast<__cccl_tag<void, _Args...>*>(nullptr)));
 
 template <class>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __cccl_is_true()
@@ -92,14 +75,25 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __cccl_is_true()
   return true;
 }
 
-#  if defined(_CCCL_COMPILER_MSVC)
+#  if _CCCL_COMPILER(CLANG) || defined(_CCCL_COMPILER_MSVC)
 template <bool _Bp>
 _LIBCUDACXX_HIDE_FROM_ABI __cccl_enable_if_t<_Bp> __cccl_requires()
 {}
-#  else // ^^^ defined(_CCCL_COMPILER_MSVC) ^^^ / vvv !defined(_CCCL_COMPILER_MSVC) vvv
+#  else // ^^^ _CCCL_COMPILER(CLANG) || defined(_CCCL_COMPILER_MSVC) ^^^ / vvv other compilers vvv
 template <bool _Bp, __cccl_enable_if_t<_Bp, int> = 0>
 _CCCL_INLINE_VAR constexpr int __cccl_requires = 0;
-#  endif // !defined(_CCCL_COMPILER_MSVC)
+#  endif // !_CCCL_COMPILER(CLANG) && !defined(_CCCL_COMPILER_MSVC)
+
+template <class _Tp, class... _Args>
+_LIBCUDACXX_HIDE_FROM_ABI auto __cccl_make_dependent(_Tp*, __cccl_tag<_Args...>*) -> _Tp;
+
+template <class _Impl, class... _Args>
+using __cccl_requires_expr_impl =
+  decltype(__cccl_make_dependent(static_cast<_Impl*>(nullptr), static_cast<__cccl_tag<void, _Args...>*>(nullptr)));
+
+// So that we can refer to the ::cuda::std namespace below
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
+_LIBCUDACXX_END_NAMESPACE_STD
 
 // We put an alias for _CUDA_VSTD here because of a bug in nvcc <12.2
 // where a requirement such as:
@@ -108,10 +102,10 @@ _CCCL_INLINE_VAR constexpr int __cccl_requires = 0;
 //
 // where ::concept is a fully qualified name, would not compile. The
 // _CUDA_VSTD macro is fully qualified.
-namespace __unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-decls)
+namespace __cccl_unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-decls)
 
 #  if _CCCL_CUDACC_BELOW(12, 2)
-#    define _CCCL_CONCEPT_VSTD __unqualified_cuda_std // must not be fully qualified
+#    define _CCCL_CONCEPT_VSTD __cccl_unqualified_cuda_std // must not be fully qualified
 #  else
 #    define _CCCL_CONCEPT_VSTD _CUDA_VSTD
 #  endif
@@ -119,10 +113,10 @@ namespace __unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-decls
 #  define _CCCL_CONCEPT_FRAGMENT_REQS_M0(_REQ) _CCCL_CONCEPT_FRAGMENT_REQS_SELECT_(_REQ)(_REQ)
 #  define _CCCL_CONCEPT_FRAGMENT_REQS_M1(_REQ) _CCCL_PP_EXPAND _REQ
 #  define _CCCL_CONCEPT_FRAGMENT_REQS_(...)    {_CCCL_PP_FOR_EACH(_CCCL_CONCEPT_FRAGMENT_REQS_M, __VA_ARGS__)}
-#  define _CCCL_CONCEPT_FRAGMENT_REQS_SELECT_(_REQ)                                                              \
-    _CCCL_PP_CAT3(_CCCL_CONCEPT_FRAGMENT_REQS_SELECT_,                                                           \
-                  _CCCL_PP_EVAL(_CCCL_PP_CHECK, _CCCL_PP_CAT3(_CCCL_CONCEPT_FRAGMENT_REQS_SELECT_PROBE_, _REQ))) \
-    /**/
+#  define _CCCL_CONCEPT_FRAGMENT_REQS_SELECT_(_REQ)    \
+    _CCCL_PP_CAT3(_CCCL_CONCEPT_FRAGMENT_REQS_SELECT_, \
+                  _CCCL_PP_EVAL(_CCCL_PP_CHECK, _CCCL_PP_CAT3(_CCCL_CONCEPT_FRAGMENT_REQS_SELECT_PROBE_, _REQ)))
+
 #  define _CCCL_CONCEPT_FRAGMENT_REQS_SELECT_PROBE_requires _CCCL_PP_PROBE_N(~, 1)
 #  define _CCCL_CONCEPT_FRAGMENT_REQS_SELECT_PROBE_noexcept _CCCL_PP_PROBE_N(~, 2)
 #  define _CCCL_CONCEPT_FRAGMENT_REQS_SELECT_PROBE_typename _CCCL_PP_PROBE_N(~, 3)
@@ -182,7 +176,7 @@ namespace __unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-decls
       template <class... _As>                                                                                          \
       _LIBCUDACXX_HIDE_FROM_ABI char _NAME##_CCCL_CONCEPT_FRAGMENT_(                                                   \
         ::__cccl_tag<_As...>*, decltype(&_NAME##_CCCL_CONCEPT_FRAGMENT_impl_<_As...>));                                \
-      _LIBCUDACXX_HIDE_FROM_ABI char(&_NAME##_CCCL_CONCEPT_FRAGMENT_(...))[2] /**/
+      _LIBCUDACXX_HIDE_FROM_ABI char(&_NAME##_CCCL_CONCEPT_FRAGMENT_(...))[2]
 #    if defined(_MSC_VER) && !defined(__clang__)
 #      define _CCCL_CONCEPT_FRAGMENT_TRUE(...) \
         ::__cccl_is_true<decltype(_CCCL_PP_FOR_EACH(_CCCL_CONCEPT_FRAGMENT_REQS_M, __VA_ARGS__) void())>()
@@ -225,9 +219,9 @@ namespace __unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-decls
 //     );
 //
 // Can only be used as the last requirement in a concept definition.
-#  if defined(__cpp_concepts) && _CCCL_STD_VER >= 2020 || defined(_CCCL_DOXYGEN_INVOKED)
-#    define _CCCL_REQUIRES_EXPR(_TY, ...) requires(__VA_ARGS__) _CCCL_REQUIRES_EXPR_IMPL
-#    define _CCCL_REQUIRES_EXPR_IMPL(...) {_CCCL_PP_FOR_EACH(_CCCL_CONCEPT_FRAGMENT_REQS_M, __VA_ARGS__)}
+#  if defined(__cpp_concepts) && _CCCL_STD_VER >= 2020
+#    define _CCCL_REQUIRES_EXPR(_TY, ...) requires(__VA_ARGS__) _CCCL_REQUIRES_EXPR_2
+#    define _CCCL_REQUIRES_EXPR_2(...)    {_CCCL_PP_FOR_EACH(_CCCL_CONCEPT_FRAGMENT_REQS_M, __VA_ARGS__)}
 #  else
 #    define _CCCL_REQUIRES_EXPR_TPARAM_PROBE_variadic _CCCL_PP_PROBE(~)
 #    define _CCCL_REQUIRES_EXPR_TPARAM_variadic
@@ -249,7 +243,7 @@ namespace __unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-decls
 #    define _CCCL_REQUIRES_EXPR_EXPAND_TPARAMS(...) _CCCL_PP_FOR_EACH(_CCCL_REQUIRES_EXPR_EXPAND_TPARAM, __VA_ARGS__)
 
 #    define _CCCL_REQUIRES_EXPR(_TY, ...)                                                                             \
-      ::__requires_expr_impl<                                                                                         \
+      ::__cccl_requires_expr_impl<                                                                                    \
         struct _CCCL_PP_CAT(__cccl_requires_expr_detail_, __LINE__) _CCCL_REQUIRES_EXPR_EXPAND_TPARAMS                \
           _TY>::__cccl_is_satisfied(static_cast<::__cccl_tag<void _CCCL_REQUIRES_EXPR_EXPAND_TPARAMS _TY>*>(nullptr), \
                                     static_cast<void (*)(__VA_ARGS__)>(nullptr));                                     \
@@ -257,9 +251,9 @@ namespace __unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-decls
       {                                                                                                               \
         using __cccl_self_t = _CCCL_PP_CAT(__cccl_requires_expr_detail_, __LINE__);                                   \
         template <class _CCCL_REQUIRES_EXPR_TPARAMS _TY>                                                              \
-        _LIBCUDACXX_HIDE_FROM_ABI static auto __cccl_well_formed(__VA_ARGS__) _CCCL_REQUIRES_EXPR_IMPL
+        _LIBCUDACXX_HIDE_FROM_ABI static auto __cccl_well_formed(__VA_ARGS__) _CCCL_REQUIRES_EXPR_2
 
-#    define _CCCL_REQUIRES_EXPR_IMPL(...)                                                                 \
+#    define _CCCL_REQUIRES_EXPR_2(...)                                                                    \
       ->decltype(_CCCL_PP_FOR_EACH(_CCCL_CONCEPT_FRAGMENT_REQS_M, __VA_ARGS__) void()) {}                 \
       template <class... _Args,                                                                           \
                 class _Sig,                                                                               \
@@ -277,4 +271,4 @@ namespace __unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-decls
 
 #endif // _CCCL_STD_VER >= 2014
 
-#endif // _CUDA___CONCEPTS_CONCEPT_MACROS
+#endif //_CUDA___CONCEPTS
