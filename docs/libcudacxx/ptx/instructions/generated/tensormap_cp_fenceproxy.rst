@@ -1,11 +1,3 @@
-.. _libcudacxx-ptx-instructions-tensormap-cp_fenceproxy:
-
-tensormap.cp_fenceproxy
-=======================
-
--  PTX ISA:
-   `tensormap.cp_fenceproxy <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-tensormap-cp-fenceproxy>`__
-
 tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.cta.sync.aligned
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
