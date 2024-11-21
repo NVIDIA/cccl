@@ -38,7 +38,8 @@ static void ensure_pinned_ptr(void* ptr)
   cudaPointerAttributes attributes;
   cudaError_t status = cudaPointerGetAttributes(&attributes, ptr);
   CHECK(status == cudaSuccess);
-  CHECK((attributes.type == cudaMemoryTypeHost) && (attributes.devicePointer != nullptr));
+  CHECK(attributes.type == cudaMemoryTypeHost);
+  CHECK(attributes.devicePointer != nullptr);
 }
 
 TEST_CASE("pinned_memory_resource construction", "[memory_resource]")
