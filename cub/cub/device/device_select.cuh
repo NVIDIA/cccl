@@ -203,7 +203,7 @@ struct DeviceSelect
                        stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <typename InputIteratorT, typename FlagIterator, typename OutputIteratorT, typename NumSelectedIteratorT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Flagged(
     void* d_temp_storage,
@@ -221,7 +221,7 @@ struct DeviceSelect
     return Flagged<InputIteratorT, FlagIterator, OutputIteratorT, NumSelectedIteratorT>(
       d_temp_storage, temp_storage_bytes, d_in, d_flags, d_out, d_num_selected_out, num_items, stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Uses the ``d_flags`` sequence to selectively compact the items in `d_data``.
@@ -341,7 +341,7 @@ struct DeviceSelect
                            stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <typename IteratorT, typename FlagIterator, typename NumSelectedIteratorT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Flagged(
     void* d_temp_storage,
@@ -358,7 +358,7 @@ struct DeviceSelect
     return Flagged<IteratorT, FlagIterator, NumSelectedIteratorT>(
       d_temp_storage, temp_storage_bytes, d_data, d_flags, d_num_selected_out, num_items, stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Uses the ``select_op`` functor to selectively copy items from ``d_in`` into ``d_out``.
@@ -498,7 +498,7 @@ struct DeviceSelect
                        stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT, typename SelectOp>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   If(void* d_temp_storage,
@@ -516,7 +516,7 @@ struct DeviceSelect
     return If<InputIteratorT, OutputIteratorT, NumSelectedIteratorT, SelectOp>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, select_op, stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Uses the ``select_op`` functor to selectively compact items in ``d_data``.
@@ -648,7 +648,7 @@ struct DeviceSelect
                            stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <typename IteratorT, typename NumSelectedIteratorT, typename SelectOp>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   If(void* d_temp_storage,
@@ -665,7 +665,7 @@ struct DeviceSelect
     return If<IteratorT, NumSelectedIteratorT, SelectOp>(
       d_temp_storage, temp_storage_bytes, d_data, d_num_selected_out, num_items, select_op, stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Uses the ``select_op`` functor applied to ``d_flags`` to selectively copy the
@@ -1011,7 +1011,7 @@ struct DeviceSelect
                        stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <typename InputIteratorT, typename OutputIteratorT, typename NumSelectedIteratorT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Unique(
     void* d_temp_storage,
@@ -1028,7 +1028,7 @@ struct DeviceSelect
     return Unique<InputIteratorT, OutputIteratorT, NumSelectedIteratorT>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Given an input sequence ``d_keys_in`` and ``d_values_in`` with runs of key-value pairs with consecutive
@@ -1330,7 +1330,7 @@ struct DeviceSelect
       stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <typename KeyInputIteratorT,
             typename ValueInputIteratorT,
             typename KeyOutputIteratorT,
@@ -1367,7 +1367,7 @@ struct DeviceSelect
       num_items,
       stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

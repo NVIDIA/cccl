@@ -961,7 +961,7 @@ _CCCL_HOST_DEVICE void swap(device_reference<T>& x, device_reference<T>& y)
 
 // declare these methods for the purpose of Doxygenating them
 // they actually are defined for a base class
-#if THRUST_DOXYGEN
+#ifdef _CCCL_DOXYGEN_INVOKED
 /*! Writes to an output stream the value of a \p device_reference.
  *
  *  \param os The output stream.

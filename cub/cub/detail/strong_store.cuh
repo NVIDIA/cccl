@@ -47,7 +47,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 namespace detail
 {
@@ -302,6 +302,6 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void store_release(unsigned char* ptr, unsigned c
 
 } // namespace detail
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 CUB_NAMESPACE_END

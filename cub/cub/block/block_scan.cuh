@@ -1291,7 +1291,7 @@ public:
   }
 
   //! @}  end member group
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document no-initial-value scans
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document no-initial-value scans
 
   //! @name Exclusive prefix scan operations (no initial value, single datum per thread)
   //! @{
@@ -1445,7 +1445,7 @@ public:
   }
 
   //! @}  end member group
-#endif // DOXYGEN_SHOULD_SKIP_THIS  // Do not document no-initial-value scans
+#endif // _CCCL_DOXYGEN_INVOKED  // Do not document no-initial-value scans
 
   //! @name Inclusive prefix sum operations
   //! @{
