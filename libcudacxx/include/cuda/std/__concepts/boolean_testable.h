@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__utility/forward.h>
 
@@ -41,16 +41,16 @@ concept __boolean_testable = __boolean_testable_impl<_Tp> && requires(_Tp&& __t)
 #elif _CCCL_STD_VER > 2011
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __boolean_testable_impl = convertible_to<_Tp, bool>;
+_CCCL_CONCEPT __boolean_testable_impl = convertible_to<_Tp, bool>;
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __boolean_testable_,
   requires(_Tp&& __t)(requires(__boolean_testable_impl<_Tp>),
                       requires(__boolean_testable_impl<decltype(!_CUDA_VSTD::forward<_Tp>(__t))>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __boolean_testable = _LIBCUDACXX_FRAGMENT(__boolean_testable_, _Tp);
+_CCCL_CONCEPT __boolean_testable = _CCCL_FRAGMENT(__boolean_testable_, _Tp);
 
 #endif // _CCCL_STD_VER > 2011
 
