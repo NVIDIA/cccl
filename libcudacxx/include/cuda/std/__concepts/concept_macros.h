@@ -54,11 +54,11 @@ using __cccl_enable_if_t = typename __cccl_select<_Bp>::template type<_Tp>;
 template <class _Tp, bool _Bp>
 using __cccl_requires_t = typename __cccl_select<_Bp>::template type<_Tp>;
 
+template <unsigned _Np>
+using __cccl_char_array = char[_Np];
+
 template <class...>
 struct __cccl_tag;
-
-template <bool _Bp, class _Int = __cccl_enable_if_t<_Bp, int>>
-using __cccl_requires = _Int;
 
 template <class _Tp, class... _Args>
 _LIBCUDACXX_HIDE_FROM_ABI auto __cccl_make_dependent(_Tp*, __cccl_tag<_Args...>*) -> _Tp;
@@ -72,6 +72,15 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __cccl_is_true()
 {
   return true;
 }
+
+#if defined(_CCCL_COMPILER_MSVC)
+template <bool _Bp>
+_LIBCUDACXX_HIDE_FROM_ABI __cccl_enable_if_t<_Bp> __cccl_requires()
+{}
+#else // ^^^ defined(_CCCL_COMPILER_MSVC) ^^^ / vvv !defined(_CCCL_COMPILER_MSVC) vvv
+template <bool _Bp, __cccl_enable_if_t<_Bp, int> = 0>
+_CCCL_INLINE_VAR constexpr int __cccl_requires = 0;
+#endif // !defined(_CCCL_COMPILER_MSVC)
 
 // We put an alias for _CUDA_VSTD here because of a bug in nvcc <12.2
 // where a requirement such as:
@@ -97,8 +106,9 @@ namespace __unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-decls
 #  define _CCCL_TRAILING_REQUIRES(...)      -> __VA_ARGS__ _CCCL_TRAILING_REQUIRES_AUX_
 #else // ^^^ __cpp_concepts ^^^ / vvv !__cpp_concepts vvv
 #  define _CCCL_TEMPLATE(...)               template <__VA_ARGS__
-#  define _CCCL_REQUIRES(...)               , bool __cccl_true_ = true, __cccl_enable_if_t<__VA_ARGS__ && __cccl_true_, int> = 0>
-#  define _CCCL_AND                         && __cccl_true_, int> = 0, __cccl_enable_if_t<
+#  define _CCCL_REQUIRES(...)               , __cccl_char_array<__LINE__>* __cccl_null_ = nullptr \
+                                            , __cccl_enable_if_t<__VA_ARGS__ && (__cccl_null_ == nullptr), int> = 0>
+#  define _CCCL_AND                         && (__cccl_null_ == nullptr), int> = 0, __cccl_enable_if_t<
 #  define _CCCL_TRAILING_REQUIRES_AUX_(...) , __VA_ARGS__>
 #  define _CCCL_TRAILING_REQUIRES(...)      -> __cccl_requires_t<__VA_ARGS__ _CCCL_TRAILING_REQUIRES_AUX_
 #endif // !__cpp_concepts
@@ -185,8 +195,7 @@ namespace __unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-decls
 #    define _CCCL_CONCEPT_FRAGMENT_REQS_M(_REQ)                             \
       _CCCL_PP_CAT2(_CCCL_CONCEPT_FRAGMENT_REQS_M, _CCCL_PP_IS_PAREN(_REQ)) \
       (_REQ),
-#    define _CCCL_CONCEPT_FRAGMENT_REQS_REQUIRES_requires(...) \
-      ::__cccl_requires<__VA_ARGS__> {}
+#    define _CCCL_CONCEPT_FRAGMENT_REQS_REQUIRES_requires(...) ::__cccl_requires<__VA_ARGS__>
 #    define _CCCL_CONCEPT_FRAGMENT_REQS_REQUIRES_typename(...) static_cast<::__cccl_tag<__VA_ARGS__>*>(nullptr)
 #    if _CCCL_COMPILER(GCC, <, 14)
 // GCC < 14 can't mangle noexcept expressions, so just check that the
@@ -194,12 +203,10 @@ namespace __unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-decls
 // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=70790
 #      define _CCCL_CONCEPT_FRAGMENT_REQS_REQUIRES_noexcept(...) __VA_ARGS__
 #    else
-#      define _CCCL_CONCEPT_FRAGMENT_REQS_REQUIRES_noexcept(...) \
-        ::__cccl_requires<noexcept(__VA_ARGS__)> {}
+#      define _CCCL_CONCEPT_FRAGMENT_REQS_REQUIRES_noexcept(...) ::__cccl_requires<noexcept(__VA_ARGS__)>
 #    endif
-#    define _CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS(_REQ)                                                                   \
-      ::__cccl_requires<_CUDA_VSTD::same_as<_CCCL_PP_CAT4(_CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS_, _REQ) _CCCL_PP_RPAREN>> \
-      {}
+#    define _CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS(_REQ) \
+      ::__cccl_requires<_CUDA_VSTD::same_as<_CCCL_PP_CAT4(_CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS_, _REQ) _CCCL_PP_RPAREN>>
 #    define _CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS__Same_as(...) __VA_ARGS__, decltype _CCCL_PP_LPAREN
 
 #    define _CCCL_FRAGMENT(_NAME, ...) \
