@@ -252,19 +252,19 @@ namespace __unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-decls
         template <class _CCCL_REQUIRES_EXPR_TPARAMS _TY>                                                              \
         _LIBCUDACXX_HIDE_FROM_ABI static auto __cccl_well_formed(__VA_ARGS__) _CCCL_REQUIRES_EXPR_IMPL
 
-#    define _CCCL_REQUIRES_EXPR_IMPL(...)                                                               \
-      ->decltype(_CCCL_PP_FOR_EACH(_CCCL_CONCEPT_FRAGMENT_REQS_M, __VA_ARGS__) void()) {}               \
-      template <class... Args,                                                                          \
-                class Sig,                                                                              \
-                class = decltype(static_cast<Sig*>(&__cccl_self_t::__cccl_well_formed<Args...>))>       \
-      _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __cccl_is_satisfied(::__cccl_tag<Args...>*, Sig*) \
-      {                                                                                                 \
-        return true;                                                                                    \
-      }                                                                                                 \
-      _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __cccl_is_satisfied(void*, ...)                   \
-      {                                                                                                 \
-        return false;                                                                                   \
-      }                                                                                                 \
+#    define _CCCL_REQUIRES_EXPR_IMPL(...)                                                                 \
+      ->decltype(_CCCL_PP_FOR_EACH(_CCCL_CONCEPT_FRAGMENT_REQS_M, __VA_ARGS__) void()) {}                 \
+      template <class... _Args,                                                                           \
+                class _Sig,                                                                               \
+                class = decltype(static_cast<_Sig*>(&__cccl_self_t::__cccl_well_formed<_Args...>))>       \
+      _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __cccl_is_satisfied(::__cccl_tag<_Args...>*, _Sig*) \
+      {                                                                                                   \
+        return true;                                                                                      \
+      }                                                                                                   \
+      _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool __cccl_is_satisfied(void*, ...)                     \
+      {                                                                                                   \
+        return false;                                                                                     \
+      }                                                                                                   \
       }
 #  endif
 
