@@ -75,14 +75,14 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __cccl_is_true()
   return true;
 }
 
-#  if _CCCL_COMPILER(CLANG) || defined(_CCCL_COMPILER_MSVC)
+#  if _CCCL_COMPILER(MSVC)
 template <bool _Bp>
 _LIBCUDACXX_HIDE_FROM_ABI __cccl_enable_if_t<_Bp> __cccl_requires()
 {}
-#  else // ^^^ _CCCL_COMPILER(CLANG) || defined(_CCCL_COMPILER_MSVC) ^^^ / vvv other compilers vvv
+#  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 template <bool _Bp, __cccl_enable_if_t<_Bp, int> = 0>
 _CCCL_INLINE_VAR constexpr int __cccl_requires = 0;
-#  endif // !_CCCL_COMPILER(CLANG) && !defined(_CCCL_COMPILER_MSVC)
+#  endif // !_CCCL_COMPILER(MSVC)
 
 template <class _Tp, class... _Args>
 _LIBCUDACXX_HIDE_FROM_ABI auto __cccl_make_dependent(_Tp*, __cccl_tag<_Args...>*) -> _Tp;
@@ -219,7 +219,7 @@ namespace __cccl_unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-
 //     );
 //
 // Can only be used as the last requirement in a concept definition.
-#  if defined(__cpp_concepts) && _CCCL_STD_VER >= 2020
+#  if defined(__cpp_concepts) && _CCCL_STD_VER >= 2020 || defined(_CCCL_DOXYGEN_INVOKED)
 #    define _CCCL_REQUIRES_EXPR(_TY, ...) requires(__VA_ARGS__) _CCCL_REQUIRES_EXPR_2
 #    define _CCCL_REQUIRES_EXPR_2(...)    {_CCCL_PP_FOR_EACH(_CCCL_CONCEPT_FRAGMENT_REQS_M, __VA_ARGS__)}
 #  else
