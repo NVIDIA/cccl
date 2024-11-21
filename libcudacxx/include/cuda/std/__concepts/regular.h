@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/semiregular.h>
 
@@ -38,10 +38,10 @@ concept regular = semiregular<_Tp> && equality_comparable<_Tp>;
 // [concept.object]
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(__regular_, requires()(requires(semiregular<_Tp>), requires(equality_comparable<_Tp>)));
+_CCCL_CONCEPT_FRAGMENT(__regular_, requires()(requires(semiregular<_Tp>), requires(equality_comparable<_Tp>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT regular = _LIBCUDACXX_FRAGMENT(__regular_, _Tp);
+_CCCL_CONCEPT regular = _CCCL_FRAGMENT(__regular_, _Tp);
 
 #endif // _CCCL_STD_VER > 2011
 

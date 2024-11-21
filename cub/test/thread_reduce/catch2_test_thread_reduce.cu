@@ -281,13 +281,15 @@ using cub_operator_fp_list =
  * Verify results and kernel launch
  **********************************************************************************************************************/
 
-template <typename T, _CUB_TEMPLATE_REQUIRES(::cuda::std::is_floating_point<T>::value)>
+_CCCL_TEMPLATE(typename T)
+_CCCL_REQUIRES((::cuda::std::is_floating_point<T>::value))
 void verify_results(const T& expected_data, const T& test_results)
 {
   REQUIRE(expected_data == Approx(test_results).epsilon(0.05));
 }
 
-template <typename T, _CUB_TEMPLATE_REQUIRES(!::cuda::std::is_floating_point<T>::value)>
+_CCCL_TEMPLATE(typename T)
+_CCCL_REQUIRES((!::cuda::std::is_floating_point<T>::value))
 void verify_results(const T& expected_data, const T& test_results)
 {
   REQUIRE(expected_data == test_results);
