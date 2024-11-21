@@ -126,9 +126,19 @@ def pointer(container, ntype):
 def ldcs(typingctx, base):
     def codegen(context, builder, sig, args):
         bw = sig.return_type.bitwidth
-        ibw = ir.IntType(bw)
-        ibw_ptr = ibw.as_pointer()
-        ftype = ir.FunctionType(ibw, [ibw_ptr])
+        rt = None
+        if isinstance(sig.return_type, numba.core.types.scalars.Integer):
+            rt = ir.IntType(bw)
+        elif isinstance(sig.return_type, numba.core.types.scalars.Float):
+            if bw == 16:
+                rt = ir.HalfType()
+            elif bw == 32:
+                rt = ir.FloatType()
+            elif bw == 64:
+                rt = ir.DoubleType()
+        if rt is None:
+            raise RuntimeError(f"Unsupported: {type(sig.return_type)=}")
+        ftype = ir.FunctionType(rt, [rt.as_pointer()])
         asm = f"ld.global.cs.b{bw} $0, [$1];"
         if bw < 64:
             constraint = "=r, l"
