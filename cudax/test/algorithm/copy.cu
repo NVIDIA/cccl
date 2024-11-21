@@ -10,7 +10,7 @@
 
 #include "common.cuh"
 
-TEST_CASE("Copy", "[data_manipulation]")
+TEST_CASE("1d Copy", "[data_manipulation]")
 {
   cudax::stream _stream;
 
@@ -102,4 +102,59 @@ TEST_CASE("Copy", "[data_manipulation]")
     CUDAX_REQUIRE(vec[0] == get_expected_value(fill_byte));
     CUDAX_REQUIRE(vec[1] == 0xbeef);
   }
+}
+
+template <typename SrcLayout = cuda::std::layout_right,
+          typename DstLayout = SrcLayout,
+          typename SrcExtents,
+          typename DstExtents>
+void test_mdspan_copy_bytes(
+  cudax::stream_ref stream, SrcExtents src_extents = SrcExtents(), DstExtents dst_extents = DstExtents())
+{
+  cuda::mr::pinned_memory_resource host_resource;
+  auto src_mapping = typename SrcLayout::mapping{src_extents};
+  auto dst_mapping = typename DstLayout::mapping{dst_extents};
+
+  cudax::uninitialized_buffer<int, cuda::mr::host_accessible> src_buffer(
+    host_resource, src_mapping.required_span_size());
+  cudax::uninitialized_buffer<int, cuda::mr::host_accessible> dst_buffer(
+    host_resource, dst_mapping.required_span_size());
+
+  memset(src_buffer.data(), 1, src_buffer.size_bytes());
+  memset(dst_buffer.data(), 0, dst_buffer.size_bytes());
+
+  cuda::std::mdspan<int, SrcExtents, SrcLayout> src(src_buffer.data(), src_extents);
+  cuda::std::mdspan<int, DstExtents, DstLayout> dst(dst_buffer.data(), dst_extents);
+
+  for (int i = 0; i < static_cast<int>(src.extent(1)); i++)
+  {
+    src(0, i) = i;
+  }
+
+  cudax::copy_bytes(stream, src, dst);
+  stream.wait();
+
+  for (int i = 0; i < static_cast<int>(dst.extent(1)); i++)
+  {
+    CUDAX_CHECK(dst(0, i) == i);
+  }
+}
+
+TEST_CASE("Mdspan copy", "[data_manipulation]")
+{
+  cudax::stream stream;
+
+  auto static_extents = cuda::std::extents<size_t, 3, 4>();
+  test_mdspan_copy_bytes(stream, static_extents, static_extents);
+  test_mdspan_copy_bytes<cuda::std::layout_left>(stream, static_extents, static_extents);
+
+  auto dynamic_extents = cuda::std::dextents<size_t, 2>(3, 4);
+  test_mdspan_copy_bytes(stream, dynamic_extents, dynamic_extents);
+  test_mdspan_copy_bytes(stream, static_extents, dynamic_extents);
+  test_mdspan_copy_bytes<cuda::std::layout_left>(stream, static_extents, dynamic_extents);
+
+  auto mixed_extents = cuda::std::extents<int, cuda::std::dynamic_extent, 4>(3);
+  test_mdspan_copy_bytes(stream, dynamic_extents, mixed_extents);
+  test_mdspan_copy_bytes(stream, mixed_extents, static_extents);
+  test_mdspan_copy_bytes<cuda::std::layout_left>(stream, mixed_extents, static_extents);
 }
