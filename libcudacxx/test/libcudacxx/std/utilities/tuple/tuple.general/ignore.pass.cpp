@@ -31,7 +31,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
     unused(ignore_v);
   }
 
-  { // Test that std::ignore provides converting assignment.
+  { // Test that cuda::std::ignore provides converting assignment.
     auto& res = (cuda::std::ignore = 42);
     static_assert(noexcept(res = (cuda::std::ignore = 42)), "");
     assert(&res == &cuda::std::ignore);
@@ -41,16 +41,16 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
     {
       unsigned int bf : 3;
     };
-    S s{0b010};
+    S s{3};
     auto& res = (cuda::std::ignore = s.bf);
     assert(&res == &cuda::std::ignore);
   }
-  { // Test that std::ignore provides copy/move constructors
+  { // Test that cuda::std::ignore provides constexpr copy/move constructors
     auto copy  = cuda::std::ignore;
     auto moved = cuda::std::move(copy);
     unused(moved);
   }
-  { // Test that std::ignore provides copy/move assignment
+  { // Test that cuda::std::ignore provides constexpr copy/move assignment
     auto copy  = cuda::std::ignore;
     copy       = cuda::std::ignore;
     auto moved = cuda::std::ignore;
