@@ -52,7 +52,7 @@ error_code ::error_code(ErrorCodeEnum e
 // XXX WAR msvc's problem with enable_if
 #if !defined(_CCCL_COMPILER_MSVC)
                         ,
-                        ::cuda::std::__enable_if_t<is_error_code_enum<ErrorCodeEnum>::value>*
+                        ::cuda::std::enable_if_t<is_error_code_enum<ErrorCodeEnum>::value>*
 #endif // !_CCCL_COMPILER_MSVC
 )
 {
@@ -68,7 +68,7 @@ void error_code ::assign(int val, const error_category& cat)
 template <typename ErrorCodeEnum>
 // XXX WAR msvc's problem with enable_if
 #if !defined(_CCCL_COMPILER_MSVC)
-::cuda::std::__enable_if_t<is_error_code_enum<ErrorCodeEnum>::value, error_code>&
+::cuda::std::enable_if_t<is_error_code_enum<ErrorCodeEnum>::value, error_code>&
 #else
 error_code&
 #endif // !_CCCL_COMPILER_MSVC

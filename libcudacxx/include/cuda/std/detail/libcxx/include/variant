@@ -381,9 +381,9 @@ using __variant_index_t =
 #  ifndef _LIBCUDACXX_ABI_VARIANT_INDEX_TYPE_OPTIMIZATION
   unsigned int;
 #  else
-  __conditional_t<__choose_index_type(_NumAlts) == 0,
-                  unsigned char,
-                  __conditional_t<__choose_index_type(_NumAlts) == 1, unsigned short, unsigned int>>;
+  conditional_t<__choose_index_type(_NumAlts) == 0,
+                unsigned char,
+                conditional_t<__choose_index_type(_NumAlts) == 1, unsigned short, unsigned int>>;
 #  endif
 
 template <class _IndexType>
@@ -663,7 +663,7 @@ struct __variant
     const size_t __first_index = __get_runtime_index<sizeof...(_Vs), 0>(__vs...);
     return __visit_impl(
       integer_sequence<size_t>{},
-      integer_sequence<size_t, (__remove_cvref_t<_Vs>::__size() - 1)...>{},
+      integer_sequence<size_t, (remove_cvref_t<_Vs>::__size() - 1)...>{},
       __first_index,
       __make_value_visitor(_CUDA_VSTD::forward<_Visitor>(__visitor)),
       _CUDA_VSTD::forward<_Vs>(__vs)...);
@@ -676,7 +676,7 @@ struct __variant
     const size_t __first_index = __get_runtime_index<sizeof...(_Vs), 0>(__vs...);
     return __visit_impl(
       integer_sequence<size_t>{},
-      integer_sequence<size_t, (__remove_cvref_t<_Vs>::__size() - 1)...>{},
+      integer_sequence<size_t, (remove_cvref_t<_Vs>::__size() - 1)...>{},
       __first_index,
       __make_value_visitor<_Rp>(_CUDA_VSTD::forward<_Visitor>(__visitor)),
       _CUDA_VSTD::forward<_Vs>(__vs)...);
@@ -913,7 +913,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT __dtor<__traits<_Types...>, _Trait::_Availab
     template <class _Alt>
     _LIBCUDACXX_HIDE_FROM_ABI void operator()(_Alt& __alt) const noexcept
     {
-      using __alt_type = __remove_cvref_t<decltype(__alt)>;
+      using __alt_type = remove_cvref_t<decltype(__alt)>;
       __alt.~__alt_type();
     }
   };
@@ -929,7 +929,7 @@ protected:
   {
     if (!this->valueless_by_exception())
     {
-      constexpr size_t __np = __remove_cvref_t<__dtor>::__size();
+      constexpr size_t __np = remove_cvref_t<__dtor>::__size();
       __destroy(integral_constant<size_t, __np - 1>{}, this->__index);
     }
     this->__index = __variant_npos<__index_t>;
@@ -942,7 +942,7 @@ private:
   {
     if (__index == _CurrentIndex)
     {
-      using __alt_type = __remove_cvref_t<decltype(__access::__base::__get_alt<_CurrentIndex>(this->__as_base()))>;
+      using __alt_type = remove_cvref_t<decltype(__access::__base::__get_alt<_CurrentIndex>(this->__as_base()))>;
       __access::__base::__get_alt<_CurrentIndex>(this->__as_base()).~__alt_type();
       return;
     }
@@ -953,7 +953,7 @@ private:
   {
     if (__index == 0)
     {
-      using __alt_type = __remove_cvref_t<decltype(__access::__base::__get_alt<0>(this->__as_base()))>;
+      using __alt_type = remove_cvref_t<decltype(__access::__base::__get_alt<0>(this->__as_base()))>;
       __access::__base::__get_alt<0>(this->__as_base()).~__alt_type();
       return;
     }
@@ -1028,7 +1028,7 @@ protected:
     __lhs.__destroy();
     if (!__rhs.valueless_by_exception())
     {
-      constexpr size_t __np = __remove_cvref_t<__ctor>::__size();
+      constexpr size_t __np = remove_cvref_t<__ctor>::__size();
       __generic_construct_impl(
         integral_constant<size_t, __np - 1>{}, __rhs.index(), __lhs, _CUDA_VSTD::forward<_Rhs>(__rhs));
       __lhs.__index = static_cast<decltype(__lhs.__index)>(__rhs.index());
@@ -1198,7 +1198,7 @@ protected:
     }
     else
     {
-      constexpr size_t __np = __remove_cvref_t<__assignment>::__size();
+      constexpr size_t __np = remove_cvref_t<__assignment>::__size();
       this->__generic_assign(integral_constant<size_t, __np - 1>{}, __that.index(), _CUDA_VSTD::forward<_That>(__that));
     }
   }
@@ -1332,7 +1332,7 @@ public:
     }
     else if (this->index() == __that.index())
     {
-      constexpr size_t __np = __remove_cvref_t<__impl>::__size();
+      constexpr size_t __np = remove_cvref_t<__impl>::__size();
       __swap_value(integral_constant<size_t, __np - 1>{}, this->index(), *this, __that);
     }
     else
@@ -1360,7 +1360,7 @@ private:
 struct __no_narrowing_check
 {
   template <class _Dest, class _Source>
-  using _Apply = __type_identity<_Dest>;
+  using _Apply = type_identity<_Dest>;
 };
 
 struct __narrowing_check
@@ -1372,18 +1372,18 @@ struct __narrowing_check
   template <class _Dest, class _Source>
   struct __narrowing_check_impl<_Dest, _Source, void_t<decltype(_Dest{_CUDA_VSTD::declval<_Source>()})>>
   {
-    using type = __type_identity<_Dest>;
+    using type = type_identity<_Dest>;
   };
 
   template <class _Dest, class _Source>
-  using _Apply _LIBCUDACXX_NODEBUG_TYPE = typename __narrowing_check_impl<_Dest, _Source>::type;
+  using _Apply _CCCL_NODEBUG_ALIAS = typename __narrowing_check_impl<_Dest, _Source>::type;
 };
 
 template <class _Dest, class _Source>
-using __check_for_narrowing _LIBCUDACXX_NODEBUG_TYPE = typename _If<
+using __check_for_narrowing _CCCL_NODEBUG_ALIAS = typename _If<
 #  ifdef _LIBCUDACXX_ENABLE_NARROWING_CONVERSIONS_IN_VARIANT
   false &&
-#  endif
+#  endif // _LIBCUDACXX_ENABLE_NARROWING_CONVERSIONS_IN_VARIANT
     _CCCL_TRAIT(is_arithmetic, _Dest),
   __narrowing_check,
   __no_narrowing_check>::template _Apply<_Dest, _Source>;
@@ -1398,9 +1398,9 @@ struct __overload
 template <class _Tp, size_t>
 struct __overload_bool
 {
-  template <class _Up, class _Ap = __remove_cvref_t<_Up>>
+  template <class _Up, class _Ap = remove_cvref_t<_Up>>
   _LIBCUDACXX_HIDE_FROM_ABI auto
-  operator()(bool, _Up&&) const -> enable_if_t<_CCCL_TRAIT(is_same, _Ap, bool), __type_identity<_Tp>>;
+  operator()(bool, _Up&&) const -> enable_if_t<_CCCL_TRAIT(is_same, _Ap, bool), type_identity<_Tp>>;
 };
 
 template <size_t _Idx>
@@ -1450,11 +1450,11 @@ template <size_t... _Idx>
 struct __make_overloads_imp<__tuple_indices<_Idx...>>
 {
   template <class... _Types>
-  using _Apply _LIBCUDACXX_NODEBUG_TYPE = __all_overloads<__overload<_Types, _Idx>...>;
+  using _Apply _CCCL_NODEBUG_ALIAS = __all_overloads<__overload<_Types, _Idx>...>;
 };
 
 template <class... _Types>
-using _MakeOverloads _LIBCUDACXX_NODEBUG_TYPE =
+using _MakeOverloads _CCCL_NODEBUG_ALIAS =
   typename __make_overloads_imp<__make_indices_imp<sizeof...(_Types), 0>>::template _Apply<_Types...>;
 
 template <class _Tp, class... _Types>
@@ -1556,8 +1556,8 @@ public:
 
   template <class _Arg>
   using __match_construct =
-    _If<!_CCCL_TRAIT(is_same, __remove_cvref_t<_Arg>, variant) && !__is_inplace_type<__remove_cvref_t<_Arg>>::value //
-          && !__is_inplace_index<__remove_cvref_t<_Arg>>::value,
+    _If<!_CCCL_TRAIT(is_same, remove_cvref_t<_Arg>, variant) && !__is_inplace_type<remove_cvref_t<_Arg>>::value //
+          && !__is_inplace_index<remove_cvref_t<_Arg>>::value,
         typename __constraints::template __match_construct<_Arg>,
         __variant_detail::__invalid_variant_constraints>;
 
@@ -1629,7 +1629,7 @@ public:
 
   template <class _Arg>
   using __match_assign =
-    _If<!_CCCL_TRAIT(is_same, __remove_cvref_t<_Arg>, variant),
+    _If<!_CCCL_TRAIT(is_same, remove_cvref_t<_Arg>, variant),
         typename __constraints::template __match_assign<_Arg>,
         __variant_detail::__invalid_variant_constraints>;
 

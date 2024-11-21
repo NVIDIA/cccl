@@ -30,7 +30,7 @@
 #include <cub/util_allocator.cuh>
 #include <cub/util_arch.cuh>
 
-#include "catch2_test_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 template <int ItemsPerThread, int ThreadsInBlock, cub::BlockLoadAlgorithm LoadAlgorithm>
 struct output_idx
@@ -160,7 +160,7 @@ struct params_t
   static constexpr cub::BlockLoadAlgorithm load_algorithm = c2h::get<3, TestType>::value;
 };
 
-CUB_TEST("Block load works with even block sizes",
+C2H_TEST("Block load works with even block sizes",
          "[load][block]",
          types,
          items_per_thread,
@@ -171,7 +171,7 @@ CUB_TEST("Block load works with even block sizes",
   using type   = typename params::type;
 
   c2h::device_vector<type> d_input(GENERATE_COPY(take(10, random(0, params::tile_size))));
-  c2h::gen(CUB_SEED(10), d_input);
+  c2h::gen(C2H_SEED(10), d_input);
 
   c2h::device_vector<type> d_output(d_input.size());
 
@@ -183,7 +183,7 @@ CUB_TEST("Block load works with even block sizes",
   REQUIRE(d_input == d_output);
 }
 
-CUB_TEST("Block load works with even odd sizes",
+C2H_TEST("Block load works with even odd sizes",
          "[load][block]",
          types,
          items_per_thread,
@@ -194,7 +194,7 @@ CUB_TEST("Block load works with even odd sizes",
   using type   = typename params::type;
 
   c2h::device_vector<type> d_input(GENERATE_COPY(take(10, random(0, params::tile_size))));
-  c2h::gen(CUB_SEED(10), d_input);
+  c2h::gen(C2H_SEED(10), d_input);
 
   c2h::device_vector<type> d_output(d_input.size());
 
@@ -206,14 +206,14 @@ CUB_TEST("Block load works with even odd sizes",
   REQUIRE(d_input == d_output);
 }
 
-CUB_TEST(
+C2H_TEST(
   "Block load works with even vector types", "[load][block]", vec_types, items_per_thread, a_block_size, load_algorithm)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
 
   c2h::device_vector<type> d_input(GENERATE_COPY(take(10, random(0, params::tile_size))));
-  c2h::gen(CUB_SEED(10), d_input);
+  c2h::gen(C2H_SEED(10), d_input);
 
   c2h::device_vector<type> d_output(d_input.size());
 
@@ -225,7 +225,7 @@ CUB_TEST(
   REQUIRE(d_input == d_output);
 }
 
-CUB_TEST("Block load works with custom types", "[load][block]", items_per_thread, load_algorithm)
+C2H_TEST("Block load works with custom types", "[load][block]", items_per_thread, load_algorithm)
 {
   using type                                              = c2h::custom_type_t<c2h::equal_comparable_t>;
   constexpr int items_per_thread                          = c2h::get<0, TestType>::value;
@@ -234,7 +234,7 @@ CUB_TEST("Block load works with custom types", "[load][block]", items_per_thread
   static constexpr cub::BlockLoadAlgorithm load_algorithm = c2h::get<1, TestType>::value;
 
   c2h::device_vector<type> d_input(GENERATE_COPY(take(10, random(0, tile_size))));
-  c2h::gen(CUB_SEED(10), d_input);
+  c2h::gen(C2H_SEED(10), d_input);
 
   c2h::device_vector<type> d_output(d_input.size());
 
@@ -246,7 +246,7 @@ CUB_TEST("Block load works with custom types", "[load][block]", items_per_thread
   REQUIRE(d_input == d_output);
 }
 
-CUB_TEST("Block load works with caching iterators", "[load][block]", items_per_thread, load_algorithm)
+C2H_TEST("Block load works with caching iterators", "[load][block]", items_per_thread, load_algorithm)
 {
   using type                                              = int;
   constexpr int items_per_thread                          = c2h::get<0, TestType>::value;
@@ -255,7 +255,7 @@ CUB_TEST("Block load works with caching iterators", "[load][block]", items_per_t
   static constexpr cub::BlockLoadAlgorithm load_algorithm = c2h::get<1, TestType>::value;
 
   c2h::device_vector<type> d_input(GENERATE_COPY(take(10, random(0, tile_size))));
-  c2h::gen(CUB_SEED(10), d_input);
+  c2h::gen(C2H_SEED(10), d_input);
 
   cub::CacheModifiedInputIterator<cub::CacheLoadModifier::LOAD_DEFAULT, type> in(
     thrust::raw_pointer_cast(d_input.data()));

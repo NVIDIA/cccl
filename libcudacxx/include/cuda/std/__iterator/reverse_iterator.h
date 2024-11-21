@@ -128,15 +128,15 @@ public:
       , current(__x)
   {}
 
-  template <class _Up, class = __enable_if_t<!is_same<_Up, _Iter>::value && is_convertible<_Up const&, _Iter>::value>>
+  template <class _Up, class = enable_if_t<!is_same<_Up, _Iter>::value && is_convertible<_Up const&, _Iter>::value>>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reverse_iterator(const reverse_iterator<_Up>& __u)
       : __t_(__u.base())
       , current(__u.base())
   {}
 
   template <class _Up,
-            class = __enable_if_t<!is_same<_Up, _Iter>::value && is_convertible<_Up const&, _Iter>::value
-                                  && is_assignable<_Iter&, _Up const&>::value>>
+            class = enable_if_t<!is_same<_Up, _Iter>::value && is_convertible<_Up const&, _Iter>::value
+                                && is_assignable<_Iter&, _Up const&>::value>>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reverse_iterator& operator=(const reverse_iterator<_Up>& __u)
   {
     __t_ = current = __u.base();
@@ -151,14 +151,14 @@ public:
       : current(__x)
   {}
 
-  template <class _Up, class = __enable_if_t<!is_same<_Up, _Iter>::value && is_convertible<_Up const&, _Iter>::value>>
+  template <class _Up, class = enable_if_t<!is_same<_Up, _Iter>::value && is_convertible<_Up const&, _Iter>::value>>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reverse_iterator(const reverse_iterator<_Up>& __u)
       : current(__u.base())
   {}
 
   template <class _Up,
-            class = __enable_if_t<!is_same<_Up, _Iter>::value && is_convertible<_Up const&, _Iter>::value
-                                  && is_assignable<_Iter&, _Up const&>::value>>
+            class = enable_if_t<!is_same<_Up, _Iter>::value && is_convertible<_Up const&, _Iter>::value
+                                && is_assignable<_Iter&, _Up const&>::value>>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reverse_iterator& operator=(const reverse_iterator<_Up>& __u)
   {
     current = __u.base();
@@ -268,10 +268,7 @@ public:
   {
     auto __xtmp = __x.base();
     auto __ytmp = __y.base();
-    _CUDA_VRANGES::iter_swap(--__xtmp, --__ytmp);
-#    if defined(_CCCL_COMPILER_ICC)
-    _CCCL_UNREACHABLE();
-#    endif // _CCCL_COMPILER_ICC
+    return _CUDA_VRANGES::iter_swap(--__xtmp, --__ytmp);
   }
 #  endif // !_CCCL_COMPILER_MSVC_2017
 #endif // _CCCL_STD_VER > 2014

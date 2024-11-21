@@ -64,7 +64,7 @@ _LIBCUDACXX_CONCEPT regular_invocable = invocable<_Fn, _Args...>;
 template <class _Fun, class... _Args>
 _LIBCUDACXX_CONCEPT_FRAGMENT(
   __invoke_constructible_,
-  requires(_Fun&& __fun, _Args&&... __args)((static_cast<__remove_cvref_t<invoke_result_t<_Fun, _Args...>>>(
+  requires(_Fun&& __fun, _Args&&... __args)((static_cast<remove_cvref_t<invoke_result_t<_Fun, _Args...>>>(
     _CUDA_VSTD::invoke(_CUDA_VSTD::forward<_Fun>(__fun), _CUDA_VSTD::forward<_Args>(__args)...)))));
 template <class _Fun, class... _Args>
 _LIBCUDACXX_CONCEPT __invoke_constructible = _LIBCUDACXX_FRAGMENT(__invoke_constructible_, _Fun, _Args...);

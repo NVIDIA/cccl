@@ -2816,7 +2816,7 @@ struct hash<THRUST_NS_QUALIFIER::optional<T>>
       return 0;
     }
 
-    return std::hash<::cuda::std::__remove_const_t<T>>()(*o);
+    return std::hash<::cuda::std::remove_const_t<T>>()(*o);
   }
 };
 } // namespace std

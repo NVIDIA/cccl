@@ -29,7 +29,7 @@
 
 #include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 
-#include "catch2_test_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 //! @file
 //! This file contains utilities for device-scope API tests
@@ -46,7 +46,7 @@
 //! // arguments as the CUB API. The wrapper name is provided as the second argument.
 //! DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, cub_reduce_sum);
 //!
-//! CUB_TEST("Reduce test", "[device][reduce]")
+//! C2H_TEST("Reduce test", "[device][reduce]")
 //! {
 //!   // ...
 //!   // Invoke the wrapper from the test. It'll allocate temporary storage and

@@ -1,6 +1,6 @@
 /******************************************************************************
  * Copyright (c) 2011, Duane Merrill.  All rights reserved.
- * Copyright (c) 2011-2022, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2011-2024, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -48,17 +48,17 @@
 #endif // no system header
 
 #include <cub/detail/type_traits.cuh> // always_false
-#include <cub/util_cpp_dialect.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/functional> // cuda::maximum, cuda::minimum
+#include <cuda/std/bit> // cuda::std::bit_cast
 #include <cuda/std/functional> // cuda::std::plus
 #include <cuda/std/type_traits> // cuda::std::common_type
 #include <cuda/std/utility> // cuda::std::forward
 
-// #include <functional> // std::plus
-
 CUB_NAMESPACE_BEGIN
 
+// TODO(bgruber): deprecate in C++17 with a note: "replace by decltype(cuda::std::not_fn(EqualityOp{}))"
 /// @brief Inequality functor (wraps equality functor)
 template <typename EqualityOp>
 struct InequalityWrapper
@@ -79,82 +79,13 @@ struct InequalityWrapper
   }
 };
 
-#if _CCCL_STD_VER > 2011
-using Equality   = ::cuda::std::equal_to<>;
-using Inequality = ::cuda::std::not_equal_to<>;
-using Sum        = ::cuda::std::plus<>;
-using Difference = ::cuda::std::minus<>;
-using Division   = ::cuda::std::divides<>;
-#else
-/// @brief Default equality functor
-struct Equality
-{
-  /// Boolean equality operator, returns `t == u`
-  template <typename T, typename U>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(T&& t, U&& u) const
-  {
-    return ::cuda::std::forward<T>(t) == ::cuda::std::forward<U>(u);
-  }
-};
-
-/// @brief Default inequality functor
-struct Inequality
-{
-  /// Boolean inequality operator, returns `t != u`
-  template <typename T, typename U>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE bool operator()(T&& t, U&& u) const
-  {
-    return ::cuda::std::forward<T>(t) != ::cuda::std::forward<U>(u);
-  }
-};
-
-/// @brief Default sum functor
-struct Sum
-{
-  /// Binary sum operator, returns `t + u`
-  template <typename T, typename U>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto
-  operator()(T&& t, U&& u) const -> decltype(::cuda::std::forward<T>(t) + ::cuda::std::forward<U>(u))
-  {
-    return ::cuda::std::forward<T>(t) + ::cuda::std::forward<U>(u);
-  }
-};
-
-/// @brief Default difference functor
-struct Difference
-{
-  /// Binary difference operator, returns `t - u`
-  template <typename T, typename U>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto
-  operator()(T&& t, U&& u) const -> decltype(::cuda::std::forward<T>(t) - ::cuda::std::forward<U>(u))
-  {
-    return ::cuda::std::forward<T>(t) - ::cuda::std::forward<U>(u);
-  }
-};
-
-/// @brief Default division functor
-struct Division
-{
-  /// Binary division operator, returns `t / u`
-  template <typename T, typename U>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE auto
-  operator()(T&& t, U&& u) const -> decltype(::cuda::std::forward<T>(t) / ::cuda::std::forward<U>(u))
-  {
-    return ::cuda::std::forward<T>(t) / ::cuda::std::forward<U>(u);
-  }
-};
-#endif
-
-/// @brief Default max functor
-struct Max
-{
-  /// Boolean max operator, returns `(t > u) ? t : u`
-  template <typename T, typename U>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::common_type<T, U>::type operator()(T&& t, U&& u) const
-  {
-    return CUB_MAX(t, u);
-  }
-};
+using Equality CUB_DEPRECATED_BECAUSE("use cuda::std::equal_to instead")       = ::cuda::std::equal_to<>;
+using Inequality CUB_DEPRECATED_BECAUSE("use cuda::std::not_equal_to instead") = ::cuda::std::not_equal_to<>;
+using Sum CUB_DEPRECATED_BECAUSE("use cuda::std::plus instead")                = ::cuda::std::plus<>;
+using Difference CUB_DEPRECATED_BECAUSE("use cuda::std::minus instead")        = ::cuda::std::minus<>;
+using Division CUB_DEPRECATED_BECAUSE("use cuda::std::divides instead")        = ::cuda::std::divides<>;
+using Max CUB_DEPRECATED_BECAUSE("use cuda::maximum instead")                  = ::cuda::maximum<>;
+using Min CUB_DEPRECATED_BECAUSE("use cuda::minimum instead")                  = ::cuda::minimum<>;
 
 /// @brief Arg max functor (keeps the value and offset of the first occurrence
 ///        of the larger item)
@@ -177,17 +108,6 @@ struct ArgMax
     }
 
     return a;
-  }
-};
-
-/// @brief Default min functor
-struct Min
-{
-  /// Boolean min operator, returns `(t < u) ? t : u`
-  template <typename T, typename U>
-  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE typename ::cuda::std::common_type<T, U>::type operator()(T&& t, U&& u) const
-  {
-    return CUB_MIN(t, u);
   }
 };
 
@@ -449,8 +369,9 @@ struct ReduceByKeyOp
   }
 };
 
+//! Deprecated [Since 2.8]
 template <typename BinaryOpT>
-struct BinaryFlip
+struct CUB_DEPRECATED BinaryFlip
 {
   BinaryOpT binary_op;
 
@@ -466,127 +387,301 @@ struct BinaryFlip
   }
 };
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+//! Deprecated [Since 2.8]
 template <typename BinaryOpT>
-_CCCL_HOST_DEVICE BinaryFlip<BinaryOpT> MakeBinaryFlip(BinaryOpT binary_op)
+CUB_DEPRECATED _CCCL_HOST_DEVICE BinaryFlip<BinaryOpT> MakeBinaryFlip(BinaryOpT binary_op)
 {
   return BinaryFlip<BinaryOpT>(binary_op);
 }
+_CCCL_SUPPRESS_DEPRECATED_POP
+
+#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
 
 namespace internal
 {
-// TODO: Remove DPX specilization when nvbug 4823237 is fixed
 
 template <typename T>
-struct DpxMin
+struct SimdMin
 {
-  static_assert(detail::always_false<T>(), "DpxMin is not supported for this type");
+  static_assert(cub::detail::always_false<T>(), "Unsupported specialization");
 };
 
 template <>
-struct DpxMin<::cuda::std::int16_t>
+struct SimdMin<::cuda::std::int16_t>
 {
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
+  using simd_type = ::cuda::std::uint32_t;
+
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t
+  operator()(::cuda::std::uint32_t a, ::cuda::std::uint32_t b) const
   {
     return __vmins2(a, b);
   }
 };
 
 template <>
-struct DpxMin<::cuda::std::uint16_t>
+struct SimdMin<::cuda::std::uint16_t>
 {
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
+  using simd_type = ::cuda::std::uint32_t;
+
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t
+  operator()(::cuda::std::uint32_t a, ::cuda::std::uint32_t b) const
   {
     return __vminu2(a, b);
   }
 };
 
+#  if defined(_CCCL_HAS_NVFP16)
+
+template <>
+struct SimdMin<__half>
+{
+  using simd_type = __half2;
+
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
+  {
+    NV_IF_TARGET(NV_PROVIDES_SM_80,
+                 (return __hmin2(a, b);),
+                 (return __halves2half2(__float2half(::cuda::minimum<>{}(__half2float(a.x), __half2float(b.x))),
+                                        __float2half(::cuda::minimum<>{}(__half2float(a.y), __half2float(b.y))));));
+  }
+};
+
+#  endif // defined(_CCCL_HAS_NVFP16)
+
+#  if defined(_CCCL_HAS_NVBF16)
+
+// NOTE: __halves2bfloat162 is not always available on older CUDA Toolkits for __CUDA_ARCH__ < 800
+_CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 halves2bfloat162(__nv_bfloat16 a, __nv_bfloat16 b)
+{
+  ::cuda::std::uint32_t tmp;
+  auto a_uint16 = ::cuda::std::bit_cast<::cuda::std::uint16_t>(a);
+  auto b_uint16 = ::cuda::std::bit_cast<::cuda::std::uint16_t>(b);
+  asm("{mov.b32 %0, {%1,%2};}\n" : "=r"(tmp) : "h"(a_uint16), "h"(b_uint16));
+  __nv_bfloat162 ret;
+  ::memcpy(&ret, &tmp, sizeof(ret));
+  return ret; // TODO: replace with ::cuda::std::bit_cast<__nv_bfloat162>(tmp);
+}
+
+template <>
+struct SimdMin<__nv_bfloat16>
+{
+  using simd_type = __nv_bfloat162;
+
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
+  {
+    NV_IF_TARGET(NV_PROVIDES_SM_80,
+                 (return __hmin2(a, b);),
+                 (return cub::internal::halves2bfloat162(
+                           __float2bfloat16(::cuda::minimum<>{}(__bfloat162float(a.x), __bfloat162float(b.x))),
+                           __float2bfloat16(::cuda::minimum<>{}(__bfloat162float(a.y), __bfloat162float(b.y))));));
+  }
+};
+
+#  endif // defined(_CCCL_HAS_NVBF16)
+
 //----------------------------------------------------------------------------------------------------------------------
 
 template <typename T>
-struct DpxMax
+struct SimdMax
 {
-  static_assert(detail::always_false<T>(), "DpxMax is not supported for this type");
+  static_assert(cub::detail::always_false<T>(), "Unsupported specialization");
 };
 
 template <>
-struct DpxMax<::cuda::std::int16_t>
+struct SimdMax<::cuda::std::int16_t>
 {
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
+  using simd_type = ::cuda::std::uint32_t;
+
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t
+  operator()(::cuda::std::uint32_t a, ::cuda::std::uint32_t b) const
   {
     return __vmaxs2(a, b);
   }
 };
 
 template <>
-struct DpxMax<::cuda::std::uint16_t>
+struct SimdMax<::cuda::std::uint16_t>
 {
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
+  using simd_type = ::cuda::std::uint32_t;
+
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE ::cuda::std::uint32_t
+  operator()(::cuda::std::uint32_t a, ::cuda::std::uint32_t b) const
   {
     return __vmaxu2(a, b);
   }
 };
 
+#  if defined(_CCCL_HAS_NVFP16)
+
+template <>
+struct SimdMax<__half>
+{
+  using simd_type = __half2;
+
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
+  {
+    NV_IF_TARGET(NV_PROVIDES_SM_80,
+                 (return __hmax2(a, b);),
+                 (return __halves2half2(__float2half(::cuda::maximum<>{}(__half2float(a.x), __half2float(b.x))),
+                                        __float2half(::cuda::maximum<>{}(__half2float(a.y), __half2float(b.y))));));
+  }
+};
+
+#  endif // defined(_CCCL_HAS_NVFP16)
+
+#  if defined(_CCCL_HAS_NVBF16)
+
+template <>
+struct SimdMax<__nv_bfloat16>
+{
+  using simd_type = __nv_bfloat162;
+
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
+  {
+    NV_IF_TARGET(NV_PROVIDES_SM_80,
+                 (return __hmax2(a, b);),
+                 (return cub::internal::halves2bfloat162(
+                           __float2bfloat16(::cuda::maximum<>{}(__bfloat162float(a.x), __bfloat162float(b.x))),
+                           __float2bfloat16(::cuda::maximum<>{}(__bfloat162float(a.y), __bfloat162float(b.y))));));
+  }
+};
+
+#  endif // defined(_CCCL_HAS_NVBF16)
+
 //----------------------------------------------------------------------------------------------------------------------
 
 template <typename T>
-struct DpxSum
+struct SimdSum
 {
-  static_assert(detail::always_false<T>(), "DpxSum is not supported for this type");
+  static_assert(cub::detail::always_false<T>(), "Unsupported specialization");
 };
 
+#  if defined(_CCCL_HAS_NVFP16)
+
 template <>
-struct DpxSum<::cuda::std::int16_t>
+struct SimdSum<__half>
 {
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
+  using simd_type = __half2;
+
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
   {
-    return __vadd2(a, b);
+    NV_IF_TARGET(NV_PROVIDES_SM_53,
+                 (return __hadd2(a, b);),
+                 (return __halves2half2(__float2half(__half2float(a.x) + __half2float(b.x)),
+                                        __float2half(__half2float(a.y) + __half2float(b.y)));));
   }
 };
 
+#  endif // defined(_CCCL_HAS_NVFP16)
+
+#  if defined(_CCCL_HAS_NVBF16)
+
 template <>
-struct DpxSum<::cuda::std::uint16_t>
+struct SimdSum<__nv_bfloat16>
 {
-  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE unsigned operator()(unsigned a, unsigned b) const
+  using simd_type = __nv_bfloat162;
+
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
   {
-    return __vadd2(a, b);
+    NV_IF_TARGET(
+      NV_PROVIDES_SM_80,
+      (return __hadd2(a, b);),
+      (return cub::internal::halves2bfloat162(__float2bfloat16(__bfloat162float(a.x) + __bfloat162float(b.x)),
+                                              __float2bfloat16(__bfloat162float(a.y) + __bfloat162float(b.y)));));
   }
 };
+
+#  endif // defined(_CCCL_HAS_NVBF16)
+
+//----------------------------------------------------------------------------------------------------------------------
+
+template <typename T>
+struct SimdMul
+{
+  static_assert(cub::detail::always_false<T>(), "Unsupported specialization");
+};
+
+#  if defined(_CCCL_HAS_NVFP16)
+
+template <>
+struct SimdMul<__half>
+{
+  using simd_type = __half2;
+
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
+  {
+    NV_IF_TARGET(NV_PROVIDES_SM_53,
+                 (return __hmul2(a, b);),
+                 (return __halves2half2(__float2half(__half2float(a.x) * __half2float(b.x)),
+                                        __float2half(__half2float(a.y) * __half2float(b.y)));));
+  }
+};
+
+#  endif // defined(_CCCL_HAS_NVFP16)
+
+#  if defined(_CCCL_HAS_NVBF16)
+
+template <>
+struct SimdMul<__nv_bfloat16>
+{
+  using simd_type = __nv_bfloat162;
+
+  _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
+  {
+    NV_IF_TARGET(NV_PROVIDES_SM_80,
+                 (return __hmul2(a, b);),
+                 (return halves2bfloat162(__float2bfloat16(__bfloat162float(a.x) * __bfloat162float(b.x)),
+                                          __float2bfloat16(__bfloat162float(a.y) * __bfloat162float(b.y)));));
+  }
+};
+
+#  endif // defined(_CCCL_HAS_NVBF16)
 
 //----------------------------------------------------------------------------------------------------------------------
 
 template <typename ReduceOp, typename T>
-struct CubOperatorToDpx
+struct CubOperatorToSimdOperator
 {
-  static_assert(detail::always_false<T>(), "Dpx is not supported for this operator");
+  static_assert(cub::detail::always_false<T>(), "Unsupported specialization");
 };
 
 template <typename T>
-struct CubOperatorToDpx<cub::Min, T>
+struct CubOperatorToSimdOperator<::cuda::minimum<>, T>
 {
-  using type = DpxMin<T>;
+  using type      = SimdMin<T>;
+  using simd_type = typename type::simd_type;
 };
 
 template <typename T>
-struct CubOperatorToDpx<cub::Max, T>
+struct CubOperatorToSimdOperator<::cuda::maximum<>, T>
 {
-  using type = DpxMax<T>;
+  using type      = SimdMax<T>;
+  using simd_type = typename type::simd_type;
 };
 
 template <typename T>
-struct CubOperatorToDpx<cub::Sum, T>
+struct CubOperatorToSimdOperator<::cuda::std::plus<>, T>
 {
-  using type = DpxSum<T>;
+  using type      = SimdSum<T>;
+  using simd_type = typename type::simd_type;
 };
 
-// template <typename T>
-// struct CubOperatorToDpx<std::plus<T>, T>
-//{
-//   using type = DpxSum<T>;
-// };
+template <typename T>
+struct CubOperatorToSimdOperator<::cuda::std::multiplies<>, T>
+{
+  using type      = SimdMul<T>;
+  using simd_type = typename type::simd_type;
+};
 
 template <typename ReduceOp, typename T>
-using cub_operator_to_dpx_t = CubOperatorToDpx<ReduceOp, T>;
+using cub_operator_to_simd_operator_t = typename CubOperatorToSimdOperator<ReduceOp, T>::type;
+
+template <typename ReduceOp, typename T>
+using simd_type_t = typename CubOperatorToSimdOperator<ReduceOp, T>::simd_type;
 
 } // namespace internal
+
+#endif // !DOXYGEN_SHOULD_SKIP_THIS
 
 CUB_NAMESPACE_END

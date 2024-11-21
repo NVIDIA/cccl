@@ -21,8 +21,8 @@ struct policy_hub_t
     static constexpr int min_bif    = cub::detail::transform::arch_to_min_bytes_in_flight(__CUDA_ARCH_LIST__);
     static constexpr auto algorithm = static_cast<cub::detail::transform::Algorithm>(TUNE_ALGORITHM);
     using algo_policy =
-      ::cuda::std::_If<algorithm == cub::detail::transform::Algorithm::fallback_for,
-                       cub::detail::transform::fallback_for_policy,
+      ::cuda::std::_If<algorithm == cub::detail::transform::Algorithm::prefetch,
+                       cub::detail::transform::prefetch_policy_t<TUNE_THREADS>,
                        cub::detail::transform::async_copy_policy_t<TUNE_THREADS>>;
   };
 };
@@ -91,7 +91,7 @@ struct narrowing_error : std::runtime_error
 
 // from C++ GSL
 // implementation insipired by: https://github.com/microsoft/GSL/blob/main/include/gsl/narrow
-template <typename DstT, typename SrcT, ::cuda::std::__enable_if_t<::cuda::std::is_arithmetic<SrcT>::value, int> = 0>
+template <typename DstT, typename SrcT, ::cuda::std::enable_if_t<::cuda::std::is_arithmetic<SrcT>::value, int> = 0>
 constexpr DstT narrow(SrcT value)
 {
   constexpr bool is_different_signedness = ::cuda::std::is_signed<SrcT>::value != ::cuda::std::is_signed<DstT>::value;

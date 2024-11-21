@@ -69,7 +69,10 @@ template <> struct char_traits<char8_t>;  // c++20
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__algorithm/search.h>
 #include <cuda/std/__fwd/string.h>
+#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/detail/libcxx/include/iosfwd>
+
+#include <nv/target>
 
 _CCCL_PUSH_MACROS
 
@@ -228,12 +231,6 @@ _LIBCUDACXX_HIDE_FROM_ABI _CharT* char_traits<_CharT>::assign(char_type* __s, si
 
 // char_traits<char>
 
-// GCC's builtin_strlen isn't reliable at constexpr time
-// MSVC does not expose builtin_strlen before C++17
-#if defined(_CCCL_COMPILER_GCC) || (defined(_CCCL_COMPILER_MSVC) && _CCCL_STD_VER < 2017)
-#  define _CCCL_HAS_NO_BUILTIN_STRLEN
-#endif
-
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char>
 {
@@ -260,41 +257,42 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char>
 
   _LIBCUDACXX_HIDE_FROM_ABI static _CCCL_CONSTEXPR_CXX14 int
   compare(const char_type* __s1, const char_type* __s2, size_t __n) noexcept;
+
   _LIBCUDACXX_HIDE_FROM_ABI static size_t _CCCL_CONSTEXPR_CXX14 length(const char_type* __s) noexcept
   {
-#ifdef _CCCL_HAS_NO_BUILTIN_STRLEN
-#  ifdef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED // is_constant_evaluated only exists since GCC 9
+#if _CCCL_COMPILER(GCC, <, 13)
+    // absurd workaround for GCC "internal compiler error: in cxx_eval_array_reference"
     if (__libcpp_is_constant_evaluated())
-#  endif // defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-    {
-      size_t __len = 0;
-      for (; !eq(*__s, char(0)); ++__s)
-      {
-        ++__len;
-      }
-      return __len;
-    }
-#endif // defined(_CCCL_HAS_NO_BUILTIN_STRLEN)
-#if !defined(_CCCL_HAS_NO_BUILTIN_STRLEN) || defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+      ;
+#endif
+#if defined(_CCCL_BUILTIN_STRLEN)
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
                       (size_t __len = 0; for (; !eq(*__s, char(0)); ++__s)++ __len; return __len;),
-                      (return __builtin_strlen(__s);))
-#endif // !defined(_CCCL_HAS_NO_BUILTIN_STRLEN) || defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
+                      (return _CCCL_BUILTIN_STRLEN(__s);))
+#else
+    size_t __len = 0;
+    for (; !eq(*__s, char(0)); ++__s)
+    {
+      ++__len;
+    }
+    return __len;
+#endif
   }
+
   _LIBCUDACXX_HIDE_FROM_ABI static _CCCL_CONSTEXPR_CXX14 const char_type*
   find(const char_type* __s, size_t __n, const char_type& __a) noexcept;
   _LIBCUDACXX_HIDE_FROM_ABI static char_type* move(char_type* __s1, const char_type* __s2, size_t __n) noexcept
   {
-    return __n == 0 ? __s1 : (char_type*) __copy<_ClassicAlgPolicy>(__s2, __s2 + __n, __s1).first - __n;
+    return __n == 0 ? __s1 : const_cast<char_type*>(__copy<_ClassicAlgPolicy>(__s2, __s2 + __n, __s1).first) - __n;
   }
   _LIBCUDACXX_HIDE_FROM_ABI static char_type* copy(char_type* __s1, const char_type* __s2, size_t __n) noexcept
   {
     _CCCL_ASSERT(__s2 < __s1 || __s2 >= __s1 + __n, "char_traits::copy overlapped range");
-    return __n == 0 ? __s1 : (char_type*) memcpy(__s1, __s2, __n);
+    return __n == 0 ? __s1 : static_cast<char_type*>(memcpy(__s1, __s2, __n));
   }
   _LIBCUDACXX_HIDE_FROM_ABI static char_type* assign(char_type* __s, size_t __n, char_type __a) noexcept
   {
-    return __n == 0 ? __s : (char_type*) memset(__s, to_int_type(__a), __n);
+    return __n == 0 ? __s : static_cast<char_type*>(memset(__s, to_int_type(__a), __n));
   }
 
 #ifndef __cuda_std__
@@ -438,7 +436,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<wchar_t>
 #  endif // !__cuda_std__
 };
 
-inline _CCCL_CONSTEXPR_CXX14 int
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 int
 char_traits<wchar_t>::compare(const char_type* __s1, const char_type* __s2, size_t __n) noexcept
 {
   if (__n == 0)
@@ -481,7 +479,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr size_t __char_traits_length_checked(const ty
 }
 
 #ifndef _LIBCUDACXX_HAS_NO_WCHAR_H
-inline _CCCL_CONSTEXPR_CXX14 size_t char_traits<wchar_t>::length(const char_type* __s) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 size_t char_traits<wchar_t>::length(const char_type* __s) noexcept
 {
 #  if _CCCL_HAS_FEATURE(cxx_constexpr_string_builtins)
   return __builtin_wcslen(__s);
@@ -497,7 +495,7 @@ inline _CCCL_CONSTEXPR_CXX14 size_t char_traits<wchar_t>::length(const char_type
 #  endif
 }
 
-inline _CCCL_CONSTEXPR_CXX14 const wchar_t*
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const wchar_t*
 char_traits<wchar_t>::find(const char_type* __s, size_t __n, const char_type& __a) noexcept
 {
   if (__n == 0)
@@ -556,18 +554,18 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char8_t>
 
   _LIBCUDACXX_HIDE_FROM_ABI static char_type* move(char_type* __s1, const char_type* __s2, size_t __n) noexcept
   {
-    return __n == 0 ? __s1 : (char_type*) __copy<_ClassicAlgPolicy>(__s2, __s2 + __n, __s1).first - __n;
+    return __n == 0 ? __s1 : const_cast<char_type*>(__copy<_ClassicAlgPolicy>(__s2, __s2 + __n, __s1).first) - __n;
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI static char_type* copy(char_type* __s1, const char_type* __s2, size_t __n) noexcept
   {
     _CCCL_ASSERT(__s2 < __s1 || __s2 >= __s1 + __n, "char_traits::copy overlapped range");
-    return __n == 0 ? __s1 : (char_type*) memcpy(__s1, __s2, __n);
+    return __n == 0 ? __s1 : static_cast<char_type*>(memcpy(__s1, __s2, __n));
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI static char_type* assign(char_type* __s, size_t __n, char_type __a) noexcept
   {
-    return __n == 0 ? __s : (char_type*) memset(__s, to_int_type(__a), __n);
+    return __n == 0 ? __s : static_cast<char_type*>(memset(__s, to_int_type(__a), __n));
   }
 
 #  ifndef __cuda_std__

@@ -40,10 +40,9 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // common_reference
-#if _CCCL_STD_VER > 2011
 
 // Let COND_RES(X, Y) be:
-#  ifdef _CCCL_COMPILER_MSVC // Workaround for DevCom-1627396
+#ifdef _CCCL_COMPILER_MSVC // Workaround for DevCom-1627396
 template <class _Tp>
 _Tp __returns_exactly() noexcept; // not defined
 
@@ -68,21 +67,17 @@ struct __cond_res_workaround<_Tp, _Up, void_t<__cond_res_if_right<_Tp, _Up>>>
 
 template <class _Xp, class _Yp>
 using __cond_res = typename __cond_res_workaround<_Xp, _Yp>::type;
-#  else // ^^^ MSVC ^^^ / vvv !MSVC vvv
+#else // ^^^ MSVC ^^^ / vvv !MSVC vvv
 template <class _Xp, class _Yp>
 using __cond_res = decltype(false ? _CUDA_VSTD::declval<_Xp (&)()>()() : _CUDA_VSTD::declval<_Yp (&)()>()());
-#  endif // !MSVC
+#endif // !MSVC
 
 // Let `XREF(A)` denote a unary alias template `T` such that `T<U>` denotes the same type as `U`
 // with the addition of `A`'s cv and reference qualifiers, for a non-reference cv-unqualified type
 // `U`.
-// [Note: `XREF(A)` is `__xref<A>::template __apply`]
+// [Note: `XREF(A)` is `__xref<A>::template __call`]
 template <class _Tp>
-struct __xref
-{
-  template <class _Up>
-  using __apply = __copy_cvref_t<_Tp, _Up>;
-};
+using __xref = __apply_cvref_fn<_Tp>;
 
 // Given types A and B, let X be remove_reference_t<A>, let Y be remove_reference_t<B>,
 // and let COMMON-REF(A, B) be:
@@ -90,7 +85,7 @@ template <class _Ap, class _Bp, class = void>
 struct __common_ref;
 
 template <class _Xp, class _Yp>
-using __common_ref_t = typename __common_ref<_Xp, _Yp>::__type;
+using __common_ref_t _CCCL_NODEBUG_ALIAS = typename __common_ref<_Xp, _Yp>::__type;
 
 template <class _Xp, class _Yp>
 using __cv_cond_res = __cond_res<__copy_cv_t<_Xp, _Yp>&, __copy_cv_t<_Yp, _Xp>&>;
@@ -98,7 +93,7 @@ using __cv_cond_res = __cond_res<__copy_cv_t<_Xp, _Yp>&, __copy_cv_t<_Yp, _Xp>&>
 //    If A and B are both lvalue reference types, COMMON-REF(A, B) is
 //    COND-RES(COPYCV(X, Y)&, COPYCV(Y, X)&) if that type exists and is a reference type.
 template <class _Ap, class _Bp>
-struct __common_ref<_Ap&, _Bp&, enable_if_t<is_reference_v<__cv_cond_res<_Ap, _Bp>>>>
+struct __common_ref<_Ap&, _Bp&, enable_if_t<_CCCL_TRAIT(is_reference, __cv_cond_res<_Ap, _Bp>)>>
 {
   using __type = __cv_cond_res<_Ap, _Bp>;
 };
@@ -114,10 +109,10 @@ struct __common_ref_rr
 {};
 
 template <class _Ap, class _Bp>
-struct __common_ref_rr<
-  _Ap&&,
-  _Bp&&,
-  enable_if_t<is_convertible_v<_Ap&&, __common_ref_C<_Ap, _Bp>> && is_convertible_v<_Bp&&, __common_ref_C<_Ap, _Bp>>>>
+struct __common_ref_rr<_Ap&&,
+                       _Bp&&,
+                       enable_if_t<_CCCL_TRAIT(is_convertible, _Ap&&, __common_ref_C<_Ap, _Bp>)
+                                   && _CCCL_TRAIT(is_convertible, _Bp&&, __common_ref_C<_Ap, _Bp>)>>
 {
   using __type = __common_ref_C<_Ap, _Bp>;
 };
@@ -137,7 +132,7 @@ struct __common_ref_lr
 {};
 
 template <class _Ap, class _Bp>
-struct __common_ref_lr<_Ap&&, _Bp&, enable_if_t<is_convertible_v<_Ap&&, __common_ref_D<_Ap, _Bp>>>>
+struct __common_ref_lr<_Ap&&, _Bp&, enable_if_t<_CCCL_TRAIT(is_convertible, _Ap&&, __common_ref_D<_Ap, _Bp>)>>
 {
   using __type = __common_ref_D<_Ap, _Bp>;
 };
@@ -163,15 +158,15 @@ template <class...>
 struct common_reference;
 
 template <class... _Types>
-using common_reference_t = typename common_reference<_Types...>::type;
+using common_reference_t _CCCL_NODEBUG_ALIAS = typename common_reference<_Types...>::type;
 
-#  if _CCCL_STD_VER > 2011
+#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class, class, class = void>
 _CCCL_INLINE_VAR constexpr bool __has_common_reference = false;
 
 template <class _Tp, class _Up>
 _CCCL_INLINE_VAR constexpr bool __has_common_reference<_Tp, _Up, void_t<common_reference_t<_Tp, _Up>>> = true;
-#  endif // _CCCL_STD_VER > 2011
+#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 // bullet 1 - sizeof...(T) == 0
 template <>
@@ -205,7 +200,7 @@ template <class _Tp, class _Up>
 struct __common_reference_sub_bullet1<
   _Tp,
   _Up,
-  void_t<__common_ref_t<_Tp, _Up>, enable_if_t<is_reference_v<_Tp> && is_reference_v<_Up>>>>
+  void_t<__common_ref_t<_Tp, _Up>, enable_if_t<_CCCL_TRAIT(is_reference, _Tp) && _CCCL_TRAIT(is_reference, _Up)>>>
 {
   using type = __common_ref_t<_Tp, _Up>;
 };
@@ -217,11 +212,11 @@ struct basic_common_reference
 {};
 
 template <class _Tp, class _Up>
-using __basic_common_reference_t =
+using __basic_common_reference_t _CCCL_NODEBUG_ALIAS =
   typename basic_common_reference<remove_cvref_t<_Tp>,
                                   remove_cvref_t<_Up>,
-                                  __xref<_Tp>::template __apply,
-                                  __xref<_Up>::template __apply>::type;
+                                  __xref<_Tp>::template __call,
+                                  __xref<_Up>::template __call>::type;
 
 template <class _Tp, class _Up>
 struct __common_reference_sub_bullet2<_Tp, _Up, void_t<__basic_common_reference_t<_Tp, _Up>>>
@@ -255,8 +250,6 @@ struct common_reference<_Tp, _Up, _Vp, void_t<common_reference_t<_Tp, _Up>>, _Re
 template <class...>
 struct common_reference
 {};
-
-#endif // _CCCL_STD_VER > 2011
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

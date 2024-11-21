@@ -104,7 +104,7 @@ struct __libcpp_is_integral<__uint128_t> : public true_type
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_integral
-    : public integral_constant<bool, __libcpp_is_integral<__remove_cv_t<_Tp>>::value>
+    : public integral_constant<bool, __libcpp_is_integral<remove_cv_t<_Tp>>::value>
 {};
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)

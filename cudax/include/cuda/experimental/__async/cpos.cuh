@@ -21,11 +21,11 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__async/config.cuh>
 #include <cuda/experimental/__async/env.cuh>
 #include <cuda/experimental/__async/meta.cuh>
 #include <cuda/experimental/__async/type_traits.cuh>
 #include <cuda/experimental/__async/utility.cuh>
+#include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/prologue.cuh>
 
@@ -44,27 +44,27 @@ struct scheduler_t
 {};
 
 template <class _Ty>
-using __sender_concept_t = typename __remove_ref_t<_Ty>::sender_concept;
+using __sender_concept_t = typename _CUDA_VSTD::remove_reference_t<_Ty>::sender_concept;
 
 template <class _Ty>
-using __receiver_concept_t = typename __remove_ref_t<_Ty>::receiver_concept;
+using __receiver_concept_t = typename _CUDA_VSTD::remove_reference_t<_Ty>::receiver_concept;
 
 template <class _Ty>
-using __scheduler_concept_t = typename __remove_ref_t<_Ty>::scheduler_concept;
+using __scheduler_concept_t = typename _CUDA_VSTD::remove_reference_t<_Ty>::scheduler_concept;
 
 template <class _Ty>
-_CCCL_INLINE_VAR constexpr bool __is_sender = __mvalid_q<__sender_concept_t, _Ty>;
+inline constexpr bool __is_sender = __type_valid_v<__sender_concept_t, _Ty>;
 
 template <class _Ty>
-_CCCL_INLINE_VAR constexpr bool __is_receiver = __mvalid_q<__receiver_concept_t, _Ty>;
+inline constexpr bool __is_receiver = __type_valid_v<__receiver_concept_t, _Ty>;
 
 template <class _Ty>
-_CCCL_INLINE_VAR constexpr bool __is_scheduler = __mvalid_q<__scheduler_concept_t, _Ty>;
+inline constexpr bool __is_scheduler = __type_valid_v<__scheduler_concept_t, _Ty>;
 
 _CCCL_GLOBAL_CONSTANT struct set_value_t
 {
   template <class _Rcvr, class... _Ts>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto operator()(_Rcvr&& __rcvr, _Ts&&... __ts) const noexcept
+  _CUDAX_TRIVIAL_API auto operator()(_Rcvr&& __rcvr, _Ts&&... __ts) const noexcept
     -> decltype(static_cast<_Rcvr&&>(__rcvr).set_value(static_cast<_Ts&&>(__ts)...))
   {
     static_assert(
@@ -74,7 +74,7 @@ _CCCL_GLOBAL_CONSTANT struct set_value_t
   }
 
   template <class _Rcvr, class... _Ts>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto operator()(_Rcvr* __rcvr, _Ts&&... __ts) const noexcept
+  _CUDAX_TRIVIAL_API auto operator()(_Rcvr* __rcvr, _Ts&&... __ts) const noexcept
     -> decltype(static_cast<_Rcvr&&>(*__rcvr).set_value(static_cast<_Ts&&>(__ts)...))
   {
     static_assert(
@@ -87,7 +87,7 @@ _CCCL_GLOBAL_CONSTANT struct set_value_t
 _CCCL_GLOBAL_CONSTANT struct set_error_t
 {
   template <class _Rcvr, class _Ey>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto operator()(_Rcvr&& __rcvr, _Ey&& __e) const noexcept
+  _CUDAX_TRIVIAL_API auto operator()(_Rcvr&& __rcvr, _Ey&& __e) const noexcept
     -> decltype(static_cast<_Rcvr&&>(__rcvr).set_error(static_cast<_Ey&&>(__e)))
   {
     static_assert(
@@ -97,7 +97,7 @@ _CCCL_GLOBAL_CONSTANT struct set_error_t
   }
 
   template <class _Rcvr, class _Ey>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto operator()(_Rcvr* __rcvr, _Ey&& __e) const noexcept
+  _CUDAX_TRIVIAL_API auto operator()(_Rcvr* __rcvr, _Ey&& __e) const noexcept
     -> decltype(static_cast<_Rcvr&&>(*__rcvr).set_error(static_cast<_Ey&&>(__e)))
   {
     static_assert(
@@ -110,7 +110,7 @@ _CCCL_GLOBAL_CONSTANT struct set_error_t
 _CCCL_GLOBAL_CONSTANT struct set_stopped_t
 {
   template <class _Rcvr>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto
+  _CUDAX_TRIVIAL_API auto
   operator()(_Rcvr&& __rcvr) const noexcept -> decltype(static_cast<_Rcvr&&>(__rcvr).set_stopped())
   {
     static_assert(_CUDA_VSTD::is_same_v<decltype(static_cast<_Rcvr&&>(__rcvr).set_stopped()), void>);
@@ -119,7 +119,7 @@ _CCCL_GLOBAL_CONSTANT struct set_stopped_t
   }
 
   template <class _Rcvr>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto
+  _CUDAX_TRIVIAL_API auto
   operator()(_Rcvr* __rcvr) const noexcept -> decltype(static_cast<_Rcvr&&>(*__rcvr).set_stopped())
   {
     static_assert(_CUDA_VSTD::is_same_v<decltype(static_cast<_Rcvr&&>(*__rcvr).set_stopped()), void>);
@@ -131,10 +131,9 @@ _CCCL_GLOBAL_CONSTANT struct set_stopped_t
 _CCCL_GLOBAL_CONSTANT struct start_t
 {
   template <class _OpState>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto
-  operator()(_OpState& __opstate) const noexcept -> decltype(__opstate.start())
+  _CUDAX_TRIVIAL_API auto operator()(_OpState& __opstate) const noexcept -> decltype(__opstate.start())
   {
-    static_assert(!__is_error<typename _OpState::completion_signatures>);
+    static_assert(!__type_is_error<typename _OpState::completion_signatures>);
     static_assert(_CUDA_VSTD::is_same_v<decltype(__opstate.start()), void>);
     static_assert(noexcept(__opstate.start()));
     __opstate.start();
@@ -144,7 +143,7 @@ _CCCL_GLOBAL_CONSTANT struct start_t
 _CCCL_GLOBAL_CONSTANT struct connect_t
 {
   template <class _Sndr, class _Rcvr>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto operator()(_Sndr&& __sndr, _Rcvr&& __rcvr) const
+  _CUDAX_TRIVIAL_API auto operator()(_Sndr&& __sndr, _Rcvr&& __rcvr) const
     noexcept(noexcept(static_cast<_Sndr&&>(__sndr).connect(static_cast<_Rcvr&&>(__rcvr))))
       -> decltype(static_cast<_Sndr&&>(__sndr).connect(static_cast<_Rcvr&&>(__rcvr)))
   {
@@ -159,8 +158,7 @@ _CCCL_GLOBAL_CONSTANT struct connect_t
 _CCCL_GLOBAL_CONSTANT struct schedule_t
 {
   template <class _Sch>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto
-  operator()(_Sch&& __sch) const noexcept -> decltype(static_cast<_Sch&&>(__sch).schedule())
+  _CUDAX_TRIVIAL_API auto operator()(_Sch&& __sch) const noexcept -> decltype(static_cast<_Sch&&>(__sch).schedule())
   {
     static_assert(noexcept(static_cast<_Sch&&>(__sch).schedule()));
     return static_cast<_Sch&&>(__sch).schedule();
@@ -192,7 +190,7 @@ template <class _Sch>
 using schedule_result_t = decltype(schedule(__declval<_Sch>()));
 
 template <class _Sndr, class _Rcvr>
-_CCCL_INLINE_VAR constexpr bool __nothrow_connectable = noexcept(connect(__declval<_Sndr>(), __declval<_Rcvr>()));
+inline constexpr bool __nothrow_connectable = noexcept(connect(__declval<_Sndr>(), __declval<_Rcvr>()));
 
 // handy enumerations for keeping type names readable
 enum __disposition_t

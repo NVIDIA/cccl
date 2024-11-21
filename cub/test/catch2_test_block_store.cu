@@ -31,7 +31,7 @@
 #include <cub/util_allocator.cuh>
 #include <cub/util_arch.cuh>
 
-#include "catch2_test_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 template <int ItemsPerThread, int ThreadsInBlock, cub::BlockStoreAlgorithm /* StoreAlgorithm */>
 struct output_idx
@@ -161,7 +161,7 @@ struct params_t
   static constexpr cub::BlockStoreAlgorithm store_algorithm = c2h::get<3, TestType>::value;
 };
 
-CUB_TEST("Block store works with even block sizes",
+C2H_TEST("Block store works with even block sizes",
          "[store][block]",
          types,
          items_per_thread,
@@ -172,7 +172,7 @@ CUB_TEST("Block store works with even block sizes",
   using type   = typename params::type;
 
   c2h::device_vector<type> d_input(GENERATE_COPY(take(10, random(0, params::tile_size))));
-  c2h::gen(CUB_SEED(10), d_input);
+  c2h::gen(C2H_SEED(10), d_input);
 
   c2h::device_vector<type> d_output(d_input.size());
 
@@ -184,7 +184,7 @@ CUB_TEST("Block store works with even block sizes",
   REQUIRE(d_input == d_output);
 }
 
-CUB_TEST("Block store works with even odd sizes",
+C2H_TEST("Block store works with even odd sizes",
          "[store][block]",
          types,
          items_per_thread,
@@ -195,7 +195,7 @@ CUB_TEST("Block store works with even odd sizes",
   using type   = typename params::type;
 
   c2h::device_vector<type> d_input(GENERATE_COPY(take(10, random(0, params::tile_size))));
-  c2h::gen(CUB_SEED(10), d_input);
+  c2h::gen(C2H_SEED(10), d_input);
 
   c2h::device_vector<type> d_output(d_input.size());
 
@@ -207,7 +207,7 @@ CUB_TEST("Block store works with even odd sizes",
   REQUIRE(d_input == d_output);
 }
 
-CUB_TEST("Block store works with even vector types",
+C2H_TEST("Block store works with even vector types",
          "[store][block]",
          vec_types,
          items_per_thread,
@@ -218,7 +218,7 @@ CUB_TEST("Block store works with even vector types",
   using type   = typename params::type;
 
   c2h::device_vector<type> d_input(GENERATE_COPY(take(10, random(0, params::tile_size))));
-  c2h::gen(CUB_SEED(10), d_input);
+  c2h::gen(C2H_SEED(10), d_input);
 
   c2h::device_vector<type> d_output(d_input.size());
 
@@ -230,7 +230,7 @@ CUB_TEST("Block store works with even vector types",
   REQUIRE(d_input == d_output);
 }
 
-CUB_TEST("Block store works with custom types", "[store][block]", items_per_thread, store_algorithm)
+C2H_TEST("Block store works with custom types", "[store][block]", items_per_thread, store_algorithm)
 {
   using type                                                = c2h::custom_type_t<c2h::equal_comparable_t>;
   constexpr int items_per_thread                            = c2h::get<0, TestType>::value;
@@ -239,7 +239,7 @@ CUB_TEST("Block store works with custom types", "[store][block]", items_per_thre
   static constexpr cub::BlockStoreAlgorithm store_algorithm = c2h::get<1, TestType>::value;
 
   c2h::device_vector<type> d_input(GENERATE_COPY(take(10, random(0, tile_size))));
-  c2h::gen(CUB_SEED(10), d_input);
+  c2h::gen(C2H_SEED(10), d_input);
 
   c2h::device_vector<type> d_output(d_input.size());
 
@@ -251,7 +251,7 @@ CUB_TEST("Block store works with custom types", "[store][block]", items_per_thre
   REQUIRE(d_input == d_output);
 }
 
-CUB_TEST("Block store works with caching iterators", "[store][block]", items_per_thread, store_algorithm)
+C2H_TEST("Block store works with caching iterators", "[store][block]", items_per_thread, store_algorithm)
 {
   using type                                                = int;
   constexpr int items_per_thread                            = c2h::get<0, TestType>::value;
@@ -260,7 +260,7 @@ CUB_TEST("Block store works with caching iterators", "[store][block]", items_per
   static constexpr cub::BlockStoreAlgorithm store_algorithm = c2h::get<1, TestType>::value;
 
   c2h::device_vector<type> d_input(GENERATE_COPY(take(10, random(0, tile_size))));
-  c2h::gen(CUB_SEED(10), d_input);
+  c2h::gen(C2H_SEED(10), d_input);
 
   c2h::device_vector<type> d_output(d_input.size());
   cub::CacheModifiedOutputIterator<cub::CacheStoreModifier::STORE_DEFAULT, type> out(

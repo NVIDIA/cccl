@@ -11,13 +11,14 @@
 #include <cuda/experimental/buffer.cuh>
 #include <cuda/experimental/memory_resource.cuh>
 
-#include "test_resource.h"
+#include "test_resource.cuh"
 #include <catch2/catch.hpp>
 #include <testing.cuh>
 
 TEMPLATE_TEST_CASE_METHOD(test_fixture, "shared_resource", "[container][resource]", big_resource, small_resource)
 {
   using TestResource = TestType;
+  static_assert(cuda::mr::async_resource<cudax::mr::shared_resource<TestResource>>);
 
   SECTION("construct and destruct")
   {

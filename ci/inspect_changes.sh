@@ -26,19 +26,21 @@ subprojects=(
   cub
   thrust
   cudax
-  pycuda
+  python
   cccl_c_parallel
+  c2h
 )
 
 # ...and their dependencies:
 declare -A dependencies=(
   [cccl]=""
   [libcudacxx]="cccl"
-  [cub]="cccl libcudacxx thrust"
+  [cub]="cccl libcudacxx thrust c2h"
   [thrust]="cccl libcudacxx cub"
   [cudax]="cccl libcudacxx"
-  [pycuda]="cccl libcudacxx cub thrust cccl_c_parallel"
+  [python]="cccl libcudacxx cub thrust cccl_c_parallel"
   [cccl_c_parallel]="cccl libcudacxx cub thrust"
+  [c2h]="cccl libcudacxx cub thrust"
 )
 
 declare -A project_names=(
@@ -47,16 +49,48 @@ declare -A project_names=(
   [cub]="CUB"
   [thrust]="Thrust"
   [cudax]="CUDA Experimental"
-  [pycuda]="pycuda"
+  [python]="python"
   [cccl_c_parallel]="CCCL C Parallel Library"
+  [c2h]="Catch2Helper"
 )
 
 # By default, the project directory is assumed to be the same as the subproject name,
 # but can be overridden here. The `cccl` project is special, and checks for files outside
 # of any subproject directory.
 declare -A project_dirs=(
-  [pycuda]="python/cuda_cooperative"
   [cccl_c_parallel]="c/parallel"
+)
+
+# Changes to files / directories listed here are ignored when checking if the
+# CCCL Infrastructure has been modified.
+# These are checked as regexes that match the beginning of the file path.
+ignore_paths=(
+  ".clang-format"
+  ".clangd"
+  ".devcontainer/img"
+  ".devcontainer/README.md"
+  ".git-blame-ignore-revs"
+  ".github/actions/docs-build"
+  ".github/CODEOWNERS"
+  ".github/copy-pr-bot.yaml"
+  ".github/ISSUE_TEMPLATE"
+  ".github/PULL_REQUEST_TEMPLATE.md"
+  ".github/workflows/backport-prs.yml"
+  ".github/workflows/build-docs.yml"
+  ".github/workflows/build-rapids.yml"
+  ".github/workflows/project_automation" # All project automation workflows
+  ".github/workflows/triage_rotation.yml"
+  ".github/workflows/update_branch_version.yml"
+  ".github/workflows/verify-devcontainers.yml"
+  ".gitignore"
+  "ci-overview.md"
+  "CITATION.md"
+  "CODE_OF_CONDUCT.md"
+  "CONTRIBUTING.md"
+  "docs"
+  "LICENSE"
+  "README.md"
+  "SECURITY.md"
 )
 
 # Usage checks:
@@ -111,7 +145,7 @@ inspect_cccl() {
     done
 
     # Manual exclusions:
-    exclusions+=("docs")
+    exclusions+=("${ignore_paths[@]}")
 
     IFS="|"
     echo "^(${exclusions[*]})/"

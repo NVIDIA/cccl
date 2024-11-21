@@ -37,8 +37,8 @@
 #include <algorithm>
 
 #include "catch2_test_device_select_common.cuh"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 template <class T, class FlagT>
 static c2h::host_vector<T> get_reference(const c2h::device_vector<T>& in, const c2h::device_vector<FlagT>& flags)
@@ -86,7 +86,7 @@ using all_types =
 
 using types = c2h::type_list<std::uint8_t, std::uint32_t, ulonglong4, c2h::custom_type_t<c2h::equal_comparable_t>>;
 
-CUB_TEST("DeviceSelect::Flagged can run with empty input", "[device][select_flagged]", types)
+C2H_TEST("DeviceSelect::Flagged can run with empty input", "[device][select_flagged]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -104,14 +104,14 @@ CUB_TEST("DeviceSelect::Flagged can run with empty input", "[device][select_flag
   REQUIRE(num_selected_out[0] == 0);
 }
 
-CUB_TEST("DeviceSelect::Flagged handles all matched", "[device][select_flagged]", types)
+C2H_TEST("DeviceSelect::Flagged handles all matched", "[device][select_flagged]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   c2h::device_vector<int> flags(num_items, 1);
 
@@ -125,14 +125,14 @@ CUB_TEST("DeviceSelect::Flagged handles all matched", "[device][select_flagged]"
   REQUIRE(out == in);
 }
 
-CUB_TEST("DeviceSelect::Flagged handles no matched", "[device][select_flagged]", types)
+C2H_TEST("DeviceSelect::Flagged handles no matched", "[device][select_flagged]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(0);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   c2h::device_vector<int> flags(num_items, 0);
 
@@ -145,17 +145,17 @@ CUB_TEST("DeviceSelect::Flagged handles no matched", "[device][select_flagged]",
   REQUIRE(num_selected_out[0] == 0);
 }
 
-CUB_TEST("DeviceSelect::Flagged does not change input", "[device][select_flagged]", types)
+C2H_TEST("DeviceSelect::Flagged does not change input", "[device][select_flagged]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   c2h::device_vector<int> flags(num_items);
-  c2h::gen(CUB_SEED(1), flags, 0, 1);
+  c2h::gen(C2H_SEED(1), flags, 0, 1);
   const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
 
   // Needs to be device accessible
@@ -171,7 +171,7 @@ CUB_TEST("DeviceSelect::Flagged does not change input", "[device][select_flagged
   REQUIRE(reference == in);
 }
 
-CUB_TEST("DeviceSelect::Flagged is stable",
+C2H_TEST("DeviceSelect::Flagged is stable",
          "[device][select_flagged]",
          c2h::type_list<c2h::custom_type_t<c2h::equal_comparable_t>>)
 {
@@ -180,10 +180,10 @@ CUB_TEST("DeviceSelect::Flagged is stable",
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   c2h::device_vector<int> flags(num_items);
-  c2h::gen(CUB_SEED(1), flags, 0, 1);
+  c2h::gen(C2H_SEED(1), flags, 0, 1);
   const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
   const c2h::host_vector<type> reference = get_reference(in, flags);
 
@@ -198,17 +198,17 @@ CUB_TEST("DeviceSelect::Flagged is stable",
   REQUIRE(reference == out);
 }
 
-CUB_TEST("DeviceSelect::Flagged works with iterators", "[device][select_flagged]", all_types)
+C2H_TEST("DeviceSelect::Flagged works with iterators", "[device][select_flagged]", all_types)
 {
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   c2h::device_vector<int> flags(num_items);
-  c2h::gen(CUB_SEED(1), flags, 0, 1);
+  c2h::gen(C2H_SEED(1), flags, 0, 1);
   const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
   const c2h::host_vector<type> reference = get_reference(in, flags);
 
@@ -223,17 +223,17 @@ CUB_TEST("DeviceSelect::Flagged works with iterators", "[device][select_flagged]
   REQUIRE(reference == out);
 }
 
-CUB_TEST("DeviceSelect::Flagged works with pointers", "[device][select_flagged]", types)
+C2H_TEST("DeviceSelect::Flagged works with pointers", "[device][select_flagged]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   c2h::device_vector<int> flags(num_items);
-  c2h::gen(CUB_SEED(1), flags, 0, 1);
+  c2h::gen(C2H_SEED(1), flags, 0, 1);
 
   const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
   const c2h::host_vector<type> reference = get_reference(in, flags);
@@ -276,17 +276,17 @@ struct convertible_to_bool
   }
 };
 
-CUB_TEST("DeviceSelect::Flagged works with flags that are convertible to bool", "[device][select_flagged]")
+C2H_TEST("DeviceSelect::Flagged works with flags that are convertible to bool", "[device][select_flagged]")
 {
   using type = c2h::custom_type_t<c2h::equal_comparable_t>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   c2h::device_vector<int> iflags(num_items);
-  c2h::gen(CUB_SEED(1), iflags, 0, 1);
+  c2h::gen(C2H_SEED(1), iflags, 0, 1);
 
   c2h::device_vector<convertible_to_bool> flags = iflags;
   const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
@@ -303,7 +303,7 @@ CUB_TEST("DeviceSelect::Flagged works with flags that are convertible to bool", 
   REQUIRE(reference == out);
 }
 
-CUB_TEST("DeviceSelect::Flagged works with flags that alias input", "[device][select_flagged]")
+C2H_TEST("DeviceSelect::Flagged works with flags that alias input", "[device][select_flagged]")
 {
   using type = int;
 
@@ -311,7 +311,7 @@ CUB_TEST("DeviceSelect::Flagged works with flags that alias input", "[device][se
   c2h::device_vector<type> out(num_items);
 
   c2h::device_vector<int> flags(num_items);
-  c2h::gen(CUB_SEED(1), flags, 0, 1);
+  c2h::gen(C2H_SEED(1), flags, 0, 1);
   const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
   const c2h::host_vector<type> reference = get_reference(flags, flags);
 
@@ -326,16 +326,16 @@ CUB_TEST("DeviceSelect::Flagged works with flags that alias input", "[device][se
   REQUIRE(reference == out);
 }
 
-CUB_TEST("DeviceSelect::Flagged works in place", "[device][select_flagged]", types)
+C2H_TEST("DeviceSelect::Flagged works in place", "[device][select_flagged]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   c2h::device_vector<int> flags(num_items);
-  c2h::gen(CUB_SEED(1), flags, 0, 1);
+  c2h::gen(C2H_SEED(1), flags, 0, 1);
 
   const c2h::host_vector<type> reference = get_reference(in, flags);
 
@@ -349,14 +349,14 @@ CUB_TEST("DeviceSelect::Flagged works in place", "[device][select_flagged]", typ
   REQUIRE(reference == in);
 }
 
-CUB_TEST("DeviceSelect::Flagged works in place with flags that alias input", "[device][select_flagged]")
+C2H_TEST("DeviceSelect::Flagged works in place with flags that alias input", "[device][select_flagged]")
 {
   using type = int;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<int> flags(num_items);
 
-  c2h::gen(CUB_SEED(1), flags, 0, 1);
+  c2h::gen(C2H_SEED(1), flags, 0, 1);
 
   const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
   const c2h::host_vector<type> reference = get_reference(flags, flags);
@@ -392,17 +392,17 @@ struct convertible_from_T
   }
 };
 
-CUB_TEST("DeviceSelect::Flagged works with a different output type", "[device][select_flagged]")
+C2H_TEST("DeviceSelect::Flagged works with a different output type", "[device][select_flagged]")
 {
   using type = c2h::custom_type_t<c2h::equal_comparable_t>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<convertible_from_T<type>> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   c2h::device_vector<int> flags(num_items);
-  c2h::gen(CUB_SEED(1), flags, 0, 1);
+  c2h::gen(C2H_SEED(1), flags, 0, 1);
 
   const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
   const c2h::host_vector<type> reference = get_reference(in, flags);
@@ -418,7 +418,7 @@ CUB_TEST("DeviceSelect::Flagged works with a different output type", "[device][s
   REQUIRE(reference == out);
 }
 
-CUB_TEST("DeviceSelect::Flagged works for very large number of items", "[device][select_flagged]")
+C2H_TEST("DeviceSelect::Flagged works for very large number of items", "[device][select_flagged]")
 try
 {
   using type     = std::int64_t;

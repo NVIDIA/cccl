@@ -208,8 +208,9 @@ struct AgentThreeWayPartition
   using BlockScanT = cub::BlockScan<AccumPackT, BLOCK_THREADS, PolicyT::SCAN_ALGORITHM>;
 
   // Callback type for obtaining tile prefix during block scan
-  using DelayConstructorT     = typename PolicyT::detail::delay_constructor_t;
-  using TilePrefixCallbackOpT = cub::TilePrefixCallbackOp<AccumPackT, cub::Sum, ScanTileStateT, 0, DelayConstructorT>;
+  using DelayConstructorT = typename PolicyT::detail::delay_constructor_t;
+  using TilePrefixCallbackOpT =
+    cub::TilePrefixCallbackOp<AccumPackT, ::cuda::std::plus<>, ScanTileStateT, 0, DelayConstructorT>;
 
   // Item exchange type
   using ItemExchangeT = InputT[TILE_ITEMS];
@@ -475,7 +476,7 @@ struct AgentThreeWayPartition
     CTA_SYNC();
 
     // Exclusive scan of values and selection_flags
-    TilePrefixCallbackOpT prefix_op(tile_state, temp_storage.scan_storage.prefix, cub::Sum(), tile_idx);
+    TilePrefixCallbackOpT prefix_op(tile_state, temp_storage.scan_storage.prefix, ::cuda::std::plus<>{}, tile_idx);
 
     BlockScanT(temp_storage.scan_storage.scan).ExclusiveSum(items_selected_flags, items_selected_indices, prefix_op);
 

@@ -27,9 +27,9 @@
 #if defined(_CCCL_CUDA_COMPILER_CLANG)
 #  define _CCCL_UNREACHABLE() __builtin_unreachable()
 #elif defined(__CUDA_ARCH__)
-#  if defined(_CCCL_CUDACC_BELOW_11_2)
+#  if _CCCL_CUDACC_BELOW(11, 2)
 #    define _CCCL_UNREACHABLE() __trap()
-#  elif defined(_CCCL_CUDACC_BELOW_11_3)
+#  elif _CCCL_CUDACC_BELOW(11, 3)
 #    define _CCCL_UNREACHABLE() __builtin_assume(false)
 #  else
 #    define _CCCL_UNREACHABLE() __builtin_unreachable()

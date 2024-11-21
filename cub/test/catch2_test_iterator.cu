@@ -39,7 +39,7 @@
 
 #include <cstdint>
 
-#include "catch2_test_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 using scalar_types = c2h::type_list<std::int8_t, std::int16_t, std::int32_t, std::int64_t, float, double>;
 
@@ -108,7 +108,7 @@ void test_iterator(InputIteratorT d_in, const c2h::host_vector<T>& h_reference)
   CHECK(d_in == h_itrs[1]);
 }
 
-CUB_TEST("Test constant iterator", "[iterator]", scalar_types)
+C2H_TEST("Test constant iterator", "[iterator]", scalar_types)
 {
   using T                = c2h::get<0, TestType>;
   const T base           = static_cast<T>(GENERATE(0, 99));
@@ -116,7 +116,7 @@ CUB_TEST("Test constant iterator", "[iterator]", scalar_types)
   test_iterator(cub::ConstantInputIterator<T>(base), h_reference);
 }
 
-CUB_TEST("Test counting iterator", "[iterator]", scalar_types)
+C2H_TEST("Test counting iterator", "[iterator]", scalar_types)
 {
   using T                = c2h::get<0, TestType>;
   const T base           = static_cast<T>(GENERATE(0, 99));
@@ -142,14 +142,14 @@ using cache_modifiers =
                       cub::LOAD_LDG,
                       cub::LOAD_VOLATILE>;
 
-CUB_TEST("Test cache modified iterator", "[iterator]", types, cache_modifiers)
+C2H_TEST("Test cache modified iterator", "[iterator]", types, cache_modifiers)
 {
   using T                       = c2h::get<0, TestType>;
   constexpr auto cache_modifier = c2h::get<1, TestType>::value;
   constexpr int TEST_VALUES     = 11000;
 
   c2h::device_vector<T> d_data(TEST_VALUES);
-  c2h::gen(CUB_SEED(1), d_data);
+  c2h::gen(C2H_SEED(1), d_data);
   c2h::host_vector<T> h_data(d_data);
 
   const auto h_reference = c2h::host_vector<T>{
@@ -168,13 +168,13 @@ struct transform_op_t
   }
 };
 
-CUB_TEST("Test transform iterator", "[iterator]", types)
+C2H_TEST("Test transform iterator", "[iterator]", types)
 {
   using T                   = c2h::get<0, TestType>;
   constexpr int TEST_VALUES = 11000;
 
   c2h::device_vector<T> d_data(TEST_VALUES);
-  c2h::gen(CUB_SEED(1), d_data);
+  c2h::gen(C2H_SEED(1), d_data);
   c2h::host_vector<T> h_data(d_data);
 
   transform_op_t<T> op;
@@ -192,13 +192,13 @@ CUB_TEST("Test transform iterator", "[iterator]", types)
                 h_reference);
 }
 
-CUB_TEST("Test tex-obj texture iterator", "[iterator]", types)
+C2H_TEST("Test tex-obj texture iterator", "[iterator]", types)
 {
   using T                            = c2h::get<0, TestType>;
   constexpr unsigned int TEST_VALUES = 11000;
 
   c2h::device_vector<T> d_data(TEST_VALUES);
-  c2h::gen(CUB_SEED(1), d_data);
+  c2h::gen(C2H_SEED(1), d_data);
   c2h::host_vector<T> h_data(d_data);
 
   const auto h_reference = c2h::host_vector<T>{
@@ -209,13 +209,13 @@ CUB_TEST("Test tex-obj texture iterator", "[iterator]", types)
   test_iterator(d_obj_itr, h_reference);
 }
 
-CUB_TEST("Test texture transform iterator", "[iterator]", types)
+C2H_TEST("Test texture transform iterator", "[iterator]", types)
 {
   using T                   = c2h::get<0, TestType>;
   constexpr int TEST_VALUES = 11000;
 
   c2h::device_vector<T> d_data(TEST_VALUES);
-  c2h::gen(CUB_SEED(1), d_data);
+  c2h::gen(C2H_SEED(1), d_data);
   c2h::host_vector<T> h_data(d_data.begin(), d_data.end());
 
   transform_op_t<T> op;

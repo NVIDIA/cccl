@@ -31,9 +31,9 @@
 
 #include <cuda/std/type_traits>
 
-#include "catch2_test_helper.h"
+#include <c2h/catch2_test_helper.h>
 
-CUB_TEST("Tests non_void_value_t", "[util][type]")
+C2H_TEST("Tests non_void_value_t", "[util][type]")
 {
   using fallback_t        = float;
   using void_fancy_it     = cub::DiscardOutputIterator<std::size_t>;
@@ -73,7 +73,7 @@ struct HasDog
   using dog = int;
 };
 
-CUB_TEST("Test CUB_DEFINE_DETECT_NESTED_TYPE", "[util][type]")
+C2H_TEST("Test CUB_DEFINE_DETECT_NESTED_TYPE", "[util][type]")
 {
   STATIC_REQUIRE(cat_detect<HasCat>::value);
   STATIC_REQUIRE(!cat_detect<HasDog>::value);

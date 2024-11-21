@@ -22,10 +22,34 @@
         "CCCL_ENABLE_TESTING": false,
         "CCCL_ENABLE_EXAMPLES": false,
         "CCCL_ENABLE_C": false,
+        "CCCL_SUPPRESS_ICC_DEPRECATION_WARNING": true,
         "libcudacxx_ENABLE_INSTALL_RULES": true,
         "CUB_ENABLE_INSTALL_RULES": true,
         "Thrust_ENABLE_INSTALL_RULES": true,
         "cudax_ENABLE_INSTALL_RULES": true
+      }
+    },
+    {
+      "name": "install",
+      "displayName": "Installation / Packaging (only stable libraries)",
+      "inherits": "base",
+      "cacheVariables": {
+        "cudax_ENABLE_INSTALL_RULES": false
+      }
+    },
+    {
+      "name": "install-unstable",
+      "displayName": "Installation / Packaging (includes experimental libraries)",
+      "inherits": "base"
+    },
+    {
+      "name": "install-unstable-only",
+      "displayName": "Installation / Packaging (*only* experimental libraries)",
+      "inherits": "base",
+      "cacheVariables": {
+        "libcudacxx_ENABLE_INSTALL_RULES": false,
+        "CUB_ENABLE_INSTALL_RULES": false,
+        "Thrust_ENABLE_INSTALL_RULES": false
       }
     },
     {
@@ -62,6 +86,12 @@
         "THRUST_MULTICONFIG_ENABLE_SYSTEM_TBB": true,
         "cudax_ENABLE_HEADER_TESTING": true,
         "cudax_ENABLE_TESTING": true,
+        "cudax_ENABLE_EXAMPLES": true,
+        "cudax_ENABLE_CUDASTF": true,
+        "cudax_ENABLE_CUDASTF_BOUNDSCHECK": false,
+        "cudax_ENABLE_CUDASTF_CODE_GENERATION": true,
+        "cudax_ENABLE_CUDASTF_DEBUG": false,
+        "cudax_ENABLE_CUDASTF_MATHLIBS": false,
         "cudax_ENABLE_DIALECT_CPP17": true,
         "cudax_ENABLE_DIALECT_CPP20": true,
         "CCCL_C_Parallel_ENABLE_TESTING": true,
@@ -73,9 +103,11 @@
       "displayName": "all-dev debug",
       "inherits": "all-dev",
       "cacheVariables": {
-        "CCCL_ENABLE_BENCHMARKS": false,
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_CUDA_FLAGS": "-G"
+        "CMAKE_CUDA_FLAGS": "-G",
+        "CCCL_ENABLE_BENCHMARKS": false,
+        "cudax_ENABLE_CUDASTF_BOUNDSCHECK": true,
+        "cudax_ENABLE_CUDASTF_DEBUG": true
       }
     },
     {
@@ -116,7 +148,6 @@
         "CMAKE_CXX_STANDARD": "14",
         "CMAKE_CUDA_STANDARD": "14",
         "LIBCUDACXX_TEST_STANDARD_VER": "c++14"
-
       }
     },
     {
@@ -127,7 +158,6 @@
         "CMAKE_CXX_STANDARD": "17",
         "CMAKE_CUDA_STANDARD": "17",
         "LIBCUDACXX_TEST_STANDARD_VER": "c++17"
-
       }
     },
     {
@@ -297,6 +327,11 @@
         "CCCL_ENABLE_CUDAX": true,
         "cudax_ENABLE_HEADER_TESTING": true,
         "cudax_ENABLE_TESTING": true,
+        "cudax_ENABLE_EXAMPLES": true,
+        "cudax_ENABLE_CUDASTF": true,
+        "cudax_ENABLE_CUDASTF_BOUNDSCHECK": false,
+        "cudax_ENABLE_CUDASTF_CODE_GENERATION": true,
+        "cudax_ENABLE_CUDASTF_MATHLIBS": false,
         "cudax_ENABLE_DIALECT_CPP17": false,
         "cudax_ENABLE_DIALECT_CPP20": false
       }
@@ -319,7 +354,7 @@
     },
     {
       "name": "cccl-c-parallel",
-      "displayName" : "CCCL C Parallel Library",
+      "displayName": "CCCL C Parallel Library",
       "inherits": "base",
       "cacheVariables": {
         "CCCL_ENABLE_C": true,
@@ -336,6 +371,44 @@
         "CCCL_ENABLE_EXAMPLES": true,
         "CCCL_ENABLE_TESTING": true
       }
+    },
+    {
+      "name": "cub-benchmark",
+      "displayName": "CUB benchmarking",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CCCL_ENABLE_BENCHMARKS": true,
+        "CCCL_ENABLE_CUB": true,
+        "CCCL_ENABLE_THRUST": false,
+        "CCCL_ENABLE_LIBCUDACXX": false,
+        "CCCL_ENABLE_CUDAX": false,
+        "CCCL_ENABLE_C": false,
+        "CCCL_ENABLE_TESTING": false,
+        "CCCL_ENABLE_EXAMPLES": false,
+        "CUB_ENABLE_EXAMPLES": false,
+        "CUB_ENABLE_TESTING": false,
+        "CUB_ENABLE_HEADER_TESTING": false
+      }
+    },
+    {
+      "name": "cub-tune",
+      "displayName": "CUB tuning",
+      "inherits": "cub-benchmark",
+      "cacheVariables": {
+        "CUB_ENABLE_TUNING": true
+      }
+    },
+    {
+      "name": "benchmark",
+      "displayName": "CUB/Thrust benchmarking",
+      "inherits": "cub-benchmark",
+      "cacheVariables": {
+        "CCCL_ENABLE_THRUST": true,
+        "THRUST_ENABLE_EXAMPLES": false,
+        "THRUST_ENABLE_TESTING": false,
+        "THRUST_ENABLE_HEADER_TESTING": false
+      }
     }
   ],
   "buildPresets": [
@@ -346,6 +419,10 @@
     {
       "name": "all-dev-debug",
       "configurePreset": "all-dev-debug"
+    },
+    {
+      "name": "install",
+      "configurePreset": "install"
     },
     {
       "name": "libcudacxx-codegen",

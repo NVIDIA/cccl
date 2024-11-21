@@ -60,25 +60,25 @@ tensormap_cp_fenceproxy(sem_release_t, scope_t<_Scope> __scope, void* __dst, con
         asm volatile(
           "tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.cta.sync.aligned  [%0], [%1], %2;"
           :
-          : "l"(__as_ptr_gmem(__dst)), "r"(__as_ptr_smem(__src)), "n"(__size)
+          : "l"(__as_ptr_gmem(__dst)), "r"(__as_ptr_smem(__src)), "n"(__size.value)
           : "memory");
       } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_cluster) {
         asm volatile(
           "tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.cluster.sync.aligned  [%0], [%1], %2;"
           :
-          : "l"(__as_ptr_gmem(__dst)), "r"(__as_ptr_smem(__src)), "n"(__size)
+          : "l"(__as_ptr_gmem(__dst)), "r"(__as_ptr_smem(__src)), "n"(__size.value)
           : "memory");
       } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_gpu) {
         asm volatile(
           "tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.gpu.sync.aligned  [%0], [%1], %2;"
           :
-          : "l"(__as_ptr_gmem(__dst)), "r"(__as_ptr_smem(__src)), "n"(__size)
+          : "l"(__as_ptr_gmem(__dst)), "r"(__as_ptr_smem(__src)), "n"(__size.value)
           : "memory");
       } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_sys) {
         asm volatile(
           "tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.sys.sync.aligned  [%0], [%1], %2;"
           :
-          : "l"(__as_ptr_gmem(__dst)), "r"(__as_ptr_smem(__src)), "n"(__size)
+          : "l"(__as_ptr_gmem(__dst)), "r"(__as_ptr_smem(__src)), "n"(__size.value)
           : "memory");
       }),
     (

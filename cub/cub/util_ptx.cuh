@@ -49,29 +49,6 @@
 CUB_NAMESPACE_BEGIN
 
 /******************************************************************************
- * PTX helper macros
- ******************************************************************************/
-
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-
-/**
- * Register modifier for pointer-types (for inlining PTX assembly)
- */
-#  if defined(_WIN64) || defined(__LP64__)
-#    define __CUB_LP64__ 1
-// 64-bit register modifier for inlined asm
-#    define _CUB_ASM_PTR_      "l"
-#    define _CUB_ASM_PTR_SIZE_ "u64"
-#  else
-#    define __CUB_LP64__       0
-// 32-bit register modifier for inlined asm
-#    define _CUB_ASM_PTR_      "r"
-#    define _CUB_ASM_PTR_SIZE_ "u32"
-#  endif
-
-#endif // DOXYGEN_SHOULD_SKIP_THIS
-
-/******************************************************************************
  * Inlined PTX intrinsics
  ******************************************************************************/
 

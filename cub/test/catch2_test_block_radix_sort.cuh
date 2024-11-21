@@ -30,7 +30,7 @@
 #include <cub/block/block_radix_sort.cuh>
 
 #include "catch2_radix_sort_helper.cuh"
-#include "catch2_test_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 template <typename InputIteratorT,
           typename OutputIteratorT,

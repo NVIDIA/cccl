@@ -23,9 +23,12 @@ endif()
 
 option(CUB_ENABLE_HEADER_TESTING "Test that all public headers compile." ON)
 option(CUB_ENABLE_TESTING "Build CUB testing suite." ON)
-option(CUB_ENABLE_BENCHMARKS "Build CUB benchmarking suite." "${CCCL_ENABLE_BENCHMARKS}")
-option(CUB_ENABLE_TUNING "Build CUB tuning suite." OFF)
 option(CUB_ENABLE_EXAMPLES "Build CUB examples." ON)
+
+option(CUB_ENABLE_TUNING "Build CUB tuning suite." OFF)
+if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  set(CUB_ENABLE_TUNING OFF)
+endif()
 
 # This is needed for NVCXX QA, which requires a static set of executable names.
 # Only a single dialect may be enabled when this is off.
@@ -47,7 +50,8 @@ option(CUB_IGNORE_DEPRECATED_API
 # need the install rules. See GH issue NVIDIA/thrust#1211.
 if (NOT (CUB_ENABLE_HEADER_TESTING OR
          CUB_ENABLE_TESTING OR
-         CUB_ENABLE_EXAMPLES))
+         CUB_ENABLE_EXAMPLES OR
+         CCCL_ENABLE_BENCHMARKS))
   return()
 endif()
 
@@ -88,6 +92,6 @@ if (CUB_ENABLE_EXAMPLES)
   add_subdirectory(examples)
 endif()
 
-if (CUB_ENABLE_BENCHMARKS OR CUB_ENABLE_TUNING)
+if (CCCL_ENABLE_BENCHMARKS OR CUB_ENABLE_TUNING)
   add_subdirectory(benchmarks)
 endif()

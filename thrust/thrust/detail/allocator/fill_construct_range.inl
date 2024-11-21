@@ -72,7 +72,7 @@ struct construct2_via_allocator
 };
 
 template <typename Allocator, typename Pointer, typename Size, typename T>
-_CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<
+_CCCL_HOST_DEVICE ::cuda::std::enable_if_t<
   has_effectful_member_construct2<Allocator, typename pointer_element<Pointer>::type, T>::value>
 fill_construct_range(Allocator& a, Pointer p, Size n, const T& value)
 {
@@ -80,7 +80,7 @@ fill_construct_range(Allocator& a, Pointer p, Size n, const T& value)
 }
 
 template <typename Allocator, typename Pointer, typename Size, typename T>
-_CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<
+_CCCL_HOST_DEVICE ::cuda::std::enable_if_t<
   !has_effectful_member_construct2<Allocator, typename pointer_element<Pointer>::type, T>::value>
 fill_construct_range(Allocator& a, Pointer p, Size n, const T& value)
 {

@@ -158,7 +158,6 @@ template <class... Types>
 #include <cuda/std/__functional/unwrap_ref.h>
 #include <cuda/std/__fwd/array.h>
 #include <cuda/std/__memory/allocator_arg_t.h>
-#include <cuda/std/__tuple_dir/apply_cv.h>
 #include <cuda/std/__tuple_dir/make_tuple_types.h>
 #include <cuda/std/__tuple_dir/sfinae_helpers.h>
 #include <cuda/std/__tuple_dir/structured_bindings.h>
@@ -168,6 +167,7 @@ template <class... Types>
 #include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__tuple_dir/tuple_types.h>
 #include <cuda/std/__tuple_dir/vector_types.h>
+#include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/maybe_const.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/integer_sequence.h>
@@ -211,7 +211,7 @@ enum class __tuple_leaf_specialization
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr __tuple_leaf_specialization __tuple_leaf_choose()
 {
-  return _CCCL_TRAIT(is_empty, _Tp) && !__libcpp_is_final<_Tp>::value ? __tuple_leaf_specialization::__empty_non_final
+  return _CCCL_TRAIT(is_empty, _Tp) && !_CCCL_TRAIT(is_final, _Tp) ? __tuple_leaf_specialization::__empty_non_final
        : __must_synthesize_assignment<_Tp>::value
          ? __tuple_leaf_specialization::__synthesize_assignment
          : __tuple_leaf_specialization::__default;
@@ -220,12 +220,16 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr __tuple_leaf_specialization __tuple_leaf_cho
 template <size_t _Ip, class _Hp, __tuple_leaf_specialization = __tuple_leaf_choose<_Hp>()>
 class __tuple_leaf;
 
+_CCCL_EXEC_CHECK_DISABLE
 template <size_t _Ip, class _Hp, __tuple_leaf_specialization _Ep>
 _LIBCUDACXX_HIDE_FROM_ABI void
 swap(__tuple_leaf<_Ip, _Hp, _Ep>& __x, __tuple_leaf<_Ip, _Hp, _Ep>& __y) noexcept(__is_nothrow_swappable<_Hp>::value)
 {
   swap(__x.get(), __y.get());
 }
+
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4244) // conversion from '_Tp' to '_Hp', possible loss of data
 
 template <size_t _Ip, class _Hp>
 class __tuple_leaf<_Ip, _Hp, __tuple_leaf_specialization::__default>
@@ -243,65 +247,70 @@ class __tuple_leaf<_Ip, _Hp, __tuple_leaf_specialization::__default>
   }
 
 public:
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __tuple_leaf() noexcept(_CCCL_TRAIT(is_nothrow_default_constructible, _Hp))
       : __value_()
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __tuple_leaf(__tuple_leaf_default_constructor_tag) noexcept(
     _CCCL_TRAIT(is_nothrow_default_constructible, _Hp))
       : __value_()
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
   _LIBCUDACXX_HIDE_FROM_ABI __tuple_leaf(integral_constant<int, 0>, const _Alloc&)
       : __value_()
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
   _LIBCUDACXX_HIDE_FROM_ABI __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a)
       : __value_(allocator_arg_t(), __a)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
   _LIBCUDACXX_HIDE_FROM_ABI __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a)
       : __value_(__a)
   {}
 
   template <class _Tp>
-  using __can_forward = _And<_IsNotSame<__remove_cvref_t<_Tp>, __tuple_leaf>, is_constructible<_Hp, _Tp>>;
+  using __can_forward = _And<_IsNotSame<remove_cvref_t<_Tp>, __tuple_leaf>, is_constructible<_Hp, _Tp>>;
 
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_MSVC(4244) // conversion from '_Tp' to '_Hp', possible loss of data
-
-  template <class _Tp, __enable_if_t<__can_forward<_Tp>::value, int> = 0>
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Tp, enable_if_t<__can_forward<_Tp>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI
   _CCCL_CONSTEXPR_CXX14 explicit __tuple_leaf(_Tp&& __t) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Hp, _Tp))
       : __value_(_CUDA_VSTD::forward<_Tp>(__t))
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
   _LIBCUDACXX_HIDE_FROM_ABI explicit __tuple_leaf(integral_constant<int, 0>, const _Alloc&, _Tp&& __t)
       : __value_(_CUDA_VSTD::forward<_Tp>(__t))
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
   _LIBCUDACXX_HIDE_FROM_ABI explicit __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a, _Tp&& __t)
       : __value_(allocator_arg_t(), __a, _CUDA_VSTD::forward<_Tp>(__t))
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
   _LIBCUDACXX_HIDE_FROM_ABI explicit __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a, _Tp&& __t)
       : __value_(_CUDA_VSTD::forward<_Tp>(__t), __a)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp>
   _LIBCUDACXX_HIDE_FROM_ABI __tuple_leaf& operator=(_Tp&& __t) noexcept(_CCCL_TRAIT(is_nothrow_assignable, _Hp&, _Tp))
   {
     __value_ = _CUDA_VSTD::forward<_Tp>(__t);
     return *this;
   }
-
-  _CCCL_DIAG_POP
 
   _LIBCUDACXX_HIDE_FROM_ABI int swap(__tuple_leaf& __t) noexcept(__is_nothrow_swappable<__tuple_leaf>::value)
   {
@@ -335,6 +344,7 @@ class __tuple_leaf<_Ip, _Hp, __tuple_leaf_specialization::__synthesize_assignmen
   }
 
 public:
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __tuple_leaf() noexcept(_CCCL_TRAIT(is_nothrow_default_constructible, _Hp))
       : __value_()
   {
@@ -342,12 +352,10 @@ public:
   }
 
   template <class _Tp>
-  using __can_forward = _And<_IsNotSame<__remove_cvref_t<_Tp>, __tuple_leaf>, is_constructible<_Hp, _Tp>>;
+  using __can_forward = _And<_IsNotSame<remove_cvref_t<_Tp>, __tuple_leaf>, is_constructible<_Hp, _Tp>>;
 
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_MSVC(4244) // conversion from '_Tp' to '_Hp', possible loss of data
-
-  template <class _Tp, __enable_if_t<__can_forward<_Tp>::value, int> = 0>
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Tp, enable_if_t<__can_forward<_Tp>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI
   _CCCL_CONSTEXPR_CXX14 explicit __tuple_leaf(_Tp&& __t) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _Hp, _Tp))
       : __value_(_CUDA_VSTD::forward<_Tp>(__t))
@@ -357,6 +365,7 @@ public:
                   "temporary whose lifetime has ended");
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
   _LIBCUDACXX_HIDE_FROM_ABI explicit __tuple_leaf(integral_constant<int, 0>, const _Alloc&, _Tp&& __t)
       : __value_(_CUDA_VSTD::forward<_Tp>(__t))
@@ -366,28 +375,31 @@ public:
                   "temporary whose lifetime has ended");
   }
 
-  _CCCL_HIDE_FROM_ABI __tuple_leaf(const __tuple_leaf& __t) = default;
-  _CCCL_HIDE_FROM_ABI __tuple_leaf(__tuple_leaf&& __t)      = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  __tuple_leaf(const __tuple_leaf& __t) = default;
+  _CCCL_EXEC_CHECK_DISABLE
+  __tuple_leaf(__tuple_leaf&& __t) = default;
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __tuple_leaf& operator=(const __tuple_leaf& __t) noexcept
   {
     __value_ = __t.__value_;
     return *this;
   }
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __tuple_leaf& operator=(__tuple_leaf&& __t) noexcept
   {
     __value_ = _CUDA_VSTD::move(__t.__value_);
     return *this;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp>
   _LIBCUDACXX_HIDE_FROM_ABI __tuple_leaf& operator=(_Tp&& __t) noexcept(_CCCL_TRAIT(is_nothrow_assignable, _Hp&, _Tp))
   {
     __value_ = _CUDA_VSTD::forward<_Tp>(__t);
     return *this;
   }
-
-  _CCCL_DIAG_POP
 
   _LIBCUDACXX_HIDE_FROM_ABI int swap(__tuple_leaf& __t) noexcept(__is_nothrow_swappable<__tuple_leaf>::value)
   {
@@ -409,52 +421,62 @@ template <size_t _Ip, class _Hp>
 class __tuple_leaf<_Ip, _Hp, __tuple_leaf_specialization::__empty_non_final> : private _Hp
 {
 public:
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __tuple_leaf() noexcept(is_nothrow_default_constructible<_Hp>::value) {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __tuple_leaf(__tuple_leaf_default_constructor_tag) noexcept(
     _CCCL_TRAIT(is_nothrow_default_constructible, _Hp))
       : _Hp()
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
   _LIBCUDACXX_HIDE_FROM_ABI __tuple_leaf(integral_constant<int, 0>, const _Alloc&)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
   _LIBCUDACXX_HIDE_FROM_ABI __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a)
       : _Hp(allocator_arg_t(), __a)
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Alloc>
   _LIBCUDACXX_HIDE_FROM_ABI __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a)
       : _Hp(__a)
   {}
 
   template <class _Tp>
-  using __can_forward = _And<_IsNotSame<__remove_cvref_t<_Tp>, __tuple_leaf>, is_constructible<_Hp, _Tp>>;
+  using __can_forward = _And<_IsNotSame<remove_cvref_t<_Tp>, __tuple_leaf>, is_constructible<_Hp, _Tp>>;
 
-  template <class _Tp, __enable_if_t<__can_forward<_Tp>::value, int> = 0>
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Tp, enable_if_t<__can_forward<_Tp>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI
   _CCCL_CONSTEXPR_CXX14 explicit __tuple_leaf(_Tp&& __t) noexcept((is_nothrow_constructible<_Hp, _Tp>::value))
       : _Hp(_CUDA_VSTD::forward<_Tp>(__t))
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
   _LIBCUDACXX_HIDE_FROM_ABI explicit __tuple_leaf(integral_constant<int, 0>, const _Alloc&, _Tp&& __t)
       : _Hp(_CUDA_VSTD::forward<_Tp>(__t))
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
   _LIBCUDACXX_HIDE_FROM_ABI explicit __tuple_leaf(integral_constant<int, 1>, const _Alloc& __a, _Tp&& __t)
       : _Hp(allocator_arg_t(), __a, _CUDA_VSTD::forward<_Tp>(__t))
   {}
 
+  _CCCL_EXEC_CHECK_DISABLE
   template <class _Tp, class _Alloc>
   _LIBCUDACXX_HIDE_FROM_ABI explicit __tuple_leaf(integral_constant<int, 2>, const _Alloc& __a, _Tp&& __t)
       : _Hp(_CUDA_VSTD::forward<_Tp>(__t), __a)
   {}
 
-  template <class _Tp, __enable_if_t<_CCCL_TRAIT(is_assignable, _Hp&, const _Tp&), int> = 0>
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Tp, enable_if_t<_CCCL_TRAIT(is_assignable, _Hp&, const _Tp&), int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI __tuple_leaf&
   operator=(const _Tp& __t) noexcept(_CCCL_TRAIT(is_nothrow_assignable, _Hp&, const _Tp&))
   {
@@ -462,13 +484,15 @@ public:
     return *this;
   }
 
-  template <class _Tp, __enable_if_t<_CCCL_TRAIT(is_assignable, _Hp&, _Tp), int> = 0>
+  _CCCL_EXEC_CHECK_DISABLE
+  template <class _Tp, enable_if_t<_CCCL_TRAIT(is_assignable, _Hp&, _Tp), int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI __tuple_leaf& operator=(_Tp&& __t) noexcept(_CCCL_TRAIT(is_nothrow_assignable, _Hp&, _Tp))
   {
     _Hp::operator=(_CUDA_VSTD::forward<_Tp>(__t));
     return *this;
   }
 
+  _CCCL_EXEC_CHECK_DISABLE
   _LIBCUDACXX_HIDE_FROM_ABI int swap(__tuple_leaf& __t) noexcept(__is_nothrow_swappable<__tuple_leaf>::value)
   {
     _CUDA_VSTD::swap(*this, __t);
@@ -484,6 +508,8 @@ public:
     return static_cast<const _Hp&>(*this);
   }
 };
+
+_CCCL_DIAG_POP
 
 template <class... _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI void __swallow(_Tp&&...) noexcept
@@ -520,7 +546,7 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, 
   // Handle non-allocator, full initialization
   // Old MSVC cannot handle the noexept specifier outside of template arguments
   template <class... _Up,
-            __enable_if_t<sizeof...(_Up) == sizeof...(_Tp), int> = 0,
+            enable_if_t<sizeof...(_Up) == sizeof...(_Tp), int> = 0,
             bool __all_nothrow_constructible = __all<_CCCL_TRAIT(is_nothrow_constructible, _Tp, _Up)...>::value>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 explicit __tuple_impl(
     __tuple_variadic_constructor_tag, _Up&&... __u) noexcept(__all_nothrow_constructible)
@@ -529,7 +555,7 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, 
 
   // Handle non-allocator, partial default initialization
   // Recursively delegate until we have full rank
-  template <class... _Up, __enable_if_t<sizeof...(_Up) < sizeof...(_Tp), int> = 0>
+  template <class... _Up, enable_if_t<sizeof...(_Up) < sizeof...(_Tp), int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI
   _CCCL_CONSTEXPR_CXX14 explicit __tuple_impl(__tuple_variadic_constructor_tag __tag, _Up&&... __u) noexcept(
     noexcept(__tuple_impl(__tag, _CUDA_VSTD::forward<_Up>(__u)..., __tuple_leaf_default_constructor_tag{})))
@@ -537,7 +563,7 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, 
   {}
 
   // Handle allocator aware, full initialization
-  template <class _Alloc, class... _Up, __enable_if_t<sizeof...(_Up) == sizeof...(_Tp), int> = 0>
+  template <class _Alloc, class... _Up, enable_if_t<sizeof...(_Up) == sizeof...(_Tp), int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI explicit __tuple_impl(
     allocator_arg_t, const _Alloc& __a, __tuple_variadic_constructor_tag, _Up&&... __u)
       : __tuple_leaf<_Indx, _Tp>(__uses_alloc_ctor<_Tp, _Alloc, _Up>(), __a, _CUDA_VSTD::forward<_Up>(__u))...
@@ -552,20 +578,20 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, 
   template <class _Tuple, size_t _Indx2>
   using __tuple_elem_at = __tuple_element_t<_Indx2, __make_tuple_types_t<_Tuple>>;
 
-  template <class _Tuple, __enable_if_t<__tuple_constructible<_Tuple, tuple<_Tp...>>::value, int> = 0>
+  template <class _Tuple, enable_if_t<__tuple_constructible<_Tuple, tuple<_Tp...>>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __tuple_impl(_Tuple&& __t) noexcept(
     (__all<_CCCL_TRAIT(is_nothrow_constructible, _Tp, __tuple_elem_at<_Tuple, _Indx>)...>::value))
       : __tuple_leaf<_Indx, _Tp>(_CUDA_VSTD::forward<__tuple_elem_at<_Tuple, _Indx>>(_CUDA_VSTD::get<_Indx>(__t)))...
   {}
 
-  template <class _Alloc, class _Tuple, __enable_if_t<__tuple_constructible<_Tuple, tuple<_Tp...>>::value, int> = 0>
+  template <class _Alloc, class _Tuple, enable_if_t<__tuple_constructible<_Tuple, tuple<_Tp...>>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI __tuple_impl(allocator_arg_t, const _Alloc& __a, _Tuple&& __t)
       : __tuple_leaf<_Indx, _Tp>(__uses_alloc_ctor<_Tp, _Alloc, __tuple_elem_at<_Tuple, _Indx>>(),
                                  __a,
                                  _CUDA_VSTD::forward<__tuple_elem_at<_Tuple, _Indx>>(_CUDA_VSTD::get<_Indx>(__t)))...
   {}
 
-  template <class _Tuple, __enable_if_t<__tuple_assignable<_Tuple, tuple<_Tp...>>::value, int> = 0>
+  template <class _Tuple, enable_if_t<__tuple_assignable<_Tuple, tuple<_Tp...>>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI __tuple_impl& operator=(_Tuple&& __t) noexcept(
     (__all<_CCCL_TRAIT(is_nothrow_assignable, _Tp&, __tuple_elem_at<_Tuple, _Indx>)...>::value))
   {
@@ -620,7 +646,7 @@ struct __tuple_constraints
   {};
 
   template <class _Arg>
-  struct _PackExpandsToThisTuple<_Arg> : is_same<__remove_cvref_t<_Arg>, tuple<_Tp...>>
+  struct _PackExpandsToThisTuple<_Arg> : is_same<remove_cvref_t<_Arg>, tuple<_Tp...>>
   {};
 
   template <class... _Args>
@@ -669,7 +695,7 @@ struct __tuple_constraints
         : _Or<
             // Don't attempt the two checks below if the tuple we are given
             // has the same type as this tuple.
-            _IsSame<__remove_cvref_t<_Tuple2>, tuple<_Tp...>>,
+            _IsSame<remove_cvref_t<_Tuple2>, tuple<_Tp...>>,
             _Lazy<_And, _Not<is_constructible<_Tp..., _Tuple2>>, _Not<is_convertible<_Tuple2, _Tp...>>>>
     {};
 
@@ -705,45 +731,45 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT tuple
   {};
 
   template <class _Arg>
-  struct _PackExpandsToThisTuple<_Arg> : is_same<__remove_cvref_t<_Arg>, tuple>
+  struct _PackExpandsToThisTuple<_Arg> : is_same<remove_cvref_t<_Arg>, tuple>
   {};
 
 public:
   template <size_t _Ip>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __tuple_element_t<_Ip, tuple>& __get_impl() & noexcept
   {
-    typedef _LIBCUDACXX_NODEBUG_TYPE __tuple_element_t<_Ip, tuple> type;
+    typedef _CCCL_NODEBUG_ALIAS __tuple_element_t<_Ip, tuple> type;
     return static_cast<__tuple_leaf<_Ip, type>&>(__base_).get();
   }
 
   template <size_t _Ip>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const __tuple_element_t<_Ip, tuple>& __get_impl() const& noexcept
   {
-    typedef _LIBCUDACXX_NODEBUG_TYPE __tuple_element_t<_Ip, tuple> type;
+    typedef _CCCL_NODEBUG_ALIAS __tuple_element_t<_Ip, tuple> type;
     return static_cast<const __tuple_leaf<_Ip, type>&>(__base_).get();
   }
 
   template <size_t _Ip>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __tuple_element_t<_Ip, tuple>&& __get_impl() && noexcept
   {
-    typedef _LIBCUDACXX_NODEBUG_TYPE __tuple_element_t<_Ip, tuple> type;
+    typedef _CCCL_NODEBUG_ALIAS __tuple_element_t<_Ip, tuple> type;
     return static_cast<type&&>(static_cast<__tuple_leaf<_Ip, type>&&>(__base_).get());
   }
 
   template <size_t _Ip>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const __tuple_element_t<_Ip, tuple>&& __get_impl() const&& noexcept
   {
-    typedef _LIBCUDACXX_NODEBUG_TYPE __tuple_element_t<_Ip, tuple> type;
+    typedef _CCCL_NODEBUG_ALIAS __tuple_element_t<_Ip, tuple> type;
     return static_cast<const type&&>(static_cast<const __tuple_leaf<_Ip, type>&&>(__base_).get());
   }
 
-  template <class _Constraints                                                 = __tuple_constraints<_Tp...>,
-            __enable_if_t<_Constraints::__implicit_default_constructible, int> = 0>
+  template <class _Constraints                                               = __tuple_constraints<_Tp...>,
+            enable_if_t<_Constraints::__implicit_default_constructible, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr tuple() noexcept(_Constraints::__nothrow_default_constructible)
   {}
 
-  template <class _Constraints                                                 = __tuple_constraints<_Tp...>,
-            __enable_if_t<_Constraints::__explicit_default_constructible, int> = 0>
+  template <class _Constraints                                               = __tuple_constraints<_Tp...>,
+            enable_if_t<_Constraints::__explicit_default_constructible, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr tuple() noexcept(_Constraints::__nothrow_default_constructible)
   {}
 
@@ -752,48 +778,48 @@ public:
 
   template <class _AllocArgT,
             class _Alloc,
-            class _Constraints                                                    = __tuple_constraints<_Tp...>,
-            __enable_if_t<_CCCL_TRAIT(is_same, allocator_arg_t, _AllocArgT), int> = 0,
-            __enable_if_t<_Constraints::__implicit_default_constructible, int>    = 0>
+            class _Constraints                                                  = __tuple_constraints<_Tp...>,
+            enable_if_t<_CCCL_TRAIT(is_same, allocator_arg_t, _AllocArgT), int> = 0,
+            enable_if_t<_Constraints::__implicit_default_constructible, int>    = 0>
   _LIBCUDACXX_HIDE_FROM_ABI tuple(_AllocArgT, _Alloc const& __a) noexcept(_Constraints::__nothrow_default_constructible)
       : __base_(allocator_arg_t(), __a)
   {}
 
   template <class _AllocArgT,
             class _Alloc,
-            class _Constraints                                                    = __tuple_constraints<_Tp...>,
-            __enable_if_t<_CCCL_TRAIT(is_same, allocator_arg_t, _AllocArgT), int> = 0,
-            __enable_if_t<_Constraints::__explicit_default_constructible, int>    = 0>
+            class _Constraints                                                  = __tuple_constraints<_Tp...>,
+            enable_if_t<_CCCL_TRAIT(is_same, allocator_arg_t, _AllocArgT), int> = 0,
+            enable_if_t<_Constraints::__explicit_default_constructible, int>    = 0>
   explicit _LIBCUDACXX_HIDE_FROM_ABI
   tuple(_AllocArgT, _Alloc const& __a) noexcept(_Constraints::__nothrow_default_constructible)
       : __base_(allocator_arg_t(), __a)
   {}
 
-  template <class _Constraints                                                       = __tuple_constraints<_Tp...>,
-            __enable_if_t<_Constraints::__implicit_variadic_copy_constructible, int> = 0>
+  template <class _Constraints                                                     = __tuple_constraints<_Tp...>,
+            enable_if_t<_Constraints::__implicit_variadic_copy_constructible, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14
   tuple(const _Tp&... __t) noexcept(_Constraints::__nothrow_variadic_copy_constructible)
       : __base_(__tuple_variadic_constructor_tag{}, __t...)
   {}
 
-  template <class _Constraints                                                       = __tuple_constraints<_Tp...>,
-            __enable_if_t<_Constraints::__explicit_variadic_copy_constructible, int> = 0>
+  template <class _Constraints                                                     = __tuple_constraints<_Tp...>,
+            enable_if_t<_Constraints::__explicit_variadic_copy_constructible, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI
   _CCCL_CONSTEXPR_CXX14 explicit tuple(const _Tp&... __t) noexcept(_Constraints::__nothrow_variadic_copy_constructible)
       : __base_(__tuple_variadic_constructor_tag{}, __t...)
   {}
 
   template <class _Alloc,
-            class _Constraints                                                       = __tuple_constraints<_Tp...>,
-            __enable_if_t<_Constraints::__implicit_variadic_copy_constructible, int> = 0>
+            class _Constraints                                                     = __tuple_constraints<_Tp...>,
+            enable_if_t<_Constraints::__implicit_variadic_copy_constructible, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI tuple(allocator_arg_t, const _Alloc& __a, const _Tp&... __t) noexcept(
     _Constraints::__nothrow_variadic_copy_constructible)
       : __base_(allocator_arg_t(), __a, __tuple_variadic_constructor_tag{}, __t...)
   {}
 
   template <class _Alloc,
-            class _Constraints                                                       = __tuple_constraints<_Tp...>,
-            __enable_if_t<_Constraints::__explicit_variadic_copy_constructible, int> = 0>
+            class _Constraints                                                     = __tuple_constraints<_Tp...>,
+            enable_if_t<_Constraints::__explicit_variadic_copy_constructible, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI explicit tuple(allocator_arg_t, const _Alloc& __a, const _Tp&... __t) noexcept(
     _Constraints::__nothrow_variadic_copy_constructible)
       : __base_(allocator_arg_t(), __a, __tuple_variadic_constructor_tag{}, __t...)
@@ -814,15 +840,15 @@ public:
         __invalid_tuple_constraints>;
 
   template <class... _Up,
-            class _Constraints                                         = __variadic_constraints<_Up...>,
-            __enable_if_t<_Constraints::__implicit_constructible, int> = 0>
+            class _Constraints                                       = __variadic_constraints<_Up...>,
+            enable_if_t<_Constraints::__implicit_constructible, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 tuple(_Up&&... __u) noexcept(_Constraints::__nothrow_constructible)
       : __base_(__tuple_variadic_constructor_tag{}, _CUDA_VSTD::forward<_Up>(__u)...)
   {}
 
   template <class... _Up,
-            class _Constraints                                         = __variadic_constraints<_Up...>,
-            __enable_if_t<_Constraints::__explicit_constructible, int> = 0>
+            class _Constraints                                       = __variadic_constraints<_Up...>,
+            enable_if_t<_Constraints::__explicit_constructible, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI
   _CCCL_CONSTEXPR_CXX14 explicit tuple(_Up&&... __u) noexcept(_Constraints::__nothrow_constructible)
       : __base_(__tuple_variadic_constructor_tag{}, _CUDA_VSTD::forward<_Up>(__u)...)
@@ -835,9 +861,9 @@ public:
         __invalid_tuple_constraints>;
 
   template <class... _Up,
-            class _Constraints                                         = __variadic_constraints_less_rank<_Up...>,
-            __enable_if_t<sizeof...(_Up) < sizeof...(_Tp), int>        = 0,
-            __enable_if_t<_Constraints::__implicit_constructible, int> = 0>
+            class _Constraints                                       = __variadic_constraints_less_rank<_Up...>,
+            enable_if_t<sizeof...(_Up) < sizeof...(_Tp), int>        = 0,
+            enable_if_t<_Constraints::__implicit_constructible, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 explicit tuple(_Up&&... __u) noexcept(
     __base_noexcept_constructible<__tuple_variadic_constructor_tag, _Up...>::value)
       : __base_(__tuple_variadic_constructor_tag{}, _CUDA_VSTD::forward<_Up>(__u)...)
@@ -845,8 +871,8 @@ public:
 
   template <class _Alloc,
             class... _Up,
-            class _Constraints                                         = __variadic_constraints<_Up...>,
-            __enable_if_t<_Constraints::__implicit_constructible, int> = 0>
+            class _Constraints                                       = __variadic_constraints<_Up...>,
+            enable_if_t<_Constraints::__implicit_constructible, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI
   tuple(allocator_arg_t, const _Alloc& __a, _Up&&... __u) noexcept(_Constraints::__nothrow_constructible)
       : __base_(allocator_arg_t(), __a, __tuple_variadic_constructor_tag{}, _CUDA_VSTD::forward<_Up>(__u)...)
@@ -854,8 +880,8 @@ public:
 
   template <class _Alloc,
             class... _Up,
-            class _Constraints                                         = __variadic_constraints<_Up...>,
-            __enable_if_t<_Constraints::__explicit_constructible, int> = 0>
+            class _Constraints                                       = __variadic_constraints<_Up...>,
+            enable_if_t<_Constraints::__explicit_constructible, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI explicit tuple(allocator_arg_t, const _Alloc& __a, _Up&&... __u) noexcept(
     _Constraints::__nothrow_constructible)
       : __base_(allocator_arg_t(), __a, __tuple_variadic_constructor_tag{}, _CUDA_VSTD::forward<_Up>(__u)...)
@@ -869,46 +895,46 @@ public:
 
   // Horrible hack to make tuple_of_iterator_references work
   template <class _TupleOfIteratorReferences,
-            __enable_if_t<__is_tuple_of_iterator_references<_TupleOfIteratorReferences>::value, int> = 0,
-            __enable_if_t<(tuple_size<_TupleOfIteratorReferences>::value == sizeof...(_Tp)), int>    = 0>
+            enable_if_t<__is_tuple_of_iterator_references<_TupleOfIteratorReferences>::value, int> = 0,
+            enable_if_t<(tuple_size<_TupleOfIteratorReferences>::value == sizeof...(_Tp)), int>    = 0>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 tuple(_TupleOfIteratorReferences&& __t)
       : tuple(_CUDA_VSTD::forward<_TupleOfIteratorReferences>(__t).template __to_tuple<_Tp...>(
           __make_tuple_indices_t<sizeof...(_Tp)>()))
   {}
 
   template <class _Tuple,
-            class _Constraints                                            = __tuple_like_constraints<_Tuple>,
-            __enable_if_t<!_PackExpandsToThisTuple<_Tuple>::value, int>   = 0,
-            __enable_if_t<!_CCCL_TRAIT(is_lvalue_reference, _Tuple), int> = 0,
-            __enable_if_t<_Constraints::__implicit_constructible, int>    = 0>
+            class _Constraints                                          = __tuple_like_constraints<_Tuple>,
+            enable_if_t<!_PackExpandsToThisTuple<_Tuple>::value, int>   = 0,
+            enable_if_t<!_CCCL_TRAIT(is_lvalue_reference, _Tuple), int> = 0,
+            enable_if_t<_Constraints::__implicit_constructible, int>    = 0>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14
   tuple(_Tuple&& __t) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _BaseT, _Tuple))
       : __base_(_CUDA_VSTD::forward<_Tuple>(__t))
   {}
 
   template <class _Tuple,
-            class _Constraints                                          = __tuple_like_constraints<const _Tuple&>,
-            __enable_if_t<!_PackExpandsToThisTuple<_Tuple>::value, int> = 0,
-            __enable_if_t<_Constraints::__implicit_constructible, int>  = 0>
+            class _Constraints                                        = __tuple_like_constraints<const _Tuple&>,
+            enable_if_t<!_PackExpandsToThisTuple<_Tuple>::value, int> = 0,
+            enable_if_t<_Constraints::__implicit_constructible, int>  = 0>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14
   tuple(const _Tuple& __t) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _BaseT, const _Tuple&))
       : __base_(__t)
   {}
 
   template <class _Tuple,
-            class _Constraints                                            = __tuple_like_constraints<_Tuple>,
-            __enable_if_t<!_PackExpandsToThisTuple<_Tuple>::value, int>   = 0,
-            __enable_if_t<!_CCCL_TRAIT(is_lvalue_reference, _Tuple), int> = 0,
-            __enable_if_t<_Constraints::__explicit_constructible, int>    = 0>
+            class _Constraints                                          = __tuple_like_constraints<_Tuple>,
+            enable_if_t<!_PackExpandsToThisTuple<_Tuple>::value, int>   = 0,
+            enable_if_t<!_CCCL_TRAIT(is_lvalue_reference, _Tuple), int> = 0,
+            enable_if_t<_Constraints::__explicit_constructible, int>    = 0>
   _LIBCUDACXX_HIDE_FROM_ABI
   _CCCL_CONSTEXPR_CXX14 explicit tuple(_Tuple&& __t) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _BaseT, _Tuple))
       : __base_(_CUDA_VSTD::forward<_Tuple>(__t))
   {}
 
   template <class _Tuple,
-            class _Constraints                                          = __tuple_like_constraints<const _Tuple&>,
-            __enable_if_t<!_PackExpandsToThisTuple<_Tuple>::value, int> = 0,
-            __enable_if_t<_Constraints::__explicit_constructible, int>  = 0>
+            class _Constraints                                        = __tuple_like_constraints<const _Tuple&>,
+            enable_if_t<!_PackExpandsToThisTuple<_Tuple>::value, int> = 0,
+            enable_if_t<_Constraints::__explicit_constructible, int>  = 0>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 explicit tuple(const _Tuple& __t) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _BaseT, const _Tuple&))
       : __base_(__t)
@@ -916,16 +942,16 @@ public:
 
   template <class _Alloc,
             class _Tuple,
-            class _Constraints                                         = __tuple_like_constraints<_Tuple>,
-            __enable_if_t<_Constraints::__implicit_constructible, int> = 0>
+            class _Constraints                                       = __tuple_like_constraints<_Tuple>,
+            enable_if_t<_Constraints::__implicit_constructible, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI tuple(allocator_arg_t, const _Alloc& __a, _Tuple&& __t)
       : __base_(allocator_arg_t(), __a, _CUDA_VSTD::forward<_Tuple>(__t))
   {}
 
   template <class _Alloc,
             class _Tuple,
-            class _Constraints                                         = __tuple_like_constraints<_Tuple>,
-            __enable_if_t<_Constraints::__explicit_constructible, int> = 0>
+            class _Constraints                                       = __tuple_like_constraints<_Tuple>,
+            enable_if_t<_Constraints::__explicit_constructible, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI explicit tuple(allocator_arg_t, const _Alloc& __a, _Tuple&& __t)
       : __base_(allocator_arg_t(), __a, _CUDA_VSTD::forward<_Tuple>(__t))
   {}
@@ -936,7 +962,7 @@ public:
   _CCCL_HIDE_FROM_ABI tuple& operator=(const tuple& __t) = default;
   _CCCL_HIDE_FROM_ABI tuple& operator=(tuple&& __t)      = default;
 
-  template <class _Tuple, __enable_if_t<__tuple_assignable<_Tuple, tuple>::value, bool> = false>
+  template <class _Tuple, enable_if_t<__tuple_assignable<_Tuple, tuple>::value, bool> = false>
   _LIBCUDACXX_HIDE_FROM_ABI tuple& operator=(_Tuple&& __t) noexcept(_CCCL_TRAIT(is_nothrow_assignable, _BaseT&, _Tuple))
   {
     __base_.operator=(_CUDA_VSTD::forward<_Tuple>(__t));
@@ -983,7 +1009,7 @@ _CCCL_HOST_DEVICE tuple(allocator_arg_t, _Alloc, tuple<_Tp...>) -> tuple<_Tp...>
 #endif // _LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES
 
 template <class... _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI __enable_if_t<_And<__is_swappable<_Tp>...>::value, void>
+_LIBCUDACXX_HIDE_FROM_ABI enable_if_t<_And<__is_swappable<_Tp>...>::value, void>
 swap(tuple<_Tp...>& __t, tuple<_Tp...>& __u) noexcept(__all<__is_nothrow_swappable<_Tp>::value...>::value)
 {
   __t.swap(__u);
@@ -1212,7 +1238,7 @@ struct __tuple_cat_type;
 template <class... _Ttypes, class... _Utypes>
 struct __tuple_cat_type<tuple<_Ttypes...>, __tuple_types<_Utypes...>>
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE tuple<_Ttypes..., _Utypes...> type;
+  typedef _CCCL_NODEBUG_ALIAS tuple<_Ttypes..., _Utypes...> type;
 };
 
 template <class _ResultTuple, bool _Is_Tuple0TupleLike, class... _Tuples>
@@ -1222,15 +1248,15 @@ struct __tuple_cat_return_1
 template <class... _Types, class _Tuple0>
 struct __tuple_cat_return_1<tuple<_Types...>, true, _Tuple0>
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE
-    typename __tuple_cat_type<tuple<_Types...>, __make_tuple_types_t<__remove_cvref_t<_Tuple0>>>::type type;
+  typedef _CCCL_NODEBUG_ALIAS
+    typename __tuple_cat_type<tuple<_Types...>, __make_tuple_types_t<remove_cvref_t<_Tuple0>>>::type type;
 };
 
 template <class... _Types, class _Tuple0, class _Tuple1, class... _Tuples>
 struct __tuple_cat_return_1<tuple<_Types...>, true, _Tuple0, _Tuple1, _Tuples...>
     : public __tuple_cat_return_1<
-        typename __tuple_cat_type<tuple<_Types...>, __make_tuple_types_t<__remove_cvref_t<_Tuple0>>>::type,
-        __tuple_like<__libcpp_remove_reference_t<_Tuple1>>::value,
+        typename __tuple_cat_type<tuple<_Types...>, __make_tuple_types_t<remove_cvref_t<_Tuple0>>>::type,
+        __tuple_like<remove_reference_t<_Tuple1>>::value,
         _Tuple1,
         _Tuples...>
 {};
@@ -1240,13 +1266,13 @@ struct __tuple_cat_return;
 
 template <class _Tuple0, class... _Tuples>
 struct __tuple_cat_return<_Tuple0, _Tuples...>
-    : public __tuple_cat_return_1<tuple<>, __tuple_like<__libcpp_remove_reference_t<_Tuple0>>::value, _Tuple0, _Tuples...>
+    : public __tuple_cat_return_1<tuple<>, __tuple_like<remove_reference_t<_Tuple0>>::value, _Tuple0, _Tuples...>
 {};
 
 template <>
 struct __tuple_cat_return<>
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE tuple<> type;
+  typedef _CCCL_NODEBUG_ALIAS tuple<> type;
 };
 
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 tuple<> tuple_cat()
@@ -1260,16 +1286,15 @@ struct __tuple_cat_return_ref_imp;
 template <class... _Types, size_t... _I0, class _Tuple0>
 struct __tuple_cat_return_ref_imp<tuple<_Types...>, __tuple_indices<_I0...>, _Tuple0>
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE __libcpp_remove_reference_t<_Tuple0> _T0;
-  typedef tuple<_Types..., typename __apply_cv<_Tuple0, __tuple_element_t<_I0, _T0>>::type&&...> type;
+  typedef _CCCL_NODEBUG_ALIAS remove_reference_t<_Tuple0> _T0;
+  typedef tuple<_Types..., __copy_cvref_t<_Tuple0, __tuple_element_t<_I0, _T0>>&&...> type;
 };
 
 template <class... _Types, size_t... _I0, class _Tuple0, class _Tuple1, class... _Tuples>
 struct __tuple_cat_return_ref_imp<tuple<_Types...>, __tuple_indices<_I0...>, _Tuple0, _Tuple1, _Tuples...>
     : public __tuple_cat_return_ref_imp<
-        tuple<_Types...,
-              typename __apply_cv<_Tuple0, __tuple_element_t<_I0, __libcpp_remove_reference_t<_Tuple0>>>::type&&...>,
-        __make_tuple_indices_t<tuple_size<__libcpp_remove_reference_t<_Tuple1>>::value>,
+        tuple<_Types..., __copy_cvref_t<_Tuple0, __tuple_element_t<_I0, remove_reference_t<_Tuple0>>>&&...>,
+        __make_tuple_indices_t<tuple_size<remove_reference_t<_Tuple1>>::value>,
         _Tuple1,
         _Tuples...>
 {};
@@ -1277,7 +1302,7 @@ struct __tuple_cat_return_ref_imp<tuple<_Types...>, __tuple_indices<_I0...>, _Tu
 template <class _Tuple0, class... _Tuples>
 struct __tuple_cat_return_ref
     : public __tuple_cat_return_ref_imp<tuple<>,
-                                        __make_tuple_indices_t<tuple_size<__libcpp_remove_reference_t<_Tuple0>>::value>,
+                                        __make_tuple_indices_t<tuple_size<remove_reference_t<_Tuple0>>::value>,
                                         _Tuple0,
                                         _Tuples...>
 {};
@@ -1303,9 +1328,9 @@ struct __tuple_cat<tuple<_Types...>, __tuple_indices<_I0...>, __tuple_indices<_J
   operator()(tuple<_Types...> __t, _Tuple0&& __t0, _Tuple1&& __t1, _Tuples&&... __tpls)
   {
     (void) __t;
-    typedef _LIBCUDACXX_NODEBUG_TYPE __libcpp_remove_reference_t<_Tuple0> _T0;
-    typedef _LIBCUDACXX_NODEBUG_TYPE __libcpp_remove_reference_t<_Tuple1> _T1;
-    return __tuple_cat<tuple<_Types..., typename __apply_cv<_Tuple0, __tuple_element_t<_J0, _T0>>::type&&...>,
+    typedef _CCCL_NODEBUG_ALIAS remove_reference_t<_Tuple0> _T0;
+    typedef _CCCL_NODEBUG_ALIAS remove_reference_t<_Tuple1> _T1;
+    return __tuple_cat<tuple<_Types..., __copy_cvref_t<_Tuple0, __tuple_element_t<_J0, _T0>>&&...>,
                        __make_tuple_indices_t<sizeof...(_Types) + tuple_size<_T0>::value>,
                        __make_tuple_indices_t<tuple_size<_T1>::value>>()(
       _CUDA_VSTD::forward_as_tuple(_CUDA_VSTD::forward<_Types>(_CUDA_VSTD::get<_I0>(__t))...,
@@ -1319,7 +1344,7 @@ template <class _Tuple0, class... _Tuples>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 typename __tuple_cat_return<_Tuple0, _Tuples...>::type
 tuple_cat(_Tuple0&& __t0, _Tuples&&... __tpls)
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE __libcpp_remove_reference_t<_Tuple0> _T0;
+  typedef _CCCL_NODEBUG_ALIAS remove_reference_t<_Tuple0> _T0;
   return __tuple_cat<tuple<>, __tuple_indices<>, __make_tuple_indices_t<tuple_size<_T0>::value>>()(
     tuple<>(), _CUDA_VSTD::forward<_Tuple0>(__t0), _CUDA_VSTD::forward<_Tuples>(__tpls)...);
 }

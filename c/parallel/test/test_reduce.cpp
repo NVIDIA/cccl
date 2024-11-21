@@ -10,7 +10,7 @@
 
 #include <cuda_runtime.h>
 
-#include "c2h.h"
+#include "test_util.h"
 
 void reduce(cccl_iterator_t input, cccl_iterator_t output, unsigned long long num_items, cccl_op_t op, cccl_value_t init)
 {

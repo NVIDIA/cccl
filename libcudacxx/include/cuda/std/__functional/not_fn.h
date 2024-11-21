@@ -31,7 +31,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2014
+#if _CCCL_STD_VER >= 2017
 
 struct __not_fn_op
 {
@@ -48,11 +48,11 @@ template <class _Fn>
 struct __not_fn_t : __perfect_forward<__not_fn_op, _Fn>
 {
   using __base = __perfect_forward<__not_fn_op, _Fn>;
-#  if defined(_CCCL_COMPILER_NVRTC) // nvbug 3961621
+#  if _CCCL_COMPILER(NVRTC) // nvbug 3961621
   _CCCL_HIDE_FROM_ABI constexpr __not_fn_t() noexcept = default;
 
   _LIBCUDACXX_TEMPLATE(class _OrigFn)
-  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_same, _Fn, __decay_t<_OrigFn>))
+  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_same, _Fn, decay_t<_OrigFn>))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __not_fn_t(_OrigFn&& __fn) noexcept(
     noexcept(__base(_CUDA_VSTD::declval<_OrigFn>())))
       : __base(_CUDA_VSTD::forward<_OrigFn>(__fn))
@@ -68,7 +68,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 auto not_fn(_Fn&& __f)
   return __not_fn_t<decay_t<_Fn>>(_CUDA_VSTD::forward<_Fn>(__f));
 }
 
-#endif // _CCCL_STD_VER > 2014
+#endif // _CCCL_STD_VER >= 2017
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

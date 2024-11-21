@@ -31,9 +31,9 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
-#include "catch2_test_helper.h"
+#include <c2h/catch2_test_helper.h>
 
-CUB_TEST("Tests choose_offset", "[util][type]")
+C2H_TEST("Tests choose_offset", "[util][type]")
 {
   // Uses unsigned 32-bit type for signed 32-bit type
   STATIC_REQUIRE(::cuda::std::is_same<cub::detail::choose_offset_t<std::int32_t>, std::uint32_t>::value);
@@ -45,7 +45,7 @@ CUB_TEST("Tests choose_offset", "[util][type]")
   STATIC_REQUIRE(::cuda::std::is_same<cub::detail::choose_offset_t<std::int64_t>, unsigned long long>::value);
 }
 
-CUB_TEST("Tests choose_signed_offset", "[util][type]")
+C2H_TEST("Tests choose_signed_offset", "[util][type]")
 {
   // Uses signed 64-bit type for unsigned signed 32-bit type
   STATIC_REQUIRE(::cuda::std::is_same<cub::detail::choose_signed_offset_t<std::uint32_t>, std::int64_t>::value);
@@ -75,7 +75,7 @@ CUB_TEST("Tests choose_signed_offset", "[util][type]")
             ::cuda::std::numeric_limits<std::uint64_t>::max()));
 }
 
-CUB_TEST("Tests promote_small_offset", "[util][type]")
+C2H_TEST("Tests promote_small_offset", "[util][type]")
 {
   // Uses input type for types of at least 32 bits
   STATIC_REQUIRE(::cuda::std::is_same<typename cub::detail::promote_small_offset_t<std::int32_t>, std::int32_t>::value);

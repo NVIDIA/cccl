@@ -25,6 +25,7 @@
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_identity.h>
+#include <cuda/std/__type_traits/type_set.h>
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/integer_sequence.h>
 
@@ -46,8 +47,11 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class... _Ts>
 struct __type_list;
 
-template <class _Tp>
-using __type = typename _Tp::type;
+template <class...>
+struct __undefined; // leave this undefined
+
+template <class _Ty>
+using __type = typename _Ty::type;
 
 //! \brief Evaluate a meta-callable with the given arguments
 template <class _Fn, class... _Ts>
@@ -67,7 +71,7 @@ template <size_t _DependentValue>
 struct __type_call_indirect_fn
 {
   template <template <class...> class _Fn, class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = _Fn<_Ts...>;
+  using __call _CCCL_NODEBUG_ALIAS = _Fn<_Ts...>;
 };
 } // namespace __detail
 
@@ -83,7 +87,7 @@ template <template <class...> class _Fn>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_quote
 {
   template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = _Fn<_Ts...>;
+  using __call _CCCL_NODEBUG_ALIAS = _Fn<_Ts...>;
 };
 
 //! \brief Turns a unary class or alias template into a meta-callable
@@ -91,7 +95,7 @@ template <template <class> class _Fn>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_quote1
 {
   template <class _Ty>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = _Fn<_Ty>;
+  using __call _CCCL_NODEBUG_ALIAS = _Fn<_Ty>;
 };
 
 //! \brief Turns a binary class or alias template into a meta-callable
@@ -99,18 +103,7 @@ template <template <class, class> class _Fn>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_quote2
 {
   template <class _Ty, class _Uy>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = _Fn<_Ty, _Uy>;
-};
-
-//! \brief Turns a class or alias template into a meta-callable with an
-//! indirection to avoid the dreaded "pack expansion argument for non-pack
-//! parameter" error.
-template <template <class...> class _Fn>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_quote_indirect
-{
-  template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE =
-    typename __detail::__type_call_indirect_fn<sizeof(__type_list<_Ts...>*)>::template __call<_Fn, _Ts...>;
+  using __call _CCCL_NODEBUG_ALIAS = _Fn<_Ty, _Uy>;
 };
 
 //! \brief Turns a trait class template \c _Fn into a meta-callable \c
@@ -120,7 +113,7 @@ template <template <class...> class _Fn>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_quote_trait
 {
   template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = __type<_Fn<_Ts...>>;
+  using __call _CCCL_NODEBUG_ALIAS = __type<_Fn<_Ts...>>;
 };
 
 //! \brief Turns a unary trait class template \c _Fn into a meta-callable
@@ -130,7 +123,7 @@ template <template <class> class _Fn>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_quote_trait1
 {
   template <class _Ty>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = __type<_Fn<_Ty>>;
+  using __call _CCCL_NODEBUG_ALIAS = __type<_Fn<_Ty>>;
 };
 
 //! \brief Turns a binary trait class template \c _Fn into a meta-callable
@@ -140,7 +133,28 @@ template <template <class, class> class _Fn>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_quote_trait2
 {
   template <class _Ty, class _Uy>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = __type<_Fn<_Ty, _Uy>>;
+  using __call _CCCL_NODEBUG_ALIAS = __type<_Fn<_Ty, _Uy>>;
+};
+
+//! \brief Adds an indirection to a meta-callable to avoid the dreaded "pack
+//! expansion argument for non-pack parameter" error.
+template <class _Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_indirect
+{
+  template <class... _Ts>
+  using __call _CCCL_NODEBUG_ALIAS = typename __detail::__type_call_indirect_fn<sizeof(
+    __type_list<_Ts...>*)>::template __call<_Fn::template __call, _Ts...>;
+};
+
+//! \brief Turns a class or alias template into a meta-callable with an
+//! indirection to avoid the dreaded "pack expansion argument for non-pack
+//! parameter" error.
+template <template <class...> class _Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_indirect_quote
+{
+  template <class... _Ts>
+  using __call _CCCL_NODEBUG_ALIAS =
+    typename __detail::__type_call_indirect_fn<sizeof(__type_list<_Ts...>*)>::template __call<_Fn, _Ts...>;
 };
 
 //! \brief A meta-callable that composes two meta-callables
@@ -148,31 +162,132 @@ template <class _Fn1, class _Fn2>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_compose
 {
   template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = __type_call1<_Fn1, __type_call<_Fn2, _Ts...>>;
+  using __call _CCCL_NODEBUG_ALIAS = __type_call1<_Fn1, __type_call<_Fn2, _Ts...>>;
+};
+
+template <template <class...> class _Fn, class... _Ts>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_bind_front_quote
+{
+  template <class... _Us>
+  using __call _CCCL_NODEBUG_ALIAS = _Fn<_Ts..., _Us...>;
 };
 
 //! \brief A meta-callable that binds the front arguments to a meta-callable
 template <class _Fn, class... _Ts>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_bind_front
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_bind_front : __type_bind_front_quote<_Fn::template __call, _Ts...>
+{};
+
+template <template <class...> class _Fn, class... _Ts>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_bind_back_quote
 {
   template <class... _Us>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = __type_call<_Fn, _Ts..., _Us...>;
+  using __call _CCCL_NODEBUG_ALIAS = _Fn<_Us..., _Ts...>;
 };
 
 //! \brief A meta-callable that binds the back arguments to a meta-callable
 template <class _Fn, class... _Ts>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_bind_back
-{
-  template <class... _Us>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = __type_call<_Fn, _Us..., _Ts...>;
-};
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_bind_back : __type_bind_back_quote<_Fn::template __call, _Ts...>
+{};
 
 //! \brief A meta-callable that always evaluates to \c _Ty.
 template <class _Ty>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_always
 {
   template <class...>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = _Ty;
+  using __call _CCCL_NODEBUG_ALIAS = _Ty;
+};
+
+//! \brief A unary meta-callable that returns its argument unmodified.
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_self
+{
+  template <class _Ty>
+  using __call _CCCL_NODEBUG_ALIAS = _Ty;
+};
+
+template <class _Ty>
+using __type_self_t _CCCL_NODEBUG_ALIAS = _Ty;
+
+//! \brief Perform a logical AND operation on a list of Boolean types.
+//!
+//! \note The AND operation is not short-circuiting.
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_strict_and
+{
+  template <class... _Ts>
+  using __call _CCCL_NODEBUG_ALIAS = __fold_and<_Ts::value...>;
+};
+
+//! \brief Perform a logical OR operation on a list of Boolean types.
+//!
+//! \note The OR operation is not short-circuiting.
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_strict_or
+{
+  template <class... _Ts>
+  using __call _CCCL_NODEBUG_ALIAS = __fold_or<_Ts::value...>;
+};
+
+//! \brief Perform a logical NOT operation on a Boolean type.
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_not
+{
+  template <class _Ty>
+  using __call _CCCL_NODEBUG_ALIAS = bool_constant<(!_Ty::value)>;
+};
+
+//! \brief Test whether two integral constants are equal.
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_equal
+{
+  template <class _Ty, class _Uy>
+  using __call _CCCL_NODEBUG_ALIAS = bool_constant<(_Ty::value == _Uy::value)>;
+};
+
+//! \brief Test whether two integral constants are not equal.
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_not_equal
+{
+  template <class _Ty, class _Uy>
+  using __call _CCCL_NODEBUG_ALIAS = bool_constant<(_Ty::value != _Uy::value)>;
+};
+
+//! \brief Test whether one integral constant is less than another.
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_less
+{
+  template <class _Ty, class _Uy>
+  using __call _CCCL_NODEBUG_ALIAS = bool_constant<(_Ty::value < _Uy::value)>;
+};
+
+//! \brief Test whether one integral constant is less than or equal to another.
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_less_equal
+{
+  template <class _Ty, class _Uy>
+  using __call _CCCL_NODEBUG_ALIAS = bool_constant<(_Ty::value <= _Uy::value)>;
+};
+
+//! \brief Test whether one integral constant is greater than another.
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_greater
+{
+  template <class _Ty, class _Uy>
+  using __call _CCCL_NODEBUG_ALIAS = bool_constant<(_Ty::value > _Uy::value)>;
+};
+
+//! \brief Test whether one integral constant is greater than or equal to another.
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_greater_equal
+{
+  template <class _Ty, class _Uy>
+  using __call _CCCL_NODEBUG_ALIAS = bool_constant<(_Ty::value >= _Uy::value)>;
+};
+
+//! \brief A functional adaptor that negates a unary predicate
+template <class _Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_negate1
+{
+  template <class _Ty>
+  using __call _CCCL_NODEBUG_ALIAS = __type_call1<__type_not, __type_call1<_Fn, _Ty>>;
+};
+
+//! \brief A functional adaptor that negates a binary predicate
+template <class _Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_negate2
+{
+  template <class _Ty, class _Uy>
+  using __call _CCCL_NODEBUG_ALIAS = __type_call1<__type_not, __type_call2<_Fn, _Ty, _Uy>>;
 };
 
 //! \brief A type list
@@ -185,7 +300,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_list
   // that takes a meta-callable and applies the
   // elements of the list to it.
   template <class _Fn, class... _Us>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = __type_call<_Fn, _Ts..., _Us...>;
+  using __call _CCCL_NODEBUG_ALIAS = __type_call<_Fn, _Ts..., _Us...>;
 };
 
 // Before the addition of inline variables, it was necessary to
@@ -209,7 +324,32 @@ using __type_push_back = __type_call<_List, __type_quote<__type_list>, _Ts...>;
 
 //! \brief Given a type list and a list of types, prepend the types to the list.
 template <class _List, class... _Ts>
-using __type_push_front = __type_call1<_List, __type_bind_front<__type_quote<__type_list>, _Ts...>>;
+using __type_push_front = __type_call1<_List, __type_bind_front_quote<__type_list, _Ts...>>;
+
+namespace __detail
+{
+template <template <class...> class _Fn, class... _Ts>
+_LIBCUDACXX_HIDE_FROM_ABI auto __as_type_list_fn(__undefined<_Fn<_Ts...>>*) //
+  -> __type_list<_Ts...>;
+
+template <template <class _Ty, _Ty...> class _Fn, class _Ty, _Ty... _Us>
+_LIBCUDACXX_HIDE_FROM_ABI auto __as_type_list_fn(__undefined<_Fn<_Ty, _Us...>>*) //
+  -> __type_list<integral_constant<_Ty, _Us>...>;
+
+template <class _Ret, class... _Args>
+_LIBCUDACXX_HIDE_FROM_ABI auto __as_type_list_fn(__undefined<_Ret(_Args...)>*) //
+  -> __type_list<_Args...>;
+} // namespace __detail
+
+//! \brief Given a type that is a specialization of a class template, return a
+//! type list of the template arguments.
+template <class _List>
+using __as_type_list = decltype(__detail::__as_type_list_fn(static_cast<__undefined<_List>*>(nullptr)));
+
+//! \brief Given a type that is a specialization of a class template and a
+//! meta-callable, invoke the callable with the template arguments.
+template <class _Fn, class _List>
+using __type_apply = __type_call<__as_type_list<_List>, _Fn>;
 
 namespace __detail
 {
@@ -235,14 +375,14 @@ template <bool _IsCallable>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_defer_fn
 {
   template <class, class...>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = __type_defer_fn;
+  using __call _CCCL_NODEBUG_ALIAS = __type_defer_fn;
 };
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_defer_fn<true>
 {
   template <class _Fn, class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = __type_identity<__type_call<_Fn, _Ts...>>;
+  using __call _CCCL_NODEBUG_ALIAS = type_identity<__type_call<_Fn, _Ts...>>;
 };
 } // namespace __detail
 
@@ -256,6 +396,30 @@ template <class _Fn, class... _Ts>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_defer
     : __type_call<__detail::__type_defer_fn<__type_callable<_Fn, _Ts...>::value>, _Fn, _Ts...>
 {};
+
+//! \brief Defer the instantiation of a template with a list of arguments.
+//!
+//! Given a variadic template and a list of arguments, return a trait type \c T
+//! where \c T::type is the result of instantiating the template with the
+//! arguments, or if the template cannot be instantiated with the arguments, a
+//! class type without a nested \c ::type type alias.
+template <template <class...> class _Fn, class... _Ts>
+using __type_defer_quote = __type_defer<__type_quote<_Fn>, _Ts...>;
+
+//! \brief A composition of two meta-callables that will attempt to call the
+//! first, and if that fails, call the second.
+//!
+//! Compose two meta-callables, \c _TryFn and \c _CatchFn, into a new
+//! meta-callable. Given arguments \c _Ts... , \c __type_try_catch will try to
+//! evaluate `__type_call<_TryFn, _Ts...>`. If this type is well-formed, it will
+//! be the result of the composition. Otherwise, the result will be
+//! `__type_call<_CatchFn, _Ts...>`.
+template <class _TryFn, class _CatchFn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_try_catch
+{
+  template <class... _Ts>
+  using __call _CCCL_NODEBUG_ALIAS = __type_call<_If<__type_callable<_TryFn, _Ts...>::value, _TryFn, _CatchFn>, _Ts...>;
+};
 
 // Implementation for indexing into a list of types:
 #  if defined(__cpp_pack_indexing) && !defined(_CCCL_CUDA_COMPILER_NVCC)
@@ -284,7 +448,7 @@ template <size_t _Ip>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_index_fn
 {
   template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = _CCCL_BUILTIN_TYPE_PACK_ELEMENT(_Ip, _Ts...);
+  using __call _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_TYPE_PACK_ELEMENT(_Ip, _Ts...);
 };
 } // namespace __detail
 
@@ -321,7 +485,7 @@ template <size_t... _Is>
 struct __type_index_large_size_fn<index_sequence<_Is...>>
 {
   template <class _Ip, class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = //
+  using __call _CCCL_NODEBUG_ALIAS = //
     __type<decltype(__detail::__type_index_get<_Ip::value>(
       static_cast<__inherit_flat<__type_index_leaf<_Is, _Ts>...>*>(nullptr)))>;
 };
@@ -335,7 +499,7 @@ struct __type_index_small_size_fn;
       struct __type_index_small_size_fn<_N>                     \
       {                                                         \
         template <_CCCL_PP_REPEAT(_N, _M0) class _Ty, class...> \
-        using __call _LIBCUDACXX_NODEBUG_TYPE = _Ty;            \
+        using __call _CCCL_NODEBUG_ALIAS = _Ty;                 \
       };
 
 _CCCL_PP_REPEAT_REVERSE(16, _M1)
@@ -347,7 +511,7 @@ template <bool _IsSmall>
 struct __type_index_select_fn // Default for larger indices
 {
   template <class _Ip, class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE =
+  using __call _CCCL_NODEBUG_ALIAS =
     __type_call<__type_index_large_size_fn<make_index_sequence<sizeof...(_Ts)>>, _Ip, _Ts...>;
 };
 
@@ -355,7 +519,7 @@ template <>
 struct __type_index_select_fn<true> // Fast implementation for smaller indices
 {
   template <class _Ip, class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = __type_call_indirect<__type_index_small_size_fn<_Ip::value>, _Ts...>;
+  using __call _CCCL_NODEBUG_ALIAS = __type_call_indirect<__type_index_small_size_fn<_Ip::value>, _Ts...>;
 };
 } // namespace __detail
 
@@ -373,7 +537,7 @@ template <size_t _Ip>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_at_fn
 {
   template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = __type_index_c<_Ip, _Ts...>;
+  using __call _CCCL_NODEBUG_ALIAS = __type_index_c<_Ip, _Ts...>;
 };
 } // namespace __detail
 
@@ -395,10 +559,38 @@ using __type_back = __type_at_c<_List::__size - 1, _List>;
 
 namespace __detail
 {
+#  if defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION < 1938
+// A workaround for https://developercommunity.visualstudio.com/t/fatal-error-C1001:-Internal-compiler-err/10405847
+struct __type_concat_fn
+{
+  template <class... _Lists>
+  struct __trait
+  {};
+
+  template <class... _Ts, class... _Us, class... _Lists>
+  struct __trait<__type_list<_Ts...>, __type_list<_Us...>, _Lists...> : __trait<__type_list<_Ts..., _Us...>, _Lists...>
+  {};
+
+  template <class... _Ts>
+  struct __trait<__type_list<_Ts...>>
+  {
+    using type = __type_list<_Ts...>;
+  };
+
+  template <>
+  struct __trait<>
+  {
+    using type = __type_list<>;
+  };
+
+  template <class... _Lists>
+  using __call _CCCL_NODEBUG_ALIAS = __type<__trait<_Lists...>>;
+};
+#  else // ^^^ _CCCL_COMPILER_MSVC < 19.38 ^^^ / vvv !(_CCCL_COMPILER_MSVC < 19.38) vvv
 template <size_t _Count>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_concat_fn
 {
-  using __next_t = __type_maybe_concat_fn<(_Count < 8 ? 0 : _Count - 8)>;
+  using __next_t _CCCL_NODEBUG_ALIAS = __type_maybe_concat_fn<(_Count < 8 ? 0 : _Count - 8)>;
 
   template <class... _Ts,
             class... _As,
@@ -443,7 +635,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_concat_fn<0>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_concat_fn
 {
   template <class... _Lists>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = decltype(__type_maybe_concat_fn<sizeof...(_Lists)>::__fn(
+  using __call _CCCL_NODEBUG_ALIAS = decltype(__type_maybe_concat_fn<sizeof...(_Lists)>::__fn(
     __type_list_ptr<>{nullptr},
     static_cast<_Lists*>(nullptr)...,
     __type_list_ptr<>{nullptr},
@@ -454,6 +646,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_concat_fn
     __type_list_ptr<>{nullptr},
     __type_list_ptr<>{nullptr}));
 };
+#  endif // !(_CCCL_COMPILER_MSVC < 19.38)
 } // namespace __detail
 
 //! \brief Concatenate a list of type lists into a single type list.
@@ -471,38 +664,68 @@ using __type_flatten = __type_call1<_ListOfLists, __type_quote<__type_concat>>;
 namespace __detail
 {
 template <bool _IsEmpty>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_find_if_fn;
+
+template <bool _Found>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_find_if_found
+{
+  template <class _Fn, class _Head, class... _Tail>
+  using __call _CCCL_NODEBUG_ALIAS = __type_list<_Head, _Tail...>;
+};
+
+template <>
+struct __type_find_if_found<false>
+{
+  template <class _Fn, class _Head, class... _Tail>
+  using __call _CCCL_NODEBUG_ALIAS = __type_call<__type_maybe_find_if_fn<sizeof...(_Tail) == 0>, _Fn, _Tail...>;
+};
+
+template <bool _IsEmpty>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_find_if_fn // Type list is not empty
 {
   template <class _Fn, class _Head, class... _Tail>
-  using __call _LIBCUDACXX_NODEBUG_TYPE =
-    _If<__type_call1<_Fn, _Head>::value,
-        __type_list<_Head, _Tail...>,
-        __type_call<__type_maybe_find_if_fn<sizeof...(_Tail) == 0>, _Fn, _Tail...>>;
+  using __call _CCCL_NODEBUG_ALIAS =
+    __type_call<__type_find_if_found<__type_call1<_Fn, _Head>::value>, _Fn, _Head, _Tail...>;
 };
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_find_if_fn<true> // Type list is empty
 {
   template <class, class... _None>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = __type_list<>;
+  using __call _CCCL_NODEBUG_ALIAS = __type_list<>;
 };
 
 template <class _Fn>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_find_if_fn
 {
   template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = __type_call<__type_maybe_find_if_fn<sizeof...(_Ts) == 0>, _Fn, _Ts...>;
+  using __call _CCCL_NODEBUG_ALIAS = __type_call<__type_maybe_find_if_fn<sizeof...(_Ts) == 0>, _Fn, _Ts...>;
+};
+
+template <class _Ty>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_same_as
+{
+  template <class _Uy>
+  using __call _CCCL_NODEBUG_ALIAS = bool_constant<_CCCL_TRAIT(is_same, _Ty, _Uy)>;
 };
 } // namespace __detail
 
-//! \brief Given a type list and a predicate, find the first type in a list that
-//! satisfies a predicate. It returns a type list containing the first type that
-//! satisfies the predicate and all the types after it.
+//! \brief Given a type list and a predicate, find the first type in the list
+//! that satisfies the predicate. It returns a type list containing the first
+//! type that satisfies the predicate and all the types after it.
 //!
-//! If no type in the list satisfies the predicate, \c __type_find_if
-//! returns an empty type list.
+//! If no type in the list satisfies the predicate, \c __type_find_if returns an
+//! empty type list.
 template <class _List, class _Fn>
 using __type_find_if = __type_call1<_List, __detail::__type_find_if_fn<_Fn>>;
+
+//! \brief Given a type list and type, find the first occurrance of the type in
+//! the list. It returns a type list containing the type and all the types after
+//! it.
+//!
+//! If the type is not in the list, \c __type_find returns an empty type list.
+template <class _List, class _Ty>
+using __type_find = __type_find_if<_List, __detail::__type_same_as<_Ty>>;
 
 namespace __detail
 {
@@ -510,7 +733,7 @@ template <class _Fn>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_transform_fn
 {
   template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = __type_list<__type_call1<_Fn, _Ts>...>;
+  using __call _CCCL_NODEBUG_ALIAS = __type_list<__type_call1<_Fn, _Ts>...>;
 };
 } // namespace __detail
 
@@ -533,12 +756,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_fold_left_fn;
 #  define _M3(_N) _M2(_N) >
 #  define _M4(_N) _M2(_CCCL_PP_DEC(_N)) >
 
-#  define _LIBCUDACXX_TYPE_LIST_FOLD_RIGHT(_N)                                                          \
-    template <>                                                                                         \
-    struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_fold_right_fn<_N>                                       \
-    {                                                                                                   \
-      template <class _Fn, class _State _CCCL_PP_REPEAT(_N, _M0)>                                       \
-      using __call _LIBCUDACXX_NODEBUG_TYPE = _CCCL_PP_REPEAT(_N, _M1) _State _CCCL_PP_REPEAT(_N, _M3); \
+#  define _LIBCUDACXX_TYPE_LIST_FOLD_RIGHT(_N)                                                     \
+    template <>                                                                                    \
+    struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_fold_right_fn<_N>                                  \
+    {                                                                                              \
+      template <class _Fn, class _State _CCCL_PP_REPEAT(_N, _M0)>                                  \
+      using __call _CCCL_NODEBUG_ALIAS = _CCCL_PP_REPEAT(_N, _M1) _State _CCCL_PP_REPEAT(_N, _M3); \
     };
 
 _CCCL_PP_REPEAT_REVERSE(17, _LIBCUDACXX_TYPE_LIST_FOLD_RIGHT)
@@ -547,7 +770,7 @@ template <size_t _Np>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_fold_right_fn
 {
   template <class _Fn, class _State _CCCL_PP_REPEAT(16, _M0), class... _Rest>
-  using __call _LIBCUDACXX_NODEBUG_TYPE =
+  using __call _CCCL_NODEBUG_ALIAS =
     __type_call_indirect<__type_fold_right_fn<_Np - 16>,
                          _Fn,
                          __type_call<__type_fold_right_fn<16>, _Fn, _State _CCCL_PP_REPEAT(16, _M2)>,
@@ -558,17 +781,15 @@ template <class _Init, class _Fn>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_fold_right_select_fn
 {
   template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE =
-    __type_call_indirect<__type_fold_right_fn<sizeof...(_Ts)>, _Fn, _Init, _Ts...>;
+  using __call _CCCL_NODEBUG_ALIAS = __type_call_indirect<__type_fold_right_fn<sizeof...(_Ts)>, _Fn, _Init, _Ts...>;
 };
 
-#  define _LIBCUDACXX_TYPE_FOLD_LEFT(_N)                                      \
-    template <>                                                               \
-    struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_fold_left_fn<_N>              \
-    {                                                                         \
-      template <class _Fn, class _State _CCCL_PP_REPEAT(_N, _M0)>             \
-      using __call _LIBCUDACXX_NODEBUG_TYPE = _CCCL_PP_REPEAT(_N, _M1) _State \
-        _CCCL_PP_REPEAT(_N, _M4, _N, _CCCL_PP_DEC);                           \
+#  define _LIBCUDACXX_TYPE_FOLD_LEFT(_N)                                                                             \
+    template <>                                                                                                      \
+    struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_fold_left_fn<_N>                                                     \
+    {                                                                                                                \
+      template <class _Fn, class _State _CCCL_PP_REPEAT(_N, _M0)>                                                    \
+      using __call _CCCL_NODEBUG_ALIAS = _CCCL_PP_REPEAT(_N, _M1) _State _CCCL_PP_REPEAT(_N, _M4, _N, _CCCL_PP_DEC); \
     };
 
 _CCCL_PP_REPEAT_REVERSE(17, _LIBCUDACXX_TYPE_FOLD_LEFT)
@@ -577,7 +798,7 @@ template <size_t _Np>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_fold_left_fn
 {
   template <class _Fn, class _State _CCCL_PP_REPEAT(16, _M0), class... _Rest>
-  using __call _LIBCUDACXX_NODEBUG_TYPE =
+  using __call _CCCL_NODEBUG_ALIAS =
     __type_call<__type_fold_left_fn<16>,
                 _Fn,
                 __type_call_indirect<__type_fold_left_fn<_Np - 16>, _Fn, _State, _Rest...> //
@@ -588,7 +809,7 @@ template <class _Init, class _Fn>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_fold_left_select_fn
 {
   template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = __type_call_indirect<__type_fold_left_fn<sizeof...(_Ts)>, _Fn, _Init, _Ts...>;
+  using __call _CCCL_NODEBUG_ALIAS = __type_call_indirect<__type_fold_left_fn<sizeof...(_Ts)>, _Fn, _Init, _Ts...>;
 };
 
 #  undef _LIBCUDACXX_TYPE_FOLD_LEFT
@@ -617,13 +838,35 @@ template <class _Ty>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_remove_fn
 {
   template <class _Uy>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = _If<_CCCL_TRAIT(is_same, _Ty, _Uy), __type_list<>, __type_list<_Uy>>;
+  using __call _CCCL_NODEBUG_ALIAS = _If<_CCCL_TRAIT(is_same, _Ty, _Uy), __type_list<>, __type_list<_Uy>>;
 };
 } // namespace __detail
 
 //! \brief Remove all occurances of a type from a type list
 template <class _List, class _Ty>
 using __type_remove = __type_flatten<__type_transform<_List, __detail::__type_remove_fn<_Ty>>>;
+
+namespace __detail
+{
+template <class _Fn>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_remove_if_fn
+{
+  template <class _Uy>
+  using __call _CCCL_NODEBUG_ALIAS = _If<__type_call1<_Fn, _Uy>::value, __type_list<>, __type_list<_Uy>>;
+};
+} // namespace __detail
+
+//! \brief Remove all types satisfying a unary predicate from a type list
+template <class _List, class _Fn>
+using __type_remove_if = __type_flatten<__type_transform<_List, __detail::__type_remove_if_fn<_Fn>>>;
+
+//! \brief Remove all types not satisfying a unary predicate from a type list
+template <class _List, class _Fn>
+using __type_copy_if = __type_flatten<__type_transform<_List, __detail::__type_remove_if_fn<__type_negate1<_Fn>>>>;
+
+//! \brief Remove all duplicate types from a type list
+template <class _List>
+using __type_unique = __as_type_list<__type_call<_List, __type_quote<__make_type_set>>>;
 
 namespace __detail
 {
@@ -635,12 +878,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_cartesian_product_fn
   struct __lambda0
   {
     template <class _List2>
-    using __lambda1 _LIBCUDACXX_NODEBUG_TYPE = __type_list<__type_push_front<_List2, _Ty>>;
+    using __lambda1 _CCCL_NODEBUG_ALIAS = __type_list<__type_push_front<_List2, _Ty>>;
 
-    using type _LIBCUDACXX_NODEBUG_TYPE = __type_flatten<__type_transform<_State, __type_quote1<__lambda1>>>;
+    using type _CCCL_NODEBUG_ALIAS = __type_flatten<__type_transform<_State, __type_quote1<__lambda1>>>;
   };
 
-  using type _LIBCUDACXX_NODEBUG_TYPE = __type_flatten<__type_transform<_List, __type_quote_trait1<__lambda0>>>;
+  using type _CCCL_NODEBUG_ALIAS = __type_flatten<__type_transform<_List, __type_quote_trait1<__lambda0>>>;
 };
 } // namespace __detail
 /// \endcond
@@ -661,96 +904,15 @@ using __type_cartesian_product =
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_sizeof
 {
   template <class _Ty>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = integral_constant<size_t, sizeof(_Ty)>;
-};
-
-//! \brief Perform a logical AND operation on a list of Boolean types.
-//!
-//! \note The AND operation is not short-circuiting.
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_strict_and
-{
-#  ifndef _LIBCUDACXX_HAS_NO_FOLD_EXPRESSIONS
-  template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<(_Ts::value && ...)>;
-#  else
-  template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<_CCCL_TRAIT(
-    is_same, integer_sequence<bool, true, _Ts::value...>, integer_sequence<bool, _Ts::value..., true>)>;
-#  endif
-};
-
-//! \brief Perform a logical OR operation on a list of Boolean types.
-//!
-//! \note The OR operation is not short-circuiting.
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_strict_or
-{
-#  ifndef _LIBCUDACXX_HAS_NO_FOLD_EXPRESSIONS
-  template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<(_Ts::value || ...)>;
-#  else
-  template <class... _Ts>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<!_CCCL_TRAIT(
-    is_same, integer_sequence<bool, false, _Ts::value...>, integer_sequence<bool, _Ts::value..., false>)>;
-#  endif
-};
-
-//! \brief Perform a logical NOT operation on a Boolean type.
-//!
-//! \note The AND operation is not short-circuiting.
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_not
-{
-  template <class _Ty>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<(!_Ty::value)>;
-};
-
-//! \brief Test whether two integral constants are equal.
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_equal
-{
-  template <class _Ty, class _Uy>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<(_Ty::value == _Uy::value)>;
-};
-
-//! \brief Test whether two integral constants are not equal.
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_not_equal
-{
-  template <class _Ty, class _Uy>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<(_Ty::value != _Uy::value)>;
-};
-
-//! \brief Test whether one integral constant is less than another.
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_less
-{
-  template <class _Ty, class _Uy>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<(_Ty::value < _Uy::value)>;
-};
-
-//! \brief Test whether one integral constant is less than or equal to another.
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_less_equal
-{
-  template <class _Ty, class _Uy>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<(_Ty::value <= _Uy::value)>;
-};
-
-//! \brief Test whether one integral constant is greater than another.
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_greater
-{
-  template <class _Ty, class _Uy>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<(_Ty::value > _Uy::value)>;
-};
-
-//! \brief Test whether one integral constant is greater than or equal to another.
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_greater_equal
-{
-  template <class _Ty, class _Uy>
-  using __call _LIBCUDACXX_NODEBUG_TYPE = bool_constant<(_Ty::value >= _Uy::value)>;
+  using __call _CCCL_NODEBUG_ALIAS = integral_constant<size_t, sizeof(_Ty)>;
 };
 
 //! \brief A pair of types
 template <class _First, class _Second>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_pair
 {
-  using __first _LIBCUDACXX_NODEBUG_TYPE  = _First;
-  using __second _LIBCUDACXX_NODEBUG_TYPE = _Second;
+  using __first _CCCL_NODEBUG_ALIAS  = _First;
+  using __second _CCCL_NODEBUG_ALIAS = _Second;
 };
 
 //! \brief Retreive the first of a pair of types
@@ -769,7 +931,7 @@ using __type_pair_second = typename _Pair::__second;
 template <class _Ty, _Ty... _Values>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_value_list : __type_list<integral_constant<_Ty, _Values>...>
 {
-  using __type _LIBCUDACXX_NODEBUG_TYPE = _Ty;
+  using __type _CCCL_NODEBUG_ALIAS = _Ty;
 };
 
 namespace __detail

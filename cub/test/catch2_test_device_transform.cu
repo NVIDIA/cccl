@@ -15,10 +15,10 @@
 
 #include <sstream>
 
-#include "c2h/custom_type.cuh"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
-#include "test/test_util_vec.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/custom_type.h>
+#include <c2h/test_util_vec.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -32,8 +32,8 @@ struct policy_hub_for_alg
     static constexpr int min_bif         = 64 * 1024;
     static constexpr Algorithm algorithm = Alg;
     using algo_policy =
-      ::cuda::std::_If<Alg == Algorithm::fallback_for,
-                       cub::detail::transform::fallback_for_policy,
+      ::cuda::std::_If<Alg == Algorithm::prefetch,
+                       cub::detail::transform::prefetch_policy_t<256>,
                        cub::detail::transform::async_copy_policy_t<256>>;
   };
 };
@@ -77,7 +77,7 @@ DECLARE_TMPL_LAUNCH_WRAPPER(transform_many_with_alg_entry_point,
 
 using algorithms =
   c2h::enum_type_list<Algorithm,
-                      Algorithm::fallback_for
+                      Algorithm::prefetch
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
                       ,
                       Algorithm::ublkcp
@@ -104,7 +104,7 @@ using offset_types = c2h::type_list<std::int32_t, std::int64_t>;
   FILTER_UBLKCP                                                           \
   _CCCL_DIAG_POP
 
-CUB_TEST("DeviceTransform::Transform BabelStream add",
+C2H_TEST("DeviceTransform::Transform BabelStream add",
          "[device][device_transform]",
          c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t /*, int3, double3*/>,
          offset_types,
@@ -119,8 +119,8 @@ CUB_TEST("DeviceTransform::Transform BabelStream add",
 
   c2h::device_vector<type> a(num_items);
   c2h::device_vector<type> b(num_items);
-  c2h::gen(CUB_SEED(1), a);
-  c2h::gen(CUB_SEED(1), b);
+  c2h::gen(C2H_SEED(1), a);
+  c2h::gen(C2H_SEED(1), b);
 
   c2h::device_vector<type> result(num_items);
   transform_many_with_alg<alg, offset_t>(
@@ -185,7 +185,7 @@ using overaligned_types =
                  >;
 
 // test with types exceeding the memcpy_async and bulk copy alignments (16 and 128 bytes respectively)
-CUB_TEST("DeviceTransform::Transform overaligned type", "[device][device_transform]", overaligned_types)
+C2H_TEST("DeviceTransform::Transform overaligned type", "[device][device_transform]", overaligned_types)
 {
   using type = c2h::get<0, TestType>;
   CAPTURE(c2h::demangle(typeid(type).name()));
@@ -205,7 +205,7 @@ CUB_TEST("DeviceTransform::Transform overaligned type", "[device][device_transfo
   REQUIRE(result == c2h::device_vector<type>(num_items, 7));
 }
 
-CUB_TEST("DeviceTransform::Transform huge type", "[device][device_transform]")
+C2H_TEST("DeviceTransform::Transform huge type", "[device][device_transform]")
 {
   using huge_t = c2h::custom_type_t<c2h::equal_comparable_t, c2h::accumulateable_t, c2h::huge_data<666>::type>;
   static_assert(alignof(huge_t) == 8, "Need a large type with alignment < 16");
@@ -214,8 +214,8 @@ CUB_TEST("DeviceTransform::Transform huge type", "[device][device_transform]")
   const int num_items = GENERATE(0, 1, 100, 1000);
   c2h::device_vector<huge_t> a(num_items);
   c2h::device_vector<huge_t> b(num_items);
-  c2h::gen(CUB_SEED(1), a);
-  c2h::gen(CUB_SEED(1), b);
+  c2h::gen(C2H_SEED(1), a);
+  c2h::gen(C2H_SEED(1), b);
 
   c2h::device_vector<huge_t> result(num_items);
   transform_many(::cuda::std::make_tuple(a.begin(), b.begin()), result.begin(), num_items, ::cuda::std::plus<huge_t>{});
@@ -235,7 +235,7 @@ struct times_seven
   }
 };
 
-CUB_TEST("DeviceTransform::Transform with large input", "[device][device_transform]", algorithms)
+C2H_TEST("DeviceTransform::Transform with large input", "[device][device_transform]", algorithms)
 try
 {
   using type         = unsigned char;
@@ -246,7 +246,7 @@ try
 
   constexpr offset_t num_items = (offset_t{1} << 32) + 123456; // a few thread blocks beyond 4GiB
   c2h::device_vector<type> input(num_items);
-  c2h::gen(CUB_SEED(1), input);
+  c2h::gen(C2H_SEED(1), input);
 
   c2h::device_vector<type> result(num_items);
   transform_many_with_alg<alg, offset_t>(
@@ -275,7 +275,7 @@ struct nstream_kernel
 };
 
 // overwrites one input stream
-CUB_TEST("DeviceTransform::Transform BabelStream nstream",
+C2H_TEST("DeviceTransform::Transform BabelStream nstream",
          "[device][device_transform]",
          c2h::type_list<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t>,
          offset_types,
@@ -291,9 +291,9 @@ CUB_TEST("DeviceTransform::Transform BabelStream nstream",
   c2h::device_vector<type> a(num_items);
   c2h::device_vector<type> b(num_items);
   c2h::device_vector<type> c(num_items);
-  c2h::gen(CUB_SEED(1), a, type{10}, type{100});
-  c2h::gen(CUB_SEED(1), b, type{10}, type{100});
-  c2h::gen(CUB_SEED(1), c, type{10}, type{100});
+  c2h::gen(C2H_SEED(1), a, type{10}, type{100});
+  c2h::gen(C2H_SEED(1), b, type{10}, type{100});
+  c2h::gen(C2H_SEED(1), c, type{10}, type{100});
 
   // copy to host before changing
   c2h::host_vector<type> a_h = a;
@@ -317,7 +317,7 @@ struct sum_five
   }
 };
 
-CUB_TEST("DeviceTransform::Transform add five streams", "[device][device_transform]", algorithms)
+C2H_TEST("DeviceTransform::Transform add five streams", "[device][device_transform]", algorithms)
 {
   using offset_t     = int;
   constexpr auto alg = c2h::get<0, TestType>::value;
@@ -350,7 +350,7 @@ struct give_me_five
   }
 };
 
-CUB_TEST("DeviceTransform::Transform no streams", "[device][device_transform]")
+C2H_TEST("DeviceTransform::Transform no streams", "[device][device_transform]")
 {
   constexpr int num_items = 100;
   c2h::device_vector<int> result(num_items);
@@ -361,7 +361,7 @@ CUB_TEST("DeviceTransform::Transform no streams", "[device][device_transform]")
   REQUIRE(reference == result);
 }
 
-CUB_TEST("DeviceTransform::Transform fancy input iterator types", "[device][device_transform]")
+C2H_TEST("DeviceTransform::Transform fancy input iterator types", "[device][device_transform]")
 {
   using type = int;
 
@@ -378,7 +378,7 @@ CUB_TEST("DeviceTransform::Transform fancy input iterator types", "[device][devi
   REQUIRE(reference_h == result);
 }
 
-CUB_TEST("DeviceTransform::Transform fancy output iterator type", "[device][device_transform]", algorithms)
+C2H_TEST("DeviceTransform::Transform fancy output iterator type", "[device][device_transform]", algorithms)
 {
   using type         = int;
   using offset_t     = int;
@@ -397,7 +397,7 @@ CUB_TEST("DeviceTransform::Transform fancy output iterator type", "[device][devi
   REQUIRE(result == c2h::device_vector<type>(num_items, (13 + 35) + 4));
 }
 
-CUB_TEST("DeviceTransform::Transform mixed input iterator types", "[device][device_transform]")
+C2H_TEST("DeviceTransform::Transform mixed input iterator types", "[device][device_transform]")
 {
   using type = int;
 
@@ -427,7 +427,7 @@ struct plus_needs_stable_address
   }
 };
 
-CUB_TEST("DeviceTransform::Transform address stability", "[device][device_transform]")
+C2H_TEST("DeviceTransform::Transform address stability", "[device][device_transform]")
 {
   using type = int;
 
@@ -490,7 +490,7 @@ static_assert(!thrust::is_trivially_relocatable<non_trivial>::value, ""); // CUB
 // (e.g. by tracking/counting invocations of those), since C++ allows (but not guarantees) elision of these operations.
 // Also thrust algorithms perform a lot of copies in-between, so the test needs to use only raw allocations and
 // iteration for setup and checking.
-CUB_TEST("DeviceTransform::Transform not trivially relocatable", "[device][device_transform]")
+C2H_TEST("DeviceTransform::Transform not trivially relocatable", "[device][device_transform]")
 {
   constexpr int num_items = 100;
   c2h::device_vector<non_trivial> input(num_items, non_trivial{42});
@@ -502,7 +502,7 @@ CUB_TEST("DeviceTransform::Transform not trivially relocatable", "[device][devic
   REQUIRE((reference == result));
 }
 
-CUB_TEST("DeviceTransform::Transform buffer start alignment",
+C2H_TEST("DeviceTransform::Transform buffer start alignment",
          "[device][device_transform]",
          c2h::type_list<std::uint8_t, std::uint16_t, float, double>)
 {
@@ -540,7 +540,7 @@ struct StringMaker<cub::detail::transform::aligned_base_ptr<T>>
 } // namespace Catch
 
 // TODO(bgruber): rewrite this example using int3
-CUB_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][device_transform]")
+C2H_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][device_transform]")
 {
   alignas(128) int arr[256];
   using namespace cub::detail::transform;
@@ -553,4 +553,13 @@ CUB_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][device_transfo
   CHECK(make_aligned_base_ptr(&arr[127], 128) == aligned_base_ptr<int>{reinterpret_cast<char*>(&arr[96]), 124});
   CHECK(make_aligned_base_ptr(&arr[128], 128) == aligned_base_ptr<int>{reinterpret_cast<char*>(&arr[128]), 0});
   CHECK(make_aligned_base_ptr(&arr[129], 128) == aligned_base_ptr<int>{reinterpret_cast<char*>(&arr[128]), 4});
+}
+
+C2H_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][device_transform]")
+{
+  using It         = thrust::reverse_iterator<thrust::detail::normal_iterator<thrust::device_ptr<int>>>;
+  using kernel_arg = cub::detail::transform::kernel_arg<It>;
+
+  STATIC_REQUIRE(::cuda::std::is_constructible<kernel_arg>::value);
+  STATIC_REQUIRE(::cuda::std::is_copy_constructible<kernel_arg>::value);
 }

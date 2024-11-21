@@ -9,11 +9,11 @@
 
 // There is an unfortunate miscompilation of the gcc-13 vectorizer leading to OOB writes
 // Adding this attribute suffices that this miscompilation does not appear anymore
-#if defined(_CCCL_COMPILER_GCC) && __GNUC__ >= 13
+#if _CCCL_COMPILER(GCC, >=, 13)
 #  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER __attribute__((optimize("no-tree-vectorize")))
-#else // defined(_CCCL_COMPILER_GCC) && __GNUC__ >= 13
+#else // _CCCL_COMPILER(GCC, <, 13)
 #  define THRUST_DISABLE_BROKEN_GCC_VECTORIZER
-#endif // defined(_CCCL_COMPILER_GCC) && __GNUC__ >= 13
+#endif
 
 template <class Vector>
 THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestTransformInputOutputIterator()

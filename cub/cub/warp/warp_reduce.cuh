@@ -256,7 +256,7 @@ public:
   //! @param[in] input Calling thread's input
   _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input)
   {
-    return InternalWarpReduce(temp_storage).template Reduce<true>(input, LOGICAL_WARP_THREADS, cub::Sum());
+    return InternalWarpReduce(temp_storage).template Reduce<true>(input, LOGICAL_WARP_THREADS, ::cuda::std::plus<>{});
   }
 
   //! @rst
@@ -309,7 +309,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T input, int valid_items)
   {
     // Determine if we don't need bounds checking
-    return InternalWarpReduce(temp_storage).template Reduce<false>(input, valid_items, cub::Sum());
+    return InternalWarpReduce(temp_storage).template Reduce<false>(input, valid_items, ::cuda::std::plus<>{});
   }
 
   //! @rst
@@ -363,7 +363,7 @@ public:
   template <typename FlagT>
   _CCCL_DEVICE _CCCL_FORCEINLINE T HeadSegmentedSum(T input, FlagT head_flag)
   {
-    return HeadSegmentedReduce(input, head_flag, cub::Sum());
+    return HeadSegmentedReduce(input, head_flag, ::cuda::std::plus<>{});
   }
 
   //! @rst
@@ -417,7 +417,7 @@ public:
   template <typename FlagT>
   _CCCL_DEVICE _CCCL_FORCEINLINE T TailSegmentedSum(T input, FlagT tail_flag)
   {
-    return TailSegmentedReduce(input, tail_flag, cub::Sum());
+    return TailSegmentedReduce(input, tail_flag, ::cuda::std::plus<>{});
   }
 
   //! @}  end member group
@@ -456,7 +456,7 @@ public:
   //!        // Return the warp-wide reductions to each lane0
   //!        int warp_id = threadIdx.x / 32;
   //!        int aggregate = WarpReduce(temp_storage[warp_id]).Reduce(
-  //!            thread_data, cub::Max());
+  //!            thread_data, cuda::maximum<>{});
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, 1, 2, 3, ..., 127}``. The corresponding output ``aggregate`` in threads 0, 32, 64, and
@@ -515,7 +515,7 @@ public:
   //!
   //!        // Return the warp-wide reductions to each lane0
   //!        int aggregate = WarpReduce(temp_storage).Reduce(
-  //!            thread_data, cub::Max(), valid_items);
+  //!            thread_data, cuda::maximum<>{}, valid_items);
   //!
   //! Suppose the input ``d_data`` is ``{0, 1, 2, 3, 4, ... }`` and ``valid_items``
   //! is ``4``. The corresponding output ``aggregate`` in thread0 is ``3`` (and is
@@ -574,7 +574,7 @@ public:
   //!
   //!        // Return the warp-wide reductions to each lane0
   //!        int aggregate = WarpReduce(temp_storage).HeadSegmentedReduce(
-  //!            thread_data, head_flag, cub::Max());
+  //!            thread_data, head_flag, cuda::maximum<>{});
   //!
   //! Suppose the set of input ``thread_data`` and ``head_flag`` across the block of threads
   //! is ``{0, 1, 2, 3, ..., 31}`` and is ``{1, 0, 0, 0, 1, 0, 0, 0, ..., 1, 0, 0, 0}``,
@@ -633,7 +633,7 @@ public:
   //!
   //!        // Return the warp-wide reductions to each lane0
   //!        int aggregate = WarpReduce(temp_storage).TailSegmentedReduce(
-  //!            thread_data, tail_flag, cub::Max());
+  //!            thread_data, tail_flag, cuda::maximum<>{});
   //!
   //! Suppose the set of input ``thread_data`` and ``tail_flag`` across the block of threads
   //! is ``{0, 1, 2, 3, ..., 31}`` and is ``{0, 0, 0, 1, 0, 0, 0, 1, ..., 0, 0, 0, 1}``,

@@ -138,6 +138,21 @@ nvcc -Icccl/thrust -Icccl/libcudacxx/include -Icccl/cub main.cu -o main
 > **Note**
 > Use `-I` and not `-isystem` to avoid collisions with the CCCL headers implicitly included by `nvcc` from the CUDA Toolkit. All CCCL headers use `#pragma system_header` to ensure warnings will still be silenced as if using `-isystem`, see https://github.com/NVIDIA/cccl/issues/527 for more information.
 
+##### Installation
+
+A minimal build that only generates installation rules can be configured using the `install` CMake preset:
+```bash
+git clone https://github.com/NVIDIA/cccl.git
+cd cccl
+cmake --preset install -DCMAKE_INSTALL_PREFIX=/usr/local/
+cd build/install
+ninja install
+```
+
+To include experimental libraries in the installation, use the `install-unstable` preset and build directory.
+
+To install **only** the experimental libraries, use the `install-unstable-only` preset and build directory.
+
 #### Conda
 
 CCCL also provides conda packages of each release via the `conda-forge` channel:

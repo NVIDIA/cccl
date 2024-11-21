@@ -35,8 +35,8 @@
 #include <cstdint>
 
 #include "catch2/catch.hpp"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_sum);
@@ -46,10 +46,10 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_sum);
 // List of types to test
 using offsets = c2h::type_list<std::ptrdiff_t, std::size_t>;
 
-CUB_TEST("Device segmented reduce works with fancy input iterators and 64-bit offsets", "[reduce][device]", offsets)
+C2H_TEST("Device segmented reduce works with fancy input iterators and 64-bit offsets", "[reduce][device]", offsets)
 {
   using offset_t = typename c2h::get<0, TestType>;
-  using op_t     = cub::Sum;
+  using op_t     = ::cuda::std::plus<>;
 
   constexpr offset_t offset_zero           = 0;
   constexpr offset_t offset_one            = 1;

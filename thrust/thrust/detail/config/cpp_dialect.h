@@ -69,13 +69,9 @@
 
 // Define THRUST_COMPILER_DEPRECATION macro:
 #if defined(_CCCL_COMPILER_MSVC)
-#  define THRUST_COMP_DEPR_IMPL(msg) __pragma(message(__FILE__ ":" THRUST_COMP_DEPR_IMPL0(__LINE__) ": warning: " #msg))
-#  define THRUST_COMP_DEPR_IMPL0(x)  THRUST_COMP_DEPR_IMPL1(x)
-#  define THRUST_COMP_DEPR_IMPL1(x)  #x
+#  define THRUST_COMP_DEPR_IMPL(msg) _CCCL_PRAGMA(message(__FILE__ ":" _CCCL_TO_STRING(__LINE__) ": warning: " #msg))
 #else // clang / gcc:
-#  define THRUST_COMP_DEPR_IMPL(msg)   THRUST_COMP_DEPR_IMPL0(GCC warning #msg)
-#  define THRUST_COMP_DEPR_IMPL0(expr) _Pragma(#expr)
-#  define THRUST_COMP_DEPR_IMPL1       /* intentionally blank */
+#  define THRUST_COMP_DEPR_IMPL(msg) _CCCL_PRAGMA(GCC warning #msg)
 #endif
 
 #define THRUST_COMPILER_DEPRECATION(REQ) \
@@ -89,9 +85,9 @@
 #ifndef THRUST_IGNORE_DEPRECATED_COMPILER
 
 // Compiler checks:
-#  if defined(_CCCL_COMPILER_GCC) && THRUST_GCC_VERSION < 50000
+#  if _CCCL_COMPILER(GCC, <, 5)
 THRUST_COMPILER_DEPRECATION(GCC 5.0);
-#  elif defined(_CCCL_COMPILER_CLANG) && THRUST_CLANG_VERSION < 70000
+#  elif _CCCL_COMPILER(CLANG, <, 7)
 THRUST_COMPILER_DEPRECATION(Clang 7.0);
 #  elif defined(_CCCL_COMPILER_MSVC) && THRUST_MSVC_VERSION < 1910
 // <2017. Hard upgrade message:

@@ -39,11 +39,11 @@ struct resource_base
 
   _LIBCUDACXX_TEMPLATE(class Property)
   _LIBCUDACXX_REQUIRES((!cuda::property_with_value<Property>)
-                       && _CUDA_VSTD::__is_included_in<Property, Properties...>) //
+                       && _CUDA_VSTD::__is_included_in_v<Property, Properties...>) //
   friend void get_property(const resource_base&, Property) noexcept {}
 
   _LIBCUDACXX_TEMPLATE(class Property)
-  _LIBCUDACXX_REQUIRES(cuda::property_with_value<Property>&& _CUDA_VSTD::__is_included_in<Property, Properties...>) //
+  _LIBCUDACXX_REQUIRES(cuda::property_with_value<Property>&& _CUDA_VSTD::__is_included_in_v<Property, Properties...>) //
   friend typename Property::value_type get_property(const resource_base& res, Property) noexcept
   {
     return 42;

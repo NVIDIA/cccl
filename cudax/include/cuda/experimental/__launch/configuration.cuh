@@ -14,6 +14,7 @@
 #include <cuda/std/span>
 #include <cuda/std/tuple>
 
+#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/hierarchy.cuh>
 
 #if _CCCL_STD_VER >= 2017
@@ -86,6 +87,35 @@ inline constexpr bool no_duplicate_options = true;
 template <typename Option, typename... Rest>
 inline constexpr bool no_duplicate_options<Option, Rest...> =
   ((Option::kind != Rest::kind) && ...) && no_duplicate_options<Rest...>;
+
+template <typename... Prev>
+_CCCL_NODISCARD constexpr auto process_config_args(const ::cuda::std::tuple<Prev...>& previous)
+{
+  return kernel_config(::cuda::std::apply(make_hierarchy_fragment<void, const Prev&...>, previous));
+}
+
+template <typename... Prev, typename Arg, typename... Rest>
+_CCCL_NODISCARD constexpr auto
+process_config_args(const ::cuda::std::tuple<Prev...>& previous, const Arg& arg, const Rest&... rest)
+{
+  if constexpr (::cuda::std::is_base_of_v<detail::launch_option, Arg>)
+  {
+    static_assert((::cuda::std::is_base_of_v<detail::launch_option, Rest> && ...),
+                  "Hierarchy levels and launch options can't be mixed");
+    if constexpr (sizeof...(Prev) == 0)
+    {
+      return kernel_config(uninit_t{}, arg, rest...);
+    }
+    else
+    {
+      return kernel_config(::cuda::std::apply(make_hierarchy_fragment<void, const Prev&...>, previous), arg, rest...);
+    }
+  }
+  else
+  {
+    return process_config_args(::cuda::std::tuple_cat(previous, ::cuda::std::make_tuple(arg)), rest...);
+  }
+}
 
 } // namespace detail
 
@@ -386,10 +416,18 @@ _CCCL_NODISCARD constexpr auto operator&(const hierarchy_dimensions<Levels...>& 
  * @param opts
  * Variadic number of launch configuration options to be included in the resulting kernel configuration object
  */
-template <typename... Levels, typename... Opts>
-_CCCL_NODISCARD constexpr auto make_config(const hierarchy_dimensions<Levels...>& dims, const Opts&... opts) noexcept
+template <typename BottomUnit, typename... Levels, typename... Opts>
+_CCCL_NODISCARD constexpr auto
+make_config(const hierarchy_dimensions_fragment<BottomUnit, Levels...>& dims, const Opts&... opts) noexcept
 {
-  return kernel_config<hierarchy_dimensions<Levels...>, Opts...>(dims, opts...);
+  return kernel_config<hierarchy_dimensions_fragment<BottomUnit, Levels...>, Opts...>(dims, opts...);
+}
+
+template <typename... Args>
+_CCCL_NODISCARD constexpr auto make_config(const Args&... args)
+{
+  static_assert(sizeof...(Args) != 0, "Configuration can't be empty");
+  return detail::process_config_args(::cuda::std::make_tuple(), args...);
 }
 
 namespace detail

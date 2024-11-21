@@ -51,6 +51,23 @@ _CCCL_INLINE_VAR constexpr bool has_property<
   _CUDA_VSTD::void_t<decltype(get_property(_CUDA_VSTD::declval<const _Resource&>(), _CUDA_VSTD::declval<_Property>()))>> =
   true;
 
+#    if _CCCL_COMPILER(NVHPC) // NVHPC has issues accepting this at compile time if it is in a variable template
+template <class _Resource, class _Property, class = void>
+struct __has_property_impl
+{
+  static constexpr bool value = false;
+};
+
+template <class _Resource, class _Property>
+struct __has_property_impl<
+  _Resource,
+  _Property,
+  _CUDA_VSTD::void_t<decltype(get_property(_CUDA_VSTD::declval<const _Resource&>(), _CUDA_VSTD::declval<_Property>()))>>
+{
+  static constexpr bool value = true;
+};
+#    endif // _CCCL_COMPILER(NVHPC)
+
 template <class _Property>
 using __property_value_t = typename _Property::value_type;
 

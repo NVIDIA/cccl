@@ -20,7 +20,29 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/void_t.h>
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
+
+// When variable templates and noexcept function types are available, a faster
+// implementation of declval is available. It compiles approximately 2x faster
+// than the fallback. NOTE: this implementation causes nvcc < 12.4 to ICE and
+// MSVC < 19.39 to miscompile so we use the fallback instead. The use of the
+// `__identity_t` alias is help MSVC parse the declaration correctly.
+#if !defined(_CCCL_NO_VARIABLE_TEMPLATES) && !defined(_CCCL_NO_NOEXCEPT_FUNCTION_TYPE) \
+  && !(defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_CUDACC_BELOW(12, 4))                 \
+  && !(defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION < 1939)
+
+template <class _Tp>
+using __identity_t _CCCL_NODEBUG_ALIAS = _Tp;
+
+template <class _Tp, class = void>
+extern __identity_t<void (*)() noexcept> declval;
+
+template <class _Tp>
+extern __identity_t<_Tp && (*) () noexcept> declval<_Tp, void_t<_Tp&&>>;
+
+#else // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES ^^^ / vvv _CCCL_NO_VARIABLE_TEMPLATES vvv
 
 // Suppress deprecation notice for volatile-qualified return type resulting
 // from volatile-qualified types _Tp.
@@ -33,6 +55,8 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI decltype(_CUDA_VSTD::__declval<_Tp>(0)) declval() noexcept;
+
+#endif // _CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

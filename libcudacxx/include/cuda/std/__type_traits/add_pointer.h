@@ -31,35 +31,30 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if defined(_CCCL_BUILTIN_ADD_POINTER) && !defined(_LIBCUDACXX_USE_ADD_POINTER_FALLBACK)
 
 template <class _Tp>
-using __add_pointer_t = _CCCL_BUILTIN_ADD_POINTER(_Tp);
+using add_pointer_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_ADD_POINTER(_Tp);
 
 #else // ^^^ _CCCL_BUILTIN_ADD_POINTER ^^^ / vvv !_CCCL_BUILTIN_ADD_POINTER vvv
 template <class _Tp, bool = __libcpp_is_referenceable<_Tp>::value || is_void<_Tp>::value>
 struct __add_pointer_impl
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE __libcpp_remove_reference_t<_Tp>* type;
+  typedef _CCCL_NODEBUG_ALIAS remove_reference_t<_Tp>* type;
 };
 template <class _Tp>
 struct __add_pointer_impl<_Tp, false>
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE _Tp type;
+  typedef _CCCL_NODEBUG_ALIAS _Tp type;
 };
 
 template <class _Tp>
-using __add_pointer_t = typename __add_pointer_impl<_Tp>::type;
+using add_pointer_t _CCCL_NODEBUG_ALIAS = typename __add_pointer_impl<_Tp>::type;
 
 #endif // !_CCCL_BUILTIN_ADD_POINTER
 
 template <class _Tp>
 struct add_pointer
 {
-  using type _LIBCUDACXX_NODEBUG_TYPE = __add_pointer_t<_Tp>;
+  using type _CCCL_NODEBUG_ALIAS = add_pointer_t<_Tp>;
 };
-
-#if _CCCL_STD_VER > 2011
-template <class _Tp>
-using add_pointer_t = __add_pointer_t<_Tp>;
-#endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

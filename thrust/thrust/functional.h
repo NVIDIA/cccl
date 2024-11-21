@@ -32,6 +32,7 @@
 
 #include <thrust/detail/functional/actor.h>
 
+#include <cuda/functional>
 #include <cuda/std/functional>
 
 #include <functional>
@@ -153,19 +154,6 @@ struct THRUST_DEPRECATED binary_function
  *  \{
  */
 
-#define THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(func, impl)                                            \
-  template <>                                                                                           \
-  struct func<void>                                                                                     \
-  {                                                                                                     \
-    using is_transparent = void;                                                                        \
-    _CCCL_EXEC_CHECK_DISABLE                                                                            \
-    template <typename T>                                                                               \
-    _CCCL_HOST_DEVICE constexpr auto operator()(T&& x) const noexcept(noexcept(impl)) -> decltype(impl) \
-    {                                                                                                   \
-      return impl;                                                                                      \
-    }                                                                                                   \
-  }
-
 #define THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION(func, impl)                                                      \
   template <>                                                                                                      \
   struct func<void>                                                                                                \
@@ -178,9 +166,6 @@ struct THRUST_DEPRECATED binary_function
       return impl;                                                                                                 \
     }                                                                                                              \
   }
-
-#define THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP(func, op) \
-  THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION(func, THRUST_FWD(t1) op THRUST_FWD(t2))
 
 /*! \p plus is a function object. Specifically, it is an Adaptable Binary Function.
  *  If \c f is an object of class <tt>plus<T></tt>, and \c x and \c y are objects
@@ -424,34 +409,11 @@ struct modulus : public ::cuda::std::modulus<T>
  *  \see unary_function
  */
 template <typename T = void>
-struct negate
+struct negate : ::cuda::std::negate<T>
 {
-  /*! \typedef argument_type
-   *  \brief The type of the function object's argument.
-   */
-  using argument_type = T;
-
-  /*! \typedef result_type
-   *  \brief The type of the function object's result;
-   */
-  using result_type = T;
-
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_MSVC(4146) // unary minus operator applied to unsigned type, result still unsigned
-
-  /*! Function call operator. The return value is <tt>-x</tt>.
-   */
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE constexpr T operator()(const T& x) const
-  {
-    return -x;
-  }
-
-  _CCCL_DIAG_POP
-
+  using argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
+  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11   = T;
 }; // end negate
-
-THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(negate, -THRUST_FWD(x));
 
 /*! \p square is a function object. Specifically, it is an Adaptable Unary Function.
  *  If \c f is an object of class <tt>square<T></tt>, and \c x is an object
@@ -486,18 +448,9 @@ THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(negate, -THRUST_FWD(x));
 template <typename T = void>
 struct square
 {
-  /*! \typedef argument_type
-   *  \brief The type of the function object's argument.
-   */
-  using argument_type = T;
+  using argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
+  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11   = T;
 
-  /*! \typedef result_type
-   *  \brief The type of the function object's result;
-   */
-  using result_type = T;
-
-  /*! Function call operator. The return value is <tt>x*x</tt>.
-   */
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE constexpr T operator()(const T& x) const
   {
@@ -505,7 +458,18 @@ struct square
   }
 }; // end square
 
-THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(square, x* x);
+template <>
+struct square<void>
+{
+  using is_transparent = void;
+
+  _CCCL_EXEC_CHECK_DISABLE
+  template <typename T>
+  _CCCL_HOST_DEVICE constexpr T operator()(const T& x) const noexcept(noexcept(x * x))
+  {
+    return x * x;
+  }
+};
 
 /*! \}
  */
@@ -873,29 +837,38 @@ struct bit_xor : public ::cuda::std::bit_xor<T>
  *  \see https://en.cppreference.com/w/cpp/utility/functional/identity
  *  \see unary_function
  */
+// TODO(bgruber): this version can also act as a functor casting to T making it not equivalent to ::cuda::std::identity
 template <typename T = void>
 struct identity
 {
-  /*! \typedef argument_type
-   *  \brief The type of the function object's first argument.
-   */
-  using argument_type = T;
+  using argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
+  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11   = T;
 
-  /*! \typedef result_type
-   *  \brief The type of the function object's result;
-   */
-  using result_type = T;
-
-  /*! Function call operator. The return value is <tt>x</tt>.
-   */
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE constexpr const T& operator()(const T& x) const
   {
     return x;
   }
-}; // end identity
 
-THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(identity, THRUST_FWD(x));
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE constexpr T& operator()(T& x) const
+  {
+    return x;
+  }
+
+  // we cannot add an overload for `const T&&` because then calling e.g. `thrust::identity<int>{}(3.14);` is ambigious
+  // on MSVC
+
+  _CCCL_EXEC_CHECK_DISABLE
+  _CCCL_HOST_DEVICE constexpr T&& operator()(T&& x) const
+  {
+    return _CUDA_VSTD::move(x);
+  }
+};
+
+template <>
+struct identity<void> : ::cuda::std::__identity
+{};
 
 /*! \p maximum is a function object that takes two arguments and returns the greater
  *  of the two. Specifically, it is an Adaptable Binary Function. If \c f is an
@@ -923,36 +896,26 @@ THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION(identity, THRUST_FWD(x));
  *  \see binary_function
  */
 template <typename T = void>
-struct maximum
+struct maximum : ::cuda::maximum<T>
 {
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
    *  deprecated [Since 2.6]
    */
-  using first_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T;
+  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    *  deprecated [Since 2.6]
    */
-  using second_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T;
+  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    *  deprecated [Since 2.6]
    */
-  using result_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T;
-
-  /*! Function call operator. The return value is <tt>rhs < lhs ? lhs : rhs</tt>.
-   */
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE constexpr T operator()(const T& lhs, const T& rhs) const
-  {
-    return lhs < rhs ? rhs : lhs;
-  }
+  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
 }; // end maximum
-
-THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION(maximum, t1 < t2 ? THRUST_FWD(t2) : THRUST_FWD(t1));
 
 /*! \p minimum is a function object that takes two arguments and returns the lesser
  *  of the two. Specifically, it is an Adaptable Binary Function. If \c f is an
@@ -980,7 +943,7 @@ THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION(maximum, t1 < t2 ? THRUST_FWD(t2) : TH
  *  \see binary_function
  */
 template <typename T = void>
-struct minimum
+struct minimum : ::cuda::minimum<T>
 {
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
@@ -999,17 +962,7 @@ struct minimum
    *  deprecated [Since 2.6]
    */
   using result_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T;
-
-  /*! Function call operator. The return value is <tt>lhs < rhs ? lhs : rhs</tt>.
-   */
-  _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE constexpr T operator()(const T& lhs, const T& rhs) const
-  {
-    return lhs < rhs ? lhs : rhs;
-  }
 }; // end minimum
-
-THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION(minimum, t1 < t2 ? THRUST_FWD(t1) : THRUST_FWD(t2));
 
 /*! \p project1st is a function object that takes two arguments and returns
  *  its first argument; the second argument is unused. It is essentially a
@@ -1294,9 +1247,9 @@ struct not_fun_t
 //! \see https://en.cppreference.com/w/cpp/utility/functional/not_fn
 // TODO(bgruber): alias to ::cuda::std::not_fn in C++17
 template <class F>
-_CCCL_HOST_DEVICE auto not_fn(F&& f) -> detail::not_fun_t<::cuda::std::__decay_t<F>>
+_CCCL_HOST_DEVICE auto not_fn(F&& f) -> detail::not_fun_t<::cuda::std::decay_t<F>>
 {
-  return detail::not_fun_t<::cuda::std::__decay_t<F>>{std::forward<F>(f)};
+  return detail::not_fun_t<::cuda::std::decay_t<F>>{std::forward<F>(f)};
 }
 
 /*! \}
@@ -1397,11 +1350,33 @@ THRUST_INLINE_CONSTANT thrust::detail::functional::placeholder<9>::type _10;
 /*! \} // placeholder_objects
  */
 
-#undef THRUST_UNARY_FUNCTOR_VOID_SPECIALIZATION
 #undef THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION
-#undef THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION_OP
 
 THRUST_NAMESPACE_END
+
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::plus);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::minus);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::multiplies);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::divides);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::modulus);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::negate);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::bit_and);
+//_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::bit_not); // does not exist?
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::bit_or);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::bit_xor);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::equal_to);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::not_equal_to);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::less);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::less_equal);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::greater_equal);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::greater);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::logical_and);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::logical_not);
+_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::logical_or);
+
+_LIBCUDACXX_END_NAMESPACE_CUDA
 
 #include <thrust/detail/functional.inl>
 #include <thrust/detail/functional/operators.h>

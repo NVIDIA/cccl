@@ -138,7 +138,6 @@ jobs:
           slack_log: ${{ secrets.SLACK_CHANNEL_CI_LOG }}
           slack_alert: ${{ secrets.SLACK_CHANNEL_CI_ALERT }}
 
-
   build-rapids:
     name: Build RAPIDS
     secrets: inherit
@@ -149,5 +148,15 @@ jobs:
       contents: read
       pull-requests: read
     uses: ./.github/workflows/build-rapids.yml
+    with:
+      enable_slack_alerts: true
+
+  build-matx:
+    name: Build MatX
+    secrets: inherit
+    permissions:
+      id-token: write
+      contents: read
+    uses: ./.github/workflows/build-matx.yml
     with:
       enable_slack_alerts: true

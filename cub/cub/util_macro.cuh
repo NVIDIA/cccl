@@ -112,12 +112,28 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wattributes")
 #  if !defined(_CCCL_CUDA_COMPILER_NVHPC)
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 #  endif // !_CCCL_CUDA_COMPILER_NVHPC
-#  if defined(_CCCL_COMPILER_ICC)
+#  if _CCCL_COMPILER(ICC)
 #    pragma nv_diag_suppress 1407 // the "__visibility__" attribute can only appear on functions and
                                   // variables with external linkage'
 #    pragma warning(disable : 1890) // the "__visibility__" attribute can only appear on functions and
                                     // variables with external linkage'
-#  endif // _CCCL_COMPILER_ICC
+#  endif // _CCCL_COMPILER(ICC)
 #endif // !CUB_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION
+
+#ifndef CUB_DEFINE_KERNEL_GETTER
+#  define CUB_DEFINE_KERNEL_GETTER(name, ...)                           \
+    CUB_RUNTIME_FUNCTION static constexpr decltype(&__VA_ARGS__) name() \
+    {                                                                   \
+      return &__VA_ARGS__;                                              \
+    }
+#endif
+
+#ifndef CUB_DEFINE_SUB_POLICY_GETTER
+#  define CUB_DEFINE_SUB_POLICY_GETTER(name)                                                         \
+    CUB_RUNTIME_FUNCTION static constexpr PolicyWrapper<typename StaticPolicyT::name##Policy> name() \
+    {                                                                                                \
+      return MakePolicyWrapper(typename StaticPolicyT::name##Policy());                              \
+    }
+#endif
 
 CUB_NAMESPACE_END

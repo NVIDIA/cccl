@@ -34,8 +34,8 @@
 #include <cub/util_vsmem.cuh>
 
 #include "catch2/catch.hpp"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 //----------------------------------------------------------------------------
 // Helper section
@@ -409,7 +409,7 @@ DECLARE_LAUNCH_WRAPPER(device_dummy_algorithm, dummy_algorithm);
 
 using type_list = c2h::type_list<large_custom_t<1>, large_custom_t<80>, large_custom_t<128>, large_custom_t<512>>;
 
-CUB_TEST("Virtual shared memory works within algorithms", "[util][vsmem]", type_list)
+C2H_TEST("Virtual shared memory works within algorithms", "[util][vsmem]", type_list)
 {
   using item_t   = typename c2h::get<0, TestType>;
   using offset_t = int32_t;
@@ -424,7 +424,7 @@ CUB_TEST("Virtual shared memory works within algorithms", "[util][vsmem]", type_
   auto const out_ptr = reinterpret_cast<item_t*>(thrust::raw_pointer_cast(out.data()));
 
   // Generate some random noise input data
-  c2h::gen(CUB_SEED(1), in);
+  c2h::gen(C2H_SEED(1), in);
 
   // Query default and fallback policies and agents so we can confirm vsmem
   using default_policy_t  = typename device_dummy_algorithm_policy_t<item_t*>::policy_350::DummyAlgorithmPolicy;

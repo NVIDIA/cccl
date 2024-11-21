@@ -15,7 +15,9 @@
 // minimal header possible. If we're testing libc++, we should use `<__config>`.
 // If <__config> isn't available, fall back to <ciso646>.
 #ifdef __has_include
-#  if __has_include("<__config>")
+#  if __has_include(<cuda/__cccl_config>)
+#    include <cuda/__cccl_config>
+#  elif __has_include("<__config>")
 #    include <__config>
 #    define TEST_IMP_INCLUDED_HEADER
 #  endif
@@ -145,8 +147,8 @@
 #  endif
 #endif
 
-#if TEST_HAS_BUILTIN(__builtin_is_constant_evaluated) || (defined(_CCCL_COMPILER_GCC) && _GNUC_VER >= 900) \
-  || (defined(_CCCL_COMPILER_MSVC) && _MSC_VER > 1924 && !defined(_CCCL_CUDACC_BELOW_11_3))
+#if TEST_HAS_BUILTIN(__builtin_is_constant_evaluated) || _CCCL_COMPILER(GCC, >=, 9) \
+  || (defined(_CCCL_COMPILER_MSVC) && _MSC_VER > 1924 && _CCCL_CUDACC_AT_LEAST(11, 3))
 #  define TEST_IS_CONSTANT_EVALUATED() _CUDA_VSTD::__libcpp_is_constant_evaluated()
 #else
 #  define TEST_IS_CONSTANT_EVALUATED() false
@@ -443,28 +445,22 @@ __host__ __device__ constexpr bool unused(T&&...)
 #if defined(TEST_COMPILER_CLANG_CUDA)
 #  define TEST_NV_DIAG_SUPPRESS(WARNING)
 #elif defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
-#  if defined(TEST_COMPILER_MSVC)
-#    define TEST_NV_DIAG_SUPPRESS(WARNING) __pragma(_TEST_TOSTRING(nv_diag_suppress WARNING))
-#  else // ^^^ MSVC ^^^ / vvv not MSVC vvv
-#    define TEST_NV_DIAG_SUPPRESS(WARNING) _Pragma(_TEST_TOSTRING(nv_diag_suppress WARNING))
-#  endif // not MSVC
+#  define TEST_NV_DIAG_SUPPRESS(WARNING) _CCCL_PRAGMA(nv_diag_suppress WARNING)
 #else // ^^^ __NVCC_DIAG_PRAGMA_SUPPORT__ ^^^ / vvv !__NVCC_DIAG_PRAGMA_SUPPORT__ vvv
-#  if defined(TEST_COMPILER_MSVC)
-#    define TEST_NV_DIAG_SUPPRESS(WARNING) __pragma(_TEST_TOSTRING(diag_suppress WARNING))
-#  else // ^^^ MSVC ^^^ / vvv not MSVC vvv
-#    define TEST_NV_DIAG_SUPPRESS(WARNING) _Pragma(_TEST_TOSTRING(diag_suppress WARNING))
-#  endif // not MSVC
+#  define TEST_NV_DIAG_SUPPRESS(WARNING) _CCCL_PRAGMA(diag_suppress WARNING)
 #endif
 
 #define TEST_CONSTEXPR_GLOBAL _CCCL_CONSTEXPR_GLOBAL
 
 // Some convenience macros for checking nvcc versions
-#if defined(__CUDACC__) && _CCCL_CUDACC_VER < 1103000
-#  define TEST_COMPILER_CUDACC_BELOW_11_3
-#endif // defined(__CUDACC__) && _CCCL_CUDACC_VER < 1103000
-#if defined(__CUDACC__) && _CCCL_CUDACC_VER < 1203000
-#  define TEST_COMPILER_CUDACC_BELOW_12_3
-#endif // defined(__CUDACC__) && _CCCL_CUDACC_VER < 1203000
+#if defined(_CCCL_CUDACC)
+#  if _CCCL_CUDACC_BELOW(11, 3)
+#    define TEST_COMPILER_CUDACC_BELOW_11_3
+#  endif // _CCCL_CUDACC_BELOW(11, 3)
+#  if _CCCL_CUDACC_BELOW(12, 3)
+#    define TEST_COMPILER_CUDACC_BELOW_12_3
+#  endif // _CCCL_CUDACC_BELOW(12, 3)
+#endif // _CCCL_CUDACC
 
 #if defined(TEST_COMPILER_MSVC)
 #  if _MSC_VER < 1920
