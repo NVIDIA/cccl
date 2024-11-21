@@ -119,35 +119,35 @@ _CCCL_INLINE_VAR constexpr bool property_with_value<_Property, _CUDA_VSTD::void_
 //!
 //! @endrst
 template <class _Resource, class _Property, class _Return>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __has_property_with_,
   requires(const _Resource& __res)(requires(property_with_value<_Property>),
                                    requires(_CUDA_VSTD::same_as<_Return, decltype(get_property(__res, _Property{}))>)));
 template <class _Resource, class _Property, class _Return>
-_LIBCUDACXX_CONCEPT has_property_with = _LIBCUDACXX_FRAGMENT(__has_property_with_, _Resource, _Property, _Return);
+_CCCL_CONCEPT has_property_with = _CCCL_FRAGMENT(__has_property_with_, _Resource, _Property, _Return);
 
 template <class _Resource, class _Upstream>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __has_upstream_resource_,
   requires(const _Resource& __res)(
     requires(_CUDA_VSTD::same_as<_CUDA_VSTD::__remove_const_ref_t<decltype(__res.upstream_resource())>, _Upstream>)));
 template <class _Resource, class _Upstream>
-_LIBCUDACXX_CONCEPT __has_upstream_resource = _LIBCUDACXX_FRAGMENT(__has_upstream_resource_, _Resource, _Upstream);
+_CCCL_CONCEPT __has_upstream_resource = _CCCL_FRAGMENT(__has_upstream_resource_, _Resource, _Upstream);
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__forward_property)
 template <class _Derived, class _Upstream>
 struct __fn
 {
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_TEMPLATE(class _Property)
-  _LIBCUDACXX_REQUIRES((!property_with_value<_Property>) _LIBCUDACXX_AND has_property<_Upstream, _Property>)
+  _CCCL_TEMPLATE(class _Property)
+  _CCCL_REQUIRES((!property_with_value<_Property>) _CCCL_AND has_property<_Upstream, _Property>)
   _LIBCUDACXX_HIDE_FROM_ABI friend constexpr void get_property(const _Derived&, _Property) noexcept {}
 
   // The indirection is needed, otherwise the compiler might believe that _Derived is an incomplete type
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_TEMPLATE(class _Property, class _Derived2 = _Derived)
-  _LIBCUDACXX_REQUIRES(property_with_value<_Property> _LIBCUDACXX_AND has_property<_Upstream, _Property> _LIBCUDACXX_AND
-                         __has_upstream_resource<_Derived2, _Upstream>)
+  _CCCL_TEMPLATE(class _Property, class _Derived2 = _Derived)
+  _CCCL_REQUIRES(property_with_value<_Property> _CCCL_AND has_property<_Upstream, _Property> _CCCL_AND
+                   __has_upstream_resource<_Derived2, _Upstream>)
   _LIBCUDACXX_HIDE_FROM_ABI friend constexpr __property_value_t<_Property>
   get_property(const _Derived& __res, _Property __prop)
   {

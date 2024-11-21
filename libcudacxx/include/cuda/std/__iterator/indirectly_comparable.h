@@ -38,15 +38,15 @@ concept indirectly_comparable =
 // clang-format off
 
 template <class _Iter1, class _Iter2, class _BinaryPred, class _Proj1, class _Proj2>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __indirectly_comparable_,
   requires()(
     requires(indirect_binary_predicate<_BinaryPred, projected<_Iter1, _Proj1>, projected<_Iter2, _Proj2>>)
   ));
 
 template <class _Iter1, class _Iter2, class _BinaryPred, class _Proj1 = identity, class _Proj2 = identity>
-_LIBCUDACXX_CONCEPT indirectly_comparable =
-  _LIBCUDACXX_FRAGMENT(__indirectly_comparable_, _Iter1, _Iter2, _BinaryPred, _Proj1, _Proj2);
+_CCCL_CONCEPT indirectly_comparable =
+  _CCCL_FRAGMENT(__indirectly_comparable_, _Iter1, _Iter2, _BinaryPred, _Proj1, _Proj2);
 
 // clang-format on
 

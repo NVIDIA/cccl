@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/destructible.h>
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
@@ -55,38 +55,36 @@ concept copy_constructible =
 #elif _CCCL_STD_VER > 2011
 
 template <class _Tp, class... _Args>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
-  __constructible_from_,
-  requires()(requires(destructible<_Tp>), requires(_CCCL_TRAIT(is_constructible, _Tp, _Args...))));
+_CCCL_CONCEPT_FRAGMENT(__constructible_from_,
+                       requires()(requires(destructible<_Tp>), requires(_CCCL_TRAIT(is_constructible, _Tp, _Args...))));
 
 template <class _Tp, class... _Args>
-_LIBCUDACXX_CONCEPT constructible_from = _LIBCUDACXX_FRAGMENT(__constructible_from_, _Tp, _Args...);
+_CCCL_CONCEPT constructible_from = _CCCL_FRAGMENT(__constructible_from_, _Tp, _Args...);
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(__default_initializable_, requires()((::new _Tp)));
+_CCCL_CONCEPT_FRAGMENT(__default_initializable_, requires()((::new _Tp)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __default_initializable = _LIBCUDACXX_FRAGMENT(__default_initializable_, _Tp);
+_CCCL_CONCEPT __default_initializable = _CCCL_FRAGMENT(__default_initializable_, _Tp);
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
-  _Default_initializable_,
-  requires(_Tp = _Tp{})(requires(constructible_from<_Tp>), requires(__default_initializable<_Tp>)));
+_CCCL_CONCEPT_FRAGMENT(_Default_initializable_,
+                       requires(_Tp = _Tp{})(requires(constructible_from<_Tp>), requires(__default_initializable<_Tp>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT default_initializable = _LIBCUDACXX_FRAGMENT(_Default_initializable_, _Tp);
+_CCCL_CONCEPT default_initializable = _CCCL_FRAGMENT(_Default_initializable_, _Tp);
 
 // [concept.moveconstructible]
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(__move_constructible_,
-                             requires()(requires(constructible_from<_Tp, _Tp>), requires(convertible_to<_Tp, _Tp>)));
+_CCCL_CONCEPT_FRAGMENT(__move_constructible_,
+                       requires()(requires(constructible_from<_Tp, _Tp>), requires(convertible_to<_Tp, _Tp>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT move_constructible = _LIBCUDACXX_FRAGMENT(__move_constructible_, _Tp);
+_CCCL_CONCEPT move_constructible = _CCCL_FRAGMENT(__move_constructible_, _Tp);
 
 // [concept.copyconstructible]
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __copy_constructible_,
   requires()(
     requires(move_constructible<_Tp>),
@@ -96,7 +94,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
     requires(constructible_from<_Tp, const _Tp>&& convertible_to<const _Tp, _Tp>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT copy_constructible = _LIBCUDACXX_FRAGMENT(__copy_constructible_, _Tp);
+_CCCL_CONCEPT copy_constructible = _CCCL_FRAGMENT(__copy_constructible_, _Tp);
 
 #endif // _CCCL_STD_VER > 2011
 
