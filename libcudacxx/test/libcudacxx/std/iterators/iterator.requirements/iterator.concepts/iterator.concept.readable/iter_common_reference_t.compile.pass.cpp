@@ -65,10 +65,10 @@ template <class T>
 constexpr bool has_common_reference = requires { typename cuda::std::iter_common_reference_t<T>; };
 #else
 template <class T>
-_LIBCUDACXX_CONCEPT_FRAGMENT(has_common_reference_, requires()(typename(cuda::std::iter_common_reference_t<T>)));
+_CCCL_CONCEPT_FRAGMENT(has_common_reference_, requires()(typename(cuda::std::iter_common_reference_t<T>)));
 
 template <class T>
-_LIBCUDACXX_CONCEPT has_common_reference = _LIBCUDACXX_FRAGMENT(has_common_reference_, T);
+_CCCL_CONCEPT has_common_reference = _CCCL_FRAGMENT(has_common_reference_, T);
 #endif
 struct NotIndirectlyReadable
 {};

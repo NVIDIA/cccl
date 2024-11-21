@@ -294,7 +294,7 @@ struct layout_stride
     _CCCL_HIDE_FROM_ABI constexpr mapping() noexcept               = default;
     _CCCL_HIDE_FROM_ABI constexpr mapping(mapping const&) noexcept = default;
 
-    // nvcc cannot deduce this constructor when using _LIBCUDACXX_REQUIRES
+    // nvcc cannot deduce this constructor when using _CCCL_REQUIRES
     template <
       class _IntegralTypes,
       enable_if_t<_CCCL_TRAIT(is_convertible, const remove_const_t<_IntegralTypes>&, index_type), int>           = 0,
@@ -323,7 +323,7 @@ struct layout_stride
        */
     }
 
-    // nvcc cannot deduce this constructor when using _LIBCUDACXX_REQUIRES
+    // nvcc cannot deduce this constructor when using _CCCL_REQUIRES
     template <
       class _IntegralTypes,
       enable_if_t<_CCCL_TRAIT(is_convertible, const remove_const_t<_IntegralTypes>&, index_type), int>           = 0,
@@ -353,12 +353,11 @@ struct layout_stride
     }
 
 #  if !(__MDSPAN_USE_CONCEPTS && __MDSPAN_HAS_CXX_20)
-    _LIBCUDACXX_TEMPLATE(class _StridedLayoutMapping)
-    _LIBCUDACXX_REQUIRES(
+    _CCCL_TEMPLATE(class _StridedLayoutMapping)
+    _CCCL_REQUIRES(
       _CCCL_TRAIT(_CUDA_VSTD::is_constructible, extents_type, typename _StridedLayoutMapping::extents_type)
-        _LIBCUDACXX_AND __detail::__is_mapping_of<typename _StridedLayoutMapping::layout_type, _StridedLayoutMapping>
-          _LIBCUDACXX_AND(_StridedLayoutMapping::is_always_unique())
-            _LIBCUDACXX_AND(_StridedLayoutMapping::is_always_strided()))
+        _CCCL_AND __detail::__is_mapping_of<typename _StridedLayoutMapping::layout_type, _StridedLayoutMapping>
+          _CCCL_AND(_StridedLayoutMapping::is_always_unique()) _CCCL_AND(_StridedLayoutMapping::is_always_strided()))
 #  else
     template <class _StridedLayoutMapping>
       requires(__detail::__layout_mapping_alike<_StridedLayoutMapping>
@@ -425,11 +424,11 @@ struct layout_stride
       return __span_size;
     }
 
-    _LIBCUDACXX_TEMPLATE(class... _Indices)
-    _LIBCUDACXX_REQUIRES(
+    _CCCL_TEMPLATE(class... _Indices)
+    _CCCL_REQUIRES(
       (sizeof...(_Indices) == _Extents::rank())
-        _LIBCUDACXX_AND __MDSPAN_FOLD_AND(_CCCL_TRAIT(is_convertible, _Indices, index_type) /*&& ...*/)
-          _LIBCUDACXX_AND __MDSPAN_FOLD_AND(_CCCL_TRAIT(is_nothrow_constructible, index_type, _Indices) /*&& ...*/))
+        _CCCL_AND __MDSPAN_FOLD_AND(_CCCL_TRAIT(is_convertible, _Indices, index_type) /*&& ...*/)
+          _CCCL_AND __MDSPAN_FOLD_AND(_CCCL_TRAIT(is_nothrow_constructible, index_type, _Indices) /*&& ...*/))
     __MDSPAN_FORCE_INLINE_FUNCTION
     constexpr index_type operator()(_Indices... __idxs) const noexcept
     {
@@ -464,19 +463,18 @@ struct layout_stride
       return true;
     }
 
-    _LIBCUDACXX_TEMPLATE(class _Ext = _Extents)
-    _LIBCUDACXX_REQUIRES((_Ext::rank() > 0))
+    _CCCL_TEMPLATE(class _Ext = _Extents)
+    _CCCL_REQUIRES((_Ext::rank() > 0))
     _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type stride(rank_type __r) const noexcept
     {
       return __strides_storage()[__r];
     }
 
 #  if !(__MDSPAN_USE_CONCEPTS && __MDSPAN_HAS_CXX_20)
-    _LIBCUDACXX_TEMPLATE(class _StridedLayoutMapping)
-    _LIBCUDACXX_REQUIRES(
-      __detail::__is_mapping_of<typename _StridedLayoutMapping::layout_type, _StridedLayoutMapping> _LIBCUDACXX_AND(
-        extents_type::rank() == _StridedLayoutMapping::extents_type::rank())
-        _LIBCUDACXX_AND(_StridedLayoutMapping::is_always_strided()))
+    _CCCL_TEMPLATE(class _StridedLayoutMapping)
+    _CCCL_REQUIRES(__detail::__is_mapping_of<typename _StridedLayoutMapping::layout_type, _StridedLayoutMapping>
+                     _CCCL_AND(extents_type::rank() == _StridedLayoutMapping::extents_type::rank())
+                       _CCCL_AND(_StridedLayoutMapping::is_always_strided()))
 #  else
     template <class _StridedLayoutMapping>
       requires(__detail::__layout_mapping_alike<_StridedLayoutMapping>
@@ -496,8 +494,8 @@ struct layout_stride
     }
 
     // This one is not technically part of the proposal. Just here to make implementation a bit more optimal hopefully
-    _LIBCUDACXX_TEMPLATE(class _OtherExtents)
-    _LIBCUDACXX_REQUIRES((extents_type::rank() == _OtherExtents::rank()))
+    _CCCL_TEMPLATE(class _OtherExtents)
+    _CCCL_REQUIRES((extents_type::rank() == _OtherExtents::rank()))
     _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
     operator==(mapping const& __lhs, mapping<_OtherExtents> const& __rhs) noexcept
     {
@@ -505,19 +503,18 @@ struct layout_stride
     }
 
 #  if !__MDSPAN_HAS_CXX_20
-    _LIBCUDACXX_TEMPLATE(class _StridedLayoutMapping)
-    _LIBCUDACXX_REQUIRES(
-      __detail::__is_mapping_of<typename _StridedLayoutMapping::layout_type, _StridedLayoutMapping> _LIBCUDACXX_AND(
-        extents_type::rank() == _StridedLayoutMapping::extents_type::rank())
-        _LIBCUDACXX_AND(_StridedLayoutMapping::is_always_strided()))
+    _CCCL_TEMPLATE(class _StridedLayoutMapping)
+    _CCCL_REQUIRES(__detail::__is_mapping_of<typename _StridedLayoutMapping::layout_type, _StridedLayoutMapping>
+                     _CCCL_AND(extents_type::rank() == _StridedLayoutMapping::extents_type::rank())
+                       _CCCL_AND(_StridedLayoutMapping::is_always_strided()))
     _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
     operator!=(const mapping& __x, const _StridedLayoutMapping& __y) noexcept
     {
       return not(__x == __y);
     }
 
-    _LIBCUDACXX_TEMPLATE(class _OtherExtents)
-    _LIBCUDACXX_REQUIRES((extents_type::rank() == _OtherExtents::rank()))
+    _CCCL_TEMPLATE(class _OtherExtents)
+    _CCCL_REQUIRES((extents_type::rank() == _OtherExtents::rank()))
     _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
     operator!=(mapping const& __lhs, mapping<_OtherExtents> const& __rhs) noexcept
     {

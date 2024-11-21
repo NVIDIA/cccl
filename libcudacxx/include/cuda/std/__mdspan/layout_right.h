@@ -125,8 +125,8 @@ public:
       : __extents(__exts)
   {}
 
-  _LIBCUDACXX_TEMPLATE(class _OtherExtents)
-  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, extents_type, _OtherExtents))
+  _CCCL_TEMPLATE(class _OtherExtents)
+  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, extents_type, _OtherExtents))
   __MDSPAN_CONDITIONAL_EXPLICIT((!_CUDA_VSTD::is_convertible<_OtherExtents, extents_type>::value)) // needs two () due
                                                                                                    // to comma
   _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping(
@@ -139,9 +139,9 @@ public:
      */
   }
 
-  _LIBCUDACXX_TEMPLATE(class _OtherExtents)
-  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, extents_type, _OtherExtents)
-                         _LIBCUDACXX_AND(extents_type::rank() <= 1))
+  _CCCL_TEMPLATE(class _OtherExtents)
+  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, extents_type, _OtherExtents)
+                   _CCCL_AND(extents_type::rank() <= 1))
   __MDSPAN_CONDITIONAL_EXPLICIT((!_CUDA_VSTD::is_convertible<_OtherExtents, extents_type>::value)) // needs two () due
                                                                                                    // to comma
   _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping(
@@ -154,8 +154,8 @@ public:
      */
   }
 
-  _LIBCUDACXX_TEMPLATE(class _OtherExtents)
-  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, extents_type, _OtherExtents))
+  _CCCL_TEMPLATE(class _OtherExtents)
+  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, extents_type, _OtherExtents))
   __MDSPAN_CONDITIONAL_EXPLICIT((extents_type::rank() > 0))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping(
     layout_stride::mapping<_OtherExtents> const& __other) // NOLINT(google-explicit-constructor)
@@ -191,8 +191,8 @@ public:
 
   //--------------------------------------------------------------------------------
 
-  _LIBCUDACXX_TEMPLATE(class... _Indices)
-  _LIBCUDACXX_REQUIRES((sizeof...(_Indices) == extents_type::rank()) _LIBCUDACXX_AND __MDSPAN_FOLD_AND(
+  _CCCL_TEMPLATE(class... _Indices)
+  _CCCL_REQUIRES((sizeof...(_Indices) == extents_type::rank()) _CCCL_AND __MDSPAN_FOLD_AND(
     (_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _Indices, index_type)
      && _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Indices))))
   _CCCL_HOST_DEVICE constexpr index_type operator()(_Indices... __idxs) const noexcept
@@ -225,8 +225,8 @@ public:
     return true;
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Ext = _Extents)
-  _LIBCUDACXX_REQUIRES((_Ext::rank() > 0))
+  _CCCL_TEMPLATE(class _Ext = _Extents)
+  _CCCL_REQUIRES((_Ext::rank() > 0))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type stride(rank_type __i) const noexcept
   {
     index_type __value = 1;

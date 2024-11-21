@@ -52,10 +52,9 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 #if __cccl_lib_mdspan
 #  include <cuda/std/mdspan>
 #endif // __cccl_lib_mdspan
+#include <cuda/std/__concepts/concept_macros.h> // IWYU pragma: keep
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
-
-#define _CUB_TEMPLATE_REQUIRES(...) ::cuda::std::enable_if_t<(__VA_ARGS__)>* = nullptr
 
 CUB_NAMESPACE_BEGIN
 namespace detail

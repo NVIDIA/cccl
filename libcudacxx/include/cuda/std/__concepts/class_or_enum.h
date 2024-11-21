@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_class.h>
 #include <cuda/std/__type_traits/is_enum.h>
 #include <cuda/std/__type_traits/is_union.h>
@@ -31,13 +31,12 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if _CCCL_STD_VER > 2011
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __class_or_enum =
-  _CCCL_TRAIT(is_class, _Tp) || _CCCL_TRAIT(is_union, _Tp) || _CCCL_TRAIT(is_enum, _Tp);
+_CCCL_CONCEPT __class_or_enum = _CCCL_TRAIT(is_class, _Tp) || _CCCL_TRAIT(is_union, _Tp) || _CCCL_TRAIT(is_enum, _Tp);
 
 // Work around Clang bug https://llvm.org/PR52970
 // TODO: remove this workaround once libc++ no longer has to support Clang 13 (it was fixed in Clang 14).
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __workaround_52970 =
+_CCCL_CONCEPT __workaround_52970 =
   _CCCL_TRAIT(is_class, remove_cvref_t<_Tp>) || _CCCL_TRAIT(is_union, remove_cvref_t<_Tp>);
 
 #endif // _CCCL_STD_VER > 2011
