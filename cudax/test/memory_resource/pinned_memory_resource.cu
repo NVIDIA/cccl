@@ -34,11 +34,11 @@ static_assert(!cuda::std::is_empty<pinned_resource>::value, "");
 
 static void ensure_pinned_ptr(void* ptr)
 {
-  assert(ptr != nullptr);
+  CHECK(ptr != nullptr);
   cudaPointerAttributes attributes;
   cudaError_t status = cudaPointerGetAttributes(&attributes, ptr);
-  assert(status == cudaSuccess);
-  assert((attributes.type == cudaMemoryTypeHost) && (attributes.devicePointer != nullptr));
+  CHECK(status == cudaSuccess);
+  CHECK((attributes.type == cudaMemoryTypeHost) && (attributes.devicePointer != nullptr));
 }
 
 TEST_CASE("pinned_memory_resource construction", "[memory_resource]")

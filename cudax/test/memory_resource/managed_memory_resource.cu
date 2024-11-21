@@ -34,11 +34,11 @@ static_assert(!cuda::std::is_empty<managed_resource>::value, "");
 
 static void ensure_managed_ptr(void* ptr)
 {
-  assert(ptr != nullptr);
+  CHECK(ptr != nullptr);
   cudaPointerAttributes attributes;
   cudaError_t status = cudaPointerGetAttributes(&attributes, ptr);
-  assert(status == cudaSuccess);
-  assert(attributes.type == cudaMemoryTypeManaged);
+  CHECK(status == cudaSuccess);
+  CHECK(attributes.type == cudaMemoryTypeManaged);
 }
 
 TEST_CASE("managed_memory_resource construction", "[memory_resource]")
