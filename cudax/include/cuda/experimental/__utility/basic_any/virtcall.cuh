@@ -23,7 +23,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/__concepts/concept_macros.h>
 
 #include <cuda/experimental/__utility/basic_any/access.cuh>
 #include <cuda/experimental/__utility/basic_any/basic_any_from.cuh>
@@ -115,8 +115,8 @@ _CUDAX_HOST_API auto __virtcall(_Self* __self, _Args&&... __args) //
   return __vptr->__virtual_fn<_Mbr2>::__fn_(__obj, static_cast<_Args&&>(__args)...);
 }
 
-_LIBCUDACXX_TEMPLATE(auto _Mbr, template <class...> class _Interface, class _Super, class... _Args)
-_LIBCUDACXX_REQUIRES(__valid_virtcall<_Mbr, _Super>)
+_CCCL_TEMPLATE(auto _Mbr, template <class...> class _Interface, class _Super, class... _Args)
+_CCCL_REQUIRES(__valid_virtcall<_Mbr, _Super>)
 _CUDAX_TRIVIAL_HOST_API auto virtcall(_Interface<_Super>* __self, _Args&&... __args) //
   noexcept(__virtual_fn<_Mbr>::__nothrow_fn) //
   -> typename __virtual_fn<_Mbr>::__result_t
@@ -125,8 +125,8 @@ _CUDAX_TRIVIAL_HOST_API auto virtcall(_Interface<_Super>* __self, _Args&&... __a
     __cudax::basic_any_from(__self), static_cast<_Args&&>(__args)...);
 }
 
-_LIBCUDACXX_TEMPLATE(auto _Mbr, template <class...> class _Interface, class _Super, class... _Args)
-_LIBCUDACXX_REQUIRES(__valid_virtcall<_Mbr, _Super>)
+_CCCL_TEMPLATE(auto _Mbr, template <class...> class _Interface, class _Super, class... _Args)
+_CCCL_REQUIRES(__valid_virtcall<_Mbr, _Super>)
 _CUDAX_TRIVIAL_HOST_API auto virtcall(_Interface<_Super> const* __self, _Args&&... __args) //
   noexcept(__virtual_fn<_Mbr>::__nothrow_fn) //
   -> typename __virtual_fn<_Mbr>::__result_t
@@ -135,8 +135,8 @@ _CUDAX_TRIVIAL_HOST_API auto virtcall(_Interface<_Super> const* __self, _Args&&.
     __cudax::basic_any_from(__self), static_cast<_Args&&>(__args)...);
 }
 
-_LIBCUDACXX_TEMPLATE(auto _Mbr, template <class...> class _Interface, class... _Super, class... _Args)
-_LIBCUDACXX_REQUIRES((!__valid_virtcall<_Mbr, _Super...>) )
+_CCCL_TEMPLATE(auto _Mbr, template <class...> class _Interface, class... _Super, class... _Args)
+_CCCL_REQUIRES((!__valid_virtcall<_Mbr, _Super...>) )
 _CUDAX_TRIVIAL_HOST_API auto virtcall(_Interface<_Super...> const*, _Args&&...) //
   noexcept(__virtual_fn<_Mbr>::__nothrow_fn) //
   -> typename __virtual_fn<_Mbr>::__result_t

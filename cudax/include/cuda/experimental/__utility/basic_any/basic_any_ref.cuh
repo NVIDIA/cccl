@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_const.h>
 #include <cuda/std/__type_traits/maybe_const.h>
 #include <cuda/std/__type_traits/remove_const.h>
@@ -268,8 +268,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__irefer
     this->__set_ref(__other.__get_vptr(), __other.__get_optr());
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Tp, class _Up = _CUDA_VSTD::remove_const_t<_Tp>)
-  _LIBCUDACXX_REQUIRES((!__is_basic_any<_Tp>) _LIBCUDACXX_AND __satisfies<_Up, interface_type> _LIBCUDACXX_AND(
+  _CCCL_TEMPLATE(class _Tp, class _Up = _CUDA_VSTD::remove_const_t<_Tp>)
+  _CCCL_REQUIRES((!__is_basic_any<_Tp>) _CCCL_AND __satisfies<_Up, interface_type> _CCCL_AND(
     __is_const_ref || !_CUDA_VSTD::is_const_v<_Tp>))
   _CUDAX_HOST_API basic_any(_Tp& __obj) noexcept
       : basic_any<__ireference<_Interface>, __secondary>()
@@ -286,9 +286,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__irefer
 #  define _CUDAX_REQUIRES(...) _CUDA_VSTD::enable_if_t<__VA_ARGS__, int> = 0 >
 #  define _CUDAX_AND           , int > = 0, _CUDA_VSTD::enable_if_t <
 #else
-#  define _CUDAX_TEMPLATE _LIBCUDACXX_TEMPLATE
-#  define _CUDAX_REQUIRES _LIBCUDACXX_REQUIRES
-#  define _CUDAX_AND      _LIBCUDACXX_AND
+#  define _CUDAX_TEMPLATE _CCCL_TEMPLATE
+#  define _CUDAX_REQUIRES _CCCL_REQUIRES
+#  define _CUDAX_AND      _CCCL_AND
 #endif
 
   _CUDAX_TEMPLATE(class _Tp)

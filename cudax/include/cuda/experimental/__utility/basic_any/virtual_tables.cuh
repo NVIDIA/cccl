@@ -122,8 +122,8 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __vtable_tuple
     static_assert(_CUDA_VSTD::is_class_v<_Super>, "expected a class type");
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Interface)
-  _LIBCUDACXX_REQUIRES(_CUDA_VSTD::__is_included_in_v<_Interface, _Interfaces...>)
+  _CCCL_TEMPLATE(class _Interface)
+  _CCCL_REQUIRES(_CUDA_VSTD::__is_included_in_v<_Interface, _Interfaces...>)
   _CCCL_NODISCARD _CUDAX_HOST_API constexpr __vptr_for<_Interface> __query_interface(_Interface) const noexcept
   {
     return static_cast<__vptr_for<_Interface>>(this);

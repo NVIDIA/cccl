@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/detail/libcxx/include/cstddef> // for byte
 
 #include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
@@ -43,8 +43,8 @@ _CUDAX_HOST_API auto __is_basic_any_test(basic_any<_Interface> const&) -> basic_
 
 // clang-format off
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __is_basic_any =
-  _LIBCUDACXX_REQUIRES_EXPR((_Tp), _Tp& __value)
+_CCCL_CONCEPT __is_basic_any =
+  _CCCL_REQUIRES_EXPR((_Tp), _Tp& __value)
   (
     __is_basic_any_test(__value)
   );

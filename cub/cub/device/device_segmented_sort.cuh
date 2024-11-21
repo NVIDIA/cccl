@@ -131,7 +131,7 @@ private:
   // Name reported for NVTX ranges
   _CCCL_HOST_DEVICE static constexpr auto GetName() -> const char*
   {
-    return "cub::DeviceSegmentedRadixSort";
+    return "cub::DeviceSegmentedSort";
   }
 
   // Internal version without NVTX range

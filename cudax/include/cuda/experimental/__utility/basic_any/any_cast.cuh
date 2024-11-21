@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_const.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__utility/move.h>
@@ -52,8 +52,8 @@ inline constexpr bool __valid_any_cast<_Interface*, _Tp*> =
 ///
 /// any_cast
 ///
-_LIBCUDACXX_TEMPLATE(class _Tp, class _Interface)
-_LIBCUDACXX_REQUIRES(__satisfies<_Tp, _Interface> || _CUDA_VSTD::is_void_v<_Tp>)
+_CCCL_TEMPLATE(class _Tp, class _Interface)
+_CCCL_REQUIRES(__satisfies<_Tp, _Interface> || _CUDA_VSTD::is_void_v<_Tp>)
 _CCCL_NODISCARD _CUDAX_HOST_API _Tp* any_cast(basic_any<_Interface>* __self) noexcept
 {
   static_assert(__valid_any_cast<_Interface, _Tp>);
@@ -64,8 +64,8 @@ _CCCL_NODISCARD _CUDAX_HOST_API _Tp* any_cast(basic_any<_Interface>* __self) noe
   return nullptr;
 }
 
-_LIBCUDACXX_TEMPLATE(class _Tp, class _Interface)
-_LIBCUDACXX_REQUIRES(__satisfies<_Tp, _Interface> || _CUDA_VSTD::is_void_v<_Tp>)
+_CCCL_TEMPLATE(class _Tp, class _Interface)
+_CCCL_REQUIRES(__satisfies<_Tp, _Interface> || _CUDA_VSTD::is_void_v<_Tp>)
 _CCCL_NODISCARD _CUDAX_HOST_API _Tp const* any_cast(basic_any<_Interface> const* __self) noexcept
 {
   static_assert(__valid_any_cast<_Interface, _Tp>);

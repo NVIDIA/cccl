@@ -51,19 +51,19 @@
 #include <cuda/std/type_traits>
 
 #if defined(_CCCL_HAS_NVBF16)
-#  if !defined(_CCCL_CUDACC_BELOW_11_8)
+#  if _CCCL_CUDACC_AT_LEAST(11, 8)
 // cuda_fp8.h resets default for C4127, so we have to guard the inclusion
 _CCCL_DIAG_PUSH
 #    include <cuda_fp8.h>
 _CCCL_DIAG_POP
-#  endif // !_CCCL_CUDACC_BELOW_11_8
+#  endif // _CCCL_CUDACC_AT_LEAST(11, 8)
 #endif // _CCCL_HAS_NV_BF16
 
-#ifdef _CCCL_COMPILER_NVRTC
+#if _CCCL_COMPILER(NVRTC)
 #  include <cuda/std/iterator>
-#else // !defined(_CCCL_COMPILER_NVRTC)
+#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ // vvv !_CCCL_COMPILER(NVRTC) vvv
 #  include <iterator>
-#endif // defined(_CCCL_COMPILER_NVRTC)
+#endif // _CCCL_COMPILER(NVRTC)
 
 CUB_NAMESPACE_BEGIN
 
@@ -73,12 +73,11 @@ CUB_NAMESPACE_BEGIN
 #      define CUB_IS_INT128_ENABLED 1
 #    endif // !defined(__CUDACC_RTC_INT128__)
 #  else // !defined(__CUDACC_RTC__)
-#    if _CCCL_CUDACC_VER >= 1105000
-#      if defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_CLANG) || defined(_CCCL_COMPILER_ICC) \
-        || _CCCL_COMPILER(NVHPC)
+#    if _CCCL_CUDACC_AT_LEAST(11, 5)
+#      if _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(ICC) || _CCCL_COMPILER(NVHPC)
 #        define CUB_IS_INT128_ENABLED 1
 #      endif // GCC || CLANG || ICC || NVHPC
-#    endif // CTK >= 11.5
+#    endif // _CCCL_CUDACC_AT_LEAST(11, 5)
 #  endif // !defined(__CUDACC_RTC__)
 #endif // !defined(CUB_IS_INT128_ENABLED)
 
@@ -94,11 +93,11 @@ namespace detail
 // only defer to the libcu++ implementation for NVRTC.
 template <typename Iterator>
 using value_t =
-#  ifdef _CCCL_COMPILER_NVRTC
+#  if _CCCL_COMPILER(NVRTC)
   typename ::cuda::std::iterator_traits<Iterator>::value_type;
-#  else // !defined(_CCCL_COMPILER_NVRTC)
+#  else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ // vvv !_CCCL_COMPILER(NVRTC) vvv
   typename std::iterator_traits<Iterator>::value_type;
-#  endif // defined(_CCCL_COMPILER_NVRTC)
+#  endif // !_CCCL_COMPILER(NVRTC)
 
 template <typename It, typename FallbackT, bool = ::cuda::std::is_void<::cuda::std::remove_pointer_t<It>>::value>
 struct non_void_value_impl

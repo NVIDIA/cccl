@@ -61,7 +61,7 @@ int main(int, char**)
   test();
   test_count<1000>(); // not in constexpr because of constexpr evaluation step limits
 // 11.4 added support for constexpr device vars needed here
-#if TEST_STD_VER >= 2014 && !defined(_CCCL_CUDACC_BELOW_11_4)
+#if TEST_STD_VER >= 2014 && _CCCL_CUDACC_AT_LEAST(11, 4)
   static_assert(test(), "");
 #endif // TEST_STD_VER >= 2014
 

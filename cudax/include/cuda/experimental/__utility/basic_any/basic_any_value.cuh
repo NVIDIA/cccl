@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__new/launder.h>
 #include <cuda/std/__type_traits/is_class.h>
@@ -50,8 +50,8 @@ namespace cuda::experimental
 // constructible_from using list initialization syntax.
 // clang-format off
 template <class _Tp, class... _Args>
-_LIBCUDACXX_CONCEPT __list_initializable_from =
-  _LIBCUDACXX_REQUIRES_EXPR((_Tp, variadic _Args), _Args&&... __args)
+_CCCL_CONCEPT __list_initializable_from =
+  _CCCL_REQUIRES_EXPR((_Tp, variadic _Args), _Args&&... __args)
   (
     _Tp{static_cast<_Args&&>(__args)...}
   );
@@ -85,8 +85,8 @@ public:
   /// \pre `__value` must be move constructible. `_Tp` must satisfy the
   /// requirements of `_Interface`.
   /// \post `has_value() == true`
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES((!__is_basic_any<_Tp>) _LIBCUDACXX_AND __satisfies<_Tp, _Interface>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES((!__is_basic_any<_Tp>) _CCCL_AND __satisfies<_Tp, _Interface>)
   _CUDAX_HOST_API basic_any(_Tp __value) noexcept(__is_small<_Tp>(__size_, __align_))
   {
     __emplace<_Tp>(_CUDA_VSTD::move(__value));
@@ -96,8 +96,8 @@ public:
   /// `_Tp` constructed as `_Tp{__args...}`.
   /// \pre `_Tp` must satisfy the requirements of `_Interface`.
   /// \post `has_value() == true`
-  _LIBCUDACXX_TEMPLATE(class _Tp, class _Up = _CUDA_VSTD::decay_t<_Tp>, class... _Args)
-  _LIBCUDACXX_REQUIRES(__list_initializable_from<_Up, _Args...> _LIBCUDACXX_AND __satisfies<_Tp, _Interface>)
+  _CCCL_TEMPLATE(class _Tp, class _Up = _CUDA_VSTD::decay_t<_Tp>, class... _Args)
+  _CCCL_REQUIRES(__list_initializable_from<_Up, _Args...> _CCCL_AND __satisfies<_Tp, _Interface>)
   _CUDAX_HOST_API explicit basic_any(_CUDA_VSTD::in_place_type_t<_Tp>, _Args&&... __args) noexcept(
     __is_small<_Up>(__size_, __align_) && _CUDA_VSTD::is_nothrow_constructible_v<_Up, _Args...>)
   {
@@ -108,9 +108,9 @@ public:
   /// `_Tp` constructed as `_Tp{__il, __args...}`.
   /// \pre `_Tp` must satisfy the requirements of `_Interface`.
   /// \post `has_value() == true`
-  _LIBCUDACXX_TEMPLATE(class _Tp, class _Up, class _Vp = _CUDA_VSTD::decay_t<_Tp>, class... _Args)
-  _LIBCUDACXX_REQUIRES(__list_initializable_from<_Vp, _CUDA_VSTD::initializer_list<_Up>&, _Args...> _LIBCUDACXX_AND
-                         __satisfies<_Tp, _Interface>)
+  _CCCL_TEMPLATE(class _Tp, class _Up, class _Vp = _CUDA_VSTD::decay_t<_Tp>, class... _Args)
+  _CCCL_REQUIRES(
+    __list_initializable_from<_Vp, _CUDA_VSTD::initializer_list<_Up>&, _Args...> _CCCL_AND __satisfies<_Tp, _Interface>)
   _CUDAX_HOST_API explicit basic_any(
     _CUDA_VSTD::in_place_type_t<_Tp>,
     _CUDA_VSTD::initializer_list<_Up> __il,
@@ -153,9 +153,9 @@ public:
   /// extend `icopyable<>`. Otherwise, `I` must extend `imovable<>`.
   /// \post `__other.has_value() == false` and `has_value()` is `true` if and
   /// only if `__other.has_value()` was `true`.
-  _LIBCUDACXX_TEMPLATE(class _OtherInterface)
-  _LIBCUDACXX_REQUIRES((!_CUDA_VSTD::same_as<_OtherInterface, _Interface>)
-                         _LIBCUDACXX_AND __any_convertible_to<basic_any<_OtherInterface>, basic_any>)
+  _CCCL_TEMPLATE(class _OtherInterface)
+  _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_OtherInterface, _Interface>)
+                   _CCCL_AND __any_convertible_to<basic_any<_OtherInterface>, basic_any>)
   _CUDAX_HOST_API basic_any(basic_any<_OtherInterface>&& __other)
   {
     __convert_from(_CUDA_VSTD::move(__other));
@@ -166,9 +166,9 @@ public:
   /// \pre The decayed type of `_OtherInterface` must extend `_Interface` and
   /// `icopyable<>`.
   /// \post `has_value() == __other.has_value()`.
-  _LIBCUDACXX_TEMPLATE(class _OtherInterface)
-  _LIBCUDACXX_REQUIRES((!_CUDA_VSTD::same_as<_OtherInterface, _Interface>)
-                         _LIBCUDACXX_AND __any_convertible_to<basic_any<_OtherInterface> const&, basic_any>)
+  _CCCL_TEMPLATE(class _OtherInterface)
+  _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_OtherInterface, _Interface>)
+                   _CCCL_AND __any_convertible_to<basic_any<_OtherInterface> const&, basic_any>)
   _CUDAX_HOST_API basic_any(basic_any<_OtherInterface> const& __other)
   {
     __convert_from(__other);
@@ -214,9 +214,9 @@ public:
   /// basic_any(cuda::std::move(__other)).swap(*this);
   /// return *this;
   /// @endcode
-  _LIBCUDACXX_TEMPLATE(class _OtherInterface)
-  _LIBCUDACXX_REQUIRES((!_CUDA_VSTD::same_as<_OtherInterface, _Interface>)
-                         _LIBCUDACXX_AND __any_convertible_to<basic_any<_OtherInterface>, basic_any>)
+  _CCCL_TEMPLATE(class _OtherInterface)
+  _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_OtherInterface, _Interface>)
+                   _CCCL_AND __any_convertible_to<basic_any<_OtherInterface>, basic_any>)
   _CUDAX_HOST_API basic_any& operator=(basic_any<_OtherInterface>&& __other)
   {
     return __assign_from(_CUDA_VSTD::move(__other));
@@ -231,9 +231,9 @@ public:
   /// basic_any(__other).swap(*this);
   /// return *this;
   /// @endcode
-  _LIBCUDACXX_TEMPLATE(class _OtherInterface)
-  _LIBCUDACXX_REQUIRES((!_CUDA_VSTD::same_as<_OtherInterface, _Interface>)
-                         _LIBCUDACXX_AND __any_convertible_to<basic_any<_OtherInterface> const&, basic_any>)
+  _CCCL_TEMPLATE(class _OtherInterface)
+  _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_OtherInterface, _Interface>)
+                   _CCCL_AND __any_convertible_to<basic_any<_OtherInterface> const&, basic_any>)
   _CUDAX_HOST_API basic_any& operator=(basic_any<_OtherInterface> const& __other)
   {
     return __assign_from(__other);
@@ -278,8 +278,8 @@ public:
   /// `_Tp{__args...}`.
   /// \pre `_Tp` must satisfy the requirements of `_Interface`.
   /// \post `has_value() == true`
-  _LIBCUDACXX_TEMPLATE(class _Tp, class _Up = _CUDA_VSTD::decay_t<_Tp>, class... _Args)
-  _LIBCUDACXX_REQUIRES(__list_initializable_from<_Up, _Args...>)
+  _CCCL_TEMPLATE(class _Tp, class _Up = _CUDA_VSTD::decay_t<_Tp>, class... _Args)
+  _CCCL_REQUIRES(__list_initializable_from<_Up, _Args...>)
   _CUDAX_HOST_API _Up& emplace(_Args&&... __args) noexcept(
     __is_small<_Up>(__size_, __align_) && _CUDA_VSTD::is_nothrow_constructible_v<_Up, _Args...>)
   {
@@ -291,8 +291,8 @@ public:
   /// `_Tp{__il, __args...}`.
   /// \pre `_Tp` must satisfy the requirements of `_Interface`.
   /// \post `has_value() == true`
-  _LIBCUDACXX_TEMPLATE(class _Tp, class _Up, class _Vp = _CUDA_VSTD::decay_t<_Tp>, class... _Args)
-  _LIBCUDACXX_REQUIRES(__list_initializable_from<_Vp, _CUDA_VSTD::initializer_list<_Up>&, _Args...>)
+  _CCCL_TEMPLATE(class _Tp, class _Up, class _Vp = _CUDA_VSTD::decay_t<_Tp>, class... _Args)
+  _CCCL_REQUIRES(__list_initializable_from<_Vp, _CUDA_VSTD::initializer_list<_Up>&, _Args...>)
   _CUDAX_HOST_API _Vp& emplace(_CUDA_VSTD::initializer_list<_Up> __il, _Args&&... __args) noexcept(
     __is_small<_Vp>(__size_, __align_)
     && _CUDA_VSTD::is_nothrow_constructible_v<_Vp, _CUDA_VSTD::initializer_list<_Up>&, _Args...>)
@@ -391,8 +391,8 @@ private:
   // this overload handles moving from basic_any<_SrcInterface> and
   // basic_any<__ireference<_SrcInterface>> (but not
   // basic_any<__ireference<_SrcInterface const>>).
-  _LIBCUDACXX_TEMPLATE(class _SrcInterface)
-  _LIBCUDACXX_REQUIRES(__any_castable_to<basic_any<_SrcInterface>, basic_any>)
+  _CCCL_TEMPLATE(class _SrcInterface)
+  _CCCL_REQUIRES(__any_castable_to<basic_any<_SrcInterface>, basic_any>)
   _CUDAX_HOST_API void
   __convert_from(basic_any<_SrcInterface>&& __from) noexcept(_CUDA_VSTD::is_same_v<_SrcInterface, _Interface>)
   {
@@ -428,8 +428,8 @@ private:
 
   // this overload handles copying from basic_any<_Interface>,
   // basic_any<__ireference<_Interface>>, and basic_any<_Interface&>.
-  _LIBCUDACXX_TEMPLATE(class _SrcInterface)
-  _LIBCUDACXX_REQUIRES(__any_castable_to<basic_any<_SrcInterface> const&, basic_any>)
+  _CCCL_TEMPLATE(class _SrcInterface)
+  _CCCL_REQUIRES(__any_castable_to<basic_any<_SrcInterface> const&, basic_any>)
   _CUDAX_HOST_API void __convert_from(basic_any<_SrcInterface> const& __from)
   {
     _CCCL_ASSERT(!has_value(), "forgot to clear the destination object first");
@@ -442,8 +442,8 @@ private:
   }
 
   // Assignment from a compatible basic_any object handled here:
-  _LIBCUDACXX_TEMPLATE(class _SrcCvAny)
-  _LIBCUDACXX_REQUIRES(__any_castable_to<_SrcCvAny, basic_any>)
+  _CCCL_TEMPLATE(class _SrcCvAny)
+  _CCCL_REQUIRES(__any_castable_to<_SrcCvAny, basic_any>)
   _CUDAX_HOST_API basic_any& __assign_from(_SrcCvAny&& __src)
   {
     if (!__ptr_eq(this, &__src))

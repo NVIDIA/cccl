@@ -25,7 +25,7 @@
 
 #include <cuda/std/__algorithm/find.h>
 #include <cuda/std/__algorithm/max.h>
-#include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_callable.h>
 #include <cuda/std/__type_traits/is_class.h>
 #include <cuda/std/__type_traits/is_const.h>
@@ -133,7 +133,7 @@ inline constexpr bool
     __bases_of<_Derived, __has_base_fn<_CUDA_VSTD::remove_const_t<_Base>>>::value;
 
 template <class _Derived, class _Base>
-_LIBCUDACXX_CONCEPT extension_of = __extension_of<_Derived, _Base>;
+_CCCL_CONCEPT extension_of = __extension_of<_Derived, _Base>;
 
 ///
 /// interface
@@ -163,8 +163,8 @@ _CUDAX_HOST_API auto __is_interface_test(interface<_Interface, _Extends, _Size, 
 
 // clang-format off
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __is_interface =
-  _LIBCUDACXX_REQUIRES_EXPR((_Tp), _Tp& __value)
+_CCCL_CONCEPT __is_interface =
+  _CCCL_REQUIRES_EXPR((_Tp), _Tp& __value)
   (
     __is_interface_test(__value)
   );
@@ -270,7 +270,7 @@ struct __unsatisfied_interface<_Interface&, _Tp> : __unsatisfied_interface<_Inte
 {};
 
 template <class _Tp, class _Interface>
-_LIBCUDACXX_CONCEPT __has_overrides = _CUDA_VSTD::_IsValidExpansion<__overrides_for, _Interface, _Tp>::value;
+_CCCL_CONCEPT __has_overrides = _CUDA_VSTD::_IsValidExpansion<__overrides_for, _Interface, _Tp>::value;
 
 /// The \c __satisfies concept checks if a type \c _Tp satisfies an interface
 /// \c _Interface. It does this by trying to instantiate
@@ -285,7 +285,7 @@ _LIBCUDACXX_CONCEPT __has_overrides = _CUDA_VSTD::_IsValidExpansion<__overrides_
 template <class _Tp,
           class _Interface,
           class UnsatisfiedInterface = _CUDA_VSTD::__type<__unsatisfied_interface<_Interface, _Tp>>>
-_LIBCUDACXX_CONCEPT __satisfies = __has_overrides<_Tp, UnsatisfiedInterface>;
+_CCCL_CONCEPT __satisfies = __has_overrides<_Tp, UnsatisfiedInterface>;
 
 ///
 /// __interface_of
@@ -338,17 +338,16 @@ struct __interface_cast_fn<_Interface<>>
   }
 };
 
-_LIBCUDACXX_TEMPLATE(template <class...> class _Interface, class Object)
-_LIBCUDACXX_REQUIRES(
-  __is_interface<_Interface<>> _LIBCUDACXX_AND _CUDA_VSTD::__is_callable_v<__interface_cast_fn<_Interface<>>, Object>)
+_CCCL_TEMPLATE(template <class...> class _Interface, class Object)
+_CCCL_REQUIRES(
+  __is_interface<_Interface<>> _CCCL_AND _CUDA_VSTD::__is_callable_v<__interface_cast_fn<_Interface<>>, Object>)
 _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API decltype(auto) __interface_cast(Object&& __obj) noexcept
 {
   return __interface_cast_fn<_Interface<>>{}(_CUDA_VSTD::forward<Object>(__obj));
 }
 
-_LIBCUDACXX_TEMPLATE(class _Interface, class Object)
-_LIBCUDACXX_REQUIRES(
-  __is_interface<_Interface> _LIBCUDACXX_AND _CUDA_VSTD::__is_callable_v<__interface_cast_fn<_Interface>, Object>)
+_CCCL_TEMPLATE(class _Interface, class Object)
+_CCCL_REQUIRES(__is_interface<_Interface> _CCCL_AND _CUDA_VSTD::__is_callable_v<__interface_cast_fn<_Interface>, Object>)
 _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API decltype(auto) __interface_cast(Object&& __obj) noexcept
 {
   return __interface_cast_fn<_Interface>{}(_CUDA_VSTD::forward<Object>(__obj));

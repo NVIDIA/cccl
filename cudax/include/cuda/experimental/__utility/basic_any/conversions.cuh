@@ -130,14 +130,14 @@ using __dst_archetype_of _CCCL_NODEBUG_ALIAS =
 // dynamically cast from the source to the destination. The cast may fail,
 // but at least it is possible.
 template <class _SrcCvAny, class _DstCvAny>
-_LIBCUDACXX_CONCEPT __any_castable_to =
+_CCCL_CONCEPT __any_castable_to =
   _CUDA_VSTD::is_convertible_v<__src_archetype_of<_SrcCvAny>, __dst_archetype_of<_DstCvAny>>;
 
 // If the archetypes are implicitly convertible **and** the source interface
 // is an extension of the destination one, then it is possible to implicitly
 // convert from the source to the destination.
 template <class _SrcCvAny, class _DstCvAny>
-_LIBCUDACXX_CONCEPT __any_convertible_to =
+_CCCL_CONCEPT __any_convertible_to =
   __any_castable_to<_SrcCvAny, _DstCvAny> && //
   extension_of<typename _CUDA_VSTD::remove_reference_t<_SrcCvAny>::interface_type,
                typename _CUDA_VSTD::remove_reference_t<_DstCvAny>::interface_type>;

@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/derived_from.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__type_traits/is_const.h>
@@ -60,8 +60,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
 
   _CUDAX_TRIVIAL_HOST_API basic_any(_CUDA_VSTD::nullptr_t) {}
 
-  _LIBCUDACXX_TEMPLATE(class _Tp, class _Up = _CUDA_VSTD::remove_const_t<_Tp>)
-  _LIBCUDACXX_REQUIRES((!__is_basic_any<_Tp>) _LIBCUDACXX_AND __satisfies<_Up, interface_type> _LIBCUDACXX_AND(
+  _CCCL_TEMPLATE(class _Tp, class _Up = _CUDA_VSTD::remove_const_t<_Tp>)
+  _CCCL_REQUIRES((!__is_basic_any<_Tp>) _CCCL_AND __satisfies<_Up, interface_type> _CCCL_AND(
     __is_const_ptr || !_CUDA_VSTD::is_const_v<_Tp>))
   _CUDAX_HOST_API basic_any(_Tp* __obj) noexcept
   {
@@ -73,41 +73,41 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
     __convert_from(__other);
   }
 
-  _LIBCUDACXX_TEMPLATE(class _OtherInterface)
-  _LIBCUDACXX_REQUIRES((!_CUDA_VSTD::same_as<_OtherInterface, _Interface>)
-                         _LIBCUDACXX_AND __any_convertible_to<basic_any<_OtherInterface*>, basic_any<_Interface*>>)
+  _CCCL_TEMPLATE(class _OtherInterface)
+  _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_OtherInterface, _Interface>)
+                   _CCCL_AND __any_convertible_to<basic_any<_OtherInterface*>, basic_any<_Interface*>>)
   _CUDAX_HOST_API basic_any(basic_any<_OtherInterface*> const& __other) noexcept
   {
     __convert_from(__other);
   }
 
-  _LIBCUDACXX_TEMPLATE(class _OtherInterface)
-  _LIBCUDACXX_REQUIRES(__any_convertible_to<basic_any<_OtherInterface>&, basic_any<_Interface&>>)
+  _CCCL_TEMPLATE(class _OtherInterface)
+  _CCCL_REQUIRES(__any_convertible_to<basic_any<_OtherInterface>&, basic_any<_Interface&>>)
   _CUDAX_HOST_API basic_any(basic_any<_OtherInterface>* __other) noexcept
   {
     __convert_from(__other);
   }
 
-  _LIBCUDACXX_TEMPLATE(class _OtherInterface)
-  _LIBCUDACXX_REQUIRES(__any_convertible_to<basic_any<_OtherInterface> const&, basic_any<_Interface&>>)
+  _CCCL_TEMPLATE(class _OtherInterface)
+  _CCCL_REQUIRES(__any_convertible_to<basic_any<_OtherInterface> const&, basic_any<_Interface&>>)
   _CUDAX_HOST_API basic_any(basic_any<_OtherInterface> const* __other) noexcept
   {
     __convert_from(__other);
   }
 
-  _LIBCUDACXX_TEMPLATE(template <class...> class _OtherInterface, class _Super)
-  _LIBCUDACXX_REQUIRES(__is_interface<_OtherInterface<_Super>> _LIBCUDACXX_AND
-                         _CUDA_VSTD::derived_from<basic_any<_Super>, _OtherInterface<_Super>> _LIBCUDACXX_AND
-                           _CUDA_VSTD::same_as<__normalized_interface_of<basic_any<_Super>*>, _Interface*>)
+  _CCCL_TEMPLATE(template <class...> class _OtherInterface, class _Super)
+  _CCCL_REQUIRES(__is_interface<_OtherInterface<_Super>> _CCCL_AND
+                   _CUDA_VSTD::derived_from<basic_any<_Super>, _OtherInterface<_Super>> _CCCL_AND
+                     _CUDA_VSTD::same_as<__normalized_interface_of<basic_any<_Super>*>, _Interface*>)
   _CUDAX_HOST_API explicit basic_any(_OtherInterface<_Super>* __self) noexcept
   {
     __convert_from(basic_any_from(__self));
   }
 
-  _LIBCUDACXX_TEMPLATE(template <class...> class _OtherInterface, class _Super)
-  _LIBCUDACXX_REQUIRES(__is_interface<_OtherInterface<_Super>> _LIBCUDACXX_AND
-                         _CUDA_VSTD::derived_from<basic_any<_Super>, _OtherInterface<_Super>> _LIBCUDACXX_AND
-                           _CUDA_VSTD::same_as<__normalized_interface_of<basic_any<_Super> const*>, _Interface*>)
+  _CCCL_TEMPLATE(template <class...> class _OtherInterface, class _Super)
+  _CCCL_REQUIRES(__is_interface<_OtherInterface<_Super>> _CCCL_AND
+                   _CUDA_VSTD::derived_from<basic_any<_Super>, _OtherInterface<_Super>> _CCCL_AND
+                     _CUDA_VSTD::same_as<__normalized_interface_of<basic_any<_Super> const*>, _Interface*>)
   _CUDAX_HOST_API explicit basic_any(_OtherInterface<_Super> const* __self) noexcept
   {
     __convert_from(basic_any_from(__self));
@@ -122,10 +122,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
     return *this;
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Tp, class _Up = _CUDA_VSTD::remove_const_t<_Tp>)
-  _LIBCUDACXX_REQUIRES((!__is_basic_any<_Tp>) _LIBCUDACXX_AND //
-                         __satisfies<_Up, interface_type> _LIBCUDACXX_AND //
-                       (__is_const_ptr || !_CUDA_VSTD::is_const_v<_Tp>))
+  _CCCL_TEMPLATE(class _Tp, class _Up = _CUDA_VSTD::remove_const_t<_Tp>)
+  _CCCL_REQUIRES((!__is_basic_any<_Tp>) _CCCL_AND //
+                   __satisfies<_Up, interface_type> _CCCL_AND //
+                 (__is_const_ptr || !_CUDA_VSTD::is_const_v<_Tp>))
   _CUDAX_HOST_API basic_any& operator=(_Tp* __obj) noexcept
   {
     __vptr_for<interface_type> __vptr = &__vtable_for_v<interface_type, _Up>;
@@ -139,25 +139,25 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
     return *this;
   }
 
-  _LIBCUDACXX_TEMPLATE(class _OtherInterface)
-  _LIBCUDACXX_REQUIRES((!_CUDA_VSTD::same_as<_OtherInterface, _Interface>)
-                         _LIBCUDACXX_AND __any_convertible_to<basic_any<_OtherInterface*>, basic_any<_Interface*>>)
+  _CCCL_TEMPLATE(class _OtherInterface)
+  _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_OtherInterface, _Interface>)
+                   _CCCL_AND __any_convertible_to<basic_any<_OtherInterface*>, basic_any<_Interface*>>)
   _CUDAX_HOST_API basic_any& operator=(basic_any<_OtherInterface*> const& __other) noexcept
   {
     __convert_from(__other);
     return *this;
   }
 
-  _LIBCUDACXX_TEMPLATE(class _OtherInterface)
-  _LIBCUDACXX_REQUIRES(__any_convertible_to<basic_any<_OtherInterface>&, basic_any<_Interface&>>)
+  _CCCL_TEMPLATE(class _OtherInterface)
+  _CCCL_REQUIRES(__any_convertible_to<basic_any<_OtherInterface>&, basic_any<_Interface&>>)
   _CUDAX_HOST_API basic_any& operator=(basic_any<_OtherInterface>* __other) noexcept
   {
     __convert_from(__other);
     return *this;
   }
 
-  _LIBCUDACXX_TEMPLATE(class _OtherInterface)
-  _LIBCUDACXX_REQUIRES(__any_convertible_to<basic_any<_OtherInterface> const&, basic_any<_Interface&>>)
+  _CCCL_TEMPLATE(class _OtherInterface)
+  _CCCL_REQUIRES(__any_convertible_to<basic_any<_OtherInterface> const&, basic_any<_Interface&>>)
   _CUDAX_HOST_API basic_any& operator=(basic_any<_OtherInterface> const* __other) noexcept
   {
     __convert_from(__other);
@@ -167,9 +167,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
   ///
   /// emplace
   ///
-  _LIBCUDACXX_TEMPLATE(
-    class _Tp, class _Up = _CUDA_VSTD::remove_pointer_t<_Tp>, class _Vp = _CUDA_VSTD::remove_const_t<_Up>)
-  _LIBCUDACXX_REQUIRES(__satisfies<_Vp, _Interface> _LIBCUDACXX_AND(__is_const_ptr || !_CUDA_VSTD::is_const_v<_Up>))
+  _CCCL_TEMPLATE(class _Tp, class _Up = _CUDA_VSTD::remove_pointer_t<_Tp>, class _Vp = _CUDA_VSTD::remove_const_t<_Up>)
+  _CCCL_REQUIRES(__satisfies<_Vp, _Interface> _CCCL_AND(__is_const_ptr || !_CUDA_VSTD::is_const_v<_Up>))
   _CUDAX_HOST_API _CUDA_VSTD::__maybe_const<__is_const_ptr, _Vp>*&
   emplace(_CUDA_VSTD::type_identity_t<_Up>* __obj) noexcept
   {
@@ -289,13 +288,13 @@ private:
   mutable basic_any<__ireference<_Interface>> __ref_;
 };
 
-_LIBCUDACXX_TEMPLATE(template <class...> class _Interface, class _Super)
-_LIBCUDACXX_REQUIRES(__is_interface<_Interface<_Super>>)
+_CCCL_TEMPLATE(template <class...> class _Interface, class _Super)
+_CCCL_REQUIRES(__is_interface<_Interface<_Super>>)
 _CUDAX_PUBLIC_API basic_any(_Interface<_Super>*) //
   -> basic_any<__normalized_interface_of<basic_any<_Super>*>>;
 
-_LIBCUDACXX_TEMPLATE(template <class...> class _Interface, class _Super)
-_LIBCUDACXX_REQUIRES(__is_interface<_Interface<_Super>>)
+_CCCL_TEMPLATE(template <class...> class _Interface, class _Super)
+_CCCL_REQUIRES(__is_interface<_Interface<_Super>>)
 _CUDAX_PUBLIC_API basic_any(_Interface<_Super> const*) //
   -> basic_any<__normalized_interface_of<basic_any<_Super> const*>>;
 

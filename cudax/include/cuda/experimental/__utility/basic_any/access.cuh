@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_cvref.h>
 
@@ -46,8 +46,8 @@ struct __basic_any_access
     return basic_any<_Interface>{};
   }
 
-  _LIBCUDACXX_TEMPLATE(class _SrcCvAny, class _DstInterface)
-  _LIBCUDACXX_REQUIRES(__any_castable_to<_SrcCvAny, basic_any<_DstInterface>>)
+  _CCCL_TEMPLATE(class _SrcCvAny, class _DstInterface)
+  _CCCL_REQUIRES(__any_castable_to<_SrcCvAny, basic_any<_DstInterface>>)
   _CUDAX_TRIVIAL_HOST_API static void __cast_to(_SrcCvAny&& __from, basic_any<_DstInterface>& __to) //
     noexcept(noexcept(__to.__convert_from(static_cast<_SrcCvAny&&>(__from))))
   {
@@ -55,8 +55,8 @@ struct __basic_any_access
     __to.__convert_from(static_cast<_SrcCvAny&&>(__from));
   }
 
-  _LIBCUDACXX_TEMPLATE(class _SrcCvAny, class _DstInterface)
-  _LIBCUDACXX_REQUIRES(__any_castable_to<_SrcCvAny*, basic_any<_DstInterface>>)
+  _CCCL_TEMPLATE(class _SrcCvAny, class _DstInterface)
+  _CCCL_REQUIRES(__any_castable_to<_SrcCvAny*, basic_any<_DstInterface>>)
   _CUDAX_TRIVIAL_HOST_API static void __cast_to(_SrcCvAny* __from, basic_any<_DstInterface>& __to) //
     noexcept(noexcept(__to.__convert_from(__from)))
   {

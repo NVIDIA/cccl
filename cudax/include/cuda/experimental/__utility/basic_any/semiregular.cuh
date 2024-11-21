@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/copyable.h>
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/movable.h>
@@ -58,15 +58,15 @@ namespace cuda::experimental
 /// semi-regular overrides
 ///
 
-_LIBCUDACXX_TEMPLATE(class _Tp)
-_LIBCUDACXX_REQUIRES(_CUDA_VSTD::movable<_Tp>)
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(_CUDA_VSTD::movable<_Tp>)
 _CUDAX_PUBLIC_API void __move_fn(_Tp& __src, void* __dst) noexcept
 {
   ::new (__dst) _Tp(static_cast<_Tp&&>(__src));
 }
 
-_LIBCUDACXX_TEMPLATE(class _Tp)
-_LIBCUDACXX_REQUIRES(_CUDA_VSTD::movable<_Tp>)
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(_CUDA_VSTD::movable<_Tp>)
 _CCCL_NODISCARD _CUDAX_PUBLIC_API bool __try_move_fn(_Tp& __src, void* __dst, size_t __size, size_t __align)
 {
   if (__is_small<_Tp>(__size, __align))
@@ -81,8 +81,8 @@ _CCCL_NODISCARD _CUDAX_PUBLIC_API bool __try_move_fn(_Tp& __src, void* __dst, si
   }
 }
 
-_LIBCUDACXX_TEMPLATE(class _Tp)
-_LIBCUDACXX_REQUIRES(_CUDA_VSTD::copyable<_Tp>)
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(_CUDA_VSTD::copyable<_Tp>)
 _CCCL_NODISCARD _CUDAX_PUBLIC_API bool __copy_fn(_Tp const& __src, void* __dst, size_t __size, size_t __align)
 {
   if (__is_small<_Tp>(__size, __align))
@@ -97,8 +97,8 @@ _CCCL_NODISCARD _CUDAX_PUBLIC_API bool __copy_fn(_Tp const& __src, void* __dst, 
   }
 }
 
-_LIBCUDACXX_TEMPLATE(class _Tp)
-_LIBCUDACXX_REQUIRES(_CUDA_VSTD::equality_comparable<_Tp>)
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(_CUDA_VSTD::equality_comparable<_Tp>)
 _CCCL_NODISCARD _CUDAX_PUBLIC_API bool
 __equal_fn(_Tp const& __self, _CUDA_VSTD::__type_info_ref __type, void const* __other)
 {
@@ -115,8 +115,8 @@ __equal_fn(_Tp const& __self, _CUDA_VSTD::__type_info_ref __type, void const* __
 template <class...>
 struct imovable : interface<imovable>
 {
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(_CUDA_VSTD::movable<_Tp>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(_CUDA_VSTD::movable<_Tp>)
   using overrides _CCCL_NODEBUG_ALIAS =
     overrides_for<_Tp, _CUDAX_FNPTR_CONSTANT_WAR(&__try_move_fn<_Tp>), _CUDAX_FNPTR_CONSTANT_WAR(&__move_fn<_Tp>)>;
 
@@ -134,8 +134,8 @@ struct imovable : interface<imovable>
 template <class...>
 struct icopyable : interface<icopyable, extends<imovable<>>>
 {
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(_CUDA_VSTD::copyable<_Tp>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(_CUDA_VSTD::copyable<_Tp>)
   using overrides _CCCL_NODEBUG_ALIAS = overrides_for<_Tp, _CUDAX_FNPTR_CONSTANT_WAR(&__copy_fn<_Tp>)>;
 
   _CCCL_NODISCARD _CUDAX_HOST_API bool __copy_to(void* __pv, size_t __size, size_t __align) const
@@ -147,8 +147,8 @@ struct icopyable : interface<icopyable, extends<imovable<>>>
 template <class...>
 struct iequality_comparable : interface<iequality_comparable>
 {
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(_CUDA_VSTD::equality_comparable<_Tp>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(_CUDA_VSTD::equality_comparable<_Tp>)
   using overrides _CCCL_NODEBUG_ALIAS = overrides_for<_Tp, _CUDAX_FNPTR_CONSTANT_WAR(&__equal_fn<_Tp>)>;
 
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
