@@ -34,6 +34,9 @@ namespace cuda::experimental::stf
 class stream_ctx;
 class graph_ctx;
 
+template <typename T>
+struct owning_container_of;
+
 namespace reserved
 {
 
@@ -116,18 +119,17 @@ template <typename ArgsTuple, typename OpsTuple>
 using redux_buffer_tup_t = typename redux_buffer_tup<ArgsTuple, OpsTuple>::type;
 
 // Helper function: processes the i-th element of dst and src
-template <typename tuple_ops, size_t I, typename Tuple>
+template <typename tuple_ops, size_t idx, typename Tuple>
 __device__ void apply_set_impl(Tuple& dst, const Tuple& src)
 {
-  // using ElementType = ::std::tuple_element_t<I, tuple_ops>;
-  ::std::get<I>(dst) = ::std::get<I>(src);
+  ::std::get<idx>(dst) = ::std::get<idx>(src);
 }
 
 // Main function: applies apply_op to every element of the tuple
-template <typename tuple_ops, typename Tuple, size_t... I>
-__device__ void apply_set_impl(Tuple& dst, const Tuple& src, ::std::index_sequence<I...>)
+template <typename tuple_ops, typename Tuple, size_t... idx>
+__device__ void apply_set_impl(Tuple& dst, const Tuple& src, ::std::index_sequence<idx...>)
 {
-  (apply_set_impl<tuple_ops, I>(dst, src), ...);
+  (apply_set_impl<tuple_ops, idx>(dst, src), ...);
 }
 
 template <typename tuple_ops, typename Tuple>
@@ -148,10 +150,10 @@ __device__ void fill_results_impl_i(tuple_args& targs, const Tuple& t)
   }
 }
 
-template <typename tuple_ops, typename tuple_args, typename Tuple, size_t... I>
-__device__ void fill_results_impl(tuple_args& targs, const Tuple& t, ::std::index_sequence<I...>)
+template <typename tuple_ops, typename tuple_args, typename Tuple, size_t... Is>
+__device__ void fill_results_impl(tuple_args& targs, const Tuple& t, ::std::index_sequence<Is...>)
 {
-  (fill_results_impl_i<tuple_ops, tuple_args, Tuple, I>(targs, t), ...);
+  (fill_results_impl_i<tuple_ops, tuple_args, Tuple, Is>(targs, t), ...);
 }
 
 template <typename tuple_ops, typename tuple_args, typename Tuple>
@@ -205,20 +207,20 @@ public:
 
 private:
   // Helper function: processes the i-th element of dst and this->tup
-  template <size_t I, typename Tuple>
+  template <size_t idx, typename Tuple>
   __device__ void apply_op_impl_i(const Tuple& src)
   {
-    using ElementType = ::std::tuple_element_t<I, tuple_ops>;
+    using ElementType = ::std::tuple_element_t<idx, tuple_ops>;
     // TODO add is invocable test on type
-    ElementType::apply_op(::std::get<I>(tup), ::std::get<I>(src));
+    ElementType::apply_op(::std::get<idx>(tup), ::std::get<idx>(src));
   }
 
   // Main function: applies apply_op to every element of the tuple
-  template <typename Tuple, ::std::size_t... I>
-  __device__ void apply_op_impl(const Tuple& src, ::std::index_sequence<I...>)
+  template <typename Tuple, ::std::size_t... Is>
+  __device__ void apply_op_impl(const Tuple& src, ::std::index_sequence<Is...>)
   {
     // Expand the indices and call apply_op_impl_i for each index
-    (apply_op_impl_i<I>(src), ...);
+    (apply_op_impl_i<Is>(src), ...);
   }
 
   // Helper function to select and return the correct element
