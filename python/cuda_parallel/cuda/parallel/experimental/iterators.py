@@ -20,6 +20,7 @@ def _sizeof_numba_type(ntype):
         types.uint16: 2,
         types.uint32: 4,
         types.uint64: 8,
+        types.float16: 2,
         types.float32: 4,
         types.float64: 8,
     }
@@ -36,6 +37,7 @@ def _ctypes_type_given_numba_type(ntype):
         types.uint16: ctypes.c_uint16,
         types.uint32: ctypes.c_uint32,
         types.uint64: ctypes.c_uint64,
+        # types.float16: ctypes.c_half,  # c_half does not exist.
         types.float32: ctypes.c_float,
         types.float64: ctypes.c_double,
     }

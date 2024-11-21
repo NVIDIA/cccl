@@ -111,7 +111,15 @@ def mul2(val):
                                              "streamed_input_float16",
                                              "streamed_input_float32",
                                              "streamed_input_float64",
-                                             "constant",
+                                             "constant_int16",
+                                             "constant_uint16",
+                                             "constant_int32",
+                                             "constant_uint32",
+                                             "constant_int64",
+                                             "constant_uint64",
+                                             # "constant_float16",
+                                             "constant_float32",
+                                             "constant_float64",
                                              "counting",
                                              "map_mul2"])
 def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, start_sum_with=10):
@@ -134,9 +142,9 @@ def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, sta
         dtype, ntype = dtype_ntype()
         streamed_input_devarr = numba.cuda.to_device(numpy.array(l_input, dtype=dtype))
         i_input = iterators.cache(streamed_input_devarr, ntype=ntype, modifier='stream')
-    elif input_generator == "constant":
+    elif input_generator.startswith("constant_"):
         l_input = [42 for distance in range(num_items)]
-        dtype, ntype = numpy.int32, numba.types.int32
+        dtype, ntype = dtype_ntype()
         i_input = iterators.repeat(42, ntype=ntype)
     elif input_generator == "counting":
         l_input = [start_sum_with + distance for distance in range(num_items)]
