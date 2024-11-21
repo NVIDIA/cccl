@@ -102,7 +102,7 @@ void test_exceptions()
 
     try
     {
-      cuda::cuda::std::ignore = arrSpan.at(arr.size());
+      cuda::std::ignore = arrSpan.at(arr.size());
       assert(false);
     }
     catch (const std::out_of_range&)
