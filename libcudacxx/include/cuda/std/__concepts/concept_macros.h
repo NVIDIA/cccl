@@ -57,46 +57,6 @@ using __cccl_requires_t = typename __cccl_select<_Bp>::template type<_Tp>;
 template <unsigned _Np>
 using __cccl_char_array = char[_Np];
 
-template <class...>
-struct __cccl_tag;
-
-template <class _Tp, class... _Args>
-_LIBCUDACXX_HIDE_FROM_ABI auto __cccl_make_dependent(_Tp*, __cccl_tag<_Args...>*) -> _Tp;
-
-template <class _Impl, class... _Args>
-using __requires_expr_impl =
-  decltype(__cccl_make_dependent(static_cast<_Impl*>(nullptr), static_cast<__cccl_tag<void, _Args...>*>(nullptr)));
-
-template <class>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __cccl_is_true()
-{
-  return true;
-}
-
-#if defined(_CCCL_COMPILER_MSVC)
-template <bool _Bp>
-_LIBCUDACXX_HIDE_FROM_ABI __cccl_enable_if_t<_Bp> __cccl_requires()
-{}
-#else // ^^^ defined(_CCCL_COMPILER_MSVC) ^^^ / vvv !defined(_CCCL_COMPILER_MSVC) vvv
-template <bool _Bp, __cccl_enable_if_t<_Bp, int> = 0>
-_CCCL_INLINE_VAR constexpr int __cccl_requires = 0;
-#endif // !defined(_CCCL_COMPILER_MSVC)
-
-// We put an alias for _CUDA_VSTD here because of a bug in nvcc <12.2
-// where a requirement such as:
-//
-//  { expression } -> ::concept<type>
-//
-// where ::concept is a fully qualified name, would not compile. The
-// _CUDA_VSTD macro is fully qualified.
-namespace __unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-decls)
-
-#if _CCCL_CUDACC_BELOW(12, 2)
-#  define _CCCL_CONCEPT_VSTD __unqualified_cuda_std // must not be fully qualified
-#else
-#  define _CCCL_CONCEPT_VSTD _CUDA_VSTD
-#endif
-
 // clang-format off
 #if (defined(__cpp_concepts) && _CCCL_STD_VER >= 2020) || defined(_CCCL_DOXYGEN_INVOKED)
 #  define _CCCL_TEMPLATE(...)               template <__VA_ARGS__>
@@ -115,6 +75,46 @@ namespace __unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-decls
 // clang-format on
 
 #if _CCCL_STD_VER >= 2014
+
+template <class...>
+struct __cccl_tag;
+
+template <class _Tp, class... _Args>
+_LIBCUDACXX_HIDE_FROM_ABI auto __cccl_make_dependent(_Tp*, __cccl_tag<_Args...>*) -> _Tp;
+
+template <class _Impl, class... _Args>
+using __requires_expr_impl =
+  decltype(__cccl_make_dependent(static_cast<_Impl*>(nullptr), static_cast<__cccl_tag<void, _Args...>*>(nullptr)));
+
+template <class>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __cccl_is_true()
+{
+  return true;
+}
+
+#  if defined(_CCCL_COMPILER_MSVC)
+template <bool _Bp>
+_LIBCUDACXX_HIDE_FROM_ABI __cccl_enable_if_t<_Bp> __cccl_requires()
+{}
+#  else // ^^^ defined(_CCCL_COMPILER_MSVC) ^^^ / vvv !defined(_CCCL_COMPILER_MSVC) vvv
+template <bool _Bp, __cccl_enable_if_t<_Bp, int> = 0>
+_CCCL_INLINE_VAR constexpr int __cccl_requires = 0;
+#  endif // !defined(_CCCL_COMPILER_MSVC)
+
+// We put an alias for _CUDA_VSTD here because of a bug in nvcc <12.2
+// where a requirement such as:
+//
+//  { expression } -> ::concept<type>
+//
+// where ::concept is a fully qualified name, would not compile. The
+// _CUDA_VSTD macro is fully qualified.
+namespace __unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-decls)
+
+#  if _CCCL_CUDACC_BELOW(12, 2)
+#    define _CCCL_CONCEPT_VSTD __unqualified_cuda_std // must not be fully qualified
+#  else
+#    define _CCCL_CONCEPT_VSTD _CUDA_VSTD
+#  endif
 
 #  define _CCCL_CONCEPT_FRAGMENT_REQS_M0(_REQ) _CCCL_CONCEPT_FRAGMENT_REQS_SELECT_(_REQ)(_REQ)
 #  define _CCCL_CONCEPT_FRAGMENT_REQS_M1(_REQ) _CCCL_PP_EXPAND _REQ
