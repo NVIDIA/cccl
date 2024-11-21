@@ -34,7 +34,6 @@ __host__ __device__ void test()
   ASSERT_SAME_TYPE(T, decltype(cuda::std::lerp(T(), T(), T())));
   static_assert(noexcept(cuda::std::lerp(T(), T(), T())), "");
 
-  //     constexpr T minV = cuda::std::numeric_limits<T>::min();
   const T maxV = cuda::std::numeric_limits<T>::max();
   const T inf  = cuda::std::numeric_limits<T>::infinity();
 
@@ -59,7 +58,7 @@ __host__ __device__ void test()
   // __half and __nvbfloat have precision issues here
   if (!cuda::std::__is_extended_floating_point<T>::value)
   {
-    assert(cuda::std::isnan(cuda::std::lerp(T(0.0), T(0.0), inf)));
+    assert(cuda::std::isnan(cuda::std::lerp(T(0.0), T(0.0), T(inf))));
   }
 }
 
@@ -72,7 +71,7 @@ int main(int, char**)
 #endif //!_LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
 #ifdef _LIBCUDACXX_HAS_NVFP16
-  // test<__half>();
+  test<__half>();
 #endif // _LIBCUDACXX_HAS_NVFP16
 #ifdef _LIBCUDACXX_HAS_NVBF16
   test<__nv_bfloat16>();
