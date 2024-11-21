@@ -3,41 +3,47 @@ import operator
 
 from numba.core import cgutils
 from llvmlite import ir
-from numba import types
 from numba.core.typing import signature
 from numba.core.extending import intrinsic, overload
 import numba
 import numba.cuda
+import numba.types
+
+
+_DEVICE_POINTER_SIZE = 8
+_DEVICE_POINTER_BITWIDTH = _DEVICE_POINTER_SIZE * 8
+_DISTANCE_NUMBA_TYPE = numba.types.uint64
+_DISTANCE_IR_TYPE = ir.IntType(64)
 
 
 def _sizeof_numba_type(ntype):
     mapping = {
-        types.int8: 1,
-        types.int16: 2,
-        types.int32: 4,
-        types.int64: 8,
-        types.uint8: 1,
-        types.uint16: 2,
-        types.uint32: 4,
-        types.uint64: 8,
-        types.float32: 4,
-        types.float64: 8,
+        numba.types.int8: 1,
+        numba.types.int16: 2,
+        numba.types.int32: 4,
+        numba.types.int64: 8,
+        numba.types.uint8: 1,
+        numba.types.uint16: 2,
+        numba.types.uint32: 4,
+        numba.types.uint64: 8,
+        numba.types.float32: 4,
+        numba.types.float64: 8,
     }
     return mapping[ntype]
 
 
 def _ctypes_type_given_numba_type(ntype):
     mapping = {
-        types.int8: ctypes.c_int8,
-        types.int16: ctypes.c_int16,
-        types.int32: ctypes.c_int32,
-        types.int64: ctypes.c_int64,
-        types.uint8: ctypes.c_uint8,
-        types.uint16: ctypes.c_uint16,
-        types.uint32: ctypes.c_uint32,
-        types.uint64: ctypes.c_uint64,
-        types.float32: ctypes.c_float,
-        types.float64: ctypes.c_double,
+        numba.types.int8: ctypes.c_int8,
+        numba.types.int16: ctypes.c_int16,
+        numba.types.int32: ctypes.c_int32,
+        numba.types.int64: ctypes.c_int64,
+        numba.types.uint8: ctypes.c_uint8,
+        numba.types.uint16: ctypes.c_uint16,
+        numba.types.uint32: ctypes.c_uint32,
+        numba.types.uint64: ctypes.c_uint64,
+        numba.types.float32: ctypes.c_float,
+        numba.types.float64: ctypes.c_double,
     }
     return mapping[ntype]
 
@@ -53,14 +59,14 @@ def _ncc(funcname, pyfunc, sig, prefix):
 
 def sizeof_pointee(context, ptr):
     size = context.get_abi_sizeof(ptr.type.pointee)
-    return ir.Constant(ir.IntType(64), size)
+    return ir.Constant(ir.IntType(_DEVICE_POINTER_BITWIDTH), size)
 
 
 @intrinsic
 def pointer_add_intrinsic(context, ptr, offset):
     def codegen(context, builder, sig, args):
         ptr, index = args
-        base = builder.ptrtoint(ptr, ir.IntType(64))
+        base = builder.ptrtoint(ptr, ir.IntType(_DEVICE_POINTER_BITWIDTH))
         offset = builder.mul(index, sizeof_pointee(context, ptr))
         result = builder.add(base, offset)
         return builder.inttoptr(result, ptr.type)
@@ -70,7 +76,9 @@ def pointer_add_intrinsic(context, ptr, offset):
 
 @overload(operator.add)
 def pointer_add(ptr, offset):
-    if not isinstance(ptr, types.CPointer) or not isinstance(offset, types.Integer):
+    if not isinstance(ptr, numba.types.CPointer) or not isinstance(
+        offset, numba.types.Integer
+    ):
         return
 
     def impl(ptr, offset):
@@ -89,7 +97,7 @@ class RawPointer:
             _ncc(
                 "advance",
                 RawPointer.pointer_advance,
-                numba.types.void(data_as_ntype_pp, numba.types.uint64),
+                numba.types.void(data_as_ntype_pp, _DISTANCE_NUMBA_TYPE),
                 self.prefix,
             ),
             _ncc(
@@ -110,10 +118,10 @@ class RawPointer:
         return ctypes.cast(ctypes.pointer(self.val), ctypes.c_void_p)
 
     def size(self):
-        return 8  # TODO should be using numba for user-defined types support
+        return _DEVICE_POINTER_SIZE
 
     def alignment(self):
-        return 8  # TODO should be using numba for user-defined types support
+        return _DEVICE_POINTER_SIZE
 
 
 def pointer(container, ntype):
@@ -162,7 +170,7 @@ class CacheModifiedPointer:
             _ncc(
                 "advance",
                 CacheModifiedPointer.cache_advance,
-                numba.types.void(data_as_ntype_pp, numba.types.uint64),
+                numba.types.void(data_as_ntype_pp, _DISTANCE_NUMBA_TYPE),
                 self.prefix,
             ),
             _ncc(
@@ -183,10 +191,10 @@ class CacheModifiedPointer:
         return ctypes.cast(ctypes.pointer(self.val), ctypes.c_void_p)
 
     def size(self):
-        return 8  # TODO should be using numba for user-defined types support
+        return _DEVICE_POINTER_SIZE
 
     def alignment(self):
-        return 8  # TODO should be using numba for user-defined types support
+        return _DEVICE_POINTER_SIZE
 
 
 def cache(container, ntype, modifier):
@@ -205,7 +213,7 @@ class ConstantIterator:
             _ncc(
                 "advance",
                 ConstantIterator.constant_advance,
-                numba.types.void(thisty, types.uint64),
+                numba.types.void(thisty, _DISTANCE_NUMBA_TYPE),
                 self.prefix,
             ),
             _ncc(
@@ -226,14 +234,10 @@ class ConstantIterator:
         return ctypes.cast(ctypes.pointer(self.val), ctypes.c_void_p)
 
     def size(self):
-        return ctypes.sizeof(
-            self.val
-        )  # TODO should be using numba for user-defined types support
+        return self.ntype.bitwidth // 8
 
     def alignment(self):
-        return ctypes.alignment(
-            self.val
-        )  # TODO should be using numba for user-defined types support
+        return self.size()
 
 
 def repeat(value, ntype):
@@ -250,7 +254,7 @@ class CountingIterator:
             _ncc(
                 "advance",
                 CountingIterator.count_advance,
-                numba.types.void(thisty, types.uint64),
+                numba.types.void(thisty, _DISTANCE_NUMBA_TYPE),
                 self.prefix,
             ),
             _ncc(
@@ -271,14 +275,10 @@ class CountingIterator:
         return ctypes.cast(ctypes.pointer(self.count), ctypes.c_void_p)
 
     def size(self):
-        return ctypes.sizeof(
-            self.count
-        )  # TODO should be using numba for user-defined types support
+        return self.ntype.bitwidth // 8
 
     def alignment(self):
-        return ctypes.alignment(
-            self.count
-        )  # TODO should be using numba for user-defined types support
+        return self.size()
 
 
 def count(offset, ntype):
@@ -297,19 +297,19 @@ def cu_map(op, it, op_return_ntype):
         pass
 
     def make_advance_codegen(name):
-        retty = types.void
-        statety = types.CPointer(types.int8)
-        distty = types.uint64
-
         def codegen(context, builder, sig, args):
             state_ptr, dist = args
             fnty = ir.FunctionType(
-                ir.VoidType(), (ir.PointerType(ir.IntType(8)), ir.IntType(64))
+                ir.VoidType(), (ir.PointerType(ir.IntType(8)), _DISTANCE_IR_TYPE)
             )
             fn = cgutils.get_or_insert_function(builder.module, fnty, name)
             builder.call(fn, (state_ptr, dist))
 
-        return signature(retty, statety, distty), codegen
+        return signature(
+            numba.types.void,
+            numba.types.CPointer(numba.types.int8),
+            _DISTANCE_NUMBA_TYPE,
+        ), codegen
 
     def advance_codegen(func_to_overload, name):
         @intrinsic
@@ -327,15 +327,15 @@ def cu_map(op, it, op_return_ntype):
         pass
 
     def make_dereference_codegen(name):
-        statety = types.CPointer(types.int8)
-
         def codegen(context, builder, sig, args):
             (state_ptr,) = args
             fnty = ir.FunctionType(op_return_ntype_ir, (ir.PointerType(ir.IntType(8)),))
             fn = cgutils.get_or_insert_function(builder.module, fnty, name)
             return builder.call(fn, (state_ptr,))
 
-        return signature(op_return_ntype, statety), codegen
+        return signature(
+            op_return_ntype, numba.types.CPointer(numba.types.int8)
+        ), codegen
 
     def dereference_codegen(func_to_overload, name):
         @intrinsic
@@ -385,7 +385,7 @@ def cu_map(op, it, op_return_ntype):
                     "advance",
                     TransformIterator.transform_advance,
                     numba.types.void(
-                        numba.types.CPointer(numba.types.char), numba.types.uint64
+                        numba.types.CPointer(numba.types.char), _DISTANCE_NUMBA_TYPE
                     ),
                     self.prefix,
                 ),
