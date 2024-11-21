@@ -171,6 +171,7 @@ template<class R>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef> // for ptrdiff_t
+#include <cuda/std/initializer_list>
 
 // standard-mandated includes
 #include <cuda/std/version>
@@ -323,6 +324,13 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr span() noexcept
       : __data_{nullptr}
   {}
+
+  template <class _Up = element_type, enable_if_t<_CCCL_TRAIT(is_const, _Up), int> = 0>
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit span(_CUDA_VSTD::initializer_list<value_type> __il)
+      : __data_{__il.begin()}
+  {
+    _CCCL_ASSERT(_Extent == __il.size(), "size mismatch in span's constructor (initializer_list).");
+  }
 
   _CCCL_HIDE_FROM_ABI span(const span&) noexcept            = default;
   _CCCL_HIDE_FROM_ABI span& operator=(const span&) noexcept = default;
@@ -571,6 +579,12 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr span() noexcept
       : __data_{nullptr}
       , __size_{0}
+  {}
+
+  template <class _Up = element_type, enable_if_t<_CCCL_TRAIT(is_const, _Up), int> = 0>
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(cuda::std::initializer_list<value_type> __il)
+      : __data_{__il.begin()}
+      , __size_{__il.size()}
   {}
 
   _CCCL_HIDE_FROM_ABI span(const span&) noexcept            = default;
