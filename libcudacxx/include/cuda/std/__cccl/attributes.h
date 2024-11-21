@@ -39,13 +39,13 @@
 // Use a function like macro to imply that it must be followed by a semicolon
 #if _CCCL_STD_VER >= 2017 && _CCCL_HAS_CPP_ATTRIBUTE(fallthrough)
 #  define _CCCL_FALLTHROUGH() [[fallthrough]]
-#elif defined(_CCCL_COMPILER_NVRTC)
+#elif _CCCL_COMPILER(NVRTC)
 #  define _CCCL_FALLTHROUGH() ((void) 0)
 #elif _CCCL_HAS_CPP_ATTRIBUTE(clang::fallthrough)
 #  define _CCCL_FALLTHROUGH() [[clang::fallthrough]]
 #elif _CCCL_COMPILER(NVHPC)
 #  define _CCCL_FALLTHROUGH()
-#elif _CCCL_HAS_ATTRIBUTE(fallthough) || _GNUC_VER >= 700
+#elif _CCCL_HAS_ATTRIBUTE(fallthough) || _CCCL_COMPILER(GCC, >=, 7)
 #  define _CCCL_FALLTHROUGH() __attribute__((__fallthrough__))
 #else
 #  define _CCCL_FALLTHROUGH() ((void) 0)
@@ -76,9 +76,9 @@
 
 // Passing objects with nested [[no_unique_address]] to kernels leads to data corruption
 // This happens up to clang18
-#if !defined(_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS) && defined(_CCCL_COMPILER_CLANG)
+#if !defined(_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS) && _CCCL_COMPILER(CLANG)
 #  define _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-#endif // !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS && _CCCL_COMPILER_CLANG
+#endif // !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS && _CCCL_COMPILER(CLANG)
 
 #if _CCCL_HAS_CPP_ATTRIBUTE(nodiscard) || (defined(_CCCL_COMPILER_MSVC) && _CCCL_STD_VER >= 2017)
 #  define _CCCL_NODISCARD [[nodiscard]]
@@ -88,11 +88,11 @@
 
 // NVCC below 11.3 does not support nodiscard on friend operators
 // It always fails with clang
-#if _CCCL_CUDACC_BELOW(11, 3) || defined(_CCCL_COMPILER_CLANG)
+#if _CCCL_CUDACC_BELOW(11, 3) || _CCCL_COMPILER(CLANG)
 #  define _CCCL_NODISCARD_FRIEND friend
 #else // ^^^ _CCCL_CUDACC_BELOW(11, 3) ^^^ / vvv _CCCL_CUDACC_AT_LEAST(11, 3) vvv
 #  define _CCCL_NODISCARD_FRIEND _CCCL_NODISCARD friend
-#endif // _CCCL_CUDACC_AT_LEAST(11, 3) && !_CCCL_COMPILER_CLANG
+#endif // _CCCL_CUDACC_AT_LEAST(11, 3) && !_CCCL_COMPILER(CLANG)
 
 // NVCC below 11.3 does not support attributes on alias declarations
 #if _CCCL_CUDACC_BELOW(11, 3)

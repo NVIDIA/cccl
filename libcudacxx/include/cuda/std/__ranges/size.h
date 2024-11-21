@@ -50,7 +50,7 @@ template <class _Tp>
 void size(const _Tp&) = delete;
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __size_enabled = !disable_sized_range<remove_cvref_t<_Tp>>;
+_CCCL_CONCEPT __size_enabled = !disable_sized_range<remove_cvref_t<_Tp>>;
 
 #  if _CCCL_STD_VER >= 2020
 template <class _Tp>
@@ -72,17 +72,16 @@ concept __difference =
   };
 #  else // ^^^ CXX20 ^^^ / vvv CXX17 vvv
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
-  __member_size_,
-  requires(_Tp&& __t)(requires(__size_enabled<_Tp>),
-                      requires(__workaround_52970<_Tp>),
-                      requires(__integer_like<decltype(_LIBCUDACXX_AUTO_CAST(__t.size()))>)));
+_CCCL_CONCEPT_FRAGMENT(__member_size_,
+                       requires(_Tp&& __t)(requires(__size_enabled<_Tp>),
+                                           requires(__workaround_52970<_Tp>),
+                                           requires(__integer_like<decltype(_LIBCUDACXX_AUTO_CAST(__t.size()))>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __member_size = _LIBCUDACXX_FRAGMENT(__member_size_, _Tp);
+_CCCL_CONCEPT __member_size = _CCCL_FRAGMENT(__member_size_, _Tp);
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __unqualified_size_,
   requires(_Tp&& __t)(requires(__size_enabled<_Tp>),
                       requires(!__member_size<_Tp>),
@@ -90,10 +89,10 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
                       requires(__integer_like<decltype(_LIBCUDACXX_AUTO_CAST(size(__t)))>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __unqualified_size = _LIBCUDACXX_FRAGMENT(__unqualified_size_, _Tp);
+_CCCL_CONCEPT __unqualified_size = _CCCL_FRAGMENT(__unqualified_size_, _Tp);
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __difference_,
   requires(_Tp&& __t)(requires(!__member_size<_Tp>),
                       requires(!__unqualified_size<_Tp>),
@@ -103,7 +102,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
                                                   decltype(_CUDA_VRANGES::begin(_CUDA_VSTD::declval<_Tp>()))>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __difference = _LIBCUDACXX_FRAGMENT(__difference_, _Tp);
+_CCCL_CONCEPT __difference = _CCCL_FRAGMENT(__difference_, _Tp);
 #  endif // _CCCL_STD_VER <= 2017
 
 struct __fn
@@ -168,11 +167,11 @@ template <class _Tp>
 concept __can_ssize = requires(_Tp&& __t) { _CUDA_VRANGES::size(__t); };
 #  else // ^^^ CXX20 ^^^ / vvv CXX17 vvv
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
-  __can_ssize_, requires(_Tp&& __t)(requires(!is_unbounded_array_v<_Tp>), ((void) _CUDA_VRANGES::size(__t))));
+_CCCL_CONCEPT_FRAGMENT(__can_ssize_,
+                       requires(_Tp&& __t)(requires(!is_unbounded_array_v<_Tp>), ((void) _CUDA_VRANGES::size(__t))));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __can_ssize = _LIBCUDACXX_FRAGMENT(__can_ssize_, _Tp);
+_CCCL_CONCEPT __can_ssize = _CCCL_FRAGMENT(__can_ssize_, _Tp);
 #  endif // _CCCL_STD_VER <= 2017
 
 struct __fn

@@ -50,7 +50,7 @@ template <class _Fn, class... _BoundArgs>
 struct __bind_front_t : __perfect_forward<__bind_front_op, _Fn, _BoundArgs...>
 {
   using __base = __perfect_forward<__bind_front_op, _Fn, _BoundArgs...>;
-#  if defined(_CCCL_COMPILER_NVRTC)
+#  if _CCCL_COMPILER(NVRTC)
   _CCCL_HIDE_FROM_ABI constexpr __bind_front_t() noexcept = default;
 
   template <class... _Args>
@@ -64,7 +64,7 @@ struct __bind_front_t : __perfect_forward<__bind_front_op, _Fn, _BoundArgs...>
 };
 
 template <class _Fn, class... _Args>
-_LIBCUDACXX_CONCEPT __can_bind_front =
+_CCCL_CONCEPT __can_bind_front =
   is_constructible_v<decay_t<_Fn>, _Fn> && is_move_constructible_v<decay_t<_Fn>>
   && (is_constructible_v<decay_t<_Args>, _Args> && ...) && (is_move_constructible_v<decay_t<_Args>> && ...);
 

@@ -35,16 +35,16 @@ namespace cuda::experimental
 {
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __convertible_to_stream_ref = _CUDA_VSTD::convertible_to<_Tp, ::cuda::stream_ref>;
+_CCCL_CONCEPT __convertible_to_stream_ref = _CUDA_VSTD::convertible_to<_Tp, ::cuda::stream_ref>;
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __has_member_get_stream_,
   requires(const _Tp& __t)(requires(!__convertible_to_stream_ref<_Tp>),
                            requires(_CUDA_VSTD::same_as<decltype(__t.get_stream()), ::cuda::stream_ref>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __has_member_get_stream = _LIBCUDACXX_FRAGMENT(__has_member_get_stream_, _Tp);
+_CCCL_CONCEPT __has_member_get_stream = _CCCL_FRAGMENT(__has_member_get_stream_, _Tp);
 
 //! @brief `get_stream` is a customization point object that queries a type `T` for an associated stream
 struct get_stream_t

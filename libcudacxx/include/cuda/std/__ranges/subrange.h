@@ -109,28 +109,27 @@ concept __subrange_to_pair = __different_from<_Pair, subrange<_Iter, _Sent, _Kin
 #  else // ^^^ C++20 ^^^ / vvv C++17 vvv
 
 template <class _From, class _To>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __uses_nonqualification_pointer_conversion_,
   requires()(requires(is_pointer_v<_From>),
              requires(is_pointer_v<_To>),
              requires(!convertible_to<remove_pointer_t<_From> (*)[], remove_pointer_t<_To> (*)[]>)));
 
 template <class _From, class _To>
-_LIBCUDACXX_CONCEPT __uses_nonqualification_pointer_conversion =
-  _LIBCUDACXX_FRAGMENT(__uses_nonqualification_pointer_conversion_, _From, _To);
+_CCCL_CONCEPT __uses_nonqualification_pointer_conversion =
+  _CCCL_FRAGMENT(__uses_nonqualification_pointer_conversion_, _From, _To);
 
 template <class _From, class _To>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
-  __convertible_to_non_slicing_,
-  requires()(requires(convertible_to<_From, _To>),
-             requires(!__uses_nonqualification_pointer_conversion<decay_t<_From>, decay_t<_To>>)));
+_CCCL_CONCEPT_FRAGMENT(__convertible_to_non_slicing_,
+                       requires()(requires(convertible_to<_From, _To>),
+                                  requires(!__uses_nonqualification_pointer_conversion<decay_t<_From>, decay_t<_To>>)));
 
 template <class _From, class _To>
-_LIBCUDACXX_CONCEPT __convertible_to_non_slicing = _LIBCUDACXX_FRAGMENT(__convertible_to_non_slicing_, _From, _To);
+_CCCL_CONCEPT __convertible_to_non_slicing = _CCCL_FRAGMENT(__convertible_to_non_slicing_, _From, _To);
 
 // We relax the requirement on tuple_size due to a gcc issue
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __pair_like_,
   requires(_Tp __t)(
     requires(!is_reference_v<_Tp>),
@@ -142,10 +141,10 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
     requires(convertible_to<decltype(_CUDA_VSTD::get<1>(__t)), const tuple_element_t<1, _Tp>&>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __pair_like = _LIBCUDACXX_FRAGMENT(__pair_like_, _Tp);
+_CCCL_CONCEPT __pair_like = _CCCL_FRAGMENT(__pair_like_, _Tp);
 
 template <class _Pair, class _Iter, class _Sent>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __pair_like_convertible_from_,
   requires()(requires(!range<_Pair>),
              requires(__pair_like<_Pair>),
@@ -154,30 +153,28 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
              requires(convertible_to<_Sent, tuple_element_t<1, _Pair>>)));
 
 template <class _Pair, class _Iter, class _Sent>
-_LIBCUDACXX_CONCEPT __pair_like_convertible_from =
-  _LIBCUDACXX_FRAGMENT(__pair_like_convertible_from_, _Pair, _Iter, _Sent);
+_CCCL_CONCEPT __pair_like_convertible_from = _CCCL_FRAGMENT(__pair_like_convertible_from_, _Pair, _Iter, _Sent);
 
 // We have issues with MSVC and _StoreSize being unable to be properly determined in SFINAE, so we need to pull that out
 template <class _Iter, class _It, class _StoreSize>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
-  __subrange_from_iter_sent_,
-  requires()(requires(!_StoreSize::value), requires(__convertible_to_non_slicing<_It, _Iter>)));
+_CCCL_CONCEPT_FRAGMENT(__subrange_from_iter_sent_,
+                       requires()(requires(!_StoreSize::value), requires(__convertible_to_non_slicing<_It, _Iter>)));
 
 template <class _Iter, class _It, bool _StoreSize>
-_LIBCUDACXX_CONCEPT __subrange_from_iter_sent =
-  _LIBCUDACXX_FRAGMENT(__subrange_from_iter_sent_, _Iter, _It, integral_constant<bool, _StoreSize>);
+_CCCL_CONCEPT __subrange_from_iter_sent =
+  _CCCL_FRAGMENT(__subrange_from_iter_sent_, _Iter, _It, integral_constant<bool, _StoreSize>);
 
 template <class _Iter, class _Kind, class _It>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __subrange_from_iter_sent_size_,
   requires()(requires(_Kind::value == subrange_kind::sized), requires(__convertible_to_non_slicing<_It, _Iter>)));
 
 template <class _Iter, subrange_kind _Kind, class _It>
-_LIBCUDACXX_CONCEPT __subrange_from_iter_sent_size =
-  _LIBCUDACXX_FRAGMENT(__subrange_from_iter_sent_size_, _Iter, integral_constant<subrange_kind, _Kind>, _It);
+_CCCL_CONCEPT __subrange_from_iter_sent_size =
+  _CCCL_FRAGMENT(__subrange_from_iter_sent_size_, _Iter, integral_constant<subrange_kind, _Kind>, _It);
 
 template <class _Iter, class _Sent, class _Kind, class _Range, class _StoreSize>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __subrange_from_range_,
   requires()(requires(_StoreSize::value),
              requires(__different_from<_Range, subrange<_Iter, _Sent, _Kind::value>>),
@@ -186,7 +183,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
              requires(convertible_to<sentinel_t<_Range>, _Sent>)));
 
 template <class _Iter, class _Sent, subrange_kind _Kind, class _Range, bool _StoreSize>
-_LIBCUDACXX_CONCEPT __subrange_from_range = _LIBCUDACXX_FRAGMENT(
+_CCCL_CONCEPT __subrange_from_range = _CCCL_FRAGMENT(
   __subrange_from_range_,
   _Iter,
   _Sent,
@@ -195,7 +192,7 @@ _LIBCUDACXX_CONCEPT __subrange_from_range = _LIBCUDACXX_FRAGMENT(
   integral_constant<bool, _StoreSize>);
 
 template <class _Iter, class _Sent, class _Kind, class _Range>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __subrange_from_range_size_,
   requires()(requires((_Kind::value == subrange_kind::sized)),
              requires(borrowed_range<_Range>),
@@ -203,17 +200,17 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
              requires(convertible_to<sentinel_t<_Range>, _Sent>)));
 
 template <class _Iter, class _Sent, subrange_kind _Kind, class _Range>
-_LIBCUDACXX_CONCEPT __subrange_from_range_size =
-  _LIBCUDACXX_FRAGMENT(__subrange_from_range_size_, _Iter, _Sent, integral_constant<subrange_kind, _Kind>, _Range);
+_CCCL_CONCEPT __subrange_from_range_size =
+  _CCCL_FRAGMENT(__subrange_from_range_size_, _Iter, _Sent, integral_constant<subrange_kind, _Kind>, _Range);
 
 template <class _Iter, class _Sent, class _Kind, class _Pair>
-_LIBCUDACXX_CONCEPT_FRAGMENT(__subrange_to_pair_,
-                             requires()(requires(__different_from<_Pair, subrange<_Iter, _Sent, _Kind::value>>),
-                                        requires(__pair_like_convertible_from<_Pair, const _Iter&, const _Sent&>)));
+_CCCL_CONCEPT_FRAGMENT(__subrange_to_pair_,
+                       requires()(requires(__different_from<_Pair, subrange<_Iter, _Sent, _Kind::value>>),
+                                  requires(__pair_like_convertible_from<_Pair, const _Iter&, const _Sent&>)));
 
 template <class _Iter, class _Sent, subrange_kind _Kind, class _Pair>
-_LIBCUDACXX_CONCEPT __subrange_to_pair =
-  _LIBCUDACXX_FRAGMENT(__subrange_to_pair_, _Iter, _Sent, integral_constant<subrange_kind, _Kind>, _Pair);
+_CCCL_CONCEPT __subrange_to_pair =
+  _CCCL_FRAGMENT(__subrange_to_pair_, _Iter, _Sent, integral_constant<subrange_kind, _Kind>, _Pair);
 #  endif // _CCCL_STD_VER <= 2017
 
 #  if _CCCL_STD_VER >= 2020
@@ -297,14 +294,14 @@ public:
       : subrange(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::end(__range), __n)
   {}
 
-#  if (!defined(_CCCL_COMPILER_GCC) || _GNUC_VER >= 900)
+#  if (!_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 9))
   _CCCL_TEMPLATE(class _Pair)
   _CCCL_REQUIRES(__pair_like<_Pair> _CCCL_AND __subrange_to_pair<_Iter, _Sent, _Kind, _Pair>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr operator _Pair() const
   {
     return _Pair(__begin_, __end_);
   }
-#  endif // !(_CCCL_COMPILER_GCC < 9)
+#  endif // (!_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 9))
 
   _CCCL_TEMPLATE(class _It = _Iter)
   _CCCL_REQUIRES(copyable<_It>)

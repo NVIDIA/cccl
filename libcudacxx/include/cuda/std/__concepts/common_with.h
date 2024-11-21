@@ -42,24 +42,23 @@ concept common_with = same_as<common_type_t<_Tp, _Up>, common_type_t<_Up, _Tp>> 
 #elif _CCCL_STD_VER > 2011
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_CONCEPT_FRAGMENT(__common_type_exists_,
-                             requires()(typename(common_type_t<_Tp, _Up>), typename(common_type_t<_Up, _Tp>)));
+_CCCL_CONCEPT_FRAGMENT(__common_type_exists_,
+                       requires()(typename(common_type_t<_Tp, _Up>), typename(common_type_t<_Up, _Tp>)));
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_CONCEPT _Common_type_exists = _LIBCUDACXX_FRAGMENT(__common_type_exists_, _Tp, _Up);
+_CCCL_CONCEPT _Common_type_exists = _CCCL_FRAGMENT(__common_type_exists_, _Tp, _Up);
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
-  __common_type_constructible_,
-  requires()(requires(_Common_type_exists<_Tp, _Up>),
-             static_cast<common_type_t<_Tp, _Up>>(_CUDA_VSTD::declval<_Tp>()),
-             static_cast<common_type_t<_Tp, _Up>>(_CUDA_VSTD::declval<_Up>())));
+_CCCL_CONCEPT_FRAGMENT(__common_type_constructible_,
+                       requires()(requires(_Common_type_exists<_Tp, _Up>),
+                                  static_cast<common_type_t<_Tp, _Up>>(_CUDA_VSTD::declval<_Tp>()),
+                                  static_cast<common_type_t<_Tp, _Up>>(_CUDA_VSTD::declval<_Up>())));
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_CONCEPT _Common_type_constructible = _LIBCUDACXX_FRAGMENT(__common_type_constructible_, _Tp, _Up);
+_CCCL_CONCEPT _Common_type_constructible = _CCCL_FRAGMENT(__common_type_constructible_, _Tp, _Up);
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __common_with_,
   requires()(
     requires(_Common_type_constructible<_Tp, _Up>),
@@ -70,7 +69,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
                             common_reference_t<add_lvalue_reference_t<const _Tp>, add_lvalue_reference_t<const _Up>>>)));
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_CONCEPT common_with = _LIBCUDACXX_FRAGMENT(__common_with_, _Tp, _Up);
+_CCCL_CONCEPT common_with = _CCCL_FRAGMENT(__common_with_, _Tp, _Up);
 
 #endif // _CCCL_STD_VER > 2011
 

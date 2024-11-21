@@ -199,7 +199,7 @@ template <class _Tp, size_t _Extent>
 _CCCL_INLINE_VAR constexpr bool __is_std_span<span<_Tp, _Extent>> = true;
 
 template <class _From, class _To>
-_LIBCUDACXX_CONCEPT __span_array_convertible = _CCCL_TRAIT(is_convertible, _From (*)[], _To (*)[]);
+_CCCL_CONCEPT __span_array_convertible = _CCCL_TRAIT(is_convertible, _From (*)[], _To (*)[]);
 
 // We want to ensure that span interacts nicely with containers that might not have had the ranges treatment
 #  if defined(__cpp_lib_ranges) && !defined(_CCCL_COMPILER_MSVC_2017)
@@ -208,7 +208,7 @@ _LIBCUDACXX_CONCEPT __span_array_convertible = _CCCL_TRAIT(is_convertible, _From
 
 #  if defined(_CCCL_SPAN_USES_RANGES)
 template <class _Range, class _ElementType>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __span_compatible_range_,
   requires()(
     requires(_CUDA_VRANGES::contiguous_range<_Range>),
@@ -220,34 +220,32 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
       is_convertible, remove_reference_t<_CUDA_VRANGES::range_reference_t<_Range>> (*)[], _ElementType (*)[]))));
 
 template <class _Range, class _ElementType>
-_LIBCUDACXX_CONCEPT __span_compatible_range = _LIBCUDACXX_FRAGMENT(__span_compatible_range_, _Range, _ElementType);
+_CCCL_CONCEPT __span_compatible_range = _CCCL_FRAGMENT(__span_compatible_range_, _Range, _ElementType);
 
 #    if _CCCL_STD_VER >= 2020
 template <class _It, class _Tp>
-_LIBCUDACXX_CONCEPT __span_compatible_iterator =
+_CCCL_CONCEPT __span_compatible_iterator =
   contiguous_iterator<_It> && __span_array_convertible<remove_reference_t<iter_reference_t<_It>>, _Tp>;
 
 template <class _Sentinel, class _It>
-_LIBCUDACXX_CONCEPT __span_compatible_sentinel_for =
+_CCCL_CONCEPT __span_compatible_sentinel_for =
   sized_sentinel_for<_Sentinel, _It> && !_CCCL_TRAIT(is_convertible, _Sentinel, size_t);
 #    else // ^^^ C++20 ^^^ / vvv C++17 vvv
 template <class _It, class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
-  __span_compatible_iterator_,
-  requires()(requires(contiguous_iterator<_It>),
-             requires(__span_array_convertible<remove_reference_t<iter_reference_t<_It>>, _Tp>)));
+_CCCL_CONCEPT_FRAGMENT(__span_compatible_iterator_,
+                       requires()(requires(contiguous_iterator<_It>),
+                                  requires(__span_array_convertible<remove_reference_t<iter_reference_t<_It>>, _Tp>)));
 
 template <class _It, class _Tp>
-_LIBCUDACXX_CONCEPT __span_compatible_iterator = _LIBCUDACXX_FRAGMENT(__span_compatible_iterator_, _It, _Tp);
+_CCCL_CONCEPT __span_compatible_iterator = _CCCL_FRAGMENT(__span_compatible_iterator_, _It, _Tp);
 
 template <class _Sentinel, class _It>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __span_compatible_sentinel_for_,
   requires()(requires(sized_sentinel_for<_Sentinel, _It>), requires(!_CCCL_TRAIT(is_convertible, _Sentinel, size_t))));
 
 template <class _Sentinel, class _It>
-_LIBCUDACXX_CONCEPT __span_compatible_sentinel_for =
-  _LIBCUDACXX_FRAGMENT(__span_compatible_sentinel_for_, _Sentinel, _It);
+_CCCL_CONCEPT __span_compatible_sentinel_for = _CCCL_FRAGMENT(__span_compatible_sentinel_for_, _Sentinel, _It);
 #    endif // _CCCL_STD_VER <= 2017
 #  else // ^^^ _CCCL_SPAN_USES_RANGES ^^^ / vvv !_CCCL_SPAN_USES_RANGES vvv
 
@@ -288,7 +286,7 @@ concept __integral_constant_like =
 #  else // ^^^ _CCCL_STD_VER >= 2020 ^^^ / vvv _CCCL_STD_VER <= 2017 vvv
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __integral_constant_like_,
   requires()(requires(_CCCL_TRAIT(is_integral, decltype(_Tp::value))),
              requires(!_CCCL_TRAIT(is_same, bool, remove_const_t<decltype(_Tp::value)>)),
@@ -297,7 +295,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
              (integral_constant<bool, _Tp() == _Tp::value>::value),
              (integral_constant<bool, static_cast<decltype(_Tp::value)>(_Tp()) == _Tp::value>::value)));
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __integral_constant_like = _LIBCUDACXX_FRAGMENT(__integral_constant_like_, _Tp);
+_CCCL_CONCEPT __integral_constant_like = _CCCL_FRAGMENT(__integral_constant_like_, _Tp);
 #  endif // _CCCL_STD_VER <= 2017
 
 template <class _Tp, bool = __integral_constant_like<_Tp>>
@@ -368,7 +366,7 @@ public:
   }
 #  endif // !_CCCL_SPAN_USES_RANGES
 
-#  if defined(_CCCL_COMPILER_NVRTC) || defined(_CCCL_COMPILER_MSVC_2017)
+#  if _CCCL_COMPILER(NVRTC) || defined(_CCCL_COMPILER_MSVC_2017)
   template <size_t _Sz = _Extent, enable_if_t<_Sz != 0, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr span(type_identity_t<element_type> (&__arr)[_Sz]) noexcept
       : __data_{__arr}
@@ -377,7 +375,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr span(type_identity_t<element_type> (&__arr)[_Extent]) noexcept
       : __data_{__arr}
   {}
-#  endif // !_CCCL_COMPILER_NVRTC && !_CCCL_COMPILER_MSVC_2017
+#  endif // !_CCCL_COMPILER(NVRTC) && !_CCCL_COMPILER_MSVC_2017
 
   _CCCL_TEMPLATE(class _OtherElementType)
   _CCCL_REQUIRES(__span_array_convertible<_OtherElementType, element_type>)

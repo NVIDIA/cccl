@@ -44,10 +44,10 @@ template <class _Tp>
 concept __can_empty = requires(_Tp& __t) { _CUDA_VRANGES::empty(__t); };
 #  else // ^^^ C++20 ^^^ / vvv C++17 vvv
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(__can_empty_, requires(_Tp& __t)(typename(decltype(_CUDA_VRANGES::empty(__t)))));
+_CCCL_CONCEPT_FRAGMENT(__can_empty_, requires(_Tp& __t)(typename(decltype(_CUDA_VRANGES::empty(__t)))));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __can_empty = _LIBCUDACXX_FRAGMENT(__can_empty_, _Tp);
+_CCCL_CONCEPT __can_empty = _CCCL_FRAGMENT(__can_empty_, _Tp);
 #  endif //  _CCCL_STD_VER <= 2017
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI

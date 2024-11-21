@@ -82,12 +82,12 @@ struct __move_iter_category_base<_Iter, enable_if_t<__has_iter_category<iterator
 };
 
 template <class _Iter, class _Sent>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __move_iter_comparable_,
   requires()(requires(convertible_to<decltype(declval<const _Iter&>() == declval<_Sent>()), bool>)));
 
 template <class _Iter, class _Sent>
-_LIBCUDACXX_CONCEPT __move_iter_comparable = _LIBCUDACXX_FRAGMENT(__move_iter_comparable_, _Iter, _Sent);
+_CCCL_CONCEPT __move_iter_comparable = _CCCL_FRAGMENT(__move_iter_comparable_, _Iter, _Sent);
 
 template <class _Iter>
 _CCCL_INLINE_VAR constexpr bool __noexcept_move_iter_iter_move =
@@ -392,11 +392,11 @@ public:
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(move_iterator);
 
 // Some compilers have issues determining _IsFancyPointer
-#if defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(GCC) || defined(_CCCL_COMPILER_MSVC)
 template <class _Iter>
 struct _IsFancyPointer<move_iterator<_Iter>> : _IsFancyPointer<_Iter>
 {};
-#endif // _CCCL_COMPILER_GCC || _CCCL_COMPILER_MSVC
+#endif // _CCCL_COMPILER(GCC) || _CCCL_COMPILER_MSVC
 
 template <class _Iter1, class _Iter2>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool

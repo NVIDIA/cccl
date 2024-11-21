@@ -63,17 +63,17 @@ concept __can_reverse =
   };
 #  else // ^^^ CXX20 ^^^ / vvv CXX17 vvv
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __member_rbegin_,
   requires(_Tp&& __t)(requires(__can_borrow<_Tp>),
                       requires(__workaround_52970<_Tp>),
                       requires(input_or_output_iterator<decltype(_LIBCUDACXX_AUTO_CAST(__t.rbegin()))>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __member_rbegin = _LIBCUDACXX_FRAGMENT(__member_rbegin_, _Tp);
+_CCCL_CONCEPT __member_rbegin = _CCCL_FRAGMENT(__member_rbegin_, _Tp);
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __unqualified_rbegin_,
   requires(_Tp&& __t)(requires(!__member_rbegin<_Tp>),
                       requires(__can_borrow<_Tp>),
@@ -81,10 +81,10 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
                       requires(input_or_output_iterator<decltype(_LIBCUDACXX_AUTO_CAST(rbegin(__t)))>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __unqualified_rbegin = _LIBCUDACXX_FRAGMENT(__unqualified_rbegin_, _Tp);
+_CCCL_CONCEPT __unqualified_rbegin = _CCCL_FRAGMENT(__unqualified_rbegin_, _Tp);
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __can_reverse_,
   requires(_Tp&& __t)(requires(__can_borrow<_Tp>),
                       requires(!__member_rbegin<_Tp>),
@@ -93,7 +93,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
                       requires(bidirectional_iterator<decltype(_CUDA_VRANGES::begin(__t))>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __can_reverse = _LIBCUDACXX_FRAGMENT(__can_reverse_, _Tp);
+_CCCL_CONCEPT __can_reverse = _CCCL_FRAGMENT(__can_reverse_, _Tp);
 #  endif // _CCCL_STD_VER <= 2017
 
 struct __fn

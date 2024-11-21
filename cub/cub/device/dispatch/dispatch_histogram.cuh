@@ -847,7 +847,7 @@ public:
   {
 // GCC 14 rightfully warns that when a value-initialized array of this struct is copied using memcpy, uninitialized
 // bytes may be accessed. To avoid this, we add a dummy member, so value initialization actually initializes the memory.
-#if defined(_CCCL_COMPILER_GCC) && __GNUC__ >= 13
+#if _CCCL_COMPILER(GCC, >=, 13)
     char dummy;
 #endif
 
@@ -1036,7 +1036,7 @@ public:
     return error;
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION static cudaError_t DispatchRange(
     void* d_temp_storage,
@@ -1067,7 +1067,7 @@ public:
       stream,
       is_byte_sample);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   /**
    * Dispatch routine for HistogramRange, specialized for 8-bit sample types
@@ -1202,7 +1202,7 @@ public:
     return error;
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION static cudaError_t DispatchRange(
     void* d_temp_storage,
@@ -1233,7 +1233,7 @@ public:
       stream,
       is_byte_sample);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   /**
    * Dispatch routine for HistogramEven, specialized for sample types larger than 8-bit
@@ -1420,7 +1420,7 @@ public:
     return error;
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DispatchEven(
     void* d_temp_storage,
@@ -1453,7 +1453,7 @@ public:
       stream,
       is_byte_sample);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   /**
    * Dispatch routine for HistogramEven, specialized for 8-bit sample types
@@ -1592,7 +1592,7 @@ public:
     return error;
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DispatchEven(
     void* d_temp_storage,
@@ -1625,7 +1625,7 @@ public:
       stream,
       is_byte_sample);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

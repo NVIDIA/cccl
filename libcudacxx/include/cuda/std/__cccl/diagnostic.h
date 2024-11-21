@@ -23,7 +23,7 @@
 #endif // no system header
 
 // Enable us to selectively silence host compiler warnings
-#ifdef _CCCL_COMPILER_CLANG
+#if _CCCL_COMPILER(CLANG)
 #  define _CCCL_DIAG_PUSH                _CCCL_PRAGMA(clang diagnostic push)
 #  define _CCCL_DIAG_POP                 _CCCL_PRAGMA(clang diagnostic pop)
 #  define _CCCL_DIAG_SUPPRESS_CLANG(str) _CCCL_PRAGMA(clang diagnostic ignored str)
@@ -31,7 +31,7 @@
 #  define _CCCL_DIAG_SUPPRESS_NVHPC(str)
 #  define _CCCL_DIAG_SUPPRESS_MSVC(str)
 #  define _CCCL_DIAG_SUPPRESS_ICC(str)
-#elif defined(_CCCL_COMPILER_GCC)
+#elif _CCCL_COMPILER(GCC)
 #  define _CCCL_DIAG_PUSH _CCCL_PRAGMA(GCC diagnostic push)
 #  define _CCCL_DIAG_POP  _CCCL_PRAGMA(GCC diagnostic pop)
 #  define _CCCL_DIAG_SUPPRESS_CLANG(str)
@@ -39,7 +39,7 @@
 #  define _CCCL_DIAG_SUPPRESS_NVHPC(str)
 #  define _CCCL_DIAG_SUPPRESS_MSVC(str)
 #  define _CCCL_DIAG_SUPPRESS_ICC(str)
-#elif defined(_CCCL_COMPILER_ICC)
+#elif _CCCL_COMPILER(ICC)
 #  define _CCCL_DIAG_PUSH _CCCL_PRAGMA(GCC diagnostic push)
 #  define _CCCL_DIAG_POP  _CCCL_PRAGMA(GCC diagnostic pop)
 #  define _CCCL_DIAG_SUPPRESS_CLANG(str)
@@ -74,18 +74,18 @@
 #endif
 
 // Convenient shortcuts to silence common warnings
-#if defined(_CCCL_COMPILER_CLANG)
+#if _CCCL_COMPILER(CLANG)
 #  define _CCCL_SUPPRESS_DEPRECATED_PUSH      \
     _CCCL_DIAG_PUSH                           \
     _CCCL_DIAG_SUPPRESS_CLANG("-Wdeprecated") \
     _CCCL_DIAG_SUPPRESS_CLANG("-Wdeprecated-declarations")
 #  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_DIAG_POP
-#elif defined(_CCCL_COMPILER_ICC)
+#elif _CCCL_COMPILER(ICC)
 #  define _CCCL_SUPPRESS_DEPRECATED_PUSH \
     _CCCL_DIAG_PUSH                      \
     _CCCL_DIAG_SUPPRESS_ICC(1478)
 #  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_DIAG_POP
-#elif defined(_CCCL_COMPILER_GCC)
+#elif _CCCL_COMPILER(GCC)
 #  define _CCCL_SUPPRESS_DEPRECATED_PUSH    \
     _CCCL_DIAG_PUSH                         \
     _CCCL_DIAG_SUPPRESS_GCC("-Wdeprecated") \
@@ -101,11 +101,11 @@
     _CCCL_DIAG_PUSH                      \
     _CCCL_DIAG_SUPPRESS_MSVC(4996)
 #  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_DIAG_POP
-#else // !_CCCL_COMPILER_CLANG && !_CCCL_COMPILER_ICC && && !_CCCL_COMPILER_GCC && !_CCCL_COMPILER(NVHPC) &&
+#else // !_CCCL_COMPILER(CLANG) && !_CCCL_COMPILER(ICC) && && !_CCCL_COMPILER(GCC) && !_CCCL_COMPILER(NVHPC) &&
       // !_CCCL_COMPILER_MSVC
 #  define _CCCL_SUPPRESS_DEPRECATED_PUSH
 #  define _CCCL_SUPPRESS_DEPRECATED_POP
-#endif // !_CCCL_COMPILER_CLANG && !_CCCL_COMPILER_ICC && && !_CCCL_COMPILER_GCC && !_CCCL_COMPILER(NVHPC) &&
+#endif // !_CCCL_COMPILER(CLANG) && !_CCCL_COMPILER(ICC) && && !_CCCL_COMPILER(GCC) && !_CCCL_COMPILER(NVHPC) &&
        // !_CCCL_COMPILER_MSVC
 
 // Enable us to selectively silence cuda compiler warnings
@@ -113,7 +113,7 @@
 #  if defined(_CCCL_CUDA_COMPILER_CLANG)
 #    define _CCCL_NV_DIAG_SUPPRESS(_WARNING)
 #    define _CCCL_NV_DIAG_DEFAULT(_WARNING)
-#  elif defined(__NVCC_DIAG_PRAGMA_SUPPORT__) || defined(_CCCL_COMPILER_ICC)
+#  elif defined(__NVCC_DIAG_PRAGMA_SUPPORT__) || _CCCL_COMPILER(ICC)
 #    if defined(_CCCL_COMPILER_MSVC)
 #      define _CCCL_NV_DIAG_SUPPRESS(_WARNING) _CCCL_PRAGMA(nv_diag_suppress _WARNING)
 #      define _CCCL_NV_DIAG_DEFAULT(_WARNING)  _CCCL_PRAGMA(nv_diag_default _WARNING)
@@ -166,7 +166,7 @@
 #endif // !_CCCL_COMPILER_MSVC
 
 #ifndef _CCCL_HAS_NO_PRAGMA_PUSH_POP_MACRO
-#  if defined(_CCCL_COMPILER_MSVC_2017) || defined(_CCCL_COMPILER_NVRTC)
+#  if defined(_CCCL_COMPILER_MSVC_2017) || _CCCL_COMPILER(NVRTC)
 #    define _CCCL_HAS_NO_PRAGMA_PUSH_POP_MACRO
 #  endif
 #endif // _CCCL_HAS_NO_PRAGMA_PUSH_POP_MACRO
@@ -175,9 +175,12 @@
 #  define _CCCL_PUSH_MACROS _CCCL_MSVC_WARNINGS_PUSH
 #  define _CCCL_POP_MACROS  _CCCL_MSVC_WARNINGS_POP
 #else // ^^^ _CCCL_HAS_NO_PRAGMA_PUSH_POP_MACRO ^^^ / vvv !_CCCL_HAS_NO_PRAGMA_PUSH_POP_MACRO vvv
-#  define _CCCL_PUSH_MACROS _CCCL_PRAGMA(push_macro("min")) _CCCL_PRAGMA(push_macro("max")) _CCCL_MSVC_WARNINGS_PUSH
-#  define _CCCL_POP_MACROS  _CCCL_PRAGMA(pop_macro("min")) _CCCL_PRAGMA(pop_macro("max")) _CCCL_MSVC_WARNINGS_POP
-
+#  define _CCCL_PUSH_MACROS         \
+    _CCCL_PRAGMA(push_macro("min")) \
+    _CCCL_PRAGMA(push_macro("max")) _CCCL_PRAGMA(push_macro("interface")) _CCCL_MSVC_WARNINGS_PUSH
+#  define _CCCL_POP_MACROS         \
+    _CCCL_PRAGMA(pop_macro("min")) \
+    _CCCL_PRAGMA(pop_macro("max")) _CCCL_PRAGMA(pop_macro("interface")) _CCCL_MSVC_WARNINGS_POP
 #endif // !_CCCL_HAS_NO_PRAGMA_PUSH_POP_MACRO
 
 #endif // __CCCL_DIAGNOSTIC_H

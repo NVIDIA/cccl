@@ -221,7 +221,7 @@ struct Catch::StringMaker<cudaError>
 {
   static auto convert(cudaError e) -> std::string
   {
-    return std::to_string(cuda::std::__to_underlying(e)) + " (" + cudaGetErrorString(e) + ")";
+    return std::to_string(cuda::std::to_underlying(e)) + " (" + cudaGetErrorString(e) + ")";
   }
 };
 

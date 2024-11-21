@@ -41,7 +41,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__data)
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __ptr_to_object = is_pointer_v<_Tp> && is_object_v<remove_pointer_t<_Tp>>;
+_CCCL_CONCEPT __ptr_to_object = is_pointer_v<_Tp> && is_object_v<remove_pointer_t<_Tp>>;
 
 #  if _CCCL_STD_VER >= 2020
 template <class _Tp>
@@ -55,24 +55,22 @@ concept __ranges_begin_invocable = !__member_data<_Tp> && __can_borrow<_Tp> && r
 };
 #  else // ^^^ CXX20 ^^^ / vvv CXX17 vvv
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
-  __member_data_,
-  requires(_Tp&& __t)(requires(__can_borrow<_Tp>),
-                      requires(__workaround_52970<_Tp>),
-                      requires(__ptr_to_object<decltype(_LIBCUDACXX_AUTO_CAST(__t.data()))>)));
+_CCCL_CONCEPT_FRAGMENT(__member_data_,
+                       requires(_Tp&& __t)(requires(__can_borrow<_Tp>),
+                                           requires(__workaround_52970<_Tp>),
+                                           requires(__ptr_to_object<decltype(_LIBCUDACXX_AUTO_CAST(__t.data()))>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __member_data = _LIBCUDACXX_FRAGMENT(__member_data_, _Tp);
+_CCCL_CONCEPT __member_data = _CCCL_FRAGMENT(__member_data_, _Tp);
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
-  __ranges_begin_invocable_,
-  requires(_Tp&& __t)(requires(!__member_data<_Tp>),
-                      requires(__can_borrow<_Tp>),
-                      requires(contiguous_iterator<decltype(_CUDA_VRANGES::begin(__t))>)));
+_CCCL_CONCEPT_FRAGMENT(__ranges_begin_invocable_,
+                       requires(_Tp&& __t)(requires(!__member_data<_Tp>),
+                                           requires(__can_borrow<_Tp>),
+                                           requires(contiguous_iterator<decltype(_CUDA_VRANGES::begin(__t))>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __ranges_begin_invocable = _LIBCUDACXX_FRAGMENT(__ranges_begin_invocable_, _Tp);
+_CCCL_CONCEPT __ranges_begin_invocable = _CCCL_FRAGMENT(__ranges_begin_invocable_, _Tp);
 #  endif // _CCCL_STD_VER <= 2017
 
 struct __fn

@@ -16,7 +16,7 @@
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/pair.h>
 
-#if defined(_CCCL_COMPILER_ICC) || defined(_CCCL_CUDA_COMPILER_NVCC) || defined(_CCCL_COMPILER_NVRTC) \
+#if _CCCL_COMPILER(ICC) || defined(_CCCL_CUDA_COMPILER_NVCC) || _CCCL_COMPILER(NVRTC) \
   || defined(_CCCL_CUDA_COMPILER_CLANG)
 // These compilers have trouble making substitution failures during
 // alias template instantiation non-fatal.

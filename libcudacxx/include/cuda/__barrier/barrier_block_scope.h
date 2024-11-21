@@ -38,11 +38,11 @@
 
 #include <nv/target>
 
-#if defined(_CCCL_COMPILER_NVRTC)
+#if _CCCL_COMPILER(NVRTC)
 #  define _LIBCUDACXX_OFFSET_IS_ZERO(type, member) !(&(((type*) 0)->member))
-#else // ^^^ _CCCL_COMPILER_NVRTC ^^^ / vvv !_CCCL_COMPILER_NVRTC vvv
+#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ / vvv !_CCCL_COMPILER(NVRTC) vvv
 #  define _LIBCUDACXX_OFFSET_IS_ZERO(type, member) !offsetof(type, member)
-#endif // _CCCL_COMPILER_NVRTC
+#endif // _CCCL_COMPILER(NVRTC)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 

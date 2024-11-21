@@ -62,30 +62,29 @@ concept __just_deref = !__unqualified_iter_move<_Tp> && !__move_deref<_Tp> && re
 #  else // ^^^ _CCCL_STD_VER >= 2020 ^^^ / vvv _CCCL_STD_VER <= 2017 vvv
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __unqualified_iter_move_,
   requires(_Tp&& __t)(requires(__class_or_enum<remove_cvref_t<_Tp>>), (iter_move(_CUDA_VSTD::forward<_Tp>(__t)))));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __unqualified_iter_move = _LIBCUDACXX_FRAGMENT(__unqualified_iter_move_, _Tp);
+_CCCL_CONCEPT __unqualified_iter_move = _CCCL_FRAGMENT(__unqualified_iter_move_, _Tp);
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __move_deref_,
   requires(_Tp&& __t)(requires(!__unqualified_iter_move<_Tp>), requires(is_lvalue_reference_v<decltype(*__t)>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __move_deref = _LIBCUDACXX_FRAGMENT(__move_deref_, _Tp);
+_CCCL_CONCEPT __move_deref = _CCCL_FRAGMENT(__move_deref_, _Tp);
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
-  __just_deref_,
-  requires(_Tp&& __t)(requires(!__unqualified_iter_move<_Tp>),
-                      requires(!__move_deref<_Tp>),
-                      requires(!is_lvalue_reference_v<decltype(*__t)>)));
+_CCCL_CONCEPT_FRAGMENT(__just_deref_,
+                       requires(_Tp&& __t)(requires(!__unqualified_iter_move<_Tp>),
+                                           requires(!__move_deref<_Tp>),
+                                           requires(!is_lvalue_reference_v<decltype(*__t)>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __just_deref = _LIBCUDACXX_FRAGMENT(__just_deref_, _Tp);
+_CCCL_CONCEPT __just_deref = _CCCL_FRAGMENT(__just_deref_, _Tp);
 #  endif // _CCCL_STD_VER <= 2017
 
 // [iterator.cust.move]
@@ -135,12 +134,12 @@ using iter_rvalue_reference_t = decltype(_CUDA_VRANGES::iter_move(_CUDA_VSTD::de
 #  else // ^^^ _CCCL_STD_VER >= 2020 ^^^ / vvv _CCCL_STD_VER <= 2017 vvv
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(__can_iter_rvalue_reference_t_,
-                             requires(_Tp& __t)(requires(__dereferenceable<_Tp>),
-                                                requires(__can_reference<decltype(_CUDA_VRANGES::iter_move(__t))>)));
+_CCCL_CONCEPT_FRAGMENT(__can_iter_rvalue_reference_t_,
+                       requires(_Tp& __t)(requires(__dereferenceable<_Tp>),
+                                          requires(__can_reference<decltype(_CUDA_VRANGES::iter_move(__t))>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __can_iter_rvalue_reference_t = _LIBCUDACXX_FRAGMENT(__can_iter_rvalue_reference_t_, _Tp);
+_CCCL_CONCEPT __can_iter_rvalue_reference_t = _CCCL_FRAGMENT(__can_iter_rvalue_reference_t_, _Tp);
 
 template <class _Tp>
 using __iter_rvalue_reference_t = decltype(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<_Tp&>()));

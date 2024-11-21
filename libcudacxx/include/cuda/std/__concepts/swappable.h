@@ -65,22 +65,21 @@ concept __exchangeable =
 #  else // ^^^ CXX20 ^^^ / vvv CXX17 vvv
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __unqualified_swappable_with_,
   requires(_Tp&& __t, _Up&& __u)((swap(_CUDA_VSTD::forward<_Tp>(__t), _CUDA_VSTD::forward<_Up>(__u)))));
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_CONCEPT __unqualified_swappable_with = _LIBCUDACXX_FRAGMENT(__unqualified_swappable_with_, _Tp, _Up);
+_CCCL_CONCEPT __unqualified_swappable_with = _CCCL_FRAGMENT(__unqualified_swappable_with_, _Tp, _Up);
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
-  __exchangeable_,
-  requires()(requires(!__unqualified_swappable_with<_Tp&, _Tp&>),
-             requires(move_constructible<_Tp>),
-             requires(assignable_from<_Tp&, _Tp>)));
+_CCCL_CONCEPT_FRAGMENT(__exchangeable_,
+                       requires()(requires(!__unqualified_swappable_with<_Tp&, _Tp&>),
+                                  requires(move_constructible<_Tp>),
+                                  requires(assignable_from<_Tp&, _Tp>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __exchangeable = _LIBCUDACXX_FRAGMENT(__exchangeable_, _Tp);
+_CCCL_CONCEPT __exchangeable = _CCCL_FRAGMENT(__exchangeable_, _Tp);
 #  endif // _CCCL_STD_VER < 2020
 
 #  if _CCCL_STD_VER > 2017 && !_CCCL_COMPILER(NVHPC) // nvbug4051640
@@ -138,7 +137,7 @@ struct __fn
 
 #  if _CCCL_STD_VER < 2020 || _CCCL_COMPILER(NVHPC)
 template <class _Tp, class _Up, class _Size>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __swappable_arrays_,
   requires(_Tp (&__t)[_Size::value], _Up (&__u)[_Size::value], const __fn& __swap)(
     requires(!__unqualified_swappable_with<_Tp (&)[_Size::value], _Up (&)[_Size::value]>),
@@ -147,7 +146,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
 
 template <class _Tp, class _Up, size_t _Size>
 _CCCL_INLINE_VAR constexpr bool __swappable_arrays<_Tp, _Up, _Size, void_t<type_identity_t<_Tp>>> =
-  _LIBCUDACXX_FRAGMENT(__swappable_arrays_, _Tp, _Up, _CUDA_VSTD::integral_constant<size_t, _Size>);
+  _CCCL_FRAGMENT(__swappable_arrays_, _Tp, _Up, _CUDA_VSTD::integral_constant<size_t, _Size>);
 #  endif // _CCCL_STD_VER < 2020 || _CCCL_COMPILER(NVHPC)
 
 template <class _Tp, class _Up>
@@ -177,13 +176,13 @@ concept swappable_with = common_reference_with<_Tp, _Up> && requires(_Tp&& __t, 
 };
 #  else
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(__swappable_, requires(_Tp& __a, _Tp& __b)((_CUDA_VRANGES::swap(__a, __b))));
+_CCCL_CONCEPT_FRAGMENT(__swappable_, requires(_Tp& __a, _Tp& __b)((_CUDA_VRANGES::swap(__a, __b))));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT swappable = _LIBCUDACXX_FRAGMENT(__swappable_, _Tp);
+_CCCL_CONCEPT swappable = _CCCL_FRAGMENT(__swappable_, _Tp);
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __swappable_with_,
   requires(_Tp&& __t, _Up&& __u)(
     requires(common_reference_with<_Tp, _Up>),
@@ -193,7 +192,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
     (_CUDA_VRANGES::swap(_CUDA_VSTD::forward<_Up>(__u), _CUDA_VSTD::forward<_Tp>(__t)))));
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_CONCEPT swappable_with = _LIBCUDACXX_FRAGMENT(__swappable_with_, _Tp, _Up);
+_CCCL_CONCEPT swappable_with = _CCCL_FRAGMENT(__swappable_with_, _Tp, _Up);
 #  endif
 
 _LIBCUDACXX_END_NAMESPACE_STD

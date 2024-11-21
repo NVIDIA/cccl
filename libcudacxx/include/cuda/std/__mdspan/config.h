@@ -187,8 +187,8 @@ static_assert(__MDSPAN_CPLUSPLUS >= __MDSPAN_CXX_STD_14, "mdspan requires C++14 
 
 #  ifndef __MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION
 // GCC 10 is known not to work with CTAD for this case.
-#    if (defined(__MDSPAN_COMPILER_CLANG) || !defined(_CCCL_COMPILER_GCC) || __GNUC__ >= 11) \
-      && ((defined(__cpp_deduction_guides) && __cpp_deduction_guides >= 201703)              \
+#    if (defined(__MDSPAN_COMPILER_CLANG) || !_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 11)) \
+      && ((defined(__cpp_deduction_guides) && __cpp_deduction_guides >= 201703)                   \
           || (!defined(__cpp_deduction_guides) && __MDSPAN_HAS_CXX_17))
 #      define __MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION 1
 #    endif
@@ -196,8 +196,8 @@ static_assert(__MDSPAN_CPLUSPLUS >= __MDSPAN_CXX_STD_14, "mdspan requires C++14 
 
 #  ifndef __MDSPAN_USE_ALIAS_TEMPLATE_ARGUMENT_DEDUCTION
 // GCC 10 is known not to work with CTAD for this case.
-#    if (defined(__MDSPAN_COMPILER_CLANG) || !defined(_CCCL_COMPILER_GCC) || __GNUC__ >= 11) \
-      && ((defined(__cpp_deduction_guides) && __cpp_deduction_guides >= 201907)              \
+#    if (defined(__MDSPAN_COMPILER_CLANG) || !_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 11)) \
+      && ((defined(__cpp_deduction_guides) && __cpp_deduction_guides >= 201907)                   \
           || (!defined(__cpp_deduction_guides) && __MDSPAN_HAS_CXX_20))
 #      define __MDSPAN_USE_ALIAS_TEMPLATE_ARGUMENT_DEDUCTION 1
 #    endif

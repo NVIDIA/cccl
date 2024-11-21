@@ -19,7 +19,8 @@
     "CCCL_CUDA_VERSION": "12.5",
     "CCCL_HOST_COMPILER": "nvhpc",
     "CCCL_HOST_COMPILER_VERSION": "24.7",
-    "CCCL_BUILD_INFIX": "cuda12.5-nvhpc24.7"
+    "CCCL_BUILD_INFIX": "cuda12.5-nvhpc24.7",
+    "CCCL_CUDA_EXTENDED": "false"
   },
   "workspaceFolder": "/home/coder/${localWorkspaceFolderBasename}",
   "workspaceMount": "source=${localWorkspaceFolder},target=/home/coder/${localWorkspaceFolderBasename},type=bind,consistency=consistent",

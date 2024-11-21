@@ -38,10 +38,10 @@ concept regular = semiregular<_Tp> && equality_comparable<_Tp>;
 // [concept.object]
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(__regular_, requires()(requires(semiregular<_Tp>), requires(equality_comparable<_Tp>)));
+_CCCL_CONCEPT_FRAGMENT(__regular_, requires()(requires(semiregular<_Tp>), requires(equality_comparable<_Tp>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT regular = _LIBCUDACXX_FRAGMENT(__regular_, _Tp);
+_CCCL_CONCEPT regular = _CCCL_FRAGMENT(__regular_, _Tp);
 
 #endif // _CCCL_STD_VER > 2011
 

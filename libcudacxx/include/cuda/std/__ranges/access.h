@@ -36,7 +36,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 #if _CCCL_STD_VER > 2014 && !defined(_CCCL_COMPILER_MSVC_2017)
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __can_borrow = is_lvalue_reference_v<_Tp> || enable_borrowed_range<remove_cvref_t<_Tp>>;
+_CCCL_CONCEPT __can_borrow = is_lvalue_reference_v<_Tp> || enable_borrowed_range<remove_cvref_t<_Tp>>;
 
 // [range.access.begin]
 
@@ -59,17 +59,17 @@ concept __unqualified_begin =
   };
 #  else // ^^^ CXX20 ^^^ / vvv CXX17 vvv
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __member_begin_,
   requires(_Tp&& __t)(requires(__can_borrow<_Tp>),
                       requires(__workaround_52970<_Tp>),
                       requires(input_or_output_iterator<decltype(_LIBCUDACXX_AUTO_CAST(__t.begin()))>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __member_begin = _LIBCUDACXX_FRAGMENT(__member_begin_, _Tp);
+_CCCL_CONCEPT __member_begin = _CCCL_FRAGMENT(__member_begin_, _Tp);
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __unqualified_begin_,
   requires(_Tp&& __t)(requires(!__member_begin<_Tp>),
                       requires(__can_borrow<_Tp>),
@@ -77,20 +77,20 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
                       requires(input_or_output_iterator<decltype(_LIBCUDACXX_AUTO_CAST(begin(__t)))>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __unqualified_begin = _LIBCUDACXX_FRAGMENT(__unqualified_begin_, _Tp);
+_CCCL_CONCEPT __unqualified_begin = _CCCL_FRAGMENT(__unqualified_begin_, _Tp);
 #  endif // _CCCL_STD_VER < 2020
 
 struct __fn
 {
   // This has been made valid as a defect report for C++17 onwards, however gcc below 11.0 does not implement it
-#  if (!defined(_CCCL_COMPILER_GCC) || __GNUC__ >= 11)
+#  if (!_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 11))
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES((sizeof(_Tp) >= 0)) // Disallow incomplete element types.
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp (&__t)[]) const noexcept
   {
     return __t + 0;
   }
-#  endif // (!defined(__GNUC__) || __GNUC__ >= 11)
+#  endif // (!_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 11))
 
   _CCCL_TEMPLATE(class _Tp, size_t _Np)
   _CCCL_REQUIRES((sizeof(_Tp) >= 0)) // Disallow incomplete element types.
@@ -156,7 +156,7 @@ concept __unqualified_end =
   };
 #  else // ^^^ CXX20 ^^^ / vvv CXX17 vvv
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __member_end_,
   requires(_Tp&& __t)(requires(__can_borrow<_Tp>),
                       requires(__workaround_52970<_Tp>),
@@ -164,10 +164,10 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
                       requires(sentinel_for<decltype(_LIBCUDACXX_AUTO_CAST(__t.end())), iterator_t<_Tp>>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __member_end = _LIBCUDACXX_FRAGMENT(__member_end_, _Tp);
+_CCCL_CONCEPT __member_end = _CCCL_FRAGMENT(__member_end_, _Tp);
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __unqualified_end_,
   requires(_Tp&& __t)(requires(!__member_end<_Tp>),
                       requires(__can_borrow<_Tp>),
@@ -176,7 +176,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
                       requires(sentinel_for<decltype(_LIBCUDACXX_AUTO_CAST(end(__t))), iterator_t<_Tp>>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __unqualified_end = _LIBCUDACXX_FRAGMENT(__unqualified_end_, _Tp);
+_CCCL_CONCEPT __unqualified_end = _CCCL_FRAGMENT(__unqualified_end_, _Tp);
 #  endif // _CCCL_STD_VER < 2020
 
 struct __fn

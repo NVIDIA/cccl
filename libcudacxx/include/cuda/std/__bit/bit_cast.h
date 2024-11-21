@@ -33,11 +33,11 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #  define _LIBCUDACXX_CONSTEXPR_BIT_CAST constexpr
 #else // ^^^ _CCCL_BUILTIN_BIT_CAST ^^^ / vvv !_CCCL_BUILTIN_BIT_CAST vvv
 #  define _LIBCUDACXX_CONSTEXPR_BIT_CAST
-#  if defined(_CCCL_COMPILER_GCC) && __GNUC__ >= 8
+#  if _CCCL_COMPILER(GCC, >=, 8)
 // GCC starting with GCC8 warns about our extended floating point types having protected data members
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_GCC("-Wclass-memaccess")
-#  endif // _CCCL_COMPILER_GCC >= 8
+#  endif // _CCCL_COMPILER(GCC, >=, 8)
 #endif // !_CCCL_BUILTIN_BIT_CAST
 
 template <
@@ -61,9 +61,9 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST _To bit
 }
 
 #if !defined(_CCCL_BUILTIN_BIT_CAST)
-#  if defined(_CCCL_COMPILER_GCC) && __GNUC__ >= 8
+#  if _CCCL_COMPILER(GCC, >=, 8)
 _CCCL_DIAG_POP
-#  endif // _CCCL_COMPILER_GCC >= 8
+#  endif // _CCCL_COMPILER(GCC, >=, 8)
 #endif // !_CCCL_BUILTIN_BIT_CAST
 
 _LIBCUDACXX_END_NAMESPACE_STD

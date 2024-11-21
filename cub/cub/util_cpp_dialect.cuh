@@ -42,7 +42,7 @@
 
 #include <cub/util_compiler.cuh> // IWYU pragma: export
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 // Deprecation warnings may be silenced by defining the following macros. These
 // may be combined.
@@ -97,9 +97,9 @@
 #  ifndef CUB_IGNORE_DEPRECATED_COMPILER
 
 // Compiler checks:
-#    if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 50000
+#    if _CCCL_COMPILER(GCC, <, 5)
 CUB_COMPILER_DEPRECATION(GCC 5.0);
-#    elif defined(_CCCL_COMPILER_CLANG) && _CCCL_CLANG_VERSION < 70000
+#    elif _CCCL_COMPILER(CLANG, <, 7)
 CUB_COMPILER_DEPRECATION(Clang 7.0);
 #    elif defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION < 1910
 // <2017. Hard upgrade message:
@@ -133,4 +133,4 @@ CUB_COMPILER_DEPRECATION_SOFT(C++ 17, C++ 14);
 #  undef CUB_COMP_DEPR_IMPL0
 #  undef CUB_COMP_DEPR_IMPL1
 
-#endif // !DOXYGEN_SHOULD_SKIP_THIS
+#endif // !_CCCL_DOXYGEN_INVOKED

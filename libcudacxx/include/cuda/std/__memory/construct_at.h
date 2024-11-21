@@ -43,9 +43,9 @@
 #endif // _CCCL_CUDA_COMPILER_CLANG
 
 #if _CCCL_STD_VER >= 2020 // need to backfill ::std::construct_at
-#  ifndef _CCCL_COMPILER_NVRTC
+#  if !_CCCL_COMPILER(NVRTC)
 #    include <memory>
-#  endif // _CCCL_COMPILER_NVRTC
+#  endif // _CCCL_COMPILER(NVRTC)
 
 #  ifndef __cpp_lib_constexpr_dynamic_alloc
 namespace std
