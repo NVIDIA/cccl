@@ -50,28 +50,24 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceFor::ForEachInExtents, device_for_each_in_exte
  * Host reference
  **********************************************************************************************************************/
 
-template <int Rank = 0,
-          typename T,
-          typename ExtentType,
-          _CUB_TEMPLATE_REQUIRES(Rank == ExtentType::rank()),
-          typename... IndicesType>
-static void fill_linear_impl(c2h::host_vector<T>& vector, const ExtentType&, size_t& pos, IndicesType... indices)
+template <int Rank = 0, typename T, typename ExtentType, typename... IndicesType>
+static auto fill_linear_impl(c2h::host_vector<T>& vector, const ExtentType&, size_t& pos, IndicesType... indices)
+  _CCCL_TRAILING_REQUIRES(void)((Rank == ExtentType::rank()))
 {
   vector[pos++] = {indices...};
+  return void(); // Intel and nvc++ require a return statement
 }
 
-template <int Rank = 0,
-          typename T,
-          typename ExtentType,
-          _CUB_TEMPLATE_REQUIRES(Rank < ExtentType::rank()),
-          typename... IndicesType>
-static void fill_linear_impl(c2h::host_vector<T>& vector, const ExtentType& ext, size_t& pos, IndicesType... indices)
+template <int Rank = 0, typename T, typename ExtentType, typename... IndicesType>
+static auto fill_linear_impl(c2h::host_vector<T>& vector, const ExtentType& ext, size_t& pos, IndicesType... indices)
+  _CCCL_TRAILING_REQUIRES(void)((Rank < ExtentType::rank()))
 {
   using IndexType = typename ExtentType::index_type;
   for (IndexType i = 0; i < ext.extent(Rank); ++i)
   {
     fill_linear_impl<Rank + 1>(vector, ext, pos, indices..., i);
   }
+  return void(); // Intel and nvc++ require a return statement
 }
 
 template <typename T, typename IndexType, size_t... Extents>

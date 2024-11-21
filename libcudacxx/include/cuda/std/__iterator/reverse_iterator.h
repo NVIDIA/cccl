@@ -253,7 +253,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   iter_swap(const reverse_iterator<_Iter1>& __x,
             const reverse_iterator<_Iter2>& __y) noexcept(__noexcept_rev_iter_iter_swap<_Iter1, _Iter2>)
-    _LIBCUDACXX_TRAILING_REQUIRES(void)(same_as<_Iter1, _Iter>&& indirectly_swappable<_Iter2, _Iter1>)
+    _CCCL_TRAILING_REQUIRES(void)(same_as<_Iter1, _Iter>&& indirectly_swappable<_Iter2, _Iter1>)
   {
     auto __xtmp = __x.base();
     auto __ytmp = __y.base();
@@ -264,7 +264,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   iter_swap(const reverse_iterator& __x,
             const reverse_iterator<_Iter2>& __y) noexcept(__noexcept_rev_iter_iter_swap<_Iter, _Iter2>)
-    _LIBCUDACXX_TRAILING_REQUIRES(void)(indirectly_swappable<_Iter2, _Iter>)
+    _CCCL_TRAILING_REQUIRES(void)(indirectly_swappable<_Iter2, _Iter>)
   {
     auto __xtmp = __x.base();
     auto __ytmp = __y.base();

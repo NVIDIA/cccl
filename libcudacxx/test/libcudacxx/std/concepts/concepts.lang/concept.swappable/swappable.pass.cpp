@@ -35,8 +35,8 @@ struct expected
 
 // clang-format off
 // Checks [concept.swappable]/2.1
-_LIBCUDACXX_TEMPLATE(class T, class U)
-  _LIBCUDACXX_REQUIRES( cuda::std::same_as<cuda::std::remove_cvref_t<T>, cuda::std::remove_cvref_t<U> > &&
+_CCCL_TEMPLATE(class T, class U)
+  _CCCL_REQUIRES( cuda::std::same_as<cuda::std::remove_cvref_t<T>, cuda::std::remove_cvref_t<U> > &&
          swappable<cuda::std::remove_cvref_t<T> >) //
 __host__ __device__ constexpr bool check_swap_21(T&& x, U&& y) {
   expected<cuda::std::remove_cvref_t<T> > const e{y, x};
@@ -45,8 +45,8 @@ __host__ __device__ constexpr bool check_swap_21(T&& x, U&& y) {
 }
 
 // Checks [concept.swappable]/2.2
-_LIBCUDACXX_TEMPLATE(class T, cuda::std::size_t N)
-  _LIBCUDACXX_REQUIRES( swappable<T>)
+_CCCL_TEMPLATE(class T, cuda::std::size_t N)
+  _CCCL_REQUIRES( swappable<T>)
 __host__ __device__ constexpr bool check_swap_22(T (&x)[N], T (&y)[N]) {
   expected<T[N]> e{};
   for (cuda::std::size_t i = 0; i < N; ++i) {
@@ -65,8 +65,8 @@ __host__ __device__ constexpr bool check_swap_22(T (&x)[N], T (&y)[N]) {
 }
 
 // Checks [concept.swappable]/2.3
-_LIBCUDACXX_TEMPLATE(class T)
-  _LIBCUDACXX_REQUIRES( swappable<T> && cuda::std::copy_constructible<cuda::std::remove_cvref_t<T> >)
+_CCCL_TEMPLATE(class T)
+  _CCCL_REQUIRES( swappable<T> && cuda::std::copy_constructible<cuda::std::remove_cvref_t<T> >)
 __host__ __device__ constexpr bool check_swap_23(T x, T y) {
   expected<cuda::std::remove_cvref_t<T> > const e{y, x};
   cuda::std::ranges::swap(x, y);

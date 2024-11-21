@@ -29,8 +29,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
 #if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
-_LIBCUDACXX_TEMPLATE(class _Range)
-_LIBCUDACXX_REQUIRES(forward_range<_Range>)
+_CCCL_TEMPLATE(class _Range)
+_CCCL_REQUIRES(forward_range<_Range>)
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator_t<_Range> __unwrap_end(_Range& __range)
 {
   if constexpr (common_range<_Range>)

@@ -20,8 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
 #include <cuda/std/__concepts/boolean_testable.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__type_traits/common_reference.h>
 #include <cuda/std/__type_traits/make_const_lvalue_ref.h>
@@ -56,7 +56,7 @@ concept totally_ordered_with =
 #elif _CCCL_STD_VER > 2011
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __partially_ordered_with_,
   requires(__make_const_lvalue_ref<_Tp> __t, __make_const_lvalue_ref<_Up> __u)(
     requires(__boolean_testable<decltype(__t < __u)>),
@@ -69,17 +69,17 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
     requires(__boolean_testable<decltype(__u >= __t)>)));
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_CONCEPT __partially_ordered_with = _LIBCUDACXX_FRAGMENT(__partially_ordered_with_, _Tp, _Up);
+_CCCL_CONCEPT __partially_ordered_with = _CCCL_FRAGMENT(__partially_ordered_with_, _Tp, _Up);
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
-  __totally_ordered_, requires()(requires(equality_comparable<_Tp>), requires(__partially_ordered_with<_Tp, _Tp>)));
+_CCCL_CONCEPT_FRAGMENT(__totally_ordered_,
+                       requires()(requires(equality_comparable<_Tp>), requires(__partially_ordered_with<_Tp, _Tp>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT totally_ordered = _LIBCUDACXX_FRAGMENT(__totally_ordered_, _Tp);
+_CCCL_CONCEPT totally_ordered = _CCCL_FRAGMENT(__totally_ordered_, _Tp);
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __totally_ordered_with_,
   requires()(requires(totally_ordered<_Tp>),
              requires(totally_ordered<_Up>),
@@ -88,7 +88,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
              requires(__partially_ordered_with<_Tp, _Up>)));
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_CONCEPT totally_ordered_with = _LIBCUDACXX_FRAGMENT(__totally_ordered_with_, _Tp, _Up);
+_CCCL_CONCEPT totally_ordered_with = _CCCL_FRAGMENT(__totally_ordered_with_, _Tp, _Up);
 ;
 
 #endif // _CCCL_STD_VER > 2011
