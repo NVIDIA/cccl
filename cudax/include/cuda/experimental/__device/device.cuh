@@ -68,7 +68,7 @@ public:
   template <::cudaDeviceAttr _Attr>
   using attr_result_t = typename detail::__dev_attr<_Attr>::type;
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 #  if _CCCL_COMPILER(MSVC)
   // When __EDG__ is defined, std::construct_at will not permit constructing
   // a device object from an __emplace_device object. This is a workaround.

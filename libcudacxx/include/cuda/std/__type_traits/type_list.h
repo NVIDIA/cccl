@@ -42,7 +42,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 template <class... _Ts>
 struct __type_list;
@@ -947,7 +947,7 @@ template <class _Ty, _Ty _Start, _Ty _Size, _Ty _Stride = _Ty(1)>
 using __type_iota =
   decltype(__detail::__type_iota_fn<_Ty, _Start, _Stride>(static_cast<make_integer_sequence<_Ty, _Size>*>(nullptr)));
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
