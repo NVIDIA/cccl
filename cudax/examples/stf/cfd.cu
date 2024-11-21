@@ -13,8 +13,8 @@
  * @brief Simulation of a fluid over a regular grid with an implicit Jacobi solver
  */
 
-#include <cuda/experimental/stf.cuh>
 #include <cuda/experimental/__stf/utility/transfer_host.cuh>
+#include <cuda/experimental/stf.cuh>
 
 #include <chrono>
 
@@ -39,7 +39,6 @@ public:
     dst += src;
   }
 };
-
 
 /* wall-clock time */
 double gettime()
@@ -75,7 +74,6 @@ void writeplotfile(int m, int n, int scale)
 
   // printf("\nWritten gnuplot script 'cfd.plt'\n");
 }
-
 
 double colfunc(double x)
 {
@@ -211,10 +209,11 @@ deltasq(context& ctx, logical_data<slice<double, 2>> lnewarr, logical_data<slice
 {
   auto ldsq = ctx.logical_data(shape_of<scalar<double>>()).set_symbol("tmp_accumulator");
 
-  ctx.parallel_for(lnewarr.shape(), ldsq.reduce(sum<double>{}), lnewarr.read(), loldarr.read()).set_symbol("deltasq")->*[]__device__(size_t i, size_t j, auto &dsq, auto newarr, auto oldarr) {
+  ctx.parallel_for(lnewarr.shape(), ldsq.reduce(sum<double>{}), lnewarr.read(), loldarr.read()).set_symbol("deltasq")->*
+    [] __device__(size_t i, size_t j, auto& dsq, auto newarr, auto oldarr) {
       double tmp = newarr(i, j) - oldarr(i, j);
-      dsq += tmp*tmp;
-  };
+      dsq += tmp * tmp;
+    };
 
   return transfer_host(ctx, ldsq);
 }
@@ -371,16 +370,16 @@ int main(int argc, char** argv)
   boundarypsi(ctx, lpsi, m, n, b, h, w);
 
   // compute normalisation factor for error
-  //auto lbnorm = ctx.logical_data(shape_of<slice<double>>({1})).set_symbol("bnorm");
+  // auto lbnorm = ctx.logical_data(shape_of<slice<double>>({1})).set_symbol("bnorm");
   auto lbnorm = ctx.logical_data(shape_of<scalar<double>>()).set_symbol("bnorm");
 
   nvtxRangePush("Compute_Normalization");
 
   // bnorm = psi * psi
-  ctx.parallel_for(lpsi.shape(), lpsi.read(), lbnorm.reduce(sum<double>{}))->*[]__device__(size_t i, size_t j, auto psi, auto &bnorm)
-  {
-      bnorm += psi(i, j) * psi(i, j);
-  };
+  ctx.parallel_for(lpsi.shape(), lpsi.read(), lbnorm.reduce(sum<double>{}))
+      ->*[] __device__(size_t i, size_t j, auto psi, auto& bnorm) {
+            bnorm += psi(i, j) * psi(i, j);
+          };
 
   auto lbnorm_zet = ctx.logical_data(shape_of<scalar<double>>()).set_symbol("bnorm_zet"); // maybe unused
   if (!irrotational)
@@ -389,18 +388,19 @@ int main(int argc, char** argv)
     boundaryzet(ctx, lzet, lpsi, m, n);
 
     // update normalisation
-    ctx.parallel_for(lzet.shape(), lzet.read(), lbnorm_zet.reduce(sum<double>{}))->*[]__device__(size_t i, size_t j, auto zet, auto &bnorm_zet)
-    {
-        bnorm_zet += zet(i, j) * zet(i, j);
-    };
+    ctx.parallel_for(lzet.shape(), lzet.read(), lbnorm_zet.reduce(sum<double>{}))
+        ->*[] __device__(size_t i, size_t j, auto zet, auto& bnorm_zet) {
+              bnorm_zet += zet(i, j) * zet(i, j);
+            };
   }
 
   double bnorm = transfer_host(ctx, lbnorm);
-  if (!irrotational) {
-      bnorm += transfer_host(ctx, lbnorm_zet);
+  if (!irrotational)
+  {
+    bnorm += transfer_host(ctx, lbnorm_zet);
   }
 
-  bnorm        = sqrt(bnorm);
+  bnorm = sqrt(bnorm);
 
   // begin iterative Jacobi loop
 

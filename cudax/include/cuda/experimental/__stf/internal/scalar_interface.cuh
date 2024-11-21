@@ -254,8 +254,9 @@ struct owning_container_of<scalar<T>>
     *s.addr = val;
   }
 
-  __host__ __device__ static T get_value(const scalar<T>& s) {
-      return *s.addr;
+  __host__ __device__ static T get_value(const scalar<T>& s)
+  {
+    return *s.addr;
   }
 };
 

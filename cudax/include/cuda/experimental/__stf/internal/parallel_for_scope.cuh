@@ -285,9 +285,9 @@ __global__ void loop_redux(
 
   // This tuple in shared memory contains either an empty type for "regular"
   // arguments, or an owning local variable for reduction variables.
-  //extern __shared__ redux_buffer_tup_wrapper<tuple_args, tuple_ops> per_block_redux_buffer[];
+  // extern __shared__ redux_buffer_tup_wrapper<tuple_args, tuple_ops> per_block_redux_buffer[];
   extern __shared__ char dyn_buffer[];
-  auto *per_block_redux_buffer = (redux_buffer_tup_wrapper<tuple_args, tuple_ops> *)((void *)dyn_buffer);
+  auto* per_block_redux_buffer = (redux_buffer_tup_wrapper<tuple_args, tuple_ops>*) ((void*) dyn_buffer);
 
   // This will initialize reduction variables with the null value of the operator
   per_block_redux_buffer[threadIdx.x].init();
@@ -339,7 +339,7 @@ __global__ void
 loop_redux_finalize(tuple_args targs, redux_buffer_tup_t<tuple_args, tuple_ops>* redux_buffer, size_t nredux_buffer)
 {
   extern __shared__ char dyn_buffer[];
-  auto *per_block_redux_buffer = (redux_buffer_tup_wrapper<tuple_args, tuple_ops> *)((void *)dyn_buffer);
+  auto* per_block_redux_buffer = (redux_buffer_tup_wrapper<tuple_args, tuple_ops>*) ((void*) dyn_buffer);
 
   unsigned int tid = threadIdx.x;
 
