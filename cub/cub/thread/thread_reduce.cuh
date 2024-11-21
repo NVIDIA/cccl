@@ -74,7 +74,7 @@ CUB_NAMESPACE_BEGIN
 //!
 //! .. code-block:: c++
 //!
-//!    _LIBCUDACXX_TEMPLATE(typename Input,
+//!    template <typename Input,
 //!              typename ReductionOp,
 //!              typename PrefixT,
 //!              typename ValueT = ::cuda::std::remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>,
@@ -481,7 +481,7 @@ ThreadReduceSimd(const Input& input, ReductionOp) -> ::cuda::std::remove_cvref_t
 }
 
 _LIBCUDACXX_TEMPLATE(typename Input, typename ReductionOp)
-_LIBCUDACXX_REQUIRES(cub::internal::enable_generic_simd_reduction<Input, ReductionOp>())
+_LIBCUDACXX_REQUIRES((cub::internal::enable_generic_simd_reduction<Input, ReductionOp>()))
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE auto
 ThreadReduceSimd(const Input& input, ReductionOp reduction_op) -> ::cuda::std::remove_cvref_t<decltype(input[0])>
 {

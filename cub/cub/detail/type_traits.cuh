@@ -52,7 +52,7 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 #if __cccl_lib_mdspan
 #  include <cuda/std/mdspan>
 #endif // __cccl_lib_mdspan
-#include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/__concepts/__concept_macros.h> // IWYU pragma: keep
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
 
