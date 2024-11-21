@@ -389,7 +389,7 @@ def cu_map(op, it, op_return_ntype):
 
     class TransformIterator:
         def __init__(self, it, op):
-            self.it = it  # TODO support row pointers
+            self.it = it  # TODO support raw pointers
             self.op = op
             self.ntype = op_return_ntype
             self.prefix = f"transform_{it.prefix}_{op.__name__}"
