@@ -69,7 +69,7 @@ public:
   using attr_result_t = typename detail::__dev_attr<_Attr>::type;
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-#  if _CCCL_COMPILER(MSVC)
+#  if defined(_CCCL_COMPILER_MSVC)
   // When __EDG__ is defined, std::construct_at will not permit constructing
   // a device object from an __emplace_device object. This is a workaround.
   device(detail::__emplace_device __ed)
