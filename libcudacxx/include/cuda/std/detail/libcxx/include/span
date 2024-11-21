@@ -331,8 +331,9 @@ public:
       : __data_{nullptr}
   {}
 
-  template <class _Up = element_type, enable_if_t<_CCCL_TRAIT(is_const, _Up), int> = 0>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit span(_CUDA_VSTD::initializer_list<value_type> __il)
+  _CCCL_TEMPLATE(class _Tp2 = Tp)
+  _CCCL_REQUIRES(_CCCL_TRAIT(is_const, _Tp2))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit span(_CUDA_VSTD::initializer_list<value_type> __il) noexcept
       : __data_{__il.begin()}
   {
     _CCCL_ASSERT(_Extent == __il.size(), "size mismatch in span's constructor (initializer_list).");
@@ -587,8 +588,9 @@ public:
       , __size_{0}
   {}
 
-  template <class _Up = element_type, enable_if_t<_CCCL_TRAIT(is_const, _Up), int> = 0>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(cuda::std::initializer_list<value_type> __il)
+  _CCCL_TEMPLATE(class _Tp2 = Tp)
+  _CCCL_REQUIRES(_CCCL_TRAIT(is_const, _Tp2))
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit span(_CUDA_VSTD::initializer_list<value_type> __il) noexcept
       : __data_{__il.begin()}
       , __size_{__il.size()}
   {}

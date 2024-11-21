@@ -34,7 +34,7 @@ static_assert(!ConstElementType<cuda::std::span<int>>::value, "");
 static_assert(ConstElementType<cuda::std::span<const int, 94>>::value, "");
 static_assert(!ConstElementType<cuda::std::span<int, 94>>::value, "");
 
-// Constructor constraings
+// Constructor constrains
 
 template <typename I, typename T, cuda::std::size_t N = cuda::std::dynamic_extent, typename = void>
 struct HasInitializerListCtr : cuda::std::false_type
@@ -61,21 +61,21 @@ static_assert(cuda::std::is_constructible<cuda::std::span<const int>, cuda::std:
 struct Sink
 {
   constexpr Sink() = default;
-  constexpr __host__ __device__ Sink(Sink*) {}
+  __host__ __device__ constexpr Sink(Sink*) {}
 };
 
-constexpr cuda::std::size_t __host__ __device__ count(cuda::std::span<const Sink> sp)
+__host__ __device__ constexpr cuda::std::size_t count(cuda::std::span<const Sink> sp)
 {
   return sp.size();
 }
 
 template <cuda::std::size_t N>
-constexpr cuda::std::size_t __host__ __device__ count_n(cuda::std::span<const Sink, N> sp)
+__host__ __device__ constexpr cuda::std::size_t count_n(cuda::std::span<const Sink, N> sp)
 {
   return sp.size();
 }
 
-constexpr __host__ __device__ bool test()
+__host__ __device__ constexpr bool test()
 {
   // Dynamic extent
   {
@@ -92,7 +92,7 @@ constexpr __host__ __device__ bool test()
 
 // Test P2447R4 "Annex C examples"
 
-constexpr __host__ __device__ int three(cuda::std::span<void* const> sp)
+__host__ __device__ constexpr int three(cuda::std::span<void* const> sp)
 {
   return static_cast<int>(sp.size());
 }
