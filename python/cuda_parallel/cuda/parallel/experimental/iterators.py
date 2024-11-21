@@ -303,12 +303,12 @@ def cu_map(op, it):
     def make_advance_codegen(name):
         retty = types.void
         statety = types.CPointer(types.int8)
-        distty = types.int32
+        distty = types.uint64
 
         def codegen(context, builder, sig, args):
             state_ptr, dist = args
             fnty = ir.FunctionType(
-                ir.VoidType(), (ir.PointerType(ir.IntType(8)), ir.IntType(32))
+                ir.VoidType(), (ir.PointerType(ir.IntType(8)), ir.IntType(64))
             )
             fn = cgutils.get_or_insert_function(builder.module, fnty, name)
             builder.call(fn, (state_ptr, dist))
@@ -393,7 +393,7 @@ def cu_map(op, it):
                     "advance",
                     TransformIterator.transform_advance,
                     numba.types.void(
-                        numba.types.CPointer(numba.types.char), numba.types.int32
+                        numba.types.CPointer(numba.types.char), numba.types.uint64
                     ),
                     self.prefix,
                 ),
