@@ -215,7 +215,7 @@ class ConstantIterator:
             _ncc(
                 "advance",
                 ConstantIterator.constant_advance,
-                numba.types.void(thisty, ntype),
+                numba.types.void(thisty, types.uint64),
                 self.prefix,
             ),
             _ncc(
@@ -264,7 +264,7 @@ class CountingIterator:
             _ncc(
                 "advance",
                 CountingIterator.count_advance,
-                numba.types.void(thisty, ntype),
+                numba.types.void(thisty, types.uint64),
                 self.prefix,
             ),
             _ncc(

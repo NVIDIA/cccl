@@ -127,8 +127,8 @@ def mul2(val):
                                              "counting_int64",
                                              "counting_uint64",
                                              # "counting_float16",
-                                             # "counting_float32", # TODO DEBUG
-                                             # "counting_float64", # TODO DEBUG
+                                             "counting_float32",
+                                             "counting_float64",
                                              "map_mul2"])
 def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, start_sum_with=10):
     def add_op(a, b):
