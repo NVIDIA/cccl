@@ -22,7 +22,7 @@ static_assert(cuda::std::is_trivial<decltype(cuda::std::ignore)>::value, "");
 {
   return 8294;
 }
-#endif
+#endif // TEST_STD_VER >= 2017
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 {
@@ -62,7 +62,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
   {
     cuda::std::ignore = test_nodiscard();
   }
-#endif
+#endif // TEST_STD_VER >= 2017
 
   return true;
 }
@@ -72,7 +72,7 @@ int main(int, char**)
   test();
 #if TEST_STD_VER >= 2014
   static_assert(test(), "");
-#endif
+#endif // TEST_STD_VER >= 2014
 
   return 0;
 }
