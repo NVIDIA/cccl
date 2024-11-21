@@ -83,6 +83,7 @@ class RawPointer:
     def __init__(self, ptr, ntype):
         self.val = ctypes.c_void_p(ptr)
         data_as_ntype_pp = numba.types.CPointer(numba.types.CPointer(ntype))
+        self.ntype = ntype
         self.prefix = "pointer_" + ntype.name
         self.ltoirs = [
             _ncc(
@@ -200,6 +201,7 @@ class ConstantIterator:
     def __init__(self, val, ntype):
         thisty = numba.types.CPointer(ntype)
         self.val = _ctypes_type_given_numba_type(ntype)(val)
+        self.ntype = ntype
         self.prefix = "constant_" + ntype.name
         self.ltoirs = [
             _ncc(
@@ -248,6 +250,7 @@ class CountingIterator:
     def __init__(self, count, ntype):
         thisty = numba.types.CPointer(ntype)
         self.count = _ctypes_type_given_numba_type(ntype)(count)
+        self.ntype = ntype
         self.prefix = "count_" + ntype.name
         self.ltoirs = [
             _ncc(
@@ -381,6 +384,7 @@ def cu_map(op, it):
         def __init__(self, it, op):
             self.it = it  # TODO support row pointers
             self.op = op
+            self.ntype = numba.types.int32
             self.prefix = f"transform_{it.prefix}_{op.__name__}"
             self.ltoirs = it.ltoirs + [
                 _ncc(

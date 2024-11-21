@@ -169,5 +169,4 @@ def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, sta
     reduce_into(d_temp_storage, num_items, d_input, d_output, h_init)
 
     h_output = d_output.copy_to_host()
-    if ntype.name not in ("float32", "float64"): # TODO: FIX
-        assert h_output[0] == expected_result
+    assert h_output[0] == expected_result

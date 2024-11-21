@@ -150,13 +150,13 @@ def _extract_ctypes_ltoirs(numba_cuda_compile_results):
     return ctypes.pointer(_CCCLStringViews(view_arr, len(view_arr)))
 
 
-def _itertools_iter_as_cccl_iter(result_numba_dtype, d_in):
+def _itertools_iter_as_cccl_iter(d_in):
     def prefix_name(name):
         return (d_in.prefix + "_" + name).encode('utf-8')
     # type name ltoi ltoir_size size alignment state
     adv = _CCCLOp(_CCCLOpKindEnum.STATELESS, prefix_name("advance"), None, 0, 1, 1, None)
     drf = _CCCLOp(_CCCLOpKindEnum.STATELESS, prefix_name("dereference"), None, 0, 1, 1, None)
-    info = _type_to_info_from_numba_type(numba.int32)
+    info = _type_to_info_from_numba_type(d_in.ntype)
     ltoirs = _extract_ctypes_ltoirs(d_in.ltoirs)
     # size alignment type advance dereference value_type state ltoirs
     return _CCCLIterator(d_in.size(), d_in.alignment(), _CCCLIteratorKindEnum.ITERATOR, adv, drf, info, d_in.state_c_void_p(), ltoirs)
@@ -306,7 +306,7 @@ class _Reduce:
                 assert d_in.size == num_items
             return num_items, _device_array_to_pointer(d_in)
         assert not hasattr(self._ctor_d_in, "dtype")
-        return num_items, _itertools_iter_as_cccl_iter(numba.int32, d_in) # TODO pass numba dtype
+        return num_items, _itertools_iter_as_cccl_iter(d_in)
 
 
 # TODO Figure out iterators
