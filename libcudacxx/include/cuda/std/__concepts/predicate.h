@@ -20,8 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
 #include <cuda/std/__concepts/boolean_testable.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/invocable.h>
 #include <cuda/std/__functional/invoke.h>
 
@@ -36,12 +36,12 @@ concept predicate = regular_invocable<_Fn, _Args...> && __boolean_testable<invok
 
 // [concept.predicate]
 template <class _Fn, class... _Args>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   _Predicate_,
   requires()(requires(regular_invocable<_Fn, _Args...>), requires(__boolean_testable<invoke_result_t<_Fn, _Args...>>)));
 
 template <class _Fn, class... _Args>
-_LIBCUDACXX_CONCEPT predicate = _LIBCUDACXX_FRAGMENT(_Predicate_, _Fn, _Args...);
+_CCCL_CONCEPT predicate = _CCCL_FRAGMENT(_Predicate_, _Fn, _Args...);
 
 #endif // _CCCL_STD_VER > 2011
 

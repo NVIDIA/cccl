@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_destructible.h>
 #include <cuda/std/__type_traits/is_nothrow_destructible.h>
@@ -35,7 +35,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #  if defined(_CCCL_COMPILER_MSVC)
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT destructible = __is_nothrow_destructible(_Tp);
+_CCCL_CONCEPT destructible = __is_nothrow_destructible(_Tp);
 
 #  else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
 
@@ -65,7 +65,7 @@ template <class _Tp, size_t _Nm>
 _CCCL_INLINE_VAR constexpr bool __destructible<_Tp[_Nm]> = __destructible<_Tp>;
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT destructible = __destructible<_Tp>;
+_CCCL_CONCEPT destructible = __destructible<_Tp>;
 
 #  endif // !_CCCL_COMPILER_MSVC
 

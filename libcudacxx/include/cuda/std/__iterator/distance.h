@@ -68,8 +68,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__distance)
 struct __fn
 {
-  _LIBCUDACXX_TEMPLATE(class _Ip, class _Sp)
-  _LIBCUDACXX_REQUIRES((sentinel_for<_Sp, _Ip> && !sized_sentinel_for<_Sp, _Ip>) )
+  _CCCL_TEMPLATE(class _Ip, class _Sp)
+  _CCCL_REQUIRES((sentinel_for<_Sp, _Ip> && !sized_sentinel_for<_Sp, _Ip>) )
   _LIBCUDACXX_HIDE_FROM_ABI constexpr iter_difference_t<_Ip> operator()(_Ip __first, _Sp __last) const
   {
     iter_difference_t<_Ip> __n = 0;
@@ -81,8 +81,8 @@ struct __fn
     return __n;
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Ip, class _Sp)
-  _LIBCUDACXX_REQUIRES((sized_sentinel_for<_Sp, decay_t<_Ip>>) )
+  _CCCL_TEMPLATE(class _Ip, class _Sp)
+  _CCCL_REQUIRES((sized_sentinel_for<_Sp, decay_t<_Ip>>) )
   _LIBCUDACXX_HIDE_FROM_ABI constexpr iter_difference_t<_Ip> operator()(_Ip&& __first, _Sp __last) const
   {
     if constexpr (sized_sentinel_for<_Sp, remove_cvref_t<_Ip>>)
@@ -96,8 +96,8 @@ struct __fn
     _CUDA_VSTD::unreachable();
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Rp)
-  _LIBCUDACXX_REQUIRES((range<_Rp>) )
+  _CCCL_TEMPLATE(class _Rp)
+  _CCCL_REQUIRES((range<_Rp>) )
   _LIBCUDACXX_HIDE_FROM_ABI constexpr range_difference_t<_Rp> operator()(_Rp&& __r) const
   {
     if constexpr (sized_range<_Rp>)

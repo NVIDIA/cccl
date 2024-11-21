@@ -50,32 +50,32 @@ _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__next)
 struct __fn
 {
-  _LIBCUDACXX_TEMPLATE(class _Ip)
-  _LIBCUDACXX_REQUIRES(input_or_output_iterator<_Ip>)
+  _CCCL_TEMPLATE(class _Ip)
+  _CCCL_REQUIRES(input_or_output_iterator<_Ip>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _Ip operator()(_Ip __x) const
   {
     ++__x;
     return __x;
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Ip)
-  _LIBCUDACXX_REQUIRES(input_or_output_iterator<_Ip>)
+  _CCCL_TEMPLATE(class _Ip)
+  _CCCL_REQUIRES(input_or_output_iterator<_Ip>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n) const
   {
     _CUDA_VRANGES::advance(__x, __n);
     return __x;
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Ip, class _Sp)
-  _LIBCUDACXX_REQUIRES(input_or_output_iterator<_Ip>&& sentinel_for<_Sp, _Ip>)
+  _CCCL_TEMPLATE(class _Ip, class _Sp)
+  _CCCL_REQUIRES(input_or_output_iterator<_Ip>&& sentinel_for<_Sp, _Ip>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _Ip operator()(_Ip __x, _Sp __bound_sentinel) const
   {
     _CUDA_VRANGES::advance(__x, __bound_sentinel);
     return __x;
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Ip, class _Sp)
-  _LIBCUDACXX_REQUIRES(input_or_output_iterator<_Ip>&& sentinel_for<_Sp, _Ip>)
+  _CCCL_TEMPLATE(class _Ip, class _Sp)
+  _CCCL_REQUIRES(input_or_output_iterator<_Ip>&& sentinel_for<_Sp, _Ip>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n, _Sp __bound_sentinel) const
   {
     _CUDA_VRANGES::advance(__x, __n, __bound_sentinel);

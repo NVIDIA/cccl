@@ -20,8 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
 #include <cuda/std/__concepts/assignable.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/movable.h>
 
@@ -38,7 +38,7 @@ concept copyable = copy_constructible<_Tp> && movable<_Tp> && assignable_from<_T
 #elif _CCCL_STD_VER > 2011
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __copyable_,
   requires()(requires(copy_constructible<_Tp>),
              requires(movable<_Tp>),
@@ -47,7 +47,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
              requires(assignable_from<_Tp&, const _Tp>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT copyable = _LIBCUDACXX_FRAGMENT(__copyable_, _Tp);
+_CCCL_CONCEPT copyable = _CCCL_FRAGMENT(__copyable_, _Tp);
 
 #endif // _CCCL_STD_VER > 2011
 
