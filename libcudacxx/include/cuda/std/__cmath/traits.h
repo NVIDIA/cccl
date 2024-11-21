@@ -37,7 +37,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool signbit(float __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_SIGNBIT)
-  return __builtin_signbit(__x);
+  return _CCCL_BUILTIN_SIGNBIT(__x);
 #else // ^^^ _CCCL_BUILTIN_SIGNBIT ^^^ / vvv !_CCCL_BUILTIN_SIGNBIT vvv
   return ::signbit(__x);
 #endif // !_CCCL_BUILTIN_SIGNBIT
@@ -46,7 +46,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool signbit(float __x) noexcept
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool signbit(double __x) noexcept
 {
 #if defined(_CCCL_BUILTIN_SIGNBIT)
-  return __builtin_signbit(__x);
+  return _CCCL_BUILTIN_SIGNBIT(__x);
 #else // ^^^ _CCCL_BUILTIN_SIGNBIT ^^^ / vvv !_CCCL_BUILTIN_SIGNBIT vvv
   return ::signbit(__x);
 #endif // !_CCCL_BUILTIN_SIGNBIT
@@ -56,7 +56,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool signbit(double __x) noexcept
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool signbit(long double __x) noexcept
 {
 #  if defined(_CCCL_BUILTIN_SIGNBIT)
-  return __builtin_signbit(__x);
+  return _CCCL_BUILTIN_SIGNBIT(__x);
 #  else // ^^^ _CCCL_BUILTIN_SIGNBIT ^^^ / vvv !_CCCL_BUILTIN_SIGNBIT vvv
   return ::signbit(__x);
 #  endif // !_CCCL_BUILTIN_SIGNBIT
