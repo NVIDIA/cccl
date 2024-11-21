@@ -20,9 +20,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
 #include <cuda/std/__concepts/boolean_testable.h>
 #include <cuda/std/__concepts/common_reference_with.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/common_reference.h>
 #include <cuda/std/__type_traits/make_const_lvalue_ref.h>
 
@@ -54,13 +54,13 @@ concept equality_comparable_with =
 #elif _CCCL_STD_VER > 2011
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(__with_lvalue_reference_, requires()(typename(__make_const_lvalue_ref<_Tp>)));
+_CCCL_CONCEPT_FRAGMENT(__with_lvalue_reference_, requires()(typename(__make_const_lvalue_ref<_Tp>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT _With_lvalue_reference = _LIBCUDACXX_FRAGMENT(__with_lvalue_reference_, _Tp);
+_CCCL_CONCEPT _With_lvalue_reference = _CCCL_FRAGMENT(__with_lvalue_reference_, _Tp);
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __weakly_equality_comparable_with_,
   requires(__make_const_lvalue_ref<_Tp> __t, __make_const_lvalue_ref<_Up> __u)(
     requires(_With_lvalue_reference<_Tp>),
@@ -71,14 +71,13 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
     requires(__boolean_testable<decltype(__u != __t)>)));
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_CONCEPT __weakly_equality_comparable_with =
-  _LIBCUDACXX_FRAGMENT(__weakly_equality_comparable_with_, _Tp, _Up);
+_CCCL_CONCEPT __weakly_equality_comparable_with = _CCCL_FRAGMENT(__weakly_equality_comparable_with_, _Tp, _Up);
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT equality_comparable = __weakly_equality_comparable_with<_Tp, _Tp>;
+_CCCL_CONCEPT equality_comparable = __weakly_equality_comparable_with<_Tp, _Tp>;
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __equality_comparable_with_,
   requires()(
     requires(equality_comparable<_Tp>),
@@ -88,7 +87,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
     requires(__weakly_equality_comparable_with<_Tp, _Up>)));
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_CONCEPT equality_comparable_with = _LIBCUDACXX_FRAGMENT(__equality_comparable_with_, _Tp, _Up);
+_CCCL_CONCEPT equality_comparable_with = _CCCL_FRAGMENT(__equality_comparable_with_, _Tp, _Up);
 
 #endif // _CCCL_STD_VER > 2011
 
