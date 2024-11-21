@@ -318,6 +318,7 @@ long double    truncl(long double x);
 #  include <cmath>
 #endif // _CCCL_COMPILER(NVHPC)
 
+#include <cuda/std/__cmath/fpclassify.h>
 #include <cuda/std/__cmath/lerp.h>
 #include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__cmath/min_max.h>
@@ -393,8 +394,6 @@ using ::abs;
 #endif
 
 #if !_CCCL_COMPILER(NVRTC)
-
-using ::fpclassify;
 
 using ::double_t;
 using ::float_t;

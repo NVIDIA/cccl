@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__cmath/common.h>
+#include <cuda/std/__cmath/fpclassify.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_extended_floating_point.h>
@@ -297,18 +298,18 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool isnormal(_A1 __x) noexcept
 
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool isnormal(float __x) noexcept
 {
-  return __x != 0 && _CUDA_VSTD::isfinite(__x);
+  return _CUDA_VSTD::fpclassify(__x) == FP_NORMAL;
 }
 
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool isnormal(double __x) noexcept
 {
-  return __x != 0 && _CUDA_VSTD::isfinite(__x);
+  return _CUDA_VSTD::fpclassify(__x) == FP_NORMAL;
 }
 
 #if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool isnormal(long double __x) noexcept
 {
-  return __x != 0 && _CUDA_VSTD::isfinite(__x);
+  return _CUDA_VSTD::fpclassify(__x) == FP_NORMAL;
 }
 #endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
 

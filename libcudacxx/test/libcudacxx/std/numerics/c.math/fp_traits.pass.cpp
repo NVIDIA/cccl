@@ -18,6 +18,53 @@
 #include "test_macros.h"
 
 template <class T>
+__host__ __device__ void test_fpclassify(float val)
+{
+  static_assert((cuda::std::is_same<decltype(cuda::std::fpclassify(val)), int>::value), "");
+  assert(cuda::std::fpclassify(T(val)) == FP_NORMAL);
+  assert(cuda::std::fpclassify(T(1.0)) == FP_NORMAL);
+  assert(cuda::std::fpclassify(T(0.0)) == FP_ZERO);
+  assert(cuda::std::fpclassify(T(-1.0)) == FP_NORMAL);
+  assert(cuda::std::fpclassify(T(0.0)) == FP_ZERO);
+  // extended floating point types have issues here
+  if (!cuda::std::__is_extended_floating_point<T>::value)
+  {
+    assert(cuda::std::fpclassify(T(cuda::std::numeric_limits<T>::quiet_NaN())) == FP_NAN);
+    assert(cuda::std::fpclassify(T(cuda::std::numeric_limits<T>::infinity())) == FP_INFINITE);
+    assert(cuda::std::fpclassify(T(cuda::std::numeric_limits<T>::denorm_min())) == FP_SUBNORMAL);
+  }
+  else
+  {
+    assert(cuda::std::fpclassify(T(cuda::std::numeric_limits<float>::quiet_NaN())) == FP_NAN);
+    assert(cuda::std::fpclassify(T(cuda::std::numeric_limits<float>::infinity())) == FP_INFINITE);
+    // float subnormal turns to 0.0 for our half precision types
+    assert(cuda::std::fpclassify(T(cuda::std::numeric_limits<float>::denorm_min())) == FP_ZERO);
+  }
+}
+
+__host__ __device__ void test_fpclassify(float val)
+{
+  test_fpclassify<float>(val);
+  test_fpclassify<double>(val);
+#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+  test_fpclassify<long double>(val);
+#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#ifdef _LIBCUDACXX_HAS_NVFP16
+  test_fpclassify<__half>(val);
+#endif // _LIBCUDACXX_HAS_NVFP16
+#ifdef _LIBCUDACXX_HAS_NVBF16
+  test_fpclassify<__nv_bfloat16>(val);
+#endif // _LIBCUDACXX_HAS_NVBF16
+
+  assert(cuda::std::fpclassify(0u) == FP_ZERO);
+  assert(cuda::std::fpclassify(cuda::std::numeric_limits<unsigned>::max()) == FP_NORMAL);
+  assert(cuda::std::fpclassify(1) == FP_NORMAL);
+  assert(cuda::std::fpclassify(-1) == FP_NORMAL);
+  assert(cuda::std::fpclassify(cuda::std::numeric_limits<int>::max()) == FP_NORMAL);
+  assert(cuda::std::fpclassify(cuda::std::numeric_limits<int>::min()) == FP_NORMAL);
+}
+
+template <class T>
 __host__ __device__ void test_signbit(float val)
 {
   static_assert((cuda::std::is_same<decltype(cuda::std::signbit((T) 0)), bool>::value), "");
@@ -90,7 +137,7 @@ template <class T>
 __host__ __device__ void test_isnormal(float val)
 {
   static_assert((cuda::std::is_same<decltype(cuda::std::isnormal((T) 0)), bool>::value), "");
-  assert(cuda::std::isnormal(T(val)) == false);
+  assert(cuda::std::isnormal(T(val)) == true);
   assert(cuda::std::isnormal(T(-1.0f)) == true);
   assert(cuda::std::isnormal(T(1.0f)) == true);
   assert(cuda::std::isnormal(T(0.0f)) == false);
@@ -371,6 +418,7 @@ __host__ __device__ void test_isunordered(float val)
 
 __host__ __device__ void test(float val)
 {
+  test_fpclassify(val);
   test_signbit(val);
   test_isfinite(val);
   test_isnormal(val);
@@ -391,19 +439,19 @@ __global__ void test_global_kernel(float* val)
 
 int main(int, char**)
 {
-  volatile float val = 0.0f;
+  volatile float val = 1.0f;
   test(val);
 
 #if defined(_CCCL_BUILTIN_ISNAN)
-  static_assert(!test_constexpr_isnan(0.0f), "");
+  static_assert(!test_constexpr_isnan(1.0f), "");
 #endif // _CCCL_BUILTIN_ISNAN
 
 #if defined(_CCCL_BUILTIN_ISINF)
-  static_assert(!test_constexpr_isinf(0.0f), "");
+  static_assert(!test_constexpr_isinf(1.0f), "");
 #endif // _CCCL_BUILTIN_ISINF
 
 #if defined(_CCCL_BUILTIN_ISFINITE) || (defined(_CCCL_BUILTIN_ISINF) && defined(_CCCL_BUILTIN_ISNAN))
-  static_assert(test_constexpr_isfinite(0.0f), "");
+  static_assert(test_constexpr_isfinite(1.0f), "");
 #endif // _CCCL_BUILTIN_ISFINITE|| (_CCCL_BUILTIN_ISINF && _CCCL_BUILTIN_ISNAN)
 
   return 0;

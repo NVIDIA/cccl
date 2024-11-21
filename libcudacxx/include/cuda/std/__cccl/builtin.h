@@ -184,6 +184,15 @@
 #  define _CCCL_BUILTIN_FILE() __FILE__
 #endif // _CCCL_CUDACC_BELOW(11, 3)
 
+#if _CCCL_CHECK_BUILTIN(builtin_fpclassify) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_FPCLASSIFY(...) __builtin_fpclassify(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_fpclassify)
+
+// Below 11.7 nvcc treats the builtin as a host only function
+#if _CCCL_CUDACC_BELOW(11, 7)
+#  undef _CCCL_BUILTIN_FPCLASSIFY
+#endif // _CCCL_CUDACC_BELOW(11, 7)
+
 #if _CCCL_HAS_BUILTIN(__builtin_FUNCTION) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC, >=, 19, 27)
 #  define _CCCL_BUILTIN_FUNCTION() __builtin_FUNCTION()
 #else // ^^^ _CCCL_HAS_BUILTIN(__builtin_FUNCTION) ^^^ / vvv !_CCCL_HAS_BUILTIN(__builtin_FUNCTION) vvv
