@@ -120,7 +120,15 @@ def mul2(val):
                                              # "constant_float16",
                                              "constant_float32",
                                              "constant_float64",
-                                             "counting",
+                                             "counting_int16",
+                                             "counting_uint16",
+                                             "counting_int32",
+                                             "counting_uint32",
+                                             "counting_int64",
+                                             "counting_uint64",
+                                             # "counting_float16",
+                                             # "counting_float32", # TODO DEBUG
+                                             # "counting_float64", # TODO DEBUG
                                              "map_mul2"])
 def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, start_sum_with=10):
     def add_op(a, b):
@@ -146,9 +154,9 @@ def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, sta
         l_input = [42 for distance in range(num_items)]
         dtype, ntype = dtype_ntype()
         i_input = iterators.repeat(42, ntype=ntype)
-    elif input_generator == "counting":
+    elif input_generator.startswith("counting_"):
         l_input = [start_sum_with + distance for distance in range(num_items)]
-        dtype, ntype = numpy.int32, numba.types.int32
+        dtype, ntype = dtype_ntype()
         i_input = iterators.count(start_sum_with, ntype=ntype)
     elif input_generator == "map_mul2":
         l_input = [2 * (start_sum_with + distance) for distance in range(num_items)]
