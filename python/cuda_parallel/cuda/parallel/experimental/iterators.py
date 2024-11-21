@@ -106,9 +106,6 @@ class RawPointer:
     def pointer_dereference(this):
         return this[0][0]
 
-    def host_address(self):
-        return ctypes.byref(self.val)
-
     def state_c_void_p(self):
         return ctypes.cast(ctypes.pointer(self.val), ctypes.c_void_p)
 
@@ -182,9 +179,6 @@ class CacheModifiedPointer:
     def cache_dereference(this):
         return ldcs(this[0])
 
-    def host_address(self):
-        return ctypes.byref(self.val)
-
     def state_c_void_p(self):
         return ctypes.cast(ctypes.pointer(self.val), ctypes.c_void_p)
 
@@ -227,10 +221,6 @@ class ConstantIterator:
 
     def constant_dereference(this):
         return this[0]
-
-    def host_address(self):
-        # TODO should use numba instead for support of user-defined types
-        return ctypes.byref(self.val)
 
     def state_c_void_p(self):
         return ctypes.cast(ctypes.pointer(self.val), ctypes.c_void_p)
@@ -276,9 +266,6 @@ class CountingIterator:
 
     def count_dereference(this):
         return this[0]
-
-    def host_address(self):
-        return ctypes.byref(self.count)
 
     def state_c_void_p(self):
         return ctypes.cast(ctypes.pointer(self.count), ctypes.c_void_p)
@@ -416,9 +403,6 @@ def cu_map(op, it, op_return_ntype):
 
         def transform_dereference(it_state_ptr):
             return op(source_dereference(it_state_ptr))  # just a function call
-
-        def host_address(self):
-            return self.it.host_address()  # TODO support stateful operators
 
         def state_c_void_p(self):
             return self.it.state_c_void_p()
