@@ -241,7 +241,11 @@ public:
     ::std::apply(
       [this](const auto&... deps) {
         // Call add_deps on each dep using a fold expression
-        (add_deps(deps), ...);
+        //
+        // Note that we use this-> while it seems unnecessary to work-around
+        // some compiler issue which otherwise believe the "this" captured
+        // value is unused.
+        (this->add_deps(deps), ...);
       },
       deps_tuple);
   }
