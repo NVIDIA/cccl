@@ -132,7 +132,7 @@ def ldcs(typingctx, base):
             rt = ir.IntType(bw)
         elif isinstance(sig.return_type, numba.core.types.scalars.Float):
             if bw == 16:
-                rt = ir.HalfType()
+                rt = ir.IntType(16)  # ir.HalfType() does not work here.
             elif bw == 32:
                 rt = ir.FloatType()
             elif bw == 64:
