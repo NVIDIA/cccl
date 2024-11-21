@@ -49,7 +49,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 namespace detail
 {
@@ -247,6 +247,6 @@ static _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int load_acquire(unsigned int con
 
 } // namespace detail
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 CUB_NAMESPACE_END

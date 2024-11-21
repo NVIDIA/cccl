@@ -145,11 +145,11 @@ CUB_NAMESPACE_BEGIN
 //!
 template <typename Input,
           typename ReductionOp,
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
           typename ValueT = ::cuda::std::remove_cvref_t<decltype(::cuda::std::declval<Input>()[0])>,
 #else
           typename ValueT = random_access_value_t<Input>,
-#endif // !DOXYGEN_SHOULD_SKIP_THIS
+#endif // !_CCCL_DOXYGEN_INVOKED
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOp, ValueT>>
 _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& input, ReductionOp reduction_op);
 // forward declaration
@@ -158,7 +158,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& 
  * Internal Reduction Implementations
  **********************************************************************************************************************/
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 namespace detail
 {
@@ -698,6 +698,6 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE T ThreadReduce(const T*, Reductio
 
 } // namespace internal
 
-#endif // !DOXYGEN_SHOULD_SKIP_THIS
+#endif // !_CCCL_DOXYGEN_INVOKED
 
 CUB_NAMESPACE_END

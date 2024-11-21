@@ -242,7 +242,7 @@
 #  define _LIBCUDACXX_PP_EAT_TYPENAME_SELECT_1(...) _LIBCUDACXX_PP_CAT3(_LIBCUDACXX_PP_EAT_TYPENAME_, __VA_ARGS__)
 #  define _LIBCUDACXX_PP_EAT_TYPENAME_typename
 
-#  if (defined(__cpp_concepts) && _CCCL_STD_VER >= 2020) || defined(_LIBCUDACXX_DOXYGEN_INVOKED)
+#  if (defined(__cpp_concepts) && _CCCL_STD_VER >= 2020) || defined(_CCCL_DOXYGEN_INVOKED)
 
 #    define _LIBCUDACXX_CONCEPT concept
 

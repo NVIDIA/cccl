@@ -405,11 +405,11 @@ public:
     return __pool_;
   }
 
-#    ifndef DOXYGEN_SHOULD_SKIP_THIS // Doxygen cannot handle the friend function
+#    ifndef _CCCL_DOXYGEN_INVOKED // Doxygen cannot handle the friend function
   //! @brief Enables the \c device_accessible property for \c device_memory_resource.
   //! @relates device_memory_resource
   friend constexpr void get_property(device_memory_resource const&, _CUDA_VMR::device_accessible) noexcept {}
-#    endif // DOXYGEN_SHOULD_SKIP_THIS
+#    endif // _CCCL_DOXYGEN_INVOKED
 };
 static_assert(_CUDA_VMR::resource_with<device_memory_resource, _CUDA_VMR::device_accessible>, "");
 
