@@ -62,16 +62,16 @@ __host__ __device__ constexpr bool test()
 
   // With dynamic extent
   {
-    cuda::std::array<int, 7> vec{0, 1, 2, 3, 4, 5, 9084};
-    cuda::std::span<int> vecSpan{vec};
+    cuda::std::array<int, 7> arr{0, 1, 2, 3, 4, 5, 9084};
+    cuda::std::span<int> dynSpan{arr};
 
-    assert(cuda::std::dynamic_extent == vecSpan.extent);
+    assert(cuda::std::dynamic_extent == dynSpan.extent);
 
-    using ReferenceT = typename decltype(vecSpan)::reference;
+    using ReferenceT = typename decltype(dynSpan)::reference;
 
-    testSpanAt<ReferenceT>(vecSpan, 0, 0);
-    testSpanAt<ReferenceT>(vecSpan, 1, 1);
-    testSpanAt<ReferenceT>(vecSpan, 6, 9084);
+    testSpanAt<ReferenceT>(dynSpan, 0, 0);
+    testSpanAt<ReferenceT>(dynSpan, 1, 1);
+    testSpanAt<ReferenceT>(dynSpan, 6, 9084);
   }
 
   return true;
@@ -148,13 +148,13 @@ void test_exceptions()
   // With dynamic extent
 
   {
-    cuda::std::array<int, 8> vec{0, 1, 2, 3, 4, 5, 9084, cuda::std::numeric_limits<int>::max()};
-    const cuda::std::span<int> vecSpan{vec};
+    cuda::std::array<int, 8> arr{0, 1, 2, 3, 4, 5, 9084, cuda::std::numeric_limits<int>::max()};
+    const cuda::std::span<int> dynSpan{arr};
 
     try
     {
-      using SizeT       = typename decltype(vecSpan)::size_type;
-      cuda::std::ignore = vecSpan.at(cuda::std::numeric_limits<SizeT>::max());
+      using SizeT       = typename decltype(dynSpan)::size_type;
+      cuda::std::ignore = dynSpan.at(cuda::std::numeric_limits<SizeT>::max());
       assert(false);
     }
     catch (const std::out_of_range&)
@@ -168,7 +168,7 @@ void test_exceptions()
 
     try
     {
-      cuda::std::ignore = vecSpan.at(vec.size());
+      cuda::std::ignore = dynSpan.at(arr.size());
       assert(false);
     }
     catch (const std::out_of_range&)
@@ -182,8 +182,8 @@ void test_exceptions()
 
     try
     {
-      cuda::std::ignore = vecSpan.at(vec.size() - 1);
-      assert(vecSpan.at(vec.size() - 1) == cuda::std::numeric_limits<int>::max());
+      cuda::std::ignore = dynSpan.at(arr.size() - 1);
+      assert(dynSpan.at(arr.size() - 1) == cuda::std::numeric_limits<int>::max());
     }
     catch (...)
     {
@@ -192,12 +192,12 @@ void test_exceptions()
   }
 
   {
-    cuda::std::array<int, 0> vec{};
-    const cuda::std::span<int> vecSpan{vec};
+    cuda::std::array<int, 0> arr{};
+    const cuda::std::span<int> dynSpan{arr};
 
     try
     {
-      cuda::std::ignore = vecSpan.at(0);
+      cuda::std::ignore = dynSpan.at(0);
       assert(false);
     }
     catch (const std::out_of_range&)
