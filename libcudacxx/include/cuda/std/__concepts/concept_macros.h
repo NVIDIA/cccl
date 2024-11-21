@@ -78,14 +78,14 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool __is_true()
   return true;
 }
 
-#  if _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(MSVC)
+#  if _CCCL_COMPILER(CLANG) || defined(_CCCL_COMPILER_MSVC)
 template <bool _Bp>
 _LIBCUDACXX_HIDE_FROM_ABI __cccl_enable_if_t<_Bp> __cccl_requires()
 {}
-#  else // ^^^ _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(MSVC) ^^^ / vvv other compilers vvv
+#  else // ^^^ _CCCL_COMPILER(CLANG) || defined(_CCCL_COMPILER_MSVC) ^^^ / vvv other compilers vvv
 template <bool _Bp, __cccl_enable_if_t<_Bp, int> = 0>
 _CCCL_INLINE_VAR constexpr int __cccl_requires = 0;
-#  endif // !_CCCL_COMPILER(CLANG) && !_CCCL_COMPILER(MSVC)
+#  endif // !_CCCL_COMPILER(CLANG) && !defined(_CCCL_COMPILER_MSVC)
 
 template <class _Tp, class... _Args>
 _LIBCUDACXX_HIDE_FROM_ABI auto __cccl_make_dependent(_Tp*, _Tag<_Args...>*) -> _Tp;

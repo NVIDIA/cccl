@@ -801,7 +801,7 @@ public:
     }
   }
 
-#  if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(
     _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _CCCL_AND(!_CUDA_VRANGES::forward_range<_Range>))
@@ -962,7 +962,7 @@ public:
     }
   }
 
-#  if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(
     _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _CCCL_AND(!_CUDA_VRANGES::forward_range<_Range>))
@@ -1308,7 +1308,7 @@ public:
     return __res;
   }
 
-#  if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(
     _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _CCCL_AND(!_CUDA_VRANGES::forward_range<_Range>))
@@ -1452,7 +1452,7 @@ public:
     return _CUDA_VSTD::addressof(this->unchecked_emplace_back(_CUDA_VSTD::move(__value)));
   }
 
-#  if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(
     _CUDA_VRANGES::__container_compatible_range<_Range, _Tp> _CCCL_AND(!_CUDA_VRANGES::forward_range<_Range>))
@@ -1787,7 +1787,7 @@ public:
     }
   }
 
-#  if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr inplace_vector(from_range_t, _Range&& __range)
@@ -1839,7 +1839,7 @@ public:
     return;
   }
 
-#  if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void assign_range(_Range&& __range)
@@ -1997,7 +1997,7 @@ public:
     return nullptr;
   }
 
-#  if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator insert_range(const_iterator __cpos, _Range&& __range)
@@ -2062,7 +2062,7 @@ public:
     return nullptr;
   }
 
-#  if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
+#  if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(_CUDA_VRANGES::__container_compatible_range<_Range, _Tp>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VRANGES::iterator_t<_Range> try_append_range(_Range&& __range) noexcept

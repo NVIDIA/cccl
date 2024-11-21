@@ -203,12 +203,6 @@ _CCCL_INLINE_VAR constexpr bool __is_std_span<span<_Tp, _Extent>> = true;
 template <class _From, class _To>
 _CCCL_CONCEPT __span_array_convertible = _CCCL_TRAIT(is_convertible, _From (*)[], _To (*)[]);
 
-template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool __is_std_initializer_list = false;
-
-template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool __is_std_initializer_list<initializer_list<_Tp>> = true;
-
 // We want to ensure that span interacts nicely with containers that might not have had the ranges treatment
 #  if defined(__cpp_lib_ranges) && !_CCCL_COMPILER(MSVC2017)
 #    define _CCCL_SPAN_USES_RANGES
