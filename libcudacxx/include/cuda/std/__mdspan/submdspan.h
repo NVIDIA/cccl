@@ -521,15 +521,14 @@ struct _is_layout_stride<layout_stride> : true_type
 
 //==============================================================================
 
-_LIBCUDACXX_TEMPLATE(class _ET, class _EXT, class _LP, class _AP, class... _SliceSpecs)
-_LIBCUDACXX_REQUIRES(
+_CCCL_TEMPLATE(class _ET, class _EXT, class _LP, class _AP, class... _SliceSpecs)
+_CCCL_REQUIRES(
   (_CCCL_TRAIT(_CUDA_VSTD::is_same, _LP, layout_left) || _CCCL_TRAIT(_CUDA_VSTD::is_same, _LP, layout_right)
    || __detail::_is_layout_stride<_LP>::value)
-    _LIBCUDACXX_AND __MDSPAN_FOLD_AND(
-      (_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _SliceSpecs, size_t)
-       || _CCCL_TRAIT(_CUDA_VSTD::is_convertible, _SliceSpecs, tuple<size_t, size_t>)
-       || _CCCL_TRAIT(_CUDA_VSTD::is_convertible, _SliceSpecs, full_extent_t)) /* && ... */)
-      _LIBCUDACXX_AND(sizeof...(_SliceSpecs) == _EXT::rank()))
+    _CCCL_AND __MDSPAN_FOLD_AND((_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _SliceSpecs, size_t)
+                                 || _CCCL_TRAIT(_CUDA_VSTD::is_convertible, _SliceSpecs, tuple<size_t, size_t>)
+                                 || _CCCL_TRAIT(_CUDA_VSTD::is_convertible, _SliceSpecs, full_extent_t)) /* && ... */)
+      _CCCL_AND(sizeof...(_SliceSpecs) == _EXT::rank()))
 _LIBCUDACXX_HIDE_FROM_ABI __MDSPAN_DEDUCE_RETURN_TYPE_SINGLE_LINE(
   (constexpr submdspan(mdspan<_ET, _EXT, _LP, _AP> const& __src, _SliceSpecs... __slices) noexcept),
   (

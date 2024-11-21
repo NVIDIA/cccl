@@ -107,7 +107,7 @@ private:
   template <class _Tp2 = _Tp>
   _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI auto
   __cudax_launch_transform(::cuda::stream_ref, uninitialized_buffer& __self) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(_CUDA_VSTD::span<_Tp>)(
+    _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<_Tp>)(
       _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<_CUDA_VMR::device_accessible, _Properties...>)
   {
     return {__self.__get_data(), __self.size()};
@@ -118,7 +118,7 @@ private:
   template <class _Tp2 = _Tp>
   _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI auto
   __cudax_launch_transform(::cuda::stream_ref, const uninitialized_buffer& __self) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(_CUDA_VSTD::span<const _Tp>)(
+    _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<const _Tp>)(
       _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<_CUDA_VMR::device_accessible, _Properties...>)
   {
     return {__self.__get_data(), __self.size()};
@@ -158,8 +158,8 @@ public:
   //! @brief Move-constructs a \c uninitialized_buffer from another \c uninitialized_buffer with matching properties
   //! @param __other Another \c uninitialized_buffer
   //! Takes ownership of the allocation in \p __other and resets it
-  _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
-  _LIBCUDACXX_REQUIRES(__properties_match<_OtherProperties...>)
+  _CCCL_TEMPLATE(class... _OtherProperties)
+  _CCCL_REQUIRES(__properties_match<_OtherProperties...>)
   _CCCL_HIDE_FROM_ABI uninitialized_buffer(uninitialized_buffer<_Tp, _OtherProperties...>&& __other) noexcept
       : __mr_(_CUDA_VSTD::move(__other.__mr_))
       , __count_(_CUDA_VSTD::exchange(__other.__count_, 0))
@@ -240,9 +240,8 @@ public:
 
 #  ifndef DOXYGEN_SHOULD_SKIP_THIS // friend functions are currently broken
   //! @brief Forwards the passed Properties
-  _LIBCUDACXX_TEMPLATE(class _Property)
-  _LIBCUDACXX_REQUIRES(
-    (!property_with_value<_Property>) _LIBCUDACXX_AND _CUDA_VSTD::__is_included_in_v<_Property, _Properties...>)
+  _CCCL_TEMPLATE(class _Property)
+  _CCCL_REQUIRES((!property_with_value<_Property>) _CCCL_AND _CUDA_VSTD::__is_included_in_v<_Property, _Properties...>)
   _CCCL_HIDE_FROM_ABI friend constexpr void get_property(const uninitialized_buffer&, _Property) noexcept {}
 #  endif // DOXYGEN_SHOULD_SKIP_THIS
 

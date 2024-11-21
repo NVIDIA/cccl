@@ -123,8 +123,8 @@ private:
 public:
   // Preconditions: If `I` does not model `bidirectional_iterator`, `n` is not negative.
 
-  _LIBCUDACXX_TEMPLATE(class _Ip)
-  _LIBCUDACXX_REQUIRES(input_or_output_iterator<_Ip>)
+  _CCCL_TEMPLATE(class _Ip)
+  _CCCL_REQUIRES(input_or_output_iterator<_Ip>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_Ip& __i, iter_difference_t<_Ip> __n) const
   {
     _CCCL_ASSERT(__n >= 0 || bidirectional_iterator<_Ip>, "If `n < 0`, then `bidirectional_iterator<I>` must be true.");
@@ -151,8 +151,8 @@ public:
     }
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Ip, class _Sp)
-  _LIBCUDACXX_REQUIRES(input_or_output_iterator<_Ip> _LIBCUDACXX_AND sentinel_for<_Sp, _Ip>)
+  _CCCL_TEMPLATE(class _Ip, class _Sp)
+  _CCCL_REQUIRES(input_or_output_iterator<_Ip> _CCCL_AND sentinel_for<_Sp, _Ip>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator()(_Ip& __i, _Sp __bound_sentinel) const
   {
     // If `I` and `S` model `assignable_from<I&, S>`, equivalent to `i = std::move(bound_sentinel)`.
@@ -182,8 +182,8 @@ public:
   //   * If `n < 0`, [bound_sentinel, i) denotes a range, `I` models `bidirectional_iterator`,
   //     and `I` and `S` model `same_as<I, S>`.
   // Returns: `n - M`, where `M` is the difference between the ending and starting position.
-  _LIBCUDACXX_TEMPLATE(class _Ip, class _Sp)
-  _LIBCUDACXX_REQUIRES(input_or_output_iterator<_Ip> _LIBCUDACXX_AND sentinel_for<_Sp, _Ip>)
+  _CCCL_TEMPLATE(class _Ip, class _Sp)
+  _CCCL_REQUIRES(input_or_output_iterator<_Ip> _CCCL_AND sentinel_for<_Sp, _Ip>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr iter_difference_t<_Ip>
   operator()(_Ip& __i, iter_difference_t<_Ip> __n, _Sp __bound_sentinel) const
   {

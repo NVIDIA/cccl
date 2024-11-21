@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/copyable.h>
 
@@ -38,10 +38,10 @@ concept semiregular = copyable<_Tp> && default_initializable<_Tp>;
 // [concept.object]
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(__semiregular_, requires()(requires(copyable<_Tp>), requires(default_initializable<_Tp>)));
+_CCCL_CONCEPT_FRAGMENT(__semiregular_, requires()(requires(copyable<_Tp>), requires(default_initializable<_Tp>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT semiregular = _LIBCUDACXX_FRAGMENT(__semiregular_, _Tp);
+_CCCL_CONCEPT semiregular = _CCCL_FRAGMENT(__semiregular_, _Tp);
 
 #endif // _CCCL_STD_VER > 2011
 
