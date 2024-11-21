@@ -22,7 +22,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class _Up>
 struct __ignore_t
 {
   template <class _Tp>
@@ -34,7 +33,7 @@ struct __ignore_t
 
 namespace
 {
-_CCCL_GLOBAL_CONSTANT __ignore_t<unsigned char> ignore{};
+_CCCL_GLOBAL_CONSTANT __ignore_t ignore{};
 } // namespace
 
 _LIBCUDACXX_END_NAMESPACE_STD
