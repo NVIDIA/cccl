@@ -125,42 +125,45 @@ def mul2(val):
                                              "counting_uint64",
                                              "counting_float32",
                                              "counting_float64",
-                                             "map_mul2"])
+                                             "map_mul2_int32_int32",
+                                            ])
 def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, start_sum_with=10):
     def add_op(a, b):
         return a + b
 
-    def dtype_ntype():
-        intty = input_generator.split("_")[-1]
+    def dtype_ntype(ix):
+        intty = input_generator.split("_")[ix]
         return numpy.dtype(intty), getattr(numba.types, intty)
 
     if input_generator.startswith("raw_pointer_"):
         rng = random.Random(0)
         l_input = [rng.randrange(100) for _ in range(num_items)]
-        dtype, ntype = dtype_ntype()
+        dtype, ntype = dtype_ntype(-1)
         raw_pointer_devarr = numba.cuda.to_device(numpy.array(l_input, dtype=dtype))
         i_input = iterators.pointer(raw_pointer_devarr, ntype=ntype)
     elif input_generator.startswith("streamed_input_"):
         rng = random.Random(0)
         l_input = [rng.randrange(100) for _ in range(num_items)]
-        dtype, ntype = dtype_ntype()
+        dtype, ntype = dtype_ntype(-1)
         streamed_input_devarr = numba.cuda.to_device(numpy.array(l_input, dtype=dtype))
         i_input = iterators.cache(streamed_input_devarr, ntype=ntype, modifier='stream')
     elif input_generator.startswith("constant_"):
         l_input = [42 for distance in range(num_items)]
-        dtype, ntype = dtype_ntype()
+        dtype, ntype = dtype_ntype(-1)
         i_input = iterators.repeat(42, ntype=ntype)
     elif input_generator.startswith("counting_"):
         l_input = [start_sum_with + distance for distance in range(num_items)]
-        dtype, ntype = dtype_ntype()
+        dtype, ntype = dtype_ntype(-1)
         i_input = iterators.count(start_sum_with, ntype=ntype)
-    elif input_generator == "map_mul2":
+    elif input_generator.startswith("map_mul2_"):
         l_input = [2 * (start_sum_with + distance) for distance in range(num_items)]
-        dtype, ntype = numpy.int32, numba.types.int32
+        dtype_op, ntype_op = dtype_ntype(-1)
+        dtype_it, ntype_it = dtype_ntype(-2)
+        dtype = dtype_op
         i_input = iterators.cu_map(
             mul2,
-            iterators.count(start_sum_with, ntype=ntype),
-            op_return_ntype=ntype)
+            iterators.count(start_sum_with, ntype=ntype_it),
+            op_return_ntype=ntype_op)
     else:
         raise RuntimeError("Unexpected input_generator")
 
