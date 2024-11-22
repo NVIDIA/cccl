@@ -6,25 +6,25 @@ PTX Instructions
 .. toctree::
    :maxdepth: 1
 
-   instructions/barrier.cluster
-   instructions/cp.async.bulk
-   instructions/cp.async.bulk.commit_group
-   instructions/cp.async.bulk.wait_group
-   instructions/cp.async.bulk.tensor
-   instructions/cp.reduce.async.bulk
-   instructions/cp.reduce.async.bulk.tensor
+   instructions/barrier_cluster
+   instructions/cp_async_bulk
+   instructions/cp_async_bulk_commit_group
+   instructions/cp_async_bulk_wait_group
+   instructions/cp_async_bulk_tensor
+   instructions/cp_reduce_async_bulk
+   instructions/cp_reduce_async_bulk_tensor
    instructions/fence
    instructions/getctarank
    instructions/mapa
-   instructions/mbarrier.init
-   instructions/mbarrier.arrive
-   instructions/mbarrier.expect_tx
-   instructions/mbarrier.test_wait
-   instructions/mbarrier.try_wait
-   instructions/red.async
-   instructions/st.async
-   instructions/tensormap.replace
-   instructions/tensormap.cp_fenceproxy
+   instructions/mbarrier_init
+   instructions/mbarrier_arrive
+   instructions/mbarrier_expect_tx
+   instructions/mbarrier_test_wait
+   instructions/mbarrier_try_wait
+   instructions/red_async
+   instructions/st_async
+   instructions/tensormap_replace
+   instructions/tensormap_cp_fenceproxy
    instructions/special_registers
 
 

@@ -243,6 +243,9 @@ template<class T> complex<T> tanh (const complex<T>&);
 #endif // no system header
 
 #include <cuda/std/__complex/vector_support.h>
+#include <cuda/std/__fwd/get.h>
+#include <cuda/std/__tuple_dir/tuple_element.h>
+#include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
@@ -285,6 +288,9 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_COMPLEX_ALIGNAS complex
 
   template <class _Up>
   friend class complex;
+
+  template <class _Up>
+  friend struct __get_complex_impl;
 
 public:
   using value_type = _Tp;
@@ -1416,6 +1422,74 @@ _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> tan(const complex<_Tp>& __x)
 {
   complex<_Tp> __z = _CUDA_VSTD::tanh(complex<_Tp>(-__x.imag(), __x.real()));
   return complex<_Tp>(__z.imag(), -__z.real());
+}
+
+template <class _Tp>
+struct tuple_size<complex<_Tp>> : _CUDA_VSTD::integral_constant<size_t, 2>
+{};
+
+template <size_t _Index, class _Tp>
+  struct tuple_element<_Index, complex<_Tp>> : _CUDA_VSTD::enable_if < _Index<2, _Tp>
+{};
+
+template <class _Tp>
+struct __get_complex_impl
+{
+  template <size_t _Index>
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp& get(complex<_Tp>& __z) noexcept
+  {
+    return (_Index == 0) ? __z.__re_ : __z.__im_;
+  }
+
+  template <size_t _Index>
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp&& get(complex<_Tp>&& __z) noexcept
+  {
+    return _CUDA_VSTD::move((_Index == 0) ? __z.__re_ : __z.__im_);
+  }
+
+  template <size_t _Index>
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& get(const complex<_Tp>& __z) noexcept
+  {
+    return (_Index == 0) ? __z.__re_ : __z.__im_;
+  }
+
+  template <size_t _Index>
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp&& get(const complex<_Tp>&& __z) noexcept
+  {
+    return _CUDA_VSTD::move((_Index == 0) ? __z.__re_ : __z.__im_);
+  }
+};
+
+template <size_t _Index, class _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp& get(complex<_Tp>& __z) noexcept
+{
+  static_assert(_Index < 2, "Index value is out of range");
+
+  return __get_complex_impl<_Tp>::template get<_Index>(__z);
+}
+
+template <size_t _Index, class _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp&& get(complex<_Tp>&& __z) noexcept
+{
+  static_assert(_Index < 2, "Index value is out of range");
+
+  return __get_complex_impl<_Tp>::template get<_Index>(_CUDA_VSTD::move(__z));
+}
+
+template <size_t _Index, class _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& get(const complex<_Tp>& __z) noexcept
+{
+  static_assert(_Index < 2, "Index value is out of range");
+
+  return __get_complex_impl<_Tp>::template get<_Index>(__z);
+}
+
+template <size_t _Index, class _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp&& get(const complex<_Tp>&& __z) noexcept
+{
+  static_assert(_Index < 2, "Index value is out of range");
+
+  return __get_complex_impl<_Tp>::template get<_Index>(_CUDA_VSTD::move(__z));
 }
 
 #if !_CCCL_COMPILER(NVRTC)

@@ -1,0 +1,21 @@
+/*
+// fence.proxy.alias; // 4. PTX ISA 75, SM_70
+template <typename=void>
+__device__ static inline void fence_proxy_alias();
+*/
+#if __cccl_ptx_isa >= 750
+extern "C" _CCCL_DEVICE void __cuda_ptx_fence_proxy_alias_is_not_supported_before_SM_70__();
+template <typename = void>
+_CCCL_DEVICE static inline void fence_proxy_alias()
+{
+  NV_IF_ELSE_TARGET(
+    NV_PROVIDES_SM_70,
+    (asm volatile("fence.proxy.alias; // 4."
+                  :
+                  :
+                  : "memory");),
+    (
+      // Unsupported architectures will have a linker error with a semi-decent error message
+      __cuda_ptx_fence_proxy_alias_is_not_supported_before_SM_70__();));
+}
+#endif // __cccl_ptx_isa >= 750

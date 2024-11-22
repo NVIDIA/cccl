@@ -112,7 +112,7 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __vtable_tuple
   template <class _Tp, class _Super>
   _CUDAX_HOST_API constexpr __vtable_tuple(__tag<_Tp, _Super> __type) noexcept
       : __rtti_ex<sizeof...(_Interfaces)>{__type, __tag<_Interfaces...>(), this}
-#ifdef _CCCL_COMPILER_MSVC
+#if _CCCL_COMPILER(MSVC)
       // workaround for MSVC bug
       , __overrides_for<_Interfaces>::__vtable{__tag<_Tp>(), this}...
 #else
