@@ -104,6 +104,19 @@ TEST_CASE("1d Copy", "[data_manipulation]")
   }
 }
 
+template <typename Layout = cuda::std::layout_right, typename Extents>
+auto make_buffer_for_mdspan(Extents extents, char value = 0)
+{
+  cuda::mr::pinned_memory_resource host_resource;
+  auto mapping = typename Layout::mapping{extents};
+
+  cudax::uninitialized_buffer<int, cuda::mr::host_accessible> buffer(host_resource, mapping.required_span_size());
+
+  memset(buffer.data(), value, buffer.size_bytes());
+
+  return buffer;
+}
+
 template <typename SrcLayout = cuda::std::layout_right,
           typename DstLayout = SrcLayout,
           typename SrcExtents,
@@ -111,17 +124,8 @@ template <typename SrcLayout = cuda::std::layout_right,
 void test_mdspan_copy_bytes(
   cudax::stream_ref stream, SrcExtents src_extents = SrcExtents(), DstExtents dst_extents = DstExtents())
 {
-  cuda::mr::pinned_memory_resource host_resource;
-  auto src_mapping = typename SrcLayout::mapping{src_extents};
-  auto dst_mapping = typename DstLayout::mapping{dst_extents};
-
-  cudax::uninitialized_buffer<int, cuda::mr::host_accessible> src_buffer(
-    host_resource, src_mapping.required_span_size());
-  cudax::uninitialized_buffer<int, cuda::mr::host_accessible> dst_buffer(
-    host_resource, dst_mapping.required_span_size());
-
-  memset(src_buffer.data(), 1, src_buffer.size_bytes());
-  memset(dst_buffer.data(), 0, dst_buffer.size_bytes());
+  auto src_buffer = make_buffer_for_mdspan<SrcLayout>(src_extents, 1);
+  auto dst_buffer = make_buffer_for_mdspan<DstLayout>(dst_extents, 0);
 
   cuda::std::mdspan<int, SrcExtents, SrcLayout> src(src_buffer.data(), src_extents);
   cuda::std::mdspan<int, DstExtents, DstLayout> dst(dst_buffer.data(), dst_extents);
@@ -144,17 +148,33 @@ TEST_CASE("Mdspan copy", "[data_manipulation]")
 {
   cudax::stream stream;
 
-  auto static_extents = cuda::std::extents<size_t, 3, 4>();
-  test_mdspan_copy_bytes(stream, static_extents, static_extents);
-  test_mdspan_copy_bytes<cuda::std::layout_left>(stream, static_extents, static_extents);
+  SECTION("Different extents")
+  {
+    auto static_extents = cuda::std::extents<size_t, 3, 4>();
+    test_mdspan_copy_bytes(stream, static_extents, static_extents);
+    test_mdspan_copy_bytes<cuda::std::layout_left>(stream, static_extents, static_extents);
 
-  auto dynamic_extents = cuda::std::dextents<size_t, 2>(3, 4);
-  test_mdspan_copy_bytes(stream, dynamic_extents, dynamic_extents);
-  test_mdspan_copy_bytes(stream, static_extents, dynamic_extents);
-  test_mdspan_copy_bytes<cuda::std::layout_left>(stream, static_extents, dynamic_extents);
+    auto dynamic_extents = cuda::std::dextents<size_t, 2>(3, 4);
+    test_mdspan_copy_bytes(stream, dynamic_extents, dynamic_extents);
+    test_mdspan_copy_bytes(stream, static_extents, dynamic_extents);
+    test_mdspan_copy_bytes<cuda::std::layout_left>(stream, static_extents, dynamic_extents);
 
-  auto mixed_extents = cuda::std::extents<int, cuda::std::dynamic_extent, 4>(3);
-  test_mdspan_copy_bytes(stream, dynamic_extents, mixed_extents);
-  test_mdspan_copy_bytes(stream, mixed_extents, static_extents);
-  test_mdspan_copy_bytes<cuda::std::layout_left>(stream, mixed_extents, static_extents);
+    auto mixed_extents = cuda::std::extents<int, cuda::std::dynamic_extent, 4>(3);
+    test_mdspan_copy_bytes(stream, dynamic_extents, mixed_extents);
+    test_mdspan_copy_bytes(stream, mixed_extents, static_extents);
+    test_mdspan_copy_bytes<cuda::std::layout_left>(stream, mixed_extents, static_extents);
+  }
+
+  SECTION("Launch transform")
+  {
+    auto extents       = cuda::std::extents<size_t, 1024, 1024, 2, 2>();
+    auto mdspan_buffer = make_buffer_for_mdspan(extents, 1);
+    cuda::std::mdspan mdspan(mdspan_buffer.data(), extents);
+    cudax::weird_buffer<cuda::std::mdspan<int, decltype(extents)>> buffer{
+      cuda::mr::pinned_memory_resource{}, mdspan.mapping().required_span_size()};
+
+    cudax::copy_bytes(stream, mdspan, buffer);
+    stream.wait();
+    CUDAX_REQUIRE(!memcmp(mdspan_buffer.data(), buffer.data, mdspan_buffer.size()));
+  }
 }

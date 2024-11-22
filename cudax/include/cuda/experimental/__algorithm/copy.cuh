@@ -124,12 +124,12 @@ _LIBCUDACXX_TEMPLATE(typename _SrcTy, typename _DstTy)
 _LIBCUDACXX_REQUIRES(__valid_nd_copy_fill_argument<_SrcTy> _LIBCUDACXX_AND __valid_nd_copy_fill_argument<_DstTy>)
 void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst)
 {
+  decltype(auto) __src_transformed = detail::__launch_transform(__stream, _CUDA_VSTD::forward<_SrcTy>(__src));
+  decltype(auto) __dst_transformed = detail::__launch_transform(__stream, _CUDA_VSTD::forward<_DstTy>(__dst));
+  decltype(auto) __src_as_arg      = static_cast<detail::__as_copy_arg_t<_SrcTy>>(__src_transformed);
+  decltype(auto) __dst_as_arg      = static_cast<detail::__as_copy_arg_t<_DstTy>>(__dst_transformed);
   __nd_copy_bytes_impl(
-    __stream,
-    static_cast<detail::__as_copy_arg_t<_SrcTy>>(
-      detail::__launch_transform(__stream, _CUDA_VSTD::forward<_SrcTy>(__src))),
-    static_cast<detail::__as_copy_arg_t<_DstTy>>(
-      detail::__launch_transform(__stream, _CUDA_VSTD::forward<_DstTy>(__dst))));
+    __stream, __as_mdspan_t<decltype(__dst_as_arg)>(__src_as_arg), __as_mdspan_t<decltype(__dst_as_arg)>(__dst_as_arg));
 }
 
 } // namespace cuda::experimental

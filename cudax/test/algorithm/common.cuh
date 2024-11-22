@@ -47,6 +47,7 @@ namespace cuda::experimental
 {
 
 // Need a type that goes through all launch_transform steps, but is not a contiguous_range
+template <typename AsKernelArg = cuda::std::span<int>>
 struct weird_buffer
 {
   const cuda::mr::pinned_memory_resource& resource;
@@ -57,7 +58,9 @@ struct weird_buffer
       : resource(res)
       , data((int*) res.allocate(s * sizeof(int)))
       , size(s)
-  {}
+  {
+    memset(data, 0, size);
+  }
 
   ~weird_buffer()
   {
@@ -72,11 +75,17 @@ struct weird_buffer
     int* data;
     std::size_t size;
 
-    using __as_kernel_arg = cuda::std::span<int>;
+    using __as_kernel_arg = AsKernelArg;
 
     operator cuda::std::span<int>()
     {
       return {data, size};
+    }
+
+    template <typename Extents>
+    operator cuda::std::mdspan<int, Extents>()
+    {
+      return cuda::std::mdspan<int, Extents>{data};
     }
   };
 
@@ -85,8 +94,6 @@ struct weird_buffer
     return {self.data, self.size};
   }
 };
-
-static_assert(std::is_same_v<cudax::as_kernel_arg_t<cudax::weird_buffer>, cuda::std::span<int>>);
 
 } // namespace cuda::experimental
 

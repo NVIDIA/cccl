@@ -31,11 +31,20 @@
 namespace cuda::experimental
 {
 
-template <typename _Tp>
-inline constexpr bool __is_mdspan = false;
+template <typename _Tp, typename _Decayed = _CUDA_VSTD::decay_t<_Tp>>
+using __as_mdspan_t =
+  _CUDA_VSTD::mdspan<typename _Decayed::value_type,
+                     typename _Decayed::extents_type,
+                     typename _Decayed::layout_type,
+                     typename _Decayed::accessor_type>;
 
-template <typename _Tp, typename _Extents, typename _LayoutPolicy, typename _AccessorPolicy>
-inline constexpr bool __is_mdspan<::cuda::std::mdspan<_Tp, _Extents, _LayoutPolicy, _AccessorPolicy>> = true;
+template <typename _Tp, typename = int>
+inline constexpr bool __convertible_to_mdspan = false;
+
+template <typename _Tp>
+inline constexpr bool
+  __convertible_to_mdspan<_Tp, _CUDA_VSTD::enable_if_t<_CUDA_VSTD::is_convertible_v<_Tp, __as_mdspan_t<_Tp>>, int>> =
+    true;
 
 #if _CCCL_STD_VER >= 2020 && defined(_CCCL_SPAN_USES_RANGES)
 template <typename _Tp>
@@ -60,7 +69,7 @@ inline constexpr bool __valid_1d_copy_fill_argument =
   _CUDA_VRANGES::contiguous_range<detail::__as_copy_arg_t<_Tp>> || __convertible_to_span<_Tp>;
 
 template <typename _Tp>
-inline constexpr bool __valid_nd_copy_fill_argument = __is_mdspan<_CUDA_VSTD::decay_t<detail::__as_copy_arg_t<_Tp>>>;
+inline constexpr bool __valid_nd_copy_fill_argument = __convertible_to_mdspan<detail::__as_copy_arg_t<_Tp>>;
 
 #endif
 
