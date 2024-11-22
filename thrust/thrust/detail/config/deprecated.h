@@ -40,19 +40,7 @@
 #ifdef THRUST_IGNORE_DEPRECATED_API
 #  define THRUST_DEPRECATED
 #  define THRUST_DEPRECATED_BECAUSE(MSG)
-#elif _CCCL_STD_VER >= 2014
-#  define THRUST_DEPRECATED              [[deprecated]]
-#  define THRUST_DEPRECATED_BECAUSE(MSG) [[deprecated(MSG)]]
-#elif _CCCL_COMPILER(MSVC)
-#  define THRUST_DEPRECATED              __declspec(deprecated)
-#  define THRUST_DEPRECATED_BECAUSE(MSG) __declspec(deprecated(MSG))
-#elif _CCCL_COMPILER(CLANG)
-#  define THRUST_DEPRECATED              __attribute__((deprecated))
-#  define THRUST_DEPRECATED_BECAUSE(MSG) __attribute__((deprecated(MSG)))
-#elif _CCCL_COMPILER(GCC)
-#  define THRUST_DEPRECATED              __attribute__((deprecated))
-#  define THRUST_DEPRECATED_BECAUSE(MSG) __attribute__((deprecated(MSG)))
 #else
-#  define THRUST_DEPRECATED
-#  define THRUST_DEPRECATED_BECAUSE(MSG)
+#  define THRUST_DEPRECATED              _CCCL_DEPRECATED
+#  define THRUST_DEPRECATED_BECAUSE(MSG) _CCCL_DEPRECATED(MSG)
 #endif

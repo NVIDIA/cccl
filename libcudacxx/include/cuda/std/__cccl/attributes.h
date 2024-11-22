@@ -115,4 +115,18 @@
 #  define _CCCL_RESTRICT __restrict__
 #endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 
+#if _CCCL_STD_VER >= 2014
+#  define _CCCL_DEPRECATED               [[deprecated]]
+#  define _CCCL_DEPRECATED_BECAUSE(_MSG) [[deprecated(_MSG)]]
+#elif _CCCL_COMPILER(MSVC)
+#  define _CCCL_DEPRECATED               __declspec(deprecated)
+#  define _CCCL_DEPRECATED_BECAUSE(_MSG) __declspec(deprecated(_MSG))
+#else _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC) || _CCCL_COMPILER(ICC)
+#  define _CCCL_DEPRECATED               __attribute__((deprecated))
+#  define _CCCL_DEPRECATED_BECAUSE(_MSG) __attribute__((deprecated(_MSG)))
+#else
+#  define _CCCL_DEPRECATED
+#  define _CCCL_DEPRECATED_BECAUSE(_MSG)
+#endif
+
 #endif // __CCCL_ATTRIBUTES_H

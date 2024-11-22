@@ -630,13 +630,7 @@ typedef unsigned int char32_t;
 // by defining _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS.
 // NVCC 11.1 and 11.2 are broken with the deprecated attribute, so disable it
 #  if !defined(_LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS) && _CCCL_CUDACC_AT_LEAST(11, 3)
-#    if _CCCL_HAS_ATTRIBUTE(deprecated)
-#      define _LIBCUDACXX_DEPRECATED __attribute__((deprecated))
-#    elif _CCCL_STD_VER > 2011
-#      define _LIBCUDACXX_DEPRECATED [[deprecated]]
-#    else
-#      define _LIBCUDACXX_DEPRECATED
-#    endif
+#    define _LIBCUDACXX_DEPRECATED _CCCL_DEPRECATED
 #  else
 #    define _LIBCUDACXX_DEPRECATED
 #  endif
