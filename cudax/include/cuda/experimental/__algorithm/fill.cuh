@@ -73,8 +73,8 @@ void fill_bytes(stream_ref __stream, _DstTy&& __dst, uint8_t __value)
 //! @param __stream Stream that the copy should be inserted into
 //! @param __dst Destination memory to fill
 //! @param __value Value to fill into every byte in the destination
-_LIBCUDACXX_TEMPLATE(typename _DstTy)
-_LIBCUDACXX_REQUIRES(__valid_nd_copy_fill_argument<_DstTy>)
+_CCCL_TEMPLATE(typename _DstTy)
+_CCCL_REQUIRES(__valid_nd_copy_fill_argument<_DstTy>)
 void fill_bytes(stream_ref __stream, _DstTy&& __dst, uint8_t __value)
 {
   decltype(auto) __dst_transformed = detail::__launch_transform(__stream, _CUDA_VSTD::forward<_DstTy>(__dst));

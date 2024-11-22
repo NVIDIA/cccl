@@ -134,8 +134,8 @@ void __nd_copy_bytes_impl(stream_ref __stream,
 //! @param __stream Stream that the copy should be inserted into
 //! @param __src Source to copy from
 //! @param __dst Destination to copy into
-_LIBCUDACXX_TEMPLATE(typename _SrcTy, typename _DstTy)
-_LIBCUDACXX_REQUIRES(__valid_nd_copy_fill_argument<_SrcTy> _LIBCUDACXX_AND __valid_nd_copy_fill_argument<_DstTy>)
+_CCCL_TEMPLATE(typename _SrcTy, typename _DstTy)
+_CCCL_REQUIRES(__valid_nd_copy_fill_argument<_SrcTy> _CCCL_AND __valid_nd_copy_fill_argument<_DstTy>)
 void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst)
 {
   decltype(auto) __src_transformed = detail::__launch_transform(__stream, _CUDA_VSTD::forward<_SrcTy>(__src));
