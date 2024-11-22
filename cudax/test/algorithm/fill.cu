@@ -51,7 +51,7 @@ TEST_CASE("Mdspan Fill", "[data_manipulation]")
   {
     cuda::std::dextents<size_t, 3> dynamic_extents{1, 2, 3};
     auto buffer = make_buffer_for_mdspan(dynamic_extents, 0);
-    cuda::std::mdspan dynamic_mdspan(buffer.data(), dynamic_extents);
+    cuda::std::mdspan<int, decltype(dynamic_extents)> dynamic_mdspan(buffer.data(), dynamic_extents);
 
     cudax::fill_bytes(stream, dynamic_mdspan, fill_byte);
     check_result_and_erase(stream, cuda::std::span(buffer.data(), buffer.size()));
@@ -59,7 +59,7 @@ TEST_CASE("Mdspan Fill", "[data_manipulation]")
   {
     cuda::std::extents<size_t, 2, cuda::std::dynamic_extent, 4> mixed_extents{1};
     auto buffer = make_buffer_for_mdspan(mixed_extents, 0);
-    cuda::std::mdspan mixed_mdspan(buffer.data(), mixed_extents);
+    cuda::std::mdspan<int, decltype(mixed_extents)> mixed_mdspan(buffer.data(), mixed_extents);
 
     cudax::fill_bytes(stream, cuda::std::move(mixed_mdspan), fill_byte);
     check_result_and_erase(stream, cuda::std::span(buffer.data(), buffer.size()));

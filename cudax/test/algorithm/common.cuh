@@ -47,7 +47,7 @@ template <typename Layout = cuda::std::layout_right, typename Extents>
 auto make_buffer_for_mdspan(Extents extents, char value = 0)
 {
   cuda::mr::pinned_memory_resource host_resource;
-  auto mapping = typename Layout::mapping<decltype(extents)>{extents};
+  auto mapping = typename Layout::template mapping<decltype(extents)>{extents};
 
   cudax::uninitialized_buffer<int, cuda::mr::host_accessible> buffer(host_resource, mapping.required_span_size());
 
