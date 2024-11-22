@@ -23,21 +23,6 @@ __host__ __device__ bool is_alpha(const char c)
   return (c >= 'A' && c <= 'z');
 }
 
-template <typename T>
-class sum
-{
-public:
-  static __host__ __device__ void init_op(T& dst)
-  {
-    dst = static_cast<T>(0);
-  }
-
-  static __host__ __device__ void apply_op(T& dst, const T& src)
-  {
-    dst += src;
-  }
-};
-
 int main()
 {
   // Paragraph from 'The Raven' by Edgar Allan Poe
@@ -60,7 +45,7 @@ int main()
   auto ltext = ctx.logical_data(const_cast<char*>(&raw_input[0]), {sizeof(raw_input)});
   auto lcnt  = ctx.logical_data(shape_of<scalar<int>>());
 
-  ctx.parallel_for(ltext.shape(), ltext.read(), lcnt.reduce(sum<int>{}))->*[] _CCCL_DEVICE(size_t i, auto text, int& s) {
+  ctx.parallel_for(ltext.shape(), ltext.read(), lcnt.reduce(reducer::sum<int>{}))->*[] _CCCL_DEVICE(size_t i, auto text, int& s) {
     /* When we have the beginning of a new word, increment the counter */
     if (!is_alpha(text(i)) && is_alpha(text(i + 1)))
     {
@@ -68,9 +53,8 @@ int main()
     }
   };
 
-  ctx.host_launch(lcnt.read())->*[](scalar<int> s) {
-    printf("Got %d words.\n", *(s.addr));
-  };
+  int cnt = ctx.transfer_host(lcnt);
+  printf("Got %d words.\n", cnt);
 
   ctx.finalize();
 
@@ -82,4 +66,6 @@ int main()
       ref_cnt++;
     }
   }
+
+  _CCCL_ASSERT(cnt == ref_cnt, "Count mismatch");
 }
