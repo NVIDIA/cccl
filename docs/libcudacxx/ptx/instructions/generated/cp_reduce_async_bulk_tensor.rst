@@ -1,11 +1,3 @@
-.. _libcudacxx-ptx-instructions-cp-reduce-async-bulk-tensor:
-
-cp.reduce.async.bulk.tensor
-===========================
-
--  PTX ISA:
-   `cp.reduce.async.bulk.tensor <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-reduce-async-bulk-tensor>`__
-
 cp.reduce.async.bulk.tensor.1d.global.shared::cta.add.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
