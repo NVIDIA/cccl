@@ -22,6 +22,7 @@
 
 #include <cuda/std/__concepts/copyable.h>
 #include <cuda/std/__fwd/array.h>
+#include <cuda/std/__fwd/complex.h>
 #include <cuda/std/__fwd/pair.h>
 #include <cuda/std/__fwd/subrange.h>
 #include <cuda/std/__fwd/tuple.h>
@@ -69,6 +70,18 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp&& get(array<_Tp, _Size>&&) n
 
 template <size_t _Ip, class _Tp, size_t _Size>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const _Tp&& get(const array<_Tp, _Size>&&) noexcept;
+
+template <size_t _Ip, class _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp& get(complex<_Tp>&) noexcept;
+
+template <size_t _Ip, class _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp&& get(complex<_Tp>&&) noexcept;
+
+template <size_t _Ip, class _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& get(const complex<_Tp>&) noexcept;
+
+template <size_t _Ip, class _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp&& get(const complex<_Tp>&&) noexcept;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
