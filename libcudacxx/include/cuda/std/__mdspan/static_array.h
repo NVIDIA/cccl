@@ -158,8 +158,8 @@ public:
       : __partially_static_array_impl(__construct_psa_from_all_exts_values_tag, _CUDA_VSTD::get<_Idxs>(__vals)...)
   {}
 
-  _LIBCUDACXX_TEMPLATE(bool _SizeMatches = (sizeof...(_Idxs) != __size_dynamic))
-  _LIBCUDACXX_REQUIRES(_SizeMatches)
+  _CCCL_TEMPLATE(bool _SizeMatches = (sizeof...(_Idxs) != __size_dynamic))
+  _CCCL_REQUIRES(_SizeMatches)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __partially_static_array_impl(
     array<_Tp, __size_dynamic> const& __vals) noexcept
     __partially_static_array_impl(__construct_psa_from_dynamic_exts_values_tag,

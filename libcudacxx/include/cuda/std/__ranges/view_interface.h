@@ -37,17 +37,17 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-#if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
 #  if _CCCL_STD_VER >= 2020
 template <class _Tp>
 concept __can_empty = requires(_Tp& __t) { _CUDA_VRANGES::empty(__t); };
 #  else // ^^^ C++20 ^^^ / vvv C++17 vvv
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(__can_empty_, requires(_Tp& __t)(typename(decltype(_CUDA_VRANGES::empty(__t)))));
+_CCCL_CONCEPT_FRAGMENT(__can_empty_, requires(_Tp& __t)(typename(decltype(_CUDA_VRANGES::empty(__t)))));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __can_empty = _LIBCUDACXX_FRAGMENT(__can_empty_, _Tp);
+_CCCL_CONCEPT __can_empty = _CCCL_FRAGMENT(__can_empty_, _Tp);
 #  endif //  _CCCL_STD_VER <= 2017
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
@@ -73,104 +73,103 @@ class view_interface
   }
 
 public:
-  _LIBCUDACXX_TEMPLATE(class _D2 = _Derived)
-  _LIBCUDACXX_REQUIRES(forward_range<_D2>)
+  _CCCL_TEMPLATE(class _D2 = _Derived)
+  _CCCL_REQUIRES(forward_range<_D2>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty()
   {
     return _CUDA_VRANGES::begin(__derived()) == _CUDA_VRANGES::end(__derived());
   }
 
-  _LIBCUDACXX_TEMPLATE(class _D2 = _Derived)
-  _LIBCUDACXX_REQUIRES(forward_range<const _D2>)
+  _CCCL_TEMPLATE(class _D2 = _Derived)
+  _CCCL_REQUIRES(forward_range<const _D2>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool empty() const
   {
     return _CUDA_VRANGES::begin(__derived()) == _CUDA_VRANGES::end(__derived());
   }
 
-  _LIBCUDACXX_TEMPLATE(class _D2 = _Derived)
-  _LIBCUDACXX_REQUIRES(__can_empty<_D2>)
+  _CCCL_TEMPLATE(class _D2 = _Derived)
+  _CCCL_REQUIRES(__can_empty<_D2>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit operator bool()
   {
     return !_CUDA_VRANGES::empty(__derived());
   }
 
-  _LIBCUDACXX_TEMPLATE(class _D2 = _Derived)
-  _LIBCUDACXX_REQUIRES(__can_empty<const _D2>)
+  _CCCL_TEMPLATE(class _D2 = _Derived)
+  _CCCL_REQUIRES(__can_empty<const _D2>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit operator bool() const
   {
     return !_CUDA_VRANGES::empty(__derived());
   }
 
-  _LIBCUDACXX_TEMPLATE(class _D2 = _Derived)
-  _LIBCUDACXX_REQUIRES(contiguous_iterator<iterator_t<_D2>>)
+  _CCCL_TEMPLATE(class _D2 = _Derived)
+  _CCCL_REQUIRES(contiguous_iterator<iterator_t<_D2>>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto data()
   {
     return _CUDA_VSTD::to_address(_CUDA_VRANGES::begin(__derived()));
   }
 
-  _LIBCUDACXX_TEMPLATE(class _D2 = _Derived)
-  _LIBCUDACXX_REQUIRES(range<const _D2> _LIBCUDACXX_AND contiguous_iterator<iterator_t<const _D2>>)
+  _CCCL_TEMPLATE(class _D2 = _Derived)
+  _CCCL_REQUIRES(range<const _D2> _CCCL_AND contiguous_iterator<iterator_t<const _D2>>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto data() const
   {
     return _CUDA_VSTD::to_address(_CUDA_VRANGES::begin(__derived()));
   }
 
-  _LIBCUDACXX_TEMPLATE(class _D2 = _Derived)
-  _LIBCUDACXX_REQUIRES(forward_range<_D2> _LIBCUDACXX_AND sized_sentinel_for<sentinel_t<_D2>, iterator_t<_D2>>)
+  _CCCL_TEMPLATE(class _D2 = _Derived)
+  _CCCL_REQUIRES(forward_range<_D2> _CCCL_AND sized_sentinel_for<sentinel_t<_D2>, iterator_t<_D2>>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto size()
   {
     return _CUDA_VSTD::__to_unsigned_like(_CUDA_VRANGES::end(__derived()) - _CUDA_VRANGES::begin(__derived()));
   }
 
-  _LIBCUDACXX_TEMPLATE(class _D2 = _Derived)
-  _LIBCUDACXX_REQUIRES(
-    forward_range<const _D2> _LIBCUDACXX_AND sized_sentinel_for<sentinel_t<const _D2>, iterator_t<const _D2>>)
+  _CCCL_TEMPLATE(class _D2 = _Derived)
+  _CCCL_REQUIRES(forward_range<const _D2> _CCCL_AND sized_sentinel_for<sentinel_t<const _D2>, iterator_t<const _D2>>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto size() const
   {
     return _CUDA_VSTD::__to_unsigned_like(_CUDA_VRANGES::end(__derived()) - _CUDA_VRANGES::begin(__derived()));
   }
 
-  _LIBCUDACXX_TEMPLATE(class _D2 = _Derived)
-  _LIBCUDACXX_REQUIRES(forward_range<_D2>)
+  _CCCL_TEMPLATE(class _D2 = _Derived)
+  _CCCL_REQUIRES(forward_range<_D2>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) front()
   {
     _CCCL_ASSERT(!empty(), "Precondition `!empty()` not satisfied. `.front()` called on an empty view.");
     return *_CUDA_VRANGES::begin(__derived());
   }
 
-  _LIBCUDACXX_TEMPLATE(class _D2 = _Derived)
-  _LIBCUDACXX_REQUIRES(forward_range<const _D2>)
+  _CCCL_TEMPLATE(class _D2 = _Derived)
+  _CCCL_REQUIRES(forward_range<const _D2>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) front() const
   {
     _CCCL_ASSERT(!empty(), "Precondition `!empty()` not satisfied. `.front()` called on an empty view.");
     return *_CUDA_VRANGES::begin(__derived());
   }
 
-  _LIBCUDACXX_TEMPLATE(class _D2 = _Derived)
-  _LIBCUDACXX_REQUIRES(bidirectional_range<_D2> _LIBCUDACXX_AND common_range<_D2>)
+  _CCCL_TEMPLATE(class _D2 = _Derived)
+  _CCCL_REQUIRES(bidirectional_range<_D2> _CCCL_AND common_range<_D2>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) back()
   {
     _CCCL_ASSERT(!empty(), "Precondition `!empty()` not satisfied. `.back()` called on an empty view.");
     return *_CUDA_VRANGES::prev(_CUDA_VRANGES::end(__derived()));
   }
 
-  _LIBCUDACXX_TEMPLATE(class _D2 = _Derived)
-  _LIBCUDACXX_REQUIRES(bidirectional_range<const _D2> _LIBCUDACXX_AND common_range<const _D2>)
+  _CCCL_TEMPLATE(class _D2 = _Derived)
+  _CCCL_REQUIRES(bidirectional_range<const _D2> _CCCL_AND common_range<const _D2>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) back() const
   {
     _CCCL_ASSERT(!empty(), "Precondition `!empty()` not satisfied. `.back()` called on an empty view.");
     return *_CUDA_VRANGES::prev(_CUDA_VRANGES::end(__derived()));
   }
 
-  _LIBCUDACXX_TEMPLATE(class _RARange = _Derived)
-  _LIBCUDACXX_REQUIRES(random_access_range<_RARange>)
+  _CCCL_TEMPLATE(class _RARange = _Derived)
+  _CCCL_REQUIRES(random_access_range<_RARange>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) operator[](range_difference_t<_RARange> __index)
   {
     return _CUDA_VRANGES::begin(__derived())[__index];
   }
 
-  _LIBCUDACXX_TEMPLATE(class _RARange = const _Derived)
-  _LIBCUDACXX_REQUIRES(random_access_range<_RARange>)
+  _CCCL_TEMPLATE(class _RARange = const _Derived)
+  _CCCL_REQUIRES(random_access_range<_RARange>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) operator[](range_difference_t<_RARange> __index) const
   {
     return _CUDA_VRANGES::begin(__derived())[__index];
@@ -179,7 +178,7 @@ public:
 
 _LIBCUDACXX_END_NAMESPACE_RANGES_ABI
 
-#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER_MSVC_2017
+#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

@@ -148,7 +148,7 @@
 #endif
 
 #if TEST_HAS_BUILTIN(__builtin_is_constant_evaluated) || _CCCL_COMPILER(GCC, >=, 9) \
-  || (defined(_CCCL_COMPILER_MSVC) && _MSC_VER > 1924 && _CCCL_CUDACC_AT_LEAST(11, 3))
+  || (_CCCL_COMPILER(MSVC) && _MSC_VER > 1924 && _CCCL_CUDACC_AT_LEAST(11, 3))
 #  define TEST_IS_CONSTANT_EVALUATED() _CUDA_VSTD::__libcpp_is_constant_evaluated()
 #else
 #  define TEST_IS_CONSTANT_EVALUATED() false
@@ -245,8 +245,8 @@
 #endif
 
 #ifndef TEST_HAS_NO_EXCEPTIONS
-#  if (defined(_CCCL_COMPILER_MSVC) && _HAS_EXCEPTIONS == 0) \
-    || (!defined(_CCCL_COMPILER_MSVC) && !__EXCEPTIONS) // Catches all non msvc based compilers
+#  if (_CCCL_COMPILER(MSVC) && _HAS_EXCEPTIONS == 0) || (!_CCCL_COMPILER(MSVC) && !__EXCEPTIONS) // Catches all non msvc
+                                                                                                 // based compilers
 #    define TEST_HAS_NO_EXCEPTIONS
 #  endif
 #endif // !TEST_HAS_NO_EXCEPTIONS

@@ -43,7 +43,7 @@ template <class _T1, class _T2>
 _CCCL_INLINE_VAR constexpr bool is_convertible_v = _CCCL_BUILTIN_IS_CONVERTIBLE_TO(_T1, _T2);
 #  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
-#  ifdef _CCCL_COMPILER_MSVC // Workaround for DevCom-1627396
+#  if _CCCL_COMPILER(MSVC) // Workaround for DevCom-1627396
 template <class _Ty>
 struct is_convertible<_Ty&, volatile _Ty&> : true_type
 {};
@@ -71,7 +71,7 @@ _CCCL_INLINE_VAR constexpr bool is_convertible_v<_Ty&, const volatile _Ty&> = tr
 
 template <class _Ty>
 _CCCL_INLINE_VAR constexpr bool is_convertible_v<volatile _Ty&, const volatile _Ty&> = true;
-#  endif // _CCCL_COMPILER_MSVC
+#  endif // _CCCL_COMPILER(MSVC)
 
 #else // ^^^ _CCCL_BUILTIN_IS_CONVERTIBLE_TO ^^^ / vvv !_CCCL_BUILTIN_IS_CONVERTIBLE_TO vvv
 

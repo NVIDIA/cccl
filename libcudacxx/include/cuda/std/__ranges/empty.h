@@ -27,7 +27,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-#if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
 // [range.prim.empty]
 
@@ -47,21 +47,20 @@ concept __can_compare_begin_end = !__member_empty<_Tp> && !__can_invoke_size<_Tp
 };
 #  else // ^^^ CXX20 ^^^ / vvv CXX17 vvv
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(__member_empty_,
-                             requires(_Tp&& __t)(requires(__workaround_52970<_Tp>), (bool(__t.empty()))));
+_CCCL_CONCEPT_FRAGMENT(__member_empty_, requires(_Tp&& __t)(requires(__workaround_52970<_Tp>), (bool(__t.empty()))));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __member_empty = _LIBCUDACXX_FRAGMENT(__member_empty_, _Tp);
+_CCCL_CONCEPT __member_empty = _CCCL_FRAGMENT(__member_empty_, _Tp);
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(__can_invoke_size_,
-                             requires(_Tp&& __t)(requires(!__member_empty<_Tp>), ((void) _CUDA_VRANGES::size(__t))));
+_CCCL_CONCEPT_FRAGMENT(__can_invoke_size_,
+                       requires(_Tp&& __t)(requires(!__member_empty<_Tp>), ((void) _CUDA_VRANGES::size(__t))));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __can_invoke_size = _LIBCUDACXX_FRAGMENT(__can_invoke_size_, _Tp);
+_CCCL_CONCEPT __can_invoke_size = _CCCL_FRAGMENT(__can_invoke_size_, _Tp);
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __can_compare_begin_end_,
   requires(_Tp&& __t)(requires(!__member_empty<_Tp>),
                       requires(!__can_invoke_size<_Tp>),
@@ -69,29 +68,29 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
                       requires(forward_iterator<decltype(_CUDA_VRANGES::begin(__t))>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __can_compare_begin_end = _LIBCUDACXX_FRAGMENT(__can_compare_begin_end_, _Tp);
+_CCCL_CONCEPT __can_compare_begin_end = _CCCL_FRAGMENT(__can_compare_begin_end_, _Tp);
 #  endif // _CCCL_STD_VER <= 2017
 
 struct __fn
 {
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(__member_empty<_Tp>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(__member_empty<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator()(_Tp&& __t) const
     noexcept(noexcept(bool(__t.empty())))
   {
     return bool(__t.empty());
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(__can_invoke_size<_Tp>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(__can_invoke_size<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator()(_Tp&& __t) const
     noexcept(noexcept(_CUDA_VRANGES::size(__t)))
   {
     return _CUDA_VRANGES::size(__t) == 0;
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(__can_compare_begin_end<_Tp>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(__can_compare_begin_end<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator()(_Tp&& __t) const
     noexcept(noexcept(bool(_CUDA_VRANGES::begin(__t) == _CUDA_VRANGES::end(__t))))
   {
@@ -105,7 +104,7 @@ inline namespace __cpo
 _CCCL_GLOBAL_CONSTANT auto empty = __empty::__fn{};
 } // namespace __cpo
 
-#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER_MSVC_2017
+#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

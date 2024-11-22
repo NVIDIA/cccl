@@ -258,7 +258,7 @@ concept indirectly_copyable_storable =
 
 // [iterator.concept.readable]
 template <class _In>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __indirectly_readable_impl_,
   requires(const _In __i)(
     typename(iter_value_t<_In>),
@@ -271,14 +271,14 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
     requires(common_reference_with<iter_rvalue_reference_t<_In>&&, const iter_value_t<_In>&>)));
 
 template <class _In>
-_LIBCUDACXX_CONCEPT indirectly_readable = _LIBCUDACXX_FRAGMENT(__indirectly_readable_impl_, remove_cvref_t<_In>);
+_CCCL_CONCEPT indirectly_readable = _CCCL_FRAGMENT(__indirectly_readable_impl_, remove_cvref_t<_In>);
 
 template <class _Tp>
 using iter_common_reference_t =
   enable_if_t<indirectly_readable<_Tp>, common_reference_t<iter_reference_t<_Tp>, iter_value_t<_Tp>&>>;
 // [iterator.concept.writable]
 template <class _Out, class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __indirectly_writable_,
   requires(_Out&& __o, _Tp&& __t)(
     typename(decltype(*__o = _CUDA_VSTD::forward<_Tp>(__t))),
@@ -288,17 +288,17 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
                         _CUDA_VSTD::forward<_Tp>(__t)))));
 
 template <class _Out, class _Tp>
-_LIBCUDACXX_CONCEPT indirectly_writable = _LIBCUDACXX_FRAGMENT(__indirectly_writable_, _Out, _Tp);
+_CCCL_CONCEPT indirectly_writable = _CCCL_FRAGMENT(__indirectly_writable_, _Out, _Tp);
 
 // [iterator.concept.winc]
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __integer_like = integral<_Tp> && !same_as<_Tp, bool>;
+_CCCL_CONCEPT __integer_like = integral<_Tp> && !same_as<_Tp, bool>;
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __signed_integer_like = signed_integral<_Tp>;
+_CCCL_CONCEPT __signed_integer_like = signed_integral<_Tp>;
 
 template <class _Ip>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __weakly_incrementable_,
   requires(_Ip __i)(typename(iter_difference_t<_Ip>),
                     requires(!same_as<_Ip, bool>),
@@ -308,43 +308,42 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
                     (__i++)));
 
 template <class _Ip>
-_LIBCUDACXX_CONCEPT weakly_incrementable = _LIBCUDACXX_FRAGMENT(__weakly_incrementable_, _Ip);
+_CCCL_CONCEPT weakly_incrementable = _CCCL_FRAGMENT(__weakly_incrementable_, _Ip);
 
 // [iterator.concept.inc]
 template <class _Ip>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __incrementable_,
   requires(_Ip __i)(
     requires(regular<_Ip>), requires(weakly_incrementable<_Ip>), requires(same_as<_Ip, decltype(__i++)>)));
 
 template <class _Ip>
-_LIBCUDACXX_CONCEPT incrementable = _LIBCUDACXX_FRAGMENT(__incrementable_, _Ip);
+_CCCL_CONCEPT incrementable = _CCCL_FRAGMENT(__incrementable_, _Ip);
 
 // [iterator.concept.iterator]
 template <class _Ip>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __input_or_output_iterator_,
   requires(_Ip __i)(requires(weakly_incrementable<_Ip>), requires(__can_reference<decltype(*__i)>)));
 
 template <class _Ip>
-_LIBCUDACXX_CONCEPT input_or_output_iterator = _LIBCUDACXX_FRAGMENT(__input_or_output_iterator_, _Ip);
+_CCCL_CONCEPT input_or_output_iterator = _CCCL_FRAGMENT(__input_or_output_iterator_, _Ip);
 
 // [iterator.concept.sentinel]
 template <class _Sp, class _Ip>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
-  __sentinel_for_,
-  requires()(requires(semiregular<_Sp>),
-             requires(input_or_output_iterator<_Ip>),
-             requires(__weakly_equality_comparable_with<_Sp, _Ip>)));
+_CCCL_CONCEPT_FRAGMENT(__sentinel_for_,
+                       requires()(requires(semiregular<_Sp>),
+                                  requires(input_or_output_iterator<_Ip>),
+                                  requires(__weakly_equality_comparable_with<_Sp, _Ip>)));
 
 template <class _Sp, class _Ip>
-_LIBCUDACXX_CONCEPT sentinel_for = _LIBCUDACXX_FRAGMENT(__sentinel_for_, _Sp, _Ip);
+_CCCL_CONCEPT sentinel_for = _CCCL_FRAGMENT(__sentinel_for_, _Sp, _Ip);
 
 template <class, class>
 _CCCL_INLINE_VAR constexpr bool disable_sized_sentinel_for = false;
 
 template <class _Sp, class _Ip>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __sized_sentinel_for_,
   requires(const _Ip& __i, const _Sp& __s)(
     requires(sentinel_for<_Sp, _Ip>),
@@ -353,13 +352,13 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
     requires(same_as<iter_difference_t<_Ip>, decltype(__i - __s)>)));
 
 template <class _Sp, class _Ip>
-_LIBCUDACXX_CONCEPT sized_sentinel_for = _LIBCUDACXX_FRAGMENT(__sized_sentinel_for_, _Sp, _Ip);
+_CCCL_CONCEPT sized_sentinel_for = _CCCL_FRAGMENT(__sized_sentinel_for_, _Sp, _Ip);
 
 // [iterator.concept.input]
 // NOTE: The ordering here is load bearing. MSVC has issues with finding iterator_traits
 //       We can work around this by checking other constraints first
 template <class _Ip>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __input_iterator_,
   requires()(requires(input_or_output_iterator<_Ip>),
              requires(indirectly_readable<_Ip>),
@@ -367,22 +366,21 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
              requires(derived_from<_ITER_CONCEPT<_Ip>, input_iterator_tag>)));
 
 template <class _Ip>
-_LIBCUDACXX_CONCEPT input_iterator = _LIBCUDACXX_FRAGMENT(__input_iterator_, _Ip);
+_CCCL_CONCEPT input_iterator = _CCCL_FRAGMENT(__input_iterator_, _Ip);
 
 // [iterator.concept.output]
 template <class _Ip, class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
-  __output_iterator_,
-  requires(_Ip __it, _Tp&& __t)(requires(input_or_output_iterator<_Ip>),
-                                requires(indirectly_writable<_Ip, _Tp>),
-                                (*__it++ = _CUDA_VSTD::forward<_Tp>(__t))));
+_CCCL_CONCEPT_FRAGMENT(__output_iterator_,
+                       requires(_Ip __it, _Tp&& __t)(requires(input_or_output_iterator<_Ip>),
+                                                     requires(indirectly_writable<_Ip, _Tp>),
+                                                     (*__it++ = _CUDA_VSTD::forward<_Tp>(__t))));
 
 template <class _Ip, class _Tp>
-_LIBCUDACXX_CONCEPT output_iterator = _LIBCUDACXX_FRAGMENT(__output_iterator_, _Ip, _Tp);
+_CCCL_CONCEPT output_iterator = _CCCL_FRAGMENT(__output_iterator_, _Ip, _Tp);
 
 // [iterator.concept.forward]
 template <class _Ip>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __forward_iterator_,
   requires()(requires(input_iterator<_Ip>),
              requires(derived_from<_ITER_CONCEPT<_Ip>, forward_iterator_tag>),
@@ -390,11 +388,11 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
              requires(sentinel_for<_Ip, _Ip>)));
 
 template <class _Ip>
-_LIBCUDACXX_CONCEPT forward_iterator = _LIBCUDACXX_FRAGMENT(__forward_iterator_, _Ip);
+_CCCL_CONCEPT forward_iterator = _CCCL_FRAGMENT(__forward_iterator_, _Ip);
 
 // [iterator.concept.bidir]
 template <class _Ip>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __bidirectional_iterator_,
   requires(_Ip __i)(requires(forward_iterator<_Ip>),
                     requires(derived_from<_ITER_CONCEPT<_Ip>, bidirectional_iterator_tag>),
@@ -402,13 +400,13 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
                     requires(same_as<_Ip, decltype(__i--)>)));
 
 template <class _Ip>
-_LIBCUDACXX_CONCEPT bidirectional_iterator = _LIBCUDACXX_FRAGMENT(__bidirectional_iterator_, _Ip);
+_CCCL_CONCEPT bidirectional_iterator = _CCCL_FRAGMENT(__bidirectional_iterator_, _Ip);
 
 // [iterator.concept.random.access]
-#  if defined(_CCCL_COMPILER_MSVC_2017)
+#  if _CCCL_COMPILER(MSVC2017)
 // For whatever reasons MSVC2017 cannot check decltype(__n +  __j)
 template <class _Ip>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __random_access_iterator_operations_,
   requires(_Ip __i, const _Ip __j, const iter_difference_t<_Ip> __n)(
     requires(same_as<_Ip&, decltype(__i += __n)>),
@@ -417,9 +415,9 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
     requires(same_as<_Ip&, decltype(__i -= __n)>),
     requires(same_as<_Ip, decltype(__j - __n)>),
     requires(same_as<iter_reference_t<_Ip>, decltype(__j[__n])>)));
-#  else // ^^^ _CCCL_COMPILER_MSVC_2017 ^^^ / vvv !_CCCL_COMPILER_MSVC_2017 vvv
+#  else // ^^^ _CCCL_COMPILER(MSVC2017) ^^^ / vvv !_CCCL_COMPILER(MSVC2017) vvv
 template <class _Ip>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __random_access_iterator_operations_,
   requires(_Ip __i, const _Ip __j, const iter_difference_t<_Ip> __n)(
     requires(same_as<_Ip&, decltype(__i += __n)>),
@@ -428,13 +426,12 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
     requires(same_as<_Ip&, decltype(__i -= __n)>),
     requires(same_as<_Ip, decltype(__j - __n)>),
     requires(same_as<iter_reference_t<_Ip>, decltype(__j[__n])>)));
-#  endif // !_CCCL_COMPILER_MSVC_2017
+#  endif // !_CCCL_COMPILER(MSVC2017)
 template <class _Ip>
-_LIBCUDACXX_CONCEPT __random_access_iterator_operations =
-  _LIBCUDACXX_FRAGMENT(__random_access_iterator_operations_, _Ip);
+_CCCL_CONCEPT __random_access_iterator_operations = _CCCL_FRAGMENT(__random_access_iterator_operations_, _Ip);
 
 template <class _Ip>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __random_access_iterator_,
   requires()(requires(bidirectional_iterator<_Ip>),
              requires(derived_from<_ITER_CONCEPT<_Ip>, random_access_iterator_tag>),
@@ -443,11 +440,11 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
              requires(__random_access_iterator_operations<_Ip>)));
 
 template <class _Ip>
-_LIBCUDACXX_CONCEPT random_access_iterator = _LIBCUDACXX_FRAGMENT(__random_access_iterator_, _Ip);
+_CCCL_CONCEPT random_access_iterator = _CCCL_FRAGMENT(__random_access_iterator_, _Ip);
 
 // [iterator.concept.contiguous]
 template <class _Ip>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __contiguous_iterator_,
   requires(const _Ip& __i)(
     requires(random_access_iterator<_Ip>),
@@ -457,23 +454,23 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
     requires(same_as<add_pointer_t<iter_reference_t<_Ip>>, decltype(_CUDA_VSTD::to_address(__i))>)));
 
 template <class _Ip>
-_LIBCUDACXX_CONCEPT contiguous_iterator = _LIBCUDACXX_FRAGMENT(__contiguous_iterator_, _Ip);
+_CCCL_CONCEPT contiguous_iterator = _CCCL_FRAGMENT(__contiguous_iterator_, _Ip);
 
 template <class _Ip>
-_LIBCUDACXX_CONCEPT_FRAGMENT(__has_arrow_, requires(_Ip __i)((__i.operator->())));
+_CCCL_CONCEPT_FRAGMENT(__has_arrow_, requires(_Ip __i)((__i.operator->())));
 
 template <class _Ip>
-_LIBCUDACXX_CONCEPT __has_arrow = input_iterator<_Ip> && (is_pointer_v<_Ip> || _LIBCUDACXX_FRAGMENT(__has_arrow_, _Ip));
+_CCCL_CONCEPT __has_arrow = input_iterator<_Ip> && (is_pointer_v<_Ip> || _CCCL_FRAGMENT(__has_arrow_, _Ip));
 
 template <class _Ip>
-_LIBCUDACXX_CONCEPT_FRAGMENT(__has_const_arrow_, requires(const _Ip __i)((__i.operator->())));
+_CCCL_CONCEPT_FRAGMENT(__has_const_arrow_, requires(const _Ip __i)((__i.operator->())));
 
 template <class _Ip>
-_LIBCUDACXX_CONCEPT __has_const_arrow = (is_pointer_v<_Ip> || _LIBCUDACXX_FRAGMENT(__has_const_arrow_, _Ip));
+_CCCL_CONCEPT __has_const_arrow = (is_pointer_v<_Ip> || _CCCL_FRAGMENT(__has_const_arrow_, _Ip));
 
 // [indirectcallable.indirectinvocable]
 template <class _Fp, class _It>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __indirectly_unary_invocable,
   requires()(
     requires(indirectly_readable<_It>),
@@ -485,10 +482,10 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
       common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It>&>, invoke_result_t<_Fp&, iter_reference_t<_It>>>)));
 
 template <class _Fp, class _It>
-_LIBCUDACXX_CONCEPT indirectly_unary_invocable = _LIBCUDACXX_FRAGMENT(__indirectly_unary_invocable, _Fp, _It);
+_CCCL_CONCEPT indirectly_unary_invocable = _CCCL_FRAGMENT(__indirectly_unary_invocable, _Fp, _It);
 
 template <class _Fp, class _It>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __indirectly_regular_unary_invocable_,
   requires()(
     requires(indirectly_readable<_It>),
@@ -500,11 +497,10 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
       common_reference_with<invoke_result_t<_Fp&, iter_value_t<_It>&>, invoke_result_t<_Fp&, iter_reference_t<_It>>>)));
 
 template <class _Fp, class _It>
-_LIBCUDACXX_CONCEPT indirectly_regular_unary_invocable =
-  _LIBCUDACXX_FRAGMENT(__indirectly_regular_unary_invocable_, _Fp, _It);
+_CCCL_CONCEPT indirectly_regular_unary_invocable = _CCCL_FRAGMENT(__indirectly_regular_unary_invocable_, _Fp, _It);
 
 template <class _Fp, class _It>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __indirect_unary_predicate_,
   requires()(requires(indirectly_readable<_It>),
              requires(copy_constructible<_Fp>),
@@ -513,10 +509,10 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
              requires(predicate<_Fp&, iter_common_reference_t<_It>>)));
 
 template <class _Fp, class _It>
-_LIBCUDACXX_CONCEPT indirect_unary_predicate = _LIBCUDACXX_FRAGMENT(__indirect_unary_predicate_, _Fp, _It);
+_CCCL_CONCEPT indirect_unary_predicate = _CCCL_FRAGMENT(__indirect_unary_predicate_, _Fp, _It);
 
 template <class _Fp, class _It1, class _It2>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __indirect_binary_predicate_,
   requires()(requires(indirectly_readable<_It1>),
              requires(indirectly_readable<_It2>),
@@ -528,10 +524,10 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
              requires(predicate<_Fp&, iter_common_reference_t<_It1>, iter_common_reference_t<_It2>>)));
 
 template <class _Fp, class _It1, class _It2>
-_LIBCUDACXX_CONCEPT indirect_binary_predicate = _LIBCUDACXX_FRAGMENT(__indirect_binary_predicate_, _Fp, _It1, _It2);
+_CCCL_CONCEPT indirect_binary_predicate = _CCCL_FRAGMENT(__indirect_binary_predicate_, _Fp, _It1, _It2);
 
 template <class _Fp, class _It1, class _It2>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __indirect_equivalence_relation_,
   requires()(requires(indirectly_readable<_It1>),
              requires(indirectly_readable<_It2>),
@@ -543,11 +539,10 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
              requires(equivalence_relation<_Fp&, iter_common_reference_t<_It1>, iter_common_reference_t<_It2>>)));
 
 template <class _Fp, class _It1, class _It2 = _It1>
-_LIBCUDACXX_CONCEPT indirect_equivalence_relation =
-  _LIBCUDACXX_FRAGMENT(__indirect_equivalence_relation_, _Fp, _It1, _It2);
+_CCCL_CONCEPT indirect_equivalence_relation = _CCCL_FRAGMENT(__indirect_equivalence_relation_, _Fp, _It1, _It2);
 
 template <class _Fp, class _It1, class _It2>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __indirect_strict_weak_order_,
   requires()(requires(indirectly_readable<_It1>),
              requires(indirectly_readable<_It2>),
@@ -559,7 +554,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
              requires(strict_weak_order<_Fp&, iter_common_reference_t<_It1>, iter_common_reference_t<_It2>>)));
 
 template <class _Fp, class _It1, class _It2 = _It1>
-_LIBCUDACXX_CONCEPT indirect_strict_weak_order = _LIBCUDACXX_FRAGMENT(__indirect_strict_weak_order_, _Fp, _It1, _It2);
+_CCCL_CONCEPT indirect_strict_weak_order = _CCCL_FRAGMENT(__indirect_strict_weak_order_, _Fp, _It1, _It2);
 
 #  if _CCCL_STD_VER > 2014
 template <class _Fp, class... _Its>
@@ -573,15 +568,15 @@ using indirect_result_t =
 #  endif // _CCCL_STD_VER > 2014
 
 template <class _In, class _Out>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __indirectly_movable_,
   requires()(requires(indirectly_readable<_In>), requires(indirectly_writable<_Out, iter_rvalue_reference_t<_In>>)));
 
 template <class _In, class _Out>
-_LIBCUDACXX_CONCEPT indirectly_movable = _LIBCUDACXX_FRAGMENT(__indirectly_movable_, _In, _Out);
+_CCCL_CONCEPT indirectly_movable = _CCCL_FRAGMENT(__indirectly_movable_, _In, _Out);
 
 template <class _In, class _Out>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __indirectly_movable_storable_,
   requires()(requires(indirectly_movable<_In, _Out>),
              requires(indirectly_writable<_Out, iter_value_t<_In>>),
@@ -590,18 +585,18 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
              requires(assignable_from<iter_value_t<_In>&, iter_rvalue_reference_t<_In>>)));
 
 template <class _In, class _Out>
-_LIBCUDACXX_CONCEPT indirectly_movable_storable = _LIBCUDACXX_FRAGMENT(__indirectly_movable_storable_, _In, _Out);
+_CCCL_CONCEPT indirectly_movable_storable = _CCCL_FRAGMENT(__indirectly_movable_storable_, _In, _Out);
 
 template <class _In, class _Out>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __indirectly_copyable_,
   requires()(requires(indirectly_readable<_In>), requires(indirectly_writable<_Out, iter_reference_t<_In>>)));
 
 template <class _In, class _Out>
-_LIBCUDACXX_CONCEPT indirectly_copyable = _LIBCUDACXX_FRAGMENT(__indirectly_copyable_, _In, _Out);
+_CCCL_CONCEPT indirectly_copyable = _CCCL_FRAGMENT(__indirectly_copyable_, _In, _Out);
 
 template <class _In, class _Out>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __indirectly_copyable_storable_,
   requires()(requires(indirectly_copyable<_In, _Out>),
              requires(indirectly_writable<_Out, iter_value_t<_In>&>),
@@ -613,7 +608,7 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
              requires(assignable_from<iter_value_t<_In>&, iter_reference_t<_In>>)));
 
 template <class _In, class _Out>
-_LIBCUDACXX_CONCEPT indirectly_copyable_storable = _LIBCUDACXX_FRAGMENT(__indirectly_copyable_storable_, _In, _Out);
+_CCCL_CONCEPT indirectly_copyable_storable = _CCCL_FRAGMENT(__indirectly_copyable_storable_, _In, _Out);
 
 template <class _Ip, class = void>
 _CCCL_INLINE_VAR constexpr bool __has_iter_category = false;

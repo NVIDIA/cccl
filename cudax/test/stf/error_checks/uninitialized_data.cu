@@ -39,9 +39,9 @@ int main()
 {
   /* Setup an handler to catch the SIGABRT signal during the programming error */
 #ifndef NDEBUG
-#  if defined(_CCCL_COMPILER_MSVC)
+#  if _CCCL_COMPILER(MSVC)
   signal(SIGABRT, &cleanupRoutine);
-#  else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC
+#  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC)
   struct sigaction sigabrt_action
   {};
   memset(&sigabrt_action, 0, sizeof(sigabrt_action));
@@ -52,7 +52,7 @@ int main()
     perror("sigaction SIGABRT");
     exit(EXIT_FAILURE);
   }
-#  endif // !_CCCL_COMPILER_MSVC
+#  endif // !_CCCL_COMPILER(MSVC)
 
   stream_ctx ctx;
 

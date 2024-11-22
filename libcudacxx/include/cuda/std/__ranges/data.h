@@ -34,14 +34,14 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-#if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
 // [range.prim.data]
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__data)
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __ptr_to_object = is_pointer_v<_Tp> && is_object_v<remove_pointer_t<_Tp>>;
+_CCCL_CONCEPT __ptr_to_object = is_pointer_v<_Tp> && is_object_v<remove_pointer_t<_Tp>>;
 
 #  if _CCCL_STD_VER >= 2020
 template <class _Tp>
@@ -55,39 +55,37 @@ concept __ranges_begin_invocable = !__member_data<_Tp> && __can_borrow<_Tp> && r
 };
 #  else // ^^^ CXX20 ^^^ / vvv CXX17 vvv
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
-  __member_data_,
-  requires(_Tp&& __t)(requires(__can_borrow<_Tp>),
-                      requires(__workaround_52970<_Tp>),
-                      requires(__ptr_to_object<decltype(_LIBCUDACXX_AUTO_CAST(__t.data()))>)));
+_CCCL_CONCEPT_FRAGMENT(__member_data_,
+                       requires(_Tp&& __t)(requires(__can_borrow<_Tp>),
+                                           requires(__workaround_52970<_Tp>),
+                                           requires(__ptr_to_object<decltype(_LIBCUDACXX_AUTO_CAST(__t.data()))>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __member_data = _LIBCUDACXX_FRAGMENT(__member_data_, _Tp);
+_CCCL_CONCEPT __member_data = _CCCL_FRAGMENT(__member_data_, _Tp);
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
-  __ranges_begin_invocable_,
-  requires(_Tp&& __t)(requires(!__member_data<_Tp>),
-                      requires(__can_borrow<_Tp>),
-                      requires(contiguous_iterator<decltype(_CUDA_VRANGES::begin(__t))>)));
+_CCCL_CONCEPT_FRAGMENT(__ranges_begin_invocable_,
+                       requires(_Tp&& __t)(requires(!__member_data<_Tp>),
+                                           requires(__can_borrow<_Tp>),
+                                           requires(contiguous_iterator<decltype(_CUDA_VRANGES::begin(__t))>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __ranges_begin_invocable = _LIBCUDACXX_FRAGMENT(__ranges_begin_invocable_, _Tp);
+_CCCL_CONCEPT __ranges_begin_invocable = _CCCL_FRAGMENT(__ranges_begin_invocable_, _Tp);
 #  endif // _CCCL_STD_VER <= 2017
 
 struct __fn
 {
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(__member_data<_Tp>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(__member_data<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(__t.data()))
   {
     return __t.data();
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(__ranges_begin_invocable<_Tp>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(__ranges_begin_invocable<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_CUDA_VSTD::to_address(_CUDA_VRANGES::begin(__t))))
   {
@@ -106,8 +104,8 @@ _CCCL_GLOBAL_CONSTANT auto data = __data::__fn{};
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__cdata)
 struct __fn
 {
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(is_lvalue_reference_v<_Tp&&>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(is_lvalue_reference_v<_Tp&&>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_CUDA_VRANGES::data(static_cast<const remove_reference_t<_Tp>&>(__t))))
       -> decltype(_CUDA_VRANGES::data(static_cast<const remove_reference_t<_Tp>&>(__t)))
@@ -115,8 +113,8 @@ struct __fn
     return _CUDA_VRANGES::data(static_cast<const remove_reference_t<_Tp>&>(__t));
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(is_rvalue_reference_v<_Tp&&>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(is_rvalue_reference_v<_Tp&&>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(
     _CUDA_VRANGES::data(static_cast<const _Tp&&>(__t)))) -> decltype(_CUDA_VRANGES::data(static_cast<const _Tp&&>(__t)))
   {
@@ -130,7 +128,7 @@ inline namespace __cpo
 _CCCL_GLOBAL_CONSTANT auto cdata = __cdata::__fn{};
 } // namespace __cpo
 
-#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER_MSVC_2017
+#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

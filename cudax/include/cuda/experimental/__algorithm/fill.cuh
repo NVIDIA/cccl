@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/__concepts/concept_macros.h>
 
 #include <cuda/experimental/__algorithm/common.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
@@ -49,8 +49,8 @@ void __fill_bytes_impl(stream_ref __stream, _CUDA_VSTD::span<_DstTy, _DstSize> _
 //! @param __stream Stream that the copy should be inserted into
 //! @param __dst Destination memory to fill
 //! @param __value Value to fill into every byte in the destination
-_LIBCUDACXX_TEMPLATE(typename _DstTy)
-_LIBCUDACXX_REQUIRES(__valid_copy_fill_argument<_DstTy>)
+_CCCL_TEMPLATE(typename _DstTy)
+_CCCL_REQUIRES(__valid_copy_fill_argument<_DstTy>)
 void fill_bytes(stream_ref __stream, _DstTy&& __dst, uint8_t __value)
 {
   __fill_bytes_impl(__stream,

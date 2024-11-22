@@ -85,7 +85,7 @@ CUB_NAMESPACE_BEGIN
  * Conditional types
  ******************************************************************************/
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 namespace detail
 {
 //! Alias to the given iterator's value_type.
@@ -142,7 +142,7 @@ struct Log2
   }; // Inductive case
 };
 
-#  ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 template <int N, int COUNT>
 struct Log2<N, 0, COUNT>
@@ -155,7 +155,7 @@ struct Log2<N, 0, COUNT>
   };
 };
 
-#  endif // DOXYGEN_SHOULD_SKIP_THIS
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 /**
  * \brief Statically determine if N is a power-of-two
@@ -169,13 +169,13 @@ struct PowerOfTwo
   };
 };
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 /******************************************************************************
  * Marker types
  ******************************************************************************/
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 /**
  * \brief A simple "null" marker type
@@ -1156,6 +1156,6 @@ template <typename T>
 struct Traits : NumericTraits<typename ::cuda::std::remove_cv<T>::type>
 {};
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 CUB_NAMESPACE_END

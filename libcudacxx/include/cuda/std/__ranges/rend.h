@@ -34,7 +34,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-#if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
 // [range.access.rend]
 
@@ -65,7 +65,7 @@ concept __can_reverse = __can_borrow<_Tp> && !__member_rend<_Tp> && !__unqualifi
 };
 #  else // ^^^ CXX20 ^^^ / vvv CXX17 vvv
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __member_rend_,
   requires(_Tp&& __t)(
     requires(__can_borrow<_Tp>),
@@ -74,10 +74,10 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
     requires(sentinel_for<decltype(_LIBCUDACXX_AUTO_CAST(__t.rend())), decltype(_CUDA_VRANGES::rbegin(__t))>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __member_rend = _LIBCUDACXX_FRAGMENT(__member_rend_, _Tp);
+_CCCL_CONCEPT __member_rend = _CCCL_FRAGMENT(__member_rend_, _Tp);
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __unqualified_rend_,
   requires(_Tp&& __t)(
     requires(!__member_rend<_Tp>),
@@ -87,10 +87,10 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
     requires(sentinel_for<decltype(_LIBCUDACXX_AUTO_CAST(rend(__t))), decltype(_CUDA_VRANGES::rbegin(__t))>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __unqualified_rend = _LIBCUDACXX_FRAGMENT(__unqualified_rend_, _Tp);
+_CCCL_CONCEPT __unqualified_rend = _CCCL_FRAGMENT(__unqualified_rend_, _Tp);
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __can_reverse_,
   requires(_Tp&& __t)(requires(!__member_rend<_Tp>),
                       requires(!__unqualified_rend<_Tp>),
@@ -99,15 +99,15 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
                       requires(bidirectional_iterator<decltype(_CUDA_VRANGES::begin(__t))>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __can_reverse = _LIBCUDACXX_FRAGMENT(__can_reverse_, _Tp);
+_CCCL_CONCEPT __can_reverse = _CCCL_FRAGMENT(__can_reverse_, _Tp);
 #  endif // _CCCL_STD_VER <= 2017
 
 class __fn
 {
 public:
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(__member_rend<_Tp>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(__member_rend<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(__t.rend())))
   {
@@ -115,8 +115,8 @@ public:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(__unqualified_rend<_Tp>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(__unqualified_rend<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_LIBCUDACXX_AUTO_CAST(rend(__t))))
   {
@@ -124,16 +124,16 @@ public:
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(__can_reverse<_Tp>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(__can_reverse<_Tp>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_CUDA_VRANGES::begin(__t)))
   {
     return _CUDA_VSTD::make_reverse_iterator(_CUDA_VRANGES::begin(__t));
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES((!__member_rend<_Tp> && !__unqualified_rend<_Tp> && !__can_reverse<_Tp>) )
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES((!__member_rend<_Tp> && !__unqualified_rend<_Tp> && !__can_reverse<_Tp>) )
   void operator()(_Tp&&) const = delete;
 };
 _LIBCUDACXX_END_NAMESPACE_CPO
@@ -149,8 +149,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__crend)
 struct __fn
 {
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(is_lvalue_reference_v<_Tp&&>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(is_lvalue_reference_v<_Tp&&>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const
     noexcept(noexcept(_CUDA_VRANGES::rend(static_cast<const remove_reference_t<_Tp>&>(__t))))
       -> decltype(_CUDA_VRANGES::rend(static_cast<const remove_reference_t<_Tp>&>(__t)))
@@ -159,8 +159,8 @@ struct __fn
   }
 
   _CCCL_EXEC_CHECK_DISABLE
-  _LIBCUDACXX_TEMPLATE(class _Tp)
-  _LIBCUDACXX_REQUIRES(is_rvalue_reference_v<_Tp&&>)
+  _CCCL_TEMPLATE(class _Tp)
+  _CCCL_REQUIRES(is_rvalue_reference_v<_Tp&&>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Tp&& __t) const noexcept(noexcept(
     _CUDA_VRANGES::rend(static_cast<const _Tp&&>(__t)))) -> decltype(_CUDA_VRANGES::rend(static_cast<const _Tp&&>(__t)))
   {
@@ -174,7 +174,7 @@ inline namespace __cpo
 _CCCL_GLOBAL_CONSTANT auto crend = __crend::__fn{};
 } // namespace __cpo
 
-#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER_MSVC_2017
+#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

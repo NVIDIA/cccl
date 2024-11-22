@@ -82,12 +82,12 @@ struct __move_iter_category_base<_Iter, enable_if_t<__has_iter_category<iterator
 };
 
 template <class _Iter, class _Sent>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __move_iter_comparable_,
   requires()(requires(convertible_to<decltype(declval<const _Iter&>() == declval<_Sent>()), bool>)));
 
 template <class _Iter, class _Sent>
-_LIBCUDACXX_CONCEPT __move_iter_comparable = _LIBCUDACXX_FRAGMENT(__move_iter_comparable_, _Iter, _Sent);
+_CCCL_CONCEPT __move_iter_comparable = _CCCL_FRAGMENT(__move_iter_comparable_, _Iter, _Sent);
 
 template <class _Iter>
 _CCCL_INLINE_VAR constexpr bool __noexcept_move_iter_iter_move =
@@ -107,7 +107,7 @@ private:
   _Iter __current_;
 
 #if _CCCL_STD_VER >= 2017
-#  if !defined(_CCCL_COMPILER_MSVC_2017)
+#  if !_CCCL_COMPILER(MSVC2017)
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto __mi_get_iter_concept()
   {
     if constexpr (random_access_iterator<_Iter>)
@@ -128,22 +128,22 @@ private:
     }
     _CCCL_UNREACHABLE();
   }
-#  endif // !_CCCL_COMPILER_MSVC_2017
+#  endif // !_CCCL_COMPILER(MSVC2017)
 #endif // _CCCL_STD_VER >= 2017
 
 public:
 #if _CCCL_STD_VER > 2014
   using iterator_type = _Iter;
-#  if defined(_CCCL_COMPILER_MSVC_2017)
+#  if _CCCL_COMPILER(MSVC2017)
   // clang-format off
   using iterator_concept = conditional_t<random_access_iterator<_Iter>, random_access_iterator_tag,
                            conditional_t<bidirectional_iterator<_Iter>, bidirectional_iterator_tag,
                            conditional_t<forward_iterator<_Iter>,       forward_iterator_tag,
                                                                         input_iterator_tag>>>;
   // clang-format on
-#  else // ^^^ _CCCL_COMPILER_MSVC_2017 ^^^ / vvv !_CCCL_COMPILER_MSVC_2017 vvv
+#  else // ^^^ _CCCL_COMPILER(MSVC2017) ^^^ / vvv !_CCCL_COMPILER(MSVC2017) vvv
   using iterator_concept = decltype(__mi_get_iter_concept());
-#  endif // !_CCCL_COMPILER_MSVC_2017
+#  endif // !_CCCL_COMPILER(MSVC2017)
 
   // iterator_category is inherited and not always present
   using value_type      = iter_value_t<_Iter>;
@@ -185,22 +185,22 @@ public:
       : __current_()
   {}
 #  else // ^^^ _CCCL_STD_VER > 2017 ^^^ / vvv _CCCL_STD_VER < 2020 vvv
-  _LIBCUDACXX_TEMPLATE(class _It2 = _Iter)
-  _LIBCUDACXX_REQUIRES(is_constructible_v<_It2>)
+  _CCCL_TEMPLATE(class _It2 = _Iter)
+  _CCCL_REQUIRES(is_constructible_v<_It2>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr move_iterator()
       : __current_()
   {}
 #  endif // _CCCL_STD_VER < 2020
 
-  _LIBCUDACXX_TEMPLATE(class _Up)
-  _LIBCUDACXX_REQUIRES((!_IsSame<_Up, _Iter>::value) && convertible_to<const _Up&, _Iter>)
+  _CCCL_TEMPLATE(class _Up)
+  _CCCL_REQUIRES((!_IsSame<_Up, _Iter>::value) && convertible_to<const _Up&, _Iter>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr move_iterator(const move_iterator<_Up>& __u)
       : __current_(__u.base())
   {}
 
-  _LIBCUDACXX_TEMPLATE(class _Up)
-  _LIBCUDACXX_REQUIRES((!_IsSame<_Up, _Iter>::value)
-                       && convertible_to<const _Up&, _Iter> && assignable_from<_Iter&, const _Up&>)
+  _CCCL_TEMPLATE(class _Up)
+  _CCCL_REQUIRES((!_IsSame<_Up, _Iter>::value)
+                 && convertible_to<const _Up&, _Iter> && assignable_from<_Iter&, const _Up&>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr move_iterator& operator=(const move_iterator<_Up>& __u)
   {
     __current_ = __u.base();
@@ -225,8 +225,8 @@ public:
     return _CUDA_VRANGES::iter_move(__current_ + __n);
   }
 
-  _LIBCUDACXX_TEMPLATE(class _It2 = _Iter)
-  _LIBCUDACXX_REQUIRES(forward_iterator<_It2>)
+  _CCCL_TEMPLATE(class _It2 = _Iter)
+  _CCCL_REQUIRES(forward_iterator<_It2>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator++(int)
   {
     move_iterator __tmp(*this);
@@ -234,8 +234,8 @@ public:
     return __tmp;
   }
 
-  _LIBCUDACXX_TEMPLATE(class _It2 = _Iter)
-  _LIBCUDACXX_REQUIRES((!forward_iterator<_It2>) )
+  _CCCL_TEMPLATE(class _It2 = _Iter)
+  _CCCL_REQUIRES((!forward_iterator<_It2>) )
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void operator++(int)
   {
     ++__current_;
@@ -318,46 +318,46 @@ public:
   }
 
 #if _CCCL_STD_VER > 2014
-  _LIBCUDACXX_TEMPLATE(class _Sent)
-  _LIBCUDACXX_REQUIRES(sentinel_for<_Sent, _Iter> _LIBCUDACXX_AND __move_iter_comparable<_Iter, _Sent>)
+  _CCCL_TEMPLATE(class _Sent)
+  _CCCL_REQUIRES(sentinel_for<_Sent, _Iter> _CCCL_AND __move_iter_comparable<_Iter, _Sent>)
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const move_iterator& __x, const move_sentinel<_Sent>& __y)
   {
     return __x.base() == __y.base();
   }
 
 #  if _CCCL_STD_VER < 2020
-  _LIBCUDACXX_TEMPLATE(class _Sent)
-  _LIBCUDACXX_REQUIRES(sentinel_for<_Sent, _Iter> _LIBCUDACXX_AND __move_iter_comparable<_Iter, _Sent>)
+  _CCCL_TEMPLATE(class _Sent)
+  _CCCL_REQUIRES(sentinel_for<_Sent, _Iter> _CCCL_AND __move_iter_comparable<_Iter, _Sent>)
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator==(const move_sentinel<_Sent>& __y, const move_iterator& __x)
   {
     return __y.base() == __x.base();
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Sent)
-  _LIBCUDACXX_REQUIRES(sentinel_for<_Sent, _Iter> _LIBCUDACXX_AND __move_iter_comparable<_Iter, _Sent>)
+  _CCCL_TEMPLATE(class _Sent)
+  _CCCL_REQUIRES(sentinel_for<_Sent, _Iter> _CCCL_AND __move_iter_comparable<_Iter, _Sent>)
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator!=(const move_iterator& __x, const move_sentinel<_Sent>& __y)
   {
     return __x.base() != __y.base();
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Sent)
-  _LIBCUDACXX_REQUIRES(sentinel_for<_Sent, _Iter> _LIBCUDACXX_AND __move_iter_comparable<_Iter, _Sent>)
+  _CCCL_TEMPLATE(class _Sent)
+  _CCCL_REQUIRES(sentinel_for<_Sent, _Iter> _CCCL_AND __move_iter_comparable<_Iter, _Sent>)
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr bool operator!=(const move_sentinel<_Sent>& __y, const move_iterator& __x)
   {
     return __y.base() != __x.base();
   }
 #  endif // _CCCL_STD_VER < 2020
 
-  _LIBCUDACXX_TEMPLATE(class _Sent)
-  _LIBCUDACXX_REQUIRES(sized_sentinel_for<_Sent, _Iter>)
+  _CCCL_TEMPLATE(class _Sent)
+  _CCCL_REQUIRES(sized_sentinel_for<_Sent, _Iter>)
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr iter_difference_t<_Iter>
   operator-(const move_sentinel<_Sent>& __x, const move_iterator& __y)
   {
     return __x.base() - __y.base();
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Sent)
-  _LIBCUDACXX_REQUIRES(sized_sentinel_for<_Sent, _Iter>)
+  _CCCL_TEMPLATE(class _Sent)
+  _CCCL_REQUIRES(sized_sentinel_for<_Sent, _Iter>)
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr iter_difference_t<_Iter>
   operator-(const move_iterator& __x, const move_sentinel<_Sent>& __y)
   {
@@ -370,33 +370,33 @@ public:
     return _CUDA_VRANGES::iter_move(__i.__current_);
   }
 
-#  if defined(_CCCL_COMPILER_MSVC_2017) // MSVC2017 cannot find _Iter otherwise
+#  if _CCCL_COMPILER(MSVC2017) // MSVC2017 cannot find _Iter otherwise
   template <class _Iter2, class _Iter1 = _Iter>
   _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto iter_swap(
     const move_iterator<_Iter1>& __x, const move_iterator<_Iter2>& __y) noexcept(__noexcept_swappable<_Iter1, _Iter2>)
-    _LIBCUDACXX_TRAILING_REQUIRES(void)(same_as<_Iter1, _Iter>&& indirectly_swappable<_Iter2, _Iter1>)
+    _CCCL_TRAILING_REQUIRES(void)(same_as<_Iter1, _Iter>&& indirectly_swappable<_Iter2, _Iter1>)
   {
     return _CUDA_VRANGES::iter_swap(__x.__current_, __y.__current_);
   }
-#  else // ^^^ _CCCL_COMPILER_MSVC_2017 ^^^ / vvv !_CCCL_COMPILER_MSVC_2017 vvv
+#  else // ^^^ _CCCL_COMPILER(MSVC2017) ^^^ / vvv !_CCCL_COMPILER(MSVC2017) vvv
   template <class _Iter2>
   _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   iter_swap(const move_iterator& __x, const move_iterator<_Iter2>& __y) noexcept(__noexcept_swappable<_Iter, _Iter2>)
-    _LIBCUDACXX_TRAILING_REQUIRES(void)(indirectly_swappable<_Iter2, _Iter>)
+    _CCCL_TRAILING_REQUIRES(void)(indirectly_swappable<_Iter2, _Iter>)
   {
     return _CUDA_VRANGES::iter_swap(__x.__current_, __y.__current_);
   }
-#  endif // !_CCCL_COMPILER_MSVC_2017
+#  endif // !_CCCL_COMPILER(MSVC2017)
 #endif // _CCCL_STD_VER > 2014
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(move_iterator);
 
 // Some compilers have issues determining _IsFancyPointer
-#if _CCCL_COMPILER(GCC) || defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC)
 template <class _Iter>
 struct _IsFancyPointer<move_iterator<_Iter>> : _IsFancyPointer<_Iter>
 {};
-#endif // _CCCL_COMPILER(GCC) || _CCCL_COMPILER_MSVC
+#endif // _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC)
 
 template <class _Iter1, class _Iter2>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool

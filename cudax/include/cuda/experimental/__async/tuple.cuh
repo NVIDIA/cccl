@@ -82,7 +82,7 @@ template <class _Fn, class _Tupl, class... _Us>
 using __apply_result_t =
   decltype(__declval<_Tupl>().__apply(__declval<_Fn>(), __declval<_Tupl>(), __declval<_Us>()...));
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
 template <class... _Ts>
 struct __mk_tuple_
 {

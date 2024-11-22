@@ -37,10 +37,10 @@
 #  pragma system_header
 #endif // no system header
 
-#ifdef DOXYGEN_SHOULD_SKIP_THIS // Only parse this during doxygen passes:
+#ifdef _CCCL_DOXYGEN_INVOKED // Only parse this during doxygen passes:
 //! When this macro is defined, no NVTX ranges are emitted by CCCL
 #  define CCCL_DISABLE_NVTX
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 // Enable the functionality of this header if:
 // * The NVTX3 C API is available in CTK
@@ -96,7 +96,7 @@ CUB_NAMESPACE_END
 
 #    define CUB_DETAIL_NVTX_RANGE_SCOPE(name) CUB_DETAIL_NVTX_RANGE_SCOPE_IF(true, name)
 #  else // NVTX3_CPP_DEFINITIONS_V1_0
-#    if defined(_CCCL_COMPILER_MSVC)
+#    if _CCCL_COMPILER(MSVC)
 #      pragma message( \
         "warning: nvtx3.hpp is available but does not define the V1 API. This is odd. Please open a GitHub issue at: https://github.com/NVIDIA/cccl/issues.")
 #    else

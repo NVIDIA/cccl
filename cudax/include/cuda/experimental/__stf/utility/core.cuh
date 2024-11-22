@@ -39,7 +39,7 @@ namespace cuda::experimental::stf
 {
 
 // Hack setenv on Windows
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
 /**
  * @brief Sets an environment variable, mimicking the behavior of `std::setenv` on Windows.
  *
@@ -79,7 +79,7 @@ inline int setenv(const char* name, const char* value, int overwrite)
 }
 #endif
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // FIXME Doxygen is lost with decltype(auto)
+#ifndef _CCCL_DOXYGEN_INVOKED // FIXME Doxygen is lost with decltype(auto)
 /**
  * @brief Custom move function that performs checks on the argument type.
  *
@@ -97,7 +97,7 @@ _CCCL_HOST_DEVICE constexpr decltype(auto) mv(T&& obj)
   static_assert(!::std::is_const_v<::std::remove_reference_t<T>>, "Misleading move from const lvalue.");
   return ::std::move(obj);
 }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 /**
  * @brief Creates a `std::shared_ptr` managing a copy of the given object.
@@ -609,7 +609,7 @@ private:
   [[no_unique_address]] state_t payload = state_t();
 };
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 // Operator implementations
 #  define _3197bc91feaf98030b2cc0b441d7b0ea(op)                                                          \
     template <auto v1, auto v2, auto r>                                                                  \
@@ -691,6 +691,6 @@ _3197bc91feaf98030b2cc0b441d7b0ea(>=);
 
 #  undef _3197bc91feaf98030b2cc0b441d7b0ea
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 } // namespace cuda::experimental::stf

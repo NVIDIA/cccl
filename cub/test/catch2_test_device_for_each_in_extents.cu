@@ -26,9 +26,9 @@
  ******************************************************************************/
 #include <cub/config.cuh>
 
-// TODO: remove _CCCL_COMPILER_MSVC check after MSVC bug related to vector comparison is fixed:
+// TODO: remove _CCCL_COMPILER(MSVC) check after MSVC bug related to vector comparison is fixed:
 //       "error C3546: '...': there are no parameter packs available to expand"
-#if __cccl_lib_mdspan && !defined(_CCCL_COMPILER_MSVC)
+#if __cccl_lib_mdspan && !_CCCL_COMPILER(MSVC)
 
 #  include <cub/device/device_for.cuh>
 
@@ -50,28 +50,24 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceFor::ForEachInExtents, device_for_each_in_exte
  * Host reference
  **********************************************************************************************************************/
 
-template <int Rank = 0,
-          typename T,
-          typename ExtentType,
-          _CUB_TEMPLATE_REQUIRES(Rank == ExtentType::rank()),
-          typename... IndicesType>
-static void fill_linear_impl(c2h::host_vector<T>& vector, const ExtentType&, size_t& pos, IndicesType... indices)
+template <int Rank = 0, typename T, typename ExtentType, typename... IndicesType>
+static auto fill_linear_impl(c2h::host_vector<T>& vector, const ExtentType&, size_t& pos, IndicesType... indices)
+  _CCCL_TRAILING_REQUIRES(void)((Rank == ExtentType::rank()))
 {
   vector[pos++] = {indices...};
+  return void(); // Intel and nvc++ require a return statement
 }
 
-template <int Rank = 0,
-          typename T,
-          typename ExtentType,
-          _CUB_TEMPLATE_REQUIRES(Rank < ExtentType::rank()),
-          typename... IndicesType>
-static void fill_linear_impl(c2h::host_vector<T>& vector, const ExtentType& ext, size_t& pos, IndicesType... indices)
+template <int Rank = 0, typename T, typename ExtentType, typename... IndicesType>
+static auto fill_linear_impl(c2h::host_vector<T>& vector, const ExtentType& ext, size_t& pos, IndicesType... indices)
+  _CCCL_TRAILING_REQUIRES(void)((Rank < ExtentType::rank()))
 {
   using IndexType = typename ExtentType::index_type;
   for (IndexType i = 0; i < ext.extent(Rank); ++i)
   {
     fill_linear_impl<Rank + 1>(vector, ext, pos, indices..., i);
   }
+  return void(); // Intel and nvc++ require a return statement
 }
 
 template <typename T, typename IndexType, size_t... Extents>
@@ -185,4 +181,4 @@ C2H_TEST("DeviceForEachInExtents 3D dynamic", "[ForEachInExtents][dynamic][devic
   REQUIRE(h_output == h_output_gpu);
 }
 
-#endif // __cccl_lib_mdspan && !defined(_CCCL_COMPILER_MSVC)
+#endif // __cccl_lib_mdspan && !_CCCL_COMPILER(MSVC)

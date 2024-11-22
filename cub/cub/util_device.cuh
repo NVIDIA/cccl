@@ -65,7 +65,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 namespace detail
 {
@@ -90,7 +90,7 @@ template <typename T>
 CUB_DETAIL_KERNEL_ATTRIBUTES void EmptyKernel()
 {}
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 /**
  * \brief Returns the current device or -1 if an error occurred.
@@ -105,13 +105,13 @@ CUB_RUNTIME_FUNCTION inline int CurrentDevice()
   return device;
 }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 //! @brief RAII helper which saves the current device and switches to the specified device on construction and switches
 //! to the saved device on destruction.
 using SwitchDevice = ::cuda::__ensure_current_device;
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 /**
  * \brief Returns the number of CUDA devices available or -1 if an error
@@ -171,7 +171,7 @@ CUB_RUNTIME_FUNCTION inline int DeviceCount()
   return result;
 }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 /**
  * \brief Per-device cache for a CUDA attribute value; the attribute is queried
  *        and stored for each device upon construction.
@@ -286,7 +286,7 @@ public:
     return entry.payload;
   }
 };
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 /**
  * \brief Retrieves the PTX version that will be used on the current device (major * 100 + minor * 10).
