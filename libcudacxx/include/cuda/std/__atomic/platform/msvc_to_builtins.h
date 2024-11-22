@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
 
 #  include <cuda/std/__atomic/order.h>
 #  include <cuda/std/cassert>
@@ -637,6 +637,6 @@ _Type __atomic_fetch_min(_Type volatile* __ptr, _Delta __val, int __memorder)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // defined(_CCCL_COMPILER_MSVC)
+#endif // _CCCL_COMPILER(MSVC)
 
 #endif // __LIBCUDACXX___ATOMIC_PLATFORM_MSVC_H
