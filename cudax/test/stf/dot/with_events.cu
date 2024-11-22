@@ -20,7 +20,7 @@ using namespace cuda::experimental::stf;
 int main()
 {
 // TODO (miscco): Make it work for windows
-#if !defined(_CCCL_COMPILER_MSVC)
+#if !_CCCL_COMPILER(MSVC)
   // Generate a random filename
   int r = rand();
 
@@ -45,5 +45,5 @@ int main()
   EXPECT(access(filename, F_OK) != -1);
 
   EXPECT(unlink(filename) == 0);
-#endif // !_CCCL_COMPILER_MSVC
+#endif // !_CCCL_COMPILER(MSVC)
 }

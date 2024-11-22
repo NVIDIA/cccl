@@ -40,11 +40,11 @@
 #include <cuda/std/cstddef>
 
 #if !_CCCL_COMPILER(NVRTC)
-#  if defined(_CCCL_COMPILER_MSVC)
+#  if _CCCL_COMPILER(MSVC)
 #    include <xutility> // for ::std::input_iterator_tag
-#  else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
+#  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 #    include <iterator> // for ::std::input_iterator_tag
-#  endif // !_CCCL_COMPILER_MSVC
+#  endif // !_CCCL_COMPILER(MSVC)
 
 #  if _CCCL_STD_VER >= 2020
 template <class _Tp, class = void>

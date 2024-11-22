@@ -36,9 +36,9 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp* assume_alig
 #if defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED) && defined(_CCCL_BUILTIN_ASSUME_ALIGNED)
   if (!_CCCL_BUILTIN_IS_CONSTANT_EVALUATED())
   {
-#  if !defined(_CCCL_COMPILER_MSVC) // MSVC checks within the builtin
+#  if !_CCCL_COMPILER(MSVC) // MSVC checks within the builtin
     _CCCL_ASSERT(reinterpret_cast<uintptr_t>(__ptr) % _Align == 0, "Alignment assumption is violated");
-#  endif // !_CCCL_COMPILER_MSVC
+#  endif // !_CCCL_COMPILER(MSVC)
     return static_cast<_Tp*>(_CCCL_BUILTIN_ASSUME_ALIGNED(__ptr, _Align));
   }
   else

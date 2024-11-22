@@ -44,7 +44,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _AlgPolicy>
 struct _IterOps;
 
-#if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 struct _RangeAlgPolicy
 {};
 
@@ -69,7 +69,7 @@ struct _IterOps<_RangeAlgPolicy>
   static constexpr auto __advance_to = _CUDA_VRANGES::advance;
 };
 
-#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER_MSVC_2017
+#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
 struct _ClassicAlgPolicy
 {};

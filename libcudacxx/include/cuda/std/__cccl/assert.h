@@ -64,7 +64,7 @@
 //! _CCCL_ASSERT_IMPL_HOST should never be used directly
 #if _CCCL_COMPILER(NVRTC) // There is no host standard library in nvrtc
 #  define _CCCL_ASSERT_IMPL_HOST(expression, message) ((void) 0)
-#elif _CCCL_HAS_INCLUDE(<yvals.h>) && defined(_CCCL_COMPILER_MSVC) // MSVC uses _STL_VERIFY from <yvals.h>
+#elif _CCCL_HAS_INCLUDE(<yvals.h>) && _CCCL_COMPILER(MSVC) // MSVC uses _STL_VERIFY from <yvals.h>
 #  include <yvals.h>
 #  define _CCCL_ASSERT_IMPL_HOST(expression, message) _STL_VERIFY(expression, message)
 #else // ^^^ MSVC STL ^^^ / vvv !MSVC STL vvv
@@ -97,15 +97,15 @@ _CCCL_HOST_DEVICE
     _CCCL_BUILTIN_EXPECT(static_cast<bool>(expression), 1) \
     ? (void) 0 : __assertfail(message, __FILE__, __LINE__, __func__, sizeof(char))
 #elif defined(_CCCL_CUDA_COMPILER_NVCC) //! Use __assert_fail to implement device side asserts
-#  if defined(_CCCL_COMPILER_MSVC)
+#  if _CCCL_COMPILER(MSVC)
 #    define _CCCL_ASSERT_IMPL_DEVICE(expression, message)    \
       _CCCL_BUILTIN_EXPECT(static_cast<bool>(expression), 1) \
       ? (void) 0 : _wassert(_CRT_WIDE(#message), __FILEW__, __LINE__)
-#  else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
+#  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 #    define _CCCL_ASSERT_IMPL_DEVICE(expression, message)    \
       _CCCL_BUILTIN_EXPECT(static_cast<bool>(expression), 1) \
       ? (void) 0 : __assert_fail(message, __FILE__, __LINE__, __func__)
-#  endif // !_CCCL_COMPILER_MSVC
+#  endif // !_CCCL_COMPILER(MSVC)
 #elif defined(_CCCL_CUDA_COMPILER)
 #  define _CCCL_ASSERT_IMPL_DEVICE(expression, message) _CCCL_ASSERT_IMPL_HOST(expression, message)
 #else // ^^^ _CCCL_CUDA_COMPILER ^^^ / vvv !_CCCL_CUDA_COMPILER vvv

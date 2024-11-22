@@ -14,7 +14,7 @@
 using namespace cuda::experimental::stf;
 
 // FIXME : MSVC has trouble with box constructors
-#if !defined(_CCCL_COMPILER_MSVC)
+#if !_CCCL_COMPILER(MSVC)
 void write_vtk_2D(const std::string& filename, slice<double, 3> Ez, double dx, double dy, double /*unused*/)
 {
   FILE* f = fopen(filename.c_str(), "w");
@@ -92,11 +92,11 @@ __device__ double Source(double t, double x, double y, double z)
   constexpr double k          = 2 * pi / wavelength;
   return sin(k * x - omega * t);
 }
-#endif // !defined(_CCCL_COMPILER_MSVC)
+#endif // !_CCCL_COMPILER(MSVC)
 
 int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 {
-#if !defined(_CCCL_COMPILER_MSVC)
+#if !_CCCL_COMPILER(MSVC)
   stream_ctx ctx;
 
   // Domain dimensions
@@ -250,5 +250,5 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
   }
 
   ctx.finalize();
-#endif // !defined(_CCCL_COMPILER_MSVC)
+#endif // !_CCCL_COMPILER(MSVC)
 }
