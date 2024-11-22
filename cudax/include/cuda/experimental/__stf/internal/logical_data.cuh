@@ -27,6 +27,7 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh> // logical_data_untyped_impl has a backend_ctx_untyped
+#include <cuda/experimental/__stf/internal/constants.cuh>
 #include <cuda/experimental/__stf/internal/data_interface.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
 
@@ -2177,11 +2178,6 @@ inline decltype(auto) task::get(size_t submitted_index) const
   logical_data_untyped d    = pimpl->deps[reordered_id].get_data();
   return d.template instance<T>(instance_id);
 }
-
-class no_init
-{};
-class do_init
-{};
 
 /**
  * @brief Represents typed logical data.

@@ -89,4 +89,9 @@ inline const char* access_mode_string(access_mode mode)
   }
 }
 
+class no_init
+{};
+class do_init
+{};
+
 } // namespace cuda::experimental::stf
