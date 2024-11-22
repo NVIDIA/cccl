@@ -333,7 +333,7 @@ template <typename T, typename ReductionOp>
 struct enable_ternary_reduction_sm90
 {
   static constexpr bool value =
-    cub::detail::is_one_of<T, ::cuda::std::int32_t, ::cuda::std::uint32_t, ::cuda::std::int64_t, ::cuda::std::uint64_t>
+    cub::detail::is_one_of<T, ::cuda::std::int32_t, ::cuda::std::uint32_t>()
     && cub::detail::is_one_of<ReductionOp,
                               ::cuda::minimum<>,
                               ::cuda::maximum<>,
@@ -383,8 +383,7 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE _CCCL_CONSTEXPR_CXX14 bool enable
       NV_PROVIDES_SM_90,
         (return enable_ternary_reduction_sm90<T, ReductionOp>::value;),
       NV_PROVIDES_SM_50,
-        (return is_one_of<AccumT, ::cuda::std::int32_t, ::cuda::std::uint32_t, ::cuda::std::int64_t,
-                                  ::cuda::std::uint64_t>()
+        (return is_one_of<AccumT, ::cuda::std::int32_t, ::cuda::std::uint32_t>()
              && is_one_of<ReductionOp, ::cuda::std::plus<>, ::cuda::std::bit_and<>, ::cuda::std::bit_or<>,
                                        ::cuda::std::bit_xor<>>();),
       NV_ANY_TARGET,
@@ -540,18 +539,38 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& 
   using cub::internal::enable_simd_reduction;
   using cub::internal::enable_ternary_reduction;
   using PromT = ::cuda::std::_If<enable_promotion<Input, ReductionOp, AccumT>(), int, AccumT>;
+  _CCCL_IF_CONSTEXPR (!cub::detail::is_one_of<ReductionOp,
+                                              ::cuda::std::plus<>,
+                                              ::cuda::std::multiplies<>,
+                                              ::cuda::std::bit_and<>,
+                                              ::cuda::std::bit_or<>,
+                                              ::cuda::std::bit_xor<>,
+                                              ::cuda::maximum<>,
+                                              ::cuda::minimum<>,
+                                              cub::internal::SimdMin<ValueT>,
+                                              cub::internal::SimdMax<ValueT>>())
+  {
+    return cub::internal::ThreadReduceSequential<AccumT>(input, reduction_op);
+  }
+  _CCCL_IF_CONSTEXPR (cuda::std::is_same<ReductionOp, ::cuda::std::plus<>>::value
+                      && cub::detail::is_one_of<ValueT, int, ::cuda::std::uint32_t>())
+  {
+    // clang-format off
+    NV_IF_TARGET(NV_PROVIDES_SM_90,
+      (return cub::internal::ThreadReduceSequential<AccumT>(input, reduction_op);),
+      (return cub::internal::ThreadReduceTernaryTree<PromT>(input, reduction_op);)
+    );
+    // clang-format on
+  }
   if (enable_simd_reduction<Input, ReductionOp, AccumT>())
   {
     return cub::internal::ThreadReduceSimd(input, reduction_op);
   }
-  else if (enable_ternary_reduction<Input, ReductionOp, PromT>())
+  if (enable_ternary_reduction<Input, ReductionOp, PromT>())
   {
     return cub::internal::ThreadReduceTernaryTree<PromT>(input, reduction_op);
   }
-  else
-  {
-    return cub::internal::ThreadReduceBinaryTree<PromT>(input, reduction_op);
-  }
+  return cub::internal::ThreadReduceBinaryTree<PromT>(input, reduction_op);
 }
 
 //! @brief Reduction over statically-sized array-like types, seeded with the specified @p prefix.
