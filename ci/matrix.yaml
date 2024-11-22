@@ -41,13 +41,13 @@ workflows:
     - {jobs: ['verify_codegen'], project: 'libcudacxx'}
     # cudax has different CTK reqs:
     - {jobs: ['build'], project: 'cudax', ctk: ['12.0'], std: 17,       cxx: ['gcc9', 'clang9']}
+    - {jobs: ['build'], project: 'cudax', ctk: ['12.0'], std: 20,       cxx: ['msvc14.36']}
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,       cxx: ['gcc10', 'gcc11', 'gcc12']}
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,       cxx: ['clang10', 'clang11', 'clang12', 'clang13']}
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,       cxx: ['clang14', 'clang15', 'clang16', 'clang17']}
     - {jobs: ['build'], project: 'cudax', ctk: ['12.5'], std: [17, 20], cxx: ['nvhpc']}
-    - {jobs: ['build'], project: 'cudax', ctk: ['12.0'], std: 17,       cxx: ['msvc14.36']}
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,       cxx: ['msvc2022']}
-    - {jobs: ['build'], project: 'cudax', ctk: ['12.0'], std: 17,       cxx: ['gcc'], sm: "90"}
+    - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 17,       cxx: ['gcc'], sm: "90"}
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,       cxx: ['gcc'], sm: "90a"}
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: [17, 20], cxx: ['gcc', 'clang'], cpu: 'arm64'}
     - {jobs: ['test'],  project: 'cudax', ctk: ['curr'], std: 20,       cxx: ['gcc', 'clang', 'msvc']}
