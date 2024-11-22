@@ -40,7 +40,8 @@ enum class access_mode : unsigned int
   write   = 2,
   rw      = 3, // READ + WRITE
   relaxed = 4, /* operator ? */
-  reduce  = 8,
+  reduce_no_init  = 8,
+  reduce_do_init  = 16,
 };
 
 /**
@@ -78,8 +79,10 @@ inline const char* access_mode_string(access_mode mode)
       return "write";
     case access_mode::relaxed:
       return "relaxed"; // op ?
-    case access_mode::reduce:
-      return "reduce"; // op ?
+    case access_mode::reduce_no_init:
+      return "reduce (no init)"; // op ?
+    case access_mode::reduce_do_init:
+      return "reduce (do init)"; // op ?
     default:
       assert(false);
       abort();

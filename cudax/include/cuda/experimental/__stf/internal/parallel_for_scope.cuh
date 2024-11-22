@@ -146,7 +146,24 @@ __device__ void fill_results_impl_i(tuple_args& targs, const Tuple& t)
   if constexpr (!std::is_same_v<op_is, task_dep_op_none>)
   {
     using arg_is = typename ::std::tuple_element<Is, tuple_args>::type;
-    owning_container_of<arg_is>::fill(::std::get<Is>(targs), ::std::get<Is>(t));
+
+    // We have 2 cases here, op is a pair of Operation,boolean where the
+    // boolean indicates if we should update the value or initialize it.
+    if constexpr (::std::is_same_v<typename op_is::second_type, do_init>) {
+        // We overwrite any value if needed
+        owning_container_of<arg_is>::fill(::std::get<Is>(targs), ::std::get<Is>(t));
+    }
+    else {
+        static_assert(::std::is_same_v<typename op_is::second_type, no_init>);
+        // Read existing value
+        auto res = owning_container_of<arg_is>::get_value(::std::get<Is>(targs));
+
+        // Reduce previous value and the output the reduction
+        op_is::first_type::apply_op(res, ::std::get<Is>(t));
+
+        // Overwrite previous value
+        owning_container_of<arg_is>::fill(::std::get<Is>(targs), res);
+    }
   }
 }
 
@@ -211,8 +228,10 @@ private:
   __device__ void apply_op_impl_i(const Tuple& src)
   {
     using ElementType = ::std::tuple_element_t<idx, tuple_ops>;
-    // TODO add is invocable test on type
-    ElementType::apply_op(::std::get<idx>(tup), ::std::get<idx>(src));
+    if constexpr (!::std::is_same_v<ElementType, task_dep_op_none>) {
+        // If this is not a none op, then we have pair of ops, and the flag which indicates if we must initialize
+        ElementType::first_type::apply_op(::std::get<idx>(tup), ::std::get<idx>(src));
+    }
   }
 
   // Main function: applies apply_op to every element of the tuple
@@ -249,10 +268,11 @@ private:
   template <size_t Is>
   __device__ decltype(auto) init_element()
   {
-    using OpType = typename ::std::tuple_element<Is, tuple_ops>::type;
-    if constexpr (!::std::is_same_v<OpType, task_dep_op_none>)
+    using OpI = typename ::std::tuple_element<Is, tuple_ops>::type;
+    if constexpr (!::std::is_same_v<OpI, task_dep_op_none>)
     {
-      OpType::init_op(::std::get<Is>(tup));
+      // If this is not a none op, then we have pair of ops, and the flag which indicates if we must initialize
+      OpI::first_type::init_op(::std::get<Is>(tup));
     }
   }
 
