@@ -24,9 +24,9 @@
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/cstdint>
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
 #  include <intrin.h>
-#endif // _CCCL_COMPILER_MSVC
+#endif // _CCCL_COMPILER(MSVC)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -55,7 +55,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __binary_clz64(uint64_t __x)
   return __binary_clz32(__x >> 32 * !!(__x & 0xFFFFFFFF00000000), 32 * !(__x & 0xFFFFFFFF00000000));
 }
 
-#if !defined(_CCCL_COMPILER_MSVC)
+#if !_CCCL_COMPILER(MSVC)
 
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_clz(uint32_t __x) noexcept
 {
@@ -97,7 +97,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __libcpp_clz(uint64_t __x) noexcept
   return __constexpr_clz(__x);
 }
 
-#else // defined(_CCCL_COMPILER_MSVC)
+#else // _CCCL_COMPILER(MSVC)
 
 // Precondition:  __x != 0
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __libcpp_clz(uint32_t __x)

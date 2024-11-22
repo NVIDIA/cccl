@@ -135,7 +135,7 @@ inline constexpr bool __type_is_error<_ERROR<_What...>&> = true;
 // True if any of the types in _Ts... are errors; false otherwise.
 template <class... _Ts>
 inline constexpr bool __type_contains_error =
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
   (__type_is_error<_Ts> || ...);
 #else
   __ustdex_unhandled_error(static_cast<_CUDA_VSTD::__type_list<_Ts...>*>(nullptr));

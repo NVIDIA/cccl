@@ -22,7 +22,7 @@
 #endif // no system header
 
 // cudaMallocAsync was introduced in CTK 11.2
-#if !defined(_CCCL_COMPILER_MSVC_2017) && _CCCL_CUDACC_AT_LEAST(11, 2)
+#if !_CCCL_COMPILER(MSVC2017) && _CCCL_CUDACC_AT_LEAST(11, 2)
 
 #  if defined(_CCCL_CUDA_COMPILER_CLANG)
 #    include <cuda_runtime.h>
@@ -405,11 +405,11 @@ public:
     return __pool_;
   }
 
-#    ifndef DOXYGEN_SHOULD_SKIP_THIS // Doxygen cannot handle the friend function
+#    ifndef _CCCL_DOXYGEN_INVOKED // Doxygen cannot handle the friend function
   //! @brief Enables the \c device_accessible property for \c device_memory_resource.
   //! @relates device_memory_resource
   friend constexpr void get_property(device_memory_resource const&, _CUDA_VMR::device_accessible) noexcept {}
-#    endif // DOXYGEN_SHOULD_SKIP_THIS
+#    endif // _CCCL_DOXYGEN_INVOKED
 };
 static_assert(_CUDA_VMR::resource_with<device_memory_resource, _CUDA_VMR::device_accessible>, "");
 
@@ -417,6 +417,6 @@ static_assert(_CUDA_VMR::resource_with<device_memory_resource, _CUDA_VMR::device
 
 #  endif // _CCCL_STD_VER >= 2014
 
-#endif // !_CCCL_COMPILER_MSVC_2017 && _CCCL_CUDACC_AT_LEAST(11, 2)
+#endif // !_CCCL_COMPILER(MSVC2017) && _CCCL_CUDACC_AT_LEAST(11, 2)
 
 #endif //_CUDAX__MEMORY_RESOURCE_CUDA_DEVICE_MEMORY_RESOURCE

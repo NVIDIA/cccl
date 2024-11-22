@@ -303,7 +303,7 @@ private:
   /// BlockExchange utility type for values
   using BlockExchangeValues = BlockExchange<ValueT, BLOCK_DIM_X, ITEMS_PER_THREAD, false, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   /// Shared memory storage layout type
   union _TempStorage
   {
@@ -312,7 +312,7 @@ private:
     typename BlockExchangeKeys::TempStorage exchange_keys;
     typename BlockExchangeValues::TempStorage exchange_values;
   };
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   /******************************************************************************
    * Thread fields
@@ -469,7 +469,7 @@ private:
   }
 
 public:
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
   /**
    * @brief Sort blocked -> striped arrangement
@@ -554,7 +554,7 @@ public:
     }
   }
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   /// @smemstorage{BlockRadixSort}
   struct TempStorage : Uninitialized<_TempStorage>

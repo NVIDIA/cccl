@@ -55,7 +55,7 @@
 #  define _CCCL_DIAG_SUPPRESS_NVHPC(str) _CCCL_PRAGMA(diag_suppress str)
 #  define _CCCL_DIAG_SUPPRESS_MSVC(str)
 #  define _CCCL_DIAG_SUPPRESS_ICC(str)
-#elif defined(_CCCL_COMPILER_MSVC)
+#elif _CCCL_COMPILER(MSVC)
 #  define _CCCL_DIAG_PUSH _CCCL_PRAGMA(warning(push))
 #  define _CCCL_DIAG_POP  _CCCL_PRAGMA(warning(pop))
 #  define _CCCL_DIAG_SUPPRESS_CLANG(str)
@@ -96,17 +96,17 @@
     _CCCL_DIAG_PUSH                      \
     _CCCL_DIAG_SUPPRESS_NVHPC(deprecated_entity)
 #  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_DIAG_POP
-#elif defined(_CCCL_COMPILER_MSVC)
+#elif _CCCL_COMPILER(MSVC)
 #  define _CCCL_SUPPRESS_DEPRECATED_PUSH \
     _CCCL_DIAG_PUSH                      \
     _CCCL_DIAG_SUPPRESS_MSVC(4996)
 #  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_DIAG_POP
 #else // !_CCCL_COMPILER(CLANG) && !_CCCL_COMPILER(ICC) && && !_CCCL_COMPILER(GCC) && !_CCCL_COMPILER(NVHPC) &&
-      // !_CCCL_COMPILER_MSVC
+      // !_CCCL_COMPILER(MSVC)
 #  define _CCCL_SUPPRESS_DEPRECATED_PUSH
 #  define _CCCL_SUPPRESS_DEPRECATED_POP
 #endif // !_CCCL_COMPILER(CLANG) && !_CCCL_COMPILER(ICC) && && !_CCCL_COMPILER(GCC) && !_CCCL_COMPILER(NVHPC) &&
-       // !_CCCL_COMPILER_MSVC
+       // !_CCCL_COMPILER(MSVC)
 
 // Enable us to selectively silence cuda compiler warnings
 #if defined(_CCCL_CUDA_COMPILER)
@@ -114,31 +114,31 @@
 #    define _CCCL_NV_DIAG_SUPPRESS(_WARNING)
 #    define _CCCL_NV_DIAG_DEFAULT(_WARNING)
 #  elif defined(__NVCC_DIAG_PRAGMA_SUPPORT__) || _CCCL_COMPILER(ICC)
-#    if defined(_CCCL_COMPILER_MSVC)
+#    if _CCCL_COMPILER(MSVC)
 #      define _CCCL_NV_DIAG_SUPPRESS(_WARNING) _CCCL_PRAGMA(nv_diag_suppress _WARNING)
 #      define _CCCL_NV_DIAG_DEFAULT(_WARNING)  _CCCL_PRAGMA(nv_diag_default _WARNING)
 #    else // ^^^ _CCCL_COMPILER_{MSVC,ICC}^^^ / vvv !_CCCL_COMPILER_{MSVC,ICC} vvv
 #      define _CCCL_NV_DIAG_SUPPRESS(_WARNING) _CCCL_PRAGMA(nv_diagnostic push) _CCCL_PRAGMA(nv_diag_suppress _WARNING)
 #      define _CCCL_NV_DIAG_DEFAULT(_WARNING)  _CCCL_PRAGMA(nv_diagnostic pop)
-#    endif // !_CCCL_COMPILER_MSVC
+#    endif // !_CCCL_COMPILER(MSVC)
 #  elif _CCCL_COMPILER(NVHPC)
 #    define _CCCL_NV_DIAG_SUPPRESS(_WARNING) _CCCL_PRAGMA(diagnostic push) _CCCL_PRAGMA(diag_suppress _WARNING)
 #    define _CCCL_NV_DIAG_DEFAULT(_WARNING)  _CCCL_PRAGMA(diagnostic pop)
 #  else // ^^^ __NVCC_DIAG_PRAGMA_SUPPORT__ ^^^ / vvv !__NVCC_DIAG_PRAGMA_SUPPORT__ vvv
-#    if defined(_CCCL_COMPILER_MSVC_2017) // MSVC 2017 has issues with restoring the warning
+#    if _CCCL_COMPILER(MSVC2017) // MSVC 2017 has issues with restoring the warning
 #      define _CCCL_NV_DIAG_SUPPRESS(_WARNING) _CCCL_PRAGMA(diag_suppress _WARNING)
 #      define _CCCL_NV_DIAG_DEFAULT(_WARNING)
-#    else // ^^^ _CCCL_COMPILER_MSVC_2017 ^^^ / vvv !_CCCL_COMPILER_MSVC_2017 vvv
+#    else // ^^^ _CCCL_COMPILER(MSVC2017) ^^^ / vvv !_CCCL_COMPILER(MSVC2017) vvv
 #      define _CCCL_NV_DIAG_SUPPRESS(_WARNING) _CCCL_PRAGMA(diag_suppress _WARNING)
 #      define _CCCL_NV_DIAG_DEFAULT(_WARNING)  _CCCL_PRAGMA(diag_default _WARNING)
-#    endif // !_CCCL_COMPILER_MSVC_2017
+#    endif // !_CCCL_COMPILER(MSVC2017)
 #  endif // !__NVCC_DIAG_PRAGMA_SUPPORT__
 #else // ^^^ _CCCL_CUDA_COMPILER ^^^ / vvv !_CCCL_CUDA_COMPILER vvv
 #  define _CCCL_NV_DIAG_SUPPRESS(_WARNING)
 #  define _CCCL_NV_DIAG_DEFAULT(_WARNING)
 #endif // other compilers
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
 #  define _CCCL_HAS_PRAGMA_MSVC_WARNING
 #  if !defined(_LIBCUDACXX_DISABLE_PRAGMA_MSVC_WARNING)
 #    define _CCCL_USE_PRAGMA_MSVC_WARNING
@@ -160,13 +160,13 @@
 #  define _CCCL_MSVC_WARNINGS_PUSH \
     _CCCL_PRAGMA(warning(push)) _CCCL_PRAGMA(warning(disable : _CCCL_MSVC_DISABLED_WARNINGS))
 #  define _CCCL_MSVC_WARNINGS_POP _CCCL_PRAGMA(warning(pop))
-#else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 #  define _CCCL_MSVC_WARNINGS_PUSH
 #  define _CCCL_MSVC_WARNINGS_POP
-#endif // !_CCCL_COMPILER_MSVC
+#endif // !_CCCL_COMPILER(MSVC)
 
 #ifndef _CCCL_HAS_NO_PRAGMA_PUSH_POP_MACRO
-#  if defined(_CCCL_COMPILER_MSVC_2017) || _CCCL_COMPILER(NVRTC)
+#  if _CCCL_COMPILER(MSVC2017) || _CCCL_COMPILER(NVRTC)
 #    define _CCCL_HAS_NO_PRAGMA_PUSH_POP_MACRO
 #  endif
 #endif // _CCCL_HAS_NO_PRAGMA_PUSH_POP_MACRO
@@ -175,9 +175,12 @@
 #  define _CCCL_PUSH_MACROS _CCCL_MSVC_WARNINGS_PUSH
 #  define _CCCL_POP_MACROS  _CCCL_MSVC_WARNINGS_POP
 #else // ^^^ _CCCL_HAS_NO_PRAGMA_PUSH_POP_MACRO ^^^ / vvv !_CCCL_HAS_NO_PRAGMA_PUSH_POP_MACRO vvv
-#  define _CCCL_PUSH_MACROS _CCCL_PRAGMA(push_macro("min")) _CCCL_PRAGMA(push_macro("max")) _CCCL_MSVC_WARNINGS_PUSH
-#  define _CCCL_POP_MACROS  _CCCL_PRAGMA(pop_macro("min")) _CCCL_PRAGMA(pop_macro("max")) _CCCL_MSVC_WARNINGS_POP
-
+#  define _CCCL_PUSH_MACROS         \
+    _CCCL_PRAGMA(push_macro("min")) \
+    _CCCL_PRAGMA(push_macro("max")) _CCCL_PRAGMA(push_macro("interface")) _CCCL_MSVC_WARNINGS_PUSH
+#  define _CCCL_POP_MACROS         \
+    _CCCL_PRAGMA(pop_macro("min")) \
+    _CCCL_PRAGMA(pop_macro("max")) _CCCL_PRAGMA(pop_macro("interface")) _CCCL_MSVC_WARNINGS_POP
 #endif // !_CCCL_HAS_NO_PRAGMA_PUSH_POP_MACRO
 
 #endif // __CCCL_DIAGNOSTIC_H
