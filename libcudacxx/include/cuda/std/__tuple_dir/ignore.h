@@ -24,6 +24,12 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 struct __ignore_t
 {
+  __ignore_t() = default;
+
+  template <class... _Ts>
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr __ignore_t(const _Ts&...) noexcept
+  {}
+
   template <class _Tp>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr const __ignore_t& operator=(const _Tp&) const noexcept
   {
