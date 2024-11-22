@@ -492,19 +492,19 @@ protected:
       return nullptr;
     }
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
     _CCCL_DIAG_PUSH
     _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
-#endif // _CCCL_COMPILER_MSVC
+#endif // _CCCL_COMPILER(MSVC)
     virtual event_list stream_to_event_list(cudaStream_t, ::std::string) const
     {
       fprintf(stderr, "Internal error.\n");
       abort();
       return event_list();
     }
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
     _CCCL_DIAG_POP
-#endif // _CCCL_COMPILER_MSVC
+#endif // _CCCL_COMPILER(MSVC)
 
     virtual size_t epoch() const
     {

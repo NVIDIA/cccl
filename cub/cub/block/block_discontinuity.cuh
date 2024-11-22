@@ -270,7 +270,7 @@ public:
   //! @name Head flag operations
   //! @{
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
   /**
    * @param[out] head_flags
@@ -349,7 +349,7 @@ public:
     Iterate::FlagHeads(linear_tid, head_flags, input, preds, flag_op);
   }
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Sets head flags indicating discontinuities between items partitioned across the thread

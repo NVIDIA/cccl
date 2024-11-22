@@ -51,7 +51,7 @@ struct _OrImpl<false>
 template <class... _Args>
 using _Or _CCCL_NODEBUG_ALIAS = typename _OrImpl<sizeof...(_Args) != 0>::template _Result<false_type, _Args...>;
 
-#ifdef _CCCL_COMPILER_MSVC
+#if _CCCL_COMPILER(MSVC)
 template <class... _Args>
 struct disjunction : false_type
 {};
@@ -63,7 +63,7 @@ struct disjunction<_First, _Rest...> : _OrImpl<true>::template _Result<false_typ
 template <class... _Args>
 struct disjunction : _Or<_Args...>
 {};
-#endif // !MSVC
+#endif // !_CCCL_COMPILER(MSVC)
 
 #if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class... _Args>

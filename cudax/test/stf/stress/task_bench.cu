@@ -57,10 +57,10 @@ int log2Int(int n)
   return result;
 }
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
-#endif // _CCCL_COMPILER_MSVC
+#endif // _CCCL_COMPILER(MSVC)
 bool skip_task(test_id id, int t, int i, int /*W*/)
 {
   switch (id)
@@ -89,9 +89,9 @@ bool skip_task(test_id id, int t, int i, int /*W*/)
   abort();
   return true;
 }
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
 _CCCL_DIAG_POP
-#endif // _CCCL_COMPILER_MSVC
+#endif // _CCCL_COMPILER(MSVC)
 
 std::vector<int> input_deps(test_id id, int t, int i, int W)
 {

@@ -27,9 +27,14 @@
 #elif defined(__GNUC__)
 #  define _CCCL_COMPILER_GCC _CCCL_COMPILER_MAKE_VERSION(__GNUC__, __GNUC_MINOR__)
 #elif defined(_MSC_VER)
-#  define _CCCL_COMPILER_MSVC
-#  define _CCCL_MSVC_VERSION      _MSC_VER
-#  define _CCCL_MSVC_VERSION_FULL _MSC_FULL_VER
+#  define _CCCL_COMPILER_MSVC     _CCCL_COMPILER_MAKE_VERSION(_MSC_VER / 100, _MSC_VER % 100)
+#  define _CCCL_COMPILER_MSVC2017 (_CCCL_COMPILER_MSVC < _CCCL_COMPILER_MAKE_VERSION(19, 20))
+#  define _CCCL_COMPILER_MSVC2019                               \
+    (_CCCL_COMPILER_MSVC >= _CCCL_COMPILER_MAKE_VERSION(19, 20) \
+     && _CCCL_COMPILER_MSVC < _CCCL_COMPILER_MAKE_VERSION(19, 30))
+#  define _CCCL_COMPILER_MSVC2022                               \
+    (_CCCL_COMPILER_MSVC >= _CCCL_COMPILER_MAKE_VERSION(19, 30) \
+     && _CCCL_COMPILER_MSVC < _CCCL_COMPILER_MAKE_VERSION(19, 40))
 #elif defined(__CUDACC_RTC__)
 #  define _CCCL_COMPILER_NVRTC _CCCL_COMPILER_MAKE_VERSION(__CUDACC_VER_MAJOR__, __CUDACC_VER_MINOR__)
 #endif
@@ -51,17 +56,6 @@
      _CCCL_COMPILER_COMPARE_VERSION_1,     \
      _CCCL_COMPILER_COMPARE_BAD_ARG_COUNT))
 #define _CCCL_COMPILER(...) _CCCL_COMPILER_SELECT(_CCCL_COMPILER_##__VA_ARGS__)(_CCCL_COMPILER_##__VA_ARGS__)
-
-// Convenient shortcut to determine which version of MSVC we are dealing with
-#if defined(_CCCL_COMPILER_MSVC)
-#  if _MSC_VER < 1920
-#    define _CCCL_COMPILER_MSVC_2017
-#  elif _MSC_VER < 1930
-#    define _CCCL_COMPILER_MSVC_2019
-#  else // _MSC_VER < 1940
-#    define _CCCL_COMPILER_MSVC_2022
-#  endif // _MSC_VER < 1940
-#endif // _CCCL_COMPILER_MSVC
 
 // Determine the cuda compiler
 #if defined(__NVCC__)
@@ -100,10 +94,10 @@
 #define _CCCL_TO_STRING(_STR)  _CCCL_TO_STRING2(_STR)
 
 // Define the pragma for the host compiler
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
 #  define _CCCL_PRAGMA(_ARG) __pragma(_ARG)
 #else
 #  define _CCCL_PRAGMA(_ARG) _Pragma(_CCCL_TO_STRING(_ARG))
-#endif // defined(_CCCL_COMPILER_MSVC)
+#endif // _CCCL_COMPILER(MSVC)
 
 #endif // __CCCL_COMPILER_H

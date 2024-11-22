@@ -170,14 +170,14 @@ private:
   };
 
 public:
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
   /// Internal specialization.
   /// Use SHFL-based reduction if LOGICAL_WARP_THREADS is a power-of-two
   using InternalWarpReduce =
     ::cuda::std::_If<IS_POW_OF_TWO, WarpReduceShfl<T, LOGICAL_WARP_THREADS>, WarpReduceSmem<T, LOGICAL_WARP_THREADS>>;
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 private:
   /// Shared memory storage layout type for WarpReduce
@@ -662,7 +662,7 @@ public:
   //! @}  end member group
 };
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 template <typename T, int LEGACY_PTX_ARCH>
 class WarpReduce<T, 1, LEGACY_PTX_ARCH>
 {
@@ -740,6 +740,6 @@ public:
     return input;
   }
 };
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 CUB_NAMESPACE_END

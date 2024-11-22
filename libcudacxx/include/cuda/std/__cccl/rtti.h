@@ -38,7 +38,7 @@
 #    endif
 #  elif _CCCL_COMPILER(NVRTC)
 #    define _CCCL_NO_RTTI
-#  elif defined(_CCCL_COMPILER_MSVC)
+#  elif _CCCL_COMPILER(MSVC)
 #    if _CPPRTTI == 0
 #      define _CCCL_NO_RTTI
 #    endif
@@ -65,7 +65,7 @@
 #    endif
 #  elif _CCCL_COMPILER(NVRTC)
 #    define _CCCL_NO_TYPEID
-#  elif defined(_CCCL_COMPILER_MSVC)
+#  elif _CCCL_COMPILER(MSVC)
 // No-op, MSVC always supports typeid even when RTTI is disabled
 #  elif _CCCL_COMPILER(CLANG)
 #    if !_CCCL_HAS_FEATURE(cxx_rtti)

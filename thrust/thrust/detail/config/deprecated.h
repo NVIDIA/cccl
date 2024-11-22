@@ -43,7 +43,7 @@
 #elif _CCCL_STD_VER >= 2014
 #  define THRUST_DEPRECATED              [[deprecated]]
 #  define THRUST_DEPRECATED_BECAUSE(MSG) [[deprecated(MSG)]]
-#elif defined(_CCCL_COMPILER_MSVC)
+#elif _CCCL_COMPILER(MSVC)
 #  define THRUST_DEPRECATED              __declspec(deprecated)
 #  define THRUST_DEPRECATED_BECAUSE(MSG) __declspec(deprecated(MSG))
 #elif _CCCL_COMPILER(CLANG)
