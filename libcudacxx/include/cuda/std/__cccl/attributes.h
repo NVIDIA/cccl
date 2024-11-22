@@ -121,7 +121,7 @@
 #elif _CCCL_COMPILER(MSVC)
 #  define _CCCL_DEPRECATED               __declspec(deprecated)
 #  define _CCCL_DEPRECATED_BECAUSE(_MSG) __declspec(deprecated(_MSG))
-#else _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC) || _CCCL_COMPILER(ICC)
+#elif _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(NVHPC) || _CCCL_COMPILER(ICC)
 #  define _CCCL_DEPRECATED               __attribute__((deprecated))
 #  define _CCCL_DEPRECATED_BECAUSE(_MSG) __attribute__((deprecated(_MSG)))
 #else
