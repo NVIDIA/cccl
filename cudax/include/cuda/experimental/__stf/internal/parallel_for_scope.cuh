@@ -111,7 +111,7 @@ struct redux_buffer_tup<::std::tuple<Ai...>, ::std::tuple<Oi...>>
 {
   static_assert(sizeof...(Ai) == sizeof...(Oi), "Tuples must be of the same size");
 
-  using type = ::std::tuple<typename SelectType<Oi, Ai>::type...>;
+  using type = ::cuda::std::tuple<typename SelectType<Oi, Ai>::type...>;
 };
 
 /**
@@ -192,7 +192,7 @@ private:
       if constexpr (::std::is_same_v<typename op_is::second_type, do_init>)
       {
         // We overwrite any value if needed
-        owning_container_of<arg_is>::fill(::std::get<Is>(targs), ::std::get<Is>(tup));
+        owning_container_of<arg_is>::fill(::std::get<Is>(targs), ::cuda::std::get<Is>(tup));
       }
       else
       {
@@ -201,7 +201,7 @@ private:
         auto res = owning_container_of<arg_is>::get_value(::std::get<Is>(targs));
 
         // Reduce previous value and the output the reduction
-        op_is::first_type::apply_op(res, ::std::get<Is>(tup));
+        op_is::first_type::apply_op(res, ::cuda::std::get<Is>(tup));
 
         // Overwrite previous value
         owning_container_of<arg_is>::fill(::std::get<Is>(targs), res);
@@ -222,7 +222,7 @@ private:
     using ElementType = ::std::tuple_element_t<idx, tuple_ops>;
     if constexpr (!::std::is_same_v<ElementType, task_dep_op_none>)
     {
-        ::std::get<idx>(tup) = ::std::get<idx>(src);
+        ::cuda::std::get<idx>(tup) = ::cuda::std::get<idx>(src);
     }
   }
 
@@ -241,7 +241,7 @@ private:
     if constexpr (!::std::is_same_v<ElementType, task_dep_op_none>)
     {
       // If this is not a none op, then we have pair of ops, and the flag which indicates if we must initialize
-      ElementType::first_type::apply_op(::std::get<idx>(tup), ::std::get<idx>(src));
+      ElementType::first_type::apply_op(::cuda::std::get<idx>(tup), ::cuda::std::get<idx>(src));
     }
   }
 
@@ -264,7 +264,7 @@ private:
     }
     else
     {
-      return ::std::get<Is>(tup); // Return reference to redux_buffer[i]
+      return ::cuda::std::get<Is>(tup); // Return reference to redux_buffer[i]
     }
   }
 
@@ -272,7 +272,7 @@ private:
   __device__ auto make_targs_aux_impl(tuple_args& targs, ::std::index_sequence<Is...>)
   {
     // We do not use make_tuple to preserve references
-    return ::std::forward_as_tuple(select_element<Is>(targs)...);
+    return ::cuda::std::forward_as_tuple(select_element<Is>(targs)...);
   }
 
   // Call the init_op method if this is reduction operator
@@ -283,7 +283,7 @@ private:
     if constexpr (!::std::is_same_v<OpI, task_dep_op_none>)
     {
       // If this is not a none op, then we have pair of ops, and the flag which indicates if we must initialize
-      OpI::first_type::init_op(::std::get<Is>(tup));
+      OpI::first_type::init_op(::cuda::std::get<Is>(tup));
     }
   }
 
@@ -341,7 +341,7 @@ __global__ void loop_redux(
     }
   };
 
-  ::std::apply(explode_args, mv(targs_aux));
+  ::cuda::std::apply(explode_args, mv(targs_aux));
 
   /* Perform block-wide reductions */
   __syncthreads();
@@ -729,9 +729,7 @@ public:
       // One tuple per CUDA block
       redux_vars<deps_tup_t, ops_t> *d_redux_buffer;
 
-      // Note that we currently put twice more memory than necessary to
-      // workaround a compiler bug with ::std::tuple on device.
-      size_t dyn_mem_size = 2 * blocks * sizeof(redux_vars<deps_tup_t, ops_t>);
+      size_t dyn_mem_size = blocks * sizeof(redux_vars<deps_tup_t, ops_t>);
 
       // TODO use CUDASTF facilities to replace this manual allocation
       cuda_safe_call(
@@ -745,7 +743,7 @@ public:
       // TODO ensure we can have a different number of threads by changing
       // how we load variables into shared memory
       size_t finalize_block_size         = block_size;
-      size_t dynamic_shared_mem_finalize = 2 * finalize_block_size * sizeof(redux_vars<deps_tup_t, ops_t>);
+      size_t dynamic_shared_mem_finalize = finalize_block_size * sizeof(redux_vars<deps_tup_t, ops_t>);
       reserved::loop_redux_finalize<deps_tup_t, ops_t>
         <<<1, finalize_block_size, dynamic_shared_mem_finalize, stream>>>(arg_instances, d_redux_buffer, block_size);
 
