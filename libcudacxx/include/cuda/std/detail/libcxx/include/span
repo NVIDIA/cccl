@@ -596,7 +596,7 @@ public:
 
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_const, _Tp2))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit span(_CUDA_VSTD::initializer_list<value_type> __il) noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr span(_CUDA_VSTD::initializer_list<value_type> __il) noexcept
       : __data_{__il.begin()}
       , __size_{__il.size()}
   {}
