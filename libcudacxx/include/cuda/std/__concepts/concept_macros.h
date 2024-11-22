@@ -50,6 +50,9 @@ using __cccl_enable_if_t = typename __cccl_select<_Bp>::template type<_Tp>;
 template <class _Tp, bool _Bp>
 using __cccl_requires_t = typename __cccl_select<_Bp>::template type<_Tp>;
 
+template <size_t _Np>
+using __cccl_char_array = char[_Np];
+
 #if (defined(__cpp_concepts) && _CCCL_STD_VER >= 2020) || defined(_CCCL_DOXYGEN_INVOKED)
 #  define _CCCL_TEMPLATE(...)               template <__VA_ARGS__>
 #  define _CCCL_REQUIRES(...)               requires __VA_ARGS__
@@ -57,9 +60,11 @@ using __cccl_requires_t = typename __cccl_select<_Bp>::template type<_Tp>;
 #  define _CCCL_TRAILING_REQUIRES_AUX_(...) requires __VA_ARGS__
 #  define _CCCL_TRAILING_REQUIRES(...)      ->__VA_ARGS__ _CCCL_TRAILING_REQUIRES_AUX_
 #else // ^^^ __cpp_concepts ^^^ / vvv !__cpp_concepts vvv
-#  define _CCCL_TEMPLATE(...)               template <__VA_ARGS__
-#  define _CCCL_REQUIRES(...)               , bool __cccl_true_ = true, __cccl_enable_if_t < __VA_ARGS__ && __cccl_true_, int > = 0 >
-#  define _CCCL_AND                         &&__cccl_true_, int > = 0, __cccl_enable_if_t <
+#  define _CCCL_TEMPLATE(...) template <__VA_ARGS__
+#  define _CCCL_REQUIRES(...)                             \
+    , __cccl_char_array<__LINE__>*__cccl_null_ = nullptr, \
+      __cccl_enable_if_t < __VA_ARGS__ && (__cccl_null_ == nullptr), int > = 0 >
+#  define _CCCL_AND                         &&(__cccl_null_ == nullptr), int > = 0, __cccl_enable_if_t <
 #  define _CCCL_TRAILING_REQUIRES_AUX_(...) , __VA_ARGS__ >
 #  define _CCCL_TRAILING_REQUIRES(...)      ->__cccl_requires_t < __VA_ARGS__ _CCCL_TRAILING_REQUIRES_AUX_
 #endif // !__cpp_concepts
@@ -127,15 +132,14 @@ namespace __cccl_unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-
 #  define _CCCL_CONCEPT_FRAGMENT_REQS_SELECT_2 _CCCL_CONCEPT_FRAGMENT_REQS_REQUIRES_OR_NOEXCEPT
 #  define _CCCL_CONCEPT_FRAGMENT_REQS_SELECT_3 _CCCL_CONCEPT_FRAGMENT_REQS_REQUIRES_OR_NOEXCEPT
 #  define _CCCL_CONCEPT_FRAGMENT_REQS_SELECT_4 _CCCL_CONCEPT_FRAGMENT_REQS_SAME_AS
+
 #  define _CCCL_CONCEPT_FRAGMENT_REQS_REQUIRES_OR_NOEXCEPT(_REQ) \
     _CCCL_PP_CAT4(_CCCL_CONCEPT_FRAGMENT_REQS_REQUIRES_, _REQ)
 #  define _CCCL_PP_EAT_TYPENAME_PROBE_typename _CCCL_PP_PROBE(~)
 #  define _CCCL_PP_EAT_TYPENAME_SELECT_(_Xp, ...) \
     _CCCL_PP_CAT3(_CCCL_PP_EAT_TYPENAME_SELECT_,  \
                   _CCCL_PP_EVAL(_CCCL_PP_CHECK, _CCCL_PP_CAT3(_CCCL_PP_EAT_TYPENAME_PROBE_, _Xp)))
-#  define _CCCL_PP_EAT_TYPENAME_(...)                            \
-    _CCCL_PP_EVAL2(_CCCL_PP_EAT_TYPENAME_SELECT_, __VA_ARGS__, ) \
-    (__VA_ARGS__)
+#  define _CCCL_PP_EAT_TYPENAME_(...)         _CCCL_PP_EVAL2(_CCCL_PP_EAT_TYPENAME_SELECT_, __VA_ARGS__, )(__VA_ARGS__)
 #  define _CCCL_PP_EAT_TYPENAME_SELECT_0(...) __VA_ARGS__
 #  define _CCCL_PP_EAT_TYPENAME_SELECT_1(...) _CCCL_PP_CAT3(_CCCL_PP_EAT_TYPENAME_, __VA_ARGS__)
 #  define _CCCL_PP_EAT_TYPENAME_typename
