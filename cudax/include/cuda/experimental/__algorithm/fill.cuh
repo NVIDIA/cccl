@@ -42,9 +42,11 @@ void __fill_bytes_impl(stream_ref __stream, _CUDA_VSTD::span<_DstTy, _DstSize> _
 
 //! @brief Launches an operation to bytewise fill the memory into the provided stream.
 //!
-//! Destination needs to either be a `contiguous_range` or implicitly/launch transform
-//! into one. It can't reside in pagable host memory.
+//! Destination needs to either be a `contiguous_range` or launch transform
+//! into one. It can also implicitly convert to `cuda::std::span`, but it needs to contain `value_type` member alias.
 //! Destination type is required to be trivially copyable.
+//!
+//! Destination can't reside in pagable host memory.
 //!
 //! @param __stream Stream that the copy should be inserted into
 //! @param __dst Destination memory to fill
@@ -59,6 +61,18 @@ void fill_bytes(stream_ref __stream, _DstTy&& __dst, uint8_t __value)
                     __value);
 }
 
+//! @brief Launches an operation to bytewise fill the memory into the provided stream.
+//!
+//! Destination needs to either be an instance of `cuda::std::mdspan` or launch transform
+//! into one. It can also implicitly convert to `cuda::std::mdspan`, but the type needs to contain `mdspan` template
+//! arguments as member aliases named `value_type`, `extents_type`, `layout_type` and `accessor_type`.   Destination
+//! type is required to be trivially copyable.
+//!
+//! Destination can't reside in pagable host memory.
+//!
+//! @param __stream Stream that the copy should be inserted into
+//! @param __dst Destination memory to fill
+//! @param __value Value to fill into every byte in the destination
 _LIBCUDACXX_TEMPLATE(typename _DstTy)
 _LIBCUDACXX_REQUIRES(__valid_nd_copy_fill_argument<_DstTy>)
 void fill_bytes(stream_ref __stream, _DstTy&& __dst, uint8_t __value)

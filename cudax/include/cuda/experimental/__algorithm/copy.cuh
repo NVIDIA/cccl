@@ -53,7 +53,8 @@ void __copy_bytes_impl(stream_ref __stream, _CUDA_VSTD::span<_SrcTy> __src, _CUD
 
 //! @brief Launches a bytewise memory copy from source to destination into the provided stream.
 //!
-//! Both source and destination needs to either be a `contiguous_range` or implicitly/launch transform to one.
+//! Both source and destination needs to either be a `contiguous_range` or launch transform to one.
+//! They can also implicitly convert to `cuda::std::span`, but the type needs to contain `value_type` member alias.
 //! Both source and destination type is required to be trivially copyable.
 //!
 //! This call might be synchronous if either source or destination is pagable host memory.
@@ -101,7 +102,7 @@ void __nd_copy_bytes_impl(stream_ref __stream,
                           _CUDA_VSTD::mdspan<_DstElem, _DstExtents, _DstLayout, _DstAccessor> __dst)
 {
   static_assert(__copy_bytes_compatible_extents<_SrcExtents, _DstExtents>,
-                "Multidimensional copy requires both source and destination extents to match");
+                "Multidimensional copy requires both source and destination extents to be compatible");
   static_assert(_CUDA_VSTD::is_same_v<_SrcLayout, _DstLayout>,
                 "Multidimensional copy requires both source and destination layouts to match");
 
@@ -120,6 +121,19 @@ void __nd_copy_bytes_impl(stream_ref __stream,
                     _CUDA_VSTD::span(__dst.data_handle(), __dst.mapping().required_span_size()));
 }
 
+//! @brief Launches a bytewise memory copy from source to destination into the provided stream.
+//!
+//! Both source and destination needs to either be an instance of `cuda::std::mdspan` or launch transform to
+//! one. They can also implicitly convert to `cuda::std::mdspan`, but the type needs to contain `mdspan` template
+//! arguments as member aliases named `value_type`, `extents_type`, `layout_type` and `accessor_type`. Both source and
+//! destination type is required to be trivially copyable.
+//!
+//! This call might be synchronous if either source or destination is pagable host memory.
+//! It will be synchronous if both destination and copy is located in host memory.
+//!
+//! @param __stream Stream that the copy should be inserted into
+//! @param __src Source to copy from
+//! @param __dst Destination to copy into
 _LIBCUDACXX_TEMPLATE(typename _SrcTy, typename _DstTy)
 _LIBCUDACXX_REQUIRES(__valid_nd_copy_fill_argument<_SrcTy> _LIBCUDACXX_AND __valid_nd_copy_fill_argument<_DstTy>)
 void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst)
