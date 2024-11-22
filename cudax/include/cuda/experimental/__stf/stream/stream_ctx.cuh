@@ -647,6 +647,20 @@ public:
     return deferred_parallel_for(exec_place::current_device(), mv(shape), mv(deps)...);
   }
 
+  template <typename T>
+  auto transfer_host(cuda::experimental::stf::logical_data<T>& ldata)
+  {
+      using valT = typename owning_container_of<T>::type;
+      valT out;
+
+      task(exec_place::host, ldata.read()).set_symbol("transfer_host")->*[&](cudaStream_t stream, auto data) {
+          cuda_safe_call(cudaStreamSynchronize(stream));
+          out = owning_container_of<T>::get_value(data);
+      };
+
+      return out;
+  }
+
 private:
   /* This class contains all the state associated to a stream_ctx, and all states associated to every contexts (in
    * `impl`) */
