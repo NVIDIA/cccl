@@ -19,19 +19,18 @@
 #  define _CCCL_FORCE_SYSTEM_HEADER_GCC
 #elif _CCCL_COMPILER(CLANG)
 #  define _CCCL_FORCE_SYSTEM_HEADER_CLANG
-#elif defined(_CCCL_COMPILER_MSVC)
+#elif _CCCL_COMPILER(MSVC)
 #  define _CCCL_FORCE_SYSTEM_HEADER_MSVC
 #endif // other compilers
 
 // Potentially enable that cccl headers are treated as system headers
-#if !defined(_CCCL_NO_SYSTEM_HEADER)                                                                               \
-  && !(defined(_CCCL_COMPILER_MSVC) && defined(_LIBCUDACXX_DISABLE_PRAGMA_MSVC_WARNING)) && !_CCCL_COMPILER(NVRTC) \
-  && !defined(_LIBCUDACXX_DISABLE_PRAGMA_GCC_SYSTEM_HEADER)
+#if !defined(_CCCL_NO_SYSTEM_HEADER) && !(_CCCL_COMPILER(MSVC) && defined(_LIBCUDACXX_DISABLE_PRAGMA_MSVC_WARNING)) \
+  && !_CCCL_COMPILER(NVRTC) && !defined(_LIBCUDACXX_DISABLE_PRAGMA_GCC_SYSTEM_HEADER)
 #  if _CCCL_COMPILER(GCC) || _CCCL_COMPILER(NVHPC) || _CCCL_COMPILER(ICC)
 #    define _CCCL_IMPLICIT_SYSTEM_HEADER_GCC
 #  elif _CCCL_COMPILER(CLANG)
 #    define _CCCL_IMPLICIT_SYSTEM_HEADER_CLANG
-#  elif defined(_CCCL_COMPILER_MSVC)
+#  elif _CCCL_COMPILER(MSVC)
 #    define _CCCL_IMPLICIT_SYSTEM_HEADER_MSVC
 #  endif // other compilers
 #endif // Use system header

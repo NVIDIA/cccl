@@ -66,13 +66,13 @@
 #define CUB_DEVICE_COMPILER_CLANG 4
 
 // figure out which host compiler we're using
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
 //! deprecated [Since 2.7]
 #  define CUB_HOST_COMPILER CUB_HOST_COMPILER_MSVC
 //! deprecated [Since 2.7]
-#  define CUB_MSVC_VERSION _CCCL_MSVC_VERSION
+#  define CUB_MSVC_VERSION _MSC_VER
 //! deprecated [Since 2.7]
-#  define CUB_MSVC_VERSION_FULL _CCCL_MSVC_VERSION_FULL
+#  define CUB_MSVC_VERSION_FULL _MSC_FULL_VER
 #elif _CCCL_COMPILER(CLANG)
 //! deprecated [Since 2.7]
 #  define CUB_HOST_COMPILER CUB_HOST_COMPILER_CLANG
@@ -89,7 +89,7 @@
 #if defined(_CCCL_CUDA_COMPILER_NVCC) || defined(_CCCL_CUDA_COMPILER_NVHPC)
 //! deprecated [Since 2.7]
 #  define CUB_DEVICE_COMPILER CUB_DEVICE_COMPILER_NVCC
-#elif defined(_CCCL_COMPILER_MSVC)
+#elif _CCCL_COMPILER(MSVC)
 //! deprecated [Since 2.7]
 #  define CUB_DEVICE_COMPILER CUB_DEVICE_COMPILER_MSVC
 #elif _CCCL_COMPILER(GCC)
