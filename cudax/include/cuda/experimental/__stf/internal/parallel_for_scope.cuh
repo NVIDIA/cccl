@@ -671,7 +671,7 @@ public:
 
   static size_t block_to_shared_mem(int block_dim)
   {
-    return block_dim * sizeof(deps_tup_t);
+    return block_dim * sizeof(redux_vars<deps_tup_t, ops_t>);
   }
 
   // Executes the loop on a device, or use the host implementation
