@@ -146,8 +146,8 @@ public:
 
   __device__ void apply_op(const redux_vars_t& src)
   {
-      constexpr size_t N = ::std::tuple_size<tuple_ops>::value;
-      apply_op_impl(src.get_tup(), ::std::make_index_sequence<N>{});
+    constexpr size_t N = ::std::tuple_size<tuple_ops>::value;
+    apply_op_impl(src.get_tup(), ::std::make_index_sequence<N>{});
   }
 
   // Set all tuple elements
@@ -175,7 +175,6 @@ public:
   }
 
 private:
-
   // Fill one entry of the tuple of arguments with the result of the reduction,
   // or accumulate the result of the reduction with the existing value if the
   // no_init{} value was used
@@ -222,7 +221,7 @@ private:
     using ElementType = ::std::tuple_element_t<idx, tuple_ops>;
     if constexpr (!::std::is_same_v<ElementType, task_dep_op_none>)
     {
-        ::cuda::std::get<idx>(tup) = ::cuda::std::get<idx>(src);
+      ::cuda::std::get<idx>(tup) = ::cuda::std::get<idx>(src);
     }
   }
 
@@ -366,7 +365,7 @@ __global__ void loop_redux(
 
 template <typename tuple_args, typename tuple_ops>
 __global__ void
-loop_redux_finalize(tuple_args targs, redux_vars<tuple_args, tuple_ops> * redux_buffer, size_t nredux_buffer)
+loop_redux_finalize(tuple_args targs, redux_vars<tuple_args, tuple_ops>* redux_buffer, size_t nredux_buffer)
 {
   extern __shared__ char dyn_buffer[];
   auto* per_block_redux_buffer = (redux_vars<tuple_args, tuple_ops>*) ((void*) dyn_buffer);
@@ -727,13 +726,12 @@ public:
       cudaStream_t stream = t.get_stream();
 
       // One tuple per CUDA block
-      redux_vars<deps_tup_t, ops_t> *d_redux_buffer;
+      redux_vars<deps_tup_t, ops_t>* d_redux_buffer;
 
       size_t dyn_mem_size = blocks * sizeof(redux_vars<deps_tup_t, ops_t>);
 
       // TODO use CUDASTF facilities to replace this manual allocation
-      cuda_safe_call(
-        cudaMallocAsync(&d_redux_buffer, dyn_mem_size, stream));
+      cuda_safe_call(cudaMallocAsync(&d_redux_buffer, dyn_mem_size, stream));
 
       // TODO optimize the case where there was a single block to write to result ??
       reserved::loop_redux<Fun_no_ref, sub_shape_t, deps_tup_t, ops_t>
