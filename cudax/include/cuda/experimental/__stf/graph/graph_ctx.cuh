@@ -520,18 +520,18 @@ public:
   template <typename T>
   auto transfer_host(cuda::experimental::stf::logical_data<T>& ldata)
   {
-      using valT = typename owning_container_of<T>::type;
-      valT out;
+    using valT = typename owning_container_of<T>::type;
+    valT out;
 
-      host_launch(ldata.read()).set_symbol("transfer_host")->*[&](auto data) {
-          out = owning_container_of<T>::get_value(data);
-      };
+    host_launch(ldata.read()).set_symbol("transfer_host")->*[&](auto data) {
+      out = owning_container_of<T>::get_value(data);
+    };
 
-      /* This forces the completion of the host callback, so that the host
-       * thread can use the content for dynamic control flow */
-      cuda_safe_call(cudaStreamSynchronize(task_fence()));
+    /* This forces the completion of the host callback, so that the host
+     * thread can use the content for dynamic control flow */
+    cuda_safe_call(cudaStreamSynchronize(task_fence()));
 
-      return out;
+    return out;
   }
 
 private:
