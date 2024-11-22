@@ -104,19 +104,6 @@ TEST_CASE("1d Copy", "[data_manipulation]")
   }
 }
 
-template <typename Layout = cuda::std::layout_right, typename Extents>
-auto make_buffer_for_mdspan(Extents extents, char value = 0)
-{
-  cuda::mr::pinned_memory_resource host_resource;
-  auto mapping = typename Layout::mapping{extents};
-
-  cudax::uninitialized_buffer<int, cuda::mr::host_accessible> buffer(host_resource, mapping.required_span_size());
-
-  memset(buffer.data(), value, buffer.size_bytes());
-
-  return buffer;
-}
-
 template <typename SrcLayout = cuda::std::layout_right,
           typename DstLayout = SrcLayout,
           typename SrcExtents,
@@ -135,7 +122,7 @@ void test_mdspan_copy_bytes(
     src(0, i) = i;
   }
 
-  cudax::copy_bytes(stream, src, dst);
+  cudax::copy_bytes(stream, std::move(src), dst);
   stream.wait();
 
   for (int i = 0; i < static_cast<int>(dst.extent(1)); i++)
@@ -167,10 +154,12 @@ TEST_CASE("Mdspan copy", "[data_manipulation]")
 
   SECTION("Launch transform")
   {
-    auto extents       = cuda::std::extents<size_t, 1024, 1024, 2, 2>();
-    auto mdspan_buffer = make_buffer_for_mdspan(extents, 1);
-    cuda::std::mdspan mdspan(mdspan_buffer.data(), extents);
-    cudax::weird_buffer<cuda::std::mdspan<int, decltype(extents)>> buffer{
+    auto mixed_extents =
+      cuda::std::extents<size_t, 1024, cuda::std::dynamic_extent, 2, cuda::std::dynamic_extent>(1024, 2);
+    [[maybe_unused]] auto static_extents = cuda::std::extents<size_t, 1024, 1024, 2, 2>();
+    auto mdspan_buffer                   = make_buffer_for_mdspan(mixed_extents, 1);
+    cuda::std::mdspan mdspan(mdspan_buffer.data(), mixed_extents);
+    cudax::weird_buffer<cuda::std::mdspan<int, decltype(static_extents)>> buffer{
       cuda::mr::pinned_memory_resource{}, mdspan.mapping().required_span_size()};
 
     cudax::copy_bytes(stream, mdspan, buffer);

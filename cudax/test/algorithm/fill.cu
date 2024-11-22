@@ -44,3 +44,32 @@ TEST_CASE("Fill", "[data_manipulation]")
     check_result_and_erase(_stream, cuda::std::span(buffer.data, buffer.size));
   }
 }
+
+TEST_CASE("Mdspan Fill", "[data_manipulation]")
+{
+  cudax::stream stream;
+  {
+    cuda::std::dextents<size_t, 3> dynamic_extents{1, 2, 3};
+    auto buffer = make_buffer_for_mdspan(dynamic_extents, 0);
+    cuda::std::mdspan dynamic_mdspan(buffer.data(), dynamic_extents);
+
+    cudax::fill_bytes(stream, dynamic_mdspan, fill_byte);
+    check_result_and_erase(stream, cuda::std::span(buffer.data(), buffer.size()));
+  }
+  {
+    cuda::std::extents<size_t, 2, cuda::std::dynamic_extent, 4> mixed_extents{1};
+    auto buffer = make_buffer_for_mdspan(mixed_extents, 0);
+    cuda::std::mdspan mixed_mdspan(buffer.data(), mixed_extents);
+
+    cudax::fill_bytes(stream, cuda::std::move(mixed_mdspan), fill_byte);
+    check_result_and_erase(stream, cuda::std::span(buffer.data(), buffer.size()));
+  }
+  {
+    using static_extents = cuda::std::extents<size_t, 2, 3, 4>;
+    auto size            = cuda::std::layout_left::mapping<static_extents>().required_span_size();
+    cudax::weird_buffer<cuda::std::mdspan<int, static_extents>> buffer(cuda::mr::pinned_memory_resource{}, size);
+
+    cudax::fill_bytes(stream, buffer, fill_byte);
+    check_result_and_erase(stream, cuda::std::span(buffer.data, buffer.size));
+  }
+}

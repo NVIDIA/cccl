@@ -129,7 +129,7 @@ void copy_bytes(stream_ref __stream, _SrcTy&& __src, _DstTy&& __dst)
   decltype(auto) __src_as_arg      = static_cast<detail::__as_copy_arg_t<_SrcTy>>(__src_transformed);
   decltype(auto) __dst_as_arg      = static_cast<detail::__as_copy_arg_t<_DstTy>>(__dst_transformed);
   __nd_copy_bytes_impl(
-    __stream, __as_mdspan_t<decltype(__dst_as_arg)>(__src_as_arg), __as_mdspan_t<decltype(__dst_as_arg)>(__dst_as_arg));
+    __stream, __as_mdspan_t<decltype(__src_as_arg)>(__src_as_arg), __as_mdspan_t<decltype(__dst_as_arg)>(__dst_as_arg));
 }
 
 } // namespace cuda::experimental

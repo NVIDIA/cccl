@@ -59,5 +59,17 @@ void fill_bytes(stream_ref __stream, _DstTy&& __dst, uint8_t __value)
                     __value);
 }
 
+_LIBCUDACXX_TEMPLATE(typename _DstTy)
+_LIBCUDACXX_REQUIRES(__valid_nd_copy_fill_argument<_DstTy>)
+void fill_bytes(stream_ref __stream, _DstTy&& __dst, uint8_t __value)
+{
+  decltype(auto) __dst_transformed = detail::__launch_transform(__stream, _CUDA_VSTD::forward<_DstTy>(__dst));
+  decltype(auto) __dst_as_arg      = static_cast<detail::__as_copy_arg_t<_DstTy>>(__dst_transformed);
+  auto __dst_mdspan                = __as_mdspan_t<decltype(__dst_as_arg)>(__dst_as_arg);
+
+  __fill_bytes_impl(
+    __stream, _CUDA_VSTD::span(__dst_mdspan.data_handle(), __dst_mdspan.mapping().required_span_size()), __value);
+}
+
 } // namespace cuda::experimental
 #endif // __CUDAX_ALGORITHM_FILL
