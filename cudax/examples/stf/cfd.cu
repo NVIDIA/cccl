@@ -13,7 +13,6 @@
  * @brief Simulation of a fluid over a regular grid with an implicit Jacobi solver
  */
 
-#include <cuda/experimental/__stf/utility/transfer_host.cuh>
 #include <cuda/experimental/stf.cuh>
 
 #include <chrono>
@@ -215,7 +214,7 @@ deltasq(context& ctx, logical_data<slice<double, 2>> lnewarr, logical_data<slice
       dsq += tmp * tmp;
     };
 
-  return transfer_host(ctx, ldsq);
+  return ctx.transfer_host(ldsq);
 }
 
 void boundarypsi(context& ctx, logical_data<slice<double, 2>> lpsi, int m, int /*n*/, int b, int h, int w)
@@ -394,10 +393,10 @@ int main(int argc, char** argv)
             };
   }
 
-  double bnorm = transfer_host(ctx, lbnorm);
+  double bnorm = ctx.transfer_host(lbnorm);
   if (!irrotational)
   {
-    bnorm += transfer_host(ctx, lbnorm_zet);
+    bnorm += ctx.transfer_host(lbnorm_zet);
   }
 
   bnorm = sqrt(bnorm);
