@@ -30,7 +30,7 @@
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__memory_resource/resource.h>
 #include <cuda/__memory_resource/resource_ref.h>
-#include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/detail/libcxx/include/stdexcept>
 
@@ -166,8 +166,8 @@ public:
   //! @param __rhs The resource to compare to
   //! @return If the underlying types are equality comparable, returns the result of equality comparison of both
   //! resources. Otherwise, returns false.
-  _LIBCUDACXX_TEMPLATE(class _Resource)
-  _LIBCUDACXX_REQUIRES(_CUDA_VMR::__different_resource<pinned_memory_resource, _Resource>)
+  _CCCL_TEMPLATE(class _Resource)
+  _CCCL_REQUIRES(_CUDA_VMR::__different_resource<pinned_memory_resource, _Resource>)
   _CCCL_NODISCARD bool operator==(_Resource const& __rhs) const noexcept
   {
     if constexpr (has_property<_Resource, device_accessible>)
