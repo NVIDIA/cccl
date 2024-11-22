@@ -89,6 +89,21 @@ inline constexpr bool __copy_bytes_compatible_extents<_CUDA_VSTD::extents<_Index
     _CUDA_VSTD::integer_sequence<size_t, _Extents...>{},
     _CUDA_VSTD::integer_sequence<size_t, _OtherExtents...>{}))::value;
 
+template <typename _SrcExtents, typename _DstExtents>
+_CCCL_NODISCARD bool __copy_bytes_runtime_extents_match(_SrcExtents __src_exts, _DstExtents __dst_exts)
+{
+  for (typename _SrcExtents::rank_type __i = 0; __i < __src_exts.rank(); __i++)
+  {
+    if (__src_exts.extent(__i)
+        != static_cast<typename _SrcExtents::index_type>(
+          __dst_exts.extent((static_cast<typename _DstExtents::rank_type>(__i)))))
+    {
+      return false;
+    }
+  }
+  return true;
+}
+
 template <typename _SrcElem,
           typename _SrcExtents,
           typename _SrcLayout,
@@ -106,14 +121,9 @@ void __nd_copy_bytes_impl(stream_ref __stream,
   static_assert(_CUDA_VSTD::is_same_v<_SrcLayout, _DstLayout>,
                 "Multidimensional copy requires both source and destination layouts to match");
 
-  for (typename _SrcExtents::rank_type __i = 0; __i < __src.rank(); __i++)
+  if (!__copy_bytes_runtime_extents_match(__src.extents(), __dst.extents()))
   {
-    if (__src.extent(__i)
-        != static_cast<typename _SrcExtents::index_type>(
-          __dst.extent((static_cast<typename _DstExtents::rank_type>(__i)))))
-    {
-      _CUDA_VSTD::__throw_invalid_argument("Copy destination size differs from the source");
-    }
+    _CUDA_VSTD::__throw_invalid_argument("Copy destination size differs from the source");
   }
 
   __copy_bytes_impl(__stream,
