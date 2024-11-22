@@ -97,7 +97,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int SHL_ADD(unsigned int x, unsigned int
   return ret;
 }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 /**
  * Bitfield-extract.
@@ -135,7 +135,7 @@ BFE(UnsignedBits source, unsigned int bit_start, unsigned int num_bits, Int2Type
 }
 #  endif
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 /**
  * \brief Bitfield-extract.  Extracts \p num_bits from \p source starting at bit-offset \p bit_start.  The input \p
@@ -199,7 +199,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE int PRMT(unsigned int a, unsigned int b, unsigned
   return ret;
 }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 /**
  * Sync-threads barrier.
@@ -329,7 +329,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE float FFMA_RZ(float a, float b, float c)
   return d;
 }
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 /**
  * \brief Terminates the calling thread
@@ -689,7 +689,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE T ShuffleIndex(T input, int src_lane, unsigned in
   return output;
 }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 namespace detail
 {
 
@@ -751,7 +751,7 @@ struct warp_matcher_t<LABEL_BITS, CUB_PTX_WARP_THREADS>
 };
 
 } // namespace detail
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 /**
  * Compute a 32b mask of threads having the same least-significant
