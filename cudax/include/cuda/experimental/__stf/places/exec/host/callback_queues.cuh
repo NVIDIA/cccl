@@ -602,5 +602,5 @@ inline bool cudaCallbackQueueProgress(callback_queue* q, bool flag)
 
 } // end namespace cuda::experimental::stf
 
-#  endif // !_CCCL_COMPILER_MSVC
+#  endif // !_CCCL_COMPILER(MSVC)
 #endif // _CCCL_DOXYGEN_INVOKED do not document
