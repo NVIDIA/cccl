@@ -51,7 +51,7 @@ CUB_NAMESPACE_BEGIN
 namespace detail
 {
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 /***********************************************************************************************************************
  * Generic Array-like to Array Conversion
@@ -74,7 +74,7 @@ to_array(const Input& input)
   return to_array_impl<CastType1>(input, ::cuda::std::make_index_sequence<cub::detail::static_size_v<Input>()>{});
 }
 
-#endif // !DOXYGEN_SHOULD_SKIP_THIS
+#endif // !_CCCL_DOXYGEN_INVOKED
 
 } // namespace detail
 

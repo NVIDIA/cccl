@@ -49,7 +49,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 #  define CUB_PREVENT_MACRO_SUBSTITUTION
 template <typename T, typename U>
 constexpr _CCCL_HOST_DEVICE auto min CUB_PREVENT_MACRO_SUBSTITUTION(T&& t, U&& u)

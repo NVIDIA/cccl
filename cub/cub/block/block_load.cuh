@@ -179,7 +179,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void LoadDirectBlocked(
   LoadDirectBlocked(linear_tid, block_src_it, dst_items, block_items_end);
 }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 //! @brief Internal implementation for load vectorization
 //!
@@ -225,7 +225,7 @@ InternalLoadDirectBlockedVectorized(int linear_tid, const T* block_src_ptr, T (&
   }
 }
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 //! @rst
 //! Load a linear segment of items into a blocked arrangement across the thread block.

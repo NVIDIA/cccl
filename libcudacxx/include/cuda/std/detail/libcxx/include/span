@@ -171,6 +171,7 @@ template<class R>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/array>
 #include <cuda/std/cstddef> // for ptrdiff_t
+#include <cuda/std/detail/libcxx/include/stdexcept>
 #include <cuda/std/initializer_list>
 
 // standard-mandated includes
@@ -511,6 +512,15 @@ public:
     return __data_[__idx];
   }
 
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference at(size_type __idx) const
+  {
+    if (__idx >= size())
+    {
+      _CUDA_VSTD::__throw_out_of_range("span::at");
+    }
+    return __data_[__idx];
+  }
+
   _LIBCUDACXX_HIDE_FROM_ABI constexpr reference front() const noexcept
   {
     _CCCL_ASSERT(!empty(), "span<T, N>::front() on empty span");
@@ -744,6 +754,15 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr reference operator[](size_type __idx) const noexcept
   {
     _CCCL_ASSERT(__idx < size(), "span<T>::operator[](index): index out of range");
+    return __data_[__idx];
+  }
+
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference at(size_type __idx) const
+  {
+    if (__idx >= size())
+    {
+      _CUDA_VSTD::__throw_out_of_range("span::at");
+    }
     return __data_[__idx];
   }
 

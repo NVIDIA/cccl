@@ -114,7 +114,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStore(OutputIteratorT itr, T val);
 
 //@}  end member group
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 /// Helper structure for templated store iteration (inductive case)
 template <int COUNT, int MAX>
@@ -353,6 +353,6 @@ _CCCL_DEVICE _CCCL_FORCEINLINE void ThreadStore(OutputIteratorT itr, T val)
   ThreadStore(itr, val, Int2Type<MODIFIER>(), Int2Type<std::is_pointer<OutputIteratorT>::value>());
 }
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 CUB_NAMESPACE_END
