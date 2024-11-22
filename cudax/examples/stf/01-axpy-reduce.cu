@@ -29,36 +29,6 @@ double Y0(int i)
   return cos((double) i);
 }
 
-template <typename T>
-class sum
-{
-public:
-  static __host__ __device__ void init_op(T& dst)
-  {
-    dst = static_cast<T>(0);
-  }
-
-  static __host__ __device__ void apply_op(T& dst, const T& src)
-  {
-    dst += src;
-  }
-};
-
-template <typename T>
-class maxval
-{
-public:
-  static __host__ __device__ void init_op(T& dst)
-  {
-    dst = ::std::numeric_limits<T>::lowest();
-  }
-
-  static __host__ __device__ void apply_op(T& dst, const T& src)
-  {
-    dst = ::std::max(dst, src);
-  }
-};
-
 int main()
 {
   context ctx;
@@ -82,7 +52,7 @@ int main()
 
   /* Compute Y = Y + alpha X */
   ctx.parallel_for(
-    lY.shape(), lX.read(), lY.rw(), lsum.write(), lsum2.reduce(sum<double>{}), lmax.reduce(maxval<double>{}))
+    lY.shape(), lX.read(), lY.rw(), lsum.write(), lsum2.reduce(reducer::sum<double>{}), lmax.reduce(reducer::maxval<double>{}))
       ->*[alpha] __device__(size_t i, auto dX, auto dY, auto sum, double& sum2, double& maxval) {
             dY(i) += alpha * dX(i);
             sum2 += dY(i);

@@ -24,21 +24,6 @@
 using namespace std::chrono;
 using namespace cuda::experimental::stf;
 
-template <typename T>
-class sum
-{
-public:
-  static __host__ __device__ void init_op(T& dst)
-  {
-    dst = static_cast<T>(0);
-  }
-
-  static __host__ __device__ void apply_op(T& dst, const T& src)
-  {
-    dst += src;
-  }
-};
-
 /* wall-clock time */
 double gettime()
 {
@@ -208,7 +193,7 @@ deltasq(context& ctx, logical_data<slice<double, 2>> lnewarr, logical_data<slice
 {
   auto ldsq = ctx.logical_data(shape_of<scalar<double>>()).set_symbol("tmp_accumulator");
 
-  ctx.parallel_for(lnewarr.shape(), ldsq.reduce(sum<double>{}), lnewarr.read(), loldarr.read()).set_symbol("deltasq")->*
+  ctx.parallel_for(lnewarr.shape(), ldsq.reduce(reducer::sum<double>{}), lnewarr.read(), loldarr.read()).set_symbol("deltasq")->*
     [] __device__(size_t i, size_t j, auto& dsq, auto newarr, auto oldarr) {
       double tmp = newarr(i, j) - oldarr(i, j);
       dsq += tmp * tmp;
@@ -374,7 +359,7 @@ int main(int argc, char** argv)
   nvtxRangePush("Compute_Normalization");
 
   // bnorm = psi * psi
-  ctx.parallel_for(lpsi.shape(), lpsi.read(), lbnorm.reduce(sum<double>{}))
+  ctx.parallel_for(lpsi.shape(), lpsi.read(), lbnorm.reduce(reducer::sum<double>{}))
       ->*[] __device__(size_t i, size_t j, auto psi, auto& bnorm) {
             bnorm += psi(i, j) * psi(i, j);
           };
@@ -385,7 +370,7 @@ int main(int argc, char** argv)
     boundaryzet(ctx, lzet, lpsi, m, n);
 
     // update normalisation
-    ctx.parallel_for(lzet.shape(), lzet.read(), lbnorm.reduce(sum<double>{}, no_init{}))
+    ctx.parallel_for(lzet.shape(), lzet.read(), lbnorm.reduce(reducer::sum<double>{}, no_init{}))
         ->*[] __device__(size_t i, size_t j, auto zet, auto& bnorm_zet) {
               bnorm_zet += zet(i, j) * zet(i, j);
             };
