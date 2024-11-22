@@ -35,13 +35,13 @@ namespace cuda::experimental::stf
  */
 enum class access_mode : unsigned int
 {
-  none    = 0,
-  read    = 1,
-  write   = 2,
-  rw      = 3, // READ + WRITE
-  relaxed = 4, /* operator ? */
-  reduce_no_init  = 8,
-  reduce_do_init  = 16,
+  none           = 0,
+  read           = 1,
+  write          = 2,
+  rw             = 3, // READ + WRITE
+  relaxed        = 4, /* operator ? */
+  reduce_no_init = 8,
+  reduce_do_init = 16,
 };
 
 /**

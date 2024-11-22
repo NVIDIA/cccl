@@ -52,7 +52,12 @@ int main()
 
   /* Compute Y = Y + alpha X */
   ctx.parallel_for(
-    lY.shape(), lX.read(), lY.rw(), lsum.write(), lsum2.reduce(reducer::sum<double>{}), lmax.reduce(reducer::maxval<double>{}))
+    lY.shape(),
+    lX.read(),
+    lY.rw(),
+    lsum.write(),
+    lsum2.reduce(reducer::sum<double>{}),
+    lmax.reduce(reducer::maxval<double>{}))
       ->*[alpha] __device__(size_t i, auto dX, auto dY, auto sum, double& sum2, double& maxval) {
             dY(i) += alpha * dX(i);
             sum2 += dY(i);

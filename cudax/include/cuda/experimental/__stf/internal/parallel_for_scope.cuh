@@ -149,20 +149,22 @@ __device__ void fill_results_impl_i(tuple_args& targs, const Tuple& t)
 
     // We have 2 cases here, op is a pair of Operation,boolean where the
     // boolean indicates if we should update the value or initialize it.
-    if constexpr (::std::is_same_v<typename op_is::second_type, do_init>) {
-        // We overwrite any value if needed
-        owning_container_of<arg_is>::fill(::std::get<Is>(targs), ::std::get<Is>(t));
+    if constexpr (::std::is_same_v<typename op_is::second_type, do_init>)
+    {
+      // We overwrite any value if needed
+      owning_container_of<arg_is>::fill(::std::get<Is>(targs), ::std::get<Is>(t));
     }
-    else {
-        static_assert(::std::is_same_v<typename op_is::second_type, no_init>);
-        // Read existing value
-        auto res = owning_container_of<arg_is>::get_value(::std::get<Is>(targs));
+    else
+    {
+      static_assert(::std::is_same_v<typename op_is::second_type, no_init>);
+      // Read existing value
+      auto res = owning_container_of<arg_is>::get_value(::std::get<Is>(targs));
 
-        // Reduce previous value and the output the reduction
-        op_is::first_type::apply_op(res, ::std::get<Is>(t));
+      // Reduce previous value and the output the reduction
+      op_is::first_type::apply_op(res, ::std::get<Is>(t));
 
-        // Overwrite previous value
-        owning_container_of<arg_is>::fill(::std::get<Is>(targs), res);
+      // Overwrite previous value
+      owning_container_of<arg_is>::fill(::std::get<Is>(targs), res);
     }
   }
 }
@@ -228,9 +230,10 @@ private:
   __device__ void apply_op_impl_i(const Tuple& src)
   {
     using ElementType = ::std::tuple_element_t<idx, tuple_ops>;
-    if constexpr (!::std::is_same_v<ElementType, task_dep_op_none>) {
-        // If this is not a none op, then we have pair of ops, and the flag which indicates if we must initialize
-        ElementType::first_type::apply_op(::std::get<idx>(tup), ::std::get<idx>(src));
+    if constexpr (!::std::is_same_v<ElementType, task_dep_op_none>)
+    {
+      // If this is not a none op, then we have pair of ops, and the flag which indicates if we must initialize
+      ElementType::first_type::apply_op(::std::get<idx>(tup), ::std::get<idx>(src));
     }
   }
 
