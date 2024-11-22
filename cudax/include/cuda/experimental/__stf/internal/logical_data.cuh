@@ -820,7 +820,8 @@ public:
 
       case access_mode::rw:
       case access_mode::write:
-      case access_mode::reduce: {
+      case access_mode::reduce_no_init:
+      case access_mode::reduce_do_init: {
         switch (current_msir)
         {
           case reserved::msir_state_id::modified:
@@ -852,7 +853,7 @@ public:
             // If we need to perform a copy, this will be the source instance
             instance_id_t src_instance_id = instance_id_t::invalid;
             // Do not find a source if this is write only
-            if (mode == access_mode::rw)
+            if (mode == access_mode::rw || mode == access_mode::reduce_no_init)
             {
               // There is no local valid copy ... find one !
               instance_id_t dst_instance_id = instance_id;
@@ -887,7 +888,7 @@ public:
             else
             {
               // Write only
-              assert(mode == access_mode::write || mode == access_mode::reduce);
+              assert(mode == access_mode::write || mode == access_mode::reduce_do_init);
             }
 
             // Clear and all copies which become invalid, keep prereqs
@@ -2177,6 +2178,9 @@ inline decltype(auto) task::get(size_t submitted_index) const
   return d.template instance<T>(instance_id);
 }
 
+class no_init {};
+class do_init {};
+
 /**
  * @brief Represents typed logical data.
  *
@@ -2302,10 +2306,25 @@ public:
   }
 
   template <typename Op, typename... Pack>
-  auto reduce(Op, Pack&&... pack)
+  auto reduce(Op, no_init, Pack&&... pack)
   {
-    return task_dep_op<::std::pair<T, Op>>(*this, access_mode::reduce, ::std::forward<Pack>(pack)...);
+    return task_dep_op<::std::pair<T, ::std::pair<Op, no_init>>>(*this, access_mode::reduce_no_init, ::std::forward<Pack>(pack)...);
   }
+
+  template <typename Op, typename... Pack>
+  auto reduce(Op, do_init, Pack&&... pack)
+  {
+    return task_dep_op<::std::pair<T, ::std::pair<Op, do_init>>>(*this, access_mode::reduce_do_init, ::std::forward<Pack>(pack)...);
+  }
+
+  template <typename Op, typename... Pack>
+  auto reduce(Op op, Pack&&... pack)
+  {
+     return reduce(mv(op), do_init{}, std::forward<Pack>(pack)...);
+  }
+
+
+
   ///@}
 };
 

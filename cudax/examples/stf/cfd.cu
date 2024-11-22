@@ -369,7 +369,6 @@ int main(int argc, char** argv)
   boundarypsi(ctx, lpsi, m, n, b, h, w);
 
   // compute normalisation factor for error
-  // auto lbnorm = ctx.logical_data(shape_of<slice<double>>({1})).set_symbol("bnorm");
   auto lbnorm = ctx.logical_data(shape_of<scalar<double>>()).set_symbol("bnorm");
 
   nvtxRangePush("Compute_Normalization");
@@ -380,25 +379,19 @@ int main(int argc, char** argv)
             bnorm += psi(i, j) * psi(i, j);
           };
 
-  auto lbnorm_zet = ctx.logical_data(shape_of<scalar<double>>()).set_symbol("bnorm_zet"); // maybe unused
   if (!irrotational)
   {
     // update zeta BCs that depend on psi
     boundaryzet(ctx, lzet, lpsi, m, n);
 
     // update normalisation
-    ctx.parallel_for(lzet.shape(), lzet.read(), lbnorm_zet.reduce(sum<double>{}))
+    ctx.parallel_for(lzet.shape(), lzet.read(), lbnorm.reduce(sum<double>{}, no_init{}))
         ->*[] __device__(size_t i, size_t j, auto zet, auto& bnorm_zet) {
               bnorm_zet += zet(i, j) * zet(i, j);
             };
   }
 
   double bnorm = ctx.transfer_host(lbnorm);
-  if (!irrotational)
-  {
-    bnorm += ctx.transfer_host(lbnorm_zet);
-  }
-
   bnorm = sqrt(bnorm);
 
   // begin iterative Jacobi loop
