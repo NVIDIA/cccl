@@ -2178,8 +2178,10 @@ inline decltype(auto) task::get(size_t submitted_index) const
   return d.template instance<T>(instance_id);
 }
 
-class no_init {};
-class do_init {};
+class no_init
+{};
+class do_init
+{};
 
 /**
  * @brief Represents typed logical data.
@@ -2308,22 +2310,22 @@ public:
   template <typename Op, typename... Pack>
   auto reduce(Op, no_init, Pack&&... pack)
   {
-    return task_dep_op<::std::pair<T, ::std::pair<Op, no_init>>>(*this, access_mode::reduce_no_init, ::std::forward<Pack>(pack)...);
+    return task_dep_op<::std::pair<T, ::std::pair<Op, no_init>>>(
+      *this, access_mode::reduce_no_init, ::std::forward<Pack>(pack)...);
   }
 
   template <typename Op, typename... Pack>
   auto reduce(Op, do_init, Pack&&... pack)
   {
-    return task_dep_op<::std::pair<T, ::std::pair<Op, do_init>>>(*this, access_mode::reduce_do_init, ::std::forward<Pack>(pack)...);
+    return task_dep_op<::std::pair<T, ::std::pair<Op, do_init>>>(
+      *this, access_mode::reduce_do_init, ::std::forward<Pack>(pack)...);
   }
 
   template <typename Op, typename... Pack>
   auto reduce(Op op, Pack&&... pack)
   {
-     return reduce(mv(op), do_init{}, std::forward<Pack>(pack)...);
+    return reduce(mv(op), do_init{}, std::forward<Pack>(pack)...);
   }
-
-
 
   ///@}
 };

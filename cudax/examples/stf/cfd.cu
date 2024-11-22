@@ -193,11 +193,12 @@ deltasq(context& ctx, logical_data<slice<double, 2>> lnewarr, logical_data<slice
 {
   auto ldsq = ctx.logical_data(shape_of<scalar<double>>()).set_symbol("tmp_accumulator");
 
-  ctx.parallel_for(lnewarr.shape(), ldsq.reduce(reducer::sum<double>{}), lnewarr.read(), loldarr.read()).set_symbol("deltasq")->*
-    [] __device__(size_t i, size_t j, auto& dsq, auto newarr, auto oldarr) {
-      double tmp = newarr(i, j) - oldarr(i, j);
-      dsq += tmp * tmp;
-    };
+  ctx.parallel_for(lnewarr.shape(), ldsq.reduce(reducer::sum<double>{}), lnewarr.read(), loldarr.read())
+      .set_symbol("deltasq")
+      ->*[] __device__(size_t i, size_t j, auto& dsq, auto newarr, auto oldarr) {
+            double tmp = newarr(i, j) - oldarr(i, j);
+            dsq += tmp * tmp;
+          };
 
   return ctx.transfer_host(ldsq);
 }
@@ -377,7 +378,7 @@ int main(int argc, char** argv)
   }
 
   double bnorm = ctx.transfer_host(lbnorm);
-  bnorm = sqrt(bnorm);
+  bnorm        = sqrt(bnorm);
 
   // begin iterative Jacobi loop
 

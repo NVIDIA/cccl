@@ -22,9 +22,8 @@
 
 #include <cuda/std/__cccl/execution_space.h>
 
-#include <limits>
 #include <algorithm> // for std::min and std::max
-
+#include <limits>
 
 namespace cuda::experimental::stf::reducer
 {
@@ -34,10 +33,10 @@ class sum
 {
 public:
   static __host__ __device__ void init_op(T& dst)
-  { 
+  {
     dst = static_cast<T>(0);
-  } 
-  
+  }
+
   static __host__ __device__ void apply_op(T& dst, const T& src)
   {
     dst += src;
