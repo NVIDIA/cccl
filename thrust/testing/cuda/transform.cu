@@ -355,7 +355,7 @@ struct sum_five
 };
 
 // The following test cannot be compiled because of a bug in the conversion of thrust::tuple on MSVC 2017
-#ifndef _CCCL_COMPILER_MSVC_2017
+#if !_CCCL_COMPILER(MSVC2017)
 // we specialize zip_function for sum_five, but do nothing in the call operator so the test below would fail if the
 // zip_function is actually called (and not unwrapped)
 THRUST_NAMESPACE_BEGIN
@@ -420,4 +420,4 @@ void TestTransformZipIteratorUnwrapping()
   }
 }
 DECLARE_UNITTEST(TestTransformZipIteratorUnwrapping);
-#endif // !_CCCL_COMPILER_MSVC_2017
+#endif // !_CCCL_COMPILER(MSVC2017)

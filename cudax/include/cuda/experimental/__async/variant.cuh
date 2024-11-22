@@ -169,7 +169,7 @@ public:
   }
 };
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
 template <class... _Ts>
 struct __mk_variant_
 {

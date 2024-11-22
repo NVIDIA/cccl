@@ -49,7 +49,7 @@
 #  include <cuda_runtime_api.h>
 #endif // !_CCCL_COMPILER(NVRTC)
 
-#ifdef DOXYGEN_SHOULD_SKIP_THIS // Only parse this during doxygen passes:
+#ifdef _CCCL_DOXYGEN_INVOKED // Only parse this during doxygen passes:
 
 /**
  * \def CUB_DISABLE_CDP
