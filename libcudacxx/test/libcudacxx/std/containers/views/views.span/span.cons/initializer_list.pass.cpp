@@ -23,40 +23,27 @@
 #include "test_convertible.h"
 #include "test_macros.h"
 
-// SFINAE
-
-template <typename T>
-struct ConstElementType : cuda::std::is_const<typename T::element_type>
-{};
-
-static_assert(ConstElementType<cuda::std::span<const int>>::value, "");
-static_assert(!ConstElementType<cuda::std::span<int>>::value, "");
-static_assert(ConstElementType<cuda::std::span<const int, 94>>::value, "");
-static_assert(!ConstElementType<cuda::std::span<int, 94>>::value, "");
+using cuda::std::is_constructible;
 
 // Constructor constrains
+static_assert(is_constructible<cuda::std::span<const int>, cuda::std::initializer_list<int>>::value, "");
+static_assert(is_constructible<cuda::std::span<const int, 42>, cuda::std::initializer_list<int>>::value, "");
+static_assert(!is_constructible<cuda::std::span<const int>, cuda::std::initializer_list<const int>>::value, "");
+static_assert(!is_constructible<cuda::std::span<const int, 42>, cuda::std::initializer_list<const int>>::value, "");
 
-template <typename I, typename T, cuda::std::size_t N = cuda::std::dynamic_extent, typename = void>
-struct HasInitializerListCtr : cuda::std::false_type
-{};
-
-template <typename I, typename T, cuda::std::size_t N>
-struct HasInitializerListCtr<I, T, N, cuda::std::void_t<decltype(cuda::std::span<T, N>{I{}})>> : cuda::std::true_type
-{};
-
-static_assert(HasInitializerListCtr<cuda::std::initializer_list<const int>, const int>::value, "");
-static_assert(!HasInitializerListCtr<cuda::std::initializer_list<int>, int>::value, "");
-static_assert(HasInitializerListCtr<cuda::std::initializer_list<const int>, const int, 94>::value, "");
-static_assert(!HasInitializerListCtr<cuda::std::initializer_list<int>, int, 94>::value, "");
+static_assert(!is_constructible<cuda::std::span<int>, cuda::std::initializer_list<int>>::value, "");
+static_assert(!is_constructible<cuda::std::span<int, 42>, cuda::std::initializer_list<int>>::value, "");
+static_assert(!is_constructible<cuda::std::span<int>, cuda::std::initializer_list<const int>>::value, "");
+static_assert(!is_constructible<cuda::std::span<int, 42>, cuda::std::initializer_list<const int>>::value, "");
 
 // Constructor conditionally explicit
 
 static_assert(!test_convertible<cuda::std::span<const int, 28>, cuda::std::initializer_list<int>>(),
               "This constructor must be explicit");
-static_assert(cuda::std::is_constructible<cuda::std::span<const int, 28>, cuda::std::initializer_list<int>>::value, "");
+static_assert(is_constructible<cuda::std::span<const int, 28>, cuda::std::initializer_list<int>>::value, "");
 static_assert(test_convertible<cuda::std::span<const int>, cuda::std::initializer_list<int>>(),
               "This constructor must not be explicit");
-static_assert(cuda::std::is_constructible<cuda::std::span<const int>, cuda::std::initializer_list<int>>::value, "");
+static_assert(is_constructible<cuda::std::span<const int>, cuda::std::initializer_list<int>>::value, "");
 
 struct Sink
 {
