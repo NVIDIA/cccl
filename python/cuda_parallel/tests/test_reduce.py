@@ -125,45 +125,56 @@ def mul2(val):
                                              "counting_uint64",
                                              "counting_float32",
                                              "counting_float64",
+                                             "map_mul2_int16_int16",
+                                             "map_mul2_uint16_uint16",
                                              "map_mul2_int32_int32",
+                                             "map_mul2_uint32_uint32",
+                                             "map_mul2_int64_int64",
+                                             "map_mul2_uint64_uint64",
+                                             "map_mul2_float32_float32",
+                                             "map_mul2_float64_float64",
+                                             # "map_mul2_float32_int32",
                                             ])
 def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, start_sum_with=10):
     def add_op(a, b):
         return a + b
 
     def dtype_ntype(ix):
-        intty = input_generator.split("_")[ix]
-        return numpy.dtype(intty), getattr(numba.types, intty)
+        ty = input_generator.split("_")[ix]
+        return numpy.dtype(ty), getattr(numba.types, ty)
 
     if input_generator.startswith("raw_pointer_"):
         rng = random.Random(0)
         l_input = [rng.randrange(100) for _ in range(num_items)]
-        dtype, ntype = dtype_ntype(-1)
-        raw_pointer_devarr = numba.cuda.to_device(numpy.array(l_input, dtype=dtype))
-        i_input = iterators.pointer(raw_pointer_devarr, ntype=ntype)
+        dtype_inp, ntype_inp = dtype_ntype(-1)
+        dtype_out = dtype_inp
+        raw_pointer_devarr = numba.cuda.to_device(numpy.array(l_input, dtype=dtype_inp))
+        i_input = iterators.pointer(raw_pointer_devarr, ntype=ntype_inp)
     elif input_generator.startswith("streamed_input_"):
         rng = random.Random(0)
         l_input = [rng.randrange(100) for _ in range(num_items)]
-        dtype, ntype = dtype_ntype(-1)
-        streamed_input_devarr = numba.cuda.to_device(numpy.array(l_input, dtype=dtype))
-        i_input = iterators.cache(streamed_input_devarr, ntype=ntype, modifier='stream')
+        dtype_inp, ntype_inp = dtype_ntype(-1)
+        dtype_out = dtype_inp
+        streamed_input_devarr = numba.cuda.to_device(numpy.array(l_input, dtype=dtype_inp))
+        i_input = iterators.cache(streamed_input_devarr, ntype=ntype_inp, modifier='stream')
     elif input_generator.startswith("constant_"):
         l_input = [42 for distance in range(num_items)]
-        dtype, ntype = dtype_ntype(-1)
-        i_input = iterators.repeat(42, ntype=ntype)
+        dtype_inp, ntype_inp = dtype_ntype(-1)
+        dtype_out = dtype_inp
+        i_input = iterators.repeat(42, ntype=ntype_inp)
     elif input_generator.startswith("counting_"):
         l_input = [start_sum_with + distance for distance in range(num_items)]
-        dtype, ntype = dtype_ntype(-1)
-        i_input = iterators.count(start_sum_with, ntype=ntype)
+        dtype_inp, ntype_inp = dtype_ntype(-1)
+        dtype_out = dtype_inp
+        i_input = iterators.count(start_sum_with, ntype=ntype_inp)
     elif input_generator.startswith("map_mul2_"):
         l_input = [2 * (start_sum_with + distance) for distance in range(num_items)]
-        dtype_op, ntype_op = dtype_ntype(-1)
-        dtype_it, ntype_it = dtype_ntype(-2)
-        dtype = dtype_op
+        dtype_inp, ntype_inp = dtype_ntype(-1)
+        dtype_out, ntype_out = dtype_ntype(-2)
         i_input = iterators.cu_map(
             mul2,
-            iterators.count(start_sum_with, ntype=ntype_it),
-            op_return_ntype=ntype_op)
+            iterators.count(start_sum_with, ntype=ntype_inp),
+            op_return_ntype=ntype_out)
     else:
         raise RuntimeError("Unexpected input_generator")
 
@@ -172,14 +183,14 @@ def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, sta
         expected_result = add_op(expected_result, v)
 
     if use_numpy_array:
-        h_input = numpy.array(l_input, dtype)
+        h_input = numpy.array(l_input, dtype_inp)
         d_input = numba.cuda.to_device(h_input)
     else:
         d_input = i_input
 
-    d_output = numba.cuda.device_array(1, dtype) # to store device sum
+    d_output = numba.cuda.device_array(1, dtype_out) # to store device sum
 
-    h_init = numpy.array([start_sum_with], dtype)
+    h_init = numpy.array([start_sum_with], dtype_out)
 
     reduce_into = cudax.reduce_into(d_in=d_input, d_out=d_output, op=add_op, init=h_init)
 
