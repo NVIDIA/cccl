@@ -24,6 +24,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/cstddef> // for size_t
+
 ////////////////////////////////////////////////////////////////////////////////
 // _CCCL_TEMPLATE
 // Usage:
