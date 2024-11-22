@@ -87,14 +87,13 @@ __host__ __device__ void test(float value)
   test<__nv_bfloat16>(__float2bfloat16(value));
 #endif // _LIBCUDACXX_HAS_NVBF16
 
-  test<unsigned short>(value);
-  test<int>(value);
-  test<unsigned int>(value);
-  test<long>(value);
-  test<long long>(value);
-  test<int>(value);
-  test<unsigned long long>(value);
-  test<int>(value);
+  test<unsigned short>(static_cast<unsigned short>(value));
+  test<int>(static_cast<int>(value));
+  test<unsigned int>(static_cast<unsigned int>(value));
+  test<long>(static_cast<long>(value));
+  test<unsigned long>(static_cast<unsigned long>(value));
+  test<long long>(static_cast<long long>(value));
+  test<unsigned long long>(static_cast<unsigned long long>(value));
 }
 
 __global__ void test_global_kernel(float* value)

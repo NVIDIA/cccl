@@ -285,7 +285,8 @@
 #endif // _CCCL_CHECK_BUILTIN(builtin_log10)
 
 // Below 11.7 nvcc treats the builtin as a host only function
-#if _CCCL_CUDACC_BELOW(11, 7)
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "log10f"
+#if _CCCL_CUDACC_BELOW(11, 7) || defined(_CCCL_CUDA_COMPILER_CLANG)
 #  undef _CCCL_BUILTIN_LOG10F
 #  undef _CCCL_BUILTIN_LOG10
 #  undef _CCCL_BUILTIN_LOG10L
@@ -326,7 +327,8 @@
 #endif // _CCCL_CHECK_BUILTIN(builtin_log1)
 
 // Below 11.7 nvcc treats the builtin as a host only function
-#if _CCCL_CUDACC_BELOW(11, 7)
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "log2f"
+#if _CCCL_CUDACC_BELOW(11, 7) || defined(_CCCL_CUDA_COMPILER_CLANG)
 #  undef _CCCL_BUILTIN_LOG2F
 #  undef _CCCL_BUILTIN_LOG2
 #  undef _CCCL_BUILTIN_LOG2L
