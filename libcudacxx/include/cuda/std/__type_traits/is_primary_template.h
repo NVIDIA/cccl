@@ -27,7 +27,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
 template <class _Tp, class = void>
 struct __is_primary_template : false_type
 {};
@@ -37,13 +37,13 @@ struct __is_primary_template<_Tp, void_t<typename _Tp::__primary_template>>
     : public is_same<_Tp, typename _Tp::__primary_template>
 {};
 
-#else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 
 template <class _Tp>
 using __test_for_primary_template = enable_if_t<_IsSame<_Tp, typename _Tp::__primary_template>::value>;
 template <class _Tp>
 using __is_primary_template = _IsValidExpansion<__test_for_primary_template, _Tp>;
-#endif // !_CCCL_COMPILER_MSVC
+#endif // !_CCCL_COMPILER(MSVC)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

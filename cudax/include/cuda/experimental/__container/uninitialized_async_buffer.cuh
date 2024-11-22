@@ -34,8 +34,7 @@
 
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
 
-#if _CCCL_STD_VER >= 2014 && !defined(_CCCL_COMPILER_MSVC_2017) \
-  && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
+#if _CCCL_STD_VER >= 2014 && !_CCCL_COMPILER(MSVC2017) && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
 //! @file
 //! The \c uninitialized_async_buffer class provides a typed buffer allocated in stream-order from a given memory
@@ -299,6 +298,6 @@ using uninitialized_async_device_buffer = uninitialized_async_buffer<_Tp, _CUDA_
 
 } // namespace cuda::experimental
 
-#endif // _CCCL_STD_VER >= 2014 && !_CCCL_COMPILER_MSVC_2017 && LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+#endif // _CCCL_STD_VER >= 2014 && !_CCCL_COMPILER(MSVC2017) && LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #endif //__CUDAX__CONTAINERS_UNINITIALIZED_ASYNC_BUFFER_H

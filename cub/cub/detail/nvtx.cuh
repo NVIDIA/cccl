@@ -96,7 +96,7 @@ CUB_NAMESPACE_END
 
 #    define CUB_DETAIL_NVTX_RANGE_SCOPE(name) CUB_DETAIL_NVTX_RANGE_SCOPE_IF(true, name)
 #  else // NVTX3_CPP_DEFINITIONS_V1_0
-#    if defined(_CCCL_COMPILER_MSVC)
+#    if _CCCL_COMPILER(MSVC)
 #      pragma message( \
         "warning: nvtx3.hpp is available but does not define the V1 API. This is odd. Please open a GitHub issue at: https://github.com/NVIDIA/cccl/issues.")
 #    else
