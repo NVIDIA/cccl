@@ -14,6 +14,8 @@ _DEVICE_POINTER_SIZE = 8
 _DEVICE_POINTER_BITWIDTH = _DEVICE_POINTER_SIZE * 8
 _DISTANCE_NUMBA_TYPE = numba.types.uint64
 _DISTANCE_IR_TYPE = ir.IntType(64)
+_CHAR_PTR_NUMBA_TYPE = numba.types.CPointer(numba.types.int8)
+_CHAR_PTR_IR_TYPE = ir.PointerType(ir.IntType(8))
 
 
 def _sizeof_numba_type(ntype):
@@ -300,15 +302,13 @@ def cu_map(op, it, op_return_ntype):
         def codegen(context, builder, sig, args):
             state_ptr, dist = args
             fnty = ir.FunctionType(
-                ir.VoidType(), (ir.PointerType(ir.IntType(8)), _DISTANCE_IR_TYPE)
+                ir.VoidType(), (_CHAR_PTR_IR_TYPE, _DISTANCE_IR_TYPE)
             )
             fn = cgutils.get_or_insert_function(builder.module, fnty, name)
             builder.call(fn, (state_ptr, dist))
 
         return signature(
-            numba.types.void,
-            numba.types.CPointer(numba.types.int8),
-            _DISTANCE_NUMBA_TYPE,
+            numba.types.void, _CHAR_PTR_NUMBA_TYPE, _DISTANCE_NUMBA_TYPE
         ), codegen
 
     def advance_codegen(func_to_overload, name):
@@ -329,13 +329,11 @@ def cu_map(op, it, op_return_ntype):
     def make_dereference_codegen(name):
         def codegen(context, builder, sig, args):
             (state_ptr,) = args
-            fnty = ir.FunctionType(op_return_ntype_ir, (ir.PointerType(ir.IntType(8)),))
+            fnty = ir.FunctionType(op_return_ntype_ir, (_CHAR_PTR_IR_TYPE,))
             fn = cgutils.get_or_insert_function(builder.module, fnty, name)
             return builder.call(fn, (state_ptr,))
 
-        return signature(
-            op_return_ntype, numba.types.CPointer(numba.types.int8)
-        ), codegen
+        return signature(op_return_ntype, _CHAR_PTR_NUMBA_TYPE), codegen
 
     def dereference_codegen(func_to_overload, name):
         @intrinsic
