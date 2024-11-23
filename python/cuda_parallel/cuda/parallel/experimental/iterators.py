@@ -370,7 +370,9 @@ def cu_map(op, it, op_return_ntype):
 
     advance_codegen(source_advance, f"{it.prefix}_advance")
     dereference_codegen(source_dereference, f"{it.prefix}_dereference")
-    op_codegen(op, op.__name__)
+
+    op_abi_name = f"{op.__name__}_{op_return_ntype.name}_{it.ntype.name}"
+    op_codegen(op, op_abi_name)
 
     class TransformIterator:
         def __init__(self, it, op):
@@ -393,7 +395,12 @@ def cu_map(op, it, op_return_ntype):
                     op_return_ntype(numba.types.CPointer(numba.types.char)),
                     self.prefix,
                 ),
-                numba.cuda.compile(op, sig=op_return_ntype(it.ntype), output="ltoir"),
+                numba.cuda.compile(
+                    op,
+                    sig=op_return_ntype(it.ntype),
+                    abi_info={"abi_name": op_abi_name},
+                    output="ltoir",
+                ),
             ]
 
         def transform_advance(it_state_ptr, diff):
