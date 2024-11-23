@@ -51,14 +51,7 @@ struct __align__(OP_ALIGNMENT) input_iterator_state_t {
   using difference_type = DIFF_T;
   using pointer = VALUE_T*;
   using reference = VALUE_T&;
-  __device__ inline value_type operator*() const {
-    printf("\nLOOOK data");
-    for (int ix = 0; ix < OP_SIZE; ix++) {
-      printf(" 0x%x", (unsigned)((unsigned char *) data)[ix]);
-    }
-    printf("\n");
-    return DEREF(data);
-  }
+  __device__ inline value_type operator*() const { return DEREF(data); }
   __device__ inline input_iterator_state_t& operator+=(difference_type diff) {
       ADVANCE(data, diff);
       return *this;

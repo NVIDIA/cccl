@@ -51,12 +51,6 @@ def _ctypes_type_given_numba_type(ntype):
 
 
 def _ncc(funcname, pyfunc, sig, prefix):
-    ptx, _ = numba.cuda.compile(
-        pyfunc=pyfunc,
-        sig=sig,
-        abi_info={"abi_name": f"{prefix}_{funcname}"},
-    )
-    print("\nLOOOK", funcname, prefix, f"ptx=\n{ptx}", flush=True)
     return numba.cuda.compile(
         pyfunc=pyfunc,
         sig=sig,
@@ -335,11 +329,11 @@ def cu_map(op, it, op_return_ntype):
     def make_dereference_codegen(name):
         def codegen(context, builder, sig, args):
             (state_ptr,) = args
-            fnty = ir.FunctionType(it_ntype_ir, (_CHAR_PTR_IR_TYPE,))
+            fnty = ir.FunctionType(op_return_ntype_ir, (_CHAR_PTR_IR_TYPE,))
             fn = cgutils.get_or_insert_function(builder.module, fnty, name)
             return builder.call(fn, (state_ptr,))
 
-        return signature(it.ntype, _CHAR_PTR_NUMBA_TYPE), codegen
+        return signature(op_return_ntype, _CHAR_PTR_NUMBA_TYPE), codegen
 
     def dereference_codegen(func_to_overload, name):
         @intrinsic

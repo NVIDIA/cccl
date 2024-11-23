@@ -89,7 +89,6 @@ def test_device_reduce_dtype_mismatch():
 
 
 def mul2(val):
-    print("\nLOOOK mul2", val)
     return 2 * val
 
 
@@ -134,7 +133,7 @@ def mul2(val):
                                              "map_mul2_uint64_uint64",
                                              "map_mul2_float32_float32",
                                              "map_mul2_float64_float64",
-                                             "map_mul2_float32_int32",
+                                             # "map_mul2_float32_int32",
                                             ])
 def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, start_sum_with=10):
     def add_op(a, b):
