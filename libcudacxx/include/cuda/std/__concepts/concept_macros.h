@@ -52,9 +52,6 @@ using __cccl_enable_if_t = typename __cccl_select<_Bp>::template type<_Tp>;
 template <class _Tp, bool _Bp>
 using __cccl_requires_t = typename __cccl_select<_Bp>::template type<_Tp>;
 
-template <size_t _Np>
-using __cccl_char_array = char[_Np];
-
 #if (defined(__cpp_concepts) && _CCCL_STD_VER >= 2020) || defined(_CCCL_DOXYGEN_INVOKED)
 #  define _CCCL_TEMPLATE(...)               template <__VA_ARGS__>
 #  define _CCCL_REQUIRES(...)               requires __VA_ARGS__
@@ -62,11 +59,9 @@ using __cccl_char_array = char[_Np];
 #  define _CCCL_TRAILING_REQUIRES_AUX_(...) requires __VA_ARGS__
 #  define _CCCL_TRAILING_REQUIRES(...)      ->__VA_ARGS__ _CCCL_TRAILING_REQUIRES_AUX_
 #else // ^^^ __cpp_concepts ^^^ / vvv !__cpp_concepts vvv
-#  define _CCCL_TEMPLATE(...) template <__VA_ARGS__
-#  define _CCCL_REQUIRES(...)                             \
-    , __cccl_char_array<__LINE__>*__cccl_null_ = nullptr, \
-      __cccl_enable_if_t < __VA_ARGS__ && (__cccl_null_ == nullptr), int > = 0 >
-#  define _CCCL_AND                         &&(__cccl_null_ == nullptr), int > = 0, __cccl_enable_if_t <
+#  define _CCCL_TEMPLATE(...)               template <__VA_ARGS__
+#  define _CCCL_REQUIRES(...)               , bool __cccl_true_ = true, __cccl_enable_if_t < __VA_ARGS__ && __cccl_true_, int > = 0 >
+#  define _CCCL_AND                         &&__cccl_true_, int > = 0, __cccl_enable_if_t <
 #  define _CCCL_TRAILING_REQUIRES_AUX_(...) , __VA_ARGS__ >
 #  define _CCCL_TRAILING_REQUIRES(...)      ->__cccl_requires_t < __VA_ARGS__ _CCCL_TRAILING_REQUIRES_AUX_
 #endif // !__cpp_concepts
