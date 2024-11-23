@@ -125,19 +125,19 @@ def mul2(val):
                                              "counting_uint64",
                                              "counting_float32",
                                              "counting_float64",
-                                             "map_mul2_int16_int16",
-                                             "map_mul2_uint16_uint16",
-                                             "map_mul2_int32_int32",
-                                             "map_mul2_uint32_uint32",
-                                             "map_mul2_int64_int64",
-                                             "map_mul2_uint64_uint64",
-                                             "map_mul2_float32_float32",
-                                             "map_mul2_float64_float64",
-                                             "map_mul2_float32_int16",
-                                             "map_mul2_float32_int32",
-                                             "map_mul2_float64_int32",
-                                             "map_mul2_float64_int64",
-                                             "map_mul2_int64_float32",
+                                             "map_mul2_count_int16_int16",
+                                             "map_mul2_count_uint16_uint16",
+                                             "map_mul2_count_int32_int32",
+                                             "map_mul2_count_uint32_uint32",
+                                             "map_mul2_count_int64_int64",
+                                             "map_mul2_count_uint64_uint64",
+                                             "map_mul2_count_float32_float32",
+                                             "map_mul2_count_float64_float64",
+                                             "map_mul2_count_float32_int16",
+                                             "map_mul2_count_float32_int32",
+                                             "map_mul2_count_float64_int32",
+                                             "map_mul2_count_float64_int64",
+                                             "map_mul2_count_int64_float32",
                                             ])
 def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, start_sum_with=10):
     def add_op(a, b):
@@ -171,7 +171,7 @@ def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, sta
         dtype_inp, ntype_inp = dtype_ntype(-1)
         dtype_out = dtype_inp
         i_input = iterators.count(start_sum_with, ntype=ntype_inp)
-    elif input_generator.startswith("map_mul2_"):
+    elif input_generator.startswith("map_mul2_count_"):
         l_input = [2 * (start_sum_with + distance) for distance in range(num_items)]
         dtype_inp, ntype_inp = dtype_ntype(-1)
         dtype_out, ntype_out = dtype_ntype(-2)
