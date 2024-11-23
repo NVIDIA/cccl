@@ -329,11 +329,11 @@ def cu_map(op, it, op_return_ntype):
     def make_dereference_codegen(name):
         def codegen(context, builder, sig, args):
             (state_ptr,) = args
-            fnty = ir.FunctionType(op_return_ntype_ir, (_CHAR_PTR_IR_TYPE,))
+            fnty = ir.FunctionType(it_ntype_ir, (_CHAR_PTR_IR_TYPE,))
             fn = cgutils.get_or_insert_function(builder.module, fnty, name)
             return builder.call(fn, (state_ptr,))
 
-        return signature(op_return_ntype, _CHAR_PTR_NUMBA_TYPE), codegen
+        return signature(it.ntype, _CHAR_PTR_NUMBA_TYPE), codegen
 
     def dereference_codegen(func_to_overload, name):
         @intrinsic
