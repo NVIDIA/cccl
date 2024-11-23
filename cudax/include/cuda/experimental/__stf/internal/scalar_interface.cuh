@@ -84,7 +84,7 @@ class scalar_stream_interface : public stream_data_interface_simple<scalar<T>>
 {
 public:
   using base = stream_data_interface_simple<scalar<T>>;
-  using base::shape_t;
+  using typename base::shape_t;
 
   scalar_stream_interface(scalar<T> val)
       : base(::std::move(val))
