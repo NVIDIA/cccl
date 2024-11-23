@@ -709,11 +709,12 @@ public:
     // max_blocks is computed so we have one thread per element processed
     const auto max_blocks = (n + block_size - 1) / block_size;
 
+    // TODO [[maybe_unused]] until we do use them in CUDA graphs as well ...
     // TODO: improve this
-    size_t blocks = ::std::min(min_blocks * 3 / 2, max_blocks);
+    [[maybe_unused]] size_t blocks = ::std::min(min_blocks * 3 / 2, max_blocks);
 
     // Create a tuple with all instances (eg. tuple<slice<double>, slice<int>>)
-    deps_tup_t arg_instances = ::std::apply(
+    [[maybe_unused]] deps_tup_t arg_instances = ::std::apply(
       [&](const auto&... d) {
         return ::std::make_tuple(d.instance(t)...);
       },
