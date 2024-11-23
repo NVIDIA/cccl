@@ -728,7 +728,7 @@ public:
       // One tuple per CUDA block
       redux_vars<deps_tup_t, ops_t>* d_redux_buffer;
 
-      size_t dyn_mem_size = blocks * sizeof(redux_vars<deps_tup_t, ops_t>);
+      size_t dyn_mem_size = block_size * sizeof(redux_vars<deps_tup_t, ops_t>);
 
       // TODO use CUDASTF facilities to replace this manual allocation
       cuda_safe_call(cudaMallocAsync(&d_redux_buffer, dyn_mem_size, stream));
