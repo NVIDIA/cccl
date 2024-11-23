@@ -45,4 +45,4 @@ static void compare_complex(nvbench::state& state, nvbench::type_list<OffsetT>)
 NVBENCH_BENCH_TYPES(compare_complex, NVBENCH_TYPE_AXES(offset_types))
   .set_name("compare_complex")
   .set_type_axes_names({"OffsetT{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", array_size_powers);
+  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));

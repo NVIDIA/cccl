@@ -54,7 +54,6 @@ struct fib_t
     return t2;
   }
 };
-
 template <typename OffsetT>
 static void fibonacci(nvbench::state& state, nvbench::type_list<OffsetT>)
 {
@@ -70,3 +69,8 @@ static void fibonacci(nvbench::state& state, nvbench::type_list<OffsetT>)
 
   bench_transform(state, ::cuda::std::tuple{in.begin()}, out.begin(), n, fib_t<index_t, output_t>{});
 }
+
+NVBENCH_BENCH_TYPES(fibonacci, NVBENCH_TYPE_AXES(offset_types))
+  .set_name("fibonacci")
+  .set_type_axes_names({"OffsetT{ct}"})
+  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));

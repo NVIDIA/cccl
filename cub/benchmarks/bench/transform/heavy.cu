@@ -77,4 +77,4 @@ using ic = ::cuda::std::integral_constant<int, I>;
 NVBENCH_BENCH_TYPES(heavy, NVBENCH_TYPE_AXES(nvbench::type_list<ic<32>, ic<64>, ic<128>, ic<256>>))
   .set_name("heavy")
   .set_type_axes_names({"Heaviness{ct}"})
-  .add_int64_power_of_two_axis("Elements{io}", array_size_powers);
+  .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));
