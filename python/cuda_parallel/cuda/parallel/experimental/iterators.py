@@ -50,12 +50,9 @@ def _ctypes_type_given_numba_type(ntype):
     return mapping[ntype]
 
 
-def _ncc(funcname, pyfunc, sig, prefix):
+def _ncc(abi_name, pyfunc, sig):
     return numba.cuda.compile(
-        pyfunc=pyfunc,
-        sig=sig,
-        abi_info={"abi_name": f"{prefix}_{funcname}"},
-        output="ltoir",
+        pyfunc=pyfunc, sig=sig, abi_info={"abi_name": abi_name}, output="ltoir"
     )
 
 
@@ -97,16 +94,14 @@ class RawPointer:
         self.prefix = "pointer_" + ntype.name
         self.ltoirs = [
             _ncc(
-                "advance",
+                f"{self.prefix}_advance",
                 RawPointer.pointer_advance,
                 numba.types.void(data_as_ntype_pp, _DISTANCE_NUMBA_TYPE),
-                self.prefix,
             ),
             _ncc(
-                "dereference",
+                f"{self.prefix}_dereference",
                 RawPointer.pointer_dereference,
                 ntype(data_as_ntype_pp),
-                self.prefix,
             ),
         ]
 
@@ -170,16 +165,14 @@ class CacheModifiedPointer:
         self.prefix = "cache" + ntype.name
         self.ltoirs = [
             _ncc(
-                "advance",
+                f"{self.prefix}_advance",
                 CacheModifiedPointer.cache_advance,
                 numba.types.void(data_as_ntype_pp, _DISTANCE_NUMBA_TYPE),
-                self.prefix,
             ),
             _ncc(
-                "dereference",
+                f"{self.prefix}_dereference",
                 CacheModifiedPointer.cache_dereference,
                 ntype(data_as_ntype_pp),
-                self.prefix,
             ),
         ]
 
@@ -213,16 +206,14 @@ class ConstantIterator:
         self.prefix = "constant_" + ntype.name
         self.ltoirs = [
             _ncc(
-                "advance",
+                f"{self.prefix}_advance",
                 ConstantIterator.constant_advance,
                 numba.types.void(thisty, _DISTANCE_NUMBA_TYPE),
-                self.prefix,
             ),
             _ncc(
-                "dereference",
+                f"{self.prefix}_dereference",
                 ConstantIterator.constant_dereference,
                 ntype(thisty),
-                self.prefix,
             ),
         ]
 
@@ -254,16 +245,14 @@ class CountingIterator:
         self.prefix = "count_" + ntype.name
         self.ltoirs = [
             _ncc(
-                "advance",
+                f"{self.prefix}_advance",
                 CountingIterator.count_advance,
                 numba.types.void(thisty, _DISTANCE_NUMBA_TYPE),
-                self.prefix,
             ),
             _ncc(
-                "dereference",
+                f"{self.prefix}_dereference",
                 CountingIterator.count_dereference,
                 ntype(thisty),
-                self.prefix,
             ),
         ]
 
@@ -382,25 +371,18 @@ def cu_map(op, it, op_return_ntype):
             self.prefix = f"transform_{it.prefix}_{op.__name__}"
             self.ltoirs = it.ltoirs + [
                 _ncc(
-                    "advance",
+                    f"{self.prefix}_advance",
                     TransformIterator.transform_advance,
                     numba.types.void(
                         numba.types.CPointer(numba.types.char), _DISTANCE_NUMBA_TYPE
                     ),
-                    self.prefix,
                 ),
                 _ncc(
-                    "dereference",
+                    f"{self.prefix}_dereference",
                     TransformIterator.transform_dereference,
                     op_return_ntype(numba.types.CPointer(numba.types.char)),
-                    self.prefix,
                 ),
-                numba.cuda.compile(
-                    op,
-                    sig=op_return_ntype(it.ntype),
-                    abi_info={"abi_name": op_abi_name},
-                    output="ltoir",
-                ),
+                _ncc(op_abi_name, op, op_return_ntype(it.ntype)),
             ]
 
         def transform_advance(it_state_ptr, diff):
