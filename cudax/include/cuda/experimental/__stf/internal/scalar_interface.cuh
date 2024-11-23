@@ -184,7 +184,7 @@ public:
   /// @brief Alias for the base class
   using base = graph_data_interface<scalar<T>>;
   /// @brief Alias for the shape type
-  using base::shape_t;
+  using typename base::shape_t;
 
   scalar_graph_interface(scalar<T> val)
       : base(mv(val))
