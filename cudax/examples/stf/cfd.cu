@@ -189,7 +189,7 @@ void jacobistepvort(
 }
 
 double
-deltasq(context& ctx, logical_data<slice<double, 2>> lnewarr, logical_data<slice<double, 2>> loldarr, int m, int n)
+deltasq(context& ctx, logical_data<slice<double, 2>> lnewarr, logical_data<slice<double, 2>> loldarr)
 {
   auto ldsq = ctx.logical_data(shape_of<scalar<double>>()).set_symbol("tmp_accumulator");
 
@@ -404,11 +404,11 @@ int main(int argc, char** argv)
     bool compute_error = (iter == numiter) || (checkerr && (iter % printfreq == 0));
     if (compute_error)
     {
-      error = deltasq(ctx, lpsitmp, lpsi, m, n);
+      error = deltasq(ctx, lpsitmp, lpsi);
 
       if (!irrotational)
       {
-        error += deltasq(ctx, lzettmp, lzet, m, n);
+        error += deltasq(ctx, lzettmp, lzet);
       }
 
       error = sqrt(error);
