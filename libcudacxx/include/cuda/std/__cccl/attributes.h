@@ -119,7 +119,7 @@
 #if _CCCL_COMPILER(MSVC)
 #  define _CCCL_DEPRECATED               __declspec(deprecated)
 #  define _CCCL_DEPRECATED_BECAUSE(_MSG) __declspec(deprecated(_MSG))
-#elif _CCCL_HAS_CPP_ATTRIBUTE(__deprecated__)
+#elif _CCCL_HAS_ATTRIBUTE(__deprecated__)
 #  define _CCCL_DEPRECATED               __attribute__((__deprecated__))
 #  define _CCCL_DEPRECATED_BECAUSE(_MSG) __attribute__((__deprecated__(_MSG)))
 #else
