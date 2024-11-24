@@ -60,7 +60,7 @@ _CCCL_DIAG_SUPPRESS_MSVC(4848)
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
 
-#  if _CCCL_STD_VER >= 2020
+#  if !defined(_CCCL_NO_CONCEPTS)
 template <class _From, class _To>
 concept __uses_nonqualification_pointer_conversion =
   is_pointer_v<_From> && is_pointer_v<_To>
@@ -106,7 +106,7 @@ template <class _Iter, class _Sent, subrange_kind _Kind, class _Pair>
 concept __subrange_to_pair = __different_from<_Pair, subrange<_Iter, _Sent, _Kind>>
                           && __pair_like_convertible_from<_Pair, const _Iter&, const _Sent&>;
 
-#  else // ^^^ C++20 ^^^ / vvv C++17 vvv
+#  else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 
 template <class _From, class _To>
 _CCCL_CONCEPT_FRAGMENT(
@@ -211,19 +211,19 @@ _CCCL_CONCEPT_FRAGMENT(__subrange_to_pair_,
 template <class _Iter, class _Sent, subrange_kind _Kind, class _Pair>
 _CCCL_CONCEPT __subrange_to_pair =
   _CCCL_FRAGMENT(__subrange_to_pair_, _Iter, _Sent, integral_constant<subrange_kind, _Kind>, _Pair);
-#  endif // _CCCL_STD_VER <= 2017
+#  endif // _CCCL_NO_CONCEPTS
 
-#  if _CCCL_STD_VER >= 2020
+#  if !defined(_CCCL_NO_CONCEPTS)
 template <input_or_output_iterator _Iter, sentinel_for<_Iter> _Sent, subrange_kind _Kind>
   requires(_Kind == subrange_kind::sized || !sized_sentinel_for<_Sent, _Iter>)
-#  else // ^^^ C++20 ^^^ / vvv C++17 vvv
+#  else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 template <class _Iter,
           class _Sent,
           subrange_kind _Kind,
           enable_if_t<input_or_output_iterator<_Iter>, int>,
           enable_if_t<sentinel_for<_Sent, _Iter>, int>,
           enable_if_t<(_Kind == subrange_kind::sized || !sized_sentinel_for<_Sent, _Iter>), int>>
-#  endif // _CCCL_STD_VER <= 2017
+#  endif // _CCCL_NO_CONCEPTS
 class _CCCL_TYPE_VISIBILITY_DEFAULT subrange : public view_interface<subrange<_Iter, _Sent, _Kind>>
 {
 public:
@@ -243,15 +243,15 @@ private:
   _CCCL_NO_UNIQUE_ADDRESS _Size __size_  = 0;
 
 public:
-#  if _CCCL_STD_VER >= 2020
+#  if !defined(_CCCL_NO_CONCEPTS)
   subrange()
     requires default_initializable<_Iter>
   = default;
-#  else // ^^^ C++20 ^^^ / vvv C++17 vvv
+#  else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
   template <class _It = _Iter, enable_if_t<default_initializable<_It>, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr subrange() noexcept(is_nothrow_default_constructible_v<_It>)
       : view_interface<subrange<_Iter, _Sent, _Kind>>(){};
-#  endif // _CCCL_STD_VER <= 2017
+#  endif // _CCCL_NO_CONCEPTS
 
   _CCCL_TEMPLATE(class _It)
   _CCCL_REQUIRES(__subrange_from_iter_sent<_Iter, _It, _StoreSize>)

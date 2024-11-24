@@ -36,7 +36,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2017
+#if !defined(_CCCL_NO_CONCEPTS)
 
 // [readable.traits]
 template <class>
@@ -106,7 +106,7 @@ using iter_value_t =
                          indirectly_readable_traits<remove_cvref_t<_Ip>>,
                          iterator_traits<remove_cvref_t<_Ip>>>::value_type;
 
-#elif _CCCL_STD_VER > 2014
+#elif !defined(_CCCL_NO_VARIABLE_TEMPLATES) // ^^^ !_CCCL_NO_CONCEPTS ^^^
 
 // [readable.traits]
 template <class, class = void>
@@ -183,7 +183,7 @@ using iter_value_t =
                          indirectly_readable_traits<remove_cvref_t<_Ip>>,
                          iterator_traits<remove_cvref_t<_Ip>>>::value_type;
 
-#endif // _CCCL_STD_VER > 2014
+#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

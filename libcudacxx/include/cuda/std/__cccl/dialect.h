@@ -80,6 +80,7 @@
 #  define _CCCL_IF_CONSTEXPR      if constexpr
 #  define _CCCL_ELSE_IF_CONSTEXPR else if constexpr
 #else // ^^^ C++17 ^^^ / vvv C++14 vvv
+#  define _CCCL_NO_IF_CONSTEXPR
 #  define _CCCL_IF_CONSTEXPR      if
 #  define _CCCL_ELSE_IF_CONSTEXPR else if
 #endif // _CCCL_STD_VER <= 2014

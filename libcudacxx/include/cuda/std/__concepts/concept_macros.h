@@ -64,7 +64,8 @@ using __cccl_requires_t = typename __cccl_select<_Bp>::template type<_Tp>;
 #  define _CCCL_TRAILING_REQUIRES(...)      ->__cccl_requires_t < __VA_ARGS__ _CCCL_TRAILING_REQUIRES_AUX_
 #endif // !defined(_CCCL_NO_CONCEPTS)
 
-#if _CCCL_STD_VER >= 2014
+// The following concepts emulation macros need variable template support
+#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 
 namespace __cccl_concept
 {
@@ -171,7 +172,7 @@ namespace __unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-decls
 
 #    define _CCCL_FRAGMENT(_NAME, ...) _NAME<__VA_ARGS__>
 
-#  else
+#  else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 
 #    define _CCCL_CONCEPT _CCCL_INLINE_VAR constexpr bool
 
@@ -212,7 +213,7 @@ namespace __unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-decls
 #    define _CCCL_FRAGMENT(_NAME, ...) \
       (1u == sizeof(_NAME##_CCCL_CONCEPT_FRAGMENT_(static_cast<__cccl_concept::_Tag<__VA_ARGS__>*>(nullptr), nullptr)))
 
-#  endif
+#  endif // ^^^ _CCCL_NO_CONCEPTS ^^^
 
 ////////////////////////////////////////////////////////////////////////////////
 // _CCCL_REQUIRES_EXPR
@@ -228,7 +229,7 @@ namespace __unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-decls
 #  if !defined(_CCCL_NO_CONCEPTS) || defined(_CCCL_DOXYGEN_INVOKED)
 #    define _CCCL_REQUIRES_EXPR(_TY, ...) requires(__VA_ARGS__) _CCCL_REQUIRES_EXPR_2
 #    define _CCCL_REQUIRES_EXPR_2(...)    {_CCCL_PP_FOR_EACH(_CCCL_CONCEPT_FRAGMENT_REQS_M, __VA_ARGS__)}
-#  else
+#  else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 #    define _CCCL_REQUIRES_EXPR_TPARAM_PROBE_variadic _CCCL_PP_PROBE(~)
 #    define _CCCL_REQUIRES_EXPR_TPARAM_variadic
 
@@ -271,8 +272,8 @@ namespace __unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-decls
         return false;                                                                                           \
       }                                                                                                         \
       }
-#  endif
+#  endif // ^^^ _CCCL_NO_CONCEPTS ^^^
 
-#endif // _CCCL_STD_VER >= 2014
+#endif // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES ^^^
 
 #endif //_CUDA___CONCEPTS

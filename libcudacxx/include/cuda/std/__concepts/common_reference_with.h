@@ -29,7 +29,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2017
+#if !defined(_CCCL_NO_CONCEPTS)
 
 // [concept.commonref]
 
@@ -38,7 +38,7 @@ concept common_reference_with =
   same_as<common_reference_t<_Tp, _Up>, common_reference_t<_Up, _Tp>>
   && convertible_to<_Tp, common_reference_t<_Tp, _Up>> && convertible_to<_Up, common_reference_t<_Tp, _Up>>;
 
-#elif _CCCL_STD_VER > 2011
+#elif !defined(_CCCL_NO_VARIABLE_TEMPLATES) // ^^^ !_CCCL_NO_CONCEPTS ^^^
 
 template <class _Tp, class _Up>
 _CCCL_CONCEPT_FRAGMENT(__common_reference_exists_,
@@ -58,7 +58,7 @@ _CCCL_CONCEPT_FRAGMENT(
 template <class _Tp, class _Up>
 _CCCL_CONCEPT common_reference_with = _CCCL_FRAGMENT(__common_reference_with_, _Tp, _Up);
 
-#endif // _CCCL_STD_VER > 2011
+#endif // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

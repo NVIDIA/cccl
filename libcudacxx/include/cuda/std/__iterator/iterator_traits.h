@@ -67,7 +67,7 @@ struct __cccl_std_contiguous_iterator_tag_exists : __cccl_type_is_defined<struct
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER >= 2020
+#if !defined(_CCCL_NO_CONCEPTS)
 
 template <class _Tp>
 using __with_reference = _Tp&;
@@ -87,7 +87,7 @@ using iter_reference_t = decltype(*declval<_Tp&>());
 template <class>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
 
-#elif _CCCL_STD_VER >= 2017
+#elif !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 
 template <class _Tp>
 using __with_reference = _Tp&;
@@ -242,7 +242,7 @@ public:
   static const bool value = decltype(__test<_Tp>(nullptr))::value;
 };
 
-#if _CCCL_STD_VER >= 2020
+#if !defined(_CCCL_NO_CONCEPTS)
 
 // The `cpp17-*-iterator` exposition-only concepts have very similar names to the `Cpp17*Iterator` named requirements
 // from `[iterator.cpp17]`. To avoid confusion between the two, the exposition-only concepts have been banished to
@@ -484,7 +484,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits : __iterator_traits<_Ip>
   using __primary_template = iterator_traits;
 };
 
-#elif _CCCL_STD_VER >= 2017
+#elif !defined(_CCCL_NO_VARIABLE_TEMPLATES) // ^^^ !_CCCL_NO_CONCEPTS ^^^
 
 // The `cpp17-*-iterator` exposition-only concepts have very similar names to the `Cpp17*Iterator` named requirements
 // from `[iterator.cpp17]`. To avoid confusion between the two, the exposition-only concepts have been banished to
@@ -801,10 +801,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits : __iterator_traits<_Iter, 
 {
   using __primary_template = iterator_traits;
 };
-#endif // _CCCL_STD_VER <= 2014
+#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 template <class _Tp>
-#if _CCCL_STD_VER >= 2020
+#if !defined(_CCCL_NO_CONCEPTS)
   requires is_object_v<_Tp>
 #endif
 struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits<_Tp*>
