@@ -15,7 +15,7 @@
 
 #include "test_macros.h"
 
-static_assert(cuda::std::is_trivial<decltype(cuda::std::ignore)>::value, "");
+static_assert(cuda::std::is_trivially_default_constructible<decltype(cuda::std::ignore)>::value, "");
 
 #if TEST_STD_VER >= 2017
 [[nodiscard]] __host__ __device__ constexpr int test_nodiscard()
