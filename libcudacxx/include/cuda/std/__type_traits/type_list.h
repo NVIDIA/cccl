@@ -13,6 +13,8 @@
 
 #include <cuda/std/detail/__config>
 
+#include "cuda/std/__cccl/attributes.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -557,6 +559,82 @@ using __type_front = __type_at_c<0, _List>;
 template <class _List>
 using __type_back = __type_at_c<_List::__size - 1, _List>;
 
+//! \brief A pair of types
+template <class _First, class _Second>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_pair
+{
+  using __first _CCCL_NODEBUG_ALIAS  = _First;
+  using __second _CCCL_NODEBUG_ALIAS = _Second;
+};
+
+//! \brief Retreive the first of a pair of types
+//! \pre \c _Pair is a specialization of \c __type_pair
+template <class _Pair>
+using __type_pair_first = typename _Pair::__first;
+
+//! \brief Retreive the second of a pair of types
+//! \pre \c _Pair is a specialization of \c __type_pair
+template <class _Pair>
+using __type_pair_second = typename _Pair::__second;
+
+//! \see __type_switch
+template <class _Value>
+using __type_default _CCCL_NODEBUG_ALIAS = __type_pair<void, _Value>;
+
+//! \see __type_switch
+template <class _IntType, _IntType _Label, class _Value>
+using __type_case _CCCL_NODEBUG_ALIAS = __type_pair<integral_constant<_IntType, _Label>, _Value>;
+
+#  if !defined(_CCCL_NO_NONTYPE_TEMPLATE_PARAMETER_AUTO)
+//! \see __type_switch
+template <auto _Label, class _Value>
+using __type_case_c _CCCL_NODEBUG_ALIAS = __type_case<decltype(_Label), _Label, _Value>;
+#  endif // !_CCCL_NO_NONTYPE_TEMPLATE_PARAMETER_AUTO
+
+namespace __detail
+{
+template <class _Label, class _Value>
+_LIBCUDACXX_HIDE_FROM_ABI auto __type_switch_fn(__type_case<typename _Label::value_type, _Label::value, _Value>*, int) //
+  -> __type_case<typename _Label::value_type, _Label::value, _Value>;
+
+template <class _Label, class _Value>
+_LIBCUDACXX_HIDE_FROM_ABI auto __type_switch_fn(__type_default<_Value>*, long) //
+  -> __type_default<_Value>;
+} // namespace __detail
+
+//! \see __type_switch
+template <class... _Cases>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DECLSPEC_EMPTY_BASES __type_switch_fn : _Cases...
+{
+  template <class _Label>
+  using __call _CCCL_NODEBUG_ALIAS =
+    __type_pair_second<decltype(__detail::__type_switch_fn<_Label>(static_cast<__type_switch_fn*>(nullptr), 0))>;
+};
+
+//! \brief Given an integral constant type \c _Label and a pack of "cases"
+//! consisting of one or more specializations of \c __type_case and zero or
+//! one specializations of \c __type_defult, `__type_switch<_Label, _Cases...>`
+//! returns the value associated with the first case whose label matches the
+//! given label. If no such case exists, the value associated with the default
+//! case is returned. If no default case exists, the type is ill-formed.
+//!
+//! \p Example:
+//! \code
+//! using result = __type_switch<integral_constant<int, 2>,
+//!                              __type_case<integral_constant<int, 1>, char>,
+//!                              __type_case<integral_constant<int, 2>, double>,
+//!                              __type_default<float>>;
+//! static_assert(is_same_v<result, double>);
+//! \endcode
+template <class _IntType, _IntType _Label, class... _Cases>
+using __type_switch _CCCL_NODEBUG_ALIAS = __type_call<__type_switch_fn<_Cases...>, integral_constant<_IntType, _Label>>;
+
+#  if !defined(_CCCL_NO_NONTYPE_TEMPLATE_PARAMETER_AUTO)
+//! \see __type_switch
+template <auto _Label, class... _Cases>
+using __type_switch_c _CCCL_NODEBUG_ALIAS = __type_switch<decltype(_Label), _Label, _Cases...>;
+#  endif // !_CCCL_NO_NONTYPE_TEMPLATE_PARAMETER_AUTO
+
 namespace __detail
 {
 #  if _CCCL_COMPILER(MSVC, <, 19, 38)
@@ -906,24 +984,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_sizeof
   template <class _Ty>
   using __call _CCCL_NODEBUG_ALIAS = integral_constant<size_t, sizeof(_Ty)>;
 };
-
-//! \brief A pair of types
-template <class _First, class _Second>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_pair
-{
-  using __first _CCCL_NODEBUG_ALIAS  = _First;
-  using __second _CCCL_NODEBUG_ALIAS = _Second;
-};
-
-//! \brief Retreive the first of a pair of types
-//! \pre \c _Pair is a specialization of \c __type_pair
-template <class _Pair>
-using __type_pair_first = typename _Pair::__first;
-
-//! \brief Retreive the second of a pair of types
-//! \pre \c _Pair is a specialization of \c __type_pair
-template <class _Pair>
-using __type_pair_second = typename _Pair::__second;
 
 //! \brief A list of compile-time values, and a meta-callable that accepts a
 //! meta-callable and evaluates it with the values, each value wrapped in an
