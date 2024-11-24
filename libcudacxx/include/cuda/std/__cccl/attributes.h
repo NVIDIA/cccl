@@ -129,7 +129,8 @@
 
 // use the C++14 deprecated attribute if available instead of the vendor specific ones except for GCC before 13 and
 // Clang before 13 which have issues with combinig it with other attributes
-#if _CCCL_STD_VER >= 2014 && !_CCCL_COMPILER(GCC, <, 13) && !_CCCL_COMPILER(CLANG, <, 13)
+#if _CCCL_STD_VER >= 2014 && _CCCL_HAS_CPP_ATTRIBUTE(deprecated) && !_CCCL_COMPILER(GCC, <, 13) \
+  && !_CCCL_COMPILER(CLANG, <, 13)
 #  undef _CCCL_DEPRECATED
 #  undef _CCCL_DEPRECATED_BECAUSE
 #  define _CCCL_DEPRECATED               [[deprecated]]
