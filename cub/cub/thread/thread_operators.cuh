@@ -692,11 +692,19 @@ struct CubOperatorToSimdOperator<::cuda::minimum<>, T>
 };
 
 template <typename T>
+struct CubOperatorToSimdOperator<::cuda::minimum<T>, T> : CubOperatorToSimdOperator<::cuda::minimum<>, T>
+{};
+
+template <typename T>
 struct CubOperatorToSimdOperator<::cuda::maximum<>, T>
 {
   using type      = SimdMax<T>;
   using simd_type = typename type::simd_type;
 };
+
+template <typename T>
+struct CubOperatorToSimdOperator<::cuda::maximum<T>, T> : CubOperatorToSimdOperator<::cuda::maximum<>, T>
+{};
 
 template <typename T>
 struct CubOperatorToSimdOperator<::cuda::std::plus<>, T>
@@ -706,11 +714,20 @@ struct CubOperatorToSimdOperator<::cuda::std::plus<>, T>
 };
 
 template <typename T>
+struct CubOperatorToSimdOperator<::cuda::std::plus<T>, T> : CubOperatorToSimdOperator<::cuda::std::plus<>, T>
+{};
+
+template <typename T>
 struct CubOperatorToSimdOperator<::cuda::std::multiplies<>, T>
 {
   using type      = SimdMul<T>;
   using simd_type = typename type::simd_type;
 };
+
+template <typename T>
+struct CubOperatorToSimdOperator<::cuda::std::multiplies<T>, T>
+    : CubOperatorToSimdOperator<::cuda::std::multiplies<>, T>
+{};
 
 template <typename ReduceOp, typename T>
 using cub_operator_to_simd_operator_t = typename CubOperatorToSimdOperator<ReduceOp, T>::type;
