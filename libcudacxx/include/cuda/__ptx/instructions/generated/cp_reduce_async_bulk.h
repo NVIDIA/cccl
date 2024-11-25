@@ -1,5 +1,8 @@
-// 9.7.8.24.7. Data Movement and Conversion Instructions: cp.reduce.async.bulk
-// https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-reduce-async-bulk
+// This file was automatically generated. Do not edit.
+
+#ifndef _CUDA_PTX_GENERATED_CP_REDUCE_ASYNC_BULK_H_
+#define _CUDA_PTX_GENERATED_CP_REDUCE_ASYNC_BULK_H_
+
 /*
 // cp.reduce.async.bulk.dst.src.mbarrier::complete_tx::bytes.op.type [dstMem], [srcMem], size, [rdsmem_bar]; // 1. PTX
 ISA 80, SM_90
@@ -154,7 +157,7 @@ ISA 80, SM_90
 // .src       = { .shared::cta }
 // .type      = { .u32 }
 // .op        = { .min }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_reduce_async_bulk(
   cuda::ptx::space_cluster_t,
   cuda::ptx::space_shared_t,
@@ -203,7 +206,7 @@ ISA 80, SM_90
 // .src       = { .shared::cta }
 // .type      = { .u32 }
 // .op        = { .max }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_reduce_async_bulk(
   cuda::ptx::space_cluster_t,
   cuda::ptx::space_shared_t,
@@ -252,7 +255,7 @@ ISA 80, SM_90
 // .src       = { .shared::cta }
 // .type      = { .u32 }
 // .op        = { .add }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_reduce_async_bulk(
   cuda::ptx::space_cluster_t,
   cuda::ptx::space_shared_t,
@@ -301,7 +304,7 @@ ISA 80, SM_90
 // .src       = { .shared::cta }
 // .type      = { .u32 }
 // .op        = { .inc }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_reduce_async_bulk(
   cuda::ptx::space_cluster_t,
   cuda::ptx::space_shared_t,
@@ -350,7 +353,7 @@ ISA 80, SM_90
 // .src       = { .shared::cta }
 // .type      = { .u32 }
 // .op        = { .dec }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_reduce_async_bulk(
   cuda::ptx::space_cluster_t,
   cuda::ptx::space_shared_t,
@@ -399,7 +402,7 @@ ISA 80, SM_90
 // .src       = { .shared::cta }
 // .type      = { .s32 }
 // .op        = { .min }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_reduce_async_bulk(
   cuda::ptx::space_cluster_t,
   cuda::ptx::space_shared_t,
@@ -448,7 +451,7 @@ ISA 80, SM_90
 // .src       = { .shared::cta }
 // .type      = { .s32 }
 // .op        = { .max }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_reduce_async_bulk(
   cuda::ptx::space_cluster_t,
   cuda::ptx::space_shared_t,
@@ -497,7 +500,7 @@ ISA 80, SM_90
 // .src       = { .shared::cta }
 // .type      = { .s32 }
 // .op        = { .add }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_reduce_async_bulk(
   cuda::ptx::space_cluster_t,
   cuda::ptx::space_shared_t,
@@ -546,7 +549,7 @@ ISA 80, SM_90
 // .src       = { .shared::cta }
 // .type      = { .u64 }
 // .op        = { .add }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_reduce_async_bulk(
   cuda::ptx::space_cluster_t,
   cuda::ptx::space_shared_t,
@@ -595,7 +598,7 @@ ISA 80, SM_90
 // .src       = { .shared::cta }
 // .type      = { .s64 }
 // .op        = { .add }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_reduce_async_bulk(
   cuda::ptx::space_cluster_t,
   cuda::ptx::space_shared_t,
@@ -670,7 +673,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
             :
             : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (sizeof(_Type) == 8) {
+      } else _CCCL_IF_CONSTEXPR (sizeof(_Type) == 8) {
         asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.and.b64  [%0], [%1], %2; // 3."
             :
             : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
@@ -715,7 +718,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
             :
             : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (sizeof(_Type) == 8) {
+      } else _CCCL_IF_CONSTEXPR (sizeof(_Type) == 8) {
         asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.or.b64  [%0], [%1], %2; // 3."
             :
             : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
@@ -760,7 +763,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
             :
             : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (sizeof(_Type) == 8) {
+      } else _CCCL_IF_CONSTEXPR (sizeof(_Type) == 8) {
         asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.xor.b64  [%0], [%1], %2; // 3."
             :
             : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
@@ -778,7 +781,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
 // .src       = { .shared::cta }
 // .type      = { .u32 }
 // .op        = { .min }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_reduce_async_bulk(
   cuda::ptx::space_global_t,
   cuda::ptx::space_shared_t,
@@ -820,7 +823,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
 // .src       = { .shared::cta }
 // .type      = { .u32 }
 // .op        = { .max }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_reduce_async_bulk(
   cuda::ptx::space_global_t,
   cuda::ptx::space_shared_t,
@@ -862,7 +865,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
 // .src       = { .shared::cta }
 // .type      = { .u32 }
 // .op        = { .add }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_reduce_async_bulk(
   cuda::ptx::space_global_t,
   cuda::ptx::space_shared_t,
@@ -904,7 +907,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
 // .src       = { .shared::cta }
 // .type      = { .u32 }
 // .op        = { .inc }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_reduce_async_bulk(
   cuda::ptx::space_global_t,
   cuda::ptx::space_shared_t,
@@ -946,7 +949,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
 // .src       = { .shared::cta }
 // .type      = { .u32 }
 // .op        = { .dec }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_reduce_async_bulk(
   cuda::ptx::space_global_t,
   cuda::ptx::space_shared_t,
@@ -988,7 +991,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
 // .src       = { .shared::cta }
 // .type      = { .s32 }
 // .op        = { .min }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_reduce_async_bulk(
   cuda::ptx::space_global_t,
   cuda::ptx::space_shared_t,
@@ -1030,7 +1033,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
 // .src       = { .shared::cta }
 // .type      = { .s32 }
 // .op        = { .max }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_reduce_async_bulk(
   cuda::ptx::space_global_t,
   cuda::ptx::space_shared_t,
@@ -1072,7 +1075,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
 // .src       = { .shared::cta }
 // .type      = { .s32 }
 // .op        = { .add }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_reduce_async_bulk(
   cuda::ptx::space_global_t,
   cuda::ptx::space_shared_t,
@@ -1114,7 +1117,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
 // .src       = { .shared::cta }
 // .type      = { .u64 }
 // .op        = { .min }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_reduce_async_bulk(
   cuda::ptx::space_global_t,
   cuda::ptx::space_shared_t,
@@ -1156,7 +1159,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
 // .src       = { .shared::cta }
 // .type      = { .u64 }
 // .op        = { .max }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_reduce_async_bulk(
   cuda::ptx::space_global_t,
   cuda::ptx::space_shared_t,
@@ -1198,7 +1201,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
 // .src       = { .shared::cta }
 // .type      = { .u64 }
 // .op        = { .add }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_reduce_async_bulk(
   cuda::ptx::space_global_t,
   cuda::ptx::space_shared_t,
@@ -1240,7 +1243,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
 // .src       = { .shared::cta }
 // .type      = { .s64 }
 // .op        = { .min }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_reduce_async_bulk(
   cuda::ptx::space_global_t,
   cuda::ptx::space_shared_t,
@@ -1282,7 +1285,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
 // .src       = { .shared::cta }
 // .type      = { .s64 }
 // .op        = { .max }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_reduce_async_bulk(
   cuda::ptx::space_global_t,
   cuda::ptx::space_shared_t,
@@ -1324,7 +1327,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
 // .src       = { .shared::cta }
 // .type      = { .f32 }
 // .op        = { .add }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_reduce_async_bulk(
   cuda::ptx::space_global_t,
   cuda::ptx::space_shared_t,
@@ -1361,7 +1364,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
 // .src       = { .shared::cta }
 // .type      = { .f64 }
 // .op        = { .add }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_reduce_async_bulk(
   cuda::ptx::space_global_t,
   cuda::ptx::space_shared_t,
@@ -1398,7 +1401,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
 // .src       = { .shared::cta }
 // .type      = { .s64 }
 // .op        = { .add }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_reduce_async_bulk(
   cuda::ptx::space_global_t,
   cuda::ptx::space_shared_t,
@@ -1433,3 +1436,5 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
 }
 #endif // __cccl_ptx_isa >= 800
+
+#endif // _CUDA_PTX_GENERATED_CP_REDUCE_ASYNC_BULK_H_

@@ -32,7 +32,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
 // 10. Special Registers
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#special-registers
-#include <cuda/__ptx/instructions/generated/get_sreg.inc>
+#include <cuda/__ptx/instructions/generated/get_sreg.h>
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
 

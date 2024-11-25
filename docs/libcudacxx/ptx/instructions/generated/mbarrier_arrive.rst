@@ -1,9 +1,12 @@
+..
+   This file was automatically generated. Do not edit.
+
 mbarrier.arrive.shared.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
    // mbarrier.arrive.shared.b64                                  state,  [addr];           // 1.  PTX ISA 70, SM_80
-   template <typename=void>
+   template <typename = void>
    __device__ static inline uint64_t mbarrier_arrive(
      uint64_t* addr);
 
@@ -12,7 +15,7 @@ mbarrier.arrive.shared::cta.b64
 .. code:: cuda
 
    // mbarrier.arrive.shared::cta.b64                             state,  [addr], count;    // 2.  PTX ISA 78, SM_90
-   template <typename=void>
+   template <typename = void>
    __device__ static inline uint64_t mbarrier_arrive(
      uint64_t* addr,
      const uint32_t& count);
@@ -87,7 +90,7 @@ mbarrier.arrive.release.cluster.shared::cluster.b64
    // .sem       = { .release }
    // .scope     = { .cluster }
    // .space     = { .shared::cluster }
-   template <typename=void>
+   template <typename = void>
    __device__ static inline void mbarrier_arrive(
      cuda::ptx::sem_release_t,
      cuda::ptx::scope_cluster_t,
@@ -102,7 +105,7 @@ mbarrier.arrive.release.cluster.shared::cluster.b64
    // .sem       = { .release }
    // .scope     = { .cluster }
    // .space     = { .shared::cluster }
-   template <typename=void>
+   template <typename = void>
    __device__ static inline void mbarrier_arrive(
      cuda::ptx::sem_release_t,
      cuda::ptx::scope_cluster_t,

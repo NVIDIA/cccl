@@ -1,9 +1,12 @@
+..
+   This file was automatically generated. Do not edit.
+
 mbarrier.try_wait.shared::cta.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
    // mbarrier.try_wait.shared::cta.b64         waitComplete, [addr], state;                                      // 5a.  PTX ISA 78, SM_90
-   template <typename=void>
+   template <typename = void>
    __device__ static inline bool mbarrier_try_wait(
      uint64_t* addr,
      const uint64_t& state);
@@ -13,7 +16,7 @@ mbarrier.try_wait.shared::cta.b64
 .. code:: cuda
 
    // mbarrier.try_wait.shared::cta.b64         waitComplete, [addr], state, suspendTimeHint;                    // 5b.  PTX ISA 78, SM_90
-   template <typename=void>
+   template <typename = void>
    __device__ static inline bool mbarrier_try_wait(
      uint64_t* addr,
      const uint64_t& state,

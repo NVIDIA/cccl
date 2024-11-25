@@ -1,3 +1,6 @@
+..
+   This file was automatically generated. Do not edit.
+
 cp.reduce.async.bulk.tensor.1d.global.shared::cta.add.tile.bulk_group
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
