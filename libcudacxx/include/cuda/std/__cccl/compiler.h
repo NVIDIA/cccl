@@ -11,7 +11,34 @@
 #ifndef __CCCL_COMPILER_H
 #define __CCCL_COMPILER_H
 
+// Utility to compare version numbers. To use:
+// 1) Define a macro that makes a version number from major and minor numbers, e. g.:
+//    #define MYPRODUCT_MAKE_VERSION(_MAJOR, _MINOR) (_MAJOR * 100 + _MINOR)
+// 2) Define a macro that you will use to compare versions, e. g.:
+//    #define MYPRODUCT(...) _CCCL_VERSION_COMPARE(MYPRODUCT, MYPRODUCT_##__VA_ARGS__)
+//    Signatures:
+//       MYPRODUCT(_PROD)                      - is the product _PROD version non-zero?
+//       MYPRODUCT(_PROD, _OP, _MAJOR)         - compare the product _PROD version to _MAJOR using operator _OP
+//       MYPRODUCT(_PROD, _OP, _MAJOR, _MINOR) - compare the product _PROD version to _MAJOR._MINOR using operator _OP
+#define _CCCL_VERSION_COMPARE_1(_PREFIX, _VER)              (_VER != 0)
+#define _CCCL_VERSION_COMPARE_3(_PREFIX, _VER, _OP, _MAJOR) _CCCL_VERSION_COMPARE_4(_PREFIX, _VER, _OP, _MAJOR, 0)
+#define _CCCL_VERSION_COMPARE_4(_PREFIX, _VER, _OP, _MAJOR, _MINOR) \
+  (_CCCL_VERSION_COMPARE_1(_PREFIX, _VER) && (_VER _OP _PREFIX##_MAKE_VERSION(_MAJOR, _MINOR)))
+#define _CCCL_VERSION_SELECT_COUNT(_ARG1, _ARG2, _ARG3, _ARG4, _ARG5, ...) _ARG5
+#define _CCCL_VERSION_SELECT2(_ARGS)                                       _CCCL_VERSION_SELECT_COUNT _ARGS
+// MSVC traditonal preprocessor requires an extra level of indirection
+#define _CCCL_VERSION_SELECT(...)         \
+  _CCCL_VERSION_SELECT2(                  \
+    (__VA_ARGS__,                         \
+     _CCCL_VERSION_COMPARE_4,             \
+     _CCCL_VERSION_COMPARE_3,             \
+     _CCCL_VERSION_COMPARE_BAD_ARG_COUNT, \
+     _CCCL_VERSION_COMPARE_1,             \
+     _CCCL_VERSION_COMPARE_BAD_ARG_COUNT))
+#define _CCCL_VERSION_COMPARE(_PREFIX, ...) _CCCL_VERSION_SELECT(__VA_ARGS__)(_PREFIX, __VA_ARGS__)
+
 #define _CCCL_COMPILER_MAKE_VERSION(_MAJOR, _MINOR) (_MAJOR * 100 + _MINOR)
+#define _CCCL_COMPILER(...)                         _CCCL_VERSION_COMPARE(_CCCL_COMPILER, _CCCL_COMPILER_##__VA_ARGS__)
 
 // Determine the host compiler and its version
 #if defined(__INTEL_COMPILER)
@@ -38,24 +65,6 @@
 #elif defined(__CUDACC_RTC__)
 #  define _CCCL_COMPILER_NVRTC _CCCL_COMPILER_MAKE_VERSION(__CUDACC_VER_MAJOR__, __CUDACC_VER_MINOR__)
 #endif
-
-#define _CCCL_COMPILER_COMPARE_VERSION_1(_COMP)              _COMP
-#define _CCCL_COMPILER_COMPARE_VERSION_3(_COMP, _OP, _MAJOR) _CCCL_COMPILER_COMPARE_VERSION_4(_COMP, _OP, _MAJOR, 0)
-#define _CCCL_COMPILER_COMPARE_VERSION_4(_COMP, _OP, _MAJOR, _MINOR) \
-  (_COMP && (_COMP _OP _CCCL_COMPILER_MAKE_VERSION(_MAJOR, _MINOR)))
-
-#define _CCCL_COMPILER_SELECT_COUNT(_ARG1, _ARG2, _ARG3, _ARG4, _ARG5, ...) _ARG5
-#define _CCCL_COMPILER_SELECT2(_ARGS)                                       _CCCL_COMPILER_SELECT_COUNT _ARGS
-// MSVC traditonal preprocessor requires an extra level of indirection
-#define _CCCL_COMPILER_SELECT(...)         \
-  _CCCL_COMPILER_SELECT2(                  \
-    (__VA_ARGS__,                          \
-     _CCCL_COMPILER_COMPARE_VERSION_4,     \
-     _CCCL_COMPILER_COMPARE_VERSION_3,     \
-     _CCCL_COMPILER_COMPARE_BAD_ARG_COUNT, \
-     _CCCL_COMPILER_COMPARE_VERSION_1,     \
-     _CCCL_COMPILER_COMPARE_BAD_ARG_COUNT))
-#define _CCCL_COMPILER(...) _CCCL_COMPILER_SELECT(_CCCL_COMPILER_##__VA_ARGS__)(_CCCL_COMPILER_##__VA_ARGS__)
 
 // Determine the cuda compiler
 #if defined(__NVCC__)

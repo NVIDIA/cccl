@@ -32,11 +32,11 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
 // 9.7.12.4. Parallel Synchronization and Communication Instructions: membar/fence
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-membar-fence
-#include <cuda/__ptx/instructions/generated/fence.inc>
-#include <cuda/__ptx/instructions/generated/fence_mbarrier_init.inc>
-#include <cuda/__ptx/instructions/generated/fence_proxy_alias.inc>
-#include <cuda/__ptx/instructions/generated/fence_proxy_async.inc>
-#include <cuda/__ptx/instructions/generated/fence_proxy_tensormap_generic.inc>
+#include <cuda/__ptx/instructions/generated/fence.h>
+#include <cuda/__ptx/instructions/generated/fence_mbarrier_init.h>
+#include <cuda/__ptx/instructions/generated/fence_proxy_alias.h>
+#include <cuda/__ptx/instructions/generated/fence_proxy_async.h>
+#include <cuda/__ptx/instructions/generated/fence_proxy_tensormap_generic.h>
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
 

@@ -32,8 +32,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
 // 9.7.8.24.6. Data Movement and Conversion Instructions: cp.async.bulk
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk
-#include <cuda/__ptx/instructions/generated/cp_async_bulk.inc>
-#include <cuda/__ptx/instructions/generated/cp_async_bulk_multicast.inc>
+#include <cuda/__ptx/instructions/generated/cp_async_bulk.h>
+#include <cuda/__ptx/instructions/generated/cp_async_bulk_multicast.h>
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
 
