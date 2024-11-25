@@ -41,6 +41,8 @@ template <typename Config, typename Kernel, typename... Args>
 _CCCL_NODISCARD cudaError_t
 launch_impl(::cuda::stream_ref stream, Config conf, const Kernel& kernel_fn, const Args&... args)
 {
+  static_assert(!::cuda::std::is_same_v<decltype(conf.dims), uninit_t>,
+                "Can't launch a configuration without hierarchy dimensions");
   cudaLaunchConfig_t config{};
   cudaError_t status                      = cudaSuccess;
   constexpr bool has_cluster_level        = has_level<cluster_level, decltype(conf.dims)>;

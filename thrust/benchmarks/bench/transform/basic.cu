@@ -68,6 +68,15 @@ struct fib_t
   }
 };
 
+template <typename... Args>
+void bench_transform(nvbench::state& state, Args&&... args)
+{
+  caching_allocator_t alloc; // transform shouldn't allocate, but let's be consistent
+  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
+    thrust::transform(policy(alloc, launch), ::cuda::std::forward<Args>(args)...);
+  });
+}
+
 template <typename T>
 static void basic(nvbench::state& state, nvbench::type_list<T>)
 {
@@ -80,13 +89,8 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_reads<T>(elements);
   state.add_global_memory_writes<nvbench::uint32_t>(elements);
 
-  caching_allocator_t alloc;
   fib_t<T, nvbench::uint32_t> op{};
-  thrust::transform(policy(alloc), input.cbegin(), input.cend(), output.begin(), op);
-
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
-    thrust::transform(policy(alloc, launch), input.cbegin(), input.cend(), output.begin(), op);
-  });
+  bench_transform(state, input.cbegin(), input.cend(), output.begin(), op);
 }
 
 using types = nvbench::type_list<nvbench::uint32_t, nvbench::uint64_t>;
@@ -123,13 +127,11 @@ static void mul(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_reads<T>(n);
   state.add_global_memory_writes<T>(n);
 
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch&) {
-    const T scalar = startScalar;
-    thrust::transform(
-      c.begin(), c.end(), b.begin(), cuda::proclaim_copyable_arguments([=] __device__ __host__(const T& ci) {
-        return ci * scalar;
-      }));
-  });
+  const T scalar = startScalar;
+  bench_transform(
+    state, c.begin(), c.end(), b.begin(), cuda::proclaim_copyable_arguments([=] _CCCL_DEVICE(const T& ci) {
+      return ci * scalar;
+    }));
 }
 
 NVBENCH_BENCH_TYPES(mul, NVBENCH_TYPE_AXES(element_types))
@@ -149,16 +151,15 @@ static void add(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_reads<T>(2 * n);
   state.add_global_memory_writes<T>(n);
 
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch&) {
-    thrust::transform(
-      a.begin(),
-      a.end(),
-      b.begin(),
-      c.begin(),
-      cuda::proclaim_copyable_arguments([] _CCCL_DEVICE(const T& ai, const T& bi) -> T {
-        return ai + bi;
-      }));
-  });
+  bench_transform(
+    state,
+    a.begin(),
+    a.end(),
+    b.begin(),
+    c.begin(),
+    cuda::proclaim_copyable_arguments([] _CCCL_DEVICE(const T& ai, const T& bi) -> T {
+      return ai + bi;
+    }));
 }
 
 NVBENCH_BENCH_TYPES(add, NVBENCH_TYPE_AXES(element_types))
@@ -178,17 +179,16 @@ static void triad(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_reads<T>(2 * n);
   state.add_global_memory_writes<T>(n);
 
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch&) {
-    const T scalar = startScalar;
-    thrust::transform(
-      b.begin(),
-      b.end(),
-      c.begin(),
-      a.begin(),
-      cuda::proclaim_copyable_arguments([=] _CCCL_DEVICE(const T& bi, const T& ci) {
-        return bi + scalar * ci;
-      }));
-  });
+  const T scalar = startScalar;
+  bench_transform(
+    state,
+    b.begin(),
+    b.end(),
+    c.begin(),
+    a.begin(),
+    cuda::proclaim_copyable_arguments([=] _CCCL_DEVICE(const T& bi, const T& ci) {
+      return bi + scalar * ci;
+    }));
 }
 
 NVBENCH_BENCH_TYPES(triad, NVBENCH_TYPE_AXES(element_types))
@@ -208,18 +208,15 @@ static void nstream(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_reads<T>(3 * n);
   state.add_global_memory_writes<T>(n);
 
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch&) {
-    const T scalar = startScalar;
-    thrust::transform(
-      thrust::make_zip_iterator(a.begin(), b.begin(), c.begin()),
-      thrust::make_zip_iterator(a.end(), b.end(), c.end()),
-      a.begin(),
-
-      thrust::make_zip_function(
-        cuda::proclaim_copyable_arguments([=] _CCCL_DEVICE(const T& ai, const T& bi, const T& ci) {
-          return ai + bi + scalar * ci;
-        })));
-  });
+  const T scalar = startScalar;
+  bench_transform(
+    state,
+    thrust::make_zip_iterator(a.begin(), b.begin(), c.begin()),
+    thrust::make_zip_iterator(a.end(), b.end(), c.end()),
+    a.begin(),
+    thrust::make_zip_function(cuda::proclaim_copyable_arguments([=] _CCCL_DEVICE(const T& ai, const T& bi, const T& ci) {
+      return ai + bi + scalar * ci;
+    })));
 }
 
 NVBENCH_BENCH_TYPES(nstream, NVBENCH_TYPE_AXES(element_types))
@@ -244,12 +241,10 @@ static void nstream_stable(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_reads<T>(3 * n);
   state.add_global_memory_writes<T>(n);
 
-  state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch&) {
-    const T scalar = startScalar;
-    thrust::transform(a.begin(), a.end(), a.begin(), [=] _CCCL_DEVICE(const T& ai) {
-      const auto i = &ai - a_start;
-      return ai + b_start[i] + scalar * c_start[i];
-    });
+  const T scalar = startScalar;
+  bench_transform(state, a.begin(), a.end(), a.begin(), [=] _CCCL_DEVICE(const T& ai) {
+    const auto i = &ai - a_start;
+    return ai + b_start[i] + scalar * c_start[i];
   });
 }
 

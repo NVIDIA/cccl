@@ -40,8 +40,7 @@ struct __ignore
   _CUDAX_API constexpr __ignore(_As&&...) noexcept {};
 };
 
-template <class...>
-struct __undefined;
+using _CUDA_VSTD::__undefined; // NOLINT: misc-unused-using-decls
 
 struct __empty
 {};
@@ -177,7 +176,7 @@ constexpr size_t __next(long)
 
 // Prior to Clang 12, we can't use the __slot trick to erase long type names
 // because of a compiler bug. We'll just use the original type name in that case.
-#if defined(_CCCL_COMPILER_CLANG) && _CCCL_CLANG_VERSION < 120000
+#if _CCCL_COMPILER(CLANG, <, 12)
 
 template <class _Type>
 using __zip = _Type;

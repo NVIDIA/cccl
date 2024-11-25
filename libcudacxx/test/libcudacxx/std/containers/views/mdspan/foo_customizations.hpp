@@ -92,8 +92,8 @@ public:
       : __extents(__exts)
   {}
 
-  _LIBCUDACXX_TEMPLATE(class OtherExtents)
-  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(cuda::std::is_constructible, extents_type, OtherExtents))
+  _CCCL_TEMPLATE(class OtherExtents)
+  _CCCL_REQUIRES(_CCCL_TRAIT(cuda::std::is_constructible, extents_type, OtherExtents))
   __MDSPAN_CONDITIONAL_EXPLICIT((!cuda::std::is_convertible<OtherExtents, extents_type>::value)) // needs two () due to
                                                                                                  // comma
   _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping(
@@ -106,8 +106,8 @@ public:
      */
   }
 
-  _LIBCUDACXX_TEMPLATE(class OtherExtents)
-  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(cuda::std::is_constructible, extents_type, OtherExtents))
+  _CCCL_TEMPLATE(class OtherExtents)
+  _CCCL_REQUIRES(_CCCL_TRAIT(cuda::std::is_constructible, extents_type, OtherExtents))
   __MDSPAN_CONDITIONAL_EXPLICIT((!cuda::std::is_convertible<OtherExtents, extents_type>::value)) // needs two () due
                                                                                                  // to comma
   _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping(
@@ -115,9 +115,8 @@ public:
       : __extents(other.extents())
   {}
 
-  _LIBCUDACXX_TEMPLATE(class OtherExtents)
-  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(cuda::std::is_constructible, extents_type, OtherExtents)
-                       && (extents_type::rank() <= 1))
+  _CCCL_TEMPLATE(class OtherExtents)
+  _CCCL_REQUIRES(_CCCL_TRAIT(cuda::std::is_constructible, extents_type, OtherExtents) && (extents_type::rank() <= 1))
   __MDSPAN_CONDITIONAL_EXPLICIT((!cuda::std::is_convertible<OtherExtents, extents_type>::value)) // needs two () due to
                                                                                                  // comma
   _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping(
@@ -125,8 +124,8 @@ public:
       : __extents(other.extents())
   {}
 
-  _LIBCUDACXX_TEMPLATE(class OtherExtents)
-  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(cuda::std::is_constructible, extents_type, OtherExtents))
+  _CCCL_TEMPLATE(class OtherExtents)
+  _CCCL_REQUIRES(_CCCL_TRAIT(cuda::std::is_constructible, extents_type, OtherExtents))
   __MDSPAN_CONDITIONAL_EXPLICIT((extents_type::rank() > 0))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping(
     cuda::std::layout_stride::mapping<OtherExtents> const& other) // NOLINT(google-explicit-constructor)

@@ -93,7 +93,7 @@ struct BlockRadixRankEmptyCallback
   _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(int (&bins)[BINS_PER_THREAD]) {}
 };
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 namespace detail
 {
 
@@ -121,7 +121,7 @@ struct warp_in_block_matcher_t<Bits, 0, PartialWarpId>
 };
 
 } // namespace detail
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 //! @rst
 //! BlockRadixRank provides operations for ranking unsigned integer types within a CUDA thread block.
@@ -263,7 +263,7 @@ private:
   /// BlockScan type
   using BlockScan = BlockScan<PackedCounter, BLOCK_DIM_X, INNER_SCAN_ALGORITHM, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   struct __align__(16) _TempStorage
   {
     union Aliasable
@@ -276,7 +276,7 @@ private:
     // Storage for scanning local ranks
     typename BlockScan::TempStorage block_scan;
   };
-#endif // !DOXYGEN_SHOULD_SKIP_THIS
+#endif // !_CCCL_DOXYGEN_INVOKED
 
   /// Shared storage reference
   _TempStorage& temp_storage;
@@ -319,7 +319,7 @@ private:
       raking_ptr = smem_raking_ptr;
     }
 
-    return internal::ThreadReduce<RAKING_SEGMENT>(raking_ptr, ::cuda::std::plus<>{});
+    return cub::internal::ThreadReduce<RAKING_SEGMENT>(raking_ptr, ::cuda::std::plus<>{});
   }
 
   /// Performs exclusive downsweep raking scan
@@ -597,7 +597,7 @@ private:
   /// BlockScan type
   using BlockScanT = BlockScan<DigitCounterT, BLOCK_THREADS, INNER_SCAN_ALGORITHM, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   struct __align__(16) _TempStorage
   {
     typename BlockScanT::TempStorage block_scan;
@@ -609,7 +609,7 @@ private:
     }
     aliasable;
   };
-#endif // !DOXYGEN_SHOULD_SKIP_THIS
+#endif // !_CCCL_DOXYGEN_INVOKED
 
   /// Shared storage reference
   _TempStorage& temp_storage;
@@ -1000,7 +1000,7 @@ struct BlockRadixRankMatchEarlyCounts
         for (int u = 0; u < WARP_BINS_PER_THREAD; ++u)
         {
           int bin = lane + u * WARP_THREADS;
-          bins[u] = internal::ThreadReduce(warp_histograms[bin], ::cuda::std::plus<>{});
+          bins[u] = cub::ThreadReduce(warp_histograms[bin], ::cuda::std::plus<>{});
         }
         CTA_SYNC();
 
@@ -1183,7 +1183,7 @@ struct BlockRadixRankMatchEarlyCounts
   }
 };
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 namespace detail
 {
 
@@ -1211,6 +1211,6 @@ using block_radix_rank_t = ::cuda::std::_If<
         BlockRadixRankMatchEarlyCounts<BlockDimX, RadixBits, IsDescending, ScanAlgorithm, WARP_MATCH_ATOMIC_OR>>>>>;
 
 } // namespace detail
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 CUB_NAMESPACE_END

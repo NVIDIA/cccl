@@ -42,10 +42,13 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 template <class... _Ts>
 struct __type_list;
+
+template <class...>
+struct __undefined; // leave this undefined
 
 template <class _Ty>
 using __type = typename _Ty::type;
@@ -326,16 +329,22 @@ using __type_push_front = __type_call1<_List, __type_bind_front_quote<__type_lis
 namespace __detail
 {
 template <template <class...> class _Fn, class... _Ts>
-_LIBCUDACXX_HIDE_FROM_ABI auto __as_type_list_fn(_Fn<_Ts...>*) -> __type_list<_Ts...>;
+_LIBCUDACXX_HIDE_FROM_ABI auto __as_type_list_fn(__undefined<_Fn<_Ts...>>*) //
+  -> __type_list<_Ts...>;
 
 template <template <class _Ty, _Ty...> class _Fn, class _Ty, _Ty... _Us>
-_LIBCUDACXX_HIDE_FROM_ABI auto __as_type_list_fn(_Fn<_Ty, _Us...>*) -> __type_list<integral_constant<_Ty, _Us>...>;
+_LIBCUDACXX_HIDE_FROM_ABI auto __as_type_list_fn(__undefined<_Fn<_Ty, _Us...>>*) //
+  -> __type_list<integral_constant<_Ty, _Us>...>;
+
+template <class _Ret, class... _Args>
+_LIBCUDACXX_HIDE_FROM_ABI auto __as_type_list_fn(__undefined<_Ret(_Args...)>*) //
+  -> __type_list<_Args...>;
 } // namespace __detail
 
 //! \brief Given a type that is a specialization of a class template, return a
 //! type list of the template arguments.
 template <class _List>
-using __as_type_list = decltype(__detail::__as_type_list_fn(static_cast<_List*>(nullptr)));
+using __as_type_list = decltype(__detail::__as_type_list_fn(static_cast<__undefined<_List>*>(nullptr)));
 
 //! \brief Given a type that is a specialization of a class template and a
 //! meta-callable, invoke the callable with the template arguments.
@@ -550,7 +559,7 @@ using __type_back = __type_at_c<_List::__size - 1, _List>;
 
 namespace __detail
 {
-#  if defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION < 1938
+#  if _CCCL_COMPILER(MSVC, <, 19, 38)
 // A workaround for https://developercommunity.visualstudio.com/t/fatal-error-C1001:-Internal-compiler-err/10405847
 struct __type_concat_fn
 {
@@ -577,7 +586,7 @@ struct __type_concat_fn
   template <class... _Lists>
   using __call _CCCL_NODEBUG_ALIAS = __type<__trait<_Lists...>>;
 };
-#  else // ^^^ _CCCL_COMPILER_MSVC < 19.38 ^^^ / vvv !(_CCCL_COMPILER_MSVC < 19.38) vvv
+#  else // ^^^ _CCCL_COMPILER(MSVC, <, 19, 38) ^^^ / vvv _CCCL_COMPILER(MSVC, >=, 19, 38) vvv
 template <size_t _Count>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_maybe_concat_fn
 {
@@ -637,7 +646,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_concat_fn
     __type_list_ptr<>{nullptr},
     __type_list_ptr<>{nullptr}));
 };
-#  endif // !(_CCCL_COMPILER_MSVC < 19.38)
+#  endif // _CCCL_COMPILER(MSVC, >=, 19, 38)
 } // namespace __detail
 
 //! \brief Concatenate a list of type lists into a single type list.
@@ -938,7 +947,7 @@ template <class _Ty, _Ty _Start, _Ty _Size, _Ty _Stride = _Ty(1)>
 using __type_iota =
   decltype(__detail::__type_iota_fn<_Ty, _Start, _Stride>(static_cast<make_integer_sequence<_Ty, _Size>*>(nullptr)));
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

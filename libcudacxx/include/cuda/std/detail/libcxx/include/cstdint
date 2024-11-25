@@ -154,9 +154,9 @@ Types:
 #include <cuda/std/climits>
 #include <cuda/std/version>
 
-#ifndef _CCCL_COMPILER_NVRTC
+#if !_CCCL_COMPILER(NVRTC)
 #  include <cstdint>
-#endif // _CCCL_COMPILER_NVRTC
+#endif // _CCCL_COMPILER(NVRTC)
 
 _CCCL_PUSH_MACROS
 

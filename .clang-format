@@ -128,8 +128,10 @@ IndentWidth: 2
 KeepEmptyLinesAtTheStartOfBlocks: false
 MaxEmptyLinesToKeep: 1
 Macros:
-- _LIBCUDACXX_TEMPLATE(...)=template<...>
-- _LIBCUDACXX_REQUIRES(...)=requires (...)
+- _CCCL_TEMPLATE(...)=template<...>
+- _CCCL_REQUIRES(...)=requires (...)
+WhitespaceSensitiveMacros:
+- _CCCL_HAS_INCLUDE
 NamespaceIndentation: None
 PackConstructorInitializers: Never
 PenaltyBreakAssignment: 30

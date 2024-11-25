@@ -84,6 +84,7 @@ setup(
     extras_require={
         "test": [
             "pytest",
+            "pytest-xdist",
         ]
     },
     cmdclass={

@@ -22,7 +22,7 @@
 #endif // no system header
 
 // cudaMallocAsync was introduced in CTK 11.2
-#if !defined(_CCCL_COMPILER_MSVC_2017) && !defined(_CCCL_CUDACC_BELOW_11_2)
+#if !_CCCL_COMPILER(MSVC2017) && _CCCL_CUDACC_AT_LEAST(11, 2)
 
 #  if defined(_CCCL_CUDA_COMPILER_CLANG)
 #    include <cuda_runtime.h>
@@ -32,7 +32,7 @@
 #  include <cuda/__memory_resource/get_property.h>
 #  include <cuda/__memory_resource/properties.h>
 #  include <cuda/__memory_resource/resource_ref.h>
-#  include <cuda/std/__concepts/__concept_macros.h>
+#  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__cuda/api_wrapper.h>
 #  include <cuda/std/__new_>
 #  include <cuda/std/cstddef>
@@ -315,8 +315,8 @@ public:
   //! @param __rhs The resource to compare to.
   //! @returns If the underlying types are equality comparable, returns the result of equality comparison of both
   //! resources. Otherwise, returns false.
-  _LIBCUDACXX_TEMPLATE(class _Resource)
-  _LIBCUDACXX_REQUIRES((_CUDA_VMR::__different_resource<device_memory_resource, _Resource>) )
+  _CCCL_TEMPLATE(class _Resource)
+  _CCCL_REQUIRES((_CUDA_VMR::__different_resource<device_memory_resource, _Resource>) )
   _CCCL_NODISCARD bool operator==(_Resource const& __rhs) const noexcept
   {
     if constexpr (has_property<_Resource, _CUDA_VMR::device_accessible>)
@@ -332,8 +332,8 @@ public:
 #    else // ^^^ C++20 ^^^ / vvv C++17
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator==(device_memory_resource const& __lhs, _Resource const& __rhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>&&
-                                          has_property<_Resource, _CUDA_VMR::device_accessible>)
+    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>&&
+                                    has_property<_Resource, _CUDA_VMR::device_accessible>)
   {
     return _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<device_memory_resource&>(__lhs)}
         == _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<_Resource&>(__rhs)};
@@ -341,16 +341,16 @@ public:
 
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator==(device_memory_resource const&, _Resource const&) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>
-                                        && !has_property<_Resource, _CUDA_VMR::device_accessible>)
+    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>
+                                  && !has_property<_Resource, _CUDA_VMR::device_accessible>)
   {
     return false;
   }
 
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator==(_Resource const& __rhs, device_memory_resource const& __lhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>&&
-                                          has_property<_Resource, _CUDA_VMR::device_accessible>)
+    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>&&
+                                    has_property<_Resource, _CUDA_VMR::device_accessible>)
   {
     return _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<device_memory_resource&>(__lhs)}
         == _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<_Resource&>(__rhs)};
@@ -358,16 +358,16 @@ public:
 
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator==(_Resource const&, device_memory_resource const&) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>
-                                        && !has_property<_Resource, _CUDA_VMR::device_accessible>)
+    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>
+                                  && !has_property<_Resource, _CUDA_VMR::device_accessible>)
   {
     return false;
   }
 
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator!=(device_memory_resource const& __lhs, _Resource const& __rhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>&&
-                                          has_property<_Resource, _CUDA_VMR::device_accessible>)
+    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>&&
+                                    has_property<_Resource, _CUDA_VMR::device_accessible>)
   {
     return _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<device_memory_resource&>(__lhs)}
         != _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<_Resource&>(__rhs)};
@@ -375,16 +375,16 @@ public:
 
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator!=(device_memory_resource const&, _Resource const&) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>
-                                        && !has_property<_Resource, _CUDA_VMR::device_accessible>)
+    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>
+                                  && !has_property<_Resource, _CUDA_VMR::device_accessible>)
   {
     return true;
   }
 
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator!=(_Resource const& __rhs, device_memory_resource const& __lhs) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>&&
-                                          has_property<_Resource, _CUDA_VMR::device_accessible>)
+    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>&&
+                                    has_property<_Resource, _CUDA_VMR::device_accessible>)
   {
     return _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<device_memory_resource&>(__lhs)}
         != _CUDA_VMR::resource_ref<_CUDA_VMR::device_accessible>{const_cast<_Resource&>(__rhs)};
@@ -392,8 +392,8 @@ public:
 
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator!=(_Resource const&, device_memory_resource const&) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>
-                                        && !has_property<_Resource, _CUDA_VMR::device_accessible>)
+    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>
+                                  && !has_property<_Resource, _CUDA_VMR::device_accessible>)
   {
     return true;
   }
@@ -405,11 +405,11 @@ public:
     return __pool_;
   }
 
-#    ifndef DOXYGEN_SHOULD_SKIP_THIS // Doxygen cannot handle the friend function
+#    ifndef _CCCL_DOXYGEN_INVOKED // Doxygen cannot handle the friend function
   //! @brief Enables the \c device_accessible property for \c device_memory_resource.
   //! @relates device_memory_resource
   friend constexpr void get_property(device_memory_resource const&, _CUDA_VMR::device_accessible) noexcept {}
-#    endif // DOXYGEN_SHOULD_SKIP_THIS
+#    endif // _CCCL_DOXYGEN_INVOKED
 };
 static_assert(_CUDA_VMR::resource_with<device_memory_resource, _CUDA_VMR::device_accessible>, "");
 
@@ -417,6 +417,6 @@ static_assert(_CUDA_VMR::resource_with<device_memory_resource, _CUDA_VMR::device
 
 #  endif // _CCCL_STD_VER >= 2014
 
-#endif // !_CCCL_COMPILER_MSVC_2017 && !_CCCL_CUDACC_BELOW_11_2
+#endif // !_CCCL_COMPILER(MSVC2017) && _CCCL_CUDACC_AT_LEAST(11, 2)
 
 #endif //_CUDAX__MEMORY_RESOURCE_CUDA_DEVICE_MEMORY_RESOURCE

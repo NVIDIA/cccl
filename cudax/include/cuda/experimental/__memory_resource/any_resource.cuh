@@ -28,7 +28,7 @@
 #endif
 
 // cuda::mr is unavable on MSVC 2017
-#if defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_COMPILER(MSVC2017)
 #  error "The any_resource header is not supported on MSVC 2017"
 #endif
 
@@ -40,7 +40,7 @@
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__memory_resource/resource.h>
 #include <cuda/__memory_resource/resource_ref.h>
-#include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__new_>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
@@ -101,8 +101,8 @@ public:
   //! @brief Constructs a \c basic_any_resource from a type that satisfies the \c resource or \c async_resource
   //! concept as well as all properties.
   //! @param __res The resource to be wrapped within the \c basic_any_resource.
-  _LIBCUDACXX_TEMPLATE(class _Resource, class __resource_t = _CUDA_VSTD::remove_cvref_t<_Resource>)
-  _LIBCUDACXX_REQUIRES((!__is_basic_any_resource<_Resource>) _LIBCUDACXX_AND __valid_resource<__resource_t>)
+  _CCCL_TEMPLATE(class _Resource, class __resource_t = _CUDA_VSTD::remove_cvref_t<_Resource>)
+  _CCCL_REQUIRES((!__is_basic_any_resource<_Resource>) _CCCL_AND __valid_resource<__resource_t>)
   basic_any_resource(_Resource&& __res) noexcept
       : _CUDA_VMR::_Resource_base<_Alloc_type, _CUDA_VMR::_WrapperType::_Owning>(
           nullptr, &_CUDA_VMR::__alloc_vtable<_Alloc_type, _CUDA_VMR::_WrapperType::_Owning, __resource_t>)
@@ -123,9 +123,8 @@ public:
   //! concept, and it must provide all properties in \c _Properties... .
   //! @param __args The arguments used to construct the instance of \c _Resource to be wrapped within the
   //! \c basic_any_resource.
-  _LIBCUDACXX_TEMPLATE(class _Resource, class... _Args)
-  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, _Resource, _Args...)
-                         _LIBCUDACXX_AND __valid_resource<_Resource>)
+  _CCCL_TEMPLATE(class _Resource, class... _Args)
+  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, _Resource, _Args...) _CCCL_AND __valid_resource<_Resource>)
   basic_any_resource(_CUDA_VSTD::in_place_type_t<_Resource>, _Args&&... __args) noexcept
       : _CUDA_VMR::_Resource_base<_Alloc_type, _CUDA_VMR::_WrapperType::_Owning>(
           nullptr, &_CUDA_VMR::__alloc_vtable<_Alloc_type, _CUDA_VMR::_WrapperType::_Owning, _Resource>)
@@ -144,11 +143,11 @@ public:
   //! @brief Conversion from a \c basic_any_resource with the same set of properties but in a different order.
   //! This constructor also handles conversion from \c any_async_resource to \c any_resource
   //! @param __other The other \c basic_any_resource.
-  _LIBCUDACXX_TEMPLATE(_CUDA_VMR::_AllocType _OtherAllocType, class... _OtherProperties)
-  _LIBCUDACXX_REQUIRES(
+  _CCCL_TEMPLATE(_CUDA_VMR::_AllocType _OtherAllocType, class... _OtherProperties)
+  _CCCL_REQUIRES(
     (_CUDA_VSTD::_IsNotSame<basic_any_resource, basic_any_resource<_OtherAllocType, _OtherProperties...>>::value)
-      _LIBCUDACXX_AND(_OtherAllocType == _Alloc_type || _OtherAllocType == _CUDA_VMR::_AllocType::_Async)
-        _LIBCUDACXX_AND __properties_match<_OtherProperties...>)
+      _CCCL_AND(_OtherAllocType == _Alloc_type || _OtherAllocType == _CUDA_VMR::_AllocType::_Async)
+        _CCCL_AND __properties_match<_OtherProperties...>)
   basic_any_resource(basic_any_resource<_OtherAllocType, _OtherProperties...> __other) noexcept
       : _CUDA_VMR::_Resource_base<_Alloc_type, _CUDA_VMR::_WrapperType::_Owning>(
           nullptr, _CUDA_VSTD::exchange(__other.__static_vtable, nullptr))
@@ -216,10 +215,9 @@ public:
 
   //! @brief Converts a \c basic_any_resource to a \c resource_ref with a potential subset of properties.
   //! @return The \c resource_ref to this resource.
-  _LIBCUDACXX_TEMPLATE(_CUDA_VMR::_AllocType _OtherAllocType, class... _OtherProperties)
-  _LIBCUDACXX_REQUIRES(
-    (_OtherAllocType == _CUDA_VMR::_AllocType::_Default || _OtherAllocType == _Alloc_type) _LIBCUDACXX_AND(
-      _CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__make_type_set<_Properties...>, _OtherProperties...>))
+  _CCCL_TEMPLATE(_CUDA_VMR::_AllocType _OtherAllocType, class... _OtherProperties)
+  _CCCL_REQUIRES((_OtherAllocType == _CUDA_VMR::_AllocType::_Default || _OtherAllocType == _Alloc_type) _CCCL_AND(
+    _CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__make_type_set<_Properties...>, _OtherProperties...>))
   operator _CUDA_VMR::basic_resource_ref<_OtherAllocType, _OtherProperties...>() noexcept
   {
     return _CUDA_VMR::_Resource_ref_helper::_Construct<_Alloc_type, _OtherProperties...>(
@@ -239,9 +237,9 @@ public:
   //! @param __rhs The other \c basic_any_resource
   //! @return Checks whether both resources have the same equality function stored in their vtable and if so returns
   //! the result of that equality comparison. Otherwise returns false.
-  _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
-  _LIBCUDACXX_REQUIRES((sizeof...(_Properties) == sizeof...(_OtherProperties))
-                         _LIBCUDACXX_AND __properties_match<_OtherProperties...>)
+  _CCCL_TEMPLATE(class... _OtherProperties)
+  _CCCL_REQUIRES((sizeof...(_Properties) == sizeof...(_OtherProperties))
+                   _CCCL_AND __properties_match<_OtherProperties...>)
   _CCCL_NODISCARD bool operator==(const basic_any_resource<_Alloc_type, _OtherProperties...>& __rhs) const
   {
     return (this->__static_vtable->__equal_fn == __rhs.__static_vtable->__equal_fn)
@@ -252,24 +250,22 @@ public:
   //! @param __rhs The other \c basic_any_resource
   //! @return Checks whether both resources have the same equality function stored in their vtable and if so returns
   //! the inverse result of that equality comparison. Otherwise returns true.
-  _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
-  _LIBCUDACXX_REQUIRES((sizeof...(_Properties) == sizeof...(_OtherProperties))
-                         _LIBCUDACXX_AND __properties_match<_OtherProperties...>)
+  _CCCL_TEMPLATE(class... _OtherProperties)
+  _CCCL_REQUIRES((sizeof...(_Properties) == sizeof...(_OtherProperties))
+                   _CCCL_AND __properties_match<_OtherProperties...>)
   _CCCL_NODISCARD bool operator!=(const basic_any_resource<_Alloc_type, _OtherProperties...>& __rhs) const
   {
     return !(*this == __rhs);
   }
 
   //! @brief Forwards the stateless properties
-  _LIBCUDACXX_TEMPLATE(class _Property)
-  _LIBCUDACXX_REQUIRES(
-    (!property_with_value<_Property>) _LIBCUDACXX_AND(_CUDA_VSTD::__is_included_in_v<_Property, _Properties...>))
+  _CCCL_TEMPLATE(class _Property)
+  _CCCL_REQUIRES((!property_with_value<_Property>) _CCCL_AND(_CUDA_VSTD::__is_included_in_v<_Property, _Properties...>))
   friend void get_property(const basic_any_resource&, _Property) noexcept {}
 
   //! @brief Forwards the stateful properties
-  _LIBCUDACXX_TEMPLATE(class _Property)
-  _LIBCUDACXX_REQUIRES(
-    property_with_value<_Property> _LIBCUDACXX_AND(_CUDA_VSTD::__is_included_in_v<_Property, _Properties...>))
+  _CCCL_TEMPLATE(class _Property)
+  _CCCL_REQUIRES(property_with_value<_Property> _CCCL_AND(_CUDA_VSTD::__is_included_in_v<_Property, _Properties...>))
   _CCCL_NODISCARD_FRIEND __property_value_t<_Property> get_property(const basic_any_resource& __res, _Property) noexcept
   {
     _CUDA_VMR::_Property_vtable<_Property> const& __prop = __res;

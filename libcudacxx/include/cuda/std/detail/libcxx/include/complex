@@ -243,6 +243,9 @@ template<class T> complex<T> tanh (const complex<T>&);
 #endif // no system header
 
 #include <cuda/std/__complex/vector_support.h>
+#include <cuda/std/__fwd/get.h>
+#include <cuda/std/__tuple_dir/tuple_element.h>
+#include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
@@ -256,13 +259,13 @@ template<class T> complex<T> tanh (const complex<T>&);
 #include <cuda/std/version>
 
 // Compatability helpers for thrust to convert between `std::complex` and `cuda::std::complex`
-#if !defined(_CCCL_COMPILER_NVRTC)
+#if !_CCCL_COMPILER(NVRTC)
 #  include <complex>
 #  include <sstream> // for std::basic_ostringstream
 
 #  define _LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__c) reinterpret_cast<const _Up(&)[2]>(__c)[0]
 #  define _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__c) reinterpret_cast<const _Up(&)[2]>(__c)[1]
-#endif // !_CCCL_COMPILER_NVRTC
+#endif // !_CCCL_COMPILER(NVRTC)
 
 _CCCL_PUSH_MACROS
 
@@ -285,6 +288,9 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_COMPLEX_ALIGNAS complex
 
   template <class _Up>
   friend class complex;
+
+  template <class _Up>
+  friend struct __get_complex_impl;
 
 public:
   using value_type = _Tp;
@@ -324,7 +330,7 @@ public:
     return *this;
   }
 
-#if !defined(_CCCL_COMPILER_NVRTC)
+#if !_CCCL_COMPILER(NVRTC)
   template <class _Up>
   _LIBCUDACXX_HIDE_FROM_ABI complex(const ::std::complex<_Up>& __other)
       : __re_(_LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__other))
@@ -343,7 +349,7 @@ public:
   {
     return {__re_, __im_};
   }
-#endif // !_CCCL_COMPILER_NVRTC
+#endif // !_CCCL_COMPILER(NVRTC)
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr value_type real() const
   {
@@ -794,7 +800,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator!=(const _Tp& __x, 
 }
 #endif // _CCCL_STD_VER <= 2017
 
-#if !defined(_CCCL_COMPILER_NVRTC)
+#if !_CCCL_COMPILER(NVRTC)
 template <class _Tp, class _Up>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator==(const complex<_Tp>& __x, const ::std::complex<_Up>& __y)
 {
@@ -822,7 +828,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool operator!=(const ::std::com
   return !(__x == __y);
 }
 #  endif // _CCCL_STD_VER <= 2017
-#endif // !_CCCL_COMPILER_NVRTC
+#endif // !_CCCL_COMPILER(NVRTC)
 
 // real
 
@@ -1418,7 +1424,75 @@ _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> tan(const complex<_Tp>& __x)
   return complex<_Tp>(__z.imag(), -__z.real());
 }
 
-#if !defined(_CCCL_COMPILER_NVRTC)
+template <class _Tp>
+struct tuple_size<complex<_Tp>> : _CUDA_VSTD::integral_constant<size_t, 2>
+{};
+
+template <size_t _Index, class _Tp>
+  struct tuple_element<_Index, complex<_Tp>> : _CUDA_VSTD::enable_if < _Index<2, _Tp>
+{};
+
+template <class _Tp>
+struct __get_complex_impl
+{
+  template <size_t _Index>
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp& get(complex<_Tp>& __z) noexcept
+  {
+    return (_Index == 0) ? __z.__re_ : __z.__im_;
+  }
+
+  template <size_t _Index>
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp&& get(complex<_Tp>&& __z) noexcept
+  {
+    return _CUDA_VSTD::move((_Index == 0) ? __z.__re_ : __z.__im_);
+  }
+
+  template <size_t _Index>
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& get(const complex<_Tp>& __z) noexcept
+  {
+    return (_Index == 0) ? __z.__re_ : __z.__im_;
+  }
+
+  template <size_t _Index>
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp&& get(const complex<_Tp>&& __z) noexcept
+  {
+    return _CUDA_VSTD::move((_Index == 0) ? __z.__re_ : __z.__im_);
+  }
+};
+
+template <size_t _Index, class _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp& get(complex<_Tp>& __z) noexcept
+{
+  static_assert(_Index < 2, "Index value is out of range");
+
+  return __get_complex_impl<_Tp>::template get<_Index>(__z);
+}
+
+template <size_t _Index, class _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp&& get(complex<_Tp>&& __z) noexcept
+{
+  static_assert(_Index < 2, "Index value is out of range");
+
+  return __get_complex_impl<_Tp>::template get<_Index>(_CUDA_VSTD::move(__z));
+}
+
+template <size_t _Index, class _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& get(const complex<_Tp>& __z) noexcept
+{
+  static_assert(_Index < 2, "Index value is out of range");
+
+  return __get_complex_impl<_Tp>::template get<_Index>(__z);
+}
+
+template <size_t _Index, class _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp&& get(const complex<_Tp>&& __z) noexcept
+{
+  static_assert(_Index < 2, "Index value is out of range");
+
+  return __get_complex_impl<_Tp>::template get<_Index>(_CUDA_VSTD::move(__z));
+}
+
+#if !_CCCL_COMPILER(NVRTC)
 template <class _Tp, class _CharT, class _Traits>
 ::std::basic_istream<_CharT, _Traits>& operator>>(::std::basic_istream<_CharT, _Traits>& __is, complex<_Tp>& __x)
 {
@@ -1433,7 +1507,7 @@ template <class _Tp, class _CharT, class _Traits>
 {
   return __os << static_cast<::std::complex<_Tp>>(__x);
 }
-#endif // !_CCCL_COMPILER_NVRTC
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #if _CCCL_STD_VER > 2011 && defined(_LIBCUDACXX_HAS_STL_LITERALS)
 // Literal suffix for complex number literals [complex.literals]

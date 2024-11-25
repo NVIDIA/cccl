@@ -61,6 +61,7 @@ using integral_types    = nvbench::type_list<TUNE_T>;
 using fundamental_types = nvbench::type_list<TUNE_T>;
 using all_types         = nvbench::type_list<TUNE_T>;
 #else
+// keep those lists in sync with the documentation in tuning.rst
 using integral_types = nvbench::type_list<int8_t, int16_t, int32_t, int64_t>;
 
 using fundamental_types =
@@ -417,52 +418,51 @@ struct less_t
   {
     return lhs < rhs;
   }
+
+  __host__ __device__ inline bool operator()(const complex& lhs, const complex& rhs) const
+  {
+    double magnitude_0 = cuda::std::abs(lhs);
+    double magnitude_1 = cuda::std::abs(rhs);
+
+    if (cuda::std::isnan(magnitude_0) || cuda::std::isnan(magnitude_1))
+    {
+      // NaN's are always equal.
+      return false;
+    }
+    else if (cuda::std::isinf(magnitude_0) || cuda::std::isinf(magnitude_1))
+    {
+      // If the real or imaginary part of the complex number has a very large value
+      // (close to the maximum representable value for a double), it is possible that
+      // the magnitude computation can result in positive infinity:
+      // ```cpp
+      // const double large_number = std::numeric_limits<double>::max() / 2;
+      // std::complex<double> z(large_number, large_number);
+      // std::abs(z) == inf;
+      // ```
+      // Dividing both components by a constant before computing the magnitude prevents overflow.
+      const complex::value_type scaler = 0.5;
+
+      magnitude_0 = cuda::std::abs(lhs * scaler);
+      magnitude_1 = cuda::std::abs(rhs * scaler);
+    }
+
+    const complex::value_type difference = cuda::std::abs(magnitude_0 - magnitude_1);
+    const complex::value_type threshold  = cuda::std::numeric_limits<complex::value_type>::epsilon() * 2;
+
+    if (difference < threshold)
+    {
+      // Triangles with the same magnitude are sorted by their phase angle.
+      const complex::value_type phase_angle_0 = cuda::std::arg(lhs);
+      const complex::value_type phase_angle_1 = cuda::std::arg(rhs);
+
+      return phase_angle_0 < phase_angle_1;
+    }
+    else
+    {
+      return magnitude_0 < magnitude_1;
+    }
+  }
 };
-
-template <>
-__host__ __device__ inline bool less_t::operator()(const complex& lhs, const complex& rhs) const
-{
-  double magnitude_0 = cuda::std::abs(lhs);
-  double magnitude_1 = cuda::std::abs(rhs);
-
-  if (cuda::std::isnan(magnitude_0) || cuda::std::isnan(magnitude_1))
-  {
-    // NaN's are always equal.
-    return false;
-  }
-  else if (cuda::std::isinf(magnitude_0) || cuda::std::isinf(magnitude_1))
-  {
-    // If the real or imaginary part of the complex number has a very large value
-    // (close to the maximum representable value for a double), it is possible that
-    // the magnitude computation can result in positive infinity:
-    // ```cpp
-    // const double large_number = std::numeric_limits<double>::max() / 2;
-    // std::complex<double> z(large_number, large_number);
-    // std::abs(z) == inf;
-    // ```
-    // Dividing both components by a constant before computing the magnitude prevents overflow.
-    const complex::value_type scaler = 0.5;
-
-    magnitude_0 = cuda::std::abs(lhs * scaler);
-    magnitude_1 = cuda::std::abs(rhs * scaler);
-  }
-
-  const complex::value_type difference = cuda::std::abs(magnitude_0 - magnitude_1);
-  const complex::value_type threshold  = cuda::std::numeric_limits<complex::value_type>::epsilon() * 2;
-
-  if (difference < threshold)
-  {
-    // Triangles with the same magnitude are sorted by their phase angle.
-    const complex::value_type phase_angle_0 = cuda::std::arg(lhs);
-    const complex::value_type phase_angle_1 = cuda::std::arg(rhs);
-
-    return phase_angle_0 < phase_angle_1;
-  }
-  else
-  {
-    return magnitude_0 < magnitude_1;
-  }
-}
 
 struct max_t
 {

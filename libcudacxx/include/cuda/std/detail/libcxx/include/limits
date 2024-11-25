@@ -118,7 +118,7 @@ template<> class numeric_limits<cv long double>;
 
 _CCCL_PUSH_MACROS
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
 #  include <cuda/std/detail/libcxx/include/support/win32/limits_msvc_win32.h>
 #endif // _LIBCUDACXX_MSVCRT
 
@@ -428,7 +428,7 @@ protected:
   static constexpr bool has_signaling_NaN        = true;
   static constexpr float_denorm_style has_denorm = denorm_present;
   static constexpr bool has_denorm_loss          = false;
-#ifdef _CCCL_COMPILER_NVRTC
+#if _CCCL_COMPILER(NVRTC)
   _LIBCUDACXX_HIDE_FROM_ABI static type infinity() noexcept
   {
     return __builtin_huge_valf();
@@ -441,7 +441,7 @@ protected:
   {
     return __builtin_nansf("");
   }
-#else
+#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ // vvv !_CCCL_COMPILER(NVRTC) vvv
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type infinity() noexcept
   {
     return __builtin_huge_valf();
@@ -454,7 +454,7 @@ protected:
   {
     return __builtin_nansf("");
   }
-#endif
+#endif // !_CCCL_COMPILER(NVRTC)
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type denorm_min() noexcept
   {
     return __FLT_DENORM_MIN__;
@@ -516,7 +516,7 @@ protected:
   static constexpr bool has_signaling_NaN        = true;
   static constexpr float_denorm_style has_denorm = denorm_present;
   static constexpr bool has_denorm_loss          = false;
-#ifdef _CCCL_COMPILER_NVRTC
+#if _CCCL_COMPILER(NVRTC)
   _LIBCUDACXX_HIDE_FROM_ABI static type infinity() noexcept
   {
     return __builtin_huge_val();
@@ -529,7 +529,7 @@ protected:
   {
     return __builtin_nans("");
   }
-#else
+#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ // vvv !_CCCL_COMPILER(NVRTC) vvv
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type infinity() noexcept
   {
     return __builtin_huge_val();
@@ -542,7 +542,7 @@ protected:
   {
     return __builtin_nans("");
   }
-#endif
+#endif // !_CCCL_COMPILER(NVRTC)
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type denorm_min() noexcept
   {
     return __DBL_DENORM_MIN__;

@@ -93,9 +93,22 @@ struct __merror_base
 template <class... _What>
 struct _ERROR : __merror_base
 {
+  // The following aliases are to simplify error propagation
+  // in the completion signatures meta-programming.
   template <class...>
   using __call _CCCL_NODEBUG_ALIAS = _ERROR;
 
+  using __partitions _CCCL_NODEBUG_ALIAS = _ERROR;
+
+  template <template <class...> class, template <class...> class>
+  using __value_types _CCCL_NODEBUG_ALIAS = _ERROR;
+
+  template <template <class...> class>
+  using __error_types _CCCL_NODEBUG_ALIAS = _ERROR;
+
+  using __sends_stopped _CCCL_NODEBUG_ALIAS = _ERROR;
+
+  // The following operator overloads also simplify error propagation.
   _ERROR operator+();
 
   template <class _Ty>
@@ -122,7 +135,7 @@ inline constexpr bool __type_is_error<_ERROR<_What...>&> = true;
 // True if any of the types in _Ts... are errors; false otherwise.
 template <class... _Ts>
 inline constexpr bool __type_contains_error =
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
   (__type_is_error<_Ts> || ...);
 #else
   __ustdex_unhandled_error(static_cast<_CUDA_VSTD::__type_list<_Ts...>*>(nullptr));
@@ -208,9 +221,9 @@ struct __type_try_quote<_Fn, _Default>
 {
   template <class... _Ts>
   using __call _CCCL_NODEBUG_ALIAS =
-    typename _CUDA_VSTD::_If<__type_valid_v<_Fn, _Ts...>, //
-                             __type_try_quote<_Fn>,
-                             _CUDA_VSTD::__type_always<_Default>>::template __call<_Ts...>;
+    typename _CUDA_VSTD::conditional_t<__type_valid_v<_Fn, _Ts...>, //
+                                       __type_try_quote<_Fn>,
+                                       _CUDA_VSTD::__type_always<_Default>>::template __call<_Ts...>;
 };
 
 template <class _First, class _Second>
@@ -239,20 +252,30 @@ struct __type_count
   using __call _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::integral_constant<size_t, sizeof...(_Ts)>;
 };
 
-template <template <class...> class _Continuation>
-struct __type_concat_into_quote
+template <class _Continuation>
+struct __type_concat_into
 {
   template <class... _Args>
   using __call _CCCL_NODEBUG_ALIAS =
-    _CUDA_VSTD::__type_call1<_CUDA_VSTD::__type_concat<_CUDA_VSTD::__as_type_list<_Args>...>,
-                             _CUDA_VSTD::__type_quote<_Continuation>>;
+    _CUDA_VSTD::__type_call1<_CUDA_VSTD::__type_concat<_CUDA_VSTD::__as_type_list<_Args>...>, _Continuation>;
 };
+
+template <template <class...> class _Continuation>
+struct __type_concat_into_quote : __type_concat_into<_CUDA_VSTD::__type_quote<_Continuation>>
+{};
 
 template <class _Ty>
 struct __type_self_or
 {
   template <class _Uy = _Ty>
   using __call _CCCL_NODEBUG_ALIAS = _Uy;
+};
+
+template <class _Ret>
+struct __type_quote_function
+{
+  template <class... _Args>
+  using __call _CCCL_NODEBUG_ALIAS = _Ret(_Args...);
 };
 } // namespace cuda::experimental::__async
 

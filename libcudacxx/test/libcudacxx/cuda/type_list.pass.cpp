@@ -13,8 +13,10 @@
 // Test that the type_list header is self-contained.
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_identity.h>
+#include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/__utility/pair.h>
 
-#if defined(_CCCL_COMPILER_ICC) || defined(_CCCL_CUDA_COMPILER_NVCC) || defined(_CCCL_COMPILER_NVRTC) \
+#if _CCCL_COMPILER(ICC) || defined(_CCCL_CUDA_COMPILER_NVCC) || _CCCL_COMPILER(NVRTC) \
   || defined(_CCCL_CUDA_COMPILER_CLANG)
 // These compilers have trouble making substitution failures during
 // alias template instantiation non-fatal.
@@ -216,6 +218,22 @@ static_assert(::cuda::std::is_same<::cuda::std::__type_push_back<::cuda::std::__
 // __type_list_push_front
 static_assert(::cuda::std::is_same<::cuda::std::__type_push_front<::cuda::std::__type_list<int, float>, double>,
                                    ::cuda::std::__type_list<double, int, float>>::value,
+              "");
+
+// __as_type_list
+static_assert(::cuda::std::is_same<::cuda::std::__as_type_list<DoNotInstantiate<int, float, double>>,
+                                   ::cuda::std::__type_list<int, float, double>>::value,
+              "");
+static_assert(::cuda::std::is_same<::cuda::std::__as_type_list<_CUDA_VSTD::pair<int, float>>,
+                                   ::cuda::std::__type_list<int, float>>::value,
+              "");
+static_assert(
+  ::cuda::std::is_same<
+    ::cuda::std::__as_type_list<_CUDA_VSTD::index_sequence<0, 1>>,
+    ::cuda::std::__type_list<_CUDA_VSTD::integral_constant<size_t, 0>, _CUDA_VSTD::integral_constant<size_t, 1>>>::value,
+  "");
+static_assert(::cuda::std::is_same<::cuda::std::__as_type_list<int(float&, double&&)>,
+                                   ::cuda::std::__type_list<float&, double&&>>::value,
               "");
 
 // __type_callable

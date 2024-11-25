@@ -20,33 +20,33 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/add_pointer.h>
 #include <cuda/std/__type_traits/is_base_of.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2017
+#if !defined(_CCCL_NO_CONCEPTS)
 
 // [concept.derived]
 
 template <class _Dp, class _Bp>
 concept derived_from = is_base_of_v<_Bp, _Dp> && is_convertible_v<const volatile _Dp*, const volatile _Bp*>;
 
-#elif _CCCL_STD_VER > 2011
+#elif !defined(_CCCL_NO_VARIABLE_TEMPLATES) // ^^^ !_CCCL_NO_CONCEPTS ^^^
 
 template <class _Dp, class _Bp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __derived_from_,
   requires()(
     requires(_CCCL_TRAIT(is_base_of, _Bp, _Dp)),
     requires(_CCCL_TRAIT(is_convertible, add_pointer_t<const volatile _Dp>, add_pointer_t<const volatile _Bp>))));
 
 template <class _Dp, class _Bp>
-_LIBCUDACXX_CONCEPT derived_from = _LIBCUDACXX_FRAGMENT(__derived_from_, _Dp, _Bp);
+_CCCL_CONCEPT derived_from = _CCCL_FRAGMENT(__derived_from_, _Dp, _Bp);
 
-#endif // _CCCL_STD_VER > 2011
+#endif // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -256,10 +256,10 @@ public:
   template <typename ErrorCodeEnum>
   error_code(ErrorCodeEnum e
 // XXX WAR msvc's problem with enable_if
-#if !defined(_CCCL_COMPILER_MSVC)
+#if !_CCCL_COMPILER(MSVC)
              ,
              ::cuda::std::enable_if_t<is_error_code_enum<ErrorCodeEnum>::value>* = 0
-#endif // !_CCCL_COMPILER_MSVC
+#endif // !_CCCL_COMPILER(MSVC)
   );
 
   // [19.5.2.3] modifiers:
@@ -272,11 +272,11 @@ public:
    */
   template <typename ErrorCodeEnum>
 // XXX WAR msvc's problem with enable_if
-#if !defined(_CCCL_COMPILER_MSVC)
+#if !_CCCL_COMPILER(MSVC)
   ::cuda::std::enable_if_t<is_error_code_enum<ErrorCodeEnum>::value, error_code>&
 #else
   error_code&
-#endif // !_CCCL_COMPILER_MSVC
+#endif // !_CCCL_COMPILER(MSVC)
   operator=(ErrorCodeEnum e);
 
   /*! \post <tt>value() == 0</tt> and <tt>category() == system_category()</tt>.
@@ -367,10 +367,10 @@ public:
   template <typename ErrorConditionEnum>
   error_condition(ErrorConditionEnum e
 // XXX WAR msvc's problem with enable_if
-#if !defined(_CCCL_COMPILER_MSVC)
+#if !_CCCL_COMPILER(MSVC)
                   ,
                   ::cuda::std::enable_if_t<is_error_condition_enum<ErrorConditionEnum>::value>* = 0
-#endif // !_CCCL_COMPILER_MSVC
+#endif // !_CCCL_COMPILER(MSVC)
   );
 
   // [19.5.3.3] modifiers
@@ -391,11 +391,11 @@ public:
    */
   template <typename ErrorConditionEnum>
 // XXX WAR msvc's problem with enable_if
-#if !defined(_CCCL_COMPILER_MSVC)
+#if !_CCCL_COMPILER(MSVC)
   ::cuda::std::enable_if_t<is_error_condition_enum<ErrorConditionEnum>::value, error_condition>&
 #else
   error_condition&
-#endif // !_CCCL_COMPILER_MSVC
+#endif // !_CCCL_COMPILER(MSVC)
   operator=(ErrorConditionEnum e);
 
   /*! Clears this \p error_code object.

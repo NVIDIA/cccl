@@ -31,7 +31,7 @@
 
 #include <filesystem>
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 // One level of macro indirection is required in order to resolve __COUNTER__,
 // and get varname1 instead of varname__COUNTER__.
 #  define _55f56f4e3b45c8cf3fa50b28fed72e2a(a, b) _a56ec7069122ad2e0888a508ecdc4639(a, b)
@@ -705,7 +705,7 @@ UNITTEST("cuda::std::source_location")
   test_func();
 };
 
-#else // DOXYGEN_SHOULD_SKIP_THIS  Do not document
+#else // _CCCL_DOXYGEN_INVOKED  Do not document
 // Ensure these are ignored by Doxygen
 #  define UNITTEST(name, ...)
-#endif // DOXYGEN_SHOULD_SKIP_THIS  Do not document
+#endif // _CCCL_DOXYGEN_INVOKED  Do not document

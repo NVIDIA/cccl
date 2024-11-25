@@ -28,12 +28,6 @@ extern "C++" {
 #  include <nv/target>
 }
 
-#  ifdef __GNUC__
-#    define _GNUC_VER (__GNUC__ * 100 + __GNUC_MINOR__)
-#  else
-#    define _GNUC_VER 0
-#  endif
-
 #  define _LIBCUDACXX_VERSION 10000
 
 #  ifndef _LIBCUDACXX_ABI_VERSION
@@ -46,7 +40,7 @@ extern "C++" {
 #    error libcu++ requires C++11 or later
 #  endif
 
-#  if (defined(_CCCL_COMPILER_NVHPC) && defined(__linux__)) || defined(_CCCL_COMPILER_NVRTC)
+#  if (_CCCL_COMPILER(NVHPC) && defined(__linux__)) || _CCCL_COMPILER(NVRTC)
 #    ifndef __ELF__
 #      define __ELF__
 #    endif // !__ELF__
@@ -98,18 +92,14 @@ extern "C++" {
 #    define __has_declspec_attribute(__x) 0
 #  endif
 
-#  ifndef __has_include
-#    define __has_include(...) 0
-#  endif
-
-#  if !defined(_CCCL_CUDA_COMPILER_NVCC) && !defined(_CCCL_COMPILER_NVRTC)
+#  if !defined(_CCCL_CUDA_COMPILER_NVCC) && !_CCCL_COMPILER(NVRTC)
 // If NVCC is not being used <complex> can safely use `long double` without warnings
 #    define _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 // NVCC does not have a way of silencing non '_' prefixed UDLs
 #    define _LIBCUDACXX_HAS_STL_LITERALS
 #  endif
 
-#  if defined(_CCCL_COMPILER_GCC) && __cplusplus < 201103L
+#  if _CCCL_COMPILER(GCC) && __cplusplus < 201103L
 #    error "libc++ does not support using GCC with C++03. Please enable C++11"
 #  endif
 
@@ -125,7 +115,7 @@ extern "C++" {
 #  elif defined(_LIBCUDACXX_ABI_FORCE_MICROSOFT)
 #    define _LIBCUDACXX_ABI_MICROSOFT
 #  else
-#    if defined(_WIN32) && defined(_CCCL_COMPILER_MSVC)
+#    if defined(_WIN32) && _CCCL_COMPILER(MSVC)
 #      define _LIBCUDACXX_ABI_MICROSOFT
 #    else
 #      define _LIBCUDACXX_ABI_ITANIUM
@@ -196,7 +186,7 @@ extern "C++" {
 #    define _LIBCUDACXX_MSVCRT_LIKE
 // If mingw not explicitly detected, assume using MS C runtime only if
 // a MS compatibility version is specified.
-#    if defined(_CCCL_COMPILER_MSVC) && !defined(__MINGW32__)
+#    if _CCCL_COMPILER(MSVC) && !defined(__MINGW32__)
 #      define _LIBCUDACXX_MSVCRT // Using Microsoft's C Runtime library
 #    endif
 #    if (defined(_M_AMD64) || defined(__x86_64__)) || (defined(_M_ARM) || defined(__arm__))
@@ -246,7 +236,7 @@ extern "C++" {
 #  endif
 
 #  ifndef _LIBCUDACXX_LITTLE_ENDIAN
-#    if defined(_CCCL_COMPILER_NVRTC)
+#    if _CCCL_COMPILER(NVRTC)
 #      define _LIBCUDACXX_LITTLE_ENDIAN
 #    endif
 #  endif // _LIBCUDACXX_LITTLE_ENDIAN
@@ -262,7 +252,7 @@ extern "C++" {
 #    endif
 #  endif // !defined(_LIBCUDACXX_LITTLE_ENDIAN) && !defined(_LIBCUDACXX_BIG_ENDIAN)
 
-#  if _CCCL_HAS_ATTRIBUTE(__no_sanitize__) && !defined(_CCCL_COMPILER_GCC)
+#  if _CCCL_HAS_ATTRIBUTE(__no_sanitize__) && !_CCCL_COMPILER(GCC)
 #    define _LIBCUDACXX_NO_CFI __attribute__((__no_sanitize__("cfi")))
 #  else
 #    define _LIBCUDACXX_NO_CFI
@@ -293,18 +283,18 @@ extern "C++" {
 #    endif // __linux__
 #  endif
 
-#  if defined(_CCCL_COMPILER_NVRTC)
+#  if _CCCL_COMPILER(NVRTC)
 #    define __alignof(x) alignof(x)
-#  endif // _CCCL_COMPILER_NVRTC
+#  endif // _CCCL_COMPILER(NVRTC)
 
-#  if defined(_CCCL_COMPILER_MSVC)
+#  if _CCCL_COMPILER(MSVC)
 #    define __alignof__ __alignof
 #  endif
 
 #  define _LIBCUDACXX_ALIGNOF(_Tp)           alignof(_Tp)
 #  define _LIBCUDACXX_PREFERRED_ALIGNOF(_Tp) __alignof(_Tp)
 
-#  if defined(_CCCL_COMPILER_MSVC)
+#  if _CCCL_COMPILER(MSVC)
 #    define _CCCL_ALIGNAS_TYPE(x) alignas(x)
 #    define _CCCL_ALIGNAS(x)      __declspec(align(x))
 #  elif _CCCL_HAS_FEATURE(cxx_alignas)
@@ -313,7 +303,7 @@ extern "C++" {
 #  else
 #    define _CCCL_ALIGNAS_TYPE(x) __attribute__((__aligned__(_LIBCUDACXX_ALIGNOF(x))))
 #    define _CCCL_ALIGNAS(x)      __attribute__((__aligned__(x)))
-#  endif // !_CCCL_COMPILER_MSVC && !_CCCL_HAS_FEATURE(cxx_alignas)
+#  endif // !_CCCL_COMPILER(MSVC) && !_CCCL_HAS_FEATURE(cxx_alignas)
 
 // This is wrapped in __CUDA_ARCH__ to prevent error: "ignoring '#pragma unroll'
 // [-Werror=unknown-pragmas]"
@@ -325,11 +315,11 @@ extern "C++" {
 
 #  if defined(_CCCL_CUDA_COMPILER)
 #    define _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(size, ptr) (size <= 8)
-#  elif defined(_CCCL_COMPILER_CLANG) || defined(_CCCL_COMPILER_GCC)
+#  elif _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(GCC)
 #    define _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(...) __atomic_always_lock_free(__VA_ARGS__)
 #  endif // _CCCL_CUDA_COMPILER
 
-#  if defined(_CCCL_COMPILER_CLANG)
+#  if _CCCL_COMPILER(CLANG)
 
 // _LIBCUDACXX_ALTERNATE_STRING_LAYOUT is an old name for
 // _LIBCUDACXX_ABI_ALTERNATE_STRING_LAYOUT left here for backward compatibility.
@@ -383,15 +373,15 @@ typedef __char32_t char32_t;
 
 #    define _LIBCUDACXX_DISABLE_EXTENSION_WARNING __extension__
 
-#  elif defined(_CCCL_COMPILER_GCC)
+#  elif _CCCL_COMPILER(GCC)
 
-#    if _GNUC_VER < 600
+#    if _CCCL_COMPILER(GCC, <, 6)
 #      define _LIBCUDACXX_GCC_MATH_IN_STD
 #    endif
 
 // NVCC cannot properly handle some deductions occuring within NOEXCEPT
 // C++17 mode causes reference instatiation errors in tuple
-#    if (_GNUC_VER >= 702 && _GNUC_VER <= 805)
+#    if (_CCCL_COMPILER(GCC, >=, 7, 2) && _CCCL_COMPILER(GCC, <=, 8, 5))
 #      if defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_STD_VER == 2017
 #        define _LIBCUDACXX_NO_TUPLE_NOEXCEPT
 #      endif
@@ -399,7 +389,7 @@ typedef __char32_t char32_t;
 
 #    define _LIBCUDACXX_DISABLE_EXTENSION_WARNING __extension__
 
-#  elif defined(_CCCL_COMPILER_MSVC)
+#  elif _CCCL_COMPILER(MSVC)
 
 #    define _LIBCUDACXX_WARNING(x) _CCCL_PRAGMA(message(__FILE__ "(" _CCCL_TO_STRING(__LINE__) ") : warning note: " x))
 
@@ -428,7 +418,7 @@ typedef __char32_t char32_t;
 
 #    define _LIBCUDACXX_HAS_NO_VECTOR_EXTENSION
 
-#  elif defined(_CCCL_COMPILER_NVRTC) || defined(_CCCL_COMPILER_NVHPC)
+#  elif _CCCL_COMPILER(NVRTC) || _CCCL_COMPILER(NVHPC)
 
 #    define _LIBCUDACXX_DISABLE_EXTENSION_WARNING
 
@@ -439,7 +429,7 @@ typedef __char32_t char32_t;
 #  endif // !_LIBCUDACXX_FREESTANDING
 
 #  ifndef _LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS
-#    if defined(_CCCL_COMPILER_NVRTC) || defined(_CCCL_CUDA_COMPILER_NVHPC)
+#    if _CCCL_COMPILER(NVRTC) || defined(_CCCL_CUDA_COMPILER_NVHPC)
 #      define _LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS
 #    endif
 #  endif // _LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS
@@ -453,11 +443,11 @@ typedef __char32_t char32_t;
 #  endif // _LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP
 
 #  ifndef _LIBCUDACXX_HAS_NO_ASAN
-#    if defined(_CCCL_COMPILER_GCC)
+#    if _CCCL_COMPILER(GCC)
 #      if !defined(__SANITIZE_ADDRESS__)
 #        define _LIBCUDACXX_HAS_NO_ASAN
 #      endif // !__SANITIZE_ADDRESS__
-#    elif defined(_CCCL_COMPILER_CLANG)
+#    elif _CCCL_COMPILER(CLANG)
 #      if !_CCCL_HAS_FEATURE(address_sanitizer)
 #        define _LIBCUDACXX_HAS_NO_ASAN
 #      endif // !_CCCL_HAS_FEATURE(address_sanitizer)
@@ -471,21 +461,21 @@ typedef __char32_t char32_t;
 #  endif // _LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS
 
 #  ifndef _LIBCUDACXX_HAS_NO_INT128
-#    if defined(_CCCL_COMPILER_MSVC) || (defined(_CCCL_COMPILER_NVRTC) && !defined(__CUDACC_RTC_INT128__)) \
-      || (defined(_CCCL_CUDA_COMPILER_NVCC) && (_CCCL_CUDACC_VER < 1105000)) || !defined(__SIZEOF_INT128__)
+#    if _CCCL_COMPILER(MSVC) || (_CCCL_COMPILER(NVRTC) && !defined(__CUDACC_RTC_INT128__)) \
+      || (defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_CUDACC_BELOW(11, 5)) || !defined(__SIZEOF_INT128__)
 #      define _LIBCUDACXX_HAS_NO_INT128
 #    endif
 #  endif // !_LIBCUDACXX_HAS_NO_INT128
 
 #  ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
-#    if defined(_CCCL_CUDACC)
+#    if _CCCL_CUDACC
 #      define _LIBCUDACXX_HAS_NO_LONG_DOUBLE
 #    endif
 #  endif // _LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
 // libcu++ requires host device support for its tests. Until then restrict usage to at least 12.2
 #  ifndef _LIBCUDACXX_HAS_NVFP16
-#    if defined(_CCCL_HAS_NVFP16) && !defined(_CCCL_CUDACC_BELOW_12_2) \
+#    if defined(_CCCL_HAS_NVFP16) && _CCCL_CUDACC_AT_LEAST(12, 2) \
       && (defined(_CCCL_CUDA_COMPILER) || defined(LIBCUDACXX_ENABLE_HOST_NVFP16))
 #      define _LIBCUDACXX_HAS_NVFP16
 #    endif
@@ -493,7 +483,7 @@ typedef __char32_t char32_t;
 
 // libcu++ requires host device support for its tests. Until then restrict usage to at least 12.2
 #  ifndef _LIBCUDACXX_HAS_NVBF16
-#    if defined(_CCCL_HAS_NVBF16) && !defined(_CCCL_CUDACC_BELOW_12_2)
+#    if defined(_CCCL_HAS_NVBF16) && _CCCL_CUDACC_AT_LEAST(12, 2)
 #      define _LIBCUDACXX_HAS_NVBF16
 #    endif
 #  endif // !_LIBCUDACXX_HAS_NVBF16
@@ -580,13 +570,13 @@ typedef unsigned short char16_t;
 typedef unsigned int char32_t;
 #  endif // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
 
-#  if defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_CLANG)
+#  if _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG)
 #    define _LIBCUDACXX_NOALIAS __attribute__((__malloc__))
 #  else
 #    define _LIBCUDACXX_NOALIAS
 #  endif
 
-#  if _CCCL_HAS_FEATURE(cxx_explicit_conversions) || defined(_CCCL_COMPILER_GCC) || defined(_CCCL_COMPILER_CLANG)
+#  if _CCCL_HAS_FEATURE(cxx_explicit_conversions) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG)
 #    define _LIBCUDACXX_EXPLICIT explicit
 #  else
 #    define _LIBCUDACXX_EXPLICIT
@@ -615,7 +605,7 @@ typedef unsigned int char32_t;
 
 // If we are getting operator new from the MSVC CRT, then allocation overloads
 // for align_val_t were added in 19.12, aka VS 2017 version 15.3.
-#  if defined(_LIBCUDACXX_MSVCRT) && defined(_CCCL_COMPILER_MSVC) && _MSC_VER < 1912
+#  if defined(_LIBCUDACXX_MSVCRT) && _CCCL_COMPILER(MSVC, <, 19, 12)
 #    define _LIBCUDACXX_HAS_NO_LIBRARY_ALIGNED_ALLOCATION
 #  elif defined(_LIBCUDACXX_ABI_VCRUNTIME) && !defined(__cpp_aligned_new)
 // We're deferring to Microsoft's STL to provide aligned new et al. We don't
@@ -639,7 +629,7 @@ typedef unsigned int char32_t;
 // Deprecations warnings are always enabled, except when users explicitly opt-out
 // by defining _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS.
 // NVCC 11.1 and 11.2 are broken with the deprecated attribute, so disable it
-#  if !defined(_LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS) && !defined(_CCCL_CUDACC_BELOW_11_3)
+#  if !defined(_LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS) && _CCCL_CUDACC_AT_LEAST(11, 3)
 #    if _CCCL_HAS_ATTRIBUTE(deprecated)
 #      define _LIBCUDACXX_DEPRECATED __attribute__((deprecated))
 #    elif _CCCL_STD_VER > 2011
@@ -677,14 +667,9 @@ typedef unsigned int char32_t;
 #    define _LIBCUDACXX_EXPLICIT_MOVE(x) (x)
 #  endif
 
-#  ifndef _LIBCUDACXX_HAS_NO_ASAN
-extern "C" _LIBCUDACXX_HIDE_FROM_ABI void
-__sanitizer_annotate_contiguous_container(const void*, const void*, const void*, const void*);
-#  endif
-
 // Thread API
 #  ifndef _LIBCUDACXX_HAS_THREAD_API_EXTERNAL
-#    if defined(_CCCL_COMPILER_NVRTC) || defined(__EMSCRIPTEN__)
+#    if _CCCL_COMPILER(NVRTC) || defined(__EMSCRIPTEN__)
 #      define _LIBCUDACXX_HAS_THREAD_API_EXTERNAL
 #    endif
 #  endif // _LIBCUDACXX_HAS_THREAD_API_EXTERNAL
@@ -696,7 +681,7 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 #  endif // _LIBCUDACXX_HAS_THREAD_API_CUDA
 
 #  ifndef _LIBCUDACXX_HAS_THREAD_API_WIN32
-#    if defined(_CCCL_COMPILER_MSVC) && !defined(_LIBCUDACXX_HAS_THREAD_API_CUDA)
+#    if _CCCL_COMPILER(MSVC) && !defined(_LIBCUDACXX_HAS_THREAD_API_CUDA)
 #      define _LIBCUDACXX_HAS_THREAD_API_WIN32
 #    endif
 #  endif // _LIBCUDACXX_HAS_THREAD_API_WIN32
@@ -705,7 +690,7 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
     && !defined(_LIBCUDACXX_HAS_THREAD_API_WIN32) && !defined(_LIBCUDACXX_HAS_THREAD_API_EXTERNAL)
 #    if defined(__FreeBSD__) || defined(__Fuchsia__) || defined(__wasi__) || defined(__NetBSD__) || defined(__linux__) \
       || defined(__GNU__) || defined(__APPLE__) || defined(__CloudABI__) || defined(__sun__)                           \
-      || (defined(__MINGW32__) && __has_include(<pthread.h>))
+      || (defined(__MINGW32__) && _CCCL_HAS_INCLUDE(<pthread.h>))
 #      define _LIBCUDACXX_HAS_THREAD_API_PTHREAD
 #    elif defined(_LIBCUDACXX_WIN32API)
 #      define _LIBCUDACXX_HAS_THREAD_API_WIN32
@@ -751,21 +736,20 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 // TODO: Support C11 Atomics?
 // #if _CCCL_HAS_FEATURE(cxx_atomic) || __has_extension(c_atomic) || _CCCL_HAS_KEYWORD(_Atomic)
 // #  define _LIBCUDACXX_HAS_C_ATOMIC_IMP
-#  if defined(_CCCL_COMPILER_ICC)
+#  if _CCCL_COMPILER(ICC)
 #    define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
-#  elif defined(_CCCL_COMPILER_CLANG)
+#  elif _CCCL_COMPILER(CLANG)
 #    define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
-#  elif defined(_CCCL_COMPILER_GCC)
+#  elif _CCCL_COMPILER(GCC)
 #    define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
-#  elif defined(_CCCL_COMPILER_NVHPC)
+#  elif _CCCL_COMPILER(NVHPC)
 #    define _LIBCUDACXX_HAS_GCC_ATOMIC_IMP
-#  elif defined(_CCCL_COMPILER_MSVC)
+#  elif _CCCL_COMPILER(MSVC)
 #    define _LIBCUDACXX_HAS_MSVC_ATOMIC_IMPL
 #  endif
 
 // CUDA Atomics supersede host atomics in order to insert the host/device dispatch layer
-#  if defined(_CCCL_CUDA_COMPILER_NVCC) || defined(_CCCL_COMPILER_NVRTC) || defined(_CCCL_COMPILER_NVHPC) \
-    || defined(_CCCL_CUDACC)
+#  if defined(_CCCL_CUDA_COMPILER_NVCC) || _CCCL_COMPILER(NVRTC) || _CCCL_COMPILER(NVHPC) || _CCCL_CUDACC
 #    define _LIBCUDACXX_HAS_CUDA_ATOMIC_IMPL
 #  endif
 
@@ -816,7 +800,7 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 #    define _LIBCUDACXX_PREFERRED_NAME(x)
 #  endif
 
-#  if defined(_LIBCUDACXX_ABI_MICROSOFT) && (defined(_CCCL_COMPILER_MSVC) || __has_declspec_attribute(empty_bases))
+#  if defined(_LIBCUDACXX_ABI_MICROSOFT) && (_CCCL_COMPILER(MSVC) || __has_declspec_attribute(empty_bases))
 #    define _LIBCUDACXX_DECLSPEC_EMPTY_BASES __declspec(empty_bases)
 #  else
 #    define _LIBCUDACXX_DECLSPEC_EMPTY_BASES
@@ -836,11 +820,11 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 // We need `is_constant_evaluated` for clang and gcc. MSVC also needs extensive rework
 #  if !defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
 #    define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
-#  elif defined(_CCCL_COMPILER_NVRTC)
+#  elif _CCCL_COMPILER(NVRTC)
 #    define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
-#  elif defined(_CCCL_COMPILER_MSVC)
+#  elif _CCCL_COMPILER(MSVC)
 #    define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
-#  elif defined(_CCCL_CUDACC_BELOW_11_8)
+#  elif _CCCL_CUDACC_BELOW(11, 8)
 #    define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
 #  elif defined(_CCCL_CUDA_COMPILER_CLANG)
 #    define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
@@ -862,7 +846,7 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 // macro is used to mark them as such, which suppresses the
 // '-Wctad-maybe-unsupported' compiler warning when CTAD is used in user code
 // with these classes.
-#  if (!defined(_CCCL_COMPILER_GCC) || __GNUC__ > 6) && _CCCL_STD_VER >= 2017
+#  if (!_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >, 6)) && _CCCL_STD_VER >= 2017
 #    define _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(_ClassName) \
       template <class... _Tag>                              \
       _ClassName(typename _Tag::__allow_ctad...)->_ClassName<_Tag...>
@@ -883,7 +867,7 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 
 // We can only expose constexpr allocations if the compiler supports it
 #  if defined(__cpp_constexpr_dynamic_alloc) && defined(__cpp_lib_constexpr_dynamic_alloc) && _CCCL_STD_VER >= 2020 \
-    && !defined(_CCCL_COMPILER_NVRTC)
+    && !_CCCL_COMPILER(NVRTC)
 #    define _CCCL_HAS_CONSTEXPR_ALLOCATION
 #    define _CCCL_CONSTEXPR_CXX20_ALLOCATION constexpr
 #  else // ^^^ __cpp_constexpr_dynamic_alloc ^^^ / vvv !__cpp_constexpr_dynamic_alloc vvv
@@ -892,7 +876,7 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
 
 // NVRTC has a bug that prevented the use of delegated constructors, as it did not accept execution space annotations.
 // This creates a whole lot of boilerplate that we can avoid through a macro (see nvbug3961621)
-#  if defined(_CCCL_COMPILER_NVRTC) || (defined(_CCCL_CUDACC_BELOW_11_3) && defined(_CCCL_COMPILER_CLANG))
+#  if _CCCL_COMPILER(NVRTC) || (_CCCL_CUDACC_BELOW(11, 3) && _CCCL_COMPILER(CLANG))
 #    define _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__class, __baseclass, ...)                               \
       using __base = __baseclass<__VA_ARGS__>;                                                         \
       template <class... _Args, enable_if_t<_CCCL_TRAIT(is_constructible, __base, _Args...), int> = 0> \
@@ -901,12 +885,12 @@ __sanitizer_annotate_contiguous_container(const void*, const void*, const void*,
           : __base(_CUDA_VSTD::forward<_Args>(__args)...)                                              \
       {}                                                                                               \
       _CCCL_HIDE_FROM_ABI constexpr __class() noexcept = default;
-#  else // ^^^ _CCCL_COMPILER_NVRTC || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER_NVRTC || nvcc >= 11.3 vvv
+#  else // ^^^ _CCCL_COMPILER(NVRTC) || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER(NVRTC) || nvcc >= 11.3 vvv
 #    define _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__class, __baseclass, ...) \
       using __base = __baseclass<__VA_ARGS__>;                           \
       using __base::__base;                                              \
       _CCCL_HIDE_FROM_ABI constexpr __class() noexcept = default;
-#  endif // !_CCCL_COMPILER_NVRTC || nvcc >= 11.3
+#  endif // !_CCCL_COMPILER(NVRTC) || nvcc >= 11.3
 
 #  define _LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES
 

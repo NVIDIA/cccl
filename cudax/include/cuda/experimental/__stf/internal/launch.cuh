@@ -31,7 +31,7 @@ namespace cuda::experimental::stf
 {
 
 // This feature requires a CUDA compiler
-#if defined(CUDASTF_CODE_GENERATION) && defined(__CUDACC__)
+#if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 
 class stream_ctx;
 template <typename...>
@@ -505,5 +505,5 @@ private:
 
 } // namespace reserved
 
-#endif // defined(CUDASTF_CODE_GENERATION) && defined(__CUDACC__)
+#endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 } // end namespace cuda::experimental::stf

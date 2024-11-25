@@ -28,7 +28,7 @@
 #endif
 
 // cuda::mr is unavable on MSVC 2017
-#if defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_COMPILER(MSVC2017)
 #  error "The shared_resource header is not supported on MSVC 2017"
 #endif
 
@@ -172,27 +172,27 @@ struct shared_resource
   //! @return Pointer to the newly allocated memory.
   //! @note The caller is responsible for ensuring that the memory is not accessed until the
   //! operation has completed.
-  _LIBCUDACXX_TEMPLATE(class _ThisResource = _Resource)
-  _LIBCUDACXX_REQUIRES(_CUDA_VMR::async_resource<_ThisResource>)
-  _CCCL_NODISCARD void* async_allocate(size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
+  _CCCL_TEMPLATE(class _ThisResource = _Resource)
+  _CCCL_REQUIRES(_CUDA_VMR::async_resource<_ThisResource>)
+  _CCCL_NODISCARD void* allocate_async(size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
   {
-    return this->__control_block->__resource.async_allocate(__bytes, __alignment, __stream);
+    return this->__control_block->__resource.allocate_async(__bytes, __alignment, __stream);
   }
 
   //! @brief Enqueues the deallocation of memory pointed to by \c __ptr. The deallocation is
   //! performed asynchronously on stream \c __stream.
   //! @pre \c _Resource must satisfy \c async_resource.
-  //! @param __bytes The number of bytes that was passed to the `async_allocate` call that returned
+  //! @param __bytes The number of bytes that was passed to the `allocate_async` call that returned
   //! \p __ptr.
-  //! @param __alignment The alignment that was passed to the `async_allocate` call that returned
+  //! @param __alignment The alignment that was passed to the `allocate_async` call that returned
   //! \p __ptr.
   //! @note The caller is responsible for ensuring that the memory is not accessed after the
   //! operation has completed.
-  _LIBCUDACXX_TEMPLATE(class _ThisResource = _Resource)
-  _LIBCUDACXX_REQUIRES(_CUDA_VMR::async_resource<_ThisResource>)
-  void async_deallocate(void* __ptr, size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
+  _CCCL_TEMPLATE(class _ThisResource = _Resource)
+  _CCCL_REQUIRES(_CUDA_VMR::async_resource<_ThisResource>)
+  void deallocate_async(void* __ptr, size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
   {
-    this->__control_block->__resource.async_deallocate(__ptr, __bytes, __alignment, __stream);
+    this->__control_block->__resource.deallocate_async(__ptr, __bytes, __alignment, __stream);
   }
 
   //! @brief Equality comparison between two \c shared_resource
@@ -224,13 +224,13 @@ struct shared_resource
   }
 
   //! @brief Forwards the stateless properties
-  _LIBCUDACXX_TEMPLATE(class _Property)
-  _LIBCUDACXX_REQUIRES((!property_with_value<_Property>) _LIBCUDACXX_AND(has_property<_Resource, _Property>))
+  _CCCL_TEMPLATE(class _Property)
+  _CCCL_REQUIRES((!property_with_value<_Property>) _CCCL_AND(has_property<_Resource, _Property>))
   friend void get_property(const shared_resource&, _Property) noexcept {}
 
   //! @brief Forwards the stateful properties
-  _LIBCUDACXX_TEMPLATE(class _Property)
-  _LIBCUDACXX_REQUIRES(property_with_value<_Property> _LIBCUDACXX_AND(has_property<_Resource, _Property>))
+  _CCCL_TEMPLATE(class _Property)
+  _CCCL_REQUIRES(property_with_value<_Property> _CCCL_AND(has_property<_Resource, _Property>))
   _CCCL_NODISCARD_FRIEND __property_value_t<_Property> get_property(const shared_resource& __self, _Property) noexcept
   {
     return get_property(__self.__control_block->__resource, _Property{});

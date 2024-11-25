@@ -30,8 +30,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // MSVC < 19.39 to miscompile so we use the fallback instead. The use of the
 // `__identity_t` alias is help MSVC parse the declaration correctly.
 #if !defined(_CCCL_NO_VARIABLE_TEMPLATES) && !defined(_CCCL_NO_NOEXCEPT_FUNCTION_TYPE) \
-  && !(defined(_CCCL_CUDA_COMPILER_NVCC) && defined(_CCCL_CUDACC_BELOW_12_4))          \
-  && !(defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION < 1939)
+  && !(defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_CUDACC_BELOW(12, 4)) && !_CCCL_COMPILER(MSVC, <, 19, 39)
 
 template <class _Tp>
 using __identity_t _CCCL_NODEBUG_ALIAS = _Tp;

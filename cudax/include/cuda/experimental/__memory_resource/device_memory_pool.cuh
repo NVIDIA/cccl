@@ -22,7 +22,7 @@
 #endif // no system header
 
 // cudaMallocAsync was introduced in CTK 11.2
-#if !defined(_CCCL_COMPILER_MSVC_2017) && !defined(_CCCL_CUDACC_BELOW_11_2)
+#if !_CCCL_COMPILER(MSVC2017) && _CCCL_CUDACC_AT_LEAST(11, 2)
 
 #  if defined(_CCCL_CUDA_COMPILER_CLANG)
 #    include <cuda_runtime.h>
@@ -133,7 +133,7 @@ private:
   static void __cuda_supports_export_handle_type(const int __device_id, cudaMemAllocationHandleType __handle_type)
   {
     int __supported_handles = static_cast<int>(cudaMemAllocationHandleType::cudaMemHandleTypeNone);
-#    if !defined(_CCCL_CUDACC_BELOW_11_3)
+#    if _CCCL_CUDACC_AT_LEAST(11, 3)
     if (__handle_type != cudaMemAllocationHandleType::cudaMemHandleTypeNone)
     {
       const ::cudaError_t __status =
@@ -152,7 +152,7 @@ private:
           ::cuda::__throw_cuda_error(__status, "Failed to call cudaDeviceGetAttribute");
       }
     }
-#    endif //_CCCL_CUDACC_BELOW_11_3
+#    endif // _CCCL_CUDACC_BELOW(11, 3)
     if ((static_cast<int>(__handle_type) & __supported_handles) != static_cast<int>(__handle_type))
     {
       ::cuda::__throw_cuda_error(
@@ -428,6 +428,6 @@ public:
 
 #  endif // _CCCL_STD_VER >= 2014
 
-#endif // !_CCCL_COMPILER_MSVC_2017 && !_CCCL_CUDACC_BELOW_11_2
+#endif // !_CCCL_COMPILER(MSVC2017) && _CCCL_CUDACC_AT_LEAST(11, 2)
 
 #endif // _CUDAX__MEMORY_RESOURCE_DEVICE_MEMORY_POOL

@@ -208,7 +208,7 @@ struct DeviceScan
                stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <typename InputIteratorT, typename OutputIteratorT, typename NumItemsT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSum(
     void* d_temp_storage,
@@ -224,7 +224,7 @@ struct DeviceScan
     return ExclusiveSum<InputIteratorT, OutputIteratorT>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Computes a device-wide exclusive prefix sum in-place.
@@ -302,7 +302,7 @@ struct DeviceScan
     return ExclusiveSum(d_temp_storage, temp_storage_bytes, d_data, d_data, num_items, stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <typename IteratorT, typename NumItemsT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveSum(
     void* d_temp_storage,
@@ -316,7 +316,7 @@ struct DeviceScan
 
     return ExclusiveSum<IteratorT>(d_temp_storage, temp_storage_bytes, d_data, num_items, stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Computes a device-wide exclusive prefix scan using the specified
@@ -450,7 +450,7 @@ struct DeviceScan
       stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename InitValueT, typename NumItemsT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     void* d_temp_storage,
@@ -468,7 +468,7 @@ struct DeviceScan
     return ExclusiveScan<InputIteratorT, OutputIteratorT, ScanOpT, InitValueT>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, init_value, num_items, stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Computes a device-wide exclusive prefix scan using the specified
@@ -579,7 +579,7 @@ struct DeviceScan
     return ExclusiveScan(d_temp_storage, temp_storage_bytes, d_data, d_data, scan_op, init_value, num_items, stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <typename IteratorT, typename ScanOpT, typename InitValueT, typename NumItemsT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ExclusiveScan(
     void* d_temp_storage,
@@ -596,7 +596,7 @@ struct DeviceScan
     return ExclusiveScan<IteratorT, ScanOpT, InitValueT>(
       d_temp_storage, temp_storage_bytes, d_data, scan_op, init_value, num_items, stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Computes a device-wide exclusive prefix scan using the specified
@@ -739,7 +739,7 @@ struct DeviceScan
       stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename ScanOpT,
@@ -762,7 +762,7 @@ struct DeviceScan
     return ExclusiveScan<InputIteratorT, OutputIteratorT, ScanOpT, InitValueT, InitValueIterT>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, init_value, num_items, stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Computes a device-wide exclusive prefix scan using the specified binary ``scan_op`` functor.
@@ -880,7 +880,7 @@ struct DeviceScan
     return ExclusiveScan(d_temp_storage, temp_storage_bytes, d_data, d_data, scan_op, init_value, num_items, stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <typename IteratorT,
             typename ScanOpT,
             typename InitValueT,
@@ -901,7 +901,7 @@ struct DeviceScan
     return ExclusiveScan<IteratorT, ScanOpT, InitValueT, InitValueIterT>(
       d_temp_storage, temp_storage_bytes, d_data, scan_op, init_value, num_items, stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @}  end member group
   //! @name Inclusive scans
@@ -1003,7 +1003,7 @@ struct DeviceScan
       d_temp_storage, temp_storage_bytes, d_in, d_out, ::cuda::std::plus<>{}, NullType{}, num_items, stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <typename InputIteratorT, typename OutputIteratorT, typename NumItemsT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSum(
     void* d_temp_storage,
@@ -1019,7 +1019,7 @@ struct DeviceScan
     return InclusiveSum<InputIteratorT, OutputIteratorT>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Computes a device-wide inclusive prefix sum in-place.
@@ -1096,7 +1096,7 @@ struct DeviceScan
     return InclusiveSum(d_temp_storage, temp_storage_bytes, d_data, d_data, num_items, stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <typename IteratorT, typename NumItemsT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t InclusiveSum(
     void* d_temp_storage,
@@ -1110,7 +1110,7 @@ struct DeviceScan
 
     return InclusiveSum<IteratorT>(d_temp_storage, temp_storage_bytes, d_data, num_items, stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Computes a device-wide inclusive prefix scan using the specified binary ``scan_op`` functor.
@@ -1333,7 +1333,7 @@ struct DeviceScan
                                 stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <typename InputIteratorT, typename OutputIteratorT, typename ScanOpT, typename NumItemsT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScan(
     void* d_temp_storage,
@@ -1350,7 +1350,7 @@ struct DeviceScan
     return InclusiveScan<InputIteratorT, OutputIteratorT, ScanOpT>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, num_items, stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Computes a device-wide inclusive prefix scan using the specified binary ``scan_op`` functor.
@@ -1451,7 +1451,7 @@ struct DeviceScan
     return InclusiveScan(d_temp_storage, temp_storage_bytes, d_data, d_data, scan_op, num_items, stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <typename IteratorT, typename ScanOpT, typename NumItemsT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t InclusiveScan(
     void* d_temp_storage,
@@ -1466,7 +1466,7 @@ struct DeviceScan
 
     return InclusiveScan<IteratorT, ScanOpT>(d_temp_storage, temp_storage_bytes, d_data, scan_op, num_items, stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Computes a device-wide exclusive prefix sum-by-key with key equality
@@ -1608,7 +1608,7 @@ struct DeviceScan
                          stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <typename KeysInputIteratorT,
             typename ValuesInputIteratorT,
             typename ValuesOutputIteratorT,
@@ -1630,7 +1630,7 @@ struct DeviceScan
     return ExclusiveSumByKey<KeysInputIteratorT, ValuesInputIteratorT, ValuesOutputIteratorT, EqualityOpT>(
       d_temp_storage, temp_storage_bytes, d_keys_in, d_values_in, d_values_out, num_items, equality_op, stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Computes a device-wide exclusive prefix scan-by-key using the
@@ -1814,7 +1814,7 @@ struct DeviceScan
                          stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <typename KeysInputIteratorT,
             typename ValuesInputIteratorT,
             typename ValuesOutputIteratorT,
@@ -1854,7 +1854,7 @@ struct DeviceScan
       equality_op,
       stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Computes a device-wide inclusive prefix sum-by-key with key equality defined by ``equality_op``.
@@ -1990,7 +1990,7 @@ struct DeviceScan
                          stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <typename KeysInputIteratorT,
             typename ValuesInputIteratorT,
             typename ValuesOutputIteratorT,
@@ -2012,7 +2012,7 @@ struct DeviceScan
     return InclusiveSumByKey<KeysInputIteratorT, ValuesInputIteratorT, ValuesOutputIteratorT, EqualityOpT>(
       d_temp_storage, temp_storage_bytes, d_keys_in, d_values_in, d_values_out, num_items, equality_op, stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Computes a device-wide inclusive prefix scan-by-key using the
@@ -2180,7 +2180,7 @@ struct DeviceScan
                          stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <typename KeysInputIteratorT,
             typename ValuesInputIteratorT,
             typename ValuesOutputIteratorT,
@@ -2204,7 +2204,7 @@ struct DeviceScan
     return InclusiveScanByKey<KeysInputIteratorT, ValuesInputIteratorT, ValuesOutputIteratorT, ScanOpT, EqualityOpT>(
       d_temp_storage, temp_storage_bytes, d_keys_in, d_values_in, d_values_out, scan_op, num_items, equality_op, stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @}  end member group
 };

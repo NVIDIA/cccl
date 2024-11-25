@@ -136,7 +136,7 @@ struct __lazy_tupl<_CUDA_VSTD::index_sequence<_Idx...>, _Ts...> : __detail::__la
   bool __engaged_[sizeof...(_Ts)] = {};
 };
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
 template <class... _Ts>
 struct __mk_lazy_tuple_
 {

@@ -81,6 +81,9 @@ struct allowed_levels
 
 namespace detail
 {
+template <typename LevelType>
+using __default_unit_below = typename LevelType::allowed_below::default_unit;
+
 template <typename QueryLevel, typename AllowedLevels>
 _CCCL_INLINE_VAR constexpr bool is_level_allowed = false;
 
@@ -94,7 +97,7 @@ _CCCL_INLINE_VAR constexpr bool can_rhs_stack_on_lhs =
 
 template <typename Unit, typename Level>
 _CCCL_INLINE_VAR constexpr bool legal_unit_for_level =
-  can_rhs_stack_on_lhs<Unit, Level> || legal_unit_for_level<Unit, typename Level::allowed_below::default_unit>;
+  can_rhs_stack_on_lhs<Unit, Level> || legal_unit_for_level<Unit, __default_unit_below<Level>>;
 
 template <typename Unit>
 _CCCL_INLINE_VAR constexpr bool legal_unit_for_level<Unit, void> = false;
@@ -279,7 +282,7 @@ template <typename Unit, typename Level>
   }
   else
   {
-    using SplitLevel = typename Level::allowed_below::default_unit;
+    using SplitLevel = detail::__default_unit_below<Level>;
     return dims_product<typename Level::product_type>(
       extents_impl<SplitLevel, Level>(), extents_impl<Unit, SplitLevel>());
   }
@@ -295,7 +298,7 @@ template <typename Unit, typename Level>
   }
   else
   {
-    using SplitLevel = typename Level::allowed_below::default_unit;
+    using SplitLevel = detail::__default_unit_below<Level>;
     return dims_sum<typename Level::product_type>(
       dims_product<typename Level::product_type>(index_impl<SplitLevel, Level>(), extents_impl<Unit, SplitLevel>()),
       index_impl<Unit, SplitLevel>());
@@ -393,7 +396,7 @@ _CCCL_DEVICE auto rank(const Unit&, const Level&)
   {
     /* Its interesting that there is a need for else here, but using the above in all cases would result in
         a different numbering scheme, where adjacent ranks in lower level would not be adjacent in this level */
-    using SplitLevel = typename Level::allowed_below::default_unit;
+    using SplitLevel = detail::__default_unit_below<Level>;
     return rank<SplitLevel, Level>() * count<Unit, SplitLevel>() + rank<Unit, SplitLevel>();
   }
 }

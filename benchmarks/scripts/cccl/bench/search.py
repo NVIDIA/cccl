@@ -8,12 +8,12 @@ from .storage import Storage
 from .cmake import CMake
 
 
-def list_benches():
+def list_benches(algnames):
     print("### Benchmarks")
 
     config = Config()
 
-    for algname in config.benchmarks:
+    for algname in algnames:
         space_size = config.variant_space_size(algname)
         print("  * `{}`: {} variants: ".format(algname, space_size))
 
@@ -45,20 +45,37 @@ def parse_arguments():
                         help="Regex for benchmarks selection.")
     parser.add_argument('-a', '--args', action='append',
                         type=str, help="Parameter in the format `Param=Value`.")
-    parser.add_argument(
-        '--list-benches', action=argparse.BooleanOptionalAction, help="Show available benchmarks.")
-    parser.add_argument('--num-shards', type=int, default=1, help='Split benchmarks into M pieces and only run one')
-    parser.add_argument('--run-shard', type=int, default=0, help='Run shard N / M of benchmarks')
-    parser.add_argument('-P0', action=argparse.BooleanOptionalAction, help="Run P0 benchmarks")
+    parser.add_argument('-l', '--list-benches', action='store_true', help="Show available benchmarks.")
+    parser.add_argument('--num-shards', type=int, default=1,
+                        help='Split benchmarks into NUM_SHARDS pieces and only run one')
+    parser.add_argument('--run-shard', type=int, default=0, help='Run benchmark shard RUN_SHARD from NUM_SHARDS pieces')
+    parser.add_argument('-P0', action='store_true', help="Run P0 benchmarks")
     return parser.parse_args()
 
 
-def run_benches(algnames, sub_space, seeker):
+def filter_benchmark_space_for_p0(algname, ct_space, rt_values):
+    if algname in ['cub.bench.merge_sort.pairs', 'cub.bench.radix_sort.pairs', 'cub.bench.select.unique_by_key']:
+        ct_space = list(filter(lambda variant: not (("OffsetT{ct}=I64" in variant) or ("KeyT{ct}=I16" in variant) or (
+                "ValueT{ct}=I16" in variant) or ("KeyT{ct}=I128" in variant) or ("ValueT{ct}=I128" in variant)),
+                               ct_space))
+
+    if algname == 'cub.bench.merge_sort.pairs':
+        for subbench in rt_values:
+            for axis in rt_values[subbench]:
+                if axis == "Entropy":
+                    rt_values[subbench][axis] = ['1.000']
+
+    return ct_space, rt_values
+
+
+def run_benches(algnames, sub_space, seeker, args):
     for algname in algnames:
         try:
             bench = BaseBench(algname)
             ct_space = bench.ct_workload_space(sub_space)
             rt_values = bench.rt_axes_values(sub_space)
+            if args.P0:
+                ct_space, rt_values = filter_benchmark_space_for_p0(algname, ct_space, rt_values)
             seeker(algname, ct_space, rt_values)
         except Exception as e:
             print("#### ERROR exception occured while running {}: '{}'".format(algname, e))
@@ -100,11 +117,12 @@ def search(seeker):
     if args.args:
         workload_sub_space = parse_sub_space(args.args)
 
+    algnames = filter_benchmarks(config.benchmarks, args)
     if args.list_benches:
-        list_benches()
+        list_benches(algnames)
         return
 
-    run_benches(filter_benchmarks(config.benchmarks, args), workload_sub_space, seeker)
+    run_benches(algnames, workload_sub_space, seeker, args)
 
 
 class MedianCenterEstimator:

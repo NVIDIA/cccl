@@ -27,6 +27,7 @@
 
 #  include <cuda/std/__complex/vector_support.h>
 #  include <cuda/std/__cuda/cmath_nvfp16.h>
+#  include <cuda/std/__fwd/get.h>
 #  include <cuda/std/__type_traits/enable_if.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
 #  include <cuda/std/__type_traits/is_constructible.h>
@@ -34,9 +35,9 @@
 #  include <cuda/std/cmath>
 #  include <cuda/std/complex>
 
-#  if !defined(_CCCL_COMPILER_NVRTC)
+#  if !_CCCL_COMPILER(NVRTC)
 #    include <sstream> // for std::basic_ostringstream
-#  endif // !_CCCL_COMPILER_NVRTC
+#  endif // !_CCCL_COMPILER(NVRTC)
 
 // This is a workaround against the user defining macros __CUDA_NO_HALF_CONVERSIONS__ __CUDA_NO_HALF_OPERATORS__
 namespace __cccl_internal
@@ -109,6 +110,9 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_ALIGNAS(alignof(__half2)) complex<__ha
   template <class _Up>
   friend class complex;
 
+  template <class _Up>
+  friend struct __get_complex_impl;
+
 public:
   using value_type = __half;
 
@@ -143,7 +147,7 @@ public:
     return *this;
   }
 
-#  if !defined(_CCCL_COMPILER_NVRTC)
+#  if !_CCCL_COMPILER(NVRTC)
   template <class _Up>
   _LIBCUDACXX_HIDE_FROM_ABI complex(const ::std::complex<_Up>& __other)
       : __repr_(_LIBCUDACXX_ACCESS_STD_COMPLEX_REAL(__other), _LIBCUDACXX_ACCESS_STD_COMPLEX_IMAG(__other))
@@ -161,7 +165,7 @@ public:
   {
     return {__repr_.x, __repr_.y};
   }
-#  endif // !_CCCL_COMPILER_NVRTC
+#  endif // !_CCCL_COMPILER(NVRTC)
 
   _LIBCUDACXX_HIDE_FROM_ABI value_type real() const
   {
@@ -292,7 +296,35 @@ _LIBCUDACXX_HIDE_FROM_ABI complex<__half> acos(const complex<__half>& __x)
   return complex<__half>{_CUDA_VSTD::acos(complex<float>{__x})};
 }
 
-#  if !defined(_LIBCUDACXX_HAS_NO_LOCALIZATION) && !defined(_CCCL_COMPILER_NVRTC)
+template <>
+struct __get_complex_impl<__half>
+{
+  template <size_t _Index>
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr __half& get(complex<__half>& __z) noexcept
+  {
+    return (_Index == 0) ? __z.__repr_.x : __z.__repr_.y;
+  }
+
+  template <size_t _Index>
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr __half&& get(complex<__half>&& __z) noexcept
+  {
+    return _CUDA_VSTD::move((_Index == 0) ? __z.__repr_.x : __z.__repr_.y);
+  }
+
+  template <size_t _Index>
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr const __half& get(const complex<__half>& __z) noexcept
+  {
+    return (_Index == 0) ? __z.__repr_.x : __z.__repr_.y;
+  }
+
+  template <size_t _Index>
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr const __half&& get(const complex<__half>&& __z) noexcept
+  {
+    return _CUDA_VSTD::move((_Index == 0) ? __z.__repr_.x : __z.__repr_.y);
+  }
+};
+
+#  if !defined(_LIBCUDACXX_HAS_NO_LOCALIZATION) && !_CCCL_COMPILER(NVRTC)
 template <class _CharT, class _Traits>
 ::std::basic_istream<_CharT, _Traits>& operator>>(::std::basic_istream<_CharT, _Traits>& __is, complex<__half>& __x)
 {
@@ -308,7 +340,7 @@ operator<<(::std::basic_ostream<_CharT, _Traits>& __os, const complex<__half>& _
 {
   return __os << complex<float>{__x};
 }
-#  endif // !_LIBCUDACXX_HAS_NO_LOCALIZATION && !_CCCL_COMPILER_NVRTC
+#  endif // !_LIBCUDACXX_HAS_NO_LOCALIZATION && !_CCCL_COMPILER(NVRTC)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

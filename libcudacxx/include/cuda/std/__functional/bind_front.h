@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__functional/invoke.h>
 #include <cuda/std/__functional/perfect_forward.h>
 #include <cuda/std/__type_traits/decay.h>
@@ -50,7 +50,7 @@ template <class _Fn, class... _BoundArgs>
 struct __bind_front_t : __perfect_forward<__bind_front_op, _Fn, _BoundArgs...>
 {
   using __base = __perfect_forward<__bind_front_op, _Fn, _BoundArgs...>;
-#  if defined(_CCCL_COMPILER_NVRTC)
+#  if _CCCL_COMPILER(NVRTC)
   _CCCL_HIDE_FROM_ABI constexpr __bind_front_t() noexcept = default;
 
   template <class... _Args>
@@ -64,12 +64,12 @@ struct __bind_front_t : __perfect_forward<__bind_front_op, _Fn, _BoundArgs...>
 };
 
 template <class _Fn, class... _Args>
-_LIBCUDACXX_CONCEPT __can_bind_front =
+_CCCL_CONCEPT __can_bind_front =
   is_constructible_v<decay_t<_Fn>, _Fn> && is_move_constructible_v<decay_t<_Fn>>
   && (is_constructible_v<decay_t<_Args>, _Args> && ...) && (is_move_constructible_v<decay_t<_Args>> && ...);
 
-_LIBCUDACXX_TEMPLATE(class _Fn, class... _Args)
-_LIBCUDACXX_REQUIRES(__can_bind_front<_Fn, _Args...>)
+_CCCL_TEMPLATE(class _Fn, class... _Args)
+_CCCL_REQUIRES(__can_bind_front<_Fn, _Args...>)
 _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
 bind_front(_Fn&& __f, _Args&&... __args) noexcept(is_nothrow_constructible_v<tuple<decay_t<_Args>...>, _Args&&...>)
 {

@@ -809,7 +809,7 @@ UNITTEST("movable stream_task")
 
 // FIXME : This test is causing some compiler errors with MSVC, so we disable
 // it on MSVC for now
-#  if !defined(_CCCL_COMPILER_MSVC)
+#  if !_CCCL_COMPILER(MSVC)
 UNITTEST("logical_data_untyped moveable")
 {
   using namespace cuda::experimental::stf;
@@ -852,7 +852,7 @@ UNITTEST("logical_data_untyped moveable")
 
   ctx.finalize();
 };
-#  endif // !_CCCL_COMPILER_MSVC
+#  endif // !_CCCL_COMPILER(MSVC)
 
 #  ifdef __CUDACC__
 namespace reserved
@@ -1125,7 +1125,7 @@ UNITTEST("get logical_data from a task_dep")
   ctx.finalize();
 };
 
-#  if defined(CUDASTF_CODE_GENERATION) && defined(__CUDACC__)
+#  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 namespace reserved
 {
 inline void unit_test_pfor()
@@ -1313,7 +1313,7 @@ UNITTEST("basic launch test")
 };
 
 } // end namespace reserved
-#  endif // defined(CUDASTF_CODE_GENERATION) && defined(__CUDACC__)
+#  endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 
 #endif // UNITTESTED_FILE
 
