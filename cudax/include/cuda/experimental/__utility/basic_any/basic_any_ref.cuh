@@ -183,7 +183,7 @@ private:
   _CUDAX_TRIVIAL_HOST_API void reset() noexcept {}
 
   /// \brief No-op.
-  _CUDAX_TRIVIAL_HOST_API void __release() {}
+  _CUDAX_TRIVIAL_HOST_API void __release() noexcept {}
 
   /// \brief Rebinds the reference with a vtable pointer and object pointer.
   _CUDAX_HOST_API void __set_ref(__vptr_for<interface_type> __vptr,

@@ -309,7 +309,7 @@ public:
 
   /// \brief Resets the `basic_any` object to an empty state.
   /// \post `has_value() == false`
-  _CUDAX_HOST_API void reset()
+  _CUDAX_HOST_API void reset() noexcept
   {
     if (auto __vptr = __get_vptr())
     {
