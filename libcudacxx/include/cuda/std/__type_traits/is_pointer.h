@@ -39,14 +39,14 @@ _CCCL_INLINE_VAR constexpr bool is_pointer_v = _CCCL_BUILTIN_IS_POINTER(_Tp);
 #else
 
 template <class _Tp>
-struct __libcpp_is_pointer : public false_type
+struct __cccl_is_pointer : public false_type
 {};
 template <class _Tp>
-struct __libcpp_is_pointer<_Tp*> : public true_type
+struct __cccl_is_pointer<_Tp*> : public true_type
 {};
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_pointer : public __libcpp_is_pointer<remove_cv_t<_Tp>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_pointer : public __cccl_is_pointer<remove_cv_t<_Tp>>
 {};
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)

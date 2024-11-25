@@ -509,7 +509,7 @@ operator*(const complex<_Tp>& __z, const complex<_Tp>& __w)
 
 #if _CCCL_STD_VER > 2011 && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   // Avoid floating point operations that are invalid during constant evaluation
-  if (__libcpp_is_constant_evaluated())
+  if (__cccl_is_constant_evaluated())
   {
     bool __z_zero = __a == _Tp(0) && __b == _Tp(0);
     bool __w_zero = __c == _Tp(0) && __d == _Tp(0);
@@ -652,7 +652,7 @@ operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
 
 #if _CCCL_STD_VER > 2011 && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   // Avoid floating point operations that are invalid during constant evaluation
-  if (__libcpp_is_constant_evaluated())
+  if (__cccl_is_constant_evaluated())
   {
     bool __z_zero = __a == _Tp(0) && __b == _Tp(0);
     bool __w_zero = __c == _Tp(0) && __d == _Tp(0);
@@ -841,12 +841,12 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp real(const complex<_Tp>& __c
 // 26.3.7 values:
 
 template <class _Tp, bool = _CCCL_TRAIT(is_integral, _Tp), bool = _CCCL_TRAIT(is_floating_point, _Tp)>
-struct __libcpp_complex_overload_traits
+struct __cccl_complex_overload_traits
 {};
 
 // Integral Types
 template <class _Tp>
-struct __libcpp_complex_overload_traits<_Tp, true, false>
+struct __cccl_complex_overload_traits<_Tp, true, false>
 {
   using _ValueType   = double;
   using _ComplexType = complex<double>;
@@ -854,20 +854,20 @@ struct __libcpp_complex_overload_traits<_Tp, true, false>
 
 // Floating point types
 template <class _Tp>
-struct __libcpp_complex_overload_traits<_Tp, false, true>
+struct __cccl_complex_overload_traits<_Tp, false, true>
 {
   using _ValueType   = _Tp;
   using _ComplexType = complex<_Tp>;
 };
 
 template <class _Tp>
-using __libcpp_complex_value_type = typename __libcpp_complex_overload_traits<_Tp>::_ValueType;
+using __cccl_complex_value_type = typename __cccl_complex_overload_traits<_Tp>::_ValueType;
 
 template <class _Tp>
-using __libcpp_complex_complex_type = typename __libcpp_complex_overload_traits<_Tp>::_ComplexType;
+using __cccl_complex_complex_type = typename __cccl_complex_overload_traits<_Tp>::_ComplexType;
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __libcpp_complex_value_type<_Tp> real(_Tp __re)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __cccl_complex_value_type<_Tp> real(_Tp __re)
 {
   return __re;
 }
@@ -881,7 +881,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp imag(const complex<_Tp>& __c
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __libcpp_complex_value_type<_Tp> imag(_Tp)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __cccl_complex_value_type<_Tp> imag(_Tp)
 {
   return 0;
 }
@@ -940,9 +940,9 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp norm(const complex<_Tp>& __c
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __libcpp_complex_value_type<_Tp> norm(_Tp __re)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __cccl_complex_value_type<_Tp> norm(_Tp __re)
 {
-  return static_cast<__libcpp_complex_value_type<_Tp>>(__re) * __re;
+  return static_cast<__cccl_complex_value_type<_Tp>>(__re) * __re;
 }
 
 // conj
@@ -954,9 +954,9 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 complex<_Tp> conj(const complex<
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __libcpp_complex_complex_type<_Tp> conj(_Tp __re)
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __cccl_complex_complex_type<_Tp> conj(_Tp __re)
 {
-  return __libcpp_complex_complex_type<_Tp>(__re);
+  return __cccl_complex_complex_type<_Tp>(__re);
 }
 
 // proj
@@ -973,7 +973,7 @@ _LIBCUDACXX_HIDE_FROM_ABI complex<_Tp> proj(const complex<_Tp>& __c)
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI enable_if_t<__is_complex_float<_Tp>::value, __libcpp_complex_complex_type<_Tp>> proj(_Tp __re)
+_LIBCUDACXX_HIDE_FROM_ABI enable_if_t<__is_complex_float<_Tp>::value, __cccl_complex_complex_type<_Tp>> proj(_Tp __re)
 {
   if (_CUDA_VSTD::__constexpr_isinf(__re))
   {
@@ -983,9 +983,9 @@ _LIBCUDACXX_HIDE_FROM_ABI enable_if_t<__is_complex_float<_Tp>::value, __libcpp_c
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_integral<_Tp>::value, __libcpp_complex_complex_type<_Tp>> proj(_Tp __re)
+_LIBCUDACXX_HIDE_FROM_ABI enable_if_t<is_integral<_Tp>::value, __cccl_complex_complex_type<_Tp>> proj(_Tp __re)
 {
-  return __libcpp_complex_complex_type<_Tp>(__re);
+  return __cccl_complex_complex_type<_Tp>(__re);
 }
 
 // polar

@@ -75,10 +75,10 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_clz(uint64_t __x) noexcept
 #  endif
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __libcpp_clz(uint32_t __x) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_clz(uint32_t __x) noexcept
 {
 #  if _CCCL_STD_VER >= 2014
-  if (!__libcpp_default_is_constant_evaluated())
+  if (!__cccl_default_is_constant_evaluated())
   {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __clz(__x);), (return __builtin_clz(__x);))
   }
@@ -86,10 +86,10 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __libcpp_clz(uint32_t __x) noexcept
   return __constexpr_clz(__x);
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __libcpp_clz(uint64_t __x) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_clz(uint64_t __x) noexcept
 {
 #  if _CCCL_STD_VER >= 2014
-  if (!__libcpp_default_is_constant_evaluated())
+  if (!__cccl_default_is_constant_evaluated())
   {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __clzll(__x);), (return __builtin_clzll(__x);))
   }
@@ -100,10 +100,10 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __libcpp_clz(uint64_t __x) noexcept
 #else // _CCCL_COMPILER(MSVC)
 
 // Precondition:  __x != 0
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __libcpp_clz(uint32_t __x)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_clz(uint32_t __x)
 {
 #  if !defined(__CUDA_ARCH__)
-  if (!__libcpp_default_is_constant_evaluated())
+  if (!__cccl_default_is_constant_evaluated())
   {
     unsigned long __where = 0;
     if (_BitScanReverse(&__where, __x))
@@ -117,10 +117,10 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __libcpp_clz(uint32_t __x)
   return __binary_clz32(static_cast<uint64_t>(__x), 0);
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __libcpp_clz(uint64_t __x)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_clz(uint64_t __x)
 {
 #  if !defined(__CUDA_ARCH__)
-  if (!__libcpp_default_is_constant_evaluated())
+  if (!__cccl_default_is_constant_evaluated())
   {
     unsigned long __where = 0;
 #    if defined(_LIBCUDACXX_HAS_BITSCAN64)
