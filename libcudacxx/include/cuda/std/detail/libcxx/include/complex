@@ -509,7 +509,7 @@ operator*(const complex<_Tp>& __z, const complex<_Tp>& __w)
 
 #if _CCCL_STD_VER > 2011 && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   // Avoid floating point operations that are invalid during constant evaluation
-  if (__cccl_is_constant_evaluated())
+  if (_CUDA_VSTD::is_constant_evaluated())
   {
     bool __z_zero = __a == _Tp(0) && __b == _Tp(0);
     bool __w_zero = __c == _Tp(0) && __d == _Tp(0);
@@ -652,7 +652,7 @@ operator/(const complex<_Tp>& __z, const complex<_Tp>& __w)
 
 #if _CCCL_STD_VER > 2011 && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
   // Avoid floating point operations that are invalid during constant evaluation
-  if (__cccl_is_constant_evaluated())
+  if (_CUDA_VSTD::is_constant_evaluated())
   {
     bool __z_zero = __a == _Tp(0) && __b == _Tp(0);
     bool __w_zero = __c == _Tp(0) && __d == _Tp(0);

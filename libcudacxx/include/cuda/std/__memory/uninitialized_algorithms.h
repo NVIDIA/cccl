@@ -576,7 +576,7 @@ template <
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _Out*
 __uninitialized_allocator_copy_impl(_Alloc&, _In* __first1, _In* __last1, _Out* __first2)
 {
-  if (__cccl_is_constant_evaluated())
+  if (_CUDA_VSTD::is_constant_evaluated())
   {
     while (__first1 != __last1)
     {
@@ -650,7 +650,7 @@ template <class _Alloc,
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _Iter2
 __uninitialized_allocator_move_if_noexcept(_Alloc&, _Iter1 __first1, _Iter1 __last1, _Iter2 __first2)
 {
-  if (__cccl_is_constant_evaluated())
+  if (_CUDA_VSTD::is_constant_evaluated())
   {
     while (__first1 != __last1)
     {

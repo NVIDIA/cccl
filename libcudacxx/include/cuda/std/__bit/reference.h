@@ -812,7 +812,7 @@ struct __bit_array
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 explicit __bit_array(difference_type __s)
       : __size_(__s)
   {
-    if (__cccl_is_constant_evaluated())
+    if (_CUDA_VSTD::is_constant_evaluated())
     {
       for (size_t __i = 0; __i != __bit_array<_Cp>::_Np; ++__i)
       {

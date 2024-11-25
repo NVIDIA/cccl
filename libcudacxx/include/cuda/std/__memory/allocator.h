@@ -129,7 +129,7 @@ public:
       __throw_bad_array_new_length();
     }
 #if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION)
-    if (__cccl_is_constant_evaluated())
+    if (_CUDA_VSTD::is_constant_evaluated())
     {
       return ::std::allocator<_Tp>{}.allocate(__n);
     }
@@ -150,7 +150,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20_ALLOCATION void deallocate(_Tp* __p, size_t __n) noexcept
   {
 #if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION)
-    if (__cccl_is_constant_evaluated())
+    if (_CUDA_VSTD::is_constant_evaluated())
     {
       return ::std::allocator<_Tp>{}.deallocate(__p, __n);
     }
@@ -231,7 +231,7 @@ public:
     {
       __throw_bad_array_new_length();
     }
-    if (__cccl_is_constant_evaluated())
+    if (_CUDA_VSTD::is_constant_evaluated())
     {
       return static_cast<const _Tp*>(::operator new(__n * sizeof(_Tp)));
     }
@@ -250,7 +250,7 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void deallocate(const _Tp* __p, size_t __n) noexcept
   {
-    if (__cccl_is_constant_evaluated())
+    if (_CUDA_VSTD::is_constant_evaluated())
     {
       ::operator delete(const_cast<_Tp*>(__p));
     }
