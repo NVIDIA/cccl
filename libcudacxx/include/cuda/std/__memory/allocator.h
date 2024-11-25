@@ -183,7 +183,7 @@ public:
     return _CUDA_VSTD::addressof(__x);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_DEPRECATED_IN_CXX17 _Tp* allocate(size_t __n, const void*)
+  _CCCL_NODISCARD _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_HIDE_FROM_ABI _Tp* allocate(size_t __n, const void*)
   {
     return allocate(__n);
   }
@@ -278,7 +278,7 @@ public:
     return _CUDA_VSTD::addressof(__x);
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_DEPRECATED_IN_CXX17 const _Tp* allocate(size_t __n, const void*)
+  _CCCL_NODISCARD _LIBCUDACXX_DEPRECATED_IN_CXX17 _LIBCUDACXX_HIDE_FROM_ABI const _Tp* allocate(size_t __n, const void*)
   {
     return allocate(__n);
   }
