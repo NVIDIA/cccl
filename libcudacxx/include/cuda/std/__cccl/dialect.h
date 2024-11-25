@@ -105,9 +105,12 @@
 #endif // _CCCL_STD_VER <= 2011
 
 // Declaring a non-type template parameters with auto is only available from C++17 onwards
-#if _CCCL_STD_VER <= 2014 || !defined(__cpp_nontype_template_parameter_auto) \
-  || (__cpp_nontype_template_parameter_auto < 201606L)
+#if _CCCL_STD_VER >= 2017 && defined(__cpp_nontype_template_parameter_auto) \
+  && (__cpp_nontype_template_parameter_auto >= 201606L)
+#  define _CCCL_NTTP_AUTO auto
+#else // ^^^ C++17 ^^^ / vvv C++14 vvv
 #  define _CCCL_NO_NONTYPE_TEMPLATE_PARAMETER_AUTO
+#  define _CCCL_NTTP_AUTO unsigned long long int
 #endif // _CCCL_STD_VER <= 2014
 
 // noexcept function types are only available from C++17 onwards

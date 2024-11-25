@@ -568,36 +568,28 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_pair
 //! \brief Retreive the first of a pair of types
 //! \pre \c _Pair is a specialization of \c __type_pair
 template <class _Pair>
-using __type_pair_first = typename _Pair::__first;
+using __type_pair_first _CCCL_NODEBUG_ALIAS = typename _Pair::__first;
 
 //! \brief Retreive the second of a pair of types
 //! \pre \c _Pair is a specialization of \c __type_pair
 template <class _Pair>
-using __type_pair_second = typename _Pair::__second;
+using __type_pair_second _CCCL_NODEBUG_ALIAS = typename _Pair::__second;
 
 //! \see __type_switch
 template <class _Value>
 using __type_default _CCCL_NODEBUG_ALIAS = __type_pair<void, _Value>;
 
 //! \see __type_switch
-template <class _IntType, _IntType _Label, class _Value>
-using __type_case _CCCL_NODEBUG_ALIAS = __type_pair<integral_constant<_IntType, _Label>, _Value>;
-
-#  if !defined(_CCCL_NO_NONTYPE_TEMPLATE_PARAMETER_AUTO)
-//! \see __type_switch
-template <auto _Label, class _Value>
-using __type_case_c _CCCL_NODEBUG_ALIAS = __type_case<decltype(_Label), _Label, _Value>;
-#  endif // !_CCCL_NO_NONTYPE_TEMPLATE_PARAMETER_AUTO
+template <_CCCL_NTTP_AUTO _Label, class _Value>
+using __type_case _CCCL_NODEBUG_ALIAS = __type_pair<integral_constant<decltype(_Label), _Label>, _Value>;
 
 namespace __detail
 {
-template <class _Label, class _Value>
-_LIBCUDACXX_HIDE_FROM_ABI auto __type_switch_fn(__type_case<typename _Label::value_type, _Label::value, _Value>*, int) //
-  -> __type_case<typename _Label::value_type, _Label::value, _Value>;
+template <_CCCL_NTTP_AUTO _Label, class _Value>
+_LIBCUDACXX_HIDE_FROM_ABI auto __type_switch_fn(__type_case<_Label, _Value>*, int) -> __type_case<_Label, _Value>;
 
-template <class _Label, class _Value>
-_LIBCUDACXX_HIDE_FROM_ABI auto __type_switch_fn(__type_default<_Value>*, long) //
-  -> __type_default<_Value>;
+template <_CCCL_NTTP_AUTO _Label, class _Value>
+_LIBCUDACXX_HIDE_FROM_ABI auto __type_switch_fn(__type_default<_Value>*, long) -> __type_default<_Value>;
 } // namespace __detail
 
 //! \see __type_switch
@@ -606,10 +598,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DECLSPEC_EMPTY_BASES __type_swi
 {
   template <class _Label>
   using __call _CCCL_NODEBUG_ALIAS =
-    __type_pair_second<decltype(__detail::__type_switch_fn<_Label>(static_cast<__type_switch_fn*>(nullptr), 0))>;
+    __type_pair_second<decltype(__detail::__type_switch_fn<_Label::value>(static_cast<__type_switch_fn*>(nullptr), 0))>;
 };
 
-//! \brief Given an integral constant type \c _Label and a pack of "cases"
+//! \brief Given an integral constant \c _Label and a pack of "cases"
 //! consisting of one or more specializations of \c __type_case and zero or
 //! one specializations of \c __type_defult, `__type_switch<_Label, _Cases...>`
 //! returns the value associated with the first case whose label matches the
@@ -618,20 +610,15 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DECLSPEC_EMPTY_BASES __type_swi
 //!
 //! \p Example:
 //! \code
-//! using result = __type_switch<integral_constant<int, 2>,
-//!                              __type_case<integral_constant<int, 1>, char>,
-//!                              __type_case<integral_constant<int, 2>, double>,
+//! using result = __type_switch<2,
+//!                              __type_case<1, char>,
+//!                              __type_case<2, double>,
 //!                              __type_default<float>>;
 //! static_assert(is_same_v<result, double>);
 //! \endcode
-template <class _IntType, _IntType _Label, class... _Cases>
-using __type_switch _CCCL_NODEBUG_ALIAS = __type_call<__type_switch_fn<_Cases...>, integral_constant<_IntType, _Label>>;
-
-#  if !defined(_CCCL_NO_NONTYPE_TEMPLATE_PARAMETER_AUTO)
-//! \see __type_switch
-template <auto _Label, class... _Cases>
-using __type_switch_c _CCCL_NODEBUG_ALIAS = __type_switch<decltype(_Label), _Label, _Cases...>;
-#  endif // !_CCCL_NO_NONTYPE_TEMPLATE_PARAMETER_AUTO
+template <_CCCL_NTTP_AUTO _Label, class... _Cases>
+using __type_switch _CCCL_NODEBUG_ALIAS =
+  __type_call<__type_switch_fn<_Cases...>, integral_constant<decltype(_Label), _Label>>;
 
 namespace __detail
 {
