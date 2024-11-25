@@ -565,12 +565,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_pair
   using __second _CCCL_NODEBUG_ALIAS = _Second;
 };
 
-//! \brief Retreive the first of a pair of types
+//! \brief Retrieve the first of a pair of types
 //! \pre \c _Pair is a specialization of \c __type_pair
 template <class _Pair>
 using __type_pair_first _CCCL_NODEBUG_ALIAS = typename _Pair::__first;
 
-//! \brief Retreive the second of a pair of types
+//! \brief Retrieve the second of a pair of types
 //! \pre \c _Pair is a specialization of \c __type_pair
 template <class _Pair>
 using __type_pair_second _CCCL_NODEBUG_ALIAS = typename _Pair::__second;
@@ -603,7 +603,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DECLSPEC_EMPTY_BASES __type_swi
 
 //! \brief Given an integral constant \c _Label and a pack of "cases"
 //! consisting of one or more specializations of \c __type_case and zero or
-//! one specializations of \c __type_defult, `__type_switch<_Label, _Cases...>`
+//! one specializations of \c __type_default, `__type_switch<_Label, _Cases...>`
 //! returns the value associated with the first case whose label matches the
 //! given label. If no such case exists, the value associated with the default
 //! case is returned. If no default case exists, the type is ill-formed.
