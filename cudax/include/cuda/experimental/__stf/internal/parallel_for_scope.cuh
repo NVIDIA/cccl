@@ -668,6 +668,9 @@ public:
     }
   }
 
+  /**
+   * @brief Amount of dynamic shared memory per kernel with a reduction
+   */
   static size_t block_to_shared_mem(int block_dim)
   {
     return block_dim * sizeof(redux_vars<deps_tup_t, ops_t>);
