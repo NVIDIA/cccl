@@ -129,15 +129,21 @@
 
 // use the C++14 deprecated attribute instead of the vendor specific ones except for GCC before 13 and Clang before 13
 // which have issues with combining it with other attributes
-#if _CCCL_STD_VER >= 2014 && !_CCCL_COMPILER(GCC, <, 13) && !_CCCL_COMPILER(CLANG, <, 13)
+#if _CCCL_STD_VER >= 2014  \
+  && (_CCCL_COMPILER(MSVC) \
+      || (_CCCL_HAS_CPP_ATTRIBUTE(deprecated) && !_CCCL_COMPILER(GCC, <, 13) && !_CCCL_COMPILER(CLANG, <, 13)))
 #  undef _CCCL_DEPRECATED
 #  undef _CCCL_DEPRECATED_BECAUSE
 #  define _CCCL_DEPRECATED               [[deprecated]]
 #  define _CCCL_DEPRECATED_BECAUSE(_MSG) [[deprecated(_MSG)]]
 #endif
 
-// MSVC vendor specific attribute does not support type aliasing
-#if _CCCL_STD_VER < 2014 && _CCCL_COMPILER(MSVC)
+// Disable deprecated attribute for type aliases on compilers that do not support it
+// - MSVC's native deprecated attribute
+// - NVCC before 11.0
+// - NVRTC before 12.0
+#if (_CCCL_STD_VER < 2014 && _CCCL_COMPILER(MSVC)) || _CCCL_COMPILER(NVRTC, <, 12)
+|| (defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_CUDACC_BELOW(11, 0))
 #  define _CCCL_DEPRECATED_TYPE_ALIAS
 #  define _CCCL_DEPRECATED_TYPE_ALIAS_BECAUSE(_MSG)
 #else
