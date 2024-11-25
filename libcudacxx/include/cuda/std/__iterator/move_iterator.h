@@ -67,7 +67,7 @@ concept __move_iter_comparable = requires {
 template <class _Iter>
 _CCCL_INLINE_VAR constexpr bool __noexcept_move_iter_iter_move =
   noexcept(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<_Iter>()));
-#elif !defined(_CCCL_NO_VARIABLE_TEMPLATES)
+#elif _CCCL_STD_VER > 2014 // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_STD_VER > 2014 vvv
 template <class _Iter, class = void>
 struct __move_iter_category_base
 {};
@@ -92,7 +92,7 @@ _CCCL_CONCEPT __move_iter_comparable = _CCCL_FRAGMENT(__move_iter_comparable_, _
 template <class _Iter>
 _CCCL_INLINE_VAR constexpr bool __noexcept_move_iter_iter_move =
   noexcept(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<_Iter>()));
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
+#endif // _CCCL_STD_VER > 2014
 
 template <class _Iter>
 class _CCCL_TYPE_VISIBILITY_DEFAULT move_iterator

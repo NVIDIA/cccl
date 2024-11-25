@@ -106,7 +106,7 @@ using iter_value_t =
                          indirectly_readable_traits<remove_cvref_t<_Ip>>,
                          iterator_traits<remove_cvref_t<_Ip>>>::value_type;
 
-#elif !defined(_CCCL_NO_VARIABLE_TEMPLATES) // ^^^ !_CCCL_NO_CONCEPTS ^^^
+#elif _CCCL_STD_VER > 2014 // ^^^ !_CCCL_NO_CONCEPTS ^^^
 
 // [readable.traits]
 template <class, class = void>
@@ -183,7 +183,7 @@ using iter_value_t =
                          indirectly_readable_traits<remove_cvref_t<_Ip>>,
                          iterator_traits<remove_cvref_t<_Ip>>>::value_type;
 
-#endif // !_CCCL_NO_VARIABLE_TEMPLATES
+#endif // _CCCL_STD_VER > 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

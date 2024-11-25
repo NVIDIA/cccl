@@ -124,14 +124,14 @@ _LIBCUDACXX_END_NAMESPACE_RANGES
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#  if _CCCL_STD_VER >= 2020
+#  if !defined(_CCCL_NO_CONCEPTS)
 template <__dereferenceable _Tp>
   requires requires(_Tp& __t) {
     { _CUDA_VRANGES::iter_move(__t) } -> __can_reference;
   }
 using iter_rvalue_reference_t = decltype(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<_Tp&>()));
 
-#  else // ^^^ _CCCL_STD_VER >= 2020 ^^^ / vvv _CCCL_STD_VER <= 2017 vvv
+#  else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 
 template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(__can_iter_rvalue_reference_t_,
@@ -146,7 +146,7 @@ using __iter_rvalue_reference_t = decltype(_CUDA_VRANGES::iter_move(_CUDA_VSTD::
 
 template <class _Tp>
 using iter_rvalue_reference_t = enable_if_t<__can_iter_rvalue_reference_t<_Tp>, __iter_rvalue_reference_t<_Tp>>;
-#  endif // _CCCL_STD_VER <= 2017
+#  endif // _CCCL_NO_CONCEPTS
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
