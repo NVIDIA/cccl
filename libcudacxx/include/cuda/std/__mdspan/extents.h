@@ -525,6 +525,9 @@ struct __make_dextents<_IndexType, 0, _CUDA_VSTD::extents<_IndexType, _ExtentsPa
 template <class _IndexType, size_t _Rank>
 using dextents = typename __detail::__make_dextents<_IndexType, _Rank>::type;
 
+template <size_t _Rank, class _IndexType = size_t>
+using dims = dextents<_IndexType, _Rank>;
+
 #  if defined(__MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION)
 template <class... _IndexTypes>
 _CCCL_HOST_DEVICE extents(_IndexTypes...)
