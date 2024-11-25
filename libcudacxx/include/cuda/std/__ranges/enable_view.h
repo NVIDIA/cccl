@@ -56,14 +56,14 @@ _CCCL_TEMPLATE(class _Op, class _Yp)
 _CCCL_REQUIRES(is_convertible_v<_Op*, view_interface<_Yp>*>)
 _LIBCUDACXX_HIDE_FROM_ABI void __is_derived_from_view_interface(const _Op*, const view_interface<_Yp>*);
 
-#  if _CCCL_STD_VER >= 2020
+#  if !defined(_CCCL_NO_CONCEPTS)
 
 template <class _Tp>
 _CCCL_INLINE_VAR constexpr bool enable_view = derived_from<_Tp, view_base> || requires {
   _CUDA_VRANGES::__is_derived_from_view_interface((_Tp*) nullptr, (_Tp*) nullptr);
 };
 
-#  else // ^^^ _CCCL_STD_VER >= 2020 ^^^ / vvv _CCCL_STD_VER <= 2017 vvv
+#  else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 
 template <class _Tp, class = void>
 _CCCL_INLINE_VAR constexpr bool enable_view = derived_from<_Tp, view_base>;
@@ -72,7 +72,7 @@ template <class _Tp>
 _CCCL_INLINE_VAR constexpr bool
   enable_view<_Tp, void_t<decltype(_CUDA_VRANGES::__is_derived_from_view_interface((_Tp*) nullptr, (_Tp*) nullptr))>> =
     true;
-#  endif // _CCCL_STD_VER <= 2017
+#  endif // _CCCL_NO_CONCEPTS
 
 #endif // _CCCL_STD_VER >= 2017
 

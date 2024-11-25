@@ -32,7 +32,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
 // 9.7.12.15.18. Parallel Synchronization and Communication Instructions: tensormap.cp_fenceproxy
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-tensormap-cp-fenceproxy
-#include <cuda/__ptx/instructions/generated/tensormap_cp_fenceproxy.inc>
+#include <cuda/__ptx/instructions/generated/tensormap_cp_fenceproxy.h>
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
 

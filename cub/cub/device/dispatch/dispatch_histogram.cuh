@@ -419,7 +419,7 @@ struct dispatch_histogram
         privatized_decode_op, privatized_decode_op + NUM_ACTIVE_CHANNELS, privatized_decode_op_wrapper.begin());
       ::cuda::std::copy(output_decode_op, output_decode_op + NUM_ACTIVE_CHANNELS, output_decode_op_wrapper.begin());
 
-      auto minus_one = cuda::proclaim_return_type<int>([](int levels) {
+      auto minus_one = ::cuda::proclaim_return_type<int>([](int levels) {
         return levels - 1;
       });
       ::cuda::std::transform(

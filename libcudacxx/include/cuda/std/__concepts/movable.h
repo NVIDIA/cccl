@@ -28,12 +28,12 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2017
+#if !defined(_CCCL_NO_CONCEPTS)
 
 template <class _Tp>
 concept movable = is_object_v<_Tp> && move_constructible<_Tp> && assignable_from<_Tp&, _Tp> && swappable<_Tp>;
 
-#elif _CCCL_STD_VER > 2011
+#elif !defined(_CCCL_NO_VARIABLE_TEMPLATES) // ^^^ !_CCCL_NO_CONCEPTS ^^^
 
 // [concepts.object]
 template <class _Tp>
@@ -47,7 +47,7 @@ _CCCL_CONCEPT_FRAGMENT(
 template <class _Tp>
 _CCCL_CONCEPT movable = _CCCL_FRAGMENT(_Movable_, _Tp);
 
-#endif // _CCCL_STD_VER > 2011
+#endif // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

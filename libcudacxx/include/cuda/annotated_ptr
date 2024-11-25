@@ -391,6 +391,10 @@ public:
 
   _CCCL_HOST_DEVICE pointer get() const noexcept
   {
+    if (__repr == nullptr)
+    {
+      return nullptr;
+    }
     constexpr bool __is_shared = std::is_same<_Property, access_property::shared>::value;
     return __is_shared ? __repr : &(*annotated_ptr<value_type, access_property::global>(__repr));
   }
