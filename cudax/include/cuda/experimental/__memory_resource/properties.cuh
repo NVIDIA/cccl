@@ -38,12 +38,12 @@
 
 #include <cuda/__memory_resource/properties.h>
 
-namespace cuda::experimental::mr
+namespace cuda::experimental
 {
 
 using ::cuda::mr::device_accessible;
 using ::cuda::mr::host_accessible;
 
-} // namespace cuda::experimental::mr
+} // namespace cuda::experimental
 
 #endif //_CUDAX__MEMORY_RESOURCE_PROPERTIES_CUH

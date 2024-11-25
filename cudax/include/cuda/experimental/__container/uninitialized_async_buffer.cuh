@@ -74,10 +74,10 @@ class uninitialized_async_buffer
 {
 private:
   static_assert(_CUDA_VMR::__contains_execution_space_property<_Properties...>,
-                "The properties of cuda::experimental::mr::uninitialized_async_buffer must contain at least one "
+                "The properties of cuda::experimental::uninitialized_async_buffer must contain at least one "
                 "execution space property!");
 
-  using __async_resource = ::cuda::experimental::mr::any_async_resource<_Properties...>;
+  using __async_resource = ::cuda::experimental::any_async_resource<_Properties...>;
 
   __async_resource __mr_;
   ::cuda::stream_ref __stream_ = {};
@@ -113,7 +113,7 @@ private:
   }
 
   //! @brief Causes the buffer to be treated as a span when passed to cudax::launch.
-  //! @pre The buffer must have the cuda::mr::mr::device_accessible property.
+  //! @pre The buffer must have the cuda::mr::device_accessible property.
   template <class _Tp2 = _Tp>
   _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI auto
   __cudax_launch_transform(::cuda::stream_ref, uninitialized_async_buffer& __self) noexcept
@@ -125,7 +125,7 @@ private:
   }
 
   //! @brief Causes the buffer to be treated as a span when passed to cudax::launch
-  //! @pre The buffer must have the cuda::mr::mr::device_accessible property.
+  //! @pre The buffer must have the cuda::mr::device_accessible property.
   template <class _Tp2 = _Tp>
   _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI auto
   __cudax_launch_transform(::cuda::stream_ref, const uninitialized_async_buffer& __self) noexcept

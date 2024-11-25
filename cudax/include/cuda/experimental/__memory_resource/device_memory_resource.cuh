@@ -48,7 +48,7 @@
 //! @file
 //! The \c device_memory_pool class provides an asynchronous memory resource that allocates device memory in stream
 //! order.
-namespace cuda::experimental::mr
+namespace cuda::experimental
 {
 
 //! @brief global stream to synchronize in the synchronous interface of \c device_memory_resource
@@ -93,7 +93,7 @@ private:
   //! @returns The default memory pool of the specified device.
   _CCCL_NODISCARD static ::cudaMemPool_t __get_default_mem_pool(const int __device_id)
   {
-    ::cuda::experimental::mr::__device_supports_stream_ordered_allocations(__device_id);
+    ::cuda::experimental::__device_supports_stream_ordered_allocations(__device_id);
 
     ::cudaMemPool_t __pool;
     _CCCL_TRY_CUDA_API(
@@ -248,7 +248,7 @@ public:
   //! @param __devices A vector of `device_ref`s listing devices to enable access for
   void enable_peer_access_from(const ::std::vector<device_ref>& __devices)
   {
-    ::cuda::experimental::mr::__mempool_switch_peer_access(
+    ::cuda::experimental::__mempool_switch_peer_access(
       __pool_, {__devices.data(), __devices.size()}, cudaMemAccessFlagsProtReadWrite);
   }
 
@@ -260,7 +260,7 @@ public:
   //! @param __device device_ref indicating for which device the access should be enabled
   void enable_peer_access_from(device_ref __device)
   {
-    ::cuda::experimental::mr::__mempool_switch_peer_access(__pool_, {&__device, 1}, cudaMemAccessFlagsProtReadWrite);
+    ::cuda::experimental::__mempool_switch_peer_access(__pool_, {&__device, 1}, cudaMemAccessFlagsProtReadWrite);
   }
 
   //! @brief Enable peer access to memory allocated through this memory resource by the supplied devices
@@ -272,7 +272,7 @@ public:
   //! @param __devices A vector of `device_ref`s listing devices to disable access for
   void disable_peer_access_from(const ::std::vector<device_ref>& __devices)
   {
-    ::cuda::experimental::mr::__mempool_switch_peer_access(
+    ::cuda::experimental::__mempool_switch_peer_access(
       __pool_, {__devices.data(), __devices.size()}, cudaMemAccessFlagsProtNone);
   }
 
@@ -284,7 +284,7 @@ public:
   //! @param __device device_ref indicating for which device the access should be enabled
   void disable_peer_access_from(device_ref __device)
   {
-    ::cuda::experimental::mr::__mempool_switch_peer_access(__pool_, {&__device, 1}, cudaMemAccessFlagsProtNone);
+    ::cuda::experimental::__mempool_switch_peer_access(__pool_, {&__device, 1}, cudaMemAccessFlagsProtNone);
   }
 
   //! @brief Query if memory allocated through this memory resource is accessible by the supplied device
@@ -292,7 +292,7 @@ public:
   //! @param __device device for which the peer access is queried
   _CCCL_NODISCARD bool is_accessible_from(device_ref __device)
   {
-    return ::cuda::experimental::mr::__mempool_get_access(__pool_, __device);
+    return ::cuda::experimental::__mempool_get_access(__pool_, __device);
   }
 
   //! @brief Equality comparison with another device_memory_resource.
@@ -414,7 +414,7 @@ public:
 };
 static_assert(_CUDA_VMR::resource_with<device_memory_resource, device_accessible>, "");
 
-} // namespace cuda::experimental::mr
+} // namespace cuda::experimental
 
 #  endif // _CCCL_STD_VER >= 2014
 

@@ -22,7 +22,7 @@
 
 namespace cudax = cuda::experimental;
 
-using pinned_resource = cudax::mr::pinned_memory_resource;
+using pinned_resource = cudax::pinned_memory_resource;
 static_assert(!cuda::std::is_trivial<pinned_resource>::value, "");
 static_assert(!cuda::std::is_trivially_default_constructible<pinned_resource>::value, "");
 static_assert(cuda::std::is_trivially_copy_constructible<pinned_resource>::value, "");
@@ -204,9 +204,9 @@ static_assert(cuda::mr::async_resource<async_resource<AccessibilityType::Host>>,
 static_assert(cuda::mr::async_resource<async_resource<AccessibilityType::Device>>, "");
 
 // test for cccl#2214: https://github.com/NVIDIA/cccl/issues/2214
-struct derived_pinned_resource : cudax::mr::pinned_memory_resource
+struct derived_pinned_resource : cudax::pinned_memory_resource
 {
-  using cudax::mr::pinned_memory_resource::pinned_memory_resource;
+  using cudax::pinned_memory_resource::pinned_memory_resource;
 };
 static_assert(cuda::mr::resource<derived_pinned_resource>, "");
 

@@ -38,7 +38,7 @@
 
 //! @file
 //! The \c managed_memory_resource class provides a memory resource that allocates pinned memory.
-namespace cuda::experimental::mr
+namespace cuda::experimental
 {
 
 //! @brief pinned_memory_resource uses `cudaMallocHost` / `cudaFreeHost` for allocation / deallocation.
@@ -251,6 +251,6 @@ public:
 static_assert(_CUDA_VMR::async_resource_with<pinned_memory_resource, device_accessible>, "");
 static_assert(_CUDA_VMR::async_resource_with<pinned_memory_resource, device_accessible>, "");
 
-} // namespace cuda::experimental::mr
+} // namespace cuda::experimental
 
 #endif //_CUDA__MEMORY_RESOURCE_CUDA_PINNED_MEMORY_RESOURCE_H

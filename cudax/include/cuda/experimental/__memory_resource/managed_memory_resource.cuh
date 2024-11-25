@@ -37,7 +37,7 @@
 
 //! @file
 //! The \c managed_memory_resource class provides a memory resource that allocates managed memory.
-namespace cuda::experimental::mr
+namespace cuda::experimental
 {
 
 //! @brief \c managed_memory_resource uses `cudaMallocManaged` / `cudaFree` for allocation / deallocation.
@@ -249,6 +249,6 @@ public:
 static_assert(_CUDA_VMR::async_resource_with<managed_memory_resource, mr::device_accessible>, "");
 static_assert(_CUDA_VMR::async_resource_with<managed_memory_resource, mr::host_accessible>, "");
 
-} // namespace cuda::experimental::mr
+} // namespace cuda::experimental
 
 #endif //_CUDAX__MEMORY_RESOURCE_MANAGED_MEMORY_RESOURCE_CUH

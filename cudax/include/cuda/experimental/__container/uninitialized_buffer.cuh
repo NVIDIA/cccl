@@ -68,7 +68,7 @@ private:
                 "The properties of cuda::experimental::uninitialized_buffer must contain at least one execution space "
                 "property!");
 
-  using __resource = ::cuda::experimental::mr::any_resource<_Properties...>;
+  using __resource = ::cuda::experimental::any_resource<_Properties...>;
 
   __resource __mr_;
   size_t __count_ = 0;
@@ -103,7 +103,7 @@ private:
   }
 
   //! @brief Causes the buffer to be treated as a span when passed to cudax::launch.
-  //! @pre The buffer must have the cuda::mr::mr::device_accessible property.
+  //! @pre The buffer must have the cuda::mr::device_accessible property.
   template <class _Tp2 = _Tp>
   _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI auto
   __cudax_launch_transform(::cuda::stream_ref, uninitialized_buffer& __self) noexcept
@@ -114,7 +114,7 @@ private:
   }
 
   //! @brief Causes the buffer to be treated as a span when passed to cudax::launch
-  //! @pre The buffer must have the cuda::mr::mr::device_accessible property.
+  //! @pre The buffer must have the cuda::mr::device_accessible property.
   template <class _Tp2 = _Tp>
   _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI auto
   __cudax_launch_transform(::cuda::stream_ref, const uninitialized_buffer& __self) noexcept

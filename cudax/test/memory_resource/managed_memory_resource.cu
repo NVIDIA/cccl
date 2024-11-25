@@ -22,7 +22,7 @@
 
 namespace cudax = cuda::experimental;
 
-using managed_resource = cudax::mr::managed_memory_resource;
+using managed_resource = cudax::managed_memory_resource;
 static_assert(!cuda::std::is_trivial<managed_resource>::value, "");
 static_assert(!cuda::std::is_trivially_default_constructible<managed_resource>::value, "");
 static_assert(cuda::std::is_trivially_copy_constructible<managed_resource>::value, "");
@@ -203,9 +203,9 @@ static_assert(cuda::mr::async_resource<async_resource<AccessibilityType::Host>>,
 static_assert(cuda::mr::async_resource<async_resource<AccessibilityType::Device>>, "");
 
 // test for cccl#2214: https://github.com/NVIDIA/cccl/issues/2214
-struct derived_managed_resource : cudax::mr::managed_memory_resource
+struct derived_managed_resource : cudax::managed_memory_resource
 {
-  using cudax::mr::managed_memory_resource::managed_memory_resource;
+  using cudax::managed_memory_resource::managed_memory_resource;
 };
 static_assert(cuda::mr::resource<derived_managed_resource>, "");
 
