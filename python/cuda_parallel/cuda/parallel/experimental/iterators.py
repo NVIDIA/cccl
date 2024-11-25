@@ -360,8 +360,11 @@ def cu_map(op, it, op_return_ntype):
     advance_codegen(source_advance, f"{it.prefix}_advance")
     dereference_codegen(source_dereference, f"{it.prefix}_dereference")
 
+    def op_caller(value):
+        return op(value)
+
     op_abi_name = f"{op.__name__}_{op_return_ntype.name}_{it.ntype.name}"
-    op_codegen(op, op_abi_name)
+    op_codegen(op_caller, op_abi_name)
 
     class TransformIterator:
         def __init__(self, it, op):
@@ -382,6 +385,7 @@ def cu_map(op, it, op_return_ntype):
                     TransformIterator.transform_dereference,
                     op_return_ntype(numba.types.CPointer(numba.types.char)),
                 ),
+                # ATTENTION: NOT op_caller here!
                 _ncc(op_abi_name, op, op_return_ntype(it.ntype)),
             ]
 
@@ -389,7 +393,8 @@ def cu_map(op, it, op_return_ntype):
             source_advance(it_state_ptr, diff)  # just a function call
 
         def transform_dereference(it_state_ptr):
-            return op(source_dereference(it_state_ptr))  # just a function call
+            # ATTENTION: op_caller here
+            return op_caller(source_dereference(it_state_ptr))
 
         def state_c_void_p(self):
             return self.it.state_c_void_p()
