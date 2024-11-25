@@ -1,3 +1,6 @@
+..
+   This file was automatically generated. Do not edit.
+
 fence.proxy.tensormap::generic.release.cta
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda

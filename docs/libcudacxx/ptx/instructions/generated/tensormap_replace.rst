@@ -1,3 +1,6 @@
+..
+   This file was automatically generated. Do not edit.
+
 tensormap.replace.tile.global_address.global.b1024.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda

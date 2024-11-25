@@ -1,3 +1,8 @@
+// This file was automatically generated. Do not edit.
+
+#ifndef _CUDA_PTX_GENERATED_FENCE_H_
+#define _CUDA_PTX_GENERATED_FENCE_H_
+
 /*
 // fence{.sem}.scope; // 1. PTX ISA 60, SM_70
 // .sem       = { .sc, .acq_rel }
@@ -19,15 +24,15 @@ _CCCL_DEVICE static inline void fence(sem_t<_Sem> __sem, scope_t<_Scope> __scope
     (
       _CCCL_IF_CONSTEXPR (__sem == sem_sc && __scope == scope_cta) {
         asm volatile("fence.sc.cta; // 1." : : : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__sem == sem_sc && __scope == scope_gpu) {
+      } else _CCCL_IF_CONSTEXPR (__sem == sem_sc && __scope == scope_gpu) {
         asm volatile("fence.sc.gpu; // 1." : : : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__sem == sem_sc && __scope == scope_sys) {
+      } else _CCCL_IF_CONSTEXPR (__sem == sem_sc && __scope == scope_sys) {
         asm volatile("fence.sc.sys; // 1." : : : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__sem == sem_acq_rel && __scope == scope_cta) {
+      } else _CCCL_IF_CONSTEXPR (__sem == sem_acq_rel && __scope == scope_cta) {
         asm volatile("fence.acq_rel.cta; // 1." : : : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__sem == sem_acq_rel && __scope == scope_gpu) {
+      } else _CCCL_IF_CONSTEXPR (__sem == sem_acq_rel && __scope == scope_gpu) {
         asm volatile("fence.acq_rel.gpu; // 1." : : : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__sem == sem_acq_rel && __scope == scope_sys) {
+      } else _CCCL_IF_CONSTEXPR (__sem == sem_acq_rel && __scope == scope_sys) {
         asm volatile("fence.acq_rel.sys; // 1." : : : "memory");
       }),
     (
@@ -57,7 +62,7 @@ _CCCL_DEVICE static inline void fence(sem_t<_Sem> __sem, scope_cluster_t)
     (
       _CCCL_IF_CONSTEXPR (__sem == sem_sc) {
         asm volatile("fence.sc.cluster; // 2." : : : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__sem == sem_acq_rel) {
+      } else _CCCL_IF_CONSTEXPR (__sem == sem_acq_rel) {
         asm volatile("fence.acq_rel.cluster; // 2." : : : "memory");
       }),
     (
@@ -65,3 +70,5 @@ _CCCL_DEVICE static inline void fence(sem_t<_Sem> __sem, scope_cluster_t)
       __cuda_ptx_fence_is_not_supported_before_SM_90__();));
 }
 #endif // __cccl_ptx_isa >= 780
+
+#endif // _CUDA_PTX_GENERATED_FENCE_H_

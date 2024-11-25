@@ -1,9 +1,14 @@
+// This file was automatically generated. Do not edit.
+
+#ifndef _CUDA_PTX_GENERATED_RED_ASYNC_H_
+#define _CUDA_PTX_GENERATED_RED_ASYNC_H_
+
 /*
 // red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  //
 PTX ISA 81, SM_90
 // .type      = { .u32 }
 // .op        = { .inc }
-template <typename=void>
+template <typename = void>
 __device__ static inline void red_async(
   cuda::ptx::op_inc_t,
   uint32_t* dest,
@@ -35,7 +40,7 @@ _CCCL_DEVICE static inline void red_async(
 PTX ISA 81, SM_90
 // .type      = { .u32 }
 // .op        = { .dec }
-template <typename=void>
+template <typename = void>
 __device__ static inline void red_async(
   cuda::ptx::op_dec_t,
   uint32_t* dest,
@@ -67,7 +72,7 @@ _CCCL_DEVICE static inline void red_async(
 PTX ISA 81, SM_90
 // .type      = { .u32 }
 // .op        = { .min }
-template <typename=void>
+template <typename = void>
 __device__ static inline void red_async(
   cuda::ptx::op_min_t,
   uint32_t* dest,
@@ -99,7 +104,7 @@ _CCCL_DEVICE static inline void red_async(
 PTX ISA 81, SM_90
 // .type      = { .u32 }
 // .op        = { .max }
-template <typename=void>
+template <typename = void>
 __device__ static inline void red_async(
   cuda::ptx::op_max_t,
   uint32_t* dest,
@@ -131,7 +136,7 @@ _CCCL_DEVICE static inline void red_async(
 PTX ISA 81, SM_90
 // .type      = { .u32 }
 // .op        = { .add }
-template <typename=void>
+template <typename = void>
 __device__ static inline void red_async(
   cuda::ptx::op_add_t,
   uint32_t* dest,
@@ -163,7 +168,7 @@ _CCCL_DEVICE static inline void red_async(
 PTX ISA 81, SM_90
 // .type      = { .s32 }
 // .op        = { .min }
-template <typename=void>
+template <typename = void>
 __device__ static inline void red_async(
   cuda::ptx::op_min_t,
   int32_t* dest,
@@ -195,7 +200,7 @@ red_async(op_min_t, _CUDA_VSTD::int32_t* __dest, const _CUDA_VSTD::int32_t& __va
 PTX ISA 81, SM_90
 // .type      = { .s32 }
 // .op        = { .max }
-template <typename=void>
+template <typename = void>
 __device__ static inline void red_async(
   cuda::ptx::op_max_t,
   int32_t* dest,
@@ -227,7 +232,7 @@ red_async(op_max_t, _CUDA_VSTD::int32_t* __dest, const _CUDA_VSTD::int32_t& __va
 PTX ISA 81, SM_90
 // .type      = { .s32 }
 // .op        = { .add }
-template <typename=void>
+template <typename = void>
 __device__ static inline void red_async(
   cuda::ptx::op_add_t,
   int32_t* dest,
@@ -358,7 +363,7 @@ red_async(op_xor_op_t, _B32* __dest, const _B32& __value, _CUDA_VSTD::uint64_t* 
 PTX ISA 81, SM_90
 // .type      = { .u64 }
 // .op        = { .add }
-template <typename=void>
+template <typename = void>
 __device__ static inline void red_async(
   cuda::ptx::op_add_t,
   uint64_t* dest,
@@ -389,7 +394,7 @@ _CCCL_DEVICE static inline void red_async(
 // red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.u64  [dest], value, [remote_bar]; // .u64
 intentional PTX ISA 81, SM_90
 // .op        = { .add }
-template <typename=void>
+template <typename = void>
 __device__ static inline void red_async(
   cuda::ptx::op_add_t,
   int64_t* dest,
@@ -415,3 +420,5 @@ red_async(op_add_t, _CUDA_VSTD::int64_t* __dest, const _CUDA_VSTD::int64_t& __va
       __cuda_ptx_red_async_is_not_supported_before_SM_90__();));
 }
 #endif // __cccl_ptx_isa >= 810
+
+#endif // _CUDA_PTX_GENERATED_RED_ASYNC_H_

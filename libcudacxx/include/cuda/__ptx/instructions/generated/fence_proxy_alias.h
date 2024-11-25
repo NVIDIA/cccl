@@ -1,6 +1,11 @@
+// This file was automatically generated. Do not edit.
+
+#ifndef _CUDA_PTX_GENERATED_FENCE_PROXY_ALIAS_H_
+#define _CUDA_PTX_GENERATED_FENCE_PROXY_ALIAS_H_
+
 /*
 // fence.proxy.alias; // 4. PTX ISA 75, SM_70
-template <typename=void>
+template <typename = void>
 __device__ static inline void fence_proxy_alias();
 */
 #if __cccl_ptx_isa >= 750
@@ -19,3 +24,5 @@ _CCCL_DEVICE static inline void fence_proxy_alias()
       __cuda_ptx_fence_proxy_alias_is_not_supported_before_SM_70__();));
 }
 #endif // __cccl_ptx_isa >= 750
+
+#endif // _CUDA_PTX_GENERATED_FENCE_PROXY_ALIAS_H_

@@ -1,6 +1,11 @@
+// This file was automatically generated. Do not edit.
+
+#ifndef _CUDA_PTX_GENERATED_MBARRIER_TEST_WAIT_PARITY_H_
+#define _CUDA_PTX_GENERATED_MBARRIER_TEST_WAIT_PARITY_H_
+
 /*
 // mbarrier.test_wait.parity.shared.b64 waitComplete, [addr], phaseParity;                                     // 3. PTX
-ISA 71, SM_80 template <typename=void>
+ISA 71, SM_80 template <typename = void>
 __device__ static inline bool mbarrier_test_wait_parity(
   uint64_t* addr,
   const uint32_t& phaseParity);
@@ -59,7 +64,7 @@ _CCCL_DEVICE static inline bool mbarrier_test_wait_parity(
             : "=r"(__waitComplete)
             : "r"(__as_ptr_smem(__addr)), "r"(__phaseParity)
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_cluster) {
+      } else _CCCL_IF_CONSTEXPR (__scope == scope_cluster) {
         asm("{\n\t .reg .pred P_OUT; \n\t"
             "mbarrier.test_wait.parity.acquire.cluster.shared::cta.b64 P_OUT, [%1], %2;                  // 4. \n\t"
             "selp.b32 %0, 1, 0, P_OUT; \n"
@@ -73,3 +78,5 @@ _CCCL_DEVICE static inline bool mbarrier_test_wait_parity(
       __cuda_ptx_mbarrier_test_wait_parity_is_not_supported_before_SM_90__(); return false;));
 }
 #endif // __cccl_ptx_isa >= 800
+
+#endif // _CUDA_PTX_GENERATED_MBARRIER_TEST_WAIT_PARITY_H_

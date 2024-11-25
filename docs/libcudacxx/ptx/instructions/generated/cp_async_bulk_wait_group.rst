@@ -1,3 +1,6 @@
+..
+   This file was automatically generated. Do not edit.
+
 cp.async.bulk.wait_group
 ^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda

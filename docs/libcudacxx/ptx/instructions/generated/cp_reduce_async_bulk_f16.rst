@@ -1,3 +1,6 @@
+..
+   This file was automatically generated. Do not edit.
+
 cp.reduce.async.bulk.global.shared::cta.bulk_group.min.f16
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
@@ -7,7 +10,7 @@ cp.reduce.async.bulk.global.shared::cta.bulk_group.min.f16
    // .src       = { .shared::cta }
    // .type      = { .f16 }
    // .op        = { .min }
-   template <typename=void>
+   template <typename = void>
    __device__ static inline void cp_reduce_async_bulk(
      cuda::ptx::space_global_t,
      cuda::ptx::space_shared_t,
@@ -25,7 +28,7 @@ cp.reduce.async.bulk.global.shared::cta.bulk_group.max.f16
    // .src       = { .shared::cta }
    // .type      = { .f16 }
    // .op        = { .max }
-   template <typename=void>
+   template <typename = void>
    __device__ static inline void cp_reduce_async_bulk(
      cuda::ptx::space_global_t,
      cuda::ptx::space_shared_t,
@@ -43,7 +46,7 @@ cp.reduce.async.bulk.global.shared::cta.bulk_group.add.noftz.f16
    // .src       = { .shared::cta }
    // .type      = { .f16 }
    // .op        = { .add }
-   template <typename=void>
+   template <typename = void>
    __device__ static inline void cp_reduce_async_bulk(
      cuda::ptx::space_global_t,
      cuda::ptx::space_shared_t,
