@@ -154,7 +154,6 @@ using __atomic_cuda_deduce_minmax = _If<
                     __type_case<size_t, 4, __atomic_cuda_operand_deduction<int32_t, __atomic_cuda_operand_s32>>,
                     __type_default<__atomic_cuda_operand_deduction<int64_t, __atomic_cuda_operand_s64>>>, // atom.min|max.s64
                                                                                                           // supported
-
       __type_switch<size_t,
                     sizeof(_Type),
                     __type_case<size_t, 1, __atomic_cuda_operand_deduction<uint8_t, __atomic_cuda_operand_u8>>,
