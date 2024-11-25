@@ -204,9 +204,9 @@ struct THRUST_DEPRECATED binary_function
 template <typename T = void>
 struct plus : public ::cuda::std::plus<T>
 {
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+  using first_argument_type THRUST_DEPRECATED_TYPE_ALIAS  = T;
+  using second_argument_type THRUST_DEPRECATED_TYPE_ALIAS = T;
+  using result_type THRUST_DEPRECATED_TYPE_ALIAS          = T;
 }; // end plus
 
 /*! \p minus is a function object. Specifically, it is an Adaptable Binary Function.
@@ -246,9 +246,9 @@ struct plus : public ::cuda::std::plus<T>
 template <typename T = void>
 struct minus : public ::cuda::std::minus<T>
 {
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+  using first_argument_type THRUST_DEPRECATED_TYPE_ALIAS  = T;
+  using second_argument_type THRUST_DEPRECATED_TYPE_ALIAS = T;
+  using result_type THRUST_DEPRECATED_TYPE_ALIAS          = T;
 }; // end minus
 
 /*! \p multiplies is a function object. Specifically, it is an Adaptable Binary Function.
@@ -288,9 +288,9 @@ struct minus : public ::cuda::std::minus<T>
 template <typename T = void>
 struct multiplies : public ::cuda::std::multiplies<T>
 {
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+  using first_argument_type THRUST_DEPRECATED_TYPE_ALIAS  = T;
+  using second_argument_type THRUST_DEPRECATED_TYPE_ALIAS = T;
+  using result_type THRUST_DEPRECATED_TYPE_ALIAS          = T;
 }; // end multiplies
 
 /*! \p divides is a function object. Specifically, it is an Adaptable Binary Function.
@@ -330,9 +330,9 @@ struct multiplies : public ::cuda::std::multiplies<T>
 template <typename T = void>
 struct divides : public ::cuda::std::divides<T>
 {
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+  using first_argument_type THRUST_DEPRECATED_TYPE_ALIAS  = T;
+  using second_argument_type THRUST_DEPRECATED_TYPE_ALIAS = T;
+  using result_type THRUST_DEPRECATED_TYPE_ALIAS          = T;
 }; // end divides
 
 /*! \p modulus is a function object. Specifically, it is an Adaptable Binary Function.
@@ -372,9 +372,9 @@ struct divides : public ::cuda::std::divides<T>
 template <typename T = void>
 struct modulus : public ::cuda::std::modulus<T>
 {
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+  using first_argument_type THRUST_DEPRECATED_TYPE_ALIAS  = T;
+  using second_argument_type THRUST_DEPRECATED_TYPE_ALIAS = T;
+  using result_type THRUST_DEPRECATED_TYPE_ALIAS          = T;
 }; // end modulus
 
 /*! \p negate is a function object. Specifically, it is an Adaptable Unary Function.
@@ -411,8 +411,8 @@ struct modulus : public ::cuda::std::modulus<T>
 template <typename T = void>
 struct negate : ::cuda::std::negate<T>
 {
-  using argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11   = T;
+  using argument_type THRUST_DEPRECATED_TYPE_ALIAS = T;
+  using result_type THRUST_DEPRECATED_TYPE_ALIAS   = T;
 }; // end negate
 
 /*! \p square is a function object. Specifically, it is an Adaptable Unary Function.
@@ -448,8 +448,8 @@ struct negate : ::cuda::std::negate<T>
 template <typename T = void>
 struct square
 {
-  using argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11   = T;
+  using argument_type THRUST_DEPRECATED_TYPE_ALIAS = T;
+  using result_type THRUST_DEPRECATED_TYPE_ALIAS   = T;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE constexpr T operator()(const T& x) const
@@ -494,9 +494,9 @@ struct square<void>
 template <typename T = void>
 struct equal_to : public ::cuda::std::equal_to<T>
 {
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+  using first_argument_type THRUST_DEPRECATED_TYPE_ALIAS  = T;
+  using second_argument_type THRUST_DEPRECATED_TYPE_ALIAS = T;
+  using result_type THRUST_DEPRECATED_TYPE_ALIAS          = T;
 }; // end equal_to
 
 /*! \p not_equal_to is a function object. Specifically, it is an Adaptable Binary
@@ -514,9 +514,9 @@ struct equal_to : public ::cuda::std::equal_to<T>
 template <typename T = void>
 struct not_equal_to : public ::cuda::std::not_equal_to<T>
 {
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+  using first_argument_type THRUST_DEPRECATED_TYPE_ALIAS  = T;
+  using second_argument_type THRUST_DEPRECATED_TYPE_ALIAS = T;
+  using result_type THRUST_DEPRECATED_TYPE_ALIAS          = T;
 }; // end not_equal_to
 
 /*! \p greater is a function object. Specifically, it is an Adaptable Binary
@@ -534,9 +534,9 @@ struct not_equal_to : public ::cuda::std::not_equal_to<T>
 template <typename T = void>
 struct greater : public ::cuda::std::greater<T>
 {
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+  using first_argument_type THRUST_DEPRECATED_TYPE_ALIAS  = T;
+  using second_argument_type THRUST_DEPRECATED_TYPE_ALIAS = T;
+  using result_type THRUST_DEPRECATED_TYPE_ALIAS          = T;
 }; // end greater
 
 /*! \p less is a function object. Specifically, it is an Adaptable Binary
@@ -554,9 +554,9 @@ struct greater : public ::cuda::std::greater<T>
 template <typename T = void>
 struct less : public ::cuda::std::less<T>
 {
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+  using first_argument_type THRUST_DEPRECATED_TYPE_ALIAS  = T;
+  using second_argument_type THRUST_DEPRECATED_TYPE_ALIAS = T;
+  using result_type THRUST_DEPRECATED_TYPE_ALIAS          = T;
 }; // end less
 
 /*! \p greater_equal is a function object. Specifically, it is an Adaptable Binary
@@ -574,9 +574,9 @@ struct less : public ::cuda::std::less<T>
 template <typename T = void>
 struct greater_equal : public ::cuda::std::greater_equal<T>
 {
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+  using first_argument_type THRUST_DEPRECATED_TYPE_ALIAS  = T;
+  using second_argument_type THRUST_DEPRECATED_TYPE_ALIAS = T;
+  using result_type THRUST_DEPRECATED_TYPE_ALIAS          = T;
 }; // end greater_equal
 
 /*! \p less_equal is a function object. Specifically, it is an Adaptable Binary
@@ -594,9 +594,9 @@ struct greater_equal : public ::cuda::std::greater_equal<T>
 template <typename T = void>
 struct less_equal : public ::cuda::std::less_equal<T>
 {
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+  using first_argument_type THRUST_DEPRECATED_TYPE_ALIAS  = T;
+  using second_argument_type THRUST_DEPRECATED_TYPE_ALIAS = T;
+  using result_type THRUST_DEPRECATED_TYPE_ALIAS          = T;
 }; // end less_equal
 
 /*! \}
@@ -621,9 +621,9 @@ struct less_equal : public ::cuda::std::less_equal<T>
 template <typename T = void>
 struct logical_and : public ::cuda::std::logical_and<T>
 {
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+  using first_argument_type THRUST_DEPRECATED_TYPE_ALIAS  = T;
+  using second_argument_type THRUST_DEPRECATED_TYPE_ALIAS = T;
+  using result_type THRUST_DEPRECATED_TYPE_ALIAS          = T;
 }; // end logical_and
 
 /*! \p logical_or is a function object. Specifically, it is an Adaptable Binary Predicate,
@@ -640,9 +640,9 @@ struct logical_and : public ::cuda::std::logical_and<T>
 template <typename T = void>
 struct logical_or : public ::cuda::std::logical_or<T>
 {
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+  using first_argument_type THRUST_DEPRECATED_TYPE_ALIAS  = T;
+  using second_argument_type THRUST_DEPRECATED_TYPE_ALIAS = T;
+  using result_type THRUST_DEPRECATED_TYPE_ALIAS          = T;
 }; // end logical_or
 
 /*! \p logical_not is a function object. Specifically, it is an Adaptable Predicate,
@@ -673,9 +673,9 @@ struct logical_or : public ::cuda::std::logical_or<T>
 template <typename T = void>
 struct logical_not : public ::cuda::std::logical_not<T>
 {
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+  using first_argument_type THRUST_DEPRECATED_TYPE_ALIAS  = T;
+  using second_argument_type THRUST_DEPRECATED_TYPE_ALIAS = T;
+  using result_type THRUST_DEPRECATED_TYPE_ALIAS          = T;
 }; // end logical_not
 
 /*! \}
@@ -722,9 +722,9 @@ struct logical_not : public ::cuda::std::logical_not<T>
 template <typename T = void>
 struct bit_and : public ::cuda::std::bit_and<T>
 {
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+  using first_argument_type THRUST_DEPRECATED_TYPE_ALIAS  = T;
+  using second_argument_type THRUST_DEPRECATED_TYPE_ALIAS = T;
+  using result_type THRUST_DEPRECATED_TYPE_ALIAS          = T;
 }; // end bit_and
 
 /*! \p bit_or is a function object. Specifically, it is an Adaptable Binary Function.
@@ -763,9 +763,9 @@ struct bit_and : public ::cuda::std::bit_and<T>
 template <typename T = void>
 struct bit_or : public ::cuda::std::bit_or<T>
 {
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+  using first_argument_type THRUST_DEPRECATED_TYPE_ALIAS  = T;
+  using second_argument_type THRUST_DEPRECATED_TYPE_ALIAS = T;
+  using result_type THRUST_DEPRECATED_TYPE_ALIAS          = T;
 }; // end bit_or
 
 /*! \p bit_xor is a function object. Specifically, it is an Adaptable Binary Function.
@@ -804,9 +804,9 @@ struct bit_or : public ::cuda::std::bit_or<T>
 template <typename T = void>
 struct bit_xor : public ::cuda::std::bit_xor<T>
 {
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
+  using first_argument_type THRUST_DEPRECATED_TYPE_ALIAS  = T;
+  using second_argument_type THRUST_DEPRECATED_TYPE_ALIAS = T;
+  using result_type THRUST_DEPRECATED_TYPE_ALIAS          = T;
 }; // end bit_xor
 
 /*! \}
@@ -841,8 +841,8 @@ struct bit_xor : public ::cuda::std::bit_xor<T>
 template <typename T = void>
 struct identity
 {
-  using argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11   = T;
+  using argument_type THRUST_DEPRECATED_TYPE_ALIAS = T;
+  using result_type THRUST_DEPRECATED_TYPE_ALIAS   = T;
 
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE constexpr const T& operator()(const T& x) const
@@ -902,19 +902,19 @@ struct maximum : ::cuda::maximum<T>
    *  \brief The type of the function object's first argument.
    *  deprecated [Since 2.6]
    */
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
+  using first_argument_type THRUST_DEPRECATED_TYPE_ALIAS = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    *  deprecated [Since 2.6]
    */
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
+  using second_argument_type THRUST_DEPRECATED_TYPE_ALIAS = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    *  deprecated [Since 2.6]
    */
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
+  using result_type THRUST_DEPRECATED_TYPE_ALIAS = T;
 }; // end maximum
 
 /*! \p minimum is a function object that takes two arguments and returns the lesser
@@ -949,19 +949,19 @@ struct minimum : ::cuda::minimum<T>
    *  \brief The type of the function object's first argument.
    *  deprecated [Since 2.6]
    */
-  using first_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T;
+  using first_argument_type THRUST_DEPRECATED_TYPE_ALIAS = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    *  deprecated [Since 2.6]
    */
-  using second_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T;
+  using second_argument_type THRUST_DEPRECATED_TYPE_ALIAS = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    *  deprecated [Since 2.6]
    */
-  using result_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T;
+  using result_type THRUST_DEPRECATED_TYPE_ALIAS = T;
 }; // end minimum
 
 /*! \p project1st is a function object that takes two arguments and returns
@@ -989,19 +989,19 @@ struct project1st
    *  \brief The type of the function object's first argument.
    *  deprecated [Since 2.6]
    */
-  using first_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T1;
+  using first_argument_type THRUST_DEPRECATED_TYPE_ALIAS = T1;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    *  deprecated [Since 2.6]
    */
-  using second_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T2;
+  using second_argument_type THRUST_DEPRECATED_TYPE_ALIAS = T2;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    *  deprecated [Since 2.6]
    */
-  using result_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T1;
+  using result_type THRUST_DEPRECATED_TYPE_ALIAS = T1;
 
   /*! Function call operator. The return value is <tt>lhs</tt>.
    */
@@ -1049,19 +1049,19 @@ struct project2nd
    *  \brief The type of the function object's first argument.
    *  deprecated [Since 2.6]
    */
-  using first_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T1;
+  using first_argument_type THRUST_DEPRECATED_TYPE_ALIAS = T1;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    *  deprecated [Since 2.6]
    */
-  using second_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T2;
+  using second_argument_type THRUST_DEPRECATED_TYPE_ALIAS = T2;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    *  deprecated [Since 2.6]
    */
-  using result_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T2;
+  using result_type THRUST_DEPRECATED_TYPE_ALIAS = T2;
 
   /*! Function call operator. The return value is <tt>rhs</tt>.
    */
