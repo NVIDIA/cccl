@@ -32,7 +32,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
 // 9.7.8.24.12. Data Movement and Conversion Instructions: cp.async.bulk.commit_group
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-async-bulk-commit-group
-#include <cuda/__ptx/instructions/generated/cp_async_bulk_commit_group.inc>
+#include <cuda/__ptx/instructions/generated/cp_async_bulk_commit_group.h>
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
 

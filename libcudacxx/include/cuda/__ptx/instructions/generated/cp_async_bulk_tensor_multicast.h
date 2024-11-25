@@ -1,9 +1,14 @@
+// This file was automatically generated. Do not edit.
+
+#ifndef _CUDA_PTX_GENERATED_CP_ASYNC_BULK_TENSOR_MULTICAST_H_
+#define _CUDA_PTX_GENERATED_CP_ASYNC_BULK_TENSOR_MULTICAST_H_
+
 /*
 // cp.async.bulk.tensor.1d.dst.src.tile.mbarrier::complete_tx::bytes.multicast::cluster [dstMem], [tensorMap,
 tensorCoords], [smem_bar], ctaMask; // 2a. PTX ISA 80, SM_90a
 // .dst       = { .shared::cluster }
 // .src       = { .global }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_async_bulk_tensor(
   cuda::ptx::space_cluster_t,
   cuda::ptx::space_global_t,
@@ -49,7 +54,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
 tensorCoords], [smem_bar], ctaMask; // 2b. PTX ISA 80, SM_90a
 // .dst       = { .shared::cluster }
 // .src       = { .global }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_async_bulk_tensor(
   cuda::ptx::space_cluster_t,
   cuda::ptx::space_global_t,
@@ -96,7 +101,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
 tensorCoords], [smem_bar], ctaMask; // 2c. PTX ISA 80, SM_90a
 // .dst       = { .shared::cluster }
 // .src       = { .global }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_async_bulk_tensor(
   cuda::ptx::space_cluster_t,
   cuda::ptx::space_global_t,
@@ -144,7 +149,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
 tensorCoords], [smem_bar], ctaMask; // 2d. PTX ISA 80, SM_90a
 // .dst       = { .shared::cluster }
 // .src       = { .global }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_async_bulk_tensor(
   cuda::ptx::space_cluster_t,
   cuda::ptx::space_global_t,
@@ -193,7 +198,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
 tensorCoords], [smem_bar], ctaMask; // 2e. PTX ISA 80, SM_90a
 // .dst       = { .shared::cluster }
 // .src       = { .global }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_async_bulk_tensor(
   cuda::ptx::space_cluster_t,
   cuda::ptx::space_global_t,
@@ -237,3 +242,5 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
       __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90a__();));
 }
 #endif // __cccl_ptx_isa >= 800
+
+#endif // _CUDA_PTX_GENERATED_CP_ASYNC_BULK_TENSOR_MULTICAST_H_

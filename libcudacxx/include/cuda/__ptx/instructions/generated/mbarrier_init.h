@@ -1,6 +1,11 @@
+// This file was automatically generated. Do not edit.
+
+#ifndef _CUDA_PTX_GENERATED_MBARRIER_INIT_H_
+#define _CUDA_PTX_GENERATED_MBARRIER_INIT_H_
+
 /*
 // mbarrier.init.shared.b64 [addr], count; // PTX ISA 70, SM_80
-template <typename=void>
+template <typename = void>
 __device__ static inline void mbarrier_init(
   uint64_t* addr,
   const uint32_t& count);
@@ -21,3 +26,5 @@ _CCCL_DEVICE static inline void mbarrier_init(_CUDA_VSTD::uint64_t* __addr, cons
       __cuda_ptx_mbarrier_init_is_not_supported_before_SM_80__();));
 }
 #endif // __cccl_ptx_isa >= 700
+
+#endif // _CUDA_PTX_GENERATED_MBARRIER_INIT_H_

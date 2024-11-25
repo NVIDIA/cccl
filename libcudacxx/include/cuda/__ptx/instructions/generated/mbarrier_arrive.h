@@ -1,6 +1,11 @@
+// This file was automatically generated. Do not edit.
+
+#ifndef _CUDA_PTX_GENERATED_MBARRIER_ARRIVE_H_
+#define _CUDA_PTX_GENERATED_MBARRIER_ARRIVE_H_
+
 /*
 // mbarrier.arrive.shared.b64                                  state,  [addr];           // 1.  PTX ISA 70, SM_80
-template <typename=void>
+template <typename = void>
 __device__ static inline uint64_t mbarrier_arrive(
   uint64_t* addr);
 */
@@ -25,7 +30,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(_CUDA_VSTD::uint
 
 /*
 // mbarrier.arrive.shared::cta.b64                             state,  [addr], count;    // 2.  PTX ISA 78, SM_90
-template <typename=void>
+template <typename = void>
 __device__ static inline uint64_t mbarrier_arrive(
   uint64_t* addr,
   const uint32_t& count);
@@ -79,7 +84,7 @@ mbarrier_arrive(sem_release_t, scope_t<_Scope> __scope, space_shared_t, _CUDA_VS
             : "=l"(__state)
             : "r"(__as_ptr_smem(__addr))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_cluster) {
+      } else _CCCL_IF_CONSTEXPR (__scope == scope_cluster) {
         asm("mbarrier.arrive.release.cluster.shared::cta.b64                   %0,  [%1];           // 3a. "
             : "=l"(__state)
             : "r"(__as_ptr_smem(__addr))
@@ -125,7 +130,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(
             : "=l"(__state)
             : "r"(__as_ptr_smem(__addr)), "r"(__count)
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_cluster) {
+      } else _CCCL_IF_CONSTEXPR (__scope == scope_cluster) {
         asm("mbarrier.arrive.release.cluster.shared::cta.b64                   %0,  [%1], %2;    // 3b. "
             : "=l"(__state)
             : "r"(__as_ptr_smem(__addr)), "r"(__count)
@@ -142,7 +147,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(
 // .sem       = { .release }
 // .scope     = { .cluster }
 // .space     = { .shared::cluster }
-template <typename=void>
+template <typename = void>
 __device__ static inline void mbarrier_arrive(
   cuda::ptx::sem_release_t,
   cuda::ptx::scope_cluster_t,
@@ -175,7 +180,7 @@ mbarrier_arrive(sem_release_t, scope_cluster_t, space_cluster_t, _CUDA_VSTD::uin
 // .sem       = { .release }
 // .scope     = { .cluster }
 // .space     = { .shared::cluster }
-template <typename=void>
+template <typename = void>
 __device__ static inline void mbarrier_arrive(
   cuda::ptx::sem_release_t,
   cuda::ptx::scope_cluster_t,
@@ -203,3 +208,5 @@ _CCCL_DEVICE static inline void mbarrier_arrive(
       __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();));
 }
 #endif // __cccl_ptx_isa >= 800
+
+#endif // _CUDA_PTX_GENERATED_MBARRIER_ARRIVE_H_

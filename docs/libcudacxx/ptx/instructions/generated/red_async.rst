@@ -1,3 +1,6 @@
+..
+   This file was automatically generated. Do not edit.
+
 red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.inc.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
@@ -5,7 +8,7 @@ red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.inc.u32
    // red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
    // .type      = { .u32 }
    // .op        = { .inc }
-   template <typename=void>
+   template <typename = void>
    __device__ static inline void red_async(
      cuda::ptx::op_inc_t,
      uint32_t* dest,
@@ -19,7 +22,7 @@ red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.dec.u32
    // red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
    // .type      = { .u32 }
    // .op        = { .dec }
-   template <typename=void>
+   template <typename = void>
    __device__ static inline void red_async(
      cuda::ptx::op_dec_t,
      uint32_t* dest,
@@ -33,7 +36,7 @@ red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.min.u32
    // red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
    // .type      = { .u32 }
    // .op        = { .min }
-   template <typename=void>
+   template <typename = void>
    __device__ static inline void red_async(
      cuda::ptx::op_min_t,
      uint32_t* dest,
@@ -47,7 +50,7 @@ red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.max.u32
    // red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
    // .type      = { .u32 }
    // .op        = { .max }
-   template <typename=void>
+   template <typename = void>
    __device__ static inline void red_async(
      cuda::ptx::op_max_t,
      uint32_t* dest,
@@ -61,7 +64,7 @@ red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.u32
    // red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
    // .type      = { .u32 }
    // .op        = { .add }
-   template <typename=void>
+   template <typename = void>
    __device__ static inline void red_async(
      cuda::ptx::op_add_t,
      uint32_t* dest,
@@ -75,7 +78,7 @@ red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.min.s32
    // red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
    // .type      = { .s32 }
    // .op        = { .min }
-   template <typename=void>
+   template <typename = void>
    __device__ static inline void red_async(
      cuda::ptx::op_min_t,
      int32_t* dest,
@@ -89,7 +92,7 @@ red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.max.s32
    // red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
    // .type      = { .s32 }
    // .op        = { .max }
-   template <typename=void>
+   template <typename = void>
    __device__ static inline void red_async(
      cuda::ptx::op_max_t,
      int32_t* dest,
@@ -103,7 +106,7 @@ red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.s32
    // red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
    // .type      = { .s32 }
    // .op        = { .add }
-   template <typename=void>
+   template <typename = void>
    __device__ static inline void red_async(
      cuda::ptx::op_add_t,
      int32_t* dest,
@@ -159,7 +162,7 @@ red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.u64
    // red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}{.type}  [dest], value, [remote_bar];  // PTX ISA 81, SM_90
    // .type      = { .u64 }
    // .op        = { .add }
-   template <typename=void>
+   template <typename = void>
    __device__ static inline void red_async(
      cuda::ptx::op_add_t,
      uint64_t* dest,
@@ -172,7 +175,7 @@ red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.add.u64
 
    // red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes{.op}.u64  [dest], value, [remote_bar]; // .u64 intentional PTX ISA 81, SM_90
    // .op        = { .add }
-   template <typename=void>
+   template <typename = void>
    __device__ static inline void red_async(
      cuda::ptx::op_add_t,
      int64_t* dest,

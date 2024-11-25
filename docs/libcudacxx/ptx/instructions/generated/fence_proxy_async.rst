@@ -1,9 +1,12 @@
+..
+   This file was automatically generated. Do not edit.
+
 fence.proxy.async
 ^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
    // fence.proxy.async; // 5. PTX ISA 80, SM_90
-   template <typename=void>
+   template <typename = void>
    __device__ static inline void fence_proxy_async();
 
 fence.proxy.async.global

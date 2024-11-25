@@ -1,9 +1,12 @@
+..
+   This file was automatically generated. Do not edit.
+
 mbarrier.test_wait.shared.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
 
    // mbarrier.test_wait.shared.b64 waitComplete, [addr], state;                                                  // 1.  PTX ISA 70, SM_80
-   template <typename=void>
+   template <typename = void>
    __device__ static inline bool mbarrier_test_wait(
      uint64_t* addr,
      const uint64_t& state);

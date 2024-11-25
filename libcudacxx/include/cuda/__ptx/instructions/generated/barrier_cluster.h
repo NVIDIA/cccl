@@ -1,7 +1,12 @@
+// This file was automatically generated. Do not edit.
+
+#ifndef _CUDA_PTX_GENERATED_BARRIER_CLUSTER_H_
+#define _CUDA_PTX_GENERATED_BARRIER_CLUSTER_H_
+
 /*
 // barrier.cluster.arrive; // PTX ISA 78, SM_90
 // Marked volatile and as clobbering memory
-template <typename=void>
+template <typename = void>
 __device__ static inline void barrier_cluster_arrive();
 */
 #if __cccl_ptx_isa >= 780
@@ -24,7 +29,7 @@ _CCCL_DEVICE static inline void barrier_cluster_arrive()
 /*
 // barrier.cluster.wait; // PTX ISA 78, SM_90
 // Marked volatile and as clobbering memory
-template <typename=void>
+template <typename = void>
 __device__ static inline void barrier_cluster_wait();
 */
 #if __cccl_ptx_isa >= 780
@@ -48,7 +53,7 @@ _CCCL_DEVICE static inline void barrier_cluster_wait()
 // barrier.cluster.arrive.sem; // PTX ISA 80, SM_90
 // .sem       = { .release }
 // Marked volatile and as clobbering memory
-template <typename=void>
+template <typename = void>
 __device__ static inline void barrier_cluster_arrive(
   cuda::ptx::sem_release_t);
 */
@@ -74,7 +79,7 @@ _CCCL_DEVICE static inline void barrier_cluster_arrive(sem_release_t)
 // barrier.cluster.arrive.sem; // PTX ISA 80, SM_90
 // .sem       = { .relaxed }
 // Marked volatile
-template <typename=void>
+template <typename = void>
 __device__ static inline void barrier_cluster_arrive(
   cuda::ptx::sem_relaxed_t);
 */
@@ -100,7 +105,7 @@ _CCCL_DEVICE static inline void barrier_cluster_arrive(sem_relaxed_t)
 // barrier.cluster.wait.sem; // PTX ISA 80, SM_90
 // .sem       = { .acquire }
 // Marked volatile and as clobbering memory
-template <typename=void>
+template <typename = void>
 __device__ static inline void barrier_cluster_wait(
   cuda::ptx::sem_acquire_t);
 */
@@ -121,3 +126,5 @@ _CCCL_DEVICE static inline void barrier_cluster_wait(sem_acquire_t)
       __cuda_ptx_barrier_cluster_wait_is_not_supported_before_SM_90__();));
 }
 #endif // __cccl_ptx_isa >= 800
+
+#endif // _CUDA_PTX_GENERATED_BARRIER_CLUSTER_H_

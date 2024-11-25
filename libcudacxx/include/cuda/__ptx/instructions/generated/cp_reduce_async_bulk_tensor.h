@@ -1,3 +1,8 @@
+// This file was automatically generated. Do not edit.
+
+#ifndef _CUDA_PTX_GENERATED_CP_REDUCE_ASYNC_BULK_TENSOR_H_
+#define _CUDA_PTX_GENERATED_CP_REDUCE_ASYNC_BULK_TENSOR_H_
+
 /*
 // cp.reduce.async.bulk.tensor.1d.dst.src.op.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 1a. PTX ISA 80,
 SM_90
@@ -37,37 +42,37 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
             :
             : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_min) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_min) {
         asm("cp.reduce.async.bulk.tensor.1d.global.shared::cta.min.tile.bulk_group [%0, {%1}], [%2]; // 1a."
             :
             : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_max) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_max) {
         asm("cp.reduce.async.bulk.tensor.1d.global.shared::cta.max.tile.bulk_group [%0, {%1}], [%2]; // 1a."
             :
             : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_inc) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_inc) {
         asm("cp.reduce.async.bulk.tensor.1d.global.shared::cta.inc.tile.bulk_group [%0, {%1}], [%2]; // 1a."
             :
             : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_dec) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_dec) {
         asm("cp.reduce.async.bulk.tensor.1d.global.shared::cta.dec.tile.bulk_group [%0, {%1}], [%2]; // 1a."
             :
             : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_and_op) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_and_op) {
         asm("cp.reduce.async.bulk.tensor.1d.global.shared::cta.and.tile.bulk_group [%0, {%1}], [%2]; // 1a."
             :
             : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_or_op) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_or_op) {
         asm("cp.reduce.async.bulk.tensor.1d.global.shared::cta.or.tile.bulk_group [%0, {%1}], [%2]; // 1a."
             :
             : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_xor_op) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_xor_op) {
         asm("cp.reduce.async.bulk.tensor.1d.global.shared::cta.xor.tile.bulk_group [%0, {%1}], [%2]; // 1a."
             :
             : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__as_ptr_smem(__srcMem))
@@ -118,37 +123,37 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
             :
             : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_min) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_min) {
         asm("cp.reduce.async.bulk.tensor.2d.global.shared::cta.min.tile.bulk_group [%0, {%1, %2}], [%3]; // 1b."
             :
             : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_max) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_max) {
         asm("cp.reduce.async.bulk.tensor.2d.global.shared::cta.max.tile.bulk_group [%0, {%1, %2}], [%3]; // 1b."
             :
             : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_inc) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_inc) {
         asm("cp.reduce.async.bulk.tensor.2d.global.shared::cta.inc.tile.bulk_group [%0, {%1, %2}], [%3]; // 1b."
             :
             : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_dec) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_dec) {
         asm("cp.reduce.async.bulk.tensor.2d.global.shared::cta.dec.tile.bulk_group [%0, {%1, %2}], [%3]; // 1b."
             :
             : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_and_op) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_and_op) {
         asm("cp.reduce.async.bulk.tensor.2d.global.shared::cta.and.tile.bulk_group [%0, {%1, %2}], [%3]; // 1b."
             :
             : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_or_op) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_or_op) {
         asm("cp.reduce.async.bulk.tensor.2d.global.shared::cta.or.tile.bulk_group [%0, {%1, %2}], [%3]; // 1b."
             :
             : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_xor_op) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_xor_op) {
         asm("cp.reduce.async.bulk.tensor.2d.global.shared::cta.xor.tile.bulk_group [%0, {%1, %2}], [%3]; // 1b."
             :
             : "l"(__tensorMap), "r"(__tensorCoords[0]), "r"(__tensorCoords[1]), "r"(__as_ptr_smem(__srcMem))
@@ -203,7 +208,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
               "r"(__tensorCoords[2]),
               "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_min) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_min) {
         asm("cp.reduce.async.bulk.tensor.3d.global.shared::cta.min.tile.bulk_group [%0, {%1, %2, %3}], [%4]; // 1c."
             :
             : "l"(__tensorMap),
@@ -212,7 +217,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
               "r"(__tensorCoords[2]),
               "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_max) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_max) {
         asm("cp.reduce.async.bulk.tensor.3d.global.shared::cta.max.tile.bulk_group [%0, {%1, %2, %3}], [%4]; // 1c."
             :
             : "l"(__tensorMap),
@@ -221,7 +226,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
               "r"(__tensorCoords[2]),
               "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_inc) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_inc) {
         asm("cp.reduce.async.bulk.tensor.3d.global.shared::cta.inc.tile.bulk_group [%0, {%1, %2, %3}], [%4]; // 1c."
             :
             : "l"(__tensorMap),
@@ -230,7 +235,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
               "r"(__tensorCoords[2]),
               "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_dec) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_dec) {
         asm("cp.reduce.async.bulk.tensor.3d.global.shared::cta.dec.tile.bulk_group [%0, {%1, %2, %3}], [%4]; // 1c."
             :
             : "l"(__tensorMap),
@@ -239,7 +244,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
               "r"(__tensorCoords[2]),
               "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_and_op) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_and_op) {
         asm("cp.reduce.async.bulk.tensor.3d.global.shared::cta.and.tile.bulk_group [%0, {%1, %2, %3}], [%4]; // 1c."
             :
             : "l"(__tensorMap),
@@ -248,7 +253,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
               "r"(__tensorCoords[2]),
               "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_or_op) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_or_op) {
         asm("cp.reduce.async.bulk.tensor.3d.global.shared::cta.or.tile.bulk_group [%0, {%1, %2, %3}], [%4]; // 1c."
             :
             : "l"(__tensorMap),
@@ -257,7 +262,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
               "r"(__tensorCoords[2]),
               "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_xor_op) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_xor_op) {
         asm("cp.reduce.async.bulk.tensor.3d.global.shared::cta.xor.tile.bulk_group [%0, {%1, %2, %3}], [%4]; // 1c."
             :
             : "l"(__tensorMap),
@@ -317,7 +322,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
               "r"(__tensorCoords[3]),
               "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_min) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_min) {
         asm("cp.reduce.async.bulk.tensor.4d.global.shared::cta.min.tile.bulk_group [%0, {%1, %2, %3, %4}], [%5]; // 1d."
             :
             : "l"(__tensorMap),
@@ -327,7 +332,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
               "r"(__tensorCoords[3]),
               "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_max) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_max) {
         asm("cp.reduce.async.bulk.tensor.4d.global.shared::cta.max.tile.bulk_group [%0, {%1, %2, %3, %4}], [%5]; // 1d."
             :
             : "l"(__tensorMap),
@@ -337,7 +342,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
               "r"(__tensorCoords[3]),
               "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_inc) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_inc) {
         asm("cp.reduce.async.bulk.tensor.4d.global.shared::cta.inc.tile.bulk_group [%0, {%1, %2, %3, %4}], [%5]; // 1d."
             :
             : "l"(__tensorMap),
@@ -347,7 +352,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
               "r"(__tensorCoords[3]),
               "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_dec) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_dec) {
         asm("cp.reduce.async.bulk.tensor.4d.global.shared::cta.dec.tile.bulk_group [%0, {%1, %2, %3, %4}], [%5]; // 1d."
             :
             : "l"(__tensorMap),
@@ -357,7 +362,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
               "r"(__tensorCoords[3]),
               "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_and_op) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_and_op) {
         asm("cp.reduce.async.bulk.tensor.4d.global.shared::cta.and.tile.bulk_group [%0, {%1, %2, %3, %4}], [%5]; // 1d."
             :
             : "l"(__tensorMap),
@@ -367,7 +372,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
               "r"(__tensorCoords[3]),
               "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_or_op) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_or_op) {
         asm("cp.reduce.async.bulk.tensor.4d.global.shared::cta.or.tile.bulk_group [%0, {%1, %2, %3, %4}], [%5]; // 1d."
             :
             : "l"(__tensorMap),
@@ -377,7 +382,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
               "r"(__tensorCoords[3]),
               "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_xor_op) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_xor_op) {
         asm("cp.reduce.async.bulk.tensor.4d.global.shared::cta.xor.tile.bulk_group [%0, {%1, %2, %3, %4}], [%5]; // 1d."
             :
             : "l"(__tensorMap),
@@ -440,7 +445,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
               "r"(__tensorCoords[4]),
               "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_min) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_min) {
         asm("cp.reduce.async.bulk.tensor.5d.global.shared::cta.min.tile.bulk_group [%0, {%1, %2, %3, %4, %5}], [%6]; "
             "// 1e."
             :
@@ -452,7 +457,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
               "r"(__tensorCoords[4]),
               "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_max) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_max) {
         asm("cp.reduce.async.bulk.tensor.5d.global.shared::cta.max.tile.bulk_group [%0, {%1, %2, %3, %4, %5}], [%6]; "
             "// 1e."
             :
@@ -464,7 +469,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
               "r"(__tensorCoords[4]),
               "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_inc) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_inc) {
         asm("cp.reduce.async.bulk.tensor.5d.global.shared::cta.inc.tile.bulk_group [%0, {%1, %2, %3, %4, %5}], [%6]; "
             "// 1e."
             :
@@ -476,7 +481,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
               "r"(__tensorCoords[4]),
               "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_dec) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_dec) {
         asm("cp.reduce.async.bulk.tensor.5d.global.shared::cta.dec.tile.bulk_group [%0, {%1, %2, %3, %4, %5}], [%6]; "
             "// 1e."
             :
@@ -488,7 +493,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
               "r"(__tensorCoords[4]),
               "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_and_op) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_and_op) {
         asm("cp.reduce.async.bulk.tensor.5d.global.shared::cta.and.tile.bulk_group [%0, {%1, %2, %3, %4, %5}], [%6]; "
             "// 1e."
             :
@@ -500,7 +505,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
               "r"(__tensorCoords[4]),
               "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_or_op) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_or_op) {
         asm("cp.reduce.async.bulk.tensor.5d.global.shared::cta.or.tile.bulk_group [%0, {%1, %2, %3, %4, %5}], [%6]; // "
             "1e."
             :
@@ -512,7 +517,7 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
               "r"(__tensorCoords[4]),
               "r"(__as_ptr_smem(__srcMem))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__op == op_xor_op) {
+      } else _CCCL_IF_CONSTEXPR (__op == op_xor_op) {
         asm("cp.reduce.async.bulk.tensor.5d.global.shared::cta.xor.tile.bulk_group [%0, {%1, %2, %3, %4, %5}], [%6]; "
             "// 1e."
             :
@@ -530,3 +535,5 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk_tensor(
       __cuda_ptx_cp_reduce_async_bulk_tensor_is_not_supported_before_SM_90__();));
 }
 #endif // __cccl_ptx_isa >= 800
+
+#endif // _CUDA_PTX_GENERATED_CP_REDUCE_ASYNC_BULK_TENSOR_H_
