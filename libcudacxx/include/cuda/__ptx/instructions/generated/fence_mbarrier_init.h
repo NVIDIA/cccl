@@ -1,8 +1,11 @@
+#ifndef _CUDA_PTX_GENERATED_FENCE_MBARRIER_INIT_H_
+#define _CUDA_PTX_GENERATED_FENCE_MBARRIER_INIT_H_
+
 /*
 // fence.mbarrier_init.sem.scope; // 3. PTX ISA 80, SM_90
 // .sem       = { .release }
 // .scope     = { .cluster }
-template <typename=void>
+template <typename = void>
 __device__ static inline void fence_mbarrier_init(
   cuda::ptx::sem_release_t,
   cuda::ptx::scope_cluster_t);
@@ -25,3 +28,5 @@ _CCCL_DEVICE static inline void fence_mbarrier_init(sem_release_t, scope_cluster
       __cuda_ptx_fence_mbarrier_init_is_not_supported_before_SM_90__();));
 }
 #endif // __cccl_ptx_isa >= 800
+
+#endif // _CUDA_PTX_GENERATED_FENCE_MBARRIER_INIT_H_

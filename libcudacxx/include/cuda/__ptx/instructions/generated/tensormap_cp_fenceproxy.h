@@ -1,3 +1,6 @@
+#ifndef _CUDA_PTX_GENERATED_TENSORMAP_CP_FENCEPROXY_H_
+#define _CUDA_PTX_GENERATED_TENSORMAP_CP_FENCEPROXY_H_
+
 /*
 // tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.sem.scope.sync.aligned  [dst], [src], size; // PTX ISA
 83, SM_90
@@ -28,19 +31,19 @@ tensormap_cp_fenceproxy(sem_release_t, scope_t<_Scope> __scope, void* __dst, con
           :
           : "l"(__as_ptr_gmem(__dst)), "r"(__as_ptr_smem(__src)), "n"(__size.value)
           : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_cluster) {
+      } else _CCCL_IF_CONSTEXPR (__scope == scope_cluster) {
         asm volatile(
           "tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.cluster.sync.aligned  [%0], [%1], %2;"
           :
           : "l"(__as_ptr_gmem(__dst)), "r"(__as_ptr_smem(__src)), "n"(__size.value)
           : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_gpu) {
+      } else _CCCL_IF_CONSTEXPR (__scope == scope_gpu) {
         asm volatile(
           "tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.gpu.sync.aligned  [%0], [%1], %2;"
           :
           : "l"(__as_ptr_gmem(__dst)), "r"(__as_ptr_smem(__src)), "n"(__size.value)
           : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_sys) {
+      } else _CCCL_IF_CONSTEXPR (__scope == scope_sys) {
         asm volatile(
           "tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.sys.sync.aligned  [%0], [%1], %2;"
           :
@@ -52,3 +55,5 @@ tensormap_cp_fenceproxy(sem_release_t, scope_t<_Scope> __scope, void* __dst, con
       __cuda_ptx_tensormap_cp_fenceproxy_is_not_supported_before_SM_90__();));
 }
 #endif // __cccl_ptx_isa >= 830
+
+#endif // _CUDA_PTX_GENERATED_TENSORMAP_CP_FENCEPROXY_H_

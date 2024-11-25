@@ -1,6 +1,9 @@
+#ifndef _CUDA_PTX_GENERATED_MBARRIER_TRY_WAIT_H_
+#define _CUDA_PTX_GENERATED_MBARRIER_TRY_WAIT_H_
+
 /*
 // mbarrier.try_wait.shared::cta.b64         waitComplete, [addr], state;                                      // 5a.
-PTX ISA 78, SM_90 template <typename=void>
+PTX ISA 78, SM_90 template <typename = void>
 __device__ static inline bool mbarrier_try_wait(
   uint64_t* addr,
   const uint64_t& state);
@@ -29,7 +32,7 @@ _CCCL_DEVICE static inline bool mbarrier_try_wait(_CUDA_VSTD::uint64_t* __addr, 
 
 /*
 // mbarrier.try_wait.shared::cta.b64         waitComplete, [addr], state, suspendTimeHint;                    // 5b. PTX
-ISA 78, SM_90 template <typename=void>
+ISA 78, SM_90 template <typename = void>
 __device__ static inline bool mbarrier_try_wait(
   uint64_t* addr,
   const uint64_t& state,
@@ -89,7 +92,7 @@ _CCCL_DEVICE static inline bool mbarrier_try_wait(
             : "=r"(__waitComplete)
             : "r"(__as_ptr_smem(__addr)), "l"(__state)
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_cluster) {
+      } else _CCCL_IF_CONSTEXPR (__scope == scope_cluster) {
         asm("{\n\t .reg .pred P_OUT; \n\t"
             "mbarrier.try_wait.acquire.cluster.shared::cta.b64         P_OUT, [%1], %2;                        // 6a. "
             "\n\t"
@@ -141,7 +144,7 @@ _CCCL_DEVICE static inline bool mbarrier_try_wait(
             : "=r"(__waitComplete)
             : "r"(__as_ptr_smem(__addr)), "l"(__state), "r"(__suspendTimeHint)
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_cluster) {
+      } else _CCCL_IF_CONSTEXPR (__scope == scope_cluster) {
         asm("{\n\t .reg .pred P_OUT; \n\t"
             "mbarrier.try_wait.acquire.cluster.shared::cta.b64         P_OUT, [%1], %2 , %3;      // 6b. \n\t"
             "selp.b32 %0, 1, 0, P_OUT; \n"
@@ -155,3 +158,5 @@ _CCCL_DEVICE static inline bool mbarrier_try_wait(
       __cuda_ptx_mbarrier_try_wait_is_not_supported_before_SM_90__(); return false;));
 }
 #endif // __cccl_ptx_isa >= 800
+
+#endif // _CUDA_PTX_GENERATED_MBARRIER_TRY_WAIT_H_

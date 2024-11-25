@@ -1,7 +1,10 @@
+#ifndef _CUDA_PTX_GENERATED_GETCTARANK_H_
+#define _CUDA_PTX_GENERATED_GETCTARANK_H_
+
 /*
 // getctarank{.space}.u32 dest, addr; // PTX ISA 78, SM_90
 // .space     = { .shared::cluster }
-template <typename=void>
+template <typename = void>
 __device__ static inline uint32_t getctarank(
   cuda::ptx::space_cluster_t,
   const void* addr);
@@ -25,3 +28,5 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t getctarank(space_cluster_t, cons
       __cuda_ptx_getctarank_is_not_supported_before_SM_90__(); return 0;));
 }
 #endif // __cccl_ptx_isa >= 780
+
+#endif // _CUDA_PTX_GENERATED_GETCTARANK_H_

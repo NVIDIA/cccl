@@ -1,6 +1,9 @@
+#ifndef _CUDA_PTX_GENERATED_MBARRIER_TRY_WAIT_PARITY_H_
+#define _CUDA_PTX_GENERATED_MBARRIER_TRY_WAIT_PARITY_H_
+
 /*
 // mbarrier.try_wait.parity.shared::cta.b64  waitComplete, [addr], phaseParity;                                // 7a.
-PTX ISA 78, SM_90 template <typename=void>
+PTX ISA 78, SM_90 template <typename = void>
 __device__ static inline bool mbarrier_try_wait_parity(
   uint64_t* addr,
   const uint32_t& phaseParity);
@@ -30,7 +33,7 @@ mbarrier_try_wait_parity(_CUDA_VSTD::uint64_t* __addr, const _CUDA_VSTD::uint32_
 
 /*
 // mbarrier.try_wait.parity.shared::cta.b64  waitComplete, [addr], phaseParity, suspendTimeHint;               // 7b.
-PTX ISA 78, SM_90 template <typename=void>
+PTX ISA 78, SM_90 template <typename = void>
 __device__ static inline bool mbarrier_try_wait_parity(
   uint64_t* addr,
   const uint32_t& phaseParity,
@@ -90,7 +93,7 @@ _CCCL_DEVICE static inline bool mbarrier_try_wait_parity(
             : "=r"(__waitComplete)
             : "r"(__as_ptr_smem(__addr)), "r"(__phaseParity)
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_cluster) {
+      } else _CCCL_IF_CONSTEXPR (__scope == scope_cluster) {
         asm("{\n\t .reg .pred P_OUT; \n\t"
             "mbarrier.try_wait.parity.acquire.cluster.shared::cta.b64  P_OUT, [%1], %2;                  // 8a. \n\t"
             "selp.b32 %0, 1, 0, P_OUT; \n"
@@ -141,7 +144,7 @@ _CCCL_DEVICE static inline bool mbarrier_try_wait_parity(
             : "=r"(__waitComplete)
             : "r"(__as_ptr_smem(__addr)), "r"(__phaseParity), "r"(__suspendTimeHint)
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_cluster) {
+      } else _CCCL_IF_CONSTEXPR (__scope == scope_cluster) {
         asm("{\n\t .reg .pred P_OUT; \n\t"
             "mbarrier.try_wait.parity.acquire.cluster.shared::cta.b64  P_OUT, [%1], %2, %3; // 8b. \n\t"
             "selp.b32 %0, 1, 0, P_OUT; \n"
@@ -155,3 +158,5 @@ _CCCL_DEVICE static inline bool mbarrier_try_wait_parity(
       __cuda_ptx_mbarrier_try_wait_parity_is_not_supported_before_SM_90__(); return false;));
 }
 #endif // __cccl_ptx_isa >= 800
+
+#endif // _CUDA_PTX_GENERATED_MBARRIER_TRY_WAIT_PARITY_H_

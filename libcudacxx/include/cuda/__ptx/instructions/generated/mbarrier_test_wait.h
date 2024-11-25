@@ -1,6 +1,9 @@
+#ifndef _CUDA_PTX_GENERATED_MBARRIER_TEST_WAIT_H_
+#define _CUDA_PTX_GENERATED_MBARRIER_TEST_WAIT_H_
+
 /*
 // mbarrier.test_wait.shared.b64 waitComplete, [addr], state;                                                  // 1. PTX
-ISA 70, SM_80 template <typename=void>
+ISA 70, SM_80 template <typename = void>
 __device__ static inline bool mbarrier_test_wait(
   uint64_t* addr,
   const uint64_t& state);
@@ -58,7 +61,7 @@ _CCCL_DEVICE static inline bool mbarrier_test_wait(
             : "=r"(__waitComplete)
             : "r"(__as_ptr_smem(__addr)), "l"(__state)
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__scope == scope_cluster) {
+      } else _CCCL_IF_CONSTEXPR (__scope == scope_cluster) {
         asm("{\n\t .reg .pred P_OUT; \n\t"
             "mbarrier.test_wait.acquire.cluster.shared::cta.b64        P_OUT, [%1], %2;                        // 2.  "
             "\n\t"
@@ -73,3 +76,5 @@ _CCCL_DEVICE static inline bool mbarrier_test_wait(
       __cuda_ptx_mbarrier_test_wait_is_not_supported_before_SM_90__(); return false;));
 }
 #endif // __cccl_ptx_isa >= 800
+
+#endif // _CUDA_PTX_GENERATED_MBARRIER_TEST_WAIT_H_

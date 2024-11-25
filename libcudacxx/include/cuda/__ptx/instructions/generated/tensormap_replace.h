@@ -1,3 +1,6 @@
+#ifndef _CUDA_PTX_GENERATED_TENSORMAP_REPLACE_H_
+#define _CUDA_PTX_GENERATED_TENSORMAP_REPLACE_H_
+
 /*
 // tensormap.replace.tile.global_address.space.b1024.b64    [tm_addr], new_val; // PTX ISA 83, SM_90a
 // .space     = { .global }
@@ -567,3 +570,5 @@ _CCCL_DEVICE static inline void tensormap_replace_fill_mode(space_shared_t, void
       __cuda_ptx_tensormap_replace_fill_mode_is_not_supported_before_SM_90a__();));
 }
 #endif // __cccl_ptx_isa >= 830
+
+#endif // _CUDA_PTX_GENERATED_TENSORMAP_REPLACE_H_

@@ -1,6 +1,9 @@
+#ifndef _CUDA_PTX_GENERATED_FENCE_PROXY_ASYNC_H_
+#define _CUDA_PTX_GENERATED_FENCE_PROXY_ASYNC_H_
+
 /*
 // fence.proxy.async; // 5. PTX ISA 80, SM_90
-template <typename=void>
+template <typename = void>
 __device__ static inline void fence_proxy_async();
 */
 #if __cccl_ptx_isa >= 800
@@ -38,9 +41,9 @@ _CCCL_DEVICE static inline void fence_proxy_async(space_t<_Space> __space)
     (
       _CCCL_IF_CONSTEXPR (__space == space_global) {
         asm volatile("fence.proxy.async.global; // 6." : : : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__space == space_cluster) {
+      } else _CCCL_IF_CONSTEXPR (__space == space_cluster) {
         asm volatile("fence.proxy.async.shared::cluster; // 6." : : : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (__space == space_shared) {
+      } else _CCCL_IF_CONSTEXPR (__space == space_shared) {
         asm volatile("fence.proxy.async.shared::cta; // 6." : : : "memory");
       }),
     (
@@ -48,3 +51,5 @@ _CCCL_DEVICE static inline void fence_proxy_async(space_t<_Space> __space)
       __cuda_ptx_fence_proxy_async_is_not_supported_before_SM_90__();));
 }
 #endif // __cccl_ptx_isa >= 800
+
+#endif // _CUDA_PTX_GENERATED_FENCE_PROXY_ASYNC_H_

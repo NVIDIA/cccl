@@ -3,7 +3,7 @@ mbarrier.test_wait.parity.shared.b64
 .. code:: cuda
 
    // mbarrier.test_wait.parity.shared.b64 waitComplete, [addr], phaseParity;                                     // 3.  PTX ISA 71, SM_80
-   template <typename=void>
+   template <typename = void>
    __device__ static inline bool mbarrier_test_wait_parity(
      uint64_t* addr,
      const uint32_t& phaseParity);

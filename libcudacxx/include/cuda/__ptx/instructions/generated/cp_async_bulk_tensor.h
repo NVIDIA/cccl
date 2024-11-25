@@ -1,9 +1,12 @@
+#ifndef _CUDA_PTX_GENERATED_CP_ASYNC_BULK_TENSOR_H_
+#define _CUDA_PTX_GENERATED_CP_ASYNC_BULK_TENSOR_H_
+
 /*
 // cp.async.bulk.tensor.1d.dst.src.tile.mbarrier::complete_tx::bytes [dstMem], [tensorMap, tensorCoords], [smem_bar];//
 1a. PTX ISA 80, SM_90
 // .dst       = { .shared::cluster }
 // .src       = { .global }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_async_bulk_tensor(
   cuda::ptx::space_cluster_t,
   cuda::ptx::space_global_t,
@@ -42,7 +45,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
 // cp.async.bulk.tensor.1d.dst.src.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 3a. PTX ISA 80, SM_90
 // .dst       = { .global }
 // .src       = { .shared::cta }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_async_bulk_tensor(
   cuda::ptx::space_global_t,
   cuda::ptx::space_shared_t,
@@ -79,7 +82,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
 1b. PTX ISA 80, SM_90
 // .dst       = { .shared::cluster }
 // .src       = { .global }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_async_bulk_tensor(
   cuda::ptx::space_cluster_t,
   cuda::ptx::space_global_t,
@@ -122,7 +125,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
 // cp.async.bulk.tensor.2d.dst.src.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 3b. PTX ISA 80, SM_90
 // .dst       = { .global }
 // .src       = { .shared::cta }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_async_bulk_tensor(
   cuda::ptx::space_global_t,
   cuda::ptx::space_shared_t,
@@ -159,7 +162,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
 1c. PTX ISA 80, SM_90
 // .dst       = { .shared::cluster }
 // .src       = { .global }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_async_bulk_tensor(
   cuda::ptx::space_cluster_t,
   cuda::ptx::space_global_t,
@@ -203,7 +206,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
 // cp.async.bulk.tensor.3d.dst.src.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 3c. PTX ISA 80, SM_90
 // .dst       = { .global }
 // .src       = { .shared::cta }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_async_bulk_tensor(
   cuda::ptx::space_global_t,
   cuda::ptx::space_shared_t,
@@ -244,7 +247,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
 1d. PTX ISA 80, SM_90
 // .dst       = { .shared::cluster }
 // .src       = { .global }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_async_bulk_tensor(
   cuda::ptx::space_cluster_t,
   cuda::ptx::space_global_t,
@@ -289,7 +292,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
 // cp.async.bulk.tensor.4d.dst.src.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 3d. PTX ISA 80, SM_90
 // .dst       = { .global }
 // .src       = { .shared::cta }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_async_bulk_tensor(
   cuda::ptx::space_global_t,
   cuda::ptx::space_shared_t,
@@ -331,7 +334,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
 1e. PTX ISA 80, SM_90
 // .dst       = { .shared::cluster }
 // .src       = { .global }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_async_bulk_tensor(
   cuda::ptx::space_cluster_t,
   cuda::ptx::space_global_t,
@@ -377,7 +380,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
 // cp.async.bulk.tensor.5d.dst.src.tile.bulk_group [tensorMap, tensorCoords], [srcMem]; // 3e. PTX ISA 80, SM_90
 // .dst       = { .global }
 // .src       = { .shared::cta }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_async_bulk_tensor(
   cuda::ptx::space_global_t,
   cuda::ptx::space_shared_t,
@@ -414,3 +417,5 @@ _CCCL_DEVICE static inline void cp_async_bulk_tensor(
       __cuda_ptx_cp_async_bulk_tensor_is_not_supported_before_SM_90__();));
 }
 #endif // __cccl_ptx_isa >= 800
+
+#endif // _CUDA_PTX_GENERATED_CP_ASYNC_BULK_TENSOR_H_

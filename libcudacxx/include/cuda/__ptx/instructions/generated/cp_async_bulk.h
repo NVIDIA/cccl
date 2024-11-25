@@ -1,9 +1,12 @@
+#ifndef _CUDA_PTX_GENERATED_CP_ASYNC_BULK_H_
+#define _CUDA_PTX_GENERATED_CP_ASYNC_BULK_H_
+
 /*
 // cp.async.bulk.dst.src.mbarrier::complete_tx::bytes [dstMem], [srcMem], size, [smem_bar]; // 1a. unicast PTX ISA 80,
 SM_90
 // .dst       = { .shared::cluster }
 // .src       = { .global }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_async_bulk(
   cuda::ptx::space_cluster_t,
   cuda::ptx::space_global_t,
@@ -41,7 +44,7 @@ _CCCL_DEVICE static inline void cp_async_bulk(
 // cp.async.bulk.dst.src.mbarrier::complete_tx::bytes [dstMem], [srcMem], size, [rdsmem_bar]; // 2.  PTX ISA 80, SM_90
 // .dst       = { .shared::cluster }
 // .src       = { .shared::cta }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_async_bulk(
   cuda::ptx::space_cluster_t,
   cuda::ptx::space_shared_t,
@@ -82,7 +85,7 @@ _CCCL_DEVICE static inline void cp_async_bulk(
 // cp.async.bulk.dst.src.bulk_group [dstMem], [srcMem], size; // 3.  PTX ISA 80, SM_90
 // .dst       = { .global }
 // .src       = { .shared::cta }
-template <typename=void>
+template <typename = void>
 __device__ static inline void cp_async_bulk(
   cuda::ptx::space_global_t,
   cuda::ptx::space_shared_t,
@@ -109,3 +112,5 @@ cp_async_bulk(space_global_t, space_shared_t, void* __dstMem, const void* __srcM
       __cuda_ptx_cp_async_bulk_is_not_supported_before_SM_90__();));
 }
 #endif // __cccl_ptx_isa >= 800
+
+#endif // _CUDA_PTX_GENERATED_CP_ASYNC_BULK_H_

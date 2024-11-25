@@ -3,7 +3,7 @@ mbarrier.try_wait.parity.shared::cta.b64
 .. code:: cuda
 
    // mbarrier.try_wait.parity.shared::cta.b64  waitComplete, [addr], phaseParity;                                // 7a.  PTX ISA 78, SM_90
-   template <typename=void>
+   template <typename = void>
    __device__ static inline bool mbarrier_try_wait_parity(
      uint64_t* addr,
      const uint32_t& phaseParity);
@@ -13,7 +13,7 @@ mbarrier.try_wait.parity.shared::cta.b64
 .. code:: cuda
 
    // mbarrier.try_wait.parity.shared::cta.b64  waitComplete, [addr], phaseParity, suspendTimeHint;               // 7b.  PTX ISA 78, SM_90
-   template <typename=void>
+   template <typename = void>
    __device__ static inline bool mbarrier_try_wait_parity(
      uint64_t* addr,
      const uint32_t& phaseParity,

@@ -1,3 +1,6 @@
+#ifndef _CUDA_PTX_GENERATED_ST_ASYNC_H_
+#define _CUDA_PTX_GENERATED_ST_ASYNC_H_
+
 /*
 // st.async.weak.shared::cluster.mbarrier::complete_tx::bytes{.type} [addr], value, [remote_bar];    // 1.  PTX ISA 81,
 SM_90
@@ -22,7 +25,7 @@ _CCCL_DEVICE static inline void st_async(_Type* __addr, const _Type& __value, _C
             :
             : "r"(__as_ptr_remote_dsmem(__addr)), "r"(__as_b32(__value)), "r"(__as_ptr_remote_dsmem(__remote_bar))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (sizeof(_Type) == 8) {
+      } else _CCCL_IF_CONSTEXPR (sizeof(_Type) == 8) {
         asm("st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.b64 [%0], %1, [%2];    // 1. "
             :
             : "r"(__as_ptr_remote_dsmem(__addr)), "l"(__as_b64(__value)), "r"(__as_ptr_remote_dsmem(__remote_bar))
@@ -61,7 +64,7 @@ _CCCL_DEVICE static inline void st_async(_Type* __addr, const _Type (&__value)[2
               "r"(__as_b32(__value[1])),
               "r"(__as_ptr_remote_dsmem(__remote_bar))
             : "memory");
-      } _CCCL_ELSE_IF_CONSTEXPR (sizeof(_Type) == 8) {
+      } else _CCCL_IF_CONSTEXPR (sizeof(_Type) == 8) {
         asm("st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.v2.b64 [%0], {%1, %2}, [%3]; // 2. "
             :
             : "r"(__as_ptr_remote_dsmem(__addr)),
@@ -106,3 +109,5 @@ _CCCL_DEVICE static inline void st_async(_B32* __addr, const _B32 (&__value)[4],
       __cuda_ptx_st_async_is_not_supported_before_SM_90__();));
 }
 #endif // __cccl_ptx_isa >= 810
+
+#endif // _CUDA_PTX_GENERATED_ST_ASYNC_H_
