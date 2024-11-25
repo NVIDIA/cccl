@@ -1,3 +1,5 @@
+// This file was automatically generated. Do not edit.
+
 #ifndef _CUDA_PTX_GENERATED_MBARRIER_TEST_WAIT_PARITY_H_
 #define _CUDA_PTX_GENERATED_MBARRIER_TEST_WAIT_PARITY_H_
 

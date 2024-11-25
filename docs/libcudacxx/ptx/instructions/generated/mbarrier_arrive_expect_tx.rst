@@ -1,3 +1,6 @@
+..
+   This file was automatically generated. Do not edit.
+
 mbarrier.arrive.expect_tx.release.cta.shared::cta.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda

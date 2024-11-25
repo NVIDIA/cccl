@@ -1,3 +1,6 @@
+..
+   This file was automatically generated. Do not edit.
+
 cp.reduce.async.bulk.global.shared::cta.bulk_group.min.bf16
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda

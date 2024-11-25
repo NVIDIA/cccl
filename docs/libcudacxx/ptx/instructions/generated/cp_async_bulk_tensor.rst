@@ -1,3 +1,6 @@
+..
+   This file was automatically generated. Do not edit.
+
 cp.async.bulk.tensor.1d.shared::cluster.global.tile.mbarrier::complete_tx::bytes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda

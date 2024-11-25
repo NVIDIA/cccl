@@ -1,3 +1,6 @@
+..
+   This file was automatically generated. Do not edit.
+
 red.async.relaxed.cluster.shared::cluster.mbarrier::complete_tx::bytes.inc.u32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda

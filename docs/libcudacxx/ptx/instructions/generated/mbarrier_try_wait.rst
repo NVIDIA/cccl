@@ -1,3 +1,6 @@
+..
+   This file was automatically generated. Do not edit.
+
 mbarrier.try_wait.shared::cta.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda

@@ -1,3 +1,5 @@
+// This file was automatically generated. Do not edit.
+
 #ifndef _CUDA_PTX_GENERATED_CP_REDUCE_ASYNC_BULK_BF16_H_
 #define _CUDA_PTX_GENERATED_CP_REDUCE_ASYNC_BULK_BF16_H_
 

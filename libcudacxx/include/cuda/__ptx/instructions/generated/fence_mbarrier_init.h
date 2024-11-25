@@ -1,3 +1,5 @@
+// This file was automatically generated. Do not edit.
+
 #ifndef _CUDA_PTX_GENERATED_FENCE_MBARRIER_INIT_H_
 #define _CUDA_PTX_GENERATED_FENCE_MBARRIER_INIT_H_
 

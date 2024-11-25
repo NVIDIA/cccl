@@ -1,3 +1,5 @@
+// This file was automatically generated. Do not edit.
+
 #ifndef _CUDA_PTX_GENERATED_CP_ASYNC_BULK_TENSOR_MULTICAST_H_
 #define _CUDA_PTX_GENERATED_CP_ASYNC_BULK_TENSOR_MULTICAST_H_
 

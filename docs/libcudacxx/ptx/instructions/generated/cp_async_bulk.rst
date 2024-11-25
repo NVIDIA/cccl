@@ -1,3 +1,6 @@
+..
+   This file was automatically generated. Do not edit.
+
 cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda

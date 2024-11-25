@@ -1,3 +1,6 @@
+..
+   This file was automatically generated. Do not edit.
+
 mbarrier.arrive.noComplete.shared.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
