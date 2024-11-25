@@ -276,9 +276,6 @@
 //==============================================================================
 // <editor-fold desc="fold expressions"> {{{1
 
-struct __mdspan_enable_fold_comma
-{};
-
 #  ifdef __MDSPAN_USE_FOLD_EXPRESSIONS
 #    define __MDSPAN_FOLD_AND(...)                 ((__VA_ARGS__) && ...)
 #    define __MDSPAN_FOLD_OR(...)                  ((__VA_ARGS__) || ...)
