@@ -80,8 +80,8 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE OffsetT safe_add_bound_to_max(OffsetT lhs, O
  * deprecated [Since 2.8.0] `cub::DivideAndRoundUp` is deprecated. Use `cuda::ceil_div` instead.
  */
 template <typename NumeratorT, typename DenominatorT>
-CUB_DEPRECATED_BECAUSE("Use cuda::ceil_div instead")
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr NumeratorT DivideAndRoundUp(NumeratorT n, DenominatorT d)
+CUB_DEPRECATED_BECAUSE("Use cuda::ceil_div instead") _CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr NumeratorT
+DivideAndRoundUp(NumeratorT n, DenominatorT d)
 {
   static_assert(
     cub::detail::is_integral_or_enum<NumeratorT>::value && cub::detail::is_integral_or_enum<DenominatorT>::value,

@@ -1153,8 +1153,8 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
  *  \see not2
  */
 template <typename Predicate>
-_CCCL_HOST_DEVICE
-THRUST_DEPRECATED_BECAUSE("Use thrust::not_fn instead") unary_negate<Predicate> not1(const Predicate& pred);
+_CCCL_HOST_DEVICE THRUST_DEPRECATED_BECAUSE("Use thrust::not_fn instead") unary_negate<Predicate>
+not1(const Predicate& pred);
 _CCCL_SUPPRESS_DEPRECATED_POP
 
 /*! \p binary_negate is a function object adaptor: it is an Adaptable Binary
@@ -1216,8 +1216,8 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
  *  \see not1
  */
 template <typename BinaryPredicate>
-_CCCL_HOST_DEVICE THRUST_DEPRECATED_BECAUSE("Use thrust::not_fn instead")
-  binary_negate<BinaryPredicate> not2(const BinaryPredicate& pred);
+_CCCL_HOST_DEVICE THRUST_DEPRECATED_BECAUSE("Use thrust::not_fn instead") binary_negate<BinaryPredicate>
+not2(const BinaryPredicate& pred);
 _CCCL_SUPPRESS_DEPRECATED_POP
 
 namespace detail

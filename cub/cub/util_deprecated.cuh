@@ -61,11 +61,10 @@
 #  define CUB_DEPRECATED_TYPE_ALIAS_BECAUSE(MSG) _CCCL_DEPRECATED_TYPE_ALIAS_BECAUSE(MSG)
 #endif
 
-#define CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED             \
-  CUB_DEPRECATED_BECAUSE(                                          \
-    "CUB no longer accepts `debug_synchronous` parameter. "        \
-    "Define CUB_DEBUG_SYNC instead, or silence this message with " \
-    "CUB_IGNORE_DEPRECATED_API.")
+#define CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED                                  \
+  CUB_DEPRECATED_BECAUSE("CUB no longer accepts `debug_synchronous` parameter. "        \
+                         "Define CUB_DEBUG_SYNC instead, or silence this message with " \
+                         "CUB_IGNORE_DEPRECATED_API.")
 
 #define CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG                     \
   if (debug_synchronous)                                            \
