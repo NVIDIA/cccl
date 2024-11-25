@@ -20,12 +20,12 @@
 template <class T>
 __host__ __device__ void test_fpclassify(float val)
 {
-  static_assert((cuda::std::is_same<decltype(cuda::std::fpclassify(val)), int>::value), "");
+  static_assert((cuda::std::is_same<decltype(cuda::std::fpclassify(T(val))), int>::value), "");
   assert(cuda::std::fpclassify(T(val)) == FP_NORMAL);
   assert(cuda::std::fpclassify(T(1.0)) == FP_NORMAL);
   assert(cuda::std::fpclassify(T(0.0)) == FP_ZERO);
   assert(cuda::std::fpclassify(T(-1.0)) == FP_NORMAL);
-  assert(cuda::std::fpclassify(T(0.0)) == FP_ZERO);
+  assert(cuda::std::fpclassify(T(-0.0)) == FP_ZERO);
   // extended floating point types have issues here
   if (!cuda::std::__is_extended_floating_point<T>::value)
   {
