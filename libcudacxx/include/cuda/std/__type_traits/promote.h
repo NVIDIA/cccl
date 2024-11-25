@@ -28,6 +28,7 @@
 #ifdef _LIBCUDACXX_HAS_NVFP16
 #  include <cuda_fp16.h>
 #endif // _LIBCUDACXX_HAS_NVFP16
+
 #ifdef _LIBCUDACXX_HAS_NVBF16
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
