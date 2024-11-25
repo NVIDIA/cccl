@@ -56,6 +56,17 @@
 #include <cuda/std/type_traits> // cuda::std::common_type
 #include <cuda/std/utility> // cuda::std::forward
 
+#if defined(_CCCL_HAS_NVFP16)
+#  include <cuda_fp16.h>
+#endif // _CCCL_HAS_NVFP16
+
+#if defined(_CCCL_HAS_NVBF16)
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
+#  include <cuda_bf16.h>
+_CCCL_DIAG_POP
+#endif // _CCCL_HAS_NVFP16
+
 CUB_NAMESPACE_BEGIN
 
 // TODO(bgruber): deprecate in C++17 with a note: "replace by decltype(cuda::std::not_fn(EqualityOp{}))"
