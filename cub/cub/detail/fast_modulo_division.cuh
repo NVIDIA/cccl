@@ -37,15 +37,15 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cub/detail/type_traits.cuh> // implicit_prom_t
+#include <cub/util_type.cuh> // CUB_IS_INT128_ENABLED
+
 #include <cuda/cmath> // cuda::std::ceil_div
 #include <cuda/std/bit> // std::has_single_bit
 #include <cuda/std/climits> // CHAR_BIT
 #include <cuda/std/cstdint> // uint64_t
 #include <cuda/std/limits> // numeric_limits
 #include <cuda/std/type_traits> // std::is_integral
-
-#include "cub/detail/type_traits.cuh" // implicit_prom_t
-#include "cub/util_type.cuh" // CUB_IS_INT128_ENABLED
 
 #if defined(CCCL_ENABLE_DEVICE_ASSERTIONS)
 _CCCL_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero

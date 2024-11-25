@@ -276,18 +276,12 @@
 //==============================================================================
 // <editor-fold desc="fold expressions"> {{{1
 
-struct __mdspan_enable_fold_comma
-{};
-
 #  ifdef __MDSPAN_USE_FOLD_EXPRESSIONS
-#    define __MDSPAN_FOLD_AND(...)                  ((__VA_ARGS__) && ...)
-#    define __MDSPAN_FOLD_AND_TEMPLATE(...)         ((__VA_ARGS__) && ...)
-#    define __MDSPAN_FOLD_OR(...)                   ((__VA_ARGS__) || ...)
-#    define __MDSPAN_FOLD_ASSIGN_LEFT(__INIT, ...)  (__INIT = ... = (__VA_ARGS__))
-#    define __MDSPAN_FOLD_ASSIGN_RIGHT(__PACK, ...) (__PACK = ... = (__VA_ARGS__))
-#    define __MDSPAN_FOLD_TIMES_RIGHT(__PACK, ...)  (__PACK * ... * (__VA_ARGS__))
-#    define __MDSPAN_FOLD_PLUS_RIGHT(__PACK, ...)   (__PACK + ... + (__VA_ARGS__))
-#    define __MDSPAN_FOLD_COMMA(...)                ((__VA_ARGS__), ...)
+#    define __MDSPAN_FOLD_AND(...)                 ((__VA_ARGS__) && ...)
+#    define __MDSPAN_FOLD_OR(...)                  ((__VA_ARGS__) || ...)
+#    define __MDSPAN_FOLD_ASSIGN_LEFT(__INIT, ...) (__INIT = ... = (__VA_ARGS__))
+#    define __MDSPAN_FOLD_TIMES_RIGHT(__PACK, ...) (__PACK * ... * (__VA_ARGS__))
+#    define __MDSPAN_FOLD_PLUS_RIGHT(__PACK, ...)  (__PACK + ... + (__VA_ARGS__))
 #  else
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -601,12 +595,6 @@ __fold_left_assign_impl(_Args&&... __args)
 
 #    endif
 
-template <class... _Args>
-_CCCL_HOST_DEVICE constexpr __mdspan_enable_fold_comma __fold_comma_impl(_Args&&...) noexcept
-{
-  return {};
-}
-
 template <bool... _Bs>
 struct __bools;
 
@@ -618,18 +606,10 @@ _LIBCUDACXX_END_NAMESPACE_STD
 #    define __MDSPAN_FOLD_OR(...)  _CUDA_VSTD::__fold_compatibility_impl::__fold_right_or_impl((__VA_ARGS__)...)
 #    define __MDSPAN_FOLD_ASSIGN_LEFT(__INIT, ...) \
       _CUDA_VSTD::__fold_compatibility_impl::__fold_left_assign_impl(__INIT, (__VA_ARGS__)...)
-#    define __MDSPAN_FOLD_ASSIGN_RIGHT(__PACK, ...) \
-      _CUDA_VSTD::__fold_compatibility_impl::__fold_right_assign_impl((__PACK)..., __VA_ARGS__)
 #    define __MDSPAN_FOLD_TIMES_RIGHT(__PACK, ...) \
       _CUDA_VSTD::__fold_compatibility_impl::__fold_right_times_impl((__PACK)..., __VA_ARGS__)
 #    define __MDSPAN_FOLD_PLUS_RIGHT(__PACK, ...) \
       _CUDA_VSTD::__fold_compatibility_impl::__fold_right_plus_impl((__PACK)..., __VA_ARGS__)
-#    define __MDSPAN_FOLD_COMMA(...) _CUDA_VSTD::__fold_compatibility_impl::__fold_comma_impl((__VA_ARGS__)...)
-
-#    define __MDSPAN_FOLD_AND_TEMPLATE(...)                                   \
-      _CCCL_TRAIT(_CUDA_VSTD::is_same,                                        \
-                  __fold_compatibility_impl::__bools<(__VA_ARGS__)..., true>, \
-                  __fold_compatibility_impl::__bools<true, (__VA_ARGS__)...>)
 
 #  endif
 

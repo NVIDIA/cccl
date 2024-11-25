@@ -32,12 +32,12 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER > 2011
 
-#  if defined(_CCCL_COMPILER_MSVC)
+#  if _CCCL_COMPILER(MSVC)
 
 template <class _Tp>
 _CCCL_CONCEPT destructible = __is_nothrow_destructible(_Tp);
 
-#  else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
+#  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 
 template <class _Tp, class = void, class = void>
 _CCCL_INLINE_VAR constexpr bool __destructible_impl = false;
@@ -67,7 +67,7 @@ _CCCL_INLINE_VAR constexpr bool __destructible<_Tp[_Nm]> = __destructible<_Tp>;
 template <class _Tp>
 _CCCL_CONCEPT destructible = __destructible<_Tp>;
 
-#  endif // !_CCCL_COMPILER_MSVC
+#  endif // !_CCCL_COMPILER(MSVC)
 
 #endif // _CCCL_STD_VER > 2011
 

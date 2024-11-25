@@ -42,21 +42,47 @@ void __fill_bytes_impl(stream_ref __stream, _CUDA_VSTD::span<_DstTy, _DstSize> _
 
 //! @brief Launches an operation to bytewise fill the memory into the provided stream.
 //!
-//! Destination needs to either be a `contiguous_range` or implicitly/launch transform
-//! into one. It can't reside in pagable host memory.
+//! Destination needs to either be a `contiguous_range` or launch transform
+//! into one. It can also implicitly convert to `cuda::std::span`, but it needs to contain `value_type` member alias.
 //! Destination type is required to be trivially copyable.
+//!
+//! Destination can't reside in pagable host memory.
 //!
 //! @param __stream Stream that the copy should be inserted into
 //! @param __dst Destination memory to fill
 //! @param __value Value to fill into every byte in the destination
 _CCCL_TEMPLATE(typename _DstTy)
-_CCCL_REQUIRES(__valid_copy_fill_argument<_DstTy>)
+_CCCL_REQUIRES(__valid_1d_copy_fill_argument<_DstTy>)
 void fill_bytes(stream_ref __stream, _DstTy&& __dst, uint8_t __value)
 {
   __fill_bytes_impl(__stream,
                     _CUDA_VSTD::span(static_cast<detail::__as_copy_arg_t<_DstTy>>(
                       detail::__launch_transform(__stream, _CUDA_VSTD::forward<_DstTy>(__dst)))),
                     __value);
+}
+
+//! @brief Launches an operation to bytewise fill the memory into the provided stream.
+//!
+//! Destination needs to either be an instance of `cuda::std::mdspan` or launch transform
+//! into one. It can also implicitly convert to `cuda::std::mdspan`, but the type needs to contain `mdspan` template
+//! arguments as member aliases named `value_type`, `extents_type`, `layout_type` and `accessor_type`.   Destination
+//! type is required to be trivially copyable.
+//!
+//! Destination can't reside in pagable host memory.
+//!
+//! @param __stream Stream that the copy should be inserted into
+//! @param __dst Destination memory to fill
+//! @param __value Value to fill into every byte in the destination
+_CCCL_TEMPLATE(typename _DstTy)
+_CCCL_REQUIRES(__valid_nd_copy_fill_argument<_DstTy>)
+void fill_bytes(stream_ref __stream, _DstTy&& __dst, uint8_t __value)
+{
+  decltype(auto) __dst_transformed = detail::__launch_transform(__stream, _CUDA_VSTD::forward<_DstTy>(__dst));
+  decltype(auto) __dst_as_arg      = static_cast<detail::__as_copy_arg_t<_DstTy>>(__dst_transformed);
+  auto __dst_mdspan                = __as_mdspan_t<decltype(__dst_as_arg)>(__dst_as_arg);
+
+  __fill_bytes_impl(
+    __stream, _CUDA_VSTD::span(__dst_mdspan.data_handle(), __dst_mdspan.mapping().required_span_size()), __value);
 }
 
 } // namespace cuda::experimental

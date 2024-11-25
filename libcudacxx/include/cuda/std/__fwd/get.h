@@ -22,6 +22,7 @@
 
 #include <cuda/std/__concepts/copyable.h>
 #include <cuda/std/__fwd/array.h>
+#include <cuda/std/__fwd/complex.h>
 #include <cuda/std/__fwd/pair.h>
 #include <cuda/std/__fwd/subrange.h>
 #include <cuda/std/__fwd/tuple.h>
@@ -70,9 +71,21 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp&& get(array<_Tp, _Size>&&) n
 template <size_t _Ip, class _Tp, size_t _Size>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const _Tp&& get(const array<_Tp, _Size>&&) noexcept;
 
+template <size_t _Ip, class _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp& get(complex<_Tp>&) noexcept;
+
+template <size_t _Ip, class _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp&& get(complex<_Tp>&&) noexcept;
+
+template <size_t _Ip, class _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp& get(const complex<_Tp>&) noexcept;
+
+template <size_t _Ip, class _Tp>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr const _Tp&& get(const complex<_Tp>&&) noexcept;
+
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
@@ -109,6 +122,6 @@ using _CUDA_VRANGES::get;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER_MSVC_2017
+#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
 #endif // _LIBCUDACXX___FWD_GET_H

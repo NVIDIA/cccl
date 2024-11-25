@@ -24,7 +24,7 @@
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/cstdint>
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
 #  include <intrin.h>
 
 #  if defined(_M_ARM64)
@@ -35,7 +35,7 @@
 #    define _LIBCUDACXX_MSVC_POPC64(x) __popcnt64(x)
 #  endif // !_M_ARM64
 
-#endif // _CCCL_COMPILER_MSVC
+#endif // _CCCL_COMPILER(MSVC)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -56,7 +56,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __fallback_popc64(uint64_t __x)
   return __fallback_popc32(__x - ((__x >> 1) & 0x5555555555555555));
 }
 
-#if !defined(_CCCL_COMPILER_MSVC)
+#if !_CCCL_COMPILER(MSVC)
 
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_popcount(uint32_t __x) noexcept
 {
@@ -98,7 +98,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __libcpp_popc(uint64_t __x) noexcept
   return __constexpr_popcount(static_cast<uint64_t>(__x));
 }
 
-#else // defined(_CCCL_COMPILER_MSVC)
+#else // _CCCL_COMPILER(MSVC)
 
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __libcpp_popc(uint32_t __x)
 {

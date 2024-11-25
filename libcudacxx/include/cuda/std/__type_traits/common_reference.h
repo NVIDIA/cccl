@@ -42,7 +42,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // common_reference
 
 // Let COND_RES(X, Y) be:
-#ifdef _CCCL_COMPILER_MSVC // Workaround for DevCom-1627396
+#if _CCCL_COMPILER(MSVC) // Workaround for DevCom-1627396
 template <class _Tp>
 _Tp __returns_exactly() noexcept; // not defined
 
@@ -67,10 +67,10 @@ struct __cond_res_workaround<_Tp, _Up, void_t<__cond_res_if_right<_Tp, _Up>>>
 
 template <class _Xp, class _Yp>
 using __cond_res = typename __cond_res_workaround<_Xp, _Yp>::type;
-#else // ^^^ MSVC ^^^ / vvv !MSVC vvv
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 template <class _Xp, class _Yp>
 using __cond_res = decltype(false ? _CUDA_VSTD::declval<_Xp (&)()>()() : _CUDA_VSTD::declval<_Yp (&)()>()());
-#endif // !MSVC
+#endif // !_CCCL_COMPILER(MSVC)
 
 // Let `XREF(A)` denote a unary alias template `T` such that `T<U>` denotes the same type as `U`
 // with the addition of `A`'s cv and reference qualifiers, for a non-reference cv-unqualified type
