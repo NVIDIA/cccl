@@ -292,7 +292,7 @@ public:
       t.set_symbol(symbol);
     }
 
-    auto& dot = *ctx.get_dot();
+    auto& dot        = *ctx.get_dot();
     auto& statistics = reserved::task_statistics::instance();
 
     cudaEvent_t start_event, end_event;
