@@ -577,11 +577,23 @@ using __type_pair_second _CCCL_NODEBUG_ALIAS = typename _Pair::__second;
 
 //! \see __type_switch
 template <class _Value>
-using __type_default _CCCL_NODEBUG_ALIAS = __type_pair<void, _Value>;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_default
+{
+  template <class>
+  using __rebind _CCCL_NODEBUG_ALIAS = __type_default;
+
+  using type _CCCL_NODEBUG_ALIAS = _Value;
+};
 
 //! \see __type_switch
 template <_CCCL_NTTP_AUTO _Label, class _Value>
-using __type_case _CCCL_NODEBUG_ALIAS = __type_pair<integral_constant<decltype(_Label), _Label>, _Value>;
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_case
+{
+  template <class _Type>
+  using __rebind _CCCL_NODEBUG_ALIAS = __type_case<static_cast<_Type>(_Label), _Value>;
+
+  using type = _Value;
+};
 
 namespace __detail
 {
@@ -593,12 +605,13 @@ _LIBCUDACXX_HIDE_FROM_ABI auto __type_switch_fn(__type_default<_Value>*, long) -
 } // namespace __detail
 
 //! \see __type_switch
-template <class... _Cases>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DECLSPEC_EMPTY_BASES __type_switch_fn : _Cases...
+template <class _Type, class... _Cases>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DECLSPEC_EMPTY_BASES __type_switch_fn
+    : _Cases::template __rebind<_Type>...
 {
   template <class _Label>
   using __call _CCCL_NODEBUG_ALIAS =
-    __type_pair_second<decltype(__detail::__type_switch_fn<_Label::value>(static_cast<__type_switch_fn*>(nullptr), 0))>;
+    __type<decltype(__detail::__type_switch_fn<_Label::value>(static_cast<__type_switch_fn*>(nullptr), 0))>;
 };
 
 //! \brief Given an integral constant \c _Label and a pack of "cases"
@@ -618,7 +631,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DECLSPEC_EMPTY_BASES __type_swi
 //! \endcode
 template <_CCCL_NTTP_AUTO _Label, class... _Cases>
 using __type_switch _CCCL_NODEBUG_ALIAS =
-  __type_call<__type_switch_fn<_Cases...>, integral_constant<decltype(_Label), _Label>>;
+  __type_call<__type_switch_fn<decltype(_Label), _Cases...>, integral_constant<decltype(_Label), _Label>>;
 
 namespace __detail
 {
