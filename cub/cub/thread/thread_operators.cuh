@@ -79,13 +79,13 @@ struct InequalityWrapper
   }
 };
 
-using Equality CUB_DEPRECATED_BECAUSE("use cuda::std::equal_to instead")       = ::cuda::std::equal_to<>;
-using Inequality CUB_DEPRECATED_BECAUSE("use cuda::std::not_equal_to instead") = ::cuda::std::not_equal_to<>;
-using Sum CUB_DEPRECATED_BECAUSE("use cuda::std::plus instead")                = ::cuda::std::plus<>;
-using Difference CUB_DEPRECATED_BECAUSE("use cuda::std::minus instead")        = ::cuda::std::minus<>;
-using Division CUB_DEPRECATED_BECAUSE("use cuda::std::divides instead")        = ::cuda::std::divides<>;
-using Max CUB_DEPRECATED_BECAUSE("use cuda::maximum instead")                  = ::cuda::maximum<>;
-using Min CUB_DEPRECATED_BECAUSE("use cuda::minimum instead")                  = ::cuda::minimum<>;
+using Equality CUB_DEPRECATED_TYPE_ALIAS_BECAUSE("use cuda::std::equal_to instead")       = ::cuda::std::equal_to<>;
+using Inequality CUB_DEPRECATED_TYPE_ALIAS_BECAUSE("use cuda::std::not_equal_to instead") = ::cuda::std::not_equal_to<>;
+using Sum CUB_DEPRECATED_TYPE_ALIAS_BECAUSE("use cuda::std::plus instead")                = ::cuda::std::plus<>;
+using Difference CUB_DEPRECATED_TYPE_ALIAS_BECAUSE("use cuda::std::minus instead")        = ::cuda::std::minus<>;
+using Division CUB_DEPRECATED_TYPE_ALIAS_BECAUSE("use cuda::std::divides instead")        = ::cuda::std::divides<>;
+using Max CUB_DEPRECATED_TYPE_ALIAS_BECAUSE("use cuda::maximum instead")                  = ::cuda::maximum<>;
+using Min CUB_DEPRECATED_TYPE_ALIAS_BECAUSE("use cuda::minimum instead")                  = ::cuda::minimum<>;
 
 /// @brief Arg max functor (keeps the value and offset of the first occurrence
 ///        of the larger item)
