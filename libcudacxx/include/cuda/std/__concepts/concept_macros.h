@@ -52,21 +52,22 @@ using __cccl_enable_if_t = typename __cccl_select<_Bp>::template type<_Tp>;
 template <class _Tp, bool _Bp>
 using __cccl_requires_t = typename __cccl_select<_Bp>::template type<_Tp>;
 
-#if (defined(__cpp_concepts) && _CCCL_STD_VER >= 2020) || defined(_CCCL_DOXYGEN_INVOKED)
+#if !defined(_CCCL_NO_CONCEPTS) || defined(_CCCL_DOXYGEN_INVOKED)
 #  define _CCCL_TEMPLATE(...)               template <__VA_ARGS__>
 #  define _CCCL_REQUIRES(...)               requires __VA_ARGS__
 #  define _CCCL_AND                         &&
 #  define _CCCL_TRAILING_REQUIRES_AUX_(...) requires __VA_ARGS__
 #  define _CCCL_TRAILING_REQUIRES(...)      ->__VA_ARGS__ _CCCL_TRAILING_REQUIRES_AUX_
-#else // ^^^ __cpp_concepts ^^^ / vvv !__cpp_concepts vvv
+#else // ^^^ _CCCL_NO_CONCEPTS ^^^ / vvv !_CCCL_NO_CONCEPTS vvv
 #  define _CCCL_TEMPLATE(...)               template <__VA_ARGS__
 #  define _CCCL_REQUIRES(...)               , bool __cccl_true_ = true, __cccl_enable_if_t < __VA_ARGS__ && __cccl_true_, int > = 0 >
 #  define _CCCL_AND                         &&__cccl_true_, int > = 0, __cccl_enable_if_t <
 #  define _CCCL_TRAILING_REQUIRES_AUX_(...) , __VA_ARGS__ >
 #  define _CCCL_TRAILING_REQUIRES(...)      ->__cccl_requires_t < __VA_ARGS__ _CCCL_TRAILING_REQUIRES_AUX_
-#endif // !__cpp_concepts
+#endif // !defined(_CCCL_NO_CONCEPTS)
 
-#if _CCCL_STD_VER >= 2014
+// The following concepts emulation macros need variable template support
+#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 
 template <class...>
 struct __cccl_tag;
@@ -141,7 +142,7 @@ namespace __cccl_unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-
 #  define _CCCL_PP_EAT_TYPENAME_SELECT_1(...) _CCCL_PP_CAT3(_CCCL_PP_EAT_TYPENAME_, __VA_ARGS__)
 #  define _CCCL_PP_EAT_TYPENAME_typename
 
-#  if (defined(__cpp_concepts) && _CCCL_STD_VER >= 2020) || defined(_CCCL_DOXYGEN_INVOKED)
+#  if !defined(_CCCL_NO_CONCEPTS) || defined(_CCCL_DOXYGEN_INVOKED)
 
 #    define _CCCL_CONCEPT concept
 
@@ -167,7 +168,7 @@ namespace __cccl_unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-
 
 #    define _CCCL_FRAGMENT(_NAME, ...) _NAME<__VA_ARGS__>
 
-#  else
+#  else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 
 #    define _CCCL_CONCEPT _CCCL_INLINE_VAR constexpr bool
 
@@ -207,7 +208,7 @@ namespace __cccl_unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-
 #    define _CCCL_FRAGMENT(_NAME, ...) \
       (1u == sizeof(_NAME##_CCCL_CONCEPT_FRAGMENT_(static_cast<::__cccl_tag<__VA_ARGS__>*>(nullptr), nullptr)))
 
-#  endif
+#  endif // ^^^ _CCCL_NO_CONCEPTS ^^^
 
 ////////////////////////////////////////////////////////////////////////////////
 // _CCCL_REQUIRES_EXPR
@@ -220,10 +221,10 @@ namespace __cccl_unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-
 //     );
 //
 // Can only be used as the last requirement in a concept definition.
-#  if defined(__cpp_concepts) && _CCCL_STD_VER >= 2020 || defined(_CCCL_DOXYGEN_INVOKED)
+#  if !defined(_CCCL_NO_CONCEPTS) || defined(_CCCL_DOXYGEN_INVOKED)
 #    define _CCCL_REQUIRES_EXPR(_TY, ...) requires(__VA_ARGS__) _CCCL_REQUIRES_EXPR_2
 #    define _CCCL_REQUIRES_EXPR_2(...)    {_CCCL_PP_FOR_EACH(_CCCL_CONCEPT_FRAGMENT_REQS_M, __VA_ARGS__)}
-#  else
+#  else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 #    define _CCCL_REQUIRES_EXPR_TPARAM_PROBE_variadic _CCCL_PP_PROBE(~)
 #    define _CCCL_REQUIRES_EXPR_TPARAM_variadic
 
@@ -268,8 +269,8 @@ namespace __cccl_unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-
         return false;                                                                                     \
       }                                                                                                   \
       }
-#  endif
+#  endif // ^^^ _CCCL_NO_CONCEPTS ^^^
 
-#endif // _CCCL_STD_VER >= 2014
+#endif // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES ^^^
 
 #endif //_CUDA___CONCEPTS
