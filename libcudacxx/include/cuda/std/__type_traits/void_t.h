@@ -26,7 +26,7 @@ template <class...>
 using void_t = void;
 
 template <class...>
-using __void_t _LIBCUDACXX_DEPRECATED = void;
+using __void_t _LIBCUDACXX_DEPRECATED_TYPE_ALIAS = void;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

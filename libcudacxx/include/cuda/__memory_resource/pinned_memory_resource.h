@@ -193,7 +193,7 @@ static_assert(resource_with<pinned_memory_resource, device_accessible>, "");
 static_assert(resource_with<pinned_memory_resource, host_accessible>, "");
 
 // For backward compatability
-using cuda_pinned_memory_resource _LIBCUDACXX_DEPRECATED = pinned_memory_resource;
+using cuda_pinned_memory_resource _LIBCUDACXX_DEPRECATED_TYPE_ALIAS = pinned_memory_resource;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 

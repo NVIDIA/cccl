@@ -138,12 +138,14 @@
 #  define _CCCL_DEPRECATED_BECAUSE(_MSG) [[deprecated(_MSG)]]
 #endif
 
-// Disable deprecated attribute for type aliases on compilers that do not support it
-// - MSVC's native deprecated attribute
-// - NVCC before 11.0
-// - NVRTC before 12.0
-#if (_CCCL_STD_VER < 2014 && _CCCL_COMPILER(MSVC)) || _CCCL_COMPILER(NVRTC, <, 12)
-|| (defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_CUDACC_BELOW(11, 0))
+// Disable deprecated attribute for CUDACC below 11.3 and NVRTC below 12
+#if _CCCL_CUDACC_BELOW(11, 3) || _CCCL_COMPILER(NVRTC, <, 12)
+#  undef _CCCL_DEPRECATED
+#  undef _CCCL_DEPRECATED_BECAUSE
+#endif
+
+// Disable deprecated attribute for type aliases when using MSVC's native attribute
+#if _CCCL_STD_VER < 2014 && _CCCL_COMPILER(MSVC)
 #  define _CCCL_DEPRECATED_TYPE_ALIAS
 #  define _CCCL_DEPRECATED_TYPE_ALIAS_BECAUSE(_MSG)
 #else

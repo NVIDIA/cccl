@@ -190,7 +190,7 @@ static_assert(resource_with<managed_memory_resource, device_accessible>, "");
 static_assert(resource_with<managed_memory_resource, host_accessible>, "");
 
 // For backward compatability
-using cuda_managed_memory_resource _LIBCUDACXX_DEPRECATED = managed_memory_resource;
+using cuda_managed_memory_resource _LIBCUDACXX_DEPRECATED_TYPE_ALIAS = managed_memory_resource;
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 

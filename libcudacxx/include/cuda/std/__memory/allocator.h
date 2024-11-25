@@ -49,9 +49,9 @@ template <>
 class _CCCL_TYPE_VISIBILITY_DEFAULT allocator<void>
 {
 public:
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef void* pointer;
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef const void* const_pointer;
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef void value_type;
+  _LIBCUDACXX_DEPRECATED_TYPE_ALIAS_IN_CXX17 typedef void* pointer;
+  _LIBCUDACXX_DEPRECATED_TYPE_ALIAS_IN_CXX17 typedef const void* const_pointer;
+  _LIBCUDACXX_DEPRECATED_TYPE_ALIAS_IN_CXX17 typedef void value_type;
 
   template <class _Up>
   struct _LIBCUDACXX_DEPRECATED_IN_CXX17 rebind
@@ -64,9 +64,9 @@ template <>
 class _CCCL_TYPE_VISIBILITY_DEFAULT allocator<const void>
 {
 public:
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef const void* pointer;
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef const void* const_pointer;
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef const void value_type;
+  _LIBCUDACXX_DEPRECATED_TYPE_ALIAS_IN_CXX17 typedef const void* pointer;
+  _LIBCUDACXX_DEPRECATED_TYPE_ALIAS_IN_CXX17 typedef const void* const_pointer;
+  _LIBCUDACXX_DEPRECATED_TYPE_ALIAS_IN_CXX17 typedef const void value_type;
 
   template <class _Up>
   struct _LIBCUDACXX_DEPRECATED_IN_CXX17 rebind
@@ -163,10 +163,10 @@ public:
 
   // C++20 Removed members
 #if _CCCL_STD_VER <= 2017
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef _Tp* pointer;
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef const _Tp* const_pointer;
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef _Tp& reference;
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef const _Tp& const_reference;
+  _LIBCUDACXX_DEPRECATED_TYPE_ALIAS_IN_CXX17 typedef _Tp* pointer;
+  _LIBCUDACXX_DEPRECATED_TYPE_ALIAS_IN_CXX17 typedef const _Tp* const_pointer;
+  _LIBCUDACXX_DEPRECATED_TYPE_ALIAS_IN_CXX17 typedef _Tp& reference;
+  _LIBCUDACXX_DEPRECATED_TYPE_ALIAS_IN_CXX17 typedef const _Tp& const_reference;
 
   template <class _Up>
   struct _LIBCUDACXX_DEPRECATED_IN_CXX17 rebind
@@ -262,10 +262,10 @@ public:
 
   // C++20 Removed members
 #if _CCCL_STD_VER <= 2017
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef const _Tp* pointer;
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef const _Tp* const_pointer;
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef const _Tp& reference;
-  _LIBCUDACXX_DEPRECATED_IN_CXX17 typedef const _Tp& const_reference;
+  _LIBCUDACXX_DEPRECATED_TYPE_ALIAS_IN_CXX17 typedef const _Tp* pointer;
+  _LIBCUDACXX_DEPRECATED_TYPE_ALIAS_IN_CXX17 typedef const _Tp* const_pointer;
+  _LIBCUDACXX_DEPRECATED_TYPE_ALIAS_IN_CXX17 typedef const _Tp& reference;
+  _LIBCUDACXX_DEPRECATED_TYPE_ALIAS_IN_CXX17 typedef const _Tp& const_reference;
 
   template <class _Up>
   struct _LIBCUDACXX_DEPRECATED_IN_CXX17 rebind
