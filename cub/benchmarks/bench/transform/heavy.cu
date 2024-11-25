@@ -23,8 +23,7 @@
 #  endif
 #endif
 
-// This benchmark uses a LOT of registers and is compute intensive. It was gifted by ahendriksen. It is very expensive
-// to compile.
+// This benchmark uses a LOT of registers and is compute intensive.
 
 template <int N>
 struct heavy_functor
