@@ -108,7 +108,7 @@
 // concepts are only available from C++20 onwards
 #if _CCCL_STD_VER <= 2017 || !defined(__cpp_concepts) || (__cpp_concepts < 201907L)
 #  define _CCCL_NO_CONCEPTS
-#endif // _CCCL_STD_VER <= 2017
+#endif // _CCCL_STD_VER <= 2017 || !defined(__cpp_concepts) || (__cpp_concepts < 201907L)
 
 // noexcept function types are only available from C++17 onwards
 #if _CCCL_STD_VER >= 2017 && defined(__cpp_noexcept_function_type) && (__cpp_noexcept_function_type >= 201510L)
