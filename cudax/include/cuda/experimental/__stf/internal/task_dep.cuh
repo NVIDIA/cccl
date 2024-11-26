@@ -41,6 +41,18 @@ class task;
 class task_dep_untyped
 {
 public:
+  // Copy constructor
+  task_dep_untyped(const task_dep_untyped&) = default;
+
+  // Move constructor
+  task_dep_untyped(task_dep_untyped&&) noexcept = default;
+
+  // Copy assignment operator
+  task_dep_untyped& operator=(const task_dep_untyped& other) = default;
+
+  // Move assignment operator
+  task_dep_untyped& operator=(task_dep_untyped&& other) noexcept = default;
+
   // dependency with an explicit data_place
   task_dep_untyped(logical_data_untyped& d,
                    access_mode m,
@@ -197,6 +209,18 @@ class task_dep : public task_dep_untyped
 public:
   using data_t = T;
 
+  // Copy constructor
+  task_dep(const task_dep&) = default;
+
+  // Move constructor
+  task_dep(task_dep&&) noexcept = default;
+
+  // Copy assignment operator
+  task_dep& operator=(const task_dep& other) = default;
+
+  // Move assignment operator
+  task_dep& operator=(task_dep&& other) noexcept = default;
+
   template <typename... Pack>
   task_dep(Pack&&... pack)
       : task_dep_untyped(::std::forward<Pack>(pack)...)
@@ -240,6 +264,18 @@ public:
   using dep_type      = typename Pair::first_type;
   using task_dep_type = task_dep<dep_type>;
   using op_type       = typename Pair::second_type;
+
+  // Copy constructor
+  task_dep_op(const task_dep_op&) = default;
+
+  // Move constructor
+  task_dep_op(task_dep_op&&) noexcept = default;
+
+  // Copy assignment operator
+  task_dep_op& operator=(const task_dep_op& other) = default;
+
+  // Move assignment operator
+  task_dep_op& operator=(task_dep_op&& other) noexcept = default;
 
   // Constructor that forwards to task_dep's constructor
   template <typename... Args>

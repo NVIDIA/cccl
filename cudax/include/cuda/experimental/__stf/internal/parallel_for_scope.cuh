@@ -428,13 +428,13 @@ public:
   /// @param e_place Execution place for this parallel_for
   /// @param shape Shape to iterate
   /// @param ...deps Dependencies
-  parallel_for_scope(context& ctx, exec_place e_place, shape_t shape, task_dep_op<deps_ops_t>&&... deps)
-      : deps(::std::make_tuple(::std::forward<task_dep_op<deps_ops_t>>(deps)...))
+  parallel_for_scope(context& ctx, exec_place e_place, shape_t shape, task_dep_op<deps_ops_t>&&... _deps)
+      : deps(::std::make_tuple(_deps...))
       , ctx(ctx)
       , e_place(mv(e_place))
       , shape(mv(shape))
   {
-    dump_hooks = reserved::get_dump_hooks(&ctx, deps...);
+    dump_hooks = reserved::get_dump_hooks(&ctx, _deps...);
   }
 
   parallel_for_scope(const parallel_for_scope&)            = delete;
