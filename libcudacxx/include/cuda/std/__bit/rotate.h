@@ -30,7 +30,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotl(_Tp __t, unsigned int __cnt) noexcept
 {
-  static_assert(__libcpp_is_unsigned_integer<_Tp>::value, "__rotl requires unsigned");
+  static_assert(__cccl_is_unsigned_integer<_Tp>::value, "__rotl requires unsigned");
   using __nlt = numeric_limits<_Tp>;
 
   return ((__cnt % __nlt::digits) == 0)
@@ -41,7 +41,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotl(_Tp __t, unsigned
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotr(_Tp __t, unsigned int __cnt) noexcept
 {
-  static_assert(__libcpp_is_unsigned_integer<_Tp>::value, "__rotr requires unsigned");
+  static_assert(__cccl_is_unsigned_integer<_Tp>::value, "__rotr requires unsigned");
   using __nlt = numeric_limits<_Tp>;
 
   return ((__cnt % __nlt::digits) == 0)
@@ -50,7 +50,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotr(_Tp __t, unsigned
 }
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, _Tp>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer<_Tp>::value, _Tp>
 rotl(_Tp __t, unsigned int __cnt) noexcept
 {
   return __rotl(__t, __cnt);
@@ -58,7 +58,7 @@ rotl(_Tp __t, unsigned int __cnt) noexcept
 
 // rotr
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, _Tp>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer<_Tp>::value, _Tp>
 rotr(_Tp __t, unsigned int __cnt) noexcept
 {
   return __rotr(__t, __cnt);

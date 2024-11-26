@@ -15,7 +15,7 @@ TEST_CASE("Fill", "[data_manipulation]")
   cudax::stream _stream;
   SECTION("Host resource")
   {
-    cuda::mr::pinned_memory_resource host_resource;
+    cudax::pinned_memory_resource host_resource;
     cudax::uninitialized_buffer<int, cuda::mr::device_accessible> buffer(host_resource, buffer_size);
 
     cudax::fill_bytes(_stream, buffer, fill_byte);
@@ -25,7 +25,7 @@ TEST_CASE("Fill", "[data_manipulation]")
 
   SECTION("Device resource")
   {
-    cuda::mr::device_memory_resource device_resource;
+    cudax::device_memory_resource device_resource;
     cudax::uninitialized_buffer<int, cuda::mr::device_accessible> buffer(device_resource, buffer_size);
     cudax::fill_bytes(_stream, buffer, fill_byte);
 
@@ -37,7 +37,7 @@ TEST_CASE("Fill", "[data_manipulation]")
   }
   SECTION("Launch transform")
   {
-    cuda::mr::pinned_memory_resource host_resource;
+    cudax::pinned_memory_resource host_resource;
     cudax::weird_buffer buffer(host_resource, buffer_size);
 
     cudax::fill_bytes(_stream, buffer, fill_byte);
@@ -67,7 +67,7 @@ TEST_CASE("Mdspan Fill", "[data_manipulation]")
   {
     using static_extents = cuda::std::extents<size_t, 2, 3, 4>;
     auto size            = cuda::std::layout_left::mapping<static_extents>().required_span_size();
-    cudax::weird_buffer<cuda::std::mdspan<int, static_extents>> buffer(cuda::mr::pinned_memory_resource{}, size);
+    cudax::weird_buffer<cuda::std::mdspan<int, static_extents>> buffer(cudax::pinned_memory_resource{}, size);
 
     cudax::fill_bytes(stream, buffer, fill_byte);
     check_result_and_erase(stream, cuda::std::span(buffer.data, buffer.size));

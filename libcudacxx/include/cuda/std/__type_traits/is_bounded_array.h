@@ -26,10 +26,10 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __libcpp_is_bounded_array : false_type
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __cccl_is_bounded_array : false_type
 {};
 template <class _Tp, size_t _Np>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __libcpp_is_bounded_array<_Tp[_Np]> : true_type
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __cccl_is_bounded_array<_Tp[_Np]> : true_type
 {};
 
 template <class>

@@ -163,7 +163,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_swappable_with
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_swappable
-    : public conditional_t<__libcpp_is_referenceable<_Tp>::value,
+    : public conditional_t<__cccl_is_referenceable<_Tp>::value,
                            is_swappable_with<add_lvalue_reference_t<_Tp>, add_lvalue_reference_t<_Tp>>,
                            false_type>
 {};
@@ -175,7 +175,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_swappable_with
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_swappable
-    : public conditional_t<__libcpp_is_referenceable<_Tp>::value,
+    : public conditional_t<__cccl_is_referenceable<_Tp>::value,
                            is_nothrow_swappable_with<add_lvalue_reference_t<_Tp>, add_lvalue_reference_t<_Tp>>,
                            false_type>
 {};

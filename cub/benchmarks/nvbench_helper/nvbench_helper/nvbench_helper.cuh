@@ -32,6 +32,19 @@ NVBENCH_DECLARE_TYPE_STRINGS(complex, "C64", "complex");
 NVBENCH_DECLARE_TYPE_STRINGS(::cuda::std::false_type, "false", "false_type");
 NVBENCH_DECLARE_TYPE_STRINGS(::cuda::std::true_type, "true", "true_type");
 
+template <typename T, T I>
+struct nvbench::type_strings<::cuda::std::integral_constant<T, I>>
+{
+  static std::string input_string()
+  {
+    return std::to_string(I);
+  }
+  static std::string description()
+  {
+    return "integral_constant<" + type_strings<T>::description() + ", " + std::to_string(I) + ">";
+  }
+};
+
 namespace detail
 {
 

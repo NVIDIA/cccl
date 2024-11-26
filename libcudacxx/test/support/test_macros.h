@@ -149,7 +149,7 @@
 
 #if TEST_HAS_BUILTIN(__builtin_is_constant_evaluated) || _CCCL_COMPILER(GCC, >=, 9) \
   || (_CCCL_COMPILER(MSVC) && _MSC_VER > 1924 && _CCCL_CUDACC_AT_LEAST(11, 3))
-#  define TEST_IS_CONSTANT_EVALUATED() _CUDA_VSTD::__libcpp_is_constant_evaluated()
+#  define TEST_IS_CONSTANT_EVALUATED() cuda::std::is_constant_evaluated()
 #else
 #  define TEST_IS_CONSTANT_EVALUATED() false
 #endif

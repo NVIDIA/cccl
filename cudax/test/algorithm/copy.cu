@@ -16,7 +16,7 @@ TEST_CASE("1d Copy", "[data_manipulation]")
 
   SECTION("Device resource")
   {
-    cudax::mr::device_memory_resource device_resource;
+    cudax::device_memory_resource device_resource;
     std::vector<int> host_vector(buffer_size);
 
     {
@@ -46,8 +46,8 @@ TEST_CASE("1d Copy", "[data_manipulation]")
 
   SECTION("Host and managed resource")
   {
-    cuda::mr::managed_memory_resource managed_resource;
-    cuda::mr::pinned_memory_resource host_resource;
+    cudax::managed_memory_resource managed_resource;
+    cudax::pinned_memory_resource host_resource;
 
     {
       cudax::uninitialized_buffer<int, cuda::mr::host_accessible> host_buffer(host_resource, buffer_size);
@@ -78,7 +78,7 @@ TEST_CASE("1d Copy", "[data_manipulation]")
   }
   SECTION("Launch transform")
   {
-    cuda::mr::pinned_memory_resource host_resource;
+    cudax::pinned_memory_resource host_resource;
     cudax::weird_buffer input(host_resource, buffer_size);
     cudax::weird_buffer output(host_resource, buffer_size);
 
@@ -90,7 +90,7 @@ TEST_CASE("1d Copy", "[data_manipulation]")
 
   SECTION("Asymetric size")
   {
-    cuda::mr::pinned_memory_resource host_resource;
+    cudax::pinned_memory_resource host_resource;
     cudax::uninitialized_buffer<int, cuda::mr::host_accessible> host_buffer(host_resource, 1);
     cudax::fill_bytes(_stream, host_buffer, fill_byte);
 
@@ -160,7 +160,7 @@ TEST_CASE("Mdspan copy", "[data_manipulation]")
     auto mdspan_buffer                   = make_buffer_for_mdspan(mixed_extents, 1);
     cuda::std::mdspan<int, decltype(mixed_extents)> mdspan(mdspan_buffer.data(), mixed_extents);
     cudax::weird_buffer<cuda::std::mdspan<int, decltype(static_extents)>> buffer{
-      cuda::mr::pinned_memory_resource{}, mdspan.mapping().required_span_size()};
+      cudax::pinned_memory_resource{}, mdspan.mapping().required_span_size()};
 
     cudax::copy_bytes(stream, mdspan, buffer);
     stream.wait();
