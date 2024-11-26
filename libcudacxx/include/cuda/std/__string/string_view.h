@@ -229,7 +229,7 @@ public:
   {
     // If we're in a constant evaluated context, we cannot compare the __str_
     // members for equality.
-    return __compare(__other, bool_constant<__libcpp_default_is_constant_evaluated()>());
+    return __compare(__other, bool_constant<__cccl_default_is_constant_evaluated()>());
   }
 
   _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr bool

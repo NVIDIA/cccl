@@ -39,7 +39,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__iter_swap)
 template <class _I1, class _I2>
 void iter_swap(_I1, _I2) = delete;
 
-#  if _CCCL_STD_VER > 2017
+#  if !defined(_CCCL_NO_CONCEPTS)
 template <class _T1, class _T2>
 concept __unqualified_iter_swap =
   (__class_or_enum<remove_cvref_t<_T1>> || __class_or_enum<remove_cvref_t<_T2>>)
@@ -52,7 +52,7 @@ concept __readable_swappable = !__unqualified_iter_swap<_T1, _T2> && indirectly_
 template <class _T1, class _T2>
 concept __moveable_storable = !__unqualified_iter_swap<_T1, _T2> && !__readable_swappable<_T1, _T2>
                            && indirectly_movable_storable<_T1, _T2> && indirectly_movable_storable<_T2, _T1>;
-#  else
+#  else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 template <class _T1, class _T2>
 _CCCL_CONCEPT_FRAGMENT(
   __unqualified_iter_swap_,
@@ -83,7 +83,7 @@ _CCCL_CONCEPT_FRAGMENT(
 
 template <class _T1, class _T2>
 _CCCL_CONCEPT __moveable_storable = _CCCL_FRAGMENT(__moveable_storable_, _T1, _T2);
-#  endif // _CCCL_STD_VER > 2011
+#  endif // _CCCL_NO_CONCEPTS
 
 struct __fn
 {

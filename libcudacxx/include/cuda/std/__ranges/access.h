@@ -46,7 +46,7 @@ void begin(_Tp&) = delete;
 template <class _Tp>
 void begin(const _Tp&) = delete;
 
-#  if _CCCL_STD_VER > 2017
+#  if !defined(_CCCL_NO_CONCEPTS)
 template <class _Tp>
 concept __member_begin = __can_borrow<_Tp> && __workaround_52970<_Tp> && requires(_Tp&& __t) {
   { _LIBCUDACXX_AUTO_CAST(__t.begin()) } -> input_or_output_iterator;
@@ -57,7 +57,7 @@ concept __unqualified_begin =
   !__member_begin<_Tp> && __can_borrow<_Tp> && __class_or_enum<remove_cvref_t<_Tp>> && requires(_Tp&& __t) {
     { _LIBCUDACXX_AUTO_CAST(begin(__t)) } -> input_or_output_iterator;
   };
-#  else // ^^^ CXX20 ^^^ / vvv CXX17 vvv
+#  else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(
   __member_begin_,
@@ -78,7 +78,7 @@ _CCCL_CONCEPT_FRAGMENT(
 
 template <class _Tp>
 _CCCL_CONCEPT __unqualified_begin = _CCCL_FRAGMENT(__unqualified_begin_, _Tp);
-#  endif // _CCCL_STD_VER < 2020
+#  endif // _CCCL_NO_CONCEPTS
 
 struct __fn
 {
@@ -141,7 +141,7 @@ void end(_Tp&) = delete;
 template <class _Tp>
 void end(const _Tp&) = delete;
 
-#  if _CCCL_STD_VER > 2017
+#  if !defined(_CCCL_NO_CONCEPTS)
 template <class _Tp>
 concept __member_end = __can_borrow<_Tp> && __workaround_52970<_Tp> && requires(_Tp&& __t) {
   typename iterator_t<_Tp>;
@@ -154,7 +154,7 @@ concept __unqualified_end =
     typename iterator_t<_Tp>;
     { _LIBCUDACXX_AUTO_CAST(end(__t)) } -> sentinel_for<iterator_t<_Tp>>;
   };
-#  else // ^^^ CXX20 ^^^ / vvv CXX17 vvv
+#  else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(
   __member_end_,
@@ -177,7 +177,7 @@ _CCCL_CONCEPT_FRAGMENT(
 
 template <class _Tp>
 _CCCL_CONCEPT __unqualified_end = _CCCL_FRAGMENT(__unqualified_end_, _Tp);
-#  endif // _CCCL_STD_VER < 2020
+#  endif // _CCCL_NO_CONCEPTS
 
 struct __fn
 {

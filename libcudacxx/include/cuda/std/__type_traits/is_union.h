@@ -39,10 +39,10 @@ _CCCL_INLINE_VAR constexpr bool is_union_v = _CCCL_BUILTIN_IS_UNION(_Tp);
 #else
 
 template <class _Tp>
-struct __libcpp_union : public false_type
+struct __cccl_union : public false_type
 {};
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_union : public __libcpp_union<remove_cv_t<_Tp>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_union : public __cccl_union<remove_cv_t<_Tp>>
 {};
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
