@@ -53,7 +53,7 @@ namespace reserved
  * @param f The function to execute.
  * @param p The additional parameters to pass to the function `f`.
  */
-template <typename F, typename shape_t, typename tuple_args, typename tuple_ops>
+template <typename F, typename shape_t, typename tuple_args>
 __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tuple_args targs)
 {
   size_t i          = blockIdx.x * blockDim.x + threadIdx.x;
@@ -801,7 +801,7 @@ public:
       // limit. We choose to dimension the kernel of the parallel loop to
       // optimize occupancy.
       reserved::compute_kernel_limits(
-        &reserved::loop<Fun_no_ref, sub_shape_t, deps_tup_t, ops_t>,
+        &reserved::loop<Fun_no_ref, sub_shape_t, deps_tup_t>,
         min_grid_size,
         max_block_size,
         0,
@@ -835,7 +835,7 @@ public:
 
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
-      reserved::loop<Fun_no_ref, sub_shape_t, deps_tup_t, ops_t>
+      reserved::loop<Fun_no_ref, sub_shape_t, deps_tup_t>
         <<<static_cast<int>(blocks), static_cast<int>(block_size), 0, t.get_stream()>>>(
           static_cast<int>(n), sub_shape, mv(f), arg_instances);
     }
@@ -844,7 +844,7 @@ public:
       // Put this kernel node in the child graph that implements the graph_task<>
       cudaKernelNodeParams kernel_params;
 
-      kernel_params.func = (void*) reserved::loop<Fun_no_ref, sub_shape_t, deps_tup_t, ops_t>;
+      kernel_params.func = (void*) reserved::loop<Fun_no_ref, sub_shape_t, deps_tup_t>;
 
       kernel_params.gridDim  = dim3(static_cast<int>(blocks));
       kernel_params.blockDim = dim3(static_cast<int>(block_size));
