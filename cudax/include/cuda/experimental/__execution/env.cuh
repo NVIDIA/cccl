@@ -34,34 +34,33 @@
 #include <cuda/experimental/__stream/get_stream.cuh>
 #include <cuda/experimental/__stream/stream_ref.cuh>
 
-namespace cuda::experimental::execution
+namespace cuda::experimental
 {
 
 template <class... _Properties>
 class env_t
 {
 private:
-  using __resource   = ::cuda::experimental::mr::any_async_resource<_Properties...>;
-  using __stream_ref = ::cuda::experimental::stream_ref;
+  using __resource   = any_async_resource<_Properties...>;
+  using __stream_ref = stream_ref;
 
-  __resource __mr_           = ::cuda::experimental::mr::device_memory_resource{};
-  __stream_ref __stream_     = ::cuda::experimental::detail::__invalid_stream;
-  execution_policy __policy_ = execution_policy::invalid_execution_policy;
+  __resource __mr_                      = device_memory_resource{};
+  __stream_ref __stream_                = detail::__invalid_stream;
+  execution::execution_policy __policy_ = execution::execution_policy::invalid_execution_policy;
 
 public:
-  //! @brief Default constructs an environment using
-  //! * ``::cuda::experimental::mr::device_memory_resource`` as the resource
-  //! * the default stream
-  //! * ``execution_policy::invalid_execution_policy`` as the execution policy
+  //! @brief Default constructs an environment using ``device_memory_resource`` as the resource the default stream
+  //! ``execution_policy::invalid_execution_policy`` as the execution policy
   _CCCL_HIDE_FROM_ABI env_t() = default;
 
   //! @brief Construct an env_t from an any_resource, a stream and a policy
   //! @param __mr The any_resource passed in
   //! @param __stream The stream_ref passed in
   //! @param __policy The execution_policy passed in
-  _CCCL_HIDE_FROM_ABI env_t(__resource __mr,
-                            __stream_ref __stream     = ::cuda::experimental::detail::__invalid_stream,
-                            execution_policy __policy = execution_policy::invalid_execution_policy) noexcept
+  _CCCL_HIDE_FROM_ABI
+  env_t(__resource __mr,
+        __stream_ref __stream                = detail::__invalid_stream,
+        execution::execution_policy __policy = execution::execution_policy::invalid_execution_policy) noexcept
       : __mr_(_CUDA_VSTD::move(__mr))
       , __stream_(__stream)
       , __policy_(__policy)
@@ -71,9 +70,8 @@ public:
   //! properties we need
   template <class _Env>
   static constexpr bool __is_compatible_env =
-    ::cuda::experimental::__async::__queryable<_Env, get_memory_resource_t>
-    && ::cuda::experimental::__async::__queryable<_Env, get_stream_t>
-    && ::cuda::experimental::__async::__queryable<_Env, get_execution_policy_t>;
+    __async::__queryable<_Env, get_memory_resource_t> && __async::__queryable<_Env, get_stream_t>
+    && __async::__queryable<_Env, execution::get_execution_policy_t>;
 
   //! @brief Construct from an environment that has the right queries
   //! @param __env The environment we are querying for the required information
@@ -82,7 +80,7 @@ public:
   _CCCL_HIDE_FROM_ABI env_t(const _Env& __env) noexcept
       : __mr_(__env.query(get_memory_resource))
       , __stream_(__env.query(get_stream))
-      , __policy_(__env.query(get_execution_policy))
+      , __policy_(__env.query(execution::get_execution_policy))
   {}
 
   _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI const __resource& query(get_memory_resource_t) const noexcept
@@ -95,12 +93,12 @@ public:
     return __stream_;
   }
 
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI execution_policy query(get_execution_policy_t) const noexcept
+  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI execution::execution_policy query(execution::get_execution_policy_t) const noexcept
   {
     return __policy_;
   }
 };
 
-} // namespace cuda::experimental::execution
+} // namespace cuda::experimental
 
 #endif //__CUDAX___EXECUTION_ENV_CUH

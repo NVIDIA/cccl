@@ -17,7 +17,7 @@
 #include <catch2/catch.hpp>
 
 namespace cudax = cuda::experimental;
-using env_t     = cudax::execution::env_t<cuda::mr::device_accessible>;
+using env_t     = cudax::env_t<cuda::mr::device_accessible>;
 
 struct test_resource
 {
@@ -58,12 +58,12 @@ TEST_CASE("env_t is default constructible", "[execution, env]")
   CHECK(env.query(cudax::get_stream) == ::cuda::experimental::detail::__invalid_stream);
   CHECK(env.query(cudax::execution::get_execution_policy)
         == cudax::execution::execution_policy::invalid_execution_policy);
-  CHECK(env.query(cudax::get_memory_resource) == cudax::mr::device_memory_resource{});
+  CHECK(env.query(cudax::get_memory_resource) == cudax::device_memory_resource{});
 }
 
 TEST_CASE("env_t is constructible from an any_resource", "[execution, env]")
 {
-  const cudax::mr::any_async_resource<cuda::mr::device_accessible> mr{test_resource{}};
+  const cudax::any_async_resource<cuda::mr::device_accessible> mr{test_resource{}};
 
   SECTION("Passing an any_resource")
   {
@@ -99,36 +99,36 @@ TEST_CASE("env_t is constructible from an any_resource passed as an rvalue", "[e
 {
   SECTION("Passing an any_resource")
   {
-    env_t env{cudax::mr::any_async_resource<cuda::mr::device_accessible>{test_resource{}}};
+    env_t env{cudax::any_async_resource<cuda::mr::device_accessible>{test_resource{}}};
     CHECK(env.query(cudax::get_stream) == ::cuda::experimental::detail::__invalid_stream);
     CHECK(env.query(cudax::execution::get_execution_policy)
           == cudax::execution::execution_policy::invalid_execution_policy);
     CHECK(env.query(cudax::get_memory_resource)
-          == cudax::mr::any_async_resource<cuda::mr::device_accessible>{test_resource{}});
+          == cudax::any_async_resource<cuda::mr::device_accessible>{test_resource{}});
   }
 
   SECTION("Passing an any_resource and a stream")
   {
     cudax::stream stream{};
-    env_t env{cudax::mr::any_async_resource<cuda::mr::device_accessible>{test_resource{}}, stream};
+    env_t env{cudax::any_async_resource<cuda::mr::device_accessible>{test_resource{}}, stream};
     CHECK(env.query(cudax::get_stream) == stream);
     CHECK(env.query(cudax::execution::get_execution_policy)
           == cudax::execution::execution_policy::invalid_execution_policy);
     CHECK(env.query(cudax::get_memory_resource)
-          == cudax::mr::any_async_resource<cuda::mr::device_accessible>{test_resource{}});
+          == cudax::any_async_resource<cuda::mr::device_accessible>{test_resource{}});
   }
 
   SECTION("Passing an any_resource, a stream and a policy")
   {
     cudax::stream stream{};
-    env_t env{cudax::mr::any_async_resource<cuda::mr::device_accessible>{test_resource{}},
+    env_t env{cudax::any_async_resource<cuda::mr::device_accessible>{test_resource{}},
               stream,
               cudax::execution::execution_policy::parallel_unsequenced_device};
     CHECK(env.query(cudax::get_stream) == stream);
     CHECK(env.query(cudax::execution::get_execution_policy)
           == cudax::execution::execution_policy::parallel_unsequenced_device);
     CHECK(env.query(cudax::get_memory_resource)
-          == cudax::mr::any_async_resource<cuda::mr::device_accessible>{test_resource{}});
+          == cudax::any_async_resource<cuda::mr::device_accessible>{test_resource{}});
   }
 }
 
@@ -266,7 +266,7 @@ TEST_CASE("Can use query to construct various objects", "[execution, env]")
   SECTION("Can create an any_resource")
   {
     env_t env{test_resource{}};
-    cudax::mr::any_resource<cuda::mr::device_accessible> resource = env.query(cudax::get_memory_resource);
+    cudax::any_resource<cuda::mr::device_accessible> resource = env.query(cudax::get_memory_resource);
     CHECK(resource == test_resource{});
   }
 
