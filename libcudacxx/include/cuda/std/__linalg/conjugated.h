@@ -97,13 +97,13 @@ public:
     return __detail::__conj_if_needed(__nested_element_type(__nested_accessor_.access(__p, __i)));
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr typename offset_policy::data_handle_type
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr typename offset_policy::data_handle_type
   offset(data_handle_type __p, size_t __i) const noexcept
   {
     return __nested_accessor_.offset(__p, __i);
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI const _NestedAccessor& nested_accessor() const noexcept
+  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI const _NestedAccessor& nested_accessor() const noexcept
   {
     return __nested_accessor_;
   }
@@ -113,7 +113,8 @@ private:
 };
 
 template <class _ElementType, class _Extents, class _Layout, class _Accessor>
-_LIBCUDACXX_HIDE_FROM_ABI auto conjugated(_CUDA_VSTD::mdspan<_ElementType, _Extents, _Layout, _Accessor> __a)
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI auto
+conjugated(_CUDA_VSTD::mdspan<_ElementType, _Extents, _Layout, _Accessor> __a)
 {
   using __value_type = typename decltype(__a)::value_type;
   // Current status of [linalg] only optimizes if _Accessor is conjugated_accessor<_Accessor> for some _Accessor.
@@ -142,7 +143,7 @@ _LIBCUDACXX_HIDE_FROM_ABI auto conjugated(_CUDA_VSTD::mdspan<_ElementType, _Exte
 
 // Conjugation is self-annihilating
 template <class _ElementType, class _Extents, class _Layout, class _NestedAccessor>
-_LIBCUDACXX_HIDE_FROM_ABI auto
+[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI auto
 conjugated(_CUDA_VSTD::mdspan<_ElementType, _Extents, _Layout, conjugated_accessor<_NestedAccessor>> __a)
 {
   using __return_element_type  = typename _NestedAccessor::element_type;
