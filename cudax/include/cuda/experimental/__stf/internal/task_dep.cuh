@@ -190,11 +190,6 @@ class logical_data;
 
 class task_dep_op_none
 {
-public:
-  // no-op operator
-  template <typename T>
-  static __host__ __device__ void apply_op(T&, const T&)
-  {}
 };
 
 /**
