@@ -826,14 +826,6 @@ public:
     // TODO: improve this
     size_t blocks = ::std::min(min_blocks * 3 / 2, max_blocks);
 
-#  if 0
-    constexpr size_t num_deps = ::std::tuple_size<ops_t>::value;
-    constexpr size_t num_none = count_type_v<task_dep_op_none, ops_t>;
-    fprintf(stderr, "number of none in type %zu total number %zu\n", num_none, num_deps);
-
-    constexpr bool need_reduction = (::std::tuple_size<ops_t>::value != count_type_v<task_dep_op_none, ops_t>);
-#  endif
-
     // Create a tuple with all instances (eg. tuple<slice<double>, slice<int>>)
     deps_tup_t arg_instances = ::std::apply(
       [&](const auto&... d) {
