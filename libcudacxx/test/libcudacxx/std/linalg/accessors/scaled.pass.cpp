@@ -7,14 +7,40 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++11
-// UNSUPPORTED: msvc && c++14, msvc && c++17
+// UNSUPPORTED: c++11, c++14
+// UNSUPPORTED: msvc && c++17
 
 #include <cuda/std/__linalg/scaled.h>
 #include <cuda/std/cassert>
 #include <cuda/std/type_traits>
 
-int main(int, char**)
+__host__ __device__ void constexpr_test()
+{
+  // operator() type
+  {
+    using element_t = int;
+    cuda::std::array<element_t, 2> d{42, 43};
+    cuda::std::mdspan md(d.data(), 2);
+    auto scaled_md = cuda::std::linalg::scaled(2.0f, md);
+
+    static_assert(cuda::std::is_same<decltype(scaled_md(0)), float>::value, "wrong type");
+    static_cast<void>(scaled_md);
+  }
+  // nested_accessor()
+  {
+    using element_t = int;
+    cuda::std::array<element_t, 2> d{42, 43};
+    cuda::std::mdspan md(d.data(), 2);
+    auto scaled_md = cuda::std::linalg::scaled(2, md);
+
+    static_assert(cuda::std::is_same<decltype(scaled_md.accessor().nested_accessor()),
+                                     cuda::std::default_accessor<element_t>>::value,
+                  "wrong type");
+    static_cast<void>(scaled_md);
+  }
+}
+
+__host__ __device__ void runtime_test()
 {
   // operator() value
   {
@@ -25,16 +51,6 @@ int main(int, char**)
 
     assert(scaled_md(0) == 42 * 2);
     assert(scaled_md(1) == 43 * 2);
-  }
-  // operator() type
-  {
-    using element_t = int;
-    cuda::std::array<element_t, 2> d{42, 43};
-    cuda::std::mdspan md(d.data(), 2);
-    auto scaled_md = cuda::std::linalg::scaled(2.0f, md);
-
-    static_assert(cuda::std::is_same<decltype(scaled_md(0)), float>::value, "wrong type");
-    static_cast<void>(scaled_md);
   }
   // access()
   {
@@ -63,18 +79,6 @@ int main(int, char**)
 
     assert(scaled_md.accessor().scaling_factor() == 2);
   }
-  // nested_accessor()
-  {
-    using element_t = int;
-    cuda::std::array<element_t, 2> d{42, 43};
-    cuda::std::mdspan md(d.data(), 2);
-    auto scaled_md = cuda::std::linalg::scaled(2, md);
-
-    static_assert(cuda::std::is_same<decltype(scaled_md.accessor().nested_accessor()),
-                                     cuda::std::default_accessor<element_t>>::value,
-                  "wrong type");
-    static_cast<void>(scaled_md);
-  }
   // composition
   {
     using element_t = int;
@@ -97,5 +101,11 @@ int main(int, char**)
     assert(scaled_md2(0) == 42 * 2);
     assert(scaled_md2(1) == 43 * 2);
   }
+}
+
+int main(int, char**)
+{
+  constexpr_test();
+  runtime_test();
   return 0;
 }
