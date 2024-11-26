@@ -52,6 +52,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__cccl/execution_space.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/remove_const.h>
@@ -69,26 +70,26 @@ namespace linalg
 namespace __detail
 {
 
-template <class __T, class = void>
+template <class _Type, class = void>
 struct __has_conj : _CUDA_VSTD::false_type
 {};
 
 // If I can find unqualified conj via overload resolution, then assume that conj(__t) returns the conjugate of __t.
-template <class __T>
-struct __has_conj<__T, _CUDA_VSTD::void_t<decltype(_CUDA_VSTD::conj(_CUDA_VSTD::declval<__T>()))>>
+template <class _Type>
+struct __has_conj<_Type, _CUDA_VSTD::void_t<decltype(_CUDA_VSTD::conj(_CUDA_VSTD::declval<_Type>()))>>
     : _CUDA_VSTD::true_type
 {};
 
-template <class __T>
-_LIBCUDACXX_HIDE_FROM_ABI __T __conj_if_needed_impl(const __T& __t, _CUDA_VSTD::false_type)
+template <class _Type>
+_LIBCUDACXX_HIDE_FROM_ABI _Type __conj_if_needed_impl(const _Type& __t, _CUDA_VSTD::false_type)
 {
   return __t;
 }
 
-template <class __T>
-_LIBCUDACXX_HIDE_FROM_ABI auto __conj_if_needed_impl(const __T& __t, _CUDA_VSTD::true_type)
+template <class _Type>
+_LIBCUDACXX_HIDE_FROM_ABI auto __conj_if_needed_impl(const _Type& __t, _CUDA_VSTD::true_type)
 {
-  if constexpr (_CUDA_VSTD::is_arithmetic_v<__T>)
+  if constexpr (_CUDA_VSTD::is_arithmetic_v<_Type>)
   {
     return __t;
   }
@@ -98,9 +99,13 @@ _LIBCUDACXX_HIDE_FROM_ABI auto __conj_if_needed_impl(const __T& __t, _CUDA_VSTD:
   }
 }
 
-inline constexpr auto __conj_if_needed = [] _CCCL_HOST_DEVICE(const auto& __t) constexpr {
-  using __T = _CUDA_VSTD::remove_const_t<decltype(__t)>;
-  return __conj_if_needed_impl(__t, __has_conj<__T>{});
+struct __conj_if_needed
+{
+  template <class _Type>
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(const _Type& __t) const
+  {
+    return __conj_if_needed_impl(__t, __has_conj<_Type>{});
+  }
 };
 
 } // end namespace __detail

@@ -71,7 +71,7 @@ class conjugated_accessor
 {
 private:
   using __nested_element_type = typename _NestedAccessor::element_type;
-  using __nc_result_type      = decltype(__detail::__conj_if_needed(_CUDA_VSTD::declval<__nested_element_type>()));
+  using __nc_result_type      = decltype(__detail::__conj_if_needed{}(_CUDA_VSTD::declval<__nested_element_type>()));
 
 public:
   using element_type     = _CUDA_VSTD::add_const_t<__nc_result_type>;
@@ -94,7 +94,7 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr reference access(data_handle_type __p, size_t __i) const noexcept
   {
-    return __detail::__conj_if_needed(__nested_element_type(__nested_accessor_.access(__p, __i)));
+    return __detail::__conj_if_needed{}(__nested_element_type(__nested_accessor_.access(__p, __i)));
   }
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr typename offset_policy::data_handle_type
