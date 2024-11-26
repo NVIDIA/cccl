@@ -59,7 +59,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2011
+#if _CCCL_STD_VER >= 2017
 
 namespace linalg
 {
@@ -80,7 +80,8 @@ public:
   _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _NestedAccessor, const _OtherNestedAccessor&)
                    _CCCL_AND _CCCL_TRAIT(is_constructible, _ScalingFactor, _OtherScalingFactor))
   __MDSPAN_CONDITIONAL_EXPLICIT(_CCCL_TRAIT(is_convertible, _OtherNestedAccessor, _NestedAccessor))
-  constexpr scaled_accessor(const scaled_accessor<_OtherScalingFactor, _OtherNestedAccessor>& __other)
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr scaled_accessor(
+    const scaled_accessor<_OtherScalingFactor, _OtherNestedAccessor>& __other)
       : __scaling_factor_(__other.scaling_factor())
       , __nested_accessor_(__other.nested_accessor())
   {}
@@ -106,7 +107,7 @@ public:
     return __nested_accessor_;
   }
 
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr _ScalingFactor scaling_factor() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr _ScalingFactor scaling_factor() const noexcept
   {
     return __scaling_factor_;
   }
@@ -121,25 +122,25 @@ namespace __detail
 
 template <class _ScalingFactor, class _NestedAccessor>
 using __scaled_element_type =
-  _CUDA_VSTD::add_const_t<typename _CUDA_VSTD::linalg::scaled_accessor<_ScalingFactor, _NestedAccessor>::element_type>;
+  _CUDA_VSTD::add_const_t<typename scaled_accessor<_ScalingFactor, _NestedAccessor>::element_type>;
 
 } // namespace __detail
 
 template <class _ScalingFactor, class _ElementType, class _Extents, class _Layout, class _Accessor>
 _LIBCUDACXX_HIDE_FROM_ABI
-mdspan<__detail::__scaled_element_type<_ScalingFactor, _Accessor>,
-       _Extents,
-       _Layout,
-       _CUDA_VSTD::linalg::scaled_accessor<_ScalingFactor, _Accessor>>
-scaled(_ScalingFactor __scaling_factor, mdspan<_ElementType, _Extents, _Layout, _Accessor> __x)
+_CUDA_VSTD::mdspan<__detail::__scaled_element_type<_ScalingFactor, _Accessor>,
+                   _Extents,
+                   _Layout,
+                   scaled_accessor<_ScalingFactor, _Accessor>>
+scaled(_ScalingFactor __scaling_factor, _CUDA_VSTD::mdspan<_ElementType, _Extents, _Layout, _Accessor> __x)
 {
-  using __acc_type = _CUDA_VSTD::linalg::scaled_accessor<_ScalingFactor, _Accessor>;
+  using __acc_type = scaled_accessor<_ScalingFactor, _Accessor>;
   return {__x.data_handle(), __x.mapping(), __acc_type{__scaling_factor, __x.accessor()}};
 }
 
 } // end namespace linalg
 
-#endif // _CCCL_STD_VER > 2011
+#endif // _CCCL_STD_VER >= 2017
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
