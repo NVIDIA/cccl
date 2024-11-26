@@ -116,9 +116,9 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __vtable_tuple
 #if _CCCL_COMPILER(MSVC)
       // workaround for MSVC bug
       , __overrides_for<_Interfaces>::__vtable{__tag<_Tp>(), this}...
-#else
+#else // ^^^ MSVC ^^^ / vvv !MSVC vvv
       , __vtable_for<_Interfaces>{__tag<_Tp>(), this}...
-#endif
+#endif // !MSVC
   {
     static_assert(_CUDA_VSTD::is_class_v<_Super>, "expected a class type");
   }

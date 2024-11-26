@@ -278,18 +278,18 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__irefer
     this->__set_ref(__vptr, &__obj);
   }
 
-#if defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_STD_VER >= 2020
+#if defined(_CCCL_CUDA_COMPILER_NVCC) && !defined(_CCCL_NO_CONCEPTS)
 // For some reason, the constructor overloads below give nvcc fits when
 // constrained with c++20 requires clauses. So we fall back to good ol'
 // enable_if.
 #  define _CUDAX_TEMPLATE(...) template <__VA_ARGS__,
 #  define _CUDAX_REQUIRES(...) _CUDA_VSTD::enable_if_t<__VA_ARGS__, int> = 0 >
 #  define _CUDAX_AND           , int > = 0, _CUDA_VSTD::enable_if_t <
-#else
+#else // ^^^ NVCC && concepts ^^^ / vvv !NVCC || !concepts vvv
 #  define _CUDAX_TEMPLATE _CCCL_TEMPLATE
 #  define _CUDAX_REQUIRES _CCCL_REQUIRES
 #  define _CUDAX_AND      _CCCL_AND
-#endif
+#endif // !NVCC || !concepts
 
   _CUDAX_TEMPLATE(class _Tp)
   _CUDAX_REQUIRES((!__is_basic_any<_Tp>) )

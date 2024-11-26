@@ -218,12 +218,12 @@ struct __vptr_for_impl
 template <class _Interface>
 using __vptr_for _CCCL_NODEBUG_ALIAS = typename __vptr_for_impl<_Interface>::type;
 
-#else
+#else // ^^^ _CCCL_COMPILER(NVHPC) ^^^ / vvv !_CCCL_COMPILER(NVHPC) vvv
 
 template <class _Interface>
 using __vptr_for _CCCL_NODEBUG_ALIAS = typename __overrides_for<_Interface>::__vptr_t;
 
-#endif
+#endif // !_CCCL_COMPILER(NVHPC)
 
 //!
 //! interface satisfaction

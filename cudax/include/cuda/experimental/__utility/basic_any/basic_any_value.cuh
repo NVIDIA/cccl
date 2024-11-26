@@ -141,12 +141,12 @@ public:
   {
     __convert_from(__other);
   }
-#else
+#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
   // Without real concepts, we use base classes to implement movability and
   // copyability. All we need here is to accept the default implementations.
   basic_any(basic_any&& __other)      = default;
   basic_any(basic_any const& __other) = default;
-#endif
+#endif // _CCCL_NO_CONCEPTS
 
   //! \brief Converting constructor that move constructs from a compatible
   //! `basic_any` object.
@@ -202,12 +202,12 @@ public:
   {
     return __assign_from(__other);
   }
-#else
+#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
   // Without real concepts, we use base classes to implement movability and
   // copyability. All we need here is to accept the default implementations.
   auto operator=(basic_any&& __other) -> basic_any&      = default;
   auto operator=(basic_any const& __other) -> basic_any& = default;
-#endif
+#endif // _CCCL_NO_CONCEPTS
 
   //! \brief Converting move assignment operator from a compatible `basic_any`
   //! object.
