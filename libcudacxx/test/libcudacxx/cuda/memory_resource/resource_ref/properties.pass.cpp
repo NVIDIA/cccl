@@ -17,7 +17,12 @@
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
 
+#include "test_macros.h"
 #include "types.h"
+
+#if defined(TEST_COMPILER_MSVC)
+struct someStruct;
+#endif // TEST_COMPILER_MSVC
 
 namespace properties_test
 {
@@ -25,7 +30,7 @@ static_assert(cuda::property_with_value<property_with_value<int>>, "");
 static_assert(cuda::property_with_value<property_with_value<struct someStruct>>, "");
 
 static_assert(!cuda::property_with_value<property_without_value<int>>, "");
-static_assert(!cuda::property_with_value<property_without_value<struct otherStruct>>, "");
+static_assert(!cuda::property_with_value<property_without_value<struct someStruct>>, "");
 } // namespace properties_test
 
 namespace resource_test

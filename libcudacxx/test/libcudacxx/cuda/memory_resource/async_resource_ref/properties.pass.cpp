@@ -18,7 +18,12 @@
 #include <cuda/std/cstdint>
 #include <cuda/stream_ref>
 
+#include "test_macros.h"
 #include "types.h"
+
+#if defined(TEST_COMPILER_MSVC)
+struct someStruct;
+#endif // TEST_COMPILER_MSVC
 
 namespace properties_test
 {
