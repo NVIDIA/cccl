@@ -144,7 +144,7 @@ TEST_CASE("device_memory_pool construction", "[memory_resource]")
   }
 
   // Allocation handles are only supported after 11.2
-#if _CCCL_CUDACC_AT_LEAST(11, 2)
+#if _CCCL_CUDA_COMPILER_AT_LEAST(11, 2)
   SECTION("Construct with allocation handle")
   {
     cudax::mr::memory_pool_properties props = {
@@ -163,7 +163,7 @@ TEST_CASE("device_memory_pool construction", "[memory_resource]")
     // Ensure that we disable export
     CHECK(ensure_export_handle(get, static_cast<cudaMemAllocationHandleType>(props.allocation_handle_type)));
   }
-#endif // _CCCL_CUDACC_AT_LEAST(11, 2)
+#endif // _CCCL_CUDA_COMPILER_AT_LEAST(11, 2)
 
   SECTION("Take ownership of native handle")
   {

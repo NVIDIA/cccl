@@ -92,7 +92,7 @@ extern "C++" {
 #    define __has_declspec_attribute(__x) 0
 #  endif
 
-#  if !defined(_CCCL_CUDA_COMPILER_NVCC) && !_CCCL_COMPILER(NVRTC)
+#  if !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_CUDA_COMPILER(NVRTC)
 // If NVCC is not being used <complex> can safely use `long double` without warnings
 #    define _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
 // NVCC does not have a way of silencing non '_' prefixed UDLs
@@ -313,7 +313,7 @@ extern "C++" {
 #    define _LIBCUDACXX_PRAGMA_UNROLL(_N)
 #  endif // !__CUDA_ARCH__
 
-#  if defined(_CCCL_CUDA_COMPILER)
+#  if _CCCL_HAS_CUDA_COMPILER
 #    define _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(size, ptr) (size <= 8)
 #  elif _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(GCC)
 #    define _LIBCUDACXX_ATOMIC_ALWAYS_LOCK_FREE(...) __atomic_always_lock_free(__VA_ARGS__)
@@ -382,7 +382,7 @@ typedef __char32_t char32_t;
 // NVCC cannot properly handle some deductions occuring within NOEXCEPT
 // C++17 mode causes reference instatiation errors in tuple
 #    if (_CCCL_COMPILER(GCC, >=, 7, 2) && _CCCL_COMPILER(GCC, <=, 8, 5))
-#      if defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_STD_VER == 2017
+#      if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_STD_VER == 2017
 #        define _LIBCUDACXX_NO_TUPLE_NOEXCEPT
 #      endif
 #    endif
@@ -429,7 +429,7 @@ typedef __char32_t char32_t;
 #  endif // !_LIBCUDACXX_FREESTANDING
 
 #  ifndef _LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS
-#    if _CCCL_COMPILER(NVRTC) || defined(_CCCL_CUDA_COMPILER_NVHPC)
+#    if _CCCL_CUDA_COMPILER(NVRTC) || _CCCL_CUDA_COMPILER(NVHPC)
 #      define _LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS
 #    endif
 #  endif // _LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS
@@ -462,28 +462,28 @@ typedef __char32_t char32_t;
 
 #  ifndef _LIBCUDACXX_HAS_NO_INT128
 #    if _CCCL_COMPILER(MSVC) || (_CCCL_COMPILER(NVRTC) && !defined(__CUDACC_RTC_INT128__)) \
-      || (defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_CUDACC_BELOW(11, 5)) || !defined(__SIZEOF_INT128__)
+      || _CCCL_CUDA_COMPILER(NVCC, <, 11, 5) || !defined(__SIZEOF_INT128__)
 #      define _LIBCUDACXX_HAS_NO_INT128
 #    endif
 #  endif // !_LIBCUDACXX_HAS_NO_INT128
 
 #  ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
-#    if _CCCL_CUDACC
+#    if _CCCL_HAS_CUDA_COMPILER
 #      define _LIBCUDACXX_HAS_NO_LONG_DOUBLE
 #    endif
 #  endif // _LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
 // libcu++ requires host device support for its tests. Until then restrict usage to at least 12.2
 #  ifndef _LIBCUDACXX_HAS_NVFP16
-#    if defined(_CCCL_HAS_NVFP16) && _CCCL_CUDACC_AT_LEAST(12, 2) \
-      && (defined(_CCCL_CUDA_COMPILER) || defined(LIBCUDACXX_ENABLE_HOST_NVFP16))
+#    if defined(_CCCL_HAS_NVFP16) && _CCCL_CUDA_COMPILER_AT_LEAST(12, 2) \
+      && (_CCCL_HAS_CUDA_COMPILER || defined(LIBCUDACXX_ENABLE_HOST_NVFP16))
 #      define _LIBCUDACXX_HAS_NVFP16
 #    endif
 #  endif // !_LIBCUDACXX_HAS_NVFP16
 
 // libcu++ requires host device support for its tests. Until then restrict usage to at least 12.2
 #  ifndef _LIBCUDACXX_HAS_NVBF16
-#    if defined(_CCCL_HAS_NVBF16) && _CCCL_CUDACC_AT_LEAST(12, 2)
+#    if defined(_CCCL_HAS_NVBF16) && _CCCL_CUDA_COMPILER_AT_LEAST(12, 2)
 #      define _LIBCUDACXX_HAS_NVBF16
 #    endif
 #  endif // !_LIBCUDACXX_HAS_NVBF16
@@ -629,7 +629,7 @@ typedef unsigned int char32_t;
 // Deprecations warnings are always enabled, except when users explicitly opt-out
 // by defining _LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS.
 // NVCC 11.1 and 11.2 are broken with the deprecated attribute, so disable it
-#  if !defined(_LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS) && _CCCL_CUDACC_AT_LEAST(11, 3)
+#  if !defined(_LIBCUDACXX_DISABLE_DEPRECATION_WARNINGS) && _CCCL_CUDA_COMPILER_AT_LEAST(11, 3)
 #    if _CCCL_HAS_ATTRIBUTE(deprecated)
 #      define _LIBCUDACXX_DEPRECATED __attribute__((deprecated))
 #    elif _CCCL_STD_VER > 2011
@@ -749,7 +749,7 @@ typedef unsigned int char32_t;
 #  endif
 
 // CUDA Atomics supersede host atomics in order to insert the host/device dispatch layer
-#  if defined(_CCCL_CUDA_COMPILER_NVCC) || _CCCL_COMPILER(NVRTC) || _CCCL_COMPILER(NVHPC) || _CCCL_CUDACC
+#  if _CCCL_COMPILER(NVHPC) || _CCCL_HAS_CUDA_COMPILER
 #    define _LIBCUDACXX_HAS_CUDA_ATOMIC_IMPL
 #  endif
 
@@ -824,9 +824,9 @@ typedef unsigned int char32_t;
 #    define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
 #  elif _CCCL_COMPILER(MSVC)
 #    define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
-#  elif _CCCL_CUDACC_BELOW(11, 8)
+#  elif _CCCL_CUDA_COMPILER_BEFORE(11, 8)
 #    define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
-#  elif defined(_CCCL_CUDA_COMPILER_CLANG)
+#  elif _CCCL_CUDA_COMPILER(CLANG)
 #    define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
 #  endif
 
@@ -876,7 +876,7 @@ typedef unsigned int char32_t;
 
 // NVRTC has a bug that prevented the use of delegated constructors, as it did not accept execution space annotations.
 // This creates a whole lot of boilerplate that we can avoid through a macro (see nvbug3961621)
-#  if _CCCL_COMPILER(NVRTC) || (_CCCL_CUDACC_BELOW(11, 3) && _CCCL_COMPILER(CLANG))
+#  if _CCCL_COMPILER(NVRTC) || _CCCL_COMPILER(CLANG, <, 11, 3)
 #    define _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__class, __baseclass, ...)                               \
       using __base = __baseclass<__VA_ARGS__>;                                                         \
       template <class... _Args, enable_if_t<_CCCL_TRAIT(is_constructible, __base, _Args...), int> = 0> \

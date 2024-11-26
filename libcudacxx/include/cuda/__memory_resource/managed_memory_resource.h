@@ -23,9 +23,9 @@
 
 #if !_CCCL_COMPILER(MSVC2017) && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
-#  if defined(_CCCL_CUDA_COMPILER_CLANG)
+#  if _CCCL_CUDA_COMPILER(CLANG)
 #    include <cuda_runtime_api.h>
-#  endif // _CCCL_CUDA_COMPILER_CLANG
+#  endif // _CCCL_CUDA_COMPILER(CLANG)
 
 #  include <cuda/__memory_resource/get_property.h>
 #  include <cuda/__memory_resource/properties.h>

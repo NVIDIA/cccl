@@ -86,7 +86,7 @@
 #endif
 
 // figure out which device compiler we're using
-#if defined(_CCCL_CUDA_COMPILER_NVCC) || defined(_CCCL_CUDA_COMPILER_NVHPC)
+#if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_CUDA_COMPILER(NVHPC)
 //! deprecated [Since 2.7]
 #  define CUB_DEVICE_COMPILER CUB_DEVICE_COMPILER_NVCC
 #elif _CCCL_COMPILER(MSVC)
@@ -97,7 +97,7 @@
 #  define CUB_DEVICE_COMPILER CUB_DEVICE_COMPILER_GCC
 #elif _CCCL_COMPILER(CLANG)
 // CUDA-capable clang should behave similar to NVCC.
-#  if defined(_CCCL_CUDA_COMPILER_NVCC)
+#  if _CCCL_CUDA_COMPILER(NVCC)
 //! deprecated [Since 2.7]
 #    define CUB_DEVICE_COMPILER CUB_DEVICE_COMPILER_NVCC
 #  else

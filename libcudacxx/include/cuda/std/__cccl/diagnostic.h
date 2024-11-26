@@ -109,8 +109,8 @@
        // !_CCCL_COMPILER(MSVC)
 
 // Enable us to selectively silence cuda compiler warnings
-#if defined(_CCCL_CUDA_COMPILER)
-#  if defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_HAS_CUDA_COMPILER
+#  if _CCCL_CUDA_COMPILER(CLANG)
 #    define _CCCL_NV_DIAG_SUPPRESS(_WARNING)
 #    define _CCCL_NV_DIAG_DEFAULT(_WARNING)
 #  elif defined(__NVCC_DIAG_PRAGMA_SUPPORT__) || _CCCL_COMPILER(ICC)
@@ -133,7 +133,7 @@
 #      define _CCCL_NV_DIAG_DEFAULT(_WARNING)  _CCCL_PRAGMA(diag_default _WARNING)
 #    endif // !_CCCL_COMPILER(MSVC2017)
 #  endif // !__NVCC_DIAG_PRAGMA_SUPPORT__
-#else // ^^^ _CCCL_CUDA_COMPILER ^^^ / vvv !_CCCL_CUDA_COMPILER vvv
+#else // ^^^ _CCCL_HAS_CUDA_COMPILER^^^ / vvv !_CCCL_HAS_CUDA_COMPILERvvv
 #  define _CCCL_NV_DIAG_SUPPRESS(_WARNING)
 #  define _CCCL_NV_DIAG_DEFAULT(_WARNING)
 #endif // other compilers

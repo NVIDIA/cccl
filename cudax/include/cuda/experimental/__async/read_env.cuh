@@ -39,10 +39,10 @@ struct THE_CURRENT_ENVIRONMENT_LACKS_THIS_QUERY;
 
 struct read_env_t
 {
-#if !defined(_CCCL_CUDA_COMPILER_NVCC)
+#if !_CCCL_CUDA_COMPILER(NVCC)
 
 private:
-#endif // _CCCL_CUDA_COMPILER_NVCC
+#endif // _CCCL_CUDA_COMPILER(NVCC)
   template <class _Query, class _Env>
   using __error_env_lacks_query = //
     _ERROR<_WHERE(_IN_ALGORITHM, read_env_t),

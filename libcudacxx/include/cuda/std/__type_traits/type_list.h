@@ -422,7 +422,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_try_catch
 };
 
 // Implementation for indexing into a list of types:
-#  if defined(__cpp_pack_indexing) && !defined(_CCCL_CUDA_COMPILER_NVCC)
+#  if defined(__cpp_pack_indexing) && !_CCCL_CUDA_COMPILER(NVCC)
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wc++26-extensions")

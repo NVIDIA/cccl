@@ -24,12 +24,12 @@
 
 #include <cuda/std/__cccl/visibility.h>
 
-#if defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_UNREACHABLE() __builtin_unreachable()
 #elif defined(__CUDA_ARCH__)
-#  if _CCCL_CUDACC_BELOW(11, 2)
+#  if _CCCL_CUDA_COMPILER_BEFORE(11, 2)
 #    define _CCCL_UNREACHABLE() __trap()
-#  elif _CCCL_CUDACC_BELOW(11, 3)
+#  elif _CCCL_CUDA_COMPILER_BEFORE(11, 3)
 #    define _CCCL_UNREACHABLE() __builtin_assume(false)
 #  else
 #    define _CCCL_UNREACHABLE() __builtin_unreachable()

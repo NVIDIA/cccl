@@ -13,12 +13,12 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_CCCL_CUDA_COMPILER) && _CCCL_CUDACC_BELOW(11, 5)
+#if _CCCL_CUDA_COMPILER_BEFORE(11, 5)
 _CCCL_NV_DIAG_SUPPRESS(186)
 #  include <cuda_pipeline_primitives.h>
 // we cannot re-enable the warning here, because it is triggered outside the translation unit
 // see also: https://godbolt.org/z/1x8b4hn3G
-#endif // defined(_CCCL_CUDA_COMPILER) && _CCCL_CUDACC_BELOW(11, 5)
+#endif // _CCCL_CUDA_COMPILER_BEFORE(11, 5)
 
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/util_arch.cuh>
@@ -46,7 +46,7 @@ _CCCL_NV_DIAG_SUPPRESS(186)
 #include <cassert>
 
 // cooperative groups do not support NVHPC yet
-#ifndef _CCCL_CUDA_COMPILER_NVHPC
+#if !_CCCL_CUDA_COMPILER(NVHPC)
 #  include <cooperative_groups.h>
 #  include <cooperative_groups/memcpy_async.h>
 #endif
@@ -55,9 +55,9 @@ CUB_NAMESPACE_BEGIN
 
 // The ublkcp kernel needs PTX features that are only available and understood by nvcc >=12.
 // Also, cooperative groups do not support NVHPC yet.
-#if _CCCL_CUDACC_AT_LEAST(12, 0) && !defined(_CCCL_CUDA_COMPILER_NVHPC)
+#if _CCCL_CUDA_COMPILER_AT_LEAST(12, 0) && !_CCCL_CUDA_COMPILER(NVHPC)
 #  define _CUB_HAS_TRANSFORM_UBLKCP
-#endif // _CCCL_CUDACC_AT_LEAST(12, 0) && !defined(_CCCL_CUDA_COMPILER_NVHPC)
+#endif // _CCCL_CUDA_COMPILER_AT_LEAST(12, 0) && !_CCCL_CUDA_COMPILER(NVHPC)
 
 namespace detail
 {

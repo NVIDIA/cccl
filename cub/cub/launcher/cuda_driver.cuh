@@ -10,7 +10,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDACC_AT_LEAST(12, 0)
+#if _CCCL_CUDA_COMPILER_AT_LEAST(12, 0)
 
 #  include <cuda.h>
 
@@ -80,4 +80,4 @@ struct CudaDriverLauncherFactory
 
 CUB_NAMESPACE_END
 
-#endif // _CCCL_CUDACC_AT_LEAST(12, 0)
+#endif // _CCCL_CUDA_COMPILER_AT_LEAST(12, 0)

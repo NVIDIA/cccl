@@ -624,7 +624,7 @@ template <class _A1>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<is_floating_point<_A1>::value, bool>
 __constexpr_isnan(_A1 __lcpp_x) noexcept
 {
-#if _CCCL_CUDACC_BELOW(11, 8)
+#if _CCCL_CUDA_COMPILER_BEFORE(11, 8)
   return __isnan(__lcpp_x);
 #elif defined(_CCCL_BUILTIN_ISNAN)
   // nvcc at times has issues determining the type of __lcpp_x
@@ -645,7 +645,7 @@ template <class _A1>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<is_floating_point<_A1>::value, bool>
 __constexpr_isinf(_A1 __lcpp_x) noexcept
 {
-#if _CCCL_CUDACC_BELOW(11, 8)
+#if _CCCL_CUDA_COMPILER_BEFORE(11, 8)
   return __isinf(__lcpp_x);
 #elif defined(_CCCL_BUILTIN_ISINF)
   // nvcc at times has issues determining the type of __lcpp_x
@@ -666,7 +666,7 @@ template <class _A1>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<is_floating_point<_A1>::value, bool>
 __constexpr_isfinite(_A1 __lcpp_x) noexcept
 {
-#if _CCCL_CUDACC_BELOW(11, 8)
+#if _CCCL_CUDA_COMPILER_BEFORE(11, 8)
   return !__isinf(__lcpp_x) && !__isnan(__lcpp_x);
 #elif defined(_CCCL_BUILTIN_ISFINITE)
   // nvcc at times has issues determining the type of __lcpp_x
@@ -831,7 +831,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX __promote_t<_Tp, _Up> __
 }
 #endif // !_CCCL_COMPILER(MSVC)
 
-#if _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC) || _CCCL_CUDA_COMPILER(CLANG)
 template <class _A1>
 _LIBCUDACXX_HIDE_FROM_ABI _A1 __constexpr_logb(_A1 __x)
 {
@@ -874,7 +874,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX _Tp __constexpr_logb(_Tp
 }
 #endif // !_MSVC
 
-#if _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC) || _CCCL_CUDA_COMPILER(CLANG)
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI _Tp __constexpr_scalbn(_Tp __x, int __i)
 {

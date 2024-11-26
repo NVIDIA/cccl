@@ -93,10 +93,10 @@ using __completion = __completion_<__call_result_t<_Fn, _Ts...>, __nothrow_calla
 template <__disposition_t _Disposition>
 struct __upon_t
 {
-#if !defined(_CCCL_CUDA_COMPILER_NVCC)
+#if !_CCCL_CUDA_COMPILER(NVCC)
 
 private:
-#endif // _CCCL_CUDA_COMPILER_NVCC
+#endif // _CCCL_CUDA_COMPILER(NVCC)
   using _UponTag = decltype(__detail::__upon_tag<_Disposition>());
   using _SetTag  = decltype(__detail::__set_tag<_Disposition>());
 
