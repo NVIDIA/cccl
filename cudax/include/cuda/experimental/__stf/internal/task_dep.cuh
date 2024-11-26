@@ -189,8 +189,7 @@ template <typename T>
 class logical_data;
 
 class task_dep_op_none
-{
-};
+{};
 
 /**
  * @brief Type storing dependency information for one data item, including the data type
