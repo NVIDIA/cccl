@@ -15,14 +15,17 @@
 
 #include "test_macros.h"
 
-static_assert(cuda::std::is_trivially_default_constructible<decltype(cuda::std::ignore)>::value, "");
+static_assert(cuda::std::is_trivially_default_constructible<decltype(cuda::std::ignore)>::value
+                && cuda::std::is_empty<decltype(cuda::std::ignore)>::value,
+              "");
 
-#if TEST_STD_VER >= 2017
-[[nodiscard]] __host__ __device__ constexpr int test_nodiscard()
+// constexpr variables are unavailable before 11.3
+#if TEST_STD_VER >= 2017 && _CCCL_CUDACC_AT_LEAST(11, 3)
+TEST_NODISCARD __host__ __device__ constexpr int test_nodiscard()
 {
   return 8294;
 }
-#endif // TEST_STD_VER >= 2017
+#endif // TEST_STD_VER >= 2017 && _CCCL_CUDACC_AT_LEAST(11, 3)
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 {
@@ -58,11 +61,11 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
     unused(moved);
   }
 
-#if TEST_STD_VER >= 2017
+#if TEST_STD_VER >= 2017 && _CCCL_CUDACC_AT_LEAST(11, 3)
   {
     cuda::std::ignore = test_nodiscard();
   }
-#endif // TEST_STD_VER >= 2017
+#endif // TEST_STD_VER >= 2017 && _CCCL_CUDACC_AT_LEAST(11, 3)
 
   return true;
 }
