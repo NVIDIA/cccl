@@ -88,8 +88,7 @@ EmptyLineAfterAccessModifier: Never
 EmptyLineBeforeAccessModifier: Always
 FixNamespaceComments: true
 IfMacros: [
-  '_CCCL_IF_CONSTEXPR',
-  '_CCCL_ELSE_IF_CONSTEXPR',
+  '_CCCL_IF_CONSTEXPR'
 ]
 IndentWrappedFunctionNames: false
 IncludeBlocks:   Regroup
