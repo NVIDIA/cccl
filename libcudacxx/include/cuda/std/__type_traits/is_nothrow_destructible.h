@@ -41,16 +41,16 @@ struct is_nothrow_destructible : public integral_constant<bool, _CCCL_BUILTIN_IS
 #elif !defined(_LIBCUDACXX_HAS_NO_NOEXCEPT)
 
 template <class _Tp, bool = is_destructible<_Tp>::value>
-struct __libcpp_is_nothrow_destructible : false_type
+struct __cccl_is_nothrow_destructible : false_type
 {};
 
 template <class _Tp>
-struct __libcpp_is_nothrow_destructible<_Tp, true>
+struct __cccl_is_nothrow_destructible<_Tp, true>
     : public integral_constant<bool, noexcept(_CUDA_VSTD::declval<_Tp>().~_Tp())>
 {};
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_destructible : public __libcpp_is_nothrow_destructible<_Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_destructible : public __cccl_is_nothrow_destructible<_Tp>
 {};
 
 template <class _Tp, size_t _Ns>
@@ -68,12 +68,12 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_destructible<_Tp&&> : public tru
 #else
 
 template <class _Tp>
-struct __libcpp_nothrow_destructor : public integral_constant<bool, is_scalar<_Tp>::value || is_reference<_Tp>::value>
+struct __cccl_nothrow_destructor : public integral_constant<bool, is_scalar<_Tp>::value || is_reference<_Tp>::value>
 {};
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_destructible
-    : public __libcpp_nothrow_destructor<remove_all_extents_t<_Tp>>
+    : public __cccl_nothrow_destructor<remove_all_extents_t<_Tp>>
 {};
 
 template <class _Tp>

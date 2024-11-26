@@ -67,7 +67,7 @@ struct __cccl_std_contiguous_iterator_tag_exists : __cccl_type_is_defined<struct
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER >= 2020
+#if !defined(_CCCL_NO_CONCEPTS)
 
 template <class _Tp>
 using __with_reference = _Tp&;
@@ -87,7 +87,7 @@ using iter_reference_t = decltype(*declval<_Tp&>());
 template <class>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
 
-#elif _CCCL_STD_VER >= 2017
+#elif _CCCL_STD_VER > 2014 // ^^^ !_CCCL_NO_CONCEPTS ^^^
 
 template <class _Tp>
 using __with_reference = _Tp&;
@@ -113,7 +113,7 @@ using iter_reference_t = enable_if_t<__dereferenceable<_Tp>, decltype(*_CUDA_VST
 
 template <class, class>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
-#else // ^^^ _CCCL_STD_VER >= 2017 ^^^ / vvv _CCCL_STD_VER <= 2014 vvv
+#else // ^^^ _CCCL_STD_VER > 2014 ^^^ / vvv _CCCL_STD_VER <= 2014 vvv
 template <class>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
 #endif // _CCCL_STD_VER <= 2014
@@ -242,7 +242,7 @@ public:
   static const bool value = decltype(__test<_Tp>(nullptr))::value;
 };
 
-#if _CCCL_STD_VER >= 2020
+#if !defined(_CCCL_NO_CONCEPTS)
 
 // The `cpp17-*-iterator` exposition-only concepts have very similar names to the `Cpp17*Iterator` named requirements
 // from `[iterator.cpp17]`. To avoid confusion between the two, the exposition-only concepts have been banished to
@@ -484,7 +484,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits : __iterator_traits<_Ip>
   using __primary_template = iterator_traits;
 };
 
-#elif _CCCL_STD_VER >= 2017
+#elif _CCCL_STD_VER > 2014 // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_STD_VER > 2014 vvv
 
 // The `cpp17-*-iterator` exposition-only concepts have very similar names to the `Cpp17*Iterator` named requirements
 // from `[iterator.cpp17]`. To avoid confusion between the two, the exposition-only concepts have been banished to
@@ -764,7 +764,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits : __iterator_traits<_Ip>
   using __primary_template = iterator_traits;
 };
 
-#else // _CCCL_STD_VER >= 2014
+#else // ^^^ _CCCL_STD_VER > 2014 ^^^ / vvv _CCCL_STD_VER <= 2014 vvv
 
 template <class _Iter, bool>
 struct __iterator_traits
@@ -804,7 +804,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits : __iterator_traits<_Iter, 
 #endif // _CCCL_STD_VER <= 2014
 
 template <class _Tp>
-#if _CCCL_STD_VER >= 2020
+#if !defined(_CCCL_NO_CONCEPTS)
   requires is_object_v<_Tp>
 #endif
 struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits<_Tp*>
@@ -814,7 +814,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits<_Tp*>
   typedef _Tp* pointer;
   typedef typename add_lvalue_reference<_Tp>::type reference;
   typedef random_access_iterator_tag iterator_category;
-#if _CCCL_STD_VER >= 2017
+#if _CCCL_STD_VER > 2014
   typedef contiguous_iterator_tag iterator_concept;
 #endif
 };
@@ -860,17 +860,17 @@ struct __is_cpp17_random_access_iterator
 // Such iterators receive special "contiguous" optimizations in
 // std::copy and std::sort.
 //
-#if _CCCL_STD_VER >= 2017
+#if _CCCL_STD_VER > 2014
 template <class _Tp>
 struct __is_cpp17_contiguous_iterator
     : _Or<__has_iterator_category_convertible_to<_Tp, contiguous_iterator_tag>,
           __has_iterator_concept_convertible_to<_Tp, contiguous_iterator_tag>>
 {};
-#else
+#else // ^^^ _CCCL_STD_VER > 2014 ^^^ / vvv _CCCL_STD_VER <= 2014 vvv
 template <class _Tp>
 struct __is_cpp17_contiguous_iterator : false_type
 {};
-#endif
+#endif // _CCCL_STD_VER <= 2014
 
 // Any native pointer which is an iterator is also a contiguous iterator.
 template <class _Up>

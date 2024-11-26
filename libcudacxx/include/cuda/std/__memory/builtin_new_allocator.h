@@ -45,7 +45,7 @@ struct __builtin_new_allocator
 
     _LIBCUDACXX_HIDE_FROM_ABI void operator()(void* __p) const noexcept
     {
-      _CUDA_VSTD::__libcpp_deallocate(__p, __size_, __align_);
+      _CUDA_VSTD::__cccl_deallocate(__p, __size_, __align_);
     }
 
   private:
@@ -57,12 +57,12 @@ struct __builtin_new_allocator
 
   _LIBCUDACXX_HIDE_FROM_ABI static __holder_t __allocate_bytes(size_t __s, size_t __align)
   {
-    return __holder_t(_CUDA_VSTD::__libcpp_allocate(__s, __align), __builtin_new_deleter(__s, __align));
+    return __holder_t(_CUDA_VSTD::__cccl_allocate(__s, __align), __builtin_new_deleter(__s, __align));
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI static void __deallocate_bytes(void* __p, size_t __s, size_t __align) noexcept
   {
-    _CUDA_VSTD::__libcpp_deallocate(__p, __s, __align);
+    _CUDA_VSTD::__cccl_deallocate(__p, __s, __align);
   }
 
   template <class _Tp>

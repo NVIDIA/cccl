@@ -25,10 +25,10 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __libcpp_is_unbounded_array : false_type
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __cccl_is_unbounded_array : false_type
 {};
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __libcpp_is_unbounded_array<_Tp[]> : true_type
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __cccl_is_unbounded_array<_Tp[]> : true_type
 {};
 
 template <class>

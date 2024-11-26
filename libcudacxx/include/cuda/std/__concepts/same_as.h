@@ -25,7 +25,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2011
+#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 
 // [concept.same]
 
@@ -35,7 +35,7 @@ _CCCL_CONCEPT __same_as_impl = _IsSame<_Tp, _Up>::value;
 template <class _Tp, class _Up>
 _CCCL_CONCEPT same_as = __same_as_impl<_Tp, _Up> && __same_as_impl<_Up, _Tp>;
 
-#endif // _CCCL_STD_VER > 2011
+#endif // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

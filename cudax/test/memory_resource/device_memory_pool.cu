@@ -22,7 +22,7 @@
 #include <testing.cuh>
 
 namespace cudax = cuda::experimental;
-using pool      = cudax::mr::device_memory_pool;
+using pool      = cudax::device_memory_pool;
 static_assert(!cuda::std::is_trivial<pool>::value, "");
 static_assert(!cuda::std::is_trivially_default_constructible<pool>::value, "");
 static_assert(!cuda::std::is_default_constructible<pool>::value, "");
@@ -89,10 +89,10 @@ TEST_CASE("device_memory_pool construction", "[memory_resource]")
                        current_device);
   }
 
-  using memory_pool = cudax::mr::device_memory_pool;
+  using memory_pool = cudax::device_memory_pool;
   SECTION("Construct from device id")
   {
-    cudax::mr::device_memory_pool from_device{current_device};
+    cudax::device_memory_pool from_device{current_device};
 
     ::cudaMemPool_t get = from_device.get();
     CHECK(get != current_default_pool);
@@ -109,7 +109,7 @@ TEST_CASE("device_memory_pool construction", "[memory_resource]")
 
   SECTION("Construct with empty properties")
   {
-    cudax::mr::memory_pool_properties props{};
+    cudax::memory_pool_properties props{};
     memory_pool from_defaulted_properties{current_device, props};
 
     ::cudaMemPool_t get = from_defaulted_properties.get();
@@ -127,7 +127,7 @@ TEST_CASE("device_memory_pool construction", "[memory_resource]")
 
   SECTION("Construct with initial pool size")
   {
-    cudax::mr::memory_pool_properties props = {42, 20};
+    cudax::memory_pool_properties props = {42, 20};
     memory_pool with_threshold{current_device, props};
 
     ::cudaMemPool_t get = with_threshold.get();
@@ -147,8 +147,8 @@ TEST_CASE("device_memory_pool construction", "[memory_resource]")
 #if _CCCL_CUDACC_AT_LEAST(11, 2)
   SECTION("Construct with allocation handle")
   {
-    cudax::mr::memory_pool_properties props = {
-      42, 20, cudax::mr::cudaMemAllocationHandleType::cudaMemHandleTypePosixFileDescriptor};
+    cudax::memory_pool_properties props = {
+      42, 20, cudax::cudaMemAllocationHandleType::cudaMemHandleTypePosixFileDescriptor};
     memory_pool with_allocation_handle{current_device, props};
 
     ::cudaMemPool_t get = with_allocation_handle.get();
@@ -175,7 +175,7 @@ TEST_CASE("device_memory_pool construction", "[memory_resource]")
     ::cudaMemPool_t new_pool{};
     _CCCL_TRY_CUDA_API(::cudaMemPoolCreate, "Failed to call cudaMemPoolCreate", &new_pool, &pool_properties);
 
-    cudax::mr::device_memory_pool from_handle = cudax::mr::device_memory_pool::from_native_handle(new_pool);
+    cudax::device_memory_pool from_handle = cudax::device_memory_pool::from_native_handle(new_pool);
     CHECK(from_handle.get() == new_pool);
   }
 }
@@ -200,9 +200,9 @@ TEST_CASE("device_memory_pool comparison", "[memory_resource]")
                        current_device);
   }
 
-  cudax::mr::device_memory_pool first{current_device};
+  cudax::device_memory_pool first{current_device};
   { // comparison against a plain device_memory_pool
-    cudax::mr::device_memory_pool second{current_device};
+    cudax::device_memory_pool second{current_device};
     CHECK(first == first);
     CHECK(first != second);
   }
@@ -237,7 +237,7 @@ TEST_CASE("device_memory_pool accessors", "[memory_resource]")
 
   SECTION("device_memory_pool::set_attribute")
   {
-    cudax::mr::device_memory_pool pool{current_device};
+    cudax::device_memory_pool pool{current_device};
 
     { // cudaMemPoolReuseFollowEventDependencies
       // Get the attribute value
@@ -300,7 +300,7 @@ TEST_CASE("device_memory_pool accessors", "[memory_resource]")
     }
 
     // prime the pool to a given size
-    cudax::mr::device_memory_resource resource{pool};
+    cudax::device_memory_resource resource{pool};
     cudax::stream stream{};
 
     // Allocate a buffer to prime
@@ -417,9 +417,9 @@ TEST_CASE("device_memory_pool accessors", "[memory_resource]")
 
   SECTION("device_memory_pool::trim_to")
   {
-    cudax::mr::device_memory_pool pool{current_device};
+    cudax::device_memory_pool pool{current_device};
     // prime the pool to a given size
-    cudax::mr::device_memory_resource resource{pool};
+    cudax::device_memory_resource resource{pool};
     cudax::stream stream{};
 
     // Allocate 2 buffers
@@ -476,7 +476,7 @@ TEST_CASE("device_memory_pool accessors", "[memory_resource]")
       auto peers = cudax::devices[0].get_peers();
       if (peers.size() > 0)
       {
-        cudax::mr::device_memory_pool pool{cudax::devices[0]};
+        cudax::device_memory_pool pool{cudax::devices[0]};
         CUDAX_CHECK(pool.is_accessible_from(cudax::devices[0]));
 
         pool.enable_peer_access_from(peers);

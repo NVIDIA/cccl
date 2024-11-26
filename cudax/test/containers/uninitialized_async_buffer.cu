@@ -42,7 +42,7 @@ constexpr int get_property(
 {
   return 42;
 }
-constexpr int get_property(const cuda::experimental::mr::device_memory_resource&, my_property)
+constexpr int get_property(const cuda::experimental::device_memory_resource&, my_property)
 {
   return 42;
 }
@@ -56,7 +56,7 @@ TEMPLATE_TEST_CASE(
   static_assert(!cuda::std::is_copy_constructible<uninitialized_async_buffer>::value, "");
   static_assert(!cuda::std::is_copy_assignable<uninitialized_async_buffer>::value, "");
 
-  cuda::experimental::mr::device_memory_resource resource{};
+  cuda::experimental::device_memory_resource resource{};
   cuda::experimental::stream stream{};
 
   SECTION("construction")
@@ -207,7 +207,7 @@ TEMPLATE_TEST_CASE(
 
 // A test resource that keeps track of the number of resources are
 // currently alive.
-struct test_async_device_memory_resource : cudax::mr::device_memory_resource
+struct test_async_device_memory_resource : cudax::device_memory_resource
 {
   static int count;
 
@@ -217,7 +217,7 @@ struct test_async_device_memory_resource : cudax::mr::device_memory_resource
   }
 
   test_async_device_memory_resource(const test_async_device_memory_resource& other)
-      : cudax::mr::device_memory_resource{other}
+      : cudax::device_memory_resource{other}
   {
     ++count;
   }
@@ -234,7 +234,7 @@ TEST_CASE("uninitialized_async_buffer's memory resource does not dangle", "[cont
 {
   cuda::experimental::stream stream{};
   cudax::uninitialized_async_buffer<int, ::cuda::mr::device_accessible> buffer{
-    cudax::mr::device_memory_resource{}, stream, 0};
+    cudax::device_memory_resource{}, stream, 0};
 
   {
     CHECK(test_async_device_memory_resource::count == 0);

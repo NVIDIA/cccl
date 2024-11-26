@@ -33,6 +33,7 @@
 #include <cuda/stream_ref>
 
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
+#include <cuda/experimental/__memory_resource/properties.cuh>
 
 #if _CCCL_STD_VER >= 2014 && !_CCCL_COMPILER(MSVC2017) && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
@@ -73,10 +74,10 @@ class uninitialized_async_buffer
 {
 private:
   static_assert(_CUDA_VMR::__contains_execution_space_property<_Properties...>,
-                "The properties of cuda::experimental::mr::uninitialized_async_buffer must contain at least one "
+                "The properties of cuda::experimental::uninitialized_async_buffer must contain at least one "
                 "execution space property!");
 
-  using __async_resource = ::cuda::experimental::mr::any_async_resource<_Properties...>;
+  using __async_resource = ::cuda::experimental::any_async_resource<_Properties...>;
 
   __async_resource __mr_;
   ::cuda::stream_ref __stream_ = {};
@@ -117,7 +118,7 @@ private:
   _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI auto
   __cudax_launch_transform(::cuda::stream_ref, uninitialized_async_buffer& __self) noexcept
     _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<_Tp>)(
-      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<_CUDA_VMR::device_accessible, _Properties...>)
+      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<mr::device_accessible, _Properties...>)
   {
     // TODO add auto synchronization
     return {__self.__get_data(), __self.size()};
@@ -129,7 +130,7 @@ private:
   _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI auto
   __cudax_launch_transform(::cuda::stream_ref, const uninitialized_async_buffer& __self) noexcept
     _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<const _Tp>)(
-      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<_CUDA_VMR::device_accessible, _Properties...>)
+      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<mr::device_accessible, _Properties...>)
   {
     // TODO add auto synchronization
     return {__self.__get_data(), __self.size()};
@@ -294,7 +295,7 @@ public:
 };
 
 template <class _Tp>
-using uninitialized_async_device_buffer = uninitialized_async_buffer<_Tp, _CUDA_VMR::device_accessible>;
+using uninitialized_async_device_buffer = uninitialized_async_buffer<_Tp, mr::device_accessible>;
 
 } // namespace cuda::experimental
 

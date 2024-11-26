@@ -109,7 +109,7 @@ public:
   }
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __bit_iterator<_Cp, false> operator&() const noexcept
   {
-    return __bit_iterator<_Cp, false>(__seg_, static_cast<unsigned>(_CUDA_VSTD::__libcpp_ctz(__mask_)));
+    return __bit_iterator<_Cp, false>(__seg_, static_cast<unsigned>(_CUDA_VSTD::__cccl_ctz(__mask_)));
   }
 
   friend _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
@@ -180,7 +180,7 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __bit_iterator<_Cp, true> operator&() const noexcept
   {
-    return __bit_iterator<_Cp, true>(__seg_, static_cast<unsigned>(_CUDA_VSTD::__libcpp_ctz(__mask_)));
+    return __bit_iterator<_Cp, true>(__seg_, static_cast<unsigned>(_CUDA_VSTD::__cccl_ctz(__mask_)));
   }
 
 private:
@@ -812,7 +812,7 @@ struct __bit_array
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 explicit __bit_array(difference_type __s)
       : __size_(__s)
   {
-    if (__libcpp_is_constant_evaluated())
+    if (_CUDA_VSTD::is_constant_evaluated())
     {
       for (size_t __i = 0; __i != __bit_array<_Cp>::_Np; ++__i)
       {
