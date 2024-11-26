@@ -121,7 +121,7 @@ public:
     __emplace<_Vp>(__il, static_cast<_Args&&>(__args)...);
   }
 
-#if defined(__cpp_concepts) || defined(DOXYGEN_ACTIVE)
+#if !defined(_CCCL_NO_CONCEPTS) || defined(_CCCL_DOXYGEN_INVOKED)
   /// \brief Move constructs a `basic_any` object.
   /// \pre `_Interface` must extend `imovable<>`.
   /// \post `__other.has_value() == false` and `has_value()` is `true` if and
@@ -142,6 +142,8 @@ public:
     __convert_from(__other);
   }
 #else
+  // Without real concepts, we use base classes to implement movability and
+  // copyability. All we need here is to accept the default implementations.
   basic_any(basic_any&& __other)      = default;
   basic_any(basic_any const& __other) = default;
 #endif
@@ -180,7 +182,7 @@ public:
     reset();
   }
 
-#if defined(__cpp_concepts) || defined(DOXYGEN_ACTIVE)
+#if !defined(_CCCL_NO_CONCEPTS) || defined(_CCCL_DOXYGEN_INVOKED)
   /// \brief Move assigns a `basic_any` object.
   /// \pre `_Interface` must extend `imovable<>`.
   /// \post `__other.has_value() == false` and `has_value()` is `true` if and
@@ -201,6 +203,8 @@ public:
     return __assign_from(__other);
   }
 #else
+  // Without real concepts, we use base classes to implement movability and
+  // copyability. All we need here is to accept the default implementations.
   basic_any& operator=(basic_any&& __other)      = default;
   basic_any& operator=(basic_any const& __other) = default;
 #endif
@@ -350,12 +354,12 @@ public:
     return _CCCL_TYPEID(_Interface);
   }
 
-#if !defined(DOXYGEN_ACTIVE) // Do not document
+#if !defined(_CCCL_DOXYGEN_INVOKED) // Do not document
   _CCCL_NODISCARD _CUDAX_HOST_API bool __in_situ() const noexcept
   {
     return __vptr_.__flag();
   }
-#endif // DOXYGEN_ACTIVE
+#endif // _CCCL_DOXYGEN_INVOKED
 
 private:
   template <class, class>

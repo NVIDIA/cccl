@@ -51,7 +51,7 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/in_place.h>
 
-namespace cuda::experimental::mr
+namespace cuda::experimental
 {
 template <class _Ty, class _Uy = _CUDA_VSTD::remove_cvref_t<_Ty>>
 _CCCL_INLINE_VAR constexpr bool __is_basic_any_resource = false;
@@ -73,7 +73,7 @@ class basic_any_resource
 {
 private:
   static_assert(_CUDA_VMR::__contains_execution_space_property<_Properties...>,
-                "The properties of cuda::experimental::mr::basic_any_resource must contain at least one execution "
+                "The properties of cuda::experimental::basic_any_resource must contain at least one execution "
                 "space property!");
 
   template <_CUDA_VMR::_AllocType, class...>
@@ -352,6 +352,6 @@ auto make_any_async_resource(_Args&&... __args) -> any_async_resource<_Propertie
   return any_async_resource<_Properties...>{_CUDA_VSTD::in_place_type<_Resource>, _CUDA_VSTD::forward<_Args>(__args)...};
 }
 
-} // namespace cuda::experimental::mr
+} // namespace cuda::experimental
 
 #endif //_CUDAX__MEMORY_RESOURCE_ANY_RESOURCE_H

@@ -50,7 +50,7 @@ _CCCL_CONCEPT __is_basic_any =
   );
 // clang-format on
 
-#if defined(__cpp_concepts)
+#if !defined(_CCCL_NO_CONCEPTS)
 template <class _Interface, int = 0>
 struct __basic_any_base : __interface_of<_Interface>
 {
@@ -65,7 +65,7 @@ private:
   __tagged_ptr<__vptr_for<_Interface>> __vptr_{};
   alignas(__align_) _CUDA_VSTD_NOVERSION::byte __buffer_[__size_];
 };
-#else
+#else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 // Without concepts, we need a base class to correctly implement movability
 // and copyability.
 template <class _Interface, int = extension_of<_Interface, imovable<>> + extension_of<_Interface, icopyable<>>>
@@ -129,7 +129,7 @@ struct __basic_any_base<_Interface, 0> : __basic_any_base<_Interface, 2> // immo
   __basic_any_base& operator=(__basic_any_base&&) noexcept = delete;
   __basic_any_base& operator=(__basic_any_base const&)     = delete;
 };
-#endif
+#endif // ^^^ _CCCL_NO_CONCEPTS ^^^
 
 } // namespace cuda::experimental
 

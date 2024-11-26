@@ -35,7 +35,24 @@
 #include <c2h/vector.h>
 
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-#  include <cub/util_type.cuh> // for <cuda_fp8.h>
+#  if defined(_CCCL_HAS_NVFP16)
+#    include <cuda_fp16.h>
+#  endif // _CCCL_HAS_NVFP16
+
+#  if defined(_CCCL_HAS_NVBF16)
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
+#    include <cuda_bf16.h>
+_CCCL_DIAG_POP
+
+#    if _CCCL_CUDACC_AT_LEAST(11, 8)
+// cuda_fp8.h resets default for C4127, so we have to guard the inclusion
+_CCCL_DIAG_PUSH
+#      include <cuda_fp8.h>
+_CCCL_DIAG_POP
+#    endif // _CCCL_CUDACC_AT_LEAST(11, 8)
+#  endif // _CCCL_HAS_NVBF16
+
 #  if defined(__CUDA_FP8_TYPES_EXIST__)
 namespace std
 {

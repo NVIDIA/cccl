@@ -146,6 +146,32 @@
 #  define _CCCL_BUILTIN_EXPECT(...) __builtin_expect(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_expect)
 
+#if _CCCL_CHECK_BUILTIN(builtin_fmax) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_FMAXF(...) __builtin_fmaxf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_FMAX(...)  __builtin_fmax(__VA_ARGS__)
+#  define _CCCL_BUILTIN_FMAXL(...) __builtin_fmaxl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_fmax)
+
+// Below 11.7 nvcc treats the builtin as a host only function
+#if _CCCL_CUDACC_BELOW(11, 7)
+#  undef _CCCL_BUILTIN_FMAXF
+#  undef _CCCL_BUILTIN_FMAX
+#  undef _CCCL_BUILTIN_FMAXL
+#endif // _CCCL_CUDACC_BELOW(11, 7)
+
+#if _CCCL_CHECK_BUILTIN(builtin_fmin) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_FMINF(...) __builtin_fminf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_FMIN(...)  __builtin_fmin(__VA_ARGS__)
+#  define _CCCL_BUILTIN_FMINL(...) __builtin_fminl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_fmin)
+
+// Below 11.7 nvcc treats the builtin as a host only function
+#if _CCCL_CUDACC_BELOW(11, 7)
+#  undef _CCCL_BUILTIN_FMINF
+#  undef _CCCL_BUILTIN_FMIN
+#  undef _CCCL_BUILTIN_FMINL
+#endif // _CCCL_CUDACC_BELOW(11, 7)
+
 #if _CCCL_HAS_BUILTIN(__builtin_FILE) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC, >=, 19, 27)
 #  define _CCCL_BUILTIN_FILE() __builtin_FILE()
 #else // ^^^ _CCCL_HAS_BUILTIN(__builtin_FILE) ^^^ / vvv !_CCCL_HAS_BUILTIN(__builtin_FILE) vvv
@@ -157,6 +183,15 @@
 #  undef _CCCL_BUILTIN_FILE
 #  define _CCCL_BUILTIN_FILE() __FILE__
 #endif // _CCCL_CUDACC_BELOW(11, 3)
+
+#if _CCCL_CHECK_BUILTIN(builtin_fpclassify) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_FPCLASSIFY(...) __builtin_fpclassify(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_fpclassify)
+
+// Below 11.7 nvcc treats the builtin as a host only function
+#if _CCCL_CUDACC_BELOW(11, 7)
+#  undef _CCCL_BUILTIN_FPCLASSIFY
+#endif // _CCCL_CUDACC_BELOW(11, 7)
 
 #if _CCCL_HAS_BUILTIN(__builtin_FUNCTION) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(MSVC, >=, 19, 27)
 #  define _CCCL_BUILTIN_FUNCTION() __builtin_FUNCTION()
@@ -180,7 +215,34 @@
 #  undef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
 #endif // _CCCL_STD_VER < 2014 && _CCCL_CUDA_COMPILER_NVCC
 
-#if _CCCL_CHECK_BUILTIN(builtin_launder) || _CCCL_COMPILER(GCC, >=, 7)
+#if _CCCL_CHECK_BUILTIN(builtin_isfinite) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(NVRTC)
+#  define _CCCL_BUILTIN_ISFINITE(...) __builtin_isfinite(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(isfinite)
+
+// Below 11.7 nvcc treats the builtin as a host only function
+#if _CCCL_CUDACC_BELOW(11, 7)
+#  undef _CCCL_BUILTIN_ISFINITE
+#endif // _CCCL_CUDACC_BELOW(11, 7)
+
+#if _CCCL_CHECK_BUILTIN(builtin_isinf) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ISINF(...) __builtin_isinf(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(isinf)
+
+// Below 11.7 nvcc treats the builtin as a host only function
+#if _CCCL_CUDACC_BELOW(11, 7)
+#  undef _CCCL_BUILTIN_ISINF
+#endif // _CCCL_CUDACC_BELOW(11, 7)
+
+#if _CCCL_CHECK_BUILTIN(builtin_isnan) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ISNAN(...) __builtin_isnan(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(isnan)
+
+// Below 11.7 nvcc treats the builtin as a host only function
+#if _CCCL_CUDACC_BELOW(11, 7)
+#  undef _CCCL_BUILTIN_ISNAN
+#endif // _CCCL_CUDACC_BELOW(11, 7)
+
+#if (_CCCL_CHECK_BUILTIN(builtin_launder) || (_CCCL_COMPILER(GCC) && _CCCL_GCC_VERSION >= 70000))
 #  define _CCCL_BUILTIN_LAUNDER(...) __builtin_launder(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_launder) && gcc >= 7
 
@@ -202,11 +264,104 @@
 #  define _CCCL_BUILTIN_LINE() __LINE__
 #endif // _CCCL_CUDACC_BELOW(11, 3)
 
+#if _CCCL_CHECK_BUILTIN(builtin_log) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_LOGF(...) __builtin_logf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOG(...)  __builtin_log(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOGL(...) __builtin_logl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_log)
+
+// Below 11.7 nvcc treats the builtin as a host only function
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "logf"
+#if _CCCL_CUDACC_BELOW(11, 7) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#  undef _CCCL_BUILTIN_LOGF
+#  undef _CCCL_BUILTIN_LOG
+#  undef _CCCL_BUILTIN_LOGL
+#endif // _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER_CLANG
+
+#if _CCCL_CHECK_BUILTIN(builtin_log10) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_LOG10F(...) __builtin_log10f(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOG10(...)  __builtin_log10(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOG10L(...) __builtin_log10l(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_log10)
+
+// Below 11.7 nvcc treats the builtin as a host only function
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "log10f"
+#if _CCCL_CUDACC_BELOW(11, 7) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#  undef _CCCL_BUILTIN_LOG10F
+#  undef _CCCL_BUILTIN_LOG10
+#  undef _CCCL_BUILTIN_LOG10L
+#endif // _CCCL_CUDACC_BELOW(11, 7)
+
+#if _CCCL_CHECK_BUILTIN(builtin_ilogb) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_ILOGBF(...) __builtin_ilogbf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ILOGB(...)  __builtin_ilogb(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ILOGBL(...) __builtin_ilogbl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_log10)
+
+// Below 11.7 nvcc treats the builtin as a host only function
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "ilogb"
+#if _CCCL_CUDACC_BELOW(11, 7) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#  undef _CCCL_BUILTIN_ILOGBF
+#  undef _CCCL_BUILTIN_ILOGB
+#  undef _CCCL_BUILTIN_ILOGBL
+#endif // _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER_CLANG
+
+#if _CCCL_CHECK_BUILTIN(builtin_log1p) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_LOG1PF(...) __builtin_log1pf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOG1P(...)  __builtin_log1p(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOG1PL(...) __builtin_log1pl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_log1p)
+
+// Below 11.7 nvcc treats the builtin as a host only function
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "log1p"
+#if _CCCL_CUDACC_BELOW(11, 7) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#  undef _CCCL_BUILTIN_LOG1PF
+#  undef _CCCL_BUILTIN_LOG1P
+#  undef _CCCL_BUILTIN_LOG1PL
+#endif // _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER_CLANG
+
+#if _CCCL_CHECK_BUILTIN(builtin_log2) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_LOG2F(...) __builtin_log2f(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOG2(...)  __builtin_log2(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOG2L(...) __builtin_log2l(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_log1)
+
+// Below 11.7 nvcc treats the builtin as a host only function
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "log2f"
+#if _CCCL_CUDACC_BELOW(11, 7) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#  undef _CCCL_BUILTIN_LOG2F
+#  undef _CCCL_BUILTIN_LOG2
+#  undef _CCCL_BUILTIN_LOG2L
+#endif // _CCCL_CUDACC_BELOW(11, 7)
+
+#if _CCCL_CHECK_BUILTIN(builtin_logb) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_LOGBF(...) __builtin_logbf(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOGB(...)  __builtin_logb(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LOGBL(...) __builtin_logbl(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_log1)
+
+// Below 11.7 nvcc treats the builtin as a host only function
+// clang-cuda fails with fatal error: error in backend: Undefined external symbol "logb"
+#if _CCCL_CUDACC_BELOW(11, 7) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#  undef _CCCL_BUILTIN_LOGBF
+#  undef _CCCL_BUILTIN_LOGB
+#  undef _CCCL_BUILTIN_LOGBL
+#endif // _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER_CLANG
+
 #if _CCCL_CHECK_BUILTIN(__builtin_operator_new) && _CCCL_CHECK_BUILTIN(__builtin_operator_delete) \
   && defined(_CCCL_CUDA_COMPILER_CLANG)
 #  define _CCCL_BUILTIN_OPERATOR_DELETE(...) __builtin_operator_delete(__VA_ARGS__)
 #  define _CCCL_BUILTIN_OPERATOR_NEW(...)    __builtin_operator_new(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(__builtin_operator_new) && _CCCL_CHECK_BUILTIN(__builtin_operator_delete)
+
+#if _CCCL_CHECK_BUILTIN(builtin_signbit) || _CCCL_COMPILER(GCC)
+#  define _CCCL_BUILTIN_SIGNBIT(...) __builtin_signbit(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_signbit)
+
+// Below 11.7 nvcc treats the builtin as a host only function
+#if _CCCL_CUDACC_BELOW(11, 7)
+#  undef _CCCL_BUILTIN_SIGNBIT
+#endif // _CCCL_CUDACC_BELOW(11, 7)
 
 #if _CCCL_HAS_BUILTIN(__decay) && defined(_CCCL_CUDA_COMPILER_CLANG)
 #  define _CCCL_BUILTIN_DECAY(...) __decay(__VA_ARGS__)
@@ -470,18 +625,6 @@
 #if 0 // _CCCL_HAS_BUILTIN(__is_volatile)
 #  define _CCCL_BUILTIN_IS_VOLATILE(...) __is_volatile(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__is_volatile)
-
-#if _CCCL_CHECK_BUILTIN(isfinite)
-#  define _CCCL_BUILTIN_ISFINITE(...) __builtin_isfinite(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(isfinite)
-
-#if _CCCL_CHECK_BUILTIN(isinf)
-#  define _CCCL_BUILTIN_ISINF(...) __builtin_isinf(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(isinf)
-
-#if _CCCL_CHECK_BUILTIN(isnan)
-#  define _CCCL_BUILTIN_ISNAN(...) __builtin_isnan(__VA_ARGS__)
-#endif // _CCCL_CHECK_BUILTIN(isnan)
 
 #if _CCCL_CHECK_BUILTIN(make_integer_seq) || _CCCL_COMPILER(MSVC, >=, 19, 23)
 #  define _CCCL_BUILTIN_MAKE_INTEGER_SEQ(...) __make_integer_seq<__VA_ARGS__>

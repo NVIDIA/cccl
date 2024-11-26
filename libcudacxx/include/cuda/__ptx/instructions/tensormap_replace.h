@@ -32,7 +32,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
 // 9.7.8.25. Data Movement and Conversion Instructions: tensormap.replace
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-tensormap-replace
-#include <cuda/__ptx/instructions/generated/tensormap_replace.inc>
+#include <cuda/__ptx/instructions/generated/tensormap_replace.h>
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
 

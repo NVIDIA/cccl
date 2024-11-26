@@ -61,7 +61,7 @@ struct __ireference : _Interface
   using interface _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::remove_const_t<_Interface>;
 };
 
-#if !defined(__cpp_concepts)
+#if defined(_CCCL_NO_CONCEPTS)
 ///
 /// A base class for basic_any<__ireference<_Interface>> that provides a
 /// conversion to basic_any<__ireference<_Interface const>>. Only used
@@ -79,7 +79,7 @@ struct __basic_any_reference_conversion_base
 template <class _Interface>
 struct __basic_any_reference_conversion_base<_Interface const>
 {};
-#endif
+#endif // _CCCL_NO_CONCEPTS
 
 _CCCL_DIAG_PUSH
 // "operator basic_any<...> will not be called for implicit or explicit conversions"
@@ -100,9 +100,9 @@ _CCCL_NV_DIAG_SUPPRESS(554)
 template <class _Interface, class Select>
 struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>, Select>
     : __interface_of<__ireference<_Interface>>
-#if !defined(__cpp_concepts)
+#if defined(_CCCL_NO_CONCEPTS)
     , __basic_any_reference_conversion_base<_Interface>
-#endif
+#endif // _CCCL_NO_CONCEPTS
 {
   static_assert(_CUDA_VSTD::is_class_v<_Interface>, "expecting a class type");
   using interface_type                 = _CUDA_VSTD::remove_const_t<_Interface>;
@@ -114,7 +114,7 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>, Sele
   basic_any& operator=(basic_any&&)      = delete;
   basic_any& operator=(basic_any const&) = delete;
 
-#if defined(__cpp_concepts)
+#if !defined(_CCCL_NO_CONCEPTS)
   /// \brief A non-const basic_any reference can be implicitly converted to a
   /// const basic_any reference.
   _CCCL_NODISCARD _CUDAX_HOST_API operator basic_any<__ireference<_Interface const>>() const noexcept
@@ -122,7 +122,7 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>, Sele
   {
     return basic_any<__ireference<_Interface const>>(*this);
   }
-#endif
+#endif // !_CCCL_NO_CONCEPTS
 
   /// \brief Returns a const reference to the type_info for the decayed type
   /// of the type-erased object.
@@ -149,12 +149,12 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>, Sele
     return true;
   }
 
-#if !defined(DOXYGEN_ACTIVE) // Do not document
+#if !defined(_CCCL_DOXYGEN_INVOKED) // Do not document
   _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API static constexpr bool __in_situ() noexcept
   {
     return true;
   }
-#endif // DOXYGEN_ACTIVE
+#endif // _CCCL_DOXYGEN_INVOKED
 
 private:
   template <class, class>

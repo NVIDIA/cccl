@@ -15,7 +15,7 @@
 #  endif
 #endif
 
-#include "babelstream.h"
+#include "common.h"
 
 #if !TUNE_BASE
 #  if CUB_DETAIL_COUNT(__CUDA_ARCH_LIST__) != 1

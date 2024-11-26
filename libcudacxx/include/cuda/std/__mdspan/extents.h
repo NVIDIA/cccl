@@ -61,6 +61,7 @@
 #include <cuda/std/__mdspan/standard_layout_static_array.h>
 #include <cuda/std/__mdspan/static_array.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
@@ -111,8 +112,7 @@ struct __compare_extent_compatible
 
 template <size_t... _Extents, size_t... _OtherExtents>
 static integral_constant<bool,
-                         __MDSPAN_FOLD_AND((__compare_extent_compatible<_Extents, _OtherExtents>::value) /* && ... */
-                                           )> _CCCL_HOST_DEVICE
+                         __fold_and_v<(__compare_extent_compatible<_Extents, _OtherExtents>::value)...>> _CCCL_HOST_DEVICE
 __check_compatible_extents(true_type,
                            _CUDA_VSTD::integer_sequence<size_t, _Extents...>,
                            _CUDA_VSTD::integer_sequence<size_t, _OtherExtents...>) noexcept
@@ -285,18 +285,16 @@ public:
   _CCCL_REQUIRES(
     // TODO: check whether the other version works with newest NVCC, doesn't with 11.4
     // NVCC seems to pick up rank_dynamic from the wrong extents type???
-    __MDSPAN_FOLD_AND(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _Integral, index_type) /* && ... */)
-      _CCCL_AND __MDSPAN_FOLD_AND(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Integral) /* && ... */)
-        _CCCL_AND
+    __fold_and_v<_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _Integral, index_type)...> _CCCL_AND
+      __fold_and_v<_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Integral)...> _CCCL_AND
     // NVCC chokes on the fold thingy here so wrote the workaround
     ((sizeof...(_Integral) == __detail::__count_dynamic_extents<_Extents...>::val)
      || (sizeof...(_Integral) == sizeof...(_Extents))))
 #  else
   _CCCL_TEMPLATE(class... _Integral)
-  _CCCL_REQUIRES(
-    __MDSPAN_FOLD_AND(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _Integral, index_type) /* && ... */)
-      _CCCL_AND __MDSPAN_FOLD_AND(_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Integral) /* && ... */)
-        _CCCL_AND((sizeof...(_Integral) == rank_dynamic()) || (sizeof...(_Integral) == rank())))
+  _CCCL_REQUIRES(__fold_and_v<_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _Integral, index_type)...> _CCCL_AND
+                   __fold_and_v<_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Integral)...> _CCCL_AND(
+                     (sizeof...(_Integral) == rank_dynamic()) || (sizeof...(_Integral) == rank())))
 #  endif
   _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr extents(_Integral... __exts) noexcept
 #  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
@@ -318,8 +316,8 @@ public:
 #  endif
   {
     /* TODO: precondition check
-     * If sizeof...(_IndexTypes) != rank_dynamic() is true, exts_arr[r] equals Er for each r for which Er is a static
-     * extent, and either
+     * If sizeof...(_IndexTypes) != rank_dynamic() is true, exts_arr[r] equals Er for each r for which Er is a
+     * static extent, and either
      *   - sizeof...(__exts) == 0 is true, or
      *   - each element of __exts is nonnegative and is a representable value of type index_type.
      */
@@ -524,6 +522,9 @@ struct __make_dextents<_IndexType, 0, _CUDA_VSTD::extents<_IndexType, _ExtentsPa
 
 template <class _IndexType, size_t _Rank>
 using dextents = typename __detail::__make_dextents<_IndexType, _Rank>::type;
+
+template <size_t _Rank, class _IndexType = size_t>
+using dims = dextents<_IndexType, _Rank>;
 
 #  if defined(__MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION)
 template <class... _IndexTypes>
