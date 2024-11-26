@@ -32,7 +32,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
 // 9.7.12.15.9. Parallel Synchronization and Communication Instructions: mbarrier.init
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#parallel-synchronization-and-communication-instructions-mbarrier-init
-#include <cuda/__ptx/instructions/generated/mbarrier_init.inc>
+#include <cuda/__ptx/instructions/generated/mbarrier_init.h>
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
 

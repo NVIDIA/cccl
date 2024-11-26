@@ -192,12 +192,12 @@ public:
   }
   _LIBCUDACXX_HIDE_FROM_ABI void wait(arrival_token&& __phase) const
   {
-    _CUDA_VSTD::__libcpp_thread_poll_with_backoff(
+    _CUDA_VSTD::__cccl_thread_poll_with_backoff(
       __barrier_poll_tester_phase<__barrier_base>(this, _CUDA_VSTD::move(__phase)));
   }
   _LIBCUDACXX_HIDE_FROM_ABI void wait_parity(bool __parity) const
   {
-    _CUDA_VSTD::__libcpp_thread_poll_with_backoff(__barrier_poll_tester_parity<__barrier_base>(this, __parity));
+    _CUDA_VSTD::__cccl_thread_poll_with_backoff(__barrier_poll_tester_parity<__barrier_base>(this, __parity));
   }
   _LIBCUDACXX_HIDE_FROM_ABI void arrive_and_wait()
   {

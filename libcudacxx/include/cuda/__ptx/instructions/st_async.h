@@ -32,7 +32,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
 // 9.7.8.12. Data Movement and Conversion Instructions: st.async
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-st-async
-#include <cuda/__ptx/instructions/generated/st_async.inc>
+#include <cuda/__ptx/instructions/generated/st_async.h>
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
 

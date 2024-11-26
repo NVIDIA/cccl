@@ -141,7 +141,7 @@ enum float_denorm_style
 };
 
 template <class _Tp, bool = is_arithmetic<_Tp>::value>
-class __libcpp_numeric_limits
+class __cccl_numeric_limits
 {
 protected:
   typedef _Tp type;
@@ -215,20 +215,20 @@ protected:
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4309)
 template <class _Tp, int __digits, bool _IsSigned>
-struct __libcpp_compute_min
+struct __cccl_compute_min
 {
   static constexpr _Tp value = static_cast<_Tp>(_Tp(1) << __digits);
 };
 _CCCL_DIAG_POP
 
 template <class _Tp, int __digits>
-struct __libcpp_compute_min<_Tp, __digits, false>
+struct __cccl_compute_min<_Tp, __digits, false>
 {
   static constexpr _Tp value = _Tp(0);
 };
 
 template <class _Tp>
-class __libcpp_numeric_limits<_Tp, true>
+class __cccl_numeric_limits<_Tp, true>
 {
 protected:
   typedef _Tp type;
@@ -239,7 +239,7 @@ protected:
   static constexpr int digits       = static_cast<int>(sizeof(type) * __CHAR_BIT__ - is_signed);
   static constexpr int digits10     = digits * 3 / 10;
   static constexpr int max_digits10 = 0;
-  static constexpr type __min       = __libcpp_compute_min<type, digits, is_signed>::value;
+  static constexpr type __min       = __cccl_compute_min<type, digits, is_signed>::value;
   static constexpr type __max       = is_signed ? type(type(~0) ^ __min) : type(~0);
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type min() noexcept
   {
@@ -307,7 +307,7 @@ protected:
 };
 
 template <>
-class __libcpp_numeric_limits<bool, true>
+class __cccl_numeric_limits<bool, true>
 {
 protected:
   typedef bool type;
@@ -382,7 +382,7 @@ protected:
 };
 
 template <>
-class __libcpp_numeric_limits<float, true>
+class __cccl_numeric_limits<float, true>
 {
 protected:
   typedef float type;
@@ -470,7 +470,7 @@ protected:
 };
 
 template <>
-class __libcpp_numeric_limits<double, true>
+class __cccl_numeric_limits<double, true>
 {
 protected:
   typedef double type;
@@ -558,7 +558,7 @@ protected:
 };
 
 template <>
-class __libcpp_numeric_limits<long double, true>
+class __cccl_numeric_limits<long double, true>
 {
 #ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
@@ -634,9 +634,9 @@ protected:
 };
 
 template <class _Tp>
-class _CCCL_TYPE_VISIBILITY_DEFAULT numeric_limits : private __libcpp_numeric_limits<remove_cv_t<_Tp>>
+class _CCCL_TYPE_VISIBILITY_DEFAULT numeric_limits : private __cccl_numeric_limits<remove_cv_t<_Tp>>
 {
-  typedef __libcpp_numeric_limits<remove_cv_t<_Tp>> __base;
+  typedef __cccl_numeric_limits<remove_cv_t<_Tp>> __base;
   typedef typename __base::type type;
 
 public:

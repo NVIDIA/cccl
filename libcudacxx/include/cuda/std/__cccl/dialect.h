@@ -80,6 +80,7 @@
 #  define _CCCL_IF_CONSTEXPR      if constexpr
 #  define _CCCL_ELSE_IF_CONSTEXPR else if constexpr
 #else // ^^^ C++17 ^^^ / vvv C++14 vvv
+#  define _CCCL_NO_IF_CONSTEXPR
 #  define _CCCL_IF_CONSTEXPR      if
 #  define _CCCL_ELSE_IF_CONSTEXPR else if
 #endif // _CCCL_STD_VER <= 2014
@@ -112,6 +113,11 @@
 #  define _CCCL_NO_NONTYPE_TEMPLATE_PARAMETER_AUTO
 #  define _CCCL_NTTP_AUTO unsigned long long int
 #endif // _CCCL_STD_VER <= 2014
+
+// concepts are only available from C++20 onwards
+#if _CCCL_STD_VER <= 2017 || !defined(__cpp_concepts) || (__cpp_concepts < 201907L)
+#  define _CCCL_NO_CONCEPTS
+#endif // _CCCL_STD_VER <= 2017 || !defined(__cpp_concepts) || (__cpp_concepts < 201907L)
 
 // noexcept function types are only available from C++17 onwards
 #if _CCCL_STD_VER >= 2017 && defined(__cpp_noexcept_function_type) && (__cpp_noexcept_function_type >= 201510L)

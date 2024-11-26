@@ -1,3 +1,6 @@
+..
+   This file was automatically generated. Do not edit.
+
 mbarrier.arrive.expect_tx.release.cta.shared::cta.b64
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
@@ -38,7 +41,7 @@ mbarrier.arrive.expect_tx.release.cluster.shared::cluster.b64
    // .sem       = { .release }
    // .scope     = { .cluster }
    // .space     = { .shared::cluster }
-   template <typename=void>
+   template <typename = void>
    __device__ static inline void mbarrier_arrive_expect_tx(
      cuda::ptx::sem_release_t,
      cuda::ptx::scope_cluster_t,

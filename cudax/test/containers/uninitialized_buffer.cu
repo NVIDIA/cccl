@@ -12,7 +12,6 @@
 #include <thrust/fill.h>
 #include <thrust/reduce.h>
 
-#include <cuda/memory_resource>
 #include <cuda/std/cstdint>
 #include <cuda/std/span>
 #include <cuda/std/type_traits>
@@ -20,6 +19,7 @@
 
 #include <cuda/experimental/buffer.cuh>
 #include <cuda/experimental/launch.cuh>
+#include <cuda/experimental/memory_resource.cuh>
 #include <cuda/experimental/stream.cuh>
 
 #include "testing.cuh"
@@ -56,7 +56,7 @@ constexpr int get_property(
 {
   return 42;
 }
-constexpr int get_property(const cuda::mr::device_memory_resource&, my_property)
+constexpr int get_property(const cudax::device_memory_resource&, my_property)
 {
   return 42;
 }
@@ -69,7 +69,7 @@ TEMPLATE_TEST_CASE(
   static_assert(!cuda::std::is_copy_constructible<uninitialized_buffer>::value, "");
   static_assert(!cuda::std::is_copy_assignable<uninitialized_buffer>::value, "");
 
-  cuda::mr::device_memory_resource resource{};
+  cudax::device_memory_resource resource{};
 
   SECTION("construction")
   {
@@ -111,7 +111,7 @@ TEMPLATE_TEST_CASE(
   {
     static_assert(!cuda::std::is_copy_assignable<uninitialized_buffer>::value, "");
     {
-      cuda::mr::managed_memory_resource other_resource{};
+      cudax::managed_memory_resource other_resource{};
       uninitialized_buffer input{other_resource, 42};
       uninitialized_buffer buf{resource, 1337};
       const auto* old_ptr       = buf.data();
@@ -222,7 +222,7 @@ TEST_CASE("uninitialized_buffer is usable with cudax::launch", "[container]")
   SECTION("non-const")
   {
     const int grid_size = 4;
-    cudax::uninitialized_buffer<int, ::cuda::mr::device_accessible> buffer{cuda::mr::device_memory_resource{}, 1024};
+    cudax::uninitialized_buffer<int, ::cuda::mr::device_accessible> buffer{cudax::device_memory_resource{}, 1024};
     auto dimensions = cudax::make_hierarchy(cudax::grid_dims(grid_size), cudax::block_dims<256>());
 
     cudax::stream stream;
@@ -233,8 +233,7 @@ TEST_CASE("uninitialized_buffer is usable with cudax::launch", "[container]")
   SECTION("const")
   {
     const int grid_size = 4;
-    const cudax::uninitialized_buffer<int, ::cuda::mr::device_accessible> buffer{
-      cuda::mr::device_memory_resource{}, 1024};
+    const cudax::uninitialized_buffer<int, ::cuda::mr::device_accessible> buffer{cudax::device_memory_resource{}, 1024};
     auto dimensions = cudax::make_hierarchy(cudax::grid_dims(grid_size), cudax::block_dims<256>());
 
     cudax::stream stream;
@@ -245,7 +244,7 @@ TEST_CASE("uninitialized_buffer is usable with cudax::launch", "[container]")
 
 // A test resource that keeps track of the number of resources are
 // currently alive.
-struct test_device_memory_resource : cuda::mr::device_memory_resource
+struct test_device_memory_resource : cudax::device_memory_resource
 {
   static int count;
 
@@ -255,7 +254,7 @@ struct test_device_memory_resource : cuda::mr::device_memory_resource
   }
 
   test_device_memory_resource(const test_device_memory_resource& other)
-      : cuda::mr::device_memory_resource{other}
+      : cudax::device_memory_resource{other}
   {
     ++count;
   }
@@ -270,7 +269,7 @@ int test_device_memory_resource::count = 0;
 
 TEST_CASE("uninitialized_buffer's memory resource does not dangle", "[container]")
 {
-  cudax::uninitialized_buffer<int, ::cuda::mr::device_accessible> buffer{cuda::mr::device_memory_resource{}, 0};
+  cudax::uninitialized_buffer<int, ::cuda::mr::device_accessible> buffer{cudax::device_memory_resource{}, 0};
 
   {
     CHECK(test_device_memory_resource::count == 0);

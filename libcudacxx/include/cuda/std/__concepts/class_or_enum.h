@@ -28,7 +28,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2011
+#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 
 template <class _Tp>
 _CCCL_CONCEPT __class_or_enum = _CCCL_TRAIT(is_class, _Tp) || _CCCL_TRAIT(is_union, _Tp) || _CCCL_TRAIT(is_enum, _Tp);
@@ -39,7 +39,7 @@ template <class _Tp>
 _CCCL_CONCEPT __workaround_52970 =
   _CCCL_TRAIT(is_class, remove_cvref_t<_Tp>) || _CCCL_TRAIT(is_union, remove_cvref_t<_Tp>);
 
-#endif // _CCCL_STD_VER > 2011
+#endif // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
