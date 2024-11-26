@@ -222,7 +222,7 @@ struct __transposed_element_accessor
   using __element_type  = _ElementType;
   using __accessor_type = _Accessor;
 
-  _LIBCUDACXX_HIDE_FROM_ABI static __accessor_type accessor(const _Accessor& __a)
+  _LIBCUDACXX_HIDE_FROM_ABI static __accessor_type __accessor(const _Accessor& __a)
   {
     return __accessor_type(__a);
   }
@@ -264,7 +264,7 @@ struct __transposed_layout<_CUDA_VSTD::layout_left>
   __mapping(const typename _CUDA_VSTD::layout_left::template mapping<_OriginalExtents>& __orig_map)
   {
     using __original_mapping_type = typename _CUDA_VSTD::layout_left::template mapping<_OriginalExtents>;
-    using __extents_type          = __transpose_extents_t<typename __original_mapping_type::__extents_type>;
+    using __extents_type          = __transpose_extents_t<typename __original_mapping_type::extents_type>;
     using __return_mapping_type   = typename __layout_type::template mapping<__extents_type>;
     return __return_mapping_type{__transpose_extents(__orig_map.extents())};
   }
@@ -280,7 +280,7 @@ struct __transposed_layout<_CUDA_VSTD::layout_right>
   __mapping(const typename _CUDA_VSTD::layout_right::template mapping<_OriginalExtents>& __orig_map)
   {
     using __original_mapping_type = typename _CUDA_VSTD::layout_right::template mapping<_OriginalExtents>;
-    using __extents_type          = __transpose_extents_t<typename __original_mapping_type::__extents_type>;
+    using __extents_type          = __transpose_extents_t<typename __original_mapping_type::extents_type>;
     using __return_mapping_type   = typename __layout_type::template mapping<__extents_type>;
     return __return_mapping_type{__transpose_extents(__orig_map.extents())};
   }
@@ -296,7 +296,7 @@ struct __transposed_layout<_CUDA_VSTD::layout_stride>
   __mapping(const typename _CUDA_VSTD::layout_stride::template mapping<_OriginalExtents>& __orig_map)
   {
     using __original_mapping_type = typename _CUDA_VSTD::layout_stride::template mapping<_OriginalExtents>;
-    using __original_extents_type = typename __original_mapping_type::__extents_type;
+    using __original_extents_type = typename __original_mapping_type::extents_type;
     using __extents_type          = __transpose_extents_t<__original_extents_type>;
     using __return_mapping_type   = typename __layout_type::template mapping<__extents_type>;
     return __return_mapping_type{
@@ -369,10 +369,9 @@ transposed(_CUDA_VSTD::mdspan<_ElementType, _Extents, _Layout, _Accessor> __a)
   using __element_type  = typename __detail::__transposed_element_accessor<_ElementType, _Accessor>::__element_type;
   using __layout_type   = typename __detail::__transposed_layout<_Layout>::__layout_type;
   using __accessor_type = typename __detail::__transposed_element_accessor<_ElementType, _Accessor>::__accessor_type;
-
-  auto __mapping  = __detail::__transposed_layout<_Layout>::__mapping(__a.mapping());
-  auto __accessor = __detail::__transposed_element_accessor<_ElementType, _Accessor>::__accessor(__a.accessor());
-  return _CUDA_VSTD::mdspan<__element_type, typename decltype(__mapping)::__extents_type, __layout_type, __accessor_type>{
+  auto __mapping        = __detail::__transposed_layout<_Layout>::__mapping(__a.mapping());
+  auto __accessor       = __detail::__transposed_element_accessor<_ElementType, _Accessor>::__accessor(__a.accessor());
+  return _CUDA_VSTD::mdspan<__element_type, typename decltype(__mapping)::extents_type, __layout_type, __accessor_type>{
     __a.data_handle(), __mapping, __accessor};
 }
 
