@@ -24,6 +24,7 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 
+#include <cuda/experimental/__async/sender/queries.cuh>
 #include <cuda/experimental/__async/sender/utility.cuh>
 
 namespace cuda::experimental::execution
@@ -60,25 +61,18 @@ _CCCL_INLINE_VAR constexpr bool __is_unsequenced_execution_policy =
   _Policy == execution_policy::unsequenced_host || _Policy == execution_policy::unsequenced_device
   || _Policy == execution_policy::parallel_unsequenced_host || _Policy == execution_policy::parallel_unsequenced_device;
 
-template <class _Tp>
-_CCCL_CONCEPT_FRAGMENT(__has_member_get_execution_policy_,
-                       requires(const _Tp& __t)(requires(_CCCL_TRAIT(
-                         _CUDA_VSTD::is_convertible, decltype(__t.get_execution_policy()), execution_policy))));
-
 struct get_execution_policy_t;
 
 template <class _Tp>
-_CCCL_CONCEPT __has_member_get_execution_policy = _CCCL_FRAGMENT(__has_member_get_execution_policy_, _Tp);
+_CCCL_CONCEPT __has_member_get_execution_policy = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __t)(
+  requires(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, decltype(__t.get_execution_policy()), execution_policy)));
 
 template <class _Env>
-_CCCL_CONCEPT_FRAGMENT(
-  __has_query_get_execution_policy_,
-  requires(const _Env& __env, const get_execution_policy_t& __cpo)(
-    requires(!__has_member_get_execution_policy<_Env>),
-    requires(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, decltype(__env.query(__cpo)), execution_policy))));
-
-template <class _Env>
-_CCCL_CONCEPT __has_query_get_execution_policy = _CCCL_FRAGMENT(__has_query_get_execution_policy_, _Env);
+_CCCL_CONCEPT __has_query_get_execution_policy = _CCCL_REQUIRES_EXPR((_Env))(
+  requires(!__has_member_get_execution_policy<_Env>),
+  requires(_CCCL_TRAIT(_CUDA_VSTD::is_convertible,
+                       ::cuda::experimental::__async::__query_result_t<const _Env&, get_execution_policy_t>,
+                       execution_policy)));
 
 struct get_execution_policy_t
 {

@@ -29,10 +29,14 @@
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/stream_ref>
 
+#include <cuda/experimental/__async/queries.cuh>
 #include <cuda/experimental/__stream/stream.cuh>
 
 namespace cuda::experimental
 {
+
+struct get_stream_t;
+
 // clang-format off
 template <class _Tp>
 _CCCL_CONCEPT __has_member_get_stream =
@@ -62,9 +66,8 @@ struct get_stream_t
     return __t.get_stream();
   }
 
-  _CCCL_TEMPLATE(class _Env,
-                 class _Ret = decltype(_CUDA_VSTD::declval<const _Env&>().query(_CUDA_VSTD::declval<get_stream_t>())))
-  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _Ret, ::cuda::stream_ref))
+  _CCCL_TEMPLATE(class _Env)
+  _CCCL_REQUIRES(__has_query_get_stream<_Env>)
   _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr ::cuda::stream_ref operator()(const _Env& __env) const noexcept
   {
     static_assert(noexcept(__env.query(*this)), "");

@@ -39,29 +39,23 @@
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/std/__type_traits/is_same.h>
 
+#include <cuda/experimental/__async/queries.cuh>
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
 
 namespace cuda::experimental
 {
 
-template <class _Tp>
-_CCCL_CONCEPT_FRAGMENT(__has_member_get_resource_,
-                       requires(const _Tp& __t)(
-                         requires(_CUDA_VMR::async_resource<cuda::std::remove_cvref_t<decltype(__t.get_resource())>>)));
-
-template <class _Tp>
-_CCCL_CONCEPT __has_member_get_resource = _CCCL_FRAGMENT(__has_member_get_resource_, _Tp);
-
 struct get_memory_resource_t;
 
-template <class _Env>
-_CCCL_CONCEPT_FRAGMENT(__has_query_get_memory_resource_,
-                       requires(const _Env& __env, const get_memory_resource_t& __cpo)(
-                         requires(!__has_member_get_resource<_Env>),
-                         requires(_CUDA_VMR::async_resource<cuda::std::remove_cvref_t<decltype(__env.query(__cpo))>>)));
+template <class _Tp>
+_CCCL_CONCEPT __has_member_get_resource = _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __t)(
+  requires(_CUDA_VMR::async_resource<cuda::std::remove_cvref_t<decltype(__t.get_resource())>>));
 
 template <class _Env>
-_CCCL_CONCEPT __has_query_get_memory_resource = _CCCL_FRAGMENT(__has_query_get_memory_resource_, _Env);
+_CCCL_CONCEPT __has_query_get_memory_resource = _CCCL_REQUIRES_EXPR((_Env))(
+  requires(!__has_member_get_resource<_Env>),
+  requires(
+    _CUDA_VMR::async_resource<cuda::std::remove_cvref_t<__async::__query_result_t<const _Env&, get_memory_resource_t>>>));
 
 //! @brief `get_memory_resource_t` is a customization point object that queries a type `T` for an associated memory
 //! resource
