@@ -37,9 +37,9 @@ namespace cuda::experimental
 template <class _Interface>
 using __vtable_for _CCCL_NODEBUG_ALIAS = typename __overrides_for<_Interface>::__vtable;
 
-///
-/// __basic_vtable
-///
+//!
+//! __basic_vtable
+//!
 template <class _Interface, auto... _Mbrs>
 struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __basic_vtable
     : __rtti_base
@@ -99,9 +99,9 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __basic_vtable
   __base_vptr __vptr_map_[__cbases];
 };
 
-///
-/// __vtable implementation details
-///
+//!
+//! __vtable implementation details
+//!
 
 template <class... _Interfaces>
 struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __vtable_tuple

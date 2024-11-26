@@ -44,18 +44,18 @@ _CCCL_PUSH_MACROS
 
 namespace cuda::experimental
 {
-///
-/// basic_any<_Interface*>
-///
+//!
+//! basic_any<_Interface*>
+//!
 template <class _Interface>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
 {
   using interface_type                 = _CUDA_VSTD::remove_const_t<_Interface>;
   static constexpr bool __is_const_ptr = _CUDA_VSTD::is_const_v<_Interface>;
 
-  ///
-  /// Constructors
-  ///
+  //!
+  //! Constructors
+  //!
   basic_any() = default;
 
   _CUDAX_TRIVIAL_HOST_API basic_any(_CUDA_VSTD::nullptr_t) {}
@@ -113,9 +113,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
     __convert_from(basic_any_from(__self));
   }
 
-  ///
-  /// Assignment operators
-  ///
+  //!
+  //! Assignment operators
+  //!
   _CUDAX_HOST_API auto operator=(_CUDA_VSTD::nullptr_t) noexcept -> basic_any&
   {
     reset();
@@ -164,9 +164,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
     return *this;
   }
 
-  ///
-  /// emplace
-  ///
+  //!
+  //! emplace
+  //!
   _CCCL_TEMPLATE(class _Tp, class _Up = _CUDA_VSTD::remove_pointer_t<_Tp>, class _Vp = _CUDA_VSTD::remove_const_t<_Up>)
   _CCCL_REQUIRES(__satisfies<_Vp, _Interface> _CCCL_AND(__is_const_ptr || !_CUDA_VSTD::is_const_v<_Up>))
   _CUDAX_HOST_API auto

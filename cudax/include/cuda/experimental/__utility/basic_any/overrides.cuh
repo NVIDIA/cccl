@@ -33,9 +33,9 @@ namespace cuda::experimental
 template <class _Interface, class _Tp = __remove_ireference_t<_Interface>>
 using __overrides_for _CCCL_NODEBUG_ALIAS = typename _Interface::template overrides<_Tp>;
 
-///
-/// overrides_for
-///
+//!
+//! overrides_for
+//!
 template <class _InterfaceOrModel, auto... _VirtualFnsOrOverrides>
 struct overrides_for
 {

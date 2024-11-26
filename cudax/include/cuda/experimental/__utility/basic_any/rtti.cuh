@@ -37,15 +37,15 @@ _CCCL_PUSH_MACROS
 
 namespace cuda::experimental
 {
-///
-/// __iunknown: Logically, the root of all interfaces.
-///
+//!
+//! __iunknown: Logically, the root of all interfaces.
+//!
 struct iunknown : interface<_CUDA_VSTD::__type_always<iunknown>::__call>
 {};
 
-///
-/// bad_any_cast
-///
+//!
+//! bad_any_cast
+//!
 struct bad_any_cast : ::std::bad_cast
 {
   bad_any_cast() noexcept                                       = default;
@@ -192,12 +192,12 @@ struct __rtti_ex : __rtti
   __base_info __base_vptr_array[_NbrInterfaces];
 };
 
-///
-/// __try_vptr_cast
-///
-/// This function ignores const qualification on the source and destination
-/// interfaces.
-///
+//!
+//! __try_vptr_cast
+//!
+//! This function ignores const qualification on the source and destination
+//! interfaces.
+//!
 template <class _SrcInterface, class _DstInterface>
 _CCCL_NODISCARD _CUDAX_HOST_API auto
 __try_vptr_cast(__vptr_for<_SrcInterface> __src_vptr) noexcept -> __vptr_for<_DstInterface>
@@ -213,12 +213,12 @@ __try_vptr_cast(__vptr_for<_SrcInterface> __src_vptr) noexcept -> __vptr_for<_Ds
   }
   else if constexpr (extension_of<_SrcInterface, _DstInterface>)
   {
-    /// Fast up-casts:
+    //! Fast up-casts:
     return __src_vptr->__query_interface(_DstInterface());
   }
   else
   {
-    /// Slow down-casts and cross-casts:
+    //! Slow down-casts and cross-casts:
     __rtti const* rtti = __src_vptr->__query_interface(iunknown());
     return rtti->__query_interface(_DstInterface());
   }

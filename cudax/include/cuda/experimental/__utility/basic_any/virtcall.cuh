@@ -36,31 +36,31 @@ _CCCL_PUSH_MACROS
 
 namespace cuda::experimental
 {
-///
-/// __virtuals_map
-///
+//!
+//! __virtuals_map
+//!
 
-/// The virtuals map is an extra convenience for interface authors. To make a
-/// virtual function call, the user must provide the member function pointer
-/// corresponding to the virtual, as in:
-///
-/// @code
-/// template <class...>
-/// struct ifoo {
-///   void meow(auto... __args) {
-///     // dispatch to the &ifoo<>::meow virtual function
-///     // NB: the `<>` after `ifoo` is significant!
-///     virtcall<&ifoo<>::meow>(this, __args...);
-///     //            ^^
-///   }
-///  ...
-/// };
-/// @endcode
-///
-/// When taking the address of the member, it is very easy to forget the `<>`
-/// after the interface name, which would result in a compilation error --
-/// except for the virtuals map, which substitutes the correct member function
-/// pointer for the user so they don't have to think about it.
+//! The virtuals map is an extra convenience for interface authors. To make a
+//! virtual function call, the user must provide the member function pointer
+//! corresponding to the virtual, as in:
+//!
+//! @code
+//! template <class...>
+//! struct ifoo {
+//!   void meow(auto... __args) {
+//!     // dispatch to the &ifoo<>::meow virtual function
+//!     // NB: the `<>` after `ifoo` is significant!
+//!     virtcall<&ifoo<>::meow>(this, __args...);
+//!     //            ^^
+//!   }
+//!  ...
+//! };
+//! @endcode
+//!
+//! When taking the address of the member, it is very easy to forget the `<>`
+//! after the interface name, which would result in a compilation error --
+//! except for the virtuals map, which substitutes the correct member function
+//! pointer for the user so they don't have to think about it.
 template <auto _Mbr, auto _BoundMbr>
 struct __virtuals_map_pair
 {
@@ -91,9 +91,9 @@ template <class _Interface, class _Super>
 using __virtuals_map_for _CCCL_NODEBUG_ALIAS =
   __virtuals_map<__overrides_for<_Interface>, __overrides_for<__rebind_interface<_Interface, _Super>>>;
 
-///
-/// virtcall
-///
+//!
+//! virtcall
+//!
 
 // If the interface is __ireference<MyInterface const>, then calls to non-const
 // member functions are not allowed.

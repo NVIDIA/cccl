@@ -40,9 +40,9 @@ _CCCL_PUSH_MACROS
 
 namespace cuda::experimental
 {
-///
-/// Interface type traits
-///
+//!
+//! Interface type traits
+//!
 // The primary __remove_ireference_v template is defined in basic_any_fwd.cuh.
 template <class _Interface>
 extern _Interface __remove_ireference_v<_Interface const>;
@@ -68,10 +68,10 @@ inline constexpr bool __is_lvalue_reference_v<__ireference<_Interface const>> = 
 template <class _Interface>
 inline constexpr bool __is_lvalue_reference_v<_Interface&> = true;
 
-///
-/// __bases_of: get the list of base interface for an interface, including itself
-///             and iunknown.
-///
+//!
+//! __bases_of: get the list of base interface for an interface, including itself
+//!             and iunknown.
+//!
 template <class _Interface, class _Fn>
 using __bases_of _CCCL_NODEBUG_ALIAS = //
   _CUDA_VSTD::__type_call< //
@@ -80,9 +80,9 @@ using __bases_of _CCCL_NODEBUG_ALIAS = //
       typename _Interface::template __ibases<__make_type_list>>,
     _Fn>;
 
-///
-/// interface subsumption
-///
+//!
+//! interface subsumption
+//!
 template <class _Interface1, class _Interface2>
 inline constexpr bool __subsumes = false;
 
@@ -96,16 +96,16 @@ template <class... _Subset, class... _Superset>
 inline constexpr bool __subsumes<__iset<_Subset...>, __iset<_Superset...>> =
   _CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__make_type_set<_Superset...>, _Subset...>;
 
-///
-/// extension_of: Checks if one interface is an extension of another.
-///
-/// An interface \c A is considered an extension of another \c B if \c B
-/// can be found by recursively searching the base interfaces of \c A.
-/// `iset<As...>` is an extension of `iset<Bs...>` if `Bs...` is a subset
-/// of `As...`.
-///
-/// \note An interface is considered an extension of itself.
-///
+//!
+//! extension_of: Checks if one interface is an extension of another.
+//!
+//! An interface \c A is considered an extension of another \c B if \c B
+//! can be found by recursively searching the base interfaces of \c A.
+//! `iset<As...>` is an extension of `iset<Bs...>` if `Bs...` is a subset
+//! of `As...`.
+//!
+//! \note An interface is considered an extension of itself.
+//!
 template <class _Base>
 struct __has_base_fn
 {
@@ -135,9 +135,9 @@ inline constexpr bool
 template <class _Derived, class _Base>
 _CCCL_CONCEPT extension_of = __extension_of<_Derived, _Base>;
 
-///
-/// interface
-///
+//!
+//! interface
+//!
 template <template <class...> class _Interface, class... _Bases, size_t Size, size_t Align>
 struct interface<_Interface, extends<_Bases...>, Size, Align>
 {
@@ -155,9 +155,9 @@ struct interface<_Interface, extends<_Bases...>, Size, Align>
   using overrides _CCCL_NODEBUG_ALIAS = overrides_for<_Tp>;
 };
 
-///
-/// __is_interface
-///
+//!
+//! __is_interface
+//!
 template <template <class...> class _Interface, class _Extends, size_t _Size, size_t _Align>
 _CUDAX_HOST_API auto __is_interface_test(interface<_Interface, _Extends, _Size, _Align> const&) -> void;
 
@@ -170,19 +170,19 @@ _CCCL_CONCEPT __is_interface =
   );
 // clang-format on
 
-///
-/// __unique_interfaces
-///
-/// Given an interface, return a list that contains the interface and all its
-/// bases, but with duplicates removed.
-///
+//!
+//! __unique_interfaces
+//!
+//! Given an interface, return a list that contains the interface and all its
+//! bases, but with duplicates removed.
+//!
 template <class _Interface, class _Fn = __make_type_list>
 using __unique_interfaces _CCCL_NODEBUG_ALIAS =
   _CUDA_VSTD::__type_apply<_Fn, __bases_of<_Interface, _CUDA_VSTD::__type_quote<_CUDA_VSTD::__make_type_set>>>;
 
-///
-/// __index_of_base: find the index of an interface in a list of unique interfaces
-///
+//!
+//! __index_of_base: find the index of an interface in a list of unique interfaces
+//!
 _CCCL_NODISCARD _CUDAX_HOST_API constexpr auto __find_index(_CUDA_VSTD::initializer_list<bool> __il) -> size_t
 {
   auto __it = _CUDA_VSTD::find(__il.begin(), __il.end(), true);
@@ -225,9 +225,9 @@ using __vptr_for _CCCL_NODEBUG_ALIAS = typename __overrides_for<_Interface>::__v
 
 #endif
 
-///
-/// interface satisfaction
-///
+//!
+//! interface satisfaction
+//!
 template <class _Tp>
 struct __satisfaction_fn
 {
@@ -272,24 +272,24 @@ struct __unsatisfied_interface<_Interface&, _Tp> : __unsatisfied_interface<_Inte
 template <class _Tp, class _Interface>
 _CCCL_CONCEPT __has_overrides = _CUDA_VSTD::_IsValidExpansion<__overrides_for, _Interface, _Tp>::value;
 
-/// The \c __satisfies concept checks if a type \c _Tp satisfies an interface
-/// \c _Interface. It does this by trying to instantiate
-/// `__overrides_for<_X, _Tp>` for all \c _X, where \c _X is \c _Interface or
-/// one of its bases. If any of the \c __overrides_for instantiations are ill-
-/// formed, then \c _Tp does not satisfy \c _Interface.
-///
-/// \c __satisfies is implemented by searching through the list of interfaces for
-/// one that \c _Tp does not satisfy. If such an interface is found, the concept
-/// check fails in such a way as to hopefully tell the user which interface is
-/// not satisfied and why.
+//! The \c __satisfies concept checks if a type \c _Tp satisfies an interface
+//! \c _Interface. It does this by trying to instantiate
+//! `__overrides_for<_X, _Tp>` for all \c _X, where \c _X is \c _Interface or
+//! one of its bases. If any of the \c __overrides_for instantiations are ill-
+//! formed, then \c _Tp does not satisfy \c _Interface.
+//!
+//! \c __satisfies is implemented by searching through the list of interfaces for
+//! one that \c _Tp does not satisfy. If such an interface is found, the concept
+//! check fails in such a way as to hopefully tell the user which interface is
+//! not satisfied and why.
 template <class _Tp,
           class _Interface,
           class UnsatisfiedInterface = _CUDA_VSTD::__type<__unsatisfied_interface<_Interface, _Tp>>>
 _CCCL_CONCEPT __satisfies = __has_overrides<_Tp, UnsatisfiedInterface>;
 
-///
-/// __interface_of
-///
+//!
+//! __interface_of
+//!
 template <class _Super>
 struct __make_interface_fn
 {
@@ -306,13 +306,13 @@ struct __make_interface_fn
 template <class _Interface>
 using __interface_of _CCCL_NODEBUG_ALIAS = __unique_interfaces<_Interface, __make_interface_fn<_Interface>>;
 
-///
-/// interface_cast
-///
-/// given a `basic_any<X<>>` object `o`, `interface_cast<Y>(o)` return a
-/// reference to the (empty) sub-object of type `Y<X<>>`, from which
-/// `basic_any<X<>>` inherits, where `Y<>` is an interface that `X<>` extends.
-///
+//!
+//! interface_cast
+//!
+//! given a `basic_any<X<>>` object `o`, `interface_cast<Y>(o)` return a
+//! reference to the (empty) sub-object of type `Y<X<>>`, from which
+//! `basic_any<X<>>` inherits, where `Y<>` is an interface that `X<>` extends.
+//!
 template <class _Interface>
 struct __interface_cast_fn;
 

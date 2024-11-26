@@ -34,9 +34,9 @@ _CCCL_PUSH_MACROS
 
 namespace cuda::experimental
 {
-///
-/// __iset
-///
+//!
+//! __iset
+//!
 template <class... _Interfaces>
 struct __iset_
 {
@@ -66,9 +66,9 @@ using iset =
   _CUDA_VSTD::__type_call<_CUDA_VSTD::__type_unique<_CUDA_VSTD::__type_concat<__iset_flatten<_Interfaces>...>>,
                           _CUDA_VSTD::__type_quote<__iset>>;
 
-///
-/// Virtual table pointers
-///
+//!
+//! Virtual table pointers
+//!
 
 template <class... _Interfaces>
 struct __iset_vptr : __base_vptr

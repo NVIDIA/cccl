@@ -35,9 +35,9 @@ _CCCL_PUSH_MACROS
 
 namespace cuda::experimental
 {
-///
-/// basic_any_access
-///
+//!
+//! basic_any_access
+//!
 struct __basic_any_access
 {
   template <class _Interface>

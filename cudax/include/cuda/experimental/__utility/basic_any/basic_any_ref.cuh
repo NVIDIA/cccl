@@ -40,16 +40,16 @@ _CCCL_PUSH_MACROS
 
 namespace cuda::experimental
 {
-///
-/// \c __ireference<_Interface>
-///
-/// For an interface `I`, `__ireference<I>` represents a reference to an object
-/// that satisfies the given interface. When you dereference a `basic_any<I*>`,
-/// you get a `basic_any<__ireference<I>>`. Also, `basic_any<I&>` is implemented
-/// in terms of `basic_any<__ireference<I>>`.
-///
-/// Note: a `basic_any<__ireference<_Interface>> &&` is an rvalue reference,
-/// whereas a `basic_any<_Interface &> &&` is an lvalue reference.
+//!
+//! \c __ireference<_Interface>
+//!
+//! For an interface `I`, `__ireference<I>` represents a reference to an object
+//! that satisfies the given interface. When you dereference a `basic_any<I*>`,
+//! you get a `basic_any<__ireference<I>>`. Also, `basic_any<I&>` is implemented
+//! in terms of `basic_any<__ireference<I>>`.
+//!
+//! Note: a `basic_any<__ireference<_Interface>> &&` is an rvalue reference,
+//! whereas a `basic_any<_Interface &> &&` is an lvalue reference.
 template <class _Interface>
 struct __ireference : _Interface
 {
@@ -62,11 +62,11 @@ struct __ireference : _Interface
 };
 
 #if defined(_CCCL_NO_CONCEPTS)
-///
-/// A base class for basic_any<__ireference<_Interface>> that provides a
-/// conversion to basic_any<__ireference<_Interface const>>. Only used
-/// when concepts are not available.
-///
+//!
+//! A base class for basic_any<__ireference<_Interface>> that provides a
+//! conversion to basic_any<__ireference<_Interface const>>. Only used
+//! when concepts are not available.
+//!
 template <class _Interface>
 struct __basic_any_reference_conversion_base
 {
@@ -87,16 +87,16 @@ _CCCL_DIAG_SUPPRESS_NVHPC(conversion_function_not_usable)
 // "operator basic_any<...> will not be called for implicit or explicit conversions"
 _CCCL_NV_DIAG_SUPPRESS(554)
 
-///
-/// \c basic_any<__ireference<_Interface>>
-///
-/// A `basic_any<__ireference<_Interface>>` is a reference to an object that
-/// satisfies the given interface. It is used as the result of dereferencing
-/// a `basic_any<_Interface*>` and as the implementation of
-/// `basic_any<_Interface&>`.
-///
-/// `basic_any<__ireference<_Interface>>` is neither copyable nor movable. It is
-/// not an end-user type.
+//!
+//! \c basic_any<__ireference<_Interface>>
+//!
+//! A `basic_any<__ireference<_Interface>>` is a reference to an object that
+//! satisfies the given interface. It is used as the result of dereferencing
+//! a `basic_any<_Interface*>` and as the implementation of
+//! `basic_any<_Interface&>`.
+//!
+//! `basic_any<__ireference<_Interface>>` is neither copyable nor movable. It is
+//! not an end-user type.
 template <class _Interface, class Select>
 struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>, Select>
     : __interface_of<__ireference<_Interface>>
@@ -115,8 +115,8 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>, Sele
   auto operator=(basic_any const&) -> basic_any& = delete;
 
 #if !defined(_CCCL_NO_CONCEPTS)
-  /// \brief A non-const basic_any reference can be implicitly converted to a
-  /// const basic_any reference.
+  //! \brief A non-const basic_any reference can be implicitly converted to a
+  //! const basic_any reference.
   _CCCL_NODISCARD _CUDAX_HOST_API operator basic_any<__ireference<_Interface const>>() const noexcept
     requires(!__is_const_ref)
   {
@@ -124,26 +124,26 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>, Sele
   }
 #endif // !_CCCL_NO_CONCEPTS
 
-  /// \brief Returns a const reference to the type_info for the decayed type
-  /// of the type-erased object.
+  //! \brief Returns a const reference to the type_info for the decayed type
+  //! of the type-erased object.
   _CCCL_NODISCARD _CUDAX_HOST_API auto type() const noexcept -> _CUDA_VSTD::__type_info_ref
   {
     return *__get_rtti()->__object_info_->__object_typeid_;
   }
 
-  /// \brief Returns a const reference to the type_info for the decayed type
-  /// of the type-erased object.
+  //! \brief Returns a const reference to the type_info for the decayed type
+  //! of the type-erased object.
   _CCCL_NODISCARD _CUDAX_HOST_API auto interface() const noexcept -> _CUDA_VSTD::__type_info_ref
   {
     return *__get_rtti()->__interface_typeid_;
   }
 
-  /// \brief Returns a reference to a type_info object representing the type of
-  /// the dynamic interface.
-  ///
-  /// The dynamic interface is the interface that was used to construct the
-  /// object, which may be different from the current object's interface if
-  /// there was a conversion.
+  //! \brief Returns a reference to a type_info object representing the type of
+  //! the dynamic interface.
+  //!
+  //! The dynamic interface is the interface that was used to construct the
+  //! object, which may be different from the current object's interface if
+  //! there was a conversion.
   _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API static constexpr auto has_value() noexcept -> bool
   {
     return true;
@@ -163,29 +163,29 @@ private:
 
   basic_any() = default;
 
-  /// \brief Constructs a \c basic_any<__ireference<_Interface>> from an lvalue
-  /// reference to a \c basic_any<_Interface>.
+  //! \brief Constructs a \c basic_any<__ireference<_Interface>> from an lvalue
+  //! reference to a \c basic_any<_Interface>.
   _CUDAX_HOST_API explicit basic_any(
     _CUDA_VSTD::__maybe_const<__is_const_ref, basic_any<interface_type>>& __other) noexcept
   {
     this->__set_ref(__other.__get_vptr(), __other.__get_optr());
   }
 
-  /// \brief Constructs a \c basic_any<__ireference<_Interface>> from a
-  /// vtable pointer and an object pointer.
+  //! \brief Constructs a \c basic_any<__ireference<_Interface>> from a
+  //! vtable pointer and an object pointer.
   _CUDAX_HOST_API basic_any(__vptr_for<interface_type> __vptr,
                             _CUDA_VSTD::__maybe_const<__is_const_ref, void>* __optr) noexcept
       : __vptr_(__vptr)
       , __optr_(__optr)
   {}
 
-  /// \brief No-op.
+  //! \brief No-op.
   _CUDAX_TRIVIAL_HOST_API void reset() noexcept {}
 
-  /// \brief No-op.
+  //! \brief No-op.
   _CUDAX_TRIVIAL_HOST_API void __release() noexcept {}
 
-  /// \brief Rebinds the reference with a vtable pointer and object pointer.
+  //! \brief Rebinds the reference with a vtable pointer and object pointer.
   _CUDAX_HOST_API void __set_ref(__vptr_for<interface_type> __vptr,
                                  _CUDA_VSTD::__maybe_const<__is_const_ref, void>* __obj) noexcept
   {
@@ -193,9 +193,9 @@ private:
     __optr_ = __vptr_ ? __obj : nullptr;
   }
 
-  /// \brief Rebinds the reference with a vtable pointer for a different
-  /// interface and object pointer. The vtable pointer is cast to the correct
-  /// type. If the cast fails, the reference is set to null.
+  //! \brief Rebinds the reference with a vtable pointer for a different
+  //! interface and object pointer. The vtable pointer is cast to the correct
+  //! type. If the cast fails, the reference is set to null.
   template <class _VTable>
   _CUDAX_HOST_API void __set_ref(_VTable const* __other, _CUDA_VSTD::__maybe_const<__is_const_ref, void>* __obj) noexcept
   {
@@ -204,11 +204,11 @@ private:
     __optr_               = __vptr_ ? __obj : nullptr;
   }
 
-  /// \brief Rebinds the reference with a pointer to an iset vtable, which
-  /// is cast to a pointer to the vtable for `_Interface`. If \c _Interface
-  /// is a specialization `__iset<Is...>`, the cast succeeds if the
-  /// \c Is... is a subset of `Interfaces...`. Otherwise, the cast succeeds
-  /// if the \c _Interface is a base of one of `Interfaces...`.
+  //! \brief Rebinds the reference with a pointer to an iset vtable, which
+  //! is cast to a pointer to the vtable for `_Interface`. If \c _Interface
+  //! is a specialization `__iset<Is...>`, the cast succeeds if the
+  //! \c Is... is a subset of `Interfaces...`. Otherwise, the cast succeeds
+  //! if the \c _Interface is a base of one of `Interfaces...`.
   template <class... _Interfaces>
   _CUDAX_HOST_API void
   __set_ref(__iset_vptr<_Interfaces...> __other, _CUDA_VSTD::__maybe_const<__is_const_ref, void>* __obj) noexcept
@@ -252,9 +252,9 @@ private:
 _CCCL_NV_DIAG_DEFAULT(554)
 _CCCL_DIAG_POP
 
-///
-/// basic_any<_Interface&>
-///
+//!
+//! basic_any<_Interface&>
+//!
 template <class _Interface>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__ireference<_Interface>, __secondary>
 {

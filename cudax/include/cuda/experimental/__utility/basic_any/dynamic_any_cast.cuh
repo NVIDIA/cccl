@@ -33,14 +33,14 @@ _CCCL_PUSH_MACROS
 
 namespace cuda::experimental
 {
-///
-/// __dynamic_any_cast_fn
-///
+//!
+//! __dynamic_any_cast_fn
+//!
 template <class _DstInterface>
 struct __dynamic_any_cast_fn
 {
-  /// @throws bad_any_cast when \c __src cannot be dynamically cast to a
-  /// \c basic_any<_DstInterface>.
+  //! @throws bad_any_cast when \c __src cannot be dynamically cast to a
+  //! \c basic_any<_DstInterface>.
   _CCCL_TEMPLATE(class _SrcInterface)
   _CCCL_REQUIRES(__any_castable_to<basic_any<_SrcInterface>, basic_any<_DstInterface>>)
   _CCCL_NODISCARD _CUDAX_HOST_API auto operator()(basic_any<_SrcInterface>&& __src) const -> basic_any<_DstInterface>
@@ -50,8 +50,8 @@ struct __dynamic_any_cast_fn
     return __dst;
   }
 
-  /// @throws bad_any_cast when \c __src cannot be dynamically cast to a
-  /// \c basic_any<_DstInterface>.
+  //! @throws bad_any_cast when \c __src cannot be dynamically cast to a
+  //! \c basic_any<_DstInterface>.
   _CCCL_TEMPLATE(class _SrcInterface)
   _CCCL_REQUIRES(__any_castable_to<basic_any<_SrcInterface>&, basic_any<_DstInterface>>)
   _CCCL_NODISCARD _CUDAX_HOST_API auto operator()(basic_any<_SrcInterface>& __src) const -> basic_any<_DstInterface>
@@ -61,8 +61,8 @@ struct __dynamic_any_cast_fn
     return __dst;
   }
 
-  /// @throws bad_any_cast when \c __src cannot be dynamically cast to a
-  /// \c basic_any<_DstInterface>.
+  //! @throws bad_any_cast when \c __src cannot be dynamically cast to a
+  //! \c basic_any<_DstInterface>.
   _CCCL_TEMPLATE(class _SrcInterface)
   _CCCL_REQUIRES(__any_castable_to<basic_any<_SrcInterface> const&, basic_any<_DstInterface>>)
   _CCCL_NODISCARD _CUDAX_HOST_API auto
@@ -73,8 +73,8 @@ struct __dynamic_any_cast_fn
     return __dst;
   }
 
-  /// @returns \c nullptr when \c __src cannot be dynamically cast to a
-  /// \c basic_any<_DstInterface>.
+  //! @returns \c nullptr when \c __src cannot be dynamically cast to a
+  //! \c basic_any<_DstInterface>.
   _CCCL_TEMPLATE(class _SrcInterface)
   _CCCL_REQUIRES(__any_castable_to<basic_any<_SrcInterface>*, basic_any<_DstInterface>>)
   _CCCL_NODISCARD _CUDAX_HOST_API auto operator()(basic_any<_SrcInterface>* __src) const -> basic_any<_DstInterface>
@@ -84,8 +84,8 @@ struct __dynamic_any_cast_fn
     return __dst;
   }
 
-  /// @returns \c nullptr when \c __src cannot be dynamically cast to a
-  /// \c basic_any<_DstInterface>.
+  //! @returns \c nullptr when \c __src cannot be dynamically cast to a
+  //! \c basic_any<_DstInterface>.
   _CCCL_TEMPLATE(class _SrcInterface)
   _CCCL_REQUIRES(__any_castable_to<basic_any<_SrcInterface> const*, basic_any<_DstInterface>>)
   _CCCL_NODISCARD _CUDAX_HOST_API auto
@@ -97,12 +97,12 @@ struct __dynamic_any_cast_fn
   }
 };
 
-///
-/// dynamic_any_cast
-///
-/// @throws bad_any_cast when \c from cannot be dynamically cast to a
-/// \c basic_any<_DstInterface>
-///
+//!
+//! dynamic_any_cast
+//!
+//! @throws bad_any_cast when \c from cannot be dynamically cast to a
+//! \c basic_any<_DstInterface>
+//!
 template <class _DstInterface>
 inline constexpr __dynamic_any_cast_fn<_DstInterface> dynamic_any_cast{};
 

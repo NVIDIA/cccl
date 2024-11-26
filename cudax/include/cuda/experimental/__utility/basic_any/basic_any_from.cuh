@@ -28,12 +28,12 @@ _CCCL_PUSH_MACROS
 
 namespace cuda::experimental
 {
-///
-/// `basic_any_from`
-///
-/// @brief This function is for use in the thunks in an interface to get
-/// a pointer or a reference to the full `basic_any` object.
-///
+//!
+//! `basic_any_from`
+//!
+//! @brief This function is for use in the thunks in an interface to get
+//! a pointer or a reference to the full `basic_any` object.
+//!
 template <template <class...> class _Interface, class _Super>
 _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API auto basic_any_from(_Interface<_Super>&& __self) noexcept -> basic_any<_Super>&&
 {

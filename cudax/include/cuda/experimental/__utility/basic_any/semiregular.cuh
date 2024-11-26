@@ -54,9 +54,9 @@ _CCCL_NODISCARD _CUDAX_HOST_API constexpr _Tp __constant_war(_Tp __val) noexcept
 
 namespace cuda::experimental
 {
-///
-/// semi-regular overrides
-///
+//!
+//! semi-regular overrides
+//!
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CUDA_VSTD::movable<_Tp>)
@@ -109,9 +109,9 @@ __equal_fn(_Tp const& __self, _CUDA_VSTD::__type_info_ref __type, void const* __
   return false;
 }
 
-///
-/// semi-regular interfaces
-///
+//!
+//! semi-regular interfaces
+//!
 template <class...>
 struct imovable : interface<imovable>
 {

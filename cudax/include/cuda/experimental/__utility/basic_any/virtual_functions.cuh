@@ -35,9 +35,9 @@ _CCCL_PUSH_MACROS
 
 namespace cuda::experimental
 {
-///
-/// __override_tag
-///
+//!
+//! __override_tag
+//!
 template <class _Tp, auto _Override>
 struct __override_tag_;
 
@@ -53,8 +53,8 @@ _CUDAX_HOST_API auto __class_of_(_Fn _Cp::*) -> _Cp;
 template <class _Fn>
 using __class_of _CCCL_NODEBUG_ALIAS = decltype(__cudax::__class_of_(_Fn()));
 
-/// We use a C-style cast instead of a static_cast because a C-style cast will
-/// ignore accessibility, letting us cast to a private base class.
+//! We use a C-style cast instead of a static_cast because a C-style cast will
+//! ignore accessibility, letting us cast to a private base class.
 template <class _DstPtr, class _Src>
 _CUDAX_TRIVIAL_HOST_API auto __c_style_cast(_Src* __ptr) noexcept -> _DstPtr
 {
@@ -150,9 +150,9 @@ _CUDAX_HOST_API auto __is_virtual_const(_Ret (*)(void*, _Args...)) -> _CUDA_VSTD
 template <class _Ret, class... _Args>
 _CUDAX_HOST_API auto __is_virtual_const(_Ret (*)(void const*, _Args...)) -> _CUDA_VSTD::true_type;
 
-///
-/// __virtual_fn
-///
+//!
+//! __virtual_fn
+//!
 template <auto _Fn>
 struct __virtual_fn
 {

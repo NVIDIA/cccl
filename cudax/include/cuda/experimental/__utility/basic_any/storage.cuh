@@ -34,14 +34,14 @@ namespace cuda::experimental
 {
 _CCCL_NODISCARD _CUDAX_HOST_API inline constexpr auto __buffer_size(size_t __size) -> size_t
 {
-  /// round up to the nearest multiple of `__word`, which is the size of a
-  /// void*.
+  //! round up to the nearest multiple of `__word`, which is the size of a
+  //! void*.
   return ((__size ? (_CUDA_VSTD::max)(__size, sizeof(void*)) : __default_buffer_size) + __word - 1) / __word * __word;
 }
 
 _CCCL_NODISCARD _CUDAX_HOST_API inline constexpr auto __buffer_align(size_t __align) -> size_t
 {
-  /// need to be able to store a void* in the buffer.
+  //! need to be able to store a void* in the buffer.
   return __align ? (_CUDA_VSTD::max)(__align, alignof(void*)) : __default_buffer_align;
 }
 

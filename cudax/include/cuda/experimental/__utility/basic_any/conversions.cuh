@@ -35,14 +35,14 @@ _CCCL_PUSH_MACROS
 
 namespace cuda::experimental
 {
-///
-/// conversions
-///
-/// Can one basic_any type convert to another? Implicitly? Explicitly?
-/// Statically? Dynamically? We answer these questions by mapping two
-/// cvref qualified basic_any types to archetype types, and then using
-/// the built-in language rules to determine if the conversion is valid.
-///
+//!
+//! conversions
+//!
+//! Can one basic_any type convert to another? Implicitly? Explicitly?
+//! Statically? Dynamically? We answer these questions by mapping two
+//! cvref qualified basic_any types to archetype types, and then using
+//! the built-in language rules to determine if the conversion is valid.
+//!
 struct __immovable_archetype
 {
   __immovable_archetype()                        = default;

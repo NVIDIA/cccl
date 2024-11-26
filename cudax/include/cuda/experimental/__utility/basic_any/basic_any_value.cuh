@@ -57,9 +57,9 @@ _CCCL_CONCEPT __list_initializable_from =
   );
 // clang-format on
 
-///
-/// basic_any
-///
+//!
+//! basic_any
+//!
 template <class _Interface, class>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any : __basic_any_base<_Interface>
 {
@@ -77,14 +77,14 @@ private:
 public:
   using interface_type = _Interface;
 
-  /// \brief Constructs an empty `basic_any` object.
-  /// \post `has_value() == false`
+  //! \brief Constructs an empty `basic_any` object.
+  //! \post `has_value() == false`
   basic_any() = default;
 
-  /// \brief Constructs a `basic_any` object that contains a copy of `__value`.
-  /// \pre `__value` must be move constructible. `_Tp` must satisfy the
-  /// requirements of `_Interface`.
-  /// \post `has_value() == true`
+  //! \brief Constructs a `basic_any` object that contains a copy of `__value`.
+  //! \pre `__value` must be move constructible. `_Tp` must satisfy the
+  //! requirements of `_Interface`.
+  //! \post `has_value() == true`
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES((!__is_basic_any<_Tp>) _CCCL_AND __satisfies<_Tp, _Interface>)
   _CUDAX_HOST_API basic_any(_Tp __value) noexcept(__is_small<_Tp>(__size_, __align_))
@@ -92,10 +92,10 @@ public:
     __emplace<_Tp>(_CUDA_VSTD::move(__value));
   }
 
-  /// \brief Constructs a `basic_any` object that contains a new object of type
-  /// `_Tp` constructed as `_Tp{__args...}`.
-  /// \pre `_Tp` must satisfy the requirements of `_Interface`.
-  /// \post `has_value() == true`
+  //! \brief Constructs a `basic_any` object that contains a new object of type
+  //! `_Tp` constructed as `_Tp{__args...}`.
+  //! \pre `_Tp` must satisfy the requirements of `_Interface`.
+  //! \post `has_value() == true`
   _CCCL_TEMPLATE(class _Tp, class _Up = _CUDA_VSTD::decay_t<_Tp>, class... _Args)
   _CCCL_REQUIRES(__list_initializable_from<_Up, _Args...> _CCCL_AND __satisfies<_Tp, _Interface>)
   _CUDAX_HOST_API explicit basic_any(_CUDA_VSTD::in_place_type_t<_Tp>, _Args&&... __args) noexcept(
@@ -104,10 +104,10 @@ public:
     __emplace<_Up>(static_cast<_Args&&>(__args)...);
   }
 
-  /// \brief Constructs a `basic_any` object that contains a new object of type
-  /// `_Tp` constructed as `_Tp{__il, __args...}`.
-  /// \pre `_Tp` must satisfy the requirements of `_Interface`.
-  /// \post `has_value() == true`
+  //! \brief Constructs a `basic_any` object that contains a new object of type
+  //! `_Tp` constructed as `_Tp{__il, __args...}`.
+  //! \pre `_Tp` must satisfy the requirements of `_Interface`.
+  //! \post `has_value() == true`
   _CCCL_TEMPLATE(class _Tp, class _Up, class _Vp = _CUDA_VSTD::decay_t<_Tp>, class... _Args)
   _CCCL_REQUIRES(
     __list_initializable_from<_Vp, _CUDA_VSTD::initializer_list<_Up>&, _Args...> _CCCL_AND __satisfies<_Tp, _Interface>)
@@ -122,20 +122,20 @@ public:
   }
 
 #if !defined(_CCCL_NO_CONCEPTS) || defined(_CCCL_DOXYGEN_INVOKED)
-  /// \brief Move constructs a `basic_any` object.
-  /// \pre `_Interface` must extend `imovable<>`.
-  /// \post `__other.has_value() == false` and `has_value()` is `true` if and
-  /// only if `__other.has_value()` was `true`.
+  //! \brief Move constructs a `basic_any` object.
+  //! \pre `_Interface` must extend `imovable<>`.
+  //! \post `__other.has_value() == false` and `has_value()` is `true` if and
+  //! only if `__other.has_value()` was `true`.
   _CUDAX_HOST_API basic_any(basic_any&& __other) noexcept
     requires(extension_of<_Interface, imovable<>>)
   {
     __convert_from(_CUDA_VSTD::move(__other));
   }
 
-  /// \brief Copy constructs a `basic_any` object.
-  /// \pre `_Interface` must extend `icopyable<>`.
-  /// \post `has_value() == __other.has_value()`. If `_Interface` extends
-  /// `iequality_comparable<>`, then `*this == __other` is `true`.
+  //! \brief Copy constructs a `basic_any` object.
+  //! \pre `_Interface` must extend `icopyable<>`.
+  //! \post `has_value() == __other.has_value()`. If `_Interface` extends
+  //! `iequality_comparable<>`, then `*this == __other` is `true`.
   _CUDAX_HOST_API basic_any(basic_any const& __other)
     requires(extension_of<_Interface, icopyable<>>)
   {
@@ -148,13 +148,13 @@ public:
   basic_any(basic_any const& __other) = default;
 #endif
 
-  /// \brief Converting constructor that move constructs from a compatible
-  /// `basic_any` object.
-  /// \pre Let `I` be the decayed type of `_OtherInterface`. `I` must extend
-  /// `_Interface`. If `_OtherInterface` is a reference type, then `I` must
-  /// extend `icopyable<>`. Otherwise, `I` must extend `imovable<>`.
-  /// \post `__other.has_value() == false` and `has_value()` is `true` if and
-  /// only if `__other.has_value()` was `true`.
+  //! \brief Converting constructor that move constructs from a compatible
+  //! `basic_any` object.
+  //! \pre Let `I` be the decayed type of `_OtherInterface`. `I` must extend
+  //! `_Interface`. If `_OtherInterface` is a reference type, then `I` must
+  //! extend `icopyable<>`. Otherwise, `I` must extend `imovable<>`.
+  //! \post `__other.has_value() == false` and `has_value()` is `true` if and
+  //! only if `__other.has_value()` was `true`.
   _CCCL_TEMPLATE(class _OtherInterface)
   _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_OtherInterface, _Interface>)
                    _CCCL_AND __any_convertible_to<basic_any<_OtherInterface>, basic_any>)
@@ -163,11 +163,11 @@ public:
     __convert_from(_CUDA_VSTD::move(__other));
   }
 
-  /// \brief Converting constructor that copy constructs from a compatible
-  /// `basic_any` object.
-  /// \pre The decayed type of `_OtherInterface` must extend `_Interface` and
-  /// `icopyable<>`.
-  /// \post `has_value() == __other.has_value()`.
+  //! \brief Converting constructor that copy constructs from a compatible
+  //! `basic_any` object.
+  //! \pre The decayed type of `_OtherInterface` must extend `_Interface` and
+  //! `icopyable<>`.
+  //! \post `has_value() == __other.has_value()`.
   _CCCL_TEMPLATE(class _OtherInterface)
   _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_OtherInterface, _Interface>)
                    _CCCL_AND __any_convertible_to<basic_any<_OtherInterface> const&, basic_any>)
@@ -176,27 +176,27 @@ public:
     __convert_from(__other);
   }
 
-  /// \brief Destroys the contained value, if any.
+  //! \brief Destroys the contained value, if any.
   _CUDAX_HOST_API ~basic_any()
   {
     reset();
   }
 
 #if !defined(_CCCL_NO_CONCEPTS) || defined(_CCCL_DOXYGEN_INVOKED)
-  /// \brief Move assigns a `basic_any` object.
-  /// \pre `_Interface` must extend `imovable<>`.
-  /// \post `__other.has_value() == false` and `has_value()` is `true` if and
-  /// only if `__other.has_value()` was `true`.
+  //! \brief Move assigns a `basic_any` object.
+  //! \pre `_Interface` must extend `imovable<>`.
+  //! \post `__other.has_value() == false` and `has_value()` is `true` if and
+  //! only if `__other.has_value()` was `true`.
   _CUDAX_HOST_API basic_any& operator=(basic_any&& __other) noexcept
     requires(extension_of<_Interface, imovable<>>)
   {
     return __assign_from(_CUDA_VSTD::move(__other));
   }
 
-  /// \brief Copy assigns a `basic_any` object.
-  /// \pre `_Interface` must extend `icopyable<>`.
-  /// \post `has_value() == __other.has_value()`. If `_Interface` extends
-  /// `iequality_comparable<>`, then `*this == __other` is `true`.
+  //! \brief Copy assigns a `basic_any` object.
+  //! \pre `_Interface` must extend `icopyable<>`.
+  //! \post `has_value() == __other.has_value()`. If `_Interface` extends
+  //! `iequality_comparable<>`, then `*this == __other` is `true`.
   _CUDAX_HOST_API basic_any& operator=(basic_any const& __other)
     requires(extension_of<_Interface, icopyable<>>)
   {
@@ -209,15 +209,15 @@ public:
   auto operator=(basic_any const& __other) -> basic_any& = default;
 #endif
 
-  /// \brief Converting move assignment operator from a compatible `basic_any`
-  /// object.
-  ///
-  /// Equivalent to:
-  ///
-  /// @code{.cpp}
-  /// basic_any(cuda::std::move(__other)).swap(*this);
-  /// return *this;
-  /// @endcode
+  //! \brief Converting move assignment operator from a compatible `basic_any`
+  //! object.
+  //!
+  //! Equivalent to:
+  //!
+  //! @code{.cpp}
+  //! basic_any(cuda::std::move(__other)).swap(*this);
+  //! return *this;
+  //! @endcode
   _CCCL_TEMPLATE(class _OtherInterface)
   _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_OtherInterface, _Interface>)
                    _CCCL_AND __any_convertible_to<basic_any<_OtherInterface>, basic_any>)
@@ -226,15 +226,15 @@ public:
     return __assign_from(_CUDA_VSTD::move(__other));
   }
 
-  /// \brief Converting copy assignment operator from a compatible `basic_any`
-  /// object.
-  ///
-  /// Equivalent to:
-  ///
-  /// @code{.cpp}
-  /// basic_any(__other).swap(*this);
-  /// return *this;
-  /// @endcode
+  //! \brief Converting copy assignment operator from a compatible `basic_any`
+  //! object.
+  //!
+  //! Equivalent to:
+  //!
+  //! @code{.cpp}
+  //! basic_any(__other).swap(*this);
+  //! return *this;
+  //! @endcode
   _CCCL_TEMPLATE(class _OtherInterface)
   _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_OtherInterface, _Interface>)
                    _CCCL_AND __any_convertible_to<basic_any<_OtherInterface> const&, basic_any>)
@@ -243,23 +243,23 @@ public:
     return __assign_from(__other);
   }
 
-  /// \brief Implicitly convert to a `basic_any` non-const reference type:
+  //! \brief Implicitly convert to a `basic_any` non-const reference type:
   _CCCL_NODISCARD _CUDAX_HOST_API operator basic_any<__ireference<_Interface>>() & noexcept
   {
     return basic_any<__ireference<_Interface>>(*this);
   }
 
-  /// \brief Implicitly convert to a `basic_any` const reference type:
+  //! \brief Implicitly convert to a `basic_any` const reference type:
   _CCCL_NODISCARD _CUDAX_HOST_API operator basic_any<__ireference<_Interface const>>() const& noexcept
   {
     return basic_any<__ireference<_Interface const>>(*this);
   }
 
-  /// \brief Exchanges the values of two `basic_any` objects.
+  //! \brief Exchanges the values of two `basic_any` objects.
   _CUDAX_HOST_API void swap(basic_any& __other) noexcept
   {
-    /// if both objects refer to heap-allocated object, we can just
-    /// swap the pointers. otherwise, do it the slow(er) way.
+    //! if both objects refer to heap-allocated object, we can just
+    //! swap the pointers. otherwise, do it the slow(er) way.
     if (!__in_situ() && !__other.__in_situ())
     {
       _CUDA_VSTD::swap(__vptr_, __other.__vptr_);
@@ -272,16 +272,16 @@ public:
     __other.__convert_from(_CUDA_VSTD::move(__tmp));
   }
 
-  /// \brief Exchanges the values of two `basic_any` objects.
+  //! \brief Exchanges the values of two `basic_any` objects.
   friend _CUDAX_TRIVIAL_HOST_API void swap(basic_any& __lhs, basic_any& __rhs) noexcept
   {
     __lhs.swap(__rhs);
   }
 
-  /// \brief Emplaces a new object of type `_Tp` constructed as
-  /// `_Tp{__args...}`.
-  /// \pre `_Tp` must satisfy the requirements of `_Interface`.
-  /// \post `has_value() == true`
+  //! \brief Emplaces a new object of type `_Tp` constructed as
+  //! `_Tp{__args...}`.
+  //! \pre `_Tp` must satisfy the requirements of `_Interface`.
+  //! \post `has_value() == true`
   _CCCL_TEMPLATE(class _Tp, class _Up = _CUDA_VSTD::decay_t<_Tp>, class... _Args)
   _CCCL_REQUIRES(__list_initializable_from<_Up, _Args...>)
   _CUDAX_HOST_API auto emplace(_Args&&... __args) noexcept(
@@ -291,10 +291,10 @@ public:
     return __emplace<_Up>(static_cast<_Args&&>(__args)...);
   }
 
-  /// \brief Emplaces a new object of type `_Tp` constructed as
-  /// `_Tp{__il, __args...}`.
-  /// \pre `_Tp` must satisfy the requirements of `_Interface`.
-  /// \post `has_value() == true`
+  //! \brief Emplaces a new object of type `_Tp` constructed as
+  //! `_Tp{__il, __args...}`.
+  //! \pre `_Tp` must satisfy the requirements of `_Interface`.
+  //! \post `has_value() == true`
   _CCCL_TEMPLATE(class _Tp, class _Up, class _Vp = _CUDA_VSTD::decay_t<_Tp>, class... _Args)
   _CCCL_REQUIRES(__list_initializable_from<_Vp, _CUDA_VSTD::initializer_list<_Up>&, _Args...>)
   _CUDAX_HOST_API auto emplace(_CUDA_VSTD::initializer_list<_Up> __il, _Args&&... __args) noexcept(
@@ -305,14 +305,14 @@ public:
     return __emplace<_Vp>(__il, static_cast<_Args&&>(__args)...);
   }
 
-  /// \brief Tests whether the `basic_any` object contains a value.
+  //! \brief Tests whether the `basic_any` object contains a value.
   _CCCL_NODISCARD _CUDAX_HOST_API auto has_value() const noexcept -> bool
   {
     return __get_vptr() != nullptr;
   }
 
-  /// \brief Resets the `basic_any` object to an empty state.
-  /// \post `has_value() == false`
+  //! \brief Resets the `basic_any` object to an empty state.
+  //! \post `has_value() == false`
   _CUDAX_HOST_API void reset() noexcept
   {
     if (auto __vptr = __get_vptr())
@@ -324,8 +324,8 @@ public:
     }
   }
 
-  /// \brief Returns a reference to a type_info object representing the type of
-  /// the contained object.
+  //! \brief Returns a reference to a type_info object representing the type of
+  //! the contained object.
   _CCCL_NODISCARD _CUDAX_HOST_API auto type() const noexcept -> _CUDA_VSTD::__type_info_ref
   {
     if (auto __vptr = __get_vptr())
@@ -337,12 +337,12 @@ public:
     return _CCCL_TYPEID(void);
   }
 
-  /// \brief Returns a reference to a type_info object representing the type of
-  /// the dynamic interface.
-  ///
-  /// The dynamic interface is the interface that was used to construct the
-  /// object, which may be different from the current object's interface if
-  /// there was a conversion.
+  //! \brief Returns a reference to a type_info object representing the type of
+  //! the dynamic interface.
+  //!
+  //! The dynamic interface is the interface that was used to construct the
+  //! object, which may be different from the current object's interface if
+  //! there was a conversion.
   _CCCL_NODISCARD _CUDAX_HOST_API auto interface() const noexcept -> _CUDA_VSTD::__type_info_ref
   {
     if (auto __vptr = __get_vptr())
