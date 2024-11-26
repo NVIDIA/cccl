@@ -106,8 +106,9 @@ struct SelectType<task_dep_op_none, Ai>
 /**
  * @brief Tuple of arguments needed to store temporary variables used in reduction operations.
  *
- * For example, if we have ArgsTuple=tuple<slice<T>, slice<T>, scalar<T>, scalar<U>> and OpsTuple=tuple<none, none, sum<T>, sum<U>>
- * we will have a type that is tuple<EmptyType, EmptyType, T, U> which corresponds to the variables we need to store to perform reductions.
+ * For example, if we have ArgsTuple=tuple<slice<T>, slice<T>, scalar<T>, scalar<U>> and OpsTuple=tuple<none, none,
+ * sum<T>, sum<U>> we will have a type that is tuple<EmptyType, EmptyType, T, U> which corresponds to the variables we
+ * need to store to perform reductions.
  */
 template <typename ArgsTuple, typename OpsTuple>
 struct redux_buffer_tup;
@@ -801,12 +802,7 @@ public:
       // limit. We choose to dimension the kernel of the parallel loop to
       // optimize occupancy.
       reserved::compute_kernel_limits(
-        &reserved::loop<Fun_no_ref, sub_shape_t, deps_tup_t>,
-        min_grid_size,
-        max_block_size,
-        0,
-        false,
-        block_size_limit);
+        &reserved::loop<Fun_no_ref, sub_shape_t, deps_tup_t>, min_grid_size, max_block_size, 0, false, block_size_limit);
       return ::std::pair(size_t(min_grid_size), size_t(max_block_size));
     }();
 
