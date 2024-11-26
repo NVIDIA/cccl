@@ -68,11 +68,11 @@ template <class _ScalingFactor, class _NestedAccessor>
 class scaled_accessor
 {
 public:
-  using __element_type = _CUDA_VSTD::add_const_t<
-    decltype(_CUDA_VSTD::declval<_ScalingFactor>() * _CUDA_VSTD::declval<typename _NestedAccessor::__element_type>())>;
-  using __reference        = _CUDA_VSTD::remove_const_t<__element_type>;
-  using __data_handle_type = typename _NestedAccessor::__data_handle_type;
-  using __offset_policy    = scaled_accessor<_ScalingFactor, typename _NestedAccessor::__offset_policy>;
+  using element_type = _CUDA_VSTD::add_const_t<
+    decltype(_CUDA_VSTD::declval<_ScalingFactor>() * _CUDA_VSTD::declval<typename _NestedAccessor::element_type>())>;
+  using reference        = _CUDA_VSTD::remove_const_t<element_type>;
+  using data_handle_type = typename _NestedAccessor::data_handle_type;
+  using offset_policy    = scaled_accessor<_ScalingFactor, typename _NestedAccessor::offset_policy>;
 
   _CCCL_HIDE_FROM_ABI constexpr scaled_accessor() = default;
 
@@ -90,13 +90,13 @@ public:
       , __nested_accessor_(__a)
   {}
 
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __reference access(__data_handle_type __p, size_t __i) const
+  _LIBCUDACXX_HIDE_FROM_ABI constexpr reference access(data_handle_type __p, size_t __i) const
   {
-    return __scaling_factor_ * typename _NestedAccessor::__element_type(__nested_accessor_.access(__p, __i));
+    return __scaling_factor_ * typename _NestedAccessor::element_type(__nested_accessor_.access(__p, __i));
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI
-  typename __offset_policy::__data_handle_type constexpr offset(__data_handle_type __p, size_t __i) const
+  typename offset_policy::data_handle_type constexpr offset(data_handle_type __p, size_t __i) const
   {
     return __nested_accessor_.offset(__p, __i);
   }
@@ -121,7 +121,7 @@ namespace __detail
 
 template <class _ScalingFactor, class _NestedAccessor>
 using __scaled_element_type =
-  _CUDA_VSTD::add_const_t<typename _CUDA_VSTD::linalg::scaled_accessor<_ScalingFactor, _NestedAccessor>::__element_type>;
+  _CUDA_VSTD::add_const_t<typename _CUDA_VSTD::linalg::scaled_accessor<_ScalingFactor, _NestedAccessor>::element_type>;
 
 } // namespace __detail
 
