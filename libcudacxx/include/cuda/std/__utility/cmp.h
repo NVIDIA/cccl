@@ -35,7 +35,9 @@
 _CCCL_PUSH_MACROS
 
 _CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_MSVC(4389) // signed/unsigned mismatch
+_CCCL_DIAG_SUPPRESS_MSVC(4018) // required cast from signed to unsigned
+_CCCL_DIAG_SUPPRESS_MSVC(4388) // required cast from signed to larger unsigned
+_CCCL_DIAG_SUPPRESS_MSVC(4389) // signed/unsigned mismatch for == and !=
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
