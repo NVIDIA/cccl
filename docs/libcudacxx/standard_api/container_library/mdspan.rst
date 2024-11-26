@@ -7,6 +7,7 @@ Extensions
 ----------
 
 -  All features of ``<mdspan>`` are made available in C++17 onwards
+-  C++26 ``std::dims`` is made available in C++17 onwards
 
 Restrictions
 ------------

@@ -28,7 +28,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-struct __libcpp_is_member_pointer
+struct __cccl_is_member_pointer
 {
   enum
   {
@@ -38,7 +38,7 @@ struct __libcpp_is_member_pointer
   };
 };
 template <class _Tp, class _Up>
-struct __libcpp_is_member_pointer<_Tp _Up::*>
+struct __cccl_is_member_pointer<_Tp _Up::*>
 {
   enum
   {
@@ -64,7 +64,7 @@ _CCCL_INLINE_VAR constexpr bool is_member_function_pointer_v = _CCCL_BUILTIN_IS_
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_member_function_pointer
-    : public integral_constant<bool, __libcpp_is_member_pointer<remove_cv_t<_Tp>>::__is_func>
+    : public integral_constant<bool, __cccl_is_member_pointer<remove_cv_t<_Tp>>::__is_func>
 {};
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)

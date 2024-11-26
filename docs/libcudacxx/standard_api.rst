@@ -101,5 +101,7 @@ Feature availability:
 
 -  C++23 ``<mdspan>`` is available in C++17.
 
-   -  mdspan is feature complete in C++17 onwards.
-   -  mdspan on msvc is only supported in C++20 and onwards.
+   -  ``mdspan`` is feature complete in C++17 onwards.
+   -  ``mdspan`` on msvc is only supported in C++20 and onwards.
+
+-  C++26 ``std::dims`` is available in C++17.

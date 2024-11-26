@@ -72,11 +72,11 @@ _LIBCUDACXX_HIDE_FROM_ABI void __atomic_wait(
     }
     if (__i < 12)
     {
-      _CUDA_VSTD::__libcpp_thread_yield_processor();
+      _CUDA_VSTD::__cccl_thread_yield_processor();
     }
     else
     {
-      _CUDA_VSTD::__libcpp_thread_yield();
+      _CUDA_VSTD::__cccl_thread_yield();
     }
   }
   while (__nonatomic_compare_equal(__atomic_load_dispatch(__a, __order, _Sco{}), __val))
