@@ -67,12 +67,12 @@ _CCCL_TEMPLATE(class _Tp, class _Up)
 _CCCL_REQUIRES(__is_safe_integral_cmp<_Tp>::value _CCCL_AND __is_safe_integral_cmp<_Up>::value)
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_equal(_Tp __t, _Up __u) noexcept
 {
-#if _CCCL_STD_VER >= 2017
-  _CCCL_IF_CONSTEXPR (_CCCL_TRAIT(is_signed, _Tp) == _CCCL_TRAIT(is_signed, _Up))
+#if !defined(_CCCL_NO_IF_CONSTEXPR)
+  if constexpr (_CCCL_TRAIT(is_signed, _Tp) == _CCCL_TRAIT(is_signed, _Up))
   {
     return __t == __u;
   }
-  _CCCL_ELSE_IF_CONSTEXPR (_CCCL_TRAIT(is_signed, _Tp))
+  else if constexpr (_CCCL_TRAIT(is_signed, _Tp))
   {
     return __t < 0 ? false : make_unsigned_t<_Tp>(__t) == __u;
   }
@@ -81,12 +81,12 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_equal(_Tp __t, _Up __u) noexcept
     return __u < 0 ? false : __t == make_unsigned_t<_Up>(__u);
   }
   _CCCL_UNREACHABLE();
-#else // ^^^ C++17 ^^^ / vvv C++14 vvv
+#else // ^^^ !_CCCL_NO_IF_CONSTEXPR ^^^ / vvv _CCCL_NO_IF_CONSTEXPR vvv
   return ((_CCCL_TRAIT(is_signed, _Tp) == _CCCL_TRAIT(is_signed, _Up))
             ? (__t == __u)
             : (_CCCL_TRAIT(is_signed, _Tp) ? (__t < 0 ? false : make_unsigned_t<_Tp>(__t) == __u)
                                            : (__u < 0 ? false : __t == make_unsigned_t<_Up>(__u))));
-#endif // _CCCL_STD_VER <= 2014
+#endif // _CCCL_NO_IF_CONSTEXPR
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
@@ -100,12 +100,12 @@ _CCCL_TEMPLATE(class _Tp, class _Up)
 _CCCL_REQUIRES(__is_safe_integral_cmp<_Tp>::value _CCCL_AND __is_safe_integral_cmp<_Up>::value)
 _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_less(_Tp __t, _Up __u) noexcept
 {
-#if _CCCL_STD_VER >= 2017
-  _CCCL_IF_CONSTEXPR (_CCCL_TRAIT(is_signed, _Tp) == _CCCL_TRAIT(is_signed, _Up))
+#if !defined(_CCCL_NO_IF_CONSTEXPR)
+  if constexpr (_CCCL_TRAIT(is_signed, _Tp) == _CCCL_TRAIT(is_signed, _Up))
   {
     return __t < __u;
   }
-  _CCCL_ELSE_IF_CONSTEXPR (_CCCL_TRAIT(is_signed, _Tp))
+  else if constexpr (_CCCL_TRAIT(is_signed, _Tp))
   {
     return __t < 0 ? true : make_unsigned_t<_Tp>(__t) < __u;
   }
@@ -114,12 +114,12 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_less(_Tp __t, _Up __u) noexcept
     return __u < 0 ? false : __t < make_unsigned_t<_Up>(__u);
   }
   _CCCL_UNREACHABLE();
-#else // ^^^ C++17 ^^^ / vvv C++14 vvv
+#else // ^^^ !_CCCL_NO_IF_CONSTEXPR ^^^ / vvv _CCCL_NO_IF_CONSTEXPR vvv
   return ((_CCCL_TRAIT(is_signed, _Tp) == _CCCL_TRAIT(is_signed, _Up))
             ? (__t < __u)
             : (_CCCL_TRAIT(is_signed, _Tp) ? (__t < 0 ? true : make_unsigned_t<_Tp>(__t) < __u)
                                            : (__u < 0 ? false : __t < make_unsigned_t<_Up>(__u))));
-#endif // _CCCL_STD_VER <= 2014
+#endif // _CCCL_NO_IF_CONSTEXPR
 }
 
 _CCCL_TEMPLATE(class _Tp, class _Up)
