@@ -103,6 +103,12 @@ struct SelectType<task_dep_op_none, Ai>
   using type = EmptyType; // Specialization when Oi is NoneType
 };
 
+/**
+ * @brief Tuple of arguments needed to store temporary variables used in reduction operations.
+ *
+ * For example, if we have ArgsTuple=tuple<slice<T>, slice<T>, scalar<T>, scalar<U>> and OpsTuple=tuple<none, none, sum<T>, sum<U>>
+ * we will have a type that is tuple<EmptyType, EmptyType, T, U> which corresponds to the variables we need to store to perform reductions.
+ */
 template <typename ArgsTuple, typename OpsTuple>
 struct redux_buffer_tup;
 
@@ -125,8 +131,6 @@ template <typename tuple_args, typename tuple_ops>
 class redux_vars
 {
 public:
-  using redux_vars_t = redux_vars<tuple_args, tuple_ops>;
-
   // Get the type of the actual tuple which will store variables
   using redux_vars_tup_t = typename redux_buffer_tup<tuple_args, tuple_ops>::type;
 
@@ -144,14 +148,14 @@ public:
     return init_impl(::std::make_index_sequence<N>{});
   }
 
-  __device__ void apply_op(const redux_vars_t& src)
+  __device__ void apply_op(const redux_vars& src)
   {
     constexpr size_t N = ::std::tuple_size<tuple_ops>::value;
     apply_op_impl(src.get_tup(), ::std::make_index_sequence<N>{});
   }
 
   // Set all tuple elements
-  __device__ void set(const redux_vars_t& src)
+  __device__ void set(const redux_vars& src)
   {
     constexpr size_t N = ::std::tuple_size<tuple_args>::value;
     set_impl(src.get_tup(), ::std::make_index_sequence<N>{});
@@ -315,8 +319,14 @@ __global__ void loop_redux(
 
   // This tuple in shared memory contains either an empty type for "regular"
   // arguments, or an owning local variable for reduction variables.
+  //
+  // Declaring extern __shared__ char dyn_buffer[]; avoids the issue of multiple
+  // definitions of the same external symbol with different types. In CUDA, all
+  // kernels share the same symbol table. If you declare dyn_buffer with different
+  // types in different kernels, it leads to multiple definitions of the same
+  // symbol, causing linkage errors
   extern __shared__ char dyn_buffer[];
-  auto* per_block_redux_buffer = (redux_vars<tuple_args, tuple_ops>*) ((void*) dyn_buffer);
+  auto* per_block_redux_buffer = reinterpret_cast<redux_vars<tuple_args, tuple_ops>*>(dyn_buffer);
 
   // This will initialize reduction variables with the null value of the operator
   per_block_redux_buffer[threadIdx.x].init();
@@ -367,8 +377,16 @@ template <typename tuple_args, typename tuple_ops>
 __global__ void
 loop_redux_finalize(tuple_args targs, redux_vars<tuple_args, tuple_ops>* redux_buffer, size_t nredux_buffer)
 {
+  // This tuple in shared memory contains either an empty type for "regular"
+  // arguments, or an owning local variable for reduction variables.
+  //
+  // Declaring extern __shared__ char dyn_buffer[]; avoids the issue of multiple
+  // definitions of the same external symbol with different types. In CUDA, all
+  // kernels share the same symbol table. If you declare dyn_buffer with different
+  // types in different kernels, it leads to multiple definitions of the same
+  // symbol, causing linkage errors
   extern __shared__ char dyn_buffer[];
-  auto* per_block_redux_buffer = (redux_vars<tuple_args, tuple_ops>*) ((void*) dyn_buffer);
+  auto* per_block_redux_buffer = reinterpret_cast<redux_vars<tuple_args, tuple_ops>*>(dyn_buffer);
 
   unsigned int tid = threadIdx.x;
 
