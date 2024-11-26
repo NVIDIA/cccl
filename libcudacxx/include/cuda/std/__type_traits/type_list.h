@@ -585,15 +585,33 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_default
   using type _CCCL_NODEBUG_ALIAS = _Value;
 };
 
+#  if _CCCL_CUDACC_AT_LEAST(12, 0) || defined(_CCCL_DOXYGEN_INVOKED)
+
 //! \see __type_switch
 template <_CCCL_NTTP_AUTO _Label, class _Value>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_case
 {
-  template <class _Type>
-  using __rebind _CCCL_NODEBUG_ALIAS = __type_case<static_cast<_Type>(_Label), _Value>;
+  template <class _OtherInt>
+  using __rebind _CCCL_NODEBUG_ALIAS = __type_case<static_cast<_OtherInt>(_Label), _Value>;
 
   using type = _Value;
 };
+
+#  else // ^^^ CUDACC >= 12.0 || DOXYGEN ^^^ / vvv CUDACC < 12.0 && !DOXYGEN vvv
+
+template <class _Label, class _Value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_case_
+{
+  template <class _OtherInt>
+  using __rebind _CCCL_NODEBUG_ALIAS = __type_case_<integral_constant<_OtherInt, _Label::value>, _Value>;
+
+  using type = _Value;
+};
+
+template <_CCCL_NTTP_AUTO _Label, class _Value>
+using __type_case _CCCL_NODEBUG_ALIAS = __type_case_<integral_constant<decltype(_Label), _Label>, _Value>;
+
+#  endif // CUDACC < 12.0 && !DOXYGEN
 
 namespace __detail
 {
