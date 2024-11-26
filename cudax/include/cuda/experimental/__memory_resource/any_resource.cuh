@@ -237,6 +237,16 @@ public:
   //! @param __rhs The other \c basic_any_resource
   //! @return Checks whether both resources have the same equality function stored in their vtable and if so returns
   //! the result of that equality comparison. Otherwise returns false.
+  _CCCL_NODISCARD bool operator==(const basic_any_resource& __rhs) const
+  {
+    return (this->__static_vtable->__equal_fn == __rhs.__static_vtable->__equal_fn)
+        && this->__static_vtable->__equal_fn(this->_Get_object(), __rhs._Get_object());
+  }
+
+  //! @brief Equality comparison between two \c basic_any_resource
+  //! @param __rhs The other \c basic_any_resource
+  //! @return Checks whether both resources have the same equality function stored in their vtable and if so returns
+  //! the result of that equality comparison. Otherwise returns false.
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES((sizeof...(_Properties) == sizeof...(_OtherProperties))
                    _CCCL_AND __properties_match<_OtherProperties...>)
@@ -244,6 +254,15 @@ public:
   {
     return (this->__static_vtable->__equal_fn == __rhs.__static_vtable->__equal_fn)
         && this->__static_vtable->__equal_fn(this->_Get_object(), __rhs._Get_object());
+  }
+
+  //! @brief Inequality comparison between two \c basic_any_resource
+  //! @param __rhs The other \c basic_any_resource
+  //! @return Checks whether both resources have the same equality function stored in their vtable and if so returns
+  //! the inverse result of that equality comparison. Otherwise returns true.
+  _CCCL_NODISCARD bool operator!=(const basic_any_resource& __rhs) const
+  {
+    return !(*this == __rhs);
   }
 
   //! @brief Inequality comparison between two \c basic_any_resource

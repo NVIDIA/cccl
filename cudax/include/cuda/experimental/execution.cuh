@@ -11,6 +11,7 @@
 #ifndef __CUDAX_EXECUTION__
 #define __CUDAX_EXECUTION__
 
+#include <cuda/experimental/__execution/env.cuh>
 #include <cuda/experimental/__execution/policy.cuh>
 
 #endif // __CUDAX_EXECUTION__

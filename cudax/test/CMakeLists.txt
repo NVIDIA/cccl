@@ -87,6 +87,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
 
   cudax_add_catch2_test(test_target execution ${cn_target}
+    execution/env.cu
     execution/policies/policies.cu
     execution/policies/get_execution_policy.cu
   )
