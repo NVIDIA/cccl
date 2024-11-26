@@ -96,8 +96,11 @@ def plot_sol(medians, box):
         ax = sns.boxenplot(data=medians, x='alg', y='bw', hue='hue')
     else:
         ax = sns.barplot(data=medians, x='alg', y='bw', hue='hue', errorbar=lambda x: (x.min(), x.max()))
-    for container in ax.containers:
-        ax.bar_label(container, fmt='%.1f')
+        ax.bar_label(ax.containers[0], fmt='%.1f')
+        for container in ax.containers[1:]:
+            labels = [f'{c:.1f}\n({(c/f)*100:.0f}%)' for f, c in zip(ax.containers[0].datavalues, container.datavalues)]
+            ax.bar_label(container, labels=labels)
+
     ax.legend(title=None)
     ax.set_xlabel('Algorithm')
     ax.set_ylabel('Bandwidth (%SOL)')
