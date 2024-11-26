@@ -46,13 +46,13 @@ private:
 
   __resource __mr_           = ::cuda::experimental::mr::device_memory_resource{};
   __stream_ref __stream_     = ::cuda::experimental::detail::__invalid_stream;
-  execution_policy __policy_ = execution_policy::unsequenced_device;
+  execution_policy __policy_ = execution_policy::invalid_execution_policy;
 
 public:
   //! @brief Default constructs an environment using
   //! * ``::cuda::experimental::mr::device_memory_resource`` as the resource
   //! * the default stream
-  //! * ``execution_policy::unsequenced_device`` as the execution policy
+  //! * ``execution_policy::invalid_execution_policy`` as the execution policy
   _CCCL_HIDE_FROM_ABI env_t() = default;
 
   //! @brief Construct an env_t from an any_resource, a stream and a policy
@@ -61,7 +61,7 @@ public:
   //! @param __policy The execution_policy passed in
   _CCCL_HIDE_FROM_ABI env_t(__resource __mr,
                             __stream_ref __stream     = ::cuda::experimental::detail::__invalid_stream,
-                            execution_policy __policy = execution_policy::unsequenced_device) noexcept
+                            execution_policy __policy = execution_policy::invalid_execution_policy) noexcept
       : __mr_(_CUDA_VSTD::move(__mr))
       , __stream_(__stream)
       , __policy_(__policy)

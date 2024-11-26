@@ -59,7 +59,8 @@ TEST_CASE("env_t is default constructible", "[execution, env]")
 {
   env_t env;
   CHECK(env.query(cudax::get_stream) == ::cuda::experimental::detail::__invalid_stream);
-  CHECK(env.query(cudax::execution::get_execution_policy) == cudax::execution::execution_policy::unsequenced_device);
+  CHECK(env.query(cudax::execution::get_execution_policy)
+        == cudax::execution::execution_policy::invalid_execution_policy);
   CHECK(env.query(cudax::get_memory_resource) == cudax::mr::device_memory_resource{});
 }
 
@@ -71,7 +72,8 @@ TEST_CASE("env_t is constructible from an any_resource", "[execution, env]")
   {
     env_t env{mr};
     CHECK(env.query(cudax::get_stream) == ::cuda::experimental::detail::__invalid_stream);
-    CHECK(env.query(cudax::execution::get_execution_policy) == cudax::execution::execution_policy::unsequenced_device);
+    CHECK(env.query(cudax::execution::get_execution_policy)
+          == cudax::execution::execution_policy::invalid_execution_policy);
     CHECK(env.query(cudax::get_memory_resource) == mr);
   }
 
@@ -80,7 +82,8 @@ TEST_CASE("env_t is constructible from an any_resource", "[execution, env]")
     cudax::stream stream{};
     env_t env{mr, stream};
     CHECK(env.query(cudax::get_stream) == stream);
-    CHECK(env.query(cudax::execution::get_execution_policy) == cudax::execution::execution_policy::unsequenced_device);
+    CHECK(env.query(cudax::execution::get_execution_policy)
+          == cudax::execution::execution_policy::invalid_execution_policy);
     CHECK(env.query(cudax::get_memory_resource) == mr);
   }
 
@@ -101,7 +104,8 @@ TEST_CASE("env_t is constructible from an any_resource passed as an rvalue", "[e
   {
     env_t env{cudax::mr::any_async_resource<cuda::mr::device_accessible>{test_resource{}}};
     CHECK(env.query(cudax::get_stream) == ::cuda::experimental::detail::__invalid_stream);
-    CHECK(env.query(cudax::execution::get_execution_policy) == cudax::execution::execution_policy::unsequenced_device);
+    CHECK(env.query(cudax::execution::get_execution_policy)
+          == cudax::execution::execution_policy::invalid_execution_policy);
     CHECK(env.query(cudax::get_memory_resource)
           == cudax::mr::any_async_resource<cuda::mr::device_accessible>{test_resource{}});
   }
@@ -111,7 +115,8 @@ TEST_CASE("env_t is constructible from an any_resource passed as an rvalue", "[e
     cudax::stream stream{};
     env_t env{cudax::mr::any_async_resource<cuda::mr::device_accessible>{test_resource{}}, stream};
     CHECK(env.query(cudax::get_stream) == stream);
-    CHECK(env.query(cudax::execution::get_execution_policy) == cudax::execution::execution_policy::unsequenced_device);
+    CHECK(env.query(cudax::execution::get_execution_policy)
+          == cudax::execution::execution_policy::invalid_execution_policy);
     CHECK(env.query(cudax::get_memory_resource)
           == cudax::mr::any_async_resource<cuda::mr::device_accessible>{test_resource{}});
   }
@@ -138,7 +143,8 @@ TEST_CASE("env_t is constructible from a resource", "[execution, env]")
   {
     env_t env{mr};
     CHECK(env.query(cudax::get_stream) == ::cuda::experimental::detail::__invalid_stream);
-    CHECK(env.query(cudax::execution::get_execution_policy) == cudax::execution::execution_policy::unsequenced_device);
+    CHECK(env.query(cudax::execution::get_execution_policy)
+          == cudax::execution::execution_policy::invalid_execution_policy);
     CHECK(env.query(cudax::get_memory_resource) == mr);
   }
 
@@ -147,7 +153,8 @@ TEST_CASE("env_t is constructible from a resource", "[execution, env]")
     cudax::stream stream{};
     env_t env{mr, stream};
     CHECK(env.query(cudax::get_stream) == stream);
-    CHECK(env.query(cudax::execution::get_execution_policy) == cudax::execution::execution_policy::unsequenced_device);
+    CHECK(env.query(cudax::execution::get_execution_policy)
+          == cudax::execution::execution_policy::invalid_execution_policy);
     CHECK(env.query(cudax::get_memory_resource) == mr);
   }
 
@@ -168,7 +175,8 @@ TEST_CASE("env_t is constructible from a resource passed as an rvalue", "[execut
   {
     env_t env{test_resource{}};
     CHECK(env.query(cudax::get_stream) == ::cuda::experimental::detail::__invalid_stream);
-    CHECK(env.query(cudax::execution::get_execution_policy) == cudax::execution::execution_policy::unsequenced_device);
+    CHECK(env.query(cudax::execution::get_execution_policy)
+          == cudax::execution::execution_policy::invalid_execution_policy);
     CHECK(env.query(cudax::get_memory_resource) == test_resource{});
   }
 
@@ -177,7 +185,8 @@ TEST_CASE("env_t is constructible from a resource passed as an rvalue", "[execut
     cudax::stream stream{};
     env_t env{test_resource{}, stream};
     CHECK(env.query(cudax::get_stream) == stream);
-    CHECK(env.query(cudax::execution::get_execution_policy) == cudax::execution::execution_policy::unsequenced_device);
+    CHECK(env.query(cudax::execution::get_execution_policy)
+          == cudax::execution::execution_policy::invalid_execution_policy);
     CHECK(env.query(cudax::get_memory_resource) == test_resource{});
   }
 

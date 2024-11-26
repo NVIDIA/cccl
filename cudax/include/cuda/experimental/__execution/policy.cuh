@@ -32,6 +32,7 @@ namespace cuda::experimental::execution
 
 enum class execution_policy
 {
+  invalid_execution_policy,
   sequenced_host,
   sequenced_device,
   parallel_host,
