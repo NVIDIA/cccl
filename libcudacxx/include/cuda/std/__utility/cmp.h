@@ -78,7 +78,6 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_equal(_Tp __t, _Up __u) noexcept
   {
     return __u < 0 ? false : __t == make_unsigned_t<_Up>(__u);
   }
-
   _CCCL_UNREACHABLE();
 #else // ^^^ C++17 ^^^ / vvv C++14 vvv
   return ((_CCCL_TRAIT(is_signed, _Tp) == _CCCL_TRAIT(is_signed, _Up))
@@ -112,7 +111,6 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_less(_Tp __t, _Up __u) noexcept
   {
     return __u < 0 ? false : __t < make_unsigned_t<_Up>(__u);
   }
-
   _CCCL_UNREACHABLE();
 #else // ^^^ C++17 ^^^ / vvv C++14 vvv
   return ((_CCCL_TRAIT(is_signed, _Tp) == _CCCL_TRAIT(is_signed, _Up))
