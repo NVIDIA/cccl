@@ -283,7 +283,7 @@ __host__ __device__ constexpr void test()
 {
   test_default<T>();
 
-  if (!cuda::std::__libcpp_is_constant_evaluated())
+  if (!cuda::std::is_constant_evaluated())
   {
     test_copy_move<T>();
     test_size<T>();
@@ -308,7 +308,7 @@ __host__ __device__ constexpr bool test()
   test<ThrowingMoveAssignment>();
 
   // Due to reinterpret_cast within the destructor a on trivially destructible type cannot be constexpr at all
-  if (!cuda::std::__libcpp_is_constant_evaluated())
+  if (!cuda::std::is_constant_evaluated())
   {
     test<NonTrivialDestructor>();
   }

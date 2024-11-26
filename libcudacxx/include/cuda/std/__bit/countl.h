@@ -38,14 +38,14 @@ template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<sizeof(_Tp) <= sizeof(uint32_t), int>
 __countl_zero_dispatch(_Tp __t) noexcept
 {
-  return __libcpp_clz(static_cast<uint32_t>(__t)) - (numeric_limits<uint32_t>::digits - numeric_limits<_Tp>::digits);
+  return __cccl_clz(static_cast<uint32_t>(__t)) - (numeric_limits<uint32_t>::digits - numeric_limits<_Tp>::digits);
 }
 
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<sizeof(_Tp) == sizeof(uint64_t), int>
 __countl_zero_dispatch(_Tp __t) noexcept
 {
-  return __libcpp_clz(static_cast<uint64_t>(__t)) - (numeric_limits<uint64_t>::digits - numeric_limits<_Tp>::digits);
+  return __cccl_clz(static_cast<uint64_t>(__t)) - (numeric_limits<uint64_t>::digits - numeric_limits<_Tp>::digits);
 }
 
 template <typename _Tp, int _St = sizeof(_Tp) / sizeof(uint64_t)>
@@ -90,27 +90,26 @@ __countl_zero_dispatch(_Tp __t) noexcept
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __countl_zero(_Tp __t) noexcept
 {
-  static_assert(__libcpp_is_unsigned_integer<_Tp>::value, "__countl_zero requires unsigned");
+  static_assert(__cccl_is_unsigned_integer<_Tp>::value, "__countl_zero requires unsigned");
   return __t ? __countl_zero_dispatch(__t) : numeric_limits<_Tp>::digits;
 }
 
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __countl_one(_Tp __t) noexcept
 {
-  static_assert(__libcpp_is_unsigned_integer<_Tp>::value, "__countl_one requires unsigned");
+  static_assert(__cccl_is_unsigned_integer<_Tp>::value, "__countl_one requires unsigned");
   return __t != numeric_limits<_Tp>::max() ? __countl_zero(static_cast<_Tp>(~__t)) : numeric_limits<_Tp>::digits;
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, int>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer<_Tp>::value, int>
 countl_zero(_Tp __t) noexcept
 {
   return __countl_zero(__t);
 }
 
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__libcpp_is_unsigned_integer<_Tp>::value, int>
-countl_one(_Tp __t) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer<_Tp>::value, int> countl_one(_Tp __t) noexcept
 {
   return __countl_one(__t);
 }

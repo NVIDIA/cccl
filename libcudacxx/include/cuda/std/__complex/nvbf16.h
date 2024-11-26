@@ -83,7 +83,7 @@ struct __type_to_vector<__nv_bfloat16>
 };
 
 template <>
-struct __libcpp_complex_overload_traits<__nv_bfloat16, false, false>
+struct __cccl_complex_overload_traits<__nv_bfloat16, false, false>
 {
   typedef __nv_bfloat16 _ValueType;
   typedef complex<__nv_bfloat16> _ComplexType;

@@ -229,7 +229,7 @@ private:
       (
         int32_t __ready = 0;
         if (!__isClusterShared(&__barrier)) {
-          return _CUDA_VSTD::__libcpp_thread_poll_with_backoff(
+          return _CUDA_VSTD::__cccl_thread_poll_with_backoff(
             _CUDA_VSTD::__barrier_poll_tester_phase<barrier>(this, _CUDA_VSTD::move(__token)), __nanosec);
         } else if (!__isShared(&__barrier)) { __trap(); }
 
@@ -256,7 +256,7 @@ private:
       (
         bool __ready = 0;
         if (!__isShared(&__barrier)) {
-          return _CUDA_VSTD::__libcpp_thread_poll_with_backoff(
+          return _CUDA_VSTD::__cccl_thread_poll_with_backoff(
             _CUDA_VSTD::__barrier_poll_tester_phase<barrier>(this, _CUDA_VSTD::move(__token)), __nanosec);
         }
 
@@ -267,7 +267,7 @@ private:
         } while (!__ready && __nanosec > (_CUDA_VSTD::chrono::high_resolution_clock::now() - __start));
         return __ready;),
       NV_ANY_TARGET,
-      (return _CUDA_VSTD::__libcpp_thread_poll_with_backoff(
+      (return _CUDA_VSTD::__cccl_thread_poll_with_backoff(
                 _CUDA_VSTD::__barrier_poll_tester_phase<barrier>(this, _CUDA_VSTD::move(__token)),
                 _CUDA_VSTD::chrono::nanoseconds(__nanosec));))
   }
@@ -331,7 +331,7 @@ private:
       (
         int32_t __ready = 0;
         if (!__isClusterShared(&__barrier)) {
-          return _CUDA_VSTD::__libcpp_thread_poll_with_backoff(
+          return _CUDA_VSTD::__cccl_thread_poll_with_backoff(
             _CUDA_VSTD::__barrier_poll_tester_parity<barrier>(this, __phase_parity), __nanosec);
         } else if (!__isShared(&__barrier)) { __trap(); }
 
@@ -359,7 +359,7 @@ private:
       (
         bool __ready = 0;
         if (!__isShared(&__barrier)) {
-          return _CUDA_VSTD::__libcpp_thread_poll_with_backoff(
+          return _CUDA_VSTD::__cccl_thread_poll_with_backoff(
             _CUDA_VSTD::__barrier_poll_tester_parity<barrier>(this, __phase_parity), __nanosec);
         }
 
@@ -371,20 +371,20 @@ private:
 
         return __ready;),
       NV_ANY_TARGET,
-      (return _CUDA_VSTD::__libcpp_thread_poll_with_backoff(
+      (return _CUDA_VSTD::__cccl_thread_poll_with_backoff(
                 _CUDA_VSTD::__barrier_poll_tester_parity<barrier>(this, __phase_parity), __nanosec);))
   }
 
 public:
   _LIBCUDACXX_HIDE_FROM_ABI void wait(arrival_token&& __phase) const
   {
-    _CUDA_VSTD::__libcpp_thread_poll_with_backoff(
+    _CUDA_VSTD::__cccl_thread_poll_with_backoff(
       _CUDA_VSTD::__barrier_poll_tester_phase<barrier>(this, _CUDA_VSTD::move(__phase)));
   }
 
   _LIBCUDACXX_HIDE_FROM_ABI void wait_parity(bool __phase_parity) const
   {
-    _CUDA_VSTD::__libcpp_thread_poll_with_backoff(
+    _CUDA_VSTD::__cccl_thread_poll_with_backoff(
       _CUDA_VSTD::__barrier_poll_tester_parity<barrier>(this, __phase_parity));
   }
 
