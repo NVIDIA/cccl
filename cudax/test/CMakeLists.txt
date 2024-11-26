@@ -88,6 +88,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
 
   cudax_add_catch2_test(test_target execution ${cn_target}
     execution/policies/policies.cu
+    execution/policies/get_execution_policy.cu
   )
 
   cudax_add_catch2_test(test_target stream ${cn_target}
