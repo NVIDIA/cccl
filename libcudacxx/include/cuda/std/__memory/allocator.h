@@ -129,13 +129,13 @@ public:
       __throw_bad_array_new_length();
     }
 #if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION)
-    if (__libcpp_is_constant_evaluated())
+    if (_CUDA_VSTD::is_constant_evaluated())
     {
       return ::std::allocator<_Tp>{}.allocate(__n);
     }
 #endif // _CCCL_HAS_CONSTEXPR_ALLOCATION
     {
-      return static_cast<_Tp*>(_CUDA_VSTD::__libcpp_allocate(__n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp)));
+      return static_cast<_Tp*>(_CUDA_VSTD::__cccl_allocate(__n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp)));
     }
   }
 
@@ -150,14 +150,14 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20_ALLOCATION void deallocate(_Tp* __p, size_t __n) noexcept
   {
 #if defined(_CCCL_HAS_CONSTEXPR_ALLOCATION)
-    if (__libcpp_is_constant_evaluated())
+    if (_CUDA_VSTD::is_constant_evaluated())
     {
       return ::std::allocator<_Tp>{}.deallocate(__p, __n);
     }
     else
 #endif // _CCCL_STD_VER >= 2020
     {
-      _CUDA_VSTD::__libcpp_deallocate((void*) __p, __n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp));
+      _CUDA_VSTD::__cccl_deallocate((void*) __p, __n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp));
     }
   }
 
@@ -231,13 +231,13 @@ public:
     {
       __throw_bad_array_new_length();
     }
-    if (__libcpp_is_constant_evaluated())
+    if (_CUDA_VSTD::is_constant_evaluated())
     {
       return static_cast<const _Tp*>(::operator new(__n * sizeof(_Tp)));
     }
     else
     {
-      return static_cast<const _Tp*>(_CUDA_VSTD::__libcpp_allocate(__n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp)));
+      return static_cast<const _Tp*>(_CUDA_VSTD::__cccl_allocate(__n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp)));
     }
   }
 
@@ -250,13 +250,13 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void deallocate(const _Tp* __p, size_t __n) noexcept
   {
-    if (__libcpp_is_constant_evaluated())
+    if (_CUDA_VSTD::is_constant_evaluated())
     {
       ::operator delete(const_cast<_Tp*>(__p));
     }
     else
     {
-      _CUDA_VSTD::__libcpp_deallocate((void*) const_cast<_Tp*>(__p), __n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp));
+      _CUDA_VSTD::__cccl_deallocate((void*) const_cast<_Tp*>(__p), __n * sizeof(_Tp), _LIBCUDACXX_ALIGNOF(_Tp));
     }
   }
 
