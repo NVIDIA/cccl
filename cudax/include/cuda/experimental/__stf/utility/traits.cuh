@@ -586,7 +586,7 @@ struct count_type;
 template <typename T, typename... Args>
 struct count_type<T, ::std::tuple<Args...>>
 {
-  static constexpr std::size_t value = (::std::size_t(0) + ... + ::std::is_same<T, Args>::value);
+  static constexpr ::std::size_t value = (... + ::std::is_same<T, Args>::value);
 };
 
 /**
