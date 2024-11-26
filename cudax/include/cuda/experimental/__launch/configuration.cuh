@@ -15,6 +15,7 @@
 #include <cuda/std/tuple>
 
 #include <cuda/experimental/__detail/utility.cuh>
+#include <cuda/experimental/__device/device_ref.cuh>
 #include <cuda/experimental/hierarchy.cuh>
 
 #if _CCCL_STD_VER >= 2017
@@ -57,7 +58,7 @@ template <detail::launch_option_kind Kind>
 struct find_option_in_tuple_impl
 {
   template <typename Option, typename... Options>
-  _CCCL_DEVICE auto& operator()(const Option& opt, const Options&... rest)
+  _CCCL_HOST_DEVICE auto operator()(const Option& opt, const Options&... rest)
   {
     if constexpr (Option::kind == Kind)
     {
@@ -69,14 +70,14 @@ struct find_option_in_tuple_impl
     }
   }
 
-  _CCCL_DEVICE auto operator()()
+  _CCCL_HOST_DEVICE auto operator()()
   {
     return option_not_found();
   }
 };
 
 template <detail::launch_option_kind Kind, typename... Options>
-_CCCL_DEVICE auto& find_option_in_tuple(const ::cuda::std::tuple<Options...>& tuple)
+_CCCL_HOST_DEVICE auto find_option_in_tuple(const ::cuda::std::tuple<Options...>& tuple)
 {
   return ::cuda::std::apply(find_option_in_tuple_impl<Kind>(), tuple);
 }
@@ -239,11 +240,23 @@ struct dynamic_shared_memory_option : public detail::launch_option
   friend cudaError_t detail::apply_kernel_config(
     const kernel_config<Dimensions, Options...>& config, cudaLaunchConfig_t& cuda_config, void* kernel) noexcept;
 
+  _CCCL_HOST_DEVICE constexpr std::size_t size_bytes() const
+  {
+    if constexpr (Extent == ::cuda::std::dynamic_extent)
+    {
+      return size * sizeof(Content);
+    }
+    else
+    {
+      return Extent * sizeof(Content);
+    }
+  }
+
 private:
   _CCCL_NODISCARD cudaError_t apply(cudaLaunchConfig_t& config, void* kernel) const noexcept
   {
     cudaFuncAttributes attrs;
-    int size_needed    = static_cast<int>(size * sizeof(Content));
+    int size_needed    = static_cast<int>(size_bytes());
     cudaError_t status = cudaFuncGetAttributes(&attrs, kernel);
 
     if ((size_needed > attrs.maxDynamicSharedSizeBytes) && NonPortableSize)
@@ -383,6 +396,47 @@ struct kernel_config
     return kernel_config<Dimensions, Options..., NewOptions...>(
       dims, ::cuda::std::tuple_cat(options, ::cuda::std::make_tuple(new_options...)));
   }
+
+  /**
+   * @brief Returns a configuration with the hierarchy updated to replace meta dimsnions with concrete dimensions
+   *
+   * This function will create a new kernel_configuration finalized for the passed in device and kernel. Each level in
+   * the hierarchy contained in the configuration will be replaced with concrete dimensions if they are meta dimensions
+   * or passed through otherwise.
+   *
+   * @param device
+   * Device to finalize the dimensions for, for example in case of fill_device meta dimensions
+   *
+   * @param kernel
+   * Kernel that the configuration is intended for
+   *
+   * @tparam Args
+   * Types of kernel arguments, need to be explicitly specified only for a kernel functor
+   */
+  template <typename... Args, typename Kernel>
+  _CCCL_NODISCARD auto finalize(device_ref device, const Kernel& kernel);
+
+  /**
+   * @brief Returns a configuration with the hierarchy updated to replace meta dimsnions with concrete dimensions
+   *
+   * This function will create a new kernel_configuration finalized for the passed in device and kernel. Each level in
+   * the hierarchy contained in the configuration will be replaced with concrete dimensions if they are meta dimensions
+   * or passed through otherwise.
+   *
+   * @param device
+   * Device to finalize the dimensions for, for example in case of fill_device meta dimensions
+   *
+   * @param kernel
+   * Kernel that the configuration is intended for
+   *
+   * @param args
+   * Arguments that the kernel will be launched with, needed only if called with a kernel functor
+   */
+  template <typename... Args, typename Kernel>
+  _CCCL_NODISCARD auto finalize(device_ref device, const Kernel& kernel, [[maybe_unused]] const Args&... args)
+  {
+    return finalize<Args...>(device, kernel);
+  }
 };
 
 template <typename Dimensions,
@@ -479,7 +533,7 @@ _CCCL_DEVICE _CCCL_NODISCARD static char* get_smem_ptr() noexcept
 template <typename Dimensions, typename... Options>
 _CCCL_DEVICE auto& dynamic_smem_ref(const kernel_config<Dimensions, Options...>& config) noexcept
 {
-  auto& option      = detail::find_option_in_tuple<detail::launch_option_kind::dynamic_shared_memory>(config.options);
+  auto option       = detail::find_option_in_tuple<detail::launch_option_kind::dynamic_shared_memory>(config.options);
   using option_type = ::cuda::std::remove_reference_t<decltype(option)>;
   static_assert(!::cuda::std::is_same_v<option_type, detail::option_not_found>,
                 "Dynamic shared memory option not found in the kernel configuration");
@@ -499,7 +553,7 @@ _CCCL_DEVICE auto& dynamic_smem_ref(const kernel_config<Dimensions, Options...>&
 template <typename Dimensions, typename... Options>
 _CCCL_DEVICE auto dynamic_smem_span(const kernel_config<Dimensions, Options...>& config) noexcept
 {
-  auto& option      = detail::find_option_in_tuple<detail::launch_option_kind::dynamic_shared_memory>(config.options);
+  auto option       = detail::find_option_in_tuple<detail::launch_option_kind::dynamic_shared_memory>(config.options);
   using option_type = ::cuda::std::remove_reference_t<decltype(option)>;
   static_assert(!::cuda::std::is_same_v<option_type, detail::option_not_found>,
                 "Dynamic shared memory option not found in the kernel configuration");

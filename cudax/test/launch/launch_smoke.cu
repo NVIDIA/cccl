@@ -10,8 +10,10 @@
 #include <cuda/atomic>
 
 #include <cuda/experimental/launch.cuh>
+#include <cuda/experimental/stream.cuh>
 
-#include <testing.cuh>
+#include <cooperative_groups.h>
+#include <host_device.cuh>
 
 __managed__ bool kernel_run_proof = false;
 
@@ -294,4 +296,197 @@ void launch_smoke_test()
 TEST_CASE("Smoke", "[launch]")
 {
   launch_smoke_test();
+}
+
+__global__ void check_expected_counts(unsigned int num_threads_in_block, unsigned int num_blocks_in_grid)
+{
+  CUDAX_REQUIRE(cudax::block.count(cudax::thread) == num_threads_in_block);
+  CUDAX_REQUIRE(cudax::grid.count(cudax::block) == num_blocks_in_grid);
+};
+
+template <unsigned int Count = 0>
+__global__ void shared_memory_expected_counts(unsigned int num_threads_in_block, unsigned int num_blocks_in_grid)
+{
+  CUDAX_REQUIRE(cudax::block.count(cudax::thread) == num_threads_in_block);
+  CUDAX_REQUIRE(cudax::grid.count(cudax::block) == num_blocks_in_grid);
+
+  if constexpr (Count != 0)
+  {
+    __shared__ int smem[Count];
+    smem[threadIdx.x] = 1;
+    CUDAX_REQUIRE(smem[threadIdx.x] == 1);
+  }
+}
+
+__global__ void grid_sync_kernel(int i)
+{
+  auto grid = cooperative_groups::this_grid();
+  grid.sync();
+};
+
+template <typename Dims>
+inline void print_dims(const Dims& in)
+{
+  std::cout << in.count() << " block: " << in.count(cudax::thread, cudax::block) << " grid: " << in.count(cudax::block)
+            << std::endl;
+}
+
+void meta_dims_test()
+{
+  cudax::stream stream;
+
+  SECTION("Just at least")
+  {
+    constexpr unsigned int block_size = 256, grid_size = 4;
+    auto dims =
+      cudax::make_hierarchy(cudax::block_dims<block_size>(), cudax::grid_dims(block_size * grid_size, cudax::thread));
+
+    // Won't work until finalized
+    // dims.count();
+
+    // Does not touch a meta dims, so works
+    static_assert(dims.count(cudax::thread, cudax::block) == block_size);
+
+    auto dims_finalized = dims.finalize(stream.device(), check_expected_counts);
+    static_assert(::cuda::std::is_same_v<::cudax::finalized_t<decltype(dims)>, decltype(dims_finalized)>);
+
+    CUDAX_REQUIRE(dims_finalized.count(cudax::block, cudax::grid) == grid_size);
+
+    cudax::launch(stream, dims_finalized, check_expected_counts, block_size, grid_size);
+
+    cudax::launch(stream, dims, check_expected_counts, block_size, grid_size);
+  }
+
+  SECTION("At least with adjacent level")
+  {
+    // Not the best usage, but should work too
+    constexpr unsigned int block_size = 256, grid_size = 4;
+    auto dims = cudax::make_hierarchy(cudax::block_dims<block_size>(), cudax::grid_dims(grid_size, cudax::block));
+
+    cudax::launch(stream, dims, check_expected_counts, block_size, grid_size);
+  }
+
+  SECTION("Wrong dims")
+  {
+    try
+    {
+      auto dims                       = cudax::make_hierarchy(cudax::grid_dims(7, cudax::thread), cudax::block_dims(3));
+      [[maybe_unused]] auto finalized = dims.finalize(stream.device(), empty_kernel);
+      CUDAX_REQUIRE(false);
+    }
+    catch (std::invalid_argument&)
+    {};
+
+    auto dims = cudax::make_hierarchy(cudax::grid_dims(cudax::at_least{7}, cudax::thread), cudax::block_dims(3));
+    [[maybe_unused]] auto finalized = dims.finalize(stream.device(), empty_kernel);
+  }
+
+  SECTION("At least + best occupancy")
+  {
+    unsigned int target_count = 4420;
+    auto dims =
+      cudax::make_hierarchy(cudax::auto_block_dims(), cudax::grid_dims(cudax::at_least{target_count}, cudax::thread));
+
+    static_assert(cuda::std::is_same_v<decltype(dims), decltype(cudax::distribute(target_count))>);
+
+    auto dims_finalized = dims.finalize(stream.device(), empty_kernel);
+    static_assert(::cuda::std::is_same_v<::cudax::finalized_t<decltype(dims)>, decltype(dims_finalized)>);
+
+    CUDAX_REQUIRE(dims_finalized.count(cudax::thread) >= target_count);
+
+    cudax::launch(stream, dims_finalized, empty_kernel, 1);
+
+    cudax::launch(stream, dims, empty_kernel, 1);
+  }
+
+  SECTION("max_coresident + best occupancy")
+  {
+    auto dims = cudax::make_hierarchy(cudax::auto_block_dims(), cudax::fill_device(1.0));
+
+    auto config = cudax::make_config(dims, cudax::cooperative_launch());
+
+    auto config_finalized = config.finalize(stream.device(), grid_sync_kernel);
+    static_assert(::cuda::std::is_same_v<::cudax::finalized_t<decltype(config)>, decltype(config_finalized)>);
+
+    cudax::launch(stream, config_finalized, grid_sync_kernel, 1);
+
+    auto config_finalized_with_arguments = config.finalize(stream.device(), grid_sync_kernel, 1);
+    static_assert(::cuda::std::is_same_v<decltype(config_finalized_with_arguments), decltype(config_finalized)>);
+
+    cudax::launch(stream, config_finalized_with_arguments, grid_sync_kernel, 1);
+
+    cudax::launch(stream, config, grid_sync_kernel, 1);
+
+    auto lambda = [] __device__(auto conf, int dummy) {
+      auto grid = cooperative_groups::this_grid();
+      grid.sync();
+      conf.dims.count();
+    };
+
+    auto finalized_for_lambda = config.finalize(stream.device(), lambda, 1);
+    static_assert(::cuda::std::is_same_v<::cudax::finalized_t<decltype(config)>, decltype(finalized_for_lambda)>);
+
+    cudax::launch(stream, finalized_for_lambda, lambda, 1);
+
+    cudax::launch(stream, config, lambda, 1);
+  }
+
+  SECTION("Dyn smem and max coresident")
+  {
+    constexpr unsigned int large_smem = 7 * 1024;
+    auto dims                         = cudax::make_hierarchy(cudax::block_dims(128), cudax::fill_device(1.0));
+
+    auto dims_finalized = dims.finalize(stream.device(), shared_memory_expected_counts<>);
+
+    auto dims_with_smem = dims.finalize(stream.device(), shared_memory_expected_counts<large_smem>);
+
+    auto config = cudax::make_config(dims, cudax::dynamic_shared_memory<int>(large_smem));
+
+    auto config_finalized = config.finalize(stream.device(), shared_memory_expected_counts<>);
+
+    CUDAX_REQUIRE(
+      dims_finalized.count(cudax::thread, cudax::block) == config_finalized.dims.count(cudax::thread, cudax::block));
+    CUDAX_REQUIRE(
+      dims_finalized.count(cudax::thread, cudax::block) == dims_with_smem.count(cudax::thread, cudax::block));
+
+    // Confirm adding large dynamic shared reduced the number of blocks that can execute at the same time
+    CUDAX_REQUIRE(dims_finalized.count(cudax::block) > config_finalized.dims.count(cudax::block));
+    // But the number is the same no matter if smem is static or dynamic
+    CUDAX_REQUIRE(dims_with_smem.count(cudax::block) == config_finalized.dims.count(cudax::block));
+
+    cudax::launch(stream,
+                  dims,
+                  shared_memory_expected_counts<>,
+                  dims_finalized.count(cudax::thread, cudax::block),
+                  dims_finalized.count(cudax::block));
+
+    cudax::launch(stream,
+                  dims,
+                  shared_memory_expected_counts<large_smem>,
+                  dims_with_smem.count(cudax::thread, cudax::block),
+                  dims_with_smem.count(cudax::block));
+
+    cudax::launch(stream,
+                  config,
+                  shared_memory_expected_counts<>,
+                  config_finalized.dims.count(cudax::thread, cudax::block),
+                  config_finalized.dims.count(cudax::block));
+  }
+  SECTION("Oversubscribe and undersubscribe")
+  {
+    auto dims = cudax::make_hierarchy(cudax::fill_device(1.5), cudax::auto_block_dims());
+    cudax::launch(stream, dims, empty_kernel, 1);
+
+    auto dims_but_larger = cudax::make_hierarchy(cudax::fill_device(5), cudax::auto_block_dims());
+    cudax::launch(stream, dims_but_larger, empty_kernel, 1);
+
+    auto dims_but_smaller = cudax::make_hierarchy(cudax::fill_device(0.5), cudax::auto_block_dims());
+    cudax::launch(stream, dims_but_smaller, empty_kernel, 1);
+  }
+  stream.wait();
+}
+
+TEST_CASE("Meta dimensions", "[launch]")
+{
+  meta_dims_test();
 }

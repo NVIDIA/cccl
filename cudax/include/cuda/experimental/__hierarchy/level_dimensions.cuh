@@ -76,6 +76,18 @@ struct dimensions_handler<::cuda::std::integral_constant<Dims, Val>>
     return dimensions<dimensions_index_type, size_t(d), 1, 1>();
   }
 };
+
+// needs_finalization or similar might be a better name
+template <typename Dims>
+inline constexpr bool usable_for_queries = false;
+
+template <typename T, size_t... Extents>
+inline constexpr bool usable_for_queries<dimensions<T, Extents...>> = true;
+
+template <typename... LevelDims>
+inline constexpr bool usable_for_queries<::cuda::std::tuple<LevelDims...>> =
+  (... && usable_for_queries<::cuda::std::decay_t<decltype(::cuda::std::declval<LevelDims>().dims)>>);
+
 } // namespace detail
 
 /**
@@ -115,10 +127,26 @@ template <typename Level, typename Dimensions>
 struct level_dimensions
 {
   static_assert(::cuda::std::is_base_of_v<hierarchy_level, Level>);
-  using level_type = Level;
+  using level_type      = Level;
+  using dimensions_type = Dimensions;
 
   // Needs alignas to work around an issue with tuple
   alignas(16) const Dimensions dims; // Unit for dimensions is implicit
+
+  // TODO might be deleted one we are confident rest of the code properly check usabe_for_queries
+  template <typename T = void>
+  _CCCL_HOST_DEVICE constexpr const Dimensions& dims_for_query() const
+  {
+    static_assert(detail::usable_for_queries<Dimensions>,
+                  "Dimensions type is not usable for queries, finalize the dimensions first");
+    return dims;
+  }
+
+  template <typename NewDims>
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE level_dimensions<Level, NewDims> finalize(const NewDims& new_dims) const
+  {
+    return level_dimensions<Level, NewDims>(new_dims);
+  }
 
   _CCCL_HOST_DEVICE constexpr level_dimensions(const Dimensions& d)
       : dims(d)

@@ -21,6 +21,7 @@
 #include <cuda/std/tuple>
 
 #include <cuda/experimental/__detail/config.cuh>
+#include <cuda/experimental/__device/device_ref.cuh>
 #include <cuda/experimental/__hierarchy/level_dimensions.cuh>
 
 #include <nv/target>
@@ -244,7 +245,7 @@ _CCCL_NODISCARD _CUDAX_API constexpr auto dims_to_count(const dimensions<T, Exte
 template <typename... Levels>
 _CCCL_NODISCARD _CUDAX_API constexpr auto get_level_counts_helper(const Levels&... ls)
 {
-  return ::cuda::std::make_tuple(dims_to_count(ls.dims)...);
+  return ::cuda::std::make_tuple(dims_to_count(ls.dims_for_query())...);
 }
 
 template <typename Unit, typename Level, typename Dims>
@@ -275,14 +276,19 @@ struct hierarchy_extents_helper
     using TopLevel = __level_type_of<LTopDims>;
     if constexpr (sizeof...(Levels) == 0)
     {
-      return replace_with_intrinsics_or_constexpr<BottomUnit, TopLevel>(ltop.dims);
+      return replace_with_intrinsics_or_constexpr<BottomUnit, TopLevel>(ltop.dims_for_query());
     }
     else
     {
       using Unit = ::cuda::std::__type_index_c<0, __level_type_of<Levels>...>;
       return dims_product<typename TopLevel::product_type>(
-        replace_with_intrinsics_or_constexpr<Unit, TopLevel>(ltop.dims), (*this)(levels...));
+        replace_with_intrinsics_or_constexpr<Unit, TopLevel>(ltop.dims_for_query()), (*this)(levels...));
     }
+  }
+
+  _CCCL_NODISCARD _CCCL_HOST_DEVICE constexpr auto operator()() noexcept
+  {
+    return hierarchy_query_result<dimensions_index_type, 1, 1, 1>();
   }
 };
 
@@ -302,16 +308,21 @@ struct index_helper
     using TopLevel = __level_type_of<LTopDims>;
     if constexpr (sizeof...(Levels) == 0)
     {
-      return static_index_hint(ltop.dims, dims_helper<BottomUnit, TopLevel>::index());
+      return static_index_hint(ltop.dims_for_query(), dims_helper<BottomUnit, TopLevel>::index());
     }
     else
     {
       using Unit        = ::cuda::std::__type_index_c<0, __level_type_of<Levels>...>;
-      auto hinted_index = static_index_hint(ltop.dims, dims_helper<Unit, TopLevel>::index());
+      auto hinted_index = static_index_hint(ltop.dims_for_query(), dims_helper<Unit, TopLevel>::index());
       return dims_sum<typename TopLevel::product_type>(
         dims_product<typename TopLevel::product_type>(hinted_index, hierarchy_extents_helper<BottomUnit>()(levels...)),
         index_helper<BottomUnit>()(levels...));
     }
+  }
+
+  _CCCL_NODISCARD _CCCL_DEVICE constexpr auto operator()() noexcept
+  {
+    return hierarchy_query_result<dimensions_index_type, 1, 1, 1>();
   }
 };
 
@@ -324,17 +335,22 @@ struct rank_helper
     using TopLevel = __level_type_of<LTopDims>;
     if constexpr (sizeof...(Levels) == 0)
     {
-      auto hinted_index = static_index_hint(ltop.dims, dims_helper<BottomUnit, TopLevel>::index());
-      return detail::index_to_linear<typename TopLevel::product_type>(hinted_index, ltop.dims);
+      auto hinted_index = static_index_hint(ltop.dims_for_query(), dims_helper<BottomUnit, TopLevel>::index());
+      return detail::index_to_linear<typename TopLevel::product_type>(hinted_index, ltop.dims_for_query());
     }
     else
     {
       using Unit        = ::cuda::std::__type_index_c<0, __level_type_of<Levels>...>;
-      auto hinted_index = static_index_hint(ltop.dims, dims_helper<Unit, TopLevel>::index());
-      auto level_rank   = detail::index_to_linear<typename TopLevel::product_type>(hinted_index, ltop.dims);
+      auto hinted_index = static_index_hint(ltop.dims_for_query(), dims_helper<Unit, TopLevel>::index());
+      auto level_rank   = detail::index_to_linear<typename TopLevel::product_type>(hinted_index, ltop.dims_for_query());
       return level_rank * dims_to_count(hierarchy_extents_helper<BottomUnit>()(levels...))
            + rank_helper<BottomUnit>()(levels...);
     }
+  }
+
+  _CCCL_NODISCARD _CCCL_DEVICE constexpr dimensions_index_type operator()() noexcept
+  {
+    return 1;
   }
 };
 } // namespace detail
@@ -412,10 +428,17 @@ private:
   _CCCL_NODISCARD _CUDAX_API static constexpr auto
   levels_range_static(const ::cuda::std::tuple<Levels...>& levels) noexcept
   {
-    static_assert(has_level<Level, hierarchy_dimensions_fragment<BottomUnit, Levels...>>);
+    static_assert(has_level_or_unit<Level, hierarchy_dimensions_fragment<BottomUnit, Levels...>>);
     static_assert(has_level_or_unit<Unit, hierarchy_dimensions_fragment<BottomUnit, Levels...>>);
-    static_assert(detail::legal_unit_for_level<Unit, Level>);
-    return ::cuda::std::apply(detail::get_levels_range<Level, Unit, Levels...>, levels);
+    if constexpr (::cuda::std::is_same_v<Unit, Level>)
+    {
+      return ::cuda::std::make_tuple();
+    }
+    else
+    {
+      static_assert(detail::legal_unit_for_level<Unit, Level>);
+      return ::cuda::std::apply(detail::get_levels_range<Level, Unit, Levels...>, levels);
+    }
   }
 
   // TODO is this useful enough to expose?
@@ -431,7 +454,7 @@ private:
     template <typename... Selected>
     _CCCL_NODISCARD _CUDAX_API constexpr auto operator()(const Selected&... levels) const noexcept
     {
-      return hierarchy_dimensions_fragment<Unit, Selected...>(levels...);
+      return hierarchy_dimensions_fragment<Unit, Selected...>(::cuda::std::make_tuple(levels...));
     }
   };
 
@@ -511,6 +534,8 @@ public:
   _CUDAX_API constexpr auto extents(const Unit& = Unit(), const Level& = Level()) const noexcept
   {
     auto selected = levels_range<Unit, Level>();
+    static_assert(detail::usable_for_queries<decltype(selected)>,
+                  "Dimensions type is not usable for queries, finalize the dimensions first");
     return detail::convert_to_query_result(::cuda::std::apply(detail::hierarchy_extents_helper<Unit>{}, selected));
   }
 
@@ -642,6 +667,8 @@ public:
   _CCCL_DEVICE constexpr auto index(const Unit& = Unit(), const Level& = Level()) const noexcept
   {
     auto selected = levels_range<Unit, Level>();
+    static_assert(detail::usable_for_queries<decltype(selected)>,
+                  "Dimensions type is not usable for queries, finalize the dimensions first");
     return detail::convert_to_query_result(::cuda::std::apply(detail::index_helper<Unit>{}, selected));
   }
 
@@ -684,6 +711,8 @@ public:
   _CCCL_DEVICE constexpr auto rank(const Unit& = Unit(), const Level& = Level()) const noexcept
   {
     auto selected = levels_range<Unit, Level>();
+    static_assert(detail::usable_for_queries<decltype(selected)>,
+                  "Dimensions type is not usable for queries, finalize the dimensions first");
     return ::cuda::std::apply(detail::rank_helper<Unit>{}, selected);
   }
 
@@ -714,6 +743,47 @@ public:
     static_assert(has_level<Level, hierarchy_dimensions_fragment<BottomUnit, Levels...>>);
 
     return ::cuda::std::apply(detail::get_level_helper<Level>{}, levels);
+  }
+
+  /**
+   * @brief Returns a hierarchy updated to replace meta dimensions with concrete dimensions
+   *
+   * This function will create a new hierarchy finalized for the passed in device and kernel. Each level in
+   * the hierarchy will be replaced with concrete dimensions if they are meta dimensions
+   * or passed through otherwise.
+   *
+   * @param device
+   * Device to finalize the dimensions for, for example in case of fill_device meta dimensions
+   *
+   * @param kernel
+   * Kernel that the hierarchy is intended for
+   *
+   * @tparam Args
+   * Types of kernel arguments, need to be explicitly specified only for a kernel functor
+   */
+  template <typename... Args, typename Kernel>
+  _CCCL_NODISCARD auto finalize(device_ref device, const Kernel& kernel);
+
+  /**
+   * @brief Returns a hierarchy updated to replace meta dimensions with concrete dimensions
+   *
+   * This function will create a new hierarchy finalized for the passed in device and kernel. Each level in
+   * the hierarchy will be replaced with concrete dimensions if they are meta dimensions
+   * or passed through otherwise.
+   *
+   * @param device
+   * Device to finalize the dimensions for, for example in case of fill_device meta dimensions
+   *
+   * @param kernel
+   * Kernel that the hierarchy is intended for
+   *
+   * @param args
+   * Arguments that the kernel will be launched with, needed only if called with a kernel functor
+   */
+  template <typename... Args, typename Kernel>
+  _CCCL_NODISCARD auto finalize(device_ref device, const Kernel& kernel, [[maybe_unused]] const Args&... args)
+  {
+    return finalize<Args...>(device, kernel);
   }
 };
 
