@@ -53,7 +53,7 @@ struct __base_vptr
     return __vptr_ != nullptr;
   }
 
-  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API constexpr __rtti_base const* operator->() const noexcept
+  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API constexpr auto operator->() const noexcept -> __rtti_base const*
   {
     return __vptr_;
   }
@@ -61,12 +61,12 @@ struct __base_vptr
 #if defined(__cpp_lib_three_way_comparison)
   bool operator==(__base_vptr const& __other) const noexcept = default;
 #else
-  _CCCL_NODISCARD_FRIEND _CUDAX_HOST_API constexpr bool operator==(__base_vptr __lhs, __base_vptr __rhs) noexcept
+  _CCCL_NODISCARD_FRIEND _CUDAX_HOST_API constexpr auto operator==(__base_vptr __lhs, __base_vptr __rhs) noexcept -> bool
   {
     return __lhs.__vptr_ == __rhs.__vptr_;
   }
 
-  _CCCL_NODISCARD_FRIEND _CUDAX_HOST_API constexpr bool operator!=(__base_vptr __lhs, __base_vptr __rhs) noexcept
+  _CCCL_NODISCARD_FRIEND _CUDAX_HOST_API constexpr auto operator!=(__base_vptr __lhs, __base_vptr __rhs) noexcept -> bool
   {
     return !(__lhs == __rhs);
   }

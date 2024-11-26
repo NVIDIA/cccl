@@ -60,14 +60,14 @@ namespace cuda::experimental
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CUDA_VSTD::movable<_Tp>)
-_CUDAX_PUBLIC_API void __move_fn(_Tp& __src, void* __dst) noexcept
+_CUDAX_PUBLIC_API auto __move_fn(_Tp& __src, void* __dst) noexcept -> void
 {
   ::new (__dst) _Tp(static_cast<_Tp&&>(__src));
 }
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CUDA_VSTD::movable<_Tp>)
-_CCCL_NODISCARD _CUDAX_PUBLIC_API bool __try_move_fn(_Tp& __src, void* __dst, size_t __size, size_t __align)
+_CCCL_NODISCARD _CUDAX_PUBLIC_API auto __try_move_fn(_Tp& __src, void* __dst, size_t __size, size_t __align) -> bool
 {
   if (__is_small<_Tp>(__size, __align))
   {
@@ -83,7 +83,7 @@ _CCCL_NODISCARD _CUDAX_PUBLIC_API bool __try_move_fn(_Tp& __src, void* __dst, si
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CUDA_VSTD::copyable<_Tp>)
-_CCCL_NODISCARD _CUDAX_PUBLIC_API bool __copy_fn(_Tp const& __src, void* __dst, size_t __size, size_t __align)
+_CCCL_NODISCARD _CUDAX_PUBLIC_API auto __copy_fn(_Tp const& __src, void* __dst, size_t __size, size_t __align) -> bool
 {
   if (__is_small<_Tp>(__size, __align))
   {
@@ -99,8 +99,8 @@ _CCCL_NODISCARD _CUDAX_PUBLIC_API bool __copy_fn(_Tp const& __src, void* __dst, 
 
 _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CUDA_VSTD::equality_comparable<_Tp>)
-_CCCL_NODISCARD _CUDAX_PUBLIC_API bool
-__equal_fn(_Tp const& __self, _CUDA_VSTD::__type_info_ref __type, void const* __other)
+_CCCL_NODISCARD _CUDAX_PUBLIC_API auto
+__equal_fn(_Tp const& __self, _CUDA_VSTD::__type_info_ref __type, void const* __other) -> bool
 {
   if (_CCCL_TYPEID(_Tp) == __type)
   {
@@ -120,12 +120,12 @@ struct imovable : interface<imovable>
   using overrides _CCCL_NODEBUG_ALIAS =
     overrides_for<_Tp, _CUDAX_FNPTR_CONSTANT_WAR(&__try_move_fn<_Tp>), _CUDAX_FNPTR_CONSTANT_WAR(&__move_fn<_Tp>)>;
 
-  _CUDAX_HOST_API void __move_to(void* __pv) noexcept
+  _CUDAX_HOST_API auto __move_to(void* __pv) noexcept -> void
   {
     return __cudax::virtcall<&__move_fn<imovable>>(this, __pv);
   }
 
-  _CCCL_NODISCARD _CUDAX_HOST_API bool __move_to(void* __pv, size_t __size, size_t __align)
+  _CCCL_NODISCARD _CUDAX_HOST_API auto __move_to(void* __pv, size_t __size, size_t __align) -> bool
   {
     return __cudax::virtcall<&__try_move_fn<imovable>>(this, __pv, __size, __align);
   }
@@ -138,7 +138,7 @@ struct icopyable : interface<icopyable, extends<imovable<>>>
   _CCCL_REQUIRES(_CUDA_VSTD::copyable<_Tp>)
   using overrides _CCCL_NODEBUG_ALIAS = overrides_for<_Tp, _CUDAX_FNPTR_CONSTANT_WAR(&__copy_fn<_Tp>)>;
 
-  _CCCL_NODISCARD _CUDAX_HOST_API bool __copy_to(void* __pv, size_t __size, size_t __align) const
+  _CCCL_NODISCARD _CUDAX_HOST_API auto __copy_to(void* __pv, size_t __size, size_t __align) const -> bool
   {
     return virtcall<&__copy_fn<icopyable>>(this, __pv, __size, __align);
   }
@@ -152,23 +152,23 @@ struct iequality_comparable : interface<iequality_comparable>
   using overrides _CCCL_NODEBUG_ALIAS = overrides_for<_Tp, _CUDAX_FNPTR_CONSTANT_WAR(&__equal_fn<_Tp>)>;
 
 #ifndef _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-  _CCCL_NODISCARD _CUDAX_HOST_API bool operator==(iequality_comparable const& __other) const
+  _CCCL_NODISCARD _CUDAX_HOST_API auto operator==(iequality_comparable const& __other) const -> bool
   {
     auto const& __other = __cudax::basic_any_from(__other);
     void const* __obj   = __basic_any_access::__get_optr(__other);
     return __cudax::virtcall<&__equal_fn<iequality_comparable>>(this, __other.type(), __obj);
   }
 #else
-  _CCCL_NODISCARD_FRIEND _CUDAX_HOST_API bool
-  operator==(iequality_comparable const& __left, iequality_comparable const& __right)
+  _CCCL_NODISCARD_FRIEND _CUDAX_HOST_API auto
+  operator==(iequality_comparable const& __left, iequality_comparable const& __right) -> bool
   {
     auto const& __rhs = __cudax::basic_any_from(__right);
     void const* __obj = __basic_any_access::__get_optr(__rhs);
     return __cudax::virtcall<&__equal_fn<iequality_comparable>>(&__left, __rhs.type(), __obj);
   }
 
-  _CCCL_NODISCARD_FRIEND _CUDAX_TRIVIAL_HOST_API bool
-  operator!=(iequality_comparable const& __left, iequality_comparable const& __right)
+  _CCCL_NODISCARD_FRIEND _CUDAX_TRIVIAL_HOST_API auto
+  operator!=(iequality_comparable const& __left, iequality_comparable const& __right) -> bool
   {
     return !(__left == __right);
   }

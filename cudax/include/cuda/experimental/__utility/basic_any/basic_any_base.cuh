@@ -86,13 +86,13 @@ struct __basic_any_base<_Interface, 2> : __interface_of<_Interface> // copyable 
     static_cast<basic_any<_Interface>*>(this)->__convert_from(static_cast<basic_any<_Interface> const&>(__other));
   }
 
-  _CUDAX_HOST_API __basic_any_base& operator=(__basic_any_base&& __other) noexcept
+  _CUDAX_HOST_API auto operator=(__basic_any_base&& __other) noexcept -> __basic_any_base&
   {
     static_cast<basic_any<_Interface>*>(this)->__assign_from(static_cast<basic_any<_Interface>&&>(__other));
     return *this;
   }
 
-  _CUDAX_HOST_API __basic_any_base& operator=(__basic_any_base const& __other)
+  _CUDAX_HOST_API auto operator=(__basic_any_base const& __other) -> __basic_any_base&
   {
     static_cast<basic_any<_Interface>*>(this)->__assign_from(static_cast<basic_any<_Interface> const&>(__other));
     return *this;
@@ -113,21 +113,21 @@ private:
 template <class _Interface>
 struct __basic_any_base<_Interface, 1> : __basic_any_base<_Interface, 2> // move-only interfaces
 {
-  __basic_any_base()                                       = default;
-  __basic_any_base(__basic_any_base&&) noexcept            = default;
-  __basic_any_base(__basic_any_base const&)                = delete;
-  __basic_any_base& operator=(__basic_any_base&&) noexcept = default;
-  __basic_any_base& operator=(__basic_any_base const&)     = delete;
+  __basic_any_base()                                               = default;
+  __basic_any_base(__basic_any_base&&) noexcept                    = default;
+  __basic_any_base(__basic_any_base const&)                        = delete;
+  auto operator=(__basic_any_base&&) noexcept -> __basic_any_base& = default;
+  auto operator=(__basic_any_base const&) -> __basic_any_base&     = delete;
 };
 
 template <class _Interface>
 struct __basic_any_base<_Interface, 0> : __basic_any_base<_Interface, 2> // immovable interfaces
 {
-  __basic_any_base()                                       = default;
-  __basic_any_base(__basic_any_base&&) noexcept            = delete;
-  __basic_any_base(__basic_any_base const&)                = delete;
-  __basic_any_base& operator=(__basic_any_base&&) noexcept = delete;
-  __basic_any_base& operator=(__basic_any_base const&)     = delete;
+  __basic_any_base()                                               = default;
+  __basic_any_base(__basic_any_base&&) noexcept                    = delete;
+  __basic_any_base(__basic_any_base const&)                        = delete;
+  auto operator=(__basic_any_base&&) noexcept -> __basic_any_base& = delete;
+  auto operator=(__basic_any_base const&) -> __basic_any_base&     = delete;
 };
 #endif // ^^^ _CCCL_NO_CONCEPTS ^^^
 

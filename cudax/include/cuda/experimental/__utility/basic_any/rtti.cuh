@@ -48,12 +48,12 @@ struct iunknown : interface<_CUDA_VSTD::__type_always<iunknown>::__call>
 ///
 struct bad_any_cast : ::std::bad_cast
 {
-  bad_any_cast() noexcept                               = default;
-  bad_any_cast(bad_any_cast const&) noexcept            = default;
-  ~bad_any_cast() noexcept override                     = default;
-  bad_any_cast& operator=(bad_any_cast const&) noexcept = default;
+  bad_any_cast() noexcept                                       = default;
+  bad_any_cast(bad_any_cast const&) noexcept                    = default;
+  ~bad_any_cast() noexcept override                             = default;
+  auto operator=(bad_any_cast const&) noexcept -> bad_any_cast& = default;
 
-  char const* what() const noexcept override
+  auto what() const noexcept -> char const* override
   {
     return "cannot cast value to target type";
   }
@@ -135,8 +135,8 @@ struct __rtti : __rtti_base
   {}
 
   template <class... _Interfaces>
-  _CCCL_NODISCARD _CUDAX_HOST_API __vptr_for<__iset<_Interfaces...>>
-  __query_interface(__iset<_Interfaces...>) const noexcept
+  _CCCL_NODISCARD _CUDAX_HOST_API auto
+  __query_interface(__iset<_Interfaces...>) const noexcept -> __vptr_for<__iset<_Interfaces...>>
   {
     // TODO: find a way to check at runtime that the requested __iset is a subset
     // of the interfaces in the vtable.
@@ -147,7 +147,7 @@ struct __rtti : __rtti_base
   // comparing typeids. If the requested interface is found, return a pointer to
   // its vtable; otherwise, return nullptr.
   template <class _Interface>
-  _CCCL_NODISCARD _CUDAX_HOST_API __vptr_for<_Interface> __query_interface(_Interface) const noexcept
+  _CCCL_NODISCARD _CUDAX_HOST_API auto __query_interface(_Interface) const noexcept -> __vptr_for<_Interface>
   {
     // On sane implementations, comparing type_info objects first compares their
     // addresses and, if that fails, it does a string comparison. What we want is

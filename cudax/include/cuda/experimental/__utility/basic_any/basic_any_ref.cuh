@@ -111,8 +111,8 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>, Sele
   basic_any(basic_any&&)      = delete;
   basic_any(basic_any const&) = delete;
 
-  basic_any& operator=(basic_any&&)      = delete;
-  basic_any& operator=(basic_any const&) = delete;
+  auto operator=(basic_any&&) -> basic_any&      = delete;
+  auto operator=(basic_any const&) -> basic_any& = delete;
 
 #if !defined(_CCCL_NO_CONCEPTS)
   /// \brief A non-const basic_any reference can be implicitly converted to a
@@ -126,14 +126,14 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>, Sele
 
   /// \brief Returns a const reference to the type_info for the decayed type
   /// of the type-erased object.
-  _CCCL_NODISCARD _CUDAX_HOST_API _CUDA_VSTD::__type_info_ref type() const noexcept
+  _CCCL_NODISCARD _CUDAX_HOST_API auto type() const noexcept -> _CUDA_VSTD::__type_info_ref
   {
     return *__get_rtti()->__object_info_->__object_typeid_;
   }
 
   /// \brief Returns a const reference to the type_info for the decayed type
   /// of the type-erased object.
-  _CCCL_NODISCARD _CUDAX_HOST_API _CUDA_VSTD::__type_info_ref interface() const noexcept
+  _CCCL_NODISCARD _CUDAX_HOST_API auto interface() const noexcept -> _CUDA_VSTD::__type_info_ref
   {
     return *__get_rtti()->__interface_typeid_;
   }
@@ -144,13 +144,13 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>, Sele
   /// The dynamic interface is the interface that was used to construct the
   /// object, which may be different from the current object's interface if
   /// there was a conversion.
-  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API static constexpr bool has_value() noexcept
+  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API static constexpr auto has_value() noexcept -> bool
   {
     return true;
   }
 
 #if !defined(_CCCL_DOXYGEN_INVOKED) // Do not document
-  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API static constexpr bool __in_situ() noexcept
+  _CCCL_NODISCARD _CUDAX_TRIVIAL_HOST_API static constexpr auto __in_situ() noexcept -> bool
   {
     return true;
   }
@@ -230,17 +230,17 @@ private:
     __set_ref(__to_vptr, __from.__get_optr());
   }
 
-  _CUDAX_TRIVIAL_HOST_API _CUDA_VSTD::__maybe_const<__is_const_ref, void>* __get_optr() const noexcept
+  _CUDAX_TRIVIAL_HOST_API auto __get_optr() const noexcept -> _CUDA_VSTD::__maybe_const<__is_const_ref, void>*
   {
     return __optr_;
   }
 
-  _CUDAX_TRIVIAL_HOST_API __vptr_for<interface_type> __get_vptr() const noexcept
+  _CUDAX_TRIVIAL_HOST_API auto __get_vptr() const noexcept -> __vptr_for<interface_type>
   {
     return __vptr_;
   }
 
-  _CUDAX_TRIVIAL_HOST_API __rtti const* __get_rtti() const noexcept
+  _CUDAX_TRIVIAL_HOST_API auto __get_rtti() const noexcept -> __rtti const*
   {
     return __vptr_->__query_interface(iunknown());
   }
@@ -334,10 +334,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__irefer
 #undef _CUDAX_REQUIRES
 #undef _CUDAX_TEMPLATE
 
-  basic_any& operator=(basic_any&&)      = delete;
-  basic_any& operator=(basic_any const&) = delete;
+  auto operator=(basic_any&&) -> basic_any&      = delete;
+  auto operator=(basic_any const&) -> basic_any& = delete;
 
-  _CUDAX_TRIVIAL_HOST_API basic_any<__ireference<_Interface>>&& move() & noexcept
+  _CUDAX_TRIVIAL_HOST_API auto move() & noexcept -> basic_any<__ireference<_Interface>>&&
   {
     return _CUDA_VSTD::move(*this);
   }

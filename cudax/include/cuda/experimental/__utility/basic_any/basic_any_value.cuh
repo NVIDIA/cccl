@@ -205,8 +205,8 @@ public:
 #else
   // Without real concepts, we use base classes to implement movability and
   // copyability. All we need here is to accept the default implementations.
-  basic_any& operator=(basic_any&& __other)      = default;
-  basic_any& operator=(basic_any const& __other) = default;
+  auto operator=(basic_any&& __other) -> basic_any&      = default;
+  auto operator=(basic_any const& __other) -> basic_any& = default;
 #endif
 
   /// \brief Converting move assignment operator from a compatible `basic_any`
@@ -221,7 +221,7 @@ public:
   _CCCL_TEMPLATE(class _OtherInterface)
   _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_OtherInterface, _Interface>)
                    _CCCL_AND __any_convertible_to<basic_any<_OtherInterface>, basic_any>)
-  _CUDAX_HOST_API basic_any& operator=(basic_any<_OtherInterface>&& __other)
+  _CUDAX_HOST_API auto operator=(basic_any<_OtherInterface>&& __other) -> basic_any&
   {
     return __assign_from(_CUDA_VSTD::move(__other));
   }
@@ -238,7 +238,7 @@ public:
   _CCCL_TEMPLATE(class _OtherInterface)
   _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_OtherInterface, _Interface>)
                    _CCCL_AND __any_convertible_to<basic_any<_OtherInterface> const&, basic_any>)
-  _CUDAX_HOST_API basic_any& operator=(basic_any<_OtherInterface> const& __other)
+  _CUDAX_HOST_API auto operator=(basic_any<_OtherInterface> const& __other) -> basic_any&
   {
     return __assign_from(__other);
   }
@@ -284,8 +284,8 @@ public:
   /// \post `has_value() == true`
   _CCCL_TEMPLATE(class _Tp, class _Up = _CUDA_VSTD::decay_t<_Tp>, class... _Args)
   _CCCL_REQUIRES(__list_initializable_from<_Up, _Args...>)
-  _CUDAX_HOST_API _Up& emplace(_Args&&... __args) noexcept(
-    __is_small<_Up>(__size_, __align_) && _CUDA_VSTD::is_nothrow_constructible_v<_Up, _Args...>)
+  _CUDAX_HOST_API auto emplace(_Args&&... __args) noexcept(
+    __is_small<_Up>(__size_, __align_) && _CUDA_VSTD::is_nothrow_constructible_v<_Up, _Args...>) -> _Up&
   {
     reset();
     return __emplace<_Up>(static_cast<_Args&&>(__args)...);
@@ -297,16 +297,16 @@ public:
   /// \post `has_value() == true`
   _CCCL_TEMPLATE(class _Tp, class _Up, class _Vp = _CUDA_VSTD::decay_t<_Tp>, class... _Args)
   _CCCL_REQUIRES(__list_initializable_from<_Vp, _CUDA_VSTD::initializer_list<_Up>&, _Args...>)
-  _CUDAX_HOST_API _Vp& emplace(_CUDA_VSTD::initializer_list<_Up> __il, _Args&&... __args) noexcept(
+  _CUDAX_HOST_API auto emplace(_CUDA_VSTD::initializer_list<_Up> __il, _Args&&... __args) noexcept(
     __is_small<_Vp>(__size_, __align_)
-    && _CUDA_VSTD::is_nothrow_constructible_v<_Vp, _CUDA_VSTD::initializer_list<_Up>&, _Args...>)
+    && _CUDA_VSTD::is_nothrow_constructible_v<_Vp, _CUDA_VSTD::initializer_list<_Up>&, _Args...>) -> _Vp&
   {
     reset();
     return __emplace<_Vp>(__il, static_cast<_Args&&>(__args)...);
   }
 
   /// \brief Tests whether the `basic_any` object contains a value.
-  _CCCL_NODISCARD _CUDAX_HOST_API bool has_value() const noexcept
+  _CCCL_NODISCARD _CUDAX_HOST_API auto has_value() const noexcept -> bool
   {
     return __get_vptr() != nullptr;
   }
@@ -326,7 +326,7 @@ public:
 
   /// \brief Returns a reference to a type_info object representing the type of
   /// the contained object.
-  _CCCL_NODISCARD _CUDAX_HOST_API _CUDA_VSTD::__type_info_ref type() const noexcept
+  _CCCL_NODISCARD _CUDAX_HOST_API auto type() const noexcept -> _CUDA_VSTD::__type_info_ref
   {
     if (auto __vptr = __get_vptr())
     {
@@ -343,7 +343,7 @@ public:
   /// The dynamic interface is the interface that was used to construct the
   /// object, which may be different from the current object's interface if
   /// there was a conversion.
-  _CCCL_NODISCARD _CUDAX_HOST_API _CUDA_VSTD::__type_info_ref interface() const noexcept
+  _CCCL_NODISCARD _CUDAX_HOST_API auto interface() const noexcept -> _CUDA_VSTD::__type_info_ref
   {
     if (auto __vptr = __get_vptr())
     {
@@ -355,7 +355,7 @@ public:
   }
 
 #if !defined(_CCCL_DOXYGEN_INVOKED) // Do not document
-  _CCCL_NODISCARD _CUDAX_HOST_API bool __in_situ() const noexcept
+  _CCCL_NODISCARD _CUDAX_HOST_API auto __in_situ() const noexcept -> bool
   {
     return __vptr_.__flag();
   }
@@ -375,8 +375,8 @@ private:
   }
 
   template <class _Tp, class... _Args>
-  _CUDAX_HOST_API _Tp& __emplace(_Args&&... __args) noexcept(
-    __is_small<_Tp>(__size_, __align_) && _CUDA_VSTD::is_nothrow_constructible_v<_Tp, _Args...>)
+  _CUDAX_HOST_API auto __emplace(_Args&&... __args) noexcept(
+    __is_small<_Tp>(__size_, __align_) && _CUDA_VSTD::is_nothrow_constructible_v<_Tp, _Args...>) -> _Tp&
   {
     if constexpr (__is_small<_Tp>(__size_, __align_))
     {
@@ -448,7 +448,7 @@ private:
   // Assignment from a compatible basic_any object handled here:
   _CCCL_TEMPLATE(class _SrcCvAny)
   _CCCL_REQUIRES(__any_castable_to<_SrcCvAny, basic_any>)
-  _CUDAX_HOST_API basic_any& __assign_from(_SrcCvAny&& __src)
+  _CUDAX_HOST_API auto __assign_from(_SrcCvAny&& __src) -> basic_any&
   {
     if (!__ptr_eq(this, &__src))
     {
@@ -458,12 +458,12 @@ private:
     return *this;
   }
 
-  _CCCL_NODISCARD _CUDAX_HOST_API __vptr_for<_Interface> __get_vptr() const noexcept
+  _CCCL_NODISCARD _CUDAX_HOST_API auto __get_vptr() const noexcept -> __vptr_for<_Interface>
   {
     return __vptr_.__get();
   }
 
-  _CCCL_NODISCARD _CUDAX_HOST_API void* __get_optr() noexcept
+  _CCCL_NODISCARD _CUDAX_HOST_API auto __get_optr() noexcept -> void*
   {
     void* __pv = __buffer_;
     return __in_situ() ? __pv : *static_cast<void**>(__pv);
@@ -471,14 +471,14 @@ private:
 
   _CCCL_DIAG_PUSH
   _CCCL_DIAG_SUPPRESS_MSVC(4702) // warning C4702: unreachable code (srsly where, msvc?)
-  _CCCL_NODISCARD _CUDAX_HOST_API void const* __get_optr() const noexcept
+  _CCCL_NODISCARD _CUDAX_HOST_API auto __get_optr() const noexcept -> void const*
   {
     void const* __pv = __buffer_;
     return __in_situ() ? __pv : *static_cast<void const* const*>(__pv);
   }
   _CCCL_DIAG_POP
 
-  _CCCL_NODISCARD _CUDAX_HOST_API __rtti const* __get_rtti() const noexcept
+  _CCCL_NODISCARD _CUDAX_HOST_API auto __get_rtti() const noexcept -> __rtti const*
   {
     return __get_vptr()->__query_interface(iunknown());
   }

@@ -62,13 +62,14 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __basic_vtable
           __vptr, __overrides_for<interface, _Tp>(), __unique_interfaces<interface, _CUDA_VSTD::__type_quote<__tag>>()}
   {}
 
-  _CCCL_NODISCARD _CUDAX_HOST_API __vptr_for<interface> __query_interface(interface) const noexcept
+  _CCCL_NODISCARD _CUDAX_HOST_API auto __query_interface(interface) const noexcept -> __vptr_for<interface>
   {
     return this;
   }
 
   template <class... _Others>
-  _CCCL_NODISCARD _CUDAX_HOST_API __vptr_for<__iset<_Others...>> __query_interface(__iset<_Others...>) const noexcept
+  _CCCL_NODISCARD _CUDAX_HOST_API auto
+  __query_interface(__iset<_Others...>) const noexcept -> __vptr_for<__iset<_Others...>>
   {
     using __remainder _CCCL_NODEBUG_ALIAS =
       _CUDA_VSTD::__type_list_size<_CUDA_VSTD::__type_find<__unique_interfaces<interface>, __iset<_Others...>>>;
@@ -88,7 +89,7 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __basic_vtable
   }
 
   template <class _Other>
-  _CCCL_NODISCARD _CUDAX_HOST_API __vptr_for<_Other> __query_interface(_Other) const noexcept
+  _CCCL_NODISCARD _CUDAX_HOST_API auto __query_interface(_Other) const noexcept -> __vptr_for<_Other>
   {
     constexpr size_t __index = __index_of_base<_Other, interface>::value;
     static_assert(__index < __cbases);
@@ -124,7 +125,7 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __vtable_tuple
 
   _CCCL_TEMPLATE(class _Interface)
   _CCCL_REQUIRES(_CUDA_VSTD::__is_included_in_v<_Interface, _Interfaces...>)
-  _CCCL_NODISCARD _CUDAX_HOST_API constexpr __vptr_for<_Interface> __query_interface(_Interface) const noexcept
+  _CCCL_NODISCARD _CUDAX_HOST_API constexpr auto __query_interface(_Interface) const noexcept -> __vptr_for<_Interface>
   {
     return static_cast<__vptr_for<_Interface>>(this);
   }
