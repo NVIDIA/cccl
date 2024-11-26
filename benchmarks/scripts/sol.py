@@ -107,6 +107,12 @@ def plot_sol(medians, box):
     ax.set_xticklabels(ax.get_xticklabels(), rotation=30, rotation_mode='anchor', ha='right')
     plt.show()
 
+def print_speedup(medians):
+    m = medians.groupby(['alg', 'hue'], sort=False).mean()
+    m['speedup'] = (m['bw'] / m.groupby(['alg'])['bw'].transform('first'))
+    print('# Speedups:')
+    print()
+    print(m.drop(columns='bw').sort_values(by='speedup', ascending=False).to_markdown())
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Analyze benchmark results.")
@@ -118,7 +124,9 @@ def parse_args():
 
 def sol():
     args = parse_args()
-    plot_sol(alg_bws(alg_dfs(args.files), args.v), args.box)
+    medians = alg_bws(alg_dfs(args.files), args.v)
+    print_speedup(medians)
+    plot_sol(medians, args.box)
 
 
 if __name__ == "__main__":
