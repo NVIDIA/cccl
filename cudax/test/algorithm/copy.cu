@@ -160,7 +160,7 @@ TEST_CASE("Mdspan copy", "[data_manipulation]")
     auto mdspan_buffer                   = make_buffer_for_mdspan(mixed_extents, 1);
     cuda::std::mdspan<int, decltype(mixed_extents)> mdspan(mdspan_buffer.data(), mixed_extents);
     cudax::weird_buffer<cuda::std::mdspan<int, decltype(static_extents)>> buffer{
-      cuda::mr::pinned_memory_resource{}, mdspan.mapping().required_span_size()};
+      cudax::pinned_memory_resource{}, mdspan.mapping().required_span_size()};
 
     cudax::copy_bytes(stream, mdspan, buffer);
     stream.wait();
