@@ -1,3 +1,6 @@
+..
+   This file was automatically generated. Do not edit.
+
 fence.sc.cta
 ^^^^^^^^^^^^
 .. code:: cuda

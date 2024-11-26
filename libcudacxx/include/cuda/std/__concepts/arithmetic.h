@@ -30,7 +30,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2011
+#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 
 // [concepts.arithmetic], arithmetic concepts
 
@@ -49,7 +49,7 @@ _CCCL_CONCEPT floating_point = _CCCL_TRAIT(is_floating_point, _Tp);
 template <class _Tp>
 _CCCL_CONCEPT __libcpp_signed_integer = __libcpp_is_signed_integer<_Tp>::value;
 
-#endif // _CCCL_STD_VER > 2011
+#endif // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

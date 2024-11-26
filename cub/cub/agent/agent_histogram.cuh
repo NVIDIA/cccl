@@ -106,23 +106,19 @@ template <int _BLOCK_THREADS,
           int _VEC_SIZE = 4>
 struct AgentHistogramPolicy
 {
-  enum
-  {
-    /// Threads per thread block
-    BLOCK_THREADS = _BLOCK_THREADS,
+  /// Threads per thread block
+  static constexpr int BLOCK_THREADS = _BLOCK_THREADS;
+  /// Pixels per thread (per tile of input)
+  static constexpr int PIXELS_PER_THREAD = _PIXELS_PER_THREAD;
 
-    /// Pixels per thread (per tile of input)
-    PIXELS_PER_THREAD = _PIXELS_PER_THREAD,
+  /// Whether to perform localized RLE to compress samples before histogramming
+  static constexpr bool IS_RLE_COMPRESS = _RLE_COMPRESS;
 
-    /// Whether to perform localized RLE to compress samples before histogramming
-    IS_RLE_COMPRESS = _RLE_COMPRESS,
+  /// Whether to prefer privatized shared-memory bins (versus privatized global-memory bins)
+  static constexpr BlockHistogramMemoryPreference MEM_PREFERENCE = _MEM_PREFERENCE;
 
-    /// Whether to prefer privatized shared-memory bins (versus privatized global-memory bins)
-    MEM_PREFERENCE = _MEM_PREFERENCE,
-
-    /// Whether to dequeue tiles from a global work queue
-    IS_WORK_STEALING = _WORK_STEALING,
-  };
+  /// Whether to dequeue tiles from a global work queue
+  static constexpr bool IS_WORK_STEALING = _WORK_STEALING;
 
   /// Vector size for samples loading (1, 2, 4)
   static constexpr int VEC_SIZE = _VEC_SIZE;
@@ -202,23 +198,21 @@ struct AgentHistogram
   using VecT                   = typename CubVector<SampleT, VecSize>::Type;
 
   /// Constants
-  enum
-  {
-    BLOCK_THREADS = AgentHistogramPolicyT::BLOCK_THREADS,
+  static constexpr int BLOCK_THREADS = AgentHistogramPolicyT::BLOCK_THREADS;
 
-    PIXELS_PER_THREAD  = AgentHistogramPolicyT::PIXELS_PER_THREAD,
-    SAMPLES_PER_THREAD = PIXELS_PER_THREAD * NUM_CHANNELS,
-    VECS_PER_THREAD    = SAMPLES_PER_THREAD / VecSize,
+  static constexpr int PIXELS_PER_THREAD  = AgentHistogramPolicyT::PIXELS_PER_THREAD;
+  static constexpr int SAMPLES_PER_THREAD = PIXELS_PER_THREAD * NUM_CHANNELS;
+  static constexpr int VECS_PER_THREAD    = SAMPLES_PER_THREAD / VecSize;
 
-    TILE_PIXELS  = PIXELS_PER_THREAD * BLOCK_THREADS,
-    TILE_SAMPLES = SAMPLES_PER_THREAD * BLOCK_THREADS,
+  static constexpr int TILE_PIXELS  = PIXELS_PER_THREAD * BLOCK_THREADS;
+  static constexpr int TILE_SAMPLES = SAMPLES_PER_THREAD * BLOCK_THREADS;
 
-    IS_RLE_COMPRESS = AgentHistogramPolicyT::IS_RLE_COMPRESS,
+  static constexpr bool IS_RLE_COMPRESS = AgentHistogramPolicyT::IS_RLE_COMPRESS;
 
-    MEM_PREFERENCE = (PRIVATIZED_SMEM_BINS > 0) ? AgentHistogramPolicyT::MEM_PREFERENCE : GMEM,
+  static constexpr BlockHistogramMemoryPreference MEM_PREFERENCE =
+    (PRIVATIZED_SMEM_BINS > 0) ? AgentHistogramPolicyT::MEM_PREFERENCE : GMEM;
 
-    IS_WORK_STEALING = AgentHistogramPolicyT::IS_WORK_STEALING,
-  };
+  static constexpr bool IS_WORK_STEALING = AgentHistogramPolicyT::IS_WORK_STEALING;
 
   /// Cache load modifier for reading input elements
   static constexpr CacheLoadModifier LOAD_MODIFIER = AgentHistogramPolicyT::LOAD_MODIFIER;

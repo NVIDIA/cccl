@@ -64,6 +64,8 @@ class graph_ctx;
 
 class null_partition;
 
+class stream_ctx;
+
 namespace reserved
 {
 
@@ -290,13 +292,57 @@ public:
       t.set_symbol(symbol);
     }
 
+    auto& dot        = *ctx.get_dot();
+    auto& statistics = reserved::task_statistics::instance();
+
+    cudaEvent_t start_event, end_event;
+    const bool record_time = t.schedule_task() || statistics.is_calibrating_to_file();
+
     t.start();
+
+    int device = -1;
+
     SCOPE(exit)
     {
-      t.end();
+      t.end_uncleared();
+
+      if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+      {
+        if (record_time)
+        {
+          cuda_safe_call(cudaEventRecord(end_event, t.get_stream()));
+          cuda_safe_call(cudaEventSynchronize(end_event));
+
+          float milliseconds = 0;
+          cuda_safe_call(cudaEventElapsedTime(&milliseconds, start_event, end_event));
+
+          if (dot.is_tracing())
+          {
+            dot.template add_vertex_timing<typename Ctx::task_type>(t, milliseconds, device);
+          }
+
+          if (statistics.is_calibrating())
+          {
+            statistics.log_task_time(t, milliseconds);
+          }
+        }
+      }
+
+      t.clear();
     };
 
-    auto& dot = *ctx.get_dot();
+    if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+    {
+      if (record_time)
+      {
+        cuda_safe_call(cudaGetDevice(&device)); // We will use this to force it during the next run
+        // Events must be created here to avoid issues with multi-gpu
+        cuda_safe_call(cudaEventCreate(&start_event));
+        cuda_safe_call(cudaEventCreate(&end_event));
+        cuda_safe_call(cudaEventRecord(start_event, t.get_stream()));
+      }
+    }
+
     if (dot.is_tracing())
     {
       dot.template add_vertex<typename Ctx::task_type, logical_data_untyped>(t);

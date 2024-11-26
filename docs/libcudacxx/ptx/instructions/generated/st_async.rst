@@ -1,3 +1,6 @@
+..
+   This file was automatically generated. Do not edit.
+
 st.async.weak.shared::cluster.mbarrier::complete_tx::bytes.b32
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda
