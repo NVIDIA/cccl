@@ -45,7 +45,7 @@ private:
   using __stream_ref = ::cuda::experimental::stream_ref;
 
   __resource __mr_           = ::cuda::experimental::mr::device_memory_resource{};
-  __stream_ref __stream_     = cudaStream_t{0};
+  __stream_ref __stream_     = ::cuda::experimental::detail::__invalid_stream;
   execution_policy __policy_ = execution_policy::unsequenced_device;
 
 public:
@@ -60,7 +60,7 @@ public:
   //! @param __stream The stream_ref passed in
   //! @param __policy The execution_policy passed in
   _CCCL_HIDE_FROM_ABI env_t(__resource __mr,
-                            __stream_ref __stream     = cudaStream_t{0},
+                            __stream_ref __stream     = ::cuda::experimental::detail::__invalid_stream,
                             execution_policy __policy = execution_policy::unsequenced_device) noexcept
       : __mr_(_CUDA_VSTD::move(__mr))
       , __stream_(__stream)
