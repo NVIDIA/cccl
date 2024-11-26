@@ -239,18 +239,6 @@ public:
   decltype(auto) instance(task&) const;
 };
 
-#if 0
-template <typename T, typename Op>
-class task_dep_op : public task_dep<T> {
-public:
-    using task_dep_t = task_dep<T>;
-    using op_t = Op;
-
-    template <typename... Args>
-    task_dep_op(Args&&... args) : task_dep<T>(::std::forward<Args>(args)...) {}
-};
-#endif
-
 // task_dep_op derived class using std::pair<T, Op>
 template <typename Pair>
 class task_dep_op : public task_dep<typename Pair::first_type>
