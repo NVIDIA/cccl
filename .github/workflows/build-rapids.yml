@@ -36,7 +36,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { cuda: '12.5', libs: 'rmm KvikIO cudf cudf_kafka cuspatial'         }
+          - { cuda: '12.5', libs: 'rmm kvikio cudf cudf_kafka cuspatial'         }
           - { cuda: '12.5', libs: 'rmm ucxx raft cuvs cumlprims_mg cuml'         }
           - { cuda: '12.5', libs: 'rmm ucxx raft cugraph cugraph-gnn'            }
     permissions:
@@ -69,7 +69,7 @@ jobs:
           # RAPIDS_cumlprims_mg_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.02"}'
           # RAPIDS_cuspatial_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.02"}'
           # RAPIDS_cuvs_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.02"}'
-          # RAPIDS_KvikIO_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.02"}'
+          # RAPIDS_kvikio_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.02"}'
           # RAPIDS_raft_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.02"}'
           # RAPIDS_rmm_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-25.02"}'
           # RAPIDS_ucxx_GIT_REPO: '{"upstream": "rapidsai", "tag": "branch-0.42"}'
