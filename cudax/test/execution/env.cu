@@ -10,13 +10,10 @@
 
 #include <cuda/std/type_traits>
 
-#include <cuda/experimental/__async/queries.cuh>
+#include <cuda/experimental/buffer.cuh>
 #include <cuda/experimental/execution.cuh>
+#include <cuda/experimental/memory_resource.cuh>
 
-#include "cuda/__memory_resource/properties.h"
-#include "cuda/experimental/__memory_resource/any_resource.cuh"
-#include "cuda/experimental/__memory_resource/device_memory_resource.cuh"
-#include "cuda/std/__type_traits/is_constructible.h"
 #include <catch2/catch.hpp>
 
 namespace cudax = cuda::experimental;
@@ -262,4 +259,24 @@ TEST_CASE("env_t is not constructible from a env missing querries", "[execution,
   STATIC_REQUIRE(!cuda::std::is_constructible_v<env_t, bad_env_t<false, true, true>>);
   STATIC_REQUIRE(!cuda::std::is_constructible_v<env_t, bad_env_t<true, false, true>>);
   STATIC_REQUIRE(!cuda::std::is_constructible_v<env_t, bad_env_t<true, true, false>>);
+}
+
+TEST_CASE("Can use query to construct various objects", "[execution, env]")
+{
+  SECTION("Can create an any_resource")
+  {
+    env_t env{test_resource{}};
+    cudax::mr::any_resource<cuda::mr::device_accessible> resource = env.query(cudax::get_memory_resource);
+    CHECK(resource == test_resource{});
+  }
+
+  SECTION("Can create an uninitialized_async_buffer")
+  {
+    cudax::stream stream_{};
+    env_t env{test_resource{}, stream_};
+    cudax::uninitialized_async_buffer<int, cuda::mr::device_accessible> buf{
+      env.query(cudax::get_memory_resource), env.query(cudax::get_stream), 0ull};
+    CHECK(buf.get_resource() == test_resource{});
+    CHECK(buf.get_stream() == stream_);
+  }
 }

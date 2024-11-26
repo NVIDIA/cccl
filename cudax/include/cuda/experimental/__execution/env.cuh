@@ -41,7 +41,7 @@ template <class... _Properties>
 class env_t
 {
 private:
-  using __resource   = ::cuda::experimental::mr::any_resource<_Properties...>;
+  using __resource   = ::cuda::experimental::mr::any_async_resource<_Properties...>;
   using __stream_ref = ::cuda::experimental::stream_ref;
 
   __resource __mr_           = ::cuda::experimental::mr::device_memory_resource{};
