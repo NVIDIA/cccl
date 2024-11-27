@@ -131,31 +131,90 @@ public:
 
   // This will return a tuple which matches the argument passed to the lambda, either an instance or an owning type for
   // reduction variables
-  __device__ auto make_targs_aux(tuple_args& targs)
+  template <::std::size_t... Is>
+  __device__ auto make_targs_aux(tuple_args& targs, ::std::index_sequence<Is...> = ::std::index_sequence<>())
   {
-    return make_targs_aux_impl(targs, ::std::make_index_sequence<size>{});
+    if constexpr (sizeof...(Is) != size)
+    {
+      // simple idiom to avoid defining two functions - "recurse" withg the correct index_sequence
+      return make_targs_aux(targs, ::std::make_index_sequence<size>{});
+    }
+    else
+    {
+      // We do not use make_tuple to preserve references
+      return ::cuda::std::forward_as_tuple(select_element<Is>(targs)...);
+    }
   }
 
   __device__ void init()
   {
-    return init_impl(::std::make_index_sequence<size>{});
+    unroll<size>([&](auto i) {
+      using OpI = typename ::std::tuple_element<i, tuple_ops>::type;
+      if constexpr (!::std::is_same_v<OpI, task_dep_op_none>)
+      {
+        // If this is not a none op, then we have pair of ops, and the flag which indicates if we must initialize
+        OpI::first_type::init_op(::cuda::std::get<i>(tup));
+      }
+    });
   }
 
   __device__ void apply_op(const redux_vars& src)
   {
-    apply_op_impl(src.get_tup(), ::std::make_index_sequence<size>{});
+    unroll<size>([&](auto i) {
+      using ElementType = ::std::tuple_element_t<i, tuple_ops>;
+      if constexpr (!::std::is_same_v<ElementType, task_dep_op_none>)
+      {
+        // If this is not a none op, then we have pair of ops, and the flag which indicates if we must initialize
+        ElementType::first_type::apply_op(::cuda::std::get<i>(tup), ::cuda::std::get<i>(src.get_tup()));
+      }
+    });
   }
 
   // Set all tuple elements
   __device__ void set(const redux_vars& src)
   {
-    set_impl(src.get_tup(), ::std::make_index_sequence<size>{});
+    unroll<size>([&](auto i) {
+      using ElementType = ::std::tuple_element_t<i, tuple_ops>;
+      if constexpr (!::std::is_same_v<ElementType, task_dep_op_none>)
+      {
+        ::cuda::std::get<i>(tup) = ::cuda::std::get<i>(src.get_tup());
+      }
+    });
   }
 
   // Fill the tuple of arguments with the content stored in tup
-  __device__ void fill_results(tuple_args& dst) const
+  __device__ void fill_results(tuple_args& targs) const
   {
-    fill_results_impl(dst, ::std::make_index_sequence<size>{});
+    unroll<size>([&](auto i) {
+      // Fill one entry of the tuple of arguments with the result of the reduction,
+      // or accumulate the result of the reduction with the existing value if the
+      // no_init{} value was used
+      using op_is = typename ::std::tuple_element<i, tuple_ops>::type;
+      if constexpr (!std::is_same_v<op_is, task_dep_op_none>)
+      {
+        using arg_is = typename ::std::tuple_element<i, tuple_args>::type;
+
+        // We have 2 cases here, op is a pair of Operation,boolean where the
+        // boolean indicates if we should update the value or initialize it.
+        if constexpr (::std::is_same_v<typename op_is::second_type, ::std::true_type>)
+        {
+          // We overwrite any value if needed
+          owning_container_of<arg_is>::fill(::std::get<i>(targs), ::cuda::std::get<i>(tup));
+        }
+        else
+        {
+          static_assert(::std::is_same_v<typename op_is::second_type, ::std::false_type>);
+          // Read existing value
+          auto res = owning_container_of<arg_is>::get_value(::std::get<i>(targs));
+
+          // Reduce previous value and the output the reduction
+          op_is::first_type::apply_op(res, ::cuda::std::get<i>(tup));
+
+          // Overwrite previous value
+          owning_container_of<arg_is>::fill(::std::get<i>(targs), res);
+        }
+      }
+    });
   }
 
   __device__ auto& get_tup()
@@ -169,83 +228,6 @@ public:
   }
 
 private:
-  // Fill one entry of the tuple of arguments with the result of the reduction,
-  // or accumulate the result of the reduction with the existing value if the
-  // no_init{} value was used
-  template <size_t Is>
-  __device__ void fill_results_impl_i(tuple_args& targs) const
-  {
-    using op_is = typename ::std::tuple_element<Is, tuple_ops>::type;
-    if constexpr (!std::is_same_v<op_is, task_dep_op_none>)
-    {
-      using arg_is = typename ::std::tuple_element<Is, tuple_args>::type;
-
-      // We have 2 cases here, op is a pair of Operation,boolean where the
-      // boolean indicates if we should update the value or initialize it.
-      if constexpr (::std::is_same_v<typename op_is::second_type, ::std::true_type>)
-      {
-        // We overwrite any value if needed
-        owning_container_of<arg_is>::fill(::std::get<Is>(targs), ::cuda::std::get<Is>(tup));
-      }
-      else
-      {
-        static_assert(::std::is_same_v<typename op_is::second_type, ::std::false_type>);
-        // Read existing value
-        auto res = owning_container_of<arg_is>::get_value(::std::get<Is>(targs));
-
-        // Reduce previous value and the output the reduction
-        op_is::first_type::apply_op(res, ::cuda::std::get<Is>(tup));
-
-        // Overwrite previous value
-        owning_container_of<arg_is>::fill(::std::get<Is>(targs), res);
-      }
-    }
-  }
-
-  template <size_t... Is>
-  __device__ void fill_results_impl(tuple_args& targs, ::std::index_sequence<Is...>) const
-  {
-    (fill_results_impl_i<Is>(targs), ...);
-  }
-
-  // Set the i-th tuple element
-  template <size_t idx, typename Tuple>
-  __device__ void set_element_i(const Tuple& src)
-  {
-    using ElementType = ::std::tuple_element_t<idx, tuple_ops>;
-    if constexpr (!::std::is_same_v<ElementType, task_dep_op_none>)
-    {
-      ::cuda::std::get<idx>(tup) = ::cuda::std::get<idx>(src);
-    }
-  }
-
-  // Set all tuple elements (implementation)
-  template <typename Tuple, size_t... idx>
-  __device__ void set_impl(const Tuple& src, ::std::index_sequence<idx...>)
-  {
-    (set_element_i<idx>(src), ...);
-  }
-
-  // Helper function: processes the i-th element of dst and this->tup
-  template <size_t idx, typename Tuple>
-  __device__ void apply_op_impl_i(const Tuple& src)
-  {
-    using ElementType = ::std::tuple_element_t<idx, tuple_ops>;
-    if constexpr (!::std::is_same_v<ElementType, task_dep_op_none>)
-    {
-      // If this is not a none op, then we have pair of ops, and the flag which indicates if we must initialize
-      ElementType::first_type::apply_op(::cuda::std::get<idx>(tup), ::cuda::std::get<idx>(src));
-    }
-  }
-
-  // Main function: applies apply_op to every element of the tuple
-  template <typename Tuple, ::std::size_t... Is>
-  __device__ void apply_op_impl(const Tuple& src, ::std::index_sequence<Is...>)
-  {
-    // Expand the indices and call apply_op_impl_i for each index
-    (apply_op_impl_i<Is>(src), ...);
-  }
-
   // Helper function to select and return the correct element
   template <size_t Is>
   __device__ decltype(auto) select_element(tuple_args& targs)
@@ -259,31 +241,6 @@ private:
     {
       return ::cuda::std::get<Is>(tup); // Return reference to redux_buffer[i]
     }
-  }
-
-  template <::std::size_t... Is>
-  __device__ auto make_targs_aux_impl(tuple_args& targs, ::std::index_sequence<Is...>)
-  {
-    // We do not use make_tuple to preserve references
-    return ::cuda::std::forward_as_tuple(select_element<Is>(targs)...);
-  }
-
-  // Call the init_op method if this is reduction operator
-  template <size_t Is>
-  __device__ decltype(auto) init_element()
-  {
-    using OpI = typename ::std::tuple_element<Is, tuple_ops>::type;
-    if constexpr (!::std::is_same_v<OpI, task_dep_op_none>)
-    {
-      // If this is not a none op, then we have pair of ops, and the flag which indicates if we must initialize
-      OpI::first_type::init_op(::cuda::std::get<Is>(tup));
-    }
-  }
-
-  template <::std::size_t... Is>
-  __device__ void init_impl(::std::index_sequence<Is...>)
-  {
-    (init_element<Is>(), ...);
   }
 
   /* This tuple contains either `::std::monostate` for non reduction variables, or the owning type for a reduction variable.
