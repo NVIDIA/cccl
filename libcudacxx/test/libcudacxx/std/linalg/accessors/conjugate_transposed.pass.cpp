@@ -19,9 +19,10 @@
 
 int main(int, char**)
 {
+  using dynamic_extents = cuda::std::dextents<size_t, 2>;
+  using complex_t       = cuda::std::complex<float>;
   {
-    using complex_t = cuda::std::complex<float>;
-    cuda::std::array d{
+    cuda::std::array<complex_t, 6> d{
       complex_t{2.f, 3.f},
       complex_t{4.f, 5.f},
       complex_t{6.f, 7.f},
@@ -31,7 +32,7 @@ int main(int, char**)
     };
     //     42, 43, 44
     //     45, 46, 47
-    cuda::std::mdspan md(d.data(), 2, 3);
+    cuda::std::mdspan<complex_t, dynamic_extents> md(d.data(), 2, 3);
     auto conj_transposed_md = cuda::std::linalg::conjugate_transposed(md);
 
     assert(conj_transposed_md.static_extent(0) == cuda::std::dynamic_extent);
