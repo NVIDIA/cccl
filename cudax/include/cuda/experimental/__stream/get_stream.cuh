@@ -47,7 +47,7 @@ _CCCL_CONCEPT __has_member_get_stream =
 struct get_stream_t
 {
   _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(_CUDA_VSTD::convertible_to<_Tp, ::cuda::stream_ref>)
+  _CCCL_REQUIRES((_CUDA_VSTD::convertible_to<_Tp, ::cuda::stream_ref>) )
   _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr ::cuda::stream_ref operator()(const _Tp& __t) const
     noexcept(noexcept(static_cast<::cuda::stream_ref>(__t)))
   {
