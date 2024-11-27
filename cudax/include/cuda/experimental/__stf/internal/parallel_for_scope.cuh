@@ -134,39 +134,35 @@ class redux_vars
 public:
   // Get the type of the actual tuple which will store variables
   using redux_vars_tup_t = typename redux_buffer_tup<tuple_args, tuple_ops>::type;
+  enum : size_t { size = ::std::tuple_size<tuple_args>::value };
 
   // This will return a tuple which matches the argument passed to the lambda, either an instance or an owning type for
   // reduction variables
   __device__ auto make_targs_aux(tuple_args& targs)
   {
-    constexpr size_t N = ::std::tuple_size<tuple_args>::value;
-    return make_targs_aux_impl(targs, ::std::make_index_sequence<N>{});
+    return make_targs_aux_impl(targs, ::std::make_index_sequence<size>{});
   }
 
   __device__ void init()
   {
-    constexpr size_t N = ::std::tuple_size<tuple_args>::value;
-    return init_impl(::std::make_index_sequence<N>{});
+    return init_impl(::std::make_index_sequence<size>{});
   }
 
   __device__ void apply_op(const redux_vars& src)
   {
-    constexpr size_t N = ::std::tuple_size<tuple_ops>::value;
-    apply_op_impl(src.get_tup(), ::std::make_index_sequence<N>{});
+    apply_op_impl(src.get_tup(), ::std::make_index_sequence<size>{});
   }
 
   // Set all tuple elements
   __device__ void set(const redux_vars& src)
   {
-    constexpr size_t N = ::std::tuple_size<tuple_args>::value;
-    set_impl(src.get_tup(), ::std::make_index_sequence<N>{});
+    set_impl(src.get_tup(), ::std::make_index_sequence<size>{});
   }
 
   // Fill the tuple of arguments with the content stored in tup
   __device__ void fill_results(tuple_args& dst) const
   {
-    constexpr size_t N = ::std::tuple_size<tuple_args>::value;
-    fill_results_impl(dst, ::std::make_index_sequence<N>{});
+    fill_results_impl(dst, ::std::make_index_sequence<size>{});
   }
 
   __device__ auto& get_tup()
