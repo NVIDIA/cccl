@@ -63,24 +63,6 @@ int main(int, char**)
   // required_span_size(), is_always_unique(), is_always_exhaustive(), is_always_strided(), is_unique(),
   // is_exhaustive(), is_strided()
   {
-    // auto map_test = [](auto layout, auto map) {
-    //   using layout_t = decltype(layout);
-    //   cuda::std::array<T, 6> d{42, 43, 44, 45, 46, 47};
-    //   cuda::std::mdspan<T, E, layout_t> md(d.data(), map);
-    //   auto transposed_md = cuda::std::linalg::transposed(md);
-
-    //  assert(transposed_md.mapping().required_span_size() == md.mapping().required_span_size());
-    //  assert(transposed_md.is_always_unique() == md.is_always_unique());
-    //  assert(transposed_md.is_always_exhaustive() == md.is_always_exhaustive());
-    //  assert(transposed_md.is_always_strided() == md.is_always_strided());
-    //  assert(transposed_md.is_unique() == md.is_unique());
-    //  assert(transposed_md.is_exhaustive() == md.is_exhaustive());
-    //  assert(transposed_md.is_strided() == md.is_strided());
-    //};
-    // map_test(cuda::std::layout_right{}, cuda::std::layout_right::mapping<E>{});
-    // map_test(cuda::std::layout_left{}, cuda::std::layout_left::mapping<E>{});
-    // map_test(cuda::std::layout_stride{}, cuda::std::layout_stride::mapping<E>{E{}, cuda::std::array<T, 2>{10, 12}});
-
     ::map_test<cuda::std::layout_right>(cuda::std::layout_right::mapping<E>{});
     ::map_test<cuda::std::layout_left>(cuda::std::layout_left::mapping<E>{});
     ::map_test<cuda::std::layout_stride>(cuda::std::layout_stride::mapping<E>{E{}, cuda::std::array<T, 2>{10, 12}});
@@ -107,7 +89,6 @@ int main(int, char**)
   }
   // operator==
   {
-    using dynamic_extents = cuda::std::dextents<size_t, 2>;
     cuda::std::layout_right::mapping<dynamic_extents> map_right1{dynamic_extents{3, 2}};
     cuda::std::linalg::layout_transpose<cuda::std::layout_right>::mapping<dynamic_extents> map1{map_right1};
 
