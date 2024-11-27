@@ -363,10 +363,10 @@ struct kernel_config
 
   constexpr kernel_config(const Dimensions& dims, const Options&... opts)
       : dims(dims)
-      , options(opts...) {};
+      , options(opts...){};
   constexpr kernel_config(const Dimensions& dims, const ::cuda::std::tuple<Options...>& opts)
       : dims(dims)
-      , options(opts) {};
+      , options(opts){};
 
   /**
    * @brief Add a new option to this configuration
@@ -382,6 +382,18 @@ struct kernel_config
   {
     return kernel_config<Dimensions, Options..., NewOptions...>(
       dims, ::cuda::std::tuple_cat(options, ::cuda::std::make_tuple(new_options...)));
+  }
+
+  template <typename OtherDimensions, typename... OtherOptions>
+  auto combine(const kernel_config<OtherDimensions, OtherOptions...>& other_config)
+  {
+    if constexpr (false)
+    {
+    }
+    else
+    {
+      return *this;
+    }
   }
 };
 
