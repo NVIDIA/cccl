@@ -149,6 +149,7 @@ doxygen_predefined = [
     "_CCCL_FORCEINLINE",
     "_CCCL_STD_VER",
     "_CCCL_NODISCARD",
+    "_CCCL_NTTP_AUTO=auto",
     "_CCCL_VISIBILITY_HIDDEN",
     "_CCCL_SUPPRESS_DEPRECATED_PUSH",
     "_CCCL_SUPPRESS_DEPRECATED_POP",
@@ -261,6 +262,7 @@ doxygen_predefined = [
   "_CCCL_HOST=",
   "_CCCL_HOST_DEVICE=",
   "_CCCL_NODISCARD=[[nodiscard]]",
+  "_CCCL_NTTP_AUTO=auto",
   "_CCCL_STD_VER",
   "_CCCL_SUPPRESS_DEPRECATED_PUSH",
   "_CCCL_SUPPRESS_DEPRECATED_POP",
@@ -408,6 +410,7 @@ doxygen_predefined = [
   "_CCCL_CUDACC_AT_LEAST(x, y)=1",
   "_CCCL_CUDACC_BELOW(x, y)=0",
   "_CCCL_DEVICE=",
+  "_CCCL_DOXYGEN_INVOKED",
   "_CCCL_EAT_REST(x)=",
   "_CCCL_EXEC_CHECK_DISABLE=",
   "_CCCL_FORCEINLINE=",
@@ -419,6 +422,7 @@ doxygen_predefined = [
   "_CCCL_INLINE_VAR=inline",
   "_CCCL_NODISCARD=[[nodiscard]]",
   "_CCCL_NODISCARD_FRIEND=",
+  "_CCCL_NTTP_AUTO=auto",
   "_CCCL_STD_VER=2020",
   "_CCCL_TRAIT(x, y)=x<y>::value",
   "_CUDA_VMR=cuda::mr",
@@ -443,7 +447,6 @@ doxygen_predefined = [
   "_CUDAX_TRIVIAL_DEVICE_API",
   "_CUDAX_PUBLIC_API",
   "LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE=",
-  "_CCCL_DOXYGEN_INVOKED",
 ]
 
 # make sure to use ./fetch_imgs.sh
