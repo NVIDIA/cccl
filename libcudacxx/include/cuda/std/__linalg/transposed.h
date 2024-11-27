@@ -147,7 +147,9 @@ public:
     }
 
     [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type required_span_size() const
+#  if _CCCL_COMPILER(GCC, >=, 10) || _CCCL_COMPILER(CLANG, >=, 10)
       noexcept(noexcept(__nested_mapping_.required_span_size()))
+#  endif
     {
       return __nested_mapping_.required_span_size();
     }
