@@ -595,4 +595,9 @@ struct count_type<T, ::std::tuple<Args...>>
 template <typename T, typename Tuple>
 constexpr ::std::size_t count_type_v = count_type<T, Tuple>::value;
 
+#ifndef NDEBUG
+// Mini-unittest
+static_assert(count_type_v<int, ::std::tuple<int, int, float, int>> == 3);
+#endif
+
 } // namespace cuda::experimental::stf
