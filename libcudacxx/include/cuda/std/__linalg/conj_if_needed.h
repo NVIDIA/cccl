@@ -59,10 +59,11 @@
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/complex>
+#include <cuda/std/version>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER >= 2017
+#if defined(__cccl_lib_mdspan) && _CCCL_STD_VER >= 2017
 
 namespace linalg
 {
@@ -111,7 +112,7 @@ struct __conj_if_needed
 } // end namespace __detail
 } // end namespace linalg
 
-#endif // _CCCL_STD_VER >= 2017
+#endif // defined(__cccl_lib_mdspan) && _CCCL_STD_VER >= 2017
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

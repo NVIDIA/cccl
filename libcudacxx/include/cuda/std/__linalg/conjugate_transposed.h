@@ -54,10 +54,11 @@
 
 #include <cuda/std/__linalg/conjugated.h>
 #include <cuda/std/__linalg/transposed.h>
+#include <cuda/std/version>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER >= 2017
+#if defined(__cccl_lib_mdspan) && _CCCL_STD_VER >= 2017
 
 namespace linalg
 {
@@ -71,7 +72,7 @@ conjugate_transposed(_CUDA_VSTD::mdspan<_ElementType, _Extents, _Layout, _Access
 
 } // end namespace linalg
 
-#endif // _CCCL_STD_VER >= 2017
+#endif // defined(__cccl_lib_mdspan) && _CCCL_STD_VER >= 2017
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

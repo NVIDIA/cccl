@@ -57,10 +57,11 @@
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/mdspan>
+#include <cuda/std/version>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER >= 2017
+#if defined(__cccl_lib_mdspan) && _CCCL_STD_VER >= 2017
 
 namespace linalg
 {
@@ -141,7 +142,7 @@ scaled(_ScalingFactor __scaling_factor, _CUDA_VSTD::mdspan<_ElementType, _Extent
 
 } // end namespace linalg
 
-#endif // _CCCL_STD_VER >= 2017
+#endif // defined(__cccl_lib_mdspan) && _CCCL_STD_VER >= 2017
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
