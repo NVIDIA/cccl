@@ -16,14 +16,37 @@
 #include <cuda/std/mdspan>
 #include <cuda/std/type_traits>
 
+#include <cstddef>
+
+template <typename Layout, typename Map>
+__host__ __device__ void map_test(Map map)
+{
+  using T = int;
+  using E = cuda::std::extents<size_t, 2, 3>;
+  cuda::std::array<T, 6> d{42, 43, 44, 45, 46, 47};
+  cuda::std::mdspan<T, E, Layout> md(d.data(), map);
+  auto transposed_md = cuda::std::linalg::transposed(md);
+
+  assert(transposed_md.mapping().required_span_size() == md.mapping().required_span_size());
+  assert(transposed_md.is_always_unique() == md.is_always_unique());
+  assert(transposed_md.is_always_exhaustive() == md.is_always_exhaustive());
+  assert(transposed_md.is_always_strided() == md.is_always_strided());
+  assert(transposed_md.is_unique() == md.is_unique());
+  assert(transposed_md.is_exhaustive() == md.is_exhaustive());
+  assert(transposed_md.is_strided() == md.is_strided());
+};
+
 int main(int, char**)
 {
+  using T               = int;
+  using E               = cuda::std::extents<size_t, 2, 3>;
+  using dynamic_extents = cuda::std::dextents<size_t, 2>;
   // operator(), extent
   {
-    cuda::std::array d{42, 43, 44, 45, 46, 47};
+    cuda::std::array<T, 6> d{42, 43, 44, 45, 46, 47};
     //     42, 43, 44
     //     45, 46, 47
-    cuda::std::mdspan md(d.data(), 2, 3);
+    cuda::std::mdspan<T, dynamic_extents> md(d.data(), 2, 3);
     auto transposed_md = cuda::std::linalg::transposed(md);
 
     assert(transposed_md.static_extent(0) == cuda::std::dynamic_extent);
@@ -40,49 +63,51 @@ int main(int, char**)
   // required_span_size(), is_always_unique(), is_always_exhaustive(), is_always_strided(), is_unique(),
   // is_exhaustive(), is_strided()
   {
-    auto map_test = [](auto map) {
-      cuda::std::array d{42, 43, 44, 45, 46, 47};
-      cuda::std::mdspan md(d.data(), map);
-      auto transposed_md = cuda::std::linalg::transposed(md);
+    // auto map_test = [](auto layout, auto map) {
+    //   using layout_t = decltype(layout);
+    //   cuda::std::array<T, 6> d{42, 43, 44, 45, 46, 47};
+    //   cuda::std::mdspan<T, E, layout_t> md(d.data(), map);
+    //   auto transposed_md = cuda::std::linalg::transposed(md);
 
-      assert(transposed_md.mapping().required_span_size() == md.mapping().required_span_size());
-      assert(transposed_md.is_always_unique() == md.is_always_unique());
-      assert(transposed_md.is_always_exhaustive() == md.is_always_exhaustive());
-      assert(transposed_md.is_always_strided() == md.is_always_strided());
-      assert(transposed_md.is_unique() == md.is_unique());
-      assert(transposed_md.is_exhaustive() == md.is_exhaustive());
-      assert(transposed_md.is_strided() == md.is_strided());
-    };
-    using extents_t = cuda::std::extents<int, 2, 3>;
-    map_test(cuda::std::layout_right::mapping<extents_t>{});
-    map_test(cuda::std::layout_left::mapping<extents_t>{});
-    map_test(cuda::std::layout_stride::mapping<extents_t>{extents_t{}, cuda::std::array{10, 12}});
+    //  assert(transposed_md.mapping().required_span_size() == md.mapping().required_span_size());
+    //  assert(transposed_md.is_always_unique() == md.is_always_unique());
+    //  assert(transposed_md.is_always_exhaustive() == md.is_always_exhaustive());
+    //  assert(transposed_md.is_always_strided() == md.is_always_strided());
+    //  assert(transposed_md.is_unique() == md.is_unique());
+    //  assert(transposed_md.is_exhaustive() == md.is_exhaustive());
+    //  assert(transposed_md.is_strided() == md.is_strided());
+    //};
+    // map_test(cuda::std::layout_right{}, cuda::std::layout_right::mapping<E>{});
+    // map_test(cuda::std::layout_left{}, cuda::std::layout_left::mapping<E>{});
+    // map_test(cuda::std::layout_stride{}, cuda::std::layout_stride::mapping<E>{E{}, cuda::std::array<T, 2>{10, 12}});
+
+    ::map_test<cuda::std::layout_right>(cuda::std::layout_right::mapping<E>{});
+    ::map_test<cuda::std::layout_left>(cuda::std::layout_left::mapping<E>{});
+    ::map_test<cuda::std::layout_stride>(cuda::std::layout_stride::mapping<E>{E{}, cuda::std::array<T, 2>{10, 12}});
   }
   // stride()
   {
-    using extents_t = cuda::std::extents<int, 2, 3>;
-    cuda::std::layout_stride::mapping<extents_t> map{extents_t{}, cuda::std::array{10, 12}};
-    cuda::std::array d{42, 43, 44, 45, 46, 47};
-    cuda::std::mdspan md(d.data(), map);
+    cuda::std::layout_stride::mapping<E> map{E{}, cuda::std::array<T, 2>{10, 12}};
+    cuda::std::array<T, 6> d{42, 43, 44, 45, 46, 47};
+    cuda::std::mdspan<T, E, cuda::std::layout_stride> md(d.data(), map);
     auto transposed_md = cuda::std::linalg::transposed(md);
     assert(transposed_md.stride(0) == md.stride(1));
     assert(transposed_md.stride(1) == md.stride(0));
   }
   // constructor
   {
-    using extents_t            = cuda::std::extents<int, 2, 3>;
-    using transposed_extents_t = cuda::std::extents<int, 3, 2>;
+    using transposed_extents_t = cuda::std::extents<size_t, 3, 2>;
     cuda::std::layout_right::mapping<transposed_extents_t> map_right{};
-    cuda::std::linalg::layout_transpose<cuda::std::layout_right>::mapping<extents_t> map_right_transposed{map_right};
+    cuda::std::linalg::layout_transpose<cuda::std::layout_right>::mapping<E> map_right_transposed{map_right};
     static_cast<void>(map_right_transposed);
 
     cuda::std::layout_left::mapping<transposed_extents_t> map_left{};
-    cuda::std::linalg::layout_transpose<cuda::std::layout_left>::mapping<extents_t> map_left_transposed{map_left};
+    cuda::std::linalg::layout_transpose<cuda::std::layout_left>::mapping<E> map_left_transposed{map_left};
     static_cast<void>(map_left_transposed);
   }
   // operator==
   {
-    using dynamic_extents = cuda::std::dextents<int, 2>;
+    using dynamic_extents = cuda::std::dextents<size_t, 2>;
     cuda::std::layout_right::mapping<dynamic_extents> map_right1{dynamic_extents{3, 2}};
     cuda::std::linalg::layout_transpose<cuda::std::layout_right>::mapping<dynamic_extents> map1{map_right1};
 
@@ -97,8 +122,8 @@ int main(int, char**)
   }
   // transposed composition
   {
-    cuda::std::array d{42, 43, 44, 45, 46, 47};
-    cuda::std::mdspan md(d.data(), 2, 3);
+    cuda::std::array<T, 6> d{42, 43, 44, 45, 46, 47};
+    cuda::std::mdspan<T, E> md(d.data(), E{});
     auto transposed_md1 = cuda::std::linalg::transposed(md);
     auto transposed_md2 = cuda::std::linalg::transposed(transposed_md1);
     static_assert(cuda::std::is_same_v<decltype(transposed_md2.accessor()), decltype(md.accessor())>);
@@ -106,18 +131,17 @@ int main(int, char**)
     assert(transposed_md2.extents() == md.extents());
     assert(md(0, 0) == transposed_md2(0, 0));
     assert(md(0, 1) == transposed_md2(0, 1));
+    assert(md(0, 2) == transposed_md2(0, 2));
     assert(md(1, 0) == transposed_md2(1, 0));
     assert(md(1, 1) == transposed_md2(1, 1));
-    assert(md(2, 0) == transposed_md2(2, 0));
-    assert(md(2, 1) == transposed_md2(2, 1));
+    assert(md(1, 2) == transposed_md2(1, 2));
   }
   // copy constructor
   {
-    cuda::std::array d{42, 43, 44, 45, 46, 47};
-    cuda::std::mdspan md(d.data(), 2, 3);
-    auto transposed_md1   = cuda::std::linalg::transposed(md);
-    auto transposed_md2   = transposed_md1;
-    using dynamic_extents = cuda::std::dextents<size_t, 2>;
+    cuda::std::array<T, 6> d{42, 43, 44, 45, 46, 47};
+    cuda::std::mdspan<T, E> md(d.data(), E{});
+    auto transposed_md1 = cuda::std::linalg::transposed(md);
+    auto transposed_md2 = transposed_md1;
     cuda::std::layout_left::mapping<dynamic_extents> map_left{dynamic_extents{3, 2}};
     assert(transposed_md2.mapping() == map_left);
     assert(transposed_md2.extent(0) == md.extent(1));

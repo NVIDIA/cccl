@@ -19,21 +19,22 @@
 
 __host__ __device__ void constexpr_test()
 {
+  using E = cuda::std::extents<size_t, 2>;
   // operator() arithmetic type
   {
-    using element_t = float;
-    cuda::std::array d{42.f, 43.f};
-    cuda::std::mdspan md(d.data(), 2);
+    using T = float;
+    cuda::std::array<T, 2> d{42.f, 43.f};
+    cuda::std::mdspan<T, E> md(d.data(), E{});
     auto conj_md = cuda::std::linalg::conjugated(md);
 
-    static_assert(cuda::std::is_same<decltype(+conj_md(0)), element_t>::value, "wrong type");
+    static_assert(cuda::std::is_same<decltype(+conj_md(0)), T>::value, "wrong type");
     static_cast<void>(conj_md);
   }
   // operator() complex type
   {
     using complex_t = cuda::std::complex<float>;
-    cuda::std::array d{complex_t{}, complex_t{}};
-    cuda::std::mdspan md(d.data(), 2);
+    cuda::std::array<complex_t, 2> d{complex_t{}, complex_t{}};
+    cuda::std::mdspan<complex_t, E> md(d.data(), E{});
     auto conj_md = cuda::std::linalg::conjugated(md);
 
     static_assert(cuda::std::is_same<decltype(conj_md(0)), complex_t>::value, "wrong type");
@@ -41,21 +42,21 @@ __host__ __device__ void constexpr_test()
   }
   // nested_accessor() arithmetic type
   {
-    using element_t = int;
-    cuda::std::array d{42, 43};
-    cuda::std::mdspan md(d.data(), 2);
+    using T = int;
+    cuda::std::array<T, 2> d{42, 43};
+    cuda::std::mdspan<T, E> md(d.data(), E{});
     auto conj_md = cuda::std::linalg::conjugated(md);
 
-    static_assert(cuda::std::is_same<cuda::std::decay_t<decltype(conj_md.accessor())>,
-                                     cuda::std::default_accessor<element_t>>::value,
-                  "wrong type");
+    static_assert(
+      cuda::std::is_same<cuda::std::decay_t<decltype(conj_md.accessor())>, cuda::std::default_accessor<T>>::value,
+      "wrong type");
     static_cast<void>(conj_md);
   }
   // nested_accessor() complex type
   {
     using complex_t = cuda::std::complex<float>;
-    cuda::std::array d{complex_t{}, complex_t{}};
-    cuda::std::mdspan md(d.data(), 2);
+    cuda::std::array<complex_t, 2> d{complex_t{}, complex_t{}};
+    cuda::std::mdspan<complex_t, E> md(d.data(), E{});
     auto conj_md = cuda::std::linalg::conjugated(md);
 
     static_assert(cuda::std::is_same<cuda::std::decay_t<decltype(conj_md.accessor().nested_accessor())>,
@@ -67,10 +68,12 @@ __host__ __device__ void constexpr_test()
 
 __host__ __device__ void runtime_test()
 {
+  using E = cuda::std::extents<size_t, 2>;
   // operator() float value
   {
-    cuda::std::array d{42.f, 43.f};
-    cuda::std::mdspan md(d.data(), 2);
+    using T = float;
+    cuda::std::array<T, 2> d{42.f, 43.f};
+    cuda::std::mdspan<T, E> md(d.data(), 2);
     auto conj_md = cuda::std::linalg::conjugated(md);
 
     assert(conj_md(0) == 42.f);
@@ -79,8 +82,8 @@ __host__ __device__ void runtime_test()
   // operator() complex value
   {
     using complex_t = cuda::std::complex<float>;
-    cuda::std::array d{complex_t{42.f, 2.f}, complex_t{43.f, 3.f}};
-    cuda::std::mdspan md(d.data(), 2);
+    cuda::std::array<complex_t, 2> d{complex_t{42.f, 2.f}, complex_t{43.f, 3.f}};
+    cuda::std::mdspan<complex_t, E> md(d.data(), 2);
     auto conj_md = cuda::std::linalg::conjugated(md);
 
     assert((conj_md(0) == complex_t{42.f, -2.f}));
@@ -88,8 +91,9 @@ __host__ __device__ void runtime_test()
   }
   // operator() integer value
   {
-    cuda::std::array d{42, 43};
-    cuda::std::mdspan md(d.data(), 2);
+    using T = int;
+    cuda::std::array<T, 2> d{42, 43};
+    cuda::std::mdspan<T, E> md(d.data(), 2);
     auto conj_md = cuda::std::linalg::conjugated(md);
 
     assert(conj_md(0) == 42);
@@ -101,8 +105,8 @@ __host__ __device__ void runtime_test()
     {
       int x;
     };
-    cuda::std::array d{A{42}, A{43}};
-    cuda::std::mdspan md(d.data(), 2);
+    cuda::std::array<A, 2> d{A{42}, A{43}};
+    cuda::std::mdspan<A, E> md(d.data(), 2);
     auto conj_md = cuda::std::linalg::conjugated(md);
 
     assert(conj_md(0).x == 42);
@@ -110,16 +114,18 @@ __host__ __device__ void runtime_test()
   }
   // access()
   {
-    cuda::std::array d{42.f, 43.f};
-    cuda::std::mdspan md(d.data(), 2);
+    using T = float;
+    cuda::std::array<T, 2> d{42.f, 43.f};
+    cuda::std::mdspan<T, E> md(d.data(), 2);
     auto conj_md = cuda::std::linalg::conjugated(md);
 
     assert(conj_md.accessor().access(d.data(), 1) == 43.f);
   }
   // offset()
   {
-    cuda::std::array d{42.f, 43.f};
-    cuda::std::mdspan md(d.data(), 2);
+    using T = float;
+    cuda::std::array<T, 2> d{42.f, 43.f};
+    cuda::std::mdspan<T, E> md(d.data(), 2);
     auto conj_md = cuda::std::linalg::conjugated(md);
 
     assert(conj_md.accessor().offset(d.data(), 1) == d.data() + 1);
@@ -127,8 +133,8 @@ __host__ __device__ void runtime_test()
   // composition
   {
     using complex_t = cuda::std::complex<float>;
-    cuda::std::array d{complex_t{42.f, 2.f}, complex_t{43.f, 3.f}};
-    cuda::std::mdspan md(d.data(), 2);
+    cuda::std::array<complex_t, 2> d{complex_t{42.f, 2.f}, complex_t{43.f, 3.f}};
+    cuda::std::mdspan<complex_t, E> md(d.data(), 2);
     auto conj_md1 = cuda::std::linalg::conjugated(md);
     auto conj_md2 = cuda::std::linalg::conjugated(conj_md1);
 
@@ -137,8 +143,9 @@ __host__ __device__ void runtime_test()
   }
   // copy constructor
   {
-    cuda::std::array d{42.f, 43.f};
-    cuda::std::mdspan md(d.data(), 2);
+    using T = float;
+    cuda::std::array<T, 2> d{42.f, 43.f};
+    cuda::std::mdspan<T, E> md(d.data(), 2);
     auto conj_md1 = cuda::std::linalg::conjugated(md);
     auto conj_md2 = conj_md1;
 

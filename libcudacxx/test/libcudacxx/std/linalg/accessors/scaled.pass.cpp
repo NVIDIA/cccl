@@ -16,11 +16,12 @@
 
 __host__ __device__ void constexpr_test()
 {
+  using T = int;
+  using E = cuda::std::extents<size_t, 2>;
+  cuda::std::array<T, 2> d{42, 43};
+  cuda::std::mdspan<T, E> md(d.data(), E{});
   // operator() type
   {
-    using element_t = int;
-    cuda::std::array<element_t, 2> d{42, 43};
-    cuda::std::mdspan md(d.data(), 2);
     auto scaled_md = cuda::std::linalg::scaled(2.0f, md);
 
     static_assert(cuda::std::is_same<decltype(scaled_md(0)), float>::value, "wrong type");
@@ -28,76 +29,53 @@ __host__ __device__ void constexpr_test()
   }
   // nested_accessor()
   {
-    using element_t = int;
-    cuda::std::array<element_t, 2> d{42, 43};
-    cuda::std::mdspan md(d.data(), 2);
     auto scaled_md = cuda::std::linalg::scaled(2, md);
 
-    static_assert(cuda::std::is_same<decltype(scaled_md.accessor().nested_accessor()),
-                                     cuda::std::default_accessor<element_t>>::value,
-                  "wrong type");
+    static_assert(
+      cuda::std::is_same<decltype(scaled_md.accessor().nested_accessor()), cuda::std::default_accessor<T>>::value,
+      "wrong type");
     static_cast<void>(scaled_md);
   }
 }
 
 __host__ __device__ void runtime_test()
 {
+  using T = const int;
+  using E = cuda::std::extents<size_t, 2>;
+  cuda::std::array<T, 2> d{42, 43};
+  cuda::std::mdspan<T, E> md(d.data(), 2);
   // operator() value
   {
-    using element_t = int;
-    cuda::std::array<element_t, 2> d{42, 43};
-    cuda::std::mdspan md(d.data(), 2);
     auto scaled_md = cuda::std::linalg::scaled(2, md);
-
     assert(scaled_md(0) == 42 * 2);
     assert(scaled_md(1) == 43 * 2);
   }
   // access()
   {
-    using element_t = int;
-    cuda::std::array<element_t, 2> d{42, 43};
-    cuda::std::mdspan md(d.data(), 2);
     auto scaled_md = cuda::std::linalg::scaled(2, md);
-
     assert(scaled_md.accessor().access(d.data(), 1) == 43 * 2);
   }
   // offset()
   {
-    using element_t = int;
-    cuda::std::array<element_t, 2> d{42, 43};
-    cuda::std::mdspan md(d.data(), 2);
     auto scaled_md = cuda::std::linalg::scaled(2, md);
-
     assert(scaled_md.accessor().offset(d.data(), 1) == d.data() + 1);
   }
   // scaling_factor()
   {
-    using element_t = int;
-    cuda::std::array<element_t, 2> d{42, 43};
-    cuda::std::mdspan md(d.data(), 2);
     auto scaled_md = cuda::std::linalg::scaled(2, md);
-
     assert(scaled_md.accessor().scaling_factor() == 2);
   }
   // composition
   {
-    using element_t = int;
-    cuda::std::array<element_t, 2> d{42, 43};
-    cuda::std::mdspan md(d.data(), 2);
     auto scaled_md1 = cuda::std::linalg::scaled(2, md);
     auto scaled_md2 = cuda::std::linalg::scaled(3, scaled_md1);
-
     assert(scaled_md2(0) == 42 * 2 * 3);
     assert(scaled_md2(1) == 43 * 2 * 3);
   }
   // copy constructor
   {
-    using element_t = int;
-    cuda::std::array<element_t, 2> d{42, 43};
-    cuda::std::mdspan md(d.data(), 2);
     auto scaled_md1 = cuda::std::linalg::scaled(2, md);
     auto scaled_md2 = scaled_md1;
-
     assert(scaled_md2(0) == 42 * 2);
     assert(scaled_md2(1) == 43 * 2);
   }
