@@ -70,7 +70,7 @@ namespace __detail
 {
 // This struct helps us impose the rank constraint on the __type alias itself.
 _CCCL_TEMPLATE(class _Extents)
-_CCCL_REQUIRES(_Extents::rank() == 2)
+_CCCL_REQUIRES((_Extents::rank() == 2))
 struct __transpose_extents_t_impl
 {
   using __type =
@@ -81,7 +81,7 @@ template <class _Extents>
 using __transpose_extents_t = typename __transpose_extents_t_impl<_Extents>::__type;
 
 _CCCL_TEMPLATE(class _Extents)
-_CCCL_REQUIRES(_Extents::rank() == 2)
+_CCCL_REQUIRES((_Extents::rank() == 2))
 _LIBCUDACXX_HIDE_FROM_ABI __transpose_extents_t<_Extents> __transpose_extents(const _Extents& __e)
 {
   static_assert(
