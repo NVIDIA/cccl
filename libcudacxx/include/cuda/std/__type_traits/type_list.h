@@ -40,6 +40,10 @@
 //! For the purpose of this file, a "trait type" is a class type with a nested
 //! type alias named \c type.
 
+#if !defined(_CCCL_META_UNROLL_LIMIT)
+#  define _CCCL_META_UNROLL_LIMIT 16
+#endif
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -489,10 +493,6 @@ struct __type_index_large_size_fn<index_sequence<_Is...>>
     __type<decltype(__detail::__type_index_get<_Ip::value>(
       static_cast<__inherit_flat<__type_index_leaf<_Is, _Ts>...>*>(nullptr)))>;
 };
-
-#    if !defined(_CCCL_META_UNROLL_LIMIT)
-#      define _CCCL_META_UNROLL_LIMIT 16
-#    endif
 
 template <size_t _Ip>
 struct __type_index_small_size_fn;
