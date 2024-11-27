@@ -73,8 +73,7 @@ conjugate_transposed(_CUDA_VSTD::mdspan<_ElementType, _Extents, _Layout, _Access
 
 } // end namespace linalg
 
-#endif // defined(__cccl_lib_mdspan) && _CCCL_STD_VER >= 2017
-
 _LIBCUDACXX_END_NAMESPACE_STD
 
+#endif // defined(__cccl_lib_mdspan) && _CCCL_STD_VER >= 2017
 #endif // _LIBCUDACXX___LINALG_CONJUGATE_TRANSPOSED_HPP

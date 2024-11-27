@@ -156,8 +156,7 @@ conjugated(_CUDA_VSTD::mdspan<_ElementType, _Extents, _Layout, conjugated_access
 
 } // end namespace linalg
 
-#endif // defined(__cccl_lib_mdspan) && _CCCL_STD_VER >= 2017
-
 _LIBCUDACXX_END_NAMESPACE_STD
 
+#endif // defined(__cccl_lib_mdspan) && _CCCL_STD_VER >= 2017
 #endif // _LIBCUDACXX___LINALG_CONJUGATED_HPP
