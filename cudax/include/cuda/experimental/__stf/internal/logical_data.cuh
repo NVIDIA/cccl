@@ -822,7 +822,7 @@ public:
       case access_mode::rw:
       case access_mode::write:
       case access_mode::reduce_no_init:
-      case access_mode::reduce_do_init: {
+      case access_mode::reduce: {
         switch (current_msir)
         {
           case reserved::msir_state_id::modified:
@@ -889,7 +889,7 @@ public:
             else
             {
               // Write only
-              assert(mode == access_mode::write || mode == access_mode::reduce_do_init);
+              assert(mode == access_mode::write || mode == access_mode::reduce);
             }
 
             // Clear and all copies which become invalid, keep prereqs
@@ -2306,21 +2306,17 @@ public:
   template <typename Op, typename... Pack>
   auto reduce(Op, no_init, Pack&&... pack)
   {
-    return task_dep_op<::std::pair<T, ::std::pair<Op, no_init>>>(
+    return task_dep_op<::std::pair<T, ::std::pair<Op, ::std::false_type>>>(
       *this, access_mode::reduce_no_init, ::std::forward<Pack>(pack)...);
   }
 
+  /* If we do not pass the no_init{} tag type, there this is going to
+   * initialize data, not accumulate with existing values. */
   template <typename Op, typename... Pack>
-  auto reduce(Op, do_init, Pack&&... pack)
+  auto reduce(Op, Pack&&... pack)
   {
-    return task_dep_op<::std::pair<T, ::std::pair<Op, do_init>>>(
-      *this, access_mode::reduce_do_init, ::std::forward<Pack>(pack)...);
-  }
-
-  template <typename Op, typename... Pack>
-  auto reduce(Op op, Pack&&... pack)
-  {
-    return reduce(mv(op), do_init{}, std::forward<Pack>(pack)...);
+    return task_dep_op<::std::pair<T, ::std::pair<Op, ::std::true_type>>>(
+      *this, access_mode::reduce, ::std::forward<Pack>(pack)...);
   }
 
   ///@}
