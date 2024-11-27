@@ -78,13 +78,6 @@ __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tup
 }
 
 /**
- * This will serve for some Empty Base Optimization (EBO) so that we can create
- * a tuple of args where args which need no reduction do not require storage.
- */
-struct EmptyType
-{};
-
-/**
  * Transform a combination of tuple<A1,..., An> and tuple<O1, ..., On> into a
  * tuple where the entries are either empty types for non reduction variables,
  * or Ai.
@@ -100,14 +93,14 @@ struct SelectType
 template <typename Ai>
 struct SelectType<task_dep_op_none, Ai>
 {
-  using type = EmptyType; // Specialization when Oi is NoneType
+  using type = ::std::monostate; // Specialization when Oi is NoneType
 };
 
 /**
  * @brief Tuple of arguments needed to store temporary variables used in reduction operations.
  *
  * For example, if we have ArgsTuple=tuple<slice<T>, slice<T>, scalar<T>, scalar<U>> and OpsTuple=tuple<none, none,
- * sum<T>, sum<U>> we will have a type that is tuple<EmptyType, EmptyType, T, U> which corresponds to the variables we
+ * sum<T>, sum<U>> we will have a type that is tuple<::std::monostate, ::std::monostate, T, U> which corresponds to the variables we
  * need to store to perform reductions.
  */
 template <typename ArgsTuple, typename OpsTuple>
@@ -293,9 +286,9 @@ private:
     (init_element<Is>(), ...);
   }
 
-  /* This tuple contains either EmptyType for non reduction variables, or the owning type for a reduction variable.
+  /* This tuple contains either `::std::monostate` for non reduction variables, or the owning type for a reduction variable.
    * if tuple_args = tuple<slice<double>, scalar<int>, slice<int>> and tuple_ops=tuple<none, sum<int>, none>
-   * this will correspond to tuple<EmptyType, int, EmptyType>.
+   * this will correspond to `tuple<::std::monostate, int, ::std::monostate>`.
    *
    * So we can store that tuple in shared memory to perform per-block reduction operations.
    */
