@@ -15,8 +15,6 @@
 #include <cuda/std/complex>
 #include <cuda/std/type_traits>
 
-#include "cuda/std/__type_traits/decay.h"
-
 __host__ __device__ void constexpr_test()
 {
   using E = cuda::std::extents<size_t, 2>;

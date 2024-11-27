@@ -13,10 +13,9 @@
 #include "cuda/std/__linalg/transposed.h"
 
 #include <cuda/std/cassert>
+#include <cuda/std/cstddef>
 #include <cuda/std/mdspan>
 #include <cuda/std/type_traits>
-
-#include <cstddef>
 
 template <typename Layout, typename Map>
 __host__ __device__ void map_test(Map map)
