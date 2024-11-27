@@ -193,14 +193,14 @@ private:
 
       // We have 2 cases here, op is a pair of Operation,boolean where the
       // boolean indicates if we should update the value or initialize it.
-      if constexpr (::std::is_same_v<typename op_is::second_type, do_init>)
+      if constexpr (::std::is_same_v<typename op_is::second_type, ::std::true_type>)
       {
         // We overwrite any value if needed
         owning_container_of<arg_is>::fill(::std::get<Is>(targs), ::cuda::std::get<Is>(tup));
       }
       else
       {
-        static_assert(::std::is_same_v<typename op_is::second_type, no_init>);
+        static_assert(::std::is_same_v<typename op_is::second_type, ::std::false_type>);
         // Read existing value
         auto res = owning_container_of<arg_is>::get_value(::std::get<Is>(targs));
 
