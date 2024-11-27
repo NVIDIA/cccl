@@ -35,12 +35,13 @@ namespace cuda::experimental::stf
  */
 enum class access_mode : unsigned int
 {
-  none           = 0,
-  read           = 1,
-  write          = 2,
-  rw             = 3, // READ + WRITE
-  relaxed        = 4, /* operator ? */
-  reduce         = 8, // overwrite the content of the logical data (if any) with the result of the reduction (equivalent to write)
+  none    = 0,
+  read    = 1,
+  write   = 2,
+  rw      = 3, // READ + WRITE
+  relaxed = 4, /* operator ? */
+  reduce  = 8, // overwrite the content of the logical data (if any) with the result of the reduction (equivalent to
+              // write)
   reduce_no_init = 16, // special case where the reduction will accumulate into the existing content (equivalent to rw)
 };
 
