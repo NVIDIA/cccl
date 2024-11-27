@@ -44,6 +44,8 @@
 
 #include <cuda/std/detail/__config>
 
+#include "cuda/std/__cccl/unreachable.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -141,6 +143,7 @@ conjugated(_CUDA_VSTD::mdspan<_ElementType, _Extents, _Layout, _Accessor> __a)
     return _CUDA_VSTD::mdspan<__return_element_type, _Extents, _Layout, __return_accessor_type>(
       __a.data_handle(), __a.mapping(), __return_accessor_type(__a.accessor()));
   }
+  _CCCL_UNREACHABLE();
 }
 
 // Conjugation is self-annihilating

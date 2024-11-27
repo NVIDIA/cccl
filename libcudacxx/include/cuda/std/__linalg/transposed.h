@@ -113,6 +113,7 @@ _LIBCUDACXX_HIDE_FROM_ABI __transpose_extents_t<_Extents> __transpose_extents(co
       return __transpose_extents_t<_Extents>{}; // all extents are static
     }
   }
+  _CCCL_UNREACHABLE(); // GCC9 workaround
 }
 
 } // namespace __detail
@@ -205,7 +206,7 @@ public:
     }
 
     template <class _OtherExtents>
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
+    _LIBCUDACXX_HIDE_FROM_ABI friend constexpr bool
     operator==(const mapping& __lhs, const mapping<_OtherExtents>& __rhs) noexcept
     {
       return __lhs.__nested_mapping_ == __rhs.__nested_mapping_;

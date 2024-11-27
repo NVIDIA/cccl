@@ -44,6 +44,8 @@
 
 #include <cuda/std/detail/__config>
 
+#include "cuda/std/__cccl/unreachable.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -99,6 +101,7 @@ _LIBCUDACXX_HIDE_FROM_ABI auto __conj_if_needed_impl(const _Type& __t, _CUDA_VST
   {
     return _CUDA_VSTD::conj(__t);
   }
+  _CCCL_UNREACHABLE();
 }
 
 struct __conj_if_needed
