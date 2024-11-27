@@ -52,17 +52,18 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cccl/assert.h>
-#include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__type_traits/is_convertible.h>
-#include <cuda/std/__type_traits/is_same.h>
-#include <cuda/std/array>
-#include <cuda/std/mdspan>
 #include <cuda/std/version>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
-
 #if defined(__cccl_lib_mdspan) && _CCCL_STD_VER >= 2017
+
+#  include <cuda/std/__cccl/assert.h>
+#  include <cuda/std/__concepts/concept_macros.h>
+#  include <cuda/std/__type_traits/is_convertible.h>
+#  include <cuda/std/__type_traits/is_same.h>
+#  include <cuda/std/array>
+#  include <cuda/std/mdspan>
+
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 namespace linalg
 {

@@ -52,18 +52,19 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cccl/execution_space.h>
-#include <cuda/std/__type_traits/integral_constant.h>
-#include <cuda/std/__type_traits/is_arithmetic.h>
-#include <cuda/std/__type_traits/remove_const.h>
-#include <cuda/std/__type_traits/void_t.h>
-#include <cuda/std/__utility/declval.h>
-#include <cuda/std/complex>
 #include <cuda/std/version>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
-
 #if defined(__cccl_lib_mdspan) && _CCCL_STD_VER >= 2017
+
+#  include <cuda/std/__cccl/execution_space.h>
+#  include <cuda/std/__type_traits/integral_constant.h>
+#  include <cuda/std/__type_traits/is_arithmetic.h>
+#  include <cuda/std/__type_traits/remove_const.h>
+#  include <cuda/std/__type_traits/void_t.h>
+#  include <cuda/std/__utility/declval.h>
+#  include <cuda/std/complex>
+
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 namespace linalg
 {

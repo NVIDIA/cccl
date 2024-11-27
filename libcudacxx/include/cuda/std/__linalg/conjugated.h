@@ -52,17 +52,18 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__linalg/conj_if_needed.h>
-#include <cuda/std/__type_traits/add_const.h>
-#include <cuda/std/__type_traits/is_arithmetic.h>
-#include <cuda/std/__type_traits/remove_const.h>
-#include <cuda/std/__utility/declval.h>
-#include <cuda/std/mdspan>
 #include <cuda/std/version>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
-
 #if defined(__cccl_lib_mdspan) && _CCCL_STD_VER >= 2017
+
+#  include <cuda/std/__linalg/conj_if_needed.h>
+#  include <cuda/std/__type_traits/add_const.h>
+#  include <cuda/std/__type_traits/is_arithmetic.h>
+#  include <cuda/std/__type_traits/remove_const.h>
+#  include <cuda/std/__utility/declval.h>
+#  include <cuda/std/mdspan>
+
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 namespace linalg
 {

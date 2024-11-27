@@ -52,13 +52,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__linalg/conjugated.h>
-#include <cuda/std/__linalg/transposed.h>
 #include <cuda/std/version>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
-
 #if defined(__cccl_lib_mdspan) && _CCCL_STD_VER >= 2017
+
+#  include <cuda/std/__linalg/conjugated.h>
+#  include <cuda/std/__linalg/transposed.h>
+
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 namespace linalg
 {
