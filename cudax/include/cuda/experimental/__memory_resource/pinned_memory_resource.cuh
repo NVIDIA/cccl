@@ -21,10 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDA_COMPILER(CLANG)
+#if defined(_CCCL_CUDA_COMPILER_CLANG)
 #  include <cuda_runtime.h>
 #  include <cuda_runtime_api.h>
-#endif // _CCCL_CUDA_COMPILER(CLANG)
+#endif // _CCCL_CUDA_COMPILER_CLANG
 
 #include <cuda/__memory_resource/get_property.h>
 #include <cuda/__memory_resource/properties.h>
