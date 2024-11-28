@@ -880,15 +880,15 @@ public:
   }
 
   void dot_push_section(::std::string symbol) const {
-    reserved::dot::instance().push_section(mv(symbol));
+    reserved::dot::dot_section::push_section(mv(symbol));
   }
 
   void dot_pop_section() const {
-    reserved::dot::instance().pop_section();
+    reserved::dot::dot_section::pop_section();
   }
 
   auto dot_section(::std::string symbol) const {
-      return reserved::dot::section_guard(mv(symbol));
+      return reserved::dot::dot_section::section_guard(mv(symbol));
   }
 
   auto get_phase() const

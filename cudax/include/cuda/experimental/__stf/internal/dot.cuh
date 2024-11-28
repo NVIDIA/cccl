@@ -64,48 +64,9 @@ struct per_task_info
   ::std::string color;
   ::std::string label;
   ::std::optional<float> timing;
+  int dot_section_id;
 };
 
-
-/**
- * @brief A named section in the DOT output to potentially collapse multiple nodes in the same section
- */
-class dot_section {
-public:
-    using unique_id_t = unique_id<dot_section>;
-
-    // Constructor to initialize symbol and children
-    dot_section(::std::string sym)
-        : symbol(mv(sym)) {
-    }
-
-    // Create a new child
-    auto create_child(::std::string sym, ::std::shared_ptr<dot_section> this_shared) {
-        _CCCL_ASSERT(this_shared.get() == this, "pointer mismatch");
-        auto c = ::std::make_shared<dot_section>(mv(sym));
-        c->parent = this_shared;
-        children.push_back(c);
-        return c;
-    }
-
-    // Use a weak_ptr to avoid circular dependencies
-    ::std::weak_ptr<dot_section> parent;
-
-    int get_id() const {
-        return int(id);
-    }
-
-    const ::std::string get_symbol() const {
-        return symbol;
-    }
-
-private:
-    ::std::string symbol;
-    ::std::vector<::std::shared_ptr<dot_section>> children;
-
-    // An identifier for that section
-    unique_id_t id;
-};
 
 class per_ctx_dot
 {
@@ -198,6 +159,9 @@ public:
     existing_edges.insert(p);
   }
 
+  // Used to avoid cyclic dependencies, defined later
+  static int get_current_section_id();
+
   template <typename task_type, typename data_type>
   void add_vertex(task_type t)
   {
@@ -219,6 +183,9 @@ public:
     auto& task_metadata = metadata[t.get_unique_id()];
 
     task_metadata.color = get_current_color();
+
+    task_metadata.dot_section_id = get_current_section_id();
+    fprintf(stderr, "TASK %s : section id %d\n", t.get_symbol().c_str(), task_metadata.dot_section_id);
 
     // Add an entry in the DOT file : we just put the node, and we will define its style/label later
     oss << "\"NODE_" << t.get_unique_id() << "\" [style=\"filled\"]\n";
@@ -376,6 +343,75 @@ public: // XXX protected, friend : dot
 
 class dot : public reserved::meyers_singleton<dot>
 {
+public:
+/**
+ * @brief A named section in the DOT output to potentially collapse multiple nodes in the same section
+ */
+class dot_section {
+public:
+    using unique_id_t = unique_id<dot_section>;
+
+    // Constructor to initialize symbol and children
+    dot_section(::std::string sym)
+        : symbol(mv(sym)) {
+    }
+
+    class section_guard {
+        public:
+            section_guard(::std::string symbol) {
+                dot_section::push_section(mv(symbol));
+            }
+
+            ~section_guard() {
+                dot_section::pop_section();
+            }
+    };
+
+    static auto &current() {
+        thread_local ::std::stack<int> s;
+        return s;
+    }
+
+    static void push_section(::std::string symbol) {
+        fprintf(stderr, "PUSHING SECTION %s\n", symbol.c_str());
+
+        // We first create a section object, with its unique id
+        auto sec = ::std::make_shared<dot_section>(mv(symbol));
+        int id = sec->get_id();
+
+        // Save the section in the map
+        dot_section::map()[id] = sec;
+
+        // Push the id in the current stack
+        current().push(id);
+    }
+
+    static void pop_section() {
+        fprintf(stderr, "POP SECTION\n");
+        current().pop();
+    }
+
+    int get_id() const {
+        return int(id);
+    }
+
+    const ::std::string get_symbol() const {
+        return symbol;
+    }
+
+    static ::std::unordered_map<int, ::std::shared_ptr<dot_section>> &map() {
+        static ::std::unordered_map<int, ::std::shared_ptr<dot_section>> m;
+        return m;
+    }
+
+private:
+    ::std::string symbol;
+
+    // An identifier for that section
+    unique_id_t id;
+};
+
+
 protected:
   dot()
   {
@@ -588,38 +624,7 @@ public:
 
   ::std::vector<::std::shared_ptr<per_ctx_dot>> per_ctx;
 
-  class section_guard {
-      public:
-          section_guard(::std::string symbol) {
-              dot::instance().push_section(mv(symbol));
-          }
-
-          ~section_guard() {
-              dot::instance().pop_section();
-          }
-  };
-
-  void push_section(::std::string symbol) {
-      fprintf(stderr, "PUSHING SECTION %s\n", symbol.c_str());
-
-      // We first create a section object, with its unique id
-      auto sec = ::std::make_shared<dot_section>(mv(symbol));
-      int id = sec->get_id();
-
-      // Save the section in the map
-      dot_section_map[id] = sec;
-
-      // Push the id in the current stack
-      current_dot_section.push(id);
-  }
-
-  void pop_section() {
-      fprintf(stderr, "POP SECTION\n");
-      current_dot_section.pop();
-  }
-
 private:
-  ::std::unordered_map<int, ::std::shared_ptr<dot_section>> dot_section_map;
 
   static thread_local ::std::stack<int> current_dot_section;
 
@@ -859,8 +864,11 @@ private:
   ::std::string dot_filename;
 };
 
-// static members need this extra declaration outside of the class
-//static ::std::shared_ptr<dot_section> root_section = ::std::make_shared<dot_section>("root");
+inline int per_ctx_dot::get_current_section_id() {
+    // Get the stack of IDs, if it's empty return 0, other 1 + the unique id
+    auto &s = dot::dot_section::current();
+    return s.size() == 0 ? 0 : 1 + s.top();
+}
 
 ///thread_local ::std::shared_ptr<dot_section> dot::current_dot_section = nullptr;
 inline thread_local ::std::stack<int> dot::current_dot_section;
