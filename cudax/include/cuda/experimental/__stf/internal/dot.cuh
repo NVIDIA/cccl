@@ -346,27 +346,27 @@ public:
   /**
    * @brief A named section in the DOT output to potentially collapse multiple nodes in the same section
    */
-  class dot_section
+  class section
   {
   public:
-    using unique_id_t = unique_id<dot_section>;
+    using unique_id_t = unique_id<section>;
 
     // Constructor to initialize symbol and children
-    dot_section(::std::string sym)
+    section(::std::string sym)
         : symbol(mv(sym))
     {}
 
-    class section_guard
+    class guard
     {
     public:
-      section_guard(::std::string symbol)
+      guard(::std::string symbol)
       {
-        dot_section::push_section(mv(symbol));
+        section::push(mv(symbol));
       }
 
-      ~section_guard()
+      ~guard()
       {
-        dot_section::pop_section();
+        section::pop();
       }
     };
 
@@ -376,22 +376,22 @@ public:
       return s;
     }
 
-    static void push_section(::std::string symbol)
+    static void push(::std::string symbol)
     {
       fprintf(stderr, "PUSHING SECTION %s\n", symbol.c_str());
 
       // We first create a section object, with its unique id
-      auto sec = ::std::make_shared<dot_section>(mv(symbol));
+      auto sec = ::std::make_shared<section>(mv(symbol));
       int id   = sec->get_id();
 
       // Save the section in the map
-      dot_section::map()[id] = sec;
+      section::map()[id] = sec;
 
       // Push the id in the current stack
       current().push(id);
     }
 
-    static void pop_section()
+    static void pop()
     {
       fprintf(stderr, "POP SECTION\n");
       current().pop();
@@ -407,9 +407,9 @@ public:
       return symbol;
     }
 
-    static ::std::unordered_map<int, ::std::shared_ptr<dot_section>>& map()
+    static ::std::unordered_map<int, ::std::shared_ptr<section>>& map()
     {
-      static ::std::unordered_map<int, ::std::shared_ptr<dot_section>> m;
+      static ::std::unordered_map<int, ::std::shared_ptr<section>> m;
       return m;
     }
 
@@ -633,7 +633,7 @@ public:
   ::std::vector<::std::shared_ptr<per_ctx_dot>> per_ctx;
 
 private:
-  static thread_local ::std::stack<int> current_dot_section;
+  static thread_local ::std::stack<int> current_section;
 
   // Function to get a color based on task duration relative to the average
   ::std::string get_color_for_duration(double duration, double avg_duration)
@@ -874,11 +874,8 @@ private:
 inline int per_ctx_dot::get_current_section_id()
 {
   // Get the stack of IDs, if it's empty return 0, other 1 + the unique id
-  auto& s = dot::dot_section::current();
+  auto& s = dot::section::current();
   return s.size() == 0 ? 0 : 1 + s.top();
 }
-
-/// thread_local ::std::shared_ptr<dot_section> dot::current_dot_section = nullptr;
-inline thread_local ::std::stack<int> dot::current_dot_section;
 
 } // namespace cuda::experimental::stf::reserved
