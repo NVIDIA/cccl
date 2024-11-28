@@ -73,7 +73,7 @@
 #if defined(__NVCC__)
 #  define _CCCL_CUDA_COMPILER_NVCC     _CCCL_CUDA_COMPILER_MAKE_VERSION(__CUDACC_VER_MAJOR__, __CUDACC_VER_MINOR__)
 #  define _CCCL_CUDA_COMPILER__CURRENT _CCCL_CUDA_COMPILER_NVCC
-#elif defined(_NVHPC_CUDA)
+#elif defined(__NVCOMPILER_CUDA__)
 #  define _CCCL_CUDA_COMPILER_NVHPC    _CCCL_CUDA_COMPILER_MAKE_VERSION(__CUDACC_VER_MAJOR__, __CUDACC_VER_MINOR__)
 #  define _CCCL_CUDA_COMPILER__CURRENT _CCCL_CUDA_COMPILER_NVHPC
 #elif defined(__CUDA__) && _CCCL_COMPILER(CLANG)
@@ -92,6 +92,16 @@
 // Define the macros to check the cuda compiler version independent on the compiler name
 #define _CCCL_CUDA_COMPILER_BELOW(_MAJOR, _MINOR)    _CCCL_CUDA_COMPILER(_CURRENT, <, _MAJOR, _MINOR)
 #define _CCCL_CUDA_COMPILER_AT_LEAST(_MAJOR, _MINOR) _CCCL_CUDA_COMPILER(_CURRENT, >=, _MAJOR, _MINOR)
+
+// If we are compiling with a cuda compiler, set the flag
+#if defined(__CUDACC__)
+#  define _CCCL_CUDA_COMPILATION 1
+#endif
+
+// If we are compiling device code, set the flag
+#if defined(__CUDA_ARCH__) || defined(__NVCOMPILER_CUDA_ARCH__)
+#  define _CCCL_DEVICE_COMPILATION 1
+#endif
 
 // Convert parameter to string
 #define _CCCL_TO_STRING2(_STR) #_STR

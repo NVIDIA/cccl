@@ -22,21 +22,17 @@
 #  pragma system_header
 #endif // no system header
 
-// Set device compilation flag to 1 and undefine it if we are not compiling device code
-#define _CCCL_DEVICE_COMPILATION 1
-
-// Define the macro for the PTX architecture. These macros are defined by the cuda compilers during device compilation.
+// Define the macro for the PTX architecture.
 #if defined(__CUDA_ARCH__) // defined by nvcc, clang and nvrtc
 #  define _CCCL_PTX_ARCH __CUDA_ARCH__
 #elif defined(__NVCOMPILER_CUDA_ARCH__) // defined by nvhpc
 #  define _CCCL_PTX_ARCH __NVCOMPILER_CUDA_ARCH__
 #else // We are not compiling device code
-#  undef _CCCL_DEVICE_COMPILATION
 #  define _CCCL_PTX_ARCH 0
 #endif
 
 // We need to ensure that we not only compile with a cuda compiler but also compile cuda source files
-#if _CCCL_DEVICE_COMPILATION
+#if _CCCL_CUDA_COMPILATION
 #  define _CCCL_HOST        __host__
 #  define _CCCL_DEVICE      __device__
 #  define _CCCL_HOST_DEVICE __host__ __device__
