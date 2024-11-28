@@ -31,6 +31,7 @@
 #include <thrust/system/detail/generic/swap_ranges.h>
 #include <thrust/tuple.h>
 
+#include <cuda/std/utility>
 THRUST_NAMESPACE_BEGIN
 namespace system
 {
@@ -48,8 +49,9 @@ struct swap_pair_elements
   template <typename Tuple>
   _CCCL_HOST_DEVICE void operator()(Tuple t)
   {
-    // fully qualify call to swap for two cuda::std::tuples to avoid ambiguity with thrust::swap
-    ::cuda::std::swap(thrust::get<0>(t), thrust::get<1>(t));
+    // use unqualified swap to allow ADL to catch any user-defined swap
+    using ::cuda::std::swap;
+    swap(thrust::get<0>(t), thrust::get<1>(t));
   }
 }; // end swap_pair_elements
 

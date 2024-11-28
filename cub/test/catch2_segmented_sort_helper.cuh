@@ -42,6 +42,7 @@
 #include <cuda/std/limits>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #include <cstdio>
 
@@ -290,7 +291,7 @@ private:
           {
             if (current_value == d_values[probe_unchecked_idx])
             {
-              using thrust::swap;
+              using ::cuda::std::swap;
               swap(d_values[probe_unchecked_idx], d_values[unchecked_values_for_current_dup_key_begin]);
               unchecked_values_for_current_dup_key_begin++;
               break;
@@ -520,7 +521,8 @@ struct unstable_segmented_value_checker
           if (current_value == test_values[probe_unchecked_idx])
           {
             // Swap the found value out of the unchecked region to reduce the search space in future iterations:
-            using thrust::swap;
+            using ::cuda::std::swap;
+            ;
             swap(test_values[probe_unchecked_idx], test_values[unchecked_values_for_current_dup_key_begin]);
             unchecked_values_for_current_dup_key_begin++;
             break;

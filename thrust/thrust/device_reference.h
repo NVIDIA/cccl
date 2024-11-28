@@ -947,17 +947,16 @@ public:
      */
     device_reference &operator^=(const T &rhs);
 #endif // end doxygen-only members
-}; // end device_reference
 
-/*! swaps the value of one \p device_reference with another.
- *  \p x The first \p device_reference of interest.
- *  \p y The second \p device_reference of interest.
- */
-template <typename T>
-_CCCL_HOST_DEVICE void swap(device_reference<T>& x, device_reference<T>& y)
-{
-  x.swap(y);
-}
+  /*! swaps the value of one \p device_reference with another.
+   *  \p x The first \p device_reference of interest.
+   *  \p y The second \p device_reference of interest.
+   */
+  friend _CCCL_HOST_DEVICE void swap(device_reference& x, device_reference& y) noexcept(noexcept(x.swap(y)))
+  {
+    x.swap(y);
+  }
+}; // end device_reference
 
 // declare these methods for the purpose of Doxygenating them
 // they actually are defined for a base class

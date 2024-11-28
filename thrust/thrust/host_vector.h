@@ -532,17 +532,16 @@ public:
      */
     allocator_type get_allocator() const;
 #endif // end doxygen-only members
-};
 
-/*! Exchanges the values of two vectors.
- *  \p x The first \p host_vector of interest.
- *  \p y The second \p host_vector of interest.
- */
-template <typename T, typename Alloc>
-void swap(host_vector<T, Alloc>& a, host_vector<T, Alloc>& b)
-{
-  a.swap(b);
-}
+  /*! Exchanges the values of two vectors.
+   *  \p x The first \p host_vector of interest.
+   *  \p y The second \p host_vector of interest.
+   */
+  friend void swap(host_vector& a, host_vector& b) noexcept(noexcept(a.swap(b)))
+  {
+    a.swap(b);
+  }
+};
 
 /*! \}
  */
