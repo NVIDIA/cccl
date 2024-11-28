@@ -454,12 +454,12 @@ __host__ __device__ constexpr bool unused(T&&...)
 
 // Some convenience macros for checking nvcc versions
 #if _CCCL_HAS_CUDA_COMPILER
-#  if _CCCL_CUDA_COMPILER_BEFORE(11, 3)
+#  if _CCCL_CUDA_COMPILER_BELOW(11, 3)
 #    define TEST_COMPILER_CUDACC_BELOW_11_3
-#  endif // _CCCL_CUDA_COMPILER_BEFORE(11, 3)
-#  if _CCCL_CUDA_COMPILER_BEFORE(12, 3)
+#  endif // _CCCL_CUDA_COMPILER_BELOW(11, 3)
+#  if _CCCL_CUDA_COMPILER_BELOW(12, 3)
 #    define TEST_COMPILER_CUDACC_BELOW_12_3
-#  endif // _CCCL_CUDA_COMPILER_BEFORE(12, 3)
+#  endif // _CCCL_CUDA_COMPILER_BELOW(12, 3)
 #endif // _CCCL_HAS_CUDA_COMPILER
 
 #if defined(TEST_COMPILER_MSVC)

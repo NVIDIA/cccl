@@ -550,7 +550,7 @@ struct SimdMax<__half>
                  (return __hmax2(a, b);),
                  (return __halves2half2(__float2half(::cuda::maximum<>{}(__half2float(a.x), __half2float(b.x))),
                                         __float2half(::cuda::maximum<>{}(__half2float(a.y), __half2float(b.y))));));
-#    endif // !_CCCL_CUDA_COMPILER_BEFORE(12, 0) || !_CCCL_CUDA_COMPILER(NVHPC)
+#    endif // !_CCCL_CUDA_COMPILER_BELOW(12, 0) || !_CCCL_CUDA_COMPILER(NVHPC)
   }
 };
 
@@ -574,7 +574,7 @@ struct SimdMax<__nv_bfloat16>
                  (return cub::internal::halves2bfloat162(
                            __float2bfloat16(::cuda::maximum<>{}(__bfloat162float(a.x), __bfloat162float(b.x))),
                            __float2bfloat16(::cuda::maximum<>{}(__bfloat162float(a.y), __bfloat162float(b.y))));));
-#    endif // !_CCCL_CUDA_COMPILER_BEFORE(12, 0) || !_CCCL_CUDA_COMPILER(NVHPC)
+#    endif // !_CCCL_CUDA_COMPILER_BELOW(12, 0) || !_CCCL_CUDA_COMPILER(NVHPC)
   }
 };
 
@@ -604,7 +604,7 @@ struct SimdSum<__half>
                  (return __hadd2(a, b);),
                  (return __halves2half2(__float2half(__half2float(a.x) + __half2float(b.x)),
                                         __float2half(__half2float(a.y) + __half2float(b.y)));));
-#    endif // !_CCCL_CUDA_COMPILER_BEFORE(12, 0) || !_CCCL_CUDA_COMPILER(NVHPC)
+#    endif // !_CCCL_CUDA_COMPILER_BELOW(12, 0) || !_CCCL_CUDA_COMPILER(NVHPC)
   }
 };
 
@@ -628,7 +628,7 @@ struct SimdSum<__nv_bfloat16>
       (return __hadd2(a, b);),
       (return cub::internal::halves2bfloat162(__float2bfloat16(__bfloat162float(a.x) + __bfloat162float(b.x)),
                                               __float2bfloat16(__bfloat162float(a.y) + __bfloat162float(b.y)));));
-#    endif // !_CCCL_CUDA_COMPILER_BEFORE(12, 0) || !_CCCL_CUDA_COMPILER(NVHPC)
+#    endif // !_CCCL_CUDA_COMPILER_BELOW(12, 0) || !_CCCL_CUDA_COMPILER(NVHPC)
   }
 };
 
@@ -658,7 +658,7 @@ struct SimdMul<__half>
                  (return __hmul2(a, b);),
                  (return __halves2half2(__float2half(__half2float(a.x) * __half2float(b.x)),
                                         __float2half(__half2float(a.y) * __half2float(b.y)));));
-#    endif // !_CCCL_CUDA_COMPILER_BEFORE(12, 0) || !_CCCL_CUDA_COMPILER(NVHPC)
+#    endif // !_CCCL_CUDA_COMPILER_BELOW(12, 0) || !_CCCL_CUDA_COMPILER(NVHPC)
   }
 };
 

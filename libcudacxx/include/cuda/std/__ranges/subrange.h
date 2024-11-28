@@ -339,9 +339,9 @@ public:
     {
       return _CUDA_VSTD::__to_unsigned_like(__end_ - __begin_);
     }
-#  if _CCCL_CUDA_COMPILER_BEFORE(11, 3)
+#  if _CCCL_CUDA_COMPILER_BELOW(11, 3)
     _CCCL_UNREACHABLE();
-#  endif // _CCCL_CUDA_COMPILER_BEFORE(11, 3)
+#  endif // _CCCL_CUDA_COMPILER_BELOW(11, 3)
   }
 
   _CCCL_TEMPLATE(class _It = _Iter)

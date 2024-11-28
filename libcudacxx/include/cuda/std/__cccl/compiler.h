@@ -90,7 +90,7 @@
 #endif
 
 // Define the macros to check the cuda compiler version independent on the compiler name
-#define _CCCL_CUDA_COMPILER_BEFORE(_MAJOR, _MINOR)   _CCCL_CUDA_COMPILER(_CURRENT, <, _MAJOR, _MINOR)
+#define _CCCL_CUDA_COMPILER_BELOW(_MAJOR, _MINOR)    _CCCL_CUDA_COMPILER(_CURRENT, <, _MAJOR, _MINOR)
 #define _CCCL_CUDA_COMPILER_AT_LEAST(_MAJOR, _MINOR) _CCCL_CUDA_COMPILER(_CURRENT, >=, _MAJOR, _MINOR)
 
 // Convert parameter to string

@@ -107,7 +107,7 @@ _LIBCUDACXX_END_NAMESPACE_STD
 // _CUDA_VSTD macro is fully qualified.
 namespace __cccl_unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-decls)
 
-#  if _CCCL_CUDA_COMPILER_BEFORE(12, 2)
+#  if _CCCL_CUDA_COMPILER_BELOW(12, 2)
 #    define _CCCL_CONCEPT_VSTD __cccl_unqualified_cuda_std // must not be fully qualified
 #  else
 #    define _CCCL_CONCEPT_VSTD _CUDA_VSTD

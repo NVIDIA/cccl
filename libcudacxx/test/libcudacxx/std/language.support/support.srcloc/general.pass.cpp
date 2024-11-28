@@ -56,7 +56,7 @@ static_assert(device_empty.line() == 0, "");
 static_assert(device_empty.column() == 0, "");
 static_assert(device_empty.file_name()[0] == '\0', "");
 static_assert(device_empty.function_name()[0] == '\0', "");
-#endif // _CCCL_CUDA_COMPILER_BEFORE(11, 3)
+#endif // _CCCL_CUDA_COMPILER_BELOW(11, 3)
 
 ASSERT_NOEXCEPT(device_empty.line());
 ASSERT_NOEXCEPT(device_empty.column());

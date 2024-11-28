@@ -86,9 +86,9 @@
 #endif // _CCCL_STD_VER <= 2014
 
 // In nvcc prior to 11.3 global variables could not be marked constexpr
-#if _CCCL_CUDA_COMPILER_BEFORE(11, 3)
+#if _CCCL_CUDA_COMPILER_BELOW(11, 3)
 #  define _CCCL_CONSTEXPR_GLOBAL const
-#else // ^^^ _CCCL_CUDA_COMPILER_BEFORE(11, 3) ^^^ / vvv _CCCL_CUDA_COMPILER_AT_LEAST(11, 3) vvv
+#else // ^^^ _CCCL_CUDA_COMPILER_BELOW(11, 3) ^^^ / vvv _CCCL_CUDA_COMPILER_AT_LEAST(11, 3) vvv
 #  define _CCCL_CONSTEXPR_GLOBAL constexpr
 #endif // _CCCL_CUDA_COMPILER_AT_LEAST(11, 3)
 

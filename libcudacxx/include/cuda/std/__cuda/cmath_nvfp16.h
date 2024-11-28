@@ -185,12 +185,12 @@ _LIBCUDACXX_HIDE_FROM_ABI bool isnan(__half __v)
 
 _LIBCUDACXX_HIDE_FROM_ABI bool __constexpr_isinf(__half __x) noexcept
 {
-#  if _CCCL_STD_VER >= 2020 && _CCCL_CUDA_COMPILER_BEFORE(12, 3)
+#  if _CCCL_STD_VER >= 2020 && _CCCL_CUDA_COMPILER_BELOW(12, 3)
   // this is a workaround for nvbug 4362808
   return !::__hisnan(__x) && ::__hisnan(__x - __x);
 #  else // ^^^ C++20 && below 12.3 ^^^ / vvv C++17 or 12.3+ vvv
   return ::__hisinf(__x) != 0;
-#  endif // _CCCL_STD_VER <= 2017 || _CCCL_CUDA_COMPILER_BEFORE(12, 3)
+#  endif // _CCCL_STD_VER <= 2017 || _CCCL_CUDA_COMPILER_BELOW(12, 3)
 }
 
 _LIBCUDACXX_HIDE_FROM_ABI bool isinf(__half __v)

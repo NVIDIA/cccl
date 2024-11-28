@@ -13,12 +13,12 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_CUDA_COMPILER_BEFORE(11, 5)
+#if _CCCL_CUDA_COMPILER_BELOW(11, 5)
 _CCCL_NV_DIAG_SUPPRESS(186)
 #  include <cuda_pipeline_primitives.h>
 // we cannot re-enable the warning here, because it is triggered outside the translation unit
 // see also: https://godbolt.org/z/1x8b4hn3G
-#endif // _CCCL_CUDA_COMPILER_BEFORE(11, 5)
+#endif // _CCCL_CUDA_COMPILER_BELOW(11, 5)
 
 #include <cub/detail/uninitialized_copy.cuh>
 #include <cub/util_arch.cuh>

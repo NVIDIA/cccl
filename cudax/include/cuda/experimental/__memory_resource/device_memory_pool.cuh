@@ -152,7 +152,7 @@ private:
           ::cuda::__throw_cuda_error(__status, "Failed to call cudaDeviceGetAttribute");
       }
     }
-#    endif // _CCCL_CUDA_COMPILER_BEFORE(11, 3)
+#    endif // _CCCL_CUDA_COMPILER_BELOW(11, 3)
     if ((static_cast<int>(__handle_type) & __supported_handles) != static_cast<int>(__handle_type))
     {
       ::cuda::__throw_cuda_error(
