@@ -385,7 +385,7 @@ public:
       int id   = sec->get_id();
 
       // Save the section in the map
-      section::map()[id] = sec;
+      map()[id] = sec;
 
       // Push the id in the current stack
       current().push(id);
