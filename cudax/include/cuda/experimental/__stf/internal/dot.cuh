@@ -36,6 +36,7 @@
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 #include <cuda/experimental/__stf/utility/threads.cuh>
+#include <cuda/experimental/__stf/utility/unique_id.cuh>
 
 #include <algorithm>
 #include <fstream>
@@ -45,6 +46,7 @@
 #include <queue>
 #include <sstream>
 #include <unordered_set>
+#include <stack>
 
 namespace cuda::experimental::stf::reserved
 {
@@ -62,6 +64,47 @@ struct per_task_info
   ::std::string color;
   ::std::string label;
   ::std::optional<float> timing;
+};
+
+
+/**
+ * @brief A named section in the DOT output to potentially collapse multiple nodes in the same section
+ */
+class dot_section {
+public:
+    using unique_id_t = unique_id<dot_section>;
+
+    // Constructor to initialize symbol and children
+    dot_section(::std::string sym)
+        : symbol(mv(sym)) {
+    }
+
+    // Create a new child
+    auto create_child(::std::string sym, ::std::shared_ptr<dot_section> this_shared) {
+        _CCCL_ASSERT(this_shared.get() == this, "pointer mismatch");
+        auto c = ::std::make_shared<dot_section>(mv(sym));
+        c->parent = this_shared;
+        children.push_back(c);
+        return c;
+    }
+
+    // Use a weak_ptr to avoid circular dependencies
+    ::std::weak_ptr<dot_section> parent;
+
+    int get_id() const {
+        return int(id);
+    }
+
+    const ::std::string get_symbol() const {
+        return symbol;
+    }
+
+private:
+    ::std::string symbol;
+    ::std::vector<::std::shared_ptr<dot_section>> children;
+
+    // An identifier for that section
+    unique_id_t id;
 };
 
 class per_ctx_dot
@@ -545,7 +588,41 @@ public:
 
   ::std::vector<::std::shared_ptr<per_ctx_dot>> per_ctx;
 
+  class section_guard {
+      public:
+          section_guard(::std::string symbol) {
+              dot::instance().push_section(mv(symbol));
+          }
+
+          ~section_guard() {
+              dot::instance().pop_section();
+          }
+  };
+
+  void push_section(::std::string symbol) {
+      fprintf(stderr, "PUSHING SECTION %s\n", symbol.c_str());
+
+      // We first create a section object, with its unique id
+      auto sec = ::std::make_shared<dot_section>(mv(symbol));
+      int id = sec->get_id();
+
+      // Save the section in the map
+      dot_section_map[id] = sec;
+
+      // Push the id in the current stack
+      current_dot_section.push(id);
+  }
+
+  void pop_section() {
+      fprintf(stderr, "POP SECTION\n");
+      current_dot_section.pop();
+  }
+
 private:
+  ::std::unordered_map<int, ::std::shared_ptr<dot_section>> dot_section_map;
+
+  static thread_local ::std::stack<int> current_dot_section;
+
   // Function to get a color based on task duration relative to the average
   ::std::string get_color_for_duration(double duration, double avg_duration)
   {
@@ -781,5 +858,11 @@ private:
 
   ::std::string dot_filename;
 };
+
+// static members need this extra declaration outside of the class
+//static ::std::shared_ptr<dot_section> root_section = ::std::make_shared<dot_section>("root");
+
+///thread_local ::std::shared_ptr<dot_section> dot::current_dot_section = nullptr;
+inline thread_local ::std::stack<int> dot::current_dot_section;
 
 } // namespace cuda::experimental::stf::reserved
