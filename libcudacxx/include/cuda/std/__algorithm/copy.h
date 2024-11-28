@@ -54,7 +54,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool __dispatch_memmove(_Up* __r
   return false;
 #endif
 
-  if (__libcpp_is_constant_evaluated())
+  if (_CUDA_VSTD::is_constant_evaluated())
   {
     return false;
   }
@@ -114,7 +114,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_Tp*, _Up*> __copy(_Tp* __f
     {
       return {__last, __result + __n};
     }
-    if ((!__libcpp_is_constant_evaluated() && __first < __result)
+    if ((!_CUDA_VSTD::is_constant_evaluated() && __first < __result)
         || __constexpr_tail_overlap(__first, __result, __last))
     {
       for (ptrdiff_t __i = __n; __i > 0; --__i)

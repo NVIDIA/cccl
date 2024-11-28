@@ -114,7 +114,7 @@ construct_at(_Tp* __location, _Args&&... __args)
 {
   _CCCL_ASSERT(__location != nullptr, "null pointer given to construct_at");
   // Need to go through `std::construct_at` as that is the explicitly blessed function
-  if (__libcpp_is_constant_evaluated())
+  if (_CUDA_VSTD::is_constant_evaluated())
   {
     return ::std::construct_at(__location, _CUDA_VSTD::forward<_Args>(__args)...);
   }
@@ -131,7 +131,7 @@ construct_at(_Tp* __location, _Args&&... __args)
 {
   _CCCL_ASSERT(__location != nullptr, "null pointer given to construct_at");
   // Need to go through `std::construct_at` as that is the explicitly blessed function
-  if (__libcpp_is_constant_evaluated())
+  if (_CUDA_VSTD::is_constant_evaluated())
   {
     return ::std::construct_at(__location, _CUDA_VSTD::forward<_Args>(__args)...);
   }
@@ -150,7 +150,7 @@ __construct_at(_Tp* __location, _Args&&... __args)
   _CCCL_ASSERT(__location != nullptr, "null pointer given to construct_at");
 #if _CCCL_STD_VER >= 2020
   // Need to go through `std::construct_at` as that is the explicitly blessed function
-  if (__libcpp_is_constant_evaluated())
+  if (_CUDA_VSTD::is_constant_evaluated())
   {
     return ::std::construct_at(__location, _CUDA_VSTD::forward<_Args>(__args)...);
   }
@@ -167,7 +167,7 @@ __construct_at(_Tp* __location, _Args&&... __args)
   _CCCL_ASSERT(__location != nullptr, "null pointer given to construct_at");
 #if _CCCL_STD_VER >= 2020
   // Need to go through `std::construct_at` as that is the explicitly blessed function
-  if (__libcpp_is_constant_evaluated())
+  if (_CUDA_VSTD::is_constant_evaluated())
   {
     return ::std::construct_at(__location, _CUDA_VSTD::forward<_Args>(__args)...);
   }

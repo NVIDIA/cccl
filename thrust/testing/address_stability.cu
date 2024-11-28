@@ -83,3 +83,40 @@ void TestAddressStabilityUserDefinedFunctionObject()
   static_assert(proclaims_copyable_arguments<decltype(proclaim_copyable_arguments(my_plus<const int&&>{}))>::value, "");
 }
 DECLARE_UNITTEST(TestAddressStabilityUserDefinedFunctionObject);
+
+void TestAddressStabilityLambda()
+{
+  using ::cuda::proclaim_copyable_arguments;
+  using ::cuda::proclaims_copyable_arguments;
+
+  {
+    auto l = [](const int& i) {
+      return i + 2;
+    };
+    static_assert(!proclaims_copyable_arguments<decltype(l)>::value, "");
+    auto pr_l = proclaim_copyable_arguments(l);
+    ASSERT_EQUAL(pr_l(3), 5);
+    static_assert(proclaims_copyable_arguments<decltype(pr_l)>::value, "");
+  }
+
+  {
+    auto l = [] _CCCL_DEVICE(const int& i) {
+      return i + 2;
+    };
+    static_assert(!proclaims_copyable_arguments<decltype(l)>::value, "");
+    auto pr_device_l = proclaim_copyable_arguments(l);
+    (void) &pr_device_l;
+    static_assert(proclaims_copyable_arguments<decltype(pr_device_l)>::value, "");
+  }
+
+  {
+    auto l = [] _CCCL_HOST_DEVICE(const int& i) {
+      return i + 2;
+    };
+    static_assert(!proclaims_copyable_arguments<decltype(l)>::value, "");
+    auto pr_l = proclaim_copyable_arguments(l);
+    ASSERT_EQUAL(pr_l(3), 5);
+    static_assert(proclaims_copyable_arguments<decltype(pr_l)>::value, "");
+  }
+}
+DECLARE_UNITTEST(TestAddressStabilityLambda);

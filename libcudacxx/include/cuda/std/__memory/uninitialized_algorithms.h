@@ -349,7 +349,7 @@ __allocator_destroy_multidimensional(_Alloc& __alloc, _BidirIter __first, _Bidir
 
   _CCCL_IF_CONSTEXPR (_CCCL_TRAIT(is_array, _ValueType))
   {
-    static_assert(!__libcpp_is_unbounded_array<_ValueType>::value,
+    static_assert(!__cccl_is_unbounded_array<_ValueType>::value,
                   "arrays of unbounded arrays don't exist, but if they did we would mess up here");
 
     using _Element = remove_extent_t<_ValueType>;
@@ -576,7 +576,7 @@ template <
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _Out*
 __uninitialized_allocator_copy_impl(_Alloc&, _In* __first1, _In* __last1, _Out* __first2)
 {
-  if (__libcpp_is_constant_evaluated())
+  if (_CUDA_VSTD::is_constant_evaluated())
   {
     while (__first1 != __last1)
     {
@@ -650,7 +650,7 @@ template <class _Alloc,
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _Iter2
 __uninitialized_allocator_move_if_noexcept(_Alloc&, _Iter1 __first1, _Iter1 __last1, _Iter2 __first2)
 {
-  if (__libcpp_is_constant_evaluated())
+  if (_CUDA_VSTD::is_constant_evaluated())
   {
     while (__first1 != __last1)
     {
