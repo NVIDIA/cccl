@@ -633,8 +633,6 @@ public:
   ::std::vector<::std::shared_ptr<per_ctx_dot>> per_ctx;
 
 private:
-  static thread_local ::std::stack<int> current_section;
-
   // Function to get a color based on task duration relative to the average
   ::std::string get_color_for_duration(double duration, double avg_duration)
   {
