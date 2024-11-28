@@ -392,11 +392,11 @@
 
 // Below 11.7 nvcc treats the builtin as a host only function
 // clang-cuda fails with fatal error: error in backend: Undefined external symbol "logf"
-#if _CCCL_CUDA_COMPILER_BELOW(11, 7) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_CUDA_COMPILER_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
 #  undef _CCCL_BUILTIN_LOGF
 #  undef _CCCL_BUILTIN_LOG
 #  undef _CCCL_BUILTIN_LOGL
-#endif // _CCCL_CUDA_COMPILER_BELOW(11, 7) || _CCCL_CUDA_COMPILER_CLANG
+#endif // _CCCL_CUDA_COMPILER_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
 
 #if _CCCL_CHECK_BUILTIN(builtin_log10) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_LOG10F(...) __builtin_log10f(__VA_ARGS__)
@@ -406,7 +406,7 @@
 
 // Below 11.7 nvcc treats the builtin as a host only function
 // clang-cuda fails with fatal error: error in backend: Undefined external symbol "log10f"
-#if _CCCL_CUDA_COMPILER_BELOW(11, 7) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_CUDA_COMPILER_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
 #  undef _CCCL_BUILTIN_LOG10F
 #  undef _CCCL_BUILTIN_LOG10
 #  undef _CCCL_BUILTIN_LOG10L
@@ -420,11 +420,11 @@
 
 // Below 11.7 nvcc treats the builtin as a host only function
 // clang-cuda fails with fatal error: error in backend: Undefined external symbol "ilogb"
-#if _CCCL_CUDA_COMPILER_BELOW(11, 7) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_CUDA_COMPILER_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
 #  undef _CCCL_BUILTIN_ILOGBF
 #  undef _CCCL_BUILTIN_ILOGB
 #  undef _CCCL_BUILTIN_ILOGBL
-#endif // _CCCL_CUDA_COMPILER_BELOW(11, 7) || _CCCL_CUDA_COMPILER_CLANG
+#endif // _CCCL_CUDA_COMPILER_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
 
 #if _CCCL_CHECK_BUILTIN(builtin_log1p) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_LOG1PF(...) __builtin_log1pf(__VA_ARGS__)
@@ -434,11 +434,11 @@
 
 // Below 11.7 nvcc treats the builtin as a host only function
 // clang-cuda fails with fatal error: error in backend: Undefined external symbol "log1p"
-#if _CCCL_CUDA_COMPILER_BELOW(11, 7) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_CUDA_COMPILER_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
 #  undef _CCCL_BUILTIN_LOG1PF
 #  undef _CCCL_BUILTIN_LOG1P
 #  undef _CCCL_BUILTIN_LOG1PL
-#endif // _CCCL_CUDA_COMPILER_BELOW(11, 7) || _CCCL_CUDA_COMPILER_CLANG
+#endif // _CCCL_CUDA_COMPILER_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
 
 #if _CCCL_CHECK_BUILTIN(builtin_log2) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_LOG2F(...) __builtin_log2f(__VA_ARGS__)
@@ -448,7 +448,7 @@
 
 // Below 11.7 nvcc treats the builtin as a host only function
 // clang-cuda fails with fatal error: error in backend: Undefined external symbol "log2f"
-#if _CCCL_CUDA_COMPILER_BELOW(11, 7) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_CUDA_COMPILER_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
 #  undef _CCCL_BUILTIN_LOG2F
 #  undef _CCCL_BUILTIN_LOG2
 #  undef _CCCL_BUILTIN_LOG2L
@@ -462,11 +462,11 @@
 
 // Below 11.7 nvcc treats the builtin as a host only function
 // clang-cuda fails with fatal error: error in backend: Undefined external symbol "logb"
-#if _CCCL_CUDA_COMPILER_BELOW(11, 7) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_CUDA_COMPILER_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
 #  undef _CCCL_BUILTIN_LOGBF
 #  undef _CCCL_BUILTIN_LOGB
 #  undef _CCCL_BUILTIN_LOGBL
-#endif // _CCCL_CUDA_COMPILER_BELOW(11, 7) || _CCCL_CUDA_COMPILER_CLANG
+#endif // _CCCL_CUDA_COMPILER_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
 
 #if _CCCL_CHECK_BUILTIN(__builtin_operator_new) && _CCCL_CHECK_BUILTIN(__builtin_operator_delete) \
   && _CCCL_CUDA_COMPILER(CLANG)
@@ -483,7 +483,7 @@
 #  undef _CCCL_BUILTIN_SIGNBIT
 #endif // _CCCL_CUDA_COMPILER_BELOW(11, 7)
 
-#if _CCCL_HAS_BUILTIN(__decay) && defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_HAS_BUILTIN(__decay) && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_DECAY(...) __decay(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__decay) && clang-cuda
 
