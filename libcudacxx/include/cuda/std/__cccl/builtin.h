@@ -242,7 +242,7 @@
 #  undef _CCCL_BUILTIN_ISNAN
 #endif // _CCCL_CUDACC_BELOW(11, 7)
 
-#if (_CCCL_CHECK_BUILTIN(builtin_launder) || (_CCCL_COMPILER(GCC) && _CCCL_GCC_VERSION >= 70000))
+#if _CCCL_CHECK_BUILTIN(builtin_launder) || _CCCL_COMPILER(GCC, >=, 7)
 #  define _CCCL_BUILTIN_LAUNDER(...) __builtin_launder(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_launder) && gcc >= 7
 
