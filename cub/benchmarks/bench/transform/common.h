@@ -7,7 +7,7 @@
 #include <cub/device/dispatch/dispatch_transform.cuh>
 #if !TUNE_BASE && TUNE_ALGORITHM == 1
 #  if _CCCL_PP_COUNT(__CUDA_ARCH_LIST__) != 1
-#    error "This benchmark does not support being compiled for multiple architectures"
+#    error "When tuning, this benchmark does not support being compiled for multiple architectures"
 #  endif
 #  if (__CUDA_ARCH_LIST__) < 900
 #    error "Cannot compile algorithm 4 (ublkcp) below sm90"
