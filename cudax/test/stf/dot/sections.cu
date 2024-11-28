@@ -38,10 +38,11 @@ int main()
   ctx.task(lA.rw())->*[](cudaStream_t, auto) {};
   ctx.dot_pop_section();
   ctx.task(lA.rw())->*[](cudaStream_t, auto) {};
-  for (size_t i = 0; i < 10; i++) {
-      auto guard = ctx.dot_section("loop");
-      ctx.task(lA.rw())->*[](cudaStream_t, auto) {};
-      ctx.task(lA.rw())->*[](cudaStream_t, auto) {};
+  for (size_t i = 0; i < 10; i++)
+  {
+    auto guard = ctx.dot_section("loop");
+    ctx.task(lA.rw())->*[](cudaStream_t, auto) {};
+    ctx.task(lA.rw())->*[](cudaStream_t, auto) {};
   }
   ctx.dot_pop_section();
   ctx.finalize();

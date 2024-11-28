@@ -879,16 +879,19 @@ public:
     reserved::per_ctx_dot::set_parent_ctx(parent_ctx.get_dot(), get_dot());
   }
 
-  void dot_push_section(::std::string symbol) const {
+  void dot_push_section(::std::string symbol) const
+  {
     reserved::dot::dot_section::push_section(mv(symbol));
   }
 
-  void dot_pop_section() const {
+  void dot_pop_section() const
+  {
     reserved::dot::dot_section::pop_section();
   }
 
-  auto dot_section(::std::string symbol) const {
-      return reserved::dot::dot_section::section_guard(mv(symbol));
+  auto dot_section(::std::string symbol) const
+  {
+    return reserved::dot::dot_section::section_guard(mv(symbol));
   }
 
   auto get_phase() const

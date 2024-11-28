@@ -612,17 +612,19 @@ public:
       payload);
   }
 
-  void dot_push_section(::std::string symbol) const {
-      _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+  void dot_push_section(::std::string symbol) const
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     ::std::visit(
-      [symbol=mv(symbol)](auto& self) {
+      [symbol = mv(symbol)](auto& self) {
         self.dot_push_section(symbol);
       },
       payload);
   }
 
-  void dot_pop_section() const {
-      _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+  void dot_pop_section() const
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     ::std::visit(
       [](auto& self) {
         self.dot_pop_section();
@@ -630,10 +632,11 @@ public:
       payload);
   }
 
-  auto dot_section(::std::string symbol) const {
-      _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
-      return ::std::visit(
-      [symbol=mv(symbol)](auto& self) {
+  auto dot_section(::std::string symbol) const
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return ::std::visit(
+      [symbol = mv(symbol)](auto& self) {
         return self.dot_section(symbol);
       },
       payload);
