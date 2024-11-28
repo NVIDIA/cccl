@@ -11,7 +11,7 @@
 #ifndef __COMMON_TESTING_H__
 #define __COMMON_TESTING_H__
 
-#include <cuda/experimental/hierarchy.cuh>
+#include <cuda/experimental/launch.cuh>
 
 #include <exception> // IWYU pragma: keep
 #include <iostream>

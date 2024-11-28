@@ -860,44 +860,6 @@ constexpr auto make_hierarchy(L1 l1, Levels... ls) noexcept
   return detail::__make_hierarchy_fragment<thread_level>()(detail::__as_level(l1), detail::__as_level(ls)...);
 }
 
-// We can consider removing the operator&, but its convenient for in-line construction
-// TODO accept forwarding references
-template <typename LUnit, typename LNew, typename... Levels>
-_CUDAX_API constexpr auto operator&(const hierarchy_dimensions_fragment<LUnit, Levels...>& ls, LNew lnew) noexcept
-{
-  auto new_level     = detail::__as_level(lnew);
-  using NewLevel     = decltype(new_level);
-  using top_level    = __level_type_of<::cuda::std::__type_index_c<0, Levels...>>;
-  using bottom_level = __level_type_of<::cuda::std::__type_index_c<sizeof...(Levels) - 1, Levels...>>;
-
-  if constexpr (detail::can_rhs_stack_on_lhs<top_level, __level_type_of<NewLevel>>)
-  {
-    return hierarchy_dimensions_fragment<LUnit, NewLevel, Levels...>(
-      ::cuda::std::tuple_cat(::cuda::std::make_tuple(new_level), ls.levels));
-  }
-  else
-  {
-    static_assert(detail::can_rhs_stack_on_lhs<__level_type_of<NewLevel>, bottom_level>,
-                  "Not supported order of levels in hierarchy");
-    using NewUnit = detail::__default_unit_below<__level_type_of<NewLevel>>;
-    return hierarchy_dimensions_fragment<NewUnit, Levels..., NewLevel>(
-      ::cuda::std::tuple_cat(ls.levels, ::cuda::std::make_tuple(new_level)));
-  }
-}
-
-template <typename L1, typename LUnit, typename... Levels>
-_CUDAX_API constexpr auto operator&(L1 l1, const hierarchy_dimensions_fragment<LUnit, Levels...>& ls) noexcept
-{
-  return ls & l1;
-}
-
-template <typename L1, typename Dims1, typename L2, typename Dims2>
-_CUDAX_API constexpr auto
-operator&(const level_dimensions<L1, Dims1>& l1, const level_dimensions<L2, Dims2>& l2) noexcept
-{
-  return hierarchy_dimensions<level_dimensions<L1, Dims1>>(l1) & l2;
-}
-
 /**
  * @brief Add a level to a hierarchy
  *
@@ -921,35 +883,26 @@ operator&(const level_dimensions<L1, Dims1>& l1, const level_dimensions<L2, Dims
  * @par
  */
 template <typename NewLevel, typename Unit, typename... Levels>
-constexpr auto hierarchy_add_level(const hierarchy_dimensions_fragment<Unit, Levels...>& hierarchy, NewLevel level)
+constexpr auto hierarchy_add_level(const hierarchy_dimensions_fragment<Unit, Levels...>& hierarchy, NewLevel lnew)
 {
-  return hierarchy & level;
-}
+  auto new_level     = detail::__as_level(lnew);
+  using AddedLevel   = decltype(new_level);
+  using top_level    = __level_type_of<::cuda::std::__type_index_c<0, Levels...>>;
+  using bottom_level = __level_type_of<::cuda::std::__type_index_c<sizeof...(Levels) - 1, Levels...>>;
 
-/**
- * @brief A shorthand for creating a hierarchy of CUDA threads by evenly
- * distributing elements among blocks and threads.
- *
- * @par Snippet
- * @code
- * #include <cudax/hierarchy_dimensions.cuh>
- * using namespace cuda::experimental;
- *
- * constexpr int threadsPerBlock = 256;
- * auto dims = distribute<threadsPerBlock>(numElements);
- *
- * // Equivalent to:
- * constexpr int threadsPerBlock = 256;
- * int blocksPerGrid = (numElements + threadsPerBlock - 1) / threadsPerBlock;
- * auto dims = make_hierarchy(grid_dims(blocksPerGrid), block_dims<threadsPerBlock>());
- * @endcode
- */
-template <int _ThreadsPerBlock>
-constexpr auto distribute(int numElements) noexcept
-{
-  int blocksPerGrid = (numElements + _ThreadsPerBlock - 1) / _ThreadsPerBlock;
-  return ::cuda::experimental::make_hierarchy(
-    ::cuda::experimental::grid_dims(blocksPerGrid), ::cuda::experimental::block_dims<_ThreadsPerBlock>());
+  if constexpr (detail::can_rhs_stack_on_lhs<top_level, __level_type_of<AddedLevel>>)
+  {
+    return hierarchy_dimensions_fragment<Unit, AddedLevel, Levels...>(
+      ::cuda::std::tuple_cat(::cuda::std::make_tuple(new_level), hierarchy.levels));
+  }
+  else
+  {
+    static_assert(detail::can_rhs_stack_on_lhs<__level_type_of<AddedLevel>, bottom_level>,
+                  "Not supported order of levels in hierarchy");
+    using NewUnit = detail::__default_unit_below<__level_type_of<AddedLevel>>;
+    return hierarchy_dimensions_fragment<NewUnit, Levels..., AddedLevel>(
+      ::cuda::std::tuple_cat(hierarchy.levels, ::cuda::std::make_tuple(new_level)));
+  }
 }
 
 } // namespace cuda::experimental
