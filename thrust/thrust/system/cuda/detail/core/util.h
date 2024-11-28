@@ -58,28 +58,14 @@ namespace cuda_cub
 namespace core
 {
 
-#ifdef _NVHPC_CUDA
-#  if (__NVCOMPILER_CUDA_ARCH__ >= 600)
-#    define THRUST_TUNING_ARCH sm60
-#  elif (__NVCOMPILER_CUDA_ARCH__ >= 520)
-#    define THRUST_TUNING_ARCH sm52
-#  elif (__NVCOMPILER_CUDA_ARCH__ >= 350)
-#    define THRUST_TUNING_ARCH sm35
-#  else
-#    define THRUST_TUNING_ARCH sm30
-#  endif
+#if (_CCCL_PTX_ARCH >= 600)
+#  define THRUST_TUNING_ARCH sm60
+#elif (_CCCL_PTX_ARCH >= 520)
+#  define THRUST_TUNING_ARCH sm52
+#elif (_CCCL_PTX_ARCH >= 350)
+#  define THRUST_TUNING_ARCH sm35
 #else
-#  if (__CUDA_ARCH__ >= 600)
-#    define THRUST_TUNING_ARCH sm60
-#  elif (__CUDA_ARCH__ >= 520)
-#    define THRUST_TUNING_ARCH sm52
-#  elif (__CUDA_ARCH__ >= 350)
-#    define THRUST_TUNING_ARCH sm35
-#  elif (__CUDA_ARCH__ >= 300)
-#    define THRUST_TUNING_ARCH sm30
-#  elif !defined(__CUDA_ARCH__)
-#    define THRUST_TUNING_ARCH sm30
-#  endif
+#  define THRUST_TUNING_ARCH sm30
 #endif
 
 /// Typelist - a container of types

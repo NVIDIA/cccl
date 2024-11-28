@@ -84,10 +84,12 @@
 #  define _CCCL_CUDA_COMPILER__CURRENT _CCCL_CUDA_COMPILER_NVRTC
 #endif
 
+// If we have a cuda compiler, set the flag
 #if _CCCL_CUDA_COMPILER(_CURRENT)
 #  define _CCCL_HAS_CUDA_COMPILER 1
 #endif
 
+// Define the macros to check the cuda compiler version independent on the compiler name
 #define _CCCL_CUDA_COMPILER_BEFORE(_MAJOR, _MINOR)   _CCCL_CUDA_COMPILER(_CURRENT, <, _MAJOR, _MINOR)
 #define _CCCL_CUDA_COMPILER_AT_LEAST(_MAJOR, _MINOR) _CCCL_CUDA_COMPILER(_CURRENT, >=, _MAJOR, _MINOR)
 

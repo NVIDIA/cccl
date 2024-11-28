@@ -302,16 +302,6 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersionUncached(int& ptx_version)
   // usual syntax of (void)empty_kernel; was not sufficient on MSVC2015.
   (void) reinterpret_cast<void*>(empty_kernel);
 
-  // Define a temporary macro that expands to the current target ptx version
-  // in device code.
-  // <nv/target> may provide an abstraction for this eventually. For now,
-  // we have to keep this usage of __CUDA_ARCH__.
-#if defined(_NVHPC_CUDA)
-#  define CUB_TEMP_GET_PTX __builtin_current_device_sm()
-#else
-#  define CUB_TEMP_GET_PTX __CUDA_ARCH__
-#endif
-
   cudaError_t result = cudaSuccess;
   NV_IF_TARGET(
     NV_IS_HOST,
@@ -328,9 +318,7 @@ CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersionUncached(int& ptx_version)
       // https://twitter.com/blelbach/status/1222391615576100864
       (void) reinterpret_cast<EmptyKernelPtr>(empty_kernel);
 
-      ptx_version = CUB_TEMP_GET_PTX;));
-
-#undef CUB_TEMP_GET_PTX
+      ptx_version = _CCCL_PTX_ARCH;));
 
   return result;
 }
@@ -367,7 +355,7 @@ struct SmVersionCacheTag
 _CCCL_HOST inline cudaError_t PtxVersion(int& ptx_version, int device)
 {
   // Note: the ChainedPolicy pruning (i.e., invoke_static) requites that there's an exact match between one of the
-  // architectures in __CUDA_ARCH__ and the runtime queried ptx version.
+  // architectures in _CCCL_PTX_ARCH and the runtime queried ptx version.
   auto const payload = GetPerDeviceAttributeCache<PtxVersionCacheTag>()(
     // If this call fails, then we get the error code back in the payload, which we check with `CubDebug` below.
     [=](int& pv) {
@@ -392,7 +380,7 @@ _CCCL_HOST inline cudaError_t PtxVersion(int& ptx_version, int device)
 CUB_RUNTIME_FUNCTION inline cudaError_t PtxVersion(int& ptx_version)
 {
   // Note: the ChainedPolicy pruning (i.e., invoke_static) requites that there's an exact match between one of the
-  // architectures in __CUDA_ARCH__ and the runtime queried ptx version.
+  // architectures in _CCCL_PTX_ARCH and the runtime queried ptx version.
   cudaError_t result = cudaErrorUnknown;
   NV_IF_TARGET(NV_IS_HOST,
                (result = PtxVersion(ptx_version, CurrentDevice());),

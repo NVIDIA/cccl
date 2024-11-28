@@ -22,8 +22,21 @@
 #  pragma system_header
 #endif // no system header
 
+// Set device compilation flag to 1 and undefine it if we are not compiling device code
+#define _CCCL_DEVICE_COMPILATION 1
+
+// Define the macro for the PTX architecture. These macros are defined by the cuda compilers during device compilation.
+#if defined(__CUDA_ARCH__) // defined by nvcc, clang and nvrtc
+#  define _CCCL_PTX_ARCH __CUDA_ARCH__
+#elif defined(__NVCOMPILER_CUDA_ARCH__) // defined by nvhpc
+#  define _CCCL_PTX_ARCH __NVCOMPILER_CUDA_ARCH__
+#else // We are not compiling device code
+#  undef _CCCL_DEVICE_COMPILATION
+#  define _CCCL_PTX_ARCH 0
+#endif
+
 // We need to ensure that we not only compile with a cuda compiler but also compile cuda source files
-#if _CCCL_HAS_CUDA_COMPILER && (defined(__CUDACC__) || defined(_NVHPC_CUDA))
+#if _CCCL_DEVICE_COMPILATION
 #  define _CCCL_HOST        __host__
 #  define _CCCL_DEVICE      __device__
 #  define _CCCL_HOST_DEVICE __host__ __device__
@@ -33,20 +46,12 @@
 #  define _CCCL_HOST_DEVICE
 #endif // !_CCCL_CUDA_COMPILATION
 
-/// In device code, _CCCL_PTX_ARCH expands to the PTX version for which we are compiling.
-/// In host code, _CCCL_PTX_ARCH's value is implementation defined.
-#if !defined(__CUDA_ARCH__)
-#  define _CCCL_PTX_ARCH 0
-#else
-#  define _CCCL_PTX_ARCH __CUDA_ARCH__
-#endif
-
-// Compile with NVCC compiler and only device code, Volta+  GPUs
-#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_PTX_ARCH >= 700 && _CCCL_CUDA_COMPILER_AT_LEAST(11, 7)
+// Compile with NVCC 11.7+ compiler and only device code, Volta+ GPUs
+#if _CCCL_CUDA_COMPILER(NVCC, >=, 11, 7) && _CCCL_PTX_ARCH >= 700
 #  define _CCCL_GRID_CONSTANT __grid_constant__
-#else // ^^^ _CCCL_CUDA_COMPILER(NVCC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC) vvv
+#else
 #  define _CCCL_GRID_CONSTANT
-#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_PTX_ARCH >= 700 && _CCCL_CUDA_COMPILER_AT_LEAST(11, 7)
+#endif
 
 #if !defined(_CCCL_EXEC_CHECK_DISABLE)
 #  if _CCCL_CUDA_COMPILER(NVCC)

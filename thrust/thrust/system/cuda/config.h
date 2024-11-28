@@ -92,9 +92,9 @@
 // them available again. These should be considered deprecated and will be
 // fully removed in a future version.
 #ifdef THRUST_PROVIDE_LEGACY_ARCH_MACROS
-#  ifdef __CUDA_ARCH__
+#  if _CCCL_DEVICE_COMPILATION
 #    define THRUST_DEVICE_CODE
-#  endif // __CUDA_ARCH__
+#  endif // _CCCL_DEVICE_COMPILATION
 #endif // THRUST_PROVIDE_LEGACY_ARCH_MACROS
 
 #ifdef THRUST_AGENT_ENTRY_NOINLINE
