@@ -33,24 +33,21 @@
 
 namespace cuda::experimental
 {
-
+// clang-format off
 template <class _Tp>
-_CCCL_CONCEPT __convertible_to_stream_ref = _CUDA_VSTD::convertible_to<_Tp, ::cuda::stream_ref>;
-
-template <class _Tp>
-_CCCL_CONCEPT_FRAGMENT(
-  __has_member_get_stream_,
-  requires(const _Tp& __t)(requires(!__convertible_to_stream_ref<_Tp>),
-                           requires(_CUDA_VSTD::same_as<decltype(__t.get_stream()), ::cuda::stream_ref>)));
-
-template <class _Tp>
-_CCCL_CONCEPT __has_member_get_stream = _CCCL_FRAGMENT(__has_member_get_stream_, _Tp);
+_CCCL_CONCEPT __has_member_get_stream =
+  _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __t)
+  (
+    requires(!_CUDA_VSTD::convertible_to<_Tp, ::cuda::stream_ref>),
+    _Same_as(::cuda::stream_ref) __t.get_stream()
+  );
+// clang-format on
 
 //! @brief `get_stream` is a customization point object that queries a type `T` for an associated stream
 struct get_stream_t
 {
   _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(__convertible_to_stream_ref<_Tp>)
+  _CCCL_REQUIRES((_CUDA_VSTD::convertible_to<_Tp, ::cuda::stream_ref>) )
   _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr ::cuda::stream_ref operator()(const _Tp& __t) const
     noexcept(noexcept(static_cast<::cuda::stream_ref>(__t)))
   {
