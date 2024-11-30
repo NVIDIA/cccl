@@ -41,7 +41,11 @@
 //! type alias named \c type.
 
 #if !defined(_CCCL_META_UNROLL_LIMIT)
-#  define _CCCL_META_UNROLL_LIMIT 16
+#  if defined(_CCCL_CUDA_COMPILER_NVCC) || _CCCL_COMPILER(NVHPC)
+#    define _CCCL_META_UNROLL_LIMIT 10
+#  else
+#    define _CCCL_META_UNROLL_LIMIT 16
+#  endif
 #endif
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
