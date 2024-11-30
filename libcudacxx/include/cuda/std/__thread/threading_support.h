@@ -52,13 +52,13 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #    define __LIBCUDACXX_ASM_THREAD_YIELD (;)
 #  endif // !__x86_64__
 
-_LIBCUDACXX_HIDE_FROM_ABI void __libcpp_thread_yield_processor()
+_LIBCUDACXX_HIDE_FROM_ABI void __cccl_thread_yield_processor()
 {
   NV_IF_TARGET(NV_IS_HOST, __LIBCUDACXX_ASM_THREAD_YIELD)
 }
 
 template <class _Fn>
-_LIBCUDACXX_HIDE_FROM_ABI bool __libcpp_thread_poll_with_backoff(
+_LIBCUDACXX_HIDE_FROM_ABI bool __cccl_thread_poll_with_backoff(
   _Fn&& __f, _CUDA_VSTD::chrono::nanoseconds __max = _CUDA_VSTD::chrono::nanoseconds::zero())
 {
   _CUDA_VSTD::chrono::high_resolution_clock::time_point const __start =
@@ -73,7 +73,7 @@ _LIBCUDACXX_HIDE_FROM_ABI bool __libcpp_thread_poll_with_backoff(
     {
       if (__count > (_LIBCUDACXX_POLLING_COUNT >> 1))
       {
-        _CUDA_VSTD::__libcpp_thread_yield_processor();
+        _CUDA_VSTD::__cccl_thread_yield_processor();
       }
       __count += 1;
       continue;
@@ -87,15 +87,15 @@ _LIBCUDACXX_HIDE_FROM_ABI bool __libcpp_thread_poll_with_backoff(
     _CUDA_VSTD::chrono::nanoseconds const __step = __elapsed / 4;
     if (__step >= _CUDA_VSTD::chrono::milliseconds(1))
     {
-      _CUDA_VSTD::__libcpp_thread_sleep_for(_CUDA_VSTD::chrono::milliseconds(1));
+      _CUDA_VSTD::__cccl_thread_sleep_for(_CUDA_VSTD::chrono::milliseconds(1));
     }
     else if (__step >= _CUDA_VSTD::chrono::microseconds(10))
     {
-      _CUDA_VSTD::__libcpp_thread_sleep_for(__step);
+      _CUDA_VSTD::__cccl_thread_sleep_for(__step);
     }
     else
     {
-      _CUDA_VSTD::__libcpp_thread_yield();
+      _CUDA_VSTD::__cccl_thread_yield();
     }
   }
 }

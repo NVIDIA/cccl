@@ -56,6 +56,17 @@
 #include <cuda/std/type_traits> // cuda::std::common_type
 #include <cuda/std/utility> // cuda::std::forward
 
+#if defined(_CCCL_HAS_NVFP16)
+#  include <cuda_fp16.h>
+#endif // _CCCL_HAS_NVFP16
+
+#if defined(_CCCL_HAS_NVBF16)
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
+#  include <cuda_bf16.h>
+_CCCL_DIAG_POP
+#endif // _CCCL_HAS_NVFP16
+
 CUB_NAMESPACE_BEGIN
 
 // TODO(bgruber): deprecate in C++17 with a note: "replace by decltype(cuda::std::not_fn(EqualityOp{}))"
@@ -396,7 +407,7 @@ CUB_DEPRECATED _CCCL_HOST_DEVICE BinaryFlip<BinaryOpT> MakeBinaryFlip(BinaryOpT 
 }
 _CCCL_SUPPRESS_DEPRECATED_POP
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 namespace internal
 {
@@ -440,10 +451,15 @@ struct SimdMin<__half>
 
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
   {
+#    if _CCCL_CUDACC_BELOW(12, 0) && defined(_CCCL_CUDA_COMPILER_NVHPC)
+    return __floats2half2_rn(::cuda::minimum<>{}(__half2float(a.x), __half2float(b.x)),
+                             ::cuda::minimum<>{}(__half2float(a.y), __half2float(b.y)));
+#    else // ^^^ _CCCL_CUDACC_BELOW(12, 0) && _CCCL_CUDA_COMPILER_NVHPC ^^^ / vvv otherwise vvv
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmin2(a, b);),
                  (return __halves2half2(__float2half(::cuda::minimum<>{}(__half2float(a.x), __half2float(b.x))),
                                         __float2half(::cuda::minimum<>{}(__half2float(a.y), __half2float(b.y))));));
+#    endif // !_CCCL_CUDACC_BELOW(12, 0) || !_CCCL_CUDA_COMPILER_NVHPC
   }
 };
 
@@ -470,11 +486,16 @@ struct SimdMin<__nv_bfloat16>
 
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
   {
+#    if _CCCL_CUDACC_BELOW(12, 0) && defined(_CCCL_CUDA_COMPILER_NVHPC)
+    return __floats2bfloat162_rn(::cuda::minimum<>{}(__bfloat162float(a.x), __bfloat162float(b.x)),
+                                 ::cuda::minimum<>{}(__bfloat162float(a.y), __bfloat162float(b.y)));
+#    else // ^^^ _CCCL_CUDACC_BELOW(12, 0) && _CCCL_CUDA_COMPILER_NVHPC ^^^ / vvv otherwise vvv
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmin2(a, b);),
                  (return cub::internal::halves2bfloat162(
                            __float2bfloat16(::cuda::minimum<>{}(__bfloat162float(a.x), __bfloat162float(b.x))),
                            __float2bfloat16(::cuda::minimum<>{}(__bfloat162float(a.y), __bfloat162float(b.y))));));
+#    endif // !_CCCL_CUDACC_BELOW(12, 0) || !_CCCL_CUDA_COMPILER_NVHPC
   }
 };
 
@@ -521,10 +542,15 @@ struct SimdMax<__half>
 
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
   {
+#    if _CCCL_CUDACC_BELOW(12, 0) && defined(_CCCL_CUDA_COMPILER_NVHPC)
+    return __floats2half2_rn(::cuda::maximum<>{}(__half2float(a.x), __half2float(b.x)),
+                             ::cuda::maximum<>{}(__half2float(a.y), __half2float(b.y)));
+#    else // ^^^ _CCCL_CUDACC_BELOW(12, 0) && _CCCL_CUDA_COMPILER_NVHPC ^^^ / vvv otherwise vvv
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmax2(a, b);),
                  (return __halves2half2(__float2half(::cuda::maximum<>{}(__half2float(a.x), __half2float(b.x))),
                                         __float2half(::cuda::maximum<>{}(__half2float(a.y), __half2float(b.y))));));
+#    endif // !_CCCL_CUDACC_BELOW(12, 0) || !_CCCL_CUDA_COMPILER_NVHPC
   }
 };
 
@@ -539,11 +565,16 @@ struct SimdMax<__nv_bfloat16>
 
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
   {
+#    if _CCCL_CUDACC_BELOW(12, 0) && defined(_CCCL_CUDA_COMPILER_NVHPC)
+    return __floats2bfloat162_rn(::cuda::maximum<>{}(__bfloat162float(a.x), __bfloat162float(b.x)),
+                                 ::cuda::maximum<>{}(__bfloat162float(a.y), __bfloat162float(b.y)));
+#    else // ^^^ _CCCL_CUDACC_BELOW(12, 0) && _CCCL_CUDA_COMPILER_NVHPC ^^^ / vvv otherwise vvv
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmax2(a, b);),
                  (return cub::internal::halves2bfloat162(
                            __float2bfloat16(::cuda::maximum<>{}(__bfloat162float(a.x), __bfloat162float(b.x))),
                            __float2bfloat16(::cuda::maximum<>{}(__bfloat162float(a.y), __bfloat162float(b.y))));));
+#    endif // !_CCCL_CUDACC_BELOW(12, 0) || !_CCCL_CUDA_COMPILER_NVHPC
   }
 };
 
@@ -566,10 +597,14 @@ struct SimdSum<__half>
 
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
   {
+#    if _CCCL_CUDACC_BELOW(12, 0) && defined(_CCCL_CUDA_COMPILER_NVHPC)
+    return __floats2half2_rn(__half2float(a.x) + __half2float(b.x), __half2float(a.y) + __half2float(b.y));
+#    else // ^^^ _CCCL_CUDACC_BELOW(12, 0) && _CCCL_CUDA_COMPILER_NVHPC ^^^ / vvv otherwise vvv
     NV_IF_TARGET(NV_PROVIDES_SM_53,
                  (return __hadd2(a, b);),
                  (return __halves2half2(__float2half(__half2float(a.x) + __half2float(b.x)),
                                         __float2half(__half2float(a.y) + __half2float(b.y)));));
+#    endif // !_CCCL_CUDACC_BELOW(12, 0) || !_CCCL_CUDA_COMPILER_NVHPC
   }
 };
 
@@ -584,11 +619,16 @@ struct SimdSum<__nv_bfloat16>
 
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
   {
+#    if _CCCL_CUDACC_BELOW(12, 0) && defined(_CCCL_CUDA_COMPILER_NVHPC)
+    return __floats2bfloat162_rn(
+      __bfloat162float(a.x) + __bfloat162float(b.x), __bfloat162float(a.y) + __bfloat162float(b.y));
+#    else // ^^^ _CCCL_CUDACC_BELOW(12, 0) && _CCCL_CUDA_COMPILER_NVHPC ^^^ / vvv otherwise vvv
     NV_IF_TARGET(
       NV_PROVIDES_SM_80,
       (return __hadd2(a, b);),
       (return cub::internal::halves2bfloat162(__float2bfloat16(__bfloat162float(a.x) + __bfloat162float(b.x)),
                                               __float2bfloat16(__bfloat162float(a.y) + __bfloat162float(b.y)));));
+#    endif // !_CCCL_CUDACC_BELOW(12, 0) || !_CCCL_CUDA_COMPILER_NVHPC
   }
 };
 
@@ -611,10 +651,14 @@ struct SimdMul<__half>
 
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __half2 operator()(__half2 a, __half2 b) const
   {
+#    if _CCCL_CUDACC_BELOW(12, 0) && defined(_CCCL_CUDA_COMPILER_NVHPC)
+    return __floats2half2_rn(__half2float(a.x) * __half2float(b.x), __half2float(a.y) * __half2float(b.y));
+#    else // ^^^ _CCCL_CUDACC_BELOW(12, 0) && _CCCL_CUDA_COMPILER_NVHPC ^^^ / vvv otherwise vvv
     NV_IF_TARGET(NV_PROVIDES_SM_53,
                  (return __hmul2(a, b);),
                  (return __halves2half2(__float2half(__half2float(a.x) * __half2float(b.x)),
                                         __float2half(__half2float(a.y) * __half2float(b.y)));));
+#    endif // !_CCCL_CUDACC_BELOW(12, 0) || !_CCCL_CUDA_COMPILER_NVHPC
   }
 };
 
@@ -629,10 +673,15 @@ struct SimdMul<__nv_bfloat16>
 
   _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE __nv_bfloat162 operator()(__nv_bfloat162 a, __nv_bfloat162 b) const
   {
+#    if _CCCL_CUDACC_BELOW(12, 0) && defined(_CCCL_CUDA_COMPILER_NVHPC)
+    return __floats2bfloat162_rn(
+      __bfloat162float(a.x) * __bfloat162float(b.x), __bfloat162float(a.y) * __bfloat162float(b.y));
+#    else // ^^^ _CCCL_CUDACC_BELOW(12, 0) && _CCCL_CUDA_COMPILER_NVHPC ^^^ / vvv otherwise vvv
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmul2(a, b);),
                  (return halves2bfloat162(__float2bfloat16(__bfloat162float(a.x) * __bfloat162float(b.x)),
                                           __float2bfloat16(__bfloat162float(a.y) * __bfloat162float(b.y)));));
+#    endif // !_CCCL_CUDACC_BELOW(12, 0) || !_CCCL_CUDA_COMPILER_NVHPC
   }
 };
 
@@ -654,11 +703,19 @@ struct CubOperatorToSimdOperator<::cuda::minimum<>, T>
 };
 
 template <typename T>
+struct CubOperatorToSimdOperator<::cuda::minimum<T>, T> : CubOperatorToSimdOperator<::cuda::minimum<>, T>
+{};
+
+template <typename T>
 struct CubOperatorToSimdOperator<::cuda::maximum<>, T>
 {
   using type      = SimdMax<T>;
   using simd_type = typename type::simd_type;
 };
+
+template <typename T>
+struct CubOperatorToSimdOperator<::cuda::maximum<T>, T> : CubOperatorToSimdOperator<::cuda::maximum<>, T>
+{};
 
 template <typename T>
 struct CubOperatorToSimdOperator<::cuda::std::plus<>, T>
@@ -668,11 +725,20 @@ struct CubOperatorToSimdOperator<::cuda::std::plus<>, T>
 };
 
 template <typename T>
+struct CubOperatorToSimdOperator<::cuda::std::plus<T>, T> : CubOperatorToSimdOperator<::cuda::std::plus<>, T>
+{};
+
+template <typename T>
 struct CubOperatorToSimdOperator<::cuda::std::multiplies<>, T>
 {
   using type      = SimdMul<T>;
   using simd_type = typename type::simd_type;
 };
+
+template <typename T>
+struct CubOperatorToSimdOperator<::cuda::std::multiplies<T>, T>
+    : CubOperatorToSimdOperator<::cuda::std::multiplies<>, T>
+{};
 
 template <typename ReduceOp, typename T>
 using cub_operator_to_simd_operator_t = typename CubOperatorToSimdOperator<ReduceOp, T>::type;
@@ -682,6 +748,6 @@ using simd_type_t = typename CubOperatorToSimdOperator<ReduceOp, T>::simd_type;
 
 } // namespace internal
 
-#endif // !DOXYGEN_SHOULD_SKIP_THIS
+#endif // !_CCCL_DOXYGEN_INVOKED
 
 CUB_NAMESPACE_END

@@ -66,7 +66,7 @@ private:
   typedef _CCCL_NODEBUG_ALIAS remove_reference_t<_Tp> _Up;
 
 public:
-  typedef _CCCL_NODEBUG_ALIAS typename __decay_impl<_Up, __libcpp_is_referenceable<_Up>::value>::type type;
+  typedef _CCCL_NODEBUG_ALIAS typename __decay_impl<_Up, __cccl_is_referenceable<_Up>::value>::type type;
 };
 
 template <class _Tp>

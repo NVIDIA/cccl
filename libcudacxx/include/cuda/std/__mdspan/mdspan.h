@@ -59,6 +59,7 @@
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/__mdspan/layout_right.h>
 #include <cuda/std/__type_traits/extent.h>
+#include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
@@ -177,12 +178,11 @@ public:
   _CCCL_HIDE_FROM_ABI constexpr mdspan(mdspan&&)      = default;
 
   _CCCL_TEMPLATE(class... _SizeTypes)
-  _CCCL_REQUIRES(
-    __MDSPAN_FOLD_AND(_CCCL_TRAIT(is_convertible, _SizeTypes, index_type) /* && ... */)
-      _CCCL_AND __MDSPAN_FOLD_AND(_CCCL_TRAIT(is_nothrow_constructible, index_type, _SizeTypes) /* && ... */)
-        _CCCL_AND((sizeof...(_SizeTypes) == rank()) || (sizeof...(_SizeTypes) == rank_dynamic()))
-          _CCCL_AND _CCCL_TRAIT(is_constructible, mapping_type, extents_type)
-            _CCCL_AND _CCCL_TRAIT(is_default_constructible, accessor_type))
+  _CCCL_REQUIRES(__fold_and_v<_CCCL_TRAIT(is_convertible, _SizeTypes, index_type)...> _CCCL_AND
+                   __fold_and_v<_CCCL_TRAIT(is_nothrow_constructible, index_type, _SizeTypes)...> _CCCL_AND(
+                     (sizeof...(_SizeTypes) == rank()) || (sizeof...(_SizeTypes) == rank_dynamic()))
+                     _CCCL_AND _CCCL_TRAIT(is_constructible, mapping_type, extents_type)
+                       _CCCL_AND _CCCL_TRAIT(is_default_constructible, accessor_type))
   _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr mdspan(data_handle_type __p, _SizeTypes... __dynamic_extents)
       // TODO @proposal-bug shouldn't I be allowed to do `move(__p)` here?
       : __members(
@@ -264,10 +264,9 @@ public:
 
 #  if __MDSPAN_USE_BRACKET_OPERATOR
   _CCCL_TEMPLATE(class... _SizeTypes)
-  _CCCL_REQUIRES(
-    __MDSPAN_FOLD_AND(_CCCL_TRAIT(is_convertible, _SizeTypes, index_type) /* && ... */)
-      _CCCL_AND __MDSPAN_FOLD_AND(_CCCL_TRAIT(is_nothrow_constructible, index_type, _SizeTypes) /* && ... */)
-        _CCCL_AND(rank() == sizeof...(_SizeTypes)))
+  _CCCL_REQUIRES(__fold_and_v<_CCCL_TRAIT(is_convertible, _SizeTypes, index_type)...> _CCCL_AND
+                   __fold_and_v<_CCCL_TRAIT(is_nothrow_constructible, index_type, _SizeTypes)...> _CCCL_AND(
+                     rank() == sizeof...(_SizeTypes)))
   __MDSPAN_FORCE_INLINE_FUNCTION
   constexpr reference operator[](_SizeTypes... __indices) const
   {
@@ -307,10 +306,9 @@ public:
 
 #  if __MDSPAN_USE_PAREN_OPERATOR
   _CCCL_TEMPLATE(class... _SizeTypes)
-  _CCCL_REQUIRES(
-    __MDSPAN_FOLD_AND(_CCCL_TRAIT(is_convertible, _SizeTypes, index_type) /* && ... */)
-      _CCCL_AND __MDSPAN_FOLD_AND(_CCCL_TRAIT(is_nothrow_constructible, index_type, _SizeTypes) /* && ... */)
-        _CCCL_AND(extents_type::rank() == sizeof...(_SizeTypes)))
+  _CCCL_REQUIRES(__fold_and_v<_CCCL_TRAIT(is_convertible, _SizeTypes, index_type)...> _CCCL_AND
+                   __fold_and_v<_CCCL_TRAIT(is_nothrow_constructible, index_type, _SizeTypes)...> _CCCL_AND(
+                     extents_type::rank() == sizeof...(_SizeTypes)))
   __MDSPAN_FORCE_INLINE_FUNCTION
   constexpr reference operator()(_SizeTypes... __indices) const
   {
@@ -440,8 +438,7 @@ private:
 
 #  if defined(__MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION)
 _CCCL_TEMPLATE(class _ElementType, class... _SizeTypes)
-_CCCL_REQUIRES(__MDSPAN_FOLD_AND(_CCCL_TRAIT(is_integral, _SizeTypes) /* && ... */)
-                 _CCCL_AND(sizeof...(_SizeTypes) > 0))
+_CCCL_REQUIRES(__fold_and_v<_CCCL_TRAIT(is_integral, _SizeTypes)...> _CCCL_AND(sizeof...(_SizeTypes) > 0))
 _CCCL_HOST_DEVICE explicit mdspan(_ElementType*,
                                   _SizeTypes...) -> mdspan<_ElementType, dextents<size_t, sizeof...(_SizeTypes)>>;
 

@@ -84,7 +84,7 @@ struct __bulk_insert
 template <>
 struct __bulk_insert<false>
 {
-#if defined(_CCCL_COMPILER_MSVC) && _CCCL_MSVC_VERSION < 1920
+#if _CCCL_COMPILER(MSVC, <, 19, 20)
   template <class _Set, class _Ty, class... _Us>
   _LIBCUDACXX_HIDE_FROM_ABI static auto __insert_fn(__type_list<_Ty, _Us...>*) ->
     typename __bulk_insert<sizeof...(_Us) == 0>::template __call<typename _Set::template __maybe_insert<_Ty>, _Us...>;

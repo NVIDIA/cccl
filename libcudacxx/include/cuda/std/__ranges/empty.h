@@ -27,13 +27,13 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-#if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
 // [range.prim.empty]
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__empty)
 
-#  if _CCCL_STD_VER >= 2020
+#  if !defined(_CCCL_NO_CONCEPTS)
 template <class _Tp>
 concept __member_empty = __workaround_52970<_Tp> && requires(_Tp&& __t) { bool(__t.empty()); };
 
@@ -45,7 +45,7 @@ concept __can_compare_begin_end = !__member_empty<_Tp> && !__can_invoke_size<_Tp
   bool(_CUDA_VRANGES::begin(__t) == _CUDA_VRANGES::end(__t));
   { _CUDA_VRANGES::begin(__t) } -> forward_iterator;
 };
-#  else // ^^^ CXX20 ^^^ / vvv CXX17 vvv
+#  else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 template <class _Tp>
 _CCCL_CONCEPT_FRAGMENT(__member_empty_, requires(_Tp&& __t)(requires(__workaround_52970<_Tp>), (bool(__t.empty()))));
 
@@ -69,7 +69,7 @@ _CCCL_CONCEPT_FRAGMENT(
 
 template <class _Tp>
 _CCCL_CONCEPT __can_compare_begin_end = _CCCL_FRAGMENT(__can_compare_begin_end_, _Tp);
-#  endif // _CCCL_STD_VER <= 2017
+#  endif // _CCCL_NO_CONCEPTS
 
 struct __fn
 {
@@ -104,7 +104,7 @@ inline namespace __cpo
 _CCCL_GLOBAL_CONSTANT auto empty = __empty::__fn{};
 } // namespace __cpo
 
-#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER_MSVC_2017
+#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

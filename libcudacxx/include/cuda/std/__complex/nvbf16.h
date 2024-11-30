@@ -28,8 +28,9 @@ _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
 #  include <cuda_bf16.h>
 _CCCL_DIAG_POP
 
+#  include <cuda/std/__cmath/nvbf16.h>
 #  include <cuda/std/__complex/vector_support.h>
-#  include <cuda/std/__cuda/cmath_nvbf16.h>
+#  include <cuda/std/__fwd/get.h>
 #  include <cuda/std/__type_traits/enable_if.h>
 #  include <cuda/std/__type_traits/integral_constant.h>
 #  include <cuda/std/__type_traits/is_constructible.h>
@@ -82,7 +83,7 @@ struct __type_to_vector<__nv_bfloat16>
 };
 
 template <>
-struct __libcpp_complex_overload_traits<__nv_bfloat16, false, false>
+struct __cccl_complex_overload_traits<__nv_bfloat16, false, false>
 {
   typedef __nv_bfloat16 _ValueType;
   typedef complex<__nv_bfloat16> _ComplexType;
@@ -111,6 +112,9 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_ALIGNAS(alignof(__nv_bfloat162)) compl
 
   template <class _Up>
   friend class complex;
+
+  template <class _Up>
+  friend struct __get_complex_impl;
 
 public:
   using value_type = __nv_bfloat16;
@@ -294,6 +298,34 @@ _LIBCUDACXX_HIDE_FROM_ABI complex<__nv_bfloat16> acos(const complex<__nv_bfloat1
 {
   return complex<__nv_bfloat16>{_CUDA_VSTD::acos(complex<float>{__x})};
 }
+
+template <>
+struct __get_complex_impl<__nv_bfloat16>
+{
+  template <size_t _Index>
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_bfloat16& get(complex<__nv_bfloat16>& __z) noexcept
+  {
+    return (_Index == 0) ? __z.__repr_.x : __z.__repr_.y;
+  }
+
+  template <size_t _Index>
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr __nv_bfloat16&& get(complex<__nv_bfloat16>&& __z) noexcept
+  {
+    return _CUDA_VSTD::move((_Index == 0) ? __z.__repr_.x : __z.__repr_.y);
+  }
+
+  template <size_t _Index>
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr const __nv_bfloat16& get(const complex<__nv_bfloat16>& __z) noexcept
+  {
+    return (_Index == 0) ? __z.__repr_.x : __z.__repr_.y;
+  }
+
+  template <size_t _Index>
+  static _LIBCUDACXX_HIDE_FROM_ABI constexpr const __nv_bfloat16&& get(const complex<__nv_bfloat16>&& __z) noexcept
+  {
+    return _CUDA_VSTD::move((_Index == 0) ? __z.__repr_.x : __z.__repr_.y);
+  }
+};
 
 #  if !_CCCL_COMPILER(NVRTC)
 template <class _CharT, class _Traits>

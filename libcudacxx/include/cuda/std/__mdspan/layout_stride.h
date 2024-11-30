@@ -61,6 +61,7 @@
 #  include <cuda/std/__mdspan/no_unique_address.h>
 #endif // _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
 #include <cuda/std/__mdspan/static_array.h>
+#include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
@@ -425,10 +426,9 @@ struct layout_stride
     }
 
     _CCCL_TEMPLATE(class... _Indices)
-    _CCCL_REQUIRES(
-      (sizeof...(_Indices) == _Extents::rank())
-        _CCCL_AND __MDSPAN_FOLD_AND(_CCCL_TRAIT(is_convertible, _Indices, index_type) /*&& ...*/)
-          _CCCL_AND __MDSPAN_FOLD_AND(_CCCL_TRAIT(is_nothrow_constructible, index_type, _Indices) /*&& ...*/))
+    _CCCL_REQUIRES((sizeof...(_Indices) == _Extents::rank())
+                     _CCCL_AND __fold_and_v<_CCCL_TRAIT(is_convertible, _Indices, index_type)...> //
+                       _CCCL_AND __fold_and_v<_CCCL_TRAIT(is_nothrow_constructible, index_type, _Indices)...>)
     __MDSPAN_FORCE_INLINE_FUNCTION
     constexpr index_type operator()(_Indices... __idxs) const noexcept
     {

@@ -96,7 +96,7 @@ struct __spin_wait
     else
     {
       --__count_;
-      _CUDA_VSTD::__libcpp_thread_yield_processor();
+      _CUDA_VSTD::__cccl_thread_yield_processor();
     }
   }
 

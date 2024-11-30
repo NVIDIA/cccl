@@ -28,16 +28,16 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // [concept.convertible]
 
-#if _CCCL_STD_VER >= 2020
+#if !defined(_CCCL_NO_CONCEPTS)
 
 template <class _From, class _To>
 concept convertible_to = is_convertible_v<_From, _To> && requires { static_cast<_To>(_CUDA_VSTD::declval<_From>()); };
 
-#elif _CCCL_STD_VER >= 2014 // ^^^ C++20 ^^^ / vvv C++14/17 vvv
+#elif !defined(_CCCL_NO_VARIABLE_TEMPLATES) // ^^^ !_CCCL_NO_CONCEPTS ^^^
 
-#  if defined(_CCCL_COMPILER_MSVC)
+#  if _CCCL_COMPILER(MSVC)
 _CCCL_NV_DIAG_SUPPRESS(1211) // nonstandard cast to array type ignored
-#  endif // _CCCL_COMPILER_MSVC
+#  endif // _CCCL_COMPILER(MSVC)
 _CCCL_NV_DIAG_SUPPRESS(171) // invalid type conversion, e.g. [with _From=int **, _To=const int *const *]
 
 // We cannot put this conversion check with the other constraint, as types with deleted operator will break here
@@ -55,12 +55,12 @@ _CCCL_CONCEPT_FRAGMENT(
 template <class _From, class _To>
 _CCCL_CONCEPT convertible_to = _CCCL_FRAGMENT(__convertible_to_, _From, _To);
 
-#  if defined(_CCCL_COMPILER_MSVC)
+#  if _CCCL_COMPILER(MSVC)
 _CCCL_NV_DIAG_DEFAULT(1211) // nonstandard cast to array type ignored
-#  endif // _CCCL_COMPILER_MSVC
+#  endif // _CCCL_COMPILER(MSVC)
 _CCCL_NV_DIAG_DEFAULT(171) // invalid type conversion, e.g. [with _From=int **, _To=const int *const *]
 
-#endif // _CCCL_STD_VER >= 2014
+#endif // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES ^^^
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

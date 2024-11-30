@@ -28,7 +28,7 @@
 #endif
 
 // cuda::mr is unavable on MSVC 2017
-#if defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_COMPILER(MSVC2017)
 #  error "The shared_resource header is not supported on MSVC 2017"
 #endif
 
@@ -44,7 +44,7 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/atomic>
 
-namespace cuda::experimental::mr
+namespace cuda::experimental
 {
 
 //! @rst
@@ -268,6 +268,6 @@ auto make_shared_resource(_Args&&... __args) -> shared_resource<_Resource>
   return shared_resource<_Resource>{_CUDA_VSTD::forward<_Args>(__args)...};
 }
 
-} // namespace cuda::experimental::mr
+} // namespace cuda::experimental
 
 #endif // _CUDAX__MEMORY_RESOURCE_SHARED_RESOURCE_H

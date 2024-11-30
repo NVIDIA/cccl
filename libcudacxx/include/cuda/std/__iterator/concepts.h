@@ -53,7 +53,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2017
+#if !defined(_CCCL_NO_CONCEPTS)
 
 // [iterator.concept.readable]
 template <class _In>
@@ -254,7 +254,7 @@ concept indirectly_copyable_storable =
 // Note: indirectly_swappable is located in iter_swap.h to prevent a dependency cycle
 // (both iter_swap and indirectly_swappable require indirectly_readable).
 
-#elif _CCCL_STD_VER > 2014
+#elif _CCCL_STD_VER > 2014 // ^^^ !_CCCL_NO_CONCEPTS ^^^
 
 // [iterator.concept.readable]
 template <class _In>
@@ -403,7 +403,7 @@ template <class _Ip>
 _CCCL_CONCEPT bidirectional_iterator = _CCCL_FRAGMENT(__bidirectional_iterator_, _Ip);
 
 // [iterator.concept.random.access]
-#  if defined(_CCCL_COMPILER_MSVC_2017)
+#  if _CCCL_COMPILER(MSVC2017)
 // For whatever reasons MSVC2017 cannot check decltype(__n +  __j)
 template <class _Ip>
 _CCCL_CONCEPT_FRAGMENT(
@@ -415,7 +415,7 @@ _CCCL_CONCEPT_FRAGMENT(
     requires(same_as<_Ip&, decltype(__i -= __n)>),
     requires(same_as<_Ip, decltype(__j - __n)>),
     requires(same_as<iter_reference_t<_Ip>, decltype(__j[__n])>)));
-#  else // ^^^ _CCCL_COMPILER_MSVC_2017 ^^^ / vvv !_CCCL_COMPILER_MSVC_2017 vvv
+#  else // ^^^ _CCCL_COMPILER(MSVC2017) ^^^ / vvv !_CCCL_COMPILER(MSVC2017) vvv
 template <class _Ip>
 _CCCL_CONCEPT_FRAGMENT(
   __random_access_iterator_operations_,
@@ -426,7 +426,7 @@ _CCCL_CONCEPT_FRAGMENT(
     requires(same_as<_Ip&, decltype(__i -= __n)>),
     requires(same_as<_Ip, decltype(__j - __n)>),
     requires(same_as<iter_reference_t<_Ip>, decltype(__j[__n])>)));
-#  endif // !_CCCL_COMPILER_MSVC_2017
+#  endif // !_CCCL_COMPILER(MSVC2017)
 template <class _Ip>
 _CCCL_CONCEPT __random_access_iterator_operations = _CCCL_FRAGMENT(__random_access_iterator_operations_, _Ip);
 

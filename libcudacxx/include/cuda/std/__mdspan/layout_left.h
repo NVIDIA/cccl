@@ -57,6 +57,7 @@
 #include <cuda/std/__mdspan/extents.h>
 #include <cuda/std/__mdspan/layout_stride.h>
 #include <cuda/std/__mdspan/macros.h>
+#include <cuda/std/__type_traits/fold.h>
 #include <cuda/std/__type_traits/is_constructible.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
@@ -187,9 +188,9 @@ public:
   //--------------------------------------------------------------------------------
 
   _CCCL_TEMPLATE(class... _Indices)
-  _CCCL_REQUIRES((sizeof...(_Indices) == extents_type::rank()) _CCCL_AND __MDSPAN_FOLD_AND(
-    (_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _Indices, index_type)
-     && _CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Indices))))
+  _CCCL_REQUIRES((sizeof...(_Indices) == extents_type::rank())
+                   _CCCL_AND __fold_and_v<_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _Indices, index_type)...> //
+                     _CCCL_AND __fold_and_v<_CCCL_TRAIT(_CUDA_VSTD::is_nothrow_constructible, index_type, _Indices)...>)
   _CCCL_HOST_DEVICE constexpr index_type operator()(_Indices... __idxs) const noexcept
   {
     // Immediately cast incoming indices to `index_type`
