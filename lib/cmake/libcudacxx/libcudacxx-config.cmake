@@ -39,6 +39,7 @@ set(_libcudacxx_INCLUDE_DIR "${_libcudacxx_VERSION_INCLUDE_DIR}"
 )
 unset(_libcudacxx_VERSION_INCLUDE_DIR CACHE) # Clear tmp variable from cache
 target_include_directories(_libcudacxx_libcudacxx INTERFACE "${_libcudacxx_INCLUDE_DIR}")
+target_compile_definitions(_libcudacxx_libcudacxx INTERFACE $<$<CONFIG:Debug>:CCCL_ENABLE_ASSERTIONS>)
 
 #
 # Standardize version info
