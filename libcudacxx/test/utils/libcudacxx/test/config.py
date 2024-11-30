@@ -995,7 +995,6 @@ class Configuration(object):
                 self.cxx.compile_flags += ['-D_SILENCE_CXX20_CISO646_REMOVED_WARNING']
             else:
                 self.cxx.compile_flags += ['-fno-rtti']
-            self.cxx.compile_flags += ['-D_LIBCUDACXX_NO_RTTI']
 
     def configure_compile_flags_abi_version(self):
         abi_version = self.get_lit_conf('abi_version', '').strip()

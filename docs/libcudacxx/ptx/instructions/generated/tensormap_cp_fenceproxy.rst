@@ -1,3 +1,6 @@
+..
+   This file was automatically generated. Do not edit.
+
 tensormap.cp_fenceproxy.global.shared::cta.tensormap::generic.release.cta.sync.aligned
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. code:: cuda

@@ -56,6 +56,17 @@
 #include <cuda/std/type_traits> // cuda::std::common_type
 #include <cuda/std/utility> // cuda::std::forward
 
+#if defined(_CCCL_HAS_NVFP16)
+#  include <cuda_fp16.h>
+#endif // _CCCL_HAS_NVFP16
+
+#if defined(_CCCL_HAS_NVBF16)
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
+#  include <cuda_bf16.h>
+_CCCL_DIAG_POP
+#endif // _CCCL_HAS_NVFP16
+
 CUB_NAMESPACE_BEGIN
 
 // TODO(bgruber): deprecate in C++17 with a note: "replace by decltype(cuda::std::not_fn(EqualityOp{}))"
@@ -692,11 +703,19 @@ struct CubOperatorToSimdOperator<::cuda::minimum<>, T>
 };
 
 template <typename T>
+struct CubOperatorToSimdOperator<::cuda::minimum<T>, T> : CubOperatorToSimdOperator<::cuda::minimum<>, T>
+{};
+
+template <typename T>
 struct CubOperatorToSimdOperator<::cuda::maximum<>, T>
 {
   using type      = SimdMax<T>;
   using simd_type = typename type::simd_type;
 };
+
+template <typename T>
+struct CubOperatorToSimdOperator<::cuda::maximum<T>, T> : CubOperatorToSimdOperator<::cuda::maximum<>, T>
+{};
 
 template <typename T>
 struct CubOperatorToSimdOperator<::cuda::std::plus<>, T>
@@ -706,11 +725,20 @@ struct CubOperatorToSimdOperator<::cuda::std::plus<>, T>
 };
 
 template <typename T>
+struct CubOperatorToSimdOperator<::cuda::std::plus<T>, T> : CubOperatorToSimdOperator<::cuda::std::plus<>, T>
+{};
+
+template <typename T>
 struct CubOperatorToSimdOperator<::cuda::std::multiplies<>, T>
 {
   using type      = SimdMul<T>;
   using simd_type = typename type::simd_type;
 };
+
+template <typename T>
+struct CubOperatorToSimdOperator<::cuda::std::multiplies<T>, T>
+    : CubOperatorToSimdOperator<::cuda::std::multiplies<>, T>
+{};
 
 template <typename ReduceOp, typename T>
 using cub_operator_to_simd_operator_t = typename CubOperatorToSimdOperator<ReduceOp, T>::type;

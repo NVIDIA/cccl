@@ -26,20 +26,20 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-struct __libcpp_is_floating_point : public false_type
+struct __cccl_is_floating_point : public false_type
 {};
 template <>
-struct __libcpp_is_floating_point<float> : public true_type
+struct __cccl_is_floating_point<float> : public true_type
 {};
 template <>
-struct __libcpp_is_floating_point<double> : public true_type
+struct __cccl_is_floating_point<double> : public true_type
 {};
 template <>
-struct __libcpp_is_floating_point<long double> : public true_type
+struct __cccl_is_floating_point<long double> : public true_type
 {};
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_floating_point : public __libcpp_is_floating_point<remove_cv_t<_Tp>>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_floating_point : public __cccl_is_floating_point<remove_cv_t<_Tp>>
 {};
 
 #if !defined(_CCCL_NO_VARIABLE_TEMPLATES)

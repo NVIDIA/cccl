@@ -28,27 +28,23 @@
 
 #include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends
 
-#if defined(_LIBCUDACXX_HAS_NVFP16)
-#  include <cuda_fp16.h>
-#endif // _LIBCUDACXX_HAS_NVFP16
-
-#if defined(_LIBCUDACXX_HAS_NVBF16)
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
-#  include <cuda_bf16.h>
-_CCCL_DIAG_POP
-#endif // _LIBCUDACXX_HAS_NVBF16
+// Forward-declare __half and __nv_bfloat16. The cuda_fp16.h and cuda_bf16.h are
+// expensive to include. The APIs use only pointers, so we do not have to define
+// the types. If the user wants to use these types, it is their responsibility
+// to include the headers.
+struct __half;
+struct __nv_bfloat16;
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
 // 9.7.8.24.7. Data Movement and Conversion Instructions: cp.reduce.async.bulk
 // https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-cp-reduce-async-bulk
-#include <cuda/__ptx/instructions/generated/cp_reduce_async_bulk.inc>
+#include <cuda/__ptx/instructions/generated/cp_reduce_async_bulk.h>
 #ifdef _LIBCUDACXX_HAS_NVF16
-#  include <cuda/__ptx/instructions/generated/cp_reduce_async_bulk_f16.inc>
+#  include <cuda/__ptx/instructions/generated/cp_reduce_async_bulk_f16.h>
 #endif // _LIBCUDACXX_HAS_NVF16
 #ifdef _LIBCUDACXX_HAS_NVBF16
-#  include <cuda/__ptx/instructions/generated/cp_reduce_async_bulk_bf16.inc>
+#  include <cuda/__ptx/instructions/generated/cp_reduce_async_bulk_bf16.h>
 #endif // _LIBCUDACXX_HAS_NVBF16
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX

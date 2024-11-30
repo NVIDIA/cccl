@@ -24,7 +24,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::mr::any_resource<cuda::mr::host_accessible> mr{TestResource{42, this}};
+      cudax::any_resource<cuda::mr::host_accessible> mr{TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
@@ -43,7 +43,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::mr::any_resource<cuda::mr::host_accessible> mr{TestResource{42, this}};
+      cudax::any_resource<cuda::mr::host_accessible> mr{TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
@@ -78,7 +78,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::mr::any_resource<cuda::mr::host_accessible> mr{TestResource{42, this}};
+      cudax::any_resource<cuda::mr::host_accessible> mr{TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
@@ -105,7 +105,7 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
   {
     Counts expected{};
     {
-      cudax::mr::any_resource<cuda::mr::host_accessible> mr{TestResource{42, this}};
+      cudax::any_resource<cuda::mr::host_accessible> mr{TestResource{42, this}};
       expected.new_count += is_big;
       ++expected.object_count;
       ++expected.move_count;
@@ -135,8 +135,8 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
     Counts expected{};
     CHECK(this->counts == expected);
     {
-      cudax::mr::any_resource<cuda::mr::host_accessible> mr =
-        cudax::mr::make_any_resource<TestResource, cuda::mr::host_accessible>(42, this);
+      cudax::any_resource<cuda::mr::host_accessible> mr =
+        cudax::make_any_resource<TestResource, cuda::mr::host_accessible>(42, this);
       expected.new_count += is_big;
       ++expected.object_count;
       CHECK(this->counts == expected);

@@ -68,6 +68,7 @@ struct dimensions_query
     return hierarchy::extents<Unit, Level>();
   }
 };
+
 } // namespace detail
 
 // Struct to represent levels allowed below or above a certain level,
@@ -91,12 +92,12 @@ _CCCL_INLINE_VAR constexpr bool is_level_allowed<QueryLevel, allowed_levels<Leve
   ::cuda::std::disjunction_v<::cuda::std::is_same<QueryLevel, Levels>...>;
 
 template <typename L1, typename L2>
-_CCCL_INLINE_VAR constexpr bool can_stack_on_top =
+_CCCL_INLINE_VAR constexpr bool can_rhs_stack_on_lhs =
   is_level_allowed<L1, typename L2::allowed_below> || is_level_allowed<L2, typename L1::allowed_above>;
 
 template <typename Unit, typename Level>
 _CCCL_INLINE_VAR constexpr bool legal_unit_for_level =
-  can_stack_on_top<Unit, Level> || legal_unit_for_level<Unit, __default_unit_below<Level>>;
+  can_rhs_stack_on_lhs<Unit, Level> || legal_unit_for_level<Unit, __default_unit_below<Level>>;
 
 template <typename Unit>
 _CCCL_INLINE_VAR constexpr bool legal_unit_for_level<Unit, void> = false;
@@ -275,7 +276,7 @@ struct dims_helper<cluster_level, grid_level>
 template <typename Unit, typename Level>
 /* _CCCL_NODISCARD */ _CCCL_DEVICE auto extents_impl()
 {
-  if constexpr (::cuda::std::is_same_v<Unit, Level> || can_stack_on_top<Unit, Level>)
+  if constexpr (::cuda::std::is_same_v<Unit, Level> || can_rhs_stack_on_lhs<Unit, Level>)
   {
     return dim3_to_dims(dims_helper<Unit, Level>::extents());
   }
@@ -291,7 +292,7 @@ template <typename Unit, typename Level>
 template <typename Unit, typename Level>
 /* _CCCL_NODISCARD */ _CCCL_DEVICE auto index_impl()
 {
-  if constexpr (::cuda::std::is_same_v<Unit, Level> || detail::can_stack_on_top<Unit, Level>)
+  if constexpr (::cuda::std::is_same_v<Unit, Level> || detail::can_rhs_stack_on_lhs<Unit, Level>)
   {
     return dim3_to_dims(dims_helper<Unit, Level>::index());
   }
@@ -386,7 +387,7 @@ template <typename Unit, typename Level>
 _CCCL_DEVICE auto rank(const Unit&, const Level&)
 {
   static_assert(detail::legal_unit_for_level<Unit, Level>);
-  if constexpr (detail::can_stack_on_top<Unit, Level>)
+  if constexpr (detail::can_rhs_stack_on_lhs<Unit, Level>)
   {
     return detail::index_to_linear<typename Level::product_type>(
       detail::index_impl<Unit, Level>(), detail::extents_impl<Unit, Level>());
