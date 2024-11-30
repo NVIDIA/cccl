@@ -526,3 +526,54 @@ TEST_CASE("cudax::distribute", "[hierarchy]")
   CUDAX_REQUIRE(dims.count(cudax::thread, cudax::block) == 256);
   CUDAX_REQUIRE(dims.count(cudax::block, cudax::grid) == (numElements + threadsPerBlock - 1) / threadsPerBlock);
 }
+
+TEST_CASE("hierarchy merge", "[hierarchy]")
+{
+  SECTION("Non overlapping")
+  {
+    auto h1       = cudax::make_hierarchy_fragment<cudax::block_level>(cudax::grid_dims<2>());
+    auto h2       = cudax::make_hierarchy_fragment<cudax::thread_level>(cudax::block_dims<3>());
+    auto combined = h1.combine(h2);
+    static_assert(combined.count(cudax::thread) == 6);
+    static_assert(combined.count(cudax::thread, cudax::block) == 3);
+    static_assert(combined.count(cudax::block) == 2);
+    auto combined_the_other_way = h2.combine(h1);
+    static_assert(cuda::std::is_same_v<decltype(combined), decltype(combined_the_other_way)>);
+    static_assert(combined_the_other_way.count(cudax::thread) == 6);
+
+    auto dynamic_values   = cudax::cluster_dims(4) & cudax::block_dims(5);
+    auto combined_dynamic = dynamic_values.combine(h1);
+    CUDAX_REQUIRE(combined_dynamic.count(cudax::thread) == 40);
+  }
+  SECTION("Overlapping")
+  {
+    auto h1 = cudax::make_hierarchy_fragment<cudax::block_level>(cudax::grid_dims<2>(), cudax::cluster_dims<3>());
+    auto h2 = cudax::make_hierarchy_fragment<cudax::thread_level>(cudax::block_dims<4>(), cudax::cluster_dims<5>());
+    auto combined = h1.combine(h2);
+    static_assert(combined.count(cudax::thread) == 24);
+    static_assert(combined.count(cudax::thread, cudax::block) == 4);
+    static_assert(combined.count(cudax::block) == 6);
+
+    auto combined_the_other_way = h2.combine(h1);
+    static_assert(!cuda::std::is_same_v<decltype(combined), decltype(combined_the_other_way)>);
+    static_assert(combined_the_other_way.count(cudax::thread) == 40);
+    static_assert(combined_the_other_way.count(cudax::thread, cudax::block) == 4);
+    static_assert(combined_the_other_way.count(cudax::block) == 10);
+
+    auto ultimate_combination = combined.combine(combined_the_other_way);
+    static_assert(cuda::std::is_same_v<decltype(combined), decltype(ultimate_combination)>);
+    static_assert(ultimate_combination.count(cudax::thread) == 24);
+
+    auto block_level_replacement = cudax::make_hierarchy_fragment<cudax::thread_level>(cudax::block_dims<6>());
+    auto with_block_replaced     = block_level_replacement.combine(combined);
+    static_assert(with_block_replaced.count(cudax::thread) == 36);
+    static_assert(with_block_replaced.count(cudax::thread, cudax::block) == 6);
+
+    auto grid_cluster_level_replacement =
+      cudax::make_hierarchy_fragment<cudax::block_level>(cudax::grid_dims<7>(), cudax::cluster_dims<8>());
+    auto with_grid_cluster_replaced = grid_cluster_level_replacement.combine(combined);
+    static_assert(with_grid_cluster_replaced.count(cudax::thread) == 7 * 8 * 4);
+    static_assert(with_grid_cluster_replaced.count(cudax::block, cudax::cluster) == 8);
+    static_assert(with_grid_cluster_replaced.count(cudax::cluster) == 7);
+  }
+}
