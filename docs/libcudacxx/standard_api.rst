@@ -104,7 +104,7 @@ Feature availability:
    -  ``mdspan`` is feature complete in C++17 onwards.
    -  ``mdspan`` on msvc is only supported in C++20 and onwards.
 
--  C++23 ``to_underling`` from ``<utility>`` is available in C++11.
+-  C++23 ``to_underlying`` from ``<utility>`` is available in C++11.
 
 -  C++26 ``std::dims`` is available in C++17.
 
