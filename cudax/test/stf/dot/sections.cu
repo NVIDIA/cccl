@@ -32,19 +32,18 @@ int main()
   context ctx;
 
   auto lA = ctx.logical_data(shape_of<slice<char>>(64));
-  ctx.dot_push_section("foo");
-  ctx.task(lA.write())->*[](cudaStream_t, auto) {};
-  ctx.dot_push_section("bar");
-  ctx.task(lA.rw())->*[](cudaStream_t, auto) {};
-  ctx.dot_pop_section();
-  ctx.task(lA.rw())->*[](cudaStream_t, auto) {};
-  for (size_t i = 0; i < 10; i++)
+  ctx.task(lA.write()).set_symbol("foot")->*[](cudaStream_t, auto) {};
+  for (size_t j = 0; j < 3; j++)
   {
-    auto guard = ctx.dot_section("loop");
-    ctx.task(lA.rw())->*[](cudaStream_t, auto) {};
-    ctx.task(lA.rw())->*[](cudaStream_t, auto) {};
+    ctx.task(lA.rw()).set_symbol("presec")->*[](cudaStream_t, auto) {};
+    auto guard = ctx.dot_section("sec_loop " + ::std::to_string(j));
+    for (size_t i = 0; i < 10; i++)
+    {
+      auto guard_inner = ctx.dot_section("sec_inner_loop " + ::std::to_string(i));
+      ctx.task(lA.rw()).set_symbol("a" + ::std::to_string(i))->*[](cudaStream_t, auto) {};
+      ctx.task(lA.rw()).set_symbol("b" + ::std::to_string(i))->*[](cudaStream_t, auto) {};
+    }
   }
-  ctx.dot_pop_section();
   ctx.finalize();
 
   // Call this explicitely for the purpose of the test

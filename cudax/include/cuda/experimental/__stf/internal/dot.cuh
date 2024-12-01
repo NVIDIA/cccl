@@ -18,6 +18,7 @@
  * CUDASTF_DOT_COLOR_BY_DEVICE
  * CUDASTF_DOT_REMOVE_DATA_DEPS
  * CUDASTF_DOT_TIMING
+ * CUDASTF_DOT_MAX_DEPTH
  */
 
 #pragma once
@@ -184,10 +185,6 @@ public:
     task_metadata.color = get_current_color();
 
     task_metadata.dot_section_id = get_current_section_id();
-    fprintf(stderr, "TASK %s : section id %d\n", t.get_symbol().c_str(), task_metadata.dot_section_id);
-
-    // Add an entry in the DOT file : we just put the node, and we will define its style/label later
-    oss << "\"NODE_" << t.get_unique_id() << "\" [style=\"filled\"]\n";
 
     // We here create the label of the task, which we may augment later with
     // timing information for example
@@ -303,6 +300,36 @@ private:
 
   ::std::unordered_set<int> discarded_tasks;
 
+  // Replace nodes with indices n with index k
+  void replace_in_unordered_set(IntPairSet& set, int n, int k)
+  {
+    IntPairSet updated_set;
+
+    // Traverse the original set
+    for (const auto& p : set)
+    {
+      auto new_pair = p;
+
+      // Replace n with k in the pair
+      if (new_pair.first == n)
+      {
+        new_pair.first = k;
+      }
+      if (new_pair.second == n)
+      {
+        new_pair.second = k;
+      }
+
+      if (new_pair.first != new_pair.second)
+      {
+        updated_set.insert(new_pair);
+      }
+    }
+
+    // Swap the updated set into the original set
+    set = mv(updated_set);
+  }
+
 public:
   // Keep track of existing edges, to make the output possibly look better
   IntPairSet existing_edges;
@@ -332,6 +359,9 @@ public:
 
   const char* current_color = "white";
 
+  // Non copyable unique id, ok because we use shared pointers
+  unique_id<per_ctx_dot> id;
+
 public: // XXX protected, friend : dot
   // string for the current epoch
   mutable ::std::ostringstream oss;
@@ -349,8 +379,6 @@ public:
   class section
   {
   public:
-    using unique_id_t = unique_id<section>;
-
     // Constructor to initialize symbol and children
     section(::std::string sym)
         : symbol(mv(sym))
@@ -378,28 +406,37 @@ public:
 
     static void push(::std::string symbol)
     {
-      fprintf(stderr, "PUSHING SECTION %s\n", symbol.c_str());
-
       // We first create a section object, with its unique id
       auto sec = ::std::make_shared<section>(mv(symbol));
       int id   = sec->get_id();
 
+      sec->parent_id = current().size() == 0 ? 0 : current().top();
+
       // Save the section in the map
-      map()[id] = sec;
+      dot::instance().map[id] = sec;
 
       // Push the id in the current stack
       current().push(id);
+
+      // The size of the stack is the recursion level of the section
+      sec->depth = current().size();
     }
 
     static void pop()
     {
-      fprintf(stderr, "POP SECTION\n");
+      _CCCL_ASSERT(current().size() > 0, "Cannot pop, no section was pushed.");
       current().pop();
     }
 
+    /**
+     * @brief Get the unique ID of the section
+     *
+     * Note that returned values start at 1, not 0, we use 0 to designate the
+     * lack of a section.
+     */
     int get_id() const
     {
-      return int(id);
+      return 1 + int(id);
     }
 
     const ::std::string get_symbol() const
@@ -407,17 +444,21 @@ public:
       return symbol;
     }
 
-    static ::std::unordered_map<int, ::std::shared_ptr<section>>& map()
+    int get_depth() const
     {
-      static ::std::unordered_map<int, ::std::shared_ptr<section>> m;
-      return m;
+      return depth;
     }
 
+    int parent_id;
+
   private:
+    int depth;
+
     ::std::string symbol;
 
-    // An identifier for that section
-    unique_id_t id;
+    // An identifier for that section. This is movable, but non
+    // copyable, but we manipulate section by the means of shared_ptr.
+    unique_id<section> id;
   };
 
 protected:
@@ -542,6 +583,114 @@ public:
     }
   }
 
+  // Combine src_id into dst_id
+  void merge_nodes(per_ctx_dot& pc, int dst_id, int src_id)
+  {
+    // ::std::unordered_map<int /* id */, per_task_info> metadata;
+
+    // Get src_id from the map and remove it
+    auto it = pc.metadata.find(src_id);
+    assert(it != pc.metadata.end());
+    per_task_info src = mv(it->second);
+    pc.metadata.erase(it);
+
+    // If there was some timing associated to either src or dst, update timing
+    auto& dst = pc.metadata[dst_id];
+    if (dst.timing.has_value() || src.timing.has_value())
+    {
+      dst.timing =
+        (src.timing.has_value() ? src.timing.value() : 0.0f) + (dst.timing.has_value() ? dst.timing.value() : 0.0f);
+    }
+
+    // Replace edges if necessary
+    IntPairSet new_edges;
+    for (auto& [from, to] : pc.existing_edges)
+    {
+      int new_from = (from == src_id) ? dst_id : from;
+      int new_to   = (to == src_id) ? dst_id : to;
+
+      if (new_from != new_to)
+      {
+        _CCCL_ASSERT(new_from < new_to, "invalid edge");
+        new_edges.insert(std::make_pair(new_from, new_to));
+      }
+    }
+    ::std::swap(new_edges, pc.existing_edges);
+  }
+
+  void collapse_sections()
+  {
+    const char* env_depth = getenv("CUDASTF_DOT_MAX_DEPTH");
+    if (!env_depth)
+    {
+      return;
+    }
+
+    const int max_depth = atoi(env_depth);
+
+    // First go over all tasks which have some timing and compute the average duration
+    for (auto& pc : per_ctx)
+    {
+      // key : section id, value : vector of IDs which should be condensed into a node
+      ::std::unordered_map<int, ::std::vector<int>> to_condense;
+
+      for (auto& p : pc->metadata)
+      {
+        // p.first task id, p.second metadata
+        auto& task_info    = p.second;
+        int dot_section_id = task_info.dot_section_id;
+        if (dot_section_id > 0)
+        {
+          // Note we do not use a reference here, because we are maybe going to
+          // update the pointer, and we do not want to update its content
+          // instead when setting sec.
+          ::std::shared_ptr<section> sec = dot::instance().map[dot_section_id];
+          assert(sec);
+
+          int depth      = sec->get_depth();
+          int section_id = task_info.dot_section_id;
+
+          if (depth >= max_depth + 1)
+          {
+            /* Find the parent at depth (max_depth + 1)*/
+            while (depth > max_depth + 1)
+            {
+              section_id = sec->parent_id;
+              _CCCL_ASSERT(section_id != 0, "invalid value");
+              sec = dot::instance().map[section_id];
+              depth--;
+            }
+
+            _CCCL_ASSERT(depth == max_depth + 1, "invalid value");
+
+            /* Add this node to the list of nodes which are "equivalent" to section_id */
+            to_condense[section_id].push_back(p.first);
+          }
+        }
+      }
+
+      for (auto& p : to_condense)
+      {
+        ::std::sort(p.second.begin(), p.second.end());
+
+        // For every section ID, we get the vector of nodes to condense. We pick the first node, and "merge" other nodes
+        // with it.
+
+        // Merge all tasks in the vector with the first entry, and then rename
+        // the first entry to take the name of the section.
+        for (size_t i = 1; i < p.second.size(); i++)
+        {
+          // Fuse i-th entry with the first one
+          merge_nodes(*pc, p.second[0], p.second[i]);
+        }
+
+        // Rename the task that remains to have the label of the section
+        ::std::shared_ptr<section> sec  = dot::instance().map[p.first];
+        pc->metadata[p.second[0]].label = sec->get_symbol();
+      }
+    }
+  }
+
   // This should not need to be called explicitly, unless we are doing some automatic tests for example
   void finish()
   {
@@ -556,6 +705,8 @@ public:
     {
       pc->finish();
     }
+
+    collapse_sections();
 
     // Now we have executed all tasks, so we can compute the average execution
     // times, and update the colors appropriately if needed.
@@ -867,13 +1018,15 @@ private:
   mutable ::std::mutex mtx;
 
   ::std::string dot_filename;
+
+  ::std::unordered_map<int, ::std::shared_ptr<section>> map;
 };
 
 inline int per_ctx_dot::get_current_section_id()
 {
-  // Get the stack of IDs, if it's empty return 0, other 1 + the unique id
+  // Get the stack of IDs, if it's empty return 0, otherwise the id of the section (which are numbered starting from 1)
   auto& s = dot::section::current();
-  return s.size() == 0 ? 0 : 1 + s.top();
+  return s.size() == 0 ? 0 : s.top();
 }
 
 } // namespace cuda::experimental::stf::reserved
