@@ -84,7 +84,7 @@ Feature availability:
    -  range algorithms are not implemented.
    -  views are not implemented.
 
--  C++20 ``<span>`` is mostly available in C++14.
+-  C++20 and C++26 ``<span>`` is mostly available in C++14.
 
    -  With the exception of the range based constructors all features
       are available in C++14 and C++17. The range based constructors are
@@ -104,4 +104,8 @@ Feature availability:
    -  ``mdspan`` is feature complete in C++17 onwards.
    -  ``mdspan`` on msvc is only supported in C++20 and onwards.
 
+-  C++23 ``to_underlying`` from ``<utility>`` is available in C++11.
+
 -  C++26 ``std::dims`` is available in C++17.
+
+-  C++26 tuple protocol to ``complex`` is available in C++11.
