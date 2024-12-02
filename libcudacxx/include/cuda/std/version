@@ -29,7 +29,8 @@
 #  include <ciso646> // otherwise go for the smallest possible header
 #endif // !_CCCL_COMPILER(NVRTC)
 
-#define __cccl_lib_to_underlying 202102L
+#define __cccl_lib_integer_comparison_functions 202002L
+#define __cccl_lib_to_underlying                202102L
 // #define __cpp_lib_tuple_like     202311L // P2819R2 is implemented, but P2165R4 is not yet
 
 #if _CCCL_STD_VER >= 2014
@@ -43,12 +44,11 @@
 #  define __cccl_lib_exchange_function 201304L
 #  define __cccl_lib_expected          202211L
 // # define __cccl_lib_generic_associative_lookup           201304L
-#  define __cccl_lib_integer_sequence             201304L
-#  define __cccl_lib_integer_comparison_functions 202002L
-#  define __cccl_lib_integral_constant_callable   201304L
-#  define __cccl_lib_is_final                     201402L
-#  define __cccl_lib_is_null_pointer              201309L
-#  define __cccl_lib_make_reverse_iterator        201402L
+#  define __cccl_lib_integer_sequence           201304L
+#  define __cccl_lib_integral_constant_callable 201304L
+#  define __cccl_lib_is_final                   201402L
+#  define __cccl_lib_is_null_pointer            201309L
+#  define __cccl_lib_make_reverse_iterator      201402L
 // # define __cccl_lib_make_unique                          201304L
 #  if !_CCCL_COMPILER(MSVC) || _CCCL_STD_VER >= 2020
 #    define __cccl_lib_mdspan 202207L
