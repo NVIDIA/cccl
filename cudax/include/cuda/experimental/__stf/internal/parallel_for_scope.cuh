@@ -100,8 +100,8 @@ struct SelectType<task_dep_op_none, Ai>
  * @brief Tuple of arguments needed to store temporary variables used in reduction operations.
  *
  * For example, if we have ArgsTuple=tuple<slice<T>, slice<T>, scalar<T>, scalar<U>> and OpsTuple=tuple<none, none,
- * sum<T>, sum<U>> we will have a type that is tuple<::std::monostate, ::std::monostate, T, U> which corresponds to the variables we
- * need to store to perform reductions.
+ * sum<T>, sum<U>> we will have a type that is tuple<::std::monostate, ::std::monostate, T, U> which corresponds to the
+ * variables we need to store to perform reductions.
  */
 template <typename ArgsTuple, typename OpsTuple>
 struct redux_buffer_tup;
@@ -127,7 +127,10 @@ class redux_vars
 public:
   // Get the type of the actual tuple which will store variables
   using redux_vars_tup_t = typename redux_buffer_tup<tuple_args, tuple_ops>::type;
-  enum : size_t { size = ::std::tuple_size<tuple_args>::value };
+  enum : size_t
+  {
+    size = ::std::tuple_size<tuple_args>::value
+  };
 
   // This will return a tuple which matches the argument passed to the lambda, either an instance or an owning type for
   // reduction variables
@@ -243,8 +246,8 @@ private:
     }
   }
 
-  /* This tuple contains either `::std::monostate` for non reduction variables, or the owning type for a reduction variable.
-   * if tuple_args = tuple<slice<double>, scalar<int>, slice<int>> and tuple_ops=tuple<none, sum<int>, none>
+  /* This tuple contains either `::std::monostate` for non reduction variables, or the owning type for a reduction
+   * variable. if tuple_args = tuple<slice<double>, scalar<int>, slice<int>> and tuple_ops=tuple<none, sum<int>, none>
    * this will correspond to `tuple<::std::monostate, int, ::std::monostate>`.
    *
    * So we can store that tuple in shared memory to perform per-block reduction operations.
