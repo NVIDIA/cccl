@@ -8,6 +8,11 @@
 //
 //===----------------------------------------------------------------------===//
 
+/**
+ * @file
+ * @brief Implementation of different operators for the reduce access type
+ */
+
 #pragma once
 
 #include <cuda/__cccl_config>
