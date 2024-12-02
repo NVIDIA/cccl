@@ -73,7 +73,7 @@ class conjugated_accessor
 {
 private:
   using __nested_element_type = typename _NestedAccessor::element_type;
-  using __nc_result_type      = decltype(__detail::__conj_if_needed{}(_CUDA_VSTD::declval<__nested_element_type>()));
+  using __nc_result_type      = decltype(conj_if_needed(_CUDA_VSTD::declval<__nested_element_type>()));
 
 public:
   using element_type     = _CUDA_VSTD::add_const_t<__nc_result_type>;
@@ -88,7 +88,7 @@ public:
   {}
 
   _CCCL_TEMPLATE(class _OtherNestedAccessor)
-  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _NestedAccessor, const _OtherNestedAccessor&))
+  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, _NestedAccessor, const _OtherNestedAccessor&))
   __MDSPAN_CONDITIONAL_EXPLICIT(!_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _OtherNestedAccessor, _NestedAccessor))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr conjugated_accessor(const conjugated_accessor<_OtherNestedAccessor>& __other)
       : __nested_accessor_(__other.nested_accessor())
@@ -96,7 +96,7 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI constexpr reference access(data_handle_type __p, size_t __i) const noexcept
   {
-    return __detail::__conj_if_needed{}(__nested_element_type(__nested_accessor_.access(__p, __i)));
+    return conj_if_needed(__nested_element_type(__nested_accessor_.access(__p, __i)));
   }
 
   [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr typename offset_policy::data_handle_type
@@ -124,12 +124,7 @@ conjugated(_CUDA_VSTD::mdspan<_ElementType, _Extents, _Layout, _Accessor> __a)
 
   // P3050 optimizes conjugated's accessor type for when we know that it can't be complex: arithmetic types,
   // and types for which `conj` is not ADL-findable.
-  if constexpr (_CUDA_VSTD::is_arithmetic_v<__value_type>)
-  {
-    return _CUDA_VSTD::mdspan<_ElementType, _Extents, _Layout, _Accessor>(
-      __a.data_handle(), __a.mapping(), __a.accessor());
-  }
-  else if constexpr (!__detail::__has_conj<__value_type>::value)
+  if constexpr (_CUDA_VSTD::is_arithmetic_v<__value_type> || !__conj_if_needed::_HasConj<__value_type>)
   {
     return _CUDA_VSTD::mdspan<_ElementType, _Extents, _Layout, _Accessor>(
       __a.data_handle(), __a.mapping(), __a.accessor());
