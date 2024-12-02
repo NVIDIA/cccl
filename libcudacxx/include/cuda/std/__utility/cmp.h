@@ -34,10 +34,12 @@
 
 _CCCL_PUSH_MACROS
 
+#if defined(_CCCL_NO_IF_CONSTEXPR)
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4018) // required cast from signed to unsigned
 _CCCL_DIAG_SUPPRESS_MSVC(4388) // required cast from signed to larger unsigned
 _CCCL_DIAG_SUPPRESS_MSVC(4389) // signed/unsigned mismatch for == and !=
+#endif // _CCCL_NO_IF_CONSTEXPR
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -153,7 +155,9 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool in_range(_Up __u) noexcept
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
+#if defined(_CCCL_NO_IF_CONSTEXPR)
 _CCCL_DIAG_POP
+#endif // _CCCL_NO_IF_CONSTEXPR
 
 _CCCL_POP_MACROS
 
