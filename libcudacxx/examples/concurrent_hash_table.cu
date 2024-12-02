@@ -14,6 +14,7 @@
 #include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/pair.h>
+#include <thrust/universal_allocator.h>
 #include <thrust/system/cuda/vector.h>
 
 #include <cassert>
@@ -25,7 +26,7 @@ template <typename Key,
           typename Value,
           typename Hash           = thrust::identity<Key>,
           typename KeyEqual       = thrust::equal_to<Key>,
-          typename MemoryResource = thrust::universal_raw_memory_resource>
+          typename MemoryResource = thrust::universal_memory_resource>
 struct concurrent_hash_table
 {
   // Elements transition from state_empty -> state_reserved ->
