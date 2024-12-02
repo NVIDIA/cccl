@@ -242,7 +242,7 @@ Benchmark results captured in a tuning database can be compared as well:
 
 This will print a Markdown report showing the runtime differences and noise for each variant.
 
-Furthermore, you can plot the results from one or more tuning databases as bar chart or box plot (add `--box`):
+Furthermore, you can plot the results from one or more tuning databases as a bar chart or a box plot (add `--box`):
 
 .. code-block:: bash
 
