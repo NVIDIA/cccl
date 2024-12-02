@@ -253,7 +253,7 @@ or visually compare the performance of CUB across different tuning databases
 (from different points in time, on different GPUs, etc.).
 
 
-Dumping benchmark result from a tuning database
+Dumping benchmark results from a tuning database
 --------------------------------------------------------------------------------
 
 The resulting database contains all samples, which can be extracted into JSON files:
