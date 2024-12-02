@@ -142,6 +142,8 @@
 #if _CCCL_CUDACC_BELOW(11, 3) || _CCCL_COMPILER(NVRTC, <, 12)
 #  undef _CCCL_DEPRECATED
 #  undef _CCCL_DEPRECATED_BECAUSE
+#  define _CCCL_DEPRECATED
+#  define _CCCL_DEPRECATED_BECAUSE(_MSG)
 #endif
 
 // Disable deprecated attribute for type aliases when using MSVC's native attribute
