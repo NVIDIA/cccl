@@ -18,8 +18,8 @@ set(stf_example_sources
 set(stf_example_codegen_sources
   01-axpy-launch.cu
   01-axpy-parallel_for.cu
-  01-axpy-reduce.cu
   binary_fhe.cu
+  09-dot-reduce.cu
   cfd.cu
   custom_data_interface.cu
   fdtd_mgpu.cu
