@@ -95,6 +95,8 @@ Feature availability:
 
    -  ``bind_front`` is available in C++17.
 
+-  C++20 integer comparison functions in ``<utility>`` are available in C++11.
+
 -  C++23 ``<expected>`` is available in C++14.
 
    -  all features are available in C++14
