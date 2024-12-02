@@ -9,6 +9,7 @@
 // TODO: It would be great if this example could NOT depend on Thrust.
 #include <thrust/allocate_unique.h>
 #include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/functional.h>
 #include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
