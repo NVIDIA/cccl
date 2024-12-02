@@ -612,6 +612,9 @@ public:
       payload);
   }
 
+  /**
+   * @brief Start a new section in the DOT file identified by its symbol
+   */
   void dot_push_section(::std::string symbol) const
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
@@ -622,6 +625,9 @@ public:
       payload);
   }
 
+  /**
+   * @brief Ends current dot section
+   */
   void dot_pop_section() const
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
@@ -632,6 +638,9 @@ public:
       payload);
   }
 
+  /**
+   * @brief RAII-style description of a new section in the DOT file identified by its symbol
+   */
   auto dot_section(::std::string symbol) const
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
