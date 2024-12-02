@@ -335,9 +335,25 @@ class _Reduce:
         bindings.cccl_device_reduce_cleanup(ctypes.byref(self.build_result))
 
 
+def _get_reducer():
+    # note: currently this is an unbounded cache:
+    cache = {}
+    def inner(d_in, d_out, op, init):
+        key = (d_in.dtype, d_out.dtype, op, init.dtype)
+        if key in cache:
+            return cache[key]
+        else:
+            result = _Reduce(d_in, d_out, op, init)
+            cache[key] = result
+            return result
+    return inner
+
+get_reducer = _get_reducer()
+
+
 # TODO Figure out `sum` without operator and initial value
 # TODO Accept stream
-def reduce_into(d_in, d_out, op, init):
+def reduce_into(d_in, d_out, op, h_init):
     """Computes a device-wide reduction using the specified binary ``op`` functor and initial value ``init``.
 
     Example:
@@ -367,4 +383,4 @@ def reduce_into(d_in, d_out, op, init):
     Returns:
         A callable object that can be used to perform the reduction
     """
-    return _Reduce(d_in, d_out, op, init)
+    return get_reducer(d_in, d_out, op, h_init)
