@@ -28,15 +28,15 @@
 
 #include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends
 
-#if defined(_LIBCUDACXX_HAS_NVFP16)
-#  include <cuda_fp16.h>
-#endif // _LIBCUDACXX_HAS_NVFP16
-
-#if defined(_LIBCUDACXX_HAS_NVBF16)
-_CCCL_DIAG_PUSH
-_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
-#  include <cuda_bf16.h>
-_CCCL_DIAG_POP
+// Forward-declare __half and __nv_bfloat16. The cuda_fp16.h and cuda_bf16.h are
+// expensive to include. The APIs use only pointers, so we do not have to define
+// the types. If the user wants to use these types, it is their responsibility
+// to include the headers.
+#ifdef _LIBCUDACXX_HAS_NVF16
+struct __half;
+#endif // _LIBCUDACXX_HAS_NVF16
+#ifdef _LIBCUDACXX_HAS_NVBF16
+struct __nv_bfloat16;
 #endif // _LIBCUDACXX_HAS_NVBF16
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX

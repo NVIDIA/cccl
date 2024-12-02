@@ -229,6 +229,33 @@ run the benchmark regardless, and continue.
 The tuning infrastructure stores results in an SQLite database called `cccl_meta_bench.db` in the build directory.
 This database persists across tuning runs.
 If you interrupt the benchmark script and then launch it again, only missing benchmark variants will be run.
+
+
+Comparing results of multiple tuning databases
+--------------------------------------------------------------------------------
+
+Benchmark results captured in a tuning database can be compared as well:
+
+.. code-block:: bash
+
+    ../benchmarks/scripts/compare.py -o cccl_meta_bench1.db cccl_meta_bench2.db
+
+This will print a Markdown report showing the runtime differences and noise for each variant.
+
+Furthermore, you can plot the results from one or more tuning databases as a bar chart or a box plot (add `--box`):
+
+.. code-block:: bash
+
+    ../benchmarks/scripts/sol.py -o cccl_meta_bench.db ...
+
+This is useful to display the current performance of CUB as captured in a single tuning database,
+or visually compare the performance of CUB across different tuning databases
+(from different points in time, on different GPUs, etc.).
+
+
+Dumping benchmark results from a tuning database
+--------------------------------------------------------------------------------
+
 The resulting database contains all samples, which can be extracted into JSON files:
 
 .. code-block:: bash
