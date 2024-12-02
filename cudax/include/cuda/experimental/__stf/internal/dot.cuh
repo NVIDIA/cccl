@@ -410,10 +410,17 @@ public:
       auto sec = ::std::make_shared<section>(mv(symbol));
       int id   = sec->get_id();
 
-      sec->parent_id = current().size() == 0 ? 0 : current().top();
+      int parent_id  = current().size() == 0 ? 0 : current().top();
+      sec->parent_id = parent_id;
 
       // Save the section in the map
       dot::instance().map[id] = sec;
+
+      // Add the section to the children of its parent if that was not the root
+      if (parent_id > 0)
+      {
+        dot::instance().map[parent_id]->children_ids.push_back(id);
+      }
 
       // Push the id in the current stack
       current().push(id);
@@ -450,6 +457,8 @@ public:
     }
 
     int parent_id;
+
+    ::std::vector<int> children_ids;
 
   private:
     int depth;
@@ -536,6 +545,60 @@ public:
     {
       existing_edges.insert(e);
     }
+
+    /* Put nodes which belong to a section into their clusters */
+    ::std::unordered_map<int, ::std::vector<int>> section_id_to_nodes;
+    for (auto& p : pc->metadata)
+    {
+      // p.first task id, p.second metadata
+      int dot_section_id = p.second.dot_section_id;
+      if (dot_section_id > 0)
+      {
+        section_id_to_nodes[dot_section_id].push_back(p.first);
+      }
+    }
+
+    /* Display all non-empty sections recursively */
+    for (auto [id, sec_ptr] : map)
+    {
+      // Select root nodes only
+      if (sec_ptr->parent_id == 0)
+      {
+        print_section(outFile, id, section_id_to_nodes);
+      }
+    }
+  }
+
+  void
+  print_section(::std::ofstream& outFile, int id, ::std::unordered_map<int, ::std::vector<int>>& section_id_to_nodes)
+  {
+    // Stop printing sections if they are deeper than the max depth (if defined)
+    const char* env_max_depth = getenv("CUDASTF_DOT_MAX_DEPTH");
+    if (env_max_depth && (atoi(env_max_depth) < map[id]->get_depth()))
+    {
+      return;
+    }
+
+    outFile << "subgraph cluster_section_" << ::std::to_string(id) << " {\n ";
+
+    // Display all children too
+    for (int children_ids : map[id]->children_ids)
+    {
+      print_section(outFile, children_ids, section_id_to_nodes);
+    }
+
+    // style of the box
+    outFile << "    color=black;\n";
+    outFile << "    style=dashed\n";
+    outFile << "    label=\"" + map[id]->get_symbol() + "\"\n";
+
+    // Put all nodes which belong to this section
+    for (auto i : section_id_to_nodes[id])
+    {
+      outFile << "    \"NODE_" + ::std::to_string(i) + "\"\n";
+    }
+
+    outFile << "} // end subgraph cluster_section_" << ::std::to_string(id) << "\n ";
   }
 
   // This will update colors if necessary
@@ -618,6 +681,10 @@ public:
     ::std::swap(new_edges, pc.existing_edges);
   }
 
+  /**
+   * @brief Collapse nodes which are parts of sections deeper than the value
+   *        specified in CUDASTF_DOT_MAX_DEPTH
+   */
   void collapse_sections()
   {
     const char* env_depth = getenv("CUDASTF_DOT_MAX_DEPTH");
@@ -687,6 +754,9 @@ public:
         // Rename the task that remains to have the label of the section
         ::std::shared_ptr<section> sec  = dot::instance().map[p.first];
         pc->metadata[p.second[0]].label = sec->get_symbol();
+
+        // Assign the node to the parent of the section it corresponds to
+        pc->metadata[p.second[0]].dot_section_id = sec->parent_id;
       }
     }
   }

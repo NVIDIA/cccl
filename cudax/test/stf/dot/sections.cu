@@ -32,16 +32,21 @@ int main()
   context ctx;
 
   auto lA = ctx.logical_data(shape_of<slice<char>>(64));
-  ctx.task(lA.write()).set_symbol("foot")->*[](cudaStream_t, auto) {};
+  auto lB = ctx.logical_data(shape_of<slice<char>>(64));
+  auto lC = ctx.logical_data(shape_of<slice<char>>(64));
+  ctx.task(lA.write()).set_symbol("initA")->*[](cudaStream_t, auto) {};
+  ctx.task(lB.write()).set_symbol("initB")->*[](cudaStream_t, auto) {};
+  ctx.task(lC.write()).set_symbol("initC")->*[](cudaStream_t, auto) {};
   for (size_t j = 0; j < 3; j++)
   {
-    ctx.task(lA.rw()).set_symbol("presec")->*[](cudaStream_t, auto) {};
+    ctx.task(lA.rw()).set_symbol("f1")->*[](cudaStream_t, auto) {};
     auto guard = ctx.dot_section("sec_loop " + ::std::to_string(j));
-    for (size_t i = 0; i < 10; i++)
+    for (size_t i = 0; i < 2; i++)
     {
       auto guard_inner = ctx.dot_section("sec_inner_loop " + ::std::to_string(i));
-      ctx.task(lA.rw()).set_symbol("a" + ::std::to_string(i))->*[](cudaStream_t, auto) {};
-      ctx.task(lA.rw()).set_symbol("b" + ::std::to_string(i))->*[](cudaStream_t, auto) {};
+      ctx.task(lA.read(), lB.rw()).set_symbol("f2")->*[](cudaStream_t, auto, auto) {};
+      ctx.task(lA.read(), lC.rw()).set_symbol("f2")->*[](cudaStream_t, auto, auto) {};
+      ctx.task(lB.read(), lC.read(), lA.rw()).set_symbol("f3")->*[](cudaStream_t, auto, auto, auto) {};
     }
   }
   ctx.finalize();
