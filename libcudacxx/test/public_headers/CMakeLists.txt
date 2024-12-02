@@ -49,6 +49,9 @@ function(libcudacxx_add_public_header_test header)
   if (CCCL_SUPPRESS_ICC_DEPRECATION_WARNING)
     target_compile_definitions(headertest_${header_name} PRIVATE CCCL_SUPPRESS_ICC_DEPRECATION_WARNING)
   endif()
+  if (CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING)
+    target_compile_definitions(headertest_${header_name} PRIVATE CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING)
+  endif()
   target_compile_definitions(headertest_${header_name} PRIVATE CCCL_ENABLE_ASSERTIONS)
 
   # Ensure that if this is an atomic header, we only include the right architectures

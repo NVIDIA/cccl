@@ -160,7 +160,7 @@ public:
   }
 #endif // _CCCL_STD_VER <= 2017
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 #  if _CCCL_STD_VER >= 2020
   //! @brief Equality comparison between a \c pinned_memory_resource and another resource
   //! @param __rhs The resource to compare to
@@ -239,7 +239,7 @@ public:
   friend constexpr void get_property(pinned_memory_resource const&, device_accessible) noexcept {}
   //! @brief Enables the \c host_accessible property
   friend constexpr void get_property(pinned_memory_resource const&, host_accessible) noexcept {}
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @brief Checks whether the passed in alignment is valid
   static constexpr bool __is_valid_alignment(const size_t __alignment) noexcept

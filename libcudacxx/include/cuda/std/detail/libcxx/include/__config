@@ -99,10 +99,6 @@ extern "C++" {
 #    define _LIBCUDACXX_HAS_STL_LITERALS
 #  endif
 
-#  if _CCCL_COMPILER(GCC) && __cplusplus < 201103L
-#    error "libc++ does not support using GCC with C++03. Please enable C++11"
-#  endif
-
 // FIXME: ABI detection should be done via compiler builtin macros. This
 // is just a placeholder until Clang implements such macros. For now assume
 // that Windows compilers pretending to be MSVC++ target the Microsoft ABI,
@@ -258,30 +254,28 @@ extern "C++" {
 #    define _LIBCUDACXX_NO_CFI
 #  endif
 
-#  if (defined(__ISO_C_VISIBLE) && __ISO_C_VISIBLE >= 2011) || __cplusplus >= 201103L
-#    if defined(__FreeBSD__)
-#      define _LIBCUDACXX_HAS_QUICK_EXIT
-#      define _LIBCUDACXX_HAS_C11_FEATURES
-#    elif defined(__Fuchsia__) || defined(__wasi__)
+#  if defined(__FreeBSD__)
+#    define _LIBCUDACXX_HAS_QUICK_EXIT
+#    define _LIBCUDACXX_HAS_C11_FEATURES
+#  elif defined(__Fuchsia__) || defined(__wasi__)
+#    define _LIBCUDACXX_HAS_QUICK_EXIT
+#    define _LIBCUDACXX_HAS_TIMESPEC_GET
+#    define _LIBCUDACXX_HAS_C11_FEATURES
+#  elif defined(__linux__)
+#    if !defined(_LIBCUDACXX_HAS_MUSL_LIBC)
+#      if _LIBCUDACXX_GLIBC_PREREQ(2, 15) || defined(__BIONIC__)
+#        define _LIBCUDACXX_HAS_QUICK_EXIT
+#      endif
+#      if _LIBCUDACXX_GLIBC_PREREQ(2, 17)
+#        define _LIBCUDACXX_HAS_C11_FEATURES
+#        define _LIBCUDACXX_HAS_TIMESPEC_GET
+#      endif
+#    else // defined(_LIBCUDACXX_HAS_MUSL_LIBC)
 #      define _LIBCUDACXX_HAS_QUICK_EXIT
 #      define _LIBCUDACXX_HAS_TIMESPEC_GET
 #      define _LIBCUDACXX_HAS_C11_FEATURES
-#    elif defined(__linux__)
-#      if !defined(_LIBCUDACXX_HAS_MUSL_LIBC)
-#        if _LIBCUDACXX_GLIBC_PREREQ(2, 15) || defined(__BIONIC__)
-#          define _LIBCUDACXX_HAS_QUICK_EXIT
-#        endif
-#        if _LIBCUDACXX_GLIBC_PREREQ(2, 17)
-#          define _LIBCUDACXX_HAS_C11_FEATURES
-#          define _LIBCUDACXX_HAS_TIMESPEC_GET
-#        endif
-#      else // defined(_LIBCUDACXX_HAS_MUSL_LIBC)
-#        define _LIBCUDACXX_HAS_QUICK_EXIT
-#        define _LIBCUDACXX_HAS_TIMESPEC_GET
-#        define _LIBCUDACXX_HAS_C11_FEATURES
-#      endif
-#    endif // __linux__
-#  endif
+#    endif
+#  endif // __linux__
 
 #  if _CCCL_COMPILER(NVRTC)
 #    define __alignof(x) alignof(x)
@@ -325,11 +319,6 @@ extern "C++" {
 // _LIBCUDACXX_ABI_ALTERNATE_STRING_LAYOUT left here for backward compatibility.
 #    if defined(_LIBCUDACXX_ALTERNATE_STRING_LAYOUT)
 #      define _LIBCUDACXX_ABI_ALTERNATE_STRING_LAYOUT
-#    endif
-
-#    if __cplusplus < 201103L
-typedef __char16_t char16_t;
-typedef __char32_t char32_t;
 #    endif
 
 #    if !(_CCCL_HAS_FEATURE(cxx_lambdas))

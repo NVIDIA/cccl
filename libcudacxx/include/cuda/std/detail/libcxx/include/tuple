@@ -158,6 +158,7 @@ template <class... Types>
 #include <cuda/std/__functional/unwrap_ref.h>
 #include <cuda/std/__fwd/array.h>
 #include <cuda/std/__memory/allocator_arg_t.h>
+#include <cuda/std/__tuple_dir/ignore.h>
 #include <cuda/std/__tuple_dir/make_tuple_types.h>
 #include <cuda/std/__tuple_dir/sfinae_helpers.h>
 #include <cuda/std/__tuple_dir/structured_bindings.h>
@@ -1115,21 +1116,6 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 tuple<_Tp&...> tie(_Tp&... __t) 
 {
   return tuple<_Tp&...>(__t...);
 }
-
-template <class _Up>
-struct __ignore_t
-{
-  template <class _Tp>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 const __ignore_t& operator=(_Tp&&) const
-  {
-    return *this;
-  }
-};
-
-namespace
-{
-_CCCL_GLOBAL_CONSTANT __ignore_t<unsigned char> ignore{};
-} // namespace
 
 template <class... _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 tuple<typename __unwrap_ref_decay<_Tp>::type...> make_tuple(_Tp&&... __t)
