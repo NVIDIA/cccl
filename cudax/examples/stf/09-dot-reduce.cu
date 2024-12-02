@@ -32,7 +32,7 @@ int main()
     Y[i] = sin(double(i));
 
     // Compute the reference result of the DOT product of X and Y
-    ref_res += X[i]*Y[i];
+    ref_res += X[i] * Y[i];
   }
 
   context ctx;
@@ -42,11 +42,7 @@ int main()
   auto lsum = ctx.logical_data(shape_of<scalar<double>>());
 
   /* Compute sum(x_i * y_i)*/
-  ctx.parallel_for(
-    lY.shape(),
-    lX.read(),
-    lY.read(),
-    lsum.reduce(reducer::sum<double>{}))
+  ctx.parallel_for(lY.shape(), lX.read(), lY.read(), lsum.reduce(reducer::sum<double>{}))
       ->*[] __device__(size_t i, auto dX, auto dY, double& sum) {
             sum += dX(i) * dY(i);
           };
