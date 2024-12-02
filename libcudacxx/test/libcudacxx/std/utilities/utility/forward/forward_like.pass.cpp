@@ -85,16 +85,16 @@ __host__ __device__ void compile_test()
   };
 
   static_assert(cuda::std::is_same<decltype(cuda::std::forward_like<CT&&>(cuda::std::declval<NoCtorCopyMove>())),
-                                  const NoCtorCopyMove&&>::value,
+                                   const NoCtorCopyMove&&>::value,
                 "");
   static_assert(cuda::std::is_same<decltype(cuda::std::forward_like<CT&>(cuda::std::declval<NoCtorCopyMove>())),
-                                  const NoCtorCopyMove&>::value,
+                                   const NoCtorCopyMove&>::value,
                 "");
   static_assert(cuda::std::is_same<decltype(cuda::std::forward_like<T&&>(cuda::std::declval<NoCtorCopyMove>())),
-                                  NoCtorCopyMove&&>::value,
+                                   NoCtorCopyMove&&>::value,
                 "");
   static_assert(cuda::std::is_same<decltype(cuda::std::forward_like<T&>(cuda::std::declval<NoCtorCopyMove>())),
-                                  NoCtorCopyMove&>::value,
+                                   NoCtorCopyMove&>::value,
                 "");
 
   static_assert(noexcept(cuda::std::forward_like<T>(cuda::std::declval<NoCtorCopyMove>())), "");
