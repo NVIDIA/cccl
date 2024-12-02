@@ -749,8 +749,8 @@ public:
       {
         for (const auto& p : pc->metadata)
         {
-          outFile << "\"NODE_" << p.first << "\" [style=\"filled\" fillcolor=\"" << p.second.color << "\" label=\"" << p.second.label
-                  << "\"]\n";
+          outFile << "\"NODE_" << p.first << "\" [style=\"filled\" fillcolor=\"" << p.second.color << "\" label=\""
+                  << p.second.label << "\"]\n";
         }
       }
 
