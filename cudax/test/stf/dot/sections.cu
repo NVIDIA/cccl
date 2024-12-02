@@ -10,7 +10,7 @@
 
 /**
  * @file
- * @brief This test makes sure we can generate a dot file
+ * @brief This test makes sure we can generate a dot file with sections
  */
 
 #include <cuda/experimental/stf.cuh>
