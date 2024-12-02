@@ -234,8 +234,7 @@ If you interrupt the benchmark script and then launch it again, only missing ben
 Comparing results of multiple tuning databases
 --------------------------------------------------------------------------------
 
-Similarly to comparing JSON files from NVBench,
-benchmark results captured in a tuning database can be compared as well:
+Benchmark results captured in a tuning database can be compared as well:
 
 .. code-block:: bash
 
