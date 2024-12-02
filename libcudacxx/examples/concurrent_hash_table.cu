@@ -15,7 +15,7 @@
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/pair.h>
 #include <thrust/universal_allocator.h>
-#include <thrust/system/cuda/vector.h>
+#include <thrust/universal_vector.h>
 
 #include <cassert>
 #include <cstdio>
@@ -187,8 +187,8 @@ int main()
 
     auto freq = thrust::allocate_unique<table>(thrust::universal_allocator<table>{}, 8);
 
-    thrust::cuda::universal_vector<int> input = [] {
-      thrust::cuda::universal_vector<int> v(2048);
+    thrust::universal_vector<int> input = [] {
+      thrust::universal_vector<int> v(2048);
       std::mt19937 gen(1337);
       std::uniform_int_distribution<long> dis(0, 7);
       thrust::generate(v.begin(), v.end(), [&] {
@@ -218,8 +218,8 @@ int main()
 
     auto freq = thrust::allocate_unique<table>(thrust::universal_allocator<table>{}, 8, identity_modulo<int>(4));
 
-    thrust::cuda::universal_vector<int> input = [] {
-      thrust::cuda::universal_vector<int> v(2048);
+    thrust::universal_vector<int> input = [] {
+      thrust::universal_vector<int> v(2048);
       std::mt19937 gen(1337);
       std::uniform_int_distribution<long> dis(0, 7);
       thrust::generate(v.begin(), v.end(), [&] {
