@@ -300,36 +300,6 @@ private:
 
   ::std::unordered_set<int> discarded_tasks;
 
-  // Replace nodes with indices n with index k
-  void replace_in_unordered_set(IntPairSet& set, int n, int k)
-  {
-    IntPairSet updated_set;
-
-    // Traverse the original set
-    for (const auto& p : set)
-    {
-      auto new_pair = p;
-
-      // Replace n with k in the pair
-      if (new_pair.first == n)
-      {
-        new_pair.first = k;
-      }
-      if (new_pair.second == n)
-      {
-        new_pair.second = k;
-      }
-
-      if (new_pair.first != new_pair.second)
-      {
-        updated_set.insert(new_pair);
-      }
-    }
-
-    // Swap the updated set into the original set
-    set = mv(updated_set);
-  }
-
 public:
   // Keep track of existing edges, to make the output possibly look better
   IntPairSet existing_edges;
