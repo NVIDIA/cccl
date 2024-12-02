@@ -53,7 +53,7 @@ class Empty
 
 class NotEmpty
 {
-  virtual ~NotEmpty();
+  __host__ __device__ virtual ~NotEmpty();
 };
 
 union Union
@@ -66,7 +66,7 @@ struct bit_zero
 
 class Abstract
 {
-  virtual ~Abstract() = 0;
+  __host__ __device__ virtual ~Abstract() = 0;
 };
 
 enum Enum
@@ -88,11 +88,11 @@ using FunctionType = void();
 
 struct TestMembers
 {
-  static int static_method(int)
+  __host__ __device__ static int static_method(int)
   {
     return 0;
   }
-  int method()
+  __host__ __device__ int method()
   {
     return 0;
   }
@@ -105,8 +105,8 @@ struct TestMembers
   enum class CE1;
 };
 
-void func1();
-int func2(int);
+__host__ __device__ void func1();
+__host__ __device__ int func2(int);
 
 int main(int, char**)
 {
