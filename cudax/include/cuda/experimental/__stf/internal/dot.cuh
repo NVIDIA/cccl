@@ -528,7 +528,7 @@ public:
       }
     }
 
-    /* Display all non-empty sections recursively */
+    /* Display all sections recursively */
     for (auto [id, sec_ptr] : map)
     {
       // Select root nodes only
@@ -539,6 +539,9 @@ public:
     }
   }
 
+  /**
+   * @brief Add a dashed box around a section and its children
+   */
   void
   print_section(::std::ofstream& outFile, int id, ::std::unordered_map<int, ::std::vector<int>>& section_id_to_nodes)
   {
@@ -551,7 +554,7 @@ public:
 
     outFile << "subgraph cluster_section_" << ::std::to_string(id) << " {\n ";
 
-    // Display all children too
+    // Display all children too to have nested boxes
     for (int children_ids : map[id]->children_ids)
     {
       print_section(outFile, children_ids, section_id_to_nodes);
@@ -616,7 +619,11 @@ public:
     }
   }
 
-  // Combine src_id into dst_id
+  /**
+   * @brief Combine two nodes identified by "src_id" and "dst_id" into a single
+   * updated one ("dst_id"), redirecting edges and combining timing if
+   * necessary
+   */
   void merge_nodes(per_ctx_dot& pc, int dst_id, int src_id)
   {
     // ::std::unordered_map<int /* id */, per_task_info> metadata;
@@ -1059,6 +1066,7 @@ private:
 
   ::std::string dot_filename;
 
+  // Map to get dot sections from their ID
   ::std::unordered_map<int, ::std::shared_ptr<section>> map;
 };
 
