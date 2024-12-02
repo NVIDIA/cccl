@@ -108,4 +108,11 @@ Feature availability:
 
 -  C++26 ``std::dims`` is available in C++17.
 
+-  C++26 ``std::linalg`` accessors, transposed layout, and related functions are available in C++17.
+
+   - ``scaled()`` and ``scaled_accessor``
+   - ``conjugated()`` and ``conjugated_accessor``
+   - ``transposed()`` and ``layout_transpose``
+   - ``conjugate_transposed()``
+
 -  C++26 tuple protocol to ``complex`` is available in C++11.
