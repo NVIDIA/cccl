@@ -103,7 +103,7 @@ void test_block_load(const c2h::device_vector<T>& d_input, InputIteratorT input)
 
   c2h::device_vector<T> d_output(d_input.size());
   kernel<ItemsPerThread, ThreadsInBlock, LoadAlgorithm>
-    <<<1, ThreadsInBlock>>>(sufficient_resources, input, thrust::raw_pointer_cast(d_output.data()), d_input.size());
+    <<<1, ThreadsInBlock>>>(sufficient_resources, input, thrust::raw_pointer_cast(d_output.data()), static_cast<int>(d_input.size()));
   REQUIRE(cudaSuccess == cudaPeekAtLastError());
   REQUIRE(cudaSuccess == cudaDeviceSynchronize());
   REQUIRE(d_input == d_output);
