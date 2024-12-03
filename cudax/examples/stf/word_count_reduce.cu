@@ -42,10 +42,11 @@ int main()
 
   context ctx;
 
-  auto ltext = ctx.logical_data(const_cast<char*>(&raw_input[0]), {sizeof(raw_input)});
-  auto lcnt  = ctx.logical_data(shape_of<scalar<int>>());
+  size_t text_len = sizeof(raw_input);
+  auto ltext      = ctx.logical_data(const_cast<char*>(&raw_input[0]), {text_len});
+  auto lcnt       = ctx.logical_data(shape_of<scalar<int>>());
 
-  ctx.parallel_for(ltext.shape(), ltext.read(), lcnt.reduce(reducer::sum<int>{}))
+  ctx.parallel_for(box(text_len - 1), ltext.read(), lcnt.reduce(reducer::sum<int>{}))
       ->*[] _CCCL_DEVICE(size_t i, auto text, int& s) {
             /* When we have the beginning of a new word, increment the counter */
             if (!is_alpha(text(i)) && is_alpha(text(i + 1)))
