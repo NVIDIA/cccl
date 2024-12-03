@@ -92,8 +92,11 @@ struct stream_ref : ::cuda::stream_ref
     // TODO consider an optimization to not create an event every time and instead have one persistent event or one
     // per stream
     _CCCL_ASSERT(__stream != detail::__invalid_stream, "cuda::experimental::stream_ref::wait invalid stream passed");
-    event __tmp(__other);
-    wait(__tmp);
+    if (*this != __other)
+    {
+      event __tmp(__other);
+      wait(__tmp);
+    }
   }
 
   //! @brief Get the logical device under which this stream was created
