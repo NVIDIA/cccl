@@ -106,7 +106,6 @@ struct swap_with_friend
 template <typename T>
 __host__ __device__ void test_ambiguous_std()
 {
-#if !defined(TEST_COMPILER_NVRTC)
   // clang-format off
   NV_IF_TARGET(NV_IS_HOST, (
     // fully qualified calls
@@ -115,17 +114,20 @@ __host__ __device__ void test_ambiguous_std()
       T j = {};
       cuda::std::swap(i,j);
     }
+#if !defined(TEST_COMPILER_NVRTC)
     {
       T i = {};
       T j = {};
       std::swap(i,j);
     }
+#endif // !TEST_COMPILER_NVRTC
     // ADL calls
     {
       T i = {};
       T j = {};
       swap(i,j);
     }
+#if !defined(TEST_COMPILER_NVRTC)
     {
       T i = {};
       T j = {};
@@ -187,13 +189,15 @@ int main(int, char**)
   static_assert(test_swap_constexpr(), "");
 #endif // TEST_STD_VER >= 2014
 
-  test_ambiguous_std<::std::pair<int, int>>(); // has std::swap overload
   test_ambiguous_std<cuda::std::pair<int, int>>(); // has cuda::std::swap overload
+#if !defined(TEST_COMPILER_NVRTC)
+  test_ambiguous_std<::std::pair<int, int>>(); // has std::swap overload
   test_ambiguous_std<cuda::std::pair<::std::pair<int, int>, int>>(); // has std:: and cuda::std as associated namespaces
   test_ambiguous_std<::std::allocator<char>>(); // no std::swap overload
 
   // Ensure that we do not SFINAE swap out if there is a free function as that will take precedent
   test_ambiguous_std<swap_with_friend<::std::pair<int, int>>>();
+#endif // !TEST_COMPILER_NVRTC
 
 #if TEST_STD_VER >= 2014
   static_assert(cuda::std::is_swappable<cuda::std::pair<::std::pair<int, int>, int>>::value, "");
