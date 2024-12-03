@@ -114,20 +114,26 @@ __host__ __device__ void test_ambiguous_std()
       T j = {};
       cuda::std::swap(i,j);
     }
+  ))
 #if !defined(TEST_COMPILER_NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (
     {
       T i = {};
       T j = {};
       std::swap(i,j);
     }
+  ))
 #endif // !TEST_COMPILER_NVRTC
+  NV_IF_TARGET(NV_IS_HOST, (
     // ADL calls
     {
       T i = {};
       T j = {};
       swap(i,j);
     }
+  ))
 #if !defined(TEST_COMPILER_NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (
     {
       T i = {};
       T j = {};
