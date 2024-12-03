@@ -404,7 +404,7 @@ C2H_TEST("DeviceMerge::MergePairs input sizes", "[merge][device]")
 }
 
 // this test exceeds 4GiB of memory and the range of 32-bit integers
-C2H_TEST("DeviceMerge::MergePairs really large input", "[merge][device]")
+C2H_TEST("DeviceMerge::MergePairs really large input", "[merge][device][skip-cs-racecheck]")
 try
 {
   using key_t     = char;

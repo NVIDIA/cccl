@@ -37,9 +37,10 @@
 int device_guard(int device_id)
 {
   int device_count{};
-  if (cudaGetDeviceCount(&device_count) != cudaSuccess)
+  auto err = cudaGetDeviceCount(&device_count);
+  if (err != cudaSuccess)
   {
-    std::cerr << "Can't query devices number." << std::endl;
+    std::cerr << "Error in cudaGetDeviceCount: " << cudaGetErrorString(err) << std::endl;
     std::exit(-1);
   }
 
@@ -54,5 +55,10 @@ int device_guard(int device_id)
 
 void set_device(int device_id)
 {
-  cudaSetDevice(device_guard(device_id));
+  auto err = cudaSetDevice(device_guard(device_id));
+  if (err != cudaSuccess)
+  {
+    std::cerr << "Error in cudaSetDevice: " << cudaGetErrorString(err) << std::endl;
+    std::exit(-1);
+  }
 }
