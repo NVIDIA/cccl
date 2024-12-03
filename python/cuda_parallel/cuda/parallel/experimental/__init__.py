@@ -263,7 +263,7 @@ class _Reduce:
         if error != enums.CUDA_SUCCESS:
             raise ValueError('Error building reduce')
 
-    def __call__(self, temp_storage, num_items, d_in, d_out, init):
+    def __call__(self, temp_storage, d_in, d_out, num_items, init):
         num_items, d_in_cccl = self.__handle_d_in(num_items, d_in)
         assert num_items is not None
         _dtype_validation(self._ctor_d_out_dtype, d_out.dtype)
