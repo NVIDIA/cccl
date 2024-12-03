@@ -79,7 +79,7 @@ struct __conj_if_needed
   template <class _Type>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(const _Type& __t) const
   {
-    if constexpr (_CUDA_VSTD::is_arithmetic_v<_Type> || !_HasConj<_Type>)
+    if constexpr (is_arithmetic_v<_Type> || !_HasConj<_Type>)
     {
       return __t;
     }

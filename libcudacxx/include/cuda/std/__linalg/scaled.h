@@ -71,9 +71,9 @@ template <class _ScalingFactor, class _NestedAccessor>
 class scaled_accessor
 {
 public:
-  using element_type = _CUDA_VSTD::add_const_t<
+  using element_type = add_const_t<
     decltype(_CUDA_VSTD::declval<_ScalingFactor>() * _CUDA_VSTD::declval<typename _NestedAccessor::element_type>())>;
-  using reference        = _CUDA_VSTD::remove_const_t<element_type>;
+  using reference        = remove_const_t<element_type>;
   using data_handle_type = typename _NestedAccessor::data_handle_type;
   using offset_policy    = scaled_accessor<_ScalingFactor, typename _NestedAccessor::offset_policy>;
 
@@ -99,18 +99,18 @@ public:
     return __scaling_factor_ * typename _NestedAccessor::element_type(__nested_accessor_.access(__p, __i));
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI
   typename offset_policy::data_handle_type constexpr offset(data_handle_type __p, size_t __i) const
   {
     return __nested_accessor_.offset(__p, __i);
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _NestedAccessor nested_accessor() const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _NestedAccessor nested_accessor() const noexcept
   {
     return __nested_accessor_;
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr _ScalingFactor scaling_factor() const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _ScalingFactor scaling_factor() const noexcept
   {
     return __scaling_factor_;
   }
@@ -124,18 +124,17 @@ namespace __detail
 {
 
 template <class _ScalingFactor, class _NestedAccessor>
-using __scaled_element_type =
-  _CUDA_VSTD::add_const_t<typename scaled_accessor<_ScalingFactor, _NestedAccessor>::element_type>;
+using __scaled_element_type = add_const_t<typename scaled_accessor<_ScalingFactor, _NestedAccessor>::element_type>;
 
 } // namespace __detail
 
 template <class _ScalingFactor, class _ElementType, class _Extents, class _Layout, class _Accessor>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI
-_CUDA_VSTD::mdspan<__detail::__scaled_element_type<_ScalingFactor, _Accessor>,
-                   _Extents,
-                   _Layout,
-                   scaled_accessor<_ScalingFactor, _Accessor>>
-scaled(_ScalingFactor __scaling_factor, _CUDA_VSTD::mdspan<_ElementType, _Extents, _Layout, _Accessor> __x)
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI
+mdspan<__detail::__scaled_element_type<_ScalingFactor, _Accessor>,
+       _Extents,
+       _Layout,
+       scaled_accessor<_ScalingFactor, _Accessor>>
+scaled(_ScalingFactor __scaling_factor, mdspan<_ElementType, _Extents, _Layout, _Accessor> __x)
 {
   using __acc_type = scaled_accessor<_ScalingFactor, _Accessor>;
   return {__x.data_handle(), __x.mapping(), __acc_type{__scaling_factor, __x.accessor()}};

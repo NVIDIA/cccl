@@ -75,8 +75,7 @@ _CCCL_TEMPLATE(class _Extents)
 _CCCL_REQUIRES((_Extents::rank() == 2))
 struct __transpose_extents_t_impl
 {
-  using __type =
-    _CUDA_VSTD::extents<typename _Extents::index_type, _Extents::static_extent(1), _Extents::static_extent(0)>;
+  using __type = extents<typename _Extents::index_type, _Extents::static_extent(1), _Extents::static_extent(0)>;
 };
 
 template <class _Extents>
@@ -86,14 +85,14 @@ _CCCL_TEMPLATE(class _Extents)
 _CCCL_REQUIRES((_Extents::rank() == 2))
 _LIBCUDACXX_HIDE_FROM_ABI __transpose_extents_t<_Extents> __transpose_extents(const _Extents& __e)
 {
-  static_assert(
-    _CUDA_VSTD::is_same_v<typename __transpose_extents_t<_Extents>::index_type, typename _Extents::index_type>,
-    "Please fix __transpose_extents_t to account  for P2553, which adds __a template parameter SizeType to extents.");
+  static_assert(is_same_v<typename __transpose_extents_t<_Extents>::index_type, typename _Extents::index_type>,
+                "Please fix __transpose_extents_t to account  for P2553, which adds __a template parameter SizeType to "
+                "extents.");
   constexpr size_t __ext0 = _Extents::static_extent(0);
   constexpr size_t __ext1 = _Extents::static_extent(1);
-  if constexpr (__ext0 == _CUDA_VSTD::dynamic_extent)
+  if constexpr (__ext0 == dynamic_extent)
   {
-    if constexpr (__ext1 == _CUDA_VSTD::dynamic_extent)
+    if constexpr (__ext1 == dynamic_extent)
     {
       return __transpose_extents_t<_Extents>{__e.extent(1), __e.extent(0)};
     }
@@ -104,7 +103,7 @@ _LIBCUDACXX_HIDE_FROM_ABI __transpose_extents_t<_Extents> __transpose_extents(co
   }
   else
   {
-    if constexpr (__ext1 == _CUDA_VSTD::dynamic_extent)
+    if constexpr (__ext1 == dynamic_extent)
     {
       return __transpose_extents_t<_Extents>{__e.extent(1) /* , __e.extent(0) */};
     }
@@ -142,12 +141,12 @@ public:
         , __extents_(__detail::__transpose_extents(__map.extents()))
     {}
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr const extents_type& extents() const noexcept
+    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const extents_type& extents() const noexcept
     {
       return __extents_;
     }
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type required_span_size() const
+    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type required_span_size() const
 #  if !_CCCL_COMPILER(GCC, <, 10) && !_CCCL_COMPILER(CLANG, <, 10)
       noexcept(noexcept(__nested_mapping_.required_span_size()))
 #  endif
@@ -163,42 +162,51 @@ public:
       return __nested_mapping_(__j, __i);
     }
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI const __nested_mapping_type& nested_mapping() const
+    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI const __nested_mapping_type& nested_mapping() const noexcept
     {
       return __nested_mapping_;
     }
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_unique() noexcept
+    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_unique() noexcept
     {
       return __nested_mapping_type::is_always_unique();
     }
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_exhaustive() noexcept
+    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_exhaustive() noexcept
     {
       return __nested_mapping_type::is_always_contiguous();
     }
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_strided() noexcept
+    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool is_always_strided() noexcept
     {
       return __nested_mapping_type::is_always_strided();
     }
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_unique() const
+    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_unique() const
+#  if !_CCCL_COMPILER(GCC, <, 10) && !_CCCL_COMPILER(CLANG, <, 10)
+      noexcept(noexcept(__nested_mapping_.is_unique()))
+#  endif
     {
       return __nested_mapping_.is_unique();
     }
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_exhaustive() const
+    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_exhaustive() const
+#  if !_CCCL_COMPILER(GCC, <, 10) && !_CCCL_COMPILER(CLANG, <, 10)
+      noexcept(noexcept(__nested_mapping_.is_exhaustive()))
+#  endif
     {
       return __nested_mapping_.is_exhaustive();
     }
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_strided() const
+    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_strided() const
+#  if !_CCCL_COMPILER(GCC, <, 10) && !_CCCL_COMPILER(CLANG, <, 10)
+      noexcept(noexcept(__nested_mapping_.is_strided()))
+#  endif
     {
       return __nested_mapping_.is_strided();
     }
 
-    [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type stride(size_t __r) const
+    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type stride(size_t __r) const
     {
       _CCCL_ASSERT(this->is_strided(), "layout must be strided");
       _CCCL_ASSERT(__r < extents_type::rank(), "rank must be less than extents rank");
@@ -234,12 +242,12 @@ struct __transposed_element_accessor
 };
 
 template <class _ElementType>
-struct __transposed_element_accessor<_ElementType, _CUDA_VSTD::default_accessor<_ElementType>>
+struct __transposed_element_accessor<_ElementType, default_accessor<_ElementType>>
 {
   using __element_type  = _ElementType;
-  using __accessor_type = _CUDA_VSTD::default_accessor<__element_type>;
+  using __accessor_type = default_accessor<__element_type>;
 
-  _LIBCUDACXX_HIDE_FROM_ABI static __accessor_type __accessor(const _CUDA_VSTD::default_accessor<_ElementType>& __a)
+  _LIBCUDACXX_HIDE_FROM_ABI static __accessor_type __accessor(const default_accessor<_ElementType>& __a)
   {
     return __accessor_type(__a);
   }
@@ -260,15 +268,15 @@ struct __transposed_layout
 };
 
 template <>
-struct __transposed_layout<_CUDA_VSTD::layout_left>
+struct __transposed_layout<layout_left>
 {
-  using __layout_type = _CUDA_VSTD::layout_right;
+  using __layout_type = layout_right;
 
   template <class _OriginalExtents>
   _LIBCUDACXX_HIDE_FROM_ABI static auto
-  __mapping(const typename _CUDA_VSTD::layout_left::template mapping<_OriginalExtents>& __orig_map)
+  __mapping(const typename layout_left::template mapping<_OriginalExtents>& __orig_map)
   {
-    using __original_mapping_type = typename _CUDA_VSTD::layout_left::template mapping<_OriginalExtents>;
+    using __original_mapping_type = typename layout_left::template mapping<_OriginalExtents>;
     using __extents_type          = __transpose_extents_t<typename __original_mapping_type::extents_type>;
     using __return_mapping_type   = typename __layout_type::template mapping<__extents_type>;
     return __return_mapping_type{__transpose_extents(__orig_map.extents())};
@@ -276,15 +284,15 @@ struct __transposed_layout<_CUDA_VSTD::layout_left>
 };
 
 template <>
-struct __transposed_layout<_CUDA_VSTD::layout_right>
+struct __transposed_layout<layout_right>
 {
-  using __layout_type = _CUDA_VSTD::layout_left;
+  using __layout_type = layout_left;
 
   template <class _OriginalExtents>
   _LIBCUDACXX_HIDE_FROM_ABI static auto
-  __mapping(const typename _CUDA_VSTD::layout_right::template mapping<_OriginalExtents>& __orig_map)
+  __mapping(const typename layout_right::template mapping<_OriginalExtents>& __orig_map)
   {
-    using __original_mapping_type = typename _CUDA_VSTD::layout_right::template mapping<_OriginalExtents>;
+    using __original_mapping_type = typename layout_right::template mapping<_OriginalExtents>;
     using __extents_type          = __transpose_extents_t<typename __original_mapping_type::extents_type>;
     using __return_mapping_type   = typename __layout_type::template mapping<__extents_type>;
     return __return_mapping_type{__transpose_extents(__orig_map.extents())};
@@ -292,21 +300,21 @@ struct __transposed_layout<_CUDA_VSTD::layout_right>
 };
 
 template <>
-struct __transposed_layout<_CUDA_VSTD::layout_stride>
+struct __transposed_layout<layout_stride>
 {
-  using __layout_type = _CUDA_VSTD::layout_stride;
+  using __layout_type = layout_stride;
 
   template <class _OriginalExtents>
   _LIBCUDACXX_HIDE_FROM_ABI static auto
-  __mapping(const typename _CUDA_VSTD::layout_stride::template mapping<_OriginalExtents>& __orig_map)
+  __mapping(const typename layout_stride::template mapping<_OriginalExtents>& __orig_map)
   {
-    using __original_mapping_type = typename _CUDA_VSTD::layout_stride::template mapping<_OriginalExtents>;
+    using __original_mapping_type = typename layout_stride::template mapping<_OriginalExtents>;
     using __original_extents_type = typename __original_mapping_type::extents_type;
     using __extents_type          = __transpose_extents_t<__original_extents_type>;
     using __return_mapping_type   = typename __layout_type::template mapping<__extents_type>;
     return __return_mapping_type{
       __transpose_extents(__orig_map.extents()),
-      _CUDA_VSTD::array<typename __extents_type::index_type, _OriginalExtents::rank() /* __orig_map.rank() */>{
+      array<typename __extents_type::index_type, _OriginalExtents::rank() /* __orig_map.rank() */>{
         __orig_map.stride(1), __orig_map.stride(0)}};
   }
 };
@@ -317,7 +325,7 @@ struct __transposed_layout<_CUDA_VSTD::layout_stride>
 
 template <class _StorageOrder>
 using __opposite_storage_t =
-  _CUDA_VSTD::conditional_t<_CUDA_VSTD::is_same_v<_StorageOrder, column_major_t>, row_major_t, column_major_t>;
+  conditional_t<is_same_v<_StorageOrder, column_major_t>, row_major_t, column_major_t>;
 
 template <class _StorageOrder>
 struct __transposed_layout<layout_blas_general<_StorageOrder>>
@@ -332,14 +340,14 @@ struct __transposed_layout<layout_blas_general<_StorageOrder>>
     using __extents_type          = __transpose_extents_t<typename __original_mapping_type::__extents_type>;
     using __return_mapping_type   = typename __layout_type::template __mapping<__extents_type>;
     const auto whichStride =
-      _CUDA_VSTD::is_same_v<_StorageOrder, column_major_t> ? __orig_map.stride(1) : __orig_map.stride(0);
+      is_same_v<_StorageOrder, column_major_t> ? __orig_map.stride(1) : __orig_map.stride(0);
     return __return_mapping_type{__transpose_extents(__orig_map.extents()), whichStride};
   }
 };
 
 template <class Triangle>
 using opposite_triangle_t =
-  _CUDA_VSTD::conditional_t<_CUDA_VSTD::is_same_v<Triangle, upper_triangle_t>, lower_triangle_t, upper_triangle_t>;
+  conditional_t<is_same_v<Triangle, upper_triangle_t>, lower_triangle_t, upper_triangle_t>;
 
 template <class Triangle, class _StorageOrder>
 struct __transposed_layout<layout_blas_packed<Triangle, _StorageOrder>>
@@ -368,15 +376,14 @@ struct __transposed_layout<layout_transpose<_NestedLayout>>
 } // namespace __detail
 
 template <class _ElementType, class _Extents, class _Layout, class _Accessor>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI auto
-transposed(_CUDA_VSTD::mdspan<_ElementType, _Extents, _Layout, _Accessor> __a)
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI auto transposed(mdspan<_ElementType, _Extents, _Layout, _Accessor> __a)
 {
   using __element_type  = typename __detail::__transposed_element_accessor<_ElementType, _Accessor>::__element_type;
   using __layout_type   = typename __detail::__transposed_layout<_Layout>::__layout_type;
   using __accessor_type = typename __detail::__transposed_element_accessor<_ElementType, _Accessor>::__accessor_type;
   auto __mapping        = __detail::__transposed_layout<_Layout>::__mapping(__a.mapping());
   auto __accessor       = __detail::__transposed_element_accessor<_ElementType, _Accessor>::__accessor(__a.accessor());
-  return _CUDA_VSTD::mdspan<__element_type, typename decltype(__mapping)::extents_type, __layout_type, __accessor_type>{
+  return mdspan<__element_type, typename decltype(__mapping)::extents_type, __layout_type, __accessor_type>{
     __a.data_handle(), __mapping, __accessor};
 }
 

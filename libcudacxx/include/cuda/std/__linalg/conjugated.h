@@ -88,9 +88,17 @@ public:
   {}
 
   _CCCL_TEMPLATE(class _OtherNestedAccessor)
-  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, _NestedAccessor, const _OtherNestedAccessor&))
-  __MDSPAN_CONDITIONAL_EXPLICIT(!_CCCL_TRAIT(_CUDA_VSTD::is_convertible, _OtherNestedAccessor, _NestedAccessor))
+  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _NestedAccessor, const _OtherNestedAccessor&)
+                   _CCCL_AND _CCCL_TRAIT(is_convertible, _OtherNestedAccessor, _NestedAccessor))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr conjugated_accessor(const conjugated_accessor<_OtherNestedAccessor>& __other)
+      : __nested_accessor_(__other.nested_accessor())
+  {}
+
+  _CCCL_TEMPLATE(class _OtherNestedAccessor)
+  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _NestedAccessor, const _OtherNestedAccessor&)
+                   _CCCL_AND !_CCCL_TRAIT(is_convertible, _OtherNestedAccessor, _NestedAccessor))
+  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr conjugated_accessor(
+    const conjugated_accessor<_OtherNestedAccessor>& __other)
       : __nested_accessor_(__other.nested_accessor())
   {}
 
@@ -105,7 +113,7 @@ public:
     return __nested_accessor_.offset(__p, __i);
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI const _NestedAccessor& nested_accessor() const noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI const _NestedAccessor& nested_accessor() const noexcept
   {
     return __nested_accessor_;
   }
@@ -115,8 +123,7 @@ private:
 };
 
 template <class _ElementType, class _Extents, class _Layout, class _Accessor>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI auto
-conjugated(_CUDA_VSTD::mdspan<_ElementType, _Extents, _Layout, _Accessor> __a)
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI auto conjugated(mdspan<_ElementType, _Extents, _Layout, _Accessor> __a)
 {
   using __value_type = typename decltype(__a)::value_type;
   // Current status of [linalg] only optimizes if _Accessor is conjugated_accessor<_Accessor> for some _Accessor.
@@ -124,10 +131,9 @@ conjugated(_CUDA_VSTD::mdspan<_ElementType, _Extents, _Layout, _Accessor> __a)
 
   // P3050 optimizes conjugated's accessor type for when we know that it can't be complex: arithmetic types,
   // and types for which `conj` is not ADL-findable.
-  if constexpr (_CUDA_VSTD::is_arithmetic_v<__value_type> || !__conj_if_needed::_HasConj<__value_type>)
+  if constexpr (is_arithmetic_v<__value_type> || !__conj_if_needed::_HasConj<__value_type>)
   {
-    return _CUDA_VSTD::mdspan<_ElementType, _Extents, _Layout, _Accessor>(
-      __a.data_handle(), __a.mapping(), __a.accessor());
+    return mdspan<_ElementType, _Extents, _Layout, _Accessor>(__a.data_handle(), __a.mapping(), __a.accessor());
   }
   else
   {
@@ -141,12 +147,12 @@ conjugated(_CUDA_VSTD::mdspan<_ElementType, _Extents, _Layout, _Accessor> __a)
 
 // Conjugation is self-annihilating
 template <class _ElementType, class _Extents, class _Layout, class _NestedAccessor>
-[[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI auto
-conjugated(_CUDA_VSTD::mdspan<_ElementType, _Extents, _Layout, conjugated_accessor<_NestedAccessor>> __a)
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI auto
+conjugated(mdspan<_ElementType, _Extents, _Layout, conjugated_accessor<_NestedAccessor>> __a)
 {
   using __return_element_type  = typename _NestedAccessor::element_type;
   using __return_accessor_type = _NestedAccessor;
-  return _CUDA_VSTD::mdspan<__return_element_type, _Extents, _Layout, __return_accessor_type>(
+  return mdspan<__return_element_type, _Extents, _Layout, __return_accessor_type>(
     __a.data_handle(), __a.mapping(), __a.accessor().nested_accessor());
 }
 
