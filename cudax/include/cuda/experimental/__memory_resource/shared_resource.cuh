@@ -44,7 +44,7 @@
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/atomic>
 
-namespace cuda::experimental::mr
+namespace cuda::experimental
 {
 
 //! @rst
@@ -268,6 +268,6 @@ auto make_shared_resource(_Args&&... __args) -> shared_resource<_Resource>
   return shared_resource<_Resource>{_CUDA_VSTD::forward<_Args>(__args)...};
 }
 
-} // namespace cuda::experimental::mr
+} // namespace cuda::experimental
 
 #endif // _CUDAX__MEMORY_RESOURCE_SHARED_RESOURCE_H

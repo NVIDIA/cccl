@@ -110,6 +110,8 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     memory_resource/any_resource.cu
     memory_resource/device_memory_pool.cu
     memory_resource/device_memory_resource.cu
+    memory_resource/managed_memory_resource.cu
+    memory_resource/pinned_memory_resource.cu
     memory_resource/shared_resource.cu
   )
 
