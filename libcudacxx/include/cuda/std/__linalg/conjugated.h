@@ -133,8 +133,8 @@ conjugated(_CUDA_VSTD::mdspan<_ElementType, _Extents, _Layout, _Accessor> __a)
   {
     using __return_element_type  = typename conjugated_accessor<_Accessor>::element_type;
     using __return_accessor_type = conjugated_accessor<_Accessor>;
-    return _CUDA_VSTD::mdspan<__return_element_type, _Extents, _Layout, __return_accessor_type>(
-      __a.data_handle(), __a.mapping(), __return_accessor_type(__a.accessor()));
+    return mdspan<__return_element_type, _Extents, _Layout, __return_accessor_type>{
+      __a.data_handle(), __a.mapping(), __return_accessor_type(__a.accessor())};
   }
   _CCCL_UNREACHABLE();
 }
