@@ -187,8 +187,9 @@ int main(int, char**)
   static_assert(test_swap_constexpr(), "");
 #endif // TEST_STD_VER >= 2014
 
-  test_ambiguous_std<cuda::std::pair<::std::pair<int, int>, int>>(); // has std:: and cuda::std as associated namespaces
   test_ambiguous_std<::std::pair<int, int>>(); // has std::swap overload
+  test_ambiguous_std<cuda::std::pair<int, int>>(); // has cuda::std::swap overload
+  test_ambiguous_std<cuda::std::pair<::std::pair<int, int>, int>>(); // has std:: and cuda::std as associated namespaces
   test_ambiguous_std<::std::allocator<char>>(); // no std::swap overload
 
   // Ensure that we do not SFINAE swap out if there is a free function as that will take precedent
