@@ -93,7 +93,7 @@ struct SelectType
 template <typename Ai>
 struct SelectType<task_dep_op_none, Ai>
 {
-  using type = ::std::monostate; // Specialization when Oi is NoneType
+  using type = ::std::monostate; // Specialization when Oi is task_dep_op_none
 };
 
 /**
@@ -139,7 +139,7 @@ public:
   {
     if constexpr (sizeof...(Is) != size)
     {
-      // simple idiom to avoid defining two functions - "recurse" withg the correct index_sequence
+      // simple idiom to avoid defining two functions - "recurse" with the correct index_sequence
       return make_targs_aux(targs, ::std::make_index_sequence<size>{});
     }
     else
@@ -152,7 +152,7 @@ public:
   __device__ void init()
   {
     unroll<size>([&](auto i) {
-      using OpI = typename ::std::tuple_element<i, tuple_ops>::type;
+      using OpI = typename ::std::tuple_element_t<i, tuple_ops>;
       if constexpr (!::std::is_same_v<OpI, task_dep_op_none>)
       {
         // If this is not a none op, then we have pair of ops, and the flag which indicates if we must initialize
@@ -396,13 +396,13 @@ public:
   /// @param e_place Execution place for this parallel_for
   /// @param shape Shape to iterate
   /// @param ...deps Dependencies
-  parallel_for_scope(context& ctx, exec_place e_place, shape_t shape, task_dep_op<deps_ops_t>&&... _deps)
-      : deps(::std::make_tuple(_deps...))
+  parallel_for_scope(context& ctx, exec_place e_place, shape_t shape, task_dep_op<deps_ops_t>... deps)
+      : dump_hooks(reserved::get_dump_hooks(&ctx, deps...))
+      , deps(mv(deps)...)
       , ctx(ctx)
       , e_place(mv(e_place))
       , shape(mv(shape))
   {
-    dump_hooks = reserved::get_dump_hooks(&ctx, _deps...);
   }
 
   parallel_for_scope(const parallel_for_scope&)            = delete;
@@ -887,13 +887,12 @@ public:
 private:
   //  task_dep_vector<deps_t...> deps;
   //  task_dep_vector<typename deps_ops_t::first_type...> deps;
+  ::std::vector<::std::function<void()>> dump_hooks;
   ::std::tuple<task_dep_op<deps_ops_t>...> deps;
   context& ctx;
   exec_place e_place;
   ::std::string symbol;
   shape_t shape;
-
-  ::std::vector<::std::function<void()>> dump_hooks;
 };
 } // end namespace reserved
 

@@ -54,7 +54,7 @@ public:
   task_dep_untyped& operator=(task_dep_untyped&& other) noexcept = default;
 
   // dependency with an explicit data_place
-  task_dep_untyped(logical_data_untyped& d,
+  task_dep_untyped(const logical_data_untyped& d,
                    access_mode m,
                    data_place dplace,
                    ::std::shared_ptr<reduction_operator_base> redux_op = nullptr)
@@ -70,7 +70,7 @@ public:
   {}
 
   // dependency without an explicit data_place : using data_place::affine
-  task_dep_untyped(logical_data_untyped& d, access_mode m, ::std::shared_ptr<reduction_operator_base> redux_op = nullptr)
+  task_dep_untyped(const logical_data_untyped& d, access_mode m, ::std::shared_ptr<reduction_operator_base> redux_op = nullptr)
       : task_dep_untyped(d, m, data_place::affine, mv(redux_op))
   {}
 
