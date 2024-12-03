@@ -205,10 +205,10 @@ int main(int, char**)
   test_ambiguous_std<swap_with_friend<::std::pair<int, int>>>();
 #endif // !TEST_COMPILER_NVRTC
 
-#if TEST_STD_VER >= 2014
+#if !defined(TEST_COMPILER_NVRTC) && TEST_STD_VER >= 2014
   static_assert(cuda::std::is_swappable<cuda::std::pair<::std::pair<int, int>, int>>::value, "");
   static_assert(cuda::std::is_swappable<swap_with_friend<::std::pair<int, int>>>::value, "");
-#endif // TEST_STD_VER >= 2014
+#endif // !defined(TEST_COMPILER_NVRTC) && TEST_STD_VER >= 2014
 
   return 0;
 }
