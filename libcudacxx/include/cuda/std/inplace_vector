@@ -65,6 +65,7 @@
 #  include <cuda/std/__type_traits/is_trivially_move_constructible.h>
 #  include <cuda/std/__utility/forward.h>
 #  include <cuda/std/__utility/move.h>
+#  include <cuda/std/__utility/unreachable.h>
 #  include <cuda/std/cstdint>
 #  include <cuda/std/detail/libcxx/include/stdexcept>
 #  include <cuda/std/initializer_list>
@@ -669,7 +670,7 @@ struct __inplace_vector_base<_Tp, 0, __inplace_vector_specialization::__empty>
   template <class... _Args>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp& unchecked_emplace_back(_Args&&...) noexcept
   {
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
 #  if _CCCL_COMPILER(MSVC)
     return *begin();
 #  endif // _CCCL_COMPILER(MSVC)
@@ -678,25 +679,25 @@ struct __inplace_vector_base<_Tp, 0, __inplace_vector_specialization::__empty>
 protected:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void __destroy(iterator, iterator) noexcept
   {
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
   }
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void __uninitialized_value_construct(iterator, iterator) noexcept
   {
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
   }
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void __uninitialized_fill(iterator, iterator, const _Tp&) noexcept
   {
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
   }
   template <class _Iter>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void __uninitialized_copy(_Iter, _Iter, iterator) noexcept
   {
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
   }
   template <class _Iter>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr void __uninitialized_move(_Iter, _Iter, iterator) noexcept
   {
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
   }
 };
 

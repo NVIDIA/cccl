@@ -17,6 +17,7 @@
 #include <cuda/std/cassert>
 #include <cuda/std/concepts>
 #include <cuda/std/cstddef>
+#include <cuda/std/utility>
 
 #include "test_macros.h"
 #include "type_algorithms.h"
@@ -1813,7 +1814,7 @@ __host__ __device__ constexpr auto get_iterator_concept()
   {
     return cuda::std::input_iterator_tag{};
   }
-  _CCCL_UNREACHABLE();
+  cuda::std::unreachable();
 }
 
 template <class Base, cuda::std::enable_if_t<cuda::std::input_iterator<Base>, int> = 0>

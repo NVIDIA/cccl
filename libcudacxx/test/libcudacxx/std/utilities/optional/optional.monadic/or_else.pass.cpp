@@ -15,6 +15,7 @@
 
 #include <cuda/std/cassert>
 #include <cuda/std/optional>
+#include <cuda/std/utility>
 
 #include "MoveOnly.h"
 
@@ -95,7 +96,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX17 bool test()
     opt = 1;
     opt.or_else([] {
 #if defined(TEST_COMPILER_GCC) && __GNUC__ < 9
-      _CCCL_UNREACHABLE();
+      cuda::std::unreachable();
 #else
       assert(false);
 #endif

@@ -24,6 +24,7 @@
 #include <cuda/std/__iterator/advance.h>
 #include <cuda/std/__ranges/access.h>
 #include <cuda/std/__ranges/concepts.h>
+#include <cuda/std/__utility/unreachable.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
@@ -43,7 +44,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr iterator_t<_Range> __unwrap_
     _CUDA_VRANGES::advance(__ret, _CUDA_VRANGES::end(__range));
     return __ret;
   }
-  _CCCL_UNREACHABLE();
+  _CUDA_VSTD::unreachable();
 }
 
 #endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)

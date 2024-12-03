@@ -29,6 +29,7 @@
 #include <cuda/__memcpy_async/is_local_smem_barrier.h>
 #include <cuda/__memcpy_async/try_get_barrier_handle.h>
 #include <cuda/std/__atomic/scopes.h>
+#include <cuda/std/__utility/unreachable.h>
 #include <cuda/std/cstdint>
 
 #if defined(_CCCL_CUDA_COMPILER)
@@ -84,7 +85,7 @@ struct __memcpy_completion_impl
         // This completion mechanism should not be used with a shared
         // memory barrier. Or at least, we do not currently envision
         // bulk group to be used with shared memory barriers.
-        _CCCL_UNREACHABLE();
+        _CUDA_VSTD::unreachable();
       case __completion_mechanism::__mbarrier_complete_tx:
 #if __cccl_ptx_isa >= 800
         // Pre-sm90, the mbarrier_complete_tx completion mechanism is not available.
@@ -100,7 +101,7 @@ struct __memcpy_completion_impl
         return async_contract_fulfillment::none;
       default:
         // Get rid of "control reaches end of non-void function":
-        _CCCL_UNREACHABLE();
+        _CUDA_VSTD::unreachable();
     }
   }
 
@@ -129,16 +130,16 @@ struct __memcpy_completion_impl
         return async_contract_fulfillment::async;
       case __completion_mechanism::__mbarrier_complete_tx:
         // Non-smem barriers do not have an mbarrier_complete_tx mechanism..
-        _CCCL_UNREACHABLE();
+        _CUDA_VSTD::unreachable();
       case __completion_mechanism::__async_bulk_group:
         // This completion mechanism is currently not expected to be used with barriers.
-        _CCCL_UNREACHABLE();
+        _CUDA_VSTD::unreachable();
       case __completion_mechanism::__sync:
         // sync: In this case, we do not need to do anything.
         return async_contract_fulfillment::none;
       default:
         // Get rid of "control reaches end of non-void function":
-        _CCCL_UNREACHABLE();
+        _CUDA_VSTD::unreachable();
     }
   }
 
@@ -158,7 +159,7 @@ struct __memcpy_completion_impl
         return async_contract_fulfillment::none;
       default:
         // Get rid of "control reaches end of non-void function":
-        _CCCL_UNREACHABLE();
+        _CUDA_VSTD::unreachable();
     }
   }
 };

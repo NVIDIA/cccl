@@ -30,6 +30,7 @@
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/unreachable.h>
 #include <cuda/std/limits>
 
 _CCCL_PUSH_MACROS
@@ -82,7 +83,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_equal(_Tp __t, _Up __u) noexcept
   {
     return __u < 0 ? false : __t == make_unsigned_t<_Up>(__u);
   }
-  _CCCL_UNREACHABLE();
+  _CUDA_VSTD::unreachable();
 #else // ^^^ !_CCCL_NO_IF_CONSTEXPR ^^^ / vvv _CCCL_NO_IF_CONSTEXPR vvv
   return ((_CCCL_TRAIT(is_signed, _Tp) == _CCCL_TRAIT(is_signed, _Up))
             ? (__t == __u)
@@ -115,7 +116,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool cmp_less(_Tp __t, _Up __u) noexcept
   {
     return __u < 0 ? false : __t < make_unsigned_t<_Up>(__u);
   }
-  _CCCL_UNREACHABLE();
+  _CUDA_VSTD::unreachable();
 #else // ^^^ !_CCCL_NO_IF_CONSTEXPR ^^^ / vvv _CCCL_NO_IF_CONSTEXPR vvv
   return ((_CCCL_TRAIT(is_signed, _Tp) == _CCCL_TRAIT(is_signed, _Up))
             ? (__t < __u)

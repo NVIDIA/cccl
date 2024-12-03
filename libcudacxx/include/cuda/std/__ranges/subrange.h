@@ -50,6 +50,7 @@
 #include <cuda/std/__type_traits/remove_const.h>
 #include <cuda/std/__type_traits/remove_pointer.h>
 #include <cuda/std/__utility/move.h>
+#include <cuda/std/__utility/unreachable.h>
 
 #if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
@@ -340,7 +341,7 @@ public:
       return _CUDA_VSTD::__to_unsigned_like(__end_ - __begin_);
     }
 #  if _CCCL_CUDACC_BELOW(11, 3)
-    _CCCL_UNREACHABLE();
+    _CUDA_VSTD::unreachable();
 #  endif // _CCCL_CUDACC_BELOW(11, 3)
   }
 
@@ -439,7 +440,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto get(const subrange<_Iter, _Sent, _Kind>
   {
     return __subrange.end();
   }
-  _CCCL_UNREACHABLE();
+  _CUDA_VSTD::unreachable();
 }
 
 #  if _CCCL_STD_VER >= 2020
@@ -463,7 +464,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto get(subrange<_Iter, _Sent, _Kind>&& __s
   {
     return __subrange.end();
   }
-  _CCCL_UNREACHABLE();
+  _CUDA_VSTD::unreachable();
 }
 
 template <class _Ip, class _Sp, subrange_kind _Kp>
