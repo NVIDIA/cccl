@@ -158,7 +158,7 @@ ArgPair argHandlers[] = {
    }},
   {// Matches -G/--device-debug
    std::regex("^(?:-G|--device-debug)$"),
-   [](const std::smatch& match) {
+   [](const std::smatch&) {
      nvrtcArguments.emplace_back("-G");
      return NORMAL;
    }},
