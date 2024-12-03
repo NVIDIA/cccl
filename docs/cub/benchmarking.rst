@@ -306,7 +306,7 @@ A typical invocation, if you work on a remote cluster, could look like this:
 
 .. code-block:: bash
 
-    ncu --set full --import-source yes -o base.ncu-rep -f ./bin/thrust.bench.transform.basic.base -d 0 --run-once
+    ncu --set full --import-source yes -o base.ncu-rep -f ./bin/thrust.bench.transform.basic.base -d 0 --profile
 
 The option `--set full` instructs `ncu` to collect all metrics.
 This requires rerunning some kernels and takes more time.
