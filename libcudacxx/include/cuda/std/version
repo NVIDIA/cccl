@@ -29,6 +29,7 @@
 #  include <ciso646> // otherwise go for the smallest possible header
 #endif // !_CCCL_COMPILER(NVRTC)
 
+#define __cccl_lib_forward_like                 202207L
 #define __cccl_lib_integer_comparison_functions 202002L
 #define __cccl_lib_is_scoped_enum               202011L
 #define __cccl_lib_to_underlying                202102L
@@ -231,7 +232,6 @@
 // # undef  __cccl_lib_constexpr_memory
 // # define __cccl_lib_constexpr_memory                     202202L
 // # define __cccl_lib_constexpr_typeinfo                   202106L
-#  define __cccl_lib_forward_like 202207L
 // # define __cccl_lib_invoke_r                             202106L
 // # define __cccl_lib_move_only_function                   202110L
 // # define __cccl_lib_out_ptr                              202106L
