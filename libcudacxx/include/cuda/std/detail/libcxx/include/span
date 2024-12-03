@@ -210,9 +210,9 @@ template <class _Tp>
 _CCCL_INLINE_VAR constexpr bool __is_std_initializer_list<initializer_list<_Tp>> = true;
 
 // We want to ensure that span interacts nicely with containers that might not have had the ranges treatment
-#  if defined(__cpp_lib_ranges) && !_CCCL_COMPILER(MSVC2017)
+#  if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 #    define _CCCL_SPAN_USES_RANGES
-#  endif // __cpp_lib_ranges && !_CCCL_COMPILER(MSVC2017)
+#  endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
 #  if defined(_CCCL_SPAN_USES_RANGES)
 template <class _Range, class _ElementType>
@@ -257,6 +257,15 @@ template <class _Sentinel, class _It>
 _CCCL_CONCEPT __span_compatible_sentinel_for = _CCCL_FRAGMENT(__span_compatible_sentinel_for_, _Sentinel, _It);
 #    endif // _CCCL_STD_VER <= 2017
 #  else // ^^^ _CCCL_SPAN_USES_RANGES ^^^ / vvv !_CCCL_SPAN_USES_RANGES vvv
+template <class _Range, class _ElementType>
+_CCCL_CONCEPT __span_compatible_range = false;
+
+template <class _It, class _Tp>
+_CCCL_CONCEPT __span_compatible_iterator = false;
+
+template <class _Sentinel, class _It>
+_CCCL_CONCEPT __span_compatible_sentinel_for = false;
+#  endif // !_CCCL_SPAN_USES_RANGES
 
 template <class _Container, class _ElementType, class = void>
 _CCCL_INLINE_VAR constexpr bool __is_span_compatible_container = false;
@@ -266,6 +275,8 @@ _CCCL_INLINE_VAR constexpr bool __is_span_compatible_container<
   _Container,
   _ElementType,
   void_t<
+    // is not a specialization for ranges
+    enable_if_t<!__span_compatible_range<remove_cvref_t<_Container>, _ElementType>, nullptr_t>,
     // is not a specialization of span
     enable_if_t<!__is_std_span<remove_cvref_t<_Container>>, nullptr_t>,
     // is not a specialization of array
@@ -281,7 +292,6 @@ _CCCL_INLINE_VAR constexpr bool __is_span_compatible_container<
     enable_if_t<is_convertible<remove_pointer_t<decltype(_CUDA_VSTD::data(declval<_Container&>()))> (*)[],
                                _ElementType (*)[]>::value,
                 nullptr_t>>> = true;
-#  endif // !_CCCL_SPAN_USES_RANGES
 
 #  if _CCCL_STD_VER >= 2020
 
@@ -370,7 +380,8 @@ public:
     _CCCL_ASSERT(__last - __first == _Extent,
                  "invalid range in span's constructor (iterator, sentinel): last - first != extent");
   }
-#  else // ^^^ _CCCL_SPAN_USES_RANGES ^^^ / vvv !_CCCL_SPAN_USES_RANGES vvv
+#  endif // _CCCL_SPAN_USES_RANGES
+
   _LIBCUDACXX_HIDE_FROM_ABI constexpr span(pointer __ptr, size_type __count)
       : __data_{__ptr}
   {
@@ -383,7 +394,6 @@ public:
     (void) __l;
     _CCCL_ASSERT(_Extent == distance(__f, __l), "size mismatch in span's constructor (ptr, ptr)");
   }
-#  endif // !_CCCL_SPAN_USES_RANGES
 
 #  if _CCCL_COMPILER(NVRTC) || _CCCL_COMPILER(MSVC2017)
   template <size_t _Sz = _Extent, enable_if_t<_Sz != 0, int> = 0>
@@ -416,7 +426,8 @@ public:
   {
     _CCCL_ASSERT(_CUDA_VRANGES::size(__r) == _Extent, "size mismatch in span's constructor (range)");
   }
-#  else // ^^^ _CCCL_SPAN_USES_RANGES ^^^ / vvv !_CCCL_SPAN_USES_RANGES vvv
+#  endif // _CCCL_SPAN_USES_RANGES
+
   _CCCL_TEMPLATE(class _Container)
   _CCCL_REQUIRES(__is_span_compatible_container<_Container, _Tp>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr span(_Container& __c) noexcept(noexcept(_CUDA_VSTD::data(__c)))
@@ -432,7 +443,6 @@ public:
   {
     _CCCL_ASSERT(_Extent == _CUDA_VSTD::size(__c), "size mismatch in span's constructor (other span)");
   }
-#  endif // !_CCCL_SPAN_USES_RANGES
 
   _CCCL_TEMPLATE(class _OtherElementType, size_t _Extent2 = _Extent)
   _CCCL_REQUIRES((_Extent2 != dynamic_extent) _CCCL_AND __span_array_convertible<_OtherElementType, element_type>)
@@ -629,8 +639,8 @@ public:
   {
     _CCCL_ASSERT(__last - __first >= 0, "invalid range in span's constructor (iterator, sentinel)");
   }
+#  endif // _CCCL_SPAN_USES_RANGES
 
-#  else // ^^^ _CCCL_SPAN_USES_RANGES ^^^ / vvv !_CCCL_SPAN_USES_RANGES vvv
   _LIBCUDACXX_HIDE_FROM_ABI constexpr span(pointer __ptr, size_type __count)
       : __data_{__ptr}
       , __size_{__count}
@@ -639,7 +649,6 @@ public:
       : __data_{__f}
       , __size_{static_cast<size_t>(__l - __f)}
   {}
-#  endif // !_CCCL_SPAN_USES_RANGES
 
   template <size_t _Sz>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr span(type_identity_t<element_type> (&__arr)[_Sz]) noexcept
@@ -668,7 +677,8 @@ public:
       : __data_(_CUDA_VRANGES::data(__r))
       , __size_{_CUDA_VRANGES::size(__r)}
   {}
-#  else // ^^^ _CCCL_SPAN_USES_RANGES ^^^ / vvv !_CCCL_SPAN_USES_RANGES vvv
+#  endif // _CCCL_SPAN_USES_RANGES
+
   _CCCL_TEMPLATE(class _Container)
   _CCCL_REQUIRES(__is_span_compatible_container<_Container, _Tp>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr span(_Container& __c)
@@ -682,7 +692,6 @@ public:
       : __data_{_CUDA_VSTD::data(__c)}
       , __size_{(size_type) _CUDA_VSTD::size(__c)}
   {}
-#  endif // !_CCCL_SPAN_USES_RANGES
 
   _CCCL_TEMPLATE(class _OtherElementType, size_t _OtherExtent)
   _CCCL_REQUIRES(__span_array_convertible<_OtherElementType, element_type>)
@@ -854,7 +863,6 @@ template <class _Tp, size_t _Sz>
 _CCCL_HOST_DEVICE span(const array<_Tp, _Sz>&) -> span<const _Tp, _Sz>;
 
 #  if defined(_CCCL_SPAN_USES_RANGES)
-
 _CCCL_TEMPLATE(class _It, class _EndOrSize)
 _CCCL_REQUIRES(contiguous_iterator<_It>)
 _CCCL_HOST_DEVICE span(_It,
@@ -863,8 +871,7 @@ _CCCL_HOST_DEVICE span(_It,
 _CCCL_TEMPLATE(class _Range)
 _CCCL_REQUIRES(_CUDA_VRANGES::contiguous_range<_Range>)
 _CCCL_HOST_DEVICE span(_Range&&) -> span<remove_reference_t<_CUDA_VRANGES::range_reference_t<_Range>>>;
-
-#  else // ^^^ _CCCL_SPAN_USES_RANGES ^^^ / vvv !_CCCL_SPAN_USES_RANGES vvv
+#  endif // _CCCL_SPAN_USES_RANGES
 
 _CCCL_TEMPLATE(class _Container)
 _CCCL_REQUIRES(__is_span_compatible_container<_Container, typename _Container::value_type>)
@@ -873,8 +880,6 @@ _CCCL_HOST_DEVICE span(_Container&) -> span<typename _Container::value_type>;
 _CCCL_TEMPLATE(class _Container)
 _CCCL_REQUIRES(__is_span_compatible_container<_Container, const typename _Container::value_type>)
 _CCCL_HOST_DEVICE span(const _Container&) -> span<const typename _Container::value_type>;
-
-#  endif // !_CCCL_SPAN_USES_RANGES
 
 #endif // _CCCL_STD_VER >= 2017
 
