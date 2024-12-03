@@ -237,9 +237,9 @@ public:
 
     auto dump_hooks = reserved::get_dump_hooks(this, deps...);
 
-    auto res = stream_task<Deps...>(*this, mv(e_place), mv(deps)...);
-    res.add_post_submission_hook(dump_hooks);
-    return res;
+    auto result = stream_task<Deps...>(*this, mv(e_place), mv(deps)...);
+    result.add_post_submission_hook(dump_hooks);
+    return result;
   }
 
   template <typename... Deps>
