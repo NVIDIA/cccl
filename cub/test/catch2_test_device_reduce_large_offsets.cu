@@ -15,7 +15,7 @@
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, device_sum);
