@@ -6,16 +6,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-// UNSUPPORTED: msvc-19.16
-// UNSUPPORTED: clang-7, clang-8
-
-// <cuda/std/variant>
+// <cuda/std/utility>
 
 // struct monostate {};
 
 #include <cuda/std/type_traits>
-#include <cuda/std/variant>
+#include <cuda/std/utility>
 
 #include "test_macros.h"
 
@@ -27,7 +23,7 @@ int main(int, char**)
   static_assert(cuda::std::is_trivially_copy_assignable<M>::value, "");
   static_assert(cuda::std::is_trivially_destructible<M>::value, "");
   constexpr M m{};
-  ((void) m);
+  unused(m);
 
   return 0;
 }

@@ -100,7 +100,7 @@ workflows:
 
 
 # The version of the devcontainer images to use from https://hub.docker.com/r/rapidsai/devcontainers
-devcontainer_version: '24.12'
+devcontainer_version: '25.02'
 
 # All supported C++ standards:
 all_stds: [11, 14, 17, 20]
