@@ -48,9 +48,8 @@ struct swap_pair_elements
   template <typename Tuple>
   _CCCL_HOST_DEVICE void operator()(Tuple t)
   {
-    // use unqualified swap to allow ADL to catch any user-defined swap
-    using thrust::swap;
-    swap(thrust::get<0>(t), thrust::get<1>(t));
+    // fully qualify call to swap for two cuda::std::tuples to avoid ambiguity with thrust::swap
+    ::cuda::std::swap(thrust::get<0>(t), thrust::get<1>(t));
   }
 }; // end swap_pair_elements
 
