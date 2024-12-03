@@ -34,13 +34,13 @@ inline constexpr bool
   check_has_difference_type<T, cuda::std::void_t<typename cuda::std::incrementable_traits<T>::difference_type>> = true;
 
 template <class T, class Expected>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   check_difference_type_matches_,
   requires()(requires(check_has_difference_type<T>),
              requires(cuda::std::same_as<typename cuda::std::incrementable_traits<T>::difference_type, Expected>)));
 
 template <class T, class Expected>
-_LIBCUDACXX_CONCEPT check_difference_type_matches = _LIBCUDACXX_FRAGMENT(check_difference_type_matches_, T, Expected);
+_CCCL_CONCEPT check_difference_type_matches = _CCCL_FRAGMENT(check_difference_type_matches_, T, Expected);
 #endif
 
 template <class T, class Expected>

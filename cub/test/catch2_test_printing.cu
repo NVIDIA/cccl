@@ -1,7 +1,7 @@
 #include <sstream>
 
-#include "catch2_test_helper.h"
 #include "test_util.h"
+#include <c2h/catch2_test_helper.h>
 
 template <typename T>
 std::string print(T val)

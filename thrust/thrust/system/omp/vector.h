@@ -82,6 +82,8 @@ using vector = thrust::detail::vector_base<T, Allocator>;
 template <typename T, typename Allocator = thrust::system::omp::universal_allocator<T>>
 using universal_vector = thrust::detail::vector_base<T, Allocator>;
 
+template <typename T>
+using universal_host_pinned_vector = thrust::detail::vector_base<T, universal_host_pinned_allocator<T>>;
 } // namespace omp
 } // namespace system
 

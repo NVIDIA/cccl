@@ -43,8 +43,8 @@
 #include <limits>
 
 #include "catch2_radix_sort_helper.cuh"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 // TODO replace with DeviceSegmentedRadixSort::SortKeys interface once https://github.com/NVIDIA/cccl/issues/50 is
 // addressed Temporary wrapper that allows specializing the DeviceSegmentedRadixSort algorithm for different offset
@@ -143,7 +143,7 @@ using fp_key_types         = c2h::type_list<double>;
 // Used for tests that just need a single type for testing:
 using single_key_type = c2h::type_list<c2h::get<0, key_types>>;
 
-CUB_TEST("DeviceSegmentedRadixSort::SortKeys: basic testing",
+C2H_TEST("DeviceSegmentedRadixSort::SortKeys: basic testing",
          "[keys][segmented][radix][sort][device]",
          key_types,
          offset_types)
@@ -158,14 +158,14 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: basic testing",
 
   c2h::device_vector<key_t> in_keys(num_items);
   const int num_key_seeds = 1;
-  c2h::gen(CUB_SEED(num_key_seeds), in_keys);
+  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
   // Initialize the output keys using the input keys since not all items
   // may belong to a segment.
   c2h::device_vector<key_t> out_keys(in_keys);
 
   c2h::device_vector<offset_t> offsets(num_segments + 1);
   const int num_segment_seeds = 1;
-  generate_segment_offsets(CUB_SEED(num_segment_seeds), offsets, static_cast<offset_t>(num_items));
+  generate_segment_offsets(C2H_SEED(num_segment_seeds), offsets, static_cast<offset_t>(num_items));
 
   const bool is_descending = GENERATE(false, true);
 
@@ -205,7 +205,7 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: basic testing",
 
 #if defined(SINGLE_TEST_CASE_INSTANTIATION)
 
-CUB_TEST("DeviceSegmentedRadixSort::SortKeys: empty data", "[keys][segmented][radix][sort][device]", single_key_type)
+C2H_TEST("DeviceSegmentedRadixSort::SortKeys: empty data", "[keys][segmented][radix][sort][device]", single_key_type)
 {
   using key_t    = c2h::get<0, TestType>;
   using offset_t = cuda::std::int32_t;
@@ -215,7 +215,7 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: empty data", "[keys][segmented][ra
 
   c2h::device_vector<key_t> in_keys(num_items);
   const int num_key_seeds = 1;
-  c2h::gen(CUB_SEED(num_key_seeds), in_keys);
+  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
   // Initialize the output keys using the input keys since not all items
   // may belong to a segment.
   c2h::device_vector<key_t> out_keys(in_keys);
@@ -261,7 +261,7 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: empty data", "[keys][segmented][ra
 
 #endif // defined(SINGLE_TEST_CASE_INSTANTIATION)
 
-CUB_TEST("DeviceSegmentedRadixSort::SortKeys: bit windows",
+C2H_TEST("DeviceSegmentedRadixSort::SortKeys: bit windows",
          "[keys][segmented][radix][sort][device]",
          bit_window_key_types)
 {
@@ -275,14 +275,14 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: bit windows",
 
   c2h::device_vector<key_t> in_keys(num_items);
   const int num_key_seeds = 1;
-  c2h::gen(CUB_SEED(num_key_seeds), in_keys);
+  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
   // Initialize the output keys using the input keys since not all items
   // may belong to a segment.
   c2h::device_vector<key_t> out_keys(in_keys);
 
   c2h::device_vector<offset_t> offsets(num_segments + 1);
   const int num_segment_seeds = 1;
-  generate_segment_offsets(CUB_SEED(num_segment_seeds), offsets, static_cast<offset_t>(num_items));
+  generate_segment_offsets(C2H_SEED(num_segment_seeds), offsets, static_cast<offset_t>(num_items));
 
   constexpr int num_bits = sizeof(key_t) * CHAR_BIT;
   // Explicitly use values<>({}) to workaround bug catchorg/Catch2#2040:
@@ -332,7 +332,7 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: bit windows",
 
 #if defined(SINGLE_TEST_CASE_INSTANTIATION)
 
-CUB_TEST("DeviceSegmentedRadixSort::SortKeys: large segments", "[keys][segmented][radix][sort][device]", single_key_type)
+C2H_TEST("DeviceSegmentedRadixSort::SortKeys: large segments", "[keys][segmented][radix][sort][device]", single_key_type)
 {
   using key_t    = c2h::get<0, TestType>;
   using offset_t = cuda::std::int32_t;
@@ -345,7 +345,7 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: large segments", "[keys][segmented
   c2h::device_vector<key_t> in_keys(num_items);
   c2h::device_vector<key_t> out_keys(num_items);
   const int num_key_seeds = 1;
-  c2h::gen(CUB_SEED(num_key_seeds), in_keys);
+  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
 
   c2h::device_vector<offset_t> offsets(3);
   offsets[0] = 0;
@@ -388,7 +388,7 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: large segments", "[keys][segmented
   REQUIRE((ref_keys == out_keys) == true);
 }
 
-CUB_TEST("DeviceSegmentedRadixSort::SortKeys: DoubleBuffer API",
+C2H_TEST("DeviceSegmentedRadixSort::SortKeys: DoubleBuffer API",
          "[keys][segmented][radix][sort][device]",
          single_key_type)
 {
@@ -402,14 +402,14 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: DoubleBuffer API",
 
   c2h::device_vector<key_t> in_keys(num_items);
   const int num_key_seeds = 1;
-  c2h::gen(CUB_SEED(num_key_seeds), in_keys);
+  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
   // Initialize the output keys using the input keys since not all items
   // may belong to a segment.
   c2h::device_vector<key_t> out_keys(in_keys);
 
   c2h::device_vector<offset_t> offsets(num_segments + 1);
   const int num_segment_seeds = 1;
-  generate_segment_offsets(CUB_SEED(num_segment_seeds), offsets, static_cast<offset_t>(num_items));
+  generate_segment_offsets(C2H_SEED(num_segment_seeds), offsets, static_cast<offset_t>(num_items));
 
   const bool is_descending = GENERATE(false, true);
 
@@ -440,7 +440,7 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: DoubleBuffer API",
   REQUIRE((ref_keys == keys) == true);
 }
 
-CUB_TEST("DeviceSegmentedRadixSort::SortKeys: unspecified ranges",
+C2H_TEST("DeviceSegmentedRadixSort::SortKeys: unspecified ranges",
          "[keys][segmented][radix][sort][device]",
          single_key_type)
 {
@@ -454,14 +454,14 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: unspecified ranges",
 
   c2h::device_vector<key_t> in_keys(num_items);
   const int num_key_seeds = 1;
-  c2h::gen(CUB_SEED(num_key_seeds), in_keys);
+  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
   // Initialize the output keys using the input keys since not all items
   // will belong to a segment.
   c2h::device_vector<key_t> out_keys(in_keys);
 
   c2h::device_vector<offset_t> begin_offsets(num_segments + 1);
   const int num_segment_seeds = 1;
-  generate_segment_offsets(CUB_SEED(num_segment_seeds), begin_offsets, static_cast<offset_t>(num_items));
+  generate_segment_offsets(C2H_SEED(num_segment_seeds), begin_offsets, static_cast<offset_t>(num_items));
 
   // Create separate begin/end offsets arrays and remove some of the segments by
   // setting both offsets to 0.
@@ -471,7 +471,7 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: unspecified ranges",
   {
     std::size_t num_empty_segments = num_segments / 16;
     c2h::device_vector<std::size_t> indices(num_empty_segments);
-    c2h::gen(CUB_SEED(1), indices, std::size_t{0}, num_segments - 1);
+    c2h::gen(C2H_SEED(1), indices, std::size_t{0}, num_segments - 1);
     auto begin = thrust::make_constant_iterator(key_t{0});
     auto end   = begin + num_empty_segments;
     thrust::scatter(c2h::device_policy, begin, end, indices.cbegin(), begin_offsets.begin());
@@ -516,7 +516,7 @@ CUB_TEST("DeviceSegmentedRadixSort::SortKeys: unspecified ranges",
 
 #  if defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
 
-CUB_TEST("DeviceSegmentedRadixSort::SortKeys: very large num. items and num. segments",
+C2H_TEST("DeviceSegmentedRadixSort::SortKeys: very large num. items and num. segments",
          "[keys][segmented][radix][sort][device]",
          all_offset_types)
 try
@@ -536,7 +536,7 @@ try
 
   c2h::device_vector<key_t> in_keys(num_items);
   c2h::device_vector<key_t> out_keys(num_items);
-  c2h::gen(CUB_SEED(num_key_seeds), in_keys);
+  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
   auto offsets =
     thrust::make_transform_iterator(thrust::make_counting_iterator(std::size_t{0}), segment_iterator_t{num_items});
   auto offsets_plus_1 = offsets + 1;
@@ -592,7 +592,7 @@ catch (std::bad_alloc& e)
   std::cerr << "Skipping segmented radix sort test, unsufficient GPU memory. " << e.what() << "\n";
 }
 
-CUB_TEST("DeviceSegmentedRadixSort::SortKeys: very large segments",
+C2H_TEST("DeviceSegmentedRadixSort::SortKeys: very large segments",
          "[keys][segmented][radix][sort][device]",
          all_offset_types)
 try
@@ -610,7 +610,7 @@ try
 
   c2h::device_vector<key_t> in_keys(num_items);
   c2h::device_vector<key_t> out_keys(num_items);
-  c2h::gen(CUB_SEED(num_key_seeds), in_keys);
+  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
   c2h::device_vector<offset_t> offsets(num_segments + 1);
   offsets[0] = 0;
   offsets[1] = static_cast<offset_t>(num_items);

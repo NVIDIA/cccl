@@ -41,8 +41,7 @@ private:
 public:
   __return_type_wrapper() = delete;
 
-  template <class _Fn,
-            class = _CUDA_VSTD::__enable_if_t<_CUDA_VSTD::is_same<_CUDA_VSTD::__decay_t<_Fn>, _DecayFn>::value>>
+  template <class _Fn, class = _CUDA_VSTD::enable_if_t<_CUDA_VSTD::is_same<_CUDA_VSTD::decay_t<_Fn>, _DecayFn>::value>>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 explicit __return_type_wrapper(_Fn&& __fn) noexcept
       : __fn_(_CUDA_VSTD::forward<_Fn>(__fn))
   {}
@@ -95,10 +94,10 @@ public:
 } // namespace __detail
 
 template <class _Ret, class _Fn>
-_LIBCUDACXX_HIDE_FROM_ABI __detail::__return_type_wrapper<_Ret, _CUDA_VSTD::__decay_t<_Fn>>
+_LIBCUDACXX_HIDE_FROM_ABI __detail::__return_type_wrapper<_Ret, _CUDA_VSTD::decay_t<_Fn>>
 proclaim_return_type(_Fn&& __fn) noexcept
 {
-  return __detail::__return_type_wrapper<_Ret, _CUDA_VSTD::__decay_t<_Fn>>(_CUDA_VSTD::forward<_Fn>(__fn));
+  return __detail::__return_type_wrapper<_Ret, _CUDA_VSTD::decay_t<_Fn>>(_CUDA_VSTD::forward<_Fn>(__fn));
 }
 _LIBCUDACXX_END_NAMESPACE_CUDA
 

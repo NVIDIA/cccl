@@ -30,10 +30,10 @@ template <class F, class... Is>
 constexpr bool has_indirect_result = requires { typename cuda::std::indirect_result_t<F, Is...>; };
 #else
 template <class F, class... Is>
-_LIBCUDACXX_CONCEPT_FRAGMENT(has_indirect_result_, requires()(typename(cuda::std::indirect_result_t<F, Is...>)));
+_CCCL_CONCEPT_FRAGMENT(has_indirect_result_, requires()(typename(cuda::std::indirect_result_t<F, Is...>)));
 
 template <class F, class... Is>
-_LIBCUDACXX_CONCEPT has_indirect_result = _LIBCUDACXX_FRAGMENT(has_indirect_result_, F, Is...);
+_CCCL_CONCEPT has_indirect_result = _CCCL_FRAGMENT(has_indirect_result_, F, Is...);
 #endif
 
 static_assert(!has_indirect_result<int (*)(int), int>); // int isn't indirectly_readable

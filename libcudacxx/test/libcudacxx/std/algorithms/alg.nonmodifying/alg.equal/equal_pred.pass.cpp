@@ -31,8 +31,6 @@
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 {
-  typedef cuda::std::equal_to<int> EQ;
-
   int ia[]         = {0, 1, 2, 3, 4, 5};
   const unsigned s = sizeof(ia) / sizeof(ia[0]);
   int ib[s]        = {0, 1, 2, 5, 4, 5};
@@ -55,6 +53,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
     random_access_iterator<const int*>(ia + s),
     cuda::std::equal_to<int>()));
 
+  typedef cuda::std::equal_to<int> EQ;
   int comparison_count = 0;
   counting_predicate<EQ> counting_equals(EQ(), comparison_count);
   assert(!cuda::std::equal(

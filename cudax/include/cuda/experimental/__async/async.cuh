@@ -22,7 +22,7 @@
 #endif // no system header
 
 // Include this first
-#include <cuda/experimental/__async/config.cuh>
+#include <cuda/experimental/__detail/config.cuh>
 
 // Include the other implementation headers:
 #include <cuda/experimental/__async/basic_sender.cuh>

@@ -20,13 +20,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
 #include <cuda/std/__concepts/arithmetic.h>
 #include <cuda/std/__concepts/assignable.h>
 #include <cuda/std/__concepts/boolean_testable.h>
 #include <cuda/std/__concepts/class_or_enum.h>
 #include <cuda/std/__concepts/common_reference_with.h>
 #include <cuda/std/__concepts/common_with.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/constructible.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/copyable.h>

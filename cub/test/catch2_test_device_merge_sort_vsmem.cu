@@ -36,8 +36,8 @@
 #include <algorithm>
 
 #include "catch2_test_device_merge_sort_common.cuh"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -48,7 +48,7 @@ using key_types =
   c2h::type_list<c2h::custom_type_t<c2h::equal_comparable_t, c2h::less_comparable_t, c2h::huge_data<512>::type>,
                  c2h::custom_type_t<c2h::equal_comparable_t, c2h::less_comparable_t, c2h::huge_data<1024>::type>>;
 
-CUB_TEST("DeviceMergeSort::StableSortKeys works for large types", "[merge][sort][device]", key_types)
+C2H_TEST("DeviceMergeSort::StableSortKeys works for large types", "[merge][sort][device]", key_types)
 {
   using key_t    = typename c2h::get<0, TestType>;
   using offset_t = std::int32_t;
@@ -56,7 +56,7 @@ CUB_TEST("DeviceMergeSort::StableSortKeys works for large types", "[merge][sort]
   // Prepare input
   const offset_t num_items = GENERATE_COPY(take(2, random(1, 10000)));
   c2h::device_vector<key_t> keys_in_out(num_items);
-  c2h::gen(CUB_SEED(2), keys_in_out);
+  c2h::gen(C2H_SEED(2), keys_in_out);
 
   // Prepare host data for verification
   c2h::host_vector<key_t> keys_expected(keys_in_out);
@@ -69,7 +69,7 @@ CUB_TEST("DeviceMergeSort::StableSortKeys works for large types", "[merge][sort]
   REQUIRE(keys_expected == keys_in_out);
 }
 
-CUB_TEST("DeviceMergeSort::StableSortPairs works for large types", "[merge][sort][device]", key_types)
+C2H_TEST("DeviceMergeSort::StableSortPairs works for large types", "[merge][sort][device]", key_types)
 {
   using key_t    = typename c2h::get<0, TestType>;
   using data_t   = std::uint32_t;
@@ -79,8 +79,8 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large types", "[merge][sort
   const offset_t num_items = GENERATE_COPY(take(2, random(1, 10000)));
   c2h::device_vector<key_t> keys_in_out(num_items);
   c2h::device_vector<data_t> values_in_out(num_items);
-  c2h::gen(CUB_SEED(2), keys_in_out);
-  c2h::gen(CUB_SEED(1), values_in_out);
+  c2h::gen(C2H_SEED(2), keys_in_out);
+  c2h::gen(C2H_SEED(1), values_in_out);
 
   // Prepare host data for verification
   c2h::host_vector<key_t> keys_expected(keys_in_out);

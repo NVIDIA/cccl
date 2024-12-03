@@ -55,11 +55,11 @@ int timespec_get( struct timespec *ts, int base); // C++17
 #  pragma system_header
 #endif // no system header
 
-#ifndef _CCCL_COMPILER_NVRTC
+#if !_CCCL_COMPILER(NVRTC)
 #  include <time.h>
 #else
 typedef long long int time_t;
-#endif // _CCCL_COMPILER_NVRTC
+#endif // _CCCL_COMPILER(NVRTC)
 
 _CCCL_PUSH_MACROS
 
@@ -69,7 +69,7 @@ using ::clock_t;
 using ::size_t;
 using ::time_t;
 
-#ifndef _CCCL_COMPILER_NVRTC
+#if !_CCCL_COMPILER(NVRTC)
 
 using ::tm;
 #  if _CCCL_STD_VER > 2014 && defined(_LIBCUDACXX_HAS_C11_FEATURES)
@@ -89,7 +89,7 @@ using ::strftime;
 #  if _CCCL_STD_VER > 2014 && defined(_LIBCUDACXX_HAS_TIMESPEC_GET)
 using ::timespec_get;
 #  endif
-#endif // _CCCL_COMPILER_NVRTC
+#endif // _CCCL_COMPILER(NVRTC)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

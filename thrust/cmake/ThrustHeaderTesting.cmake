@@ -154,13 +154,6 @@ foreach(thrust_target IN LISTS THRUST_TARGETS)
     "CUB_WRAPPED_NAMESPACE=wrapped_cub")
   thrust_add_header_test(${thrust_target} wrap "${header_definitions}")
 
-  # We need to ensure that the different dispatch mechanisms work
-  set(header_definitions "THRUST_FORCE_32_BIT_OFFSET_TYPE")
-  thrust_add_header_test(${thrust_target} offset_32 "${header_definitions}")
-
-  set(header_definitions "THRUST_FORCE_64_BIT_OFFSET_TYPE")
-  thrust_add_header_test(${thrust_target} offset_64 "${header_definitions}")
-
   thrust_get_target_property(config_device ${thrust_target} DEVICE)
   if ("CUDA" STREQUAL "${config_device}")
     # Check that BF16 support can be disabled

@@ -77,7 +77,7 @@ struct __tuple_sfinae_base
 
 template <class _Tp,
           class _Up,
-          bool = __tuple_like_ext<__libcpp_remove_reference_t<_Tp>>::value,
+          bool = __tuple_like_ext<remove_reference_t<_Tp>>::value,
           bool = __tuple_like_ext<_Up>::value>
 struct __tuple_convertible : public false_type
 {};
@@ -91,7 +91,7 @@ struct __tuple_convertible<_Tp, _Up, true, true>
 
 template <class _Tp,
           class _Up,
-          bool = __tuple_like_ext<__libcpp_remove_reference_t<_Tp>>::value,
+          bool = __tuple_like_ext<remove_reference_t<_Tp>>::value,
           bool = __tuple_like_ext<_Up>::value>
 struct __tuple_constructible : public false_type
 {};
@@ -105,7 +105,7 @@ struct __tuple_constructible<_Tp, _Up, true, true>
 
 template <class _Tp,
           class _Up,
-          bool = __tuple_like_ext<__libcpp_remove_reference_t<_Tp>>::value,
+          bool = __tuple_like_ext<remove_reference_t<_Tp>>::value,
           bool = __tuple_like_ext<_Up>::value>
 struct __tuple_assignable : public false_type
 {};
@@ -118,7 +118,7 @@ struct __tuple_assignable<_Tp, _Up, true, true>
 template <size_t _Ip, class... _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT tuple_element<_Ip, tuple<_Tp...>>
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE __tuple_element_t<_Ip, __tuple_types<_Tp...>> type;
+  typedef _CCCL_NODEBUG_ALIAS __tuple_element_t<_Ip, __tuple_types<_Tp...>> type;
 };
 
 template <bool _IsTuple, class _SizeTrait, size_t _Expected>
@@ -129,8 +129,8 @@ template <class _SizeTrait, size_t _Expected>
 struct __tuple_like_with_size_imp<true, _SizeTrait, _Expected> : integral_constant<bool, _SizeTrait::value == _Expected>
 {};
 
-template <class _Tuple, size_t _ExpectedSize, class _RawTuple = __remove_cvref_t<_Tuple>>
-using __tuple_like_with_size _LIBCUDACXX_NODEBUG_TYPE =
+template <class _Tuple, size_t _ExpectedSize, class _RawTuple = remove_cvref_t<_Tuple>>
+using __tuple_like_with_size _CCCL_NODEBUG_ALIAS =
   __tuple_like_with_size_imp<__tuple_like_ext<_RawTuple>::value, tuple_size<_RawTuple>, _ExpectedSize>;
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __check_tuple_constructor_fail

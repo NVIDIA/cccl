@@ -46,8 +46,6 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_writes<T>(elements);
 
   caching_allocator_t alloc;
-  thrust::sort(policy(alloc), vec.begin(), vec.end(), less_t{});
-
   state.exec(nvbench::exec_tag::timer | nvbench::exec_tag::sync, [&](nvbench::launch& launch, auto& timer) {
     vec = input;
     timer.start();

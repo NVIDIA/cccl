@@ -86,7 +86,7 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   using offset_t       = cub::detail::choose_offset_t<OffsetT>;
   using output_t       = T;
   using init_t         = T;
-  using reduction_op_t = cub::Sum;
+  using reduction_op_t = ::cuda::std::plus<>;
   using transform_op_t = square_t<T>;
 
 #  if !TUNE_BASE
@@ -139,7 +139,7 @@ void reduce(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   using offset_t       = cub::detail::choose_offset_t<OffsetT>;
   using output_t       = T;
   using init_t         = T;
-  using reduction_op_t = cub::Sum;
+  using reduction_op_t = ::cuda::std::plus<>;
   using transform_op_t = square_t<T>;
 
 #  if !TUNE_BASE

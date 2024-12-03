@@ -42,7 +42,7 @@ _CCCL_INLINE_VAR constexpr bool is_trivially_copyable_v = _CCCL_BUILTIN_IS_TRIVI
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_copyable
-    : integral_constant<bool, is_scalar<__remove_all_extents_t<_Tp>>::value>
+    : integral_constant<bool, is_scalar<remove_all_extents_t<_Tp>>::value>
 {};
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)

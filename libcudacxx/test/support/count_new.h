@@ -12,9 +12,9 @@
 #include <cuda/std/cassert>
 #include <cuda/std/cstdlib>
 
-#if !defined(_CCCL_COMPILER_NVRTC)
+#if !_CCCL_COMPILER(NVRTC)
 #  include <new>
-#endif // !_CCCL_COMPILER_NVRTC
+#endif // !_CCCL_COMPILER(NVRTC)
 
 #include "test_macros.h"
 

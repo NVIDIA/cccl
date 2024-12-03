@@ -2,7 +2,7 @@
 include("${CMAKE_CURRENT_LIST_DIR}/libcudacxx-header-search.cmake")
 
 set(libcudacxx_VERSION_MAJOR 2)
-set(libcudacxx_VERSION_MINOR 7)
+set(libcudacxx_VERSION_MINOR 8)
 set(libcudacxx_VERSION_PATCH 0)
 set(libcudacxx_VERSION_TWEAK 0)
 

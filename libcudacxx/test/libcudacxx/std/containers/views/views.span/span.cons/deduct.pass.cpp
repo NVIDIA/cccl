@@ -52,7 +52,7 @@ __host__ __device__ void test_iterator_sentinel()
     assert(s.data() == cuda::std::data(arr));
   }
 
-#if !defined(TEST_COMPILER_MSVC)
+#if defined(_CCCL_SPAN_USES_RANGES)
   // P3029R1: deduction from `integral_constant`
   {
     cuda::std::span s{cuda::std::begin(arr), cuda::std::integral_constant<size_t, 3>{}};
@@ -60,7 +60,7 @@ __host__ __device__ void test_iterator_sentinel()
     assert(s.size() == cuda::std::size(arr));
     assert(s.data() == cuda::std::data(arr));
   }
-#endif // !TEST_COMPILER_MSVC
+#endif // _CCCL_SPAN_USES_RANGES
 }
 
 __host__ __device__ void test_c_array()

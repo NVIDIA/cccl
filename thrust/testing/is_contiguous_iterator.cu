@@ -89,8 +89,8 @@ struct expect_passthrough
 template <typename IteratorT, typename PointerT, typename expected_unwrapped_type /* = expect_[pointer|passthrough] */>
 struct check_unwrapped_iterator
 {
-  using unwrapped_t = ::cuda::std::__libcpp_remove_reference_t<decltype(thrust::try_unwrap_contiguous_iterator(
-    cuda::std::declval<IteratorT>()))>;
+  using unwrapped_t =
+    ::cuda::std::remove_reference_t<decltype(thrust::try_unwrap_contiguous_iterator(cuda::std::declval<IteratorT>()))>;
 
   static constexpr bool value =
     std::is_same<expected_unwrapped_type, expect_pointer>::value

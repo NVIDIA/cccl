@@ -27,7 +27,7 @@
 
 #include <cub/block/block_adjacent_difference.cuh>
 
-#include "catch2_test_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 template <int ThreadsInBlock, int ItemsPerThread, class T, class ActionT>
 __global__ void block_adj_diff_kernel(T* data, ActionT action, bool in_place)
@@ -241,7 +241,7 @@ struct params_t
   static constexpr bool read_left       = c2h::get<3, TestType>::value;
 };
 
-CUB_TEST("Block adjacent difference works with full tiles",
+C2H_TEST("Block adjacent difference works with full tiles",
          "[adjacent difference][block]",
          key_types,
          items_per_thread,
@@ -252,7 +252,7 @@ CUB_TEST("Block adjacent difference works with full tiles",
   using key_t  = typename params::key_t;
 
   c2h::device_vector<key_t> d_data(params::tile_size);
-  c2h::gen(CUB_SEED(10), d_data);
+  c2h::gen(C2H_SEED(10), d_data);
 
   const bool in_place = GENERATE(false, true);
 
@@ -264,7 +264,7 @@ CUB_TEST("Block adjacent difference works with full tiles",
   REQUIRE(h_data == d_data);
 }
 
-CUB_TEST("Block adjacent difference works with last tiles",
+C2H_TEST("Block adjacent difference works with last tiles",
          "[adjacent difference][block]",
          key_types,
          items_per_thread,
@@ -275,7 +275,7 @@ CUB_TEST("Block adjacent difference works with last tiles",
   using key_t  = typename params::key_t;
 
   c2h::device_vector<key_t> d_data(params::tile_size);
-  c2h::gen(CUB_SEED(10), d_data);
+  c2h::gen(C2H_SEED(10), d_data);
 
   const bool in_place   = GENERATE(false, true);
   const int valid_items = GENERATE_COPY(take(10, random(0, params::tile_size)));
@@ -289,7 +289,7 @@ CUB_TEST("Block adjacent difference works with last tiles",
   REQUIRE(h_data == d_data);
 }
 
-CUB_TEST("Block adjacent difference works with single tiles",
+C2H_TEST("Block adjacent difference works with single tiles",
          "[adjacent difference][block]",
          key_types,
          items_per_thread,
@@ -300,7 +300,7 @@ CUB_TEST("Block adjacent difference works with single tiles",
   using key_t  = typename params::key_t;
 
   c2h::device_vector<key_t> d_data(params::tile_size);
-  c2h::gen(CUB_SEED(10), d_data);
+  c2h::gen(C2H_SEED(10), d_data);
 
   const bool in_place      = GENERATE(false, true);
   const int valid_items    = GENERATE_COPY(take(10, random(0, params::tile_size)));
@@ -317,7 +317,7 @@ CUB_TEST("Block adjacent difference works with single tiles",
   REQUIRE(h_data == d_data);
 }
 
-CUB_TEST("Block adjacent difference works with middle tiles",
+C2H_TEST("Block adjacent difference works with middle tiles",
          "[adjacent difference][block]",
          key_types,
          items_per_thread,
@@ -328,7 +328,7 @@ CUB_TEST("Block adjacent difference works with middle tiles",
   using key_t  = typename params::key_t;
 
   c2h::device_vector<key_t> d_data(params::tile_size);
-  c2h::gen(CUB_SEED(10), d_data);
+  c2h::gen(C2H_SEED(10), d_data);
 
   const bool in_place = GENERATE(false, true);
 
@@ -343,7 +343,7 @@ CUB_TEST("Block adjacent difference works with middle tiles",
   REQUIRE(h_data == d_data);
 }
 
-CUB_TEST("Block adjacent difference supports custom types", "[adjacent difference][block]", threads_in_block)
+C2H_TEST("Block adjacent difference supports custom types", "[adjacent difference][block]", threads_in_block)
 {
   using key_t = c2h::custom_type_t<c2h::equal_comparable_t, c2h::subtractable_t>;
 
@@ -354,7 +354,7 @@ CUB_TEST("Block adjacent difference supports custom types", "[adjacent differenc
   constexpr bool in_place        = true;
 
   c2h::device_vector<key_t> d_data(tile_size);
-  c2h::gen(CUB_SEED(10), d_data);
+  c2h::gen(C2H_SEED(10), d_data);
 
   c2h::host_vector<key_t> h_data = d_data;
   host_adj_diff<read_left>(h_data, tile_size);

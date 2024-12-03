@@ -312,7 +312,7 @@ private:
   std::string stderr_from_child_;
 };
 
-void std::__libcpp_verbose_abort(char const* format, ...)
+void std::__cccl_verbose_abort(char const* format, ...)
 {
   assert(!GlobalMatcher().empty());
 

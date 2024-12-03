@@ -31,16 +31,16 @@ struct TestZipIteratorReduce
     using Tuple = tuple<T, T>;
 
     // run on host
-    Tuple h_result = reduce(
-      make_zip_iterator(make_tuple(h_data0.begin(), h_data1.begin())),
-      make_zip_iterator(make_tuple(h_data0.end(), h_data1.end())),
+    Tuple h_result = thrust::reduce(
+      make_zip_iterator(h_data0.begin(), h_data1.begin()),
+      make_zip_iterator(h_data0.end(), h_data1.end()),
       make_tuple<T, T>(0, 0),
       TuplePlus<Tuple>());
 
     // run on device
-    Tuple d_result = reduce(
-      make_zip_iterator(make_tuple(d_data0.begin(), d_data1.begin())),
-      make_zip_iterator(make_tuple(d_data0.end(), d_data1.end())),
+    Tuple d_result = thrust::reduce(
+      make_zip_iterator(d_data0.begin(), d_data1.begin()),
+      make_zip_iterator(d_data0.end(), d_data1.end()),
       make_tuple<T, T>(0, 0),
       TuplePlus<Tuple>());
 

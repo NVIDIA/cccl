@@ -55,13 +55,13 @@
 #elif _CCCL_STD_VER >= 2014
 #  define CUB_DEPRECATED              [[deprecated]]
 #  define CUB_DEPRECATED_BECAUSE(MSG) [[deprecated(MSG)]]
-#elif defined(_CCCL_COMPILER_MSVC)
+#elif _CCCL_COMPILER(MSVC)
 #  define CUB_DEPRECATED              __declspec(deprecated)
 #  define CUB_DEPRECATED_BECAUSE(MSG) __declspec(deprecated(MSG))
-#elif defined(_CCCL_COMPILER_CLANG)
+#elif _CCCL_COMPILER(CLANG)
 #  define CUB_DEPRECATED              __attribute__((deprecated))
 #  define CUB_DEPRECATED_BECAUSE(MSG) __attribute__((deprecated(MSG)))
-#elif defined(_CCCL_COMPILER_GCC)
+#elif _CCCL_COMPILER(GCC)
 #  define CUB_DEPRECATED              __attribute__((deprecated))
 #  define CUB_DEPRECATED_BECAUSE(MSG) __attribute__((deprecated(MSG)))
 #else

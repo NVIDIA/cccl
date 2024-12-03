@@ -136,8 +136,8 @@ class __alloc_func<_Fp, _Ap, _Rp(_ArgTypes...)>
   __compressed_pair<_Fp, _Ap> __f_;
 
 public:
-  typedef _LIBCUDACXX_NODEBUG_TYPE _Fp _Target;
-  typedef _LIBCUDACXX_NODEBUG_TYPE _Ap _Alloc;
+  typedef _CCCL_NODEBUG_ALIAS _Fp _Target;
+  typedef _CCCL_NODEBUG_ALIAS _Ap _Alloc;
 
   _LIBCUDACXX_HIDE_FROM_ABI const _Target& __target() const
   {
@@ -206,7 +206,7 @@ class __default_alloc_func<_Fp, _Rp(_ArgTypes...)>
   _Fp __f_;
 
 public:
-  typedef _LIBCUDACXX_NODEBUG_TYPE _Fp _Target;
+  typedef _CCCL_NODEBUG_ALIAS _Fp _Target;
 
   _LIBCUDACXX_HIDE_FROM_ABI const _Target& __target() const
   {
@@ -419,7 +419,7 @@ public:
     }
   }
 
-  template <class _Fp, class = __enable_if_t<!is_same<__decay_t<_Fp>, __value_func>::value>>
+  template <class _Fp, class = enable_if_t<!is_same<decay_t<_Fp>, __value_func>::value>>
   _LIBCUDACXX_HIDE_FROM_ABI explicit __value_func(_Fp&& __f)
       : __value_func(_CUDA_VSTD::forward<_Fp>(__f), allocator<_Fp>())
   {}
@@ -687,7 +687,7 @@ private:
 // Used to choose between perfect forwarding or pass-by-value. Pass-by-value is
 // faster for types that can be passed in registers.
 template <typename _Tp>
-using __fast_forward = __conditional_t<is_scalar<_Tp>::value, _Tp, _Tp&&>;
+using __fast_forward = conditional_t<is_scalar<_Tp>::value, _Tp, _Tp&&>;
 
 // __policy_invoker calls an instance of __alloc_func held in __policy_storage.
 
@@ -786,7 +786,7 @@ public:
     }
   }
 
-  template <class _Fp, class = __enable_if_t<!is_same<__decay_t<_Fp>, __policy_func>::value>>
+  template <class _Fp, class = enable_if_t<!is_same<decay_t<_Fp>, __policy_func>::value>>
   _LIBCUDACXX_HIDE_FROM_ABI explicit __policy_func(_Fp&& __f)
       : __policy_(__policy::__create_empty())
   {
@@ -997,7 +997,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT function<_Rp(_ArgTypes...)>
 
   __func __f_;
 
-  template <class _Fp, bool = _And<_IsNotSame<__remove_cvref_t<_Fp>, function>, __invokable<_Fp, _ArgTypes...>>::value>
+  template <class _Fp, bool = _And<_IsNotSame<remove_cvref_t<_Fp>, function>, __invokable<_Fp, _ArgTypes...>>::value>
   struct __callable;
   template <class _Fp>
   struct __callable<_Fp, true>
@@ -1012,7 +1012,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT function<_Rp(_ArgTypes...)>
   };
 
   template <class _Fp>
-  using _EnableIfLValueCallable = __enable_if_t<__callable<_Fp&>::value>;
+  using _EnableIfLValueCallable = enable_if_t<__callable<_Fp&>::value>;
 
 public:
   typedef _Rp result_type;
@@ -1043,7 +1043,7 @@ public:
   function& operator=(const function&);
   function& operator=(function&&) noexcept;
   function& operator=(nullptr_t) noexcept;
-  template <class _Fp, class = _EnableIfLValueCallable<__decay_t<_Fp>>>
+  template <class _Fp, class = _EnableIfLValueCallable<decay_t<_Fp>>>
   function& operator=(_Fp&&);
 
   ~function();

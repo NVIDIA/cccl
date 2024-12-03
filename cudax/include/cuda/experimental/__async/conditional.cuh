@@ -12,11 +12,11 @@
 #define __CUDAX_ASYNC_DETAIL_CONDITIONAL
 
 #include <cuda/experimental/__async/completion_signatures.cuh>
-#include <cuda/experimental/__async/config.cuh>
 #include <cuda/experimental/__async/just_from.cuh>
 #include <cuda/experimental/__async/meta.cuh>
 #include <cuda/experimental/__async/type_traits.cuh>
 #include <cuda/experimental/__async/variant.cuh>
+#include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/prologue.cuh>
 
@@ -45,7 +45,7 @@ struct __cond_t
   };
 
   template <class... _Args>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE static auto __mk_complete_fn(_Args&&... __args) noexcept
+  _CCCL_HOST_DEVICE _CCCL_FORCEINLINE static auto __mk_complete_fn(_Args&&... __args) noexcept
   {
     return [&](auto __sink) noexcept {
       return __sink(static_cast<_Args&&>(__args)...);
@@ -60,7 +60,7 @@ struct __cond_t
   {
     using operation_state_concept = operation_state_t;
 
-    _CCCL_HOST_DEVICE friend env_of_t<_Rcvr> get_env(const __opstate* __self) noexcept
+    _CUDAX_API friend env_of_t<_Rcvr> get_env(const __opstate* __self) noexcept
     {
       return get_env(__self->__rcvr_);
     }
@@ -73,29 +73,31 @@ struct __cond_t
 
     template <class... _Args>
     using __opstate_t = //
-      __mlist< //
+      _CUDA_VSTD::__type_list< //
         connect_result_t<__call_result_t<_Then, __just_from_t<_Args...>>, __rcvr_ref_t<_Rcvr&>>,
         connect_result_t<__call_result_t<_Else, __just_from_t<_Args...>>, __rcvr_ref_t<_Rcvr&>>>;
 
     using __next_ops_variant_t = //
-      __value_types<completion_signatures_of_t<_Sndr, __opstate*>, __opstate_t, __mconcat_into_q<__variant>::__f>;
+      __value_types<completion_signatures_of_t<_Sndr, __opstate*>,
+                    __opstate_t,
+                    __type_concat_into_quote<__variant>::__call>;
 
     using completion_signatures = //
       transform_completion_signatures_of<_Sndr, __opstate*, __async::completion_signatures<>, __value_t>;
 
-    _CCCL_HOST_DEVICE __opstate(_Sndr&& __sndr, _Rcvr&& __rcvr, __data<_Pred, _Then, _Else>&& __data)
+    _CUDAX_API __opstate(_Sndr&& __sndr, _Rcvr&& __rcvr, __data<_Pred, _Then, _Else>&& __data)
         : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
         , __data_{static_cast<__cond_t::__data<_Pred, _Then, _Else>>(__data)}
         , __op_{__async::connect(static_cast<_Sndr&&>(__sndr), this)}
     {}
 
-    _CCCL_HOST_DEVICE void start() noexcept
+    _CUDAX_API void start() noexcept
     {
       __async::start(__op_);
     }
 
     template <class... _Args>
-    _CCCL_HOST_DEVICE void set_value(_Args&&... __args) noexcept
+    _CUDAX_API void set_value(_Args&&... __args) noexcept
     {
       if (static_cast<_Pred&&>(__data_.__pred_)(__args...))
       {
@@ -116,12 +118,12 @@ struct __cond_t
     }
 
     template <class _Error>
-    _CCCL_HOST_DEVICE void set_error(_Error&& __error) noexcept
+    _CUDAX_API void set_error(_Error&& __error) noexcept
     {
       __async::set_error(static_cast<_Rcvr&&>(__rcvr_), static_cast<_Error&&>(__error));
     }
 
-    _CCCL_HOST_DEVICE void set_stopped() noexcept
+    _CUDAX_API void set_stopped() noexcept
     {
       __async::set_stopped(static_cast<_Rcvr&&>(__rcvr_));
     }
@@ -141,18 +143,18 @@ struct __cond_t
     __cond_t::__data<_Pred, _Then, _Else> __data_;
 
     template <class _Sndr>
-    _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto __mk_sender(_Sndr&& __sndr) //
+    _CUDAX_TRIVIAL_API auto __mk_sender(_Sndr&& __sndr) //
       -> __sndr_t<_Sndr, _Pred, _Then, _Else>;
 
     template <class _Sndr>
-    _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto operator()(_Sndr __sndr) //
+    _CUDAX_TRIVIAL_API auto operator()(_Sndr __sndr) //
       -> __sndr_t<_Sndr, _Pred, _Then, _Else>
     {
       return __mk_sender(static_cast<_Sndr&&>(__sndr));
     }
 
     template <class _Sndr>
-    _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE friend auto operator|(_Sndr __sndr, __closure&& __self) //
+    _CUDAX_TRIVIAL_API friend auto operator|(_Sndr __sndr, __closure&& __self) //
       -> __sndr_t<_Sndr, _Pred, _Then, _Else>
     {
       return __self.__mk_sender(static_cast<_Sndr&&>(__sndr));
@@ -160,11 +162,11 @@ struct __cond_t
   };
 
   template <class _Sndr, class _Pred, class _Then, class _Else>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const //
+  _CUDAX_TRIVIAL_API auto operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const //
     -> __sndr_t<_Sndr, _Pred, _Then, _Else>;
 
   template <class _Pred, class _Then, class _Else>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto operator()(_Pred __pred, _Then __then, _Else __else) const
+  _CUDAX_TRIVIAL_API auto operator()(_Pred __pred, _Then __then, _Else __else) const
   {
     return __closure<_Pred, _Then, _Else>{
       {static_cast<_Pred&&>(__pred), static_cast<_Then&&>(__then), static_cast<_Else&&>(__else)}};
@@ -179,7 +181,7 @@ struct __cond_t::__sndr_t
   _Sndr __sndr_;
 
   template <class _Rcvr>
-  _CCCL_HOST_DEVICE auto connect(_Rcvr __rcvr) && -> __opstate<_Sndr, _Rcvr, _Pred, _Then, _Else>
+  _CUDAX_API auto connect(_Rcvr __rcvr) && -> __opstate<_Sndr, _Rcvr, _Pred, _Then, _Else>
   {
     return {static_cast<_Sndr&&>(__sndr_),
             static_cast<_Rcvr&&>(__rcvr),
@@ -187,20 +189,19 @@ struct __cond_t::__sndr_t
   }
 
   template <class _Rcvr>
-  _CCCL_HOST_DEVICE auto connect(_Rcvr __rcvr) const& -> __opstate<_Sndr const&, _Rcvr, _Pred, _Then, _Else>
+  _CUDAX_API auto connect(_Rcvr __rcvr) const& -> __opstate<_Sndr const&, _Rcvr, _Pred, _Then, _Else>
   {
     return {__sndr_, static_cast<_Rcvr&&>(__rcvr), static_cast<__cond_t::__data<_Pred, _Then, _Else>&&>(__data_)};
   }
 
-  _CCCL_HOST_DEVICE env_of_t<_Sndr> get_env() const noexcept
+  _CUDAX_API env_of_t<_Sndr> get_env() const noexcept
   {
     return __async::get_env(__sndr_);
   }
 };
 
 template <class _Sndr, class _Pred, class _Then, class _Else>
-_CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto
-__cond_t::operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const //
+_CUDAX_TRIVIAL_API auto __cond_t::operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) const //
   -> __sndr_t<_Sndr, _Pred, _Then, _Else>
 {
   if constexpr (__is_non_dependent_sender<_Sndr>)
@@ -217,7 +218,7 @@ __cond_t::operator()(_Sndr __sndr, _Pred __pred, _Then __then, _Else __else) con
 
 template <class _Pred, class _Then, class _Else>
 template <class _Sndr>
-_CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto __cond_t::__closure<_Pred, _Then, _Else>::__mk_sender(_Sndr&& __sndr) //
+_CUDAX_TRIVIAL_API auto __cond_t::__closure<_Pred, _Then, _Else>::__mk_sender(_Sndr&& __sndr) //
   -> __sndr_t<_Sndr, _Pred, _Then, _Else>
 {
   if constexpr (__is_non_dependent_sender<_Sndr>)

@@ -331,7 +331,7 @@ private:
 public:
   /*! The type of element pointed to by \p iterator_facade.
    */
-  using value_type = ::cuda::std::__remove_const_t<Value>;
+  using value_type = ::cuda::std::remove_const_t<Value>;
 
   /*! The return type of \p iterator_facade::operator*().
    */

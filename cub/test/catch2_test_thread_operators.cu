@@ -27,8 +27,8 @@
 
 #include <cub/thread/thread_operators.cuh>
 
-#include "catch2_test_helper.h"
 #include "test_util.h"
+#include <c2h/catch2_test_helper.h>
 
 template <class T>
 T Make(int val)
@@ -81,49 +81,12 @@ public:
     }                                                  \
   }
 
-//                  NAME  RT    OP  CONVERTABLE
 CUSTOM_TYPE_FACTORY(Eq, bool, ==, false);
-CUSTOM_TYPE_FACTORY(Ineq, bool, !=, false);
-CUSTOM_TYPE_FACTORY(Sum, int, +, false);
-CUSTOM_TYPE_FACTORY(Diff, int, -, false);
-CUSTOM_TYPE_FACTORY(Div, int, /, false);
-CUSTOM_TYPE_FACTORY(Gt, bool, >, true);
-CUSTOM_TYPE_FACTORY(Lt, bool, <, true);
 
-CUB_TEST("Equality", "[thread_operator]")
+C2H_TEST("InequalityWrapper", "[thread_operator]")
 {
-  cub::Equality op{};
-
-  constexpr int const_magic_val = 42;
-  int magic_val                 = const_magic_val;
-
-  CHECK(op(const_magic_val, const_magic_val) == true);
-  CHECK(op(const_magic_val, magic_val) == true);
-  CHECK(op(const_magic_val, magic_val + 1) == false);
-
-  CHECK(op(Make<CustomEqT>(magic_val), magic_val) == true);
-  CHECK(op(Make<CustomEqT>(magic_val), magic_val + 1) == false);
-}
-
-CUB_TEST("Inequality", "[thread_operator]")
-{
-  cub::Inequality op{};
-
-  constexpr int const_magic_val = 42;
-  int magic_val                 = const_magic_val;
-
-  CHECK(op(const_magic_val, const_magic_val) == false);
-  CHECK(op(const_magic_val, magic_val) == false);
-  CHECK(op(const_magic_val, magic_val + 1) == true);
-
-  CHECK(op(Make<CustomIneqT>(magic_val), magic_val) == false);
-  CHECK(op(Make<CustomIneqT>(magic_val), magic_val + 1) == true);
-}
-
-CUB_TEST("InequalityWrapper", "[thread_operator]")
-{
-  cub::Equality wrapped_op{};
-  cub::InequalityWrapper<cub::Equality> op{wrapped_op};
+  ::cuda::std::equal_to<> wrapped_op{};
+  cub::InequalityWrapper<::cuda::std::equal_to<>> op{wrapped_op};
 
   constexpr int const_magic_val = 42;
   int magic_val                 = const_magic_val;
@@ -134,116 +97,4 @@ CUB_TEST("InequalityWrapper", "[thread_operator]")
 
   CHECK(op(Make<CustomEqT>(magic_val), magic_val) == false);
   CHECK(op(Make<CustomEqT>(magic_val), magic_val + 1) == true);
-}
-
-#define CUSTOM_SYNC_T(NAME, RT, OP)               \
-  struct Custom##NAME##Sink                       \
-  {                                               \
-    template <class T>                            \
-    __host__ __device__ RT operator OP(T&&) const \
-    {                                             \
-      return RT{};                                \
-    }                                             \
-  }
-
-CUSTOM_SYNC_T(SumInt, int, +);
-CUSTOM_SYNC_T(SumCustomInt, CustomSumIntSink, +);
-
-CUSTOM_SYNC_T(DiffInt, int, -);
-CUSTOM_SYNC_T(DiffCustomInt, CustomDiffIntSink, -);
-
-CUSTOM_SYNC_T(DivInt, int, /);
-CUSTOM_SYNC_T(DivCustomInt, CustomDivIntSink, /);
-
-template <class ExpectedT, class ActualT>
-void StaticSame()
-{
-  STATIC_REQUIRE(std::is_same<ExpectedT, ActualT>::value);
-}
-
-CUB_TEST("Sum", "[thread_operator]")
-{
-  cub::Sum op{};
-
-  constexpr int const_magic_val = 40;
-  int magic_val                 = const_magic_val;
-
-  CHECK(op(const_magic_val, 2) == 42);
-  CHECK(op(magic_val, 2) == 42);
-  CHECK(op(Make<CustomSumT>(magic_val), 2) == 42);
-
-  StaticSame<decltype(op(42, 42)), int>();
-  StaticSame<decltype(op(1, 1.0)), double>();
-  StaticSame<decltype(op(CustomSumIntSink{}, 1.0)), int>();
-  StaticSame<decltype(op(CustomSumCustomIntSink{}, 1.0)), CustomSumIntSink>();
-}
-
-CUB_TEST("Difference", "[thread_operator]")
-{
-  cub::Difference op{};
-
-  constexpr int const_magic_val = 44;
-  int magic_val                 = const_magic_val;
-
-  CHECK(op(const_magic_val, 2) == 42);
-  CHECK(op(magic_val, 2) == 42);
-
-  CHECK(op(Make<CustomDiffT>(magic_val), 2) == 42);
-
-  StaticSame<decltype(op(42, 42)), int>();
-  StaticSame<decltype(op(1, 1.0)), double>();
-  StaticSame<decltype(op(CustomDiffIntSink{}, 1.0)), int>();
-  StaticSame<decltype(op(CustomDiffCustomIntSink{}, 1.0)), CustomDiffIntSink>();
-}
-
-CUB_TEST("Division", "[thread_operator]")
-{
-  cub::Division op{};
-
-  constexpr int const_magic_val = 44;
-  int magic_val                 = const_magic_val;
-
-  CHECK(op(const_magic_val, 2) == 22);
-  CHECK(op(magic_val, 2) == 22);
-
-  CHECK(op(Make<CustomDivT>(magic_val), 2) == 22);
-
-  StaticSame<decltype(op(42, 42)), int>();
-  StaticSame<decltype(op(1, 1.0)), double>();
-  StaticSame<decltype(op(CustomDivIntSink{}, 1.0)), int>();
-  StaticSame<decltype(op(CustomDivCustomIntSink{}, 1.0)), CustomDivIntSink>();
-}
-
-CUB_TEST("Max", "[thread_operator]")
-{
-  cub::Max op{};
-
-  constexpr int const_magic_val = 42;
-  int magic_val                 = const_magic_val;
-
-  CHECK(op(const_magic_val, 2) == 42);
-  CHECK(op(magic_val, 2) == 42);
-
-  CHECK(op(2, Make<CustomGtT>(magic_val)) == 42);
-
-  StaticSame<decltype(op(42, 42)), int>();
-  StaticSame<decltype(op(1, 1.0)), double>();
-  StaticSame<decltype(op(1, Make<CustomGtT>(magic_val))), int>();
-}
-
-CUB_TEST("Min", "[thread_operator]")
-{
-  cub::Min op{};
-
-  constexpr int const_magic_val = 42;
-  int magic_val                 = const_magic_val;
-
-  CHECK(op(const_magic_val, 2) == 2);
-  CHECK(op(magic_val, 2) == 2);
-
-  CHECK(op(2, Make<CustomLtT>(magic_val)) == 2);
-
-  StaticSame<decltype(op(42, 42)), int>();
-  StaticSame<decltype(op(1, 1.0)), double>();
-  StaticSame<decltype(op(1, Make<CustomLtT>(magic_val))), int>();
 }

@@ -35,7 +35,7 @@
 
 #include <cuda/std/type_traits>
 
-#include "catch2_test_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 /******************************************************************************
  * HELPER CLASS FOR RUN-LENGTH DECODING TESTS
@@ -87,16 +87,12 @@ private:
   using BlockLoadRunLengthsT =
     cub::BlockLoad<RunLengthT, BLOCK_DIM_X, RUNS_PER_THREAD, cub::BLOCK_LOAD_WARP_TRANSPOSE, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
-  using BlockStoreDecodedItemT = cub::
-    BlockStore<RunItemT, BLOCK_DIM_X, DECODED_ITEMS_PER_THREAD, cub::BLOCK_STORE_WARP_TRANSPOSE, BLOCK_DIM_Y, BLOCK_DIM_Z>;
-
+  // These must both use BLOCK_STORE_DIRECT. They're called in a loop with RunLengthDecode and must not
+  // use shmem so that we can test repeatedly calling RLD without synchronizing.
+  using BlockStoreDecodedItemT =
+    cub::BlockStore<RunItemT, BLOCK_DIM_X, DECODED_ITEMS_PER_THREAD, cub::BLOCK_STORE_DIRECT, BLOCK_DIM_Y, BLOCK_DIM_Z>;
   using BlockStoreRelativeOffsetT =
-    cub::BlockStore<RunLengthT,
-                    BLOCK_DIM_X,
-                    DECODED_ITEMS_PER_THREAD,
-                    cub::BLOCK_STORE_WARP_TRANSPOSE,
-                    BLOCK_DIM_Y,
-                    BLOCK_DIM_Z>;
+    cub::BlockStore<RunLengthT, BLOCK_DIM_X, DECODED_ITEMS_PER_THREAD, cub::BLOCK_STORE_DIRECT, BLOCK_DIM_Y, BLOCK_DIM_Z>;
 
   __device__ __forceinline__ BlockRunLengthDecodeT InitBlockRunLengthDecode(
     RunItemT (&unique_items)[RUNS_PER_THREAD],
@@ -234,6 +230,7 @@ public:
       // decoding
       uint32_t num_valid_items = decoded_size - decoded_window_offset;
       run_length_decode.RunLengthDecode(decoded_items, relative_offsets, decoded_window_offset);
+
       BlockStoreDecodedItemT(temp_storage.decode.store_decoded_runs_storage)
         .Store(d_block_decoded_out + decoded_window_offset, decoded_items, num_valid_items);
 
@@ -496,7 +493,7 @@ struct params_t
   static constexpr int block_dim_z              = BlockDimZ;
 };
 
-CUB_TEST_LIST(
+C2H_TEST_LIST(
   "Block Run Length Decode works with run lengths and offsets relative to each run",
   "[rld][block]",
   params_t<1, 1, 64>,
@@ -520,7 +517,7 @@ CUB_TEST_LIST(
                               DO_TEST_RELATIVE_OFFSETS>();
 }
 
-CUB_TEST_LIST(
+C2H_TEST_LIST(
   "Block Run Length Decode works with run lengths and performs normal run-length "
   "decoding",
   "[rld][block]",
@@ -545,7 +542,7 @@ CUB_TEST_LIST(
                               DO_NOT_TEST_RELATIVE_OFFSETS>();
 }
 
-CUB_TEST_LIST(
+C2H_TEST_LIST(
   "Block Run Length Decode works with run offsets and generates offsets relative to "
   "each run",
   "[rld][block]",
@@ -570,7 +567,7 @@ CUB_TEST_LIST(
                               DO_TEST_RELATIVE_OFFSETS>();
 }
 
-CUB_TEST_LIST(
+C2H_TEST_LIST(
   "Block Run Length Decode works with run offsets and performs normal run-length "
   "decoding",
   "[rld][block]",

@@ -33,11 +33,11 @@
 
 #include <cstdint>
 
-#include "c2h/custom_type.cuh"
-#include "c2h/extended_types.cuh"
 #include "catch2_test_device_reduce.cuh"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/custom_type.h>
+#include <c2h/extended_types.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Reduce, device_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Sum, device_sum);
@@ -91,7 +91,7 @@ enum class gen_data_t : int
   GEN_TYPE_CONST
 };
 
-CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", full_type_list)
+C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", full_type_list)
 {
   using params   = params_t<TestType>;
   using item_t   = typename params::item_t;
@@ -117,7 +117,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
   c2h::device_vector<item_t> in_items(num_items);
   if (data_gen_mode == gen_data_t::GEN_TYPE_RANDOM)
   {
-    c2h::gen(CUB_SEED(2), in_items);
+    c2h::gen(C2H_SEED(2), in_items);
   }
   else
   {
@@ -130,7 +130,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
 #if TEST_TYPES != 4
   SECTION("reduce")
   {
-    using op_t = cub::Sum;
+    using op_t = ::cuda::std::plus<>;
 
     // Binary reduction operator
     auto reduction_op = unwrap_op(reference_extended_fp(d_in_it), op_t{});
@@ -156,7 +156,7 @@ CUB_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
 #if TEST_TYPES != 3
   SECTION("sum")
   {
-    using op_t    = cub::Sum;
+    using op_t    = ::cuda::std::plus<>;
     using accum_t = ::cuda::std::__accumulator_t<op_t, item_t, output_t>;
 
     // Prepare verification data

@@ -62,7 +62,7 @@ static void unique(nvbench::state& state, nvbench::type_list<T, OffsetT, InPlace
   using output_it_t        = T*;
   using num_selected_it_t  = OffsetT*;
   using select_op_t        = cub::NullType;
-  using equality_op_t      = cub::Equality;
+  using equality_op_t      = ::cuda::std::equal_to<>;
   using offset_t           = OffsetT;
   constexpr bool may_alias = InPlaceAlgT::value;
 

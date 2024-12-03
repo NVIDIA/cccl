@@ -29,9 +29,9 @@
 
 #include <cuda/std/type_traits>
 
-#include "catch2_test_helper.h"
+#include <c2h/catch2_test_helper.h>
 
-CUB_TEST("Tests safe_add_bound_to_max", "[util][math]")
+C2H_TEST("Tests safe_add_bound_to_max", "[util][math]")
 {
   REQUIRE(cub::detail::safe_add_bound_to_max(0U, ::cuda::std::numeric_limits<std::uint32_t>::max())
           == ::cuda::std::numeric_limits<std::uint32_t>::max());

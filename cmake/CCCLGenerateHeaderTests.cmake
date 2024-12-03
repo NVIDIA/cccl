@@ -108,4 +108,16 @@ function(cccl_generate_header_tests target_name project_include_path)
   add_library(${target_name} OBJECT ${header_srcs})
   cccl_configure_target(${target_name} ${cccl_configure_target_options})
 
+  # Check that all functions in headers are either template functions or inline:
+  set(link_target ${target_name}.link_check)
+  add_executable(${link_target} "${CCCL_SOURCE_DIR}/cmake/link_check_main.cpp")
+  cccl_configure_target(${link_target} ${cccl_configure_target_options})
+  # Linking both ${target_name} and $<TARGET_OBJECTS:${target_name}> forces CMake to
+  # link the same objects twice. The compiler will complain about duplicate symbols if
+  # any functions are missing inline markup.
+  target_link_libraries(${link_target} PRIVATE
+    ${target_name}
+    $<TARGET_OBJECTS:${target_name}>
+  )
+
 endfunction()

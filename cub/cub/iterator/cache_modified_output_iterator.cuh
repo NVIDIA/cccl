@@ -46,14 +46,10 @@
 #include <cub/thread/thread_load.cuh>
 #include <cub/thread/thread_store.cuh>
 
-#include <iostream>
-#include <iterator>
+#include <thrust/iterator/iterator_facade.h>
+#include <thrust/iterator/iterator_traits.h>
 
-#if (THRUST_VERSION >= 100700)
-// This iterator is compatible with Thrust API 1.7 and newer
-#  include <thrust/iterator/iterator_facade.h>
-#  include <thrust/iterator/iterator_traits.h>
-#endif // THRUST_VERSION
+#include <iosfwd>
 
 CUB_NAMESPACE_BEGIN
 
@@ -143,19 +139,12 @@ public:
   /// The type of a reference to an element the iterator can point to
   using reference = Reference;
 
-#if (THRUST_VERSION >= 100700)
-  // Use Thrust's iterator categories so we can use these iterators in Thrust 1.7 (or newer) methods
-
   /// The iterator category
   using iterator_category = typename THRUST_NS_QUALIFIER::detail::iterator_facade_category<
     THRUST_NS_QUALIFIER::device_system_tag,
     THRUST_NS_QUALIFIER::random_access_traversal_tag,
     value_type,
     reference>::type;
-#else
-  /// The iterator category
-  using iterator_category = std::random_access_iterator_tag;
-#endif // THRUST_VERSION
 
 private:
   ValueType* ptr;

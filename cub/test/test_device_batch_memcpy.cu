@@ -44,8 +44,8 @@
 #include <vector>
 
 #include "test_util.h"
-#include <c2h/device_policy.cuh>
-#include <c2h/vector.cuh>
+#include <c2h/device_policy.h>
+#include <c2h/vector.h>
 
 /**
  * @brief Host-side random data generation

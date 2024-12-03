@@ -46,11 +46,11 @@
 #include <cstdint>
 #include <numeric>
 
-#include <c2h/cpu_timer.cuh>
-#include <c2h/device_policy.cuh>
-#include <c2h/generators.cuh> // seed_t
-#include <c2h/vector.cuh>
-#include <catch2_test_helper.h>
+#include <c2h/catch2_test_helper.h>
+#include <c2h/cpu_timer.h>
+#include <c2h/device_policy.h>
+#include <c2h/generators.h> // seed_t
+#include <c2h/vector.h>
 
 // #define DEBUG_TIMING
 

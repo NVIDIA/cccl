@@ -165,7 +165,8 @@ struct WarpScanSmem
    * @param[in]
    *   Marker type indicating whether T is primitive type
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveScan(T input, T& output, Sum scan_op, Int2Type<true> /*is_primitive*/)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void
+  InclusiveScan(T input, T& output, ::cuda::std::plus<> scan_op, Int2Type<true> /*is_primitive*/)
   {
     T identity = 0;
     ThreadStore<STORE_VOLATILE>(&temp_storage[lane_id], (CellT) identity);
@@ -316,7 +317,7 @@ struct WarpScanSmem
    *        integer types)
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE void
-  Update(T input, T& inclusive, T& exclusive, cub::Sum /*scan_op*/, Int2Type<true> /*is_integer*/)
+  Update(T input, T& inclusive, T& exclusive, ::cuda::std::plus<> /*scan_op*/, Int2Type<true> /*is_integer*/)
   {
     // initial value presumed 0
     exclusive = inclusive - input;
@@ -346,8 +347,8 @@ struct WarpScanSmem
    * @brief Update inclusive and exclusive using initial value using input and inclusive
    *        (specialized for summation of integer types)
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  Update(T input, T& inclusive, T& exclusive, cub::Sum scan_op, T initial_value, Int2Type<true> /*is_integer*/)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Update(
+    T input, T& inclusive, T& exclusive, ::cuda::std::plus<> scan_op, T initial_value, Int2Type<true> /*is_integer*/)
   {
     inclusive = scan_op(initial_value, inclusive);
     exclusive = inclusive - input;
@@ -373,8 +374,13 @@ struct WarpScanSmem
    * @brief Update inclusive, exclusive, and warp aggregate using input and inclusive (specialized
    *        for summation of integer types)
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE void
-  Update(T input, T& inclusive, T& exclusive, T& warp_aggregate, cub::Sum /*scan_o*/, Int2Type<true> /*is_integer*/)
+  _CCCL_DEVICE _CCCL_FORCEINLINE void Update(
+    T input,
+    T& inclusive,
+    T& exclusive,
+    T& warp_aggregate,
+    ::cuda::std::plus<> /*scan_o*/,
+    Int2Type<true> /*is_integer*/)
   {
     // Initial value presumed to be unknown or identity (either way our padding is correct)
     ThreadStore<STORE_VOLATILE>(&temp_storage[HALF_WARP_THREADS + lane_id], (CellT) inclusive);

@@ -162,24 +162,20 @@ void check_values(Sndr&& sndr, const Values&... values) noexcept
 #endif // !defined(__CUDA_ARCH__)
 
 template <class... Ts>
-using types = cudax_async::__mlist<Ts...>;
+using types = _CUDA_VSTD::__type_list<Ts...>;
 
 template <class... Values, class Sndr>
 _CCCL_HOST_DEVICE void check_value_types(Sndr&&) noexcept
 {
-  using actual_t   = cudax_async::value_types_of_t<Sndr, cudax_async::env<>, types, cudax_async::__mmake_set>;
-  using expected_t = cudax_async::__mmake_set<Values...>;
-
-  static_assert(cudax_async::__mset_eq<expected_t, actual_t>, "value_types_of_t does not match expected types");
+  using actual_t = cudax_async::value_types_of_t<Sndr, cudax_async::env<>, types, _CUDA_VSTD::__make_type_set>;
+  static_assert(_CUDA_VSTD::__type_set_eq_v<actual_t, Values...>, "value_types_of_t does not match expected types");
 }
 
 template <class... Errors, class Sndr>
 _CCCL_HOST_DEVICE void check_error_types(Sndr&&) noexcept
 {
-  using actual_t   = cudax_async::error_types_of_t<Sndr, cudax_async::env<>, cudax_async::__mmake_set>;
-  using expected_t = cudax_async::__mmake_set<Errors...>;
-
-  static_assert(cudax_async::__mset_eq<expected_t, actual_t>, "error_types_of_t does not match expected types");
+  using actual_t = cudax_async::error_types_of_t<Sndr, cudax_async::env<>, _CUDA_VSTD::__make_type_set>;
+  static_assert(_CUDA_VSTD::__type_set_eq_v<actual_t, Errors...>, "error_types_of_t does not match expected types");
 }
 
 template <bool SendsStopped, class Sndr>

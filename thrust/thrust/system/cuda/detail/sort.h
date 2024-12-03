@@ -60,6 +60,17 @@
 
 #  include <cstdint>
 
+#  if defined(_CCCL_HAS_NVFP16)
+#    include <cuda_fp16.h>
+#  endif // _CCCL_HAS_NVFP16
+
+#  if defined(_CCCL_HAS_NVBF16)
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
+#    include <cuda_bf16.h>
+_CCCL_DIAG_POP
+#  endif // _CCCL_HAS_NVBF16
+
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
@@ -325,7 +336,7 @@ template <
   class KeysIt,
   class ItemsIt,
   class CompareOp,
-  ::cuda::std::__enable_if_t<!can_use_primitive_sort<typename iterator_value<KeysIt>::type, CompareOp>::value, int> = 0>
+  ::cuda::std::enable_if_t<!can_use_primitive_sort<typename iterator_value<KeysIt>::type, CompareOp>::value, int> = 0>
 THRUST_RUNTIME_FUNCTION void
 smart_sort(Policy& policy, KeysIt keys_first, KeysIt keys_last, ItemsIt items_first, CompareOp compare_op)
 {
@@ -339,7 +350,7 @@ template <
   class KeysIt,
   class ItemsIt,
   class CompareOp,
-  ::cuda::std::__enable_if_t<can_use_primitive_sort<typename iterator_value<KeysIt>::type, CompareOp>::value, int> = 0>
+  ::cuda::std::enable_if_t<can_use_primitive_sort<typename iterator_value<KeysIt>::type, CompareOp>::value, int> = 0>
 THRUST_RUNTIME_FUNCTION void smart_sort(
   execution_policy<Policy>& policy, KeysIt keys_first, KeysIt keys_last, ItemsIt items_first, CompareOp compare_op)
 {

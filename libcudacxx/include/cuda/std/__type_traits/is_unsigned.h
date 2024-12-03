@@ -45,23 +45,23 @@ _CCCL_INLINE_VAR constexpr bool is_unsigned_v = _CCCL_BUILTIN_IS_UNSIGNED(_Tp);
 #else
 
 template <class _Tp, bool = is_integral<_Tp>::value>
-struct __libcpp_is_unsigned_impl : public bool_constant<(_Tp(0) < _Tp(-1))>
+struct __cccl_is_unsigned_impl : public bool_constant<(_Tp(0) < _Tp(-1))>
 {};
 
 template <class _Tp>
-struct __libcpp_is_unsigned_impl<_Tp, false> : public false_type
+struct __cccl_is_unsigned_impl<_Tp, false> : public false_type
 {}; // floating point
 
 template <class _Tp, bool = is_arithmetic<_Tp>::value>
-struct __libcpp_is_unsigned : public __libcpp_is_unsigned_impl<_Tp>
+struct __cccl_is_unsigned : public __cccl_is_unsigned_impl<_Tp>
 {};
 
 template <class _Tp>
-struct __libcpp_is_unsigned<_Tp, false> : public false_type
+struct __cccl_is_unsigned<_Tp, false> : public false_type
 {};
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_unsigned : public __libcpp_is_unsigned<_Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_unsigned : public __cccl_is_unsigned<_Tp>
 {};
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)

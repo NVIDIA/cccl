@@ -22,8 +22,8 @@
 #endif // no system header
 
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
-#include <cuda/std/__type_traits/apply_cv.h>
 #include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/integral_constant.h>
@@ -253,7 +253,7 @@ struct __member_pointer_traits_imp<_Rp _Class::*, false, true>
 
 template <class _MP>
 struct __member_pointer_traits
-    : public __member_pointer_traits_imp<__remove_cv_t<_MP>,
+    : public __member_pointer_traits_imp<remove_cv_t<_MP>,
                                          is_member_function_pointer<_MP>::value,
                                          is_member_object_pointer<_MP>::value>
 {
@@ -274,45 +274,45 @@ struct __member_pointer_class_type<_Ret _ClassType::*>
 
 template <class _Fp,
           class _A0,
-          class _DecayFp = __decay_t<_Fp>,
+          class _DecayFp = decay_t<_Fp>,
           class _DecayA0 = typename decay<_A0>::type,
           class _ClassT  = typename __member_pointer_class_type<_DecayFp>::type>
 using __enable_if_bullet1 =
-  __enable_if_t<is_member_function_pointer<_DecayFp>::value && is_base_of<_ClassT, _DecayA0>::value>;
+  enable_if_t<is_member_function_pointer<_DecayFp>::value && is_base_of<_ClassT, _DecayA0>::value>;
 
-template <class _Fp, class _A0, class _DecayFp = __decay_t<_Fp>, class _DecayA0 = typename decay<_A0>::type>
+template <class _Fp, class _A0, class _DecayFp = decay_t<_Fp>, class _DecayA0 = typename decay<_A0>::type>
 using __enable_if_bullet2 =
-  __enable_if_t<is_member_function_pointer<_DecayFp>::value && __is_reference_wrapper<_DecayA0>::value>;
+  enable_if_t<is_member_function_pointer<_DecayFp>::value && __is_reference_wrapper<_DecayA0>::value>;
 
 template <class _Fp,
           class _A0,
-          class _DecayFp = __decay_t<_Fp>,
+          class _DecayFp = decay_t<_Fp>,
           class _DecayA0 = typename decay<_A0>::type,
           class _ClassT  = typename __member_pointer_class_type<_DecayFp>::type>
 using __enable_if_bullet3 =
-  __enable_if_t<is_member_function_pointer<_DecayFp>::value && !is_base_of<_ClassT, _DecayA0>::value
-                && !__is_reference_wrapper<_DecayA0>::value>;
+  enable_if_t<is_member_function_pointer<_DecayFp>::value && !is_base_of<_ClassT, _DecayA0>::value
+              && !__is_reference_wrapper<_DecayA0>::value>;
 
 template <class _Fp,
           class _A0,
-          class _DecayFp = __decay_t<_Fp>,
+          class _DecayFp = decay_t<_Fp>,
           class _DecayA0 = typename decay<_A0>::type,
           class _ClassT  = typename __member_pointer_class_type<_DecayFp>::type>
 using __enable_if_bullet4 =
-  __enable_if_t<is_member_object_pointer<_DecayFp>::value && is_base_of<_ClassT, _DecayA0>::value>;
+  enable_if_t<is_member_object_pointer<_DecayFp>::value && is_base_of<_ClassT, _DecayA0>::value>;
 
-template <class _Fp, class _A0, class _DecayFp = __decay_t<_Fp>, class _DecayA0 = typename decay<_A0>::type>
+template <class _Fp, class _A0, class _DecayFp = decay_t<_Fp>, class _DecayA0 = typename decay<_A0>::type>
 using __enable_if_bullet5 =
-  __enable_if_t<is_member_object_pointer<_DecayFp>::value && __is_reference_wrapper<_DecayA0>::value>;
+  enable_if_t<is_member_object_pointer<_DecayFp>::value && __is_reference_wrapper<_DecayA0>::value>;
 
 template <class _Fp,
           class _A0,
-          class _DecayFp = __decay_t<_Fp>,
+          class _DecayFp = decay_t<_Fp>,
           class _DecayA0 = typename decay<_A0>::type,
           class _ClassT  = typename __member_pointer_class_type<_DecayFp>::type>
 using __enable_if_bullet6 =
-  __enable_if_t<is_member_object_pointer<_DecayFp>::value && !is_base_of<_ClassT, _DecayA0>::value
-                && !__is_reference_wrapper<_DecayA0>::value>;
+  enable_if_t<is_member_object_pointer<_DecayFp>::value && !is_base_of<_ClassT, _DecayA0>::value
+              && !__is_reference_wrapper<_DecayA0>::value>;
 
 // __invoke forward declarations
 
@@ -406,9 +406,9 @@ struct __invokable_r
   // or incomplete array types as required by the standard.
   using _Result = decltype(__try_call<_Fp, _Args...>(0));
 
-  using type              = __conditional_t<_IsNotSame<_Result, __nat>::value,
-                                            __conditional_t<is_void<_Ret>::value, true_type, __is_core_convertible<_Result, _Ret>>,
-                                            false_type>;
+  using type              = conditional_t<_IsNotSame<_Result, __nat>::value,
+                                          conditional_t<is_void<_Ret>::value, true_type, __is_core_convertible<_Result, _Ret>>,
+                                          false_type>;
   static const bool value = type::value;
 };
 template <class _Fp, class... _Args>
@@ -450,13 +450,13 @@ struct __invoke_of
     : public enable_if<__invokable<_Fp, _Args...>::value, typename __invokable_r<void, _Fp, _Args...>::_Result>
 {
 #if defined(__NVCC__) && defined(__CUDACC_EXTENDED_LAMBDA__) && !defined(__CUDA_ARCH__)
-#  if defined(_CCCL_CUDACC_BELOW_12_3)
+#  if _CCCL_CUDACC_BELOW(12, 3)
   static_assert(!__nv_is_extended_device_lambda_closure_type(_Fp),
                 "Attempt to use an extended __device__ lambda in a context "
                 "that requires querying its return type in host code. Use a "
                 "named function object, an extended __host__ __device__ lambda, or "
                 "cuda::proclaim_return_type instead.");
-#  else // ^^^ _CCCL_CUDACC_BELOW_12_3 ^^^ / vvv !_CCCL_CUDACC_BELOW_12_3 vvv
+#  else // ^^^ _CCCL_CUDACC_BELOW(12, 3) ^^^ / vvv _CCCL_CUDACC_AT_LEAST(12, 3) vvv
   static_assert(
     !__nv_is_extended_device_lambda_closure_type(_Fp) || __nv_is_extended_host_device_lambda_closure_type(_Fp)
       || __nv_is_extended_device_lambda_with_preserved_return_type(_Fp),
@@ -465,7 +465,7 @@ struct __invoke_of
     "named function object, an extended __host__ __device__ lambda, "
     "cuda::proclaim_return_type, or an extended __device__ lambda "
     "with a trailing return type instead ([] __device__ (...) -> RETURN_TYPE {...}).");
-#  endif // !_CCCL_CUDACC_BELOW_12_3
+#  endif // _CCCL_CUDACC_AT_LEAST(12, 3)
 #endif
 };
 

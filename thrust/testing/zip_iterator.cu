@@ -46,8 +46,8 @@ struct TestZipIteratorManipulation
 
     // test equality
     ZipIterator iter1 = iter0;
-    ZipIterator iter2 = make_zip_iterator(make_tuple(v0.begin(), v2.begin()));
-    ZipIterator iter3 = make_zip_iterator(make_tuple(v1.begin(), v2.begin()));
+    ZipIterator iter2 = make_zip_iterator(v0.begin(), v2.begin());
+    ZipIterator iter3 = make_zip_iterator(v1.begin(), v2.begin());
     ASSERT_EQUAL(true, iter0 == iter1);
     ASSERT_EQUAL(true, iter0 == iter2);
     ASSERT_EQUAL(false, iter0 == iter3);
@@ -284,9 +284,9 @@ void TestZipIteratorCopy()
   sequence(input0.begin(), input0.end(), T{0});
   sequence(input1.begin(), input1.end(), T{13});
 
-  thrust::copy(make_zip_iterator(make_tuple(input0.begin(), input1.begin())),
-               make_zip_iterator(make_tuple(input0.end(), input1.end())),
-               make_zip_iterator(make_tuple(output0.begin(), output1.begin())));
+  thrust::copy(make_zip_iterator(input0.begin(), input1.begin()),
+               make_zip_iterator(input0.end(), input1.end()),
+               make_zip_iterator(output0.begin(), output1.begin()));
 
   ASSERT_EQUAL(input0, output0);
   ASSERT_EQUAL(input1, output1);
@@ -332,23 +332,23 @@ struct TestZipIteratorTransform
     device_vector<T> d_result(n);
 
     // Tuples with 2 elements
-    transform(make_zip_iterator(make_tuple(h_data0.begin(), h_data1.begin())),
-              make_zip_iterator(make_tuple(h_data0.end(), h_data1.end())),
+    transform(make_zip_iterator(h_data0.begin(), h_data1.begin()),
+              make_zip_iterator(h_data0.end(), h_data1.end()),
               h_result.begin(),
               SumTwoTuple());
-    transform(make_zip_iterator(make_tuple(d_data0.begin(), d_data1.begin())),
-              make_zip_iterator(make_tuple(d_data0.end(), d_data1.end())),
+    transform(make_zip_iterator(d_data0.begin(), d_data1.begin()),
+              make_zip_iterator(d_data0.end(), d_data1.end()),
               d_result.begin(),
               SumTwoTuple());
     ASSERT_EQUAL(h_result, d_result);
 
     // Tuples with 3 elements
-    transform(make_zip_iterator(make_tuple(h_data0.begin(), h_data1.begin(), h_data2.begin())),
-              make_zip_iterator(make_tuple(h_data0.end(), h_data1.end(), h_data2.end())),
+    transform(make_zip_iterator(h_data0.begin(), h_data1.begin(), h_data2.begin()),
+              make_zip_iterator(h_data0.end(), h_data1.end(), h_data2.end()),
               h_result.begin(),
               SumThreeTuple());
-    transform(make_zip_iterator(make_tuple(d_data0.begin(), d_data1.begin(), d_data2.begin())),
-              make_zip_iterator(make_tuple(d_data0.end(), d_data1.end(), d_data2.end())),
+    transform(make_zip_iterator(d_data0.begin(), d_data1.begin(), d_data2.begin()),
+              make_zip_iterator(d_data0.end(), d_data1.end(), d_data2.end()),
               d_result.begin(),
               SumThreeTuple());
     ASSERT_EQUAL(h_result, d_result);
@@ -375,14 +375,14 @@ void TestZipIteratorCopyAoSToSoA()
 
   // host to host
   host_vector<int> h_field0(n), h_field1(n);
-  host_structure_of_arrays h_soa = make_zip_iterator(make_tuple(h_field0.begin(), h_field1.begin()));
+  host_structure_of_arrays h_soa = make_zip_iterator(h_field0.begin(), h_field1.begin());
 
   thrust::copy(h_aos.begin(), h_aos.end(), h_soa);
   ASSERT_EQUAL_QUIET(make_tuple(7, 13), h_soa[0]);
 
   // host to device
   device_vector<int> d_field0(n), d_field1(n);
-  device_structure_of_arrays d_soa = make_zip_iterator(make_tuple(d_field0.begin(), d_field1.begin()));
+  device_structure_of_arrays d_soa = make_zip_iterator(d_field0.begin(), d_field1.begin());
 
   thrust::copy(h_aos.begin(), h_aos.end(), d_soa);
   ASSERT_EQUAL_QUIET(make_tuple(7, 13), d_soa[0]);
@@ -420,8 +420,8 @@ void TestZipIteratorCopySoAToAoS()
   host_vector<int> h_field0(n, 7), h_field1(n, 13);
   device_vector<int> d_field0(n, 7), d_field1(n, 13);
 
-  host_structure_of_arrays h_soa   = make_zip_iterator(make_tuple(h_field0.begin(), h_field1.begin()));
-  device_structure_of_arrays d_soa = make_zip_iterator(make_tuple(d_field0.begin(), d_field1.begin()));
+  host_structure_of_arrays h_soa   = make_zip_iterator(h_field0.begin(), h_field1.begin());
+  device_structure_of_arrays d_soa = make_zip_iterator(d_field0.begin(), d_field1.begin());
 
   host_array_of_structures h_aos(n);
   device_array_of_structures d_aos(n);

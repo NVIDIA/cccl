@@ -32,7 +32,7 @@
 #include <utility>
 
 #include "catch2_test_block_radix_sort.cuh"
-#include "catch2_test_helper.h" // __CUDA_FP8_TYPES_EXIST__
+#include <c2h/catch2_test_helper.h> // __CUDA_FP8_TYPES_EXIST__
 
 // %PARAM% TEST_MEMOIZE mem 0:1
 // %PARAM% TEST_ALGORITHM alg 0:1
@@ -113,7 +113,7 @@ bool binary_equal(
   return thrust::equal(c2h::device_policy, d_output_ptr, d_output_ptr + d_output.size(), d_reference_ptr);
 }
 
-CUB_TEST("Block radix sort can sort keys",
+C2H_TEST("Block radix sort can sort keys",
          "[radix][sort][block]",
          types,
          no_value_types,
@@ -129,7 +129,7 @@ CUB_TEST("Block radix sort can sort keys",
 
   c2h::device_vector<type> d_output(params::tile_size);
   c2h::device_vector<type> d_input(params::tile_size);
-  c2h::gen(CUB_SEED(2), d_input);
+  c2h::gen(C2H_SEED(2), d_input);
 
   constexpr int key_size = sizeof(type) * 8;
   const int begin_bit    = GENERATE_COPY(take(2, random(0, key_size)));
@@ -157,7 +157,7 @@ CUB_TEST("Block radix sort can sort keys",
   REQUIRE(binary_equal(d_output, h_reference, d_input));
 }
 
-CUB_TEST("Block radix sort can sort keys in descending order",
+C2H_TEST("Block radix sort can sort keys in descending order",
          "[radix][sort][block]",
          types,
          no_value_types,
@@ -173,7 +173,7 @@ CUB_TEST("Block radix sort can sort keys in descending order",
 
   c2h::device_vector<type> d_output(params::tile_size);
   c2h::device_vector<type> d_input(params::tile_size);
-  c2h::gen(CUB_SEED(2), d_input);
+  c2h::gen(C2H_SEED(2), d_input);
 
   constexpr int key_size = sizeof(type) * 8;
   const int begin_bit    = GENERATE_COPY(take(2, random(0, key_size)));
@@ -201,7 +201,7 @@ CUB_TEST("Block radix sort can sort keys in descending order",
   REQUIRE(binary_equal(d_output, h_reference, d_input));
 }
 
-CUB_TEST("Block radix sort can sort pairs",
+C2H_TEST("Block radix sort can sort pairs",
          "[radix][sort][block]",
          key_types,
          no_value_types,
@@ -220,8 +220,8 @@ CUB_TEST("Block radix sort can sort pairs",
   c2h::device_vector<value_type> d_output_values(params::tile_size);
   c2h::device_vector<key_type> d_input_keys(params::tile_size);
   c2h::device_vector<value_type> d_input_values(params::tile_size);
-  c2h::gen(CUB_SEED(2), d_input_keys);
-  c2h::gen(CUB_SEED(2), d_input_values);
+  c2h::gen(C2H_SEED(2), d_input_keys);
+  c2h::gen(C2H_SEED(2), d_input_values);
 
   constexpr int key_size = sizeof(key_type) * 8;
   const int begin_bit    = GENERATE_COPY(take(2, random(0, key_size)));
@@ -253,7 +253,7 @@ CUB_TEST("Block radix sort can sort pairs",
   REQUIRE(binary_equal(d_output_values, h_reference.second, d_input_values));
 }
 
-CUB_TEST("Block radix sort can sort pairs in descending order",
+C2H_TEST("Block radix sort can sort pairs in descending order",
          "[radix][sort][block]",
          key_types,
          no_value_types,
@@ -272,8 +272,8 @@ CUB_TEST("Block radix sort can sort pairs in descending order",
   c2h::device_vector<value_type> d_output_values(params::tile_size);
   c2h::device_vector<key_type> d_input_keys(params::tile_size);
   c2h::device_vector<value_type> d_input_values(params::tile_size);
-  c2h::gen(CUB_SEED(2), d_input_keys);
-  c2h::gen(CUB_SEED(2), d_input_values);
+  c2h::gen(C2H_SEED(2), d_input_keys);
+  c2h::gen(C2H_SEED(2), d_input_values);
 
   constexpr int key_size = sizeof(key_type) * 8;
   const int begin_bit    = GENERATE_COPY(take(2, random(0, key_size)));
@@ -305,7 +305,7 @@ CUB_TEST("Block radix sort can sort pairs in descending order",
   REQUIRE(binary_equal(d_output_values, h_reference.second, d_input_values));
 }
 
-CUB_TEST("Block radix sort can sort mixed pairs",
+C2H_TEST("Block radix sort can sort mixed pairs",
          "[radix][sort][block]",
          key_types,
          value_types,
@@ -324,8 +324,8 @@ CUB_TEST("Block radix sort can sort mixed pairs",
   c2h::device_vector<value_type> d_output_values(params::tile_size);
   c2h::device_vector<key_type> d_input_keys(params::tile_size);
   c2h::device_vector<value_type> d_input_values(params::tile_size);
-  c2h::gen(CUB_SEED(2), d_input_keys);
-  c2h::gen(CUB_SEED(2), d_input_values);
+  c2h::gen(C2H_SEED(2), d_input_keys);
+  c2h::gen(C2H_SEED(2), d_input_values);
 
   constexpr int key_size = sizeof(key_type) * 8;
   const int begin_bit    = GENERATE_COPY(take(2, random(0, key_size)));
@@ -357,7 +357,7 @@ CUB_TEST("Block radix sort can sort mixed pairs",
   REQUIRE(d_output_values == h_reference.second);
 }
 
-CUB_TEST("Block radix sort can sort mixed pairs in descending order",
+C2H_TEST("Block radix sort can sort mixed pairs in descending order",
          "[radix][sort][block]",
          key_types,
          value_types,
@@ -376,8 +376,8 @@ CUB_TEST("Block radix sort can sort mixed pairs in descending order",
   c2h::device_vector<value_type> d_output_values(params::tile_size);
   c2h::device_vector<key_type> d_input_keys(params::tile_size);
   c2h::device_vector<value_type> d_input_values(params::tile_size);
-  c2h::gen(CUB_SEED(2), d_input_keys);
-  c2h::gen(CUB_SEED(2), d_input_values);
+  c2h::gen(C2H_SEED(2), d_input_keys);
+  c2h::gen(C2H_SEED(2), d_input_values);
 
   constexpr int key_size = sizeof(key_type) * 8;
   const int begin_bit    = GENERATE_COPY(take(2, random(0, key_size)));

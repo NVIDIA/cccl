@@ -28,14 +28,15 @@ if [ -z "$major" ] || [ -z "$minor" ] || [ -z "$patch" ]; then
 fi
 
 # Version file paths
+REPO_VERSION_FILE="cccl-version.json"
 CCCL_VERSION_FILE="libcudacxx/include/cuda/std/__cccl/version.h"
 THRUST_VERSION_FILE="thrust/thrust/version.h"
 CUB_VERSION_FILE="cub/cub/version.cuh"
 CCCL_CMAKE_VERSION_FILE="lib/cmake/cccl/cccl-config-version.cmake"
-CUB_CMAKE_VERSION_FILE="cub/cub/cmake/cub-config-version.cmake"
-LIBCUDACXX_CMAKE_VERSION_FILE="libcudacxx/lib/cmake/libcudacxx/libcudacxx-config-version.cmake"
-THRUST_CMAKE_VERSION_FILE="thrust/thrust/cmake/thrust-config-version.cmake"
-CUDAX_CMAKE_VERSION_FILE="cudax/lib/cmake/cudax/cudax-config-version.cmake"
+CUB_CMAKE_VERSION_FILE="lib/cmake/cub/cub-config-version.cmake"
+LIBCUDACXX_CMAKE_VERSION_FILE="lib/cmake/libcudacxx/libcudacxx-config-version.cmake"
+THRUST_CMAKE_VERSION_FILE="lib/cmake/thrust/thrust-config-version.cmake"
+CUDAX_CMAKE_VERSION_FILE="lib/cmake/cudax/cudax-config-version.cmake"
 CUDA_COOPERATIVE_VERSION_FILE="python/cuda_cooperative/cuda/cooperative/_version.py"
 CUDA_PARALLEL_VERSION_FILE="python/cuda_parallel/cuda/parallel/_version.py"
 
@@ -78,7 +79,13 @@ update_file () {
     fi
 }
 
-# Update version information in files
+# Update version information in files:
+
+update_file "$REPO_VERSION_FILE" "  \"full\":.*," "  \"full\": \"$major.$minor.$patch\","
+update_file "$REPO_VERSION_FILE" "  \"major\":.*" "  \"major\": $major,"
+update_file "$REPO_VERSION_FILE" "  \"minor\":.*" "  \"minor\": $minor,"
+update_file "$REPO_VERSION_FILE" "  \"patch\":.*" "  \"patch\": $patch"
+
 update_file "$CCCL_VERSION_FILE" "^#define CCCL_VERSION \([0-9]\+\)" "#define CCCL_VERSION $new_cccl_version"
 update_file "$THRUST_VERSION_FILE" "^#define THRUST_VERSION \([0-9]\+\)" "#define THRUST_VERSION $new_thrust_cub_version"
 update_file "$CUB_VERSION_FILE" "^#define CUB_VERSION \([0-9]\+\)" "#define CUB_VERSION $new_thrust_cub_version"

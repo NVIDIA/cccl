@@ -27,21 +27,16 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_constant_evaluated() noexcept
 {
   return _CCCL_BUILTIN_IS_CONSTANT_EVALUATED();
 }
-
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __libcpp_is_constant_evaluated() noexcept
-{
-  return _CCCL_BUILTIN_IS_CONSTANT_EVALUATED();
-}
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __libcpp_default_is_constant_evaluated() noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __cccl_default_is_constant_evaluated() noexcept
 {
   return _CCCL_BUILTIN_IS_CONSTANT_EVALUATED();
 }
 #else // ^^^ _CCCL_BUILTIN_IS_CONSTANT_EVALUATED ^^^ / vvv !_CCCL_BUILTIN_IS_CONSTANT_EVALUATED vvv
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __libcpp_is_constant_evaluated() noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool is_constant_evaluated() noexcept
 {
   return false;
 }
-_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __libcpp_default_is_constant_evaluated() noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr bool __cccl_default_is_constant_evaluated() noexcept
 {
   return true;
 }

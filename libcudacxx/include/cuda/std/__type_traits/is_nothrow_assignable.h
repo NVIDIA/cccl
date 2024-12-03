@@ -42,20 +42,20 @@ _CCCL_INLINE_VAR constexpr bool is_nothrow_assignable_v = _CCCL_BUILTIN_IS_NOTHR
 #elif !defined(_LIBCUDACXX_HAS_NO_NOEXCEPT) && !defined(_LIBCUDACXX_HAS_NO_NOEXCEPT_SFINAE)
 
 template <bool, class _Tp, class _Arg>
-struct __libcpp_is_nothrow_assignable;
+struct __cccl_is_nothrow_assignable;
 
 template <class _Tp, class _Arg>
-struct __libcpp_is_nothrow_assignable<false, _Tp, _Arg> : public false_type
+struct __cccl_is_nothrow_assignable<false, _Tp, _Arg> : public false_type
 {};
 
 template <class _Tp, class _Arg>
-struct __libcpp_is_nothrow_assignable<true, _Tp, _Arg>
+struct __cccl_is_nothrow_assignable<true, _Tp, _Arg>
     : public integral_constant<bool, noexcept(_CUDA_VSTD::declval<_Tp>() = _CUDA_VSTD::declval<_Arg>())>
 {};
 
 template <class _Tp, class _Arg>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_assignable
-    : public __libcpp_is_nothrow_assignable<is_assignable<_Tp, _Arg>::value, _Tp, _Arg>
+    : public __cccl_is_nothrow_assignable<is_assignable<_Tp, _Arg>::value, _Tp, _Arg>
 {};
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)

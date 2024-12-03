@@ -25,20 +25,20 @@ concept value_type_matches =
 
 #else
 template <class T>
-_LIBCUDACXX_CONCEPT_FRAGMENT(has_no_value_type_,
-                             requires()(typename(typename cuda::std::indirectly_readable_traits<T>::value_type)));
+_CCCL_CONCEPT_FRAGMENT(has_no_value_type_,
+                       requires()(typename(typename cuda::std::indirectly_readable_traits<T>::value_type)));
 
 template <class T>
-_LIBCUDACXX_CONCEPT has_no_value_type = !_LIBCUDACXX_FRAGMENT(has_no_value_type_, T);
+_CCCL_CONCEPT has_no_value_type = !_CCCL_FRAGMENT(has_no_value_type_, T);
 
 template <class T, class Expected>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   value_type_matches_,
   requires()(typename(typename cuda::std::indirectly_readable_traits<T>::value_type),
              requires(cuda::std::same_as<typename cuda::std::indirectly_readable_traits<T>::value_type, Expected>)));
 
 template <class T, class Expected>
-_LIBCUDACXX_CONCEPT value_type_matches = _LIBCUDACXX_FRAGMENT(value_type_matches_, T, Expected);
+_CCCL_CONCEPT value_type_matches = _CCCL_FRAGMENT(value_type_matches_, T, Expected);
 #endif
 
 template <class T>

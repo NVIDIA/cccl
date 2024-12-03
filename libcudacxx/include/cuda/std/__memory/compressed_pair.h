@@ -48,7 +48,7 @@ struct __default_init_tag
 struct __value_init_tag
 {};
 
-template <class _Tp, int _Idx, bool _CanBeEmptyBase = _CCCL_TRAIT(is_empty, _Tp) && !__libcpp_is_final<_Tp>::value>
+template <class _Tp, int _Idx, bool _CanBeEmptyBase = _CCCL_TRAIT(is_empty, _Tp) && !_CCCL_TRAIT(is_final, _Tp)>
 struct __compressed_pair_elem
 {
   using _ParamT         = _Tp;
@@ -63,7 +63,7 @@ struct __compressed_pair_elem
       : __value_()
   {}
 
-  template <class _Up, __enable_if_t<!_CCCL_TRAIT(is_same, __compressed_pair_elem, __decay_t<_Up>), int> = 0>
+  template <class _Up, enable_if_t<!_CCCL_TRAIT(is_same, __compressed_pair_elem, decay_t<_Up>), int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __compressed_pair_elem(_Up&& __u) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _Tp, _Up))
       : __value_(_CUDA_VSTD::forward<_Up>(__u))
@@ -108,7 +108,7 @@ struct __compressed_pair_elem<_Tp, _Idx, true> : private _Tp
       : __value_type()
   {}
 
-  template <class _Up, __enable_if_t<!_CCCL_TRAIT(is_same, __compressed_pair_elem, __decay_t<_Up>), int> = 0>
+  template <class _Up, enable_if_t<!_CCCL_TRAIT(is_same, __compressed_pair_elem, decay_t<_Up>), int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __compressed_pair_elem(_Up&& __u) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _Tp, _Up))
       : __value_type(_CUDA_VSTD::forward<_Up>(__u))
@@ -147,12 +147,12 @@ public:
                 "The current implementation is NOT ABI-compatible with the previous implementation for this "
                 "configuration");
 
-  using _Base1 _LIBCUDACXX_NODEBUG_TYPE = __compressed_pair_elem<_T1, 0>;
-  using _Base2 _LIBCUDACXX_NODEBUG_TYPE = __compressed_pair_elem<_T2, 1>;
+  using _Base1 _CCCL_NODEBUG_ALIAS = __compressed_pair_elem<_T1, 0>;
+  using _Base2 _CCCL_NODEBUG_ALIAS = __compressed_pair_elem<_T2, 1>;
 
   template <bool _Dummy = true,
-            class       = __enable_if_t<__dependent_type<is_default_constructible<_T1>, _Dummy>::value
-                                        && __dependent_type<is_default_constructible<_T2>, _Dummy>::value>>
+            class       = enable_if_t<__dependent_type<is_default_constructible<_T1>, _Dummy>::value
+                                      && __dependent_type<is_default_constructible<_T2>, _Dummy>::value>>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit __compressed_pair() noexcept(
     _CCCL_TRAIT(is_nothrow_default_constructible, _T1) && _CCCL_TRAIT(is_nothrow_default_constructible, _T2))
       : _Base1(__value_init_tag())

@@ -185,7 +185,7 @@ public:
   }
 };
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 /**
  * Reset grid queue (call with 1 block of 1 thread)
@@ -196,6 +196,6 @@ __global__ void FillAndResetDrainKernel(GridQueue<OffsetT> grid_queue, OffsetT n
   grid_queue.FillAndResetDrain(num_items);
 }
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 CUB_NAMESPACE_END

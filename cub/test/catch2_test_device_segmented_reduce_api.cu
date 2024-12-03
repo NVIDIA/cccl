@@ -36,8 +36,8 @@
 #include <climits>
 #include <cstddef>
 
-#include "catch2_test_helper.h"
 #include "thrust/detail/raw_pointer_cast.h"
+#include <c2h/catch2_test_helper.h>
 
 // example-begin segmented-reduce-custommin
 struct CustomMin
@@ -59,7 +59,7 @@ struct is_equal
   }
 };
 
-CUB_TEST("cub::DeviceSegmentedReduce::Reduce works with int data elements", "[segmented_reduce][device]")
+C2H_TEST("cub::DeviceSegmentedReduce::Reduce works with int data elements", "[segmented_reduce][device]")
 {
   // example-begin segmented-reduce-reduce
   int num_segments                     = 3;
@@ -105,7 +105,7 @@ CUB_TEST("cub::DeviceSegmentedReduce::Reduce works with int data elements", "[se
   REQUIRE(d_out == expected);
 }
 
-CUB_TEST("cub::DeviceSegmentedReduce::Sum works with int data elements", "[segmented_reduce][device]")
+C2H_TEST("cub::DeviceSegmentedReduce::Sum works with int data elements", "[segmented_reduce][device]")
 {
   // example-begin segmented-reduce-sum
   int num_segments                     = 3;
@@ -133,7 +133,7 @@ CUB_TEST("cub::DeviceSegmentedReduce::Sum works with int data elements", "[segme
   REQUIRE(d_out == expected);
 }
 
-CUB_TEST("cub::DeviceSegmentedReduce::Min works with int data elements", "[segmented_reduce][device]")
+C2H_TEST("cub::DeviceSegmentedReduce::Min works with int data elements", "[segmented_reduce][device]")
 {
   // example-begin segmented-reduce-min
   int num_segments                     = 3;
@@ -161,7 +161,7 @@ CUB_TEST("cub::DeviceSegmentedReduce::Min works with int data elements", "[segme
   REQUIRE(d_out == expected);
 }
 
-CUB_TEST("cub::DeviceSegmentedReduce::ArgMin works with int data elements", "[segmented_reduce][device]")
+C2H_TEST("cub::DeviceSegmentedReduce::ArgMin works with int data elements", "[segmented_reduce][device]")
 {
   // example-begin segmented-reduce-argmin
   int num_segments                     = 3;
@@ -189,7 +189,7 @@ CUB_TEST("cub::DeviceSegmentedReduce::ArgMin works with int data elements", "[se
   REQUIRE(thrust::equal(d_out.begin(), d_out.end(), expected.begin(), is_equal()));
 }
 
-CUB_TEST("cub::DeviceSegmentedReduce::Max works with int data elements", "[segmented_reduce][device]")
+C2H_TEST("cub::DeviceSegmentedReduce::Max works with int data elements", "[segmented_reduce][device]")
 {
   // example-begin segmented-reduce-max
   int num_segments                     = 3;
@@ -217,7 +217,7 @@ CUB_TEST("cub::DeviceSegmentedReduce::Max works with int data elements", "[segme
   REQUIRE(d_out == expected);
 }
 
-CUB_TEST("cub::DeviceSegmentedReduce::ArgMax works with int data elements", "[segmented_reduce][device]")
+C2H_TEST("cub::DeviceSegmentedReduce::ArgMax works with int data elements", "[segmented_reduce][device]")
 {
   // example-begin segmented-reduce-argmax
   int num_segments                     = 3;

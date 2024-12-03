@@ -5,6 +5,13 @@ macro(cccl_get_boost)
   CPMAddPackage("gh:boostorg/boost#boost-1.83.0")
 endmacro()
 
+# The CCCL Catch2Helper library:
+macro(cccl_get_c2h)
+  if (NOT TARGET cccl.c2h)
+    add_subdirectory("${CCCL_SOURCE_DIR}/c2h" "${CCCL_BINARY_DIR}/c2h")
+  endif()
+endmacro()
+
 macro(cccl_get_catch2)
   include("${_cccl_cpm_file}")
   CPMAddPackage("gh:catchorg/Catch2@2.13.9")

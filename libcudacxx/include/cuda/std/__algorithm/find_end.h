@@ -196,7 +196,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
   _ForwardIterator2 __last2,
   _BinaryPredicate __pred)
 {
-  return _CUDA_VSTD::__find_end<__add_lvalue_reference_t<_BinaryPredicate>>(
+  return _CUDA_VSTD::__find_end<add_lvalue_reference_t<_BinaryPredicate>>(
     __first1,
     __last1,
     __first2,

@@ -21,10 +21,10 @@ template <class T>
 concept HasMinus = requires(T t) { t - t; };
 #else
 template <class T>
-_LIBCUDACXX_CONCEPT_FRAGMENT(HasMinus_, requires(T t)(t - t));
+_CCCL_CONCEPT_FRAGMENT(HasMinus_, requires(T t)(t - t));
 
 template <class T>
-_LIBCUDACXX_CONCEPT HasMinus = _LIBCUDACXX_FRAGMENT(HasMinus_, T);
+_CCCL_CONCEPT HasMinus = _CCCL_FRAGMENT(HasMinus_, T);
 #endif
 
 using sized_it = random_access_iterator<int*>;

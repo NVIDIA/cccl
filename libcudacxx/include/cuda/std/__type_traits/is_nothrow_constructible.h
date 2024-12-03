@@ -44,10 +44,10 @@ _CCCL_INLINE_VAR constexpr bool is_nothrow_constructible_v = _CCCL_BUILTIN_IS_NO
 #  if !defined(_LIBCUDACXX_HAS_NO_NOEXCEPT)
 
 template <bool, bool, class _Tp, class... _Args>
-struct __libcpp_is_nothrow_constructible;
+struct __cccl_is_nothrow_constructible;
 
 template <class _Tp, class... _Args>
-struct __libcpp_is_nothrow_constructible</*is constructible*/ true, /*is reference*/ false, _Tp, _Args...>
+struct __cccl_is_nothrow_constructible</*is constructible*/ true, /*is reference*/ false, _Tp, _Args...>
     : public integral_constant<bool, noexcept(_Tp(_CUDA_VSTD::declval<_Args>()...))>
 {};
 
@@ -56,22 +56,22 @@ _LIBCUDACXX_HIDE_FROM_ABI void __implicit_conversion_to(_Tp) noexcept
 {}
 
 template <class _Tp, class _Arg>
-struct __libcpp_is_nothrow_constructible</*is constructible*/ true, /*is reference*/ true, _Tp, _Arg>
+struct __cccl_is_nothrow_constructible</*is constructible*/ true, /*is reference*/ true, _Tp, _Arg>
     : public integral_constant<bool, noexcept(__implicit_conversion_to<_Tp>(_CUDA_VSTD::declval<_Arg>()))>
 {};
 
 template <class _Tp, bool _IsReference, class... _Args>
-struct __libcpp_is_nothrow_constructible</*is constructible*/ false, _IsReference, _Tp, _Args...> : public false_type
+struct __cccl_is_nothrow_constructible</*is constructible*/ false, _IsReference, _Tp, _Args...> : public false_type
 {};
 
 template <class _Tp, class... _Args>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_constructible
-    : __libcpp_is_nothrow_constructible<is_constructible<_Tp, _Args...>::value, is_reference<_Tp>::value, _Tp, _Args...>
+    : __cccl_is_nothrow_constructible<is_constructible<_Tp, _Args...>::value, is_reference<_Tp>::value, _Tp, _Args...>
 {};
 
 template <class _Tp, size_t _Ns>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_constructible<_Tp[_Ns]>
-    : __libcpp_is_nothrow_constructible<is_constructible<_Tp>::value, is_reference<_Tp>::value, _Tp>
+    : __cccl_is_nothrow_constructible<is_constructible<_Tp>::value, is_reference<_Tp>::value, _Tp>
 {};
 
 #  else

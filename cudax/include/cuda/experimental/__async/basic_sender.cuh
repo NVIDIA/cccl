@@ -24,9 +24,9 @@
 #include <cuda/std/__type_traits/is_same.h>
 
 #include <cuda/experimental/__async/completion_signatures.cuh>
-#include <cuda/experimental/__async/config.cuh>
 #include <cuda/experimental/__async/cpos.cuh>
 #include <cuda/experimental/__async/utility.cuh>
+#include <cuda/experimental/__detail/config.cuh>
 
 #include <cuda/experimental/__async/prologue.cuh>
 
@@ -44,7 +44,7 @@ struct receiver_defaults
   using receiver_concept = __async::receiver_t;
 
   template <class _Rcvr, class... _Args>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE static auto set_value(__ignore, _Rcvr& __rcvr, _Args&&... __args) noexcept
+  _CUDAX_TRIVIAL_API static auto set_value(__ignore, _Rcvr& __rcvr, _Args&&... __args) noexcept
     -> __async::completion_signatures<__async::set_value_t(_Args...)>
   {
     __async::set_value(static_cast<_Rcvr&&>(__rcvr), static_cast<_Args&&>(__args)...);
@@ -52,7 +52,7 @@ struct receiver_defaults
   }
 
   template <class _Rcvr, class _Error>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE static auto set_error(__ignore, _Rcvr& __rcvr, _Error&& __error) noexcept
+  _CUDAX_TRIVIAL_API static auto set_error(__ignore, _Rcvr& __rcvr, _Error&& __error) noexcept
     -> __async::completion_signatures<__async::set_error_t(_Error)>
   {
     __async::set_error(static_cast<_Rcvr&&>(__rcvr), static_cast<_Error&&>(__error));
@@ -60,7 +60,7 @@ struct receiver_defaults
   }
 
   template <class _Rcvr>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE static auto
+  _CUDAX_TRIVIAL_API static auto
   set_stopped(__ignore, _Rcvr& __rcvr) noexcept -> __async::completion_signatures<__async::set_stopped_t()>
   {
     __async::set_stopped(static_cast<_Rcvr&&>(__rcvr));
@@ -68,7 +68,7 @@ struct receiver_defaults
   }
 
   template <class _Rcvr>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE static decltype(auto) get_env(__ignore, const _Rcvr& __rcvr) noexcept
+  _CUDAX_TRIVIAL_API static decltype(auto) get_env(__ignore, const _Rcvr& __rcvr) noexcept
   {
     return __async::get_env(__rcvr);
   }
@@ -82,30 +82,30 @@ struct basic_receiver
   __state<_Data, _Rcvr>& __state_;
 
   template <class... _Args>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void set_value(_Args&&... __args) noexcept
+  _CUDAX_TRIVIAL_API void set_value(_Args&&... __args) noexcept
   {
     __rcvr_t::set_value(__state_.__data_, __state_.__receiver_, (_Args&&) __args...);
   }
 
   template <class _Error>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void set_error(_Error&& __error) noexcept
+  _CUDAX_TRIVIAL_API void set_error(_Error&& __error) noexcept
   {
     __rcvr_t::set_error(__state_.__data_, __state_.__receiver_, (_Error&&) __error);
   }
 
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void set_stopped() noexcept
+  _CUDAX_TRIVIAL_API void set_stopped() noexcept
   {
     __rcvr_t::set_stopped(__state_.__data_, __state_.__receiver_);
   }
 
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE decltype(auto) get_env() const noexcept
+  _CUDAX_TRIVIAL_API decltype(auto) get_env() const noexcept
   {
     return __rcvr_t::get_env(__state_.__data_, __state_.__receiver_);
   }
 };
 
 template <class _Rcvr>
-_CCCL_INLINE_VAR constexpr bool has_no_environment = _CUDA_VSTD::is_same_v<_Rcvr, receiver_archetype>;
+inline constexpr bool has_no_environment = _CUDA_VSTD::is_same_v<_Rcvr, receiver_archetype>;
 
 template <bool _HasStopped, class _Data, class _Rcvr>
 struct __mk_completions
@@ -172,12 +172,12 @@ struct __basic_opstate
                                     __traits_t::template __set_error_t,
                                     typename __traits_t::__set_stopped_t>;
 
-  _CCCL_HOST_DEVICE __basic_opstate(_Sndr&& __sndr, _Data __data, _Rcvr __rcvr)
+  _CUDAX_API __basic_opstate(_Sndr&& __sndr, _Data __data, _Rcvr __rcvr)
       : __state_{static_cast<_Data&&>(__data), static_cast<_Rcvr&&>(__rcvr)}
       , __op_(__async::connect(static_cast<_Sndr&&>(__sndr), __rcvr_t{__state_}))
   {}
 
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void start() noexcept
+  _CUDAX_TRIVIAL_API void start() noexcept
   {
     __async::start(__op_);
   }
@@ -187,7 +187,7 @@ struct __basic_opstate
 };
 
 template <class _Sndr, class _Rcvr>
-_CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto __make_opstate(_Sndr __sndr, _Rcvr __rcvr)
+_CUDAX_TRIVIAL_API auto __make_opstate(_Sndr __sndr, _Rcvr __rcvr)
 {
   auto [__tag, __data, __child] = static_cast<_Sndr&&>(__sndr);
   using __data_t                = decltype(__data);
@@ -198,14 +198,14 @@ _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto __make_opstate(_Sndr __sndr, _Rcvr _
 }
 
 template <class _Data, class... _Sndrs>
-_CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto
+_CUDAX_TRIVIAL_API auto
 __get_attrs(int, const _Data& __data, const _Sndrs&... __sndrs) noexcept -> decltype(__data.get_attrs(__sndrs...))
 {
   return __data.get_attrs(__sndrs...);
 }
 
 template <class _Data, class... _Sndrs>
-_CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto
+_CUDAX_TRIVIAL_API auto
 __get_attrs(long, const _Data&, const _Sndrs&... __sndrs) noexcept -> decltype(__async::get_env(__sndrs...))
 {
   return __async::get_env(__sndrs...);
@@ -228,18 +228,18 @@ struct basic_sender<_Data, _Sndr>
   // Connect the sender to the receiver (the continuation) and
   // return the state_type object for this operation.
   template <class _Rcvr>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto connect(_Rcvr __rcvr) &&
+  _CUDAX_TRIVIAL_API auto connect(_Rcvr __rcvr) &&
   {
     return __make_opstate(static_cast<basic_sender&&>(*this), static_cast<_Rcvr&&>(__rcvr));
   }
 
   template <class _Rcvr>
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto connect(_Rcvr __rcvr) const&
+  _CUDAX_TRIVIAL_API auto connect(_Rcvr __rcvr) const&
   {
     return __make_opstate(*this, static_cast<_Rcvr&&>(__rcvr));
   }
 
-  _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE decltype(auto) get_env() const noexcept
+  _CUDAX_TRIVIAL_API decltype(auto) get_env() const noexcept
   {
     return __async::__get_attrs(0, __data_, __sndr_);
   }

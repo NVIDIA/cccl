@@ -172,7 +172,7 @@ OutputIterator inclusive_scan(InputIterator first, InputIterator last, OutputIte
  *  \param first The beginning of the input sequence.
  *  \param last The end of the input sequence.
  *  \param result The beginning of the output sequence.
- *  \param binary_op The associatve operator used to 'sum' values.
+ *  \param binary_op The associative operator used to 'sum' values.
  *  \return The end of the output sequence.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
@@ -229,7 +229,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
  *  \param first The beginning of the input sequence.
  *  \param last The end of the input sequence.
  *  \param result The beginning of the output sequence.
- *  \param binary_op The associatve operator used to 'sum' values.
+ *  \param binary_op The associative operator used to 'sum' values.
  *  \return The end of the output sequence.
  *
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
@@ -282,7 +282,7 @@ inclusive_scan(InputIterator first, InputIterator last, OutputIterator result, A
  *  \param last The end of the input sequence.
  *  \param result The beginning of the output sequence.
  *  \param init The initial value.
- *  \param binary_op The associatve operator used to 'sum' values.
+ *  \param binary_op The associative operator used to 'sum' values.
  *  \return The end of the output sequence.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
@@ -335,7 +335,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan(
  *  \param last The end of the input sequence.
  *  \param result The beginning of the output sequence.
  *  \param init The initial value.
- *  \param binary_op The associatve operator used to 'sum' values.
+ *  \param binary_op The associative operator used to 'sum' values.
  *  \return The end of the output sequence.
  *
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
@@ -586,7 +586,7 @@ OutputIterator exclusive_scan(InputIterator first, InputIterator last, OutputIte
  *  \param last The end of the input sequence.
  *  \param result The beginning of the output sequence.
  *  \param init The initial value.
- *  \param binary_op The associatve operator used to 'sum' values.
+ *  \param binary_op The associative operator used to 'sum' values.
  *  \return The end of the output sequence.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
@@ -650,7 +650,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan(
  *  \param last The end of the input sequence.
  *  \param result The beginning of the output sequence.
  *  \param init The initial value.
- *  \param binary_op The associatve operator used to 'sum' values.
+ *  \param binary_op The associative operator used to 'sum' values.
  *  \return The end of the output sequence.
  *
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
@@ -1003,7 +1003,7 @@ OutputIterator inclusive_scan_by_key(
  *  \param first2 The beginning of the input value sequence.
  *  \param result The beginning of the output value sequence.
  *  \param binary_pred  The binary predicate used to determine equality of keys.
- *  \param binary_op The associatve operator used to 'sum' values.
+ *  \param binary_op The associative operator used to 'sum' values.
  *  \return The end of the output sequence.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
@@ -1088,7 +1088,7 @@ _CCCL_HOST_DEVICE OutputIterator inclusive_scan_by_key(
  *  \param first2 The beginning of the input value sequence.
  *  \param result The beginning of the output value sequence.
  *  \param binary_pred  The binary predicate used to determine equality of keys.
- *  \param binary_op The associatve operator used to 'sum' values.
+ *  \param binary_op The associative operator used to 'sum' values.
  *  \return The end of the output sequence.
  *
  *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
@@ -1534,7 +1534,7 @@ OutputIterator exclusive_scan_by_key(
  *  \param result The beginning of the output value sequence.
  *  \param init The initial of the exclusive sum value.
  *  \param binary_pred The binary predicate used to determine equality of keys.
- *  \param binary_op The associatve operator used to 'sum' values.
+ *  \param binary_op The associative operator used to 'sum' values.
  *  \return The end of the output sequence.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
@@ -1627,7 +1627,7 @@ _CCCL_HOST_DEVICE OutputIterator exclusive_scan_by_key(
  *  \param result The beginning of the output value sequence.
  *  \param init The initial of the exclusive sum value.
  *  \param binary_pred The binary predicate used to determine equality of keys.
- *  \param binary_op The associatve operator used to 'sum' values.
+ *  \param binary_op The associative operator used to 'sum' values.
  *  \return The end of the output sequence.
  *
  *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input

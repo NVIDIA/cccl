@@ -29,7 +29,7 @@
 
 #include <string>
 
-#include "catch2_test_helper.h"
+#include <c2h/catch2_test_helper.h>
 #include <nvrtc.h>
 
 TEST_CASE("Test nvrtc", "[test][nvrtc]")

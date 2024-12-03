@@ -247,7 +247,7 @@ struct AgentSpmv
   using KeyValuePairT = KeyValuePair<OffsetT, ValueT>;
 
   // Reduce-value-by-segment scan operator
-  using ReduceBySegmentOpT = ReduceByKeyOp<cub::Sum>;
+  using ReduceBySegmentOpT = ReduceByKeyOp<::cuda::std::plus<>>;
 
   // BlockReduce specialization
   using BlockReduceT = BlockReduce<ValueT, BLOCK_THREADS, BLOCK_REDUCE_WARP_REDUCTIONS>;

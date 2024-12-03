@@ -32,12 +32,12 @@
 
 #include <cstdint>
 
-#include "c2h/custom_type.cuh"
-#include "c2h/extended_types.cuh"
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_device_scan.cuh"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/custom_type.h>
+#include <c2h/extended_types.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSumByKey, device_exclusive_sum_by_key);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScanByKey, device_exclusive_scan_by_key);
@@ -55,7 +55,7 @@ using custom_t =
                      c2h::lexicographical_greater_comparable_t>;
 
 // type_quad's parameters and defaults:
-// type_quad<value_in_t, value_out_t=value_in_t, key_t=int32_t, equality_op_t=cub::Equality>
+// type_quad<value_in_t, value_out_t=value_in_t, key_t=int32_t, equality_op_t=::cuda::std::equal_to<>>
 #if TEST_TYPES == 0
 using full_type_list = c2h::type_list<type_quad<std::uint8_t, std::int32_t, float>,
                                       type_quad<std::int8_t, std::int8_t, std::int32_t, Mod2Equality>>;
@@ -79,7 +79,7 @@ enum class gen_data_t : int
   GEN_TYPE_CONST
 };
 
-CUB_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", full_type_list)
+C2H_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", full_type_list)
 {
   using params   = params_t<TestType>;
   using key_t    = typename params::type_pair_t::key_t;
@@ -107,7 +107,7 @@ CUB_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
 
   // Generate input segments
   c2h::device_vector<offset_t> segment_offsets = c2h::gen_uniform_offsets<offset_t>(
-    CUB_SEED(1), num_items, std::get<0>(seg_size_range), std::get<1>(seg_size_range));
+    C2H_SEED(1), num_items, std::get<0>(seg_size_range), std::get<1>(seg_size_range));
 
   // Get array of keys from segment offsets
   c2h::device_vector<key_t> segment_keys(num_items);
@@ -122,7 +122,7 @@ CUB_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
 
   SECTION("inclusive sum")
   {
-    using op_t = cub::Sum;
+    using op_t = ::cuda::std::plus<>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
@@ -139,7 +139,7 @@ CUB_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
 
   SECTION("exclusive sum")
   {
-    using op_t = cub::Sum;
+    using op_t = ::cuda::std::plus<>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
@@ -156,7 +156,7 @@ CUB_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
 
   SECTION("inclusive scan")
   {
-    using op_t = cub::Min;
+    using op_t = ::cuda::minimum<>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
@@ -173,7 +173,7 @@ CUB_TEST("Device scan works with fancy iterators", "[by_key][scan][device]", ful
 
   SECTION("exclusive scan")
   {
-    using op_t = cub::Sum;
+    using op_t = ::cuda::std::plus<>;
 
     // Scan operator
     auto scan_op = op_t{};

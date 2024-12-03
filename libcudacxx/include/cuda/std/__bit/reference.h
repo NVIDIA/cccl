@@ -109,7 +109,7 @@ public:
   }
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __bit_iterator<_Cp, false> operator&() const noexcept
   {
-    return __bit_iterator<_Cp, false>(__seg_, static_cast<unsigned>(_CUDA_VSTD::__libcpp_ctz(__mask_)));
+    return __bit_iterator<_Cp, false>(__seg_, static_cast<unsigned>(_CUDA_VSTD::__cccl_ctz(__mask_)));
   }
 
   friend _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void
@@ -180,7 +180,7 @@ public:
 
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __bit_iterator<_Cp, true> operator&() const noexcept
   {
-    return __bit_iterator<_Cp, true>(__seg_, static_cast<unsigned>(_CUDA_VSTD::__libcpp_ctz(__mask_)));
+    return __bit_iterator<_Cp, true>(__seg_, static_cast<unsigned>(_CUDA_VSTD::__cccl_ctz(__mask_)));
   }
 
 private:
@@ -446,7 +446,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __bit_iterator<_Cp, false> __cop
     if (__n > 0)
     {
       __storage_type __m = ~__storage_type(0) << (__bits_per_word - __n);
-#if defined(_CCCL_COMPILER_GCC) && _GNUC_VER < 900
+#if _CCCL_COMPILER(GCC, <, 9)
       // workaround for GCC pre-9 being really bad at tracking one-past-the-end pointers at constexpr
       // can't check for is-constant-evaluated, because GCC pre-9 also lacks _that_.
       if (__last.__seg_ == __first.__seg_ + 1)
@@ -461,7 +461,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __bit_iterator<_Cp, false> __cop
       --__last.__seg_;
 #endif // !GCC || GCC >= 9
       __storage_type __b = *__last.__seg_ & __m;
-#if defined(_CCCL_COMPILER_GCC) && _GNUC_VER < 900
+#if _CCCL_COMPILER(GCC, <, 9)
       // workaround for GCC pre-9 being really bad at tracking one-past-the-end pointers at constexpr
       // can't check for is-constant-evaluated, because GCC pre-9 also lacks _that_.
       if (__result.__seg_ == __first.__seg_ + 1)
@@ -527,7 +527,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __bit_iterator<_Cp, false> __cop
       if (__dn > 0)
       {
         // __result.__ctz_ == 0
-#if defined(_CCCL_COMPILER_GCC) && _GNUC_VER < 900
+#if _CCCL_COMPILER(GCC, <, 9)
         // workaround for GCC pre-9 being really bad at tracking one-past-the-end pointers at constexpr
         // can't check for is-constant-evaluated, because GCC pre-9 also lacks _that_.
         if (__result.__seg_ == __first.__seg_ + 1)
@@ -812,7 +812,7 @@ struct __bit_array
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 explicit __bit_array(difference_type __s)
       : __size_(__s)
   {
-    if (__libcpp_is_constant_evaluated())
+    if (_CUDA_VSTD::is_constant_evaluated())
     {
       for (size_t __i = 0; __i != __bit_array<_Cp>::_Np; ++__i)
       {
@@ -1048,13 +1048,13 @@ public:
   using difference_type   = typename _Cp::difference_type;
   using value_type        = bool;
   using pointer           = __bit_iterator;
-  using reference         = __conditional_t<_IsConst, __bit_const_reference<_Cp>, __bit_reference<_Cp>>;
+  using reference         = conditional_t<_IsConst, __bit_const_reference<_Cp>, __bit_reference<_Cp>>;
   using iterator_category = random_access_iterator_tag;
 
 private:
   using __storage_type = typename _Cp::__storage_type;
   using __storage_pointer =
-    __conditional_t<_IsConst, typename _Cp::__const_storage_pointer, typename _Cp::__storage_pointer>;
+    conditional_t<_IsConst, typename _Cp::__const_storage_pointer, typename _Cp::__storage_pointer>;
 
   static const unsigned __bits_per_word = _Cp::__bits_per_word;
 
@@ -1069,7 +1069,7 @@ public:
 
   _CCCL_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __bit_iterator(const __bit_iterator<_Cp, _IsConst>& __it) = default;
 
-  template <bool _OtherIsConst, class = __enable_if_t<_IsConst == true && _OtherIsConst == false>>
+  template <bool _OtherIsConst, class = enable_if_t<_IsConst == true && _OtherIsConst == false>>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __bit_iterator(const __bit_iterator<_Cp, _OtherIsConst>& __it) noexcept
       : __seg_(__it.__seg_)
       , __ctz_(__it.__ctz_)
@@ -1166,7 +1166,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 friend difference_type
   operator-(const __bit_iterator& __x, const __bit_iterator& __y)
   {
-#if defined(_CCCL_COMPILER_GCC) && _GNUC_VER >= 800 && _GNUC_VER < 900
+#if _CCCL_COMPILER(GCC, >=, 8) && _CCCL_COMPILER(GCC, <, 9)
     if (__y.__seg_ && __y.__seg_ != __x.__seg_)
     {
       return (__x.__seg_ == __y.__seg_ + 1 ? 1 : __x.__seg_ - __y.__seg_) * __bits_per_word + __x.__ctz_ - __y.__ctz_;

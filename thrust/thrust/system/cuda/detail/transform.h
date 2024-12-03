@@ -39,26 +39,32 @@
 #ifdef _CCCL_CUDA_COMPILER
 #  include <thrust/system/cuda/config.h>
 
-#  include <thrust/detail/type_traits/result_of_adaptable_function.h>
+#  include <cub/device/device_transform.cuh>
+
 #  include <thrust/distance.h>
+#  include <thrust/iterator/zip_iterator.h>
+#  include <thrust/system/cuda/detail/dispatch.h>
 #  include <thrust/system/cuda/detail/parallel_for.h>
 #  include <thrust/system/cuda/detail/util.h>
+#  include <thrust/zip_function.h>
+
+#  include <cuda/__functional/address_stability.h>
+
+#  include <cstdint>
 
 THRUST_NAMESPACE_BEGIN
 
 namespace cuda_cub
 {
-
 namespace __transform
 {
-
 struct no_stencil_tag
 {};
 
 struct always_true_predicate
 {
   template <class T>
-  bool THRUST_DEVICE_FUNCTION operator()(T const&) const
+  constexpr bool THRUST_DEVICE_FUNCTION operator()(T const&) const
   {
     return true;
   }
@@ -235,6 +241,63 @@ OutputIt _CCCL_HOST_DEVICE inline binary(
   return result + num_items;
 }
 
+_CCCL_EXEC_CHECK_DISABLE
+template <class Derived, class Offset, class... InputIts, class OutputIt, class TransformOp>
+OutputIt THRUST_FUNCTION cub_transform_many(
+  execution_policy<Derived>& policy,
+  ::cuda::std::tuple<InputIts...> firsts,
+  OutputIt result,
+  Offset num_items,
+  TransformOp transform_op)
+{
+  if (num_items == 0)
+  {
+    return result;
+  }
+
+  constexpr auto requires_stable_address = !::cuda::proclaims_copyable_arguments<TransformOp>::value;
+
+  cudaError_t status;
+  THRUST_INDEX_TYPE_DISPATCH(
+    status,
+    (cub::detail::transform::dispatch_t<requires_stable_address,
+                                        decltype(num_items_fixed),
+                                        ::cuda::std::tuple<InputIts...>,
+                                        OutputIt,
+                                        TransformOp>::dispatch),
+    num_items,
+    (firsts, result, num_items_fixed, transform_op, cuda_cub::stream(policy)));
+  throw_on_error(status, "transform: failed inside CUB");
+
+  status = cuda_cub::synchronize_optional(policy);
+  throw_on_error(status, "transform: failed to synchronize");
+
+  return result + num_items;
+}
+
+template <typename... Ts, std::size_t... Is>
+THRUST_FUNCTION auto
+convert_to_std_tuple(tuple<Ts...> t, ::cuda::std::index_sequence<Is...>) -> ::cuda::std::tuple<Ts...>
+{
+  return ::cuda::std::tuple<Ts...>{get<Is>(t)...};
+}
+
+// unwrap zip_iterator and zip_function into their underlying iterators so cub::DeviceTransform can optimize them
+template <class Derived, class Offset, class... InputIts, class OutputIt, class TransformOp>
+OutputIt THRUST_FUNCTION cub_transform_many(
+  execution_policy<Derived>& policy,
+  ::cuda::std::tuple<zip_iterator<tuple<InputIts...>>> firsts,
+  OutputIt result,
+  Offset num_items,
+  zip_function<TransformOp> transform_op)
+{
+  return cub_transform_many(
+    policy,
+    convert_to_std_tuple(get<0>(firsts).get_iterator_tuple(), ::cuda::std::index_sequence_for<InputIts...>{}),
+    result,
+    num_items,
+    transform_op.underlying_function());
+}
 } // namespace __transform
 
 //-------------------------
@@ -276,7 +339,15 @@ template <class Derived, class InputIt, class OutputIt, class TransformOp>
 OutputIt THRUST_FUNCTION
 transform(execution_policy<Derived>& policy, InputIt first, InputIt last, OutputIt result, TransformOp transform_op)
 {
-  return cuda_cub::transform_if(policy, first, last, result, transform_op, __transform::always_true_predicate());
+  THRUST_CDP_DISPATCH(
+    (using size_type      = typename iterator_traits<InputIt>::difference_type;
+     const auto num_items = static_cast<size_type>(thrust::distance(first, last));
+     return __transform::cub_transform_many(policy, ::cuda::std::make_tuple(first), result, num_items, transform_op);),
+    (while (first != last) {
+      *result = transform_op(raw_reference_cast(*first));
+      ++first;
+      ++result;
+    } return result;));
 } // func transform
 
 //-------------------------
@@ -314,17 +385,18 @@ OutputIt THRUST_FUNCTION transform(
   OutputIt result,
   TransformOp transform_op)
 {
-  return cuda_cub::transform_if(
-    policy,
-    first1,
-    last1,
-    first2,
-    __transform::no_stencil_tag(),
-    result,
-    transform_op,
-    __transform::always_true_predicate());
-} // func transform
-
+  THRUST_CDP_DISPATCH(
+    (using size_type      = typename iterator_traits<InputIt1>::difference_type;
+     const auto num_items = static_cast<size_type>(thrust::distance(first1, last1));
+     return __transform::cub_transform_many(
+       policy, ::cuda::std::make_tuple(first1, first2), result, num_items, transform_op);),
+    (while (first1 != last1) {
+      *result = transform_op(raw_reference_cast(*first1), raw_reference_cast(*first2));
+      ++first1;
+      ++first2;
+      ++result;
+    } return result;));
+}
 } // namespace cuda_cub
 
 THRUST_NAMESPACE_END

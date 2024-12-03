@@ -87,9 +87,7 @@ extern "C" CCCL_C_API CUresult cccl_device_for_build(
 
     const char* name = "test";
 
-    const int cc                     = cc_major * 10 + cc_minor;
-    const std::string d_data_value_t = cccl_type_enum_to_string(d_data.value_type.type);
-    const std::string offset_t       = cccl_type_enum_to_string(cccl_type_enum::UINT64);
+    const int cc = cc_major * 10 + cc_minor;
 
     const std::string for_kernel_name   = get_device_for_kernel_name();
     const std::string device_for_kernel = get_for_kernel(op, d_data);

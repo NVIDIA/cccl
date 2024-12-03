@@ -28,13 +28,13 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // Perform division by two quickly for positive integers (llvm.org/PR39129)
 
-template <class _Integral, __enable_if_t<_CCCL_TRAIT(is_integral, _Integral), int> = 0>
+template <class _Integral, enable_if_t<_CCCL_TRAIT(is_integral, _Integral), int> = 0>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Integral __half_positive(_Integral __value)
 {
-  return static_cast<_Integral>(static_cast<__make_unsigned_t<_Integral>>(__value) / 2);
+  return static_cast<_Integral>(static_cast<make_unsigned_t<_Integral>>(__value) / 2);
 }
 
-template <class _Tp, __enable_if_t<!_CCCL_TRAIT(is_integral, _Tp), int> = 0>
+template <class _Tp, enable_if_t<!_CCCL_TRAIT(is_integral, _Tp), int> = 0>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __half_positive(_Tp __value)
 {
   return __value / 2;

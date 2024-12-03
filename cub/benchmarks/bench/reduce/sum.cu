@@ -31,5 +31,5 @@
 // %RANGE% TUNE_THREADS_PER_BLOCK tpb 128:1024:32
 // %RANGE% TUNE_ITEMS_PER_VEC_LOAD_POW2 ipv 1:2:1
 
-using op_t = cub::Sum;
+using op_t = ::cuda::std::plus<>;
 #include "base.cuh"

@@ -7,11 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14, c++17, c++20
-
 // [utility.underlying], to_underlying
 // template <class T>
-//     constexpr underlying_type_t<T> to_underlying( T value ) noexcept; // C++2b
+//     constexpr underlying_type_t<T> to_underlying( T value ) noexcept;
 
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
@@ -19,6 +17,10 @@
 #include <cuda/std/utility>
 
 #include "test_macros.h"
+
+#if defined(TEST_COMPILER_GCC) && ((TEST_GCC_VER >= 900 && TEST_GCC_VER < 903) || TEST_GCC_VER < 804)
+#  define OMIT_BITFIELD_ENUMS 1
+#endif
 
 enum class e_default
 {
@@ -54,14 +56,16 @@ enum class e_bool : cuda::std::uint8_t
   t = 1
 };
 
+#if !OMIT_BITFIELD_ENUMS
 struct WithBitfieldEnums
 {
   e_default e1 : 3;
   e_ushort e2  : 6;
   e_bool e3    : 1;
 };
+#endif // !OMIT_BITFIELD_ENUMS
 
-__host__ __device__ constexpr bool test()
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 {
   ASSERT_NOEXCEPT(cuda::std::to_underlying(e_default::a));
   ASSERT_SAME_TYPE(int, decltype(cuda::std::to_underlying(e_default::a)));
@@ -88,13 +92,15 @@ __host__ __device__ constexpr bool test()
   assert(cuda::std::numeric_limits<int>::min() == cuda::std::to_underlying(enum_min));
   assert(cuda::std::numeric_limits<int>::max() == cuda::std::to_underlying(enum_max));
 
-  WithBitfieldEnums bf;
+#if !OMIT_BITFIELD_ENUMS
+  WithBitfieldEnums bf{};
   bf.e1 = static_cast<e_default>(3);
   bf.e2 = e_ushort::e;
   bf.e3 = e_bool::t;
   assert(3 == cuda::std::to_underlying(bf.e1));
   assert(25 == cuda::std::to_underlying(bf.e2));
   assert(1 == cuda::std::to_underlying(bf.e3));
+#endif // !OMIT_BITFIELD_ENUMS
 
   return true;
 }
@@ -102,7 +108,10 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
-  static_assert(test());
+
+#if TEST_STD_VER >= 2014
+  static_assert(test(), "");
+#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

@@ -61,7 +61,7 @@ struct reference_is_assignable
 
 _CCCL_EXEC_CHECK_DISABLE
 template <typename OutputIterator, typename InputIterator>
-inline _CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<reference_is_assignable<InputIterator, OutputIterator>::value>
+inline _CCCL_HOST_DEVICE ::cuda::std::enable_if_t<reference_is_assignable<InputIterator, OutputIterator>::value>
 iter_assign(OutputIterator dst, InputIterator src)
 {
   *dst = *src;
@@ -88,7 +88,7 @@ _CCCL_HOST_DEVICE OutputIterator general_copy(InputIterator first, InputIterator
   for (; first != last; ++first, (void) ++result)
   {
     // gcc 4.2 crashes while instantiating iter_assign
-#if defined(_CCCL_COMPILER_GCC) && (THRUST_GCC_VERSION < 40300)
+#if _CCCL_COMPILER(GCC, <, 4, 3)
     *result = *first;
 #else
     general_copy_detail::iter_assign(result, first);
@@ -105,7 +105,7 @@ _CCCL_HOST_DEVICE OutputIterator general_copy_n(InputIterator first, Size n, Out
   for (; n > Size(0); ++first, (void) ++result, (void) --n)
   {
     // gcc 4.2 crashes while instantiating iter_assign
-#if defined(_CCCL_COMPILER_GCC) && (THRUST_GCC_VERSION < 40300)
+#if _CCCL_COMPILER(GCC, <, 4, 3)
     *result = *first;
 #else
     general_copy_detail::iter_assign(result, first);

@@ -70,34 +70,3 @@ TEST_CASE("Custom level", "[hierarchy]")
 {
   custom_level_test().run();
 }
-
-template <typename Level, typename Dims>
-struct level_disabled_copy : public cudax::level_dimensions<Level, Dims>
-{
-  constexpr __host__ __device__ level_disabled_copy(const Dims& d)
-      : cudax::level_dimensions<Level, Dims>(d)
-  {}
-
-  constexpr level_disabled_copy(const level_disabled_copy<Level, Dims>& d) = delete;
-  constexpr level_disabled_copy(level_disabled_copy<Level, Dims>&& d)      = default;
-};
-
-TEST_CASE("Disabled lvalue copy", "hierarchy")
-{
-  auto ext               = cuda::std::extents<size_t, cuda::std::dynamic_extent, 1, 1>(64, 1, 1);
-  auto ext_static        = cuda::std::extents<size_t, 64, 1, 1>();
-  auto block_dims        = level_disabled_copy<cudax::block_level, decltype(ext)>(ext);
-  auto block_dims2       = level_disabled_copy<cudax::block_level, decltype(ext)>(ext);
-  auto block_dims_static = level_disabled_copy<cudax::block_level, decltype(ext_static)>(ext_static);
-
-  auto hierarchy     = cudax::make_hierarchy(cudax::grid_dims(256), std::move(block_dims));
-  auto hierarchy_rev = cudax::make_hierarchy(std::move(block_dims2), cudax::grid_dims(256));
-  static_assert(std::is_same_v<decltype(hierarchy), decltype(hierarchy_rev)>);
-
-  CUDAX_REQUIRE(hierarchy.count() == 256 * 64);
-  CUDAX_REQUIRE(hierarchy_rev.count() == 256 * 64);
-
-  auto hierarchy_static = cudax::make_hierarchy(std::move(block_dims_static), cudax::grid_dims(256));
-
-  static_assert(hierarchy_static.count(cudax::thread, cudax::block) == 64);
-}

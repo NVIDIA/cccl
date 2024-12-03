@@ -43,8 +43,8 @@
 #include <algorithm>
 
 #include "catch2_test_device_select_common.cuh"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSelect::If, select_if);
 
@@ -91,7 +91,7 @@ using all_types =
 using types = c2h::
   type_list<std::uint8_t, std::uint32_t, ulonglong4, c2h::custom_type_t<c2h::less_comparable_t, c2h::equal_comparable_t>>;
 
-CUB_TEST("DeviceSelect::If can run with empty input", "[device][select_if]", types)
+C2H_TEST("DeviceSelect::If can run with empty input", "[device][select_if]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -108,14 +108,14 @@ CUB_TEST("DeviceSelect::If can run with empty input", "[device][select_if]", typ
   REQUIRE(num_selected_out[0] == 0);
 }
 
-CUB_TEST("DeviceSelect::If handles all matched", "[device][select_if]", types)
+C2H_TEST("DeviceSelect::If handles all matched", "[device][select_if]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -127,14 +127,14 @@ CUB_TEST("DeviceSelect::If handles all matched", "[device][select_if]", types)
   REQUIRE(out == in);
 }
 
-CUB_TEST("DeviceSelect::If handles no matched", "[device][select_if]", types)
+C2H_TEST("DeviceSelect::If handles no matched", "[device][select_if]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(0);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -145,14 +145,14 @@ CUB_TEST("DeviceSelect::If handles no matched", "[device][select_if]", types)
   REQUIRE(num_selected_out[0] == 0);
 }
 
-CUB_TEST("DeviceSelect::If does not change input", "[device][select_if]", types)
+C2H_TEST("DeviceSelect::If does not change input", "[device][select_if]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   // just pick one of the input elements as boundary
   less_than_t<type> le{in[num_items / 2]};
@@ -169,14 +169,14 @@ CUB_TEST("DeviceSelect::If does not change input", "[device][select_if]", types)
   REQUIRE(reference == in);
 }
 
-CUB_TEST("DeviceSelect::If is stable", "[device][select_if]")
+C2H_TEST("DeviceSelect::If is stable", "[device][select_if]")
 {
   using type = c2h::custom_type_t<c2h::less_comparable_t, c2h::equal_comparable_t>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   // just pick one of the input elements as boundary
   less_than_t<type> le{in[num_items / 2]};
@@ -200,14 +200,14 @@ CUB_TEST("DeviceSelect::If is stable", "[device][select_if]")
   REQUIRE(reference == out);
 }
 
-CUB_TEST("DeviceSelect::If works with iterators", "[device][select_if]", all_types)
+C2H_TEST("DeviceSelect::If works with iterators", "[device][select_if]", all_types)
 {
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   // just pick one of the input elements as boundary
   less_than_t<type> le{in[num_items / 2]};
@@ -223,14 +223,14 @@ CUB_TEST("DeviceSelect::If works with iterators", "[device][select_if]", all_typ
   REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), equal_to_default_t{}));
 }
 
-CUB_TEST("DeviceSelect::If works with pointers", "[device][select_if]", types)
+C2H_TEST("DeviceSelect::If works with pointers", "[device][select_if]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   // just pick one of the input elements as boundary
   less_than_t<type> le{in[num_items / 2]};
@@ -247,13 +247,13 @@ CUB_TEST("DeviceSelect::If works with pointers", "[device][select_if]", types)
   REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), equal_to_default_t{}));
 }
 
-CUB_TEST("DeviceSelect::If works in place", "[device][select_if]", types)
+C2H_TEST("DeviceSelect::If works in place", "[device][select_if]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   // just pick one of the input elements as boundary
   less_than_t<type> le{in[num_items / 2]};
@@ -293,14 +293,14 @@ struct convertible_from_T
   }
 };
 
-CUB_TEST("DeviceSelect::If works with a different output type", "[device][select_if]")
+C2H_TEST("DeviceSelect::If works with a different output type", "[device][select_if]")
 {
   using type = c2h::custom_type_t<c2h::less_comparable_t, c2h::equal_comparable_t>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<convertible_from_T<type>> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   // just pick one of the input elements as boundary
   less_than_t<type> le{in[num_items / 2]};
@@ -316,7 +316,7 @@ CUB_TEST("DeviceSelect::If works with a different output type", "[device][select
   REQUIRE(thrust::all_of(c2h::device_policy, boundary, out.end(), equal_to_default_t{}));
 }
 
-CUB_TEST("DeviceSelect::If works for very large number of items", "[device][select_if]")
+C2H_TEST("DeviceSelect::If works for very large number of items", "[device][select_if]")
 try
 {
   using type     = std::int64_t;
@@ -361,7 +361,7 @@ catch (std::bad_alloc&)
   // Exceeding memory is not a failure.
 }
 
-CUB_TEST("DeviceSelect::If works for very large number of output items", "[device][select_if]")
+C2H_TEST("DeviceSelect::If works for very large number of output items", "[device][select_if]")
 try
 {
   using type     = std::uint8_t;

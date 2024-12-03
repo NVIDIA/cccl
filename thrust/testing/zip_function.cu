@@ -62,17 +62,17 @@ struct TestZipFunctionTransform
     device_vector<T> d_result_zip(n);
 
     // Tuple base case
-    transform(make_zip_iterator(make_tuple(h_data0.begin(), h_data1.begin(), h_data2.begin())),
-              make_zip_iterator(make_tuple(h_data0.end(), h_data1.end(), h_data2.end())),
+    transform(make_zip_iterator(h_data0.begin(), h_data1.begin(), h_data2.begin()),
+              make_zip_iterator(h_data0.end(), h_data1.end(), h_data2.end()),
               h_result_tuple.begin(),
               SumThreeTuple{});
     // Zip Function
-    transform(make_zip_iterator(make_tuple(h_data0.begin(), h_data1.begin(), h_data2.begin())),
-              make_zip_iterator(make_tuple(h_data0.end(), h_data1.end(), h_data2.end())),
+    transform(make_zip_iterator(h_data0.begin(), h_data1.begin(), h_data2.begin()),
+              make_zip_iterator(h_data0.end(), h_data1.end(), h_data2.end()),
               h_result_zip.begin(),
               make_zip_function(SumThree{}));
-    transform(make_zip_iterator(make_tuple(d_data0.begin(), d_data1.begin(), d_data2.begin())),
-              make_zip_iterator(make_tuple(d_data0.end(), d_data1.end(), d_data2.end())),
+    transform(make_zip_iterator(d_data0.begin(), d_data1.begin(), d_data2.begin()),
+              make_zip_iterator(d_data0.end(), d_data1.end(), d_data2.end()),
               d_result_zip.begin(),
               make_zip_function(SumThree{}));
 

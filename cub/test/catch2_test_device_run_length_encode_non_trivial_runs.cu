@@ -39,8 +39,8 @@
 #include <limits>
 #include <numeric>
 
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRunLengthEncode::NonTrivialRuns, run_length_encode);
 
@@ -58,7 +58,7 @@ using types = c2h::type_list<std::uint32_t, std::int8_t>;
 
 #if 0 // DeviceRunLengthEncode::NonTrivialRuns cannot handle inputs with one or less elements
       // https://github.com/NVIDIA/cccl/issues/426
-CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle empty input", "[device][run_length_encode]")
+C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle empty input", "[device][run_length_encode]")
 {
   constexpr int num_items = 0;
   c2h::device_vector<int> out_num_runs(1, 42);
@@ -73,7 +73,7 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle empty input", "[devic
   REQUIRE(out_num_runs.front() == 0);
 }
 
-CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle a single element", "[device][run_length_encode]")
+C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle a single element", "[device][run_length_encode]")
 {
   constexpr int num_items = 1;
   c2h::device_vector<int> out_num_runs(1, 42);
@@ -90,7 +90,7 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle a single element", "[
 #endif
 
 #if 0 // DeviceRunLengthEncode::NonTrivialRuns cannot handle inputs larger than INT32_MAX
-CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle large indexes", "[device][run_length_encode]")
+C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle large indexes", "[device][run_length_encode]")
 {
   constexpr cuda::std::size_t num_items = 1ull << 33;
   c2h::device_vector<cuda::std::size_t> out_num_runs(1, -1);
@@ -106,7 +106,7 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle large indexes", "[dev
 }
 #endif
 
-CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle different counting types", "[device][run_length_encode]")
+C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle different counting types", "[device][run_length_encode]")
 {
   constexpr int num_items = 1;
   c2h::device_vector<int> in(num_items, 42);
@@ -124,7 +124,7 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle different counting ty
   REQUIRE(out_num_runs.front() == 0);
 }
 
-CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle all unique", "[device][run_length_encode]", types)
+C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle all unique", "[device][run_length_encode]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -141,7 +141,7 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle all unique", "[device
   REQUIRE(out_num_runs.front() == 0);
 }
 
-CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle all equal", "[device][run_length_encode]", types)
+C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle all equal", "[device][run_length_encode]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -150,7 +150,7 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle all equal", "[device]
   c2h::device_vector<int> out_offsets(1, -1);
   c2h::device_vector<int> out_lengths(1, -1);
   c2h::device_vector<int> out_num_runs(1, -1);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
   thrust::fill(c2h::device_policy, in.begin(), in.end(), in.front());
 
   run_length_encode(in.begin(), out_offsets.begin(), out_lengths.begin(), out_num_runs.begin(), num_items);
@@ -210,7 +210,7 @@ bool validate_results(
   return true;
 }
 
-CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle iterators", "[device][run_length_encode]", all_types)
+C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle iterators", "[device][run_length_encode]", all_types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -219,7 +219,7 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle iterators", "[device]
   c2h::device_vector<int> out_offsets(num_items, -1);
   c2h::device_vector<int> out_lengths(num_items, -1);
   c2h::device_vector<int> out_num_runs(1, -1);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   run_length_encode(in.begin(), out_offsets.begin(), out_lengths.begin(), out_num_runs.begin(), num_items);
 
@@ -228,7 +228,7 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle iterators", "[device]
   REQUIRE(validate_results(in, out_offsets, out_lengths, out_num_runs, num_items));
 }
 
-CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle pointers", "[device][run_length_encode]", types)
+C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle pointers", "[device][run_length_encode]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -237,7 +237,7 @@ CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns can handle pointers", "[device][
   c2h::device_vector<int> out_offsets(num_items, -1);
   c2h::device_vector<int> out_lengths(num_items, -1);
   c2h::device_vector<int> out_num_runs(1, -1);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   run_length_encode(
     thrust::raw_pointer_cast(in.data()),
@@ -285,7 +285,7 @@ struct CustomDeviceRunLengthEncode
     cudaStream_t stream = 0)
   {
     using OffsetT    = int; // Signed integer type for global offsets
-    using EqualityOp = cub::Equality; // Default == operator
+    using EqualityOp = ::cuda::std::equal_to<>; // Default == operator
 
     return cub::DeviceRleDispatch<InputIteratorT,
                                   OffsetsOutputIteratorT,
@@ -311,7 +311,7 @@ DECLARE_LAUNCH_WRAPPER(CustomDeviceRunLengthEncode::NonTrivialRuns<false>, run_l
 
 using time_slicing = c2h::type_list<std::true_type, std::false_type>;
 
-CUB_TEST("DeviceRunLengthEncode::NonTrivialRuns does not run out of memory", "[device][run_length_encode]", time_slicing)
+C2H_TEST("DeviceRunLengthEncode::NonTrivialRuns does not run out of memory", "[device][run_length_encode]", time_slicing)
 {
   using type         = typename c2h::get<0, TestType>;
   using policy_hub_t = device_rle_policy_hub<type::value>;

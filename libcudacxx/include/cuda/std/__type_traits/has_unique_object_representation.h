@@ -26,7 +26,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2011 && defined(_CCCL_BUILTIN_HAS_UNIQUE_OBJECT_REPRESENTATIONS)
+#if defined(_CCCL_BUILTIN_HAS_UNIQUE_OBJECT_REPRESENTATIONS)
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT has_unique_object_representations
@@ -38,7 +38,7 @@ template <class _Tp>
 _CCCL_INLINE_VAR constexpr bool has_unique_object_representations_v = has_unique_object_representations<_Tp>::value;
 #  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
-#endif
+#endif // _CCCL_BUILTIN_HAS_UNIQUE_OBJECT_REPRESENTATIONS
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

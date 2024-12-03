@@ -49,12 +49,12 @@ THRUST_NAMESPACE_BEGIN
  *  \tparam N This parameter selects the member of interest.
  *  \tparam T A \c pair type of interest.
  */
-#ifdef DOXYGEN_SHOULD_SKIP_THIS // Provide a fake alias for doxygen
+#ifdef _CCCL_DOXYGEN_INVOKED // Provide a fake alias for doxygen
 template <size_t N, class T>
 using tuple_element = _CUDA_VSTD::tuple_element<N, T>;
-#else // ^^^ DOXYGEN_SHOULD_SKIP_THIS ^^^ / vvv !DOXYGEN_SHOULD_SKIP_THIS vvv
+#else // ^^^ _CCCL_DOXYGEN_INVOKED ^^^ / vvv !_CCCL_DOXYGEN_INVOKED vvv
 using _CUDA_VSTD::tuple_element;
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 /*! This convenience metafunction is included for compatibility with
  *  \p tuple. It returns \c 2, the number of elements of a \p pair,
@@ -62,12 +62,12 @@ using _CUDA_VSTD::tuple_element;
  *
  *  \tparam Pair A \c pair type of interest.
  */
-#ifdef DOXYGEN_SHOULD_SKIP_THIS // Provide a fake alias for doxygen
+#ifdef _CCCL_DOXYGEN_INVOKED // Provide a fake alias for doxygen
 template <class T>
 using tuple_size = _CUDA_VSTD::tuple_size<T>;
-#else // ^^^ DOXYGEN_SHOULD_SKIP_THIS ^^^ / vvv !DOXYGEN_SHOULD_SKIP_THIS vvv
+#else // ^^^ _CCCL_DOXYGEN_INVOKED ^^^ / vvv !_CCCL_DOXYGEN_INVOKED vvv
 using _CUDA_VSTD::tuple_size;
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 /*! \p pair is a generic data structure encapsulating a heterogeneous
  *  pair of values.
@@ -80,12 +80,12 @@ using _CUDA_VSTD::tuple_size;
  *          requirements on the type of \p T2. <tt>T2</tt>'s type is
  *          provided by <tt>pair::second_type</tt>.
  */
-#ifdef DOXYGEN_SHOULD_SKIP_THIS // Provide a fake alias for doxygen
+#ifdef _CCCL_DOXYGEN_INVOKED // Provide a fake alias for doxygen
 template <class T, class U>
 using pair = _CUDA_VSTD::pair<T, U>;
-#else // ^^^ DOXYGEN_SHOULD_SKIP_THIS ^^^ / vvv !DOXYGEN_SHOULD_SKIP_THIS vvv
+#else // ^^^ _CCCL_DOXYGEN_INVOKED ^^^ / vvv !_CCCL_DOXYGEN_INVOKED vvv
 using _CUDA_VSTD::pair;
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 using _CUDA_VSTD::get;
 using _CUDA_VSTD::make_pair;

@@ -57,7 +57,7 @@ void left(nvbench::state& state, nvbench::type_list<T, OffsetT>)
 
   using input_it_t      = const T*;
   using output_it_t     = T*;
-  using difference_op_t = cub::Difference;
+  using difference_op_t = ::cuda::std::minus<>;
   using offset_t        = cub::detail::choose_offset_t<OffsetT>;
 
 #if !TUNE_BASE

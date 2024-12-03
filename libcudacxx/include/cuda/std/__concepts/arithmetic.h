@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
 #include <cuda/std/__type_traits/is_floating_point.h>
 #include <cuda/std/__type_traits/is_integral.h>
@@ -30,26 +30,26 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2011
+#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 
 // [concepts.arithmetic], arithmetic concepts
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT integral = _CCCL_TRAIT(is_integral, _Tp);
+_CCCL_CONCEPT integral = _CCCL_TRAIT(is_integral, _Tp);
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT signed_integral = integral<_Tp> && _CCCL_TRAIT(is_signed, _Tp);
+_CCCL_CONCEPT signed_integral = integral<_Tp> && _CCCL_TRAIT(is_signed, _Tp);
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT unsigned_integral = integral<_Tp> && !signed_integral<_Tp>;
+_CCCL_CONCEPT unsigned_integral = integral<_Tp> && !signed_integral<_Tp>;
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT floating_point = _CCCL_TRAIT(is_floating_point, _Tp);
+_CCCL_CONCEPT floating_point = _CCCL_TRAIT(is_floating_point, _Tp);
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __libcpp_signed_integer = __libcpp_is_signed_integer<_Tp>::value;
+_CCCL_CONCEPT __cccl_signed_integer = __cccl_is_signed_integer<_Tp>::value;
 
-#endif // _CCCL_STD_VER > 2011
+#endif // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

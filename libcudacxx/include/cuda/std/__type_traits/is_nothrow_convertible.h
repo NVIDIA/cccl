@@ -30,8 +30,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2011
-
 template <typename _Tp>
 _CCCL_HOST_DEVICE static void __test_noexcept(_Tp) noexcept;
 
@@ -49,10 +47,10 @@ struct is_nothrow_convertible
           _Lazy<_And, is_convertible<_Fm, _To>, __is_nothrow_convertible_helper<_Fm, _To>>>::type
 {};
 
+#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <typename _Fm, typename _To>
 _CCCL_INLINE_VAR constexpr bool is_nothrow_convertible_v = is_nothrow_convertible<_Fm, _To>::value;
-
-#endif // _CCCL_STD_VER > 2011
+#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

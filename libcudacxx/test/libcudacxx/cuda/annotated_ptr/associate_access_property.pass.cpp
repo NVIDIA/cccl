@@ -17,9 +17,9 @@
 #define ARR_SZ 128
 
 template <typename T, typename P>
-__device__ __host__ __noinline__ void test(P ap, bool shared = false)
+__device__ __host__ __noinline__ void test(P ap)
 {
-  T* arr = alloc<T, ARR_SZ>(shared);
+  T* arr = global_alloc<T, ARR_SZ>();
 
   arr = cuda::associate_access_property(arr, ap);
 
@@ -28,7 +28,20 @@ __device__ __host__ __noinline__ void test(P ap, bool shared = false)
     assert(arr[i] == i);
   }
 
-  dealloc<T>(arr, shared);
+  dealloc<T>(arr);
+}
+
+template <typename T, typename P>
+__device__ __host__ __noinline__ void test_shared(P ap)
+{
+  T* arr = shared_alloc<T, ARR_SZ>();
+
+  arr = cuda::associate_access_property(arr, ap);
+
+  for (int i = 0; i < ARR_SZ; ++i)
+  {
+    assert(arr[i] == i);
+  }
 }
 
 __device__ __host__ __noinline__ void test_all()
@@ -38,12 +51,7 @@ __device__ __host__ __noinline__ void test_all()
   test<int>(cuda::access_property::streaming{});
   test<int>(cuda::access_property::global{});
   test<int>(cuda::access_property{});
-  test<int>(cuda::access_property::shared{}, true);
-}
-
-__global__ void test_kernel()
-{
-  test_all();
+  NV_IF_TARGET(NV_IS_DEVICE, (test_shared<int>(cuda::access_property::shared{});))
 }
 
 int main(int argc, char** argv)

@@ -58,32 +58,33 @@ template <bool IsVoid, bool _Nothrow>
 struct __completion_fn
 { // non-void, potentially throwing case
   template <class _Result>
-  using __f = completion_signatures<set_value_t(_Result), set_error_t(::std::exception_ptr)>;
+  using __call = completion_signatures<set_value_t(_Result), set_error_t(::std::exception_ptr)>;
 };
 
 template <>
 struct __completion_fn<true, false>
 { // void, potentially throwing case
   template <class>
-  using __f = completion_signatures<set_value_t(), set_error_t(::std::exception_ptr)>;
+  using __call = completion_signatures<set_value_t(), set_error_t(::std::exception_ptr)>;
 };
 
 template <>
 struct __completion_fn<false, true>
 { // non-void, non-throwing case
   template <class _Result>
-  using __f = completion_signatures<set_value_t(_Result)>;
+  using __call = completion_signatures<set_value_t(_Result)>;
 };
 
 template <>
 struct __completion_fn<true, true>
 { // void, non-throwing case
   template <class>
-  using __f = completion_signatures<set_value_t()>;
+  using __call = completion_signatures<set_value_t()>;
 };
 
 template <class _Result, bool _Nothrow>
-using __completion_ = __minvoke1<__completion_fn<_CUDA_VSTD::is_same_v<_Result, void>, _Nothrow>, _Result>;
+using __completion_ =
+  _CUDA_VSTD::__type_call1<__completion_fn<_CUDA_VSTD::is_same_v<_Result, void>, _Nothrow>, _Result>;
 
 template <class _Fn, class... _Ts>
 using __completion = __completion_<__call_result_t<_Fn, _Ts...>, __nothrow_callable<_Fn, _Ts...>>;
@@ -111,21 +112,22 @@ private:
   struct __transform_completion
   {
     template <class... _Ts>
-    using __f = __minvoke<__mtry_quote<__upon::__completion, __error_not_callable<_Fn, _Ts...>>, _Fn, _Ts...>;
+    using __call =
+      _CUDA_VSTD::__type_call<__type_try_quote<__upon::__completion, __error_not_callable<_Fn, _Ts...>>, _Fn, _Ts...>;
   };
 
   template <class _CvSndr, class _Fn, class _Rcvr>
   using __completions =
     __gather_completion_signatures<completion_signatures_of_t<_CvSndr, _Rcvr>,
                                    _SetTag,
-                                   __transform_completion<_Fn>::template __f,
+                                   __transform_completion<_Fn>::template __call,
                                    __default_completions,
-                                   __mtry_quote<__concat_completion_signatures>::__f>;
+                                   __type_try_quote<__concat_completion_signatures>::__call>;
 
   template <class _Rcvr, class _CvSndr, class _Fn>
   struct __opstate_t
   {
-    _CCCL_HOST_DEVICE friend env_of_t<_Rcvr> get_env(const __opstate_t* __self) noexcept
+    _CUDAX_API friend env_of_t<_Rcvr> get_env(const __opstate_t* __self) noexcept
     {
       return __async::get_env(__self->__rcvr_);
     }
@@ -137,7 +139,7 @@ private:
     _Fn __fn_;
     connect_result_t<_CvSndr, __opstate_t*> __opstate_;
 
-    _CCCL_HOST_DEVICE __opstate_t(_CvSndr&& __sndr, _Rcvr __rcvr, _Fn __fn)
+    _CUDAX_API __opstate_t(_CvSndr&& __sndr, _Rcvr __rcvr, _Fn __fn)
         : __rcvr_{static_cast<_Rcvr&&>(__rcvr)}
         , __fn_{static_cast<_Fn&&>(__fn)}
         , __opstate_{__async::connect(static_cast<_CvSndr&&>(__sndr), this)}
@@ -145,13 +147,13 @@ private:
 
     _CUDAX_IMMOVABLE(__opstate_t);
 
-    _CCCL_HOST_DEVICE void start() & noexcept
+    _CUDAX_API void start() & noexcept
     {
       __async::start(__opstate_);
     }
 
     template <bool _CanThrow = false, class... _Ts>
-    _CCCL_HOST_DEVICE void __set(_Ts&&... __ts) noexcept(!_CanThrow)
+    _CUDAX_API void __set(_Ts&&... __ts) noexcept(!_CanThrow)
     {
       if constexpr (_CanThrow || __nothrow_callable<_Fn, _Ts...>)
       {
@@ -179,7 +181,7 @@ private:
     }
 
     template <class _Tag, class... _Ts>
-    _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE void __complete(_Tag, _Ts&&... __ts) noexcept
+    _CUDAX_TRIVIAL_API void __complete(_Tag, _Ts&&... __ts) noexcept
     {
       if constexpr (_CUDA_VSTD::is_same_v<_Tag, _SetTag>)
       {
@@ -192,18 +194,18 @@ private:
     }
 
     template <class... _Ts>
-    _CCCL_HOST_DEVICE void set_value(_Ts&&... __ts) noexcept
+    _CUDAX_API void set_value(_Ts&&... __ts) noexcept
     {
       __complete(set_value_t(), static_cast<_Ts&&>(__ts)...);
     }
 
     template <class _Error>
-    _CCCL_HOST_DEVICE void set_error(_Error&& __error) noexcept
+    _CUDAX_API void set_error(_Error&& __error) noexcept
     {
       __complete(set_error_t(), static_cast<_Error&&>(__error));
     }
 
-    _CCCL_HOST_DEVICE void set_stopped() noexcept
+    _CUDAX_API void set_stopped() noexcept
     {
       __complete(set_stopped_t());
     }
@@ -218,7 +220,7 @@ private:
     _Sndr __sndr_;
 
     template <class _Rcvr>
-    _CCCL_HOST_DEVICE auto connect(_Rcvr __rcvr) && //
+    _CUDAX_API auto connect(_Rcvr __rcvr) && //
       noexcept(__nothrow_constructible<__opstate_t<_Rcvr, _Sndr, _Fn>, _Sndr, _Rcvr, _Fn>) //
       -> __opstate_t<_Rcvr, _Sndr, _Fn>
     {
@@ -227,7 +229,7 @@ private:
     }
 
     template <class _Rcvr>
-    _CCCL_HOST_DEVICE auto connect(_Rcvr __rcvr) const& //
+    _CUDAX_API auto connect(_Rcvr __rcvr) const& //
       noexcept(__nothrow_constructible<__opstate_t<_Rcvr, const _Sndr&, _Fn>,
                                        const _Sndr&,
                                        _Rcvr,
@@ -237,7 +239,7 @@ private:
       return __opstate_t<_Rcvr, const _Sndr&, _Fn>{__sndr_, static_cast<_Rcvr&&>(__rcvr), __fn_};
     }
 
-    _CCCL_HOST_DEVICE env_of_t<_Sndr> get_env() const noexcept
+    _CUDAX_API env_of_t<_Sndr> get_env() const noexcept
     {
       return __async::get_env(__sndr_);
     }
@@ -250,13 +252,13 @@ private:
     _Fn __fn_;
 
     template <class _Sndr>
-    _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE auto operator()(_Sndr __sndr) -> __call_result_t<_UponTag, _Sndr, _Fn>
+    _CUDAX_TRIVIAL_API auto operator()(_Sndr __sndr) -> __call_result_t<_UponTag, _Sndr, _Fn>
     {
       return _UponTag()(static_cast<_Sndr&&>(__sndr), static_cast<_Fn&&>(__fn_));
     }
 
     template <class _Sndr>
-    _CCCL_HOST_DEVICE _CUDAX_ALWAYS_INLINE friend auto operator|(_Sndr __sndr, __closure_t&& __self) //
+    _CUDAX_TRIVIAL_API friend auto operator|(_Sndr __sndr, __closure_t&& __self) //
       -> __call_result_t<_UponTag, _Sndr, _Fn>
     {
       return _UponTag()(static_cast<_Sndr&&>(__sndr), static_cast<_Fn&&>(__self.__fn_));
@@ -265,7 +267,7 @@ private:
 
 public:
   template <class _Sndr, class _Fn>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto operator()(_Sndr __sndr, _Fn __fn) const noexcept //
+  _CUDAX_TRIVIAL_API auto operator()(_Sndr __sndr, _Fn __fn) const noexcept //
     -> __sndr_t<_Fn, _Sndr>
   {
     // If the incoming sender is non-dependent, we can check the completion
@@ -279,7 +281,7 @@ public:
   }
 
   template <class _Fn>
-  _CUDAX_ALWAYS_INLINE _CCCL_HOST_DEVICE auto operator()(_Fn __fn) const noexcept
+  _CUDAX_TRIVIAL_API auto operator()(_Fn __fn) const noexcept
   {
     return __closure_t<_Fn>{static_cast<_Fn&&>(__fn)};
   }

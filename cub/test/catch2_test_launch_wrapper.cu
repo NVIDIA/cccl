@@ -29,8 +29,8 @@
 
 #include <cuda/std/tuple>
 
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -127,7 +127,7 @@ struct cub_api_example_t
 DECLARE_LAUNCH_WRAPPER(cub_api_example_t::x2_0, x2_0);
 DECLARE_LAUNCH_WRAPPER(cub_api_example_t::x0_5, x0_5);
 
-CUB_TEST("Launch wrapper works with predefined invocables", "[test][utils]")
+C2H_TEST("Launch wrapper works with predefined invocables", "[test][utils]")
 {
   INFO("Launch = " << TEST_LAUNCH);
 
@@ -187,7 +187,7 @@ struct custom_x0_5_invocable
   }
 };
 
-CUB_TEST("Launch wrapper works with custom invocables", "[test][utils]")
+C2H_TEST("Launch wrapper works with custom invocables", "[test][utils]")
 {
   int n = 42;
   c2h::device_vector<int> in(n, 21);

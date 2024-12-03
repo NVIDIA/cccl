@@ -38,8 +38,8 @@
 
 #include <algorithm>
 
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 template <class T>
 inline T to_bound(const unsigned long long bound)
@@ -133,7 +133,7 @@ using huge_types = c2h::type_list<c2h::custom_type_t<c2h::equal_comparable_t, c2
 
 using types = c2h::type_list<std::uint8_t, std::uint32_t>;
 
-CUB_TEST("DeviceSelect::UniqueByKey can run with empty input", "[device][select_unique_by_key]", types)
+C2H_TEST("DeviceSelect::UniqueByKey can run with empty input", "[device][select_unique_by_key]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -149,7 +149,7 @@ CUB_TEST("DeviceSelect::UniqueByKey can run with empty input", "[device][select_
   REQUIRE(num_selected_out[0] == 0);
 }
 
-CUB_TEST("DeviceSelect::UniqueByKey handles none equal", "[device][select_unique_by_key]", types)
+C2H_TEST("DeviceSelect::UniqueByKey handles none equal", "[device][select_unique_by_key]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -158,7 +158,7 @@ CUB_TEST("DeviceSelect::UniqueByKey handles none equal", "[device][select_unique
   c2h::device_vector<type> vals_out(num_items);
 
   // Ensure we copy the right value
-  c2h::gen(CUB_SEED(2), vals_in);
+  c2h::gen(C2H_SEED(2), vals_in);
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -176,7 +176,7 @@ CUB_TEST("DeviceSelect::UniqueByKey handles none equal", "[device][select_unique
   REQUIRE(vals_in == vals_out);
 }
 
-CUB_TEST("DeviceSelect::UniqueByKey handles all equal", "[device][select_unique_by_key]", types)
+C2H_TEST("DeviceSelect::UniqueByKey handles all equal", "[device][select_unique_by_key]", types)
 {
   using type     = typename c2h::get<0, TestType>;
   using val_type = c2h::custom_type_t<c2h::equal_comparable_t>;
@@ -188,7 +188,7 @@ CUB_TEST("DeviceSelect::UniqueByKey handles all equal", "[device][select_unique_
   c2h::device_vector<val_type> vals_out(1);
 
   // Ensure we copy the right value
-  c2h::gen(CUB_SEED(2), vals_in);
+  c2h::gen(C2H_SEED(2), vals_in);
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -203,7 +203,7 @@ CUB_TEST("DeviceSelect::UniqueByKey handles all equal", "[device][select_unique_
   REQUIRE(vals_in[0] == vals_out[0]);
 }
 
-CUB_TEST("DeviceSelect::UniqueByKey does not change input", "[device][select_unique_by_key]", types)
+C2H_TEST("DeviceSelect::UniqueByKey does not change input", "[device][select_unique_by_key]", types)
 {
   using type     = typename c2h::get<0, TestType>;
   using val_type = c2h::custom_type_t<c2h::equal_comparable_t>;
@@ -211,8 +211,8 @@ CUB_TEST("DeviceSelect::UniqueByKey does not change input", "[device][select_uni
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> keys_in(num_items);
   c2h::device_vector<val_type> vals_in(num_items);
-  c2h::gen(CUB_SEED(2), keys_in, to_bound<type>(0), to_bound<type>(42));
-  c2h::gen(CUB_SEED(1), vals_in);
+  c2h::gen(C2H_SEED(2), keys_in, to_bound<type>(0), to_bound<type>(42));
+  c2h::gen(C2H_SEED(1), vals_in);
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -255,7 +255,7 @@ struct custom_equality_op
   }
 };
 
-CUB_TEST("DeviceSelect::UniqueByKey works with iterators", "[device][select_unique_by_key]", all_types)
+C2H_TEST("DeviceSelect::UniqueByKey works with iterators", "[device][select_unique_by_key]", all_types)
 {
   using type     = typename c2h::get<0, TestType>;
   using val_type = c2h::custom_type_t<c2h::equal_comparable_t>;
@@ -265,8 +265,8 @@ CUB_TEST("DeviceSelect::UniqueByKey works with iterators", "[device][select_uniq
   c2h::device_vector<val_type> vals_in(num_items);
   c2h::device_vector<type> keys_out(num_items);
   c2h::device_vector<val_type> vals_out(num_items);
-  c2h::gen(CUB_SEED(2), keys_in, to_bound<type>(0), to_bound<type>(42));
-  c2h::gen(CUB_SEED(1), vals_in);
+  c2h::gen(C2H_SEED(2), keys_in, to_bound<type>(0), to_bound<type>(42));
+  c2h::gen(C2H_SEED(1), vals_in);
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -280,7 +280,8 @@ CUB_TEST("DeviceSelect::UniqueByKey works with iterators", "[device][select_uniq
   c2h::host_vector<val_type> reference_vals = vals_in;
   const auto zip_begin                      = thrust::make_zip_iterator(reference_keys.begin(), reference_vals.begin());
   const auto zip_end                        = thrust::make_zip_iterator(reference_keys.end(), reference_vals.end());
-  const auto boundary = std::unique(zip_begin, zip_end, project_first<cub::Equality>{cub::Equality{}});
+  const auto boundary =
+    std::unique(zip_begin, zip_end, project_first<::cuda::std::equal_to<>>{::cuda::std::equal_to<>{}});
   REQUIRE((boundary - zip_begin) == num_selected_out[0]);
 
   keys_out.resize(num_selected_out[0]);
@@ -291,7 +292,7 @@ CUB_TEST("DeviceSelect::UniqueByKey works with iterators", "[device][select_uniq
   REQUIRE(reference_vals == vals_out);
 }
 
-CUB_TEST("DeviceSelect::UniqueByKey works with pointers", "[device][select_unique_by_key]", types)
+C2H_TEST("DeviceSelect::UniqueByKey works with pointers", "[device][select_unique_by_key]", types)
 {
   using type     = typename c2h::get<0, TestType>;
   using val_type = c2h::custom_type_t<c2h::equal_comparable_t>;
@@ -301,8 +302,8 @@ CUB_TEST("DeviceSelect::UniqueByKey works with pointers", "[device][select_uniqu
   c2h::device_vector<val_type> vals_in(num_items);
   c2h::device_vector<type> keys_out(num_items);
   c2h::device_vector<val_type> vals_out(num_items);
-  c2h::gen(CUB_SEED(2), keys_in, to_bound<type>(0), to_bound<type>(42));
-  c2h::gen(CUB_SEED(1), vals_in);
+  c2h::gen(C2H_SEED(2), keys_in, to_bound<type>(0), to_bound<type>(42));
+  c2h::gen(C2H_SEED(1), vals_in);
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -321,7 +322,8 @@ CUB_TEST("DeviceSelect::UniqueByKey works with pointers", "[device][select_uniqu
   c2h::host_vector<val_type> reference_vals = vals_in;
   const auto zip_begin                      = thrust::make_zip_iterator(reference_keys.begin(), reference_vals.begin());
   const auto zip_end                        = thrust::make_zip_iterator(reference_keys.end(), reference_vals.end());
-  const auto boundary = std::unique(zip_begin, zip_end, project_first<cub::Equality>{cub::Equality{}});
+  const auto boundary =
+    std::unique(zip_begin, zip_end, project_first<::cuda::std::equal_to<>>{::cuda::std::equal_to<>{}});
   REQUIRE((boundary - zip_begin) == num_selected_out[0]);
 
   keys_out.resize(num_selected_out[0]);
@@ -352,7 +354,7 @@ struct convertible_from_T
   }
 };
 
-CUB_TEST("DeviceSelect::UniqueByKey works with a different output type", "[device][select_unique_by_key]", types)
+C2H_TEST("DeviceSelect::UniqueByKey works with a different output type", "[device][select_unique_by_key]", types)
 {
   using type     = typename c2h::get<0, TestType>;
   using val_type = c2h::custom_type_t<c2h::equal_comparable_t>;
@@ -362,8 +364,8 @@ CUB_TEST("DeviceSelect::UniqueByKey works with a different output type", "[devic
   c2h::device_vector<val_type> vals_in(num_items);
   c2h::device_vector<type> keys_out(num_items);
   c2h::device_vector<convertible_from_T<val_type>> vals_out(num_items);
-  c2h::gen(CUB_SEED(2), keys_in, to_bound<type>(0), to_bound<type>(42));
-  c2h::gen(CUB_SEED(1), vals_in);
+  c2h::gen(C2H_SEED(2), keys_in, to_bound<type>(0), to_bound<type>(42));
+  c2h::gen(C2H_SEED(1), vals_in);
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -377,7 +379,8 @@ CUB_TEST("DeviceSelect::UniqueByKey works with a different output type", "[devic
   c2h::host_vector<val_type> reference_vals = vals_in;
   const auto zip_begin                      = thrust::make_zip_iterator(reference_keys.begin(), reference_vals.begin());
   const auto zip_end                        = thrust::make_zip_iterator(reference_keys.end(), reference_vals.end());
-  const auto boundary = std::unique(zip_begin, zip_end, project_first<cub::Equality>{cub::Equality{}});
+  const auto boundary =
+    std::unique(zip_begin, zip_end, project_first<::cuda::std::equal_to<>>{::cuda::std::equal_to<>{}});
   REQUIRE((boundary - zip_begin) == num_selected_out[0]);
 
   keys_out.resize(num_selected_out[0]);
@@ -388,7 +391,7 @@ CUB_TEST("DeviceSelect::UniqueByKey works with a different output type", "[devic
   REQUIRE(reference_vals == vals_out);
 }
 
-CUB_TEST("DeviceSelect::UniqueByKey works and uses vsmem for large types",
+C2H_TEST("DeviceSelect::UniqueByKey works and uses vsmem for large types",
          "[device][select_unique_by_key][vsmem]",
          huge_types)
 {
@@ -399,7 +402,7 @@ CUB_TEST("DeviceSelect::UniqueByKey works and uses vsmem for large types",
   c2h::device_vector<type> keys_in(num_items);
   c2h::device_vector<type> keys_out(num_items);
   c2h::device_vector<val_type> vals_out(num_items);
-  c2h::gen(CUB_SEED(2), keys_in, to_bound<type>(0), to_bound<type>(42));
+  c2h::gen(C2H_SEED(2), keys_in, to_bound<type>(0), to_bound<type>(42));
 
   auto vals_it =
     thrust::make_transform_iterator(thrust::make_counting_iterator(0U), index_to_huge_type_op_t<val_type>{});
@@ -423,7 +426,8 @@ CUB_TEST("DeviceSelect::UniqueByKey works and uses vsmem for large types",
 
   const auto zip_begin = thrust::make_zip_iterator(reference_keys.begin(), reference_vals.begin());
   const auto zip_end   = thrust::make_zip_iterator(reference_keys.end(), reference_vals.end());
-  const auto boundary  = std::unique(zip_begin, zip_end, project_first<cub::Equality>{cub::Equality{}});
+  const auto boundary =
+    std::unique(zip_begin, zip_end, project_first<::cuda::std::equal_to<>>{::cuda::std::equal_to<>{}});
   REQUIRE((boundary - zip_begin) == num_selected_out[0]);
 
   keys_out.resize(num_selected_out[0]);
@@ -434,7 +438,7 @@ CUB_TEST("DeviceSelect::UniqueByKey works and uses vsmem for large types",
   REQUIRE(reference_vals == vals_out);
 }
 
-CUB_TEST("DeviceSelect::UniqueByKey works for very large input that need 64-bit offset types",
+C2H_TEST("DeviceSelect::UniqueByKey works for very large input that need 64-bit offset types",
          "[device][select_unique_by_key]")
 {
   using type       = std::int32_t;
@@ -462,7 +466,7 @@ CUB_TEST("DeviceSelect::UniqueByKey works for very large input that need 64-bit 
   REQUIRE(reference_values == values_out);
 }
 
-CUB_TEST("DeviceSelect::UniqueByKey works for very large outputs that needs 64-bit offset types",
+C2H_TEST("DeviceSelect::UniqueByKey works for very large outputs that needs 64-bit offset types",
          "[device][select_unique_by_key]")
 {
   using type       = std::int32_t;
@@ -490,7 +494,7 @@ CUB_TEST("DeviceSelect::UniqueByKey works for very large outputs that needs 64-b
   REQUIRE(num_items == static_cast<std::size_t>(num_selected_out[0]));
 }
 
-CUB_TEST("DeviceSelect::UniqueByKey works with a custom equality operator", "[device][select_unique_by_key]")
+C2H_TEST("DeviceSelect::UniqueByKey works with a custom equality operator", "[device][select_unique_by_key]")
 {
   using type        = std::int32_t;
   using custom_op_t = custom_equality_op<type>;

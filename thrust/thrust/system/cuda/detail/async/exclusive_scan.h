@@ -54,9 +54,6 @@
 #    include <type_traits>
 
 // TODO specialize for thrust::plus to use e.g. ExclusiveSum instead of ExcScan
-//  - Note that thrust::plus<> is transparent, cub::Sum is not. This should be
-//    fixed in CUB first).
-//  - Need to check if CUB actually optimizes for sums before putting in effort
 
 THRUST_NAMESPACE_BEGIN
 namespace system

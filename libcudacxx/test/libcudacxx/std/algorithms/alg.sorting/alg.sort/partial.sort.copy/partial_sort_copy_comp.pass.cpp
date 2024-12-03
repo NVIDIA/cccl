@@ -84,7 +84,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
   assert(j == 75);
 
   test<int, random_access_iterator<int*>, random_access_iterator<int*>>();
-  if (!cuda::std::__libcpp_is_constant_evaluated()) // This breaks some compilers due to excessive constant folding
+  if (!cuda::std::is_constant_evaluated()) // This breaks some compilers due to excessive constant folding
   {
     test<int, random_access_iterator<int*>, int*>();
     test<int, int*, random_access_iterator<int*>>();
@@ -92,7 +92,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
   }
 
   test<MoveOnly, random_access_iterator<int*>, random_access_iterator<MoveOnly*>>();
-  if (!cuda::std::__libcpp_is_constant_evaluated()) // This breaks some compilers due to excessive constant folding
+  if (!cuda::std::is_constant_evaluated()) // This breaks some compilers due to excessive constant folding
   {
     test<MoveOnly, random_access_iterator<int*>, MoveOnly*>();
     test<MoveOnly, int*, random_access_iterator<MoveOnly*>>();

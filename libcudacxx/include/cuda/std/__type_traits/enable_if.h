@@ -32,12 +32,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT enable_if<true, _Tp>
 };
 
 template <bool _Bp, class _Tp = void>
-using __enable_if_t _LIBCUDACXX_NODEBUG_TYPE = typename enable_if<_Bp, _Tp>::type;
-
-#if _CCCL_STD_VER > 2011
-template <bool _Bp, class _Tp = void>
-using enable_if_t = typename enable_if<_Bp, _Tp>::type;
-#endif
+using enable_if_t _CCCL_NODEBUG_ALIAS = typename enable_if<_Bp, _Tp>::type;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

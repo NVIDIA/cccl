@@ -42,7 +42,7 @@ template <typename T, typename Allocator, template <typename> class BaseSystem>
 _CCCL_HOST thrust::pair<T*, std::ptrdiff_t>
 get_temporary_buffer(thrust::detail::execute_with_allocator<Allocator, BaseSystem>& system, std::ptrdiff_t n)
 {
-  using naked_allocator = ::cuda::std::__libcpp_remove_reference_t<Allocator>;
+  using naked_allocator = ::cuda::std::remove_reference_t<Allocator>;
   using alloc_traits    = typename thrust::detail::allocator_traits<naked_allocator>;
   using void_pointer    = typename alloc_traits::void_pointer;
   using size_type       = typename alloc_traits::size_type;
@@ -62,7 +62,7 @@ template <typename Pointer, typename Allocator, template <typename> class BaseSy
 _CCCL_HOST void return_temporary_buffer(
   thrust::detail::execute_with_allocator<Allocator, BaseSystem>& system, Pointer p, std::ptrdiff_t n)
 {
-  using naked_allocator = ::cuda::std::__libcpp_remove_reference_t<Allocator>;
+  using naked_allocator = ::cuda::std::remove_reference_t<Allocator>;
   using alloc_traits    = typename thrust::detail::allocator_traits<naked_allocator>;
   using pointer         = typename alloc_traits::pointer;
   using size_type       = typename alloc_traits::size_type;
@@ -80,7 +80,7 @@ _CCCL_HOST thrust::pair<T*, std::ptrdiff_t> get_temporary_buffer(
   thrust::detail::execute_with_allocator_and_dependencies<Allocator, BaseSystem, Dependencies...>& system,
   std::ptrdiff_t n)
 {
-  using naked_allocator = ::cuda::std::__libcpp_remove_reference_t<Allocator>;
+  using naked_allocator = ::cuda::std::remove_reference_t<Allocator>;
   using alloc_traits    = typename thrust::detail::allocator_traits<naked_allocator>;
   using void_pointer    = typename alloc_traits::void_pointer;
   using size_type       = typename alloc_traits::size_type;
@@ -102,7 +102,7 @@ _CCCL_HOST void return_temporary_buffer(
   Pointer p,
   std::ptrdiff_t n)
 {
-  using naked_allocator = ::cuda::std::__libcpp_remove_reference_t<Allocator>;
+  using naked_allocator = ::cuda::std::remove_reference_t<Allocator>;
   using alloc_traits    = typename thrust::detail::allocator_traits<naked_allocator>;
   using pointer         = typename alloc_traits::pointer;
   using size_type       = typename alloc_traits::size_type;

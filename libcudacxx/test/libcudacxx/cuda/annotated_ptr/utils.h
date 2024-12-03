@@ -44,18 +44,12 @@ __device__ __host__ void assert_rt_wrap(cudaError_t code, const char* file, int 
   }
 
 template <typename T, int N>
-__device__ __host__ __noinline__ T* alloc(bool shared = false)
+__device__ __host__ __noinline__ T* global_alloc()
 {
   T* arr = nullptr;
 
   NV_IF_ELSE_TARGET(
-    NV_IS_DEVICE,
-    (
-      if (!shared) { arr = (T*) malloc(N * sizeof(T)); } else {
-        __shared__ T data[N];
-        arr = data;
-      }),
-    assert_rt(cudaMallocManaged((void**) &arr, N * sizeof(T)));)
+    NV_IS_DEVICE, (arr = (T*) malloc(N * sizeof(T));), (assert_rt(cudaMallocManaged((void**) &arr, N * sizeof(T)));))
 
   for (int i = 0; i < N; ++i)
   {
@@ -64,8 +58,20 @@ __device__ __host__ __noinline__ T* alloc(bool shared = false)
   return arr;
 }
 
-template <typename T>
-__device__ __host__ __noinline__ void dealloc(T* arr, bool shared)
+template <typename T, int N>
+__device__ __noinline__ T* shared_alloc()
 {
-  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (if (!shared) free(arr);), assert_rt(cudaFree(arr));)
+  __shared__ T data[N];
+
+  for (int i = 0; i < N; ++i)
+  {
+    data[i] = i;
+  }
+  return data;
+}
+
+template <typename T>
+__device__ __host__ __noinline__ void dealloc(T* arr)
+{
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE, (free(arr);), assert_rt(cudaFree(arr));)
 }

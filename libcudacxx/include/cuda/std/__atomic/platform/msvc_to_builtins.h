@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
 
 #  include <cuda/std/__atomic/order.h>
 #  include <cuda/std/cassert>
@@ -72,7 +72,7 @@ static inline void __atomic_thread_fence(int __memorder)
 }
 
 template <typename _Type, size_t _Size>
-using __enable_if_sized_as = __enable_if_t<sizeof(_Type) == _Size, int>;
+using __enable_if_sized_as = enable_if_t<sizeof(_Type) == _Size, int>;
 
 template <class _Type, __enable_if_sized_as<_Type, 1> = 0>
 void __atomic_load_relaxed(const volatile _Type* __ptr, _Type* __ret)
@@ -637,6 +637,6 @@ _Type __atomic_fetch_min(_Type volatile* __ptr, _Delta __val, int __memorder)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // defined(_CCCL_COMPILER_MSVC)
+#endif // _CCCL_COMPILER(MSVC)
 
 #endif // __LIBCUDACXX___ATOMIC_PLATFORM_MSVC_H

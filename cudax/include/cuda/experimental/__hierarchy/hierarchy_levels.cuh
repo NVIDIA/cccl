@@ -11,6 +11,8 @@
 #ifndef _CUDAX__HIERARCHY_HIERARCHY_LEVELS
 #define _CUDAX__HIERARCHY_HIERARCHY_LEVELS
 
+#include <cuda/std/__type_traits/type_list.h>
+
 #include <cuda/experimental/__hierarchy/dimensions.cuh>
 
 #include <nv/target>
@@ -67,11 +69,6 @@ struct dimensions_query
   }
 };
 
-template <typename L1, typename... Levels>
-struct get_first_level_type
-{
-  using type = L1;
-};
 } // namespace detail
 
 // Struct to represent levels allowed below or above a certain level,
@@ -79,17 +76,14 @@ struct get_first_level_type
 template <typename... Levels>
 struct allowed_levels
 {
-  using default_unit = typename detail::get_first_level_type<Levels...>::type;
-};
-
-template <>
-struct allowed_levels<>
-{
-  using default_unit = void;
+  using default_unit = ::cuda::std::__type_index_c<0, Levels..., void>;
 };
 
 namespace detail
 {
+template <typename LevelType>
+using __default_unit_below = typename LevelType::allowed_below::default_unit;
+
 template <typename QueryLevel, typename AllowedLevels>
 _CCCL_INLINE_VAR constexpr bool is_level_allowed = false;
 
@@ -98,12 +92,12 @@ _CCCL_INLINE_VAR constexpr bool is_level_allowed<QueryLevel, allowed_levels<Leve
   ::cuda::std::disjunction_v<::cuda::std::is_same<QueryLevel, Levels>...>;
 
 template <typename L1, typename L2>
-_CCCL_INLINE_VAR constexpr bool can_stack_on_top =
+_CCCL_INLINE_VAR constexpr bool can_rhs_stack_on_lhs =
   is_level_allowed<L1, typename L2::allowed_below> || is_level_allowed<L2, typename L1::allowed_above>;
 
 template <typename Unit, typename Level>
 _CCCL_INLINE_VAR constexpr bool legal_unit_for_level =
-  can_stack_on_top<Unit, Level> || legal_unit_for_level<Unit, typename Level::allowed_below::default_unit>;
+  can_rhs_stack_on_lhs<Unit, Level> || legal_unit_for_level<Unit, __default_unit_below<Level>>;
 
 template <typename Unit>
 _CCCL_INLINE_VAR constexpr bool legal_unit_for_level<Unit, void> = false;
@@ -282,13 +276,13 @@ struct dims_helper<cluster_level, grid_level>
 template <typename Unit, typename Level>
 /* _CCCL_NODISCARD */ _CCCL_DEVICE auto extents_impl()
 {
-  if constexpr (::cuda::std::is_same_v<Unit, Level> || can_stack_on_top<Unit, Level>)
+  if constexpr (::cuda::std::is_same_v<Unit, Level> || can_rhs_stack_on_lhs<Unit, Level>)
   {
     return dim3_to_dims(dims_helper<Unit, Level>::extents());
   }
   else
   {
-    using SplitLevel = typename Level::allowed_below::default_unit;
+    using SplitLevel = detail::__default_unit_below<Level>;
     return dims_product<typename Level::product_type>(
       extents_impl<SplitLevel, Level>(), extents_impl<Unit, SplitLevel>());
   }
@@ -298,13 +292,13 @@ template <typename Unit, typename Level>
 template <typename Unit, typename Level>
 /* _CCCL_NODISCARD */ _CCCL_DEVICE auto index_impl()
 {
-  if constexpr (::cuda::std::is_same_v<Unit, Level> || detail::can_stack_on_top<Unit, Level>)
+  if constexpr (::cuda::std::is_same_v<Unit, Level> || detail::can_rhs_stack_on_lhs<Unit, Level>)
   {
     return dim3_to_dims(dims_helper<Unit, Level>::index());
   }
   else
   {
-    using SplitLevel = typename Level::allowed_below::default_unit;
+    using SplitLevel = detail::__default_unit_below<Level>;
     return dims_sum<typename Level::product_type>(
       dims_product<typename Level::product_type>(index_impl<SplitLevel, Level>(), extents_impl<Unit, SplitLevel>()),
       index_impl<Unit, SplitLevel>());
@@ -393,7 +387,7 @@ template <typename Unit, typename Level>
 _CCCL_DEVICE auto rank(const Unit&, const Level&)
 {
   static_assert(detail::legal_unit_for_level<Unit, Level>);
-  if constexpr (detail::can_stack_on_top<Unit, Level>)
+  if constexpr (detail::can_rhs_stack_on_lhs<Unit, Level>)
   {
     return detail::index_to_linear<typename Level::product_type>(
       detail::index_impl<Unit, Level>(), detail::extents_impl<Unit, Level>());
@@ -402,7 +396,7 @@ _CCCL_DEVICE auto rank(const Unit&, const Level&)
   {
     /* Its interesting that there is a need for else here, but using the above in all cases would result in
         a different numbering scheme, where adjacent ranks in lower level would not be adjacent in this level */
-    using SplitLevel = typename Level::allowed_below::default_unit;
+    using SplitLevel = detail::__default_unit_below<Level>;
     return rank<SplitLevel, Level>() * count<Unit, SplitLevel>() + rank<Unit, SplitLevel>();
   }
 }

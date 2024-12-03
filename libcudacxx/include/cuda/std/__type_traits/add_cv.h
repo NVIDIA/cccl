@@ -25,13 +25,11 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT add_cv
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE const volatile _Tp type;
+  typedef _CCCL_NODEBUG_ALIAS const volatile _Tp type;
 };
 
-#if _CCCL_STD_VER > 2011
 template <class _Tp>
-using add_cv_t = typename add_cv<_Tp>::type;
-#endif
+using add_cv_t _CCCL_NODEBUG_ALIAS = typename add_cv<_Tp>::type;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

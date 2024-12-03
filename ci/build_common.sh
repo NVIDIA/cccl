@@ -126,12 +126,13 @@ print_environment_details() {
       NVCC_VERSION \
       CMAKE_BUILD_PARALLEL_LEVEL \
       CTEST_PARALLEL_LEVEL \
+      CCCL_CUDA_EXTENDED \
       CCCL_BUILD_INFIX \
       GLOBAL_CMAKE_OPTIONS \
       TBB_ROOT
 
   echo "Current commit is:"
-  git log -1 || echo "Not a repository"
+  git log -1 --format=short || echo "Not a repository"
 
   if command -v nvidia-smi &> /dev/null; then
     nvidia-smi

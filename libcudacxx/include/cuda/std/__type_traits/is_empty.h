@@ -50,15 +50,15 @@ struct __is_empty2
 };
 
 template <class _Tp, bool = _CCCL_TRAIT(is_class, _Tp)>
-struct __libcpp_empty : public integral_constant<bool, sizeof(__is_empty1<_Tp>) == sizeof(__is_empty2)>
+struct __cccl_empty : public integral_constant<bool, sizeof(__is_empty1<_Tp>) == sizeof(__is_empty2)>
 {};
 
 template <class _Tp>
-struct __libcpp_empty<_Tp, false> : public false_type
+struct __cccl_empty<_Tp, false> : public false_type
 {};
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_empty : public __libcpp_empty<_Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_empty : public __cccl_empty<_Tp>
 {};
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)

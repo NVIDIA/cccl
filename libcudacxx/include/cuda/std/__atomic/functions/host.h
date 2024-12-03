@@ -33,7 +33,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Watomic-alignment")
 
-#if !defined(_CCCL_COMPILER_NVRTC)
+#if !_CCCL_COMPILER(NVRTC)
 
 template <typename _Tp>
 struct _CCCL_ALIGNAS(sizeof(_Tp)) __atomic_alignment_wrapper
@@ -45,7 +45,7 @@ template <typename _Tp>
 __atomic_alignment_wrapper<_Tp>* __atomic_force_align_host(_Tp* __a)
 {
   __atomic_alignment_wrapper<_Tp>* __w =
-    reinterpret_cast<__atomic_alignment_wrapper<_Tp>*>(const_cast<__remove_cv_t<_Tp>*>(__a));
+    reinterpret_cast<__atomic_alignment_wrapper<_Tp>*>(const_cast<remove_cv_t<_Tp>*>(__a));
   return __w;
 }
 
@@ -67,17 +67,17 @@ inline void __atomic_store_host(_Tp* __a, _Up __val, memory_order __order)
 }
 
 template <typename _Tp>
-inline auto __atomic_load_host(_Tp* __a, memory_order __order) -> __remove_cv_t<_Tp>
+inline auto __atomic_load_host(_Tp* __a, memory_order __order) -> remove_cv_t<_Tp>
 {
-  __remove_cv_t<_Tp> __ret;
+  remove_cv_t<_Tp> __ret;
   __atomic_load(&__atomic_force_align_host(__a)->__atom, &__ret, __atomic_order_to_int(__order));
   return __ret;
 }
 
 template <typename _Tp, typename _Up>
-inline auto __atomic_exchange_host(_Tp* __a, _Up __val, memory_order __order) -> __remove_cv_t<_Tp>
+inline auto __atomic_exchange_host(_Tp* __a, _Up __val, memory_order __order) -> remove_cv_t<_Tp>
 {
-  __remove_cv_t<_Tp> __ret;
+  remove_cv_t<_Tp> __ret;
   __atomic_exchange(&__atomic_force_align_host(__a)->__atom, &__val, &__ret, __atomic_order_to_int(__order));
   return __ret;
 }
@@ -110,15 +110,15 @@ inline bool __atomic_compare_exchange_weak_host(
     __atomic_failure_order_to_int(__failure));
 }
 
-template <typename _Tp, typename _Td, __enable_if_t<!is_floating_point<_Tp>::value, int> = 0>
-inline __remove_cv_t<_Tp> __atomic_fetch_add_host(_Tp* __a, _Td __delta, memory_order __order)
+template <typename _Tp, typename _Td, enable_if_t<!is_floating_point<_Tp>::value, int> = 0>
+inline remove_cv_t<_Tp> __atomic_fetch_add_host(_Tp* __a, _Td __delta, memory_order __order)
 {
   constexpr auto __skip_v = __atomic_ptr_skip_t<_Tp>::__skip;
   return __atomic_fetch_add(__a, __delta * __skip_v, __atomic_order_to_int(__order));
 }
 
-template <typename _Tp, typename _Td, __enable_if_t<is_floating_point<_Tp>::value, int> = 0>
-inline __remove_cv_t<_Tp> __atomic_fetch_add_host(_Tp* __a, _Td __delta, memory_order __order)
+template <typename _Tp, typename _Td, enable_if_t<is_floating_point<_Tp>::value, int> = 0>
+inline remove_cv_t<_Tp> __atomic_fetch_add_host(_Tp* __a, _Td __delta, memory_order __order)
 {
   auto __expected = __atomic_load_host(__a, memory_order_relaxed);
   auto __desired  = __expected + __delta;
@@ -131,15 +131,15 @@ inline __remove_cv_t<_Tp> __atomic_fetch_add_host(_Tp* __a, _Td __delta, memory_
   return __expected;
 }
 
-template <typename _Tp, typename _Td, __enable_if_t<!is_floating_point<_Tp>::value, int> = 0>
-inline __remove_cv_t<_Tp> __atomic_fetch_sub_host(_Tp* __a, _Td __delta, memory_order __order)
+template <typename _Tp, typename _Td, enable_if_t<!is_floating_point<_Tp>::value, int> = 0>
+inline remove_cv_t<_Tp> __atomic_fetch_sub_host(_Tp* __a, _Td __delta, memory_order __order)
 {
   constexpr auto __skip_v = __atomic_ptr_skip_t<_Tp>::__skip;
   return __atomic_fetch_sub(__a, __delta * __skip_v, __atomic_order_to_int(__order));
 }
 
-template <typename _Tp, typename _Td, __enable_if_t<is_floating_point<_Tp>::value, int> = 0>
-inline __remove_cv_t<_Tp> __atomic_fetch_sub_host(_Tp* __a, _Td __delta, memory_order __order)
+template <typename _Tp, typename _Td, enable_if_t<is_floating_point<_Tp>::value, int> = 0>
+inline remove_cv_t<_Tp> __atomic_fetch_sub_host(_Tp* __a, _Td __delta, memory_order __order)
 {
   auto __expected = __atomic_load_host(__a, memory_order_relaxed);
   auto __desired  = __expected - __delta;
@@ -153,25 +153,25 @@ inline __remove_cv_t<_Tp> __atomic_fetch_sub_host(_Tp* __a, _Td __delta, memory_
 }
 
 template <typename _Tp, typename _Td>
-inline __remove_cv_t<_Tp> __atomic_fetch_and_host(_Tp* __a, _Td __pattern, memory_order __order)
+inline remove_cv_t<_Tp> __atomic_fetch_and_host(_Tp* __a, _Td __pattern, memory_order __order)
 {
   return __atomic_fetch_and(__a, __pattern, __atomic_order_to_int(__order));
 }
 
 template <typename _Tp, typename _Td>
-inline __remove_cv_t<_Tp> __atomic_fetch_or_host(_Tp* __a, _Td __pattern, memory_order __order)
+inline remove_cv_t<_Tp> __atomic_fetch_or_host(_Tp* __a, _Td __pattern, memory_order __order)
 {
   return __atomic_fetch_or(__a, __pattern, __atomic_order_to_int(__order));
 }
 
 template <typename _Tp, typename _Td>
-inline __remove_cv_t<_Tp> __atomic_fetch_xor_host(_Tp* __a, _Td __pattern, memory_order __order)
+inline remove_cv_t<_Tp> __atomic_fetch_xor_host(_Tp* __a, _Td __pattern, memory_order __order)
 {
   return __atomic_fetch_xor(__a, __pattern, __atomic_order_to_int(__order));
 }
 
 template <typename _Tp, typename _Td>
-inline __remove_cv_t<_Tp> __atomic_fetch_max_host(_Tp* __a, _Td __val, memory_order __order)
+inline remove_cv_t<_Tp> __atomic_fetch_max_host(_Tp* __a, _Td __val, memory_order __order)
 {
   auto __expected = __atomic_load_host(__a, memory_order_relaxed);
   auto __desired  = __expected > __val ? __expected : __val;
@@ -185,7 +185,7 @@ inline __remove_cv_t<_Tp> __atomic_fetch_max_host(_Tp* __a, _Td __val, memory_or
 }
 
 template <typename _Tp, typename _Td>
-inline __remove_cv_t<_Tp> __atomic_fetch_min_host(_Tp* __a, _Td __val, memory_order __order)
+inline remove_cv_t<_Tp> __atomic_fetch_min_host(_Tp* __a, _Td __val, memory_order __order)
 {
   auto __expected = __atomic_load_host(__a, memory_order_relaxed);
   auto __desired  = __expected < __val ? __expected : __val;
@@ -198,7 +198,7 @@ inline __remove_cv_t<_Tp> __atomic_fetch_min_host(_Tp* __a, _Td __val, memory_or
   return __expected;
 }
 
-#endif // !defined(_CCCL_COMPILER_NVRTC)
+#endif // !_CCCL_COMPILER(NVRTC)
 
 _CCCL_DIAG_POP
 

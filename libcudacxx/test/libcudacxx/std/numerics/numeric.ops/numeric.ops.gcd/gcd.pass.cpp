@@ -41,17 +41,17 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test0(int in1, int in2, int out)
 template <typename Input1, typename Input2 = Input1>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
 {
-  using S1                   = cuda::std::__make_signed_t<Input1>;
-  using S2                   = cuda::std::__make_signed_t<Input2>;
-  using U1                   = cuda::std::__make_signed_t<Input1>;
-  using U2                   = cuda::std::__make_signed_t<Input2>;
+  using S1                   = cuda::std::make_signed_t<Input1>;
+  using S2                   = cuda::std::make_signed_t<Input2>;
+  using U1                   = cuda::std::make_signed_t<Input1>;
+  using U2                   = cuda::std::make_signed_t<Input2>;
   bool accumulate            = true;
   constexpr TestCase Cases[] = {
     {0, 0, 0}, {1, 0, 1}, {0, 1, 1}, {1, 1, 1}, {2, 3, 1}, {2, 4, 2}, {36, 17, 1}, {36, 18, 18}};
   for (auto TC : Cases)
   {
     { // Test with two signed types
-      using Output = cuda::std::__common_type_t<S1, S2>;
+      using Output = cuda::std::common_type_t<S1, S2>;
       accumulate &= test0<S1, S2, Output>(TC.x, TC.y, TC.expect);
       accumulate &= test0<S1, S2, Output>(-TC.x, TC.y, TC.expect);
       accumulate &= test0<S1, S2, Output>(TC.x, -TC.y, TC.expect);
@@ -62,19 +62,19 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
       accumulate &= test0<S2, S1, Output>(-TC.x, -TC.y, TC.expect);
     }
     { // test with two unsigned types
-      using Output = cuda::std::__common_type_t<U1, U2>;
+      using Output = cuda::std::common_type_t<U1, U2>;
       accumulate &= test0<U1, U2, Output>(TC.x, TC.y, TC.expect);
       accumulate &= test0<U2, U1, Output>(TC.x, TC.y, TC.expect);
     }
     { // Test with mixed signs
-      using Output = cuda::std::__common_type_t<S1, U2>;
+      using Output = cuda::std::common_type_t<S1, U2>;
       accumulate &= test0<S1, U2, Output>(TC.x, TC.y, TC.expect);
       accumulate &= test0<U2, S1, Output>(TC.x, TC.y, TC.expect);
       accumulate &= test0<S1, U2, Output>(-TC.x, TC.y, TC.expect);
       accumulate &= test0<U2, S1, Output>(TC.x, -TC.y, TC.expect);
     }
     { // Test with mixed signs
-      using Output = cuda::std::__common_type_t<S2, U1>;
+      using Output = cuda::std::common_type_t<S2, U1>;
       accumulate &= test0<S2, U1, Output>(TC.x, TC.y, TC.expect);
       accumulate &= test0<U1, S2, Output>(TC.x, TC.y, TC.expect);
       accumulate &= test0<S2, U1, Output>(-TC.x, TC.y, TC.expect);

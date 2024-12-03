@@ -20,10 +20,10 @@
 #include "test_macros.h"
 
 template <class T>
-_LIBCUDACXX_CONCEPT_FRAGMENT(brace_initializable_, requires()(T{}));
+_CCCL_CONCEPT_FRAGMENT(brace_initializable_, requires()(T{}));
 
 template <class T>
-_LIBCUDACXX_CONCEPT brace_initializable = _LIBCUDACXX_FRAGMENT(brace_initializable_, T);
+_CCCL_CONCEPT brace_initializable = _CCCL_FRAGMENT(brace_initializable_, T);
 
 __host__ __device__ void test()
 {

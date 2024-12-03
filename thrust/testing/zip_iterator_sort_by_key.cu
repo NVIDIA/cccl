@@ -21,12 +21,8 @@ struct TestZipIteratorStableSortByKey
     device_vector<T> d4 = h4;
 
     // sort with (tuple, scalar)
-    stable_sort_by_key(make_zip_iterator(make_tuple(h1.begin(), h2.begin())),
-                       make_zip_iterator(make_tuple(h1.end(), h2.end())),
-                       h3.begin());
-    stable_sort_by_key(make_zip_iterator(make_tuple(d1.begin(), d2.begin())),
-                       make_zip_iterator(make_tuple(d1.end(), d2.end())),
-                       d3.begin());
+    stable_sort_by_key(make_zip_iterator(h1.begin(), h2.begin()), make_zip_iterator(h1.end(), h2.end()), h3.begin());
+    stable_sort_by_key(make_zip_iterator(d1.begin(), d2.begin()), make_zip_iterator(d1.end(), d2.end()), d3.begin());
 
     ASSERT_EQUAL_QUIET(h1, d1);
     ASSERT_EQUAL_QUIET(h2, d2);
@@ -34,16 +30,16 @@ struct TestZipIteratorStableSortByKey
     ASSERT_EQUAL_QUIET(h4, d4);
 
     // sort with (scalar, tuple)
-    stable_sort_by_key(h1.begin(), h1.end(), make_zip_iterator(make_tuple(h3.begin(), h4.begin())));
-    stable_sort_by_key(d1.begin(), d1.end(), make_zip_iterator(make_tuple(d3.begin(), d4.begin())));
+    stable_sort_by_key(h1.begin(), h1.end(), make_zip_iterator(h3.begin(), h4.begin()));
+    stable_sort_by_key(d1.begin(), d1.end(), make_zip_iterator(d3.begin(), d4.begin()));
 
     // sort with (tuple, tuple)
-    stable_sort_by_key(make_zip_iterator(make_tuple(h1.begin(), h2.begin())),
-                       make_zip_iterator(make_tuple(h1.end(), h2.end())),
-                       make_zip_iterator(make_tuple(h3.begin(), h4.begin())));
-    stable_sort_by_key(make_zip_iterator(make_tuple(d1.begin(), d2.begin())),
-                       make_zip_iterator(make_tuple(d1.end(), d2.end())),
-                       make_zip_iterator(make_tuple(d3.begin(), d4.begin())));
+    stable_sort_by_key(make_zip_iterator(h1.begin(), h2.begin()),
+                       make_zip_iterator(h1.end(), h2.end()),
+                       make_zip_iterator(h3.begin(), h4.begin()));
+    stable_sort_by_key(make_zip_iterator(d1.begin(), d2.begin()),
+                       make_zip_iterator(d1.end(), d2.end()),
+                       make_zip_iterator(d3.begin(), d4.begin()));
 
     ASSERT_EQUAL_QUIET(h1, d1);
     ASSERT_EQUAL_QUIET(h2, d2);

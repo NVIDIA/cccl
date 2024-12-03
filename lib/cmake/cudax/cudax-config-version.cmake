@@ -1,5 +1,5 @@
 set(cudax_VERSION_MAJOR 2)
-set(cudax_VERSION_MINOR 7)
+set(cudax_VERSION_MINOR 8)
 set(cudax_VERSION_PATCH 0)
 set(cudax_VERSION_TWEAK 0)
 

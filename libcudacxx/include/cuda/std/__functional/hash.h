@@ -647,25 +647,25 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT hash<nullptr_t> : public __unary_function<n
 #  endif
 
 template <class _Key, class _Hash>
-using __check_hash_requirements _LIBCUDACXX_NODEBUG_TYPE =
+using __check_hash_requirements _CCCL_NODEBUG_ALIAS =
   integral_constant<bool,
                     is_copy_constructible<_Hash>::value && is_move_constructible<_Hash>::value
                       && __invokable_r<size_t, _Hash, _Key const&>::value>;
 
 template <class _Key, class _Hash = hash<_Key>>
-using __has_enabled_hash _LIBCUDACXX_NODEBUG_TYPE =
+using __has_enabled_hash _CCCL_NODEBUG_ALIAS =
   integral_constant<bool, __check_hash_requirements<_Key, _Hash>::value && is_default_constructible<_Hash>::value>;
 
 #  if _CCCL_STD_VER > 2014
 template <class _Type, class>
-using __enable_hash_helper_imp _LIBCUDACXX_NODEBUG_TYPE = _Type;
+using __enable_hash_helper_imp _CCCL_NODEBUG_ALIAS = _Type;
 
 template <class _Type, class... _Keys>
-using __enable_hash_helper _LIBCUDACXX_NODEBUG_TYPE =
-  __enable_hash_helper_imp<_Type, __enable_if_t<__all<__has_enabled_hash<_Keys>::value...>::value>>;
+using __enable_hash_helper _CCCL_NODEBUG_ALIAS =
+  __enable_hash_helper_imp<_Type, enable_if_t<__all<__has_enabled_hash<_Keys>::value...>::value>>;
 #  else
 template <class _Type, class...>
-using __enable_hash_helper _LIBCUDACXX_NODEBUG_TYPE = _Type;
+using __enable_hash_helper _CCCL_NODEBUG_ALIAS = _Type;
 #  endif
 
 _LIBCUDACXX_END_NAMESPACE_STD

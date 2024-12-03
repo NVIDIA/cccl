@@ -35,5 +35,5 @@
 // %RANGE% TUNE_TRANSPOSE trp 0:1:1
 // %RANGE% TUNE_LOAD ld 0:2:1
 
-using op_t = cub::Sum;
+using op_t = ::cuda::std::plus<>;
 #include "base.cuh"

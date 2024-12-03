@@ -94,7 +94,7 @@ template <class _AlgPolicy, class _ForwardIterator, class _Sentinel, class _Pred
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_ForwardIterator, _ForwardIterator>
 __partition(_ForwardIterator __first, _Sentinel __last, _Predicate&& __pred, _IterCategory __iter_category)
 {
-  return _CUDA_VSTD::__partition_impl<__remove_cvref_t<_Predicate>&, _AlgPolicy>(
+  return _CUDA_VSTD::__partition_impl<remove_cvref_t<_Predicate>&, _AlgPolicy>(
     _CUDA_VSTD::move(__first), _CUDA_VSTD::move(__last), __pred, __iter_category);
 }
 

@@ -23,11 +23,11 @@
 
 _CCCL_PUSH_MACROS
 
-#ifndef _CCCL_COMPILER_NVRTC
+#if !_CCCL_COMPILER(NVRTC)
 #  include <cfloat>
 
 #  include <float.h>
-#endif // _CCCL_COMPILER_NVRTC
+#endif // _CCCL_COMPILER(NVRTC)
 
 _CCCL_POP_MACROS
 

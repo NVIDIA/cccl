@@ -142,7 +142,7 @@ struct ShiftDigitExtractor : BaseDigitExtractor<KeyT>
   }
 };
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 namespace detail
 {
 
@@ -564,7 +564,7 @@ struct traits_t<T, false /* is_fundamental */>
 } // namespace radix
 
 } // namespace detail
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 //! Twiddling keys for radix sort
 template <bool IS_DESCENDING, typename KeyT>

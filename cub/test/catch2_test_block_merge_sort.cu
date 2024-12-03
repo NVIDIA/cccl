@@ -38,7 +38,7 @@
 
 #include <algorithm>
 
-#include "catch2_test_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 struct CustomLess
 {
@@ -202,7 +202,7 @@ struct params_t
   static constexpr int tile_size        = items_per_thread * threads_in_block;
 };
 
-CUB_TEST("Block merge sort can sort keys in partial tiles",
+C2H_TEST("Block merge sort can sort keys in partial tiles",
          "[merge sort][block]",
          key_types,
          items_per_thread,
@@ -213,7 +213,7 @@ CUB_TEST("Block merge sort can sort keys in partial tiles",
 
   c2h::device_vector<key_t> d_keys(GENERATE_COPY(take(10, random(0, params::tile_size))));
 
-  c2h::gen(CUB_SEED(10), d_keys);
+  c2h::gen(C2H_SEED(10), d_keys);
 
   c2h::host_vector<key_t> h_reference = d_keys;
   std::stable_sort(thrust::raw_pointer_cast(h_reference.data()),
@@ -225,7 +225,7 @@ CUB_TEST("Block merge sort can sort keys in partial tiles",
   REQUIRE(h_reference == d_keys);
 }
 
-CUB_TEST(
+C2H_TEST(
   "Block merge sort can sort keys in full tiles", "[merge sort][block]", key_types, items_per_thread, threads_in_block)
 {
   using params = params_t<TestType>;
@@ -233,7 +233,7 @@ CUB_TEST(
 
   c2h::device_vector<key_t> d_keys(params::tile_size);
 
-  c2h::gen(CUB_SEED(10), d_keys);
+  c2h::gen(C2H_SEED(10), d_keys);
 
   c2h::host_vector<key_t> h_reference = d_keys;
   std::stable_sort(thrust::raw_pointer_cast(h_reference.data()),
@@ -245,7 +245,7 @@ CUB_TEST(
   REQUIRE(h_reference == d_keys);
 }
 
-CUB_TEST("Block merge sort can sort pairs in partial tiles",
+C2H_TEST("Block merge sort can sort pairs in partial tiles",
          "[merge sort][block]",
          key_types,
          items_per_thread,
@@ -259,8 +259,8 @@ CUB_TEST("Block merge sort can sort pairs in partial tiles",
   c2h::device_vector<key_t> d_keys(GENERATE_COPY(take(10, random(0, params::tile_size))));
   c2h::device_vector<value_t> d_vals(d_keys.size());
 
-  c2h::gen(CUB_SEED(5), d_keys);
-  c2h::gen(CUB_SEED(5), d_vals);
+  c2h::gen(C2H_SEED(5), d_keys);
+  c2h::gen(C2H_SEED(5), d_vals);
 
   c2h::host_vector<key_t> h_keys   = d_keys;
   c2h::host_vector<value_t> h_vals = d_vals;
@@ -291,7 +291,7 @@ CUB_TEST("Block merge sort can sort pairs in partial tiles",
   REQUIRE(h_vals == d_vals);
 }
 
-CUB_TEST(
+C2H_TEST(
   "Block merge sort can sort pairs in full tiles", "[merge sort][block]", key_types, items_per_thread, threads_in_block)
 {
   using params  = params_t<TestType>;
@@ -302,8 +302,8 @@ CUB_TEST(
   c2h::device_vector<key_t> d_keys(params::tile_size);
   c2h::device_vector<value_t> d_vals(d_keys.size());
 
-  c2h::gen(CUB_SEED(5), d_keys);
-  c2h::gen(CUB_SEED(5), d_vals);
+  c2h::gen(C2H_SEED(5), d_keys);
+  c2h::gen(C2H_SEED(5), d_vals);
 
   c2h::host_vector<key_t> h_keys   = d_keys;
   c2h::host_vector<value_t> h_vals = d_vals;
@@ -333,7 +333,7 @@ CUB_TEST(
   REQUIRE(h_vals == d_vals);
 }
 
-CUB_TEST("Block merge sort can sort pairs with mixed types", "[merge sort][block]", threads_in_block)
+C2H_TEST("Block merge sort can sort pairs with mixed types", "[merge sort][block]", threads_in_block)
 {
   using key_t   = std::int32_t;
   using value_t = std::int64_t;
@@ -346,8 +346,8 @@ CUB_TEST("Block merge sort can sort pairs with mixed types", "[merge sort][block
   c2h::device_vector<key_t> d_keys(tile_size);
   c2h::device_vector<value_t> d_vals(d_keys.size());
 
-  c2h::gen(CUB_SEED(5), d_keys);
-  c2h::gen(CUB_SEED(5), d_vals);
+  c2h::gen(C2H_SEED(5), d_keys);
+  c2h::gen(C2H_SEED(5), d_vals);
 
   c2h::host_vector<key_t> h_keys   = d_keys;
   c2h::host_vector<value_t> h_vals = d_vals;
@@ -377,7 +377,7 @@ CUB_TEST("Block merge sort can sort pairs with mixed types", "[merge sort][block
   REQUIRE(h_vals == d_vals);
 }
 
-CUB_TEST("Block merge sort can sort large tiles", "[merge sort][block]", threads_in_block)
+C2H_TEST("Block merge sort can sort large tiles", "[merge sort][block]", threads_in_block)
 {
   using key_t = std::uint16_t;
 
@@ -390,7 +390,7 @@ CUB_TEST("Block merge sort can sort large tiles", "[merge sort][block]", threads
   constexpr int tile_size = threads_in_block * items_per_thread;
 
   c2h::device_vector<key_t> d_keys(tile_size);
-  c2h::gen(CUB_SEED(10), d_keys);
+  c2h::gen(C2H_SEED(10), d_keys);
 
   c2h::host_vector<key_t> h_reference = d_keys;
   std::stable_sort(thrust::raw_pointer_cast(h_reference.data()),
@@ -402,7 +402,7 @@ CUB_TEST("Block merge sort can sort large tiles", "[merge sort][block]", threads
   REQUIRE(h_reference == d_keys);
 }
 
-CUB_TEST("Block merge sort is stable", "[merge sort][block]", threads_in_block)
+C2H_TEST("Block merge sort is stable", "[merge sort][block]", threads_in_block)
 {
   using key_t = c2h::custom_type_t<c2h::less_comparable_t, c2h::equal_comparable_t>;
 
@@ -411,7 +411,7 @@ CUB_TEST("Block merge sort is stable", "[merge sort][block]", threads_in_block)
   constexpr int tile_size        = threads_in_block * items_per_thread;
 
   c2h::device_vector<key_t> d_keys(tile_size);
-  c2h::gen(CUB_SEED(10), d_keys);
+  c2h::gen(C2H_SEED(10), d_keys);
 
   c2h::host_vector<key_t> h_reference = d_keys;
   std::stable_sort(thrust::raw_pointer_cast(h_reference.data()),

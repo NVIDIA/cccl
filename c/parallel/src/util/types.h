@@ -17,4 +17,4 @@
 struct storage_t;
 
 std::string cccl_type_enum_to_name(cccl_type_enum type, bool is_pointer = false);
-char const* cccl_type_enum_to_string(cccl_type_enum type);
+std::string_view cccl_type_enum_to_string(cccl_type_enum type);

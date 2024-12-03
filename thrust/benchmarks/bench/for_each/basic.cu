@@ -53,8 +53,6 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
 
   square_t<T> op{};
   caching_allocator_t alloc;
-  thrust::for_each(policy(alloc), in.begin(), in.end(), op);
-
   state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
     thrust::for_each(policy(alloc, launch), in.begin(), in.end(), op);
   });

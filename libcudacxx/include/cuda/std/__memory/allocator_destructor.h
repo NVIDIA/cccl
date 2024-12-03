@@ -29,11 +29,11 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Alloc>
 class __allocator_destructor
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE allocator_traits<_Alloc> __alloc_traits;
+  typedef _CCCL_NODEBUG_ALIAS allocator_traits<_Alloc> __alloc_traits;
 
 public:
-  typedef _LIBCUDACXX_NODEBUG_TYPE typename __alloc_traits::pointer pointer;
-  typedef _LIBCUDACXX_NODEBUG_TYPE typename __alloc_traits::size_type size_type;
+  typedef _CCCL_NODEBUG_ALIAS typename __alloc_traits::pointer pointer;
+  typedef _CCCL_NODEBUG_ALIAS typename __alloc_traits::size_type size_type;
 
 private:
   _Alloc& __alloc_;

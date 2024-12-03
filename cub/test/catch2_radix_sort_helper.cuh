@@ -46,10 +46,10 @@
 #include <climits>
 #include <cstdint>
 
-#include "c2h/generators.cuh"
-#include "c2h/utility.cuh"
-#include "c2h/vector.cuh"
-#include "catch2_test_helper.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/generators.h>
+#include <c2h/utility.h>
+#include <c2h/vector.h>
 
 // Index types used for OffsetsT testing
 using offset_types = c2h::type_list<cuda::std::int32_t, cuda::std::uint64_t>;

@@ -36,10 +36,10 @@
 
 #include <cstdint>
 
-#include "c2h/custom_type.cuh"
 #include "catch2_test_device_reduce.cuh"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/custom_type.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Reduce, device_segmented_reduce);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedReduce::Sum, device_segmented_sum);
@@ -51,7 +51,7 @@ using custom_t           = c2h::custom_type_t<c2h::accumulateable_t, c2h::equal_
 using iterator_type_list = c2h::type_list<type_pair<custom_t>, type_pair<std::int64_t>>;
 using offsets            = c2h::type_list<std::int32_t, std::uint32_t>;
 
-CUB_TEST("Device segmented reduce works with fancy input iterators", "[reduce][device]", iterator_type_list, offsets)
+C2H_TEST("Device segmented reduce works with fancy input iterators", "[reduce][device]", iterator_type_list, offsets)
 {
   using type_pair_t = typename c2h::get<0, TestType>;
   using item_t      = typename type_pair_t::input_t;
@@ -77,7 +77,7 @@ CUB_TEST("Device segmented reduce works with fancy input iterators", "[reduce][d
 
   // Generate input segments
   c2h::device_vector<offset_t> segment_offsets = c2h::gen_uniform_offsets<offset_t>(
-    CUB_SEED(1), num_items, std::get<0>(seg_size_range), std::get<1>(seg_size_range));
+    C2H_SEED(1), num_items, std::get<0>(seg_size_range), std::get<1>(seg_size_range));
   const offset_t num_segments = static_cast<offset_t>(segment_offsets.size() - 1);
   auto d_offsets_it           = thrust::raw_pointer_cast(segment_offsets.data());
 
@@ -86,7 +86,7 @@ CUB_TEST("Device segmented reduce works with fancy input iterators", "[reduce][d
   init_default_constant(default_constant);
   auto in_it = thrust::make_constant_iterator(default_constant);
 
-  using op_t   = cub::Sum;
+  using op_t   = ::cuda::std::plus<>;
   using init_t = output_t;
 
   // Binary reduction operator

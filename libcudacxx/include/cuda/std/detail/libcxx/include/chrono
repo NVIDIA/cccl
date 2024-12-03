@@ -834,9 +834,9 @@ constexpr chrono::year                                  operator ""y(unsigned lo
 #endif // no system header
 
 #ifdef __cuda_std__
-#  ifndef _CCCL_COMPILER_NVRTC
+#  if !_CCCL_COMPILER(NVRTC)
 #    include <chrono>
-#  endif // _CCCL_COMPILER_NVRTC
+#  endif // _CCCL_COMPILER(NVRTC)
 #endif // __cuda_std__
 
 #include <cuda/std/__type_traits/common_type.h>
@@ -966,7 +966,7 @@ struct __duration_cast<_FromDuration, _ToDuration, _Period, false, false>
 };
 
 template <class _ToDuration, class _Rep, class _Period>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<__is_duration<_ToDuration>::value, _ToDuration>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__is_duration<_ToDuration>::value, _ToDuration>
 duration_cast(const duration<_Rep, _Period>& __fd)
 {
   return __duration_cast<duration<_Rep, _Period>, _ToDuration>()(__fd);
@@ -1001,7 +1001,7 @@ public:
 
 #if _CCCL_STD_VER > 2011
 template <class _ToDuration, class _Rep, class _Period>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __enable_if_t<__is_duration<_ToDuration>::value, _ToDuration>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 enable_if_t<__is_duration<_ToDuration>::value, _ToDuration>
 floor(const duration<_Rep, _Period>& __d)
 {
   _ToDuration __t = duration_cast<_ToDuration>(__d);
@@ -1013,7 +1013,7 @@ floor(const duration<_Rep, _Period>& __d)
 }
 
 template <class _ToDuration, class _Rep, class _Period>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __enable_if_t<__is_duration<_ToDuration>::value, _ToDuration>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 enable_if_t<__is_duration<_ToDuration>::value, _ToDuration>
 ceil(const duration<_Rep, _Period>& __d)
 {
   _ToDuration __t = duration_cast<_ToDuration>(__d);
@@ -1025,7 +1025,7 @@ ceil(const duration<_Rep, _Period>& __d)
 }
 
 template <class _ToDuration, class _Rep, class _Period>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __enable_if_t<__is_duration<_ToDuration>::value, _ToDuration>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 enable_if_t<__is_duration<_ToDuration>::value, _ToDuration>
 round(const duration<_Rep, _Period>& __d)
 {
   _ToDuration __lower = floor<_ToDuration>(__d);
@@ -1095,8 +1095,8 @@ public:
   template <class _Rep2>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit duration(
     const _Rep2& __r,
-    __enable_if_t<is_convertible<_Rep2, rep>::value
-                  && (treat_as_floating_point<rep>::value || !treat_as_floating_point<_Rep2>::value)>* = 0)
+    enable_if_t<is_convertible<_Rep2, rep>::value
+                && (treat_as_floating_point<rep>::value || !treat_as_floating_point<_Rep2>::value)>* = 0)
       : __rep_(static_cast<rep>(__r))
   {}
 
@@ -1104,9 +1104,9 @@ public:
   template <class _Rep2, class _Period2>
   _LIBCUDACXX_HIDE_FROM_ABI constexpr duration(
     const duration<_Rep2, _Period2>& __d,
-    __enable_if_t<__no_overflow<_Period2, period>::value
-                  && (treat_as_floating_point<rep>::value
-                      || (__no_overflow<_Period2, period>::type::den == 1 && !treat_as_floating_point<_Rep2>::value))>* =
+    enable_if_t<__no_overflow<_Period2, period>::value
+                && (treat_as_floating_point<rep>::value
+                    || (__no_overflow<_Period2, period>::type::den == 1 && !treat_as_floating_point<_Rep2>::value))>* =
       0)
       : __rep_(_CUDA_VSTD::chrono::duration_cast<duration>(__d).count())
   {}
@@ -1322,8 +1322,8 @@ operator-(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2
 // Duration *
 
 template <class _Rep1, class _Period, class _Rep2>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<is_convertible<_Rep2, typename common_type<_Rep1, _Rep2>::type>::value,
-                                                  duration<typename common_type<_Rep1, _Rep2>::type, _Period>>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<is_convertible<_Rep2, typename common_type<_Rep1, _Rep2>::type>::value,
+                                                duration<typename common_type<_Rep1, _Rep2>::type, _Period>>
 operator*(const duration<_Rep1, _Period>& __d, const _Rep2& __s)
 {
   typedef typename common_type<_Rep1, _Rep2>::type _Cr;
@@ -1332,8 +1332,8 @@ operator*(const duration<_Rep1, _Period>& __d, const _Rep2& __s)
 }
 
 template <class _Rep1, class _Period, class _Rep2>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<is_convertible<_Rep1, typename common_type<_Rep1, _Rep2>::type>::value,
-                                                  duration<typename common_type<_Rep1, _Rep2>::type, _Period>>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<is_convertible<_Rep1, typename common_type<_Rep1, _Rep2>::type>::value,
+                                                duration<typename common_type<_Rep1, _Rep2>::type, _Period>>
 operator*(const _Rep1& __s, const duration<_Rep2, _Period>& __d)
 {
   return __d * __s;
@@ -1342,7 +1342,7 @@ operator*(const _Rep1& __s, const duration<_Rep2, _Period>& __d)
 // Duration /
 
 template <class _Rep1, class _Period, class _Rep2>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   !__is_duration<_Rep2>::value && is_convertible<_Rep2, typename common_type<_Rep1, _Rep2>::type>::value,
   duration<typename common_type<_Rep1, _Rep2>::type, _Period>>
 operator/(const duration<_Rep1, _Period>& __d, const _Rep2& __s)
@@ -1363,7 +1363,7 @@ operator/(const duration<_Rep1, _Period1>& __lhs, const duration<_Rep2, _Period2
 // Duration %
 
 template <class _Rep1, class _Period, class _Rep2>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<
   !__is_duration<_Rep2>::value && is_convertible<_Rep2, typename common_type<_Rep1, _Rep2>::type>::value,
   duration<typename common_type<_Rep1, _Rep2>::type, _Period>>
 operator%(const duration<_Rep1, _Period>& __d, const _Rep2& __s)
@@ -1412,7 +1412,7 @@ public:
   // conversions
   template <class _Duration2>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14
-  time_point(const time_point<clock, _Duration2>& t, __enable_if_t<is_convertible<_Duration2, duration>::value>* = 0)
+  time_point(const time_point<clock, _Duration2>& t, enable_if_t<is_convertible<_Duration2, duration>::value>* = 0)
       : __d_(t.time_since_epoch())
   {}
 
@@ -1469,28 +1469,28 @@ time_point_cast(const time_point<_Clock, _Duration>& __t)
 
 #if _CCCL_STD_VER > 2011
 template <class _ToDuration, class _Clock, class _Duration>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<__is_duration<_ToDuration>::value, time_point<_Clock, _ToDuration>>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__is_duration<_ToDuration>::value, time_point<_Clock, _ToDuration>>
 floor(const time_point<_Clock, _Duration>& __t)
 {
   return time_point<_Clock, _ToDuration>{floor<_ToDuration>(__t.time_since_epoch())};
 }
 
 template <class _ToDuration, class _Clock, class _Duration>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<__is_duration<_ToDuration>::value, time_point<_Clock, _ToDuration>>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__is_duration<_ToDuration>::value, time_point<_Clock, _ToDuration>>
 ceil(const time_point<_Clock, _Duration>& __t)
 {
   return time_point<_Clock, _ToDuration>{ceil<_ToDuration>(__t.time_since_epoch())};
 }
 
 template <class _ToDuration, class _Clock, class _Duration>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<__is_duration<_ToDuration>::value, time_point<_Clock, _ToDuration>>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__is_duration<_ToDuration>::value, time_point<_Clock, _ToDuration>>
 round(const time_point<_Clock, _Duration>& __t)
 {
   return time_point<_Clock, _ToDuration>{round<_ToDuration>(__t.time_since_epoch())};
 }
 
 template <class _Rep, class _Period>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr __enable_if_t<numeric_limits<_Rep>::is_signed, duration<_Rep, _Period>>
+_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<numeric_limits<_Rep>::is_signed, duration<_Rep, _Period>>
 abs(duration<_Rep, _Period> __d)
 {
   return __d >= __d.zero() ? +__d : -__d;
@@ -3540,7 +3540,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr hours make24(const hours& __h, bool __is_pm)
 // but have no way of disabling that. Use the system_header pragma on those GCC versions
 // for the remainder of this file, even if it has been requested to disable the pragma
 // earlier.
-#  if defined(_CCCL_COMPILER_GCC) && (__GNUC__ == 5 || __GNUC__ == 6)
+#  if _CCCL_COMPILER(GCC, >=, 5) && _CCCL_COMPILER(GCC, <, 7)
 #    pragma GCC system_header
 #  endif
 

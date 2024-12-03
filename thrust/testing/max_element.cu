@@ -104,8 +104,10 @@ void TestMaxElementWithBigIndexesHelper(int magnitude)
 void TestMaxElementWithBigIndexes()
 {
   TestMaxElementWithBigIndexesHelper(30);
+#ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
   TestMaxElementWithBigIndexesHelper(31);
   TestMaxElementWithBigIndexesHelper(32);
   TestMaxElementWithBigIndexesHelper(33);
+#endif
 }
 DECLARE_UNITTEST(TestMaxElementWithBigIndexes);

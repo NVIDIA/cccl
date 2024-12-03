@@ -29,6 +29,7 @@
 #    include <cuda/__barrier/async_contract_fulfillment.h>
 #    include <cuda/__barrier/barrier_block_scope.h>
 #    include <cuda/__barrier/barrier_native_handle.h>
+#    include <cuda/__ptx/instructions/cp_async_bulk.h>
 #    include <cuda/__ptx/ptx_dot_variants.h>
 #    include <cuda/__ptx/ptx_helper_functions.h>
 #    include <cuda/std/__atomic/scopes.h>
@@ -49,7 +50,7 @@ _CCCL_DEVICE inline async_contract_fulfillment memcpy_async_tx(
   // incorrectly classified as not trivially copyable. Remove this assertion to allow for their usage with
   // memcpy_async when compiling with GCC 4.8.
   // FIXME: remove the #if once GCC 4.8 is no longer supported.
-#    if !defined(_CCCL_COMPILER_GCC) || _GNUC_VER > 408
+#    if !_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >, 4, 8)
   static_assert(_CUDA_VSTD::is_trivially_copyable<_Tp>::value, "memcpy_async_tx requires a trivially copyable type");
 #    endif
   static_assert(16 <= _Alignment, "mempcy_async_tx expects arguments to be at least 16 byte aligned.");

@@ -37,16 +37,6 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_CCCL_COMPILER_MSVC)
-// MSVC ICEs when using the standard C++11 `_Pragma` operator with OpenMP
-// directives.
-// WAR this by using the MSVC-extension `__pragma`. See this link for more info:
-// https://developercommunity.visualstudio.com/t/Using-C11s-_Pragma-with-OpenMP-dire/1590628
-#  define THRUST_PRAGMA_OMP_IMPL(directive) __pragma(directive)
-#else // Not MSVC:
-#  define THRUST_PRAGMA_OMP_IMPL(directive) _Pragma(#directive)
-#endif
-
 // For internal use only -- THRUST_PRAGMA_OMP is used to switch between
 // different flavors of openmp pragmas. Pragmas are not emitted when OpenMP is
 // not available.
@@ -56,9 +46,9 @@
 //   With   : THRUST_PRAGMA_OMP(parallel for)
 //
 #if defined(_NVHPC_STDPAR_OPENMP) && _NVHPC_STDPAR_OPENMP == 1
-#  define THRUST_PRAGMA_OMP(directive) THRUST_PRAGMA_OMP_IMPL(omp_stdpar directive)
+#  define THRUST_PRAGMA_OMP(directive) _CCCL_PRAGMA(omp_stdpar directive)
 #elif defined(_OPENMP)
-#  define THRUST_PRAGMA_OMP(directive) THRUST_PRAGMA_OMP_IMPL(omp directive)
+#  define THRUST_PRAGMA_OMP(directive) _CCCL_PRAGMA(omp directive)
 #else
 #  define THRUST_PRAGMA_OMP(directive)
 #endif

@@ -110,7 +110,7 @@ struct CachingDeviceAllocator
   /// Invalid size
   static constexpr size_t INVALID_SIZE = (size_t) -1;
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
   /// Invalid device ordinal
   static constexpr int INVALID_DEVICE_ORDINAL = -1;
@@ -299,7 +299,7 @@ struct CachingDeviceAllocator
   /// Set of live device allocations currently in use
   BusyBlocks live_blocks;
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //---------------------------------------------------------------------
   // Methods

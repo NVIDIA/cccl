@@ -36,8 +36,8 @@
 
 #include <algorithm>
 
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 template <typename PredOpT>
 struct predicate_op_wrapper_t
@@ -127,7 +127,7 @@ using types = c2h::type_list<std::uint8_t, std::uint32_t, ulonglong4, custom_t>;
 
 using flag_types = c2h::type_list<std::uint8_t, std::uint64_t, custom_t>;
 
-CUB_TEST("DeviceSelect::FlaggedIf can run with empty input", "[device][select_flagged_if]", types)
+C2H_TEST("DeviceSelect::FlaggedIf can run with empty input", "[device][select_flagged_if]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -145,7 +145,7 @@ CUB_TEST("DeviceSelect::FlaggedIf can run with empty input", "[device][select_fl
   REQUIRE(num_selected_out[0] == 0);
 }
 
-CUB_TEST("DeviceSelect::FlaggedIf handles all matched", "[device][select_flagged_if]", types)
+C2H_TEST("DeviceSelect::FlaggedIf handles all matched", "[device][select_flagged_if]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -153,7 +153,7 @@ CUB_TEST("DeviceSelect::FlaggedIf handles all matched", "[device][select_flagged
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
   c2h::device_vector<int> flags(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -165,14 +165,14 @@ CUB_TEST("DeviceSelect::FlaggedIf handles all matched", "[device][select_flagged
   REQUIRE(out == in);
 }
 
-CUB_TEST("DeviceSelect::FlaggedIf handles no matched", "[device][select_flagged_if]", types)
+C2H_TEST("DeviceSelect::FlaggedIf handles no matched", "[device][select_flagged_if]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(0);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   c2h::device_vector<int> flags(num_items, 0);
 
@@ -185,7 +185,7 @@ CUB_TEST("DeviceSelect::FlaggedIf handles no matched", "[device][select_flagged_
   REQUIRE(num_selected_out[0] == 0);
 }
 
-CUB_TEST("DeviceSelect::FlaggedIf does not change input and is stable",
+C2H_TEST("DeviceSelect::FlaggedIf does not change input and is stable",
          "[device][select_flagged_if]",
          c2h::type_list<std::uint8_t, std::uint64_t>,
          flag_types)
@@ -196,12 +196,12 @@ CUB_TEST("DeviceSelect::FlaggedIf does not change input and is stable",
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<input_type> in(num_items);
   c2h::device_vector<input_type> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   is_even_t<flag_type> is_even{};
 
   c2h::device_vector<flag_type> flags(num_items);
-  c2h::gen(CUB_SEED(1), flags);
+  c2h::gen(C2H_SEED(1), flags);
   const c2h::host_vector<input_type> reference_out = get_reference(in, flags, is_even);
   const int num_selected                           = static_cast<int>(reference_out.size());
 
@@ -225,7 +225,7 @@ CUB_TEST("DeviceSelect::FlaggedIf does not change input and is stable",
   REQUIRE(reference_out == out);
 }
 
-CUB_TEST("DeviceSelect::FlaggedIf works with iterators", "[device][select_if]", all_types, flag_types)
+C2H_TEST("DeviceSelect::FlaggedIf works with iterators", "[device][select_if]", all_types, flag_types)
 {
   using input_type = typename c2h::get<0, TestType>;
   using flag_type  = typename c2h::get<1, TestType>;
@@ -233,12 +233,12 @@ CUB_TEST("DeviceSelect::FlaggedIf works with iterators", "[device][select_if]", 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<input_type> in(num_items);
   c2h::device_vector<input_type> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   is_even_t<flag_type> is_even{};
 
   c2h::device_vector<flag_type> flags(num_items);
-  c2h::gen(CUB_SEED(1), flags);
+  c2h::gen(C2H_SEED(1), flags);
   const c2h::host_vector<input_type> reference = get_reference(in, flags, is_even);
   const int num_selected                       = static_cast<int>(reference.size());
 
@@ -253,7 +253,7 @@ CUB_TEST("DeviceSelect::FlaggedIf works with iterators", "[device][select_if]", 
   REQUIRE(reference == out);
 }
 
-CUB_TEST("DeviceSelect::FlaggedIf works with pointers", "[device][select_flagged]", types, flag_types)
+C2H_TEST("DeviceSelect::FlaggedIf works with pointers", "[device][select_flagged]", types, flag_types)
 {
   using input_type = typename c2h::get<0, TestType>;
   using flag_type  = typename c2h::get<1, TestType>;
@@ -261,12 +261,12 @@ CUB_TEST("DeviceSelect::FlaggedIf works with pointers", "[device][select_flagged
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<input_type> in(num_items);
   c2h::device_vector<input_type> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   is_even_t<flag_type> is_even{};
 
   c2h::device_vector<flag_type> flags(num_items);
-  c2h::gen(CUB_SEED(1), flags);
+  c2h::gen(C2H_SEED(1), flags);
 
   const c2h::host_vector<input_type> reference = get_reference(in, flags, is_even);
   const int num_selected                       = static_cast<int>(reference.size());

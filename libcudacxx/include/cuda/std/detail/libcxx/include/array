@@ -334,7 +334,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT array<_Tp, 0>
   typedef _CUDA_VSTD::reverse_iterator<iterator> reverse_iterator;
   typedef _CUDA_VSTD::reverse_iterator<const_iterator> const_reverse_iterator;
 
-  typedef __conditional_t<is_const<_Tp>::value, const char, char> _CharType;
+  typedef conditional_t<is_const<_Tp>::value, const char, char> _CharType;
 
   struct _ArrayInStructT
   {
@@ -488,7 +488,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT array<_Tp, 0>
 };
 
 #if _CCCL_STD_VER >= 2017
-template <class _Tp, class... _Args, class = __enable_if_t<(is_same_v<_Tp, _Args> && ...)>>
+template <class _Tp, class... _Args, class = enable_if_t<(is_same_v<_Tp, _Args> && ...)>>
 _CCCL_HOST_DEVICE array(_Tp, _Args...) -> array<_Tp, 1 + sizeof...(_Args)>;
 #endif // _CCCL_STD_VER >= 2017
 
@@ -535,7 +535,7 @@ operator>=(const array<_Tp, _Size>& __x, const array<_Tp, _Size>& __y)
 }
 
 template <class _Tp, size_t _Size>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __enable_if_t<_Size == 0 || __is_swappable<_Tp>::value, void>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 enable_if_t<_Size == 0 || __is_swappable<_Tp>::value, void>
 swap(array<_Tp, _Size>& __x, array<_Tp, _Size>& __y) noexcept(noexcept(__x.swap(__y)))
 {
   __x.swap(__y);

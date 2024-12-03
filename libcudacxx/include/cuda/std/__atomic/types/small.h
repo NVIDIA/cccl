@@ -36,20 +36,20 @@ template <typename _Tp>
 using __atomic_small_proxy_t = _If<_CCCL_TRAIT(is_signed, _Tp), int32_t, uint32_t>;
 
 // Arithmetic conversions to/from proxy types
-template <class _Tp, __enable_if_t<_CCCL_TRAIT(is_arithmetic, _Tp), int> = 0>
+template <class _Tp, enable_if_t<_CCCL_TRAIT(is_arithmetic, _Tp), int> = 0>
 _CCCL_HOST_DEVICE constexpr __atomic_small_proxy_t<_Tp> __atomic_small_to_32(_Tp __val)
 {
   return static_cast<__atomic_small_proxy_t<_Tp>>(__val);
 }
 
-template <class _Tp, __enable_if_t<_CCCL_TRAIT(is_arithmetic, _Tp), int> = 0>
+template <class _Tp, enable_if_t<_CCCL_TRAIT(is_arithmetic, _Tp), int> = 0>
 _CCCL_HOST_DEVICE constexpr inline _Tp __atomic_small_from_32(__atomic_small_proxy_t<_Tp> __val)
 {
   return static_cast<_Tp>(__val);
 }
 
 // Non-arithmetic conversion to/from proxy types
-template <class _Tp, __enable_if_t<!_CCCL_TRAIT(is_arithmetic, _Tp), int> = 0>
+template <class _Tp, enable_if_t<!_CCCL_TRAIT(is_arithmetic, _Tp), int> = 0>
 _CCCL_HOST_DEVICE inline __atomic_small_proxy_t<_Tp> __atomic_small_to_32(_Tp __val)
 {
   __atomic_small_proxy_t<_Tp> __temp{};
@@ -57,7 +57,7 @@ _CCCL_HOST_DEVICE inline __atomic_small_proxy_t<_Tp> __atomic_small_to_32(_Tp __
   return __temp;
 }
 
-template <class _Tp, __enable_if_t<!_CCCL_TRAIT(is_arithmetic, _Tp), int> = 0>
+template <class _Tp, enable_if_t<!_CCCL_TRAIT(is_arithmetic, _Tp), int> = 0>
 _CCCL_HOST_DEVICE inline _Tp __atomic_small_from_32(__atomic_small_proxy_t<_Tp> __val)
 {
   _Tp __temp{};

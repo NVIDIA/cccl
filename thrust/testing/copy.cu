@@ -668,6 +668,8 @@ void TestCopyIfStencilDispatchImplicit()
 }
 DECLARE_UNITTEST(TestCopyIfStencilDispatchImplicit);
 
+#ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
+
 struct only_set_when_expected_it
 {
   long long expected;
@@ -752,3 +754,5 @@ void TestCopyWithBigIndexes()
   TestCopyWithBigIndexesHelper(33);
 }
 DECLARE_UNITTEST(TestCopyWithBigIndexes);
+
+#endif

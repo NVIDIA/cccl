@@ -318,7 +318,7 @@ struct SetOpAgent
     using BlockLoadValues1 = typename core::BlockLoad<PtxPlan, ValuesLoadIt1>::type;
     using BlockLoadValues2 = typename core::BlockLoad<PtxPlan, ValuesLoadIt2>::type;
 
-    using TilePrefixCallback = cub::TilePrefixCallbackOp<Size, cub::Sum, ScanTileState, Arch::ver>;
+    using TilePrefixCallback = cub::TilePrefixCallbackOp<Size, ::cuda::std::plus<>, ScanTileState, Arch::ver>;
 
     using BlockScan = cub::BlockScan<Size, PtxPlan::BLOCK_THREADS, PtxPlan::SCAN_ALGORITHM, 1, 1, Arch::ver>;
 
@@ -599,7 +599,7 @@ struct SetOpAgent
       }
       else
       {
-        TilePrefixCallback prefix_cb(tile_state, storage.scan_storage.prefix, cub::Sum(), tile_idx);
+        TilePrefixCallback prefix_cb(tile_state, storage.scan_storage.prefix, ::cuda::std::plus<>{}, tile_idx);
 
         BlockScan(storage.scan_storage.scan).ExclusiveSum(thread_output_count, thread_output_prefix, prefix_cb);
         tile_output_count  = prefix_cb.GetBlockAggregate();

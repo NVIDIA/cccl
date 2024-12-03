@@ -32,20 +32,20 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_copy_constructible
     : public integral_constant<
         bool,
-        _CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp, __add_lvalue_reference_t<typename add_const<_Tp>::type>)>
+        _CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp, add_lvalue_reference_t<typename add_const<_Tp>::type>)>
 {};
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
 _CCCL_INLINE_VAR constexpr bool is_trivially_copy_constructible_v =
-  _CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp, __add_lvalue_reference_t<typename add_const<_Tp>::type>);
+  _CCCL_BUILTIN_IS_TRIVIALLY_CONSTRUCTIBLE(_Tp, add_lvalue_reference_t<typename add_const<_Tp>::type>);
 #  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #else
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_copy_constructible
-    : public is_trivially_constructible<_Tp, __add_lvalue_reference_t<typename add_const<_Tp>::type>>
+    : public is_trivially_constructible<_Tp, add_lvalue_reference_t<typename add_const<_Tp>::type>>
 {};
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)

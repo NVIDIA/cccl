@@ -83,12 +83,14 @@ inline void free(pointer<void> ptr);
 template <typename T>
 using allocator = thrust::mr::stateless_resource_allocator<T, thrust::system::cpp::memory_resource>;
 
-/*! \p cpp::universal_allocator allocates memory that can be used by the \p cpp
- *  system and host systems.
- */
+//! \p cpp::universal_allocator allocates memory that can be used by the \p cpp system and host systems.
 template <typename T>
 using universal_allocator = thrust::mr::stateless_resource_allocator<T, thrust::system::cpp::universal_memory_resource>;
 
+//! \p cpp::universal_host_pinned_allocator allocates memory that can be used by the \p cpp system and host systems.
+template <typename T>
+using universal_host_pinned_allocator =
+  thrust::mr::stateless_resource_allocator<T, thrust::system::cpp::universal_host_pinned_memory_resource>;
 } // namespace cpp
 } // namespace system
 

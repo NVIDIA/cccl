@@ -261,7 +261,7 @@ public:
   //!   Calling thread's output item. May be aliased with `input`.
   _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveSum(T input, T& inclusive_output)
   {
-    InclusiveScan(input, inclusive_output, cub::Sum());
+    InclusiveScan(input, inclusive_output, ::cuda::std::plus<>{});
   }
 
   //! @rst
@@ -314,7 +314,7 @@ public:
   //!   Warp-wide aggregate reduction of input items
   _CCCL_DEVICE _CCCL_FORCEINLINE void InclusiveSum(T input, T& inclusive_output, T& warp_aggregate)
   {
-    InclusiveScan(input, inclusive_output, cub::Sum(), warp_aggregate);
+    InclusiveScan(input, inclusive_output, ::cuda::std::plus<>{}, warp_aggregate);
   }
 
   //! @}  end member group
@@ -366,7 +366,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveSum(T input, T& exclusive_output)
   {
     T initial_value{};
-    ExclusiveScan(input, exclusive_output, initial_value, cub::Sum());
+    ExclusiveScan(input, exclusive_output, initial_value, ::cuda::std::plus<>{});
   }
 
   //! @rst
@@ -423,7 +423,7 @@ public:
   _CCCL_DEVICE _CCCL_FORCEINLINE void ExclusiveSum(T input, T& exclusive_output, T& warp_aggregate)
   {
     T initial_value{};
-    ExclusiveScan(input, exclusive_output, initial_value, cub::Sum(), warp_aggregate);
+    ExclusiveScan(input, exclusive_output, initial_value, ::cuda::std::plus<>{}, warp_aggregate);
   }
 
   //! @}  end member group
@@ -459,7 +459,7 @@ public:
   //!
   //!        // Compute inclusive warp-wide prefix max scans
   //!        int warp_id = threadIdx.x / 32;
-  //!        WarpScan(temp_storage[warp_id]).InclusiveScan(thread_data, thread_data, cub::Max());
+  //!        WarpScan(temp_storage[warp_id]).InclusiveScan(thread_data, thread_data, cuda::maximum<>{});
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
@@ -568,7 +568,7 @@ public:
   //!        int warp_aggregate;
   //!        int warp_id = threadIdx.x / 32;
   //!        WarpScan(temp_storage[warp_id]).InclusiveScan(
-  //!            thread_data, thread_data, cub::Max(), warp_aggregate);
+  //!            thread_data, thread_data, cuda::maximum<>{}, warp_aggregate);
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
@@ -693,7 +693,7 @@ public:
   //!
   //!        // Compute exclusive warp-wide prefix max scans
   //!        int warp_id = threadIdx.x / 32;
-  //!        WarpScan(temp_storage[warp_id]).ExclusiveScan(thread_data, thread_data, cub::Max());
+  //!        WarpScan(temp_storage[warp_id]).ExclusiveScan(thread_data, thread_data, cuda::maximum<>{});
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
@@ -757,7 +757,7 @@ public:
   //!        WarpScan(temp_storage[warp_id]).ExclusiveScan(thread_data,
   //!                                                      thread_data,
   //!                                                      INT_MIN,
-  //!                                                      cub::Max());
+  //!                                                      cuda::maximum<>{});
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``thread_data`` in the first
@@ -825,7 +825,7 @@ public:
   //!        int warp_id = threadIdx.x / 32;
   //!        WarpScan(temp_storage[warp_id]).ExclusiveScan(thread_data,
   //!                                                      thread_data,
-  //!                                                      cub::Max(),
+  //!                                                      cuda::maximum<>{},
   //!                                                      warp_aggregate);
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
@@ -896,7 +896,7 @@ public:
   //!        WarpScan(temp_storage[warp_id]).ExclusiveScan(thread_data,
   //!                                                      thread_data,
   //!                                                      INT_MIN,
-  //!                                                      cub::Max(),
+  //!                                                      cuda::maximum<>{},
   //!                                                      warp_aggregate);
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
@@ -975,7 +975,7 @@ public:
   //!        WarpScan(temp_storage[warp_id]).Scan(thread_data,
   //!                                             inclusive_partial,
   //!                                             exclusive_partial,
-  //!                                             cub::Max());
+  //!                                             cuda::maximum<>{});
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``inclusive_partial`` in the
@@ -1045,7 +1045,7 @@ public:
   //!                                             inclusive_partial,
   //!                                             exclusive_partial,
   //!                                             INT_MIN,
-  //!                                             cub::Max());
+  //!                                             cuda::maximum<>{});
   //!
   //! Suppose the set of input ``thread_data`` across the block of threads is
   //! ``{0, -1, 2, -3, ..., 126, -127}``. The corresponding output ``inclusive_partial`` in the

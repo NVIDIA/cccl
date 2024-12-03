@@ -296,7 +296,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI bool consumer_wait_for(const _CUDA_VSTD::chrono::duration<_Rep, _Period>& __duration)
   {
     barrier<_Scope>& __stage_barrier = __shared_state_get_stage(__tail)->__produced;
-    return _CUDA_VSTD::__libcpp_thread_poll_with_backoff(
+    return _CUDA_VSTD::__cccl_thread_poll_with_backoff(
       _CUDA_VSTD::__barrier_poll_tester_parity<barrier<_Scope>>(&__stage_barrier, __produced_phase_parity),
       _CUDA_VSTD::chrono::duration_cast<_CUDA_VSTD::chrono::nanoseconds>(__duration));
   }

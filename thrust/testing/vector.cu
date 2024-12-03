@@ -209,6 +209,9 @@ void TestVectorAssignFromHostVector()
 }
 DECLARE_VECTOR_UNITTEST(TestVectorAssignFromHostVector);
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wself-assign")
+
 template <class Vector>
 void TestVectorToAndFromHostVector()
 {
@@ -220,10 +223,7 @@ void TestVectorToAndFromHostVector()
 
   ASSERT_EQUAL(v, h);
 
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_CLANG("-Wself-assign")
   v = v;
-  _CCCL_DIAG_POP
 
   ASSERT_EQUAL(v, h);
 
@@ -246,6 +246,8 @@ void TestVectorToAndFromHostVector()
 }
 DECLARE_VECTOR_UNITTEST(TestVectorToAndFromHostVector);
 
+_CCCL_DIAG_POP
+
 template <class Vector>
 void TestVectorAssignFromDeviceVector()
 {
@@ -260,6 +262,9 @@ void TestVectorAssignFromDeviceVector()
 }
 DECLARE_VECTOR_UNITTEST(TestVectorAssignFromDeviceVector);
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wself-assign")
+
 template <class Vector>
 void TestVectorToAndFromDeviceVector()
 {
@@ -271,10 +276,7 @@ void TestVectorToAndFromDeviceVector()
 
   ASSERT_EQUAL(v, h);
 
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_CLANG("-Wself-assign")
   v = v;
-  _CCCL_DIAG_POP
 
   ASSERT_EQUAL(v, h);
 
@@ -296,6 +298,7 @@ void TestVectorToAndFromDeviceVector()
   ASSERT_EQUAL(v, h);
 }
 DECLARE_VECTOR_UNITTEST(TestVectorToAndFromDeviceVector);
+_CCCL_DIAG_POP
 
 template <class Vector>
 void TestVectorWithInitialValue()

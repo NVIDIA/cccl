@@ -23,6 +23,11 @@
 
 #include <cuda/std/__cuda/api_wrapper.h>
 
+#include <cuda/experimental/__utility/driver_api.cuh>
+
+#include <string>
+#include <vector>
+
 namespace cuda::experimental
 {
 class device;
@@ -104,7 +109,49 @@ public:
     return attr(detail::__dev_attr<_Attr>());
   }
 
+  _CCCL_NODISCARD ::std::string get_name() const
+  {
+    constexpr int __max_name_length = 256;
+    ::std::string __name(256, 0);
+
+    // For some reason there is no separate name query in CUDA runtime
+    detail::driver::getName(__name.data(), __max_name_length, get());
+    return __name;
+  }
+
+  //! @brief Queries if its possible for this device to directly access specified device's memory.
+  //!
+  //! If this function returns true, device supplied to this call can be passed into enable_peer_access
+  //! on memory resource or pool that manages memory on this device. It will make allocations from that
+  //! pool accessible by this device.
+  //!
+  //! @param __other_dev Device to query the peer access
+  //! @return true if its possible for this device to access the specified device's memory
+  bool has_peer_access_to(device_ref __other_dev) const
+  {
+    int __can_access;
+    _CCCL_TRY_CUDA_API(
+      ::cudaDeviceCanAccessPeer,
+      "Could not query if device can be peer accessed",
+      &__can_access,
+      get(),
+      __other_dev.get());
+    return __can_access;
+  }
+
   const arch_traits_t& arch_traits() const;
+
+  // TODO this might return some more complex type in the future
+  // TODO we might want to include the calling device, depends on what we decide
+  // peer access APIs
+
+  //! @brief Retrieve a vector of `device_ref`s that are peers of this device
+  //!
+  //! The device on which this API is called is not included in the vector,
+  //! if a full group of peer devices is needed, it needs to be pushed_back separately.
+  //!
+  //! @throws cuda_error if any peer access query fails
+  ::std::vector<device_ref> get_peers() const;
 };
 
 } // namespace cuda::experimental

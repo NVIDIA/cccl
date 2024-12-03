@@ -28,7 +28,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER <= 2014
+#if defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class = void>
 struct __has_allocator_type : false_type
 {};
@@ -42,7 +42,7 @@ struct __uses_allocator : false_type
 template <class _Tp, class _Alloc>
 struct __uses_allocator<_Tp, _Alloc, true> : is_convertible<_Alloc, typename _Tp::allocator_type>
 {};
-#else // ^^^ _CCCL_STD_VER <= 2014 ^^^ / vvv _CCCL_STD_VER >= 2017 vvv
+#else // ^^^ _CCCL_NO_VARIABLE_TEMPLATES ^^^ / vvv !_CCCL_NO_VARIABLE_TEMPLATES vvv
 template <class _Tp, class = void>
 _CCCL_INLINE_VAR constexpr bool __has_allocator_type_v = false;
 template <class _Tp>
@@ -53,7 +53,7 @@ _CCCL_INLINE_VAR constexpr bool __uses_allocator_v = false;
 template <class _Tp, class _Alloc>
 _CCCL_INLINE_VAR constexpr bool __uses_allocator_v<_Tp, _Alloc, true> =
   is_convertible_v<_Alloc, typename _Tp::allocator_type>;
-#endif // _CCCL_STD_VER >= 2017
+#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 template <class _Tp, class _Alloc>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT uses_allocator

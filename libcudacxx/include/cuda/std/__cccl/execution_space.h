@@ -42,19 +42,15 @@
 #endif
 
 // Compile with NVCC compiler and only device code, Volta+  GPUs
-#if defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_PTX_ARCH >= 700 && !defined(_CCCL_CUDACC_BELOW_11_7)
+#if defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_PTX_ARCH >= 700 && _CCCL_CUDACC_AT_LEAST(11, 7)
 #  define _CCCL_GRID_CONSTANT __grid_constant__
 #else // ^^^ _CCCL_CUDA_COMPILER_NVCC ^^^ / vvv !_CCCL_CUDA_COMPILER_NVCC vvv
 #  define _CCCL_GRID_CONSTANT
-#endif // defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_PTX_ARCH >= 700 && !defined(_CCCL_CUDACC_BELOW_11_7)
+#endif // defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_PTX_ARCH >= 700 && _CCCL_CUDACC_AT_LEAST(11, 7)
 
 #if !defined(_CCCL_EXEC_CHECK_DISABLE)
 #  if defined(_CCCL_CUDA_COMPILER_NVCC)
-#    if defined(_CCCL_COMPILER_MSVC)
-#      define _CCCL_EXEC_CHECK_DISABLE __pragma("nv_exec_check_disable")
-#    else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
-#      define _CCCL_EXEC_CHECK_DISABLE _Pragma("nv_exec_check_disable")
-#    endif // !_CCCL_COMPILER_MSVC
+#    define _CCCL_EXEC_CHECK_DISABLE _CCCL_PRAGMA(nv_exec_check_disable)
 #  else
 #    define _CCCL_EXEC_CHECK_DISABLE
 #  endif // _CCCL_CUDA_COMPILER_NVCC

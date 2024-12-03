@@ -44,7 +44,7 @@ concept mergeable =
 #elif _CCCL_STD_VER > 2014
 
 template <class _Input1, class _Input2, class _Output, class _Comp, class _Proj1, class _Proj2>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __mergeable_,
   requires()(requires(input_iterator<_Input1>),
              requires(input_iterator<_Input2>),
@@ -59,7 +59,7 @@ template <class _Input1,
           class _Comp  = _CUDA_VRANGES::less,
           class _Proj1 = identity,
           class _Proj2 = identity>
-_LIBCUDACXX_CONCEPT mergeable = _LIBCUDACXX_FRAGMENT(__mergeable_, _Input1, _Input2, _Output, _Comp, _Proj1, _Proj2);
+_CCCL_CONCEPT mergeable = _CCCL_FRAGMENT(__mergeable_, _Input1, _Input2, _Output, _Comp, _Proj1, _Proj2);
 
 #endif // _CCCL_STD_VER > 2014
 

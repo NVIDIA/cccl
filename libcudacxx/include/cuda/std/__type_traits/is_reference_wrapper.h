@@ -35,7 +35,7 @@ template <class _Tp>
 struct __is_reference_wrapper_impl<reference_wrapper<_Tp>> : public true_type
 {};
 template <class _Tp>
-struct __is_reference_wrapper : public __is_reference_wrapper_impl<__remove_cv_t<_Tp>>
+struct __is_reference_wrapper : public __is_reference_wrapper_impl<remove_cv_t<_Tp>>
 {};
 
 _LIBCUDACXX_END_NAMESPACE_STD

@@ -39,6 +39,7 @@
 
 #include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_for.cuh>
+#include <cub/device/dispatch/dispatch_for_each_in_extents.cuh>
 #include <cub/util_namespace.cuh>
 
 #include <thrust/detail/raw_reference_cast.h>
@@ -47,6 +48,9 @@
 #include <thrust/system/cuda/detail/core/util.h>
 #include <thrust/type_traits/is_contiguous_iterator.h>
 
+#if __cccl_lib_mdspan
+#  include <cuda/std/__mdspan/extents.h>
+#endif // __cccl_lib_mdspan
 #include <cuda/std/type_traits>
 
 CUB_NAMESPACE_BEGIN
@@ -834,6 +838,160 @@ public:
     const auto num_items = static_cast<offset_t>(THRUST_NS_QUALIFIER::distance(first, last));
     return ForEachCopyNNoNVTX(first, num_items, op, stream);
   }
+
+  /*********************************************************************************************************************
+   * ForEachInExtents
+   ********************************************************************************************************************/
+
+#if __cccl_lib_mdspan
+
+  //! @rst
+  //! Overview
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! Iterate through a multi-dimensional extents into
+  //!
+  //! - a single linear index that represents the current iteration
+  //! - indices of each extent dimension
+  //!
+  //! Then apply a function object to the results.
+  //!
+  //! - The return value of ``op``, if any, is ignored.
+  //!
+  //! **Note**: ``DeviceFor::ForEachInExtents`` supports integral index type up to 64-bits.
+  //!
+  //! A Simple Example
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The following code snippet demonstrates how to use ``ForEachInExtents`` to tabulate a 3D array with its
+  //! coordinates.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_each_in_extents_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin for-each-in-extents-op
+  //!     :end-before: example-end for-each-in-extents-op
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_each_in_extents_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after:example-begin for-each-in-extents-example
+  //!     :end-before: example-end for-each-in-extents-example
+  //!
+  //! @endrst
+  //!
+  //! @tparam IndexType
+  //!   is an integral type that represents the extent index space (automatically deduced)
+  //!
+  //! @tparam Extents
+  //!   are the extent sizes for each rank index (automatically deduced)
+  //!
+  //! @tparam OpType
+  //!   is a function object with arity equal to the number of extents + 1 for the linear index (iteration)
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`,
+  //!   the required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] extents
+  //!   Extents object that represents a multi-dimensional index space
+  //!
+  //! @param[in] op
+  //!   Function object to apply to each linear index (iteration) and multi-dimensional coordinates
+  //!
+  //! @param[in] stream
+  //!   CUDA stream to launch kernels within. Default stream is `NULL`
+  //!
+  //! @return cudaError_t
+  //!   error status
+  template <typename IndexType, ::cuda::std::size_t... Extents, typename OpType>
+  CUB_RUNTIME_FUNCTION static cudaError_t ForEachInExtents(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    const ::cuda::std::extents<IndexType, Extents...>& extents,
+    OpType op,
+    cudaStream_t stream = {})
+  {
+    // TODO: check dimensions overflows
+    // TODO: check tha arity of OpType is equal to sizeof...(ExtentsType)
+    if (d_temp_storage == nullptr)
+    {
+      temp_storage_bytes = 1;
+      return cudaSuccess;
+    }
+    return ForEachInExtents(extents, op, stream);
+  }
+
+  //! @rst
+  //! Overview
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! Iterate through a multi-dimensional extents producing
+  //!
+  //! - a single linear index that represents the current iteration
+  //! - list of indices containing the coordinates for each extent dimension
+  //!
+  //! Then apply a function object to each tuple of linear index and multidimensional coordinate list.
+  //!
+  //! - The return value of ``op``, if any, is ignored.
+  //!
+  //! **Note**: ``DeviceFor::ForEachInExtents`` supports integral index type up to 64-bits.
+  //!
+  //! A Simple Example
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The following code snippet demonstrates how to use ``ForEachInExtents`` to tabulate a 3D array with its
+  //! coordinates.
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_each_in_extents_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after: example-begin for-each-in-extents-op
+  //!     :end-before: example-end for-each-in-extents-op
+  //!
+  //! .. literalinclude:: ../../../cub/test/catch2_test_device_for_each_in_extents_api.cu
+  //!     :language: c++
+  //!     :dedent:
+  //!     :start-after:example-begin for-each-in-extents-example
+  //!     :end-before: example-end for-each-in-extents-example
+  //!
+  //! @endrst
+  //!
+  //! @tparam IndexType
+  //!   is an integral type that represents the extent index space (automatically deduced)
+  //!
+  //! @tparam Extents
+  //!   are the extent sizes for each rank index (automatically deduced)
+  //!
+  //! @tparam OpType
+  //!   is a function object with arity equal to the number of extents + 1 for the linear index (iteration)
+  //!
+  //! @param[in] extents
+  //!   Extents object that represents a multi-dimensional index space
+  //!
+  //! @param[in] op
+  //!   Function object to apply to each linear index (iteration) and multi-dimensional coordinates
+  //!
+  //! @param[in] stream
+  //!   CUDA stream to launch kernels within. Default stream is `NULL`
+  //!
+  //! @return cudaError_t
+  //!   error status
+  template <typename IndexType, ::cuda::std::size_t... Extents, typename OpType>
+  CUB_RUNTIME_FUNCTION static cudaError_t
+  ForEachInExtents(const ::cuda::std::extents<IndexType, Extents...>& extents, OpType op, cudaStream_t stream = {})
+  {
+    using extents_type = ::cuda::std::extents<IndexType, Extents...>;
+    // TODO: check dimensions overflows
+    // TODO: check tha arity of OpType is equal to sizeof...(extents_type)
+    CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceFor::ForEachInExtents");
+    return detail::for_each_in_extents::dispatch_t<extents_type, OpType>::dispatch(extents, op, stream);
+  }
+
+#endif // __cccl_lib_mdspan
 };
 
 CUB_NAMESPACE_END

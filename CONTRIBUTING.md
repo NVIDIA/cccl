@@ -51,8 +51,8 @@ For more information about design and development practices for each CCCL compon
 
 - [CUB Developer Guide](docs/cub/developer_overview.rst) - General overview of the design of CUB internals
 - [CUB Test Overview](docs/cub/test_overview.rst) - Overview of how to write CUB unit tests
-- [CUB Tuning Infrastructure](docs/cub/tuning.rst) - Overview of CUB's performance tuning infrastructure
 - [CUB Benchmarks](docs/cub/benchmarking.rst) - Overview of CUB's performance benchmarks
+- [CUB Tuning Infrastructure](docs/cub/tuning.rst) - Overview of CUB's performance tuning infrastructure
 
 #### Thrust
 

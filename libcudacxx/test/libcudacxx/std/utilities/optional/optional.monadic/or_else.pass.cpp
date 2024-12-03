@@ -34,11 +34,11 @@ concept has_or_else = requires(Opt&& opt, F&& f) {
 #else
 
 template <class Opt, class F>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
-  HasOrElse, requires(Opt&& opt, F&& f)(cuda::std::forward<Opt>(opt).or_else(cuda::std::forward<F>(f))));
+_CCCL_CONCEPT_FRAGMENT(HasOrElse,
+                       requires(Opt&& opt, F&& f)(cuda::std::forward<Opt>(opt).or_else(cuda::std::forward<F>(f))));
 
 template <class Opt, class F>
-_LIBCUDACXX_CONCEPT has_or_else = _LIBCUDACXX_FRAGMENT(HasOrElse, Opt, F);
+_CCCL_CONCEPT has_or_else = _CCCL_FRAGMENT(HasOrElse, Opt, F);
 
 #endif
 

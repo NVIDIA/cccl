@@ -43,6 +43,8 @@
 #  include <thrust/pair.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 
+#  include <cuda/std/__functional/identity.h>
+
 THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
@@ -71,8 +73,8 @@ mismatch(execution_policy<Derived>& policy, InputIt1 first1, InputIt1 last1, Inp
 
   transform_t transform_first = transform_t(first1, first2, binary_pred);
 
-  transform_t result =
-    cuda_cub::find_if_not(policy, transform_first, transform_first + thrust::distance(first1, last1), identity());
+  transform_t result = cuda_cub::find_if_not(
+    policy, transform_first, transform_first + thrust::distance(first1, last1), ::cuda::std::__identity{});
 
   return thrust::make_pair(first1 + thrust::distance(transform_first, result),
                            first2 + thrust::distance(transform_first, result));

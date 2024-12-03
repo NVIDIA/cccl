@@ -153,8 +153,10 @@ void TestAdjacentDifferenceWithBigIndexesHelper(int magnitude)
 void TestAdjacentDifferenceWithBigIndexes()
 {
   TestAdjacentDifferenceWithBigIndexesHelper(30);
+#ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
   TestAdjacentDifferenceWithBigIndexesHelper(31);
   TestAdjacentDifferenceWithBigIndexesHelper(32);
   TestAdjacentDifferenceWithBigIndexesHelper(33);
+#endif
 }
 DECLARE_UNITTEST(TestAdjacentDifferenceWithBigIndexes);

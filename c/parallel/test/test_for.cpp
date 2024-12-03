@@ -12,7 +12,7 @@
 
 #include <algorithm>
 
-#include "c2h.h"
+#include "test_util.h"
 #include <cccl/c/for.h>
 
 void for_each(cccl_iterator_t input, unsigned long long num_items, cccl_op_t op)

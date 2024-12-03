@@ -106,7 +106,7 @@ double const DEFAULT_ABSOLUTE_TOL = 1e-4;
 template <typename T>
 struct value_type
 {
-  using type = ::cuda::std::__remove_const_t<::cuda::std::__libcpp_remove_reference_t<T>>;
+  using type = ::cuda::std::remove_const_t<::cuda::std::remove_reference_t<T>>;
 };
 
 template <typename T>
@@ -328,7 +328,7 @@ struct is_complex<std::complex<T>> : public THRUST_NS_QUALIFIER::true_type
 } // namespace
 
 template <typename T1, typename T2>
-inline ::cuda::std::__enable_if_t<is_complex<T1>::value && is_complex<T2>::value, bool>
+inline ::cuda::std::enable_if_t<is_complex<T1>::value && is_complex<T2>::value, bool>
 almost_equal(const T1& a, const T2& b, double a_tol, double r_tol)
 {
   return almost_equal(a.real(), b.real(), a_tol, r_tol) && almost_equal(a.imag(), b.imag(), a_tol, r_tol);

@@ -58,8 +58,6 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
 
   caching_allocator_t alloc;
   seg_size_t<T> op{thrust::raw_pointer_cast(input.data())};
-  thrust::tabulate(policy(alloc), output.begin(), output.end(), op);
-
   state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
     thrust::tabulate(policy(alloc, launch), output.begin(), output.end(), op);
   });

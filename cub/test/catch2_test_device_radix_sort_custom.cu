@@ -42,9 +42,9 @@
 #include <limits>
 
 #include "catch2_radix_sort_helper.cuh"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
 #include "cub/util_type.cuh"
+#include <c2h/catch2_test_helper.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortKeys, sort_keys);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRadixSort::SortPairs, sort_pairs);
@@ -172,14 +172,14 @@ static std::pair<c2h::device_vector<key>, c2h::device_vector<value>> reference_s
   return std::make_pair(result_keys, result_values);
 }
 
-CUB_TEST("Device radix sort works with parts of custom i128_t", "[radix][sort][device]")
+C2H_TEST("Device radix sort works with parts of custom i128_t", "[radix][sort][device]")
 {
   constexpr int max_items = 1 << 18;
   const int num_items     = GENERATE_COPY(take(4, random(max_items / 2, max_items)));
 
   c2h::device_vector<key> in_keys(num_items);
   c2h::device_vector<key> out_keys(num_items);
-  c2h::gen(CUB_SEED(10), in_keys);
+  c2h::gen(C2H_SEED(10), in_keys);
 
   auto reference_keys = reference_sort_keys(in_keys, false, 64, 128);
   sort_keys(
@@ -188,14 +188,14 @@ CUB_TEST("Device radix sort works with parts of custom i128_t", "[radix][sort][d
   REQUIRE(reference_keys == out_keys);
 }
 
-CUB_TEST("Device radix descending sort works with custom i128_t", "[radix][sort][device]")
+C2H_TEST("Device radix descending sort works with custom i128_t", "[radix][sort][device]")
 {
   constexpr int max_items = 1 << 18;
   const int num_items     = GENERATE_COPY(take(4, random(max_items / 2, max_items)));
 
   c2h::device_vector<key> in_keys(num_items);
   c2h::device_vector<key> out_keys(num_items);
-  c2h::gen(CUB_SEED(10), in_keys);
+  c2h::gen(C2H_SEED(10), in_keys);
 
   const bool is_descending = GENERATE(false, true);
   auto reference_keys      = reference_sort_keys(in_keys, is_descending, 0, 128);
@@ -219,7 +219,7 @@ CUB_TEST("Device radix descending sort works with custom i128_t", "[radix][sort]
   REQUIRE(reference_keys == out_keys);
 }
 
-CUB_TEST("Device radix sort can sort pairs with custom i128_t keys", "[radix][sort][device]")
+C2H_TEST("Device radix sort can sort pairs with custom i128_t keys", "[radix][sort][device]")
 {
   constexpr int max_items = 1 << 18;
   const int num_items     = GENERATE_COPY(take(4, random(max_items / 2, max_items)));
@@ -229,8 +229,8 @@ CUB_TEST("Device radix sort can sort pairs with custom i128_t keys", "[radix][so
 
   c2h::device_vector<value> in_values(num_items);
   c2h::device_vector<value> out_values(num_items);
-  c2h::gen(CUB_SEED(10), in_keys);
-  c2h::gen(CUB_SEED(1), in_values);
+  c2h::gen(C2H_SEED(10), in_keys);
+  c2h::gen(C2H_SEED(1), in_values);
 
   const bool is_descending = GENERATE(false, true);
   auto reference           = reference_sort_pairs(in_keys, in_values, is_descending, 0, 128);
@@ -259,14 +259,14 @@ CUB_TEST("Device radix sort can sort pairs with custom i128_t keys", "[radix][so
   REQUIRE(reference.second == out_values);
 }
 
-CUB_TEST("Device radix sort works with custom i128_t (db)", "[radix][sort][device]")
+C2H_TEST("Device radix sort works with custom i128_t (db)", "[radix][sort][device]")
 {
   constexpr int max_items = 1 << 18;
   const int num_items     = GENERATE_COPY(take(4, random(max_items / 2, max_items)));
 
   c2h::device_vector<key> keys_1(num_items);
   c2h::device_vector<key> keys_2(num_items);
-  c2h::gen(CUB_SEED(2), keys_1);
+  c2h::gen(C2H_SEED(2), keys_1);
 
   key* d_keys_1 = thrust::raw_pointer_cast(keys_1.data());
   key* d_keys_2 = thrust::raw_pointer_cast(keys_2.data());
@@ -288,18 +288,18 @@ CUB_TEST("Device radix sort works with custom i128_t (db)", "[radix][sort][devic
   REQUIRE(reference_keys == out_keys);
 }
 
-CUB_TEST("Device radix sort works with custom i128_t keys (db)", "[radix][sort][device]")
+C2H_TEST("Device radix sort works with custom i128_t keys (db)", "[radix][sort][device]")
 {
   constexpr int max_items = 1 << 18;
   const int num_items     = GENERATE_COPY(take(4, random(max_items / 2, max_items)));
 
   c2h::device_vector<key> keys_1(num_items);
   c2h::device_vector<key> keys_2(num_items);
-  c2h::gen(CUB_SEED(2), keys_1);
+  c2h::gen(C2H_SEED(2), keys_1);
 
   c2h::device_vector<value> values_1(num_items);
   c2h::device_vector<value> values_2(num_items);
-  c2h::gen(CUB_SEED(1), values_1);
+  c2h::gen(C2H_SEED(1), values_1);
 
   key* d_keys_1 = thrust::raw_pointer_cast(keys_1.data());
   key* d_keys_2 = thrust::raw_pointer_cast(keys_2.data());
@@ -329,14 +329,14 @@ CUB_TEST("Device radix sort works with custom i128_t keys (db)", "[radix][sort][
   REQUIRE(reference_keys.second == out_values);
 }
 
-CUB_TEST("Device radix descending sort works with bits of custom i128_t", "[radix][sort][device]")
+C2H_TEST("Device radix descending sort works with bits of custom i128_t", "[radix][sort][device]")
 {
   constexpr int max_items = 1 << 18;
   const int num_items     = GENERATE_COPY(take(1, random(max_items / 2, max_items)));
 
   c2h::device_vector<key> in_keys(num_items);
   c2h::device_vector<key> out_keys(num_items);
-  c2h::gen(CUB_SEED(2), in_keys);
+  c2h::gen(C2H_SEED(2), in_keys);
 
   const int begin_bit      = GENERATE_COPY(take(4, random(0, 120)));
   const int end_bit        = GENERATE_COPY(take(4, random(begin_bit, 128)));
@@ -367,7 +367,7 @@ CUB_TEST("Device radix descending sort works with bits of custom i128_t", "[radi
   REQUIRE(reference_keys == out_keys);
 }
 
-CUB_TEST("Device radix sort can sort pairs with bits of custom i128_t keys", "[radix][sort][device]")
+C2H_TEST("Device radix sort can sort pairs with bits of custom i128_t keys", "[radix][sort][device]")
 {
   constexpr int max_items = 1 << 18;
   const int num_items     = GENERATE_COPY(take(1, random(max_items / 2, max_items)));
@@ -377,8 +377,8 @@ CUB_TEST("Device radix sort can sort pairs with bits of custom i128_t keys", "[r
 
   c2h::device_vector<value> in_values(num_items);
   c2h::device_vector<value> out_values(num_items);
-  c2h::gen(CUB_SEED(2), in_keys);
-  c2h::gen(CUB_SEED(1), in_values);
+  c2h::gen(C2H_SEED(2), in_keys);
+  c2h::gen(C2H_SEED(1), in_values);
 
   const int begin_bit      = GENERATE_COPY(take(4, random(0, 120)));
   const int end_bit        = GENERATE_COPY(take(4, random(begin_bit, 128)));
@@ -415,14 +415,14 @@ CUB_TEST("Device radix sort can sort pairs with bits of custom i128_t keys", "[r
   REQUIRE(reference.second == out_values);
 }
 
-CUB_TEST("Device radix sort works with bits of custom i128_t (db)", "[radix][sort][device]")
+C2H_TEST("Device radix sort works with bits of custom i128_t (db)", "[radix][sort][device]")
 {
   constexpr int max_items = 1 << 18;
   const int num_items     = GENERATE_COPY(take(4, random(max_items / 2, max_items)));
 
   c2h::device_vector<key> keys_1(num_items);
   c2h::device_vector<key> keys_2(num_items);
-  c2h::gen(CUB_SEED(2), keys_1);
+  c2h::gen(C2H_SEED(2), keys_1);
 
   key* d_keys_1 = thrust::raw_pointer_cast(keys_1.data());
   key* d_keys_2 = thrust::raw_pointer_cast(keys_2.data());
@@ -447,18 +447,18 @@ CUB_TEST("Device radix sort works with bits of custom i128_t (db)", "[radix][sor
   REQUIRE(reference_keys == out_keys);
 }
 
-CUB_TEST("Device radix sort works with bits of custom i128_t keys (db)", "[radix][sort][device]")
+C2H_TEST("Device radix sort works with bits of custom i128_t keys (db)", "[radix][sort][device]")
 {
   constexpr int max_items = 1 << 18;
   const int num_items     = GENERATE_COPY(take(4, random(max_items / 2, max_items)));
 
   c2h::device_vector<key> keys_1(num_items);
   c2h::device_vector<key> keys_2(num_items);
-  c2h::gen(CUB_SEED(2), keys_1);
+  c2h::gen(C2H_SEED(2), keys_1);
 
   c2h::device_vector<value> values_1(num_items);
   c2h::device_vector<value> values_2(num_items);
-  c2h::gen(CUB_SEED(1), values_1);
+  c2h::gen(C2H_SEED(1), values_1);
 
   key* d_keys_1 = thrust::raw_pointer_cast(keys_1.data());
   key* d_keys_2 = thrust::raw_pointer_cast(keys_2.data());
@@ -526,7 +526,7 @@ static __host__ __device__ bool operator==(const custom_t& lhs, const custom_t& 
   return lhs.f == rhs.f && lhs.lli == rhs.lli;
 }
 
-CUB_TEST("Device radix sort works against some corner cases", "[radix][sort][device]")
+C2H_TEST("Device radix sort works against some corner cases", "[radix][sort][device]")
 {
   SECTION("Keys")
   {
@@ -722,7 +722,7 @@ CUB_TEST("Device radix sort works against some corner cases", "[radix][sort][dev
   }
 }
 
-CUB_TEST("Device radix sort works against some corner cases (db)", "[radix][sort][device]")
+C2H_TEST("Device radix sort works against some corner cases (db)", "[radix][sort][device]")
 {
   SECTION("Keys")
   {
@@ -941,7 +941,7 @@ CUB_TEST("Device radix sort works against some corner cases (db)", "[radix][sort
   }
 }
 
-CUB_TEST("Device radix sort works against some corner cases (bits)", "[radix][sort][device]")
+C2H_TEST("Device radix sort works against some corner cases (bits)", "[radix][sort][device]")
 {
   SECTION("Keys")
   {
@@ -1213,7 +1213,7 @@ CUB_TEST("Device radix sort works against some corner cases (bits)", "[radix][so
   }
 }
 
-CUB_TEST("Device radix sort works against some corner cases (bits) (db)", "[radix][sort][device]")
+C2H_TEST("Device radix sort works against some corner cases (bits) (db)", "[radix][sort][device]")
 {
   SECTION("Keys")
   {

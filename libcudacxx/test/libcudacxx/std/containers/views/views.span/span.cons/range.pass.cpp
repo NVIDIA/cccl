@@ -26,6 +26,10 @@
 
 #include "test_macros.h"
 
+#if !defined(TEST_COMPILER_NVRTC)
+#  include <vector>
+#endif // !TEST_COMPILER_NVRTC
+
 //  Look ma - I'm a container!
 template <typename T>
 struct IsAContainer
@@ -136,6 +140,19 @@ __host__ __device__ void testRuntimeSpanStatic()
   assert(s2.data() == cVal.getV() && s2.size() == 1);
 }
 
+#if !defined(TEST_COMPILER_NVRTC)
+template <typename T>
+void testContainers()
+{
+  ::std::vector<T> val(1);
+  const ::std::vector<T> cVal(1);
+  cuda::std::span<T> s1{val};
+  cuda::std::span<const T> s2{cVal};
+  assert(s1.data() == val.data() && s1.size() == 1);
+  assert(s2.data() == cVal.data() && s2.size() == 1);
+}
+#endif // !TEST_COMPILER_NVRTC
+
 struct A
 {};
 
@@ -162,6 +179,10 @@ int main(int, char**)
   testRuntimeSpanStatic<A>();
 
   checkCV();
+
+#if !defined(TEST_COMPILER_NVRTC)
+  NV_IF_TARGET(NV_IS_HOST, (testContainers<int>(); testContainers<A>();))
+#endif // !TEST_COMPILER_NVRTC
 
   return 0;
 }

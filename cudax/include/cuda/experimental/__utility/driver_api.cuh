@@ -102,6 +102,15 @@ inline CUdevice deviceGet(int ordinal)
   return result;
 }
 
+inline void getName(char* __name_out, int __len, int __ordinal)
+{
+  static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuDeviceGetName);
+
+  // TODO CUdevice is just an int, we probably could just cast, but for now do the safe thing
+  CUdevice __dev = deviceGet(__ordinal);
+  call_driver_fn(driver_fn, "Failed to query the name of a device", __name_out, __len, __dev);
+}
+
 inline CUcontext primaryCtxRetain(CUdevice dev)
 {
   static auto driver_fn = CUDAX_GET_DRIVER_FUNCTION(cuDevicePrimaryCtxRetain);

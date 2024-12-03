@@ -43,13 +43,13 @@ struct avoid_initialization : ::cuda::std::is_trivially_copy_constructible<T>
 {};
 
 template <typename T, typename TemporaryArray, typename Size>
-_CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<avoid_initialization<T>::value> construct_values(TemporaryArray&, Size)
+_CCCL_HOST_DEVICE ::cuda::std::enable_if_t<avoid_initialization<T>::value> construct_values(TemporaryArray&, Size)
 {
   // avoid the overhead of initialization
 } // end construct_values()
 
 template <typename T, typename TemporaryArray, typename Size>
-_CCCL_HOST_DEVICE ::cuda::std::__enable_if_t<!avoid_initialization<T>::value> construct_values(TemporaryArray& a, Size n)
+_CCCL_HOST_DEVICE ::cuda::std::enable_if_t<!avoid_initialization<T>::value> construct_values(TemporaryArray& a, Size n)
 {
   a.value_initialize_n(a.begin(), n);
 } // end construct_values()

@@ -254,7 +254,7 @@ struct has_enough_shmem_impl<V, A, S, typelist<>>
   {
     value = V
   };
-  using type = ::cuda::std::__conditional_t<value, thrust::detail::true_type, thrust::detail::false_type>;
+  using type = ::cuda::std::conditional_t<value, thrust::detail::true_type, thrust::detail::false_type>;
 };
 
 template <class Agent, size_t MAX_SHMEM>
@@ -514,9 +514,9 @@ struct LoadIterator
   using size_type  = typename iterator_traits<It>::difference_type;
 
   using type =
-    ::cuda::std::__conditional_t<is_contiguous_iterator<It>::value,
-                                 cub::CacheModifiedInputIterator<PtxPlan::LOAD_MODIFIER, value_type, size_type>,
-                                 It>;
+    ::cuda::std::conditional_t<is_contiguous_iterator<It>::value,
+                               cub::CacheModifiedInputIterator<PtxPlan::LOAD_MODIFIER, value_type, size_type>,
+                               It>;
 }; // struct Iterator
 
 template <class PtxPlan, class It>

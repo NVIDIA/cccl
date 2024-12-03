@@ -49,8 +49,6 @@ static void basic(nvbench::state& state, nvbench::type_list<KeyT, ValueT>)
   state.add_global_memory_writes<ValueT>(elements);
 
   caching_allocator_t alloc;
-  thrust::sort_by_key(policy(alloc), keys.begin(), keys.end(), vals.begin());
-
   state.exec(nvbench::exec_tag::timer | nvbench::exec_tag::sync, [&](nvbench::launch& launch, auto& timer) {
     keys = in_keys;
     vals = in_vals;

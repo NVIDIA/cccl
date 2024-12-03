@@ -33,28 +33,48 @@
 
 #include <thrust/iterator/constant_iterator.h>
 
+#include <cuda/__functional/maximum.h>
+#include <cuda/__functional/minimum.h>
+
 #include <iostream>
 #include <numeric>
 #include <type_traits>
 
-#include "c2h/custom_type.cuh"
-#include "c2h/extended_types.cuh"
-#include "catch2_test_helper.h"
-#include "test_util_vec.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/custom_type.h>
+#include <c2h/extended_types.h>
+#include <c2h/test_util_vec.h>
 #include <nv/target>
-
-CUB_NAMESPACE_BEGIN
 
 #if TEST_HALF_T
 // Half support is provided by SM53+. We currently test against a few older architectures.
 // The specializations below can be removed once we drop these architectures.
+
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
 template <>
-__host__ __device__ __forceinline__ //
-  __half
-  Min::operator()(__half& a, __half& b) const
+_LIBCUDACXX_HIDE_FROM_ABI __half minimum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
 {
+#  if defined(__CUDA_NO_HALF_OPERATORS__)
+  return CUB_MIN(__half2float(a), __half2float(b));
+#  else // ^^^ __CUDA_NO_HALF_OPERATORS__ ^^^ / vvv !__CUDA_NO_HALF_OPERATORS__ vvv
   NV_IF_TARGET(NV_PROVIDES_SM_53, (return CUB_MIN(a, b);), (return CUB_MIN(__half2float(a), __half2float(b));));
+#  endif // !__CUDA_NO_HALF_OPERATORS__
 }
+
+template <>
+_LIBCUDACXX_HIDE_FROM_ABI __half maximum<void>::operator()<__half, __half>(const __half& a, const __half& b) const
+{
+#  if defined(__CUDA_NO_HALF_OPERATORS__)
+  return CUB_MAX(__half2float(a), __half2float(b));
+#  else // ^^^ __CUDA_NO_HALF_OPERATORS__ ^^^ / vvv !__CUDA_NO_HALF_OPERATORS__ vvv
+  NV_IF_TARGET(NV_PROVIDES_SM_53, (return CUB_MAX(a, b);), (return CUB_MAX(__half2float(a), __half2float(b));));
+#  endif // !__CUDA_NO_HALF_OPERATORS__
+}
+
+_LIBCUDACXX_END_NAMESPACE_CUDA
+
+CUB_NAMESPACE_BEGIN
 
 template <>
 __host__ __device__ __forceinline__ //
@@ -70,14 +90,6 @@ __host__ __device__ __forceinline__ //
   }
 
   return a;
-}
-
-template <>
-__host__ __device__ __forceinline__ //
-  __half
-  Max::operator()(__half& a, __half& b) const
-{
-  NV_IF_TARGET(NV_PROVIDES_SM_53, (return CUB_MAX(a, b);), (return CUB_MAX(__half2float(a), __half2float(b));));
 }
 
 template <>
@@ -225,7 +237,7 @@ std::integral_constant<bool, !std::is_same<WrappedItT, ItT>::value> //
   return {};
 }
 
-inline ExtendedFloatSum unwrap_op(std::true_type /* extended float */, cub::Sum) //
+inline ExtendedFloatSum unwrap_op(std::true_type /* extended float */, ::cuda::std::plus<>) //
 {
   return {};
 }

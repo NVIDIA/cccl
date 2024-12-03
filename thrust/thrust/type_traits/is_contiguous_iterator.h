@@ -39,7 +39,7 @@
 #include <type_traits>
 #include <utility>
 
-#if defined(_CCCL_COMPILER_MSVC) && _MSC_VER < 1916 // MSVC 2017 version 15.9
+#if _CCCL_COMPILER(MSVC, <, 19, 16) // MSVC 2017 version 15.9
 #  include <array>
 #  include <string>
 #  include <vector>

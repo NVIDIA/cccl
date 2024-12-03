@@ -175,14 +175,14 @@ private:
   // Whether or not there are values to be trucked along with keys
   static constexpr bool KEYS_ONLY = ::cuda::std::is_same<ValueT, NullType>::value;
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   /// Shared memory type required by this thread block
   union _TempStorage
   {
     KeyT keys_shared[ITEMS_PER_TILE + 1];
     ValueT items_shared[ITEMS_PER_TILE + 1];
   }; // union TempStorage
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   /// Shared storage reference
   _TempStorage& temp_storage;

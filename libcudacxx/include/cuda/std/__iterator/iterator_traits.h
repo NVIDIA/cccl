@@ -39,12 +39,12 @@
 #include <cuda/std/__type_traits/void_t.h>
 #include <cuda/std/cstddef>
 
-#if !defined(_CCCL_COMPILER_NVRTC)
-#  if defined(_CCCL_COMPILER_MSVC)
+#if !_CCCL_COMPILER(NVRTC)
+#  if _CCCL_COMPILER(MSVC)
 #    include <xutility> // for ::std::input_iterator_tag
-#  else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
+#  else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 #    include <iterator> // for ::std::input_iterator_tag
-#  endif // !_CCCL_COMPILER_MSVC
+#  endif // !_CCCL_COMPILER(MSVC)
 
 #  if _CCCL_STD_VER >= 2020
 template <class _Tp, class = void>
@@ -63,11 +63,11 @@ struct __cccl_std_contiguous_iterator_tag_exists : __cccl_type_is_defined<struct
 } // namespace std
 #  endif // _CCCL_STD_VER >= 2020
 
-#endif // !_CCCL_COMPILER_NVRTC
+#endif // !_CCCL_COMPILER(NVRTC)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER >= 2020
+#if !defined(_CCCL_NO_CONCEPTS)
 
 template <class _Tp>
 using __with_reference = _Tp&;
@@ -87,25 +87,25 @@ using iter_reference_t = decltype(*declval<_Tp&>());
 template <class>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
 
-#elif _CCCL_STD_VER >= 2017
+#elif _CCCL_STD_VER > 2014 // ^^^ !_CCCL_NO_CONCEPTS ^^^
 
 template <class _Tp>
 using __with_reference = _Tp&;
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(__can_reference_, requires()(typename(__with_reference<_Tp>)));
+_CCCL_CONCEPT_FRAGMENT(__can_reference_, requires()(typename(__with_reference<_Tp>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __can_reference = _LIBCUDACXX_FRAGMENT(__can_reference_, _Tp);
+_CCCL_CONCEPT __can_reference = _CCCL_FRAGMENT(__can_reference_, _Tp);
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wvoid-ptr-dereference")
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(__dereferenceable_, requires(_Tp& __t)(requires(__can_reference<decltype(*__t)>)));
+_CCCL_CONCEPT_FRAGMENT(__dereferenceable_, requires(_Tp& __t)(requires(__can_reference<decltype(*__t)>)));
 _CCCL_DIAG_POP
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __dereferenceable = _LIBCUDACXX_FRAGMENT(__dereferenceable_, _Tp);
+_CCCL_CONCEPT __dereferenceable = _CCCL_FRAGMENT(__dereferenceable_, _Tp);
 
 // [iterator.traits]
 template <class _Tp>
@@ -113,12 +113,12 @@ using iter_reference_t = enable_if_t<__dereferenceable<_Tp>, decltype(*_CUDA_VST
 
 template <class, class>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
-#else // ^^^ _CCCL_STD_VER >= 2017 ^^^ / vvv _CCCL_STD_VER <= 2014 vvv
+#else // ^^^ _CCCL_STD_VER > 2014 ^^^ / vvv _CCCL_STD_VER <= 2014 vvv
 template <class>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits;
 #endif // _CCCL_STD_VER <= 2014
 
-#if defined(_CCCL_COMPILER_NVRTC)
+#if _CCCL_COMPILER(NVRTC)
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT input_iterator_tag
 {};
@@ -135,7 +135,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT contiguous_iterator_tag : public random_acc
 {};
 #  endif // _CCCL_STD_VER >= 2014
 
-#else // ^^^ _CCCL_COMPILER_NVRTC ^^^ / vvv !_CCCL_COMPILER_NVRTC vvv
+#else // ^^^ _CCCL_COMPILER(NVRTC) ^^^ / vvv !_CCCL_COMPILER(NVRTC) vvv
 
 using input_iterator_tag         = ::std::input_iterator_tag;
 using output_iterator_tag        = ::std::output_iterator_tag;
@@ -155,7 +155,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT contiguous_iterator_tag : public random_acc
 {};
 #  endif // _CCCL_STD_VER >= 2014
 
-#endif // !_CCCL_COMPILER_NVRTC
+#endif // !_CCCL_COMPILER(NVRTC)
 
 template <class _Iter>
 struct __iter_traits_cache
@@ -178,7 +178,7 @@ struct __iter_concept_category_test
 struct __iter_concept_random_fallback
 {
   template <class _Iter>
-  using _Apply = __enable_if_t<__is_primary_template<iterator_traits<_Iter>>::value, random_access_iterator_tag>;
+  using _Apply = enable_if_t<__is_primary_template<iterator_traits<_Iter>>::value, random_access_iterator_tag>;
 };
 
 template <class _Iter, class _Tester>
@@ -242,7 +242,7 @@ public:
   static const bool value = decltype(__test<_Tp>(nullptr))::value;
 };
 
-#if _CCCL_STD_VER >= 2020
+#if !defined(_CCCL_NO_CONCEPTS)
 
 // The `cpp17-*-iterator` exposition-only concepts have very similar names to the `Cpp17*Iterator` named requirements
 // from `[iterator.cpp17]`. To avoid confusion between the two, the exposition-only concepts have been banished to
@@ -484,7 +484,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits : __iterator_traits<_Ip>
   using __primary_template = iterator_traits;
 };
 
-#elif _CCCL_STD_VER >= 2017
+#elif _CCCL_STD_VER > 2014 // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_STD_VER > 2014 vvv
 
 // The `cpp17-*-iterator` exposition-only concepts have very similar names to the `Cpp17*Iterator` named requirements
 // from `[iterator.cpp17]`. To avoid confusion between the two, the exposition-only concepts have been banished to
@@ -492,7 +492,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits : __iterator_traits<_Ip>
 namespace __iterator_traits_detail
 {
 template <class _Ip>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __cpp17_iterator_,
   requires(_Ip __i)(requires(__can_reference<decltype(*__i)>),
                     requires(same_as<_Ip&, decltype(++__i)>),
@@ -500,10 +500,10 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
                     requires(copyable<_Ip>)));
 
 template <class _Ip>
-_LIBCUDACXX_CONCEPT __cpp17_iterator = _LIBCUDACXX_FRAGMENT(__cpp17_iterator_, _Ip);
+_CCCL_CONCEPT __cpp17_iterator = _CCCL_FRAGMENT(__cpp17_iterator_, _Ip);
 
 template <class _Ip>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __cpp17_input_iterator_,
   requires(_Ip __i)(
     typename(common_reference_t<iter_reference_t<_Ip>&&, typename indirectly_readable_traits<_Ip>::value_type&>),
@@ -515,10 +515,10 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
     requires(signed_integral<typename incrementable_traits<_Ip>::difference_type>)));
 
 template <class _Ip>
-_LIBCUDACXX_CONCEPT __cpp17_input_iterator = _LIBCUDACXX_FRAGMENT(__cpp17_input_iterator_, _Ip);
+_CCCL_CONCEPT __cpp17_input_iterator = _CCCL_FRAGMENT(__cpp17_input_iterator_, _Ip);
 
 template <class _Ip>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __cpp17_forward_iterator_,
   requires(_Ip __i)(
     requires(__cpp17_input_iterator<_Ip>),
@@ -529,10 +529,10 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
     requires(same_as<remove_cvref_t<iter_reference_t<_Ip>>, typename indirectly_readable_traits<_Ip>::value_type>)));
 
 template <class _Ip>
-_LIBCUDACXX_CONCEPT __cpp17_forward_iterator = _LIBCUDACXX_FRAGMENT(__cpp17_forward_iterator_, _Ip);
+_CCCL_CONCEPT __cpp17_forward_iterator = _CCCL_FRAGMENT(__cpp17_forward_iterator_, _Ip);
 
 template <class _Ip>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __cpp17_bidirectional_iterator_,
   requires(_Ip __i)(requires(__cpp17_forward_iterator<_Ip>),
                     requires(same_as<_Ip&, decltype(--__i)>),
@@ -540,10 +540,10 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
                     requires(same_as<iter_reference_t<_Ip>, decltype(*__i--)>)));
 
 template <class _Ip>
-_LIBCUDACXX_CONCEPT __cpp17_bidirectional_iterator = _LIBCUDACXX_FRAGMENT(__cpp17_bidirectional_iterator_, _Ip);
+_CCCL_CONCEPT __cpp17_bidirectional_iterator = _CCCL_FRAGMENT(__cpp17_bidirectional_iterator_, _Ip);
 
 template <class _Ip>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __cpp17_random_access_iterator_,
   requires(_Ip __i, typename incrementable_traits<_Ip>::difference_type __n)(
     requires(same_as<_Ip&, decltype(__i += __n)>),
@@ -555,9 +555,8 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
     requires(convertible_to<decltype(__i[__n]), iter_reference_t<_Ip>>)));
 
 template <class _Ip>
-_LIBCUDACXX_CONCEPT __cpp17_random_access_iterator =
-  __cpp17_bidirectional_iterator<_Ip> && totally_ordered<_Ip>
-  && _LIBCUDACXX_FRAGMENT(__cpp17_random_access_iterator_, _Ip);
+_CCCL_CONCEPT __cpp17_random_access_iterator =
+  __cpp17_bidirectional_iterator<_Ip> && totally_ordered<_Ip> && _CCCL_FRAGMENT(__cpp17_random_access_iterator_, _Ip);
 } // namespace __iterator_traits_detail
 
 template <class, class = void>
@@ -579,7 +578,7 @@ template <class _Tp>
 _CCCL_INLINE_VAR constexpr bool __has_member_iterator_category<_Tp, void_t<typename _Tp::iterator_category>> = true;
 
 template <class _Ip>
-_LIBCUDACXX_CONCEPT __specifies_members =
+_CCCL_CONCEPT __specifies_members =
   __has_member_value_type<_Ip> && __has_member_difference_type<_Ip> && __has_member_reference<_Ip>
   && __has_member_iterator_category<_Ip>;
 
@@ -596,11 +595,11 @@ struct __iterator_traits_member_pointer_or_void<_Tp, enable_if_t<__has_member_po
 };
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __cpp17_iterator_missing_members =
+_CCCL_CONCEPT __cpp17_iterator_missing_members =
   !__specifies_members<_Tp> && __iterator_traits_detail::__cpp17_iterator<_Tp>;
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __cpp17_input_iterator_missing_members =
+_CCCL_CONCEPT __cpp17_input_iterator_missing_members =
   __cpp17_iterator_missing_members<_Tp> && __iterator_traits_detail::__cpp17_input_iterator<_Tp>;
 
 // Otherwise, `pointer` names `void`.
@@ -619,10 +618,10 @@ struct __iterator_traits_member_pointer_or_arrow_or_void<_Ip, enable_if_t<__has_
 };
 
 template <class _Ip>
-_LIBCUDACXX_CONCEPT_FRAGMENT(__has_operator_arrow_, requires(_Ip& __i)(__i.operator->()));
+_CCCL_CONCEPT_FRAGMENT(__has_operator_arrow_, requires(_Ip& __i)(__i.operator->()));
 
 template <class _Ip>
-_LIBCUDACXX_CONCEPT __has_operator_arrow = _LIBCUDACXX_FRAGMENT(__has_operator_arrow_, _Ip);
+_CCCL_CONCEPT __has_operator_arrow = _CCCL_FRAGMENT(__has_operator_arrow_, _Ip);
 
 // Otherwise, if `decltype(declval<I&>().operator->())` is well-formed, then `pointer` names that
 // type.
@@ -765,7 +764,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits : __iterator_traits<_Ip>
   using __primary_template = iterator_traits;
 };
 
-#else // _CCCL_STD_VER >= 2014
+#else // ^^^ _CCCL_STD_VER > 2014 ^^^ / vvv _CCCL_STD_VER <= 2014 vvv
 
 template <class _Iter, bool>
 struct __iterator_traits
@@ -805,17 +804,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits : __iterator_traits<_Iter, 
 #endif // _CCCL_STD_VER <= 2014
 
 template <class _Tp>
-#if _CCCL_STD_VER >= 2020
+#if !defined(_CCCL_NO_CONCEPTS)
   requires is_object_v<_Tp>
 #endif
 struct _CCCL_TYPE_VISIBILITY_DEFAULT iterator_traits<_Tp*>
 {
   typedef ptrdiff_t difference_type;
-  typedef __remove_cv_t<_Tp> value_type;
+  typedef remove_cv_t<_Tp> value_type;
   typedef _Tp* pointer;
   typedef typename add_lvalue_reference<_Tp>::type reference;
   typedef random_access_iterator_tag iterator_category;
-#if _CCCL_STD_VER >= 2017
+#if _CCCL_STD_VER > 2014
   typedef contiguous_iterator_tag iterator_concept;
 #endif
 };
@@ -861,17 +860,17 @@ struct __is_cpp17_random_access_iterator
 // Such iterators receive special "contiguous" optimizations in
 // std::copy and std::sort.
 //
-#if _CCCL_STD_VER >= 2017
+#if _CCCL_STD_VER > 2014
 template <class _Tp>
 struct __is_cpp17_contiguous_iterator
     : _Or<__has_iterator_category_convertible_to<_Tp, contiguous_iterator_tag>,
           __has_iterator_concept_convertible_to<_Tp, contiguous_iterator_tag>>
 {};
-#else
+#else // ^^^ _CCCL_STD_VER > 2014 ^^^ / vvv _CCCL_STD_VER <= 2014 vvv
 template <class _Tp>
 struct __is_cpp17_contiguous_iterator : false_type
 {};
-#endif
+#endif // _CCCL_STD_VER <= 2014
 
 // Any native pointer which is an iterator is also a contiguous iterator.
 template <class _Up>

@@ -21,13 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
-#ifndef _CCCL_COMPILER_NVRTC
+#if !_CCCL_COMPILER(NVRTC)
 #  include <cstddef>
 
 #  include <stddef.h>
 #else
 #  define offsetof(type, member) (_CUDA_VSTD::size_t)((char*) &(((type*) 0)->member) - (char*) 0)
-#endif // _CCCL_COMPILER_NVRTC
+#endif // _CCCL_COMPILER(NVRTC)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 

@@ -677,9 +677,12 @@ void TestPartitionIfWithMagnitude(int magnitude)
 void TestPartitionIfWithLargeNumberOfItems()
 {
   TestPartitionIfWithMagnitude(30);
+  // These require 64-bit dispatches even when magnitude < 32.
+#  ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
   TestPartitionIfWithMagnitude(31);
   TestPartitionIfWithMagnitude(32);
   TestPartitionIfWithMagnitude(33);
+#  endif
 }
 DECLARE_UNITTEST(TestPartitionIfWithLargeNumberOfItems);
 #endif

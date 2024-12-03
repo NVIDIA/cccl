@@ -51,7 +51,7 @@ Macros:
 
 _CCCL_PUSH_MACROS
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
 #  include <cuda/std/detail/libcxx/include/support/win32/limits_msvc_win32.h>
 #endif // _LIBCUDACXX_MSVCRT
 

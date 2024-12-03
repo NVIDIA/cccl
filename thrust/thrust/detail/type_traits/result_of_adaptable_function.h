@@ -53,12 +53,15 @@ public:
   using type = typename impl<Signature>::type;
 };
 
+// TODO(bgruber): remove this specialization eventually
 // specialization for invocations which define result_type
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 template <typename Functor, typename... ArgTypes>
 struct result_of_adaptable_function<Functor(ArgTypes...), ::cuda::std::void_t<typename Functor::result_type>>
 {
   using type = typename Functor::result_type;
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 } // namespace detail
 THRUST_NAMESPACE_END

@@ -77,8 +77,8 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   using vals_input_it_t            = cub::ConstantInputIterator<offset_t, OffsetT>;
   using aggregate_output_it_t      = offset_t*;
   using num_runs_output_iterator_t = offset_t*;
-  using equality_op_t              = cub::Equality;
-  using reduction_op_t             = cub::Sum;
+  using equality_op_t              = ::cuda::std::equal_to<>;
+  using reduction_op_t             = ::cuda::std::plus<>;
   using accum_t                    = offset_t;
 
 #if !TUNE_BASE

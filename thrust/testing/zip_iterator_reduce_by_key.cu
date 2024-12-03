@@ -49,9 +49,9 @@ struct TestZipIteratorReduceByKey
       reduce_by_key(
         h_data0.begin(),
         h_data0.end(),
-        make_zip_iterator(make_tuple(h_data1.begin(), h_data2.begin())),
+        make_zip_iterator(h_data1.begin(), h_data2.begin()),
         h_data3.begin(),
-        make_zip_iterator(make_tuple(h_data4.begin(), h_data5.begin())),
+        make_zip_iterator(h_data4.begin(), h_data5.begin()),
         equal_to<T>(),
         TuplePlus<Tuple>());
 
@@ -59,9 +59,9 @@ struct TestZipIteratorReduceByKey
       reduce_by_key(
         d_data0.begin(),
         d_data0.end(),
-        make_zip_iterator(make_tuple(d_data1.begin(), d_data2.begin())),
+        make_zip_iterator(d_data1.begin(), d_data2.begin()),
         d_data3.begin(),
-        make_zip_iterator(make_tuple(d_data4.begin(), d_data5.begin())),
+        make_zip_iterator(d_data4.begin(), d_data5.begin()),
         equal_to<T>(),
         TuplePlus<Tuple>());
 
@@ -95,21 +95,21 @@ struct TestZipIteratorReduceByKey
 
       // run on host
       reduce_by_key(
-        make_zip_iterator(make_tuple(h_data0.begin(), h_data0.begin())),
-        make_zip_iterator(make_tuple(h_data0.end(), h_data0.end())),
-        make_zip_iterator(make_tuple(h_data1.begin(), h_data2.begin())),
-        make_zip_iterator(make_tuple(h_data3.begin(), h_data4.begin())),
-        make_zip_iterator(make_tuple(h_data5.begin(), h_data6.begin())),
+        make_zip_iterator(h_data0.begin(), h_data0.begin()),
+        make_zip_iterator(h_data0.end(), h_data0.end()),
+        make_zip_iterator(h_data1.begin(), h_data2.begin()),
+        make_zip_iterator(h_data3.begin(), h_data4.begin()),
+        make_zip_iterator(h_data5.begin(), h_data6.begin()),
         equal_to<Tuple>(),
         TuplePlus<Tuple>());
 
       // run on device
       reduce_by_key(
-        make_zip_iterator(make_tuple(d_data0.begin(), d_data0.begin())),
-        make_zip_iterator(make_tuple(d_data0.end(), d_data0.end())),
-        make_zip_iterator(make_tuple(d_data1.begin(), d_data2.begin())),
-        make_zip_iterator(make_tuple(d_data3.begin(), d_data4.begin())),
-        make_zip_iterator(make_tuple(d_data5.begin(), d_data6.begin())),
+        make_zip_iterator(d_data0.begin(), d_data0.begin()),
+        make_zip_iterator(d_data0.end(), d_data0.end()),
+        make_zip_iterator(d_data1.begin(), d_data2.begin()),
+        make_zip_iterator(d_data3.begin(), d_data4.begin()),
+        make_zip_iterator(d_data5.begin(), d_data6.begin()),
         equal_to<Tuple>(),
         TuplePlus<Tuple>());
 

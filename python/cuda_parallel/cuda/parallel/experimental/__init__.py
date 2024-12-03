@@ -151,7 +151,6 @@ def _get_bindings():
         cccl_c_path = os.path.join(include_path, 'libcccl.c.parallel.so')
         _bindings = ctypes.CDLL(cccl_c_path)
         _bindings.cccl_device_reduce.restype = ctypes.c_int
-        _bindings.cccl_device_reduce.restype = ctypes.c_int
         _bindings.cccl_device_reduce.argtypes = [_CCCLDeviceReduceBuildResult, ctypes.c_void_p, ctypes.POINTER(
             ctypes.c_ulonglong), _CCCLIterator, _CCCLIterator, ctypes.c_ulonglong, _CCCLOp, _CCCLValue, ctypes.c_void_p]
         _bindings.cccl_device_reduce_cleanup.restype = ctypes.c_int
@@ -161,7 +160,9 @@ def _get_bindings():
 def _get_paths():
     global _paths
     if _paths is None:
-        include_path = importlib.resources.files('cuda').joinpath('_include')
+        # Using `.parent` for compatibility with pip install --editable:
+        include_path = importlib.resources.files(
+            'cuda.parallel').parent.joinpath('_include')
         include_path_str = str(include_path)
         include_option = '-I' + include_path_str
         cub_path = include_option.encode('utf-8')
@@ -181,6 +182,7 @@ class _CCCLDeviceReduceBuildResult(ctypes.Structure):
                 ("cubin", ctypes.c_void_p),
                 ("cubin_size", ctypes.c_size_t),
                 ("library", ctypes.c_void_p),
+                ("accumulator_size", ctypes.c_ulonglong),
                 ("single_tile_kernel", ctypes.c_void_p),
                 ("single_tile_second_kernel", ctypes.c_void_p),
                 ("reduction_kernel", ctypes.c_void_p)]

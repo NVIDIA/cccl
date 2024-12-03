@@ -206,6 +206,7 @@ function(_thrust_build_target_list_multiconfig)
           thrust_create_target(${target_name}
             HOST ${host}
             DEVICE ${device}
+            DISPATCH ${THRUST_DISPATCH_TYPE}
             ${THRUST_TARGET_FLAGS}
           )
 

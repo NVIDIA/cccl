@@ -270,8 +270,9 @@ struct AgentSelectIf
   using BlockScanT = BlockScan<OffsetT, BLOCK_THREADS, AgentSelectIfPolicyT::SCAN_ALGORITHM>;
 
   // Callback type for obtaining tile prefix during block scan
-  using DelayConstructorT     = typename AgentSelectIfPolicyT::detail::delay_constructor_t;
-  using TilePrefixCallbackOpT = TilePrefixCallbackOp<OffsetT, cub::Sum, MemoryOrderedTileStateT, 0, DelayConstructorT>;
+  using DelayConstructorT = typename AgentSelectIfPolicyT::detail::delay_constructor_t;
+  using TilePrefixCallbackOpT =
+    TilePrefixCallbackOp<OffsetT, ::cuda::std::plus<>, MemoryOrderedTileStateT, 0, DelayConstructorT>;
 
   // Item exchange type
   using ItemExchangeT = InputT[TILE_ITEMS];
@@ -896,7 +897,8 @@ struct AgentSelectIf
     CTA_SYNC();
 
     // Exclusive scan of values and selection_flags
-    TilePrefixCallbackOpT prefix_op(tile_state_wrapper, temp_storage.scan_storage.prefix, cub::Sum(), tile_idx);
+    TilePrefixCallbackOpT prefix_op(
+      tile_state_wrapper, temp_storage.scan_storage.prefix, ::cuda::std::plus<>{}, tile_idx);
     BlockScanT(temp_storage.scan_storage.scan).ExclusiveSum(selection_flags, selection_indices, prefix_op);
 
     OffsetT num_tile_selections   = prefix_op.GetBlockAggregate();

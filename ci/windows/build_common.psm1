@@ -57,7 +57,7 @@ Write-Host "CMAKE_BUILD_PARALLEL_LEVEL=$env:CMAKE_BUILD_PARALLEL_LEVEL"
 Write-Host "CTEST_PARALLEL_LEVEL=$env:CTEST_PARALLEL_LEVEL"
 Write-Host "CCCL_BUILD_INFIX=$env:CCCL_BUILD_INFIX"
 Write-Host "Current commit is:"
-Write-Host "$(git log -1)"
+Write-Host "$(git log -1 --format=short)"
 Write-Host "========================================"
 
 cmake --version
@@ -112,7 +112,7 @@ function build_preset {
 
     sccache_stats('Start')
 
-    cmake --build --preset $PRESET -v
+    cmake --build --preset $PRESET -v -- -k 0
     $test_result = $LastExitCode
 
     $preset_dir = "${BUILD_DIR}/${PRESET}"

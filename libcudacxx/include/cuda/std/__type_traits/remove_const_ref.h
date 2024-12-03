@@ -26,7 +26,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-using __remove_const_ref_t = __remove_const_t<__libcpp_remove_reference_t<_Tp>>;
+using __remove_const_ref_t _CCCL_NODEBUG_ALIAS = remove_const_t<remove_reference_t<_Tp>>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

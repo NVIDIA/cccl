@@ -20,8 +20,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
 #include <cuda/std/__concepts/common_reference_with.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__type_traits/is_reference.h>
 #include <cuda/std/__type_traits/make_const_lvalue_ref.h>
@@ -29,7 +29,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2017
+#if !defined(_CCCL_NO_CONCEPTS)
 
 // [concept.assignable]
 
@@ -40,10 +40,10 @@ concept assignable_from =
        { __lhs = _CUDA_VSTD::forward<_Rhs>(__rhs) } -> same_as<_Lhs>;
      };
 
-#elif _CCCL_STD_VER > 2011
+#elif !defined(_CCCL_NO_VARIABLE_TEMPLATES) // ^^^ !_CCCL_NO_CONCEPTS ^^^
 
 template <class _Lhs, class _Rhs>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __assignable_from_,
   requires(_Lhs __lhs,
            _Rhs&& __rhs)(requires(_CCCL_TRAIT(is_lvalue_reference, _Lhs)),
@@ -51,9 +51,9 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
                          requires(same_as<_Lhs, decltype(__lhs = _CUDA_VSTD::forward<_Rhs>(__rhs))>)));
 
 template <class _Lhs, class _Rhs>
-_LIBCUDACXX_CONCEPT assignable_from = _LIBCUDACXX_FRAGMENT(__assignable_from_, _Lhs, _Rhs);
+_CCCL_CONCEPT assignable_from = _CCCL_FRAGMENT(__assignable_from_, _Lhs, _Rhs);
 
-#endif // _CCCL_STD_VER > 2011
+#endif // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

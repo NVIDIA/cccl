@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__async/config.cuh>
+#include <cuda/experimental/__detail/config.cuh>
 
 #include <thread>
 
@@ -36,7 +36,7 @@ namespace cuda::experimental::__async
 {
 #if defined(__CUDA_ARCH__)
 using __thread_id = int;
-#elif defined(_CCCL_COMPILER_NVHPC)
+#elif _CCCL_COMPILER(NVHPC)
 struct __thread_id
 {
   union
@@ -45,23 +45,23 @@ struct __thread_id
     int __device_;
   };
 
-  _CCCL_HOST_DEVICE __thread_id() noexcept
+  _CUDAX_API __thread_id() noexcept
       : __host_()
   {}
-  _CCCL_HOST_DEVICE __thread_id(::std::thread::id __host) noexcept
+  _CUDAX_API __thread_id(::std::thread::id __host) noexcept
       : __host_(__host)
   {}
-  _CCCL_HOST_DEVICE __thread_id(int __device) noexcept
+  _CUDAX_API __thread_id(int __device) noexcept
       : __device_(__device)
   {}
 
-  _CCCL_HOST_DEVICE friend bool operator==(const __thread_id& __self, const __thread_id& __other) noexcept
+  _CUDAX_API friend bool operator==(const __thread_id& __self, const __thread_id& __other) noexcept
   {
     _CUDAX_FOR_HOST_OR_DEVICE((return __self.__host_ == __other.__host_;),
                               (return __self.__device_ == __other.__device_;))
   }
 
-  _CCCL_HOST_DEVICE friend bool operator!=(const __thread_id& __self, const __thread_id& __other) noexcept
+  _CUDAX_API friend bool operator!=(const __thread_id& __self, const __thread_id& __other) noexcept
   {
     return !(__self == __other);
   }
@@ -70,13 +70,13 @@ struct __thread_id
 using __thread_id = ::std::thread::id;
 #endif
 
-inline _CCCL_HOST_DEVICE __thread_id __this_thread_id() noexcept
+inline _CUDAX_API __thread_id __this_thread_id() noexcept
 {
   _CUDAX_FOR_HOST_OR_DEVICE((return ::std::this_thread::get_id();),
                             (return static_cast<int>(threadIdx.x + blockIdx.x * blockDim.x);))
 }
 
-inline _CCCL_HOST_DEVICE void __this_thread_yield() noexcept
+inline _CUDAX_API void __this_thread_yield() noexcept
 {
   _CUDAX_FOR_HOST_OR_DEVICE((::std::this_thread::yield();), (void();))
 }

@@ -188,3 +188,18 @@ TEST_CASE("Launch configuration", "[launch]")
   CUDART(cudaStreamDestroy(stream));
   CUDAX_CHECK(replacementCalled);
 }
+
+TEST_CASE("Hierarchy construction in config", "[launch]")
+{
+  auto config = cudax::make_config(cudax::grid_dims<2>(), cudax::cooperative_launch());
+  static_assert(config.dims.count(cudax::block) == 2);
+
+  auto config_larger = cudax::make_config(cudax::grid_dims<2>(), cudax::block_dims(256), cudax::cooperative_launch());
+  CUDAX_REQUIRE(config_larger.dims.count(cudax::thread) == 512);
+
+  auto config_no_options = cudax::make_config(cudax::grid_dims(2), cudax::block_dims<128>());
+  CUDAX_REQUIRE(config_no_options.dims.count(cudax::thread) == 256);
+
+  [[maybe_unused]] auto config_no_dims = cudax::make_config(cudax::cooperative_launch());
+  static_assert(cuda::std::is_same_v<decltype(config_no_dims.dims), cudax::uninit_t>);
+}

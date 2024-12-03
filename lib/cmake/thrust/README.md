@@ -38,6 +38,22 @@ If using Thrust from the CCCL sources, this would be
 $ cmake . -DThrust_DIR=<CCCL git repo root>/thrust/thrust/cmake/
 ```
 
+#### Large Array (64-bit offseet) Handling: `DISPATCH`
+
+The `DISPATCH` option allows users to select the tradeoff of compile-time / binary-size
+vs. performance vs. scalability when given large inputs that require 64-bit offset types.
+This currently only applies when DEVICE=CUDA.
+
+- `Dynamic` May compile each kernel twice, once for 32-bit offsets and again for 64-bit
+  offsets, and choose dynamically using the input size at runtime.
+  This significantly increases compile-time and binary-size, but provides optimal performance
+  for small input sizes while also supporting 64-bit indexed workloads.
+- `Force32bit` forces Thrust to use a 32 bit offset type. This improves compile time and
+  binary size but limits the input size.
+- `Force64bit` forces Thrust to use a 64-bit offset type. This improves compile time and
+  binary size and allows large input sizes. However, it may degrade runtime performance
+  for 32-bit indexed workloads.
+
 #### TBB / OpenMP
 
 To explicitly specify host/device systems, `HOST` and `DEVICE` arguments can be
@@ -56,17 +72,21 @@ host system, but will find and use TBB or OpenMP for the device system.
 
 To allow a Thrust target to be configurable easily via `cmake-gui` or
 `ccmake`, pass the `FROM_OPTIONS` flag to `thrust_create_target`. This will add
-`THRUST_HOST_SYSTEM` and `THRUST_DEVICE_SYSTEM` options to the CMake cache that
-allow selection from the systems supported by this version of Thrust.
+`THRUST_HOST_SYSTEM`, `THRUST_DEVICE_SYSTEM`, and `THRUST_DISPATCH_TYPE` options
+to the CMake cache that allow selection from the systems supported by this version
+of Thrust.
 
 ```cmake
 thrust_create_target(Thrust FROM_OPTIONS
   [HOST_OPTION <option name>]
   [DEVICE_OPTION <option name>]
+  [DISPATCH_OPTION <option name>]
   [HOST_OPTION_DOC <doc string>]
   [DEVICE_OPTION_DOC <doc string>]
+  [DISPATCH_OPTION_DOC <doc string>]
   [HOST <default host system name>]
   [DEVICE <default device system name>]
+  [DISPATCH <default dispatch type>]
   [ADVANCED]
 )
 ```
@@ -74,15 +94,18 @@ thrust_create_target(Thrust FROM_OPTIONS
 The optional arguments have sensible defaults, but may be configured per
 `thrust_create_target` call:
 
-| Argument            | Default                 | Description                     |
-|---------------------|-------------------------|---------------------------------|
-| `HOST_OPTION`       | `THRUST_HOST_SYSTEM`    | Name of cache option for host   |
-| `DEVICE_OPTION`     | `THRUST_DEVICE_SYSTEM`  | Name of cache option for device |
-| `HOST_OPTION_DOC`   | Thrust's host system.   | Docstring for host option       |
-| `DEVICE_OPTION_DOC` | Thrust's device system. | Docstring for device option     |
-| `HOST`              | `CPP`                   | Default host system             |
-| `DEVICE`            | `CUDA`                  | Default device system           |
-| `ADVANCED`          | *N/A*                   | Mark cache options advanced     |
+| Argument              | Default                 | Description                       |
+|-----------------------|-------------------------|-----------------------------------|
+| `HOST_OPTION`         | `THRUST_HOST_SYSTEM`    | Name of cache option for host     |
+| `DEVICE_OPTION`       | `THRUST_DEVICE_SYSTEM`  | Name of cache option for device   |
+| `DISPATCH_OPTION`     | `THRUST_DISPATCH_TYPE`  | Name of cache option for dispatch |
+| `HOST_OPTION_DOC`     | Thrust's host system.   | Docstring for host option         |
+| `DEVICE_OPTION_DOC`   | Thrust's device system. | Docstring for device option       |
+| `DISPATCH_OPTION_DOC` | Thrust's dispatch type. | Docstring for dispatch option     |
+| `HOST`                | `CPP`                   | Default host system               |
+| `DEVICE`              | `CUDA`                  | Default device system             |
+| `DISPATCH`            | `Dispatch`                  | Default dispatch type             |
+| `ADVANCED`            | *N/A*                   | Mark cache options advanced       |
 
 ### Specifying Thrust Version Requirements
 

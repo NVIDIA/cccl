@@ -9,6 +9,7 @@ endif()
 
 # Determine whether CCCL is the top-level project or included into
 # another project via add_subdirectory()
+set(CCCL_TOPLEVEL_PROJECT OFF)
 if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_LIST_DIR}")
   set(CCCL_TOPLEVEL_PROJECT ON)
 endif()
@@ -34,11 +35,14 @@ option(CCCL_ENABLE_CUB "Enable the CUB developer build." ${CCCL_TOPLEVEL_PROJECT
 option(CCCL_ENABLE_THRUST "Enable the Thrust developer build." ${CCCL_TOPLEVEL_PROJECT})
 option(CCCL_ENABLE_TESTING "Enable CUDA C++ Core Library tests." ${CCCL_TOPLEVEL_PROJECT})
 option(CCCL_ENABLE_EXAMPLES "Enable CUDA C++ Core Library examples." ${CCCL_TOPLEVEL_PROJECT})
-option(CCCL_ENABLE_BENCHMARKS "Enable CUDA C++ Core Library benchmarks." OFF)
 option(CCCL_ENABLE_C "Enable CUDA C Core Library." OFF)
 
-option(CCCL_ENABLE_UNSTABLE "Enable targets and developer build options for unstable projects." OFF)
+option(CCCL_ENABLE_BENCHMARKS "Enable CUDA C++ Core Library benchmarks." OFF)
+if ("NVHPC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
+  set(CCCL_ENABLE_BENCHMARKS OFF)
+endif()
 
+option(CCCL_ENABLE_UNSTABLE "Enable targets and developer build options for unstable projects." OFF)
 if (CCCL_ENABLE_UNSTABLE)
   option(CCCL_ENABLE_CUDAX "Enable the CUDA Experimental developer build." ${CCCL_TOPLEVEL_PROJECT})
 else()

@@ -16,7 +16,7 @@
 #include <nvJitLink.h>
 #include <nvrtc.h>
 
-char const* cccl_type_enum_to_string(cccl_type_enum type)
+std::string_view cccl_type_enum_to_string(cccl_type_enum type)
 {
   switch (type)
   {

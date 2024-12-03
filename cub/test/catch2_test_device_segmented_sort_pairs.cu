@@ -27,8 +27,8 @@
 #include "catch2_radix_sort_helper.cuh"
 // above header needs to be included first
 
+#include <c2h/catch2_test_helper.h>
 #include <catch2_segmented_sort_helper.cuh>
-#include <catch2_test_helper.h>
 
 // FIXME: Graph launch disabled, algorithm syncs internally. WAR exists for device-launch, figure out how to enable for
 // graph launch.
@@ -102,7 +102,7 @@ using pair_types =
 #endif
                  >;
 
-CUB_TEST("DeviceSegmentedSortPairs: No segments", "[pairs][segmented][sort][device]")
+C2H_TEST("DeviceSegmentedSortPairs: No segments", "[pairs][segmented][sort][device]")
 {
   // Type doesn't affect the escape logic, so it should be fine
   // to test only one set of types here.
@@ -136,7 +136,7 @@ CUB_TEST("DeviceSegmentedSortPairs: No segments", "[pairs][segmented][sort][devi
   REQUIRE(values_buffer.selector == 1);
 }
 
-CUB_TEST("DeviceSegmentedSortPairs: Empty segments", "[pairs][segmented][sort][device]")
+C2H_TEST("DeviceSegmentedSortPairs: Empty segments", "[pairs][segmented][sort][device]")
 {
   // Type doesn't affect the escape logic, so it should be fine
   // to test only one set of types here.
@@ -174,7 +174,7 @@ CUB_TEST("DeviceSegmentedSortPairs: Empty segments", "[pairs][segmented][sort][d
   REQUIRE(values_buffer.selector == 1);
 }
 
-CUB_TEST("DeviceSegmentedSortPairs: Same size segments, derived keys/values",
+C2H_TEST("DeviceSegmentedSortPairs: Same size segments, derived keys/values",
          "[pairs][segmented][sort][device]",
          pair_types)
 {
@@ -193,7 +193,7 @@ CUB_TEST("DeviceSegmentedSortPairs: Same size segments, derived keys/values",
   test_same_size_segments_derived<KeyT, ValueT>(segment_size, segments);
 }
 
-CUB_TEST("DeviceSegmentedSortPairs: Randomly sized segments, derived keys/values",
+C2H_TEST("DeviceSegmentedSortPairs: Randomly sized segments, derived keys/values",
          "[pairs][segmented][sort][device]",
          pair_types)
 {
@@ -210,10 +210,10 @@ CUB_TEST("DeviceSegmentedSortPairs: Randomly sized segments, derived keys/values
     take(2, random(1 << 10, 1 << 15)),
     take(2, random(1 << 15, 1 << 20)));
 
-  test_random_size_segments_derived<KeyT, ValueT>(CUB_SEED(1), max_items, max_segment, segments);
+  test_random_size_segments_derived<KeyT, ValueT>(C2H_SEED(1), max_items, max_segment, segments);
 }
 
-CUB_TEST("DeviceSegmentedSortPairs: Randomly sized segments, random keys/values",
+C2H_TEST("DeviceSegmentedSortPairs: Randomly sized segments, random keys/values",
          "[pairs][segmented][sort][device]",
          pair_types)
 {
@@ -226,10 +226,10 @@ CUB_TEST("DeviceSegmentedSortPairs: Randomly sized segments, random keys/values"
 
   const int segments = GENERATE_COPY(take(2, random(1 << 15, 1 << 20)));
 
-  test_random_size_segments_random<KeyT, ValueT>(CUB_SEED(1), max_items, max_segment, segments);
+  test_random_size_segments_random<KeyT, ValueT>(C2H_SEED(1), max_items, max_segment, segments);
 }
 
-CUB_TEST("DeviceSegmentedSortPairs: Edge case segments, random keys/values",
+C2H_TEST("DeviceSegmentedSortPairs: Edge case segments, random keys/values",
          "[pairs][segmented][sort][device]",
          pair_types)
 {
@@ -237,10 +237,10 @@ CUB_TEST("DeviceSegmentedSortPairs: Edge case segments, random keys/values",
   using KeyT   = c2h::get<0, PairT>;
   using ValueT = c2h::get<1, PairT>;
 
-  test_edge_case_segments_random<KeyT, ValueT>(CUB_SEED(4));
+  test_edge_case_segments_random<KeyT, ValueT>(C2H_SEED(4));
 }
 
-CUB_TEST("DeviceSegmentedSortPairs: Unspecified segments, random key/values",
+C2H_TEST("DeviceSegmentedSortPairs: Unspecified segments, random key/values",
          "[pairs][segmented][sort][device]",
          pair_types)
 {
@@ -248,13 +248,13 @@ CUB_TEST("DeviceSegmentedSortPairs: Unspecified segments, random key/values",
   using KeyT   = c2h::get<0, PairT>;
   using ValueT = c2h::get<1, PairT>;
 
-  test_unspecified_segments_random<KeyT, ValueT>(CUB_SEED(4));
+  test_unspecified_segments_random<KeyT, ValueT>(C2H_SEED(4));
 }
 
 #if defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)
 
 // we can reuse the same structure of DeviceSegmentedRadixSortPairs for simplicity
-CUB_TEST("DeviceSegmentedSortPairs: very large num. items and num. segments",
+C2H_TEST("DeviceSegmentedSortPairs: very large num. items and num. segments",
          "[pairs][segmented][sort][device]",
          all_offset_types)
 try
@@ -276,8 +276,8 @@ try
 
   c2h::device_vector<key_t> in_keys(num_items);
   c2h::device_vector<value_t> in_values(num_items);
-  c2h::gen(CUB_SEED(num_key_seeds), in_keys);
-  c2h::gen(CUB_SEED(num_value_seeds), in_values);
+  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
+  c2h::gen(C2H_SEED(num_value_seeds), in_values);
 
   // Initialize the output vectors by copying the inputs since not all items may belong to a segment.
   c2h::device_vector<key_t> out_keys(num_items);
@@ -341,7 +341,7 @@ catch (std::bad_alloc& e)
   std::cerr << "Skipping segmented sort test, unsufficient GPU memory. " << e.what() << "\n";
 }
 
-CUB_TEST("DeviceSegmentedSort::SortPairs: very large segments", "[pairs][segmented][sort][device]", all_offset_types)
+C2H_TEST("DeviceSegmentedSort::SortPairs: very large segments", "[pairs][segmented][sort][device]", all_offset_types)
 try
 {
   using key_t                      = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
@@ -360,8 +360,8 @@ try
   c2h::device_vector<key_t> in_keys(num_items);
   c2h::device_vector<value_t> in_values(num_items);
   c2h::device_vector<key_t> out_keys(num_items);
-  c2h::gen(CUB_SEED(num_key_seeds), in_keys);
-  c2h::gen(CUB_SEED(num_value_seeds), in_values);
+  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
+  c2h::gen(C2H_SEED(num_value_seeds), in_values);
   c2h::device_vector<value_t> out_values(num_items);
   c2h::device_vector<offset_t> offsets(num_segments + 1);
   offsets[0]         = 0;

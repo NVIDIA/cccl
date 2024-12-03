@@ -26,11 +26,11 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp>
 struct remove_volatile
 {
-  using type _LIBCUDACXX_NODEBUG_TYPE = _CCCL_BUILTIN_REMOVE_VOLATILE(_Tp);
+  using type _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_VOLATILE(_Tp);
 };
 
 template <class _Tp>
-using __remove_volatile_t = _CCCL_BUILTIN_REMOVE_VOLATILE(_Tp);
+using remove_volatile_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_VOLATILE(_Tp);
 
 #else
 template <class _Tp>
@@ -45,14 +45,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_volatile<volatile _Tp>
 };
 
 template <class _Tp>
-using __remove_volatile_t = typename remove_volatile<_Tp>::type;
+using remove_volatile_t _CCCL_NODEBUG_ALIAS = typename remove_volatile<_Tp>::type;
 
 #endif // defined(_CCCL_BUILTIN_REMOVE_VOLATILE) && !defined(_LIBCUDACXX_USE_REMOVE_VOLATILE_FALLBACK)
-
-#if _CCCL_STD_VER > 2011
-template <class _Tp>
-using remove_volatile_t = __remove_volatile_t<_Tp>;
-#endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -586,7 +586,7 @@ struct TestComplexPowerFunctions
     {
       using T0       = T;
       using T1       = other_floating_point_type_t<T0>;
-      using promoted = ::cuda::std::__common_type_t<T0, T1>;
+      using promoted = ::cuda::std::common_type_t<T0, T1>;
 
       thrust::host_vector<T0> data = unittest::random_samples<T0>(4);
 

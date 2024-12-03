@@ -110,7 +110,7 @@ __device__ __host__ __noinline__ void test_write_access(In i)
 
 __device__ __host__ __noinline__ void all_tests()
 {
-  S* arr = alloc<S, N>(false);
+  S* arr = global_alloc<S, N>();
 
   test_read_access(cuda::annotated_ptr<S, cuda::access_property::normal>(arr), arr);
   test_read_access(cuda::annotated_ptr<S, cuda::access_property::streaming>(arr), arr);
@@ -150,7 +150,8 @@ __device__ __host__ __noinline__ void all_tests()
 
   NV_IF_TARGET(
     NV_IS_DEVICE,
-    (S* sarr = alloc<S, N>(true); test_read_access(cuda::annotated_ptr<S, cuda::access_property::shared>(sarr), sarr);
+    (S* sarr = shared_alloc<S, N>(); // Allocating shared memory is only supported on device
+     test_read_access(cuda::annotated_ptr<S, cuda::access_property::shared>(sarr), sarr);
      test_read_access(cuda::annotated_ptr<const S, cuda::access_property::shared>(sarr), sarr);
      test_read_access(cuda::annotated_ptr<volatile S, cuda::access_property::shared>(sarr), sarr);
      test_read_access(cuda::annotated_ptr<const volatile S, cuda::access_property::shared>(sarr), sarr);

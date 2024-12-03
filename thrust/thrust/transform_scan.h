@@ -64,7 +64,7 @@ THRUST_NAMESPACE_BEGIN
  *  \param last The end of the input sequence.
  *  \param result The beginning of the output sequence.
  *  \param unary_op The function used to tranform the input sequence.
- *  \param binary_op The associatve operator used to 'sum' transformed values.
+ *  \param binary_op The associative operator used to 'sum' transformed values.
  *  \return The end of the output sequence.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
@@ -130,7 +130,7 @@ _CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
  *  \param last The end of the input sequence.
  *  \param result The beginning of the output sequence.
  *  \param unary_op The function used to tranform the input sequence.
- *  \param binary_op The associatve operator used to 'sum' transformed values.
+ *  \param binary_op The associative operator used to 'sum' transformed values.
  *  \return The end of the output sequence.
  *
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
@@ -187,7 +187,7 @@ OutputIterator transform_inclusive_scan(
  *  \param result The beginning of the output sequence.
  *  \param unary_op The function used to tranform the input sequence.
  *  \param init The initial value of the \p transform_inclusive_scan
- *  \param binary_op The associatve operator used to 'sum' transformed values.
+ *  \param binary_op The associative operator used to 'sum' transformed values.
  *  \return The end of the output sequence.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
@@ -259,7 +259,7 @@ _CCCL_HOST_DEVICE OutputIterator transform_inclusive_scan(
  *  \param result The beginning of the output sequence.
  *  \param unary_op The function used to tranform the input sequence.
  *  \param init The initial value of the \p transform_inclusive_scan
- *  \param binary_op The associatve operator used to 'sum' transformed values.
+ *  \param binary_op The associative operator used to 'sum' transformed values.
  *  \return The end of the output sequence.
  *
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
@@ -325,7 +325,7 @@ OutputIterator transform_inclusive_scan(
  *  \param result The beginning of the output sequence.
  *  \param unary_op The function used to tranform the input sequence.
  *  \param init The initial value of the \p exclusive_scan
- *  \param binary_op The associatve operator used to 'sum' transformed values.
+ *  \param binary_op The associative operator used to 'sum' transformed values.
  *  \return The end of the output sequence.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
@@ -395,7 +395,7 @@ _CCCL_HOST_DEVICE OutputIterator transform_exclusive_scan(
  *  \param result The beginning of the output sequence.
  *  \param unary_op The function used to tranform the input sequence.
  *  \param init The initial value of the \p exclusive_scan
- *  \param binary_op The associatve operator used to 'sum' transformed values.
+ *  \param binary_op The associative operator used to 'sum' transformed values.
  *  \return The end of the output sequence.
  *
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input

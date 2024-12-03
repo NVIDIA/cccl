@@ -21,8 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-#ifndef _CCCL_COMPILER_NVRTC
+#if !_CCCL_COMPILER(NVRTC)
 #  include <cassert>
-#endif //_CCCL_COMPILER_NVRTC
+#endif //_CCCL_COMPILER(NVRTC)
 
 #endif // _CUDA_STD_CASSERT

@@ -59,7 +59,7 @@
 ///
 // Trailing return types seem to confuse Doxygen, and cause it to interpret
 // parts of the function's body as new function signatures.
-#if defined(THRUST_DOXYGEN)
+#if defined(_CCCL_DOXYGEN_INVOKED)
 #  define THRUST_DECLTYPE_RETURNS(...) \
     {                                  \
       return (__VA_ARGS__);            \
@@ -81,7 +81,7 @@
 ///
 // Trailing return types seem to confuse Doxygen, and cause it to interpret
 // parts of the function's body as new function signatures.
-#if defined(THRUST_DOXYGEN)
+#if defined(_CCCL_DOXYGEN_INVOKED)
 #  define THRUST_DECLTYPE_RETURNS(...) \
     {                                  \
       return (__VA_ARGS__);            \

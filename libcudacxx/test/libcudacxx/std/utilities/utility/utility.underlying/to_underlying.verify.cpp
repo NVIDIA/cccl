@@ -7,11 +7,9 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14, c++17, c++20
-
 // [utility.underlying], to_underlying
 // template <class T>
-//     constexpr underlying_type_t<T> to_underlying( T value ) noexcept; // C++2b
+//     constexpr underlying_type_t<T> to_underlying( T value ) noexcept;
 
 #include <cuda/std/utility>
 

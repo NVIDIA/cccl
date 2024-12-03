@@ -20,7 +20,7 @@
 #  include <new>
 #endif
 
-#ifdef _CCCL_COMPILER_NVRTC
+#if _CCCL_COMPILER(NVRTC)
 #  define LAMBDA [=]
 #else
 #  define LAMBDA [=] __host__ __device__

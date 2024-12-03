@@ -73,31 +73,31 @@ _CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI _Tp __gcd(_Tp __m, _Tp __n)
 }
 
 template <class _Tp, class _Up>
-_CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI __common_type_t<_Tp, _Up> gcd(_Tp __m, _Up __n)
+_CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI common_type_t<_Tp, _Up> gcd(_Tp __m, _Up __n)
 {
   static_assert((_CCCL_TRAIT(is_integral, _Tp) && _CCCL_TRAIT(is_integral, _Up)),
                 "Arguments to gcd must be integer types");
-  static_assert((!_CCCL_TRAIT(is_same, __remove_cv_t<_Tp>, bool)), "First argument to gcd cannot be bool");
-  static_assert((!_CCCL_TRAIT(is_same, __remove_cv_t<_Up>, bool)), "Second argument to gcd cannot be bool");
-  using _Rp = __common_type_t<_Tp, _Up>;
-  using _Wp = __make_unsigned_t<_Rp>;
+  static_assert((!_CCCL_TRAIT(is_same, remove_cv_t<_Tp>, bool)), "First argument to gcd cannot be bool");
+  static_assert((!_CCCL_TRAIT(is_same, remove_cv_t<_Up>, bool)), "Second argument to gcd cannot be bool");
+  using _Rp = common_type_t<_Tp, _Up>;
+  using _Wp = make_unsigned_t<_Rp>;
   return static_cast<_Rp>(
     _CUDA_VSTD::__gcd(static_cast<_Wp>(__ct_abs<_Rp, _Tp>()(__m)), static_cast<_Wp>(__ct_abs<_Rp, _Up>()(__n))));
 }
 
 template <class _Tp, class _Up>
-_CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI __common_type_t<_Tp, _Up> lcm(_Tp __m, _Up __n)
+_CCCL_CONSTEXPR_CXX14 _LIBCUDACXX_HIDE_FROM_ABI common_type_t<_Tp, _Up> lcm(_Tp __m, _Up __n)
 {
   static_assert((_CCCL_TRAIT(is_integral, _Tp) && _CCCL_TRAIT(is_integral, _Up)),
                 "Arguments to lcm must be integer types");
-  static_assert((!_CCCL_TRAIT(is_same, __remove_cv_t<_Tp>, bool)), "First argument to lcm cannot be bool");
-  static_assert((!_CCCL_TRAIT(is_same, __remove_cv_t<_Up>, bool)), "Second argument to lcm cannot be bool");
+  static_assert((!_CCCL_TRAIT(is_same, remove_cv_t<_Tp>, bool)), "First argument to lcm cannot be bool");
+  static_assert((!_CCCL_TRAIT(is_same, remove_cv_t<_Up>, bool)), "Second argument to lcm cannot be bool");
   if (__m == 0 || __n == 0)
   {
     return 0;
   }
 
-  using _Rp  = __common_type_t<_Tp, _Up>;
+  using _Rp  = common_type_t<_Tp, _Up>;
   _Rp __val1 = __ct_abs<_Rp, _Tp>()(__m) / _CUDA_VSTD::gcd(__m, __n);
   _Rp __val2 = __ct_abs<_Rp, _Up>()(__n);
   _CCCL_ASSERT((numeric_limits<_Rp>::max() / __val1 > __val2), "Overflow in lcm");

@@ -68,8 +68,8 @@ public:
   template <::cudaDeviceAttr _Attr>
   using attr_result_t = typename detail::__dev_attr<_Attr>::type;
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
-#  if defined(_CCCL_COMPILER_MSVC)
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+#  if _CCCL_COMPILER(MSVC)
   // When __EDG__ is defined, std::construct_at will not permit constructing
   // a device object from an __emplace_device object. This is a workaround.
   device(detail::__emplace_device __ed)
@@ -89,7 +89,7 @@ public:
       __device      = detail::driver::deviceGet(__id_);
       __primary_ctx = detail::driver::primaryCtxRetain(__device);
     });
-    assert(__primary_ctx != nullptr);
+    _CCCL_ASSERT(__primary_ctx != nullptr, "cuda::experimental::attr_result_t::primary_context failed to get context");
     return __primary_ctx;
   }
 

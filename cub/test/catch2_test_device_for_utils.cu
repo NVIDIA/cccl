@@ -30,7 +30,7 @@
 
 #include <cub/device/device_for.cuh>
 
-#include "catch2_test_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 template <class T>
 struct value_t
@@ -98,7 +98,7 @@ void test()
   STATIC_REQUIRE(!cub::detail::for_each::has_unique_value_overload<T, tpl_value_t>::value);
 }
 
-CUB_TEST("Device for utils correctly detect value overloads", "[for][device]")
+C2H_TEST("Device for utils correctly detect value overloads", "[for][device]")
 {
   test<int>();
   test<double>();

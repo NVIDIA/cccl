@@ -16,6 +16,7 @@
 #include <string>
 #include <string_view>
 #include <tuple>
+#include <vector>
 
 #include <nvJitLink.h>
 #include <nvrtc.h>
@@ -53,6 +54,7 @@ struct nvrtc_ltoir
   const char* ltoir;
   int ltsz;
 };
+using nvrtc_ltoir_list = std::vector<nvrtc_ltoir>;
 struct nvrtc_jitlink_cleanup
 {
   nvrtc_cubin& cubin_ref;
@@ -131,6 +133,13 @@ struct nvrtc_command_list_visitor
   {
     check(nvJitLinkAddData(
       jitlink.handle, NVJITLINK_INPUT_LTOIR, (const void*) lto.ltoir, (size_t) lto.ltsz, program_name.data()));
+  }
+  void execute(const nvrtc_ltoir_list& lto_list)
+  {
+    for (auto lto : lto_list)
+    {
+      execute(lto);
+    }
   }
   void execute(nvrtc_jitlink_cleanup cleanup)
   {
@@ -212,6 +221,11 @@ struct nvrtc_sm_top_level
   }
   // Add linkable unit to whole program
   nvrtc_sm_top_level<Tx..., nvrtc_ltoir> add_link(nvrtc_ltoir arg)
+  {
+    return {nvrtc_command_list_append(std::move(cl), std::move(arg))};
+  }
+  // Add linkable units to whole program
+  nvrtc_sm_top_level<Tx..., nvrtc_ltoir_list> add_link_list(nvrtc_ltoir_list arg)
   {
     return {nvrtc_command_list_append(std::move(cl), std::move(arg))};
   }

@@ -40,7 +40,7 @@ class choose_merge_agent
                                     && sizeof(typename fallback_agent_t::TempStorage) <= max_smem_per_block;
 
 public:
-  using type = ::cuda::std::__conditional_t<use_fallback, fallback_agent_t, default_agent_t>;
+  using type = ::cuda::std::conditional_t<use_fallback, fallback_agent_t, default_agent_t>;
 };
 
 // Computes the merge path intersections at equally wide intervals. The approach is outlined in the paper:

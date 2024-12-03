@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_array.h>
 #include <cuda/std/__type_traits/is_const.h>
@@ -73,24 +73,24 @@ public:
   _CCCL_HIDE_FROM_ABI unexpected(const unexpected&) = default;
   _CCCL_HIDE_FROM_ABI unexpected(unexpected&&)      = default;
 
-  _LIBCUDACXX_TEMPLATE(class _Error = _Err)
-  _LIBCUDACXX_REQUIRES((!_CCCL_TRAIT(is_same, remove_cvref_t<_Error>, unexpected)
-                        && !_CCCL_TRAIT(is_same, remove_cvref_t<_Error>, in_place_t)
-                        && _CCCL_TRAIT(is_constructible, _Err, _Error)))
+  _CCCL_TEMPLATE(class _Error = _Err)
+  _CCCL_REQUIRES((!_CCCL_TRAIT(is_same, remove_cvref_t<_Error>, unexpected)
+                  && !_CCCL_TRAIT(is_same, remove_cvref_t<_Error>, in_place_t)
+                  && _CCCL_TRAIT(is_constructible, _Err, _Error)))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit unexpected(_Error&& __error) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _Err, _Error))
       : __unex_(_CUDA_VSTD::forward<_Error>(__error))
   {}
 
-  _LIBCUDACXX_TEMPLATE(class... _Args)
-  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, _Args...))
+  _CCCL_TEMPLATE(class... _Args)
+  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, _Args...))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit unexpected(in_place_t, _Args&&... __args) noexcept(
     _CCCL_TRAIT(is_nothrow_constructible, _Err, _Args...))
       : __unex_(_CUDA_VSTD::forward<_Args>(__args)...)
   {}
 
-  _LIBCUDACXX_TEMPLATE(class _Up, class... _Args)
-  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, initializer_list<_Up>&, _Args...))
+  _CCCL_TEMPLATE(class _Up, class... _Args)
+  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _Err, initializer_list<_Up>&, _Args...))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr explicit unexpected(
     in_place_t,
     initializer_list<_Up> __il,
@@ -130,8 +130,8 @@ public:
     swap(__unex_, __other.__unex_);
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Err2 = _Err)
-  _LIBCUDACXX_REQUIRES(_CCCL_TRAIT(is_swappable, _Err2))
+  _CCCL_TEMPLATE(class _Err2 = _Err)
+  _CCCL_REQUIRES(_CCCL_TRAIT(is_swappable, _Err2))
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr void
   swap(unexpected& __lhs, unexpected& __rhs) noexcept(_CCCL_TRAIT(is_nothrow_swappable, _Err2))
   {

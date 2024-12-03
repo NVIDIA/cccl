@@ -32,10 +32,9 @@
 
 // Test Constraints:
 template <class T, class E>
-_LIBCUDACXX_CONCEPT_FRAGMENT(HasMemberSwap_,
-                             requires(cuda::std::expected<T, E> x, cuda::std::expected<T, E> y)((x.swap(y))));
+_CCCL_CONCEPT_FRAGMENT(HasMemberSwap_, requires(cuda::std::expected<T, E> x, cuda::std::expected<T, E> y)((x.swap(y))));
 template <class T, class E>
-_LIBCUDACXX_CONCEPT HasMemberSwap = _LIBCUDACXX_FRAGMENT(HasMemberSwap_, T, E);
+_CCCL_CONCEPT HasMemberSwap = _CCCL_FRAGMENT(HasMemberSwap_, T, E);
 
 static_assert(HasMemberSwap<int, int>, "");
 

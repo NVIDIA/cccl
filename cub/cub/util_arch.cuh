@@ -52,7 +52,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 // \deprecated [Since 2.1.0]
 #  define CUB_USE_COOPERATIVE_GROUPS

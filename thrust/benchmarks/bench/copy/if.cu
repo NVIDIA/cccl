@@ -77,8 +77,6 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_writes<T>(selected_elements);
 
   caching_allocator_t alloc;
-  thrust::copy_if(policy(alloc), input.cbegin(), input.cend(), output.begin(), select_op);
-
   state.exec(nvbench::exec_tag::no_batch | nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
     thrust::copy_if(policy(alloc, launch), input.cbegin(), input.cend(), output.begin(), select_op);
   });

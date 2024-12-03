@@ -45,7 +45,7 @@ int main(int, char**)
   test_op_and<65>();
   test_op_and<1000>(); // not in constexpr because of constexpr evaluation step limits
 // 11.4 added support for constexpr device vars needed here
-#if TEST_STD_VER >= 2014 && !defined(_CCCL_CUDACC_BELOW_11_4)
+#if TEST_STD_VER >= 2014 && _CCCL_CUDACC_AT_LEAST(11, 4)
   static_assert(test_op_and<0>(), "");
   static_assert(test_op_and<1>(), "");
   static_assert(test_op_and<31>(), "");

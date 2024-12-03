@@ -185,7 +185,7 @@ struct WarpReduceShfl
    *   Up-offset to pull from
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE unsigned int
-  ReduceStep(unsigned int input, cub::Sum /*reduction_op*/, int last_lane, int offset)
+  ReduceStep(unsigned int input, ::cuda::std::plus<> /*reduction_op*/, int last_lane, int offset)
   {
     unsigned int output;
     int shfl_c = last_lane | SHFL_C; // Shuffle control (mask and last_lane)
@@ -220,7 +220,8 @@ struct WarpReduceShfl
    * @param[in] offset
    *   Up-offset to pull from
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE float ReduceStep(float input, cub::Sum /*reduction_op*/, int last_lane, int offset)
+  _CCCL_DEVICE _CCCL_FORCEINLINE float
+  ReduceStep(float input, ::cuda::std::plus<> /*reduction_op*/, int last_lane, int offset)
   {
     float output;
     int shfl_c = last_lane | SHFL_C; // Shuffle control (mask and last_lane)
@@ -256,7 +257,7 @@ struct WarpReduceShfl
    *   Up-offset to pull from
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE unsigned long long
-  ReduceStep(unsigned long long input, cub::Sum /*reduction_op*/, int last_lane, int offset)
+  ReduceStep(unsigned long long input, ::cuda::std::plus<> /*reduction_op*/, int last_lane, int offset)
   {
     unsigned long long output;
     int shfl_c = last_lane | SHFL_C; // Shuffle control (mask and last_lane)
@@ -294,7 +295,7 @@ struct WarpReduceShfl
    *   Up-offset to pull from
    */
   _CCCL_DEVICE _CCCL_FORCEINLINE long long
-  ReduceStep(long long input, cub::Sum /*reduction_op*/, int last_lane, int offset)
+  ReduceStep(long long input, ::cuda::std::plus<> /*reduction_op*/, int last_lane, int offset)
   {
     long long output;
     int shfl_c = last_lane | SHFL_C; // Shuffle control (mask and last_lane)
@@ -332,7 +333,8 @@ struct WarpReduceShfl
    * @param[in] offset
    *   Up-offset to pull from
    */
-  _CCCL_DEVICE _CCCL_FORCEINLINE double ReduceStep(double input, cub::Sum /*reduction_op*/, int last_lane, int offset)
+  _CCCL_DEVICE _CCCL_FORCEINLINE double
+  ReduceStep(double input, ::cuda::std::plus<> /*reduction_op*/, int last_lane, int offset)
   {
     double output;
     int shfl_c = last_lane | SHFL_C; // Shuffle control (mask and last_lane)
@@ -358,7 +360,7 @@ struct WarpReduceShfl
   }
 
   /**
-   * @brief Reduction (specialized for swizzled ReduceByKeyOp<cub::Sum> across
+   * @brief Reduction (specialized for swizzled ReduceByKeyOp<::cuda::std::plus<>> across
    *        KeyValuePair<KeyT, ValueT> types)
    *
    * @param[in] input
@@ -375,15 +377,18 @@ struct WarpReduceShfl
    */
   template <typename ValueT, typename KeyT>
   _CCCL_DEVICE _CCCL_FORCEINLINE KeyValuePair<KeyT, ValueT> ReduceStep(
-    KeyValuePair<KeyT, ValueT> input, SwizzleScanOp<ReduceByKeyOp<cub::Sum>> /*reduction_op*/, int last_lane, int offset)
+    KeyValuePair<KeyT, ValueT> input,
+    SwizzleScanOp<ReduceByKeyOp<::cuda::std::plus<>>> /*reduction_op*/,
+    int last_lane,
+    int offset)
   {
     KeyValuePair<KeyT, ValueT> output;
 
     KeyT other_key = ShuffleDown<LOGICAL_WARP_THREADS>(input.key, offset, last_lane, member_mask);
 
-    output.key = input.key;
-    output.value =
-      ReduceStep(input.value, cub::Sum(), last_lane, offset, Int2Type<IsInteger<ValueT>::IS_SMALL_UNSIGNED>());
+    output.key   = input.key;
+    output.value = ReduceStep(
+      input.value, ::cuda::std::plus<>{}, last_lane, offset, Int2Type<IsInteger<ValueT>::IS_SMALL_UNSIGNED>());
 
     if (input.key != other_key)
     {
@@ -394,7 +399,7 @@ struct WarpReduceShfl
   }
 
   /**
-   * @brief Reduction (specialized for swizzled ReduceBySegmentOp<cub::Sum> across
+   * @brief Reduction (specialized for swizzled ReduceBySegmentOp<cuda::std::plus<>> across
    *        KeyValuePair<OffsetT, ValueT> types)
    *
    * @param[in] input
@@ -412,16 +417,16 @@ struct WarpReduceShfl
   template <typename ValueT, typename OffsetT>
   _CCCL_DEVICE _CCCL_FORCEINLINE KeyValuePair<OffsetT, ValueT> ReduceStep(
     KeyValuePair<OffsetT, ValueT> input,
-    SwizzleScanOp<ReduceBySegmentOp<cub::Sum>> /*reduction_op*/,
+    SwizzleScanOp<ReduceBySegmentOp<::cuda::std::plus<>>> /*reduction_op*/,
     int last_lane,
     int offset)
   {
     KeyValuePair<OffsetT, ValueT> output;
 
-    output.value =
-      ReduceStep(input.value, cub::Sum(), last_lane, offset, Int2Type<IsInteger<ValueT>::IS_SMALL_UNSIGNED>());
-    output.key =
-      ReduceStep(input.key, cub::Sum(), last_lane, offset, Int2Type<IsInteger<OffsetT>::IS_SMALL_UNSIGNED>());
+    output.value = ReduceStep(
+      input.value, ::cuda::std::plus<>{}, last_lane, offset, Int2Type<IsInteger<ValueT>::IS_SMALL_UNSIGNED>());
+    output.key = ReduceStep(
+      input.key, ::cuda::std::plus<>{}, last_lane, offset, Int2Type<IsInteger<OffsetT>::IS_SMALL_UNSIGNED>());
 
     if (input.key > 0)
     {
@@ -608,13 +613,14 @@ struct WarpReduceShfl
   typename ::cuda::std::enable_if<(::cuda::std::is_same<int, U>::value || ::cuda::std::is_same<unsigned int, U>::value)
                                     && detail::reduce_add_exists<>::value,
                                   T>::type
-  ReduceImpl(Int2Type<1> /* all_lanes_valid */, T input, int /* valid_items */, cub::Sum /* reduction_op */)
+  ReduceImpl(Int2Type<1> /* all_lanes_valid */, T input, int /* valid_items */, ::cuda::std::plus<> /* reduction_op */)
   {
     T output = input;
 
-    NV_IF_TARGET(NV_PROVIDES_SM_80,
-                 (output = __reduce_add_sync(member_mask, input);),
-                 (output = ReduceImpl<cub::Sum>(Int2Type<1>{}, input, LOGICAL_WARP_THREADS, cub::Sum{});));
+    NV_IF_TARGET(
+      NV_PROVIDES_SM_80,
+      (output = __reduce_add_sync(member_mask, input);),
+      (output = ReduceImpl<::cuda::std::plus<>>(Int2Type<1>{}, input, LOGICAL_WARP_THREADS, ::cuda::std::plus<>{});));
 
     return output;
   }
@@ -624,13 +630,14 @@ struct WarpReduceShfl
   typename ::cuda::std::enable_if<(::cuda::std::is_same<int, U>::value || ::cuda::std::is_same<unsigned int, U>::value)
                                     && detail::reduce_min_exists<>::value,
                                   T>::type
-  ReduceImpl(Int2Type<1> /* all_lanes_valid */, T input, int /* valid_items */, cub::Min /* reduction_op */)
+  ReduceImpl(Int2Type<1> /* all_lanes_valid */, T input, int /* valid_items */, ::cuda::minimum<> /* reduction_op */)
   {
     T output = input;
 
-    NV_IF_TARGET(NV_PROVIDES_SM_80,
-                 (output = __reduce_min_sync(member_mask, input);),
-                 (output = ReduceImpl<cub::Min>(Int2Type<1>{}, input, LOGICAL_WARP_THREADS, cub::Min{});));
+    NV_IF_TARGET(
+      NV_PROVIDES_SM_80,
+      (output = __reduce_min_sync(member_mask, input);),
+      (output = ReduceImpl<::cuda::minimum<>>(Int2Type<1>{}, input, LOGICAL_WARP_THREADS, ::cuda::minimum<>{});));
 
     return output;
   }
@@ -640,13 +647,14 @@ struct WarpReduceShfl
   typename ::cuda::std::enable_if<(::cuda::std::is_same<int, U>::value || ::cuda::std::is_same<unsigned int, U>::value)
                                     && detail::reduce_max_exists<>::value,
                                   T>::type
-  ReduceImpl(Int2Type<1> /* all_lanes_valid */, T input, int /* valid_items */, cub::Max /* reduction_op */)
+  ReduceImpl(Int2Type<1> /* all_lanes_valid */, T input, int /* valid_items */, ::cuda::maximum<> /* reduction_op */)
   {
     T output = input;
 
-    NV_IF_TARGET(NV_PROVIDES_SM_80,
-                 (output = __reduce_max_sync(member_mask, input);),
-                 (output = ReduceImpl<cub::Max>(Int2Type<1>{}, input, LOGICAL_WARP_THREADS, cub::Max{});));
+    NV_IF_TARGET(
+      NV_PROVIDES_SM_80,
+      (output = __reduce_max_sync(member_mask, input);),
+      (output = ReduceImpl<::cuda::maximum<>>(Int2Type<1>{}, input, LOGICAL_WARP_THREADS, ::cuda::maximum<>{});));
 
     return output;
   }

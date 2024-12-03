@@ -225,6 +225,11 @@ struct BlockReduceRaking
 
         int valid_raking_threads = (IS_FULL_TILE) ? RAKING_THREADS : (num_valid + SEGMENT_LENGTH - 1) / SEGMENT_LENGTH;
 
+        // sync before re-using shmem (warp_storage/raking_grid are aliased)
+        static_assert(RAKING_THREADS <= CUB_PTX_WARP_THREADS, "RAKING_THREADS must be <= warp size.");
+        unsigned int mask = static_cast<unsigned int>((1ull << RAKING_THREADS) - 1);
+        WARP_SYNC(mask);
+
         partial = WarpReduce(temp_storage.warp_storage)
                     .template Reduce<(IS_FULL_TILE && RAKING_UNGUARDED)>(partial, valid_raking_threads, reduction_op);
       }
@@ -247,7 +252,7 @@ struct BlockReduceRaking
   template <bool IS_FULL_TILE>
   _CCCL_DEVICE _CCCL_FORCEINLINE T Sum(T partial, int num_valid)
   {
-    cub::Sum reduction_op;
+    ::cuda::std::plus<> reduction_op;
 
     return Reduce<IS_FULL_TILE>(partial, num_valid, reduction_op);
   }

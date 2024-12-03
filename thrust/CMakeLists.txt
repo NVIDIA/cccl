@@ -28,10 +28,9 @@ cmake_minimum_required(VERSION 3.17)
 option(THRUST_ENABLE_HEADER_TESTING "Test that all public headers compile." "ON")
 option(THRUST_ENABLE_TESTING "Build Thrust testing suite." "ON")
 option(THRUST_ENABLE_EXAMPLES "Build Thrust examples." "ON")
-option(THRUST_ENABLE_BENCHMARKS "Build Thrust runtime benchmarks." "${CCCL_ENABLE_BENCHMARKS}")
 
 # Allow the user to optionally select offset type dispatch to fixed 32 or 64 bit types
-set(THRUST_DISPATCH_TYPE "Dynamic" CACHE STRING "Select Thrust offset type dispatch." FORCE)
+set(THRUST_DISPATCH_TYPE "Dynamic" CACHE STRING "Select Thrust offset type dispatch.")
 set_property(CACHE THRUST_DISPATCH_TYPE PROPERTY STRINGS "Dynamic" "Force32bit" "Force64bit")
 
 # Check if we're actually building anything before continuing. If not, no need
@@ -40,7 +39,7 @@ set_property(CACHE THRUST_DISPATCH_TYPE PROPERTY STRINGS "Dynamic" "Force32bit" 
 if (NOT (THRUST_ENABLE_HEADER_TESTING OR
          THRUST_ENABLE_TESTING OR
          THRUST_ENABLE_EXAMPLES OR
-         THRUST_ENABLE_BENCHMARKS))
+         CCCL_ENABLE_BENCHMARKS))
   return()
 endif()
 
@@ -97,6 +96,6 @@ if (THRUST_ENABLE_EXAMPLES)
   add_subdirectory(examples)
 endif()
 
-if (THRUST_ENABLE_BENCHMARKS)
+if (CCCL_ENABLE_BENCHMARKS)
   add_subdirectory(benchmarks)
 endif()
