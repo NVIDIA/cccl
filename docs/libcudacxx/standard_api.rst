@@ -106,7 +106,7 @@ Feature availability:
    -  ``mdspan`` is feature complete in C++17 onwards.
    -  ``mdspan`` on msvc is only supported in C++20 and onwards.
 
--  C++23 ``to_underlying`` from ``<utility>`` is available in C++11.
+-  C++23 ``forward_like`` and ``to_underlying`` from ``<utility>`` are available in C++11.
 
 -  C++23 ``is_scoped_enum`` in ``<type_traits>`` is available in C++11.
 
