@@ -10,9 +10,9 @@
 // UNSUPPORTED: c++11, c++14
 // UNSUPPORTED: msvc && c++17
 
-#include <cuda/std/__linalg/conjugated.h>
 #include <cuda/std/cassert>
 #include <cuda/std/complex>
+#include <cuda/std/linalg>
 #include <cuda/std/type_traits>
 
 __host__ __device__ void constexpr_test()
