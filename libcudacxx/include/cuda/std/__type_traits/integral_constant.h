@@ -45,7 +45,7 @@ typedef integral_constant<bool, true> true_type;
 typedef integral_constant<bool, false> false_type;
 
 template <bool _Val>
-using _BoolConstant _LIBCUDACXX_DEPRECATED _CCCL_NODEBUG_ALIAS = integral_constant<bool, _Val>;
+using _BoolConstant _LIBCUDACXX_DEPRECATED_TYPE_ALIAS _CCCL_NODEBUG_ALIAS = integral_constant<bool, _Val>;
 
 template <bool __b>
 using bool_constant = integral_constant<bool, __b>;

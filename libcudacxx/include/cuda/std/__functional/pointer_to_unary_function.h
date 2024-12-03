@@ -31,7 +31,7 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 template <class _Arg, class _Result>
 class _CCCL_TYPE_VISIBILITY_DEFAULT
-_LIBCUDACXX_DEPRECATED_IN_CXX11 pointer_to_unary_function : public __unary_function<_Arg, _Result>
+_LIBCUDACXX_DEPRECATED pointer_to_unary_function : public __unary_function<_Arg, _Result>
 {
   _Result (*__f_)(_Arg);
 
@@ -46,8 +46,7 @@ public:
 };
 
 template <class _Arg, class _Result>
-_LIBCUDACXX_DEPRECATED_IN_CXX11 _LIBCUDACXX_HIDE_FROM_ABI pointer_to_unary_function<_Arg, _Result>
-ptr_fun(_Result (*__f)(_Arg))
+_LIBCUDACXX_DEPRECATED _LIBCUDACXX_HIDE_FROM_ABI pointer_to_unary_function<_Arg, _Result> ptr_fun(_Result (*__f)(_Arg))
 {
   return pointer_to_unary_function<_Arg, _Result>(__f);
 }

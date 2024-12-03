@@ -30,7 +30,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 
 template <class __Operation>
-class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED_IN_CXX11 binder2nd
+class _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DEPRECATED binder2nd
     : public __unary_function<typename __Operation::first_argument_type, typename __Operation::result_type>
 {
 protected:
@@ -57,8 +57,7 @@ public:
 };
 
 template <class __Operation, class _Tp>
-_LIBCUDACXX_DEPRECATED_IN_CXX11 _LIBCUDACXX_HIDE_FROM_ABI binder2nd<__Operation>
-bind2nd(const __Operation& __op, const _Tp& __x)
+_LIBCUDACXX_DEPRECATED _LIBCUDACXX_HIDE_FROM_ABI binder2nd<__Operation> bind2nd(const __Operation& __op, const _Tp& __x)
 {
   return binder2nd<__Operation>(__op, __x);
 }

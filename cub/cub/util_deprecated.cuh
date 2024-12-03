@@ -52,28 +52,19 @@
 #ifdef CUB_IGNORE_DEPRECATED_API
 #  define CUB_DEPRECATED
 #  define CUB_DEPRECATED_BECAUSE(MSG)
-#elif _CCCL_STD_VER >= 2014
-#  define CUB_DEPRECATED              [[deprecated]]
-#  define CUB_DEPRECATED_BECAUSE(MSG) [[deprecated(MSG)]]
-#elif _CCCL_COMPILER(MSVC)
-#  define CUB_DEPRECATED              __declspec(deprecated)
-#  define CUB_DEPRECATED_BECAUSE(MSG) __declspec(deprecated(MSG))
-#elif _CCCL_COMPILER(CLANG)
-#  define CUB_DEPRECATED              __attribute__((deprecated))
-#  define CUB_DEPRECATED_BECAUSE(MSG) __attribute__((deprecated(MSG)))
-#elif _CCCL_COMPILER(GCC)
-#  define CUB_DEPRECATED              __attribute__((deprecated))
-#  define CUB_DEPRECATED_BECAUSE(MSG) __attribute__((deprecated(MSG)))
+#  define CUB_DEPRECATED_TYPE_ALIAS
+#  define CUB_DEPRECATED_TYPE_ALIAS_BECAUSE(MSG)
 #else
-#  define CUB_DEPRECATED
-#  define CUB_DEPRECATED_BECAUSE(MSG)
+#  define CUB_DEPRECATED                         _CCCL_DEPRECATED
+#  define CUB_DEPRECATED_BECAUSE(MSG)            _CCCL_DEPRECATED_BECAUSE(MSG)
+#  define CUB_DEPRECATED_TYPE_ALIAS              _CCCL_DEPRECATED_TYPE_ALIAS
+#  define CUB_DEPRECATED_TYPE_ALIAS_BECAUSE(MSG) _CCCL_DEPRECATED_TYPE_ALIAS_BECAUSE(MSG)
 #endif
 
-#define CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED             \
-  CUB_DEPRECATED_BECAUSE(                                          \
-    "CUB no longer accepts `debug_synchronous` parameter. "        \
-    "Define CUB_DEBUG_SYNC instead, or silence this message with " \
-    "CUB_IGNORE_DEPRECATED_API.")
+#define CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED                                  \
+  CUB_DEPRECATED_BECAUSE("CUB no longer accepts `debug_synchronous` parameter. "        \
+                         "Define CUB_DEBUG_SYNC instead, or silence this message with " \
+                         "CUB_IGNORE_DEPRECATED_API.")
 
 #define CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG                     \
   if (debug_synchronous)                                            \

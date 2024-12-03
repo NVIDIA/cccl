@@ -115,4 +115,44 @@
 #  define _CCCL_RESTRICT __restrict__
 #endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 
+// define deprecated macro to vendor specific attributes
+#if _CCCL_COMPILER(MSVC)
+#  define _CCCL_DEPRECATED               __declspec(deprecated)
+#  define _CCCL_DEPRECATED_BECAUSE(_MSG) __declspec(deprecated(_MSG))
+#elif _CCCL_HAS_ATTRIBUTE(__deprecated__)
+#  define _CCCL_DEPRECATED               __attribute__((__deprecated__))
+#  define _CCCL_DEPRECATED_BECAUSE(_MSG) __attribute__((__deprecated__(_MSG)))
+#else
+#  define _CCCL_DEPRECATED
+#  define _CCCL_DEPRECATED_BECAUSE(_MSG)
+#endif
+
+// use the C++14 deprecated attribute instead of the vendor specific ones except for GCC before 13 and Clang before 13
+// which have issues with combining it with other attributes
+#if _CCCL_STD_VER >= 2014  \
+  && (_CCCL_COMPILER(MSVC) \
+      || (_CCCL_HAS_CPP_ATTRIBUTE(deprecated) && !_CCCL_COMPILER(GCC, <, 13) && !_CCCL_COMPILER(CLANG, <, 13)))
+#  undef _CCCL_DEPRECATED
+#  undef _CCCL_DEPRECATED_BECAUSE
+#  define _CCCL_DEPRECATED               [[deprecated]]
+#  define _CCCL_DEPRECATED_BECAUSE(_MSG) [[deprecated(_MSG)]]
+#endif
+
+// Disable deprecated attribute for CUDACC below 11.3 and NVRTC below 12
+#if _CCCL_CUDACC_BELOW(11, 3) || _CCCL_COMPILER(NVRTC, <, 12)
+#  undef _CCCL_DEPRECATED
+#  undef _CCCL_DEPRECATED_BECAUSE
+#  define _CCCL_DEPRECATED
+#  define _CCCL_DEPRECATED_BECAUSE(_MSG)
+#endif
+
+// Disable deprecated attribute for type aliases when using MSVC's native attribute
+#if _CCCL_STD_VER < 2014 && _CCCL_COMPILER(MSVC)
+#  define _CCCL_DEPRECATED_TYPE_ALIAS
+#  define _CCCL_DEPRECATED_TYPE_ALIAS_BECAUSE(_MSG)
+#else
+#  define _CCCL_DEPRECATED_TYPE_ALIAS               _CCCL_DEPRECATED
+#  define _CCCL_DEPRECATED_TYPE_ALIAS_BECAUSE(_MSG) _CCCL_DEPRECATED_BECAUSE(_MSG)
+#endif
+
 #endif // __CCCL_ATTRIBUTES_H

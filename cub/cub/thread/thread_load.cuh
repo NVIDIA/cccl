@@ -118,16 +118,16 @@ template <int COUNT, int MAX>
 struct IterateThreadLoad
 {
   template <CacheLoadModifier MODIFIER, typename T>
-  CUB_DEPRECATED_BECAUSE("Use UnrolledThreadLoad() instead")
-  static _CCCL_DEVICE _CCCL_FORCEINLINE void Load(T const* ptr, T* vals)
+  CUB_DEPRECATED_BECAUSE("Use UnrolledThreadLoad() instead") static _CCCL_DEVICE _CCCL_FORCEINLINE void
+  Load(T const* ptr, T* vals)
   {
     vals[COUNT] = ThreadLoad<MODIFIER>(ptr + COUNT);
     IterateThreadLoad<COUNT + 1, MAX>::template Load<MODIFIER>(ptr, vals);
   }
 
   template <typename RandomAccessIterator, typename T>
-  CUB_DEPRECATED_BECAUSE("Use UnrolledCopy() instead")
-  static _CCCL_DEVICE _CCCL_FORCEINLINE void Dereference(RandomAccessIterator itr, T* vals)
+  CUB_DEPRECATED_BECAUSE("Use UnrolledCopy() instead") static _CCCL_DEVICE _CCCL_FORCEINLINE void
+  Dereference(RandomAccessIterator itr, T* vals)
   {
     vals[COUNT] = itr[COUNT];
     IterateThreadLoad<COUNT + 1, MAX>::Dereference(itr, vals);
