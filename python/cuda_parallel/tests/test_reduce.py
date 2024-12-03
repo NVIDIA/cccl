@@ -9,6 +9,7 @@ import re
 import numba.cuda
 import numba.types
 import cuda.parallel.experimental as cudax
+from cuda.parallel.experimental import _iterators
 from cuda.parallel.experimental import iterators
 
 
@@ -160,14 +161,14 @@ def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, sta
         dtype_inp, ntype_inp = dtype_ntype(-1)
         dtype_out = dtype_inp
         raw_pointer_devarr = numba.cuda.to_device(numpy.array(l_input, dtype=dtype_inp))
-        i_input = iterators.pointer(raw_pointer_devarr, ntype=ntype_inp)
+        i_input = _iterators.pointer(raw_pointer_devarr, ntype=ntype_inp)
     elif input_generator.startswith("streamed_input_"):
         rng = random.Random(0)
         l_input = [rng.randrange(100) for _ in range(num_items)]
         dtype_inp, ntype_inp = dtype_ntype(-1)
         dtype_out = dtype_inp
         streamed_input_devarr = numba.cuda.to_device(numpy.array(l_input, dtype=dtype_inp))
-        i_input = iterators.cache(streamed_input_devarr, ntype=ntype_inp, modifier='stream')
+        i_input = _iterators.cache(streamed_input_devarr, ntype=ntype_inp, modifier='stream')
     elif input_generator.startswith("constant_"):
         l_input = [42 for distance in range(num_items)]
         dtype_inp, ntype_inp = dtype_ntype(-1)
