@@ -29,7 +29,8 @@
 #  include <ciso646> // otherwise go for the smallest possible header
 #endif // !_CCCL_COMPILER(NVRTC)
 
-#define __cccl_lib_to_underlying 202102L
+#define __cccl_lib_is_scoped_enum 202011L
+#define __cccl_lib_to_underlying  202102L
 // #define __cpp_lib_tuple_like     202311L // P2819R2 is implemented, but P2165R4 is not yet
 
 #if _CCCL_STD_VER >= 2014
@@ -231,7 +232,6 @@
 // # define __cccl_lib_constexpr_typeinfo                   202106L
 #  define __cccl_lib_forward_like 202207L
 // # define __cccl_lib_invoke_r                             202106L
-#  define __cccl_lib_is_scoped_enum 202011L
 // # define __cccl_lib_move_only_function                   202110L
 // # define __cccl_lib_out_ptr                              202106L
 // # define __cccl_lib_ranges_chunk                         202202L

@@ -106,6 +106,8 @@ Feature availability:
 
 -  C++23 ``to_underlying`` from ``<utility>`` is available in C++11.
 
+-  C++23 ``is_scoped_enum`` in ``<type_traits>`` is available in C++11.
+
 -  C++26 ``std::dims`` is available in C++17.
 
 -  C++26 tuple protocol to ``complex`` is available in C++11.
