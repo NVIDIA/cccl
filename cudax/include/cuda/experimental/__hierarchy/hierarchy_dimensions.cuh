@@ -138,7 +138,7 @@ template <typename... Levels>
 struct can_stack_checker
 {
   template <typename... LevelsShifted>
-  using can_stack = ::cuda::std::__fold_and<detail::can_stack_on_top<LevelsShifted, Levels>...>;
+  using can_stack = ::cuda::std::__fold_and<detail::can_rhs_stack_on_lhs<LevelsShifted, Levels>...>;
 };
 
 template <typename LUnit, typename L1, typename... Levels>
@@ -436,6 +436,9 @@ private:
   };
 
 public:
+  template <typename, typename...>
+  friend struct hierarchy_dimensions_fragment;
+
   template <typename Unit, typename Level>
   using extents_type = decltype(::cuda::std::apply(
     ::cuda::std::declval<detail::hierarchy_extents_helper<Unit>>(),
@@ -715,6 +718,63 @@ public:
 
     return ::cuda::std::apply(detail::get_level_helper<Level>{}, levels);
   }
+
+  //! @brief Returns a new hierarchy with combined levels of this and the other supplied hierarchy
+  //!
+  //! This function combines this hierarchy with the supplied hierarchy, the resulting hierarchy
+  //! holds levels present in both hierarchies. In case of overlap of levels this hierarchy
+  //! is prioritized, so the result always holds all levels from this hierarchy and non-overlapping
+  //! levels from the other hierarchy.
+  //!
+  //! @param other The other hierarchy to be combined with this hierarchy
+  //!
+  //! @return Hierarchy holding the combined levels from both hierarchies
+  template <typename OtherUnit, typename... OtherLevels>
+  constexpr auto combine(const hierarchy_dimensions_fragment<OtherUnit, OtherLevels...>& other)
+  {
+    using this_top_level     = __level_type_of<::cuda::std::__type_index_c<0, Levels...>>;
+    using this_bottom_level  = __level_type_of<::cuda::std::__type_index_c<sizeof...(Levels) - 1, Levels...>>;
+    using other_top_level    = __level_type_of<::cuda::std::__type_index_c<0, OtherLevels...>>;
+    using other_bottom_level = __level_type_of<::cuda::std::__type_index_c<sizeof...(OtherLevels) - 1, OtherLevels...>>;
+    if constexpr (detail::can_rhs_stack_on_lhs<other_top_level, this_bottom_level>)
+    {
+      // Easily stackable case, example this is (grid), other is (cluster, block)
+      return ::cuda::std::apply(fragment_helper<OtherUnit>(), ::cuda::std::tuple_cat(levels, other.levels));
+    }
+    else if constexpr (has_level<this_bottom_level, hierarchy_dimensions_fragment<OtherUnit, OtherLevels...>>
+                       && (!has_level<this_top_level, hierarchy_dimensions_fragment<OtherUnit, OtherLevels...>>
+                           || ::cuda::std::is_same_v<this_top_level, other_top_level>) )
+    {
+      // Overlap with this on the top, e.g. this is (grid, cluster), other is (cluster, block), can fully overlap
+      // Do we have some CCCL tuple utils that can select all but the first?
+      auto to_add_with_one_too_many = other.template levels_range<OtherUnit, this_bottom_level>();
+      auto to_add                   = ::cuda::std::apply(
+        [](auto&&, auto&&... rest) {
+          return ::cuda::std::make_tuple(rest...);
+        },
+        to_add_with_one_too_many);
+      return ::cuda::std::apply(fragment_helper<OtherUnit>(), ::cuda::std::tuple_cat(levels, to_add));
+    }
+    else
+    {
+      if constexpr (detail::can_rhs_stack_on_lhs<this_top_level, other_bottom_level>)
+      {
+        // Easily stackable case again, just reversed
+        return ::cuda::std::apply(fragment_helper<BottomUnit>(), ::cuda::std::tuple_cat(other.levels, levels));
+      }
+      else
+      {
+        // Overlap with this on the bottom, e.g. this is (cluster, block), other is (grid, cluster), can fully overlap
+        static_assert(has_level<other_bottom_level, hierarchy_dimensions_fragment<BottomUnit, Levels...>>
+                        && (!has_level<this_bottom_level, hierarchy_dimensions_fragment<OtherUnit, OtherLevels...>>
+                            || ::cuda::std::is_same_v<this_bottom_level, other_bottom_level>),
+                      "Can't combine the hierarchies");
+
+        auto to_add = other.template levels_range<this_top_level, other_top_level>();
+        return ::cuda::std::apply(fragment_helper<BottomUnit>(), ::cuda::std::tuple_cat(to_add, levels));
+      }
+    }
+  }
 };
 
 /**
@@ -810,14 +870,14 @@ _CUDAX_API constexpr auto operator&(const hierarchy_dimensions_fragment<LUnit, L
   using top_level    = __level_type_of<::cuda::std::__type_index_c<0, Levels...>>;
   using bottom_level = __level_type_of<::cuda::std::__type_index_c<sizeof...(Levels) - 1, Levels...>>;
 
-  if constexpr (detail::can_stack_on_top<top_level, __level_type_of<NewLevel>>)
+  if constexpr (detail::can_rhs_stack_on_lhs<top_level, __level_type_of<NewLevel>>)
   {
     return hierarchy_dimensions_fragment<LUnit, NewLevel, Levels...>(
       ::cuda::std::tuple_cat(::cuda::std::make_tuple(new_level), ls.levels));
   }
   else
   {
-    static_assert(detail::can_stack_on_top<__level_type_of<NewLevel>, bottom_level>,
+    static_assert(detail::can_rhs_stack_on_lhs<__level_type_of<NewLevel>, bottom_level>,
                   "Not supported order of levels in hierarchy");
     using NewUnit = detail::__default_unit_below<__level_type_of<NewLevel>>;
     return hierarchy_dimensions_fragment<NewUnit, Levels..., NewLevel>(

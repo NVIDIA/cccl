@@ -37,7 +37,7 @@
 #include <type_traits>
 #include <utility>
 
-#if defined(_CCCL_COMPILER_MSVC) && _MSC_VER == 1900
+#if _CCCL_COMPILER(MSVC, ==, 19, 00)
 #  define THRUST_OPTIONAL_MSVC2015
 #endif
 
@@ -231,7 +231,7 @@ using enable_assign_from_other = detail::enable_if_t<
   && !std::is_assignable<T&, optional<U>&>::value && !std::is_assignable<T&, optional<U>&&>::value
   && !std::is_assignable<T&, const optional<U>&>::value && !std::is_assignable<T&, const optional<U>&&>::value>;
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
 // TODO make a version which works with MSVC
 template <class T, class U = T>
 struct is_swappable : std::true_type
@@ -1976,7 +1976,7 @@ optional(T) -> optional<T>;
 #endif
 
 // Doxygen chokes on the trailing return types used below.
-#if !defined(THRUST_DOXYGEN)
+#if !defined(_CCCL_DOXYGEN_INVOKED)
 /// \exclude
 namespace detail
 {
@@ -2034,7 +2034,7 @@ _CCCL_HOST_DEVICE auto optional_map_impl(Opt&& opt, F&& f) -> optional<monostate
 }
 #  endif
 } // namespace detail
-#endif // !defined(THRUST_DOXYGEN)
+#endif // !defined(_CCCL_DOXYGEN_INVOKED)
 
 /// Specialization for when `T` is a reference. `optional<T&>` acts similarly
 /// to a `T*`, but provides more operations and shows intent more clearly.

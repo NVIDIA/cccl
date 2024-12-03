@@ -11,7 +11,34 @@
 #ifndef __CCCL_COMPILER_H
 #define __CCCL_COMPILER_H
 
+// Utility to compare version numbers. To use:
+// 1) Define a macro that makes a version number from major and minor numbers, e. g.:
+//    #define MYPRODUCT_MAKE_VERSION(_MAJOR, _MINOR) (_MAJOR * 100 + _MINOR)
+// 2) Define a macro that you will use to compare versions, e. g.:
+//    #define MYPRODUCT(...) _CCCL_VERSION_COMPARE(MYPRODUCT, MYPRODUCT_##__VA_ARGS__)
+//    Signatures:
+//       MYPRODUCT(_PROD)                      - is the product _PROD version non-zero?
+//       MYPRODUCT(_PROD, _OP, _MAJOR)         - compare the product _PROD version to _MAJOR using operator _OP
+//       MYPRODUCT(_PROD, _OP, _MAJOR, _MINOR) - compare the product _PROD version to _MAJOR._MINOR using operator _OP
+#define _CCCL_VERSION_COMPARE_1(_PREFIX, _VER)              (_VER != 0)
+#define _CCCL_VERSION_COMPARE_3(_PREFIX, _VER, _OP, _MAJOR) _CCCL_VERSION_COMPARE_4(_PREFIX, _VER, _OP, _MAJOR, 0)
+#define _CCCL_VERSION_COMPARE_4(_PREFIX, _VER, _OP, _MAJOR, _MINOR) \
+  (_CCCL_VERSION_COMPARE_1(_PREFIX, _VER) && (_VER _OP _PREFIX##_MAKE_VERSION(_MAJOR, _MINOR)))
+#define _CCCL_VERSION_SELECT_COUNT(_ARG1, _ARG2, _ARG3, _ARG4, _ARG5, ...) _ARG5
+#define _CCCL_VERSION_SELECT2(_ARGS)                                       _CCCL_VERSION_SELECT_COUNT _ARGS
+// MSVC traditonal preprocessor requires an extra level of indirection
+#define _CCCL_VERSION_SELECT(...)         \
+  _CCCL_VERSION_SELECT2(                  \
+    (__VA_ARGS__,                         \
+     _CCCL_VERSION_COMPARE_4,             \
+     _CCCL_VERSION_COMPARE_3,             \
+     _CCCL_VERSION_COMPARE_BAD_ARG_COUNT, \
+     _CCCL_VERSION_COMPARE_1,             \
+     _CCCL_VERSION_COMPARE_BAD_ARG_COUNT))
+#define _CCCL_VERSION_COMPARE(_PREFIX, ...) _CCCL_VERSION_SELECT(__VA_ARGS__)(_PREFIX, __VA_ARGS__)
+
 #define _CCCL_COMPILER_MAKE_VERSION(_MAJOR, _MINOR) (_MAJOR * 100 + _MINOR)
+#define _CCCL_COMPILER(...)                         _CCCL_VERSION_COMPARE(_CCCL_COMPILER, _CCCL_COMPILER_##__VA_ARGS__)
 
 // Determine the host compiler and its version
 #if defined(__INTEL_COMPILER)
@@ -23,53 +50,32 @@
 #elif defined(__NVCOMPILER)
 #  define _CCCL_COMPILER_NVHPC _CCCL_COMPILER_MAKE_VERSION(__NVCOMPILER_MAJOR__, __NVCOMPILER_MINOR__)
 #elif defined(__clang__)
-#  define _CCCL_COMPILER_CLANG
-#  define _CCCL_CLANG_VERSION (__clang_major__ * 10000 + __clang_minor__ * 100 + __clang_patchlevel__)
+#  define _CCCL_COMPILER_CLANG _CCCL_COMPILER_MAKE_VERSION(__clang_major__, __clang_minor__)
 #elif defined(__GNUC__)
 #  define _CCCL_COMPILER_GCC _CCCL_COMPILER_MAKE_VERSION(__GNUC__, __GNUC_MINOR__)
 #elif defined(_MSC_VER)
-#  define _CCCL_COMPILER_MSVC
-#  define _CCCL_MSVC_VERSION      _MSC_VER
-#  define _CCCL_MSVC_VERSION_FULL _MSC_FULL_VER
+#  define _CCCL_COMPILER_MSVC     _CCCL_COMPILER_MAKE_VERSION(_MSC_VER / 100, _MSC_VER % 100)
+#  define _CCCL_COMPILER_MSVC2017 (_CCCL_COMPILER_MSVC < _CCCL_COMPILER_MAKE_VERSION(19, 20))
+#  if _CCCL_COMPILER_MSVC2017 && !defined(CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING)
+#    pragma message( \
+      "Support for the Visual Studio 2017 (MSC_VER < 1920) is deprecated and will eventually be removed. Define CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING to suppress this warning")
+#  endif // CCCL_SUPPRESS_ICC_DEPRECATION_WARNING
+#  define _CCCL_COMPILER_MSVC2019                               \
+    (_CCCL_COMPILER_MSVC >= _CCCL_COMPILER_MAKE_VERSION(19, 20) \
+     && _CCCL_COMPILER_MSVC < _CCCL_COMPILER_MAKE_VERSION(19, 30))
+#  define _CCCL_COMPILER_MSVC2022                               \
+    (_CCCL_COMPILER_MSVC >= _CCCL_COMPILER_MAKE_VERSION(19, 30) \
+     && _CCCL_COMPILER_MSVC < _CCCL_COMPILER_MAKE_VERSION(19, 40))
 #elif defined(__CUDACC_RTC__)
 #  define _CCCL_COMPILER_NVRTC _CCCL_COMPILER_MAKE_VERSION(__CUDACC_VER_MAJOR__, __CUDACC_VER_MINOR__)
 #endif
-
-#define _CCCL_COMPILER_COMPARE_VERSION_1(_COMP)              _COMP
-#define _CCCL_COMPILER_COMPARE_VERSION_3(_COMP, _OP, _MAJOR) _CCCL_COMPILER_COMPARE_VERSION_4(_COMP, _OP, _MAJOR, 0)
-#define _CCCL_COMPILER_COMPARE_VERSION_4(_COMP, _OP, _MAJOR, _MINOR) \
-  (_COMP && (_COMP _OP _CCCL_COMPILER_MAKE_VERSION(_MAJOR, _MINOR)))
-
-#define _CCCL_COMPILER_SELECT_COUNT(_ARG1, _ARG2, _ARG3, _ARG4, _ARG5, ...) _ARG5
-#define _CCCL_COMPILER_SELECT2(_ARGS)                                       _CCCL_COMPILER_SELECT_COUNT _ARGS
-// MSVC traditonal preprocessor requires an extra level of indirection
-#define _CCCL_COMPILER_SELECT(...)         \
-  _CCCL_COMPILER_SELECT2(                  \
-    (__VA_ARGS__,                          \
-     _CCCL_COMPILER_COMPARE_VERSION_4,     \
-     _CCCL_COMPILER_COMPARE_VERSION_3,     \
-     _CCCL_COMPILER_COMPARE_BAD_ARG_COUNT, \
-     _CCCL_COMPILER_COMPARE_VERSION_1,     \
-     _CCCL_COMPILER_COMPARE_BAD_ARG_COUNT))
-#define _CCCL_COMPILER(...) _CCCL_COMPILER_SELECT(_CCCL_COMPILER_##__VA_ARGS__)(_CCCL_COMPILER_##__VA_ARGS__)
-
-// Convenient shortcut to determine which version of MSVC we are dealing with
-#if defined(_CCCL_COMPILER_MSVC)
-#  if _MSC_VER < 1920
-#    define _CCCL_COMPILER_MSVC_2017
-#  elif _MSC_VER < 1930
-#    define _CCCL_COMPILER_MSVC_2019
-#  else // _MSC_VER < 1940
-#    define _CCCL_COMPILER_MSVC_2022
-#  endif // _MSC_VER < 1940
-#endif // _CCCL_COMPILER_MSVC
 
 // Determine the cuda compiler
 #if defined(__NVCC__)
 #  define _CCCL_CUDA_COMPILER_NVCC
 #elif defined(_NVHPC_CUDA)
 #  define _CCCL_CUDA_COMPILER_NVHPC
-#elif defined(__CUDA__) && defined(_CCCL_COMPILER_CLANG)
+#elif defined(__CUDA__) && _CCCL_COMPILER(CLANG)
 #  define _CCCL_CUDA_COMPILER_CLANG
 #endif
 
@@ -101,10 +107,10 @@
 #define _CCCL_TO_STRING(_STR)  _CCCL_TO_STRING2(_STR)
 
 // Define the pragma for the host compiler
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
 #  define _CCCL_PRAGMA(_ARG) __pragma(_ARG)
 #else
 #  define _CCCL_PRAGMA(_ARG) _Pragma(_CCCL_TO_STRING(_ARG))
-#endif // defined(_CCCL_COMPILER_MSVC)
+#endif // _CCCL_COMPILER(MSVC)
 
 #endif // __CCCL_COMPILER_H

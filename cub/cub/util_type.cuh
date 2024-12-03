@@ -50,7 +50,16 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
+#if defined(_CCCL_HAS_NVFP16)
+#  include <cuda_fp16.h>
+#endif // _CCCL_HAS_NVFP16
+
 #if defined(_CCCL_HAS_NVBF16)
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
+#  include <cuda_bf16.h>
+_CCCL_DIAG_POP
+
 #  if _CCCL_CUDACC_AT_LEAST(11, 8)
 // cuda_fp8.h resets default for C4127, so we have to guard the inclusion
 _CCCL_DIAG_PUSH
@@ -74,7 +83,7 @@ CUB_NAMESPACE_BEGIN
 #    endif // !defined(__CUDACC_RTC_INT128__)
 #  else // !defined(__CUDACC_RTC__)
 #    if _CCCL_CUDACC_AT_LEAST(11, 5)
-#      if _CCCL_COMPILER(GCC) || defined(_CCCL_COMPILER_CLANG) || _CCCL_COMPILER(ICC) || _CCCL_COMPILER(NVHPC)
+#      if _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG) || _CCCL_COMPILER(ICC) || _CCCL_COMPILER(NVHPC)
 #        define CUB_IS_INT128_ENABLED 1
 #      endif // GCC || CLANG || ICC || NVHPC
 #    endif // _CCCL_CUDACC_AT_LEAST(11, 5)
@@ -85,7 +94,7 @@ CUB_NAMESPACE_BEGIN
  * Conditional types
  ******************************************************************************/
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 namespace detail
 {
 //! Alias to the given iterator's value_type.
@@ -142,7 +151,7 @@ struct Log2
   }; // Inductive case
 };
 
-#  ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 template <int N, int COUNT>
 struct Log2<N, 0, COUNT>
@@ -155,7 +164,7 @@ struct Log2<N, 0, COUNT>
   };
 };
 
-#  endif // DOXYGEN_SHOULD_SKIP_THIS
+#  endif // _CCCL_DOXYGEN_INVOKED
 
 /**
  * \brief Statically determine if N is a power-of-two
@@ -169,13 +178,13 @@ struct PowerOfTwo
   };
 };
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 /******************************************************************************
  * Marker types
  ******************************************************************************/
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 /**
  * \brief A simple "null" marker type
@@ -1156,6 +1165,6 @@ template <typename T>
 struct Traits : NumericTraits<typename ::cuda::std::remove_cv<T>::type>
 {};
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 CUB_NAMESPACE_END

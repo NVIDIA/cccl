@@ -76,11 +76,11 @@
 
 // Passing objects with nested [[no_unique_address]] to kernels leads to data corruption
 // This happens up to clang18
-#if !defined(_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS) && defined(_CCCL_COMPILER_CLANG)
+#if !defined(_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS) && _CCCL_COMPILER(CLANG)
 #  define _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
-#endif // !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS && _CCCL_COMPILER_CLANG
+#endif // !_CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS && _CCCL_COMPILER(CLANG)
 
-#if _CCCL_HAS_CPP_ATTRIBUTE(nodiscard) || (defined(_CCCL_COMPILER_MSVC) && _CCCL_STD_VER >= 2017)
+#if _CCCL_HAS_CPP_ATTRIBUTE(nodiscard) || (_CCCL_COMPILER(MSVC) && _CCCL_STD_VER >= 2017)
 #  define _CCCL_NODISCARD [[nodiscard]]
 #else // ^^^ has nodiscard ^^^ / vvv no nodiscard vvv
 #  define _CCCL_NODISCARD
@@ -88,11 +88,11 @@
 
 // NVCC below 11.3 does not support nodiscard on friend operators
 // It always fails with clang
-#if _CCCL_CUDACC_BELOW(11, 3) || defined(_CCCL_COMPILER_CLANG)
+#if _CCCL_CUDACC_BELOW(11, 3) || _CCCL_COMPILER(CLANG)
 #  define _CCCL_NODISCARD_FRIEND friend
 #else // ^^^ _CCCL_CUDACC_BELOW(11, 3) ^^^ / vvv _CCCL_CUDACC_AT_LEAST(11, 3) vvv
 #  define _CCCL_NODISCARD_FRIEND _CCCL_NODISCARD friend
-#endif // _CCCL_CUDACC_AT_LEAST(11, 3) && !_CCCL_COMPILER_CLANG
+#endif // _CCCL_CUDACC_AT_LEAST(11, 3) && !_CCCL_COMPILER(CLANG)
 
 // NVCC below 11.3 does not support attributes on alias declarations
 #if _CCCL_CUDACC_BELOW(11, 3)
@@ -101,7 +101,7 @@
 #  define _CCCL_ALIAS_ATTRIBUTE(...) __VA_ARGS__
 #endif // _CCCL_CUDACC_AT_LEAST(11, 3)
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
 #  define _CCCL_NORETURN __declspec(noreturn)
 #elif _CCCL_HAS_CPP_ATTRIBUTE(noreturn)
 #  define _CCCL_NORETURN [[noreturn]]
@@ -109,10 +109,10 @@
 #  define _CCCL_NORETURN __attribute__((noreturn))
 #endif
 
-#if defined(_CCCL_COMPILER_MSVC) // vvv _CCCL_COMPILER_MSVC vvv
+#if _CCCL_COMPILER(MSVC) // vvv _CCCL_COMPILER(MSVC) vvv
 #  define _CCCL_RESTRICT __restrict
-#else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
 #  define _CCCL_RESTRICT __restrict__
-#endif // ^^^ !_CCCL_COMPILER_MSVC ^^^
+#endif // ^^^ !_CCCL_COMPILER(MSVC) ^^^
 
 #endif // __CCCL_ATTRIBUTES_H

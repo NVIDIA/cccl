@@ -385,6 +385,8 @@ void PDNRM2_HOST(matrix<double>* A, double* result)
 
 void PDPOTRF(matrix<double>& A)
 {
+  auto guard = ctx.dot_section("PDPOTRF");
+
 #ifdef HAVE_DOT
   reserved::dot::set_current_color("yellow");
 #endif
@@ -505,6 +507,7 @@ void PDTRSM(cublasSideMode_t side,
 
 void PDPOTRS(matrix<double>& A, class matrix<double>& B, cublasFillMode_t uplo)
 {
+  auto guard = ctx.dot_section("PDPOTRS");
 #ifdef HAVE_DOT
   reserved::dot::set_current_color("green");
 #endif
@@ -656,12 +659,14 @@ int main(int argc, char** argv)
     return 1.0 / (col + row + 1.0) + 2.0 * N * (col == row);
   };
 
+  ctx.dot_push_section("fillA");
   if (check_result)
   {
     Aref.fill(hilbert);
   }
 
   A.fill(hilbert);
+  ctx.dot_pop_section();
 
   /* Right-hand side */
   matrix<double> B_potrs(N, 1, NB, 1, false, "B");

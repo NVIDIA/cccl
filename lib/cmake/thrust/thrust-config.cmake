@@ -3,8 +3,6 @@
 #
 # Provided by NVIDIA under the same license as the associated Thrust library.
 #
-# Reply-To: Allison Vacanti <alliepiper16@gmail.com>
-#
 # *****************************************************************************
 # **     The following is a short reference to using Thrust from CMake.      **
 # ** For more details, see the README.md in the same directory as this file. **
@@ -30,10 +28,13 @@
 # thrust_create_target(TargetName FROM_OPTIONS
 #   [HOST_OPTION <option_name>]      # Optionally rename the host system option
 #   [DEVICE_OPTION <option_name>]    # Optionally rename the device system option
+#   [DISPATCH_OPTION <option_name>]  # Optionally rename the dispatch system option
 #   [HOST_OPTION_DOC <doc_string>]   # Optionally change the cache label
 #   [DEVICE_OPTION_DOC <doc_string>] # Optionally change the cache label
+#   [DISPATCH_OPTION_DOC <doc_str>]  # Optionally change the cache label
 #   [HOST <default system>]          # Optionally change the default backend
 #   [DEVICE <default system>]        # Optionally change the default backend
+#   [DISPATCH <default dispatch>]    # Optionally change the default dispatch
 #   [ADVANCED]                       # Optionally mark options as advanced
 #   [GLOBAL]                         # Optionally mark the target as GLOBAL
 # )
@@ -58,6 +59,11 @@
 #   IGNORE_DEPRECATED_COMPILER    # Only silence deprecation warnings for old compilers
 #   IGNORE_CUB_VERSION            # Skip configure-time and compile-time CUB version checks
 # )
+#
+# # DISPATCH options (See README):
+# thrust_create_target(TargetName DISPATCH Dynamic)
+# thrust_create_target(TargetName DISPATCH Force32bit)
+# thrust_create_target(TargetName DISPATCH Force64bit)
 #
 # # Test if a particular system has been loaded. ${var_name} is set to TRUE or
 # # FALSE to indicate if "system" is found.
@@ -100,6 +106,11 @@ set(THRUST_DEVICE_SYSTEM_OPTIONS
   CACHE INTERNAL "Valid Thrust device systems"
   FORCE
 )
+set(THRUST_DISPATCH_TYPE_OPTIONS
+  Dynamic Force32bit Force64bit
+  CACHE INTERNAL "Valid Thrust dispatch types"
+  FORCE
+)
 
 # Workaround cmake issue #20670 https://gitlab.kitware.com/cmake/cmake/-/issues/20670
 # Legacy all-caps THRUST variables:
@@ -137,6 +148,9 @@ function(thrust_create_target target_name)
     HOST
     HOST_OPTION
     HOST_OPTION_DOC
+    DISPATCH
+    DISPATCH_OPTION
+    DISPATCH_OPTION_DOC
   )
   cmake_parse_arguments(TCT "${options}" "${keys}" "" ${ARGN})
   if (TCT_UNPARSED_ARGUMENTS)
@@ -158,10 +172,13 @@ function(thrust_create_target target_name)
 
   _thrust_set_if_undefined(TCT_HOST CPP)
   _thrust_set_if_undefined(TCT_DEVICE CUDA)
+  _thrust_set_if_undefined(TCT_DISPATCH Dynamic)
   _thrust_set_if_undefined(TCT_HOST_OPTION THRUST_HOST_SYSTEM)
   _thrust_set_if_undefined(TCT_DEVICE_OPTION THRUST_DEVICE_SYSTEM)
-  _thrust_set_if_undefined(TCT_HOST_OPTION_DOC "Thrust host system.")
-  _thrust_set_if_undefined(TCT_DEVICE_OPTION_DOC "Thrust device system.")
+  _thrust_set_if_undefined(TCT_DISPATCH_OPTION THRUST_DISPATCH_TYPE)
+  _thrust_set_if_undefined(TCT_HOST_OPTION_DOC "Thrust host system: ${THRUST_HOST_SYSTEM_OPTIONS}")
+  _thrust_set_if_undefined(TCT_DEVICE_OPTION_DOC "Thrust device system: ${THRUST_DEVICE_SYSTEM_OPTIONS}")
+  _thrust_set_if_undefined(TCT_DISPATCH_OPTION_DOC "Thrust dispatch type: ${THRUST_DISPATCH_TYPE_OPTIONS}")
 
   if (NOT TCT_HOST IN_LIST THRUST_HOST_SYSTEM_OPTIONS)
     message(FATAL_ERROR
@@ -175,18 +192,26 @@ function(thrust_create_target target_name)
     )
   endif()
 
+  if (NOT TCT_DISPATCH IN_LIST THRUST_DISPATCH_TYPE_OPTIONS)
+    message(FATAL_ERROR
+      "Requested DISPATCH=${TCT_DISPATCH}; must be one of ${THRUST_DISPATCH_TYPE_OPTIONS}"
+    )
+  endif()
+
   if (TCT_FROM_OPTIONS)
     _thrust_create_cache_options(
-      ${TCT_HOST} ${TCT_DEVICE}
-      ${TCT_HOST_OPTION} ${TCT_DEVICE_OPTION}
-      ${TCT_HOST_OPTION_DOC} ${TCT_DEVICE_OPTION_DOC}
+      ${TCT_HOST} ${TCT_DEVICE} ${TCT_DISPATCH}
+      ${TCT_HOST_OPTION} ${TCT_DEVICE_OPTION} ${TCT_DISPATCH_OPTION}
+      ${TCT_HOST_OPTION_DOC} ${TCT_DEVICE_OPTION_DOC} ${TCT_DISPATCH_OPTION_DOC}
       ${TCT_ADVANCED}
     )
     set(TCT_HOST ${${TCT_HOST_OPTION}})
     set(TCT_DEVICE ${${TCT_DEVICE_OPTION}})
+    set(TCT_DISPATCH ${${TCT_DISPATCH_OPTION}})
     thrust_debug("Current option settings:" internal)
     thrust_debug("  - ${TCT_HOST_OPTION}=${TCT_HOST}" internal)
     thrust_debug("  - ${TCT_DEVICE_OPTION}=${TCT_DEVICE}" internal)
+    thrust_debug("  - ${TCT_DISPATCH_OPTION}=${TCT_DISPATCH}" internal)
   endif()
 
   _thrust_find_backend(${TCT_HOST} REQUIRED)
@@ -205,6 +230,12 @@ function(thrust_create_target target_name)
     Thrust::${TCT_HOST}::Host
     Thrust::${TCT_DEVICE}::Device
   )
+
+  if (${TCT_DISPATCH} STREQUAL "Force32bit")
+    target_compile_definitions(${target_name} INTERFACE "THRUST_FORCE_32_BIT_OFFSET_TYPE")
+  elseif(${TCT_DISPATCH} STREQUAL "Force64bit")
+    target_compile_definitions(${target_name} INTERFACE "THRUST_FORCE_64_BIT_OFFSET_TYPE")
+  endif()
 
   # This would be nice to enforce, but breaks when using old cmake + new
   # compiler, since cmake doesn't know what features the new compiler version
@@ -416,14 +447,17 @@ function(_thrust_declare_interface_alias alias_name ugly_name)
 endfunction()
 
 # Create cache options for selecting the user/device systems with ccmake/cmake-gui.
-function(_thrust_create_cache_options host device host_option device_option host_doc device_doc advanced)
+function(_thrust_create_cache_options host device dispatch host_option device_option dispatch_option host_doc device_doc dispatch_doc advanced)
   thrust_debug("Creating system cache options: (advanced=${advanced})" internal)
   thrust_debug("  - Host Option=${host_option} Default=${host} Doc='${host_doc}'" internal)
   thrust_debug("  - Device Option=${device_option} Default=${device} Doc='${device_doc}'" internal)
+  thrust_debug("  - Dispatch Option=${dispatch_option} Default=${dispatch} Doc='${dispatch_doc}'" internal)
   set(${host_option} ${host} CACHE STRING "${host_doc}")
   set_property(CACHE ${host_option} PROPERTY STRINGS ${THRUST_HOST_SYSTEM_OPTIONS})
   set(${device_option} ${device} CACHE STRING "${device_doc}")
   set_property(CACHE ${device_option} PROPERTY STRINGS ${THRUST_DEVICE_SYSTEM_OPTIONS})
+  set(${dispatch_option} ${dispatch} CACHE STRING "${dispatch_doc}")
+  set_property(CACHE ${dispatch_option} PROPERTY STRINGS ${THRUST_DISPATCH_TYPE_OPTIONS})
   if (advanced)
     mark_as_advanced(${host_option} ${device_option})
   endif()

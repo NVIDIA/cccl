@@ -28,7 +28,7 @@
 
 #include <thrust/detail/preprocessor.h>
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
 #  pragma message( \
     "warning: The functionality in this header is unsafe, deprecated, and will soon be removed. Use C++11 atomics instead.")
 #else
@@ -36,7 +36,7 @@
 #endif
 
 // msvc case
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
 
 #  ifndef _DEBUG
 
@@ -66,7 +66,7 @@
 #  endif // _CCCL_COMPILER(GCC, >=, 4, 2)
 
 // unknown case
-#elif defined(_CCCL_COMPILER_CLANG)
+#elif _CCCL_COMPILER(CLANG)
 #  define __thrust_compiler_fence() __sync_synchronize()
 #else
 

@@ -41,7 +41,7 @@ prev(_InputIter __x, typename iterator_traits<_InputIter>::difference_type __n =
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2014 && !defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER > 2014 && !_CCCL_COMPILER(MSVC2017)
 
 // [range.iter.op.prev]
 
@@ -49,24 +49,24 @@ _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__prev)
 struct __fn
 {
-  _LIBCUDACXX_TEMPLATE(class _Ip)
-  _LIBCUDACXX_REQUIRES(bidirectional_iterator<_Ip>)
+  _CCCL_TEMPLATE(class _Ip)
+  _CCCL_REQUIRES(bidirectional_iterator<_Ip>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _Ip operator()(_Ip __x) const
   {
     --__x;
     return __x;
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Ip)
-  _LIBCUDACXX_REQUIRES(bidirectional_iterator<_Ip>)
+  _CCCL_TEMPLATE(class _Ip)
+  _CCCL_REQUIRES(bidirectional_iterator<_Ip>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n) const
   {
     _CUDA_VRANGES::advance(__x, -__n);
     return __x;
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Ip)
-  _LIBCUDACXX_REQUIRES(bidirectional_iterator<_Ip>)
+  _CCCL_TEMPLATE(class _Ip)
+  _CCCL_REQUIRES(bidirectional_iterator<_Ip>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr _Ip operator()(_Ip __x, iter_difference_t<_Ip> __n, _Ip __bound_iter) const
   {
     _CUDA_VRANGES::advance(__x, -__n, __bound_iter);
@@ -81,6 +81,6 @@ _CCCL_GLOBAL_CONSTANT auto prev = __prev::__fn{};
 } // namespace __cpo
 _LIBCUDACXX_END_NAMESPACE_RANGES
 
-#endif // _CCCL_STD_VER > 2014 && !defined(_CCCL_COMPILER_MSVC_2017)
+#endif // _CCCL_STD_VER > 2014 && !_CCCL_COMPILER(MSVC2017)
 
 #endif // _LIBCUDACXX___ITERATOR_PREV_H

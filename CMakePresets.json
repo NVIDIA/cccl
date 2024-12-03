@@ -23,6 +23,7 @@
         "CCCL_ENABLE_EXAMPLES": false,
         "CCCL_ENABLE_C": false,
         "CCCL_SUPPRESS_ICC_DEPRECATION_WARNING": true,
+        "CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING": true,
         "libcudacxx_ENABLE_INSTALL_RULES": true,
         "CUB_ENABLE_INSTALL_RULES": true,
         "Thrust_ENABLE_INSTALL_RULES": true,

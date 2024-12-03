@@ -48,7 +48,7 @@
 
 #include <nv/target>
 
-#ifdef DOXYGEN_SHOULD_SKIP_THIS // Only parse this during doxygen passes:
+#ifdef _CCCL_DOXYGEN_INVOKED // Only parse this during doxygen passes:
 
 /**
  * @def CUB_DEBUG_LOG
@@ -92,7 +92,7 @@
  */
 #  define CUB_DEBUG_ALL
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 // `CUB_DETAIL_DEBUG_LEVEL_*`: Implementation details, internal use only:
 

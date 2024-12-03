@@ -330,7 +330,7 @@ struct DispatchScan : SelectedPolicy
       , ptx_version(ptx_version)
   {}
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchScan(
     void* d_temp_storage,
@@ -355,7 +355,7 @@ struct DispatchScan : SelectedPolicy
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   template <typename ActivePolicyT, typename InitKernel, typename ScanKernel>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke(InitKernel init_kernel, ScanKernel scan_kernel)
@@ -593,7 +593,7 @@ struct DispatchScan : SelectedPolicy
     return error;
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
@@ -610,7 +610,7 @@ struct DispatchScan : SelectedPolicy
 
     return Dispatch(d_temp_storage, temp_storage_bytes, d_in, d_out, scan_op, init_value, num_items, stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

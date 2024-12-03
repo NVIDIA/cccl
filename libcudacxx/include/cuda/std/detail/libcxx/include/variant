@@ -252,9 +252,9 @@ C++20
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/__utility/monostate.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/swap.h>
-#include <cuda/std/__variant/monostate.h>
 #include <cuda/std/cstddef>
 #include <cuda/std/initializer_list>
 #include <cuda/std/tuple>
@@ -293,7 +293,7 @@ _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
 
 #endif // !_CCCL_NO_EXCEPTIONS
 
-#if _CCCL_STD_VER >= 2014 && !defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER >= 2014 && !_CCCL_COMPILER(MSVC2017)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -2152,6 +2152,6 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr auto&& __unchecked_get(variant<_Types...>& _
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _CCCL_STD_VER >= 2014 && !_CCCL_COMPILER_MSVC_2017
+#endif // _CCCL_STD_VER >= 2014 && !_CCCL_COMPILER(MSVC2017)
 
 #endif // _LIBCUDACXX_VARIANT

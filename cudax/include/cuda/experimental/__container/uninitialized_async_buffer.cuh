@@ -33,9 +33,9 @@
 #include <cuda/stream_ref>
 
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
+#include <cuda/experimental/__memory_resource/properties.cuh>
 
-#if _CCCL_STD_VER >= 2014 && !defined(_CCCL_COMPILER_MSVC_2017) \
-  && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
+#if _CCCL_STD_VER >= 2014 && !_CCCL_COMPILER(MSVC2017) && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
 //! @file
 //! The \c uninitialized_async_buffer class provides a typed buffer allocated in stream-order from a given memory
@@ -74,10 +74,10 @@ class uninitialized_async_buffer
 {
 private:
   static_assert(_CUDA_VMR::__contains_execution_space_property<_Properties...>,
-                "The properties of cuda::experimental::mr::uninitialized_async_buffer must contain at least one "
+                "The properties of cuda::experimental::uninitialized_async_buffer must contain at least one "
                 "execution space property!");
 
-  using __async_resource = ::cuda::experimental::mr::any_async_resource<_Properties...>;
+  using __async_resource = ::cuda::experimental::any_async_resource<_Properties...>;
 
   __async_resource __mr_;
   ::cuda::stream_ref __stream_ = {};
@@ -117,8 +117,8 @@ private:
   template <class _Tp2 = _Tp>
   _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI auto
   __cudax_launch_transform(::cuda::stream_ref, uninitialized_async_buffer& __self) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(_CUDA_VSTD::span<_Tp>)(
-      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<_CUDA_VMR::device_accessible, _Properties...>)
+    _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<_Tp>)(
+      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<mr::device_accessible, _Properties...>)
   {
     // TODO add auto synchronization
     return {__self.__get_data(), __self.size()};
@@ -129,8 +129,8 @@ private:
   template <class _Tp2 = _Tp>
   _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI auto
   __cudax_launch_transform(::cuda::stream_ref, const uninitialized_async_buffer& __self) noexcept
-    _LIBCUDACXX_TRAILING_REQUIRES(_CUDA_VSTD::span<const _Tp>)(
-      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<_CUDA_VMR::device_accessible, _Properties...>)
+    _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<const _Tp>)(
+      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<mr::device_accessible, _Properties...>)
   {
     // TODO add auto synchronization
     return {__self.__get_data(), __self.size()};
@@ -173,8 +173,8 @@ public:
   //! @brief Move-constructs a \c uninitialized_async_buffer from \p __other
   //! @param __other Another \c uninitialized_async_buffer with matching properties
   //! Takes ownership of the allocation in \p __other and resets it
-  _LIBCUDACXX_TEMPLATE(class... _OtherProperties)
-  _LIBCUDACXX_REQUIRES(__properties_match<_OtherProperties...>)
+  _CCCL_TEMPLATE(class... _OtherProperties)
+  _CCCL_REQUIRES(__properties_match<_OtherProperties...>)
   _CCCL_HIDE_FROM_ABI uninitialized_async_buffer(uninitialized_async_buffer<_Tp, _OtherProperties...>&& __other) noexcept
       : __mr_(_CUDA_VSTD::move(__other.__mr_))
       , __stream_(_CUDA_VSTD::exchange(__other.__stream_, {}))
@@ -273,13 +273,12 @@ public:
     __stream_ = __new_stream;
   }
 
-#  ifndef DOXYGEN_SHOULD_SKIP_THIS // friend functions are currently broken
+#  ifndef _CCCL_DOXYGEN_INVOKED // friend functions are currently broken
   //! @brief Forwards the passed properties
-  _LIBCUDACXX_TEMPLATE(class _Property)
-  _LIBCUDACXX_REQUIRES(
-    (!property_with_value<_Property>) _LIBCUDACXX_AND _CUDA_VSTD::__is_included_in_v<_Property, _Properties...>)
+  _CCCL_TEMPLATE(class _Property)
+  _CCCL_REQUIRES((!property_with_value<_Property>) _CCCL_AND _CUDA_VSTD::__is_included_in_v<_Property, _Properties...>)
   _CCCL_HIDE_FROM_ABI friend constexpr void get_property(const uninitialized_async_buffer&, _Property) noexcept {}
-#  endif // DOXYGEN_SHOULD_SKIP_THIS
+#  endif // _CCCL_DOXYGEN_INVOKED
 
   //! @brief Internal method to grow the allocation to a new size \p __count.
   //! @param __count The new size of the allocation.
@@ -296,10 +295,10 @@ public:
 };
 
 template <class _Tp>
-using uninitialized_async_device_buffer = uninitialized_async_buffer<_Tp, _CUDA_VMR::device_accessible>;
+using uninitialized_async_device_buffer = uninitialized_async_buffer<_Tp, mr::device_accessible>;
 
 } // namespace cuda::experimental
 
-#endif // _CCCL_STD_VER >= 2014 && !_CCCL_COMPILER_MSVC_2017 && LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+#endif // _CCCL_STD_VER >= 2014 && !_CCCL_COMPILER(MSVC2017) && LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #endif //__CUDAX__CONTAINERS_UNINITIALIZED_ASYNC_BUFFER_H

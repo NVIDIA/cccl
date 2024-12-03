@@ -54,7 +54,7 @@ struct underlying_type
   static_assert(_Support,
                 "The underyling_type trait requires compiler "
                 "support. Either no such support exists or "
-                "libc++ does not know how to use it.");
+                "libcu++ does not know how to use it.");
 };
 
 #endif // !_CCCL_BUILTIN_UNDERLYING_TYPE

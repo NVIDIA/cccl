@@ -494,6 +494,26 @@ static_assert(
   "");
 #endif
 
+// __type_switch
+static_assert(::cuda::std::is_same<::cuda::std::__type_switch<0,
+                                                              ::cuda::std::__type_case<0, char>,
+                                                              ::cuda::std::__type_case<1, double>,
+                                                              ::cuda::std::__type_default<float>>,
+                                   char>::value,
+              "");
+static_assert(::cuda::std::is_same<::cuda::std::__type_switch<1,
+                                                              ::cuda::std::__type_case<0, char>,
+                                                              ::cuda::std::__type_case<1, double>,
+                                                              ::cuda::std::__type_default<float>>,
+                                   double>::value,
+              "");
+static_assert(::cuda::std::is_same<::cuda::std::__type_switch<2,
+                                                              ::cuda::std::__type_case<0, char>,
+                                                              ::cuda::std::__type_case<1, double>,
+                                                              ::cuda::std::__type_default<float>>,
+                                   float>::value,
+              "");
+
 // __type_concat
 static_assert(::cuda::std::is_same<::cuda::std::__type_concat<>, ::cuda::std::__type_list<>>::value, "");
 

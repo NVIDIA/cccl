@@ -28,6 +28,7 @@
 #ifdef _LIBCUDACXX_HAS_NVFP16
 #  include <cuda_fp16.h>
 #endif // _LIBCUDACXX_HAS_NVFP16
+
 #ifdef _LIBCUDACXX_HAS_NVBF16
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wunused-function")
@@ -42,10 +43,10 @@ struct __numeric_type
 {
   _LIBCUDACXX_HIDE_FROM_ABI static void __test(...);
 #ifdef _LIBCUDACXX_HAS_NVFP16
-  _LIBCUDACXX_HIDE_FROM_ABI static __half __test(__half);
+  _LIBCUDACXX_HIDE_FROM_ABI static float __test(__half);
 #endif // _LIBCUDACXX_HAS_NVBF16
 #ifdef _LIBCUDACXX_HAS_NVBF16
-  _LIBCUDACXX_HIDE_FROM_ABI static __nv_bfloat16 __test(__nv_bfloat16);
+  _LIBCUDACXX_HIDE_FROM_ABI static float __test(__nv_bfloat16);
 #endif // _LIBCUDACXX_HAS_NVFP16
   _LIBCUDACXX_HIDE_FROM_ABI static float __test(float);
   _LIBCUDACXX_HIDE_FROM_ABI static double __test(char);
@@ -68,10 +69,55 @@ struct __numeric_type<void>
   static const bool value = true;
 };
 
+template <class _A1, class _A2, class _A3>
+struct __is_mixed_extended_floating_point
+{
+  static constexpr bool value = false;
+};
+
+#if defined(_LIBCUDACXX_HAS_NVFP16) && defined(_LIBCUDACXX_HAS_NVBF16)
+template <class _A1>
+struct __is_mixed_extended_floating_point<_A1, __half, __nv_bfloat16>
+{
+  static constexpr bool value = true;
+};
+
+template <class _A1>
+struct __is_mixed_extended_floating_point<_A1, __nv_bfloat16, __half>
+{
+  static constexpr bool value = true;
+};
+
+template <class _A1>
+struct __is_mixed_extended_floating_point<__half, _A1, __nv_bfloat16>
+{
+  static constexpr bool value = true;
+};
+
+template <class _A1>
+struct __is_mixed_extended_floating_point<__nv_bfloat16, _A1, __half>
+{
+  static constexpr bool value = true;
+};
+
+template <class _A1>
+struct __is_mixed_extended_floating_point<__half, __nv_bfloat16, _A1>
+{
+  static constexpr bool value = true;
+};
+
+template <class _A1>
+struct __is_mixed_extended_floating_point<__nv_bfloat16, __half, _A1>
+{
+  static constexpr bool value = true;
+};
+#endif // _LIBCUDACXX_HAS_NVFP16 && _LIBCUDACXX_HAS_NVBF16
+
 template <class _A1,
           class _A2 = void,
           class _A3 = void,
-          bool      = __numeric_type<_A1>::value && __numeric_type<_A2>::value && __numeric_type<_A3>::value>
+          bool      = __numeric_type<_A1>::value && __numeric_type<_A2>::value && __numeric_type<_A3>::value
+              && !__is_mixed_extended_floating_point<_A1, _A2, _A3>::value>
 class __promote_imp
 {
 public:
@@ -95,8 +141,8 @@ template <class _A1, class _A2>
 class __promote_imp<_A1, _A2, void, true>
 {
 private:
-  typedef typename __promote_imp<_A1>::type __type1;
-  typedef typename __promote_imp<_A2>::type __type2;
+  using __type1 = typename __promote_imp<_A1>::type;
+  using __type2 = typename __promote_imp<_A2>::type;
 
 public:
   typedef decltype(__type1() + __type2()) type;

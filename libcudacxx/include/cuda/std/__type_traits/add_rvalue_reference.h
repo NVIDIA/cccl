@@ -31,7 +31,7 @@ using add_rvalue_reference_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_ADD_RVALUE_REFE
 
 #else // ^^^ _CCCL_BUILTIN_ADD_RVALUE_REFERENCE ^^^ / vvv !_CCCL_BUILTIN_ADD_RVALUE_REFERENCE vvv
 
-template <class _Tp, bool = __libcpp_is_referenceable<_Tp>::value>
+template <class _Tp, bool = __cccl_is_referenceable<_Tp>::value>
 struct __add_rvalue_reference_impl
 {
   typedef _CCCL_NODEBUG_ALIAS _Tp type;

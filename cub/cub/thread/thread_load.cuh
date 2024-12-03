@@ -110,7 +110,7 @@ _CCCL_DEVICE _CCCL_FORCEINLINE cub::detail::value_t<RandomAccessIterator> Thread
 
 //@}  end member group
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 /// Helper structure for templated load iteration (inductive case)
 /// \deprecated [Since 2.6.0] Use UnrolledThreadLoad() or UnrolledCopy() instead.
@@ -378,6 +378,6 @@ _CCCL_DEVICE _CCCL_FORCEINLINE cub::detail::value_t<RandomAccessIterator> Thread
   return ThreadLoad(itr, Int2Type<MODIFIER>(), Int2Type<::cuda::std::is_pointer<RandomAccessIterator>::value>());
 }
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 CUB_NAMESPACE_END
