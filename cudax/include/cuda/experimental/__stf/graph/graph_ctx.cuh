@@ -296,9 +296,9 @@ public:
   auto task(exec_place e_place, task_dep<Deps>... deps)
   {
     auto dump_hooks = reserved::get_dump_hooks(this, deps...);
-    auto res        = graph_task<Deps...>(*this, get_graph(), get_graph_epoch(), mv(e_place), mv(deps)...);
-    res.add_post_submission_hook(dump_hooks);
-    return res;
+    auto result     = graph_task<Deps...>(*this, get_graph(), get_graph_epoch(), mv(e_place), mv(deps)...);
+    result.add_post_submission_hook(dump_hooks);
+    return result;
   }
 
   // submit a new epoch : this will submit a graph in a stream that we return

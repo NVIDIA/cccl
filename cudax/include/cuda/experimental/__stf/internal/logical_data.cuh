@@ -740,7 +740,7 @@ public:
     /* Update msir_statuses depending on the current states and the required access mode */
     switch (mode)
     {
-      case access_mode::read: {
+      case access_mode::read:
         switch (current_msir)
         {
           case reserved::msir_state_id::modified:
@@ -797,7 +797,7 @@ public:
           }
           break;
 
-          case reserved::msir_state_id::reduction: {
+          case reserved::msir_state_id::reduction:
             // This is where we should reconstruct the data ?
 
             // Invalidate all other existing copies but that one
@@ -809,7 +809,6 @@ public:
             get_data_instance(instance_id).set_msir(reserved::msir_state_id::modified);
 
             break;
-          }
 
           default:
             assert(!"Corrupt MSIR state detected.");
@@ -817,12 +816,11 @@ public:
         }
 
         break;
-      }
 
       case access_mode::rw:
       case access_mode::write:
       case access_mode::reduce_no_init:
-      case access_mode::reduce: {
+      case access_mode::reduce:
         switch (current_msir)
         {
           case reserved::msir_state_id::modified:
@@ -830,7 +828,7 @@ public:
             prereqs.merge(current_instance.get_read_prereq(), current_instance.get_write_prereq());
             break;
 
-          case reserved::msir_state_id::shared: {
+          case reserved::msir_state_id::shared:
             // There is a local copy, but we need to invalidate others
             prereqs.merge(current_instance.get_read_prereq(), current_instance.get_write_prereq());
 
@@ -849,7 +847,7 @@ public:
 
             current_instance.set_msir(reserved::msir_state_id::modified);
             break;
-          }
+
           case reserved::msir_state_id::invalid: {
             // If we need to perform a copy, this will be the source instance
             instance_id_t src_instance_id = instance_id_t::invalid;
@@ -918,11 +916,11 @@ public:
         }
 
         break;
-      }
 
       case access_mode::relaxed:
         current_instance.set_msir(reserved::msir_state_id::reduction);
         break;
+
       default:
         assert(!"Corrupt MSIR state detected.");
         abort();
