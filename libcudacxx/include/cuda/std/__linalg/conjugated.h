@@ -76,8 +76,8 @@ private:
   using __nc_result_type      = decltype(conj_if_needed(_CUDA_VSTD::declval<__nested_element_type>()));
 
 public:
-  using element_type     = _CUDA_VSTD::add_const_t<__nc_result_type>;
-  using reference        = _CUDA_VSTD::remove_const_t<element_type>;
+  using element_type     = add_const_t<__nc_result_type>;
+  using reference        = remove_const_t<element_type>;
   using data_handle_type = typename _NestedAccessor::data_handle_type;
   using offset_policy    = conjugated_accessor<typename _NestedAccessor::offset_policy>;
 
