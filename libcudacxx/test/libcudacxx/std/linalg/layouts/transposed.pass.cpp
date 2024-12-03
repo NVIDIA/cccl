@@ -86,7 +86,7 @@ int main(int, char**)
     cuda::std::linalg::layout_transpose<cuda::std::layout_left>::mapping<E> map_left_transposed{map_left};
     static_cast<void>(map_left_transposed);
   }
-  // operator==
+  // operator==, operator!=
   {
     cuda::std::layout_right::mapping<dynamic_extents> map_right1{dynamic_extents{3, 2}};
     cuda::std::linalg::layout_transpose<cuda::std::layout_right>::mapping<dynamic_extents> map1{map_right1};
@@ -98,7 +98,7 @@ int main(int, char**)
     cuda::std::linalg::layout_transpose<cuda::std::layout_right>::mapping<dynamic_extents> map3{map_right3};
 
     assert(map1 == map2);
-    assert(!(map1 == map3));
+    assert(map1 != map3);
   }
   // transposed composition
   {
