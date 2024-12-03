@@ -99,7 +99,7 @@ public:
     return conj_if_needed(__nested_element_type(__nested_accessor_.access(__p, __i)));
   }
 
-  [[nodiscard]] _LIBCUDACXX_HIDE_FROM_ABI constexpr typename offset_policy::data_handle_type
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr typename offset_policy::data_handle_type
   offset(data_handle_type __p, size_t __i) const noexcept
   {
     return __nested_accessor_.offset(__p, __i);
