@@ -5,9 +5,7 @@ CUB Testing Overview
     CUB is in the progress of migrating to [Catch2](https://github.com/catchorg/Catch2) framework.
 
 CUB tests rely on `CPM <https://github.com/cpm-cmake/CPM.cmake>`_ to fetch
-`Catch2 <https://github.com/catchorg/Catch2>`_ that's used as our main testing framework
-along with `metal <https://github.com/brunocodutra/metal>`_ that's used as template metaprogramming
-backend for some of the test macro implementation.
+`Catch2 <https://github.com/catchorg/Catch2>`_ that's used as our main testing framework.
 
 Currently,
 legacy tests coexist with Catch2 ones.
@@ -19,8 +17,8 @@ This guide is focused on new tests.
 .. code-block:: c++
 
     #include <cub/block/block_scan.cuh>
-    #include <c2h/vector.cuh>
-    #include <c2h/catch2_test_helper.cuh>
+    #include <c2h/vector.h>
+    #include <c2h/catch2_test_helper.h>
 
 Directory and File Naming
 *************************************

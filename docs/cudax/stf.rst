@@ -558,7 +558,7 @@ write-only access (using the ``write()`` member of ``lX``). A write-only
 access will indeed allocate ``lX`` at the appropriate location, but it
 will not try to load a valid copy of it prior to executing the task.
 
-Using other access modes such as ``read()``, ``redux()`` or ``rw()``
+Using other access modes such as ``read()``, ``relaxed()`` or ``rw()``
 that attempt to provide a valid instance will result in an error.
 
 Similarly, it is possible to define a logical data from a slice shapes
@@ -1741,6 +1741,11 @@ variable.
 To reduce the amount of information displayed in the graph, we can
 remove the list of data associated to each task by setting the
 ``CUDASTF_DOT_REMOVE_DATA_DEPS`` environment variable.
+
+It is also possible to include timing information in this graph by setting the
+``CUDASTF_DOT_TIMING`` environment variable to a non-null value. This will
+color the graph nodes according to their relative duration, and the measured
+duration will be included in task labels.
 
 Kernel tuning with ncu
 ^^^^^^^^^^^^^^^^^^^^^^

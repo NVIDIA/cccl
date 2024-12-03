@@ -156,7 +156,7 @@ _CCCL_HOST_DEVICE constexpr uint32_t __ap_max(uint32_t __a, uint32_t __b) noexce
 
 // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=61414
 // Specifically search for 8.4 and 9.3 and above to guarantee uint64_t enum.
-#if defined(_CCCL_COMPILER_GCC) && (((_GNUC_VER < 804)) || ((_GNUC_VER < 903)))
+#if _CCCL_COMPILER(GCC, <, 9, 3)
 #  define _LIBCUDACXX_AP_ENUM_TYPE_ANNOTATION
 #else
 #  define _LIBCUDACXX_AP_ENUM_TYPE_ANNOTATION : uint64_t

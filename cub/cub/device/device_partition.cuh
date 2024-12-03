@@ -223,7 +223,7 @@ struct DevicePartition
       stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <typename InputIteratorT,
             typename FlagIterator,
             typename OutputIteratorT,
@@ -245,7 +245,7 @@ struct DevicePartition
     return Flagged<InputIteratorT, FlagIterator, OutputIteratorT, NumSelectedIteratorT>(
       d_temp_storage, temp_storage_bytes, d_in, d_flags, d_out, d_num_selected_out, num_items, stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Uses the ``select_op`` functor to split the corresponding items from ``d_in`` into
@@ -405,7 +405,7 @@ struct DevicePartition
       stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename NumSelectedIteratorT,
@@ -427,7 +427,7 @@ struct DevicePartition
     return If<InputIteratorT, OutputIteratorT, NumSelectedIteratorT, SelectOp, NumItemsT>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, d_num_selected_out, num_items, select_op, stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 private:
   template <bool IS_DESCENDING,
@@ -700,7 +700,7 @@ public:
       stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <typename InputIteratorT,
             typename FirstOutputIteratorT,
             typename SecondOutputIteratorT,
@@ -743,7 +743,7 @@ public:
       select_second_part_op,
       stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

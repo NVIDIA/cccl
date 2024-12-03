@@ -24,7 +24,7 @@
 // Debuggers do not step into functions marked with __attribute__((__artificial__)).
 // This is useful for small wrapper functions that just dispatch to other functions and
 // that are inlined into the caller.
-#if _CCCL_HAS_ATTRIBUTE(__artificial__) && !defined(_CCCL_CUDACC)
+#if _CCCL_HAS_ATTRIBUTE(__artificial__) && !_CCCL_CUDACC
 #  define _CUDAX_ARTIFICIAL __attribute__((__artificial__))
 #else // ^^^ _CCCL_HAS_ATTRIBUTE(__artificial__) ^^^ / vvv !_CCCL_HAS_ATTRIBUTE(__artificial__) vvv
 #  define _CUDAX_ARTIFICIAL
@@ -35,15 +35,15 @@
 // two attributes:
 // - `_CUDAX_API` declares the function host/device and hides the symbol from the ABI
 // - `_CUDAX_TRIVIAL_API` does the same while also forcing inlining and hiding the function from debuggers
-#if defined(_CCCL_COMPILER_ICC) // ICC has issues with visibility attributes on symbols with internal linkage
+#if _CCCL_COMPILER(ICC) // ICC has issues with visibility attributes on symbols with internal linkage
 #  define _CUDAX_API        _CCCL_HOST_DEVICE
 #  define _CUDAX_HOST_API   _CCCL_HOST
 #  define _CUDAX_DEVICE_API _CCCL_DEVICE
-#else // ^^^ _CCCL_COMPILER_ICC ^^^ / vvv !_CCCL_COMPILER_ICC vvv
+#else // ^^^ _CCCL_COMPILER(ICC) ^^^ / vvv !_CCCL_COMPILER(ICC) vvv
 #  define _CUDAX_API        _CCCL_HOST_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
 #  define _CUDAX_HOST_API   _CCCL_HOST _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
 #  define _CUDAX_DEVICE_API _CCCL_DEVICE _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION
-#endif // !_CCCL_COMPILER_ICC
+#endif // !_CCCL_COMPILER(ICC)
 
 // _CUDAX_TRIVIAL_API force-inlines a function, marks its visibility as hidden, and causes debuggers to skip it.
 // This is useful for trivial internal functions that do dispatching or other plumbing work. It is particularly
@@ -53,11 +53,11 @@
 #define _CUDAX_TRIVIAL_DEVICE_API _CUDAX_DEVICE_API _CCCL_FORCEINLINE _CUDAX_ARTIFICIAL _LIBCUDACXX_NODEBUG
 
 // GCC struggles with guaranteed copy elision of immovable types.
-#if defined(_CCCL_COMPILER_GCC)
+#if _CCCL_COMPILER(GCC)
 #  define _CUDAX_IMMOVABLE(_XP) _XP(_XP&&)
-#else // ^^^ _CCCL_COMPILER_GCC ^^^ / vvv !_CCCL_COMPILER_GCC vvv
+#else // ^^^ _CCCL_COMPILER(GCC) ^^^ / vvv !_CCCL_COMPILER(GCC) vvv
 #  define _CUDAX_IMMOVABLE(_XP) _XP(_XP&&) = delete
-#endif // !_CCCL_COMPILER_GCC
+#endif // !_CCCL_COMPILER(GCC)
 
 namespace cuda::experimental
 {

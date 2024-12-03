@@ -206,7 +206,7 @@ DECLARE_VARIABLE_UNITTEST(TestSetIntersectionMultiset);
 
 // FIXME: disabled on Windows, because it causes a failure on the internal CI system in one specific configuration.
 // That failure will be tracked in a new NVBug, this is disabled to unblock submitting all the other changes.
-#if !defined(_CCCL_COMPILER_MSVC)
+#if !_CCCL_COMPILER(MSVC)
 void TestSetDifferenceWithBigIndexesHelper(int magnitude)
 {
   thrust::counting_iterator<long long> begin1(0);
@@ -227,10 +227,12 @@ void TestSetDifferenceWithBigIndexesHelper(int magnitude)
 
 void TestSetDifferenceWithBigIndexes()
 {
+#  ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
   TestSetDifferenceWithBigIndexesHelper(30);
   TestSetDifferenceWithBigIndexesHelper(31);
   TestSetDifferenceWithBigIndexesHelper(32);
   TestSetDifferenceWithBigIndexesHelper(33);
+#  endif
 }
 DECLARE_UNITTEST(TestSetDifferenceWithBigIndexes);
 #endif

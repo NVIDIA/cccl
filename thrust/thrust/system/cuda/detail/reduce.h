@@ -150,7 +150,7 @@ struct Tuning<sm35, T> : Tuning<sm30, T>
               cub::LOAD_LDG,
               cub::GRID_MAPPING_DYNAMIC>;
 
-  using type = ::cuda::std::__conditional_t<(sizeof(T) < 4), ReducePolicy1B, ReducePolicy4B>;
+  using type = ::cuda::std::conditional_t<(sizeof(T) < 4), ReducePolicy1B, ReducePolicy4B>;
 }; // Tuning sm35
 
 template <class InputIt, class OutputIt, class T, class Size, class ReductionOp>
@@ -289,8 +289,8 @@ struct ReduceAgent
       cub::LoadDirectStriped<BLOCK_THREADS>(threadIdx.x, load_it + block_offset, items);
 
       // Reduce items within each thread stripe
-      thread_aggregate = (IS_FIRST_TILE) ? cub::internal::ThreadReduce(items, reduction_op)
-                                         : cub::internal::ThreadReduce(items, reduction_op, thread_aggregate);
+      thread_aggregate = (IS_FIRST_TILE) ? cub::ThreadReduce(items, reduction_op)
+                                         : cub::ThreadReduce(items, reduction_op, thread_aggregate);
     }
 
     // Consume a full tile of input (vectorized)
@@ -324,8 +324,8 @@ struct ReduceAgent
       }
 
       // Reduce items within each thread stripe
-      thread_aggregate = (IS_FIRST_TILE) ? cub::internal::ThreadReduce(items, reduction_op)
-                                         : cub::internal::ThreadReduce(items, reduction_op, thread_aggregate);
+      thread_aggregate = (IS_FIRST_TILE) ? cub::ThreadReduce(items, reduction_op)
+                                         : cub::ThreadReduce(items, reduction_op, thread_aggregate);
     }
 
     // Consume a partial tile of input

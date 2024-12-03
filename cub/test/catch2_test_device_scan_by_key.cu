@@ -36,9 +36,9 @@
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_device_scan.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.cuh>
-#include <c2h/custom_type.cuh>
-#include <c2h/extended_types.cuh>
+#include <c2h/catch2_test_helper.h>
+#include <c2h/custom_type.h>
+#include <c2h/extended_types.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveSumByKey, device_exclusive_sum_by_key);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceScan::ExclusiveScanByKey, device_exclusive_scan_by_key);
@@ -56,7 +56,7 @@ using custom_t =
                      c2h::lexicographical_greater_comparable_t>;
 
 // type_quad's parameters and defaults:
-// type_quad<value_in_t, value_out_t=value_in_t, key_t=int32_t, equality_op_t=cub::Equality>
+// type_quad<value_in_t, value_out_t=value_in_t, key_t=int32_t, equality_op_t=::cuda::std::equal_to<>>
 #if TEST_TYPES == 0
 using full_type_list = c2h::type_list<type_quad<std::uint8_t, std::int32_t, float>,
                                       type_quad<std::int8_t, std::int8_t, std::int32_t, Mod2Equality>>;
@@ -125,7 +125,7 @@ C2H_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
 #if TEST_TYPES != 3
   SECTION("inclusive sum")
   {
-    using op_t = cub::Sum;
+    using op_t = ::cuda::std::plus<>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
@@ -155,7 +155,7 @@ C2H_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
 
   SECTION("exclusive sum")
   {
-    using op_t = cub::Sum;
+    using op_t = ::cuda::std::plus<>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
@@ -187,7 +187,7 @@ C2H_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
 
   SECTION("inclusive scan")
   {
-    using op_t = cub::Min;
+    using op_t = ::cuda::minimum<>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
@@ -219,7 +219,7 @@ C2H_TEST("Device scan works with all device interfaces", "[by_key][scan][device]
 
   SECTION("exclusive scan")
   {
-    using op_t = cub::Sum;
+    using op_t = ::cuda::std::plus<>;
 
     // Scan operator
     auto scan_op = unwrap_op(reference_extended_fp(d_values_it), op_t{});
@@ -307,15 +307,16 @@ C2H_TEST("Device scan works when memory for keys and results alias one another",
 
   SECTION("inclusive sum")
   {
-    using op_t = cub::Sum;
+    using op_t = ::cuda::std::plus<>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
-    compute_inclusive_scan_by_key_reference(in_values, segment_keys, expected_result.begin(), op_t{}, cub::Equality{});
+    compute_inclusive_scan_by_key_reference(
+      in_values, segment_keys, expected_result.begin(), op_t{}, ::cuda::std::equal_to<>{});
 
     // Run test
     auto d_values_out_it = d_keys_it;
-    device_inclusive_sum_by_key(d_keys_it, d_values_it, d_values_out_it, num_items, cub::Equality{});
+    device_inclusive_sum_by_key(d_keys_it, d_values_it, d_values_out_it, num_items, ::cuda::std::equal_to<>{});
 
     // Verify result
     REQUIRE(expected_result == segment_keys);
@@ -323,16 +324,16 @@ C2H_TEST("Device scan works when memory for keys and results alias one another",
 
   SECTION("exclusive sum")
   {
-    using op_t = cub::Sum;
+    using op_t = ::cuda::std::plus<>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
     compute_exclusive_scan_by_key_reference(
-      in_values, segment_keys, expected_result.begin(), op_t{}, cub::Equality{}, output_t{});
+      in_values, segment_keys, expected_result.begin(), op_t{}, ::cuda::std::equal_to<>{}, output_t{});
 
     // Run test
     auto d_values_out_it = d_keys_it;
-    device_exclusive_sum_by_key(d_keys_it, d_values_it, d_values_out_it, num_items, cub::Equality{});
+    device_exclusive_sum_by_key(d_keys_it, d_values_it, d_values_out_it, num_items, ::cuda::std::equal_to<>{});
 
     // Verify result
     REQUIRE(expected_result == segment_keys);
@@ -340,15 +341,16 @@ C2H_TEST("Device scan works when memory for keys and results alias one another",
 
   SECTION("inclusive scan")
   {
-    using op_t = cub::Min;
+    using op_t = ::cuda::minimum<>;
 
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
-    compute_inclusive_scan_by_key_reference(in_values, segment_keys, expected_result.begin(), op_t{}, cub::Equality{});
+    compute_inclusive_scan_by_key_reference(
+      in_values, segment_keys, expected_result.begin(), op_t{}, ::cuda::std::equal_to<>{});
 
     // Run test
     auto d_values_out_it = d_keys_it;
-    device_inclusive_scan_by_key(d_keys_it, d_values_it, d_values_out_it, op_t{}, num_items, cub::Equality{});
+    device_inclusive_scan_by_key(d_keys_it, d_values_it, d_values_out_it, op_t{}, num_items, ::cuda::std::equal_to<>{});
 
     // Verify result
     REQUIRE(expected_result == segment_keys);
@@ -356,7 +358,7 @@ C2H_TEST("Device scan works when memory for keys and results alias one another",
 
   SECTION("exclusive scan")
   {
-    using op_t = cub::Sum;
+    using op_t = ::cuda::std::plus<>;
 
     // Scan operator
     auto scan_op = op_t{};
@@ -364,12 +366,13 @@ C2H_TEST("Device scan works when memory for keys and results alias one another",
     // Prepare verification data
     c2h::host_vector<output_t> expected_result(num_items);
     compute_exclusive_scan_by_key_reference(
-      in_values, segment_keys, expected_result.begin(), scan_op, cub::Equality{}, output_t{});
+      in_values, segment_keys, expected_result.begin(), scan_op, ::cuda::std::equal_to<>{}, output_t{});
 
     // Run test
     auto d_values_out_it = d_keys_it;
     using init_t         = value_t;
-    device_exclusive_scan_by_key(d_keys_it, d_values_it, d_values_out_it, scan_op, init_t{}, num_items, cub::Equality{});
+    device_exclusive_scan_by_key(
+      d_keys_it, d_values_it, d_values_out_it, scan_op, init_t{}, num_items, ::cuda::std::equal_to<>{});
 
     // Verify result
     REQUIRE(expected_result == segment_keys);

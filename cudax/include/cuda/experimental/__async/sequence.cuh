@@ -57,9 +57,10 @@ struct __seq
         __sndr1_t,
         __opstate*,
         completion_signatures_of_t<__sndr2_t, __rcvr_ref_t<__rcvr_t&>>,
-        __malways<__async::completion_signatures<>>::__f>; // swallow the first sender's value completions
+        _CUDA_VSTD::__type_always<__async::completion_signatures<>>::__call>; // swallow the first sender's value
+                                                                              // completions
 
-    _CCCL_HOST_DEVICE friend env_of_t<__rcvr_t> get_env(const __opstate* __self) noexcept
+    _CUDAX_API friend env_of_t<__rcvr_t> get_env(const __opstate* __self) noexcept
     {
       return __async::get_env(__self->__rcvr_);
     }
@@ -68,30 +69,30 @@ struct __seq
     connect_result_t<__sndr1_t, __opstate*> __opstate1_;
     connect_result_t<__sndr2_t, __rcvr_ref_t<__rcvr_t&>> __opstate2_;
 
-    _CCCL_HOST_DEVICE __opstate(__sndr1_t&& __sndr1, __sndr2_t&& __sndr2, __rcvr_t&& __rcvr)
+    _CUDAX_API __opstate(__sndr1_t&& __sndr1, __sndr2_t&& __sndr2, __rcvr_t&& __rcvr)
         : __rcvr_(static_cast<__rcvr_t&&>(__rcvr))
         , __opstate1_(__async::connect(static_cast<__sndr1_t&&>(__sndr1), this))
         , __opstate2_(__async::connect(static_cast<__sndr2_t&&>(__sndr2), __rcvr_ref(__rcvr_)))
     {}
 
-    _CCCL_HOST_DEVICE void start() noexcept
+    _CUDAX_API void start() noexcept
     {
       __async::start(__opstate1_);
     }
 
     template <class... _Values>
-    _CCCL_HOST_DEVICE void set_value(_Values&&...) && noexcept
+    _CUDAX_API void set_value(_Values&&...) && noexcept
     {
       __async::start(__opstate2_);
     }
 
     template <class _Error>
-    _CCCL_HOST_DEVICE void set_error(_Error&& __error) && noexcept
+    _CUDAX_API void set_error(_Error&& __error) && noexcept
     {
       __async::set_error(static_cast<__rcvr_t&&>(__rcvr_), static_cast<_Error&&>(__error));
     }
 
-    _CCCL_HOST_DEVICE void set_stopped() && noexcept
+    _CUDAX_API void set_stopped() && noexcept
     {
       __async::set_stopped(static_cast<__rcvr_t&&>(__rcvr_));
     }
@@ -101,7 +102,7 @@ struct __seq
   struct __sndr_t;
 
   template <class _Sndr1, class _Sndr2>
-  _CCCL_HOST_DEVICE auto operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const -> __sndr_t<_Sndr1, _Sndr2>;
+  _CUDAX_API auto operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const -> __sndr_t<_Sndr1, _Sndr2>;
 };
 
 template <class _Sndr1, class _Sndr2>
@@ -112,20 +113,20 @@ struct __seq::__sndr_t
   using __sndr2_t      = _Sndr2;
 
   template <class _Rcvr>
-  _CCCL_HOST_DEVICE auto connect(_Rcvr __rcvr) &&
+  _CUDAX_API auto connect(_Rcvr __rcvr) &&
   {
     using __opstate_t = __opstate<__zip<__args<_Rcvr, _Sndr1, _Sndr2>>>;
     return __opstate_t{static_cast<_Sndr1&&>(__sndr1_), static_cast<_Sndr2>(__sndr2_), static_cast<_Rcvr&&>(__rcvr)};
   }
 
   template <class _Rcvr>
-  _CCCL_HOST_DEVICE auto connect(_Rcvr __rcvr) const&
+  _CUDAX_API auto connect(_Rcvr __rcvr) const&
   {
     using __opstate_t = __opstate<__zip<__args<_Rcvr, const _Sndr1&, const _Sndr2&>>>;
     return __opstate_t{__sndr1_, __sndr2_, static_cast<_Rcvr&&>(__rcvr)};
   }
 
-  _CCCL_HOST_DEVICE env_of_t<_Sndr2> get_env() const noexcept
+  _CUDAX_API env_of_t<_Sndr2> get_env() const noexcept
   {
     return __async::get_env(__sndr2_);
   }
@@ -137,7 +138,7 @@ struct __seq::__sndr_t
 };
 
 template <class _Sndr1, class _Sndr2>
-_CCCL_HOST_DEVICE auto __seq::operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const -> __sndr_t<_Sndr1, _Sndr2>
+_CUDAX_API auto __seq::operator()(_Sndr1 __sndr1, _Sndr2 __sndr2) const -> __sndr_t<_Sndr1, _Sndr2>
 {
   return __sndr_t<_Sndr1, _Sndr2>{{}, {}, static_cast<_Sndr1&&>(__sndr1), static_cast<_Sndr2&&>(__sndr2)};
 }

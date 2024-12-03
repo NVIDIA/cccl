@@ -46,7 +46,7 @@
 #include <vector>
 
 #include "test_util.h"
-#include <c2h/vector.cuh>
+#include <c2h/vector.h>
 
 /**
  * @brief Host-side random data generation
@@ -345,7 +345,7 @@ void nontrivial_constructor_test()
 
   cub::DeviceCopy::Batched(d_temp_storage, temp_storage_bytes, a_iter.begin(), b_iter.begin(), sizes, num_buffers);
 
-  for (int i = 0; i < 10; i++)
+  for (int i = 0; i < num_buffers; i++)
   {
     object_with_non_trivial_ctor ha(a[i]);
     object_with_non_trivial_ctor hb(b[i]);

@@ -26,48 +26,43 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp>
 struct remove_pointer
 {
-  using type _LIBCUDACXX_NODEBUG_TYPE = _CCCL_BUILTIN_REMOVE_POINTER(_Tp);
+  using type _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_POINTER(_Tp);
 };
 
 template <class _Tp>
-using __remove_pointer_t = _CCCL_BUILTIN_REMOVE_POINTER(_Tp);
+using remove_pointer_t _CCCL_NODEBUG_ALIAS = _CCCL_BUILTIN_REMOVE_POINTER(_Tp);
 
 #else
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_pointer
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE _Tp type;
+  typedef _CCCL_NODEBUG_ALIAS _Tp type;
 };
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_pointer<_Tp*>
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE _Tp type;
+  typedef _CCCL_NODEBUG_ALIAS _Tp type;
 };
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_pointer<_Tp* const>
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE _Tp type;
+  typedef _CCCL_NODEBUG_ALIAS _Tp type;
 };
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_pointer<_Tp* volatile>
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE _Tp type;
+  typedef _CCCL_NODEBUG_ALIAS _Tp type;
 };
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT remove_pointer<_Tp* const volatile>
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE _Tp type;
+  typedef _CCCL_NODEBUG_ALIAS _Tp type;
 };
 
 template <class _Tp>
-using __remove_pointer_t = typename remove_pointer<_Tp>::type;
+using remove_pointer_t _CCCL_NODEBUG_ALIAS = typename remove_pointer<_Tp>::type;
 
 #endif // defined(_CCCL_BUILTIN_REMOVE_POINTER) && !defined(_LIBCUDACXX_USE_REMOVE_POINTER_FALLBACK)
-
-#if _CCCL_STD_VER > 2011
-template <class _Tp>
-using remove_pointer_t = __remove_pointer_t<_Tp>;
-#endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

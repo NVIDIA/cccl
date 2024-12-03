@@ -33,7 +33,7 @@
 #include <thrust/sort.h>
 
 #include "cub/thread/thread_sort.cuh"
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 struct CustomLess
 {

@@ -66,9 +66,9 @@ private:
   using _JustTag = decltype(__detail::__just_from_tag<_Disposition>());
   using _SetTag  = decltype(__detail::__set_tag<_Disposition>());
 
-  using __diag_t = _CUDA_VSTD::_If<_CUDA_VSTD::is_same_v<_SetTag, set_error_t>,
-                                   _AN_ERROR_COMPLETION_MUST_HAVE_EXACTLY_ONE_ERROR_ARGUMENT,
-                                   _A_STOPPED_COMPLETION_MUST_HAVE_NO_ARGUMENTS>;
+  using __diag_t = _CUDA_VSTD::conditional_t<_CUDA_VSTD::is_same_v<_SetTag, set_error_t>,
+                                             _AN_ERROR_COMPLETION_MUST_HAVE_EXACTLY_ONE_ERROR_ARGUMENT,
+                                             _A_STOPPED_COMPLETION_MUST_HAVE_NO_ARGUMENTS>;
 
   template <class... _Ts>
   using __error_t =
@@ -78,8 +78,9 @@ private:
   {
     template <class... _Ts>
     auto operator()(_Ts&&... __ts) const noexcept
-      -> _CUDA_VSTD::
-        _If<__is_valid_signature<_SetTag(_Ts...)>, completion_signatures<_SetTag(_Ts...)>, __error_t<_Ts...>>;
+      -> _CUDA_VSTD::conditional_t<__signature_disposition<_SetTag(_Ts...)> != __invalid_disposition,
+                                   completion_signatures<_SetTag(_Ts...)>,
+                                   __error_t<_Ts...>>;
   };
 
   template <class _Rcvr = receiver_archetype>
@@ -88,7 +89,7 @@ private:
     _Rcvr& __rcvr_;
 
     template <class... _Ts>
-    _CCCL_HOST_DEVICE auto operator()(_Ts&&... __ts) const noexcept
+    _CUDAX_API auto operator()(_Ts&&... __ts) const noexcept
     {
       _SetTag()(static_cast<_Rcvr&&>(__rcvr_), static_cast<_Ts&&>(__ts)...);
     }
@@ -104,7 +105,7 @@ private:
     _Rcvr __rcvr_;
     _Fn __fn_;
 
-    _CCCL_HOST_DEVICE void start() & noexcept
+    _CUDAX_API void start() & noexcept
     {
       static_cast<_Fn&&>(__fn_)(__complete_fn<_Rcvr>{__rcvr_});
     }
@@ -119,14 +120,14 @@ private:
     _Fn __fn_;
 
     template <class _Rcvr>
-    _CCCL_HOST_DEVICE __opstate<_Rcvr, _Fn> connect(_Rcvr __rcvr) && //
+    _CUDAX_API __opstate<_Rcvr, _Fn> connect(_Rcvr __rcvr) && //
       noexcept(__nothrow_decay_copyable<_Rcvr, _Fn>)
     {
       return __opstate<_Rcvr, _Fn>{static_cast<_Rcvr&&>(__rcvr), static_cast<_Fn&&>(__fn_)};
     }
 
     template <class _Rcvr>
-    _CCCL_HOST_DEVICE __opstate<_Rcvr, _Fn> connect(_Rcvr __rcvr) const& //
+    _CUDAX_API __opstate<_Rcvr, _Fn> connect(_Rcvr __rcvr) const& //
       noexcept(__nothrow_decay_copyable<_Rcvr, _Fn const&>)
     {
       return __opstate<_Rcvr, _Fn>{static_cast<_Rcvr&&>(__rcvr), __fn_};

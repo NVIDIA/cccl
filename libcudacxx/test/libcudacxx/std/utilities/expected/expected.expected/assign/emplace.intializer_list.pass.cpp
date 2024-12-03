@@ -33,9 +33,9 @@
 #include "test_macros.h"
 
 template <class T, class... Args>
-_LIBCUDACXX_CONCEPT_FRAGMENT(CanEmplace_, requires(T t, Args&&... args)((t.emplace(cuda::std::forward<Args>(args)...))));
+_CCCL_CONCEPT_FRAGMENT(CanEmplace_, requires(T t, Args&&... args)((t.emplace(cuda::std::forward<Args>(args)...))));
 template <class T, class... Args>
-constexpr bool CanEmplace = _LIBCUDACXX_FRAGMENT(CanEmplace_, T, Args...);
+constexpr bool CanEmplace = _CCCL_FRAGMENT(CanEmplace_, T, Args...);
 
 static_assert(CanEmplace<cuda::std::expected<int, int>, int>, "");
 

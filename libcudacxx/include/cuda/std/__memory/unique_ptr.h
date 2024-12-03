@@ -63,7 +63,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_delete
 
   template <class _Up>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20
-  default_delete(const default_delete<_Up>&, __enable_if_t<_CCCL_TRAIT(is_convertible, _Up*, _Tp*), int> = 0) noexcept
+  default_delete(const default_delete<_Up>&, enable_if_t<_CCCL_TRAIT(is_convertible, _Up*, _Tp*), int> = 0) noexcept
   {}
 
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void operator()(_Tp* __ptr) const noexcept
@@ -81,11 +81,11 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT default_delete<_Tp[]>
 
   template <class _Up>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 default_delete(
-    const default_delete<_Up[]>&, __enable_if_t<_CCCL_TRAIT(is_convertible, _Up (*)[], _Tp (*)[]), int> = 0) noexcept
+    const default_delete<_Up[]>&, enable_if_t<_CCCL_TRAIT(is_convertible, _Up (*)[], _Tp (*)[]), int> = 0) noexcept
   {}
 
   template <class _Up>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __enable_if_t<_CCCL_TRAIT(is_convertible, _Up (*)[], _Tp (*)[]), void>
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 enable_if_t<_CCCL_TRAIT(is_convertible, _Up (*)[], _Tp (*)[]), void>
   operator()(_Up* __ptr) const noexcept
   {
     static_assert(sizeof(_Up) >= 0, "cannot delete an incomplete type");
@@ -130,7 +130,7 @@ class _LIBCUDACXX_UNIQUE_PTR_TRIVIAL_ABI _CCCL_TYPE_VISIBILITY_DEFAULT unique_pt
 public:
   typedef _Tp element_type;
   typedef _Dp deleter_type;
-  typedef _LIBCUDACXX_NODEBUG_TYPE typename __pointer<_Tp, deleter_type>::type pointer;
+  typedef _CCCL_NODEBUG_ALIAS typename __pointer<_Tp, deleter_type>::type pointer;
 
   static_assert(!_CCCL_TRAIT(is_rvalue_reference, deleter_type),
                 "the specified deleter type cannot be an rvalue reference");
@@ -143,33 +143,31 @@ private:
     int __for_bool_;
   };
 
-  typedef _LIBCUDACXX_NODEBUG_TYPE __unique_ptr_deleter_sfinae<_Dp> _DeleterSFINAE;
+  typedef _CCCL_NODEBUG_ALIAS __unique_ptr_deleter_sfinae<_Dp> _DeleterSFINAE;
 
   template <bool _Dummy>
-  using _LValRefType _LIBCUDACXX_NODEBUG_TYPE = typename __dependent_type<_DeleterSFINAE, _Dummy>::__lval_ref_type;
+  using _LValRefType _CCCL_NODEBUG_ALIAS = typename __dependent_type<_DeleterSFINAE, _Dummy>::__lval_ref_type;
 
   template <bool _Dummy>
-  using _GoodRValRefType _LIBCUDACXX_NODEBUG_TYPE =
-    typename __dependent_type<_DeleterSFINAE, _Dummy>::__good_rval_ref_type;
+  using _GoodRValRefType _CCCL_NODEBUG_ALIAS = typename __dependent_type<_DeleterSFINAE, _Dummy>::__good_rval_ref_type;
 
   template <bool _Dummy>
-  using _BadRValRefType _LIBCUDACXX_NODEBUG_TYPE =
-    typename __dependent_type<_DeleterSFINAE, _Dummy>::__bad_rval_ref_type;
+  using _BadRValRefType _CCCL_NODEBUG_ALIAS = typename __dependent_type<_DeleterSFINAE, _Dummy>::__bad_rval_ref_type;
 
-  template <bool _Dummy, class _Deleter = typename __dependent_type<__type_identity<deleter_type>, _Dummy>::type>
-  using _EnableIfDeleterDefaultConstructible _LIBCUDACXX_NODEBUG_TYPE =
+  template <bool _Dummy, class _Deleter = typename __dependent_type<type_identity<deleter_type>, _Dummy>::type>
+  using _EnableIfDeleterDefaultConstructible _CCCL_NODEBUG_ALIAS =
     typename enable_if<is_default_constructible<_Deleter>::value && !is_pointer<_Deleter>::value>::type;
 
   template <class _ArgType>
-  using _EnableIfDeleterConstructible _LIBCUDACXX_NODEBUG_TYPE =
+  using _EnableIfDeleterConstructible _CCCL_NODEBUG_ALIAS =
     typename enable_if<is_constructible<deleter_type, _ArgType>::value>::type;
 
   template <class _UPtr, class _Up>
-  using _EnableIfMoveConvertible _LIBCUDACXX_NODEBUG_TYPE =
+  using _EnableIfMoveConvertible _CCCL_NODEBUG_ALIAS =
     typename enable_if<is_convertible<typename _UPtr::pointer, pointer>::value && !is_array<_Up>::value>::type;
 
   template <class _UDel>
-  using _EnableIfDeleterConvertible _LIBCUDACXX_NODEBUG_TYPE =
+  using _EnableIfDeleterConvertible _CCCL_NODEBUG_ALIAS =
     typename enable_if<(is_reference<_Dp>::value && is_same<_Dp, _UDel>::value)
                        || (!is_reference<_Dp>::value && is_convertible<_UDel, _Dp>::value)>::type;
 
@@ -251,7 +249,7 @@ public:
     return *this;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __add_lvalue_reference_t<_Tp> operator*() const
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 add_lvalue_reference_t<_Tp> operator*() const
   {
     return *__ptr_.first();
   }
@@ -325,41 +323,38 @@ private:
   typedef __unique_ptr_deleter_sfinae<_Dp> _DeleterSFINAE;
 
   template <bool _Dummy>
-  using _LValRefType _LIBCUDACXX_NODEBUG_TYPE = typename __dependent_type<_DeleterSFINAE, _Dummy>::__lval_ref_type;
+  using _LValRefType _CCCL_NODEBUG_ALIAS = typename __dependent_type<_DeleterSFINAE, _Dummy>::__lval_ref_type;
 
   template <bool _Dummy>
-  using _GoodRValRefType _LIBCUDACXX_NODEBUG_TYPE =
-    typename __dependent_type<_DeleterSFINAE, _Dummy>::__good_rval_ref_type;
+  using _GoodRValRefType _CCCL_NODEBUG_ALIAS = typename __dependent_type<_DeleterSFINAE, _Dummy>::__good_rval_ref_type;
 
   template <bool _Dummy>
-  using _BadRValRefType _LIBCUDACXX_NODEBUG_TYPE =
-    typename __dependent_type<_DeleterSFINAE, _Dummy>::__bad_rval_ref_type;
+  using _BadRValRefType _CCCL_NODEBUG_ALIAS = typename __dependent_type<_DeleterSFINAE, _Dummy>::__bad_rval_ref_type;
 
-  template <bool _Dummy, class _Deleter = typename __dependent_type<__type_identity<deleter_type>, _Dummy>::type>
-  using _EnableIfDeleterDefaultConstructible _LIBCUDACXX_NODEBUG_TYPE =
+  template <bool _Dummy, class _Deleter = typename __dependent_type<type_identity<deleter_type>, _Dummy>::type>
+  using _EnableIfDeleterDefaultConstructible _CCCL_NODEBUG_ALIAS =
     typename enable_if<is_default_constructible<_Deleter>::value && !is_pointer<_Deleter>::value>::type;
 
   template <class _ArgType>
-  using _EnableIfDeleterConstructible _LIBCUDACXX_NODEBUG_TYPE =
+  using _EnableIfDeleterConstructible _CCCL_NODEBUG_ALIAS =
     typename enable_if<is_constructible<deleter_type, _ArgType>::value>::type;
 
   template <class _Pp>
-  using _EnableIfPointerConvertible _LIBCUDACXX_NODEBUG_TYPE =
+  using _EnableIfPointerConvertible _CCCL_NODEBUG_ALIAS =
     typename enable_if<_CheckArrayPointerConversion<_Pp>::value>::type;
 
   template <class _UPtr, class _Up, class _ElemT = typename _UPtr::element_type>
-  using _EnableIfMoveConvertible _LIBCUDACXX_NODEBUG_TYPE = typename enable_if<
+  using _EnableIfMoveConvertible _CCCL_NODEBUG_ALIAS = typename enable_if<
     is_array<_Up>::value && is_same<pointer, element_type*>::value && is_same<typename _UPtr::pointer, _ElemT*>::value
     && is_convertible<_ElemT (*)[], element_type (*)[]>::value>::type;
 
   template <class _UDel>
-  using _EnableIfDeleterConvertible _LIBCUDACXX_NODEBUG_TYPE =
+  using _EnableIfDeleterConvertible _CCCL_NODEBUG_ALIAS =
     typename enable_if<(is_reference<_Dp>::value && is_same<_Dp, _UDel>::value)
                        || (!is_reference<_Dp>::value && is_convertible<_UDel, _Dp>::value)>::type;
 
   template <class _UDel>
-  using _EnableIfDeleterAssignable _LIBCUDACXX_NODEBUG_TYPE =
-    typename enable_if<is_assignable<_Dp&, _UDel&&>::value>::type;
+  using _EnableIfDeleterAssignable _CCCL_NODEBUG_ALIAS = typename enable_if<is_assignable<_Dp&, _UDel&&>::value>::type;
 
 public:
   template <bool _Dummy = true, class = _EnableIfDeleterDefaultConstructible<_Dummy>>
@@ -458,7 +453,7 @@ public:
     return *this;
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __add_lvalue_reference_t<_Tp> operator[](size_t __i) const
+  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 add_lvalue_reference_t<_Tp> operator[](size_t __i) const
   {
     return __ptr_.first()[__i];
   }
@@ -488,7 +483,7 @@ public:
     return __t;
   }
 
-  template <class _Pp, __enable_if_t<_CheckArrayPointerConversion<_Pp>::value, int> = 0>
+  template <class _Pp, enable_if_t<_CheckArrayPointerConversion<_Pp>::value, int> = 0>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void reset(_Pp __p) noexcept
   {
     pointer __tmp  = __ptr_.first();
@@ -516,7 +511,7 @@ public:
 };
 
 template <class _Tp, class _Dp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 __enable_if_t<__is_swappable<_Dp>::value, void>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 enable_if_t<__is_swappable<_Dp>::value, void>
 swap(unique_ptr<_Tp, _Dp>& __x, unique_ptr<_Tp, _Dp>& __y) noexcept
 {
   __x.swap(__y);
@@ -717,7 +712,7 @@ template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 typename __unique_if<_Tp>::__unique_array_unknown_bound
 make_unique(size_t __n)
 {
-  typedef __remove_extent_t<_Tp> _Up;
+  typedef remove_extent_t<_Tp> _Up;
   return unique_ptr<_Tp>(new _Up[__n]());
 }
 
@@ -734,7 +729,7 @@ template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 typename __unique_if<_Tp>::__unique_array_unknown_bound
 make_unique_for_overwrite(size_t __n)
 {
-  return unique_ptr<_Tp>(new __remove_extent_t<_Tp>[__n]);
+  return unique_ptr<_Tp>(new remove_extent_t<_Tp>[__n]);
 }
 
 template <class _Tp, class... _Args>

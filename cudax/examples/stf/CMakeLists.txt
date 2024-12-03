@@ -2,24 +2,30 @@ set(stf_example_sources
   01-axpy.cu
   01-axpy-cuda_kernel.cu
   01-axpy-cuda_kernel_chain.cu
-  01-axpy-parallel_for.cu
-  01-axpy-launch.cu
   02-axpy-host_launch.cu
   03-temporary-data.cu
   04-fibonacci.cu
   04-fibonacci-run_once.cu
   08-cub-reduce.cu
   axpy-annotated.cu
+  void_data_interface.cu
+  explicit_data_places.cu
+  thrust_zip_iterator.cu
+  1f1b.cu
+)
+
+# Examples which rely on code generation (parallel_for or launch)
+set(stf_example_codegen_sources
+  01-axpy-parallel_for.cu
+  01-axpy-launch.cu
   binary_fhe.cu
   cfd.cu
   custom_data_interface.cu
-  void_data_interface.cu
   frozen_data_init.cu
   graph_algorithms/degree_centrality.cu
   graph_algorithms/pagerank.cu
   graph_algorithms/tricount.cu
   graph_algorithms/jaccard.cu
-  explicit_data_places.cu
   fdtd_mgpu.cu
   heat.cu
   heat_mgpu.cu
@@ -33,9 +39,7 @@ set(stf_example_sources
   scan.cu
   mandelbrot.cu
   standalone-launches.cu
-  thrust_zip_iterator.cu
   word_count.cu
-  1f1b.cu
 )
 
 # Examples using CUBLAS, CUSOLVER...
@@ -54,12 +58,6 @@ find_package(CUB ${cudax_VERSION} EXACT CONFIG
   NO_DEFAULT_PATH # Only check the explicit path in HINTS:
   HINTS "${CCCL_SOURCE_DIR}/lib/cmake/cub/"
 )
-
-find_package(Thrust ${cudax_VERSION} EXACT CONFIG
-  NO_DEFAULT_PATH # Only check the explicit path in HINTS:
-  HINTS "${CCCL_SOURCE_DIR}/lib/cmake/thrust/"
-)
-thrust_create_target(cudax.stf.examples.thrust)
 
 find_package(CUDAToolkit REQUIRED)
 
@@ -90,7 +88,7 @@ function(cudax_add_stf_example target_name_var source cn_target)
   cudax_clone_target_properties(${example_target} ${cn_target})
   cudax_stf_configure_target(${example_target} ${ARGN})
   target_link_libraries(${example_target} PRIVATE
-    cudax.stf.examples.thrust
+    cudax.examples.thrust
     CUB::CUB
   )
 
@@ -115,6 +113,12 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   foreach(source IN LISTS stf_example_sources)
     cudax_add_stf_example(example_target "${source}" ${cn_target})
   endforeach()
+
+  if (cudax_ENABLE_CUDASTF_CODE_GENERATION)
+     foreach(source IN LISTS stf_example_codegen_sources)
+         cudax_add_stf_example(example_target "${source}" ${cn_target})
+     endforeach()
+  endif()
 
   if (cudax_ENABLE_CUDASTF_MATHLIBS)
     foreach(source IN LISTS stf_example_mathlib_sources)

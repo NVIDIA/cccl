@@ -1,6 +1,4 @@
 set(static_assert_tests
-  gnu_launch.cpp
-  gnu_parallel_for.cpp
   static.cu
   task_prototype.cu
   stream_task_prototype.cu

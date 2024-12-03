@@ -16,9 +16,9 @@
 #include <sstream>
 
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.cuh>
-#include <c2h/custom_type.cuh>
-#include <c2h/test_util_vec.cuh>
+#include <c2h/catch2_test_helper.h>
+#include <c2h/custom_type.h>
+#include <c2h/test_util_vec.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -178,10 +178,10 @@ struct alignas(Alignment) overaligned_addable_t
 
 using overaligned_types =
   c2h::type_list<overaligned_addable_t<32>
-#ifndef _CCCL_COMPILER_MSVC // error C2719: [...] formal parameter with requested alignment of 256 won't be aligned
+#if !_CCCL_COMPILER(MSVC) // error C2719: [...] formal parameter with requested alignment of 256 won't be aligned
                  ,
                  overaligned_addable_t<256>
-#endif // _CCCL_COMPILER_MSVC
+#endif // !_CCCL_COMPILER(MSVC)
                  >;
 
 // test with types exceeding the memcpy_async and bulk copy alignments (16 and 128 bytes respectively)
@@ -553,4 +553,13 @@ C2H_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][device_transfo
   CHECK(make_aligned_base_ptr(&arr[127], 128) == aligned_base_ptr<int>{reinterpret_cast<char*>(&arr[96]), 124});
   CHECK(make_aligned_base_ptr(&arr[128], 128) == aligned_base_ptr<int>{reinterpret_cast<char*>(&arr[128]), 0});
   CHECK(make_aligned_base_ptr(&arr[129], 128) == aligned_base_ptr<int>{reinterpret_cast<char*>(&arr[128]), 4});
+}
+
+C2H_TEST("DeviceTransform::Transform aligned_base_ptr", "[device][device_transform]")
+{
+  using It         = thrust::reverse_iterator<thrust::detail::normal_iterator<thrust::device_ptr<int>>>;
+  using kernel_arg = cub::detail::transform::kernel_arg<It>;
+
+  STATIC_REQUIRE(::cuda::std::is_constructible<kernel_arg>::value);
+  STATIC_REQUIRE(::cuda::std::is_copy_constructible<kernel_arg>::value);
 }

@@ -30,7 +30,7 @@
 
 #include <cub/device/device_for.cuh>
 
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 template <class T>
 struct value_t

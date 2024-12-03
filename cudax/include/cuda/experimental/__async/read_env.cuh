@@ -53,7 +53,7 @@ private:
   struct __completions_fn
   {
     template <class _Query, class _Env>
-    using __f = _CUDA_VSTD::_If<
+    using __call = _CUDA_VSTD::conditional_t<
       __nothrow_callable<_Query, _Env>,
       completion_signatures<set_value_t(__call_result_t<_Query, _Env>)>,
       completion_signatures<set_value_t(__call_result_t<_Query, _Env>), set_error_t(::std::exception_ptr)>>;
@@ -64,21 +64,21 @@ private:
   {
     using operation_state_concept = operation_state_t;
     using completion_signatures   = //
-      __minvoke<
-        _CUDA_VSTD::
-          _If<__callable<_Query, env_of_t<_Rcvr>>, __completions_fn, __error_env_lacks_query<_Query, env_of_t<_Rcvr>>>,
-        _Query,
-        env_of_t<_Rcvr>>;
+      _CUDA_VSTD::__type_call<_CUDA_VSTD::conditional_t<__callable<_Query, env_of_t<_Rcvr>>,
+                                                        __completions_fn,
+                                                        __error_env_lacks_query<_Query, env_of_t<_Rcvr>>>,
+                              _Query,
+                              env_of_t<_Rcvr>>;
 
     _Rcvr __rcvr_;
 
-    _CCCL_HOST_DEVICE explicit __opstate_t(_Rcvr __rcvr)
+    _CUDAX_API explicit __opstate_t(_Rcvr __rcvr)
         : __rcvr_(static_cast<_Rcvr&&>(__rcvr))
     {}
 
     _CUDAX_IMMOVABLE(__opstate_t);
 
-    _CCCL_HOST_DEVICE void start() noexcept
+    _CUDAX_API void start() noexcept
     {
       // If the query invocation is noexcept, call it directly. Otherwise,
       // wrap it in a try-catch block and forward the exception to the
@@ -110,8 +110,8 @@ private:
   {
     using operation_state_concept = operation_state_t;
     using completion_signatures   = dependent_completions;
-    _CCCL_HOST_DEVICE explicit __opstate_t(receiver_archetype);
-    _CCCL_HOST_DEVICE void start() noexcept;
+    _CUDAX_API explicit __opstate_t(receiver_archetype);
+    _CUDAX_API void start() noexcept;
   };
 
   template <class _Query>
@@ -133,7 +133,7 @@ struct read_env_t::__sndr_t
   _CCCL_NO_UNIQUE_ADDRESS _Query __query;
 
   template <class _Rcvr>
-  _CCCL_HOST_DEVICE auto connect(_Rcvr __rcvr) const noexcept(__nothrow_movable<_Rcvr>) -> __opstate_t<_Rcvr, _Query>
+  _CUDAX_API auto connect(_Rcvr __rcvr) const noexcept(__nothrow_movable<_Rcvr>) -> __opstate_t<_Rcvr, _Query>
   {
     return __opstate_t<_Rcvr, _Query>{static_cast<_Rcvr&&>(__rcvr)};
   }
