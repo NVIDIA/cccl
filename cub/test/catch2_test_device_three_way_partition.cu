@@ -460,7 +460,7 @@ C2H_TEST("Device three-way partition handles single output", "[partition][device
   REQUIRE(actual_num_items_in_second_part == num_items_in_second_part);
 }
 
-CUB_TEST("Device three-way partition works for very large number of items", "[device][partition]", offset_types)
+C2H_TEST("Device three-way partition works for very large number of items", "[device][partition]", offset_types)
 try
 {
   using offset_t = typename c2h::get<0, TestType>;
