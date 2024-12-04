@@ -41,8 +41,7 @@ using can_invoke_r = typename can_invoke_r_impl<R, F, void, Args...>::type;
 
 __host__ __device__ constexpr bool test()
 {
-  // Make sure basic functionality works (i.e. we actually call the function and
-  // return the right result).
+  // Make sure basic functionality works (i.e. we actually call the function and return the right result).
   {
     struct F
     {
@@ -65,11 +64,21 @@ __host__ __device__ constexpr bool test()
     };
     static_assert(can_invoke_r<char*, F, int>::value, "");
     static_assert(can_invoke_r<void*, F, int>::value, "");
-    static_assert(can_invoke_r<void, F, int>::value, ""); // discard return type
-    static_assert(!can_invoke_r<char*, F, void*>::value, ""); // wrong argument type
-    static_assert(!can_invoke_r<char*, F>::value, ""); // missing argument
-    static_assert(!can_invoke_r<int*, F, int>::value, ""); // incompatible return type
-    static_assert(!can_invoke_r<void, F, void*>::value, ""); // discard return type, invalid argument type
+
+    // discard return type
+    static_assert(can_invoke_r<void, F, int>::value, "");
+
+    // wrong argument type
+    static_assert(!can_invoke_r<char*, F, void*>::value, "");
+
+    // missing argument
+    static_assert(!can_invoke_r<char*, F>::value, "");
+
+    // incompatible return type
+    static_assert(!can_invoke_r<int*, F, int>::value, "");
+
+    // discard return type, invalid argument type
+    static_assert(!can_invoke_r<void, F, void*>::value, "");
   }
 
   // Make sure invoke_r has the right noexcept specification
@@ -94,11 +103,15 @@ __host__ __device__ constexpr bool test()
       __host__ __device__ constexpr ConversionNotNoexcept(char*) noexcept(false) {}
     };
     static_assert(noexcept(cuda::std::invoke_r<char*>(F{}, 0)), "");
-    static_assert(!noexcept(cuda::std::invoke_r<char*>(G{}, 0)), ""); // function call is not noexcept
-    static_assert(!noexcept(cuda::std::invoke_r<ConversionNotNoexcept>(F{}, 0)), ""); // function call is noexcept,
-                                                                                      // conversion isn't
-    static_assert(!noexcept(cuda::std::invoke_r<ConversionNotNoexcept>(G{}, 0)), ""); // function call and conversion
-                                                                                      // are both not noexcept
+
+    // function call is not noexcept
+    static_assert(!noexcept(cuda::std::invoke_r<char*>(G{}, 0)), "");
+
+    // function call is noexcept, conversion isn't
+    static_assert(!noexcept(cuda::std::invoke_r<ConversionNotNoexcept>(F{}, 0)), "");
+
+    // function call and conversion are both not noexcept
+    static_assert(!noexcept(cuda::std::invoke_r<ConversionNotNoexcept>(G{}, 0)), "");
   }
 
   // Make sure invoke_r works with void return type

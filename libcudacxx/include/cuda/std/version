@@ -49,6 +49,7 @@
 // # define __cccl_lib_generic_associative_lookup           201304L
 #  define __cccl_lib_integer_sequence           201304L
 #  define __cccl_lib_integral_constant_callable 201304L
+#  define __cccl_lib_invoke_r                   202106L
 #  define __cccl_lib_is_final                   201402L
 #  define __cccl_lib_is_null_pointer            201309L
 #  define __cccl_lib_make_reverse_iterator      201402L
@@ -232,7 +233,6 @@
 // # undef  __cccl_lib_constexpr_memory
 // # define __cccl_lib_constexpr_memory                     202202L
 // # define __cccl_lib_constexpr_typeinfo                   202106L
-// # define __cccl_lib_invoke_r                             202106L
 // # define __cccl_lib_move_only_function                   202110L
 // # define __cccl_lib_out_ptr                              202106L
 // # define __cccl_lib_ranges_chunk                         202202L
