@@ -101,6 +101,9 @@ using __swap_result_t _CCCL_NODEBUG_ALIAS =
   enable_if_t<__detect_adl_swap::__can_define_swap<_Tp>::value && _CCCL_TRAIT(is_move_constructible, _Tp)
               && _CCCL_TRAIT(is_move_assignable, _Tp)>;
 
+// we use type_identity_t<_Tp> as second parameter, to avoid ambiguity with std::swap, which will thus be preferred by
+// overload resolution (which is ok since std::swap is only considered when explicitly called, or found by ADL for types
+// from std::)
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __swap_result_t<_Tp> swap(_Tp& __x, type_identity_t<_Tp>& __y) noexcept(
   _CCCL_TRAIT(is_nothrow_move_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_move_assignable, _Tp));
