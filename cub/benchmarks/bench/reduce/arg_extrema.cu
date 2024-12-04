@@ -31,9 +31,6 @@ struct policy_hub_t
                              cub::BLOCK_REDUCE_WARP_REDUCTIONS,
                              cub::LOAD_DEFAULT>;
 
-    // SingleTilePolicy
-    using SingleTilePolicy = ReducePolicy;
-
     using SingleTilePolicy      = ReducePolicy;
     using SegmentedReducePolicy = ReducePolicy;
   };

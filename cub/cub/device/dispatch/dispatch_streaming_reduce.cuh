@@ -26,7 +26,7 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 
 #include <cuda/std/type_traits>
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 CUB_NAMESPACE_BEGIN
 
@@ -406,4 +406,4 @@ struct dispatch_streaming_arg_reduce_t
 
 CUB_NAMESPACE_END
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // !_CCCL_DOXYGEN_INVOKED
