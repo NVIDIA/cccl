@@ -156,6 +156,12 @@ ArgPair argHandlers[] = {
      nvrtcArguments.emplace_back("-std=" + match[1].str());
      return NORMAL;
    }},
+  {// Matches -G/--device-debug
+   std::regex("^(?:-G|--device-debug)$"),
+   [](const std::smatch&) {
+     nvrtcArguments.emplace_back("-G");
+     return NORMAL;
+   }},
   {// Capture an argument that is just '-'. If no input file is listed input is on stdin
    std::regex("^-$"),
    [](const std::smatch& match) {
