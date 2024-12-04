@@ -24,7 +24,7 @@
 
 #include <cuda/std/__cccl/visibility.h>
 
-#if defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_UNREACHABLE() __builtin_unreachable()
 #elif defined(__CUDA_ARCH__)
 #  if _CCCL_CUDACC_BELOW(11, 2)

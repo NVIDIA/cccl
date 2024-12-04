@@ -46,10 +46,10 @@ struct __sch_env_t
 
 _CCCL_GLOBAL_CONSTANT struct start_on_t
 {
-#if !defined(_CCCL_CUDA_COMPILER_NVCC)
+#if !_CCCL_CUDA_COMPILER(NVCC)
 
 private:
-#endif // _CCCL_CUDA_COMPILER_NVCC
+#endif // _CCCL_CUDA_COMPILER(NVCC)
 
   template <class _Rcvr, class _Sch, class _CvSndr>
   struct __opstate_t

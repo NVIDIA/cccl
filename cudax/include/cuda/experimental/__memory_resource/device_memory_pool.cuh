@@ -24,10 +24,10 @@
 // cudaMallocAsync was introduced in CTK 11.2
 #if !_CCCL_COMPILER(MSVC2017) && _CCCL_CUDACC_AT_LEAST(11, 2)
 
-#  if defined(_CCCL_CUDA_COMPILER_CLANG)
+#  if _CCCL_CUDA_COMPILER(CLANG)
 #    include <cuda_runtime.h>
 #    include <cuda_runtime_api.h>
-#  endif // _CCCL_CUDA_COMPILER_CLANG
+#  endif // _CCCL_CUDA_COMPILER(CLANG)
 
 #  include <cuda/__memory_resource/get_property.h>
 #  include <cuda/__memory_resource/properties.h>

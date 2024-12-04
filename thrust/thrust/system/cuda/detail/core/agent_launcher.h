@@ -38,7 +38,7 @@
 
 #include <cub/detail/device_synchronize.cuh>
 
-#ifdef _CCCL_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER
 #  include <thrust/system/cuda/detail/core/triple_chevron_launch.h>
 #  include <thrust/system/cuda/detail/core/util.h>
 
@@ -53,7 +53,7 @@
 #  if !defined(THRUST_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION)
 _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wattributes")
-#    if !defined(_CCCL_CUDA_COMPILER_NVHPC)
+#    if !_CCCL_CUDA_COMPILER(NVHPC)
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 #    endif // !_CCCL_CUDA_COMPILER_NVHPC
 #  endif // !THRUST_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION
