@@ -32,6 +32,7 @@
 #include <thrust/tuple.h>
 
 #include <cuda/std/utility>
+
 THRUST_NAMESPACE_BEGIN
 namespace system
 {
