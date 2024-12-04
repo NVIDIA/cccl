@@ -38,6 +38,7 @@ set(stf_example_codegen_sources
   logical_gates_composition.cu
   mandelbrot.cu
   parallel_for_2D.cu
+  pi.cu
   scan.cu
   standalone-launches.cu
   word_count.cu
