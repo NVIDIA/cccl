@@ -183,7 +183,7 @@ def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, sta
         l_input = [2 * (start_sum_with + distance) for distance in range(num_items)]
         dtype_inp, ntype_inp = dtype_ntype(-1)
         dtype_out, ntype_out = dtype_ntype(-2)
-        i_input = iterators.cu_map(
+        i_input = iterators.map(
             mul2,
             iterators.count(start_sum_with, ntype=ntype_inp),
             op_return_ntype=ntype_out)
@@ -195,9 +195,9 @@ def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, sta
         dtype_mid, ntype_mid = dtype_ntype(-2)
         dtype_out, ntype_out = dtype_ntype(-3)
         mul_funcs = {2: mul2, 3: mul3}
-        i_input = iterators.cu_map(
+        i_input = iterators.map(
             mul_funcs[fac_out],
-            iterators.cu_map(
+            iterators.map(
                 mul_funcs[fac_mid],
                 iterators.count(start_sum_with, ntype=ntype_inp),
                 op_return_ntype=ntype_mid),

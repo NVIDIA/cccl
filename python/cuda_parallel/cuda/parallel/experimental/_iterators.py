@@ -233,10 +233,6 @@ class ConstantIterator:
         return self.size()
 
 
-def repeat(value, ntype):
-    return ConstantIterator(value, ntype)
-
-
 class CountingIterator:
     def __init__(self, count, ntype):
         thisty = numba.types.CPointer(ntype)
@@ -272,11 +268,7 @@ class CountingIterator:
         return self.size()
 
 
-def count(offset, ntype):
-    return CountingIterator(offset, ntype)
-
-
-def cu_map(op, it, op_return_ntype):
+def cumap(op, it, op_return_ntype):
     op_return_ntype_ir = _ir_type_given_numba_type(op_return_ntype)
     if op_return_ntype_ir is None:
         raise RuntimeError(f"Unsupported: {type(op_return_ntype)=}")
