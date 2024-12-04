@@ -33,7 +33,11 @@ __device__ __host__ void assert_rt_wrap(cudaError_t code, const char* file, int 
   if (code != cudaSuccess)
   {
 #ifndef TEST_COMPILER_NVRTC
+#  if !defined(__CUDA_ARCH__)
     printf("assert: %s %s %d\n", cudaGetErrorString(code), file, line);
+#  else
+    printf("assert: error=%d %s %d\n", code, file, line);
+#  endif
 #endif
     assert(code == cudaSuccess);
   }
