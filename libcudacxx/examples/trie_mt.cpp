@@ -36,11 +36,11 @@ struct trie
 {
   struct ref
   {
-    std::atomic<trie*> ptr = LIBCUDACXX_ATOMIC_VAR_INIT(nullptr);
+    std::atomic<trie*> ptr = ATOMIC_VAR_INIT(nullptr);
     // the flag will protect against multiple pointer updates
-    std::atomic_flag flag = LIBCUDACXX_ATOMIC_VAR_INIT(0);
+    std::atomic_flag flag = ATOMIC_VAR_INIT(0);
   } next[26];
-  std::atomic<int> count = LIBCUDACXX_ATOMIC_VAR_INIT(0);
+  std::atomic<int> count = ATOMIC_VAR_INIT(0);
 };
 int index_of(char c)
 {

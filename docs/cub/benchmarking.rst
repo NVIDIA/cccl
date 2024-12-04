@@ -203,7 +203,7 @@ You can expect the output to look like this:
     ...
 
 The tuning infrastructure will build and execute all benchmarks and their variants one after each other,
-reporting the time in seconds it took to execute the benchmark executable.
+reporting the time in seconds it took to execute the benchmarked region.
 
 It's also possible to benchmark a subset of algorithms and workloads:
 
@@ -234,7 +234,7 @@ If you interrupt the benchmark script and then launch it again, only missing ben
 Comparing results of multiple tuning databases
 --------------------------------------------------------------------------------
 
-Benchmark results captured in a tuning database can be compared as well:
+Benchmark results captured in different tuning databases can be compared as well:
 
 .. code-block:: bash
 
@@ -288,3 +288,41 @@ For example:
         "speedup": 1
       }
     ]
+
+
+Profiling benchmarks with Nsight Compute
+--------------------------------------------------------------------------------
+
+If you want to see profiling metrics on source code level,
+you have to recompile your benchmarks with the `-lineinfo` option.
+With cmake, you can just add `-DCMAKE_CUDA_FLAGS=-lineinfo` when invoking cmake in the `build` directory:
+
+.. code-block:: bash
+
+    cmake .. --preset=cub-benchmark -DCMAKE_CUDA_FLAGS=-lineinfo -DCMAKE_CUDA_ARCHITECTURES=90 # TODO: Set your GPU architecture
+
+To profile the kernels, use the `ncu` command.
+A typical invocation, if you work on a remote cluster, could look like this:
+
+.. code-block:: bash
+
+    ncu --set full --import-source yes -o base.ncu-rep -f ./bin/thrust.bench.transform.basic.base -d 0 --profile
+
+The option `--set full` instructs `ncu` to collect all metrics.
+This requires rerunning some kernels and takes more time.
+`--import-source yes` imports the source code into the report file,
+so you can see metrics not only in SASS but also in your source code,
+even if you copy the resulting report away from the source code.
+`-o base.ncu-rep` specifies the output file and `-f` overwrites the output file if it already exists.
+`--profile` tells NVBench to run only one iteration, which speeds up profiling.
+
+For inspecting the profiling report, we recommend using the GUI of Nsight Compute.
+If you run on a remote machine, you may want to copy the report `base.ncu-rep` back to your local workstation,
+before viewing the report using `ncu-ui`:
+
+.. code-block:: bash
+
+    scp <remote hostname>:<cccl repo directory>/build/base.ncu-rep .
+    ncu-ui base.ncu-rep
+
+The version of `ncu-ui` needs to be at least as high as the version of `ncu` used to create the report.

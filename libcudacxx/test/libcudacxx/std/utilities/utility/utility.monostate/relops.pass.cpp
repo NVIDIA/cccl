@@ -6,11 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11
-// UNSUPPORTED: msvc-19.16
-// UNSUPPORTED: clang-7, clang-8
-
-// <cuda/std/variant>
+// <cuda/std/utility>
 
 // constexpr bool operator<(monostate, monostate) noexcept { return false; }
 // constexpr bool operator>(monostate, monostate) noexcept { return false; }
@@ -22,12 +18,12 @@
 // C++20
 
 #include <cuda/std/cassert>
-#include <cuda/std/variant>
+#include <cuda/std/utility>
 
 #include "test_comparisons.h"
 #include "test_macros.h"
 
-__host__ __device__ constexpr bool test()
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 {
   using M = cuda::std::monostate;
   constexpr M m1{};
@@ -46,7 +42,9 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
+#if TEST_STD_VER >= 2014
   static_assert(test(), "");
+#endif // TEST_STD_VER >= 2014
 
   return 0;
 }

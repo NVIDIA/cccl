@@ -6,12 +6,10 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14, c++17
-
 // <utility>
 
 // template<class R, class T>
-//   constexpr bool in_range(T t) noexcept;               // C++20
+//   constexpr bool in_range(T t) noexcept;
 
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
@@ -24,28 +22,17 @@
 template <typename T>
 struct Tuple
 {
-  T min;
-  T max;
-  T mid;
-  __host__ __device__ constexpr Tuple()
-  {
-    min = cuda::std::numeric_limits<T>::min();
-    max = cuda::std::numeric_limits<T>::max();
-    if constexpr (cuda::std::is_signed_v<T>)
-    {
-      mid = T(-1);
-    }
-    else
-    {
-      mid = max >> 1;
-    }
-  }
+  T min = cuda::std::numeric_limits<T>::min();
+  T max = cuda::std::numeric_limits<T>::max();
+  T mid = cuda::std::is_signed<T>::value ? T(-1) : max >> 1;
+
+  __host__ __device__ constexpr Tuple() noexcept {}
 };
 
 template <typename T>
-__host__ __device__ constexpr void test_in_range1()
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test_in_range1()
 {
-  constexpr Tuple<T> tup;
+  constexpr Tuple<T> tup{};
   assert(cuda::std::in_range<T>(tup.min));
   assert(cuda::std::in_range<T>(tup.min + 1));
   assert(cuda::std::in_range<T>(tup.max));
@@ -55,10 +42,10 @@ __host__ __device__ constexpr void test_in_range1()
   assert(cuda::std::in_range<T>(tup.mid + 1));
 }
 
-__host__ __device__ constexpr void test_in_range()
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test_in_range()
 {
-  constexpr Tuple<uint8_t> utup8;
-  constexpr Tuple<int8_t> stup8;
+  constexpr Tuple<uint8_t> utup8{};
+  constexpr Tuple<int8_t> stup8{};
   assert(!cuda::std::in_range<int8_t>(utup8.max));
   assert(cuda::std::in_range<short>(utup8.max));
   assert(!cuda::std::in_range<uint8_t>(stup8.min));
@@ -67,32 +54,23 @@ __host__ __device__ constexpr void test_in_range()
   assert(!cuda::std::in_range<uint8_t>(-1));
 }
 
-template <class... Ts>
-__host__ __device__ constexpr void test1(const cuda::std::tuple<Ts...>&)
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
 {
-  (test_in_range1<Ts>(), ...);
-}
-
-__host__ __device__ constexpr bool test()
-{
-  cuda::std::tuple<
-#ifndef TEST_HAS_NO_INT128_T
-    __int128_t,
-    __uint128_t,
-#endif
-    unsigned long long,
-    long long,
-    unsigned long,
-    long,
-    unsigned int,
-    int,
-    unsigned short,
-    short,
-    unsigned char,
-    signed char>
-    types;
-  test1(types);
   test_in_range();
+#ifndef TEST_HAS_NO_INT128_T
+  test_in_range1<__int128_t>();
+  test_in_range1<__uint128_t>();
+#endif // TEST_HAS_NO_INT128_T
+  test_in_range1<unsigned long long>();
+  test_in_range1<long long>();
+  test_in_range1<unsigned long>();
+  test_in_range1<long>();
+  test_in_range1<unsigned int>();
+  test_in_range1<int>();
+  test_in_range1<unsigned short>();
+  test_in_range1<short>();
+  test_in_range1<unsigned char>();
+  test_in_range1<signed char>();
   return true;
 }
 
@@ -100,6 +78,8 @@ int main(int, char**)
 {
   ASSERT_NOEXCEPT(cuda::std::in_range<int>(-1));
   test();
-  static_assert(test());
+#if TEST_STD_VER >= 2014
+  static_assert(test(), "");
+#endif // TEST_STD_VER >= 2014
   return 0;
 }
