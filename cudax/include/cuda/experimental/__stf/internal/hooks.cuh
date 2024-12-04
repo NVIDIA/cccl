@@ -108,10 +108,10 @@ static ::std::vector<::std::function<void()>> get_dump_hooks(ctxt_t* ctx, const 
 
   // If the CUDASTF_AUTO_DUMP is not set, or set to 0, we don't save the content
   const char* dump_str = ::std::getenv("CUDASTF_AUTO_DUMP");
-  const bool dump            = dump_str && atoi(dump_str) != 0;
+  const bool dump      = dump_str && atoi(dump_str) != 0;
 
   const char* compare_str = ::std::getenv("CUDASTF_AUTO_COMPARE");
-  const bool compare            = compare_str && atoi(compare_str) != 0;
+  const bool compare      = compare_str && atoi(compare_str) != 0;
 
   if (!dump && !compare)
   {
@@ -123,8 +123,8 @@ static ::std::vector<::std::function<void()>> get_dump_hooks(ctxt_t* ctx, const 
   // Where do we write dumped content ? We postpone the creation of this
   // directory to the first time we need to create a directory to avoid
   // creating an empty dir if no data was dumped
-  const char* dump_dir_env = ::std::getenv("CUDASTF_AUTO_DUMP_DIR");
-  const ::std::string dump_dir   = (dump_dir_env != nullptr) ? dump_dir_env : "dump/";
+  const char* dump_dir_env     = ::std::getenv("CUDASTF_AUTO_DUMP_DIR");
+  const ::std::string dump_dir = (dump_dir_env != nullptr) ? dump_dir_env : "dump/";
 
   // For every dependency, we create a hook to dump the content of the
   // logical data if it was modified.
@@ -136,7 +136,7 @@ static ::std::vector<::std::function<void()>> get_dump_hooks(ctxt_t* ctx, const 
         const auto ro_dep = dep.as_read_mode();
 
         /* We either make sure the directory exists or lazily create it if
-        * we need to add content when dumping data */
+         * we need to add content when dumping data */
         if (compare)
         {
           ensure_directory_exists(dump_dir);
