@@ -27,6 +27,23 @@ class _TypeEnum(ctypes.c_int):
     STORAGE = 10
 
 
+def _cccl_type_enum_as_name(enum_value):
+    assert isinstance(enum_value, int)
+    return (
+        "int8",
+        "int16",
+        "int32",
+        "int64",
+        "uint8",
+        "uint16",
+        "uint32",
+        "uint64",
+        "float32",
+        "float64",
+        "STORAGE",
+    )[enum_value]
+
+
 # MUST match `cccl_op_kind_t` in c/include/cccl/c/types.h
 class _CCCLOpKindEnum(ctypes.c_int):
     STATELESS = 0
@@ -150,7 +167,7 @@ def _extract_ctypes_ltoirs(numba_cuda_compile_results):
     return ctypes.pointer(_CCCLStringViews(view_arr, len(view_arr)))
 
 
-def _itertools_iter_as_cccl_iter(d_in):
+def _facade_iter_as_cccl_iter(d_in):
     def prefix_name(name):
         return (d_in.prefix + "_" + name).encode('utf-8')
     # type name ltoi ltoir_size size alignment state
@@ -160,6 +177,14 @@ def _itertools_iter_as_cccl_iter(d_in):
     ltoirs = _extract_ctypes_ltoirs(d_in.ltoirs)
     # size alignment type advance dereference value_type state ltoirs
     return _CCCLIterator(d_in.size(), d_in.alignment(), _CCCLIteratorKindEnum.ITERATOR, adv, drf, info, d_in.state_c_void_p(), ltoirs)
+
+
+def _d_in_as_cccl_iter(d_in):
+    ntype = getattr(d_in, 'ntype', None)
+    if ntype is not None:
+        return _facade_iter_as_cccl_iter(d_in)
+    assert hasattr(d_in, 'dtype')
+    return _device_array_to_pointer(d_in)
 
 
 def _get_cuda_path():
@@ -235,8 +260,9 @@ def _dtype_validation(dt1, dt2):
 
 class _Reduce:
     def __init__(self, d_in, d_out, op, init):
-        self._ctor_d_in = d_in
-        _, d_in_cccl = self.__handle_d_in(None, d_in)
+        d_in_cccl = _d_in_as_cccl_iter(d_in)
+        self._ctor_d_in_cccl_type_enum_name = _cccl_type_enum_as_name(
+            d_in_cccl.value_type.type.value)
         self._ctor_d_out_dtype = d_out.dtype
         self._ctor_init_dtype = init.dtype
         cc_major, cc_minor = cuda.get_current_device().compute_capability
@@ -264,8 +290,17 @@ class _Reduce:
             raise ValueError('Error building reduce')
 
     def __call__(self, temp_storage, d_in, d_out, num_items, init):
-        num_items, d_in_cccl = self.__handle_d_in(num_items, d_in)
-        assert num_items is not None
+        d_in_cccl = _d_in_as_cccl_iter(d_in)
+        if d_in_cccl.type.value == _CCCLIteratorKindEnum.ITERATOR:
+            assert num_items is not None
+        else:
+            assert d_in_cccl.type.value == _CCCLIteratorKindEnum.POINTER
+            if num_items is None:
+                num_items = d_in.size
+            else:
+                assert num_items == d_in.size
+        _dtype_validation(self._ctor_d_in_cccl_type_enum_name,
+                          _cccl_type_enum_as_name(d_in_cccl.value_type.type.value))
         _dtype_validation(self._ctor_d_out_dtype, d_out.dtype)
         _dtype_validation(self._ctor_init_dtype, init.dtype)
         bindings = _get_bindings()
@@ -295,18 +330,6 @@ class _Reduce:
     def __del__(self):
         bindings = _get_bindings()
         bindings.cccl_device_reduce_cleanup(ctypes.byref(self.build_result))
-
-    def __handle_d_in(self, num_items, d_in):
-        if hasattr(d_in, "dtype"):
-            assert hasattr(self._ctor_d_in, "dtype")
-            _dtype_validation(self._ctor_d_in.dtype, d_in.dtype)
-            if num_items is None:
-                num_items = d_in.size
-            else:
-                assert d_in.size == num_items
-            return num_items, _device_array_to_pointer(d_in)
-        assert not hasattr(self._ctor_d_in, "dtype")
-        return num_items, _itertools_iter_as_cccl_iter(d_in)
 
 
 # TODO Figure out iterators
