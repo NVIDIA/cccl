@@ -15,7 +15,7 @@
  */
 
 // Include this first
-#include <cuda/experimental/__async/sender/async.cuh>
+#include <cuda/experimental/__async/sender.cuh>
 
 // Then include the test helpers
 #include "common/checked_receiver.cuh"
