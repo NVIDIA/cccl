@@ -21,14 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__async/completion_signatures.cuh>
-#include <cuda/experimental/__async/cpos.cuh>
-#include <cuda/experimental/__async/exception.cuh>
-#include <cuda/experimental/__async/lazy.cuh>
-#include <cuda/experimental/__async/rcvr_ref.cuh>
-#include <cuda/experimental/__async/variant.cuh>
+#include <cuda/experimental/__async/sender/completion_signatures.cuh>
+#include <cuda/experimental/__async/sender/cpos.cuh>
+#include <cuda/experimental/__async/sender/exception.cuh>
+#include <cuda/experimental/__async/sender/lazy.cuh>
+#include <cuda/experimental/__async/sender/rcvr_ref.cuh>
+#include <cuda/experimental/__async/sender/variant.cuh>
 
-#include <cuda/experimental/__async/prologue.cuh>
+#include <cuda/experimental/__async/sender/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -147,6 +147,6 @@ using sequence_t = __seq;
 _CCCL_GLOBAL_CONSTANT sequence_t sequence{};
 } // namespace cuda::experimental::__async
 
-#include <cuda/experimental/__async/epilogue.cuh>
+#include <cuda/experimental/__async/sender/epilogue.cuh>
 
 #endif

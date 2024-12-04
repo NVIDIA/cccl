@@ -26,16 +26,16 @@
 // libcu++ does not have <cuda/std/mutex> or <cuda/std/condition_variable>
 #if !defined(__CUDA_ARCH__)
 
-#  include <cuda/experimental/__async/completion_signatures.cuh>
-#  include <cuda/experimental/__async/env.cuh>
-#  include <cuda/experimental/__async/exception.cuh>
-#  include <cuda/experimental/__async/queries.cuh>
-#  include <cuda/experimental/__async/utility.cuh>
+#  include <cuda/experimental/__async/sender/completion_signatures.cuh>
+#  include <cuda/experimental/__async/sender/env.cuh>
+#  include <cuda/experimental/__async/sender/exception.cuh>
+#  include <cuda/experimental/__async/sender/queries.cuh>
+#  include <cuda/experimental/__async/sender/utility.cuh>
 
 #  include <condition_variable>
 #  include <mutex>
 
-#  include <cuda/experimental/__async/prologue.cuh>
+#  include <cuda/experimental/__async/sender/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -267,7 +267,7 @@ _CUDAX_API inline auto run_loop::__pop_front() -> __task*
 }
 } // namespace cuda::experimental::__async
 
-#  include <cuda/experimental/__async/epilogue.cuh>
+#  include <cuda/experimental/__async/sender/epilogue.cuh>
 
 #endif // !defined(__CUDA_ARCH__)
 

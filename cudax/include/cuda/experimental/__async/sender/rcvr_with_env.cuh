@@ -21,10 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__async/cpos.cuh>
-#include <cuda/experimental/__async/env.cuh>
+#include <cuda/experimental/__async/sender/cpos.cuh>
+#include <cuda/experimental/__async/sender/env.cuh>
 
-#include <cuda/experimental/__async/prologue.cuh>
+#include <cuda/experimental/__async/sender/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -136,6 +136,6 @@ struct __rcvr_with_env_t<_Rcvr*, _Env>
 };
 } // namespace cuda::experimental::__async
 
-#include <cuda/experimental/__async/epilogue.cuh>
+#include <cuda/experimental/__async/sender/epilogue.cuh>
 
 #endif

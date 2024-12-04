@@ -25,11 +25,11 @@
 
 #if !defined(__CUDA_ARCH__)
 
-#  include <cuda/experimental/__async/run_loop.cuh>
+#  include <cuda/experimental/__async/sender/run_loop.cuh>
 
 #  include <thread>
 
-#  include <cuda/experimental/__async/prologue.cuh>
+#  include <cuda/experimental/__async/sender/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -66,7 +66,7 @@ private:
 };
 } // namespace cuda::experimental::__async
 
-#  include <cuda/experimental/__async/epilogue.cuh>
+#  include <cuda/experimental/__async/sender/epilogue.cuh>
 
 #endif // !defined(__CUDA_ARCH__)
 

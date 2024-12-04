@@ -21,15 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__async/cpos.cuh>
-#include <cuda/experimental/__async/env.cuh>
-#include <cuda/experimental/__async/exception.cuh>
-#include <cuda/experimental/__async/queries.cuh>
-#include <cuda/experimental/__async/rcvr_with_env.cuh>
-#include <cuda/experimental/__async/utility.cuh>
+#include <cuda/experimental/__async/sender/cpos.cuh>
+#include <cuda/experimental/__async/sender/env.cuh>
+#include <cuda/experimental/__async/sender/exception.cuh>
+#include <cuda/experimental/__async/sender/queries.cuh>
+#include <cuda/experimental/__async/sender/rcvr_with_env.cuh>
+#include <cuda/experimental/__async/sender/utility.cuh>
 #include <cuda/experimental/__detail/config.cuh>
 
-#include <cuda/experimental/__async/prologue.cuh>
+#include <cuda/experimental/__async/sender/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -111,6 +111,6 @@ _CCCL_GLOBAL_CONSTANT write_env_t write_env{};
 
 } // namespace cuda::experimental::__async
 
-#include <cuda/experimental/__async/epilogue.cuh>
+#include <cuda/experimental/__async/sender/epilogue.cuh>
 
 #endif

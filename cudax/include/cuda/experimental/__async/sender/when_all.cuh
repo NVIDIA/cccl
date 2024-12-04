@@ -26,20 +26,20 @@
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/atomic>
 
-#include <cuda/experimental/__async/completion_signatures.cuh>
-#include <cuda/experimental/__async/cpos.cuh>
-#include <cuda/experimental/__async/env.cuh>
-#include <cuda/experimental/__async/exception.cuh>
-#include <cuda/experimental/__async/lazy.cuh>
-#include <cuda/experimental/__async/meta.cuh>
-#include <cuda/experimental/__async/stop_token.cuh>
-#include <cuda/experimental/__async/tuple.cuh>
-#include <cuda/experimental/__async/type_traits.cuh>
-#include <cuda/experimental/__async/utility.cuh>
-#include <cuda/experimental/__async/variant.cuh>
+#include <cuda/experimental/__async/sender/completion_signatures.cuh>
+#include <cuda/experimental/__async/sender/cpos.cuh>
+#include <cuda/experimental/__async/sender/env.cuh>
+#include <cuda/experimental/__async/sender/exception.cuh>
+#include <cuda/experimental/__async/sender/lazy.cuh>
+#include <cuda/experimental/__async/sender/meta.cuh>
+#include <cuda/experimental/__async/sender/stop_token.cuh>
+#include <cuda/experimental/__async/sender/tuple.cuh>
+#include <cuda/experimental/__async/sender/type_traits.cuh>
+#include <cuda/experimental/__async/sender/utility.cuh>
+#include <cuda/experimental/__async/sender/variant.cuh>
 #include <cuda/experimental/__detail/config.cuh>
 
-#include <cuda/experimental/__async/prologue.cuh>
+#include <cuda/experimental/__async/sender/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -655,6 +655,6 @@ _CCCL_GLOBAL_CONSTANT when_all_t when_all{};
 
 } // namespace cuda::experimental::__async
 
-#include <cuda/experimental/__async/epilogue.cuh>
+#include <cuda/experimental/__async/sender/epilogue.cuh>
 
 #endif

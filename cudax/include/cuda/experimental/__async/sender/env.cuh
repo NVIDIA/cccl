@@ -23,15 +23,15 @@
 
 #include <cuda/std/__functional/reference_wrapper.h>
 
-#include <cuda/experimental/__async/meta.cuh>
-#include <cuda/experimental/__async/queries.cuh>
-#include <cuda/experimental/__async/tuple.cuh>
-#include <cuda/experimental/__async/type_traits.cuh>
-#include <cuda/experimental/__async/utility.cuh>
+#include <cuda/experimental/__async/sender/meta.cuh>
+#include <cuda/experimental/__async/sender/queries.cuh>
+#include <cuda/experimental/__async/sender/tuple.cuh>
+#include <cuda/experimental/__async/sender/type_traits.cuh>
+#include <cuda/experimental/__async/sender/utility.cuh>
 
 #include <functional>
 
-#include <cuda/experimental/__async/prologue.cuh>
+#include <cuda/experimental/__async/sender/prologue.cuh>
 
 _CCCL_DIAG_PUSH
 
@@ -205,6 +205,6 @@ _CCCL_NV_DIAG_DEFAULT(20012)
 
 _CCCL_DIAG_POP
 
-#include <cuda/experimental/__async/epilogue.cuh>
+#include <cuda/experimental/__async/sender/epilogue.cuh>
 
 #endif

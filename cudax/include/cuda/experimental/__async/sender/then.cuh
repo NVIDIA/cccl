@@ -23,14 +23,14 @@
 
 #include <cuda/std/__type_traits/is_same.h>
 
-#include <cuda/experimental/__async/completion_signatures.cuh>
-#include <cuda/experimental/__async/cpos.cuh>
-#include <cuda/experimental/__async/exception.cuh>
-#include <cuda/experimental/__async/meta.cuh>
-#include <cuda/experimental/__async/tuple.cuh>
-#include <cuda/experimental/__async/utility.cuh>
+#include <cuda/experimental/__async/sender/completion_signatures.cuh>
+#include <cuda/experimental/__async/sender/cpos.cuh>
+#include <cuda/experimental/__async/sender/exception.cuh>
+#include <cuda/experimental/__async/sender/meta.cuh>
+#include <cuda/experimental/__async/sender/tuple.cuh>
+#include <cuda/experimental/__async/sender/utility.cuh>
 
-#include <cuda/experimental/__async/prologue.cuh>
+#include <cuda/experimental/__async/sender/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -300,6 +300,6 @@ _CCCL_GLOBAL_CONSTANT struct upon_stopped_t : __upon_t<__stopped>
 } upon_stopped{};
 } // namespace cuda::experimental::__async
 
-#include <cuda/experimental/__async/epilogue.cuh>
+#include <cuda/experimental/__async/sender/epilogue.cuh>
 
 #endif

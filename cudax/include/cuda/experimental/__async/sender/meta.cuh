@@ -32,7 +32,7 @@
 #  include <compare>
 #endif
 
-#include <cuda/experimental/__async/prologue.cuh>
+#include <cuda/experimental/__async/sender/prologue.cuh>
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wgnu-string-literal-operator-template")
@@ -281,6 +281,6 @@ struct __type_quote_function
 
 _CCCL_DIAG_POP
 
-#include <cuda/experimental/__async/epilogue.cuh>
+#include <cuda/experimental/__async/sender/epilogue.cuh>
 
 #endif

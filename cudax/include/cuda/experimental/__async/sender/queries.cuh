@@ -27,12 +27,12 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
 #include <cuda/std/__memory/allocator.h>
 _CCCL_SUPPRESS_DEPRECATED_POP
 
-#include <cuda/experimental/__async/meta.cuh>
-#include <cuda/experimental/__async/stop_token.cuh>
-#include <cuda/experimental/__async/type_traits.cuh>
-#include <cuda/experimental/__async/utility.cuh>
+#include <cuda/experimental/__async/sender/meta.cuh>
+#include <cuda/experimental/__async/sender/stop_token.cuh>
+#include <cuda/experimental/__async/sender/type_traits.cuh>
+#include <cuda/experimental/__async/sender/utility.cuh>
 
-#include <cuda/experimental/__async/prologue.cuh>
+#include <cuda/experimental/__async/sender/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -166,6 +166,6 @@ using domain_of_t = __call_result_t<get_domain_t, _Sch>;
 
 } // namespace cuda::experimental::__async
 
-#include <cuda/experimental/__async/epilogue.cuh>
+#include <cuda/experimental/__async/sender/epilogue.cuh>
 
 #endif

@@ -27,10 +27,10 @@
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__type_traits/type_list.h>
 
-#include <cuda/experimental/__async/meta.cuh>
+#include <cuda/experimental/__async/sender/meta.cuh>
 #include <cuda/experimental/__detail/config.cuh>
 
-#include <cuda/experimental/__async/prologue.cuh>
+#include <cuda/experimental/__async/sender/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -119,6 +119,6 @@ template <class... _As>
 using __nothrow_decay_copyable_t = _CUDA_VSTD::bool_constant<__nothrow_decay_copyable<_As...>>;
 } // namespace cuda::experimental::__async
 
-#include <cuda/experimental/__async/epilogue.cuh>
+#include <cuda/experimental/__async/sender/epilogue.cuh>
 
 #endif

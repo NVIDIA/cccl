@@ -29,14 +29,14 @@
 #  include <cuda/std/optional>
 #  include <cuda/std/tuple>
 
-#  include <cuda/experimental/__async/exception.cuh>
-#  include <cuda/experimental/__async/meta.cuh>
-#  include <cuda/experimental/__async/run_loop.cuh>
-#  include <cuda/experimental/__async/utility.cuh>
+#  include <cuda/experimental/__async/sender/exception.cuh>
+#  include <cuda/experimental/__async/sender/meta.cuh>
+#  include <cuda/experimental/__async/sender/run_loop.cuh>
+#  include <cuda/experimental/__async/sender/utility.cuh>
 
 #  include <system_error>
 
-#  include <cuda/experimental/__async/prologue.cuh>
+#  include <cuda/experimental/__async/sender/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -200,7 +200,7 @@ public:
 _CCCL_GLOBAL_CONSTANT sync_wait_t sync_wait{};
 } // namespace cuda::experimental::__async
 
-#  include <cuda/experimental/__async/epilogue.cuh>
+#  include <cuda/experimental/__async/sender/epilogue.cuh>
 
 #endif // !defined(__CUDA_ARCH__)
 

@@ -25,11 +25,11 @@
 #include <cuda/std/__type_traits/disjunction.h>
 #include <cuda/std/__type_traits/enable_if.h>
 
-#include <cuda/experimental/__async/cpos.cuh>
-#include <cuda/experimental/__async/exception.cuh>
-#include <cuda/experimental/__async/type_traits.cuh>
+#include <cuda/experimental/__async/sender/cpos.cuh>
+#include <cuda/experimental/__async/sender/exception.cuh>
+#include <cuda/experimental/__async/sender/type_traits.cuh>
 
-#include <cuda/experimental/__async/prologue.cuh>
+#include <cuda/experimental/__async/sender/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -414,6 +414,6 @@ auto eptr_completion_if()
 } // namespace meta
 } // namespace cuda::experimental::__async
 
-#include <cuda/experimental/__async/epilogue.cuh>
+#include <cuda/experimental/__async/sender/epilogue.cuh>
 
 #endif

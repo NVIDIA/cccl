@@ -21,13 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__async/env.cuh>
-#include <cuda/experimental/__async/meta.cuh>
-#include <cuda/experimental/__async/type_traits.cuh>
-#include <cuda/experimental/__async/utility.cuh>
+#include <cuda/experimental/__async/sender/env.cuh>
+#include <cuda/experimental/__async/sender/meta.cuh>
+#include <cuda/experimental/__async/sender/type_traits.cuh>
+#include <cuda/experimental/__async/sender/utility.cuh>
 #include <cuda/experimental/__detail/config.cuh>
 
-#include <cuda/experimental/__async/prologue.cuh>
+#include <cuda/experimental/__async/sender/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -213,6 +213,6 @@ extern __fn_t<set_stopped_t>* __set_tag<__stopped, _Void>;
 } // namespace __detail
 } // namespace cuda::experimental::__async
 
-#include <cuda/experimental/__async/epilogue.cuh>
+#include <cuda/experimental/__async/sender/epilogue.cuh>
 
 #endif

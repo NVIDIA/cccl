@@ -24,11 +24,11 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/initializer_list>
 
-#include <cuda/experimental/__async/meta.cuh>
-#include <cuda/experimental/__async/type_traits.cuh>
+#include <cuda/experimental/__async/sender/meta.cuh>
+#include <cuda/experimental/__async/sender/type_traits.cuh>
 #include <cuda/experimental/__detail/config.cuh>
 
-#include <cuda/experimental/__async/prologue.cuh>
+#include <cuda/experimental/__async/sender/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -203,6 +203,6 @@ _CCCL_DIAG_POP
 
 } // namespace cuda::experimental::__async
 
-#include <cuda/experimental/__async/epilogue.cuh>
+#include <cuda/experimental/__async/sender/epilogue.cuh>
 
 #endif
