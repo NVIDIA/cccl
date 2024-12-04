@@ -268,6 +268,46 @@ class CountingIterator:
         return self.size()
 
 
+class TransformIterator:
+    def __init__(
+        self,
+        it,
+        op,
+        op_return_ntype,
+        transform_advance,
+        transform_dereference,
+        op_abi_name,
+    ):
+        self.it = it  # TODO support raw pointers
+        self.ntype = op_return_ntype
+        self.prefix = f"transform_{it.prefix}_{op.__name__}"
+        self.ltoirs = it.ltoirs + [
+            _ncc(
+                f"{self.prefix}_advance",
+                transform_advance,
+                numba.types.void(
+                    numba.types.CPointer(numba.types.char), _DISTANCE_NUMBA_TYPE
+                ),
+            ),
+            _ncc(
+                f"{self.prefix}_dereference",
+                transform_dereference,
+                op_return_ntype(numba.types.CPointer(numba.types.char)),
+            ),
+            # ATTENTION: NOT op_caller here!
+            _ncc(op_abi_name, op, op_return_ntype(it.ntype)),
+        ]
+
+    def state_c_void_p(self):
+        return self.it.state_c_void_p()
+
+    def size(self):
+        return self.it.size()  # TODO fix for stateful op
+
+    def alignment(self):
+        return self.it.alignment()  # TODO fix for stateful op
+
+
 def cumap(op, it, op_return_ntype):
     op_return_ntype_ir = _ir_type_given_numba_type(op_return_ntype)
     if op_return_ntype_ir is None:
@@ -358,43 +398,13 @@ def cumap(op, it, op_return_ntype):
     op_abi_name = f"{op.__name__}_{op_return_ntype.name}_{it.ntype.name}"
     op_codegen(op_caller, op_abi_name)
 
-    class TransformIterator:
-        def __init__(self, it, op):
-            self.it = it  # TODO support raw pointers
-            self.op = op
-            self.ntype = op_return_ntype
-            self.prefix = f"transform_{it.prefix}_{op.__name__}"
-            self.ltoirs = it.ltoirs + [
-                _ncc(
-                    f"{self.prefix}_advance",
-                    TransformIterator.transform_advance,
-                    numba.types.void(
-                        numba.types.CPointer(numba.types.char), _DISTANCE_NUMBA_TYPE
-                    ),
-                ),
-                _ncc(
-                    f"{self.prefix}_dereference",
-                    TransformIterator.transform_dereference,
-                    op_return_ntype(numba.types.CPointer(numba.types.char)),
-                ),
-                # ATTENTION: NOT op_caller here!
-                _ncc(op_abi_name, op, op_return_ntype(it.ntype)),
-            ]
+    def transform_advance(it_state_ptr, diff):
+        source_advance(it_state_ptr, diff)  # just a function call
 
-        def transform_advance(it_state_ptr, diff):
-            source_advance(it_state_ptr, diff)  # just a function call
+    def transform_dereference(it_state_ptr):
+        # ATTENTION: op_caller here
+        return op_caller(source_dereference(it_state_ptr))
 
-        def transform_dereference(it_state_ptr):
-            # ATTENTION: op_caller here
-            return op_caller(source_dereference(it_state_ptr))
-
-        def state_c_void_p(self):
-            return self.it.state_c_void_p()
-
-        def size(self):
-            return self.it.size()  # TODO fix for stateful op
-
-        def alignment(self):
-            return self.it.alignment()  # TODO fix for stateful op
-
-    return TransformIterator(it, op)
+    return TransformIterator(
+        it, op, op_return_ntype, transform_advance, transform_dereference, op_abi_name
+    )
