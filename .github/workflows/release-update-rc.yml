@@ -36,7 +36,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Prepare environment
+      - name: Prepare environment and validate tags
         id: prepare
         run: |
           log_vars() {
@@ -58,10 +58,8 @@ jobs:
           branch_name="branch/${major_version}.${minor_version}.x"
 
           log_vars full_version major_version minor_version patch_version branch_name GITHUB_REF GITHUB_SHA
-          export_vars export_vars log_vars full_version major_version minor_version patch_version branch_name
+          export_vars full_version major_version minor_version patch_version branch_name
 
-      - name: Validate versions and tags
-        run: |
           # The workflow must be started on a release branch:
           if [[ "${GITHUB_REF}" != "refs/heads/${branch_name}" ]]; then
             echo "::error::GITHUB_REF (${GITHUB_REF}) does not match expected branch name (${branch_name})."
