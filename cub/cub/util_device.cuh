@@ -730,7 +730,7 @@ private:
   template <int, typename FunctorT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t invoke_static(FunctorT&, ::cuda::std::false_type)
   {
-    ::cuda::std::unreachable();
+    _CCCL_UNREACHABLE();
   }
 
   template <typename FunctorT>
@@ -742,7 +742,7 @@ private:
   template <typename FunctorT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t do_invoke(FunctorT&, ::cuda::std::false_type)
   {
-    ::cuda::std::unreachable();
+    _CCCL_UNREACHABLE();
   }
 };
 
@@ -773,7 +773,7 @@ private:
   template <int, typename FunctorT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t invoke_static(FunctorT&, ::cuda::std::false_type)
   {
-    ::cuda::std::unreachable();
+    _CCCL_UNREACHABLE();
   }
 };
 

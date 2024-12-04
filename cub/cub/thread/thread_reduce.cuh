@@ -53,7 +53,6 @@
 #include <cuda/std/cassert> // assert
 #include <cuda/std/cstdint> // uint16_t
 #include <cuda/std/functional> // cuda::std::plus
-#include <cuda/std/utility> // cuda::std::unreachable
 
 #if defined(_CCCL_HAS_NVFP16)
 #  include <cuda_fp16.h>
@@ -591,7 +590,7 @@ ThreadReduceSimd(const Input& input, ReductionOp reduction_op) -> ::cuda::std::r
     }
     return unsafe_bitcast<UnpackedType>(result)[0];
   }
-  ::cuda::std::unreachable(); // nvcc 11.x warning workaround (never reached)
+  _CCCL_UNREACHABLE(); // nvcc 11.x warning workaround (never reached)
 }
 
 } // namespace internal

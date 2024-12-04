@@ -28,7 +28,6 @@
 #include <cuda/std/__iterator/iterator_traits.h>
 #include <cuda/std/__utility/convert_to_integral.h>
 #include <cuda/std/__utility/move.h>
-#include <cuda/std/__utility/unreachable.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -227,7 +226,7 @@ public:
       }
       return __n;
     }
-    _CUDA_VSTD::unreachable();
+    _CCCL_UNREACHABLE();
   }
 };
 _LIBCUDACXX_END_NAMESPACE_CPO

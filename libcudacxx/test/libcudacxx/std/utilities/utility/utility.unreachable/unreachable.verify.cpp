@@ -7,9 +7,11 @@
 //
 //===----------------------------------------------------------------------===//
 
+// UNSUPPORTED: c++03, c++11, c++14, c++17, c++20
+
 #include <cuda/std/utility>
 
-_CCCL_NORETURN void unreachable()
+[[noreturn]] void unreachable()
 {
   cuda::std::unreachable();
 } // expected-no-diagnostics

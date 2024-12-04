@@ -12,7 +12,6 @@
 #define _CUDAX__HIERARCHY_HIERARCHY_LEVELS
 
 #include <cuda/std/__type_traits/type_list.h>
-#include <cuda/std/__utility/unreachable.h>
 
 #include <cuda/experimental/__hierarchy/dimensions.cuh>
 
@@ -287,7 +286,7 @@ template <typename Unit, typename Level>
     return dims_product<typename Level::product_type>(
       extents_impl<SplitLevel, Level>(), extents_impl<Unit, SplitLevel>());
   }
-  ::cuda::std::unreachable();
+  _CCCL_UNREACHABLE();
 }
 
 template <typename Unit, typename Level>
@@ -304,7 +303,7 @@ template <typename Unit, typename Level>
       dims_product<typename Level::product_type>(index_impl<SplitLevel, Level>(), extents_impl<Unit, SplitLevel>()),
       index_impl<Unit, SplitLevel>());
   }
-  ::cuda::std::unreachable();
+  _CCCL_UNREACHABLE();
 }
 } // namespace detail
 

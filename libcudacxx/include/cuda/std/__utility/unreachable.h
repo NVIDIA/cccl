@@ -22,22 +22,19 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void unreachable()
+_CCCL_NORETURN _LIBCUDACXX_HIDE_FROM_ABI void __cccl_unreachable()
 {
-#if defined(__CUDA_ARCH__) && !defined(_CCCL_CUDA_COMPILER_CLANG)
-#  if _CCCL_CUDACC_BELOW(11, 2)
-  __trap();
-#  elif _CCCL_CUDACC_BELOW(11, 3)
-  __builtin_assume(false);
-#  else
-  __builtin_unreachable();
-#  endif // CUDACC above 11.4
-#elif _CCCL_COMPILER(MSVC)
-  __assume(0);
-#else
-  __builtin_unreachable();
-#endif
+  _CCCL_UNREACHABLE();
 }
+
+#if _CCCL_STD_VER > 2020
+
+[[noreturn]] _LIBCUDACXX_HIDE_FROM_ABI void unreachable()
+{
+  _CCCL_UNREACHABLE();
+}
+
+#endif // _CCCL_STD_VER > 2020
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

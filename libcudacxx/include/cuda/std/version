@@ -33,7 +33,6 @@
 #define __cccl_lib_integer_comparison_functions 202002L
 #define __cccl_lib_is_scoped_enum               202011L
 #define __cccl_lib_to_underlying                202102L
-#define __cccl_lib_unreachable                  202202L
 // #define __cpp_lib_tuple_like     202311L // P2819R2 is implemented, but P2165R4 is not yet
 
 #if _CCCL_STD_VER >= 2014
@@ -249,6 +248,7 @@
 // # define __cccl_lib_stdatomic_h                          202011L
 // # define __cccl_lib_string_contains                      202011L
 // # define __cccl_lib_string_resize_and_overwrite          202110L
+#  define __cccl_lib_unreachable 202202L
 
 #endif // _CCCL_STD_VER >= 2023
 
