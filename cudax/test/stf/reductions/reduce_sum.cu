@@ -27,7 +27,7 @@ int main()
   size_t N = 100000;
 
   ctx.parallel_for(box(N), lsum.reduce(reducer::sum<size_t>{}))->*[] __device__(size_t i, auto& sum) {
-      sum++;
+    sum++;
   };
 
   size_t res_sum = ctx.transfer_host(lsum);
