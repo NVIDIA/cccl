@@ -24,11 +24,11 @@
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__utility/integer_sequence.h>
 
-#include <cuda/experimental/__async/meta.cuh>
-#include <cuda/experimental/__async/type_traits.cuh>
+#include <cuda/experimental/__async/sender/meta.cuh>
+#include <cuda/experimental/__async/sender/type_traits.cuh>
 #include <cuda/experimental/__detail/config.cuh>
 
-#include <cuda/experimental/__async/prologue.cuh>
+#include <cuda/experimental/__async/sender/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -101,6 +101,6 @@ template <class... _Ts>
 using __decayed_tuple = __tuple<__decay_t<_Ts>...>;
 } // namespace cuda::experimental::__async
 
-#include <cuda/experimental/__async/epilogue.cuh>
+#include <cuda/experimental/__async/sender/epilogue.cuh>
 
 #endif

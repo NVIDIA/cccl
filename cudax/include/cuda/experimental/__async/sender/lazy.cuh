@@ -26,8 +26,8 @@
 #include <cuda/std/__new/launder.h>
 #include <cuda/std/__utility/integer_sequence.h>
 
-#include <cuda/experimental/__async/meta.cuh>
-#include <cuda/experimental/__async/type_traits.cuh>
+#include <cuda/experimental/__async/sender/meta.cuh>
+#include <cuda/experimental/__async/sender/type_traits.cuh>
 #include <cuda/experimental/__detail/config.cuh>
 
 #include <new> // IWYU pragma: keep

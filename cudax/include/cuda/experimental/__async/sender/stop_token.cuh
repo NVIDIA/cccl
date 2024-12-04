@@ -25,15 +25,15 @@
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/atomic>
 
-#include <cuda/experimental/__async/thread.cuh>
-#include <cuda/experimental/__async/utility.cuh>
+#include <cuda/experimental/__async/sender/thread.cuh>
+#include <cuda/experimental/__async/sender/utility.cuh>
 #include <cuda/experimental/__detail/config.cuh>
 
 #if _CCCL_HAS_INCLUDE(<stop_token>) && __cpp_lib_jthread >= 201911
 #  include <stop_token>
 #endif
 
-#include <cuda/experimental/__async/prologue.cuh>
+#include <cuda/experimental/__async/sender/prologue.cuh>
 
 // warning #20012-D: __device__ annotation is ignored on a
 // function("inplace_stop_source") that is explicitly defaulted on its first
@@ -483,6 +483,6 @@ using stop_callback_for_t = typename _Token::template callback_type<_Callback>;
 
 _CCCL_NV_DIAG_DEFAULT(20012)
 
-#include <cuda/experimental/__async/epilogue.cuh>
+#include <cuda/experimental/__async/sender/epilogue.cuh>
 
 #endif

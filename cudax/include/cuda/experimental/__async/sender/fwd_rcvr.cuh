@@ -21,8 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__async/cpos.cuh>
-#include <cuda/experimental/__async/env.cuh>
+#include <cuda/experimental/__async/sender/cpos.cuh>
+#include <cuda/experimental/__async/sender/env.cuh>
 #include <cuda/experimental/__detail/config.cuh>
 
 namespace cuda::experimental::__async

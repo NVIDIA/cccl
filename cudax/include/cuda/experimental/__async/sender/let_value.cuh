@@ -23,14 +23,14 @@
 
 #include <cuda/std/__type_traits/conditional.h>
 
-#include <cuda/experimental/__async/completion_signatures.cuh>
-#include <cuda/experimental/__async/cpos.cuh>
-#include <cuda/experimental/__async/exception.cuh>
-#include <cuda/experimental/__async/rcvr_ref.cuh>
-#include <cuda/experimental/__async/tuple.cuh>
-#include <cuda/experimental/__async/variant.cuh>
+#include <cuda/experimental/__async/sender/completion_signatures.cuh>
+#include <cuda/experimental/__async/sender/cpos.cuh>
+#include <cuda/experimental/__async/sender/exception.cuh>
+#include <cuda/experimental/__async/sender/rcvr_ref.cuh>
+#include <cuda/experimental/__async/sender/tuple.cuh>
+#include <cuda/experimental/__async/sender/variant.cuh>
 
-#include <cuda/experimental/__async/prologue.cuh>
+#include <cuda/experimental/__async/sender/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -321,6 +321,6 @@ _CCCL_GLOBAL_CONSTANT struct let_stopped_t : __let<__stopped>
 } let_stopped{};
 } // namespace cuda::experimental::__async
 
-#include <cuda/experimental/__async/epilogue.cuh>
+#include <cuda/experimental/__async/sender/epilogue.cuh>
 
 #endif

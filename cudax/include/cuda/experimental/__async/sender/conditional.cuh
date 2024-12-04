@@ -11,14 +11,14 @@
 #ifndef __CUDAX_ASYNC_DETAIL_CONDITIONAL
 #define __CUDAX_ASYNC_DETAIL_CONDITIONAL
 
-#include <cuda/experimental/__async/completion_signatures.cuh>
-#include <cuda/experimental/__async/just_from.cuh>
-#include <cuda/experimental/__async/meta.cuh>
-#include <cuda/experimental/__async/type_traits.cuh>
-#include <cuda/experimental/__async/variant.cuh>
+#include <cuda/experimental/__async/sender/completion_signatures.cuh>
+#include <cuda/experimental/__async/sender/just_from.cuh>
+#include <cuda/experimental/__async/sender/meta.cuh>
+#include <cuda/experimental/__async/sender/type_traits.cuh>
+#include <cuda/experimental/__async/sender/variant.cuh>
 #include <cuda/experimental/__detail/config.cuh>
 
-#include <cuda/experimental/__async/prologue.cuh>
+#include <cuda/experimental/__async/sender/prologue.cuh>
 
 //! \file conditional.cuh
 //! This file defines the \c conditional sender. \c conditional is a sender that
@@ -234,6 +234,6 @@ _CUDAX_TRIVIAL_API auto __cond_t::__closure<_Pred, _Then, _Else>::__mk_sender(_S
 _CCCL_GLOBAL_CONSTANT __cond_t conditional{};
 } // namespace cuda::experimental::__async
 
-#include <cuda/experimental/__async/epilogue.cuh>
+#include <cuda/experimental/__async/sender/epilogue.cuh>
 
 #endif

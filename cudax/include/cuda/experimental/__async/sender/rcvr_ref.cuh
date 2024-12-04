@@ -21,10 +21,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__async/cpos.cuh>
-#include <cuda/experimental/__async/meta.cuh>
+#include <cuda/experimental/__async/sender/cpos.cuh>
+#include <cuda/experimental/__async/sender/meta.cuh>
 
-#include <cuda/experimental/__async/prologue.cuh>
+#include <cuda/experimental/__async/sender/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -46,6 +46,6 @@ using __rcvr_ref_t = decltype(__async::__rcvr_ref(__declval<_Rcvr>()));
 
 } // namespace cuda::experimental::__async
 
-#include <cuda/experimental/__async/epilogue.cuh>
+#include <cuda/experimental/__async/sender/epilogue.cuh>
 
 #endif

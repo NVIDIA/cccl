@@ -21,15 +21,15 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__async/completion_signatures.cuh>
-#include <cuda/experimental/__async/cpos.cuh>
-#include <cuda/experimental/__async/queries.cuh>
-#include <cuda/experimental/__async/rcvr_with_env.cuh>
-#include <cuda/experimental/__async/tuple.cuh>
-#include <cuda/experimental/__async/utility.cuh>
-#include <cuda/experimental/__async/variant.cuh>
+#include <cuda/experimental/__async/sender/completion_signatures.cuh>
+#include <cuda/experimental/__async/sender/cpos.cuh>
+#include <cuda/experimental/__async/sender/queries.cuh>
+#include <cuda/experimental/__async/sender/rcvr_with_env.cuh>
+#include <cuda/experimental/__async/sender/tuple.cuh>
+#include <cuda/experimental/__async/sender/utility.cuh>
+#include <cuda/experimental/__async/sender/variant.cuh>
 
-#include <cuda/experimental/__async/prologue.cuh>
+#include <cuda/experimental/__async/sender/prologue.cuh>
 
 namespace cuda::experimental::__async
 {
@@ -144,6 +144,6 @@ _CUDAX_API auto start_on_t::operator()(_Sch __sch, _Sndr __sndr) const noexcept 
 }
 } // namespace cuda::experimental::__async
 
-#include <cuda/experimental/__async/epilogue.cuh>
+#include <cuda/experimental/__async/sender/epilogue.cuh>
 
 #endif
