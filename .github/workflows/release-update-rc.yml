@@ -107,6 +107,8 @@ jobs:
       - name: Tag the release candidate
         run: |
           rc_tag=${{ needs.prepare.outputs.tag_name }}
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git tag -a -m "CCCL Release Candidate ${rc_tag}" ${rc_tag} ${GITHUB_SHA}
           git push origin ${rc_tag}
           echo "Tagged release candidate ${rc_tag}."
