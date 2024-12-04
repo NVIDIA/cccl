@@ -122,6 +122,7 @@ set(stf_test_codegen_sources
   parallel_for/tiled_loops.cu
   places/cuda_stream_place.cu
   places/managed_from_shape.cu
+  reductions/reduce_sum.cu
   reductions/successive_reductions_pfor.cu
   reductions/sum_multiple_places.cu
   reductions/write_back_after_redux.cu
