@@ -849,6 +849,8 @@ public:
       Fun&& f                  = mv(::std::get<2>(*p));
       const sub_shape_t& shape = ::std::get<3>(*p);
 
+      // deps_ops_t are pairs of data instance type, and a reduction operator,
+      // this gets only the data instance types (eg. slice<double>)
       auto explode_coords = [&](size_t i, typename deps_ops_t::first_type... data) {
         auto h = [&](auto... coords) {
           f(coords..., data...);
@@ -884,8 +886,6 @@ public:
   }
 
 private:
-  //  task_dep_vector<deps_t...> deps;
-  //  task_dep_vector<typename deps_ops_t::first_type...> deps;
   ::std::vector<::std::function<void()>> dump_hooks;
   ::std::tuple<task_dep_op<deps_ops_t>...> deps;
   context& ctx;
