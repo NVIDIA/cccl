@@ -38,7 +38,6 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __swap_result_t<_Tp> swap(_Tp& __x, type_identity_t<_Tp>& __y) noexcept(
   _CCCL_TRAIT(is_nothrow_move_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_move_assignable, _Tp))
-//  requires(!requires{ ::std::swap(__x, __y); })
 {
   _Tp __t(_CUDA_VSTD::move(__x));
   __x = _CUDA_VSTD::move(__y);
