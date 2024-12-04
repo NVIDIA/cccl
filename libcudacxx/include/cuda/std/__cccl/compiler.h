@@ -37,7 +37,7 @@
      _CCCL_VERSION_COMPARE_BAD_ARG_COUNT))
 #define _CCCL_VERSION_COMPARE(_PREFIX, ...) _CCCL_VERSION_SELECT(__VA_ARGS__)(_PREFIX, __VA_ARGS__)
 
-#define _CCCL_COMPILER_MAKE_VERSION(_MAJOR, _MINOR) (_MAJOR * 100 + _MINOR)
+#define _CCCL_COMPILER_MAKE_VERSION(_MAJOR, _MINOR) ((_MAJOR) * 100 + (_MINOR))
 #define _CCCL_COMPILER(...)                         _CCCL_VERSION_COMPARE(_CCCL_COMPILER_, _CCCL_COMPILER_##__VA_ARGS__)
 
 // Determine the host compiler and its version
