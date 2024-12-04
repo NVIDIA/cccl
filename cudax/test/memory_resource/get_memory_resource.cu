@@ -140,9 +140,27 @@ TEST_CASE("Can call get_resource on a type with both get_resource and query", "[
 
 struct with_get_resource_non_async
 {
-  cudax::device_memory_resource res_{};
+  struct resource
+  {
+    void* allocate(std::size_t, std::size_t)
+    {
+      return nullptr;
+    }
 
-  cudax::device_memory_resource get_resource() noexcept
+    void deallocate(void*, std::size_t, std::size_t) noexcept {}
+
+    bool operator==(const resource&) const noexcept
+    {
+      return true;
+    }
+    bool operator!=(const resource&) const noexcept
+    {
+      return false;
+    }
+  };
+  resource res_{};
+
+  resource get_resource() const noexcept
   {
     return res_;
   }
