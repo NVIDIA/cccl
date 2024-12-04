@@ -40,6 +40,14 @@
 //! For the purpose of this file, a "trait type" is a class type with a nested
 //! type alias named \c type.
 
+#if !defined(_CCCL_META_UNROLL_LIMIT)
+#  if defined(_CCCL_CUDA_COMPILER_NVCC) || _CCCL_COMPILER(NVHPC)
+#    define _CCCL_META_UNROLL_LIMIT 10
+#  else
+#    define _CCCL_META_UNROLL_LIMIT 16
+#  endif
+#endif
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -502,7 +510,7 @@ struct __type_index_small_size_fn;
         using __call _CCCL_NODEBUG_ALIAS = _Ty;                 \
       };
 
-_CCCL_PP_REPEAT_REVERSE(16, _M1)
+_CCCL_PP_REPEAT_REVERSE(_CCCL_META_UNROLL_LIMIT, _M1)
 
 #    undef _M0
 #    undef _M1
@@ -524,7 +532,7 @@ struct __type_index_select_fn<true> // Fast implementation for smaller indices
 } // namespace __detail
 
 template <class _Ip, class... _Ts>
-using __type_index = __type_call<__detail::__type_index_select_fn<(_Ip::value < 16)>, _Ip, _Ts...>;
+using __type_index = __type_call<__detail::__type_index_select_fn<(_Ip::value < _CCCL_META_UNROLL_LIMIT)>, _Ip, _Ts...>;
 
 template <size_t _Ip, class... _Ts>
 using __type_index_c = __type_index<integral_constant<size_t, _Ip>, _Ts...>;
@@ -858,17 +866,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_fold_left_fn;
       using __call _CCCL_NODEBUG_ALIAS = _CCCL_PP_REPEAT(_N, _M1) _State _CCCL_PP_REPEAT(_N, _M3); \
     };
 
-_CCCL_PP_REPEAT_REVERSE(17, _LIBCUDACXX_TYPE_LIST_FOLD_RIGHT)
+_CCCL_PP_REPEAT_REVERSE(_CCCL_PP_INC(_CCCL_META_UNROLL_LIMIT), _LIBCUDACXX_TYPE_LIST_FOLD_RIGHT)
 
 template <size_t _Np>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_fold_right_fn
 {
-  template <class _Fn, class _State _CCCL_PP_REPEAT(16, _M0), class... _Rest>
-  using __call _CCCL_NODEBUG_ALIAS =
-    __type_call_indirect<__type_fold_right_fn<_Np - 16>,
-                         _Fn,
-                         __type_call<__type_fold_right_fn<16>, _Fn, _State _CCCL_PP_REPEAT(16, _M2)>,
-                         _Rest...>;
+  template <class _Fn, class _State _CCCL_PP_REPEAT(_CCCL_META_UNROLL_LIMIT, _M0), class... _Rest>
+  using __call _CCCL_NODEBUG_ALIAS = __type_call_indirect<
+    __type_fold_right_fn<_Np - _CCCL_META_UNROLL_LIMIT>,
+    _Fn,
+    __type_call<__type_fold_right_fn<_CCCL_META_UNROLL_LIMIT>, _Fn, _State _CCCL_PP_REPEAT(_CCCL_META_UNROLL_LIMIT, _M2)>,
+    _Rest...>;
 };
 
 template <class _Init, class _Fn>
@@ -886,17 +894,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_fold_right_select_fn
       using __call _CCCL_NODEBUG_ALIAS = _CCCL_PP_REPEAT(_N, _M1) _State _CCCL_PP_REPEAT(_N, _M4, _N, _CCCL_PP_DEC); \
     };
 
-_CCCL_PP_REPEAT_REVERSE(17, _LIBCUDACXX_TYPE_FOLD_LEFT)
+_CCCL_PP_REPEAT_REVERSE(_CCCL_PP_INC(_CCCL_META_UNROLL_LIMIT), _LIBCUDACXX_TYPE_FOLD_LEFT)
 
 template <size_t _Np>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_fold_left_fn
 {
-  template <class _Fn, class _State _CCCL_PP_REPEAT(16, _M0), class... _Rest>
+  template <class _Fn, class _State _CCCL_PP_REPEAT(_CCCL_META_UNROLL_LIMIT, _M0), class... _Rest>
   using __call _CCCL_NODEBUG_ALIAS =
-    __type_call<__type_fold_left_fn<16>,
+    __type_call<__type_fold_left_fn<_CCCL_META_UNROLL_LIMIT>,
                 _Fn,
-                __type_call_indirect<__type_fold_left_fn<_Np - 16>, _Fn, _State, _Rest...> //
-                  _CCCL_PP_REPEAT(16, _M2, 0, _CCCL_PP_INC)>;
+                __type_call_indirect<__type_fold_left_fn<_Np - _CCCL_META_UNROLL_LIMIT>, _Fn, _State, _Rest...> //
+                  _CCCL_PP_REPEAT(_CCCL_META_UNROLL_LIMIT, _M2, 0, _CCCL_PP_INC)>;
 };
 
 template <class _Init, class _Fn>

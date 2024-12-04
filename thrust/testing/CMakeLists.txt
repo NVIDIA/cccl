@@ -79,6 +79,16 @@ function(thrust_add_test target_name_var test_name test_src thrust_target)
     target_compile_definitions(${test_target} PRIVATE THRUST_TEST_DEVICE_SIDE)
   endif()
 
+  # nvcc < 11.5 generates "error #186-D: pointless comparison of unsigned integer with zero"
+  # when including <cuda_pipeline_primitives.h> in CUB's dispatch_transform.h,
+  # despite explicitly suppressing the warning there
+  if ("NVIDIA" STREQUAL "${CMAKE_CUDA_COMPILER_ID}" AND CMAKE_CUDA_COMPILER_VERSION VERSION_LESS 11.5.0)
+      target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:-Xcudafe=--diag_suppress=186>)
+  endif ()
+
+  # Ensure that we test with assertions enabled
+  target_compile_definitions(${test_target} PRIVATE CCCL_ENABLE_ASSERTIONS)
+
   thrust_fix_clang_nvcc_build_for(${test_target})
 
   # Add to the active configuration's meta target
