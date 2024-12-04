@@ -22,7 +22,7 @@
 
 using namespace cuda::experimental::stf;
 
-int main(int argc, char** argv)
+int main(int, char**)
 {
   context ctx;
   auto lsum = ctx.logical_data(shape_of<scalar<size_t>>());
