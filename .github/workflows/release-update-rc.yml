@@ -58,7 +58,7 @@ jobs:
           branch_name="branch/${major_version}.${minor_version}.x"
 
           log_vars full_version major_version minor_version patch_version branch_name GITHUB_REF GITHUB_SHA
-          export_vars full_version major_version minor_version patch_version branch_name
+          export_vars export_vars log_vars full_version major_version minor_version patch_version branch_name
 
       - name: Validate versions and tags
         run: |
