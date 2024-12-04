@@ -2137,7 +2137,7 @@ inline logical_data_untyped task_dep_untyped::get_data() const
 
 // Defined here to avoid circular dependencies
 template <class T>
-inline decltype(auto) task_dep<T>::instance(task& tp) const
+inline decltype(auto) task_dep<T, void, false>::instance(task& tp) const
 {
   auto t = get_data();
   return static_cast<logical_data<T>&>(t).instance(tp);
