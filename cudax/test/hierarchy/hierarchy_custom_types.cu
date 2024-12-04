@@ -44,7 +44,7 @@ struct custom_level_test
     // Check extending level_dimensions with custom info
     custom_level_dims<cudax::block_level, cudax::dimensions<int, 64, 1, 1>> custom_block;
     custom_block.dummy     = 2;
-    auto custom_dims       = cudax::grid_dims<256>() & cudax::cluster_dims<8>() & custom_block;
+    auto custom_dims       = cudax::make_hierarchy(cudax::grid_dims<256>(), cudax::cluster_dims<8>(), custom_block);
     auto custom_block_back = custom_dims.level(cudax::block);
     CUDAX_REQUIRE(custom_block_back.dummy == 2);
 

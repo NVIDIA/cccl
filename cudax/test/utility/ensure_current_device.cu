@@ -129,7 +129,7 @@ TEST_CASE("ensure current device", "[device]")
   {
     cudax::stream stream(target_device);
     CUDAX_REQUIRE(test::count_driver_stack() == 0);
-    cudax::launch(stream, cudax::make_hierarchy(cudax::block_dims<1>(), cudax::grid_dims<1>()), test::empty_kernel{});
+    cudax::launch(stream, cudax::make_config(cudax::block_dims<1>(), cudax::grid_dims<1>()), test::empty_kernel{});
     CUDAX_REQUIRE(test::count_driver_stack() == 0);
   }
 }
