@@ -2,7 +2,7 @@ from . import _iterators
 
 
 def cache_load_modifier(device_array, ntype, modifier):
-    """Python fascade for Random Access Iterator that wraps a native device pointer.
+    """Python fascade for Random Access Cache Modified Iterator that wraps a native device pointer.
 
     Similar to https://nvidia.github.io/cccl/cub/api/classcub_1_1CacheModifiedInputIterator.html
 
@@ -21,7 +21,7 @@ def repeat(value, ntype):
 
 
 def count(offset, ntype):
-    """Python fascade (similar to itertools.count) for C++ Random Access ConstantIterator."""
+    """Python fascade (similar to itertools.count) for C++ Random Access CountingIterator."""
     return _iterators.CountingIterator(offset, ntype)
 
 
