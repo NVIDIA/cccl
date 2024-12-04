@@ -338,21 +338,23 @@ loop_redux_finalize(tuple_args targs, redux_vars<tuple_args, tuple_ops>* redux_b
   extern __shared__ char dyn_buffer[];
   auto* per_block_redux_buffer = reinterpret_cast<redux_vars<tuple_args, tuple_ops>*>(dyn_buffer);
 
-  unsigned int tid = threadIdx.x;
+  unsigned int tid  = threadIdx.x;
   const size_t step = blockDim.x;
 
   // Load partial results into shared memory
   bool first = true;
   for (size_t ind = tid; ind < nredux_buffer; ind += step)
   {
-      // The first item is copied, other items are combined using the reduction operator
-      if (first) {
-          per_block_redux_buffer[tid].set(redux_buffer[ind]);
-          first = false;
-      }
-      else {
-          per_block_redux_buffer[tid].apply_op(redux_buffer[ind]);
-      }
+    // The first item is copied, other items are combined using the reduction operator
+    if (first)
+    {
+      per_block_redux_buffer[tid].set(redux_buffer[ind]);
+      first = false;
+    }
+    else
+    {
+      per_block_redux_buffer[tid].apply_op(redux_buffer[ind]);
+    }
   }
 
   __syncthreads();
@@ -407,8 +409,7 @@ public:
       , ctx(ctx)
       , e_place(mv(e_place))
       , shape(mv(shape))
-  {
-  }
+  {}
 
   parallel_for_scope(const parallel_for_scope&)            = delete;
   parallel_for_scope(parallel_for_scope&&)                 = default;
@@ -705,7 +706,7 @@ public:
       // One tuple per CUDA block
       // TODO use CUDASTF facilities to replace this manual allocation
       redux_vars<deps_tup_t, ops_t>* d_redux_buffer;
-      cuda_safe_call(cudaMallocAsync(&d_redux_buffer, blocks*sizeof(redux_vars<deps_tup_t, ops_t>), stream));
+      cuda_safe_call(cudaMallocAsync(&d_redux_buffer, blocks * sizeof(redux_vars<deps_tup_t, ops_t>), stream));
 
       size_t dyn_shmem_size = block_size * sizeof(redux_vars<deps_tup_t, ops_t>);
 
@@ -714,16 +715,13 @@ public:
         <<<static_cast<int>(blocks), static_cast<int>(block_size), dyn_shmem_size, stream>>>(
           static_cast<int>(n), sub_shape, mv(f), arg_instances, d_redux_buffer);
 
-    static const auto conf_finalize = [] {
-      int minGridSize, blockSize;
-      // We are using int instead of size_t because CUDA API uses int for occupancy calculations
-      cuda_safe_call(cudaOccupancyMaxPotentialBlockSizeVariableSMem(
-        &minGridSize,
-        &blockSize,
-        reserved::loop_redux_finalize<deps_tup_t, ops_t>,
-        block_to_shared_mem));
-      return ::std::pair(size_t(minGridSize), size_t(blockSize));
-    }();
+      static const auto conf_finalize = [] {
+        int minGridSize, blockSize;
+        // We are using int instead of size_t because CUDA API uses int for occupancy calculations
+        cuda_safe_call(cudaOccupancyMaxPotentialBlockSizeVariableSMem(
+          &minGridSize, &blockSize, reserved::loop_redux_finalize<deps_tup_t, ops_t>, block_to_shared_mem));
+        return ::std::pair(size_t(minGridSize), size_t(blockSize));
+      }();
 
       size_t finalize_block_size         = conf_finalize.second;
       size_t dynamic_shared_mem_finalize = finalize_block_size * sizeof(redux_vars<deps_tup_t, ops_t>);
