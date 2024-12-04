@@ -75,7 +75,7 @@
 #define _CCCL_CUDA_COMPILER(...)                         _CCCL_VERSION_COMPARE(_CCCL_CUDA_COMPILER_, _CCCL_CUDA_COMPILER_##__VA_ARGS__)
 
 // Determine the cuda compiler
-#if defined(__NVCC__) && defined(__CUDACC__)
+#if defined(__NVCC__)
 #  define _CCCL_CUDA_COMPILER_NVCC _CCCL_CUDA_COMPILER_MAKE_VERSION(__CUDACC_VER_MAJOR__, __CUDACC_VER_MINOR__)
 #elif defined(_NVHPC_CUDA)
 #  define _CCCL_CUDA_COMPILER_NVHPC _CCCL_COMPILER_NVHPC
