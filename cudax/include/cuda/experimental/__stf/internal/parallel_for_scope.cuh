@@ -415,18 +415,6 @@ public:
   parallel_for_scope(parallel_for_scope&&)                 = default;
   parallel_for_scope& operator=(const parallel_for_scope&) = delete;
 
-#  if 0
-  /**
-   * @brief Retrieves the task dependencies in an untyped vector.
-   *
-   * @return The task dependencies as a `task_dep_vector_untyped` object.
-   */
-  const task_dep_vector_untyped& get_task_deps() const
-  {
-    return deps;
-  }
-#  endif
-
   /**
    * @brief Retrieves the symbol associated with the task.
    *
