@@ -282,8 +282,7 @@ public:
       , ctx(ctx)
       , e_place(mv(e_place))
       , spec(mv(spec))
-  {
-  }
+  {}
 
   /// Deleted copy constructor and copy assignment operator.
   launch_scope(const launch_scope&)            = delete;
