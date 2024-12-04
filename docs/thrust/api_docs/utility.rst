@@ -9,5 +9,4 @@ Utility
 
    utility/pair
    utility/tuple
-   utility/swap
    utility/type_traits

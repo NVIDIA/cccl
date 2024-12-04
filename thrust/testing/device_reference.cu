@@ -218,8 +218,9 @@ void TestDeviceReferenceSwap()
   ref1 = 7;
   ref2 = 13;
 
-  // test thrust::swap()
-  thrust::swap(ref1, ref2);
+  // test ADL two-step swap
+  using ::cuda::std::swap;
+  swap(ref1, ref2);
   ASSERT_EQUAL(13, ref1);
   ASSERT_EQUAL(7, ref2);
 

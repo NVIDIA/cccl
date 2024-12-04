@@ -1548,7 +1548,7 @@ public:
     {
       if (rhs.has_value())
       {
-        using thrust::swap;
+        using ::cuda::std::swap;
         swap(**this, *rhs);
       }
       else
