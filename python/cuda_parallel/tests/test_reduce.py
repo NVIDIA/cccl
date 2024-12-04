@@ -168,7 +168,7 @@ def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, sta
         dtype_inp, ntype_inp = dtype_ntype(-1)
         dtype_out = dtype_inp
         streamed_input_devarr = numba.cuda.to_device(numpy.array(l_input, dtype=dtype_inp))
-        i_input = _iterators.cache(streamed_input_devarr, ntype=ntype_inp, modifier='stream')
+        i_input = iterators.cache_load_modifier(streamed_input_devarr, ntype=ntype_inp, modifier='stream')
     elif input_generator.startswith("constant_"):
         l_input = [42 for distance in range(num_items)]
         dtype_inp, ntype_inp = dtype_ntype(-1)

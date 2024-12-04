@@ -192,12 +192,6 @@ class CacheModifiedPointer:
         return _DEVICE_POINTER_SIZE
 
 
-def cache(container, ntype, modifier):
-    if modifier != "stream":
-        raise NotImplementedError("Only stream modifier is supported")
-    return CacheModifiedPointer(container.device_ctypes_pointer.value, ntype)
-
-
 class ConstantIterator:
     def __init__(self, val, ntype):
         thisty = numba.types.CPointer(ntype)
