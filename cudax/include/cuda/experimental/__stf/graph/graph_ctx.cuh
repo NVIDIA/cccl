@@ -520,8 +520,7 @@ public:
   template <typename T>
   auto transfer_host(cuda::experimental::stf::logical_data<T>& ldata)
   {
-    using valT = typename owning_container_of<T>::type;
-    valT out;
+    typename owning_container_of<T>::type out;
 
     host_launch(ldata.read()).set_symbol("transfer_host")->*[&](auto data) {
       out = owning_container_of<T>::get_value(data);
