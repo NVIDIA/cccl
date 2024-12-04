@@ -59,7 +59,7 @@ TEST_CASE("The get_stream method must be const qualified", "[stream]")
   STATIC_REQUIRE(!::cuda::std::is_invocable_v<::cuda::experimental::get_stream_t, const non_const_get_stream&>);
 }
 
-struct get_stream_wrong_return
+struct get_stream_convertible
 {
   ::cudaStream_t stream_{};
 
@@ -68,9 +68,23 @@ struct get_stream_wrong_return
     return stream_;
   }
 };
-TEST_CASE("The get_stream method must return a cuda::stream_ref", "[stream]")
+TEST_CASE("The get_stream method can return something convertible to cuda::stream_ref", "[stream]")
 {
-  STATIC_REQUIRE(!::cuda::std::is_invocable_v<::cuda::experimental::get_stream_t, const get_stream_wrong_return&>);
+  get_stream_convertible str{};
+  auto ref = ::cuda::experimental::get_stream(str);
+  CUDAX_CHECK(str.stream_ == ref);
+}
+
+struct get_stream_not_convertible
+{
+  int get_stream() const noexcept
+  {
+    return 42;
+  }
+};
+TEST_CASE("The get_stream method must return something convertible to cuda::stream_ref", "[stream]")
+{
+  STATIC_REQUIRE(!::cuda::std::is_invocable_v<::cuda::experimental::get_stream_t, const get_stream_not_convertible&>);
 }
 
 struct env_with_query

@@ -2,12 +2,6 @@ cccl_get_catch2()
 
 find_package(cudax) # already found, bring in version info.
 
-find_package(Thrust ${cudax_VERSION} EXACT CONFIG
-  NO_DEFAULT_PATH # Only check the explicit path in HINTS:
-  HINTS "${CCCL_SOURCE_DIR}/lib/cmake/thrust/"
-)
-thrust_create_target(cudax.test.thrust)
-
 add_library(catch2_main STATIC catch2_helpers/catch2_main.cpp)
 target_link_libraries(catch2_main PUBLIC Catch2::Catch2)
 
@@ -33,7 +27,6 @@ function(cudax_add_catch2_test target_name_var test_name cn_target) # ARGN=test 
   target_include_directories(${test_target} PRIVATE "common")
   target_link_libraries(${test_target} PRIVATE
     ${cn_target}
-    cudax.test.thrust
     Catch2::Catch2
     catch2_main
   )
@@ -87,7 +80,9 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   target_compile_options(${test_target} PRIVATE $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>)
 
   cudax_add_catch2_test(test_target execution ${cn_target}
+    execution/env.cu
     execution/policies/policies.cu
+    execution/policies/get_execution_policy.cu
   )
 
   cudax_add_catch2_test(test_target stream ${cn_target}
@@ -103,6 +98,19 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   cudax_add_catch2_test(test_target containers ${cn_target}
     containers/uninitialized_buffer.cu
     containers/uninitialized_async_buffer.cu
+    containers/vector/access.cu
+    containers/vector/assign.cu
+    containers/vector/assignment.cu
+    containers/vector/capacity.cu
+    containers/vector/comparison.cu
+    containers/vector/constructor.cu
+    containers/vector/conversion.cu
+    containers/vector/emplace.cu
+    containers/vector/insert.cu
+    containers/vector/iterators.cu
+    containers/vector/properties.cu
+    containers/vector/resize.cu
+    containers/vector/swap.cu
   )
 
   cudax_add_catch2_test(test_target memory_resource ${cn_target}
@@ -110,6 +118,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     memory_resource/any_resource.cu
     memory_resource/device_memory_pool.cu
     memory_resource/device_memory_resource.cu
+    memory_resource/get_memory_resource.cu
     memory_resource/managed_memory_resource.cu
     memory_resource/pinned_memory_resource.cu
     memory_resource/shared_resource.cu
