@@ -57,11 +57,9 @@ __host__ __device__ constexpr bool test()
   {
     struct F
     {
-      __host__ __device__ constexpr char* operator()(int) const
-      {
-        return nullptr;
-      }
+      __host__ __device__ char* operator()(int) const;
     };
+
     static_assert(can_invoke_r<char*, F, int>::value, "");
     static_assert(can_invoke_r<void*, F, int>::value, "");
 
@@ -85,33 +83,29 @@ __host__ __device__ constexpr bool test()
   {
     struct F
     {
-      __host__ __device__ constexpr char* operator()(int) const noexcept(true)
-      {
-        return nullptr;
-      }
+      __host__ __device__ char* operator()(int) const noexcept(true);
     };
 
     struct G
     {
-      __host__ __device__ constexpr char* operator()(int) const noexcept(false)
-      {
-        return nullptr;
-      }
+      __host__ __device__ char* operator()(int) const noexcept(false);
     };
+
     struct ConversionNotNoexcept
     {
-      __host__ __device__ constexpr ConversionNotNoexcept(char*) noexcept(false) {}
+      __host__ __device__ ConversionNotNoexcept(char*) noexcept(false);
     };
-    static_assert(noexcept(cuda::std::invoke_r<char*>(F{}, 0)), "");
+
+    static_assert(noexcept(cuda::std::invoke_r<char*>(cuda::std::declval<F>(), 0)), "");
 
     // function call is not noexcept
-    static_assert(!noexcept(cuda::std::invoke_r<char*>(G{}, 0)), "");
+    static_assert(!noexcept(cuda::std::invoke_r<char*>(cuda::std::declval<G>(), 0)), "");
 
     // function call is noexcept, conversion isn't
-    static_assert(!noexcept(cuda::std::invoke_r<ConversionNotNoexcept>(F{}, 0)), "");
+    static_assert(!noexcept(cuda::std::invoke_r<ConversionNotNoexcept>(cuda::std::declval<F>(), 0)), "");
 
     // function call and conversion are both not noexcept
-    static_assert(!noexcept(cuda::std::invoke_r<ConversionNotNoexcept>(G{}, 0)), "");
+    static_assert(!noexcept(cuda::std::invoke_r<ConversionNotNoexcept>(cuda::std::declval<G>(), 0)), "");
   }
 
   // Make sure invoke_r works with void return type
