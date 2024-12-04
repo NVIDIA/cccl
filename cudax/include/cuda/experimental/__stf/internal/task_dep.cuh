@@ -189,8 +189,11 @@ private:
 template <typename T>
 class logical_data;
 
-class task_dep_op_none
+class task_dep_op_none : public ::std::pair<::std::monostate, ::std::false_type>
 {};
+
+template <typename T, typename reduce_op = void, bool initialize = false>
+class task_dep;
 
 /**
  * @brief Type storing dependency information for one data item, including the data type
@@ -199,7 +202,7 @@ class task_dep_op_none
  * that `T` may be different in `const` qualifiers than the actual type stored in the dependency information.
  */
 template <typename T>
-class task_dep : public task_dep_untyped
+class task_dep<T, void, false> : public task_dep_untyped
 {
 public:
   using data_t = T;
@@ -239,11 +242,28 @@ public:
   decltype(auto) instance(task&) const;
 };
 
-// task_dep_op derived class using std::pair<T, Op>
-template <typename Pair>
-class task_dep_op : public task_dep<typename Pair::first_type>
+template <typename T, typename reduce_op, bool initialize>
+class task_dep : public task_dep<T, void, false>
 {
 public:
+  using base = task_dep<T, void, false>;
+
+  template <typename... Args>
+  task_dep(Args&&... args)
+      : base(std::forward<Args>(args)...)
+  {}
+};
+
+// task_dep_op derived class using std::pair<T, Op>
+template <typename Pair>
+class task_dep_op
+    : public task_dep<typename Pair::first_type,
+                      typename Pair::second_type::first_type,
+                      Pair::second_type::second_type::value>
+{
+public:
+  using base =
+    task_dep<typename Pair::first_type, typename Pair::second_type::first_type, Pair::second_type::second_type::value>;
   using dep_type      = typename Pair::first_type;
   using task_dep_type = task_dep<dep_type>;
   using op_type       = typename Pair::second_type;
@@ -263,7 +283,7 @@ public:
   // Constructor that forwards to task_dep's constructor
   template <typename... Args>
   task_dep_op(Args&&... args)
-      : task_dep<dep_type>(std::forward<Args>(args)...)
+      : base(std::forward<Args>(args)...)
   {}
 };
 
