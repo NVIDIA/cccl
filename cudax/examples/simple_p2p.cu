@@ -30,7 +30,6 @@
  * Unified Virtual Address Space (UVA) features.
  */
 
-#define LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 #include <cuda/memory_resource>
 
 #include <cuda/experimental/algorithm.cuh>
