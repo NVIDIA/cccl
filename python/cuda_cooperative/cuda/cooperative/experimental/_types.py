@@ -629,15 +629,21 @@ class Algorithm:
                 if threads is None:
                     raise ValueError(
                         'Warp algorithm must specify number of threads')
-                # Pessimistic temporary storage allocation for 1024 threads
+                # sub hw warps require computing masks for syncwarp, which is not supported
+                # allocate temporary storage explicitly
+                provide_alloc_version = threads == 32
+
+                # pessimistic temporary storage allocation for 1024 threads
                 storage = f"__shared__ temp_storage_t temp_storages[1024 / {threads}];"
                 storage += f"temp_storage_t &temp_storage = temp_storages[threadIdx.x / {threads}];"
                 sync = "__syncwarp();"
             elif self.struct_name.startswith('Block'):
+                provide_alloc_version = True
                 storage = "__shared__ temp_storage_t temp_storage;"
                 sync = "__syncthreads();"
 
             template = environment.from_string("""
+                {% if provide_alloc_version %}
                 extern "C" __device__ void {{ mangled_name }}_alloc({{ param_decls }})
                 {
                   {{ storage }}
@@ -654,6 +660,7 @@ class Algorithm:
 
                   {{ sync }}
                 }
+                {% endif %}
 
                 extern "C" __device__ void {{ mangled_name }}( temp_storage_t *temp_storage, {{ param_decls }})
                 {
@@ -675,7 +682,8 @@ class Algorithm:
                                    method_name=self.method_name,
                                    mangled_name=self.mangled_name(method),
                                    sync=sync,
-                                   storage=storage)
+                                   storage=storage,
+                                   provide_alloc_version=provide_alloc_version)
 
         device = cuda.get_current_device()
         cc_major, cc_minor = device.compute_capability
