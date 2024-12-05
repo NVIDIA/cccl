@@ -40,13 +40,13 @@ namespace cuda::experimental
 //! __valid_any_cast
 //!
 template <class _Interface, class _Tp>
-inline constexpr bool __valid_any_cast = true;
+_CCCL_GLOBAL_CONSTANT bool __valid_any_cast = true;
 
 template <class _Interface, class _Tp>
-inline constexpr bool __valid_any_cast<_Interface*, _Tp> = false;
+_CCCL_GLOBAL_CONSTANT bool __valid_any_cast<_Interface*, _Tp> = false;
 
 template <class _Interface, class _Tp>
-inline constexpr bool __valid_any_cast<_Interface*, _Tp*> =
+_CCCL_GLOBAL_CONSTANT bool __valid_any_cast<_Interface*, _Tp*> =
   !_CUDA_VSTD::is_const_v<_Interface> || _CUDA_VSTD::is_const_v<_Tp>;
 
 //!

@@ -139,7 +139,7 @@ using __vtable _CCCL_NODEBUG_ALIAS = __unique_interfaces<_Interface, _CUDA_VSTD:
 // __vtable_for_v<_Interface, _Tp> is an instance of `__vtable<_Interface>` that
 // contains the overrides for `_Tp`.
 template <class _Interface, class _Tp>
-inline constexpr __vtable<_Interface> __vtable_for_v{__tag<_Tp, _Interface>()};
+_CCCL_GLOBAL_CONSTANT __vtable<_Interface> __vtable_for_v{__tag<_Tp, _Interface>()};
 
 } // namespace cuda::experimental
 

@@ -11,7 +11,7 @@
 #ifndef __CUDAX_DETAIL_BASIC_ANY_STORAGE_H
 #define __CUDAX_DETAIL_BASIC_ANY_STORAGE_H
 
-#include <cuda/__cccl_config>
+#include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header

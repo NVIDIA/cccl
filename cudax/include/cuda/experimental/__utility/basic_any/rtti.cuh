@@ -13,6 +13,8 @@
 
 #include <cuda/std/detail/__config>
 
+#include "cuda/std/__cccl/unreachable.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -107,7 +109,7 @@ struct __object_metadata
 };
 
 template <class _Tp>
-inline constexpr __object_metadata __object_metadata_v = {
+_CCCL_GLOBAL_CONSTANT __object_metadata __object_metadata_v = {
   sizeof(_Tp), alignof(_Tp), &_CCCL_TYPEID(_Tp), &_CCCL_TYPEID(_Tp*), &_CCCL_TYPEID(_Tp const*)};
 
 template <class _Tp>
@@ -242,6 +244,7 @@ _CCCL_NODISCARD _CUDAX_HOST_API auto __vptr_cast(__vptr_for<_SrcInterface> __src
     }
     return __dst_vptr;
   }
+  _CCCL_UNREACHABLE();
 }
 
 } // namespace cuda::experimental

@@ -45,8 +45,9 @@ namespace cuda::experimental
 //!
 struct __immovable_archetype
 {
-  __immovable_archetype()                        = default;
-  __immovable_archetype(__immovable_archetype&&) = delete;
+  __immovable_archetype()                             = default;
+  __immovable_archetype(__immovable_archetype&&)      = delete;
+  __immovable_archetype(const __immovable_archetype&) = delete;
 
   template <class _Value>
   _CUDAX_HOST_API __immovable_archetype(_Value) noexcept;
@@ -58,6 +59,7 @@ struct __movable_archetype : __immovable_archetype
 {
   __movable_archetype() = default;
   _CUDAX_HOST_API __movable_archetype(__movable_archetype&&) noexcept;
+  __movable_archetype(const __movable_archetype&) = delete;
 };
 
 struct __copyable_archetype : __movable_archetype

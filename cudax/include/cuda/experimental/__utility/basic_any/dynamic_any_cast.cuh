@@ -13,6 +13,8 @@
 
 #include <cuda/std/detail/__config>
 
+#include "cuda/std/__cccl/dialect.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -104,7 +106,7 @@ struct __dynamic_any_cast_fn
 //! \c basic_any<_DstInterface>
 //!
 template <class _DstInterface>
-inline constexpr __dynamic_any_cast_fn<_DstInterface> dynamic_any_cast{};
+_CCCL_GLOBAL_CONSTANT __dynamic_any_cast_fn<_DstInterface> dynamic_any_cast{};
 
 } // namespace cuda::experimental
 

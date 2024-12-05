@@ -8,7 +8,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include <cuda/std/__type_traits/is_standard_layout.h>
+#include <cuda/std/type_traits>
 
 #include <cuda/experimental/__utility/basic_any.cuh>
 

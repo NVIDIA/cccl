@@ -69,7 +69,6 @@ using iset =
 //!
 //! Virtual table pointers
 //!
-
 template <class... _Interfaces>
 struct __iset_vptr : __base_vptr
 {
