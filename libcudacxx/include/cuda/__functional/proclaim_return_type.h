@@ -49,10 +49,10 @@ public:
   template <class... _As>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Ret operator()(_As&&... __as) & noexcept
   {
-#if !defined(_CCCL_CUDA_COMPILER_NVCC) || defined(__CUDA_ARCH__)
+#if !_CCCL_CUDA_COMPILER(NVCC) || defined(__CUDA_ARCH__)
     static_assert(_CUDA_VSTD::is_same<_Ret, typename _CUDA_VSTD::__invoke_of<_DecayFn&, _As...>::type>::value,
                   "Return type shall match the proclaimed one exactly");
-#endif // !_CCCL_CUDA_COMPILER_NVCC || __CUDA_ARCH__
+#endif // !_CCCL_CUDA_COMPILER(NVCC) || __CUDA_ARCH__
 
     return _CUDA_VSTD::__invoke(__fn_, _CUDA_VSTD::forward<_As>(__as)...);
   }
@@ -60,10 +60,10 @@ public:
   template <class... _As>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Ret operator()(_As&&... __as) && noexcept
   {
-#if !defined(_CCCL_CUDA_COMPILER_NVCC) || defined(__CUDA_ARCH__)
+#if !_CCCL_CUDA_COMPILER(NVCC) || defined(__CUDA_ARCH__)
     static_assert(_CUDA_VSTD::is_same<_Ret, typename _CUDA_VSTD::__invoke_of<_DecayFn, _As...>::type>::value,
                   "Return type shall match the proclaimed one exactly");
-#endif // !_CCCL_CUDA_COMPILER_NVCC || __CUDA_ARCH__
+#endif // !_CCCL_CUDA_COMPILER(NVCC) || __CUDA_ARCH__
 
     return _CUDA_VSTD::__invoke(_CUDA_VSTD::move(__fn_), _CUDA_VSTD::forward<_As>(__as)...);
   }
@@ -71,10 +71,10 @@ public:
   template <class... _As>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Ret operator()(_As&&... __as) const& noexcept
   {
-#if !defined(_CCCL_CUDA_COMPILER_NVCC) || defined(__CUDA_ARCH__)
+#if !_CCCL_CUDA_COMPILER(NVCC) || defined(__CUDA_ARCH__)
     static_assert(_CUDA_VSTD::is_same<_Ret, typename _CUDA_VSTD::__invoke_of<const _DecayFn&, _As...>::type>::value,
                   "Return type shall match the proclaimed one exactly");
-#endif // !_CCCL_CUDA_COMPILER_NVCC || __CUDA_ARCH__
+#endif // !_CCCL_CUDA_COMPILER(NVCC) || __CUDA_ARCH__
 
     return _CUDA_VSTD::__invoke(__fn_, _CUDA_VSTD::forward<_As>(__as)...);
   }
@@ -82,10 +82,10 @@ public:
   template <class... _As>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Ret operator()(_As&&... __as) const&& noexcept
   {
-#if !defined(_CCCL_CUDA_COMPILER_NVCC) || defined(__CUDA_ARCH__)
+#if !_CCCL_CUDA_COMPILER(NVCC) || defined(__CUDA_ARCH__)
     static_assert(_CUDA_VSTD::is_same<_Ret, typename _CUDA_VSTD::__invoke_of<const _DecayFn, _As...>::type>::value,
                   "Return type shall match the proclaimed one exactly");
-#endif // !_CCCL_CUDA_COMPILER_NVCC || __CUDA_ARCH__
+#endif // !_CCCL_CUDA_COMPILER(NVCC) || __CUDA_ARCH__
 
     return _CUDA_VSTD::__invoke(_CUDA_VSTD::move(__fn_), _CUDA_VSTD::forward<_As>(__as)...);
   }

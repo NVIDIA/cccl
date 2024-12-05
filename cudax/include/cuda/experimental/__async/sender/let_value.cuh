@@ -58,10 +58,11 @@ extern __fn_t<let_stopped_t>* __let_tag<__stopped, _Void>;
 template <__disposition_t _Disposition>
 struct __let
 {
-#if !defined(_CCCL_CUDA_COMPILER_NVCC)
+#if !_CCCL_CUDA_COMPILER(NVCC)
 
 private:
-#endif // _CCCL_CUDA_COMPILER_NVCC
+#endif // !_CCCL_CUDA_COMPILER(NVCC)
+
   using _LetTag = decltype(__detail::__let_tag<_Disposition>());
   using _SetTag = decltype(__detail::__set_tag<_Disposition>());
 

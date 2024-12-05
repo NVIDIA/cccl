@@ -52,7 +52,7 @@
 #endif
 
 // The nodebug attribute flattens aliases down to the actual type rather typename meow<T>::type
-#if _CCCL_HAS_ATTRIBUTE(__nodebug__) && defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_HAS_ATTRIBUTE(__nodebug__) && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_NODEBUG_ALIAS __attribute__((nodebug))
 #else
 #  define _CCCL_NODEBUG_ALIAS
