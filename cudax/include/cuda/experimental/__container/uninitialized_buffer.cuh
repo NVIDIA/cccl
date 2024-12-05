@@ -233,7 +233,7 @@ public:
   //! Returns a \c const reference to the :ref:`any_resource <cudax-memory-resource-any-resource>`
   //! that holds the memory resource used to allocate the buffer
   //! @endrst
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI const __resource& get_resource() const noexcept
+  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI const __resource& get_memory_resource() const noexcept
   {
     return __mr_;
   }

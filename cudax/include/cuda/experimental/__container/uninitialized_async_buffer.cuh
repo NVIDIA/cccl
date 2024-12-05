@@ -250,7 +250,7 @@ public:
   //! Returns a \c const reference to the :ref:`any_async_resource <cudax-memory-resource-any-async-resource>`
   //! that holds the memory resource used to allocate the buffer
   //! @endrst
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI const __async_resource& get_resource() const noexcept
+  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI const __async_resource& get_memory_resource() const noexcept
   {
     return __mr_;
   }
