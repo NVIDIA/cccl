@@ -60,7 +60,7 @@ def reduce(dtype, binary_op, threads_in_warp=32, methods=None):
                                           'VIRTUAL_WARP_THREADS': threads_in_warp,
                                           'Op': binary_op})
 
-    return Invocable(temp_files=[make_binary_tempfile(ltoir, '.ltoir') for ltoir in specialization.get_lto_ir()],
+    return Invocable(temp_files=[make_binary_tempfile(ltoir, '.ltoir') for ltoir in specialization.get_lto_ir(threads=threads_in_warp)],
                      temp_storage_bytes=specialization.get_temp_storage_bytes(),
                      algorithm=specialization)
 
@@ -112,6 +112,6 @@ def sum(dtype, threads_in_warp=32):
                            DependentReference(Dependency('T'), True)]])
     specialization = template.specialize({'T': dtype,
                                           'VIRTUAL_WARP_THREADS': threads_in_warp})
-    return Invocable(temp_files=[make_binary_tempfile(ltoir, '.ltoir') for ltoir in specialization.get_lto_ir()],
+    return Invocable(temp_files=[make_binary_tempfile(ltoir, '.ltoir') for ltoir in specialization.get_lto_ir(threads=threads_in_warp)],
                      temp_storage_bytes=specialization.get_temp_storage_bytes(),
                      algorithm=specialization)

@@ -31,9 +31,7 @@ NUMBA_TYPES_TO_CPP = {
 
 
 def numba_type_to_cpp(numba_type):
-    if numba_type in NUMBA_TYPES_TO_CPP:
-        return NUMBA_TYPES_TO_CPP[numba_type]
-    return 'storage_t'
+    return NUMBA_TYPES_TO_CPP.get(numba_type, 'storage_t')
 
 
 def method_to_signature(numba_type, method):
@@ -559,7 +557,7 @@ class Algorithm:
         _, ptx = compile(cpp=src, cc=cc, rdc=True, code='ptx')
         return find_unsigned('temp_storage_bytes', ptx)
 
-    def get_lto_ir(self):
+    def get_lto_ir(self, threads=None):
         lto_irs = []
 
         if self.type_definitions:
@@ -628,11 +626,12 @@ class Algorithm:
                         param_args.append(name)
 
             if self.struct_name.startswith('Warp'):
-                print(self.parameters)
+                if threads is None:
+                    raise ValueError(
+                        'Warp algorithm must specify number of threads')
                 # Pessimistic temporary storage allocation for 1024 threads
-                # TODO: Use the actual warp size
-                storage = "__shared__ temp_storage_t temp_storages[1024 / 32];"
-                storage += "temp_storage_t &temp_storage = temp_storages[threadIdx.x / 32];"
+                storage = f"__shared__ temp_storage_t temp_storages[1024 / {threads}];"
+                storage += f"temp_storage_t &temp_storage = temp_storages[threadIdx.x / {threads}];"
                 sync = "__syncwarp();"
             elif self.struct_name.startswith('Block'):
                 storage = "__shared__ temp_storage_t temp_storage;"

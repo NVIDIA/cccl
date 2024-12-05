@@ -59,6 +59,6 @@ def merge_sort_keys(dtype, items_per_thread, compare_op, threads_in_warp=32, met
                                           'VIRTUAL_WARP_THREADS': threads_in_warp,
                                           'ITEMS_PER_THREAD': items_per_thread,
                                           'Op': compare_op})
-    return Invocable(temp_files=[make_binary_tempfile(ltoir, '.ltoir') for ltoir in specialization.get_lto_ir()],
+    return Invocable(temp_files=[make_binary_tempfile(ltoir, '.ltoir') for ltoir in specialization.get_lto_ir(threads=threads_in_warp)],
                      temp_storage_bytes=specialization.get_temp_storage_bytes(),
                      algorithm=specialization)
