@@ -404,11 +404,11 @@ class parallel_for_scope
 {
   //  using deps_t = typename reserved::extract_all_first_types<deps_ops_t...>::type;
   // tuple<slice<double>, slice<int>> ...
-  using deps_tup_t = ::std::tuple<typename deps_ops_t::first_type...>;
+  using deps_tup_t = ::std::tuple<typename deps_ops_t::dep_type...>;
   //  // tuple<task_dep<slice<double>>, task_dep<slice<int>>> ...
   //  using task_deps_t = ::std::tuple<typename deps_ops_t::task_dep_type...>;
   // tuple<none, none, sum, none> ...
-  using ops_t = ::std::tuple<typename deps_ops_t::second_type...>;
+  using ops_t = ::std::tuple<typename deps_ops_t::op_type...>;
 
 public:
   /// @brief Constructor
@@ -416,7 +416,7 @@ public:
   /// @param e_place Execution place for this parallel_for
   /// @param shape Shape to iterate
   /// @param ...deps Dependencies
-  parallel_for_scope(context& ctx, exec_place e_place, shape_t shape, task_dep_op<deps_ops_t>... deps)
+  parallel_for_scope(context& ctx, exec_place e_place, shape_t shape, deps_ops_t... deps)
       : dump_hooks(reserved::get_dump_hooks(&ctx, deps...))
       , deps(mv(deps)...)
       , ctx(ctx)
@@ -900,7 +900,7 @@ public:
 
 private:
   ::std::vector<::std::function<void()>> dump_hooks;
-  ::std::tuple<task_dep_op<deps_ops_t>...> deps;
+  ::std::tuple<deps_ops_t...> deps;
   context& ctx;
   exec_place e_place;
   ::std::string symbol;

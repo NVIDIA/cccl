@@ -304,8 +304,8 @@ public:
           : task(ctx, mv(e_place), mv(shape), mv(deps)...)
       {}
 
-      reserved::parallel_for_scope<stream_ctx, shape_t, P, Data...> task;
-      ::std::function<void(reserved::parallel_for_scope<stream_ctx, shape_t, P, Data...>&)> todo;
+      reserved::parallel_for_scope<stream_ctx, shape_t, P, task_dep_op<Data>...> task;
+      ::std::function<void(reserved::parallel_for_scope<stream_ctx, shape_t, P, task_dep_op<Data>...>&)> todo;
 
       void set_symbol(::std::string s) override
       {
@@ -396,7 +396,7 @@ public:
     template <typename Fun>
     void operator->*(Fun fun)
     {
-      my_payload().todo = [f = mv(fun)](reserved::parallel_for_scope<stream_ctx, shape_t, P, Data...>& task) {
+      my_payload().todo = [f = mv(fun)](reserved::parallel_for_scope<stream_ctx, shape_t, P, task_dep_op<Data>...>& task) {
         task->*f;
       };
     }
@@ -633,7 +633,7 @@ public:
   template <typename S, typename... Deps>
   auto deferred_parallel_for(exec_place e_place, S shape, task_dep<Deps>... deps)
   {
-    auto result = deferred_parallel_for_scope<S, null_partition, Deps...>(*this, mv(e_place), mv(shape), mv(deps)...);
+    auto result = deferred_parallel_for_scope<S, null_partition, task_dep_op<Deps>...>(*this, mv(e_place), mv(shape), mv(deps)...);
     int id      = result.get_mapping_id();
     state().deferred_tasks.push_back(id);
     state().task_map.emplace(id, result);

@@ -367,8 +367,8 @@ public:
   auto parallel_for(exec_place e_place, S shape, task_dep_op<Deps>... deps)
   {
     EXPECT(payload.index() != ::std::variant_npos, "Context is not initialized.");
-    using result_t = unified_scope<reserved::parallel_for_scope<stream_ctx, S, null_partition, Deps...>,
-                                   reserved::parallel_for_scope<graph_ctx, S, null_partition, Deps...>>;
+    using result_t = unified_scope<reserved::parallel_for_scope<stream_ctx, S, null_partition, task_dep_op<Deps>...>,
+                                   reserved::parallel_for_scope<graph_ctx, S, null_partition, task_dep_op<Deps>...>>;
     return ::std::visit(
       [&](auto& self) {
         return result_t(self.parallel_for(mv(e_place), mv(shape), deps...));
@@ -380,8 +380,8 @@ public:
   auto parallel_for(partitioner_t p, exec_place e_place, S shape, task_dep_op<Deps>... deps)
   {
     EXPECT(payload.index() != ::std::variant_npos, "Context is not initialized.");
-    using result_t = unified_scope<reserved::parallel_for_scope<stream_ctx, S, partitioner_t, Deps...>,
-                                   reserved::parallel_for_scope<graph_ctx, S, partitioner_t, Deps...>>;
+    using result_t = unified_scope<reserved::parallel_for_scope<stream_ctx, S, partitioner_t, task_dep_op<Deps>...>,
+                                   reserved::parallel_for_scope<graph_ctx, S, partitioner_t, task_dep_op<Deps>...>>;
     return ::std::visit(
       [&](auto& self) {
         return result_t(self.parallel_for(mv(p), mv(e_place), mv(shape), deps...));
