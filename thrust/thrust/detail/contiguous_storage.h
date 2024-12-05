@@ -128,14 +128,11 @@ public:
     {
       swap(m_allocator, x.m_allocator);
     }
-    else
+    else _CCCL_IF_CONSTEXPR (!allocator_traits<Alloc>::is_always_equal::value)
     {
-      _CCCL_IF_CONSTEXPR (!allocator_traits<Alloc>::is_always_equal::value)
-      {
-        NV_IF_TARGET(NV_IS_DEVICE, (assert(m_allocator == other);), (if (m_allocator != x.m_allocator) {
-                       throw allocator_mismatch_on_swap();
-                     }));
-      }
+      NV_IF_TARGET(NV_IS_DEVICE, (assert(m_allocator == other);), (if (m_allocator != x.m_allocator) {
+                     throw allocator_mismatch_on_swap();
+                   }));
     }
   }
 
