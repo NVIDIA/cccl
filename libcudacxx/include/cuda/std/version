@@ -56,6 +56,7 @@
 #define __cccl_lib_tuple_element_t              201402L
 // #define __cpp_lib_tuple_like                    202311L // P2819R2 is implemented, but P2165R4 is not yet
 #define __cccl_lib_type_identity 201806L
+#define __cccl_lib_unreachable   202202L
 #define __cccl_lib_void_t        201411L
 
 #if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
@@ -251,7 +252,6 @@
 // # define __cccl_lib_stdatomic_h                          202011L
 // # define __cccl_lib_string_contains                      202011L
 // # define __cccl_lib_string_resize_and_overwrite          202110L
-#  define __cccl_lib_unreachable 202202L
 #endif // _CCCL_STD_VER >= 2023
 
 #endif // _CUDA_STD_VERSION
