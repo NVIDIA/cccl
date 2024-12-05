@@ -47,7 +47,8 @@ struct sync_wait_t
 #  if !_CCCL_CUDA_COMPILER(NVCC)
 
 private:
-#  endif // _CCCL_CUDA_COMPILER(NVCC)
+#  endif // !_CCCL_CUDA_COMPILER(NVCC)
+
   struct __env_t
   {
     run_loop* __loop_;
