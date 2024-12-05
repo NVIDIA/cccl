@@ -148,13 +148,25 @@ class Pointer(Parameter):
         return f'Pointer(dtype={self.value_dtype}, out={self.is_output})'
 
     def cpp_decl(self, name):
-        return numba_type_to_cpp(self.value_type) + '* ' + name
+        return numba_type_to_cpp(self.value_dtype) + '* ' + name
 
     def dtype(self):
-        return numba.types.Array(self.value_dtype, 1, 'C')
+        return numba.types.Array(self.value_dtype, 1, 'A')
 
     def mangled_name(self):
         return f'P{self.value_dtype}'
+
+
+class DependentPointer(Parameter):
+    def __init__(self, value_dtype, is_output=False):
+        self.value_dtype = value_dtype
+        super().__init__(is_output)
+
+    def __repr__(self) -> str:
+        return f'DependentPointer(dep={self.value_dtype}, out={self.is_output})'
+
+    def specialize(self, template_arguments):
+        return Pointer(self.value_dtype.resolve(template_arguments), self.is_output)
 
 
 class Reference(Parameter):
@@ -406,7 +418,7 @@ class DependentArray(Parameter):
         super().__init__(is_output)
 
     def __repr__(self) -> str:
-        return f'DependentArray(dep={self.value_dtype}, is_output={self.is_output})'
+        return f'DependentArray(dep={self.value_dtype}, out={self.is_output})'
 
     def specialize(self, template_arguments):
         return Array(self.value_dtype.resolve(template_arguments),
@@ -478,6 +490,8 @@ class Algorithm:
             template_argument = template_arguments[template_parameter.name]
             if isinstance(template_argument, int):
                 template_list.append(str(template_argument))
+            elif isinstance(template_argument, str):
+                template_list.append(template_argument)
             else:
                 template_list.append(numba_type_to_cpp(template_argument))
         template_list = ', '.join(template_list)
