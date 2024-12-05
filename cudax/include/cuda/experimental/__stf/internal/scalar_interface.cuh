@@ -49,6 +49,8 @@ template <typename T>
 class scalar
 {
 public:
+  scalar() = default;
+  scalar(T *_addr) : addr(_addr) {}
   T* addr;
 };
 
