@@ -86,6 +86,14 @@ def pointer_add(ptr, offset):
     return impl
 
 
+def pointer_advance(this, distance):
+    this[0] = this[0] + distance
+
+
+def pointer_dereference(this):
+    return this[0][0]
+
+
 class RawPointer:
     def __init__(self, ptr, ntype):
         self.val = ctypes.c_void_p(ptr)
@@ -95,21 +103,15 @@ class RawPointer:
         self.ltoirs = [
             _ncc(
                 f"{self.prefix}_advance",
-                RawPointer.pointer_advance,
+                pointer_advance,
                 numba.types.void(data_as_ntype_pp, _DISTANCE_NUMBA_TYPE),
             ),
             _ncc(
                 f"{self.prefix}_dereference",
-                RawPointer.pointer_dereference,
+                pointer_dereference,
                 ntype(data_as_ntype_pp),
             ),
         ]
-
-    def pointer_advance(this, distance):
-        this[0] = this[0] + distance
-
-    def pointer_dereference(this):
-        return this[0][0]
 
     def state_c_void_p(self):
         return ctypes.cast(ctypes.pointer(self.val), ctypes.c_void_p)
@@ -159,6 +161,14 @@ def load_cs(typingctx, base):
     return base.dtype(base), codegen
 
 
+def cache_advance(this, distance):
+    this[0] = this[0] + distance
+
+
+def cache_dereference(this):
+    return load_cs(this[0])
+
+
 class CacheModifiedPointer:
     def __init__(self, ptr, ntype):
         self.val = ctypes.c_void_p(ptr)
@@ -168,21 +178,13 @@ class CacheModifiedPointer:
         self.ltoirs = [
             _ncc(
                 f"{self.prefix}_advance",
-                CacheModifiedPointer.cache_advance,
+                cache_advance,
                 numba.types.void(data_as_ntype_pp, _DISTANCE_NUMBA_TYPE),
             ),
             _ncc(
-                f"{self.prefix}_dereference",
-                CacheModifiedPointer.cache_dereference,
-                ntype(data_as_ntype_pp),
+                f"{self.prefix}_dereference", cache_dereference, ntype(data_as_ntype_pp)
             ),
         ]
-
-    def cache_advance(this, distance):
-        this[0] = this[0] + distance
-
-    def cache_dereference(this):
-        return load_cs(this[0])
 
     def state_c_void_p(self):
         return ctypes.cast(ctypes.pointer(self.val), ctypes.c_void_p)
@@ -192,6 +194,14 @@ class CacheModifiedPointer:
 
     def alignment(self):
         return _DEVICE_POINTER_SIZE
+
+
+def constant_advance(this, _):
+    pass
+
+
+def constant_dereference(this):
+    return this[0]
 
 
 class ConstantIterator:
@@ -203,21 +213,11 @@ class ConstantIterator:
         self.ltoirs = [
             _ncc(
                 f"{self.prefix}_advance",
-                ConstantIterator.constant_advance,
+                constant_advance,
                 numba.types.void(thisty, _DISTANCE_NUMBA_TYPE),
             ),
-            _ncc(
-                f"{self.prefix}_dereference",
-                ConstantIterator.constant_dereference,
-                ntype(thisty),
-            ),
+            _ncc(f"{self.prefix}_dereference", constant_dereference, ntype(thisty)),
         ]
-
-    def constant_advance(this, _):
-        pass
-
-    def constant_dereference(this):
-        return this[0]
 
     def state_c_void_p(self):
         return ctypes.cast(ctypes.pointer(self.val), ctypes.c_void_p)
@@ -229,6 +229,14 @@ class ConstantIterator:
         return self.size()
 
 
+def count_advance(this, diff):
+    this[0] += diff
+
+
+def count_dereference(this):
+    return this[0]
+
+
 class CountingIterator:
     def __init__(self, count, ntype):
         thisty = numba.types.CPointer(ntype)
@@ -238,21 +246,11 @@ class CountingIterator:
         self.ltoirs = [
             _ncc(
                 f"{self.prefix}_advance",
-                CountingIterator.count_advance,
+                count_advance,
                 numba.types.void(thisty, _DISTANCE_NUMBA_TYPE),
             ),
-            _ncc(
-                f"{self.prefix}_dereference",
-                CountingIterator.count_dereference,
-                ntype(thisty),
-            ),
+            _ncc(f"{self.prefix}_dereference", count_dereference, ntype(thisty)),
         ]
-
-    def count_advance(this, diff):
-        this[0] += diff
-
-    def count_dereference(this):
-        return this[0]
 
     def state_c_void_p(self):
         return ctypes.cast(ctypes.pointer(self.count), ctypes.c_void_p)
@@ -274,7 +272,7 @@ class TransformIterator:
         transform_dereference,
         op_abi_name,
     ):
-        self.it = it  # TODO support raw pointers
+        self.it = it
         self.ntype = op_return_ntype
         self.prefix = f"transform_{it.prefix}_{op.__name__}"
         self.ltoirs = it.ltoirs + [
