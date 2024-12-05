@@ -132,7 +132,7 @@ public:
     const data_place& memory_node,
     instance_id_t instance_id,
     ::std::ptrdiff_t& s,
-    void** extra_args,
+    void**,
     event_list& prereqs) override
   {
     scalar<T>& instance = this->instance(instance_id);
@@ -149,7 +149,7 @@ public:
     block_allocator_untyped& custom_allocator,
     const data_place& memory_node,
     instance_id_t instance_id,
-    void* extra_args,
+    void*,
     event_list& prereqs) override
   {
     auto& local_desc = this->instance(instance_id);
