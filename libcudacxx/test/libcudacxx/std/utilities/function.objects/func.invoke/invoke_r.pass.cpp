@@ -127,6 +127,7 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::is_void<decltype(cuda::std::invoke_r<void>(F{was_called}, 3))>::value, "");
   }
 
+#if !defined(TEST_COMPILER_MSVC)
   // Make sure invoke_r works with const void return type
   {
     struct F
@@ -145,6 +146,7 @@ __host__ __device__ constexpr bool test()
     assert(was_called);
     static_assert(cuda::std::is_void<decltype(cuda::std::invoke_r<const void>(F{was_called}, 3))>::value, "");
   }
+#endif // !TEST_COMPILER_MSVC
 
   // Make sure invoke_r forwards its arguments
   {
@@ -241,7 +243,6 @@ __host__ __device__ constexpr bool test()
 
   // Note: We don't test that `std::invoke_r` works with all kinds of callable types here,
   //       since that is extensively tested in the `std::invoke` tests.
-
   return true;
 }
 
