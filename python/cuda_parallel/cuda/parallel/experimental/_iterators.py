@@ -139,20 +139,22 @@ def _ir_type_given_numba_type(ntype):
 
 
 @intrinsic
-def ldcs(typingctx, base):
+def load_cs(typingctx, base):
+    # Corresponding to `LOAD_CS` here:
+    # https://nvidia.github.io/cccl/cub/api/classcub_1_1CacheModifiedInputIterator.html
     def codegen(context, builder, sig, args):
         rt = _ir_type_given_numba_type(sig.return_type)
         if rt is None:
             raise RuntimeError(f"Unsupported: {type(sig.return_type)=}")
         ftype = ir.FunctionType(rt, [rt.as_pointer()])
         bw = sig.return_type.bitwidth
-        asm = f"ld.global.cs.b{bw} $0, [$1];"
+        asm_txt = f"ld.global.cs.b{bw} $0, [$1];"
         if bw < 64:
             constraint = "=r, l"
         else:
             constraint = "=l, l"
-        ldcs = ir.InlineAsm(ftype, asm, constraint)
-        return builder.call(ldcs, args)
+        asm_ir = ir.InlineAsm(ftype, asm_txt, constraint)
+        return builder.call(asm_ir, args)
 
     return base.dtype(base), codegen
 
@@ -180,7 +182,7 @@ class CacheModifiedPointer:
         this[0] = this[0] + distance
 
     def cache_dereference(this):
-        return ldcs(this[0])
+        return load_cs(this[0])
 
     def state_c_void_p(self):
         return ctypes.cast(ctypes.pointer(self.val), ctypes.c_void_p)
