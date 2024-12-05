@@ -32,6 +32,7 @@ project_build_order = [ "libcudacxx", "cudax", "cub", "thrust", "cccl", "cuda_co
 # deps can be used to link to other projects' documentation
 deps = [
     [ "libcudacxx", "_build/docs/libcudacxx/latest" ],
+    [ "cudax", "_build/docs/cudax/latest" ],
     [ "cub", "_build/docs/cub/latest" ],
     [ "thrust", "_build/docs/thrust/latest" ],
     [ "cuda_cooperative", "_build/docs/cuda_cooperative/latest" ],
@@ -430,6 +431,7 @@ doxygen_predefined = [
   "_CCCL_TRAIT(x, y)=x<y>::value",
   "_CUDA_VMR=cuda::mr",
   "_CUDA_VSTD=cuda::std",
+  "_CUDA_VRANGES=cuda::std::ranges",
   "_CCCL_SUPPRESS_DEPRECATED_PUSH",
   "_CCCL_SUPPRESS_DEPRECATED_POP",
   "_CCCL_DIAG_PUSH=",
