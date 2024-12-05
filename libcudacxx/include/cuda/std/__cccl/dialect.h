@@ -109,6 +109,10 @@
 #  define _CCCL_NO_INLINE_VARIABLES
 #endif // _CCCL_STD_VER <= 2014 || __cpp_inline_variables < 201606L
 
+#if _CCCL_STD_VER <= 2017 || !defined(__cpp_fold_expressions) || __cpp_fold_expressions < 201603L
+#  define _CCCL_HAS_NO_FOLD_EXPRESSIONS
+#endif // _CCCL_STD_VER <= 2017 || !defined(__cpp_fold_expressions) || __cpp_fold_expressions < 201603L
+
 // noexcept function types are only available from C++17 onwards
 #if _CCCL_STD_VER <= 2014 || __cpp_noexcept_function_type < 201510L
 #  define _CCCL_NO_NOEXCEPT_FUNCTION_TYPE

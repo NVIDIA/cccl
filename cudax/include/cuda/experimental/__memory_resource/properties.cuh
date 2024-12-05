@@ -36,6 +36,7 @@
 #  define LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 #endif
 
+#include <cuda/__memory_resource/get_property.h>
 #include <cuda/__memory_resource/properties.h>
 
 namespace cuda::experimental
@@ -43,6 +44,13 @@ namespace cuda::experimental
 
 using ::cuda::mr::device_accessible;
 using ::cuda::mr::host_accessible;
+
+//! @brief determines the cudaMemcpyKind needed to transfer memory pointed to by an iterator to a cudax::mdarray
+template <bool _IsHostOnly, class _Iter>
+_CCCL_INLINE_VAR constexpr cudaMemcpyKind __detect_transfer_kind =
+  has_property<_Iter, _CUDA_VMR::device_accessible>
+    ? (_IsHostOnly ? cudaMemcpyKind::cudaMemcpyDeviceToHost : cudaMemcpyKind::cudaMemcpyDeviceToDevice)
+    : (_IsHostOnly ? cudaMemcpyKind::cudaMemcpyHostToHost : cudaMemcpyKind::cudaMemcpyHostToDevice);
 
 } // namespace cuda::experimental
 

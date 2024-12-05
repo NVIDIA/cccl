@@ -100,6 +100,14 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   cudax_add_catch2_test(test_target containers ${cn_target}
     containers/uninitialized_buffer.cu
     containers/uninitialized_async_buffer.cu
+    containers/async_mdarray/access.cu
+    containers/async_mdarray/assignment.cu
+    containers/async_mdarray/capacity.cu
+    containers/async_mdarray/comparison.cu
+    containers/async_mdarray/constructor.cu
+    containers/async_mdarray/conversion.cu
+    containers/async_mdarray/iterators.cu
+    containers/async_mdarray/properties.cu
   )
 
   cudax_add_catch2_test(test_target memory_resource ${cn_target}
