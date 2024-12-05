@@ -2,6 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+# TODO(rwgk): Format entire file.
+# fmt: off
+
 import cupy as cp
 import numpy
 import pytest
@@ -91,131 +94,12 @@ def test_device_reduce_dtype_mismatch():
           reduce_into(None, d_inputs[int(ix == 0)], d_outputs[int(ix == 1)], None, h_inits[int(ix == 2)])
 
 
-def mul2(val):
-    return 2 * val
-
-
-def mul3(val):
-    return 3 * val
-
-
-@pytest.mark.parametrize("use_numpy_array", [True, False])
-@pytest.mark.parametrize("input_generator", ["raw_pointer_int16",
-                                             "raw_pointer_uint16",
-                                             "raw_pointer_int32",
-                                             "raw_pointer_uint32",
-                                             "raw_pointer_int64",
-                                             "raw_pointer_uint64",
-                                             "raw_pointer_float32",
-                                             "raw_pointer_float64",
-                                             "streamed_input_int16",
-                                             "streamed_input_uint16",
-                                             "streamed_input_int32",
-                                             "streamed_input_uint32",
-                                             "streamed_input_int64",
-                                             "streamed_input_uint64",
-                                             "streamed_input_float32",
-                                             "streamed_input_float64",
-                                             "constant_int16",
-                                             "constant_uint16",
-                                             "constant_int32",
-                                             "constant_uint32",
-                                             "constant_int64",
-                                             "constant_uint64",
-                                             "constant_float32",
-                                             "constant_float64",
-                                             "counting_int16",
-                                             "counting_uint16",
-                                             "counting_int32",
-                                             "counting_uint32",
-                                             "counting_int64",
-                                             "counting_uint64",
-                                             "counting_float32",
-                                             "counting_float64",
-                                             "map_mul2_count_int16_int16",
-                                             "map_mul2_count_uint16_uint16",
-                                             "map_mul2_count_int32_int32",
-                                             "map_mul2_count_uint32_uint32",
-                                             "map_mul2_count_int64_int64",
-                                             "map_mul2_count_uint64_uint64",
-                                             "map_mul2_count_float32_float32",
-                                             "map_mul2_count_float64_float64",
-                                             "map_mul2_count_float32_int16",
-                                             "map_mul2_count_float32_int32",
-                                             "map_mul2_count_float64_int32",
-                                             "map_mul2_count_float64_int64",
-                                             "map_mul2_count_int64_float32",
-                                             "map_mul3_map_mul2_count_int32_int32_int32",
-                                             "map_mul2_map_mul2_count_float64_float32_int16",
-                                             "map_mul2_cp_array_int32_int32",
-                                             "map_mul2_cp_array_int64_int32",
-                                             "map_mul2_cp_array_int32_int64",
-                                            ])
-def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, start_sum_with=10):
+# fmt: on
+def _test_device_sum_with_iterator(
+    l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
+):
     def add_op(a, b):
         return a + b
-
-    def dtype_ntype(ix):
-        ty = input_generator.split("_")[ix]
-        return numpy.dtype(ty), getattr(numba.types, ty)
-
-    if input_generator.startswith("raw_pointer_"):
-        rng = random.Random(0)
-        l_varr = [rng.randrange(100) for _ in range(num_items)]
-        dtype_inp, ntype_inp = dtype_ntype(-1)
-        dtype_out = dtype_inp
-        raw_pointer_devarr = numba.cuda.to_device(numpy.array(l_varr, dtype=dtype_inp))
-        i_input = _iterators.pointer(raw_pointer_devarr, ntype=ntype_inp)
-    elif input_generator.startswith("streamed_input_"):
-        rng = random.Random(0)
-        l_varr = [rng.randrange(100) for _ in range(num_items)]
-        dtype_inp, ntype_inp = dtype_ntype(-1)
-        dtype_out = dtype_inp
-        streamed_input_devarr = numba.cuda.to_device(numpy.array(l_varr, dtype=dtype_inp))
-        i_input = iterators.cache_load_modifier(streamed_input_devarr, ntype=ntype_inp, modifier='stream')
-    elif input_generator.startswith("constant_"):
-        l_varr = [42 for distance in range(num_items)]
-        dtype_inp, ntype_inp = dtype_ntype(-1)
-        dtype_out = dtype_inp
-        i_input = iterators.repeat(42, ntype=ntype_inp)
-    elif input_generator.startswith("counting_"):
-        l_varr = [start_sum_with + distance for distance in range(num_items)]
-        dtype_inp, ntype_inp = dtype_ntype(-1)
-        dtype_out = dtype_inp
-        i_input = iterators.count(start_sum_with, ntype=ntype_inp)
-    elif input_generator.startswith("map_mul2_count_"):
-        l_varr = [2 * (start_sum_with + distance) for distance in range(num_items)]
-        dtype_inp, ntype_inp = dtype_ntype(-1)
-        dtype_out, ntype_out = dtype_ntype(-2)
-        i_input = iterators.map(
-            mul2,
-            iterators.count(start_sum_with, ntype=ntype_inp),
-            op_return_ntype=ntype_out)
-    elif re.match(r"map_mul\d_map_mul\d_count_", input_generator):
-        fac_out = int(input_generator[7])
-        fac_mid = int(input_generator[16])
-        l_varr = [fac_out * (fac_mid * (start_sum_with + distance)) for distance in range(num_items)]
-        dtype_inp, ntype_inp = dtype_ntype(-1)
-        dtype_mid, ntype_mid = dtype_ntype(-2)
-        dtype_out, ntype_out = dtype_ntype(-3)
-        mul_funcs = {2: mul2, 3: mul3}
-        i_input = iterators.map(
-            mul_funcs[fac_out],
-            iterators.map(
-                mul_funcs[fac_mid],
-                iterators.count(start_sum_with, ntype=ntype_inp),
-                op_return_ntype=ntype_mid),
-            op_return_ntype=ntype_out)
-    elif input_generator.startswith("map_mul2_cp_array_"):
-        dtype_inp, ntype_inp = dtype_ntype(-1)
-        dtype_out, ntype_out = dtype_ntype(-2)
-        rng = random.Random(0)
-        l_d_in = [rng.randrange(100) for _ in range(num_items)]
-        a_d_in = cp.array(l_d_in, dtype_inp)
-        i_input = iterators.map(mul2, a_d_in, ntype_out)
-        l_varr = [mul2(v) for v in l_d_in]
-    else:
-        raise RuntimeError("Unexpected input_generator")
 
     expected_result = start_sum_with
     for v in l_varr:
@@ -227,16 +111,199 @@ def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, sta
     else:
         d_input = i_input
 
-    d_output = numba.cuda.device_array(1, dtype_out) # to store device sum
+    d_output = numba.cuda.device_array(1, dtype_out)  # to store device sum
 
     h_init = numpy.array([start_sum_with], dtype_out)
 
-    reduce_into = cudax.reduce_into(d_in=d_input, d_out=d_output, op=add_op, init=h_init)
+    reduce_into = cudax.reduce_into(
+        d_in=d_input, d_out=d_output, op=add_op, init=h_init
+    )
 
-    temp_storage_size = reduce_into(None, d_in=d_input, d_out=d_output, num_items=num_items, init=h_init)
+    temp_storage_size = reduce_into(
+        None, d_in=d_input, d_out=d_output, num_items=len(l_varr), init=h_init
+    )
     d_temp_storage = numba.cuda.device_array(temp_storage_size, dtype=numpy.uint8)
 
-    reduce_into(d_temp_storage, d_input, d_output, num_items, h_init)
+    reduce_into(d_temp_storage, d_input, d_output, len(l_varr), h_init)
 
     h_output = d_output.copy_to_host()
     assert h_output[0] == expected_result
+
+
+def mul2(val):
+    return 2 * val
+
+
+def mul3(val):
+    return 3 * val
+
+
+COMMON_VALUE_TYPE_NAMES = (
+    "int16",
+    "uint16",
+    "int32",
+    "uint32",
+    "int64",
+    "uint64",
+    "float32",
+    "float64",
+)
+
+
+def np_dtype_nb_type(value_type_name):
+    return numpy.dtype(value_type_name), getattr(numba.types, value_type_name)
+
+
+@pytest.mark.parametrize("use_numpy_array", [True, False])
+@pytest.mark.parametrize("value_type_name", COMMON_VALUE_TYPE_NAMES)
+def test_device_sum_raw_pointer_it(
+    use_numpy_array, value_type_name, num_items=3, start_sum_with=10
+):
+    # Exercise non-public _iterators.pointer() independently from iterators.map().
+    rng = random.Random(0)
+    l_varr = [rng.randrange(100) for _ in range(num_items)]
+    dtype_inp, ntype_inp = np_dtype_nb_type(value_type_name)
+    dtype_out = dtype_inp
+    raw_pointer_devarr = numba.cuda.to_device(numpy.array(l_varr, dtype=dtype_inp))
+    i_input = _iterators.pointer(raw_pointer_devarr, ntype=ntype_inp)
+    _test_device_sum_with_iterator(
+        l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
+    )
+
+
+@pytest.mark.parametrize("use_numpy_array", [True, False])
+@pytest.mark.parametrize("value_type_name", COMMON_VALUE_TYPE_NAMES)
+def test_device_sum_cache_load_modifier_it(
+    use_numpy_array, value_type_name, num_items=3, start_sum_with=10
+):
+    rng = random.Random(0)
+    l_varr = [rng.randrange(100) for _ in range(num_items)]
+    dtype_inp, ntype_inp = np_dtype_nb_type(value_type_name)
+    dtype_out = dtype_inp
+    input_devarr = numba.cuda.to_device(numpy.array(l_varr, dtype=dtype_inp))
+    i_input = iterators.cache_load_modifier(
+        input_devarr, ntype=ntype_inp, modifier="stream"
+    )
+    _test_device_sum_with_iterator(
+        l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
+    )
+
+
+@pytest.mark.parametrize("use_numpy_array", [True, False])
+@pytest.mark.parametrize("value_type_name", COMMON_VALUE_TYPE_NAMES)
+def test_device_sum_constant_it(
+    use_numpy_array, value_type_name, num_items=3, start_sum_with=10
+):
+    l_varr = [42 for distance in range(num_items)]
+    dtype_inp, ntype_inp = np_dtype_nb_type(value_type_name)
+    dtype_out = dtype_inp
+    i_input = iterators.repeat(42, ntype=ntype_inp)
+    _test_device_sum_with_iterator(
+        l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
+    )
+
+
+@pytest.mark.parametrize("use_numpy_array", [True, False])
+@pytest.mark.parametrize("value_type_name", COMMON_VALUE_TYPE_NAMES)
+def test_device_sum_counting_it(
+    use_numpy_array, value_type_name, num_items=3, start_sum_with=10
+):
+    l_varr = [start_sum_with + distance for distance in range(num_items)]
+    dtype_inp, ntype_inp = np_dtype_nb_type(value_type_name)
+    dtype_out = dtype_inp
+    i_input = iterators.count(start_sum_with, ntype=ntype_inp)
+    _test_device_sum_with_iterator(
+        l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
+    )
+
+
+@pytest.mark.parametrize("use_numpy_array", [True, False])
+@pytest.mark.parametrize(
+    "value_type_name_pair",
+    list(zip(COMMON_VALUE_TYPE_NAMES, COMMON_VALUE_TYPE_NAMES))
+    + [
+        ("float32", "int16"),
+        ("float32", "int32"),
+        ("float64", "int32"),
+        ("float64", "int64"),
+        ("int64", "float32"),
+    ],
+)
+def test_device_sum_map_mul2_count_it(
+    use_numpy_array, value_type_name_pair, num_items=3, start_sum_with=10
+):
+    l_varr = [2 * (start_sum_with + distance) for distance in range(num_items)]
+    dtype_inp, ntype_inp = np_dtype_nb_type(value_type_name_pair[1])
+    dtype_out, ntype_out = np_dtype_nb_type(value_type_name_pair[0])
+    i_input = iterators.map(
+        mul2,
+        iterators.count(start_sum_with, ntype=ntype_inp),
+        op_return_ntype=ntype_out,
+    )
+    _test_device_sum_with_iterator(
+        l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
+    )
+
+
+@pytest.mark.parametrize("use_numpy_array", [True, False])
+@pytest.mark.parametrize(
+    ("fac_out", "fac_mid", "vtn_out", "vtn_mid", "vtn_inp"),
+    [
+        (3, 2, "int32", "int32", "int32"),
+        (2, 2, "float64", "float32", "int16"),
+    ],
+)
+def test_device_sum_map_mul_map_mul_count_it(
+    use_numpy_array,
+    fac_out,
+    fac_mid,
+    vtn_out,
+    vtn_mid,
+    vtn_inp,
+    num_items=3,
+    start_sum_with=10,
+):
+    l_varr = [
+        fac_out * (fac_mid * (start_sum_with + distance))
+        for distance in range(num_items)
+    ]
+    dtype_inp, ntype_inp = np_dtype_nb_type(vtn_inp)
+    dtype_mid, ntype_mid = np_dtype_nb_type(vtn_mid)
+    dtype_out, ntype_out = np_dtype_nb_type(vtn_out)
+    mul_funcs = {2: mul2, 3: mul3}
+    i_input = iterators.map(
+        mul_funcs[fac_out],
+        iterators.map(
+            mul_funcs[fac_mid],
+            iterators.count(start_sum_with, ntype=ntype_inp),
+            op_return_ntype=ntype_mid,
+        ),
+        op_return_ntype=ntype_out,
+    )
+    _test_device_sum_with_iterator(
+        l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
+    )
+
+
+@pytest.mark.parametrize("use_numpy_array", [True, False])
+@pytest.mark.parametrize(
+    "value_type_name_pair",
+    [
+        ("int32", "int32"),
+        ("int64", "int32"),
+        ("int32", "int64"),
+    ],
+)
+def test_device_sum_map_mul2_cp_array_it(
+    use_numpy_array, value_type_name_pair, num_items=3, start_sum_with=10
+):
+    dtype_inp, ntype_inp = np_dtype_nb_type(value_type_name_pair[1])
+    dtype_out, ntype_out = np_dtype_nb_type(value_type_name_pair[0])
+    rng = random.Random(0)
+    l_d_in = [rng.randrange(100) for _ in range(num_items)]
+    a_d_in = cp.array(l_d_in, dtype_inp)
+    i_input = iterators.map(mul2, a_d_in, ntype_out)
+    l_varr = [mul2(v) for v in l_d_in]
+    _test_device_sum_with_iterator(
+        l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
+    )
