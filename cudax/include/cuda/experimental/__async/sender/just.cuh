@@ -52,10 +52,10 @@ extern __fn_t<just_stopped_t>* __just_tag<__stopped, _Void>;
 template <__disposition_t _Disposition>
 struct __just
 {
-#if !defined(_CCCL_CUDA_COMPILER_NVCC)
+#if !_CCCL_CUDA_COMPILER(NVCC)
 
 private:
-#endif // _CCCL_CUDA_COMPILER_NVCC
+#endif // !_CCCL_CUDA_COMPILER(NVCC)
 
   using _JustTag = decltype(__detail::__just_tag<_Disposition>());
   using _SetTag  = decltype(__detail::__set_tag<_Disposition>());

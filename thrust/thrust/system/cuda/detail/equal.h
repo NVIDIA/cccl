@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#ifdef _CCCL_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER
 #  include <thrust/system/cuda/config.h>
 
 #  include <thrust/system/cuda/detail/mismatch.h>

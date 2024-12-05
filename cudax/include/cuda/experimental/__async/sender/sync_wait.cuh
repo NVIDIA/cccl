@@ -44,10 +44,11 @@ namespace cuda::experimental::__async
 /// sender.
 struct sync_wait_t
 {
-#  if !defined(_CCCL_CUDA_COMPILER_NVCC)
+#  if !_CCCL_CUDA_COMPILER(NVCC)
 
 private:
-#  endif // _CCCL_CUDA_COMPILER_NVCC
+#  endif // !_CCCL_CUDA_COMPILER(NVCC)
+
   struct __env_t
   {
     run_loop* __loop_;

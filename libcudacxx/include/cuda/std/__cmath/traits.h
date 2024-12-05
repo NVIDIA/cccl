@@ -209,7 +209,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool isinf(__half __x) noexcept
   return !::__hisnan(__x) && ::__hisnan(__x - __x);
 #  else // ^^^ C++20 && below 12.3 ^^^ / vvv C++17 or 12.3+ vvv
   return ::__hisinf(__x) != 0;
-#  endif // _CCCL_STD_VER <= 2017 || _CCCL_CUDACC_VER < 1203000
+#  endif // _CCCL_STD_VER <= 2017 || _CCCL_CUDACC_BELOW(12, 3)
 }
 #endif // _LIBCUDACXX_HAS_NVFP16
 
@@ -221,7 +221,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI bool isinf(__nv_bfloat16 __x) noexcept
   return !::__hisnan(__x) && ::__hisnan(__x - __x);
 #  else // ^^^ C++20 && below 12.3 ^^^ / vvv C++17 or 12.3+ vvv
   return ::__hisinf(__x) != 0;
-#  endif // _CCCL_STD_VER <= 2017 || _CCCL_CUDACC_VER < 1203000
+#  endif // _CCCL_STD_VER <= 2017 || _CCCL_CUDACC_BELOW(12, 3)
 }
 #endif // _LIBCUDACXX_HAS_NVBF16
 

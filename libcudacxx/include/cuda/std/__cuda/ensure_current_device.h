@@ -21,9 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_CUDA_COMPILER(CLANG)
 #  include <cuda_runtime_api.h>
-#endif // _CCCL_CUDA_COMPILER_CLANG
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 #include <cuda/std/__cuda/api_wrapper.h>
 

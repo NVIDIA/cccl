@@ -38,10 +38,10 @@ namespace cuda::experimental::__async
 {
 struct continue_on_t
 {
-#if !defined(_CCCL_CUDA_COMPILER_NVCC)
+#if !_CCCL_CUDA_COMPILER(NVCC)
 
 private:
-#endif // _CCCL_CUDA_COMPILER_NVCC
+#endif // !_CCCL_CUDA_COMPILER(NVCC)
   template <class... _As>
   using __set_value_tuple_t = __tuple<set_value_t, __decay_t<_As>...>;
 

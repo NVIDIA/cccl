@@ -22,9 +22,9 @@
 #endif // no system header
 
 // MSVC and clang cuda need the host side functions included
-#if _CCCL_COMPILER(MSVC) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
 #  include <math.h>
-#endif // _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER_CLANG
+#endif // _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(CLANG)
 
 #if defined(_LIBCUDACXX_HAS_NVFP16)
 #  include <cuda_fp16.h>

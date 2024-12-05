@@ -41,7 +41,7 @@
 //! type alias named \c type.
 
 #if !defined(_CCCL_META_UNROLL_LIMIT)
-#  if defined(_CCCL_CUDA_COMPILER_NVCC) || _CCCL_COMPILER(NVHPC)
+#  if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVHPC)
 #    define _CCCL_META_UNROLL_LIMIT 10
 #  else
 #    define _CCCL_META_UNROLL_LIMIT 16
@@ -430,7 +430,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_try_catch
 };
 
 // Implementation for indexing into a list of types:
-#  if defined(__cpp_pack_indexing) && !defined(_CCCL_CUDA_COMPILER_NVCC)
+#  if defined(__cpp_pack_indexing) && !_CCCL_CUDA_COMPILER(NVCC)
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wc++26-extensions")
@@ -593,7 +593,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_default
   using type _CCCL_NODEBUG_ALIAS = _Value;
 };
 
-#  if _CCCL_CUDACC_AT_LEAST(12, 0) || defined(_CCCL_DOXYGEN_INVOKED)
+#  if _CCCL_CUDACC_AT_LEAST(12) || defined(_CCCL_DOXYGEN_INVOKED)
 
 //! \see __type_switch
 template <_CCCL_NTTP_AUTO _Label, class _Value>
