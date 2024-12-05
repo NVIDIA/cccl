@@ -34,22 +34,10 @@ template <unsigned int BlockSize>
 struct functor_taking_config
 {
   template <typename Config>
-  __device__ void operator()(Config conf, int grid_size)
+  __device__ void operator()(Config config, int grid_size)
   {
-    static_assert(conf.dims.static_count(cudax::thread, cudax::block) == BlockSize);
-    CUDAX_REQUIRE(conf.dims.count(cudax::block, cudax::grid) == grid_size);
-    kernel_run_proof = true;
-  }
-};
-
-template <unsigned int BlockSize>
-struct functor_taking_dims
-{
-  template <typename Dimensions>
-  __device__ void operator()(Dimensions dims, int grid_size)
-  {
-    static_assert(dims.static_count(cudax::thread, cudax::block) == BlockSize);
-    CUDAX_REQUIRE(dims.count(cudax::block, cudax::grid) == grid_size);
+    static_assert(config.dims.static_count(cudax::thread, cudax::block) == BlockSize);
+    CUDAX_REQUIRE(config.dims.count(cudax::block, cudax::grid) == grid_size);
     kernel_run_proof = true;
   }
 };
@@ -60,15 +48,9 @@ __global__ void kernel_int_argument(int dummy)
 }
 
 template <typename Config, unsigned int BlockSize>
-__global__ void kernel_taking_config(Config conf, int grid_size)
+__global__ void kernel_taking_config(Config config, int grid_size)
 {
-  functor_taking_config<BlockSize>()(conf, grid_size);
-}
-
-template <typename Dims, unsigned int BlockSize>
-__global__ void kernel_taking_dims(Dims dims, int grid_size)
-{
-  functor_taking_dims<BlockSize>()(dims, grid_size);
+  functor_taking_config<BlockSize>()(config, grid_size);
 }
 
 struct my_dynamic_smem_t
@@ -80,9 +62,9 @@ template <typename SmemType>
 struct dynamic_smem_single
 {
   template <typename Config>
-  __device__ void operator()(Config conf)
+  __device__ void operator()(Config config)
   {
-    auto& dynamic_smem = cudax::dynamic_smem_ref(conf);
+    auto& dynamic_smem = cudax::dynamic_smem_ref(config);
     static_assert(::cuda::std::is_same_v<SmemType&, decltype(dynamic_smem)>);
     CUDAX_REQUIRE(__isShared(&dynamic_smem));
     kernel_run_proof = true;
@@ -93,9 +75,9 @@ template <typename SmemType, size_t Extent>
 struct dynamic_smem_span
 {
   template <typename Config>
-  __device__ void operator()(Config conf, int size)
+  __device__ void operator()(Config config, int size)
   {
-    auto dynamic_smem = cudax::dynamic_smem_span(conf);
+    auto dynamic_smem = cudax::dynamic_smem_span(config);
     static_assert(decltype(dynamic_smem)::extent == Extent);
     static_assert(::cuda::std::is_same_v<SmemType&, decltype(dynamic_smem[1])>);
     CUDAX_REQUIRE(dynamic_smem.size() == size);
@@ -165,28 +147,24 @@ void launch_smoke_test()
 
     SECTION("Not taking dims")
     {
-      auto lambda = [&](auto dims_or_conf) {
-        const int dummy = 1;
-        cudax::launch(stream, dims_or_conf, kernel_int_argument, dummy);
-        check_kernel_run(stream);
-        cudax::launch(stream, dims_or_conf, kernel_int_argument, 1);
-        check_kernel_run(stream);
-        cudax::launch(stream, dims_or_conf, kernel_int_argument, launch_transform_to_int_convertible{1});
-        check_kernel_run(stream);
-        cudax::launch(stream, dims_or_conf, functor_int_argument(), dummy);
-        check_kernel_run(stream);
-        cudax::launch(stream, dims_or_conf, functor_int_argument(), 1);
-        check_kernel_run(stream);
-        cudax::launch(stream, dims_or_conf, functor_int_argument(), launch_transform_to_int_convertible{1});
-        check_kernel_run(stream);
+      const int dummy = 1;
+      cudax::launch(stream, config, kernel_int_argument, dummy);
+      check_kernel_run(stream);
+      cudax::launch(stream, config, kernel_int_argument, 1);
+      check_kernel_run(stream);
+      cudax::launch(stream, config, kernel_int_argument, launch_transform_to_int_convertible{1});
+      check_kernel_run(stream);
+      cudax::launch(stream, config, functor_int_argument(), dummy);
+      check_kernel_run(stream);
+      cudax::launch(stream, config, functor_int_argument(), 1);
+      check_kernel_run(stream);
+      cudax::launch(stream, config, functor_int_argument(), launch_transform_to_int_convertible{1});
+      check_kernel_run(stream);
 
-        cudax::launch(stream, dims_or_conf, kernel_int_argument, 1U);
-        check_kernel_run(stream);
-        cudax::launch(stream, dims_or_conf, functor_int_argument(), 1U);
-        check_kernel_run(stream);
-      };
-      lambda(config);
-      lambda(dimensions);
+      cudax::launch(stream, config, kernel_int_argument, 1U);
+      check_kernel_run(stream);
+      cudax::launch(stream, config, functor_int_argument(), 1U);
+      check_kernel_run(stream);
     }
 
     SECTION("Config argument")
@@ -213,37 +191,12 @@ void launch_smoke_test()
       cudax::launch(stream, config, kernel_instance, static_cast<unsigned int>(grid_size));
       check_kernel_run(stream);
     }
-
-    SECTION("Dimensions argument")
-    {
-      auto functor_instance = functor_taking_dims<block_size>();
-      auto kernel_instance  = kernel_taking_dims<decltype(dimensions), block_size>;
-
-      cudax::launch(stream, dimensions, functor_instance, grid_size);
-      check_kernel_run(stream);
-      cudax::launch(stream, dimensions, functor_instance, ::cuda::std::move(grid_size));
-      check_kernel_run(stream);
-      cudax::launch(stream, dimensions, functor_instance, launch_transform_to_int_convertible{grid_size});
-      check_kernel_run(stream);
-
-      cudax::launch(stream, dimensions, kernel_instance, grid_size);
-      check_kernel_run(stream);
-      cudax::launch(stream, dimensions, kernel_instance, ::cuda::std::move(grid_size));
-      check_kernel_run(stream);
-      cudax::launch(stream, dimensions, kernel_instance, launch_transform_to_int_convertible{grid_size});
-      check_kernel_run(stream);
-
-      cudax::launch(stream, dimensions, functor_instance, static_cast<unsigned int>(grid_size));
-      check_kernel_run(stream);
-      cudax::launch(stream, dimensions, kernel_instance, static_cast<unsigned int>(grid_size));
-      check_kernel_run(stream);
-    }
   }
 
   SECTION("Lambda")
   {
-    cudax::launch(stream, cudax::block_dims<256>() & cudax::grid_dims(1), [] __device__(auto dims) {
-      if (dims.rank(cudax::thread, cudax::block) == 0)
+    cudax::launch(stream, cudax::block_dims<256>() & cudax::grid_dims(1), [] __device__(auto config) {
+      if (config.dims.rank(cudax::thread, cudax::block) == 0)
       {
         printf("Hello from the GPU\n");
         kernel_run_proof = true;
@@ -254,8 +207,7 @@ void launch_smoke_test()
 
   SECTION("Dynamic shared memory option")
   {
-    auto dims   = cudax::block_dims<32>() & cudax::grid_dims<1>();
-    auto config = cudax::kernel_config(dims);
+    auto config = cudax::block_dims<32>() & cudax::grid_dims<1>();
 
     auto test = [stream](const auto& input_config) {
       SECTION("Single element")

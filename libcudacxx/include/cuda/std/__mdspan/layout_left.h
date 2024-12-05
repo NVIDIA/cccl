@@ -178,7 +178,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type required_span_size() const noexcept
   {
     index_type __value = 1;
-    for (rank_type __r = 0; __r < extents_type::rank(); __r++)
+    for (rank_type __r = 0; __r != extents_type::rank(); __r++)
     {
       __value *= __extents.extent(__r);
     }

@@ -23,7 +23,7 @@
 #endif // no system header
 
 // We need to ensure that we not only compile with a cuda compiler but also compile cuda source files
-#if defined(_CCCL_CUDA_COMPILER) && (defined(__CUDACC__) || defined(_NVHPC_CUDA))
+#if _CCCL_HAS_CUDA_COMPILER && (defined(__CUDACC__) || defined(_NVHPC_CUDA))
 #  define _CCCL_HOST        __host__
 #  define _CCCL_DEVICE      __device__
 #  define _CCCL_HOST_DEVICE __host__ __device__
@@ -42,18 +42,18 @@
 #endif
 
 // Compile with NVCC compiler and only device code, Volta+  GPUs
-#if defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_PTX_ARCH >= 700 && _CCCL_CUDACC_AT_LEAST(11, 7)
+#if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_PTX_ARCH >= 700 && _CCCL_CUDACC_AT_LEAST(11, 7)
 #  define _CCCL_GRID_CONSTANT __grid_constant__
-#else // ^^^ _CCCL_CUDA_COMPILER_NVCC ^^^ / vvv !_CCCL_CUDA_COMPILER_NVCC vvv
+#else // ^^^ _CCCL_CUDA_COMPILER(NVCC) ^^^ / vvv !_CCCL_CUDA_COMPILER(NVCC) vvv
 #  define _CCCL_GRID_CONSTANT
-#endif // defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_PTX_ARCH >= 700 && _CCCL_CUDACC_AT_LEAST(11, 7)
+#endif // _CCCL_CUDA_COMPILER(NVCC) && _CCCL_PTX_ARCH >= 700 && _CCCL_CUDACC_AT_LEAST(11, 7)
 
 #if !defined(_CCCL_EXEC_CHECK_DISABLE)
-#  if defined(_CCCL_CUDA_COMPILER_NVCC)
+#  if _CCCL_CUDA_COMPILER(NVCC)
 #    define _CCCL_EXEC_CHECK_DISABLE _CCCL_PRAGMA(nv_exec_check_disable)
 #  else
 #    define _CCCL_EXEC_CHECK_DISABLE
-#  endif // _CCCL_CUDA_COMPILER_NVCC
+#  endif // _CCCL_CUDA_COMPILER(NVCC)
 #endif // !_CCCL_EXEC_CHECK_DISABLE
 
 #endif // __CCCL_EXECUTION_SPACE_H

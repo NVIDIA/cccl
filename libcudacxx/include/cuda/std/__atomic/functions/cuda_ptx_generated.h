@@ -39,7 +39,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if defined(_CCCL_CUDA_COMPILER)
+#if _CCCL_HAS_CUDA_COMPILER
 
 static inline _CCCL_DEVICE void __cuda_atomic_membar(__thread_scope_block_tag)
 { asm volatile("membar.cta;" ::: "memory"); }
@@ -3935,7 +3935,7 @@ static inline _CCCL_DEVICE _Type __atomic_fetch_sub_cuda(_Type volatile* __ptr, 
   return __atomic_fetch_add_cuda(__ptr, -__op, __memorder, _Sco{});
 }
 
-#endif // defined(_CCCL_CUDA_COMPILER)
+#endif // _CCCL_HAS_CUDA_COMPILER
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

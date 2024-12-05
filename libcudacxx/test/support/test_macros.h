@@ -84,12 +84,12 @@
 #  define TEST_COMPILER_EDG
 #endif
 
-#if defined(_CCCL_CUDA_COMPILER_NVCC)
+#if _CCCL_CUDA_COMPILER(NVCC)
 #  define TEST_COMPILER_NVCC
 #  define TEST_COMPILER_EDG
-#elif defined(_CCCL_CUDA_COMPILER_NVHPC)
+#elif _CCCL_CUDA_COMPILER(NVHPC)
 #  define TEST_COMPILER_NVHPC_CUDA
-#elif defined(_CCCL_CUDA_COMPILER_CLANG)
+#elif _CCCL_CUDA_COMPILER(CLANG)
 #  define TEST_COMPILER_CLANG_CUDA
 #endif // no cuda compiler
 
@@ -453,14 +453,12 @@ __host__ __device__ constexpr bool unused(T&&...)
 #define TEST_CONSTEXPR_GLOBAL _CCCL_CONSTEXPR_GLOBAL
 
 // Some convenience macros for checking nvcc versions
-#if defined(_CCCL_CUDACC)
-#  if _CCCL_CUDACC_BELOW(11, 3)
-#    define TEST_COMPILER_CUDACC_BELOW_11_3
-#  endif // _CCCL_CUDACC_BELOW(11, 3)
-#  if _CCCL_CUDACC_BELOW(12, 3)
-#    define TEST_COMPILER_CUDACC_BELOW_12_3
-#  endif // _CCCL_CUDACC_BELOW(12, 3)
-#endif // _CCCL_CUDACC
+#if _CCCL_CUDACC_BELOW(11, 3)
+#  define TEST_COMPILER_CUDACC_BELOW_11_3
+#endif // _CCCL_CUDACC_BELOW(11, 3)
+#if _CCCL_CUDACC_BELOW(12, 3)
+#  define TEST_COMPILER_CUDACC_BELOW_12_3
+#endif // _CCCL_CUDACC_BELOW(12, 3)
 
 #if defined(TEST_COMPILER_MSVC)
 #  if _MSC_VER < 1920

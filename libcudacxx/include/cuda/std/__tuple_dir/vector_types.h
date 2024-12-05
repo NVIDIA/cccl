@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_CCCL_CUDA_COMPILER)
+#if _CCCL_HAS_CUDA_COMPILER
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wmismatched-tags")

@@ -101,12 +101,14 @@ Feature availability:
 
    -  all features are available in C++14
 
+-  C++23 ``invoke_r`` in ``<functional>`` is available in C++14.
+
 -  C++23 ``<mdspan>`` is available in C++17.
 
    -  ``mdspan`` is feature complete in C++17 onwards.
    -  ``mdspan`` on msvc is only supported in C++20 and onwards.
 
--  C++23 ``forward_like`` and ``to_underlying`` from ``<utility>`` are available in C++11.
+-  C++23 ``forward_like``, ``to_underlying`` and ``unreachable`` from ``<utility>`` are available in C++11.
 
 -  C++23 ``is_scoped_enum`` in ``<type_traits>`` is available in C++11.
 
