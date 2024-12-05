@@ -24,8 +24,7 @@ void run()
   auto lb = ctx.logical_data(scalar<double>(&b)).set_symbol("b");
   auto lc = ctx.logical_data(shape_of<scalar<double>>()).set_symbol("c");
 
-  ctx.parallel_for(box(1), la.read(), lb.read(), lc.write())->*[]__device__(size_t, auto a, auto b, auto c)
-  {
+  ctx.parallel_for(box(1), la.read(), lb.read(), lc.write())->*[] __device__(size_t, auto a, auto b, auto c) {
     *c.addr = *a.addr + *b.addr;
   };
 
