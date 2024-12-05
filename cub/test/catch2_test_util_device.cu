@@ -92,9 +92,11 @@ C2H_TEST("CUB correctly identifies the ptx version the kernel was compiled for",
 }
 
 #ifdef __CUDA_ARCH_LIST__
-#  define CUDA_SM_LIST __CUDA_ARCH_LIST__
+#  define CUDA_SM_LIST       __CUDA_ARCH_LIST__
+#  define CUDA_SM_LIST_SCALE 1
 #elif defined(NV_TARGET_SM_INTEGER_LIST)
-#  define CUDA_SM_LIST NV_TARGET_SM_INTEGER_LIST
+#  define CUDA_SM_LIST       NV_TARGET_SM_INTEGER_LIST
+#  define CUDA_SM_LIST_SCALE 10
 #endif
 
 #ifdef CUDA_SM_LIST
@@ -102,7 +104,11 @@ C2H_TEST("PtxVersion returns a value from __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGE
 {
   int ptx_version = 0;
   REQUIRE(cub::PtxVersion(ptx_version) == cudaSuccess);
-  const auto arch_list = std::vector<int>{CUDA_SM_LIST};
+  auto arch_list = std::vector<int>{CUDA_SM_LIST};
+  for (auto& a : arch_list)
+  {
+    a *= CUDA_SM_LIST_SCALE;
+  }
   REQUIRE(std::find(arch_list.begin(), arch_list.end(), ptx_version) != arch_list.end());
 }
 #endif
@@ -142,11 +148,11 @@ struct policy_hub_all
   using max_policy = policy2000;
 };
 
-// Check that selected is one of arches
+// Check that selected is one of (scaled) arches
 template <int Selected, int... ArchList>
 struct check
 {
-  static_assert(::cuda::std::_Or<::cuda::std::bool_constant<Selected == ArchList>...>::value, "");
+  static_assert(::cuda::std::_Or<::cuda::std::bool_constant<Selected == ArchList * CUDA_SM_LIST_SCALE>...>::value, "");
   using type = cudaError_t;
 };
 
