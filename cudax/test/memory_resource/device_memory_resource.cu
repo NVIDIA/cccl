@@ -487,11 +487,11 @@ TEST_CASE("Async memory resource peer access")
       CUDAX_CHECK(resource.is_accessible_from(cudax::devices[0]));
 
       auto allocate_and_check_access = [&](auto& resource) {
-        auto* ptr1 = resource.allocate_async(sizeof(int), stream);
-        auto* ptr2 = resource.allocate(sizeof(int));
-        auto dims  = cudax::distribute<1>(1);
-        cudax::launch(stream, dims, test::assign_42{}, (int*) ptr1);
-        cudax::launch(stream, dims, test::assign_42{}, (int*) ptr2);
+        auto* ptr1  = resource.allocate_async(sizeof(int), stream);
+        auto* ptr2  = resource.allocate(sizeof(int));
+        auto config = cudax::distribute<1>(1);
+        cudax::launch(stream, config, test::assign_42{}, (int*) ptr1);
+        cudax::launch(stream, config, test::assign_42{}, (int*) ptr2);
         stream.wait();
         resource.deallocate_async(ptr1, sizeof(int), stream);
         resource.deallocate(ptr2, sizeof(int));

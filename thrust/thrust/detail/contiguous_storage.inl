@@ -31,7 +31,8 @@
 #include <thrust/detail/allocator/fill_construct_range.h>
 #include <thrust/detail/allocator/value_initialize_range.h>
 #include <thrust/detail/contiguous_storage.h>
-#include <thrust/detail/swap.h>
+
+#include <cuda/std/utility>
 
 #include <stdexcept> // for std::runtime_error
 #include <utility> // for use of std::swap in the WAR below
@@ -190,16 +191,18 @@ _CCCL_HOST_DEVICE void contiguous_storage<T, Alloc>::deallocate() noexcept
   } // end if
 } // end contiguous_storage::deallocate()
 
+_CCCL_EXEC_CHECK_DISABLE
 template <typename T, typename Alloc>
 _CCCL_HOST_DEVICE void contiguous_storage<T, Alloc>::swap(contiguous_storage& x)
 {
-  thrust::swap(m_begin, x.m_begin);
-  thrust::swap(m_size, x.m_size);
+  using ::cuda::std::swap;
+  swap(m_begin, x.m_begin);
+  swap(m_size, x.m_size);
 
+  // FIXME(bgruber): swap_allocators already swaps m_allocator, so we are swapping twice here !!
   swap_allocators(integral_constant<bool, allocator_traits<Alloc>::propagate_on_container_swap::value>(),
                   x.m_allocator);
-
-  thrust::swap(m_allocator, x.m_allocator);
+  swap(m_allocator, x.m_allocator);
 } // end contiguous_storage::swap()
 
 template <typename T, typename Alloc>
@@ -335,16 +338,19 @@ template <typename T, typename Alloc>
 _CCCL_HOST_DEVICE void contiguous_storage<T, Alloc>::swap_allocators(true_type, const Alloc&)
 {} // end contiguous_storage::swap_allocators()
 
+_CCCL_EXEC_CHECK_DISABLE
 template <typename T, typename Alloc>
 _CCCL_HOST_DEVICE void contiguous_storage<T, Alloc>::swap_allocators(false_type, Alloc& other)
 {
+  // FIXME(bgruber): it is really concerning, that swapping an allocator can throw. swap() should be noexcept in
+  // general.
   NV_IF_TARGET(NV_IS_DEVICE,
                (
                  // allocators must be equal when swapping containers with allocators that propagate on swap
                  assert(!is_allocator_not_equal(other));),
                (if (is_allocator_not_equal(other)) { throw allocator_mismatch_on_swap(); }));
-
-  thrust::swap(m_allocator, other);
+  using ::cuda::std::swap;
+  swap(m_allocator, other);
 } // end contiguous_storage::swap_allocators()
 
 template <typename T, typename Alloc>
@@ -418,11 +424,5 @@ _CCCL_HOST_DEVICE void contiguous_storage<T, Alloc>::propagate_allocator_dispatc
 {} // end contiguous_storage::propagate_allocator()
 
 } // namespace detail
-
-template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE void swap(detail::contiguous_storage<T, Alloc>& lhs, detail::contiguous_storage<T, Alloc>& rhs)
-{
-  lhs.swap(rhs);
-} // end swap()
 
 THRUST_NAMESPACE_END

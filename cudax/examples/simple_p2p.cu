@@ -48,11 +48,11 @@ namespace cudax = cuda::experimental;
 
 struct simple_kernel
 {
-  template <typename Dimensions>
-  __device__ void operator()(Dimensions dims, ::cuda::std::span<const float> src, ::cuda::std::span<float> dst)
+  template <typename Configuration>
+  __device__ void operator()(Configuration config, ::cuda::std::span<const float> src, ::cuda::std::span<float> dst)
   {
     // Just a dummy kernel, doing enough for us to verify that everything worked
-    const auto idx = dims.rank(cudax::thread);
+    const auto idx = config.dims.rank(cudax::thread);
     dst[idx]       = src[idx] * 2.0f;
   }
 };
@@ -131,7 +131,7 @@ void test_cross_device_access_from_kernel(
   dev1_stream.wait(dev0_stream);
 
   // Kernel launch configuration
-  auto dims = cudax::distribute<512>(dev0_buffer.size());
+  auto config = cudax::distribute<512>(dev0_buffer.size());
 
   // Run kernel on GPU 1, reading input from the GPU 0 buffer, writing output to the GPU 1 buffer
   printf("Run kernel on GPU%d, taking source data from GPU%d and writing to "
@@ -139,7 +139,7 @@ void test_cross_device_access_from_kernel(
          dev1.get(),
          dev0.get(),
          dev1.get());
-  cudax::launch(dev1_stream, dims, simple_kernel{}, dev0_buffer, dev1_buffer);
+  cudax::launch(dev1_stream, config, simple_kernel{}, dev0_buffer, dev1_buffer);
   dev0_stream.wait(dev1_stream);
 
   // Run kernel on GPU 0, reading input from the GPU 1 buffer, writing output to the GPU 0 buffer
@@ -148,7 +148,7 @@ void test_cross_device_access_from_kernel(
          dev0.get(),
          dev1.get(),
          dev0.get());
-  cudax::launch(dev0_stream, dims, simple_kernel{}, dev1_buffer, dev0_buffer);
+  cudax::launch(dev0_stream, config, simple_kernel{}, dev1_buffer, dev0_buffer);
 
   // Copy data back to host and verify
   printf("Copy data back to host from GPU%d and verify results...\n", dev0.get());

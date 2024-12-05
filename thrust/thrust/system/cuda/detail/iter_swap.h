@@ -34,6 +34,8 @@
 #  include <thrust/swap.h>
 #  include <thrust/system/cuda/detail/execution_policy.h>
 
+#  include <cuda/std/utility>
+
 #  include <nv/target>
 
 THRUST_NAMESPACE_BEGIN
@@ -53,7 +55,7 @@ inline _CCCL_HOST_DEVICE void iter_swap(thrust::cuda::execution_policy<DerivedPo
 
     _CCCL_DEVICE inline static void device_path(Pointer1 a, Pointer2 b)
     {
-      using thrust::swap;
+      using ::cuda::std::swap;
       swap(*thrust::raw_pointer_cast(a), *thrust::raw_pointer_cast(b));
     }
   };
