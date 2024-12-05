@@ -650,7 +650,7 @@ public:
     using Fun_no_ref = ::std::remove_reference_t<Fun>;
 
     static const auto conf = [] {
-      int minGridSize, blockSize;
+      int minGridSize = 0, blockSize = 0;
       // We are using int instead of size_t because CUDA API uses int for occupancy calculations
       cuda_safe_call(cudaOccupancyMaxPotentialBlockSizeVariableSMem(
         &minGridSize,
@@ -704,7 +704,7 @@ public:
           static_cast<int>(n), sub_shape, mv(f), arg_instances, d_redux_buffer);
 
       static const auto conf_finalize = [] {
-        int minGridSize, blockSize;
+        int minGridSize = 0, blockSize = 0;
         // We are using int instead of size_t because CUDA API uses int for occupancy calculations
         cuda_safe_call(cudaOccupancyMaxPotentialBlockSizeVariableSMem(
           &minGridSize, &blockSize, reserved::loop_redux_finalize<deps_tup_t, ops_t>, block_to_shared_mem));
