@@ -161,30 +161,30 @@ def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, sta
 
     if input_generator.startswith("raw_pointer_"):
         rng = random.Random(0)
-        l_input = [rng.randrange(100) for _ in range(num_items)]
+        l_varr = [rng.randrange(100) for _ in range(num_items)]
         dtype_inp, ntype_inp = dtype_ntype(-1)
         dtype_out = dtype_inp
-        raw_pointer_devarr = numba.cuda.to_device(numpy.array(l_input, dtype=dtype_inp))
+        raw_pointer_devarr = numba.cuda.to_device(numpy.array(l_varr, dtype=dtype_inp))
         i_input = _iterators.pointer(raw_pointer_devarr, ntype=ntype_inp)
     elif input_generator.startswith("streamed_input_"):
         rng = random.Random(0)
-        l_input = [rng.randrange(100) for _ in range(num_items)]
+        l_varr = [rng.randrange(100) for _ in range(num_items)]
         dtype_inp, ntype_inp = dtype_ntype(-1)
         dtype_out = dtype_inp
-        streamed_input_devarr = numba.cuda.to_device(numpy.array(l_input, dtype=dtype_inp))
+        streamed_input_devarr = numba.cuda.to_device(numpy.array(l_varr, dtype=dtype_inp))
         i_input = iterators.cache_load_modifier(streamed_input_devarr, ntype=ntype_inp, modifier='stream')
     elif input_generator.startswith("constant_"):
-        l_input = [42 for distance in range(num_items)]
+        l_varr = [42 for distance in range(num_items)]
         dtype_inp, ntype_inp = dtype_ntype(-1)
         dtype_out = dtype_inp
         i_input = iterators.repeat(42, ntype=ntype_inp)
     elif input_generator.startswith("counting_"):
-        l_input = [start_sum_with + distance for distance in range(num_items)]
+        l_varr = [start_sum_with + distance for distance in range(num_items)]
         dtype_inp, ntype_inp = dtype_ntype(-1)
         dtype_out = dtype_inp
         i_input = iterators.count(start_sum_with, ntype=ntype_inp)
     elif input_generator.startswith("map_mul2_count_"):
-        l_input = [2 * (start_sum_with + distance) for distance in range(num_items)]
+        l_varr = [2 * (start_sum_with + distance) for distance in range(num_items)]
         dtype_inp, ntype_inp = dtype_ntype(-1)
         dtype_out, ntype_out = dtype_ntype(-2)
         i_input = iterators.map(
@@ -194,7 +194,7 @@ def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, sta
     elif re.match(r"map_mul\d_map_mul\d_count_", input_generator):
         fac_out = int(input_generator[7])
         fac_mid = int(input_generator[16])
-        l_input = [fac_out * (fac_mid * (start_sum_with + distance)) for distance in range(num_items)]
+        l_varr = [fac_out * (fac_mid * (start_sum_with + distance)) for distance in range(num_items)]
         dtype_inp, ntype_inp = dtype_ntype(-1)
         dtype_mid, ntype_mid = dtype_ntype(-2)
         dtype_out, ntype_out = dtype_ntype(-3)
@@ -213,16 +213,16 @@ def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, sta
         l_d_in = [rng.randrange(100) for _ in range(num_items)]
         a_d_in = cp.array(l_d_in, dtype_inp)
         i_input = iterators.map(mul2, a_d_in, ntype_out)
-        l_input = [mul2(v) for v in l_d_in]
+        l_varr = [mul2(v) for v in l_d_in]
     else:
         raise RuntimeError("Unexpected input_generator")
 
     expected_result = start_sum_with
-    for v in l_input:
+    for v in l_varr:
         expected_result = add_op(expected_result, v)
 
     if use_numpy_array:
-        h_input = numpy.array(l_input, dtype_inp)
+        h_input = numpy.array(l_varr, dtype_inp)
         d_input = numba.cuda.to_device(h_input)
     else:
         d_input = i_input
