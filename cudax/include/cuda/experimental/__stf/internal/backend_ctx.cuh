@@ -1114,28 +1114,28 @@ public:
    * parallel_for : apply an operation over a shaped index space
    */
   template <typename S, typename... Deps>
-  auto parallel_for(exec_place e_place, S shape, task_dep_op<Deps>... deps)
+  auto parallel_for(exec_place e_place, S shape, Deps... deps)
   {
-    return reserved::parallel_for_scope<Engine, S, null_partition, task_dep_op<Deps>...>(self(), mv(e_place), mv(shape), mv(deps)...);
+    return reserved::parallel_for_scope<Engine, S, null_partition, Deps...>(self(), mv(e_place), mv(shape), mv(deps)...);
   }
 
   template <typename partitioner_t, typename S, typename... Deps>
-  auto parallel_for(partitioner_t, exec_place e_place, S shape, task_dep_op<Deps>... deps)
+  auto parallel_for(partitioner_t, exec_place e_place, S shape, Deps... deps)
   {
-    return reserved::parallel_for_scope<Engine, S, partitioner_t, task_dep_op<Deps>...>(self(), mv(e_place), mv(shape), mv(deps)...);
+    return reserved::parallel_for_scope<Engine, S, partitioner_t, Deps...>(self(), mv(e_place), mv(shape), mv(deps)...);
   }
 
   template <typename S, typename... Deps>
-  auto parallel_for(exec_place_grid e_place, S shape, task_dep_op<Deps>... deps) = delete;
+  auto parallel_for(exec_place_grid e_place, S shape, Deps... deps) = delete;
 
   template <typename partitioner_t, typename S, typename... Deps>
-  auto parallel_for(partitioner_t p, exec_place_grid e_place, S shape, task_dep_op<Deps>... deps)
+  auto parallel_for(partitioner_t p, exec_place_grid e_place, S shape, Deps... deps)
   {
     return parallel_for(mv(p), exec_place(mv(e_place)), mv(shape), mv(deps)...);
   }
 
   template <typename S, typename... Deps>
-  auto parallel_for(S shape, task_dep_op<Deps>... deps)
+  auto parallel_for(S shape, Deps... deps)
   {
     return parallel_for(self().default_exec_place(), mv(shape), mv(deps)...);
   }
