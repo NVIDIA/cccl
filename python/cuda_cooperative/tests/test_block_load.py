@@ -9,23 +9,36 @@ from helpers import random_int, NUMBA_TYPES_TO_NP
 import pytest
 from numba import cuda, types
 import numba
+
 patch.patch_numba_linker(lto=True)
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 
-@pytest.mark.parametrize('T', [types.int8, types.int16, types.uint32, types.uint64])
-@pytest.mark.parametrize('threads_in_block', [32, 128, 256])
-@pytest.mark.parametrize('items_per_thread', [1, 3])
-@pytest.mark.parametrize('algorithm', ['direct', 'striped', 'vectorize', 'transpose', 'warp_transpose', 'warp_transpose_timesliced'])
+@pytest.mark.parametrize("T", [types.int8, types.int16, types.uint32, types.uint64])
+@pytest.mark.parametrize("threads_in_block", [32, 128, 256])
+@pytest.mark.parametrize("items_per_thread", [1, 3])
+@pytest.mark.parametrize(
+    "algorithm",
+    [
+        "direct",
+        "striped",
+        "vectorize",
+        "transpose",
+        "warp_transpose",
+        "warp_transpose_timesliced",
+    ],
+)
 def test_block_load(T, threads_in_block, items_per_thread, algorithm):
     block_load = cudax.block.load(T, threads_in_block, items_per_thread, algorithm)
     temp_storage_bytes = block_load.temp_storage_bytes
 
-    if algorithm == 'striped':
+    if algorithm == "striped":
+
         @cuda.jit(device=True)
         def output_index(i):
             return cuda.threadIdx.x + threads_in_block * i
     else:
+
         @cuda.jit(device=True)
         def output_index(i):
             return cuda.threadIdx.x * items_per_thread + i
@@ -33,7 +46,7 @@ def test_block_load(T, threads_in_block, items_per_thread, algorithm):
     @cuda.jit(link=block_load.files)
     def kernel(d_input, d_output):
         tid = cuda.threadIdx.x
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype='uint8')
+        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
         thread_data = cuda.local.array(shape=items_per_thread, dtype=dtype)
         block_load(temp_storage, d_input, thread_data)
         for i in range(items_per_thread):
@@ -55,5 +68,5 @@ def test_block_load(T, threads_in_block, items_per_thread, algorithm):
     sig = (T[::1], T[::1])
     sass = kernel.inspect_sass(sig)
 
-    assert 'LDL' not in sass
-    assert 'STL' not in sass
+    assert "LDL" not in sass
+    assert "STL" not in sass
