@@ -35,8 +35,8 @@
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/sequence.h>
 
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -72,7 +72,7 @@ public:
   }
 };
 
-CUB_TEST("Device for each works", "[for_copy][device]")
+C2H_TEST("Device for each works", "[for_copy][device]")
 {
   constexpr int max_items = 5000000;
   constexpr int min_items = 1;
@@ -100,7 +100,7 @@ CUB_TEST("Device for each works", "[for_copy][device]")
   REQUIRE(num_of_once_marked_items == num_items);
 }
 
-CUB_TEST("Device for each works with unaligned vectors", "[for_copy][device]")
+C2H_TEST("Device for each works with unaligned vectors", "[for_copy][device]")
 {
   constexpr int max_items = 5000000;
   constexpr int min_items = 1;
@@ -129,7 +129,7 @@ CUB_TEST("Device for each works with unaligned vectors", "[for_copy][device]")
   REQUIRE(num_of_once_marked_items == num_items);
 }
 
-CUB_TEST("Device for each n works", "[for_copy][device]", offset_type)
+C2H_TEST("Device for each n works", "[for_copy][device]", offset_type)
 {
   using offset_t = c2h::get<0, TestType>;
 
@@ -157,7 +157,7 @@ CUB_TEST("Device for each n works", "[for_copy][device]", offset_type)
   REQUIRE(num_of_once_marked_items == num_items);
 }
 
-CUB_TEST("Device for each n works with unaligned vectors", "[for_copy][device]", offset_type)
+C2H_TEST("Device for each n works with unaligned vectors", "[for_copy][device]", offset_type)
 {
   using offset_t = c2h::get<0, TestType>;
 
@@ -188,7 +188,7 @@ CUB_TEST("Device for each n works with unaligned vectors", "[for_copy][device]",
   REQUIRE(num_of_once_marked_items == num_items);
 }
 
-CUB_TEST("Device for each works with couting iterator", "[for][device]")
+C2H_TEST("Device for each works with couting iterator", "[for][device]")
 {
   using offset_t               = int;
   constexpr offset_t max_items = 5000000;

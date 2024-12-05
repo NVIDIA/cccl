@@ -30,7 +30,7 @@ void TestScanSimple()
   // The issue doesn't happen with opts disabled, or on other compilers.
   // Printing the intermediate sum each iteration "fixes" the issue,
   // so likely a bad optimization.
-#if defined(_CCCL_COMPILER_ICC)
+#if _CCCL_COMPILER(ICC)
   if (std::is_same<T, custom_numeric>::value)
   {
     return;
@@ -617,8 +617,10 @@ void TestInclusiveScanWithBigIndexes()
 {
   TestInclusiveScanWithBigIndexesHelper(30);
   TestInclusiveScanWithBigIndexesHelper(31);
+#ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
   TestInclusiveScanWithBigIndexesHelper(32);
   TestInclusiveScanWithBigIndexesHelper(33);
+#endif
 }
 
 DECLARE_UNITTEST(TestInclusiveScanWithBigIndexes);
@@ -646,8 +648,10 @@ void TestExclusiveScanWithBigIndexes()
 {
   TestExclusiveScanWithBigIndexesHelper(30);
   TestExclusiveScanWithBigIndexesHelper(31);
+#ifndef THRUST_FORCE_32_BIT_OFFSET_TYPE
   TestExclusiveScanWithBigIndexesHelper(32);
   TestExclusiveScanWithBigIndexesHelper(33);
+#endif
 }
 
 DECLARE_UNITTEST(TestExclusiveScanWithBigIndexes);

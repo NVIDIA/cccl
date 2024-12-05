@@ -269,6 +269,8 @@ def get_job_type_info(job):
         result['name'] = job.capitalize()
     if not 'gpu' in result:
         result['gpu'] = False
+    if not 'cuda_ext' in result:
+        result['cuda_ext'] = False
     if not 'needs' in result:
         result['needs'] = None
     if not 'invoke' in result:
@@ -344,6 +346,11 @@ def is_windows(matrix_job):
     return host_compiler['container_tag'] == 'cl'
 
 
+def is_nvhpc(matrix_job):
+    host_compiler = get_host_compiler(matrix_job['cxx'])
+    return host_compiler['container_tag'] == "nvhpc"
+
+
 def generate_dispatch_group_name(matrix_job):
     project = get_project(matrix_job['project'])
     ctk = matrix_job['ctk']
@@ -408,10 +415,16 @@ def generate_dispatch_job_image(matrix_job, job_type):
     ctk = matrix_job['ctk']
     host_compiler = generate_dispatch_job_host_compiler(matrix_job, job_type)
 
-    if is_windows(matrix_job):
-        return f"rapidsai/devcontainers:{devcontainer_version}-cuda{ctk}-{host_compiler}"
+    job_info = get_job_type_info(job_type)
+    ctk_suffix = "ext" if job_info['cuda_ext'] else ""
 
-    return f"rapidsai/devcontainers:{devcontainer_version}-cpp-{host_compiler}-cuda{ctk}"
+    if is_windows(matrix_job):
+        return f"rapidsai/devcontainers:{devcontainer_version}-cuda{ctk}{ctk_suffix}-{host_compiler}"
+
+    if is_nvhpc(matrix_job):
+        return f"rapidsai/devcontainers:{devcontainer_version}-cpp-{host_compiler}"
+
+    return f"rapidsai/devcontainers:{devcontainer_version}-cpp-{host_compiler}-cuda{ctk}{ctk_suffix}"
 
 
 def generate_dispatch_job_command(matrix_job, job_type):
@@ -702,7 +715,7 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
 
     # Natural sort impl (handles embedded numbers in strings, case insensitive)
     def natural_sort_key(key):
-        return [(int(text) if text.isdigit() else text.lower()) for text in re.split('(\d+)', key)]
+        return [(int(text) if text.isdigit() else text.lower()) for text in re.split('(\\d+)', key)]
 
     # Sort the dispatch groups by name:
     workflow_dispatch_groups = dict(sorted(workflow_dispatch_groups.items(), key=lambda x: natural_sort_key(x[0])))
@@ -1080,8 +1093,18 @@ def print_devcontainer_info(args):
     for workflow_name in workflow_names:
         matrix_jobs.extend(parse_workflow_matrix_jobs(args, workflow_name))
 
+    # Check if the extended cuda images are needed:
+    for matrix_job in matrix_jobs:
+        cuda_ext = False
+        for job in matrix_job['jobs']:
+            job_info = get_job_type_info(job)
+            if job_info['cuda_ext']:
+                cuda_ext = True
+                break
+        matrix_job['cuda_ext'] = cuda_ext
+
     # Remove all but the following keys from the matrix jobs:
-    keep_keys = ['ctk', 'cxx']
+    keep_keys = ['ctk', 'cxx', 'cuda_ext']
     combinations = [{key: job[key] for key in keep_keys} for job in matrix_jobs]
 
     # Remove duplicates and filter out windows jobs:

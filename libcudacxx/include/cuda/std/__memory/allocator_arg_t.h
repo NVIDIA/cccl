@@ -35,14 +35,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT allocator_arg_t
   _CCCL_HIDE_FROM_ABI explicit allocator_arg_t() = default;
 };
 
-_LIBCUDACXX_INLINE_VAR constexpr allocator_arg_t allocator_arg = allocator_arg_t();
+_CCCL_INLINE_VAR constexpr allocator_arg_t allocator_arg = allocator_arg_t();
 
 // allocator construction
 
 template <class _Tp, class _Alloc, class... _Args>
 struct __uses_alloc_ctor_imp
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE __remove_cvref_t<_Alloc> _RawAlloc;
+  typedef _CCCL_NODEBUG_ALIAS remove_cvref_t<_Alloc> _RawAlloc;
   static const bool __ua = uses_allocator<_Tp, _RawAlloc>::value;
   static const bool __ic = is_constructible<_Tp, allocator_arg_t, _Alloc, _Args...>::value;
   static const int value = __ua ? 2 - __ic : 0;

@@ -9,9 +9,9 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
-#include "catch2_test_helper.h"
+#include <c2h/catch2_test_helper.h>
 
-CUB_TEST("DeviceMerge::MergeKeys API example", "[merge][device]")
+C2H_TEST("DeviceMerge::MergeKeys API example", "[merge][device]")
 {
   // example-begin merge-keys
   thrust::device_vector<int> keys1{0, 2, 5};
@@ -47,7 +47,7 @@ CUB_TEST("DeviceMerge::MergeKeys API example", "[merge][device]")
   CHECK(result == expected);
 }
 
-CUB_TEST("DeviceMerge::MergePairs API example", "[merge][device]")
+C2H_TEST("DeviceMerge::MergePairs API example", "[merge][device]")
 {
   // example-begin merge-pairs
   thrust::device_vector<int> keys1{0, 2, 5};

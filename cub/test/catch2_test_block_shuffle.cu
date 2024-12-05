@@ -38,7 +38,7 @@
 
 #include <algorithm>
 
-#include "catch2_test_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 template <int BlockDimX, int BlockDimY, int BlockDimZ, int ItemsPerThread, class T, class ActionT>
 __global__ void block_shuffle_kernel(T* data, ActionT action)
@@ -205,13 +205,13 @@ struct params_t
   static constexpr int tile_size        = items_per_thread * threads_in_block;
 };
 
-CUB_TEST("Block shuffle offset works", "[shuffle][block]", types, single_item_per_thread, block_dim_x, block_dim_yz)
+C2H_TEST("Block shuffle offset works", "[shuffle][block]", types, single_item_per_thread, block_dim_x, block_dim_yz)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
 
   c2h::device_vector<type> d_data(params::tile_size);
-  c2h::gen(CUB_SEED(10), d_data);
+  c2h::gen(C2H_SEED(10), d_data);
 
   const int distance = GENERATE_COPY(take(4, random(1 - params::tile_size, params::tile_size - 1)));
 
@@ -230,13 +230,13 @@ CUB_TEST("Block shuffle offset works", "[shuffle][block]", types, single_item_pe
   REQUIRE(h_ref == d_data);
 }
 
-CUB_TEST("Block shuffle rotate works", "[shuffle][block]", types, single_item_per_thread, block_dim_x, block_dim_yz)
+C2H_TEST("Block shuffle rotate works", "[shuffle][block]", types, single_item_per_thread, block_dim_x, block_dim_yz)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
 
   c2h::device_vector<type> d_data(params::tile_size);
-  c2h::gen(CUB_SEED(10), d_data);
+  c2h::gen(C2H_SEED(10), d_data);
 
   c2h::device_vector<type> d_ref = d_data;
 
@@ -251,13 +251,13 @@ CUB_TEST("Block shuffle rotate works", "[shuffle][block]", types, single_item_pe
   REQUIRE(h_ref == d_data);
 }
 
-CUB_TEST("Block shuffle up works", "[shuffle][block]", types, items_per_thread, block_dim_x, block_dim_yz)
+C2H_TEST("Block shuffle up works", "[shuffle][block]", types, items_per_thread, block_dim_x, block_dim_yz)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
 
   c2h::device_vector<type> d_data(params::tile_size);
-  c2h::gen(CUB_SEED(10), d_data);
+  c2h::gen(C2H_SEED(10), d_data);
 
   c2h::device_vector<type> d_ref(params::tile_size);
   thrust::copy(d_data.begin(), d_data.end() - 1, d_ref.begin() + 1);
@@ -269,7 +269,7 @@ CUB_TEST("Block shuffle up works", "[shuffle][block]", types, items_per_thread, 
   REQUIRE(d_ref == d_data);
 }
 
-CUB_TEST("Block shuffle up works when suffix is required",
+C2H_TEST("Block shuffle up works when suffix is required",
          "[shuffle][block]",
          types,
          items_per_thread,
@@ -280,7 +280,7 @@ CUB_TEST("Block shuffle up works when suffix is required",
   using type   = typename params::type;
 
   c2h::device_vector<type> d_data(params::tile_size);
-  c2h::gen(CUB_SEED(10), d_data);
+  c2h::gen(C2H_SEED(10), d_data);
 
   const int target_thread_id = GENERATE_COPY(take(2, random(0, params::threads_in_block - 1)));
 
@@ -299,13 +299,13 @@ CUB_TEST("Block shuffle up works when suffix is required",
   REQUIRE(d_suffix_ref == d_suffix);
 }
 
-CUB_TEST("Block shuffle down works", "[shuffle][block]", types, items_per_thread, block_dim_x, block_dim_yz)
+C2H_TEST("Block shuffle down works", "[shuffle][block]", types, items_per_thread, block_dim_x, block_dim_yz)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
 
   c2h::device_vector<type> d_data(params::tile_size);
-  c2h::gen(CUB_SEED(10), d_data);
+  c2h::gen(C2H_SEED(10), d_data);
 
   c2h::device_vector<type> d_ref(params::tile_size);
   thrust::copy(d_data.begin() + 1, d_data.end(), d_ref.begin());
@@ -317,7 +317,7 @@ CUB_TEST("Block shuffle down works", "[shuffle][block]", types, items_per_thread
   REQUIRE(d_ref == d_data);
 }
 
-CUB_TEST("Block shuffle down works when prefix is required",
+C2H_TEST("Block shuffle down works when prefix is required",
          "[shuffle][block]",
          types,
          items_per_thread,
@@ -328,7 +328,7 @@ CUB_TEST("Block shuffle down works when prefix is required",
   using type   = typename params::type;
 
   c2h::device_vector<type> d_data(params::tile_size);
-  c2h::gen(CUB_SEED(10), d_data);
+  c2h::gen(C2H_SEED(10), d_data);
 
   const int target_thread_id = GENERATE_COPY(take(2, random(0, params::threads_in_block - 1)));
 

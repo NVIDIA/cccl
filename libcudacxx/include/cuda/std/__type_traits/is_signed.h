@@ -34,37 +34,37 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_signed : public integral_constant<bool, _CCCL_BUILTIN_IS_SIGNED(_Tp)>
 {};
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_signed_v = _CCCL_BUILTIN_IS_SIGNED(_Tp);
-#  endif
+_CCCL_INLINE_VAR constexpr bool is_signed_v = _CCCL_BUILTIN_IS_SIGNED(_Tp);
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #else
 
 template <class _Tp, bool = is_integral<_Tp>::value>
-struct __libcpp_is_signed_impl : public bool_constant<(_Tp(-1) < _Tp(0))>
+struct __cccl_is_signed_impl : public bool_constant<(_Tp(-1) < _Tp(0))>
 {};
 
 template <class _Tp>
-struct __libcpp_is_signed_impl<_Tp, false> : public true_type
+struct __cccl_is_signed_impl<_Tp, false> : public true_type
 {}; // floating point
 
 template <class _Tp, bool = is_arithmetic<_Tp>::value>
-struct __libcpp_is_signed : public __libcpp_is_signed_impl<_Tp>
+struct __cccl_is_signed : public __cccl_is_signed_impl<_Tp>
 {};
 
 template <class _Tp>
-struct __libcpp_is_signed<_Tp, false> : public false_type
+struct __cccl_is_signed<_Tp, false> : public false_type
 {};
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_signed : public __libcpp_is_signed<_Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_signed : public __cccl_is_signed<_Tp>
 {};
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_signed_v = is_signed<_Tp>::value;
-#  endif
+_CCCL_INLINE_VAR constexpr bool is_signed_v = is_signed<_Tp>::value;
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #endif // defined(_CCCL_BUILTIN_IS_SIGNED) && !defined(_LIBCUDACXX_USE_IS_SIGNED_FALLBACK)
 

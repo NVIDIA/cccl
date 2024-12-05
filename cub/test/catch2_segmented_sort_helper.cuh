@@ -42,30 +42,16 @@
 #include <cuda/std/limits>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #include <cstdio>
 
-#include <c2h/cpu_timer.cuh>
-#include <c2h/utility.cuh>
-#include <catch2_test_helper.h>
+#include <c2h/catch2_test_helper.h>
+#include <c2h/cpu_timer.h>
+#include <c2h/extended_types.h>
+#include <c2h/utility.h>
 #include <catch2_test_launch_helper.h>
 #include <nv/target>
-
-#define TEST_HALF_T _CCCL_HAS_NVFP16
-
-#define TEST_BF_T _CCCL_HAS_NVBF16
-
-#if TEST_HALF_T
-#  include <cuda_fp16.h>
-
-#  include <half.h>
-#endif
-
-#if TEST_BF_T
-#  include <cuda_bf16.h>
-
-#  include <bfloat16.h>
-#endif
 
 #define MAKE_SEED_MOD_FUNCTION(name, xor_mask)                  \
   inline c2h::seed_t make_##name##_seed(const c2h::seed_t seed) \
@@ -305,7 +291,7 @@ private:
           {
             if (current_value == d_values[probe_unchecked_idx])
             {
-              using thrust::swap;
+              using ::cuda::std::swap;
               swap(d_values[probe_unchecked_idx], d_values[unchecked_values_for_current_dup_key_begin]);
               unchecked_values_for_current_dup_key_begin++;
               break;
@@ -535,7 +521,7 @@ struct unstable_segmented_value_checker
           if (current_value == test_values[probe_unchecked_idx])
           {
             // Swap the found value out of the unchecked region to reduce the search space in future iterations:
-            using thrust::swap;
+            using ::cuda::std::swap;
             swap(test_values[probe_unchecked_idx], test_values[unchecked_values_for_current_dup_key_begin]);
             unchecked_values_for_current_dup_key_begin++;
             break;

@@ -38,8 +38,8 @@
 #include <limits>
 #include <numeric>
 
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceRunLengthEncode::Encode, run_length_encode);
 
@@ -57,7 +57,7 @@ using types = c2h::type_list<std::uint32_t, std::int8_t>;
 
 #if 0 // DeviceRunLengthEncode::Encode cannot handle empty inputs
       // https://github.com/NVIDIA/cccl/issues/426
-CUB_TEST("DeviceRunLengthEncode::Encode can handle empty input", "[device][run_length_encode]")
+C2H_TEST("DeviceRunLengthEncode::Encode can handle empty input", "[device][run_length_encode]")
 {
   constexpr int num_items = 0;
   c2h::device_vector<int> in(num_items);
@@ -74,7 +74,7 @@ CUB_TEST("DeviceRunLengthEncode::Encode can handle empty input", "[device][run_l
 }
 #endif
 
-CUB_TEST("DeviceRunLengthEncode::Encode can handle a single element", "[device][run_length_encode]")
+C2H_TEST("DeviceRunLengthEncode::Encode can handle a single element", "[device][run_length_encode]")
 {
   constexpr int num_items = 1;
   c2h::device_vector<int> in(num_items, 42);
@@ -89,7 +89,7 @@ CUB_TEST("DeviceRunLengthEncode::Encode can handle a single element", "[device][
   REQUIRE(out_num_runs.front() == num_items);
 }
 
-CUB_TEST("DeviceRunLengthEncode::Encode can handle different counting types", "[device][run_length_encode]")
+C2H_TEST("DeviceRunLengthEncode::Encode can handle different counting types", "[device][run_length_encode]")
 {
   constexpr int num_items = 1;
   c2h::device_vector<int> in(num_items, 42);
@@ -104,7 +104,7 @@ CUB_TEST("DeviceRunLengthEncode::Encode can handle different counting types", "[
   REQUIRE(out_num_runs.front() == static_cast<std::int16_t>(num_items));
 }
 
-CUB_TEST("DeviceRunLengthEncode::Encode can handle all unique", "[device][run_length_encode]", types)
+C2H_TEST("DeviceRunLengthEncode::Encode can handle all unique", "[device][run_length_encode]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -127,7 +127,7 @@ CUB_TEST("DeviceRunLengthEncode::Encode can handle all unique", "[device][run_le
   REQUIRE(out_num_runs == reference_num_runs);
 }
 
-CUB_TEST("DeviceRunLengthEncode::Encode can handle all equal", "[device][run_length_encode]", types)
+C2H_TEST("DeviceRunLengthEncode::Encode can handle all equal", "[device][run_length_encode]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -148,7 +148,7 @@ CUB_TEST("DeviceRunLengthEncode::Encode can handle all equal", "[device][run_len
   REQUIRE(out_num_runs == reference_num_runs);
 }
 
-CUB_TEST("DeviceRunLengthEncode::Encode can handle iterators", "[device][run_length_encode]", all_types)
+C2H_TEST("DeviceRunLengthEncode::Encode can handle iterators", "[device][run_length_encode]", all_types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -157,7 +157,7 @@ CUB_TEST("DeviceRunLengthEncode::Encode can handle iterators", "[device][run_len
   c2h::device_vector<type> out_unique(num_items);
   c2h::device_vector<int> out_counts(num_items);
   c2h::device_vector<int> out_num_runs(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   run_length_encode(in.begin(), out_unique.begin(), out_counts.begin(), out_num_runs.begin(), num_items);
 
@@ -170,7 +170,7 @@ CUB_TEST("DeviceRunLengthEncode::Encode can handle iterators", "[device][run_len
   REQUIRE(out_unique == reference_out);
 }
 
-CUB_TEST("DeviceRunLengthEncode::Encode can handle pointers", "[device][run_length_encode]", types)
+C2H_TEST("DeviceRunLengthEncode::Encode can handle pointers", "[device][run_length_encode]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -179,7 +179,7 @@ CUB_TEST("DeviceRunLengthEncode::Encode can handle pointers", "[device][run_leng
   c2h::device_vector<type> out_unique(num_items);
   c2h::device_vector<int> out_counts(num_items);
   c2h::device_vector<int> out_num_runs(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   run_length_encode(
     thrust::raw_pointer_cast(in.data()),
@@ -211,7 +211,7 @@ struct convertible_from_T {
   __host__ __device__ operator T() const noexcept { return val_; }
 };
 
-CUB_TEST("DeviceRunLengthEncode::Encode works with a different output type", "[device][run_length_encode]")
+C2H_TEST("DeviceRunLengthEncode::Encode works with a different output type", "[device][run_length_encode]")
 {
   using type = c2h::custom_type_t<c2h::equal_comparable_t>;
 
@@ -220,7 +220,7 @@ CUB_TEST("DeviceRunLengthEncode::Encode works with a different output type", "[d
   c2h::device_vector<convertible_from_T<type>> out_unique(num_items);
   c2h::device_vector<int>  out_counts(num_items);
   c2h::device_vector<int>  out_num_runs(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   run_length_encode(in.begin(),
                     out_unique.begin(),
@@ -237,7 +237,7 @@ CUB_TEST("DeviceRunLengthEncode::Encode works with a different output type", "[d
 }
 #endif // https://github.com/NVIDIA/cccl/issues/400
 
-CUB_TEST("DeviceRunLengthEncode::Encode can handle leading NaN", "[device][run_length_encode]")
+C2H_TEST("DeviceRunLengthEncode::Encode can handle leading NaN", "[device][run_length_encode]")
 {
   using type = double;
 

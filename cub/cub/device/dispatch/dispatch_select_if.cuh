@@ -237,13 +237,6 @@ struct agent_select_if_wrapper_t
 /******************************************************************************
  * Kernel entry points
  *****************************************************************************/
-// TODO (elstehle) gird-private constants were introduced in CTK 11.7. The macro is temporarily placed here, do we want
-// to make this a CCCL macro?
-#if defined(_CCCL_CUDACC_BELOW_11_7) || (CUB_PTX_ARCH < 700)
-#  define _CUB_GRID_CONSTANT
-#else
-#  define _CUB_GRID_CONSTANT __grid_constant__
-#endif
 
 /**
  * Select kernel entry point (multi-block)
@@ -356,7 +349,7 @@ __launch_bounds__(int(
     EqualityOpT equality_op,
     OffsetT num_items,
     int num_tiles,
-    _CUB_GRID_CONSTANT const StreamingContextT streaming_context,
+    _CCCL_GRID_CONSTANT const StreamingContextT streaming_context,
     cub::detail::vsmem_t vsmem)
 {
   using VsmemHelperT = cub::detail::vsmem_helper_default_fallback_policy_t<
@@ -852,7 +845,7 @@ struct DispatchSelectIf : SelectedPolicy
     return CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
@@ -881,7 +874,7 @@ struct DispatchSelectIf : SelectedPolicy
       num_items,
       stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

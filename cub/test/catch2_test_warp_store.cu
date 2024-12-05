@@ -28,8 +28,8 @@
 #include <cub/iterator/cache_modified_output_iterator.cuh>
 #include <cub/warp/warp_store.cuh>
 
-#include "catch2_test_helper.h"
-#include "fill_striped.cuh"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/fill_striped.h>
 
 template <cub::WarpStoreAlgorithm StoreAlgorithm,
           int LOGICAL_WARP_THREADS,
@@ -192,7 +192,7 @@ struct params_t
   static constexpr int total_item_count              = total_warps * tile_size;
 };
 
-CUB_TEST("Warp store guarded range works with pointer",
+C2H_TEST("Warp store guarded range works with pointer",
          "[store][warp]",
          types,
          logical_warp_threads,
@@ -213,7 +213,7 @@ CUB_TEST("Warp store guarded range works with pointer",
   REQUIRE(d_expected_output == d_out);
 }
 
-CUB_TEST("Warp store guarded range works with cache modified iterator",
+C2H_TEST("Warp store guarded range works with cache modified iterator",
          "[store][warp]",
          types,
          logical_warp_threads,
@@ -236,7 +236,7 @@ CUB_TEST("Warp store guarded range works with cache modified iterator",
   REQUIRE(d_expected_output == d_out);
 }
 
-CUB_TEST("Warp store unguarded range works with pointer",
+C2H_TEST("Warp store unguarded range works with pointer",
          "[store][warp]",
          types,
          logical_warp_threads,
@@ -257,7 +257,7 @@ CUB_TEST("Warp store unguarded range works with pointer",
   REQUIRE(d_expected_output == d_out);
 }
 
-CUB_TEST("Warp store unguarded range works with cache modified iterator",
+C2H_TEST("Warp store unguarded range works with cache modified iterator",
          "[store][warp]",
          types,
          logical_warp_threads,

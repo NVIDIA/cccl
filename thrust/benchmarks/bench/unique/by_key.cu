@@ -42,13 +42,14 @@ static void basic(nvbench::state& state, nvbench::type_list<KeyT, ValueT>)
   thrust::device_vector<KeyT> in_keys = generate.uniform.key_segments(elements, min_segment_size, max_segment_size);
   thrust::device_vector<KeyT> out_keys(elements);
   thrust::device_vector<ValueT> in_vals(elements);
+  thrust::device_vector<ValueT> out_vals(elements);
 
   caching_allocator_t alloc;
-  const std::size_t unique_elements = thrust::distance(
-    out_keys.begin(), thrust::unique_copy(policy(alloc), in_keys.cbegin(), in_keys.cend(), out_keys.begin()));
+  // not a warm-up run, we need to run once to determine the size of the output
+  const auto [new_key_end, new_val_end] = thrust::unique_by_key_copy(
+    policy(alloc), in_keys.cbegin(), in_keys.cend(), in_vals.cbegin(), out_keys.begin(), out_vals.begin());
 
-  thrust::device_vector<ValueT> out_vals(unique_elements);
-
+  const std::size_t unique_elements = thrust::distance(out_keys.begin(), new_key_end);
   state.add_element_count(elements);
   state.add_global_memory_reads<KeyT>(elements);
   state.add_global_memory_writes<KeyT>(unique_elements);

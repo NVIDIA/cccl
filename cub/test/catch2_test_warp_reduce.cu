@@ -34,8 +34,8 @@
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 
-#include "c2h/custom_type.cuh"
-#include "catch2_test_helper.h"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/custom_type.h>
 
 template <int LOGICAL_WARP_THREADS, int TOTAL_WARPS, typename T, typename ActionT>
 __global__ void warp_reduce_kernel(T* in, T* out, ActionT action)
@@ -337,7 +337,7 @@ struct params_t
   static constexpr int tile_size            = total_warps * logical_warp_threads;
 };
 
-CUB_TEST("Warp sum works", "[reduce][warp]", full_type_list, logical_warp_threads)
+C2H_TEST("Warp sum works", "[reduce][warp]", full_type_list, logical_warp_threads)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -346,7 +346,7 @@ CUB_TEST("Warp sum works", "[reduce][warp]", full_type_list, logical_warp_thread
   c2h::device_vector<type> d_in(params::tile_size);
   c2h::device_vector<type> d_out(params::tile_size);
   constexpr auto valid_items = params::logical_warp_threads;
-  c2h::gen(CUB_SEED(10), d_in);
+  c2h::gen(C2H_SEED(10), d_in);
 
   // Run test
   warp_reduce<params::logical_warp_threads, params::total_warps>(d_in, d_out, warp_sum_t<type>{});
@@ -369,17 +369,17 @@ CUB_TEST("Warp sum works", "[reduce][warp]", full_type_list, logical_warp_thread
   verify_results(h_out, d_out);
 }
 
-CUB_TEST("Warp reduce works", "[reduce][warp]", builtin_type_list, logical_warp_threads)
+C2H_TEST("Warp reduce works", "[reduce][warp]", builtin_type_list, logical_warp_threads)
 {
   using params   = params_t<TestType>;
   using type     = typename params::type;
-  using red_op_t = cub::Min;
+  using red_op_t = ::cuda::minimum<>;
 
   // Prepare test data
   c2h::device_vector<type> d_in(params::tile_size);
   c2h::device_vector<type> d_out(params::tile_size);
   constexpr auto valid_items = params::logical_warp_threads;
-  c2h::gen(CUB_SEED(10), d_in);
+  c2h::gen(C2H_SEED(10), d_in);
 
   // Run test
   warp_reduce<params::logical_warp_threads, params::total_warps>(d_in, d_out, warp_reduce_t<type, red_op_t>{red_op_t{}});
@@ -402,7 +402,7 @@ CUB_TEST("Warp reduce works", "[reduce][warp]", builtin_type_list, logical_warp_
   verify_results(h_out, d_out);
 }
 
-CUB_TEST("Warp sum on partial warp works", "[reduce][warp]", full_type_list, logical_warp_threads)
+C2H_TEST("Warp sum on partial warp works", "[reduce][warp]", full_type_list, logical_warp_threads)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -411,7 +411,7 @@ CUB_TEST("Warp sum on partial warp works", "[reduce][warp]", full_type_list, log
   c2h::device_vector<type> d_in(params::tile_size);
   c2h::device_vector<type> d_out(params::tile_size);
   const int valid_items = GENERATE_COPY(take(2, random(1, params::logical_warp_threads)));
-  c2h::gen(CUB_SEED(10), d_in);
+  c2h::gen(C2H_SEED(10), d_in);
 
   // Run test
   warp_reduce<params::logical_warp_threads, params::total_warps>(d_in, d_out, warp_sum_partial_t<type>{valid_items});
@@ -434,17 +434,17 @@ CUB_TEST("Warp sum on partial warp works", "[reduce][warp]", full_type_list, log
   verify_results(h_out, d_out);
 }
 
-CUB_TEST("Warp reduce on partial warp works", "[reduce][warp]", builtin_type_list, logical_warp_threads)
+C2H_TEST("Warp reduce on partial warp works", "[reduce][warp]", builtin_type_list, logical_warp_threads)
 {
   using params   = params_t<TestType>;
   using type     = typename params::type;
-  using red_op_t = cub::Min;
+  using red_op_t = ::cuda::minimum<>;
 
   // Prepare test data
   c2h::device_vector<type> d_in(params::tile_size);
   c2h::device_vector<type> d_out(params::tile_size);
   const int valid_items = GENERATE_COPY(take(2, random(1, params::logical_warp_threads)));
-  c2h::gen(CUB_SEED(10), d_in);
+  c2h::gen(C2H_SEED(10), d_in);
 
   // Run test
   warp_reduce<params::logical_warp_threads, params::total_warps>(
@@ -468,7 +468,7 @@ CUB_TEST("Warp reduce on partial warp works", "[reduce][warp]", builtin_type_lis
   verify_results(h_out, d_out);
 }
 
-CUB_TEST("Warp segmented sum works", "[reduce][warp]", full_type_list, logical_warp_threads, segmented_modes)
+C2H_TEST("Warp segmented sum works", "[reduce][warp]", full_type_list, logical_warp_threads, segmented_modes)
 {
   using params = params_t<TestType>;
   using type   = typename params::type;
@@ -486,8 +486,8 @@ CUB_TEST("Warp segmented sum works", "[reduce][warp]", full_type_list, logical_w
   constexpr auto valid_items = params::logical_warp_threads;
   constexpr uint8_t min      = 0;
   constexpr uint8_t max      = 2;
-  c2h::gen(CUB_SEED(5), d_in);
-  c2h::gen(CUB_SEED(5), d_flags, min, max);
+  c2h::gen(C2H_SEED(5), d_in);
+  c2h::gen(C2H_SEED(5), d_flags, min, max);
 
   // Run test
   warp_reduce<params::logical_warp_threads, params::total_warps>(
@@ -511,11 +511,11 @@ CUB_TEST("Warp segmented sum works", "[reduce][warp]", full_type_list, logical_w
   verify_results(h_out, d_out);
 }
 
-CUB_TEST("Warp segmented reduction works", "[reduce][warp]", builtin_type_list, logical_warp_threads, segmented_modes)
+C2H_TEST("Warp segmented reduction works", "[reduce][warp]", builtin_type_list, logical_warp_threads, segmented_modes)
 {
   using params   = params_t<TestType>;
   using type     = typename params::type;
-  using red_op_t = cub::Min;
+  using red_op_t = ::cuda::minimum<>;
 
   constexpr auto segmented_mod = c2h::get<2, TestType>::value;
   static_assert(segmented_mod == reduce_mode::tail_flags || segmented_mod == reduce_mode::head_flags,
@@ -532,8 +532,8 @@ CUB_TEST("Warp segmented reduction works", "[reduce][warp]", builtin_type_list, 
   constexpr auto valid_items = params::logical_warp_threads;
   constexpr uint8_t min      = 0;
   constexpr uint8_t max      = 2;
-  c2h::gen(CUB_SEED(5), d_in);
-  c2h::gen(CUB_SEED(5), d_flags, min, max);
+  c2h::gen(C2H_SEED(5), d_in);
+  c2h::gen(C2H_SEED(5), d_flags, min, max);
 
   // Run test
   warp_reduce<params::logical_warp_threads, params::total_warps>(

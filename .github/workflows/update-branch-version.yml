@@ -1,0 +1,63 @@
+# SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: "Release: 0. Update version in target branch"
+
+# The target branch when starting this workflow should be:
+#   "branch/{major}.{minor}.x" if it exists, or "main"
+
+on:
+  workflow_dispatch:
+    inputs:
+      new_version:
+        description: "Version 'X.Y.Z' for the release branch."
+        type: string
+        required: true
+        default: "0.0.0"
+      target_branch:
+        description: "Target branch for the version update"
+        type: string
+        required: false
+        default: "main"
+      force:
+        description: "Enable overwriting existing PR branches (this does not force overwrite the target branch or skip creating a PR)"
+        type: boolean
+        required: true
+        default: false
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+jobs:
+  update-version:
+    permissions:
+      contents: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.target_branch }}
+
+      - name: Update version
+        uses: ./.github/actions/version-update
+        with:
+          new_version: ${{ inputs.new_version }}
+          target_branch: ${{ inputs.target_branch }}
+          force: ${{ inputs.force }}

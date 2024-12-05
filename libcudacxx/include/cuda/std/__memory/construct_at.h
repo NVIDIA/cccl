@@ -4,7 +4,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES
 //
 //===----------------------------------------------------------------------===//
 
@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__iterator/access.h>
 #include <cuda/std/__memory/addressof.h>
 #include <cuda/std/__memory/voidify.h>
@@ -43,9 +43,9 @@
 #endif // _CCCL_CUDA_COMPILER_CLANG
 
 #if _CCCL_STD_VER >= 2020 // need to backfill ::std::construct_at
-#  ifndef _CCCL_COMPILER_NVRTC
+#  if !_CCCL_COMPILER(NVRTC)
 #    include <memory>
-#  endif // _CCCL_COMPILER_NVRTC
+#  endif // _CCCL_COMPILER(NVRTC)
 
 #  ifndef __cpp_lib_constexpr_dynamic_alloc
 namespace std
@@ -109,12 +109,12 @@ template <class _Tp,
           class... _Args,
           class = decltype(::new(_CUDA_VSTD::declval<void*>()) _Tp(_CUDA_VSTD::declval<_Args>()...))>
 _LIBCUDACXX_HIDE_FROM_ABI
-_CCCL_CONSTEXPR_CXX20 __enable_if_t<!__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
+_CCCL_CONSTEXPR_CXX20 enable_if_t<!__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
 construct_at(_Tp* __location, _Args&&... __args)
 {
   _CCCL_ASSERT(__location != nullptr, "null pointer given to construct_at");
   // Need to go through `std::construct_at` as that is the explicitly blessed function
-  if (__libcpp_is_constant_evaluated())
+  if (_CUDA_VSTD::is_constant_evaluated())
   {
     return ::std::construct_at(__location, _CUDA_VSTD::forward<_Args>(__args)...);
   }
@@ -126,12 +126,12 @@ template <class _Tp,
           class... _Args,
           class = decltype(::new(_CUDA_VSTD::declval<void*>()) _Tp(_CUDA_VSTD::declval<_Args>()...))>
 _LIBCUDACXX_HIDE_FROM_ABI
-_CCCL_CONSTEXPR_CXX20 __enable_if_t<__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
+_CCCL_CONSTEXPR_CXX20 enable_if_t<__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
 construct_at(_Tp* __location, _Args&&... __args)
 {
   _CCCL_ASSERT(__location != nullptr, "null pointer given to construct_at");
   // Need to go through `std::construct_at` as that is the explicitly blessed function
-  if (__libcpp_is_constant_evaluated())
+  if (_CUDA_VSTD::is_constant_evaluated())
   {
     return ::std::construct_at(__location, _CUDA_VSTD::forward<_Args>(__args)...);
   }
@@ -144,13 +144,13 @@ construct_at(_Tp* __location, _Args&&... __args)
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class... _Args>
 _LIBCUDACXX_HIDE_FROM_ABI
-_CCCL_CONSTEXPR_CXX20 __enable_if_t<!__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
+_CCCL_CONSTEXPR_CXX20 enable_if_t<!__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
 __construct_at(_Tp* __location, _Args&&... __args)
 {
   _CCCL_ASSERT(__location != nullptr, "null pointer given to construct_at");
 #if _CCCL_STD_VER >= 2020
   // Need to go through `std::construct_at` as that is the explicitly blessed function
-  if (__libcpp_is_constant_evaluated())
+  if (_CUDA_VSTD::is_constant_evaluated())
   {
     return ::std::construct_at(__location, _CUDA_VSTD::forward<_Args>(__args)...);
   }
@@ -161,13 +161,13 @@ __construct_at(_Tp* __location, _Args&&... __args)
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp, class... _Args>
 _LIBCUDACXX_HIDE_FROM_ABI
-_CCCL_CONSTEXPR_CXX20 __enable_if_t<__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
+_CCCL_CONSTEXPR_CXX20 enable_if_t<__detail::__can_optimize_construct_at<_Tp, _Args...>::value, _Tp*>
 __construct_at(_Tp* __location, _Args&&... __args)
 {
   _CCCL_ASSERT(__location != nullptr, "null pointer given to construct_at");
 #if _CCCL_STD_VER >= 2020
   // Need to go through `std::construct_at` as that is the explicitly blessed function
-  if (__libcpp_is_constant_evaluated())
+  if (_CUDA_VSTD::is_constant_evaluated())
   {
     return ::std::construct_at(__location, _CUDA_VSTD::forward<_Args>(__args)...);
   }
@@ -185,8 +185,8 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator __destroy(_Forw
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp,
-          __enable_if_t<!is_array<_Tp>::value, int>                  = 0,
-          __enable_if_t<!is_trivially_destructible<_Tp>::value, int> = 0>
+          enable_if_t<!_CCCL_TRAIT(is_array, _Tp), int>                  = 0,
+          enable_if_t<!_CCCL_TRAIT(is_trivially_destructible, _Tp), int> = 0>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void __destroy_at(_Tp* __loc)
 {
   _CCCL_ASSERT(__loc != nullptr, "null pointer given to destroy_at");
@@ -195,22 +195,20 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void __destroy_at(_Tp* __loc)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class _Tp,
-          __enable_if_t<!is_array<_Tp>::value, int>                 = 0,
-          __enable_if_t<is_trivially_destructible<_Tp>::value, int> = 0>
+          enable_if_t<!_CCCL_TRAIT(is_array, _Tp), int>                 = 0,
+          enable_if_t<_CCCL_TRAIT(is_trivially_destructible, _Tp), int> = 0>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void __destroy_at(_Tp* __loc)
 {
   _CCCL_ASSERT(__loc != nullptr, "null pointer given to destroy_at");
   (void) __loc;
 }
 
-#if _CCCL_STD_VER >= 2020
-template <class _Tp, __enable_if_t<is_array<_Tp>::value, int> = 0>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr void __destroy_at(_Tp* __loc)
+template <class _Tp, enable_if_t<_CCCL_TRAIT(is_array, _Tp), int> = 0>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 void __destroy_at(_Tp* __loc)
 {
   _CCCL_ASSERT(__loc != nullptr, "null pointer given to destroy_at");
   _CUDA_VSTD::__destroy(_CUDA_VSTD::begin(*__loc), _CUDA_VSTD::end(*__loc));
 }
-#endif // _CCCL_STD_VER >= 2020
 
 template <class _ForwardIterator>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
@@ -235,22 +233,18 @@ __reverse_destroy(_BidirectionalIterator __first, _BidirectionalIterator __last)
   return __last;
 }
 
-#if _CCCL_STD_VER >= 2017
-
-template <class _Tp, enable_if_t<!is_array_v<_Tp>, int> = 0>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void destroy_at(_Tp* __loc) noexcept
+template <class _Tp, enable_if_t<!_CCCL_TRAIT(is_array, _Tp), int> = 0>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void destroy_at(_Tp* __loc)
 {
   _CCCL_ASSERT(__loc != nullptr, "null pointer given to destroy_at");
   __loc->~_Tp();
 }
 
-#  if _CCCL_STD_VER >= 2020
-template <class _Tp, enable_if_t<is_array_v<_Tp>, int> = 0>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void destroy_at(_Tp* __loc) noexcept
+template <class _Tp, enable_if_t<_CCCL_TRAIT(is_array, _Tp), int> = 0>
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void destroy_at(_Tp* __loc)
 {
   _CUDA_VSTD::__destroy_at(__loc);
 }
-#  endif // _CCCL_STD_VER >= 2020
 
 template <class _ForwardIterator>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 void destroy(_ForwardIterator __first, _ForwardIterator __last) noexcept
@@ -267,8 +261,6 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 _ForwardIterator destroy_n(_Forw
   }
   return __first;
 }
-
-#endif // _CCCL_STD_VER >= 2017
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

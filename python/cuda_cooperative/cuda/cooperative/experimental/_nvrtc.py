@@ -4,10 +4,10 @@
 
 import os
 import shutil
-from cuda import nvrtc
+from cuda.bindings import nvrtc
 from cuda.cooperative.experimental._caching import disk_cache
 from cuda.cooperative.experimental._common import check_in, version
-import importlib
+import importlib.resources as pkg_resources
 import functools
 
 
@@ -46,12 +46,14 @@ def compile_impl(cpp, cc, rdc, code, nvrtc_path, nvrtc_version):
     check_in('rdc', rdc, [True, False])
     check_in('code', code, ['lto', 'ptx'])
 
-    include_path = importlib.resources.files('cuda').joinpath('_include')
-    include_path_str = str(include_path)
-    cub_path = include_path_str
-    thrust_path = include_path_str
-    libcudacxx_path = str(os.path.join(include_path, 'libcudacxx'))
-    cuda_include_path = os.path.join(get_cuda_path(), 'include')
+    with pkg_resources.path('cuda', '_include') as include_path:
+        # Using `.parent` for compatibility with pip install --editable:
+        include_path = pkg_resources.files(
+            'cuda.cooperative').parent.joinpath('_include')
+        cub_path = include_path
+        thrust_path = include_path
+        libcudacxx_path = os.path.join(include_path, 'libcudacxx')
+        cuda_include_path = os.path.join(get_cuda_path(), 'include')
 
     opts = [b"--std=c++17",
             bytes(f"--include-path={cub_path}", encoding='ascii'),

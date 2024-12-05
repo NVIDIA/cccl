@@ -65,7 +65,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 namespace detail
 {
@@ -90,7 +90,7 @@ template <typename T>
 CUB_DETAIL_KERNEL_ATTRIBUTES void EmptyKernel()
 {}
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 /**
  * \brief Returns the current device or -1 if an error occurred.
@@ -105,13 +105,13 @@ CUB_RUNTIME_FUNCTION inline int CurrentDevice()
   return device;
 }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 //! @brief RAII helper which saves the current device and switches to the specified device on construction and switches
 //! to the saved device on destruction.
 using SwitchDevice = ::cuda::__ensure_current_device;
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 /**
  * \brief Returns the number of CUDA devices available or -1 if an error
@@ -171,7 +171,7 @@ CUB_RUNTIME_FUNCTION inline int DeviceCount()
   return result;
 }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 /**
  * \brief Per-device cache for a CUDA attribute value; the attribute is queried
  *        and stored for each device upon construction.
@@ -286,7 +286,7 @@ public:
     return entry.payload;
   }
 };
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 /**
  * \brief Retrieves the PTX version that will be used on the current device (major * 100 + minor * 10).
@@ -601,6 +601,42 @@ MaxSmOccupancy(int& max_sm_occupancy, KernelPtr kernel_ptr, int block_threads, i
  * Policy management
  ******************************************************************************/
 
+template <typename PolicyT, typename = void>
+struct PolicyWrapper : PolicyT
+{
+  CUB_RUNTIME_FUNCTION PolicyWrapper(PolicyT base)
+      : PolicyT(base)
+  {}
+};
+
+template <typename StaticPolicyT>
+struct PolicyWrapper<
+  StaticPolicyT,
+  _CUDA_VSTD::void_t<decltype(StaticPolicyT::BLOCK_THREADS), decltype(StaticPolicyT::ITEMS_PER_THREAD)>> : StaticPolicyT
+{
+  CUB_RUNTIME_FUNCTION PolicyWrapper(StaticPolicyT base)
+      : StaticPolicyT(base)
+  {}
+
+  CUB_RUNTIME_FUNCTION static constexpr int BlockThreads()
+  {
+    return StaticPolicyT::BLOCK_THREADS;
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr int ItemsPerThread()
+  {
+    return StaticPolicyT::ITEMS_PER_THREAD;
+  }
+};
+
+template <typename PolicyT>
+CUB_RUNTIME_FUNCTION PolicyWrapper<PolicyT> MakePolicyWrapper(PolicyT policy)
+{
+  return PolicyWrapper<PolicyT>{policy};
+}
+
+struct TripleChevronFactory;
+
 /**
  * Kernel dispatch configuration
  */
@@ -618,14 +654,14 @@ struct KernelConfig
       , sm_occupancy(0)
   {}
 
-  template <typename AgentPolicyT, typename KernelPtrT>
-  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t Init(KernelPtrT kernel_ptr)
+  template <typename AgentPolicyT, typename KernelPtrT, typename LauncherFactory = TripleChevronFactory>
+  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
+  Init(KernelPtrT kernel_ptr, AgentPolicyT agent_policy = {}, LauncherFactory launcher_factory = {})
   {
-    block_threads      = AgentPolicyT::BLOCK_THREADS;
-    items_per_thread   = AgentPolicyT::ITEMS_PER_THREAD;
-    tile_size          = block_threads * items_per_thread;
-    cudaError_t retval = MaxSmOccupancy(sm_occupancy, kernel_ptr, block_threads);
-    return retval;
+    block_threads    = MakePolicyWrapper(agent_policy).BlockThreads();
+    items_per_thread = MakePolicyWrapper(agent_policy).ItemsPerThread();
+    tile_size        = block_threads * items_per_thread;
+    return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, block_threads);
   }
 };
 
@@ -742,3 +778,5 @@ private:
 };
 
 CUB_NAMESPACE_END
+
+#include <cub/launcher/cuda_runtime.cuh> // to complete the definition of TripleChevronFactory

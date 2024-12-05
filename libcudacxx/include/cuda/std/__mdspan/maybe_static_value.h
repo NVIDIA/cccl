@@ -88,10 +88,9 @@ struct __maybe_static_value
     return static_cast<_dynamic_t>(__v);
   }
   template <class _Up>
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr __mdspan_enable_fold_comma __set_value(_Up&& /*__rhs*/) noexcept
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr void __set_value(_Up&& /*__rhs*/) noexcept
   {
     // Should we assert that the value matches the static value here?
-    return {};
   }
 
   //--------------------------------------------------------------------------
@@ -132,10 +131,9 @@ struct __maybe_static_value<_dynamic_t, _static_t, __is_dynamic_sentinal, __is_d
     return __v;
   }
   template <class _Up>
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr __mdspan_enable_fold_comma __set_value(_Up&& __rhs) noexcept
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr void __set_value(_Up&& __rhs) noexcept
   {
     __v = (_Up&&) rhs;
-    return {};
   }
 #    else
   __MDSPAN_FORCE_INLINE_FUNCTION constexpr _dynamic_t __value() const noexcept
@@ -147,10 +145,9 @@ struct __maybe_static_value<_dynamic_t, _static_t, __is_dynamic_sentinal, __is_d
     return this->__no_unique_address_emulation<_dynamic_t>::__ref();
   }
   template <class _Up>
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr __mdspan_enable_fold_comma __set_value(_Up&& __rhs) noexcept
+  __MDSPAN_FORCE_INLINE_FUNCTION constexpr void __set_value(_Up&& __rhs) noexcept
   {
     this->__no_unique_address_emulation<_dynamic_t>::__ref() = (_Up&&) __rhs;
-    return {};
   }
 #    endif
 };

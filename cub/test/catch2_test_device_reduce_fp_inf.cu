@@ -32,15 +32,15 @@
 
 #include <cuda/std/limits>
 
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 
 // %PARAM% TEST_LAUNCH lid 0:1
 
-CUB_TEST("Device reduce arg{min,max} works with inf items", "[reduce][device]")
+C2H_TEST("Device reduce arg{min,max} works with inf items", "[reduce][device]")
 {
   using in_t     = float;
   using offset_t = int;

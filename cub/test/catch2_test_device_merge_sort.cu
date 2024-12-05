@@ -45,8 +45,8 @@
 
 #include "catch2_large_array_sort_helper.cuh"
 #include "catch2_test_device_merge_sort_common.cuh"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -220,14 +220,14 @@ c2h::device_vector<OffsetT> make_shuffled_key_ranks_vector(OffsetT num_items, c2
   return key_ranks;
 }
 
-CUB_TEST("DeviceMergeSort::SortKeysCopy works", "[merge][sort][device]", wide_key_types)
+C2H_TEST("DeviceMergeSort::SortKeysCopy works", "[merge][sort][device]", wide_key_types)
 {
   using key_t    = typename c2h::get<0, TestType>;
   using offset_t = std::int32_t;
 
   // Prepare input
   const offset_t num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
-  auto key_ranks           = make_shuffled_key_ranks_vector(num_items, CUB_SEED(2));
+  auto key_ranks           = make_shuffled_key_ranks_vector(num_items, C2H_SEED(2));
   c2h::device_vector<key_t> keys_in(num_items);
   thrust::transform(
     c2h::device_policy, key_ranks.begin(), key_ranks.end(), keys_in.begin(), rank_to_key_op_t<offset_t, key_t>{});
@@ -244,14 +244,14 @@ CUB_TEST("DeviceMergeSort::SortKeysCopy works", "[merge][sort][device]", wide_ke
   REQUIRE(results_equal == true);
 }
 
-CUB_TEST("DeviceMergeSort::SortKeys works", "[merge][sort][device]", wide_key_types)
+C2H_TEST("DeviceMergeSort::SortKeys works", "[merge][sort][device]", wide_key_types)
 {
   using key_t    = typename c2h::get<0, TestType>;
   using offset_t = std::int32_t;
 
   // Prepare input
   const offset_t num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
-  auto key_ranks           = make_shuffled_key_ranks_vector(num_items, CUB_SEED(2));
+  auto key_ranks           = make_shuffled_key_ranks_vector(num_items, C2H_SEED(2));
   c2h::device_vector<key_t> keys_in_out(num_items);
   thrust::transform(
     c2h::device_policy, key_ranks.begin(), key_ranks.end(), keys_in_out.begin(), rank_to_key_op_t<offset_t, key_t>{});
@@ -266,7 +266,7 @@ CUB_TEST("DeviceMergeSort::SortKeys works", "[merge][sort][device]", wide_key_ty
   REQUIRE(results_equal == true);
 }
 
-CUB_TEST("DeviceMergeSort::StableSortKeysCopy works and performs a stable sort when there are a lot sort-keys that "
+C2H_TEST("DeviceMergeSort::StableSortKeysCopy works and performs a stable sort when there are a lot sort-keys that "
          "compare equal",
          "[merge][sort][device]")
 {
@@ -276,7 +276,7 @@ CUB_TEST("DeviceMergeSort::StableSortKeysCopy works and performs a stable sort w
   // Prepare input (generate a items that compare equally to check for stability of sort)
   const offset_t num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
   c2h::device_vector<offset_t> key_ranks(num_items);
-  c2h::gen(CUB_SEED(2), key_ranks, offset_t{}, static_cast<offset_t>(128));
+  c2h::gen(C2H_SEED(2), key_ranks, offset_t{}, static_cast<offset_t>(128));
   c2h::device_vector<key_t> keys_in(num_items);
   auto key_value_it = thrust::make_counting_iterator(offset_t{});
   auto key_init_it  = thrust::make_zip_iterator(key_ranks.begin(), key_value_it);
@@ -295,7 +295,7 @@ CUB_TEST("DeviceMergeSort::StableSortKeysCopy works and performs a stable sort w
   REQUIRE(keys_expected == keys_out);
 }
 
-CUB_TEST("DeviceMergeSort::StableSortKeys works", "[merge][sort][device]")
+C2H_TEST("DeviceMergeSort::StableSortKeys works", "[merge][sort][device]")
 {
   using key_t    = c2h::custom_type_t<c2h::equal_comparable_t, c2h::less_comparable_t>;
   using offset_t = std::int32_t;
@@ -303,7 +303,7 @@ CUB_TEST("DeviceMergeSort::StableSortKeys works", "[merge][sort][device]")
   // Prepare input
   const offset_t num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
   c2h::device_vector<key_t> keys_in_out(num_items);
-  c2h::gen(CUB_SEED(2), keys_in_out);
+  c2h::gen(C2H_SEED(2), keys_in_out);
 
   // Perform sort
   stable_sort_keys(thrust::raw_pointer_cast(keys_in_out.data()), num_items, custom_less_op_t{});
@@ -315,14 +315,14 @@ CUB_TEST("DeviceMergeSort::StableSortKeys works", "[merge][sort][device]")
   REQUIRE(keys_expected == keys_in_out);
 }
 
-CUB_TEST("DeviceMergeSort::SortPairsCopy works", "[merge][sort][device]", wide_key_types)
+C2H_TEST("DeviceMergeSort::SortPairsCopy works", "[merge][sort][device]", wide_key_types)
 {
   using key_t    = typename c2h::get<0, TestType>;
   using offset_t = std::int32_t;
 
   // Prepare input
   const offset_t num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
-  auto key_ranks           = make_shuffled_key_ranks_vector(num_items, CUB_SEED(2));
+  auto key_ranks           = make_shuffled_key_ranks_vector(num_items, C2H_SEED(2));
   c2h::device_vector<key_t> keys_in(num_items);
   thrust::transform(
     c2h::device_policy, key_ranks.begin(), key_ranks.end(), keys_in.begin(), rank_to_key_op_t<offset_t, key_t>{});
@@ -348,14 +348,14 @@ CUB_TEST("DeviceMergeSort::SortPairsCopy works", "[merge][sort][device]", wide_k
   REQUIRE(values_equal == true);
 }
 
-CUB_TEST("DeviceMergeSort::SortPairs works", "[merge][sort][device]", wide_key_types)
+C2H_TEST("DeviceMergeSort::SortPairs works", "[merge][sort][device]", wide_key_types)
 {
   using key_t    = typename c2h::get<0, TestType>;
   using offset_t = std::int32_t;
 
   // Prepare input
   const offset_t num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
-  auto key_ranks           = make_shuffled_key_ranks_vector(num_items, CUB_SEED(2));
+  auto key_ranks           = make_shuffled_key_ranks_vector(num_items, C2H_SEED(2));
   c2h::device_vector<key_t> keys_in_out(num_items);
   thrust::transform(
     c2h::device_policy, key_ranks.begin(), key_ranks.end(), keys_in_out.begin(), rank_to_key_op_t<offset_t, key_t>{});
@@ -376,7 +376,7 @@ CUB_TEST("DeviceMergeSort::SortPairs works", "[merge][sort][device]", wide_key_t
   REQUIRE(values_equal == true);
 }
 
-CUB_TEST(
+C2H_TEST(
   "DeviceMergeSort::StableSortPairs works and performs a stable sort", "[merge][sort][device]", key_types, value_types)
 {
   using key_t    = typename c2h::get<0, TestType>;
@@ -387,8 +387,8 @@ CUB_TEST(
   const offset_t num_items = GENERATE_COPY(take(2, random(1, 1000000)), values({500, 1000000, 2000000}));
   c2h::device_vector<key_t> keys_in_out(num_items);
   c2h::device_vector<data_t> values_in_out(num_items);
-  c2h::gen(CUB_SEED(2), keys_in_out);
-  c2h::gen(CUB_SEED(1), values_in_out);
+  c2h::gen(C2H_SEED(2), keys_in_out);
+  c2h::gen(C2H_SEED(1), values_in_out);
 
   // Prepare host data for verification
   c2h::host_vector<key_t> keys_expected(keys_in_out);
@@ -406,7 +406,7 @@ CUB_TEST(
   REQUIRE(values_expected == values_in_out);
 }
 
-CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs", "[merge][sort][device]", offset_types)
+C2H_TEST("DeviceMergeSort::StableSortPairs works for large inputs", "[merge][sort][device]", offset_types)
 {
   using testing_types_tuple = c2h::get<0, TestType>;
   using key_t               = typename testing_types_tuple::key_t;
@@ -425,7 +425,7 @@ CUB_TEST("DeviceMergeSort::StableSortPairs works for large inputs", "[merge][sor
       // Initialize random input data
       large_array_sort_helper<key_t> arrays;
       constexpr bool is_descending = false;
-      arrays.initialize_for_unstable_key_sort(CUB_SEED(1), num_items, is_descending);
+      arrays.initialize_for_unstable_key_sort(C2H_SEED(1), num_items, is_descending);
 
       // Free extra data buffer used during initialization, but not needed for the "in-place" merge sort
       arrays.deallocate_outputs();

@@ -13,9 +13,9 @@
 // template <class ForwardIt>
 // void uninitialized_value_construct(ForwardIt, ForwardIt);
 
-#include <cuda/std/__memory_>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdlib>
+#include <cuda/std/memory>
 
 #include "test_iterators.h"
 #include "test_macros.h"

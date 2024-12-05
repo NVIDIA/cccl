@@ -30,8 +30,8 @@
 
 #include <thrust/sequence.h>
 
-#include "catch2_test_helper.h"
-#include "fill_striped.cuh"
+#include <c2h/catch2_test_helper.h>
+#include <c2h/fill_striped.h>
 
 template <cub::WarpLoadAlgorithm LoadAlgorithm,
           int LOGICAL_WARP_THREADS,
@@ -237,7 +237,7 @@ struct params_t
   static constexpr int total_item_count             = total_warps * tile_size;
 };
 
-CUB_TEST(
+C2H_TEST(
   "Warp load guarded range works with pointer", "[load][warp]", types, logical_warp_threads, items_per_thread, algorithm)
 {
   using params     = params_t<TestType>;
@@ -261,7 +261,7 @@ CUB_TEST(
   REQUIRE(num_errors == expected_error_count);
 }
 
-CUB_TEST("Warp load guarded range works with cache modified iterator",
+C2H_TEST("Warp load guarded range works with cache modified iterator",
          "[load][warp]",
          types,
          logical_warp_threads,
@@ -290,7 +290,7 @@ CUB_TEST("Warp load guarded range works with cache modified iterator",
   REQUIRE(num_errors == expected_error_count);
 }
 
-CUB_TEST("Warp load unguarded range works with pointer",
+C2H_TEST("Warp load unguarded range works with pointer",
          "[load][warp]",
          types,
          logical_warp_threads,
@@ -313,7 +313,7 @@ CUB_TEST("Warp load unguarded range works with pointer",
   REQUIRE(num_errors == expected_error_count);
 }
 
-CUB_TEST("Warp load unguarded range works with cache modified iterator",
+C2H_TEST("Warp load unguarded range works with cache modified iterator",
          "[load][warp]",
          types,
          logical_warp_threads,

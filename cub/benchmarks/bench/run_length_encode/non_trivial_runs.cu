@@ -78,7 +78,7 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   using offset_output_it_t         = offset_t*;
   using length_output_it_t         = offset_t*;
   using num_runs_output_iterator_t = offset_t*;
-  using equality_op_t              = cub::Equality;
+  using equality_op_t              = ::cuda::std::equal_to<>;
   using accum_t                    = offset_t;
 
 #if !TUNE_BASE

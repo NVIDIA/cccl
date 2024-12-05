@@ -272,7 +272,7 @@ public:
       stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <typename InputIteratorT,
             typename OutputIteratorT,
             typename BeginOffsetIteratorT,
@@ -306,7 +306,7 @@ public:
       initial_value,
       stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Computes a device-wide segmented sum using the addition (``+``) operator.
@@ -407,7 +407,12 @@ public:
 
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
 
-    return segmented_reduce<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT, OffsetT, cub::Sum>(
+    return segmented_reduce<InputIteratorT,
+                            OutputIteratorT,
+                            BeginOffsetIteratorT,
+                            EndOffsetIteratorT,
+                            OffsetT,
+                            ::cuda::std::plus<>>(
       integral_offset_check{},
       d_temp_storage,
       temp_storage_bytes,
@@ -416,12 +421,12 @@ public:
       num_segments,
       d_begin_offsets,
       d_end_offsets,
-      cub::Sum(),
+      ::cuda::std::plus<>{},
       OutputT(), // zero-initialize
       stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <typename InputIteratorT, typename OutputIteratorT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t
   Sum(void* d_temp_storage,
@@ -439,7 +444,7 @@ public:
     return Sum<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Computes a device-wide segmented minimum using the less-than (``<``) operator.
@@ -545,7 +550,12 @@ public:
 
     static_assert(integral_offset_check::value, "Offset iterator value type should be integral.");
 
-    return segmented_reduce<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT, OffsetT, cub::Min>(
+    return segmented_reduce<InputIteratorT,
+                            OutputIteratorT,
+                            BeginOffsetIteratorT,
+                            EndOffsetIteratorT,
+                            OffsetT,
+                            ::cuda::minimum<>>(
       integral_offset_check{},
       d_temp_storage,
       temp_storage_bytes,
@@ -554,7 +564,7 @@ public:
       num_segments,
       d_begin_offsets,
       d_end_offsets,
-      cub::Min(),
+      ::cuda::minimum<>{},
       Traits<InputT>::Max(), // replace with
                              // std::numeric_limits<T>::max()
                              // when C++11 support is
@@ -562,7 +572,7 @@ public:
       stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <typename InputIteratorT, typename OutputIteratorT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t
   Min(void* d_temp_storage,
@@ -580,7 +590,7 @@ public:
     return Min<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Finds the first device-wide minimum in each segment using the
@@ -732,7 +742,7 @@ public:
       stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <typename InputIteratorT, typename OutputIteratorT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
     void* d_temp_storage,
@@ -750,7 +760,7 @@ public:
     return ArgMin<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Computes a device-wide segmented maximum using the greater-than (``>``) operator.
@@ -859,7 +869,7 @@ public:
       num_segments,
       d_begin_offsets,
       d_end_offsets,
-      cub::Max(),
+      ::cuda::maximum<>{},
       Traits<InputT>::Lowest(), // replace with
                                 // std::numeric_limits<T>::lowest()
                                 // when C++11 support is
@@ -867,7 +877,7 @@ public:
       stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <typename InputIteratorT, typename OutputIteratorT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t
   Max(void* d_temp_storage,
@@ -885,7 +895,7 @@ public:
     return Max<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Finds the first device-wide maximum in each segment using the
@@ -1040,7 +1050,7 @@ public:
       stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <typename InputIteratorT, typename OutputIteratorT, typename BeginOffsetIteratorT, typename EndOffsetIteratorT>
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(
     void* d_temp_storage,
@@ -1058,7 +1068,7 @@ public:
     return ArgMax<InputIteratorT, OutputIteratorT, BeginOffsetIteratorT, EndOffsetIteratorT>(
       d_temp_storage, temp_storage_bytes, d_in, d_out, num_segments, d_begin_offsets, d_end_offsets, stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

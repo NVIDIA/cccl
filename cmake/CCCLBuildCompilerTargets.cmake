@@ -21,7 +21,10 @@ set(CCCL_KNOWN_CXX_DIALECTS 11 14 17 20)
 set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
 
 option(CCCL_ENABLE_EXCEPTIONS "Enable exceptions within CCCL libraries." ON)
+option(CCCL_ENABLE_RTTI "Enable RTTI within CCCL libraries." ON)
 option(CCCL_ENABLE_WERROR "Treat warnings as errors for CCCL targets." ON)
+option(CCCL_SUPPRESS_ICC_DEPRECATION_WARNING "Suppress Intel Compiler deprecation warnings" OFF)
+option(CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING "Suppress Visual Studio 2017 deprecation warnings" OFF)
 
 function(cccl_build_compiler_interface interface_target cuda_compile_options cxx_compile_options compile_defs)
   add_library(${interface_target} INTERFACE)
@@ -50,14 +53,28 @@ function(cccl_build_compiler_targets)
   set(cxx_compile_definitions)
 
   list(APPEND cuda_compile_options "-Xcudafe=--display_error_number")
-  list(APPEND cuda_compile_options "-Xcudafe=--promote_warnings")
   list(APPEND cuda_compile_options "-Wno-deprecated-gpu-targets")
+  if (CCCL_ENABLE_WERROR)
+    list(APPEND cuda_compile_options "-Xcudafe=--promote_warnings")
+  endif()
 
   # Ensure that we build our tests without treating ourself as system header
   list(APPEND cxx_compile_definitions "_CCCL_NO_SYSTEM_HEADER")
 
   if (NOT CCCL_ENABLE_EXCEPTIONS)
     list(APPEND cxx_compile_definitions "CCCL_DISABLE_EXCEPTIONS")
+  endif()
+
+  if (NOT CCCL_ENABLE_RTTI)
+    list(APPEND cxx_compile_definitions "CCCL_DISABLE_RTTI")
+  endif()
+
+  if (CCCL_SUPPRESS_ICC_DEPRECATION_WARNING)
+    list(APPEND cxx_compile_definitions "CCCL_SUPPRESS_ICC_DEPRECATION_WARNING")
+  endif()
+
+  if (CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING)
+    list(APPEND cxx_compile_definitions "CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING")
   endif()
 
   if ("MSVC" STREQUAL "${CMAKE_CXX_COMPILER_ID}")

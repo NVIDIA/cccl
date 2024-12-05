@@ -24,9 +24,18 @@
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/cstdint>
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
 #  include <intrin.h>
-#endif // _CCCL_COMPILER_MSVC
+
+#  if defined(_M_ARM64)
+#    define _LIBCUDACXX_MSVC_POPC(x)   _CountOneBits(x)
+#    define _LIBCUDACXX_MSVC_POPC64(x) _CountOneBits64(x)
+#  else // ^^^ _M_ARM64 ^^^ / vvv !_M_ARM64 vvv
+#    define _LIBCUDACXX_MSVC_POPC(x)   __popcnt(x)
+#    define _LIBCUDACXX_MSVC_POPC64(x) __popcnt64(x)
+#  endif // !_M_ARM64
+
+#endif // _CCCL_COMPILER(MSVC)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -47,7 +56,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __fallback_popc64(uint64_t __x)
   return __fallback_popc32(__x - ((__x >> 1) & 0x5555555555555555));
 }
 
-#if !defined(_CCCL_COMPILER_MSVC)
+#if !_CCCL_COMPILER(MSVC)
 
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_popcount(uint32_t __x) noexcept
 {
@@ -67,10 +76,10 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_popcount(uint64_t __x) noexc
 #  endif
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __libcpp_popc(uint32_t __x) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_popc(uint32_t __x) noexcept
 {
 #  if _CCCL_STD_VER >= 2014
-  if (!__libcpp_default_is_constant_evaluated())
+  if (!__cccl_default_is_constant_evaluated())
   {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __popc(__x);), (return __builtin_popcount(__x);))
   }
@@ -78,10 +87,10 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __libcpp_popc(uint32_t __x) noexcept
   return __constexpr_popcount(static_cast<uint64_t>(__x));
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __libcpp_popc(uint64_t __x) noexcept
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_popc(uint64_t __x) noexcept
 {
 #  if _CCCL_STD_VER >= 2014
-  if (!__libcpp_default_is_constant_evaluated())
+  if (!__cccl_default_is_constant_evaluated())
   {
     NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __popcll(__x);), (return __builtin_popcountll(__x);))
   }
@@ -89,23 +98,23 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __libcpp_popc(uint64_t __x) noexcept
   return __constexpr_popcount(static_cast<uint64_t>(__x));
 }
 
-#else // defined(_CCCL_COMPILER_MSVC)
+#else // _CCCL_COMPILER(MSVC)
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __libcpp_popc(uint32_t __x)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_popc(uint32_t __x)
 {
-  if (!__libcpp_default_is_constant_evaluated())
+  if (!__cccl_default_is_constant_evaluated())
   {
-    NV_IF_TARGET(NV_IS_HOST, (return static_cast<int>(__popcnt(__x));))
+    NV_IF_TARGET(NV_IS_HOST, (return static_cast<int>(_LIBCUDACXX_MSVC_POPC(__x));))
   }
 
   return __fallback_popc64(static_cast<uint64_t>(__x));
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __libcpp_popc(uint64_t __x)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_popc(uint64_t __x)
 {
-  if (!__libcpp_default_is_constant_evaluated())
+  if (!__cccl_default_is_constant_evaluated())
   {
-    NV_IF_TARGET(NV_IS_HOST, (return static_cast<int>(__popcnt64(__x));))
+    NV_IF_TARGET(NV_IS_HOST, (return static_cast<int>(_LIBCUDACXX_MSVC_POPC64(__x));))
   }
 
   return __fallback_popc64(static_cast<uint64_t>(__x));

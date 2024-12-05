@@ -21,9 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
-#ifndef _CCCL_COMPILER_NVRTC
+#if !_CCCL_COMPILER(NVRTC)
 #  include <cstdint>
-#else // ^^^ !_CCCL_COMPILER_NVRTC ^^^ / vvv _CCCL_COMPILER_NVRTC vvv
+#else // ^^^ !_CCCL_COMPILER(NVRTC) ^^^ / vvv _CCCL_COMPILER(NVRTC) vvv
 typedef signed char int8_t;
 typedef unsigned char uint8_t;
 typedef signed short int16_t;
@@ -85,6 +85,6 @@ typedef uint64_t uintmax_t;
 #  define UINT64_C(X)  ((uint_least64_t) (X))
 #  define INTMAX_C(X)  ((intmax_t) (X))
 #  define UINTMAX_C(X) ((uintmax_t) (X))
-#endif // _CCCL_COMPILER_NVRTC
+#endif // _CCCL_COMPILER(NVRTC)
 
 #endif // _LIBCUDACXX___CUDA_CSTDINT_PRELUDE_H

@@ -56,7 +56,7 @@ struct non_const_get_stream
 
 TEST_CASE("The get_stream method must be const qualified", "[stream]")
 {
-  static_assert(!::cuda::std::is_invocable_v<decltype(::cuda::experimental::get_stream), const non_const_get_stream&>);
+  STATIC_REQUIRE(!::cuda::std::is_invocable_v<::cuda::experimental::get_stream_t, const non_const_get_stream&>);
 }
 
 struct get_stream_wrong_return
@@ -70,6 +70,66 @@ struct get_stream_wrong_return
 };
 TEST_CASE("The get_stream method must return a cuda::stream_ref", "[stream]")
 {
-  static_assert(
-    !::cuda::std::is_invocable_v<decltype(::cuda::experimental::get_stream), const get_stream_wrong_return&>);
+  STATIC_REQUIRE(!::cuda::std::is_invocable_v<::cuda::experimental::get_stream_t, const get_stream_wrong_return&>);
+}
+
+struct env_with_query
+{
+  cudax::stream stream_{};
+
+  ::cuda::stream_ref query(::cuda::experimental::get_stream_t) const noexcept
+  {
+    return ::cuda::stream_ref{stream_.get()};
+  }
+};
+TEST_CASE("Works with queries", "[stream]")
+{
+  env_with_query env;
+  ::cuda::stream_ref ref = ::cuda::experimental::get_stream(env);
+  CUDAX_CHECK(ref == env.stream_);
+}
+
+struct env_with_query_that_returns_cudastream
+{
+  cudax::stream stream_{};
+
+  ::cudaStream_t query(::cuda::experimental::get_stream_t) const noexcept
+  {
+    return stream_.get();
+  }
+};
+TEST_CASE("Works with queries that return cudastream", "[stream]")
+{
+  env_with_query_that_returns_cudastream env;
+  ::cuda::stream_ref ref = ::cuda::experimental::get_stream(env);
+  CUDAX_CHECK(ref == env.stream_);
+}
+
+struct env_with_query_that_returns_stream
+{
+  cudax::stream stream_{};
+
+  const cudax::stream& query(::cuda::experimental::get_stream_t) const noexcept
+  {
+    return stream_;
+  }
+};
+TEST_CASE("Works with queries that return stream", "[stream]")
+{
+  env_with_query_that_returns_stream env;
+  ::cuda::stream_ref ref = ::cuda::experimental::get_stream(env);
+  CUDAX_CHECK(ref == env.stream_);
+}
+
+struct env_with_query_that_returns_wrong_type
+{
+  float query(::cuda::experimental::get_stream_t) const noexcept
+  {
+    return 42;
+  }
+};
+TEST_CASE("Queries require a proper return type", "[stream]")
+{
+  STATIC_REQUIRE(
+    !::cuda::std::is_invocable_v<::cuda::experimental::get_stream_t, const env_with_query_that_returns_wrong_type&>);
 }

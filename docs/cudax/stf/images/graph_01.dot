@@ -1,0 +1,10 @@
+digraph {
+    T_1 [label="T1\nX(rw)"];
+    T_2 [label="T2\nX(read)\nY(rw)"];
+    T_3 [label="T3\nX(read)\nZ(rw)"];
+    T_4 [label="T4\nY(read)\nZ(rw)"];
+    T_1 -> T_2;
+    T_1 -> T_3;
+    T_2 -> T_4;
+    T_3 -> T_4;
+}

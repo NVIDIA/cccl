@@ -32,8 +32,8 @@
 #include <thrust/shuffle.h>
 #include <thrust/sort.h>
 
-#include "catch2_test_helper.h"
 #include "cub/thread/thread_sort.cuh"
+#include <c2h/catch2_test_helper.h>
 
 struct CustomLess
 {
@@ -74,7 +74,7 @@ __global__ void kernel(const KeyT* keys_in, KeyT* keys_out, const ValueT* values
 using value_types           = c2h::type_list<std::uint32_t, std::uint64_t>;
 using items_per_thread_list = c2h::enum_type_list<int, 2, 3, 4, 5, 7, 8, 9, 11>;
 
-CUB_TEST("Test", "[thread_sort]", value_types, items_per_thread_list)
+C2H_TEST("Test", "[thread_sort]", value_types, items_per_thread_list)
 {
   using key_t                             = std::uint32_t;
   using value_t                           = c2h::get<0, TestType>;
@@ -87,7 +87,7 @@ CUB_TEST("Test", "[thread_sort]", value_types, items_per_thread_list)
 
   for (int iteration = 0; iteration < 10; iteration++)
   {
-    c2h::gen(CUB_SEED(2), data_source);
+    c2h::gen(C2H_SEED(2), data_source);
     c2h::device_vector<key_t> in_keys(data_source);
     c2h::device_vector<key_t> out_keys(elements);
 

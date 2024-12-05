@@ -36,10 +36,10 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_scalar : public integral_constant<bool, _CCCL_BUILTIN_IS_SCALAR(_Tp)>
 {};
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_scalar_v = _CCCL_BUILTIN_IS_SCALAR(_Tp);
-#  endif
+_CCCL_INLINE_VAR constexpr bool is_scalar_v = _CCCL_BUILTIN_IS_SCALAR(_Tp);
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #else
 
@@ -63,10 +63,10 @@ template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_scalar<nullptr_t> : public true_type
 {};
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_scalar_v = is_scalar<_Tp>::value;
-#  endif
+_CCCL_INLINE_VAR constexpr bool is_scalar_v = is_scalar<_Tp>::value;
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #endif // defined(_CCCL_BUILTIN_IS_SCALAR) && !defined(_LIBCUDACXX_USE_IS_SCALAR_FALLBACK)
 

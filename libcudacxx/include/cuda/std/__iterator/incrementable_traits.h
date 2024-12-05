@@ -37,7 +37,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2017
+#if !defined(_CCCL_NO_CONCEPTS)
 
 // [incrementable.traits]
 template <class>
@@ -88,7 +88,7 @@ using iter_difference_t =
                          incrementable_traits<remove_cvref_t<_Ip>>,
                          iterator_traits<remove_cvref_t<_Ip>>>::difference_type;
 
-#elif _CCCL_STD_VER > 2014
+#elif _CCCL_STD_VER > 2014 // ^^^ !_CCCL_NO_CONCEPTS ^^^
 
 // [incrementable.traits]
 template <class, class = void>
@@ -106,17 +106,17 @@ struct incrementable_traits<const _Ip> : incrementable_traits<_Ip>
 {};
 
 template <class _Tp, class = void>
-_LIBCUDACXX_INLINE_VAR constexpr bool __has_member_difference_type = false;
+_CCCL_INLINE_VAR constexpr bool __has_member_difference_type = false;
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool __has_member_difference_type<_Tp, void_t<typename _Tp::difference_type>> = true;
+_CCCL_INLINE_VAR constexpr bool __has_member_difference_type<_Tp, void_t<typename _Tp::difference_type>> = true;
 
 template <class _Tp, class = void, class = void>
-_LIBCUDACXX_INLINE_VAR constexpr bool __has_integral_minus = false;
+_CCCL_INLINE_VAR constexpr bool __has_integral_minus = false;
 
 // In C++17 we get issues trying to bind void* to a const& so special case it here
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool
+_CCCL_INLINE_VAR constexpr bool
   __has_integral_minus<_Tp,
                        enable_if_t<!same_as<_Tp, void*>>,
                        void_t<decltype(_CUDA_VSTD::declval<const _Tp&>() - _CUDA_VSTD::declval<const _Tp&>())>> =

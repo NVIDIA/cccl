@@ -28,7 +28,7 @@
 
 #pragma once
 
-#if defined(_WIN32) || defined(_WIN64)
+#ifdef _WIN32
 #  include <windows.h>
 #  undef small // Windows is terrible for polluting macro namespace
 #else
@@ -54,10 +54,10 @@
 #include <string>
 #include <vector>
 
-#include "c2h/extended_types.cuh"
 #include "mersenne.h"
-#include "test_util_vec.h"
 #include "test_warning_suppression.cuh"
+#include <c2h/extended_types.h>
+#include <c2h/test_util_vec.h>
 #include <nv/target>
 
 /******************************************************************************
@@ -1417,8 +1417,7 @@ void InitializeSegments(OffsetT num_items, int num_segments, OffsetT* h_segment_
 
 struct CpuTimer
 {
-#if defined(_WIN32) || defined(_WIN64)
-
+#ifdef _WIN32
   LARGE_INTEGER ll_freq;
   LARGE_INTEGER ll_start;
   LARGE_INTEGER ll_stop;

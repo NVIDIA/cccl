@@ -25,23 +25,23 @@
 THRUST_NAMESPACE_BEGIN
 
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> pow(const complex<T0>& x, const complex<T1>& y)
+_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> pow(const complex<T0>& x, const complex<T1>& y)
 {
-  using T = ::cuda::std::__common_type_t<T0, T1>;
+  using T = ::cuda::std::common_type_t<T0, T1>;
   return exp(log(complex<T>(x)) * complex<T>(y));
 }
 
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> pow(const complex<T0>& x, const T1& y)
+_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> pow(const complex<T0>& x, const T1& y)
 {
-  using T = ::cuda::std::__common_type_t<T0, T1>;
+  using T = ::cuda::std::common_type_t<T0, T1>;
   return exp(log(complex<T>(x)) * T(y));
 }
 
 template <typename T0, typename T1>
-_CCCL_HOST_DEVICE complex<::cuda::std::__common_type_t<T0, T1>> pow(const T0& x, const complex<T1>& y)
+_CCCL_HOST_DEVICE complex<::cuda::std::common_type_t<T0, T1>> pow(const T0& x, const complex<T1>& y)
 {
-  using T = ::cuda::std::__common_type_t<T0, T1>;
+  using T = ::cuda::std::common_type_t<T0, T1>;
   // Find `log` by ADL.
   using std::log;
   return exp(log(T(x)) * complex<T>(y));

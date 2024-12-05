@@ -35,8 +35,8 @@
 #include <cuda/std/__algorithm/find_if.h>
 #include <cuda/std/array>
 
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 CUB_NAMESPACE_BEGIN
 
@@ -62,7 +62,7 @@ CUB_NAMESPACE_END
 // %PARAM% TEST_LAUNCH lid 0:1:2
 DECLARE_LAUNCH_WRAPPER(cub::get_cuda_arch_from_kernel, get_cuda_arch_from_kernel);
 
-CUB_TEST("CUB correctly identifies the ptx version the kernel was compiled for", "[util][dispatch]")
+C2H_TEST("CUB correctly identifies the ptx version the kernel was compiled for", "[util][dispatch]")
 {
   constexpr std::size_t single_item = 1;
   c2h::device_vector<int> cuda_arch(single_item);
@@ -92,7 +92,7 @@ CUB_TEST("CUB correctly identifies the ptx version the kernel was compiled for",
 }
 
 #ifdef __CUDA_ARCH_LIST__
-CUB_TEST("PtxVersion returns a value from __CUDA_ARCH_LIST__", "[util][dispatch]")
+C2H_TEST("PtxVersion returns a value from __CUDA_ARCH_LIST__", "[util][dispatch]")
 {
   int ptx_version = 0;
   REQUIRE(cub::PtxVersion(ptx_version) == cudaSuccess);
@@ -177,7 +177,7 @@ check_chained_policy_prunes_to_arch_list(void* d_temp_storage, size_t& temp_stor
 
 DECLARE_LAUNCH_WRAPPER(check_chained_policy_prunes_to_arch_list, check_wrapper_all);
 
-CUB_TEST("ChainedPolicy prunes based on __CUDA_ARCH_LIST__", "[util][dispatch]")
+C2H_TEST("ChainedPolicy prunes based on __CUDA_ARCH_LIST__", "[util][dispatch]")
 {
   check_wrapper_all();
 }
@@ -267,7 +267,7 @@ struct policy_hub_minimal
   using max_policy = policy350;
 };
 
-CUB_TEST("ChainedPolicy invokes correct policy", "[util][dispatch]")
+C2H_TEST("ChainedPolicy invokes correct policy", "[util][dispatch]")
 {
   SECTION("policy_hub_some")
   {

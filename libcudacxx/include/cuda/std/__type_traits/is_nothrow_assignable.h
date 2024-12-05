@@ -34,34 +34,34 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_assignable
     : public integral_constant<bool, _CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE(_Tp, _Arg)>
 {};
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class _Arg>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_assignable_v = _CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE(_Tp, _Arg);
-#  endif
+_CCCL_INLINE_VAR constexpr bool is_nothrow_assignable_v = _CCCL_BUILTIN_IS_NOTHROW_ASSIGNABLE(_Tp, _Arg);
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #elif !defined(_LIBCUDACXX_HAS_NO_NOEXCEPT) && !defined(_LIBCUDACXX_HAS_NO_NOEXCEPT_SFINAE)
 
 template <bool, class _Tp, class _Arg>
-struct __libcpp_is_nothrow_assignable;
+struct __cccl_is_nothrow_assignable;
 
 template <class _Tp, class _Arg>
-struct __libcpp_is_nothrow_assignable<false, _Tp, _Arg> : public false_type
+struct __cccl_is_nothrow_assignable<false, _Tp, _Arg> : public false_type
 {};
 
 template <class _Tp, class _Arg>
-struct __libcpp_is_nothrow_assignable<true, _Tp, _Arg>
+struct __cccl_is_nothrow_assignable<true, _Tp, _Arg>
     : public integral_constant<bool, noexcept(_CUDA_VSTD::declval<_Tp>() = _CUDA_VSTD::declval<_Arg>())>
 {};
 
 template <class _Tp, class _Arg>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_assignable
-    : public __libcpp_is_nothrow_assignable<is_assignable<_Tp, _Arg>::value, _Tp, _Arg>
+    : public __cccl_is_nothrow_assignable<is_assignable<_Tp, _Arg>::value, _Tp, _Arg>
 {};
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class _Arg>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_assignable_v = is_nothrow_assignable<_Tp, _Arg>::value;
-#  endif
+_CCCL_INLINE_VAR constexpr bool is_nothrow_assignable_v = is_nothrow_assignable<_Tp, _Arg>::value;
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #else
 
@@ -117,10 +117,10 @@ struct is_nothrow_assignable<_Tp&, _Tp&&>
 
 #  endif // _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class _Arg>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_nothrow_assignable_v = is_nothrow_assignable<_Tp, _Arg>::value;
-#  endif
+_CCCL_INLINE_VAR constexpr bool is_nothrow_assignable_v = is_nothrow_assignable<_Tp, _Arg>::value;
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #endif // !defined(_LIBCUDACXX_HAS_NO_NOEXCEPT)
 

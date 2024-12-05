@@ -47,12 +47,12 @@ _CCCL_SUPPRESS_DEPRECATED_POP
 #else
 
 template <class _Tp>
-struct __libcpp_trivial_destructor : public integral_constant<bool, is_scalar<_Tp>::value || is_reference<_Tp>::value>
+struct __cccl_trivial_destructor : public integral_constant<bool, is_scalar<_Tp>::value || is_reference<_Tp>::value>
 {};
 
 template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_destructible
-    : public __libcpp_trivial_destructor<__remove_all_extents_t<_Tp>>
+    : public __cccl_trivial_destructor<remove_all_extents_t<_Tp>>
 {};
 
 template <class _Tp>
@@ -61,10 +61,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_trivially_destructible<_Tp[]> : public f
 
 #endif // defined(_CCCL_BUILTIN_HAS_TRIVIAL_DESTRUCTOR) && !defined(_LIBCUDACXX_USE_HAS_TRIVIAL_DESTRUCTOR_FALLBACK)
 
-#if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_trivially_destructible_v = is_trivially_destructible<_Tp>::value;
-#endif
+_CCCL_INLINE_VAR constexpr bool is_trivially_destructible_v = is_trivially_destructible<_Tp>::value;
+#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

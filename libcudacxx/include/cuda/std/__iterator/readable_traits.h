@@ -36,7 +36,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2017
+#if !defined(_CCCL_NO_CONCEPTS)
 
 // [readable.traits]
 template <class>
@@ -106,7 +106,7 @@ using iter_value_t =
                          indirectly_readable_traits<remove_cvref_t<_Ip>>,
                          iterator_traits<remove_cvref_t<_Ip>>>::value_type;
 
-#elif _CCCL_STD_VER > 2014
+#elif _CCCL_STD_VER > 2014 // ^^^ !_CCCL_NO_CONCEPTS ^^^
 
 // [readable.traits]
 template <class, class = void>
@@ -120,16 +120,16 @@ struct __cond_value_type<_Tp, enable_if_t<_CCCL_TRAIT(is_object, _Tp)>>
 };
 
 template <class _Tp, class = void>
-_LIBCUDACXX_INLINE_VAR constexpr bool __has_member_value_type = false;
+_CCCL_INLINE_VAR constexpr bool __has_member_value_type = false;
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool __has_member_value_type<_Tp, void_t<typename _Tp::value_type>> = true;
+_CCCL_INLINE_VAR constexpr bool __has_member_value_type<_Tp, void_t<typename _Tp::value_type>> = true;
 
 template <class _Tp, class = void>
-_LIBCUDACXX_INLINE_VAR constexpr bool __has_member_element_type = false;
+_CCCL_INLINE_VAR constexpr bool __has_member_element_type = false;
 
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool __has_member_element_type<_Tp, void_t<typename _Tp::element_type>> = true;
+_CCCL_INLINE_VAR constexpr bool __has_member_element_type<_Tp, void_t<typename _Tp::element_type>> = true;
 
 template <class, class = void>
 struct indirectly_readable_traits

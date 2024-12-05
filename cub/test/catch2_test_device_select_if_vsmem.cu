@@ -32,9 +32,9 @@
 
 #include <algorithm>
 
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
-#include <c2h/vector.cuh>
+#include <c2h/catch2_test_helper.h>
+#include <c2h/vector.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -61,14 +61,14 @@ struct less_than_t
   }
 };
 
-CUB_TEST("DeviceSelect::If works for large types", "[select_if][vsmem][device]", types)
+C2H_TEST("DeviceSelect::If works for large types", "[select_if][vsmem][device]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 10000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   // Just pick one of the input elements as boundary
   less_than_t<type> le{in[num_items / 2]};

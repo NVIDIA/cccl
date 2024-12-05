@@ -20,7 +20,7 @@ function(cccl_c_parallel_add_test target_name_var source)
 
   target_compile_definitions(${target_name} PRIVATE
     TEST_CUB_PATH="-I${CCCL_SOURCE_DIR}/cub"
-    TEST_THRUST_PATH="-I${CCCL_SOURCE_DIR}/cub"
+    TEST_THRUST_PATH="-I${CCCL_SOURCE_DIR}/thrust"
     TEST_LIBCUDACXX_PATH="-I${CCCL_SOURCE_DIR}/libcudacxx/include"
     TEST_CTK_PATH="-I${CUDAToolkit_INCLUDE_DIRS}"
   )

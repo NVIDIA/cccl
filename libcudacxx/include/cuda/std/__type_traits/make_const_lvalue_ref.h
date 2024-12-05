@@ -25,7 +25,7 @@
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 template <class _Tp>
-using __make_const_lvalue_ref = const __libcpp_remove_reference_t<_Tp>&;
+using __make_const_lvalue_ref = const remove_reference_t<_Tp>&;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

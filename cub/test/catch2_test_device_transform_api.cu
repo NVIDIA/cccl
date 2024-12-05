@@ -6,7 +6,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
-#include "catch2_test_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 // need a separate function because the ext. lambda needs to be enclosed by a function with external linkage on Windows
 void test_transform_api()
@@ -29,7 +29,7 @@ void test_transform_api()
   CHECK(result == expected);
 }
 
-CUB_TEST("DeviceTransform::Transform API example", "[device][device_transform]")
+C2H_TEST("DeviceTransform::Transform API example", "[device][device_transform]")
 {
   test_transform_api();
 }
@@ -59,7 +59,7 @@ void test_transform_stable_api()
   CHECK(result == expected);
 }
 
-CUB_TEST("DeviceTransform::TransformStableArgumentAddresses API example", "[device][device_transform]")
+C2H_TEST("DeviceTransform::TransformStableArgumentAddresses API example", "[device][device_transform]")
 {
   test_transform_stable_api();
 }

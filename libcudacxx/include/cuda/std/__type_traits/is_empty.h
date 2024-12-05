@@ -31,10 +31,10 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_empty : public integral_constant<bool, _CCCL_BUILTIN_IS_EMPTY(_Tp)>
 {};
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_empty_v = _CCCL_BUILTIN_IS_EMPTY(_Tp);
-#  endif
+_CCCL_INLINE_VAR constexpr bool is_empty_v = _CCCL_BUILTIN_IS_EMPTY(_Tp);
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #else
 
@@ -50,21 +50,21 @@ struct __is_empty2
 };
 
 template <class _Tp, bool = _CCCL_TRAIT(is_class, _Tp)>
-struct __libcpp_empty : public integral_constant<bool, sizeof(__is_empty1<_Tp>) == sizeof(__is_empty2)>
+struct __cccl_empty : public integral_constant<bool, sizeof(__is_empty1<_Tp>) == sizeof(__is_empty2)>
 {};
 
 template <class _Tp>
-struct __libcpp_empty<_Tp, false> : public false_type
+struct __cccl_empty<_Tp, false> : public false_type
 {};
 
 template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_empty : public __libcpp_empty<_Tp>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_empty : public __cccl_empty<_Tp>
 {};
 
-#  if _CCCL_STD_VER > 2011 && !defined(_LIBCUDACXX_HAS_NO_VARIABLE_TEMPLATES)
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool is_empty_v = is_empty<_Tp>::value;
-#  endif
+_CCCL_INLINE_VAR constexpr bool is_empty_v = is_empty<_Tp>::value;
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 #endif // defined(_CCCL_BUILTIN_IS_EMPTY) && !defined(_LIBCUDACXX_USE_IS_EMPTY_FALLBACK)
 

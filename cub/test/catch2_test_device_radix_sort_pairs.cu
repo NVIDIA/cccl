@@ -42,8 +42,8 @@
 
 #include "catch2_large_array_sort_helper.cuh"
 #include "catch2_radix_sort_helper.cuh"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -56,7 +56,7 @@ using value_types    = c2h::type_list<cuda::std::uint8_t, cuda::std::uint64_t, c
 // cub::detail::ChooseOffsetsT only selected 32/64 bit unsigned types:
 using num_items_types = c2h::type_list<cuda::std::uint32_t, cuda::std::uint64_t>;
 
-CUB_TEST("DeviceRadixSort::SortPairs: Basic testing", "[pairs][radix][sort][device]", value_types, num_items_types)
+C2H_TEST("DeviceRadixSort::SortPairs: Basic testing", "[pairs][radix][sort][device]", value_types, num_items_types)
 {
   using key_t       = cuda::std::uint32_t;
   using value_t     = c2h::get<0, TestType>;
@@ -75,8 +75,8 @@ CUB_TEST("DeviceRadixSort::SortPairs: Basic testing", "[pairs][radix][sort][devi
 
   const int num_key_seeds   = 1;
   const int num_value_seeds = 1;
-  c2h::gen(CUB_SEED(num_key_seeds), in_keys);
-  c2h::gen(CUB_SEED(num_value_seeds), in_values);
+  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
+  c2h::gen(C2H_SEED(num_value_seeds), in_values);
 
   const bool is_descending = GENERATE(false, true);
 
@@ -110,7 +110,7 @@ CUB_TEST("DeviceRadixSort::SortPairs: Basic testing", "[pairs][radix][sort][devi
   REQUIRE(ref_values == out_values);
 }
 
-CUB_TEST("DeviceRadixSort::SortPairs: DoubleBuffer API", "[pairs][radix][sort][device]", value_types)
+C2H_TEST("DeviceRadixSort::SortPairs: DoubleBuffer API", "[pairs][radix][sort][device]", value_types)
 {
   using key_t   = cuda::std::uint32_t;
   using value_t = c2h::get<0, TestType>;
@@ -126,8 +126,8 @@ CUB_TEST("DeviceRadixSort::SortPairs: DoubleBuffer API", "[pairs][radix][sort][d
 
   const int num_key_seeds   = 1;
   const int num_value_seeds = 1;
-  c2h::gen(CUB_SEED(num_key_seeds), in_keys);
-  c2h::gen(CUB_SEED(num_value_seeds), in_values);
+  c2h::gen(C2H_SEED(num_key_seeds), in_keys);
+  c2h::gen(C2H_SEED(num_value_seeds), in_values);
 
   const bool is_descending = GENERATE(false, true);
 
@@ -165,7 +165,7 @@ void do_large_offset_test(std::size_t num_items)
   try
   {
     large_array_sort_helper<key_t, value_t> arrays;
-    arrays.initialize_for_stable_pair_sort(CUB_SEED(1), num_items, is_descending);
+    arrays.initialize_for_stable_pair_sort(C2H_SEED(1), num_items, is_descending);
 
     TIME(c2h::cpu_timer timer);
 
@@ -196,7 +196,7 @@ void do_large_offset_test(std::size_t num_items)
   }
 }
 
-CUB_TEST("DeviceRadixSort::SortPairs: 32-bit overflow check", "[large][pairs][radix][sort][device]")
+C2H_TEST("DeviceRadixSort::SortPairs: 32-bit overflow check", "[large][pairs][radix][sort][device]")
 {
   using key_t       = std::uint8_t;
   using value_t     = std::uint8_t;
@@ -208,7 +208,7 @@ CUB_TEST("DeviceRadixSort::SortPairs: 32-bit overflow check", "[large][pairs][ra
   do_large_offset_test<key_t, value_t, num_items_t>(num_items);
 }
 
-CUB_TEST("DeviceRadixSort::SortPairs: Large Offsets", "[large][pairs][radix][sort][device]")
+C2H_TEST("DeviceRadixSort::SortPairs: Large Offsets", "[large][pairs][radix][sort][device]")
 {
   using key_t       = std::uint8_t;
   using value_t     = std::uint8_t;
