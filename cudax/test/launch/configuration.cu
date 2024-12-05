@@ -203,3 +203,15 @@ TEST_CASE("Hierarchy construction in config", "[launch]")
   [[maybe_unused]] auto config_no_dims = cudax::make_config(cudax::cooperative_launch());
   static_assert(cuda::std::is_same_v<decltype(config_no_dims.dims), cudax::uninit_t>);
 }
+
+TEST_CASE("Configuration combine", "[launch]")
+{
+  auto grid         = cudax::grid_dims<2>;
+  auto block        = cudax::block_dims(256);
+  auto config_part1 = make_config(grid, cudax::cooperative_launch());
+  auto config_part2 = make_config(block, cudax::cooperative_launch());
+  auto combined     = config_part1.combine(config_part2);
+  static_assert(
+    cuda::std::is_same_v<decltype(combined), decltype(make_config(grid, block, cudax::cooperative_launch()))>);
+  CUDAX_REQUIRE(combined.dims.count(cudax::thread) == 512);
+}

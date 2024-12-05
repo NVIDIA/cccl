@@ -730,7 +730,7 @@ public:
   //!
   //! @return Hierarchy holding the combined levels from both hierarchies
   template <typename OtherUnit, typename... OtherLevels>
-  constexpr auto combine(const hierarchy_dimensions_fragment<OtherUnit, OtherLevels...>& other)
+  constexpr auto combine(const hierarchy_dimensions_fragment<OtherUnit, OtherLevels...>& other) const
   {
     using this_top_level     = __level_type_of<::cuda::std::__type_index_c<0, Levels...>>;
     using this_bottom_level  = __level_type_of<::cuda::std::__type_index_c<sizeof...(Levels) - 1, Levels...>>;

@@ -81,12 +81,15 @@ _CCCL_DEVICE auto& find_option_in_tuple(const ::cuda::std::tuple<Options...>& tu
   return ::cuda::std::apply(find_option_in_tuple_impl<Kind>(), tuple);
 }
 
+template <typename _Option, typename... _OptionsList>
+inline constexpr bool __option_present_in_list = ((_Option::kind == _OptionsList::kind) || ...);
+
 template <typename...>
 inline constexpr bool no_duplicate_options = true;
 
 template <typename Option, typename... Rest>
 inline constexpr bool no_duplicate_options<Option, Rest...> =
-  ((Option::kind != Rest::kind) && ...) && no_duplicate_options<Rest...>;
+  !__option_present_in_list<Option, Rest...> && no_duplicate_options<Rest...>;
 
 template <typename... Prev>
 _CCCL_NODISCARD constexpr auto process_config_args(const ::cuda::std::tuple<Prev...>& previous)
@@ -340,14 +343,70 @@ private:
   }
 };
 
+template <typename... _OptionsToFilter>
+struct __filter_options
+{
+  template <bool _Pred, typename _Option>
+  _CCCL_NODISCARD auto __option_or_empty(const _Option& __option)
+  {
+    if constexpr (_Pred)
+    {
+      return ::cuda::std::tuple(__option);
+    }
+    else
+    {
+      return ::cuda::std::tuple();
+    }
+  }
+
+  template <typename... _Options>
+  _CCCL_NODISCARD auto operator()(const _Options&... __options)
+  {
+    return ::cuda::std::tuple_cat(
+      __option_or_empty<!detail::__option_present_in_list<_Options, _OptionsToFilter...>>(__options)...);
+  }
+};
+/*
+template <typename _Option, typename... _RestOptions>
+_CCCL_NODISCARD auto operator()(const _Option& __option, const _RestOptions& __rest)
+{
+ if constexpr (detail::__option_present_in_list<_Option, _OptionsToFilter>) {
+   return (*this)(__rest...);
+ }
+ else {
+   return ::cuda::std::tuple_cat()
+ }
+}
+
+_CCCL_NODISCARD operator()()
+{
+ return ::cuda::std::tuple();
+}*/
+
+template <typename _Dimensions, typename... _Options>
+auto __make_config_from_tuple(const _Dimensions& __dims, const ::cuda::std::tuple<_Options...>& __opts);
+
+template <typename _Dimensions, typename... _Options>
+struct __kernel_config;
+
+template <typename _T>
+inline constexpr bool __is_kernel_config = false;
+
+template <typename _Dimensions, typename... _Options>
+inline constexpr bool __is_kernel_config<kernel_config<_Dimensions, _Options...>> = true;
+
+template <typename _Tp>
+_CCCL_CONCEPT __has_default_kernel_configuration =
+  _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __t)(requires(__is_kernel_config<decltype(__t.default_configuration())>));
+
 /**
  * @brief Type describing a kernel launch configuration
  *
  * This type should not be constructed directly and make_config helper function should be used instead
  *
  * @tparam Dimensions
- * cuda::experimetnal::hierarchy_dimensions instance that describes dimensions of thread hierarchy in this configuration
- * object
+ * cuda::experimetnal::hierarchy_dimensions instance that describes dimensions of thread hierarchy in this
+ * configuration object
  *
  * @tparam Options
  * Types of options that were added to this configuration object
@@ -358,7 +417,7 @@ struct kernel_config
   Dimensions dims;
   ::cuda::std::tuple<Options...> options;
 
-  static_assert(::cuda::std::_Or<std::true_type, ::cuda::std::is_base_of<detail::launch_option, Options>...>::value);
+  static_assert(::cuda::std::_And<::cuda::std::is_base_of<detail::launch_option, Options>...>::value);
   static_assert(detail::no_duplicate_options<Options...>);
 
   constexpr kernel_config(const Dimensions& dims, const Options&... opts)
@@ -384,11 +443,22 @@ struct kernel_config
       dims, ::cuda::std::tuple_cat(options, ::cuda::std::make_tuple(new_options...)));
   }
 
-  template <typename OtherDimensions, typename... OtherOptions>
-  auto combine(const kernel_config<OtherDimensions, OtherOptions...>& other_config)
+  template <typename _OtherDimensions, typename... _OtherOptions>
+  _CCCL_NODISCARD auto combine(const kernel_config<_OtherDimensions, _OtherOptions...>& __other_config) const
   {
-    if constexpr (false)
+    // can't use fully qualified kernel_config name here because of nvcc bug, TODO remove __make_config_from_tuple once
+    // fixed
+    return __make_config_from_tuple(
+      dims.combine(__other_config.dims),
+      ::cuda::std::tuple_cat(options, ::cuda::std::apply(__filter_options<Options...>{}, __other_config.options)));
+  }
+
+  template <typename _Kernel>
+  _CCCL_NODISCARD auto combine_with_default(const _Kernel& __kernel) const
+  {
+    if constexpr (__has_default_kernel_configuration<_Kernel>)
     {
+      return combine(__kernel.default_configuration());
     }
     else
     {
@@ -417,6 +487,12 @@ _CUDAX_HOST_API constexpr auto
 operator&(const level_dimensions<L1, Dims1>& l1, const level_dimensions<L2, Dims2>& l2) noexcept
 {
   return kernel_config(make_hierarchy_fragment(l1, l2));
+}
+
+template <typename _Dimensions, typename... _Options>
+auto __make_config_from_tuple(const _Dimensions& __dims, const ::cuda::std::tuple<_Options...>& __opts)
+{
+  return kernel_config(__dims, __opts);
 }
 
 template <typename Dimensions,
