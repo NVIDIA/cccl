@@ -7,7 +7,7 @@ import shutil
 from cuda import nvrtc
 from cuda.cooperative.experimental._caching import disk_cache
 from cuda.cooperative.experimental._common import check_in, version
-import importlib.resources as pkg_resources
+import importlib
 import functools
 
 def CHECK_NVRTC(err, prog):
@@ -45,11 +45,11 @@ def compile_impl(cpp, cc, rdc, code, nvrtc_path, nvrtc_version):
     check_in('rdc', rdc, [True, False])
     check_in('code', code, ['lto', 'ptx'])
 
-    with pkg_resources.path('cuda', '_include') as include_path:
-        cub_path = include_path
-        thrust_path = include_path
-        libcudacxx_path = os.path.join(include_path, 'libcudacxx')
-        cuda_include_path = os.path.join(get_cuda_path(), 'include')
+    include_path = importlib.resources.files('cuda').joinpath('_include')
+    cub_path = str(include_path)
+    thrust_path = cub_path
+    libcudacxx_path = str(os.path.join(include_path, 'libcudacxx'))
+    cuda_include_path = os.path.join(get_cuda_path(), 'include')
 
     opts = [b"--std=c++17", \
             bytes(f"--include-path={cub_path}", encoding='ascii'), \
