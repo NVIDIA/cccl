@@ -134,7 +134,7 @@ DECLARE_VARIABLE_UNITTEST(TestSetDifferenceEquivalentRanges);
 template <typename T>
 void TestSetDifferenceMultiset(const size_t n)
 {
-  thrust::host_vector<T> vec = unittest::random_integers<T>(2 * n);
+  thrust::host_vector<T> vec = unittest::random_integers<int>(2 * n);
 
   // restrict elements to [min,13)
   for (typename thrust::host_vector<T>::iterator i = vec.begin(); i != vec.end(); ++i)

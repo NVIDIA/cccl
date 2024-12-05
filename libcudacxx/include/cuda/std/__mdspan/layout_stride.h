@@ -413,7 +413,7 @@ struct layout_stride
     _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type required_span_size() const noexcept
     {
       index_type __span_size = 1;
-      for (unsigned __r = 0; __r < extents_type::rank(); __r++)
+      for (rank_type __r = 0; __r != extents_type::rank(); __r++)
       {
         // Return early if any of the extents are zero
         if (extents().extent(__r) == 0)
@@ -485,7 +485,7 @@ struct layout_stride
     operator==(const mapping& __x, const _StridedLayoutMapping& __y) noexcept
     {
       bool __strides_match = true;
-      for (rank_type __r = 0; __r < extents_type::rank(); __r++)
+      for (rank_type __r = 0; __r != extents_type::rank(); __r++)
       {
         __strides_match = __strides_match && (__x.stride(__r) == __y.stride(__r));
       }
