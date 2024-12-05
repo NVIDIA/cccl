@@ -16,6 +16,8 @@
 #include <cuda/annotated_ptr>
 #include <cuda/std/cassert>
 
+#include <nv/target>
+
 #if defined(DEBUG)
 #  define DPRINTF(...)     \
     {                      \
@@ -33,12 +35,10 @@ __device__ __host__ void assert_rt_wrap(cudaError_t code, const char* file, int 
   if (code != cudaSuccess)
   {
 #ifndef TEST_COMPILER_NVRTC
-#  if !defined(__CUDA_ARCH__)
-    printf("assert: %s %s %d\n", cudaGetErrorString(code), file, line);
-#  else
-    printf("assert: error=%d %s %d\n", code, file, line);
-#  endif
-#endif
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                      (printf("assert: %s %s %d\n", cudaGetErrorString(code), file, line);),
+                      (printf("assert: error=%d %s %d\n", code, file, line);))
+#endif // !TEST_COMPILER_NVRTC
     assert(code == cudaSuccess);
   }
 }
