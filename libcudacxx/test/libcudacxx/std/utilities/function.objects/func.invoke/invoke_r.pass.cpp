@@ -127,6 +127,7 @@ __host__ __device__ constexpr bool test()
     static_assert(cuda::std::is_void<decltype(cuda::std::invoke_r<void>(F{was_called}, 3))>::value, "");
   }
 
+// https://developercommunity.visualstudio.com/t/ICE-when-forwarding-a-function-to-invoke/10806827
 #if !defined(TEST_COMPILER_MSVC)
   // Make sure invoke_r works with const void return type
   {
