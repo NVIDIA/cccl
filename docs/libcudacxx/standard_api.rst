@@ -117,7 +117,7 @@ Feature availability:
    - ``transposed()`` and ``layout_transpose``
    - ``conjugate_transposed()``
 
--  C++23 ``forward_like`` and ``to_underlying`` from ``<utility>`` are available in C++11.
+-  C++23 ``forward_like``, ``to_underlying``, and ``unreachable`` from ``<utility>`` are available in C++11.
 
 -  C++23 ``is_scoped_enum`` in ``<type_traits>`` is available in C++11.
 
