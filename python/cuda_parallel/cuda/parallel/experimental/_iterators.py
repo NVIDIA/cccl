@@ -113,12 +113,15 @@ class RawPointer:
             ),
         ]
 
+    @property
     def state_c_void_p(self):
         return ctypes.cast(ctypes.pointer(self.val), ctypes.c_void_p)
 
+    @property
     def size(self):
         return _DEVICE_POINTER_SIZE
 
+    @property
     def alignment(self):
         return _DEVICE_POINTER_SIZE
 
@@ -186,12 +189,15 @@ class CacheModifiedPointer:
             ),
         ]
 
+    @property
     def state_c_void_p(self):
         return ctypes.cast(ctypes.pointer(self.val), ctypes.c_void_p)
 
+    @property
     def size(self):
         return _DEVICE_POINTER_SIZE
 
+    @property
     def alignment(self):
         return _DEVICE_POINTER_SIZE
 
@@ -219,14 +225,17 @@ class ConstantIterator:
             _ncc(f"{self.prefix}_dereference", constant_dereference, ntype(thisty)),
         ]
 
+    @property
     def state_c_void_p(self):
         return ctypes.cast(ctypes.pointer(self.val), ctypes.c_void_p)
 
+    @property
     def size(self):
         return self.ntype.bitwidth // 8
 
+    @property
     def alignment(self):
-        return self.size()
+        return self.size
 
 
 def count_advance(this, diff):
@@ -252,14 +261,17 @@ class CountingIterator:
             _ncc(f"{self.prefix}_dereference", count_dereference, ntype(thisty)),
         ]
 
+    @property
     def state_c_void_p(self):
         return ctypes.cast(ctypes.pointer(self.count), ctypes.c_void_p)
 
+    @property
     def size(self):
         return self.ntype.bitwidth // 8
 
+    @property
     def alignment(self):
-        return self.size()
+        return self.size
 
 
 class TransformIterator:
@@ -292,14 +304,17 @@ class TransformIterator:
             _ncc(op_abi_name, op, op_return_ntype(it.ntype)),
         ]
 
+    @property
     def state_c_void_p(self):
-        return self.it.state_c_void_p()
+        return self.it.state_c_void_p
 
+    @property
     def size(self):
-        return self.it.size()  # TODO fix for stateful op
+        return self.it.size  # TODO fix for stateful op
 
+    @property
     def alignment(self):
-        return self.it.alignment()  # TODO fix for stateful op
+        return self.it.alignment  # TODO fix for stateful op
 
 
 def cumap(op, it, op_return_ntype):

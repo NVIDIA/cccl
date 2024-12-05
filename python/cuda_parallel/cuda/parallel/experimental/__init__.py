@@ -176,7 +176,7 @@ def _facade_iter_as_cccl_iter(d_in):
     info = _type_to_info_from_numba_type(d_in.ntype)
     ltoirs = _extract_ctypes_ltoirs(d_in.ltoirs)
     # size alignment type advance dereference value_type state ltoirs
-    return _CCCLIterator(d_in.size(), d_in.alignment(), _CCCLIteratorKindEnum.ITERATOR, adv, drf, info, d_in.state_c_void_p(), ltoirs)
+    return _CCCLIterator(d_in.size, d_in.alignment, _CCCLIteratorKindEnum.ITERATOR, adv, drf, info, d_in.state_c_void_p, ltoirs)
 
 
 def _d_in_as_cccl_iter(d_in):
