@@ -223,22 +223,22 @@ TEST_CASE("uninitialized_buffer is usable with cudax::launch", "[container]")
   {
     const int grid_size = 4;
     cudax::uninitialized_buffer<int, ::cuda::mr::device_accessible> buffer{cudax::device_memory_resource{}, 1024};
-    auto dimensions = cudax::make_hierarchy(cudax::grid_dims(grid_size), cudax::block_dims<256>());
+    auto configuration = cudax::make_config(cudax::grid_dims(grid_size), cudax::block_dims<256>());
 
     cudax::stream stream;
 
-    cudax::launch(stream, dimensions, kernel, buffer);
+    cudax::launch(stream, configuration, kernel, buffer);
   }
 
   SECTION("const")
   {
     const int grid_size = 4;
     const cudax::uninitialized_buffer<int, ::cuda::mr::device_accessible> buffer{cudax::device_memory_resource{}, 1024};
-    auto dimensions = cudax::make_hierarchy(cudax::grid_dims(grid_size), cudax::block_dims<256>());
+    auto configuration = cudax::make_config(cudax::grid_dims(grid_size), cudax::block_dims<256>());
 
     cudax::stream stream;
 
-    cudax::launch(stream, dimensions, const_kernel, buffer);
+    cudax::launch(stream, configuration, const_kernel, buffer);
   }
 }
 

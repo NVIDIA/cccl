@@ -148,7 +148,7 @@ struct warp_in_block_matcher_t<Bits, 0, PartialWarpId>
 //!
 //!      // Specialize BlockRadixRank for a 1D block of 2 threads
 //!      // Specialize BlockRadixRank for a 1D block of 2 threads
-//!      using block_radix_rank = cub::BlockRadixRank<block_threads, radix_bits>;
+//!      using block_radix_rank = cub::BlockRadixRank<block_threads, radix_bits, false>;
 //!      using storage_t = typename block_radix_rank::TempStorage;
 //!
 //!      // Allocate shared memory for BlockRadixSort
