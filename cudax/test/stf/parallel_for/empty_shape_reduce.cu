@@ -25,9 +25,10 @@ int main()
   auto lsum = ctx.logical_data(shape_of<scalar<int>>());
   auto lmax = ctx.logical_data(shape_of<scalar<int>>());
 
-  ctx.parallel_for(box(0), lsum.reduce(reducer::sum<int>{}), lmax.reduce(reducer::maxval<int>{}))->*[] __device__(size_t, auto&, auto &) {
-    // This is never going to be called because this is an empty shape
-  };
+  ctx.parallel_for(box(0), lsum.reduce(reducer::sum<int>{}), lmax.reduce(reducer::maxval<int>{}))
+      ->*[] __device__(size_t, auto&, auto&) {
+            // This is never going to be called because this is an empty shape
+          };
 
   auto res_sum = ctx.transfer_host(lsum);
   auto res_max = ctx.transfer_host(lmax);
