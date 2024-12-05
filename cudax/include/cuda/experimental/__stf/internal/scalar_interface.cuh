@@ -50,7 +50,9 @@ class scalar
 {
 public:
   scalar() = default;
-  scalar(T *_addr) : addr(_addr) {}
+  scalar(T* _addr)
+      : addr(_addr)
+  {}
   T* addr;
 };
 
@@ -82,10 +84,10 @@ public:
  * @brief Data interface to manipulate the void interface in the CUDA stream backend
  */
 template <typename T>
-class scalar_stream_interface : public stream_data_interface_simple<scalar<T>>
+class scalar_stream_interface : public stream_data_interface<scalar<T>>
 {
 public:
-  using base = stream_data_interface_simple<scalar<T>>;
+  using base = stream_data_interface<scalar<T>>;
   using typename base::shape_t;
 
   scalar_stream_interface(scalar<T> val)
@@ -124,43 +126,52 @@ public:
     cuda_safe_call(cudaMemcpyAsync((void*) dst_instance.addr, (void*) src_instance.addr, sz, kind, stream));
   }
 
-  void stream_data_allocate(
-    backend_ctx_untyped&,
+  void data_allocate(
+    backend_ctx_untyped& bctx,
+    block_allocator_untyped& custom_allocator,
     const data_place& memory_node,
     instance_id_t instance_id,
     ::std::ptrdiff_t& s,
-    void**,
-    cudaStream_t stream) override
+    void** extra_args,
+    event_list& prereqs) override
   {
     scalar<T>& instance = this->instance(instance_id);
-    T* base_ptr;
-
-    if (memory_node == data_place::host)
-    {
-      // Fallback to a synchronous method as there is no asynchronous host allocation API
-      cuda_safe_call(cudaStreamSynchronize(stream));
-      cuda_safe_call(cudaHostAlloc(&base_ptr, sizeof(T), cudaHostAllocMapped));
-    }
-    else
-    {
-      cuda_safe_call(cudaMallocAsync(&base_ptr, sizeof(T), stream));
-    }
-
-    instance.addr = base_ptr;
+    _CCCL_ASSERT(memory_node != data_place::invalid, "invalid memory node");
 
     s = sizeof(T);
+
+    T* base_ptr   = static_cast<T*>(custom_allocator.allocate(bctx, memory_node, s, prereqs));
+    instance.addr = base_ptr;
   }
 
-  /// Pretend we deallocate an instance (no-op)
-  void stream_data_deallocate(backend_ctx_untyped&, const data_place&, instance_id_t, void*, cudaStream_t) override {}
-
-  bool pin_host_memory(instance_id_t) override
+  void data_deallocate(
+    backend_ctx_untyped& bctx,
+    block_allocator_untyped& custom_allocator,
+    const data_place& memory_node,
+    instance_id_t instance_id,
+    void* extra_args,
+    event_list& prereqs) override
   {
-    // no-op
-    return false;
+    auto& local_desc = this->instance(instance_id);
+    custom_allocator.deallocate(bctx, memory_node, prereqs, local_desc.addr, sizeof(T));
   }
 
-  void unpin_host_memory(instance_id_t) override {}
+  bool pin_host_memory(instance_id_t instance_id) override
+  {
+    auto& s = this->instance(instance_id);
+    if (address_is_pinned(s.addr))
+    {
+      return false;
+    }
+    pin_memory(s.addr, 1);
+    return true;
+  }
+
+  void unpin_host_memory(instance_id_t instance_id) override
+  {
+    auto& s = this->instance(instance_id);
+    unpin_memory(s.addr);
+  }
 };
 
 /**
@@ -196,41 +207,79 @@ public:
   {}
 
   void data_allocate(
-    backend_ctx_untyped&,
-    block_allocator_untyped&,
-    const data_place&,
-    instance_id_t,
+    backend_ctx_untyped& bctx,
+    block_allocator_untyped& a,
+    const data_place& memory_node,
+    instance_id_t instance_id,
     ::std::ptrdiff_t& s,
     void**,
-    event_list&) override
+    event_list& prereqs) override
   {
     s = sizeof(T);
+
+    void* base_ptr = a.allocate(bctx, memory_node, s, prereqs);
+
+    auto& local_desc = this->instance(instance_id);
+    local_desc       = scalar<T>(static_cast<T*>(base_ptr));
   }
 
   void data_deallocate(
-    backend_ctx_untyped&, block_allocator_untyped&, const data_place&, instance_id_t, void*, event_list&) final
-  {}
+    backend_ctx_untyped& bctx,
+    block_allocator_untyped& a,
+    const data_place& memory_node,
+    instance_id_t instance_id,
+    void*,
+    event_list& prereqs) final
+  {
+    auto& local_desc = this->instance(instance_id);
+    a.deallocate(bctx, memory_node, prereqs, local_desc.addr, sizeof(T));
+  }
 
   cudaGraphNode_t graph_data_copy(
-    cudaMemcpyKind,
-    instance_id_t,
-    instance_id_t,
+    cudaMemcpyKind kind,
+    instance_id_t src_instance_id,
+    instance_id_t dst_instance_id,
     cudaGraph_t graph,
     const cudaGraphNode_t* input_nodes,
     size_t input_cnt) override
   {
-    cudaGraphNode_t dummy;
-    cuda_safe_call(cudaGraphAddEmptyNode(&dummy, graph, input_nodes, input_cnt));
-    return dummy;
+    const auto& src_instance = this->instance(src_instance_id);
+    const auto& dst_instance = this->instance(dst_instance_id);
+
+    T* src_ptr = src_instance.addr;
+    T* dst_ptr = dst_instance.addr;
+
+    cudaMemcpy3DParms cpy_params = {
+      .srcArray = nullptr,
+      .srcPos   = make_cudaPos(size_t(0), size_t(0), size_t(0)),
+      .srcPtr   = make_cudaPitchedPtr(src_ptr, sizeof(T), 1, 1),
+      .dstArray = nullptr,
+      .dstPos   = make_cudaPos(size_t(0), size_t(0), size_t(0)),
+      .dstPtr   = make_cudaPitchedPtr(dst_ptr, sizeof(T), 1, 1),
+      .extent   = make_cudaExtent(sizeof(T), 1, 1),
+      .kind     = kind};
+
+    cudaGraphNode_t result;
+    cuda_safe_call(cudaGraphAddMemcpyNode(&result, graph, input_nodes, input_cnt, &cpy_params));
+    return result;
   }
 
-  bool pin_host_memory(instance_id_t) override
+  bool pin_host_memory(instance_id_t instance_id) override
   {
-    // no-op
-    return false;
+    auto s = this->instance(instance_id);
+    if (address_is_pinned(s.addr))
+    {
+      return false;
+    }
+    pin_memory(s.addr, 1);
+    return true;
   }
 
-  void unpin_host_memory(instance_id_t) override {}
+  void unpin_host_memory(instance_id_t) override
+  {
+    // no-op ... we unfortunately cannot unpin memory safely yet because
+    // the graph may be executed a long time after this unpinning occurs.
+  }
 };
 
 /**
@@ -268,9 +317,9 @@ struct owning_container_of<scalar<T>>
 template <typename T>
 struct hash<scalar<T>>
 {
-  ::std::size_t operator()(scalar<T> const&) const noexcept
+  ::std::size_t operator()(scalar<T> const& s) const noexcept
   {
-    return 16; // TODO !
+    return ::std::hash<T>{}(*s.addr);
   }
 };
 
