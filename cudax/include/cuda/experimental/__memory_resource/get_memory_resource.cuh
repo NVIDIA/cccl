@@ -39,7 +39,7 @@
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/std/__type_traits/is_same.h>
 
-#include <cuda/experimental/__async/queries.cuh>
+#include <cuda/experimental/__async/sender/queries.cuh>
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
 
 namespace cuda::experimental

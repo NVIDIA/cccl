@@ -26,7 +26,7 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
-#include <cuda/experimental/__async/queries.cuh>
+#include <cuda/experimental/__async/sender/queries.cuh>
 #include <cuda/experimental/__execution/policy.cuh>
 #include <cuda/experimental/__memory_resource/any_resource.cuh>
 #include <cuda/experimental/__memory_resource/device_memory_resource.cuh>
