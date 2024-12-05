@@ -18,6 +18,10 @@ _CHAR_PTR_NUMBA_TYPE = numba.types.CPointer(numba.types.int8)
 _CHAR_PTR_IR_TYPE = ir.PointerType(ir.IntType(8))
 
 
+def numba_type_from_any(value_type):
+    return getattr(numba.types, str(value_type))
+
+
 def _sizeof_numba_type(ntype):
     mapping = {
         numba.types.int8: 1,
