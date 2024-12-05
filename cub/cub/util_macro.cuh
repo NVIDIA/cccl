@@ -111,7 +111,7 @@ _CCCL_DIAG_SUPPRESS_GCC("-Wattributes")
 _CCCL_DIAG_SUPPRESS_CLANG("-Wattributes")
 #  if !_CCCL_CUDA_COMPILER(NVHPC)
 _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
-#  endif // !_CCCL_CUDA_COMPILER_NVHPC
+#  endif // !_CCCL_CUDA_COMPILER(NVHPC)
 #  if _CCCL_COMPILER(ICC)
 #    pragma nv_diag_suppress 1407 // the "__visibility__" attribute can only appear on functions and
                                   // variables with external linkage'

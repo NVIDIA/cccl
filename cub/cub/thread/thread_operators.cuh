@@ -454,12 +454,12 @@ struct SimdMin<__half>
 #    if _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC)
     return __floats2half2_rn(::cuda::minimum<>{}(__half2float(a.x), __half2float(b.x)),
                              ::cuda::minimum<>{}(__half2float(a.y), __half2float(b.y)));
-#    else // ^^^ _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER_NVHPC ^^^ / vvv otherwise vvv
+#    else // ^^^ _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv otherwise vvv
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmin2(a, b);),
                  (return __halves2half2(__float2half(::cuda::minimum<>{}(__half2float(a.x), __half2float(b.x))),
                                         __float2half(::cuda::minimum<>{}(__half2float(a.y), __half2float(b.y))));));
-#    endif // !_CCCL_CUDACC_BELOW(12) || !_CCCL_CUDA_COMPILER_NVHPC
+#    endif // !_CCCL_CUDACC_BELOW(12) || !_CCCL_CUDA_COMPILER(NVHPC)
   }
 };
 
@@ -489,13 +489,13 @@ struct SimdMin<__nv_bfloat16>
 #    if _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC)
     return __floats2bfloat162_rn(::cuda::minimum<>{}(__bfloat162float(a.x), __bfloat162float(b.x)),
                                  ::cuda::minimum<>{}(__bfloat162float(a.y), __bfloat162float(b.y)));
-#    else // ^^^ _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER_NVHPC ^^^ / vvv otherwise vvv
+#    else // ^^^ _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv otherwise vvv
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmin2(a, b);),
                  (return cub::internal::halves2bfloat162(
                            __float2bfloat16(::cuda::minimum<>{}(__bfloat162float(a.x), __bfloat162float(b.x))),
                            __float2bfloat16(::cuda::minimum<>{}(__bfloat162float(a.y), __bfloat162float(b.y))));));
-#    endif // !_CCCL_CUDACC_BELOW(12) || !_CCCL_CUDA_COMPILER_NVHPC
+#    endif // !_CCCL_CUDACC_BELOW(12) || !_CCCL_CUDA_COMPILER(NVHPC)
   }
 };
 
@@ -545,12 +545,12 @@ struct SimdMax<__half>
 #    if _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC)
     return __floats2half2_rn(::cuda::maximum<>{}(__half2float(a.x), __half2float(b.x)),
                              ::cuda::maximum<>{}(__half2float(a.y), __half2float(b.y)));
-#    else // ^^^ _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER_NVHPC ^^^ / vvv otherwise vvv
+#    else // ^^^ _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv otherwise vvv
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmax2(a, b);),
                  (return __halves2half2(__float2half(::cuda::maximum<>{}(__half2float(a.x), __half2float(b.x))),
                                         __float2half(::cuda::maximum<>{}(__half2float(a.y), __half2float(b.y))));));
-#    endif // !_CCCL_CUDACC_BELOW(12) || !_CCCL_CUDA_COMPILER_NVHPC
+#    endif // !_CCCL_CUDACC_BELOW(12) || !_CCCL_CUDA_COMPILER(NVHPC)
   }
 };
 
@@ -568,13 +568,13 @@ struct SimdMax<__nv_bfloat16>
 #    if _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC)
     return __floats2bfloat162_rn(::cuda::maximum<>{}(__bfloat162float(a.x), __bfloat162float(b.x)),
                                  ::cuda::maximum<>{}(__bfloat162float(a.y), __bfloat162float(b.y)));
-#    else // ^^^ _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER_NVHPC ^^^ / vvv otherwise vvv
+#    else // ^^^ _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv otherwise vvv
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmax2(a, b);),
                  (return cub::internal::halves2bfloat162(
                            __float2bfloat16(::cuda::maximum<>{}(__bfloat162float(a.x), __bfloat162float(b.x))),
                            __float2bfloat16(::cuda::maximum<>{}(__bfloat162float(a.y), __bfloat162float(b.y))));));
-#    endif // !_CCCL_CUDACC_BELOW(12) || !_CCCL_CUDA_COMPILER_NVHPC
+#    endif // !_CCCL_CUDACC_BELOW(12) || !_CCCL_CUDA_COMPILER(NVHPC)
   }
 };
 
@@ -599,12 +599,12 @@ struct SimdSum<__half>
   {
 #    if _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC)
     return __floats2half2_rn(__half2float(a.x) + __half2float(b.x), __half2float(a.y) + __half2float(b.y));
-#    else // ^^^ _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER_NVHPC ^^^ / vvv otherwise vvv
+#    else // ^^^ _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv otherwise vvv
     NV_IF_TARGET(NV_PROVIDES_SM_53,
                  (return __hadd2(a, b);),
                  (return __halves2half2(__float2half(__half2float(a.x) + __half2float(b.x)),
                                         __float2half(__half2float(a.y) + __half2float(b.y)));));
-#    endif // !_CCCL_CUDACC_BELOW(12) || !_CCCL_CUDA_COMPILER_NVHPC
+#    endif // !_CCCL_CUDACC_BELOW(12) || !_CCCL_CUDA_COMPILER(NVHPC)
   }
 };
 
@@ -622,13 +622,13 @@ struct SimdSum<__nv_bfloat16>
 #    if _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC)
     return __floats2bfloat162_rn(
       __bfloat162float(a.x) + __bfloat162float(b.x), __bfloat162float(a.y) + __bfloat162float(b.y));
-#    else // ^^^ _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER_NVHPC ^^^ / vvv otherwise vvv
+#    else // ^^^ _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv otherwise vvv
     NV_IF_TARGET(
       NV_PROVIDES_SM_80,
       (return __hadd2(a, b);),
       (return cub::internal::halves2bfloat162(__float2bfloat16(__bfloat162float(a.x) + __bfloat162float(b.x)),
                                               __float2bfloat16(__bfloat162float(a.y) + __bfloat162float(b.y)));));
-#    endif // !_CCCL_CUDACC_BELOW(12) || !_CCCL_CUDA_COMPILER_NVHPC
+#    endif // !_CCCL_CUDACC_BELOW(12) || !_CCCL_CUDA_COMPILER(NVHPC)
   }
 };
 
@@ -653,12 +653,12 @@ struct SimdMul<__half>
   {
 #    if _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC)
     return __floats2half2_rn(__half2float(a.x) * __half2float(b.x), __half2float(a.y) * __half2float(b.y));
-#    else // ^^^ _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER_NVHPC ^^^ / vvv otherwise vvv
+#    else // ^^^ _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv otherwise vvv
     NV_IF_TARGET(NV_PROVIDES_SM_53,
                  (return __hmul2(a, b);),
                  (return __halves2half2(__float2half(__half2float(a.x) * __half2float(b.x)),
                                         __float2half(__half2float(a.y) * __half2float(b.y)));));
-#    endif // !_CCCL_CUDACC_BELOW(12) || !_CCCL_CUDA_COMPILER_NVHPC
+#    endif // !_CCCL_CUDACC_BELOW(12) || !_CCCL_CUDA_COMPILER(NVHPC)
   }
 };
 
@@ -676,12 +676,12 @@ struct SimdMul<__nv_bfloat16>
 #    if _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC)
     return __floats2bfloat162_rn(
       __bfloat162float(a.x) * __bfloat162float(b.x), __bfloat162float(a.y) * __bfloat162float(b.y));
-#    else // ^^^ _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER_NVHPC ^^^ / vvv otherwise vvv
+#    else // ^^^ _CCCL_CUDACC_BELOW(12) && _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv otherwise vvv
     NV_IF_TARGET(NV_PROVIDES_SM_80,
                  (return __hmul2(a, b);),
                  (return halves2bfloat162(__float2bfloat16(__bfloat162float(a.x) * __bfloat162float(b.x)),
                                           __float2bfloat16(__bfloat162float(a.y) * __bfloat162float(b.y)));));
-#    endif // !_CCCL_CUDACC_BELOW(12) || !_CCCL_CUDA_COMPILER_NVHPC
+#    endif // !_CCCL_CUDACC_BELOW(12) || !_CCCL_CUDA_COMPILER(NVHPC)
   }
 };
 
