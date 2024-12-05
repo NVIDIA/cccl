@@ -364,11 +364,11 @@ public:
    * parallel_for : apply an operation over a shaped index space
    */
   template <typename S, typename... Deps>
-  auto parallel_for(exec_place e_place, S shape, task_dep_op<Deps>... deps)
+  auto parallel_for(exec_place e_place, S shape, Deps... deps)
   {
     EXPECT(payload.index() != ::std::variant_npos, "Context is not initialized.");
-    using result_t = unified_scope<reserved::parallel_for_scope<stream_ctx, S, null_partition, task_dep_op<Deps>...>,
-                                   reserved::parallel_for_scope<graph_ctx, S, null_partition, task_dep_op<Deps>...>>;
+    using result_t = unified_scope<reserved::parallel_for_scope<stream_ctx, S, null_partition, Deps...>,
+                                   reserved::parallel_for_scope<graph_ctx, S, null_partition, Deps...>>;
     return ::std::visit(
       [&](auto& self) {
         return result_t(self.parallel_for(mv(e_place), mv(shape), deps...));
@@ -377,11 +377,11 @@ public:
   }
 
   template <typename partitioner_t, typename S, typename... Deps>
-  auto parallel_for(partitioner_t p, exec_place e_place, S shape, task_dep_op<Deps>... deps)
+  auto parallel_for(partitioner_t p, exec_place e_place, S shape, Deps... deps)
   {
     EXPECT(payload.index() != ::std::variant_npos, "Context is not initialized.");
-    using result_t = unified_scope<reserved::parallel_for_scope<stream_ctx, S, partitioner_t, task_dep_op<Deps>...>,
-                                   reserved::parallel_for_scope<graph_ctx, S, partitioner_t, task_dep_op<Deps>...>>;
+    using result_t = unified_scope<reserved::parallel_for_scope<stream_ctx, S, partitioner_t, Deps...>,
+                                   reserved::parallel_for_scope<graph_ctx, S, partitioner_t, Deps...>>;
     return ::std::visit(
       [&](auto& self) {
         return result_t(self.parallel_for(mv(p), mv(e_place), mv(shape), deps...));
@@ -390,7 +390,7 @@ public:
   }
 
   template <typename S, typename... Deps>
-  auto parallel_for(S shape, task_dep_op<Deps>... deps)
+  auto parallel_for(S shape, Deps... deps)
   {
     return parallel_for(default_exec_place(), mv(shape), mv(deps)...);
   }
