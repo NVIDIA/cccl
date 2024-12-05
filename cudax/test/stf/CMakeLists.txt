@@ -108,6 +108,7 @@ set(stf_test_codegen_sources
   interface/mix_stream_and_graph_2.cu
   interface/scal.cu
   interface/scalar_div.cu
+  interface/scalar_interface.cu
   interface/stream_add_callback.cu
   local_stf/interop_cuda.cu
   loop_dispatch/dispatch_on_streams.cu
