@@ -506,8 +506,8 @@ union kernel_arg
   // thrust::normal_iterator<thrust::device_pointer<T>>), so because of
   // https://eel.is/c++draft/class.union#general-note-3, kernel_args's special members are deleted. We work around it by
   // explicitly defining them.
-
-  _CCCL_HOST_DEVICE kernel_arg() {}
+  _CCCL_HOST_DEVICE kernel_arg() noexcept {}
+  _CCCL_HOST_DEVICE ~kernel_arg() noexcept {}
 
   _CCCL_HOST_DEVICE kernel_arg(const kernel_arg& other)
   {
