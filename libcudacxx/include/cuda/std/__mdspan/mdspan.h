@@ -113,7 +113,7 @@ private:
 
     template <class... _SizeTypes>
     _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
-    __check_index(const _Extents& exts, _SizeTypes... __indices)
+    __check_index(_Extents const& exts, _SizeTypes... __indices)
     {
       array<bool, sizeof...(_SizeTypes)> __res{((is_signed_v<index_type> && static_cast<index_type>(__indices) < 0)
                                                 || static_cast<index_type>(__indices) >= exts.extent(_Idxs))...};
@@ -135,7 +135,7 @@ private:
     _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr index_type
     __index(mdspan const& __self, const _CUDA_VSTD::array<_SizeType, _Np>& __indices) noexcept
     {
-      _CCCL_ASSERT(__check_index(__indices, __self.__mapping_ref().extents()),
+      _CCCL_ASSERT(__check_index(__self.__mapping_ref().extents(), __indices...),
                    "cuda::std::mdspan subscript out of range!");
       const index_type __res = __self.__mapping_ref()(__indices[_Idxs]...);
       return __res;
@@ -144,7 +144,7 @@ private:
     _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr index_type
     __index(mdspan const& __self, const _CUDA_VSTD::span<_SizeType, _Np>& __indices) noexcept
     {
-      _CCCL_ASSERT(__check_index(__indices, __self.__mapping_ref().extents()),
+      _CCCL_ASSERT(__check_index(__self.__mapping_ref().extents(), __indices...),
                    "cuda::std::mdspan subscript out of range!");
       const index_type __res = __self.__mapping_ref()(__indices[_Idxs]...);
       return __res;
