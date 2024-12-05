@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import re
 import numba
 from numba import cuda, types
 from numba.core import cgutils
@@ -511,6 +512,9 @@ class Algorithm:
                 template_list.append(numba_type_to_cpp(template_argument))
         template_list = ', '.join(template_list)
 
+        # '::cuda::std::int32_t, 32' -> __cuda__std__int32_t__32
+        mangle = re.sub(r'[^a-zA-Z0-9]', '_', template_list)
+
         specialized_parameters = []
         for method in self.parameters:
             specialized_signature = []
@@ -523,7 +527,7 @@ class Algorithm:
                 pass  # Substitution failure is not an error
 
         specialized_name = f'{self.struct_name}<{template_list}>'
-        return Algorithm(specialized_name, self.method_name, self.c_name, self.includes, [], specialized_parameters, type_definitions=self.type_definitions, fake_return=self.fake_return)
+        return Algorithm(specialized_name, self.method_name, self.c_name + mangle, self.includes, [], specialized_parameters, type_definitions=self.type_definitions, fake_return=self.fake_return)
 
     def get_temp_storage_bytes(self):
         # TODO Should be in value types, not bytes for alignment perposes?
@@ -624,6 +628,7 @@ class Algorithm:
                         param_args.append(name)
 
             if self.struct_name.startswith('Warp'):
+                print(self.parameters)
                 # Pessimistic temporary storage allocation for 1024 threads
                 # TODO: Use the actual warp size
                 storage = "__shared__ temp_storage_t temp_storages[1024 / 32];"
