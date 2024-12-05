@@ -213,7 +213,7 @@ public:
    */
   virtual size_t data_hash(instance_id_t instance_id) const = 0;
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen fails to parse this
+#ifndef _CCCL_DOXYGEN_INVOKED // doxygen fails to parse this
   /**
    * @brief Returns the size of the data represented by this logical data.
    *
@@ -221,7 +221,7 @@ public:
    * purposes, or for the scheduling strategies.
    */
   virtual size_t data_footprint() const = 0;
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   /**
    * @brief Get the part of the data interface that is common to all data instances.

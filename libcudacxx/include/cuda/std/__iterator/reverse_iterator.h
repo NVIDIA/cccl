@@ -128,15 +128,15 @@ public:
       , current(__x)
   {}
 
-  template <class _Up, class = __enable_if_t<!is_same<_Up, _Iter>::value && is_convertible<_Up const&, _Iter>::value>>
+  template <class _Up, class = enable_if_t<!is_same<_Up, _Iter>::value && is_convertible<_Up const&, _Iter>::value>>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reverse_iterator(const reverse_iterator<_Up>& __u)
       : __t_(__u.base())
       , current(__u.base())
   {}
 
   template <class _Up,
-            class = __enable_if_t<!is_same<_Up, _Iter>::value && is_convertible<_Up const&, _Iter>::value
-                                  && is_assignable<_Iter&, _Up const&>::value>>
+            class = enable_if_t<!is_same<_Up, _Iter>::value && is_convertible<_Up const&, _Iter>::value
+                                && is_assignable<_Iter&, _Up const&>::value>>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reverse_iterator& operator=(const reverse_iterator<_Up>& __u)
   {
     __t_ = current = __u.base();
@@ -151,14 +151,14 @@ public:
       : current(__x)
   {}
 
-  template <class _Up, class = __enable_if_t<!is_same<_Up, _Iter>::value && is_convertible<_Up const&, _Iter>::value>>
+  template <class _Up, class = enable_if_t<!is_same<_Up, _Iter>::value && is_convertible<_Up const&, _Iter>::value>>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reverse_iterator(const reverse_iterator<_Up>& __u)
       : current(__u.base())
   {}
 
   template <class _Up,
-            class = __enable_if_t<!is_same<_Up, _Iter>::value && is_convertible<_Up const&, _Iter>::value
-                                  && is_assignable<_Iter&, _Up const&>::value>>
+            class = enable_if_t<!is_same<_Up, _Iter>::value && is_convertible<_Up const&, _Iter>::value
+                                && is_assignable<_Iter&, _Up const&>::value>>
   _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 reverse_iterator& operator=(const reverse_iterator<_Up>& __u)
   {
     current = __u.base();
@@ -175,7 +175,7 @@ public:
     return *--__tmp;
   }
 
-#if _CCCL_STD_VER > 2017
+#if !defined(_CCCL_NO_CONCEPTS) && !defined(_CCCL_NO_IF_CONSTEXPR)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr pointer operator->() const
     requires is_pointer_v<_Iter> || requires(const _Iter __i) { __i.operator->(); }
   {
@@ -248,29 +248,29 @@ public:
     return _CUDA_VRANGES::iter_move(--__tmp);
   }
 
-#  if defined(_CCCL_COMPILER_MSVC_2017) // MSVC2017 cannot find _Iter otherwise
+#  if _CCCL_COMPILER(MSVC2017) // MSVC2017 cannot find _Iter otherwise
   template <class _Iter2, class _Iter1 = _Iter>
   _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   iter_swap(const reverse_iterator<_Iter1>& __x,
             const reverse_iterator<_Iter2>& __y) noexcept(__noexcept_rev_iter_iter_swap<_Iter1, _Iter2>)
-    _LIBCUDACXX_TRAILING_REQUIRES(void)(same_as<_Iter1, _Iter>&& indirectly_swappable<_Iter2, _Iter1>)
+    _CCCL_TRAILING_REQUIRES(void)(same_as<_Iter1, _Iter>&& indirectly_swappable<_Iter2, _Iter1>)
   {
     auto __xtmp = __x.base();
     auto __ytmp = __y.base();
     _CUDA_VRANGES::iter_swap(--__xtmp, --__ytmp);
   }
-#  else // ^^^ _CCCL_COMPILER_MSVC_2017 ^^^ / vvv !_CCCL_COMPILER_MSVC_2017 vvv
+#  else // ^^^ _CCCL_COMPILER(MSVC2017) ^^^ / vvv !_CCCL_COMPILER(MSVC2017) vvv
   template <class _Iter2>
   _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
   iter_swap(const reverse_iterator& __x,
             const reverse_iterator<_Iter2>& __y) noexcept(__noexcept_rev_iter_iter_swap<_Iter, _Iter2>)
-    _LIBCUDACXX_TRAILING_REQUIRES(void)(indirectly_swappable<_Iter2, _Iter>)
+    _CCCL_TRAILING_REQUIRES(void)(indirectly_swappable<_Iter2, _Iter>)
   {
     auto __xtmp = __x.base();
     auto __ytmp = __y.base();
     return _CUDA_VRANGES::iter_swap(--__xtmp, --__ytmp);
   }
-#  endif // !_CCCL_COMPILER_MSVC_2017
+#  endif // !_CCCL_COMPILER(MSVC2017)
 #endif // _CCCL_STD_VER > 2014
 };
 
@@ -285,11 +285,11 @@ struct __is_reverse_iterator<reverse_iterator<_Iter>> : true_type
 template <class _Iter1, class _Iter2>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 operator==(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& __y)
-#if _CCCL_STD_VER > 2017
+#if !defined(_CCCL_NO_CONCEPTS)
   requires requires {
     { __x.base() == __y.base() } -> convertible_to<bool>;
   }
-#endif // _CCCL_STD_VER > 2017
+#endif // !_CCCL_NO_CONCEPTS
 {
   return __x.base() == __y.base();
 }
@@ -297,11 +297,11 @@ operator==(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& 
 template <class _Iter1, class _Iter2>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 operator<(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& __y)
-#if _CCCL_STD_VER > 2017
+#if !defined(_CCCL_NO_CONCEPTS)
   requires requires {
     { __x.base() > __y.base() } -> convertible_to<bool>;
   }
-#endif // _CCCL_STD_VER > 2017
+#endif // !_CCCL_NO_CONCEPTS
 {
   return __x.base() > __y.base();
 }
@@ -309,11 +309,11 @@ operator<(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& _
 template <class _Iter1, class _Iter2>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 operator!=(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& __y)
-#if _CCCL_STD_VER > 2017
+#if !defined(_CCCL_NO_CONCEPTS)
   requires requires {
     { __x.base() != __y.base() } -> convertible_to<bool>;
   }
-#endif // _CCCL_STD_VER > 2017
+#endif // !_CCCL_NO_CONCEPTS
 {
   return __x.base() != __y.base();
 }
@@ -321,11 +321,11 @@ operator!=(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& 
 template <class _Iter1, class _Iter2>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 operator>(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& __y)
-#if _CCCL_STD_VER > 2017
+#if !defined(_CCCL_NO_CONCEPTS)
   requires requires {
     { __x.base() < __y.base() } -> convertible_to<bool>;
   }
-#endif // _CCCL_STD_VER > 2017
+#endif // !_CCCL_NO_CONCEPTS
 {
   return __x.base() < __y.base();
 }
@@ -333,11 +333,11 @@ operator>(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& _
 template <class _Iter1, class _Iter2>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 operator>=(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& __y)
-#if _CCCL_STD_VER > 2017
+#if !defined(_CCCL_NO_CONCEPTS)
   requires requires {
     { __x.base() <= __y.base() } -> convertible_to<bool>;
   }
-#endif // _CCCL_STD_VER > 2017
+#endif // !_CCCL_NO_CONCEPTS
 {
   return __x.base() <= __y.base();
 }
@@ -345,11 +345,11 @@ operator>=(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& 
 template <class _Iter1, class _Iter2>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 bool
 operator<=(const reverse_iterator<_Iter1>& __x, const reverse_iterator<_Iter2>& __y)
-#if _CCCL_STD_VER > 2017
+#if !defined(_CCCL_NO_CONCEPTS)
   requires requires {
     { __x.base() >= __y.base() } -> convertible_to<bool>;
   }
-#endif // _CCCL_STD_VER > 2017
+#endif // !_CCCL_NO_CONCEPTS
 {
   return __x.base() >= __y.base();
 }
@@ -377,11 +377,11 @@ operator+(typename reverse_iterator<_Iter>::difference_type __n, const reverse_i
   return reverse_iterator<_Iter>(__x.base() - __n);
 }
 
-#if _CCCL_STD_VER > 2017
+#if !defined(_CCCL_NO_CONCEPTS)
 template <class _Iter1, class _Iter2>
   requires(!sized_sentinel_for<_Iter1, _Iter2>)
 inline constexpr bool disable_sized_sentinel_for<reverse_iterator<_Iter1>, reverse_iterator<_Iter2>> = true;
-#endif // _CCCL_STD_VER > 2017
+#endif // !_CCCL_NO_CONCEPTS
 
 #if _CCCL_STD_VER > 2011
 template <class _Iter>

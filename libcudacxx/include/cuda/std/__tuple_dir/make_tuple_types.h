@@ -22,11 +22,11 @@
 
 #include <cuda/std/__fwd/array.h>
 #include <cuda/std/__fwd/tuple.h>
-#include <cuda/std/__tuple_dir/apply_cv.h>
 #include <cuda/std/__tuple_dir/tuple_element.h>
 #include <cuda/std/__tuple_dir/tuple_indices.h>
 #include <cuda/std/__tuple_dir/tuple_size.h>
 #include <cuda/std/__tuple_dir/tuple_types.h>
+#include <cuda/std/__type_traits/copy_cvref.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/remove_reference.h>
 #include <cuda/std/__type_traits/type_list.h>
@@ -48,9 +48,9 @@ struct __make_tuple_types_flat<_Tuple<_Types...>, __tuple_indices<_Idx...>>
   using __tuple_types_list = __type_list<_Types...>;
 
   // Specialization for pair, tuple, and __tuple_types
-  template <class _Tp, class _ApplyFn = __apply_cv_t<_Tp>>
-  using __apply_quals _LIBCUDACXX_NODEBUG_TYPE =
-    __tuple_types<typename _ApplyFn::template __apply<__type_at_c<_Idx, __tuple_types_list>>...>;
+  template <class _Tp, class _ApplyFn = __apply_cvref_fn<_Tp>>
+  using __apply_quals _CCCL_NODEBUG_ALIAS =
+    __tuple_types<__type_call<_ApplyFn, __type_at_c<_Idx, __tuple_types_list>>...>;
 };
 
 template <class _Vt, size_t _Np, size_t... _Idx>
@@ -58,18 +58,18 @@ struct __make_tuple_types_flat<array<_Vt, _Np>, __tuple_indices<_Idx...>>
 {
   template <size_t>
   using __value_type = _Vt;
-  template <class _Tp, class _ApplyFn = __apply_cv_t<_Tp>>
-  using __apply_quals = __tuple_types<typename _ApplyFn::template __apply<__value_type<_Idx>>...>;
+  template <class _Tp, class _ApplyFn = __apply_cvref_fn<_Tp>>
+  using __apply_quals = __tuple_types<__type_call<_ApplyFn, __value_type<_Idx>>...>;
 };
 
 template <class _Tp,
-          size_t _Ep     = tuple_size<__libcpp_remove_reference_t<_Tp>>::value,
+          size_t _Ep     = tuple_size<remove_reference_t<_Tp>>::value,
           size_t _Sp     = 0,
-          bool _SameSize = (_Ep == tuple_size<__libcpp_remove_reference_t<_Tp>>::value)>
+          bool _SameSize = (_Ep == tuple_size<remove_reference_t<_Tp>>::value)>
 struct __make_tuple_types
 {
   static_assert(_Sp <= _Ep, "__make_tuple_types input error");
-  using _RawTp = __remove_cv_t<__libcpp_remove_reference_t<_Tp>>;
+  using _RawTp = remove_cv_t<remove_reference_t<_Tp>>;
   using _Maker = __make_tuple_types_flat<_RawTp, __make_tuple_indices_t<_Ep, _Sp>>;
   using type   = typename _Maker::template __apply_quals<_Tp>;
 };
@@ -77,16 +77,16 @@ struct __make_tuple_types
 template <class... _Types, size_t _Ep>
 struct __make_tuple_types<tuple<_Types...>, _Ep, 0, true>
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE __tuple_types<_Types...> type;
+  typedef _CCCL_NODEBUG_ALIAS __tuple_types<_Types...> type;
 };
 
 template <class... _Types, size_t _Ep>
 struct __make_tuple_types<__tuple_types<_Types...>, _Ep, 0, true>
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE __tuple_types<_Types...> type;
+  typedef _CCCL_NODEBUG_ALIAS __tuple_types<_Types...> type;
 };
 
-template <class _Tp, size_t _Ep = tuple_size<__libcpp_remove_reference_t<_Tp>>::value, size_t _Sp = 0>
+template <class _Tp, size_t _Ep = tuple_size<remove_reference_t<_Tp>>::value, size_t _Sp = 0>
 using __make_tuple_types_t = typename __make_tuple_types<_Tp, _Ep, _Sp>::type;
 
 _LIBCUDACXX_END_NAMESPACE_STD

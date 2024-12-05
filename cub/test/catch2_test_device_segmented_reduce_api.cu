@@ -37,7 +37,7 @@
 #include <cstddef>
 
 #include "thrust/detail/raw_pointer_cast.h"
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 // example-begin segmented-reduce-custommin
 struct CustomMin

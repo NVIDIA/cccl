@@ -31,11 +31,12 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
-#include "cuda/std/__algorithm/fill.h"
-#include "cuda/std/__algorithm/max.h"
-#include "cuda/std/__numeric/inclusive_scan.h"
-#include "cuda/std/__numeric/iota.h"
-#include <c2h/catch2_test_helper.cuh>
+#include <cuda/std/__algorithm/fill.h>
+#include <cuda/std/__algorithm/max.h>
+#include <cuda/std/__numeric/inclusive_scan.h>
+#include <cuda/std/__numeric/iota.h>
+
+#include <c2h/catch2_test_helper.h>
 
 constexpr int num_warps = 4;
 
@@ -73,7 +74,7 @@ __global__ void InclusiveWarpScanKernel(int* output)
   // warp #4 input: {3, 4, 5, 6, ..., 34}
 
   // Collectively compute the warp-wide inclusive prefix max scan
-  warp_scan_t(temp_storage[warp_id]).InclusiveScan(thread_data, thread_data, initial_value, cub::Max());
+  warp_scan_t(temp_storage[warp_id]).InclusiveScan(thread_data, thread_data, initial_value, ::cuda::maximum<>{});
 
   // initial value = 3 (for each warp)
   // warp #0 output: {3, 3, 3, 3, ..., 31}
@@ -127,7 +128,8 @@ __global__ void InclusiveWarpScanKernelAggr(int* output, int* d_warp_aggregate)
   // warp #4 input: {1, 1, 1, 1, ..., 1}
 
   // Collectively compute the warp-wide inclusive prefix max scan
-  warp_scan_t(temp_storage[warp_id]).InclusiveScan(thread_data, thread_data, initial_value, cub::Sum(), warp_aggregate);
+  warp_scan_t(temp_storage[warp_id])
+    .InclusiveScan(thread_data, thread_data, initial_value, ::cuda::std::plus<>{}, warp_aggregate);
 
   // warp #1 output: {4, 5, 6, 7, ..., 35} - warp aggregate: 32
   // warp #2 output: {4, 5, 6, 7, ..., 35} - warp aggregate: 32

@@ -301,7 +301,7 @@ public:
    *
    * @tparam level The level in the hierarchy to check for the `sync` property. Level starts from 0 (top-level).
    */
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen fails to parse this
+#ifndef _CCCL_DOXYGEN_INVOKED // doxygen fails to parse this
   template <size_t level>
   static inline constexpr bool is_synchronizable = [] {
     if constexpr (level > 0)
@@ -395,7 +395,7 @@ private:
   mem mem_bytes = mem(0);
 };
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen fails to parse this
+#ifndef _CCCL_DOXYGEN_INVOKED // doxygen fails to parse this
 /**
  * @brief Creates and returns a `thread_hierarchy_spec` object with no synchronization and dynamic width.
  *
@@ -480,7 +480,7 @@ constexpr auto con(const P&... p)
   return R(p...);
 }
 /// @}
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 #ifdef UNITTESTED_FILE
 

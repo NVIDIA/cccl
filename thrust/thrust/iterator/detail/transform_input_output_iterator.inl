@@ -56,7 +56,7 @@ public:
   transform_input_output_iterator_proxy(const transform_input_output_iterator_proxy&) = default;
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE operator Value const() const
+  _CCCL_HOST_DEVICE operator Value() const
   {
     return input_function(*io);
   }

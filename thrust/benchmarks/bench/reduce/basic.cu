@@ -43,8 +43,6 @@ static void basic(nvbench::state& state, nvbench::type_list<T>)
   state.add_global_memory_writes<T>(1);
 
   caching_allocator_t alloc;
-  do_not_optimize(thrust::reduce(policy(alloc), in.begin(), in.end()));
-
   state.exec(nvbench::exec_tag::sync, [&](nvbench::launch& launch) {
     do_not_optimize(thrust::reduce(policy(alloc, launch), in.begin(), in.end()));
   });

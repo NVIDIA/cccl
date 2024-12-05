@@ -34,9 +34,9 @@
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.cuh>
-#include <c2h/custom_type.cuh>
-#include <c2h/extended_types.cuh>
+#include <c2h/catch2_test_helper.h>
+#include <c2h/custom_type.h>
+#include <c2h/extended_types.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::TransformReduce, device_transform_reduce);
 
@@ -58,7 +58,7 @@ C2H_TEST("Device transform reduce works with pointers", "[reduce][device]", type
   using item_t         = c2h::get<0, TestType>;
   using init_t         = item_t;
   using offset_t       = std::int32_t;
-  using reduction_op_t = cub::Sum;
+  using reduction_op_t = ::cuda::std::plus<>;
   using transform_op_t = square_t<item_t>;
 
   constexpr int max_items = 5000000;
@@ -105,7 +105,7 @@ C2H_TEST("Device transform reduce works with iterators", "[reduce][device]", typ
   using item_t         = c2h::get<0, TestType>;
   using init_t         = item_t;
   using offset_t       = std::int32_t;
-  using reduction_op_t = cub::Sum;
+  using reduction_op_t = ::cuda::std::plus<>;
   using transform_op_t = square_t<item_t>;
 
   constexpr int max_items = 5000000;

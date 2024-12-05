@@ -66,7 +66,7 @@ struct DeviceTransform
           ::cuda::std::move(inputs), ::cuda::std::move(output), num_items, ::cuda::std::move(transform_op), stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   // This overload has additional parameters to specify temporary storage. Provided for compatibility with other CUB
   // APIs.
   template <typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut, typename TransformOp>
@@ -88,7 +88,7 @@ struct DeviceTransform
     return Transform(
       ::cuda::std::move(inputs), ::cuda::std::move(output), num_items, ::cuda::std::move(transform_op), stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Transforms one input sequence into one output sequence, by applying a transformation operation on corresponding
@@ -120,7 +120,7 @@ struct DeviceTransform
       stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   // This overload has additional parameters to specify temporary storage. Provided for compatibility with other CUB
   // APIs.
   template <typename RandomAccessIteratorIn, typename RandomAccessIteratorOut, typename TransformOp>
@@ -146,7 +146,7 @@ struct DeviceTransform
       ::cuda::std::move(transform_op),
       stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Overview
@@ -189,7 +189,7 @@ struct DeviceTransform
           ::cuda::std::move(inputs), ::cuda::std::move(output), num_items, ::cuda::std::move(transform_op), stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut, typename TransformOp>
   CUB_RUNTIME_FUNCTION static cudaError_t TransformStableArgumentAddresses(
     void* d_temp_storage,
@@ -209,7 +209,7 @@ struct DeviceTransform
     return TransformStableArgumentAddresses(
       ::cuda::std::move(inputs), ::cuda::std::move(output), num_items, ::cuda::std::move(transform_op), stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
   //! Transforms one input sequence into one output sequence, by applying a transformation operation on corresponding
@@ -241,7 +241,7 @@ struct DeviceTransform
       stream);
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <typename RandomAccessIteratorIn, typename RandomAccessIteratorOut, typename TransformOp>
   CUB_RUNTIME_FUNCTION static cudaError_t TransformStableArgumentAddresses(
     void* d_temp_storage,
@@ -265,7 +265,7 @@ struct DeviceTransform
       ::cuda::std::move(transform_op),
       stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

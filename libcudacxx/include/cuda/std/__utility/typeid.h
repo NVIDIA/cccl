@@ -96,7 +96,7 @@ using _CCCL_TYPEID_ONLY_SUPPORTS_TYPES = _Tp;
 // Instead, arrange things so that the pretty name gets stored in a class static
 // data member, where it can be referenced from other constexpr contexts.
 
-#if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 90000
+#if _CCCL_COMPILER(GCC, <, 9)
 
 template <size_t _Np>
 struct __sstring
@@ -118,7 +118,7 @@ __make_pretty_name_impl(char const (&__s)[_Mp], index_sequence<_Is...>) noexcept
 
 template <class _Tp, size_t _Np>
 _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr auto __make_pretty_name(integral_constant<size_t, _Np>) noexcept //
-  -> __enable_if_t<_Np == size_t(-1), __string_view>
+  -> enable_if_t<_Np == size_t(-1), __string_view>
 {
   using _TpName = __static_nameof<_Tp, sizeof(_CCCL_BUILTIN_PRETTY_FUNCTION())>;
   return __string_view(_TpName::value.__str_, _TpName::value.__len_);
@@ -126,7 +126,7 @@ _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr auto __make_pretty_name(integral
 
 template <class _Tp, size_t _Np>
 _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr auto __make_pretty_name(integral_constant<size_t, _Np>) noexcept //
-  -> __enable_if_t<_Np != size_t(-1), __sstring<_Np>>
+  -> enable_if_t<_Np != size_t(-1), __sstring<_Np>>
 {
   return _CUDA_VSTD::__make_pretty_name_impl<_Np>(_CCCL_BUILTIN_PRETTY_FUNCTION(), make_index_sequence<_Np>{});
 }
@@ -144,7 +144,7 @@ template <class _Tp, size_t _Np>
 constexpr __sstring<_Np> __static_nameof<_Tp, _Np>::value;
 #  endif // _CCCL_NO_INLINE_VARIABLES
 
-#endif // _CCCL_GCC_VERSION < 90000
+#endif // _CCCL_COMPILER(GCC, <, 9)
 
 template <class _Tp>
 struct __pretty_name_begin
@@ -171,7 +171,7 @@ __find_pretty_name(__string_view __sv) noexcept
 template <class _Tp>
 _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __string_view __pretty_nameof_helper() noexcept
 {
-#if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 90000 && !defined(__CUDA_ARCH__)
+#if _CCCL_COMPILER(GCC, <, 9) && !defined(__CUDA_ARCH__)
   return _CUDA_VSTD::__find_pretty_name(_CUDA_VSTD::__make_pretty_name<_Tp>(integral_constant<size_t, size_t(-1)>{}));
 #else // ^^^ gcc < 9 ^^^^/ vvv other compiler vvv
   return _CUDA_VSTD::__find_pretty_name(_CUDA_VSTD::__string_view(_CCCL_BUILTIN_PRETTY_FUNCTION()));
@@ -185,7 +185,7 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE constexpr __string_view __
 }
 
 // In device code with old versions of gcc, we cannot have nice things.
-#if defined(_CCCL_COMPILER_GCC) && _CCCL_GCC_VERSION < 90000 && defined(__CUDA_ARCH__)
+#if _CCCL_COMPILER(GCC, <, 9) && defined(__CUDA_ARCH__)
 #  define _CCCL_NO_CONSTEXPR_PRETTY_NAMEOF
 #endif
 
@@ -325,7 +325,7 @@ using __type_info_ref = __type_info_ref_;
 #  endif // defined(_CCCL_NO_TYPEID) || defined(_CCCL_USE_TYPEID_FALLBACK)
 
 #  define _CCCL_TYPEID_FALLBACK(...) \
-    _CUDA_VSTD::__type_info_ref(&_CUDA_VSTD::__type_info::__get_ti_for<_CUDA_VSTD::__remove_cv_t<__VA_ARGS__>>)
+    _CUDA_VSTD::__type_info_ref(&_CUDA_VSTD::__type_info::__get_ti_for<_CUDA_VSTD::remove_cv_t<__VA_ARGS__>>)
 
 #elif defined(_CCCL_BROKEN_MSVC_FUNCSIG) // ^^^ defined(__CUDA_ARCH__) ^^^
 
@@ -409,7 +409,7 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr __type_info const& __typeid() noex
   return __typeid_v<_Tp>;
 }
 
-#    define _CCCL_TYPEID_FALLBACK(...) _CUDA_VSTD::__typeid<_CUDA_VSTD::__remove_cv_t<__VA_ARGS__>>()
+#    define _CCCL_TYPEID_FALLBACK(...) _CUDA_VSTD::__typeid<_CUDA_VSTD::remove_cv_t<__VA_ARGS__>>()
 
 #  else // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES ^^^ / vvv _CCCL_NO_VARIABLE_TEMPLATES vvv
 
@@ -432,7 +432,7 @@ _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr __type_info const& __typeid() noex
   return __typeid_value<_Tp>::value;
 }
 
-#    define _CCCL_TYPEID_FALLBACK(...) _CUDA_VSTD::__typeid<_CUDA_VSTD::__remove_cv_t<__VA_ARGS__>>()
+#    define _CCCL_TYPEID_FALLBACK(...) _CUDA_VSTD::__typeid<_CUDA_VSTD::remove_cv_t<__VA_ARGS__>>()
 
 #  endif // _CCCL_NO_VARIABLE_TEMPLATES
 

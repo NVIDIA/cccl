@@ -29,7 +29,7 @@
 
 #include <climits>
 
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 template <cub::BlockScanAlgorithm Algorithm,
           int ItemsPerThread,
@@ -118,11 +118,11 @@ struct min_init_value_op_t
   {
     _CCCL_IF_CONSTEXPR (Mode == scan_mode::exclusive)
     {
-      scan.ExclusiveScan(thread_data, thread_data, initial_value, cub::Min{});
+      scan.ExclusiveScan(thread_data, thread_data, initial_value, ::cuda::minimum<>{});
     }
     else
     {
-      scan.InclusiveScan(thread_data, thread_data, initial_value, cub::Min{});
+      scan.InclusiveScan(thread_data, thread_data, initial_value, ::cuda::minimum<>{});
     }
   }
 };
@@ -135,11 +135,11 @@ struct min_op_t
   {
     if (Mode == scan_mode::exclusive)
     {
-      scan.ExclusiveScan(thread_data, thread_data, cub::Min{});
+      scan.ExclusiveScan(thread_data, thread_data, ::cuda::minimum<>{});
     }
     else
     {
-      scan.InclusiveScan(thread_data, thread_data, cub::Min{});
+      scan.InclusiveScan(thread_data, thread_data, ::cuda::minimum<>{});
     }
   }
 };
@@ -158,11 +158,11 @@ struct min_init_value_aggregate_op_t
 
     _CCCL_IF_CONSTEXPR (Mode == scan_mode::exclusive)
     {
-      scan.ExclusiveScan(thread_data, thread_data, initial_value, cub::Min{}, block_aggregate);
+      scan.ExclusiveScan(thread_data, thread_data, initial_value, ::cuda::minimum<>{}, block_aggregate);
     }
     else
     {
-      scan.InclusiveScan(thread_data, thread_data, initial_value, cub::Min{}, block_aggregate);
+      scan.InclusiveScan(thread_data, thread_data, initial_value, ::cuda::minimum<>{}, block_aggregate);
     }
 
     const int tid = cub::RowMajorTid(blockDim.x, blockDim.y, blockDim.z);
@@ -262,7 +262,7 @@ struct min_prefix_op_t
     __device__ T operator()(T block_aggregate)
     {
       T retval = (linear_tid == 0) ? prefix : min_identity;
-      prefix   = cub::Min{}(prefix, block_aggregate);
+      prefix   = ::cuda::minimum<>{}(prefix, block_aggregate);
       return retval;
     }
   };
@@ -275,11 +275,11 @@ struct min_prefix_op_t
 
     if (Mode == scan_mode::exclusive)
     {
-      scan.ExclusiveScan(thread_data, thread_data, cub::Min{}, prefix_op);
+      scan.ExclusiveScan(thread_data, thread_data, ::cuda::minimum<>{}, prefix_op);
     }
     else
     {
-      scan.InclusiveScan(thread_data, thread_data, cub::Min{}, prefix_op);
+      scan.InclusiveScan(thread_data, thread_data, ::cuda::minimum<>{}, prefix_op);
     }
   }
 };

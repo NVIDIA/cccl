@@ -18,6 +18,7 @@
 //   — remove_pointer_t<decltype(data(arr))>(*)[] is convertible to ElementType(*)[].
 //
 
+#include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/span>
 
@@ -92,8 +93,8 @@ __host__ __device__ constexpr bool testSpan()
   assert(s3.data() == val && s3.size() == 2);
   assert(s4.data() == val && s4.size() == 2);
 
-  cuda::std::span<const int> s5    = {{1, 2}};
-  cuda::std::span<const int, 2> s6 = {{1, 2}};
+  cuda::std::span<const int> s5    = {cuda::std::array<int, 2>{1, 2}};
+  cuda::std::span<const int, 2> s6 = {cuda::std::array<int, 2>{1, 2}};
   assert(s5.size() == 2); // and it dangles
   assert(s6.size() == 2); // and it dangles
 

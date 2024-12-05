@@ -64,6 +64,8 @@ class graph_ctx;
 
 class null_partition;
 
+class stream_ctx;
+
 namespace reserved
 {
 
@@ -290,13 +292,57 @@ public:
       t.set_symbol(symbol);
     }
 
+    auto& dot        = *ctx.get_dot();
+    auto& statistics = reserved::task_statistics::instance();
+
+    cudaEvent_t start_event, end_event;
+    const bool record_time = t.schedule_task() || statistics.is_calibrating_to_file();
+
     t.start();
+
+    int device = -1;
+
     SCOPE(exit)
     {
-      t.end();
+      t.end_uncleared();
+
+      if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+      {
+        if (record_time)
+        {
+          cuda_safe_call(cudaEventRecord(end_event, t.get_stream()));
+          cuda_safe_call(cudaEventSynchronize(end_event));
+
+          float milliseconds = 0;
+          cuda_safe_call(cudaEventElapsedTime(&milliseconds, start_event, end_event));
+
+          if (dot.is_tracing())
+          {
+            dot.template add_vertex_timing<typename Ctx::task_type>(t, milliseconds, device);
+          }
+
+          if (statistics.is_calibrating())
+          {
+            statistics.log_task_time(t, milliseconds);
+          }
+        }
+      }
+
+      t.clear();
     };
 
-    auto& dot = *ctx.get_dot();
+    if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+    {
+      if (record_time)
+      {
+        cuda_safe_call(cudaGetDevice(&device)); // We will use this to force it during the next run
+        // Events must be created here to avoid issues with multi-gpu
+        cuda_safe_call(cudaEventCreate(&start_event));
+        cuda_safe_call(cudaEventCreate(&end_event));
+        cuda_safe_call(cudaEventRecord(start_event, t.get_stream()));
+      }
+    }
+
     if (dot.is_tracing())
     {
       dot.template add_vertex<typename Ctx::task_type, logical_data_untyped>(t);
@@ -438,8 +484,6 @@ protected:
         : auto_scheduler(reserved::scheduler::make(getenv("CUDASTF_SCHEDULE")))
         , auto_reorderer(reserved::reorderer::make(getenv("CUDASTF_TASK_ORDER")))
         , async_resources(async_resources ? mv(async_resources) : async_resources_handle())
-        , is_tracing(reserved::dot::instance().is_tracing())
-        , is_tracing_prereqs(reserved::dot::instance().is_tracing_prereqs())
     {
       // Enable peer memory accesses (if not done already)
       reserved::machine::instance().enable_peer_accesses();
@@ -451,16 +495,18 @@ protected:
         is_recording_stats = true;
       }
 
+      // Initialize a structure to generate a visualization of the activity in this context
+      dot = ::std::make_shared<reserved::per_ctx_dot>(
+        reserved::dot::instance().is_tracing(),
+        reserved::dot::instance().is_tracing_prereqs(),
+        reserved::dot::instance().is_timing());
+
       // We generate symbols if we may use them
 #ifdef CUDASTF_DEBUG
       generate_event_symbols = true;
 #else
-      generate_event_symbols = is_tracing_prereqs;
+      generate_event_symbols = dot->is_tracing_prereqs();
 #endif
-
-      // Initialize a structure to generate a visualization of the activity in this context
-      dot = ::std::make_shared<reserved::per_ctx_dot>(is_tracing, is_tracing_prereqs);
-
       // Record it in the list of all traced contexts
       reserved::dot::instance().per_ctx.push_back(dot);
     }
@@ -492,19 +538,19 @@ protected:
       return nullptr;
     }
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
     _CCCL_DIAG_PUSH
     _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
-#endif // _CCCL_COMPILER_MSVC
+#endif // _CCCL_COMPILER(MSVC)
     virtual event_list stream_to_event_list(cudaStream_t, ::std::string) const
     {
       fprintf(stderr, "Internal error.\n");
       abort();
       return event_list();
     }
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
     _CCCL_DIAG_POP
-#endif // _CCCL_COMPILER_MSVC
+#endif // _CCCL_COMPILER(MSVC)
 
     virtual size_t epoch() const
     {
@@ -612,10 +658,6 @@ protected:
     //
     // We use an optional to avoid instantiating it until we have initialized it
     async_resources_handle async_resources;
-
-    // Should we generate a DOT output ? Should it include prereqs too ?
-    mutable bool is_tracing         = false;
-    mutable bool is_tracing_prereqs = false;
 
     // Do we need to generate symbols for events ? This is true when we are
     // in debug mode (as we may inspect structures with a debugger, or when
@@ -785,16 +827,6 @@ public:
     pimpl->transfers[nodes].second += s;
   }
 
-  bool is_tracing() const
-  {
-    return pimpl->is_tracing;
-  }
-
-  bool is_tracing_prereqs() const
-  {
-    return pimpl->is_tracing_prereqs;
-  }
-
   bool generate_event_symbols() const
   {
     return pimpl->generate_event_symbols;
@@ -845,6 +877,21 @@ public:
   void set_parent_ctx(parent_ctx_t& parent_ctx)
   {
     reserved::per_ctx_dot::set_parent_ctx(parent_ctx.get_dot(), get_dot());
+  }
+
+  void dot_push_section(::std::string symbol) const
+  {
+    reserved::dot::section::push(mv(symbol));
+  }
+
+  void dot_pop_section() const
+  {
+    reserved::dot::section::pop();
+  }
+
+  auto dot_section(::std::string symbol) const
+  {
+    return reserved::dot::section::guard(mv(symbol));
   }
 
   auto get_phase() const

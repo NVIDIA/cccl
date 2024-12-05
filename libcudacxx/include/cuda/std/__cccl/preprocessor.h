@@ -11,19 +11,89 @@
 #ifndef __CCCL_PREPROCESSOR_H
 #define __CCCL_PREPROCESSOR_H
 
-#define _CCCL_PP_EXPAND(...)   __VA_ARGS__
-#define _CCCL_PP_EVAL(_M, ...) _M(__VA_ARGS__)
+#include <cuda/std/__cccl/compiler.h>
+#include <cuda/std/__cccl/system_header.h>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#ifdef __has_include
+#  define _CCCL_HAS_INCLUDE(_X) __has_include(_X)
+#else
+#  define _CCCL_HAS_INCLUDE(_X) 0
+#endif
+
+#define _CCCL_PP_EXPAND(...) __VA_ARGS__
 #define _CCCL_PP_EAT(...)
 
-#define _CCCL_PP_CAT(_X, _Y) _CCCL_PP_CAT_IMPL0(_X, _Y)
+#define _CCCL_PP_CAT_(_Xp, ...) _Xp##__VA_ARGS__
+#define _CCCL_PP_CAT(_Xp, ...)  _CCCL_PP_CAT_(_Xp, __VA_ARGS__)
 
-#if defined(_MSC_VER) && (defined(__EDG__) || defined(__EDG_VERSION__)) \
-  && (defined(__INTELLISENSE__) || __EDG_VERSION__ >= 308)
-#  define _CCCL_PP_CAT_IMPL0(_X, _Y) _CCCL_PP_CAT_IMPL1(~, _X##_Y)
-#  define _CCCL_PP_CAT_IMPL1(_X, _Y) _Y
-#else
-#  define _CCCL_PP_CAT_IMPL0(_X, _Y) _X##_Y
-#endif
+#define _CCCL_PP_CAT2_(_Xp, ...) _Xp##__VA_ARGS__
+#define _CCCL_PP_CAT2(_Xp, ...)  _CCCL_PP_CAT2_(_Xp, __VA_ARGS__)
+
+#define _CCCL_PP_CAT3_(_Xp, ...) _Xp##__VA_ARGS__
+#define _CCCL_PP_CAT3(_Xp, ...)  _CCCL_PP_CAT3_(_Xp, __VA_ARGS__)
+
+#define _CCCL_PP_CAT4_(_Xp, ...) _Xp##__VA_ARGS__
+#define _CCCL_PP_CAT4(_Xp, ...)  _CCCL_PP_CAT4_(_Xp, __VA_ARGS__)
+
+#define _CCCL_PP_EVAL_(_Xp, _ARGS) _Xp _ARGS
+#define _CCCL_PP_EVAL(_Xp, ...)    _CCCL_PP_EVAL_(_Xp, (__VA_ARGS__))
+
+#define _CCCL_PP_EVAL2_(_Xp, _ARGS) _Xp _ARGS
+#define _CCCL_PP_EVAL2(_Xp, ...)    _CCCL_PP_EVAL2_(_Xp, (__VA_ARGS__))
+
+#define _CCCL_PP_CHECK(...)              _CCCL_PP_EXPAND(_CCCL_PP_CHECK_N(__VA_ARGS__, 0, ))
+#define _CCCL_PP_CHECK_N(_Xp, _Num, ...) _Num
+#define _CCCL_PP_PROBE(_Xp)              _Xp, 1,
+#define _CCCL_PP_PROBE_N(_Xp, _Num)      _Xp, _Num,
+
+#define _CCCL_PP_IS_PAREN(_Xp)       _CCCL_PP_CHECK(_CCCL_PP_IS_PAREN_PROBE _Xp)
+#define _CCCL_PP_IS_PAREN_PROBE(...) _CCCL_PP_PROBE(~)
+
+#define _CCCL_PP_IIF(_BIT)         _CCCL_PP_CAT_(_CCCL_PP_IIF_, _BIT)
+#define _CCCL_PP_IIF_0(_TRUE, ...) __VA_ARGS__
+#define _CCCL_PP_IIF_1(_TRUE, ...) _TRUE
+
+#define _CCCL_PP_LPAREN (
+#define _CCCL_PP_RPAREN )
+
+#define _CCCL_PP_NOT(_BIT) _CCCL_PP_CAT_(_CCCL_PP_NOT_, _BIT)
+#define _CCCL_PP_NOT_0     1
+#define _CCCL_PP_NOT_1     0
+
+#define _CCCL_PP_EMPTY()
+#define _CCCL_PP_COMMA()        ,
+#define _CCCL_PP_LBRACE()       {
+#define _CCCL_PP_RBRACE()       }
+#define _CCCL_PP_COMMA_IIF(_Xp) _CCCL_PP_IIF(_Xp)(_CCCL_PP_EMPTY, _CCCL_PP_COMMA)() /**/
+
+#define _CCCL_PP_FOR_EACH(_Mp, ...)                          _CCCL_PP_FOR_EACH_N(_CCCL_PP_COUNT(__VA_ARGS__), _Mp, __VA_ARGS__)
+#define _CCCL_PP_FOR_EACH_N(_Np, _Mp, ...)                   _CCCL_PP_CAT2(_CCCL_PP_FOR_EACH_, _Np)(_Mp, __VA_ARGS__)
+#define _CCCL_PP_FOR_EACH_1(_Mp, _1)                         _Mp(_1)
+#define _CCCL_PP_FOR_EACH_2(_Mp, _1, _2)                     _Mp(_1) _Mp(_2)
+#define _CCCL_PP_FOR_EACH_3(_Mp, _1, _2, _3)                 _Mp(_1) _Mp(_2) _Mp(_3)
+#define _CCCL_PP_FOR_EACH_4(_Mp, _1, _2, _3, _4)             _Mp(_1) _Mp(_2) _Mp(_3) _Mp(_4)
+#define _CCCL_PP_FOR_EACH_5(_Mp, _1, _2, _3, _4, _5)         _Mp(_1) _Mp(_2) _Mp(_3) _Mp(_4) _Mp(_5)
+#define _CCCL_PP_FOR_EACH_6(_Mp, _1, _2, _3, _4, _5, _6)     _Mp(_1) _Mp(_2) _Mp(_3) _Mp(_4) _Mp(_5) _Mp(_6)
+#define _CCCL_PP_FOR_EACH_7(_Mp, _1, _2, _3, _4, _5, _6, _7) _Mp(_1) _Mp(_2) _Mp(_3) _Mp(_4) _Mp(_5) _Mp(_6) _Mp(_7)
+#define _CCCL_PP_FOR_EACH_8(_Mp, _1, _2, _3, _4, _5, _6, _7, _8) \
+  _Mp(_1) _Mp(_2) _Mp(_3) _Mp(_4) _Mp(_5) _Mp(_6) _Mp(_7) _Mp(_8)
+
+#define _CCCL_PP_PROBE_EMPTY_PROBE__CCCL_PP_PROBE_EMPTY _CCCL_PP_PROBE(~)
+
+#define _CCCL_PP_PROBE_EMPTY()
+#define _CCCL_PP_IS_NOT_EMPTY(...)                                                                             \
+  _CCCL_PP_EVAL(_CCCL_PP_CHECK, _CCCL_PP_CAT(_CCCL_PP_PROBE_EMPTY_PROBE_, _CCCL_PP_PROBE_EMPTY __VA_ARGS__())) \
+  /**/
+
+#define _CCCL_PP_TAIL(_, ...) __VA_ARGS__
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1120,5 +1190,42 @@
 #define _CCCL_PP_REPEAT_REVERSE254(_M, _S, _F) _CCCL_PP_REPEAT_REVERSE253(_M, _F(_S), _F) _M(_S)
 #define _CCCL_PP_REPEAT_REVERSE255(_M, _S, _F) _CCCL_PP_REPEAT_REVERSE254(_M, _F(_S), _F) _M(_S)
 #define _CCCL_PP_REPEAT_REVERSE256(_M, _S, _F) _CCCL_PP_REPEAT_REVERSE255(_M, _F(_S), _F) _M(_S)
+
+#define _CCCL_PP_SPLICE_WITH_IMPL1(SEP, P1)       P1
+#define _CCCL_PP_SPLICE_WITH_IMPL2(SEP, P1, ...)  _CCCL_PP_CAT(P1##SEP, _CCCL_PP_SPLICE_WITH_IMPL1(SEP, __VA_ARGS__))
+#define _CCCL_PP_SPLICE_WITH_IMPL3(SEP, P1, ...)  _CCCL_PP_CAT(P1##SEP, _CCCL_PP_SPLICE_WITH_IMPL2(SEP, __VA_ARGS__))
+#define _CCCL_PP_SPLICE_WITH_IMPL4(SEP, P1, ...)  _CCCL_PP_CAT(P1##SEP, _CCCL_PP_SPLICE_WITH_IMPL3(SEP, __VA_ARGS__))
+#define _CCCL_PP_SPLICE_WITH_IMPL5(SEP, P1, ...)  _CCCL_PP_CAT(P1##SEP, _CCCL_PP_SPLICE_WITH_IMPL4(SEP, __VA_ARGS__))
+#define _CCCL_PP_SPLICE_WITH_IMPL6(SEP, P1, ...)  _CCCL_PP_CAT(P1##SEP, _CCCL_PP_SPLICE_WITH_IMPL5(SEP, __VA_ARGS__))
+#define _CCCL_PP_SPLICE_WITH_IMPL7(SEP, P1, ...)  _CCCL_PP_CAT(P1##SEP, _CCCL_PP_SPLICE_WITH_IMPL6(SEP, __VA_ARGS__))
+#define _CCCL_PP_SPLICE_WITH_IMPL8(SEP, P1, ...)  _CCCL_PP_CAT(P1##SEP, _CCCL_PP_SPLICE_WITH_IMPL7(SEP, __VA_ARGS__))
+#define _CCCL_PP_SPLICE_WITH_IMPL9(SEP, P1, ...)  _CCCL_PP_CAT(P1##SEP, _CCCL_PP_SPLICE_WITH_IMPL8(SEP, __VA_ARGS__))
+#define _CCCL_PP_SPLICE_WITH_IMPL10(SEP, P1, ...) _CCCL_PP_CAT(P1##SEP, _CCCL_PP_SPLICE_WITH_IMPL9(SEP, __VA_ARGS__))
+#define _CCCL_PP_SPLICE_WITH_IMPL11(SEP, P1, ...) _CCCL_PP_CAT(P1##SEP, _CCCL_PP_SPLICE_WITH_IMPL10(SEP, __VA_ARGS__))
+#define _CCCL_PP_SPLICE_WITH_IMPL12(SEP, P1, ...) _CCCL_PP_CAT(P1##SEP, _CCCL_PP_SPLICE_WITH_IMPL11(SEP, __VA_ARGS__))
+#define _CCCL_PP_SPLICE_WITH_IMPL13(SEP, P1, ...) _CCCL_PP_CAT(P1##SEP, _CCCL_PP_SPLICE_WITH_IMPL12(SEP, __VA_ARGS__))
+#define _CCCL_PP_SPLICE_WITH_IMPL14(SEP, P1, ...) _CCCL_PP_CAT(P1##SEP, _CCCL_PP_SPLICE_WITH_IMPL13(SEP, __VA_ARGS__))
+#define _CCCL_PP_SPLICE_WITH_IMPL15(SEP, P1, ...) _CCCL_PP_CAT(P1##SEP, _CCCL_PP_SPLICE_WITH_IMPL14(SEP, __VA_ARGS__))
+#define _CCCL_PP_SPLICE_WITH_IMPL16(SEP, P1, ...) _CCCL_PP_CAT(P1##SEP, _CCCL_PP_SPLICE_WITH_IMPL15(SEP, __VA_ARGS__))
+#define _CCCL_PP_SPLICE_WITH_IMPL17(SEP, P1, ...) _CCCL_PP_CAT(P1##SEP, _CCCL_PP_SPLICE_WITH_IMPL16(SEP, __VA_ARGS__))
+#define _CCCL_PP_SPLICE_WITH_IMPL18(SEP, P1, ...) _CCCL_PP_CAT(P1##SEP, _CCCL_PP_SPLICE_WITH_IMPL17(SEP, __VA_ARGS__))
+#define _CCCL_PP_SPLICE_WITH_IMPL19(SEP, P1, ...) _CCCL_PP_CAT(P1##SEP, _CCCL_PP_SPLICE_WITH_IMPL18(SEP, __VA_ARGS__))
+#define _CCCL_PP_SPLICE_WITH_IMPL21(SEP, P1, ...) _CCCL_PP_CAT(P1##SEP, _CCCL_PP_SPLICE_WITH_IMPL19(SEP, __VA_ARGS__))
+#define _CCCL_PP_SPLICE_WITH_IMPL22(SEP, P1, ...) _CCCL_PP_CAT(P1##SEP, _CCCL_PP_SPLICE_WITH_IMPL21(SEP, __VA_ARGS__))
+#define _CCCL_PP_SPLICE_WITH_IMPL23(SEP, P1, ...) _CCCL_PP_CAT(P1##SEP, _CCCL_PP_SPLICE_WITH_IMPL22(SEP, __VA_ARGS__))
+#define _CCCL_PP_SPLICE_WITH_IMPL24(SEP, P1, ...) _CCCL_PP_CAT(P1##SEP, _CCCL_PP_SPLICE_WITH_IMPL23(SEP, __VA_ARGS__))
+#define _CCCL_PP_SPLICE_WITH_IMPL25(SEP, P1, ...) _CCCL_PP_CAT(P1##SEP, _CCCL_PP_SPLICE_WITH_IMPL24(SEP, __VA_ARGS__))
+#define _CCCL_PP_SPLICE_WITH_IMPL26(SEP, P1, ...) _CCCL_PP_CAT(P1##SEP, _CCCL_PP_SPLICE_WITH_IMPL25(SEP, __VA_ARGS__))
+#define _CCCL_PP_SPLICE_WITH_IMPL27(SEP, P1, ...) _CCCL_PP_CAT(P1##SEP, _CCCL_PP_SPLICE_WITH_IMPL26(SEP, __VA_ARGS__))
+#define _CCCL_PP_SPLICE_WITH_IMPL28(SEP, P1, ...) _CCCL_PP_CAT(P1##SEP, _CCCL_PP_SPLICE_WITH_IMPL27(SEP, __VA_ARGS__))
+#define _CCCL_PP_SPLICE_WITH_IMPL29(SEP, P1, ...) _CCCL_PP_CAT(P1##SEP, _CCCL_PP_SPLICE_WITH_IMPL28(SEP, __VA_ARGS__))
+#define _CCCL_PP_SPLICE_WITH_IMPL30(SEP, P1, ...) _CCCL_PP_CAT(P1##SEP, _CCCL_PP_SPLICE_WITH_IMPL29(SEP, __VA_ARGS__))
+
+#define _CCCL_PP_SPLICE_WITH_IMPL_DISPATCH(N) _CCCL_PP_SPLICE_WITH_IMPL##N
+
+// Splices a pack of arguments into a single token, separated by SEP
+// E.g., _CCCL_PP_SPLICE_WITH(_, A, B, C) will evaluate to A_B_C
+#define _CCCL_PP_SPLICE_WITH(SEP, ...) \
+  _CCCL_PP_EXPAND(_CCCL_PP_EVAL(_CCCL_PP_SPLICE_WITH_IMPL_DISPATCH, _CCCL_PP_COUNT(__VA_ARGS__))(SEP, __VA_ARGS__))
 
 #endif // __CCCL_PREPROCESSOR_H

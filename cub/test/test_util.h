@@ -56,8 +56,8 @@
 
 #include "mersenne.h"
 #include "test_warning_suppression.cuh"
-#include <c2h/extended_types.cuh>
-#include <c2h/test_util_vec.cuh>
+#include <c2h/extended_types.h>
+#include <c2h/test_util_vec.h>
 #include <nv/target>
 
 /******************************************************************************

@@ -14,6 +14,7 @@
 #include <cuda/std/span>
 #include <cuda/std/tuple>
 
+#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/hierarchy.cuh>
 
 #if _CCCL_STD_VER >= 2017
@@ -86,6 +87,35 @@ inline constexpr bool no_duplicate_options = true;
 template <typename Option, typename... Rest>
 inline constexpr bool no_duplicate_options<Option, Rest...> =
   ((Option::kind != Rest::kind) && ...) && no_duplicate_options<Rest...>;
+
+template <typename... Prev>
+_CCCL_NODISCARD constexpr auto process_config_args(const ::cuda::std::tuple<Prev...>& previous)
+{
+  return kernel_config(::cuda::std::apply(make_hierarchy_fragment<void, const Prev&...>, previous));
+}
+
+template <typename... Prev, typename Arg, typename... Rest>
+_CCCL_NODISCARD constexpr auto
+process_config_args(const ::cuda::std::tuple<Prev...>& previous, const Arg& arg, const Rest&... rest)
+{
+  if constexpr (::cuda::std::is_base_of_v<detail::launch_option, Arg>)
+  {
+    static_assert((::cuda::std::is_base_of_v<detail::launch_option, Rest> && ...),
+                  "Hierarchy levels and launch options can't be mixed");
+    if constexpr (sizeof...(Prev) == 0)
+    {
+      return kernel_config(uninit_t{}, arg, rest...);
+    }
+    else
+    {
+      return kernel_config(::cuda::std::apply(make_hierarchy_fragment<void, const Prev&...>, previous), arg, rest...);
+    }
+  }
+  else
+  {
+    return process_config_args(::cuda::std::tuple_cat(previous, ::cuda::std::make_tuple(arg)), rest...);
+  }
+}
 
 } // namespace detail
 
@@ -355,6 +385,28 @@ struct kernel_config
   }
 };
 
+// We can consider removing the operator&, but its convenient for in-line construction
+template <typename Dimensions, typename... Options, typename NewLevel>
+_CUDAX_HOST_API constexpr auto
+operator&(const kernel_config<Dimensions, Options...>& config, const NewLevel& new_level) noexcept
+{
+  return kernel_config(hierarchy_add_level(config.dims, new_level), config.options);
+}
+
+template <typename NewLevel, typename Dimensions, typename... Options>
+_CUDAX_HOST_API constexpr auto
+operator&(const NewLevel& new_level, const kernel_config<Dimensions, Options...>& config) noexcept
+{
+  return kernel_config(hierarchy_add_level(config.dims, new_level), config.options);
+}
+
+template <typename L1, typename Dims1, typename L2, typename Dims2>
+_CUDAX_HOST_API constexpr auto
+operator&(const level_dimensions<L1, Dims1>& l1, const level_dimensions<L2, Dims2>& l2) noexcept
+{
+  return kernel_config(make_hierarchy_fragment(l1, l2));
+}
+
 template <typename Dimensions,
           typename... Options,
           typename Option,
@@ -386,10 +438,43 @@ _CCCL_NODISCARD constexpr auto operator&(const hierarchy_dimensions<Levels...>& 
  * @param opts
  * Variadic number of launch configuration options to be included in the resulting kernel configuration object
  */
-template <typename... Levels, typename... Opts>
-_CCCL_NODISCARD constexpr auto make_config(const hierarchy_dimensions<Levels...>& dims, const Opts&... opts) noexcept
+template <typename BottomUnit, typename... Levels, typename... Opts>
+_CCCL_NODISCARD constexpr auto
+make_config(const hierarchy_dimensions_fragment<BottomUnit, Levels...>& dims, const Opts&... opts) noexcept
 {
-  return kernel_config<hierarchy_dimensions<Levels...>, Opts...>(dims, opts...);
+  return kernel_config<hierarchy_dimensions_fragment<BottomUnit, Levels...>, Opts...>(dims, opts...);
+}
+
+/**
+ * @brief A shorthand for creating a kernel configuration with a hierarchy of CUDA threads evenly
+ * distributing elements among blocks and threads.
+ *
+ * @par Snippet
+ * @code
+ * #include <cudax/hierarchy_dimensions.cuh>
+ * using namespace cuda::experimental;
+ *
+ * constexpr int threadsPerBlock = 256;
+ * auto dims = distribute<threadsPerBlock>(numElements);
+ *
+ * // Equivalent to:
+ * constexpr int threadsPerBlock = 256;
+ * int blocksPerGrid = (numElements + threadsPerBlock - 1) / threadsPerBlock;
+ * auto dims = make_hierarchy(grid_dims(blocksPerGrid), block_dims<threadsPerBlock>());
+ * @endcode
+ */
+template <int _ThreadsPerBlock>
+constexpr auto distribute(int numElements) noexcept
+{
+  int blocksPerGrid = (numElements + _ThreadsPerBlock - 1) / _ThreadsPerBlock;
+  return make_config(make_hierarchy(grid_dims(blocksPerGrid), block_dims<_ThreadsPerBlock>()));
+}
+
+template <typename... Args>
+_CCCL_NODISCARD constexpr auto make_config(const Args&... args)
+{
+  static_assert(sizeof...(Args) != 0, "Configuration can't be empty");
+  return detail::process_config_args(::cuda::std::make_tuple(), args...);
 }
 
 namespace detail
