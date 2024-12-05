@@ -22,12 +22,13 @@ struct with_get_resource_const_lvalue
 {
   device_resource res_{};
 
-  const device_resource& get_resource() const noexcept
+  const device_resource& get_memory_resource() const noexcept
   {
     return res_;
   }
 };
-TEST_CASE("Can call get_resource on a type with a get_resource method that returns a const lvalue", "[resource]")
+TEST_CASE("Can call get_memory_resource on a type with a get_memory_resource method that returns a const lvalue",
+          "[resource]")
 {
   with_get_resource_const_lvalue val{};
   auto&& res = ::cuda::experimental::get_memory_resource(val);
@@ -39,12 +40,12 @@ struct with_get_resource_rvalue
 {
   device_resource res_{};
 
-  device_resource get_resource() const noexcept
+  device_resource get_memory_resource() const noexcept
   {
     return res_;
   }
 };
-TEST_CASE("Can call get_resource on a type with a get_resource method returns an rvalue", "[resource]")
+TEST_CASE("Can call get_memory_resource on a type with a get_memory_resource method returns an rvalue", "[resource]")
 {
   with_get_resource_rvalue val{};
   auto&& res = ::cuda::experimental::get_memory_resource(val);
@@ -56,12 +57,12 @@ struct with_get_resource_non_const
 {
   device_resource res_{};
 
-  device_resource get_resource() noexcept
+  device_resource get_memory_resource() noexcept
   {
     return res_;
   }
 };
-TEST_CASE("Cannot call get_resource on a type with a non-const get_resource method", "[resource]")
+TEST_CASE("Cannot call get_memory_resource on a type with a non-const get_memory_resource method", "[resource]")
 {
   STATIC_REQUIRE(
     !::cuda::std::is_invocable_v<::cuda::experimental::get_memory_resource_t, const with_get_resource_non_const&>);
@@ -76,7 +77,8 @@ struct env_with_query_const_ref
     return res_;
   }
 };
-TEST_CASE("Can call get_resource on an env with a get_memory_resource query that returns a const lvalue", "[resource]")
+TEST_CASE("Can call get_memory_resource on an env with a get_memory_resource query that returns a const lvalue",
+          "[resource]")
 {
   env_with_query_const_ref val{};
   auto&& res = ::cuda::experimental::get_memory_resource(val);
@@ -93,7 +95,8 @@ struct env_with_query_rvalue
     return res_;
   }
 };
-TEST_CASE("Can call get_resource on an env with a get_memory_resource query that returns an rvalue", "[resource]")
+TEST_CASE("Can call get_memory_resource on an env with a get_memory_resource query that returns an rvalue",
+          "[resource]")
 {
   env_with_query_rvalue val{};
   auto&& res = ::cuda::experimental::get_memory_resource(val);
@@ -110,7 +113,7 @@ struct env_with_query_non_const
     return res_;
   }
 };
-TEST_CASE("Cannot call get_resource on an env with a non-const query", "[resource]")
+TEST_CASE("Cannot call get_memory_resource on an env with a non-const query", "[resource]")
 {
   STATIC_REQUIRE(
     !::cuda::std::is_invocable_v<::cuda::experimental::get_memory_resource_t, const env_with_query_non_const&>);
@@ -120,7 +123,7 @@ struct env_with_query_and_method
 {
   device_resource res_{};
 
-  const device_resource& get_resource() const noexcept
+  const device_resource& get_memory_resource() const noexcept
   {
     return res_;
   }
@@ -130,7 +133,7 @@ struct env_with_query_and_method
     return res_;
   }
 };
-TEST_CASE("Can call get_resource on a type with both get_resource and query", "[resource]")
+TEST_CASE("Can call get_memory_resource on a type with both get_memory_resource and query", "[resource]")
 {
   env_with_query_and_method val{};
   auto&& res = ::cuda::experimental::get_memory_resource(val);
@@ -160,12 +163,12 @@ struct with_get_resource_non_async
   };
   resource res_{};
 
-  resource get_resource() const noexcept
+  resource get_memory_resource() const noexcept
   {
     return res_;
   }
 };
-TEST_CASE("Cannot call get_resource on an env with a non-async resource", "[resource]")
+TEST_CASE("Cannot call get_memory_resource on an env with a non-async resource", "[resource]")
 {
   STATIC_REQUIRE(
     !::cuda::std::is_invocable_v<::cuda::experimental::get_memory_resource_t, const with_get_resource_non_async&>);
