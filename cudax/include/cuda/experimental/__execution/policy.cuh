@@ -21,7 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__async/utility.cuh>
+#include <cuda/experimental/__async/sender/utility.cuh>
 
 namespace cuda::experimental::execution
 {

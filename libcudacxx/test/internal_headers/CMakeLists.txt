@@ -61,6 +61,9 @@ function(libcudacxx_create_internal_header_test header_name, headertest_src, fal
   if (CCCL_SUPPRESS_ICC_DEPRECATION_WARNING)
     target_compile_definitions(headertest_${header_name} PRIVATE CCCL_SUPPRESS_ICC_DEPRECATION_WARNING)
   endif()
+  if (CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING)
+    target_compile_definitions(headertest_${header_name} PRIVATE CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING)
+  endif()
 
   add_dependencies(libcudacxx.test.internal_headers headertest_${header_name})
 endfunction()

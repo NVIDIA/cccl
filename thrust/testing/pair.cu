@@ -286,7 +286,8 @@ void TestPairSwap()
   thrust::pair<int, int> a(x, y);
   thrust::pair<int, int> b(z, w);
 
-  thrust::swap(a, b);
+  using ::cuda::std::swap;
+  swap(a, b);
 
   ASSERT_EQUAL(z, a.first);
   ASSERT_EQUAL(w, a.second);

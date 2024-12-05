@@ -77,12 +77,10 @@
 #endif // _CCCL_STD_VER <= 2020
 
 #if _CCCL_STD_VER >= 2017 && defined(__cpp_if_constexpr)
-#  define _CCCL_IF_CONSTEXPR      if constexpr
-#  define _CCCL_ELSE_IF_CONSTEXPR else if constexpr
+#  define _CCCL_IF_CONSTEXPR if constexpr
 #else // ^^^ C++17 ^^^ / vvv C++14 vvv
 #  define _CCCL_NO_IF_CONSTEXPR
-#  define _CCCL_IF_CONSTEXPR      if
-#  define _CCCL_ELSE_IF_CONSTEXPR else if
+#  define _CCCL_IF_CONSTEXPR if
 #endif // _CCCL_STD_VER <= 2014
 
 // In nvcc prior to 11.3 global variables could not be marked constexpr
@@ -104,6 +102,15 @@
 #if _CCCL_STD_VER <= 2011 || !defined(__cpp_variable_templates) || (__cpp_variable_templates < 201304L)
 #  define _CCCL_NO_VARIABLE_TEMPLATES
 #endif // _CCCL_STD_VER <= 2011
+
+// Declaring a non-type template parameters with auto is only available from C++17 onwards
+#if _CCCL_STD_VER >= 2017 && defined(__cpp_nontype_template_parameter_auto) \
+  && (__cpp_nontype_template_parameter_auto >= 201606L)
+#  define _CCCL_NTTP_AUTO auto
+#else // ^^^ C++17 ^^^ / vvv C++14 vvv
+#  define _CCCL_NO_NONTYPE_TEMPLATE_PARAMETER_AUTO
+#  define _CCCL_NTTP_AUTO unsigned long long int
+#endif // _CCCL_STD_VER <= 2014
 
 // concepts are only available from C++20 onwards
 #if _CCCL_STD_VER <= 2017 || !defined(__cpp_concepts) || (__cpp_concepts < 201907L)

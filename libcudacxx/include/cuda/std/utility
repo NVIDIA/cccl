@@ -49,6 +49,7 @@
 #include <cuda/std/__utility/forward_like.h>
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/integer_sequence.h>
+#include <cuda/std/__utility/monostate.h>
 #include <cuda/std/__utility/move.h>
 #include <cuda/std/__utility/pair.h>
 #include <cuda/std/__utility/piecewise_construct.h>
@@ -68,6 +69,9 @@
 #  include <cuda/std/compare>
 #endif // !_LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
 #include <cuda/std/initializer_list>
+
+// [tuple.creation]
+#include <cuda/std/__tuple_dir/ignore.h>
 
 // [tuple.helper]
 #include <cuda/std/__tuple_dir/tuple_element.h>

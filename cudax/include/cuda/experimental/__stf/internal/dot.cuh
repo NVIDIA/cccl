@@ -18,6 +18,7 @@
  * CUDASTF_DOT_COLOR_BY_DEVICE
  * CUDASTF_DOT_REMOVE_DATA_DEPS
  * CUDASTF_DOT_TIMING
+ * CUDASTF_DOT_MAX_DEPTH
  */
 
 #pragma once
@@ -36,6 +37,7 @@
 #include <cuda/experimental/__stf/utility/cuda_safe_call.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 #include <cuda/experimental/__stf/utility/threads.cuh>
+#include <cuda/experimental/__stf/utility/unique_id.cuh>
 
 #include <algorithm>
 #include <fstream>
@@ -44,6 +46,7 @@
 #include <optional>
 #include <queue>
 #include <sstream>
+#include <stack>
 #include <unordered_set>
 
 namespace cuda::experimental::stf::reserved
@@ -62,6 +65,7 @@ struct per_task_info
   ::std::string color;
   ::std::string label;
   ::std::optional<float> timing;
+  int dot_section_id;
 };
 
 class per_ctx_dot
@@ -155,6 +159,9 @@ public:
     existing_edges.insert(p);
   }
 
+  // Used to avoid cyclic dependencies, defined later
+  static int get_current_section_id();
+
   template <typename task_type, typename data_type>
   void add_vertex(task_type t)
   {
@@ -177,8 +184,7 @@ public:
 
     task_metadata.color = get_current_color();
 
-    // Add an entry in the DOT file : we just put the node, and we will define its style/label later
-    oss << "\"NODE_" << t.get_unique_id() << "\" [style=\"filled\"]\n";
+    task_metadata.dot_section_id = get_current_section_id();
 
     // We here create the label of the task, which we may augment later with
     // timing information for example
@@ -323,6 +329,9 @@ public:
 
   const char* current_color = "white";
 
+  // Non copyable unique id, ok because we use shared pointers
+  unique_id<per_ctx_dot> id;
+
 public: // XXX protected, friend : dot
   // string for the current epoch
   mutable ::std::ostringstream oss;
@@ -333,6 +342,104 @@ public: // XXX protected, friend : dot
 
 class dot : public reserved::meyers_singleton<dot>
 {
+public:
+  /**
+   * @brief A named section in the DOT output to potentially collapse multiple nodes in the same section
+   */
+  class section
+  {
+  public:
+    // Constructor to initialize symbol and children
+    section(::std::string sym)
+        : symbol(mv(sym))
+    {}
+
+    class guard
+    {
+    public:
+      guard(::std::string symbol)
+      {
+        section::push(mv(symbol));
+      }
+
+      ~guard()
+      {
+        section::pop();
+      }
+    };
+
+    static auto& current()
+    {
+      thread_local ::std::stack<int> s;
+      return s;
+    }
+
+    static void push(::std::string symbol)
+    {
+      // We first create a section object, with its unique id
+      auto sec = ::std::make_shared<section>(mv(symbol));
+      int id   = sec->get_id();
+
+      int parent_id  = current().size() == 0 ? 0 : current().top();
+      sec->parent_id = parent_id;
+
+      // Save the section in the map
+      dot::instance().map[id] = sec;
+
+      // Add the section to the children of its parent if that was not the root
+      if (parent_id > 0)
+      {
+        dot::instance().map[parent_id]->children_ids.push_back(id);
+      }
+
+      // Push the id in the current stack
+      current().push(id);
+
+      // The size of the stack is the recursion level of the section
+      sec->depth = current().size();
+    }
+
+    static void pop()
+    {
+      _CCCL_ASSERT(current().size() > 0, "Cannot pop, no section was pushed.");
+      current().pop();
+    }
+
+    /**
+     * @brief Get the unique ID of the section
+     *
+     * Note that returned values start at 1, not 0, we use 0 to designate the
+     * lack of a section.
+     */
+    int get_id() const
+    {
+      return 1 + int(id);
+    }
+
+    const ::std::string get_symbol() const
+    {
+      return symbol;
+    }
+
+    int get_depth() const
+    {
+      return depth;
+    }
+
+    int parent_id;
+
+    ::std::vector<int> children_ids;
+
+  private:
+    int depth;
+
+    ::std::string symbol;
+
+    // An identifier for that section. This is movable, but non
+    // copyable, but we manipulate section by the means of shared_ptr.
+    unique_id<section> id;
+  };
+
 protected:
   dot()
   {
@@ -408,6 +515,63 @@ public:
     {
       existing_edges.insert(e);
     }
+
+    /* Put nodes which belong to a section into their clusters */
+    ::std::unordered_map<int, ::std::vector<int>> section_id_to_nodes;
+    for (auto& p : pc->metadata)
+    {
+      // p.first task id, p.second metadata
+      int dot_section_id = p.second.dot_section_id;
+      if (dot_section_id > 0)
+      {
+        section_id_to_nodes[dot_section_id].push_back(p.first);
+      }
+    }
+
+    /* Display all sections recursively */
+    for (auto [id, sec_ptr] : map)
+    {
+      // Select root nodes only
+      if (sec_ptr->parent_id == 0)
+      {
+        print_section(outFile, id, section_id_to_nodes);
+      }
+    }
+  }
+
+  /**
+   * @brief Add a dashed box around a section and its children
+   */
+  void
+  print_section(::std::ofstream& outFile, int id, ::std::unordered_map<int, ::std::vector<int>>& section_id_to_nodes)
+  {
+    // Stop printing sections if they are deeper than the max depth (if defined)
+    const char* env_max_depth = getenv("CUDASTF_DOT_MAX_DEPTH");
+    if (env_max_depth && (atoi(env_max_depth) < map[id]->get_depth()))
+    {
+      return;
+    }
+
+    outFile << "subgraph cluster_section_" << ::std::to_string(id) << " {\n ";
+
+    // Display all children too to have nested boxes
+    for (int children_ids : map[id]->children_ids)
+    {
+      print_section(outFile, children_ids, section_id_to_nodes);
+    }
+
+    // style of the box
+    outFile << "    color=black;\n";
+    outFile << "    style=dashed\n";
+    outFile << "    label=\"" + map[id]->get_symbol() + "\"\n";
+
+    // Put all nodes which belong to this section
+    for (auto i : section_id_to_nodes[id])
+    {
+      outFile << "    \"NODE_" + ::std::to_string(i) + "\"\n";
+    }
+
+    outFile << "} // end subgraph cluster_section_" << ::std::to_string(id) << "\n ";
   }
 
   // This will update colors if necessary
@@ -455,6 +619,125 @@ public:
     }
   }
 
+  /**
+   * @brief Combine two nodes identified by "src_id" and "dst_id" into a single
+   * updated one ("dst_id"), redirecting edges and combining timing if
+   * necessary
+   */
+  void merge_nodes(per_ctx_dot& pc, int dst_id, int src_id)
+  {
+    // ::std::unordered_map<int /* id */, per_task_info> metadata;
+
+    // Get src_id from the map and remove it
+    auto it = pc.metadata.find(src_id);
+    assert(it != pc.metadata.end());
+    per_task_info src = mv(it->second);
+    pc.metadata.erase(it);
+
+    // If there was some timing associated to either src or dst, update timing
+    auto& dst = pc.metadata[dst_id];
+    if (dst.timing.has_value() || src.timing.has_value())
+    {
+      dst.timing =
+        (src.timing.has_value() ? src.timing.value() : 0.0f) + (dst.timing.has_value() ? dst.timing.value() : 0.0f);
+    }
+
+    // Replace edges if necessary
+    IntPairSet new_edges;
+    for (auto& [from, to] : pc.existing_edges)
+    {
+      int new_from = (from == src_id) ? dst_id : from;
+      int new_to   = (to == src_id) ? dst_id : to;
+
+      if (new_from != new_to)
+      {
+        _CCCL_ASSERT(new_from < new_to, "invalid edge");
+        new_edges.insert(std::make_pair(new_from, new_to));
+      }
+    }
+    ::std::swap(new_edges, pc.existing_edges);
+  }
+
+  /**
+   * @brief Collapse nodes which are parts of sections deeper than the value
+   *        specified in CUDASTF_DOT_MAX_DEPTH
+   */
+  void collapse_sections()
+  {
+    const char* env_depth = getenv("CUDASTF_DOT_MAX_DEPTH");
+    if (!env_depth)
+    {
+      return;
+    }
+
+    const int max_depth = atoi(env_depth);
+
+    // First go over all tasks which have some timing and compute the average duration
+    for (auto& pc : per_ctx)
+    {
+      // key : section id, value : vector of IDs which should be condensed into a node
+      ::std::unordered_map<int, ::std::vector<int>> to_condense;
+
+      for (auto& p : pc->metadata)
+      {
+        // p.first task id, p.second metadata
+        auto& task_info    = p.second;
+        int dot_section_id = task_info.dot_section_id;
+        if (dot_section_id > 0)
+        {
+          // Note we do not use a reference here, because we are maybe going to
+          // update the pointer, and we do not want to update its content
+          // instead when setting sec.
+          ::std::shared_ptr<section> sec = dot::instance().map[dot_section_id];
+          assert(sec);
+
+          int depth      = sec->get_depth();
+          int section_id = task_info.dot_section_id;
+
+          if (depth >= max_depth + 1)
+          {
+            /* Find the parent at depth (max_depth + 1)*/
+            while (depth > max_depth + 1)
+            {
+              section_id = sec->parent_id;
+              _CCCL_ASSERT(section_id != 0, "invalid value");
+              sec = dot::instance().map[section_id];
+              depth--;
+            }
+
+            _CCCL_ASSERT(depth == max_depth + 1, "invalid value");
+
+            /* Add this node to the list of nodes which are "equivalent" to section_id */
+            to_condense[section_id].push_back(p.first);
+          }
+        }
+      }
+
+      for (auto& p : to_condense)
+      {
+        ::std::sort(p.second.begin(), p.second.end());
+
+        // For every section ID, we get the vector of nodes to condense. We pick the first node, and "merge" other nodes
+        // with it.
+
+        // Merge all tasks in the vector with the first entry, and then rename
+        // the first entry to take the name of the section.
+        for (size_t i = 1; i < p.second.size(); i++)
+        {
+          // Fuse i-th entry with the first one
+          merge_nodes(*pc, p.second[0], p.second[i]);
+        }
+
+        // Rename the task that remains to have the label of the section
+        ::std::shared_ptr<section> sec  = dot::instance().map[p.first];
+        pc->metadata[p.second[0]].label = sec->get_symbol();
+
+        // Assign the node to the parent of the section it corresponds to
+        pc->metadata[p.second[0]].dot_section_id = sec->parent_id;
+      }
+    }
+  }
+
   // This should not need to be called explicitly, unless we are doing some automatic tests for example
   void finish()
   {
@@ -469,6 +752,8 @@ public:
     {
       pc->finish();
     }
+
+    collapse_sections();
 
     // Now we have executed all tasks, so we can compute the average execution
     // times, and update the colors appropriately if needed.
@@ -511,8 +796,8 @@ public:
       {
         for (const auto& p : pc->metadata)
         {
-          outFile << "\"NODE_" << p.first << "\" [fillcolor=\"" << p.second.color << "\" label=\"" << p.second.label
-                  << "\"]\n";
+          outFile << "\"NODE_" << p.first << "\" [style=\"filled\" fillcolor=\"" << p.second.color << "\" label=\""
+                  << p.second.label << "\"]\n";
         }
       }
 
@@ -780,6 +1065,16 @@ private:
   mutable ::std::mutex mtx;
 
   ::std::string dot_filename;
+
+  // Map to get dot sections from their ID
+  ::std::unordered_map<int, ::std::shared_ptr<section>> map;
 };
+
+inline int per_ctx_dot::get_current_section_id()
+{
+  // Get the stack of IDs, if it's empty return 0, otherwise the id of the section (which are numbered starting from 1)
+  auto& s = dot::section::current();
+  return s.size() == 0 ? 0 : s.top();
+}
 
 } // namespace cuda::experimental::stf::reserved

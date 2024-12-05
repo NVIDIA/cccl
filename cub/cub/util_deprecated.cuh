@@ -50,22 +50,34 @@
 #endif
 
 #ifdef CUB_IGNORE_DEPRECATED_API
+//! deprecated [Since 2.8]
 #  define CUB_DEPRECATED
+//! deprecated [Since 2.8]
 #  define CUB_DEPRECATED_BECAUSE(MSG)
 #elif _CCCL_STD_VER >= 2014
+//! deprecated [Since 2.8]
 #  define CUB_DEPRECATED              [[deprecated]]
+//! deprecated [Since 2.8]
 #  define CUB_DEPRECATED_BECAUSE(MSG) [[deprecated(MSG)]]
 #elif _CCCL_COMPILER(MSVC)
+//! deprecated [Since 2.8]
 #  define CUB_DEPRECATED              __declspec(deprecated)
+//! deprecated [Since 2.8]
 #  define CUB_DEPRECATED_BECAUSE(MSG) __declspec(deprecated(MSG))
 #elif _CCCL_COMPILER(CLANG)
+//! deprecated [Since 2.8]
 #  define CUB_DEPRECATED              __attribute__((deprecated))
+//! deprecated [Since 2.8]
 #  define CUB_DEPRECATED_BECAUSE(MSG) __attribute__((deprecated(MSG)))
 #elif _CCCL_COMPILER(GCC)
+//! deprecated [Since 2.8]
 #  define CUB_DEPRECATED              __attribute__((deprecated))
+//! deprecated [Since 2.8]
 #  define CUB_DEPRECATED_BECAUSE(MSG) __attribute__((deprecated(MSG)))
 #else
+//! deprecated [Since 2.8]
 #  define CUB_DEPRECATED
+//! deprecated [Since 2.8]
 #  define CUB_DEPRECATED_BECAUSE(MSG)
 #endif
 
