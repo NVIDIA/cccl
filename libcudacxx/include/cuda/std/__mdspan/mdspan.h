@@ -54,6 +54,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__algorithm/all_of.h>
 #include <cuda/std/__mdspan/compressed_pair.h>
 #include <cuda/std/__mdspan/default_accessor.h>
 #include <cuda/std/__mdspan/extents.h>
@@ -64,6 +65,7 @@
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/is_default_constructible.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
+#include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/rank.h>
 #include <cuda/std/__type_traits/remove_all_extents.h>
 #include <cuda/std/__type_traits/remove_cv.h>
@@ -108,28 +110,43 @@ private:
       return (__self.rank() > 0)
           && __MDSPAN_FOLD_OR((__self.__mapping_ref().extents().template __extent<_Idxs>() == index_type(0)));
     }
+
+    template <class... _SizeTypes>
+    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
+    __check_index(const _Extents& exts, _SizeTypes... __indices)
+    {
+      array<bool, sizeof...(_SizeTypes)> __res{((is_signed_v<index_type> && static_cast<index_type>(__indices) < 0)
+                                                || static_cast<index_type>(__indices) >= exts.extent(_Idxs))...};
+      return _CUDA_VSTD::all_of(__res.begin(), __res.end(), [](bool __v) {
+        return __v;
+      });
+    }
+
     template <class... _SizeTypes>
     _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr index_type
     __index(mdspan const& __self, _SizeTypes... __indices) noexcept
     {
+      _CCCL_ASSERT(__check_index(__self.__mapping_ref().extents(), __indices...),
+                   "cuda::std::mdspan subscript out of range!");
       const index_type __res = __self.__mapping_ref()(index_type(__indices)...);
-      _CCCL_ASSERT(__res < __self.__mapping_ref().required_span_size(), "cuda::std::mdspan subscript out of range!");
       return __res;
     }
     template <class _SizeType, size_t _Np>
     _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr index_type
     __index(mdspan const& __self, const _CUDA_VSTD::array<_SizeType, _Np>& __indices) noexcept
     {
+      _CCCL_ASSERT(__check_index(__indices, __self.__mapping_ref().extents()),
+                   "cuda::std::mdspan subscript out of range!");
       const index_type __res = __self.__mapping_ref()(__indices[_Idxs]...);
-      _CCCL_ASSERT(__res < __self.__mapping_ref().required_span_size(), "cuda::std::mdspan subscript out of range!");
       return __res;
     }
     template <class _SizeType, size_t _Np>
     _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr index_type
     __index(mdspan const& __self, const _CUDA_VSTD::span<_SizeType, _Np>& __indices) noexcept
     {
+      _CCCL_ASSERT(__check_index(__indices, __self.__mapping_ref().extents()),
+                   "cuda::std::mdspan subscript out of range!");
       const index_type __res = __self.__mapping_ref()(__indices[_Idxs]...);
-      _CCCL_ASSERT(__res < __self.__mapping_ref().required_span_size(), "cuda::std::mdspan subscript out of range!");
       return __res;
     }
   };
