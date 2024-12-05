@@ -623,10 +623,20 @@ class Algorithm:
                     else:
                         param_args.append(name)
 
+            if self.struct_name.startswith('Warp'):
+                # Pessimistic temporary storage allocation for 1024 threads
+                # TODO: Use the actual warp size
+                storage = "__shared__ temp_storage_t temp_storages[1024 / 32];"
+                storage += "temp_storage_t &temp_storage = temp_storages[threadIdx.x / 32];"
+                sync = "__syncwarp();"
+            elif self.struct_name.startswith('Block'):
+                storage = "__shared__ temp_storage_t temp_storage;"
+                sync = "__syncthreads();"
+
             template = environment.from_string("""
                 extern "C" __device__ void {{ mangled_name }}_alloc({{ param_decls }})
                 {
-                  __shared__ temp_storage_t temp_storage;
+                  {{ storage }}
 
                   {% for decl in func_decls %}
                   {{ decl }}
@@ -637,6 +647,8 @@ class Algorithm:
                   {% endif %}
 
                    algorithm_t(temp_storage).{{ method_name }}({{ param_args }});
+
+                  {{ sync }}
                 }
 
                 extern "C" __device__ void {{ mangled_name }}( temp_storage_t *temp_storage, {{ param_decls }})
@@ -657,7 +669,9 @@ class Algorithm:
                                    func_decls=func_decls,
                                    out_param=out_param,
                                    method_name=self.method_name,
-                                   mangled_name=self.mangled_name(method))
+                                   mangled_name=self.mangled_name(method),
+                                   sync=sync,
+                                   storage=storage)
 
         device = cuda.get_current_device()
         cc_major, cc_minor = device.compute_capability
