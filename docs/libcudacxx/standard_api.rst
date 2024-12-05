@@ -101,6 +101,8 @@ Feature availability:
 
    -  all features are available in C++14
 
+-  C++23 ``invoke_r`` in ``<functional>`` is available in C++14.
+
 -  C++23 ``<mdspan>`` is available in C++17.
 
    -  ``mdspan`` is feature complete in C++17 onwards.
