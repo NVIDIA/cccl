@@ -4,7 +4,7 @@
 
 import os
 import shutil
-from cuda import nvrtc
+from cuda.bindings import nvrtc
 from cuda.cooperative.experimental._caching import disk_cache
 from cuda.cooperative.experimental._common import check_in, version
 import importlib
