@@ -300,7 +300,7 @@ class TransformIterator:
                 transform_dereference,
                 op_return_ntype(numba.types.CPointer(numba.types.char)),
             ),
-            # ATTENTION: NOT op_caller here!
+            # ATTENTION: NOT op_caller here! (see issue #3064)
             _ncc(op_abi_name, op, op_return_ntype(it.ntype)),
         ]
 
@@ -318,6 +318,8 @@ class TransformIterator:
 
 
 def cumap(op, it, op_return_ntype):
+    # TODO(rwgk): Resolve issue #3064
+
     op_return_ntype_ir = _ir_type_given_numba_type(op_return_ntype)
     if op_return_ntype_ir is None:
         raise RuntimeError(f"Unsupported: {type(op_return_ntype)=}")
@@ -414,7 +416,7 @@ def cumap(op, it, op_return_ntype):
         source_advance(it_state_ptr, diff)  # just a function call
 
     def transform_dereference(it_state_ptr):
-        # ATTENTION: op_caller here
+        # ATTENTION: op_caller here (see issue #3064)
         return op_caller(source_dereference(it_state_ptr))
 
     return TransformIterator(
