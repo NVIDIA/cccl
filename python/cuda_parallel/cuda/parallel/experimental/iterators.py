@@ -1,7 +1,7 @@
 from . import _iterators
 
 
-def cache_load_modifier(device_array, value_type, modifier):
+def CacheModifiedInputIterator(device_array, value_type, modifier):
     """Python fascade for Random Access Cache Modified Iterator that wraps a native device pointer.
 
     Similar to https://nvidia.github.io/cccl/cub/api/classcub_1_1CacheModifiedInputIterator.html
@@ -16,23 +16,22 @@ def cache_load_modifier(device_array, value_type, modifier):
     )
 
 
-def repeat(value, value_type):
+def ConstantIterator(value, value_type):
     """Python fascade (similar to itertools.repeat) for C++ Random Access ConstantIterator."""
     return _iterators.ConstantIterator(
         value, _iterators.numba_type_from_any(value_type)
     )
 
 
-def count(offset, value_type):
+def CountingIterator(offset, value_type):
     """Python fascade (similar to itertools.count) for C++ Random Access CountingIterator."""
     return _iterators.CountingIterator(
         offset, _iterators.numba_type_from_any(value_type)
     )
 
 
-# Knowingly shadowing a built-in function.
-def map(op, it, op_return_value_type):
+def TransformIterator(op, it, op_return_value_type):
     """Python fascade (similar to built-in map) mimicking a C++ Random Access TransformIterator."""
-    return _iterators.cumap(
+    return _iterators.TransformIterator(
         op, it, _iterators.numba_type_from_any(op_return_value_type)
     )

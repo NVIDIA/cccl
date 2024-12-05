@@ -278,7 +278,7 @@ class CountingIterator:
         return self.size
 
 
-class TransformIterator:
+class TransformIteratorImpl:
     def __init__(
         self,
         it,
@@ -321,7 +321,7 @@ class TransformIterator:
         return self.it.alignment  # TODO fix for stateful op
 
 
-def cumap(op, it, op_return_ntype):
+def TransformIterator(op, it, op_return_ntype):
     # TODO(rwgk): Resolve issue #3064
 
     op_return_ntype_ir = _ir_type_given_numba_type(op_return_ntype)
@@ -423,6 +423,6 @@ def cumap(op, it, op_return_ntype):
         # ATTENTION: op_caller here (see issue #3064)
         return op_caller(source_dereference(it_state_ptr))
 
-    return TransformIterator(
+    return TransformIteratorImpl(
         it, op, op_return_ntype, transform_advance, transform_dereference, op_abi_name
     )

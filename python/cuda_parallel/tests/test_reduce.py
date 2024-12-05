@@ -167,7 +167,7 @@ def test_value_type_name_round_trip(type_obj_from_str, value_type_name):
 def test_device_sum_raw_pointer_it(
     use_numpy_array, value_type_name, num_items=3, start_sum_with=10
 ):
-    # Exercise non-public _iterators.pointer() independently from iterators.map().
+    # Exercise non-public _iterators.pointer() independently from iterators.TransformIterator().
     rng = random.Random(0)
     l_varr = [rng.randrange(100) for _ in range(num_items)]
     dtype_inp = numpy.dtype(value_type_name)
@@ -191,7 +191,7 @@ def test_device_sum_cache_load_modifier_it(
     dtype_inp = numpy.dtype(value_type_name)
     dtype_out = dtype_inp
     input_devarr = numba.cuda.to_device(numpy.array(l_varr, dtype=dtype_inp))
-    i_input = iterators.cache_load_modifier(
+    i_input = iterators.CacheModifiedInputIterator(
         input_devarr, value_type=value_type_name, modifier="stream"
     )
     _test_device_sum_with_iterator(
@@ -207,7 +207,7 @@ def test_device_sum_constant_it(
     l_varr = [42 for distance in range(num_items)]
     dtype_inp = numpy.dtype(value_type_name)
     dtype_out = dtype_inp
-    i_input = iterators.repeat(42, value_type=value_type_name)
+    i_input = iterators.ConstantIterator(42, value_type=value_type_name)
     _test_device_sum_with_iterator(
         l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
     )
@@ -221,7 +221,7 @@ def test_device_sum_counting_it(
     l_varr = [start_sum_with + distance for distance in range(num_items)]
     dtype_inp = numpy.dtype(value_type_name)
     dtype_out = dtype_inp
-    i_input = iterators.count(start_sum_with, value_type=value_type_name)
+    i_input = iterators.CountingIterator(start_sum_with, value_type=value_type_name)
     _test_device_sum_with_iterator(
         l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
     )
@@ -246,9 +246,9 @@ def test_device_sum_map_mul2_count_it(
     vtn_out, vtn_inp = value_type_name_pair
     dtype_inp = numpy.dtype(vtn_inp)
     dtype_out = numpy.dtype(vtn_out)
-    i_input = iterators.map(
+    i_input = iterators.TransformIterator(
         mul2,
-        iterators.count(start_sum_with, value_type=vtn_inp),
+        iterators.CountingIterator(start_sum_with, value_type=vtn_inp),
         op_return_value_type=vtn_out,
     )
     _test_device_sum_with_iterator(
@@ -281,11 +281,11 @@ def test_device_sum_map_mul_map_mul_count_it(
     dtype_inp = numpy.dtype(vtn_inp)
     dtype_out = numpy.dtype(vtn_out)
     mul_funcs = {2: mul2, 3: mul3}
-    i_input = iterators.map(
+    i_input = iterators.TransformIterator(
         mul_funcs[fac_out],
-        iterators.map(
+        iterators.TransformIterator(
             mul_funcs[fac_mid],
-            iterators.count(start_sum_with, value_type=vtn_inp),
+            iterators.CountingIterator(start_sum_with, value_type=vtn_inp),
             op_return_value_type=vtn_mid,
         ),
         op_return_value_type=vtn_out,
@@ -313,7 +313,7 @@ def test_device_sum_map_mul2_cp_array_it(
     rng = random.Random(0)
     l_d_in = [rng.randrange(100) for _ in range(num_items)]
     a_d_in = cp.array(l_d_in, dtype_inp)
-    i_input = iterators.map(mul2, a_d_in, vtn_out)
+    i_input = iterators.TransformIterator(mul2, a_d_in, vtn_out)
     l_varr = [mul2(v) for v in l_d_in]
     _test_device_sum_with_iterator(
         l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
