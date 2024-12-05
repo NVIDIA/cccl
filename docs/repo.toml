@@ -345,7 +345,7 @@ social_media     = [
 autodoc.mock_imports = [
     "numba",
     "pynvjitlink",
-    "cuda.nvrtc",
+    "cuda.bindings.nvrtc",
     "llvmlite"
 ]
 
