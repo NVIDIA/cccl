@@ -35,7 +35,7 @@ __device__ __host__ void assert_rt_wrap(cudaError_t code, const char* file, int 
   if (code != cudaSuccess)
   {
 #ifndef TEST_COMPILER_NVRTC
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+    NV_IF_ELSE_TARGET(NV_IS_HOST,
                       (printf("assert: %s %s %d\n", cudaGetErrorString(code), file, line);),
                       (printf("assert: error=%d %s %d\n", code, file, line);))
 #endif // !TEST_COMPILER_NVRTC
