@@ -34,3 +34,6 @@ def test_warp_exclusive_sum():
     h_keys = d_keys.copy_to_host()
     for i in range(tile_size):
         assert h_keys[i] == i
+
+
+test_warp_exclusive_sum()
