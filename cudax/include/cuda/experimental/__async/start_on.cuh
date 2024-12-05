@@ -49,7 +49,7 @@ _CCCL_GLOBAL_CONSTANT struct start_on_t
 #if !_CCCL_CUDA_COMPILER(NVCC)
 
 private:
-#endif // _CCCL_CUDA_COMPILER(NVCC)
+#endif // !_CCCL_CUDA_COMPILER(NVCC)
 
   template <class _Rcvr, class _Sch, class _CvSndr>
   struct __opstate_t

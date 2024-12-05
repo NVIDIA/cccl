@@ -61,7 +61,7 @@ struct __just_from
 #if !_CCCL_CUDA_COMPILER(NVCC)
 
 private:
-#endif // _CCCL_CUDA_COMPILER(NVCC)
+#endif // !_CCCL_CUDA_COMPILER(NVCC)
 
   using _JustTag = decltype(__detail::__just_from_tag<_Disposition>());
   using _SetTag  = decltype(__detail::__set_tag<_Disposition>());

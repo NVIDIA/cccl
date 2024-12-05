@@ -61,7 +61,8 @@ struct __let
 #if !_CCCL_CUDA_COMPILER(NVCC)
 
 private:
-#endif // _CCCL_CUDA_COMPILER(NVCC)
+#endif // !_CCCL_CUDA_COMPILER(NVCC)
+
   using _LetTag = decltype(__detail::__let_tag<_Disposition>());
   using _SetTag = decltype(__detail::__set_tag<_Disposition>());
 
