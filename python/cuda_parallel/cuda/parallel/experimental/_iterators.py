@@ -122,7 +122,7 @@ class RawPointer:
 
 
 def pointer(container, ntype):
-    return RawPointer(container.device_ctypes_pointer.value, ntype)
+    return RawPointer(container.__cuda_array_interface__["data"][0], ntype)
 
 
 def _ir_type_given_numba_type(ntype):
@@ -306,6 +306,9 @@ def cumap(op, it, op_return_ntype):
     op_return_ntype_ir = _ir_type_given_numba_type(op_return_ntype)
     if op_return_ntype_ir is None:
         raise RuntimeError(f"Unsupported: {type(op_return_ntype)=}")
+    if hasattr(it, "dtype"):
+        assert not hasattr(it, "ntype")
+        it = pointer(it, getattr(numba.types, str(it.dtype)))
     it_ntype_ir = _ir_type_given_numba_type(it.ntype)
     if it_ntype_ir is None:
         raise RuntimeError(f"Unsupported: {type(it.ntype)=}")

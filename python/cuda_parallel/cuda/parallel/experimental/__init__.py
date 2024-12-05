@@ -180,8 +180,7 @@ def _facade_iter_as_cccl_iter(d_in):
 
 
 def _d_in_as_cccl_iter(d_in):
-    ntype = getattr(d_in, 'ntype', None)
-    if ntype is not None:
+    if hasattr(d_in, 'ntype'):
         return _facade_iter_as_cccl_iter(d_in)
     assert hasattr(d_in, 'dtype')
     return _device_array_to_pointer(d_in)

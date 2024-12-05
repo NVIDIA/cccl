@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import cupy as cp
 import numpy
 import pytest
 import random
@@ -146,6 +147,9 @@ def mul3(val):
                                              "map_mul2_count_int64_float32",
                                              "map_mul3_map_mul2_count_int32_int32_int32",
                                              "map_mul2_map_mul2_count_float64_float32_int16",
+                                             "map_mul2_cp_array_int32_int32",
+                                             "map_mul2_cp_array_int64_int32",
+                                             "map_mul2_cp_array_int32_int64",
                                             ])
 def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, start_sum_with=10):
     def add_op(a, b):
@@ -202,6 +206,14 @@ def test_device_sum_iterators(use_numpy_array, input_generator, num_items=3, sta
                 iterators.count(start_sum_with, ntype=ntype_inp),
                 op_return_ntype=ntype_mid),
             op_return_ntype=ntype_out)
+    elif input_generator.startswith("map_mul2_cp_array_"):
+        dtype_inp, ntype_inp = dtype_ntype(-1)
+        dtype_out, ntype_out = dtype_ntype(-2)
+        rng = random.Random(0)
+        l_d_in = [rng.randrange(100) for _ in range(num_items)]
+        a_d_in = cp.array(l_d_in, dtype_inp)
+        i_input = iterators.map(mul2, a_d_in, ntype_out)
+        l_input = [mul2(v) for v in l_d_in]
     else:
         raise RuntimeError("Unexpected input_generator")
 
