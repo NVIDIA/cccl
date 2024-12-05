@@ -255,6 +255,19 @@ private:
   redux_vars_tup_t tup;
 };
 
+template <typename tuple_args, typename tuple_ops>
+__global__ void loop_redux_empty_shape(tuple_args targs)
+{
+  // A buffer to store reduction variables
+  redux_vars<tuple_args, tuple_ops> res;
+
+  // Initialize them with the default value
+  res.init();
+
+  // Write the result if necessary
+  res.fill_results(targs);
+}
+
 /* the redux_buffer is an array of tuples which sizes corresponds to the number of CUDA blocks */
 template <typename F, typename shape_t, typename tuple_args, typename tuple_ops>
 __global__ void loop_redux(
@@ -663,14 +676,6 @@ public:
     const auto [block_size, min_blocks] = conf;
     size_t n                            = sub_shape.size();
 
-    // If there is no item in that shape, no need to launch a kernel !
-    if (n == 0)
-    {
-      // TODO this should fill reduction variables with the null value of their
-      // operators
-      return;
-    }
-
     // max_blocks is computed so we have one thread per element processed
     const auto max_blocks = (n + block_size - 1) / block_size;
 
@@ -690,6 +695,14 @@ public:
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
       cudaStream_t stream = t.get_stream();
+
+      // If there is no item in that shape, we launch a trivial kernel which will just initialize the reduction
+      // variables if necessary
+      if (n == 0)
+      {
+        loop_redux_empty_shape<deps_tup_t, ops_t><<<1, 1, 0, stream>>>(arg_instances);
+        return;
+      }
 
       // One tuple per CUDA block
       // TODO use CUDASTF facilities to replace this manual allocation
