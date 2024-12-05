@@ -112,8 +112,7 @@ public:
   _CCCL_HOST_DEVICE void deallocate() noexcept;
 
   _CCCL_EXEC_CHECK_DISABLE
-  _CCCL_HOST_DEVICE void swap(contiguous_storage& x) noexcept(
-    allocator_traits<Alloc>::propagate_on_container_swap::value || allocator_traits<Alloc>::is_always_equal::value)
+  _CCCL_HOST_DEVICE void swap(contiguous_storage& x)
   {
     using ::cuda::std::swap;
     swap(m_begin, x.m_begin);
