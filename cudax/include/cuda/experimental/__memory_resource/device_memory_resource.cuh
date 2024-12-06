@@ -299,7 +299,7 @@ public:
   {
     return __pool_ == __rhs.__pool_;
   }
-#    if _CCCL_STD_VER <= 2017
+#  if _CCCL_STD_VER <= 2017
 
   //! @brief Inequality comparison with another \c device_memory_resource.
   //! @returns true if underlying \c cudaMemPool_t are inequal.
@@ -307,7 +307,7 @@ public:
   {
     return __pool_ != __rhs.__pool_;
   }
-#    endif // _CCCL_STD_VER <= 2017
+#  endif // _CCCL_STD_VER <= 2017
 
 #  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
