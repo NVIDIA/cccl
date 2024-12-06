@@ -940,7 +940,7 @@ public:
 
       // deps_ops_t are pairs of data instance type, and a reduction operator,
       // this gets only the data instance types (eg. slice<double>)
-      auto explode_coords = [&](size_t i, typename deps_ops_t::first_type... data) {
+      auto explode_coords = [&](size_t i, typename deps_ops_t::dep_type... data) {
         auto h = [&](auto... coords) {
           f(coords..., data...);
         };
