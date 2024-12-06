@@ -55,6 +55,7 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/all_of.h>
+#include <cuda/std/__functional/identity.h>
 #include <cuda/std/__mdspan/compressed_pair.h>
 #include <cuda/std/__mdspan/default_accessor.h>
 #include <cuda/std/__mdspan/extents.h>
