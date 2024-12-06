@@ -115,10 +115,10 @@ private:
     _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
     __check_index(_Extents const& exts, _SizeTypes... __indices)
     {
-      index_type zero = 0; // avoid warning:186 (ICC/NVCC) pointless comparison of unsigned integer with zero
-      array<bool, sizeof...(_SizeTypes)> __res{((is_signed_v<index_type> && static_cast<index_type>(__indices) < zero)
+      index_type __zero = 0; // avoid warning:186 (ICC/NVCC) pointless comparison of unsigned integer with zero
+      array<bool, sizeof...(_SizeTypes)> __res{((is_signed_v<index_type> && static_cast<index_type>(__indices) < __zero)
                                                 || static_cast<index_type>(__indices) >= exts.extent(_Idxs))...};
-      static_cast<void>(zero);
+      _LIBCUDACXX_UNUSED_VAR(__zero * 2);
       return _CUDA_VSTD::all_of(__res.begin(), __res.end(), [](bool __v) {
         return __v;
       });
