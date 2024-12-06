@@ -189,7 +189,14 @@ void select(nvbench::state& state, nvbench::type_list<T, OffsetT, MayAlias>)
   });
 }
 
-using may_alias = nvbench::type_list<::cuda::std::false_type, ::cuda::std::true_type>;
+using ::cuda::std::false_type;
+using ::cuda::std::true_type;
+#ifdef TUNE_MayAlias
+using may_alias = nvbench::type_list<TUNE_MayAlias>; // expands to "false_type" or "true_type"
+#else // !defined(TUNE_MayAlias)
+using may_alias = nvbench::type_list<false_type, true_type>;
+#endif // TUNE_MayAlias
+
 // The implementation of DeviceSelect for 64-bit offset types uses a streaming approach, where it runs multiple passes
 // using a 32-bit offset type, so we only need to test one (to save time for tuning and the benchmark CI).
 using select_offset_types = nvbench::type_list<int64_t>;
