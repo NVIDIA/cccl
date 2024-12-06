@@ -19,9 +19,10 @@
 
 using namespace cuda::experimental::stf;
 
-int main()
+template <typename context_t>
+void run()
 {
-  context ctx;
+  context_t ctx;
   auto lsum = ctx.logical_data(shape_of<scalar<int>>());
   auto lmax = ctx.logical_data(shape_of<scalar<int>>());
 
@@ -37,4 +38,11 @@ int main()
 
   _CCCL_ASSERT(res_sum == 0, "Invalid result");
   _CCCL_ASSERT(res_max == ::std::numeric_limits<int>::lowest(), "Invalid result");
+}
+
+
+int main()
+{
+   run<stream_ctx>();
+   run<graph_ctx>();
 }
