@@ -160,76 +160,66 @@ public:
 #endif // _CCCL_STD_VER <= 2017
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-#  if _CCCL_STD_VER >= 2020
-  //! @brief Equality comparison between a \c managed_memory_resource and another resource
-  //! @param __rhs The resource to compare to
-  //! @return If the underlying types are equality comparable, returns the result of equality comparison of both
-  //! resources. Otherwise, returns false.
-  _CCCL_TEMPLATE(class _Resource)
-  _CCCL_REQUIRES(_CUDA_VMR::__different_resource<managed_memory_resource, _Resource>)
-  _CCCL_NODISCARD bool operator==(_Resource const& __rhs) const noexcept
+
+private:
+  template <class _Resource>
+  _CCCL_NODISCARD bool __equal_to(_Resource const& __rhs) const noexcept
   {
     if constexpr (has_property<_Resource, mr::device_accessible>)
     {
       return _CUDA_VMR::resource_ref<mr::device_accessible>{const_cast<managed_memory_resource*>(this)}
           == _CUDA_VMR::resource_ref<mr::device_accessible>{const_cast<_Resource&>(__rhs)};
     }
-    else if constexpr (has_property<_Resource, mr::device_accessible>)
+    else if constexpr (has_property<_Resource, mr::host_accessible>)
     {
-      return _CUDA_VMR::resource_ref<mr::device_accessible>{const_cast<managed_memory_resource*>(this)}
-          == _CUDA_VMR::resource_ref<mr::device_accessible>{const_cast<_Resource&>(__rhs)};
+      return _CUDA_VMR::resource_ref<mr::host_accessible>{const_cast<managed_memory_resource*>(this)}
+          == _CUDA_VMR::resource_ref<mr::host_accessible>{const_cast<_Resource&>(__rhs)};
     }
     else
     {
       return false;
     }
   }
+
+public:
+#  if _CCCL_STD_VER >= 2020
+  //! @brief Equality comparison between a \c managed_memory_resource and another resource
+  //! @param __rhs The resource to compare to
+  //! @return If the underlying types are equality comparable, returns the result of equality comparison of both
+  //! resources. Otherwise, returns false.
+  template <class _Resource>
+    requires _CUDA_VMR::__different_resource<managed_memory_resource, _Resource>
+  _CCCL_NODISCARD bool operator==(_Resource const& __rhs) const noexcept
+  {
+    return this->__equal_to(__rhs);
+  }
 #  else // ^^^ C++20 ^^^ / vvv C++17
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator==(managed_memory_resource const& __lhs, _Resource const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<managed_memory_resource, _Resource>&&
-                                    has_property<_Resource, mr::device_accessible>)
+    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<managed_memory_resource, _Resource>)
   {
-    return _CUDA_VMR::resource_ref<mr::device_accessible>{const_cast<managed_memory_resource&>(__lhs)}
-        == _CUDA_VMR::resource_ref<mr::device_accessible>{const_cast<_Resource&>(__rhs)};
-  }
-  template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator==(managed_memory_resource const& __lhs, _Resource const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(
-      _CUDA_VMR::__different_resource<managed_memory_resource, _Resource>
-      && !has_property<_Resource, mr::device_accessible> && has_property<_Resource, mr::device_accessible>)
-  {
-    return _CUDA_VMR::resource_ref<mr::device_accessible>{const_cast<managed_memory_resource&>(__lhs)}
-        == _CUDA_VMR::resource_ref<mr::device_accessible>{const_cast<_Resource&>(__rhs)};
-  }
-  template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator==(managed_memory_resource const&, _Resource const&) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(
-      _CUDA_VMR::__different_resource<managed_memory_resource, _Resource>
-      && !has_property<_Resource, mr::device_accessible> && !has_property<_Resource, mr::device_accessible>)
-  {
-    return false;
+    return __lhs.__equal_to(__rhs);
   }
 
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator==(_Resource const& __lhs, managed_memory_resource const& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<managed_memory_resource, _Resource>)
   {
-    return __rhs == __lhs;
+    return __rhs.__equal_to(__lhs);
   }
 
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator!=(managed_memory_resource const& __lhs, _Resource const& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<managed_memory_resource, _Resource>)
   {
-    return !(__lhs == __rhs);
+    return !__lhs.__equal_to(__rhs);
   }
 
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator!=(_Resource const& __rhs, managed_memory_resource const& __lhs) noexcept
+  _CCCL_NODISCARD_FRIEND auto operator!=(_Resource const& __lhs, managed_memory_resource const& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<managed_memory_resource, _Resource>)
   {
-    return !(__rhs == __lhs);
+    return !__rhs.__equal_to(__lhs);
   }
 #  endif // _CCCL_STD_VER <= 2017
 
