@@ -164,8 +164,11 @@ void select(nvbench::state& state, nvbench::type_list<T, OffsetT, MayAlias>)
 }
 
 using may_alias = nvbench::type_list<::cuda::std::false_type, ::cuda::std::true_type>;
+// The implementation of DeviceSelect for 64-bit offset types uses a streaming approach, where it runs multiple passes
+// using a 32-bit offset type, so we only need to test one (to save time for tuning and the benchmark CI).
+using select_offset_types = nvbench::type_list<int64_t>;
 
-NVBENCH_BENCH_TYPES(select, NVBENCH_TYPE_AXES(fundamental_types, offset_types, may_alias))
+NVBENCH_BENCH_TYPES(select, NVBENCH_TYPE_AXES(fundamental_types, select_offset_types, may_alias))
   .set_name("base")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}", "MayAlias{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
