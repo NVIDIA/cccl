@@ -58,9 +58,9 @@ struct __base_vptr
     return __vptr_;
   }
 
-#if defined(__cpp_three_way_comparison)
+#if !defined(_CCCL_NO_THREE_WAY_COMPARISON)
   bool operator==(__base_vptr const& __other) const noexcept = default;
-#else // ^^^ __cpp_three_way_comparison ^^^ / vvv !__cpp_three_way_comparison vvv
+#else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv _CCCL_NO_THREE_WAY_COMPARISON vvv
   _CCCL_NODISCARD_FRIEND _CUDAX_HOST_API constexpr auto operator==(__base_vptr __lhs, __base_vptr __rhs) noexcept -> bool
   {
     return __lhs.__vptr_ == __rhs.__vptr_;
@@ -70,7 +70,7 @@ struct __base_vptr
   {
     return !(__lhs == __rhs);
   }
-#endif // !__cpp_three_way_comparison
+#endif // _CCCL_NO_THREE_WAY_COMPARISON
 
   __rtti_base const* __vptr_{};
 };

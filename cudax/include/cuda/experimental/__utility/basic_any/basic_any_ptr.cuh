@@ -177,13 +177,13 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
     return *static_cast<_CUDA_VSTD::__maybe_const<__is_const_ptr, _Vp>**>(static_cast<void*>(&__ref_.__optr_));
   }
 
-#if defined(__cpp_three_way_comparison)
+#if !defined(_CCCL_NO_THREE_WAY_COMPARISON)
   _CCCL_NODISCARD _CUDAX_HOST_API auto operator==(basic_any const& __other) const noexcept -> bool
   {
     using __void_ptr_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__maybe_const<__is_const_ptr, void>* const*;
     return *static_cast<__void_ptr_t>(__get_optr()) == *static_cast<__void_ptr_t>(__other.__get_optr());
   }
-#else // ^^^ __cpp_three_way_comparison ^^^ / vvv !__cpp_three_way_comparison vvv
+#else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv _CCCL_NO_THREE_WAY_COMPARISON vvv
   _CCCL_NODISCARD_FRIEND _CUDAX_HOST_API auto operator==(basic_any const& __lhs, basic_any const& __rhs) noexcept -> bool
   {
     using __void_ptr_t _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__maybe_const<__is_const_ptr, void>* const*;
@@ -195,7 +195,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
   {
     return !(__lhs == __rhs);
   }
-#endif // !__cpp_three_way_comparison
+#endif // _CCCL_NO_THREE_WAY_COMPARISON
 
   using __any_ref_t _CCCL_NODEBUG_ALIAS =
     _CUDA_VSTD::__maybe_const<__is_const_ptr, basic_any<__ireference<_Interface>>>;

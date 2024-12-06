@@ -152,14 +152,14 @@ struct iequality_comparable : interface<iequality_comparable>
   _CCCL_REQUIRES(_CUDA_VSTD::equality_comparable<_Tp>)
   using overrides _CCCL_NODEBUG_ALIAS = overrides_for<_Tp, _CUDAX_FNPTR_CONSTANT_WAR(&__equal_fn<_Tp>)>;
 
-#if defined(__cpp_three_way_comparison)
+#if !defined(_CCCL_NO_THREE_WAY_COMPARISON)
   _CCCL_NODISCARD _CUDAX_HOST_API auto operator==(iequality_comparable const& __other) const -> bool
   {
     auto const& __other = __cudax::basic_any_from(__other);
     void const* __obj   = __basic_any_access::__get_optr(__other);
     return __cudax::virtcall<&__equal_fn<iequality_comparable>>(this, __other.type(), __obj);
   }
-#else // ^^^ __cpp_three_way_comparison ^^^ / vvv !__cpp_three_way_comparison vvv
+#else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv _CCCL_NO_THREE_WAY_COMPARISON vvv
   _CCCL_NODISCARD_FRIEND _CUDAX_HOST_API auto
   operator==(iequality_comparable const& __left, iequality_comparable const& __right) -> bool
   {
@@ -173,7 +173,7 @@ struct iequality_comparable : interface<iequality_comparable>
   {
     return !(__left == __right);
   }
-#endif // !__cpp_three_way_comparison
+#endif // _CCCL_NO_THREE_WAY_COMPARISON
 };
 
 } // namespace cuda::experimental
