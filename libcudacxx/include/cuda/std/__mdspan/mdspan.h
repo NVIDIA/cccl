@@ -118,13 +118,10 @@ private:
     _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr bool
     __check_index(_Extents const& exts, _SizeTypes... __indices)
     {
-      _CCCL_DIAG_PUSH
-      _CCCL_DIAG_SUPPRESS_ICC(186)
       // std::array supports zero size
       array<bool, sizeof...(_SizeTypes)> __res{((is_unsigned_v<index_type> || static_cast<index_type>(__indices) >= 0)
                                                 && static_cast<index_type>(__indices) < exts.extent(_Idxs))...};
       return _CUDA_VSTD::all_of(__res.begin(), __res.end(), identity{});
-      _CCCL_DIAG_POP
     }
 
     template <class... _SizeTypes>
