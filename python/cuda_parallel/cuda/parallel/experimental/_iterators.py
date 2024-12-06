@@ -90,14 +90,6 @@ def pointer_add(ptr, offset):
     return impl
 
 
-def pointer_advance(this, distance):
-    this[0] = this[0] + distance
-
-
-def pointer_dereference(this):
-    return this[0][0]
-
-
 class RawPointer:
     def __init__(self, ptr, ntype):
         self.val = ctypes.c_void_p(ptr)
@@ -107,15 +99,23 @@ class RawPointer:
         self.ltoirs = [
             _ncc(
                 f"{self.prefix}_advance",
-                pointer_advance,
+                RawPointer.pointer_advance,
                 numba.types.void(data_as_ntype_pp, _DISTANCE_NUMBA_TYPE),
             ),
             _ncc(
                 f"{self.prefix}_dereference",
-                pointer_dereference,
+                RawPointer.pointer_dereference,
                 ntype(data_as_ntype_pp),
             ),
         ]
+
+    # Exclusively for numba.cuda.compile (this is not an actual method).
+    def pointer_advance(this, distance):
+        this[0] = this[0] + distance
+
+    # Exclusively for numba.cuda.compile (this is not an actual method).
+    def pointer_dereference(this):
+        return this[0][0]
 
     @property
     def state_c_void_p(self):
@@ -168,14 +168,6 @@ def load_cs(typingctx, base):
     return base.dtype(base), codegen
 
 
-def cache_advance(this, distance):
-    this[0] = this[0] + distance
-
-
-def cache_dereference(this):
-    return load_cs(this[0])
-
-
 class CacheModifiedPointer:
     def __init__(self, ptr, ntype):
         self.val = ctypes.c_void_p(ptr)
@@ -185,13 +177,23 @@ class CacheModifiedPointer:
         self.ltoirs = [
             _ncc(
                 f"{self.prefix}_advance",
-                cache_advance,
+                CacheModifiedPointer.cache_advance,
                 numba.types.void(data_as_ntype_pp, _DISTANCE_NUMBA_TYPE),
             ),
             _ncc(
-                f"{self.prefix}_dereference", cache_dereference, ntype(data_as_ntype_pp)
+                f"{self.prefix}_dereference",
+                CacheModifiedPointer.cache_dereference,
+                ntype(data_as_ntype_pp),
             ),
         ]
+
+    # Exclusively for numba.cuda.compile (this is not an actual method).
+    def cache_advance(this, distance):
+        this[0] = this[0] + distance
+
+    # Exclusively for numba.cuda.compile (this is not an actual method).
+    def cache_dereference(this):
+        return load_cs(this[0])
 
     @property
     def state_c_void_p(self):
@@ -206,14 +208,6 @@ class CacheModifiedPointer:
         return _DEVICE_POINTER_SIZE
 
 
-def constant_advance(this, _):
-    pass
-
-
-def constant_dereference(this):
-    return this[0]
-
-
 class ConstantIterator:
     def __init__(self, val, ntype):
         thisty = numba.types.CPointer(ntype)
@@ -223,11 +217,23 @@ class ConstantIterator:
         self.ltoirs = [
             _ncc(
                 f"{self.prefix}_advance",
-                constant_advance,
+                ConstantIterator.constant_advance,
                 numba.types.void(thisty, _DISTANCE_NUMBA_TYPE),
             ),
-            _ncc(f"{self.prefix}_dereference", constant_dereference, ntype(thisty)),
+            _ncc(
+                f"{self.prefix}_dereference",
+                ConstantIterator.constant_dereference,
+                ntype(thisty),
+            ),
         ]
+
+    # Exclusively for numba.cuda.compile (this is not an actual method).
+    def constant_advance(this, _):
+        pass
+
+    # Exclusively for numba.cuda.compile (this is not an actual method).
+    def constant_dereference(this):
+        return this[0]
 
     @property
     def state_c_void_p(self):
@@ -242,14 +248,6 @@ class ConstantIterator:
         return self.size
 
 
-def count_advance(this, diff):
-    this[0] += diff
-
-
-def count_dereference(this):
-    return this[0]
-
-
 class CountingIterator:
     def __init__(self, count, ntype):
         thisty = numba.types.CPointer(ntype)
@@ -259,11 +257,23 @@ class CountingIterator:
         self.ltoirs = [
             _ncc(
                 f"{self.prefix}_advance",
-                count_advance,
+                CountingIterator.count_advance,
                 numba.types.void(thisty, _DISTANCE_NUMBA_TYPE),
             ),
-            _ncc(f"{self.prefix}_dereference", count_dereference, ntype(thisty)),
+            _ncc(
+                f"{self.prefix}_dereference",
+                CountingIterator.count_dereference,
+                ntype(thisty),
+            ),
         ]
+
+    # Exclusively for numba.cuda.compile (this is not an actual method).
+    def count_advance(this, diff):
+        this[0] += diff
+
+    # Exclusively for numba.cuda.compile (this is not an actual method).
+    def count_dereference(this):
+        return this[0]
 
     @property
     def state_c_void_p(self):
