@@ -82,6 +82,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER >= 2014
 
+_CCCL_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
+
 template <class _ElementType,
           class _Extents,
           class _LayoutPolicy   = layout_right,
@@ -117,13 +119,11 @@ private:
     __check_index(_Extents const& exts, _SizeTypes... __indices)
     {
       _CCCL_DIAG_PUSH
-      _CCCL_NV_DIAG_SUPPRESS(186) // pointless comparison of unsigned integer with zero
       _CCCL_DIAG_SUPPRESS_ICC(186)
       // std::array supports zero size
       array<bool, sizeof...(_SizeTypes)> __res{((is_unsigned_v<index_type> || static_cast<index_type>(__indices) >= 0)
                                                 && static_cast<index_type>(__indices) < exts.extent(_Idxs))...};
       return _CUDA_VSTD::all_of(__res.begin(), __res.end(), identity{});
-      _CCCL_NV_DIAG_DEFAULT(186)
       _CCCL_DIAG_POP
     }
 
@@ -509,6 +509,8 @@ _CCCL_HOST_DEVICE mdspan(const typename _AccessorType::data_handle_type, const _
             typename _MappingType::layout_type,
             _AccessorType>;
 #  endif // __MDSPAN_USE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION
+
+_CCCL_NV_DIAG_DEFAULT(186)
 
 #endif // _CCCL_STD_VER >= 2014
 
