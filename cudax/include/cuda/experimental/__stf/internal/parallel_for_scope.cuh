@@ -411,7 +411,7 @@ class parallel_for_scope
   //  using task_deps_t = ::std::tuple<typename deps_ops_t::task_dep_type...>;
   // tuple<none, none, sum, none> ...
   using ops_and_inits = ::std::tuple<typename deps_ops_t::op_and_init...>;
-  using operators_t   = ::std::tuple<typename deps_ops_t::op_type_cacat...>;
+  using operators_t = ::std::tuple<typename deps_ops_t::op_type...>;
 
 public:
   /// @brief Constructor
