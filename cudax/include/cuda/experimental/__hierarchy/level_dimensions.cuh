@@ -130,7 +130,7 @@ struct level_dimensions
       : dims(){};
 
 #  if !defined(_CCCL_NO_THREE_WAY_COMPARISON)
-  _CCCL_NODISCARD _CUDAX_API constexpr bool operator==(const level_dimensions&) const noexcept = default;
+  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr bool operator==(const level_dimensions&) const noexcept = default;
 #  else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv _CCCL_NO_THREE_WAY_COMPARISON vvv
   _CCCL_NODISCARD_FRIEND _CUDAX_API constexpr bool
   operator==(const level_dimensions& left, const level_dimensions& right) noexcept
