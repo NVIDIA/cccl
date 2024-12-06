@@ -119,8 +119,10 @@ private:
     __check_index(_Extents const& exts, _SizeTypes... __indices)
     {
       // std::array supports zero size
-      array<bool, sizeof...(_SizeTypes)> __res{((is_unsigned_v<index_type> || static_cast<index_type>(__indices) >= 0)
-                                                && static_cast<index_type>(__indices) < exts.extent(_Idxs))...};
+      // ternary avoids "pointless comparison of unsigned integer with zero" warning
+      array<bool, sizeof...(_SizeTypes)> __res{
+        ((is_unsigned_v<index_type> ? true : static_cast<index_type>(__indices) >= 0)
+         && static_cast<index_type>(__indices) < exts.extent(_Idxs))...};
       return _CUDA_VSTD::all_of(__res.begin(), __res.end(), identity{});
     }
 
