@@ -529,7 +529,7 @@ struct __tuple_variadic_constructor_tag
 // __tuple_impl
 
 template <class _Indx, class... _Tp>
-struct __tuple_impl;
+struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __tuple_impl;
 
 template <size_t... _Indx, class... _Tp>
 struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...>
