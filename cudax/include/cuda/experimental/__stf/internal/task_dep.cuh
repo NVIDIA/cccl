@@ -243,11 +243,15 @@ template <typename T, typename reduce_op, bool initialize>
 class task_dep : public task_dep<T, void, false>
 {
 public:
-  using base = task_dep<T, void, false>;
+  using base          = task_dep<T, void, false>;
   using dep_type      = T;
-  using op_and_init       = ::std::pair<reduce_op, ::std::bool_constant<initialize>>;
-  using op_type_cacat   = reduce_op;
-  enum : bool { initialize_pisat = initialize, does_work = !::std::is_same_v<reduce_op, ::std::monostate> };
+  using op_and_init   = ::std::pair<reduce_op, ::std::bool_constant<initialize>>;
+  using op_type_cacat = reduce_op;
+  enum : bool
+  {
+    initialize_pisat = initialize,
+    does_work        = !::std::is_same_v<reduce_op, ::std::monostate>
+  };
 
   template <typename... Args>
   task_dep(Args&&... args)

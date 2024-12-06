@@ -40,9 +40,8 @@ void run()
   _CCCL_ASSERT(res_max == ::std::numeric_limits<int>::lowest(), "Invalid result");
 }
 
-
 int main()
 {
-   run<stream_ctx>();
-   run<graph_ctx>();
+  run<stream_ctx>();
+  run<graph_ctx>();
 }
