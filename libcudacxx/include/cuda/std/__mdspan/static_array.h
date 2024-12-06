@@ -246,25 +246,16 @@ struct __partially_static_array_impl_maker<_Tp,
        _CUDA_VSTD::make_index_sequence<__dynamic_idxs::size()>>;
 };
 
+template <class _Tp, class _static_t, class _ValsSeq, _static_t __sentinal>
+using __partially_static_array_impl_t =
+  typename __partially_static_array_impl_maker<_Tp, _static_t, _ValsSeq, __sentinal>::__impl_base;
+
 template <class _Tp, class _static_t, class _ValsSeq, _static_t __sentinal = dynamic_extent>
 class __partially_static_array_with_sentinal
-    : public __partially_static_array_impl_maker<_Tp, _static_t, _ValsSeq, __sentinal>::__impl_base
+    : public __partially_static_array_impl_t<_Tp, _static_t, _ValsSeq, __sentinal>
 {
-private:
-  using __base_t = typename __partially_static_array_impl_maker<_Tp, _static_t, _ValsSeq, __sentinal>::__impl_base;
-
-public:
-#    if _CCCL_COMPILER(NVRTC) || _CCCL_CUDACC_BELOW(11, 3)
-  _CCCL_HIDE_FROM_ABI constexpr __partially_static_array_with_sentinal() = default;
-
-  template <class... _Args>
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr __partially_static_array_with_sentinal(_Args&&... __args) noexcept(
-    noexcept(__base_t(_CUDA_VSTD::declval<_Args>()...)))
-      : __base_t(_CUDA_VSTD::forward<_Args>(__args)...)
-  {}
-#    else // ^^^ _CCCL_COMPILER(NVRTC) || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER(NVRTC) || nvcc >= 11.3 vvv
-  using __base_t::__base_t;
-#    endif // !_CCCL_COMPILER(NVRTC) || nvcc >= 11.3
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(
+    __partially_static_array_with_sentinal, __partially_static_array_impl_t, _Tp, _static_t, _ValsSeq, __sentinal);
 };
 
 //==============================================================================
@@ -275,24 +266,13 @@ struct __partially_static_sizes
                                              _static_t,
                                              _CUDA_VSTD::integer_sequence<_static_t, __values_or_sentinals...>>
 {
-private:
-  using __base_t =
-    __partially_static_array_with_sentinal<T,
-                                           _static_t,
-                                           _CUDA_VSTD::integer_sequence<_static_t, __values_or_sentinals...>>;
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(
+    __partially_static_sizes,
+    __partially_static_array_with_sentinal,
+    T,
+    _static_t,
+    _CUDA_VSTD::integer_sequence<_static_t, __values_or_sentinals...>);
 
-public:
-#    if _CCCL_COMPILER(NVRTC) || _CCCL_CUDACC_BELOW(11, 3)
-  _CCCL_HIDE_FROM_ABI constexpr __partially_static_sizes() = default;
-
-  template <class... _Args>
-  __MDSPAN_FORCE_INLINE_FUNCTION constexpr __partially_static_sizes(_Args&&... __args) noexcept(
-    noexcept(__base_t(_CUDA_VSTD::declval<_Args>()...)))
-      : __base_t(_CUDA_VSTD::forward<_Args>(__args)...)
-  {}
-#    else // ^^^ _CCCL_COMPILER(NVRTC) || nvcc < 11.3 ^^^ / vvv !_CCCL_COMPILER(NVRTC) || nvcc >= 11.3 vvv
-  using __base_t::__base_t;
-#    endif // !_CCCL_COMPILER(NVRTC) || nvcc >= 11.3
   template <class _UTag>
   __MDSPAN_FORCE_INLINE_FUNCTION constexpr __partially_static_sizes<T, _static_t, __values_or_sentinals...>
   __with_tag() const noexcept
