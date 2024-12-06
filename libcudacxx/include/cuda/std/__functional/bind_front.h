@@ -49,18 +49,7 @@ struct __bind_front_op
 template <class _Fn, class... _BoundArgs>
 struct __bind_front_t : __perfect_forward<__bind_front_op, _Fn, _BoundArgs...>
 {
-  using __base = __perfect_forward<__bind_front_op, _Fn, _BoundArgs...>;
-#  if _CCCL_COMPILER(NVRTC)
-  _CCCL_HIDE_FROM_ABI constexpr __bind_front_t() noexcept = default;
-
-  template <class... _Args>
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __bind_front_t(_Args&&... __args) noexcept(
-    noexcept(__base(_CUDA_VSTD::declval<_Args>()...)))
-      : __base(_CUDA_VSTD::forward<_Args>(__args)...)
-  {}
-#  else
-  using __base::__base;
-#  endif
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__bind_front_t, __perfect_forward, __bind_front_op, _Fn, _BoundArgs...);
 };
 
 template <class _Fn, class... _Args>
