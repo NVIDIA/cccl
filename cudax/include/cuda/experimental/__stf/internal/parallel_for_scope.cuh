@@ -664,6 +664,43 @@ public:
 
     using Fun_no_ref = ::std::remove_reference_t<Fun>;
 
+    // Create a tuple with all instances (eg. tuple<slice<double>, slice<int>>)
+    deps_tup_t arg_instances = ::std::apply(
+      [&](const auto&... d) {
+        return ::std::make_tuple(d.instance(t)...);
+      },
+      deps);
+
+    size_t n = sub_shape.size();
+
+    // If there is no item in that shape, we launch a trivial kernel which will just initialize the reduction
+    // variables if necessary
+    if (n == 0)
+    {
+      if constexpr (::std::is_same_v<context, stream_ctx>)
+      {
+        cudaStream_t stream = t.get_stream();
+
+        loop_redux_empty_shape<deps_tup_t, ops_t><<<1, 1, 0, stream>>>(arg_instances);
+      }
+      else
+      {
+        void* kernelArgs[] = {&arg_instances};
+        cudaKernelNodeParams kernel_params;
+        kernel_params.func           = (void*) reserved::loop_redux_empty_shape<deps_tup_t, ops_t>;
+        kernel_params.gridDim        = dim3(1);
+        kernel_params.blockDim       = dim3(1);
+        kernel_params.kernelParams   = kernelArgs;
+        kernel_params.extra          = nullptr;
+        kernel_params.sharedMemBytes = 0;
+
+        // This new node will depend on the previous in the chain (allocation)
+        cuda_safe_call(cudaGraphAddKernelNode(&t.get_node(), t.get_ctx_graph(), NULL, 0, &kernel_params));
+      }
+
+      return;
+    }
+
     static const auto conf = [] {
       int minGridSize = 0, blockSize = 0;
       // We are using int instead of size_t because CUDA API uses int for occupancy calculations
@@ -676,7 +713,6 @@ public:
     }();
 
     const auto [block_size, min_blocks] = conf;
-    size_t n                            = sub_shape.size();
 
     // max_blocks is computed so we have one thread per element processed
     const auto max_blocks = (n + block_size - 1) / block_size;
@@ -685,49 +721,35 @@ public:
     // TODO: improve this
     [[maybe_unused]] size_t blocks = ::std::min(min_blocks * 3 / 2, max_blocks);
 
-    // Create a tuple with all instances (eg. tuple<slice<double>, slice<int>>)
-    [[maybe_unused]] deps_tup_t arg_instances = ::std::apply(
-      [&](const auto&... d) {
-        return ::std::make_tuple(d.instance(t)...);
-      },
-      deps);
-
     ////static_assert(::std::is_same_v<context, stream_ctx>);
 
+    static const auto conf_finalize = [] {
+      int minGridSize = 0, blockSize = 0;
+      // We are using int instead of size_t because CUDA API uses int for occupancy calculations
+      cuda_safe_call(cudaOccupancyMaxPotentialBlockSizeVariableSMem(
+        &minGridSize, &blockSize, reserved::loop_redux_finalize<deps_tup_t, ops_t>, block_to_shared_mem));
+      return ::std::pair(size_t(minGridSize), size_t(blockSize));
+    }();
+
+    size_t dyn_shmem_size              = block_size * sizeof(redux_vars<deps_tup_t, ops_t>);
+    size_t finalize_block_size         = conf_finalize.second;
+    size_t dynamic_shared_mem_finalize = finalize_block_size * sizeof(redux_vars<deps_tup_t, ops_t>);
+
+    _CCCL_ASSERT(n > 0, "Invalid empty shape here");
     if constexpr (::std::is_same_v<context, stream_ctx>)
     {
       cudaStream_t stream = t.get_stream();
-
-      // If there is no item in that shape, we launch a trivial kernel which will just initialize the reduction
-      // variables if necessary
-      if (n == 0)
-      {
-        loop_redux_empty_shape<deps_tup_t, ops_t><<<1, 1, 0, stream>>>(arg_instances);
-        return;
-      }
 
       // One tuple per CUDA block
       // TODO use CUDASTF facilities to replace this manual allocation
       redux_vars<deps_tup_t, ops_t>* d_redux_buffer;
       cuda_safe_call(cudaMallocAsync(&d_redux_buffer, blocks * sizeof(redux_vars<deps_tup_t, ops_t>), stream));
 
-      size_t dyn_shmem_size = block_size * sizeof(redux_vars<deps_tup_t, ops_t>);
-
       // TODO optimize the case where there was a single block to write to result ??
       reserved::loop_redux<Fun_no_ref, sub_shape_t, deps_tup_t, ops_t>
         <<<static_cast<int>(blocks), static_cast<int>(block_size), dyn_shmem_size, stream>>>(
           static_cast<int>(n), sub_shape, mv(f), arg_instances, d_redux_buffer);
 
-      static const auto conf_finalize = [] {
-        int minGridSize = 0, blockSize = 0;
-        // We are using int instead of size_t because CUDA API uses int for occupancy calculations
-        cuda_safe_call(cudaOccupancyMaxPotentialBlockSizeVariableSMem(
-          &minGridSize, &blockSize, reserved::loop_redux_finalize<deps_tup_t, ops_t>, block_to_shared_mem));
-        return ::std::pair(size_t(minGridSize), size_t(blockSize));
-      }();
-
-      size_t finalize_block_size         = conf_finalize.second;
-      size_t dynamic_shared_mem_finalize = finalize_block_size * sizeof(redux_vars<deps_tup_t, ops_t>);
       reserved::loop_redux_finalize<deps_tup_t, ops_t>
         <<<1, finalize_block_size, dynamic_shared_mem_finalize, stream>>>(arg_instances, d_redux_buffer, blocks);
 
@@ -735,9 +757,62 @@ public:
     }
     else
     {
-      // TODO graphs
-      fprintf(stderr, "Internal error.\n");
-      abort();
+      fprintf(stderr, "GENERATING graph for reduce ...\n");
+      auto g = t.get_ctx_graph();
+
+      cudaMemAllocNodeParams allocParams{};
+      allocParams.poolProps.allocType   = cudaMemAllocationTypePinned;
+      allocParams.poolProps.handleTypes = cudaMemHandleTypeNone;
+      allocParams.poolProps.location    = {.type = cudaMemLocationTypeDevice, .id = 0}; // TODO fix device id
+      allocParams.bytesize              = blocks * sizeof(redux_vars<deps_tup_t, ops_t>);
+
+      const auto& input_nodes = t.get_ready_dependencies();
+
+      /* This first node depends on task's dependencies themselves */
+      cudaGraphNode_t allocNode;
+      cuda_safe_call(cudaGraphAddMemAllocNode(&allocNode, g, input_nodes.data(), input_nodes.size(), &allocParams));
+
+      auto* d_redux_buffer = static_cast<redux_vars<deps_tup_t, ops_t>*>(allocParams.dptr);
+
+      // Launch the main kernel
+      // It is ok to use reference to local variables because the arguments
+      // will be used directly when calling cudaGraphAddKernelNode
+      void* kernelArgs[] = {
+        &n, const_cast<void*>(static_cast<const void*>(&sub_shape)), &f, &arg_instances, &d_redux_buffer};
+      cudaKernelNodeParams kernel_params;
+      kernel_params.func           = (void*) reserved::loop_redux<Fun_no_ref, sub_shape_t, deps_tup_t, ops_t>;
+      kernel_params.gridDim        = dim3(static_cast<int>(blocks));
+      kernel_params.blockDim       = dim3(static_cast<int>(block_size));
+      kernel_params.kernelParams   = kernelArgs;
+      kernel_params.extra          = nullptr;
+      kernel_params.sharedMemBytes = dyn_shmem_size;
+
+      // This new node will depend on the previous in the chain (allocation)
+      cudaGraphNode_t kernel_1;
+      cuda_safe_call(cudaGraphAddKernelNode(&kernel_1, g, &allocNode, 1, &kernel_params));
+
+      // Launch the second kernel to reduce remaining values among original blocks
+      // It is ok to use reference to local variables because the arguments
+      // will be used directly when calling cudaGraphAddKernelNode
+      void* kernel2Args[] = {&arg_instances, &d_redux_buffer, const_cast<void*>(static_cast<const void*>(&blocks))};
+
+      size_t finalize_block_size = blocks;
+      cudaKernelNodeParams kernel2_params;
+      kernel2_params.func           = (void*) reserved::loop_redux_finalize<deps_tup_t, ops_t>;
+      kernel2_params.gridDim        = dim3(1);
+      kernel2_params.blockDim       = dim3(static_cast<int>(finalize_block_size));
+      kernel2_params.kernelParams   = kernel2Args;
+      kernel2_params.extra          = nullptr;
+      kernel2_params.sharedMemBytes = dynamic_shared_mem_finalize;
+      cudaGraphNode_t kernel_2;
+      cuda_safe_call(cudaGraphAddKernelNode(&kernel_2, g, &kernel_1, 1, &kernel2_params));
+
+      // We can now free memory
+      cudaGraphNode_t free_node;
+      cuda_safe_call(cudaGraphAddMemFreeNode(&free_node, g, &kernel_2, 1, allocParams.dptr));
+
+      // Make this the node which defines the end of the task
+      t.add_done_node(free_node);
     }
   }
 
