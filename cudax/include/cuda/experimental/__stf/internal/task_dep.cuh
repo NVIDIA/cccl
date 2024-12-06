@@ -189,9 +189,6 @@ private:
 template <typename T>
 class logical_data;
 
-class task_dep_op_none : public ::std::pair<::std::monostate, ::std::false_type>
-{};
-
 template <typename T, typename reduce_op = void, bool initialize = false>
 class task_dep;
 
@@ -247,42 +244,13 @@ class task_dep : public task_dep<T, void, false>
 {
 public:
   using base = task_dep<T, void, false>;
+  using dep_type      = T;
+  using op_and_init       = ::std::pair<reduce_op, ::std::bool_constant<initialize>>;
+  using op_type_cacat   = reduce_op;
+  enum : bool { initialize_pisat = initialize, does_work = !::std::is_same_v<reduce_op, ::std::monostate> };
 
   template <typename... Args>
   task_dep(Args&&... args)
-      : base(std::forward<Args>(args)...)
-  {}
-};
-
-// task_dep_op derived class using std::pair<T, Op>
-template <typename Pair>
-class task_dep_op
-    : public task_dep<typename Pair::first_type,
-                      typename Pair::second_type::first_type,
-                      Pair::second_type::second_type::value>
-{
-public:
-  using base =
-    task_dep<typename Pair::first_type, typename Pair::second_type::first_type, Pair::second_type::second_type::value>;
-  using dep_type      = typename Pair::first_type;
-  using task_dep_type = task_dep<dep_type>;
-  using op_type       = typename Pair::second_type;
-
-  // Copy constructor
-  task_dep_op(const task_dep_op&) = default;
-
-  // Move constructor
-  task_dep_op(task_dep_op&&) noexcept = default;
-
-  // Copy assignment operator
-  task_dep_op& operator=(const task_dep_op& other) = default;
-
-  // Move assignment operator
-  task_dep_op& operator=(task_dep_op&& other) noexcept = default;
-
-  // Constructor that forwards to task_dep's constructor
-  template <typename... Args>
-  task_dep_op(Args&&... args)
       : base(std::forward<Args>(args)...)
   {}
 };

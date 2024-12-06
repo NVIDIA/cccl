@@ -2280,31 +2280,31 @@ public:
   {
     using U = readonly_type_of<T>;
     // The constness of *this implies that access mode is read
-    return task_dep_op<::std::pair<U, task_dep_op_none>>(*this, /* access_mode::read, */ ::std::forward<Pack>(pack)...);
+    return task_dep<U, ::std::monostate, false>(*this, /* access_mode::read, */ ::std::forward<Pack>(pack)...);
   }
 
   template <typename... Pack>
   auto write(Pack&&... pack)
   {
-    return task_dep_op<::std::pair<T, task_dep_op_none>>(*this, access_mode::write, ::std::forward<Pack>(pack)...);
+    return task_dep<T, ::std::monostate, false>(*this, access_mode::write, ::std::forward<Pack>(pack)...);
   }
 
   template <typename... Pack>
   auto rw(Pack&&... pack)
   {
-    return task_dep_op<::std::pair<T, task_dep_op_none>>(*this, access_mode::rw, ::std::forward<Pack>(pack)...);
+    return task_dep<T, ::std::monostate, false>(*this, access_mode::rw, ::std::forward<Pack>(pack)...);
   }
 
   template <typename... Pack>
   auto relaxed(Pack&&... pack)
   {
-    return task_dep_op<::std::pair<T, task_dep_op_none>>(*this, access_mode::relaxed, ::std::forward<Pack>(pack)...);
+    return task_dep<T, ::std::monostate, false>(*this, access_mode::relaxed, ::std::forward<Pack>(pack)...);
   }
 
   template <typename Op, typename... Pack>
   auto reduce(Op, no_init, Pack&&... pack)
   {
-    return task_dep_op<::std::pair<T, ::std::pair<Op, ::std::false_type>>>(
+    return task_dep<T, Op, false>(
       *this, access_mode::reduce_no_init, ::std::forward<Pack>(pack)...);
   }
 
@@ -2313,7 +2313,7 @@ public:
   template <typename Op, typename... Pack>
   auto reduce(Op, Pack&&... pack)
   {
-    return task_dep_op<::std::pair<T, ::std::pair<Op, ::std::true_type>>>(
+    return task_dep<T, Op, true>(
       *this, access_mode::reduce, ::std::forward<Pack>(pack)...);
   }
 
