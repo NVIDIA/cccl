@@ -26,7 +26,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if !defined(_LIBCUDACXX_HAS_NO_FOLD_EXPRESSIONS)
+#if !defined(_CCCL_NO_FOLD_EXPRESSIONS)
 
 // Use fold expressions when possible to implement __fold_and[_v] and
 // __fold_or[_v].
@@ -42,7 +42,7 @@ using __fold_and = bool_constant<bool((_Preds && ...))>; // cast to bool to avoi
 template <bool... _Preds>
 using __fold_or = bool_constant<bool((_Preds || ...))>; // cast to bool to avoid error from gcc < 8
 
-#else // ^^^ !_LIBCUDACXX_HAS_NO_FOLD_EXPRESSIONS / _LIBCUDACXX_HAS_NO_FOLD_EXPRESSIONS vvv
+#else // ^^^ !_CCCL_NO_FOLD_EXPRESSIONS / _CCCL_NO_FOLD_EXPRESSIONS vvv
 
 // Otherwise, we can use a helper class to implement __fold_and and __fold_or.
 template <bool... _Preds>
@@ -62,7 +62,7 @@ template <bool... _Preds>
 _CCCL_INLINE_VAR constexpr bool __fold_or_v = __fold_or<_Preds...>::value;
 #  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
-#endif // _LIBCUDACXX_HAS_NO_FOLD_EXPRESSIONS
+#endif // _CCCL_NO_FOLD_EXPRESSIONS
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
