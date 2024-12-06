@@ -28,7 +28,7 @@
 #pragma once
 
 //! @file
-//! This file includes implementation of CUDA-specific utilities for custom Catch2 main When CMake is configured to
+//! This file includes implementation of CUDA-specific utilities for custom Catch2 main. When CMake is configured to
 //! include all the tests into a single executable, this file is only included into catch2_runner_helper.cu. When CMake
 //! is configured to compile each test as a separate binary, this file is included into each test.
 

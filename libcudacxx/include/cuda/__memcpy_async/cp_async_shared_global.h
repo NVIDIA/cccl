@@ -22,7 +22,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_CCCL_CUDA_COMPILER)
+#if _CCCL_HAS_CUDA_COMPILER
 
 #  include <cuda/__ptx/ptx_dot_variants.h>
 #  include <cuda/__ptx/ptx_helper_functions.h>

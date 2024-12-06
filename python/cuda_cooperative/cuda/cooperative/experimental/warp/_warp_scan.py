@@ -52,6 +52,6 @@ def exclusive_sum(dtype, threads_in_warp=32):
                          fake_return=True)
     specialization = template.specialize({'T': dtype,
                                           'VIRTUAL_WARP_THREADS': threads_in_warp})
-    return Invocable(temp_files=[make_binary_tempfile(ltoir, '.ltoir') for ltoir in specialization.get_lto_ir()],
+    return Invocable(temp_files=[make_binary_tempfile(ltoir, '.ltoir') for ltoir in specialization.get_lto_ir(threads=threads_in_warp)],
                      temp_storage_bytes=specialization.get_temp_storage_bytes(),
                      algorithm=specialization)

@@ -40,7 +40,7 @@
 
 #include "catch2_test_launch_helper.h"
 #include "cub/util_type.cuh"
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DevicePartition::If, partition);
 

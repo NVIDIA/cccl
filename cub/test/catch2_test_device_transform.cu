@@ -16,9 +16,9 @@
 #include <sstream>
 
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.cuh>
-#include <c2h/custom_type.cuh>
-#include <c2h/test_util_vec.cuh>
+#include <c2h/catch2_test_helper.h>
+#include <c2h/custom_type.h>
+#include <c2h/test_util_vec.h>
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
 
@@ -178,10 +178,10 @@ struct alignas(Alignment) overaligned_addable_t
 
 using overaligned_types =
   c2h::type_list<overaligned_addable_t<32>
-#ifndef _CCCL_COMPILER_MSVC // error C2719: [...] formal parameter with requested alignment of 256 won't be aligned
+#if !_CCCL_COMPILER(MSVC) // error C2719: [...] formal parameter with requested alignment of 256 won't be aligned
                  ,
                  overaligned_addable_t<256>
-#endif // _CCCL_COMPILER_MSVC
+#endif // !_CCCL_COMPILER(MSVC)
                  >;
 
 // test with types exceeding the memcpy_async and bulk copy alignments (16 and 128 bytes respectively)

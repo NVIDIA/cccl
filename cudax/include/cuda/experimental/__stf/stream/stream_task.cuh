@@ -617,7 +617,7 @@ private:
 template <typename... Data>
 class deferred_stream_task;
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // doxygen has issues with this code
+#ifndef _CCCL_DOXYGEN_INVOKED // doxygen has issues with this code
 /*
  * Base of all deferred tasks. Stores the needed information for typed deferred tasks to run (see below).
  */
@@ -877,6 +877,6 @@ public:
     };
   }
 };
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 } // namespace cuda::experimental::stf

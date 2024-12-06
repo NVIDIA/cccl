@@ -35,10 +35,8 @@ class _LIBCUDACXX_DEPRECATED_IN_CXX17
 _CCCL_TYPE_VISIBILITY_DEFAULT result_of<_Fp(_Args...)> : public __invoke_of<_Fp, _Args...>
 {};
 
-#  if _CCCL_STD_VER > 2011
 template <class _Tp>
 using result_of_t _LIBCUDACXX_DEPRECATED_IN_CXX17 = typename result_of<_Tp>::type;
-#  endif // _CCCL_STD_VER > 2011
 #endif // _CCCL_STD_VER <= 2017 || defined(_LIBCUDACXX_ENABLE_CXX20_REMOVED_TYPE_TRAITS)
 
 _LIBCUDACXX_END_NAMESPACE_STD

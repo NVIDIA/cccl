@@ -85,7 +85,7 @@ struct get_expected<BaseType, 3>
   }
 };
 
-template <class VType, class BaseType, size_t VSize, size_t Index, cuda::std::__enable_if_t<(Index < VSize), int> = 0>
+template <class VType, class BaseType, size_t VSize, size_t Index, cuda::std::enable_if_t<(Index < VSize), int> = 0>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
 {
   { // & overload
@@ -125,7 +125,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
   }
 }
 
-template <class VType, class BaseType, size_t VSize, size_t Index, cuda::std::__enable_if_t<(Index >= VSize), int> = 0>
+template <class VType, class BaseType, size_t VSize, size_t Index, cuda::std::enable_if_t<(Index >= VSize), int> = 0>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
 {}
 

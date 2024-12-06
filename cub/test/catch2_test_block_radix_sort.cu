@@ -32,7 +32,7 @@
 #include <utility>
 
 #include "catch2_test_block_radix_sort.cuh"
-#include <c2h/catch2_test_helper.cuh> // __CUDA_FP8_TYPES_EXIST__
+#include <c2h/catch2_test_helper.h> // __CUDA_FP8_TYPES_EXIST__
 
 // %PARAM% TEST_MEMOIZE mem 0:1
 // %PARAM% TEST_ALGORITHM alg 0:1

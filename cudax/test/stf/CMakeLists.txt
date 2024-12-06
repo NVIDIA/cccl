@@ -1,23 +1,14 @@
 set(stf_test_sources
-  algorithm/graph_algorithms.cu
-  algorithm/in_graph_ctx.cu
-  algorithm/nested.cu
-  algorithm/algorithm_with_read.cu
-  allocators/adapter.cu
   allocators/buddy_allocator.cu
-  allocators/cap_tmp_buffers.cu
-  cpp/read_const.cu
+  cpp/concurrency_test.cu
   cpp/redundant_data.cu
   cpp/redundant_data_different_modes.cu
-  cpp/reuse_computation.cu
-  cpp/reuse_computation_2.cu
   cpp/scoped_graph_task.cu
   cpp/user_streams.cu
-  cpp/concurrency_test.cu
   dot/basic.cu
-  dot/with_events.cu
   dot/graph_print_to_dot.cu
-  tools/auto_dump/auto_dump.cu
+  dot/sections.cu
+  dot/with_events.cu
   error_checks/ctx_mismatch.cu
   error_checks/data_interface_mismatch.cu
   error_checks/double_finalize.cu
@@ -25,72 +16,22 @@ set(stf_test_sources
   error_checks/misformed_tasks_dbl_end.cu
   error_checks/misformed_tasks_dbl_start.cu
   error_checks/non_managed_data.cu
-  error_checks/slice_check_bounds.cu
   error_checks/uninitialized_data.cu
-  error_checks/unsatisfiable_spec.cu
   error_checks/write_frozen.cu
-  examples/01-axpy-launch-ranges-cg.cu
-  examples/01-axpy-places.cu
-  examples/05-stencil.cu
   examples/05-stencil-no-copy.cu
   examples/05-stencil-places.cu
+  examples/05-stencil.cu
   examples/05-stencil2d-places.cu
-  examples/09-nbody.cu
-  examples/09-nbody-algorithm.cu
-  examples/09-nbody-blocked.cu
   fhe/parse_arctyrex.cu
-  freeze/constant_logical_data.cu
-  freeze/freeze.cu
-  freeze/freeze_rw.cu
-  freeze/task_fence.cu
-  graph/concurrency_test.cu
-  graph/epoch.cu
-  graph/for_each_batched.cu
-  graph/for_each_batched_write.cu
-  graph/freeze_for_graph.cu
-  graph/graph_ctx_low_level.cu
-  graph/graph_composition.cu
-  graph/many.cu
-  graph/multiple_graph_ctx.cu
-  graph/static_graph_ctx.cu
-  graph/graph_tmp_data.cu
-  green_context/axpy_gc.cu
-  green_context/cuda_graph.cu
-  green_context/gc_grid.cu
   gnu/include_only.cpp
-  hash/logical_data.cu
-  hash/ctx_hash.cu
-  hashtable/fusion.cu
-  hashtable/fusion_reduction.cu
+  graph/concurrency_test.cu
+  graph/graph_ctx_low_level.cu
+  graph/static_graph_ctx.cu
   hashtable/test.cu
-  hashtable/parallel_for.cu
-  hashtable/parallel_for_shape.cu
-  interface/mix_stream_and_graph.cu
-  interface/mix_stream_and_graph_2.cu
-  interface/data_from_device.cu
-  interface/data_from_device_2.cu
-  interface/data_from_device_wb.cu
   interface/data_from_device_async.cu
-  interface/graph_use_device_data.cu
-  interface/stream_add_callback.cu
   interface/move_operator.cu
-  interface/scal.cu
-  interface/scalar_div.cu
-  local_stf/interop_cuda.cu
   local_stf/legacy_to_stf.cu
-  loop_dispatch/dispatch_on_streams.cu
-  loop_dispatch/nested_loop_dispatch.cu
-  loop_dispatch/loop_dispatch.cu
-  parallel_for/parallel_for_repeat.cu
-  parallel_for/test_parallel_for.cu
-  parallel_for/test2_parallel_for_context.cu
-  parallel_for/parallel_for_box.cu
-  parallel_for/parallel_for_all_devs.cu
-  parallel_for/fdtd.cu
-  parallel_for/tiled_loops.cu
-  places/cuda_stream_place.cu
   places/managed.cu
-  places/managed_from_shape.cu
   places/managed_from_user.cu
   places/non_current_device.cu
   places/place_partition.cu
@@ -105,27 +46,90 @@ set(stf_test_sources
   reductions/slice2d_reduction.cu
   reductions/slice_custom_op.cu
   reductions/successive_reductions.cu
-  reductions/successive_reductions_pfor.cu
   reductions/sum.cu
   reductions/sum_array.cu
-  reductions/sum_multiple_places.cu
   reductions/sum_multiple_places_no_refvalue.cu
-  reductions/write_back_after_redux.cu
   slice/pinning.cu
   stencil/stencil-1D.cu
   stress/empty_tasks.cu
   stress/empty_tasks_alloc.cu
   stress/kernel_chain.cu
   stress/kernel_chain_fused.cu
+  stress/many_read.cu
+  stress/task_bench.cu
+  threads/axpy-threads-2.cu
+  # threads/axpy-threads.cu
+  utility/timing_with_fences.cu
+)
+
+set(stf_test_codegen_sources
+  algorithm/algorithm_with_read.cu
+  algorithm/graph_algorithms.cu
+  algorithm/in_graph_ctx.cu
+  algorithm/nested.cu
+  allocators/adapter.cu
+  allocators/cap_tmp_buffers.cu
+  cpp/read_const.cu
+  cpp/reuse_computation.cu
+  cpp/reuse_computation_2.cu
+  error_checks/slice_check_bounds.cu
+  error_checks/unsatisfiable_spec.cu
+  examples/01-axpy-launch-ranges-cg.cu
+  examples/01-axpy-places.cu
+  examples/09-nbody-algorithm.cu
+  examples/09-nbody-blocked.cu
+  examples/09-nbody.cu
+  freeze/constant_logical_data.cu
+  freeze/freeze.cu
+  freeze/freeze_rw.cu
+  freeze/task_fence.cu
+  graph/epoch.cu
+  graph/for_each_batched.cu
+  graph/for_each_batched_write.cu
+  graph/freeze_for_graph.cu
+  graph/graph_composition.cu
+  graph/graph_tmp_data.cu
+  graph/many.cu
+  graph/multiple_graph_ctx.cu
+  green_context/axpy_gc.cu
+  green_context/cuda_graph.cu
+  green_context/gc_grid.cu
+  hash/ctx_hash.cu
+  hash/logical_data.cu
+  hashtable/fusion.cu
+  hashtable/fusion_reduction.cu
+  hashtable/parallel_for.cu
+  hashtable/parallel_for_shape.cu
+  interface/data_from_device.cu
+  interface/data_from_device_2.cu
+  interface/data_from_device_wb.cu
+  interface/graph_use_device_data.cu
+  interface/mix_stream_and_graph.cu
+  interface/mix_stream_and_graph_2.cu
+  interface/scal.cu
+  interface/scalar_div.cu
+  interface/stream_add_callback.cu
+  local_stf/interop_cuda.cu
+  loop_dispatch/dispatch_on_streams.cu
+  loop_dispatch/loop_dispatch.cu
+  loop_dispatch/nested_loop_dispatch.cu
+  parallel_for/fdtd.cu
+  parallel_for/parallel_for_all_devs.cu
+  parallel_for/parallel_for_box.cu
+  parallel_for/parallel_for_repeat.cu
+  parallel_for/test2_parallel_for_context.cu
+  parallel_for/test_parallel_for.cu
+  parallel_for/tiled_loops.cu
+  places/cuda_stream_place.cu
+  places/managed_from_shape.cu
+  reductions/successive_reductions_pfor.cu
+  reductions/sum_multiple_places.cu
+  reductions/write_back_after_redux.cu
   stress/launch_overhead.cu
   stress/launch_vs_parallelfor.cu
-  stress/many_read.cu
   stress/parallel_for_overhead.cu
-  stress/task_bench.cu
-  # threads/axpy-threads.cu
-  threads/axpy-threads-2.cu
   # threads/axpy-threads-pfor.cu   # Currently has a difficult-to-reproduce concurrency problem
-  utility/timing_with_fences.cu
+  tools/auto_dump/auto_dump.cu
 )
 
 # Examples using CUBLAS, CUSOLVER...
@@ -265,6 +269,12 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   foreach(source IN LISTS stf_test_sources)
     cudax_add_stf_test(test_target "${source}" ${cn_target})
   endforeach()
+
+  if (cudax_ENABLE_CUDASTF_CODE_GENERATION)
+    foreach(source IN LISTS stf_test_codegen_sources)
+      cudax_add_stf_test(test_target "${source}" ${cn_target})
+    endforeach()
+  endif()
 
   # Tests with mathlib deps:
   if (cudax_ENABLE_CUDASTF_MATHLIBS)

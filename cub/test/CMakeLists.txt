@@ -102,7 +102,7 @@ foreach(cub_target IN LISTS CUB_TARGETS)
   add_dependencies(${config_prefix}.all ${config_meta_target})
 endforeach()
 
-file(GLOB test_srcs
+file(GLOB_RECURSE test_srcs
   RELATIVE "${CUB_SOURCE_DIR}/test"
   CONFIGURE_DEPENDS
   test_*.cu
@@ -308,6 +308,9 @@ function(cub_add_test target_name_var test_name test_src cub_target launcher_id)
       add_test(NAME ${test_target} COMMAND "$<TARGET_FILE:${test_target}>")
     endif()
   endif() # Not catch2 test
+
+  # Ensure that we test with assertions enabled
+  target_compile_definitions(${test_target} PRIVATE CCCL_ENABLE_ASSERTIONS)
 endfunction()
 
 # Sets out_var to launch id if the label contains launch variants

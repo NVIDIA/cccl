@@ -491,8 +491,10 @@ class tagged_reference<void const, Tag>
  *  \param x The first \p tagged_reference of interest.
  *  \param y The second \p tagged_reference of interest.
  */
+// note: this is not a hidden friend, because we have template specializations of tagged_reference
 template <typename Element, typename Tag>
-_CCCL_HOST_DEVICE void swap(tagged_reference<Element, Tag>& x, tagged_reference<Element, Tag>& y)
+_CCCL_HOST_DEVICE void
+swap(tagged_reference<Element, Tag>& x, tagged_reference<Element, Tag>& y) noexcept(noexcept(x.swap(y)))
 {
   x.swap(y);
 }

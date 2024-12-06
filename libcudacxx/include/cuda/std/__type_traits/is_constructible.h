@@ -45,17 +45,16 @@ struct __nat
      || defined(_LIBCUDACXX_USE_IS_CONSTRUCTIBLE_FALLBACK))
 
 template <class _Tp, class... _Args>
-struct __libcpp_is_constructible;
+struct __cccl_is_constructible;
 
 template <class _To, class _From>
 struct __is_invalid_base_to_derived_cast
 {
   static_assert(is_reference<_To>::value, "Wrong specialization");
-  using _RawFrom = __remove_cvref_t<_From>;
-  using _RawTo   = __remove_cvref_t<_To>;
+  using _RawFrom = remove_cvref_t<_From>;
+  using _RawTo   = remove_cvref_t<_To>;
   static const bool value =
-    _And<_IsNotSame<_RawFrom, _RawTo>, is_base_of<_RawFrom, _RawTo>, _Not<__libcpp_is_constructible<_RawTo, _From>>>::
-      value;
+    _And<_IsNotSame<_RawFrom, _RawTo>, is_base_of<_RawFrom, _RawTo>, _Not<__cccl_is_constructible<_RawTo, _From>>>::value;
 };
 
 template <class _To, class _From>
@@ -67,8 +66,8 @@ struct __is_invalid_lvalue_to_rvalue_cast : false_type
 template <class _ToRef, class _FromRef>
 struct __is_invalid_lvalue_to_rvalue_cast<_ToRef&&, _FromRef&>
 {
-  using _RawFrom = __remove_cvref_t<_FromRef>;
-  using _RawTo   = __remove_cvref_t<_ToRef>;
+  using _RawFrom = remove_cvref_t<_FromRef>;
+  using _RawTo   = remove_cvref_t<_ToRef>;
   static const bool value =
     _And<_Not<is_function<_RawTo>>, _Or<_IsSame<_RawFrom, _RawTo>, is_base_of<_RawTo, _RawFrom>>>::value;
 };
@@ -119,30 +118,30 @@ struct __is_default_constructible<_Tp[], false> : false_type
 {};
 
 template <class _Tp, size_t _Nx>
-struct __is_default_constructible<_Tp[_Nx], false> : __is_default_constructible<__remove_all_extents_t<_Tp>>
+struct __is_default_constructible<_Tp[_Nx], false> : __is_default_constructible<remove_all_extents_t<_Tp>>
 {};
 
 template <class _Tp, class... _Args>
-struct __libcpp_is_constructible
+struct __cccl_is_constructible
 {
   static_assert(sizeof...(_Args) > 1, "Wrong specialization");
   typedef decltype(__is_constructible_helper::__test_nary<_Tp, _Args...>(0)) type;
 };
 
 template <class _Tp>
-struct __libcpp_is_constructible<_Tp> : __is_default_constructible<_Tp>
+struct __cccl_is_constructible<_Tp> : __is_default_constructible<_Tp>
 {};
 
 template <class _Tp, class _A0>
-struct __libcpp_is_constructible<_Tp, _A0> : public decltype(__is_constructible_helper::__test_unary<_Tp, _A0>(0))
+struct __cccl_is_constructible<_Tp, _A0> : public decltype(__is_constructible_helper::__test_unary<_Tp, _A0>(0))
 {};
 
 template <class _Tp, class _A0>
-struct __libcpp_is_constructible<_Tp&, _A0> : public decltype(__is_constructible_helper::__test_cast<_Tp&, _A0>(0))
+struct __cccl_is_constructible<_Tp&, _A0> : public decltype(__is_constructible_helper::__test_cast<_Tp&, _A0>(0))
 {};
 
 template <class _Tp, class _A0>
-struct __libcpp_is_constructible<_Tp&&, _A0> : public decltype(__is_constructible_helper::__test_cast<_Tp&&, _A0>(0))
+struct __cccl_is_constructible<_Tp&&, _A0> : public decltype(__is_constructible_helper::__test_cast<_Tp&&, _A0>(0))
 {};
 
 #endif
@@ -160,7 +159,7 @@ _CCCL_INLINE_VAR constexpr bool is_constructible_v = _CCCL_BUILTIN_IS_CONSTRUCTI
 
 #else
 template <class _Tp, class... _Args>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_constructible : public __libcpp_is_constructible<_Tp, _Args...>::type
+struct _CCCL_TYPE_VISIBILITY_DEFAULT is_constructible : public __cccl_is_constructible<_Tp, _Args...>::type
 {};
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)

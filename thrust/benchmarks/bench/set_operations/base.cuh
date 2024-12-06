@@ -50,14 +50,15 @@ static void basic(nvbench::state& state, nvbench::type_list<T>, OpT op)
   thrust::sort(input.begin() + elements_in_A, input.end());
 
   caching_allocator_t alloc;
-  const std::size_t elements_in_AB = thrust::distance(
-    output.begin(),
+  // not a warm-up run, we need to run once to determine the size of the output
+  const auto result_ends =
     op(policy(alloc),
        input.cbegin(),
        input.cbegin() + elements_in_A,
        input.cbegin() + elements_in_A,
        input.cend(),
-       output.begin()));
+       output.begin());
+  const std::size_t elements_in_AB = thrust::distance(output.begin(), result_ends);
 
   state.add_element_count(elements);
   state.add_global_memory_reads<T>(elements);

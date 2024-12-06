@@ -53,11 +53,11 @@ template <class T>
 __host__ __device__ void conversion_test(T);
 
 template <class T, class... Args>
-_LIBCUDACXX_CONCEPT_FRAGMENT(ImplicitlyConstructible_,
-                             requires(Args&&... args)((conversion_test<T>({cuda::std::forward<Args>(args)...}))));
+_CCCL_CONCEPT_FRAGMENT(ImplicitlyConstructible_,
+                       requires(Args&&... args)((conversion_test<T>({cuda::std::forward<Args>(args)...}))));
 
 template <class T, class... Args>
-constexpr bool ImplicitlyConstructible = _LIBCUDACXX_FRAGMENT(ImplicitlyConstructible_, T, Args...);
+constexpr bool ImplicitlyConstructible = _CCCL_FRAGMENT(ImplicitlyConstructible_, T, Args...);
 static_assert(ImplicitlyConstructible<int, int>, "");
 
 #if defined(_LIBCUDACXX_HAS_VECTOR)
@@ -73,8 +73,8 @@ struct Data
   int vec_[N] = {};
   cuda::std::tuple<Ts...> tuple_;
 
-  _LIBCUDACXX_TEMPLATE(class... Us)
-  _LIBCUDACXX_REQUIRES(cuda::std::is_constructible<cuda::std::tuple<Ts...>, Us&&...>::value)
+  _CCCL_TEMPLATE(class... Us)
+  _CCCL_REQUIRES(cuda::std::is_constructible<cuda::std::tuple<Ts...>, Us&&...>::value)
   __host__ __device__ constexpr Data(cuda::std::initializer_list<int> il, Us&&... us)
       : tuple_(cuda::std::forward<Us>(us)...)
   {

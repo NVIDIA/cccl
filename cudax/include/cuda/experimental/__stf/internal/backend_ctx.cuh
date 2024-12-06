@@ -64,6 +64,8 @@ class graph_ctx;
 
 class null_partition;
 
+class stream_ctx;
+
 namespace reserved
 {
 
@@ -290,13 +292,57 @@ public:
       t.set_symbol(symbol);
     }
 
+    auto& dot        = *ctx.get_dot();
+    auto& statistics = reserved::task_statistics::instance();
+
+    cudaEvent_t start_event, end_event;
+    const bool record_time = t.schedule_task() || statistics.is_calibrating_to_file();
+
     t.start();
+
+    int device = -1;
+
     SCOPE(exit)
     {
-      t.end();
+      t.end_uncleared();
+
+      if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+      {
+        if (record_time)
+        {
+          cuda_safe_call(cudaEventRecord(end_event, t.get_stream()));
+          cuda_safe_call(cudaEventSynchronize(end_event));
+
+          float milliseconds = 0;
+          cuda_safe_call(cudaEventElapsedTime(&milliseconds, start_event, end_event));
+
+          if (dot.is_tracing())
+          {
+            dot.template add_vertex_timing<typename Ctx::task_type>(t, milliseconds, device);
+          }
+
+          if (statistics.is_calibrating())
+          {
+            statistics.log_task_time(t, milliseconds);
+          }
+        }
+      }
+
+      t.clear();
     };
 
-    auto& dot = *ctx.get_dot();
+    if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+    {
+      if (record_time)
+      {
+        cuda_safe_call(cudaGetDevice(&device)); // We will use this to force it during the next run
+        // Events must be created here to avoid issues with multi-gpu
+        cuda_safe_call(cudaEventCreate(&start_event));
+        cuda_safe_call(cudaEventCreate(&end_event));
+        cuda_safe_call(cudaEventRecord(start_event, t.get_stream()));
+      }
+    }
+
     if (dot.is_tracing())
     {
       dot.template add_vertex<typename Ctx::task_type, logical_data_untyped>(t);
@@ -492,19 +538,19 @@ protected:
       return nullptr;
     }
 
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
     _CCCL_DIAG_PUSH
     _CCCL_DIAG_SUPPRESS_MSVC(4702) // unreachable code
-#endif // _CCCL_COMPILER_MSVC
+#endif // _CCCL_COMPILER(MSVC)
     virtual event_list stream_to_event_list(cudaStream_t, ::std::string) const
     {
       fprintf(stderr, "Internal error.\n");
       abort();
       return event_list();
     }
-#if defined(_CCCL_COMPILER_MSVC)
+#if _CCCL_COMPILER(MSVC)
     _CCCL_DIAG_POP
-#endif // _CCCL_COMPILER_MSVC
+#endif // _CCCL_COMPILER(MSVC)
 
     virtual size_t epoch() const
     {
@@ -831,6 +877,21 @@ public:
   void set_parent_ctx(parent_ctx_t& parent_ctx)
   {
     reserved::per_ctx_dot::set_parent_ctx(parent_ctx.get_dot(), get_dot());
+  }
+
+  void dot_push_section(::std::string symbol) const
+  {
+    reserved::dot::section::push(mv(symbol));
+  }
+
+  void dot_pop_section() const
+  {
+    reserved::dot::section::pop();
+  }
+
+  auto dot_section(::std::string symbol) const
+  {
+    return reserved::dot::section::guard(mv(symbol));
   }
 
   auto get_phase() const

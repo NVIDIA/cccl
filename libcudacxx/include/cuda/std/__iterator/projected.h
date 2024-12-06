@@ -29,8 +29,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER > 2014
 
-_LIBCUDACXX_TEMPLATE(class _It, class _Proj)
-_LIBCUDACXX_REQUIRES(indirectly_readable<_It> _LIBCUDACXX_AND indirectly_regular_unary_invocable<_Proj, _It>)
+_CCCL_TEMPLATE(class _It, class _Proj)
+_CCCL_REQUIRES(indirectly_readable<_It> _CCCL_AND indirectly_regular_unary_invocable<_Proj, _It>)
 struct projected
 {
   using value_type = remove_cvref_t<indirect_result_t<_Proj&, _It>>;

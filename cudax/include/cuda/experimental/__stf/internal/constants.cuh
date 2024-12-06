@@ -35,11 +35,11 @@ namespace cuda::experimental::stf
  */
 enum class access_mode : unsigned int
 {
-  none  = 0,
-  read  = 1,
-  write = 2,
-  rw    = 3, // READ + WRITE
-  redux = 4, /* operator ? */
+  none    = 0,
+  read    = 1,
+  write   = 2,
+  rw      = 3, // READ + WRITE
+  relaxed = 4, /* operator ? */
 };
 
 /**
@@ -50,8 +50,8 @@ inline access_mode operator|(access_mode lhs, access_mode rhs)
 {
   assert(as_underlying(lhs) < 16);
   assert(as_underlying(rhs) < 16);
-  EXPECT(lhs != access_mode::redux);
-  EXPECT(rhs != access_mode::redux);
+  EXPECT(lhs != access_mode::relaxed);
+  EXPECT(rhs != access_mode::relaxed);
   return access_mode(as_underlying(lhs) | as_underlying(rhs));
 }
 
@@ -75,8 +75,8 @@ inline const char* access_mode_string(access_mode mode)
       return "rw";
     case access_mode::write:
       return "write";
-    case access_mode::redux:
-      return "redux"; // op ?
+    case access_mode::relaxed:
+      return "relaxed"; // op ?
     default:
       assert(false);
       abort();

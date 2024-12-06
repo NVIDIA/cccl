@@ -45,6 +45,8 @@
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/functional>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail
