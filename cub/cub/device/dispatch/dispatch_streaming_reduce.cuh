@@ -174,7 +174,8 @@ struct write_to_user_out_it
                          KeyValuePair<::cuda::std::uint32_t, ResultT>,
                          KeyValuePair<::cuda::std::int32_t, ResultT>>>>;
 
-    _CCCL_ASSERT(static_cast<OffsetT>(static_cast<index_t>(reduced_result.key)) == reduced_result.key);
+    _CCCL_ASSERT(static_cast<OffsetT>(static_cast<index_t>(reduced_result.key)) == reduced_result.key,
+                 "the given output iterator will lead to truncation of the index");
     *out_it = kv_pair_t{static_cast<index_t>(reduced_result.key), reduced_result.value};
   }
 };
