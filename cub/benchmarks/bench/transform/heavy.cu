@@ -53,10 +53,18 @@ static void heavy(nvbench::state& state, nvbench::type_list<Heaviness>)
   bench_transform(state, ::cuda::std::tuple{in.begin()}, out.begin(), n, heavy_functor<Heaviness::value>{});
 }
 
-template <int I>
-using ic = ::cuda::std::integral_constant<int, I>;
+using ::cuda::std::integral_constant;
+#ifdef TUNE_Heaviness
+using heaviness = nvbench::type_list<TUNE_Heaviness>; // expands to "integral_constant<int, ...>"
+#else
+using heaviness =
+  nvbench::type_list<integral_constant<int, 32>,
+                     integral_constant<int, 64>,
+                     integral_constant<int, 128>,
+                     integral_constant<int, 256>>;
+#endif
 
-NVBENCH_BENCH_TYPES(heavy, NVBENCH_TYPE_AXES(nvbench::type_list<ic<32>, ic<64>, ic<128>, ic<256>>))
+NVBENCH_BENCH_TYPES(heavy, NVBENCH_TYPE_AXES(heaviness))
   .set_name("heavy")
   .set_type_axes_names({"Heaviness{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));

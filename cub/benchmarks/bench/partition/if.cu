@@ -208,7 +208,13 @@ void partition(nvbench::state& state, nvbench::type_list<T, OffsetT, UseDistinct
   });
 }
 
-using distinct_partitions = nvbench::type_list<::cuda::std::false_type, ::cuda::std::true_type>;
+using ::cuda::std::false_type;
+using ::cuda::std::true_type;
+#ifdef TUNE_DistinctPartitions
+using distinct_partitions = nvbench::type_list<TUNE_DistinctPartitions>; // expands to "false_type" or "true_type"
+#else // !defined(TUNE_DistinctPartitions)
+using distinct_partitions = nvbench::type_list<false_type, true_type>;
+#endif // TUNE_DistinctPartitions
 
 NVBENCH_BENCH_TYPES(partition, NVBENCH_TYPE_AXES(fundamental_types, offset_types, distinct_partitions))
   .set_name("base")
