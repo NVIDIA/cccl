@@ -161,10 +161,10 @@ private:
   _Err __unex_;
 };
 
-#  if _CCCL_STD_VER > 2014 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
+#  if !defined(_CCCL_NO_DEDUCTION_GUIDES)
 template <class _Err>
 unexpected(_Err) -> unexpected<_Err>;
-#  endif // _CCCL_STD_VER > 2014 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
+#  endif // !defined(_CCCL_NO_DEDUCTION_GUIDES)
 
 #endif // _CCCL_STD_VER > 2011
 

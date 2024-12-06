@@ -525,10 +525,10 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT pair : public __pair_base<_T1, _T2>
 #endif // !_CCCL_COMPILER(NVRTC)
 };
 
-#if _CCCL_STD_VER > 2014 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
+#if !defined(_CCCL_NO_DEDUCTION_GUIDES)
 template <class _T1, class _T2>
 _CCCL_HOST_DEVICE pair(_T1, _T2) -> pair<_T1, _T2>;
-#endif // _CCCL_STD_VER > 2014 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
+#endif // !_CCCL_NO_DEDUCTION_GUIDES
 
 // [pairs.spec], specialized algorithms
 

@@ -390,9 +390,9 @@ struct hierarchy_dimensions_fragment
       : levels(ls)
   {}
 
-#  if defined(__cpp_three_way_comparison) && __cpp_three_way_comparison >= 201907
+#  if !defined(_CCCL_NO_THREE_WAY_COMPARISON)
   _CCCL_NODISCARD _CUDAX_API constexpr bool operator==(const hierarchy_dimensions_fragment&) const noexcept = default;
-#  else
+#  else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv _CCCL_NO_THREE_WAY_COMPARISON vvv
   _CCCL_NODISCARD_FRIEND _CUDAX_API constexpr bool
   operator==(const hierarchy_dimensions_fragment& left, const hierarchy_dimensions_fragment& right) noexcept
   {
@@ -404,7 +404,7 @@ struct hierarchy_dimensions_fragment
   {
     return left.levels != right.levels;
   }
-#  endif
+#  endif // _CCCL_NO_THREE_WAY_COMPARISON
 
 private:
   // This being static is a bit of a hack to make extents_type working without incomplete class member access

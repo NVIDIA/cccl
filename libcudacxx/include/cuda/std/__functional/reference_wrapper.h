@@ -76,10 +76,10 @@ public:
   }
 };
 
-#if _CCCL_STD_VER > 2014 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
+#if !defined(_CCCL_NO_DEDUCTION_GUIDES)
 template <class _Tp>
 _CCCL_HOST_DEVICE reference_wrapper(_Tp&) -> reference_wrapper<_Tp>;
-#endif
+#endif // !_CCCL_NO_DEDUCTION_GUIDES
 
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX20 reference_wrapper<_Tp> ref(_Tp& __t) noexcept
