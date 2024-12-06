@@ -163,7 +163,14 @@ void select(nvbench::state& state, nvbench::type_list<T, OffsetT, InPlaceAlgT>)
   });
 }
 
-using in_place_alg = nvbench::type_list<::cuda::std::false_type, ::cuda::std::true_type>;
+using ::cuda::std::false_type;
+using ::cuda::std::true_type;
+#ifdef TUNE_IsInPlace
+using in_place_alg = nvbench::type_list<TUNE_IsInPlace>; // expands to "false_type" or "true_type"
+#else // !defined(TUNE_IsInPlace)
+using in_place_alg = nvbench::type_list<false_type, true_type>;
+#endif // TUNE_IsInPlace
+
 // The implementation of DeviceSelect for 64-bit offset types uses a streaming approach, where it runs multiple passes
 // using a 32-bit offset type, so we only need to test one (to save time for tuning and the benchmark CI).
 using select_offset_types = nvbench::type_list<int64_t>;
