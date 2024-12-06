@@ -94,7 +94,14 @@ inline constexpr bool no_duplicate_options<Option, Rest...> =
 template <typename... Prev>
 _CCCL_NODISCARD constexpr auto process_config_args(const ::cuda::std::tuple<Prev...>& previous)
 {
-  return kernel_config(::cuda::std::apply(make_hierarchy_fragment<void, const Prev&...>, previous));
+  if constexpr (sizeof...(Prev) == 0)
+  {
+    return kernel_config(__empty_hierarchy());
+  }
+  else
+  {
+    return kernel_config(::cuda::std::apply(make_hierarchy_fragment<void, const Prev&...>, previous));
+  }
 }
 
 template <typename... Prev, typename Arg, typename... Rest>
@@ -107,7 +114,7 @@ process_config_args(const ::cuda::std::tuple<Prev...>& previous, const Arg& arg,
                   "Hierarchy levels and launch options can't be mixed");
     if constexpr (sizeof...(Prev) == 0)
     {
-      return kernel_config(uninit_t{}, arg, rest...);
+      return kernel_config(__empty_hierarchy(), arg, rest...);
     }
     else
     {
@@ -366,22 +373,6 @@ struct __filter_options
       __option_or_empty<!detail::__option_present_in_list<_Options, _OptionsToFilter...>>(__options)...);
   }
 };
-/*
-template <typename _Option, typename... _RestOptions>
-_CCCL_NODISCARD auto operator()(const _Option& __option, const _RestOptions& __rest)
-{
- if constexpr (detail::__option_present_in_list<_Option, _OptionsToFilter>) {
-   return (*this)(__rest...);
- }
- else {
-   return ::cuda::std::tuple_cat()
- }
-}
-
-_CCCL_NODISCARD operator()()
-{
- return ::cuda::std::tuple();
-}*/
 
 template <typename _Dimensions, typename... _Options>
 auto __make_config_from_tuple(const _Dimensions& __dims, const ::cuda::std::tuple<_Options...>& __opts);
@@ -396,8 +387,8 @@ template <typename _Dimensions, typename... _Options>
 inline constexpr bool __is_kernel_config<kernel_config<_Dimensions, _Options...>> = true;
 
 template <typename _Tp>
-_CCCL_CONCEPT __has_default_kernel_configuration =
-  _CCCL_REQUIRES_EXPR((_Tp), const _Tp& __t)(requires(__is_kernel_config<decltype(__t.default_configuration())>));
+_CCCL_CONCEPT __kernel_has_default_config =
+  _CCCL_REQUIRES_EXPR((_Tp), _Tp& __t)(requires(__is_kernel_config<decltype(__t.default_config())>));
 
 /**
  * @brief Type describing a kernel launch configuration
@@ -456,9 +447,9 @@ struct kernel_config
   template <typename _Kernel>
   _CCCL_NODISCARD auto combine_with_default(const _Kernel& __kernel) const
   {
-    if constexpr (__has_default_kernel_configuration<_Kernel>)
+    if constexpr (__kernel_has_default_config<_Kernel>)
     {
-      return combine(__kernel.default_configuration());
+      return combine(__kernel.default_config());
     }
     else
     {
@@ -561,7 +552,6 @@ constexpr auto distribute(int numElements) noexcept
 template <typename... Args>
 _CCCL_NODISCARD constexpr auto make_config(const Args&... args)
 {
-  static_assert(sizeof...(Args) != 0, "Configuration can't be empty");
   return detail::process_config_args(::cuda::std::make_tuple(), args...);
 }
 

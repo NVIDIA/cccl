@@ -10,7 +10,9 @@
 #include <cuda/atomic>
 
 #include <cuda/experimental/launch.cuh>
+#include <cuda/experimental/stream.cuh>
 
+#include <cooperative_groups.h>
 #include <testing.cuh>
 
 __managed__ bool kernel_run_proof = false;
@@ -246,4 +248,52 @@ void launch_smoke_test()
 TEST_CASE("Smoke", "[launch]")
 {
   launch_smoke_test();
+}
+
+template <typename DefaultConfig>
+struct kernel_with_default_config
+{
+  DefaultConfig config;
+
+  kernel_with_default_config(DefaultConfig c)
+      : config(c)
+  {}
+
+  DefaultConfig default_config() const
+  {
+    return config;
+  }
+
+  template <typename Config, typename ConfigCheckFn>
+  __device__ void operator()(Config config, ConfigCheckFn check_fn)
+  {
+    check_fn(config);
+  }
+};
+
+TEST_CASE("Launch with default config")
+{
+  cudax::stream stream;
+  auto grid  = cudax::grid_dims(4);
+  auto block = cudax::block_dims<256>;
+  {
+    kernel_with_default_config kernel{cudax::make_config(block, grid)};
+    static_assert(cudax::__is_kernel_config<decltype(kernel.default_config())>);
+    static_assert(cudax::__kernel_has_default_config<decltype(kernel)>);
+
+    cudax::launch(stream, cudax::make_config(), kernel, [] __device__(auto& config) {
+      CUDAX_REQUIRE(config.dims.count(cudax::thread, cudax::block) == 256);
+      CUDAX_REQUIRE(config.dims.count(cudax::block) == 4);
+    });
+    stream.wait();
+  }
+  {
+    kernel_with_default_config kernel{cudax::make_config(block)};
+    cudax::launch(stream, cudax::make_config(grid, cudax::cooperative_launch()), kernel, [] __device__(auto& config) {
+      CUDAX_REQUIRE(config.dims.count(cudax::thread, cudax::block) == 256);
+      CUDAX_REQUIRE(config.dims.count(cudax::block) == 4);
+      cooperative_groups::this_grid().sync();
+    });
+    stream.wait();
+  }
 }
