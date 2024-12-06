@@ -209,6 +209,7 @@ TEST_CASE("Configuration combine", "[launch]")
   auto grid    = cudax::grid_dims<2>;
   auto cluster = cudax::cluster_dims<2, 2>;
   auto block   = cudax::block_dims(256);
+  SECTION("Combine with no overlap")
   {
     auto config_part1                         = make_config(grid);
     auto config_part2                         = make_config(block, cudax::launch_priority(2));
@@ -223,6 +224,7 @@ TEST_CASE("Configuration combine", "[launch]")
     static_assert(cuda::std::is_same_v<decltype(combined), decltype(empty_with_combined)>);
     CUDAX_REQUIRE(combined.dims.count(cudax::thread) == 512);
   }
+  SECTION("Combine with overlap")
   {
     auto config_part1 = make_config(grid, cluster, cudax::launch_priority(2));
     auto config_part2 = make_config(cudax::cluster_dims<256>, block, cudax::launch_priority(42));

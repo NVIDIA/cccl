@@ -276,24 +276,32 @@ TEST_CASE("Launch with default config")
   cudax::stream stream;
   auto grid  = cudax::grid_dims(4);
   auto block = cudax::block_dims<256>;
+
+  auto verify_lambda = [] __device__(auto& config) {
+    CUDAX_REQUIRE(config.dims.count(cudax::thread, cudax::block) == 256);
+    CUDAX_REQUIRE(config.dims.count(cudax::block) == 4);
+    cooperative_groups::this_grid().sync();
+  };
+
+  SECTION("Combine with empty")
   {
-    kernel_with_default_config kernel{cudax::make_config(block, grid)};
+    kernel_with_default_config kernel{cudax::make_config(block, grid, cudax::cooperative_launch())};
     static_assert(cudax::__is_kernel_config<decltype(kernel.default_config())>);
     static_assert(cudax::__kernel_has_default_config<decltype(kernel)>);
 
-    cudax::launch(stream, cudax::make_config(), kernel, [] __device__(auto& config) {
-      CUDAX_REQUIRE(config.dims.count(cudax::thread, cudax::block) == 256);
-      CUDAX_REQUIRE(config.dims.count(cudax::block) == 4);
-    });
+    cudax::launch(stream, cudax::make_config(), kernel, verify_lambda);
     stream.wait();
   }
+  SECTION("Combine with no overlap")
   {
     kernel_with_default_config kernel{cudax::make_config(block)};
-    cudax::launch(stream, cudax::make_config(grid, cudax::cooperative_launch()), kernel, [] __device__(auto& config) {
-      CUDAX_REQUIRE(config.dims.count(cudax::thread, cudax::block) == 256);
-      CUDAX_REQUIRE(config.dims.count(cudax::block) == 4);
-      cooperative_groups::this_grid().sync();
-    });
+    cudax::launch(stream, cudax::make_config(grid, cudax::cooperative_launch()), kernel, verify_lambda);
+    stream.wait();
+  }
+  SECTION("Combine with overlap")
+  {
+    kernel_with_default_config kernel{cudax::make_config(cudax::block_dims<1>, cudax::cooperative_launch())};
+    cudax::launch(stream, cudax::make_config(block, grid, cudax::cooperative_launch()), kernel, verify_lambda);
     stream.wait();
   }
 }

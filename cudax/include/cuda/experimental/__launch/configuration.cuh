@@ -377,9 +377,6 @@ struct __filter_options
 template <typename _Dimensions, typename... _Options>
 auto __make_config_from_tuple(const _Dimensions& __dims, const ::cuda::std::tuple<_Options...>& __opts);
 
-template <typename _Dimensions, typename... _Options>
-struct __kernel_config;
-
 template <typename _T>
 inline constexpr bool __is_kernel_config = false;
 
@@ -434,6 +431,20 @@ struct kernel_config
       dims, ::cuda::std::tuple_cat(options, ::cuda::std::make_tuple(new_options...)));
   }
 
+  /**
+   * @brief Combine this configuration with another configuration object
+   *
+   * Returns a new `kernel_config` that is a combination of this configuration and the configuration from argument.
+   * It contains dimensions that are combination of dimensions in this object and the other configuration. The resulting
+   * hierarchy holds levels present in both hierarchies. In case of overlap of levels hierarchy from this configuration
+   * is prioritized, so the result always holds all levels from this hierarchy and non-overlapping
+   * levels from the other hierarchy. This behavior is the same as `combine()` member function of the hierarchy type.
+   * The result also contains configuration options from both configurations. In case the same type of a configuration
+   * option is present in both configration this configuration is copied into the resulting configuration.
+   *
+   * @param __other_config
+   * Other configuration to combine with this configuration
+   */
   template <typename _OtherDimensions, typename... _OtherOptions>
   _CCCL_NODISCARD auto combine(const kernel_config<_OtherDimensions, _OtherOptions...>& __other_config) const
   {
@@ -444,6 +455,17 @@ struct kernel_config
       ::cuda::std::tuple_cat(options, ::cuda::std::apply(__filter_options<Options...>{}, __other_config.options)));
   }
 
+  /**
+   * @brief Combine this configuration with default configuration of a kernel functor
+   *
+   * Returns a new `kernel_config` that is a combination of this configuration and a default configuration from the
+   * kernel argument. Default configuration is a `kernel_config` object returned from `default_config()` member function
+   * of the kernel type. The configurations are combined using the `combine()` member function of this configuration.
+   * If the kernel has no default configuration, a copy of this configuration is returned without any changes.
+   *
+   * @param __kernel
+   * Kernel functor to search for the default configuration
+   */
   template <typename _Kernel>
   _CCCL_NODISCARD auto combine_with_default(const _Kernel& __kernel) const
   {
