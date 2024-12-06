@@ -355,19 +355,21 @@ loop_redux_finalize(tuple_args targs, redux_vars<tuple_args, tuple_ops>* redux_b
   const size_t step = blockDim.x;
 
   // Load partial results into shared memory
-  bool first = true;
-  for (size_t ind = tid; ind < nredux_buffer; ind += step)
+  if (tid < nredux_buffer)
   {
-    // The first item is copied, other items are combined using the reduction operator
-    if (first)
-    {
-      per_block_redux_buffer[tid].set(redux_buffer[ind]);
-      first = false;
-    }
-    else
+    // Initialize per_block_redux_buffer[tid] with the first element
+    per_block_redux_buffer[tid].set(redux_buffer[tid]);
+
+    // Accumulate the rest of the elements assigned to this thread
+    for (size_t ind = tid + step; ind < nredux_buffer; ind += step)
     {
       per_block_redux_buffer[tid].apply_op(redux_buffer[ind]);
     }
+  }
+  else
+  {
+    // For threads that will not be involved with actual values
+    per_block_redux_buffer[tid].init();
   }
 
   __syncthreads();
