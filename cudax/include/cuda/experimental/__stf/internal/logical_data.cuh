@@ -2304,8 +2304,7 @@ public:
   template <typename Op, typename... Pack>
   auto reduce(Op, no_init, Pack&&... pack)
   {
-    return task_dep<T, Op, false>(
-      *this, access_mode::reduce_no_init, ::std::forward<Pack>(pack)...);
+    return task_dep<T, Op, false>(*this, access_mode::reduce_no_init, ::std::forward<Pack>(pack)...);
   }
 
   /* If we do not pass the no_init{} tag type, there this is going to
@@ -2313,8 +2312,7 @@ public:
   template <typename Op, typename... Pack>
   auto reduce(Op, Pack&&... pack)
   {
-    return task_dep<T, Op, true>(
-      *this, access_mode::reduce, ::std::forward<Pack>(pack)...);
+    return task_dep<T, Op, true>(*this, access_mode::reduce, ::std::forward<Pack>(pack)...);
   }
 
   ///@}
