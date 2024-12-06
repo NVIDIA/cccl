@@ -277,8 +277,8 @@ TEST_CASE("Launch with default config")
   auto grid  = cudax::grid_dims(4);
   auto block = cudax::block_dims<256>;
 
-  auto verify_lambda = [] __device__(auto& config) {
-    CUDAX_REQUIRE(config.dims.count(cudax::thread, cudax::block) == 256);
+  auto verify_lambda = [] __device__(auto config) {
+    static_assert(config.dims.count(cudax::thread, cudax::block) == 256);
     CUDAX_REQUIRE(config.dims.count(cudax::block) == 4);
     cooperative_groups::this_grid().sync();
   };

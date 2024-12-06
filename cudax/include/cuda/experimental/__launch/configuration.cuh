@@ -91,42 +91,6 @@ template <typename Option, typename... Rest>
 inline constexpr bool no_duplicate_options<Option, Rest...> =
   !__option_present_in_list<Option, Rest...> && no_duplicate_options<Rest...>;
 
-template <typename... Prev>
-_CCCL_NODISCARD constexpr auto process_config_args(const ::cuda::std::tuple<Prev...>& previous)
-{
-  if constexpr (sizeof...(Prev) == 0)
-  {
-    return kernel_config(__empty_hierarchy());
-  }
-  else
-  {
-    return kernel_config(::cuda::std::apply(make_hierarchy_fragment<void, const Prev&...>, previous));
-  }
-}
-
-template <typename... Prev, typename Arg, typename... Rest>
-_CCCL_NODISCARD constexpr auto
-process_config_args(const ::cuda::std::tuple<Prev...>& previous, const Arg& arg, const Rest&... rest)
-{
-  if constexpr (::cuda::std::is_base_of_v<detail::launch_option, Arg>)
-  {
-    static_assert((::cuda::std::is_base_of_v<detail::launch_option, Rest> && ...),
-                  "Hierarchy levels and launch options can't be mixed");
-    if constexpr (sizeof...(Prev) == 0)
-    {
-      return kernel_config(__empty_hierarchy(), arg, rest...);
-    }
-    else
-    {
-      return kernel_config(::cuda::std::apply(make_hierarchy_fragment<void, const Prev&...>, previous), arg, rest...);
-    }
-  }
-  else
-  {
-    return process_config_args(::cuda::std::tuple_cat(previous, ::cuda::std::make_tuple(arg)), rest...);
-  }
-}
-
 } // namespace detail
 
 /**
@@ -410,10 +374,10 @@ struct kernel_config
 
   constexpr kernel_config(const Dimensions& dims, const Options&... opts)
       : dims(dims)
-      , options(opts...){};
+      , options(opts...) {};
   constexpr kernel_config(const Dimensions& dims, const ::cuda::std::tuple<Options...>& opts)
       : dims(dims)
-      , options(opts){};
+      , options(opts) {};
 
   /**
    * @brief Add a new option to this configuration
@@ -571,10 +535,46 @@ constexpr auto distribute(int numElements) noexcept
   return make_config(make_hierarchy(grid_dims(blocksPerGrid), block_dims<_ThreadsPerBlock>()));
 }
 
+template <typename... Prev>
+_CCCL_NODISCARD constexpr auto __process_config_args(const ::cuda::std::tuple<Prev...>& previous)
+{
+  if constexpr (sizeof...(Prev) == 0)
+  {
+    return kernel_config<__empty_hierarchy>(__empty_hierarchy());
+  }
+  else
+  {
+    return kernel_config(::cuda::std::apply(make_hierarchy_fragment<void, const Prev&...>, previous));
+  }
+}
+
+template <typename... Prev, typename Arg, typename... Rest>
+_CCCL_NODISCARD constexpr auto
+__process_config_args(const ::cuda::std::tuple<Prev...>& previous, const Arg& arg, const Rest&... rest)
+{
+  if constexpr (::cuda::std::is_base_of_v<detail::launch_option, Arg>)
+  {
+    static_assert((::cuda::std::is_base_of_v<detail::launch_option, Rest> && ...),
+                  "Hierarchy levels and launch options can't be mixed");
+    if constexpr (sizeof...(Prev) == 0)
+    {
+      return kernel_config(__empty_hierarchy(), arg, rest...);
+    }
+    else
+    {
+      return kernel_config(::cuda::std::apply(make_hierarchy_fragment<void, const Prev&...>, previous), arg, rest...);
+    }
+  }
+  else
+  {
+    return __process_config_args(::cuda::std::tuple_cat(previous, ::cuda::std::make_tuple(arg)), rest...);
+  }
+}
+
 template <typename... Args>
 _CCCL_NODISCARD constexpr auto make_config(const Args&... args)
 {
-  return detail::process_config_args(::cuda::std::make_tuple(), args...);
+  return __process_config_args(::cuda::std::make_tuple(), args...);
 }
 
 namespace detail
