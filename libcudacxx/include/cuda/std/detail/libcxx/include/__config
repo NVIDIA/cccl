@@ -802,10 +802,6 @@ typedef unsigned int char32_t;
 #    define _LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS
 #  endif // _LIBCUDACXX_ENABLE_CXX17_REMOVED_FEATURES
 
-#  if !defined(__cpp_deduction_guides) || __cpp_deduction_guides < 201611
-#    define _LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES
-#  endif
-
 // We need `is_constant_evaluated` for clang and gcc. MSVC also needs extensive rework
 #  if !defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
 #    define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS

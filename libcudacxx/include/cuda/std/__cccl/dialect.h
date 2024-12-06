@@ -94,6 +94,11 @@
 #  define _CCCL_NO_CONCEPTS
 #endif // _CCCL_STD_VER <= 2017 || __cpp_concepts < 201907L
 
+// CTAD is only available from C++17 onwards
+#if _CCCL_STD_VER <= 2014 || __cpp_deduction_guides < 201611L
+#  define _CCCL_NO_DEDUCTION_GUIDES
+#endif // _CCCL_STD_VER <= 2014 || __cpp_deduction_guides < 201611L
+
 // Fold expressions are only available from C++17 onwards
 #if _CCCL_STD_VER <= 2014 || __cpp_fold_expressions < 201603L
 #  define _CCCL_NO_FOLD_EXPRESSIONS
