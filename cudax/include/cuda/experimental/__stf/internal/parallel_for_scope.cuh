@@ -91,9 +91,9 @@ struct SelectType
 };
 
 template <typename Ai>
-struct SelectType<task_dep_op_none, Ai>
+struct SelectType<::std::monostate, Ai>
 {
-  using type = ::std::monostate; // Specialization when Oi is task_dep_op_none
+  using type = ::std::monostate;
 };
 
 /**
@@ -111,7 +111,7 @@ struct redux_buffer_tup<::std::tuple<Ai...>, ::std::tuple<Oi...>>
 {
   static_assert(sizeof...(Ai) == sizeof...(Oi), "Tuples must be of the same size");
 
-  using type = ::cuda::std::tuple<typename SelectType<Oi, Ai>::type...>;
+  using type = ::cuda::std::tuple<typename SelectType<typename Oi::first_type, Ai>::type...>;
 };
 
 /**
@@ -152,11 +152,11 @@ public:
   __device__ void init()
   {
     unroll<size>([&](auto i) {
-      using OpI = typename ::std::tuple_element_t<i, tuple_ops>;
-      if constexpr (!::std::is_same_v<OpI, task_dep_op_none>)
+      using OpI = typename ::std::tuple_element_t<i, tuple_ops>::first_type;
+      if constexpr (!::std::is_same_v<OpI, ::std::monostate>)
       {
         // If this is not a none op, then we have pair of ops, and the flag which indicates if we must initialize
-        OpI::first_type::init_op(::cuda::std::get<i>(tup));
+        OpI::init_op(::cuda::std::get<i>(tup));
       }
     });
   }
@@ -164,11 +164,11 @@ public:
   __device__ void apply_op(const redux_vars& src)
   {
     unroll<size>([&](auto i) {
-      using ElementType = ::std::tuple_element_t<i, tuple_ops>;
-      if constexpr (!::std::is_same_v<ElementType, task_dep_op_none>)
+      using ElementType = typename ::std::tuple_element_t<i, tuple_ops>::first_type;
+      if constexpr (!::std::is_same_v<ElementType, ::std::monostate>)
       {
         // If this is not a none op, then we have pair of ops, and the flag which indicates if we must initialize
-        ElementType::first_type::apply_op(::cuda::std::get<i>(tup), ::cuda::std::get<i>(src.get_tup()));
+        ElementType::apply_op(::cuda::std::get<i>(tup), ::cuda::std::get<i>(src.get_tup()));
       }
     });
   }
@@ -177,8 +177,8 @@ public:
   __device__ void set(const redux_vars& src)
   {
     unroll<size>([&](auto i) {
-      using ElementType = ::std::tuple_element_t<i, tuple_ops>;
-      if constexpr (!::std::is_same_v<ElementType, task_dep_op_none>)
+      using ElementType = typename ::std::tuple_element_t<i, tuple_ops>::first_type;
+      if constexpr (!::std::is_same_v<ElementType, ::std::monostate>)
       {
         ::cuda::std::get<i>(tup) = ::cuda::std::get<i>(src.get_tup());
       }
@@ -192,8 +192,8 @@ public:
       // Fill one entry of the tuple of arguments with the result of the reduction,
       // or accumulate the result of the reduction with the existing value if the
       // no_init{} value was used
-      using op_is = typename ::std::tuple_element<i, tuple_ops>::type;
-      if constexpr (!std::is_same_v<op_is, task_dep_op_none>)
+      using op_is = ::std::tuple_element_t<i, tuple_ops>;
+      if constexpr (!::std::is_same_v<typename op_is::first_type, ::std::monostate>)
       {
         using arg_is = typename ::std::tuple_element<i, tuple_args>::type;
 
@@ -236,7 +236,7 @@ private:
   __device__ decltype(auto) select_element(tuple_args& targs)
   {
     using OpType = typename ::std::tuple_element<Is, tuple_ops>::type;
-    if constexpr (::std::is_same_v<OpType, task_dep_op_none>)
+    if constexpr (::std::is_same_v<typename OpType::first_type, ::std::monostate>)
     {
       return ::std::get<Is>(targs); // Return reference to targs[i]
     }
@@ -410,7 +410,8 @@ class parallel_for_scope
   //  // tuple<task_dep<slice<double>>, task_dep<slice<int>>> ...
   //  using task_deps_t = ::std::tuple<typename deps_ops_t::task_dep_type...>;
   // tuple<none, none, sum, none> ...
-  using ops_t = ::std::tuple<typename deps_ops_t::op_type...>;
+  using ops_and_inits = ::std::tuple<typename deps_ops_t::op_and_init...>;
+  using operators_t = ::std::tuple<typename deps_ops_t::op_type_cacat...>;
 
 public:
   /// @brief Constructor
@@ -559,9 +560,7 @@ public:
       dot.template add_vertex<typename context::task_type, logical_data_untyped>(t);
     }
 
-    //    constexpr size_t num_deps = ::std::tuple_size<ops_t>::value;
-    //    constexpr size_t num_none = count_type_v<task_dep_op_none, ops_t>;
-    constexpr bool need_reduction = (::std::tuple_size<ops_t>::value != count_type_v<task_dep_op_none, ops_t>);
+    static constexpr bool need_reduction = (deps_ops_t::does_work || ...);
 
 #  if __NVCOMPILER
     // With nvc++, all lambdas can run on host and device.
@@ -650,7 +649,7 @@ public:
    */
   static size_t block_to_shared_mem(int block_dim)
   {
-    return block_dim * sizeof(redux_vars<deps_tup_t, ops_t>);
+    return block_dim * sizeof(redux_vars<deps_tup_t, ops_and_inits>);
   }
 
   // Executes the loop on a device, or use the host implementation
@@ -681,13 +680,13 @@ public:
       {
         cudaStream_t stream = t.get_stream();
 
-        loop_redux_empty_shape<deps_tup_t, ops_t><<<1, 1, 0, stream>>>(arg_instances);
+        loop_redux_empty_shape<deps_tup_t, ops_and_inits><<<1, 1, 0, stream>>>(arg_instances);
       }
       else
       {
         void* kernelArgs[] = {&arg_instances};
         cudaKernelNodeParams kernel_params;
-        kernel_params.func           = (void*) reserved::loop_redux_empty_shape<deps_tup_t, ops_t>;
+        kernel_params.func           = (void*) reserved::loop_redux_empty_shape<deps_tup_t, ops_and_inits>;
         kernel_params.gridDim        = dim3(1);
         kernel_params.blockDim       = dim3(1);
         kernel_params.kernelParams   = kernelArgs;
@@ -707,7 +706,7 @@ public:
       cuda_safe_call(cudaOccupancyMaxPotentialBlockSizeVariableSMem(
         &minGridSize,
         &blockSize,
-        reserved::loop_redux<Fun_no_ref, sub_shape_t, deps_tup_t, ops_t>,
+        reserved::loop_redux<Fun_no_ref, sub_shape_t, deps_tup_t, ops_and_inits>,
         block_to_shared_mem));
       return ::std::pair(size_t(minGridSize), size_t(blockSize));
     }();
@@ -727,13 +726,13 @@ public:
       int minGridSize = 0, blockSize = 0;
       // We are using int instead of size_t because CUDA API uses int for occupancy calculations
       cuda_safe_call(cudaOccupancyMaxPotentialBlockSizeVariableSMem(
-        &minGridSize, &blockSize, reserved::loop_redux_finalize<deps_tup_t, ops_t>, block_to_shared_mem));
+        &minGridSize, &blockSize, reserved::loop_redux_finalize<deps_tup_t, ops_and_inits>, block_to_shared_mem));
       return ::std::pair(size_t(minGridSize), size_t(blockSize));
     }();
 
-    size_t dyn_shmem_size              = block_size * sizeof(redux_vars<deps_tup_t, ops_t>);
-    size_t finalize_block_size         = conf_finalize.second;
-    size_t dynamic_shared_mem_finalize = finalize_block_size * sizeof(redux_vars<deps_tup_t, ops_t>);
+    const size_t dyn_shmem_size              = block_size * sizeof(redux_vars<deps_tup_t, ops_and_inits>);
+    const size_t finalize_block_size         = conf_finalize.second;
+    const size_t dynamic_shared_mem_finalize = finalize_block_size * sizeof(redux_vars<deps_tup_t, ops_and_inits>);
 
     _CCCL_ASSERT(n > 0, "Invalid empty shape here");
     if constexpr (::std::is_same_v<context, stream_ctx>)
@@ -742,15 +741,15 @@ public:
 
       // One tuple per CUDA block
       // TODO use CUDASTF facilities to replace this manual allocation
-      redux_vars<deps_tup_t, ops_t>* d_redux_buffer;
-      cuda_safe_call(cudaMallocAsync(&d_redux_buffer, blocks * sizeof(redux_vars<deps_tup_t, ops_t>), stream));
+      redux_vars<deps_tup_t, ops_and_inits>* d_redux_buffer;
+      cuda_safe_call(cudaMallocAsync(&d_redux_buffer, blocks * sizeof(*d_redux_buffer), stream));
 
       // TODO optimize the case where there was a single block to write to result ??
-      reserved::loop_redux<Fun_no_ref, sub_shape_t, deps_tup_t, ops_t>
+      reserved::loop_redux<Fun_no_ref, sub_shape_t, deps_tup_t, ops_and_inits>
         <<<static_cast<int>(blocks), static_cast<int>(block_size), dyn_shmem_size, stream>>>(
           static_cast<int>(n), sub_shape, mv(f), arg_instances, d_redux_buffer);
 
-      reserved::loop_redux_finalize<deps_tup_t, ops_t>
+      reserved::loop_redux_finalize<deps_tup_t, ops_and_inits>
         <<<1, finalize_block_size, dynamic_shared_mem_finalize, stream>>>(arg_instances, d_redux_buffer, blocks);
 
       cuda_safe_call(cudaFreeAsync(d_redux_buffer, stream));
@@ -764,7 +763,7 @@ public:
       allocParams.poolProps.allocType   = cudaMemAllocationTypePinned;
       allocParams.poolProps.handleTypes = cudaMemHandleTypeNone;
       allocParams.poolProps.location    = {.type = cudaMemLocationTypeDevice, .id = 0}; // TODO fix device id
-      allocParams.bytesize              = blocks * sizeof(redux_vars<deps_tup_t, ops_t>);
+      allocParams.bytesize              = blocks * sizeof(redux_vars<deps_tup_t, ops_and_inits>);
 
       const auto& input_nodes = t.get_ready_dependencies();
 
@@ -772,7 +771,7 @@ public:
       cudaGraphNode_t allocNode;
       cuda_safe_call(cudaGraphAddMemAllocNode(&allocNode, g, input_nodes.data(), input_nodes.size(), &allocParams));
 
-      auto* d_redux_buffer = static_cast<redux_vars<deps_tup_t, ops_t>*>(allocParams.dptr);
+      auto* d_redux_buffer = static_cast<redux_vars<deps_tup_t, ops_and_inits>*>(allocParams.dptr);
 
       // Launch the main kernel
       // It is ok to use reference to local variables because the arguments
@@ -780,7 +779,7 @@ public:
       void* kernelArgs[] = {
         &n, const_cast<void*>(static_cast<const void*>(&sub_shape)), &f, &arg_instances, &d_redux_buffer};
       cudaKernelNodeParams kernel_params;
-      kernel_params.func           = (void*) reserved::loop_redux<Fun_no_ref, sub_shape_t, deps_tup_t, ops_t>;
+      kernel_params.func           = (void*) reserved::loop_redux<Fun_no_ref, sub_shape_t, deps_tup_t, ops_and_inits>;
       kernel_params.gridDim        = dim3(static_cast<int>(blocks));
       kernel_params.blockDim       = dim3(static_cast<int>(block_size));
       kernel_params.kernelParams   = kernelArgs;
@@ -798,7 +797,7 @@ public:
 
       size_t finalize_block_size = blocks;
       cudaKernelNodeParams kernel2_params;
-      kernel2_params.func           = (void*) reserved::loop_redux_finalize<deps_tup_t, ops_t>;
+      kernel2_params.func           = (void*) reserved::loop_redux_finalize<deps_tup_t, ops_and_inits>;
       kernel2_params.gridDim        = dim3(1);
       kernel2_params.blockDim       = dim3(static_cast<int>(finalize_block_size));
       kernel2_params.kernelParams   = kernel2Args;
