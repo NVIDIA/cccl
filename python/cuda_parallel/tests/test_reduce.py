@@ -150,84 +150,86 @@ SUPPORTED_VALUE_TYPE_NAMES = (
 )
 
 
+@pytest.fixture(params=SUPPORTED_VALUE_TYPE_NAMES)
+def supported_value_type(request):
+    return request.param
+
+
+@pytest.fixture(params=[True, False])
+def use_numpy_array(request):
+    return request.param
+
+
 @pytest.mark.parametrize(
     "type_obj_from_str", [_iterators.numba_type_from_any, numpy.dtype, cp.dtype]
 )
-@pytest.mark.parametrize("value_type_name", SUPPORTED_VALUE_TYPE_NAMES)
-def test_value_type_name_round_trip(type_obj_from_str, value_type_name):
+def test_value_type_name_round_trip(type_obj_from_str, supported_value_type):
     # If all round trip tests here pass for all value types we are supporting,
     # this provides a super easy way to support numba.types, numpy.dtypes,
     # cupy.dtypes and plain strings as `value_type` arguments.
-    type_obj = type_obj_from_str(value_type_name)
-    assert str(type_obj) == value_type_name
+    type_obj = type_obj_from_str(supported_value_type)
+    assert str(type_obj) == supported_value_type
 
 
-@pytest.mark.parametrize("use_numpy_array", [True, False])
-@pytest.mark.parametrize("value_type_name", SUPPORTED_VALUE_TYPE_NAMES)
 def test_device_sum_raw_pointer_it(
-    use_numpy_array, value_type_name, num_items=3, start_sum_with=10
+    use_numpy_array, supported_value_type, num_items=3, start_sum_with=10
 ):
     # Exercise non-public _iterators.pointer() independently from iterators.TransformIterator().
     rng = random.Random(0)
     l_varr = [rng.randrange(100) for _ in range(num_items)]
-    dtype_inp = numpy.dtype(value_type_name)
+    dtype_inp = numpy.dtype(supported_value_type)
     dtype_out = dtype_inp
     raw_pointer_devarr = numba.cuda.to_device(numpy.array(l_varr, dtype=dtype_inp))
     i_input = _iterators.pointer(
-        raw_pointer_devarr, _iterators.numba_type_from_any(value_type_name)
+        raw_pointer_devarr, _iterators.numba_type_from_any(supported_value_type)
     )
     _test_device_sum_with_iterator(
         l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
     )
 
 
-@pytest.mark.parametrize("use_numpy_array", [True, False])
-@pytest.mark.parametrize("value_type_name", SUPPORTED_VALUE_TYPE_NAMES)
-def test_device_sum_cache_load_modifier_it(
-    use_numpy_array, value_type_name, num_items=3, start_sum_with=10
+def test_device_sum_cache_modified_input_it(
+    use_numpy_array, supported_value_type, num_items=3, start_sum_with=10
 ):
     rng = random.Random(0)
     l_varr = [rng.randrange(100) for _ in range(num_items)]
-    dtype_inp = numpy.dtype(value_type_name)
+    dtype_inp = numpy.dtype(supported_value_type)
     dtype_out = dtype_inp
     input_devarr = numba.cuda.to_device(numpy.array(l_varr, dtype=dtype_inp))
     i_input = iterators.CacheModifiedInputIterator(
-        input_devarr, value_type=value_type_name, modifier="stream"
+        input_devarr, value_type=supported_value_type, modifier="stream"
     )
     _test_device_sum_with_iterator(
         l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
     )
 
 
-@pytest.mark.parametrize("use_numpy_array", [True, False])
-@pytest.mark.parametrize("value_type_name", SUPPORTED_VALUE_TYPE_NAMES)
 def test_device_sum_constant_it(
-    use_numpy_array, value_type_name, num_items=3, start_sum_with=10
+    use_numpy_array, supported_value_type, num_items=3, start_sum_with=10
 ):
     l_varr = [42 for distance in range(num_items)]
-    dtype_inp = numpy.dtype(value_type_name)
+    dtype_inp = numpy.dtype(supported_value_type)
     dtype_out = dtype_inp
-    i_input = iterators.ConstantIterator(42, value_type=value_type_name)
+    i_input = iterators.ConstantIterator(42, value_type=supported_value_type)
     _test_device_sum_with_iterator(
         l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
     )
 
 
-@pytest.mark.parametrize("use_numpy_array", [True, False])
-@pytest.mark.parametrize("value_type_name", SUPPORTED_VALUE_TYPE_NAMES)
 def test_device_sum_counting_it(
-    use_numpy_array, value_type_name, num_items=3, start_sum_with=10
+    use_numpy_array, supported_value_type, num_items=3, start_sum_with=10
 ):
     l_varr = [start_sum_with + distance for distance in range(num_items)]
-    dtype_inp = numpy.dtype(value_type_name)
+    dtype_inp = numpy.dtype(supported_value_type)
     dtype_out = dtype_inp
-    i_input = iterators.CountingIterator(start_sum_with, value_type=value_type_name)
+    i_input = iterators.CountingIterator(
+        start_sum_with, value_type=supported_value_type
+    )
     _test_device_sum_with_iterator(
         l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
     )
 
 
-@pytest.mark.parametrize("use_numpy_array", [True, False])
 @pytest.mark.parametrize(
     "value_type_name_pair",
     list(zip(SUPPORTED_VALUE_TYPE_NAMES, SUPPORTED_VALUE_TYPE_NAMES))
@@ -256,7 +258,6 @@ def test_device_sum_map_mul2_count_it(
     )
 
 
-@pytest.mark.parametrize("use_numpy_array", [True, False])
 @pytest.mark.parametrize(
     ("fac_out", "fac_mid", "vtn_out", "vtn_mid", "vtn_inp"),
     [
@@ -295,7 +296,6 @@ def test_device_sum_map_mul_map_mul_count_it(
     )
 
 
-@pytest.mark.parametrize("use_numpy_array", [True, False])
 @pytest.mark.parametrize(
     "value_type_name_pair",
     [
