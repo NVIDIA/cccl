@@ -41,6 +41,7 @@ function(cudax_add_catch2_test target_name_var test_name cn_target) # ARGN=test 
     "-DLIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE"
     $<$<COMPILE_LANG_AND_ID:CUDA,NVIDIA>:--extended-lambda>
   )
+
   cudax_clone_target_properties(${test_target} ${cn_target})
   set_target_properties(${test_target} PROPERTIES
     CUDA_ARCHITECTURES "${CMAKE_CUDA_ARCHITECTURES}"
@@ -98,6 +99,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   )
 
   cudax_add_catch2_test(test_target misc ${cn_target}
+    utility/basic_any.cu
     utility/driver_api.cu
     utility/ensure_current_device.cu
   )
