@@ -593,14 +593,12 @@ struct DeviceReduce
     // Helper transform output iterator, to allow "implicit conversion" between KeyValuePair types that have a different
     // key type, which may happen if the user uses a different index type than the global offset type used by the
     // algorithm
-    using implicit_cast_kv_pair_op_it =
-      THRUST_NS_QUALIFIER::tabulate_output_iterator<detail::reduce::write_to_user_out_it<OutputIteratorT>>;
-    implicit_cast_kv_pair_op_it out_it =
+    auto out_it =
       THRUST_NS_QUALIFIER::make_tabulate_output_iterator(detail::reduce::write_to_user_out_it<OutputIteratorT>{d_out});
 
     return detail::reduce::dispatch_streaming_arg_reduce_t<
       InputIteratorT,
-      implicit_cast_kv_pair_op_it,
+      decltype(out_it),
       PerPartitionOffsetT,
       GlobalOffsetT,
       ReduceOpT,

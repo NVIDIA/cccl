@@ -81,7 +81,8 @@ struct accumulating_transform_output_op
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void advance(GlobalOffsetT partition_size, bool next_partition_is_the_last)
   {
     promote_op.advance(partition_size);
-    ::cuda::std::swap(d_previous_aggregate, d_aggregate_out);
+    using ::cuda::std::swap;
+    swap(d_previous_aggregate, d_aggregate_out);
     first_partition = false;
     last_partition  = next_partition_is_the_last;
   }
@@ -173,8 +174,8 @@ struct write_to_user_out_it
                          KeyValuePair<::cuda::std::uint32_t, ResultT>,
                          KeyValuePair<::cuda::std::int32_t, ResultT>>>>;
 
-    using index_t = typename kv_pair_t::Key;
-    *out_it       = kv_pair_t{static_cast<index_t>(reduced_result.key), reduced_result.value};
+    _CCCL_ASSERT(static_cast<OffsetT>(static_cast<index_t>(reduced_result.key)) == reduced_result.key);
+    *out_it = kv_pair_t{static_cast<index_t>(reduced_result.key), reduced_result.value};
   }
 };
 
