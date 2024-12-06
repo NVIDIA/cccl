@@ -30,7 +30,7 @@ set(CCCL_TAG "main" CACHE STRING "Git tag/branch to fetch from CCCL repository")
 CPMAddPackage(
   NAME CCCL
   GITHUB_REPOSITORY ${CCCL_REPOSITORY}
-  GIT_TAG ${CCCL_TAG}
+  GIT_TAG branch/2.7.x
   GIT_SHALLOW ON
   # The following is required to make the `CCCL::cudax` target available:
   OPTIONS "CCCL_ENABLE_UNSTABLE ON"
