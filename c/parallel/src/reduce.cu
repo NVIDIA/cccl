@@ -263,6 +263,12 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
       op_src, // 6
       policy.vector_load_length); // 7
 
+#if false // CCCL_DEBUGGING_SWITCH
+    fflush(stderr);
+    printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", src.c_str());
+    fflush(stdout);
+#endif
+
     std::string single_tile_kernel_name        = get_single_tile_kernel_name(input_it, output_it, op, init, false);
     std::string single_tile_second_kernel_name = get_single_tile_kernel_name(input_it, output_it, op, init, true);
     std::string reduction_kernel_name          = get_device_reduce_kernel_name(op, input_it, init);
@@ -287,16 +293,23 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
       }
     };
     ltoir_list_append({op.ltoir, op.ltoir_size});
-    if (cccl_iterator_kind_t::iterator == input_it.type)
-    {
-      ltoir_list_append({input_it.advance.ltoir, input_it.advance.ltoir_size});
-      ltoir_list_append({input_it.dereference.ltoir, input_it.dereference.ltoir_size});
-    }
-    if (cccl_iterator_kind_t::iterator == output_it.type)
-    {
-      ltoir_list_append({output_it.advance.ltoir, output_it.advance.ltoir_size});
-      ltoir_list_append({output_it.dereference.ltoir, output_it.dereference.ltoir_size});
-    }
+    auto extract_ltoirs = [ltoir_list_append](const cccl_iterator_t& it) {
+      if (cccl_iterator_kind_t::iterator == it.type)
+      {
+        ltoir_list_append({it.advance.ltoir, it.advance.ltoir_size});
+        ltoir_list_append({it.dereference.ltoir, it.dereference.ltoir_size});
+        if (it.ltoirs != nullptr)
+        {
+          for (int i = 0; i < it.ltoirs->size; i++)
+          {
+            auto view = it.ltoirs->views[i];
+            ltoir_list_append({view.begin, view.size});
+          }
+        }
+      }
+    };
+    extract_ltoirs(input_it);
+    extract_ltoirs(output_it);
 
     nvrtc_cubin result =
       make_nvrtc_command_list()
@@ -323,8 +336,11 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
     build->cubin_size       = result.size;
     build->accumulator_size = accum_t.size;
   }
-  catch (...)
+  catch (const std::exception& exc)
   {
+    fflush(stderr);
+    printf("\nEXCEPTION in cccl_device_reduce_build(): %s\n", exc.what());
+    fflush(stdout);
     error = CUDA_ERROR_UNKNOWN;
   }
 
@@ -411,8 +427,11 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce(
         cub::CudaDriverLauncherFactory{cu_device, build.cc},
         {get_accumulator_type(op, d_in, init)});
   }
-  catch (...)
+  catch (const std::exception& exc)
   {
+    fflush(stderr);
+    printf("\nEXCEPTION in cccl_device_reduce(): %s\n", exc.what());
+    fflush(stdout);
     error = CUDA_ERROR_UNKNOWN;
   }
 
@@ -437,8 +456,11 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_cleanup(cccl_device_reduce_bui
     std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(bld_ptr->cubin));
     check(cuLibraryUnload(bld_ptr->library));
   }
-  catch (...)
+  catch (const std::exception& exc)
   {
+    fflush(stderr);
+    printf("\nEXCEPTION in cccl_device_reduce_cleanup(): %s\n", exc.what());
+    fflush(stdout);
     return CUDA_ERROR_UNKNOWN;
   }
 
