@@ -227,9 +227,9 @@ def iterate_case_dfs(args, callable):
             continue
 
         case_dfs = {}
-        for subbench in storage.subbenches(algname):
-            for file in storages:
-                storage = storages[file]
+        for file in storages:
+            storage = storages[file]
+            for subbench in storage.subbenches(algname):
                 df = storage.alg_to_df(algname, subbench)
 
                 df = df.map(lambda x: x if is_finite(x) else np.nan)
