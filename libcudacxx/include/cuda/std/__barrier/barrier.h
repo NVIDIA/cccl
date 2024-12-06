@@ -36,6 +36,9 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+_CCCL_DIAG_PUSH
+_CCCL_DIAG_SUPPRESS_MSVC(4324) // structure was padded due to alignment specifier
+
 template <class _CompletionF, thread_scope _Sco = thread_scope_system>
 class __barrier_base
 {
@@ -116,6 +119,8 @@ public:
     return numeric_limits<ptrdiff_t>::max();
   }
 };
+
+_CCCL_DIAG_POP
 
 template <thread_scope _Sco>
 class __barrier_base<__empty_completion, _Sco>
