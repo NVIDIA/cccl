@@ -201,5 +201,44 @@ TEST_CASE("Hierarchy construction in config", "[launch]")
   CUDAX_REQUIRE(config_no_options.dims.count(cudax::thread) == 256);
 
   [[maybe_unused]] auto config_no_dims = cudax::make_config(cudax::cooperative_launch());
-  static_assert(cuda::std::is_same_v<decltype(config_no_dims.dims), cudax::uninit_t>);
+  static_assert(cuda::std::is_same_v<decltype(config_no_dims.dims), cudax::__empty_hierarchy>);
+}
+
+TEST_CASE("Configuration combine", "[launch]")
+{
+  auto grid    = cudax::grid_dims<2>;
+  auto cluster = cudax::cluster_dims<2, 2>;
+  auto block   = cudax::block_dims(256);
+  SECTION("Combine with no overlap")
+  {
+    auto config_part1                         = make_config(grid);
+    auto config_part2                         = make_config(block, cudax::launch_priority(2));
+    auto combined                             = config_part1.combine(config_part2);
+    [[maybe_unused]] auto combined_other_way  = config_part2.combine(config_part1);
+    [[maybe_unused]] auto combined_with_empty = combined.combine(cudax::make_config());
+    [[maybe_unused]] auto empty_with_combined = cudax::make_config().combine(combined);
+    static_assert(
+      cuda::std::is_same_v<decltype(combined), decltype(make_config(grid, block, cudax::launch_priority(2)))>);
+    static_assert(cuda::std::is_same_v<decltype(combined), decltype(combined_other_way)>);
+    static_assert(cuda::std::is_same_v<decltype(combined), decltype(combined_with_empty)>);
+    static_assert(cuda::std::is_same_v<decltype(combined), decltype(empty_with_combined)>);
+    CUDAX_REQUIRE(combined.dims.count(cudax::thread) == 512);
+  }
+  SECTION("Combine with overlap")
+  {
+    auto config_part1 = make_config(grid, cluster, cudax::launch_priority(2));
+    auto config_part2 = make_config(cudax::cluster_dims<256>, block, cudax::launch_priority(42));
+    auto combined     = config_part1.combine(config_part2);
+    CUDAX_REQUIRE(combined.dims.count(cudax::thread) == 2048);
+    CUDAX_REQUIRE(cuda::std::get<0>(combined.options).priority == 2);
+
+    auto replaced_one_option = cudax::make_config(cudax::launch_priority(3)).combine(combined);
+    CUDAX_REQUIRE(replaced_one_option.dims.count(cudax::thread) == 2048);
+    CUDAX_REQUIRE(cuda::std::get<0>(replaced_one_option.options).priority == 3);
+
+    [[maybe_unused]] auto combined_with_extra_option =
+      combined.combine(cudax::make_config(cudax::cooperative_launch()));
+    static_assert(cuda::std::is_same_v<decltype(combined.dims), decltype(combined_with_extra_option.dims)>);
+    static_assert(cuda::std::tuple_size_v<decltype(combined_with_extra_option.options)> == 2);
+  }
 }
