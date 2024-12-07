@@ -78,26 +78,6 @@ __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tup
 }
 
 /**
- * @brief Tuple of arguments needed to store temporary variables used in reduction operations.
- *
- * For example, if we have ArgsTuple=tuple<slice<T>, slice<T>, scalar<T>, scalar<U>> and OpsTuple=tuple<none, none,
- * sum<T>, sum<U>> we will have a type that is tuple<::std::monostate, ::std::monostate, T, U> which corresponds to the
- * variables we need to store to perform reductions.
- */
-template <typename ArgsTuple, typename OpsTuple>
-struct redux_buffer_tup;
-
-template <typename... Ai, typename... Oi>
-struct redux_buffer_tup<::std::tuple<Ai...>, ::std::tuple<Oi...>>
-{
-  static_assert(sizeof...(Ai) == sizeof...(Oi), "Tuples must be of the same size");
-
-  using type = ::cuda::std::tuple<::std::conditional_t<::std::is_same_v<typename Oi::first_type, ::std::monostate>,
-                                                       ::std::monostate,
-                                                       typename owning_container_of<Ai>::type>...>;
-};
-
-/**
  * @brief This wraps tuple of arguments and operators into a class that stores
  * a tuple of arguments which include local variables for reductions.
  *
@@ -107,6 +87,26 @@ struct redux_buffer_tup<::std::tuple<Ai...>, ::std::tuple<Oi...>>
 template <typename tuple_args, typename tuple_ops>
 class redux_vars
 {
+  /**
+   * @brief Tuple of arguments needed to store temporary variables used in reduction operations.
+   *
+   * For example, if we have ArgsTuple=tuple<slice<T>, slice<T>, scalar<T>, scalar<U>> and OpsTuple=tuple<none, none,
+   * sum<T>, sum<U>> we will have a type that is tuple<::std::monostate, ::std::monostate, T, U> which corresponds to
+   * the variables we need to store to perform reductions.
+   */
+  template <typename ArgsTuple, typename OpsTuple>
+  struct redux_buffer_tup;
+
+  template <typename... Ai, typename... Oi>
+  struct redux_buffer_tup<::std::tuple<Ai...>, ::std::tuple<Oi...>>
+  {
+    static_assert(sizeof...(Ai) == sizeof...(Oi), "Tuples must be of the same size");
+
+    using type = ::cuda::std::tuple<::std::conditional_t<::std::is_same_v<typename Oi::first_type, ::std::monostate>,
+                                                         ::std::monostate,
+                                                         typename owning_container_of<Ai>::type>...>;
+  };
+
 public:
   // Get the type of the actual tuple which will store variables
   using redux_vars_tup_t = typename redux_buffer_tup<tuple_args, tuple_ops>::type;
@@ -118,12 +118,12 @@ public:
   // This will return a tuple which matches the argument passed to the lambda, either an instance or an owning type for
   // reduction variables
   template <::std::size_t... Is>
-  __device__ auto make_targs_aux(tuple_args& targs, ::std::index_sequence<Is...> = ::std::index_sequence<>())
+  __device__ auto make_targs(tuple_args& targs, ::std::index_sequence<Is...> = ::std::index_sequence<>())
   {
     if constexpr (sizeof...(Is) != size)
     {
       // simple idiom to avoid defining two functions - "recurse" with the correct index_sequence
-      return make_targs_aux(targs, ::std::make_index_sequence<size>{});
+      return make_targs(targs, ::std::make_index_sequence<size>{});
     }
     else
     {
@@ -178,7 +178,7 @@ public:
       using op_is = ::std::tuple_element_t<i, tuple_ops>;
       if constexpr (!::std::is_same_v<typename op_is::first_type, ::std::monostate>)
       {
-        using arg_is = typename ::std::tuple_element<i, tuple_args>::type;
+        using arg_is = typename ::std::tuple_element_t<i, tuple_args>;
 
         // We have 2 cases here, op is a pair of Operation,boolean where the
         // boolean indicates if we should update the value or initialize it.
@@ -215,17 +215,17 @@ public:
 
 private:
   // Helper function to select and return the correct element
-  template <size_t Is>
-  __device__ decltype(auto) select_element(tuple_args& targs)
+  template <size_t i>
+  __device__ auto& select_element(tuple_args& targs)
   {
-    using OpType = typename ::std::tuple_element<Is, tuple_ops>::type;
+    using OpType = typename ::std::tuple_element_t<i, tuple_ops>;
     if constexpr (::std::is_same_v<typename OpType::first_type, ::std::monostate>)
     {
-      return ::std::get<Is>(targs); // Return reference to targs[i]
+      return ::std::get<i>(targs); // Return reference to targs[i]
     }
     else
     {
-      return ::cuda::std::get<Is>(tup); // Return reference to redux_buffer[i]
+      return ::cuda::std::get<i>(tup); // Return reference to redux_buffer[i]
     }
   }
 
@@ -251,7 +251,7 @@ __global__ void loop_redux_empty_shape(tuple_args targs)
   res.fill_results(targs);
 }
 
-/* the redux_buffer is an array of tuples which sizes corresponds to the number of CUDA blocks */
+/* the redux_buffer is an array of tuples of which sizes corresponds to the number of CUDA blocks */
 template <typename F, typename shape_t, typename tuple_args, typename tuple_ops>
 __global__ void loop_redux(
   const _CCCL_GRID_CONSTANT size_t n,
@@ -272,7 +272,7 @@ __global__ void loop_redux(
   // types in different kernels, it leads to multiple definitions of the same
   // symbol, causing linkage errors
   extern __shared__ char dyn_buffer[];
-  auto* per_block_redux_buffer = reinterpret_cast<redux_vars<tuple_args, tuple_ops>*>(dyn_buffer);
+  auto* const per_block_redux_buffer = reinterpret_cast<redux_vars<tuple_args, tuple_ops>*>(dyn_buffer);
 
   // This will initialize reduction variables with the null value of the operator
   per_block_redux_buffer[threadIdx.x].init();
@@ -280,31 +280,30 @@ __global__ void loop_redux(
   // Return a tuple with either arguments, or references to the owning type in
   // the reduction buffer stored in shared memory
   // This is used to build the arguments passed to the user-provided lambda function.
-  auto targs_aux = per_block_redux_buffer[threadIdx.x].make_targs_aux(targs);
 
   // Help the compiler which may not detect that a device lambda is calling a device lambda
   CUDASTF_NO_DEVICE_STACK
-  auto explode_args = [&](auto&&... data) {
+  const auto explode_args = [&](auto&&... data) {
+    CUDASTF_NO_DEVICE_STACK
+    const auto explode_coords = [&](auto&&... coords) {
+      f(coords..., data...);
+    };
     // For every linearized index in the shape
     for (; i < n; i += step)
     {
-      CUDASTF_NO_DEVICE_STACK
-      auto explode_coords = [&](auto... coords) {
-        f(coords..., data...);
-      };
       ::std::apply(explode_coords, shape.index_to_coords(i));
     }
   };
 
-  ::cuda::std::apply(explode_args, mv(targs_aux));
+  ::cuda::std::apply(explode_args, per_block_redux_buffer[threadIdx.x].make_targs(targs));
 
   /* Perform block-wide reductions */
   __syncthreads();
 
-  unsigned int tid = threadIdx.x;
+  const unsigned int tid = threadIdx.x;
   for (unsigned int stride = 1; stride < blockDim.x; stride *= 2)
   {
-    unsigned int index = 2 * stride * tid; // Target index for this thread
+    const unsigned int index = 2 * stride * tid; // Target index for this thread
     if (index + stride < blockDim.x)
     {
       per_block_redux_buffer[index].apply_op(per_block_redux_buffer[index + stride]);
