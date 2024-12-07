@@ -1134,8 +1134,8 @@ public:
     return parallel_for(mv(p), exec_place(mv(e_place)), mv(shape), mv(deps)...);
   }
 
-  template <typename S, typename... Deps>
-  auto parallel_for(S shape, Deps... deps)
+  template <typename S, typename... Deps, typename... Ops, bool... flags>
+  auto parallel_for(S shape, task_dep<Deps, Ops, flags>... deps)
   {
     return parallel_for(self().default_exec_place(), mv(shape), mv(deps)...);
   }
