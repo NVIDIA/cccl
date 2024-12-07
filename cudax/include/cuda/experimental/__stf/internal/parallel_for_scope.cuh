@@ -63,14 +63,14 @@ __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tup
 
   // Help the compiler which may not detect that a device lambda is calling a device lambda
   CUDASTF_NO_DEVICE_STACK
-  auto explode_args = [&](auto... data) {
+  auto explode_args = [&](auto&&... data) {
+    CUDASTF_NO_DEVICE_STACK
+    auto const explode_coords = [&](auto&&... coords) {
+      f(coords..., data...);
+    };
     // For every linearized index in the shape
     for (; i < n; i += step)
     {
-      CUDASTF_NO_DEVICE_STACK
-      auto explode_coords = [&](auto... coords) {
-        f(coords..., data...);
-      };
       ::std::apply(explode_coords, shape.index_to_coords(i));
     }
   };
