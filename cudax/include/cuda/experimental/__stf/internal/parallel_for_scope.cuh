@@ -77,6 +77,19 @@ __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tup
   ::std::apply(explode_args, mv(targs));
 }
 
+// Create SelectType Using Partial Specialization
+template <typename Oi, typename Ai>
+struct get_owning_container_of
+{
+  using type = typename owning_container_of<Ai>::type; // Default case
+};
+
+template <typename Ai>
+struct get_owning_container_of<::std::monostate, Ai>
+{
+  using type = ::std::monostate;
+};
+
 /**
  * @brief This wraps tuple of arguments and operators into a class that stores
  * a tuple of arguments which include local variables for reductions.
@@ -102,9 +115,7 @@ class redux_vars
   {
     static_assert(sizeof...(Ai) == sizeof...(Oi), "Tuples must be of the same size");
 
-    using type = ::cuda::std::tuple<::std::conditional_t<::std::is_same_v<typename Oi::first_type, ::std::monostate>,
-                                                         ::std::monostate,
-                                                         typename owning_container_of<Ai>::type>...>;
+    using type = ::cuda::std::tuple<typename get_owning_container_of<typename Oi::first_type, Ai>::type...>;
   };
 
 public:
