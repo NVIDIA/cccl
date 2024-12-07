@@ -3,7 +3,7 @@
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2023-24 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -31,8 +31,29 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT enable_if<true, _Tp>
   typedef _Tp type;
 };
 
+#if _CCCL_COMPILER(NVHPC) || _CCCL_COMPILER(ICC) || _CCCL_COMPILER(GCC, <, 8)
+
 template <bool _Bp, class _Tp = void>
 using enable_if_t _CCCL_NODEBUG_ALIAS = typename enable_if<_Bp, _Tp>::type;
+
+#else // ^^^ standard implementation ^^^ / vvv optimized implementation
+
+// Optimized enable_if_t implementation that does not instantiate a type every time
+template <bool>
+struct __enable_if_t_impl
+{};
+
+template <>
+struct __enable_if_t_impl<true>
+{
+  template <class _Tp>
+  using type = _Tp;
+};
+
+template <bool _Bp, class _Tp = void>
+using enable_if_t _CCCL_NODEBUG_ALIAS = typename __enable_if_t_impl<_Bp>::template type<_Tp>;
+
+#endif // !_CCCL_COMPILER(NVHPC) && !_CCCL_COMPILER(ICC) && !_CCCL_COMPILER(GCC, <, 8)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
