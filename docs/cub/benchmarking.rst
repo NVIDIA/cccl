@@ -326,3 +326,10 @@ before viewing the report using `ncu-ui`:
     ncu-ui base.ncu-rep
 
 The version of `ncu-ui` needs to be at least as high as the version of `ncu` used to create the report.
+
+Authoring benchmarks
+--------------------------------------------------------------------------------
+
+CUB's benchmarks serve a dual purpose.
+They are used to measure and compare the performance of CUB and to tune CUB's algorithms.
+More information on how to create new benchmarks is provided in the :ref:`CUB tuning guide <cub-tuning>`.
