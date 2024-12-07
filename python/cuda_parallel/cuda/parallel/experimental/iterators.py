@@ -30,8 +30,6 @@ def CountingIterator(offset, value_type):
     )
 
 
-def TransformIterator(op, it, op_return_value_type):
+def TransformIterator(op, it):
     """Python fascade (similar to built-in map) mimicking a C++ Random Access TransformIterator."""
-    return _iterators.TransformIterator(
-        op, it, _iterators.numba_type_from_any(op_return_value_type)
-    )
+    return _iterators.TransformIterator(op, it)
