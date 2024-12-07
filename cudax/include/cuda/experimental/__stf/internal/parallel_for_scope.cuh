@@ -78,25 +78,6 @@ __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tup
 }
 
 /**
- * Transform a combination of tuple<A1,..., An> and tuple<O1, ..., On> into a
- * tuple where the entries are either empty types for non reduction variables,
- * or Ai.
- */
-
-// Create SelectType Using Partial Specialization
-template <typename Oi, typename Ai>
-struct SelectType
-{
-  using type = typename owning_container_of<Ai>::type; // Default case
-};
-
-template <typename Ai>
-struct SelectType<::std::monostate, Ai>
-{
-  using type = ::std::monostate;
-};
-
-/**
  * @brief Tuple of arguments needed to store temporary variables used in reduction operations.
  *
  * For example, if we have ArgsTuple=tuple<slice<T>, slice<T>, scalar<T>, scalar<U>> and OpsTuple=tuple<none, none,
@@ -111,7 +92,9 @@ struct redux_buffer_tup<::std::tuple<Ai...>, ::std::tuple<Oi...>>
 {
   static_assert(sizeof...(Ai) == sizeof...(Oi), "Tuples must be of the same size");
 
-  using type = ::cuda::std::tuple<typename SelectType<typename Oi::first_type, Ai>::type...>;
+  using type = ::cuda::std::tuple<::std::conditional_t<::std::is_same_v<typename Oi::first_type, ::std::monostate>,
+                                                       ::std::monostate,
+                                                       typename owning_container_of<Ai>::type>...>;
 };
 
 /**
