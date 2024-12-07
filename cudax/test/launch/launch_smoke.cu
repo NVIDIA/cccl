@@ -271,7 +271,7 @@ struct kernel_with_default_config
   }
 };
 
-TEST_CASE("Launch with default config")
+void test_default_config()
 {
   cudax::stream stream;
   auto grid  = cudax::grid_dims(4);
@@ -304,4 +304,9 @@ TEST_CASE("Launch with default config")
     cudax::launch(stream, cudax::make_config(block, grid, cudax::cooperative_launch()), kernel, verify_lambda);
     stream.wait();
   }
+}
+
+TEST_CASE("Launch with default config")
+{
+  test_default_config();
 }
