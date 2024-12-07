@@ -389,8 +389,8 @@ public:
       payload);
   }
 
-  template <typename S, typename... Deps>
-  auto parallel_for(S shape, Deps... deps)
+  template <typename S, typename... Deps, typename... Ops, bool... flags>
+  auto parallel_for(S shape, task_dep<Deps, Ops, flags>... deps)
   {
     return parallel_for(default_exec_place(), mv(shape), mv(deps)...);
   }
