@@ -749,7 +749,6 @@ public:
     }
     else
     {
-      fprintf(stderr, "GENERATING graph for reduce ...\n");
       auto g = t.get_ctx_graph();
 
       cudaMemAllocNodeParams allocParams{};
