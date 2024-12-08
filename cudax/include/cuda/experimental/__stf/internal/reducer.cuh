@@ -33,6 +33,9 @@
 namespace cuda::experimental::stf::reducer
 {
 
+/**
+ * @brief sum operator for the reduce access mode
+ */
 template <typename T>
 class sum
 {
@@ -48,6 +51,9 @@ public:
   }
 };
 
+/**
+ * @brief maxval operator for the reduce access mode
+ */
 template <typename T>
 class maxval
 {
@@ -63,6 +69,9 @@ public:
   }
 };
 
+/**
+ * @brief minval operator for the reduce access mode
+ */
 template <typename T>
 class minval
 {
@@ -78,6 +87,9 @@ public:
   }
 };
 
+/**
+ * @brief product operator for the reduce access mode
+ */
 template <typename T>
 class product
 {
@@ -93,6 +105,9 @@ public:
   }
 };
 
+/**
+ * @brief bitwise and operator for the reduce access mode
+ */
 template <typename T>
 class bitwise_and
 {
@@ -108,6 +123,9 @@ public:
   }
 };
 
+/**
+ * @brief bitwise or operator for the reduce access mode
+ */
 template <typename T>
 class bitwise_or
 {
@@ -123,6 +141,9 @@ public:
   }
 };
 
+/**
+ * @brief bitwise xor operator for the reduce access mode
+ */
 template <typename T>
 class bitwise_xor
 {
@@ -138,6 +159,9 @@ public:
   }
 };
 
+/**
+ * @brief logical and operator for the reduce access mode
+ */
 template <typename T>
 class logical_and
 {
@@ -153,6 +177,9 @@ public:
   }
 };
 
+/**
+ * @brief logical or operator for the reduce access mode
+ */
 template <typename T>
 class logical_or
 {
