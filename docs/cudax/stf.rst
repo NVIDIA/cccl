@@ -779,13 +779,13 @@ an asynchronous fence mechanism is available :
     cudaStream_t stream = ctx.task_fence();
     cudaStreamSynchronize(stream);
 
-Another synchronization mechanism is the ``transfer_host`` method of the
+Another synchronization mechanism is the ``wait`` method of the
 context object. It is typically used in combination with the ``reduce()``
-access mode for dynamic control flow. ``auto val = ctx.transfer_host(ld)`` is a
+access mode for dynamic control flow. ``auto val = ctx.wait(ld)`` is a
 blocking call that returns the content of the ``ld`` logical data. The type of
 the returned value is defined by the ``owning_container_of<interface>`` trait
 class where ``interface`` is the data interface of the logical data. The
-``transfer_host`` method therefore cannot be called on a logical data with an
+``wait`` method therefore cannot be called on a logical data with an
 interface that does not overload this trait class.
 
 This mechanism is illustrated in the dot product example of the
@@ -1350,7 +1350,7 @@ be ``T``. The argument passed to the ``parallel_for`` construct is a reference
 to object of this type. The following piece of code for example computes the
 dot product of two vectors of double elements (``slice<double>``) using a
 reduction, and a ``scalar<double>``. Reductions are typically used in
-combination with the ``transfer_host`` mechanism which synchronously returns
+combination with the ``wait`` mechanism which synchronously returns
 the content of the logical data in a variable.
 
 .. code-block:: cpp
@@ -1364,7 +1364,7 @@ the content of the logical data in a variable.
             sum += dX(i) * dY(i);
           };
 
-  double res = ctx.transfer_host(lsum);
+  double res = ctx.wait(lsum);
 
 Note that if we had put a ``no_init{}`` argument after
 ``reducer::sum<double>{}`` we would have an error because ``lsum`` was not

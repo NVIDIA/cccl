@@ -30,7 +30,7 @@ int main()
     sum++;
   };
 
-  size_t res_sum = ctx.transfer_host(lsum);
+  size_t res_sum = ctx.wait(lsum);
 
   ctx.finalize();
 
