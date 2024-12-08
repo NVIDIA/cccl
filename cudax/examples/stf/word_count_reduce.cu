@@ -35,11 +35,6 @@ int main()
     "  On the morrow he will leave me, as my hopes have flown before.'\n"
     "  Then the bird said, `Nevermore.'\n";
 
-  // std::cout << "Text sample:" << std::endl;
-  // std::cout << raw_input << std::endl;
-
-  // fprintf(stderr, "TEXT size : %ld\n", sizeof(raw_input));
-
   context ctx;
 
   size_t text_len = sizeof(raw_input);
