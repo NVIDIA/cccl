@@ -8,6 +8,13 @@
 //
 //===----------------------------------------------------------------------===//
 
+/**
+ * @file
+ *
+ * @brief Ensure that the scalar data interface works on both stream and graph backends
+ *
+ */
+
 #include <cuda/experimental/stf.cuh>
 
 using namespace cuda::experimental::stf;

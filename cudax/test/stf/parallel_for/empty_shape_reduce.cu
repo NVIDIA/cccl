@@ -11,7 +11,7 @@
 /**
  * @file
  *
- * @brief Test reduce access mode
+ * @brief Test reduce access mode when we encounter an empty shape to ensure we do initialize values
  *
  */
 
