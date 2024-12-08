@@ -711,9 +711,8 @@ public:
     // max_blocks is computed so we have one thread per element processed
     const auto max_blocks = (n + block_size - 1) / block_size;
 
-    // TODO [[maybe_unused]] until we do use them in CUDA graphs as well ...
     // TODO: improve this
-    [[maybe_unused]] size_t blocks = ::std::min(min_blocks * 3 / 2, max_blocks);
+    size_t blocks = ::std::min(min_blocks * 3 / 2, max_blocks);
 
     ////static_assert(::std::is_same_v<context, stream_ctx>);
 
