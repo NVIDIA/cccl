@@ -752,10 +752,13 @@ public:
     {
       auto g = t.get_ctx_graph();
 
+      _CCCL_ASSERT(sub_exec_place.is_device(), "Invalid execution place");
+      int dev_id = device_ordinal(sub_exec_place.affine_data_place());
+
       cudaMemAllocNodeParams allocParams{};
       allocParams.poolProps.allocType   = cudaMemAllocationTypePinned;
       allocParams.poolProps.handleTypes = cudaMemHandleTypeNone;
-      allocParams.poolProps.location    = {.type = cudaMemLocationTypeDevice, .id = 0}; // TODO fix device id
+      allocParams.poolProps.location    = {.type = cudaMemLocationTypeDevice, .id = dev_id};
       allocParams.bytesize              = blocks * sizeof(redux_vars<deps_tup_t, ops_and_inits>);
 
       const auto& input_nodes = t.get_ready_dependencies();
