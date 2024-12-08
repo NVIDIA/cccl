@@ -162,7 +162,7 @@ class _Op:
 
 def _extract_ctypes_ltoirs(numba_cuda_compile_results):
     view_lst = [_CCCLStringView(ltoir, len(ltoir))
-                for ltoir, _ in numba_cuda_compile_results]
+                for ltoir in numba_cuda_compile_results]
     view_arr = (_CCCLStringView * len(view_lst))(*view_lst)
     return ctypes.pointer(_CCCLStringViews(view_arr, len(view_arr)))
 
