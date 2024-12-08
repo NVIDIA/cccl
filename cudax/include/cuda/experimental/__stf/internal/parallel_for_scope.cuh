@@ -569,6 +569,8 @@ public:
     // TODO redo cascade of tests
     if constexpr (need_reduction)
     {
+      _CCCL_ASSERT(e_place != exec_place::host, "Reduce access mode currently unimplemented on host.");
+      _CCCL_ASSERT(e_place.is_grid(), "Reduce access mode currently unimplemented on grid of places.");
       do_parallel_for_redux(f, e_place, shape, t);
       return;
     }
