@@ -199,7 +199,7 @@ double deltasq(context& ctx, logical_data<slice<double, 2>> lnewarr, logical_dat
             dsq += tmp * tmp;
           };
 
-  return ctx.transfer_host(ldsq);
+  return ctx.wait(ldsq);
 }
 
 void boundarypsi(context& ctx, logical_data<slice<double, 2>> lpsi, int m, int /*n*/, int b, int h, int w)
@@ -376,7 +376,7 @@ int main(int argc, char** argv)
             };
   }
 
-  double bnorm = ctx.transfer_host(lbnorm);
+  double bnorm = ctx.wait(lbnorm);
   bnorm        = sqrt(bnorm);
 
   // begin iterative Jacobi loop

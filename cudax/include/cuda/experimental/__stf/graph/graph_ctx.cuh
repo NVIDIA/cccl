@@ -518,11 +518,11 @@ public:
   }
 
   template <typename T>
-  auto transfer_host(cuda::experimental::stf::logical_data<T>& ldata)
+  auto wait(cuda::experimental::stf::logical_data<T>& ldata)
   {
     typename owning_container_of<T>::type out;
 
-    host_launch(ldata.read()).set_symbol("transfer_host")->*[&](auto data) {
+    host_launch(ldata.read()).set_symbol("wait")->*[&](auto data) {
       out = owning_container_of<T>::get_value(data);
     };
 

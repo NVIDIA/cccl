@@ -603,12 +603,12 @@ public:
   }
 
   template <typename T>
-  auto transfer_host(::cuda::experimental::stf::logical_data<T>& ldata)
+  auto wait(::cuda::experimental::stf::logical_data<T>& ldata)
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     return ::std::visit(
       [&ldata](auto& self) {
-        return self.transfer_host(ldata);
+        return self.wait(ldata);
       },
       payload);
   }

@@ -648,11 +648,11 @@ public:
   }
 
   template <typename T>
-  auto transfer_host(cuda::experimental::stf::logical_data<T>& ldata)
+  auto wait(cuda::experimental::stf::logical_data<T>& ldata)
   {
     typename owning_container_of<T>::type out;
 
-    task(exec_place::host, ldata.read()).set_symbol("transfer_host")->*[&](cudaStream_t stream, auto data) {
+    task(exec_place::host, ldata.read()).set_symbol("wait")->*[&](cudaStream_t stream, auto data) {
       cuda_safe_call(cudaStreamSynchronize(stream));
       out = owning_container_of<T>::get_value(data);
     };
