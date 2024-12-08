@@ -55,7 +55,7 @@ int main()
             }
           };
 
-  int cnt = ctx.transfer_host(lcnt);
+  int cnt = ctx.wait(lcnt);
   printf("Got %d words.\n", cnt);
 
   ctx.finalize();

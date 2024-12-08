@@ -43,7 +43,7 @@ int main(int, char**)
 
   // We get the ratio of "shots" within the unit circle and the total number of
   // "shots". The surface of the quarter of unit circle [0, 1) x [0, 1) is pi/4
-  auto res      = ctx.transfer_host(lsum);
+  auto res      = ctx.wait(lsum);
   double pi_val = (4.0 * res) / N;
 
   ctx.finalize();

@@ -31,8 +31,8 @@ void run()
             // This is never going to be called because this is an empty shape
           };
 
-  auto res_sum = ctx.transfer_host(lsum);
-  auto res_max = ctx.transfer_host(lmax);
+  auto res_sum = ctx.wait(lsum);
+  auto res_max = ctx.wait(lmax);
 
   ctx.finalize();
 
