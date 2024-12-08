@@ -277,13 +277,12 @@ public:
    * @param deps Dependencies for the task to be launched.
    */
   launch_scope(Ctx& ctx, thread_hierarchy_spec_t spec, exec_place e_place, task_dep<Deps>... deps)
-      : deps(deps...)
+      : dump_hooks(reserved::get_dump_hooks(&ctx, deps...))
+      , deps(mv(deps)...)
       , ctx(ctx)
       , e_place(mv(e_place))
       , spec(mv(spec))
-  {
-    dump_hooks = reserved::get_dump_hooks(&ctx, deps...);
-  }
+  {}
 
   /// Deleted copy constructor and copy assignment operator.
   launch_scope(const launch_scope&)            = delete;
@@ -494,13 +493,12 @@ private:
     }
   }
 
+  ::std::vector<::std::function<void()>> dump_hooks;
   task_dep_vector<Deps...> deps;
   Ctx& ctx;
   exec_place e_place;
   ::std::string symbol;
   thread_hierarchy_spec_t spec;
-
-  ::std::vector<::std::function<void()>> dump_hooks;
 };
 
 } // namespace reserved

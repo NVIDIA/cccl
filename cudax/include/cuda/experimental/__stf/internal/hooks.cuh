@@ -102,117 +102,116 @@ inline void ensure_directory_exists(const ::std::string& dir_path)
  * typed-erased hooks). This will generate one host_launch task for each
  * modified logical data after task submission. */
 template <typename ctxt_t, typename... Deps>
-static ::std::vector<::std::function<void()>> get_dump_hooks(ctxt_t* ctx, task_dep<Deps>... deps)
+static ::std::vector<::std::function<void()>> get_dump_hooks(ctxt_t* ctx, const task_dep<Deps>&... deps)
 {
   ::std::vector<::std::function<void()>> hooks;
 
   // If the CUDASTF_AUTO_DUMP is not set, or set to 0, we don't save the content
   const char* dump_str = ::std::getenv("CUDASTF_AUTO_DUMP");
-  bool dump            = dump_str && atoi(dump_str) != 0;
+  const bool dump      = dump_str && atoi(dump_str) != 0;
 
   const char* compare_str = ::std::getenv("CUDASTF_AUTO_COMPARE");
-  bool compare            = compare_str && atoi(compare_str) != 0;
+  const bool compare      = compare_str && atoi(compare_str) != 0;
 
   if (!dump && !compare)
   {
     return hooks;
   }
 
-  bool hash_only = ::std::getenv("CUDASTF_AUTO_DUMP_ONLY_HASH");
+  const bool hash_only = ::std::getenv("CUDASTF_AUTO_DUMP_ONLY_HASH");
 
   // Where do we write dumped content ? We postpone the creation of this
   // directory to the first time we need to create a directory to avoid
   // creating an empty dir if no data was dumped
-  const char* dump_dir_env = ::std::getenv("CUDASTF_AUTO_DUMP_DIR");
-  ::std::string dump_dir   = (dump_dir_env != nullptr) ? dump_dir_env : "dump/";
+  const char* dump_dir_env     = ::std::getenv("CUDASTF_AUTO_DUMP_DIR");
+  const ::std::string dump_dir = (dump_dir_env != nullptr) ? dump_dir_env : "dump/";
 
   // For every dependency, we create a hook to dump the content of the
   // logical data if it was modified.
-  auto dump_dep = [&, dump_dir](auto dep) {
-    auto dep_ld = dep.get_data();
-    if (dep.get_access_mode() != access_mode::read && dep_ld.get_auto_dump())
-    {
-      auto ro_dep = dep.as_read_mode();
-
-      /* We either make sure the directory exists or lazily create it if
-       * we need to add content when dumping data */
-      if (compare)
+  ::cuda::experimental::stf::each_in_pack(
+    [&](const auto& dep) {
+      auto dep_ld = dep.get_data();
+      if (dep.get_access_mode() != access_mode::read && dep_ld.get_auto_dump())
       {
-        ensure_directory_exists(dump_dir);
-      }
-      else
-      {
-        create_dump_dir(dump_dir);
-      }
+        const auto ro_dep = dep.as_read_mode();
 
-      // Create a hook that will be executed after the submission of the
-      // tasks: this will submit a host callback to write the content in
-      // a file
-      auto h = [ctx, ro_dep, dump_dir, hash_only, compare]() {
-        // Get the next counter (to have a repeatable order)
-        int cnt                = reserved::dump_hook_cnt::get();
-        ::std::string filePath = dump_dir + "/" + ::std::to_string(cnt);
-
+        /* We either make sure the directory exists or lazily create it if
+         * we need to add content when dumping data */
         if (compare)
         {
-          // Instead of using a host callback which might have had
-          // better performance, we use a task and a synchronization
-          // because it is easier to break on errors with a debugger
-          // when a mismatch is found.
-          ctx->task(exec_place::host, ro_dep).set_symbol("compare " + ::std::to_string(cnt))
-              ->*[filePath](cudaStream_t stream, auto s) {
-                    cuda_safe_call(cudaStreamSynchronize(stream));
-                    ::std::ifstream f(filePath);
-                    if (!f.is_open())
-                    {
-                      ::std::cerr << "Failed to open " << filePath << ::std::endl;
-                      abort();
-                    }
-
-                    size_t saved_hash;
-                    f >> saved_hash;
-                    f.close();
-
-                    size_t computed_hash = data_hash(s);
-                    if (computed_hash != saved_hash)
-                    {
-                      ::std::cerr << "Hash mismatch : computed = " << computed_hash << ", saved = " << saved_hash
-                                  << " in " << filePath << ::std::endl;
-                      if (getenv("CUDASTF_AUTO_COMPARE_ABORT_ON_ERRORS"))
-                      {
-                        abort();
-                      }
-                    }
-                  };
+          ensure_directory_exists(dump_dir);
         }
         else
         {
-          ctx->host_launch(ro_dep).set_symbol("dump " + ::std::to_string(cnt))->*[filePath, hash_only](auto s) {
-            ::std::ofstream f(filePath);
-            if (!f.is_open())
-            {
-              ::std::cerr << "Failed to open " << filePath << ::std::endl;
-              abort();
-            }
-            // Compute a hash of the content, to easily compare equality
-            size_t hsh = data_hash(s);
-            f << hsh << ::std::endl;
-
-            if (!hash_only)
-            {
-              // Dump the actual data content (may be very large)
-              data_dump(s, f);
-            }
-            f.close();
-          };
+          create_dump_dir(dump_dir);
         }
-      };
-      hooks.push_back(h);
-    }
-  };
-  ::std::ignore = dump_dep;
 
-  (dump_dep(deps), ...); // Call dump_dep on every dependency
+        // Create a hook that will be executed after the submission of the
+        // tasks: this will submit a host callback to write the content in
+        // a file
+        auto h = [ctx, ro_dep, dump_dir, hash_only, compare]() {
+          // Get the next counter (to have a repeatable order)
+          const int cnt                = reserved::dump_hook_cnt::get();
+          const ::std::string filePath = dump_dir + "/" + ::std::to_string(cnt);
+
+          if (compare)
+          {
+            // Instead of using a host callback which might have had
+            // better performance, we use a task and a synchronization
+            // because it is easier to break on errors with a debugger
+            // when a mismatch is found.
+            ctx->task(exec_place::host, ro_dep).set_symbol("compare " + ::std::to_string(cnt))
+                ->*[filePath](cudaStream_t stream, auto s) {
+                      cuda_safe_call(cudaStreamSynchronize(stream));
+                      ::std::ifstream f(filePath);
+                      if (!f.is_open())
+                      {
+                        ::std::cerr << "Failed to open " << filePath << ::std::endl;
+                        abort();
+                      }
+
+                      size_t saved_hash;
+                      f >> saved_hash;
+                      f.close();
+
+                      size_t computed_hash = data_hash(s);
+                      if (computed_hash != saved_hash)
+                      {
+                        ::std::cerr << "Hash mismatch : computed = " << computed_hash << ", saved = " << saved_hash
+                                    << " in " << filePath << ::std::endl;
+                        if (getenv("CUDASTF_AUTO_COMPARE_ABORT_ON_ERRORS"))
+                        {
+                          abort();
+                        }
+                      }
+                    };
+          }
+          else
+          {
+            ctx->host_launch(ro_dep).set_symbol("dump " + ::std::to_string(cnt))->*[filePath, hash_only](auto s) {
+              ::std::ofstream f(filePath);
+              if (!f.is_open())
+              {
+                ::std::cerr << "Failed to open " << filePath << ::std::endl;
+                abort();
+              }
+              // Compute a hash of the content, to easily compare equality
+              const size_t hsh = data_hash(s);
+              f << hsh << ::std::endl;
+
+              if (!hash_only)
+              {
+                // Dump the actual data content (may be very large)
+                data_dump(s, f);
+              }
+              f.close();
+            };
+          }
+        };
+        hooks.push_back(mv(h));
+      }
+    },
+    deps...);
 
   return hooks;
 }
