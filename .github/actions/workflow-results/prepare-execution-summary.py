@@ -368,7 +368,7 @@ def main():
     # The timing file is not required.
     try:
         job_times = json.load(args.job_times)
-    except:
+    except Exception:
         job_times = None
 
     write_workflow_summary(workflow, job_times)
