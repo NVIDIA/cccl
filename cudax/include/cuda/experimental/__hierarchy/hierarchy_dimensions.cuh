@@ -390,7 +390,7 @@ struct hierarchy_dimensions_fragment
       : levels(ls)
   {}
 
-#  if !defined(_CCCL_NO_THREE_WAY_COMPARISON) && !_CCCL_COMPILER(MSVC, <, 19, 39)
+#  if !defined(_CCCL_NO_THREE_WAY_COMPARISON) && !_CCCL_COMPILER(MSVC, <, 19, 39) && !_CCCL_COMPILER(GCC, <, 12)
   _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr bool
   operator==(const hierarchy_dimensions_fragment&) const noexcept = default;
 #  else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv _CCCL_NO_THREE_WAY_COMPARISON vvv

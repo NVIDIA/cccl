@@ -42,17 +42,14 @@ _CCCL_PUSH_MACROS
 
 namespace cuda::experimental
 {
-struct __primary;
-struct __secondary;
-
 template <class _Interface>
 struct __ireference;
 
-template <class _Interface, class _Select = __primary>
+template <class _Interface>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any;
 
-template <class _Interface, class _Select>
-struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>, _Select>;
+template <class _Interface>
+struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>>;
 
 template <class _Interface>
 struct basic_any<_Interface*>;

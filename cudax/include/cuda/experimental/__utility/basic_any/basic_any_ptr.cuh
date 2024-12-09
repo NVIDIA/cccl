@@ -247,7 +247,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
 #endif // _CCCL_DOXYGEN_INVOKED
 
 private:
-  template <class, class>
+  template <class>
   friend struct basic_any;
   friend struct __basic_any_access;
 
