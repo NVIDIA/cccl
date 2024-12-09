@@ -1,0 +1,3 @@
+[tool.ruff]
+target-version = "py312"
+src = ["python/cuda_parallel"]

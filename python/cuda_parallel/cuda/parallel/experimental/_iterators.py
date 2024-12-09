@@ -55,12 +55,15 @@ def _ctypes_type_given_numba_type(ntype):
     return mapping[ntype]
 
 
-CompileResult = collections.namedtuple('CompileResult', ['ltoir', 'result_type'])
+CompileResult = collections.namedtuple("CompileResult", ["ltoir", "result_type"])
+
 
 def _ncc(abi_name, pyfunc, sig):
-    return CompileResult(*numba.cuda.compile(
-        pyfunc=pyfunc, sig=sig, abi_info={"abi_name": abi_name}, output="ltoir"
-    ))
+    return CompileResult(
+        *numba.cuda.compile(
+            pyfunc=pyfunc, sig=sig, abi_info={"abi_name": abi_name}, output="ltoir"
+        )
+    )
 
 
 def sizeof_pointee(context, ptr):
@@ -109,7 +112,7 @@ class RawPointer:
                 f"{self.prefix}_dereference",
                 RawPointer.pointer_dereference,
                 (data_as_ntype_pp,),
-            ).ltoir
+            ).ltoir,
         ]
 
     # Exclusively for numba.cuda.compile (this is not an actual method).
@@ -420,7 +423,7 @@ def TransformIterator(op, it):
         return op_caller(source_dereference(it_state_ptr))
 
     prefix = f"transform_{it.prefix}_{op.__name__}"
-    ltoirs =  it.ltoirs + [
+    ltoirs = it.ltoirs + [
         _ncc(
             f"{prefix}_advance",
             transform_advance,
@@ -434,9 +437,7 @@ def TransformIterator(op, it):
             (numba.types.CPointer(numba.types.char),),
         ).ltoir,
         # ATTENTION: NOT op_caller here! (see issue #3064)
-        op_ltoir
+        op_ltoir,
     ]
 
-    return TransformIteratorImpl(
-        it, op.__name__, op_return_ntype, ltoirs
-    )
+    return TransformIteratorImpl(it, op.__name__, op_return_ntype, ltoirs)

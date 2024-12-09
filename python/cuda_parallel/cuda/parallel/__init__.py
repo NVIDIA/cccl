@@ -2,5 +2,4 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-import cuda.parallel.experimental
-from cuda.parallel._version import __version__
+from cuda.parallel._version import __version__ as __version__
