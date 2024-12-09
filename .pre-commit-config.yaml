@@ -43,9 +43,9 @@ repos:
     hooks:
     - id: ruff
       args: ["--fix", "--show-fixes"]
-      files: ^python/cuda_parallel/
+      files: ^python/cuda_cooperative/|^python/cuda_parallel/
     - id: ruff-format
-      files: ^python/cuda_parallel/
+      files: ^python/cuda_cooperative/|^python/cuda_parallel/
 
 default_language_version:
   python: python3
