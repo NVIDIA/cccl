@@ -103,7 +103,7 @@ class RawPointer:
             _ncc(
                 f"{self.prefix}_advance",
                 RawPointer.pointer_advance,
-                (data_as_ntype_pp, _DISTANCE_NUMBA_TYPE),
+                numba.types.void(data_as_ntype_pp, _DISTANCE_NUMBA_TYPE),
             ).ltoir,
             _ncc(
                 f"{self.prefix}_dereference",
@@ -181,7 +181,7 @@ class CacheModifiedPointer:
             _ncc(
                 f"{self.prefix}_advance",
                 CacheModifiedPointer.cache_advance,
-                (data_as_ntype_pp, _DISTANCE_NUMBA_TYPE),
+                numba.types.void(data_as_ntype_pp, _DISTANCE_NUMBA_TYPE),
             ).ltoir,
             _ncc(
                 f"{self.prefix}_dereference",
@@ -221,7 +221,7 @@ class ConstantIterator:
             _ncc(
                 f"{self.prefix}_advance",
                 ConstantIterator.constant_advance,
-                (thisty, _DISTANCE_NUMBA_TYPE),
+                numba.types.void(thisty, _DISTANCE_NUMBA_TYPE),
             ).ltoir,
             _ncc(
                 f"{self.prefix}_dereference",
@@ -261,7 +261,7 @@ class CountingIterator:
             _ncc(
                 f"{self.prefix}_advance",
                 CountingIterator.count_advance,
-                (thisty, _DISTANCE_NUMBA_TYPE),
+                numba.types.void(thisty, _DISTANCE_NUMBA_TYPE),
             ).ltoir,
             _ncc(
                 f"{self.prefix}_dereference",
@@ -424,7 +424,7 @@ def TransformIterator(op, it):
         _ncc(
             f"{prefix}_advance",
             transform_advance,
-            (
+            numba.types.void(
                 numba.types.CPointer(numba.types.char), _DISTANCE_NUMBA_TYPE
             ),
         ).ltoir,
