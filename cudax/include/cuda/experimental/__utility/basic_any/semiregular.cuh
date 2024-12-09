@@ -27,6 +27,7 @@
 #include <cuda/std/__concepts/movable.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__utility/typeid.h>
+#include <cuda/std/__utility/unreachable.h>
 
 #include <cuda/experimental/__utility/basic_any/access.cuh>
 #include <cuda/experimental/__utility/basic_any/basic_any_base.cuh>
@@ -156,18 +157,16 @@ struct iequality_comparable_base : interface<iequality_comparable>
   // These overloads are only necessary so that iequality_comparable<> itself
   // satisfies the std::equality_comparable constraint that is used by the
   // `iequality_comparable<>::overloads` alias template below.
-  _CCCL_NODISCARD_FRIEND _CUDAX_TRIVIAL_HOST_API auto
+  _CCCL_NORETURN friend _CUDAX_TRIVIAL_HOST_API auto
   operator==(iequality_comparable<> const&, iequality_comparable<> const&) noexcept -> bool
   {
-    _CCCL_UNREACHABLE();
-    return true;
+    _CUDA_VSTD::unreachable();
   }
 
-  _CCCL_NODISCARD_FRIEND _CUDAX_TRIVIAL_HOST_API auto
+  _CCCL_NORETURN friend _CUDAX_TRIVIAL_HOST_API auto
   operator!=(iequality_comparable<> const&, iequality_comparable<> const&) noexcept -> bool
   {
-    _CCCL_UNREACHABLE();
-    return false;
+    _CUDA_VSTD::unreachable();
   }
 
   template <class _Interface>
