@@ -191,16 +191,17 @@ struct DeviceSelect
       SelectOp,
       EqualityOp,
       OffsetT,
-      false>::Dispatch(d_temp_storage,
-                       temp_storage_bytes,
-                       d_in,
-                       d_flags,
-                       d_out,
-                       d_num_selected_out,
-                       SelectOp(),
-                       EqualityOp(),
-                       num_items,
-                       stream);
+      /*KeepRejects*/ false,
+      /*MayAlias*/ false>::Dispatch(d_temp_storage,
+                                    temp_storage_bytes,
+                                    d_in,
+                                    d_flags,
+                                    d_out,
+                                    d_num_selected_out,
+                                    SelectOp(),
+                                    EqualityOp(),
+                                    num_items,
+                                    stream);
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -318,8 +319,6 @@ struct DeviceSelect
     using SelectOp   = NullType; // Selection op (not used)
     using EqualityOp = NullType; // Equality operator (not used)
 
-    constexpr bool may_alias = true;
-
     return DispatchSelectIf<
       IteratorT,
       FlagIterator,
@@ -328,17 +327,17 @@ struct DeviceSelect
       SelectOp,
       EqualityOp,
       OffsetT,
-      false,
-      may_alias>::Dispatch(d_temp_storage,
-                           temp_storage_bytes,
-                           d_data, // in
-                           d_flags,
-                           d_data, // out
-                           d_num_selected_out,
-                           SelectOp(),
-                           EqualityOp(),
-                           num_items,
-                           stream);
+      /*KeepRejects*/ false,
+      /*MayAlias*/ true>::Dispatch(d_temp_storage,
+                                   temp_storage_bytes,
+                                   d_data, // in
+                                   d_flags,
+                                   d_data, // out
+                                   d_num_selected_out,
+                                   SelectOp(),
+                                   EqualityOp(),
+                                   num_items,
+                                   stream);
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -486,16 +485,17 @@ struct DeviceSelect
       SelectOp,
       EqualityOp,
       OffsetT,
-      false>::Dispatch(d_temp_storage,
-                       temp_storage_bytes,
-                       d_in,
-                       nullptr,
-                       d_out,
-                       d_num_selected_out,
-                       select_op,
-                       EqualityOp(),
-                       num_items,
-                       stream);
+      /*KeepRejects*/ false,
+      /*MayAlias*/ false>::Dispatch(d_temp_storage,
+                                    temp_storage_bytes,
+                                    d_in,
+                                    nullptr,
+                                    d_out,
+                                    d_num_selected_out,
+                                    select_op,
+                                    EqualityOp(),
+                                    num_items,
+                                    stream);
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -635,17 +635,17 @@ struct DeviceSelect
       SelectOp,
       EqualityOp,
       OffsetT,
-      false,
-      may_alias>::Dispatch(d_temp_storage,
-                           temp_storage_bytes,
-                           d_data, // in
-                           nullptr,
-                           d_data, // out
-                           d_num_selected_out,
-                           select_op,
-                           EqualityOp(),
-                           num_items,
-                           stream);
+      /*KeepRejects*/ false,
+      /*MayAlias*/ may_alias>::Dispatch(d_temp_storage,
+                                        temp_storage_bytes,
+                                        d_data, // in
+                                        nullptr,
+                                        d_data, // out
+                                        d_num_selected_out,
+                                        select_op,
+                                        EqualityOp(),
+                                        num_items,
+                                        stream);
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -773,16 +773,17 @@ struct DeviceSelect
       SelectOp,
       EqualityOp,
       OffsetT,
-      false>::Dispatch(d_temp_storage,
-                       temp_storage_bytes,
-                       d_in,
-                       d_flags,
-                       d_out,
-                       d_num_selected_out,
-                       select_op,
-                       EqualityOp(),
-                       num_items,
-                       stream);
+      /*KeepRejects*/ false,
+      /*MayAlias*/ false>::Dispatch(d_temp_storage,
+                                    temp_storage_bytes,
+                                    d_in,
+                                    d_flags,
+                                    d_out,
+                                    d_num_selected_out,
+                                    select_op,
+                                    EqualityOp(),
+                                    num_items,
+                                    stream);
   }
 
   //! @rst
@@ -870,8 +871,6 @@ struct DeviceSelect
     using OffsetT    = ::cuda::std::int64_t; // Signed integer type for global offsets
     using EqualityOp = NullType; // Equality operator (not used)
 
-    constexpr bool may_alias = true;
-
     return DispatchSelectIf<
       IteratorT,
       FlagIterator,
@@ -880,17 +879,17 @@ struct DeviceSelect
       SelectOp,
       EqualityOp,
       OffsetT,
-      false,
-      may_alias>::Dispatch(d_temp_storage,
-                           temp_storage_bytes,
-                           d_data, // in
-                           d_flags,
-                           d_data, // out
-                           d_num_selected_out,
-                           select_op,
-                           EqualityOp(),
-                           num_items,
-                           stream);
+      /*KeepRejects*/ false,
+      /*MayAlias*/ true>::Dispatch(d_temp_storage,
+                                   temp_storage_bytes,
+                                   d_data, // in
+                                   d_flags,
+                                   d_data, // out
+                                   d_num_selected_out,
+                                   select_op,
+                                   EqualityOp(),
+                                   num_items,
+                                   stream);
   }
 
   //! @rst
@@ -999,16 +998,17 @@ struct DeviceSelect
       SelectOp,
       EqualityOp,
       OffsetT,
-      false>::Dispatch(d_temp_storage,
-                       temp_storage_bytes,
-                       d_in,
-                       nullptr,
-                       d_out,
-                       d_num_selected_out,
-                       SelectOp(),
-                       EqualityOp(),
-                       num_items,
-                       stream);
+      /*KeepRejects*/ false,
+      /*MayAlias*/ false>::Dispatch(d_temp_storage,
+                                    temp_storage_bytes,
+                                    d_in,
+                                    nullptr,
+                                    d_out,
+                                    d_num_selected_out,
+                                    SelectOp(),
+                                    EqualityOp(),
+                                    num_items,
+                                    stream);
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
