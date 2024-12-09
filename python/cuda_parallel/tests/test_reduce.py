@@ -2,9 +2,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-# TODO(rwgk): Format entire file.
-# fmt: off
-
 import cupy as cp
 import numpy
 import pytest
@@ -94,7 +91,6 @@ def test_device_reduce_dtype_mismatch():
           reduce_into(None, d_inputs[int(ix == 0)], d_outputs[int(ix == 1)], None, h_inits[int(ix == 2)])
 
 
-# fmt: on
 def _test_device_sum_with_iterator(
     l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
 ):
