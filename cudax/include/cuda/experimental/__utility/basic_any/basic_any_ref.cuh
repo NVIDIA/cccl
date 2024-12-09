@@ -97,8 +97,8 @@ _CCCL_NV_DIAG_SUPPRESS(554)
 //!
 //! `basic_any<__ireference<_Interface>>` is neither copyable nor movable. It is
 //! not an end-user type.
-template <class _Interface, class Select>
-struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>, Select>
+template <class _Interface>
+struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>>
     : __interface_of<__ireference<_Interface>>
 #if defined(_CCCL_NO_CONCEPTS)
     , __basic_any_reference_conversion_base<_Interface>
@@ -157,7 +157,7 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>, Sele
 #endif // _CCCL_DOXYGEN_INVOKED
 
 private:
-  template <class, class>
+  template <class>
   friend struct basic_any;
   friend struct __basic_any_access;
 
@@ -256,14 +256,14 @@ _CCCL_DIAG_POP
 //! basic_any<_Interface&>
 //!
 template <class _Interface>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__ireference<_Interface>, __secondary>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__ireference<_Interface>>
 {
   static_assert(_CUDA_VSTD::is_class_v<_Interface>, "expecting a class type");
-  using typename basic_any<__ireference<_Interface>, __secondary>::interface_type;
-  using basic_any<__ireference<_Interface>, __secondary>::__is_const_ref;
+  using typename basic_any<__ireference<_Interface>>::interface_type;
+  using basic_any<__ireference<_Interface>>::__is_const_ref;
 
   _CUDAX_HOST_API basic_any(basic_any const& __other) noexcept
-      : basic_any<__ireference<_Interface>, __secondary>()
+      : basic_any<__ireference<_Interface>>()
   {
     this->__set_ref(__other.__get_vptr(), __other.__get_optr());
   }
@@ -272,7 +272,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__irefer
   _CCCL_REQUIRES((!__is_basic_any<_Tp>) _CCCL_AND __satisfies<_Up, interface_type> _CCCL_AND(
     __is_const_ref || !_CUDA_VSTD::is_const_v<_Tp>))
   _CUDAX_HOST_API basic_any(_Tp& __obj) noexcept
-      : basic_any<__ireference<_Interface>, __secondary>()
+      : basic_any<__ireference<_Interface>>()
   {
     __vptr_for<interface_type> const __vptr = &__vtable_for_v<interface_type, _Up>;
     this->__set_ref(__vptr, &__obj);
@@ -300,7 +300,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__irefer
                   (!__is_value_v<_SrcInterface>) _CUDAX_AND //
                     __any_convertible_to<basic_any<_SrcInterface>, basic_any>)
   _CUDAX_HOST_API basic_any(basic_any<_SrcInterface>&& __src) noexcept
-      : basic_any<__ireference<_Interface>, __secondary>()
+      : basic_any<__ireference<_Interface>>()
   {
     this->__set_ref(__src.__get_vptr(), __src.__get_optr());
   }
@@ -309,7 +309,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__irefer
   _CUDAX_REQUIRES((!_CUDA_VSTD::same_as<_SrcInterface, _Interface&>) _CUDAX_AND //
                     __any_convertible_to<basic_any<_SrcInterface>&, basic_any>)
   _CUDAX_HOST_API basic_any(basic_any<_SrcInterface>& __src) noexcept
-      : basic_any<__ireference<_Interface>, __secondary>()
+      : basic_any<__ireference<_Interface>>()
   {
     this->__set_ref(__src.__get_vptr(), __src.__get_optr());
   }
@@ -318,7 +318,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__irefer
   _CUDAX_REQUIRES((!_CUDA_VSTD::same_as<_SrcInterface, _Interface&>) _CUDAX_AND //
                     __any_convertible_to<basic_any<_SrcInterface> const&, basic_any>)
   _CUDAX_HOST_API basic_any(basic_any<_SrcInterface> const& __src) noexcept
-      : basic_any<__ireference<_Interface>, __secondary>()
+      : basic_any<__ireference<_Interface>>()
   {
     this->__set_ref(__src.__get_vptr(), __src.__get_optr());
   }
@@ -343,7 +343,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__irefer
   }
 
 private:
-  template <class, class>
+  template <class>
   friend struct basic_any;
   friend struct __basic_any_access;
 
