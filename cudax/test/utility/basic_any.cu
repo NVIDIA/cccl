@@ -547,7 +547,20 @@ TEMPLATE_TEST_CASE_METHOD(BasicAnyTestsFixture, "basic_any tests", "[utility][ba
     CHECK_FALSE(e != b);
     CHECK(e != c);
     CHECK(e != d);
+
+    CHECK(a == 42);
+    CHECK(42 == a);
+    CHECK(a != 43);
+    CHECK(43 != a);
   }
 }
 
+#else
+// BUGBUG TODO:
+// temporary hack to prevent sccache from ignoring changes in code guarded by
+// !defined(__CUDA_ARCH__)
+char const* __fool_sccache()
+{
+  return __TIME__;
+}
 #endif // __CUDA_ARCH__
