@@ -45,6 +45,11 @@ struct graphed_interface_of;
 template <typename T>
 struct owning_container_of;
 
+/**
+ * @brief View of an object of type `T`
+ *
+ * This is used to store a single value in a logical data.
+ */
 template <typename T>
 class scalar
 {
