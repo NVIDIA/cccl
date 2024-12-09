@@ -32,21 +32,17 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 class __byteswap_impl
 {
-  template <class _Tp>
-  using __unsigned_type = bool_constant<_CCCL_TRAIT(is_integral, _Tp) && _CCCL_TRAIT(is_unsigned, _Tp)>;
-
   _CCCL_TEMPLATE(class _Half, class _Full)
-  _CCCL_REQUIRES(
-    __unsigned_type<_Half>::value _CCCL_AND __unsigned_type<_Full>::value _CCCL_AND(sizeof(_Full) == sizeof(_Half) * 2))
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Full __impl_recursive(_Full __val) noexcept
   {
+    static_assert(sizeof(_Full) == sizeof(_Half) * 2, "Invalid half type passed to __bytswap_impl");
+
     return static_cast<_Full>(__impl(static_cast<_Half>(__val >> CHAR_BIT * sizeof(_Half))))
          | (static_cast<_Full>(__impl(static_cast<_Half>(__val))) << CHAR_BIT * sizeof(_Half));
   }
 
 public:
   _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES(__unsigned_type<_Tp>::value)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static _CCCL_CONSTEXPR_CXX14 _Tp __impl(_Tp __val) noexcept
   {
     _Tp __result{};
@@ -62,27 +58,27 @@ public:
   {
 #if defined(_CCCL_BUILTIN_BSWAP16)
     return _CCCL_BUILTIN_BSWAP16(__val);
-#else
+#else // ^^^ _CCCL_BUILTIN_BSWAP16 ^^^ / vvv !_CCCL_BUILTIN_BSWAP16 vvv
     return (__val << CHAR_BIT) | (__val >> CHAR_BIT);
-#endif // _CCCL_BUILTIN_BSWAP16
+#endif // !_CCCL_BUILTIN_BSWAP16
   }
 
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr uint32_t __impl(uint32_t __val) noexcept
   {
 #if defined(_CCCL_BUILTIN_BSWAP32)
     return _CCCL_BUILTIN_BSWAP32(__val);
-#else
+#else // ^^^ _CCCL_BUILTIN_BSWAP32 ^^^ / vvv !_CCCL_BUILTIN_BSWAP32 vvv
     return __impl_recursive<uint16_t>(__val);
-#endif // _CCCL_BUILTIN_BSWAP32
+#endif // !_CCCL_BUILTIN_BSWAP32
   }
 
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr uint64_t __impl(uint64_t __val) noexcept
   {
 #if defined(_CCCL_BUILTIN_BSWAP64)
     return _CCCL_BUILTIN_BSWAP64(__val);
-#else
+#else // ^^^ _CCCL_BUILTIN_BSWAP64 ^^^ / vvv !_CCCL_BUILTIN_BSWAP64 vvv
     return __impl_recursive<uint32_t>(__val);
-#endif // _CCCL_BUILTIN_BSWAP64
+#endif // !_CCCL_BUILTIN_BSWAP64
   }
 
 #if !defined(_LIBCUDACXX_HAS_NO_INT128)
@@ -90,9 +86,9 @@ public:
   {
 #  if defined(_CCCL_BUILTIN_BSWAP128)
     return _CCCL_BUILTIN_BSWAP128(__val);
-#  else
+#  else // ^^^ _CCCL_BUILTIN_BSWAP128 ^^^ / vvv !_CCCL_BUILTIN_BSWAP128 vvv
     return __impl_recursive<uint64_t>(__val);
-#  endif // _CCCL_BUILTIN_BSWAP128
+#  endif // !_CCCL_BUILTIN_BSWAP128
   }
 #endif // !_LIBCUDACXX_HAS_NO_INT128
 };
