@@ -172,7 +172,8 @@ struct iequality_comparable_base : interface<iequality_comparable>
   struct __const_reference
   {
     _CCCL_TEMPLATE(class _Object)
-    _CCCL_REQUIRES((!__is_basic_any<_Object>) _CCCL_AND __satisfies<_Object, _Interface>)
+    _CCCL_REQUIRES((!__is_basic_any<_Object>) _CCCL_AND(!__is_interface<_Object>)
+                     _CCCL_AND __satisfies<_Object, _Interface>)
     __const_reference(_Object const& __obj) noexcept
         : __obj_(&__obj)
         , __type_(_CCCL_TYPEID(_Object))
