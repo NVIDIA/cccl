@@ -55,7 +55,7 @@ template <class _Interface, int = 0>
 struct __basic_any_base : __interface_of<_Interface>
 {
 private:
-  template <class, class>
+  template <class>
   friend struct basic_any;
   friend struct __basic_any_access;
 
@@ -99,7 +99,7 @@ struct __basic_any_base<_Interface, 2> : __interface_of<_Interface> // copyable 
   }
 
 private:
-  template <class, class>
+  template <class>
   friend struct basic_any;
   friend struct __basic_any_access;
 

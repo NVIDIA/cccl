@@ -60,7 +60,7 @@ _CCCL_CONCEPT __list_initializable_from =
 //!
 //! basic_any
 //!
-template <class _Interface, class>
+template <class _Interface>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any : __basic_any_base<_Interface>
 {
 private:
@@ -362,7 +362,7 @@ public:
 #endif // _CCCL_DOXYGEN_INVOKED
 
 private:
-  template <class, class>
+  template <class>
   friend struct basic_any;
   friend struct __basic_any_access;
   template <class, int>

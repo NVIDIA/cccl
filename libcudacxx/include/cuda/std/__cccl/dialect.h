@@ -120,9 +120,9 @@
 #endif // _CCCL_STD_VER <= 2014 || __cpp_nontype_template_parameter_auto < 201606L
 
 // Three way comparison is only available from C++20 onwards
-#if _CCCL_STD_VER <= 2017 || __cpp_three_way_comparison < 201907
+#if _CCCL_STD_VER <= 2017 || __cpp_impl_three_way_comparison < 201907L
 #  define _CCCL_NO_THREE_WAY_COMPARISON
-#endif // _CCCL_STD_VER <= 2017 || __cpp_three_way_comparison < 201907
+#endif // _CCCL_STD_VER <= 2017 || __cpp_impl_three_way_comparison < 201907L
 
 // Variable templates are only available from C++14 onwards and require some compiler support
 #if _CCCL_STD_VER <= 2011 || __cpp_variable_templates < 201304L
