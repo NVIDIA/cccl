@@ -86,7 +86,7 @@ class StagingDirectory:
 def rename_folder(staging_dir: StagingDirectory, folder_name: str):
     try:
         staging_dir.promote_and_rename(folder_name)
-    except OSError as exc:
+    except OSError:
         # if we failed to rename because the folder now exists we can assume that another packman process
         # has managed to update the package before us - in all other cases we re-raise the exception
         abs_dst_folder_name = os.path.join(staging_dir.staging_path, folder_name)
@@ -150,5 +150,7 @@ if __name__ == "__main__":
     target_path_np_nc = os.path.normcase(target_path_np)
     for exec_path in paths_list:
         if os.path.normcase(os.path.normpath(exec_path)) == target_path_np_nc:
-            raise RuntimeError(f"packman will not install to executable path '{exec_path}'")
+            raise RuntimeError(
+                f"packman will not install to executable path '{exec_path}'"
+            )
     install_package(sys.argv[1], target_path_np)

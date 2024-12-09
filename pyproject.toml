@@ -1,0 +1,16 @@
+[tool.ruff]
+target-version = "py312"
+src = ["src"]
+
+[tool.ruff.lint]
+ignore = [
+  # TODO(rwgk): Work through these one-by-one.
+  # grep '^.*\.py:' ruff_output | cut -d' ' -f2 | sort | uniq -c
+  "E721", # 3
+  "E722", # 3
+  "E741", # 8
+  "F401", # 22
+  "F403", # 18
+  "F405", # 196
+  "F821", # 6
+]

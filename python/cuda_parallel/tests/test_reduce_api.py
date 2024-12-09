@@ -8,8 +8,6 @@ import numpy as np
 import cuda.parallel.experimental as cudax
 # example-end imports
 
-import pytest
-
 
 def test_device_reduce():
     # example-begin reduce-min
