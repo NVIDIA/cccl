@@ -1,5 +1,6 @@
 import ctypes
 import operator
+import collections
 
 from numba.core import cgutils
 from llvmlite import ir
@@ -54,10 +55,12 @@ def _ctypes_type_given_numba_type(ntype):
     return mapping[ntype]
 
 
+CompileResult = collections.namedtuple('CompileResult', ['ltoir', 'result_type'])
+
 def _ncc(abi_name, pyfunc, sig):
-    return numba.cuda.compile(
+    return CompileResult(*numba.cuda.compile(
         pyfunc=pyfunc, sig=sig, abi_info={"abi_name": abi_name}, output="ltoir"
-    )
+    ))
 
 
 def sizeof_pointee(context, ptr):
@@ -101,12 +104,12 @@ class RawPointer:
                 f"{self.prefix}_advance",
                 RawPointer.pointer_advance,
                 numba.types.void(data_as_ntype_pp, _DISTANCE_NUMBA_TYPE),
-            ),
+            ).ltoir,
             _ncc(
                 f"{self.prefix}_dereference",
                 RawPointer.pointer_dereference,
-                ntype(data_as_ntype_pp),
-            ),
+                (data_as_ntype_pp,),
+            ).ltoir
         ]
 
     # Exclusively for numba.cuda.compile (this is not an actual method).
@@ -179,12 +182,12 @@ class CacheModifiedPointer:
                 f"{self.prefix}_advance",
                 CacheModifiedPointer.cache_advance,
                 numba.types.void(data_as_ntype_pp, _DISTANCE_NUMBA_TYPE),
-            ),
+            ).ltoir,
             _ncc(
                 f"{self.prefix}_dereference",
                 CacheModifiedPointer.cache_dereference,
-                ntype(data_as_ntype_pp),
-            ),
+                (data_as_ntype_pp,),
+            ).ltoir,
         ]
 
     # Exclusively for numba.cuda.compile (this is not an actual method).
@@ -219,12 +222,12 @@ class ConstantIterator:
                 f"{self.prefix}_advance",
                 ConstantIterator.constant_advance,
                 numba.types.void(thisty, _DISTANCE_NUMBA_TYPE),
-            ),
+            ).ltoir,
             _ncc(
                 f"{self.prefix}_dereference",
                 ConstantIterator.constant_dereference,
-                ntype(thisty),
-            ),
+                (thisty,),
+            ).ltoir,
         ]
 
     # Exclusively for numba.cuda.compile (this is not an actual method).
@@ -259,12 +262,12 @@ class CountingIterator:
                 f"{self.prefix}_advance",
                 CountingIterator.count_advance,
                 numba.types.void(thisty, _DISTANCE_NUMBA_TYPE),
-            ),
+            ).ltoir,
             _ncc(
                 f"{self.prefix}_dereference",
                 CountingIterator.count_dereference,
-                ntype(thisty),
-            ),
+                (thisty,),
+            ).ltoir,
         ]
 
     # Exclusively for numba.cuda.compile (this is not an actual method).
@@ -292,31 +295,14 @@ class TransformIteratorImpl:
     def __init__(
         self,
         it,
-        op,
+        op_name,
         op_return_ntype,
-        transform_advance,
-        transform_dereference,
-        op_abi_name,
+        ltoirs,
     ):
         self.it = it
         self.ntype = op_return_ntype
-        self.prefix = f"transform_{it.prefix}_{op.__name__}"
-        self.ltoirs = it.ltoirs + [
-            _ncc(
-                f"{self.prefix}_advance",
-                transform_advance,
-                numba.types.void(
-                    numba.types.CPointer(numba.types.char), _DISTANCE_NUMBA_TYPE
-                ),
-            ),
-            _ncc(
-                f"{self.prefix}_dereference",
-                transform_dereference,
-                op_return_ntype(numba.types.CPointer(numba.types.char)),
-            ),
-            # ATTENTION: NOT op_caller here! (see issue #3064)
-            _ncc(op_abi_name, op, op_return_ntype(it.ntype)),
-        ]
+        self.prefix = f"transform_{it.prefix}_{op_name}"
+        self.ltoirs = ltoirs
 
     @property
     def state_c_void_p(self):
@@ -331,18 +317,19 @@ class TransformIteratorImpl:
         return self.it.alignment  # TODO fix for stateful op
 
 
-def TransformIterator(op, it, op_return_ntype):
+def TransformIterator(op, it):
     # TODO(rwgk): Resolve issue #3064
 
-    op_return_ntype_ir = _ir_type_given_numba_type(op_return_ntype)
-    if op_return_ntype_ir is None:
-        raise RuntimeError(f"Unsupported: {type(op_return_ntype)=}")
     if hasattr(it, "dtype"):
         assert not hasattr(it, "ntype")
         it = pointer(it, getattr(numba.types, str(it.dtype)))
     it_ntype_ir = _ir_type_given_numba_type(it.ntype)
     if it_ntype_ir is None:
         raise RuntimeError(f"Unsupported: {type(it.ntype)=}")
+
+    op_abi_name = f"{op.__name__}_{it.ntype.name}"
+    op_ltoir, op_return_ntype = _ncc(op_abi_name, op, (it.ntype,))
+    op_return_ntype_ir = _ir_type_given_numba_type(op_return_ntype)
 
     def source_advance(it_state_ptr, diff):
         pass
@@ -423,7 +410,6 @@ def TransformIterator(op, it, op_return_ntype):
     def op_caller(value):
         return op(value)
 
-    op_abi_name = f"{op.__name__}_{op_return_ntype.name}_{it.ntype.name}"
     op_codegen(op_caller, op_abi_name)
 
     def transform_advance(it_state_ptr, diff):
@@ -433,6 +419,24 @@ def TransformIterator(op, it, op_return_ntype):
         # ATTENTION: op_caller here (see issue #3064)
         return op_caller(source_dereference(it_state_ptr))
 
+    prefix = f"transform_{it.prefix}_{op.__name__}"
+    ltoirs =  it.ltoirs + [
+        _ncc(
+            f"{prefix}_advance",
+            transform_advance,
+            numba.types.void(
+                numba.types.CPointer(numba.types.char), _DISTANCE_NUMBA_TYPE
+            ),
+        ).ltoir,
+        _ncc(
+            f"{prefix}_dereference",
+            transform_dereference,
+            (numba.types.CPointer(numba.types.char),),
+        ).ltoir,
+        # ATTENTION: NOT op_caller here! (see issue #3064)
+        op_ltoir
+    ]
+
     return TransformIteratorImpl(
-        it, op, op_return_ntype, transform_advance, transform_dereference, op_abi_name
+        it, op.__name__, op_return_ntype, ltoirs
     )
