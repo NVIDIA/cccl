@@ -32,7 +32,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 class __byteswap_impl
 {
-  _CCCL_TEMPLATE(class _Half, class _Full)
+  template <class _Half, class _Full>
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Full __impl_recursive(_Full __val) noexcept
   {
     static_assert(sizeof(_Full) == sizeof(_Half) * 2, "Invalid half type passed to __bytswap_impl");
@@ -42,7 +42,7 @@ class __byteswap_impl
   }
 
 public:
-  _CCCL_TEMPLATE(class _Tp)
+  template <class _Tp>
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static _CCCL_CONSTEXPR_CXX14 _Tp __impl(_Tp __val) noexcept
   {
     _Tp __result{};
