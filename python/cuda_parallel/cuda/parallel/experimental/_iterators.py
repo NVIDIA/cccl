@@ -213,7 +213,7 @@ class CacheModifiedPointer:
 
 class ConstantIterator:
     def __init__(self, val):
-        ntype = numba.from_dtype(val)
+        ntype = numba.from_dtype(val.dtype)
         thisty = numba.types.CPointer(ntype)
         self.val = _ctypes_type_given_numba_type(ntype)(val)
         self.ntype = ntype
