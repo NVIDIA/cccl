@@ -14,7 +14,7 @@ Let's define some terms that will be used throughout the documentation.
 We omit the word "tuning" but assume it in the definitions for all terms below,
 so those terms may mean something else in a more generic context.
 
-Algorithms are tuned for different workloads, which are sub spaces of the all benchmark versions defined by NVBench via a benchmark's axes.
+Algorithms are tuned for different workloads, which are sub spaces of all benchmark versions defined by NVBench via a benchmark's axes.
 For instance, radix sort can be tuned for different key types, different number of keys, and different distributions of keys.
 We partition the space spanned by a benchmark's axes into two categories:
 
