@@ -157,7 +157,6 @@ def canonicalize_host_compiler_name(cxx_string):
         )
 
     hc_def = matrix_yaml["host_compilers"][id]
-    hc_def["versions"]
 
     if not version:
         version = max(
