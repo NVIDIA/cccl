@@ -33,10 +33,10 @@ using namespace cuda::experimental::stf;
  */
 __device__ void calculating_pagerank(
   int idx,
-  slice<const int> loffsets,
-  slice<const int> lnonzeros,
-  slice<const float> lpage_rank,
-  slice<float> lnew_page_rank,
+  const slice<const int>& loffsets,
+  const slice<const int>& lnonzeros,
+  const slice<const float>& lpage_rank,
+  slice<float>& lnew_page_rank,
   float init_rank)
 {
   float rank_sum = 0.0;
