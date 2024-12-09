@@ -155,9 +155,9 @@ struct iequality_comparable : interface<iequality_comparable>
 #if !defined(_CCCL_NO_THREE_WAY_COMPARISON)
   _CCCL_NODISCARD _CUDAX_HOST_API auto operator==(iequality_comparable const& __other) const -> bool
   {
-    auto const& __other = __cudax::basic_any_from(__other);
-    void const* __obj   = __basic_any_access::__get_optr(__other);
-    return __cudax::virtcall<&__equal_fn<iequality_comparable>>(this, __other.type(), __obj);
+    auto const& __rhs = __cudax::basic_any_from(__other);
+    void const* __obj = __basic_any_access::__get_optr(__rhs);
+    return __cudax::virtcall<&__equal_fn<iequality_comparable>>(this, __rhs.type(), __obj);
   }
 #else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv _CCCL_NO_THREE_WAY_COMPARISON vvv
   _CCCL_NODISCARD_FRIEND _CUDAX_HOST_API auto

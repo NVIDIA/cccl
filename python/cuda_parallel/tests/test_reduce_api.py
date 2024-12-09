@@ -25,13 +25,13 @@ def test_device_reduce():
     reduce_into = cudax.reduce_into(d_output, d_output, min_op, h_init)
 
     # Determine temporary device storage requirements
-    temp_storage_size = reduce_into(None, d_input, d_output, h_init)
+    temp_storage_size = reduce_into(None, d_input, d_output, None, h_init)
 
     # Allocate temporary storage
     d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
 
     # Run reduction
-    reduce_into(d_temp_storage, d_input, d_output, h_init)
+    reduce_into(d_temp_storage, d_input, d_output, None, h_init)
 
     # Check the result is correct
     expected_output = 0

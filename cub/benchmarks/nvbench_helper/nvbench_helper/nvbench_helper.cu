@@ -751,8 +751,8 @@ void do_not_optimize(const void* ptr)
   template std::size_t detail::gen_uniform_segment_offsets_device<TYPE>(                                        \
     seed_t, cuda::std::span<TYPE>, std::size_t, std::size_t)
 
-INSTANTIATE(uint32_t);
-INSTANTIATE(uint64_t);
+INSTANTIATE(int32_t);
+INSTANTIATE(int64_t);
 
 #undef INSTANTIATE
 
