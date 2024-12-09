@@ -42,7 +42,7 @@ repos:
     rev: v0.8.1
     hooks:
     - id: ruff
-      args: ["--fix", "--show-fixes"]
+      args: ["--fix", "--unsafe-fixes", "--show-fixes"]
     - id: ruff-format
 
 default_language_version:
