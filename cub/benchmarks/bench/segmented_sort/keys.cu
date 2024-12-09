@@ -226,7 +226,7 @@ void seg_sort(nvbench::state& state,
   });
 }
 
-using some_offset_types = nvbench::type_list<uint32_t>;
+using some_offset_types = nvbench::type_list<int32_t>;
 
 template <class T, typename OffsetT>
 void power_law(nvbench::state& state, nvbench::type_list<T, OffsetT> ts)
