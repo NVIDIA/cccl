@@ -77,7 +77,6 @@ int main()
   int num_vertices = offsets.size() - 1;
   float init_rank  = 1.0f / num_vertices;
   float tolerance  = 1e-6f;
-  float max_diff   = 0.0f;
   int NITER        = 100;
 
   // output pageranks for each vertex
@@ -88,34 +87,26 @@ int main()
   auto lnonzeros      = ctx.logical_data(&nonzeros[0], nonzeros.size());
   auto lpage_rank     = ctx.logical_data(&page_rank[0], page_rank.size());
   auto lnew_page_rank = ctx.logical_data(&new_page_rank[0], new_page_rank.size());
-  auto lmax_diff      = ctx.logical_data(&max_diff, {1});
+  auto lmax_diff      = ctx.logical_data(shape_of<scalar<float>>());
 
   for (int iter = 0; iter < NITER; ++iter)
   {
     // Calculate Current Iteration PageRank
-    ctx.parallel_for(box(num_vertices), loffsets.read(), lnonzeros.read(), lpage_rank.rw(), lnew_page_rank.rw())
-        ->*[init_rank] __device__(size_t idx, auto loffsets, auto lnonzeros, auto lpage_rank, auto lnew_page_rank) {
+    ctx.parallel_for(
+      box(num_vertices),
+      loffsets.read(),
+      lnonzeros.read(),
+      lpage_rank.rw(),
+      lnew_page_rank.rw(),
+      lmax_diff.reduce(reducer::maxval<float>{}))
+        ->*[init_rank] __device__(
+             size_t idx, auto loffsets, auto lnonzeros, auto lpage_rank, auto lnew_page_rank, auto& max_diff) {
               calculating_pagerank(idx, loffsets, lnonzeros, lpage_rank, lnew_page_rank, init_rank);
-            };
-
-    // Calculate Current Iteration Error
-    ctx.parallel_for(box(1), lmax_diff.write())->*[] __device__(size_t, auto lmax_diff) {
-      lmax_diff(0) = 0.0f;
-    };
-
-    // Calculate Current Iteration Error
-    ctx.parallel_for(box(num_vertices), lpage_rank.read(), lnew_page_rank.read(), lmax_diff.rw())
-        ->*[] __device__(size_t idx, auto lpage_rank, auto lnew_page_rank, auto lmax_diff) {
-              atomicMaxFloat(lmax_diff.data_handle(), fabs(lnew_page_rank[idx] - lpage_rank[idx]));
+              max_diff = ::std::max(max_diff, lnew_page_rank[idx] - lpage_rank[idx]);
             };
 
     // Reduce Error and Check for Convergence
-    bool converged;
-    ctx.task(exec_place::host, lmax_diff.read())->*[tolerance, &converged](cudaStream_t s, auto max_diff) {
-      cuda_safe_call(cudaStreamSynchronize(s));
-      converged = (max_diff(0) < tolerance);
-    };
-
+    bool converged = (ctx.wait(lmax_diff) < tolerance);
     if (converged)
     {
       break;
