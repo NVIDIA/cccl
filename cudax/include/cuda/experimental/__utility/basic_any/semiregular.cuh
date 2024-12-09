@@ -160,12 +160,14 @@ struct iequality_comparable_base : interface<iequality_comparable>
   operator==(iequality_comparable<> const&, iequality_comparable<> const&) noexcept -> bool
   {
     _CCCL_UNREACHABLE();
+    return true;
   }
 
   _CCCL_NODISCARD_FRIEND _CUDAX_TRIVIAL_HOST_API auto
   operator!=(iequality_comparable<> const&, iequality_comparable<> const&) noexcept -> bool
   {
     _CCCL_UNREACHABLE();
+    return false;
   }
 
   template <class _Interface>
