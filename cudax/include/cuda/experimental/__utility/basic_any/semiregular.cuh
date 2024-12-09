@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
-#include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/copyable.h>
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/movable.h>
@@ -33,6 +32,7 @@
 #include <cuda/experimental/__utility/basic_any/basic_any_base.cuh>
 #include <cuda/experimental/__utility/basic_any/basic_any_from.cuh>
 #include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
+#include <cuda/experimental/__utility/basic_any/conversions.cuh>
 #include <cuda/experimental/__utility/basic_any/interfaces.cuh>
 #include <cuda/experimental/__utility/basic_any/storage.cuh>
 #include <cuda/experimental/__utility/basic_any/virtcall.cuh>
@@ -186,8 +186,8 @@ struct iequality_comparable_base : interface<iequality_comparable>
   // These are the overloads that actually get used when testing `basic_any`
   // objects for equality.
   _CCCL_TEMPLATE(class _ILeft, class _IRight)
-  _CCCL_REQUIRES(_CUDA_VSTD::convertible_to<basic_any<_ILeft> const&, basic_any<_IRight> const&>
-                 || _CUDA_VSTD::convertible_to<basic_any<_IRight> const&, basic_any<_ILeft> const&>)
+  _CCCL_REQUIRES(__any_convertible_to<basic_any<_ILeft> const&, basic_any<_IRight> const&>
+                 || __any_convertible_to<basic_any<_IRight> const&, basic_any<_ILeft> const&>)
   _CCCL_NODISCARD_FRIEND _CUDAX_HOST_API auto
   operator==(iequality_comparable<_ILeft> const& __lhs, iequality_comparable<_IRight> const& __rhs) noexcept -> bool
   {
@@ -197,8 +197,8 @@ struct iequality_comparable_base : interface<iequality_comparable>
   }
 
   _CCCL_TEMPLATE(class _ILeft, class _IRight)
-  _CCCL_REQUIRES(_CUDA_VSTD::convertible_to<basic_any<_ILeft> const&, basic_any<_IRight> const&>
-                 || _CUDA_VSTD::convertible_to<basic_any<_IRight> const&, basic_any<_ILeft> const&>)
+  _CCCL_REQUIRES(__any_convertible_to<basic_any<_ILeft> const&, basic_any<_IRight> const&>
+                 || __any_convertible_to<basic_any<_IRight> const&, basic_any<_ILeft> const&>)
   _CCCL_NODISCARD_FRIEND _CUDAX_TRIVIAL_HOST_API auto
   operator!=(iequality_comparable<_ILeft> const& __lhs, iequality_comparable<_IRight> const& __rhs) noexcept -> bool
   {
