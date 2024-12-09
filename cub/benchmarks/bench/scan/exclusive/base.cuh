@@ -131,7 +131,11 @@ static void basic(nvbench::state& state, nvbench::type_list<T, OffsetT>)
   });
 }
 
-using some_offset_types = nvbench::type_list<nvbench::uint32_t, nvbench::uint64_t>;
+#ifdef TUNE_OffsetT
+using some_offset_types = nvbench::type_list<TUNE_OffsetT>;
+#else
+using some_offset_types = nvbench::type_list<uint32_t, uint64_t>;
+#endif
 
 NVBENCH_BENCH_TYPES(basic, NVBENCH_TYPE_AXES(all_types, some_offset_types))
   .set_name("base")
