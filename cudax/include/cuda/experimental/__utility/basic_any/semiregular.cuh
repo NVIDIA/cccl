@@ -168,11 +168,11 @@ struct iequality_comparable_base : interface<iequality_comparable>
   }
 
   template <class _Interface>
-  struct __object
+  struct __const_reference
   {
     _CCCL_TEMPLATE(class _Object)
-    _CCCL_REQUIRES(__satisfies<_Object, _Interface>)
-    __object(_Object const& __obj) noexcept
+    _CCCL_REQUIRES((!__is_basic_any<_Object>) _CCCL_AND __satisfies<_Object, _Interface>)
+    __const_reference(_Object const& __obj) noexcept
         : __obj_(&__obj)
         , __type_(_CCCL_TYPEID(_Object))
     {}
@@ -208,15 +208,16 @@ struct iequality_comparable_base : interface<iequality_comparable>
   template <class _Interface>
   _CCCL_NODISCARD_FRIEND _CUDAX_HOST_API auto
   operator==(iequality_comparable<_Interface> const& __lhs,
-             _CUDA_VSTD::type_identity_t<__object<_Interface>> __rhs) noexcept -> bool
+             _CUDA_VSTD::type_identity_t<__const_reference<_Interface>> __rhs) noexcept -> bool
   {
     constexpr auto __eq = &__equal_fn<iequality_comparable<_Interface>>;
     return __cudax::virtcall<__eq>(&__lhs, __rhs.__type_, __rhs.__obj_);
   }
 
   template <class _Interface>
-  _CCCL_NODISCARD_FRIEND _CUDAX_HOST_API auto operator==(_CUDA_VSTD::type_identity_t<__object<_Interface>> __lhs,
-                                                         iequality_comparable<_Interface> const& __rhs) noexcept -> bool
+  _CCCL_NODISCARD_FRIEND _CUDAX_HOST_API auto
+  operator==(_CUDA_VSTD::type_identity_t<__const_reference<_Interface>> __lhs,
+             iequality_comparable<_Interface> const& __rhs) noexcept -> bool
   {
     constexpr auto __eq = &__equal_fn<iequality_comparable<_Interface>>;
     return __cudax::virtcall<__eq>(&__rhs, __lhs.__type_, __lhs.__obj_);
@@ -225,14 +226,14 @@ struct iequality_comparable_base : interface<iequality_comparable>
   template <class _Interface>
   _CCCL_NODISCARD_FRIEND _CUDAX_TRIVIAL_HOST_API auto
   operator!=(iequality_comparable<_Interface> const& __lhs,
-             _CUDA_VSTD::type_identity_t<__object<_Interface>> __rhs) noexcept -> bool
+             _CUDA_VSTD::type_identity_t<__const_reference<_Interface>> __rhs) noexcept -> bool
   {
     return !(__lhs == __rhs);
   }
 
   template <class _Interface>
   _CCCL_NODISCARD_FRIEND _CUDAX_TRIVIAL_HOST_API auto
-  operator!=(_CUDA_VSTD::type_identity_t<__object<_Interface>> __lhs,
+  operator!=(_CUDA_VSTD::type_identity_t<__const_reference<_Interface>> __lhs,
              iequality_comparable<_Interface> const& __rhs) noexcept -> bool
   {
     return !(__lhs == __rhs);
