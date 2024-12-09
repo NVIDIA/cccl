@@ -46,7 +46,7 @@ It searches through a space of parameters to find the combination for a given co
 Authoring Benchmarks
 --------------------------------------------------------------------------------
 
-CUB benchmarks are split into multiple files based on the algorithm they are testing,
+CUB benchmarks are split into multiple files based on the algorithm they are testing
 and potentially further into compile-time flavors that are tuned for individually
 (e.g.: sorting only keys vs. key-value pairs, or reducing using sum vs. using min).
 The name of the directory represents the name of the algorithm.
