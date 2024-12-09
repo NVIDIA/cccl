@@ -88,7 +88,7 @@ Tuning relies on CUB's device algorithms to expose a dispatch layer which can be
 CUB usually provides a default policy hub, but when tuning we want to overwrite it, so we have to specialize the dispatch layer.
 The tuning infrastructure will use the :code:`TUNE_BASE` macro to distinguish between compiling the base version (i.e. baseline) of a benchmark
 and compiling a variant for a given set of tuning parameters.
-When base is used, no policy is specified, so that the default one is used that CUB currently provides.
+When base is used, no policy is specified, so that the default one CUB provides is used.
 If :code:`TUNE_BASE` is not defined, we specify a custom policy
 using the parameter macros defined in the :code:`%RANGE%` comments which specify the search space.
 
