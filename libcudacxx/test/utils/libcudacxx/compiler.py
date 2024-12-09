@@ -172,7 +172,7 @@ class CXXCompiler(object):
             self.type = compiler_type
             self.version = (major_ver, minor_ver, patchlevel)
             self.default_dialect = default_dialect
-        except:
+        except Exception:
             (self.type, self.version, self.default_dialect) = self.dumpVersion()
 
         if self.type == "nvcc":
@@ -386,7 +386,7 @@ class CXXCompiler(object):
             version = None
             try:
                 version = eval(out)
-            except:
+            except Exception:
                 pass
 
             if not (isinstance(version, tuple) and 3 == len(version)):
@@ -428,13 +428,13 @@ class CXXCompiler(object):
             raise BaseException("Macros failed to dump")
 
         parsed_macros = {}
-        lines = [l.strip() for l in out.split("\n") if l.strip()]
-        for l in lines:
+        lines = [line.strip() for line in out.split("\n") if line.strip()]
+        for line in lines:
             # NVHPC also outputs the file contents from -E -dM for some reason; handle that
-            if not l.startswith("#define "):
+            if not line.startswith("#define "):
                 continue
-            l = l[len("#define ") :]
-            macro, _, value = l.partition(" ")
+            line = line[len("#define ") :]
+            macro, _, value = line.partition(" ")
             parsed_macros[macro] = value
         return parsed_macros
 
