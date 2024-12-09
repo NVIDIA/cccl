@@ -157,7 +157,7 @@ def canonicalize_host_compiler_name(cxx_string):
         )
 
     hc_def = matrix_yaml["host_compilers"][id]
-    hc_versions = hc_def["versions"]
+    hc_def["versions"]
 
     if not version:
         version = max(
@@ -1075,7 +1075,7 @@ def parse_workflow_matrix_jobs(args, workflow_name):
 
     if args:
         if (
-            args.dirty_projects != None
+            args.dirty_projects is not None
         ):  # Explicitly check for None, as an empty list is valid:
             matrix_jobs = [
                 job for job in matrix_jobs if job["project"] in args.dirty_projects
