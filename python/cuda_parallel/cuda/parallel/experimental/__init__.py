@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import functools
 import importlib
 import ctypes
 import shutil
@@ -121,8 +122,10 @@ class _CCCLValue(ctypes.Structure):
     _fields_ = [("type", _TypeInfo),
                 ("state", ctypes.c_void_p)]
 
-
-def _type_to_info_from_numba_type(numba_type):
+# TODO: replace with functools.cache once our docs build environment
+# is upgraded to at least Python 3.9
+@functools.lru_cache(maxsize=None)
+def _numba_type_to_info(numba_type):
     context = cuda.descriptor.cuda_target.target_context
     size = context.get_value_type(numba_type).get_abi_size(context.target_data)
     alignment = context.get_value_type(
@@ -130,14 +133,15 @@ def _type_to_info_from_numba_type(numba_type):
     return _TypeInfo(size, alignment, _type_to_enum(numba_type))
 
 
-def _type_to_info(numpy_type):
+@functools.lru_cache(maxsize=None)
+def _numpy_type_to_info(numpy_type):
     numba_type = numba.from_dtype(numpy_type)
-    return _type_to_info_from_numba_type(numba_type)
+    return _numba_type_to_info(numba_type)
 
 
 def _device_array_to_pointer(array):
     dtype = array.dtype
-    info = _type_to_info(dtype)
+    info = _numpy_type_to_info(dtype)
     # Note: this is slightly slower, but supports all ndarray-like objects as long as they support CAI
     # TODO: switch to use gpumemoryview once it's ready
     return _CCCLIterator(1, 1, _CCCLIteratorKindEnum.POINTER, _CCCLOp(), _CCCLOp(), info, array.__cuda_array_interface__["data"][0], None)
@@ -145,7 +149,7 @@ def _device_array_to_pointer(array):
 
 def _host_array_to_value(array):
     dtype = array.dtype
-    info = _type_to_info(dtype)
+    info = _numpy_type_to_info(dtype)
     return _CCCLValue(info, array.ctypes.data)
 
 
@@ -173,7 +177,7 @@ def _facade_iter_as_cccl_iter(d_in):
     # type name ltoi ltoir_size size alignment state
     adv = _CCCLOp(_CCCLOpKindEnum.STATELESS, prefix_name("advance"), None, 0, 1, 1, None)
     drf = _CCCLOp(_CCCLOpKindEnum.STATELESS, prefix_name("dereference"), None, 0, 1, 1, None)
-    info = _type_to_info_from_numba_type(d_in.ntype)
+    info = _numba_type_to_info(d_in.ntype)
     ltoirs = _extract_ctypes_ltoirs(d_in.ltoirs)
     # size alignment type advance dereference value_type state ltoirs
     return _CCCLIterator(d_in.size, d_in.alignment, _CCCLIteratorKindEnum.ITERATOR, adv, drf, info, d_in.state_c_void_p, ltoirs)
