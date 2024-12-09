@@ -9,7 +9,6 @@ import cupy as cp
 import numpy
 import pytest
 import random
-import re
 import numba.cuda
 import numba.types
 import cuda.parallel.experimental as cudax

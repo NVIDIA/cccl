@@ -28,25 +28,29 @@ class StorageBase:
 
     def algnames(self):
         with self.conn:
-            rows = self.conn.execute('SELECT DISTINCT algorithm FROM subbenches').fetchall()
+            rows = self.conn.execute(
+                "SELECT DISTINCT algorithm FROM subbenches"
+            ).fetchall()
             return [row[0] for row in rows]
 
     def subbenches(self, algname):
         with self.conn:
-            rows = self.conn.execute('SELECT DISTINCT bench FROM subbenches WHERE algorithm=?', (algname,)).fetchall()
+            rows = self.conn.execute(
+                "SELECT DISTINCT bench FROM subbenches WHERE algorithm=?", (algname,)
+            ).fetchall()
             return [row[0] for row in rows]
 
     def alg_to_df(self, algname, subbench):
         table = get_bench_table_name(subbench, algname)
         with self.conn:
-            df = pd.read_sql_query("SELECT * FROM \"{}\"".format(table), self.conn)
-            df['samples'] = df['samples'].apply(blob_to_samples)
+            df = pd.read_sql_query('SELECT * FROM "{}"'.format(table), self.conn)
+            df["samples"] = df["samples"].apply(blob_to_samples)
 
         return df
 
     def store_df(self, algname, df):
-        df['samples'] = df['samples'].apply(fpzip.compress)
-        df.to_sql(algname, self.conn, if_exists='replace', index=False)
+        df["samples"] = df["samples"].apply(fpzip.compress)
+        df.to_sql(algname, self.conn, if_exists="replace", index=False)
 
 
 class Storage:
