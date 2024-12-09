@@ -30,6 +30,7 @@
 #include <cuda/std/__utility/typeid.h>
 
 #include <cuda/experimental/__utility/basic_any/access.cuh>
+#include <cuda/experimental/__utility/basic_any/basic_any_base.cuh>
 #include <cuda/experimental/__utility/basic_any/basic_any_from.cuh>
 #include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
 #include <cuda/experimental/__utility/basic_any/interfaces.cuh>
