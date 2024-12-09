@@ -135,9 +135,9 @@ For this, you can optionally provide information on the memory reads and writes 
     state.add_global_memory_reads<T>(elements, "Size");
     state.add_global_memory_writes<T>(1);
 
-Most CUB algorithms need to be called twice,
-once to query the amount of temporary storage needed,
-and once to run the actual algorithm.
+Most CUB algorithms need to be called twice:
+ * once to query the amount of temporary storage needed,
+ * once to run the actual algorithm.
 We perform the first call now and allocate temporary storage:
 
 .. code:: c++
