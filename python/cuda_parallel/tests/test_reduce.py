@@ -6,7 +6,6 @@ import cupy as cp
 import numpy
 import pytest
 import random
-import re
 import numba.cuda
 import numba.types
 import cuda.parallel.experimental as cudax
@@ -31,7 +30,9 @@ def type_to_problem_sizes(dtype):
         raise ValueError("Unsupported dtype")
 
 
-@pytest.mark.parametrize('dtype', [numpy.uint8, numpy.uint16, numpy.uint32, numpy.uint64])
+@pytest.mark.parametrize(
+    "dtype", [numpy.uint8, numpy.uint16, numpy.uint32, numpy.uint64]
+)
 def test_device_reduce(dtype):
     def op(a, b):
         return a + b
@@ -42,12 +43,11 @@ def test_device_reduce(dtype):
     reduce_into = cudax.reduce_into(d_output, d_output, op, h_init)
 
     for num_items_pow2 in type_to_problem_sizes(dtype):
-        num_items = 2 ** num_items_pow2
+        num_items = 2**num_items_pow2
         h_input = random_int(num_items, dtype)
         d_input = numba.cuda.to_device(h_input)
         temp_storage_size = reduce_into(None, d_input, d_output, None, h_init)
-        d_temp_storage = numba.cuda.device_array(
-            temp_storage_size, dtype=numpy.uint8)
+        d_temp_storage = numba.cuda.device_array(temp_storage_size, dtype=numpy.uint8)
         reduce_into(d_temp_storage, d_input, d_output, None, h_init)
         h_output = d_output.copy_to_host()
         assert h_output[0] == sum(h_input) + init_value
@@ -62,8 +62,7 @@ def test_complex_device_reduce():
     reduce_into = cudax.reduce_into(d_output, d_output, op, h_init)
 
     for num_items in [42, 420000]:
-        h_input = numpy.random.random(
-            num_items) + 1j * numpy.random.random(num_items)
+        h_input = numpy.random.random(num_items) + 1j * numpy.random.random(num_items)
         d_input = numba.cuda.to_device(h_input)
         temp_storage_bytes = reduce_into(None, d_input, d_output, None, h_init)
         d_temp_storage = numba.cuda.device_array(temp_storage_bytes, numpy.uint8)
@@ -87,8 +86,16 @@ def test_device_reduce_dtype_mismatch():
     reduce_into = cudax.reduce_into(d_inputs[0], d_outputs[0], min_op, h_inits[0])
 
     for ix in range(3):
-        with pytest.raises(TypeError, match=r"^dtype mismatch: __init__=int32, __call__=int64$"):
-          reduce_into(None, d_inputs[int(ix == 0)], d_outputs[int(ix == 1)], None, h_inits[int(ix == 2)])
+        with pytest.raises(
+            TypeError, match=r"^dtype mismatch: __init__=int32, __call__=int64$"
+        ):
+            reduce_into(
+                None,
+                d_inputs[int(ix == 0)],
+                d_outputs[int(ix == 1)],
+                None,
+                h_inits[int(ix == 2)],
+            )
 
 
 def _test_device_sum_with_iterator(
@@ -282,7 +289,7 @@ def test_device_sum_map_mul_map_mul_count_it(
         iterators.TransformIterator(
             mul_funcs[fac_mid],
             iterators.CountingIterator(start_sum_with, value_type=vtn_inp),
-        )
+        ),
     )
     _test_device_sum_with_iterator(
         l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
