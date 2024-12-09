@@ -47,7 +47,7 @@ struct __atomic_ptr_skip<_Tp[n]>
 {};
 
 template <typename _Tp>
-using __atomic_ptr_skip_t = __atomic_ptr_skip<__remove_cvref_t<_Tp>>;
+using __atomic_ptr_skip_t = __atomic_ptr_skip<remove_cvref_t<_Tp>>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

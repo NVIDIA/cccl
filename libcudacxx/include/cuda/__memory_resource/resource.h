@@ -21,13 +21,14 @@
 #  pragma system_header
 #endif // no system header
 
-#if !defined(_CCCL_COMPILER_MSVC_2017) && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
+#if !_CCCL_COMPILER(MSVC2017) && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
 #  include <cuda/__memory_resource/get_property.h>
-#  include <cuda/std/__concepts/__concept_macros.h>
+#  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__concepts/convertible_to.h>
 #  include <cuda/std/__concepts/equality_comparable.h>
 #  include <cuda/std/__concepts/same_as.h>
+#  include <cuda/std/__tuple_dir/sfinae_helpers.h>
 #  include <cuda/std/__type_traits/decay.h>
 #  include <cuda/std/__type_traits/fold.h>
 #  include <cuda/stream_ref>
@@ -49,8 +50,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 //! @endrst
 //! @tparam _Resource The type that should implement the resource concept
 template <class _Resource>
-_LIBCUDACXX_CONCEPT resource =
-  _LIBCUDACXX_REQUIRES_EXPR((_Resource), _Resource& __res, void* __ptr, size_t __bytes, size_t __alignment)(
+_CCCL_CONCEPT resource =
+  _CCCL_REQUIRES_EXPR((_Resource), _Resource& __res, void* __ptr, size_t __bytes, size_t __alignment)(
     requires(_CUDA_VSTD::equality_comparable<_Resource>),
     _Same_as(void*) __res.allocate(__bytes, __alignment), //
     _Same_as(void) __res.deallocate(__ptr, __bytes, __alignment));
@@ -71,7 +72,7 @@ _LIBCUDACXX_CONCEPT resource =
 //! @endrst
 //! @tparam _Resource The type that should implement the async resource concept
 template <class _Resource>
-_LIBCUDACXX_CONCEPT async_resource = _LIBCUDACXX_REQUIRES_EXPR(
+_CCCL_CONCEPT async_resource = _CCCL_REQUIRES_EXPR(
   (_Resource), _Resource& __res, void* __ptr, size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)(
   requires(resource<_Resource>),
   _Same_as(void*) __res.allocate_async(__bytes, __alignment, __stream),
@@ -81,25 +82,19 @@ _LIBCUDACXX_CONCEPT async_resource = _LIBCUDACXX_REQUIRES_EXPR(
 //! also satisfies all the provided Properties
 //! @tparam _Resource
 //! @tparam _Properties
+// We cannot use fold expressions here due to a nvcc bug
 template <class _Resource, class... _Properties>
-_LIBCUDACXX_CONCEPT resource_with =
-#    if defined(_CCCL_COMPILER_NVHPC)
-  resource<_Resource> && _CUDA_VSTD::__fold_and_v<__has_property_impl<_Resource, _Properties>::value...>;
-#    else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-  resource<_Resource> && _CUDA_VSTD::__fold_and_v<has_property<_Resource, _Properties>...>;
-#    endif // !_CCCL_COMPILER_NVHPC
+_CCCL_CONCEPT resource_with = _CCCL_REQUIRES_EXPR((_Resource, variadic _Properties))(
+  requires(resource<_Resource>), requires(_CUDA_VSTD::__all<has_property<_Resource, _Properties>...>::value));
 
 //! @brief The \c async_resource_with concept verifies that a type Resource satisfies the `async_resource`
 //! concept and also satisfies all the provided Properties
 //! @tparam _Resource
 //! @tparam _Properties
+// We cannot use fold expressions here due to a nvcc bug
 template <class _Resource, class... _Properties>
-_LIBCUDACXX_CONCEPT async_resource_with =
-#    if defined(_CCCL_COMPILER_NVHPC)
-  async_resource<_Resource> && _CUDA_VSTD::__fold_and_v<__has_property_impl<_Resource, _Properties>::value...>;
-#    else // ^^^ _CCCL_COMPILER_NVHPC ^^^ / vvv !_CCCL_COMPILER_NVHPC vvv
-  async_resource<_Resource> && _CUDA_VSTD::__fold_and_v<has_property<_Resource, _Properties>...>;
-#    endif // !_CCCL_COMPILER_NVHPC
+_CCCL_CONCEPT async_resource_with = _CCCL_REQUIRES_EXPR((_Resource, variadic _Properties))(
+  requires(async_resource<_Resource>), requires(_CUDA_VSTD::__all<has_property<_Resource, _Properties>...>::value));
 
 template <bool _Convertible>
 struct __different_resource__
@@ -121,7 +116,7 @@ struct __different_resource__<true>
 };
 
 template <class _Resource, class _OtherResource>
-_LIBCUDACXX_CONCEPT __different_resource =
+_CCCL_CONCEPT __different_resource =
   __different_resource__<_CUDA_VSTD::convertible_to<_OtherResource const&, _Resource const&>>::__value(
     static_cast<_OtherResource*>(nullptr));
 
@@ -129,6 +124,6 @@ _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 
 #  endif // _CCCL_STD_VER >= 2014
 
-#endif // !_CCCL_COMPILER_MSVC_2017 && LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+#endif // !_CCCL_COMPILER(MSVC2017) && LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #endif //_CUDA__MEMORY_RESOURCE_RESOURCE_H

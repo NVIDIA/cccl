@@ -25,8 +25,8 @@
 #ifndef _CCCL_NO_EXCEPTIONS
 #  if defined(CCCL_DISABLE_EXCEPTIONS) // Escape hatch for users to manually disable exceptions
 #    define _CCCL_NO_EXCEPTIONS
-#  elif defined(_CCCL_COMPILER_NVRTC) || (defined(_CCCL_COMPILER_MSVC) && _CPPUNWIND == 0) \
-    || (!defined(_CCCL_COMPILER_MSVC) && !__EXCEPTIONS) // Catches all non msvc based compilers
+#  elif _CCCL_COMPILER(NVRTC) || (_CCCL_COMPILER(MSVC) && _CPPUNWIND == 0) \
+    || (!_CCCL_COMPILER(MSVC) && !__EXCEPTIONS) // Catches all non msvc based compilers
 #    define _CCCL_NO_EXCEPTIONS
 #  endif
 #endif // !_CCCL_NO_EXCEPTIONS

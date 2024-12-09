@@ -1,0 +1,146 @@
+# SPDX-FileCopyrightText: Copyright (c) 2024, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: "Release: 1. Begin Release Cycle"
+
+# The branch or tag selected when starting the workflow should be:
+# 1. "branch/{major}.{minor}.x" if it exists, or
+# 2. The ref to use when branching the release branch.
+
+on:
+  workflow_dispatch:
+    inputs:
+      main_version:
+        description: "Next version of main. (x.y.z)"
+        type: string
+        required: true
+
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+
+jobs:
+  create-release-branch:
+    env:
+      GH_TOKEN: ${{ github.token }}
+    permissions:
+      actions: write
+      contents: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+
+      - name: Prepare environment
+        id: prepare-env
+        run: |
+          log_and_export_vars() {
+            for var in "$@"; do
+              printf "%-15s %s\n" "$var:" "${!var}" | tee -a $GITHUB_STEP_SUMMARY
+              echo "${var}=${!var}" | tee -a $GITHUB_ENV | tee -a $GITHUB_OUTPUT
+            done
+          }
+
+          repo_version=$(jq -r .full cccl-version.json)
+          main_version=${{ inputs.main_version }}
+
+          if [[ ! $repo_version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid version number: $repo_version"
+            exit 1
+          fi
+
+          if [[ ! $main_version =~ ^[0-9]+\.[0-9]+\.[0-9]*$ ]]; then
+            echo "Invalid main version number: $main_version"
+            exit 1
+          fi
+
+          major_version=$(echo ${repo_version} | cut -d. -f1)
+          minor_version=$(echo ${repo_version} | cut -d. -f2)
+          patch_version=$(echo ${repo_version} | cut -d. -f3)
+          branch_name="branch/${major_version}.${minor_version}.x"
+
+          main_major_version=$(echo ${main_version} | cut -d. -f1)
+          main_minor_version=$(echo ${main_version} | cut -d. -f2)
+          main_patch_version=$(echo ${main_version} | cut -d. -f3)
+
+          log_and_export_vars \
+            repo_version major_version minor_version patch_version \
+            main_version main_major_version main_minor_version main_patch_version \
+            branch_name
+
+          echo "Branch ref: $GITHUB_REF" | tee -a $GITHUB_STEP_SUMMARY
+          echo "Branch SHA: $GITHUB_SHA" | tee -a $GITHUB_STEP_SUMMARY
+          echo "Branch commit: $(git show --oneline --no-patch ${GITHUB_SHA})" | tee -a $GITHUB_STEP_SUMMARY
+
+      - name: Verify environment
+        run: |
+          # If the release branch already exists, it must match the branch point:
+          if git ls-remote --exit-code origin $branch_name; then
+            echo "Branch $branch_name already exists" | tee -a $GITHUB_STEP_SUMMARY
+            echo "  GITHUB_REF: $GITHUB_REF" | tee -a $GITHUB_STEP_SUMMARY
+            echo "  branch_name: $branch_name" | tee -a $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+      - name: Create release branch
+        id: create_branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git push origin ${GITHUB_SHA}:"refs/heads/$branch_name"
+          echo "Created branch $branch_name at:" | tee -a $GITHUB_STEP_SUMMARY
+
+          git show --oneline --no-patch HEAD | tee -a $GITHUB_STEP_SUMMARY
+
+      - name: Update version numbers in main
+        uses: ./.github/actions/version-update
+        with:
+          new_version: ${{ inputs.main_version }}
+          target_branch: "main"
+
+      - name: Notify Slack
+        if: ${{ success()}}
+        uses: slackapi/slack-github-action@v1.26.0
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
+          SUMMARY_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+          BRANCH_NAME: ${{ steps.prepare-env.outputs.branch_name }}
+          BRANCH_VERSION: ${{ inputs.branch_version }}
+          MAIN_VERSION: ${{ inputs.main_version }}
+          MAIN_PR_URL: ${{ steps.create_pr.outputs.pull-request-url }}
+        with:
+          channel-id: ${{ secrets.SLACK_CHANNEL_RELEASE_LOG }}
+          slack-message: |
+            A new release cycle has started for `v${{ env.BRANCH_VERSION }}` on `${{ env.BRANCH_NAME }}`.
+
+            If requested, a PR to update `main` to `v${{ env.MAIN_VERSION }}` has been created: ${{ env.MAIN_PR_URL }}.
+
+            Workflow summary: ${{ env.SUMMARY_URL }}
+
+      - name: Notify Slack (failure)
+        if: ${{ failure() }}
+        uses: slackapi/slack-github-action@v1.26.0
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
+          SUMMARY_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+          BRANCH_VERSION: ${{ inputs.branch_version }}
+        with:
+          channel-id: ${{ secrets.SLACK_CHANNEL_RELEASE_LOG }}
+          slack-message: |
+            An error has occurred while initiating a new release cycle for `v${{ env.BRANCH_VERSION }}`.
+
+            Details: ${{ env.SUMMARY_URL }}

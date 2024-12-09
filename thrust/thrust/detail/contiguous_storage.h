@@ -179,12 +179,14 @@ private:
   _CCCL_HOST_DEVICE void propagate_allocator_dispatch(true_type, contiguous_storage& other);
 
   _CCCL_HOST_DEVICE void propagate_allocator_dispatch(false_type, contiguous_storage& other);
+
+  friend _CCCL_HOST_DEVICE void swap(contiguous_storage& lhs, contiguous_storage& rhs) noexcept(noexcept(lhs.swap(rhs)))
+  {
+    lhs.swap(rhs);
+  }
 }; // end contiguous_storage
 
 } // namespace detail
-
-template <typename T, typename Alloc>
-_CCCL_HOST_DEVICE void swap(detail::contiguous_storage<T, Alloc>& lhs, detail::contiguous_storage<T, Alloc>& rhs);
 
 THRUST_NAMESPACE_END
 

@@ -10,13 +10,13 @@
 // UNSUPPORTED: c++11
 
 #include <cuda/std/__algorithm_>
+#include <cuda/std/__type_traits/is_nothrow_default_constructible.h>
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/initializer_list>
 #include <cuda/std/inplace_vector>
 #include <cuda/std/type_traits>
 
-#include "cuda/std/__type_traits/is_nothrow_default_constructible.h"
 #include "test_iterators.h"
 #include "test_macros.h"
 #include "types.h"
@@ -283,7 +283,7 @@ __host__ __device__ constexpr void test()
 {
   test_default<T>();
 
-  if (!cuda::std::__libcpp_is_constant_evaluated())
+  if (!cuda::std::is_constant_evaluated())
   {
     test_copy_move<T>();
     test_size<T>();
@@ -308,7 +308,7 @@ __host__ __device__ constexpr bool test()
   test<ThrowingMoveAssignment>();
 
   // Due to reinterpret_cast within the destructor a on trivially destructible type cannot be constexpr at all
-  if (!cuda::std::__libcpp_is_constant_evaluated())
+  if (!cuda::std::is_constant_evaluated())
   {
     test<NonTrivialDestructor>();
   }

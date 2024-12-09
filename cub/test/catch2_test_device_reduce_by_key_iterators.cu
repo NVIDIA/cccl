@@ -36,8 +36,8 @@
 
 #include "catch2_test_device_reduce.cuh"
 #include "catch2_test_launch_helper.h"
-#include <c2h/catch2_test_helper.cuh>
-#include <c2h/custom_type.cuh>
+#include <c2h/catch2_test_helper.h>
+#include <c2h/custom_type.h>
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ReduceByKey, device_reduce_by_key);
 
@@ -87,7 +87,7 @@ C2H_TEST("Device reduce-by-key works with iterators", "[by_key][reduce][device]"
   init_default_constant(default_constant);
   auto value_it = thrust::make_constant_iterator(default_constant);
 
-  using op_t = cub::Sum;
+  using op_t = ::cuda::std::plus<>;
 
   // Prepare verification data
   using accum_t = ::cuda::std::__accumulator_t<op_t, value_t, output_t>;

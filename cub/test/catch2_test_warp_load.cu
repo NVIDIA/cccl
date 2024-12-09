@@ -30,8 +30,8 @@
 
 #include <thrust/sequence.h>
 
-#include <c2h/catch2_test_helper.cuh>
-#include <c2h/fill_striped.cuh>
+#include <c2h/catch2_test_helper.h>
+#include <c2h/fill_striped.h>
 
 template <cub::WarpLoadAlgorithm LoadAlgorithm,
           int LOGICAL_WARP_THREADS,

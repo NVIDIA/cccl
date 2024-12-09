@@ -167,7 +167,7 @@ void TestForEach(const size_t n)
 {
   const size_t output_size = std::min((size_t) 10, 2 * n);
 
-  thrust::host_vector<T> h_input = unittest::random_integers<T>(n);
+  thrust::host_vector<T> h_input = unittest::random_integers<size_t>(n);
 
   for (size_t i = 0; i < n; i++)
   {
@@ -199,7 +199,7 @@ void TestForEachN(const size_t n)
 {
   const size_t output_size = std::min((size_t) 10, 2 * n);
 
-  thrust::host_vector<T> h_input = unittest::random_integers<T>(n);
+  thrust::host_vector<T> h_input = unittest::random_integers<size_t>(n);
 
   for (size_t i = 0; i < n; i++)
   {

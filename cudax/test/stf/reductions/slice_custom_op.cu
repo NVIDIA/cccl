@@ -51,12 +51,12 @@ int main()
   auto op = std::make_shared<slice_reduction_op<bool, 1, OR_op>>();
 
   // C |= A
-  ctx.task(lC.redux(op), lA.read())->*[](auto stream, auto sC, auto sA) {
+  ctx.task(lC.relaxed(op), lA.read())->*[](auto stream, auto sC, auto sA) {
     cudaMemcpyAsync(sC.data_handle(), sA.data_handle(), sA.extent(0) * sizeof(bool), cudaMemcpyDeviceToDevice, stream);
   };
 
   // C |= B
-  ctx.task(lC.redux(op), lB.read())->*[](auto stream, auto sC, auto sB) {
+  ctx.task(lC.relaxed(op), lB.read())->*[](auto stream, auto sC, auto sB) {
     cudaMemcpyAsync(sC.data_handle(), sB.data_handle(), sB.extent(0) * sizeof(bool), cudaMemcpyDeviceToDevice, stream);
   };
 

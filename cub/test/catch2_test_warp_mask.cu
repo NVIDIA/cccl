@@ -27,7 +27,7 @@
 
 #include <cub/util_ptx.cuh>
 
-#include <c2h/catch2_test_helper.cuh>
+#include <c2h/catch2_test_helper.h>
 
 template <int logical_warp_threads>
 struct total_warps_t

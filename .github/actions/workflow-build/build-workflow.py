@@ -269,6 +269,8 @@ def get_job_type_info(job):
         result['name'] = job.capitalize()
     if not 'gpu' in result:
         result['gpu'] = False
+    if not 'cuda_ext' in result:
+        result['cuda_ext'] = False
     if not 'needs' in result:
         result['needs'] = None
     if not 'invoke' in result:
@@ -413,13 +415,16 @@ def generate_dispatch_job_image(matrix_job, job_type):
     ctk = matrix_job['ctk']
     host_compiler = generate_dispatch_job_host_compiler(matrix_job, job_type)
 
+    job_info = get_job_type_info(job_type)
+    ctk_suffix = "ext" if job_info['cuda_ext'] else ""
+
     if is_windows(matrix_job):
-        return f"rapidsai/devcontainers:{devcontainer_version}-cuda{ctk}-{host_compiler}"
+        return f"rapidsai/devcontainers:{devcontainer_version}-cuda{ctk}{ctk_suffix}-{host_compiler}"
 
     if is_nvhpc(matrix_job):
         return f"rapidsai/devcontainers:{devcontainer_version}-cpp-{host_compiler}"
 
-    return f"rapidsai/devcontainers:{devcontainer_version}-cpp-{host_compiler}-cuda{ctk}"
+    return f"rapidsai/devcontainers:{devcontainer_version}-cpp-{host_compiler}-cuda{ctk}{ctk_suffix}"
 
 
 def generate_dispatch_job_command(matrix_job, job_type):
@@ -636,18 +641,18 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
                 matching_consumers = merged_consumers[producer_index]
 
                 producer_name = producer['name']
-                print(f"::notice::Merging consumers for duplicate producer '{producer_name}' in '{group_name}'",
+                print(f"Merging consumers for duplicate producer '{producer_name}' in '{group_name}'",
                       file=sys.stderr)
                 consumer_names = ", ".join([consumer['name'] for consumer in matching_consumers])
-                print(f"::notice::Original consumers: {consumer_names}", file=sys.stderr)
+                print(f"Original consumers: {consumer_names}", file=sys.stderr)
                 consumer_names = ", ".join([consumer['name'] for consumer in consumers])
-                print(f"::notice::Duplicate consumers: {consumer_names}", file=sys.stderr)
+                print(f"Duplicate consumers: {consumer_names}", file=sys.stderr)
                 # Merge if unique:
                 for consumer in consumers:
                     if not dispatch_job_in_container(consumer, matching_consumers):
                         matching_consumers.append(consumer)
                 consumer_names = ", ".join([consumer['name'] for consumer in matching_consumers])
-                print(f"::notice::Merged consumers: {consumer_names}", file=sys.stderr)
+                print(f"Merged consumers: {consumer_names}", file=sys.stderr)
             else:
                 merged_producers.append(producer)
                 merged_consumers.append(consumers)
@@ -663,7 +668,7 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
         unique_standalone_jobs = []
         for job_json in standalone_jobs:
             if dispatch_job_in_container(job_json, unique_standalone_jobs):
-                print(f"::notice::Removing duplicate standalone job '{job_json['name']}' in '{group_name}'",
+                print(f"Removing duplicate standalone job '{job_json['name']}' in '{group_name}'",
                       file=sys.stderr)
             else:
                 unique_standalone_jobs.append(job_json)
@@ -673,12 +678,12 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
         for two_stage_job in two_stage_jobs:
             for producer in two_stage_job['producers']:
                 if remove_dispatch_job_from_container(producer, unique_standalone_jobs):
-                    print(f"::notice::Removing standalone job '{producer['name']}' " +
+                    print(f"Removing standalone job '{producer['name']}' " +
                           f"as it appears as a producer in '{group_name}'",
                           file=sys.stderr)
             for consumer in two_stage_job['consumers']:
                 if remove_dispatch_job_from_container(producer, unique_standalone_jobs):
-                    print(f"::notice::Removing standalone job '{consumer['name']}' " +
+                    print(f"Removing standalone job '{consumer['name']}' " +
                           f"as it appears as a consumer in '{group_name}'",
                           file=sys.stderr)
         standalone_jobs = list(unique_standalone_jobs)
@@ -710,7 +715,7 @@ def finalize_workflow_dispatch_groups(workflow_dispatch_groups_orig):
 
     # Natural sort impl (handles embedded numbers in strings, case insensitive)
     def natural_sort_key(key):
-        return [(int(text) if text.isdigit() else text.lower()) for text in re.split('(\d+)', key)]
+        return [(int(text) if text.isdigit() else text.lower()) for text in re.split('(\\d+)', key)]
 
     # Sort the dispatch groups by name:
     workflow_dispatch_groups = dict(sorted(workflow_dispatch_groups.items(), key=lambda x: natural_sort_key(x[0])))
@@ -1088,8 +1093,18 @@ def print_devcontainer_info(args):
     for workflow_name in workflow_names:
         matrix_jobs.extend(parse_workflow_matrix_jobs(args, workflow_name))
 
+    # Check if the extended cuda images are needed:
+    for matrix_job in matrix_jobs:
+        cuda_ext = False
+        for job in matrix_job['jobs']:
+            job_info = get_job_type_info(job)
+            if job_info['cuda_ext']:
+                cuda_ext = True
+                break
+        matrix_job['cuda_ext'] = cuda_ext
+
     # Remove all but the following keys from the matrix jobs:
-    keep_keys = ['ctk', 'cxx']
+    keep_keys = ['ctk', 'cxx', 'cuda_ext']
     combinations = [{key: job[key] for key in keep_keys} for job in matrix_jobs]
 
     # Remove duplicates and filter out windows jobs:

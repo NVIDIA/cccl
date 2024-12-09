@@ -25,7 +25,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <class _Tp>
 struct __unwrap_reference
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE _Tp type;
+  typedef _CCCL_NODEBUG_ALIAS _Tp type;
 };
 
 template <class _Tp>
@@ -34,7 +34,7 @@ class reference_wrapper;
 template <class _Tp>
 struct __unwrap_reference<reference_wrapper<_Tp>>
 {
-  typedef _LIBCUDACXX_NODEBUG_TYPE _Tp& type;
+  typedef _CCCL_NODEBUG_ALIAS _Tp& type;
 };
 
 template <class _Tp>

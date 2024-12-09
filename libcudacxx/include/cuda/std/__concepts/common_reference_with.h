@@ -20,7 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__concepts/__concept_macros.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__type_traits/common_reference.h>
@@ -29,7 +29,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER > 2017
+#if !defined(_CCCL_NO_CONCEPTS)
 
 // [concept.commonref]
 
@@ -38,17 +38,17 @@ concept common_reference_with =
   same_as<common_reference_t<_Tp, _Up>, common_reference_t<_Up, _Tp>>
   && convertible_to<_Tp, common_reference_t<_Tp, _Up>> && convertible_to<_Up, common_reference_t<_Tp, _Up>>;
 
-#elif _CCCL_STD_VER > 2011
+#elif !defined(_CCCL_NO_VARIABLE_TEMPLATES) // ^^^ !_CCCL_NO_CONCEPTS ^^^
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_CONCEPT_FRAGMENT(__common_reference_exists_,
-                             requires()(typename(common_reference_t<_Tp, _Up>), typename(common_reference_t<_Up, _Tp>)));
+_CCCL_CONCEPT_FRAGMENT(__common_reference_exists_,
+                       requires()(typename(common_reference_t<_Tp, _Up>), typename(common_reference_t<_Up, _Tp>)));
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_CONCEPT _Common_reference_exists = _LIBCUDACXX_FRAGMENT(__common_reference_exists_, _Tp, _Up);
+_CCCL_CONCEPT _Common_reference_exists = _CCCL_FRAGMENT(__common_reference_exists_, _Tp, _Up);
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __common_reference_with_,
   requires()(requires(_Common_reference_exists<_Tp, _Up>),
              requires(same_as<common_reference_t<_Tp, _Up>, common_reference_t<_Up, _Tp>>),
@@ -56,9 +56,9 @@ _LIBCUDACXX_CONCEPT_FRAGMENT(
              requires(convertible_to<_Up, common_reference_t<_Tp, _Up>>)));
 
 template <class _Tp, class _Up>
-_LIBCUDACXX_CONCEPT common_reference_with = _LIBCUDACXX_FRAGMENT(__common_reference_with_, _Tp, _Up);
+_CCCL_CONCEPT common_reference_with = _CCCL_FRAGMENT(__common_reference_with_, _Tp, _Up);
 
-#endif // _CCCL_STD_VER > 2011
+#endif // ^^^ !_CCCL_NO_VARIABLE_TEMPLATES
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

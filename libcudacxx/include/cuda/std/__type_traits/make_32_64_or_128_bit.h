@@ -36,20 +36,20 @@ template <class _Tp>
 #if _CCCL_STD_VER > 2017
   requires(is_signed_v<_Tp> || is_unsigned_v<_Tp> || is_same_v<_Tp, char>)
 #endif
-using __make_32_64_or_128_bit_t =
+using __make_32_64_or_128_bit_t _CCCL_NODEBUG_ALIAS =
   __copy_unsigned_t<_Tp,
-                    __conditional_t<sizeof(_Tp) <= sizeof(int32_t),
-                                    int32_t,
-                                    __conditional_t<sizeof(_Tp) <= sizeof(int64_t),
-                                                    int64_t,
+                    conditional_t<sizeof(_Tp) <= sizeof(int32_t),
+                                  int32_t,
+                                  conditional_t<sizeof(_Tp) <= sizeof(int64_t),
+                                                int64_t,
 #ifndef _LIBCUDACXX_HAS_NO_INT128
-                                                    __conditional_t<sizeof(_Tp) <= sizeof(__int128_t),
-                                                                    __int128_t,
-                                                                    /* else */ void>
+                                                conditional_t<sizeof(_Tp) <= sizeof(__int128_t),
+                                                              __int128_t,
+                                                              /* else */ void>
 #else
-                                                    /* else */ void
+                                                /* else */ void
 #endif
-                                                    >>>;
+                                                >>>;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

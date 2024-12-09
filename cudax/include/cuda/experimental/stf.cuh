@@ -357,18 +357,13 @@ public:
     return task(default_exec_place(), mv(deps)...);
   }
 
+#if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
   /*
    * parallel_for : apply an operation over a shaped index space
    */
   template <typename S, typename... Deps>
   auto parallel_for(exec_place e_place, S shape, task_dep<Deps>... deps)
   {
-#ifndef __CUDACC__
-    // We want a test that always fail, but is only triggered when the
-    // function is instantiated so the test relies on actual templated
-    // types.
-    static_assert(::std::is_same_v<S, ::std::false_type>, "parallel_for is only supported with CUDA compilers.");
-#endif
     EXPECT(payload.index() != ::std::variant_npos, "Context is not initialized.");
     using result_t = unified_scope<reserved::parallel_for_scope<stream_ctx, S, null_partition, Deps...>,
                                    reserved::parallel_for_scope<graph_ctx, S, null_partition, Deps...>>;
@@ -382,12 +377,6 @@ public:
   template <typename partitioner_t, typename S, typename... Deps>
   auto parallel_for(partitioner_t p, exec_place e_place, S shape, task_dep<Deps>... deps)
   {
-#ifndef __CUDACC__
-    // We want a test that always fail, but is only triggered when the
-    // function is instantiated so the test relies on actual templated
-    // types.
-    static_assert(::std::is_same_v<S, ::std::false_type>, "parallel_for is only supported with CUDA compilers.");
-#endif
     EXPECT(payload.index() != ::std::variant_npos, "Context is not initialized.");
     using result_t = unified_scope<reserved::parallel_for_scope<stream_ctx, S, partitioner_t, Deps...>,
                                    reserved::parallel_for_scope<graph_ctx, S, partitioner_t, Deps...>>;
@@ -403,6 +392,7 @@ public:
   {
     return parallel_for(default_exec_place(), mv(shape), mv(deps)...);
   }
+#endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 
   template <typename... Deps>
   auto host_launch(task_dep<Deps>... deps)
@@ -473,17 +463,10 @@ public:
       payload);
   }
 
+#if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
   template <typename thread_hierarchy_spec_t, typename... Deps>
   auto launch(thread_hierarchy_spec_t spec, exec_place e_place, task_dep<Deps>... deps)
   {
-#ifndef __CUDACC__
-    // We want a test that always fail, but is only triggered when the
-    // function is instantiated so the test relies on actual templated
-    // types.
-    static_assert(::std::is_same_v<thread_hierarchy_spec_t, ::std::false_type>,
-                  "launch is only supported with CUDA compilers.");
-#endif
-
     using result_t = unified_scope<reserved::launch_scope<stream_ctx, thread_hierarchy_spec_t, Deps...>,
                                    reserved::launch_scope<graph_ctx, thread_hierarchy_spec_t, Deps...>>;
     return ::std::visit(
@@ -514,6 +497,7 @@ public:
   {
     return launch(mv(ths), default_exec_place(), mv(deps)...);
   }
+#endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 
   auto repeat(size_t count)
   {
@@ -624,6 +608,45 @@ public:
     ::std::visit(
       [&](auto& self) {
         self.set_parent_ctx(parent_ctx.get_dot());
+      },
+      payload);
+  }
+
+  /**
+   * @brief Start a new section in the DOT file identified by its symbol
+   */
+  void dot_push_section(::std::string symbol) const
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    ::std::visit(
+      [symbol = mv(symbol)](auto& self) {
+        self.dot_push_section(symbol);
+      },
+      payload);
+  }
+
+  /**
+   * @brief Ends current dot section
+   */
+  void dot_pop_section() const
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    ::std::visit(
+      [](auto& self) {
+        self.dot_pop_section();
+      },
+      payload);
+  }
+
+  /**
+   * @brief RAII-style description of a new section in the DOT file identified by its symbol
+   */
+  auto dot_section(::std::string symbol) const
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return ::std::visit(
+      [symbol = mv(symbol)](auto& self) {
+        return self.dot_section(symbol);
       },
       payload);
   }
@@ -802,7 +825,7 @@ UNITTEST("context with arguments")
   cuda_safe_call(cudaStreamDestroy(stream));
 };
 
-#  ifdef __CUDACC__
+#  if !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 namespace reserved
 {
 inline void unit_test_context_pfor()
@@ -1251,7 +1274,7 @@ UNITTEST("unit_test_partitioner_product")
 };
 
 } // namespace reserved
-#  endif // __CUDACC__
+#  endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 
 UNITTEST("make_tuple_indexwise")
 {

@@ -242,10 +242,10 @@ def device_json(algname):
 
 def get_device_name(device):
     gpu_name = device["name"]
-    bw = device["global_memory_bus_width"]
+    bus_width = device["global_memory_bus_width"]
     sms = device["number_of_sms"]
     ecc = "eccon" if device["ecc_state"] else "eccoff"
-    name = "{} ({}, {}, {})".format(gpu_name, bw, sms, ecc)
+    name = "{} ({}, {}, {})".format(gpu_name, bus_width, sms, ecc)
     return name.replace('NVIDIA ', '')
 
 

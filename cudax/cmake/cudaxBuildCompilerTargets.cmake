@@ -47,6 +47,7 @@ function(cudax_build_compiler_targets)
   if("Clang" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
     # stf heavily uses host device lambdas which break on clang due to a warning about the implicitly
     # deleted copy constructor
+    # TODO(bgruber): remove this when NVBug 4980157 is resolved
     append_option_if_available("-Wno-deprecated-copy" cxx_compile_options)
   endif()
 

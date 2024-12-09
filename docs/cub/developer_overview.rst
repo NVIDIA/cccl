@@ -14,10 +14,10 @@ how many threads participate,
 and on which thread(s) the result is valid.
 
 These layers naturally build on each other.
-For example, :cpp:struct:`WarpReduce <cub::WarpReduce>` uses :cpp:func:`ThreadReduce <cub::internal::ThreadReduce>`,
+For example, :cpp:struct:`WarpReduce <cub::WarpReduce>` uses :cpp:func:`ThreadReduce <cub::ThreadReduce>`,
 :cpp:struct:`BlockReduce <cub::BlockReduce>` uses :cpp:struct:`WarpReduce <cub::WarpReduce>`, etc.
 
-:cpp:func:`ThreadReduce <cub::internal::ThreadReduce>`
+:cpp:func:`ThreadReduce <cub::ThreadReduce>`
 
    - A normal function invoked and executed sequentially by a single thread that returns a valid result on that thread
    - Single thread functions are usually an implementation detail and not exposed in CUB's public API
@@ -46,7 +46,7 @@ The table below provides a summary of these functions:
       - parallel execution
       - max threads
       - valid result in
-    * - :cpp:func:`ThreadReduce <cub::internal::ThreadReduce>`
+    * - :cpp:func:`ThreadReduce <cub::ThreadReduce>`
       - :math:`-`
       - :math:`-`
       - :math:`1`
@@ -255,7 +255,7 @@ and algorithm implementation look like:
 
     __device__ __forceinline__ T Sum(T input, int valid_items) {
       return InternalWarpReduce(temp_storage)
-          .Reduce(input, valid_items, cub::Sum());
+          .Reduce(input, valid_items, ::cuda::std::plus<>{});
     }
 
 Due to ``LEGACY_PTX_ARCH`` issues described above,
@@ -282,15 +282,15 @@ we can't specialize on the PTX version.
                               std::is_same<unsigned int, U>::value,
                               T>::type
         ReduceImpl(T input,
-                  int,      // valid_items
-                  cub::Sum) // reduction_op
+                  int,               // valid_items
+                  ::cuda::std::plus<>) // reduction_op
     {
       T output = input;
 
       NV_IF_TARGET(NV_PROVIDES_SM_80,
                   (output = __reduce_add_sync(member_mask, input);),
-                  (output = ReduceImpl<cub::Sum>(
-                        input, LOGICAL_WARP_THREADS, cub::Sum{});));
+                  (output = ReduceImpl<::cuda::std::plus<>>(
+                        input, LOGICAL_WARP_THREADS, ::cuda::std::plus<>{});));
 
       return output;
     }
