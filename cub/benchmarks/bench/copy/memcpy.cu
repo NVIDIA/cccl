@@ -132,7 +132,7 @@ struct policy_hub_t
       block_delay_constructor_t>;
 
     using AgentLargeBufferPolicyT =
-      cub::detail::AgentBatchMemcpyLargeBuffersPolicy<TUNE_LARGE_THREADS, TUNE_LARGE_BUFFER_BYTES_PER_THREAD>;
+      cub::detail::batch_memcpy::agent_large_buffer_policy<TUNE_LARGE_THREADS, TUNE_LARGE_BUFFER_BYTES_PER_THREAD>;
   };
 
   using MaxPolicy = policy_t;
@@ -189,7 +189,7 @@ void copy(nvbench::state& state,
 #if !TUNE_BASE
   using policy_t = policy_hub_t;
 #else
-  using policy_t = cub::detail::DeviceBatchMemcpyPolicy<buffer_offset_t, block_offset_t>;
+  using policy_t = cub::detail::batch_memcpy::policy_hub<buffer_offset_t, block_offset_t>;
 #endif
 
   using dispatch_t = cub::detail::DispatchBatchMemcpy<
