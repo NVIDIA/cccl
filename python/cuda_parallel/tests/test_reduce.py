@@ -251,7 +251,6 @@ def test_device_sum_map_mul2_count_it(
     i_input = iterators.TransformIterator(
         mul2,
         iterators.CountingIterator(start_sum_with, value_type=vtn_inp),
-        op_return_value_type=vtn_out,
     )
     _test_device_sum_with_iterator(
         l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
@@ -287,9 +286,7 @@ def test_device_sum_map_mul_map_mul_count_it(
         iterators.TransformIterator(
             mul_funcs[fac_mid],
             iterators.CountingIterator(start_sum_with, value_type=vtn_inp),
-            op_return_value_type=vtn_mid,
-        ),
-        op_return_value_type=vtn_out,
+        )
     )
     _test_device_sum_with_iterator(
         l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
@@ -313,7 +310,7 @@ def test_device_sum_map_mul2_cp_array_it(
     rng = random.Random(0)
     l_d_in = [rng.randrange(100) for _ in range(num_items)]
     a_d_in = cp.array(l_d_in, dtype_inp)
-    i_input = iterators.TransformIterator(mul2, a_d_in, vtn_out)
+    i_input = iterators.TransformIterator(mul2, a_d_in)
     l_varr = [mul2(v) for v in l_d_in]
     _test_device_sum_with_iterator(
         l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
