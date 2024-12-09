@@ -10,7 +10,6 @@ selecting optimal tuning parameters for a given device and data type.
 Definitions
 --------------------------------------------------------------------------------
 
-Let's define some terms that will be used throughout the documentation.
 We omit the word "tuning" but assume it in the definitions for all terms below,
 so those terms may mean something else in a more generic context.
 
@@ -136,8 +135,10 @@ For this, you can optionally provide information on the memory reads and writes 
     state.add_global_memory_writes<T>(1);
 
 Most CUB algorithms need to be called twice:
- * once to query the amount of temporary storage needed,
- * once to run the actual algorithm.
+
+1. once to query the amount of temporary storage needed,
+2. once to run the actual algorithm.
+
 We perform the first call now and allocate temporary storage:
 
 .. code:: c++
