@@ -22,22 +22,6 @@
 using namespace cuda::experimental::stf;
 
 /**
- * @brief Performs an atomic maximum operation on floating-point numbers by reinterpreting them as integers.
- *
- * @param address Pointer to the float value that will be updated.
- * @param val     The float value to compare and possibly set at the address.
- * @return        The old value at the address (reinterpreted as a float).
- */
-__device__ float atomicMaxFloat(float* address, float val)
-{
-  int* address_as_int = (int*) address;
-  int old             = *address_as_int;
-  int new_val         = __float_as_int(val);
-  atomicMax(address_as_int, new_val);
-  return __int_as_float(old);
-}
-
-/**
  * @brief Calculates the PageRank for a given vertex.
  *
  * @param idx               The index of the vertex for which PageRank is being calculated.
