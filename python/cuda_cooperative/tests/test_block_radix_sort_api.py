@@ -7,6 +7,7 @@ import cuda.cooperative.experimental as cudax
 import numpy as np
 import numba
 from numba import cuda
+
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 # example-begin imports
@@ -20,14 +21,14 @@ def test_block_radix_sort():
     items_per_thread = 4
     threads_per_block = 128
     block_radix_sort = cudax.block.radix_sort_keys(
-        numba.int32, threads_per_block, items_per_thread)
+        numba.int32, threads_per_block, items_per_thread
+    )
 
     # Link the radix sort to a CUDA kernel
     @cuda.jit(link=block_radix_sort.files)
     def kernel(keys):
         # Obtain a segment of consecutive items that are blocked across threads
-        thread_keys = cuda.local.array(
-            shape=items_per_thread, dtype=numba.int32)
+        thread_keys = cuda.local.array(shape=items_per_thread, dtype=numba.int32)
 
         for i in range(items_per_thread):
             thread_keys[i] = keys[cuda.threadIdx.x * items_per_thread + i]
@@ -38,6 +39,7 @@ def test_block_radix_sort():
         # Copy the sorted keys back to the output
         for i in range(items_per_thread):
             keys[cuda.threadIdx.x * items_per_thread + i] = thread_keys[i]
+
     # example-end radix-sort
 
     tile_size = threads_per_block * items_per_thread
@@ -56,14 +58,14 @@ def test_block_radix_sort_descending():
     items_per_thread = 4
     threads_per_block = 128
     block_radix_sort = cudax.block.radix_sort_keys_descending(
-        numba.int32, threads_per_block, items_per_thread)
+        numba.int32, threads_per_block, items_per_thread
+    )
 
     # Link the radix sort to a CUDA kernel
     @cuda.jit(link=block_radix_sort.files)
     def kernel(keys):
         # Obtain a segment of consecutive items that are blocked across threads
-        thread_keys = cuda.local.array(
-            shape=items_per_thread, dtype=numba.int32)
+        thread_keys = cuda.local.array(shape=items_per_thread, dtype=numba.int32)
 
         for i in range(items_per_thread):
             thread_keys[i] = keys[cuda.threadIdx.x * items_per_thread + i]
@@ -74,6 +76,7 @@ def test_block_radix_sort_descending():
         # Copy the sorted keys back to the output
         for i in range(items_per_thread):
             keys[cuda.threadIdx.x * items_per_thread + i] = thread_keys[i]
+
     # example-end radix-sort-descending
 
     tile_size = threads_per_block * items_per_thread

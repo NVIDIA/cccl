@@ -3,11 +3,24 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import numba
-from cuda.cooperative.experimental._types import *
+
+from cuda.cooperative.experimental._types import (
+    Algorithm,
+    Constant,
+    Dependency,
+    DependentArray,
+    DependentOperator,
+    Invocable,
+    Pointer,
+    TemplateParameter,
+    numba_type_to_wrapper,
+)
 from cuda.cooperative.experimental._common import make_binary_tempfile
 
 
-def merge_sort_keys(dtype, threads_in_block, items_per_thread, compare_op, methods=None):
+def merge_sort_keys(
+    dtype, threads_in_block, items_per_thread, compare_op, methods=None
+):
     """Performs a block-wide merge sort over a :ref:`blocked arrangement <flexible-data-arrangement>` of keys.
 
     Example:
@@ -43,22 +56,42 @@ def merge_sort_keys(dtype, threads_in_block, items_per_thread, compare_op, metho
     Returns:
         A callable object that can be linked to and invoked from a CUDA kernel
     """
-    template = Algorithm('BlockMergeSort',
-                         'Sort',
-                         'block_merge_sort',
-                         ['cub/block/block_merge_sort.cuh'],
-                         [TemplateParameter('KeyT'),
-                          TemplateParameter('BLOCK_DIM_X'),
-                          TemplateParameter('ITEMS_PER_THREAD')],
-                         [[Pointer(numba.uint8),
-                           DependentArray(Dependency('KeyT'),
-                                          Dependency('ITEMS_PER_THREAD')),
-                           DependentOperator(Constant(numba.int8), [Dependency('KeyT'), Dependency('KeyT')], Dependency('Op'))]],
-                         type_definitions=[numba_type_to_wrapper(dtype, methods=methods)])
-    specialization = template.specialize({'KeyT': dtype,
-                                          'BLOCK_DIM_X': threads_in_block,
-                                          'ITEMS_PER_THREAD': items_per_thread,
-                                          'Op': compare_op})
-    return Invocable(temp_files=[make_binary_tempfile(ltoir, '.ltoir') for ltoir in specialization.get_lto_ir()],
-                     temp_storage_bytes=specialization.get_temp_storage_bytes(),
-                     algorithm=specialization)
+    template = Algorithm(
+        "BlockMergeSort",
+        "Sort",
+        "block_merge_sort",
+        ["cub/block/block_merge_sort.cuh"],
+        [
+            TemplateParameter("KeyT"),
+            TemplateParameter("BLOCK_DIM_X"),
+            TemplateParameter("ITEMS_PER_THREAD"),
+        ],
+        [
+            [
+                Pointer(numba.uint8),
+                DependentArray(Dependency("KeyT"), Dependency("ITEMS_PER_THREAD")),
+                DependentOperator(
+                    Constant(numba.int8),
+                    [Dependency("KeyT"), Dependency("KeyT")],
+                    Dependency("Op"),
+                ),
+            ]
+        ],
+        type_definitions=[numba_type_to_wrapper(dtype, methods=methods)],
+    )
+    specialization = template.specialize(
+        {
+            "KeyT": dtype,
+            "BLOCK_DIM_X": threads_in_block,
+            "ITEMS_PER_THREAD": items_per_thread,
+            "Op": compare_op,
+        }
+    )
+    return Invocable(
+        temp_files=[
+            make_binary_tempfile(ltoir, ".ltoir")
+            for ltoir in specialization.get_lto_ir()
+        ],
+        temp_storage_bytes=specialization.get_temp_storage_bytes(),
+        algorithm=specialization,
+    )

@@ -7,6 +7,7 @@ import cuda.cooperative.experimental as cudax
 import numpy as np
 import numba
 from numba import cuda
+
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 # example-begin imports
@@ -28,6 +29,7 @@ def test_block_reduction():
 
         if cuda.threadIdx.x == 0:
             output[0] = block_output
+
     # example-end reduce
 
     h_input = np.random.randint(0, 42, threads_in_block, dtype=np.int32)
@@ -51,6 +53,7 @@ def test_block_sum():
 
         if cuda.threadIdx.x == 0:
             output[0] = block_output
+
     # example-end sum
 
     h_input = np.ones(threads_in_block, dtype=np.int32)

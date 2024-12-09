@@ -7,6 +7,7 @@ import cuda.cooperative.experimental as cudax
 import numpy as np
 import numba
 from numba import cuda
+
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 # example-begin imports
@@ -24,6 +25,7 @@ def test_warp_exclusive_sum():
     def kernel(data):
         # Collectively compute the warp-wide exclusive prefix sum
         data[cuda.threadIdx.x] = warp_exclusive_sum(data[cuda.threadIdx.x])
+
     # example-end exclusive-sum
 
     tile_size = 32
