@@ -116,11 +116,11 @@ def _test_device_sum_with_iterator(
     h_init = numpy.array([start_sum_with], dtype_out)
 
     reduce_into = cudax.reduce_into(
-        d_in=d_input, d_out=d_output, op=add_op, init=h_init
+        d_in=d_input, d_out=d_output, op=add_op, h_init=h_init
     )
 
     temp_storage_size = reduce_into(
-        None, d_in=d_input, d_out=d_output, num_items=len(l_varr), init=h_init
+        None, d_in=d_input, d_out=d_output, num_items=len(l_varr), h_init=h_init
     )
     d_temp_storage = numba.cuda.device_array(temp_storage_size, dtype=numpy.uint8)
 
