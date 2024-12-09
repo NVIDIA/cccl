@@ -293,7 +293,7 @@ def case_top(alpha, N, algname, ct_point_name, case_dfs):
     print("{}[{}]:".format(algname, ct_point_name))
 
     if alpha < 1.0:
-        remove_matching_distributions(alpha, case_df)
+        remove_matching_distributions(alpha, case_dfs)  # TODO(rwgk): CORRECT?
 
     for subbench in case_dfs:
         case_dfs[subbench] = extract_complete_variants(case_dfs[subbench])
