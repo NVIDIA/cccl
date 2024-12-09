@@ -555,7 +555,26 @@ TEMPLATE_TEST_CASE_METHOD(BasicAnyTestsFixture, "basic_any tests", "[utility][ba
   }
 }
 
-#else
+struct any_regular : cudax::basic_any<iregular<>>
+{
+  using cudax::basic_any<iregular<>>::basic_any;
+};
+
+struct any_regular_ref : cudax::basic_any<iregular<>&>
+{
+  using cudax::basic_any<iregular<>&>::basic_any;
+};
+
+TEST_CASE("basic_any test for ambiguous conversions", "[utility][basic_any]")
+{
+  int i = 42;
+  any_regular_ref ref{i};
+
+  any_regular a = ref;
+  a             = ref;
+}
+
+#else // ^^^ !__CUDA_ARCH__ ^^^ / vvv __CUDA_ARCH__ vvv
 // BUGBUG TODO:
 // temporary hack to prevent sccache from ignoring changes in code guarded by
 // !defined(__CUDA_ARCH__)

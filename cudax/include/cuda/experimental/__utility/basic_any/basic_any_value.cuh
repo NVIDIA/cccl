@@ -176,6 +176,17 @@ public:
     __convert_from(__other);
   }
 
+#if _CCCL_COMPILER(CLANG, <, 12) || _CCCL_COMPILER(GCC, <, 11)
+  // Older versions of clang and gcc need help disambiguating between
+  // basic_any<__ireference<I>> and basic_any<I&>.
+  _CCCL_TEMPLATE(class _OtherInterface)
+  _CCCL_REQUIRES(__any_convertible_to<basic_any<_OtherInterface&>, basic_any>)
+  _CUDAX_HOST_API basic_any(basic_any<_OtherInterface&> __other)
+  {
+    __convert_from(__other);
+  }
+#endif // _CCCL_COMPILER(CLANG, <, 12) || _CCCL_COMPILER(GCC, <, 11)
+
   //! \brief Destroys the contained value, if any.
   _CUDAX_HOST_API ~basic_any()
   {
@@ -242,6 +253,17 @@ public:
   {
     return __assign_from(__other);
   }
+
+#if _CCCL_COMPILER(CLANG, <, 12) || _CCCL_COMPILER(GCC, <, 11)
+  // Older versions of clang and gcc need help disambiguating between
+  // basic_any<__ireference<I>> and basic_any<I&>.
+  _CCCL_TEMPLATE(class _OtherInterface)
+  _CCCL_REQUIRES(__any_convertible_to<basic_any<_OtherInterface&>, basic_any>)
+  _CUDAX_HOST_API auto operator=(basic_any<_OtherInterface&> __other) -> basic_any&
+  {
+    return __assign_from(__other);
+  }
+#endif // _CCCL_COMPILER(CLANG, <, 12) || _CCCL_COMPILER(GCC, <, 11)
 
   //! \brief Implicitly convert to a `basic_any` non-const reference type:
   _CCCL_NODISCARD _CUDAX_HOST_API operator basic_any<__ireference<_Interface>>() & noexcept
