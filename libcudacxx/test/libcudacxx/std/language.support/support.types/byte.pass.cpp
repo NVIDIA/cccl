@@ -11,19 +11,13 @@
 
 #include "test_macros.h"
 
-// XFAIL: c++98, c++03, c++11
-
 // If we're just building the test and not executing it, it should pass.
 // UNSUPPORTED: no_execute
 
 // cuda::std::byte is not an integer type, nor a character type.
 // It is a distinct type for accessing the bits that ultimately make up object storage.
 
-#if TEST_STD_VER > 2011
-static_assert(cuda::std::is_trivial<cuda::std::byte>::value, ""); // P0767
-#else
-static_assert(cuda::std::is_pod<cuda::std::byte>::value, "");
-#endif
+static_assert(cuda::std::is_trivial<cuda::std::byte>::value, "");
 static_assert(!cuda::std::is_arithmetic<cuda::std::byte>::value, "");
 static_assert(!cuda::std::is_integral<cuda::std::byte>::value, "");
 
