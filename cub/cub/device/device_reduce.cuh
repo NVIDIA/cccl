@@ -46,8 +46,11 @@
 #include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
-#include <cub/iterator/arg_index_input_iterator.cuh>
+#include <cub/device/dispatch/dispatch_streaming_reduce.cuh>
 #include <cub/util_deprecated.cuh>
+#include <cub/util_type.cuh>
+
+#include <thrust/iterator/tabulate_output_iterator.h>
 
 #include <iterator>
 #include <limits>
@@ -476,9 +479,14 @@ struct DeviceReduce
   //! @rst
   //! Finds the first device-wide minimum using the less-than (``<``) operator, also returning the index of that item.
   //!
-  //! - The output value type of ``d_out`` is ``cub::KeyValuePair<int, T>``
-  //!   (assuming the value type of ``d_in`` is ``T``)
-  //!
+  //! - The output value type assigned to ``d_out`` is ``cub::KeyValuePair<offset_t, T>``.
+  //!   ``T`` is ``iterator_traits<OutputIteratorT>::value_type::Value``, unless this type is `void`,
+  //!   in which case ``T`` is ``iterator_traits<InputIteratorT>::value_type``.
+  //!   ``offset_t`` is determined as
+  //!   follows:
+  //!   ``uint64_t`` if ``cub::KeyValuePair<uint64_t, T>`` is assignable to ``d_out``. Otherwise, ``int64_t`` if
+  //!   ``cub::KeyValuePair<int64_t, T>`` is assignable to ``d_out``. Otherwise, ``uint32_t`` if
+  //!   ``cub::KeyValuePair<uint32_t, T>`` is assignable to ``d_out``. Otherwise, ``int32_t``.
   //!   - The minimum is written to ``d_out.value`` and its offset in the input array is written to ``d_out.key``.
   //!   - The ``{1, std::numeric_limits<T>::max()}`` tuple is produced for zero-length inputs
   //!
@@ -529,7 +537,7 @@ struct DeviceReduce
   //!
   //! @tparam OutputIteratorT
   //!   **[inferred]** Output iterator type for recording the reduced aggregate
-  //!   (having value type `cub::KeyValuePair<int, T>`) @iterator
+  //!   (having value type `cub::KeyValuePair<offset_t, T>`) @iterator
   //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
@@ -557,38 +565,51 @@ struct DeviceReduce
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    int num_items,
+    ::cuda::std::int64_t num_items,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMin");
 
-    // Signed integer type for global offsets
-    using OffsetT = int;
-
     // The input type
     using InputValueT = cub::detail::value_t<InputIteratorT>;
 
-    // The output tuple type
-    using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;
+    // Offset type used within the kernel and to index within one partition
+    using PerPartitionOffsetT = int;
 
-    using AccumT = OutputTupleT;
+    // Offset type used to index within the total input in the range [d_in, d_in + num_items)
+    using GlobalOffsetT = ::cuda::std::int64_t;
 
-    using InitT = detail::reduce::empty_problem_init_t<AccumT>;
+    // Determine initial value type
+    using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<GlobalOffsetT, InputValueT>>;
+    using InitT        = typename OutputTupleT::Value;
 
-    // The output value type
-    using OutputValueT = typename OutputTupleT::Value;
-
-    // Wrapped input iterator to produce index-value <OffsetT, InputT> tuples
-    using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OffsetT, OutputValueT>;
-
-    ArgIndexInputIteratorT d_indexed_in(d_in);
+    // Reduction operation
+    using ReduceOpT = cub::ArgMin;
 
     // Initial value
     // TODO Address https://github.com/NVIDIA/cub/issues/651
-    InitT initial_value{AccumT(1, Traits<InputValueT>::Max())};
+    InitT initial_value{Traits<InputValueT>::Max()};
 
-    return DispatchReduce<ArgIndexInputIteratorT, OutputIteratorT, OffsetT, cub::ArgMin, InitT, AccumT>::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_indexed_in, d_out, num_items, cub::ArgMin(), initial_value, stream);
+    // Helper transform output iterator, to allow "implicit conversion" between KeyValuePair types that have a different
+    // key type, which may happen if the user uses a different index type than the global offset type used by the
+    // algorithm
+    auto out_it =
+      THRUST_NS_QUALIFIER::make_tabulate_output_iterator(detail::reduce::write_to_user_out_it<OutputIteratorT>{d_out});
+
+    return detail::reduce::dispatch_streaming_arg_reduce_t<
+      InputIteratorT,
+      decltype(out_it),
+      PerPartitionOffsetT,
+      GlobalOffsetT,
+      ReduceOpT,
+      InitT>::Dispatch(d_temp_storage,
+                       temp_storage_bytes,
+                       d_in,
+                       out_it,
+                       static_cast<GlobalOffsetT>(num_items),
+                       ReduceOpT{},
+                       initial_value,
+                       stream);
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -598,7 +619,7 @@ struct DeviceReduce
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    int num_items,
+    ::cuda::std::int64_t num_items,
     cudaStream_t stream,
     bool debug_synchronous)
   {
@@ -736,8 +757,16 @@ struct DeviceReduce
   //! Finds the first device-wide maximum using the greater-than (``>``)
   //! operator, also returning the index of that item
   //!
-  //! - The output value type of ``d_out`` is ``cub::KeyValuePair<int, T>``
-  //!   (assuming the value type of ``d_in`` is ``T``)
+  //! - The output value type assigned to ``d_out`` is ``cub::KeyValuePair<offset_t, T>``.
+  //!   ``T`` is ``iterator_traits<OutputIteratorT>::value_type::Value``, unless this type is `void`,
+  //!   in which case ``T`` is ``iterator_traits<InputIteratorT>::value_type``.
+  //!   ``offset_t`` is determined as
+  //!   follows:
+  //!   ``uint64_t`` if ``cub::KeyValuePair<uint64_t, T>`` is assignable to ``d_out``. Otherwise, ``int64_t`` if
+  //!   ``cub::KeyValuePair<int64_t, T>`` is assignable to ``d_out``. Otherwise, ``uint32_t`` if
+  //!   ``cub::KeyValuePair<uint32_t, T>`` is assignable to ``d_out``. Otherwise, ``int32_t``.
+  //!   - The minimum is written to ``d_out.value`` and its offset in the input array is written to ``d_out.key``.
+  //!   - The ``{1, std::numeric_limits<T>::max()}`` tuple is produced for zero-length inputs
   //!
   //!   - The maximum is written to ``d_out.value`` and its offset in the input
   //!     array is written to ``d_out.key``.
@@ -792,7 +821,7 @@ struct DeviceReduce
   //!
   //! @tparam OutputIteratorT
   //!   **[inferred]** Output iterator type for recording the reduced aggregate
-  //!   (having value type `cub::KeyValuePair<int, T>`) @iterator
+  //!   (having value type `cub::KeyValuePair<offset_t, T>`) @iterator
   //!
   //! @param[in] d_temp_storage
   //!   Device-accessible allocation of temporary storage. When `nullptr`, the
@@ -820,38 +849,53 @@ struct DeviceReduce
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    int num_items,
+    ::cuda::std::int64_t num_items,
     cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMax");
 
-    // Signed integer type for global offsets
-    using OffsetT = int;
-
     // The input type
     using InputValueT = cub::detail::value_t<InputIteratorT>;
 
-    // The output tuple type
-    using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<OffsetT, InputValueT>>;
+    // Offset type used within the kernel and to index within one partition
+    using PerPartitionOffsetT = int;
 
-    using AccumT = OutputTupleT;
+    // Offset type used to index within the total input in the range [d_in, d_in + num_items)
+    using GlobalOffsetT = ::cuda::std::int64_t;
 
-    // The output value type
-    using OutputValueT = typename OutputTupleT::Value;
+    // Determine initial value type
+    using OutputTupleT = cub::detail::non_void_value_t<OutputIteratorT, KeyValuePair<GlobalOffsetT, InputValueT>>;
+    using InitT        = typename OutputTupleT::Value;
 
-    using InitT = detail::reduce::empty_problem_init_t<AccumT>;
-
-    // Wrapped input iterator to produce index-value <OffsetT, InputT> tuples
-    using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OffsetT, OutputValueT>;
-
-    ArgIndexInputIteratorT d_indexed_in(d_in);
+    // Reduction operation
+    using ReduceOpT = cub::ArgMax;
 
     // Initial value
     // TODO Address https://github.com/NVIDIA/cub/issues/651
-    InitT initial_value{AccumT(1, Traits<InputValueT>::Lowest())};
+    InitT initial_value{Traits<InputValueT>::Lowest()};
 
-    return DispatchReduce<ArgIndexInputIteratorT, OutputIteratorT, OffsetT, cub::ArgMax, InitT, AccumT>::Dispatch(
-      d_temp_storage, temp_storage_bytes, d_indexed_in, d_out, num_items, cub::ArgMax(), initial_value, stream);
+    // Helper transform output iterator, to allow "implicit conversion" between KeyValuePair types that have a different
+    // key type, which may happen if the user uses a different index type than the global offset type used by the
+    // algorithm
+    using implicit_cast_kv_pair_op_it =
+      THRUST_NS_QUALIFIER::tabulate_output_iterator<detail::reduce::write_to_user_out_it<OutputIteratorT>>;
+    implicit_cast_kv_pair_op_it out_it =
+      THRUST_NS_QUALIFIER::make_tabulate_output_iterator(detail::reduce::write_to_user_out_it<OutputIteratorT>{d_out});
+
+    return detail::reduce::dispatch_streaming_arg_reduce_t<
+      InputIteratorT,
+      implicit_cast_kv_pair_op_it,
+      PerPartitionOffsetT,
+      GlobalOffsetT,
+      ReduceOpT,
+      InitT>::Dispatch(d_temp_storage,
+                       temp_storage_bytes,
+                       d_in,
+                       out_it,
+                       static_cast<GlobalOffsetT>(num_items),
+                       ReduceOpT{},
+                       initial_value,
+                       stream);
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -861,7 +905,7 @@ struct DeviceReduce
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    int num_items,
+    ::cuda::std::int64_t num_items,
     cudaStream_t stream,
     bool debug_synchronous)
   {
