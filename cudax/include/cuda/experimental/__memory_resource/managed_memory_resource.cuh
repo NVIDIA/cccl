@@ -28,11 +28,11 @@
 #include <cuda/__memory_resource/get_property.h>
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__memory_resource/resource.h>
-#include <cuda/__memory_resource/resource_ref.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/detail/libcxx/include/stdexcept>
 
+#include <cuda/experimental/__memory_resource/any_resource.cuh>
 #include <cuda/experimental/__memory_resource/properties.cuh>
 
 //! @file
@@ -165,15 +165,15 @@ private:
   template <class _Resource>
   _CCCL_NODISCARD bool __equal_to(_Resource const& __rhs) const noexcept
   {
-    if constexpr (has_property<_Resource, mr::device_accessible>)
+    if constexpr (has_property<_Resource, device_accessible>)
     {
-      return _CUDA_VMR::resource_ref<mr::device_accessible>{const_cast<managed_memory_resource*>(this)}
-          == _CUDA_VMR::resource_ref<mr::device_accessible>{const_cast<_Resource&>(__rhs)};
+      return resource_ref<device_accessible>{*const_cast<managed_memory_resource*>(this)}
+          == __cudax::__as_resource_ref<device_accessible>(const_cast<_Resource&>(__rhs));
     }
-    else if constexpr (has_property<_Resource, mr::host_accessible>)
+    else if constexpr (has_property<_Resource, host_accessible>)
     {
-      return _CUDA_VMR::resource_ref<mr::host_accessible>{const_cast<managed_memory_resource*>(this)}
-          == _CUDA_VMR::resource_ref<mr::host_accessible>{const_cast<_Resource&>(__rhs)};
+      return resource_ref<host_accessible>{*const_cast<managed_memory_resource*>(this)}
+          == __cudax::__as_resource_ref<host_accessible>(const_cast<_Resource&>(__rhs));
     }
     else
     {
@@ -224,9 +224,9 @@ public:
 #  endif // _CCCL_STD_VER <= 2017
 
   //! @brief Enables the \c device_accessible property
-  friend constexpr void get_property(managed_memory_resource const&, mr::device_accessible) noexcept {}
+  friend constexpr void get_property(managed_memory_resource const&, device_accessible) noexcept {}
   //! @brief Enables the \c host_accessible property
-  friend constexpr void get_property(managed_memory_resource const&, mr::host_accessible) noexcept {}
+  friend constexpr void get_property(managed_memory_resource const&, host_accessible) noexcept {}
 #endif // _CCCL_DOXYGEN_INVOKED
 
   //! @brief Checks whether the passed in alignment is valid
@@ -236,8 +236,8 @@ public:
         && (_CUDA_VMR::default_cuda_malloc_alignment % __alignment == 0);
   }
 };
-static_assert(_CUDA_VMR::async_resource_with<managed_memory_resource, mr::device_accessible>, "");
-static_assert(_CUDA_VMR::async_resource_with<managed_memory_resource, mr::host_accessible>, "");
+static_assert(_CUDA_VMR::async_resource_with<managed_memory_resource, device_accessible>, "");
+static_assert(_CUDA_VMR::async_resource_with<managed_memory_resource, host_accessible>, "");
 
 } // namespace cuda::experimental
 
