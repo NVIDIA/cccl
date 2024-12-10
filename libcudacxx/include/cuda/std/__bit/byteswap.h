@@ -46,6 +46,27 @@ class __byteswap_impl
          | (static_cast<_Full>(__impl(static_cast<_Half>(__val))) << CHAR_BIT * sizeof(_Half));
   }
 
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static uint32_t __impl_device(uint32_t __val) noexcept
+  {
+    uint32_t __result{};
+    asm("prmt.b32 %0, %1, 0, 0x0123;" : "=r"(__result) : "r"(__val));
+    return __result;
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static uint64_t __impl_device(uint64_t __val) noexcept
+  {
+    uint32_t __hi{};
+    uint32_t __lo{};
+    asm("mov.b64 {%0, %1}, %2;" : "=r"(__hi), "=r"(__lo) : "l"(__val));
+
+    const uint32_t __swapped_lo = __impl(__hi);
+    const uint32_t __swapped_hi = __impl(__lo);
+    uint64_t __result{};
+    asm("mov.b64 %0, {%1, %2};" : "=l"(__result) : "r"(__swapped_hi), "r"(__swapped_lo));
+
+    return __result;
+  }
+
 public:
   template <class _Tp>
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static _CCCL_CONSTEXPR_CXX14 _Tp __impl(_Tp __val) noexcept
@@ -76,13 +97,6 @@ public:
 #endif
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static uint32_t __impl_device(uint32_t __val) noexcept
-  {
-    uint32_t __result{};
-    asm("prmt.b32 %0, %1, 0, 0x0123;" : "=r"(__result) : "r"(__val));
-    return __result;
-  }
-
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr uint32_t __impl(uint32_t __val) noexcept
   {
 #if defined(_CCCL_BUILTIN_BSWAP32)
@@ -99,20 +113,6 @@ public:
 #  endif // _CCCL_STD_VER >= 2014
     return __impl_recursive<uint16_t>(__val);
 #endif // !_CCCL_BUILTIN_BSWAP32
-  }
-
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static uint64_t __impl_device(uint64_t __val) noexcept
-  {
-    uint32_t __hi{};
-    uint32_t __lo{};
-    asm("mov.b64 {%0, %1}, %2;" : "=r"(__hi), "=r"(__lo) : "l"(__val));
-
-    const uint32_t __swapped_lo = __impl(__hi);
-    const uint32_t __swapped_hi = __impl(__lo);
-    uint64_t __result{};
-    asm("mov.b64 %0, {%1, %2};" : "=l"(__result) : "r"(__swapped_hi), "r"(__swapped_lo));
-
-    return __result;
   }
 
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr uint64_t __impl(uint64_t __val) noexcept
