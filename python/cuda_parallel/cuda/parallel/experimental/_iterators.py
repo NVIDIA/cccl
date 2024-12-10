@@ -66,6 +66,38 @@ def _ncc(abi_name, pyfunc, sig):
     )
 
 
+class IteratorBase:
+    def __init__(self, cvalue, value_type, numba_type):
+        self._cvalue = cvalue
+        self._value_type = value_type
+        self._numba_type = numba_type
+
+    @cached_property
+    def ltoirs(self):
+        advance_ltoir, _ = cached_compile(
+            self.__class__.advance,
+            (
+                self._numba_type,
+                numba.from_dtype(np.dtype("uint64"))
+            ),
+            output="ltoir"
+        )
+
+        deref_ltoir, _ = cached_compile(
+            self.__class__.dereference,
+            (
+                self._numba_type,
+            ),
+            output="ltoir"
+        )
+
+        return advance_ltoir, deref_ltoir
+
+    @property
+    def state(self):
+        return ctypes.cast(ctypes.pointer(self._cvalue), ctypes.c_void_p)
+
+
 def sizeof_pointee(context, ptr):
     size = context.get_abi_sizeof(ptr.type.pointee)
     return ir.Constant(ir.IntType(_DEVICE_POINTER_BITWIDTH), size)
