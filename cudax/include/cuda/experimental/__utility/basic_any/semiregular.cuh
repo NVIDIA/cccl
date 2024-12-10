@@ -25,11 +25,15 @@
 #include <cuda/std/__concepts/copyable.h>
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/movable.h>
+#include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__utility/typeid.h>
+#include <cuda/std/__utility/unreachable.h>
 
 #include <cuda/experimental/__utility/basic_any/access.cuh>
+#include <cuda/experimental/__utility/basic_any/basic_any_base.cuh>
 #include <cuda/experimental/__utility/basic_any/basic_any_from.cuh>
 #include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
+#include <cuda/experimental/__utility/basic_any/conversions.cuh>
 #include <cuda/experimental/__utility/basic_any/interfaces.cuh>
 #include <cuda/experimental/__utility/basic_any/storage.cuh>
 #include <cuda/experimental/__utility/basic_any/virtcall.cuh>
@@ -145,36 +149,107 @@ struct icopyable : interface<icopyable, extends<imovable<>>>
   }
 };
 
-template <class...>
-struct iequality_comparable : interface<iequality_comparable>
+template <class _Object>
+_CCCL_CONCEPT __non_polymorphic = (!__is_basic_any<_Object>) && (!__is_interface<_Object>);
+
+template <class... _Super>
+struct iequality_comparable;
+
+struct iequality_comparable_base : interface<iequality_comparable>
 {
+  // These overloads are only necessary so that iequality_comparable<> itself
+  // satisfies the std::equality_comparable constraint that is used by the
+  // `iequality_comparable<>::overloads` alias template below.
+  _CCCL_NORETURN friend _CUDAX_TRIVIAL_HOST_API auto
+  operator==(iequality_comparable<> const&, iequality_comparable<> const&) noexcept -> bool
+  {
+    _CUDA_VSTD::unreachable();
+  }
+
+  _CCCL_NORETURN friend _CUDAX_TRIVIAL_HOST_API auto
+  operator!=(iequality_comparable<> const&, iequality_comparable<> const&) noexcept -> bool
+  {
+    _CUDA_VSTD::unreachable();
+  }
+
+  // These are the overloads that get used when testing two `basic_any` objects
+  // for equality.
+  _CCCL_TEMPLATE(class _ILeft, class _IRight)
+  _CCCL_REQUIRES(__any_convertible_to<basic_any<_ILeft> const&, basic_any<_IRight> const&>
+                 || __any_convertible_to<basic_any<_IRight> const&, basic_any<_ILeft> const&>)
+  _CCCL_NODISCARD_FRIEND _CUDAX_HOST_API auto
+  operator==(iequality_comparable<_ILeft> const& __lhs, iequality_comparable<_IRight> const& __rhs) noexcept -> bool
+  {
+    auto const& __other = __cudax::basic_any_from(__rhs);
+    constexpr auto __eq = &__equal_fn<iequality_comparable<_ILeft>>;
+    return __cudax::virtcall<__eq>(&__lhs, __other.type(), __basic_any_access::__get_optr(__other));
+  }
+
+  _CCCL_TEMPLATE(class _ILeft, class _IRight)
+  _CCCL_REQUIRES(__any_convertible_to<basic_any<_ILeft> const&, basic_any<_IRight> const&>
+                 || __any_convertible_to<basic_any<_IRight> const&, basic_any<_ILeft> const&>)
+  _CCCL_NODISCARD_FRIEND _CUDAX_TRIVIAL_HOST_API auto
+  operator!=(iequality_comparable<_ILeft> const& __lhs, iequality_comparable<_IRight> const& __rhs) noexcept -> bool
+  {
+    return !(__lhs == __rhs);
+  }
+
+  // These are the overloads that get used when testing a `basic_any` object
+  // against a non-type-erased object.
+  //
+  // Q: Why require that the basic_any wrapper is not convertible to _Object?
+  //
+  // A: If there is a user-defined conversion from the basic_any type to _Object
+  // such that we can use _Object's symmetric equality comparison operator, that
+  // should be prefered. _Object may be another kind of wrapper object, in which
+  // case using the address of the **wrapper** object for the comparison (as
+  // opposed to the address of the wrapped object) is probably wrong.
+  _CCCL_TEMPLATE(class _Interface, class _Object, class _Self = basic_any_from_t<iequality_comparable<_Interface>>)
+  _CCCL_REQUIRES(__non_polymorphic<_Object> _CCCL_AND(!_CUDA_VSTD::convertible_to<_Self, _Object>)
+                   _CCCL_AND __satisfies<_Object, _Interface>)
+  _CCCL_NODISCARD_FRIEND _CUDAX_HOST_API auto
+  operator==(iequality_comparable<_Interface> const& __lhs, _Object const& __rhs) -> bool
+  {
+    constexpr auto __eq = &__equal_fn<iequality_comparable<_Interface>>;
+    return __cudax::virtcall<__eq>(&__lhs, _CCCL_TYPEID(_Object), _CUDA_VSTD::addressof(__rhs));
+  }
+
+  _CCCL_TEMPLATE(class _Interface, class _Object, class _Self = basic_any_from_t<iequality_comparable<_Interface>>)
+  _CCCL_REQUIRES(__non_polymorphic<_Object> _CCCL_AND(!_CUDA_VSTD::convertible_to<_Self, _Object>)
+                   _CCCL_AND __satisfies<_Object, _Interface>)
+  _CCCL_NODISCARD_FRIEND _CUDAX_HOST_API auto
+  operator==(_Object const& __lhs, iequality_comparable<_Interface> const& __rhs) noexcept -> bool
+  {
+    constexpr auto __eq = &__equal_fn<iequality_comparable<_Interface>>;
+    return __cudax::virtcall<__eq>(&__rhs, _CCCL_TYPEID(_Object), _CUDA_VSTD::addressof(__lhs));
+  }
+
+  _CCCL_TEMPLATE(class _Interface, class _Object, class _Self = basic_any_from_t<iequality_comparable<_Interface>>)
+  _CCCL_REQUIRES(__non_polymorphic<_Object> _CCCL_AND(!_CUDA_VSTD::convertible_to<_Self, _Object>)
+                   _CCCL_AND __satisfies<_Object, _Interface>)
+  _CCCL_NODISCARD_FRIEND _CUDAX_TRIVIAL_HOST_API auto
+  operator!=(iequality_comparable<_Interface> const& __lhs, _Object const& __rhs) noexcept -> bool
+  {
+    return !(__lhs == __rhs);
+  }
+
+  _CCCL_TEMPLATE(class _Interface, class _Object, class _Self = basic_any_from_t<iequality_comparable<_Interface>>)
+  _CCCL_REQUIRES(__non_polymorphic<_Object> _CCCL_AND(!_CUDA_VSTD::convertible_to<_Self, _Object>)
+                   _CCCL_AND __satisfies<_Object, _Interface>)
+  _CCCL_NODISCARD_FRIEND _CUDAX_TRIVIAL_HOST_API auto
+  operator!=(_Object const& __lhs, iequality_comparable<_Interface> const& __rhs) noexcept -> bool
+  {
+    return !(__lhs == __rhs);
+  }
+
   _CCCL_TEMPLATE(class _Tp)
   _CCCL_REQUIRES(_CUDA_VSTD::equality_comparable<_Tp>)
   using overrides _CCCL_NODEBUG_ALIAS = overrides_for<_Tp, _CUDAX_FNPTR_CONSTANT_WAR(&__equal_fn<_Tp>)>;
-
-#if !defined(_CCCL_NO_THREE_WAY_COMPARISON)
-  _CCCL_NODISCARD _CUDAX_HOST_API auto operator==(iequality_comparable const& __other) const -> bool
-  {
-    auto const& __rhs = __cudax::basic_any_from(__other);
-    void const* __obj = __basic_any_access::__get_optr(__rhs);
-    return __cudax::virtcall<&__equal_fn<iequality_comparable>>(this, __rhs.type(), __obj);
-  }
-#else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv _CCCL_NO_THREE_WAY_COMPARISON vvv
-  _CCCL_NODISCARD_FRIEND _CUDAX_HOST_API auto
-  operator==(iequality_comparable const& __left, iequality_comparable const& __right) -> bool
-  {
-    auto const& __rhs = __cudax::basic_any_from(__right);
-    void const* __obj = __basic_any_access::__get_optr(__rhs);
-    return __cudax::virtcall<&__equal_fn<iequality_comparable>>(&__left, __rhs.type(), __obj);
-  }
-
-  _CCCL_NODISCARD_FRIEND _CUDAX_TRIVIAL_HOST_API auto
-  operator!=(iequality_comparable const& __left, iequality_comparable const& __right) -> bool
-  {
-    return !(__left == __right);
-  }
-#endif // _CCCL_NO_THREE_WAY_COMPARISON
 };
+
+template <class... _Super>
+struct iequality_comparable : iequality_comparable_base
+{};
 
 } // namespace cuda::experimental
 
