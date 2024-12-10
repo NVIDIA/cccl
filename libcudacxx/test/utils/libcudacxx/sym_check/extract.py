@@ -54,7 +54,9 @@ class NMExtractor(object):
         out, _, exit_code = libcudacxx.util.executeCommandVerbose(cmd)
         if exit_code != 0:
             raise RuntimeError("Failed to run %s on %s" % (self.nm_exe, lib))
-        fmt_syms = (self._extract_sym(l) for l in out.splitlines() if l.strip())
+        fmt_syms = (
+            self._extract_sym(line) for line in out.splitlines() if line.strip()
+        )
         # Cast symbol to string.
         final_syms = (repr(s) for s in fmt_syms if self._want_sym(s))
         # Make unique and sort strings.
