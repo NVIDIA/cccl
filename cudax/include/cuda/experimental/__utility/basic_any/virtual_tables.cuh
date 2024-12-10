@@ -29,6 +29,8 @@
 #include <cuda/experimental/__utility/basic_any/virtual_functions.cuh>
 #include <cuda/experimental/__utility/basic_any/virtual_ptrs.cuh>
 
+#include <nv/target>
+
 _CCCL_PUSH_MACROS
 #undef interface
 
@@ -140,6 +142,12 @@ using __vtable _CCCL_NODEBUG_ALIAS = __unique_interfaces<_Interface, _CUDA_VSTD:
 // contains the overrides for `_Tp`.
 template <class _Interface, class _Tp>
 _CCCL_GLOBAL_CONSTANT __vtable<_Interface> __vtable_for_v{__tag<_Tp, _Interface>()};
+
+template <class _Interface, class _Tp>
+_CUDAX_API constexpr __vtable<_Interface> const* __get_vtable_ptr_for() noexcept
+{
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (return &__vtable_for_v<_Interface, _Tp>;), (return nullptr;))
+}
 
 } // namespace cuda::experimental
 

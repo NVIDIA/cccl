@@ -274,7 +274,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__irefer
   _CUDAX_HOST_API basic_any(_Tp& __obj) noexcept
       : basic_any<__ireference<_Interface>>()
   {
-    __vptr_for<interface_type> const __vptr = &__vtable_for_v<interface_type, _Up>;
+    __vptr_for<interface_type> const __vptr = __cudax::__get_vtable_ptr_for<interface_type, _Up>();
     this->__set_ref(__vptr, &__obj);
   }
 
