@@ -121,10 +121,10 @@ struct __has_base_fn<__iset<_Bases...>>
 };
 
 template <class _Derived, class _Base, class = void>
-_CCCL_GLOBAL_CONSTANT bool __extension_of = false;
+_CCCL_INLINE_VAR constexpr bool __extension_of = false;
 
 template <class _Derived, class _Base>
-_CCCL_GLOBAL_CONSTANT bool
+_CCCL_INLINE_VAR constexpr bool
   __extension_of<_Derived,
                  _Base,
                  _CUDA_VSTD::enable_if_t<_CUDA_VSTD::is_class_v<_Derived> && _CUDA_VSTD::is_class_v<_Base>>> =
