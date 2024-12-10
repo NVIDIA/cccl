@@ -72,6 +72,9 @@ namespace reserved
 template <typename Ctx, typename shape_t, typename partitioner_t, typename... DepsAndOps>
 class parallel_for_scope;
 
+template <typename Ctx, typename shape_t, typename partitioner_t, typename reduce_op_t, typename... DepsAndOps>
+class reduce_scope;
+
 template <typename Ctx, typename thread_hierarchy_spec_t, typename... Deps>
 class launch_scope;
 
@@ -1139,6 +1142,19 @@ public:
   {
     return parallel_for(self().default_exec_place(), mv(shape), mv(deps)...);
   }
+
+  template <typename S, typename reduce_op_t, typename... Deps>
+  auto reduce(exec_place e_place, S shape, reduce_op_t, Deps... deps)
+  {
+    return reserved::reduce_scope<Engine, S, null_partition, reduce_op_t, Deps...>(self(), mv(e_place), mv(shape), reduce_op_t{}, mv(deps)...);
+  }
+
+  template <typename S, typename reduce_op_t, typename... Deps, typename... Ops, bool... flags>
+  auto reduce(S shape, reduce_op_t, task_dep<Deps, Ops, flags>... deps)
+  {
+    return reduce(self().default_exec_place(), mv(shape), reduce_op_t{}, mv(deps)...);
+  }
+
 
 private:
   Engine& self()

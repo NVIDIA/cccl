@@ -40,6 +40,8 @@ template <typename T>
 class sum
 {
 public:
+  using scalar_t = T;
+
   static __host__ __device__ void init_op(T& dst)
   {
     dst = static_cast<T>(0);

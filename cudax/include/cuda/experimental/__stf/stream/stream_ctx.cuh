@@ -31,6 +31,7 @@
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh>
 #include <cuda/experimental/__stf/internal/launch.cuh>
 #include <cuda/experimental/__stf/internal/parallel_for_scope.cuh>
+#include <cuda/experimental/__stf/internal/reduce_scope.cuh>
 #include <cuda/experimental/__stf/internal/reorderer.cuh>
 #include <cuda/experimental/__stf/places/blocked_partition.cuh> // for unit test!
 #include <cuda/experimental/__stf/stream/interfaces/slice.cuh> // For implicit logical_data_untyped constructors

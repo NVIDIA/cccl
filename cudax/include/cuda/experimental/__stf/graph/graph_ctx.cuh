@@ -31,6 +31,7 @@
 #include <cuda/experimental/__stf/internal/backend_allocator_setup.cuh>
 #include <cuda/experimental/__stf/internal/launch.cuh>
 #include <cuda/experimental/__stf/internal/parallel_for_scope.cuh>
+#include <cuda/experimental/__stf/internal/reduce_scope.cuh>
 #include <cuda/experimental/__stf/places/blocked_partition.cuh> // for unit test!
 
 namespace cuda::experimental::stf

@@ -394,6 +394,45 @@ public:
   {
     return parallel_for(default_exec_place(), mv(shape), mv(deps)...);
   }
+
+  /*
+   * reduce
+   */
+  template <typename S, typename reduce_op_t, typename... Deps>
+  auto reduce(exec_place e_place, S shape, reduce_op_t, Deps... deps)
+  {
+    EXPECT(payload.index() != ::std::variant_npos, "Context is not initialized.");
+    using result_t = unified_scope<reserved::reduce_scope<stream_ctx, S,null_partition, reduce_op_t, Deps...>,
+                                   reserved::reduce_scope<graph_ctx, S, null_partition,reduce_op_t, Deps...>>;
+    return ::std::visit(
+      [&](auto& self) {
+        return result_t(self.reduce(mv(e_place), mv(shape), reduce_op_t{}, deps...));
+      },
+      payload);
+  }
+
+
+#if 0
+  template <typename partitioner_t, typename S, typename reduce_op_t, typename... Deps>
+  auto reduce(partitioner_t p, exec_place e_place, S shape, reduce_op_t, Deps... deps)
+  {
+    EXPECT(payload.index() != ::std::variant_npos, "Context is not initialized.");
+    using result_t = unified_scope<reserved::reduce_scope<stream_ctx, S, partitioner_t, reduce_op_t, Deps...>,
+                                   reserved::reduce_scope<graph_ctx, S, partitioner_t, reduce_op_t, Deps...>>;
+    return ::std::visit(
+      [&](auto& self) {
+        return result_t(self.reduce(mv(p), mv(e_place), mv(shape), deps..., reduce_op_t{}));
+      },
+      payload);
+  }
+#endif
+
+  template <typename S, typename reduce_op_t, typename... Deps, typename... Ops, bool... flags>
+  auto reduce(S shape, reduce_op_t, task_dep<Deps, Ops, flags>... deps)
+  {
+    return reduce(default_exec_place(), mv(shape), reduce_op_t{}, mv(deps)...);
+  }
+
 #endif // !defined(CUDASTF_DISABLE_CODE_GENERATION) && defined(__CUDACC__)
 
   template <typename... Deps>
