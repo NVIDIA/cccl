@@ -46,14 +46,13 @@ class __byteswap_impl
          | (static_cast<_Full>(__impl(static_cast<_Half>(__val))) << CHAR_BIT * sizeof(_Half));
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static uint32_t __impl_device(uint32_t __val) noexcept
+  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE static uint32_t __impl_device(uint32_t __val) noexcept
   {
-    uint32_t __result{};
-    asm("prmt.b32 %0, %1, 0, 0x0123;" : "=r"(__result) : "r"(__val));
-    return __result;
+    asm("prmt.b32 %0, %0, 0, 0x0123;" : "+r"(__val));
+    return __val;
   }
 
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static uint64_t __impl_device(uint64_t __val) noexcept
+  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE static uint64_t __impl_device(uint64_t __val) noexcept
   {
     uint32_t __hi{};
     uint32_t __lo{};
