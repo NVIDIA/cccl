@@ -3,7 +3,16 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import numba
-from cuda.cooperative.experimental._types import *
+
+from cuda.cooperative.experimental._types import (
+    Algorithm,
+    Dependency,
+    DependentArray,
+    Invocable,
+    Pointer,
+    TemplateParameter,
+    Value,
+)
 from cuda.cooperative.experimental._common import make_binary_tempfile
 
 

@@ -5,8 +5,8 @@ import random
 
 def randomized_cartesian_product(list_of_lists):
     length = 1
-    for l in list_of_lists:
-        length *= len(l)
+    for lst in list_of_lists:
+        length *= len(lst)
 
     visited = set()
     while len(visited) < length:

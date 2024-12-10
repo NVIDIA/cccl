@@ -15,8 +15,10 @@ from wheel.bdist_wheel import bdist_wheel
 project_path = os.path.abspath(os.path.dirname(__file__))
 cccl_path = os.path.abspath(os.path.join(project_path, "..", ".."))
 cccl_headers = [["cub", "cub"], ["libcudacxx", "include"], ["thrust", "thrust"]]
+__version__ = None
 with open(os.path.join(project_path, "cuda", "parallel", "_version.py")) as f:
     exec(f.read())
+assert __version__ is not None
 ver = __version__
 del __version__
 

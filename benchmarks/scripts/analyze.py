@@ -293,7 +293,10 @@ def case_top(alpha, N, algname, ct_point_name, case_dfs):
     print("{}[{}]:".format(algname, ct_point_name))
 
     if alpha < 1.0:
-        case_df = remove_matching_distributions(alpha, case_df)
+        for subbench in case_dfs:
+            case_dfs[subbench] = remove_matching_distributions(
+                alpha, case_dfs[subbench]
+            )
 
     for subbench in case_dfs:
         case_dfs[subbench] = extract_complete_variants(case_dfs[subbench])

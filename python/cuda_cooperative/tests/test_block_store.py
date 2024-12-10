@@ -44,7 +44,6 @@ def test_block_store(T, threads_in_block, items_per_thread, algorithm):
 
     @cuda.jit(link=block_store.files)
     def kernel(d_input, d_output):
-        tid = cuda.threadIdx.x
         temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
         thread_data = cuda.local.array(shape=items_per_thread, dtype=dtype)
         for i in range(items_per_thread):
