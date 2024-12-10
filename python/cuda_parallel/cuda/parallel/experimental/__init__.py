@@ -99,28 +99,15 @@ class _CCCLOp(ctypes.Structure):
     ]
 
 
-# MUST match `cccl_string_view` in c/include/cccl/c/types.h
-class _CCCLStringView(ctypes.Structure):
-    _fields_ = [("begin", ctypes.c_char_p), ("size", ctypes.c_int)]
-
-
-# MUST match `cccl_string_views` in c/include/cccl/c/types.h
-class _CCCLStringViews(ctypes.Structure):
-    _fields_ = [("views", ctypes.POINTER(_CCCLStringView)), ("size", ctypes.c_int)]
-
-
 # MUST match `cccl_iterator_t` in c/include/cccl/c/types.h
 class _CCCLIterator(ctypes.Structure):
-    _fields_ = [
-        ("size", ctypes.c_int),
-        ("alignment", ctypes.c_int),
-        ("type", _CCCLIteratorKindEnum),
-        ("advance", _CCCLOp),
-        ("dereference", _CCCLOp),
-        ("value_type", _TypeInfo),
-        ("state", ctypes.c_void_p),
-        ("ltoirs", ctypes.POINTER(_CCCLStringViews)),
-    ]
+    _fields_ = [("size", ctypes.c_int),
+                ("alignment", ctypes.c_int),
+                ("type", _CCCLIteratorKindEnum),
+                ("advance", _CCCLOp),
+                ("dereference", _CCCLOp),
+                ("value_type", _TypeInfo),
+                ("state", ctypes.c_void_p)]
 
 
 # MUST match `cccl_value_t` in c/include/cccl/c/types.h
@@ -177,7 +164,7 @@ def _device_array_to_cccl_iter(array):
     info = _numpy_type_to_info(dtype)
     # Note: this is slightly slower, but supports all ndarray-like objects as long as they support CAI
     # TODO: switch to use gpumemoryview once it's ready
-    return _CCCLIterator(1, 1, _CCCLIteratorKindEnum.POINTER, _CCCLOp(), _CCCLOp(), info, array.__cuda_array_interface__["data"][0], None)
+    return _CCCLIterator(1, 1, _CCCLIteratorKindEnum.POINTER, _CCCLOp(), _CCCLOp(), info, array.__cuda_array_interface__["data"][0])
 
 
 def _iterator_to_cccl_iter(it):
