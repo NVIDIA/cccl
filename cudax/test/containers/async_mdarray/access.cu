@@ -31,47 +31,47 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray access",
 {
   using Env             = typename extract_properties<TestType>::env;
   using Resource        = typename extract_properties<TestType>::resource;
-  using Vector          = typename extract_properties<TestType>::async_mdarray;
-  using T               = typename Vector::value_type;
-  using reference       = typename Vector::reference;
-  using const_reference = typename Vector::const_reference;
-  using pointer         = typename Vector::pointer;
-  using const_pointer   = typename Vector::const_pointer;
+  using Array           = typename extract_properties<TestType>::async_mdarray;
+  using T               = typename Array::value_type;
+  using reference       = typename Array::reference;
+  using const_reference = typename Array::const_reference;
+  using pointer         = typename Array::pointer;
+  using const_pointer   = typename Array::const_pointer;
 
   cudax::stream stream{};
   Env env{Resource{}, stream};
 
   SECTION("cudax::async_mdarray::operator[]")
   {
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>()[1ull]), reference>);
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const Vector&>()[1ull]), const_reference>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<Array&>()[1ull]), reference>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const Array&>()[1ull]), const_reference>);
 
     {
-      Vector vec{env, {T(1), T(42), T(1337), T(0)}};
+      Array vec{env, {T(1), T(42), T(1337), T(0)}};
       auto& res = vec[2];
-      CHECK(compare_value<Vector::__is_host_only>(res, T(1337)));
+      CHECK(compare_value<Array::__is_host_only>(res, T(1337)));
       CHECK(static_cast<size_t>(cuda::std::addressof(res) - vec.data()) == 2);
-      assign_value<Vector::__is_host_only>(res, T(4));
+      assign_value<Array::__is_host_only>(res, T(4));
 
       auto& const_res = cuda::std::as_const(vec)[2];
-      CHECK(compare_value<Vector::__is_host_only>(const_res, T(4)));
+      CHECK(compare_value<Array::__is_host_only>(const_res, T(4)));
       CHECK(static_cast<size_t>(cuda::std::addressof(const_res) - vec.data()) == 2);
     }
   }
 
   SECTION("cudax::async_mdarray::data")
   {
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().data()), pointer>);
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const Vector&>().data()), const_pointer>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<Array&>().data()), pointer>);
+    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const Array&>().data()), const_pointer>);
 
     { // Works without allocation
-      Vector vec{env};
+      Array vec{env};
       CHECK(vec.data() == nullptr);
       CHECK(cuda::std::as_const(vec).data() == nullptr);
     }
 
     { // Works with allocation
-      Vector vec{env, {T(1), T(42), T(1337), T(0)}};
+      Array vec{env, {T(1), T(42), T(1337), T(0)}};
       CHECK(vec.data() != nullptr);
       CHECK(cuda::std::as_const(vec).data() != nullptr);
       CHECK(cuda::std::as_const(vec).data() == vec.data());

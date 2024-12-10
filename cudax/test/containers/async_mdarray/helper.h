@@ -30,6 +30,23 @@ namespace cudax = cuda::experimental;
 __device__ constexpr int device_data[] = {1, 42, 1337, 0, 12, -1};
 constexpr int host_data[]              = {1, 42, 1337, 0, 12, -1};
 
+template <bool __is_host_only, class Span>
+constexpr bool equal_range(const Span& span)
+{
+  _CCCL_IF_CONSTEXPR (__is_host_only)
+  {
+    return cuda::std::equal(span.begin(), span.end(), cuda::std::begin(host_data), cuda::std::end(host_data));
+  }
+  else
+  {
+    return span.size() == cuda::std::size(device_data)
+        && thrust::equal(thrust::cuda::par.on(span.get_stream().get()),
+                         span.begin(),
+                         span.end(),
+                         cuda::get_device_address(device_data[0]));
+  }
+}
+
 template <class Vector>
 constexpr bool equal_range(const Vector& vec)
 {

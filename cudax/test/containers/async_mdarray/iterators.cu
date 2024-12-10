@@ -30,9 +30,9 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray iterators",
 {
   using Env       = typename extract_properties<TestType>::env;
   using Resource  = typename extract_properties<TestType>::resource;
-  using Vector    = typename extract_properties<TestType>::async_mdarray;
-  using T         = typename Vector::value_type;
-  using size_type = typename Vector::size_type;
+  using Array     = typename extract_properties<TestType>::async_mdarray;
+  using T         = typename Array::value_type;
+  using size_type = typename Array::size_type;
 
   using iterator       = typename extract_properties<TestType>::iterator;
   using const_iterator = typename extract_properties<TestType>::const_iterator;
@@ -45,24 +45,24 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray iterators",
 
   SECTION("cudax::async_mdarray::begin/end properties")
   {
-    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().begin()), iterator>);
-    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<const Vector&>().begin()), const_iterator>);
-    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().cbegin()), const_iterator>);
-    STATIC_REQUIRE(noexcept(cuda::std::declval<Vector&>().begin()));
-    STATIC_REQUIRE(noexcept(cuda::std::declval<const Vector&>().begin()));
-    STATIC_REQUIRE(noexcept(cuda::std::declval<Vector&>().cbegin()));
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Array&>().begin()), iterator>);
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<const Array&>().begin()), const_iterator>);
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Array&>().cbegin()), const_iterator>);
+    STATIC_REQUIRE(noexcept(cuda::std::declval<Array&>().begin()));
+    STATIC_REQUIRE(noexcept(cuda::std::declval<const Array&>().begin()));
+    STATIC_REQUIRE(noexcept(cuda::std::declval<Array&>().cbegin()));
 
-    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().end()), iterator>);
-    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<const Vector&>().end()), const_iterator>);
-    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().cend()), const_iterator>);
-    STATIC_REQUIRE(noexcept(cuda::std::declval<Vector&>().end()));
-    STATIC_REQUIRE(noexcept(cuda::std::declval<const Vector&>().end()));
-    STATIC_REQUIRE(noexcept(cuda::std::declval<Vector&>().cend()));
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Array&>().end()), iterator>);
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<const Array&>().end()), const_iterator>);
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Array&>().cend()), const_iterator>);
+    STATIC_REQUIRE(noexcept(cuda::std::declval<Array&>().end()));
+    STATIC_REQUIRE(noexcept(cuda::std::declval<const Array&>().end()));
+    STATIC_REQUIRE(noexcept(cuda::std::declval<Array&>().cend()));
   }
 
   SECTION("cudax::async_mdarray::begin/end no allocation")
   {
-    Vector vec{env, 0};
+    Array vec{env, 0};
     CHECK(vec.begin() == iterator{nullptr});
     CHECK(cuda::std::as_const(vec).begin() == const_iterator{nullptr});
     CHECK(vec.cbegin() == const_iterator{nullptr});
@@ -78,7 +78,7 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray iterators",
 
   SECTION("cudax::async_mdarray::begin/end with allocation")
   {
-    Vector vec{env, 42, cudax::uninit}; // Note we do not care about the elements just the sizes
+    Array vec{env, 42, cudax::uninit}; // Note we do not care about the elements just the sizes
     // begin points to the element at data()
     CHECK(vec.begin() == iterator{vec.data()});
     CHECK(cuda::std::as_const(vec).begin() == const_iterator{vec.data()});
@@ -97,25 +97,24 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray iterators",
 
   SECTION("cudax::async_mdarray::rbegin/rend properties")
   {
-    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().rbegin()), reverse_iterator>);
-    STATIC_REQUIRE(
-      cuda::std::is_same_v<decltype(cuda::std::declval<const Vector&>().rbegin()), const_reverse_iterator>);
-    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().crbegin()), const_reverse_iterator>);
-    STATIC_REQUIRE(noexcept(cuda::std::declval<Vector&>().rbegin()));
-    STATIC_REQUIRE(noexcept(cuda::std::declval<const Vector&>().rbegin()));
-    STATIC_REQUIRE(noexcept(cuda::std::declval<Vector&>().crbegin()));
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Array&>().rbegin()), reverse_iterator>);
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<const Array&>().rbegin()), const_reverse_iterator>);
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Array&>().crbegin()), const_reverse_iterator>);
+    STATIC_REQUIRE(noexcept(cuda::std::declval<Array&>().rbegin()));
+    STATIC_REQUIRE(noexcept(cuda::std::declval<const Array&>().rbegin()));
+    STATIC_REQUIRE(noexcept(cuda::std::declval<Array&>().crbegin()));
 
-    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().rend()), reverse_iterator>);
-    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<const Vector&>().rend()), const_reverse_iterator>);
-    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().crend()), const_reverse_iterator>);
-    STATIC_REQUIRE(noexcept(cuda::std::declval<Vector&>().rend()));
-    STATIC_REQUIRE(noexcept(cuda::std::declval<const Vector&>().rend()));
-    STATIC_REQUIRE(noexcept(cuda::std::declval<Vector&>().crend()));
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Array&>().rend()), reverse_iterator>);
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<const Array&>().rend()), const_reverse_iterator>);
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Array&>().crend()), const_reverse_iterator>);
+    STATIC_REQUIRE(noexcept(cuda::std::declval<Array&>().rend()));
+    STATIC_REQUIRE(noexcept(cuda::std::declval<const Array&>().rend()));
+    STATIC_REQUIRE(noexcept(cuda::std::declval<Array&>().crend()));
   }
 
   SECTION("cudax::async_mdarray::rbegin/rend no allocation")
   {
-    Vector vec{env, 0};
+    Array vec{env, 0};
     CHECK(vec.rbegin() == reverse_iterator{iterator{nullptr}});
     CHECK(cuda::std::as_const(vec).rbegin() == const_reverse_iterator{const_iterator{nullptr}});
     CHECK(vec.crbegin() == const_reverse_iterator{const_iterator{nullptr}});
@@ -131,7 +130,7 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray iterators",
 
   SECTION("cudax::async_mdarray::rbegin/rend with allocation")
   {
-    Vector vec{env, 42, cudax::uninit}; // Note we do not care about the elements just the sizes
+    Array vec{env, 42, cudax::uninit}; // Note we do not care about the elements just the sizes
     // rbegin points to the element at data() + 42
     CHECK(vec.rbegin() == reverse_iterator{iterator{vec.data() + 42}});
     CHECK(cuda::std::as_const(vec).rbegin() == const_reverse_iterator{const_iterator{vec.data() + 42}});

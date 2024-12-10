@@ -30,25 +30,24 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray swap",
 {
   using Env       = typename extract_properties<TestType>::env;
   using Resource  = typename extract_properties<TestType>::resource;
-  using Vector    = typename extract_properties<TestType>::async_mdarray;
-  using T         = typename Vector::value_type;
-  using size_type = typename Vector::size_type;
+  using Array     = typename extract_properties<TestType>::async_mdarray;
+  using T         = typename Array::value_type;
+  using size_type = typename Array::size_type;
 
   cudax::stream stream{};
   Env env{Resource{}, stream};
+  STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Array&>().swap(cuda::std::declval<Array&>())), void>);
   STATIC_REQUIRE(
-    cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().swap(cuda::std::declval<Vector&>())), void>);
-  STATIC_REQUIRE(
-    cuda::std::is_same_v<decltype(swap(cuda::std::declval<Vector&>(), cuda::std::declval<Vector&>())), void>);
-  STATIC_REQUIRE(noexcept(cuda::std::declval<Vector&>().swap(cuda::std::declval<Vector&>())));
-  STATIC_REQUIRE(noexcept(swap(cuda::std::declval<Vector&>(), cuda::std::declval<Vector&>())));
+    cuda::std::is_same_v<decltype(swap(cuda::std::declval<Array&>(), cuda::std::declval<Array&>())), void>);
+  STATIC_REQUIRE(noexcept(cuda::std::declval<Array&>().swap(cuda::std::declval<Array&>())));
+  STATIC_REQUIRE(noexcept(swap(cuda::std::declval<Array&>(), cuda::std::declval<Array&>())));
 
   // Note we do not care about the elements just the sizes
-  Vector vec_small{env, 5, cudax::uninit};
+  Array vec_small{env, 5, cudax::uninit};
 
   SECTION("Can swap async_mdarray")
   {
-    Vector vec_large{env, 42, cudax::uninit};
+    Array vec_large{env, 42, cudax::uninit};
 
     CHECK(vec_large.size() == 42);
     CHECK(vec_small.size() == 5);
@@ -70,7 +69,7 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray swap",
 
   SECTION("Can swap async_mdarray without allocation")
   {
-    Vector vec_no_allocation{env, 0, cudax::uninit};
+    Array vec_no_allocation{env, 0, cudax::uninit};
 
     CHECK(vec_no_allocation.size() == 0);
     CHECK(vec_small.size() == 5);

@@ -46,6 +46,8 @@
 #include <cuda/std/__ranges/size.h>
 #include <cuda/std/__ranges/unwrap_end.h>
 #include <cuda/std/__type_traits/add_const.h>
+#include <cuda/std/__type_traits/is_assignable.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_trivially_copyable.h>
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
@@ -89,9 +91,9 @@ namespace cuda::experimental
 //! implement :ref:`get_property(const async_mdarray&, Property) <libcudacxx-extended-api-memory-resources-properties>`.
 //!
 //! @endrst
-//! @tparam _Tp the type to be stored in the buffer
+//! @tparam _ElementType the type to be stored in the buffer
 //! @tparam _Properties... The properties the allocated memory satisfies
-template <class _Tp, class _Extents, class _LayoutPolicy = _CUDA_VSTD::layout_right, class... _Properties>
+template <class _ElementType, class _Extents, class _LayoutPolicy = _CUDA_VSTD::layout_right, class... _Properties>
 class async_mdarray
 {
 public:
@@ -99,14 +101,14 @@ public:
   using layout_type  = _LayoutPolicy;
   using mapping_type = typename layout_type::template mapping<extents_type>;
 
-  using element_type           = _Tp;
-  using value_type             = _CUDA_VSTD::remove_cv_t<_Tp>;
-  using pointer                = _Tp*;
-  using const_pointer          = const _Tp*;
-  using reference              = _Tp&;
-  using const_reference        = const _Tp&;
-  using iterator               = heterogeneous_iterator<_Tp, false, _Properties...>;
-  using const_iterator         = heterogeneous_iterator<_Tp, true, _Properties...>;
+  using element_type           = _ElementType;
+  using value_type             = _CUDA_VSTD::remove_cv_t<_ElementType>;
+  using pointer                = _ElementType*;
+  using const_pointer          = const _ElementType*;
+  using reference              = _ElementType&;
+  using const_reference        = const _ElementType&;
+  using iterator               = heterogeneous_iterator<_ElementType, false, _Properties...>;
+  using const_iterator         = heterogeneous_iterator<_ElementType, true, _Properties...>;
   using reverse_iterator       = _CUDA_VSTD::reverse_iterator<iterator>;
   using const_reverse_iterator = _CUDA_VSTD::reverse_iterator<const_iterator>;
 
@@ -117,18 +119,22 @@ public:
 
   using __env_t          = ::cuda::experimental::env_t<_Properties...>;
   using __policy_t       = ::cuda::experimental::execution::execution_policy;
-  using __buffer_t       = ::cuda::experimental::uninitialized_async_buffer<_Tp, _Properties...>;
+  using __buffer_t       = ::cuda::experimental::uninitialized_async_buffer<_ElementType, _Properties...>;
   using __resource_t     = ::cuda::experimental::any_async_resource<_Properties...>;
   using __resource_ref_t = _CUDA_VMR::async_resource_ref<_Properties...>;
 
   // TODO: use an accessor that has host / device guardrails
-  using __mdspan_t = _CUDA_VSTD::mdspan<_Tp, _Extents, _LayoutPolicy>;
+  template <class _OtherElementType,
+            class _OtherExtent,
+            class _OtherLayout,
+            class _OtherAccessorType = _CUDA_VSTD::default_accessor<_ElementType>>
+  using __mdspan_t = _CUDA_VSTD::mdspan<_OtherElementType, _OtherExtent, _OtherLayout, _OtherAccessorType>;
 
   template <class, class, class, class...>
   friend class async_mdarray;
 
   // For now we require trivially copyable type to simplify the implementation
-  static_assert(_CCCL_TRAIT(_CUDA_VSTD::is_trivially_copyable, _Tp),
+  static_assert(_CCCL_TRAIT(_CUDA_VSTD::is_trivially_copyable, _ElementType),
                 "cuda::experimental::async_mdarray requires T to be trivially copyable.");
 
   static_assert(_CUDA_VSTD::__detail::__is_extents_v<_Extents>,
@@ -149,7 +155,7 @@ private:
 
   //! @brief Helper to check container is compatible with this async_mdarray
   template <class _Range>
-  static constexpr bool __compatible_range = _CUDA_VRANGES::__container_compatible_range<_Range, _Tp>;
+  static constexpr bool __compatible_range = _CUDA_VRANGES::__container_compatible_range<_Range, _ElementType>;
 
   //! @brief Helper to check whether a different async_mdarray still statisfies all properties of this one
   template <class... _OtherProperties>
@@ -193,7 +199,7 @@ private:
         "cudax::async_mdarray::__copy_same: failed to copy data",
         __dest,
         __first,
-        sizeof(_Tp) * __count,
+        sizeof(_ElementType) * __count,
         ::cudaMemcpyDeviceToDevice,
         __buf_.get_stream().get());
       return __dest + __count;
@@ -218,14 +224,14 @@ private:
     { // For non-contiguous iterators we need to copy into temporary host storage to use cudaMemcpy
       // This should only ever happen when passing in data from host to device
       _CCCL_ASSERT(__kind == cudaMemcpyHostToDevice, "Invalid use case!");
-      auto __temp = _CUDA_VSTD::get_temporary_buffer<_Tp>(__count).first;
+      auto __temp = _CUDA_VSTD::get_temporary_buffer<_ElementType>(__count).first;
       _CUDA_VSTD::copy(__first, __last, __temp);
       _CCCL_TRY_CUDA_API(
         ::cudaMemcpyAsync,
         "cudax::async_mdarray::__copy_cross: failed to copy data",
         __dest,
         __temp,
-        sizeof(_Tp) * __count,
+        sizeof(_ElementType) * __count,
         __kind,
         __buf_.get_stream().get());
       _CUDA_VSTD::return_temporary_buffer(__temp);
@@ -238,7 +244,7 @@ private:
         "cudax::async_mdarray::__copy_cross: failed to copy data",
         __dest,
         _CUDA_VSTD::to_address(__first),
-        sizeof(_Tp) * __count,
+        sizeof(_ElementType) * __count,
         __kind,
         __buf_.get_stream().get());
     }
@@ -247,7 +253,7 @@ private:
   //! @brief Copy-constructs elements in the range `[__first, __first + __count)`.
   //! @param __first Pointer to the first element to be initialized.
   //! @param __count The number of elements to be initialized.
-  _CCCL_HIDE_FROM_ABI void __fill_n(pointer __first, size_type __count, const _Tp& __value)
+  _CCCL_HIDE_FROM_ABI void __fill_n(pointer __first, size_type __count, const _ElementType& __value)
   {
     _CCCL_IF_CONSTEXPR (__is_host_only)
     {
@@ -312,7 +318,7 @@ public:
   //! @param __other The other async_mdarray.
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES(__properties_match<_OtherProperties...>)
-  _CCCL_HIDE_FROM_ABI explicit async_mdarray(const async_mdarray<_Tp, _OtherProperties...>& __other)
+  _CCCL_HIDE_FROM_ABI explicit async_mdarray(const async_mdarray<_ElementType, _OtherProperties...>& __other)
       : __buf_(__other.get_memory_resource(), __other.get_stream(), __other.size())
       , __mapping_(__other.__mapping_)
       , __policy_(__other.__policy_)
@@ -328,7 +334,7 @@ public:
   //! @param __other The other async_mdarray.
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES(__properties_match<_OtherProperties...>)
-  _CCCL_HIDE_FROM_ABI explicit async_mdarray(async_mdarray<_Tp, _OtherProperties...>&& __other) noexcept
+  _CCCL_HIDE_FROM_ABI explicit async_mdarray(async_mdarray<_ElementType, _OtherProperties...>&& __other) noexcept
       : __buf_(_CUDA_VSTD::move(__other.__buf_))
       , __mapping_(_CUDA_VSTD::exchange(__other.__mapping_, mapping_type{}))
       , __policy_(_CUDA_VSTD::exchange(__other.__policy_, __policy_t::invalid_execution_policy))
@@ -352,7 +358,7 @@ public:
     if (__size != 0)
     {
       // miscco: should implement parallel specialized memory algorithms
-      this->__fill_n(__unwrapped_begin(), __size, _Tp());
+      this->__fill_n(__unwrapped_begin(), __size, _ElementType());
     }
   }
 
@@ -362,7 +368,7 @@ public:
   //! @param __size The size of the async_mdarray.
   //! @param __value The value all elements are copied from.
   //! @note If `__size == 0` then no memory is allocated.
-  _CCCL_HIDE_FROM_ABI explicit async_mdarray(const __env_t& __env, const size_type __size, const _Tp& __value)
+  _CCCL_HIDE_FROM_ABI explicit async_mdarray(const __env_t& __env, const size_type __size, const _ElementType& __value)
       : async_mdarray(__env, __size, ::cuda::experimental::uninit)
   {
     if (__size != 0)
@@ -407,7 +413,7 @@ public:
   //! @param __mr The memory resource to allocate the async_mdarray with.
   //! @param __ilist The initializer_list being copied into the async_mdarray.
   //! @note If `__ilist.size() == 0` then no memory is allocated
-  _CCCL_HIDE_FROM_ABI async_mdarray(const __env_t& __env, _CUDA_VSTD::initializer_list<_Tp> __ilist)
+  _CCCL_HIDE_FROM_ABI async_mdarray(const __env_t& __env, _CUDA_VSTD::initializer_list<_ElementType> __ilist)
       : async_mdarray(__env, __ilist.size(), ::cuda::experimental::uninit)
   {
     if (size() > 0)
@@ -501,7 +507,7 @@ public:
   //! @param __other The other async_mdarray.
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES(__properties_match<_OtherProperties...>)
-  _CCCL_HIDE_FROM_ABI async_mdarray& operator=(const async_mdarray<_Tp, _OtherProperties...>& __other)
+  _CCCL_HIDE_FROM_ABI async_mdarray& operator=(const async_mdarray<_ElementType, _OtherProperties...>& __other)
   {
     if (this == reinterpret_cast<const async_mdarray*>(_CUDA_VSTD::addressof(__other)))
     {
@@ -526,7 +532,7 @@ public:
   //! @param __other The other async_mdarray.
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES(__properties_match<_OtherProperties...>)
-  _CCCL_HIDE_FROM_ABI async_mdarray& operator=(async_mdarray<_Tp, _OtherProperties...>&& __other)
+  _CCCL_HIDE_FROM_ABI async_mdarray& operator=(async_mdarray<_ElementType, _OtherProperties...>&& __other)
   {
     if (this == reinterpret_cast<async_mdarray*>(_CUDA_VSTD::addressof(__other)))
     {
@@ -541,7 +547,7 @@ public:
 
   //! @brief Assigns an initializer_list to a async_mdarray, replacing its content with that of the initializer_list
   //! @param __ilist The initializer_list to be assigned
-  _CCCL_HIDE_FROM_ABI async_mdarray& operator=(_CUDA_VSTD::initializer_list<_Tp> __ilist)
+  _CCCL_HIDE_FROM_ABI async_mdarray& operator=(_CUDA_VSTD::initializer_list<_ElementType> __ilist)
   {
     const auto __count = __ilist.size();
     if (size() != __count)
@@ -553,6 +559,61 @@ public:
     __mapping_ = mapping_type{_CUDA_VSTD::dims<1>{__count}};
     this->__copy_cross(__ilist.begin(), __ilist.end(), __unwrapped_begin(), __count);
     return *this;
+  }
+
+  //! @}
+
+  //! @addtogroup conversions
+  _CCCL_HIDE_FROM_ABI
+  operator __mdspan_t<_ElementType, _Extents, _LayoutPolicy, _CUDA_VSTD::default_accessor<_ElementType>>() noexcept
+  {
+    return {data(), __mapping_};
+  }
+
+  _CCCL_HIDE_FROM_ABI
+  operator __mdspan_t<const _ElementType, _Extents, _LayoutPolicy, _CUDA_VSTD::default_accessor<const _ElementType>>() noexcept
+  {
+    return {data(), __mapping_};
+  }
+
+  _CCCL_TEMPLATE(class _OtherElementType, class _OtherExtent, class _OtherLayout, class _OtherAccessorType)
+  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_assignable,
+                             __mdspan_t<_ElementType, _Extents, _LayoutPolicy>,
+                             __mdspan_t<_OtherElementType, _OtherExtent, _OtherLayout, _OtherAccessorType>))
+  _CCCL_HIDE_FROM_ABI operator __mdspan_t<_OtherElementType, _OtherExtent, _OtherLayout, _OtherAccessorType>() noexcept
+  {
+    return __mdspan_t<_OtherElementType, _OtherExtent, _OtherLayout, _OtherAccessorType>(data(), __mapping_);
+  }
+
+  _CCCL_HIDE_FROM_ABI __mdspan_t<_ElementType, _Extents, _LayoutPolicy, _CUDA_VSTD::default_accessor<_ElementType>>
+  view(const _CUDA_VSTD::default_accessor<_ElementType>& __accessor = {}) noexcept
+  {
+    return {data(), __mapping_, __accessor};
+  }
+
+  _CCCL_HIDE_FROM_ABI
+  __mdspan_t<const _ElementType, _Extents, _LayoutPolicy, _CUDA_VSTD::default_accessor<const _ElementType>>
+  view(const _CUDA_VSTD::default_accessor<const _ElementType>& __accessor = {}) const noexcept
+  {
+    return {data(), __mapping_, __accessor};
+  }
+
+  _CCCL_TEMPLATE(class _OtherAccessorType)
+  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_assignable,
+                             __mdspan_t<_ElementType, _Extents, _LayoutPolicy>,
+                             __mdspan_t<_ElementType, _Extents, _LayoutPolicy, _OtherAccessorType>))
+  _CCCL_HIDE_FROM_ABI __mdspan_t<_ElementType, _Extents, _LayoutPolicy, _OtherAccessorType>
+  view(const _OtherAccessorType& __accessor) noexcept
+  {
+    return __mdspan_t<_ElementType, _Extents, _LayoutPolicy, _OtherAccessorType>(data(), __mapping_, __accessor);
+  }
+
+  _CCCL_TEMPLATE(class _OtherAccessorType)
+  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_same, typename _OtherAccessorType::element_type, const element_type))
+  _CCCL_HIDE_FROM_ABI __mdspan_t<const _ElementType, _Extents, _LayoutPolicy, _OtherAccessorType>
+  view(const _OtherAccessorType& __accessor) const noexcept
+  {
+    return __mdspan_t<const _ElementType, _Extents, _LayoutPolicy, _OtherAccessorType>(data(), __mapping_, __accessor);
   }
 
   //! @}
@@ -729,6 +790,15 @@ public:
     return size() == 0;
   }
 
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const extents_type& extents() const noexcept
+  {
+    return __mapping_.extents();
+  };
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const mapping_type& mapping() const noexcept
+  {
+    return __mapping_;
+  };
+
   //! @rst
   //! Returns a \c const reference to the :ref:`any_resource <cudax-memory-resource-any-resource>`
   //! that holds the memory resource used to allocate the async_mdarray
@@ -806,11 +876,11 @@ public:
 #endif // _CCCL_DOXYGEN_INVOKED
 };
 
-template <class _Tp, class _Layout = _CUDA_VSTD::layout_right>
-using device_mdarray = async_mdarray<_Tp, _Layout, _CUDA_VMR::device_accessible>;
+template <class _ElementType, class _Layout = _CUDA_VSTD::layout_right>
+using device_mdarray = async_mdarray<_ElementType, _Layout, _CUDA_VMR::device_accessible>;
 
-template <class _Tp, class _Layout = _CUDA_VSTD::layout_right>
-using host_mdarray = async_mdarray<_Tp, _Layout, _CUDA_VMR::host_accessible>;
+template <class _ElementType, class _Layout = _CUDA_VSTD::layout_right>
+using host_mdarray = async_mdarray<_ElementType, _Layout, _CUDA_VMR::host_accessible>;
 
 } // namespace cuda::experimental
 

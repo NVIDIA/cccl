@@ -13,6 +13,7 @@
 #include <cuda/std/array>
 #include <cuda/std/cassert>
 #include <cuda/std/initializer_list>
+#include <cuda/std/mdspan>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
 
@@ -31,48 +32,48 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray conversion",
 {
   using Env      = typename extract_properties<TestType>::env;
   using Resource = typename extract_properties<TestType>::resource;
-  using Vector   = typename extract_properties<TestType>::async_mdarray;
-  using T        = typename Vector::value_type;
+  using Array    = typename extract_properties<TestType>::async_mdarray;
+  using T        = typename Array::value_type;
 
   cudax::stream stream{};
   Resource resource{};
   Env env{resource, stream};
 
   // Convert from a async_mdarray that has more properties than the current one
-  using MatchingVector   = typename extract_properties<TestType>::matching_vector;
+  using MatchingArray    = typename extract_properties<TestType>::matching_vector;
   using MatchingResource = typename extract_properties<TestType>::matching_resource;
   Env matching_env{MatchingResource{resource}, stream};
 
   SECTION("cudax::async_mdarray construction with matching async_mdarray")
   {
     { // can be copy constructed from empty input
-      const MatchingVector input{matching_env, 0};
-      Vector vec(input);
+      const MatchingArray input{matching_env, 0};
+      Array vec(input);
       CHECK(vec.empty());
       CHECK(input.empty());
     }
 
     { // can be copy constructed from non-empty input
-      const MatchingVector input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
-      Vector vec(input);
+      const MatchingArray input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      Array vec(input);
       CHECK(!vec.empty());
       CHECK(equal_range(vec));
       CHECK(equal_range(input));
     }
 
     { // can be move constructed with empty input
-      MatchingVector input{matching_env, 0};
-      Vector vec(cuda::std::move(input));
+      MatchingArray input{matching_env, 0};
+      Array vec(cuda::std::move(input));
       CHECK(vec.empty());
       CHECK(input.empty());
     }
 
     { // can be move constructed from non-empty input
-      MatchingVector input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      MatchingArray input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
 
       // ensure that we steal the data
       const auto* allocation = input.data();
-      Vector vec(cuda::std::move(input));
+      Array vec(cuda::std::move(input));
       CHECK(vec.size() == 6);
       CHECK(vec.data() == allocation);
       CHECK(input.size() == 0);
@@ -84,40 +85,40 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray conversion",
   SECTION("cudax::async_mdarray copy assignment of matching async_mdarray")
   {
     { // Can be assigned an empty input, no allocation
-      const MatchingVector input{matching_env};
-      Vector vec{env};
+      const MatchingArray input{matching_env};
+      Array vec{env};
       vec = input;
       CHECK(vec.empty());
       CHECK(vec.data() == nullptr);
     }
 
     { // Can be assigned an empty input, shrinking
-      const MatchingVector input{matching_env};
-      Vector vec{env, 4, T(-2)};
+      const MatchingArray input{matching_env};
+      Array vec{env, 4, T(-2)};
       vec = input;
       CHECK(vec.empty());
       CHECK(vec.data() == nullptr);
     }
 
     { // Can be assigned a non-empty input, shrinking
-      const MatchingVector input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
-      Vector vec{env, 42, T(-2)};
+      const MatchingArray input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      Array vec{env, 42, T(-2)};
       vec = input;
       CHECK(!vec.empty());
       CHECK(equal_range(vec));
     }
 
     { // Can be assigned a non-empty input, growing from empty with reallocation
-      const MatchingVector input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
-      Vector vec{env};
+      const MatchingArray input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      Array vec{env};
       vec = input;
       CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
     }
 
     { // Can be assigned a non-empty input, growing with reallocation
-      const MatchingVector input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
-      Vector vec{env, 4, T(-2)};
+      const MatchingArray input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      Array vec{env, 4, T(-2)};
       vec = input;
       CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
@@ -127,11 +128,11 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray conversion",
   SECTION("cudax::async_mdarray move-assignment matching async_mdarray")
   {
     { // Can be move-assigned an empty input
-      MatchingVector input{matching_env};
+      MatchingArray input{matching_env};
       CHECK(input.empty());
       CHECK(input.data() == nullptr);
 
-      Vector vec{env};
+      Array vec{env};
       vec = cuda::std::move(input);
       CHECK(vec.empty());
       CHECK(vec.data() == nullptr);
@@ -140,11 +141,11 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray conversion",
     }
 
     { // Can be move-assigned an empty input, shrinking
-      MatchingVector input{matching_env};
+      MatchingArray input{matching_env};
       CHECK(input.empty());
       CHECK(input.data() == nullptr);
 
-      Vector vec{env, 4};
+      Array vec{env, 4};
       vec = cuda::std::move(input);
       CHECK(vec.empty());
       CHECK(vec.data() == nullptr);
@@ -153,8 +154,8 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray conversion",
     }
 
     { // Can be move-assigned a non-empty input, shrinking
-      MatchingVector input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
-      Vector vec{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      MatchingArray input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      Array vec{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       vec = cuda::std::move(input);
       CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
@@ -163,13 +164,110 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray conversion",
     }
 
     { // Can be move-assigned an non-empty input growing from empty
-      MatchingVector input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
-      Vector vec{env};
+      MatchingArray input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      Array vec{env};
       vec = cuda::std::move(input);
       CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
       CHECK(input.empty());
       CHECK(input.data() == nullptr);
+    }
+  }
+
+  SECTION("Conversion to mdspan")
+  {
+    Array vec{env, 42, T{42}};
+    using layout         = cuda::std::layout_right;
+    using accessor       = cuda::std::default_accessor<int>;
+    using const_accessor = cuda::std::default_accessor<const int>;
+
+    { // conversion with same template arguments
+      const cuda::std::mdspan<int, cuda::std::dims<1>, layout, accessor> mdspan = vec;
+      CHECK(vec.data() == mdspan.data_handle());
+      CHECK(vec.mapping() == mdspan.mapping());
+      CHECK(vec.extents() == mdspan.extents());
+    }
+
+    { // Explicit call to view with same properties and no argument
+      using mdspan_t                 = cuda::std::mdspan<int, cuda::std::dims<1>, layout, accessor>;
+      const cuda::std::mdspan mdspan = vec.view();
+      STATIC_REQUIRE(cuda::std::is_same_v<decltype(mdspan), const mdspan_t>);
+      CHECK(vec.data() == mdspan.data_handle());
+      CHECK(vec.mapping() == mdspan.mapping());
+      CHECK(vec.extents() == mdspan.extents());
+
+      using const_mdspan_t                 = cuda::std::mdspan<const int, cuda::std::dims<1>, layout, const_accessor>;
+      const cuda::std::mdspan const_mdspan = cuda::std::as_const(vec).view();
+      STATIC_REQUIRE(cuda::std::is_same_v<decltype(const_mdspan), const const_mdspan_t>);
+      CHECK(vec.data() == const_mdspan.data_handle());
+      CHECK(vec.mapping() == const_mdspan.mapping());
+      CHECK(vec.extents() == const_mdspan.extents());
+    }
+
+    { // Explicit call to view with same properties and accessor
+      using mdspan_t    = cuda::std::mdspan<int, cuda::std::dims<1>, layout, accessor>;
+      const auto mdspan = vec.view(accessor{});
+      STATIC_REQUIRE(cuda::std::is_same_v<decltype(mdspan), const mdspan_t>);
+      CHECK(vec.data() == mdspan.data_handle());
+      CHECK(vec.mapping() == mdspan.mapping());
+      CHECK(vec.extents() == mdspan.extents());
+
+      using const_mdspan_t    = cuda::std::mdspan<const int, cuda::std::dims<1>, layout, const_accessor>;
+      const auto const_mdspan = cuda::std::as_const(vec).view(const_accessor{});
+      STATIC_REQUIRE(cuda::std::is_same_v<decltype(const_mdspan), const const_mdspan_t>);
+      CHECK(vec.data() == const_mdspan.data_handle());
+      CHECK(vec.mapping() == const_mdspan.mapping());
+      CHECK(vec.extents() == const_mdspan.extents());
+    }
+  }
+
+  SECTION("Conversion to mdspan with different accessor")
+  {
+    Array vec{env, 42, T{42}};
+    using layout = cuda::std::layout_right;
+    struct accessor : cuda::std::default_accessor<int>
+    {};
+    struct const_accessor : cuda::std::default_accessor<const int>
+    {};
+
+    { // conversion
+      const cuda::std::mdspan<int, cuda::std::dims<1>, layout, accessor> mdspan = vec;
+      CHECK(vec.data() == mdspan.data_handle());
+      CHECK(vec.mapping() == mdspan.mapping());
+      CHECK(vec.extents() == mdspan.extents());
+    }
+
+    { // Explicit call to view with same properties and accessor
+      using mdspan_t    = cuda::std::mdspan<int, cuda::std::dims<1>, layout, accessor>;
+      const auto mdspan = vec.view(accessor{});
+      STATIC_REQUIRE(cuda::std::is_same_v<decltype(mdspan), const mdspan_t>);
+      CHECK(vec.data() == mdspan.data_handle());
+      CHECK(vec.mapping() == mdspan.mapping());
+      CHECK(vec.extents() == mdspan.extents());
+
+      using const_mdspan_t    = cuda::std::mdspan<const int, cuda::std::dims<1>, layout, const_accessor>;
+      const auto const_mdspan = cuda::std::as_const(vec).view(const_accessor{});
+      STATIC_REQUIRE(cuda::std::is_same_v<decltype(const_mdspan), const const_mdspan_t>);
+      CHECK(vec.data() == const_mdspan.data_handle());
+      CHECK(vec.mapping() == const_mdspan.mapping());
+      CHECK(vec.extents() == const_mdspan.extents());
+    }
+  }
+
+  SECTION("Conversion to mdspan with different layout")
+  {
+    Array vec{env, 42, T{42}};
+    using layout = cuda::std::layout_left;
+    struct accessor : cuda::std::default_accessor<int>
+    {};
+    struct const_accessor : cuda::std::default_accessor<const int>
+    {};
+
+    { // conversion
+      const cuda::std::mdspan<int, cuda::std::dims<1>, layout, accessor> mdspan = vec;
+      CHECK(vec.data() == mdspan.data_handle());
+      CHECK(vec.mapping() == mdspan.mapping());
+      CHECK(vec.extents() == mdspan.extents());
     }
   }
 }

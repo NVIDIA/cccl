@@ -32,8 +32,8 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray assignment",
 {
   using Env      = typename extract_properties<TestType>::env;
   using Resource = typename extract_properties<TestType>::resource;
-  using Vector   = typename extract_properties<TestType>::async_mdarray;
-  using T        = typename Vector::value_type;
+  using Array    = typename extract_properties<TestType>::async_mdarray;
+  using T        = typename Array::value_type;
 
   cudax::stream stream{};
   Resource resource{};
@@ -45,39 +45,39 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray assignment",
   SECTION("cudax::async_mdarray copy-assignment")
   {
     { // Can be copy-assigned an empty input
-      const Vector input{env};
-      Vector vec{env};
+      const Array input{env};
+      Array vec{env};
       vec = input;
       CHECK(vec.empty());
       CHECK(vec.data() == nullptr);
     }
     { // Can be copy-assigned an empty input, shrinking
-      const Vector input{env};
+      const Array input{env};
       CHECK(input.empty());
-      Vector vec{env, 4};
+      Array vec{env, 4};
       vec = input;
       CHECK(vec.empty());
     }
 
     { // Can be copy-assigned a non-empty input, shrinking
-      const Vector input{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
-      Vector vec{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      const Array input{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      Array vec{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       vec = input;
       CHECK(!vec.empty());
       CHECK(equal_range(vec));
     }
 
     { // Can be copy-assigned a non-empty input, growing from empty with reallocation
-      const Vector input{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
-      Vector vec{env};
+      const Array input{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      Array vec{env};
       vec = input;
       CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
     }
 
     { // Can be copy-assigned a non-empty input, growing with reallocation
-      const Vector input{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
-      Vector vec{env, 2};
+      const Array input{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      Array vec{env, 2};
       vec = input;
       CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
@@ -87,32 +87,32 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray assignment",
   SECTION("cudax::async_mdarray copy-assignment different resource")
   {
     { // Can be copy-assigned an empty input
-      const Vector input{matching_env};
-      Vector vec{env};
+      const Array input{matching_env};
+      Array vec{env};
       vec = input;
       CHECK(vec.empty());
       CHECK(vec.data() == nullptr);
     }
 
     { // Can be copy-assigned an empty input, shrinking
-      const Vector input{matching_env};
-      Vector vec{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      const Array input{matching_env};
+      Array vec{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       vec = input;
       CHECK(vec.empty());
       CHECK(vec.data() == nullptr);
     }
 
     { // Can be copy-assigned a non-empty input, shrinking
-      const Vector input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
-      Vector vec{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      const Array input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      Array vec{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       vec = input;
       CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
     }
 
     { // Can be copy-assigned an non-empty input growing from empty without size
-      const Vector input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
-      Vector vec{env};
+      const Array input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      Array vec{env};
       vec = input;
       CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
@@ -122,11 +122,11 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray assignment",
   SECTION("cudax::async_mdarray move-assignment")
   {
     { // Can be move-assigned an empty input
-      Vector input{env};
+      Array input{env};
       CHECK(input.empty());
       CHECK(input.data() == nullptr);
 
-      Vector vec{env};
+      Array vec{env};
       vec = cuda::std::move(input);
       CHECK(vec.empty());
       CHECK(vec.data() == nullptr);
@@ -135,11 +135,11 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray assignment",
     }
 
     { // Can be move-assigned an empty input, shrinking
-      Vector input{env};
+      Array input{env};
       CHECK(input.empty());
       CHECK(input.data() == nullptr);
 
-      Vector vec{env, 4};
+      Array vec{env, 4};
       vec = cuda::std::move(input);
       CHECK(vec.empty());
       CHECK(vec.data() == nullptr);
@@ -148,8 +148,8 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray assignment",
     }
 
     { // Can be move-assigned a non-empty input, shrinking
-      Vector input{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
-      Vector vec{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      Array input{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      Array vec{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       vec = cuda::std::move(input);
       CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
@@ -158,8 +158,8 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray assignment",
     }
 
     { // Can be move-assigned an non-empty input growing from empty
-      Vector input{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
-      Vector vec{env};
+      Array input{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      Array vec{env};
       vec = cuda::std::move(input);
       CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
@@ -171,35 +171,35 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray assignment",
   SECTION("cudax::async_mdarray assignment initializer_list")
   {
     { // Can be assigned an empty initializer_list
-      Vector vec{env};
+      Array vec{env};
       vec = {};
       CHECK(vec.empty());
       CHECK(vec.data() == nullptr);
     }
 
     { // Can be assigned an empty initializer_list, shrinking
-      Vector vec{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      Array vec{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       auto* old_ptr = vec.data();
       vec           = {};
       CHECK(vec.empty());
     }
 
     { // Can be assigned a non-empty initializer_list, from empty
-      Vector vec{env};
+      Array vec{env};
       vec = {T(1), T(42), T(1337), T(0), T(12), T(-1)};
       CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
     }
 
     { // Can be assigned a non-empty initializer_list, shrinking
-      Vector vec{env, 42};
+      Array vec{env, 42};
       vec = {T(1), T(42), T(1337), T(0), T(12), T(-1)};
       CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
     }
 
     { // Can be assigned a non-empty initializer_list, growing from non empty
-      Vector vec{env, {T(0), T(42)}};
+      Array vec{env, {T(0), T(42)}};
       vec = {T(1), T(42), T(1337), T(0), T(12), T(-1)};
       CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
@@ -211,8 +211,8 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray assignment",
   SECTION("cudax::async_mdarray assignment exceptions")
   { // assignment throws std::bad_alloc
     constexpr size_t size = 4;
-    using Vector              = cudax::async_mdarray<int, size>;
-    Vector too_small{};
+    using Array              = cudax::async_mdarray<int, size>;
+    Array too_small{};
 
     try
     {

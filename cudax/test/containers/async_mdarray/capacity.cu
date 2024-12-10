@@ -31,28 +31,28 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray size",
 {
   using Env       = typename extract_properties<TestType>::env;
   using Resource  = typename extract_properties<TestType>::resource;
-  using Vector    = typename extract_properties<TestType>::async_mdarray;
-  using T         = typename Vector::value_type;
-  using size_type = typename Vector::size_type;
+  using Array     = typename extract_properties<TestType>::async_mdarray;
+  using T         = typename Array::value_type;
+  using size_type = typename Array::size_type;
 
   cudax::stream stream{};
   Env env{Resource{}, stream};
 
   SECTION("cudax::async_mdarray::empty")
   {
-    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().empty()), bool>);
-    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<const Vector&>().empty()), bool>);
-    STATIC_REQUIRE(noexcept(cuda::std::declval<Vector&>().empty()));
-    STATIC_REQUIRE(noexcept(cuda::std::declval<const Vector&>().empty()));
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Array&>().empty()), bool>);
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<const Array&>().empty()), bool>);
+    STATIC_REQUIRE(noexcept(cuda::std::declval<Array&>().empty()));
+    STATIC_REQUIRE(noexcept(cuda::std::declval<const Array&>().empty()));
 
     { // Works without allocation
-      Vector vec{env, 0};
+      Array vec{env, 0};
       CHECK(vec.empty());
       CHECK(cuda::std::as_const(vec).empty());
     }
 
     { // Works with allocation
-      Vector vec{env, 42, cudax::uninit}; // Note we do not care about the elements just the sizes
+      Array vec{env, 42, cudax::uninit}; // Note we do not care about the elements just the sizes
       CHECK(!vec.empty());
       CHECK(!cuda::std::as_const(vec).empty());
     }
@@ -60,19 +60,19 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray size",
 
   SECTION("cudax::async_mdarray::size")
   {
-    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().size()), size_type>);
-    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<const Vector&>().size()), size_type>);
-    STATIC_REQUIRE(noexcept(cuda::std::declval<Vector&>().size()));
-    STATIC_REQUIRE(noexcept(cuda::std::declval<const Vector&>().size()));
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Array&>().size()), size_type>);
+    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<const Array&>().size()), size_type>);
+    STATIC_REQUIRE(noexcept(cuda::std::declval<Array&>().size()));
+    STATIC_REQUIRE(noexcept(cuda::std::declval<const Array&>().size()));
 
     { // Works without allocation
-      Vector vec{env, 0};
+      Array vec{env, 0};
       CHECK(vec.size() == 0);
       CHECK(cuda::std::as_const(vec).size() == 0);
     }
 
     { // Works with allocation
-      Vector vec{env, 42, cudax::uninit}; // Note we do not care about the elements just the sizes
+      Array vec{env, 42, cudax::uninit}; // Note we do not care about the elements just the sizes
       CHECK(vec.size() == 42);
       CHECK(cuda::std::as_const(vec).size() == 42);
     }
