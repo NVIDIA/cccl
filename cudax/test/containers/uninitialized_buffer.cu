@@ -61,6 +61,21 @@ constexpr int get_property(const cudax::device_memory_resource&, my_property)
   return 42;
 }
 
+__global__ void kernel(_CUDA_VSTD::span<int> data)
+{
+  // Touch the memory to be sure it's accessible
+  CUDAX_CHECK(data.size() == 1024);
+  data[0] = 42;
+}
+
+__global__ void const_kernel(_CUDA_VSTD::span<const int> data)
+{
+  // Touch the memory to be sure it's accessible
+  CUDAX_CHECK(data.size() == 1024);
+}
+
+#ifndef __CUDA_ARCH__
+
 TEMPLATE_TEST_CASE(
   "uninitialized_buffer", "[container]", char, short, int, long, long long, float, double, do_not_construct)
 {
@@ -204,19 +219,6 @@ TEMPLATE_TEST_CASE(
   }
 }
 
-__global__ void kernel(_CUDA_VSTD::span<int> data)
-{
-  // Touch the memory to be sure it's accessible
-  CUDAX_CHECK(data.size() == 1024);
-  data[0] = 42;
-}
-
-__global__ void const_kernel(_CUDA_VSTD::span<const int> data)
-{
-  // Touch the memory to be sure it's accessible
-  CUDAX_CHECK(data.size() == 1024);
-}
-
 TEST_CASE("uninitialized_buffer is usable with cudax::launch", "[container]")
 {
   SECTION("non-const")
@@ -287,3 +289,13 @@ TEST_CASE("uninitialized_buffer's memory resource does not dangle", "[container]
 
   CHECK(test_device_memory_resource::count == 1);
 }
+
+#else
+// BUGBUG TODO:
+// temporary hack to prevent sccache from ignoring changes in code guarded by
+// !defined(__CUDA_ARCH__)
+char const* __fool_sccache()
+{
+  return __TIME__;
+}
+#endif // __CUDA_ARCH__
