@@ -296,9 +296,9 @@ public:
   auto task(exec_place e_place, task_dep<Deps>... deps)
   {
     auto dump_hooks = reserved::get_dump_hooks(this, deps...);
-    auto res        = graph_task<Deps...>(*this, get_graph(), get_graph_epoch(), mv(e_place), mv(deps)...);
-    res.add_post_submission_hook(dump_hooks);
-    return res;
+    auto result     = graph_task<Deps...>(*this, get_graph(), get_graph_epoch(), mv(e_place), mv(deps)...);
+    result.add_post_submission_hook(dump_hooks);
+    return result;
   }
 
   // submit a new epoch : this will submit a graph in a stream that we return
@@ -515,6 +515,22 @@ public:
   void print_to_dot(const ::std::string& filename, enum cudaGraphDebugDotFlags flags = cudaGraphDebugDotFlags(0))
   {
     cudaGraphDebugDotPrint(get_graph(), filename.c_str(), flags);
+  }
+
+  template <typename T>
+  auto wait(cuda::experimental::stf::logical_data<T>& ldata)
+  {
+    typename owning_container_of<T>::type out;
+
+    host_launch(ldata.read()).set_symbol("wait")->*[&](auto data) {
+      out = owning_container_of<T>::get_value(data);
+    };
+
+    /* This forces the completion of the host callback, so that the host
+     * thread can use the content for dynamic control flow */
+    cuda_safe_call(cudaStreamSynchronize(task_fence()));
+
+    return out;
   }
 
 private:

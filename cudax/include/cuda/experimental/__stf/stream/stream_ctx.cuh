@@ -237,9 +237,9 @@ public:
 
     auto dump_hooks = reserved::get_dump_hooks(this, deps...);
 
-    auto res = stream_task<Deps...>(*this, mv(e_place), mv(deps)...);
-    res.add_post_submission_hook(dump_hooks);
-    return res;
+    auto result = stream_task<Deps...>(*this, mv(e_place), mv(deps)...);
+    result.add_post_submission_hook(dump_hooks);
+    return result;
   }
 
   template <typename... Deps>
@@ -645,6 +645,19 @@ public:
   auto deferred_parallel_for(S shape, task_dep<Deps>... deps)
   {
     return deferred_parallel_for(exec_place::current_device(), mv(shape), mv(deps)...);
+  }
+
+  template <typename T>
+  auto wait(cuda::experimental::stf::logical_data<T>& ldata)
+  {
+    typename owning_container_of<T>::type out;
+
+    task(exec_place::host, ldata.read()).set_symbol("wait")->*[&](cudaStream_t stream, auto data) {
+      cuda_safe_call(cudaStreamSynchronize(stream));
+      out = owning_container_of<T>::get_value(data);
+    };
+
+    return out;
   }
 
 private:

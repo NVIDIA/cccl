@@ -37,43 +37,21 @@ int main()
 
   context ctx;
 
-  auto ltext = ctx.logical_data(const_cast<char*>(&raw_input[0]), {sizeof(raw_input)});
+  size_t text_len = sizeof(raw_input);
+  auto ltext      = ctx.logical_data(const_cast<char*>(&raw_input[0]), {text_len});
+  auto lcnt       = ctx.logical_data(shape_of<scalar<int>>());
 
-  int cnt   = 0;
-  auto lcnt = ctx.logical_data(&cnt, {1});
+  ctx.parallel_for(box(text_len - 1), ltext.read(), lcnt.reduce(reducer::sum<int>{}))
+      ->*[] _CCCL_DEVICE(size_t i, auto text, int& s) {
+            /* When we have the beginning of a new word, increment the counter */
+            if (!is_alpha(text(i)) && is_alpha(text(i + 1)))
+            {
+              s++;
+            }
+          };
 
-  auto number_devices = 2;
-  auto all_devs       = exec_place::repeat(exec_place::device(0), number_devices);
-
-  auto spec = par(con(128));
-
-  ctx.launch(spec, all_devs, ltext.read(), lcnt.rw())->*[] _CCCL_DEVICE(auto th, auto text, auto cnt) {
-    int local_cnt = 0;
-    for (size_t i = th.rank(); i < text.size() - 1; i += th.size())
-    {
-      /* If the thread encounters the beginning of a new word, increment
-       * its local counter */
-      if (!is_alpha(text(i)) && is_alpha(text(i + 1)))
-      {
-        local_cnt++;
-      }
-    }
-
-    // Get a piece of shared memory, and zero it
-    __shared__ int block_cnt;
-    block_cnt = 0;
-    th.inner().sync();
-
-    // In every block, partial sums are gathered, and added to the result
-    // by the first thread of the block.
-    atomicAdd(&block_cnt, local_cnt);
-    th.inner().sync();
-
-    if (th.inner().rank() == 0)
-    {
-      atomicAdd(&cnt(0), block_cnt);
-    }
-  };
+  int cnt = ctx.wait(lcnt);
+  printf("Got %d words.\n", cnt);
 
   ctx.finalize();
 
@@ -86,6 +64,5 @@ int main()
     }
   }
 
-  // fprintf(stderr, "Result : found %d words (expected %d)\n", cnt, ref_cnt);
-  EXPECT(cnt == ref_cnt);
+  _CCCL_ASSERT(cnt == ref_cnt, "Count mismatch");
 }

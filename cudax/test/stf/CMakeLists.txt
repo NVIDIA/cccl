@@ -108,11 +108,13 @@ set(stf_test_codegen_sources
   interface/mix_stream_and_graph_2.cu
   interface/scal.cu
   interface/scalar_div.cu
+  interface/scalar_interface.cu
   interface/stream_add_callback.cu
   local_stf/interop_cuda.cu
   loop_dispatch/dispatch_on_streams.cu
   loop_dispatch/loop_dispatch.cu
   loop_dispatch/nested_loop_dispatch.cu
+  parallel_for/empty_shape_reduce.cu
   parallel_for/fdtd.cu
   parallel_for/parallel_for_all_devs.cu
   parallel_for/parallel_for_box.cu
@@ -122,6 +124,7 @@ set(stf_test_codegen_sources
   parallel_for/tiled_loops.cu
   places/cuda_stream_place.cu
   places/managed_from_shape.cu
+  reductions/reduce_sum.cu
   reductions/successive_reductions_pfor.cu
   reductions/sum_multiple_places.cu
   reductions/write_back_after_redux.cu

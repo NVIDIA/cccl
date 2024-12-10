@@ -44,6 +44,9 @@ class task;
 template <typename T>
 class shape_of;
 
+template <typename T>
+struct owning_container_of;
+
 namespace reserved
 {
 
