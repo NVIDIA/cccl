@@ -100,6 +100,7 @@ foreach(cn_target IN LISTS cudax_TARGETS)
 
   cudax_add_catch2_test(test_target misc ${cn_target}
     utility/basic_any.cu
+    utility/basic_any_test.cu
     utility/driver_api.cu
     utility/ensure_current_device.cu
   )
