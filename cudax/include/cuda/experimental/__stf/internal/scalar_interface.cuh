@@ -53,6 +53,11 @@ struct owning_container_of;
 template <typename T>
 struct scalar
 {
+  scalar() = default;
+  scalar(T* _addr)
+      : addr(_addr)
+  {}
+
   T* addr;
 };
 
