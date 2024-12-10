@@ -6,7 +6,7 @@ import subprocess
 from .build import Build
 from .config import Config
 from .storage import Storage
-from .logger import *
+from .logger import Logger
 
 
 def create_builds_table(conn):

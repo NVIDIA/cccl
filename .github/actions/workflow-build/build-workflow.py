@@ -157,7 +157,6 @@ def canonicalize_host_compiler_name(cxx_string):
         )
 
     hc_def = matrix_yaml["host_compilers"][id]
-    hc_versions = hc_def["versions"]
 
     if not version:
         version = max(
@@ -852,10 +851,10 @@ def apply_matrix_job_exclusion(matrix_job, exclusion):
         # Some tags are left unexploded (e.g. 'jobs') to optimize scheduling,
         # so the values can be either a list or a single value.
         # Standardize to a list for comparison:
-        if type(excluded_values) != list:
+        if not isinstance(excluded_values, list):
             excluded_values = [excluded_values]
         matrix_values = matrix_job[tag]
-        if type(matrix_values) != list:
+        if not isinstance(matrix_values, list):
             matrix_values = [matrix_values]
 
         # Identify excluded values that are present in the matrix job for this tag:
@@ -1075,7 +1074,7 @@ def parse_workflow_matrix_jobs(args, workflow_name):
 
     if args:
         if (
-            args.dirty_projects != None
+            args.dirty_projects is not None
         ):  # Explicitly check for None, as an empty list is valid:
             matrix_jobs = [
                 job for job in matrix_jobs if job["project"] in args.dirty_projects

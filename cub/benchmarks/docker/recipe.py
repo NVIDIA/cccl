@@ -4,7 +4,7 @@ import hpccm
 
 hpccm.config.set_container_format("docker")
 
-Stage0 += hpccm.primitives.baseimage(image="nvidia/cuda:12.2.0-devel-ubuntu22.04")
+Stage0 = hpccm.primitives.baseimage(image="nvidia/cuda:12.2.0-devel-ubuntu22.04")
 Stage0 += hpccm.building_blocks.apt_get(
     ospackages=[
         "git",
