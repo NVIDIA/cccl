@@ -128,44 +128,20 @@ def pointer_add(ptr, offset):
     return impl
 
 
-class RawPointer:
+class RawPointer(IteratorBase):
     def __init__(self, ptr, ntype):
-        self.val = ctypes.c_void_p(ptr)
-        data_as_ntype_pp = numba.types.CPointer(numba.types.CPointer(ntype))
-        self.ntype = ntype
-        self.prefix = "pointer_" + ntype.name
-        self.ltoirs = [
-            _ncc(
-                f"{self.prefix}_advance",
-                RawPointer.pointer_advance,
-                numba.types.void(data_as_ntype_pp, _DISTANCE_NUMBA_TYPE),
-            ).ltoir,
-            _ncc(
-                f"{self.prefix}_dereference",
-                RawPointer.pointer_dereference,
-                (data_as_ntype_pp,),
-            ).ltoir,
-        ]
+        value_type = ntype
+        cvalue = ctypes.c_void_p(ptr)
+        numba_type = numba.types.CPointer(numba.types.CPointer(value_type))
+        super().__init__(cvalue=cvalue, value_type=value_type, numba_type=numba_type)
 
-    # Exclusively for numba.cuda.compile (this is not an actual method).
-    def pointer_advance(this, distance):
-        this[0] = this[0] + distance
+    @staticmethod
+    def advance(it, distance):
+        it[0] = it[0] + distance
 
-    # Exclusively for numba.cuda.compile (this is not an actual method).
-    def pointer_dereference(this):
-        return this[0][0]
-
-    @property
-    def state_c_void_p(self):
-        return ctypes.cast(ctypes.pointer(self.val), ctypes.c_void_p)
-
-    @property
-    def size(self):
-        return _DEVICE_POINTER_SIZE
-
-    @property
-    def alignment(self):
-        return _DEVICE_POINTER_SIZE
+    @staticmethod
+    def dereference(it):
+        return it[0][0]
 
 
 def pointer(container, ntype):
