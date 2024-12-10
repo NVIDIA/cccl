@@ -17,8 +17,7 @@ import ctypes
 
 from libcudacxx.compiler import CXXCompiler
 from libcudacxx.test.target_info import make_target_info
-from libcudacxx.test.executor import *
-from libcudacxx.test.tracing import *
+from libcudacxx.test.executor import LocalExecutor, NoopExecutor, ValgrindExecutor
 import libcudacxx.util
 
 
@@ -280,7 +279,7 @@ class Configuration(object):
                 # ValgrindExecutor is supposed to go. It is likely
                 # that the user wants it at the end, but we have no
                 # way of getting at that easily.
-                selt.lit_config.fatal(
+                self.lit_config.fatal(
                     "Cannot infer how to create a Valgrind " " executor."
                 )
         else:
@@ -568,7 +567,7 @@ class Configuration(object):
         self.execute_external = not use_lit_shell
 
     def configure_no_execute(self):
-        if type(self.executor) == NoopExecutor:
+        if isinstance(self.executor, NoopExecutor):
             self.config.available_features.add("no_execute")
 
     def configure_ccache(self):
