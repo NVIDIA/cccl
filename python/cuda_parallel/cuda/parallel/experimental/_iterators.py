@@ -66,16 +66,16 @@ def cached_compile(*args, **kwargs):
 
 class IteratorBase:
     def __init__(self, cvalue, value_type, numba_type):
-        self._cvalue = cvalue
-        self._value_type = value_type
-        self._numba_type = numba_type
+        self.cvalue = cvalue
+        self.value_type = value_type
+        self.numba_type = numba_type
 
     @cached_property
     def ltoirs(self):
         advance_ltoir, _ = cached_compile(
             self.__class__.advance,
             (
-                self._numba_type,
+                self.numba_type,
                 numba.from_dtype(np.dtype("uint64"))
             ),
             output="ltoir"
@@ -84,7 +84,7 @@ class IteratorBase:
         deref_ltoir, _ = cached_compile(
             self.__class__.dereference,
             (
-                self._numba_type,
+                self.numba_type,
             ),
             output="ltoir"
         )
@@ -93,7 +93,7 @@ class IteratorBase:
 
     @property
     def state(self):
-        return ctypes.cast(ctypes.pointer(self._cvalue), ctypes.c_void_p)
+        return ctypes.cast(ctypes.pointer(self.cvalue), ctypes.c_void_p)
 
 
 def sizeof_pointee(context, ptr):
@@ -239,12 +239,12 @@ def make_transform_iterator(it, op):
     class TransformIterator(IteratorBase):
         def __init__(self, it, op):
             self._it = it
-            cvalue = it._cvalue
-            numba_type = it._numba_type
+            cvalue = it.cvalue
+            numba_type = it.numba_type
             _, op_retty = cached_compile(
                 op,
                 (
-                    self._it._value_type,
+                    self._it.value_type,
                 ),
                 output="ltoir"
             )

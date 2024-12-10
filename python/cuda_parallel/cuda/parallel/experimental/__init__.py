@@ -182,7 +182,7 @@ def _device_array_to_cccl_iter(array):
 
 def _iterator_to_cccl_iter(it):
     context = cuda.descriptor.cuda_target.target_context
-    numba_type = it._numba_type
+    numba_type = it.numba_type
     size = context.get_value_type(numba_type).get_abi_size(context.target_data)
     alignment = context.get_value_type(
         numba_type).get_abi_alignment(context.target_data)
@@ -211,7 +211,7 @@ def _iterator_to_cccl_iter(it):
         _CCCLOpKindEnum.STATEFUL,
         advance_op,
         deref_op,
-        _numba_type_to_info(it._value_type),
+        _numba_type_to_info(it.value_type),
         it.state
     )
 
