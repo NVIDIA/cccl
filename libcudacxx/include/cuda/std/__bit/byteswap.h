@@ -48,20 +48,21 @@ class __byteswap_impl
 
   _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE static uint32_t __impl_device(uint32_t __val) noexcept
   {
-    asm("prmt.b32 %0, %0, 0, 0x0123;" : "+r"(__val));
-    return __val;
+    uint32_t __result;
+    asm("prmt.b32 %0, %1, 0, 0x0123;" : "=r"(__result) : "r"(__val));
+    return __result;
   }
 
   _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE static uint64_t __impl_device(uint64_t __val) noexcept
   {
-    uint32_t __hi{};
-    uint32_t __lo{};
+    uint32_t __hi;
+    uint32_t __lo;
     asm("mov.b64 {%0, %1}, %2;" : "=r"(__hi), "=r"(__lo) : "l"(__val));
+    asm("prmt.b32 %0, %0, 0, 0x0123;" : "+r"(__hi));
+    asm("prmt.b32 %0, %0, 0, 0x0123;" : "+r"(__lo));
 
-    const uint32_t __swapped_lo = __impl_device(__hi);
-    const uint32_t __swapped_hi = __impl_device(__lo);
-    uint64_t __result{};
-    asm("mov.b64 %0, {%1, %2};" : "=l"(__result) : "r"(__swapped_hi), "r"(__swapped_lo));
+    uint64_t __result;
+    asm("mov.b64 %0, {%1, %2};" : "=l"(__result) : "r"(__lo), "r"(__hi));
 
     return __result;
   }
