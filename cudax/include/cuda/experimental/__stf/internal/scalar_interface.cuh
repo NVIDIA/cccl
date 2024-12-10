@@ -51,13 +51,8 @@ struct owning_container_of;
  * This is used to store a single value in a logical data.
  */
 template <typename T>
-class scalar
+struct scalar
 {
-public:
-  scalar() = default;
-  scalar(T* _addr)
-      : addr(_addr)
-  {}
   T* addr;
 };
 
