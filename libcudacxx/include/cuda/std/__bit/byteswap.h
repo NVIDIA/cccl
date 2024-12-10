@@ -59,8 +59,8 @@ class __byteswap_impl
     uint32_t __lo{};
     asm("mov.b64 {%0, %1}, %2;" : "=r"(__hi), "=r"(__lo) : "l"(__val));
 
-    const uint32_t __swapped_lo = __impl(__hi);
-    const uint32_t __swapped_hi = __impl(__lo);
+    const uint32_t __swapped_lo = __impl_device(__hi);
+    const uint32_t __swapped_hi = __impl_device(__lo);
     uint64_t __result{};
     asm("mov.b64 %0, {%1, %2};" : "=l"(__result) : "r"(__swapped_hi), "r"(__swapped_lo));
 
@@ -84,17 +84,15 @@ public:
   {
 #if defined(_CCCL_BUILTIN_BSWAP16)
     return _CCCL_BUILTIN_BSWAP16(__val);
-#  if _CCCL_STD_VER >= 2014
-    if (!__cccl_default_is_constant_evaluated())
+#else // ^^^ _CCCL_BUILTIN_BSWAP16 ^^^ / vvv !_CCCL_BUILTIN_BSWAP16 vvv
+#  if _CCCL_STD_VER >= 2014 && _CCCL_COMPILER(MSVC)
+    if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
     {
-#    if _CCCL_COMPILER(MSVC)
       NV_IF_TARGET(NV_IS_HOST, return _byteswap_ushort(__val);)
-#    endif // _CCCL_COMPILER(MSVC)
     }
-#  endif // _CCCL_STD_VER >= 2014
-#else
+#  endif // _CCCL_STD_VER >= 2014 && _CCCL_COMPILER(MSVC)
     return (__val << CHAR_BIT) | (__val >> CHAR_BIT);
-#endif
+#endif // !_CCCL_BUILTIN_BSWAP16
   }
 
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr uint32_t __impl(uint32_t __val) noexcept
@@ -103,7 +101,7 @@ public:
     return _CCCL_BUILTIN_BSWAP32(__val);
 #else // ^^^ _CCCL_BUILTIN_BSWAP32 ^^^ / vvv !_CCCL_BUILTIN_BSWAP32 vvv
 #  if _CCCL_STD_VER >= 2014
-    if (!__cccl_default_is_constant_evaluated())
+    if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
     {
 #    if _CCCL_COMPILER(MSVC)
       NV_IF_TARGET(NV_IS_HOST, return _byteswap_ulong(__val);)
@@ -121,7 +119,7 @@ public:
     return _CCCL_BUILTIN_BSWAP64(__val);
 #else // ^^^ _CCCL_BUILTIN_BSWAP64 ^^^ / vvv !_CCCL_BUILTIN_BSWAP64 vvv
 #  if _CCCL_STD_VER >= 2014
-    if (!__cccl_default_is_constant_evaluated())
+    if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
     {
 #    if _CCCL_COMPILER(MSVC)
       NV_IF_TARGET(NV_IS_HOST, return _byteswap_uint64(__val);)
@@ -134,7 +132,7 @@ public:
   }
 
 #if !defined(_LIBCUDACXX_HAS_NO_INT128)
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr unsigned __int128 __impl(unsigned __int128 __val) noexcept
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr __uint128_t __impl(__uint128_t __val) noexcept
   {
 #  if defined(_CCCL_BUILTIN_BSWAP128)
     return _CCCL_BUILTIN_BSWAP128(__val);

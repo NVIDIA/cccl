@@ -85,10 +85,10 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
   test_num<cuda::std::int64_t>(0x0123456789ABCDEF, 0xEFCDAB8967452301);
 
 #if !defined(TEST_HAS_NO_INT128_T)
-  const auto in       = static_cast<unsigned __int128>(0x0123456789ABCDEF) << 64 | 0x13579BDF02468ACE;
-  const auto expected = static_cast<unsigned __int128>(0xCE8A4602DF9B5713) << 64 | 0xEFCDAB8967452301;
-  test_num<unsigned __int128>(in, expected);
-  test_num<__int128>(in, expected);
+  const auto in       = static_cast<__uint128_t>(0x0123456789ABCDEF) << 64 | 0x13579BDF02468ACE;
+  const auto expected = static_cast<__uint128_t>(0xCE8A4602DF9B5713) << 64 | 0xEFCDAB8967452301;
+  test_num<__uint128_t>(in, expected);
+  test_num<__int128_t>(in, expected);
 #endif // !defined(TEST_HAS_NO_INT128_T)
 
   test_num<bool>(true, true);
