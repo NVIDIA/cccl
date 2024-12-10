@@ -286,7 +286,7 @@ public:
   _CCCL_HIDE_FROM_ABI uninitialized_async_buffer __replace_allocation(const size_t __count)
   {
     // Create a new buffer with a reference to the stored memory resource and swap allocation information
-    uninitialized_async_buffer __ret{mr::async_resource_ref<_Properties...>{__mr_}, __stream_, __count};
+    uninitialized_async_buffer __ret{async_resource_ref<_Properties...>{__mr_}, __stream_, __count};
     _CUDA_VSTD::swap(__count_, __ret.__count_);
     _CUDA_VSTD::swap(__buf_, __ret.__buf_);
     return __ret;

@@ -214,8 +214,7 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __iresource_ref_conversions
     : interface<__iresource_ref_conversions>
     , _CUDA_VMR::_Resource_ref_base
 {
-  using __basic_any_type =
-    _CUDA_VSTD::decay_t<decltype(__cudax::basic_any_from(declval<__iresource_ref_conversions&>()))>;
+  using __self_t = basic_any_from_t<__iresource_ref_conversions&>;
 
   template <class _Property>
   using __iprop = __rebind_interface<__iproperty<_Property>, _Super...>;
@@ -227,8 +226,8 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __iresource_ref_conversions
     _Super...>;
 
   _CCCL_TEMPLATE(_CUDA_VMR::_AllocType _Alloc_type, class... _Properties)
-  _CCCL_REQUIRES(_CUDA_VSTD::derived_from<__basic_any_type, __iresource<_Alloc_type>>
-                 && (_CUDA_VSTD::derived_from<__basic_any_type, __iprop<_Properties>> && ...))
+  _CCCL_REQUIRES(_CUDA_VSTD::derived_from<__self_t, __iresource<_Alloc_type>>
+                 && (_CUDA_VSTD::derived_from<__self_t, __iprop<_Properties>> && ...))
   operator _CUDA_VMR::basic_resource_ref<_Alloc_type, _Properties...>()
   {
     auto& __self = __cudax::basic_any_from(*this);
@@ -368,7 +367,7 @@ private:
 };
 
 _CCCL_TEMPLATE(class... _Properties, class _Resource)
-_CCCL_REQUIRES((!mr::_Is_resource_ref<_Resource>) _CCCL_AND mr::resource_with<_Resource, _Properties...>)
+_CCCL_REQUIRES(mr::resource_with<_Resource, _Properties...>)
 resource_ref<_Properties...> __as_resource_ref(_Resource& __mr) noexcept
 {
   return resource_ref<_Properties...>(__mr);

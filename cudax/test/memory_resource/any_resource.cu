@@ -8,15 +8,12 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef __CUDA_ARCH__
+#include <cuda/memory_resource>
 
-#  include <cuda/memory_resource>
+#include <cuda/experimental/memory_resource.cuh>
 
-#  include <cuda/experimental/memory_resource.cuh>
-
-#  include "test_resource.cuh"
-#  include <catch2/catch.hpp>
-#  include <testing.cuh>
+#include "test_resource.cuh"
+#include <testing.cuh>
 
 static_assert(cuda::has_property<cudax::any_resource<cudax::host_accessible, get_data>, cudax::host_accessible>);
 static_assert(cuda::has_property<cudax::any_resource<cudax::host_accessible, get_data>, get_data>);
@@ -24,6 +21,8 @@ static_assert(!cuda::has_property<cudax::any_resource<cudax::host_accessible, ge
 
 struct unused_property
 {};
+
+#ifndef __CUDA_ARCH__
 
 TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]", big_resource, small_resource)
 {
@@ -67,14 +66,14 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
       ++expected.copy_count;
       ++expected.object_count;
       CHECK(this->counts == expected);
-      CHECK(mr == mr2);
+      CHECK((mr == mr2));
       ++expected.equal_to_count;
       CHECK(this->counts == expected);
 
       auto mr3 = std::move(mr);
       expected.move_count += !is_big; // for big resources, move is a pointer swap
       CHECK(this->counts == expected);
-      CHECK(mr2 == mr3);
+      CHECK((mr2 == mr3));
       ++expected.equal_to_count;
       CHECK(this->counts == expected);
     }
@@ -284,4 +283,12 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
   this->counts = Counts();
 }
 
+#else
+// BUGBUG TODO:
+// temporary hack to prevent sccache from ignoring changes in code guarded by
+// !defined(__CUDA_ARCH__)
+char const* __fool_sccache()
+{
+  return __TIME__;
+}
 #endif // __CUDA_ARCH__

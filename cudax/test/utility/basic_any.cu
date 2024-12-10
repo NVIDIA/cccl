@@ -486,7 +486,7 @@ TEMPLATE_TEST_CASE_METHOD(BasicAnyTestsFixture, "basic_any tests", "[utility][ba
       !_CUDA_VSTD::constructible_from<cudax::basic_any<cudax::imovable<>>, cudax::basic_any<cudax::imovable<>*>>);
 
     STATIC_REQUIRE(
-      !_CUDA_VSTD::constructible_from<cudax::basic_any<cudax::imovable<> const&>, cudax::basic_any<cudax::imovable<>>>);
+      _CUDA_VSTD::constructible_from<cudax::basic_any<cudax::imovable<> const&>, cudax::basic_any<cudax::imovable<>>>);
     STATIC_REQUIRE(
       _CUDA_VSTD::constructible_from<cudax::basic_any<cudax::imovable<> const&>, cudax::basic_any<cudax::imovable<>>&>);
   }
