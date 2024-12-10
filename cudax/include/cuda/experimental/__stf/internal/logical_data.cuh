@@ -2307,7 +2307,7 @@ public:
     return task_dep<T, Op, false>(*this, access_mode::reduce_no_init, ::std::forward<Pack>(pack)...);
   }
 
-  /* If we do not pass the no_init{} tag type, there this is going to
+  /* If we do not pass the no_init{} tag type there, this is going to
    * initialize data, not accumulate with existing values. */
   template <typename Op, typename... Pack>
   auto reduce(Op, Pack&&... pack)
