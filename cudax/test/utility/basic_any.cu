@@ -12,7 +12,6 @@
 
 #include <cuda/experimental/__utility/basic_any.cuh>
 
-#include "cuda/std/detail/libcxx/include/__config"
 #include <testing.cuh>
 
 #undef interface
