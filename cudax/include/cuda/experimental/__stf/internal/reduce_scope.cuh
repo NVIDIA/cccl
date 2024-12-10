@@ -92,15 +92,20 @@ public:
   template <typename Fun>
   auto operator->*(Fun&& f)
   {
-      pfor_scope->*f;
-      return result;
+    pfor_scope->*f;
+    return result;
   }
 
 private:
   ::std::string symbol;
   // ctx.reduce is lowered down to a parallel for internally
   logical_data<scalar_view<typename reduce_op_t::scalar_t>> result;
-  parallel_for_scope<context, shape_t, partitioner_t, deps_ops_t...> pfor_scope;
+  parallel_for_scope<context,
+                     shape_t,
+                     partitioner_t,
+                     deps_ops_t...,
+                     task_dep<scalar_view<typename reduce_op_t::scalar_t>, reduce_op_t, false>>
+    pfor_scope;
 };
 } // end namespace reserved
 

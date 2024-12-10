@@ -84,16 +84,16 @@ class context
     }
 
     template <typename Fun>
-    void operator->*(Fun&& f)
+    auto operator->*(Fun&& f)
     {
       if (payload.index() == 0)
       {
-        ::std::get<0>(payload)->*::std::forward<Fun>(f);
+        return ::std::get<0>(payload)->*::std::forward<Fun>(f);
       }
       else
       {
         EXPECT(payload.index() == 1UL, "Uninitialized scope.");
-        ::std::get<1>(payload)->*::std::forward<Fun>(f);
+        return ::std::get<1>(payload)->*::std::forward<Fun>(f);
       }
     }
 
@@ -402,8 +402,8 @@ public:
   auto reduce(exec_place e_place, S shape, reduce_op_t, Deps... deps)
   {
     EXPECT(payload.index() != ::std::variant_npos, "Context is not initialized.");
-    using result_t = unified_scope<reserved::reduce_scope<stream_ctx, S,null_partition, reduce_op_t, Deps...>,
-                                   reserved::reduce_scope<graph_ctx, S, null_partition,reduce_op_t, Deps...>>;
+    using result_t = unified_scope<reserved::reduce_scope<stream_ctx, S, null_partition, reduce_op_t, Deps...>,
+                                   reserved::reduce_scope<graph_ctx, S, null_partition, reduce_op_t, Deps...>>;
     return ::std::visit(
       [&](auto& self) {
         return result_t(self.reduce(mv(e_place), mv(shape), reduce_op_t{}, deps...));
@@ -411,8 +411,7 @@ public:
       payload);
   }
 
-
-#if 0
+#  if 0
   template <typename partitioner_t, typename S, typename reduce_op_t, typename... Deps>
   auto reduce(partitioner_t p, exec_place e_place, S shape, reduce_op_t, Deps... deps)
   {
@@ -425,7 +424,7 @@ public:
       },
       payload);
   }
-#endif
+#  endif
 
   template <typename S, typename reduce_op_t, typename... Deps, typename... Ops, bool... flags>
   auto reduce(S shape, reduce_op_t, task_dep<Deps, Ops, flags>... deps)

@@ -1146,7 +1146,8 @@ public:
   template <typename S, typename reduce_op_t, typename... Deps>
   auto reduce(exec_place e_place, S shape, reduce_op_t, Deps... deps)
   {
-    return reserved::reduce_scope<Engine, S, null_partition, reduce_op_t, Deps...>(self(), mv(e_place), mv(shape), reduce_op_t{}, mv(deps)...);
+    return reserved::reduce_scope<Engine, S, null_partition, reduce_op_t, Deps...>(
+      self(), mv(e_place), mv(shape), reduce_op_t{}, mv(deps)...);
   }
 
   template <typename S, typename reduce_op_t, typename... Deps, typename... Ops, bool... flags>
@@ -1154,7 +1155,6 @@ public:
   {
     return reduce(self().default_exec_place(), mv(shape), reduce_op_t{}, mv(deps)...);
   }
-
 
 private:
   Engine& self()
