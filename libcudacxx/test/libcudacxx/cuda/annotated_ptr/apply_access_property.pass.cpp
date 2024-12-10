@@ -26,7 +26,7 @@ __device__ __host__ __noinline__ void test(P ap)
 
   for (size_t i = 0; i < array_size; ++i)
   {
-    assert(arr[i] == i);
+    assert(static_cast<size_t>(arr[i]) == i);
   }
 
   dealloc<T>(arr);
@@ -41,7 +41,7 @@ __device__ __host__ __noinline__ void test_aligned(P ap)
 
   for (size_t i = 0; i < array_size; ++i)
   {
-    assert(arr[i] == i);
+    assert(static_cast<size_t>(arr[i]) == i);
   }
 
   dealloc<T>(arr);
