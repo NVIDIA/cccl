@@ -16,29 +16,6 @@ import numba.types
 _DEVICE_POINTER_SIZE = 8
 _DEVICE_POINTER_BITWIDTH = _DEVICE_POINTER_SIZE * 8
 _DISTANCE_NUMBA_TYPE = numba.types.uint64
-_DISTANCE_IR_TYPE = ir.IntType(64)
-_CHAR_PTR_NUMBA_TYPE = numba.types.CPointer(numba.types.int8)
-_CHAR_PTR_IR_TYPE = ir.PointerType(ir.IntType(8))
-
-
-def numba_type_from_any(value_type):
-    return getattr(numba.types, str(value_type))
-
-
-def _sizeof_numba_type(ntype):
-    mapping = {
-        numba.types.int8: 1,
-        numba.types.int16: 2,
-        numba.types.int32: 4,
-        numba.types.int64: 8,
-        numba.types.uint8: 1,
-        numba.types.uint16: 2,
-        numba.types.uint32: 4,
-        numba.types.uint64: 8,
-        numba.types.float32: 4,
-        numba.types.float64: 8,
-    }
-    return mapping[ntype]
 
 
 @lru_cache

@@ -9,7 +9,6 @@ import random
 import numba.cuda
 import numba.types
 import cuda.parallel.experimental as cudax
-from cuda.parallel.experimental import _iterators
 from cuda.parallel.experimental import iterators
 
 
@@ -161,34 +160,6 @@ def supported_value_type(request):
 @pytest.fixture(params=[True, False])
 def use_numpy_array(request):
     return request.param
-
-
-@pytest.mark.parametrize(
-    "type_obj_from_str", [_iterators.numba_type_from_any, numpy.dtype, cp.dtype]
-)
-def test_value_type_name_round_trip(type_obj_from_str, supported_value_type):
-    # If all round trip tests here pass for all value types we are supporting,
-    # this provides a super easy way to support numba.types, numpy.dtypes,
-    # cupy.dtypes and plain strings as `value_type` arguments.
-    type_obj = type_obj_from_str(supported_value_type)
-    assert str(type_obj) == supported_value_type
-
-
-def test_device_sum_raw_pointer_it(
-    use_numpy_array, supported_value_type, num_items=3, start_sum_with=10
-):
-    # Exercise non-public _iterators.pointer() independently from iterators.TransformIterator().
-    rng = random.Random(0)
-    l_varr = [rng.randrange(100) for _ in range(num_items)]
-    dtype_inp = numpy.dtype(supported_value_type)
-    dtype_out = dtype_inp
-    raw_pointer_devarr = numba.cuda.to_device(numpy.array(l_varr, dtype=dtype_inp))
-    i_input = _iterators.pointer(
-        raw_pointer_devarr, _iterators.numba_type_from_any(supported_value_type)
-    )
-    _test_device_sum_with_iterator(
-        l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
-    )
 
 
 def test_device_sum_cache_modified_input_it(
