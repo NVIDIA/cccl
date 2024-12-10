@@ -92,7 +92,7 @@ CUB_NAMESPACE_BEGIN
  *   The init_value element for ScanOpT type (cub::NullType for inclusive scan)
  *
  * @tparam OffsetT
- *   Signed integer type for global offsets
+ *   Unsigned integer type for global offsets
  *
  * @param d_keys_in
  *   Input keys data
@@ -217,7 +217,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanByKeyInitKernel(
  *   The init_value element for ScanOpT type (cub::NullType for inclusive scan)
  *
  * @tparam OffsetT
- *   Signed integer type for global offsets
+ *   Unsigned integer type for global offsets
  *
  */
 template <
