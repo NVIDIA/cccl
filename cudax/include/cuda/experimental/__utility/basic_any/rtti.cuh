@@ -113,7 +113,7 @@ _CCCL_GLOBAL_CONSTANT __object_metadata __object_metadata_v = {
   sizeof(_Tp), alignof(_Tp), &_CCCL_TYPEID(_Tp), &_CCCL_TYPEID(_Tp*), &_CCCL_TYPEID(_Tp const*)};
 
 template <class _Tp>
-_CUDAX_HOST_API void __dtor_fn(void* __pv, bool __small) noexcept
+_CUDAX_API void __dtor_fn(void* __pv, bool __small) noexcept
 {
   __small ? static_cast<_Tp*>(__pv)->~_Tp() //
           : delete *static_cast<_Tp**>(__pv);
