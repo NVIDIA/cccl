@@ -46,6 +46,7 @@ class __byteswap_impl
          | (static_cast<_Full>(__impl(static_cast<_Half>(__val))) << CHAR_BIT * sizeof(_Half));
   }
 
+#if _CCCL_HAS_CUDA_COMPILER
   _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _CCCL_DEVICE static uint32_t __impl_device(uint32_t __val) noexcept
   {
     uint32_t __result;
@@ -66,6 +67,7 @@ class __byteswap_impl
 
     return __result;
   }
+#endif // _CCCL_HAS_CUDA_COMPILER
 
 public:
   template <class _Tp>

@@ -82,7 +82,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
   test_num<cuda::std::int8_t>(static_cast<cuda::std::int8_t>(0xAB), static_cast<cuda::std::int8_t>(0xAB));
   test_num<cuda::std::int16_t>(static_cast<cuda::std::int16_t>(0xCDEF), static_cast<cuda::std::int16_t>(0xEFCD));
   test_num<cuda::std::int32_t>(0x01234567, 0x67452301);
-  test_num<cuda::std::int64_t>(0x0123456789ABCDEF, 0xEFCDAB8967452301);
+  // requires static_cast to silence integer conversion resulted in a change of sign warning
+  test_num<cuda::std::int64_t>(
+    static_cast<cuda::std::int64_t>(0x0123456789ABCDEF), static_cast<cuda::std::int64_t>(0xEFCDAB8967452301));
 
 #if !defined(TEST_HAS_NO_INT128_T)
   const auto in       = static_cast<__uint128_t>(0x0123456789ABCDEF) << 64 | 0x13579BDF02468ACE;
