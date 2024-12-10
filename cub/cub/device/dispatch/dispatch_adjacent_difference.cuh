@@ -108,7 +108,7 @@ template <typename InputIteratorT,
           typename OffsetT,
           bool MayAlias,
           bool ReadLeft,
-          typename SelectedPolicy = DeviceAdjacentDifferencePolicy<InputIteratorT, MayAlias>>
+          typename SelectedPolicy = detail::adjacent_difference::policy_hub<InputIteratorT, MayAlias>>
 struct DispatchAdjacentDifference : public SelectedPolicy
 {
   using InputT = typename std::iterator_traits<InputIteratorT>::value_type;

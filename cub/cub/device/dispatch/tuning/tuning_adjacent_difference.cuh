@@ -48,7 +48,7 @@ namespace detail
 namespace adjacent_difference
 {
 template <typename InputIteratorT, bool MayAlias>
-struct DeviceAdjacentDifferencePolicy
+struct policy_hub
 {
   using ValueT = typename std::iterator_traits<InputIteratorT>::value_type;
 
@@ -79,7 +79,6 @@ struct DeviceAdjacentDifferencePolicy
 
 // TODO(bgruber): deprecate this alias. Users should not access policy_hubs directly.
 template <typename InputIteratorT, bool MayAlias = true>
-using DeviceAdjacentDifferencePolicy =
-  detail::adjacent_difference::DeviceAdjacentDifferencePolicy<InputIteratorT, MayAlias>;
+using DeviceAdjacentDifferencePolicy = detail::adjacent_difference::policy_hub<InputIteratorT, MayAlias>;
 
 CUB_NAMESPACE_END
