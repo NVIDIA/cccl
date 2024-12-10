@@ -1,1 +1,1 @@
-from . import bench
+from . import bench as bench

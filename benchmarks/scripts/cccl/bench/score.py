@@ -14,9 +14,9 @@ def compute_weights(num_values):
     least_importance = 0.6
     most_importance = 0.999
 
-    assert(least_importance < most_importance)
-    assert(least_importance >= 0 and least_importance < 1)
-    assert(most_importance > 0 and most_importance < 1)
+    assert least_importance < most_importance
+    assert least_importance >= 0 and least_importance < 1
+    assert most_importance > 0 and most_importance < 1
 
     begin = x_by_importance(least_importance)
     end = x_by_importance(most_importance)
@@ -47,6 +47,7 @@ def compute_axes_ids(rt_axes_values):
         result[bench] = rt_axes_ids
     return result
 
+
 def compute_raw_weight_matrix(rt_axes_values, rt_axes_ids):
     rt_axes_weights = {}
 
@@ -58,7 +59,7 @@ def compute_raw_weight_matrix(rt_axes_values, rt_axes_ids):
             first_rt_axis = False
         values = rt_axes_values[rt_axis]
         rt_axes_values[rt_axis] = values
-        if '{io}' in rt_axis:
+        if "{io}" in rt_axis:
             rt_axes_weights[rt_axis] = io_weights(values)
         else:
             rt_axes_weights[rt_axis] = ei_weights(values)
@@ -78,11 +79,14 @@ def compute_raw_weight_matrix(rt_axes_values, rt_axes_ids):
 
     return weights_matrix
 
+
 def compute_weight_matrices(rt_axes_values, rt_axes_ids):
     matrices = {}
     aggregate = 0.0
     for bench in rt_axes_values:
-        matrices[bench] = compute_raw_weight_matrix(rt_axes_values[bench], rt_axes_ids[bench])
+        matrices[bench] = compute_raw_weight_matrix(
+            rt_axes_values[bench], rt_axes_ids[bench]
+        )
         aggregate = aggregate + np.sum(matrices[bench])
     for bench in rt_axes_values:
         matrices[bench] = matrices[bench] / aggregate
@@ -92,9 +96,10 @@ def compute_weight_matrices(rt_axes_values, rt_axes_ids):
 def get_workload_coordinates(rt_workload, rt_axes_values, rt_axes_ids):
     coordinates = [0] * len(rt_axes_ids)
     for point in rt_workload:
-        rt_axis, rt_value = point.split('=')
+        rt_axis, rt_value = point.split("=")
         coordinates[rt_axes_ids[rt_axis]] = rt_axes_values[rt_axis].index(rt_value)
     return coordinates
+
 
 def get_workload_weight(rt_workload, rt_axes_values, rt_axes_ids, weights_matrix):
     coordinates = get_workload_coordinates(rt_workload, rt_axes_values, rt_axes_ids)
