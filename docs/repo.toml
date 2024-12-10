@@ -323,7 +323,8 @@ autodoc.mock_imports = [
     "numba",
     "pynvjitlink",
     "cuda.bindings",
-    "llvmlite"
+    "llvmlite",
+    "numpy",
 ]
 
 enhanced_search_enabled = true
@@ -346,7 +347,8 @@ autodoc.mock_imports = [
     "numba",
     "pynvjitlink",
     "cuda.bindings",
-    "llvmlite"
+    "llvmlite",
+    "numpy"
 ]
 
 enhanced_search_enabled = true
