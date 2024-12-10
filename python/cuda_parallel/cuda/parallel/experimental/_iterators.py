@@ -35,10 +35,7 @@ def _ctypes_type_given_numba_type(ntype):
     return mapping[ntype]
 
 
-@lru_cache
-def cached_compile(*args, **kwargs):
-    result = numba.cuda.compile(*args, **kwargs)
-    return result
+cached_compile = lru_cache(maxsize=256)(numba.cuda.compile)  # TODO: what's a reasonable value?
 
 
 class IteratorBase:
