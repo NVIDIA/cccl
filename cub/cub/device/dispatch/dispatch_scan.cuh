@@ -143,7 +143,7 @@ DeviceCompactInitKernel(ScanTileStateT tile_state, int num_tiles, NumSelectedIte
  *   (cub::NullType for inclusive scans)
  *
  * @tparam OffsetT
- *   Signed integer type for global offsets
+ *   Unsigned integer type for global offsets
  *
  * @paramInput d_in
  *   data
@@ -223,7 +223,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS))
  *   The init_value element type for ScanOpT (cub::NullType for inclusive scans)
  *
  * @tparam OffsetT
- *   Signed integer type for global offsets
+ *   Unsigned integer type for global offsets
  *
  * @tparam ForceInclusive
  *   Boolean flag to force InclusiveScan invocation when true.
