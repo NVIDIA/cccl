@@ -22,8 +22,6 @@ static_assert(!cuda::has_property<cudax::any_resource<cudax::host_accessible, ge
 struct unused_property
 {};
 
-#ifndef __CUDA_ARCH__
-
 TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]", big_resource, small_resource)
 {
   using TestResource    = TestType;
@@ -282,13 +280,3 @@ TEMPLATE_TEST_CASE_METHOD(test_fixture, "any_resource", "[container][resource]",
   // Reset the counters:
   this->counts = Counts();
 }
-
-#else
-// BUGBUG TODO:
-// temporary hack to prevent sccache from ignoring changes in code guarded by
-// !defined(__CUDA_ARCH__)
-char const* __fool_sccache()
-{
-  return __TIME__;
-}
-#endif // __CUDA_ARCH__
