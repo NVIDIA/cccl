@@ -77,7 +77,16 @@ __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tup
   ::std::apply(explode_args, mv(targs));
 }
 
-// Create SelectType Using Partial Specialization
+/**
+ * @brief Create a trait to select useful types during the reduction phase
+ * using Partial Specialization
+ *
+ * Oi are the operator type (no op (= monostate), or reducer::sum for example)
+ * Ai are the argument type (slice<T>, or scalar<T> for example)
+ * If Oi is not monostate, it will correspond to the container of Ai, otherwise
+ * we don't need to manipulate that argument during a reduction phase, so this
+ * is a monostate
+ */
 template <typename Oi, typename Ai>
 struct get_owning_container_of
 {
