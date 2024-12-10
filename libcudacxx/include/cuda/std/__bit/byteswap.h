@@ -23,10 +23,15 @@
 
 #include <cuda/std/__bit/has_single_bit.h>
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/climits>
 #include <cuda/std/cstdint>
+
+#if _CCCL_COMPILER(MSVC)
+#  include <intrin.h>
+#endif // _CCCL_COMPILER(MSVC)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
@@ -58,9 +63,24 @@ public:
   {
 #if defined(_CCCL_BUILTIN_BSWAP16)
     return _CCCL_BUILTIN_BSWAP16(__val);
-#else // ^^^ _CCCL_BUILTIN_BSWAP16 ^^^ / vvv !_CCCL_BUILTIN_BSWAP16 vvv
+#  if _CCCL_STD_VER >= 2014
+    if (!__cccl_default_is_constant_evaluated())
+    {
+#    if _CCCL_COMPILER(MSVC)
+      NV_IF_TARGET(NV_IS_HOST, return _byteswap_ushort(__val);)
+#    endif // _CCCL_COMPILER(MSVC)
+    }
+#  endif // _CCCL_STD_VER >= 2014
+#else
     return (__val << CHAR_BIT) | (__val >> CHAR_BIT);
-#endif // !_CCCL_BUILTIN_BSWAP16
+#endif
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static uint32_t __impl_device(uint32_t __val) noexcept
+  {
+    uint32_t __result{};
+    asm("prmt.b32 %0, %1, 0, 0x0123;" : "=r"(__result) : "r"(__val));
+    return __result;
   }
 
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr uint32_t __impl(uint32_t __val) noexcept
@@ -68,8 +88,31 @@ public:
 #if defined(_CCCL_BUILTIN_BSWAP32)
     return _CCCL_BUILTIN_BSWAP32(__val);
 #else // ^^^ _CCCL_BUILTIN_BSWAP32 ^^^ / vvv !_CCCL_BUILTIN_BSWAP32 vvv
+#  if _CCCL_STD_VER >= 2014
+    if (!__cccl_default_is_constant_evaluated())
+    {
+#    if _CCCL_COMPILER(MSVC)
+      NV_IF_TARGET(NV_IS_HOST, return _byteswap_ulong(__val);)
+#    endif // _CCCL_COMPILER(MSVC)
+      NV_IF_TARGET(NV_IS_DEVICE, return __impl_device(__val);)
+    }
+#  endif // _CCCL_STD_VER >= 2014
     return __impl_recursive<uint16_t>(__val);
 #endif // !_CCCL_BUILTIN_BSWAP32
+  }
+
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static uint64_t __impl_device(uint64_t __val) noexcept
+  {
+    uint32_t __hi{};
+    uint32_t __lo{};
+    asm("mov.b64 {%0, %1}, %2;" : "=r"(__hi), "=r"(__lo) : "l"(__val));
+
+    const uint32_t __swapped_lo = __impl(__hi);
+    const uint32_t __swapped_hi = __impl(__lo);
+    uint64_t __result{};
+    asm("mov.b64 %0, {%1, %2};" : "=l"(__result) : "r"(__swapped_hi), "r"(__swapped_lo));
+
+    return __result;
   }
 
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI static constexpr uint64_t __impl(uint64_t __val) noexcept
@@ -77,6 +120,15 @@ public:
 #if defined(_CCCL_BUILTIN_BSWAP64)
     return _CCCL_BUILTIN_BSWAP64(__val);
 #else // ^^^ _CCCL_BUILTIN_BSWAP64 ^^^ / vvv !_CCCL_BUILTIN_BSWAP64 vvv
+#  if _CCCL_STD_VER >= 2014
+    if (!__cccl_default_is_constant_evaluated())
+    {
+#    if _CCCL_COMPILER(MSVC)
+      NV_IF_TARGET(NV_IS_HOST, return _byteswap_uint64(__val);)
+#    endif // _CCCL_COMPILER(MSVC)
+      NV_IF_TARGET(NV_IS_DEVICE, return __impl_device(__val);)
+    }
+#  endif // _CCCL_STD_VER >= 2014
     return __impl_recursive<uint32_t>(__val);
 #endif // !_CCCL_BUILTIN_BSWAP64
   }
@@ -105,7 +157,7 @@ _CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Integer) _CCCL_AND(sizeof(_Integer) > 1
                  _CCCL_AND(has_single_bit(sizeof(_Integer))))
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Integer byteswap(_Integer __val) noexcept
 {
-  return static_cast<_Integer>(__byteswap_impl::__impl(__to_unsigned_like(__val)));
+  return static_cast<_Integer>(__byteswap_impl::__impl(_CUDA_VSTD::__to_unsigned_like(__val)));
 }
 
 _CCCL_TEMPLATE(class _Integer)
@@ -113,7 +165,7 @@ _CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Integer) _CCCL_AND(sizeof(_Integer) > 1
                  _CCCL_AND(!has_single_bit(sizeof(_Integer))))
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Integer byteswap(_Integer __val) noexcept
 {
-  return static_cast<_Integer>(__byteswap_impl::__impl(__to_unsigned_like(__val)));
+  return static_cast<_Integer>(__byteswap_impl::__impl(_CUDA_VSTD::__to_unsigned_like(__val)));
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
