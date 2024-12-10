@@ -56,7 +56,7 @@ using __class_of _CCCL_NODEBUG_ALIAS = decltype(__cudax::__class_of_(_Fn()));
 //! We use a C-style cast instead of a static_cast because a C-style cast will
 //! ignore accessibility, letting us cast to a private base class.
 template <class _DstPtr, class _Src>
-_CUDAX_TRIVIAL_HOST_API auto __c_style_cast(_Src* __ptr) noexcept -> _DstPtr
+_CUDAX_TRIVIAL_API auto __c_style_cast(_Src* __ptr) noexcept -> _DstPtr
 {
   static_assert(_CUDA_VSTD::is_pointer_v<_DstPtr>, "");
   static_assert(_CUDA_VSTD::is_base_of_v<_CUDA_VSTD::remove_pointer_t<_DstPtr>, _Src>, "invalid C-style cast detected");
@@ -64,8 +64,8 @@ _CUDAX_TRIVIAL_HOST_API auto __c_style_cast(_Src* __ptr) noexcept -> _DstPtr
 }
 
 template <class _Tp, auto _Fn, class _Ret, bool _IsConst, bool _IsNothrow, class... _Args>
-_CCCL_NODISCARD _CUDAX_HOST_API auto __override_fn_([[maybe_unused]] _CUDA_VSTD::__maybe_const<_IsConst, void>* __pv,
-                                                    [[maybe_unused]] _Args... __args) noexcept(_IsNothrow) -> _Ret
+_CCCL_NODISCARD _CUDAX_API auto __override_fn_([[maybe_unused]] _CUDA_VSTD::__maybe_const<_IsConst, void>* __pv,
+                                               [[maybe_unused]] _Args... __args) noexcept(_IsNothrow) -> _Ret
 {
   using __value_type _CCCL_NODEBUG_ALIAS = _CUDA_VSTD::__maybe_const<_IsConst, _Tp>;
 

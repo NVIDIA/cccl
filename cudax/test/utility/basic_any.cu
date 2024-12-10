@@ -14,9 +14,7 @@
 
 #include <testing.cuh>
 
-// basic_any is not yet supported in device code because of nvbugs/4886070
-#ifndef __CUDA_ARCH__
-#  undef interface
+#undef interface
 
 using immovable = cudax::detail::__immovable;
 
@@ -568,13 +566,3 @@ TEST_CASE("basic_any test for ambiguous conversions", "[utility][basic_any]")
   any_regular a = ref;
   a             = ref;
 }
-
-#else // ^^^ !__CUDA_ARCH__ ^^^ / vvv __CUDA_ARCH__ vvv
-// BUGBUG TODO:
-// temporary hack to prevent sccache from ignoring changes in code guarded by
-// !defined(__CUDA_ARCH__)
-char const* __fool_sccache()
-{
-  return __TIME__;
-}
-#endif // __CUDA_ARCH__
