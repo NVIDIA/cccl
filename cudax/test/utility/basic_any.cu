@@ -12,6 +12,7 @@
 
 #include <cuda/experimental/__utility/basic_any.cuh>
 
+#include "cuda/std/detail/libcxx/include/__config"
 #include <testing.cuh>
 
 #undef interface
@@ -70,7 +71,7 @@ template <>
 struct SmallOrLarge<false>
 {
   unsigned int cookie = 0xDEADBEEF;
-  std::byte buffer[cudax::__default_buffer_size]{};
+  _CUDA_VSTD_NOVERSION::byte buffer[cudax::__default_buffer_size]{};
 };
 
 constexpr bool Small = true;
@@ -165,7 +166,7 @@ struct Regular
 
 TEMPLATE_TEST_CASE_METHOD(BasicAnyTestsFixture, "basic_any tests", "[utility][basic_any]", SmallType, LargeType)
 {
-  constexpr bool IsSmall = std::is_same_v<TestType, SmallType>;
+  constexpr bool IsSmall = _CUDA_VSTD::is_same_v<TestType, SmallType>;
 
   SECTION("type traits")
   {
@@ -247,7 +248,7 @@ TEMPLATE_TEST_CASE_METHOD(BasicAnyTestsFixture, "basic_any tests", "[utility][ba
 
     a.emplace<Bar<IsSmall>>(-1, this);
     CHECK(a.foo(2) == 1);
-    b = std::move(a);
+    b = _CUDA_VSTD::move(a);
     CHECK(b.foo(2) == 1);
     CHECK(cudax::any_cast<Bar<IsSmall>>(&b)->j == -1);
 
@@ -287,7 +288,7 @@ TEMPLATE_TEST_CASE_METHOD(BasicAnyTestsFixture, "basic_any tests", "[utility][ba
     CHECK(nullptr != a);
     CHECK(pi == &i);
 
-    int* const* ppi = cudax::any_cast<int*>(&std::as_const(a));
+    int* const* ppi = cudax::any_cast<int*>(&_CUDA_VSTD::as_const(a));
     CHECK(&pi == ppi);
 
     cudax::basic_any<iempty<> const*> b = a;
@@ -377,7 +378,7 @@ TEMPLATE_TEST_CASE_METHOD(BasicAnyTestsFixture, "basic_any tests", "[utility][ba
     Bar<IsSmall> bar2{-1, this};
     a.emplace<Bar<IsSmall>*>(&bar2);
     CHECK(a->foo(2) == 1);
-    b = std::move(a);
+    b = _CUDA_VSTD::move(a);
     CHECK(b->foo(2) == 1);
     REQUIRE(cudax::any_cast<Bar<IsSmall>*>(&b));
     CHECK((*cudax::any_cast<Bar<IsSmall>*>(&b))->j == -1);
@@ -425,13 +426,13 @@ TEMPLATE_TEST_CASE_METHOD(BasicAnyTestsFixture, "basic_any tests", "[utility][ba
     CHECK(bar.j == -2);
 
     bar.j = 10;
-    a     = std::move(*pb3);
+    a     = _CUDA_VSTD::move(*pb3);
     CHECK(a.foo(2) == 12);
     CHECK(bar.j == 10);
 
     cudax::basic_any<iderived<>*> pb4 = &bar;
     bar.j                             = 20;
-    a                                 = std::move(*pb4);
+    a                                 = _CUDA_VSTD::move(*pb4);
     CHECK(a.foo(2) == 22);
     CHECK(bar.j == INT_MAX); // bar is moved from
   }
@@ -491,23 +492,27 @@ TEMPLATE_TEST_CASE_METHOD(BasicAnyTestsFixture, "basic_any tests", "[utility][ba
 
   SECTION("cudax::dynamic_any_cast")
   {
-    using cast_to_derived = decltype(cudax::dynamic_any_cast<iderived<>>);
+    auto cast_to_derived_fn =
+      [](auto&& arg) -> decltype(cudax::dynamic_any_cast<iderived<>>(static_cast<decltype(arg)>(arg))) {
+      throw;
+    };
+    using cast_to_derived = decltype(cast_to_derived_fn);
 
-    STATIC_REQUIRE_FALSE(std::is_invocable_v<cast_to_derived, cudax::basic_any<ibase<>>&>);
-    STATIC_REQUIRE_FALSE(std::is_invocable_v<cast_to_derived, cudax::basic_any<ibase<>&>>);
-    STATIC_REQUIRE(std::is_invocable_v<cast_to_derived, cudax::basic_any<cudax::__ireference<ibase<>>>>);
-    STATIC_REQUIRE_FALSE(std::is_invocable_v<cast_to_derived, cudax::basic_any<cudax::__ireference<ibase<>>>&>);
+    STATIC_REQUIRE_FALSE(_CUDA_VSTD::__is_callable_v<cast_to_derived, cudax::basic_any<ibase<>>&>);
+    STATIC_REQUIRE_FALSE(_CUDA_VSTD::__is_callable_v<cast_to_derived, cudax::basic_any<ibase<>&>>);
+    STATIC_REQUIRE(_CUDA_VSTD::__is_callable_v<cast_to_derived, cudax::basic_any<cudax::__ireference<ibase<>>>>);
+    STATIC_REQUIRE_FALSE(_CUDA_VSTD::__is_callable_v<cast_to_derived, cudax::basic_any<cudax::__ireference<ibase<>>>&>);
 
     // dynamic cast to a value
     cudax::basic_any<iderived<>> a{_CUDA_VSTD::in_place_type<Bar<IsSmall>>, 42, this};
     cudax::basic_any<ibase<>> b = a;
-    auto c                      = cudax::dynamic_any_cast<iderived<>>(std::move(b));
+    auto c                      = cudax::dynamic_any_cast<iderived<>>(_CUDA_VSTD::move(b));
     CHECK(c.has_value());
     CHECK(a.bar(2) == c.bar(2));
     CHECK(cudax::any_cast<Bar<IsSmall>>(&a) != cudax::any_cast<Bar<IsSmall>>(&c));
 
     cudax::basic_any<ibase<>*> pa = &a;
-    auto d                        = cudax::dynamic_any_cast<iderived<>>(std::move(*pa));
+    auto d                        = cudax::dynamic_any_cast<iderived<>>(_CUDA_VSTD::move(*pa));
     CHECK(d.has_value());
     CHECK(cudax::any_cast<Bar<IsSmall>>(&a)->j == INT_MAX); // moved from
     CHECK(cudax::any_cast<Bar<IsSmall>>(&d)->j == 42);

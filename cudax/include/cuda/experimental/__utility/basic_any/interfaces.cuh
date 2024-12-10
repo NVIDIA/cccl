@@ -52,19 +52,19 @@ template <class _Interface>
 extern _Interface __remove_ireference_v<__ireference<_Interface const>>;
 
 template <class _Interface>
-_CCCL_GLOBAL_CONSTANT bool __is_value_v = _CUDA_VSTD::is_class_v<_Interface>;
+_CCCL_INLINE_VAR constexpr bool __is_value_v = _CUDA_VSTD::is_class_v<_Interface>;
 
 template <class _Interface>
-_CCCL_GLOBAL_CONSTANT bool __is_value_v<__ireference<_Interface>> = false;
+_CCCL_INLINE_VAR constexpr bool __is_value_v<__ireference<_Interface>> = false;
 
 template <class _Interface>
-_CCCL_GLOBAL_CONSTANT bool __is_lvalue_reference_v = false;
+_CCCL_INLINE_VAR constexpr bool __is_lvalue_reference_v = false;
 
 template <class _Interface>
-_CCCL_GLOBAL_CONSTANT bool __is_lvalue_reference_v<__ireference<_Interface const>> = true;
+_CCCL_INLINE_VAR constexpr bool __is_lvalue_reference_v<__ireference<_Interface const>> = true;
 
 template <class _Interface>
-_CCCL_GLOBAL_CONSTANT bool __is_lvalue_reference_v<_Interface&> = true;
+_CCCL_INLINE_VAR constexpr bool __is_lvalue_reference_v<_Interface&> = true;
 
 //!
 //! __bases_of: get the list of base interface for an interface, including itself
@@ -82,16 +82,16 @@ using __bases_of _CCCL_NODEBUG_ALIAS = //
 //! interface subsumption
 //!
 template <class _Interface1, class _Interface2>
-_CCCL_GLOBAL_CONSTANT bool __subsumes = false;
+_CCCL_INLINE_VAR constexpr bool __subsumes = false;
 
 template <class _Interface>
-_CCCL_GLOBAL_CONSTANT bool __subsumes<_Interface, _Interface> = true;
+_CCCL_INLINE_VAR constexpr bool __subsumes<_Interface, _Interface> = true;
 
 template <class... _Set>
-_CCCL_GLOBAL_CONSTANT bool __subsumes<__iset<_Set...>, __iset<_Set...>> = true;
+_CCCL_INLINE_VAR constexpr bool __subsumes<__iset<_Set...>, __iset<_Set...>> = true;
 
 template <class... _Subset, class... _Superset>
-_CCCL_GLOBAL_CONSTANT bool __subsumes<__iset<_Subset...>, __iset<_Superset...>> =
+_CCCL_INLINE_VAR constexpr bool __subsumes<__iset<_Subset...>, __iset<_Superset...>> =
   _CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__make_type_set<_Superset...>, _Subset...>;
 
 //!
