@@ -119,11 +119,11 @@ def _test_device_sum_with_iterator(
     h_init = numpy.array([start_sum_with], dtype_out)
 
     reduce_into = cudax.reduce_into(
-        d_in=d_input, d_out=d_output, op=add_op, init=h_init
+        d_in=d_input, d_out=d_output, op=add_op, h_init=h_init
     )
 
     temp_storage_size = reduce_into(
-        None, d_in=d_input, d_out=d_output, num_items=len(l_varr), init=h_init
+        None, d_in=d_input, d_out=d_output, num_items=len(l_varr), h_init=h_init
     )
     d_temp_storage = numba.cuda.device_array(temp_storage_size, dtype=numpy.uint8)
 
@@ -199,9 +199,7 @@ def test_device_sum_cache_modified_input_it(
     dtype_inp = numpy.dtype(supported_value_type)
     dtype_out = dtype_inp
     input_devarr = numba.cuda.to_device(numpy.array(l_varr, dtype=dtype_inp))
-    i_input = iterators.CacheModifiedInputIterator(
-        input_devarr, value_type=supported_value_type, modifier="stream"
-    )
+    i_input = iterators.CacheModifiedInputIterator(input_devarr, modifier="stream")
     _test_device_sum_with_iterator(
         l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
     )
@@ -213,7 +211,7 @@ def test_device_sum_constant_it(
     l_varr = [42 for distance in range(num_items)]
     dtype_inp = numpy.dtype(supported_value_type)
     dtype_out = dtype_inp
-    i_input = iterators.ConstantIterator(42, value_type=supported_value_type)
+    i_input = iterators.ConstantIterator(dtype_inp.type(42))
     _test_device_sum_with_iterator(
         l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
     )
@@ -225,9 +223,7 @@ def test_device_sum_counting_it(
     l_varr = [start_sum_with + distance for distance in range(num_items)]
     dtype_inp = numpy.dtype(supported_value_type)
     dtype_out = dtype_inp
-    i_input = iterators.CountingIterator(
-        start_sum_with, value_type=supported_value_type
-    )
+    i_input = iterators.CountingIterator(dtype_inp.type(start_sum_with))
     _test_device_sum_with_iterator(
         l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
     )
@@ -252,8 +248,7 @@ def test_device_sum_map_mul2_count_it(
     dtype_inp = numpy.dtype(vtn_inp)
     dtype_out = numpy.dtype(vtn_out)
     i_input = iterators.TransformIterator(
-        mul2,
-        iterators.CountingIterator(start_sum_with, value_type=vtn_inp),
+        mul2, iterators.CountingIterator(dtype_inp.type(start_sum_with))
     )
     _test_device_sum_with_iterator(
         l_varr, start_sum_with, i_input, dtype_inp, dtype_out, use_numpy_array
@@ -288,7 +283,7 @@ def test_device_sum_map_mul_map_mul_count_it(
         mul_funcs[fac_out],
         iterators.TransformIterator(
             mul_funcs[fac_mid],
-            iterators.CountingIterator(start_sum_with, value_type=vtn_inp),
+            iterators.CountingIterator(dtype_inp.type(start_sum_with)),
         ),
     )
     _test_device_sum_with_iterator(

@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import functools
 import importlib
 import ctypes
 import shutil
@@ -125,7 +126,10 @@ class _CCCLValue(ctypes.Structure):
     _fields_ = [("type", _TypeInfo), ("state", ctypes.c_void_p)]
 
 
-def _type_to_info_from_numba_type(numba_type):
+# TODO: replace with functools.cache once our docs build environment
+# is upgraded to at least Python 3.9
+@functools.lru_cache(maxsize=None)
+def _numba_type_to_info(numba_type):
     context = cuda.descriptor.cuda_target.target_context
     size = context.get_value_type(numba_type).get_abi_size(context.target_data)
     alignment = context.get_value_type(numba_type).get_abi_alignment(
@@ -134,14 +138,15 @@ def _type_to_info_from_numba_type(numba_type):
     return _TypeInfo(size, alignment, _type_to_enum(numba_type))
 
 
-def _type_to_info(numpy_type):
+@functools.lru_cache(maxsize=None)
+def _numpy_type_to_info(numpy_type):
     numba_type = numba.from_dtype(numpy_type)
-    return _type_to_info_from_numba_type(numba_type)
+    return _numba_type_to_info(numba_type)
 
 
 def _device_array_to_pointer(array):
     dtype = array.dtype
-    info = _type_to_info(dtype)
+    info = _numpy_type_to_info(dtype)
     # Note: this is slightly slower, but supports all ndarray-like objects as long as they support CAI
     # TODO: switch to use gpumemoryview once it's ready
     return _CCCLIterator(
@@ -158,7 +163,7 @@ def _device_array_to_pointer(array):
 
 def _host_array_to_value(array):
     dtype = array.dtype
-    info = _type_to_info(dtype)
+    info = _numpy_type_to_info(dtype)
     return _CCCLValue(info, array.ctypes.data)
 
 
@@ -201,7 +206,7 @@ def _facade_iter_as_cccl_iter(d_in):
     drf = _CCCLOp(
         _CCCLOpKindEnum.STATELESS, prefix_name("dereference"), None, 0, 1, 1, None
     )
-    info = _type_to_info_from_numba_type(d_in.ntype)
+    info = _numba_type_to_info(d_in.ntype)
     ltoirs = _extract_ctypes_ltoirs(d_in.ltoirs)
     # size alignment type advance dereference value_type state ltoirs
     return _CCCLIterator(
@@ -308,17 +313,18 @@ def _dtype_validation(dt1, dt2):
 
 
 class _Reduce:
-    def __init__(self, d_in, d_out, op, init):
+    # TODO: constructor shouldn't require concrete `d_in`, `d_out`:
+    def __init__(self, d_in, d_out, op, h_init):
         d_in_cccl = _d_in_as_cccl_iter(d_in)
         self._ctor_d_in_cccl_type_enum_name = _cccl_type_enum_as_name(
             d_in_cccl.value_type.type.value
         )
         self._ctor_d_out_dtype = d_out.dtype
-        self._ctor_init_dtype = init.dtype
+        self._ctor_init_dtype = h_init.dtype
         cc_major, cc_minor = cuda.get_current_device().compute_capability
         cub_path, thrust_path, libcudacxx_path, cuda_include_path = _get_paths()
         bindings = _get_bindings()
-        accum_t = init.dtype
+        accum_t = h_init.dtype
         self.op_wrapper = _Op(accum_t, op)
         d_out_ptr = _device_array_to_pointer(d_out)
         self.build_result = _CCCLDeviceReduceBuildResult()
@@ -329,7 +335,7 @@ class _Reduce:
             d_in_cccl,
             d_out_ptr,
             self.op_wrapper.handle(),
-            _host_array_to_value(init),
+            _host_array_to_value(h_init),
             cc_major,
             cc_minor,
             ctypes.c_char_p(cub_path),
@@ -340,7 +346,7 @@ class _Reduce:
         if error != enums.CUDA_SUCCESS:
             raise ValueError("Error building reduce")
 
-    def __call__(self, temp_storage, d_in, d_out, num_items, init):
+    def __call__(self, temp_storage, d_in, d_out, num_items, h_init):
         d_in_cccl = _d_in_as_cccl_iter(d_in)
         if d_in_cccl.type.value == _CCCLIteratorKindEnum.ITERATOR:
             assert num_items is not None
@@ -355,7 +361,7 @@ class _Reduce:
             _cccl_type_enum_as_name(d_in_cccl.value_type.type.value),
         )
         _dtype_validation(self._ctor_d_out_dtype, d_out.dtype)
-        _dtype_validation(self._ctor_init_dtype, init.dtype)
+        _dtype_validation(self._ctor_init_dtype, h_init.dtype)
         bindings = _get_bindings()
         if temp_storage is None:
             temp_storage_bytes = ctypes.c_size_t()
@@ -374,7 +380,7 @@ class _Reduce:
             d_out_ptr,
             ctypes.c_ulonglong(num_items),
             self.op_wrapper.handle(),
-            _host_array_to_value(init),
+            _host_array_to_value(h_init),
             None,
         )
         if error != enums.CUDA_SUCCESS:
@@ -387,10 +393,9 @@ class _Reduce:
         bindings.cccl_device_reduce_cleanup(ctypes.byref(self.build_result))
 
 
-# TODO Figure out iterators
 # TODO Figure out `sum` without operator and initial value
 # TODO Accept stream
-def reduce_into(d_in, d_out, op, init):
+def reduce_into(d_in, d_out, op, h_init):
     """Computes a device-wide reduction using the specified binary ``op`` functor and initial value ``init``.
 
     Example:
@@ -420,4 +425,4 @@ def reduce_into(d_in, d_out, op, init):
     Returns:
         A callable object that can be used to perform the reduction
     """
-    return _Reduce(d_in, d_out, op, init)
+    return _Reduce(d_in, d_out, op, h_init)
