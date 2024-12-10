@@ -155,7 +155,7 @@ def extract_scores(dfs):
         score_closure = functools.partial(
             compute_variant_score, rt_axes_values[subbench], rt_axes_ids[subbench], weights[subbench])
         grouped = dfs[subbench].groupby('variant')
-        scores = grouped.apply(score_closure).reset_index()
+        scores = grouped.apply(score_closure, include_groups = False).reset_index()
         scores.columns = ['variant', 'score']
         stat = grouped.agg(mins=('speedup', 'min'),
                            means=('speedup', 'mean'),
