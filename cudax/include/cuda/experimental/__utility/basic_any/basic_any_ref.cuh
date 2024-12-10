@@ -291,10 +291,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__irefer
 #  define _CUDAX_AND      _CCCL_AND
 #endif // !NVCC || !concepts
 
-  _CUDAX_TEMPLATE(class _Tp)
-  _CUDAX_REQUIRES((!__is_basic_any<_Tp>) )
-  basic_any(_Tp const&&) = delete;
-
   _CUDAX_TEMPLATE(class _SrcInterface)
   _CUDAX_REQUIRES((!_CUDA_VSTD::same_as<_SrcInterface, _Interface&>) _CUDAX_AND //
                   (!__is_value_v<_SrcInterface>) _CUDAX_AND //
@@ -322,13 +318,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__irefer
   {
     this->__set_ref(__src.__get_vptr(), __src.__get_optr());
   }
-
-  // A temporary value cannot bind to a basic_any reference.
-  // TODO: find another way to support APIs that take by reference and want
-  // implicit conversion from prvalues.
-  _CUDAX_TEMPLATE(class _SrcInterface)
-  _CUDAX_REQUIRES(__is_value_v<_SrcInterface>) //
-  basic_any(basic_any<_SrcInterface> const&&) = delete;
 
 #undef _CUDAX_AND
 #undef _CUDAX_REQUIRES

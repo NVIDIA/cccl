@@ -29,11 +29,11 @@
 #include <cuda/__memory_resource/get_property.h>
 #include <cuda/__memory_resource/properties.h>
 #include <cuda/__memory_resource/resource.h>
-#include <cuda/__memory_resource/resource_ref.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__cuda/api_wrapper.h>
 #include <cuda/std/detail/libcxx/include/stdexcept>
 
+#include <cuda/experimental/__memory_resource/any_resource.cuh>
 #include <cuda/experimental/__memory_resource/properties.cuh>
 
 //! @file
@@ -166,13 +166,13 @@ public:
   {
     if constexpr (has_property<_Resource, device_accessible>)
     {
-      return _CUDA_VMR::resource_ref<device_accessible>{const_cast<pinned_memory_resource*>(this)}
-          == _CUDA_VMR::resource_ref<device_accessible>{const_cast<_Resource&>(__rhs)};
+      return resource_ref<device_accessible>{*const_cast<pinned_memory_resource*>(this)}
+          == __cudax::__as_resource_ref<device_accessible>(const_cast<_Resource&>(__rhs));
     }
     else if constexpr (has_property<_Resource, host_accessible>)
     {
-      return _CUDA_VMR::resource_ref<host_accessible>{const_cast<pinned_memory_resource*>(this)}
-          == _CUDA_VMR::resource_ref<host_accessible>{const_cast<_Resource&>(__rhs)};
+      return resource_ref<host_accessible>{*const_cast<pinned_memory_resource*>(this)}
+          == __cudax::__as_resource_ref<host_accessible>(const_cast<_Resource&>(__rhs));
     }
     else
     {
