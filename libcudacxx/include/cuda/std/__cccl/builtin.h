@@ -130,37 +130,25 @@
 #  define _CCCL_BUILTIN_BSWAP16(...) __builtin_bswap16(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_bswap16)
 
-// GCC prior to 10, MSVC, NVCC and NVRTC do not support __builtin_bswap16
-#if _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC)
-#  undef _CCCL_BUILTIN_BSWAP16
-#endif // _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC)
-
 #if _CCCL_CHECK_BUILTIN(builtin_bswap32)
 #  define _CCCL_BUILTIN_BSWAP32(...) __builtin_bswap32(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_bswap32)
-
-// GCC prior to 10, MSVC, NVCC and NVRTC do not support __builtin_bswap32
-#if _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC)
-#  undef _CCCL_BUILTIN_BSWAP32
-#endif // _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC)
 
 #if _CCCL_CHECK_BUILTIN(builtin_bswap64)
 #  define _CCCL_BUILTIN_BSWAP64(...) __builtin_bswap64(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_bswap64)
 
-// GCC prior to 10, MSVC, NVCC and NVRTC do not support __builtin_bswap64
-#if _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC)
-#  undef _CCCL_BUILTIN_BSWAP64
-#endif // _CCCL_COMPILER(GCC, <, 10) || _CCCL_COMPILER(MSVC) || _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC)
-
 #if _CCCL_CHECK_BUILTIN(builtin_bswap128)
 #  define _CCCL_BUILTIN_BSWAP128(...) __builtin_bswap128(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_bswap128)
 
-// Only GCC 10 and later support __builtin_bswap128
-#if !_CCCL_COMPILER(GCC, >=, 10) || _CCCL_HAS_CUDA_COMPILER
+// NVCC cannot handle builtins for bswap
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  undef _CCCL_BUILTIN_BSWAP16
+#  undef _CCCL_BUILTIN_BSWAP32
+#  undef _CCCL_BUILTIN_BSWAP64
 #  undef _CCCL_BUILTIN_BSWAP128
-#endif // !_CCCL_COMPILER(GCC, >=, 10) || _CCCL_HAS_CUDA_COMPILER
+#endif // _CCCL_CUDA_COMPILER(NVCC)
 
 #if _CCCL_HAS_BUILTIN(__builtin_COLUMN) || _CCCL_COMPILER(MSVC, >=, 19, 27)
 #  define _CCCL_BUILTIN_COLUMN() __builtin_COLUMN()
