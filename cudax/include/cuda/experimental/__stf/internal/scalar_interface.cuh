@@ -68,7 +68,6 @@ class shape_of<scalar<T>>
 {
 public:
   shape_of()                = default;
-  shape_of(const shape_of&) = default;
   shape_of(const scalar<T>&)
       : shape_of<scalar<T>>()
   {}
