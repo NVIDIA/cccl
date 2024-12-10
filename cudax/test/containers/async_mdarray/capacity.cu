@@ -23,7 +23,7 @@
 #include "types.h"
 #include <catch2/catch.hpp>
 
-TEMPLATE_TEST_CASE("cudax::async_mdarray capacity",
+TEMPLATE_TEST_CASE("cudax::async_mdarray size",
                    "[container][async_mdarray]",
                    cuda::std::tuple<cuda::mr::host_accessible>,
                    cuda::std::tuple<cuda::mr::device_accessible>,
@@ -75,48 +75,6 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray capacity",
       Vector vec{env, 42, cudax::uninit}; // Note we do not care about the elements just the sizes
       CHECK(vec.size() == 42);
       CHECK(cuda::std::as_const(vec).size() == 42);
-    }
-  }
-
-  SECTION("cudax::async_mdarray::capacity")
-  {
-    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().capacity()), size_type>);
-    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<const Vector&>().capacity()), size_type>);
-    STATIC_REQUIRE(noexcept(cuda::std::declval<Vector&>().capacity()));
-    STATIC_REQUIRE(noexcept(cuda::std::declval<const Vector&>().capacity()));
-
-    { // Works without allocation
-      Vector vec{env, 0};
-      CHECK(vec.capacity() == 0);
-      CHECK(cuda::std::as_const(vec).capacity() == 0);
-    }
-
-    { // Works with allocation
-      Vector vec{env, 42};
-      CHECK(vec.capacity() == 42);
-      CHECK(cuda::std::as_const(vec).capacity() == 42);
-    }
-  }
-
-  SECTION("cudax::async_mdarray::max_size")
-  {
-    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().max_size()), size_type>);
-    STATIC_REQUIRE(cuda::std::is_same_v<decltype(cuda::std::declval<const Vector&>().max_size()), size_type>);
-    STATIC_REQUIRE(noexcept(cuda::std::declval<Vector&>().max_size()));
-    STATIC_REQUIRE(noexcept(cuda::std::declval<const Vector&>().max_size()));
-
-    constexpr size_t max_size =
-      static_cast<size_type>((cuda::std::numeric_limits<typename Vector::difference_type>::max)());
-    { // Works without allocation
-      Vector vec{env, 0};
-      CHECK(vec.max_size() == max_size);
-      CHECK(cuda::std::as_const(vec).max_size() == max_size);
-    }
-
-    { // Works with allocation
-      Vector vec{env, 42, cudax::uninit}; // Note we do not care about the elements just the sizes
-      CHECK(vec.max_size() == max_size);
-      CHECK(cuda::std::as_const(vec).max_size() == max_size);
     }
   }
 }

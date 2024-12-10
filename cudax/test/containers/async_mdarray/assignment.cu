@@ -71,7 +71,7 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray assignment",
       const Vector input{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       Vector vec{env};
       vec = input;
-      CHECK(vec.capacity() == 6);
+      CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
     }
 
@@ -79,7 +79,7 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray assignment",
       const Vector input{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       Vector vec{env, 2};
       vec = input;
-      CHECK(vec.capacity() == 6);
+      CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
     }
   }
@@ -106,15 +106,15 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray assignment",
       const Vector input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       Vector vec{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       vec = input;
-      CHECK(vec.capacity() == 6);
+      CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
     }
 
-    { // Can be copy-assigned an non-empty input growing from empty without capacity
+    { // Can be copy-assigned an non-empty input growing from empty without size
       const Vector input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       Vector vec{env};
       vec = input;
-      CHECK(vec.capacity() == 6);
+      CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
     }
   }
@@ -151,7 +151,7 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray assignment",
       Vector input{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       Vector vec{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       vec = cuda::std::move(input);
-      CHECK(vec.capacity() == 6);
+      CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
       CHECK(input.empty());
       CHECK(input.data() == nullptr);
@@ -161,7 +161,7 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray assignment",
       Vector input{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       Vector vec{env};
       vec = cuda::std::move(input);
-      CHECK(vec.capacity() == 6);
+      CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
       CHECK(input.empty());
       CHECK(input.data() == nullptr);
@@ -187,21 +187,21 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray assignment",
     { // Can be assigned a non-empty initializer_list, from empty
       Vector vec{env};
       vec = {T(1), T(42), T(1337), T(0), T(12), T(-1)};
-      CHECK(vec.capacity() == 6);
+      CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
     }
 
     { // Can be assigned a non-empty initializer_list, shrinking
       Vector vec{env, 42};
       vec = {T(1), T(42), T(1337), T(0), T(12), T(-1)};
-      CHECK(vec.capacity() == 6);
+      CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
     }
 
     { // Can be assigned a non-empty initializer_list, growing from non empty
       Vector vec{env, {T(0), T(42)}};
       vec = {T(1), T(42), T(1337), T(0), T(12), T(-1)};
-      CHECK(vec.capacity() == 6);
+      CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
     }
   }
@@ -210,8 +210,8 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray assignment",
 #  ifndef TEST_HAS_NO_EXCEPTIONS
   SECTION("cudax::async_mdarray assignment exceptions")
   { // assignment throws std::bad_alloc
-    constexpr size_t capacity = 4;
-    using Vector              = cudax::async_mdarray<int, capacity>;
+    constexpr size_t size = 4;
+    using Vector              = cudax::async_mdarray<int, size>;
     Vector too_small{};
 
     try

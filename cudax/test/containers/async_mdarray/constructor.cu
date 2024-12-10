@@ -40,19 +40,19 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray constructors",
 
   SECTION("Construction with explicit size")
   {
-    { // from env, no alllocation
+    { // from env, no allocation
       const async_mdarray vec{env};
       CHECK(vec.empty());
       CHECK(vec.data() == nullptr);
     }
 
-    { // from env and size, no alllocation
+    { // from env and size, no allocation
       const async_mdarray vec{env, 0};
       CHECK(vec.empty());
       CHECK(vec.data() == nullptr);
     }
 
-    { // from env, size and value, no alllocation
+    { // from env, size and value, no allocation
       const async_mdarray vec{env, 0, T{42}};
       CHECK(vec.empty());
       CHECK(vec.data() == nullptr);
@@ -60,13 +60,13 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray constructors",
 
     { // from env and size
       const async_mdarray vec{env, 5};
-      CHECK(vec.capacity() == 5);
+      CHECK(vec.size() == 5);
       CHECK(equal_size_value(vec, 5, T(0)));
     }
 
     { // from env, size and value
       const async_mdarray vec{env, 5, T{42}};
-      CHECK(vec.capacity() == 5);
+      CHECK(vec.size() == 5);
       CHECK(equal_size_value(vec, 5, T(42)));
     }
   }
@@ -84,13 +84,13 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray constructors",
     { // can be constructed from two forward iterators
       using iter = forward_iterator<const T*>;
       async_mdarray vec(env, iter{input.begin()}, iter{input.end()});
-      CHECK(vec.capacity() == 6);
+      CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
     }
 
     { // can be constructed from two input iterators
       async_mdarray vec(env, input.begin(), input.end());
-      CHECK(vec.capacity() == 6);
+      CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
     }
   }
@@ -146,7 +146,7 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray constructors",
     { // can be constructed from a non-empty initializer_list
       const cuda::std::initializer_list<T> input{T(1), T(42), T(1337), T(0), T(12), T(-1)};
       async_mdarray vec(env, input);
-      CHECK(vec.capacity() == 6);
+      CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
     }
   }
@@ -185,9 +185,9 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray constructors",
       // ensure that we steal the data
       const auto* allocation = input.data();
       async_mdarray vec(cuda::std::move(input));
-      CHECK(vec.capacity() == 6);
+      CHECK(vec.size() == 6);
       CHECK(vec.data() == allocation);
-      CHECK(input.capacity() == 0);
+      CHECK(input.size() == 0);
       CHECK(input.data() == nullptr);
       CHECK(equal_range(vec));
     }
@@ -201,7 +201,7 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray constructors",
 
     try
     {
-      async_mdarray too_small(2 * capacity);
+      async_mdarray too_small(2 * size);
     }
     catch (const std::bad_alloc&)
     {}
@@ -212,7 +212,7 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray constructors",
 
     try
     {
-      async_mdarray too_small(2 * capacity, 42);
+      async_mdarray too_small(2 * size, 42);
     }
     catch (const std::bad_alloc&)
     {}
@@ -223,7 +223,7 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray constructors",
 
     try
     {
-      cuda::std::array<int, 2 * capacity> input{0, 1, 2, 3, 4, 5, 6, 7};
+      cuda::std::array<int, 2 * size> input{0, 1, 2, 3, 4, 5, 6, 7};
       async_mdarray too_small(input.begin(), input.end());
     }
     catch (const std::bad_alloc&)
@@ -247,7 +247,7 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray constructors",
 
     try
     {
-      uncommon_range<int, 2 * capacity> input{{0, 1, 2, 3, 4, 5, 6, 7}};
+      uncommon_range<int, 2 * size> input{{0, 1, 2, 3, 4, 5, 6, 7}};
       async_mdarray too_small(input);
     }
     catch (const std::bad_alloc&)
@@ -259,7 +259,7 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray constructors",
 
     try
     {
-      sized_uncommon_range<int, 2 * capacity> input{{0, 1, 2, 3, 4, 5, 6, 7}};
+      sized_uncommon_range<int, 2 * size> input{{0, 1, 2, 3, 4, 5, 6, 7}};
       async_mdarray too_small(input);
     }
     catch (const std::bad_alloc&)
@@ -271,7 +271,7 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray constructors",
 
     try
     {
-      cuda::std::array<int, 2 * capacity> input{0, 1, 2, 3, 4, 5, 6, 7};
+      cuda::std::array<int, 2 * size> input{0, 1, 2, 3, 4, 5, 6, 7};
       async_mdarray too_small(input);
     }
     catch (const std::bad_alloc&)

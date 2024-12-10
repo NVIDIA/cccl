@@ -103,7 +103,6 @@ foreach(cn_target IN LISTS cudax_TARGETS)
     containers/async_mdarray/access.cu
     containers/async_mdarray/assignment.cu
     containers/async_mdarray/capacity.cu
-    containers/async_mdarray/comparison.cu
     containers/async_mdarray/constructor.cu
     containers/async_mdarray/conversion.cu
     containers/async_mdarray/iterators.cu

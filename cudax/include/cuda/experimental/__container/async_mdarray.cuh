@@ -166,7 +166,8 @@ private:
       ? (__is_host_only ? cudaMemcpyHostToHost : cudaMemcpyHostToDevice)
       : (__is_host_only ? cudaMemcpyDeviceToHost : cudaMemcpyDeviceToDevice);
 
-  //! @brief Helper to return an async_resource_ref to the currently used resource. Used to grow the async_mdarray
+  //! @brief Helper to return an async_resource_ref to the currently used resource. Used in case we need to replace the
+  //! underlying allocation
   __resource_ref_t __borrow_resource() const noexcept
   {
     return const_cast<__resource_t&>(__buf_.get_memory_resource());
@@ -214,7 +215,7 @@ private:
       _CUDA_VSTD::copy(__first, __last, __dest);
     }
     else _CCCL_IF_CONSTEXPR (!_CUDA_VSTD::contiguous_iterator<_Iter>)
-    { // For non-coniguous iterators we need to copy into temporary host storage to use cudaMemcpy
+    { // For non-contiguous iterators we need to copy into temporary host storage to use cudaMemcpy
       // This should only ever happen when passing in data from host to device
       _CCCL_ASSERT(__kind == cudaMemcpyHostToDevice, "Invalid use case!");
       auto __temp = _CUDA_VSTD::get_temporary_buffer<_Tp>(__count).first;
@@ -277,18 +278,6 @@ private:
           && thrust::equal(thrust::cuda::par_nosync.on(__buf_.get_stream().get()), __first1, __last1, __first2);
     }
     _CCCL_UNREACHABLE();
-  }
-
-  template <class _IndexType, size_t... _Exts>
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI static constexpr size_type
-  __size(const _CUDA_VSTD::extents<_IndexType, _Exts...>& __ext) noexcept
-  {
-    size_type __res = 1;
-    for (size_t __i = 0; __i != sizeof...(_Exts); ++__i)
-    {
-      __res *= __ext.extent(__i);
-    }
-    return __res;
   }
 
 public:
@@ -480,7 +469,7 @@ public:
     }
 
     const auto __count = __other.size();
-    if ((__borrow_resource() != __resource_ref_t(__other.__borrow_resource()) || (capacity() != __other.capacity())))
+    if ((__borrow_resource() != __resource_ref_t(__other.__borrow_resource()) || (size() != __other.size())))
     {
       __buffer_t __new_buf{__other.get_memory_resource(), __other.get_stream(), __other.size()};
       _CUDA_VSTD::swap(__buf_, __new_buf);
@@ -520,7 +509,7 @@ public:
     }
 
     const auto __count = __other.size();
-    if ((__borrow_resource() != __resource_ref_t(__other.__borrow_resource()) || (capacity() != __other.capacity())))
+    if ((__borrow_resource() != __resource_ref_t(__other.__borrow_resource()) || (size() != __other.size())))
     {
       __buffer_t __new_buf{__other.get_memory_resource(), __other.get_stream(), __count};
       _CUDA_VSTD::swap(__buf_, __new_buf);
@@ -555,7 +544,7 @@ public:
   _CCCL_HIDE_FROM_ABI async_mdarray& operator=(_CUDA_VSTD::initializer_list<_Tp> __ilist)
   {
     const auto __count = __ilist.size();
-    if (capacity() != __count)
+    if (size() != __count)
     {
       __buffer_t __new_buf{get_memory_resource(), get_stream(), __count};
       _CUDA_VSTD::swap(__buf_, __new_buf);
@@ -713,7 +702,7 @@ public:
   _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI reference operator[](const size_type __n) noexcept
   {
     _CCCL_ASSERT(__n < size(), "cuda::experimental::async_mdarray subscript out of range!");
-    return begin()[__n];
+    return begin()[__mapping_(__n)];
   }
 
   //! @brief Returns a reference to the \p __n 'th element of the async_mdarray
@@ -721,62 +710,23 @@ public:
   _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI const_reference operator[](const size_type __n) const noexcept
   {
     _CCCL_ASSERT(__n < size(), "cuda::experimental::async_mdarray subscript out of range!");
-    return begin()[__n];
+    return begin()[__mapping_(__n)];
   }
 
-  //! @brief Returns a reference to the first element of the async_mdarray
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI reference front() noexcept
-  {
-    _CCCL_ASSERT(size() != 0, "cuda::experimental::async_mdarray front() called on empty async_mdarray!");
-    return begin()[0];
-  }
-
-  //! @brief Returns a reference to the first element of the async_mdarray
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI const_reference front() const noexcept
-  {
-    _CCCL_ASSERT(size() != 0, "cuda::experimental::async_mdarray front() called on empty async_mdarray!");
-    return begin()[0];
-  }
-
-  //! @brief Returns a reference to the last element of the async_mdarray
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI reference back() noexcept
-  {
-    _CCCL_ASSERT(size() != 0, "cuda::experimental::async_mdarray back() called on empty async_mdarray!");
-    return begin()[size() - 1];
-  }
-
-  //! @brief Returns a reference to the last element of the async_mdarray
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI const_reference back() const noexcept
-  {
-    _CCCL_ASSERT(size() != 0, "cuda::experimental::async_mdarray back() called on empty async_mdarray!");
-    return begin()[size() - 1];
-  }
   //! @}
 
-  //! @addtogroup capacity
+  //! @addtogroup size
   //! @{
   //! @brief Returns the current number of elements stored in the async_mdarray.
   _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI size_type size() const noexcept
   {
-    return __size(__mapping_.extents());
+    return __mapping_.required_span_size();
   }
 
   //! @brief Returns true if the async_mdarray is empty.
   _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI bool empty() const noexcept
   {
     return size() == 0;
-  }
-
-  //! @brief Returns the capacity of the current allocation of the async_mdarray..
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI size_type capacity() const noexcept
-  {
-    return size();
-  }
-
-  //! @brief Returns the maximal size of the async_mdarray.
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr size_type max_size() const noexcept
-  {
-    return static_cast<size_type>((_CUDA_VSTD::numeric_limits<difference_type>::max)());
   }
 
   //! @rst
@@ -824,7 +774,7 @@ public:
     __policy_ = __new_policy;
   }
 
-  //! @brief Returns the execution policy
+  //! @brief Synchronizes with the stored stream
   _CCCL_HIDE_FROM_ABI void wait() const
   {
     __buf_.get_stream().wait();
@@ -846,38 +796,6 @@ public:
   {
     __lhs.swap(__rhs);
   }
-  //! @}
-
-  //! @addtogroup comparison
-  //! @{
-
-  //! @brief Compares two async_vectors for equality
-  //! @param __lhs One async_mdarray.
-  //! @param __rhs The other async_mdarray.
-  //! @return true, if \p __lhs and \p __rhs contain equal elements have the same size
-  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI constexpr bool
-  operator==(const async_mdarray& __lhs, const async_mdarray& __rhs) noexcept(noexcept(_CUDA_VSTD::equal(
-    __lhs.__unwrapped_begin(), __lhs.__unwrapped_end(), __rhs.__unwrapped_begin(), __rhs.__unwrapped_end())))
-  {
-    ::cuda::experimental::stream_ref{__lhs.get_stream()}.wait(__rhs.get_stream());
-    return __lhs.__equality(
-      __lhs.__unwrapped_begin(), __lhs.__unwrapped_end(), __rhs.__unwrapped_begin(), __rhs.__unwrapped_end());
-  }
-#if _CCCL_STD_VER <= 2017
-  //! @brief Compares two async_vectors for inequality
-  //! @param __lhs One async_mdarray.
-  //! @param __rhs The other async_mdarray.
-  //! @return false, if \p __lhs and \p __rhs contain equal elements have the same size
-  _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI constexpr bool
-  operator!=(const async_mdarray& __lhs, const async_mdarray& __rhs) noexcept(noexcept(_CUDA_VSTD::equal(
-    __lhs.__unwrapped_begin(), __lhs.__unwrapped_end(), __rhs.__unwrapped_begin(), __rhs.__unwrapped_end())))
-  {
-    ::cuda::experimental::stream_ref{__lhs.get_stream()}.wait(__rhs.get_stream());
-    return !__lhs.__equality(
-      __lhs.__unwrapped_begin(), __lhs.__unwrapped_end(), __rhs.__unwrapped_begin(), __rhs.__unwrapped_end());
-  }
-#endif // _CCCL_STD_VER <= 2017
-
   //! @}
 
 #ifndef _CCCL_DOXYGEN_INVOKED // friend functions are currently broken

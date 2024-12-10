@@ -73,9 +73,9 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray conversion",
       // ensure that we steal the data
       const auto* allocation = input.data();
       Vector vec(cuda::std::move(input));
-      CHECK(vec.capacity() == 6);
+      CHECK(vec.size() == 6);
       CHECK(vec.data() == allocation);
-      CHECK(input.capacity() == 0);
+      CHECK(input.size() == 0);
       CHECK(input.data() == nullptr);
       CHECK(equal_range(vec));
     }
@@ -111,7 +111,7 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray conversion",
       const MatchingVector input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       Vector vec{env};
       vec = input;
-      CHECK(vec.capacity() == 6);
+      CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
     }
 
@@ -119,7 +119,7 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray conversion",
       const MatchingVector input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       Vector vec{env, 4, T(-2)};
       vec = input;
-      CHECK(vec.capacity() == 6);
+      CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
     }
   }
@@ -156,7 +156,7 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray conversion",
       MatchingVector input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       Vector vec{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       vec = cuda::std::move(input);
-      CHECK(vec.capacity() == 6);
+      CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
       CHECK(input.empty());
       CHECK(input.data() == nullptr);
@@ -166,7 +166,7 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray conversion",
       MatchingVector input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       Vector vec{env};
       vec = cuda::std::move(input);
-      CHECK(vec.capacity() == 6);
+      CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
       CHECK(input.empty());
       CHECK(input.data() == nullptr);

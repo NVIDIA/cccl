@@ -59,42 +59,6 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray access",
     }
   }
 
-  SECTION("cudax::async_mdarray::front")
-  {
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().front()), reference>);
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const Vector&>().front()), const_reference>);
-
-    {
-      Vector vec{env, {T(1), T(42), T(1337), T(0)}};
-      auto& res = vec.front();
-      CHECK(compare_value<Vector::__is_host_only>(res, T(1)));
-      CHECK(cuda::std::addressof(res) == vec.data());
-      assign_value<Vector::__is_host_only>(res, T(4));
-
-      auto& const_res = cuda::std::as_const(vec).front();
-      CHECK(compare_value<Vector::__is_host_only>(const_res, T(4)));
-      CHECK(cuda::std::addressof(const_res) == vec.data());
-    }
-  }
-
-  SECTION("cudax::async_mdarray::back")
-  {
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().back()), reference>);
-    static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const Vector&>().back()), const_reference>);
-
-    {
-      Vector vec{env, {T(1), T(42), T(1337), T(0)}};
-      auto& res = vec.back();
-      CHECK(compare_value<Vector::__is_host_only>(res, T(0)));
-      CHECK(static_cast<size_t>(cuda::std::addressof(res) - vec.data()) == (vec.size() - 1));
-      assign_value<Vector::__is_host_only>(res, T(4));
-
-      auto& const_res = cuda::std::as_const(vec).back();
-      CHECK(compare_value<Vector::__is_host_only>(const_res, T(4)));
-      CHECK(static_cast<size_t>(cuda::std::addressof(const_res) - vec.data()) == (vec.size() - 1));
-    }
-  }
-
   SECTION("cudax::async_mdarray::data")
   {
     static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<Vector&>().data()), pointer>);
