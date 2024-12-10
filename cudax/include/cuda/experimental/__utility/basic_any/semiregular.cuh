@@ -149,6 +149,9 @@ struct icopyable : interface<icopyable, extends<imovable<>>>
   }
 };
 
+template <class _Object>
+_CCCL_CONCEPT __non_polymorphic = (!__is_basic_any<_Object>) && (!__is_interface<_Object>);
+
 template <class... _Super>
 struct iequality_comparable;
 
@@ -169,23 +172,8 @@ struct iequality_comparable_base : interface<iequality_comparable>
     _CUDA_VSTD::unreachable();
   }
 
-  template <class _Interface>
-  struct __const_reference
-  {
-    _CCCL_TEMPLATE(class _Object)
-    _CCCL_REQUIRES((!__is_basic_any<_Object>) _CCCL_AND(!__is_interface<_Object>)
-                     _CCCL_AND __satisfies<_Object, _Interface>)
-    __const_reference(_Object const& __obj) noexcept
-        : __obj_(&__obj)
-        , __type_(_CCCL_TYPEID(_Object))
-    {}
-
-    const void* __obj_;
-    _CUDA_VSTD::__type_info_ref __type_;
-  };
-
-  // These are the overloads that actually get used when testing `basic_any`
-  // objects for equality.
+  // These are the overloads that get used when testing two `basic_any` objects
+  // for equality.
   _CCCL_TEMPLATE(class _ILeft, class _IRight)
   _CCCL_REQUIRES(__any_convertible_to<basic_any<_ILeft> const&, basic_any<_IRight> const&>
                  || __any_convertible_to<basic_any<_IRight> const&, basic_any<_ILeft> const&>)
@@ -206,38 +194,50 @@ struct iequality_comparable_base : interface<iequality_comparable>
     return !(__lhs == __rhs);
   }
 
-  // These are the overloads that actually get used when testing a `basic_any`
-  // object against a non-type-erased object.
-  template <class _Interface>
+  // These are the overloads that get used when testing a `basic_any` object
+  // against a non-type-erased object.
+  //
+  // Q: Why require that the basic_any wrapper is not convertible to _Object?
+  //
+  // A: If there is a user-defined conversion from the basic_any type to _Object
+  // such that we can use _Object's symmetric equality comparison operator, that
+  // should be prefered. _Object may be another kind of wrapper object, in which
+  // case using the address of the **wrapper** object for the comparison (as
+  // opposed to the address of the wrapped object) is probably wrong.
+  _CCCL_TEMPLATE(class _Interface, class _Object, class _Self = basic_any_from_t<iequality_comparable<_Interface>>)
+  _CCCL_REQUIRES(__non_polymorphic<_Object> _CCCL_AND(!_CUDA_VSTD::convertible_to<_Self, _Object>)
+                   _CCCL_AND __satisfies<_Object, _Interface>)
   _CCCL_NODISCARD_FRIEND _CUDAX_HOST_API auto
-  operator==(iequality_comparable<_Interface> const& __lhs,
-             _CUDA_VSTD::type_identity_t<__const_reference<_Interface>> __rhs) noexcept -> bool
+  operator==(iequality_comparable<_Interface> const& __lhs, _Object const& __rhs) -> bool
   {
     constexpr auto __eq = &__equal_fn<iequality_comparable<_Interface>>;
-    return __cudax::virtcall<__eq>(&__lhs, __rhs.__type_, __rhs.__obj_);
+    return __cudax::virtcall<__eq>(&__lhs, _CCCL_TYPEID(_Object), _CUDA_VSTD::addressof(__rhs));
   }
 
-  template <class _Interface>
+  _CCCL_TEMPLATE(class _Interface, class _Object, class _Self = basic_any_from_t<iequality_comparable<_Interface>>)
+  _CCCL_REQUIRES(__non_polymorphic<_Object> _CCCL_AND(!_CUDA_VSTD::convertible_to<_Self, _Object>)
+                   _CCCL_AND __satisfies<_Object, _Interface>)
   _CCCL_NODISCARD_FRIEND _CUDAX_HOST_API auto
-  operator==(_CUDA_VSTD::type_identity_t<__const_reference<_Interface>> __lhs,
-             iequality_comparable<_Interface> const& __rhs) noexcept -> bool
+  operator==(_Object const& __lhs, iequality_comparable<_Interface> const& __rhs) noexcept -> bool
   {
     constexpr auto __eq = &__equal_fn<iequality_comparable<_Interface>>;
-    return __cudax::virtcall<__eq>(&__rhs, __lhs.__type_, __lhs.__obj_);
+    return __cudax::virtcall<__eq>(&__rhs, _CCCL_TYPEID(_Object), _CUDA_VSTD::addressof(__lhs));
   }
 
-  template <class _Interface>
+  _CCCL_TEMPLATE(class _Interface, class _Object, class _Self = basic_any_from_t<iequality_comparable<_Interface>>)
+  _CCCL_REQUIRES(__non_polymorphic<_Object> _CCCL_AND(!_CUDA_VSTD::convertible_to<_Self, _Object>)
+                   _CCCL_AND __satisfies<_Object, _Interface>)
   _CCCL_NODISCARD_FRIEND _CUDAX_TRIVIAL_HOST_API auto
-  operator!=(iequality_comparable<_Interface> const& __lhs,
-             _CUDA_VSTD::type_identity_t<__const_reference<_Interface>> __rhs) noexcept -> bool
+  operator!=(iequality_comparable<_Interface> const& __lhs, _Object const& __rhs) noexcept -> bool
   {
     return !(__lhs == __rhs);
   }
 
-  template <class _Interface>
+  _CCCL_TEMPLATE(class _Interface, class _Object, class _Self = basic_any_from_t<iequality_comparable<_Interface>>)
+  _CCCL_REQUIRES(__non_polymorphic<_Object> _CCCL_AND(!_CUDA_VSTD::convertible_to<_Self, _Object>)
+                   _CCCL_AND __satisfies<_Object, _Interface>)
   _CCCL_NODISCARD_FRIEND _CUDAX_TRIVIAL_HOST_API auto
-  operator!=(_CUDA_VSTD::type_identity_t<__const_reference<_Interface>> __lhs,
-             iequality_comparable<_Interface> const& __rhs) noexcept -> bool
+  operator!=(_Object const& __lhs, iequality_comparable<_Interface> const& __rhs) noexcept -> bool
   {
     return !(__lhs == __rhs);
   }
