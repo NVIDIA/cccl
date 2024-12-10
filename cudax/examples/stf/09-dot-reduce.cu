@@ -40,11 +40,10 @@ int main()
   auto lY = ctx.logical_data(Y);
 
   /* Compute sum(x_i * y_i)*/
-  logical_data<scalar_view<double>> lsum =
-    ctx.reduce(exec_place::current_device(), lY.shape(), reducer::sum<double>{}, lX.read(), lY.read())
-      ->*[] __device__(size_t i, auto dX, auto dY, double& sum) {
-            sum += dX(i) * dY(i);
-          };
+  auto lsum = ctx.reduce(lY.shape(), reducer::sum<double>{}, lX.read(), lY.read())
+                ->*[] __device__(size_t i, auto dX, auto dY, double& sum) {
+                      sum += dX(i) * dY(i);
+                    };
 
   double res = ctx.wait(lsum);
 
