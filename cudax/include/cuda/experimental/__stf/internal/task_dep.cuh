@@ -41,8 +41,20 @@ class task;
 class task_dep_untyped
 {
 public:
+  // Copy constructor
+  task_dep_untyped(const task_dep_untyped&) = default;
+
+  // Move constructor
+  task_dep_untyped(task_dep_untyped&&) noexcept = default;
+
+  // Copy assignment operator
+  task_dep_untyped& operator=(const task_dep_untyped& other) = default;
+
+  // Move assignment operator
+  task_dep_untyped& operator=(task_dep_untyped&& other) noexcept = default;
+
   // dependency with an explicit data_place
-  task_dep_untyped(logical_data_untyped& d,
+  task_dep_untyped(const logical_data_untyped& d,
                    access_mode m,
                    data_place dplace,
                    ::std::shared_ptr<reduction_operator_base> redux_op = nullptr)
@@ -52,22 +64,25 @@ public:
       , redux_op(mv(redux_op))
   {}
 
+  // dependency without an explicit data_place : using data_place::affine
+  task_dep_untyped(
+    const logical_data_untyped& d, access_mode m, ::std::shared_ptr<reduction_operator_base> redux_op = nullptr)
+      : task_dep_untyped(d, m, data_place::affine, mv(redux_op))
+  {}
+
+  // These constructors take no access_mode, which is a way to identify that
+  // they are using read-only access mode.
+  // TODO : That was the only way to dispatch at compile time which constructor
+  // is used. We might use a tag_type or a std::true_type to do this static
+  // dispatch in a better way.
   task_dep_untyped(
     const logical_data_untyped& d, data_place dplace, ::std::shared_ptr<reduction_operator_base> redux_op = nullptr)
       : task_dep_untyped(const_cast<logical_data_untyped&>(d), access_mode::read, mv(dplace), mv(redux_op))
   {}
 
-  // dependency without an explicit data_place : using data_place::affine
-  task_dep_untyped(logical_data_untyped& d, access_mode m, ::std::shared_ptr<reduction_operator_base> redux_op = nullptr)
-      : task_dep_untyped(d, m, data_place::affine, mv(redux_op))
-  {}
-
   task_dep_untyped(const logical_data_untyped& d, ::std::shared_ptr<reduction_operator_base> redux_op = nullptr)
       : task_dep_untyped(const_cast<logical_data_untyped&>(d), access_mode::read, mv(redux_op))
   {}
-
-  // @@@@ TODO @@@@ We may make this class non-copyable, but for now we are
-  // actually copying it when adding dependencies to a task.
 
   logical_data_untyped get_data() const;
 
@@ -176,6 +191,9 @@ private:
 template <typename T>
 class logical_data;
 
+template <typename T, typename reduce_op = void, bool initialize = false>
+class task_dep;
+
 /**
  * @brief Type storing dependency information for one data item, including the data type
  *
@@ -183,10 +201,22 @@ class logical_data;
  * that `T` may be different in `const` qualifiers than the actual type stored in the dependency information.
  */
 template <typename T>
-class task_dep : public task_dep_untyped
+class task_dep<T, void, false> : public task_dep_untyped
 {
 public:
   using data_t = T;
+
+  // Copy constructor
+  task_dep(const task_dep&) = default;
+
+  // Move constructor
+  task_dep(task_dep&&) noexcept = default;
+
+  // Copy assignment operator
+  task_dep& operator=(const task_dep& other) = default;
+
+  // Move assignment operator
+  task_dep& operator=(task_dep&& other) noexcept = default;
 
   template <typename... Pack>
   task_dep(Pack&&... pack)
@@ -209,6 +239,25 @@ public:
    * @return decltype(auto) `T&` or `T`
    */
   decltype(auto) instance(task&) const;
+};
+
+template <typename T, typename reduce_op, bool initialize>
+class task_dep : public task_dep<T, void, false>
+{
+public:
+  using base        = task_dep<T, void, false>;
+  using dep_type    = T;
+  using op_and_init = ::std::pair<reduce_op, ::std::bool_constant<initialize>>;
+  using op_type     = reduce_op;
+  enum : bool
+  {
+    does_work = !::std::is_same_v<reduce_op, ::std::monostate>
+  };
+
+  template <typename... Args>
+  task_dep(Args&&... args)
+      : base(std::forward<Args>(args)...)
+  {}
 };
 
 // A vector of dependencies
