@@ -237,9 +237,6 @@ def get_summary_stats(summary):
 
 
 def get_summary_heading(summary, walltime):
-    passed = summary["passed"]
-    failed = summary["failed"]
-
     if summary["passed"] == 0:
         flag = "🟥"
     elif summary["failed"] > 0:
@@ -298,7 +295,6 @@ def get_tag_line(tag, tag_summary):
 def get_value_line(value, value_summary, tag_summary):
     passed = value_summary["passed"]
     failed = value_summary["failed"]
-    total = passed + failed
 
     parent_size = len(tag_summary["values"])
     parent_failed = tag_summary["failed"]
@@ -372,7 +368,7 @@ def main():
     # The timing file is not required.
     try:
         job_times = json.load(args.job_times)
-    except:
+    except Exception:
         job_times = None
 
     write_workflow_summary(workflow, job_times)
