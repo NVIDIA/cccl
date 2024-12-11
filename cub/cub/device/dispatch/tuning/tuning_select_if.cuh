@@ -568,7 +568,7 @@ constexpr offset_size classify_offset_size()
 template <class InputT, class FlagT, class OffsetT, bool MayAlias, bool KeepRejects>
 struct policy_hub
 {
-  struct DefaultTuning
+  struct DefaultPolicy
   {
     static constexpr int nominal_4B_items_per_thread = 10;
     // TODO(bgruber): use cuda::std::clamp() in C++14
@@ -584,7 +584,7 @@ struct policy_hub
   };
 
   struct Policy350
-      : DefaultTuning
+      : DefaultPolicy
       , ChainedPolicy<350, Policy350, Policy350>
   {};
 
@@ -608,7 +608,7 @@ struct policy_hub
   };
 
   struct Policy860
-      : DefaultTuning
+      : DefaultPolicy
       , ChainedPolicy<860, Policy860, Policy800>
   {};
 
