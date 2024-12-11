@@ -167,12 +167,8 @@ struct sm90_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no
 
 template <class LengthT>
 struct sm90_tuning<LengthT, __uint128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
-{
-  static constexpr int threads                       = 128;
-  static constexpr int items                         = 11;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = detail::fixed_delay_constructor_t<428, 930>;
-};
+    : sm90_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
+{};
 #endif
 
 template <class LengthT,
@@ -231,12 +227,8 @@ struct sm80_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no
 
 template <class LengthT>
 struct sm80_tuning<LengthT, __uint128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
-{
-  static constexpr int threads                       = 128;
-  static constexpr int items                         = 7;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = detail::no_delay_constructor_t<630>;
-};
+    : sm80_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
+{};
 #endif
 } // namespace encode
 
@@ -313,13 +305,8 @@ struct sm90_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no
 
 template <class LengthT>
 struct sm90_tuning<LengthT, __uint128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
-{
-  static constexpr int threads                       = 288;
-  static constexpr int items                         = 9;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr bool store_with_time_slicing      = false;
-  using delay_constructor                            = detail::fixed_delay_constructor_t<484, 1150>;
-};
+    : sm90_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
+{};
 #endif
 
 template <class LengthT,
@@ -393,13 +380,8 @@ struct sm80_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no
 
 template <class LengthT>
 struct sm80_tuning<LengthT, __uint128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
-{
-  static constexpr int threads                       = 192;
-  static constexpr int items                         = 13;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr bool store_with_time_slicing      = false;
-  using delay_constructor                            = detail::no_delay_constructor_t<1050>;
-};
+    : sm80_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
+{};
 #endif
 
 } // namespace non_trivial_runs
