@@ -1,4 +1,4 @@
-/******************************************************************************
+/****)**************************************************************************
  * Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -50,10 +50,8 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 namespace rle
 {
-
 enum class primitive_key
 {
   no,
@@ -111,7 +109,6 @@ constexpr length_size classify_length_size()
 
 namespace encode
 {
-
 template <class LengthT,
           class KeyT,
           primitive_length PrimitiveLength = is_primitive_length<LengthT>(),
@@ -120,95 +117,72 @@ template <class LengthT,
           key_size KeySize                 = classify_key_size<KeyT>()>
 struct sm90_tuning
 {
-  static constexpr int max_input_bytes      = CUB_MAX(sizeof(KeyT), sizeof(LengthT));
-  static constexpr int combined_input_bytes = sizeof(KeyT) + sizeof(LengthT);
-
-  static constexpr int threads = 128;
-
+  static constexpr int max_input_bytes             = CUB_MAX(sizeof(KeyT), sizeof(LengthT));
+  static constexpr int combined_input_bytes        = sizeof(KeyT) + sizeof(LengthT);
+  static constexpr int threads                     = 128;
   static constexpr int nominal_4b_items_per_thread = 6;
-
   static constexpr int items =
     (max_input_bytes <= 8)
       ? 6
       : CUB_MIN(nominal_4b_items_per_thread,
                 CUB_MAX(1, ((nominal_4b_items_per_thread * 8) + combined_input_bytes - 1) / combined_input_bytes));
-
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-
-  using delay_constructor = detail::default_reduce_by_key_delay_constructor_t<LengthT, int>;
+  using delay_constructor                            = detail::default_reduce_by_key_delay_constructor_t<LengthT, int>;
 };
 
 template <class LengthT, class KeyT>
 struct sm90_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_1>
 {
-  static constexpr int threads = 256;
-
-  static constexpr int items = 13;
-
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 13;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-
-  using delay_constructor = detail::no_delay_constructor_t<620>;
+  using delay_constructor                            = detail::no_delay_constructor_t<620>;
 };
 
 template <class LengthT, class KeyT>
 struct sm90_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_2>
 {
-  static constexpr int threads = 128;
-
-  static constexpr int items = 22;
-
+  static constexpr int threads                       = 128;
+  static constexpr int items                         = 22;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-
-  using delay_constructor = detail::no_delay_constructor_t<775>;
+  using delay_constructor                            = detail::no_delay_constructor_t<775>;
 };
 
 template <class LengthT, class KeyT>
 struct sm90_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_4>
 {
-  static constexpr int threads = 192;
-
-  static constexpr int items = 14;
-
+  static constexpr int threads                       = 192;
+  static constexpr int items                         = 14;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  using delay_constructor = detail::fixed_delay_constructor_t<284, 480>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<284, 480>;
 };
 
 template <class LengthT, class KeyT>
 struct sm90_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_8>
 {
-  static constexpr int threads = 128;
-
-  static constexpr int items = 19;
-
+  static constexpr int threads                       = 128;
+  static constexpr int items                         = 19;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  using delay_constructor = detail::no_delay_constructor_t<515>;
+  using delay_constructor                            = detail::no_delay_constructor_t<515>;
 };
 
 #if CUB_IS_INT128_ENABLED
 template <class LengthT>
 struct sm90_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
 {
-  static constexpr int threads = 128;
-
-  static constexpr int items = 11;
-
+  static constexpr int threads                       = 128;
+  static constexpr int items                         = 11;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  using delay_constructor = detail::fixed_delay_constructor_t<428, 930>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<428, 930>;
 };
 
 template <class LengthT>
 struct sm90_tuning<LengthT, __uint128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
 {
-  static constexpr int threads = 128;
-
-  static constexpr int items = 11;
-
+  static constexpr int threads                       = 128;
+  static constexpr int items                         = 11;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  using delay_constructor = detail::fixed_delay_constructor_t<428, 930>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<428, 930>;
 };
 #endif
 
@@ -241,82 +215,62 @@ struct sm80_tuning
 template <class LengthT, class KeyT>
 struct sm80_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_1>
 {
-  static constexpr int threads = 256;
-
-  static constexpr int items = 14;
-
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 14;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-
-  using delay_constructor = detail::no_delay_constructor_t<640>;
+  using delay_constructor                            = detail::no_delay_constructor_t<640>;
 };
 
 template <class LengthT, class KeyT>
 struct sm80_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_2>
 {
-  static constexpr int threads = 256;
-
-  static constexpr int items = 13;
-
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 13;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-
-  using delay_constructor = detail::no_delay_constructor_t<900>;
+  using delay_constructor                            = detail::no_delay_constructor_t<900>;
 };
 
 template <class LengthT, class KeyT>
 struct sm80_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_4>
 {
-  static constexpr int threads = 256;
-
-  static constexpr int items = 13;
-
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 13;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-
-  using delay_constructor = detail::no_delay_constructor_t<1080>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1080>;
 };
 
 template <class LengthT, class KeyT>
 struct sm80_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_8>
 {
-  static constexpr int threads = 224;
-
-  static constexpr int items = 9;
-
+  static constexpr int threads                       = 224;
+  static constexpr int items                         = 9;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  using delay_constructor = detail::no_delay_constructor_t<1075>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1075>;
 };
 
 #if CUB_IS_INT128_ENABLED
 template <class LengthT>
 struct sm80_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
 {
-  static constexpr int threads = 128;
-
-  static constexpr int items = 7;
-
+  static constexpr int threads                       = 128;
+  static constexpr int items                         = 7;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  using delay_constructor = detail::no_delay_constructor_t<630>;
+  using delay_constructor                            = detail::no_delay_constructor_t<630>;
 };
 
 template <class LengthT>
 struct sm80_tuning<LengthT, __uint128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
 {
-  static constexpr int threads = 128;
-
-  static constexpr int items = 7;
-
+  static constexpr int threads                       = 128;
+  static constexpr int items                         = 7;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  using delay_constructor = detail::no_delay_constructor_t<630>;
+  using delay_constructor                            = detail::no_delay_constructor_t<630>;
 };
 #endif
-
 } // namespace encode
 
 namespace non_trivial_runs
 {
-
 template <class LengthT,
           class KeyT,
           primitive_length PrimitiveLength = is_primitive_length<LengthT>(),
@@ -325,103 +279,74 @@ template <class LengthT,
           key_size KeySize                 = classify_key_size<KeyT>()>
 struct sm90_tuning
 {
-  static constexpr int threads = 96;
-
+  static constexpr int threads                     = 96;
   static constexpr int nominal_4b_items_per_thread = 15;
-
   static constexpr int items =
     CUB_MIN(nominal_4b_items_per_thread, CUB_MAX(1, (nominal_4b_items_per_thread * 4 / sizeof(KeyT))));
-
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  static constexpr bool store_with_time_slicing = true;
-
-  using delay_constructor = detail::default_reduce_by_key_delay_constructor_t<LengthT, int>;
+  static constexpr bool store_with_time_slicing      = true;
+  using delay_constructor                            = detail::default_reduce_by_key_delay_constructor_t<LengthT, int>;
 };
 
 template <class LengthT, class KeyT>
 struct sm90_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_1>
 {
-  static constexpr int threads = 256;
-
-  static constexpr int items = 18;
-
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 18;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-
-  static constexpr bool store_with_time_slicing = false;
-
-  using delay_constructor = detail::no_delay_constructor_t<385>;
+  static constexpr bool store_with_time_slicing      = false;
+  using delay_constructor                            = detail::no_delay_constructor_t<385>;
 };
 
 template <class LengthT, class KeyT>
 struct sm90_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_2>
 {
-  static constexpr int threads = 224;
-
-  static constexpr int items = 20;
-
+  static constexpr int threads                       = 224;
+  static constexpr int items                         = 20;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-
-  static constexpr bool store_with_time_slicing = false;
-
-  using delay_constructor = detail::no_delay_constructor_t<675>;
+  static constexpr bool store_with_time_slicing      = false;
+  using delay_constructor                            = detail::no_delay_constructor_t<675>;
 };
 
 template <class LengthT, class KeyT>
 struct sm90_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_4>
 {
-  static constexpr int threads = 256;
-
-  static constexpr int items = 18;
-
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 18;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-
-  static constexpr bool store_with_time_slicing = false;
-
-  using delay_constructor = detail::no_delay_constructor_t<695>;
+  static constexpr bool store_with_time_slicing      = false;
+  using delay_constructor                            = detail::no_delay_constructor_t<695>;
 };
 
 template <class LengthT, class KeyT>
 struct sm90_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_8>
 {
-  static constexpr int threads = 224;
-
-  static constexpr int items = 14;
-
+  static constexpr int threads                       = 224;
+  static constexpr int items                         = 14;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  static constexpr bool store_with_time_slicing = false;
-
-  using delay_constructor = detail::no_delay_constructor_t<840>;
+  static constexpr bool store_with_time_slicing      = false;
+  using delay_constructor                            = detail::no_delay_constructor_t<840>;
 };
 
 #if CUB_IS_INT128_ENABLED
 template <class LengthT>
 struct sm90_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
 {
-  static constexpr int threads = 288;
-
-  static constexpr int items = 9;
-
+  static constexpr int threads                       = 288;
+  static constexpr int items                         = 9;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  static constexpr bool store_with_time_slicing = false;
-
-  using delay_constructor = detail::fixed_delay_constructor_t<484, 1150>;
+  static constexpr bool store_with_time_slicing      = false;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<484, 1150>;
 };
 
 template <class LengthT>
 struct sm90_tuning<LengthT, __uint128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
 {
-  static constexpr int threads = 288;
-
-  static constexpr int items = 9;
-
+  static constexpr int threads                       = 288;
+  static constexpr int items                         = 9;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  static constexpr bool store_with_time_slicing = false;
-
-  using delay_constructor = detail::fixed_delay_constructor_t<484, 1150>;
+  static constexpr bool store_with_time_slicing      = false;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<484, 1150>;
 };
 #endif
 
@@ -433,112 +358,82 @@ template <class LengthT,
           key_size KeySize                 = classify_key_size<KeyT>()>
 struct sm80_tuning
 {
-  static constexpr int threads = 96;
-
+  static constexpr int threads                     = 96;
   static constexpr int nominal_4b_items_per_thread = 15;
-
   static constexpr int items =
     CUB_MIN(nominal_4b_items_per_thread, CUB_MAX(1, (nominal_4b_items_per_thread * 4 / sizeof(KeyT))));
-
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  static constexpr bool store_with_time_slicing = true;
-
-  using delay_constructor = detail::default_reduce_by_key_delay_constructor_t<LengthT, int>;
+  static constexpr bool store_with_time_slicing      = true;
+  using delay_constructor                            = detail::default_reduce_by_key_delay_constructor_t<LengthT, int>;
 };
 
 template <class LengthT, class KeyT>
 struct sm80_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_1>
 {
-  static constexpr int threads = 192;
-
-  static constexpr int items = 20;
-
+  static constexpr int threads                       = 192;
+  static constexpr int items                         = 20;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-
-  static constexpr bool store_with_time_slicing = false;
-
-  using delay_constructor = detail::no_delay_constructor_t<630>;
+  static constexpr bool store_with_time_slicing      = false;
+  using delay_constructor                            = detail::no_delay_constructor_t<630>;
 };
 
 template <class LengthT, class KeyT>
 struct sm80_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_2>
 {
-  static constexpr int threads = 192;
-
-  static constexpr int items = 20;
-
+  static constexpr int threads                       = 192;
+  static constexpr int items                         = 20;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  static constexpr bool store_with_time_slicing = false;
-
-  using delay_constructor = detail::no_delay_constructor_t<1015>;
+  static constexpr bool store_with_time_slicing      = false;
+  using delay_constructor                            = detail::no_delay_constructor_t<1015>;
 };
 
 template <class LengthT, class KeyT>
 struct sm80_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_4>
 {
-  static constexpr int threads = 224;
-
-  static constexpr int items = 15;
-
+  static constexpr int threads                       = 224;
+  static constexpr int items                         = 15;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  static constexpr bool store_with_time_slicing = false;
-
-  using delay_constructor = detail::no_delay_constructor_t<915>;
+  static constexpr bool store_with_time_slicing      = false;
+  using delay_constructor                            = detail::no_delay_constructor_t<915>;
 };
 
 template <class LengthT, class KeyT>
 struct sm80_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_8>
 {
-  static constexpr int threads = 256;
-
-  static constexpr int items = 13;
-
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 13;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  static constexpr bool store_with_time_slicing = false;
-
-  using delay_constructor = detail::no_delay_constructor_t<1065>;
+  static constexpr bool store_with_time_slicing      = false;
+  using delay_constructor                            = detail::no_delay_constructor_t<1065>;
 };
 
 #if CUB_IS_INT128_ENABLED
 template <class LengthT>
 struct sm80_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
 {
-  static constexpr int threads = 192;
-
-  static constexpr int items = 13;
-
+  static constexpr int threads                       = 192;
+  static constexpr int items                         = 13;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  static constexpr bool store_with_time_slicing = false;
-
-  using delay_constructor = detail::no_delay_constructor_t<1050>;
+  static constexpr bool store_with_time_slicing      = false;
+  using delay_constructor                            = detail::no_delay_constructor_t<1050>;
 };
 
 template <class LengthT>
 struct sm80_tuning<LengthT, __uint128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
 {
-  static constexpr int threads = 192;
-
-  static constexpr int items = 13;
-
+  static constexpr int threads                       = 192;
+  static constexpr int items                         = 13;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  static constexpr bool store_with_time_slicing = false;
-
-  using delay_constructor = detail::no_delay_constructor_t<1050>;
+  static constexpr bool store_with_time_slicing      = false;
+  using delay_constructor                            = detail::no_delay_constructor_t<1050>;
 };
 #endif
 
 } // namespace non_trivial_runs
 
-} // namespace rle
-
+// this policy is passed to DispatchReduceByKey
 template <class LengthT, class KeyT>
-struct device_run_length_encode_policy_hub
+struct policy_hub_encode
 {
   static constexpr int MAX_INPUT_BYTES      = CUB_MAX(sizeof(KeyT), sizeof(LengthT));
   static constexpr int COMBINED_INPUT_BYTES = sizeof(KeyT) + sizeof(LengthT);
@@ -605,7 +500,7 @@ struct device_run_length_encode_policy_hub
 };
 
 template <class LengthT, class KeyT>
-struct device_non_trivial_runs_policy_hub
+struct policy_hub
 {
   struct DefaultTuning
   {
@@ -671,7 +566,7 @@ struct device_non_trivial_runs_policy_hub
 
   using MaxPolicy = Policy900;
 };
-
+} // namespace rle
 } // namespace detail
 
 CUB_NAMESPACE_END
