@@ -15,7 +15,6 @@ import numba.types
 
 _DEVICE_POINTER_SIZE = 8
 _DEVICE_POINTER_BITWIDTH = _DEVICE_POINTER_SIZE * 8
-_DISTANCE_NUMBA_TYPE = numba.types.uint64
 
 
 @lru_cache
@@ -50,7 +49,7 @@ class IteratorBase:
             self.__class__.advance,
             (
                 self.numba_type,
-                numba.from_dtype(np.dtype("uint64"))
+                numba.types.uint64  # distance type
             ),
             output="ltoir"
         )
