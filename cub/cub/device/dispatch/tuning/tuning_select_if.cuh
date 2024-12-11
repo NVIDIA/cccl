@@ -82,16 +82,7 @@ enum class input_size
 };
 
 template <class InputT, flagged, keep_rejects, offset_size OffsetSize, primitive, input_size InputSize>
-struct sm80_tuning
-{
-  static constexpr int threads                     = 128;
-  static constexpr int nominal_4b_items_per_thread = 10;
-  // TODO(bgruber): use cuda::std::clamp() in C++14
-  static constexpr int items =
-    CUB_MIN(nominal_4b_items_per_thread, CUB_MAX(1, (nominal_4b_items_per_thread * 4 / sizeof(InputT))));
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = detail::fixed_delay_constructor_t<350, 450>;
-};
+struct sm80_tuning;
 
 // select::if
 template <class Input>
@@ -306,16 +297,7 @@ struct sm80_tuning<__uint128_t, flagged::yes, keep_rejects::yes, offset_size::_4
 #endif
 
 template <class InputT, flagged, keep_rejects, offset_size OffsetSize, primitive, input_size InputSize>
-struct sm90_tuning
-{
-  static constexpr int threads                     = 128;
-  static constexpr int nominal_4b_items_per_thread = 10;
-  // TODO(bgruber): use cuda::std::clamp() in C++14
-  static constexpr int items =
-    CUB_MIN(nominal_4b_items_per_thread, CUB_MAX(1, (nominal_4b_items_per_thread * 4 / sizeof(InputT))));
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = detail::fixed_delay_constructor_t<350, 450>;
-};
+struct sm90_tuning;
 
 // select::if
 template <class Input>
@@ -568,6 +550,7 @@ constexpr offset_size classify_offset_size()
 template <class InputT, class FlagT, class OffsetT, bool MayAlias, bool KeepRejects>
 struct policy_hub
 {
+  template <CacheLoadModifier LoadModifier>
   struct DefaultPolicy
   {
     static constexpr int nominal_4B_items_per_thread = 10;
@@ -578,57 +561,65 @@ struct policy_hub
       AgentSelectIfPolicy<128,
                           items_per_thread,
                           BLOCK_LOAD_DIRECT,
-                          MayAlias ? LOAD_CA : LOAD_LDG,
+                          LoadModifier,
                           BLOCK_SCAN_WARP_SCANS,
                           detail::fixed_delay_constructor_t<350, 450>>;
   };
 
   struct Policy350
-      : DefaultPolicy
+      : DefaultPolicy<MayAlias ? LOAD_CA : LOAD_LDG>
       , ChainedPolicy<350, Policy350, Policy350>
   {};
 
   struct Policy800 : ChainedPolicy<800, Policy800, Policy350>
   {
-    using tuning =
-      sm80_tuning<InputT,
-                  is_flagged<FlagT>(),
-                  are_rejects_kept<KeepRejects>(),
-                  classify_offset_size<OffsetT>(),
-                  is_primitive<InputT>(),
-                  classify_input_size<InputT>()>;
+    // Use values from tuning if a specialization exists, otherwise pick the default
+    template <typename Tuning>
+    static auto select_agent_policy(int)
+      -> AgentSelectIfPolicy<Tuning::threads,
+                             Tuning::items,
+                             Tuning::load_algorithm,
+                             LOAD_DEFAULT,
+                             BLOCK_SCAN_WARP_SCANS,
+                             typename Tuning::delay_constructor>;
+    template <typename Tuning>
+    static auto select_agent_policy(long) -> typename DefaultPolicy<LOAD_DEFAULT>::SelectIfPolicyT;
 
     using SelectIfPolicyT =
-      AgentSelectIfPolicy<tuning::threads,
-                          tuning::items,
-                          tuning::load_algorithm,
-                          LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
-                          typename tuning::delay_constructor>;
+      decltype(select_agent_policy<sm80_tuning<InputT,
+                                               is_flagged<FlagT>(),
+                                               are_rejects_kept<KeepRejects>(),
+                                               classify_offset_size<OffsetT>(),
+                                               is_primitive<InputT>(),
+                                               classify_input_size<InputT>()>>(0));
   };
 
   struct Policy860
-      : DefaultPolicy
+      : DefaultPolicy<MayAlias ? LOAD_CA : LOAD_LDG>
       , ChainedPolicy<860, Policy860, Policy800>
   {};
 
   struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
   {
-    using tuning =
-      sm90_tuning<InputT,
-                  is_flagged<FlagT>(),
-                  are_rejects_kept<KeepRejects>(),
-                  classify_offset_size<OffsetT>(),
-                  is_primitive<InputT>(),
-                  classify_input_size<InputT>()>;
+    // Use values from tuning if a specialization exists, otherwise pick the default
+    template <typename Tuning>
+    static auto select_agent_policy(int)
+      -> AgentSelectIfPolicy<Tuning::threads,
+                             Tuning::items,
+                             Tuning::load_algorithm,
+                             LOAD_DEFAULT,
+                             BLOCK_SCAN_WARP_SCANS,
+                             typename Tuning::delay_constructor>;
+    template <typename Tuning>
+    static auto select_agent_policy(long) -> typename DefaultPolicy<LOAD_DEFAULT>::SelectIfPolicyT;
 
     using SelectIfPolicyT =
-      AgentSelectIfPolicy<tuning::threads,
-                          tuning::items,
-                          tuning::load_algorithm,
-                          LOAD_DEFAULT,
-                          BLOCK_SCAN_WARP_SCANS,
-                          typename tuning::delay_constructor>;
+      decltype(select_agent_policy<sm90_tuning<InputT,
+                                               is_flagged<FlagT>(),
+                                               are_rejects_kept<KeepRejects>(),
+                                               classify_offset_size<OffsetT>(),
+                                               is_primitive<InputT>(),
+                                               classify_input_size<InputT>()>>(0));
   };
 
   using MaxPolicy = Policy900;
