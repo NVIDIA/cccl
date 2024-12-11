@@ -45,9 +45,11 @@ runs:
     - name: Install dependencies
       shell: sh
       run: |
+        echo "::group::📦 Install Dependencies"
         # Install script dependencies
         apt update
         apt install -y --no-install-recommends tree git
+        echo "::endgroup::"
     - name: Checkout repo
       uses: actions/checkout@v4
       with:
