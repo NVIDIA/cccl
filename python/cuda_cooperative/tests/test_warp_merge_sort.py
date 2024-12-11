@@ -3,31 +3,29 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 from pynvjitlink import patch
-import numpy as np
 import cuda.cooperative.experimental as cudax
 from helpers import random_int, NUMBA_TYPES_TO_NP
 import pytest
 from numba import cuda, types
 import numba
+
 patch.patch_numba_linker(lto=True)
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 
-@pytest.mark.parametrize('T', [types.int8, types.int16, types.uint32, types.uint64])
-@pytest.mark.parametrize('items_per_thread', [1, 3])
+@pytest.mark.parametrize("T", [types.int8, types.int16, types.uint32, types.uint64])
+@pytest.mark.parametrize("items_per_thread", [1, 3])
 def test_warp_merge_sort(T, items_per_thread):
     def op(a, b):
         return a < b
 
-    warp_merge_sort = cudax.warp.merge_sort_keys(
-        T, items_per_thread, op)
+    warp_merge_sort = cudax.warp.merge_sort_keys(T, items_per_thread, op)
     temp_storage_bytes = warp_merge_sort.temp_storage_bytes
 
     @cuda.jit(link=warp_merge_sort.files)
     def kernel(input, output):
         tid = cuda.threadIdx.x
-        temp_storage = cuda.shared.array(
-            shape=temp_storage_bytes, dtype='uint8')
+        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
         thread_data = cuda.local.array(shape=items_per_thread, dtype=dtype)
         for i in range(items_per_thread):
             thread_data[i] = input[tid * items_per_thread + i]
@@ -51,8 +49,8 @@ def test_warp_merge_sort(T, items_per_thread):
     sig = (T[::1], T[::1])
     sass = kernel.inspect_sass(sig)
 
-    assert 'LDL' not in sass
-    assert 'STL' not in sass
+    assert "LDL" not in sass
+    assert "STL" not in sass
 
 
 def test_warp_merge_sort_multiple_warps():
@@ -65,8 +63,7 @@ def test_warp_merge_sort_multiple_warps():
     def op(a, b):
         return a < b
 
-    warp_merge_sort = cudax.warp.merge_sort_keys(
-        T, items_per_thread, op)
+    warp_merge_sort = cudax.warp.merge_sort_keys(T, items_per_thread, op)
 
     @cuda.jit(link=warp_merge_sort.files)
     def kernel(input, output):
@@ -92,13 +89,14 @@ def test_warp_merge_sort_multiple_warps():
     for wid in range(block_threads // warp_threads):
         warp_offset = wid * warp_threads * items_per_thread
         reference = sorted(
-            h_input[warp_offset:warp_offset + warp_threads * items_per_thread])
+            h_input[warp_offset : warp_offset + warp_threads * items_per_thread]
+        )
         for i in range(warp_threads * items_per_thread):
             assert output[warp_offset + i] == reference[i]
 
     sig = (T[::1], T[::1])
     sass = kernel.inspect_sass(sig)
 
-    assert 'LDL' not in sass
-    assert 'STL' not in sass
-    assert 'BAR.SYNC' not in sass
+    assert "LDL" not in sass
+    assert "STL" not in sass
+    assert "BAR.SYNC" not in sass

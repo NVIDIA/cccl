@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 from pynvjitlink import patch
-import numpy as np
 import cuda.cooperative.experimental as cudax
 from helpers import random_int, NUMBA_TYPES_TO_NP
 import pytest
