@@ -86,6 +86,7 @@ struct sm90_tuning
 {
   static constexpr int threads                     = 128;
   static constexpr int nominal_4b_items_per_thread = 10;
+  // TODO(bgruber): use cuda::std::clamp() in C++14
   static constexpr int items =
     CUB_MIN(nominal_4b_items_per_thread, CUB_MAX(1, (nominal_4b_items_per_thread * 4 / sizeof(InputT))));
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -325,6 +326,7 @@ struct sm80_tuning
 {
   static constexpr int threads                     = 128;
   static constexpr int nominal_4b_items_per_thread = 10;
+  // TODO(bgruber): use cuda::std::clamp() in C++14
   static constexpr int items =
     CUB_MIN(nominal_4b_items_per_thread, CUB_MAX(1, (nominal_4b_items_per_thread * 4 / sizeof(InputT))));
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
@@ -602,10 +604,9 @@ struct device_select_policy_hub
   struct DefaultTuning
   {
     static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 10;
-
+    // TODO(bgruber): use cuda::std::clamp() in C++14
     static constexpr int ITEMS_PER_THREAD =
       CUB_MIN(NOMINAL_4B_ITEMS_PER_THREAD, CUB_MAX(1, (NOMINAL_4B_ITEMS_PER_THREAD * 4 / sizeof(InputT))));
-
     using SelectIfPolicyT =
       AgentSelectIfPolicy<128,
                           ITEMS_PER_THREAD,
@@ -623,12 +624,12 @@ struct device_select_policy_hub
   struct Policy800 : ChainedPolicy<800, Policy800, Policy350>
   {
     using tuning =
-      detail::select::sm80_tuning<InputT,
-                                  select::is_flagged<FlagT>(),
-                                  select::are_rejects_kept<KeepRejects>(),
-                                  select::classify_offset_size<OffsetT>(),
-                                  select::is_primitive<InputT>(),
-                                  select::classify_input_size<InputT>()>;
+      select::sm80_tuning<InputT,
+                          select::is_flagged<FlagT>(),
+                          select::are_rejects_kept<KeepRejects>(),
+                          select::classify_offset_size<OffsetT>(),
+                          select::is_primitive<InputT>(),
+                          select::classify_input_size<InputT>()>;
 
     using SelectIfPolicyT =
       AgentSelectIfPolicy<tuning::threads,
