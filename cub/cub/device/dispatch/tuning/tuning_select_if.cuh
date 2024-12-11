@@ -142,12 +142,8 @@ struct sm90_tuning<__int128_t, flagged::no, keep_rejects::no, offset_size::_4, p
 
 template <>
 struct sm90_tuning<__uint128_t, flagged::no, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
-{
-  static constexpr int threads                       = 512;
-  static constexpr int items                         = 5;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = detail::fixed_delay_constructor_t<460, 1145>;
-};
+    : sm90_tuning<__int128_t, flagged::no, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
+{};
 #endif
 
 // select::flagged
@@ -199,12 +195,8 @@ struct sm90_tuning<__int128_t, flagged::yes, keep_rejects::no, offset_size::_4, 
 
 template <>
 struct sm90_tuning<__uint128_t, flagged::yes, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
-{
-  static constexpr int threads                       = 512;
-  static constexpr int items                         = 3;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = detail::fixed_delay_constructor_t<284, 1130>;
-};
+    : sm90_tuning<__int128_t, flagged::yes, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
+{};
 #endif
 
 // partition::if
@@ -256,12 +248,8 @@ struct sm90_tuning<__int128_t, flagged::no, keep_rejects::yes, offset_size::_4, 
 
 template <>
 struct sm90_tuning<__uint128_t, flagged::no, keep_rejects::yes, offset_size::_4, primitive::no, input_size::_16>
-{
-  static constexpr int threads                       = 192;
-  static constexpr int items                         = 5;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = detail::fixed_delay_constructor_t<1616, 1115>;
-};
+    : sm90_tuning<__int128_t, flagged::no, keep_rejects::yes, offset_size::_4, primitive::no, input_size::_16>
+{};
 #endif
 
 // partition::flagged
@@ -313,12 +301,8 @@ struct sm90_tuning<__int128_t, flagged::yes, keep_rejects::yes, offset_size::_4,
 
 template <>
 struct sm90_tuning<__uint128_t, flagged::yes, keep_rejects::yes, offset_size::_4, primitive::no, input_size::_16>
-{
-  static constexpr int threads                       = 160;
-  static constexpr int items                         = 5;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = detail::fixed_delay_constructor_t<720, 1105>;
-};
+    : sm90_tuning<__int128_t, flagged::yes, keep_rejects::yes, offset_size::_4, primitive::no, input_size::_16>
+{};
 #endif
 
 template <class InputT, flagged, keep_rejects, offset_size OffsetSize, primitive, input_size InputSize>
@@ -382,12 +366,8 @@ struct sm80_tuning<__int128_t, flagged::no, keep_rejects::no, offset_size::_4, p
 
 template <>
 struct sm80_tuning<__uint128_t, flagged::no, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
-{
-  static constexpr int threads                       = 384;
-  static constexpr int items                         = 4;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = detail::no_delay_constructor_t<1140>;
-};
+    : sm80_tuning<__int128_t, flagged::no, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
+{};
 #endif
 
 // select::flagged
@@ -439,12 +419,8 @@ struct sm80_tuning<__int128_t, flagged::yes, keep_rejects::no, offset_size::_4, 
 
 template <>
 struct sm80_tuning<__uint128_t, flagged::yes, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
-{
-  static constexpr int threads                       = 256;
-  static constexpr int items                         = 5;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = detail::fixed_delay_constructor_t<464, 1025>;
-};
+    : sm80_tuning<__int128_t, flagged::yes, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
+{};
 #endif
 
 // partition::if
@@ -496,12 +472,8 @@ struct sm80_tuning<__int128_t, flagged::no, keep_rejects::yes, offset_size::_4, 
 
 template <>
 struct sm80_tuning<__uint128_t, flagged::no, keep_rejects::yes, offset_size::_4, primitive::no, input_size::_16>
-{
-  static constexpr int threads                       = 256;
-  static constexpr int items                         = 5;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = detail::fixed_delay_constructor_t<400, 1090>;
-};
+    : sm80_tuning<__int128_t, flagged::no, keep_rejects::yes, offset_size::_4, primitive::no, input_size::_16>
+{};
 #endif
 
 // partition::flagged
@@ -553,12 +525,8 @@ struct sm80_tuning<__int128_t, flagged::yes, keep_rejects::yes, offset_size::_4,
 
 template <>
 struct sm80_tuning<__uint128_t, flagged::yes, keep_rejects::yes, offset_size::_4, primitive::no, input_size::_16>
-{
-  static constexpr int threads                       = 256;
-  static constexpr int items                         = 5;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = detail::fixed_delay_constructor_t<400, 1090>;
-};
+    : sm80_tuning<__int128_t, flagged::yes, keep_rejects::yes, offset_size::_4, primitive::no, input_size::_16>
+{};
 #endif
 
 template <class InputT>
