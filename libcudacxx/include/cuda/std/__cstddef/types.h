@@ -9,8 +9,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CSTDDEF_SIZE_T_H
-#define _LIBCUDACXX___CSTDDEF_SIZE_T_H
+#ifndef _LIBCUDACXX___CSTDDEF_TYPES_H
+#define _LIBCUDACXX___CSTDDEF_TYPES_H
 
 #include <cuda/std/detail/__config>
 
@@ -22,12 +22,30 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cstddef/prelude.h>
+#if !_CCCL_COMPILER(NVRTC)
+#  include <cstddef>
+
+#  include <stddef.h>
+#else
+#  if !defined(offsetof)
+#    define offsetof(type, member) (::size_t)((char*) &(((type*) 0)->member) - (char*) 0)
+#  endif // !offsetof
+#endif // !_CCCL_COMPILER(NVRTC)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+#if defined(__CLANG_MAX_ALIGN_T_DEFINED) || defined(_GCC_MAX_ALIGN_T) || defined(__DEFINED_max_align_t) \
+  || defined(__NetBS)
+// Re-use the compiler's <stddef.h> max_align_t where possible.
+using ::max_align_t;
+#else
+using max_align_t = long double;
+#endif
+
+using nullptr_t = decltype(nullptr);
+using ::ptrdiff_t;
 using ::size_t;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _LIBCUDACXX___CSTDDEF_SIZE_T_H
+#endif // _LIBCUDACXX___CSTDDEF_TYPES_H

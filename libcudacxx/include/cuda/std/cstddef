@@ -24,10 +24,7 @@
 _CCCL_PUSH_MACROS
 
 #include <cuda/std/__cstddef/byte.h>
-#include <cuda/std/__cstddef/max_align_t.h>
-#include <cuda/std/__cstddef/nullptr_t.h>
-#include <cuda/std/__cstddef/ptrdiff_t.h>
-#include <cuda/std/__cstddef/size_t.h>
+#include <cuda/std/__cstddef/types.h>
 
 _CCCL_POP_MACROS
 
