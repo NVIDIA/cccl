@@ -230,6 +230,70 @@ struct sm80_tuning<LengthT, __uint128_t, primitive_length::yes, primitive_key::n
     : sm80_tuning<LengthT, __int128_t, primitive_length::yes, primitive_key::no, length_size::_4, key_size::_16>
 {};
 #endif
+
+// this policy is passed to DispatchReduceByKey
+template <class LengthT, class KeyT>
+struct policy_hub
+{
+  static constexpr int max_input_bytes      = ::cuda::std::max(sizeof(KeyT), sizeof(LengthT));
+  static constexpr int combined_input_bytes = sizeof(KeyT) + sizeof(LengthT);
+
+  struct DefaultPolicy
+  {
+    static constexpr int nominal_4B_items_per_thread = 6;
+    static constexpr int items =
+      (max_input_bytes <= 8)
+        ? 6
+        // TODO(bgruber): use clamp() and ceil_div in C++14
+        : CUB_MIN(nominal_4B_items_per_thread,
+                  CUB_MAX(1, ((nominal_4B_items_per_thread * 8) + combined_input_bytes - 1) / combined_input_bytes));
+    using ReduceByKeyPolicyT =
+      AgentReduceByKeyPolicy<128,
+                             items,
+                             BLOCK_LOAD_DIRECT,
+                             LOAD_LDG,
+                             BLOCK_SCAN_WARP_SCANS,
+                             default_reduce_by_key_delay_constructor_t<LengthT, int>>;
+  };
+
+  // SM35
+  struct Policy350
+      : DefaultPolicy
+      , ChainedPolicy<350, Policy350, Policy350>
+  {};
+
+  // Use values from tuning if a specialization exists, otherwise pick the default
+  template <typename Tuning>
+  static auto select_agent_policy(int)
+    -> AgentReduceByKeyPolicy<Tuning::threads,
+                              Tuning::items,
+                              Tuning::load_algorithm,
+                              LOAD_DEFAULT,
+                              BLOCK_SCAN_WARP_SCANS,
+                              typename Tuning::delay_constructor>;
+  template <typename Tuning>
+  static auto select_agent_policy(long) -> typename DefaultPolicy::ReduceByKeyPolicyT;
+
+  // SM80
+  struct Policy800 : ChainedPolicy<800, Policy800, Policy350>
+  {
+    using ReduceByKeyPolicyT = decltype(select_agent_policy<encode::sm80_tuning<LengthT, KeyT>>(0));
+  };
+
+  // SM86
+  struct Policy860
+      : DefaultPolicy
+      , ChainedPolicy<860, Policy860, Policy800>
+  {};
+
+  // SM90
+  struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
+  {
+    using ReduceByKeyPolicyT = decltype(select_agent_policy<encode::sm90_tuning<LengthT, KeyT>>(0));
+  };
+
+  using MaxPolicy = Policy900;
+};
 } // namespace encode
 
 namespace non_trivial_runs
@@ -364,72 +428,6 @@ struct sm80_tuning<LengthT, __uint128_t, primitive_length::yes, primitive_key::n
 {};
 #endif
 
-} // namespace non_trivial_runs
-
-// this policy is passed to DispatchReduceByKey
-template <class LengthT, class KeyT>
-struct policy_hub_encode
-{
-  static constexpr int max_input_bytes      = ::cuda::std::max(sizeof(KeyT), sizeof(LengthT));
-  static constexpr int combined_input_bytes = sizeof(KeyT) + sizeof(LengthT);
-
-  struct DefaultPolicy
-  {
-    static constexpr int nominal_4B_items_per_thread = 6;
-    static constexpr int items =
-      (max_input_bytes <= 8)
-        ? 6
-        // TODO(bgruber): use clamp() and ceil_div in C++14
-        : CUB_MIN(nominal_4B_items_per_thread,
-                  CUB_MAX(1, ((nominal_4B_items_per_thread * 8) + combined_input_bytes - 1) / combined_input_bytes));
-    using ReduceByKeyPolicyT =
-      AgentReduceByKeyPolicy<128,
-                             items,
-                             BLOCK_LOAD_DIRECT,
-                             LOAD_LDG,
-                             BLOCK_SCAN_WARP_SCANS,
-                             default_reduce_by_key_delay_constructor_t<LengthT, int>>;
-  };
-
-  // SM35
-  struct Policy350
-      : DefaultPolicy
-      , ChainedPolicy<350, Policy350, Policy350>
-  {};
-
-  // Use values from tuning if a specialization exists, otherwise pick the default
-  template <typename Tuning>
-  static auto select_agent_policy(int)
-    -> AgentReduceByKeyPolicy<Tuning::threads,
-                              Tuning::items,
-                              Tuning::load_algorithm,
-                              LOAD_DEFAULT,
-                              BLOCK_SCAN_WARP_SCANS,
-                              typename Tuning::delay_constructor>;
-  template <typename Tuning>
-  static auto select_agent_policy(long) -> typename DefaultPolicy::ReduceByKeyPolicyT;
-
-  // SM80
-  struct Policy800 : ChainedPolicy<800, Policy800, Policy350>
-  {
-    using ReduceByKeyPolicyT = decltype(select_agent_policy<encode::sm80_tuning<LengthT, KeyT>>(0));
-  };
-
-  // SM86
-  struct Policy860
-      : DefaultPolicy
-      , ChainedPolicy<860, Policy860, Policy800>
-  {};
-
-  // SM90
-  struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
-  {
-    using ReduceByKeyPolicyT = decltype(select_agent_policy<encode::sm90_tuning<LengthT, KeyT>>(0));
-  };
-
-  using MaxPolicy = Policy900;
-};
-
 template <class LengthT, class KeyT>
 struct policy_hub
 {
@@ -489,6 +487,7 @@ struct policy_hub
 
   using MaxPolicy = Policy900;
 };
+} // namespace non_trivial_runs
 } // namespace rle
 } // namespace detail
 

@@ -206,7 +206,7 @@ struct DeviceRunLengthEncode
 
     using key_t = cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::value_t<InputIteratorT>>;
 
-    using policy_t = detail::rle::policy_hub_encode<accum_t, key_t>;
+    using policy_t = cub::detail::rle::encode::policy_hub<accum_t, key_t>;
 
     return DispatchReduceByKey<
       InputIteratorT,

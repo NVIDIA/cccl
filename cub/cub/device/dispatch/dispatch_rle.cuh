@@ -182,15 +182,15 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::RleSweepPolicyT::BLOCK_THREA
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
-template <
-  typename InputIteratorT,
-  typename OffsetsOutputIteratorT,
-  typename LengthsOutputIteratorT,
-  typename NumRunsOutputIteratorT,
-  typename EqualityOpT,
-  typename OffsetT,
-  typename SelectedPolicy = detail::rle::policy_hub<cub::detail::non_void_value_t<LengthsOutputIteratorT, OffsetT>,
-                                                    cub::detail::value_t<InputIteratorT>>>
+template <typename InputIteratorT,
+          typename OffsetsOutputIteratorT,
+          typename LengthsOutputIteratorT,
+          typename NumRunsOutputIteratorT,
+          typename EqualityOpT,
+          typename OffsetT,
+          typename SelectedPolicy =
+            detail::rle::non_trivial_runs::policy_hub<cub::detail::non_void_value_t<LengthsOutputIteratorT, OffsetT>,
+                                                      cub::detail::value_t<InputIteratorT>>>
 struct DeviceRleDispatch
 {
   /******************************************************************************
