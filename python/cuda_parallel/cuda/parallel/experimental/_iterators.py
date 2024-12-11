@@ -34,7 +34,9 @@ def _ctypes_type_given_numba_type(ntype):
     return mapping[ntype]
 
 
-cached_compile = lru_cache(maxsize=256)(numba.cuda.compile)  # TODO: what's a reasonable value?
+cached_compile = lru_cache(maxsize=256)(
+    numba.cuda.compile
+)  # TODO: what's a reasonable value?
 
 
 class IteratorBase:
@@ -49,17 +51,13 @@ class IteratorBase:
             self.__class__.advance,
             (
                 self.numba_type,
-                numba.types.uint64  # distance type
+                numba.types.uint64,  # distance type
             ),
-            output="ltoir"
+            output="ltoir",
         )
 
         deref_ltoir, _ = cached_compile(
-            self.__class__.dereference,
-            (
-                self.numba_type,
-            ),
-            output="ltoir"
+            self.__class__.dereference, (self.numba_type,), output="ltoir"
         )
 
         return advance_ltoir, deref_ltoir
@@ -214,15 +212,11 @@ def make_transform_iterator(it, op):
             self._it = it
             cvalue = it.cvalue
             numba_type = it.numba_type
-            _, op_retty = cached_compile(
-                op,
-                (
-                    self._it.value_type,
-                ),
-                output="ltoir"
-            )
+            _, op_retty = cached_compile(op, (self._it.value_type,), output="ltoir")
             value_type = op_retty
-            super().__init__(cvalue=cvalue, value_type=value_type, numba_type=numba_type)
+            super().__init__(
+                cvalue=cvalue, value_type=value_type, numba_type=numba_type
+            )
 
         @staticmethod
         def advance(it, n):

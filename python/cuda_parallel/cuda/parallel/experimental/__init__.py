@@ -15,6 +15,7 @@ from numba.cuda.cudadrv import enums
 
 from ._iterators import IteratorBase
 
+
 # MUST match `cccl_type_enum` in c/include/cccl/c/types.h
 class _TypeEnum(ctypes.c_int):
     INT8 = 0
@@ -101,13 +102,15 @@ class _CCCLOp(ctypes.Structure):
 
 # MUST match `cccl_iterator_t` in c/include/cccl/c/types.h
 class _CCCLIterator(ctypes.Structure):
-    _fields_ = [("size", ctypes.c_int),
-                ("alignment", ctypes.c_int),
-                ("type", _CCCLIteratorKindEnum),
-                ("advance", _CCCLOp),
-                ("dereference", _CCCLOp),
-                ("value_type", _TypeInfo),
-                ("state", ctypes.c_void_p)]
+    _fields_ = [
+        ("size", ctypes.c_int),
+        ("alignment", ctypes.c_int),
+        ("type", _CCCLIteratorKindEnum),
+        ("advance", _CCCLOp),
+        ("dereference", _CCCLOp),
+        ("value_type", _TypeInfo),
+        ("state", ctypes.c_void_p),
+    ]
 
 
 # MUST match `cccl_value_t` in c/include/cccl/c/types.h
@@ -164,15 +167,24 @@ def _device_array_to_cccl_iter(array):
     info = _numpy_type_to_info(dtype)
     # Note: this is slightly slower, but supports all ndarray-like objects as long as they support CAI
     # TODO: switch to use gpumemoryview once it's ready
-    return _CCCLIterator(1, 1, _CCCLIteratorKindEnum.POINTER, _CCCLOp(), _CCCLOp(), info, array.__cuda_array_interface__["data"][0])
+    return _CCCLIterator(
+        1,
+        1,
+        _CCCLIteratorKindEnum.POINTER,
+        _CCCLOp(),
+        _CCCLOp(),
+        info,
+        array.__cuda_array_interface__["data"][0],
+    )
 
 
 def _iterator_to_cccl_iter(it):
     context = cuda.descriptor.cuda_target.target_context
     numba_type = it.numba_type
     size = context.get_value_type(numba_type).get_abi_size(context.target_data)
-    alignment = context.get_value_type(
-        numba_type).get_abi_alignment(context.target_data)
+    alignment = context.get_value_type(numba_type).get_abi_alignment(
+        context.target_data
+    )
     advance_ltoir, deref_ltoir = it.ltoirs
     advance_op = _CCCLOp(
         _CCCLOpKindEnum.STATELESS,
@@ -181,7 +193,7 @@ def _iterator_to_cccl_iter(it):
         len(advance_ltoir),
         1,
         1,
-        None
+        None,
     )
     deref_op = _CCCLOp(
         _CCCLOpKindEnum.STATELESS,
@@ -190,7 +202,7 @@ def _iterator_to_cccl_iter(it):
         len(deref_ltoir),
         1,
         1,
-        None
+        None,
     )
     return _CCCLIterator(
         size,
@@ -199,7 +211,7 @@ def _iterator_to_cccl_iter(it):
         advance_op,
         deref_op,
         _numba_type_to_info(it.value_type),
-        it.state
+        it.state,
     )
 
 
@@ -311,18 +323,19 @@ class _Reduce:
         self.build_result = _CCCLDeviceReduceBuildResult()
 
         # TODO Figure out caching
-        error = bindings.cccl_device_reduce_build(ctypes.byref(self.build_result),
-                                                  d_in_cccl,
-                                                  d_out_cccl,
-                                                  self.op_wrapper.handle(),
-                                                  _host_array_to_value(h_init),
-                                                  cc_major,
-                                                  cc_minor,
-                                                  ctypes.c_char_p(cub_path),
-                                                  ctypes.c_char_p(thrust_path),
-                                                  ctypes.c_char_p(
-                                                      libcudacxx_path),
-                                                  ctypes.c_char_p(cuda_include_path))
+        error = bindings.cccl_device_reduce_build(
+            ctypes.byref(self.build_result),
+            d_in_cccl,
+            d_out_cccl,
+            self.op_wrapper.handle(),
+            _host_array_to_value(h_init),
+            cc_major,
+            cc_minor,
+            ctypes.c_char_p(cub_path),
+            ctypes.c_char_p(thrust_path),
+            ctypes.c_char_p(libcudacxx_path),
+            ctypes.c_char_p(cuda_include_path),
+        )
         if error != enums.CUDA_SUCCESS:
             raise ValueError("Error building reduce")
 
@@ -352,15 +365,17 @@ class _Reduce:
             # TODO: switch to use gpumemoryview once it's ready
             d_temp_storage = temp_storage.__cuda_array_interface__["data"][0]
         d_out_cccl = _to_cccl_iter(d_out)
-        error = bindings.cccl_device_reduce(self.build_result,
-                                            d_temp_storage,
-                                            ctypes.byref(temp_storage_bytes),
-                                            d_in_cccl,
-                                            d_out_cccl,
-                                            ctypes.c_ulonglong(num_items),
-                                            self.op_wrapper.handle(),
-                                            _host_array_to_value(h_init),
-                                            None)
+        error = bindings.cccl_device_reduce(
+            self.build_result,
+            d_temp_storage,
+            ctypes.byref(temp_storage_bytes),
+            d_in_cccl,
+            d_out_cccl,
+            ctypes.c_ulonglong(num_items),
+            self.op_wrapper.handle(),
+            _host_array_to_value(h_init),
+            None,
+        )
         if error != enums.CUDA_SUCCESS:
             raise ValueError("Error reducing")
 
