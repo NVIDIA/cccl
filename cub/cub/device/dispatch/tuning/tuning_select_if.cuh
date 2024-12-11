@@ -570,13 +570,13 @@ struct policy_hub
 {
   struct DefaultTuning
   {
-    static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 10;
+    static constexpr int nominal_4B_items_per_thread = 10;
     // TODO(bgruber): use cuda::std::clamp() in C++14
-    static constexpr int ITEMS_PER_THREAD =
-      CUB_MIN(NOMINAL_4B_ITEMS_PER_THREAD, CUB_MAX(1, (NOMINAL_4B_ITEMS_PER_THREAD * 4 / sizeof(InputT))));
+    static constexpr int items_per_thread =
+      CUB_MIN(nominal_4B_items_per_thread, CUB_MAX(1, (nominal_4B_items_per_thread * 4 / sizeof(InputT))));
     using SelectIfPolicyT =
       AgentSelectIfPolicy<128,
-                          ITEMS_PER_THREAD,
+                          items_per_thread,
                           BLOCK_LOAD_DIRECT,
                           MayAlias ? LOAD_CA : LOAD_LDG,
                           BLOCK_SCAN_WARP_SCANS,
