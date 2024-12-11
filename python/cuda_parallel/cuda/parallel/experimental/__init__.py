@@ -185,10 +185,10 @@ def _iterator_to_cccl_iter(it):
     alignment = context.get_value_type(numba_type).get_abi_alignment(
         context.target_data
     )
-    advance_ltoir, deref_ltoir = it.ltoirs
+    (advance_abi_name, advance_ltoir), (deref_abi_name, deref_ltoir) = it.ltoirs.items()
     advance_op = _CCCLOp(
         _CCCLOpKindEnum.STATELESS,
-        type(it).advance.__name__.encode("utf-8"),
+        advance_abi_name.encode("utf-8"),
         ctypes.c_char_p(advance_ltoir),
         len(advance_ltoir),
         1,
@@ -197,7 +197,7 @@ def _iterator_to_cccl_iter(it):
     )
     deref_op = _CCCLOp(
         _CCCLOpKindEnum.STATELESS,
-        type(it).dereference.__name__.encode("utf-8"),
+        deref_abi_name.encode("utf-8"),
         ctypes.c_char_p(deref_ltoir),
         len(deref_ltoir),
         1,

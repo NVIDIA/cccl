@@ -2,6 +2,7 @@ import ctypes
 import operator
 import collections
 from functools import cached_property, lru_cache
+from sys import prefix
 
 import numpy as np
 from numba.core import cgutils
@@ -34,19 +35,22 @@ def _ctypes_type_given_numba_type(ntype):
     return mapping[ntype]
 
 
-cached_compile = lru_cache(maxsize=256)(
-    numba.cuda.compile
-)  # TODO: what's a reasonable value?
+@lru_cache(maxsize=256)  # TODO: what's a reasonable value?
+def cached_compile(func, sig, abi_name=None, **kwargs):
+    return numba.cuda.compile(func, sig, abi_info={"abi_name": abi_name}, **kwargs)
 
 
 class IteratorBase:
-    def __init__(self, cvalue, value_type, numba_type):
+    def __init__(self, cvalue, value_type, numba_type, abi_name):
         self.cvalue = cvalue
         self.value_type = value_type
         self.numba_type = numba_type
+        self.abi_name = abi_name
 
     @cached_property
     def ltoirs(self):
+        advance_abi_name = self.abi_name + "_advance"
+        deref_abi_name = self.abi_name + "_dereference"
         advance_ltoir, _ = cached_compile(
             self.__class__.advance,
             (
@@ -54,13 +58,16 @@ class IteratorBase:
                 numba.types.uint64,  # distance type
             ),
             output="ltoir",
+            abi_name=advance_abi_name,
         )
 
         deref_ltoir, _ = cached_compile(
-            self.__class__.dereference, (self.numba_type,), output="ltoir"
+            self.__class__.dereference,
+            (self.numba_type,),
+            output="ltoir",
+            abi_name=deref_abi_name,
         )
-
-        return advance_ltoir, deref_ltoir
+        return {advance_abi_name: advance_ltoir, deref_abi_name: deref_ltoir}
 
     @property
     def state(self):
@@ -102,7 +109,13 @@ class RawPointer(IteratorBase):
         value_type = ntype
         cvalue = ctypes.c_void_p(ptr)
         numba_type = numba.types.CPointer(numba.types.CPointer(value_type))
-        super().__init__(cvalue=cvalue, value_type=value_type, numba_type=numba_type)
+        abi_name = f"{self.__class__.__name__}_{str(value_type)}"
+        super().__init__(
+            cvalue=cvalue,
+            value_type=value_type,
+            numba_type=numba_type,
+            abi_name=abi_name,
+        )
 
     @staticmethod
     def advance(it, distance):
@@ -156,7 +169,13 @@ class CacheModifiedPointer(IteratorBase):
         cvalue = ctypes.c_void_p(ptr)
         value_type = ntype
         numba_type = numba.types.CPointer(numba.types.CPointer(value_type))
-        super().__init__(cvalue=cvalue, value_type=value_type, numba_type=numba_type)
+        abi_name = f"{self.__class__.__name__}_{str(value_type)}"
+        super().__init__(
+            cvalue=cvalue,
+            value_type=value_type,
+            numba_type=numba_type,
+            abi_name=abi_name,
+        )
 
     @staticmethod
     def advance(it, distance):
@@ -172,7 +191,13 @@ class ConstantIterator(IteratorBase):
         value_type = numba.from_dtype(value.dtype)
         cvalue = _ctypes_type_given_numba_type(value_type)(value)
         numba_type = numba.types.CPointer(value_type)
-        super().__init__(cvalue=cvalue, value_type=value_type, numba_type=numba_type)
+        abi_name = f"{self.__class__.__name__}_{str(value_type)}"
+        super().__init__(
+            cvalue=cvalue,
+            value_type=value_type,
+            numba_type=numba_type,
+            abi_name=abi_name,
+        )
 
     @staticmethod
     def advance(it, n):
@@ -188,7 +213,13 @@ class CountingIterator(IteratorBase):
         value_type = numba.from_dtype(value.dtype)
         cvalue = _ctypes_type_given_numba_type(value_type)(value)
         numba_type = numba.types.CPointer(value_type)
-        super().__init__(cvalue=cvalue, value_type=value_type, numba_type=numba_type)
+        abi_name = f"{self.__class__.__name__}_{str(value_type)}"
+        super().__init__(
+            cvalue=cvalue,
+            value_type=value_type,
+            numba_type=numba_type,
+            abi_name=abi_name,
+        )
 
     @staticmethod
     def advance(it, n):
@@ -212,10 +243,19 @@ def make_transform_iterator(it, op):
             self._it = it
             cvalue = it.cvalue
             numba_type = it.numba_type
-            _, op_retty = cached_compile(op, (self._it.value_type,), output="ltoir")
+            _, op_retty = cached_compile(
+                op,
+                (self._it.value_type,),
+                abi_name=f"{self.__class__.__name__}_{op.__name__}",
+                output="ltoir",
+            )
             value_type = op_retty
+            abi_name = f"{self.__class__.__name__}_{it.abi_name}"
             super().__init__(
-                cvalue=cvalue, value_type=value_type, numba_type=numba_type
+                cvalue=cvalue,
+                value_type=value_type,
+                numba_type=numba_type,
+                abi_name=abi_name,
             )
 
         @staticmethod
