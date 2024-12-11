@@ -38,3 +38,8 @@
 #    pragma warning(disable : 4127)
 #  endif
 #endif
+
+#if _CCCL_COMPILER(GCC, ==, 14) // Disable bugged warning on GCC 14 -
+                                // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=115048
+#  pragma GCC diagnostic ignored "-Wfree-nonheap-object"
+#endif
