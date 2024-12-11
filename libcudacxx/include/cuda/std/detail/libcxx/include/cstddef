@@ -59,8 +59,10 @@ using ::size_t;
   || defined(__NetBS)
 // Re-use the compiler's <stddef.h> max_align_t where possible.
 using ::max_align_t;
+#elif !defined(_LIBCUDACXX_HAS_NO_INT128)
+using max_align_t = __int128;
 #else
-typedef long double max_align_t;
+using max_align_t = long double;
 #endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
