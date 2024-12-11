@@ -25,7 +25,7 @@ using namespace cuda::experimental::stf;
 int main(int, char**)
 {
   context ctx;
-  auto lsum = ctx.logical_data(shape_of<scalar<size_t>>());
+  auto lsum = ctx.logical_data(shape_of<scalar_view<size_t>>());
 
   size_t N = 1000000;
 
