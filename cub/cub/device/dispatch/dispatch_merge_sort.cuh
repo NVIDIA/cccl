@@ -212,6 +212,8 @@ __launch_bounds__(
   VSmemHelperT::discard_temp_storage(temp_storage);
 }
 
+// TODO(bgruber): if we put a call to cudaTriggerProgrammaticLaunchCompletion inside this kernel, the tests fail with
+// cudaErrorIllegalAddress.
 template <typename KeyIteratorT, typename OffsetT, typename CompareOpT, typename KeyT>
 CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceMergeSortPartitionKernel(
   bool ping,
@@ -618,7 +620,7 @@ struct DispatchMergeSort : SelectedPolicy
 
         // Partition
         THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
-          partition_grid_size, threads_per_partition_block, 0, stream)
+          partition_grid_size, threads_per_partition_block, 0, stream, true)
           .doit(DeviceMergeSortPartitionKernel<KeyIteratorT, OffsetT, CompareOpT, KeyT>,
                 ping,
                 d_output_keys,
@@ -645,7 +647,7 @@ struct DispatchMergeSort : SelectedPolicy
 
         // Merge
         THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
-          static_cast<int>(num_tiles), static_cast<int>(merge_sort_helper_t::policy_t::BLOCK_THREADS), 0, stream)
+          static_cast<int>(num_tiles), static_cast<int>(merge_sort_helper_t::policy_t::BLOCK_THREADS), 0, stream, true)
           .doit(
             DeviceMergeSortMergeKernel<MaxPolicyT,
                                        KeyInputIteratorT,
