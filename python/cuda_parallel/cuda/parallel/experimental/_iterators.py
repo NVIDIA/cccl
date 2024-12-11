@@ -261,14 +261,15 @@ def make_transform_iterator(it, op):
         def __init__(self, it, op):
             self._it = it
             numba_type = it.numba_type
+            op_abi_name = f"{self.__class__.__name__}_{op.py_func.__name__}"
             _, op_retty = cached_compile(
                 op,
                 (self._it.value_type,),
-                abi_name=f"{self.__class__.__name__}_{op.__name__}",
+                abi_name=op_abi_name,
                 output="ltoir",
             )
             value_type = op_retty
-            abi_name = f"{self.__class__.__name__}_{it.abi_name}"
+            abi_name = f"{self.__class__.__name__}_{it.abi_name}_{op_abi_name}"
             super().__init__(
                 value_type=value_type,
                 numba_type=numba_type,
