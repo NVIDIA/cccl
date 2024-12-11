@@ -117,21 +117,7 @@ template <class LengthT,
           primitive_key PrimitiveKey       = is_primitive_key<KeyT>(),
           length_size LengthSize           = classify_length_size<LengthT>(),
           key_size KeySize                 = classify_key_size<KeyT>()>
-struct sm90_tuning
-{
-  static constexpr int max_input_bytes             = ::cuda::std::max(sizeof(KeyT), sizeof(LengthT));
-  static constexpr int combined_input_bytes        = sizeof(KeyT) + sizeof(LengthT);
-  static constexpr int threads                     = 128;
-  static constexpr int nominal_4b_items_per_thread = 6;
-  static constexpr int items =
-    (max_input_bytes <= 8)
-      ? 6
-      // TODO(bgruber): use clamp() and ceil_div() in C++14
-      : CUB_MIN(nominal_4b_items_per_thread,
-                CUB_MAX(1, ((nominal_4b_items_per_thread * 8) + combined_input_bytes - 1) / combined_input_bytes));
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = detail::default_reduce_by_key_delay_constructor_t<LengthT, int>;
-};
+struct sm90_tuning;
 
 template <class LengthT, class KeyT>
 struct sm90_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_1>
@@ -195,26 +181,7 @@ template <class LengthT,
           primitive_key PrimitiveKey       = is_primitive_key<KeyT>(),
           length_size LengthSize           = classify_length_size<LengthT>(),
           key_size KeySize                 = classify_key_size<KeyT>()>
-struct sm80_tuning
-{
-  static constexpr int max_input_bytes      = ::cuda::std::max(sizeof(KeyT), sizeof(LengthT));
-  static constexpr int combined_input_bytes = sizeof(KeyT) + sizeof(LengthT);
-
-  static constexpr int threads = 128;
-
-  static constexpr int nominal_4b_items_per_thread = 6;
-
-  static constexpr int items =
-    (max_input_bytes <= 8)
-      ? 6
-      // TODO(bgruber): use clamp() and ceil_div() in C++14
-      : CUB_MIN(nominal_4b_items_per_thread,
-                CUB_MAX(1, ((nominal_4b_items_per_thread * 8) + combined_input_bytes - 1) / combined_input_bytes));
-
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-
-  using delay_constructor = detail::default_reduce_by_key_delay_constructor_t<LengthT, int>;
-};
+struct sm80_tuning;
 
 template <class LengthT, class KeyT>
 struct sm80_tuning<LengthT, KeyT, primitive_length::yes, primitive_key::yes, length_size::_4, key_size::_1>
@@ -284,10 +251,10 @@ template <class LengthT,
 struct sm90_tuning
 {
   static constexpr int threads                     = 96;
-  static constexpr int nominal_4b_items_per_thread = 15;
+  static constexpr int nominal_4B_items_per_thread = 15;
   // TODO(bgruber): use clamp() in C++14
   static constexpr int items =
-    CUB_MIN(nominal_4b_items_per_thread, CUB_MAX(1, (nominal_4b_items_per_thread * 4 / sizeof(KeyT))));
+    CUB_MIN(nominal_4B_items_per_thread, CUB_MAX(1, (nominal_4B_items_per_thread * 4 / sizeof(KeyT))));
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
   static constexpr bool store_with_time_slicing      = true;
   using delay_constructor                            = detail::default_reduce_by_key_delay_constructor_t<LengthT, int>;
@@ -364,10 +331,10 @@ template <class LengthT,
 struct sm80_tuning
 {
   static constexpr int threads                     = 96;
-  static constexpr int nominal_4b_items_per_thread = 15;
+  static constexpr int nominal_4B_items_per_thread = 15;
   // TODO(bgruber): use clamp() in C++14
   static constexpr int items =
-    CUB_MIN(nominal_4b_items_per_thread, CUB_MAX(1, (nominal_4b_items_per_thread * 4 / sizeof(KeyT))));
+    CUB_MIN(nominal_4B_items_per_thread, CUB_MAX(1, (nominal_4B_items_per_thread * 4 / sizeof(KeyT))));
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
   static constexpr bool store_with_time_slicing      = true;
   using delay_constructor                            = detail::default_reduce_by_key_delay_constructor_t<LengthT, int>;
@@ -441,21 +408,21 @@ struct sm80_tuning<LengthT, __uint128_t, primitive_length::yes, primitive_key::n
 template <class LengthT, class KeyT>
 struct policy_hub_encode
 {
-  static constexpr int MAX_INPUT_BYTES      = ::cuda::std::max(sizeof(KeyT), sizeof(LengthT));
-  static constexpr int COMBINED_INPUT_BYTES = sizeof(KeyT) + sizeof(LengthT);
+  static constexpr int max_input_bytes      = ::cuda::std::max(sizeof(KeyT), sizeof(LengthT));
+  static constexpr int combined_input_bytes = sizeof(KeyT) + sizeof(LengthT);
 
-  struct DefaultTuning
+  struct DefaultPolicy
   {
-    static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 6;
-    static constexpr int ITEMS_PER_THREAD =
-      (MAX_INPUT_BYTES <= 8)
+    static constexpr int nominal_4B_items_per_thread = 6;
+    static constexpr int items =
+      (max_input_bytes <= 8)
         ? 6
         // TODO(bgruber): use clamp() and ceil_div in C++14
-        : CUB_MIN(NOMINAL_4B_ITEMS_PER_THREAD,
-                  CUB_MAX(1, ((NOMINAL_4B_ITEMS_PER_THREAD * 8) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES));
+        : CUB_MIN(nominal_4B_items_per_thread,
+                  CUB_MAX(1, ((nominal_4B_items_per_thread * 8) + combined_input_bytes - 1) / combined_input_bytes));
     using ReduceByKeyPolicyT =
       AgentReduceByKeyPolicy<128,
-                             ITEMS_PER_THREAD,
+                             items,
                              BLOCK_LOAD_DIRECT,
                              LOAD_LDG,
                              BLOCK_SCAN_WARP_SCANS,
@@ -464,40 +431,38 @@ struct policy_hub_encode
 
   // SM35
   struct Policy350
-      : DefaultTuning
+      : DefaultPolicy
       , ChainedPolicy<350, Policy350, Policy350>
   {};
+
+  // Use values from tuning if a specialization exists, otherwise pick the default
+  template <typename Tuning>
+  static auto select_agent_policy(int)
+    -> AgentReduceByKeyPolicy<Tuning::threads,
+                              Tuning::items,
+                              Tuning::load_algorithm,
+                              LOAD_DEFAULT,
+                              BLOCK_SCAN_WARP_SCANS,
+                              typename Tuning::delay_constructor>;
+  template <typename Tuning>
+  static auto select_agent_policy(long) -> typename DefaultPolicy::ReduceByKeyPolicyT;
 
   // SM80
   struct Policy800 : ChainedPolicy<800, Policy800, Policy350>
   {
-    using tuning = encode::sm80_tuning<LengthT, KeyT>;
-    using ReduceByKeyPolicyT =
-      AgentReduceByKeyPolicy<tuning::threads,
-                             tuning::items,
-                             tuning::load_algorithm,
-                             LOAD_DEFAULT,
-                             BLOCK_SCAN_WARP_SCANS,
-                             typename tuning::delay_constructor>;
+    using ReduceByKeyPolicyT = decltype(select_agent_policy<encode::sm80_tuning<LengthT, KeyT>>(0));
   };
 
   // SM86
   struct Policy860
-      : DefaultTuning
+      : DefaultPolicy
       , ChainedPolicy<860, Policy860, Policy800>
   {};
 
   // SM90
   struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
   {
-    using tuning = encode::sm90_tuning<LengthT, KeyT>;
-    using ReduceByKeyPolicyT =
-      AgentReduceByKeyPolicy<tuning::threads,
-                             tuning::items,
-                             tuning::load_algorithm,
-                             LOAD_DEFAULT,
-                             BLOCK_SCAN_WARP_SCANS,
-                             typename tuning::delay_constructor>;
+    using ReduceByKeyPolicyT = decltype(select_agent_policy<encode::sm90_tuning<LengthT, KeyT>>(0));
   };
 
   using MaxPolicy = Policy900;
@@ -506,12 +471,12 @@ struct policy_hub_encode
 template <class LengthT, class KeyT>
 struct policy_hub
 {
-  struct DefaultTuning
+  struct DefaultPolicy
   {
-    static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 15;
+    static constexpr int nominal_4B_items_per_thread = 15;
     // TODO(bgruber): use clamp() in C++14
     static constexpr int ITEMS_PER_THREAD =
-      CUB_MIN(NOMINAL_4B_ITEMS_PER_THREAD, CUB_MAX(1, (NOMINAL_4B_ITEMS_PER_THREAD * 4 / sizeof(KeyT))));
+      CUB_MIN(nominal_4B_items_per_thread, CUB_MAX(1, (nominal_4B_items_per_thread * 4 / sizeof(KeyT))));
     using RleSweepPolicyT =
       AgentRlePolicy<96,
                      ITEMS_PER_THREAD,
@@ -524,7 +489,7 @@ struct policy_hub
 
   // SM35
   struct Policy350
-      : DefaultTuning
+      : DefaultPolicy
       , ChainedPolicy<350, Policy350, Policy350>
   {};
 
@@ -544,7 +509,7 @@ struct policy_hub
 
   // SM86
   struct Policy860
-      : DefaultTuning
+      : DefaultPolicy
       , ChainedPolicy<860, Policy860, Policy800>
   {};
 
