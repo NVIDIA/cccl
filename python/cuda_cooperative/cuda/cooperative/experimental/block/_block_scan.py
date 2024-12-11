@@ -44,26 +44,41 @@ def exclusive_sum(dtype, threads_in_block, items_per_thread, prefix_op=None):
     Returns:
         A callable object that can be linked to and invoked from a CUDA kernel
     """
-    template = Algorithm('BlockScan',
-                         'ExclusiveSum',
-                         'block_scan',
-                         ['cub/block/block_scan.cuh'],
-                         [TemplateParameter('T'),
-                          TemplateParameter('BLOCK_DIM_X')],
-                         [[Pointer(numba.uint8),
-                           DependentArray(Dependency(
-                               'T'), Dependency('ITEMS_PER_THREAD')),
-                           DependentArray(Dependency(
-                               'T'), Dependency('ITEMS_PER_THREAD')),
-                           DependentOperator(Dependency('T'), [Dependency('T')], Dependency('PrefixOp'))],
-                          [Pointer(numba.uint8),
-                           DependentArray(Dependency(
-                               'T'), Dependency('ITEMS_PER_THREAD')),
-                           DependentArray(Dependency('T'), Dependency('ITEMS_PER_THREAD'))]])
-    specialization = template.specialize({'T': dtype,
-                                          'BLOCK_DIM_X': threads_in_block,
-                                          'ITEMS_PER_THREAD': items_per_thread,
-                                          'PrefixOp': prefix_op})
-    return Invocable(temp_files=[make_binary_tempfile(ltoir, '.ltoir') for ltoir in specialization.get_lto_ir()],
-                     temp_storage_bytes=specialization.get_temp_storage_bytes(),
-                     algorithm=specialization)
+    template = Algorithm(
+        "BlockScan",
+        "ExclusiveSum",
+        "block_scan",
+        ["cub/block/block_scan.cuh"],
+        [TemplateParameter("T"), TemplateParameter("BLOCK_DIM_X")],
+        [
+            [
+                Pointer(numba.uint8),
+                DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
+                DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
+                DependentOperator(
+                    Dependency("T"), [Dependency("T")], Dependency("PrefixOp")
+                ),
+            ],
+            [
+                Pointer(numba.uint8),
+                DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
+                DependentArray(Dependency("T"), Dependency("ITEMS_PER_THREAD")),
+            ],
+        ],
+    )
+    specialization = template.specialize(
+        {
+            "T": dtype,
+            "BLOCK_DIM_X": threads_in_block,
+            "ITEMS_PER_THREAD": items_per_thread,
+            "PrefixOp": prefix_op,
+        }
+    )
+    return Invocable(
+        temp_files=[
+            make_binary_tempfile(ltoir, ".ltoir")
+            for ltoir in specialization.get_lto_ir()
+        ],
+        temp_storage_bytes=specialization.get_temp_storage_bytes(),
+        algorithm=specialization,
+    )

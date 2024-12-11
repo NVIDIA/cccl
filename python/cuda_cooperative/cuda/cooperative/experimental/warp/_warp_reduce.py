@@ -44,25 +44,38 @@ def reduce(dtype, binary_op, threads_in_warp=32, methods=None):
     Returns:
         A callable object that can be linked to and invoked from a CUDA kernel
     """
-    template = Algorithm('WarpReduce',
-                         'Reduce',
-                         'warp_reduce',
-                         ['cub/warp/warp_reduce.cuh'],
-                         [TemplateParameter('T'),
-                          TemplateParameter('VIRTUAL_WARP_THREADS')],
-                         [[Pointer(numba.uint8),
-                           DependentReference(Dependency('T')),
-                           DependentOperator(Dependency('T'), [Dependency(
-                               'T'), Dependency('T')], Dependency('Op')),
-                           DependentReference(Dependency('T'), True)]],
-                         type_definitions=[numba_type_to_wrapper(dtype, methods=methods)])
-    specialization = template.specialize({'T': dtype,
-                                          'VIRTUAL_WARP_THREADS': threads_in_warp,
-                                          'Op': binary_op})
+    template = Algorithm(
+        "WarpReduce",
+        "Reduce",
+        "warp_reduce",
+        ["cub/warp/warp_reduce.cuh"],
+        [TemplateParameter("T"), TemplateParameter("VIRTUAL_WARP_THREADS")],
+        [
+            [
+                Pointer(numba.uint8),
+                DependentReference(Dependency("T")),
+                DependentOperator(
+                    Dependency("T"),
+                    [Dependency("T"), Dependency("T")],
+                    Dependency("Op"),
+                ),
+                DependentReference(Dependency("T"), True),
+            ]
+        ],
+        type_definitions=[numba_type_to_wrapper(dtype, methods=methods)],
+    )
+    specialization = template.specialize(
+        {"T": dtype, "VIRTUAL_WARP_THREADS": threads_in_warp, "Op": binary_op}
+    )
 
-    return Invocable(temp_files=[make_binary_tempfile(ltoir, '.ltoir') for ltoir in specialization.get_lto_ir(threads=threads_in_warp)],
-                     temp_storage_bytes=specialization.get_temp_storage_bytes(),
-                     algorithm=specialization)
+    return Invocable(
+        temp_files=[
+            make_binary_tempfile(ltoir, ".ltoir")
+            for ltoir in specialization.get_lto_ir(threads=threads_in_warp)
+        ],
+        temp_storage_bytes=specialization.get_temp_storage_bytes(),
+        algorithm=specialization,
+    )
 
 
 def sum(dtype, threads_in_warp=32):
@@ -101,17 +114,28 @@ def sum(dtype, threads_in_warp=32):
     Returns:
         A callable object that can be linked to and invoked from a CUDA kernel
     """
-    template = Algorithm('WarpReduce',
-                         'Sum',
-                         'warp_reduce',
-                         ['cub/warp/warp_reduce.cuh'],
-                         [TemplateParameter('T'),
-                          TemplateParameter('VIRTUAL_WARP_THREADS')],
-                         [[Pointer(numba.uint8),
-                           DependentReference(Dependency('T')),
-                           DependentReference(Dependency('T'), True)]])
-    specialization = template.specialize({'T': dtype,
-                                          'VIRTUAL_WARP_THREADS': threads_in_warp})
-    return Invocable(temp_files=[make_binary_tempfile(ltoir, '.ltoir') for ltoir in specialization.get_lto_ir(threads=threads_in_warp)],
-                     temp_storage_bytes=specialization.get_temp_storage_bytes(),
-                     algorithm=specialization)
+    template = Algorithm(
+        "WarpReduce",
+        "Sum",
+        "warp_reduce",
+        ["cub/warp/warp_reduce.cuh"],
+        [TemplateParameter("T"), TemplateParameter("VIRTUAL_WARP_THREADS")],
+        [
+            [
+                Pointer(numba.uint8),
+                DependentReference(Dependency("T")),
+                DependentReference(Dependency("T"), True),
+            ]
+        ],
+    )
+    specialization = template.specialize(
+        {"T": dtype, "VIRTUAL_WARP_THREADS": threads_in_warp}
+    )
+    return Invocable(
+        temp_files=[
+            make_binary_tempfile(ltoir, ".ltoir")
+            for ltoir in specialization.get_lto_ir(threads=threads_in_warp)
+        ],
+        temp_storage_bytes=specialization.get_temp_storage_bytes(),
+        algorithm=specialization,
+    )
