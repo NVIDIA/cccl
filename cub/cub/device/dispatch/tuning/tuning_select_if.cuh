@@ -623,12 +623,12 @@ struct policy_hub
   struct Policy800 : ChainedPolicy<800, Policy800, Policy350>
   {
     using tuning =
-      select::sm80_tuning<InputT,
-                          select::is_flagged<FlagT>(),
-                          select::are_rejects_kept<KeepRejects>(),
-                          select::classify_offset_size<OffsetT>(),
-                          select::is_primitive<InputT>(),
-                          select::classify_input_size<InputT>()>;
+      sm80_tuning<InputT,
+                  is_flagged<FlagT>(),
+                  are_rejects_kept<KeepRejects>(),
+                  classify_offset_size<OffsetT>(),
+                  is_primitive<InputT>(),
+                  classify_input_size<InputT>()>;
 
     using SelectIfPolicyT =
       AgentSelectIfPolicy<tuning::threads,
@@ -647,12 +647,12 @@ struct policy_hub
   struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
   {
     using tuning =
-      select::sm90_tuning<InputT,
-                          select::is_flagged<FlagT>(),
-                          select::are_rejects_kept<KeepRejects>(),
-                          select::classify_offset_size<OffsetT>(),
-                          select::is_primitive<InputT>(),
-                          select::classify_input_size<InputT>()>;
+      sm90_tuning<InputT,
+                  is_flagged<FlagT>(),
+                  are_rejects_kept<KeepRejects>(),
+                  classify_offset_size<OffsetT>(),
+                  is_primitive<InputT>(),
+                  classify_input_size<InputT>()>;
 
     using SelectIfPolicyT =
       AgentSelectIfPolicy<tuning::threads,
