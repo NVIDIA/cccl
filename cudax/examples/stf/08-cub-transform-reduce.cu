@@ -103,44 +103,35 @@ auto stf_transform_reduce(Ctx& ctx, shape_t s, TransformOp &&transform_op, Binar
   // Ensure that the 
   TEST_KERNEL<<<1, 8, 0, stream>>>(itr);
 
-  t.end();
-
-
-  return result;
-#if 0
-
-
   // Determine temporary device storage requirements
+  int init_val = 0;//TODO
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
   cub::DeviceReduce::Reduce(
     d_temp_storage,
     temp_storage_bytes,
+    itr, //TODO
     (OutT*) nullptr,
-    (OutT*) nullptr,
-    data.shape().size(),
-    OpWrapper<BinaryOp>(op),
+    s.size(),
+    ReduceOpWrapper<BinaryOp>(op),
     init_val,
     0);
 
-  auto ltemp = ctx.logical_data(shape_of<slice<char>>(temp_storage_bytes));
+  cudaMallocAsync(&d_temp_storage, temp_storage_bytes, stream);
 
-  ctx.task(data.read(), result.write(), ltemp.write())
-      ->*[&op, init_val](cudaStream_t stream, auto d_data, auto d_result, auto d_temp) {
-            size_t tmp_size = d_temp.size();
-            cub::DeviceReduce::Reduce(
-              (void*) d_temp.data_handle(),
-              tmp_size,
-              d_data.begin(),
-              (OutT*) d_result.addr,
-              shape(d_data).size(),
-              OpWrapper<BinaryOp>(op),
-              init_val,
-              stream);
-          };
+  cub::DeviceReduce::Reduce(
+    d_temp_storage,
+    temp_storage_bytes,
+    itr, //TODO
+    (OutT*) ::std::get<0>(deps).addr,
+    s.size(),
+    ReduceOpWrapper<BinaryOp>(op),
+    init_val,
+    0);
+
+  t.end();
 
   return result;
-#endif
 }
 
 template <typename Ctx>
@@ -175,8 +166,8 @@ void run()
       return a + b;
     }, lX, lY);
 
-//  int result = ctx.wait(lresult);
-//  _CCCL_ASSERT(result == ref_prod, "Incorrect result");
+  int result = ctx.wait(lresult);
+  _CCCL_ASSERT(result == ref_prod, "Incorrect result");
 
   ctx.finalize();
 }
