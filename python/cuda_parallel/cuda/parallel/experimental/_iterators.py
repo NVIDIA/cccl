@@ -262,6 +262,10 @@ def make_transform_iterator(it, op):
             self._it = it
             numba_type = it.numba_type
             op_abi_name = f"{self.__class__.__name__}_{op.py_func.__name__}"
+
+            # TODO: it would be nice to not need to compile `op` to get
+            # its return type, but there's nothing in the numba API
+            # to do that (yet),
             _, op_retty = cached_compile(
                 op,
                 (self._it.value_type,),
