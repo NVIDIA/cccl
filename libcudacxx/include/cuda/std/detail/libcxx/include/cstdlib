@@ -95,6 +95,8 @@ void *aligned_alloc(size_t alignment, size_t size);                       // C11
 #  include <cstdlib>
 #endif // !_CCCL_COMPILER(NVRTC)
 
+#include <cuda/std/__cstdlib/abs.h>
+
 _CCCL_PUSH_MACROS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
@@ -137,15 +139,10 @@ using ::srand;
 using ::getenv;
 using ::system;
 #  endif
-using ::abs;
 using ::bsearch;
-using ::labs;
-using ::qsort;
-#  ifndef _LIBCUDACXX_HAS_NO_LONG_LONG
-using ::llabs;
-#  endif // _LIBCUDACXX_HAS_NO_LONG_LONG
 using ::div;
 using ::ldiv;
+using ::qsort;
 #  ifndef _LIBCUDACXX_HAS_NO_LONG_LONG
 using ::lldiv;
 #  endif // _LIBCUDACXX_HAS_NO_LONG_LONG

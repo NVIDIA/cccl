@@ -146,6 +146,18 @@
 #  define _CCCL_BUILTIN_EXPECT(...) __builtin_expect(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_expect)
 
+#if _CCCL_CHECK_BUILTIN(builtin_abs)
+#  define _CCCL_BUILTIN_ABS(...) __builtin_abs(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_abs)
+
+#if _CCCL_CHECK_BUILTIN(builtin_labs)
+#  define _CCCL_BUILTIN_LABS(...) __builtin_labs(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_labs)
+
+#if _CCCL_CHECK_BUILTIN(builtin_llabs)
+#  define _CCCL_BUILTIN_LLABS(...) __builtin_llabs(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_llabs)
+
 #if _CCCL_CHECK_BUILTIN(builtin_fmax) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_FMAXF(...) __builtin_fmaxf(__VA_ARGS__)
 #  define _CCCL_BUILTIN_FMAX(...)  __builtin_fmax(__VA_ARGS__)
