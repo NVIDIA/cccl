@@ -7,3 +7,4 @@ from cuda.cooperative.experimental.block._block_reduce import reduce, sum
 from cuda.cooperative.experimental.block._block_scan import exclusive_sum
 from cuda.cooperative.experimental.block._block_radix_sort import radix_sort_keys, radix_sort_keys_descending
 from cuda.cooperative.experimental.block._block_load_store import load, store
+from cuda.cooperative.experimental.block._block_exchange import striped_to_blocked
