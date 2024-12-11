@@ -54,3 +54,9 @@ def find_dim2(name, txt):
 
 def find_dim3(name, txt):
     return (find_unsigned(f'{name}_x', txt), find_unsigned(f'{name}_y', txt), find_unsigned(f'{name}_z', txt))
+
+def normalize_dim_param(dim):
+    x = dim[0] if type(dim) is not int else dim
+    y = dim[1] if type(dim) is not int and len(dim) >= 2 else 1
+    z = dim[2] if type(dim) is not int and len(dim) >= 3 else 1
+    return (x, y, z)

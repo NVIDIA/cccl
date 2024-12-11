@@ -4,7 +4,7 @@
 
 
 from cuda.cooperative.experimental._types import *
-from cuda.cooperative.experimental._common import make_binary_tempfile
+from cuda.cooperative.experimental._common import make_binary_tempfile, normalize_dim_param
 
 CUB_BLOCK_LOAD_ALGOS = {
     "direct": "::cub::BLOCK_LOAD_DIRECT",
@@ -24,8 +24,8 @@ CUB_BLOCK_STORE_ALGOS = {
     "warp_transpose_timesliced": "::cub::BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED",
 }
 
-
 def load(dtype, threads_in_block, items_per_thread=1, algorithm="direct"):
+    dim = normalize_dim_param(threads_in_block)
     template = Algorithm(
         "BlockLoad",
         "Load",
@@ -36,6 +36,8 @@ def load(dtype, threads_in_block, items_per_thread=1, algorithm="direct"):
             TemplateParameter("BLOCK_DIM_X"),
             TemplateParameter("ITEMS_PER_THREAD"),
             TemplateParameter("ALGORITHM"),
+            TemplateParameter("BLOCK_DIM_Y"),
+            TemplateParameter("BLOCK_DIM_Z"),
         ],
         [
             [
@@ -48,9 +50,11 @@ def load(dtype, threads_in_block, items_per_thread=1, algorithm="direct"):
     specialization = template.specialize(
         {
             "T": dtype,
-            "BLOCK_DIM_X": threads_in_block,
+            "BLOCK_DIM_X": dim[0],
             "ITEMS_PER_THREAD": items_per_thread,
-            "ALGORITHM": CUB_BLOCK_LOAD_ALGOS[algorithm],
+            "ALGORITHM": CUB_BLOCK_STORE_ALGOS[algorithm],
+            "BLOCK_DIM_Y": dim[1],
+            "BLOCK_DIM_Z": dim[2],
         }
     )
     return Invocable(
@@ -64,6 +68,7 @@ def load(dtype, threads_in_block, items_per_thread=1, algorithm="direct"):
 
 
 def store(dtype, threads_in_block, items_per_thread=1, algorithm="direct"):
+    dim = normalize_dim_param(threads_in_block)
     template = Algorithm(
         "BlockStore",
         "Store",
@@ -74,6 +79,8 @@ def store(dtype, threads_in_block, items_per_thread=1, algorithm="direct"):
             TemplateParameter("BLOCK_DIM_X"),
             TemplateParameter("ITEMS_PER_THREAD"),
             TemplateParameter("ALGORITHM"),
+            TemplateParameter("BLOCK_DIM_Y"),
+            TemplateParameter("BLOCK_DIM_Z"),
         ],
         [
             [
@@ -86,9 +93,11 @@ def store(dtype, threads_in_block, items_per_thread=1, algorithm="direct"):
     specialization = template.specialize(
         {
             "T": dtype,
-            "BLOCK_DIM_X": threads_in_block,
+            "BLOCK_DIM_X": dim[0],
             "ITEMS_PER_THREAD": items_per_thread,
             "ALGORITHM": CUB_BLOCK_STORE_ALGOS[algorithm],
+            "BLOCK_DIM_Y": dim[1],
+            "BLOCK_DIM_Z": dim[2],
         }
     )
     return Invocable(
