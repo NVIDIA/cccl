@@ -24,8 +24,6 @@
 
 #if !_CCCL_COMPILER(NVRTC)
 #  include <cstddef>
-
-#  include <stddef.h>
 #else
 #  if !defined(offsetof)
 #    define offsetof(type, member) (::size_t)((char*) &(((type*) 0)->member) - (char*) 0)
