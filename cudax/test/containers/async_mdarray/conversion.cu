@@ -24,6 +24,9 @@
 #include "types.h"
 #include <catch2/catch.hpp>
 
+template <class>
+void print() = delete;
+
 TEMPLATE_TEST_CASE("cudax::async_mdarray conversion",
                    "[container][async_mdarray]",
                    cuda::std::tuple<cuda::mr::host_accessible>,
@@ -257,7 +260,8 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray conversion",
   SECTION("Conversion to mdspan with different layout")
   {
     Array vec{env, 42, T{42}};
-    using layout = cuda::std::layout_left;
+    using layout  = cuda::std::layout_left;
+    using mapping = typename layout::mapping<cuda::std::dims<1>>;
     struct accessor : cuda::std::default_accessor<int>
     {};
     struct const_accessor : cuda::std::default_accessor<const int>
@@ -266,8 +270,8 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray conversion",
     { // conversion
       const cuda::std::mdspan<int, cuda::std::dims<1>, layout, accessor> mdspan = vec;
       CHECK(vec.data() == mdspan.data_handle());
-      CHECK(vec.mapping() == mdspan.mapping());
       CHECK(vec.extents() == mdspan.extents());
+      STATIC_REQUIRE(cuda::std::is_same_v<decltype(mdspan.mapping()), const mapping&>);
     }
   }
 }
