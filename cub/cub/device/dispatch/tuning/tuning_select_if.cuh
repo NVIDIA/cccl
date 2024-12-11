@@ -82,230 +82,6 @@ enum class input_size
 };
 
 template <class InputT, flagged, keep_rejects, offset_size OffsetSize, primitive, input_size InputSize>
-struct sm90_tuning
-{
-  static constexpr int threads                     = 128;
-  static constexpr int nominal_4b_items_per_thread = 10;
-  // TODO(bgruber): use cuda::std::clamp() in C++14
-  static constexpr int items =
-    CUB_MIN(nominal_4b_items_per_thread, CUB_MAX(1, (nominal_4b_items_per_thread * 4 / sizeof(InputT))));
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = detail::fixed_delay_constructor_t<350, 450>;
-};
-
-// select::if
-template <class Input>
-struct sm90_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primitive::yes, input_size::_1>
-{
-  static constexpr int threads                       = 256;
-  static constexpr int items                         = 22;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = detail::no_delay_constructor_t<580>;
-};
-
-template <class Input>
-struct sm90_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primitive::yes, input_size::_2>
-{
-  static constexpr int threads                       = 256;
-  static constexpr int items                         = 22;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = detail::fixed_delay_constructor_t<320, 605>;
-};
-
-template <class Input>
-struct sm90_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primitive::yes, input_size::_4>
-{
-  static constexpr int threads                       = 384;
-  static constexpr int items                         = 17;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = detail::fixed_delay_constructor_t<76, 1150>;
-};
-
-template <class Input>
-struct sm90_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primitive::yes, input_size::_8>
-{
-  static constexpr int threads                       = 384;
-  static constexpr int items                         = 11;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = detail::fixed_delay_constructor_t<380, 1140>;
-};
-
-#if CUB_IS_INT128_ENABLED
-template <>
-struct sm90_tuning<__int128_t, flagged::no, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
-{
-  static constexpr int threads                       = 512;
-  static constexpr int items                         = 5;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = detail::fixed_delay_constructor_t<460, 1145>;
-};
-
-template <>
-struct sm90_tuning<__uint128_t, flagged::no, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
-    : sm90_tuning<__int128_t, flagged::no, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
-{};
-#endif
-
-// select::flagged
-template <class Input>
-struct sm90_tuning<Input, flagged::yes, keep_rejects::no, offset_size::_4, primitive::yes, input_size::_1>
-{
-  static constexpr int threads                       = 448;
-  static constexpr int items                         = 20;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = detail::no_delay_constructor_t<715>;
-};
-
-template <class Input>
-struct sm90_tuning<Input, flagged::yes, keep_rejects::no, offset_size::_4, primitive::yes, input_size::_2>
-{
-  static constexpr int threads                       = 448;
-  static constexpr int items                         = 20;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = detail::fixed_delay_constructor_t<504, 765>;
-};
-
-template <class Input>
-struct sm90_tuning<Input, flagged::yes, keep_rejects::no, offset_size::_4, primitive::yes, input_size::_4>
-{
-  static constexpr int threads                       = 384;
-  static constexpr int items                         = 15;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = detail::fixed_delay_constructor_t<415, 1125>;
-};
-
-template <class Input>
-struct sm90_tuning<Input, flagged::yes, keep_rejects::no, offset_size::_4, primitive::yes, input_size::_8>
-{
-  static constexpr int threads                       = 384;
-  static constexpr int items                         = 11;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = detail::fixed_delay_constructor_t<360, 1170>;
-};
-
-#if CUB_IS_INT128_ENABLED
-template <>
-struct sm90_tuning<__int128_t, flagged::yes, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
-{
-  static constexpr int threads                       = 512;
-  static constexpr int items                         = 3;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = detail::fixed_delay_constructor_t<284, 1130>;
-};
-
-template <>
-struct sm90_tuning<__uint128_t, flagged::yes, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
-    : sm90_tuning<__int128_t, flagged::yes, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
-{};
-#endif
-
-// partition::if
-template <class Input>
-struct sm90_tuning<Input, flagged::no, keep_rejects::yes, offset_size::_4, primitive::yes, input_size::_1>
-{
-  static constexpr int threads                       = 384;
-  static constexpr int items                         = 20;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = detail::fixed_delay_constructor_t<908, 995>;
-};
-
-template <class Input>
-struct sm90_tuning<Input, flagged::no, keep_rejects::yes, offset_size::_4, primitive::yes, input_size::_2>
-{
-  static constexpr int threads                       = 320;
-  static constexpr int items                         = 14;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = detail::fixed_delay_constructor_t<500, 560>;
-};
-
-template <class Input>
-struct sm90_tuning<Input, flagged::no, keep_rejects::yes, offset_size::_4, primitive::yes, input_size::_4>
-{
-  static constexpr int threads                       = 256;
-  static constexpr int items                         = 14;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = detail::fixed_delay_constructor_t<536, 1055>;
-};
-
-template <class Input>
-struct sm90_tuning<Input, flagged::no, keep_rejects::yes, offset_size::_4, primitive::yes, input_size::_8>
-{
-  static constexpr int threads                       = 128;
-  static constexpr int items                         = 12;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = detail::fixed_delay_constructor_t<512, 1075>;
-};
-
-#if CUB_IS_INT128_ENABLED
-template <>
-struct sm90_tuning<__int128_t, flagged::no, keep_rejects::yes, offset_size::_4, primitive::no, input_size::_16>
-{
-  static constexpr int threads                       = 192;
-  static constexpr int items                         = 5;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = detail::fixed_delay_constructor_t<1616, 1115>;
-};
-
-template <>
-struct sm90_tuning<__uint128_t, flagged::no, keep_rejects::yes, offset_size::_4, primitive::no, input_size::_16>
-    : sm90_tuning<__int128_t, flagged::no, keep_rejects::yes, offset_size::_4, primitive::no, input_size::_16>
-{};
-#endif
-
-// partition::flagged
-template <class Input>
-struct sm90_tuning<Input, flagged::yes, keep_rejects::yes, offset_size::_4, primitive::yes, input_size::_1>
-{
-  static constexpr int threads                       = 256;
-  static constexpr int items                         = 20;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = detail::fixed_delay_constructor_t<580, 850>;
-};
-
-template <class Input>
-struct sm90_tuning<Input, flagged::yes, keep_rejects::yes, offset_size::_4, primitive::yes, input_size::_2>
-{
-  static constexpr int threads                       = 512;
-  static constexpr int items                         = 20;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = detail::fixed_delay_constructor_t<388, 1055>;
-};
-
-template <class Input>
-struct sm90_tuning<Input, flagged::yes, keep_rejects::yes, offset_size::_4, primitive::yes, input_size::_4>
-{
-  static constexpr int threads                       = 256;
-  static constexpr int items                         = 20;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = detail::fixed_delay_constructor_t<72, 1165>;
-};
-
-template <class Input>
-struct sm90_tuning<Input, flagged::yes, keep_rejects::yes, offset_size::_4, primitive::yes, input_size::_8>
-{
-  static constexpr int threads                       = 224;
-  static constexpr int items                         = 6;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = detail::fixed_delay_constructor_t<532, 1180>;
-};
-
-#if CUB_IS_INT128_ENABLED
-template <>
-struct sm90_tuning<__int128_t, flagged::yes, keep_rejects::yes, offset_size::_4, primitive::no, input_size::_16>
-{
-  static constexpr int threads                       = 160;
-  static constexpr int items                         = 5;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = detail::fixed_delay_constructor_t<720, 1105>;
-};
-
-template <>
-struct sm90_tuning<__uint128_t, flagged::yes, keep_rejects::yes, offset_size::_4, primitive::no, input_size::_16>
-    : sm90_tuning<__int128_t, flagged::yes, keep_rejects::yes, offset_size::_4, primitive::no, input_size::_16>
-{};
-#endif
-
-template <class InputT, flagged, keep_rejects, offset_size OffsetSize, primitive, input_size InputSize>
 struct sm80_tuning
 {
   static constexpr int threads                     = 128;
@@ -529,6 +305,230 @@ struct sm80_tuning<__uint128_t, flagged::yes, keep_rejects::yes, offset_size::_4
 {};
 #endif
 
+template <class InputT, flagged, keep_rejects, offset_size OffsetSize, primitive, input_size InputSize>
+struct sm90_tuning
+{
+  static constexpr int threads                     = 128;
+  static constexpr int nominal_4b_items_per_thread = 10;
+  // TODO(bgruber): use cuda::std::clamp() in C++14
+  static constexpr int items =
+    CUB_MIN(nominal_4b_items_per_thread, CUB_MAX(1, (nominal_4b_items_per_thread * 4 / sizeof(InputT))));
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<350, 450>;
+};
+
+// select::if
+template <class Input>
+struct sm90_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primitive::yes, input_size::_1>
+{
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 22;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  using delay_constructor                            = detail::no_delay_constructor_t<580>;
+};
+
+template <class Input>
+struct sm90_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primitive::yes, input_size::_2>
+{
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 22;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<320, 605>;
+};
+
+template <class Input>
+struct sm90_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primitive::yes, input_size::_4>
+{
+  static constexpr int threads                       = 384;
+  static constexpr int items                         = 17;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<76, 1150>;
+};
+
+template <class Input>
+struct sm90_tuning<Input, flagged::no, keep_rejects::no, offset_size::_4, primitive::yes, input_size::_8>
+{
+  static constexpr int threads                       = 384;
+  static constexpr int items                         = 11;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<380, 1140>;
+};
+
+#if CUB_IS_INT128_ENABLED
+template <>
+struct sm90_tuning<__int128_t, flagged::no, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
+{
+  static constexpr int threads                       = 512;
+  static constexpr int items                         = 5;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<460, 1145>;
+};
+
+template <>
+struct sm90_tuning<__uint128_t, flagged::no, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
+    : sm90_tuning<__int128_t, flagged::no, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
+{};
+#endif
+
+// select::flagged
+template <class Input>
+struct sm90_tuning<Input, flagged::yes, keep_rejects::no, offset_size::_4, primitive::yes, input_size::_1>
+{
+  static constexpr int threads                       = 448;
+  static constexpr int items                         = 20;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  using delay_constructor                            = detail::no_delay_constructor_t<715>;
+};
+
+template <class Input>
+struct sm90_tuning<Input, flagged::yes, keep_rejects::no, offset_size::_4, primitive::yes, input_size::_2>
+{
+  static constexpr int threads                       = 448;
+  static constexpr int items                         = 20;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<504, 765>;
+};
+
+template <class Input>
+struct sm90_tuning<Input, flagged::yes, keep_rejects::no, offset_size::_4, primitive::yes, input_size::_4>
+{
+  static constexpr int threads                       = 384;
+  static constexpr int items                         = 15;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<415, 1125>;
+};
+
+template <class Input>
+struct sm90_tuning<Input, flagged::yes, keep_rejects::no, offset_size::_4, primitive::yes, input_size::_8>
+{
+  static constexpr int threads                       = 384;
+  static constexpr int items                         = 11;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<360, 1170>;
+};
+
+#if CUB_IS_INT128_ENABLED
+template <>
+struct sm90_tuning<__int128_t, flagged::yes, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
+{
+  static constexpr int threads                       = 512;
+  static constexpr int items                         = 3;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<284, 1130>;
+};
+
+template <>
+struct sm90_tuning<__uint128_t, flagged::yes, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
+    : sm90_tuning<__int128_t, flagged::yes, keep_rejects::no, offset_size::_4, primitive::no, input_size::_16>
+{};
+#endif
+
+// partition::if
+template <class Input>
+struct sm90_tuning<Input, flagged::no, keep_rejects::yes, offset_size::_4, primitive::yes, input_size::_1>
+{
+  static constexpr int threads                       = 384;
+  static constexpr int items                         = 20;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<908, 995>;
+};
+
+template <class Input>
+struct sm90_tuning<Input, flagged::no, keep_rejects::yes, offset_size::_4, primitive::yes, input_size::_2>
+{
+  static constexpr int threads                       = 320;
+  static constexpr int items                         = 14;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<500, 560>;
+};
+
+template <class Input>
+struct sm90_tuning<Input, flagged::no, keep_rejects::yes, offset_size::_4, primitive::yes, input_size::_4>
+{
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 14;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<536, 1055>;
+};
+
+template <class Input>
+struct sm90_tuning<Input, flagged::no, keep_rejects::yes, offset_size::_4, primitive::yes, input_size::_8>
+{
+  static constexpr int threads                       = 128;
+  static constexpr int items                         = 12;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<512, 1075>;
+};
+
+#if CUB_IS_INT128_ENABLED
+template <>
+struct sm90_tuning<__int128_t, flagged::no, keep_rejects::yes, offset_size::_4, primitive::no, input_size::_16>
+{
+  static constexpr int threads                       = 192;
+  static constexpr int items                         = 5;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<1616, 1115>;
+};
+
+template <>
+struct sm90_tuning<__uint128_t, flagged::no, keep_rejects::yes, offset_size::_4, primitive::no, input_size::_16>
+    : sm90_tuning<__int128_t, flagged::no, keep_rejects::yes, offset_size::_4, primitive::no, input_size::_16>
+{};
+#endif
+
+// partition::flagged
+template <class Input>
+struct sm90_tuning<Input, flagged::yes, keep_rejects::yes, offset_size::_4, primitive::yes, input_size::_1>
+{
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 20;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<580, 850>;
+};
+
+template <class Input>
+struct sm90_tuning<Input, flagged::yes, keep_rejects::yes, offset_size::_4, primitive::yes, input_size::_2>
+{
+  static constexpr int threads                       = 512;
+  static constexpr int items                         = 20;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<388, 1055>;
+};
+
+template <class Input>
+struct sm90_tuning<Input, flagged::yes, keep_rejects::yes, offset_size::_4, primitive::yes, input_size::_4>
+{
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 20;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<72, 1165>;
+};
+
+template <class Input>
+struct sm90_tuning<Input, flagged::yes, keep_rejects::yes, offset_size::_4, primitive::yes, input_size::_8>
+{
+  static constexpr int threads                       = 224;
+  static constexpr int items                         = 6;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<532, 1180>;
+};
+
+#if CUB_IS_INT128_ENABLED
+template <>
+struct sm90_tuning<__int128_t, flagged::yes, keep_rejects::yes, offset_size::_4, primitive::no, input_size::_16>
+{
+  static constexpr int threads                       = 160;
+  static constexpr int items                         = 5;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<720, 1105>;
+};
+
+template <>
+struct sm90_tuning<__uint128_t, flagged::yes, keep_rejects::yes, offset_size::_4, primitive::no, input_size::_16>
+    : sm90_tuning<__int128_t, flagged::yes, keep_rejects::yes, offset_size::_4, primitive::no, input_size::_16>
+{};
+#endif
+
 template <class InputT>
 constexpr primitive is_primitive()
 {
@@ -538,7 +538,7 @@ constexpr primitive is_primitive()
 template <class FlagT>
 constexpr flagged is_flagged()
 {
-  return std::is_same<FlagT, NullType>::value ? flagged::no : flagged::yes;
+  return ::cuda::std::is_same<FlagT, NullType>::value ? flagged::no : flagged::yes;
 }
 
 template <bool KeepRejects>
