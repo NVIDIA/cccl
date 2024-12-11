@@ -1,37 +1,16 @@
 // -*- C++ -*-
-//===--------------------------- cstddef ----------------------------------===//
+//===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX_CSTDDEF
-#define _LIBCUDACXX_CSTDDEF
-
-/*
-    cstddef synopsis
-
-Macros:
-
-    offsetof(type,member-designator)
-    NULL
-
-namespace std
-{
-
-Types:
-
-    ptrdiff_t
-    size_t
-    max_align_t
-    nullptr_t
-    byte // C++17
-
-}  // std
-
-*/
+#ifndef _LIBCUDACXX___CSTDDEF_BYTE_H
+#define _LIBCUDACXX___CSTDDEF_BYTE_H
 
 #include <cuda/std/detail/__config>
 
@@ -43,27 +22,8 @@ Types:
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__cuda/cstddef_prelude.h>
-#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_integral.h>
-#include <cuda/std/version>
-
-_CCCL_PUSH_MACROS
-
-_LIBCUDACXX_BEGIN_NAMESPACE_STD
-
-using ::ptrdiff_t;
-using ::size_t;
-
-#if defined(__CLANG_MAX_ALIGN_T_DEFINED) || defined(_GCC_MAX_ALIGN_T) || defined(__DEFINED_max_align_t) \
-  || defined(__NetBS)
-// Re-use the compiler's <stddef.h> max_align_t where possible.
-using ::max_align_t;
-#else
-typedef long double max_align_t;
-#endif
-
-_LIBCUDACXX_END_NAMESPACE_STD
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD_NOVERSION
 
@@ -109,43 +69,41 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr byte operator~(byte __b) noexcept
   return static_cast<byte>(static_cast<unsigned char>(~static_cast<unsigned int>(__b)));
 }
 
-template <class _Integer>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 enable_if_t<_CCCL_TRAIT(is_integral, _Integer), byte>&
-operator<<=(byte& __lhs, _Integer __shift) noexcept
+_CCCL_TEMPLATE(class _Integer)
+_CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Integer))
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 byte& operator<<=(byte& __lhs, _Integer __shift) noexcept
 {
   return __lhs = __lhs << __shift;
 }
 
-template <class _Integer>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<_CCCL_TRAIT(is_integral, _Integer), byte>
-operator<<(byte __lhs, _Integer __shift) noexcept
+_CCCL_TEMPLATE(class _Integer)
+_CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Integer))
+_LIBCUDACXX_HIDE_FROM_ABI constexpr byte operator<<(byte __lhs, _Integer __shift) noexcept
 {
   return static_cast<byte>(static_cast<unsigned char>(static_cast<unsigned int>(__lhs) << __shift));
 }
 
-template <class _Integer>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 enable_if_t<_CCCL_TRAIT(is_integral, _Integer), byte>&
-operator>>=(byte& __lhs, _Integer __shift) noexcept
+_CCCL_TEMPLATE(class _Integer)
+_CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Integer))
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 byte& operator>>=(byte& __lhs, _Integer __shift) noexcept
 {
   return __lhs = __lhs >> __shift;
 }
 
-template <class _Integer>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<_CCCL_TRAIT(is_integral, _Integer), byte>
-operator>>(byte __lhs, _Integer __shift) noexcept
+_CCCL_TEMPLATE(class _Integer)
+_CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Integer))
+_LIBCUDACXX_HIDE_FROM_ABI constexpr byte operator>>(byte __lhs, _Integer __shift) noexcept
 {
   return static_cast<byte>(static_cast<unsigned char>(static_cast<unsigned int>(__lhs) >> __shift));
 }
 
-template <class _Integer>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<_CCCL_TRAIT(is_integral, _Integer), _Integer>
-to_integer(byte __b) noexcept
+_CCCL_TEMPLATE(class _Integer)
+_CCCL_REQUIRES(_CCCL_TRAIT(is_integral, _Integer))
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _Integer to_integer(byte __b) noexcept
 {
   return static_cast<_Integer>(__b);
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD_NOVERSION
 
-_CCCL_POP_MACROS
-
-#endif // _LIBCUDACXX_CSTDDEF
+#endif // _LIBCUDACXX___CSTDDEF_BYTE_H

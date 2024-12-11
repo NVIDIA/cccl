@@ -1,15 +1,16 @@
+// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
 // Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD_CSTDDEF
-#define _CUDA_STD_CSTDDEF
+#ifndef _LIBCUDACXX___CSTDDEF_PRELUDE_H
+#define _LIBCUDACXX___CSTDDEF_PRELUDE_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,14 +22,14 @@
 #  pragma system_header
 #endif // no system header
 
-_CCCL_PUSH_MACROS
+#if !_CCCL_COMPILER(NVRTC)
+#  include <cstddef>
 
-#include <cuda/std/__cstddef/byte.h>
-#include <cuda/std/__cstddef/max_align_t.h>
-#include <cuda/std/__cstddef/nullptr_t.h>
-#include <cuda/std/__cstddef/ptrdiff_t.h>
-#include <cuda/std/__cstddef/size_t.h>
+#  include <stddef.h>
+#endif // !_CCCL_COMPILER(NVRTC)
 
-_CCCL_POP_MACROS
+#ifndef offsetof
+#  define offsetof(type, member) (::size_t)((char*) &(((type*) 0)->member) - (char*) 0)
+#endif
 
-#endif // _CUDA_STD_CSTDDEF
+#endif // _LIBCUDACXX___CSTDDEF_PRELUDE_H

@@ -1,15 +1,16 @@
+// -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
 // Part of libcu++, the C++ Standard Library for your entire system,
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _CUDA_STD_CSTDDEF
-#define _CUDA_STD_CSTDDEF
+#ifndef _LIBCUDACXX___CSTDDEF_NULLPTR_T_H
+#define _LIBCUDACXX___CSTDDEF_NULLPTR_T_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,14 +22,10 @@
 #  pragma system_header
 #endif // no system header
 
-_CCCL_PUSH_MACROS
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#include <cuda/std/__cstddef/byte.h>
-#include <cuda/std/__cstddef/max_align_t.h>
-#include <cuda/std/__cstddef/nullptr_t.h>
-#include <cuda/std/__cstddef/ptrdiff_t.h>
-#include <cuda/std/__cstddef/size_t.h>
+using nullptr_t = decltype(nullptr);
 
-_CCCL_POP_MACROS
+_LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _CUDA_STD_CSTDDEF
+#endif // _LIBCUDACXX___CSTDDEF_NULLPTR_T_H

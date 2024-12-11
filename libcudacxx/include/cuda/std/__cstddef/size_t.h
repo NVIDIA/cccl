@@ -1,15 +1,16 @@
 // -*- C++ -*-
 //===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CUDA_CSTDDEF_PRELUDE_H
-#define _LIBCUDACXX___CUDA_CSTDDEF_PRELUDE_H
+#ifndef _LIBCUDACXX___CSTDDEF_SIZE_T_H
+#define _LIBCUDACXX___CSTDDEF_SIZE_T_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,18 +22,12 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC)
-#  include <cstddef>
-
-#  include <stddef.h>
-#else
-#  define offsetof(type, member) (_CUDA_VSTD::size_t)((char*) &(((type*) 0)->member) - (char*) 0)
-#endif // _CCCL_COMPILER(NVRTC)
+#include <cuda/std/__cstddef/prelude.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-typedef decltype(nullptr) nullptr_t;
+using ::size_t;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _LIBCUDACXX___CUDA_CSTDDEF_PRELUDE_H
+#endif // _LIBCUDACXX___CSTDDEF_SIZE_T_H
