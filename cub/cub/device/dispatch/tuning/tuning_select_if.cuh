@@ -596,10 +596,9 @@ constexpr offset_size classify_offset_size()
 {
   return sizeof(OffsetT) == 4 ? offset_size::_4 : sizeof(OffsetT) == 8 ? offset_size::_8 : offset_size::unknown;
 }
-} // namespace select
 
 template <class InputT, class FlagT, class OffsetT, bool MayAlias, bool KeepRejects>
-struct device_select_policy_hub
+struct policy_hub
 {
   struct DefaultTuning
   {
@@ -666,6 +665,7 @@ struct device_select_policy_hub
 
   using MaxPolicy = Policy900;
 };
+} // namespace select
 } // namespace detail
 
 CUB_NAMESPACE_END
