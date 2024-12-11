@@ -33,11 +33,10 @@ struct csr_matrix
   }
 
   /* Description of the CSR */
-  logical_data<slice<double>> val_handle;
-  logical_data<slice<size_t>> row_handle;
-  logical_data<slice<size_t>> col_handle;
-
-  context ctx;
+  mutable logical_data<slice<double>> val_handle;
+  mutable logical_data<slice<size_t>> row_handle;
+  mutable logical_data<slice<size_t>> col_handle;
+  mutable context ctx;
 };
 
 class vector
@@ -81,8 +80,8 @@ public:
     return handle.shape().size();
   }
 
-  logical_data<slice<double>> handle;
-  context ctx;
+  mutable logical_data<slice<double>> handle;
+  mutable context ctx;
 };
 
 class scalar
@@ -132,8 +131,8 @@ public:
     return res;
   }
 
-  logical_data<scalar_view<double>> handle;
-  context ctx;
+  mutable logical_data<scalar_view<double>> handle;
+  mutable context ctx;
 };
 
 scalar DOT(vector& a, vector& b)
