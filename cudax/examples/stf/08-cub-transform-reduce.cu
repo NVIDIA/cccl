@@ -39,8 +39,6 @@ struct FancyIterator
       return ::std::apply(explode_coords, shape.index_to_coords(index));
     };
     return ::std::apply(explode_args, targs);
-    // int res = ::std::apply(explode_args, targs);
-    // return res; // test if that is an int
   }
 
   TransformOp op;
@@ -63,10 +61,6 @@ struct ReduceOpWrapper
   BinaryOp op;
 };
 
-// Helper: Extract `element_type` from a type
-template <typename T>
-using element_type_t = typename T::element_type;
-
 // This should print the output of the transform op (which is an int)
 template <typename It>
 __global__ void TEST_KERNEL(It it)
@@ -86,13 +80,13 @@ auto remove_first(const Tuple& t)
 
 template <typename Ctx, typename shape_t, typename TransformOp, typename BinaryOp, typename... Args>
 auto stf_transform_reduce(
-  Ctx& ctx, shape_t s, TransformOp&& transform_op, BinaryOp&& op /*, OutT init_val*/, Args... args)
+  Ctx& ctx, shape_t s, TransformOp&& transform_op, BinaryOp&& op /*, OutT init_val*/, logical_data<Args>... args)
 {
   // TODO
   //  using OutT = typename ::std::result_of<TransformOp>::type; or use ::std::invoke_result
   using OutT = int;
 
-  using ConvertionOp_t = FancyIterator<TransformOp, shape_t, element_type_t<Args>...>;
+  using ConvertionOp_t = FancyIterator<TransformOp, shape_t, Args...>;
 
   auto result = ctx.logical_data(shape_of<scalar<OutT>>());
 
@@ -120,14 +114,14 @@ auto stf_transform_reduce(
   cub::DeviceReduce::Reduce(
     d_temp_storage,
     temp_storage_bytes,
-    itr, // TODO
+    itr,//*static_cast<decltype(itr) *>(nullptr), // TODO
     (OutT*) nullptr,
     s.size(),
     ReduceOpWrapper<BinaryOp>(op),
     init_val,
     0);
 
-  cudaMallocAsync(&d_temp_storage, temp_storage_bytes, stream);
+  cuda_safe_call(cudaMallocAsync(&d_temp_storage, temp_storage_bytes, stream));
 
   cub::DeviceReduce::Reduce(
     d_temp_storage,
@@ -138,6 +132,8 @@ auto stf_transform_reduce(
     ReduceOpWrapper<BinaryOp>(op),
     init_val,
     0);
+
+  cuda_safe_call(cudaFreeAsync(d_temp_storage, stream));
 
   t.end();
 
@@ -174,9 +170,7 @@ void run()
     },
     [] __device__(const int& a, const int& b) {
       return a + b;
-    },
-    lX,
-    lY);
+    }, lX, lY);
 
   int result = ctx.wait(lresult);
   _CCCL_ASSERT(result == ref_prod, "Incorrect result");
