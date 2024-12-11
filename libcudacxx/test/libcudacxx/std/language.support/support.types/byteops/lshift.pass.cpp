@@ -10,8 +10,6 @@
 
 #include <test_macros.h>
 
-// UNSUPPORTED: c++98, c++03, c++11, c++14
-
 // template <class IntegerType>
 //    constexpr byte operator <<(byte b, IntegerType shift) noexcept;
 // These functions shall not participate in overload resolution unless
