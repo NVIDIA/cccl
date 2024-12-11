@@ -41,9 +41,32 @@ def cached_compile(func, sig, abi_name=None, **kwargs):
 
 
 class IteratorBase:
-    def __init__(self, value_type, numba_type, abi_name):
-        self.value_type = value_type
+    """
+    An Iterator is a wrapper around a pointer, and must define the following:
+
+    - a `state` property that returns a `ctypes.c_void_p` object, representing
+      a pointer to some data.
+    - an `advance` (static) method that receives the state pointer and performs
+      an action that advances the pointer by the offset `distance`
+      (returns nothing).
+    - a `dereference` (static) method that dereferences the state pointer
+      and returns a value.
+    """
+
+    def __init__(self, numba_type, value_type, abi_name):
+        """
+        Parameters
+        ----------
+        numba_type
+          A numba type that specifies how to interpret the state pointer.
+        value_type
+          The numba type of the value returned by the dereference operation.
+        abi_name
+          A unique identifier that will determine the abi_names for the
+          advance and dereference operations.
+        """
         self.numba_type = numba_type
+        self.value_type = value_type
         self.abi_name = abi_name
 
     @cached_property
@@ -118,8 +141,8 @@ class RawPointer(IteratorBase):
         numba_type = numba.types.CPointer(numba.types.CPointer(value_type))
         abi_name = f"{self.__class__.__name__}_{str(value_type)}"
         super().__init__(
-            value_type=value_type,
             numba_type=numba_type,
+            value_type=value_type,
             abi_name=abi_name,
         )
 
@@ -181,8 +204,8 @@ class CacheModifiedPointer(IteratorBase):
         numba_type = numba.types.CPointer(numba.types.CPointer(value_type))
         abi_name = f"{self.__class__.__name__}_{str(value_type)}"
         super().__init__(
-            value_type=value_type,
             numba_type=numba_type,
+            value_type=value_type,
             abi_name=abi_name,
         )
 
@@ -206,13 +229,13 @@ class ConstantIterator(IteratorBase):
         numba_type = numba.types.CPointer(value_type)
         abi_name = f"{self.__class__.__name__}_{str(value_type)}"
         super().__init__(
-            value_type=value_type,
             numba_type=numba_type,
+            value_type=value_type,
             abi_name=abi_name,
         )
 
     @staticmethod
-    def advance(it, n):
+    def advance(it, distance):
         pass
 
     @staticmethod
@@ -231,14 +254,14 @@ class CountingIterator(IteratorBase):
         numba_type = numba.types.CPointer(value_type)
         abi_name = f"{self.__class__.__name__}_{str(value_type)}"
         super().__init__(
-            value_type=value_type,
             numba_type=numba_type,
+            value_type=value_type,
             abi_name=abi_name,
         )
 
     @staticmethod
-    def advance(it, n):
-        it[0] += n
+    def advance(it, distance):
+        it[0] += distance
 
     @staticmethod
     def dereference(it):
@@ -275,14 +298,14 @@ def make_transform_iterator(it, op):
             value_type = op_retty
             abi_name = f"{self.__class__.__name__}_{it.abi_name}_{op_abi_name}"
             super().__init__(
-                value_type=value_type,
                 numba_type=numba_type,
+                value_type=value_type,
                 abi_name=abi_name,
             )
 
         @staticmethod
-        def advance(it, n):
-            return it_advance(it, n)
+        def advance(it, distance):
+            return it_advance(it, distance)
 
         @staticmethod
         def dereference(it):
