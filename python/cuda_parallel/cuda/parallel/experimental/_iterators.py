@@ -41,8 +41,7 @@ def cached_compile(func, sig, abi_name=None, **kwargs):
 
 
 class IteratorBase:
-    def __init__(self, cvalue, value_type, numba_type, abi_name):
-        self.cvalue = cvalue
+    def __init__(self, value_type, numba_type, abi_name):
         self.value_type = value_type
         self.numba_type = numba_type
         self.abi_name = abi_name
@@ -71,7 +70,15 @@ class IteratorBase:
 
     @property
     def state(self):
-        return ctypes.cast(ctypes.pointer(self.cvalue), ctypes.c_void_p)
+        raise AttributeError("Subclasses must override advance staticmethod")
+
+    @staticmethod
+    def advance(it, distance):
+        raise AttributeError("Subclasses must override advance staticmethod")
+
+    @staticmethod
+    def dereference(it):
+        raise AttributeError("Subclasses must override dereference staticmethod")
 
 
 def sizeof_pointee(context, ptr):
@@ -107,11 +114,10 @@ def pointer_add(ptr, offset):
 class RawPointer(IteratorBase):
     def __init__(self, ptr, ntype):
         value_type = ntype
-        cvalue = ctypes.c_void_p(ptr)
+        self._cvalue = ctypes.c_void_p(ptr)
         numba_type = numba.types.CPointer(numba.types.CPointer(value_type))
         abi_name = f"{self.__class__.__name__}_{str(value_type)}"
         super().__init__(
-            cvalue=cvalue,
             value_type=value_type,
             numba_type=numba_type,
             abi_name=abi_name,
@@ -124,6 +130,10 @@ class RawPointer(IteratorBase):
     @staticmethod
     def dereference(it):
         return it[0][0]
+
+    @property
+    def state(self):
+        return ctypes.cast(ctypes.pointer(self._cvalue), ctypes.c_void_p)
 
 
 def pointer(container, ntype):
@@ -166,12 +176,11 @@ def load_cs(typingctx, base):
 
 class CacheModifiedPointer(IteratorBase):
     def __init__(self, ptr, ntype):
-        cvalue = ctypes.c_void_p(ptr)
+        self._cvalue = ctypes.c_void_p(ptr)
         value_type = ntype
         numba_type = numba.types.CPointer(numba.types.CPointer(value_type))
         abi_name = f"{self.__class__.__name__}_{str(value_type)}"
         super().__init__(
-            cvalue=cvalue,
             value_type=value_type,
             numba_type=numba_type,
             abi_name=abi_name,
@@ -185,15 +194,18 @@ class CacheModifiedPointer(IteratorBase):
     def dereference(it):
         return load_cs(it[0])
 
+    @property
+    def state(self):
+        return ctypes.cast(ctypes.pointer(self._cvalue), ctypes.c_void_p)
+
 
 class ConstantIterator(IteratorBase):
     def __init__(self, value):
         value_type = numba.from_dtype(value.dtype)
-        cvalue = _ctypes_type_given_numba_type(value_type)(value)
+        self._cvalue = _ctypes_type_given_numba_type(value_type)(value)
         numba_type = numba.types.CPointer(value_type)
         abi_name = f"{self.__class__.__name__}_{str(value_type)}"
         super().__init__(
-            cvalue=cvalue,
             value_type=value_type,
             numba_type=numba_type,
             abi_name=abi_name,
@@ -207,15 +219,18 @@ class ConstantIterator(IteratorBase):
     def dereference(it):
         return it[0]
 
+    @property
+    def state(self):
+        return ctypes.cast(ctypes.pointer(self._cvalue), ctypes.c_void_p)
+
 
 class CountingIterator(IteratorBase):
     def __init__(self, value):
         value_type = numba.from_dtype(value.dtype)
-        cvalue = _ctypes_type_given_numba_type(value_type)(value)
+        self._cvalue = _ctypes_type_given_numba_type(value_type)(value)
         numba_type = numba.types.CPointer(value_type)
         abi_name = f"{self.__class__.__name__}_{str(value_type)}"
         super().__init__(
-            cvalue=cvalue,
             value_type=value_type,
             numba_type=numba_type,
             abi_name=abi_name,
@@ -229,6 +244,10 @@ class CountingIterator(IteratorBase):
     def dereference(it):
         return it[0]
 
+    @property
+    def state(self):
+        return ctypes.cast(ctypes.pointer(self._cvalue), ctypes.c_void_p)
+
 
 def make_transform_iterator(it, op):
     if hasattr(it, "__cuda_array_interface__"):
@@ -241,7 +260,6 @@ def make_transform_iterator(it, op):
     class TransformIterator(IteratorBase):
         def __init__(self, it, op):
             self._it = it
-            cvalue = it.cvalue
             numba_type = it.numba_type
             _, op_retty = cached_compile(
                 op,
@@ -252,7 +270,6 @@ def make_transform_iterator(it, op):
             value_type = op_retty
             abi_name = f"{self.__class__.__name__}_{it.abi_name}"
             super().__init__(
-                cvalue=cvalue,
                 value_type=value_type,
                 numba_type=numba_type,
                 abi_name=abi_name,
@@ -265,5 +282,9 @@ def make_transform_iterator(it, op):
         @staticmethod
         def dereference(it):
             return op(it_dereference(it))
+
+        @property
+        def state(self):
+            return it.state
 
     return TransformIterator(it, op)
