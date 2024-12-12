@@ -183,7 +183,7 @@ def load_cs(typingctx, base):
     def codegen(context, builder, sig, args):
         rt = _ir_type_given_numba_type(sig.return_type)
         if rt is None:
-            raise RuntimeError(f"Unsupported: {type(sig.return_type)=}")
+            raise RuntimeError(f"Unsupported return type: {type(sig.return_type)}")
         ftype = ir.FunctionType(rt, [rt.as_pointer()])
         bw = sig.return_type.bitwidth
         asm_txt = f"ld.global.cs.b{bw} $0, [$1];"
