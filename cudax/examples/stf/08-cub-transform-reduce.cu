@@ -104,6 +104,7 @@ auto stf_transform_reduce(
   // We remove the first argument
   ConvertionOp_t conversion_op(transform_op, s, remove_first(deps));
 
+  size_t num_elements = s.size();
   cub::CountingInputIterator<size_t> count_it(0);
 
   // Create an iterator wrapper
@@ -120,7 +121,7 @@ auto stf_transform_reduce(
     temp_storage_bytes,
     itr, //*static_cast<decltype(itr) *>(nullptr), // TODO
     (OutT*) nullptr,
-    s.size(),
+    num_elements,
     ReduceOpWrapper<BinaryOp>(op),
     init_val,
     0);
@@ -132,7 +133,7 @@ auto stf_transform_reduce(
     temp_storage_bytes,
     itr, // TODO
     (OutT*) ::std::get<0>(deps).addr,
-    s.size(),
+    num_elements,
     ReduceOpWrapper<BinaryOp>(op),
     init_val,
     0);
