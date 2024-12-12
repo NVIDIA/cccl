@@ -244,7 +244,7 @@ private:
 
 public:
 #  if !defined(_CCCL_NO_CONCEPTS)
-  subrange()
+  _CCCL_HIDE_FROM_ABI subrange()
     requires default_initializable<_Iter>
   = default;
 #  else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
@@ -294,14 +294,15 @@ public:
       : subrange(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::end(__range), __n)
   {}
 
-#  if (!_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 9))
+  // This often ICEs all of clang and old gcc when it encounteres a rvalue subrange in a pipe
+#  if !defined(_CCCL_NO_CONCEPTS)
   _CCCL_TEMPLATE(class _Pair)
   _CCCL_REQUIRES(__pair_like<_Pair> _CCCL_AND __subrange_to_pair<_Iter, _Sent, _Kind, _Pair>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr operator _Pair() const
   {
     return _Pair(__begin_, __end_);
   }
-#  endif // (!_CCCL_COMPILER(GCC) || _CCCL_COMPILER(GCC, >=, 9))
+#  endif // !_CCCL_NO_CONCEPTS
 
   _CCCL_TEMPLATE(class _It = _Iter)
   _CCCL_REQUIRES(copyable<_It>)
