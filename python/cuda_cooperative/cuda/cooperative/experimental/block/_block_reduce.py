@@ -6,7 +6,7 @@ from cuda.cooperative.experimental._types import *
 from cuda.cooperative.experimental._common import make_binary_tempfile
 
 
-def reduce(dtype, threads_in_block, binary_op, methods=None):
+def reduce(dtype, threads_in_block, binary_op, items_per_thread=1, methods=None):
     """Computes a block-wide reduction for thread\ :sub:`0` using the specified binary reduction functor.
     Each thread contributes one input element.
 
@@ -39,6 +39,7 @@ def reduce(dtype, threads_in_block, binary_op, methods=None):
         dtype: Data type being reduced
         threads_in_block: The number of threads in a block
         binary_op: Binary reduction function
+        items_per_thread: The number of items each thread owns
 
     Returns:
         A callable object that can be linked to and invoked from a CUDA kernel
@@ -49,14 +50,30 @@ def reduce(dtype, threads_in_block, binary_op, methods=None):
                          ['cub/block/block_reduce.cuh'],
                          [TemplateParameter('T'),
                           TemplateParameter('BLOCK_DIM_X')],
+                          # Signatures:
+                          # T Reduce(T, Op);
                          [[Pointer(numba.uint8),
                            DependentReference(Dependency('T')),
+                           DependentOperator(Dependency('T'), [Dependency(
+                               'T'), Dependency('T')], Dependency('Op')),
+                           DependentReference(Dependency('T'), True)],
+                          # T Reduce(T, Op, int num_valid);
+                          [Pointer(numba.uint8),
+                           DependentReference(Dependency('T')),
+                           DependentOperator(Dependency('T'), [Dependency(
+                               'T'), Dependency('T')], Dependency('Op')),
+                           Value(numba.int32),
+                           DependentReference(Dependency('T'), True)],
+                          # T Reduce(T(&)[ITEMS_PER_THREAD], Op);
+                          [Pointer(numba.uint8),
+                           DependentArray(Dependency('T'), Dependency('ITEMS_PER_THREAD')),
                            DependentOperator(Dependency('T'), [Dependency(
                                'T'), Dependency('T')], Dependency('Op')),
                            DependentReference(Dependency('T'), True)]],
                          type_definitions=[numba_type_to_wrapper(dtype, methods=methods)])
     specialization = template.specialize({'T': dtype,
                                           'BLOCK_DIM_X': threads_in_block,
+                                          'ITEMS_PER_THREAD': items_per_thread,
                                           'Op': binary_op})
 
     return Invocable(temp_files=[make_binary_tempfile(ltoir, '.ltoir') for ltoir in specialization.get_lto_ir()],
@@ -64,7 +81,7 @@ def reduce(dtype, threads_in_block, binary_op, methods=None):
                      algorithm=specialization)
 
 
-def sum(dtype, threads_in_block):
+def sum(dtype, threads_in_block, items_per_thread=1):
     """Computes a block-wide reduction for thread\ :sub:`0` using addition (+) as the reduction operator.
     Each thread contributes one input element.
 
@@ -96,6 +113,7 @@ def sum(dtype, threads_in_block):
     Args:
         dtype: Data type being reduced
         threads_in_block: The number of threads in a block
+        items_per_thread: The number of items each thread owns
 
     Returns:
         A callable object that can be linked to and invoked from a CUDA kernel
@@ -106,10 +124,23 @@ def sum(dtype, threads_in_block):
                          ['cub/block/block_reduce.cuh'],
                          [TemplateParameter('T'),
                           TemplateParameter('BLOCK_DIM_X')],
-                         [[Pointer(numba.uint8), DependentReference(Dependency('T')), DependentReference(Dependency('T'), True)],
-                          [Pointer(numba.uint8), DependentReference(Dependency('T')), Value(numba.int32), DependentReference(Dependency('T'), True)]])
+                          # Signatures:
+                          # T Sum(T);
+                         [[Pointer(numba.uint8),
+                           DependentReference(Dependency('T')),
+                           DependentReference(Dependency('T'), True)],
+                          # T Sum(T, int num_valid);
+                          [Pointer(numba.uint8),
+                           DependentReference(Dependency('T')),
+                           Value(numba.int32),
+                           DependentReference(Dependency('T'), True)],
+                          # T Sum(T(&)[ITEMS_PER_THREAD]);
+                          [Pointer(numba.uint8),
+                           DependentArray(Dependency('T'), Dependency('ITEMS_PER_THREAD')),
+                           DependentReference(Dependency('T'), True)]])
     specialization = template.specialize({'T': dtype,
-                                          'BLOCK_DIM_X': threads_in_block})
+                                          'BLOCK_DIM_X': threads_in_block,
+                                          'ITEMS_PER_THREAD': items_per_thread})
     return Invocable(temp_files=[make_binary_tempfile(ltoir, '.ltoir') for ltoir in specialization.get_lto_ir()],
                      temp_storage_bytes=specialization.get_temp_storage_bytes(),
                      algorithm=specialization)
