@@ -1,7 +1,7 @@
 import ctypes
 import operator
 import collections
-from functools import cached_property, lru_cache
+from functools import lru_cache
 from sys import prefix
 
 import numpy as np
@@ -72,7 +72,7 @@ class IteratorBase:
     # TODO: should we cache this? Current docs environment doesn't allow
     # using Python > 3.7. We could use a hand-rolled cached_property if
     # needed.
-    # @cached_property
+    @property
     def ltoirs(self):
         advance_abi_name = self.abi_name + "_advance"
         deref_abi_name = self.abi_name + "_dereference"

@@ -325,7 +325,6 @@ autodoc.mock_imports = [
     "cuda.bindings",
     "llvmlite",
     "numpy",
-    "functools", # using >=3.8 feature cached_property
 ]
 
 enhanced_search_enabled = true
@@ -350,7 +349,6 @@ autodoc.mock_imports = [
     "cuda.bindings",
     "llvmlite",
     "numpy",
-    "functools", # using >=3.8 feature cached_property
 ]
 
 enhanced_search_enabled = true
