@@ -120,17 +120,7 @@ template <class AccumT,
           primitive_op PrimitiveOp,
           primitive_accum PrimitiveAccumulator = is_primitive_accum<AccumT>(),
           accum_size AccumSize                 = classify_accum_size<AccumT>()>
-struct sm80_tuning
-{
-  static constexpr int threads                       = 128;
-  static constexpr int items                         = 15;
-  using delay_constructor                            = default_delay_constructor_t<AccumT>;
-  static constexpr bool large_values                 = sizeof(AccumT) > 128;
-  static constexpr BlockLoadAlgorithm load_algorithm = //
-    large_values ? BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED : BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr BlockStoreAlgorithm store_algorithm = //
-    large_values ? BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : BLOCK_STORE_WARP_TRANSPOSE;
-};
+struct sm80_tuning;
 
 template <class T>
 struct sm80_tuning<T, primitive_op::yes, primitive_accum::yes, accum_size::_1>
@@ -213,12 +203,7 @@ template <class AccumT,
           primitive_op PrimitiveOp,
           primitive_accum PrimitiveAccumulator = is_primitive_accum<AccumT>(),
           accum_size AccumSize                 = classify_accum_size<AccumT>()>
-struct sm90_tuning
-{
-  static constexpr int threads = 128;
-  static constexpr int items   = 15;
-  using delay_constructor      = default_delay_constructor_t<AccumT>;
-};
+struct sm90_tuning;
 
 // clang-format off
 template <class T> struct sm90_tuning<T, primitive_op::yes, primitive_accum::yes, accum_size::_1> : tuning<192, 22, 168, 1140> {};
@@ -241,13 +226,6 @@ struct sm90_tuning<__uint128_t, primitive_op::yes, primitive_accum::no, accum_si
 template <typename AccumT, typename ScanOpT>
 struct policy_hub
 {
-  // For large values, use timesliced loads/stores to fit shared memory.
-  static constexpr bool large_values = sizeof(AccumT) > 128;
-  static constexpr BlockLoadAlgorithm scan_transposed_load =
-    large_values ? BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED : BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr BlockStoreAlgorithm scan_transposed_store =
-    large_values ? BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : BLOCK_STORE_WARP_TRANSPOSE;
-
   template <int NominalThreadsPerBlock4B,
             int NominalItemsPerThread4B,
             BlockLoadAlgorithm LoadAlgorithm,
@@ -279,6 +257,13 @@ struct policy_hub
                default_delay_constructor_t<AccumT>>;
   };
 
+  // For large values, use timesliced loads/stores to fit shared memory.
+  static constexpr bool large_values = sizeof(AccumT) > 128;
+  static constexpr BlockLoadAlgorithm scan_transposed_load =
+    large_values ? BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED : BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr BlockStoreAlgorithm scan_transposed_store =
+    large_values ? BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : BLOCK_STORE_WARP_TRANSPOSE;
+
   struct Policy520 : ChainedPolicy<520, Policy520, Policy350>
   {
     // Titan X: 32.47B items/s @ 48M 32-bit T
@@ -309,18 +294,22 @@ struct policy_hub
       , ChainedPolicy<600, Policy600, Policy520>
   {};
 
+  // Use values from tuning if a specialization exists, otherwise pick DefaultPolicy
+  template <typename Tuning>
+  static auto select_agent_policy(int)
+    -> policy_t<Tuning::threads,
+                Tuning::items,
+                Tuning::load_algorithm,
+                LOAD_DEFAULT,
+                Tuning::store_algorithm,
+                BLOCK_SCAN_WARP_SCANS,
+                typename Tuning::delay_constructor>;
+  template <typename Tuning>
+  static auto select_agent_policy(long) -> typename DefaultPolicy::ScanPolicyT;
+
   struct Policy800 : ChainedPolicy<800, Policy800, Policy600>
   {
-    using tuning = sm80_tuning<AccumT, is_primitive_op<ScanOpT>()>;
-
-    using ScanPolicyT =
-      policy_t<tuning::threads,
-               tuning::items,
-               tuning::load_algorithm,
-               LOAD_DEFAULT,
-               tuning::store_algorithm,
-               BLOCK_SCAN_WARP_SCANS,
-               typename tuning::delay_constructor>;
+    using ScanPolicyT = decltype(select_agent_policy<sm80_tuning<AccumT, is_primitive_op<ScanOpT>()>>(0));
   };
 
   struct Policy860
@@ -330,15 +319,7 @@ struct policy_hub
 
   struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
   {
-    using tuning = sm90_tuning<AccumT, is_primitive_op<ScanOpT>()>;
-    using ScanPolicyT =
-      policy_t<tuning::threads,
-               tuning::items,
-               scan_transposed_load,
-               LOAD_DEFAULT,
-               scan_transposed_store,
-               BLOCK_SCAN_WARP_SCANS,
-               typename tuning::delay_constructor>;
+    using ScanPolicyT = decltype(select_agent_policy<sm90_tuning<AccumT, is_primitive_op<ScanOpT>()>>(0));
   };
 
   using MaxPolicy = Policy900;
