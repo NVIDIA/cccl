@@ -126,160 +126,115 @@ template <class KeyT,
           val_size AccumSize           = classify_val_size<ValueT>()>
 struct sm80_tuning
 {
-  static constexpr int threads = 64;
-
-  static constexpr int nominal_4b_items_per_thread = 11;
-
-  static constexpr int items = Nominal4BItemsToItems<KeyT>(nominal_4b_items_per_thread);
-
+  static constexpr int threads                       = 64;
+  static constexpr int nominal_4b_items_per_thread   = 11;
+  static constexpr int items                         = Nominal4BItemsToItems<KeyT>(nominal_4b_items_per_thread);
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  static constexpr CacheLoadModifier load_modifier = LOAD_LDG;
-
-  using delay_constructor = detail::default_delay_constructor_t<int>;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_LDG;
+  using delay_constructor                            = detail::default_delay_constructor_t<int>;
 };
 
 // 8-bit key
 template <class KeyT, class ValueT>
 struct sm80_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_size::_1, val_size::_1>
 {
-  static constexpr int threads = 256;
-
-  static constexpr int items = 12;
-
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 12;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-
-  static constexpr CacheLoadModifier load_modifier = LOAD_DEFAULT;
-
-  using delay_constructor = detail::no_delay_constructor_t<835>;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = detail::no_delay_constructor_t<835>;
 };
 
 template <class KeyT, class ValueT>
 struct sm80_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_size::_1, val_size::_2>
 {
-  static constexpr int threads = 256;
-
-  static constexpr int items = 12;
-
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 12;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-
-  static constexpr CacheLoadModifier load_modifier = LOAD_DEFAULT;
-
-  using delay_constructor = detail::no_delay_constructor_t<765>;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = detail::no_delay_constructor_t<765>;
 };
 
 template <class KeyT, class ValueT>
 struct sm80_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_size::_1, val_size::_4>
 {
-  static constexpr int threads = 256;
-
-  static constexpr int items = 12;
-
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 12;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-
-  static constexpr CacheLoadModifier load_modifier = LOAD_DEFAULT;
-
-  using delay_constructor = detail::no_delay_constructor_t<1155>;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = detail::no_delay_constructor_t<1155>;
 };
 
 template <class KeyT, class ValueT>
 struct sm80_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_size::_1, val_size::_8>
 {
-  static constexpr int threads = 224;
-
-  static constexpr int items = 10;
-
+  static constexpr int threads                       = 224;
+  static constexpr int items                         = 10;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-
-  static constexpr CacheLoadModifier load_modifier = LOAD_DEFAULT;
-
-  using delay_constructor = detail::no_delay_constructor_t<1065>;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = detail::no_delay_constructor_t<1065>;
 };
 
 template <class KeyT, class ValueT>
 struct sm80_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::no, key_size::_1, val_size::_16>
 {
-  static constexpr int threads = 128;
-
-  static constexpr int items = 15;
-
+  static constexpr int threads                       = 128;
+  static constexpr int items                         = 15;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  static constexpr CacheLoadModifier load_modifier = LOAD_DEFAULT;
-
-  using delay_constructor = detail::fixed_delay_constructor_t<248, 1200>;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<248, 1200>;
 };
 
 // 16-bit key
 template <class KeyT, class ValueT>
 struct sm80_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_size::_2, val_size::_1>
 {
-  static constexpr int threads = 320;
-
-  static constexpr int items = 20;
-
+  static constexpr int threads                       = 320;
+  static constexpr int items                         = 20;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-
-  static constexpr CacheLoadModifier load_modifier = LOAD_DEFAULT;
-
-  using delay_constructor = detail::no_delay_constructor_t<1020>;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = detail::no_delay_constructor_t<1020>;
 };
 
 template <class KeyT, class ValueT>
 struct sm80_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_size::_2, val_size::_2>
 {
-  static constexpr int threads = 192;
-
-  static constexpr int items = 22;
-
+  static constexpr int threads                       = 192;
+  static constexpr int items                         = 22;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  static constexpr CacheLoadModifier load_modifier = LOAD_DEFAULT;
-
-  using delay_constructor = detail::fixed_delay_constructor_t<328, 1080>;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<328, 1080>;
 };
 
 template <class KeyT, class ValueT>
 struct sm80_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_size::_2, val_size::_4>
 {
-  static constexpr int threads = 256;
-
-  static constexpr int items = 14;
-
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 14;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  static constexpr CacheLoadModifier load_modifier = LOAD_DEFAULT;
-
-  using delay_constructor = detail::no_delay_constructor_t<535>;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = detail::no_delay_constructor_t<535>;
 };
 
 template <class KeyT, class ValueT>
 struct sm80_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_size::_2, val_size::_8>
 {
-  static constexpr int threads = 256;
-
-  static constexpr int items = 10;
-
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 10;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  static constexpr CacheLoadModifier load_modifier = LOAD_DEFAULT;
-
-  using delay_constructor = detail::no_delay_constructor_t<1055>;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = detail::no_delay_constructor_t<1055>;
 };
 
 // 32-bit key
 template <class KeyT, class ValueT>
 struct sm80_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_size::_4, val_size::_1>
 {
-  static constexpr int threads = 256;
-
-  static constexpr int items = 12;
-
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 12;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-
-  static constexpr CacheLoadModifier load_modifier = LOAD_DEFAULT;
-
-  using delay_constructor = detail::no_delay_constructor_t<1120>;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = detail::no_delay_constructor_t<1120>;
 };
 
 template <class KeyT, class ValueT>
@@ -299,100 +254,72 @@ struct sm80_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_siz
 template <class KeyT, class ValueT>
 struct sm80_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_size::_4, val_size::_4>
 {
-  static constexpr int threads = 256;
-
-  static constexpr int items = 11;
-
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 11;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-
-  static constexpr CacheLoadModifier load_modifier = LOAD_DEFAULT;
-
-  using delay_constructor = detail::no_delay_constructor_t<1115>;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = detail::no_delay_constructor_t<1115>;
 };
 
 template <class KeyT, class ValueT>
 struct sm80_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_size::_4, val_size::_8>
 {
-  static constexpr int threads = 256;
-
-  static constexpr int items = 7;
-
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 7;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-
-  static constexpr CacheLoadModifier load_modifier = LOAD_DEFAULT;
-
-  using delay_constructor = detail::fixed_delay_constructor_t<320, 1115>;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<320, 1115>;
 };
 
 // 64-bit key
 template <class KeyT, class ValueT>
 struct sm80_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_size::_8, val_size::_1>
 {
-  static constexpr int threads = 256;
-
-  static constexpr int items = 7;
-
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 7;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-
-  static constexpr CacheLoadModifier load_modifier = LOAD_DEFAULT;
-
-  using delay_constructor = detail::fixed_delay_constructor_t<24, 555>;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<24, 555>;
 };
 
 template <class KeyT, class ValueT>
 struct sm80_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_size::_8, val_size::_2>
 {
-  static constexpr int threads = 256;
-
-  static constexpr int items = 7;
-
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 7;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-
-  static constexpr CacheLoadModifier load_modifier = LOAD_DEFAULT;
-
-  using delay_constructor = detail::fixed_delay_constructor_t<324, 1105>;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<324, 1105>;
 };
 
 template <class KeyT, class ValueT>
 struct sm80_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_size::_8, val_size::_4>
 {
-  static constexpr int threads = 256;
-
-  static constexpr int items = 7;
-
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 7;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-
-  static constexpr CacheLoadModifier load_modifier = LOAD_DEFAULT;
-
-  using delay_constructor = detail::fixed_delay_constructor_t<740, 1105>;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<740, 1105>;
 };
 
 template <class KeyT, class ValueT>
 struct sm80_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_size::_8, val_size::_8>
 {
-  static constexpr int threads = 192;
-
-  static constexpr int items = 7;
-
+  static constexpr int threads                       = 192;
+  static constexpr int items                         = 7;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-
-  static constexpr CacheLoadModifier load_modifier = LOAD_DEFAULT;
-
-  using delay_constructor = detail::fixed_delay_constructor_t<764, 1155>;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<764, 1155>;
 };
 
 template <class KeyT, class ValueT>
 struct sm80_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::no, key_size::_8, val_size::_16>
 {
-  static constexpr int threads = 128;
-
-  static constexpr int items = 7;
-
+  static constexpr int threads                       = 128;
+  static constexpr int items                         = 7;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  static constexpr CacheLoadModifier load_modifier = LOAD_DEFAULT;
-
-  using delay_constructor = detail::fixed_delay_constructor_t<992, 1135>;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<992, 1135>;
 };
 
 template <class KeyT,
