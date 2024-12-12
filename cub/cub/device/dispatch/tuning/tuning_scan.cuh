@@ -53,7 +53,6 @@ namespace detail
 {
 namespace scan
 {
-
 enum class keep_rejects
 {
   no,
@@ -114,8 +113,7 @@ struct tuning
 {
   static constexpr int threads = Threads;
   static constexpr int items   = Items;
-
-  using delay_constructor = detail::fixed_delay_constructor_t<L2B, L2W>;
+  using delay_constructor      = fixed_delay_constructor_t<L2B, L2W>;
 };
 
 template <class AccumT,
@@ -126,8 +124,7 @@ struct sm90_tuning
 {
   static constexpr int threads = 128;
   static constexpr int items   = 15;
-
-  using delay_constructor = detail::default_delay_constructor_t<AccumT>;
+  using delay_constructor      = default_delay_constructor_t<AccumT>;
 };
 
 // clang-format off
@@ -154,13 +151,10 @@ template <class AccumT,
           accum_size AccumSize                 = classify_accum_size<AccumT>()>
 struct sm80_tuning
 {
-  static constexpr int threads = 128;
-  static constexpr int items   = 15;
-
-  using delay_constructor = detail::default_delay_constructor_t<AccumT>;
-
-  static constexpr bool LargeValues = sizeof(AccumT) > 128;
-
+  static constexpr int threads                       = 128;
+  static constexpr int items                         = 15;
+  using delay_constructor                            = default_delay_constructor_t<AccumT>;
+  static constexpr bool LargeValues                  = sizeof(AccumT) > 128;
   static constexpr BlockLoadAlgorithm load_algorithm = //
     LargeValues ? BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED : BLOCK_LOAD_WARP_TRANSPOSE;
   static constexpr BlockStoreAlgorithm store_algorithm = //
@@ -170,11 +164,9 @@ struct sm80_tuning
 template <class T>
 struct sm80_tuning<T, primitive_op::yes, primitive_accum::yes, accum_size::_1>
 {
-  static constexpr int threads = 320;
-  static constexpr int items   = 14;
-
-  using delay_constructor = detail::fixed_delay_constructor_t<368, 725>;
-
+  static constexpr int threads                         = 320;
+  static constexpr int items                           = 14;
+  using delay_constructor                              = fixed_delay_constructor_t<368, 725>;
   static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
   static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
 };
@@ -182,11 +174,9 @@ struct sm80_tuning<T, primitive_op::yes, primitive_accum::yes, accum_size::_1>
 template <class T>
 struct sm80_tuning<T, primitive_op::yes, primitive_accum::yes, accum_size::_2>
 {
-  static constexpr int threads = 352;
-  static constexpr int items   = 16;
-
-  using delay_constructor = detail::fixed_delay_constructor_t<488, 1040>;
-
+  static constexpr int threads                         = 352;
+  static constexpr int items                           = 16;
+  using delay_constructor                              = fixed_delay_constructor_t<488, 1040>;
   static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
   static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
 };
@@ -194,11 +184,9 @@ struct sm80_tuning<T, primitive_op::yes, primitive_accum::yes, accum_size::_2>
 template <class T>
 struct sm80_tuning<T, primitive_op::yes, primitive_accum::yes, accum_size::_4>
 {
-  static constexpr int threads = 320;
-  static constexpr int items   = 12;
-
-  using delay_constructor = detail::fixed_delay_constructor_t<268, 1180>;
-
+  static constexpr int threads                         = 320;
+  static constexpr int items                           = 12;
+  using delay_constructor                              = fixed_delay_constructor_t<268, 1180>;
   static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
   static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
 };
@@ -206,11 +194,9 @@ struct sm80_tuning<T, primitive_op::yes, primitive_accum::yes, accum_size::_4>
 template <class T>
 struct sm80_tuning<T, primitive_op::yes, primitive_accum::yes, accum_size::_8>
 {
-  static constexpr int threads = 288;
-  static constexpr int items   = 22;
-
-  using delay_constructor = detail::fixed_delay_constructor_t<716, 785>;
-
+  static constexpr int threads                         = 288;
+  static constexpr int items                           = 22;
+  using delay_constructor                              = fixed_delay_constructor_t<716, 785>;
   static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
   static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
 };
@@ -218,11 +204,9 @@ struct sm80_tuning<T, primitive_op::yes, primitive_accum::yes, accum_size::_8>
 template <>
 struct sm80_tuning<float, primitive_op::yes, primitive_accum::yes, accum_size::_4>
 {
-  static constexpr int threads = 288;
-  static constexpr int items   = 8;
-
-  using delay_constructor = detail::fixed_delay_constructor_t<724, 1050>;
-
+  static constexpr int threads                         = 288;
+  static constexpr int items                           = 8;
+  using delay_constructor                              = fixed_delay_constructor_t<724, 1050>;
   static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
   static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
 };
@@ -230,11 +214,9 @@ struct sm80_tuning<float, primitive_op::yes, primitive_accum::yes, accum_size::_
 template <>
 struct sm80_tuning<double, primitive_op::yes, primitive_accum::yes, accum_size::_8>
 {
-  static constexpr int threads = 384;
-  static constexpr int items   = 12;
-
-  using delay_constructor = detail::fixed_delay_constructor_t<388, 1100>;
-
+  static constexpr int threads                         = 384;
+  static constexpr int items                           = 12;
+  using delay_constructor                              = fixed_delay_constructor_t<388, 1100>;
   static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
   static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
 };
@@ -243,11 +225,9 @@ struct sm80_tuning<double, primitive_op::yes, primitive_accum::yes, accum_size::
 template <>
 struct sm80_tuning<__int128_t, primitive_op::yes, primitive_accum::no, accum_size::_16>
 {
-  static constexpr int threads = 640;
-  static constexpr int items   = 24;
-
-  using delay_constructor = detail::no_delay_constructor_t<1200>;
-
+  static constexpr int threads                         = 640;
+  static constexpr int items                           = 24;
+  using delay_constructor                              = no_delay_constructor_t<1200>;
   static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_DIRECT;
   static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_DIRECT;
 };
