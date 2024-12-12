@@ -294,7 +294,6 @@ struct DeviceScanPolicy
                     MemBoundScaling<NOMINAL_BLOCK_THREADS_4B, NOMINAL_ITEMS_PER_THREAD_4B, ComputeT>,
                     DelayConstructorT>;
 
-  /// SM350
   struct Policy350 : ChainedPolicy<350, Policy350, Policy350>
   {
     // GTX Titan: 29.5B items/s (232.4 GB/s) @ 48M 32-bit T
@@ -309,7 +308,6 @@ struct DeviceScanPolicy
                detail::default_delay_constructor_t<AccumT>>;
   };
 
-  /// SM520
   struct Policy520 : ChainedPolicy<520, Policy520, Policy350>
   {
     // Titan X: 32.47B items/s @ 48M 32-bit T
@@ -324,7 +322,6 @@ struct DeviceScanPolicy
                detail::default_delay_constructor_t<AccumT>>;
   };
 
-  /// SM600
   struct DefaultTuning
   {
     using ScanPolicyT =
@@ -338,13 +335,11 @@ struct DeviceScanPolicy
                detail::default_delay_constructor_t<AccumT>>;
   };
 
-  /// SM600
   struct Policy600
       : DefaultTuning
       , ChainedPolicy<600, Policy600, Policy520>
   {};
 
-  /// SM800
   struct Policy800 : ChainedPolicy<800, Policy800, Policy600>
   {
     using tuning = detail::scan::sm80_tuning<AccumT, detail::scan::is_primitive_op<ScanOpT>()>;
@@ -360,13 +355,11 @@ struct DeviceScanPolicy
                typename tuning::delay_constructor>;
   };
 
-  /// SM860
   struct Policy860
       : DefaultTuning
       , ChainedPolicy<860, Policy860, Policy800>
   {};
 
-  /// SM900
   struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
   {
     using tuning = detail::scan::sm90_tuning<AccumT, detail::scan::is_primitive_op<ScanOpT>()>;
