@@ -238,11 +238,8 @@ struct sm80_tuning<__uint128_t, primitive_op::yes, primitive_accum::no, accum_si
 {};
 #endif
 
-} // namespace scan
-} // namespace detail
-
-template <typename AccumT, typename ScanOpT = ::cuda::std::plus<>>
-struct DeviceScanPolicy
+template <typename AccumT, typename ScanOpT>
+struct policy_hub
 {
   // For large values, use timesliced loads/stores to fit shared memory.
   static constexpr bool LargeValues = sizeof(AccumT) > 128;
@@ -353,5 +350,11 @@ struct DeviceScanPolicy
 
   using MaxPolicy = Policy900;
 };
+} // namespace scan
+} // namespace detail
+
+// TODO(bgruber): deprecate this at some point when we have a better way to allow users to supply tunings
+template <typename AccumT, typename ScanOpT = ::cuda::std::plus<>>
+using DeviceScanPolicy = detail::scan::policy_hub<AccumT, ScanOpT>;
 
 CUB_NAMESPACE_END
