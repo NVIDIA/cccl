@@ -713,15 +713,15 @@ struct sm90_tuning<KeyT, __uint128_t, primitive_op::yes, key_size::_16, val_size
 template <typename KeysInputIteratorT, typename AccumT, typename ValueT, typename ScanOpT>
 struct policy_hub
 {
-  using key_t                                  = value_t<KeysInputIteratorT>;
-  static constexpr size_t max_input_bytes      = static_cast<int>(::cuda::std::max(sizeof(key_t), sizeof(AccumT)));
-  static constexpr size_t combined_input_bytes = sizeof(key_t) + sizeof(AccumT);
+  using key_t                               = value_t<KeysInputIteratorT>;
+  static constexpr int max_input_bytes      = static_cast<int>(::cuda::std::max(sizeof(key_t), sizeof(AccumT)));
+  static constexpr int combined_input_bytes = static_cast<int>(sizeof(key_t) + sizeof(AccumT));
 
   struct Policy350 : ChainedPolicy<350, Policy350, Policy350>
   {
     static constexpr int nominal_4b_items_per_thread = 6;
     static constexpr int items_per_thread =
-      ((max_input_bytes <= 8) ? 6 : Nominal4BItemsToItemsCombined(nominal_4b_items_per_thread, combined_input_bytes));
+      max_input_bytes <= 8 ? 6 : Nominal4BItemsToItemsCombined(nominal_4b_items_per_thread, combined_input_bytes);
 
     using ScanByKeyPolicyT =
       AgentScanByKeyPolicy<128,
@@ -738,7 +738,7 @@ struct policy_hub
   {
     static constexpr int nominal_4b_items_per_thread = 9;
     static constexpr int items_per_thread =
-      ((max_input_bytes <= 8) ? 9 : Nominal4BItemsToItemsCombined(nominal_4b_items_per_thread, combined_input_bytes));
+      max_input_bytes <= 8 ? 9 : Nominal4BItemsToItemsCombined(nominal_4b_items_per_thread, combined_input_bytes);
 
     using ScanByKeyPolicyT =
       AgentScanByKeyPolicy<256,
