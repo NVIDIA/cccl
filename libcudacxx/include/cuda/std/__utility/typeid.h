@@ -72,9 +72,10 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 #if !defined(_CCCL_NO_TYPEID) && !defined(_CCCL_USE_TYPEID_FALLBACK)
 
 #  define _CCCL_TYPEID _CCCL_STD_TYPEID
-using type_info       = ::std::type_info;
-using __type_info_ptr = type_info const*;
-using __type_info_ref = type_info const&;
+using type_info        = ::std::type_info;
+using __type_info_ptr  = type_info const*;
+using __type_info_ref  = type_info const&;
+using __type_info_ref_ = type_info const&;
 
 #else // ^^^ !_CCCL_NO_TYPEID ^^^ / vvv _CCCL_NO_TYPEID vvv
 
