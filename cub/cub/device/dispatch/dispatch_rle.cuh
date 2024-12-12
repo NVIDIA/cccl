@@ -189,8 +189,8 @@ template <typename InputIteratorT,
           typename EqualityOpT,
           typename OffsetT,
           typename SelectedPolicy =
-            detail::device_non_trivial_runs_policy_hub<cub::detail::non_void_value_t<LengthsOutputIteratorT, OffsetT>,
-                                                       cub::detail::value_t<InputIteratorT>>>
+            detail::rle::non_trivial_runs::policy_hub<cub::detail::non_void_value_t<LengthsOutputIteratorT, OffsetT>,
+                                                      cub::detail::value_t<InputIteratorT>>>
 struct DeviceRleDispatch
 {
   /******************************************************************************
@@ -543,7 +543,7 @@ struct DeviceRleDispatch
     return error;
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
@@ -570,7 +570,7 @@ struct DeviceRleDispatch
       num_items,
       stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

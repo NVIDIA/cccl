@@ -71,6 +71,18 @@ struct cccl_value_t
   void* state;
 };
 
+struct cccl_string_view
+{
+  const char* begin;
+  int size;
+};
+
+struct cccl_string_views
+{
+  cccl_string_view* views;
+  int size;
+};
+
 struct cccl_iterator_t
 {
   int size;
@@ -80,4 +92,5 @@ struct cccl_iterator_t
   cccl_op_t dereference;
   cccl_type_info value_type;
   void* state;
+  cccl_string_views* ltoirs = nullptr;
 };

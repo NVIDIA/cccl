@@ -39,7 +39,7 @@
   struct trait_name<                                                                                                \
     T,                                                                                                              \
     ResultT(Args...),                                                                                               \
-    ::cuda::std::__enable_if_t<                                                                                     \
+    ::cuda::std::enable_if_t<                                                                                       \
       ::cuda::std::is_same<ResultT, void>::value                                                                    \
       || ::cuda::std::                                                                                              \
         is_convertible<ResultT, decltype(std::declval<T>().member_function_name(std::declval<Args>()...))>::value>> \

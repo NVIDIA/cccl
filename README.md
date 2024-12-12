@@ -138,6 +138,21 @@ nvcc -Icccl/thrust -Icccl/libcudacxx/include -Icccl/cub main.cu -o main
 > **Note**
 > Use `-I` and not `-isystem` to avoid collisions with the CCCL headers implicitly included by `nvcc` from the CUDA Toolkit. All CCCL headers use `#pragma system_header` to ensure warnings will still be silenced as if using `-isystem`, see https://github.com/NVIDIA/cccl/issues/527 for more information.
 
+##### Installation
+
+A minimal build that only generates installation rules can be configured using the `install` CMake preset:
+```bash
+git clone https://github.com/NVIDIA/cccl.git
+cd cccl
+cmake --preset install -DCMAKE_INSTALL_PREFIX=/usr/local/
+cd build/install
+ninja install
+```
+
+To include experimental libraries in the installation, use the `install-unstable` preset and build directory.
+
+To install **only** the experimental libraries, use the `install-unstable-only` preset and build directory.
+
 #### Conda
 
 CCCL also provides conda packages of each release via the `conda-forge` channel:
@@ -241,11 +256,17 @@ Unless otherwise specified, CCCL supports all the same operating systems as the 
 
 ### Host Compilers
 
-Unless otherwise specified, CCCL supports all the same host compilers as the CUDA Toolkit, which are documented here:
+Unless otherwise specified, CCCL supports the same host compilers as the latest CUDA Toolkit, which are documented here:
 - [Linux](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#host-compiler-support-policy)
 - [Windows](https://docs.nvidia.com/cuda/cuda-installation-guide-microsoft-windows/index.html#system-requirements)
 
-In the spirit of "You only support what you test",  see our [CI Overview](https://github.com/NVIDIA/cccl/blob/main/ci-overview.md) for more information on exactly what we test.
+When using older CUDA Toolkits, we also only support the host compilers of the latest CUDA Toolkit,
+but at least the most recent host compiler of any supported older CUDA Toolkit.
+
+We may retain support of additional compilers and will accept corresponding patches from the community with reasonable fixes.
+But we will not invest significant time in triaging or fixing issues for older compilers.
+
+In the spirit of "You only support what you test", see our [CI Overview](https://github.com/NVIDIA/cccl/blob/main/ci-overview.md) for more information on exactly what we test.
 
 ### C++ Dialects
 - C++11 (Deprecated in Thrust/CUB, to be removed in next major version)

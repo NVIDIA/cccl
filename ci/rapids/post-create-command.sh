@@ -69,7 +69,7 @@ _create_rapids_cmake_override_json() {
   | tee ~/rapids-cmake-override-versions.json;
 
     # Define default CMake args for each repo
-    local -a cmake_args=(BUILD_TESTS BUILD_BENCHMARKS BUILD_ANN_BENCH BUILD_PRIMS_BENCH BUILD_CUGRAPH_MG_TESTS);
+    local -a cmake_args=(BUILD_TESTS BUILD_BENCHMARKS BUILD_PRIMS_BENCH BUILD_CUGRAPH_MG_TESTS);
     # Enable tests
     cmake_args=("${cmake_args[@]/#/"-D"}");
     cmake_args=("${cmake_args[@]/%/"=${RAPIDS_ENABLE_TESTS:-ON}"}");

@@ -36,7 +36,7 @@
 #  pragma system_header
 #endif // no system header
 
-#ifdef _CCCL_CUDA_COMPILER
+#if _CCCL_HAS_CUDA_COMPILER
 
 #  include <thrust/system/cuda/config.h>
 
@@ -130,7 +130,7 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
                       InputValueT,
                       std::int32_t,
                       AccumT,
-                      cub::DeviceScanPolicy<AccumT, ScanOp>,
+                      cub::detail::scan::policy_hub<AccumT, ScanOp>,
                       ForceInclusive>;
   using Dispatch64 =
     cub::DispatchScan<InputIt,
@@ -139,7 +139,7 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
                       InputValueT,
                       std::int64_t,
                       AccumT,
-                      cub::DeviceScanPolicy<AccumT, ScanOp>,
+                      cub::detail::scan::policy_hub<AccumT, ScanOp>,
                       ForceInclusive>;
 
   cudaStream_t stream = thrust::cuda_cub::stream(policy);

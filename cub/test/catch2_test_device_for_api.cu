@@ -34,7 +34,7 @@
 #include <thrust/detail/raw_pointer_cast.h>
 #include <thrust/device_vector.h>
 
-#include "catch2_test_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 // example-begin bulk-square-t
 struct square_t
@@ -73,7 +73,7 @@ struct odd_count_t
 };
 // example-end bulk-odd-count-t
 
-CUB_TEST("Device bulk works with temporary storage", "[bulk][device]")
+C2H_TEST("Device bulk works with temporary storage", "[bulk][device]")
 {
   // example-begin bulk-temp-storage
   thrust::device_vector<int> vec = {1, 2, 3, 4};
@@ -97,7 +97,7 @@ CUB_TEST("Device bulk works with temporary storage", "[bulk][device]")
   REQUIRE(vec == expected);
 }
 
-CUB_TEST("Device bulk works without temporary storage", "[bulk][device]")
+C2H_TEST("Device bulk works without temporary storage", "[bulk][device]")
 {
   // example-begin bulk-wo-temp-storage
   thrust::device_vector<int> vec = {1, 2, 3, 4};
@@ -111,7 +111,7 @@ CUB_TEST("Device bulk works without temporary storage", "[bulk][device]")
   REQUIRE(vec == expected);
 }
 
-CUB_TEST("Device for each n works with temporary storage", "[for_each][device]")
+C2H_TEST("Device for each n works with temporary storage", "[for_each][device]")
 {
   // example-begin for-each-n-temp-storage
   thrust::device_vector<int> vec = {1, 2, 3, 4};
@@ -135,7 +135,7 @@ CUB_TEST("Device for each n works with temporary storage", "[for_each][device]")
   REQUIRE(vec == expected);
 }
 
-CUB_TEST("Device for each n works without temporary storage", "[for_each][device]")
+C2H_TEST("Device for each n works without temporary storage", "[for_each][device]")
 {
   // example-begin for-each-n-wo-temp-storage
   thrust::device_vector<int> vec = {1, 2, 3, 4};
@@ -149,7 +149,7 @@ CUB_TEST("Device for each n works without temporary storage", "[for_each][device
   REQUIRE(vec == expected);
 }
 
-CUB_TEST("Device for each works with temporary storage", "[for_each][device]")
+C2H_TEST("Device for each works with temporary storage", "[for_each][device]")
 {
   // example-begin for-each-temp-storage
   thrust::device_vector<int> vec = {1, 2, 3, 4};
@@ -173,7 +173,7 @@ CUB_TEST("Device for each works with temporary storage", "[for_each][device]")
   REQUIRE(vec == expected);
 }
 
-CUB_TEST("Device for each works without temporary storage", "[for_each][device]")
+C2H_TEST("Device for each works without temporary storage", "[for_each][device]")
 {
   // example-begin for-each-wo-temp-storage
   thrust::device_vector<int> vec = {1, 2, 3, 4};
@@ -187,7 +187,7 @@ CUB_TEST("Device for each works without temporary storage", "[for_each][device]"
   REQUIRE(vec == expected);
 }
 
-CUB_TEST("Device for each n copy works with temporary storage", "[for_each][device]")
+C2H_TEST("Device for each n copy works with temporary storage", "[for_each][device]")
 {
   // example-begin for-each-copy-n-temp-storage
   thrust::device_vector<int> vec = {1, 2, 3, 4};
@@ -212,7 +212,7 @@ CUB_TEST("Device for each n copy works with temporary storage", "[for_each][devi
   REQUIRE(count == expected);
 }
 
-CUB_TEST("Device for each n copy works without temporary storage", "[for_each][device]")
+C2H_TEST("Device for each n copy works without temporary storage", "[for_each][device]")
 {
   // example-begin for-each-copy-n-wo-temp-storage
   thrust::device_vector<int> vec = {1, 2, 3, 4};
@@ -227,7 +227,7 @@ CUB_TEST("Device for each n copy works without temporary storage", "[for_each][d
   REQUIRE(count == expected);
 }
 
-CUB_TEST("Device for each copy works with temporary storage", "[for_each][device]")
+C2H_TEST("Device for each copy works with temporary storage", "[for_each][device]")
 {
   // example-begin for-each-copy-temp-storage
   thrust::device_vector<int> vec = {1, 2, 3, 4};
@@ -252,7 +252,7 @@ CUB_TEST("Device for each copy works with temporary storage", "[for_each][device
   REQUIRE(count == expected);
 }
 
-CUB_TEST("Device for each copy works without temporary storage", "[for_each][device]")
+C2H_TEST("Device for each copy works without temporary storage", "[for_each][device]")
 {
   // example-begin for-each-copy-wo-temp-storage
   thrust::device_vector<int> vec = {1, 2, 3, 4};

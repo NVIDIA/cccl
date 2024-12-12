@@ -138,7 +138,7 @@ template<typename Element, typename Tag, typename Reference = thrust::use_defaul
 };
 #endif
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Doxygen cannot handle both versions
+#ifndef _CCCL_DOXYGEN_INVOKED // Doxygen cannot handle both versions
 
 /*! This version of \p malloc allocates untyped uninitialized storage associated with a given system.
  *
@@ -176,7 +176,7 @@ template <typename DerivedPolicy>
 _CCCL_HOST_DEVICE pointer<void, DerivedPolicy>
 malloc(const thrust::detail::execution_policy_base<DerivedPolicy>& system, std::size_t n);
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 /*! This version of \p malloc allocates typed uninitialized storage associated with a given system.
  *

@@ -65,7 +65,7 @@
 
 CUB_NAMESPACE_BEGIN
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 namespace detail
 {
@@ -90,7 +90,7 @@ template <typename T>
 CUB_DETAIL_KERNEL_ATTRIBUTES void EmptyKernel()
 {}
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 /**
  * \brief Returns the current device or -1 if an error occurred.
@@ -105,13 +105,13 @@ CUB_RUNTIME_FUNCTION inline int CurrentDevice()
   return device;
 }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 //! @brief RAII helper which saves the current device and switches to the specified device on construction and switches
 //! to the saved device on destruction.
 using SwitchDevice = ::cuda::__ensure_current_device;
 
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 /**
  * \brief Returns the number of CUDA devices available or -1 if an error
@@ -171,7 +171,7 @@ CUB_RUNTIME_FUNCTION inline int DeviceCount()
   return result;
 }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 /**
  * \brief Per-device cache for a CUDA attribute value; the attribute is queried
  *        and stored for each device upon construction.
@@ -286,7 +286,7 @@ public:
     return entry.payload;
   }
 };
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
 /**
  * \brief Retrieves the PTX version that will be used on the current device (major * 100 + minor * 10).
@@ -601,6 +601,42 @@ MaxSmOccupancy(int& max_sm_occupancy, KernelPtr kernel_ptr, int block_threads, i
  * Policy management
  ******************************************************************************/
 
+template <typename PolicyT, typename = void>
+struct PolicyWrapper : PolicyT
+{
+  CUB_RUNTIME_FUNCTION PolicyWrapper(PolicyT base)
+      : PolicyT(base)
+  {}
+};
+
+template <typename StaticPolicyT>
+struct PolicyWrapper<
+  StaticPolicyT,
+  _CUDA_VSTD::void_t<decltype(StaticPolicyT::BLOCK_THREADS), decltype(StaticPolicyT::ITEMS_PER_THREAD)>> : StaticPolicyT
+{
+  CUB_RUNTIME_FUNCTION PolicyWrapper(StaticPolicyT base)
+      : StaticPolicyT(base)
+  {}
+
+  CUB_RUNTIME_FUNCTION static constexpr int BlockThreads()
+  {
+    return StaticPolicyT::BLOCK_THREADS;
+  }
+
+  CUB_RUNTIME_FUNCTION static constexpr int ItemsPerThread()
+  {
+    return StaticPolicyT::ITEMS_PER_THREAD;
+  }
+};
+
+template <typename PolicyT>
+CUB_RUNTIME_FUNCTION PolicyWrapper<PolicyT> MakePolicyWrapper(PolicyT policy)
+{
+  return PolicyWrapper<PolicyT>{policy};
+}
+
+struct TripleChevronFactory;
+
 /**
  * Kernel dispatch configuration
  */
@@ -618,14 +654,14 @@ struct KernelConfig
       , sm_occupancy(0)
   {}
 
-  template <typename AgentPolicyT, typename KernelPtrT>
-  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t Init(KernelPtrT kernel_ptr)
+  template <typename AgentPolicyT, typename KernelPtrT, typename LauncherFactory = TripleChevronFactory>
+  CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
+  Init(KernelPtrT kernel_ptr, AgentPolicyT agent_policy = {}, LauncherFactory launcher_factory = {})
   {
-    block_threads      = AgentPolicyT::BLOCK_THREADS;
-    items_per_thread   = AgentPolicyT::ITEMS_PER_THREAD;
-    tile_size          = block_threads * items_per_thread;
-    cudaError_t retval = MaxSmOccupancy(sm_occupancy, kernel_ptr, block_threads);
-    return retval;
+    block_threads    = MakePolicyWrapper(agent_policy).BlockThreads();
+    items_per_thread = MakePolicyWrapper(agent_policy).ItemsPerThread();
+    tile_size        = block_threads * items_per_thread;
+    return launcher_factory.MaxSmOccupancy(sm_occupancy, kernel_ptr, block_threads);
   }
 };
 
@@ -642,7 +678,11 @@ struct ChainedPolicy
   {
     // __CUDA_ARCH_LIST__ is only available from CTK 11.5 onwards
 #ifdef __CUDA_ARCH_LIST__
-    return runtime_to_compiletime<__CUDA_ARCH_LIST__>(device_ptx_version, op);
+    return runtime_to_compiletime<1, __CUDA_ARCH_LIST__>(device_ptx_version, op);
+    // NV_TARGET_SM_INTEGER_LIST is defined by NVHPC. The values need to be multiplied by 10 to match
+    // __CUDA_ARCH_LIST__. E.g. arch 860 from __CUDA_ARCH_LIST__ corresponds to arch 86 from NV_TARGET_SM_INTEGER_LIST.
+#elif defined(NV_TARGET_SM_INTEGER_LIST)
+    return runtime_to_compiletime<10, NV_TARGET_SM_INTEGER_LIST>(device_ptx_version, op);
 #else
     if (device_ptx_version < PolicyPtxVersion)
     {
@@ -656,18 +696,19 @@ private:
   template <int, typename, typename>
   friend struct ChainedPolicy; // let us call invoke_static of other ChainedPolicy instantiations
 
-  template <int... CudaArches, typename FunctorT>
+  template <int ArchMult, int... CudaArches, typename FunctorT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t runtime_to_compiletime(int device_ptx_version, FunctorT& op)
   {
     // We instantiate invoke_static for each CudaArches, but only call the one matching device_ptx_version.
-    // If there's no exact match of any of the architectures in __CUDA_ARCH_LIST__ and the runtime
+    // If there's no exact match of the architectures in __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST and the runtime
     // queried ptx version (i.e., the closest ptx version to the current device's architecture that the EmptyKernel was
     // compiled for), we return cudaErrorInvalidDeviceFunction. Such a scenario may arise if CUB_DISABLE_NAMESPACE_MAGIC
     // is set and different TUs are compiled for different sets of architecture.
     cudaError_t e             = cudaErrorInvalidDeviceFunction;
     const cudaError_t dummy[] = {
-      (device_ptx_version == CudaArches ? (e = invoke_static<CudaArches>(op, ::cuda::std::true_type{}))
-                                        : cudaSuccess)...};
+      (device_ptx_version == (CudaArches * ArchMult)
+         ? (e = invoke_static<(CudaArches * ArchMult)>(op, ::cuda::std::true_type{}))
+         : cudaSuccess)...};
     (void) dummy;
     return e;
   }
@@ -742,3 +783,5 @@ private:
 };
 
 CUB_NAMESPACE_END
+
+#include <cub/launcher/cuda_runtime.cuh> // to complete the definition of TripleChevronFactory

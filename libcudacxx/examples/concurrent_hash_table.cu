@@ -9,36 +9,24 @@
 // TODO: It would be great if this example could NOT depend on Thrust.
 #include <thrust/allocate_unique.h>
 #include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/functional.h>
 #include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/pair.h>
+#include <thrust/universal_allocator.h>
+#include <thrust/universal_vector.h>
 
 #include <cassert>
 #include <cstdio>
 #include <iostream>
 #include <random>
 
-// TODO: This should be upstreamed and then removed.
-namespace thrust
-{
-
-using universal_raw_memory_resource =
-  thrust::system::cuda::detail::cuda_memory_resource<thrust::system::cuda::detail::cudaMallocManaged, cudaFree, void*>;
-
-template <typename T>
-using universal_allocator = thrust::mr::stateless_resource_allocator<T, universal_raw_memory_resource>;
-
-template <typename T>
-using universal_vector = thrust::device_vector<T, universal_allocator<T>>;
-
-} // namespace thrust
-
 template <typename Key,
           typename Value,
           typename Hash           = thrust::identity<Key>,
           typename KeyEqual       = thrust::equal_to<Key>,
-          typename MemoryResource = thrust::universal_raw_memory_resource>
+          typename MemoryResource = thrust::universal_memory_resource>
 struct concurrent_hash_table
 {
   // Elements transition from state_empty -> state_reserved ->

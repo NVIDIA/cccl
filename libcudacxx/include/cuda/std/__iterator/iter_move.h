@@ -42,7 +42,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CPO(__iter_move)
 
 _CCCL_HOST_DEVICE void iter_move();
 
-#  if _CCCL_STD_VER >= 2020
+#  if !defined(_CCCL_NO_CONCEPTS)
 template <class _Tp>
 concept __unqualified_iter_move =
   __class_or_enum<remove_cvref_t<_Tp>> && requires(_Tp&& __t) { iter_move(_CUDA_VSTD::forward<_Tp>(__t)); };
@@ -59,57 +59,56 @@ concept __just_deref = !__unqualified_iter_move<_Tp> && !__move_deref<_Tp> && re
   requires(!is_lvalue_reference_v<decltype(*__t)>);
 };
 
-#  else // ^^^ _CCCL_STD_VER >= 2020 ^^^ / vvv _CCCL_STD_VER <= 2017 vvv
+#  else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __unqualified_iter_move_,
   requires(_Tp&& __t)(requires(__class_or_enum<remove_cvref_t<_Tp>>), (iter_move(_CUDA_VSTD::forward<_Tp>(__t)))));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __unqualified_iter_move = _LIBCUDACXX_FRAGMENT(__unqualified_iter_move_, _Tp);
+_CCCL_CONCEPT __unqualified_iter_move = _CCCL_FRAGMENT(__unqualified_iter_move_, _Tp);
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
+_CCCL_CONCEPT_FRAGMENT(
   __move_deref_,
   requires(_Tp&& __t)(requires(!__unqualified_iter_move<_Tp>), requires(is_lvalue_reference_v<decltype(*__t)>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __move_deref = _LIBCUDACXX_FRAGMENT(__move_deref_, _Tp);
+_CCCL_CONCEPT __move_deref = _CCCL_FRAGMENT(__move_deref_, _Tp);
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(
-  __just_deref_,
-  requires(_Tp&& __t)(requires(!__unqualified_iter_move<_Tp>),
-                      requires(!__move_deref<_Tp>),
-                      requires(!is_lvalue_reference_v<decltype(*__t)>)));
+_CCCL_CONCEPT_FRAGMENT(__just_deref_,
+                       requires(_Tp&& __t)(requires(!__unqualified_iter_move<_Tp>),
+                                           requires(!__move_deref<_Tp>),
+                                           requires(!is_lvalue_reference_v<decltype(*__t)>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __just_deref = _LIBCUDACXX_FRAGMENT(__just_deref_, _Tp);
-#  endif // _CCCL_STD_VER <= 2017
+_CCCL_CONCEPT __just_deref = _CCCL_FRAGMENT(__just_deref_, _Tp);
+#  endif // _CCCL_NO_CONCEPTS
 
 // [iterator.cust.move]
 
 struct __fn
 {
-  _LIBCUDACXX_TEMPLATE(class _Ip)
-  _LIBCUDACXX_REQUIRES(__unqualified_iter_move<_Ip>)
+  _CCCL_TEMPLATE(class _Ip)
+  _CCCL_REQUIRES(__unqualified_iter_move<_Ip>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(auto) operator()(_Ip&& __i) const
     noexcept(noexcept(iter_move(_CUDA_VSTD::forward<_Ip>(__i))))
   {
     return iter_move(_CUDA_VSTD::forward<_Ip>(__i));
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Ip)
-  _LIBCUDACXX_REQUIRES(__move_deref<_Ip>)
+  _CCCL_TEMPLATE(class _Ip)
+  _CCCL_REQUIRES(__move_deref<_Ip>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Ip&& __i) const noexcept(noexcept(
     _CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i)))) -> decltype(_CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i)))
   {
     return _CUDA_VSTD::move(*_CUDA_VSTD::forward<_Ip>(__i));
   }
 
-  _LIBCUDACXX_TEMPLATE(class _Ip)
-  _LIBCUDACXX_REQUIRES(__just_deref<_Ip>)
+  _CCCL_TEMPLATE(class _Ip)
+  _CCCL_REQUIRES(__just_deref<_Ip>)
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto operator()(_Ip&& __i) const
     noexcept(noexcept(*_CUDA_VSTD::forward<_Ip>(__i))) -> decltype(*_CUDA_VSTD::forward<_Ip>(__i))
   {
@@ -125,29 +124,29 @@ _LIBCUDACXX_END_NAMESPACE_RANGES
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#  if _CCCL_STD_VER >= 2020
+#  if !defined(_CCCL_NO_CONCEPTS)
 template <__dereferenceable _Tp>
   requires requires(_Tp& __t) {
     { _CUDA_VRANGES::iter_move(__t) } -> __can_reference;
   }
 using iter_rvalue_reference_t = decltype(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<_Tp&>()));
 
-#  else // ^^^ _CCCL_STD_VER >= 2020 ^^^ / vvv _CCCL_STD_VER <= 2017 vvv
+#  else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT_FRAGMENT(__can_iter_rvalue_reference_t_,
-                             requires(_Tp& __t)(requires(__dereferenceable<_Tp>),
-                                                requires(__can_reference<decltype(_CUDA_VRANGES::iter_move(__t))>)));
+_CCCL_CONCEPT_FRAGMENT(__can_iter_rvalue_reference_t_,
+                       requires(_Tp& __t)(requires(__dereferenceable<_Tp>),
+                                          requires(__can_reference<decltype(_CUDA_VRANGES::iter_move(__t))>)));
 
 template <class _Tp>
-_LIBCUDACXX_CONCEPT __can_iter_rvalue_reference_t = _LIBCUDACXX_FRAGMENT(__can_iter_rvalue_reference_t_, _Tp);
+_CCCL_CONCEPT __can_iter_rvalue_reference_t = _CCCL_FRAGMENT(__can_iter_rvalue_reference_t_, _Tp);
 
 template <class _Tp>
 using __iter_rvalue_reference_t = decltype(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<_Tp&>()));
 
 template <class _Tp>
 using iter_rvalue_reference_t = enable_if_t<__can_iter_rvalue_reference_t<_Tp>, __iter_rvalue_reference_t<_Tp>>;
-#  endif // _CCCL_STD_VER <= 2017
+#  endif // _CCCL_NO_CONCEPTS
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

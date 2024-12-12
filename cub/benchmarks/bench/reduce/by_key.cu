@@ -51,7 +51,7 @@
 #    define TUNE_LOAD_MODIFIER cub::LOAD_CA
 #  endif // TUNE_LOAD
 
-struct device_reduce_by_key_policy_hub
+struct reduce_by_key_policy_hub
 {
   struct Policy350 : cub::ChainedPolicy<350, Policy350, Policy350>
   {
@@ -76,8 +76,8 @@ static void reduce(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
   using vals_input_it_t            = const ValueT*;
   using aggregate_output_it_t      = ValueT*;
   using num_runs_output_iterator_t = OffsetT*;
-  using equality_op_t              = cub::Equality;
-  using reduction_op_t             = cub::Sum;
+  using equality_op_t              = ::cuda::std::equal_to<>;
+  using reduction_op_t             = ::cuda::std::plus<>;
   using accum_t                    = ValueT;
   using offset_t                   = OffsetT;
 
@@ -92,7 +92,7 @@ static void reduce(nvbench::state& state, nvbench::type_list<KeyT, ValueT, Offse
     reduction_op_t,
     offset_t,
     accum_t,
-    device_reduce_by_key_policy_hub>;
+    reduce_by_key_policy_hub>;
 #else
   using dispatch_t = cub::DispatchReduceByKey<
     keys_input_it_t,

@@ -39,6 +39,7 @@
 
 #include <cub/agent/agent_adjacent_difference.cuh>
 #include <cub/detail/type_traits.cuh>
+#include <cub/device/dispatch/tuning/tuning_adjacent_difference.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_deprecated.cuh>
 #include <cub/util_device.cuh>
@@ -101,45 +102,13 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceAdjacentDifferenceDifferenceKernel(
   agent.Process(tile_idx, tile_base);
 }
 
-template <typename InputIteratorT, bool MayAlias = true>
-struct DeviceAdjacentDifferencePolicy
-{
-  using ValueT = typename std::iterator_traits<InputIteratorT>::value_type;
-
-  //------------------------------------------------------------------------------
-  // Architecture-specific tuning policies
-  //------------------------------------------------------------------------------
-
-  struct Policy300 : ChainedPolicy<300, Policy300, Policy300>
-  {
-    using AdjacentDifferencePolicy =
-      AgentAdjacentDifferencePolicy<128,
-                                    Nominal8BItemsToItems<ValueT>(7),
-                                    BLOCK_LOAD_WARP_TRANSPOSE,
-                                    LOAD_DEFAULT,
-                                    BLOCK_STORE_WARP_TRANSPOSE>;
-  };
-
-  struct Policy350 : ChainedPolicy<350, Policy350, Policy300>
-  {
-    using AdjacentDifferencePolicy =
-      AgentAdjacentDifferencePolicy<128,
-                                    Nominal8BItemsToItems<ValueT>(7),
-                                    BLOCK_LOAD_WARP_TRANSPOSE,
-                                    MayAlias ? LOAD_CA : LOAD_LDG,
-                                    BLOCK_STORE_WARP_TRANSPOSE>;
-  };
-
-  using MaxPolicy = Policy350;
-};
-
 template <typename InputIteratorT,
           typename OutputIteratorT,
           typename DifferenceOpT,
           typename OffsetT,
           bool MayAlias,
           bool ReadLeft,
-          typename SelectedPolicy = DeviceAdjacentDifferencePolicy<InputIteratorT, MayAlias>>
+          typename SelectedPolicy = detail::adjacent_difference::policy_hub<InputIteratorT, MayAlias>>
 struct DispatchAdjacentDifference : public SelectedPolicy
 {
   using InputT = typename std::iterator_traits<InputIteratorT>::value_type;
@@ -169,7 +138,7 @@ struct DispatchAdjacentDifference : public SelectedPolicy
       , stream(stream)
   {}
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_DEPRECATED CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE DispatchAdjacentDifference(
     void* d_temp_storage,
@@ -190,7 +159,7 @@ struct DispatchAdjacentDifference : public SelectedPolicy
   {
     CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   /// Invocation
   template <typename ActivePolicyT>
@@ -356,7 +325,7 @@ struct DispatchAdjacentDifference : public SelectedPolicy
     return error;
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION static cudaError_t Dispatch(
     void* d_temp_storage,
@@ -372,7 +341,7 @@ struct DispatchAdjacentDifference : public SelectedPolicy
 
     return Dispatch(d_temp_storage, temp_storage_bytes, d_input, d_output, num_items, difference_op, stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

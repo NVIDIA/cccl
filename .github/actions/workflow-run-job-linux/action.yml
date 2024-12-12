@@ -68,6 +68,7 @@ runs:
       env:
         CI: true
         RUNNER: "${{inputs.runner}}"
+        IMAGE: "${{inputs.image}}"
         # Dereferencing the command from an env var instead of a GHA input avoids issues with escaping
         # semicolons and other special characters (e.g. `-arch "60;70;80"`).
         COMMAND: "${{inputs.command}}"
@@ -139,15 +140,21 @@ runs:
           sed "s@/__w@$(dirname "$(dirname "${{github.workspace}}")")@" <<< "$1"
         }
 
+        # If the image contains "cudaXX.Yext"...
+        if [[ "${IMAGE}" =~ cuda[0-9.]+ext ]]; then
+          cuda_ext_request="--cuda-ext"
+        fi
+
         # Launch this container using the host's docker daemon
         set -x
         ${{github.event.repository.name}}/.devcontainer/launch.sh \
           --docker \
           --cuda ${{inputs.cuda}} \
           --host ${{inputs.host}} \
+          ${cuda_ext_request:-} \
           "${gpu_request[@]}" \
           --env "CI=$CI" \
-          --env "VAULT_HOST=" \
+          --env "AWS_ROLE_ARN=" \
           --env "COMMAND=$COMMAND" \
           --env "SCCACHE_IDLE_TIMEOUT=0" \
           --env "GITHUB_ENV=$GITHUB_ENV" \

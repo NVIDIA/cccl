@@ -226,7 +226,7 @@ template <typename KeysInputIteratorT,
                                        cub::detail::value_t<ValuesInputIteratorT>,
                                        cub::detail::value_t<ValuesInputIteratorT>>,
           typename SelectedPolicy = //
-          detail::device_reduce_by_key_policy_hub< //
+          detail::reduce_by_key::policy_hub< //
             ReductionOpT, //
             AccumT, //
             cub::detail::non_void_value_t< //
@@ -550,7 +550,7 @@ struct DispatchReduceByKey
     return error;
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
@@ -581,7 +581,7 @@ struct DispatchReduceByKey
       num_items,
       stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

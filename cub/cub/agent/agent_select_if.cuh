@@ -175,7 +175,7 @@ struct partition_distinct_output_t
  *    num_total_items() -> total number of items across all partitions (partition only)
  *    update_num_selected(d_num_sel_out, num_selected) -> invoked by last CTA with number of selected
  *
- * @tparam KEEP_REJECTS
+ * @tparam KeepRejects
  *   Whether or not we push rejected items to the back of the output
  */
 template <typename AgentSelectIfPolicyT,
@@ -186,7 +186,7 @@ template <typename AgentSelectIfPolicyT,
           typename EqualityOpT,
           typename OffsetT,
           typename StreamingContextT,
-          bool KEEP_REJECTS,
+          bool KeepRejects,
           bool MayAlias>
 struct AgentSelectIf
 {
@@ -206,7 +206,7 @@ struct AgentSelectIf
   // updating a tile state. Similarly, we need to make sure that the load of previous tile states precede writing of
   // the stream-compacted items and, hence, we need a load acquire when reading those tile states.
   static constexpr MemoryOrder memory_order =
-    ((!KEEP_REJECTS) && MayAlias && (!loads_via_smem)) ? MemoryOrder::acquire_release : MemoryOrder::relaxed;
+    ((!KeepRejects) && MayAlias && (!loads_via_smem)) ? MemoryOrder::acquire_release : MemoryOrder::relaxed;
 
   // If we need to enforce memory order for in-place stream compaction, wrap the default decoupled look-back tile
   // state in a helper class that enforces memory order on reads and writes
@@ -270,8 +270,9 @@ struct AgentSelectIf
   using BlockScanT = BlockScan<OffsetT, BLOCK_THREADS, AgentSelectIfPolicyT::SCAN_ALGORITHM>;
 
   // Callback type for obtaining tile prefix during block scan
-  using DelayConstructorT     = typename AgentSelectIfPolicyT::detail::delay_constructor_t;
-  using TilePrefixCallbackOpT = TilePrefixCallbackOp<OffsetT, cub::Sum, MemoryOrderedTileStateT, 0, DelayConstructorT>;
+  using DelayConstructorT = typename AgentSelectIfPolicyT::detail::delay_constructor_t;
+  using TilePrefixCallbackOpT =
+    TilePrefixCallbackOp<OffsetT, ::cuda::std::plus<>, MemoryOrderedTileStateT, 0, DelayConstructorT>;
 
   // Item exchange type
   using ItemExchangeT = InputT[TILE_ITEMS];
@@ -844,7 +845,7 @@ struct AgentSelectIf
       0,
       0,
       num_tile_selections,
-      cub::Int2Type<KEEP_REJECTS>{});
+      cub::Int2Type<KeepRejects>{});
 
     return num_tile_selections;
   }
@@ -896,7 +897,8 @@ struct AgentSelectIf
     CTA_SYNC();
 
     // Exclusive scan of values and selection_flags
-    TilePrefixCallbackOpT prefix_op(tile_state_wrapper, temp_storage.scan_storage.prefix, cub::Sum(), tile_idx);
+    TilePrefixCallbackOpT prefix_op(
+      tile_state_wrapper, temp_storage.scan_storage.prefix, ::cuda::std::plus<>{}, tile_idx);
     BlockScanT(temp_storage.scan_storage.scan).ExclusiveSum(selection_flags, selection_indices, prefix_op);
 
     OffsetT num_tile_selections   = prefix_op.GetBlockAggregate();
@@ -926,7 +928,7 @@ struct AgentSelectIf
       num_selections_prefix,
       num_rejected_prefix,
       num_selections,
-      cub::Int2Type<KEEP_REJECTS>{});
+      cub::Int2Type<KeepRejects>{});
 
     return num_selections;
   }

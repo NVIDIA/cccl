@@ -419,7 +419,7 @@ struct dispatch_histogram
         privatized_decode_op, privatized_decode_op + NUM_ACTIVE_CHANNELS, privatized_decode_op_wrapper.begin());
       ::cuda::std::copy(output_decode_op, output_decode_op + NUM_ACTIVE_CHANNELS, output_decode_op_wrapper.begin());
 
-      auto minus_one = cuda::proclaim_return_type<int>([](int levels) {
+      auto minus_one = ::cuda::proclaim_return_type<int>([](int levels) {
         return levels - 1;
       });
       ::cuda::std::transform(
@@ -555,12 +555,8 @@ template <int NUM_CHANNELS,
           typename CounterT,
           typename LevelT,
           typename OffsetT,
-          typename SelectedPolicy = //
-          detail::device_histogram_policy_hub< //
-            cub::detail::value_t<SampleIteratorT>,
-            CounterT,
-            NUM_CHANNELS,
-            NUM_ACTIVE_CHANNELS>>
+          typename SelectedPolicy =
+            detail::histogram::policy_hub<detail::value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS>>
 struct DispatchHistogram : SelectedPolicy
 {
   static_assert(NUM_CHANNELS <= 4, "Histograms only support up to 4 channels");
@@ -847,7 +843,7 @@ public:
   {
 // GCC 14 rightfully warns that when a value-initialized array of this struct is copied using memcpy, uninitialized
 // bytes may be accessed. To avoid this, we add a dummy member, so value initialization actually initializes the memory.
-#if defined(_CCCL_COMPILER_GCC) && __GNUC__ >= 13
+#if _CCCL_COMPILER(GCC, >=, 13)
     char dummy;
 #endif
 
@@ -1036,7 +1032,7 @@ public:
     return error;
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION static cudaError_t DispatchRange(
     void* d_temp_storage,
@@ -1067,7 +1063,7 @@ public:
       stream,
       is_byte_sample);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   /**
    * Dispatch routine for HistogramRange, specialized for 8-bit sample types
@@ -1202,7 +1198,7 @@ public:
     return error;
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION static cudaError_t DispatchRange(
     void* d_temp_storage,
@@ -1233,7 +1229,7 @@ public:
       stream,
       is_byte_sample);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   /**
    * Dispatch routine for HistogramEven, specialized for sample types larger than 8-bit
@@ -1420,7 +1416,7 @@ public:
     return error;
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DispatchEven(
     void* d_temp_storage,
@@ -1453,7 +1449,7 @@ public:
       stream,
       is_byte_sample);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 
   /**
    * Dispatch routine for HistogramEven, specialized for 8-bit sample types
@@ -1592,7 +1588,7 @@ public:
     return error;
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t DispatchEven(
     void* d_temp_storage,
@@ -1625,7 +1621,7 @@ public:
       stream,
       is_byte_sample);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

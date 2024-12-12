@@ -133,7 +133,8 @@ struct type_with_swap
 
 inline _CCCL_HOST_DEVICE void swap(type_with_swap& a, type_with_swap& b)
 {
-  thrust::swap(a.m_x, b.m_x);
+  using ::cuda::std::swap;
+  swap(a.m_x, b.m_x);
   a.m_swapped = true;
   b.m_swapped = true;
 }

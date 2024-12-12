@@ -153,16 +153,16 @@ DeviceThreeWayPartitionInitKernel(ScanTileStateT tile_state, int num_tiles, NumS
  * Dispatch
  ******************************************************************************/
 
-template <typename InputIteratorT,
-          typename FirstOutputIteratorT,
-          typename SecondOutputIteratorT,
-          typename UnselectedOutputIteratorT,
-          typename NumSelectedIteratorT,
-          typename SelectFirstPartOp,
-          typename SelectSecondPartOp,
-          typename OffsetT,
-          typename SelectedPolicy =
-            detail::device_three_way_partition_policy_hub<cub::detail::value_t<InputIteratorT>, OffsetT>>
+template <
+  typename InputIteratorT,
+  typename FirstOutputIteratorT,
+  typename SecondOutputIteratorT,
+  typename UnselectedOutputIteratorT,
+  typename NumSelectedIteratorT,
+  typename SelectFirstPartOp,
+  typename SelectSecondPartOp,
+  typename OffsetT,
+  typename SelectedPolicy = detail::three_way_partition::policy_hub<cub::detail::value_t<InputIteratorT>, OffsetT>>
 struct DispatchThreeWayPartitionIf
 {
   /*****************************************************************************
@@ -452,7 +452,7 @@ struct DispatchThreeWayPartitionIf
     return error;
   }
 
-#ifndef DOXYGEN_SHOULD_SKIP_THIS // Do not document
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
@@ -483,7 +483,7 @@ struct DispatchThreeWayPartitionIf
       num_items,
       stream);
   }
-#endif // DOXYGEN_SHOULD_SKIP_THIS
+#endif // _CCCL_DOXYGEN_INVOKED
 };
 
 CUB_NAMESPACE_END

@@ -44,8 +44,8 @@
 #include <algorithm>
 
 #include "catch2_test_device_select_common.cuh"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 template <class T, class FlagT>
 static c2h::host_vector<T> get_reference(const c2h::device_vector<T>& in, const c2h::device_vector<FlagT>& flags)
@@ -96,7 +96,7 @@ using types = c2h::type_list<std::uint8_t, std::uint32_t, ulonglong4, c2h::custo
 // List of offset types to be used for testing large number of items
 using offset_types = c2h::type_list<std::int32_t, std::uint32_t, std::uint64_t>;
 
-CUB_TEST("DevicePartition::Flagged can run with empty input", "[device][partition_flagged]", types)
+C2H_TEST("DevicePartition::Flagged can run with empty input", "[device][partition_flagged]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -114,14 +114,14 @@ CUB_TEST("DevicePartition::Flagged can run with empty input", "[device][partitio
   REQUIRE(num_selected_out[0] == 0);
 }
 
-CUB_TEST("DevicePartition::Flagged handles all matched", "[device][partition_flagged]", types)
+C2H_TEST("DevicePartition::Flagged handles all matched", "[device][partition_flagged]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   c2h::device_vector<char> flags(num_items, static_cast<char>(1));
 
@@ -135,14 +135,14 @@ CUB_TEST("DevicePartition::Flagged handles all matched", "[device][partition_fla
   REQUIRE(out == in);
 }
 
-CUB_TEST("DevicePartition::Flagged handles no matched", "[device][partition_flagged]", types)
+C2H_TEST("DevicePartition::Flagged handles no matched", "[device][partition_flagged]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   c2h::device_vector<char> flags(num_items, static_cast<char>(0));
 
@@ -159,17 +159,17 @@ CUB_TEST("DevicePartition::Flagged handles no matched", "[device][partition_flag
   REQUIRE(out == in);
 }
 
-CUB_TEST("DevicePartition::Flagged does not change input", "[device][partition_flagged]", types)
+C2H_TEST("DevicePartition::Flagged does not change input", "[device][partition_flagged]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   c2h::device_vector<int> flags(num_items);
-  c2h::gen(CUB_SEED(1), flags, 0, 1);
+  c2h::gen(C2H_SEED(1), flags, 0, 1);
 
   const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
 
@@ -186,17 +186,17 @@ CUB_TEST("DevicePartition::Flagged does not change input", "[device][partition_f
   REQUIRE(reference == in);
 }
 
-CUB_TEST("DevicePartition::Flagged is stable", "[device][partition_flagged]")
+C2H_TEST("DevicePartition::Flagged is stable", "[device][partition_flagged]")
 {
   using type = c2h::custom_type_t<c2h::equal_comparable_t>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   c2h::device_vector<int> flags(num_items);
-  c2h::gen(CUB_SEED(1), flags, 0, 1);
+  c2h::gen(C2H_SEED(1), flags, 0, 1);
 
   const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
   const c2h::host_vector<type> reference = get_reference(in, flags);
@@ -211,17 +211,17 @@ CUB_TEST("DevicePartition::Flagged is stable", "[device][partition_flagged]")
   REQUIRE(reference == out);
 }
 
-CUB_TEST("DevicePartition::Flagged works with iterators", "[device][partition_flagged]", all_types)
+C2H_TEST("DevicePartition::Flagged works with iterators", "[device][partition_flagged]", all_types)
 {
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   c2h::device_vector<int> flags(num_items);
-  c2h::gen(CUB_SEED(1), flags, 0, 1);
+  c2h::gen(C2H_SEED(1), flags, 0, 1);
 
   const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
   const c2h::host_vector<type> reference = get_reference(in, flags);
@@ -236,17 +236,17 @@ CUB_TEST("DevicePartition::Flagged works with iterators", "[device][partition_fl
   REQUIRE(reference == out);
 }
 
-CUB_TEST("DevicePartition::Flagged works with pointers", "[device][partition_flagged]", types)
+C2H_TEST("DevicePartition::Flagged works with pointers", "[device][partition_flagged]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   c2h::device_vector<int> flags(num_items);
-  c2h::gen(CUB_SEED(1), flags, 0, 1);
+  c2h::gen(C2H_SEED(1), flags, 0, 1);
 
   const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
   const c2h::host_vector<type> reference = get_reference(in, flags);
@@ -289,17 +289,17 @@ struct convertible_to_bool
   }
 };
 
-CUB_TEST("DevicePartition::Flagged works with flags that are convertible to bool", "[device][partition_flagged]")
+C2H_TEST("DevicePartition::Flagged works with flags that are convertible to bool", "[device][partition_flagged]")
 {
   using type = c2h::custom_type_t<c2h::equal_comparable_t>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   c2h::device_vector<int> iflags(num_items);
-  c2h::gen(CUB_SEED(1), iflags, 0, 1);
+  c2h::gen(C2H_SEED(1), iflags, 0, 1);
 
   c2h::device_vector<convertible_to_bool> flags = iflags;
   const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
@@ -315,7 +315,7 @@ CUB_TEST("DevicePartition::Flagged works with flags that are convertible to bool
   REQUIRE(reference == out);
 }
 
-CUB_TEST("DevicePartition::Flagged works with flags that alias input", "[device][partition_flagged]")
+C2H_TEST("DevicePartition::Flagged works with flags that alias input", "[device][partition_flagged]")
 {
   using type = int;
 
@@ -323,7 +323,7 @@ CUB_TEST("DevicePartition::Flagged works with flags that alias input", "[device]
   c2h::device_vector<type> out(num_items);
 
   c2h::device_vector<int> flags(num_items);
-  c2h::gen(CUB_SEED(1), flags, 0, 1);
+  c2h::gen(C2H_SEED(1), flags, 0, 1);
 
   const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
   const c2h::host_vector<type> reference = get_reference(flags, flags);
@@ -358,17 +358,17 @@ struct convertible_from_T
   }
 };
 
-CUB_TEST("DevicePartition::Flagged works with different output type", "[device][partition_flagged]")
+C2H_TEST("DevicePartition::Flagged works with different output type", "[device][partition_flagged]")
 {
   using type = c2h::custom_type_t<c2h::equal_comparable_t>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<convertible_from_T<type>> out(num_items);
-  c2h::gen(CUB_SEED(2), in);
+  c2h::gen(C2H_SEED(2), in);
 
   c2h::device_vector<int> flags(num_items);
-  c2h::gen(CUB_SEED(1), flags, 0, 1);
+  c2h::gen(C2H_SEED(1), flags, 0, 1);
 
   const int num_selected = static_cast<int>(thrust::count(c2h::device_policy, flags.begin(), flags.end(), 1));
   const c2h::host_vector<type> reference = get_reference(in, flags);
@@ -383,7 +383,7 @@ CUB_TEST("DevicePartition::Flagged works with different output type", "[device][
   REQUIRE(reference == out);
 }
 
-CUB_TEST("DevicePartition::Flagged works for very large number of items", "[device][partition_flagged]", offset_types)
+C2H_TEST("DevicePartition::Flagged works for very large number of items", "[device][partition_flagged]", offset_types)
 try
 {
   using type     = std::int64_t;

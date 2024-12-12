@@ -40,7 +40,7 @@
 
 #if _CCCL_STD_VER >= 2014
 
-#  ifdef _CCCL_CUDA_COMPILER
+#  if _CCCL_HAS_CUDA_COMPILER
 
 #    include <thrust/system/cuda/config.h>
 
@@ -54,9 +54,6 @@
 #    include <type_traits>
 
 // TODO specialize for thrust::plus to use e.g. InclusiveSum instead of IncScan
-//  - Note that thrust::plus<> is transparent, cub::Sum is not. This should be
-//    fixed in CUB first).
-//  - Need to check if CUB actually optimizes for sums before putting in effort
 
 THRUST_NAMESPACE_BEGIN
 namespace system
@@ -147,7 +144,7 @@ unique_eager_event async_inclusive_scan_n(
                       InputValueT,
                       std::int32_t,
                       AccumT,
-                      cub::DeviceScanPolicy<AccumT, BinaryOp>,
+                      cub::detail::scan::policy_hub<AccumT, BinaryOp>,
                       ForceInclusive>;
   using Dispatch64 =
     cub::DispatchScan<ForwardIt,
@@ -156,7 +153,7 @@ unique_eager_event async_inclusive_scan_n(
                       InputValueT,
                       std::int64_t,
                       AccumT,
-                      cub::DeviceScanPolicy<AccumT, BinaryOp>,
+                      cub::detail::scan::policy_hub<AccumT, BinaryOp>,
                       ForceInclusive>;
 
   InputValueT init_value(init);

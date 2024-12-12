@@ -1,0 +1,91 @@
+name: Build MatX
+
+on:
+  workflow_call:
+    inputs:
+      enable_slack_alerts:
+        description: "If true, a message will be posted to the CCCL GHA CI Alert channel if the workflow fails."
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  build-matx:
+    name: Build MatX
+    runs-on: linux-amd64-cpu32
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Add NVCC problem matcher
+        run: echo "::add-matcher::$(pwd)/.github/problem-matchers/problem-matcher.json"
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::279114543810:role/gha-oidc-NVIDIA
+          aws-region: us-east-2
+          role-duration-seconds: 43200 # 12h
+      - name: Run command
+        run: |
+          cat <<"EOF" > "$RUNNER_TEMP/ci.sh"
+          #! /usr/bin/env bash
+          set -eo pipefail
+
+          ~/cccl/ci/matx/build_matx.sh;
+          sccache --show-adv-stats
+          EOF
+
+          chmod +x "$RUNNER_TEMP/ci.sh"
+
+          mkdir -p .aws
+
+          cat <<EOF > .aws/config
+          [default]
+          bucket=rapids-sccache-devs
+          region=us-east-2
+          EOF
+
+          cat <<EOF > .aws/credentials
+          [default]
+          aws_access_key_id=$AWS_ACCESS_KEY_ID
+          aws_session_token=$AWS_SESSION_TOKEN
+          aws_secret_access_key=$AWS_SECRET_ACCESS_KEY
+          EOF
+
+          chmod 0600 .aws/credentials
+          chmod 0664 .aws/config
+
+          .devcontainer/launch.sh \
+            --docker \
+            --cuda 12.6 \
+            --host gcc13 \
+            --cuda-ext \
+            --env VAULT_HOST= \
+            --env "GITHUB_SHA=$GITHUB_SHA" \
+            --env "GITHUB_REF_NAME=$GITHUB_REF_NAME" \
+            --env "GITHUB_REPOSITORY=$GITHUB_REPOSITORY" \
+            --volume "$RUNNER_TEMP/ci.sh:/ci.sh" \
+            -- /ci.sh
+
+  notify-failure:
+    name: Notify Slack of MatX failure
+    if: ${{ failure() && inputs.enable_slack_alerts }}
+    needs: build-matx
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify
+        uses: slackapi/slack-github-action@v1.26.0
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_NOTIFIER_BOT_TOKEN }}
+          WORKFLOW_TYPE: ${{ github.workflow }}
+          SUMMARY_URL: https://github.com/${{github.repository}}/actions/runs/${{github.run_id}}
+        with:
+          channel-id: ${{ secrets.SLACK_CHANNEL_CI_ALERT }}
+          slack-message: |
+            MatX build in workflow '${{ env.WORKFLOW_TYPE }}' failed.
+
+            Details: ${{ env.SUMMARY_URL }}

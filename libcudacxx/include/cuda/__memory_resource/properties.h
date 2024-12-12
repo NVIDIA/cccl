@@ -24,7 +24,7 @@
 #include <cuda/std/__type_traits/type_set.h>
 #include <cuda/std/cstddef>
 
-#if !defined(_CCCL_COMPILER_MSVC_2017) && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
+#if !_CCCL_COMPILER(MSVC2017) && defined(LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE)
 
 #  if _CCCL_STD_VER >= 2014
 
@@ -47,17 +47,17 @@ struct host_accessible
 //! @brief determines wether a set of properties signals host accessible memory.
 template <class... _Properties>
 _CCCL_INLINE_VAR constexpr bool __is_host_accessible =
-  _CUDA_VSTD::__type_set_contains<_CUDA_VSTD::__make_type_set<_Properties...>, host_accessible>;
+  _CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__make_type_set<_Properties...>, host_accessible>;
 
 //! @brief determines wether a set of properties signals device accessible memory.
 template <class... _Properties>
 _CCCL_INLINE_VAR constexpr bool __is_device_accessible =
-  _CUDA_VSTD::__type_set_contains<_CUDA_VSTD::__make_type_set<_Properties...>, device_accessible>;
+  _CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__make_type_set<_Properties...>, device_accessible>;
 
 //! @brief determines wether a set of properties signals host device accessible memory.
 template <class... _Properties>
 _CCCL_INLINE_VAR constexpr bool __is_host_device_accessible =
-  _CUDA_VSTD::__type_set_contains<_CUDA_VSTD::__make_type_set<_Properties...>, host_accessible, device_accessible>;
+  _CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__make_type_set<_Properties...>, host_accessible, device_accessible>;
 
 //! @brief verifies that a set of properties contains at least one execution space property
 template <class... _Properties>
@@ -68,6 +68,6 @@ _LIBCUDACXX_END_NAMESPACE_CUDA_MR
 
 #  endif // _CCCL_STD_VER >= 2014
 
-#endif // !_CCCL_COMPILER_MSVC_2017 && LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
+#endif // !_CCCL_COMPILER(MSVC2017) && LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE
 
 #endif //_CUDA__MEMORY_RESOURCE_PROPERTIES_H

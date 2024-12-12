@@ -73,8 +73,8 @@ static_assert(!canCstrFromExpected<int, NoCtorFromInt, int, int>, "");
 template <class T>
 struct CtorFrom
 {
-  _LIBCUDACXX_TEMPLATE(class T2 = T)
-  _LIBCUDACXX_REQUIRES((!cuda::std::same_as<T2, int>) )
+  _CCCL_TEMPLATE(class T2 = T)
+  _CCCL_REQUIRES((!cuda::std::same_as<T2, int>) )
   __host__ __device__ explicit CtorFrom(int);
   __host__ __device__ explicit CtorFrom(T);
 
@@ -100,8 +100,8 @@ static_assert(!canCstrFromExpected<CtorFrom<cuda::std::expected<int, int> const&
 template <class T>
 struct ConvertFrom
 {
-  _LIBCUDACXX_TEMPLATE(class T2 = T)
-  _LIBCUDACXX_REQUIRES((!cuda::std::same_as<T2, int>) )
+  _CCCL_TEMPLATE(class T2 = T)
+  _CCCL_REQUIRES((!cuda::std::same_as<T2, int>) )
   __host__ __device__ ConvertFrom(int);
   __host__ __device__ ConvertFrom(T);
 

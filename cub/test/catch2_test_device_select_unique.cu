@@ -40,8 +40,8 @@
 #include <algorithm>
 
 #include "catch2_test_device_select_common.cuh"
-#include "catch2_test_helper.h"
 #include "catch2_test_launch_helper.h"
+#include <c2h/catch2_test_helper.h>
 
 template <class T>
 inline T to_bound(const unsigned long long bound)
@@ -102,7 +102,7 @@ using all_types =
 
 using types = c2h::type_list<std::uint8_t, std::uint32_t>;
 
-CUB_TEST("DeviceSelect::Unique can run with empty input", "[device][select_unique]", types)
+C2H_TEST("DeviceSelect::Unique can run with empty input", "[device][select_unique]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -119,7 +119,7 @@ CUB_TEST("DeviceSelect::Unique can run with empty input", "[device][select_uniqu
   REQUIRE(num_selected_out[0] == 0);
 }
 
-CUB_TEST("DeviceSelect::Unique handles none equal", "[device][select_unique]", types)
+C2H_TEST("DeviceSelect::Unique handles none equal", "[device][select_unique]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -134,7 +134,7 @@ CUB_TEST("DeviceSelect::Unique handles none equal", "[device][select_unique]", t
   REQUIRE(num_selected_out[0] == num_items);
 }
 
-CUB_TEST("DeviceSelect::Unique handles all equal", "[device][select_unique]", types)
+C2H_TEST("DeviceSelect::Unique handles all equal", "[device][select_unique]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
@@ -153,14 +153,14 @@ CUB_TEST("DeviceSelect::Unique handles all equal", "[device][select_unique]", ty
   REQUIRE(out[0] == in[0]);
 }
 
-CUB_TEST("DeviceSelect::Unique does not change input", "[device][select_unique]", types)
+C2H_TEST("DeviceSelect::Unique does not change input", "[device][select_unique]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
-  c2h::gen(CUB_SEED(2), in, to_bound<type>(0), to_bound<type>(42));
+  c2h::gen(C2H_SEED(2), in, to_bound<type>(0), to_bound<type>(42));
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -174,14 +174,14 @@ CUB_TEST("DeviceSelect::Unique does not change input", "[device][select_unique]"
   REQUIRE(reference == in);
 }
 
-CUB_TEST("DeviceSelect::Unique works with iterators", "[device][select_unique]", all_types)
+C2H_TEST("DeviceSelect::Unique works with iterators", "[device][select_unique]", all_types)
 {
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
-  c2h::gen(CUB_SEED(2), in, to_bound<type>(0), to_bound<type>(42));
+  c2h::gen(C2H_SEED(2), in, to_bound<type>(0), to_bound<type>(42));
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -199,14 +199,14 @@ CUB_TEST("DeviceSelect::Unique works with iterators", "[device][select_unique]",
   REQUIRE(reference == out);
 }
 
-CUB_TEST("DeviceSelect::Unique works with pointers", "[device][select_unique]", types)
+C2H_TEST("DeviceSelect::Unique works with pointers", "[device][select_unique]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<type> out(num_items);
-  c2h::gen(CUB_SEED(2), in, to_bound<type>(0), to_bound<type>(42));
+  c2h::gen(C2H_SEED(2), in, to_bound<type>(0), to_bound<type>(42));
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -245,14 +245,14 @@ struct convertible_from_T
   }
 };
 
-CUB_TEST("DeviceSelect::Unique works with a different output type", "[device][select_unique]", types)
+C2H_TEST("DeviceSelect::Unique works with a different output type", "[device][select_unique]", types)
 {
   using type = typename c2h::get<0, TestType>;
 
   const int num_items = GENERATE_COPY(take(2, random(1, 1000000)));
   c2h::device_vector<type> in(num_items);
   c2h::device_vector<convertible_from_T<type>> out(num_items);
-  c2h::gen(CUB_SEED(2), in, to_bound<type>(0), to_bound<type>(42));
+  c2h::gen(C2H_SEED(2), in, to_bound<type>(0), to_bound<type>(42));
 
   // Needs to be device accessible
   c2h::device_vector<int> num_selected_out(1, 0);
@@ -270,7 +270,7 @@ CUB_TEST("DeviceSelect::Unique works with a different output type", "[device][se
   REQUIRE(reference == out);
 }
 
-CUB_TEST("DeviceSelect::Unique works for very large number of items", "[device][select_unique]")
+C2H_TEST("DeviceSelect::Unique works for very large number of items", "[device][select_unique]")
 try
 {
   using type     = std::int64_t;
