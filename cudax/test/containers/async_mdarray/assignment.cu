@@ -167,42 +167,4 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray assignment",
       CHECK(input.data() == nullptr);
     }
   }
-
-  SECTION("cudax::async_mdarray assignment initializer_list")
-  {
-    { // Can be assigned an empty initializer_list
-      Array vec{env};
-      vec = {};
-      CHECK(vec.empty());
-      CHECK(vec.data() == nullptr);
-    }
-
-    { // Can be assigned an empty initializer_list, shrinking
-      Array vec{env, cuda::std::dims<1>{6}, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
-      auto* old_ptr = vec.data();
-      vec           = {};
-      CHECK(vec.empty());
-    }
-
-    { // Can be assigned a non-empty initializer_list, from empty
-      Array vec{env};
-      vec = {T(1), T(42), T(1337), T(0), T(12), T(-1)};
-      CHECK(vec.size() == 6);
-      CHECK(equal_range(vec));
-    }
-
-    { // Can be assigned a non-empty initializer_list, shrinking
-      Array vec{env, cuda::std::dims<1>{42}};
-      vec = {T(1), T(42), T(1337), T(0), T(12), T(-1)};
-      CHECK(vec.size() == 6);
-      CHECK(equal_range(vec));
-    }
-
-    { // Can be assigned a non-empty initializer_list, growing from non empty
-      Array vec{env, cuda::std::dims<1>{2}};
-      vec = {T(1), T(42), T(1337), T(0), T(12), T(-1)};
-      CHECK(vec.size() == 6);
-      CHECK(equal_range(vec));
-    }
-  }
 }

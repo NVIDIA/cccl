@@ -585,22 +585,6 @@ public:
     return *this;
   }
 
-  //! @brief Assigns an initializer_list to a async_mdarray, replacing its content with that of the initializer_list
-  //! @param __ilist The initializer_list to be assigned
-  _CCCL_HIDE_FROM_ABI async_mdarray& operator=(_CUDA_VSTD::initializer_list<_ElementType> __ilist)
-  {
-    const auto __count = __ilist.size();
-    if (size() != __count)
-    {
-      __buffer_t __new_buf{get_memory_resource(), get_stream(), __count};
-      _CUDA_VSTD::swap(__buf_, __new_buf);
-    }
-
-    __mapping_ = mapping_type{_CUDA_VSTD::dims<1>{__count}};
-    this->__copy_cross(__ilist.begin(), __ilist.end(), __unwrapped_begin(), __count);
-    return *this;
-  }
-
   //! @}
 
   //! @addtogroup conversions
