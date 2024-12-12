@@ -73,11 +73,9 @@ struct ReduceOpWrapper
 template <typename Tuple>
 auto remove_first(const Tuple& t)
 {
-  return ::std::apply(
-    [](auto&& head, auto&&... tail) {
-      return ::std::make_tuple(::std::forward<decltype(tail)>(tail)...);
-    },
-    t);
+  return make_tuple_indexwise<::std::tuple_size_v<Tuple> - 1>(
+    [&](auto i) -> decltype(auto) { return ::std::get<i + 1>(t); }
+  );
 }
 
 template <typename Ctx, typename shape_t, typename TransformOp, typename BinaryOp, typename OutT, typename... Args>
@@ -157,7 +155,7 @@ void run()
   int* X = new int[N];
   int* Y = new int[N];
 
-  for (int ind = 0; ind < N; ind++)
+  for (size_t ind = 0; ind < N; ind++)
   {
     X[ind] = 2 + ind; // rand() % N;
     Y[ind] = 3 + ind; // rand() % N;
