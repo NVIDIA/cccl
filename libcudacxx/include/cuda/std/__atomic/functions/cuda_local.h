@@ -95,7 +95,7 @@ _CCCL_DEVICE inline bool __cuda_load_weak_if_local(const volatile void* __ptr, v
   }
   memcpy(__ret, const_cast<const void*>(__ptr), __size);
   // Required to workaround a compiler bug, see nvbug/4064730
-  __nanosleep(0);
+  NV_IF_TARGET(NV_PROVIDES_SM_70, (__nanosleep(0);))
   return true;
 }
 
@@ -127,7 +127,7 @@ __cuda_compare_exchange_weak_if_local(volatile _Type* __ptr, _Type* __expected, 
     memcpy(const_cast<_Type*>(__expected), const_cast<_Type const*>(__ptr), sizeof(_Type));
     *__success = false;
   }
-  __nanosleep(0);
+  NV_IF_TARGET(NV_PROVIDES_SM_70, (__nanosleep(0);))
   return true;
 }
 
@@ -140,7 +140,7 @@ _CCCL_DEVICE bool __cuda_exchange_weak_if_local(volatile _Type* __ptr, _Type* __
   }
   memcpy(const_cast<_Type*>(__ret), const_cast<const _Type*>(__ptr), sizeof(_Type));
   memcpy(const_cast<_Type*>(__ptr), const_cast<const _Type*>(__val), sizeof(_Type));
-  __nanosleep(0);
+  NV_IF_TARGET(NV_PROVIDES_SM_70, (__nanosleep(0);))
   return true;
 }
 
@@ -153,7 +153,7 @@ _CCCL_DEVICE bool __cuda_fetch_weak_if_local(volatile _Type* __ptr, _Type __val,
   }
   memcpy(const_cast<_Type*>(__ret), const_cast<const _Type*>(__ptr), sizeof(_Type));
   __bop(*__ptr, __val);
-  __nanosleep(0);
+  NV_IF_TARGET(NV_PROVIDES_SM_70, (__nanosleep(0);))
   return true;
 }
 
