@@ -1,4 +1,5 @@
 from . import _iterators
+import numba
 
 
 def CacheModifiedInputIterator(device_array, modifier):
@@ -13,7 +14,7 @@ def CacheModifiedInputIterator(device_array, modifier):
     value_type = device_array.dtype
     return _iterators.CacheModifiedPointer(
         device_array.__cuda_array_interface__["data"][0],
-        _iterators.numba_type_from_any(value_type),
+        numba.from_dtype(value_type),
     )
 
 
@@ -31,4 +32,4 @@ def CountingIterator(offset):
 
 def TransformIterator(op, it):
     """Python facade (similar to built-in map) mimicking a C++ Random Access TransformIterator."""
-    return _iterators.TransformIterator(op, it)
+    return _iterators.make_transform_iterator(it, op)
