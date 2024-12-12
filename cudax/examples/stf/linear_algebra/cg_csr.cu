@@ -17,12 +17,15 @@
 
 using namespace cuda::experimental::stf;
 
-stream_ctx ctx;
-
-class csr_matrix
+struct csr_matrix
 {
-public:
-  csr_matrix(size_t num_rows, size_t num_nonzeros, double* values, size_t* row_offsets, size_t* column_indices)
+  csr_matrix(const context& _ctx,
+             size_t num_rows,
+             size_t num_nonzeros,
+             double* values,
+             size_t* row_offsets,
+             size_t* column_indices)
+      : ctx(_ctx)
   {
     val_handle = ctx.logical_data(make_slice(values, num_nonzeros));
     col_handle = ctx.logical_data(make_slice(column_indices, num_nonzeros));
@@ -30,22 +33,24 @@ public:
   }
 
   /* Description of the CSR */
-  logical_data<slice<double>> val_handle;
-  logical_data<slice<size_t>> row_handle;
-  logical_data<slice<size_t>> col_handle;
+  mutable logical_data<slice<double>> val_handle;
+  mutable logical_data<slice<size_t>> row_handle;
+  mutable logical_data<slice<size_t>> col_handle;
+  mutable context ctx;
 };
 
 class vector
 {
 public:
-  vector(size_t N)
+  vector(const context& _ctx, size_t N)
+      : ctx(_ctx)
   {
     handle = ctx.logical_data(shape_of<slice<double>>(N));
   }
 
   static void copy_vector(const vector& from, vector& to)
   {
-    ctx.parallel_for(to.handle.shape(), to.handle.write(), from.handle.read()).set_symbol("copy_vector")
+    to.ctx.parallel_for(to.handle.shape(), to.handle.write(), from.handle.read()).set_symbol("copy_vector")
         ->*[] _CCCL_DEVICE(size_t i, slice<double> dto, slice<double> dfrom) {
               dto(i) = dfrom(i);
             };
@@ -54,6 +59,7 @@ public:
   // Copy constructor
   vector(const vector& a)
   {
+    ctx    = a.ctx;
     handle = ctx.logical_data(a.handle.shape());
     copy_vector(a, *this);
   }
@@ -74,39 +80,41 @@ public:
     return handle.shape().size();
   }
 
-  logical_data<slice<double>> handle;
+  mutable logical_data<slice<double>> handle;
+  mutable context ctx;
 };
 
 class scalar
 {
 public:
-  scalar()
+  scalar(const context& _ctx)
+      : ctx(_ctx)
   {
-    handle = ctx.logical_data(shape_of<slice<double>>(1));
+    handle = ctx.logical_data(shape_of<scalar_view<double>>());
   }
 
   static void copy_scalar(const scalar& from, scalar& to)
   {
-    ctx.parallel_for(to.handle.shape(), to.handle.write(), from.handle.read())
-        ->*[] _CCCL_DEVICE(size_t i, slice<double> dto, slice<double> dfrom) {
-              dto(i) = dfrom(i);
-            };
+    to.ctx.parallel_for(box(1), to.handle.write(), from.handle.read())->*[] _CCCL_DEVICE(size_t i, auto dto, auto dfrom) {
+      *dto = *dfrom;
+    };
   }
 
   // Copy constructor
   scalar(const scalar& a)
   {
-    handle = ctx.logical_data(shape_of<slice<double>>(1));
+    handle = ctx.logical_data(a.handle.shape());
+    ctx    = a.ctx;
     copy_scalar(a, *this);
   }
 
   scalar operator/(scalar const& rhs) const
   {
     // Submit a task that computes this/rhs
-    scalar res;
-    ctx.parallel_for(handle.shape(), handle.read(), rhs.handle.read(), res.handle.write())
+    scalar res(ctx);
+    res.ctx.parallel_for(box(1), handle.read(), rhs.handle.read(), res.handle.write())
         ->*[] _CCCL_DEVICE(size_t i, auto dthis, auto drhs, auto dres) {
-              dres(i) = dthis(i) / drhs(i);
+              *dres = *dthis / *drhs;
             };
 
     return res;
@@ -115,68 +123,25 @@ public:
   scalar operator-() const
   {
     // Submit a task that computes -s
-    scalar res;
-    ctx.parallel_for(handle.shape(), handle.read(), res.handle.write())
-        ->*[] _CCCL_DEVICE(size_t i, auto dthis, auto dres) {
-              dres(i) = -dthis(i);
-            };
+    scalar res(ctx);
+    res.ctx.parallel_for(box(1), handle.read(), res.handle.write())->*[] _CCCL_DEVICE(size_t i, auto dthis, auto dres) {
+      *dres = -*dthis;
+    };
 
     return res;
   }
 
-  /* This methods reads the content of the logical data in a synchronous manner, and returns its value. */
-  double get() const
-  {
-    double ret;
-    ctx.task(exec_place::host, handle.read())->*[&](cudaStream_t stream, auto dval) {
-      cuda_safe_call(cudaStreamSynchronize(stream));
-      ret = dval(0);
-    };
-    return ret;
-  }
-
-  logical_data<slice<double>> handle;
+  mutable logical_data<scalar_view<double>> handle;
+  mutable context ctx;
 };
 
 scalar DOT(vector& a, vector& b)
 {
-  scalar res;
+  scalar res(a.ctx);
 
-  /* We initialize the result with a trivial kernel so that we do not need a
-   * cooperative kernel launch for the reduction */
-  ctx.parallel_for(box(1), res.handle.write())->*[] _CCCL_DEVICE(size_t, auto dres) {
-    dres(0) = 0.0;
-  };
-
-  auto spec = par<128>(con<32>());
-  ctx.launch(spec, exec_place::current_device(), a.handle.read(), b.handle.read(), res.handle.rw())
-      ->*[] _CCCL_DEVICE(auto th, auto da, auto db, auto dres) {
-            // Each thread computes the dot product of the elements assigned to it
-            double local_sum = 0.0;
-            for (auto i : th.apply_partition(shape(da), std::tuple<blocked_partition, cyclic_partition>()))
-            {
-              local_sum += da(i) * db(i);
-            }
-
-            auto ti = th.inner();
-            __shared__ double block_sum[th.static_width(1)];
-            block_sum[ti.rank()] = local_sum;
-
-            /* Reduce within blocks */
-            for (size_t s = ti.size() / 2; s > 0; s /= 2)
-            {
-              ti.sync();
-              if (ti.rank() < s)
-              {
-                block_sum[ti.rank()] += block_sum[ti.rank() + s];
-              }
-            }
-
-            /* Every first thread of a block writes its contribution */
-            if (ti.rank() == 0)
-            {
-              atomicAdd(&dres(0), block_sum[0]);
-            }
+  a.ctx.parallel_for(a.handle.shape(), a.handle.read(), b.handle.read(), res.handle.reduce(reducer::sum<double>{}))
+      ->*[] __device__(size_t i, auto da, auto db, double& dres) {
+            dres += da(i) * db(i);
           };
 
   return res;
@@ -185,24 +150,26 @@ scalar DOT(vector& a, vector& b)
 // Y = Y + alpha * X
 void AXPY(const scalar& alpha, vector& x, vector& y)
 {
-  ctx.parallel_for(x.handle.shape(), alpha.handle.read(), x.handle.read(), y.handle.rw())
+  y.ctx.parallel_for(x.handle.shape(), alpha.handle.read(), x.handle.read(), y.handle.rw())
       ->*[] _CCCL_DEVICE(size_t i, auto dalpha, auto dx, auto dy) {
-            dy(i) += dalpha(0) * dx(i);
+            dy(i) += *dalpha * dx(i);
           };
 };
 
 // Y = alpha*Y + X
 void SCALE_AXPY(const scalar& alpha, const vector& x, vector& y)
 {
-  ctx.parallel_for(x.handle.shape(), alpha.handle.read(), x.handle.read(), y.handle.rw())
+  y.ctx.parallel_for(x.handle.shape(), alpha.handle.read(), x.handle.read(), y.handle.rw())
       ->*[] _CCCL_DEVICE(size_t i, auto dalpha, auto dx, auto dy) {
-            dy(i) = dalpha(0) * dy(i) + dx(i);
+            dy(i) = *dalpha * dy(i) + dx(i);
           };
 };
 
-void SPMV(csr_matrix& a, vector& x, vector& y)
+vector SPMV(csr_matrix& a, vector& x)
 {
-  ctx.parallel_for(
+  vector y(x.ctx, x.size());
+
+  y.ctx.parallel_for(
     y.handle.shape(), a.val_handle.read(), a.col_handle.read(), a.row_handle.read(), x.handle.read(), y.handle.write())
       ->*[] _CCCL_DEVICE(size_t row, auto da_val, auto da_col, auto da_row, auto dx, auto dy) {
             int row_start = da_row(row);
@@ -216,16 +183,18 @@ void SPMV(csr_matrix& a, vector& x, vector& y)
 
             dy(row) = sum;
           };
+
+  return y;
 }
 
 void cg(csr_matrix& A, vector& X, vector& B)
 {
-  size_t N = B.size();
-  vector R = B;
+  context ctx = A.ctx;
+  size_t N    = B.size();
+  vector R    = B;
 
   // R = R - A*X
-  vector Ax(N);
-  SPMV(A, X, Ax);
+  auto Ax = SPMV(A, X);
   R -= Ax;
 
   vector P = R;
@@ -236,10 +205,8 @@ void cg(csr_matrix& A, vector& X, vector& B)
   const int MAXITER = N;
   for (int k = 0; k < MAXITER; k++)
   {
-    vector Ap(N);
-
     // Ap = A*P
-    SPMV(A, P, Ap);
+    auto Ap = SPMV(A, P);
 
     // alpha = rsold / (p' * Ap);
     scalar alpha = rsold / DOT(P, Ap);
@@ -255,7 +222,7 @@ void cg(csr_matrix& A, vector& X, vector& B)
 
     // Read the residual on the CPU, and halt the iterative process if we have converged
     // (note that this will block the submission of tasks)
-    double err = sqrt(rsnew.get());
+    double err = ctx.wait(rsnew.handle);
     if (err < 1e-10)
     {
       // We have converged
@@ -315,6 +282,29 @@ void genTridiag(size_t* I, size_t* J, double* val, size_t N, size_t nz)
   I[N] = nz;
 }
 
+void cg_solver(size_t N, size_t nz, size_t* row_offsets, size_t* column_indices, double* values)
+{
+  context ctx;
+
+  csr_matrix A(ctx, N, nz, values, row_offsets, column_indices);
+
+  vector X(ctx, N), B(ctx, N);
+
+  // RHS
+  ctx.parallel_for(B.handle.shape(), B.handle.write())->*[] _CCCL_DEVICE(size_t i, auto dB) {
+    dB(i) = 1.0;
+  };
+
+  // Initial guess
+  ctx.parallel_for(X.handle.shape(), X.handle.write())->*[] _CCCL_DEVICE(size_t i, auto dX) {
+    dX(i) = 1.0;
+  };
+
+  cg(A, X, B);
+
+  ctx.finalize();
+}
+
 int main(int argc, char** argv)
 {
   size_t N = 10485760;
@@ -337,21 +327,6 @@ int main(int argc, char** argv)
   // Generate a random matrix that is supposed to be invertible
   genTridiag(row_offsets, column_indices, values, N, nz);
 
-  csr_matrix A(N, nz, values, row_offsets, column_indices);
-
-  vector X(N), B(N);
-
-  // RHS
-  ctx.parallel_for(B.handle.shape(), B.handle.write())->*[] _CCCL_DEVICE(size_t i, auto dB) {
-    dB(i) = 1.0;
-  };
-
-  // Initial guess
-  ctx.parallel_for(X.handle.shape(), X.handle.write())->*[] _CCCL_DEVICE(size_t i, auto dX) {
-    dX(i) = 1.0;
-  };
-
-  cg(A, X, B);
-
-  ctx.finalize();
+  // Solve the system using the CG algorithm
+  cg_solver(N, nz, row_offsets, column_indices, values);
 }

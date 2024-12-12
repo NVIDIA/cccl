@@ -82,7 +82,7 @@ __global__ void loop(const _CCCL_GRID_CONSTANT size_t n, shape_t shape, F f, tup
  * using Partial Specialization
  *
  * Oi are the operator type (no op (= monostate), or reducer::sum for example)
- * Ai are the argument type (slice<T>, or scalar<T> for example)
+ * Ai are the argument type (slice<T>, or scalar_view<T> for example)
  * If Oi is not monostate, it will correspond to the container of Ai, otherwise
  * we don't need to manipulate that argument during a reduction phase, so this
  * is a monostate
@@ -112,9 +112,9 @@ class redux_vars
   /**
    * @brief Tuple of arguments needed to store temporary variables used in reduction operations.
    *
-   * For example, if we have ArgsTuple=tuple<slice<T>, slice<T>, scalar<T>, scalar<U>> and OpsTuple=tuple<none, none,
-   * sum<T>, sum<U>> we will have a type that is tuple<::std::monostate, ::std::monostate, T, U> which corresponds to
-   * the variables we need to store to perform reductions.
+   * For example, if we have ArgsTuple=tuple<slice<T>, slice<T>, scalar_view<T>, scalar_view<U>> and
+   * OpsTuple=tuple<none, none, sum<T>, sum<U>> we will have a type that is tuple<::std::monostate, ::std::monostate, T,
+   * U> which corresponds to the variables we need to store to perform reductions.
    */
   template <typename ArgsTuple, typename OpsTuple>
   struct redux_buffer_tup;
@@ -250,8 +250,8 @@ private:
   }
 
   /* This tuple contains either `::std::monostate` for non reduction variables, or the owning type for a reduction
-   * variable. if tuple_args = tuple<slice<double>, scalar<int>, slice<int>> and tuple_ops=tuple<none, sum<int>, none>
-   * this will correspond to `tuple<::std::monostate, int, ::std::monostate>`.
+   * variable. if tuple_args = tuple<slice<double>, scalar_view<int>, slice<int>> and tuple_ops=tuple<none, sum<int>,
+   * none> this will correspond to `tuple<::std::monostate, int, ::std::monostate>`.
    *
    * So we can store that tuple in shared memory to perform per-block reduction operations.
    */
