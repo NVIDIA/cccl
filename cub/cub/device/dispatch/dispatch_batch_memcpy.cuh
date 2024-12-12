@@ -183,9 +183,9 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT::BLO
 
 /**
  * @brief Kernel that copies data from a batch of given source buffers to their corresponding
- * destination buffer. If a buffer's size is to large to be copied by a single thread block, that
+ * destination buffer. If a buffer's size is too large to be copied by a single thread block, that
  * buffer is put into a queue of buffers that will get picked up later on, where multiple blocks
- * collaborate on each of these buffers. All other buffers get copied straight away.
+ * collaborate on each of these buffers. All other buffers get copied straight away.o
  *
  * @param input_buffer_it [in] Iterator providing the pointers to the source memory buffers
  * @param output_buffer_it [in] Iterator providing the pointers to the destination memory buffers
