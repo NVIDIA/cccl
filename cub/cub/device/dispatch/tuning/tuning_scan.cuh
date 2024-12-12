@@ -226,37 +226,6 @@ struct sm90_tuning<__uint128_t, primitive_op::yes, primitive_accum::no, accum_si
 template <typename AccumT, typename ScanOpT>
 struct policy_hub
 {
-  template <int NominalThreadsPerBlock4B,
-            int NominalItemsPerThread4B,
-            BlockLoadAlgorithm LoadAlgorithm,
-            CacheLoadModifier LoadModifier,
-            BlockStoreAlgorithm StoreAlgorithm,
-            BlockScanAlgorithm ScanAlgorithm,
-            typename DelayConstructorT>
-  using policy_t =
-    AgentScanPolicy<NominalThreadsPerBlock4B,
-                    NominalItemsPerThread4B,
-                    AccumT,
-                    LoadAlgorithm,
-                    LoadModifier,
-                    StoreAlgorithm,
-                    ScanAlgorithm,
-                    MemBoundScaling<NominalThreadsPerBlock4B, NominalItemsPerThread4B, AccumT>,
-                    DelayConstructorT>;
-
-  struct Policy350 : ChainedPolicy<350, Policy350, Policy350>
-  {
-    // GTX Titan: 29.5B items/s (232.4 GB/s) @ 48M 32-bit T
-    using ScanPolicyT =
-      policy_t<128,
-               12,
-               BLOCK_LOAD_DIRECT,
-               LOAD_CA,
-               BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED,
-               BLOCK_SCAN_RAKING,
-               default_delay_constructor_t<AccumT>>;
-  };
-
   // For large values, use timesliced loads/stores to fit shared memory.
   static constexpr bool large_values = sizeof(AccumT) > 128;
   static constexpr BlockLoadAlgorithm scan_transposed_load =
@@ -264,29 +233,23 @@ struct policy_hub
   static constexpr BlockStoreAlgorithm scan_transposed_store =
     large_values ? BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : BLOCK_STORE_WARP_TRANSPOSE;
 
+  struct Policy350 : ChainedPolicy<350, Policy350, Policy350>
+  {
+    // GTX Titan: 29.5B items/s (232.4 GB/s) @ 48M 32-bit T
+    using ScanPolicyT =
+      AgentScanPolicy<128, 12, AccumT, BLOCK_LOAD_DIRECT, LOAD_CA, BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED, BLOCK_SCAN_RAKING>;
+  };
   struct Policy520 : ChainedPolicy<520, Policy520, Policy350>
   {
     // Titan X: 32.47B items/s @ 48M 32-bit T
     using ScanPolicyT =
-      policy_t<128,
-               12,
-               BLOCK_LOAD_DIRECT,
-               LOAD_CA,
-               scan_transposed_store,
-               BLOCK_SCAN_WARP_SCANS,
-               default_delay_constructor_t<AccumT>>;
+      AgentScanPolicy<128, 12, AccumT, BLOCK_LOAD_DIRECT, LOAD_CA, scan_transposed_store, BLOCK_SCAN_WARP_SCANS>;
   };
 
   struct DefaultPolicy
   {
     using ScanPolicyT =
-      policy_t<128,
-               15,
-               scan_transposed_load,
-               LOAD_DEFAULT,
-               scan_transposed_store,
-               BLOCK_SCAN_WARP_SCANS,
-               default_delay_constructor_t<AccumT>>;
+      AgentScanPolicy<128, 15, AccumT, scan_transposed_load, LOAD_DEFAULT, scan_transposed_store, BLOCK_SCAN_WARP_SCANS>;
   };
 
   struct Policy600
@@ -297,13 +260,15 @@ struct policy_hub
   // Use values from tuning if a specialization exists, otherwise pick DefaultPolicy
   template <typename Tuning>
   static auto select_agent_policy(int)
-    -> policy_t<Tuning::threads,
-                Tuning::items,
-                Tuning::load_algorithm,
-                LOAD_DEFAULT,
-                Tuning::store_algorithm,
-                BLOCK_SCAN_WARP_SCANS,
-                typename Tuning::delay_constructor>;
+    -> AgentScanPolicy<Tuning::threads,
+                       Tuning::items,
+                       AccumT,
+                       Tuning::load_algorithm,
+                       LOAD_DEFAULT,
+                       Tuning::store_algorithm,
+                       BLOCK_SCAN_WARP_SCANS,
+                       MemBoundScaling<Tuning::threads, Tuning::items, AccumT>,
+                       typename Tuning::delay_constructor>;
   template <typename Tuning>
   static auto select_agent_policy(long) -> typename DefaultPolicy::ScanPolicyT;
 
