@@ -792,6 +792,7 @@ struct policy_hub
 } // namespace scan_by_key
 } // namespace detail
 
+// TODO(bgruber): deprecate this at some point in the future when we have a better API for users to supply policies
 template <typename KeysInputIteratorT, typename AccumT, typename ValueT = AccumT, typename ScanOpT = ::cuda::std::plus<>>
 using DeviceScanByKeyPolicy = detail::scan_by_key::policy_hub<KeysInputIteratorT, AccumT, ValueT, ScanOpT>;
 
