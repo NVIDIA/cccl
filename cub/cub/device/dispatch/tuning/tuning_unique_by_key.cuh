@@ -124,15 +124,7 @@ template <class KeyT,
           primitive_val PrimitiveAccum = is_primitive_val<ValueT>(),
           key_size KeySize             = classify_key_size<KeyT>(),
           val_size AccumSize           = classify_val_size<ValueT>()>
-struct sm80_tuning
-{
-  static constexpr int threads                       = 64;
-  static constexpr int nominal_4b_items_per_thread   = 11;
-  static constexpr int items                         = Nominal4BItemsToItems<KeyT>(nominal_4b_items_per_thread);
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr CacheLoadModifier load_modifier   = LOAD_LDG;
-  using delay_constructor                            = detail::default_delay_constructor_t<int>;
-};
+struct sm80_tuning;
 
 // 8-bit key
 template <class KeyT, class ValueT>
@@ -328,15 +320,7 @@ template <class KeyT,
           primitive_val PrimitiveAccum = is_primitive_val<ValueT>(),
           key_size KeySize             = classify_key_size<KeyT>(),
           val_size AccumSize           = classify_val_size<ValueT>()>
-struct sm90_tuning
-{
-  static constexpr int threads                       = 64;
-  static constexpr int nominal_4b_items_per_thread   = 11;
-  static constexpr int items                         = Nominal4BItemsToItems<KeyT>(nominal_4b_items_per_thread);
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr CacheLoadModifier load_modifier   = LOAD_LDG;
-  using delay_constructor                            = detail::default_delay_constructor_t<int>;
-};
+struct sm90_tuning;
 
 // 8-bit key
 template <class KeyT, class ValueT>
@@ -542,27 +526,19 @@ struct sm90_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::no, key_size
   using delay_constructor                            = detail::no_delay_constructor_t<1155>;
 };
 
-} // namespace unique_by_key
-} // namespace detail
-
-template <typename KeyInputIteratorT, typename ValueInputIteratorT = unsigned long long int*>
-struct DeviceUniqueByKeyPolicy
+template <class KeyT, class ValueT>
+struct policy_hub
 {
-  using KeyT   = typename std::iterator_traits<KeyInputIteratorT>::value_type;
-  using ValueT = typename std::iterator_traits<ValueInputIteratorT>::value_type;
+  // using KeyT   = typename std::iterator_traits<KeyInputIteratorT>::value_type;
+  // using ValueT = typename std::iterator_traits<ValueInputIteratorT>::value_type;
 
-  // SM350
-  struct Policy350 : ChainedPolicy<350, Policy350, Policy350>
+  template <int NOMINAL_4B_ITEMS_PER_THREAD, int THREADS>
+  struct DefaultPolicy
   {
-    static constexpr int INPUT_SIZE = sizeof(KeyT);
-    enum
-    {
-      NOMINAL_4B_ITEMS_PER_THREAD = 9,
-      ITEMS_PER_THREAD            = Nominal4BItemsToItems<KeyT>(NOMINAL_4B_ITEMS_PER_THREAD),
-    };
-
+    static constexpr int nominal_4b_items_per_thread = NOMINAL_4B_ITEMS_PER_THREAD;
+    static constexpr int ITEMS_PER_THREAD            = Nominal4BItemsToItems<KeyT>(nominal_4b_items_per_thread);
     using UniqueByKeyPolicyT =
-      AgentUniqueByKeyPolicy<128,
+      AgentUniqueByKeyPolicy<THREADS,
                              ITEMS_PER_THREAD,
                              cub::BLOCK_LOAD_WARP_TRANSPOSE,
                              cub::LOAD_LDG,
@@ -570,65 +546,47 @@ struct DeviceUniqueByKeyPolicy
                              detail::default_delay_constructor_t<int>>;
   };
 
-  struct DefaultTuning
-  {
-    static constexpr int INPUT_SIZE = sizeof(KeyT);
-    enum
-    {
-      NOMINAL_4B_ITEMS_PER_THREAD = 11,
-      ITEMS_PER_THREAD            = Nominal4BItemsToItems<KeyT>(NOMINAL_4B_ITEMS_PER_THREAD),
-    };
+  struct Policy350
+      : DefaultPolicy<9, 128>
+      , ChainedPolicy<350, Policy350, Policy350>
+  {};
 
-    using UniqueByKeyPolicyT =
-      AgentUniqueByKeyPolicy<64,
-                             ITEMS_PER_THREAD,
-                             cub::BLOCK_LOAD_WARP_TRANSPOSE,
-                             cub::LOAD_LDG,
-                             cub::BLOCK_SCAN_WARP_SCANS,
-                             detail::default_delay_constructor_t<int>>;
-  };
+  // Use values from tuning if a specialization exists, otherwise pick the default
+  template <typename Tuning>
+  static auto select_agent_policy(int)
+    -> AgentUniqueByKeyPolicy<Tuning::threads,
+                              Tuning::items,
+                              Tuning::load_algorithm,
+                              Tuning::load_modifier,
+                              BLOCK_SCAN_WARP_SCANS,
+                              typename Tuning::delay_constructor>;
+  template <typename Tuning>
+  static auto select_agent_policy(long) -> typename DefaultPolicy<Tuning::items, Tuning::threads>::UniqueByKeyPolicyT;
 
-  // SM520
   struct Policy520
-      : DefaultTuning
+      : DefaultPolicy<11, 64>
       , ChainedPolicy<520, Policy520, Policy350>
   {};
 
-  /// SM80
   struct Policy800 : ChainedPolicy<800, Policy800, Policy520>
   {
-    using tuning = detail::unique_by_key::sm80_tuning<KeyT, ValueT>;
-
-    using UniqueByKeyPolicyT =
-      AgentUniqueByKeyPolicy<tuning::threads,
-                             tuning::items,
-                             tuning::load_algorithm,
-                             tuning::load_modifier,
-                             BLOCK_SCAN_WARP_SCANS,
-                             typename tuning::delay_constructor>;
+    using UniqueByKeyPolicyT = decltype(select_agent_policy<sm80_tuning<KeyT, ValueT>>(0));
   };
 
-  // SM860
   struct Policy860
-      : DefaultTuning
+      : DefaultPolicy<11, 64>
       , ChainedPolicy<860, Policy860, Policy800>
   {};
 
-  /// SM90
   struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
   {
-    using tuning = detail::unique_by_key::sm90_tuning<KeyT, ValueT>;
-
-    using UniqueByKeyPolicyT =
-      AgentUniqueByKeyPolicy<tuning::threads,
-                             tuning::items,
-                             tuning::load_algorithm,
-                             tuning::load_modifier,
-                             BLOCK_SCAN_WARP_SCANS,
-                             typename tuning::delay_constructor>;
+    using UniqueByKeyPolicyT = decltype(select_agent_policy<sm90_tuning<KeyT, ValueT>>(0));
   };
 
   using MaxPolicy = Policy900;
 };
+
+} // namespace unique_by_key
+} // namespace detail
 
 CUB_NAMESPACE_END

@@ -213,7 +213,9 @@ template <typename KeyInputIteratorT,
           typename NumSelectedIteratorT,
           typename EqualityOpT,
           typename OffsetT,
-          typename SelectedPolicy = DeviceUniqueByKeyPolicy<KeyInputIteratorT, ValueInputIteratorT>>
+          typename SelectedPolicy =
+            detail::unique_by_key::policy_hub<typename std::iterator_traits<KeyInputIteratorT>::value_type,
+                                              typename std::iterator_traits<ValueInputIteratorT>::value_type>>
 struct DispatchUniqueByKey : SelectedPolicy
 {
   /******************************************************************************
