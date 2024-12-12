@@ -214,8 +214,7 @@ template <typename KeyInputIteratorT,
           typename EqualityOpT,
           typename OffsetT,
           typename SelectedPolicy =
-            detail::unique_by_key::policy_hub<typename std::iterator_traits<KeyInputIteratorT>::value_type,
-                                              typename std::iterator_traits<ValueInputIteratorT>::value_type>>
+            detail::unique_by_key::policy_hub<detail::value_t<KeyInputIteratorT>, detail::value_t<ValueInputIteratorT>>>
 struct DispatchUniqueByKey : SelectedPolicy
 {
   /******************************************************************************

@@ -232,15 +232,11 @@ struct sm80_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_siz
 template <class KeyT, class ValueT>
 struct sm80_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::yes, key_size::_4, val_size::_2>
 {
-  static constexpr int threads = 256;
-
-  static constexpr int items = 14;
-
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 14;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  static constexpr CacheLoadModifier load_modifier = LOAD_DEFAULT;
-
-  using delay_constructor = detail::no_delay_constructor_t<1185>;
+  static constexpr CacheLoadModifier load_modifier   = LOAD_DEFAULT;
+  using delay_constructor                            = detail::no_delay_constructor_t<1185>;
 };
 
 template <class KeyT, class ValueT>
@@ -529,14 +525,13 @@ struct sm90_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::no, key_size
 template <class KeyT, class ValueT>
 struct policy_hub
 {
-  template <int NOMINAL_4B_ITEMS_PER_THREAD, int THREADS>
+  template <int Nominal4bItemsPerThread, int Threads>
   struct DefaultPolicy
   {
-    static constexpr int nominal_4b_items_per_thread = NOMINAL_4B_ITEMS_PER_THREAD;
-    static constexpr int ITEMS_PER_THREAD            = Nominal4BItemsToItems<KeyT>(nominal_4b_items_per_thread);
+    static constexpr int items_per_thread = Nominal4BItemsToItems<KeyT>(Nominal4bItemsPerThread);
     using UniqueByKeyPolicyT =
-      AgentUniqueByKeyPolicy<THREADS,
-                             ITEMS_PER_THREAD,
+      AgentUniqueByKeyPolicy<Threads,
+                             items_per_thread,
                              cub::BLOCK_LOAD_WARP_TRANSPOSE,
                              cub::LOAD_LDG,
                              cub::BLOCK_SCAN_WARP_SCANS,
@@ -585,5 +580,10 @@ struct policy_hub
 
 } // namespace unique_by_key
 } // namespace detail
+
+// TODO(bgruber): deprecate at some point when we have an API to pass tuning policies
+template <typename KeyInputIteratorT, typename ValueInputIteratorT = unsigned long long int*>
+using DeviceUniqueByKeyPolicy =
+  detail::unique_by_key::policy_hub<detail::value_t<KeyInputIteratorT>, detail::value_t<ValueInputIteratorT>>;
 
 CUB_NAMESPACE_END
