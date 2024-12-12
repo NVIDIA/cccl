@@ -46,6 +46,7 @@
 
 #include <cub/agent/agent_reduce.cuh>
 #include <cub/device/dispatch/kernels/reduce.cuh>
+#include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/launcher/cuda_runtime.cuh>
@@ -191,130 +192,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReducePolicy::BLOCK_THREADS)
   }
 }
 
-/******************************************************************************
- * Policy
- ******************************************************************************/
-
-template <typename PolicyT, typename = void>
-struct ReducePolicyWrapper : PolicyT
-{
-  CUB_RUNTIME_FUNCTION ReducePolicyWrapper(PolicyT base)
-      : PolicyT(base)
-  {}
-};
-
-template <typename StaticPolicyT>
-struct ReducePolicyWrapper<StaticPolicyT,
-                           _CUDA_VSTD::void_t<typename StaticPolicyT::ReducePolicy,
-                                              typename StaticPolicyT::SingleTilePolicy,
-                                              typename StaticPolicyT::SegmentedReducePolicy>> : StaticPolicyT
-{
-  CUB_RUNTIME_FUNCTION ReducePolicyWrapper(StaticPolicyT base)
-      : StaticPolicyT(base)
-  {}
-
-  CUB_DEFINE_SUB_POLICY_GETTER(Reduce)
-  CUB_DEFINE_SUB_POLICY_GETTER(SingleTile)
-  CUB_DEFINE_SUB_POLICY_GETTER(SegmentedReduce)
-};
-
-template <typename PolicyT>
-CUB_RUNTIME_FUNCTION ReducePolicyWrapper<PolicyT> MakeReducePolicyWrapper(PolicyT policy)
-{
-  return ReducePolicyWrapper<PolicyT>{policy};
-}
-
-/**
- * @tparam AccumT
- *   Accumulator data type
- *
- * OffsetT
- *   Signed integer type for global offsets
- *
- * ReductionOpT
- *   Binary reduction functor type having member
- *   `auto operator()(const T &a, const U &b)`
- */
-template <typename AccumT, typename OffsetT, typename ReductionOpT>
-struct DeviceReducePolicy
-{
-  //---------------------------------------------------------------------------
-  // Architecture-specific tuning policies
-  //---------------------------------------------------------------------------
-
-  /// SM30
-  struct Policy300 : ChainedPolicy<300, Policy300, Policy300>
-  {
-    static constexpr int threads_per_block  = 256;
-    static constexpr int items_per_thread   = 20;
-    static constexpr int items_per_vec_load = 2;
-
-    // ReducePolicy (GTX670: 154.0 @ 48M 4B items)
-    using ReducePolicy =
-      AgentReducePolicy<threads_per_block,
-                        items_per_thread,
-                        AccumT,
-                        items_per_vec_load,
-                        BLOCK_REDUCE_WARP_REDUCTIONS,
-                        LOAD_DEFAULT>;
-
-    // SingleTilePolicy
-    using SingleTilePolicy = ReducePolicy;
-
-    // SegmentedReducePolicy
-    using SegmentedReducePolicy = ReducePolicy;
-  };
-
-  /// SM35
-  struct Policy350 : ChainedPolicy<350, Policy350, Policy300>
-  {
-    static constexpr int threads_per_block  = 256;
-    static constexpr int items_per_thread   = 20;
-    static constexpr int items_per_vec_load = 4;
-
-    // ReducePolicy (GTX Titan: 255.1 GB/s @ 48M 4B items; 228.7 GB/s @ 192M 1B
-    // items)
-    using ReducePolicy =
-      AgentReducePolicy<threads_per_block,
-                        items_per_thread,
-                        AccumT,
-                        items_per_vec_load,
-                        BLOCK_REDUCE_WARP_REDUCTIONS,
-                        LOAD_LDG>;
-
-    // SingleTilePolicy
-    using SingleTilePolicy = ReducePolicy;
-
-    // SegmentedReducePolicy
-    using SegmentedReducePolicy = ReducePolicy;
-  };
-
-  /// SM60
-  struct Policy600 : ChainedPolicy<600, Policy600, Policy350>
-  {
-    static constexpr int threads_per_block  = 256;
-    static constexpr int items_per_thread   = 16;
-    static constexpr int items_per_vec_load = 4;
-
-    // ReducePolicy (P100: 591 GB/s @ 64M 4B items; 583 GB/s @ 256M 1B items)
-    using ReducePolicy =
-      AgentReducePolicy<threads_per_block,
-                        items_per_thread,
-                        AccumT,
-                        items_per_vec_load,
-                        BLOCK_REDUCE_WARP_REDUCTIONS,
-                        LOAD_LDG>;
-
-    // SingleTilePolicy
-    using SingleTilePolicy = ReducePolicy;
-
-    // SegmentedReducePolicy
-    using SegmentedReducePolicy = ReducePolicy;
-  };
-
-  using MaxPolicy = Policy600;
-};
-
 template <typename MaxPolicyT,
           typename InputIteratorT,
           typename OutputIteratorT,
@@ -385,7 +262,7 @@ template <typename InputIteratorT,
           typename ReductionOpT,
           typename InitT  = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::value_t<InputIteratorT>>,
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::value_t<InputIteratorT>, InitT>,
-          typename SelectedPolicy = DeviceReducePolicy<AccumT, OffsetT, ReductionOpT>,
+          typename SelectedPolicy = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
           typename TransformOpT   = ::cuda::std::__identity,
           typename KernelSource   = DeviceReduceKernelSource<
               typename SelectedPolicy::MaxPolicy,
@@ -867,7 +744,7 @@ template <
   typename InitT,
   typename AccumT = ::cuda::std::
     __accumulator_t<ReductionOpT, cub::detail::invoke_result_t<TransformOpT, cub::detail::value_t<InputIteratorT>>, InitT>,
-  typename SelectedPolicyT = DeviceReducePolicy<AccumT, OffsetT, ReductionOpT>,
+  typename SelectedPolicyT = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
   typename KernelSource    = DeviceReduceKernelSource<
        typename SelectedPolicyT::MaxPolicy,
        InputIteratorT,
@@ -930,7 +807,7 @@ template <typename InputIteratorT,
           typename ReductionOpT,
           typename InitT  = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::value_t<InputIteratorT>>,
           typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::value_t<InputIteratorT>, InitT>,
-          typename SelectedPolicy = DeviceReducePolicy<AccumT, OffsetT, ReductionOpT>>
+          typename SelectedPolicy = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>>
 struct DispatchSegmentedReduce : SelectedPolicy
 {
   //---------------------------------------------------------------------------
