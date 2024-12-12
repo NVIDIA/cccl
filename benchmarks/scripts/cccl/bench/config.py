@@ -1,13 +1,12 @@
 import os
 import sys
 import random
-import itertools
 
 
 def randomized_cartesian_product(list_of_lists):
     length = 1
-    for l in list_of_lists:
-        length *= len(l)
+    for lst in list_of_lists:
+        length *= len(lst)
 
     visited = set()
     while len(visited) < length:
@@ -39,8 +38,10 @@ class VariantPoint:
 
     def label(self):
         if self.is_base():
-            return 'base'
-        return '.'.join(["{}_{}".format(point.label, point.value) for point in self.range_points])
+            return "base"
+        return ".".join(
+            ["{}_{}".format(point.label, point.value) for point in self.range_points]
+        )
 
     def is_base(self):
         return len(self.range_points) == 0
@@ -63,9 +64,9 @@ class BasePoint(VariantPoint):
 def parse_ranges(columns):
     ranges = []
     for column in columns:
-        definition, label_range = column.split('|')
-        label, range = label_range.split('=')
-        start, end, step = [int(x) for x in range.split(':')]
+        definition, label_range = column.split("|")
+        label, range = label_range.split("=")
+        start, end, step = [int(x) for x in range.split(":")]
         ranges.append(Range(definition, label, start, end + 1, step))
 
     return ranges
@@ -74,8 +75,9 @@ def parse_ranges(columns):
 def parse_meta():
     if not os.path.isfile("cccl_meta_bench.csv"):
         print("cccl_meta_bench.csv not found", file=sys.stderr)
-        print("make sure to run the script from the CUB build directory",
-              file=sys.stderr)
+        print(
+            "make sure to run the script from the CUB build directory", file=sys.stderr
+        )
 
     benchmarks = {}
     ctk_version = "0.0.0"
@@ -83,10 +85,10 @@ def parse_meta():
     with open("cccl_meta_bench.csv", "r") as f:
         lines = f.readlines()
         for line in lines:
-            if ',' in line:
-                columns = line.split(',')
+            if "," in line:
+                columns = line.split(",")
             else:
-                columns = [' '.join(line.split())]
+                columns = [" ".join(line.split())]
 
             name = columns[0]
 
@@ -109,7 +111,9 @@ class Config:
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
             cls._instance = super().__new__(cls, *args, **kwargs)
-            cls._instance.ctk, cls._instance.cccl, cls._instance.benchmarks = parse_meta()
+            cls._instance.ctk, cls._instance.cccl, cls._instance.benchmarks = (
+                parse_meta()
+            )
         return cls._instance
 
     def label_to_variant_point(self, algname, label):
@@ -121,8 +125,8 @@ class Config:
             label_to_definition[param_space.label] = param_space.definition
 
         points = []
-        for point in label.split('.'):
-            label, value = point.split('_')
+        for point in label.split("."):
+            label, value = point.split("_")
             points.append(RangePoint(label_to_definition[label], label, int(value)))
 
         return VariantPoint(points)
@@ -132,12 +136,18 @@ class Config:
         for param_space in self.benchmarks[algname]:
             variants.append([])
             for value in range(param_space.low, param_space.high, param_space.step):
-                variants[-1].append(RangePoint(param_space.definition, param_space.label, value))
+                variants[-1].append(
+                    RangePoint(param_space.definition, param_space.label, value)
+                )
 
-        return (VariantPoint(points) for points in randomized_cartesian_product(variants))
+        return (
+            VariantPoint(points) for points in randomized_cartesian_product(variants)
+        )
 
     def variant_space_size(self, algname):
         num_variants = 1
         for param_space in self.benchmarks[algname]:
-            num_variants = num_variants * len(range(param_space.low, param_space.high, param_space.step))
+            num_variants = num_variants * len(
+                range(param_space.low, param_space.high, param_space.step)
+            )
         return num_variants
