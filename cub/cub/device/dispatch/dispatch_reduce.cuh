@@ -260,21 +260,21 @@ template <typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
           typename ReductionOpT,
-          typename InitT  = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::value_t<InputIteratorT>>,
-          typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::value_t<InputIteratorT>, InitT>,
-          typename SelectedPolicy = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
-          typename TransformOpT   = ::cuda::std::__identity,
-          typename KernelSource   = DeviceReduceKernelSource<
-              typename SelectedPolicy::MaxPolicy,
-              InputIteratorT,
-              OutputIteratorT,
-              OffsetT,
-              ReductionOpT,
-              InitT,
-              AccumT,
-              TransformOpT>,
+          typename InitT     = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::value_t<InputIteratorT>>,
+          typename AccumT    = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::value_t<InputIteratorT>, InitT>,
+          typename PolicyHub = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
+          typename TransformOpT = ::cuda::std::__identity,
+          typename KernelSource = DeviceReduceKernelSource<
+            typename PolicyHub::MaxPolicy,
+            InputIteratorT,
+            OutputIteratorT,
+            OffsetT,
+            ReductionOpT,
+            InitT,
+            AccumT,
+            TransformOpT>,
           typename KernelLauncherFactory = TripleChevronFactory>
-struct DispatchReduce : SelectedPolicy
+struct DispatchReduce
 {
   //---------------------------------------------------------------------------
   // Problem state
@@ -639,7 +639,7 @@ struct DispatchReduce : SelectedPolicy
    *   **[optional]** CUDA stream to launch kernels within.
    *   Default is stream<sub>0</sub>.
    */
-  template <typename MaxPolicyT = typename DispatchReduce::MaxPolicy>
+  template <typename MaxPolicyT = typename PolicyHub::MaxPolicy>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t Dispatch(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -744,16 +744,16 @@ template <
   typename InitT,
   typename AccumT = ::cuda::std::
     __accumulator_t<ReductionOpT, cub::detail::invoke_result_t<TransformOpT, cub::detail::value_t<InputIteratorT>>, InitT>,
-  typename SelectedPolicyT = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
-  typename KernelSource    = DeviceReduceKernelSource<
-       typename SelectedPolicyT::MaxPolicy,
-       InputIteratorT,
-       OutputIteratorT,
-       OffsetT,
-       ReductionOpT,
-       InitT,
-       AccumT,
-       TransformOpT>,
+  typename PolicyHub    = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>,
+  typename KernelSource = DeviceReduceKernelSource<
+    typename PolicyHub::MaxPolicy,
+    InputIteratorT,
+    OutputIteratorT,
+    OffsetT,
+    ReductionOpT,
+    InitT,
+    AccumT,
+    TransformOpT>,
   typename KernelLauncherFactory = TripleChevronFactory>
 using DispatchTransformReduce =
   DispatchReduce<InputIteratorT,
@@ -762,7 +762,7 @@ using DispatchTransformReduce =
                  ReductionOpT,
                  InitT,
                  AccumT,
-                 SelectedPolicyT,
+                 PolicyHub,
                  TransformOpT,
                  KernelSource,
                  KernelLauncherFactory>;
@@ -805,10 +805,10 @@ template <typename InputIteratorT,
           typename EndOffsetIteratorT,
           typename OffsetT,
           typename ReductionOpT,
-          typename InitT  = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::value_t<InputIteratorT>>,
-          typename AccumT = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::value_t<InputIteratorT>, InitT>,
-          typename SelectedPolicy = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>>
-struct DispatchSegmentedReduce : SelectedPolicy
+          typename InitT     = cub::detail::non_void_value_t<OutputIteratorT, cub::detail::value_t<InputIteratorT>>,
+          typename AccumT    = ::cuda::std::__accumulator_t<ReductionOpT, cub::detail::value_t<InputIteratorT>, InitT>,
+          typename PolicyHub = detail::reduce::policy_hub<AccumT, OffsetT, ReductionOpT>>
+struct DispatchSegmentedReduce
 {
   //---------------------------------------------------------------------------
   // Problem state
@@ -996,12 +996,10 @@ struct DispatchSegmentedReduce : SelectedPolicy
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
-    using MaxPolicyT = typename DispatchSegmentedReduce::MaxPolicy;
-
     // Force kernel code-generation in all compiler passes
     return InvokePasses<ActivePolicyT>(
       DeviceSegmentedReduceKernel<
-        MaxPolicyT,
+        typename PolicyHub::MaxPolicy,
         InputIteratorT,
         OutputIteratorT,
         BeginOffsetIteratorT,
@@ -1071,8 +1069,6 @@ struct DispatchSegmentedReduce : SelectedPolicy
     InitT init,
     cudaStream_t stream)
   {
-    using MaxPolicyT = typename DispatchSegmentedReduce::MaxPolicy;
-
     if (num_segments <= 0)
     {
       return cudaSuccess;
@@ -1105,7 +1101,7 @@ struct DispatchSegmentedReduce : SelectedPolicy
         ptx_version);
 
       // Dispatch to chained policy
-      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+      error = CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
       if (cudaSuccess != error)
       {
         break;

@@ -153,16 +153,15 @@ DeviceThreeWayPartitionInitKernel(ScanTileStateT tile_state, int num_tiles, NumS
  * Dispatch
  ******************************************************************************/
 
-template <
-  typename InputIteratorT,
-  typename FirstOutputIteratorT,
-  typename SecondOutputIteratorT,
-  typename UnselectedOutputIteratorT,
-  typename NumSelectedIteratorT,
-  typename SelectFirstPartOp,
-  typename SelectSecondPartOp,
-  typename OffsetT,
-  typename SelectedPolicy = detail::three_way_partition::policy_hub<cub::detail::value_t<InputIteratorT>, OffsetT>>
+template <typename InputIteratorT,
+          typename FirstOutputIteratorT,
+          typename SecondOutputIteratorT,
+          typename UnselectedOutputIteratorT,
+          typename NumSelectedIteratorT,
+          typename SelectFirstPartOp,
+          typename SelectSecondPartOp,
+          typename OffsetT,
+          typename PolicyHub = detail::three_way_partition::policy_hub<cub::detail::value_t<InputIteratorT>, OffsetT>>
 struct DispatchThreeWayPartitionIf
 {
   /*****************************************************************************
@@ -382,7 +381,7 @@ struct DispatchThreeWayPartitionIf
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
-    using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
+    using MaxPolicyT = typename PolicyHub::MaxPolicy;
     return Invoke<ActivePolicyT>(
       DeviceThreeWayPartitionInitKernel<ScanTileStateT, NumSelectedIteratorT>,
       DeviceThreeWayPartitionKernel<
@@ -414,7 +413,7 @@ struct DispatchThreeWayPartitionIf
     OffsetT num_items,
     cudaStream_t stream)
   {
-    using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
+    using MaxPolicyT = typename PolicyHub::MaxPolicy;
 
     cudaError error = cudaSuccess;
 

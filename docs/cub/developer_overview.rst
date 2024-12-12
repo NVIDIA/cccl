@@ -518,9 +518,8 @@ and passes it to the ``ChainedPolicy::Invoke`` function:
         {
           return error;
         }
-        using MaxPolicy = typename PolicyHub::MaxPolicy;
         DispatchAlgorithm dispatch(..., stream);
-        return CubDebug(MaxPolicy::Invoke(ptx_version, dispatch));
+        return CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
       }
     };
 
