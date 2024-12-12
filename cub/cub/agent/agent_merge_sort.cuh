@@ -172,6 +172,9 @@ struct AgentBlockSort
   _CCCL_DEVICE _CCCL_FORCEINLINE void consume_tile(OffsetT tile_base, int num_remaining)
   {
     ValueT items_local[ITEMS_PER_THREAD];
+
+    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+
     _CCCL_IF_CONSTEXPR (!KEYS_ONLY)
     {
       _CCCL_IF_CONSTEXPR (IS_LAST_TILE)
@@ -198,6 +201,7 @@ struct AgentBlockSort
     }
 
     CTA_SYNC();
+    _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 
     _CCCL_IF_CONSTEXPR (IS_LAST_TILE)
     {
@@ -335,6 +339,8 @@ struct AgentPartition
     const OffsetT keys1_end = (cub::min)(keys_count, detail::safe_add_bound_to_max(start, size));
     const OffsetT keys2_beg = keys1_end;
     const OffsetT keys2_end = (cub::min)(keys_count, detail::safe_add_bound_to_max(keys2_beg, size));
+
+    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
 
     // The last partition (which is one-past-the-last-tile) is only to mark the end of keys1_end for the merge stage
     if (partition_idx + 1 == num_partitions)
@@ -535,6 +541,8 @@ struct AgentMerge
     const int num_keys1 = static_cast<int>(keys1_end - keys1_beg);
     const int num_keys2 = static_cast<int>(keys2_end - keys2_beg);
 
+    _CCCL_PDL_GRID_DEPENDENCY_SYNC();
+
     // load keys1 & keys2
     KeyT keys_local[ITEMS_PER_THREAD];
     if (ping)
@@ -576,6 +584,7 @@ struct AgentMerge
     }
 
     CTA_SYNC();
+    _CCCL_PDL_TRIGGER_NEXT_LAUNCH();
 
     // use binary search in shared memory
     // to find merge path for each of thread

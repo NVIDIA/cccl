@@ -141,7 +141,7 @@ A simple example
 
 The following example illustrates the use of CUDASTF to implement the
 well-known AXPY kernel, which computes ``Y = Y + alpha * X`` where ``X``
-and ``Y`` are two vectors, and ``alpha`` is a scalar value.
+and ``Y`` are two vectors, and ``alpha`` is a scalar_view value.
 
 .. code:: cpp
 
@@ -433,7 +433,7 @@ A slice is a partial specialization of C++’s
    using slice = mdspan<T, dextents<size_t, dimensions>, layout_stride>;
 
 When creating a ``logical_data`` from a C++ array, CUDASTF automatically
-describes it as a slice instantiated with the scalar element type and
+describes it as a slice instantiated with the scalar_view element type and
 the dimensionality of the array. Here is an example with an 1D array of
 ``double``.
 
@@ -444,7 +444,7 @@ the dimensionality of the array. Here is an example with an 1D array of
    auto lA = ctx.logical_data(A);
 
 Internally, all instances of ``A`` are described as ``slice<double, 1>``
-where ``double`` is the scalar element type, and ``1`` is the
+where ``double`` is the scalar_view element type, and ``1`` is the
 dimensionality of the array. The default dimension corresponds to ``1``,
 so ``slice<double>`` is equivalent with ``slice<double, 1>``.
 
@@ -979,12 +979,12 @@ Creating grids of places
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 Grid of execution places are described with the ``exec_place_grid``
-class. This class is templated by two parameters : a scalar execution
+class. This class is templated by two parameters : a scalar_view execution
 place type which represents the type of each individual element, and a
 partitioning class which defines how data and indexes are spread across
 the different places of the grid.
 
-The scalar execution place can be for example be ``exec_place_device``
+The scalar_view execution place can be for example be ``exec_place_device``
 if all entries are devices, or it can be the base ``exec_place`` class
 if the type of the places is not homogeneous in the grid, or if the type
 is not known statically, for example.
@@ -1345,18 +1345,18 @@ construct.
 
 We can only apply the ``reduce()`` access mode on logical data which data
 interface have defined the ``owning_container_of`` trait class. This is the
-case of the ``scalar<T>`` data interface, which sets ``owning_container_of`` to
+case of the ``scalar_view<T>`` data interface, which sets ``owning_container_of`` to
 be ``T``. The argument passed to the ``parallel_for`` construct is a reference
 to object of this type. The following piece of code for example computes the
 dot product of two vectors of double elements (``slice<double>``) using a
-reduction, and a ``scalar<double>``. Reductions are typically used in
+reduction, and a ``scalar_view<double>``. Reductions are typically used in
 combination with the ``wait`` mechanism which synchronously returns
 the content of the logical data in a variable.
 
 .. code-block:: cpp
   :caption: dot product using a reduction operation
 
-  auto lsum = ctx.logical_data(shape_of<scalar<double>>());
+  auto lsum = ctx.logical_data(shape_of<scalar_view<double>>());
 
   /* Compute sum(x_i * y_i)*/
   ctx.parallel_for(lY.shape(), lX.read(), lY.read(), lsum.reduce(reducer::sum<double>{}))
