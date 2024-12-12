@@ -125,14 +125,15 @@ void launch(
 {
   __ensure_current_device __dev_setter(stream);
   cudaError_t status;
+  auto combined = conf.combine_with_default(kernel);
   if constexpr (::cuda::std::is_invocable_v<Kernel, kernel_config<Dimensions, Config...>, as_kernel_arg_t<Args>...>)
   {
-    auto launcher = detail::kernel_launcher<kernel_config<Dimensions, Config...>, Kernel, as_kernel_arg_t<Args>...>;
+    auto launcher = detail::kernel_launcher<decltype(combined), Kernel, as_kernel_arg_t<Args>...>;
     status        = detail::launch_impl(
       stream,
-      conf,
+      combined,
       launcher,
-      conf,
+      combined,
       kernel,
       static_cast<as_kernel_arg_t<Args>>(detail::__launch_transform(stream, std::forward<Args>(args)))...);
   }
@@ -142,7 +143,7 @@ void launch(
     auto launcher = detail::kernel_launcher_no_config<Kernel, as_kernel_arg_t<Args>...>;
     status        = detail::launch_impl(
       stream,
-      conf,
+      combined,
       launcher,
       kernel,
       static_cast<as_kernel_arg_t<Args>>(detail::__launch_transform(stream, std::forward<Args>(args)))...);

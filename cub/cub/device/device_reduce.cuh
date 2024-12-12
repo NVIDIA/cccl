@@ -109,7 +109,7 @@ struct DeviceReduce
   //!    struct CustomMin
   //!    {
   //!        template <typename T>
-  //!        __host__ __forceinline__
+  //!        __device__ __forceinline__
   //!        T operator()(const T &a, const T &b) const {
   //!            return (b < a) ? b : a;
   //!        }

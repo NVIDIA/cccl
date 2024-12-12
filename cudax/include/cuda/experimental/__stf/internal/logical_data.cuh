@@ -27,6 +27,7 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh> // logical_data_untyped_impl has a backend_ctx_untyped
+#include <cuda/experimental/__stf/internal/constants.cuh>
 #include <cuda/experimental/__stf/internal/data_interface.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
 
@@ -739,7 +740,7 @@ public:
     /* Update msir_statuses depending on the current states and the required access mode */
     switch (mode)
     {
-      case access_mode::read: {
+      case access_mode::read:
         switch (current_msir)
         {
           case reserved::msir_state_id::modified:
@@ -796,7 +797,7 @@ public:
           }
           break;
 
-          case reserved::msir_state_id::reduction: {
+          case reserved::msir_state_id::reduction:
             // This is where we should reconstruct the data ?
 
             // Invalidate all other existing copies but that one
@@ -808,7 +809,6 @@ public:
             get_data_instance(instance_id).set_msir(reserved::msir_state_id::modified);
 
             break;
-          }
 
           default:
             assert(!"Corrupt MSIR state detected.");
@@ -816,10 +816,11 @@ public:
         }
 
         break;
-      }
 
       case access_mode::rw:
-      case access_mode::write: {
+      case access_mode::write:
+      case access_mode::reduce_no_init:
+      case access_mode::reduce:
         switch (current_msir)
         {
           case reserved::msir_state_id::modified:
@@ -827,7 +828,7 @@ public:
             prereqs.merge(current_instance.get_read_prereq(), current_instance.get_write_prereq());
             break;
 
-          case reserved::msir_state_id::shared: {
+          case reserved::msir_state_id::shared:
             // There is a local copy, but we need to invalidate others
             prereqs.merge(current_instance.get_read_prereq(), current_instance.get_write_prereq());
 
@@ -846,12 +847,12 @@ public:
 
             current_instance.set_msir(reserved::msir_state_id::modified);
             break;
-          }
+
           case reserved::msir_state_id::invalid: {
             // If we need to perform a copy, this will be the source instance
             instance_id_t src_instance_id = instance_id_t::invalid;
             // Do not find a source if this is write only
-            if (mode == access_mode::rw)
+            if (mode == access_mode::rw || mode == access_mode::reduce_no_init)
             {
               // There is no local valid copy ... find one !
               instance_id_t dst_instance_id = instance_id;
@@ -886,7 +887,7 @@ public:
             else
             {
               // Write only
-              assert(mode == access_mode::write);
+              assert(mode == access_mode::write || mode == access_mode::reduce);
             }
 
             // Clear and all copies which become invalid, keep prereqs
@@ -915,11 +916,11 @@ public:
         }
 
         break;
-      }
 
       case access_mode::relaxed:
         current_instance.set_msir(reserved::msir_state_id::reduction);
         break;
+
       default:
         assert(!"Corrupt MSIR state detected.");
         abort();
@@ -2136,7 +2137,7 @@ inline logical_data_untyped task_dep_untyped::get_data() const
 
 // Defined here to avoid circular dependencies
 template <class T>
-inline decltype(auto) task_dep<T>::instance(task& tp) const
+inline decltype(auto) task_dep<T, void, false>::instance(task& tp) const
 {
   auto t = get_data();
   return static_cast<logical_data<T>&>(t).instance(tp);
@@ -2279,26 +2280,46 @@ public:
   {
     using U = readonly_type_of<T>;
     // The constness of *this implies that access mode is read
-    return task_dep<U>(*this, /* access_mode::read, */ ::std::forward<Pack>(pack)...);
+    // Note that we do not provide an access mode, because this is how we
+    // dispatch statically between read-only and non read-only access modes in
+    // task_dep_untyped.
+    // TODO : we could make this cleaner if we had a tag type in addition to
+    // the access_mode enum class.
+    return task_dep<U, ::std::monostate, false>(*this, /* access_mode::read, */ ::std::forward<Pack>(pack)...);
   }
 
   template <typename... Pack>
-  task_dep<T> write(Pack&&... pack)
+  auto write(Pack&&... pack)
   {
-    return task_dep<T>(*this, access_mode::write, ::std::forward<Pack>(pack)...);
+    return task_dep<T, ::std::monostate, false>(*this, access_mode::write, ::std::forward<Pack>(pack)...);
   }
 
   template <typename... Pack>
-  task_dep<T> rw(Pack&&... pack)
+  auto rw(Pack&&... pack)
   {
-    return task_dep<T>(*this, access_mode::rw, ::std::forward<Pack>(pack)...);
+    return task_dep<T, ::std::monostate, false>(*this, access_mode::rw, ::std::forward<Pack>(pack)...);
   }
 
   template <typename... Pack>
-  task_dep<T> relaxed(Pack&&... pack)
+  auto relaxed(Pack&&... pack)
   {
-    return task_dep<T>(*this, access_mode::relaxed, ::std::forward<Pack>(pack)...);
+    return task_dep<T, ::std::monostate, false>(*this, access_mode::relaxed, ::std::forward<Pack>(pack)...);
   }
+
+  template <typename Op, typename... Pack>
+  auto reduce(Op, no_init, Pack&&... pack)
+  {
+    return task_dep<T, Op, false>(*this, access_mode::reduce_no_init, ::std::forward<Pack>(pack)...);
+  }
+
+  /* If we do not pass the no_init{} tag type there, this is going to
+   * initialize data, not accumulate with existing values. */
+  template <typename Op, typename... Pack>
+  auto reduce(Op, Pack&&... pack)
+  {
+    return task_dep<T, Op, true>(*this, access_mode::reduce, ::std::forward<Pack>(pack)...);
+  }
+
   ///@}
 };
 

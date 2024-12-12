@@ -247,18 +247,53 @@ that we don't intend to provide separate tuning policies for.
 Search Process
 --------------------------------------------------------------------------------
 
-To get started with tuning / benchmarking, you need to configure CMake. You can use the following command:
+To get started with tuning, you need to configure CMake.
+You can use the following command:
 
 .. code:: bash
 
   $ mkdir build
   $ cd build
   $ cmake .. --preset=cub-tune -DCMAKE_CUDA_ARCHITECTURES=90 # TODO: Set your GPU architecture
-  $ ../benchmarks/scripts/search.py -a "T{ct}=[I8,I16]" -R ".*algname.*"
 
-Both :code:`-a` and :code:`-R` options are optional. The first one is used to specify types to tune
-for. The second one is used to specify benchmarks to be tuned. If not specified, all benchmarks are
-going to be tuned.
+You can then run the tuning search for a specific algorithm and compile-time workload:
+
+.. code:: bash
+
+  $ ../benchmarks/scripts/search.py -R '.*merge_sort.*pairs' -a 'KeyT{ct}=I128' -a 'Elements{io}[pow2]=28'
+  cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_13.tpb_6 0.6805093269929858
+  cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_11.tpb_10 1.0774560502969677
+  ...
+
+This will tune merge sort for key-value pairs, for the key type :code:`int128_t` on :code:`2^28` elements.
+The :code:`-R` and :code:`-a` options are optional. If not specified, all benchmarks are going to be tuned.
+For the axis option :code:`-a`, you can also specify a range of values like :code:`-a 'KeyT{ct}=[I32,I64]'`.
+The first variant :code:`cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_13.tpb_6` has a score <1 and is thus generally slower than baseline,
+whereas the second variant :code:`cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_11.tpb_10` has a score of >1 and is thus an improvement over the baseline.
+
+Notice there is currently a limitation in :code:`search.py`
+which will only execute runs for the first axis value for each axis
+(independently of whether the axis is specified on the command line or not).
+Please see `this issue <https://github.com/NVIDIA/cccl/issues/2267>`_ for more information.
+
+To get quick feedback on what benchmarks are selected and how big the search space is,
+you can add the :code:`-l` option:
+
+.. code:: bash
+
+  $ ../benchmarks/scripts/search.py -R '.*merge_sort.*pairs' -a 'KeyT{ct}=I128' -a 'Elements{io}[pow2]=28' -l
+  ctk:  12.6.85
+  cccl:  v2.7.0
+  ### Benchmarks
+    * `cub.bench.merge_sort.pairs`: 540 variants:
+      * `trp`: (0, 2, 1)
+      * `ld`: (0, 3, 1)
+      * `ipt`: (7, 25, 1)
+      * `tpb`: (6, 11, 1)
+
+It will list all selected benchmarks as well as the total number of variants (the magnitude of the search space)
+as a result of the Cartesian product of all its tuning parameter spaces.
+
 
 Analyzing the results
 --------------------------------------------------------------------------------

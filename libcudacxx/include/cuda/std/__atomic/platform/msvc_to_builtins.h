@@ -24,6 +24,7 @@
 #if _CCCL_COMPILER(MSVC)
 
 #  include <cuda/std/__atomic/order.h>
+#  include <cuda/std/__type_traits/enable_if.h>
 #  include <cuda/std/cassert>
 
 #  include <intrin.h>

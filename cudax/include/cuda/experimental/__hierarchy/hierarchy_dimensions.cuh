@@ -339,6 +339,18 @@ struct rank_helper
 };
 } // namespace detail
 
+// Artificial empty hierarchy to make it possible for the config type to be empty,
+// seems easier than checking everywhere in hierarchy APIs if its not empty.
+// Any usage of an empty hierarchy other than combine should lead to an error anyway
+struct __empty_hierarchy
+{
+  template <typename _Other>
+  _CCCL_NODISCARD _Other combine(const _Other& __other) const
+  {
+    return __other;
+  }
+};
+
 /**
  * @brief Type representing a hierarchy of CUDA threads
  *
@@ -731,7 +743,7 @@ public:
   //!
   //! @return Hierarchy holding the combined levels from both hierarchies
   template <typename OtherUnit, typename... OtherLevels>
-  constexpr auto combine(const hierarchy_dimensions_fragment<OtherUnit, OtherLevels...>& other)
+  constexpr auto combine(const hierarchy_dimensions_fragment<OtherUnit, OtherLevels...>& other) const
   {
     using this_top_level     = __level_type_of<::cuda::std::__type_index_c<0, Levels...>>;
     using this_bottom_level  = __level_type_of<::cuda::std::__type_index_c<sizeof...(Levels) - 1, Levels...>>;
@@ -776,6 +788,13 @@ public:
       }
     }
   }
+
+#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+  constexpr hierarchy_dimensions_fragment combine([[maybe_unused]] __empty_hierarchy __empty) const
+  {
+    return *this;
+  }
+#  endif // _CCCL_DOXYGEN_INVOKED
 };
 
 /**

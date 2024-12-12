@@ -92,7 +92,7 @@ CUB_NAMESPACE_BEGIN
  *   The init_value element for ScanOpT type (cub::NullType for inclusive scan)
  *
  * @tparam OffsetT
- *   Signed integer type for global offsets
+ *   Unsigned integer type for global offsets
  *
  * @param d_keys_in
  *   Input keys data
@@ -217,7 +217,7 @@ CUB_DETAIL_KERNEL_ATTRIBUTES void DeviceScanByKeyInitKernel(
  *   The init_value element for ScanOpT type (cub::NullType for inclusive scan)
  *
  * @tparam OffsetT
- *   Signed integer type for global offsets
+ *   Unsigned integer type for global offsets
  *
  */
 template <
@@ -233,7 +233,7 @@ template <
     cub::detail::value_t<ValuesInputIteratorT>,
     ::cuda::std::_If<std::is_same<InitValueT, NullType>::value, cub::detail::value_t<ValuesInputIteratorT>, InitValueT>>,
   typename SelectedPolicy =
-    DeviceScanByKeyPolicy<KeysInputIteratorT, AccumT, cub::detail::value_t<ValuesInputIteratorT>, ScanOpT>>
+    detail::scan_by_key::policy_hub<KeysInputIteratorT, AccumT, cub::detail::value_t<ValuesInputIteratorT>, ScanOpT>>
 struct DispatchScanByKey : SelectedPolicy
 {
   //---------------------------------------------------------------------

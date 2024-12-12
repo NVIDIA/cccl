@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__exception/terminate.h>
 #include <cuda/std/__utility/typeid.h>
 
 #include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
@@ -146,7 +147,7 @@ _CCCL_GLOBAL_CONSTANT __vtable<_Interface> __vtable_for_v{__tag<_Tp, _Interface>
 template <class _Interface, class _Tp>
 _CUDAX_API constexpr __vtable<_Interface> const* __get_vtable_ptr_for() noexcept
 {
-  NV_IF_ELSE_TARGET(NV_IS_HOST, (return &__vtable_for_v<_Interface, _Tp>;), (return nullptr;))
+  NV_IF_ELSE_TARGET(NV_IS_HOST, (return &__vtable_for_v<_Interface, _Tp>;), (_CUDA_VSTD_NOVERSION::terminate();))
 }
 
 } // namespace cuda::experimental
