@@ -633,10 +633,9 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
   using delay_constructor                            = detail::no_delay_constructor_t<1150>;
 };
-} // namespace reduce_by_key
 
 template <class ReductionOpT, class AccumT, class KeyT>
-struct device_reduce_by_key_policy_hub
+struct policy_hub
 {
   static constexpr int MAX_INPUT_BYTES      = static_cast<int>(::cuda::std::max(sizeof(KeyT), sizeof(AccumT)));
   static constexpr int COMBINED_INPUT_BYTES = sizeof(KeyT) + sizeof(AccumT);
@@ -700,7 +699,7 @@ struct device_reduce_by_key_policy_hub
 
   using MaxPolicy = Policy900;
 };
-
+} // namespace reduce_by_key
 } // namespace detail
 
 CUB_NAMESPACE_END
