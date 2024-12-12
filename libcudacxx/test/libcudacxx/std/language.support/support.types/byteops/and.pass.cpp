@@ -10,8 +10,6 @@
 
 #include <test_macros.h>
 
-// UNSUPPORTED: c++98, c++03, c++11, c++14
-
 // constexpr byte operator&(byte l, byte r) noexcept;
 
 int main(int, char**)
