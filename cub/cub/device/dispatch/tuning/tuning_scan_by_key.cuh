@@ -735,19 +735,19 @@ struct sm80_tuning<KeyT, __uint128_t, primitive_op::yes, key_size::_16, val_size
 template <typename KeysInputIteratorT, typename AccumT, typename ValueT, typename ScanOpT>
 struct policy_hub
 {
-  using KeyT                                 = value_t<KeysInputIteratorT>;
-  static constexpr size_t MaxInputBytes      = static_cast<int>(::cuda::std::max(sizeof(KeyT), sizeof(AccumT)));
-  static constexpr size_t CombinedInputBytes = sizeof(KeyT) + sizeof(AccumT);
+  using key_t                                  = value_t<KeysInputIteratorT>;
+  static constexpr size_t max_input_bytes      = static_cast<int>(::cuda::std::max(sizeof(key_t), sizeof(AccumT)));
+  static constexpr size_t combined_input_bytes = sizeof(key_t) + sizeof(AccumT);
 
   struct Policy350 : ChainedPolicy<350, Policy350, Policy350>
   {
-    static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 6;
-    static constexpr int ITEMS_PER_THREAD =
-      ((MaxInputBytes <= 8) ? 6 : Nominal4BItemsToItemsCombined(NOMINAL_4B_ITEMS_PER_THREAD, CombinedInputBytes));
+    static constexpr int nominal_4b_items_per_thread = 6;
+    static constexpr int items_per_thread =
+      ((max_input_bytes <= 8) ? 6 : Nominal4BItemsToItemsCombined(nominal_4b_items_per_thread, combined_input_bytes));
 
     using ScanByKeyPolicyT =
       AgentScanByKeyPolicy<128,
-                           ITEMS_PER_THREAD,
+                           items_per_thread,
                            BLOCK_LOAD_WARP_TRANSPOSE,
                            LOAD_CA,
                            BLOCK_SCAN_WARP_SCANS,
@@ -755,15 +755,15 @@ struct policy_hub
                            default_reduce_by_key_delay_constructor_t<AccumT, int>>;
   };
 
-  struct DefaultTuning
+  struct DefaultPolicy
   {
-    static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 9;
-    static constexpr int ITEMS_PER_THREAD =
-      ((MaxInputBytes <= 8) ? 9 : Nominal4BItemsToItemsCombined(NOMINAL_4B_ITEMS_PER_THREAD, CombinedInputBytes));
+    static constexpr int nominal_4b_items_per_thread = 9;
+    static constexpr int items_per_thread =
+      ((max_input_bytes <= 8) ? 9 : Nominal4BItemsToItemsCombined(nominal_4b_items_per_thread, combined_input_bytes));
 
     using ScanByKeyPolicyT =
       AgentScanByKeyPolicy<256,
-                           ITEMS_PER_THREAD,
+                           items_per_thread,
                            BLOCK_LOAD_WARP_TRANSPOSE,
                            LOAD_CA,
                            BLOCK_SCAN_WARP_SCANS,
@@ -772,13 +772,13 @@ struct policy_hub
   };
 
   struct Policy520
-      : DefaultTuning
+      : DefaultPolicy
       , ChainedPolicy<520, Policy520, Policy350>
   {};
 
   struct Policy800 : ChainedPolicy<800, Policy800, Policy520>
   {
-    using tuning = sm80_tuning<KeyT, ValueT, is_primitive_op<ScanOpT>()>;
+    using tuning = sm80_tuning<key_t, ValueT, is_primitive_op<ScanOpT>()>;
 
     using ScanByKeyPolicyT =
       AgentScanByKeyPolicy<tuning::threads,
@@ -791,13 +791,13 @@ struct policy_hub
   };
 
   struct Policy860
-      : DefaultTuning
+      : DefaultPolicy
       , ChainedPolicy<860, Policy860, Policy800>
   {};
 
   struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
   {
-    using tuning = sm90_tuning<KeyT, ValueT, is_primitive_op<ScanOpT>()>;
+    using tuning = sm90_tuning<key_t, ValueT, is_primitive_op<ScanOpT>()>;
 
     using ScanByKeyPolicyT =
       AgentScanByKeyPolicy<tuning::threads,
