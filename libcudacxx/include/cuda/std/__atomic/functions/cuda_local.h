@@ -32,9 +32,11 @@
 // uses inline PTX to bypass __isLocal.
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_CCCL_DEVICE inline bool __cuda_is_local(const void* __ptr)
+_CCCL_DEVICE inline bool __cuda_is_local(const volatile void* __ptr)
 {
-#if defined(_CCCL_CUDACC_BELOW_12_3)
+#if defined(_LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE)
+  return false;
+#elif defined(_CCCL_CUDACC_BELOW_12_3)
   int __tmp = 0;
   asm("{\n\t"
       "  .reg .pred p;\n\t"
@@ -42,10 +44,10 @@ _CCCL_DEVICE inline bool __cuda_is_local(const void* __ptr)
       "  @p mov.s32 %0, 1;\n\t"
       "}\n\t"
       : "=r"(__tmp)
-      : "l"(__ptr));
+      : "l"(const_cast<const void*>(__ptr)));
   return __tmp == 1;
 #else
-  return __isLocal(__ptr);
+  return __isLocal(const_cast<const void*>(__ptr));
 #endif
 }
 
@@ -85,47 +87,37 @@ _CCCL_DEVICE void __cuda_fetch_local_bop_min(volatile _Type& __atom, _Type const
   __atom = __v < __atom ? __v : __atom;
 }
 
-template <class _Type>
-_CCCL_DEVICE bool __cuda_load_weak_if_local(const volatile _Type* __ptr, _Type* __ret)
+_CCCL_DEVICE inline bool __cuda_load_weak_if_local(const volatile void* __ptr, void* __ret, size_t __size)
 {
-#if defined(_LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE)
-  if (!__cuda_is_local((const void*) __ptr))
+  if (!__cuda_is_local(__ptr))
   {
     return false;
   }
-  memcpy((void*) __ret, (void const*) __ptr, sizeof(_Type));
+  memcpy(__ret, const_cast<const void*>(__ptr), __size);
   // Required to workaround a compiler bug, see nvbug/4064730
   __nanosleep(0);
   return true;
-#else
-  return false;
-#endif
 }
 
-template <class _Type>
-_CCCL_DEVICE bool __cuda_store_weak_if_local(volatile _Type* __ptr, _Type __val)
+_CCCL_DEVICE inline bool __cuda_store_weak_if_local(volatile void* __ptr, const void* __val, size_t __size)
 {
-#if defined(_LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE)
-  if (!__cuda_is_local((const void*) __ptr))
+  if (!__cuda_is_local(__ptr))
   {
     return false;
   }
-  memcpy((void*) __ptr, (void const*) &__val, sizeof(_Type));
+  memcpy(__ptr, __val, __size);
   return true;
-#else
-  return false;
-#endif
 }
 
 template <class _Type>
 _CCCL_DEVICE bool
 __cuda_compare_exchange_weak_if_local(volatile _Type* __ptr, _Type* __expected, const _Type* __desired, bool* __success)
 {
-  if (!__cuda_is_local((const void*) __ptr))
+  if (!__cuda_is_local(__ptr))
   {
     return false;
   }
-  if (0 == __atomic_memcmp((const void*) __ptr, (const void*) __expected, sizeof(_Type)))
+  if (__atomic_memcmp((const void*) __ptr, (const void*) __expected, sizeof(_Type)) == 0)
   {
     memcpy((void*) __ptr, (void const*) __desired, sizeof(_Type));
     *__success = true;
@@ -142,7 +134,7 @@ __cuda_compare_exchange_weak_if_local(volatile _Type* __ptr, _Type* __expected, 
 template <class _Type>
 _CCCL_DEVICE bool __cuda_exchange_weak_if_local(volatile _Type* __ptr, _Type* __val, _Type* __ret)
 {
-  if (!__cuda_is_local((const void*) __ptr))
+  if (!__cuda_is_local(__ptr))
   {
     return false;
   }
@@ -168,71 +160,43 @@ _CCCL_DEVICE bool __cuda_fetch_weak_if_local(volatile _Type* __ptr, _Type __val,
 template <class _Type>
 _CCCL_DEVICE bool __cuda_fetch_and_weak_if_local(volatile _Type* __ptr, _Type __val, _Type* __ret)
 {
-#if defined(_LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE)
-  return false;
-#else
   return __cuda_fetch_weak_if_local(__ptr, __val, __ret, __cuda_fetch_local_bop_and<_Type>);
-#endif
 }
 
 template <class _Type>
 _CCCL_DEVICE bool __cuda_fetch_or_weak_if_local(volatile _Type* __ptr, _Type __val, _Type* __ret)
 {
-#if defined(_LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE)
-  return false;
-#else
   return __cuda_fetch_weak_if_local(__ptr, __val, __ret, __cuda_fetch_local_bop_or<_Type>);
-#endif
 }
 
 template <class _Type>
 _CCCL_DEVICE bool __cuda_fetch_xor_weak_if_local(volatile _Type* __ptr, _Type __val, _Type* __ret)
 {
-#if defined(_LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE)
-  return false;
-#else
   return __cuda_fetch_weak_if_local(__ptr, __val, __ret, __cuda_fetch_local_bop_xor<_Type>);
-#endif
 }
 
 template <class _Type>
 _CCCL_DEVICE bool __cuda_fetch_add_weak_if_local(volatile _Type* __ptr, _Type __val, _Type* __ret)
 {
-#if defined(_LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE)
-  return false;
-#else
   return __cuda_fetch_weak_if_local(__ptr, __val, __ret, __cuda_fetch_local_bop_add<_Type>);
-#endif
 }
 
 template <class _Type>
 _CCCL_DEVICE bool __cuda_fetch_sub_weak_if_local(volatile _Type* __ptr, _Type __val, _Type* __ret)
 {
-#if defined(_LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE)
-  return false;
-#else
   return __cuda_fetch_weak_if_local(__ptr, __val, __ret, __cuda_fetch_local_bop_sub<_Type>);
-#endif
 }
 
 template <class _Type>
 _CCCL_DEVICE bool __cuda_fetch_max_weak_if_local(volatile _Type* __ptr, _Type __val, _Type* __ret)
 {
-#if defined(_LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE)
-  return false;
-#else
   return __cuda_fetch_weak_if_local(__ptr, __val, __ret, __cuda_fetch_local_bop_max<_Type>);
-#endif
 }
 
 template <class _Type>
 _CCCL_DEVICE bool __cuda_fetch_min_weak_if_local(volatile _Type* __ptr, _Type __val, _Type* __ret)
 {
-#if defined(_LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE)
-  return false;
-#else
   return __cuda_fetch_weak_if_local(__ptr, __val, __ret, __cuda_fetch_local_bop_min<_Type>);
-#endif
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
