@@ -140,8 +140,11 @@ template <> struct sm90_tuning<float,  primitive_op::yes, primitive_accum::yes, 
 template <> struct sm90_tuning<double, primitive_op::yes, primitive_accum::yes, accum_size::_8> : tuning<224, 24, 576, 1215> {};
 
 #if CUB_IS_INT128_ENABLED
-template <> struct sm90_tuning< __int128_t, primitive_op::yes, primitive_accum::no, accum_size::_16> : tuning<576, 21, 860, 630> {};
-template <> struct sm90_tuning<__uint128_t, primitive_op::yes, primitive_accum::no, accum_size::_16> : tuning<576, 21, 860, 630> {};
+template <> struct sm90_tuning<__int128_t, primitive_op::yes, primitive_accum::no, accum_size::_16> : tuning<576, 21, 860, 630> {};
+template <>
+struct sm90_tuning<__uint128_t, primitive_op::yes, primitive_accum::no, accum_size::_16>
+    : sm90_tuning<__int128_t, primitive_op::yes, primitive_accum::no, accum_size::_16>
+{};
 #endif
 // clang-format on
 
@@ -251,15 +254,8 @@ struct sm80_tuning<__int128_t, primitive_op::yes, primitive_accum::no, accum_siz
 
 template <>
 struct sm80_tuning<__uint128_t, primitive_op::yes, primitive_accum::no, accum_size::_16>
-{
-  static constexpr int threads = 640;
-  static constexpr int items   = 24;
-
-  using delay_constructor = detail::no_delay_constructor_t<1200>;
-
-  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_DIRECT;
-  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_DIRECT;
-};
+    : sm80_tuning<__int128_t, primitive_op::yes, primitive_accum::no, accum_size::_16>
+{};
 #endif
 
 } // namespace scan
