@@ -19,11 +19,14 @@
 
 using namespace cuda::experimental::stf;
 
+/**
+ * This functor transforms a 1D index into the result of the transformation
+ */
 // Args... is for example slice<double>, slice<int>...
 template <typename TransformOp, typename shape_t, typename... Args>
-struct FancyIterator
+struct IndexToTransformedValue
 {
-  FancyIterator(TransformOp _op, shape_t s, ::std::tuple<Args...> _targs)
+  IndexToTransformedValue(TransformOp _op, shape_t s, ::std::tuple<Args...> _targs)
       : op(mv(_op))
       , shape(mv(s))
       , targs(mv(_targs))
@@ -42,10 +45,13 @@ struct FancyIterator
   }
 
   TransformOp op;
-  shape_t shape;
+  const shape_t shape;
   ::std::tuple<Args...> targs;
 };
 
+/**
+ * @brief Helper to transform a device lambda into a functor that we can use in CUB
+ */
 template <typename BinaryOp>
 struct ReduceOpWrapper
 {
@@ -68,6 +74,9 @@ __global__ void TEST_KERNEL(It it)
   printf("it(%d) = %d\n", threadIdx.x, it[threadIdx.x]);
 }
 
+/**
+ * @brief Remove the first entry of a std::tuple
+ */
 template <typename Tuple>
 auto remove_first(const Tuple& t)
 {
@@ -78,22 +87,18 @@ auto remove_first(const Tuple& t)
     t);
 }
 
-template <typename Ctx, typename shape_t, typename TransformOp, typename BinaryOp, typename... Args>
+template <typename Ctx, typename shape_t, typename TransformOp, typename BinaryOp, typename OutT, typename... Args>
 auto stf_transform_reduce(
-  Ctx& ctx, shape_t s, TransformOp&& transform_op, BinaryOp&& op /*, OutT init_val*/, logical_data<Args>... args)
+  Ctx& ctx, shape_t s, TransformOp&& transform_op, BinaryOp&& op, OutT init_val, logical_data<Args>... args)
 {
-  // TODO
-  //  using OutT = typename ::std::result_of<TransformOp>::type; or use ::std::invoke_result
-  using OutT = int;
+  using ConvertionOp_t = IndexToTransformedValue<TransformOp, shape_t, Args...>;
 
-  using ConvertionOp_t = FancyIterator<TransformOp, shape_t, Args...>;
-
+  // The result of this operation is a logical data
   auto result = ctx.logical_data(shape_of<scalar<OutT>>());
 
   auto t = ctx.task(result.write(), args.read()...);
   t.start();
   cudaStream_t stream = t.get_stream();
-  fprintf(stderr, "GOT stream %p\n", stream);
 
   auto deps = t.typed_deps();
   // We remove the first argument
@@ -108,13 +113,12 @@ auto stf_transform_reduce(
   TEST_KERNEL<<<1, 8, 0, stream>>>(itr);
 
   // Determine temporary device storage requirements
-  int init_val              = 0; // TODO
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
   cub::DeviceReduce::Reduce(
     d_temp_storage,
     temp_storage_bytes,
-    itr,//*static_cast<decltype(itr) *>(nullptr), // TODO
+    itr, //*static_cast<decltype(itr) *>(nullptr), // TODO
     (OutT*) nullptr,
     s.size(),
     ReduceOpWrapper<BinaryOp>(op),
@@ -170,7 +174,10 @@ void run()
     },
     [] __device__(const int& a, const int& b) {
       return a + b;
-    }, lX, lY);
+    },
+    0,
+    lX,
+    lY);
 
   int result = ctx.wait(lresult);
   _CCCL_ASSERT(result == ref_prod, "Incorrect result");
