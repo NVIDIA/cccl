@@ -781,11 +781,9 @@ struct sm80_tuning<KeyT, __uint128_t, primitive_op::yes, key_size::_16, val_size
   using delay_constructor                              = detail::no_delay_constructor_t<1160>;
 };
 #endif
-} // namespace scan_by_key
-} // namespace detail
 
-template <typename KeysInputIteratorT, typename AccumT, typename ValueT = AccumT, typename ScanOpT = ::cuda::std::plus<>>
-struct DeviceScanByKeyPolicy
+template <typename KeysInputIteratorT, typename AccumT, typename ValueT, typename ScanOpT>
+struct policy_hub
 {
   using KeyT                                 = cub::detail::value_t<KeysInputIteratorT>;
   static constexpr size_t MaxInputBytes      = (cub::max)(sizeof(KeyT), sizeof(AccumT));
@@ -863,5 +861,10 @@ struct DeviceScanByKeyPolicy
 
   using MaxPolicy = Policy900;
 };
+} // namespace scan_by_key
+} // namespace detail
+
+template <typename KeysInputIteratorT, typename AccumT, typename ValueT = AccumT, typename ScanOpT = ::cuda::std::plus<>>
+using DeviceScanByKeyPolicy = detail::scan_by_key::policy_hub<KeysInputIteratorT, AccumT, ValueT, ScanOpT>;
 
 CUB_NAMESPACE_END
