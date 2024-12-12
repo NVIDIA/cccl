@@ -107,16 +107,18 @@ using __iproperty_set = iset<__iproperty<_Properties>...>;
 // Wrap the calls of the allocate_async and deallocate_async member functions
 // because of NVBUG#4967486
 template <class _Resource>
-_CUDAX_PUBLIC_API void* __allocate_async(_Resource& mr, size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
+_CUDAX_PUBLIC_API auto __allocate_async(_Resource& __mr, size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
+  -> decltype(__mr.allocate_async(__bytes, __alignment, __stream))
 {
-  return mr.allocate_async(__bytes, __alignment, __stream);
+  return __mr.allocate_async(__bytes, __alignment, __stream);
 }
 
 template <class _Resource>
-_CUDAX_PUBLIC_API void
-__deallocate_async(_Resource& mr, void* __pv, size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
+_CUDAX_PUBLIC_API auto
+__deallocate_async(_Resource& __mr, void* __pv, size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)
+  -> decltype(__mr.deallocate_async(__pv, __bytes, __alignment, __stream))
 {
-  mr.deallocate_async(__pv, __bytes, __alignment, __stream);
+  __mr.deallocate_async(__pv, __bytes, __alignment, __stream);
 }
 
 template <class...>
