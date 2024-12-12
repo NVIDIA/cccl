@@ -43,6 +43,11 @@ private:
   Allocator alloc;
 
 public:
+  _CCCL_HOST_DEVICE execute_with_allocator()
+      : super_t()
+      , alloc()
+  {}
+
   _CCCL_HOST_DEVICE execute_with_allocator(super_t const& super, Allocator alloc_)
       : super_t(super)
       , alloc(alloc_)
