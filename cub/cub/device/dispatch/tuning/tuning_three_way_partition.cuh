@@ -243,7 +243,7 @@ struct sm80_tuning<Input, OffsetT, input_size::_16, offset_size::_4>
 template <class InputT, class OffsetT>
 struct policy_hub
 {
-  struct DefaultTuning
+  struct DefaultPolicy
   {
     using ThreeWayPartitionPolicy =
       AgentThreeWayPartitionPolicy<256,
@@ -254,7 +254,7 @@ struct policy_hub
   };
 
   struct Policy350
-      : DefaultTuning
+      : DefaultPolicy
       , ChainedPolicy<350, Policy350, Policy350>
   {};
 
@@ -272,7 +272,7 @@ struct policy_hub
   };
 
   struct Policy860
-      : DefaultTuning
+      : DefaultPolicy
       , ChainedPolicy<860, Policy860, Policy800>
   {};
 
