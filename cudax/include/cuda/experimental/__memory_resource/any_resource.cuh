@@ -382,7 +382,7 @@ resource_ref<_Properties...> __as_resource_ref(resource_ref<_Properties...> __mr
 template <class... _Properties>
 resource_ref<_Properties...> __as_resource_ref(async_resource_ref<_Properties...> __mr) noexcept
 {
-  return __mr;
+  return static_cast<resource_ref<_Properties...>>(__mr);
 }
 
 template <class... _Properties, mr::_AllocType _Alloc_type>
