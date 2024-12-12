@@ -105,7 +105,7 @@ _CCCL_DEVICE inline bool __cuda_store_weak_if_local(volatile void* __ptr, const 
   {
     return false;
   }
-  memcpy(__ptr, __val, __size);
+  memcpy(const_cast<void*>(__ptr), __val, __size);
   return true;
 }
 
@@ -117,14 +117,14 @@ __cuda_compare_exchange_weak_if_local(volatile _Type* __ptr, _Type* __expected, 
   {
     return false;
   }
-  if (__atomic_memcmp((const void*) __ptr, (const void*) __expected, sizeof(_Type)) == 0)
+  if (__atomic_memcmp(const_cast<const void*>(__ptr), const_cast<const void*>(__expected), sizeof(_Type)) == 0)
   {
-    memcpy((void*) __ptr, (void const*) __desired, sizeof(_Type));
+    memcpy(const_cast<void*>(__ptr), const_cast<void const*>(__desired), sizeof(_Type));
     *__success = true;
   }
   else
   {
-    memcpy((void*) __expected, (void const*) __ptr, sizeof(_Type));
+    memcpy(const_cast<void*>(__expected), const_cast<void const*>(__ptr), sizeof(_Type));
     *__success = false;
   }
   __nanosleep(0);
@@ -138,8 +138,8 @@ _CCCL_DEVICE bool __cuda_exchange_weak_if_local(volatile _Type* __ptr, _Type* __
   {
     return false;
   }
-  memcpy((void*) __ret, (void const*) __ptr, sizeof(_Type));
-  memcpy((void*) __ptr, (void const*) __val, sizeof(_Type));
+  memcpy(const_cast<void*>(__ret), const_cast<const void*>(__ptr), sizeof(_Type));
+  memcpy(const_cast<void*>(__ptr), const_cast<const void*>(__val), sizeof(_Type));
   __nanosleep(0);
   return true;
 }
@@ -147,11 +147,11 @@ _CCCL_DEVICE bool __cuda_exchange_weak_if_local(volatile _Type* __ptr, _Type* __
 template <class _Type, class _BOp>
 _CCCL_DEVICE bool __cuda_fetch_weak_if_local(volatile _Type* __ptr, _Type __val, _Type* __ret, _BOp&& __bop)
 {
-  if (!__cuda_is_local((const void*) __ptr))
+  if (!__cuda_is_local(__ptr))
   {
     return false;
   }
-  memcpy((void*) __ret, (void const*) __ptr, sizeof(_Type));
+  memcpy(const_cast<void*>(__ret), const_cast<const void*>(__ptr), sizeof(_Type));
   __bop(*__ptr, __val);
   __nanosleep(0);
   return true;
