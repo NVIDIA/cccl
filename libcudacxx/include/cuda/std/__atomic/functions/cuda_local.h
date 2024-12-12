@@ -47,7 +47,10 @@ _CCCL_DEVICE inline bool __cuda_is_local(const volatile void* __ptr)
       : "l"(const_cast<const void*>(__ptr)));
   return __tmp == 1;
 #else
+// Only NVCC+NVRTC define __isLocal
+#  if defined(_CCCL_CUDA_COMPILER_NVCC) || defined(_CCCL_CUDA_COMPILER_NVRTC)
   return __isLocal(const_cast<const void*>(__ptr));
+#  endif
 #endif
 }
 
