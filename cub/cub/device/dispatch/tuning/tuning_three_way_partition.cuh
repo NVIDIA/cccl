@@ -49,10 +49,8 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
 namespace three_way_partition
 {
-
 enum class input_size
 {
   _1,
@@ -94,124 +92,102 @@ template <class InputT,
           offset_size OffsetSize = classify_offset_size<OffsetT>()>
 struct sm90_tuning
 {
-  static constexpr int threads = 256;
-  static constexpr int items   = Nominal4BItemsToItems<InputT>(9);
-
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = Nominal4BItemsToItems<InputT>(9);
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-
-  using AccumPackHelperT  = detail::three_way_partition::accumulator_pack_t<OffsetT>;
-  using AccumPackT        = typename AccumPackHelperT::pack_t;
-  using delay_constructor = detail::default_delay_constructor_t<AccumPackT>;
+  using AccumPackHelperT                             = detail::three_way_partition::accumulator_pack_t<OffsetT>;
+  using AccumPackT                                   = typename AccumPackHelperT::pack_t;
+  using delay_constructor                            = detail::default_delay_constructor_t<AccumPackT>;
 };
 
 template <class Input, class OffsetT>
 struct sm90_tuning<Input, OffsetT, input_size::_1, offset_size::_4>
 {
-  static constexpr int threads = 256;
-  static constexpr int items   = 12;
-
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 12;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-
-  using delay_constructor = detail::no_delay_constructor_t<445>;
+  using delay_constructor                            = detail::no_delay_constructor_t<445>;
 };
 
 template <class Input, class OffsetT>
 struct sm90_tuning<Input, OffsetT, input_size::_2, offset_size::_4>
 {
-  static constexpr int threads = 256;
-  static constexpr int items   = 12;
-
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 12;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-
-  using delay_constructor = detail::fixed_delay_constructor_t<104, 512>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<104, 512>;
 };
 
 template <class Input, class OffsetT>
 struct sm90_tuning<Input, OffsetT, input_size::_4, offset_size::_4>
 {
-  static constexpr int threads = 320;
-  static constexpr int items   = 12;
-
+  static constexpr int threads                       = 320;
+  static constexpr int items                         = 12;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-
-  using delay_constructor = detail::no_delay_constructor_t<1105>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1105>;
 };
 
 template <class Input, class OffsetT>
 struct sm90_tuning<Input, OffsetT, input_size::_8, offset_size::_4>
 {
-  static constexpr int threads = 384;
-  static constexpr int items   = 7;
-
+  static constexpr int threads                       = 384;
+  static constexpr int items                         = 7;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  using delay_constructor = detail::fixed_delay_constructor_t<464, 1165>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<464, 1165>;
 };
 
 template <class Input, class OffsetT>
 struct sm90_tuning<Input, OffsetT, input_size::_16, offset_size::_4>
 {
-  static constexpr int threads = 128;
-  static constexpr int items   = 7;
-
+  static constexpr int threads                       = 128;
+  static constexpr int items                         = 7;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  using delay_constructor = detail::no_delay_constructor_t<1040>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1040>;
 };
 
 template <class Input, class OffsetT>
 struct sm90_tuning<Input, OffsetT, input_size::_1, offset_size::_8>
 {
-  static constexpr int threads = 256;
-  static constexpr int items   = 24;
-
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 24;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-
-  using delay_constructor = detail::fixed_delay_constructor_t<4, 285>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<4, 285>;
 };
 
 template <class Input, class OffsetT>
 struct sm90_tuning<Input, OffsetT, input_size::_2, offset_size::_8>
 {
-  static constexpr int threads = 640;
-  static constexpr int items   = 24;
-
+  static constexpr int threads                       = 640;
+  static constexpr int items                         = 24;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  using delay_constructor = detail::no_delay_constructor_t<245>;
+  using delay_constructor                            = detail::no_delay_constructor_t<245>;
 };
 
 template <class Input, class OffsetT>
 struct sm90_tuning<Input, OffsetT, input_size::_4, offset_size::_8>
 {
-  static constexpr int threads = 256;
-  static constexpr int items   = 23;
-
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 23;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  using delay_constructor = detail::no_delay_constructor_t<910>;
+  using delay_constructor                            = detail::no_delay_constructor_t<910>;
 };
 
 template <class Input, class OffsetT>
 struct sm90_tuning<Input, OffsetT, input_size::_8, offset_size::_8>
 {
-  static constexpr int threads = 256;
-  static constexpr int items   = 18;
-
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 18;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  using delay_constructor = detail::no_delay_constructor_t<1145>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1145>;
 };
 
 template <class Input, class OffsetT>
 struct sm90_tuning<Input, OffsetT, input_size::_16, offset_size::_8>
 {
-  static constexpr int threads = 256;
-  static constexpr int items   = 11;
-
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 11;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  using delay_constructor = detail::no_delay_constructor_t<1050>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1050>;
 };
 
 template <class InputT,
@@ -220,58 +196,48 @@ template <class InputT,
           offset_size OffsetSize = classify_offset_size<OffsetT>()>
 struct sm80_tuning
 {
-  static constexpr int threads = 256;
-  static constexpr int items   = Nominal4BItemsToItems<InputT>(9);
-
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = Nominal4BItemsToItems<InputT>(9);
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-
-  using AccumPackHelperT  = detail::three_way_partition::accumulator_pack_t<OffsetT>;
-  using AccumPackT        = typename AccumPackHelperT::pack_t;
-  using delay_constructor = detail::default_delay_constructor_t<AccumPackT>;
+  using AccumPackHelperT                             = detail::three_way_partition::accumulator_pack_t<OffsetT>;
+  using AccumPackT                                   = typename AccumPackHelperT::pack_t;
+  using delay_constructor                            = detail::default_delay_constructor_t<AccumPackT>;
 };
 
 template <class Input, class OffsetT>
 struct sm80_tuning<Input, OffsetT, input_size::_2, offset_size::_4>
 {
-  static constexpr int threads = 256;
-  static constexpr int items   = 12;
-
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 12;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  using delay_constructor = detail::no_delay_constructor_t<910>;
+  using delay_constructor                            = detail::no_delay_constructor_t<910>;
 };
 
 template <class Input, class OffsetT>
 struct sm80_tuning<Input, OffsetT, input_size::_4, offset_size::_4>
 {
-  static constexpr int threads = 256;
-  static constexpr int items   = 11;
-
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 11;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  using delay_constructor = detail::no_delay_constructor_t<1120>;
+  using delay_constructor                            = detail::no_delay_constructor_t<1120>;
 };
 
 template <class Input, class OffsetT>
 struct sm80_tuning<Input, OffsetT, input_size::_8, offset_size::_4>
 {
-  static constexpr int threads = 224;
-  static constexpr int items   = 11;
-
+  static constexpr int threads                       = 224;
+  static constexpr int items                         = 11;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  using delay_constructor = detail::fixed_delay_constructor_t<264, 1080>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<264, 1080>;
 };
 
 template <class Input, class OffsetT>
 struct sm80_tuning<Input, OffsetT, input_size::_16, offset_size::_4>
 {
-  static constexpr int threads = 128;
-  static constexpr int items   = 10;
-
+  static constexpr int threads                       = 128;
+  static constexpr int items                         = 10;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-
-  using delay_constructor = detail::fixed_delay_constructor_t<672, 1120>;
+  using delay_constructor                            = detail::fixed_delay_constructor_t<672, 1120>;
 };
 
 } // namespace three_way_partition
@@ -291,7 +257,6 @@ struct device_three_way_partition_policy_hub
                                         cub::BLOCK_SCAN_WARP_SCANS>;
   };
 
-  /// SM35
   struct Policy350
       : DefaultTuning
       , ChainedPolicy<350, Policy350, Policy350>
@@ -315,7 +280,6 @@ struct device_three_way_partition_policy_hub
       , ChainedPolicy<860, Policy860, Policy800>
   {};
 
-  /// SM90
   struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
   {
     using tuning = detail::three_way_partition::sm90_tuning<InputT, OffsetT>;
