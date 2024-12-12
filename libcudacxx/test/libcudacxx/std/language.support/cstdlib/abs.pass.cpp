@@ -10,41 +10,51 @@
 #include <cuda/std/cassert>
 #include <cuda/std/cstdlib>
 #include <cuda/std/limits>
-#include <cuda/std/utility>
 
 #include "test_macros.h"
 
-__host__ __device__ constexpr int abs_overload(int value)
+using I   = int;
+using IL  = long;
+using ILL = long long;
+
+__host__ __device__ constexpr I abs_overload(I value)
 {
-  ASSERT_SAME_TYPE(int, decltype(cuda::std::abs(cuda::std::declval<int>())));
-  static_assert(noexcept(cuda::std::abs(cuda::std::declval<int>())), "");
+  ASSERT_SAME_TYPE(I, decltype(cuda::std::abs(I{})));
+  static_assert(noexcept(cuda::std::abs(I{})), "");
   return cuda::std::abs(value);
 }
 
-__host__ __device__ constexpr long abs_overload(long value)
+__host__ __device__ constexpr IL abs_overload(IL value)
 {
-  ASSERT_SAME_TYPE(long, decltype(cuda::std::labs(cuda::std::declval<long>())));
-  static_assert(noexcept(cuda::std::labs(cuda::std::declval<long>())), "");
+  ASSERT_SAME_TYPE(IL, decltype(cuda::std::labs(IL{})));
+  static_assert(noexcept(cuda::std::labs(IL{})), "");
   return cuda::std::labs(value);
 }
 
-__host__ __device__ constexpr long long abs_overload(long long value)
+__host__ __device__ constexpr ILL abs_overload(ILL value)
 {
-  ASSERT_SAME_TYPE(long long, decltype(cuda::std::llabs(cuda::std::declval<long long>())));
-  static_assert(noexcept(cuda::std::llabs(cuda::std::declval<long long>())), "");
+  ASSERT_SAME_TYPE(ILL, decltype(cuda::std::llabs(ILL{})));
+  static_assert(noexcept(cuda::std::llabs(ILL{})), "");
   return cuda::std::llabs(value);
+}
+
+template <class T>
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test_abs(T in, T ref, T zero_value)
+{
+  assert(abs_overload(zero_value + in) == ref);
+  return true;
 }
 
 template <class T>
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool test_abs(T zero_value)
 {
-  assert(abs_overload(zero_value + T{0}) == T{0});
-  assert(abs_overload(zero_value + T{1}) == T{1});
-  assert(abs_overload(zero_value + T{-1}) == T{1});
-  assert(abs_overload(zero_value + T{257}) == T{257});
-  assert(abs_overload(zero_value + T{-257}) == T{257});
-  assert(abs_overload(zero_value + cuda::std::numeric_limits<T>::max()) == cuda::std::numeric_limits<T>::max());
-  assert(abs_overload(zero_value + cuda::std::numeric_limits<T>::min() + T{1}) == cuda::std::numeric_limits<T>::max());
+  test_abs(T{0}, T{0}, zero_value);
+  test_abs(T{1}, T{1}, zero_value);
+  test_abs(T{-1}, T{1}, zero_value);
+  test_abs(T{257}, T{257}, zero_value);
+  test_abs(T{-257}, T{257}, zero_value);
+  test_abs(cuda::std::numeric_limits<T>::max(), cuda::std::numeric_limits<T>::max(), zero_value);
+  test_abs(cuda::std::numeric_limits<T>::min() + T{1}, cuda::std::numeric_limits<T>::max(), zero_value);
   return true;
 }
 
