@@ -90,6 +90,48 @@ template <class InputT,
           class OffsetT,
           input_size InputSize   = classify_input_size<InputT>(),
           offset_size OffsetSize = classify_offset_size<OffsetT>()>
+struct sm80_tuning;
+
+template <class Input, class OffsetT>
+struct sm80_tuning<Input, OffsetT, input_size::_2, offset_size::_4>
+{
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 12;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+  using delay_constructor                            = no_delay_constructor_t<910>;
+};
+
+template <class Input, class OffsetT>
+struct sm80_tuning<Input, OffsetT, input_size::_4, offset_size::_4>
+{
+  static constexpr int threads                       = 256;
+  static constexpr int items                         = 11;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+  using delay_constructor                            = no_delay_constructor_t<1120>;
+};
+
+template <class Input, class OffsetT>
+struct sm80_tuning<Input, OffsetT, input_size::_8, offset_size::_4>
+{
+  static constexpr int threads                       = 224;
+  static constexpr int items                         = 11;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+  using delay_constructor                            = fixed_delay_constructor_t<264, 1080>;
+};
+
+template <class Input, class OffsetT>
+struct sm80_tuning<Input, OffsetT, input_size::_16, offset_size::_4>
+{
+  static constexpr int threads                       = 128;
+  static constexpr int items                         = 10;
+  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
+  using delay_constructor                            = fixed_delay_constructor_t<672, 1120>;
+};
+
+template <class InputT,
+          class OffsetT,
+          input_size InputSize   = classify_input_size<InputT>(),
+          offset_size OffsetSize = classify_offset_size<OffsetT>()>
 struct sm90_tuning;
 
 template <class Input, class OffsetT>
@@ -180,48 +222,6 @@ struct sm90_tuning<Input, OffsetT, input_size::_16, offset_size::_8>
   static constexpr int items                         = 11;
   static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
   using delay_constructor                            = no_delay_constructor_t<1050>;
-};
-
-template <class InputT,
-          class OffsetT,
-          input_size InputSize   = classify_input_size<InputT>(),
-          offset_size OffsetSize = classify_offset_size<OffsetT>()>
-struct sm80_tuning;
-
-template <class Input, class OffsetT>
-struct sm80_tuning<Input, OffsetT, input_size::_2, offset_size::_4>
-{
-  static constexpr int threads                       = 256;
-  static constexpr int items                         = 12;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = no_delay_constructor_t<910>;
-};
-
-template <class Input, class OffsetT>
-struct sm80_tuning<Input, OffsetT, input_size::_4, offset_size::_4>
-{
-  static constexpr int threads                       = 256;
-  static constexpr int items                         = 11;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = no_delay_constructor_t<1120>;
-};
-
-template <class Input, class OffsetT>
-struct sm80_tuning<Input, OffsetT, input_size::_8, offset_size::_4>
-{
-  static constexpr int threads                       = 224;
-  static constexpr int items                         = 11;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = fixed_delay_constructor_t<264, 1080>;
-};
-
-template <class Input, class OffsetT>
-struct sm80_tuning<Input, OffsetT, input_size::_16, offset_size::_4>
-{
-  static constexpr int threads                       = 128;
-  static constexpr int items                         = 10;
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_WARP_TRANSPOSE;
-  using delay_constructor                            = fixed_delay_constructor_t<672, 1120>;
 };
 
 template <class InputT, class OffsetT>
