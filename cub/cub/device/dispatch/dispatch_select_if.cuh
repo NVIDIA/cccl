@@ -100,7 +100,8 @@ public:
 
   _CCCL_HOST_DEVICE _CCCL_FORCEINLINE void advance(TotalNumItemsT num_items, bool next_partition_is_the_last)
   {
-    ::cuda::std::swap(d_num_selected_in, d_num_selected_out);
+    using ::cuda::std::swap;
+    swap(d_num_selected_in, d_num_selected_out);
     first_partition = false;
     last_partition  = next_partition_is_the_last;
     total_previous_num_items += num_items;
