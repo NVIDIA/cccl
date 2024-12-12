@@ -136,21 +136,7 @@ template <class KeyT,
           primitive_accum PrimitiveAccum = is_primitive_accum<AccumT>(),
           key_size KeySize               = classify_key_size<KeyT>(),
           accum_size AccumSize           = classify_accum_size<AccumT>()>
-struct sm80_tuning
-{
-  static constexpr int max_input_bytes             = CUB_MAX(sizeof(KeyT), sizeof(AccumT));
-  static constexpr int combined_input_bytes        = sizeof(KeyT) + sizeof(AccumT);
-  static constexpr int threads                     = 128;
-  static constexpr int nominal_4b_items_per_thread = 6;
-  static constexpr int items =
-    (max_input_bytes <= 8)
-      ? 6
-      : CUB_MIN(nominal_4b_items_per_thread,
-                CUB_MAX(1, ((nominal_4b_items_per_thread * 8) + combined_input_bytes - 1) / combined_input_bytes));
-
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = detail::default_reduce_by_key_delay_constructor_t<AccumT, int>;
-};
+struct sm80_tuning;
 
 // 8-bit key
 template <class KeyT, class AccumT>
@@ -389,20 +375,7 @@ template <class KeyT,
           primitive_accum PrimitiveAccum = is_primitive_accum<AccumT>(),
           key_size KeySize               = classify_key_size<KeyT>(),
           accum_size AccumSize           = classify_accum_size<AccumT>()>
-struct sm90_tuning
-{
-  static constexpr int max_input_bytes             = CUB_MAX(sizeof(KeyT), sizeof(AccumT));
-  static constexpr int combined_input_bytes        = sizeof(KeyT) + sizeof(AccumT);
-  static constexpr int threads                     = 128;
-  static constexpr int nominal_4b_items_per_thread = 6;
-  static constexpr int items =
-    (max_input_bytes <= 8)
-      ? 6
-      : CUB_MIN(nominal_4b_items_per_thread,
-                CUB_MAX(1, ((nominal_4b_items_per_thread * 8) + combined_input_bytes - 1) / combined_input_bytes));
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using delay_constructor                            = detail::default_reduce_by_key_delay_constructor_t<AccumT, int>;
-};
+struct sm90_tuning;
 
 // 8-bit key
 template <class KeyT, class AccumT>
@@ -656,7 +629,7 @@ struct policy_hub
                              BLOCK_LOAD_DIRECT,
                              LOAD_LDG,
                              BLOCK_SCAN_WARP_SCANS,
-                             detail::default_reduce_by_key_delay_constructor_t<AccumT, int>>;
+                             default_reduce_by_key_delay_constructor_t<AccumT, int>>;
   };
 
   struct Policy350
@@ -664,18 +637,23 @@ struct policy_hub
       , ChainedPolicy<350, Policy350, Policy350>
   {};
 
+  // Use values from tuning if a specialization exists, otherwise pick DefaultTuning
+  template <typename Tuning>
+  static auto select_agent_policy(int)
+    -> AgentReduceByKeyPolicy<Tuning::threads,
+                              Tuning::items,
+                              Tuning::load_algorithm,
+                              LOAD_DEFAULT,
+                              BLOCK_SCAN_WARP_SCANS,
+                              typename Tuning::delay_constructor>;
+
+  template <typename Tuning>
+  static auto select_agent_policy(long) -> typename DefaultTuning::ReduceByKeyPolicyT;
+
   struct Policy800 : ChainedPolicy<800, Policy800, Policy350>
   {
-    using tuning =
-      detail::reduce_by_key::sm80_tuning<KeyT, AccumT, detail::reduce_by_key::is_primitive_op<ReductionOpT>()>;
-
     using ReduceByKeyPolicyT =
-      AgentReduceByKeyPolicy<tuning::threads,
-                             tuning::items,
-                             tuning::load_algorithm,
-                             LOAD_DEFAULT,
-                             BLOCK_SCAN_WARP_SCANS,
-                             typename tuning::delay_constructor>;
+      decltype(select_agent_policy<sm80_tuning<KeyT, AccumT, is_primitive_op<ReductionOpT>()>>(0));
   };
 
   struct Policy860
@@ -685,16 +663,8 @@ struct policy_hub
 
   struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
   {
-    using tuning =
-      detail::reduce_by_key::sm90_tuning<KeyT, AccumT, detail::reduce_by_key::is_primitive_op<ReductionOpT>()>;
-
     using ReduceByKeyPolicyT =
-      AgentReduceByKeyPolicy<tuning::threads,
-                             tuning::items,
-                             tuning::load_algorithm,
-                             LOAD_DEFAULT,
-                             BLOCK_SCAN_WARP_SCANS,
-                             typename tuning::delay_constructor>;
+      decltype(select_agent_policy<sm90_tuning<KeyT, AccumT, is_primitive_op<ReductionOpT>()>>(0));
   };
 
   using MaxPolicy = Policy900;
