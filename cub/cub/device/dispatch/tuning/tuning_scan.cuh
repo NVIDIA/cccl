@@ -292,7 +292,7 @@ struct policy_hub
                default_delay_constructor_t<AccumT>>;
   };
 
-  struct DefaultTuning
+  struct DefaultPolicy
   {
     using ScanPolicyT =
       policy_t<128,
@@ -305,7 +305,7 @@ struct policy_hub
   };
 
   struct Policy600
-      : DefaultTuning
+      : DefaultPolicy
       , ChainedPolicy<600, Policy600, Policy520>
   {};
 
@@ -324,7 +324,7 @@ struct policy_hub
   };
 
   struct Policy860
-      : DefaultTuning
+      : DefaultPolicy
       , ChainedPolicy<860, Policy860, Policy800>
   {};
 
