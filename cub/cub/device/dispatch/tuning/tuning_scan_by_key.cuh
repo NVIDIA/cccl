@@ -130,18 +130,7 @@ template <class KeyT,
           key_size KeySize                     = classify_key_size<KeyT>(),
           val_size AccumSize                   = classify_val_size<AccumT>(),
           primitive_accum PrimitiveAccumulator = is_primitive_accum<AccumT>()>
-struct sm90_tuning
-{
-  static constexpr int nominal_4b_items_per_thread = 9;
-  static constexpr int threads                     = 256;
-  static constexpr size_t max_input_bytes          = (cub::max)(sizeof(KeyT), sizeof(AccumT));
-  static constexpr size_t combined_input_bytes     = sizeof(KeyT) + sizeof(AccumT);
-  static constexpr int items =
-    ((max_input_bytes <= 8) ? 9 : Nominal4BItemsToItemsCombined(nominal_4b_items_per_thread, combined_input_bytes));
-  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
-  using delay_constructor                              = default_reduce_by_key_delay_constructor_t<AccumT, int>;
-};
+struct sm90_tuning;
 
 template <class KeyT, class ValueT>
 struct sm90_tuning<KeyT, ValueT, primitive_op::yes, key_size::_1, val_size::_1, primitive_accum::yes>
@@ -434,18 +423,7 @@ template <class KeyT,
           key_size KeySize                     = classify_key_size<KeyT>(),
           val_size AccumSize                   = classify_val_size<AccumT>(),
           primitive_accum PrimitiveAccumulator = is_primitive_accum<AccumT>()>
-struct sm80_tuning
-{
-  static constexpr int nominal_4b_items_per_thread = 9;
-  static constexpr int threads                     = 256;
-  static constexpr size_t max_input_bytes          = (cub::max)(sizeof(KeyT), sizeof(AccumT));
-  static constexpr size_t combined_input_bytes     = sizeof(KeyT) + sizeof(AccumT);
-  static constexpr int items =
-    ((max_input_bytes <= 8) ? 9 : Nominal4BItemsToItemsCombined(nominal_4b_items_per_thread, combined_input_bytes));
-  static constexpr BlockLoadAlgorithm load_algorithm   = BLOCK_LOAD_WARP_TRANSPOSE;
-  static constexpr BlockStoreAlgorithm store_algorithm = BLOCK_STORE_WARP_TRANSPOSE;
-  using delay_constructor                              = default_reduce_by_key_delay_constructor_t<AccumT, int>;
-};
+struct sm80_tuning;
 
 template <class KeyT, class ValueT>
 struct sm80_tuning<KeyT, ValueT, primitive_op::yes, key_size::_1, val_size::_1, primitive_accum::yes>
@@ -755,6 +733,7 @@ struct policy_hub
                            default_reduce_by_key_delay_constructor_t<AccumT, int>>;
   };
 
+  template <CacheLoadModifier LoadModifier, typename DelayConstructurValueT>
   struct DefaultPolicy
   {
     static constexpr int nominal_4b_items_per_thread = 9;
@@ -765,48 +744,47 @@ struct policy_hub
       AgentScanByKeyPolicy<256,
                            items_per_thread,
                            BLOCK_LOAD_WARP_TRANSPOSE,
-                           LOAD_CA,
+                           LoadModifier,
                            BLOCK_SCAN_WARP_SCANS,
                            BLOCK_STORE_WARP_TRANSPOSE,
-                           default_reduce_by_key_delay_constructor_t<AccumT, int>>;
+                           default_reduce_by_key_delay_constructor_t<DelayConstructurValueT, int>>;
   };
 
   struct Policy520
-      : DefaultPolicy
+      : DefaultPolicy<LOAD_CA, AccumT>
       , ChainedPolicy<520, Policy520, Policy350>
   {};
 
+  // Use values from tuning if a specialization exists, otherwise pick the default
+  template <typename Tuning>
+  static auto select_agent_policy(int)
+    -> AgentScanByKeyPolicy<Tuning::threads,
+                            Tuning::items,
+                            Tuning::load_algorithm,
+                            LOAD_DEFAULT,
+                            BLOCK_SCAN_WARP_SCANS,
+                            Tuning::store_algorithm,
+                            typename Tuning::delay_constructor>;
+
+  template <typename Tuning>
+  // FIXME(bgruber): should we rather use `AccumT` instead of `ValueT` like the other default policies?
+  static auto select_agent_policy(long) -> typename DefaultPolicy<LOAD_DEFAULT, ValueT>::ScanByKeyPolicyT;
+
   struct Policy800 : ChainedPolicy<800, Policy800, Policy520>
   {
-    using tuning = sm80_tuning<key_t, ValueT, is_primitive_op<ScanOpT>()>;
-
-    using ScanByKeyPolicyT =
-      AgentScanByKeyPolicy<tuning::threads,
-                           tuning::items,
-                           tuning::load_algorithm,
-                           LOAD_DEFAULT,
-                           BLOCK_SCAN_WARP_SCANS,
-                           tuning::store_algorithm,
-                           typename tuning::delay_constructor>;
+    // FIXME(bgruber): is `ValueT` correct here? Shouldn't we use `AccumT` instead?
+    using ScanByKeyPolicyT = decltype(select_agent_policy<sm80_tuning<key_t, ValueT, is_primitive_op<ScanOpT>()>>(0));
   };
 
   struct Policy860
-      : DefaultPolicy
+      : DefaultPolicy<LOAD_CA, AccumT>
       , ChainedPolicy<860, Policy860, Policy800>
   {};
 
   struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
   {
-    using tuning = sm90_tuning<key_t, ValueT, is_primitive_op<ScanOpT>()>;
-
-    using ScanByKeyPolicyT =
-      AgentScanByKeyPolicy<tuning::threads,
-                           tuning::items,
-                           tuning::load_algorithm,
-                           LOAD_DEFAULT,
-                           BLOCK_SCAN_WARP_SCANS,
-                           tuning::store_algorithm,
-                           typename tuning::delay_constructor>;
+    // FIXME(bgruber): is `ValueT` correct here? Shouldn't we use `AccumT` instead?
+    using ScanByKeyPolicyT = decltype(select_agent_policy<sm90_tuning<key_t, ValueT, is_primitive_op<ScanOpT>()>>(0));
   };
 
   using MaxPolicy = Policy900;
