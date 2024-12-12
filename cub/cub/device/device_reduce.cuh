@@ -49,10 +49,32 @@
 #include <cub/iterator/arg_index_input_iterator.cuh>
 #include <cub/util_deprecated.cuh>
 
+#include <thrust/iterator/tabulate_output_iterator.h>
+
 #include <iterator>
 #include <limits>
 
 CUB_NAMESPACE_BEGIN
+
+namespace detail
+{
+namespace reduce
+{
+template <typename ExtremumOutIteratorT, typename IndexOutIteratorT>
+struct unzip_and_write_arg_extremum_op
+{
+  ExtremumOutIteratorT result_out_it;
+  IndexOutIteratorT index_out_it;
+
+  template <typename IndexT, typename KeyValuePairT>
+  __device__ void operator()(IndexT, KeyValuePairT reduced_result)
+  {
+    *result_out_it = reduced_result.value;
+    *index_out_it  = reduced_result.key;
+  }
+};
+} // namespace reduce
+} // namespace detail
 
 //! @rst
 //! DeviceReduce provides device-wide, parallel operations for computing
@@ -103,7 +125,7 @@ struct DeviceReduce
   //! .. code-block:: c++
   //!
   //!    #include <cub/cub.cuh>
-  //!    // or equivalently <cub/device/device_radix_sort.cuh>
+  //!    // or equivalently <cub/device/device_reduce.cuh>
   //!
   //!    // CustomMin functor
   //!    struct CustomMin
@@ -246,7 +268,7 @@ struct DeviceReduce
   //!
   //! .. code-block:: c++
   //!
-  //!    #include <cub/cub.cuh> // or equivalently <cub/device/device_radix_sort.cuh>
+  //!    #include <cub/cub.cuh> // or equivalently <cub/device/device_reduce.cuh>
   //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for input and output
@@ -368,7 +390,7 @@ struct DeviceReduce
   //! .. code-block:: c++
   //!
   //!    #include <cub/cub.cuh>
-  //!    // or equivalently <cub/device/device_radix_sort.cuh>
+  //!    // or equivalently <cub/device/device_reduce.cuh>
   //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for input and output
@@ -474,6 +496,142 @@ struct DeviceReduce
 #endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
+  //! Finds the first device-wide minimum using the less-than (``<``) operator and also returns the index of that item.
+  //!
+  //! - The minimum is written to ``d_min_out``
+  //! - The offset of the returned item is written to ``d_index_out``, the offset type being written is of type
+  //! ``cuda::std::int64_t``.
+  //! - For zero-length inputs, ``cuda::std::numeric_limits<T>::max()}`` is written to ``d_min_out``  and the index
+  //! ``1`` is written to ``d_index_out``.
+  //! - Does not support ``<`` operators that are non-commutative.
+  //! - Provides "run-to-run" determinism for pseudo-associative reduction
+  //!   (e.g., addition of floating point types) on the same GPU device.
+  //!   However, results for pseudo-associative reduction may be inconsistent
+  //!   from one device to a another device of a different compute-capability
+  //!   because CUB can employ different tile-sizing for different architectures.
+  //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_min_out`` nor ``d_index_out``.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the argmin-reduction of a device vector
+  //! of ``int`` data elements.
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh> // or equivalently <cub/device/device_reduce.cuh>
+  //!
+  //!    // Declare, allocate, and initialize device-accessible pointers
+  //!    // for input and output
+  //!    int                                   num_items; // e.g., 7
+  //!    int                                   *d_in;     // e.g., [8, 6, 7, 5, 3, 0, 9]
+  //!    KeyValuePair<cuda::std::int64_t, int> *d_argmin; // e.g., [{-,-}]
+  //!    ...
+  //!
+  //!    // Determine temporary device storage requirements
+  //!    void     *d_temp_storage = nullptr;
+  //!    size_t   temp_storage_bytes = 0;
+  //!    cub::DeviceReduce::ArgMin(d_temp_storage, temp_storage_bytes, d_in, &d_argmin->value, &d_argmin->key,
+  //!    num_items);
+  //!
+  //!    // Allocate temporary storage
+  //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
+  //!
+  //!    // Run argmin-reduction
+  //!    cub::DeviceReduce::ArgMin(d_temp_storage, temp_storage_bytes, d_in, &d_argmin->value, &d_argmin->key,
+  //!    num_items);
+  //!
+  //!    // d_argmin <-- [{5, 0}]
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items
+  //!   (of some type `T`) @iterator
+  //!
+  //! @tparam ExtremumOutIteratorT
+  //!   **[inferred]** Output iterator type for recording minimum value
+  //!
+  //! @tparam IndexOutIteratorT
+  //!   **[inferred]** Output iterator type for recording index of the returned value
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_in
+  //!   Iterator to the input sequence of data items
+  //!
+  //! @param[out] d_min_out
+  //!   Iterator to which the minimum value is written
+  //!
+  //! @param[out] d_index_out
+  //!   Iterator to which the index of the returned value is written
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of `d_in`)
+  //!
+  //! @param[in] stream
+  //!   @rst
+  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   @endrst
+  template <typename InputIteratorT, typename ExtremumOutIteratorT, typename IndexOutIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    ExtremumOutIteratorT d_min_out,
+    IndexOutIteratorT d_index_out,
+    ::cuda::std::int64_t num_items,
+    cudaStream_t stream = 0)
+  {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMin");
+
+    // Signed integer type for global offsets
+    using OffsetT = ::cuda::std::int64_t;
+
+    // The input type
+    using InputValueT = cub::detail::value_t<InputIteratorT>;
+
+    // The value type used for the extremum
+    using OutputExtremumT = detail::non_void_value_t<ExtremumOutIteratorT, InputValueT>;
+
+    // The (index, extremum)-tuple type
+    using OutputTupleT = KeyValuePair<OffsetT, OutputExtremumT>;
+
+    // Initial value type
+    using InitT = detail::reduce::empty_problem_init_t<OutputTupleT>;
+
+    // Accumulator type
+    using AccumT = OutputTupleT;
+
+    // Wrapped input iterator to produce index-value <OffsetT, InputT> tuples
+    using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OffsetT, OutputExtremumT>;
+    ArgIndexInputIteratorT d_indexed_in(d_in);
+
+    // Initial value
+    InitT initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::max())};
+
+    // Tabulate output iterator that unzips the result and writes it to the user-provided output iterators
+    auto unzip_result_it = THRUST_NS_QUALIFIER::make_tabulate_output_iterator(
+      detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_min_out, d_index_out});
+
+    return DispatchReduce<ArgIndexInputIteratorT, decltype(unzip_result_it), OffsetT, cub::ArgMin, InitT, AccumT>::
+      Dispatch(d_temp_storage,
+               temp_storage_bytes,
+               d_indexed_in,
+               unzip_result_it,
+               num_items,
+               cub::ArgMin{},
+               initial_value,
+               stream);
+  }
+
+  //! @rst
   //! Finds the first device-wide minimum using the less-than (``<``) operator, also returning the index of that item.
   //!
   //! - The output value type of ``d_out`` is ``cub::KeyValuePair<int, T>``
@@ -499,7 +657,7 @@ struct DeviceReduce
   //!
   //! .. code-block:: c++
   //!
-  //!    #include <cub/cub.cuh> // or equivalently <cub/device/device_radix_sort.cuh>
+  //!    #include <cub/cub.cuh> // or equivalently <cub/device/device_reduce.cuh>
   //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for input and output
@@ -552,13 +710,16 @@ struct DeviceReduce
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
   template <typename InputIteratorT, typename OutputIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t ArgMin(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    int num_items,
-    cudaStream_t stream = 0)
+  CUB_DEPRECATED_BECAUSE("CUB has superseded this interface in favor of the ArgMin interface that takes two separate "
+                         "iterators: one iterator to which the extremum is written and another iterator to which the "
+                         "index of the found extremum is written. ")
+  CUB_RUNTIME_FUNCTION static cudaError_t
+    ArgMin(void* d_temp_storage,
+           size_t& temp_storage_bytes,
+           InputIteratorT d_in,
+           OutputIteratorT d_out,
+           int num_items,
+           cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMin");
 
@@ -628,7 +789,7 @@ struct DeviceReduce
   //!
   //! .. code-block:: c++
   //!
-  //!    #include <cub/cub.cuh> // or equivalently <cub/device/device_radix_sort.cuh>
+  //!    #include <cub/cub.cuh> // or equivalently <cub/device/device_reduce.cuh>
   //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for input and output
@@ -733,6 +894,143 @@ struct DeviceReduce
 #endif // _CCCL_DOXYGEN_INVOKED
 
   //! @rst
+  //! Finds the first device-wide maximum using the greater-than (``>``) operator and also returns the index of that
+  //! item.
+  //!
+  //! - The maximum is written to ``d_max_out``
+  //! - The offset of the returned item is written to ``d_index_out``, the offset type being written is of type
+  //! ``cuda::std::int64_t``.
+  //! - For zero-length inputs, ``cuda::std::numeric_limits<T>::max()}`` is written to ``d_max_out``  and the index
+  //! ``1`` is written to ``d_index_out``.
+  //! - Does not support ``>`` operators that are non-commutative.
+  //! - Provides "run-to-run" determinism for pseudo-associative reduction
+  //!   (e.g., addition of floating point types) on the same GPU device.
+  //!   However, results for pseudo-associative reduction may be inconsistent
+  //!   from one device to a another device of a different compute-capability
+  //!   because CUB can employ different tile-sizing for different architectures.
+  //! - The range ``[d_in, d_in + num_items)`` shall not overlap ``d_out``.
+  //! - @devicestorage
+  //!
+  //! Snippet
+  //! +++++++++++++++++++++++++++++++++++++++++++++
+  //!
+  //! The code snippet below illustrates the argmax-reduction of a device vector
+  //! of `int` data elements.
+  //!
+  //! .. code-block:: c++
+  //!
+  //!    #include <cub/cub.cuh> // or equivalently <cub/device/device_reduce.cuh>
+  //!
+  //!    // Declare, allocate, and initialize device-accessible pointers
+  //!    // for input and output
+  //!    int                      num_items;      // e.g., 7
+  //!    int                      *d_in;          // e.g., [8, 6, 7, 5, 3, 0, 9]
+  //!    KeyValuePair<int, int>   *d_argmax;      // e.g., [{-,-}]
+  //!    ...
+  //!
+  //!    // Determine temporary device storage requirements
+  //!    void     *d_temp_storage = nullptr;
+  //!    size_t   temp_storage_bytes = 0;
+  //!    cub::DeviceReduce::ArgMax(
+  //!      d_temp_storage, temp_storage_bytes, d_in, &d_argmax->value, &d_argmax->key, num_items);
+  //!
+  //!    // Allocate temporary storage
+  //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
+  //!
+  //!    // Run argmax-reduction
+  //!    cub::DeviceReduce::ArgMax(
+  //!      d_temp_storage, temp_storage_bytes, d_in, &d_argmax->value, &d_argmax->key, num_items);
+  //!
+  //!    // d_argmax <-- [{6, 9}]
+  //!
+  //! @endrst
+  //!
+  //! @tparam InputIteratorT
+  //!   **[inferred]** Random-access input iterator type for reading input items (of some type `T`) @iterator
+  //!
+  //! @tparam ExtremumOutIteratorT
+  //!   **[inferred]** Output iterator type for recording maximum value
+  //!
+  //! @tparam IndexOutIteratorT
+  //!   **[inferred]** Output iterator type for recording index of the returned value
+  //!
+  //! @param[in] d_temp_storage
+  //!   Device-accessible allocation of temporary storage. When `nullptr`, the
+  //!   required allocation size is written to `temp_storage_bytes` and no work is done.
+  //!
+  //! @param[in,out] temp_storage_bytes
+  //!   Reference to size in bytes of `d_temp_storage` allocation
+  //!
+  //! @param[in] d_in
+  //!   Pointer to the input sequence of data items
+  //!
+  //! @param[out] d_max_out
+  //!   Iterator to which the maximum value is written
+  //!
+  //! @param[out] d_index_out
+  //!   Iterator to which the index of the returned value is written
+  //!
+  //! @param[in] num_items
+  //!   Total number of input items (i.e., length of `d_in`)
+  //!
+  //! @param[in] stream
+  //!   @rst
+  //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
+  //!   @endrst
+  template <typename InputIteratorT, typename ExtremumOutIteratorT, typename IndexOutIteratorT>
+  CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(
+    void* d_temp_storage,
+    size_t& temp_storage_bytes,
+    InputIteratorT d_in,
+    ExtremumOutIteratorT d_max_out,
+    IndexOutIteratorT d_index_out,
+    ::cuda::std::int64_t num_items,
+    cudaStream_t stream = 0)
+  {
+    CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMax");
+
+    // Signed integer type for global offsets
+    // TODO (elstehle): Temporary solution, will be moved to int64_t in https://github.com/NVIDIA/cccl/pull/2647
+    using OffsetT = ::cuda::std::int64_t;
+
+    // The input type
+    using InputValueT = cub::detail::value_t<InputIteratorT>;
+
+    // The value type used for the extremum
+    using OutputExtremumT = detail::non_void_value_t<ExtremumOutIteratorT, InputValueT>;
+
+    // The (index, extremum)-tuple type
+    using OutputTupleT = KeyValuePair<OffsetT, OutputExtremumT>;
+
+    // Initial value type
+    using InitT = detail::reduce::empty_problem_init_t<OutputTupleT>;
+
+    // Accumulator type
+    using AccumT = OutputTupleT;
+
+    // Wrapped input iterator to produce index-value <OffsetT, InputT> tuples
+    using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OffsetT, OutputExtremumT>;
+    ArgIndexInputIteratorT d_indexed_in(d_in);
+
+    // Initial value
+    InitT initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::lowest())};
+
+    // Tabulate output iterator that unzips the result and writes it to the user-provided output iterators
+    auto unzip_result_it = THRUST_NS_QUALIFIER::make_tabulate_output_iterator(
+      detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_max_out, d_index_out});
+
+    return DispatchReduce<ArgIndexInputIteratorT, decltype(unzip_result_it), OffsetT, cub::ArgMax, InitT, AccumT>::
+      Dispatch(d_temp_storage,
+               temp_storage_bytes,
+               d_indexed_in,
+               unzip_result_it,
+               num_items,
+               cub::ArgMax{},
+               initial_value,
+               stream);
+  }
+
+  //! @rst
   //! Finds the first device-wide maximum using the greater-than (``>``)
   //! operator, also returning the index of that item
   //!
@@ -815,13 +1113,16 @@ struct DeviceReduce
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
   template <typename InputIteratorT, typename OutputIteratorT>
-  CUB_RUNTIME_FUNCTION static cudaError_t ArgMax(
-    void* d_temp_storage,
-    size_t& temp_storage_bytes,
-    InputIteratorT d_in,
-    OutputIteratorT d_out,
-    int num_items,
-    cudaStream_t stream = 0)
+  CUB_DEPRECATED_BECAUSE("CUB has superseded this interface in favor of the ArgMax interface that takes two separate "
+                         "iterators: one iterator to which the extremum is written and another iterator to which the "
+                         "index of the found extremum is written. ")
+  CUB_RUNTIME_FUNCTION static cudaError_t
+    ArgMax(void* d_temp_storage,
+           size_t& temp_storage_bytes,
+           InputIteratorT d_in,
+           OutputIteratorT d_out,
+           int num_items,
+           cudaStream_t stream = 0)
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMax");
 
@@ -1047,7 +1348,7 @@ struct DeviceReduce
   //!    struct CustomMin
   //!    {
   //!        template <typename T>
-  //!        __host__ __device__ __forceinline__
+  //!        __device__ __forceinline__
   //!        T operator()(const T &a, const T &b) const {
   //!            return (b < a) ? b : a;
   //!        }
