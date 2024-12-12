@@ -529,9 +529,6 @@ struct sm90_tuning<KeyT, ValueT, primitive_key::yes, primitive_val::no, key_size
 template <class KeyT, class ValueT>
 struct policy_hub
 {
-  // using KeyT   = typename std::iterator_traits<KeyInputIteratorT>::value_type;
-  // using ValueT = typename std::iterator_traits<ValueInputIteratorT>::value_type;
-
   template <int NOMINAL_4B_ITEMS_PER_THREAD, int THREADS>
   struct DefaultPolicy
   {
@@ -561,7 +558,7 @@ struct policy_hub
                               BLOCK_SCAN_WARP_SCANS,
                               typename Tuning::delay_constructor>;
   template <typename Tuning>
-  static auto select_agent_policy(long) -> typename DefaultPolicy<Tuning::items, Tuning::threads>::UniqueByKeyPolicyT;
+  static auto select_agent_policy(long) -> typename DefaultPolicy<11, 64>::UniqueByKeyPolicyT;
 
   struct Policy520
       : DefaultPolicy<11, 64>
