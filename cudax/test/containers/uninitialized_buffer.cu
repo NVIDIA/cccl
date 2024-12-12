@@ -73,8 +73,6 @@ __global__ void const_kernel(_CUDA_VSTD::span<const int> data)
   CUDAX_CHECK(data.size() == 1024);
 }
 
-#ifndef __CUDA_ARCH__
-
 TEMPLATE_TEST_CASE(
   "uninitialized_buffer", "[container]", char, short, int, long, long long, float, double, do_not_construct)
 {
@@ -288,13 +286,3 @@ TEST_CASE("uninitialized_buffer's memory resource does not dangle", "[container]
 
   CHECK(test_device_memory_resource::count == 1);
 }
-
-#else
-// BUGBUG TODO:
-// temporary hack to prevent sccache from ignoring changes in code guarded by
-// !defined(__CUDA_ARCH__)
-char const* __fool_sccache()
-{
-  return __TIME__;
-}
-#endif // __CUDA_ARCH__

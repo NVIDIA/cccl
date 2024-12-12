@@ -16,8 +16,6 @@
 
 #include <catch2/catch.hpp>
 
-#if !defined(__CUDA_ARCH__) // type-erased memory resources do not work in device code yet.
-
 namespace cudax = cuda::experimental;
 using env_t     = cudax::env_t<cuda::mr::device_accessible>;
 
@@ -282,13 +280,3 @@ TEST_CASE("Can use query to construct various objects", "[execution, env]")
     CHECK(buf.get_stream() == stream_);
   }
 }
-
-#else // ^^^ !__CUDA_ARCH__ ^^^ / vvv __CUDA_ARCH__ vvv
-// BUGBUG TODO:
-// temporary hack to prevent sccache from ignoring changes in code guarded by
-// !defined(__CUDA_ARCH__)
-char const* __fool_sccache()
-{
-  return __TIME__;
-}
-#endif // !defined(__CUDA_ARCH__)

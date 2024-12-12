@@ -19,8 +19,6 @@
 #include <catch2/catch.hpp>
 #include <utility.cuh>
 
-#ifndef __CUDA_ARCH__
-
 namespace cudax = cuda::experimental;
 
 static_assert(!cuda::std::is_trivial<cudax::device_memory_resource>::value, "");
@@ -187,7 +185,7 @@ TEST_CASE("device_memory_resource construction", "[memory_resource]")
   }
 
   // Allocation handles are only supported after 11.2
-#  if _CCCL_CUDACC_AT_LEAST(11, 2)
+#if _CCCL_CUDACC_AT_LEAST(11, 2)
   SECTION("Construct with allocation handle")
   {
     cudax::memory_pool_properties props = {
@@ -210,7 +208,7 @@ TEST_CASE("device_memory_resource construction", "[memory_resource]")
     // Ensure that we disable export
     CHECK(ensure_export_handle(get, static_cast<cudaMemAllocationHandleType>(props.allocation_handle_type)));
   }
-#  endif // _CCCL_CUDACC_AT_LEAST(11, 2)
+#endif // _CCCL_CUDACC_AT_LEAST(11, 2)
 }
 
 static void ensure_device_ptr(void* ptr)
@@ -272,7 +270,7 @@ TEST_CASE("device_memory_resource allocation", "[memory_resource]")
     cudaStreamDestroy(raw_stream);
   }
 
-#  ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#ifndef _LIBCUDACXX_NO_EXCEPTIONS
   { // allocate with too small alignment
     while (true)
     {
@@ -341,7 +339,7 @@ TEST_CASE("device_memory_resource allocation", "[memory_resource]")
       CHECK(false);
     }
   }
-#  endif // _LIBCUDACXX_NO_EXCEPTIONS
+#endif // _LIBCUDACXX_NO_EXCEPTIONS
 }
 
 enum class AccessibilityType
@@ -534,13 +532,3 @@ TEST_CASE("Async memory resource peer access")
     }
   }
 }
-
-#else
-// BUGBUG TODO:
-// temporary hack to prevent sccache from ignoring changes in code guarded by
-// !defined(__CUDA_ARCH__)
-char const* __fool_sccache()
-{
-  return __TIME__;
-}
-#endif // __CUDA_ARCH__

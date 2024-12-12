@@ -20,8 +20,6 @@
 #include <catch2/catch.hpp>
 #include <utility.cuh>
 
-#ifndef __CUDA_ARCH__
-
 namespace cudax = cuda::experimental;
 
 using managed_resource = cudax::managed_memory_resource;
@@ -99,7 +97,7 @@ TEST_CASE("managed_memory_resource allocation", "[memory_resource]")
     res.deallocate_async(ptr, 42, 4, stream);
   }
 
-#  ifndef _LIBCUDACXX_NO_EXCEPTIONS
+#ifndef _LIBCUDACXX_NO_EXCEPTIONS
   { // allocate with too small alignment
     while (true)
     {
@@ -162,7 +160,7 @@ TEST_CASE("managed_memory_resource allocation", "[memory_resource]")
       CHECK(false);
     }
   }
-#  endif // _LIBCUDACXX_NO_EXCEPTIONS
+#endif // _LIBCUDACXX_NO_EXCEPTIONS
 }
 
 enum class AccessibilityType
@@ -273,13 +271,3 @@ TEST_CASE("managed_memory_resource comparison", "[memory_resource]")
     CHECK((device_async_resource != first));
   }
 }
-
-#else
-// BUGBUG TODO:
-// temporary hack to prevent sccache from ignoring changes in code guarded by
-// !defined(__CUDA_ARCH__)
-char const* __fool_sccache()
-{
-  return __TIME__;
-}
-#endif // __CUDA_ARCH__

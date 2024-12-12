@@ -47,8 +47,6 @@ constexpr int get_property(const cuda::experimental::device_memory_resource&, my
   return 42;
 }
 
-#ifndef __CUDA_ARCH__
-
 TEMPLATE_TEST_CASE(
   "uninitialized_async_buffer", "[container]", char, short, int, long, long long, float, double, do_not_construct)
 {
@@ -256,13 +254,3 @@ TEST_CASE("uninitialized_async_buffer's memory resource does not dangle", "[cont
 
   CHECK(test_async_device_memory_resource::count == 1);
 }
-
-#else
-// BUGBUG TODO:
-// temporary hack to prevent sccache from ignoring changes in code guarded by
-// !defined(__CUDA_ARCH__)
-char const* __fool_sccache()
-{
-  return __TIME__;
-}
-#endif // __CUDA_ARCH__
