@@ -14,28 +14,21 @@
 
 #include "test_macros.h"
 
-#if _CCCL_HAS_CONSTEXPR_INT_ABS && TEST_STD_VER >= 2014
-#  define ALLOW_CONSTEXPR 1
-#  define CONSTEXPR       constexpr
-#else
-#  define CONSTEXPR
-#endif
-
-__host__ __device__ CONSTEXPR int abs_overload(int value)
+__host__ __device__ constexpr int abs_overload(int value)
 {
   ASSERT_SAME_TYPE(int, decltype(cuda::std::abs(cuda::std::declval<int>())));
   static_assert(noexcept(cuda::std::abs(cuda::std::declval<int>())), "");
   return cuda::std::abs(value);
 }
 
-__host__ __device__ CONSTEXPR long abs_overload(long value)
+__host__ __device__ constexpr long abs_overload(long value)
 {
   ASSERT_SAME_TYPE(long, decltype(cuda::std::labs(cuda::std::declval<long>())));
   static_assert(noexcept(cuda::std::labs(cuda::std::declval<long>())), "");
   return cuda::std::labs(value);
 }
 
-__host__ __device__ CONSTEXPR long long abs_overload(long long value)
+__host__ __device__ constexpr long long abs_overload(long long value)
 {
   ASSERT_SAME_TYPE(long long, decltype(cuda::std::llabs(cuda::std::declval<long long>())));
   static_assert(noexcept(cuda::std::llabs(cuda::std::declval<long long>())), "");
@@ -43,7 +36,7 @@ __host__ __device__ CONSTEXPR long long abs_overload(long long value)
 }
 
 template <class T>
-__host__ __device__ CONSTEXPR bool test_abs(T zero_value)
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test_abs(T zero_value)
 {
   assert(abs_overload(zero_value + T{0}) == T{0});
   assert(abs_overload(zero_value + T{1}) == T{1});
@@ -55,7 +48,7 @@ __host__ __device__ CONSTEXPR bool test_abs(T zero_value)
   return true;
 }
 
-__host__ __device__ CONSTEXPR bool test(int zero_value)
+__host__ __device__ TEST_CONSTEXPR_CXX14 bool test(int zero_value)
 {
   test_abs(zero_value);
   test_abs(static_cast<long>(zero_value));
@@ -72,8 +65,8 @@ int main(int, char**)
 {
   volatile int zero_value = 0;
   assert(test(zero_value));
-#if ALLOW_CONSTEXPR
+#if TEST_STD_VER >= 2014
   static_assert(test(0), "");
-#endif // _CCCL_HAS_CONSTEXPR_INT_ABS
+#endif // TEST_STD_VER >= 2014
   return 0;
 }

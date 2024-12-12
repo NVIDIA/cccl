@@ -21,67 +21,21 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC)
-#  include <cstdlib>
-#endif // !_CCCL_COMPILER(NVRTC)
-
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
-
-#if (_CCCL_STD_VER >= 2014 && defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)) || _CCCL_HAS_CONSTEXPR_BUILTIN_ABS
-#  define _CCCL_HAS_CONSTEXPR_INT_ABS 1
-#  define _CCCL_CONSTEXPR_INT_ABS     constexpr
-#else
-#  define _CCCL_CONSTEXPR_INT_ABS
-#endif
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_INT_ABS int abs(int __val) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int abs(int __val) noexcept
 {
-#if !_CCCL_HAS_CONSTEXPR_BUILTIN_ABS
-  if (_CUDA_VSTD::is_constant_evaluated())
-  {
-    return (__val < 0) ? -__val : __val;
-  }
-#endif // !_CCCL_HAS_CONSTEXPR_BUILTIN_ABS
-
-#if defined(_CCCL_BUILTIN_ABS)
-  return _CCCL_BUILTIN_ABS(__val);
-#else // ^^^ _CCCL_BUILTIN_ABS ^^^ / vvv !_CCCL_BUILTIN_ABS vvv
-  return ::abs(__val);
-#endif // !_CCCL_BUILTIN_ABS
+  return (__val < 0) ? -__val : __val;
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_INT_ABS long labs(long __val) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr long labs(long __val) noexcept
 {
-#if !_CCCL_HAS_CONSTEXPR_BUILTIN_ABS
-  if (_CUDA_VSTD::is_constant_evaluated())
-  {
-    return (__val < 0) ? -__val : __val;
-  }
-#endif // !_CCCL_HAS_CONSTEXPR_BUILTIN_ABS
-
-#if defined(_CCCL_BUILTIN_ABS)
-  return _CCCL_BUILTIN_LABS(__val);
-#else // ^^^ _CCCL_BUILTIN_ABS ^^^ / vvv !_CCCL_BUILTIN_ABS vvv
-  return ::labs(__val);
-#endif // !_CCCL_BUILTIN_ABS
+  return (__val < 0l) ? -__val : __val;
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_INT_ABS long long llabs(long long __val) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr long long llabs(long long __val) noexcept
 {
-#if !_CCCL_HAS_CONSTEXPR_BUILTIN_ABS
-  if (_CUDA_VSTD::is_constant_evaluated())
-  {
-    return (__val < 0) ? -__val : __val;
-  }
-#endif // !_CCCL_HAS_CONSTEXPR_BUILTIN_ABS
-
-#if defined(_CCCL_BUILTIN_ABS)
-  return _CCCL_BUILTIN_LLABS(__val);
-#else // ^^^ _CCCL_BUILTIN_ABS ^^^ / vvv !_CCCL_BUILTIN_ABS vvv
-  return ::llabs(__val);
-#endif // !_CCCL_BUILTIN_ABS
+  return (__val < 0ll) ? -__val : __val;
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
