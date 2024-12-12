@@ -69,7 +69,10 @@ class IteratorBase:
         self.value_type = value_type
         self.abi_name = abi_name
 
-    @cached_property
+    # TODO: should we cache this? Current docs environment doesn't allow
+    # using Python > 3.7. We could use a hand-rolled cached_property if
+    # needed.
+    # @cached_property
     def ltoirs(self):
         advance_abi_name = self.abi_name + "_advance"
         deref_abi_name = self.abi_name + "_dereference"
