@@ -287,6 +287,12 @@ struct __with_try_get_property
   }
 };
 
+template <class... _Properties>
+struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES any_async_resource;
+
+template <class... _Properties>
+struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES async_resource_ref;
+
 // `any_resource` wraps any given resource that satisfies the required
 // properties. It owns the contained resource, taking care of construction /
 // destruction. This makes it especially suited for use in e.g. container types
@@ -298,6 +304,13 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES any_resource
     , __with_try_get_property<any_resource<_Properties...>>
 {
   using any_resource::basic_any::basic_any;
+
+  // any_async_resource is convertible to any_resource
+  _CCCL_TEMPLATE(class... _OtherProperties)
+  _CCCL_REQUIRES(_CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__type_set<_OtherProperties...>, _Properties...>)
+  any_resource(any_async_resource<_OtherProperties...> __other) noexcept
+      : basic_any<__iresource<_Properties...>>(static_cast<basic_any<__iasync_resource<_OtherProperties...>>&>(__other))
+  {}
 
 private:
   static_assert(_CUDA_VMR::__contains_execution_space_property<_Properties...>,
@@ -333,6 +346,14 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES resource_ref
     , __with_try_get_property<resource_ref<_Properties...>>
 {
   using resource_ref::basic_any::basic_any;
+
+  // async_resource_ref is convertible to resource_ref
+  _CCCL_TEMPLATE(class... _OtherProperties)
+  _CCCL_REQUIRES(_CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__type_set<_OtherProperties...>, _Properties...>)
+  resource_ref(async_resource_ref<_OtherProperties...> __other) noexcept
+      : basic_any<__iresource<_Properties...>&>(
+          static_cast<basic_any<__iasync_resource<_OtherProperties...>&>&>(__other))
+  {}
 
   // Conversions from the resource_ref types in cuda::mr is not supported.
   template <class... _OtherProperties>
@@ -384,7 +405,7 @@ resource_ref<_Properties...> __as_resource_ref(resource_ref<_Properties...> __mr
 template <class... _Properties>
 resource_ref<_Properties...> __as_resource_ref(async_resource_ref<_Properties...> __mr) noexcept
 {
-  return static_cast<resource_ref<_Properties...>>(__mr);
+  return __mr;
 }
 
 template <class... _Properties, mr::_AllocType _Alloc_type>
