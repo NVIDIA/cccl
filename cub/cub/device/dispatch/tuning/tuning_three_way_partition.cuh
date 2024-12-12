@@ -90,15 +90,7 @@ template <class InputT,
           class OffsetT,
           input_size InputSize   = classify_input_size<InputT>(),
           offset_size OffsetSize = classify_offset_size<OffsetT>()>
-struct sm90_tuning
-{
-  static constexpr int threads                       = 256;
-  static constexpr int items                         = Nominal4BItemsToItems<InputT>(9);
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using AccumPackHelperT                             = accumulator_pack_t<OffsetT>;
-  using AccumPackT                                   = typename AccumPackHelperT::pack_t;
-  using delay_constructor                            = default_delay_constructor_t<AccumPackT>;
-};
+struct sm90_tuning;
 
 template <class Input, class OffsetT>
 struct sm90_tuning<Input, OffsetT, input_size::_1, offset_size::_4>
@@ -194,15 +186,7 @@ template <class InputT,
           class OffsetT,
           input_size InputSize   = classify_input_size<InputT>(),
           offset_size OffsetSize = classify_offset_size<OffsetT>()>
-struct sm80_tuning
-{
-  static constexpr int threads                       = 256;
-  static constexpr int items                         = Nominal4BItemsToItems<InputT>(9);
-  static constexpr BlockLoadAlgorithm load_algorithm = BLOCK_LOAD_DIRECT;
-  using AccumPackHelperT                             = accumulator_pack_t<OffsetT>;
-  using AccumPackT                                   = typename AccumPackHelperT::pack_t;
-  using delay_constructor                            = default_delay_constructor_t<AccumPackT>;
-};
+struct sm80_tuning;
 
 template <class Input, class OffsetT>
 struct sm80_tuning<Input, OffsetT, input_size::_2, offset_size::_4>
@@ -243,6 +227,7 @@ struct sm80_tuning<Input, OffsetT, input_size::_16, offset_size::_4>
 template <class InputT, class OffsetT>
 struct policy_hub
 {
+  template <typename DelayConstructor>
   struct DefaultPolicy
   {
     using ThreeWayPartitionPolicy =
@@ -250,43 +235,43 @@ struct policy_hub
                                    Nominal4BItemsToItems<InputT>(9),
                                    BLOCK_LOAD_DIRECT,
                                    LOAD_DEFAULT,
-                                   BLOCK_SCAN_WARP_SCANS>;
+                                   BLOCK_SCAN_WARP_SCANS,
+                                   DelayConstructor>;
   };
 
   struct Policy350
-      : DefaultPolicy
+      : DefaultPolicy<fixed_delay_constructor_t<350, 450>>
       , ChainedPolicy<350, Policy350, Policy350>
   {};
 
+  // Use values from tuning if a specialization exists, otherwise pick DefaultPolicy
+  template <typename Tuning>
+  static auto select_agent_policy(int)
+    -> AgentThreeWayPartitionPolicy<Tuning::threads,
+                                    Tuning::items,
+                                    Tuning::load_algorithm,
+                                    LOAD_DEFAULT,
+                                    BLOCK_SCAN_WARP_SCANS,
+                                    typename Tuning::delay_constructor>;
+
+  template <typename Tuning>
+  static auto select_agent_policy(long) ->
+    typename DefaultPolicy<
+      default_delay_constructor_t<typename accumulator_pack_t<OffsetT>::pack_t>>::ThreeWayPartitionPolicy;
+
   struct Policy800 : ChainedPolicy<800, Policy800, Policy350>
   {
-    using tuning = sm80_tuning<InputT, OffsetT>;
-
-    using ThreeWayPartitionPolicy =
-      AgentThreeWayPartitionPolicy<tuning::threads,
-                                   tuning::items,
-                                   tuning::load_algorithm,
-                                   LOAD_DEFAULT,
-                                   BLOCK_SCAN_WARP_SCANS,
-                                   typename tuning::delay_constructor>;
+    using ThreeWayPartitionPolicy = decltype(select_agent_policy<sm80_tuning<InputT, OffsetT>>(0));
   };
 
   struct Policy860
-      : DefaultPolicy
+      : DefaultPolicy<fixed_delay_constructor_t<350, 450>>
       , ChainedPolicy<860, Policy860, Policy800>
   {};
 
   struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
   {
-    using tuning = sm90_tuning<InputT, OffsetT>;
-
-    using ThreeWayPartitionPolicy =
-      AgentThreeWayPartitionPolicy<tuning::threads,
-                                   tuning::items,
-                                   tuning::load_algorithm,
-                                   LOAD_DEFAULT,
-                                   BLOCK_SCAN_WARP_SCANS,
-                                   typename tuning::delay_constructor>;
+    using ThreeWayPartitionPolicy = decltype(select_agent_policy<sm90_tuning<InputT, OffsetT>>(0));
   };
 
   using MaxPolicy = Policy900;
