@@ -45,6 +45,8 @@
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 
+#include <cuda/std/__algorithm/max.h>
+
 CUB_NAMESPACE_BEGIN
 
 namespace detail
@@ -636,7 +638,7 @@ struct sm80_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive
 template <class ReductionOpT, class AccumT, class KeyT>
 struct device_reduce_by_key_policy_hub
 {
-  static constexpr int MAX_INPUT_BYTES      = CUB_MAX(sizeof(KeyT), sizeof(AccumT));
+  static constexpr int MAX_INPUT_BYTES      = static_cast<int>(::cuda::std::max(sizeof(KeyT), sizeof(AccumT)));
   static constexpr int COMBINED_INPUT_BYTES = sizeof(KeyT) + sizeof(AccumT);
 
   struct DefaultTuning
@@ -645,6 +647,7 @@ struct device_reduce_by_key_policy_hub
     static constexpr int ITEMS_PER_THREAD =
       (MAX_INPUT_BYTES <= 8)
         ? 6
+        // TODO(bgruber): use ceil_div and clamp in C++14
         : CUB_MIN(NOMINAL_4B_ITEMS_PER_THREAD,
                   CUB_MAX(1, ((NOMINAL_4B_ITEMS_PER_THREAD * 8) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES));
 
