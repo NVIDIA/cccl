@@ -263,12 +263,12 @@ struct uncommon_range
   cuda::std::array<T, Capacity> data;
   forward_iterator<T*> end_{data.data() + Capacity};
 
-  __host__ __device__ constexpr forward_iterator<T*> begin() noexcept
+  __host__ __device__ constexpr forward_iterator<T*> begin() const noexcept
   {
-    return forward_iterator<T*>{data.begin()};
+    return forward_iterator<T*>{const_cast<T*>(data.begin())};
   }
 
-  __host__ __device__ constexpr sentinel_wrapper<forward_iterator<T*>> end() noexcept
+  __host__ __device__ constexpr sentinel_wrapper<forward_iterator<T*>> end() const noexcept
   {
     return sentinel_wrapper<forward_iterator<T*>>{end_};
   }
@@ -283,12 +283,12 @@ struct sized_uncommon_range
   cuda::std::array<T, Capacity> data;
   forward_iterator<T*> end_{data.data() + Capacity};
 
-  __host__ __device__ constexpr forward_iterator<T*> begin() noexcept
+  __host__ __device__ constexpr forward_iterator<T*> begin() const noexcept
   {
-    return forward_iterator<T*>{data.begin()};
+    return forward_iterator<T*>{const_cast<T*>(data.begin())};
   }
 
-  __host__ __device__ constexpr sized_sentinel<forward_iterator<T*>> end() noexcept
+  __host__ __device__ constexpr sized_sentinel<forward_iterator<T*>> end() const noexcept
   {
     return sized_sentinel<forward_iterator<T*>>{end_};
   }

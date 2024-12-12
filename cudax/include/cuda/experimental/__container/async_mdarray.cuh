@@ -343,7 +343,7 @@ public:
   //! @brief Constructs an empty async_mdarray using an environment
   //! @param __env The environment providing the needed information
   _CCCL_HIDE_FROM_ABI async_mdarray(const __env_t& __env)
-      : async_mdarray(__env, extents_type{})
+      : async_mdarray(__env, extents_type{}, _ElementType())
   {}
 
   //! @brief Constructs a async_mdarray of size \p __size using a memory resource and value-initializes \p __size
@@ -353,28 +353,43 @@ public:
   _CCCL_TEMPLATE(class... _IndexTypes)
   _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, extents_type, _IndexTypes...))
   _CCCL_HIDE_FROM_ABI explicit async_mdarray(const __env_t& __env, _IndexTypes... __extents)
-      : __mapping_(extents_type{__extents...})
-      , __buf_(__env.query(::cuda::experimental::get_memory_resource),
-               __env.query(::cuda::experimental::get_stream),
-               __mapping_.required_span_size())
-      , __policy_(__env.query(::cuda::experimental::execution::get_execution_policy))
-  {
-    const auto __size = __mapping_.required_span_size();
-    if (__size != 0)
-    {
-      // miscco: should implement parallel specialized memory algorithms
-      this->__fill_n(__unwrapped_begin(), __size, _ElementType());
-    }
-  }
+      : async_mdarray(__env, mapping_type{extents_type{__extents...}}, _ElementType())
+  {}
 
   //! @brief Constructs a async_mdarray of size \p __size using a memory resource and copy-constructs \p __size elements
   //! from \p __value
   //! @param __mr The memory resource to allocate the async_mdarray with.
   //! @param __size The size of the async_mdarray.
   //! @param __value The value all elements are copied from.
-  _CCCL_HIDE_FROM_ABI explicit async_mdarray(
-    const __env_t& __env, const extents_type& __extent, const _ElementType& __value = _ElementType())
-      : async_mdarray(__env, __extent, ::cuda::experimental::uninit)
+  _CCCL_HIDE_FROM_ABI explicit async_mdarray(const __env_t& __env, const extents_type& __extent)
+      : async_mdarray(__env, mapping_type{__extent}, _ElementType())
+  {}
+
+  //! @brief Constructs a async_mdarray of size \p __size using a memory resource and copy-constructs \p __size elements
+  //! from \p __value
+  //! @param __mr The memory resource to allocate the async_mdarray with.
+  //! @param __size The size of the async_mdarray.
+  //! @param __value The value all elements are copied from.
+  _CCCL_HIDE_FROM_ABI explicit async_mdarray(const __env_t& __env, const mapping_type& __mapping)
+      : async_mdarray(__env, __mapping, _ElementType())
+  {}
+
+  //! @brief Constructs a async_mdarray of size \p __size using a memory resource and copy-constructs \p __size elements
+  //! from \p __value
+  //! @param __mr The memory resource to allocate the async_mdarray with.
+  //! @param __size The size of the async_mdarray.
+  //! @param __value The value all elements are copied from.
+  _CCCL_HIDE_FROM_ABI async_mdarray(const __env_t& __env, const extents_type& __extent, const _ElementType& __value)
+      : async_mdarray(__env, mapping_type{__extent}, __value)
+  {}
+
+  //! @brief Constructs a async_mdarray of size \p __size using a memory resource and copy-constructs \p __size elements
+  //! from \p __value
+  //! @param __mr The memory resource to allocate the async_mdarray with.
+  //! @param __size The size of the async_mdarray.
+  //! @param __value The value all elements are copied from.
+  _CCCL_HIDE_FROM_ABI async_mdarray(const __env_t& __env, const mapping_type& __mapping, const _ElementType& __value)
+      : async_mdarray(__env, __mapping, ::cuda::experimental::uninit)
   {
     if (__mapping_.required_span_size() != 0)
     {
@@ -391,7 +406,19 @@ public:
   //! `[0, mapping.required_span_size())` will be destroyed.
   _CCCL_HIDE_FROM_ABI explicit async_mdarray(
     const __env_t& __env, const extents_type& __extent, ::cuda::experimental::uninit_t)
-      : __mapping_(__extent)
+      : async_mdarray(__env, mapping_type{__extent}, ::cuda::experimental::uninit)
+  {}
+
+  //! @brief Constructs a async_mdarray of size \p __size using a memory and leaves all elements uninitialized
+  //! @param __mr The memory resource to allocate the async_mdarray with.
+  //! @param __size The size of the async_mdarray.
+  //! @warning This constructor does *NOT* initialize any elements. It is the user's responsibility to ensure that the
+  //! elements within `[0, mapping.required_span_size())` are properly initialized, e.g with
+  //! `cuda::std::uninitialized_copy`. At the destruction of the \c async_mdarray all elements in the range
+  //! `[0, mapping.required_span_size())` will be destroyed.
+  _CCCL_HIDE_FROM_ABI explicit async_mdarray(
+    const __env_t& __env, const mapping_type& __mapping, ::cuda::experimental::uninit_t)
+      : __mapping_(__mapping)
       , __buf_(__env.query(::cuda::experimental::get_memory_resource),
                __env.query(::cuda::experimental::get_stream),
                __mapping_.required_span_size())
@@ -404,7 +431,16 @@ public:
   //! @note If `__ilist.size() == 0` then no memory is allocated
   _CCCL_HIDE_FROM_ABI
   async_mdarray(const __env_t& __env, const extents_type& __extent, _CUDA_VSTD::initializer_list<_ElementType> __ilist)
-      : async_mdarray(__env, __extent, ::cuda::experimental::uninit)
+      : async_mdarray(__env, mapping_type{__extent}, __ilist)
+  {}
+
+  //! @brief Constructs a async_mdarray using a memory resource and copy-constructs all elements from \p __ilist
+  //! @param __mr The memory resource to allocate the async_mdarray with.
+  //! @param __ilist The initializer_list being copied into the async_mdarray.
+  //! @note If `__ilist.size() == 0` then no memory is allocated
+  _CCCL_HIDE_FROM_ABI
+  async_mdarray(const __env_t& __env, const mapping_type& __mapping, _CUDA_VSTD::initializer_list<_ElementType> __ilist)
+      : async_mdarray(__env, __mapping, ::cuda::experimental::uninit)
   {
     const auto __size = __mapping_.required_span_size();
     _CCCL_ASSERT(__size == __ilist.size(),
@@ -415,38 +451,43 @@ public:
     }
   }
 
+  template <class _Range>
+  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI static constexpr size_type __get_range_size(const _Range& __range)
+  {
+    if constexpr (_CUDA_VRANGES::sized_range<_Range>)
+    {
+      return static_cast<size_type>(_CUDA_VRANGES::size(__range));
+    }
+    else
+    {
+      return static_cast<size_type>(
+        _CUDA_VRANGES::distance(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::end(__range)));
+    }
+    _CCCL_UNREACHABLE();
+  }
+
   //! @brief Constructs a async_mdarray using a memory resource and an input range
   //! @param __mr The memory resource to allocate the async_mdarray with.
   //! @param __range The input range to be moved into the async_mdarray.
   //! @note If `__range.size() == 0` then no memory is allocated.
   _CCCL_TEMPLATE(class _Range)
-  _CCCL_REQUIRES(__compatible_range<_Range> _CCCL_AND _CUDA_VRANGES::forward_range<_Range> _CCCL_AND
-                   _CUDA_VRANGES::sized_range<_Range>)
+  _CCCL_REQUIRES(__compatible_range<_Range>)
   _CCCL_HIDE_FROM_ABI async_mdarray(const __env_t& __env, const extents_type& __extent, _Range&& __range)
-      : async_mdarray(__env, __extent, ::cuda::experimental::uninit)
-  {
-    const auto __size  = __mapping_.required_span_size();
-    const auto __rsize = static_cast<size_type>(_CUDA_VRANGES::size(__range));
-    _CCCL_ASSERT(__size == __rsize, "cuda::experimental::async_mdarray: Construction with range of wrong size");
-    if (__size > 0)
-    {
-      using _Iter = _CUDA_VRANGES::iterator_t<_Range>;
-      this->__copy_cross<_Iter, __detect_transfer_kind<__is_host_only, _Range>>(
-        _CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __unwrapped_begin(), __size);
-    }
-  }
+      : async_mdarray(__env, mapping_type{__extent}, _CUDA_VSTD::forward<_Range>(__range))
+  {}
 
-#ifndef _CCCL_DOXYGEN_INVOKED // doxygen conflates the overloads
+  //! @brief Constructs a async_mdarray using a memory resource and an input range
+  //! @param __mr The memory resource to allocate the async_mdarray with.
+  //! @param __range The input range to be moved into the async_mdarray.
+  //! @note If `__range.size() == 0` then no memory is allocated.
   _CCCL_TEMPLATE(class _Range)
-  _CCCL_REQUIRES(__compatible_range<_Range> _CCCL_AND _CUDA_VRANGES::forward_range<_Range> _CCCL_AND(
-    !_CUDA_VRANGES::sized_range<_Range>))
-  _CCCL_HIDE_FROM_ABI async_mdarray(const __env_t& __env, const extents_type& __extent, _Range&& __range)
-      : async_mdarray(__env, __extent, ::cuda::experimental::uninit)
+  _CCCL_REQUIRES(__compatible_range<_Range>)
+  _CCCL_HIDE_FROM_ABI async_mdarray(const __env_t& __env, const mapping_type& __mapping, _Range&& __range)
+      : async_mdarray(__env, __mapping, ::cuda::experimental::uninit)
   {
     const auto __size = __mapping_.required_span_size();
-    const auto __rsize =
-      static_cast<size_type>(_CUDA_VRANGES::distance(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::end(__range)));
-    _CCCL_ASSERT(__size == __rsize, "cuda::experimental::async_mdarray: Construction with range of wrong size");
+    _CCCL_ASSERT(__size == __get_range_size(__range),
+                 "cuda::experimental::async_mdarray: Construction with range of wrong size");
     if (__size > 0)
     {
       using _Iter = _CUDA_VRANGES::iterator_t<_Range>;
@@ -454,7 +495,6 @@ public:
         _CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __unwrapped_begin(), __size);
     }
   }
-#endif // _CCCL_DOXYGEN_INVOKED
   //! @}
 
   //! @addtogroup assignment
