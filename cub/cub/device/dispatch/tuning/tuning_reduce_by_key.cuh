@@ -657,13 +657,11 @@ struct device_reduce_by_key_policy_hub
                              detail::default_reduce_by_key_delay_constructor_t<AccumT, int>>;
   };
 
-  /// SM35
   struct Policy350
       : DefaultTuning
       , ChainedPolicy<350, Policy350, Policy350>
   {};
 
-  /// SM80
   struct Policy800 : ChainedPolicy<800, Policy800, Policy350>
   {
     using tuning =
@@ -678,13 +676,11 @@ struct device_reduce_by_key_policy_hub
                              typename tuning::delay_constructor>;
   };
 
-  /// SM86
   struct Policy860
       : DefaultTuning
       , ChainedPolicy<860, Policy860, Policy800>
   {};
 
-  /// SM90
   struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
   {
     using tuning =
