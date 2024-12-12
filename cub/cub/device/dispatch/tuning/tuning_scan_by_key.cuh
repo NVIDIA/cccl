@@ -791,7 +791,6 @@ struct DeviceScanByKeyPolicy
   static constexpr size_t MaxInputBytes      = (cub::max)(sizeof(KeyT), sizeof(AccumT));
   static constexpr size_t CombinedInputBytes = sizeof(KeyT) + sizeof(AccumT);
 
-  // SM350
   struct Policy350 : ChainedPolicy<350, Policy350, Policy350>
   {
     static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 6;
@@ -824,13 +823,11 @@ struct DeviceScanByKeyPolicy
                            detail::default_reduce_by_key_delay_constructor_t<AccumT, int>>;
   };
 
-  // SM520
   struct Policy520
       : DefaultTuning
       , ChainedPolicy<520, Policy520, Policy350>
   {};
 
-  // SM800
   struct Policy800 : ChainedPolicy<800, Policy800, Policy520>
   {
     using tuning = detail::scan_by_key::sm80_tuning<KeyT, ValueT, detail::scan_by_key::is_primitive_op<ScanOpT>()>;
@@ -845,13 +842,11 @@ struct DeviceScanByKeyPolicy
                            typename tuning::delay_constructor>;
   };
 
-  // SM860
   struct Policy860
       : DefaultTuning
       , ChainedPolicy<860, Policy860, Policy800>
   {};
 
-  // SM900
   struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
   {
     using tuning = detail::scan_by_key::sm90_tuning<KeyT, ValueT, detail::scan_by_key::is_primitive_op<ScanOpT>()>;
