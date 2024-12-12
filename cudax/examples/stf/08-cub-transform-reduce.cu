@@ -80,21 +80,6 @@ auto remove_first(const Tuple& t)
     t);
 }
 
-namespace reserved {
-
-template <typename Ctx, typename shape_t, typename OutT, typename... Args>
-class transform_reduce_scope {
-public:
-    transform_reduce_scope(Ctx &ctx, shape_t _s, OutT _init_val, logical_data<Args>... args) : s(mv(_s)), init_val(mv(_init_val)), targs(::std::forward<Args>(args)...) {}
-
-private:
-    shape_t s;
-    OutT init_val;
-    ::cuda::std::tuple<logical_data<Args>...> targs;
-};
-
-} // end namespace reserved
-
 template <typename Ctx, typename shape_t, typename TransformOp, typename BinaryOp, typename OutT, typename... Args>
 auto stf_transform_reduce(
   Ctx& ctx, shape_t s, TransformOp&& transform_op, BinaryOp&& op, OutT init_val, logical_data<Args>... args)
@@ -135,7 +120,7 @@ auto stf_transform_reduce(
     d_temp_storage,
     temp_storage_bytes,
     transform_output_it,
-    (OutT*)::std::get<0>(deps).addr, // output into a scalar_view<OutT>
+    (OutT*) ::std::get<0>(deps).addr, // output into a scalar_view<OutT>
     num_elements,
     ReduceOpWrapper<BinaryOp>(op),
     init_val,
