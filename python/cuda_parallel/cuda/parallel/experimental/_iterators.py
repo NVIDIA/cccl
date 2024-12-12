@@ -18,7 +18,7 @@ _DEVICE_POINTER_SIZE = 8
 _DEVICE_POINTER_BITWIDTH = _DEVICE_POINTER_SIZE * 8
 
 
-@lru_cache
+@lru_cache(maxsize=256)
 def _ctypes_type_given_numba_type(ntype):
     mapping = {
         numba.types.int8: ctypes.c_int8,
