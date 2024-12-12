@@ -32,12 +32,14 @@
 // uses inline PTX to bypass __isLocal.
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+#if _CCCL_HAS_CUDA_COMPILER
+
 _CCCL_DEVICE inline bool __cuda_is_local(const volatile void* __ptr)
 {
-#if defined(_LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE)
+#  if defined(_LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE)
   return false;
 // Only NVCC+NVRTC define __isLocal, so drop to PTX
-#elif defined(_CCCL_CUDACC_BELOW_12_3) || defined(_CCCL_CUDA_COMPILER_NVHPC)
+#  elif defined(_CCCL_CUDACC_BELOW_12_3) || defined(_CCCL_CUDA_COMPILER_NVHPC)
   int __tmp = 0;
   asm("{\n\t"
       "  .reg .pred p;\n\t"
@@ -47,9 +49,9 @@ _CCCL_DEVICE inline bool __cuda_is_local(const volatile void* __ptr)
       : "=r"(__tmp)
       : "l"(const_cast<const void*>(__ptr)));
   return __tmp == 1;
-#else
+#  else
   return __isLocal(const_cast<const void*>(__ptr));
-#endif
+#  endif
 }
 
 template <class _Type>
@@ -199,6 +201,8 @@ _CCCL_DEVICE bool __cuda_fetch_min_weak_if_local(volatile _Type* __ptr, _Type __
 {
   return __cuda_fetch_weak_if_local(__ptr, __val, __ret, __cuda_fetch_local_bop_min<_Type>);
 }
+
+#endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
