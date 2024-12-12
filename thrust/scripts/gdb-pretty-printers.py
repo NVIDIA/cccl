@@ -29,7 +29,7 @@ class ThrustVectorPrinter(gdb.printing.PrettyPrinter):
             count = self.count
             self.item = self.item + 1
             self.count = self.count + 1
-            return ('[%d]' % count, elt)
+            return ("[%d]" % count, elt)
 
     class _cuda_iterator(Iterator):
         def __init__(self, start, size):
@@ -41,32 +41,35 @@ class ThrustVectorPrinter(gdb.printing.PrettyPrinter):
             self.sizeof = self.item.dereference().type.sizeof
             self.buffer_start = 0
             # At most 1 MB or size, at least 1
-            self.buffer_size = min(size, max(1, 2 ** 20 // self.sizeof))
+            self.buffer_size = min(size, max(1, 2**20 // self.sizeof))
             self.buffer = gdb.parse_and_eval(
-                '(void*)malloc(%s)' % (self.buffer_size * self.sizeof))
+                "(void*)malloc(%s)" % (self.buffer_size * self.sizeof)
+            )
             self.buffer.fetch_lazy()
             self.buffer_count = self.buffer_size
             self.update_buffer()
 
         def update_buffer(self):
             if self.buffer_count >= self.buffer_size:
-                self.buffer_item = gdb.parse_and_eval(
-                    hex(self.buffer)).cast(self.item.type)
+                self.buffer_item = gdb.parse_and_eval(hex(self.buffer)).cast(
+                    self.item.type
+                )
                 self.buffer_count = 0
                 self.buffer_start = self.count
                 device_addr = hex(self.item.dereference().address)
                 buffer_addr = hex(self.buffer)
-                size = min(self.buffer_size, self.size -
-                           self.buffer_start) * self.sizeof
+                size = (
+                    min(self.buffer_size, self.size - self.buffer_start) * self.sizeof
+                )
                 status = gdb.parse_and_eval(
-                    '(cudaError)cudaMemcpy(%s, %s, %d, cudaMemcpyDeviceToHost)' % (buffer_addr, device_addr, size))
+                    "(cudaError)cudaMemcpy(%s, %s, %d, cudaMemcpyDeviceToHost)"
+                    % (buffer_addr, device_addr, size)
+                )
                 if status != 0:
-                    raise gdb.MemoryError(
-                        'memcpy from device failed: %s' % status)
+                    raise gdb.MemoryError("memcpy from device failed: %s" % status)
 
         def __del__(self):
-            gdb.parse_and_eval('(void)free(%s)' %
-                               hex(self.buffer)).fetch_lazy()
+            gdb.parse_and_eval("(void)free(%s)" % hex(self.buffer)).fetch_lazy()
 
         def __iter__(self):
             return self
@@ -81,17 +84,17 @@ class ThrustVectorPrinter(gdb.printing.PrettyPrinter):
             count = self.count
             self.item = self.item + 1
             self.count = self.count + 1
-            return ('[%d]' % count, elt)
+            return ("[%d]" % count, elt)
 
     def __init__(self, val):
         self.val = val
-        self.pointer = val['m_storage']['m_begin']['m_iterator']
-        self.size = int(val['m_size'])
-        self.capacity = int(val['m_storage']['m_size'])
+        self.pointer = val["m_storage"]["m_begin"]["m_iterator"]
+        self.size = int(val["m_size"])
+        self.capacity = int(val["m_storage"]["m_size"])
         self.is_device_vector = str(self.pointer.type).startswith("thrust::device_ptr")
         if self.is_device_vector:
-            self.pointer = self.pointer['m_iterator']
-        self.is_cuda_vector = "cuda" in str(val['m_storage']['m_allocator'])
+            self.pointer = self.pointer["m_iterator"]
+        self.is_cuda_vector = "cuda" in str(val["m_storage"]["m_allocator"])
 
     def children(self):
         if self.is_cuda_vector:
@@ -101,10 +104,10 @@ class ThrustVectorPrinter(gdb.printing.PrettyPrinter):
 
     def to_string(self):
         typename = str(self.val.type)
-        return ('%s of length %d, capacity %d' % (typename, self.size, self.capacity))
+        return "%s of length %d, capacity %d" % (typename, self.size, self.capacity)
 
     def display_hint(self):
-        return 'array'
+        return "array"
 
 
 class ThrustCUDAReferencePrinter(gdb.printing.PrettyPrinter):
@@ -112,56 +115,59 @@ class ThrustCUDAReferencePrinter(gdb.printing.PrettyPrinter):
 
     def __init__(self, val):
         self.val = val
-        self.pointer = val['ptr']['m_iterator']
+        self.pointer = val["ptr"]["m_iterator"]
         self.type = self.pointer.dereference().type
         sizeof = self.type.sizeof
-        self.buffer = gdb.parse_and_eval('(void*)malloc(%s)' % sizeof)
+        self.buffer = gdb.parse_and_eval("(void*)malloc(%s)" % sizeof)
         device_addr = hex(self.pointer)
         buffer_addr = hex(self.buffer)
-        status = gdb.parse_and_eval('(cudaError)cudaMemcpy(%s, %s, %d, cudaMemcpyDeviceToHost)' % (
-            buffer_addr, device_addr, sizeof))
+        status = gdb.parse_and_eval(
+            "(cudaError)cudaMemcpy(%s, %s, %d, cudaMemcpyDeviceToHost)"
+            % (buffer_addr, device_addr, sizeof)
+        )
         if status != 0:
-            raise gdb.MemoryError('memcpy from device failed: %s' % status)
-        self.buffer_val = gdb.parse_and_eval(
-            hex(self.buffer)).cast(self.pointer.type).dereference()
+            raise gdb.MemoryError("memcpy from device failed: %s" % status)
+        self.buffer_val = (
+            gdb.parse_and_eval(hex(self.buffer)).cast(self.pointer.type).dereference()
+        )
 
     def __del__(self):
-        gdb.parse_and_eval('(void)free(%s)' % hex(self.buffer)).fetch_lazy()
+        gdb.parse_and_eval("(void)free(%s)" % hex(self.buffer)).fetch_lazy()
 
     def children(self):
         return []
 
     def to_string(self):
         typename = str(self.val.type)
-        return ('(%s) @%s: %s' % (typename, self.pointer, self.buffer_val))
+        return "(%s) @%s: %s" % (typename, self.pointer, self.buffer_val)
 
     def display_hint(self):
         return None
+
 
 class ThrustHostAccessibleReferencePrinter(gdb.printing.PrettyPrinter):
     def __init__(self, val):
         self.val = val
-        self.pointer = val['ptr']['m_iterator']
+        self.pointer = val["ptr"]["m_iterator"]
 
     def children(self):
         return []
 
     def to_string(self):
         typename = str(self.val.type)
-        return ('(%s) @%s: %s' % (typename, self.pointer, self.pointer.dereference()))
+        return "(%s) @%s: %s" % (typename, self.pointer, self.pointer.dereference())
 
     def display_hint(self):
         return None
 
 
-
 def lookup_thrust_type(val):
-    if not str(val.type.unqualified()).startswith('thrust::'):
+    if not str(val.type.unqualified()).startswith("thrust::"):
         return None
     suffix = str(val.type.unqualified())[8:]
-    if suffix.startswith('host_vector') or suffix.startswith('device_vector'):
+    if suffix.startswith("host_vector") or suffix.startswith("device_vector"):
         return ThrustVectorPrinter(val)
-    elif int(gdb.VERSION.split(".")[0]) >= 10 and suffix.startswith('device_reference'):
+    elif int(gdb.VERSION.split(".")[0]) >= 10 and suffix.startswith("device_reference"):
         # look for tag in type name
         if "cuda" in "".join(str(field.type) for field in val["ptr"].type.fields()):
             return ThrustCUDAReferencePrinter(val)

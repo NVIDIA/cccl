@@ -7,6 +7,7 @@ import cuda.cooperative.experimental as cudax
 import numpy as np
 import numba
 from numba import cuda
+
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 # example-begin imports
@@ -21,14 +22,14 @@ def test_block_exclusive_sum():
 
     # Specialize exclusive sum for a 1D block of 128 threads owning 4 integer items each
     block_exclusive_sum = cudax.block.exclusive_sum(
-        numba.int32, threads_per_block, items_per_thread)
+        numba.int32, threads_per_block, items_per_thread
+    )
 
     # Link the exclusive sum to a CUDA kernel
     @cuda.jit(link=block_exclusive_sum.files)
     def kernel(data):
         # Obtain a segment of consecutive items that are blocked across threads
-        thread_data = cuda.local.array(
-            shape=items_per_thread, dtype=numba.int32)
+        thread_data = cuda.local.array(shape=items_per_thread, dtype=numba.int32)
         for i in range(items_per_thread):
             thread_data[i] = data[cuda.threadIdx.x * items_per_thread + i]
 
@@ -38,6 +39,7 @@ def test_block_exclusive_sum():
         # Copy the scanned keys back to the output
         for i in range(items_per_thread):
             data[cuda.threadIdx.x * items_per_thread + i] = thread_data[i]
+
     # example-end exclusive-sum
 
     tile_size = threads_per_block * items_per_thread
