@@ -149,8 +149,8 @@ public:
   static constexpr bool __is_host_only = __select_execution_space<_Properties...> == _ExecutionSpace::__host;
 
 private:
-  __buffer_t __buf_{};
   mapping_type __mapping_{};
+  __buffer_t __buf_{};
   __policy_t __policy_ = __policy_t::invalid_execution_policy;
 
   //! @brief Helper to check container is compatible with this async_mdarray
@@ -295,8 +295,8 @@ public:
   //! The new async_mdarray has capacity of \p __other.size() which is potentially less than \p __other.capacity().
   //! @note No memory is allocated if \p __other is empty
   _CCCL_HIDE_FROM_ABI async_mdarray(const async_mdarray& __other)
-      : __buf_(__other.get_memory_resource(), __other.get_stream(), __other.size())
-      , __mapping_(__other.__mapping_)
+      : __mapping_(__other.__mapping_)
+      , __buf_(__other.get_memory_resource(), __other.get_stream(), __other.size())
       , __policy_(__other.__policy_)
   {
     if (__other.size() != 0)
@@ -309,8 +309,8 @@ public:
   //! @param __other The other async_mdarray.
   //! The new async_mdarray takes ownership of the allocation of \p __other and resets it.
   _CCCL_HIDE_FROM_ABI async_mdarray(async_mdarray&& __other) noexcept
-      : __buf_(_CUDA_VSTD::move(__other.__buf_))
-      , __mapping_(_CUDA_VSTD::exchange(__other.__mapping_, mapping_type{}))
+      : __mapping_(_CUDA_VSTD::exchange(__other.__mapping_, mapping_type{}))
+      , __buf_(_CUDA_VSTD::move(__other.__buf_))
       , __policy_(_CUDA_VSTD::exchange(__other.__policy_, __policy_t::invalid_execution_policy))
   {}
 
@@ -319,8 +319,8 @@ public:
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES(__properties_match<_OtherProperties...>)
   _CCCL_HIDE_FROM_ABI explicit async_mdarray(const async_mdarray<_ElementType, _OtherProperties...>& __other)
-      : __buf_(__other.get_memory_resource(), __other.get_stream(), __other.size())
-      , __mapping_(__other.__mapping_)
+      : __mapping_(__other.__mapping_)
+      , __buf_(__other.get_memory_resource(), __other.get_stream(), __other.size())
       , __policy_(__other.__policy_)
   {
     if (__other.size() != 0)
@@ -335,26 +335,31 @@ public:
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES(__properties_match<_OtherProperties...>)
   _CCCL_HIDE_FROM_ABI explicit async_mdarray(async_mdarray<_ElementType, _OtherProperties...>&& __other) noexcept
-      : __buf_(_CUDA_VSTD::move(__other.__buf_))
-      , __mapping_(_CUDA_VSTD::exchange(__other.__mapping_, mapping_type{}))
+      : __mapping_(_CUDA_VSTD::exchange(__other.__mapping_, mapping_type{}))
+      , __buf_(_CUDA_VSTD::move(__other.__buf_))
       , __policy_(_CUDA_VSTD::exchange(__other.__policy_, __policy_t::invalid_execution_policy))
   {}
 
   //! @brief Constructs an empty async_mdarray using an environment
   //! @param __env The environment providing the needed information
-  //! @note No memory is allocated.
   _CCCL_HIDE_FROM_ABI async_mdarray(const __env_t& __env)
-      : async_mdarray(__env, 0, ::cuda::experimental::uninit)
+      : async_mdarray(__env, extents_type{})
   {}
 
   //! @brief Constructs a async_mdarray of size \p __size using a memory resource and value-initializes \p __size
   //! elements
   //! @param __mr The memory resource to allocate the async_mdarray with.
   //! @param __size The size of the async_mdarray. Defaults to zero
-  //! @note If `__size == 0` then no memory is allocated.
-  _CCCL_HIDE_FROM_ABI explicit async_mdarray(const __env_t& __env, const size_type __size)
-      : async_mdarray(__env, __size, ::cuda::experimental::uninit)
+  _CCCL_TEMPLATE(class... _IndexTypes)
+  _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_constructible, extents_type, _IndexTypes...))
+  _CCCL_HIDE_FROM_ABI explicit async_mdarray(const __env_t& __env, _IndexTypes... __extents)
+      : __mapping_(extents_type{__extents...})
+      , __buf_(__env.query(::cuda::experimental::get_memory_resource),
+               __env.query(::cuda::experimental::get_stream),
+               __mapping_.required_span_size())
+      , __policy_(__env.query(::cuda::experimental::execution::get_execution_policy))
   {
+    const auto __size = __mapping_.required_span_size();
     if (__size != 0)
     {
       // miscco: should implement parallel specialized memory algorithms
@@ -367,13 +372,13 @@ public:
   //! @param __mr The memory resource to allocate the async_mdarray with.
   //! @param __size The size of the async_mdarray.
   //! @param __value The value all elements are copied from.
-  //! @note If `__size == 0` then no memory is allocated.
-  _CCCL_HIDE_FROM_ABI explicit async_mdarray(const __env_t& __env, const size_type __size, const _ElementType& __value)
-      : async_mdarray(__env, __size, ::cuda::experimental::uninit)
+  _CCCL_HIDE_FROM_ABI explicit async_mdarray(
+    const __env_t& __env, const extents_type& __extent, const _ElementType& __value = _ElementType())
+      : async_mdarray(__env, __extent, ::cuda::experimental::uninit)
   {
-    if (__size != 0)
+    if (__mapping_.required_span_size() != 0)
     {
-      this->__fill_n(__unwrapped_begin(), __size, __value);
+      this->__fill_n(__unwrapped_begin(), __mapping_.required_span_size(), __value);
     }
   }
 
@@ -381,44 +386,32 @@ public:
   //! @param __mr The memory resource to allocate the async_mdarray with.
   //! @param __size The size of the async_mdarray.
   //! @warning This constructor does *NOT* initialize any elements. It is the user's responsibility to ensure that the
-  //! elements within `[vec.begin(), vec.end())` are properly initialized, e.g with `cuda::std::uninitialized_copy`.
-  //! At the destruction of the \c async_mdarray all elements in the range `[vec.begin(), vec.end())` will be destroyed.
+  //! elements within `[0, mapping.required_span_size())` are properly initialized, e.g with
+  //! `cuda::std::uninitialized_copy`. At the destruction of the \c async_mdarray all elements in the range
+  //! `[0, mapping.required_span_size())` will be destroyed.
   _CCCL_HIDE_FROM_ABI explicit async_mdarray(
-    const __env_t& __env, const size_type __size, ::cuda::experimental::uninit_t)
-      : __buf_(
-          __env.query(::cuda::experimental::get_memory_resource), __env.query(::cuda::experimental::get_stream), __size)
-      , __mapping_(_Extents{__size})
+    const __env_t& __env, const extents_type& __extent, ::cuda::experimental::uninit_t)
+      : __mapping_(__extent)
+      , __buf_(__env.query(::cuda::experimental::get_memory_resource),
+               __env.query(::cuda::experimental::get_stream),
+               __mapping_.required_span_size())
       , __policy_(__env.query(::cuda::experimental::execution::get_execution_policy))
   {}
-
-  //! @brief Constructs a async_mdarray using a memory resource and copy-constructs all elements from the forward range
-  //! ``[__first, __last)``
-  //! @param __mr The memory resource to allocate the async_mdarray with.
-  //! @param __first The start of the input sequence.
-  //! @param __last The end of the input sequence.
-  //! @note If `__first == __last` then no memory is allocated
-  _CCCL_TEMPLATE(class _Iter)
-  _CCCL_REQUIRES(_CUDA_VSTD::__is_cpp17_forward_iterator<_Iter>::value)
-  _CCCL_HIDE_FROM_ABI async_mdarray(const __env_t& __env, _Iter __first, _Iter __last)
-      : async_mdarray(__env, static_cast<size_type>(_CUDA_VSTD::distance(__first, __last)), ::cuda::experimental::uninit)
-  {
-    if (size() > 0)
-    {
-      this->__copy_cross<_Iter, __detect_transfer_kind<__is_host_only, _Iter>>(
-        __first, __last, __unwrapped_begin(), size());
-    }
-  }
 
   //! @brief Constructs a async_mdarray using a memory resource and copy-constructs all elements from \p __ilist
   //! @param __mr The memory resource to allocate the async_mdarray with.
   //! @param __ilist The initializer_list being copied into the async_mdarray.
   //! @note If `__ilist.size() == 0` then no memory is allocated
-  _CCCL_HIDE_FROM_ABI async_mdarray(const __env_t& __env, _CUDA_VSTD::initializer_list<_ElementType> __ilist)
-      : async_mdarray(__env, __ilist.size(), ::cuda::experimental::uninit)
+  _CCCL_HIDE_FROM_ABI
+  async_mdarray(const __env_t& __env, const extents_type& __extent, _CUDA_VSTD::initializer_list<_ElementType> __ilist)
+      : async_mdarray(__env, __extent, ::cuda::experimental::uninit)
   {
-    if (size() > 0)
+    const auto __size = __mapping_.required_span_size();
+    _CCCL_ASSERT(__size == __ilist.size(),
+                 "cuda::experimental::async_mdarray: Construction with initializer_list of wrong size");
+    if (__mapping_.required_span_size() > 0)
     {
-      this->__copy_cross(__ilist.begin(), __ilist.end(), __unwrapped_begin(), size());
+      this->__copy_cross(__ilist.begin(), __ilist.end(), __unwrapped_begin(), __size);
     }
   }
 
@@ -429,14 +422,17 @@ public:
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__compatible_range<_Range> _CCCL_AND _CUDA_VRANGES::forward_range<_Range> _CCCL_AND
                    _CUDA_VRANGES::sized_range<_Range>)
-  _CCCL_HIDE_FROM_ABI async_mdarray(const __env_t& __env, _Range&& __range)
-      : async_mdarray(__env, static_cast<size_type>(_CUDA_VRANGES::size(__range)), ::cuda::experimental::uninit)
+  _CCCL_HIDE_FROM_ABI async_mdarray(const __env_t& __env, const extents_type& __extent, _Range&& __range)
+      : async_mdarray(__env, __extent, ::cuda::experimental::uninit)
   {
-    if (size() > 0)
+    const auto __size  = __mapping_.required_span_size();
+    const auto __rsize = static_cast<size_type>(_CUDA_VRANGES::size(__range));
+    _CCCL_ASSERT(__size == __rsize, "cuda::experimental::async_mdarray: Construction with range of wrong size");
+    if (__size > 0)
     {
       using _Iter = _CUDA_VRANGES::iterator_t<_Range>;
       this->__copy_cross<_Iter, __detect_transfer_kind<__is_host_only, _Range>>(
-        _CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __unwrapped_begin(), size());
+        _CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __unwrapped_begin(), __size);
     }
   }
 
@@ -444,17 +440,18 @@ public:
   _CCCL_TEMPLATE(class _Range)
   _CCCL_REQUIRES(__compatible_range<_Range> _CCCL_AND _CUDA_VRANGES::forward_range<_Range> _CCCL_AND(
     !_CUDA_VRANGES::sized_range<_Range>))
-  _CCCL_HIDE_FROM_ABI async_mdarray(const __env_t& __env, _Range&& __range)
-      : async_mdarray(
-          __env,
-          static_cast<size_type>(_CUDA_VRANGES::distance(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::end(__range))),
-          ::cuda::experimental::uninit)
+  _CCCL_HIDE_FROM_ABI async_mdarray(const __env_t& __env, const extents_type& __extent, _Range&& __range)
+      : async_mdarray(__env, __extent, ::cuda::experimental::uninit)
   {
-    if (size() > 0)
+    const auto __size = __mapping_.required_span_size();
+    const auto __rsize =
+      static_cast<size_type>(_CUDA_VRANGES::distance(_CUDA_VRANGES::begin(__range), _CUDA_VRANGES::end(__range)));
+    _CCCL_ASSERT(__size == __rsize, "cuda::experimental::async_mdarray: Construction with range of wrong size");
+    if (__size > 0)
     {
       using _Iter = _CUDA_VRANGES::iterator_t<_Range>;
       this->__copy_cross<_Iter, __detect_transfer_kind<__is_host_only, _Range>>(
-        _CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __unwrapped_begin(), size());
+        _CUDA_VRANGES::begin(__range), _CUDA_VRANGES::__unwrap_end(__range), __unwrapped_begin(), __size);
     }
   }
 #endif // _CCCL_DOXYGEN_INVOKED
@@ -474,7 +471,7 @@ public:
       return *this;
     }
 
-    const auto __count = __other.size();
+    __other.wait();
     if ((__borrow_resource() != __resource_ref_t(__other.__borrow_resource()) || (size() != __other.size())))
     {
       __buffer_t __new_buf{__other.get_memory_resource(), __other.get_stream(), __other.size()};
@@ -497,6 +494,7 @@ public:
       return *this;
     }
 
+    __other.wait();
     __buf_     = _CUDA_VSTD::move(__other.__buf_);
     __mapping_ = _CUDA_VSTD::exchange(__other.__mapping_, mapping_type());
     __policy_  = _CUDA_VSTD::exchange(__other.__policy_, __policy_t::invalid_execution_policy);
@@ -514,6 +512,7 @@ public:
       return *this;
     }
 
+    __other.wait();
     const auto __count = __other.size();
     if ((__borrow_resource() != __resource_ref_t(__other.__borrow_resource()) || (size() != __other.size())))
     {
@@ -539,6 +538,7 @@ public:
       return *this;
     }
 
+    __other.wait();
     __buf_     = _CUDA_VSTD::move(__other.__buf_);
     __mapping_ = _CUDA_VSTD::exchange(__other.__mapping_, mapping_type());
     __policy_  = _CUDA_VSTD::exchange(__other.__policy_, __policy_t::invalid_execution_policy);

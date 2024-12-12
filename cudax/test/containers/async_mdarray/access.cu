@@ -47,7 +47,7 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray access",
     static_assert(cuda::std::is_same_v<decltype(cuda::std::declval<const Array&>()[1ull]), const_reference>);
 
     {
-      Array vec{env, {T(1), T(42), T(1337), T(0)}};
+      Array vec{env, cuda::std::dims<1>{4}, {T(1), T(42), T(1337), T(0)}};
       auto& res = vec[2];
       CHECK(compare_value<Array::__is_host_only>(res, T(1337)));
       CHECK(static_cast<size_t>(cuda::std::addressof(res) - vec.data()) == 2);
@@ -71,46 +71,10 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray access",
     }
 
     { // Works with allocation
-      Array vec{env, {T(1), T(42), T(1337), T(0)}};
+      Array vec{env, cuda::std::dims<1>{4}, {T(1), T(42), T(1337), T(0)}};
       CHECK(vec.data() != nullptr);
       CHECK(cuda::std::as_const(vec).data() != nullptr);
       CHECK(cuda::std::as_const(vec).data() == vec.data());
     }
   }
-
-#if 0 // Implement exceptions
-#  ifndef TEST_HAS_NO_EXCEPTIONS
-  SECTION("cudax::async_mdarray access exceptions")
-  { // at throws std::out_of_range
-    {
-      using vec = cudax::async_mdarray<int, 42>;
-      try
-      {
-        vec too_small{};
-        auto res = too_small.at(5);
-        unused(res);
-      }
-      catch (const std::out_of_range&)
-      {}
-      catch (...)
-      {
-        assert(false);
-      }
-
-      try
-      {
-        const vec too_small{};
-        auto res = too_small.at(5);
-        unused(res);
-      }
-      catch (const std::out_of_range&)
-      {}
-      catch (...)
-      {
-        assert(false);
-      }
-    }
-  }
-#  endif // !TEST_HAS_NO_EXCEPTIONS
-#endif // Implement exceptions
 }

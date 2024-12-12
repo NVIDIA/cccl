@@ -43,11 +43,11 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray swap",
   STATIC_REQUIRE(noexcept(swap(cuda::std::declval<Array&>(), cuda::std::declval<Array&>())));
 
   // Note we do not care about the elements just the sizes
-  Array vec_small{env, 5, cudax::uninit};
+  Array vec_small{env, cuda::std::dims<1>{5}, cudax::uninit};
 
   SECTION("Can swap async_mdarray")
   {
-    Array vec_large{env, 42, cudax::uninit};
+    Array vec_large{env, cuda::std::dims<1>{42}, cudax::uninit};
 
     CHECK(vec_large.size() == 42);
     CHECK(vec_small.size() == 5);
@@ -69,7 +69,7 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray swap",
 
   SECTION("Can swap async_mdarray without allocation")
   {
-    Array vec_no_allocation{env, 0, cudax::uninit};
+    Array vec_no_allocation{env, cuda::std::dims<1>{0}, cudax::uninit};
 
     CHECK(vec_no_allocation.size() == 0);
     CHECK(vec_small.size() == 5);

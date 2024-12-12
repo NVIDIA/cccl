@@ -50,14 +50,14 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray conversion",
   SECTION("cudax::async_mdarray construction with matching async_mdarray")
   {
     { // can be copy constructed from empty input
-      const MatchingArray input{matching_env, 0};
+      const MatchingArray input{matching_env};
       Array vec(input);
       CHECK(vec.empty());
       CHECK(input.empty());
     }
 
     { // can be copy constructed from non-empty input
-      const MatchingArray input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      const MatchingArray input{matching_env, cuda::std::dims<1>{6}, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       Array vec(input);
       CHECK(!vec.empty());
       CHECK(equal_range(vec));
@@ -65,14 +65,14 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray conversion",
     }
 
     { // can be move constructed with empty input
-      MatchingArray input{matching_env, 0};
+      MatchingArray input{matching_env};
       Array vec(cuda::std::move(input));
       CHECK(vec.empty());
       CHECK(input.empty());
     }
 
     { // can be move constructed from non-empty input
-      MatchingArray input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      MatchingArray input{matching_env, cuda::std::dims<1>{6}, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
 
       // ensure that we steal the data
       const auto* allocation = input.data();
@@ -97,22 +97,22 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray conversion",
 
     { // Can be assigned an empty input, shrinking
       const MatchingArray input{matching_env};
-      Array vec{env, 4, T(-2)};
+      Array vec{env, cuda::std::dims<1>{42}, T(-2)};
       vec = input;
       CHECK(vec.empty());
       CHECK(vec.data() == nullptr);
     }
 
     { // Can be assigned a non-empty input, shrinking
-      const MatchingArray input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
-      Array vec{env, 42, T(-2)};
+      const MatchingArray input{matching_env, cuda::std::dims<1>{6}, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      Array vec{env, cuda::std::dims<1>{42}, T(-2)};
       vec = input;
       CHECK(!vec.empty());
       CHECK(equal_range(vec));
     }
 
     { // Can be assigned a non-empty input, growing from empty with reallocation
-      const MatchingArray input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      const MatchingArray input{matching_env, cuda::std::dims<1>{6}, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       Array vec{env};
       vec = input;
       CHECK(vec.size() == 6);
@@ -120,8 +120,8 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray conversion",
     }
 
     { // Can be assigned a non-empty input, growing with reallocation
-      const MatchingArray input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
-      Array vec{env, 4, T(-2)};
+      const MatchingArray input{matching_env, cuda::std::dims<1>{6}, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      Array vec{env, cuda::std::dims<1>{42}, T(-2)};
       vec = input;
       CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
@@ -157,8 +157,8 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray conversion",
     }
 
     { // Can be move-assigned a non-empty input, shrinking
-      MatchingArray input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
-      Array vec{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      MatchingArray input{matching_env, cuda::std::dims<1>{6}, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      Array vec{env, cuda::std::dims<1>{42}, T(-2)};
       vec = cuda::std::move(input);
       CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
@@ -167,7 +167,7 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray conversion",
     }
 
     { // Can be move-assigned an non-empty input growing from empty
-      MatchingArray input{matching_env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      MatchingArray input{matching_env, cuda::std::dims<1>{6}, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       Array vec{env};
       vec = cuda::std::move(input);
       CHECK(vec.size() == 6);
@@ -179,7 +179,7 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray conversion",
 
   SECTION("Conversion to mdspan")
   {
-    Array vec{env, 42, T{42}};
+    Array vec{env, cuda::std::dims<1>{42}, T{42}};
     using layout         = cuda::std::layout_right;
     using accessor       = cuda::std::default_accessor<int>;
     using const_accessor = cuda::std::default_accessor<const int>;
@@ -226,7 +226,7 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray conversion",
 
   SECTION("Conversion to mdspan with different accessor")
   {
-    Array vec{env, 42, T{42}};
+    Array vec{env, cuda::std::dims<1>{42}, T{42}};
     using layout = cuda::std::layout_right;
     struct accessor : cuda::std::default_accessor<int>
     {};
@@ -259,7 +259,7 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray conversion",
 
   SECTION("Conversion to mdspan with different layout")
   {
-    Array vec{env, 42, T{42}};
+    Array vec{env, cuda::std::dims<1>{42}, T{42}};
     using layout  = cuda::std::layout_left;
     using mapping = typename layout::mapping<cuda::std::dims<1>>;
     struct accessor : cuda::std::default_accessor<int>

@@ -46,13 +46,13 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray size",
     STATIC_REQUIRE(noexcept(cuda::std::declval<const Array&>().empty()));
 
     { // Works without allocation
-      Array vec{env, 0};
+      Array vec{env};
       CHECK(vec.empty());
       CHECK(cuda::std::as_const(vec).empty());
     }
 
     { // Works with allocation
-      Array vec{env, 42, cudax::uninit}; // Note we do not care about the elements just the sizes
+      Array vec{env, cuda::std::dims<1>{42}, cudax::uninit}; // Note we do not care about the elements just the sizes
       CHECK(!vec.empty());
       CHECK(!cuda::std::as_const(vec).empty());
     }
@@ -66,13 +66,13 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray size",
     STATIC_REQUIRE(noexcept(cuda::std::declval<const Array&>().size()));
 
     { // Works without allocation
-      Array vec{env, 0};
+      Array vec{env};
       CHECK(vec.size() == 0);
       CHECK(cuda::std::as_const(vec).size() == 0);
     }
 
     { // Works with allocation
-      Array vec{env, 42, cudax::uninit}; // Note we do not care about the elements just the sizes
+      Array vec{env, cuda::std::dims<1>{42}, cudax::uninit}; // Note we do not care about the elements just the sizes
       CHECK(vec.size() == 42);
       CHECK(cuda::std::as_const(vec).size() == 42);
     }

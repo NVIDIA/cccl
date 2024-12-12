@@ -62,7 +62,7 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray iterators",
 
   SECTION("cudax::async_mdarray::begin/end no allocation")
   {
-    Array vec{env, 0};
+    Array vec{env};
     CHECK(vec.begin() == iterator{nullptr});
     CHECK(cuda::std::as_const(vec).begin() == const_iterator{nullptr});
     CHECK(vec.cbegin() == const_iterator{nullptr});
@@ -78,7 +78,7 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray iterators",
 
   SECTION("cudax::async_mdarray::begin/end with allocation")
   {
-    Array vec{env, 42, cudax::uninit}; // Note we do not care about the elements just the sizes
+    Array vec{env, cuda::std::dims<1>{42}, cudax::uninit}; // Note we do not care about the elements just the sizes
     // begin points to the element at data()
     CHECK(vec.begin() == iterator{vec.data()});
     CHECK(cuda::std::as_const(vec).begin() == const_iterator{vec.data()});
@@ -114,7 +114,7 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray iterators",
 
   SECTION("cudax::async_mdarray::rbegin/rend no allocation")
   {
-    Array vec{env, 0};
+    Array vec{env};
     CHECK(vec.rbegin() == reverse_iterator{iterator{nullptr}});
     CHECK(cuda::std::as_const(vec).rbegin() == const_reverse_iterator{const_iterator{nullptr}});
     CHECK(vec.crbegin() == const_reverse_iterator{const_iterator{nullptr}});
@@ -130,7 +130,7 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray iterators",
 
   SECTION("cudax::async_mdarray::rbegin/rend with allocation")
   {
-    Array vec{env, 42, cudax::uninit}; // Note we do not care about the elements just the sizes
+    Array vec{env, cuda::std::dims<1>{42}, cudax::uninit}; // Note we do not care about the elements just the sizes
     // rbegin points to the element at data() + 42
     CHECK(vec.rbegin() == reverse_iterator{iterator{vec.data() + 42}});
     CHECK(cuda::std::as_const(vec).rbegin() == const_reverse_iterator{const_iterator{vec.data() + 42}});

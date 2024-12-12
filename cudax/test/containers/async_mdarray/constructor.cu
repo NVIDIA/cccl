@@ -18,8 +18,6 @@
 
 #include <cuda/experimental/container.cuh>
 
-#include <stdexcept>
-
 #include "helper.h"
 #include "types.h"
 #include <catch2/catch.hpp>
@@ -38,7 +36,7 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray constructors",
   cudax::stream stream{};
   Env env{Resource{}, stream};
 
-  SECTION("Construction with explicit size")
+  SECTION("Construction with extent")
   {
     { // from env, no allocation
       const async_mdarray vec{env};
@@ -47,106 +45,74 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray constructors",
     }
 
     { // from env and size, no allocation
-      const async_mdarray vec{env, 0};
+      const async_mdarray vec{env, cuda::std::dims<1>{0}};
       CHECK(vec.empty());
       CHECK(vec.data() == nullptr);
     }
 
     { // from env, size and value, no allocation
-      const async_mdarray vec{env, 0, T{42}};
+      const async_mdarray vec{env, cuda::std::dims<1>{0}};
       CHECK(vec.empty());
       CHECK(vec.data() == nullptr);
     }
 
     { // from env and size
-      const async_mdarray vec{env, 5};
+      const async_mdarray vec{env, cuda::std::dims<1>{5}};
       CHECK(vec.size() == 5);
       CHECK(equal_size_value(vec, 5, T(0)));
     }
 
     { // from env, size and value
-      const async_mdarray vec{env, 5, T{42}};
+      const async_mdarray vec{env, cuda::std::dims<1>{5}, T{42}};
       CHECK(vec.size() == 5);
       CHECK(equal_size_value(vec, 5, T(42)));
     }
   }
 
-  SECTION("Construction from iterators")
+  SECTION("Multidimensional construction with sizes")
   {
-    const cuda::std::array<T, 6> input{T(1), T(42), T(1337), T(0), T(12), T(-1)};
-    { // can be constructed from two equal forward iterators
-      using iter = forward_iterator<const T*>;
-      async_mdarray vec(env, iter{input.begin()}, iter{input.begin()});
-      CHECK(vec.empty());
-      CHECK(vec.data() == nullptr);
-    }
-
-    { // can be constructed from two forward iterators
-      using iter = forward_iterator<const T*>;
-      async_mdarray vec(env, iter{input.begin()}, iter{input.end()});
-      CHECK(vec.size() == 6);
-      CHECK(equal_range(vec));
-    }
-
-    { // can be constructed from two input iterators
-      async_mdarray vec(env, input.begin(), input.end());
-      CHECK(vec.size() == 6);
-      CHECK(equal_range(vec));
-    }
+    using multidim_mdarray = typename change_extent<async_mdarray, cuda::std::dims<2>>::type;
+    const multidim_mdarray vec{env, 2, 3};
+    CHECK(vec.size() == 6);
+    CHECK(equal_size_value(vec, 6, T(0)));
   }
 
   SECTION("Construction from range")
   {
     { // can be constructed from an empty uncommon forward range
-      async_mdarray vec(env, uncommon_range<T, 0>{});
+      async_mdarray vec(env, cuda::std::dims<1>{0}, uncommon_range<T, 0>{});
       CHECK(vec.empty());
       CHECK(vec.data() == nullptr);
     }
 
     { // can be constructed from a non-empty uncommon forward range
-      async_mdarray vec(env, uncommon_range<T, 6>{{T(1), T(42), T(1337), T(0), T(12), T(-1)}});
+      async_mdarray vec(env, cuda::std::dims<1>{6}, uncommon_range<T, 6>{{T(1), T(42), T(1337), T(0), T(12), T(-1)}});
       CHECK(!vec.empty());
       CHECK(equal_range(vec));
     }
 
     { // can be constructed from an empty sized uncommon forward range
-      async_mdarray vec(env, sized_uncommon_range<T, 0>{});
+      async_mdarray vec(env, cuda::std::dims<1>{0}, sized_uncommon_range<T, 0>{});
       CHECK(vec.empty());
       CHECK(vec.data() == nullptr);
     }
 
     { // can be constructed from a non-empty sized uncommon forward range
-      async_mdarray vec(env, sized_uncommon_range<T, 6>{{T(1), T(42), T(1337), T(0), T(12), T(-1)}});
+      async_mdarray vec(
+        env, cuda::std::dims<1>{6}, sized_uncommon_range<T, 6>{{T(1), T(42), T(1337), T(0), T(12), T(-1)}});
       CHECK(!vec.empty());
       CHECK(equal_range(vec));
     }
 
     { // can be constructed from an empty random access range
-      async_mdarray vec(env, cuda::std::array<T, 0>{});
+      async_mdarray vec(env, cuda::std::dims<1>{0}, cuda::std::array<T, 0>{});
       CHECK(vec.empty());
       CHECK(vec.data() == nullptr);
     }
 
     { // can be constructed from a non-empty random access range
-      async_mdarray vec(env, cuda::std::array<T, 6>{T(1), T(42), T(1337), T(0), T(12), T(-1)});
+      async_mdarray vec(env, cuda::std::dims<1>{6}, cuda::std::array<T, 6>{T(1), T(42), T(1337), T(0), T(12), T(-1)});
       CHECK(!vec.empty());
-      CHECK(equal_range(vec));
-    }
-  }
-
-  SECTION("Construction from initializer_list")
-  {
-    { // can be constructed from an empty initializer_list
-      const cuda::std::initializer_list<T> input{};
-      async_mdarray vec(env, input);
-      CHECK(vec.empty());
-      CHECK(vec.data() == nullptr);
-    }
-
-    { // can be constructed from a non-empty initializer_list
-      const cuda::std::initializer_list<T> input{T(1), T(42), T(1337), T(0), T(12), T(-1)};
-      async_mdarray vec(env, input);
-      CHECK(vec.size() == 6);
       CHECK(equal_range(vec));
     }
   }
@@ -155,13 +121,13 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray constructors",
   {
     static_assert(!cuda::std::is_nothrow_copy_constructible<async_mdarray>::value, "");
     { // can be copy constructed from empty input
-      const async_mdarray input{env, 0};
+      const async_mdarray input{env, cuda::std::dims<1>{0}};
       async_mdarray vec(input);
       CHECK(vec.empty());
     }
 
     { // can be copy constructed from non-empty input
-      const async_mdarray input{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      const async_mdarray input{env, cuda::std::dims<1>{6}, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
       async_mdarray vec(input);
       CHECK(!vec.empty());
       CHECK(equal_range(vec));
@@ -180,7 +146,7 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray constructors",
     }
 
     { // can be move constructed from non-empty input
-      async_mdarray input{env, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
+      async_mdarray input{env, cuda::std::dims<1>{6}, {T(1), T(42), T(1337), T(0), T(12), T(-1)}};
 
       // ensure that we steal the data
       const auto* allocation = input.data();
@@ -192,95 +158,4 @@ TEMPLATE_TEST_CASE("cudax::async_mdarray constructors",
       CHECK(equal_range(vec));
     }
   }
-
-#if 0 // Implement exception handling
-#  ifndef TEST_HAS_NO_EXCEPTIONS
-  SECTION("Exception handling throwing bad_alloc")
-  {
-    using async_mdarray = cudax::async_mdarray<int>;
-
-    try
-    {
-      async_mdarray too_small(2 * size);
-    }
-    catch (const std::bad_alloc&)
-    {}
-    catch (...)
-    {
-      CHECK(false);
-    }
-
-    try
-    {
-      async_mdarray too_small(2 * size, 42);
-    }
-    catch (const std::bad_alloc&)
-    {}
-    catch (...)
-    {
-      CHECK(false);
-    }
-
-    try
-    {
-      cuda::std::array<int, 2 * size> input{0, 1, 2, 3, 4, 5, 6, 7};
-      async_mdarray too_small(input.begin(), input.end());
-    }
-    catch (const std::bad_alloc&)
-    {}
-    catch (...)
-    {
-      CHECK(false);
-    }
-
-    try
-    {
-      cuda::std::initializer_list<int> input{0, 1, 2, 3, 4, 5, 6};
-      async_mdarray too_small(input);
-    }
-    catch (const std::bad_alloc&)
-    {}
-    catch (...)
-    {
-      CHECK(false);
-    }
-
-    try
-    {
-      uncommon_range<int, 2 * size> input{{0, 1, 2, 3, 4, 5, 6, 7}};
-      async_mdarray too_small(input);
-    }
-    catch (const std::bad_alloc&)
-    {}
-    catch (...)
-    {
-      CHECK(false);
-    }
-
-    try
-    {
-      sized_uncommon_range<int, 2 * size> input{{0, 1, 2, 3, 4, 5, 6, 7}};
-      async_mdarray too_small(input);
-    }
-    catch (const std::bad_alloc&)
-    {}
-    catch (...)
-    {
-      CHECK(false);
-    }
-
-    try
-    {
-      cuda::std::array<int, 2 * size> input{0, 1, 2, 3, 4, 5, 6, 7};
-      async_mdarray too_small(input);
-    }
-    catch (const std::bad_alloc&)
-    {}
-    catch (...)
-    {
-      CHECK(false);
-    }
-  }
-#  endif // !TEST_HAS_NO_EXCEPTIONS
-#endif // 0
 }

@@ -50,6 +50,7 @@ constexpr bool equal_range(const Span& span)
 template <class Vector>
 constexpr bool equal_range(const Vector& vec)
 {
+  vec.get_stream().wait();
   _CCCL_IF_CONSTEXPR (Vector::__is_host_only)
   {
     return cuda::std::equal(vec.begin(), vec.end(), cuda::std::begin(host_data), cuda::std::end(host_data));
@@ -57,10 +58,7 @@ constexpr bool equal_range(const Vector& vec)
   else
   {
     return vec.size() == cuda::std::size(device_data)
-        && thrust::equal(thrust::cuda::par.on(vec.get_stream().get()),
-                         vec.begin(),
-                         vec.end(),
-                         cuda::get_device_address(device_data[0]));
+        && thrust::equal(thrust::device, vec.begin(), vec.end(), cuda::get_device_address(device_data[0]));
   }
 }
 
@@ -173,6 +171,15 @@ struct extract_properties<cuda::std::tuple<Properties...>>
   using matching_vector =
     cudax::async_mdarray<int, cuda::std::dims<1>, cuda::std::layout_right, other_property, Properties...>;
   using matching_resource = memory_resource_wrapper<other_property, Properties...>;
+};
+
+template <class, class>
+struct change_extent;
+
+template <class T, class OldExtent, class Layout, class... Properties, class NewExtent>
+struct change_extent<cudax::async_mdarray<T, OldExtent, Layout, Properties...>, NewExtent>
+{
+  using type = cudax::async_mdarray<T, NewExtent, Layout, Properties...>;
 };
 
 #endif // CUDAX_TEST_CONTAINER_VECTOR_HELPER_H
