@@ -50,7 +50,7 @@ struct IndexToTransformedValue
 };
 
 /**
- * @brief Helper to transform a device lambda into a functor that we can use in CUB
+ * @brief Helper to transform an extended device lambda into a functor that we can use in CUB
  */
 template <typename BinaryOp>
 struct ReduceOpWrapper
@@ -67,13 +67,6 @@ struct ReduceOpWrapper
   BinaryOp op;
 };
 
-// This should print the output of the transform op (which is an int)
-template <typename It>
-__global__ void TEST_KERNEL(It it)
-{
-  printf("it(%d) = %d\n", threadIdx.x, it[threadIdx.x]);
-}
-
 /**
  * @brief Remove the first entry of a std::tuple
  */
@@ -87,31 +80,53 @@ auto remove_first(const Tuple& t)
     t);
 }
 
+namespace reserved {
+
+template <typename Ctx, typename shape_t, typename OutT, typename... Args>
+class transform_reduce_scope {
+public:
+    transform_reduce_scope(Ctx &ctx, shape_t _s, OutT _init_val, logical_data<Args>... args) : s(mv(_s)), init_val(mv(_init_val)), targs(::std::forward<Args>(args)...) {}
+
+private:
+    shape_t s;
+    OutT init_val;
+    ::cuda::std::tuple<logical_data<Args>...> targs;
+};
+
+} // end namespace reserved
+
 template <typename Ctx, typename shape_t, typename TransformOp, typename BinaryOp, typename OutT, typename... Args>
 auto stf_transform_reduce(
   Ctx& ctx, shape_t s, TransformOp&& transform_op, BinaryOp&& op, OutT init_val, logical_data<Args>... args)
 {
-  using ConvertionOp_t = IndexToTransformedValue<TransformOp, shape_t, Args...>;
-
   // The result of this operation is a logical data
-  auto result = ctx.logical_data(shape_of<scalar<OutT>>());
+  auto result = ctx.logical_data(shape_of<scalar_view<OutT>>());
 
   auto t = ctx.task(result.write(), args.read()...);
   t.start();
   cudaStream_t stream = t.get_stream();
 
   auto deps = t.typed_deps();
-  // We remove the first argument
-  ConvertionOp_t conversion_op(transform_op, s, remove_first(deps));
 
+  // We are going to enumerate the entries in the shape, and create an counting
+  // iterator that will be combined with a functor that converts the
+  // corresponding 1D index in the shape to the result of the transform
+  // operation
   size_t num_elements = s.size();
   cub::CountingInputIterator<size_t> count_it(0);
 
-  // Create an iterator wrapper
-  cub::TransformInputIterator<OutT, ConvertionOp_t, decltype(count_it)> itr(count_it, conversion_op);
+  // This is a functor that transforms a 1D index in the shape into the result
+  // of the transform operation
+  //
+  // Note that we pass a tuple where we have removed the first argument (we do
+  // not consider the logical data of the result during the transform)
+  using ConvertionOp_t = IndexToTransformedValue<TransformOp, shape_t, Args...>;
+  ConvertionOp_t conversion_op(transform_op, s, remove_first(deps));
 
-  // Ensure that the
-  TEST_KERNEL<<<1, 8, 0, stream>>>(itr);
+  // This is an iterator that combines the counting iterator with the functor
+  // to apply the transformation, it thus outputs the different values produced
+  // by the transformation over the shape
+  cub::TransformInputIterator<OutT, ConvertionOp_t, decltype(count_it)> transform_output_it(count_it, conversion_op);
 
   // Determine temporary device storage requirements
   void* d_temp_storage      = nullptr;
@@ -119,8 +134,8 @@ auto stf_transform_reduce(
   cub::DeviceReduce::Reduce(
     d_temp_storage,
     temp_storage_bytes,
-    itr, //*static_cast<decltype(itr) *>(nullptr), // TODO
-    (OutT*) nullptr,
+    transform_output_it,
+    (OutT*)::std::get<0>(deps).addr, // output into a scalar_view<OutT>
     num_elements,
     ReduceOpWrapper<BinaryOp>(op),
     init_val,
@@ -131,8 +146,8 @@ auto stf_transform_reduce(
   cub::DeviceReduce::Reduce(
     d_temp_storage,
     temp_storage_bytes,
-    itr, // TODO
-    (OutT*) ::std::get<0>(deps).addr,
+    transform_output_it,
+    (OutT*) ::std::get<0>(deps).addr, // output into a scalar_view<OutT>
     num_elements,
     ReduceOpWrapper<BinaryOp>(op),
     init_val,

@@ -37,7 +37,7 @@ struct OpWrapper
 template <typename OutT, typename Ctx, typename T, typename BinaryOp>
 auto reduce(Ctx& ctx, logical_data<T> data, BinaryOp&& op, OutT init_val)
 {
-  auto result = ctx.logical_data(shape_of<scalar<OutT>>());
+  auto result = ctx.logical_data(shape_of<scalar_view<OutT>>());
 
   // Determine temporary device storage requirements
   void* d_temp_storage      = nullptr;
