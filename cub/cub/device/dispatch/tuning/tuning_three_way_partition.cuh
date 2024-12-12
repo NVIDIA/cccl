@@ -240,10 +240,8 @@ struct sm80_tuning<Input, OffsetT, input_size::_16, offset_size::_4>
   using delay_constructor                            = detail::fixed_delay_constructor_t<672, 1120>;
 };
 
-} // namespace three_way_partition
-
 template <class InputT, class OffsetT>
-struct device_three_way_partition_policy_hub
+struct policy_hub
 {
   struct DefaultTuning
   {
@@ -295,7 +293,7 @@ struct device_three_way_partition_policy_hub
 
   using MaxPolicy = Policy900;
 };
-
+} // namespace three_way_partition
 } // namespace detail
 
 CUB_NAMESPACE_END
