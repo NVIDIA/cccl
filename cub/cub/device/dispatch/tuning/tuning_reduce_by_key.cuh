@@ -613,7 +613,7 @@ struct policy_hub
   static constexpr int max_input_bytes      = static_cast<int>(::cuda::std::max(sizeof(KeyT), sizeof(AccumT)));
   static constexpr int combined_input_bytes = sizeof(KeyT) + sizeof(AccumT);
 
-  struct DefaultTuning
+  struct DefaultPolicy
   {
     static constexpr int nominal_4B_items_per_thread = 6;
     static constexpr int items_per_thread =
@@ -633,11 +633,11 @@ struct policy_hub
   };
 
   struct Policy350
-      : DefaultTuning
+      : DefaultPolicy
       , ChainedPolicy<350, Policy350, Policy350>
   {};
 
-  // Use values from tuning if a specialization exists, otherwise pick DefaultTuning
+  // Use values from tuning if a specialization exists, otherwise pick DefaultPolicy
   template <typename Tuning>
   static auto select_agent_policy(int)
     -> AgentReduceByKeyPolicy<Tuning::threads,
@@ -648,7 +648,7 @@ struct policy_hub
                               typename Tuning::delay_constructor>;
 
   template <typename Tuning>
-  static auto select_agent_policy(long) -> typename DefaultTuning::ReduceByKeyPolicyT;
+  static auto select_agent_policy(long) -> typename DefaultPolicy::ReduceByKeyPolicyT;
 
   struct Policy800 : ChainedPolicy<800, Policy800, Policy350>
   {
@@ -657,7 +657,7 @@ struct policy_hub
   };
 
   struct Policy860
-      : DefaultTuning
+      : DefaultPolicy
       , ChainedPolicy<860, Policy860, Policy800>
   {};
 
