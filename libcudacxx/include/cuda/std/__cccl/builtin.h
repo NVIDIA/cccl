@@ -147,15 +147,18 @@
 #endif // _CCCL_CHECK_BUILTIN(builtin_expect)
 
 #if _CCCL_CHECK_BUILTIN(builtin_abs)
-#  define _CCCL_BUILTIN_ABS(...) __builtin_abs(__VA_ARGS__)
+#  define _CCCL_BUILTIN_ABS(...)   __builtin_abs(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LABS(...)  __builtin_labs(__VA_ARGS__)
+#  define _CCCL_BUILTIN_LLABS(...) __builtin_llabs(__VA_ARGS__)
+#  if !_CCCL_COMPILER(CLANG, <, 20) && !_CCCL_COMPILER(GCC, <, 10) && !_CCCL_HAS_CUDA_COMPILER
+#    define _CCCL_HAS_CONSTEXPR_BUILTIN_ABS 1
+#  endif // !_CCCL_COMPILER(CLANG, <, 20) && !_CCCL_COMPILER(GCC, <, 10) && !_CCCL_HAS_CUDA_COMPILER
 #endif // _CCCL_CHECK_BUILTIN(builtin_abs)
 
 #if _CCCL_CHECK_BUILTIN(builtin_labs)
-#  define _CCCL_BUILTIN_LABS(...) __builtin_labs(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_labs)
 
 #if _CCCL_CHECK_BUILTIN(builtin_llabs)
-#  define _CCCL_BUILTIN_LLABS(...) __builtin_llabs(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_llabs)
 
 #if _CCCL_CHECK_BUILTIN(builtin_fmax) || _CCCL_COMPILER(GCC)

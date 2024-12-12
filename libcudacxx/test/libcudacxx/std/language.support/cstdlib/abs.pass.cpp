@@ -14,57 +14,66 @@
 
 #include "test_macros.h"
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_int()
+#if _CCCL_HAS_CONSTEXPR_INT_ABS && TEST_STD_VER >= 2014
+#  define ALLOW_CONSTEXPR 1
+#  define CONSTEXPR       constexpr
+#else
+#  define CONSTEXPR
+#endif
+
+__host__ __device__ CONSTEXPR int abs_overload(int value)
 {
   ASSERT_SAME_TYPE(int, decltype(cuda::std::abs(cuda::std::declval<int>())));
   static_assert(noexcept(cuda::std::abs(cuda::std::declval<int>())), "");
-  assert(cuda::std::abs(0) == 0);
-  assert(cuda::std::abs(1) == 1);
-  assert(cuda::std::abs(-1) == 1);
-  assert(cuda::std::abs(257) == 257);
-  assert(cuda::std::abs(-257) == 257);
-  assert(cuda::std::abs(cuda::std::numeric_limits<int>::min() + 1) == cuda::std::numeric_limits<int>::max());
+  return cuda::std::abs(value);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_long()
+__host__ __device__ CONSTEXPR long abs_overload(long value)
 {
   ASSERT_SAME_TYPE(long, decltype(cuda::std::labs(cuda::std::declval<long>())));
-  static_assert(noexcept(cuda::std::abs(cuda::std::declval<long>())), "");
-  assert(cuda::std::labs(0l) == 0l);
-  assert(cuda::std::labs(1l) == 1l);
-  assert(cuda::std::labs(-1l) == 1l);
-  assert(cuda::std::labs(257l) == 257l);
-  assert(cuda::std::labs(-257l) == 257l);
-  assert(cuda::std::labs(cuda::std::numeric_limits<long>::min() + 1l) == cuda::std::numeric_limits<long>::max());
+  static_assert(noexcept(cuda::std::labs(cuda::std::declval<long>())), "");
+  return cuda::std::labs(value);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 void test_long_long()
+__host__ __device__ CONSTEXPR long long abs_overload(long long value)
 {
   ASSERT_SAME_TYPE(long long, decltype(cuda::std::llabs(cuda::std::declval<long long>())));
-  static_assert(noexcept(cuda::std::abs(cuda::std::declval<long long>())), "");
-  assert(cuda::std::llabs(0ll) == 0ll);
-  assert(cuda::std::llabs(1ll) == 1ll);
-  assert(cuda::std::llabs(-1ll) == 1ll);
-  assert(cuda::std::llabs(257ll) == 257ll);
-  assert(cuda::std::llabs(-257ll) == 257ll);
-  assert(cuda::std::llabs(cuda::std::numeric_limits<long long>::min() + 1ll)
-         == cuda::std::numeric_limits<long long>::max());
+  static_assert(noexcept(cuda::std::llabs(cuda::std::declval<long long>())), "");
+  return cuda::std::llabs(value);
 }
 
-__host__ __device__ TEST_CONSTEXPR_CXX14 bool test()
+template <class T>
+__host__ __device__ CONSTEXPR bool test_abs(T zero_value)
 {
-  test_int();
-  test_long();
-  test_long_long();
+  assert(abs_overload(zero_value + T{0}) == T{0});
+  assert(abs_overload(zero_value + T{1}) == T{1});
+  assert(abs_overload(zero_value + T{-1}) == T{1});
+  assert(abs_overload(zero_value + T{257}) == T{257});
+  assert(abs_overload(zero_value + T{-257}) == T{257});
+  assert(abs_overload(zero_value + cuda::std::numeric_limits<T>::max()) == cuda::std::numeric_limits<T>::max());
+  assert(abs_overload(zero_value + cuda::std::numeric_limits<T>::min() + T{1}) == cuda::std::numeric_limits<T>::max());
   return true;
+}
+
+__host__ __device__ CONSTEXPR bool test(int zero_value)
+{
+  test_abs(zero_value);
+  test_abs(static_cast<long>(zero_value));
+  test_abs(static_cast<long long>(zero_value));
+  return true;
+}
+
+__global__ void test_global_kernel(int* zero_value)
+{
+  test(*zero_value);
 }
 
 int main(int, char**)
 {
-  assert(test());
-#if TEST_STD_VER > 2014
-  static_assert(test(), "");
-#endif // TEST_STD_VER > 2014
-
+  volatile int zero_value = 0;
+  assert(test(zero_value));
+#if ALLOW_CONSTEXPR
+  static_assert(test(0), "");
+#endif // _CCCL_HAS_CONSTEXPR_INT_ABS
   return 0;
 }
