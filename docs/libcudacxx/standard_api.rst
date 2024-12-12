@@ -97,6 +97,8 @@ Feature availability:
 
 -  C++20 integer comparison functions in ``<utility>`` are available in C++11.
 
+-  C++23 ``byteswap`` in ``<bit>`` is available in C++11.
+
 -  C++23 ``<expected>`` is available in C++14.
 
    -  all features are available in C++14
