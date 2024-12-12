@@ -637,22 +637,22 @@ struct sm90_tuning<KeyT, AccumT, primitive_op::yes, primitive_key::no, primitive
 template <class ReductionOpT, class AccumT, class KeyT>
 struct policy_hub
 {
-  static constexpr int MAX_INPUT_BYTES      = static_cast<int>(::cuda::std::max(sizeof(KeyT), sizeof(AccumT)));
-  static constexpr int COMBINED_INPUT_BYTES = sizeof(KeyT) + sizeof(AccumT);
+  static constexpr int max_input_bytes      = static_cast<int>(::cuda::std::max(sizeof(KeyT), sizeof(AccumT)));
+  static constexpr int combined_input_bytes = sizeof(KeyT) + sizeof(AccumT);
 
   struct DefaultTuning
   {
-    static constexpr int NOMINAL_4B_ITEMS_PER_THREAD = 6;
-    static constexpr int ITEMS_PER_THREAD =
-      (MAX_INPUT_BYTES <= 8)
+    static constexpr int nominal_4B_items_per_thread = 6;
+    static constexpr int items_per_thread =
+      (max_input_bytes <= 8)
         ? 6
         // TODO(bgruber): use ceil_div and clamp in C++14
-        : CUB_MIN(NOMINAL_4B_ITEMS_PER_THREAD,
-                  CUB_MAX(1, ((NOMINAL_4B_ITEMS_PER_THREAD * 8) + COMBINED_INPUT_BYTES - 1) / COMBINED_INPUT_BYTES));
+        : CUB_MIN(nominal_4B_items_per_thread,
+                  CUB_MAX(1, ((nominal_4B_items_per_thread * 8) + combined_input_bytes - 1) / combined_input_bytes));
 
     using ReduceByKeyPolicyT =
       AgentReduceByKeyPolicy<128,
-                             ITEMS_PER_THREAD,
+                             items_per_thread,
                              BLOCK_LOAD_DIRECT,
                              LOAD_LDG,
                              BLOCK_SCAN_WARP_SCANS,
