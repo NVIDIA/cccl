@@ -125,11 +125,11 @@ constexpr key_size classify_key_size()
 }
 
 template <class KeyT,
-          class AccumT,
+          class ValueT,
           primitive_op PrimitiveOp,
           key_size KeySize                     = classify_key_size<KeyT>(),
-          val_size AccumSize                   = classify_val_size<AccumT>(),
-          primitive_accum PrimitiveAccumulator = is_primitive_accum<AccumT>()>
+          val_size ValueSize                   = classify_val_size<ValueT>(),
+          primitive_accum PrimitiveAccumulator = is_primitive_accum<ValueT>()>
 struct sm80_tuning;
 
 template <class KeyT, class ValueT>
@@ -418,11 +418,11 @@ struct sm80_tuning<KeyT, __uint128_t, primitive_op::yes, key_size::_16, val_size
 #endif
 
 template <class KeyT,
-          class AccumT,
+          class ValueT,
           primitive_op PrimitiveOp,
           key_size KeySize                     = classify_key_size<KeyT>(),
-          val_size AccumSize                   = classify_val_size<AccumT>(),
-          primitive_accum PrimitiveAccumulator = is_primitive_accum<AccumT>()>
+          val_size ValueSize                   = classify_val_size<ValueT>(),
+          primitive_accum PrimitiveAccumulator = is_primitive_accum<ValueT>()>
 struct sm90_tuning;
 
 template <class KeyT, class ValueT>
@@ -772,7 +772,6 @@ struct policy_hub
 
   struct Policy800 : ChainedPolicy<800, Policy800, Policy520>
   {
-    // FIXME(bgruber): is `ValueT` correct here? Shouldn't we use `AccumT` instead?
     using ScanByKeyPolicyT = decltype(select_agent_policy<sm80_tuning<key_t, ValueT, is_primitive_op<ScanOpT>()>>(0));
   };
 
@@ -783,7 +782,6 @@ struct policy_hub
 
   struct Policy900 : ChainedPolicy<900, Policy900, Policy860>
   {
-    // FIXME(bgruber): is `ValueT` correct here? Shouldn't we use `AccumT` instead?
     using ScanByKeyPolicyT = decltype(select_agent_policy<sm90_tuning<key_t, ValueT, is_primitive_op<ScanOpT>()>>(0));
   };
 
