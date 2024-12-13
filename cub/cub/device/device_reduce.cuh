@@ -521,28 +521,31 @@ struct DeviceReduce
   //! .. code-block:: c++
   //!
   //!    #include <cub/cub.cuh> // or equivalently <cub/device/device_reduce.cuh>
+  //!    #include <cuda/std/cstdint>
   //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for input and output
-  //!    int                                   num_items; // e.g., 7
-  //!    int                                   *d_in;     // e.g., [8, 6, 7, 5, 3, 0, 9]
-  //!    KeyValuePair<cuda::std::int64_t, int> *d_argmin; // e.g., [{-,-}]
+  //!    int                num_items;    // e.g., 7
+  //!    int                *d_in;        // e.g., [8, 6, 7, 5, 3, 0, 9]
+  //!    int                *d_min_out;   // memory for the minimum value
+  //!    cuda::std::int64_t *d_index_out; // memory for the index of the returned value
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
-  //!    cub::DeviceReduce::ArgMin(d_temp_storage, temp_storage_bytes, d_in, &d_argmin->value, &d_argmin->key,
+  //!    cub::DeviceReduce::ArgMin(d_temp_storage, temp_storage_bytes, d_in, d_min_out, d_index_out,
   //!    num_items);
   //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
   //!
   //!    // Run argmin-reduction
-  //!    cub::DeviceReduce::ArgMin(d_temp_storage, temp_storage_bytes, d_in, &d_argmin->value, &d_argmin->key,
+  //!    cub::DeviceReduce::ArgMin(d_temp_storage, temp_storage_bytes, d_in, d_min_out, d_index_out,
   //!    num_items);
   //!
-  //!    // d_argmin <-- [{5, 0}]
+  //!    // d_min_out   <-- 0
+  //!    // d_index_out <-- 5
   //!
   //! @endrst
   //!
@@ -920,28 +923,31 @@ struct DeviceReduce
   //! .. code-block:: c++
   //!
   //!    #include <cub/cub.cuh> // or equivalently <cub/device/device_reduce.cuh>
+  //!    #include <cuda/std/cstdint>
   //!
   //!    // Declare, allocate, and initialize device-accessible pointers
   //!    // for input and output
-  //!    int                      num_items;      // e.g., 7
-  //!    int                      *d_in;          // e.g., [8, 6, 7, 5, 3, 0, 9]
-  //!    KeyValuePair<int, int>   *d_argmax;      // e.g., [{-,-}]
+  //!    int                num_items;    // e.g., 7
+  //!    int                *d_in;        // e.g., [8, 6, 7, 5, 3, 0, 9]
+  //!    int                *d_max_out;   // memory for the maximum value
+  //!    cuda::std::int64_t *d_index_out; // memory for the index of the returned value
   //!    ...
   //!
   //!    // Determine temporary device storage requirements
   //!    void     *d_temp_storage = nullptr;
   //!    size_t   temp_storage_bytes = 0;
   //!    cub::DeviceReduce::ArgMax(
-  //!      d_temp_storage, temp_storage_bytes, d_in, &d_argmax->value, &d_argmax->key, num_items);
+  //!      d_temp_storage, temp_storage_bytes, d_in, d_max_out, d_index_out, num_items);
   //!
   //!    // Allocate temporary storage
   //!    cudaMalloc(&d_temp_storage, temp_storage_bytes);
   //!
   //!    // Run argmax-reduction
   //!    cub::DeviceReduce::ArgMax(
-  //!      d_temp_storage, temp_storage_bytes, d_in, &d_argmax->value, &d_argmax->key, num_items);
+  //!      d_temp_storage, temp_storage_bytes, d_in, d_max_out, d_index_out, num_items);
   //!
-  //!    // d_argmax <-- [{6, 9}]
+  //!    // d_max_out   <-- 9
+  //!    // d_index_out <-- 6
   //!
   //! @endrst
   //!
