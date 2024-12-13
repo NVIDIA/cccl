@@ -643,7 +643,8 @@ public:
   //!   - \c _OtherProperties be the pack of type parameters of the
   //!     \c basic_any_resource object that first type-erased \c obj. [_Note:_
   //!     `_OtherProperties` is different than `_Properties` when \c *this is
-  //!     the result of an interface-narrowing conversion. -- end note]
+  //!     the result of a conversion from a different \c basic_any type. -- end
+  //!     note]
   //!   .
   //! `try_get_property(__res, __prop)` has type \c ReturnType. If \c _Property
   //! is not in the pack \c _OtherProperties, returns `ReturnType()`.
@@ -651,7 +652,7 @@ public:
   //!   - Returns \c true if \c ValueType is \c void.
   //!   - Returns `ReturnType(get_property(obj, __prop))` otherwise.
   template <class _Property>
-  friend _SEE_BELOW_ try_get_property(const basic_any_resource& __res, _Property __prop) noexcept;
+  friend auto try_get_property(const basic_any_resource& __res, _Property __prop) noexcept;
 };
 
 //! @brief Type erased wrapper around a reference to an object that satisfies
@@ -659,7 +660,7 @@ public:
 //! @tparam _Properties The properties that any resource wrapped within the
 //! `basic_resource_ref` needs to provide.
 //!
-//! ``basic_resource_ref`` models the ``cuda::std::copable`` and
+//! ``basic_resource_ref`` models the ``cuda::std::copyable`` and
 //! ``cuda::std::equality_comparable`` concepts.
 template <_ResourceKind _Kind, class... _Properties>
 class basic_resource_ref
@@ -804,7 +805,7 @@ public:
   //!   - Returns \c true if \c ValueType is \c void.
   //!   - Returns `ReturnType(get_property(obj, __prop))` otherwise.
   template <class _Property>
-  friend _SEE_BELOW_ try_get_property(const basic_resource_ref& __res, _Property __prop) noexcept;
+  friend auto try_get_property(const basic_resource_ref& __res, _Property __prop) noexcept;
 };
 
 //! @rst
