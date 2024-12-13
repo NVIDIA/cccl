@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 #ifndef __LIBCUDACXX___ATOMIC_FUNCTIONS_CUDA_LOCAL_H
@@ -39,7 +39,7 @@ _CCCL_DEVICE inline bool __cuda_is_local(const volatile void* __ptr)
 #  if defined(_LIBCUDACXX_ATOMIC_UNSAFE_AUTOMATIC_STORAGE)
   return false;
 // Only NVCC+NVRTC define __isLocal, so drop to PTX
-#  elif defined(_CCCL_CUDACC_BELOW_12_3) || defined(_CCCL_CUDA_COMPILER_NVHPC)
+#  elif _CCCL_CUDACC_BELOW(12, 3) || _CCCL_CUDA_COMPILER(NVHPC)
   int __tmp = 0;
   asm("{\n\t"
       "  .reg .pred p;\n\t"
@@ -49,9 +49,9 @@ _CCCL_DEVICE inline bool __cuda_is_local(const volatile void* __ptr)
       : "=r"(__tmp)
       : "l"(const_cast<const void*>(__ptr)));
   return __tmp == 1;
-#  else
+#  else // ^^^ _CCCL_CUDACC_BELOW(12, 3) || _CCCL_CUDA_COMPILER(NVHPC) ^^^ / vvv other compiler vvv
   return __isLocal(const_cast<const void*>(__ptr));
-#  endif
+#  endif // _CCCL_CUDACC_AT_LEAST(12, 3) && !_CCCL_CUDA_COMPILER(NVHPC)
 }
 
 template <class _Type>
@@ -202,7 +202,7 @@ _CCCL_DEVICE bool __cuda_fetch_min_weak_if_local(volatile _Type* __ptr, _Type __
   return __cuda_fetch_weak_if_local(__ptr, __val, __ret, __cuda_fetch_local_bop_min<_Type>);
 }
 
-#endif
+#endif // _CCCL_HAS_CUDA_COMPILER
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
