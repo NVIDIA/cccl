@@ -4,6 +4,7 @@ from functools import lru_cache
 
 from llvmlite import ir
 from numba.core.extending import intrinsic, overload
+from numba.core.typing.ctypes_utils import to_ctypes
 import numba
 import numba.cuda
 import numba.types
@@ -11,23 +12,6 @@ import numba.types
 
 _DEVICE_POINTER_SIZE = 8
 _DEVICE_POINTER_BITWIDTH = _DEVICE_POINTER_SIZE * 8
-
-
-@lru_cache(maxsize=256)
-def _ctypes_type_given_numba_type(ntype):
-    mapping = {
-        numba.types.int8: ctypes.c_int8,
-        numba.types.int16: ctypes.c_int16,
-        numba.types.int32: ctypes.c_int32,
-        numba.types.int64: ctypes.c_int64,
-        numba.types.uint8: ctypes.c_uint8,
-        numba.types.uint16: ctypes.c_uint16,
-        numba.types.uint32: ctypes.c_uint32,
-        numba.types.uint64: ctypes.c_uint64,
-        numba.types.float32: ctypes.c_float,
-        numba.types.float64: ctypes.c_double,
-    }
-    return mapping[ntype]
 
 
 @lru_cache(maxsize=256)  # TODO: what's a reasonable value?
@@ -161,25 +145,12 @@ def pointer(container, ntype):
     return RawPointer(container.__cuda_array_interface__["data"][0], ntype)
 
 
-def _ir_type_given_numba_type(ntype):
-    bw = ntype.bitwidth
-    irt = None
-    if isinstance(ntype, numba.core.types.scalars.Integer):
-        irt = ir.IntType(bw)
-    elif isinstance(ntype, numba.core.types.scalars.Float):
-        if bw == 32:
-            irt = ir.FloatType()
-        elif bw == 64:
-            irt = ir.DoubleType()
-    return irt
-
-
 @intrinsic
 def load_cs(typingctx, base):
     # Corresponding to `LOAD_CS` here:
     # https://nvidia.github.io/cccl/cub/api/classcub_1_1CacheModifiedInputIterator.html
     def codegen(context, builder, sig, args):
-        rt = _ir_type_given_numba_type(sig.return_type)
+        rt = context.get_value_type(sig.return_type)
         if rt is None:
             raise RuntimeError(f"Unsupported return type: {type(sig.return_type)}")
         ftype = ir.FunctionType(rt, [rt.as_pointer()])
@@ -223,7 +194,7 @@ class CacheModifiedPointer(IteratorBase):
 class ConstantIterator(IteratorBase):
     def __init__(self, value):
         value_type = numba.from_dtype(value.dtype)
-        self._cvalue = _ctypes_type_given_numba_type(value_type)(value)
+        self._cvalue = to_ctypes(value_type)(value)
         numba_type = numba.types.CPointer(value_type)
         abi_name = f"{self.__class__.__name__}_{str(value_type)}"
         super().__init__(
@@ -248,7 +219,7 @@ class ConstantIterator(IteratorBase):
 class CountingIterator(IteratorBase):
     def __init__(self, value):
         value_type = numba.from_dtype(value.dtype)
-        self._cvalue = _ctypes_type_given_numba_type(value_type)(value)
+        self._cvalue = to_ctypes(value_type)(value)
         numba_type = numba.types.CPointer(value_type)
         abi_name = f"{self.__class__.__name__}_{str(value_type)}"
         super().__init__(
