@@ -68,79 +68,117 @@ struct ReduceOpWrapper
 };
 
 /**
- * @brief Remove the first entry of a std::tuple
+ * @brief Remove the first entry of a ::std::tuple
  */
 template <typename Tuple>
-auto remove_first(const Tuple& t)
+auto remove_first(Tuple&& t)
 {
-  return make_tuple_indexwise<::std::tuple_size_v<Tuple> - 1>(
-    [&](auto i) -> decltype(auto) { return ::std::get<i + 1>(t); }
-  );
+  return make_tuple_indexwise<::std::tuple_size_v<::std::remove_reference_t<Tuple>> - 1>([&](auto i) -> decltype(auto) {
+    return ::std::get<i + 1>(::std::forward<Tuple>(t));
+  });
 }
 
-template <typename Ctx, typename shape_t, typename TransformOp, typename BinaryOp, typename OutT, typename... Args>
-auto stf_transform_reduce(
-  Ctx& ctx, shape_t s, TransformOp&& transform_op, BinaryOp&& op, OutT init_val, logical_data<Args>... args)
+// A helper trait to detect if the expression in the operator->* body is valid
+template <typename F1, typename F2, typename = void>
+struct is_arrow_star_valid : ::std::false_type
+{};
+
+// Specialization: If the expression compiles, this specialization is chosen
+template <typename F1, typename F2>
+struct is_arrow_star_valid<F1, F2, ::std::void_t<decltype(std::declval<F1>()(std::declval<F2>()))>> : ::std::true_type
+{};
+
+// Helper variable template for convenience
+template <typename F1, typename F2>
+constexpr bool is_arrow_star_valid_v = is_arrow_star_valid<F1, F2>::value;
+
+// Define operator->* only if the body of the operator would compile
+template <class F1, class F2, ::std::enable_if_t<is_arrow_star_valid_v<F1, F2>, int> = 0>
+decltype(auto) operator->*(F1&& f1, F2&& f2)
 {
-  // The result of this operation is a logical data
+  static_assert(!::std::is_lvalue_reference_v<F1>, "Left-hand side of operator->* must be an rvalue.");
+  return ::std::forward<F1>(f1)(::std::forward<F2>(f2));
+}
+
+template <typename Ctx, typename shape_t, typename OutT, typename... Args>
+auto stf_transform_reduce(Ctx& ctx, shape_t s, OutT init_val, const logical_data<Args>&... args)
+{
+  // This will be the ultimate result of the transform followed by reduce
   auto result = ctx.logical_data(shape_of<scalar_view<OutT>>());
-
+  // Create a typed task eagerly that we'll use throughout
   auto t = ctx.task(result.write(), args.read()...);
+  // Start it so we can get its stream and dependencies
   t.start();
-  cudaStream_t stream = t.get_stream();
-
-  auto deps = t.typed_deps();
 
   // We are going to enumerate the entries in the shape, and create an counting
   // iterator that will be combined with a functor that converts the
   // corresponding 1D index in the shape to the result of the transform
-  // operation
-  size_t num_elements = s.size();
-  cub::CountingInputIterator<size_t> count_it(0);
+  // operation.
+  // The lambda we return here takes the transform lambda and applies it.
+  return
+    [stream   = t.get_stream(),
+     deps     = t.typed_deps(),
+     count_it = cub::CountingInputIterator<size_t>(0),
+     t        = mv(t),
+     result   = mv(result),
+     s        = mv(s),
+     init_val = mv(init_val)](auto&& transform_op) mutable {
+      using TransformOp = ::std::remove_reference_t<decltype(transform_op)>;
+      // This is a functor that transforms a 1D index in the shape into the result
+      // of the transform operation
+      //
+      // Note that we pass a tuple where we have removed the first argument (we do
+      // not consider the logical data of the result during the transform)
+      using ConversionOp_t = IndexToTransformedValue<TransformOp, shape_t, Args...>;
 
-  // This is a functor that transforms a 1D index in the shape into the result
-  // of the transform operation
-  //
-  // Note that we pass a tuple where we have removed the first argument (we do
-  // not consider the logical data of the result during the transform)
-  using ConvertionOp_t = IndexToTransformedValue<TransformOp, shape_t, Args...>;
-  ConvertionOp_t conversion_op(transform_op, s, remove_first(deps));
+      // This is an iterator that combines the counting iterator with the functor
+      // to apply the transformation, it thus outputs the different values produced
+      // by the transformation over the shape
+      cub::TransformInputIterator<OutT, ConversionOp_t, decltype(count_it)> transform_output_it(
+        count_it, ConversionOp_t(transform_op, s, remove_first(deps)));
 
-  // This is an iterator that combines the counting iterator with the functor
-  // to apply the transformation, it thus outputs the different values produced
-  // by the transformation over the shape
-  cub::TransformInputIterator<OutT, ConvertionOp_t, decltype(count_it)> transform_output_it(count_it, conversion_op);
+      // This lambda takes the reduction operator and finalizes the operation.
+      // We can capture most parameters by reference here because the parent object will
+      // be alive during the call.
+      return [&, transform_output_it = mv(transform_output_it)](auto&& reduce_op) {
+        SCOPE(exit)
+        {
+          t.end();
+        };
 
-  // Determine temporary device storage requirements
-  void* d_temp_storage      = nullptr;
-  size_t temp_storage_bytes = 0;
-  cub::DeviceReduce::Reduce(
-    d_temp_storage,
-    temp_storage_bytes,
-    transform_output_it,
-    (OutT*) ::std::get<0>(deps).addr, // output into a scalar_view<OutT>
-    num_elements,
-    ReduceOpWrapper<BinaryOp>(op),
-    init_val,
-    0);
+        using BinaryOp = ::std::remove_reference_t<decltype(reduce_op)>;
+        // Determine temporary device storage requirements
+        void* d_temp_storage      = nullptr;
+        size_t temp_storage_bytes = 0;
+        auto wrapped_reducer      = ReduceOpWrapper<BinaryOp>(reduce_op);
 
-  cuda_safe_call(cudaMallocAsync(&d_temp_storage, temp_storage_bytes, stream));
+        cub::DeviceReduce::Reduce(
+          d_temp_storage,
+          temp_storage_bytes,
+          transform_output_it,
+          (OutT*) ::std::get<0>(deps).addr, // output into a scalar_view<OutT>
+          s.size(),
+          wrapped_reducer,
+          init_val,
+          0);
 
-  cub::DeviceReduce::Reduce(
-    d_temp_storage,
-    temp_storage_bytes,
-    transform_output_it,
-    (OutT*) ::std::get<0>(deps).addr, // output into a scalar_view<OutT>
-    num_elements,
-    ReduceOpWrapper<BinaryOp>(op),
-    init_val,
-    0);
+        cuda_safe_call(cudaMallocAsync(&d_temp_storage, temp_storage_bytes, stream));
 
-  cuda_safe_call(cudaFreeAsync(d_temp_storage, stream));
+        cub::DeviceReduce::Reduce(
+          d_temp_storage,
+          temp_storage_bytes,
+          transform_output_it,
+          (OutT*) ::std::get<0>(deps).addr, // output into a scalar_view<OutT>
+          s.size(),
+          mv(wrapped_reducer),
+          mv(init_val),
+          0);
 
-  t.end();
+        cuda_safe_call(cudaFreeAsync(d_temp_storage, stream));
 
-  return result;
+        return mv(result);
+      };
+    };
 }
 
 template <typename Ctx>
@@ -165,18 +203,15 @@ void run()
   auto lX = ctx.logical_data(X, {N});
   auto lY = ctx.logical_data(Y, {N});
 
-  auto lresult = stf_transform_reduce(
-    ctx,
-    lX.shape(),
+  auto lresult =
+    stf_transform_reduce(ctx, lX.shape(), 0, lX, lY)
+      ->*
     [] __device__(size_t i, auto x, auto y) {
       return x(i) * y(i);
-    },
+    }->*
     [] __device__(const int& a, const int& b) {
       return a + b;
-    },
-    0,
-    lX,
-    lY);
+    };
 
   int result = ctx.wait(lresult);
   _CCCL_ASSERT(result == ref_prod, "Incorrect result");
