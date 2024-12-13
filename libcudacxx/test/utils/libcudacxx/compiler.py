@@ -406,7 +406,7 @@ class CXXCompiler(object):
             cmd, out, err, rc = self.preprocess(source_files, flags=flags, cwd=cwd)
             # Older MSVC does not support dumping macros
             if err.find("D9002") > 0:
-                raise BaseException("Cannot be dumped on old MSVC")
+                raise RuntimeError("Cannot be dumped on old MSVC")
             if rc != 0:
                 flags = [
                     "-Xcompiler",
@@ -416,7 +416,7 @@ class CXXCompiler(object):
                 ] + old_flags
                 cmd, out, err, rc = self.preprocess(source_files, flags=flags, cwd=cwd)
                 if err.find("D9002") > 0:
-                    raise BaseException("Cannot be dumped on old MSVC")
+                    raise RuntimeError("Cannot be dumped on old MSVC")
         else:
             flags = ["-dM"] + flags
             cmd, out, err, rc = self.preprocess(source_files, flags=flags, cwd=cwd)
@@ -425,7 +425,7 @@ class CXXCompiler(object):
                 cmd, out, err, rc = self.preprocess(source_files, flags=flags, cwd=cwd)
 
         if rc != 0:
-            raise BaseException("Macros failed to dump")
+            raise RuntimeError("Macros failed to dump")
 
         parsed_macros = {}
         lines = [line.strip() for line in out.split("\n") if line.strip()]
