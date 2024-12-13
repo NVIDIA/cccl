@@ -43,9 +43,9 @@ repos:
     hooks:
     - id: ruff
       args: ["--fix", "--show-fixes"]
-      exclude: "^docs/tools/|^libcudacxx/test/"
+      exclude: "^docs/tools/"
     - id: ruff-format
-      exclude: "^docs/tools/|^libcudacxx/test/"
+      exclude: "^docs/tools/"
 
 default_language_version:
   python: python3
