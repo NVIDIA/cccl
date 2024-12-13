@@ -409,7 +409,7 @@ private:
       ::new (__buffer_) __identity_t<_Tp*>{new _Tp{static_cast<_Args&&>(__args)...}};
     }
 
-    __vptr_for<_Interface> __vptr = &__vtable_for_v<_Interface, _Tp>;
+    __vptr_for<_Interface> __vptr = __cudax::__get_vtable_ptr_for<_Interface, _Tp>();
     __vptr_.__set(__vptr, __is_small<_Tp>(__size_, __align_));
     return *_CUDA_VSTD::launder(static_cast<_Tp*>(__get_optr()));
   }
