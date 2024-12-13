@@ -19,7 +19,7 @@ def read_syms_from_list(slist):
     Read a list of symbols from a list of strings.
     Each string is one symbol.
     """
-    return [ast.literal_eval(l) for l in slist]
+    return [ast.literal_eval(s) for s in slist]
 
 
 def read_syms_from_file(filename):
@@ -34,8 +34,8 @@ def read_syms_from_file(filename):
 def read_blacklist(filename):
     with open(filename, "r") as f:
         data = f.read()
-    lines = [l.strip() for l in data.splitlines() if l.strip()]
-    lines = [l for l in lines if not l.startswith("#")]
+    lines = [line.strip() for line in data.splitlines() if line.strip()]
+    lines = [line for line in lines if not line.startswith("#")]
     return lines
 
 
