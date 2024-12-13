@@ -500,9 +500,9 @@ struct DeviceReduce
   //!
   //! - The minimum is written to ``d_min_out``
   //! - The offset of the returned item is written to ``d_index_out``, the offset type being written is of type
-  //! ``cuda::std::int64_t``.
+  //!   ``cuda::std::int64_t``.
   //! - For zero-length inputs, ``cuda::std::numeric_limits<T>::max()}`` is written to ``d_min_out``  and the index
-  //! ``1`` is written to ``d_index_out``.
+  //!   ``1`` is written to ``d_index_out``.
   //! - Does not support ``<`` operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
   //!   (e.g., addition of floating point types) on the same GPU device.
@@ -899,9 +899,9 @@ struct DeviceReduce
   //!
   //! - The maximum is written to ``d_max_out``
   //! - The offset of the returned item is written to ``d_index_out``, the offset type being written is of type
-  //! ``cuda::std::int64_t``.
+  //!   ``cuda::std::int64_t``.
   //! - For zero-length inputs, ``cuda::std::numeric_limits<T>::max()}`` is written to ``d_max_out``  and the index
-  //! ``1`` is written to ``d_index_out``.
+  //!   ``1`` is written to ``d_index_out``.
   //! - Does not support ``>`` operators that are non-commutative.
   //! - Provides "run-to-run" determinism for pseudo-associative reduction
   //!   (e.g., addition of floating point types) on the same GPU device.
