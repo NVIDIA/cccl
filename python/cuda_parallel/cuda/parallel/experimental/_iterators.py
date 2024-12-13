@@ -30,6 +30,11 @@ class IteratorBase:
       (returns nothing).
     - a `dereference` (static) method that dereferences the state pointer
       and returns a value.
+
+    Iterators are not meant to be used directly. They are constructed and passed
+    to algorithms (e.g., `reduce`), which internally invoke their methods.
+
+    The `advance` and `dereference` must be compilable to device code by numba.
     """
 
     def __init__(self, numba_type, value_type, abi_name):
@@ -75,15 +80,15 @@ class IteratorBase:
 
     @property
     def state(self):
-        raise AttributeError("Subclasses must override advance staticmethod")
+        raise NotImplementedError("Subclasses must override advance staticmethod")
 
     @staticmethod
-    def advance(it, distance):
-        raise AttributeError("Subclasses must override advance staticmethod")
+    def advance(state, distance):
+        raise NotImplementedError("Subclasses must override advance staticmethod")
 
     @staticmethod
     def dereference(it):
-        raise AttributeError("Subclasses must override dereference staticmethod")
+        raise NotImplementedError("Subclasses must override dereference staticmethod")
 
 
 def sizeof_pointee(context, ptr):
@@ -129,12 +134,12 @@ class RawPointer(IteratorBase):
         )
 
     @staticmethod
-    def advance(it, distance):
-        it[0] = it[0] + distance
+    def advance(state, distance):
+        state[0] = state[0] + distance
 
     @staticmethod
-    def dereference(it):
-        return it[0][0]
+    def dereference(state):
+        return state[0][0]
 
     @property
     def state(self):
@@ -179,12 +184,12 @@ class CacheModifiedPointer(IteratorBase):
         )
 
     @staticmethod
-    def advance(it, distance):
-        it[0] = it[0] + distance
+    def advance(state, distance):
+        state[0] = state[0] + distance
 
     @staticmethod
-    def dereference(it):
-        return load_cs(it[0])
+    def dereference(state):
+        return load_cs(state[0])
 
     @property
     def state(self):
@@ -204,12 +209,12 @@ class ConstantIterator(IteratorBase):
         )
 
     @staticmethod
-    def advance(it, distance):
+    def advance(state, distance):
         pass
 
     @staticmethod
-    def dereference(it):
-        return it[0]
+    def dereference(state):
+        return state[0]
 
     @property
     def state(self):
@@ -229,12 +234,12 @@ class CountingIterator(IteratorBase):
         )
 
     @staticmethod
-    def advance(it, distance):
-        it[0] += distance
+    def advance(state, distance):
+        state[0] += distance
 
     @staticmethod
-    def dereference(it):
-        return it[0]
+    def dereference(state):
+        return state[0]
 
     @property
     def state(self):
@@ -253,6 +258,9 @@ def make_transform_iterator(it, op):
         def __init__(self, it, op):
             self._it = it
             numba_type = it.numba_type
+            # TODO: the abi name below isn't unique enough when we have e.g.,
+            # two indentically named `op` functions with different
+            # signatures, bytecodes, and/or closure variables.
             op_abi_name = f"{self.__class__.__name__}_{op.py_func.__name__}"
 
             # TODO: it would be nice to not need to compile `op` to get
@@ -273,12 +281,12 @@ def make_transform_iterator(it, op):
             )
 
         @staticmethod
-        def advance(it, distance):
-            return it_advance(it, distance)
+        def advance(state, distance):
+            return it_advance(state, distance)
 
         @staticmethod
-        def dereference(it):
-            return op(it_dereference(it))
+        def dereference(state):
+            return op(it_dereference(state))
 
         @property
         def state(self):

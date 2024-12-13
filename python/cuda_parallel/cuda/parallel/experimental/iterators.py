@@ -11,10 +11,9 @@ def CacheModifiedInputIterator(device_array, modifier):
     """
     if modifier != "stream":
         raise NotImplementedError("Only stream modifier is supported")
-    value_type = device_array.dtype
     return _iterators.CacheModifiedPointer(
         device_array.__cuda_array_interface__["data"][0],
-        numba.from_dtype(value_type),
+        numba.from_dtype(device_array.dtype),
     )
 
 
