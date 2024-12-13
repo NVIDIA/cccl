@@ -424,13 +424,13 @@ template <typename InputIteratorT,
           typename EqualityOpT,
           typename OffsetT,
           bool KeepRejects,
-          bool MayAlias           = false,
-          typename SelectedPolicy = detail::select::policy_hub<cub::detail::value_t<InputIteratorT>,
-                                                               cub::detail::value_t<FlagsInputIteratorT>,
-                                                               detail::select::per_partition_offset_t,
-                                                               MayAlias,
-                                                               KeepRejects>>
-struct DispatchSelectIf : SelectedPolicy
+          bool MayAlias      = false,
+          typename PolicyHub = detail::select::policy_hub<cub::detail::value_t<InputIteratorT>,
+                                                          cub::detail::value_t<FlagsInputIteratorT>,
+                                                          detail::select::per_partition_offset_t,
+                                                          MayAlias,
+                                                          KeepRejects>>
+struct DispatchSelectIf
 {
   /******************************************************************************
    * Types and constants
@@ -755,12 +755,10 @@ struct DispatchSelectIf : SelectedPolicy
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
-    using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
-
     return Invoke<ActivePolicyT>(
       DeviceCompactInitKernel<ScanTileStateT, NumSelectedIteratorT>,
       DeviceSelectSweepKernel<
-        MaxPolicyT,
+        typename PolicyHub::MaxPolicy,
         InputIteratorT,
         FlagsInputIteratorT,
         SelectedOutputIteratorT,
@@ -821,8 +819,6 @@ struct DispatchSelectIf : SelectedPolicy
     OffsetT num_items,
     cudaStream_t stream)
   {
-    using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
-
     int ptx_version = 0;
     if (cudaError_t error = CubDebug(PtxVersion(ptx_version)))
     {
@@ -842,7 +838,7 @@ struct DispatchSelectIf : SelectedPolicy
       stream,
       ptx_version);
 
-    return CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+    return CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document

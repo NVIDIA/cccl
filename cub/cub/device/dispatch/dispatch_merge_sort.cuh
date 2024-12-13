@@ -334,8 +334,8 @@ template <typename KeyInputIteratorT,
           typename ValueIteratorT,
           typename OffsetT,
           typename CompareOpT,
-          typename SelectedPolicy = detail::merge_sort::policy_hub<KeyIteratorT>>
-struct DispatchMergeSort : SelectedPolicy
+          typename PolicyHub = detail::merge_sort::policy_hub<KeyIteratorT>>
+struct DispatchMergeSort
 {
   using KeyT   = cub::detail::value_t<KeyIteratorT>;
   using ValueT = cub::detail::value_t<ValueIteratorT>;
@@ -447,8 +447,6 @@ struct DispatchMergeSort : SelectedPolicy
     using BlockSortVSmemHelperT  = cub::detail::vsmem_helper_impl<typename merge_sort_helper_t::block_sort_agent_t>;
     using MergeAgentVSmemHelperT = cub::detail::vsmem_helper_impl<typename merge_sort_helper_t::merge_agent_t>;
 
-    using MaxPolicyT = typename DispatchMergeSort::MaxPolicy;
-
     cudaError error = cudaSuccess;
 
     if (num_items == 0)
@@ -517,7 +515,7 @@ struct DispatchMergeSort : SelectedPolicy
         static_cast<int>(num_tiles), merge_sort_helper_t::policy_t::BLOCK_THREADS, 0, stream)
         .doit(
           DeviceMergeSortBlockSortKernel<
-            MaxPolicyT,
+            typename PolicyHub::MaxPolicy,
             KeyInputIteratorT,
             ValueInputIteratorT,
             KeyIteratorT,
@@ -602,7 +600,7 @@ struct DispatchMergeSort : SelectedPolicy
         THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
           static_cast<int>(num_tiles), static_cast<int>(merge_sort_helper_t::policy_t::BLOCK_THREADS), 0, stream, true)
           .doit(
-            DeviceMergeSortMergeKernel<MaxPolicyT,
+            DeviceMergeSortMergeKernel<typename PolicyHub::MaxPolicy,
                                        KeyInputIteratorT,
                                        ValueInputIteratorT,
                                        KeyIteratorT,
@@ -651,8 +649,6 @@ struct DispatchMergeSort : SelectedPolicy
     CompareOpT compare_op,
     cudaStream_t stream)
   {
-    using MaxPolicyT = typename DispatchMergeSort::MaxPolicy;
-
     cudaError error = cudaSuccess;
     do
     {
@@ -678,7 +674,7 @@ struct DispatchMergeSort : SelectedPolicy
         ptx_version);
 
       // Dispatch to chained policy
-      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+      error = CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
       if (cudaSuccess != error)
       {
         break;
