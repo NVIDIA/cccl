@@ -244,12 +244,12 @@ namespace __cccl_unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-
 
 #    define _CCCL_REQUIRES_EXPR(_TY, ...)                                                                             \
       ::__cccl_requires_expr_impl<                                                                                    \
-        struct _CCCL_PP_CAT(__cccl_requires_expr_detail_, __LINE__) _CCCL_REQUIRES_EXPR_EXPAND_TPARAMS                \
+        struct _CCCL_PP_CAT(__cccl_requires_expr_detail_, _CCCL_COUNTER()) _CCCL_REQUIRES_EXPR_EXPAND_TPARAMS         \
           _TY>::__cccl_is_satisfied(static_cast<::__cccl_tag<void _CCCL_REQUIRES_EXPR_EXPAND_TPARAMS _TY>*>(nullptr), \
                                     static_cast<void (*)(__VA_ARGS__)>(nullptr));                                     \
-      struct _CCCL_PP_CAT(__cccl_requires_expr_detail_, __LINE__)                                                     \
+      struct _CCCL_PP_CAT(__cccl_requires_expr_detail_, _CCCL_COUNTER())                                              \
       {                                                                                                               \
-        using __cccl_self_t = _CCCL_PP_CAT(__cccl_requires_expr_detail_, __LINE__);                                   \
+        using __cccl_self_t = _CCCL_PP_CAT(__cccl_requires_expr_detail_, _CCCL_COUNTER());                            \
         template <class _CCCL_REQUIRES_EXPR_TPARAMS _TY>                                                              \
         _LIBCUDACXX_HIDE_FROM_ABI static auto __cccl_well_formed(__VA_ARGS__) _CCCL_REQUIRES_EXPR_2
 
