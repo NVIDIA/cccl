@@ -270,7 +270,10 @@ class LibcxxTestFormat(object):
             if any(test_str in contents for test_str in test_str_list):
                 test_cxx.flags += ["-Werror=unused-result"]
         cmd, out, err, rc = test_cxx.compile(source_path, out=os.devnull)
-        check_rc = lambda rc: rc == 0 if use_verify else rc != 0
+
+        def check_rc(rc):
+            return rc == 0 if use_verify else rc != 0
+
         report = libcudacxx.util.makeReport(cmd, out, err, rc)
         if check_rc(rc):
             return lit.Test.Result(lit.Test.PASS, report)

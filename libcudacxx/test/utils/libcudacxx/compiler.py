@@ -343,10 +343,13 @@ class CXXCompiler(object):
             raise TypeError("This function only accepts a single input file")
         if object_file is None:
             # Create, use and delete a temporary object file if none is given.
-            with_fn = lambda: libcudacxx.util.guardedTempFilename(suffix=".o")
+            def with_fn():
+                return libcudacxx.util.guardedTempFilename(suffix=".o")
         else:
             # Otherwise wrap the filename in a context manager function.
-            with_fn = lambda: libcudacxx.util.nullContext(object_file)
+            def with_fn():
+                return libcudacxx.util.nullContext(object_file)
+
         with with_fn() as object_file:
             cc_cmd, cc_stdout, cc_stderr, rc = self.compile(
                 source_file, object_file, flags=flags, cwd=cwd
@@ -367,7 +370,10 @@ class CXXCompiler(object):
         dumpversion_cpp = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), "dumpversion.cpp"
         )
-        with_fn = lambda: libcudacxx.util.guardedTempFilename(suffix=".exe")
+
+        def with_fn():
+            return libcudacxx.util.guardedTempFilename(suffix=".exe")
+
         with with_fn() as exe:
             cmd, out, err, rc = self.compileLink(
                 [dumpversion_cpp], out=exe, flags=flags, cwd=cwd
