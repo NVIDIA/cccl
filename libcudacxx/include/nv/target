@@ -67,9 +67,10 @@ constexpr base_int_t sm_87_bit  = 1 << 14;
 constexpr base_int_t sm_89_bit  = 1 << 15;
 constexpr base_int_t sm_90_bit  = 1 << 16;
 constexpr base_int_t sm_100_bit = 1 << 17;
+constexpr base_int_t sm_101_bit = 1 << 18;
 constexpr base_int_t all_devices =
   sm_35_bit | sm_37_bit | sm_50_bit | sm_52_bit | sm_53_bit | sm_60_bit | sm_61_bit | sm_62_bit | sm_70_bit | sm_72_bit
-  | sm_75_bit | sm_80_bit | sm_86_bit | sm_87_bit | sm_89_bit | sm_90_bit | sm_100_bit;
+  | sm_75_bit | sm_80_bit | sm_86_bit | sm_87_bit | sm_89_bit | sm_90_bit | sm_100_bit | sm_101_bit;
 
 // Store a set of targets as a set of bits
 struct _NV_BITSET_ATTRIBUTE target_description
@@ -101,6 +102,7 @@ enum class sm_selector : base_int_t
   sm_89  = 89,
   sm_90  = 90,
   sm_100 = 100,
+  sm_101 = 101,
 };
 
 constexpr base_int_t toint(sm_selector a)
@@ -127,12 +129,14 @@ constexpr base_int_t bitexact(sm_selector a)
        : toint(a) == 89  ? sm_89_bit
        : toint(a) == 90  ? sm_90_bit
        : toint(a) == 100 ? sm_100_bit
+       : toint(a) == 101 ? sm_101_bit
                          : 0;
 }
 
 constexpr base_int_t bitrounddown(sm_selector a)
 {
-  return toint(a) >= 100 ? sm_100_bit
+  return toint(a) >= 101 ? sm_101_bit
+       : toint(a) >= 100 ? sm_100_bit
        : toint(a) >= 90  ? sm_90_bit
        : toint(a) >= 89  ? sm_89_bit
        : toint(a) >= 87  ? sm_87_bit
@@ -209,6 +213,7 @@ constexpr sm_selector sm_87  = sm_selector::sm_87;
 constexpr sm_selector sm_89  = sm_selector::sm_89;
 constexpr sm_selector sm_90  = sm_selector::sm_90;
 constexpr sm_selector sm_100 = sm_selector::sm_100;
+constexpr sm_selector sm_101 = sm_selector::sm_101;
 
 using detail::is_exactly;
 using detail::provides;
