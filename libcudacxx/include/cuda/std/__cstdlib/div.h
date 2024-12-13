@@ -21,18 +21,24 @@
 #  pragma system_header
 #endif // no system header
 
+#if !_CCCL_COMPILER(NVRTC)
+#  include <cstdlib>
+#endif // !_CCCL_COMPILER(NVRTC)
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
+// If available, use the host's div_t, ldiv_t, and lldiv_t types because the struct members order is
+// implementation-defined.
+#if !_CCCL_COMPILER(NVRTC)
+using ::div_t;
+using ::ldiv_t;
+using ::lldiv_t;
+#else // ^^^ !_CCCL_COMPILER(NVRTC) / _CCCL_COMPILER(NVRTC) vvv
 struct _CCCL_TYPE_VISIBILITY_DEFAULT div_t
 {
   int quot;
   int rem;
 };
-
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr div_t div(int __x, int __y) noexcept
-{
-  return {__x / __y, __x % __y};
-}
 
 struct _CCCL_TYPE_VISIBILITY_DEFAULT ldiv_t
 {
@@ -40,28 +46,43 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT ldiv_t
   long rem;
 };
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr ldiv_t ldiv(long __x, long __y) noexcept
-{
-  return {__x / __y, __x % __y};
-}
-
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr ldiv_t div(long __x, long __y) noexcept
-{
-  return _CUDA_VSTD::ldiv(__x, __y);
-}
-
 struct _CCCL_TYPE_VISIBILITY_DEFAULT lldiv_t
 {
   long long quot;
   long long rem;
 };
+#endif // !_CCCL_COMPILER(NVRTC)
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr lldiv_t lldiv(long long __x, long long __y) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 div_t div(int __x, int __y) noexcept
 {
-  return {__x / __y, __x % __y};
+  div_t __result{};
+  __result.quot = __x / __y;
+  __result.rem  = __x % __y;
+  return __result;
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr lldiv_t div(long long __x, long long __y) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 ldiv_t ldiv(long __x, long __y) noexcept
+{
+  ldiv_t __result{};
+  __result.quot = __x / __y;
+  __result.rem  = __x % __y;
+  return __result;
+}
+
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 ldiv_t div(long __x, long __y) noexcept
+{
+  return _CUDA_VSTD::ldiv(__x, __y);
+}
+
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 lldiv_t lldiv(long long __x, long long __y) noexcept
+{
+  lldiv_t __result{};
+  __result.quot = __x / __y;
+  __result.rem  = __x % __y;
+  return __result;
+}
+
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 lldiv_t div(long long __x, long long __y) noexcept
 {
   return _CUDA_VSTD::lldiv(__x, __y);
 }

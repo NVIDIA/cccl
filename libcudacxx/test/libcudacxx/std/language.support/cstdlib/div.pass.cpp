@@ -17,21 +17,21 @@ using I   = int;
 using IL  = long;
 using ILL = long long;
 
-__host__ __device__ constexpr cuda::std::div_t div_overload(I x, I y)
+__host__ __device__ TEST_CONSTEXPR_CXX14 cuda::std::div_t div_overload(I x, I y)
 {
   ASSERT_SAME_TYPE(cuda::std::div_t, decltype(cuda::std::div(I{}, I{})));
   static_assert(noexcept(cuda::std::div(I{}, I{})), "");
   return cuda::std::div(x, y);
 }
 
-__host__ __device__ constexpr cuda::std::ldiv_t div_overload(IL x, IL y)
+__host__ __device__ TEST_CONSTEXPR_CXX14 cuda::std::ldiv_t div_overload(IL x, IL y)
 {
   ASSERT_SAME_TYPE(cuda::std::ldiv_t, decltype(cuda::std::ldiv(IL{}, IL{})));
   static_assert(noexcept(cuda::std::ldiv(IL{}, IL{})), "");
   return cuda::std::ldiv(x, y);
 }
 
-__host__ __device__ constexpr cuda::std::lldiv_t div_overload(ILL x, ILL y)
+__host__ __device__ TEST_CONSTEXPR_CXX14 cuda::std::lldiv_t div_overload(ILL x, ILL y)
 {
   ASSERT_SAME_TYPE(cuda::std::lldiv_t, decltype(cuda::std::lldiv(ILL{}, ILL{})));
   static_assert(noexcept(cuda::std::lldiv(ILL{}, ILL{})), "");
@@ -85,6 +85,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test(int zero_value)
 __global__ void test_global_kernel(int* zero_value)
 {
   test(*zero_value);
+#if TEST_STD_VER >= 2014
+  static_assert(test(0), "");
+#endif // TEST_STD_VER >= 2014
 }
 
 int main(int, char**)
