@@ -286,7 +286,7 @@ gpus:
   rtxa6000: { sm: 86, testing: true } # 48 GB,  12 runners
   l4:       { sm: 89, testing: true } # 24 GB,  48 runners
   rtx4090:  { sm: 89, testing: true } # 24 GB,  10 runners
-  h100:     { sm: 90 }                # 80 GB,  16 runners
+  h100:     { sm: 90, testing: true } # 80 GB,  16 runners
 
 # Tags are used to define a `matrix job` in the workflow section.
 #
