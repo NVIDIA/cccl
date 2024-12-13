@@ -108,12 +108,18 @@ constexpr accum_size classify_accum_size()
          : accum_size::unknown;
 }
 
-template <int Threads, int Items, int L2B, int L2W>
+template <class OffsetT>
+constexpr offset_size classify_offset_size()
+{
+  return sizeof(OffsetT) == 4 ? offset_size::_4 : sizeof(OffsetT) == 8 ? offset_size::_8 : offset_size::unknown;
+}
+
+template <int Threads, int Items, int L2B, int L2W, typename DelayConstructor = fixed_delay_constructor_t<L2B, L2W>>
 struct tuning
 {
   static constexpr int threads = Threads;
   static constexpr int items   = Items;
-  using delay_constructor      = fixed_delay_constructor_t<L2B, L2W>;
+  using delay_constructor      = DelayConstructor;
 };
 
 template <class AccumT,
@@ -223,7 +229,7 @@ struct sm90_tuning<__uint128_t, primitive_op::yes, primitive_accum::no, accum_si
 #endif
 // clang-format on
 
-template <typename AccumT, typename ScanOpT>
+template <typename AccumT, typename OffsetT, typename ScanOpT>
 struct policy_hub
 {
   // For large values, use timesliced loads/stores to fit shared memory.
@@ -293,7 +299,7 @@ struct policy_hub
 } // namespace detail
 
 // TODO(bgruber): deprecate this at some point when we have a better way to allow users to supply tunings
-template <typename AccumT, typename ScanOpT = ::cuda::std::plus<>>
-using DeviceScanPolicy = detail::scan::policy_hub<AccumT, ScanOpT>;
+template <typename AccumT, typename OffsetT, typename ScanOpT = ::cuda::std::plus<>>
+using DeviceScanPolicy = detail::scan::policy_hub<AccumT, OffsetT, ScanOpT>;
 
 CUB_NAMESPACE_END

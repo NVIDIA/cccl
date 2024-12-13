@@ -239,7 +239,7 @@ template <typename InputIteratorT,
                                                                  ::cuda::std::_If<std::is_same<InitValueT, NullType>::value,
                                                                                   cub::detail::value_t<InputIteratorT>,
                                                                                   typename InitValueT::value_type>>,
-          typename SelectedPolicy = detail::scan::policy_hub<AccumT, ScanOpT>,
+          typename SelectedPolicy = detail::scan::policy_hub<AccumT, OffsetT, ScanOpT>,
           bool ForceInclusive     = false>
 struct DispatchScan : SelectedPolicy
 {
