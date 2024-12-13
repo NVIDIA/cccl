@@ -1,13 +1,8 @@
 import ctypes
 import operator
-import collections
 from functools import lru_cache
-from sys import prefix
 
-import numpy as np
-from numba.core import cgutils
 from llvmlite import ir
-from numba.core.typing import signature
 from numba.core.extending import intrinsic, overload
 import numba
 import numba.cuda
