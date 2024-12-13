@@ -49,10 +49,8 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 // Suppress deprecation warning for the deprecated ArgMin and ArgMax interfaces
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 _CCCL_NV_DIAG_SUPPRESS(1444)
-#pragma diag_suppress deprecated_entity_with_custom_message // nvhpc 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min_old);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max_old);
-#pragma diag_default deprecated_entity_with_custom_message
 _CCCL_NV_DIAG_DEFAULT(1444)
 _CCCL_SUPPRESS_DEPRECATED_POP
 
