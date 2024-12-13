@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__type_traits/is_const.h>
 #include <cuda/std/__type_traits/maybe_const.h>
 #include <cuda/std/__type_traits/remove_const.h>
@@ -262,6 +263,14 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__irefer
   using typename basic_any<__ireference<_Interface>>::interface_type;
   using basic_any<__ireference<_Interface>>::__is_const_ref;
 
+  _CUDAX_TRIVIAL_HOST_API basic_any(basic_any&& __other) noexcept
+      : basic_any(const_cast<basic_any const&>(__other))
+  {}
+
+  _CUDAX_TRIVIAL_HOST_API basic_any(basic_any& __other) noexcept
+      : basic_any(const_cast<basic_any const&>(__other))
+  {}
+
   _CUDAX_HOST_API basic_any(basic_any const& __other) noexcept
       : basic_any<__ireference<_Interface>>()
   {
@@ -269,70 +278,42 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface&> : basic_any<__irefer
   }
 
   _CCCL_TEMPLATE(class _Tp, class _Up = _CUDA_VSTD::remove_const_t<_Tp>)
-  _CCCL_REQUIRES((!__is_basic_any<_Tp>) _CCCL_AND __satisfies<_Up, interface_type> _CCCL_AND(
-    __is_const_ref || !_CUDA_VSTD::is_const_v<_Tp>))
+  _CCCL_REQUIRES((!__is_basic_any<_Up>) _CCCL_AND(__is_const_ref || !_CUDA_VSTD::is_const_v<_Tp>)
+                   _CCCL_AND __satisfies<_Up, interface_type>)
   _CUDAX_HOST_API basic_any(_Tp& __obj) noexcept
       : basic_any<__ireference<_Interface>>()
   {
-    __vptr_for<interface_type> const __vptr = &__vtable_for_v<interface_type, _Up>;
+    __vptr_for<interface_type> const __vptr = __cudax::__get_vtable_ptr_for<interface_type, _Up>();
     this->__set_ref(__vptr, &__obj);
   }
 
-#if defined(_CCCL_CUDA_COMPILER_NVCC) && !defined(_CCCL_NO_CONCEPTS)
-// For some reason, the constructor overloads below give nvcc fits when
-// constrained with c++20 requires clauses. So we fall back to good ol'
-// enable_if.
-#  define _CUDAX_TEMPLATE(...) template <__VA_ARGS__,
-#  define _CUDAX_REQUIRES(...) _CUDA_VSTD::enable_if_t<__VA_ARGS__, int> = 0 >
-#  define _CUDAX_AND           , int > = 0, _CUDA_VSTD::enable_if_t <
-#else // ^^^ NVCC && concepts ^^^ / vvv !NVCC || !concepts vvv
-#  define _CUDAX_TEMPLATE _CCCL_TEMPLATE
-#  define _CUDAX_REQUIRES _CCCL_REQUIRES
-#  define _CUDAX_AND      _CCCL_AND
-#endif // !NVCC || !concepts
-
-  _CUDAX_TEMPLATE(class _Tp)
-  _CUDAX_REQUIRES((!__is_basic_any<_Tp>) )
-  basic_any(_Tp const&&) = delete;
-
-  _CUDAX_TEMPLATE(class _SrcInterface)
-  _CUDAX_REQUIRES((!_CUDA_VSTD::same_as<_SrcInterface, _Interface&>) _CUDAX_AND //
-                  (!__is_value_v<_SrcInterface>) _CUDAX_AND //
-                    __any_convertible_to<basic_any<_SrcInterface>, basic_any>)
+  _CCCL_TEMPLATE(class _SrcInterface)
+  _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_SrcInterface, _Interface&>) _CCCL_AND //
+                 (!__is_value_v<_SrcInterface>) _CCCL_AND //
+                   __any_convertible_to<basic_any<_SrcInterface>, basic_any>)
   _CUDAX_HOST_API basic_any(basic_any<_SrcInterface>&& __src) noexcept
       : basic_any<__ireference<_Interface>>()
   {
     this->__set_ref(__src.__get_vptr(), __src.__get_optr());
   }
 
-  _CUDAX_TEMPLATE(class _SrcInterface)
-  _CUDAX_REQUIRES((!_CUDA_VSTD::same_as<_SrcInterface, _Interface&>) _CUDAX_AND //
-                    __any_convertible_to<basic_any<_SrcInterface>&, basic_any>)
+  _CCCL_TEMPLATE(class _SrcInterface)
+  _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_SrcInterface, _Interface&>) _CCCL_AND //
+                   __any_convertible_to<basic_any<_SrcInterface>&, basic_any>)
   _CUDAX_HOST_API basic_any(basic_any<_SrcInterface>& __src) noexcept
       : basic_any<__ireference<_Interface>>()
   {
     this->__set_ref(__src.__get_vptr(), __src.__get_optr());
   }
 
-  _CUDAX_TEMPLATE(class _SrcInterface)
-  _CUDAX_REQUIRES((!_CUDA_VSTD::same_as<_SrcInterface, _Interface&>) _CUDAX_AND //
-                    __any_convertible_to<basic_any<_SrcInterface> const&, basic_any>)
+  _CCCL_TEMPLATE(class _SrcInterface)
+  _CCCL_REQUIRES((!_CUDA_VSTD::same_as<_SrcInterface, _Interface&>) _CCCL_AND //
+                   __any_convertible_to<basic_any<_SrcInterface> const&, basic_any>)
   _CUDAX_HOST_API basic_any(basic_any<_SrcInterface> const& __src) noexcept
       : basic_any<__ireference<_Interface>>()
   {
     this->__set_ref(__src.__get_vptr(), __src.__get_optr());
   }
-
-  // A temporary value cannot bind to a basic_any reference.
-  // TODO: find another way to support APIs that take by reference and want
-  // implicit conversion from prvalues.
-  _CUDAX_TEMPLATE(class _SrcInterface)
-  _CUDAX_REQUIRES(__is_value_v<_SrcInterface>) //
-  basic_any(basic_any<_SrcInterface> const&&) = delete;
-
-#undef _CUDAX_AND
-#undef _CUDAX_REQUIRES
-#undef _CUDAX_TEMPLATE
 
   auto operator=(basic_any&&) -> basic_any&      = delete;
   auto operator=(basic_any const&) -> basic_any& = delete;

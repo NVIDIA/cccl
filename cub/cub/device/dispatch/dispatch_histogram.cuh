@@ -555,12 +555,8 @@ template <int NUM_CHANNELS,
           typename CounterT,
           typename LevelT,
           typename OffsetT,
-          typename SelectedPolicy = //
-          detail::device_histogram_policy_hub< //
-            cub::detail::value_t<SampleIteratorT>,
-            CounterT,
-            NUM_CHANNELS,
-            NUM_ACTIVE_CHANNELS>>
+          typename SelectedPolicy =
+            detail::histogram::policy_hub<detail::value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS>>
 struct DispatchHistogram : SelectedPolicy
 {
   static_assert(NUM_CHANNELS <= 4, "Histograms only support up to 4 channels");

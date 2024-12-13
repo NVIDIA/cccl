@@ -226,7 +226,7 @@ template <typename KeysInputIteratorT,
                                        cub::detail::value_t<ValuesInputIteratorT>,
                                        cub::detail::value_t<ValuesInputIteratorT>>,
           typename SelectedPolicy = //
-          detail::device_reduce_by_key_policy_hub< //
+          detail::reduce_by_key::policy_hub< //
             ReductionOpT, //
             AccumT, //
             cub::detail::non_void_value_t< //

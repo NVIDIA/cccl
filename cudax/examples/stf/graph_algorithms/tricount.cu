@@ -82,7 +82,7 @@ int main()
 
   auto loffsets     = ctx.logical_data(&offsets[0], offsets.size());
   auto lnonzeros    = ctx.logical_data(&nonzeros[0], nonzeros.size());
-  auto ltotal_count = ctx.logical_data(shape_of<scalar<unsigned long long>>());
+  auto ltotal_count = ctx.logical_data(shape_of<scalar_view<unsigned long long>>());
 
   ctx.parallel_for(
     box(num_vertices), loffsets.read(), lnonzeros.read(), ltotal_count.reduce(reducer::sum<unsigned long long>{}))

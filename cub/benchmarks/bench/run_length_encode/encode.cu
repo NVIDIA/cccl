@@ -51,7 +51,7 @@
 #    define TUNE_LOAD_MODIFIER cub::LOAD_CA
 #  endif // TUNE_LOAD
 
-struct device_reduce_by_key_policy_hub
+struct reduce_by_key_policy_hub
 {
   struct Policy350 : cub::ChainedPolicy<350, Policy350, Policy350>
   {
@@ -92,9 +92,9 @@ static void rle(nvbench::state& state, nvbench::type_list<T, OffsetT>)
     reduction_op_t,
     offset_t,
     accum_t,
-    device_reduce_by_key_policy_hub>;
+    reduce_by_key_policy_hub>;
 #else
-  using policy_t   = cub::detail::device_run_length_encode_policy_hub<accum_t, T>;
+  using policy_t   = cub::detail::rle::encode::policy_hub<accum_t, T>;
   using dispatch_t = cub::DispatchReduceByKey<
     keys_input_it_t,
     unique_output_it_t,

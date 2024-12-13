@@ -51,14 +51,19 @@ struct owning_container_of;
  * This is used to store a single value in a logical data.
  */
 template <typename T>
-struct scalar
+struct scalar_view
 {
-  scalar() = default;
-  scalar(T* _addr)
+  scalar_view() = default;
+  scalar_view(T* _addr)
       : addr(_addr)
   {}
 
   T* addr;
+
+  _CCCL_HOST_DEVICE T& operator*() const
+  {
+    return *addr;
+  }
 };
 
 /**
@@ -69,12 +74,12 @@ struct scalar
  * @extends shape_of
  */
 template <typename T>
-class shape_of<scalar<T>>
+class shape_of<scalar_view<T>>
 {
 public:
   shape_of() = default;
-  shape_of(const scalar<T>&)
-      : shape_of<scalar<T>>()
+  shape_of(const scalar_view<T>&)
+      : shape_of<scalar_view<T>>()
   {}
 
   /// Mandatory method : defined the total number of elements in the shape
@@ -88,13 +93,13 @@ public:
  * @brief Data interface to manipulate the void interface in the CUDA stream backend
  */
 template <typename T>
-class scalar_stream_interface : public stream_data_interface<scalar<T>>
+class scalar_stream_interface : public stream_data_interface<scalar_view<T>>
 {
 public:
-  using base = stream_data_interface<scalar<T>>;
+  using base = stream_data_interface<scalar_view<T>>;
   using typename base::shape_t;
 
-  scalar_stream_interface(scalar<T> val)
+  scalar_stream_interface(scalar_view<T> val)
       : base(::std::move(val))
   {}
   scalar_stream_interface(typename base::shape_t s)
@@ -122,8 +127,8 @@ public:
       kind = cudaMemcpyDeviceToHost;
     }
 
-    const scalar<T>& src_instance = this->instance(src_instance_id);
-    const scalar<T>& dst_instance = this->instance(dst_instance_id);
+    const scalar_view<T>& src_instance = this->instance(src_instance_id);
+    const scalar_view<T>& dst_instance = this->instance(dst_instance_id);
 
     size_t sz = sizeof(T);
 
@@ -139,7 +144,7 @@ public:
     void**,
     event_list& prereqs) override
   {
-    scalar<T>& instance = this->instance(instance_id);
+    scalar_view<T>& instance = this->instance(instance_id);
     _CCCL_ASSERT(memory_node != data_place::invalid, "invalid memory node");
 
     s = sizeof(T);
@@ -179,14 +184,14 @@ public:
 };
 
 /**
- * @brief Define how the CUDA stream backend must manipulate this scalar<T> interface
+ * @brief Define how the CUDA stream backend must manipulate this scalar_view<T> interface
  *
  * Note that we specialize cuda::experimental::stf::shape_of to avoid ambiguous specialization
  *
  * @extends streamed_interface_of
  */
 template <typename T>
-struct streamed_interface_of<scalar<T>>
+struct streamed_interface_of<scalar_view<T>>
 {
   using type = scalar_stream_interface<T>;
 };
@@ -195,18 +200,18 @@ struct streamed_interface_of<scalar<T>>
  * @brief Data interface to manipulate the void interface in the CUDA graph backend
  */
 template <typename T>
-class scalar_graph_interface : public graph_data_interface<scalar<T>>
+class scalar_graph_interface : public graph_data_interface<scalar_view<T>>
 {
 public:
   /// @brief Alias for the base class
-  using base = graph_data_interface<scalar<T>>;
+  using base = graph_data_interface<scalar_view<T>>;
   /// @brief Alias for the shape type
   using typename base::shape_t;
 
-  scalar_graph_interface(scalar<T> val)
+  scalar_graph_interface(scalar_view<T> val)
       : base(mv(val))
   {}
-  scalar_graph_interface(shape_of<scalar<T>> s)
+  scalar_graph_interface(shape_of<scalar_view<T>> s)
       : base(mv(s))
   {}
 
@@ -224,7 +229,7 @@ public:
     void* base_ptr = a.allocate(bctx, memory_node, s, prereqs);
 
     auto& local_desc = this->instance(instance_id);
-    local_desc       = scalar<T>(static_cast<T*>(base_ptr));
+    local_desc       = scalar_view<T>(static_cast<T*>(base_ptr));
   }
 
   void data_deallocate(
@@ -294,22 +299,22 @@ public:
  * @extends graphed_interface_of
  */
 template <typename T>
-struct graphed_interface_of<scalar<T>>
+struct graphed_interface_of<scalar_view<T>>
 {
   using type = scalar_graph_interface<T>;
 };
 
 template <typename T>
-struct owning_container_of<scalar<T>>
+struct owning_container_of<scalar_view<T>>
 {
   using type = T;
 
-  __host__ __device__ static void fill(scalar<T>& s, const T& val)
+  __host__ __device__ static void fill(scalar_view<T>& s, const T& val)
   {
     *s.addr = val;
   }
 
-  __host__ __device__ static T get_value(const scalar<T>& s)
+  __host__ __device__ static T get_value(const scalar_view<T>& s)
   {
     return *s.addr;
   }
@@ -319,9 +324,9 @@ struct owning_container_of<scalar<T>>
  * @brief A hash of the content
  */
 template <typename T>
-struct hash<scalar<T>>
+struct hash<scalar_view<T>>
 {
-  ::std::size_t operator()(scalar<T> const& s) const noexcept
+  ::std::size_t operator()(scalar_view<T> const& s) const noexcept
   {
     return ::std::hash<T>{}(*s.addr);
   }

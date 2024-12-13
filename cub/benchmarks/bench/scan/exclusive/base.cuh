@@ -30,6 +30,7 @@
 #include <cuda/std/__functional/invoke.h>
 
 #include <look_back_helper.cuh>
+#include <nvbench_helper.cuh>
 
 #if !TUNE_BASE
 #  if TUNE_TRANSPOSE == 0

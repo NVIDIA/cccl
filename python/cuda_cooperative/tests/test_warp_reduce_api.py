@@ -7,6 +7,7 @@ import cuda.cooperative.experimental as cudax
 import numpy as np
 import numba
 from numba import cuda
+
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 # example-begin imports
@@ -27,6 +28,7 @@ def test_warp_reduction():
 
         if cuda.threadIdx.x == 0:
             output[0] = warp_output
+
     # example-end reduce
 
     h_input = np.random.randint(0, 42, 32, dtype=np.int32)
@@ -49,6 +51,7 @@ def test_warp_sum():
 
         if cuda.threadIdx.x == 0:
             output[0] = warp_output
+
     # example-end sum
 
     h_input = np.ones(32, dtype=np.int32)

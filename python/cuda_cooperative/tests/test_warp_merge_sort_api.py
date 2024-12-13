@@ -7,6 +7,7 @@ import cuda.cooperative.experimental as cudax
 import numpy as np
 import numba
 from numba import cuda
+
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 # example-begin imports
@@ -23,14 +24,14 @@ def test_warp_merge_sort():
     # Specialize merge sort for a warp of threads owning 4 integer items each
     items_per_thread = 4
     warp_merge_sort = cudax.warp.merge_sort_keys(
-        numba.int32, items_per_thread, compare_op)
+        numba.int32, items_per_thread, compare_op
+    )
 
     # Link the merge sort to a CUDA kernel
     @cuda.jit(link=warp_merge_sort.files)
     def kernel(keys):
         # Obtain a segment of consecutive items that are blocked across threads
-        thread_keys = cuda.local.array(
-            shape=items_per_thread, dtype=numba.int32)
+        thread_keys = cuda.local.array(shape=items_per_thread, dtype=numba.int32)
 
         for i in range(items_per_thread):
             thread_keys[i] = keys[cuda.threadIdx.x * items_per_thread + i]
@@ -41,6 +42,7 @@ def test_warp_merge_sort():
         # Copy the sorted keys back to the output
         for i in range(items_per_thread):
             keys[cuda.threadIdx.x * items_per_thread + i] = thread_keys[i]
+
     # example-end merge-sort
 
     tile_size = 32 * items_per_thread

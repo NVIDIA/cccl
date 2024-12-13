@@ -267,7 +267,9 @@ You can then run the tuning search for a specific algorithm and compile-time wor
 
 This will tune merge sort for key-value pairs, for the key type :code:`int128_t` on :code:`2^28` elements.
 The :code:`-R` and :code:`-a` options are optional. If not specified, all benchmarks are going to be tuned.
+The :code:`-R` option can select multiple benchmarks using a regular expression.
 For the axis option :code:`-a`, you can also specify a range of values like :code:`-a 'KeyT{ct}=[I32,I64]'`.
+Any axis values not supported by a selected benchmark will be ignored.
 The first variant :code:`cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_13.tpb_6` has a score <1 and is thus generally slower than baseline,
 whereas the second variant :code:`cub.bench.merge_sort.pairs.trp_0.ld_1.ipt_11.tpb_10` has a score of >1 and is thus an improvement over the baseline.
 

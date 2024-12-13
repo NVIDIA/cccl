@@ -27,9 +27,9 @@ void run()
   double a = 42.0;
   double b = 12.3;
 
-  auto la = ctx.logical_data(scalar<double>(&a)).set_symbol("a");
-  auto lb = ctx.logical_data(scalar<double>(&b)).set_symbol("b");
-  auto lc = ctx.logical_data(shape_of<scalar<double>>()).set_symbol("c");
+  auto la = ctx.logical_data(scalar_view<double>(&a)).set_symbol("a");
+  auto lb = ctx.logical_data(scalar_view<double>(&b)).set_symbol("b");
+  auto lc = ctx.logical_data(shape_of<scalar_view<double>>()).set_symbol("c");
 
   ctx.parallel_for(box(1), la.read(), lb.read(), lc.write())->*[] __device__(size_t, auto a, auto b, auto c) {
     *c.addr = *a.addr + *b.addr;

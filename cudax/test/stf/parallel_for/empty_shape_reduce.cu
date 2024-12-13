@@ -23,8 +23,8 @@ template <typename context_t>
 void run()
 {
   context_t ctx;
-  auto lsum = ctx.logical_data(shape_of<scalar<int>>());
-  auto lmax = ctx.logical_data(shape_of<scalar<int>>());
+  auto lsum = ctx.logical_data(shape_of<scalar_view<int>>());
+  auto lmax = ctx.logical_data(shape_of<scalar_view<int>>());
 
   ctx.parallel_for(box(0), lsum.reduce(reducer::sum<int>{}), lmax.reduce(reducer::maxval<int>{}))
       ->*[] __device__(size_t, auto&, auto&) {

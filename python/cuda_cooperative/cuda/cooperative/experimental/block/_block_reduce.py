@@ -2,7 +2,19 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from cuda.cooperative.experimental._types import *
+import numba
+
+from cuda.cooperative.experimental._types import (
+    Algorithm,
+    Dependency,
+    DependentOperator,
+    DependentReference,
+    Invocable,
+    Pointer,
+    TemplateParameter,
+    Value,
+    numba_type_to_wrapper,
+)
 from cuda.cooperative.experimental._common import make_binary_tempfile
 
 
@@ -43,25 +55,38 @@ def reduce(dtype, threads_in_block, binary_op, methods=None):
     Returns:
         A callable object that can be linked to and invoked from a CUDA kernel
     """
-    template = Algorithm('BlockReduce',
-                         'Reduce',
-                         'block_reduce',
-                         ['cub/block/block_reduce.cuh'],
-                         [TemplateParameter('T'),
-                          TemplateParameter('BLOCK_DIM_X')],
-                         [[Pointer(numba.uint8),
-                           DependentReference(Dependency('T')),
-                           DependentOperator(Dependency('T'), [Dependency(
-                               'T'), Dependency('T')], Dependency('Op')),
-                           DependentReference(Dependency('T'), True)]],
-                         type_definitions=[numba_type_to_wrapper(dtype, methods=methods)])
-    specialization = template.specialize({'T': dtype,
-                                          'BLOCK_DIM_X': threads_in_block,
-                                          'Op': binary_op})
+    template = Algorithm(
+        "BlockReduce",
+        "Reduce",
+        "block_reduce",
+        ["cub/block/block_reduce.cuh"],
+        [TemplateParameter("T"), TemplateParameter("BLOCK_DIM_X")],
+        [
+            [
+                Pointer(numba.uint8),
+                DependentReference(Dependency("T")),
+                DependentOperator(
+                    Dependency("T"),
+                    [Dependency("T"), Dependency("T")],
+                    Dependency("Op"),
+                ),
+                DependentReference(Dependency("T"), True),
+            ]
+        ],
+        type_definitions=[numba_type_to_wrapper(dtype, methods=methods)],
+    )
+    specialization = template.specialize(
+        {"T": dtype, "BLOCK_DIM_X": threads_in_block, "Op": binary_op}
+    )
 
-    return Invocable(temp_files=[make_binary_tempfile(ltoir, '.ltoir') for ltoir in specialization.get_lto_ir()],
-                     temp_storage_bytes=specialization.get_temp_storage_bytes(),
-                     algorithm=specialization)
+    return Invocable(
+        temp_files=[
+            make_binary_tempfile(ltoir, ".ltoir")
+            for ltoir in specialization.get_lto_ir()
+        ],
+        temp_storage_bytes=specialization.get_temp_storage_bytes(),
+        algorithm=specialization,
+    )
 
 
 def sum(dtype, threads_in_block):
@@ -100,16 +125,32 @@ def sum(dtype, threads_in_block):
     Returns:
         A callable object that can be linked to and invoked from a CUDA kernel
     """
-    template = Algorithm('BlockReduce',
-                         'Sum',
-                         'block_reduce',
-                         ['cub/block/block_reduce.cuh'],
-                         [TemplateParameter('T'),
-                          TemplateParameter('BLOCK_DIM_X')],
-                         [[Pointer(numba.uint8), DependentReference(Dependency('T')), DependentReference(Dependency('T'), True)],
-                          [Pointer(numba.uint8), DependentReference(Dependency('T')), Value(numba.int32), DependentReference(Dependency('T'), True)]])
-    specialization = template.specialize({'T': dtype,
-                                          'BLOCK_DIM_X': threads_in_block})
-    return Invocable(temp_files=[make_binary_tempfile(ltoir, '.ltoir') for ltoir in specialization.get_lto_ir()],
-                     temp_storage_bytes=specialization.get_temp_storage_bytes(),
-                     algorithm=specialization)
+    template = Algorithm(
+        "BlockReduce",
+        "Sum",
+        "block_reduce",
+        ["cub/block/block_reduce.cuh"],
+        [TemplateParameter("T"), TemplateParameter("BLOCK_DIM_X")],
+        [
+            [
+                Pointer(numba.uint8),
+                DependentReference(Dependency("T")),
+                DependentReference(Dependency("T"), True),
+            ],
+            [
+                Pointer(numba.uint8),
+                DependentReference(Dependency("T")),
+                Value(numba.int32),
+                DependentReference(Dependency("T"), True),
+            ],
+        ],
+    )
+    specialization = template.specialize({"T": dtype, "BLOCK_DIM_X": threads_in_block})
+    return Invocable(
+        temp_files=[
+            make_binary_tempfile(ltoir, ".ltoir")
+            for ltoir in specialization.get_lto_ir()
+        ],
+        temp_storage_bytes=specialization.get_temp_storage_bytes(),
+        algorithm=specialization,
+    )

@@ -1,10 +1,10 @@
-#===----------------------------------------------------------------------===##
+# ===----------------------------------------------------------------------===##
 #
 # Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 # See https://llvm.org/LICENSE.txt for license information.
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 #
-#===----------------------------------------------------------------------===##
+# ===----------------------------------------------------------------------===##
 
 import platform
 import os
@@ -34,11 +34,11 @@ class LocalExecutor(Executor):
     def __init__(self):
         super(LocalExecutor, self).__init__()
         self.timeout = 0
-        self.is_windows = platform.system() == 'Windows'
+        self.is_windows = platform.system() == "Windows"
 
-    def run(self, exe_path, cmd=None, work_dir='.', file_deps=None, env=None):
+    def run(self, exe_path, cmd=None, work_dir=".", file_deps=None, env=None):
         cmd = cmd or [exe_path]
-        if work_dir == '.':
+        if work_dir == ".":
             work_dir = os.getcwd()
         out, err, rc = executeCommand(cmd, cwd=work_dir, env=env, timeout=self.timeout)
         return (cmd, out, err, rc)
@@ -48,8 +48,8 @@ class NoopExecutor(Executor):
     def __init__(self):
         super(NoopExecutor, self).__init__()
 
-    def run(self, exe_path, cmd=None, work_dir='.', file_deps=None, env=None):
-        return (cmd, '', '', 0)
+    def run(self, exe_path, cmd=None, work_dir=".", file_deps=None, env=None):
+        return (cmd, "", "", 0)
 
 
 class PrefixExecutor(Executor):
@@ -58,31 +58,32 @@ class PrefixExecutor(Executor):
     Most useful for setting ulimits on commands, or running an emulator like
     qemu and valgrind.
     """
+
     def __init__(self, commandPrefix, chain):
         super(PrefixExecutor, self).__init__()
 
         self.commandPrefix = commandPrefix
         self.chain = chain
 
-    def run(self, exe_path, cmd=None, work_dir='.', file_deps=None, env=None):
+    def run(self, exe_path, cmd=None, work_dir=".", file_deps=None, env=None):
         cmd = cmd or [exe_path]
-        return self.chain.run(exe_path, self.commandPrefix + cmd, work_dir,
-                              file_deps, env=env)
+        return self.chain.run(
+            exe_path, self.commandPrefix + cmd, work_dir, file_deps, env=env
+        )
 
 
 class PostfixExecutor(Executor):
     """Postfix an executor with some args."""
+
     def __init__(self, commandPostfix, chain):
         super(PostfixExecutor, self).__init__()
 
         self.commandPostfix = commandPostfix
         self.chain = chain
 
-    def run(self, exe_path, cmd=None, work_dir='.', file_deps=None, env=None):
+    def run(self, exe_path, cmd=None, work_dir=".", file_deps=None, env=None):
         cmd = cmd or [exe_path]
-        return self.chain.run(cmd + self.commandPostfix, work_dir, file_deps,
-                              env=env)
-
+        return self.chain.run(cmd + self.commandPostfix, work_dir, file_deps, env=env)
 
 
 class TimeoutExecutor(PrefixExecutor):
@@ -90,9 +91,9 @@ class TimeoutExecutor(PrefixExecutor):
 
     Deprecated. http://reviews.llvm.org/D6584 adds timeouts to LIT.
     """
+
     def __init__(self, duration, chain):
-        super(TimeoutExecutor, self).__init__(
-            ['timeout', duration], chain)
+        super(TimeoutExecutor, self).__init__(["timeout", duration], chain)
 
 
 class RemoteExecutor(Executor):
@@ -119,17 +120,17 @@ class RemoteExecutor(Executor):
 
     def delete_remote(self, remote):
         try:
-            self._execute_command_remote(['rm', '-rf', remote])
+            self._execute_command_remote(["rm", "-rf", remote])
         except OSError:
             # TODO: Log failure to delete?
             pass
 
-    def run(self, exe_path, cmd=None, work_dir='.', file_deps=None, env=None):
+    def run(self, exe_path, cmd=None, work_dir=".", file_deps=None, env=None):
         target_exe_path = None
         target_cwd = None
         try:
             target_cwd = self.remote_temp_dir()
-            target_exe_path = os.path.join(target_cwd, 'libcxx_test.exe')
+            target_exe_path = os.path.join(target_cwd, "libcxx_test.exe")
             if cmd:
                 # Replace exe_path with target_exe_path.
                 cmd = [c if c != exe_path else target_exe_path for c in cmd]
@@ -139,8 +140,9 @@ class RemoteExecutor(Executor):
             srcs = [exe_path]
             dsts = [target_exe_path]
             if file_deps is not None:
-                dev_paths = [os.path.join(target_cwd, os.path.basename(f))
-                             for f in file_deps]
+                dev_paths = [
+                    os.path.join(target_cwd, os.path.basename(f)) for f in file_deps
+                ]
                 srcs.extend(file_deps)
                 dsts.extend(dev_paths)
             self.copy_in(srcs, dsts)
@@ -152,7 +154,7 @@ class RemoteExecutor(Executor):
             if target_cwd:
                 self.delete_remote(target_cwd)
 
-    def _execute_command_remote(self, cmd, remote_work_dir='.', env=None):
+    def _execute_command_remote(self, cmd, remote_work_dir=".", env=None):
         raise NotImplementedError()
 
 
@@ -160,16 +162,16 @@ class SSHExecutor(RemoteExecutor):
     def __init__(self, host, username=None):
         super(SSHExecutor, self).__init__()
 
-        self.user_prefix = username + '@' if username else ''
+        self.user_prefix = username + "@" if username else ""
         self.host = host
-        self.scp_command = 'scp'
-        self.ssh_command = 'ssh'
+        self.scp_command = "scp"
+        self.ssh_command = "ssh"
 
         # TODO(jroelofs): switch this on some -super-verbose-debug config flag
         if False:
             self.local_run = tracing.trace_function(
-                self.local_run, log_calls=True, log_results=True,
-                label='ssh_local')
+                self.local_run, log_calls=True, log_results=True, label="ssh_local"
+            )
 
     def _remote_temp(self, is_dir):
         # TODO: detect what the target system is, and use the correct
@@ -177,8 +179,8 @@ class SSHExecutor(RemoteExecutor):
         # sure windows has another way to do it)
 
         # Not sure how to do suffix on osx yet
-        dir_arg = '-d' if is_dir else ''
-        cmd = 'mktemp -q {} /tmp/libcxx.XXXXXXXXXX'.format(dir_arg)
+        dir_arg = "-d" if is_dir else ""
+        cmd = "mktemp -q {} /tmp/libcxx.XXXXXXXXXX".format(dir_arg)
         _, temp_path, err, exitCode = self._execute_command_remote([cmd])
         temp_path = temp_path.strip()
         if exitCode != 0:
@@ -189,18 +191,18 @@ class SSHExecutor(RemoteExecutor):
         scp = self.scp_command
         remote = self.host
         remote = self.user_prefix + remote
-        cmd = [scp, '-p', src, remote + ':' + dst]
+        cmd = [scp, "-p", src, remote + ":" + dst]
         self.local_run(cmd)
 
-    def _execute_command_remote(self, cmd, remote_work_dir='.', env=None):
+    def _execute_command_remote(self, cmd, remote_work_dir=".", env=None):
         remote = self.user_prefix + self.host
-        ssh_cmd = [self.ssh_command, '-oBatchMode=yes', remote]
+        ssh_cmd = [self.ssh_command, "-oBatchMode=yes", remote]
         if env:
-            env_cmd = ['env'] + ['%s="%s"' % (k, v) for k, v in env.items()]
+            env_cmd = ["env"] + ['%s="%s"' % (k, v) for k, v in env.items()]
         else:
             env_cmd = []
-        remote_cmd = ' '.join(env_cmd + cmd)
-        if remote_work_dir != '.':
-            remote_cmd = 'cd ' + remote_work_dir + ' && ' + remote_cmd
+        remote_cmd = " ".join(env_cmd + cmd)
+        if remote_work_dir != ".":
+            remote_cmd = "cd " + remote_work_dir + " && " + remote_cmd
         out, err, rc = self.local_run(ssh_cmd + [remote_cmd])
         return (remote_cmd, out, err, rc)

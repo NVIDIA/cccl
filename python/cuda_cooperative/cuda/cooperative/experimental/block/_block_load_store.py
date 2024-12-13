@@ -3,8 +3,21 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 
-from cuda.cooperative.experimental._types import *
-from cuda.cooperative.experimental._common import make_binary_tempfile, normalize_dim_param
+import numba
+
+from cuda.cooperative.experimental._types import (
+    Algorithm,
+    Dependency,
+    DependentArray,
+    DependentPointer,
+    Invocable,
+    Pointer,
+    TemplateParameter,
+)
+from cuda.cooperative.experimental._common import (
+    make_binary_tempfile,
+    normalize_dim_param
+)
 
 CUB_BLOCK_LOAD_ALGOS = {
     "direct": "::cub::BLOCK_LOAD_DIRECT",

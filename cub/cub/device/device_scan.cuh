@@ -1322,7 +1322,7 @@ struct DeviceScan
       detail::InputValue<InitValueT>,
       OffsetT,
       AccumT,
-      DeviceScanPolicy<AccumT, ScanOpT>,
+      detail::scan::policy_hub<AccumT, ScanOpT>,
       ForceInclusive>::Dispatch(d_temp_storage,
                                 temp_storage_bytes,
                                 d_in,

@@ -1,21 +1,27 @@
 import sys
 import os
 import socket
-import stat
 
 # Ensure that this is being run on a specific platform
-assert sys.platform.startswith('linux') or sys.platform.startswith('darwin') \
-    or sys.platform.startswith('cygwin') or sys.platform.startswith('freebsd') \
-    or sys.platform.startswith('netbsd')
+assert (
+    sys.platform.startswith("linux")
+    or sys.platform.startswith("darwin")
+    or sys.platform.startswith("cygwin")
+    or sys.platform.startswith("freebsd")
+    or sys.platform.startswith("netbsd")
+)
+
 
 def env_path():
-    ep = os.environ.get('LIBCXX_FILESYSTEM_DYNAMIC_TEST_ROOT')
+    ep = os.environ.get("LIBCXX_FILESYSTEM_DYNAMIC_TEST_ROOT")
     assert ep is not None
     ep = os.path.realpath(ep)
     assert os.path.isdir(ep)
     return ep
 
+
 env_path_global = env_path()
+
 
 # Make sure we don't try and write outside of env_path.
 # All paths used should be sanitized
@@ -25,11 +31,14 @@ def sanitize(p):
         return p
     assert False
 
+
 """
 Some of the tests restrict permissions to induce failures.
 Before we delete the test environment, we have to walk it and re-raise the
 permissions.
 """
+
+
 def clean_recursive(root_p):
     if not os.path.islink(root_p):
         os.chmod(root_p, 0o777)
@@ -56,8 +65,8 @@ def destroy_test_directory(root_p):
 
 
 def create_file(fname, size):
-    with open(sanitize(fname), 'w') as f:
-        f.write('c' * size)
+    with open(sanitize(fname), "w") as f:
+        f.write("c" * size)
 
 
 def create_dir(dname):
@@ -86,7 +95,7 @@ def create_socket(source):
     sock.bind(os.path.basename(sanitized_source))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     command = " ".join(sys.argv[1:])
     eval(command)
     sys.exit(0)
