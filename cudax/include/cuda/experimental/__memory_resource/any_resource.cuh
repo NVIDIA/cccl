@@ -397,19 +397,20 @@ resource_ref<_Properties...> __as_resource_ref(_Resource& __mr) noexcept
 }
 
 template <class... _Properties>
-resource_ref<_Properties...> __as_resource_ref(resource_ref<_Properties...> __mr) noexcept
+resource_ref<_Properties...> __as_resource_ref(resource_ref<_Properties...> const __mr) noexcept
 {
   return __mr;
 }
 
 template <class... _Properties>
-resource_ref<_Properties...> __as_resource_ref(async_resource_ref<_Properties...> __mr) noexcept
+resource_ref<_Properties...> __as_resource_ref(async_resource_ref<_Properties...> const __mr) noexcept
 {
   return __mr;
 }
 
 template <class... _Properties, mr::_AllocType _Alloc_type>
-mr::resource_ref<_Properties...> __as_resource_ref(mr::basic_resource_ref<_Alloc_type, _Properties...> __mr) noexcept
+mr::resource_ref<_Properties...>
+__as_resource_ref(mr::basic_resource_ref<_Alloc_type, _Properties...> const __mr) noexcept
 {
   return __mr;
 }
