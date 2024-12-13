@@ -8,8 +8,8 @@
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___CSTDLIB_ABS_H
-#define _LIBCUDACXX___CSTDLIB_ABS_H
+#ifndef _LIBCUDACXX___CMATH_ABS_H
+#define _LIBCUDACXX___CMATH_ABS_H
 
 #include <cuda/std/detail/__config>
 
@@ -21,33 +21,35 @@
 #  pragma system_header
 #endif // no system header
 
+#if !_CCCL_COMPILER(NVRTC)
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int abs(int __val) noexcept
+using ::fabs;
+using ::fabsf;
+#  if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+using ::fabsl;
+#  endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float abs(float __val) noexcept
 {
-  return (__val < 0) ? -__val : __val;
+  return _CUDA_VSTD::fabsf(__val);
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr long labs(long __val) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double abs(double __val) noexcept
 {
-  return (__val < 0l) ? -__val : __val;
+  return _CUDA_VSTD::fabs(__val);
 }
 
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr long abs(long __val) noexcept
+#  if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double abs(long double __val) noexcept
 {
-  return _CUDA_VSTD::labs(__val);
+  return _CUDA_VSTD::fabsl(__val);
 }
-
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr long long llabs(long long __val) noexcept
-{
-  return (__val < 0ll) ? -__val : __val;
-}
-
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr long long abs(long long __val) noexcept
-{
-  return _CUDA_VSTD::llabs(__val);
-}
+#  endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
-#endif // _LIBCUDACXX___CSTDLIB_ABS_H
+#endif // !_CCCL_COMPILER(NVRTC)
+
+#endif // _LIBCUDACXX___CMATH_ABS_H

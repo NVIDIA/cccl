@@ -43,6 +43,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test_div(T x_in, T y_in, T x_ref, 
 {
   auto result = div_overload(zero_value + x_in, zero_value + y_in);
   assert(result.quot == x_ref && result.rem == r_ref);
+
+  result = cuda::std::div(zero_value + x_in, zero_value + y_in);
+  assert(result.quot == x_ref && result.rem == r_ref);
 }
 
 template <class T, class Ret>
@@ -62,6 +65,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test_div(T zero_value)
   test_div(T{-20}, T{3}, T{-6}, T{-2}, zero_value);
   test_div(T{-20}, T{-3}, T{6}, T{-2}, zero_value);
 
+  static_assert(noexcept(cuda::std::div(T{}, T{})), "");
   ASSERT_SAME_TYPE(Ret, decltype(cuda::std::div(T{}, T{})));
   ASSERT_SAME_TYPE(Ret, decltype(cuda::std::div(T{}, float{})));
   ASSERT_SAME_TYPE(Ret, decltype(cuda::std::div(float{}, T{})));
@@ -76,8 +80,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test_div(T zero_value)
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool test(int zero_value)
 {
   test_div<I, cuda::std::div_t>(zero_value);
-  test_div<IL, cuda::std::ldiv_t>(static_cast<long>(zero_value));
-  test_div<ILL, cuda::std::lldiv_t>(static_cast<long long>(zero_value));
+  test_div<IL, cuda::std::ldiv_t>(static_cast<IL>(zero_value));
+  test_div<ILL, cuda::std::lldiv_t>(static_cast<ILL>(zero_value));
 
   return true;
 }

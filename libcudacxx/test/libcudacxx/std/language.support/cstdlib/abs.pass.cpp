@@ -42,6 +42,7 @@ template <class T>
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool test_abs(T in, T ref, T zero_value)
 {
   assert(abs_overload(zero_value + in) == ref);
+  assert(cuda::std::abs(zero_value + in) == ref);
   return true;
 }
 
@@ -55,14 +56,18 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test_abs(T zero_value)
   test_abs(T{-257}, T{257}, zero_value);
   test_abs(cuda::std::numeric_limits<T>::max(), cuda::std::numeric_limits<T>::max(), zero_value);
   test_abs(cuda::std::numeric_limits<T>::min() + T{1}, cuda::std::numeric_limits<T>::max(), zero_value);
+
+  static_assert(noexcept(cuda::std::abs(T{})), "");
+  ASSERT_SAME_TYPE(T, decltype(cuda::std::abs(T{})));
+
   return true;
 }
 
 __host__ __device__ TEST_CONSTEXPR_CXX14 bool test(int zero_value)
 {
   test_abs(zero_value);
-  test_abs(static_cast<long>(zero_value));
-  test_abs(static_cast<long long>(zero_value));
+  test_abs(static_cast<IL>(zero_value));
+  test_abs(static_cast<ILL>(zero_value));
   return true;
 }
 
