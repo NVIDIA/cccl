@@ -67,7 +67,7 @@ struct unzip_and_write_arg_extremum_op
   IndexOutIteratorT index_out_it;
 
   template <typename IndexT, typename KeyValuePairT>
-  __device__ void operator()(IndexT, KeyValuePairT reduced_result)
+  _CCCL_DEVICE constexpr void operator()(IndexT, KeyValuePairT reduced_result)
   {
     *result_out_it = reduced_result.value;
     *index_out_it  = reduced_result.key;
