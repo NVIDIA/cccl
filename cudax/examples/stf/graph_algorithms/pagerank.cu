@@ -71,7 +71,7 @@ int main()
   auto lnonzeros      = ctx.logical_data(&nonzeros[0], nonzeros.size());
   auto lpage_rank     = ctx.logical_data(&page_rank[0], page_rank.size());
   auto lnew_page_rank = ctx.logical_data(&new_page_rank[0], new_page_rank.size());
-  auto lmax_diff      = ctx.logical_data(shape_of<scalar<float>>());
+  auto lmax_diff      = ctx.logical_data(shape_of<scalar_view<float>>());
 
   for (int iter = 0; iter < NITER; ++iter)
   {

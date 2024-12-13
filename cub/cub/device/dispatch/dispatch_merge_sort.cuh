@@ -38,6 +38,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_merge_sort.cuh>
+#include <cub/device/dispatch/tuning/tuning_merge_sort.cuh>
 #include <cub/util_deprecated.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
@@ -327,61 +328,13 @@ __launch_bounds__(
  * Policy
  ******************************************************************************/
 
-template <typename KeyIteratorT>
-struct DeviceMergeSortPolicy
-{
-  using KeyT = cub::detail::value_t<KeyIteratorT>;
-
-  //----------------------------------------------------------------------------
-  // Architecture-specific tuning policies
-  //----------------------------------------------------------------------------
-
-  struct Policy350 : ChainedPolicy<350, Policy350, Policy350>
-  {
-    using MergeSortPolicy =
-      AgentMergeSortPolicy<256,
-                           Nominal4BItemsToItems<KeyT>(11),
-                           cub::BLOCK_LOAD_WARP_TRANSPOSE,
-                           cub::LOAD_LDG,
-                           cub::BLOCK_STORE_WARP_TRANSPOSE>;
-  };
-
-// NVBug 3384810
-#if defined(_NVHPC_CUDA)
-  using Policy520 = Policy350;
-#else
-  struct Policy520 : ChainedPolicy<520, Policy520, Policy350>
-  {
-    using MergeSortPolicy =
-      AgentMergeSortPolicy<512,
-                           Nominal4BItemsToItems<KeyT>(15),
-                           cub::BLOCK_LOAD_WARP_TRANSPOSE,
-                           cub::LOAD_LDG,
-                           cub::BLOCK_STORE_WARP_TRANSPOSE>;
-  };
-#endif
-
-  struct Policy600 : ChainedPolicy<600, Policy600, Policy520>
-  {
-    using MergeSortPolicy =
-      AgentMergeSortPolicy<256,
-                           Nominal4BItemsToItems<KeyT>(17),
-                           cub::BLOCK_LOAD_WARP_TRANSPOSE,
-                           cub::LOAD_DEFAULT,
-                           cub::BLOCK_STORE_WARP_TRANSPOSE>;
-  };
-
-  /// MaxPolicy
-  using MaxPolicy = Policy600;
-};
-
 template <typename KeyInputIteratorT,
           typename ValueInputIteratorT,
           typename KeyIteratorT,
           typename ValueIteratorT,
           typename OffsetT,
           typename CompareOpT,
-          typename SelectedPolicy = DeviceMergeSortPolicy<KeyIteratorT>>
+          typename SelectedPolicy = detail::merge_sort::policy_hub<KeyIteratorT>>
 struct DispatchMergeSort : SelectedPolicy
 {
   using KeyT   = cub::detail::value_t<KeyIteratorT>;

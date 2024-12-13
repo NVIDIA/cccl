@@ -19,13 +19,11 @@ def CacheModifiedInputIterator(device_array, modifier):
 
 def ConstantIterator(value):
     """Python facade (similar to itertools.repeat) for C++ Random Access ConstantIterator."""
-    value_type = value.dtype
     return _iterators.ConstantIterator(value)
 
 
 def CountingIterator(offset):
     """Python facade (similar to itertools.count) for C++ Random Access CountingIterator."""
-    value_type = offset.dtype
     return _iterators.CountingIterator(offset)
 
 

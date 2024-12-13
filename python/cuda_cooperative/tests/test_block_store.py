@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 from pynvjitlink import patch
-import numpy as np
 import cuda.cooperative.experimental as cudax
 from helpers import random_int, NUMBA_TYPES_TO_NP
 import pytest
@@ -45,7 +44,6 @@ def test_block_store(T, threads_in_block, items_per_thread, algorithm):
 
     @cuda.jit(link=block_store.files)
     def kernel(d_input, d_output):
-        tid = cuda.threadIdx.x
         temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype="uint8")
         thread_data = cuda.local.array(shape=items_per_thread, dtype=dtype)
         for i in range(items_per_thread):
