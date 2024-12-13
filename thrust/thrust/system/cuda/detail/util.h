@@ -174,7 +174,7 @@ trivial_copy_device_to_device(Policy& policy, Type* dst, Type const* src, size_t
   cudaStream_t stream = cuda_cub::stream(policy);
   //
   status = ::cudaMemcpyAsync(dst, src, sizeof(Type) * count, cudaMemcpyDeviceToDevice, stream);
-  cuda_cub::synchronize(policy);
+  cuda_cub::synchronize_optional(policy);
   return status;
 }
 

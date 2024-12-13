@@ -190,7 +190,7 @@ void jacobistepvort(
 
 double deltasq(context& ctx, logical_data<slice<double, 2>> lnewarr, logical_data<slice<double, 2>> loldarr)
 {
-  auto ldsq = ctx.logical_data(shape_of<scalar<double>>()).set_symbol("tmp_accumulator");
+  auto ldsq = ctx.logical_data(shape_of<scalar_view<double>>()).set_symbol("tmp_accumulator");
 
   ctx.parallel_for(lnewarr.shape(), ldsq.reduce(reducer::sum<double>{}), lnewarr.read(), loldarr.read())
       .set_symbol("deltasq")
@@ -354,7 +354,7 @@ int main(int argc, char** argv)
   boundarypsi(ctx, lpsi, m, n, b, h, w);
 
   // compute normalisation factor for error
-  auto lbnorm = ctx.logical_data(shape_of<scalar<double>>()).set_symbol("bnorm");
+  auto lbnorm = ctx.logical_data(shape_of<scalar_view<double>>()).set_symbol("bnorm");
 
   nvtxRangePush("Compute_Normalization");
 

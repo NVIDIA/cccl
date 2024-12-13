@@ -233,7 +233,7 @@ template <
     cub::detail::value_t<ValuesInputIteratorT>,
     ::cuda::std::_If<std::is_same<InitValueT, NullType>::value, cub::detail::value_t<ValuesInputIteratorT>, InitValueT>>,
   typename SelectedPolicy =
-    DeviceScanByKeyPolicy<KeysInputIteratorT, AccumT, cub::detail::value_t<ValuesInputIteratorT>, ScanOpT>>
+    detail::scan_by_key::policy_hub<KeysInputIteratorT, AccumT, cub::detail::value_t<ValuesInputIteratorT>, ScanOpT>>
 struct DispatchScanByKey : SelectedPolicy
 {
   //---------------------------------------------------------------------

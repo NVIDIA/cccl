@@ -7,6 +7,8 @@ thrust/ @nvidia/cccl-thrust-codeowners @nvidia/cccl-codeowners
 cub/ @nvidia/cccl-cub-codeowners @nvidia/cccl-codeowners
 libcudacxx/ @nvidia/cccl-libcudacxx-codeowners @nvidia/cccl-codeowners
 cudax/ @nvidia/cccl-cudax-codeowners
+c/ @nvidia/cccl-c-codeowners
+python/ @nvidia/cccl-python-codeowners
 
 # Infrastructure
 .github/ @nvidia/cccl-infra-codeowners @nvidia/cccl-codeowners
