@@ -863,6 +863,8 @@ struct DispatchRadixSort
   // Whether this is a keys-only (or key-value) sort
   static constexpr bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
 
+  using max_policy_t = typename PolicyHub::MaxPolicy;
+
   //------------------------------------------------------------------------------
   // Problem state
   //------------------------------------------------------------------------------
@@ -1321,8 +1323,7 @@ struct DispatchRadixSort
 
       constexpr int HISTO_BLOCK_THREADS = ActivePolicyT::HistogramPolicy::BLOCK_THREADS;
       int histo_blocks_per_sm           = 1;
-      auto histogram_kernel =
-        DeviceRadixSortHistogramKernel<typename PolicyHub::MaxPolicy, IS_DESCENDING, KeyT, OffsetT, DecomposerT>;
+      auto histogram_kernel = DeviceRadixSortHistogramKernel<max_policy_t, IS_DESCENDING, KeyT, OffsetT, DecomposerT>;
 
       error = CubDebug(
         cudaOccupancyMaxActiveBlocksPerMultiprocessor(&histo_blocks_per_sm, histogram_kernel, HISTO_BLOCK_THREADS, 0));
@@ -1371,7 +1372,7 @@ struct DispatchRadixSort
 #endif
 
       error = THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(num_passes, SCAN_BLOCK_THREADS, 0, stream)
-                .doit(DeviceRadixSortExclusiveSumKernel<typename PolicyHub::MaxPolicy, OffsetT>, d_bins);
+                .doit(DeviceRadixSortExclusiveSumKernel<max_policy_t, OffsetT>, d_bins);
       error = CubDebug(error);
       if (cudaSuccess != error)
       {
@@ -1424,7 +1425,7 @@ struct DispatchRadixSort
 #endif
 
           auto onesweep_kernel = DeviceRadixSortOnesweepKernel<
-            typename PolicyHub::MaxPolicy,
+            max_policy_t,
             IS_DESCENDING,
             KeyT,
             ValueT,
@@ -1673,13 +1674,12 @@ struct DispatchRadixSort
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t InvokeManyTiles(Int2Type<false>)
   {
     // Invoke upsweep-downsweep
-    using MaxPolicyT = typename PolicyHub::MaxPolicy;
     return InvokePasses<ActivePolicyT>(
-      DeviceRadixSortUpsweepKernel<MaxPolicyT, false, IS_DESCENDING, KeyT, OffsetT, DecomposerT>,
-      DeviceRadixSortUpsweepKernel<MaxPolicyT, true, IS_DESCENDING, KeyT, OffsetT, DecomposerT>,
-      RadixSortScanBinsKernel<MaxPolicyT, OffsetT>,
-      DeviceRadixSortDownsweepKernel<MaxPolicyT, false, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>,
-      DeviceRadixSortDownsweepKernel<MaxPolicyT, true, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>);
+      DeviceRadixSortUpsweepKernel<max_policy_t, false, IS_DESCENDING, KeyT, OffsetT, DecomposerT>,
+      DeviceRadixSortUpsweepKernel<max_policy_t, true, IS_DESCENDING, KeyT, OffsetT, DecomposerT>,
+      RadixSortScanBinsKernel<max_policy_t, OffsetT>,
+      DeviceRadixSortDownsweepKernel<max_policy_t, false, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>,
+      DeviceRadixSortDownsweepKernel<max_policy_t, true, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>);
   }
 
   template <typename ActivePolicyT>
@@ -1779,7 +1779,7 @@ struct DispatchRadixSort
     {
       // Small, single tile size
       return InvokeSingleTile<ActivePolicyT>(
-        DeviceRadixSortSingleTileKernel<typename PolicyHub::MaxPolicy, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>);
+        DeviceRadixSortSingleTileKernel<max_policy_t, IS_DESCENDING, KeyT, ValueT, OffsetT, DecomposerT>);
     }
     else
     {
@@ -1864,7 +1864,7 @@ struct DispatchRadixSort
         decomposer);
 
       // Dispatch to chained policy
-      error = CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
+      error = CubDebug(max_policy_t::Invoke(ptx_version, dispatch));
       if (cudaSuccess != error)
       {
         break;
@@ -1936,6 +1936,8 @@ struct DispatchSegmentedRadixSort
 
   // Whether this is a keys-only (or key-value) sort
   static constexpr bool KEYS_ONLY = std::is_same<ValueT, NullType>::value;
+
+  using max_policy_t = typename PolicyHub::MaxPolicy;
 
   //------------------------------------------------------------------------------
   // Parameter members
@@ -2302,7 +2304,7 @@ struct DispatchSegmentedRadixSort
     // Force kernel code-generation in all compiler passes
     return InvokePasses<ActivePolicyT>(
       DeviceSegmentedRadixSortKernel<
-        typename PolicyHub::MaxPolicy,
+        max_policy_t,
         false,
         IS_DESCENDING,
         KeyT,
@@ -2312,7 +2314,7 @@ struct DispatchSegmentedRadixSort
         OffsetT,
         DecomposerT>,
       DeviceSegmentedRadixSortKernel<
-        typename PolicyHub::MaxPolicy,
+        max_policy_t,
         true,
         IS_DESCENDING,
         KeyT,
@@ -2418,7 +2420,7 @@ struct DispatchSegmentedRadixSort
         ptx_version);
 
       // Dispatch to chained policy
-      error = CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
+      error = CubDebug(max_policy_t::Invoke(ptx_version, dispatch));
       if (cudaSuccess != error)
       {
         break;
