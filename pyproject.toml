@@ -1,2 +1,14 @@
+# Copyright (c) 2024, NVIDIA CORPORATION.
+
 [tool.ruff]
 target-version = "py310"
+
+[tool.codespell]
+# note: pre-commit passes explicit lists of files here, which this skip file list doesn't override -
+# this is only to allow you to run codespell interactively
+skip = "./pyproject.toml,./.git,./.github,./build,.*egg-info.*,./CITATION.md"
+# ignore short words, and typename parameters like OffsetT
+ignore-regex = "\\b(.{1,4}|[A-Z]\\w*T)\\b"
+ignore-words-list = "inout,thirdparty,imovable,optionN,aCount,quitted,Invokable,countr,unexpect,numer,euclidian"
+builtin = "clear"
+quiet-level = 3
