@@ -700,8 +700,8 @@ template <bool IS_DESCENDING,
           typename OffsetT,
           typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
-          typename SelectedPolicy = detail::segmented_sort::policy_hub<KeyT, ValueT>>
-struct DispatchSegmentedSort : SelectedPolicy
+          typename PolicyHub = detail::segmented_sort::policy_hub<KeyT, ValueT>>
+struct DispatchSegmentedSort
 {
   static constexpr int KEYS_ONLY = std::is_same<ValueT, NullType>::value;
 
@@ -853,7 +853,6 @@ struct DispatchSegmentedSort : SelectedPolicy
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
-    using MaxPolicyT            = typename DispatchSegmentedSort::MaxPolicy;
     using LargeSegmentPolicyT   = typename ActivePolicyT::LargeSegmentPolicy;
     using SmallAndMediumPolicyT = typename ActivePolicyT::SmallAndMediumSegmentedSortPolicyT;
 
@@ -1026,6 +1025,8 @@ struct DispatchSegmentedSort : SelectedPolicy
         : (is_num_passes_odd) ? values_allocation.get()
                               : d_values.Alternate());
 
+      using MaxPolicyT = typename PolicyHub::MaxPolicy;
+
       if (partition_segments)
       {
         // Partition input segments into size groups and assign specialized
@@ -1092,8 +1093,6 @@ struct DispatchSegmentedSort : SelectedPolicy
     bool is_overwrite_okay,
     cudaStream_t stream)
   {
-    using MaxPolicyT = typename DispatchSegmentedSort::MaxPolicy;
-
     cudaError error = cudaSuccess;
 
     do
@@ -1120,7 +1119,7 @@ struct DispatchSegmentedSort : SelectedPolicy
         stream);
 
       // Dispatch to chained policy
-      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+      error = CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
       if (cudaSuccess != error)
       {
         break;
@@ -1234,12 +1233,11 @@ private:
 #else // CUB_RDC_ENABLED
 
 #  define CUB_TEMP_DEVICE_CODE                                                 \
-    using MaxPolicyT = typename DispatchSegmentedSort::MaxPolicy;              \
     error =                                                                    \
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(1, 1, 0, stream) \
         .doit(                                                                 \
           DeviceSegmentedSortContinuationKernel<                               \
-            MaxPolicyT,                                                        \
+            typename PolicyHub::MaxPolicy,                                     \
             LargeKernelT,                                                      \
             SmallKernelT,                                                      \
             KeyT,                                                              \

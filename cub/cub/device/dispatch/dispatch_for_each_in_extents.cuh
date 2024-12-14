@@ -80,11 +80,11 @@ namespace for_each_in_extents
 
 // The dispatch layer is in the detail namespace until we figure out the tuning API
 template <typename ExtentsType, typename OpType, typename PolicyHubT = cub::detail::for_each::policy_hub_t>
-class dispatch_t : PolicyHubT
+class dispatch_t
 {
   using index_type          = typename ExtentsType::index_type;
   using unsigned_index_type = ::cuda::std::make_unsigned_t<index_type>;
-  using max_policy_t        = typename dispatch_t::MaxPolicy;
+  using max_policy_t        = typename PolicyHubT::MaxPolicy;
   //  workaround for nvcc 11.1 bug related to deduction guides, vvv
   using array_type = ::cuda::std::array<fast_div_mod<index_type>, ExtentsType::rank()>;
 
@@ -190,8 +190,7 @@ public:
   _CCCL_NODISCARD CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t
   dispatch(const ExtentsType& ext, const OpType& op, cudaStream_t stream)
   {
-    using max_policy_t = typename dispatch_t::MaxPolicy;
-    int ptx_version    = 0;
+    int ptx_version = 0;
     _CUB_RETURN_IF_ERROR(CubDebug(PtxVersion(ptx_version)))
     dispatch_t dispatch(ext, op, stream);
     return CubDebug(max_policy_t::Invoke(ptx_version, dispatch));
