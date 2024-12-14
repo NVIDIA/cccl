@@ -584,7 +584,7 @@ protected:
 
     /**
      * @brief Detach all allocators previously attached in this context to
-     * release ressources that might have been cached
+     * release resources that might have been cached
      */
     void detach_allocators(backend_ctx_untyped& bctx)
     {

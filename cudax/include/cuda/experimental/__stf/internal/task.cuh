@@ -445,7 +445,7 @@ void dep_allocate(
 
       if (s >= 0)
       {
-        // This allocation was succesful
+        // This allocation was successful
         inst.allocated_size = s;
         inst.set_allocated(true);
         inst.reclaimable = true;

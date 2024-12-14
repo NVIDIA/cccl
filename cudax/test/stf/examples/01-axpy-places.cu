@@ -70,7 +70,7 @@ void run()
   auto all_devs = exec_place::repeat(exec_place::device(0), 4);
 
   // 512k doubles = 4MB (2 pages)
-  // A 1D blocking strategy over all devices with a block size of 32 and a round robin distribution of blocks accross
+  // A 1D blocking strategy over all devices with a block size of 32 and a round robin distribution of blocks across
   // devices
   //    data_place cdp = data_place(exec_place::all_devices().as_grid().get_grid(),
   //            [](dim4 grid_dim, pos4 index_pos) { return pos4((index_pos.x / (512 * 1024ULL)) % grid_dim.x); });

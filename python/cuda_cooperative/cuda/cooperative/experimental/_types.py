@@ -73,7 +73,7 @@ class TypeWrapper:
         {
             {% if construct %}
             __device__ storage_t() {
-                {{ construt }}(data);
+                {{ construct }}(data);
             }
             {% endif %}
 

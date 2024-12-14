@@ -167,7 +167,7 @@ void launch(
  * #include <cstdio>
  * #include <cuda/experimental/launch.cuh>
  *
- * template <typename Congifuration>
+ * template <typename Configuration>
  * __global__ void kernel(Configuration conf, unsigned int thread_to_print) {
  *     if (conf.dims.rank(cudax::thread, cudax::grid) == thread_to_print) {
  *         printf("Hello from the GPU\n");
@@ -226,7 +226,7 @@ void launch(::cuda::stream_ref stream,
  * #include <cstdio>
  * #include <cuda/experimental/launch.cuh>
  *
- * template <typename Congifuration>
+ * template <typename Configuration>
  * __global__ void kernel(Configuration conf, unsigned int thread_to_print) {
  *     if (conf.dims.rank(cudax::thread, cudax::grid) == thread_to_print) {
  *         printf("Hello from the GPU\n");

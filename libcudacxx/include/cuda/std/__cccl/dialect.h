@@ -130,7 +130,7 @@
 #endif // _CCCL_STD_VER <= 2011 || __cpp_variable_templates < 201304L
 
 ///////////////////////////////////////////////////////////////////////////////
-// Conditionally use certain language features depending on availablility
+// Conditionally use certain language features depending on availability
 ///////////////////////////////////////////////////////////////////////////////
 #if defined(_CCCL_NO_IF_CONSTEXPR)
 #  define _CCCL_IF_CONSTEXPR if

@@ -201,7 +201,7 @@ struct iequality_comparable_base : interface<iequality_comparable>
   //
   // A: If there is a user-defined conversion from the basic_any type to _Object
   // such that we can use _Object's symmetric equality comparison operator, that
-  // should be prefered. _Object may be another kind of wrapper object, in which
+  // should be preferred. _Object may be another kind of wrapper object, in which
   // case using the address of the **wrapper** object for the comparison (as
   // opposed to the address of the wrapped object) is probably wrong.
   _CCCL_TEMPLATE(class _Interface, class _Object, class _Self = basic_any_from_t<iequality_comparable<_Interface>>)

@@ -317,7 +317,7 @@ earlier calls to complete:
    // Do other work while kernels execute:
    do_something();
 
-   // Must explictly synchronize before accessing `for_each` results:
+   // Must explicitly synchronize before accessing `for_each` results:
    cudaDeviceSynchronize();
 
 Thanks to @fkallen for this contribution.
@@ -896,7 +896,7 @@ Bug Fixes
    asynchronous algorithms.
 -  NVIDIA/thrust#1190: Make ``out_of_memory_recovery`` test trigger
    faster.
--  NVIDIA/thrust#1187: Elminate superfluous iterators specific to the
+-  NVIDIA/thrust#1187: Eliminate superfluous iterators specific to the
    CUDA backend.
 -  NVIDIA/thrust#1181: Various fixes for GoUDA. Thanks to Andrei
    Tchouprakov for this contribution.

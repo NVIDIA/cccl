@@ -255,7 +255,7 @@ struct TestComplexPowerTransform
 
     thrust::transform(h_p1.begin(), h_p1.end(), h_p2.begin(), h_result.begin(), pow_functor());
     thrust::transform(d_p1.begin(), d_p1.end(), d_p2.begin(), d_result.begin(), pow_functor());
-    // pow can be very innacurate there's no point trying to check for equality
+    // pow can be very inaccurate there's no point trying to check for equality
     // Currently just checking for compilation
     //    ASSERT_ALMOST_EQUAL(h_result, d_result);
 

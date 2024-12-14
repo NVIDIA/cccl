@@ -15,7 +15,7 @@
  */
 
 /*! \file
- *  \brief An extensible type trait for determining if an iterator satisifies the
+ *  \brief An extensible type trait for determining if an iterator satisfies the
  *  <a href="https://en.cppreference.com/w/cpp/named_req/ContiguousIterator">ContiguousIterator</a>
  *  requirements (aka is pointer-like).
  */

@@ -241,7 +241,7 @@ private:
 
   /**
    * @brief This class implements a matrix to keep track of the previous
-   * synchronization that occured between each pair of streams in our pools.
+   * synchronization that occurred between each pair of streams in our pools.
    *
    * We record the largest event ID used to synchronized between two streams
    * because synchronizing these two streams with an older event (with a lower

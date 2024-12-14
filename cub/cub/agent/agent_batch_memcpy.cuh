@@ -595,7 +595,7 @@ private:
     // Size is only valid (and relevant) for buffers that are use thread-level collaboration
     TLevBufferSizeT size;
 
-    // The buffer id relativ to this tile (i.e., the buffer id within this tile)
+    // The buffer id relative to this tile (i.e., the buffer id within this tile)
     BlockBufferOffsetT buffer_id;
   };
 

@@ -162,7 +162,7 @@ public:
   /*! This constructor, which optionally accepts a seed, initializes a new
    *  \p linear_congruential_engine.
    *
-   *  \param s The seed used to intialize this \p linear_congruential_engine's state.
+   *  \param s The seed used to initialize this \p linear_congruential_engine's state.
    */
   _CCCL_HOST_DEVICE explicit linear_congruential_engine(result_type s = default_seed);
 

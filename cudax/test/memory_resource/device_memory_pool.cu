@@ -314,7 +314,7 @@ TEST_CASE("device_memory_pool accessors", "[memory_resource]")
       // Set it to zero as everything else is illegal
       pool.set_attribute(::cudaMemPoolAttrReservedMemHigh, 0);
 
-      // Retrieve again and verify it was changed, which it wasnt...
+      // Retrieve again and verify it was changed, which it wasn't...
       size_t new_attr = pool.get_attribute(::cudaMemPoolAttrReservedMemHigh);
       CHECK(new_attr == attr);
 
@@ -343,7 +343,7 @@ TEST_CASE("device_memory_pool accessors", "[memory_resource]")
       // Set it to zero as everything else is illegal
       pool.set_attribute(::cudaMemPoolAttrUsedMemHigh, 0);
 
-      // Retrieve again and verify it was changed, which it wasnt...
+      // Retrieve again and verify it was changed, which it wasn't...
       size_t new_attr = pool.get_attribute(::cudaMemPoolAttrUsedMemHigh);
       CHECK(new_attr == attr);
 

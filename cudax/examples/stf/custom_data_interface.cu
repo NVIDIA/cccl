@@ -184,7 +184,7 @@ public:
       cuda_safe_call(cudaMallocAsync(&base_ptr, sz, stream));
     }
 
-    // By filling a positive number, we notify that the allocation was succesful
+    // By filling a positive number, we notify that the allocation was successful
     s = sz;
 
     instance.base = base_ptr;
@@ -214,7 +214,7 @@ public:
   /// Register the host memory associated to an instance of matrix
   ///
   /// Note that this pin_host_memory method is not mandatory, but then it is
-  /// the responsability of the user to only passed memory that is already
+  /// the responsibility of the user to only passed memory that is already
   /// registered, and the allocation method on the host must allocate
   /// registered memory too. Otherwise, copy methods need to be synchronous.
   bool pin_host_memory(instance_id_t instance_id) override

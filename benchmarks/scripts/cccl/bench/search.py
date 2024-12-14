@@ -112,7 +112,7 @@ def run_benches(algnames, sub_space, seeker, args):
             seeker(algname, ct_space, rt_values)
         except Exception as e:
             print(
-                "#### ERROR exception occured while running {}: '{}'".format(algname, e)
+                "#### ERROR exception occurred while running {}: '{}'".format(algname, e)
             )
 
 

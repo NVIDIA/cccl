@@ -121,7 +121,7 @@ public:
   /*! This constructor, which optionally accepts a seed, initializes a new
    *  \p linear_feedback_shift_engine.
    *
-   *  \param value The seed used to intialize this \p linear_feedback_shift_engine's state.
+   *  \param value The seed used to initialize this \p linear_feedback_shift_engine's state.
    */
   _CCCL_HOST_DEVICE explicit linear_feedback_shift_engine(result_type value = default_seed);
 

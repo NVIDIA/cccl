@@ -221,7 +221,7 @@ _CCCL_NODISCARD _CUDAX_API constexpr auto get_levels_range_start(const LTopDims&
   }
 }
 
-// Creates a new hierachy from Levels... cutting out levels between LTop and LUnit
+// Creates a new hierarchy from Levels... cutting out levels between LTop and LUnit
 template <typename LTop, typename LUnit, typename... Levels>
 _CCCL_NODISCARD _CUDAX_API constexpr auto get_levels_range(const Levels&... levels) noexcept
 {
@@ -464,7 +464,7 @@ public:
    * It returns a hierarchy_dimensions_fragment that includes levels starting with the
    * level specified in Level and ending with a level before Unit. Toegether with
    * hierarchy_add_level function it can be used to create a new hierarchy that is a modification
-   * of an exsiting hierarchy.
+   * of an existing hierarchy.
    * @par Snippet
    * @code
    * #include <cudax/hierarchy_dimensions.cuh>
