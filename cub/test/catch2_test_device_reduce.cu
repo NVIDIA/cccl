@@ -46,12 +46,19 @@ DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::Max, device_max);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 
+#if defined(__CUDACC_VER_MAJOR__) && defined(__CUDACC_VER_MINOR__) && ((__CUDACC_VER_MAJOR__ > 11) || ((__CUDACC_VER_MAJOR__ == 11) && (__CUDACC_VER_MINOR__ >= 5)))
+#define HAS_NV_PREFIX
+#endif
 // Suppress deprecation warning for the deprecated ArgMin and ArgMax interfaces
-_CCCL_SUPPRESS_DEPRECATED_PUSH
+#if defined(HAS_NV_PREFIX)
 _CCCL_NV_DIAG_SUPPRESS(1444)
+#else
+#pragma diag_suppress 1444
+#endif
+
+_CCCL_SUPPRESS_DEPRECATED_PUSH
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min_old);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max_old);
-_CCCL_NV_DIAG_DEFAULT(1444)
 _CCCL_SUPPRESS_DEPRECATED_POP
 
 // %PARAM% TEST_LAUNCH lid 0:1:2
@@ -290,3 +297,9 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
   }
 #endif
 }
+
+#if HAS_NV_PREFIX
+_CCCL_NV_DIAG_DEFAULT(1444)
+// #else
+// #pragma diag_default 1444
+#endif
