@@ -39,6 +39,7 @@
 
 #include <algorithm>
 
+#include "catch2_large_problem_helper.cuh"
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include <c2h/catch2_test_helper.h>
@@ -294,15 +295,12 @@ try
   {
     auto in = thrust::make_counting_iterator(offset_t{0});
 
-    // Prepare tabulate output iterator to verify results in a memory-efficient way:
-    // We use a tabulate iterator that checks whenever the algorithm writes an output whether that item
-    // corresponds to the expected value at that index and, if correct, sets a boolean flag at that index.
-    static constexpr auto bits_per_element = 8 * sizeof(std::uint32_t);
-    c2h::device_vector<std::uint32_t> correctness_flags(::cuda::ceil_div(num_items, bits_per_element));
+    // Prepare expected data
     auto expected_result_it = in;
-    auto check_result_op =
-      make_checking_write_op(expected_result_it, thrust::raw_pointer_cast(correctness_flags.data()));
-    auto check_result_it = thrust::make_tabulate_output_iterator(check_result_op);
+
+    // Prepare helper to check results
+    auto check_result_helper = detail::large_problem_test_helper(num_items);
+    auto check_result_it     = check_result_helper.get_flagging_output_iterator(expected_result_it);
 
     // Needs to be device accessible
     c2h::device_vector<offset_t> num_selected_out(1, 0);
@@ -313,8 +311,7 @@ try
 
     // Ensure that we created the correct output
     REQUIRE(num_selected_out[0] == num_items);
-    bool all_results_correct = are_all_flags_set(correctness_flags, num_items);
-    REQUIRE(all_results_correct == true);
+    check_result_helper.check_all_results_correct();
   }
 
   // All the same -> single unique
@@ -323,15 +320,12 @@ try
     auto in = thrust::make_constant_iterator(offset_t{0});
     constexpr offset_t expected_num_unique{1};
 
-    // Prepare tabulate output iterator to verify results in a memory-efficient way:
-    // We use a tabulate iterator that checks whenever the algorithm writes an output whether that item
-    // corresponds to the expected value at that index and, if correct, sets a boolean flag at that index.
-    static constexpr auto bits_per_element = 8 * sizeof(std::uint32_t);
-    c2h::device_vector<std::uint32_t> correctness_flags(::cuda::ceil_div(expected_num_unique, bits_per_element));
+    // Prepare expected data
     auto expected_result_it = in;
-    auto check_result_op =
-      make_checking_write_op(expected_result_it, thrust::raw_pointer_cast(correctness_flags.data()));
-    auto check_result_it = thrust::make_tabulate_output_iterator(check_result_op);
+
+    // Prepare helper to check results
+    auto check_result_helper = detail::large_problem_test_helper(expected_num_unique);
+    auto check_result_it     = check_result_helper.get_flagging_output_iterator(expected_result_it);
 
     // Needs to be device accessible
     c2h::device_vector<offset_t> num_selected_out(1, 0);
@@ -342,8 +336,7 @@ try
 
     // Ensure that we created the correct output
     REQUIRE(num_selected_out[0] == expected_num_unique);
-    bool all_results_correct = are_all_flags_set(correctness_flags, expected_num_unique);
-    REQUIRE(all_results_correct == true);
+    check_result_helper.check_all_results_correct();
   }
 }
 catch (std::bad_alloc&)
