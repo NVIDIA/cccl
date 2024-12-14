@@ -298,7 +298,7 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
 #endif
 }
 
-#if HAS_NV_PREFIX
+#if defined(HAS_NV_PREFIX)
 _CCCL_NV_DIAG_DEFAULT(1444)
 // #else
 // #pragma diag_default 1444
