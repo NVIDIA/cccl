@@ -1,4 +1,4 @@
-name: "CCCL Workflow Sentinal"
+name: "CCCL Workflow Sentinel"
 description: "Check the results of the dispatched jobs and comment on the PR."
 
 inputs:

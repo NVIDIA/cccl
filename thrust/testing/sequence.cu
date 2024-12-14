@@ -110,7 +110,7 @@ void TestSequenceComplex()
 }
 DECLARE_UNITTEST(TestSequenceComplex);
 
-// A class that doesnt accept conversion from size_t but can be multiplied by a scalar
+// A class that does not accept conversion from size_t but can be multiplied by a scalar
 struct Vector
 {
   Vector() = default;

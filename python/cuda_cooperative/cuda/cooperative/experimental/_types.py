@@ -576,7 +576,7 @@ class Algorithm:
         )
 
     def get_temp_storage_bytes(self):
-        # TODO Should be in value types, not bytes for alignment perposes?
+        # TODO Should be in value types, not bytes for alignment purposes?
         environment = jinja2.Environment()
         template = environment.from_string("""
             #include <cuda/std/cstdint>

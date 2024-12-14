@@ -207,7 +207,7 @@ get_levels_range_end(const LDims& l, [[maybe_unused]] const Levels&... levels) n
   }
 }
 
-// Find the LTop in Levels... and discard the preceeding ones
+// Find the LTop in Levels... and discard the preceding ones
 template <typename LTop, typename LUnit, typename LTopDims, typename... Levels>
 _CCCL_NODISCARD _CUDAX_API constexpr auto get_levels_range_start(const LTopDims& ltop, const Levels&... levels) noexcept
 {
@@ -845,7 +845,7 @@ constexpr auto _CCCL_HOST get_launch_dimensions(const hierarchy_dimensions<Level
 
 /* TODO consider having LUnit optional argument for template argument deduction
  This could have been a single function with make_hierarchy and first template
- argument defauled, but then the above TODO would be impossible and the current
+ argument defaulted, but then the above TODO would be impossible and the current
  name makes more sense */
 template <typename LUnit = void, typename L1, typename... Levels>
 constexpr auto make_hierarchy_fragment(L1 l1, Levels... ls) noexcept

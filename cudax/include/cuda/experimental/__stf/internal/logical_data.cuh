@@ -109,7 +109,7 @@ namespace reserved
  * enforcing the STF coherency model.
  *
  * Implementing the STF model for example requires to introduce implicit
- * dependencies between a task making a write access, and all preceeding read
+ * dependencies between a task making a write access, and all preceding read
  * accesses. The list of previous readsers, the previous writer etc... are kept on
  * a per context basis.
  */
@@ -1790,7 +1790,7 @@ inline void reserved::logical_data_untyped_impl::erase()
     {
       // Make sure copies or reduction initiated by the erase are finished
       auto inst_prereqs = wb_prereqs;
-      // Wait for preceeding tasks
+      // Wait for preceding tasks
       inst_prereqs.merge(get_pending_done_prereqs(inst_i.get_dplace()));
 
       inst_prereqs.merge(inst_i.get_read_prereq(), inst_i.get_write_prereq());

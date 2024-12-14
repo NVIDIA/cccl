@@ -101,7 +101,7 @@ launch_impl(::cuda::stream_ref stream, Config conf, const Kernel& kernel_fn, con
  *
  * void launch_kernel(cuda::stream_ref stream) {
  *     auto dims    = cudax::make_hierarchy(cudax::block_dims<128>(), cudax::grid_dims(4));
- *     auto confing = cudax::make_config(dims, cudax::launch_cooperative());
+ *     auto config = cudax::make_config(dims, cudax::launch_cooperative());
  *
  *     cudax::launch(stream, config, kernel(), 42);
  * }
@@ -176,7 +176,7 @@ void launch(
  *
  * void launch_kernel(cuda::stream_ref stream) {
  *     auto dims    = cudax::make_hierarchy(cudax::block_dims<128>(), cudax::grid_dims(4));
- *     auto confing = cudax::make_config(dims, cudax::launch_cooperative());
+ *     auto config = cudax::make_config(dims, cudax::launch_cooperative());
  *
  *     cudax::launch(stream, config, kernel<decltype(config)>, 42);
  * }
@@ -235,7 +235,7 @@ void launch(::cuda::stream_ref stream,
  *
  * void launch_kernel(cuda::stream_ref stream) {
  *     auto dims    = cudax::make_hierarchy(cudax::block_dims<128>(), cudax::grid_dims(4));
- *     auto confing = cudax::make_config(dims, cudax::launch_cooperative());
+ *     auto config = cudax::make_config(dims, cudax::launch_cooperative());
  *
  *     cudax::launch(stream, config, kernel<decltype(config)>, 42);
  * }

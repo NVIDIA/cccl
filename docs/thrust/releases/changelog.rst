@@ -1856,7 +1856,7 @@ Bug Fixes
    policies with streams attached,
    i.e. ``thrust::::cuda::par.on(stream)``.
 -  #664: ``thrust::for_each`` and algorithms based on it no longer
-   ignore streams attached to execution policys.
+   ignore streams attached to execution policies.
 
 .. _known-issues-1:
 

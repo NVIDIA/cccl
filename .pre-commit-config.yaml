@@ -50,6 +50,11 @@ repos:
     rev: v2.3.0
     hooks:
       - id: codespell
+        exclude: |
+          (?x)^(
+            build|
+            CITATION.md
+          )
 
 default_language_version:
   python: python3
