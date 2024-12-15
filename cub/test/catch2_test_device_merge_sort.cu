@@ -406,7 +406,9 @@ C2H_TEST(
   REQUIRE(values_expected == values_in_out);
 }
 
-C2H_TEST("DeviceMergeSort::StableSortPairs works for large inputs", "[merge][sort][device]", offset_types)
+C2H_TEST("DeviceMergeSort::StableSortPairs works for large inputs",
+         "[merge][sort][device][skip-cs-initcheck][skip-cs-racecheck]",
+         offset_types)
 {
   using testing_types_tuple = c2h::get<0, TestType>;
   using key_t               = typename testing_types_tuple::key_t;

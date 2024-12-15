@@ -1,0 +1,386 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ComputeSanitizerOutput>
+  <!--
+  thrust::equal reduces using an accumulator type tuple<bool, OffsetT>.
+  The padding bytes inside the tuple are not initialized.
+  This causes issues during `cub::ThreadLoad`, which loads the memory as aliased
+  machine words that are cast to the tuple type.
+  -->
+  <record>
+    <kind>Initcheck</kind>
+    <what>
+      <text>Uninitialized __global__ memory read of size 2 bytes</text>
+    </what>
+    <where>
+      <func>ThreadLoad</func>
+    </where>
+    <deviceStack>
+      <frame>
+        <func>UnrolledThreadLoadImpl</func>
+      </frame>
+      <frame>
+        <func>UnrolledThreadLoad</func>
+      </frame>
+      <frame>
+        <func>ThreadLoad</func>
+      </frame>
+      <frame>
+        <func>ThreadLoad</func>
+      </frame>
+      <frame>
+        <func>operator.*</func>
+      </frame>
+      <frame>
+        <func>ConsumeTile</func>
+      </frame>
+      <frame>
+        <func>ConsumeRange</func>
+      </frame>
+      <frame>
+        <func>ConsumeRange</func>
+      </frame>
+      <frame>
+        <func>DeviceReduceSingleTileKernel</func>
+      </frame>
+    </deviceStack>
+  </record>
+  <!--
+  Similar to the above, thrust::equal copies a tuple<bool, OffsetT> from host -> device
+  with the result of the comparison. The padding bytes trigger host API initialization
+  errors during the cudaMemcpy.
+  Sadly, this is a very generic suppression that may hide real issues, but it's the best
+  we can do given the current tooling.
+  -->
+  <record>
+    <kind>InitcheckApiError</kind>
+    <level>Error</level>
+    <what>
+      <text>Host API uninitialized memory access</text>
+      <accessSize>16</accessSize>
+    </what>
+    <hostStack>
+      <saveLocation>error</saveLocation>
+      <frame>
+        <module>.*/libcuda.so.*</module>
+      </frame>
+      <frame>
+        <func>libcudart_static_.*</func>
+      </frame>
+      <frame>
+        <func>libcudart_static_.*</func>
+      </frame>
+      <frame>
+        <func>cudaMemcpyAsync</func>
+      </frame>
+      <frame>
+        <func>void C_A_T_C_H_T_E_M_P_L_A_T_E_T_E_S_T_F_U_N_C_.*</func>
+        <!-- This happens in pretty much every test that calls `vector::operator==` -->
+        <!-- <module>.*/cub\..*\.test\.device_adjacent_difference_substract_left\..*</module> -->
+      </frame>
+      <frame>
+        <func>Catch::RunContext::invokeActiveTestCase</func>
+      </frame>
+      <frame>
+        <func>Catch::RunContext::runCurrentTest</func>
+      </frame>
+      <frame>
+        <func>Catch::RunContext::runTest</func>
+      </frame>
+      <frame>
+        <func>Catch::Session::runInternal</func>
+      </frame>
+      <frame>
+        <func>Catch::Session::run</func>
+      </frame>
+      <frame>
+        <func>main</func>
+      </frame>
+      <frame>
+        <module>.*libc.so.*</module>
+      </frame>
+      <frame>
+        <func>__libc_start_main</func>
+      </frame>
+      <frame>
+        <func>_start</func>
+      </frame>
+    </hostStack>
+  </record>
+  <!--
+  DeviceRunLengthEncode performs a WarpExchange::ScatterToStriped that 'discards'
+  elements by scattering them to the same (ignored) destination address. This
+  triggers a WAW race that we can safely ignore.
+  -->
+  <record>
+    <kind>Analysis</kind>
+    <level>Error</level>
+    <what>
+      <text>Race condition</text>
+      <source>
+        <direction>Write</direction>
+        <where>
+          <func>ScatterToStriped</func>
+        </where>
+      </source>
+      <destination>
+        <direction>Write</direction>
+        <where>
+          <func>ScatterToStriped</func>
+        </where>
+      </destination>
+      <destination>
+        <direction>Write</direction>
+        <where>
+          <func>ScatterToStriped</func>
+        </where>
+      </destination>
+      <destination>
+        <direction>Write</direction>
+        <where>
+          <func>ScatterToStriped</func>
+        </where>
+      </destination>
+    </what>
+  </record>
+  <!-- Another variation of the above -->
+  <record>
+    <kind>Analysis</kind>
+    <level>Error</level>
+    <what>
+      <text>Race condition</text>
+      <source>
+        <direction>Write</direction>
+        <where>
+          <func>ScatterToStriped</func>
+        </where>
+      </source>
+      <destination>
+        <direction>Write</direction>
+        <where>
+          <func>ScatterToStriped</func>
+        </where>
+      </destination>
+    </what>
+  </record>
+  <!-- Another variation of the above -->
+  <record>
+    <kind>Analysis</kind>
+    <level>Error</level>
+    <what>
+      <text>Race condition</text>
+      <source>
+        <direction>Write</direction>
+        <where>
+          <func>ScatterToStriped</func>
+        </where>
+      </source>
+      <destination>
+        <direction>Write</direction>
+        <where>
+          <func>ScatterToStriped</func>
+        </where>
+      </destination>
+      <destination>
+        <direction>Write</direction>
+        <where>
+          <func>ScatterToStriped</func>
+        </where>
+      </destination>
+    </what>
+  </record>
+  <!--
+  There are uninitialized padding bits inside cub::ConstantInputIterator,
+  which is basically a struct{ T value; ptrdiff_t offset; }.
+  -->
+  <record>
+    <kind>InitcheckApiError</kind>
+    <level>Error</level>
+    <what>
+      <text>Host API uninitialized memory access</text>
+      <accessSize>32</accessSize>
+    </what>
+    <hostStack>
+      <saveLocation>error</saveLocation>
+      <frame>
+        <module>.*libcuda.so.*</module>
+      </frame>
+      <frame>
+        <func>libcudart_static_.*</func>
+      </frame>
+      <frame>
+        <func>libcudart_static_.*</func>
+      </frame>
+      <frame>
+        <func>cudaMemcpyAsync</func>
+      </frame>
+      <frame>
+        <func>thrust.*vector_base.*ConstantInputIterator.*</func>
+      </frame>
+      <frame>
+        <func>void test_iterator.*ConstantInputIterator.*</func>
+        <pc>0x16aa31</pc>
+        <module>/home/coder/cccl/build/cuda12.6-gcc13/cub-cpp17/bin/cub.cpp17.test.iterator</module>
+      </frame>
+      <frame>
+        <func>void C_A_T_C_H_T_E_M_P_L_A_T_E_T_E_S_T_F_U_N_C_.*</func>
+        <module>.*/cub..*.test.iterator</module>
+      </frame>
+      <frame>
+        <func>Catch::RunContext::invokeActiveTestCase</func>
+      </frame>
+      <frame>
+        <func>Catch::RunContext::runCurrentTest</func>
+      </frame>
+      <frame>
+        <func>Catch::RunContext::runTest</func>
+      </frame>
+      <frame>
+        <func>Catch::Session::runInternal</func>
+      </frame>
+      <frame>
+        <func>Catch::Session::run</func>
+      </frame>
+      <frame>
+        <func>main</func>
+      </frame>
+      <frame>
+        <module>/usr/lib/x86_64-linux-gnu/libc.so.6</module>
+      </frame>
+      <frame>
+        <func>__libc_start_main</func>
+      </frame>
+      <frame>
+        <func>_start</func>
+      </frame>
+    </hostStack>
+  </record>
+  <!--
+  Similar to the above; cub::TransformInputIterator is a struct{TransformOp op; InputIterT iter;}.
+  In this case TransformOp is 1 byte, and InputIterT is an 8-byte pointer.
+  Padding bits strike again.
+  -->
+    <record>
+    <kind>InitcheckApiError</kind>
+    <level>Error</level>
+    <what>
+      <text>Host API uninitialized memory access</text>
+      <accessSize>32</accessSize>
+    </what>
+    <hostStack>
+      <saveLocation>error</saveLocation>
+      <frame>
+        <module>.*/libcuda.so.*</module>
+      </frame>
+      <frame>
+        <func>libcudart_static_.*</func>
+      </frame>
+      <frame>
+        <func>libcudart_static_.*</func>
+      </frame>
+      <frame>
+        <func>cudaMemcpyAsync</func>
+      </frame>
+      <frame>
+        <func>thrust.*vector_base.*TransformInputIterator.*</func>
+      </frame>
+      <frame>
+        <func>void test_iterator.*TransformInputIterator.*</func>
+      </frame>
+      <frame>
+        <func>void C_A_T_C_H_T_E_M_P_L_A_T_E_T_E_S_T_F_U_N_C_.*</func>
+        <module>.*/cub..*.test.iterator</module>
+      </frame>
+      <frame>
+        <func>Catch::RunContext::invokeActiveTestCase</func>
+      </frame>
+      <frame>
+        <func>Catch::RunContext::runCurrentTest</func>
+      </frame>
+      <frame>
+        <func>Catch::RunContext::runTest</func>
+      </frame>
+      <frame>
+        <func>Catch::Session::runInternal</func>
+      </frame>
+      <frame>
+        <func>Catch::Session::run</func>
+      </frame>
+      <frame>
+        <func>main</func>
+      </frame>
+      <frame>
+        <module>.*libc.so.*</module>
+      </frame>
+      <frame>
+        <func>__libc_start_main</func>
+      </frame>
+      <frame>
+        <func>_start</func>
+      </frame>
+    </hostStack>
+  </record>
+  <!--
+  Same as above; this time InputIterT is a cub::TexObjInputIterator.
+  -->
+  <record>
+    <kind>InitcheckApiError</kind>
+    <level>Error</level>
+    <what>
+      <text>Host API uninitialized memory access</text>
+      <accessSize>64</accessSize>
+    </what>
+    <hostStack>
+      <saveLocation>error</saveLocation>
+      <frame>
+        <module>.*/libcuda.so.*</module>
+      </frame>
+      <frame>
+        <func>libcudart_static_.*</func>
+      </frame>
+      <frame>
+        <func>libcudart_static_.*</func>
+      </frame>
+      <frame>
+        <func>cudaMemcpyAsync</func>
+      </frame>
+      <frame>
+        <func>thrust.*vector_base.*TransformInputIterator.*</func>
+      </frame>
+      <frame>
+        <func>void test_iterator.*TransformInputIterator.*</func>
+      </frame>
+      <frame>
+        <func>void C_A_T_C_H_T_E_M_P_L_A_T_E_T_E_S_T_F_U_N_C_.*</func>
+        <pc>0xb17b1</pc>
+        <module>.*/cub..*.test.iterator</module>
+      </frame>
+      <frame>
+        <func>Catch::RunContext::invokeActiveTestCase</func>
+      </frame>
+      <frame>
+        <func>Catch::RunContext::runCurrentTest</func>
+      </frame>
+      <frame>
+        <func>Catch::RunContext::runTest</func>
+      </frame>
+      <frame>
+        <func>Catch::Session::runInternal</func>
+      </frame>
+      <frame>
+        <func>Catch::Session::run</func>
+      </frame>
+      <frame>
+        <func>main</func>
+      </frame>
+      <frame>
+        <module>.*libc.so.*</module>
+      </frame>
+      <frame>
+        <func>__libc_start_main</func>
+      </frame>
+      <frame>
+        <func>_start</func>
+      </frame>
+    </hostStack>
+  </record>
+</ComputeSanitizerOutput>
