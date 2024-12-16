@@ -54,7 +54,7 @@ struct large_problem_test_helper
   c2h::device_vector<std::uint32_t> correctness_flags;
   std::size_t num_elements;
 
-  // Prepare the helper for a given nunber of output elements
+  // Prepare the helper for a given number of output elements
   large_problem_test_helper(std::size_t num_elements)
       : num_elements(num_elements)
   {
