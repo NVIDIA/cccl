@@ -48,7 +48,7 @@ template <class _Tp>
 _CCCL_CONCEPT __is_basic_any =
   _CCCL_REQUIRES_EXPR((_Tp), _Tp& __value)
   (
-    __is_basic_any_test(__value)
+    __cudax::__is_basic_any_test(__value)
   );
 // clang-format on
 

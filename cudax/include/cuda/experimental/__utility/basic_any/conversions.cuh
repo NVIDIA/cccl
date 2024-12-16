@@ -69,64 +69,78 @@ struct __copyable_archetype : __movable_archetype
 };
 
 template <class _Interface>
-using _archetype_base = _CUDA_VSTD::conditional_t<
-  extension_of<_Interface, icopyable<>>,
-  __copyable_archetype,
-  _CUDA_VSTD::conditional_t<extension_of<_Interface, imovable<>>, __movable_archetype, __immovable_archetype>>;
+using __archetype_base =
+  _CUDA_VSTD::__type_switch<(extension_of<_Interface, imovable<>> + extension_of<_Interface, icopyable<>>),
+                            _CUDA_VSTD::__type_case<0, __immovable_archetype>,
+                            _CUDA_VSTD::__type_case<1, __movable_archetype>,
+                            _CUDA_VSTD::__type_case<2, __copyable_archetype>>;
+
+// Strip top-level cv- and ref-qualifiers from pointer types:
+template <class _Ty>
+auto __normalize(_Ty&&) -> _Ty
+{}
+template <class _Ty>
+auto __normalize(_Ty*) -> _Ty*
+{}
+
+template <class _Ty>
+using __normalize_t = decltype(__cudax::__normalize(declval<_Ty>()));
+
+template <class _Ty>
+extern _CUDA_VSTD::__undefined<_Ty> __interface_from;
+template <class _Interface>
+extern __identity_t<_Interface (*)()> __interface_from<basic_any<_Interface>>;
+template <class _Interface>
+extern __identity_t<_Interface (*)()> __interface_from<basic_any<__ireference<_Interface>>>;
+template <class _Interface>
+extern __identity_t<_Interface& (*) ()> __interface_from<basic_any<_Interface>&>;
+template <class _Interface>
+extern __identity_t<_Interface const& (*) ()> __interface_from<basic_any<_Interface> const&>;
+template <class _Interface>
+extern __identity_t<_Interface* (*) ()> __interface_from<basic_any<_Interface>*>;
+template <class _Interface>
+extern __identity_t<_Interface const* (*) ()> __interface_from<basic_any<_Interface> const*>;
+template <class _Interface>
+extern __identity_t<_Interface* (*) ()> __interface_from<basic_any<__ireference<_Interface>>*>;
+template <class _Interface>
+extern __identity_t<_Interface* (*) ()> __interface_from<basic_any<__ireference<_Interface>> const*>;
 
 template <class _Interface>
-_CUDAX_HOST_API auto __interface_from(basic_any<_Interface>&&) -> _Interface;
+_CUDAX_HOST_API auto __as_archetype(_Interface&&) -> __archetype_base<_Interface>;
 template <class _Interface>
-_CUDAX_HOST_API auto __interface_from(basic_any<__ireference<_Interface>>&&) -> _Interface;
+_CUDAX_HOST_API auto __as_archetype(_Interface&) -> __archetype_base<_Interface>&;
 template <class _Interface>
-_CUDAX_HOST_API auto __interface_from(basic_any<_Interface>&) -> _Interface&;
+_CUDAX_HOST_API auto __as_archetype(_Interface const&) -> __archetype_base<_Interface> const&;
 template <class _Interface>
-_CUDAX_HOST_API auto __interface_from(basic_any<_Interface> const&) -> _Interface const&;
+_CUDAX_HOST_API auto __as_archetype(_Interface*) -> __archetype_base<_Interface>*;
 template <class _Interface>
-_CUDAX_HOST_API auto __interface_from(basic_any<_Interface>*) -> _Interface*;
+_CUDAX_HOST_API auto __as_archetype(_Interface const*) -> __archetype_base<_Interface> const*;
 template <class _Interface>
-_CUDAX_HOST_API auto __interface_from(basic_any<_Interface> const*) -> _Interface const*;
+_CUDAX_HOST_API auto __as_archetype(__ireference<_Interface>) -> __archetype_base<_Interface>&;
 template <class _Interface>
-_CUDAX_HOST_API auto __interface_from(basic_any<__ireference<_Interface>>*) -> _Interface*;
-template <class _Interface>
-_CUDAX_HOST_API auto __interface_from(basic_any<__ireference<_Interface>> const*) -> _Interface*;
+_CUDAX_HOST_API auto __as_archetype(__ireference<_Interface const>) -> __archetype_base<_Interface> const&;
 
-template <class _Interface>
-_CUDAX_HOST_API auto __as_archetype(_Interface&&) -> _archetype_base<_Interface>;
-template <class _Interface>
-_CUDAX_HOST_API auto __as_archetype(_Interface&) -> _archetype_base<_Interface>&;
-template <class _Interface>
-_CUDAX_HOST_API auto __as_archetype(_Interface const&) -> _archetype_base<_Interface> const&;
-template <class _Interface>
-_CUDAX_HOST_API auto __as_archetype(_Interface*) -> _archetype_base<_Interface>*;
-template <class _Interface>
-_CUDAX_HOST_API auto __as_archetype(_Interface const*) -> _archetype_base<_Interface> const*;
-template <class _Interface>
-_CUDAX_HOST_API auto __as_archetype(__ireference<_Interface>) -> _archetype_base<_Interface>&;
-template <class _Interface>
-_CUDAX_HOST_API auto __as_archetype(__ireference<_Interface const>) -> _archetype_base<_Interface> const&;
+template <class _Archetype>
+_CUDAX_HOST_API auto __as_immovable(_Archetype&&) -> __immovable_archetype;
+template <class _Archetype>
+_CUDAX_HOST_API auto __as_immovable(_Archetype&) -> __immovable_archetype&;
+template <class _Archetype>
+_CUDAX_HOST_API auto __as_immovable(_Archetype const&) -> __immovable_archetype const&;
+template <class _Archetype>
+_CUDAX_HOST_API auto __as_immovable(_Archetype*) -> __immovable_archetype*;
+template <class _Archetype>
+_CUDAX_HOST_API auto __as_immovable(_Archetype const*) -> __immovable_archetype const*;
 
-template <class _Interface>
-_CUDAX_HOST_API auto __as_immovable(_Interface&&) -> __immovable_archetype;
-template <class _Interface>
-_CUDAX_HOST_API auto __as_immovable(_Interface&) -> __immovable_archetype&;
-template <class _Interface>
-_CUDAX_HOST_API auto __as_immovable(_Interface const&) -> __immovable_archetype const&;
-template <class _Interface>
-_CUDAX_HOST_API auto __as_immovable(_Interface*) -> __immovable_archetype*;
-template <class _Interface>
-_CUDAX_HOST_API auto __as_immovable(_Interface const*) -> __immovable_archetype const*;
+template <class _CvAny>
+using __normalized_interface_of _CCCL_NODEBUG_ALIAS = decltype(__interface_from<__normalize_t<_CvAny>>());
 
-template <class CvAny>
-using __normalized_interface_of _CCCL_NODEBUG_ALIAS = decltype(__cudax::__interface_from(declval<CvAny>()));
-
-template <class CvAny>
+template <class _CvAny>
 using __src_archetype_of _CCCL_NODEBUG_ALIAS =
-  decltype(__cudax::__as_archetype(__cudax::__interface_from(declval<CvAny>())));
+  decltype(__cudax::__as_archetype(__interface_from<__normalize_t<_CvAny>>()));
 
-template <class CvAny>
+template <class _CvAny>
 using __dst_archetype_of _CCCL_NODEBUG_ALIAS =
-  decltype(__cudax::__as_immovable(__cudax::__as_archetype(__cudax::__interface_from(declval<CvAny>()))));
+  decltype(__cudax::__as_immovable(__cudax::__as_archetype(__interface_from<__normalize_t<_CvAny>>())));
 
 // If the archetypes are implicitly convertible, then it is possible to
 // dynamically cast from the source to the destination. The cast may fail,
