@@ -7,11 +7,13 @@ import os
 import shutil
 import importlib
 import ctypes
+from typing import Tuple, Optional
+
 
 from . import _cccl as cccl
 
 
-def _get_cuda_path():
+def _get_cuda_path() -> Optional[str]:
     cuda_path = os.environ.get("CUDA_PATH", "")
     if os.path.exists(cuda_path):
         return cuda_path
@@ -27,11 +29,11 @@ def _get_cuda_path():
     return None
 
 
-_bindings = None
-_paths = None
+_bindings: ctypes.CDLL = None  # type: ignore
+_paths: Tuple[bytes, bytes, bytes, bytes] = None  # type: ignore
 
 
-def get_bindings():
+def get_bindings() -> ctypes.CDLL:
     global _bindings
     if _bindings is not None:
         return _bindings
@@ -56,7 +58,7 @@ def get_bindings():
     return _bindings
 
 
-def get_paths():
+def get_paths() -> Tuple[bytes, bytes, bytes, bytes]:
     global _paths
     if _paths is not None:
         return _paths
