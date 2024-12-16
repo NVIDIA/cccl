@@ -40,12 +40,6 @@ extern "C++" {
 #    error libcu++ requires C++11 or later
 #  endif
 
-#  if (_CCCL_COMPILER(NVHPC) && defined(__linux__)) || _CCCL_COMPILER(NVRTC)
-#    ifndef __ELF__
-#      define __ELF__
-#    endif // !__ELF__
-#  endif
-
 #  if defined(_LIBCUDACXX_ABI_UNSTABLE) || _LIBCUDACXX_ABI_VERSION >= 2 || defined(__cuda_std__)
 // Change short string representation so that string data starts at offset 0,
 // improving its alignment in some cases.
