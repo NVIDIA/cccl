@@ -56,11 +56,10 @@ void exclusive_scan(
   auto ltemp = ctx.logical_data(shape_of<slice<char>>(temp_storage_bytes));
 
   ctx.task(in_data.read(), out_data.write(), ltemp.write())
-      ->*[&op, init_val, nitems](cudaStream_t stream, auto d_in, auto d_out, auto d_temp) {
-            size_t tmp_size = d_temp.size();
+      ->*[&op, init_val, nitems, temp_storage_bytes](cudaStream_t stream, auto d_in, auto d_out, auto d_temp) {
             cub::DeviceScan::ExclusiveScan(
               (void*) d_temp.data_handle(),
-              tmp_size,
+              temp_storage_bytes,
               (InT*) d_in.data_handle(),
               (OutT*) d_out.data_handle(),
               OpWrapper<BinaryOp>(op),

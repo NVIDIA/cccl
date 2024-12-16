@@ -34,10 +34,10 @@ struct OpWrapper
   BinaryOp op;
 };
 
-template <typename OutT, typename Ctx, typename T, typename BinaryOp>
-auto reduce(Ctx& ctx, logical_data<T> data, BinaryOp&& op, OutT init_val)
+template <typename T, typename Ctx, typename BinaryOp>
+auto reduce(Ctx& ctx, logical_data<slice<T>> data, BinaryOp&& op, T init_val)
 {
-  auto result = ctx.logical_data(shape_of<scalar_view<OutT>>());
+  auto result = ctx.logical_data(shape_of<scalar_view<T>>());
 
   // Determine temporary device storage requirements
   void* d_temp_storage      = nullptr;
@@ -45,8 +45,8 @@ auto reduce(Ctx& ctx, logical_data<T> data, BinaryOp&& op, OutT init_val)
   cub::DeviceReduce::Reduce(
     d_temp_storage,
     temp_storage_bytes,
-    (OutT*) nullptr,
-    (OutT*) nullptr,
+    (T*) nullptr,
+    (T*) nullptr,
     data.shape().size(),
     OpWrapper<BinaryOp>(op),
     init_val,
@@ -55,13 +55,12 @@ auto reduce(Ctx& ctx, logical_data<T> data, BinaryOp&& op, OutT init_val)
   auto ltemp = ctx.logical_data(shape_of<slice<char>>(temp_storage_bytes));
 
   ctx.task(data.read(), result.write(), ltemp.write())
-      ->*[&op, init_val](cudaStream_t stream, auto d_data, auto d_result, auto d_temp) {
-            size_t tmp_size = d_temp.size();
+      ->*[&op, init_val, temp_storage_bytes](cudaStream_t stream, auto d_data, auto d_result, auto d_temp) {
             cub::DeviceReduce::Reduce(
               (void*) d_temp.data_handle(),
-              tmp_size,
-              (OutT*) d_data.data_handle(),
-              (OutT*) d_result.addr,
+              temp_storage_bytes,
+              (T*) d_data.data_handle(),
+              (T*) d_result.addr,
               shape(d_data).size(),
               OpWrapper<BinaryOp>(op),
               init_val,
@@ -92,7 +91,7 @@ void run()
   auto values = ctx.logical_data(X, {N});
 
   // int should be deduced from "values"...
-  auto lresult = reduce<int>(
+  auto lresult = reduce(
     ctx,
     values,
     [] __device__(const int& a, const int& b) {
