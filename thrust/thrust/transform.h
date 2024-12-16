@@ -42,10 +42,10 @@ THRUST_NAMESPACE_BEGIN
  */
 
 //! This version of \p transform applies a unary function to each element  of an input sequence and stores the result in
-//! the corresponding position in an output sequence.  Specifically, for each iterator <tt>i</tt> in the range [\p
-//! first, \p last) the operation <tt>op(*i)</tt> is performed and the result is assigned to <tt>*o</tt>, where
-//! <tt>o</tt> is the corresponding output iterator in the range [\p result, \p result + (\p last - \p first) ). The
-//! input and output sequences may coincide, resulting in an in-place transformation.
+//! the corresponding position in an output sequence. Specifically, for each iterator <tt>i</tt> in the range [\p first,
+//! \p last) the operation <tt>op(*i)</tt> is performed and the result is assigned to <tt>*o</tt>, where <tt>o</tt> is
+//! the corresponding output iterator in the range [\p result, \p result + (\p last - \p first) ). The input and output
+//! sequences may coincide, resulting in an in-place transformation.
 //!
 //! The algorithm's execution is parallelized as determined by \p exec.
 //!
