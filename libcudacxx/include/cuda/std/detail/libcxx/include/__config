@@ -40,44 +40,6 @@ extern "C++" {
 #    error libcu++ requires C++11 or later
 #  endif
 
-#  if defined(_LIBCUDACXX_ABI_UNSTABLE) || _LIBCUDACXX_ABI_VERSION >= 2 || defined(__cuda_std__)
-// Change short string representation so that string data starts at offset 0,
-// improving its alignment in some cases.
-#    define _LIBCUDACXX_ABI_ALTERNATE_STRING_LAYOUT
-// Fix deque iterator type in order to support incomplete types.
-#    define _LIBCUDACXX_ABI_INCOMPLETE_TYPES_IN_DEQUE
-// Fix undefined behavior in how std::list stores its linked nodes.
-#    define _LIBCUDACXX_ABI_LIST_REMOVE_NODE_POINTER_UB
-// Fix undefined behavior in  how __tree stores its end and parent nodes.
-#    define _LIBCUDACXX_ABI_TREE_REMOVE_NODE_POINTER_UB
-// Fix undefined behavior in how __hash_table stores its pointer types.
-#    define _LIBCUDACXX_ABI_FIX_UNORDERED_NODE_POINTER_UB
-#    define _LIBCUDACXX_ABI_FORWARD_LIST_REMOVE_NODE_POINTER_UB
-#    define _LIBCUDACXX_ABI_FIX_UNORDERED_CONTAINER_SIZE_TYPE
-// Don't use a nullptr_t simulation type in C++03 instead using C++11 nullptr
-// provided under the alternate keyword __nullptr, which changes the mangling
-// of nullptr_t. This option is ABI incompatible with GCC in C++03 mode.
-#    define _LIBCUDACXX_ABI_ALWAYS_USE_CXX11_NULLPTR
-// Define the `pointer_safety` enum as a C++11 strongly typed enumeration
-// instead of as a class simulating an enum. If this option is enabled
-// `pointer_safety` and `get_pointer_safety()` will no longer be available
-// in C++03.
-#    define _LIBCUDACXX_ABI_POINTER_SAFETY_ENUM_TYPE
-// Define a key function for `bad_function_call` in the library, to centralize
-// its vtable and typeinfo to libc++ rather than having all other libraries
-// using that class define their own copies.
-#    define _LIBCUDACXX_ABI_BAD_FUNCTION_CALL_KEY_FUNCTION
-// Enable optimized version of __do_get_(un)signed which avoids redundant copies.
-#    define _LIBCUDACXX_ABI_OPTIMIZED_LOCALE_NUM_GET
-// Use the smallest possible integer type to represent the index of the variant.
-// Previously libc++ used "unsigned int" exclusively.
-#    define _LIBCUDACXX_ABI_VARIANT_INDEX_TYPE_OPTIMIZATION
-// Unstable attempt to provide a more optimized std::function
-#    define _LIBCUDACXX_ABI_OPTIMIZED_FUNCTION
-// All the regex constants must be distinct and nonzero.
-#    define _LIBCUDACXX_ABI_REGEX_CONSTANTS_NONZERO
-#  endif
-
 #  ifndef __has_extension
 #    define __has_extension(__x) 0
 #  endif
@@ -309,19 +271,12 @@ extern "C++" {
 
 #  if _CCCL_COMPILER(CLANG)
 
-// _LIBCUDACXX_ALTERNATE_STRING_LAYOUT is an old name for
-// _LIBCUDACXX_ABI_ALTERNATE_STRING_LAYOUT left here for backward compatibility.
-#    if defined(_LIBCUDACXX_ALTERNATE_STRING_LAYOUT)
-#      define _LIBCUDACXX_ABI_ALTERNATE_STRING_LAYOUT
-#    endif
-
 #    if !(_CCCL_HAS_FEATURE(cxx_lambdas))
 #      define _LIBCUDACXX_HAS_NO_LAMBDAS
 #    endif
 
 #    if !(_CCCL_HAS_FEATURE(cxx_nullptr))
-#      if (__has_extension(cxx_nullptr) || _CCCL_HAS_KEYWORD(__nullptr)) \
-        && defined(_LIBCUDACXX_ABI_ALWAYS_USE_CXX11_NULLPTR)
+#      if (__has_extension(cxx_nullptr) || _CCCL_HAS_KEYWORD(__nullptr))
 #        define nullptr __nullptr
 #      else
 #        define _LIBCUDACXX_HAS_NO_NULLPTR
