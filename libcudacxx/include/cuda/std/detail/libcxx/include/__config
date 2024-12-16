@@ -193,20 +193,6 @@ extern "C++" {
 
 #  elif _CCCL_COMPILER(MSVC)
 
-#    if _MSC_VER < 1900
-#      error "MSVC versions prior to Visual Studio 2015 are not supported"
-#    endif
-
-// MSVC implemented P0030R1 in 15.7, only available under C++17
-#    if _MSC_VER < 1914
-#      define _LIBCUDACXX_NO_HOST_CPP17_HYPOT
-#    endif
-
-#    if _MSC_VER < 1920
-#      define _LIBCUDACXX_HAS_NO_NOEXCEPT_SFINAE
-#      define _LIBCUDACXX_HAS_NO_LOGICAL_METAFUNCTION_ALIASES
-#    endif
-
 // MSVC exposed __iso_volatile intrinsics beginning on 1924 for x86
 #    if _MSC_VER < 1924
 #      define _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
