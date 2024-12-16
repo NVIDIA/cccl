@@ -188,14 +188,7 @@ extern "C++" {
         __attribute__((__no_sanitize__("unsigned-integer-overflow")))
 #    endif
 
-#  elif _CCCL_COMPILER(MSVC)
-
-// MSVC exposed __iso_volatile intrinsics beginning on 1924 for x86
-#    if _MSC_VER < 1924
-#      define _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
-#    endif
-
-#  endif // _CCCL_COMPILER_[CLANG|GCC|MSVC|NVRTC]
+#  endif //  _CCCL_COMPILER(CLANG)
 
 #  ifndef _LIBCUDACXX_FREESTANDING
 #    define _LIBCUDACXX_FREESTANDING
