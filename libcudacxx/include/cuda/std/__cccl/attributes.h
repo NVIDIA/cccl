@@ -64,12 +64,18 @@
 #  define _CCCL_FALLTHROUGH() ((void) 0)
 #endif
 
+#if _CCCL_HAS_ATTRIBUTE(__nodebug__)
+#  define _CCCL_NODEBUG __attribute__((__nodebug__))
+#else // ^^^ _CCCL_HAS_ATTRIBUTE(__nodebug__) ^^^ / vvv !_CCCL_HAS_ATTRIBUTE(__nodebug__) vvv
+#  define _CCCL_NODEBUG
+#endif // !_CCCL_HAS_ATTRIBUTE(__nodebug__)
+
 // The nodebug attribute flattens aliases down to the actual type rather typename meow<T>::type
-#if _CCCL_HAS_ATTRIBUTE(__nodebug__) && _CCCL_CUDA_COMPILER(CLANG)
-#  define _CCCL_NODEBUG_ALIAS __attribute__((nodebug))
-#else
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  define _CCCL_NODEBUG_ALIAS _CCCL_NODEBUG
+#else // ^^^ _CCCL_CUDA_COMPILER(CLANG) ^^^ / vvv !_CCCL_CUDA_COMPILER(CLANG) vvv
 #  define _CCCL_NODEBUG_ALIAS
-#endif
+#endif // !_CCCL_CUDA_COMPILER(CLANG)
 
 #if _CCCL_HAS_CPP_ATTRIBUTE(msvc::no_unique_address)
 // MSVC implements [[no_unique_address]] as a silent no-op currently.

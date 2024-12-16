@@ -321,12 +321,6 @@ typedef unsigned int char32_t;
 #    define _LIBCUDACXX_DIAGNOSE_ERROR(...)
 #  endif
 
-#  if _CCCL_HAS_ATTRIBUTE(__nodebug__)
-#    define _LIBCUDACXX_NODEBUG __attribute__((__nodebug__))
-#  else
-#    define _LIBCUDACXX_NODEBUG
-#  endif
-
 #  if _CCCL_HAS_ATTRIBUTE(__preferred_name__)
 #    define _LIBCUDACXX_PREFERRED_NAME(x) __attribute__((__preferred_name__(x)))
 #  else
