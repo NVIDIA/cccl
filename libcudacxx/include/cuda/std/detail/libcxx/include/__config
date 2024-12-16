@@ -127,7 +127,6 @@ extern "C++" {
 #    else // _BYTE_ORDER == _LITTLE_ENDIAN
 #      define _LIBCUDACXX_BIG_ENDIAN
 #    endif // _BYTE_ORDER == _LITTLE_ENDIAN
-#    define _LIBCUDACXX_HAS_QUICK_EXIT
 #  endif // __NetBSD__
 
 #  if defined(_WIN32)
@@ -145,9 +144,6 @@ extern "C++" {
 #      define _LIBCUDACXX_HAS_BITSCAN64
 #    endif
 #    define _LIBCUDACXX_HAS_OPEN_WITH_WCHAR
-#    if defined(_LIBCUDACXX_MSVCRT)
-#      define _LIBCUDACXX_HAS_QUICK_EXIT
-#    endif
 
 // Some CRT APIs are unavailable to store apps
 #    if defined(WINAPI_FAMILY)
@@ -209,29 +205,6 @@ extern "C++" {
 #  else
 #    define _LIBCUDACXX_NO_CFI
 #  endif
-
-#  if defined(__FreeBSD__)
-#    define _LIBCUDACXX_HAS_QUICK_EXIT
-#    define _LIBCUDACXX_HAS_C11_FEATURES
-#  elif defined(__Fuchsia__) || defined(__wasi__)
-#    define _LIBCUDACXX_HAS_QUICK_EXIT
-#    define _LIBCUDACXX_HAS_TIMESPEC_GET
-#    define _LIBCUDACXX_HAS_C11_FEATURES
-#  elif defined(__linux__)
-#    if !defined(_LIBCUDACXX_HAS_MUSL_LIBC)
-#      if _LIBCUDACXX_GLIBC_PREREQ(2, 15) || defined(__BIONIC__)
-#        define _LIBCUDACXX_HAS_QUICK_EXIT
-#      endif
-#      if _LIBCUDACXX_GLIBC_PREREQ(2, 17)
-#        define _LIBCUDACXX_HAS_C11_FEATURES
-#        define _LIBCUDACXX_HAS_TIMESPEC_GET
-#      endif
-#    else // defined(_LIBCUDACXX_HAS_MUSL_LIBC)
-#      define _LIBCUDACXX_HAS_QUICK_EXIT
-#      define _LIBCUDACXX_HAS_TIMESPEC_GET
-#      define _LIBCUDACXX_HAS_C11_FEATURES
-#    endif
-#  endif // __linux__
 
 #  if _CCCL_COMPILER(NVRTC)
 #    define __alignof(x) alignof(x)
@@ -636,16 +609,6 @@ typedef unsigned int char32_t;
 #      define _LIBCUDACXX_UNSUPPORTED_THREAD_API
 #    endif // _LIBCUDACXX_HAS_THREAD_API
 #  endif // _LIBCUDACXX_HAS_NO_THREADS
-
-#  if defined(_LIBCUDACXX_HAS_THREAD_API_PTHREAD)
-#    if defined(__ANDROID__) && __ANDROID_API__ >= 30
-#      define _LIBCUDACXX_HAS_COND_CLOCKWAIT
-#    elif defined(_LIBCUDACXX_GLIBC_PREREQ)
-#      if _LIBCUDACXX_GLIBC_PREREQ(2, 30)
-#        define _LIBCUDACXX_HAS_COND_CLOCKWAIT
-#      endif
-#    endif
-#  endif
 
 #  if defined(_LIBCUDACXX_HAS_NO_THREADS) && defined(_LIBCUDACXX_HAS_THREAD_API_PTHREAD)
 #    error _LIBCUDACXX_HAS_THREAD_API_PTHREAD may only be defined when \
