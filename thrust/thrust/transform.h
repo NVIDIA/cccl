@@ -53,7 +53,8 @@ THRUST_NAMESPACE_BEGIN
 //! \param first The beginning of the input sequence.
 //! \param last The end of the input sequence.
 //! \param result The beginning of the output sequence.
-//! \param op The transformation operation.
+//! \param op The transformation operation. Relying on the address of op's arguments in its implementation is
+//! deprecated.
 //! \return The end of the output sequence.
 //!
 //! \tparam DerivedPolicy The name of the derived execution policy.
@@ -107,7 +108,8 @@ _CCCL_HOST_DEVICE OutputIterator transform(
 //! \param first The beginning of the input sequence.
 //! \param last The end of the input sequence.
 //! \param result The beginning of the output sequence.
-//! \param op The transformation operation.
+//! \param op The transformation operation. Relying on the address of op's arguments in its implementation is
+//! deprecated.
 //! \return The end of the output sequence.
 //!
 //! \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
@@ -157,7 +159,8 @@ OutputIterator transform(InputIterator first, InputIterator last, OutputIterator
 //! \param last1 The end of the first input sequence.
 //! \param first2 The beginning of the second input sequence.
 //! \param result The beginning of the output sequence.
-//! \param op The transformation operation.
+//! \param op The transformation operation. Relying on the address of op's arguments in its implementation is
+//! deprecated.
 //! \return The end of the output sequence.
 //!
 //! \tparam DerivedPolicy The name of the derived execution policy.
@@ -223,7 +226,8 @@ _CCCL_HOST_DEVICE OutputIterator transform(
 //! \param last1 The end of the first input sequence.
 //! \param first2 The beginning of the second input sequence.
 //! \param result The beginning of the output sequence.
-//! \param op The transformation operation.
+//! \param op The transformation operation. Relying on the address of op's arguments in its implementation is
+//! deprecated.
 //! \return The end of the output sequence.
 //!
 //! \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
@@ -285,8 +289,9 @@ transform(InputIterator1 first1, InputIterator1 last1, InputIterator2 first2, Ou
  *  \param first The beginning of the input sequence.
  *  \param last The end of the input sequence.
  *  \param result The beginning of the output sequence.
- *  \param op The transformation operation.
- *  \param pred The predicate operation.
+ *  \param op The transformation operation. Relying on the address of op's arguments in its implementation is
+ *  deprecated.
+ *  \param pred The predicate operation. Relying on the address of pred's arguments in its implementation is deprecated.
  *  \return The end of the output sequence.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
@@ -362,8 +367,10 @@ _CCCL_HOST_DEVICE ForwardIterator transform_if(
  *  \param first The beginning of the input sequence.
  *  \param last The end of the input sequence.
  *  \param result The beginning of the output sequence.
- *  \param op The transformation operation.
- *  \param pred The predicate operation.
+ *  \param op The transformation operation. Relying on the address of op's arguments in its implementation is
+ *  deprecated.
+ *  \param pred The predicate operation. Relying on the address of pred's arguments in its implementation
+ *  is deprecated.
  *  \return The end of the output sequence.
  *
  *  \tparam InputIterator is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
@@ -431,8 +438,10 @@ transform_if(InputIterator first, InputIterator last, ForwardIterator result, Un
  *  \param last The end of the input sequence.
  *  \param stencil The beginning of the stencil sequence.
  *  \param result The beginning of the output sequence.
- *  \param op The transformation operation.
- *  \param pred The predicate operation.
+ *  \param op The transformation operation. Relying on the address of op's arguments in its implementation is
+ *  deprecated.
+ *  \param pred The predicate operation. Relying on the address of pred's arguments in its implementation
+ *  is deprecated.
  *  \return The end of the output sequence.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
@@ -506,8 +515,10 @@ _CCCL_HOST_DEVICE ForwardIterator transform_if(
  *  \param last The end of the input sequence.
  *  \param stencil The beginning of the stencil sequence.
  *  \param result The beginning of the output sequence.
- *  \param op The transformation operation.
- *  \param pred The predicate operation.
+ *  \param op The transformation operation. Relying on the address of op's arguments in its implementation is
+ *  deprecated.
+ *  \param pred The predicate operation. Relying on the address of pred's arguments in its implementation
+ *  is deprecated.
  *  \return The end of the output sequence.
  *
  *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
@@ -581,7 +592,8 @@ ForwardIterator transform_if(
  *  \param stencil The beginning of the stencil sequence.
  *  \param result The beginning of the output sequence.
  *  \param binary_op The transformation operation.
- *  \param pred The predicate operation.
+ *  \param pred The predicate operation. Relying on the address of pred's arguments in its implementation
+ *  is deprecated.
  *  \return The end of the output sequence.
  *
  *  \tparam DerivedPolicy The name of the derived execution policy.
@@ -663,8 +675,10 @@ _CCCL_HOST_DEVICE ForwardIterator transform_if(
  *  \param first2 The beginning of the second input sequence.
  *  \param stencil The beginning of the stencil sequence.
  *  \param result The beginning of the output sequence.
- *  \param binary_op The transformation operation.
- *  \param pred The predicate operation.
+ *  \param binary_op The transformation operation. Relying on the address of binary_op's arguments in its implementation
+ *  is deprecated.
+ *  \param pred The predicate operation. Relying on the address of pred's arguments in its implementation
+ *  is deprecated.
  *  \return The end of the output sequence.
  *
  *  \tparam InputIterator1 is a model of <a href="https://en.cppreference.com/w/cpp/iterator/input_iterator">Input
