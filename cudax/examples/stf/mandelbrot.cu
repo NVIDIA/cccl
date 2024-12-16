@@ -37,7 +37,7 @@ int main(int argc, char** argv)
   // Maximum number of iterations
   int maxIterations = 256;
 
-  // Describe a 2D array of integers of size (width x heigth)
+  // Describe a 2D array of integers of size (width x height)
   auto lbuffer = ctx.logical_data(shape_of<slice<int, 2>>(width, height));
 
   cudaEvent_t start, stop;

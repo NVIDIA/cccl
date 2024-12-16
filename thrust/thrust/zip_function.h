@@ -86,7 +86,7 @@ _CCCL_HOST_DEVICE auto apply_impl(Function&& func, Tuple&& args, index_sequence<
  *  \p tuple.
  *
  *  The \p make_zip_function convenience function is provided to avoid having
- *  to explicitely define the type of the functor when creating a \p zip_function,
+ *  to explicitly define the type of the functor when creating a \p zip_function,
  *  whic is especially helpful when using lambdas as the functor.
  *
  *  \code

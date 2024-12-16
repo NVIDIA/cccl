@@ -319,7 +319,7 @@ C2H_TEST("DeviceRadixSort::SortKeys: entropy reduction", "[keys][radix][sort][de
   const int num_key_seeds = 1;
   c2h::gen(C2H_SEED(num_key_seeds), in_keys);
 
-  // Repeatedly bitwise-and random keys together. This increases the likelyhood
+  // Repeatedly bitwise-and random keys together. This increases the likelihood
   // of duplicate keys.
   const int entropy_reduction = GENERATE(1, 3, 9, 15);
   {

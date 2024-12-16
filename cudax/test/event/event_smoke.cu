@@ -36,7 +36,7 @@ TEST_CASE("can construct an event_ref from a cudaEvent_t", "[event]")
   cudax::event_ref ref(ev);
   CUDAX_REQUIRE(ref.get() == ev);
   CUDAX_REQUIRE(!!ref);
-  // test implicit converstion from cudaEvent_t:
+  // test implicit conversion from cudaEvent_t:
   cudax::event_ref ref2 = ::test::fn_takes_event_ref(ev);
   CUDAX_REQUIRE(ref2.get() == ev);
   CUDAX_REQUIRE(::cudaEventDestroy(ev) == ::cudaSuccess);

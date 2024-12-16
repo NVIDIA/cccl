@@ -277,7 +277,7 @@ void TestForEachWithLargeTypes()
   _TestForEachWithLargeTypes<int, 256>();
   _TestForEachWithLargeTypes<int, 512>();
 
-  // XXX parallel_for doens't support large types
+  // XXX parallel_for doesn't support large types
   //    _TestForEachWithLargeTypes<int, 1024>();  // fails on Vista 64 w/ VS2008
 }
 DECLARE_UNITTEST(TestForEachWithLargeTypes);
@@ -318,7 +318,7 @@ void TestForEachNWithLargeTypes()
   _TestForEachNWithLargeTypes<int, 256>();
   _TestForEachNWithLargeTypes<int, 512>();
 
-  // XXX parallel_for doens't support large types
+  // XXX parallel_for doesn't support large types
   //    _TestForEachNWithLargeTypes<int, 1024>();  // fails on Vista 64 w/ VS2008
 }
 DECLARE_UNITTEST(TestForEachNWithLargeTypes);

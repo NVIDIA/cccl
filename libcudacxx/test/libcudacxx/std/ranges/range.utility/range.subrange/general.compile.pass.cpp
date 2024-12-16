@@ -25,7 +25,7 @@ concept ValidSubrangeKind = requires { typename cuda::std::ranges::subrange<Args
 template <class... Args>
 concept ValidSubrange = requires { typename cuda::std::ranges::subrange<Args...>; };
 #else
-// clang is really not helpfull here failing with concept emulation
+// clang is really not helpful here failing with concept emulation
 template <class It, class = void>
 constexpr bool ValidSubrange1 = false;
 

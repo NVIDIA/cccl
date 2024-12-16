@@ -370,8 +370,8 @@ extern "C++" {
 #      define _LIBCUDACXX_GCC_MATH_IN_STD
 #    endif
 
-// NVCC cannot properly handle some deductions occuring within NOEXCEPT
-// C++17 mode causes reference instatiation errors in tuple
+// NVCC cannot properly handle some deductions occurring within NOEXCEPT
+// C++17 mode causes reference instantiation errors in tuple
 #    if (_CCCL_COMPILER(GCC, >=, 7, 2) && _CCCL_COMPILER(GCC, <=, 8, 5))
 #      if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_STD_VER == 2017
 #        define _LIBCUDACXX_NO_TUPLE_NOEXCEPT

@@ -42,8 +42,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 //! @rst
 //! We require that a resource supports the following interface
 //!
-//!   - ``allocate(size_t bytes, size_t alginment)``
-//!   - ``deallocate(void* ptr, size_t bytes, size_t alginment)``
+//!   - ``allocate(size_t bytes, size_t alignment)``
+//!   - ``deallocate(void* ptr, size_t bytes, size_t alignment)``
 //!   - ``T() == T()``
 //!   - ``T() != T()``
 //!

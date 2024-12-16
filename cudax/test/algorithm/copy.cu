@@ -88,7 +88,7 @@ TEST_CASE("1d Copy", "[data_manipulation]")
     check_result_and_erase(_stream, cuda::std::span(output.data, output.size));
   }
 
-  SECTION("Asymetric size")
+  SECTION("Asymmetric size")
   {
     cudax::pinned_memory_resource host_resource;
     cudax::uninitialized_buffer<int, cuda::mr::host_accessible> host_buffer(host_resource, 1);

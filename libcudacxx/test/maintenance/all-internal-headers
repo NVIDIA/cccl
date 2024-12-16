@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-#this creates a set of tests, that ensures, that all itnernal headers can be build independently
+#this creates a set of tests, that ensures, that all internal headers can be build independently
 
 set -e
 
