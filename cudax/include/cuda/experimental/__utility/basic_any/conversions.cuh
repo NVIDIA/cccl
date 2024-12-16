@@ -23,9 +23,10 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/conditional.h>
+#include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__type_traits/is_convertible.h>
 #include <cuda/std/__type_traits/remove_reference.h>
+#include <cuda/std/__type_traits/type_list.h>
 
 #include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
 #include <cuda/experimental/__utility/basic_any/interfaces.cuh>
@@ -75,6 +76,33 @@ using __archetype_base =
                             _CUDA_VSTD::__type_case<1, __movable_archetype>,
                             _CUDA_VSTD::__type_case<2, __copyable_archetype>>;
 
+template <class _Interface>
+_CUDAX_HOST_API auto __as_archetype(_Interface&&) -> __archetype_base<_Interface>;
+template <class _Interface>
+_CUDAX_HOST_API auto __as_archetype(_Interface&) -> __archetype_base<_Interface>&;
+template <class _Interface>
+_CUDAX_HOST_API auto __as_archetype(_Interface const&) -> __archetype_base<_Interface> const&;
+template <class _Interface>
+_CUDAX_HOST_API auto __as_archetype(_Interface*) -> __archetype_base<_Interface>*;
+template <class _Interface>
+_CUDAX_HOST_API auto __as_archetype(_Interface const*) -> __archetype_base<_Interface> const*;
+template <class _Interface>
+_CUDAX_HOST_API auto __as_archetype(__ireference<_Interface>) -> __archetype_base<_Interface>&;
+template <class _Interface>
+_CUDAX_HOST_API auto __as_archetype(__ireference<_Interface const>) -> __archetype_base<_Interface> const&;
+
+template <class _Archetype>
+_CUDAX_HOST_API auto __as_immovable(_Archetype&&) -> __immovable_archetype;
+template <class _Archetype>
+_CUDAX_HOST_API auto __as_immovable(_Archetype&) -> __immovable_archetype&;
+template <class _Archetype>
+_CUDAX_HOST_API auto __as_immovable(_Archetype const&) -> __immovable_archetype const&;
+template <class _Archetype>
+_CUDAX_HOST_API auto __as_immovable(_Archetype*) -> __immovable_archetype*;
+template <class _Archetype>
+_CUDAX_HOST_API auto __as_immovable(_Archetype const*) -> __immovable_archetype const*;
+
+#if _CCCL_COMPILER(MSVC)
 // Strip top-level cv- and ref-qualifiers from pointer types:
 template <class _Ty>
 auto __normalize(_Ty&&) -> _Ty
@@ -105,32 +133,6 @@ extern __identity_t<_Interface* (*) ()> __interface_from<basic_any<__ireference<
 template <class _Interface>
 extern __identity_t<_Interface* (*) ()> __interface_from<basic_any<__ireference<_Interface>> const*>;
 
-template <class _Interface>
-_CUDAX_HOST_API auto __as_archetype(_Interface&&) -> __archetype_base<_Interface>;
-template <class _Interface>
-_CUDAX_HOST_API auto __as_archetype(_Interface&) -> __archetype_base<_Interface>&;
-template <class _Interface>
-_CUDAX_HOST_API auto __as_archetype(_Interface const&) -> __archetype_base<_Interface> const&;
-template <class _Interface>
-_CUDAX_HOST_API auto __as_archetype(_Interface*) -> __archetype_base<_Interface>*;
-template <class _Interface>
-_CUDAX_HOST_API auto __as_archetype(_Interface const*) -> __archetype_base<_Interface> const*;
-template <class _Interface>
-_CUDAX_HOST_API auto __as_archetype(__ireference<_Interface>) -> __archetype_base<_Interface>&;
-template <class _Interface>
-_CUDAX_HOST_API auto __as_archetype(__ireference<_Interface const>) -> __archetype_base<_Interface> const&;
-
-template <class _Archetype>
-_CUDAX_HOST_API auto __as_immovable(_Archetype&&) -> __immovable_archetype;
-template <class _Archetype>
-_CUDAX_HOST_API auto __as_immovable(_Archetype&) -> __immovable_archetype&;
-template <class _Archetype>
-_CUDAX_HOST_API auto __as_immovable(_Archetype const&) -> __immovable_archetype const&;
-template <class _Archetype>
-_CUDAX_HOST_API auto __as_immovable(_Archetype*) -> __immovable_archetype*;
-template <class _Archetype>
-_CUDAX_HOST_API auto __as_immovable(_Archetype const*) -> __immovable_archetype const*;
-
 template <class _CvAny>
 using __normalized_interface_of _CCCL_NODEBUG_ALIAS = decltype(__interface_from<__normalize_t<_CvAny>>());
 
@@ -142,12 +144,43 @@ template <class _CvAny>
 using __dst_archetype_of _CCCL_NODEBUG_ALIAS =
   decltype(__cudax::__as_immovable(__cudax::__as_archetype(__interface_from<__normalize_t<_CvAny>>())));
 
+#else // ^^^ MSVC ^^^ / vvv !MSVC vvv
+
+template <class _Interface>
+_CUDAX_HOST_API auto __interface_from(basic_any<_Interface>&&) -> _Interface;
+template <class _Interface>
+_CUDAX_HOST_API auto __interface_from(basic_any<__ireference<_Interface>>&&) -> _Interface;
+template <class _Interface>
+_CUDAX_HOST_API auto __interface_from(basic_any<_Interface>&) -> _Interface&;
+template <class _Interface>
+_CUDAX_HOST_API auto __interface_from(basic_any<_Interface> const&) -> _Interface const&;
+template <class _Interface>
+_CUDAX_HOST_API auto __interface_from(basic_any<_Interface>*) -> _Interface*;
+template <class _Interface>
+_CUDAX_HOST_API auto __interface_from(basic_any<_Interface> const*) -> _Interface const*;
+template <class _Interface>
+_CUDAX_HOST_API auto __interface_from(basic_any<__ireference<_Interface>>*) -> _Interface*;
+template <class _Interface>
+_CUDAX_HOST_API auto __interface_from(basic_any<__ireference<_Interface>> const*) -> _Interface*;
+
+template <class _CvAny>
+using __normalized_interface_of _CCCL_NODEBUG_ALIAS = decltype(__cudax::__interface_from(declval<_CvAny>()));
+
+template <class _CvAny>
+using __src_archetype_of _CCCL_NODEBUG_ALIAS =
+  decltype(__cudax::__as_archetype(__cudax::__interface_from(declval<_CvAny>())));
+
+template <class _CvAny>
+using __dst_archetype_of _CCCL_NODEBUG_ALIAS =
+  decltype(__cudax::__as_immovable(__cudax::__as_archetype(__cudax::__interface_from(declval<_CvAny>()))));
+#endif // !MSVC
+
 // If the archetypes are implicitly convertible, then it is possible to
 // dynamically cast from the source to the destination. The cast may fail,
 // but at least it is possible.
 template <class _SrcCvAny, class _DstCvAny>
 _CCCL_CONCEPT __any_castable_to =
-  _CUDA_VSTD::is_convertible_v<__src_archetype_of<_SrcCvAny>, __dst_archetype_of<_DstCvAny>>;
+  _CUDA_VSTD::convertible_to<__src_archetype_of<_SrcCvAny>, __dst_archetype_of<_DstCvAny>>;
 
 // If the archetypes are implicitly convertible **and** the source interface
 // is an extension of the destination one, then it is possible to implicitly
