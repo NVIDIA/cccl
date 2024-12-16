@@ -309,7 +309,8 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES any_resource
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES(_CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__type_set<_OtherProperties...>, _Properties...>)
   any_resource(any_async_resource<_OtherProperties...> __other) noexcept
-      : basic_any<__iresource<_Properties...>>(static_cast<basic_any<__iasync_resource<_OtherProperties...>>&>(__other))
+      : __cudax::basic_any<__iresource<_Properties...>>(
+          static_cast<__cudax::basic_any<__iasync_resource<_OtherProperties...>>&>(__other))
   {}
 
 private:
@@ -351,8 +352,8 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES resource_ref
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES(_CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__type_set<_OtherProperties...>, _Properties...>)
   resource_ref(async_resource_ref<_OtherProperties...> __other) noexcept
-      : basic_any<__iresource<_Properties...>&>(
-          static_cast<basic_any<__iasync_resource<_OtherProperties...>&>&>(__other))
+      : __cudax::basic_any<__iresource<_Properties...>&>(
+          static_cast<__cudax::basic_any<__iasync_resource<_OtherProperties...>&>&>(__other))
   {}
 
   // Conversions from the resource_ref types in cuda::mr is not supported.
