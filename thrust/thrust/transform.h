@@ -84,6 +84,11 @@ THRUST_NAMESPACE_BEGIN
 //! // data is now {5, 0, -2, 3, -2, -4, 0, 1, -2, -8};
 //! \endcode
 //!
+//! @rst
+//! Some backends of transform may take advantage knowing if the transformation operation supports
+//! :ref:`copyable arguments <address-stability>`.
+//! @endrst
+//!
 //! \see https://en.cppreference.com/w/cpp/algorithm/transform
 template <typename DerivedPolicy, typename InputIterator, typename OutputIterator, typename UnaryFunction>
 _CCCL_HOST_DEVICE OutputIterator transform(
@@ -128,6 +133,11 @@ _CCCL_HOST_DEVICE OutputIterator transform(
 //!
 //!  // data is now {5, 0, -2, 3, -2, -4, 0, 1, -2, -8};
 //!  \endcode
+//!
+//! @rst
+//! Some backends of transform may take advantage knowing if the transformation operation supports
+//! :ref:`copyable arguments <address-stability>`.
+//! @endrst
 //!
 //!  \see https://en.cppreference.com/w/cpp/algorithm/transform
 template <typename InputIterator, typename OutputIterator, typename UnaryFunction>
@@ -182,6 +192,11 @@ OutputIterator transform(InputIterator first, InputIterator last, OutputIterator
 //!
 //! // output is now {-2,  6,  0,  4,  4,  7};
 //! \endcode
+//!
+//! @rst
+//! Some backends of transform may take advantage knowing if the transformation operation supports
+//! :ref:`copyable arguments <address-stability>`.
+//! @endrst
 //!
 //! \see https://en.cppreference.com/w/cpp/algorithm/transform
 template <typename DerivedPolicy,
@@ -239,6 +254,11 @@ _CCCL_HOST_DEVICE OutputIterator transform(
 //!
 //! // output is now {-2,  6,  0,  4,  4,  7};
 //! \endcode
+//!
+//! @rst
+//! Some backends of transform may take advantage knowing if the transformation operation supports
+//! :ref:`copyable arguments <address-stability>`.
+//! @endrst
 //!
 //! \see https://en.cppreference.com/w/cpp/algorithm/transform
 template <typename InputIterator1, typename InputIterator2, typename OutputIterator, typename BinaryFunction>
