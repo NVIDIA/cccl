@@ -120,6 +120,9 @@ public:
   template <typename Fun>
   void operator->*(Fun&& f)
   {
+    auto& dot        = *ctx.get_dot();
+    auto& statistics = reserved::task_statistics::instance();
+
     auto t = ctx.task(exec_place::host);
     t.add_deps(deps);
     if (!symbol.empty())
@@ -127,13 +130,48 @@ public:
       t.set_symbol(symbol);
     }
 
+    cudaEvent_t start_event, end_event;
+    const bool record_time = t.schedule_task() || statistics.is_calibrating_to_file();
+
     t.start();
+
+    if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+    {
+      if (record_time)
+      {
+        cuda_safe_call(cudaEventCreate(&start_event));
+        cuda_safe_call(cudaEventCreate(&end_event));
+        cuda_safe_call(cudaEventRecord(start_event, t.get_stream()));
+      }
+    }
+
     SCOPE(exit)
     {
-      t.end();
+      t.end_uncleared();
+      if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+      {
+        if (record_time)
+        {
+          cuda_safe_call(cudaEventRecord(end_event, t.get_stream()));
+          cuda_safe_call(cudaEventSynchronize(end_event));
+
+          float milliseconds = 0;
+          cuda_safe_call(cudaEventElapsedTime(&milliseconds, start_event, end_event));
+
+          if (dot.is_tracing())
+          {
+            dot.template add_vertex_timing<typename Ctx::task_type>(t, milliseconds, -1);
+          }
+
+          if (statistics.is_calibrating())
+          {
+            statistics.log_task_time(t, milliseconds);
+          }
+        }
+      }
+      t.clear();
     };
 
-    auto& dot = *ctx.get_dot();
     if (dot.is_tracing())
     {
       dot.template add_vertex<typename Ctx::task_type, logical_data_untyped>(t);
@@ -584,7 +622,7 @@ protected:
 
     /**
      * @brief Detach all allocators previously attached in this context to
-     * release ressources that might have been cached
+     * release resources that might have been cached
      */
     void detach_allocators(backend_ctx_untyped& bctx)
     {

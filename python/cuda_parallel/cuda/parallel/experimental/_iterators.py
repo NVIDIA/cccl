@@ -259,7 +259,7 @@ def make_transform_iterator(it, op):
             self._it = it
             numba_type = it.numba_type
             # TODO: the abi name below isn't unique enough when we have e.g.,
-            # two indentically named `op` functions with different
+            # two identically named `op` functions with different
             # signatures, bytecodes, and/or closure variables.
             op_abi_name = f"{self.__class__.__name__}_{op.py_func.__name__}"
 

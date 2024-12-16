@@ -141,7 +141,7 @@ TEMPLATE_TEST_CASE(
       CUDAX_CHECK(input.size_bytes() == 0);
     }
 
-    { // Ensure self move assignment doesnt do anything
+    { // Ensure self move assignment does not do anything
       uninitialized_buffer buf{resource, 1337};
       const auto* old_ptr = buf.data();
 
@@ -180,7 +180,7 @@ TEMPLATE_TEST_CASE(
       "");
   }
 
-  SECTION("convertion to span")
+  SECTION("conversion to span")
   {
     uninitialized_buffer buf{resource, 42};
     const cuda::std::span<TestType> as_span{buf};

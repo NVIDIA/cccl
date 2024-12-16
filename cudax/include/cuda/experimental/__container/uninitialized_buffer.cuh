@@ -76,7 +76,7 @@ private:
   template <class, class...>
   friend class uninitialized_buffer;
 
-  //! @brief Helper to check whether a different buffer still statisfies all properties of this one
+  //! @brief Helper to check whether a different buffer still satisfies all properties of this one
   template <class... _OtherProperties>
   static constexpr bool __properties_match =
     !_CCCL_TRAIT(_CUDA_VSTD::is_same,
@@ -165,7 +165,7 @@ public:
       , __buf_(_CUDA_VSTD::exchange(__other.__buf_, nullptr))
   {}
 
-  //! @brief Move-assings a \c uninitialized_buffer from \p __other
+  //! @brief Move-assigns a \c uninitialized_buffer from \p __other
   //! @param __other Another \c uninitialized_buffer
   //! Deallocates the current allocation and then takes ownership of the allocation in \p __other and resets it
   _CCCL_HIDE_FROM_ABI uninitialized_buffer& operator=(uninitialized_buffer&& __other) noexcept

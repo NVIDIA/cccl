@@ -115,7 +115,7 @@ public:
     }
     else
     {
-      // We either created independant task nodes, or a child graph. We need
+      // We either created independent task nodes, or a child graph. We need
       // to inject input dependencies, and make the task completion depend on
       // task nodes or the child graph.
       if (task_nodes.size() > 0)
@@ -397,7 +397,7 @@ private:
   cudaGraph_t child_graph       = nullptr;
   bool must_destroy_child_graph = false;
 
-  /* If the task corresponds to independant graph nodes, we do not use a
+  /* If the task corresponds to independent graph nodes, we do not use a
    * child graph, but add nodes directly */
   ::std::vector<cudaGraphNode_t> task_nodes;
 

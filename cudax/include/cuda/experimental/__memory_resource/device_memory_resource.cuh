@@ -239,7 +239,7 @@ public:
 
   //! @brief Enable peer access to memory allocated through this memory resource by the supplied devices
   //!
-  //! Access is controlled through the underyling memory pool, so this
+  //! Access is controlled through the underlying memory pool, so this
   //! setting is shared between all memory resources created from the same pool.
   //! Device on which this resource allocates memory can be included in the vector.
   //!
@@ -252,7 +252,7 @@ public:
 
   //! @brief Enable peer access to memory allocated through this memory resource by the supplied device
   //!
-  //! Access is controlled through the underyling memory pool, so this
+  //! Access is controlled through the underlying memory pool, so this
   //! setting is shared between all memory resources created from the same pool.
   //!
   //! @param __device device_ref indicating for which device the access should be enabled
@@ -263,7 +263,7 @@ public:
 
   //! @brief Enable peer access to memory allocated through this memory resource by the supplied devices
   //!
-  //! Access is controlled through the underyling memory pool, so this
+  //! Access is controlled through the underlying memory pool, so this
   //! setting is shared between all memory resources created from the same pool.
   //! Device on which this resource allocates memory can be included in the vector.
   //!
@@ -276,7 +276,7 @@ public:
 
   //! @brief Enable peer access to memory allocated through this memory resource by the supplied device
   //!
-  //! Access is controlled through the underyling memory pool, so this
+  //! Access is controlled through the underlying memory pool, so this
   //! setting is shared between all memory resources created from the same pool.
   //!
   //! @param __device device_ref indicating for which device the access should be enabled

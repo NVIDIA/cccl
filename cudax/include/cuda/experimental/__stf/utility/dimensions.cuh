@@ -72,7 +72,7 @@ public:
     return get(axis_id);
   }
 
-  /// Comparision of two pos4 in lexicographical order
+  /// Comparison of two pos4 in lexicographical order
   _CCCL_HOST_DEVICE constexpr bool operator<(const pos4& rhs) const
   {
     if (x != rhs.x)

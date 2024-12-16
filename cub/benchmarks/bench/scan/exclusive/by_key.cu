@@ -36,7 +36,7 @@
 // %RANGE% TUNE_DELAY_CONSTRUCTOR_ID dcid 0:7:1
 // %RANGE% TUNE_L2_WRITE_LATENCY_NS l2w 0:1200:5
 // %RANGE% TUNE_TRANSPOSE trp 0:1:1
-// %RANGE% TUNE_LOAD ld 0:2:1
+// %RANGE% TUNE_LOAD ld 0:1:1
 
 #if !TUNE_BASE
 #  if TUNE_TRANSPOSE == 0
@@ -49,7 +49,7 @@
 
 #  if TUNE_LOAD == 0
 #    define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
-#  else // TUNE_LOAD == 1
+#  elif TUNE_LOAD == 1
 #    define TUNE_LOAD_MODIFIER cub::LOAD_CA
 #  endif // TUNE_LOAD
 

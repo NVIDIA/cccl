@@ -35,7 +35,7 @@ struct execution_policy_marker
 {};
 
 // execution_policy_base serves as a guard against
-// inifinite recursion in thrust entry points:
+// infinite recursion in thrust entry points:
 //
 // template<typename DerivedPolicy>
 // void foo(const thrust::detail::execution_policy_base<DerivedPolicy> &s)

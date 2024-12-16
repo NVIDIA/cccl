@@ -207,7 +207,7 @@ get_levels_range_end(const LDims& l, [[maybe_unused]] const Levels&... levels) n
   }
 }
 
-// Find the LTop in Levels... and discard the preceeding ones
+// Find the LTop in Levels... and discard the preceding ones
 template <typename LTop, typename LUnit, typename LTopDims, typename... Levels>
 _CCCL_NODISCARD _CUDAX_API constexpr auto get_levels_range_start(const LTopDims& ltop, const Levels&... levels) noexcept
 {
@@ -221,7 +221,7 @@ _CCCL_NODISCARD _CUDAX_API constexpr auto get_levels_range_start(const LTopDims&
   }
 }
 
-// Creates a new hierachy from Levels... cutting out levels between LTop and LUnit
+// Creates a new hierarchy from Levels... cutting out levels between LTop and LUnit
 template <typename LTop, typename LUnit, typename... Levels>
 _CCCL_NODISCARD _CUDAX_API constexpr auto get_levels_range(const Levels&... levels) noexcept
 {
@@ -464,7 +464,7 @@ public:
    * It returns a hierarchy_dimensions_fragment that includes levels starting with the
    * level specified in Level and ending with a level before Unit. Toegether with
    * hierarchy_add_level function it can be used to create a new hierarchy that is a modification
-   * of an exsiting hierarchy.
+   * of an existing hierarchy.
    * @par Snippet
    * @code
    * #include <cudax/hierarchy_dimensions.cuh>
@@ -845,7 +845,7 @@ constexpr auto _CCCL_HOST get_launch_dimensions(const hierarchy_dimensions<Level
 
 /* TODO consider having LUnit optional argument for template argument deduction
  This could have been a single function with make_hierarchy and first template
- argument defauled, but then the above TODO would be impossible and the current
+ argument defaulted, but then the above TODO would be impossible and the current
  name makes more sense */
 template <typename LUnit = void, typename L1, typename... Levels>
 constexpr auto make_hierarchy_fragment(L1 l1, Levels... ls) noexcept

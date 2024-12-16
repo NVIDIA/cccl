@@ -999,7 +999,7 @@ void vector_base<T, Alloc>::range_assign(
   } // end if
   else if (size() >= n)
   {
-    // we can already accomodate the new range
+    // we can already accommodate the new range
     iterator new_end = thrust::copy(first, last, begin());
 
     // destroy the elements we don't need

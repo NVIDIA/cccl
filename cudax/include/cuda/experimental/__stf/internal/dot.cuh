@@ -602,7 +602,7 @@ public:
     {
       float avg = sum / cnt;
 
-      // Update colors assocated to tasks with timing now in order to
+      // Update colors associated to tasks with timing now in order to
       // illustrate how long they take to execute relative to the average
       for (auto& pc : per_ctx)
       {

@@ -428,7 +428,7 @@ C2H_TEST("Virtual shared memory works within algorithms", "[util][vsmem]", type_
   using fallback_policy_t = typename device_dummy_algorithm_policy_t<item_t*>::policy_350::FallbackDummyAlgorithmPolicy;
   using fallback_agent_t  = agent_dummy_algorithm_t<fallback_policy_t, item_t*, item_t*, offset_t>;
 
-  // Get the information as it is expected from the vsmem helper to work as epxected
+  // Get the information as it is expected from the vsmem helper to work as expected
   std::size_t default_smem_size  = sizeof(typename default_agent_t::TempStorage);
   std::size_t fallback_smem_size = sizeof(typename fallback_agent_t::TempStorage);
   bool expected_to_use_fallback =

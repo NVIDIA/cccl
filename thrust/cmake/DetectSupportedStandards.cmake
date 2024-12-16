@@ -1,4 +1,4 @@
-# Detect the langauge standards supported by the current compilers.
+# Detect the language standards supported by the current compilers.
 #
 # Usage: detect_supported_cxx_standards(<var_prefix> <lang> <standards>)
 #

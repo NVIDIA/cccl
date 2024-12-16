@@ -49,7 +49,7 @@ def cleanFile(filename):
 
 @contextmanager
 def guardedTempFilename(suffix="", prefix="", dir=None):
-    # Creates and yeilds a temporary filename within a with statement. The file
+    # Creates and yields a temporary filename within a with statement. The file
     # is removed upon scope exit.
     handle, name = tempfile.mkstemp(suffix=suffix, prefix=prefix, dir=dir)
     os.close(handle)
@@ -59,7 +59,7 @@ def guardedTempFilename(suffix="", prefix="", dir=None):
 
 @contextmanager
 def guardedFilename(name):
-    # yeilds a filename within a with statement. The file is removed upon scope
+    # yields a filename within a with statement. The file is removed upon scope
     # exit.
     yield name
     cleanFile(name)
@@ -67,7 +67,7 @@ def guardedFilename(name):
 
 @contextmanager
 def nullContext(value):
-    # yeilds a variable within a with statement. No action is taken upon scope
+    # yields a variable within a with statement. No action is taken upon scope
     # exit.
     yield value
 

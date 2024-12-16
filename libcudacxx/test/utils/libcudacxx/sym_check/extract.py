@@ -194,7 +194,7 @@ def extract_symbols(lib_file, static_lib=None):
     """
     Extract and return a list of symbols extracted from a static or dynamic
     library. The symbols are extracted using NM or readelf. They are then
-    filtered and formated. Finally they symbols are made unique.
+    filtered and formatted. Finally they symbols are made unique.
     """
     if static_lib is None:
         _, ext = os.path.splitext(lib_file)

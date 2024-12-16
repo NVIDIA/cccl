@@ -258,7 +258,7 @@ template<class T> complex<T> tanh (const complex<T>&);
 #include <cuda/std/type_traits>
 #include <cuda/std/version>
 
-// Compatability helpers for thrust to convert between `std::complex` and `cuda::std::complex`
+// Compatibility helpers for thrust to convert between `std::complex` and `cuda::std::complex`
 #if !_CCCL_COMPILER(NVRTC)
 #  include <complex>
 #  include <sstream> // for std::basic_ostringstream

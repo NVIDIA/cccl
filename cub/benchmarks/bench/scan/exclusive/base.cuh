@@ -43,7 +43,7 @@
 
 #  if TUNE_LOAD == 0
 #    define TUNE_LOAD_MODIFIER cub::LOAD_DEFAULT
-#  else // TUNE_LOAD == 1
+#  elif TUNE_LOAD == 1
 #    define TUNE_LOAD_MODIFIER cub::LOAD_CA
 #  endif // TUNE_LOAD
 

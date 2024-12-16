@@ -1112,7 +1112,7 @@ There are currently two policies readily available in CUDASTF : -
 *tiled* layout. For multi-dimensional shapes, the outermost dimension is
 dispatched into contiguous tiles of size ``TILE_SIZE``. -
 ``blocked_partition`` dispatches entries of the shape using a *blocked*
-layout, where each entry of the grid of places receive approximatively
+layout, where each entry of the grid of places receive approximately
 the same contiguous portion of the shape, dispatched along the outermost
 dimension.
 
@@ -1413,7 +1413,7 @@ define their own operators. These operators are defined in the
 for example illustrates how to implement the ``sum`` reduction operator.
 
 .. code-block:: cpp
-   :caption: Definining the sum reduction operator
+   :caption: Defining the sum reduction operator
 
    template <typename T>
    class sum

@@ -70,7 +70,7 @@ class hashtable_fusion_t : public stream_reduction_operator<hashtable>
   }
 };
 
-// A kernel to fill the hashtable with some fictious values
+// A kernel to fill the hashtable with some fictitious values
 __global__ void fill_table(size_t dev_id, size_t cnt, hashtable h)
 {
   unsigned int threadid = blockIdx.x * blockDim.x + threadIdx.x;

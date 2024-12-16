@@ -76,7 +76,7 @@ int main()
   // Note: keys have not been modified
   // Note: permutation now maps unsorted keys to sorted order
 
-  // permute the key arrays by the final permuation
+  // permute the key arrays by the final permutation
   apply_permutation(lower, permutation);
   apply_permutation(middle, permutation);
   apply_permutation(upper, permutation);

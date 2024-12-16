@@ -247,7 +247,7 @@ struct AgentRadixSortDownsweep
   std::uint32_t current_bit;
   std::uint32_t num_bits;
 
-  // Whether to short-cirucit
+  // Whether to short-circuit
   int short_circuit;
 
   DecomposerT decomposer;
