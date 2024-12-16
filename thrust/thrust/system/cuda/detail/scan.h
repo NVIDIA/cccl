@@ -129,7 +129,7 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
                       InputValueT,
                       std::uint32_t,
                       AccumT,
-                      cub::detail::scan::policy_hub<AccumT, ScanOp>,
+                      cub::detail::scan::policy_hub<AccumT, std::int32_t, ScanOp>,
                       cub::ForceInclusive::Yes>;
   using Dispatch64 =
     cub::DispatchScan<InputIt,
@@ -138,7 +138,7 @@ _CCCL_HOST_DEVICE OutputIt inclusive_scan_n_impl(
                       InputValueT,
                       std::uint64_t,
                       AccumT,
-                      cub::detail::scan::policy_hub<AccumT, ScanOp>,
+                      cub::detail::scan::policy_hub<AccumT, std::int64_t, ScanOp>,
                       cub::ForceInclusive::Yes>;
 
   cudaStream_t stream = thrust::cuda_cub::stream(policy);
