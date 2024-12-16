@@ -140,8 +140,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nwarpid()
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_get_sreg_nwarpid_is_not_supported_before_SM_35__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 200
@@ -268,8 +267,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nsmid()
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_get_sreg_nsmid_is_not_supported_before_SM_35__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 200
@@ -334,8 +332,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_clusterid_x()
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_get_sreg_clusterid_x_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 780
@@ -357,8 +354,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_clusterid_y()
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_get_sreg_clusterid_y_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 780
@@ -380,8 +376,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_clusterid_z()
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_get_sreg_clusterid_z_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 780
@@ -403,8 +398,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nclusterid_x()
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_get_sreg_nclusterid_x_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 780
@@ -426,8 +420,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nclusterid_y()
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_get_sreg_nclusterid_y_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 780
@@ -449,8 +442,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_nclusterid_z()
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_get_sreg_nclusterid_z_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 780
@@ -472,8 +464,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_ctaid_x()
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_get_sreg_cluster_ctaid_x_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 780
@@ -495,8 +486,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_ctaid_y()
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_get_sreg_cluster_ctaid_y_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 780
@@ -518,8 +508,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_ctaid_z()
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_get_sreg_cluster_ctaid_z_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 780
@@ -541,8 +530,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_nctaid_x()
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_get_sreg_cluster_nctaid_x_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 780
@@ -564,8 +552,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_nctaid_y()
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_get_sreg_cluster_nctaid_y_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 780
@@ -587,8 +574,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_nctaid_z()
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_get_sreg_cluster_nctaid_z_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 780
@@ -610,8 +596,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_ctarank()
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_get_sreg_cluster_ctarank_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 780
@@ -633,8 +618,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_cluster_nctarank()
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_get_sreg_cluster_nctarank_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 780
@@ -656,8 +640,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_eq()
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_get_sreg_lanemask_eq_is_not_supported_before_SM_35__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 200
@@ -679,8 +662,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_le()
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_get_sreg_lanemask_le_is_not_supported_before_SM_35__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 200
@@ -702,8 +684,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_lt()
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_get_sreg_lanemask_lt_is_not_supported_before_SM_35__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 200
@@ -725,8 +706,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_ge()
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_get_sreg_lanemask_ge_is_not_supported_before_SM_35__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 200
@@ -748,8 +728,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_lanemask_gt()
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_get_sreg_lanemask_gt_is_not_supported_before_SM_35__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 200
@@ -786,8 +765,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_clock_hi()
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_get_sreg_clock_hi_is_not_supported_before_SM_35__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 500
@@ -809,8 +787,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint64_t get_sreg_clock64()
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_get_sreg_clock64_is_not_supported_before_SM_35__();
-  _CUDA_VSTD::uint64_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 200
@@ -832,8 +809,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint64_t get_sreg_globaltimer()
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_get_sreg_globaltimer_is_not_supported_before_SM_35__();
-  _CUDA_VSTD::uint64_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 310
@@ -855,8 +831,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_globaltimer_lo()
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_get_sreg_globaltimer_lo_is_not_supported_before_SM_35__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 310
@@ -878,8 +853,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_globaltimer_hi()
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_get_sreg_globaltimer_hi_is_not_supported_before_SM_35__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 310
@@ -901,8 +875,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_total_smem_size()
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_get_sreg_total_smem_size_is_not_supported_before_SM_35__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 410
@@ -924,8 +897,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_aggr_smem_size()
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_get_sreg_aggr_smem_size_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 810
@@ -947,8 +919,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t get_sreg_dynamic_smem_size()
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_get_sreg_dynamic_smem_size_is_not_supported_before_SM_35__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 410
@@ -970,8 +941,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint64_t get_sreg_current_graph_exec()
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_get_sreg_current_graph_exec_is_not_supported_before_SM_50__();
-  _CUDA_VSTD::uint64_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 800

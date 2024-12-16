@@ -28,8 +28,7 @@ multimem_ld_reduce(sem_weak_t, op_min_t, const _CUDA_VSTD::uint32_t* __addr)
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 810
@@ -117,8 +116,7 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_min_t, const _
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 810
@@ -148,8 +146,7 @@ multimem_ld_reduce(sem_weak_t, op_min_t, const _CUDA_VSTD::uint64_t* __addr)
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint64_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 810
@@ -237,8 +234,7 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_min_t, const _
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint64_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 810
@@ -268,8 +264,7 @@ multimem_ld_reduce(sem_weak_t, op_min_t, const _CUDA_VSTD::int32_t* __addr)
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::int32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 810
@@ -357,8 +352,7 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_min_t, const _
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::int32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 810
@@ -388,8 +382,7 @@ multimem_ld_reduce(sem_weak_t, op_min_t, const _CUDA_VSTD::int64_t* __addr)
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::int64_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 810
@@ -477,8 +470,7 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_min_t, const _
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::int64_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 810
@@ -508,8 +500,7 @@ multimem_ld_reduce(sem_weak_t, op_max_t, const _CUDA_VSTD::uint32_t* __addr)
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 810
@@ -597,8 +588,7 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_max_t, const _
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 810
@@ -628,8 +618,7 @@ multimem_ld_reduce(sem_weak_t, op_max_t, const _CUDA_VSTD::uint64_t* __addr)
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint64_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 810
@@ -717,8 +706,7 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_max_t, const _
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint64_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 810
@@ -748,8 +736,7 @@ multimem_ld_reduce(sem_weak_t, op_max_t, const _CUDA_VSTD::int32_t* __addr)
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::int32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 810
@@ -837,8 +824,7 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_max_t, const _
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::int32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 810
@@ -868,8 +854,7 @@ multimem_ld_reduce(sem_weak_t, op_max_t, const _CUDA_VSTD::int64_t* __addr)
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::int64_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 810
@@ -957,8 +942,7 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_max_t, const _
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::int64_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 810
@@ -988,8 +972,7 @@ multimem_ld_reduce(sem_weak_t, op_add_t, const _CUDA_VSTD::uint32_t* __addr)
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 810
@@ -1077,8 +1060,7 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_add_t, const _
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 810
@@ -1108,8 +1090,7 @@ multimem_ld_reduce(sem_weak_t, op_add_t, const _CUDA_VSTD::uint64_t* __addr)
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint64_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 810
@@ -1197,8 +1178,7 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_add_t, const _
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint64_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 810
@@ -1228,8 +1208,7 @@ multimem_ld_reduce(sem_weak_t, op_add_t, const _CUDA_VSTD::int32_t* __addr)
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::int32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 810
@@ -1317,8 +1296,7 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_add_t, const _
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::int32_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 810
@@ -1348,8 +1326,7 @@ multimem_ld_reduce(sem_weak_t, op_add_t, const _CUDA_VSTD::int64_t* __addr)
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::int64_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 810
@@ -1437,8 +1414,7 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_add_t, const _
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::int64_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 810
@@ -1468,7 +1444,7 @@ _CCCL_DEVICE static inline _B32 multimem_ld_reduce(sem_weak_t, op_and_op_t, cons
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _uint32_t ____err_out_var;
+  _uint32_t __err_out_var = 0;
   return *reinterpret_cast<_B32*>(&__err_out_var);
 #  endif
 }
@@ -1558,7 +1534,7 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_and_op_t, cons
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _uint32_t ____err_out_var;
+  _uint32_t __err_out_var = 0;
   return *reinterpret_cast<_B32*>(&__err_out_var);
 #  endif
 }
@@ -1589,7 +1565,7 @@ _CCCL_DEVICE static inline _B32 multimem_ld_reduce(sem_weak_t, op_or_op_t, const
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _uint32_t ____err_out_var;
+  _uint32_t __err_out_var = 0;
   return *reinterpret_cast<_B32*>(&__err_out_var);
 #  endif
 }
@@ -1679,7 +1655,7 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_or_op_t, const
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _uint32_t ____err_out_var;
+  _uint32_t __err_out_var = 0;
   return *reinterpret_cast<_B32*>(&__err_out_var);
 #  endif
 }
@@ -1710,7 +1686,7 @@ _CCCL_DEVICE static inline _B32 multimem_ld_reduce(sem_weak_t, op_xor_op_t, cons
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _uint32_t ____err_out_var;
+  _uint32_t __err_out_var = 0;
   return *reinterpret_cast<_B32*>(&__err_out_var);
 #  endif
 }
@@ -1800,7 +1776,7 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_xor_op_t, cons
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _uint32_t ____err_out_var;
+  _uint32_t __err_out_var = 0;
   return *reinterpret_cast<_B32*>(&__err_out_var);
 #  endif
 }
@@ -1831,7 +1807,7 @@ _CCCL_DEVICE static inline _B64 multimem_ld_reduce(sem_weak_t, op_and_op_t, cons
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _uint64_t ____err_out_var;
+  _uint64_t __err_out_var = 0;
   return *reinterpret_cast<_B64*>(&__err_out_var);
 #  endif
 }
@@ -1921,7 +1897,7 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_and_op_t, cons
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _uint64_t ____err_out_var;
+  _uint64_t __err_out_var = 0;
   return *reinterpret_cast<_B64*>(&__err_out_var);
 #  endif
 }
@@ -1952,7 +1928,7 @@ _CCCL_DEVICE static inline _B64 multimem_ld_reduce(sem_weak_t, op_or_op_t, const
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _uint64_t ____err_out_var;
+  _uint64_t __err_out_var = 0;
   return *reinterpret_cast<_B64*>(&__err_out_var);
 #  endif
 }
@@ -2042,7 +2018,7 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_or_op_t, const
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _uint64_t ____err_out_var;
+  _uint64_t __err_out_var = 0;
   return *reinterpret_cast<_B64*>(&__err_out_var);
 #  endif
 }
@@ -2073,7 +2049,7 @@ _CCCL_DEVICE static inline _B64 multimem_ld_reduce(sem_weak_t, op_xor_op_t, cons
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _uint64_t ____err_out_var;
+  _uint64_t __err_out_var = 0;
   return *reinterpret_cast<_B64*>(&__err_out_var);
 #  endif
 }
@@ -2163,7 +2139,7 @@ multimem_ld_reduce(sem_t<_Sem> __sem, scope_t<_Scope> __scope, op_xor_op_t, cons
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_multimem_ld_reduce_is_not_supported_before_SM_90__();
-  _uint64_t ____err_out_var;
+  _uint64_t __err_out_var = 0;
   return *reinterpret_cast<_B64*>(&__err_out_var);
 #  endif
 }

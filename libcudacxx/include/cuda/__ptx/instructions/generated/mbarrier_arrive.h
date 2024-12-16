@@ -24,8 +24,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(_CUDA_VSTD::uint
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_80__();
-  _CUDA_VSTD::uint64_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 700
@@ -53,8 +52,7 @@ mbarrier_arrive(_CUDA_VSTD::uint64_t* __addr, const _CUDA_VSTD::uint32_t& __coun
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint64_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 780
@@ -100,8 +98,7 @@ mbarrier_arrive(sem_release_t, scope_t<_Scope> __scope, space_shared_t, _CUDA_VS
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint64_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 800
@@ -152,8 +149,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint64_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 800
@@ -271,8 +267,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint64_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
@@ -318,8 +313,7 @@ mbarrier_arrive(space_shared_t, sem_relaxed_t, scope_t<_Scope> __scope, _CUDA_VS
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint64_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860

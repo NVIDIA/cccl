@@ -119,7 +119,7 @@ _CCCL_DEVICE static inline _B32 clusterlaunchcontrol_query_cancel_get_first_ctai
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_clusterlaunchcontrol_query_cancel_get_first_ctaid_x_is_not_supported_before_SM_100__();
-  _uint32_t ____err_out_var;
+  _uint32_t __err_out_var = 0;
   return *reinterpret_cast<_B32*>(&__err_out_var);
 #  endif
 }
@@ -157,7 +157,7 @@ _CCCL_DEVICE static inline _B32 clusterlaunchcontrol_query_cancel_get_first_ctai
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_clusterlaunchcontrol_query_cancel_get_first_ctaid_y_is_not_supported_before_SM_100__();
-  _uint32_t ____err_out_var;
+  _uint32_t __err_out_var = 0;
   return *reinterpret_cast<_B32*>(&__err_out_var);
 #  endif
 }
@@ -195,7 +195,7 @@ _CCCL_DEVICE static inline _B32 clusterlaunchcontrol_query_cancel_get_first_ctai
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_clusterlaunchcontrol_query_cancel_get_first_ctaid_z_is_not_supported_before_SM_100__();
-  _uint32_t ____err_out_var;
+  _uint32_t __err_out_var = 0;
   return *reinterpret_cast<_B32*>(&__err_out_var);
 #  endif
 }

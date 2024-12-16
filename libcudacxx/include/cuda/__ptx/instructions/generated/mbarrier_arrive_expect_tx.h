@@ -49,8 +49,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive_expect_tx(
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_mbarrier_arrive_expect_tx_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint64_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 800
@@ -135,8 +134,7 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive_expect_tx(
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_mbarrier_arrive_expect_tx_is_not_supported_before_SM_90__();
-  _CUDA_VSTD::uint64_t ____err_out_var;
-  return __err_out_var;
+  return 0;
 #  endif
 }
 #endif // __cccl_ptx_isa >= 860
