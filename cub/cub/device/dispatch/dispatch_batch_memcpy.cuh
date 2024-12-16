@@ -154,7 +154,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT::BLO
       return;
     }
 
-    // Tiny remainders are copied without vectorizing laods
+    // Tiny remainders are copied without vectorizing loads
     if (buffer_sizes[buffer_id] - tile_offset_within_buffer <= 32)
     {
       BufferSizeT thread_offset = tile_offset_within_buffer + threadIdx.x;
@@ -285,9 +285,9 @@ template <typename InputBufferIt,
           typename BufferSizeIteratorT,
           typename BufferOffsetT,
           typename BlockOffsetT,
-          typename SelectedPolicy = batch_memcpy::policy_hub<BufferOffsetT, BlockOffsetT>,
-          bool IsMemcpy           = true>
-struct DispatchBatchMemcpy : SelectedPolicy
+          typename PolicyHub = batch_memcpy::policy_hub<BufferOffsetT, BlockOffsetT>,
+          bool IsMemcpy      = true>
+struct DispatchBatchMemcpy
 {
   //------------------------------------------------------------------------------
   // TYPE ALIASES
@@ -304,7 +304,7 @@ struct DispatchBatchMemcpy : SelectedPolicy
   using BufferSizeT = cub::detail::value_t<BufferSizeIteratorT>;
 
   //------------------------------------------------------------------------------
-  // Member Veriables
+  // Member Variables
   //------------------------------------------------------------------------------
   void* d_temp_storage;
   size_t& temp_storage_bytes;
@@ -345,8 +345,6 @@ struct DispatchBatchMemcpy : SelectedPolicy
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
-    using MaxPolicyT = typename DispatchBatchMemcpy::MaxPolicy;
-
     // Single-pass prefix scan tile states for the prefix-sum over the number of block-level buffers
     using BLevBufferOffsetTileState = cub::ScanTileState<BufferOffsetT>;
 
@@ -466,7 +464,7 @@ struct DispatchBatchMemcpy : SelectedPolicy
     auto init_scan_states_kernel =
       InitTileStateKernel<BLevBufferOffsetTileState, BLevBlockOffsetTileState, BlockOffsetT>;
     auto batch_memcpy_non_blev_kernel = BatchMemcpyKernel<
-      MaxPolicyT,
+      typename PolicyHub::MaxPolicy,
       InputBufferIt,
       OutputBufferIt,
       BufferSizeIteratorT,
@@ -481,7 +479,7 @@ struct DispatchBatchMemcpy : SelectedPolicy
       IsMemcpy>;
 
     auto multi_block_memcpy_kernel = MultiBlockBatchMemcpyKernel<
-      MaxPolicyT,
+      typename PolicyHub::MaxPolicy,
       BufferOffsetT,
       BlevBufferSrcsOutItT,
       BlevBufferDstsOutItT,
@@ -651,8 +649,6 @@ struct DispatchBatchMemcpy : SelectedPolicy
     BufferOffsetT num_buffers,
     cudaStream_t stream)
   {
-    using MaxPolicyT = typename DispatchBatchMemcpy::MaxPolicy;
-
     cudaError_t error = cudaSuccess;
 
     // Get PTX version
@@ -668,7 +664,7 @@ struct DispatchBatchMemcpy : SelectedPolicy
       d_temp_storage, temp_storage_bytes, input_buffer_it, output_buffer_it, buffer_sizes, num_buffers, stream);
 
     // Dispatch to chained policy
-    error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+    error = CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
     if (cudaSuccess != error)
     {
       return error;

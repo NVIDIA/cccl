@@ -171,7 +171,7 @@ enum class AccessibilityType
   Host,
 };
 
-template <AccessibilityType Accessibilty>
+template <AccessibilityType Accessibility>
 struct resource
 {
   void* allocate(size_t, size_t)
@@ -192,8 +192,8 @@ struct resource
 static_assert(cuda::mr::resource<resource<AccessibilityType::Host>>, "");
 static_assert(cuda::mr::resource<resource<AccessibilityType::Device>>, "");
 
-template <AccessibilityType Accessibilty>
-struct async_resource : public resource<Accessibilty>
+template <AccessibilityType Accessibility>
+struct async_resource : public resource<Accessibility>
 {
   void* allocate_async(size_t, size_t, cuda::stream_ref)
   {

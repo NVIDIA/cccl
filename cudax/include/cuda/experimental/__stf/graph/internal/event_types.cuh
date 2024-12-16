@@ -61,7 +61,7 @@ inline ::std::vector<cudaGraphNode_t> join_with_graph_nodes(event_list& prereqs,
     const auto ge = reserved::graph_event(e, reserved::use_dynamic_cast);
     EXPECT(current_epoch >= ge->epoch);
 
-    // If current_epoch > ge->epoch, then this was already implicitely
+    // If current_epoch > ge->epoch, then this was already implicitly
     // synchronized as different epochs are submitted sequentially.
     if (current_epoch == ge->epoch)
     {

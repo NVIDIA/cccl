@@ -48,7 +48,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_ForwardIte
   }
   while (true)
   {
-    // Find first element in sequence 1 that matchs *__first2, with a mininum of loop checks
+    // Find first element in sequence 1 that matches *__first2, with a minimum of loop checks
     while (true)
     {
       if (__first1 == __last1) // return __last1 if no element matches *__first2
@@ -70,7 +70,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 pair<_ForwardIte
       {
         return _CUDA_VSTD::make_pair(__first1, __m1);
       }
-      if (++__m1 == __last1) // Otherwise if source exhaused, pattern not found
+      if (++__m1 == __last1) // Otherwise if source exhausted, pattern not found
       {
         return _CUDA_VSTD::make_pair(__last1, __last1);
       }

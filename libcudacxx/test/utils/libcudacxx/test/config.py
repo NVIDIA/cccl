@@ -907,7 +907,7 @@ class Configuration(object):
         gcc_toolchain = self.get_lit_conf("gcc_toolchain")
         if gcc_toolchain:
             self.cxx.flags += ["--gcc-toolchain=" + gcc_toolchain]
-        # NOTE: the _DEBUG definition must preceed the triple check because for
+        # NOTE: the _DEBUG definition must precede the triple check because for
         # the Windows build of libc++, the forced inclusion of a header requires
         # that _DEBUG is defined.  Incorrect ordering will result in -target
         # being elided.

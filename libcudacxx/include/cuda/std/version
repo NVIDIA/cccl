@@ -33,6 +33,7 @@
 #define __cccl_lib_bool_constant                201505L
 #define __cccl_lib_bounded_array_traits         201902L
 #define __cccl_lib_byte                         201603L
+#define __cccl_lib_byteswap                     202110L
 #define __cccl_lib_clamp                        201603L
 #define __cccl_lib_endian                       201907L
 #define __cccl_lib_forward_like                 202207L
@@ -229,7 +230,6 @@
 // # define __cccl_lib_allocate_at_least                    202106L
 // # define __cccl_lib_associative_heterogeneous_erasure    202110L
 // # define __cccl_lib_bind_back                            202202L
-// # define __cccl_lib_byteswap                             202110L
 // # define __cccl_lib_constexpr_bitset                     202207L
 // # define __cccl_lib_constexpr_charconv                   202207L
 // # define __cccl_lib_constexpr_cmath                      202202L

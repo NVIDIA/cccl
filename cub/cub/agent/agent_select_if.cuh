@@ -734,7 +734,7 @@ struct AgentSelectIf
 
   /**
    * @brief Second phase of scattering partitioned items to global memory. Specialized for partitioning to a single
-   * iterator, where selected items are written in order from the beginning of the itereator and rejected items are
+   * iterator, where selected items are written in order from the beginning of the iterator and rejected items are
    * writtem from the iterators end backwards.
    */
   template <bool IS_LAST_TILE, typename PartitionedOutputItT>

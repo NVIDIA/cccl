@@ -65,7 +65,7 @@ static bool ensure_export_handle(::cudaMemPool_t pool, const ::cudaMemAllocation
   const ::cudaError_t status = ::cudaMemPoolExportToShareableHandle(&handle, pool, allocation_handle, 0);
   ::cudaGetLastError(); // Clear CUDA error state
 
-  // If no export was defined we need to querry cudaErrorInvalidValue
+  // If no export was defined we need to query cudaErrorInvalidValue
   return allocation_handle == ::cudaMemHandleTypeNone ? status == ::cudaErrorInvalidValue : status == ::cudaSuccess;
 }
 
@@ -184,7 +184,7 @@ TEST_CASE("device_memory_pool comparison", "[memory_resource]")
 {
   int current_device{};
   {
-    _CCCL_TRY_CUDA_API(::cudaGetDevice, "Failed to querry current device with with cudaGetDevice.", &current_device);
+    _CCCL_TRY_CUDA_API(::cudaGetDevice, "Failed to query current device with with cudaGetDevice.", &current_device);
   }
 
   int driver_version = 0;
@@ -219,7 +219,7 @@ TEST_CASE("device_memory_pool accessors", "[memory_resource]")
 {
   int current_device{};
   {
-    _CCCL_TRY_CUDA_API(::cudaGetDevice, "Failed to querry current device with with cudaGetDevice.", &current_device);
+    _CCCL_TRY_CUDA_API(::cudaGetDevice, "Failed to query current device with with cudaGetDevice.", &current_device);
   }
 
   int driver_version = 0;
@@ -314,7 +314,7 @@ TEST_CASE("device_memory_pool accessors", "[memory_resource]")
       // Set it to zero as everything else is illegal
       pool.set_attribute(::cudaMemPoolAttrReservedMemHigh, 0);
 
-      // Retrieve again and verify it was changed, which it wasnt...
+      // Retrieve again and verify it was changed, which it wasn't...
       size_t new_attr = pool.get_attribute(::cudaMemPoolAttrReservedMemHigh);
       CHECK(new_attr == attr);
 
@@ -343,7 +343,7 @@ TEST_CASE("device_memory_pool accessors", "[memory_resource]")
       // Set it to zero as everything else is illegal
       pool.set_attribute(::cudaMemPoolAttrUsedMemHigh, 0);
 
-      // Retrieve again and verify it was changed, which it wasnt...
+      // Retrieve again and verify it was changed, which it wasn't...
       size_t new_attr = pool.get_attribute(::cudaMemPoolAttrUsedMemHigh);
       CHECK(new_attr == attr);
 

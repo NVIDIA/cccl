@@ -218,8 +218,8 @@ struct device_dummy_algorithm_policy_t
 template <typename InputIteratorT,
           typename OutputIteratorT,
           typename OffsetT,
-          typename SelectedPolicy = device_dummy_algorithm_policy_t<InputIteratorT>>
-struct dispatch_dummy_algorithm_t : SelectedPolicy
+          typename PolicyHub = device_dummy_algorithm_policy_t<InputIteratorT>>
+struct dispatch_dummy_algorithm_t
 {
   using item_t = cub::detail::value_t<InputIteratorT>;
 
@@ -274,8 +274,6 @@ struct dispatch_dummy_algorithm_t : SelectedPolicy
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION __forceinline__ cudaError_t Invoke()
   {
-    using max_policy_t = typename dispatch_dummy_algorithm_t::max_policy_t;
-
     using vsmem_helper_t = cub::detail::vsmem_helper_fallback_policy_t<
       typename ActivePolicyT::DummyAlgorithmPolicy,
       typename ActivePolicyT::FallbackDummyAlgorithmPolicy,
@@ -327,7 +325,7 @@ struct dispatch_dummy_algorithm_t : SelectedPolicy
     launch_config_info->config_vsmem_per_block       = vsmem_helper_t::vsmem_per_block;
 
     THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(num_tiles, block_threads, 0, stream)
-      .doit(dummy_algorithm_kernel<max_policy_t, InputIteratorT, OutputIteratorT, OffsetT>,
+      .doit(dummy_algorithm_kernel<typename PolicyHub::max_policy_t, InputIteratorT, OutputIteratorT, OffsetT>,
             d_in,
             d_out,
             num_items,
@@ -349,8 +347,6 @@ struct dispatch_dummy_algorithm_t : SelectedPolicy
     launch_config_test_info_t* launch_config_info,
     cudaStream_t stream = 0)
   {
-    using max_policy_t = typename dispatch_dummy_algorithm_t::max_policy_t;
-
     // Get PTX version
     int ptx_version = 0;
     cudaError error = cub::PtxVersion(ptx_version);
@@ -372,7 +368,7 @@ struct dispatch_dummy_algorithm_t : SelectedPolicy
       ptx_version);
 
     // Dispatch to chained policy
-    error = max_policy_t::Invoke(ptx_version, dispatch);
+    error = PolicyHub::max_policy_t::Invoke(ptx_version, dispatch);
     if (cudaSuccess != error)
     {
       return error;
@@ -432,7 +428,7 @@ C2H_TEST("Virtual shared memory works within algorithms", "[util][vsmem]", type_
   using fallback_policy_t = typename device_dummy_algorithm_policy_t<item_t*>::policy_350::FallbackDummyAlgorithmPolicy;
   using fallback_agent_t  = agent_dummy_algorithm_t<fallback_policy_t, item_t*, item_t*, offset_t>;
 
-  // Get the information as it is expected from the vsmem helper to work as epxected
+  // Get the information as it is expected from the vsmem helper to work as expected
   std::size_t default_smem_size  = sizeof(typename default_agent_t::TempStorage);
   std::size_t fallback_smem_size = sizeof(typename fallback_agent_t::TempStorage);
   bool expected_to_use_fallback =

@@ -297,7 +297,7 @@ void assert_gequal(char a, char b, const std::string& filename = "unknown", int 
   }
 }
 
-// will catch everything implicitly convertable to a double
+// will catch everything implicitly convertible to a double
 bool almost_equal(double a, double b, double a_tol, double r_tol)
 {
   if (std::abs(a - b) > r_tol * (std::abs(a) + std::abs(b)) + a_tol)

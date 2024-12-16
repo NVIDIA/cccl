@@ -65,11 +65,11 @@ public:
   }
 };
 
-#define CUSTOM_TYPE_FACTORY(NAME, RT, OP, CONVERTABLE) \
-  class Custom##NAME##T : public BaseT<CONVERTABLE>    \
+#define CUSTOM_TYPE_FACTORY(NAME, RT, OP, CONVERTIBLE) \
+  class Custom##NAME##T : public BaseT<CONVERTIBLE>    \
   {                                                    \
     explicit Custom##NAME##T(int val)                  \
-        : BaseT<CONVERTABLE>(val)                      \
+        : BaseT<CONVERTIBLE>(val)                      \
     {}                                                 \
                                                        \
     friend Custom##NAME##T Make<Custom##NAME##T>(int); \

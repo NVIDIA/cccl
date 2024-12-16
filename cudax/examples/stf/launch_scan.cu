@@ -95,7 +95,7 @@ int main(int argc, char** argv)
 
     th.inner().sync();
 
-    /* Block level : get partials sum accross the different threads */
+    /* Block level : get partials sum across the different threads */
     if (tid == 0)
     { // rank in scope block is 0
       // Prefix sum on partial sums
@@ -106,7 +106,7 @@ int main(int argc, char** argv)
       dev_partial_sum[block_id] = block_partial_sum[BLOCK_THREADS - 1];
     }
 
-    /* Reduce partial sums at device level : get sum accross all blocks */
+    /* Reduce partial sums at device level : get sum across all blocks */
     th.sync();
 
     if (block_id == 0 && tid == 0)

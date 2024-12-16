@@ -545,7 +545,7 @@ struct dispatch_histogram
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
- * @tparam SelectedPolicy
+ * @tparam PolicyHub
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
@@ -555,9 +555,9 @@ template <int NUM_CHANNELS,
           typename CounterT,
           typename LevelT,
           typename OffsetT,
-          typename SelectedPolicy =
+          typename PolicyHub =
             detail::histogram::policy_hub<detail::value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS>>
-struct DispatchHistogram : SelectedPolicy
+struct DispatchHistogram
 {
   static_assert(NUM_CHANNELS <= 4, "Histograms only support up to 4 channels");
   static_assert(NUM_ACTIVE_CHANNELS <= NUM_CHANNELS,
@@ -921,7 +921,7 @@ public:
     cudaStream_t stream,
     Int2Type<false> /*is_byte_sample*/)
   {
-    using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
+    using MaxPolicyT = typename PolicyHub::MaxPolicy;
     cudaError error  = cudaSuccess;
 
     do
@@ -1125,7 +1125,7 @@ public:
     cudaStream_t stream,
     Int2Type<true> /*is_byte_sample*/)
   {
-    using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
+    using MaxPolicyT = typename PolicyHub::MaxPolicy;
     cudaError error  = cudaSuccess;
 
     do
@@ -1293,7 +1293,7 @@ public:
     cudaStream_t stream,
     Int2Type<false> /*is_byte_sample*/)
   {
-    using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
+    using MaxPolicyT = typename PolicyHub::MaxPolicy;
     cudaError error  = cudaSuccess;
 
     do
@@ -1514,7 +1514,7 @@ public:
     cudaStream_t stream,
     Int2Type<true> /*is_byte_sample*/)
   {
-    using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
+    using MaxPolicyT = typename PolicyHub::MaxPolicy;
     cudaError error  = cudaSuccess;
 
     do

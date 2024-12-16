@@ -18,7 +18,7 @@
 #include <cuda/std/__cccl/compiler.h>
 #include <cuda/std/__cccl/system_header.h>
 
-// We want to ensure that all warning emmiting from this header are supressed
+// We want to ensure that all warning emitting from this header are suppressed
 #if defined(_CCCL_FORCE_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_FORCE_SYSTEM_HEADER_CLANG)
@@ -80,7 +80,7 @@
 #  define _CCCL_HIDE_FROM_ABI _CCCL_VISIBILITY_HIDDEN _CCCL_EXCLUDE_FROM_EXPLICIT_INSTANTIATION inline
 #endif // !_CCCL_COMPILER(ICC)
 
-//! Defined here to supress any warnings from the definition
+//! Defined here to suppress any warnings from the definition
 #define _LIBCUDACXX_HIDE_FROM_ABI _CCCL_HIDE_FROM_ABI _CCCL_HOST_DEVICE
 
 #if !defined(CCCL_DETAIL_KERNEL_ATTRIBUTES)

@@ -47,7 +47,7 @@ shall not be accessed concurrently by CPU and GPU threads unless:
   - it is in CPU memory and the `hostNativeAtomicSupported property <https://docs.nvidia.com/cuda/cuda-runtime-api/structcudaDeviceProp.html#structcudaDeviceProp_1ef82fd7d1d0413c7d6f33287e5b6306f>`_
     is 1.
 
-Note, for objects of scopes other than ``cuda::thread_scope_system`` this is a data-race, and thefore also
+Note, for objects of scopes other than ``cuda::thread_scope_system`` this is a data-race, and therefore also
 prohibited regardless of memory characteristics.
 
 Under CUDA Compute Capability 6 (Pascal), an object of type ``atomic`` may not be used:

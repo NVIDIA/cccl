@@ -613,7 +613,7 @@ template <class _Tp>
 struct __is_std_optional<optional<_Tp>> : true_type
 {};
 
-// Constraits
+// Constraints
 template <class _Tp, class _Up, class _Opt = optional<_Up>>
 using __opt_check_constructible_from_opt =
   _Or<is_constructible<_Tp, _Opt&>,

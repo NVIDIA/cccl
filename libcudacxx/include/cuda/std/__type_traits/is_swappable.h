@@ -41,7 +41,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // We need to detect whether there is already a free function swap that would end up being ambiguous.
 // This can happen when a type pulls in both namespace std and namespace cuda::std via ADL.
 // In that case we are always safe to just not do anything because that type must be host only.
-// However, we must be carefull to ensure that we still create the overload if there is just a hidden friend swap
+// However, we must be careful to ensure that we still create the overload if there is just a hidden friend swap
 namespace __detect_hidden_friend_swap
 {
 // This will intentionally create an ambiguity with std::swap if that is find-able by ADL. But it will not interfere

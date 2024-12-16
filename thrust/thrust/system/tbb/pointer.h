@@ -51,7 +51,7 @@ namespace tbb
  *  \p tbb::pointer can be created with the function \p tbb::malloc, or by
  *  explicitly calling its constructor with a raw pointer.
  *
- *  The raw pointer encapsulated by a \p tbb::pointer may be obtained by eiter its
+ *  The raw pointer encapsulated by a \p tbb::pointer may be obtained by either its
  *  <tt>get</tt> member function or the \p raw_pointer_cast function.
  *
  *  \note \p tbb::pointer is not a "smart" pointer; it is the programmer's
@@ -76,7 +76,7 @@ using pointer = thrust::pointer<T, thrust::system::tbb::tag, thrust::tagged_refe
  *  or by explicitly calling its constructor with a raw pointer.
  *
  *  The raw pointer encapsulated by a \p tbb::universal_pointer may be obtained
- *  by eiter its <tt>get</tt> member function or the \p raw_pointer_cast
+ *  by either its <tt>get</tt> member function or the \p raw_pointer_cast
  *  function.
  *
  *  \note \p tbb::universal_pointer is not a "smart" pointer; it is the
