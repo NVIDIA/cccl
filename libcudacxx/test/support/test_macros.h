@@ -201,10 +201,7 @@
 // Sniff out to see if the underling C library has C11 features
 // Note that at this time (July 2018), MacOS X and iOS do NOT.
 // This is cribbed from __config; but lives here as well because we can't assume libc++
-#if defined(__wasi__)
-#  define TEST_HAS_C11_FEATURES
-#  define TEST_HAS_TIMESPEC_GET
-#elif defined(__linux__)
+#if defined(__linux__)
 // This block preserves the old behavior used by include/__config:
 // _LIBCUDACXX_GLIBC_PREREQ would be defined to 0 if __GLIBC_PREREQ was not
 // available. The configuration here may be too vague though, as Bionic, uClibc,
