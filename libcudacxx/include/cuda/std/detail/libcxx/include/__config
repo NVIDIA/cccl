@@ -42,29 +42,6 @@ extern "C++" {
 #    define __has_extension(__x) 0
 #  endif
 
-// FIXME: ABI detection should be done via compiler builtin macros. This
-// is just a placeholder until Clang implements such macros. For now assume
-// that Windows compilers pretending to be MSVC++ target the Microsoft ABI,
-// and allow the user to explicitly specify the ABI to handle cases where this
-// heuristic falls short.
-#  if defined(_LIBCUDACXX_ABI_FORCE_ITANIUM) && defined(_LIBCUDACXX_ABI_FORCE_MICROSOFT)
-#    error "Only one of _LIBCUDACXX_ABI_FORCE_ITANIUM and _LIBCUDACXX_ABI_FORCE_MICROSOFT can be defined"
-#  elif defined(_LIBCUDACXX_ABI_FORCE_ITANIUM)
-#    define _LIBCUDACXX_ABI_ITANIUM
-#  elif defined(_LIBCUDACXX_ABI_FORCE_MICROSOFT)
-#    define _LIBCUDACXX_ABI_MICROSOFT
-#  else
-#    if defined(_WIN32) && _CCCL_COMPILER(MSVC)
-#      define _LIBCUDACXX_ABI_MICROSOFT
-#    else
-#      define _LIBCUDACXX_ABI_ITANIUM
-#    endif
-#  endif
-
-#  if defined(_LIBCUDACXX_ABI_MICROSOFT) && !defined(_LIBCUDACXX_NO_VCRUNTIME)
-#    define _LIBCUDACXX_ABI_VCRUNTIME
-#  endif
-
 #  ifdef __LITTLE_ENDIAN__
 #    if __LITTLE_ENDIAN__
 #      define _LIBCUDACXX_LITTLE_ENDIAN
