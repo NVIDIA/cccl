@@ -38,15 +38,8 @@
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 
-#if defined(__CUDACC_VER_MAJOR__) && defined(__CUDACC_VER_MINOR__) && ((__CUDACC_VER_MAJOR__ > 11) || ((__CUDACC_VER_MAJOR__ == 11) && (__CUDACC_VER_MINOR__ >= 5)))
-#define HAS_NV_PREFIX
-#endif
 // Suppress deprecation warning for the deprecated ArgMin and ArgMax interfaces
-#if defined(HAS_NV_PREFIX)
 _CCCL_NV_DIAG_SUPPRESS(1444)
-#else
-#pragma diag_suppress 1444
-#endif
 _CCCL_SUPPRESS_DEPRECATED_PUSH
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min_old);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max_old);
@@ -137,8 +130,8 @@ C2H_TEST("Device reduce arg{min,max} works with inf items", "[reduce][device]")
   }
 }
 
-#if defined(HAS_NV_PREFIX)
+// Pre-nv_diag support, suppression of the warning for the deprecated ArgMin and ArgMax interfaces wouldn't work when
+// defaulting
+#if defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
 _CCCL_NV_DIAG_DEFAULT(1444)
-// #else
-// #pragma diag_default 1444
 #endif
