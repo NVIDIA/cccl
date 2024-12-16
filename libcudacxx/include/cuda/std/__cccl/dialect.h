@@ -177,7 +177,7 @@
 #  define _CCCL_GLOBAL_CONSTANT _CCCL_INLINE_VAR constexpr
 #endif // __CUDA_ARCH__
 
-// Check for deprectation opt outs
+// Check for deprecation opt outs
 #if defined(LIBCUDACXX_IGNORE_DEPRECATED_CPP_DIALECT) || defined(THRUST_IGNORE_DEPRECATED_CPP_DIALECT) \
   || defined(CUB_IGNORE_DEPRECATED_CPP_DIALECT)
 #  define _CCCL_IGNORE_DEPRECATED_CPP_DIALECT
