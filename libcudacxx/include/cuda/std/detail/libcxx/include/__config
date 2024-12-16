@@ -190,10 +190,6 @@ extern "C++" {
 
 #  endif //  _CCCL_COMPILER(CLANG)
 
-#  ifndef _LIBCUDACXX_FREESTANDING
-#    define _LIBCUDACXX_FREESTANDING
-#  endif // !_LIBCUDACXX_FREESTANDING
-
 #  ifndef _LIBCUDACXX_HAS_CUDA_ATOMIC_EXT
 #    define _LIBCUDACXX_HAS_CUDA_ATOMIC_EXT
 #  endif // _LIBCUDACXX_HAS_CUDA_ATOMIC_EXT
@@ -406,9 +402,6 @@ typedef unsigned int char32_t;
 #    endif
 #    ifndef _LIBCUDACXX_ATOMIC_FLAG_TYPE
 #      define _LIBCUDACXX_ATOMIC_FLAG_TYPE bool
-#    endif
-#    ifdef _LIBCUDACXX_FREESTANDING
-#      define _LIBCUDACXX_ATOMIC_ONLY_USE_BUILTINS
 #    endif
 #  endif
 
