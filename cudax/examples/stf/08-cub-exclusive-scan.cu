@@ -57,9 +57,10 @@ void exclusive_scan(
 
   ctx.task(in_data.read(), out_data.write(), ltemp.write())
       ->*[&op, init_val, nitems, temp_storage_bytes](cudaStream_t stream, auto d_in, auto d_out, auto d_temp) {
+            size_t d_temp_size = shape(d_temp).size();
             cub::DeviceScan::ExclusiveScan(
               (void*) d_temp.data_handle(),
-              temp_storage_bytes,
+              d_temp_size,
               (InT*) d_in.data_handle(),
               (OutT*) d_out.data_handle(),
               OpWrapper<BinaryOp>(op),
