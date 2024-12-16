@@ -201,7 +201,7 @@
 // Sniff out to see if the underling C library has C11 features
 // Note that at this time (July 2018), MacOS X and iOS do NOT.
 // This is cribbed from __config; but lives here as well because we can't assume libc++
-#if defined(__Fuchsia__) || defined(__wasi__)
+#if defined(__wasi__)
 #  define TEST_HAS_C11_FEATURES
 #  define TEST_HAS_TIMESPEC_GET
 #elif defined(__linux__)
