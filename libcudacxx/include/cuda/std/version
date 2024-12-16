@@ -165,9 +165,9 @@
 #    define __cccl_lib_barrier 201907L
 #  endif // !_LIBCUDACXX_HAS_NO_THREADS
 #  define __cccl_lib_bit_cast 201806L
-#  ifndef _LIBCUDACXX_NO_HAS_CHAR8_T
+#  ifndef _LIBCUDACXX_HAS_NO_CHAR8_T
 #    define __cccl_lib_char8_t 201811L
-#  endif // !_LIBCUDACXX_NO_HAS_CHAR8_T
+#  endif // !_LIBCUDACXX_HAS_NO_CHAR8_T
 // # define __cccl_lib_constexpr_algorithms                 201806L
 // # define __cccl_lib_constexpr_dynamic_alloc              201907L
 #  define __cccl_lib_constexpr_functional 201907L

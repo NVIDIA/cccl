@@ -227,10 +227,6 @@ typedef unsigned int char32_t;
 #    define _LIBCUDACXX_HAS_NO_ALIGNED_ALLOCATION
 #  endif
 
-#  if _CCCL_STD_VER <= 2017 || !defined(__cpp_char8_t)
-#    define _LIBCUDACXX_NO_HAS_CHAR8_T
-#  endif
-
 // Deprecation macros.
 //
 // Deprecations warnings are always enabled, except when users explicitly opt-out

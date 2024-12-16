@@ -29,6 +29,12 @@
 #  define _LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP
 #endif // _LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP
 
+#ifndef _LIBCUDACXX_HAS_NO_CHAR8_T
+#  if _CCCL_STD_VER <= 2017 || !defined(__cpp_char8_t)
+#    define _LIBCUDACXX_HAS_NO_CHAR8_T
+#  endif // _CCCL_STD_VER <= 2017 || !defined(__cpp_char8_t)
+#endif // _LIBCUDACXX_HAS_NO_CHAR8_T
+
 // We need `is_constant_evaluated` for clang and gcc. MSVC also needs extensive rework
 #if !defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
 #  define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
