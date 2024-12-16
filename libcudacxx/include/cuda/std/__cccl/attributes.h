@@ -36,6 +36,19 @@
 #  define _CCCL_HAS_CPP_ATTRIBUTE(__x) 0
 #endif // !__has_cpp_attribute
 
+#ifdef __has_declspec_attribute
+#  define _CCCL_HAS_DECLSPEC_ATTRIBUTE(__x) __has_declspec_attribute(__x)
+#else // ^^^ __has_declspec_attribute ^^^ / vvv !__has_declspec_attribute vvv
+#  define _CCCL_HAS_DECLSPEC_ATTRIBUTE(__x) 0
+#endif // !__has_declspec_attribute
+
+// MSVC needs extra help with empty base classes
+#if _CCCL_COMPILER(MSVC) || _CCCL_HAS_DECLSPEC_ATTRIBUTE(empty_bases)
+#  define _CCCL_DECLSPEC_EMPTY_BASES __declspec(empty_bases)
+#else // ^^^ _CCCL_COMPILER(MSVC) ^^^ / vvv !_CCCL_COMPILER(MSVC) vvv
+#  define _CCCL_DECLSPEC_EMPTY_BASES
+#endif // !_CCCL_COMPILER(MSVC)
+
 // Use a function like macro to imply that it must be followed by a semicolon
 #if _CCCL_STD_VER >= 2017 && _CCCL_HAS_CPP_ATTRIBUTE(fallthrough)
 #  define _CCCL_FALLTHROUGH() [[fallthrough]]
@@ -51,12 +64,18 @@
 #  define _CCCL_FALLTHROUGH() ((void) 0)
 #endif
 
+#if _CCCL_HAS_ATTRIBUTE(__nodebug__)
+#  define _CCCL_NODEBUG __attribute__((__nodebug__))
+#else // ^^^ _CCCL_HAS_ATTRIBUTE(__nodebug__) ^^^ / vvv !_CCCL_HAS_ATTRIBUTE(__nodebug__) vvv
+#  define _CCCL_NODEBUG
+#endif // !_CCCL_HAS_ATTRIBUTE(__nodebug__)
+
 // The nodebug attribute flattens aliases down to the actual type rather typename meow<T>::type
-#if _CCCL_HAS_ATTRIBUTE(__nodebug__) && _CCCL_CUDA_COMPILER(CLANG)
-#  define _CCCL_NODEBUG_ALIAS __attribute__((nodebug))
-#else
+#if _CCCL_CUDA_COMPILER(CLANG)
+#  define _CCCL_NODEBUG_ALIAS _CCCL_NODEBUG
+#else // ^^^ _CCCL_CUDA_COMPILER(CLANG) ^^^ / vvv !_CCCL_CUDA_COMPILER(CLANG) vvv
 #  define _CCCL_NODEBUG_ALIAS
-#endif
+#endif // !_CCCL_CUDA_COMPILER(CLANG)
 
 #if _CCCL_HAS_CPP_ATTRIBUTE(msvc::no_unique_address)
 // MSVC implements [[no_unique_address]] as a silent no-op currently.
