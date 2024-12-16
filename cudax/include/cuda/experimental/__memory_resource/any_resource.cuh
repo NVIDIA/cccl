@@ -335,11 +335,14 @@ private:
   static_assert(_CUDA_VMR::__contains_execution_space_property<_Properties...>,
                 "The properties of cuda::experimental::any_async_resource must contain at least one execution space "
                 "property!");
+
   template <class...>
   friend struct any_resource;
-  using any_async_resource::basic_any::interface;
 
-  auto __base() noexcept -> typename any_async_resource::basic_any&
+  using __base_t = typename any_async_resource::basic_any;
+  using __base_t::interface;
+
+  __base_t& __base() noexcept
   {
     return *this;
   }
@@ -392,11 +395,14 @@ private:
   static_assert(_CUDA_VMR::__contains_execution_space_property<_Properties...>,
                 "The properties of cuda::experimental::async_resource_ref must contain at least one execution space "
                 "property!");
+
   template <class...>
   friend struct resource_ref;
-  using async_resource_ref::basic_any::interface;
 
-  auto __base() noexcept -> typename async_resource_ref::basic_any&
+  using __base_t = typename async_resource_ref::basic_any;
+  using __base_t::interface;
+
+  __base_t& __base() noexcept
   {
     return *this;
   }
