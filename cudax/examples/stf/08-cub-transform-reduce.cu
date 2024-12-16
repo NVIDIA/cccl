@@ -53,9 +53,9 @@ struct IndexToTransformedValue
  * @brief Helper to transform an extended device lambda into a functor that we can use in CUB
  */
 template <typename BinaryOp>
-struct ReduceOpWrapper
+struct LambdaOpWrapper
 {
-  ReduceOpWrapper(BinaryOp _op)
+  LambdaOpWrapper(BinaryOp _op)
       : op(mv(_op)) {};
 
   template <typename T>
@@ -150,7 +150,7 @@ auto stf_transform_reduce(Ctx& ctx, shape_t s, OutT init_val, const logical_data
         // Determine temporary device storage requirements
         void* d_temp_storage      = nullptr;
         size_t temp_storage_bytes = 0;
-        auto wrapped_reducer      = ReduceOpWrapper<BinaryOp>(reduce_op);
+        auto wrapped_reducer      = LambdaOpWrapper<BinaryOp>(reduce_op);
 
         cub::DeviceReduce::Reduce(
           d_temp_storage,
@@ -232,7 +232,7 @@ auto stf_transform_exclusive_scan(Ctx& ctx, shape_t s, OutT init_val, const logi
         // Determine temporary device storage requirements
         void* d_temp_storage      = nullptr;
         size_t temp_storage_bytes = 0;
-        auto wrapped_binary_op      = ReduceOpWrapper<BinaryOp>(binary_op);
+        auto wrapped_binary_op      = LambdaOpWrapper<BinaryOp>(binary_op);
 
         cub::DeviceScan::ExclusiveScan(
           d_temp_storage,
