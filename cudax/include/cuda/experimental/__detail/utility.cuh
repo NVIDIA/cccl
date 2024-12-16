@@ -46,7 +46,7 @@ struct __immovable
 };
 
 template <class... _Types>
-struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __inherit : _Types...
+struct _CCCL_DECLSPEC_EMPTY_BASES __inherit : _Types...
 {};
 
 template <class _Type, template <class...> class _Template>

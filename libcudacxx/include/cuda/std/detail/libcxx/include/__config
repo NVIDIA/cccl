@@ -42,10 +42,6 @@ extern "C++" {
 #    define __has_extension(__x) 0
 #  endif
 
-#  ifndef __has_declspec_attribute
-#    define __has_declspec_attribute(__x) 0
-#  endif
-
 // FIXME: ABI detection should be done via compiler builtin macros. This
 // is just a placeholder until Clang implements such macros. For now assume
 // that Windows compilers pretending to be MSVC++ target the Microsoft ABI,
@@ -358,12 +354,6 @@ typedef unsigned int char32_t;
 #    define _LIBCUDACXX_PREFERRED_NAME(x) __attribute__((__preferred_name__(x)))
 #  else
 #    define _LIBCUDACXX_PREFERRED_NAME(x)
-#  endif
-
-#  if defined(_LIBCUDACXX_ABI_MICROSOFT) && (_CCCL_COMPILER(MSVC) || __has_declspec_attribute(empty_bases))
-#    define _LIBCUDACXX_DECLSPEC_EMPTY_BASES __declspec(empty_bases)
-#  else
-#    define _LIBCUDACXX_DECLSPEC_EMPTY_BASES
 #  endif
 
 #  if defined(_LIBCUDACXX_ENABLE_CXX17_REMOVED_FEATURES)

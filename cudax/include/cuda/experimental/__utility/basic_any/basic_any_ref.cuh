@@ -99,7 +99,7 @@ _CCCL_NV_DIAG_SUPPRESS(554)
 //! `basic_any<__ireference<_Interface>>` is neither copyable nor movable. It is
 //! not an end-user type.
 template <class _Interface>
-struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>>
+struct _CCCL_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>>
     : __interface_of<__ireference<_Interface>>
 #if defined(_CCCL_NO_CONCEPTS)
     , __basic_any_reference_conversion_base<_Interface>
