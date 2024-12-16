@@ -307,10 +307,9 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES any_resource
 
   // any_async_resource is convertible to any_resource
   _CCCL_TEMPLATE(class... _OtherProperties)
-  _CCCL_REQUIRES(_CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__type_set<_OtherProperties...>, _Properties...>)
-  any_resource(any_async_resource<_OtherProperties...> __other) noexcept
-      : __cudax::basic_any<__iresource<_Properties...>>(
-          static_cast<__cudax::basic_any<__iasync_resource<_OtherProperties...>>&>(__other))
+  _CCCL_REQUIRES((_CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__type_set<_OtherProperties...>, _Properties...>) )
+  any_resource(__cudax::any_async_resource<_OtherProperties...> __other) noexcept
+      : any_resource::basic_any(_CUDA_VSTD::move(__other.__base()))
   {}
 
 private:
@@ -336,7 +335,14 @@ private:
   static_assert(_CUDA_VMR::__contains_execution_space_property<_Properties...>,
                 "The properties of cuda::experimental::any_async_resource must contain at least one execution space "
                 "property!");
+  template <class...>
+  friend struct any_resource;
   using any_async_resource::basic_any::interface;
+
+  auto __base() noexcept -> typename any_async_resource::basic_any&
+  {
+    return *this;
+  }
 };
 
 //! @brief Type erased wrapper around a `resource` that satisfies \tparam _Properties
@@ -350,10 +356,9 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES resource_ref
 
   // async_resource_ref is convertible to resource_ref
   _CCCL_TEMPLATE(class... _OtherProperties)
-  _CCCL_REQUIRES(_CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__type_set<_OtherProperties...>, _Properties...>)
-  resource_ref(async_resource_ref<_OtherProperties...> __other) noexcept
-      : __cudax::basic_any<__iresource<_Properties...>&>(
-          static_cast<__cudax::basic_any<__iasync_resource<_OtherProperties...>&>&>(__other))
+  _CCCL_REQUIRES((_CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__type_set<_OtherProperties...>, _Properties...>) )
+  resource_ref(__cudax::async_resource_ref<_OtherProperties...> __other) noexcept
+      : resource_ref::basic_any(__other.__base())
   {}
 
   // Conversions from the resource_ref types in cuda::mr is not supported.
@@ -387,7 +392,14 @@ private:
   static_assert(_CUDA_VMR::__contains_execution_space_property<_Properties...>,
                 "The properties of cuda::experimental::async_resource_ref must contain at least one execution space "
                 "property!");
+  template <class...>
+  friend struct resource_ref;
   using async_resource_ref::basic_any::interface;
+
+  auto __base() noexcept -> typename async_resource_ref::basic_any&
+  {
+    return *this;
+  }
 };
 
 _CCCL_TEMPLATE(class... _Properties, class _Resource)
