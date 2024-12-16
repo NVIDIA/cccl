@@ -21,15 +21,13 @@
 #  pragma system_header
 #endif // no system header
 
-#if !_CCCL_COMPILER(NVRTC)
-
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 using ::fabs;
 using ::fabsf;
-#  if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
 using ::fabsl;
-#  endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI float abs(float __val) noexcept
 {
@@ -41,15 +39,13 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI double abs(double __val) noexcept
   return _CUDA_VSTD::fabs(__val);
 }
 
-#  if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
+#if !defined(_LIBCUDACXX_HAS_NO_LONG_DOUBLE)
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI long double abs(long double __val) noexcept
 {
   return _CUDA_VSTD::fabsl(__val);
 }
-#  endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
+#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
 
 _LIBCUDACXX_END_NAMESPACE_STD
-
-#endif // !_CCCL_COMPILER(NVRTC)
 
 #endif // _LIBCUDACXX___CMATH_ABS_H
