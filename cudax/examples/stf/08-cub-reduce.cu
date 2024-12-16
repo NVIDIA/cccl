@@ -56,9 +56,10 @@ auto reduce(Ctx& ctx, logical_data<slice<T>> data, BinaryOp&& op, T init_val)
 
   ctx.task(data.read(), result.write(), ltemp.write())
       ->*[&op, init_val, temp_storage_bytes](cudaStream_t stream, auto d_data, auto d_result, auto d_temp) {
+            size_t d_temp_size = shape(d_temp).size();
             cub::DeviceReduce::Reduce(
               (void*) d_temp.data_handle(),
-              temp_storage_bytes,
+              d_temp_size,
               (T*) d_data.data_handle(),
               (T*) d_result.addr,
               shape(d_data).size(),
