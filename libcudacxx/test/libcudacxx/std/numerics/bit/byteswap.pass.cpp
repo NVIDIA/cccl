@@ -34,9 +34,23 @@ static_assert(!has_byteswap<char[2]>::value, "");
 static_assert(!has_byteswap<Byte>::value, "");
 
 template <class T>
+struct MakeUnsigned
+{
+  using type = cuda::std::make_unsigned_t<T>;
+};
+
+template <>
+struct MakeUnsigned<bool>
+{
+  using type = bool;
+};
+
+template <class T>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test_num(T in, T expected)
 {
-  assert(cuda::std::byteswap(in) == expected);
+  using U = typename MakeUnsigned<T>::type;
+
+  assert(static_cast<U>(cuda::std::byteswap(in)) == static_cast<U>(expected));
   ASSERT_SAME_TYPE(decltype(cuda::std::byteswap(in)), decltype(in));
   ASSERT_NOEXCEPT(cuda::std::byteswap(in));
 }
