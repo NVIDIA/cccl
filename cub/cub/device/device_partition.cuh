@@ -436,7 +436,7 @@ private:
             typename OffsetT,
             typename BeginOffsetIteratorT,
             typename EndOffsetIteratorT,
-            typename SelectedPolicy>
+            typename PolicyHub>
   friend class DispatchSegmentedSort;
 
   // Internal version without NVTX range

@@ -96,10 +96,10 @@ using __virtuals_map_for _CCCL_NODEBUG_ALIAS =
 // If the interface is __ireference<MyInterface const>, then calls to non-const
 // member functions are not allowed.
 template <auto, class... _Interface>
-_CCCL_GLOBAL_CONSTANT bool __valid_virtcall = sizeof...(_Interface) == 1;
+_CCCL_INLINE_VAR constexpr bool __valid_virtcall = sizeof...(_Interface) == 1;
 
 template <auto _Mbr, class _Interface>
-_CCCL_GLOBAL_CONSTANT bool __valid_virtcall<_Mbr, __ireference<_Interface const>> = __virtual_fn<_Mbr>::__const_fn;
+_CCCL_INLINE_VAR constexpr bool __valid_virtcall<_Mbr, __ireference<_Interface const>> = __virtual_fn<_Mbr>::__const_fn;
 
 template <auto _Mbr, class _Interface, class _Super, class _Self, class... _Args>
 _CUDAX_HOST_API auto __virtcall(_Self* __self, _Args&&... __args) //

@@ -209,7 +209,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ReduceByKeyPolicyT::BLOCK_TH
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
- * @tparam SelectedPolicy
+ * @tparam PolicyHub
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
@@ -221,17 +221,13 @@ template <typename KeysInputIteratorT,
           typename EqualityOpT,
           typename ReductionOpT,
           typename OffsetT,
-          typename AccumT = //
-          ::cuda::std::__accumulator_t<ReductionOpT,
-                                       cub::detail::value_t<ValuesInputIteratorT>,
-                                       cub::detail::value_t<ValuesInputIteratorT>>,
-          typename SelectedPolicy = //
-          detail::device_reduce_by_key_policy_hub< //
-            ReductionOpT, //
-            AccumT, //
-            cub::detail::non_void_value_t< //
-              UniqueOutputIteratorT, //
-              cub::detail::value_t<KeysInputIteratorT>>>>
+          typename AccumT    = ::cuda::std::__accumulator_t<ReductionOpT,
+                                                            cub::detail::value_t<ValuesInputIteratorT>,
+                                                            cub::detail::value_t<ValuesInputIteratorT>>,
+          typename PolicyHub = detail::reduce_by_key::policy_hub<
+            ReductionOpT,
+            AccumT,
+            cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::value_t<KeysInputIteratorT>>>>
 struct DispatchReduceByKey
 {
   //-------------------------------------------------------------------------
@@ -443,11 +439,10 @@ struct DispatchReduceByKey
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
-    using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
     return Invoke<ActivePolicyT>(
       DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
       DeviceReduceByKeyKernel<
-        MaxPolicyT,
+        typename PolicyHub::MaxPolicy,
         KeysInputIteratorT,
         UniqueOutputIteratorT,
         ValuesInputIteratorT,
@@ -512,8 +507,6 @@ struct DispatchReduceByKey
     OffsetT num_items,
     cudaStream_t stream)
   {
-    using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
-
     cudaError error = cudaSuccess;
 
     do
@@ -540,7 +533,7 @@ struct DispatchReduceByKey
         stream);
 
       // Dispatch
-      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+      error = CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
       if (cudaSuccess != error)
       {
         break;

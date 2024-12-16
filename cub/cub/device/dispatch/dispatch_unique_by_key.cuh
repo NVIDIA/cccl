@@ -213,8 +213,9 @@ template <typename KeyInputIteratorT,
           typename NumSelectedIteratorT,
           typename EqualityOpT,
           typename OffsetT,
-          typename SelectedPolicy = DeviceUniqueByKeyPolicy<KeyInputIteratorT, ValueInputIteratorT>>
-struct DispatchUniqueByKey : SelectedPolicy
+          typename PolicyHub =
+            detail::unique_by_key::policy_hub<detail::value_t<KeyInputIteratorT>, detail::value_t<ValueInputIteratorT>>>
+struct DispatchUniqueByKey
 {
   /******************************************************************************
    * Types and constants
@@ -528,13 +529,11 @@ struct DispatchUniqueByKey : SelectedPolicy
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke()
   {
-    using MaxPolicyT = typename DispatchUniqueByKey::MaxPolicy;
-
     // Ensure kernels are instantiated.
     return Invoke<ActivePolicyT>(
       DeviceCompactInitKernel<ScanTileStateT, NumSelectedIteratorT>,
       DeviceUniqueByKeySweepKernel<
-        MaxPolicyT,
+        typename PolicyHub::MaxPolicy,
         KeyInputIteratorT,
         ValueInputIteratorT,
         KeyOutputIteratorT,
@@ -594,8 +593,6 @@ struct DispatchUniqueByKey : SelectedPolicy
     OffsetT num_items,
     cudaStream_t stream)
   {
-    using MaxPolicyT = typename DispatchUniqueByKey::MaxPolicy;
-
     cudaError_t error;
     do
     {
@@ -621,7 +618,7 @@ struct DispatchUniqueByKey : SelectedPolicy
         stream);
 
       // Dispatch to chained policy
-      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+      error = CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
       if (cudaSuccess != error)
       {
         break;

@@ -178,7 +178,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::RleSweepPolicyT::BLOCK_THREA
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
- * @tparam SelectedPolicy
+ * @tparam PolicyHub
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
@@ -188,9 +188,9 @@ template <typename InputIteratorT,
           typename NumRunsOutputIteratorT,
           typename EqualityOpT,
           typename OffsetT,
-          typename SelectedPolicy =
-            detail::device_non_trivial_runs_policy_hub<cub::detail::non_void_value_t<LengthsOutputIteratorT, OffsetT>,
-                                                       cub::detail::value_t<InputIteratorT>>>
+          typename PolicyHub =
+            detail::rle::non_trivial_runs::policy_hub<cub::detail::non_void_value_t<LengthsOutputIteratorT, OffsetT>,
+                                                      cub::detail::value_t<InputIteratorT>>>
 struct DeviceRleDispatch
 {
   /******************************************************************************
@@ -450,10 +450,9 @@ struct DeviceRleDispatch
   template <class ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
-    using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
     return Invoke<ActivePolicyT>(
       DeviceCompactInitKernel<ScanTileStateT, NumRunsOutputIteratorT>,
-      DeviceRleSweepKernel<MaxPolicyT,
+      DeviceRleSweepKernel<typename PolicyHub::MaxPolicy,
                            InputIteratorT,
                            OffsetsOutputIteratorT,
                            LengthsOutputIteratorT,
@@ -507,8 +506,6 @@ struct DeviceRleDispatch
     OffsetT num_items,
     cudaStream_t stream)
   {
-    using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
-
     cudaError error = cudaSuccess;
 
     do
@@ -533,7 +530,7 @@ struct DeviceRleDispatch
         stream);
 
       // Dispatch
-      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+      error = CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
       if (cudaSuccess != error)
       {
         break;
