@@ -34,10 +34,6 @@ extern "C++" {
 
 #  define _LIBCUDACXX_VERSION 10000
 
-#  if _CCCL_STD_VER < 2011
-#    error libcu++ requires C++11 or later
-#  endif
-
 #  ifndef __has_extension
 #    define __has_extension(__x) 0
 #  endif
