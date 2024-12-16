@@ -1046,15 +1046,9 @@ class Configuration(object):
         # Transform each macro name into the feature name used in the tests.
         # Ex. _LIBCUDACXX_HAS_NO_THREADS -> libcpp-has-no-threads
         for m in feature_macros:
-            if (
-                m == "_LIBCUDACXX_DISABLE_VISIBILITY_ANNOTATIONS"
-                or m == "_LIBCUDACXX_HIDE_FROM_ABI_PER_TU_BY_DEFAULT"
-            ):
-                continue
-            if m == "_LIBCUDACXX_ABI_VERSION":
-                self.config.available_features.add(
-                    "libcpp-abi-version-v%s" % feature_macros[m]
-                )
+            if m == '_LIBCUDACXX_ABI_VERSION':
+                self.config.available_features.add('libcpp-abi-version-v%s'
+                    % feature_macros[m])
                 continue
             if m == "_LIBCUDACXX_NO_VCRUNTIME":
                 self.config.available_features.add("libcpp-no-vcruntime")
