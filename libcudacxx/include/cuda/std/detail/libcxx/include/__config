@@ -36,8 +36,6 @@ extern "C++" {
 #    define _LIBCUDACXX_ABI_VERSION 1
 #  endif
 
-#  define _LIBCUDACXX_STD_VER _CCCL_STD_VER
-
 #  if _CCCL_STD_VER < 2011
 #    error libcu++ requires C++11 or later
 #  endif
