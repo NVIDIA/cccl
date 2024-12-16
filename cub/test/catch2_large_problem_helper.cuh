@@ -9,7 +9,8 @@
 #include <thrust/iterator/constant_iterator.h>
 #include <thrust/iterator/tabulate_output_iterator.h>
 
-#include "cuda/std/__cccl/execution_space.h"
+#include <cuda/std/__cccl/execution_space.h>
+
 #include <c2h/catch2_test_helper.h>
 
 namespace detail
@@ -73,16 +74,14 @@ struct large_problem_test_helper
   // Checks whether all results have been written correctly
   void check_all_results_correct()
   {
-    bool all_flags_set = thrust::equal(
-      correctness_flags.cbegin(),
-      correctness_flags.cbegin() + (num_elements / bits_per_element),
-      thrust::make_constant_iterator(0xFFFFFFFFU));
+    REQUIRE(thrust::equal(correctness_flags.cbegin(),
+                          correctness_flags.cbegin() + (num_elements / bits_per_element),
+                          thrust::make_constant_iterator(0xFFFFFFFFU)));
     if (num_elements % bits_per_element != 0)
     {
       std::uint32_t last_element_flags = (0x00000001U << (num_elements % bits_per_element)) - 0x01U;
-      all_flags_set = all_flags_set && (correctness_flags[num_elements / bits_per_element] == last_element_flags);
+      REQUIRE(correctness_flags[num_elements / bits_per_element] == last_element_flags);
     }
-    REQUIRE(all_flags_set == true);
   }
 };
 
