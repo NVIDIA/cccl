@@ -1046,9 +1046,6 @@ class Configuration(object):
         # Transform each macro name into the feature name used in the tests.
         # Ex. _LIBCUDACXX_HAS_NO_THREADS -> libcpp-has-no-threads
         for m in feature_macros:
-            if m == '_LIBCUDACXX_NO_VCRUNTIME':
-                self.config.available_features.add('libcpp-no-vcruntime')
-                continue
             assert m.startswith("_LIBCUDACXX_HAS_") or m.startswith("_LIBCUDACXX_ABI_")
             m = m.lower()[1:].replace("_", "-")
             self.config.available_features.add(m)
