@@ -130,7 +130,7 @@
 #endif // _CCCL_STD_VER <= 2011 || __cpp_variable_templates < 201304L
 
 ///////////////////////////////////////////////////////////////////////////////
-// Conditionally use certain language features depending on availablility
+// Conditionally use certain language features depending on availability
 ///////////////////////////////////////////////////////////////////////////////
 #if defined(_CCCL_NO_IF_CONSTEXPR)
 #  define _CCCL_IF_CONSTEXPR if
@@ -176,5 +176,20 @@
 #else // ^^^ __CUDA_ARCH__ ^^^ / vvv !__CUDA_ARCH__ vvv
 #  define _CCCL_GLOBAL_CONSTANT _CCCL_INLINE_VAR constexpr
 #endif // __CUDA_ARCH__
+
+// Check for deprectation opt outs
+#if defined(LIBCUDACXX_IGNORE_DEPRECATED_CPP_DIALECT) || defined(THRUST_IGNORE_DEPRECATED_CPP_DIALECT) \
+  || defined(CUB_IGNORE_DEPRECATED_CPP_DIALECT)
+#  define _CCCL_IGNORE_DEPRECATED_CPP_DIALECT
+#endif // ignore all dialect suppression
+#if defined(LIBCUDACXX_IGNORE_DEPRECATED_CPP_14) || defined(THRUST_IGNORE_DEPRECATED_CPP_14) \
+  || defined(CUB_IGNORE_DEPRECATED_CPP_14) || defined(_CCCL_IGNORE_DEPRECATED_CPP_DIALECT)
+#  define _CCCL_IGNORE_DEPRECATED_CPP_14
+#endif // ignore all c++14 suppressions
+#if defined(LIBCUDACXX_IGNORE_DEPRECATED_CPP_11) || defined(THRUST_IGNORE_DEPRECATED_CPP_11) \
+  || defined(CUB_IGNORE_DEPRECATED_CPP_11) || defined(_CCCL_IGNORE_DEPRECATED_CPP_DIALECT)   \
+  || defined(_CCCL_IGNORE_DEPRECATED_CPP_14)
+#  define _CCCL_IGNORE_DEPRECATED_CPP_11
+#endif // ignore all c++11 suppressions
 
 #endif // __CCCL_DIALECT_H

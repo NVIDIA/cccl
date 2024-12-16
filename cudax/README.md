@@ -10,7 +10,7 @@ Features are exposed here for the CUDA C++ community to experiment with and prov
 Once we become confident a feature is ready and would be a great permanent addition in CCCL, it will become a part of some other CCCL library with a stable API.
 
 ## Installation
-CUDA Experimental library is **not** distributed with the CUDA Toolkit like the rest of CCCL. It is only avaiable on the [CCCL GitHub repository](https://github.com/NVIDIA/cccl).
+CUDA Experimental library is **not** distributed with the CUDA Toolkit like the rest of CCCL. It is only available on the [CCCL GitHub repository](https://github.com/NVIDIA/cccl).
 
 CUDA Experimental compilation requires C++17 standard or newer. Supported compilers are:
 

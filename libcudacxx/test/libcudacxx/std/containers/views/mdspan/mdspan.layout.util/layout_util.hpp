@@ -135,20 +135,20 @@ struct is_cons_avail<T1, T2, cuda::std::enable_if_t<cuda::std::is_same<decltype(
 template <class T1, class T2>
 constexpr bool is_cons_avail_v = is_cons_avail<T1, T2>::value;
 
-template <class, class T, class... Indicies>
+template <class, class T, class... Indices>
 struct is_paren_op_avail : cuda::std::false_type
 {};
 
-template <class T, class... Indicies>
+template <class T, class... Indices>
 struct is_paren_op_avail<
-  cuda::std::enable_if_t<cuda::std::is_same<decltype(cuda::std::declval<T>()(cuda::std::declval<Indicies>()...)),
+  cuda::std::enable_if_t<cuda::std::is_same<decltype(cuda::std::declval<T>()(cuda::std::declval<Indices>()...)),
                                             typename T::index_type>::value>,
   T,
-  Indicies...> : cuda::std::true_type
+  Indices...> : cuda::std::true_type
 {};
 
-template <class T, class... Indicies>
-constexpr bool is_paren_op_avail_v = is_paren_op_avail<void, T, Indicies...>::value;
+template <class T, class... Indices>
+constexpr bool is_paren_op_avail_v = is_paren_op_avail<void, T, Indices...>::value;
 
 template <class T, class RankType, class = void>
 struct is_stride_avail : cuda::std::false_type

@@ -102,7 +102,7 @@ try
   printf("waiting for the stream to finish\n");
   stream.wait();
 
-  printf("veryfying the results\n");
+  printf("verifying the results\n");
   // Verify that the result vector is correct
   for (int i = 0; i < numElements; ++i)
   {

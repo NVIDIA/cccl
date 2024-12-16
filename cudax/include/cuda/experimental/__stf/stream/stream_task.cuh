@@ -49,7 +49,7 @@ class stream_task;
  * that task's stream.
  *
  * This task type accepts dynamic dependencies, i.e. dependencies can be added at runtime by calling `add_deps()` or
- * `add_deps()` prior to starting the task with `start()`. In turn, the added depdencies have dynamic types. It is the
+ * `add_deps()` prior to starting the task with `start()`. In turn, the added dependencies have dynamic types. It is the
  * caller's responsibility to access the correct types for each dependency by calling `get<T>(index)`.
  */
 template <>
@@ -122,7 +122,7 @@ public:
       assert(automatic_stream);
 
       // Note: we store grid in a variable to avoid dangling references
-      // because the compiler does not know we are making a refernce to
+      // because the compiler does not know we are making a reference to
       // a vector that remains valid
       const auto& grid   = e_place.as_grid();
       const auto& places = grid.get_places();
@@ -262,7 +262,7 @@ public:
    *
    * The lambda must accept exactly one argument. If the type of the lambda's argument is one of
    * `stream_task<>`, `stream_task<>&`, `auto`, `auto&`, or `auto&&`, then `*this` is passed to the
-   * lambda. Otherwise, `this->get_stream()` is passed to the lambda. Depdendencies would need to be accessed
+   * lambda. Otherwise, `this->get_stream()` is passed to the lambda. Dependencies would need to be accessed
    * separately.
    */
   template <typename Fun>
@@ -832,7 +832,7 @@ class deferred_stream_task : public deferred_stream_task<>
 
 public:
   /**
-   * @brief Construct a new deferred stream task object from a context, execution place, and depdenencies.
+   * @brief Construct a new deferred stream task object from a context, execution place, and dependencies.
    *
    * @param ctx the parent context
    * @param e_place the place where the task will execute

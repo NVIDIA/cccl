@@ -53,7 +53,7 @@ __cp_async_fallback_mechanism(_Group __g, char* __dest, const char* __src, _CUDA
   // threads (copying ints). On the other hand, in the unfortunate case that
   // we have to move 1024 bytes / thread with char width, then we prevent
   // fully unrolling the loop to 1024 copy instructions. This prevents the
-  // compile times from increasing unreasonably, and also has neglibible
+  // compile times from increasing unreasonably, and also has negligible
   // impact on runtime performance.
   _LIBCUDACXX_PRAGMA_UNROLL(64)
   for (_CUDA_VSTD::size_t __offset = __g.thread_rank() * __copy_size; __offset < __size; __offset += __stride)

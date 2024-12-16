@@ -595,7 +595,7 @@ private:
     // Size is only valid (and relevant) for buffers that are use thread-level collaboration
     TLevBufferSizeT size;
 
-    // The buffer id relativ to this tile (i.e., the buffer id within this tile)
+    // The buffer id relative to this tile (i.e., the buffer id within this tile)
     BlockBufferOffsetT buffer_id;
   };
 
@@ -608,7 +608,7 @@ private:
               BUFFER_STABLE_PARTITION ? BLOCK_LOAD_WARP_TRANSPOSE : BLOCK_LOAD_STRIPED>;
 
   // A vectorized counter that will count the number of buffers that fall into each of the
-  // size-classes. Where the size class representes the collaboration level that is required to
+  // size-classes. Where the size class represents the collaboration level that is required to
   // process a buffer. The collaboration level being either:
   //-> (1) TLEV (thread-level collaboration), requiring one or multiple threads but not a FULL warp
   // to collaborate

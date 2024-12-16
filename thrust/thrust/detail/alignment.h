@@ -67,7 +67,7 @@ using max_align_t = ::cuda::std::max_align_t;
 /// `void*` suppresses compiler warnings when the alignment requirement of \p *u
 /// is less than the alignment requirement of \p *t. The caller of
 /// \p aligned_reinterpret_cast is responsible for ensuring that the alignment
-/// requirements are actually satisified.
+/// requirements are actually satisfied.
 template <typename T, typename U>
 _CCCL_HOST_DEVICE T aligned_reinterpret_cast(U u)
 {

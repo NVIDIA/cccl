@@ -83,7 +83,8 @@
 #elif _CCCL_COMPILER(ICC)
 #  define _CCCL_SUPPRESS_DEPRECATED_PUSH \
     _CCCL_DIAG_PUSH                      \
-    _CCCL_DIAG_SUPPRESS_ICC(1478)
+    _CCCL_DIAG_SUPPRESS_ICC(1478)        \
+    _CCCL_DIAG_SUPPRESS_ICC(1786)
 #  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_DIAG_POP
 #elif _CCCL_COMPILER(GCC)
 #  define _CCCL_SUPPRESS_DEPRECATED_PUSH    \
@@ -92,9 +93,10 @@
     _CCCL_DIAG_SUPPRESS_GCC("-Wdeprecated-declarations")
 #  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_DIAG_POP
 #elif _CCCL_COMPILER(NVHPC)
-#  define _CCCL_SUPPRESS_DEPRECATED_PUSH \
-    _CCCL_DIAG_PUSH                      \
-    _CCCL_DIAG_SUPPRESS_NVHPC(deprecated_entity)
+#  define _CCCL_SUPPRESS_DEPRECATED_PUSH         \
+    _CCCL_DIAG_PUSH                              \
+    _CCCL_DIAG_SUPPRESS_NVHPC(deprecated_entity) \
+    _CCCL_DIAG_SUPPRESS_NVHPC(deprecated_entity_with_custom_message)
 #  define _CCCL_SUPPRESS_DEPRECATED_POP _CCCL_DIAG_POP
 #elif _CCCL_COMPILER(MSVC)
 #  define _CCCL_SUPPRESS_DEPRECATED_PUSH \

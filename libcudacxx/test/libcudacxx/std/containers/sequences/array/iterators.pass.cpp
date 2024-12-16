@@ -56,7 +56,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void check_noexcept(T& c)
   ASSERT_NOEXCEPT(cc.rend());
 }
 
-// gcc-7 and gcc-8 are really helpfull here
+// gcc-7 and gcc-8 are really helpful here
 __host__ __device__
 #if TEST_STD_VER >= 2014 && (!defined(TEST_COMPILER_GCC) || __GNUC__ > 8)
   TEST_CONSTEXPR_CXX14

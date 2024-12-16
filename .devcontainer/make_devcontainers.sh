@@ -36,7 +36,7 @@ update_devcontainer() {
         local cuda_suffix="ext"
     fi
 
-    # NVHPC SDK comes with its own bundeled toolkit
+    # NVHPC SDK comes with its own bundled toolkit
     local toolkit_name="-cuda${cuda_version}${cuda_suffix}"
     if [ $compiler_name == "nvhpc" ]; then
         toolkit_name=""

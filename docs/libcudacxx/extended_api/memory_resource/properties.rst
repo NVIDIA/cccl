@@ -74,7 +74,7 @@ require a stateful property with ``cuda::has_property_with`` as shown in the exa
        }
    }
 
-In generic code it is often desireable to propagate properties from a base type to a derived type, without knowing the
+In generic code it is often desirable to propagate properties from a base type to a derived type, without knowing the
 base type at all. This common use case is covered by ``cuda::forward_property``, a simple CRTP template.
 
 .. code:: cpp

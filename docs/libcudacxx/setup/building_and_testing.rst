@@ -29,7 +29,7 @@ Note that the name of the top level folder is the same as the name of the preset
    lit libcudacxx-cpp17/libcudacxx/test/libcudacxx/std/containers/views/views.span/span.cons/array.pass.cpp -sv
 
 If only building the tests and not running them is desired one can pass ``-Dexecutor="NoopExecutor()"`` to the lit invocation.
-This is especially usefull if the machine has no GPU or testing a different architecture
+This is especially useful if the machine has no GPU or testing a different architecture
 
 .. code:: bash
 

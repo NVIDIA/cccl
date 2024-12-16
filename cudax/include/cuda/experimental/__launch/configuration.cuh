@@ -98,7 +98,7 @@ inline constexpr bool no_duplicate_options<Option, Rest...> =
  *
  * This launch option causes the launched grid to be restricted to a number of
  * blocks that can simultaneously execute on the device. It means that every thread
- * in the launched grid can eventualy observe execution of each other thread in the grid.
+ * in the launched grid can eventually observe execution of each other thread in the grid.
  * It also enables usage of cooperative_groups::grid_group::sync() function, that
  * synchronizes all threads in the grid.
  *
@@ -148,7 +148,7 @@ private:
 };
 
 /**
- * @brief Launch option specyfying dynamic shared memory configuration
+ * @brief Launch option specifying dynamic shared memory configuration
  *
  * This launch option causes the launch to allocate amount of shared memory sufficient
  * to store the specified number of object of the specified type.
@@ -357,7 +357,7 @@ _CCCL_CONCEPT __kernel_has_default_config =
  * This type should not be constructed directly and make_config helper function should be used instead
  *
  * @tparam Dimensions
- * cuda::experimetnal::hierarchy_dimensions instance that describes dimensions of thread hierarchy in this
+ * cuda::experimental::hierarchy_dimensions instance that describes dimensions of thread hierarchy in this
  * configuration object
  *
  * @tparam Options
@@ -404,7 +404,7 @@ struct kernel_config
    * is prioritized, so the result always holds all levels from this hierarchy and non-overlapping
    * levels from the other hierarchy. This behavior is the same as `combine()` member function of the hierarchy type.
    * The result also contains configuration options from both configurations. In case the same type of a configuration
-   * option is present in both configration this configuration is copied into the resulting configuration.
+   * option is present in both configuration this configuration is copied into the resulting configuration.
    *
    * @param __other_config
    * Other configuration to combine with this configuration
@@ -605,7 +605,7 @@ _CCCL_NODISCARD cudaError_t apply_kernel_config(
   return status;
 }
 
-// Needs to be a char casted to the apropriate type, if it would be a template
+// Needs to be a char casted to the appropriate type, if it would be a template
 //  different instantiations would clash the extern symbol
 _CCCL_DEVICE _CCCL_NODISCARD static char* get_smem_ptr() noexcept
 {
@@ -636,9 +636,9 @@ _CCCL_DEVICE auto& dynamic_smem_ref(const kernel_config<Dimensions, Options...>&
 }
 
 /**
- * @brief Returns a cuda::std::span object refering to dynamic shared memory region
+ * @brief Returns a cuda::std::span object referring to dynamic shared memory region
  *
- * This function returns a std::std::span object refering to the dynamic shared memory region
+ * This function returns a std::std::span object referring to the dynamic shared memory region
  * configured when launching the kernel.
  * It accepts a kernel_config containing a dynamic_shared_memory_option.
  * It is typed and sized according to the launch option provided as input.

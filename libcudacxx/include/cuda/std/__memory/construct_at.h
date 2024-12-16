@@ -69,7 +69,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* construct_at(_Tp* __location, _Args&&..
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // There is a performance issue with placement new, where EDG based compiler insert a nullptr check that is superfluous
-// Because this is a noticable performance regression, we specialize it for certain types
+// Because this is a noticeable performance regression, we specialize it for certain types
 // This is possible because we are calling ::new ignoring any user defined overloads of operator placement new
 namespace __detail
 {

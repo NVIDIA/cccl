@@ -32,7 +32,7 @@ struct DeviceMerge
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //! Merges two sorted sequences of values (called keys) into a sorted output sequence. Merging is unstable,
-  //! which means any two equivalent values (neither value is ordered before the other) may be written to the ouput
+  //! which means any two equivalent values (neither value is ordered before the other) may be written to the output
   //! sequence in any order.
   //!
   //! A Simple Example
@@ -105,7 +105,7 @@ struct DeviceMerge
   //! Overview
   //! +++++++++++++++++++++++++++++++++++++++++++++
   //! Merges two sorted sequences of key-value pairs into a sorted output sequence. Merging is unstable,
-  //! which means any two equivalent values (neither value is ordered before the other) may be written to the ouput
+  //! which means any two equivalent values (neither value is ordered before the other) may be written to the output
   //! sequence in any order.
   //!
   //! A Simple Example

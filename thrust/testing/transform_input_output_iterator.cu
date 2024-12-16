@@ -75,7 +75,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestMakeTransformInputOutputIterator()
 
   ASSERT_EQUAL(negated, gold_negated);
 
-  // squared value writen by transform iterator
+  // squared value written by transform iterator
   thrust::copy(negated.begin(),
                negated.end(),
                thrust::make_transform_input_output_iterator(squared.begin(), InputFunction(), OutputFunction()));
