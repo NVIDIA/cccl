@@ -278,6 +278,12 @@ which will only execute runs for the first axis value for each axis
 (independently of whether the axis is specified on the command line or not).
 Please see `this issue <https://github.com/NVIDIA/cccl/issues/2267>`_ for more information.
 
+The tuning framework will handle building the benchmarks (base and variants) by itself.
+It will keep track of the build time for base and variants.
+Sometimes, a tuning variant may lead the compiler to hang or take exceptionally long to compile.
+To keep the tuning process going, if the build time of a variant exceeds a threshold, the build is cancelled.
+The same applies to benchmarks running for too long.
+
 To get quick feedback on what benchmarks are selected and how big the search space is,
 you can add the :code:`-l` option:
 
