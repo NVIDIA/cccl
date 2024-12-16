@@ -160,7 +160,7 @@ auto stf_transform_reduce(Ctx& ctx, shape_t s, OutT init_val, const logical_data
           s.size(),
           wrapped_reducer,
           init_val,
-          0);
+          stream);
 
         cuda_safe_call(cudaMallocAsync(&d_temp_storage, temp_storage_bytes, stream));
 
@@ -172,7 +172,89 @@ auto stf_transform_reduce(Ctx& ctx, shape_t s, OutT init_val, const logical_data
           s.size(),
           mv(wrapped_reducer),
           mv(init_val),
-          0);
+          stream);
+
+        cuda_safe_call(cudaFreeAsync(d_temp_storage, stream));
+
+        return mv(result);
+      };
+    };
+}
+
+template <typename Ctx, typename shape_t, typename OutT, typename... Args>
+auto stf_transform_exclusive_scan(Ctx& ctx, shape_t s, OutT init_val, const logical_data<Args>&... args)
+{
+  // This will be the ultimate result of the transform followed by scan
+  auto result = ctx.logical_data(shape_of<slice<OutT>>(s.size()));
+
+  // Create a typed task eagerly that we'll use throughout
+  auto t = ctx.task(result.write(), args.read()...);
+  // Start it so we can get its stream and dependencies
+  t.start();
+
+  // We are going to enumerate the entries in the shape, and create an counting
+  // iterator that will be combined with a functor that converts the
+  // corresponding 1D index in the shape to the result of the transform
+  // operation.
+  // The lambda we return here takes the transform lambda and applies it.
+  return
+    [stream   = t.get_stream(),
+     deps     = t.typed_deps(),
+     count_it = cub::CountingInputIterator<size_t>(0),
+     t        = mv(t),
+     result   = mv(result),
+     s        = mv(s),
+     init_val = mv(init_val)](auto&& transform_op) mutable {
+      using TransformOp = ::std::remove_reference_t<decltype(transform_op)>;
+      // This is a functor that transforms a 1D index in the shape into the result
+      // of the transform operation
+      //
+      // Note that we pass a tuple where we have removed the first argument (we do
+      // not consider the logical data of the result during the transform)
+      using ConversionOp_t = IndexToTransformedValue<TransformOp, shape_t, Args...>;
+
+      // This is an iterator that combines the counting iterator with the functor
+      // to apply the transformation, it thus outputs the different values produced
+      // by the transformation over the shape
+      cub::TransformInputIterator<OutT, ConversionOp_t, decltype(count_it)> transform_output_it(
+        count_it, ConversionOp_t(transform_op, s, remove_first(deps)));
+
+      // This lambda takes the reduction operator and finalizes the operation.
+      // We can capture most parameters by reference here because the parent object will
+      // be alive during the call.
+      return [&, transform_output_it = mv(transform_output_it)](auto&& binary_op) {
+        SCOPE(exit)
+        {
+          t.end();
+        };
+
+        using BinaryOp = ::std::remove_reference_t<decltype(binary_op)>;
+        // Determine temporary device storage requirements
+        void* d_temp_storage      = nullptr;
+        size_t temp_storage_bytes = 0;
+        auto wrapped_binary_op      = ReduceOpWrapper<BinaryOp>(binary_op);
+
+        cub::DeviceScan::ExclusiveScan(
+          d_temp_storage,
+          temp_storage_bytes,
+          transform_output_it,
+          (OutT*) ::std::get<0>(deps).data_handle(),
+          wrapped_binary_op,
+          init_val,
+          s.size(),
+          stream);
+
+        cuda_safe_call(cudaMallocAsync(&d_temp_storage, temp_storage_bytes, stream));
+
+        cub::DeviceScan::ExclusiveScan(
+          d_temp_storage,
+          temp_storage_bytes,
+          transform_output_it,
+          (OutT*) ::std::get<0>(deps).data_handle(),
+          mv(wrapped_binary_op),
+          mv(init_val),
+          s.size(),
+          stream);
 
         cuda_safe_call(cudaFreeAsync(d_temp_storage, stream));
 
@@ -186,7 +268,7 @@ void run()
 {
   Ctx ctx;
 
-  const size_t N = 1024 * 16;
+  const size_t N = 16;
 
   int ref_prod = 0;
 
@@ -215,6 +297,23 @@ void run()
 
   int result = ctx.wait(lresult);
   _CCCL_ASSERT(result == ref_prod, "Incorrect result");
+
+  auto lscan_result =
+    stf_transform_exclusive_scan(ctx, lX.shape(), 0, lX, lY)
+      ->*
+    [] __device__(size_t i, auto x, auto y) {
+      return x(i) * y(i);
+    }->*
+    [] __device__(const int& a, const int& b) {
+      return a + b;
+    };
+
+  ctx.host_launch(lscan_result.read())->*[N](auto scan_result) {
+     for (size_t i = 0; i < N; i++)
+     {
+         fprintf(stderr, "scan_result[%zu] = %d\n", i, scan_result(i));
+     }
+  };
 
   ctx.finalize();
 }
