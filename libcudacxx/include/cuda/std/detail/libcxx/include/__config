@@ -21,6 +21,8 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__internal/cpp_dialect.h>
+
 #ifdef __cplusplus
 
 // __config may be included in `extern "C"` contexts, switch back to include <nv/target>

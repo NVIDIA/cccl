@@ -65,6 +65,7 @@
         "CCCL_ENABLE_EXAMPLES": true,
         "CCCL_ENABLE_BENCHMARKS": true,
         "CCCL_ENABLE_C": true,
+        "LIBCUDACXX_IGNORE_DEPRECATED_CPP_DIALECT": true,
         "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": true,
         "CUB_ENABLE_TESTING": true,
         "CUB_ENABLE_EXAMPLES": true,
@@ -119,7 +120,8 @@
         "CCCL_ENABLE_LIBCUDACXX": true,
         "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": false,
         "libcudacxx_ENABLE_CODEGEN": true,
-        "LIBCUDACXX_ENABLE_CUDA": false
+        "LIBCUDACXX_ENABLE_CUDA": false,
+        "LIBCUDACXX_IGNORE_DEPRECATED_CPP_DIALECT": true
       }
     },
     {
@@ -138,7 +140,8 @@
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "11",
         "CMAKE_CUDA_STANDARD": "11",
-        "LIBCUDACXX_TEST_STANDARD_VER": "c++11"
+        "LIBCUDACXX_TEST_STANDARD_VER": "c++11",
+        "LIBCUDACXX_IGNORE_DEPRECATED_CPP_11": true
       }
     },
     {
@@ -148,7 +151,8 @@
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "14",
         "CMAKE_CUDA_STANDARD": "14",
-        "LIBCUDACXX_TEST_STANDARD_VER": "c++14"
+        "LIBCUDACXX_TEST_STANDARD_VER": "c++14",
+        "LIBCUDACXX_IGNORE_DEPRECATED_CPP_14": true
       }
     },
     {
@@ -187,7 +191,8 @@
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "11",
         "CMAKE_CUDA_STANDARD": "11",
-        "LIBCUDACXX_TEST_STANDARD_VER": "c++11"
+        "LIBCUDACXX_TEST_STANDARD_VER": "c++11",
+        "LIBCUDACXX_IGNORE_DEPRECATED_CPP_11": true
       }
     },
     {
@@ -197,7 +202,8 @@
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "14",
         "CMAKE_CUDA_STANDARD": "14",
-        "LIBCUDACXX_TEST_STANDARD_VER": "c++14"
+        "LIBCUDACXX_TEST_STANDARD_VER": "c++14",
+        "LIBCUDACXX_IGNORE_DEPRECATED_CPP_14": true
       }
     },
     {
