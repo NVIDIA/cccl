@@ -329,28 +329,10 @@ extern "C++" {
 
 // clang-format on
 
-#  ifndef _LIBCUDACXX_PREFERRED_OVERLOAD
-#    if _CCCL_HAS_ATTRIBUTE(__enable_if__)
-#      define _LIBCUDACXX_PREFERRED_OVERLOAD __attribute__((__enable_if__(true, "")))
-#    endif
-#  endif
-
 #  ifdef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
 typedef unsigned short char16_t;
 typedef unsigned int char32_t;
 #  endif // _LIBCUDACXX_HAS_NO_UNICODE_CHARS
-
-#  if _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG)
-#    define _LIBCUDACXX_NOALIAS __attribute__((__malloc__))
-#  else
-#    define _LIBCUDACXX_NOALIAS
-#  endif
-
-#  if _CCCL_HAS_FEATURE(cxx_explicit_conversions) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG)
-#    define _LIBCUDACXX_EXPLICIT explicit
-#  else
-#    define _LIBCUDACXX_EXPLICIT
-#  endif
 
 #  ifdef _LIBCUDACXX_DEBUG
 #    if _LIBCUDACXX_DEBUG == 0

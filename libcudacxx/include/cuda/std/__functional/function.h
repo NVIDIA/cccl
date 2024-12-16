@@ -556,7 +556,7 @@ public:
     }
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_EXPLICIT operator bool() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI explicit operator bool() const noexcept
   {
     return __f_ != nullptr;
   }
@@ -1056,7 +1056,7 @@ public:
 #  endif
 
   // function capacity:
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_EXPLICIT operator bool() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI explicit operator bool() const noexcept
   {
     return static_cast<bool>(__f_);
   }
