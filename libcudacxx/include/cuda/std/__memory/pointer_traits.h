@@ -52,8 +52,6 @@ struct __pointer_traits_element_type<_Ptr, true>
   typedef _CCCL_NODEBUG_ALIAS typename _Ptr::element_type type;
 };
 
-#ifndef _LIBCUDACXX_HAS_NO_VARIADICS
-
 template <template <class, class...> class _Sp, class _Tp, class... _Args>
 struct __pointer_traits_element_type<_Sp<_Tp, _Args...>, true>
 {
@@ -65,58 +63,6 @@ struct __pointer_traits_element_type<_Sp<_Tp, _Args...>, false>
 {
   typedef _CCCL_NODEBUG_ALIAS _Tp type;
 };
-
-#else // _LIBCUDACXX_HAS_NO_VARIADICS
-
-template <template <class> class _Sp, class _Tp>
-struct __pointer_traits_element_type<_Sp<_Tp>, true>
-{
-  typedef typename _Sp<_Tp>::element_type type;
-};
-
-template <template <class> class _Sp, class _Tp>
-struct __pointer_traits_element_type<_Sp<_Tp>, false>
-{
-  typedef _Tp type;
-};
-
-template <template <class, class> class _Sp, class _Tp, class _A0>
-struct __pointer_traits_element_type<_Sp<_Tp, _A0>, true>
-{
-  typedef typename _Sp<_Tp, _A0>::element_type type;
-};
-
-template <template <class, class> class _Sp, class _Tp, class _A0>
-struct __pointer_traits_element_type<_Sp<_Tp, _A0>, false>
-{
-  typedef _Tp type;
-};
-
-template <template <class, class, class> class _Sp, class _Tp, class _A0, class _A1>
-struct __pointer_traits_element_type<_Sp<_Tp, _A0, _A1>, true>
-{
-  typedef typename _Sp<_Tp, _A0, _A1>::element_type type;
-};
-
-template <template <class, class, class> class _Sp, class _Tp, class _A0, class _A1>
-struct __pointer_traits_element_type<_Sp<_Tp, _A0, _A1>, false>
-{
-  typedef _Tp type;
-};
-
-template <template <class, class, class, class> class _Sp, class _Tp, class _A0, class _A1, class _A2>
-struct __pointer_traits_element_type<_Sp<_Tp, _A0, _A1, _A2>, true>
-{
-  typedef typename _Sp<_Tp, _A0, _A1, _A2>::element_type type;
-};
-
-template <template <class, class, class, class> class _Sp, class _Tp, class _A0, class _A1, class _A2>
-struct __pointer_traits_element_type<_Sp<_Tp, _A0, _A1, _A2>, false>
-{
-  typedef _Tp type;
-};
-
-#endif // _LIBCUDACXX_HAS_NO_VARIADICS
 
 template <class _Tp, class = void>
 struct __has_difference_type : false_type
@@ -159,8 +105,6 @@ struct __pointer_traits_rebind
   typedef _CCCL_NODEBUG_ALIAS typename _Tp::template rebind<_Up> type;
 };
 
-#ifndef _LIBCUDACXX_HAS_NO_VARIADICS
-
 template <template <class, class...> class _Sp, class _Tp, class... _Args, class _Up>
 struct __pointer_traits_rebind<_Sp<_Tp, _Args...>, _Up, true>
 {
@@ -172,58 +116,6 @@ struct __pointer_traits_rebind<_Sp<_Tp, _Args...>, _Up, false>
 {
   typedef _Sp<_Up, _Args...> type;
 };
-
-#else // _LIBCUDACXX_HAS_NO_VARIADICS
-
-template <template <class> class _Sp, class _Tp, class _Up>
-struct __pointer_traits_rebind<_Sp<_Tp>, _Up, true>
-{
-  typedef typename _Sp<_Tp>::template rebind<_Up> type;
-};
-
-template <template <class> class _Sp, class _Tp, class _Up>
-struct __pointer_traits_rebind<_Sp<_Tp>, _Up, false>
-{
-  typedef _Sp<_Up> type;
-};
-
-template <template <class, class> class _Sp, class _Tp, class _A0, class _Up>
-struct __pointer_traits_rebind<_Sp<_Tp, _A0>, _Up, true>
-{
-  typedef typename _Sp<_Tp, _A0>::template rebind<_Up> type;
-};
-
-template <template <class, class> class _Sp, class _Tp, class _A0, class _Up>
-struct __pointer_traits_rebind<_Sp<_Tp, _A0>, _Up, false>
-{
-  typedef _Sp<_Up, _A0> type;
-};
-
-template <template <class, class, class> class _Sp, class _Tp, class _A0, class _A1, class _Up>
-struct __pointer_traits_rebind<_Sp<_Tp, _A0, _A1>, _Up, true>
-{
-  typedef typename _Sp<_Tp, _A0, _A1>::template rebind<_Up> type;
-};
-
-template <template <class, class, class> class _Sp, class _Tp, class _A0, class _A1, class _Up>
-struct __pointer_traits_rebind<_Sp<_Tp, _A0, _A1>, _Up, false>
-{
-  typedef _Sp<_Up, _A0, _A1> type;
-};
-
-template <template <class, class, class, class> class _Sp, class _Tp, class _A0, class _A1, class _A2, class _Up>
-struct __pointer_traits_rebind<_Sp<_Tp, _A0, _A1, _A2>, _Up, true>
-{
-  typedef typename _Sp<_Tp, _A0, _A1, _A2>::template rebind<_Up> type;
-};
-
-template <template <class, class, class, class> class _Sp, class _Tp, class _A0, class _A1, class _A2, class _Up>
-struct __pointer_traits_rebind<_Sp<_Tp, _A0, _A1, _A2>, _Up, false>
-{
-  typedef _Sp<_Up, _A0, _A1, _A2> type;
-};
-
-#endif // _LIBCUDACXX_HAS_NO_VARIADICS
 
 template <class _Ptr>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT pointer_traits

@@ -185,38 +185,6 @@ extern "C++" {
 
 #  if _CCCL_COMPILER(CLANG)
 
-#    if !(_CCCL_HAS_FEATURE(cxx_lambdas))
-#      define _LIBCUDACXX_HAS_NO_LAMBDAS
-#    endif
-
-#    if !(_CCCL_HAS_FEATURE(cxx_nullptr))
-#      if (__has_extension(cxx_nullptr) || _CCCL_HAS_KEYWORD(__nullptr))
-#        define nullptr __nullptr
-#      else
-#        define _LIBCUDACXX_HAS_NO_NULLPTR
-#      endif
-#    endif
-
-#    if !(_CCCL_HAS_FEATURE(cxx_rvalue_references))
-#      define _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-#    endif
-
-#    if !(_CCCL_HAS_FEATURE(cxx_auto_type))
-#      define _LIBCUDACXX_HAS_NO_AUTO_TYPE
-#    endif
-
-#    if !(_CCCL_HAS_FEATURE(cxx_variadic_templates))
-#      define _LIBCUDACXX_HAS_NO_VARIADICS
-#    endif
-
-#    if !(_CCCL_HAS_FEATURE(cxx_generalized_initializers))
-#      define _LIBCUDACXX_HAS_NO_GENERALIZED_INITIALIZERS
-#    endif
-
-#    if !(_CCCL_HAS_FEATURE(cxx_noexcept))
-#      define _LIBCUDACXX_HAS_NO_NOEXCEPT
-#    endif
-
 // Allow for build-time disabling of unsigned integer sanitization
 #    if !defined(_LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK) && _CCCL_HAS_ATTRIBUTE(no_sanitize)
 #      define _LIBCUDACXX_DISABLE_UBSAN_UNSIGNED_INTEGER_CHECK \
@@ -511,12 +479,6 @@ typedef unsigned int char32_t;
 #    define _LIBCUDACXX_DEPRECATED_IN_CXX20 _LIBCUDACXX_DEPRECATED
 #  else
 #    define _LIBCUDACXX_DEPRECATED_IN_CXX20
-#  endif
-
-#  ifdef _LIBCUDACXX_HAS_NO_RVALUE_REFERENCES
-#    define _LIBCUDACXX_EXPLICIT_MOVE(x) _CUDA_VSTD::move(x)
-#  else
-#    define _LIBCUDACXX_EXPLICIT_MOVE(x) (x)
 #  endif
 
 // Thread API
