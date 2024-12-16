@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__internal/cpp_dialect.h>
+#include <cuda/std/__internal/features.h>
 #include <cuda/std/__internal/namespaces.h>
 
 #ifdef __cplusplus
@@ -43,13 +44,6 @@ extern "C++" {
 
 #  ifndef __has_declspec_attribute
 #    define __has_declspec_attribute(__x) 0
-#  endif
-
-#  if !_CCCL_CUDA_COMPILER(NVCC) && !_CCCL_COMPILER(NVRTC)
-// If NVCC is not being used <complex> can safely use `long double` without warnings
-#    define _LIBCUDACXX_HAS_COMPLEX_LONG_DOUBLE
-// NVCC does not have a way of silencing non '_' prefixed UDLs
-#    define _LIBCUDACXX_HAS_STL_LITERALS
 #  endif
 
 // FIXME: ABI detection should be done via compiler builtin macros. This
@@ -189,50 +183,6 @@ extern "C++" {
 #    endif
 
 #  endif //  _CCCL_COMPILER(CLANG)
-
-#  ifndef _LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP
-#    define _LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP
-#  endif // _LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP
-
-#  ifndef _LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS
-#    define _LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS
-#  endif // _LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS
-
-#  ifndef _LIBCUDACXX_HAS_NO_INT128
-#    if _CCCL_COMPILER(MSVC) || (_CCCL_COMPILER(NVRTC) && !defined(__CUDACC_RTC_INT128__)) \
-      || _CCCL_CUDA_COMPILER(NVCC, <, 11, 5) || !defined(__SIZEOF_INT128__)
-#      define _LIBCUDACXX_HAS_NO_INT128
-#    endif
-#  endif // !_LIBCUDACXX_HAS_NO_INT128
-
-#  ifndef _LIBCUDACXX_HAS_NO_LONG_DOUBLE
-#    if _CCCL_CUDACC
-#      define _LIBCUDACXX_HAS_NO_LONG_DOUBLE
-#    endif
-#  endif // _LIBCUDACXX_HAS_NO_LONG_DOUBLE
-
-// libcu++ requires host device support for its tests. Until then restrict usage to at least 12.2
-#  ifndef _LIBCUDACXX_HAS_NVFP16
-#    if defined(_CCCL_HAS_NVFP16) && _CCCL_CUDACC_AT_LEAST(12, 2) \
-      && (_CCCL_HAS_CUDA_COMPILER || defined(LIBCUDACXX_ENABLE_HOST_NVFP16))
-#      define _LIBCUDACXX_HAS_NVFP16
-#    endif
-#  endif // !_LIBCUDACXX_HAS_NVFP16
-
-// libcu++ requires host device support for its tests. Until then restrict usage to at least 12.2
-#  ifndef _LIBCUDACXX_HAS_NVBF16
-#    if defined(_CCCL_HAS_NVBF16) && _CCCL_CUDACC_AT_LEAST(12, 2)
-#      define _LIBCUDACXX_HAS_NVBF16
-#    endif
-#  endif // !_LIBCUDACXX_HAS_NVBF16
-
-#  ifndef _LIBCUDACXX_HAS_NO_MONOTONIC_CLOCK
-#    define _LIBCUDACXX_HAS_NO_MONOTONIC_CLOCK
-#  endif // _LIBCUDACXX_HAS_NO_MONOTONIC_CLOCK
-
-#  ifndef _LIBCUDACXX_HAS_NO_WCHAR_H
-#    define _LIBCUDACXX_HAS_NO_WCHAR_H
-#  endif // _LIBCUDACXX_HAS_NO_WCHAR_H
 
 #  ifdef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
 typedef unsigned short char16_t;
@@ -444,24 +394,6 @@ typedef unsigned int char32_t;
 #    define _LIBCUDACXX_ENABLE_CXX17_REMOVED_BINDERS
 #  endif // _LIBCUDACXX_ENABLE_CXX17_REMOVED_FEATURES
 
-// We need `is_constant_evaluated` for clang and gcc. MSVC also needs extensive rework
-#  if !defined(_CCCL_BUILTIN_IS_CONSTANT_EVALUATED)
-#    define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
-#  elif _CCCL_COMPILER(NVRTC)
-#    define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
-#  elif _CCCL_COMPILER(MSVC)
-#    define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
-#  elif _CCCL_CUDACC_BELOW(11, 8)
-#    define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
-#  elif _CCCL_CUDA_COMPILER(CLANG)
-#    define _LIBCUDACXX_HAS_NO_CONSTEXPR_COMPLEX_OPERATIONS
-#  endif
-
-// FIXME: Correct this macro when either (A) a feature test macro for the
-// spaceship operator is provided, or (B) a compiler provides a complete
-// implementation.
-#  define _LIBCUDACXX_HAS_NO_SPACESHIP_OPERATOR
-
 #  define _LIBCUDACXX_UNUSED_VAR(x) ((void) (x))
 
 #  ifndef _LIBCUDACXX_SYS_CLOCK_DURATION
@@ -519,8 +451,6 @@ typedef unsigned int char32_t;
       using __base::__base;                                              \
       _CCCL_HIDE_FROM_ABI constexpr __class() noexcept = default;
 #  endif // !(_CCCL_CUDACC_BELOW(12,5) && _CCCL_COMPILER(NVRTC)) && !(_CCCL_CUDACC_BELOW(11,3) && _CCCL_COMPILER(CLANG))
-
-#  define _LIBCUDACXX_HAS_NO_INCOMPLETE_RANGES
 
 #endif // __cplusplus
 
