@@ -35,7 +35,8 @@ struct OpWrapper
 };
 
 template <typename Ctx, typename InT, typename OutT, typename BinaryOp>
-void exclusive_scan(Ctx& ctx, logical_data<slice<InT>> in_data, logical_data<slice<OutT>> out_data, BinaryOp&& op, OutT init_val)
+void exclusive_scan(
+  Ctx& ctx, logical_data<slice<InT>> in_data, logical_data<slice<OutT>> out_data, BinaryOp&& op, OutT init_val)
 {
   size_t nitems = in_data.shape().size();
 
@@ -58,7 +59,7 @@ void exclusive_scan(Ctx& ctx, logical_data<slice<InT>> in_data, logical_data<sli
       ->*[&op, init_val, nitems](cudaStream_t stream, auto d_in, auto d_out, auto d_temp) {
             size_t tmp_size = d_temp.size();
             cub::DeviceScan::ExclusiveScan(
-              (void *)d_temp.data_handle(),
+              (void*) d_temp.data_handle(),
               tmp_size,
               (InT*) d_in.data_handle(),
               (OutT*) d_out.data_handle(),
@@ -86,15 +87,16 @@ void run()
     X[ind] = rand() % N;
 
     // compute the exclusive sum of X
-    ref_out[ind] = (ind == 0)?0:(X[ind-1]+ref_out[ind-1]);
+    ref_out[ind] = (ind == 0) ? 0 : (X[ind - 1] + ref_out[ind - 1]);
   }
 
-  auto lX = ctx.logical_data(X.data(), {N});
+  auto lX   = ctx.logical_data(X.data(), {N});
   auto lout = ctx.logical_data(out.data(), {N});
 
   exclusive_scan(
     ctx,
-    lX, lout,
+    lX,
+    lout,
     [] __device__(const int& a, const int& b) {
       return a + b;
     },
@@ -104,7 +106,7 @@ void run()
 
   for (size_t i = 0; i < N; i++)
   {
-      _CCCL_ASSERT(ref_out[i] == out[i], "Incorrect result");
+    _CCCL_ASSERT(ref_out[i] == out[i], "Incorrect result");
   }
 }
 
