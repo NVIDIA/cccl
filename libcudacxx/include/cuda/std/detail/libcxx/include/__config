@@ -202,20 +202,6 @@ extern "C++" {
 #    define _LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP
 #  endif // _LIBCUDACXX_HAS_EXTERNAL_ATOMIC_IMP
 
-#  ifndef _LIBCUDACXX_HAS_NO_ASAN
-#    if _CCCL_COMPILER(GCC)
-#      if !defined(__SANITIZE_ADDRESS__)
-#        define _LIBCUDACXX_HAS_NO_ASAN
-#      endif // !__SANITIZE_ADDRESS__
-#    elif _CCCL_COMPILER(CLANG)
-#      if !_CCCL_HAS_FEATURE(address_sanitizer)
-#        define _LIBCUDACXX_HAS_NO_ASAN
-#      endif // !_CCCL_HAS_FEATURE(address_sanitizer)
-#    else
-#      define _LIBCUDACXX_HAS_NO_ASAN
-#    endif // _CCCL_COMPILER[MSVC|NVHPC|NVRTC]
-#  endif // _LIBCUDACXX_HAS_NO_ASAN
-
 #  ifndef _LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS
 #    define _LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS
 #  endif // _LIBCUDACXX_HAS_NO_CXX20_CHRONO_LITERALS
