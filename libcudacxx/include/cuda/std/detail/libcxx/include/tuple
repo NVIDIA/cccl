@@ -826,14 +826,6 @@ public:
       : __base_(allocator_arg_t(), __a, __tuple_variadic_constructor_tag{}, __t...)
   {}
 
-#if defined(_LIBCUDACXX_NO_TUPLE_NOEXCEPT)
-  template <class... _Vp>
-  using __base_noexcept_constructible = false_type;
-#else
-  template <class... _Vp>
-  using __base_noexcept_constructible = is_nothrow_constructible<_BaseT, _Vp...>;
-#endif // defined(_LIBCUDACXX_NO_TUPLE_NOEXCEPT)
-
   template <class... _Up>
   using __variadic_constraints =
     _If<!_PackExpandsToThisTuple<_Up...>::value && sizeof...(_Up) == sizeof...(_Tp),
@@ -865,8 +857,8 @@ public:
             class _Constraints                                       = __variadic_constraints_less_rank<_Up...>,
             enable_if_t<sizeof...(_Up) < sizeof...(_Tp), int>        = 0,
             enable_if_t<_Constraints::__implicit_constructible, int> = 0>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 explicit tuple(_Up&&... __u) noexcept(
-    __base_noexcept_constructible<__tuple_variadic_constructor_tag, _Up...>::value)
+  _LIBCUDACXX_HIDE_FROM_ABI
+  _CCCL_CONSTEXPR_CXX14 explicit tuple(_Up&&... __u) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _BaseT, _Up...))
       : __base_(__tuple_variadic_constructor_tag{}, _CUDA_VSTD::forward<_Up>(__u)...)
   {}
 

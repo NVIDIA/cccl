@@ -191,20 +191,6 @@ extern "C++" {
         __attribute__((__no_sanitize__("unsigned-integer-overflow")))
 #    endif
 
-#  elif _CCCL_COMPILER(GCC)
-
-#    if _CCCL_COMPILER(GCC, <, 6)
-#      define _LIBCUDACXX_GCC_MATH_IN_STD
-#    endif
-
-// NVCC cannot properly handle some deductions occurring within NOEXCEPT
-// C++17 mode causes reference instantiation errors in tuple
-#    if (_CCCL_COMPILER(GCC, >=, 7, 2) && _CCCL_COMPILER(GCC, <=, 8, 5))
-#      if _CCCL_CUDA_COMPILER(NVCC) && _CCCL_STD_VER == 2017
-#        define _LIBCUDACXX_NO_TUPLE_NOEXCEPT
-#      endif
-#    endif
-
 #  elif _CCCL_COMPILER(MSVC)
 
 #    define _LIBCUDACXX_WARNING(x) _CCCL_PRAGMA(message(__FILE__ "(" _CCCL_TO_STRING(__LINE__) ") : warning note: " x))
