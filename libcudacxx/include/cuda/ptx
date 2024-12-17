@@ -85,6 +85,7 @@
 #include <cuda/__ptx/instructions/mbarrier_wait.h>
 #include <cuda/__ptx/instructions/multimem_ld_reduce.h>
 #include <cuda/__ptx/instructions/multimem_red.h>
+#include <cuda/__ptx/instructions/multimem_st.h>
 #include <cuda/__ptx/instructions/red_async.h>
 #include <cuda/__ptx/instructions/st_async.h>
 #include <cuda/__ptx/instructions/tensormap_cp_fenceproxy.h>
