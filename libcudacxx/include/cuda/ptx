@@ -89,6 +89,7 @@
 #include <cuda/__ptx/instructions/st_bulk.h>
 #include <cuda/__ptx/instructions/tcgen05_alloc.h>
 #include <cuda/__ptx/instructions/tcgen05_commit.h>
+#include <cuda/__ptx/instructions/tcgen05_cp.h>
 #include <cuda/__ptx/instructions/tensormap_cp_fenceproxy.h>
 #include <cuda/__ptx/instructions/tensormap_replace.h>
 
