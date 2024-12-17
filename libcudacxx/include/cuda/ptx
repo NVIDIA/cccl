@@ -74,6 +74,7 @@
 #include <cuda/__ptx/instructions/cp_async_bulk_commit_group.h>
 #include <cuda/__ptx/instructions/cp_async_bulk_tensor.h>
 #include <cuda/__ptx/instructions/cp_async_bulk_wait_group.h>
+#include <cuda/__ptx/instructions/cp_async_mbarrier_arrive.h>
 #include <cuda/__ptx/instructions/cp_reduce_async_bulk.h>
 #include <cuda/__ptx/instructions/cp_reduce_async_bulk_tensor.h>
 #include <cuda/__ptx/instructions/fence.h>
