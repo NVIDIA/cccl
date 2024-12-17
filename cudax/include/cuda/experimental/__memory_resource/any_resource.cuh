@@ -303,20 +303,23 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES any_resource
     : basic_any<__iresource<_Properties...>>
     , __with_try_get_property<any_resource<_Properties...>>
 {
-  using any_resource::basic_any::basic_any;
-
-  // any_async_resource is convertible to any_resource
-  _CCCL_TEMPLATE(class... _OtherProperties)
-  _CCCL_REQUIRES((_CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__type_set<_OtherProperties...>, _Properties...>) )
-  any_resource(__cudax::any_async_resource<_OtherProperties...> __other) noexcept
-      : any_resource::basic_any(_CUDA_VSTD::move(__other.__base()))
-  {}
-
 private:
   static_assert(_CUDA_VMR::__contains_execution_space_property<_Properties...>,
                 "The properties of cuda::experimental::any_resource must contain at least one execution space "
                 "property!");
-  using any_resource::basic_any::interface;
+  using __base_t = __cudax::basic_any<__iresource<_Properties...>>;
+  using __base_t::interface;
+
+public:
+  // any_async_resource is convertible to any_resource
+  _CCCL_TEMPLATE(class... _OtherProperties)
+  _CCCL_REQUIRES((_CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__type_set<_OtherProperties...>, _Properties...>) )
+  any_resource(__cudax::any_async_resource<_OtherProperties...> __other) noexcept
+      : __base_t(_CUDA_VSTD::move(__other.__base()))
+  {}
+
+  // Inherit other constructors from basic_any
+  using __base_t::__base_t;
 };
 
 // ``any_async_resource`` wraps any given async_resource that satisfies the
@@ -329,8 +332,6 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES any_async_resource
     : basic_any<__iasync_resource<_Properties...>>
     , __with_try_get_property<any_async_resource<_Properties...>>
 {
-  using any_async_resource::basic_any::basic_any;
-
 private:
   static_assert(_CUDA_VMR::__contains_execution_space_property<_Properties...>,
                 "The properties of cuda::experimental::any_async_resource must contain at least one execution space "
@@ -339,13 +340,17 @@ private:
   template <class...>
   friend struct any_resource;
 
-  using __base_t = typename any_async_resource::basic_any;
+  using __base_t = __cudax::basic_any<__iasync_resource<_Properties...>>;
   using __base_t::interface;
 
   __base_t& __base() noexcept
   {
     return *this;
   }
+
+public:
+  // Inherit constructors from basic_any
+  using __base_t::__base_t;
 };
 
 //! @brief Type erased wrapper around a `resource` that satisfies \tparam _Properties
@@ -355,13 +360,19 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES resource_ref
     : basic_any<__iresource<_Properties...>&>
     , __with_try_get_property<resource_ref<_Properties...>>
 {
-  using resource_ref::basic_any::basic_any;
+private:
+  static_assert(_CUDA_VMR::__contains_execution_space_property<_Properties...>,
+                "The properties of cuda::experimental::resource_ref must contain at least one execution space "
+                "property!");
+  using __base_t = __cudax::basic_any<__iresource<_Properties...>&>;
+  using __base_t::interface;
 
+public:
   // async_resource_ref is convertible to resource_ref
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES((_CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__type_set<_OtherProperties...>, _Properties...>) )
   resource_ref(__cudax::async_resource_ref<_OtherProperties...> __other) noexcept
-      : resource_ref::basic_any(__other.__base())
+      : __base_t(__other.__base())
   {}
 
   // Conversions from the resource_ref types in cuda::mr is not supported.
@@ -371,11 +382,8 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES resource_ref
   template <class... _OtherProperties>
   resource_ref(_CUDA_VMR::async_resource_ref<_OtherProperties...>) = delete;
 
-private:
-  static_assert(_CUDA_VMR::__contains_execution_space_property<_Properties...>,
-                "The properties of cuda::experimental::resource_ref must contain at least one execution space "
-                "property!");
-  using resource_ref::basic_any::interface;
+  // Inherit other constructors from basic_any
+  using __base_t::__base_t;
 };
 
 //! @brief Type erased wrapper around a `async_resource` that satisfies \tparam _Properties
@@ -385,12 +393,6 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES async_resource_ref
     : basic_any<__iasync_resource<_Properties...>&>
     , __with_try_get_property<async_resource_ref<_Properties...>>
 {
-  using async_resource_ref::basic_any::basic_any;
-
-  // Conversions from the resource_ref types in cuda::mr is not supported.
-  template <class... _OtherProperties>
-  async_resource_ref(_CUDA_VMR::async_resource_ref<_OtherProperties...>) = delete;
-
 private:
   static_assert(_CUDA_VMR::__contains_execution_space_property<_Properties...>,
                 "The properties of cuda::experimental::async_resource_ref must contain at least one execution space "
@@ -399,13 +401,21 @@ private:
   template <class...>
   friend struct resource_ref;
 
-  using __base_t = typename async_resource_ref::basic_any;
+  using __base_t = __cudax::basic_any<__iasync_resource<_Properties...>&>;
   using __base_t::interface;
 
   __base_t& __base() noexcept
   {
     return *this;
   }
+
+public:
+  // Conversions from the resource_ref types in cuda::mr is not supported.
+  template <class... _OtherProperties>
+  async_resource_ref(_CUDA_VMR::async_resource_ref<_OtherProperties...>) = delete;
+
+  // Inherit other constructors from basic_any
+  using __base_t::__base_t;
 };
 
 _CCCL_TEMPLATE(class... _Properties, class _Resource)
