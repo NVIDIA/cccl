@@ -141,7 +141,7 @@ template <class _Archetype>
 extern __archetype<false, false> const* __as_immovable<_Archetype const*>;
 
 template <class _CvAny>
-using __normalized_interface_of _CCCL_NODEBUG_ALIAS = decltype(__interface_from<__normalize_t<_CvAny>>);
+using __normalized_interface_of _CCCL_NODEBUG_ALIAS = __normalize_t<decltype(__interface_from<__normalize_t<_CvAny>>)>;
 
 template <class _CvAny>
 using __src_archetype_of _CCCL_NODEBUG_ALIAS = decltype(__as_archetype<__normalized_interface_of<_CvAny>>);
