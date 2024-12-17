@@ -190,6 +190,116 @@ auto stf_transform_reduce(Ctx& ctx, shape_t s, OutT init_val, const logical_data
 }
 
 template <typename Ctx, typename shape_t, typename OutT, typename... Args>
+class stf_transform_reduce_scope
+{
+public:
+  stf_transform_reduce_scope(Ctx ctx, shape_t s, OutT init_val, logical_data<Args>... args)
+      : ctx(mv(ctx))
+      , s(mv(s))
+      , init_val(mv(init_val))
+      , args_tuple(::std::forward_as_tuple(args)...)
+  {}
+
+  stf_transform_reduce_scope(const stf_transform_reduce_scope&)            = delete;
+  stf_transform_reduce_scope(stf_transform_reduce_scope&&)                 = default;
+  stf_transform_reduce_scope& operator=(const stf_transform_reduce_scope&) = delete;
+
+  template <typename TransformOp>
+  class reduce_scope
+  {
+  public:
+    reduce_scope(stf_transform_reduce_scope& parent_scope, TransformOp&& transform_op)
+        : transform_op(mv(transform_op))
+    {}
+
+    reduce_scope(const reduce_scope&)            = delete;
+    reduce_scope(reduce_scope&&)                 = default;
+    reduce_scope& operator=(const reduce_scope&) = delete;
+
+    template <typename ReduceOp>
+    auto operator->*(ReduceOp&& reduce_op)
+    {
+      // This will be the ultimate result of the transform followed by reduce
+      auto result = ctx.logical_data(shape_of<scalar_view<OutT>>());
+
+      auto t = ::std::apply(
+        [&](auto&&... a) {
+          return ctx.task(result.write(), a.read()...);
+        },
+        args_tuple);
+
+      t->*[&](cudaStream_t stream, scalar_view<OutT> res, auto... deps) {
+        // using TransformOp = ::std::remove_reference_t<decltype(transform_op)>;
+
+        auto deps_tuple = ::std::forward_as_tuple(deps...);
+
+        // This is a functor that transforms a 1D index in the shape into the result
+        // of the transform operation
+        //
+        // Note that we pass a tuple where we have removed the first argument (we do
+        // not consider the logical data of the result during the transform)
+        using ConversionOp_t = IndexToTransformedValue<TransformOp, shape_t, Args...>;
+
+        auto count_it = cub::CountingInputIterator<size_t>(0);
+
+        // This is an iterator that combines the counting iterator with the functor
+        // to apply the transformation, it thus outputs the different values produced
+        // by the transformation over the shape
+        cub::TransformInputIterator<OutT, ConversionOp_t, decltype(count_it)> transform_output_it(
+          count_it, ConversionOp_t(transform_op, s, deps_tuple));
+
+        using BinaryOp = ::std::remove_reference_t<decltype(reduce_op)>;
+        // Determine temporary device storage requirements
+        void* d_temp_storage      = nullptr;
+        size_t temp_storage_bytes = 0;
+        auto wrapped_reducer      = LambdaOpWrapper<BinaryOp>(reduce_op);
+
+        cub::DeviceReduce::Reduce(
+          d_temp_storage,
+          temp_storage_bytes,
+          transform_output_it,
+          (OutT*) res.addr, // output into a scalar_view<OutT>
+          s.size(),
+          wrapped_reducer,
+          init_val,
+          stream);
+
+        cuda_safe_call(cudaMallocAsync(&d_temp_storage, temp_storage_bytes, stream));
+
+        cub::DeviceReduce::Reduce(
+          d_temp_storage,
+          temp_storage_bytes,
+          transform_output_it,
+          (OutT*) res.addr, // output into a scalar_view<OutT>
+          s.size(),
+          mv(wrapped_reducer),
+          init_val,
+          stream);
+
+        cuda_safe_call(cudaFreeAsync(d_temp_storage, stream));
+      };
+
+      return mv(result);
+    }
+
+  private:
+    TransformOp transform_op;
+  };
+
+  template <typename TransformOp>
+  auto operator->*(TransformOp&& transform_op)
+  {
+    return reduce_scope(*this, mv(transform_op));
+  }
+
+private:
+  Ctx ctx;
+  shape_t s;
+  OutT init_val;
+  ::std::tuple<::std::decay_t<Args>...> args_tuple;
+};
+
+template <typename Ctx, typename shape_t, typename OutT, typename... Args>
 auto stf_transform_exclusive_scan(Ctx& ctx, shape_t s, OutT init_val, const logical_data<Args>&... args)
 {
   auto args_tuple = ::std::forward_as_tuple(args...);
@@ -271,6 +381,5 @@ auto stf_transform_exclusive_scan(Ctx& ctx, shape_t s, OutT init_val, const logi
     };
   };
 }
-
 
 } // end namespace cuda::experimental::stf::reserved

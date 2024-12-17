@@ -664,14 +664,16 @@ public:
   template <typename shape_t, typename OutT, typename... Args>
   auto transform_reduce(shape_t s, OutT init_val, const cuda::experimental::stf::logical_data<Args>&... args)
   {
-    return reserved::stf_transform_reduce(*this, mv(s), mv(init_val), args...);
+    return reserved::stf_transform_reduce_scope(*this, mv(s), mv(init_val), args...);
   }
 
+#if 0
   template <typename shape_t, typename OutT, typename... Args>
   auto transform_exclusive_scan(shape_t s, OutT init_val, const cuda::experimental::stf::logical_data<Args>&... args)
   {
     return reserved::stf_transform_exclusive_scan(*this, mv(s), mv(init_val), args...);
   }
+#endif
 
 private:
   /* This class contains all the state associated to a stream_ctx, and all states associated to every contexts (in
