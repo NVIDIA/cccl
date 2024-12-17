@@ -37,7 +37,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
 // CRTP base that one can derive from in order to be considered a range adaptor closure
 // by the library. When deriving from this class, a pipe operator will be provided to
@@ -76,7 +76,7 @@ _CCCL_CONCEPT __range_adaptor_can_pipe_compose =
 template <class _Tp>
 struct __range_adaptor_closure
 {
-#  if defined(_CCCL_COMPILER_NVRTC)
+#  if _CCCL_COMPILER(NVRTC)
   template <class _View, class _Closure>
   _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
   operator|(_View&& __view, _Closure&& __closure) noexcept(is_nothrow_invocable_v<_Closure, _View>)
@@ -94,7 +94,7 @@ struct __range_adaptor_closure
   }
 #  endif // !_CCCL_COMPILER_NVRTC
 
-#  if defined(_CCCL_COMPILER_NVRTC)
+#  if _CCCL_COMPILER(NVRTC)
   template <class _Closure, class _OtherClosure>
   using __compose_return_t = decltype(__range_adaptor_closure_t(
     _CUDA_VSTD::__compose(_CUDA_VSTD::declval<_OtherClosure>(), _CUDA_VSTD::declval<_Closure>())));

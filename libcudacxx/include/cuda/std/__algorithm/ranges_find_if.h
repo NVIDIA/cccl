@@ -30,7 +30,7 @@
 #include <cuda/std/__ranges/dangling.h>
 #include <cuda/std/__utility/move.h>
 
-#if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
@@ -75,6 +75,6 @@ _CCCL_GLOBAL_CONSTANT auto find_if = __find_if::__fn{};
 } // namespace __cpo
 _LIBCUDACXX_END_NAMESPACE_RANGES
 
-#endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
 #endif // _LIBCUDACXX___ALGORITHM_RANGES_FIND_IF_H

@@ -192,6 +192,7 @@ __host__ __device__ constexpr void testOne()
     unused(it);
   }
 
+#if !defined(TEST_COMPILER_MSVC)
   // Test with a non-const predicate
   {
     auto mutable_pred = [](int& i) mutable {
@@ -199,18 +200,13 @@ __host__ __device__ constexpr void testOne()
     };
     int buffer[] = {1, 2, 3, 2, 1};
     auto range   = make_subrange<Range, Iter, Sent>(buffer);
-    // With MSVC the lambda does not satisfy indirect_unary_predicate
-    if constexpr (cuda::std::indirect_unary_predicate<const decltype(mutable_pred), Iter>)
-    {
-      cuda::std::ranges::drop_while_view<decltype(range), decltype(mutable_pred)> dwv{
-        cuda::std::move(range), mutable_pred};
-      decltype(auto) it = dwv.begin();
-      static_assert(cuda::std::same_as<decltype(it), Iter>);
-      assert(base(it) == buffer + 2);
-    }
-    unused(range);
-    unused(mutable_pred);
+    cuda::std::ranges::drop_while_view<decltype(range), decltype(mutable_pred)> dwv{
+      cuda::std::move(range), cuda::std::move(mutable_pred)};
+    decltype(auto) it = dwv.begin();
+    static_assert(cuda::std::same_as<decltype(it), Iter>);
+    assert(base(it) == buffer + 2);
   }
+#endif // !TEST_COMPILER_MSVC
 
   // Test with a predicate that takes by non-const reference
   {

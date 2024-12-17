@@ -75,6 +75,34 @@ struct TrackingPred : TrackInitialization
   }
 };
 
+struct always_true
+{
+  __host__ __device__ constexpr bool operator()(int) const noexcept
+  {
+    return true;
+  }
+};
+struct always_false
+{
+  __host__ __device__ constexpr bool operator()(int) const noexcept
+  {
+    return false;
+  }
+};
+
+struct equals_to
+{
+  const int expected_;
+  __host__ __device__ constexpr equals_to(const int expected) noexcept
+      : expected_(expected)
+  {}
+
+  __host__ __device__ constexpr bool operator()(const int val) const noexcept
+  {
+    return val == expected_;
+  }
+};
+
 template <typename Range>
 __host__ __device__ constexpr void general_tests()
 {
@@ -83,10 +111,7 @@ __host__ __device__ constexpr void general_tests()
   // Check the return type of `.begin()`
   {
     Range range(buff, buff + 1);
-    auto pred = [](int) {
-      return true;
-    };
-    cuda::std::ranges::filter_view<Range, decltype(pred)> view(range, pred);
+    cuda::std::ranges::filter_view<Range, always_true> view(range, always_true{});
     using FilterIterator = cuda::std::ranges::iterator_t<decltype(view)>;
     ASSERT_SAME_TYPE(FilterIterator, decltype(view.begin()));
   }
@@ -94,10 +119,7 @@ __host__ __device__ constexpr void general_tests()
   // begin() over an empty range
   {
     Range range(buff, buff);
-    auto pred = [](int) {
-      return true;
-    };
-    cuda::std::ranges::filter_view<Range, decltype(pred)> view(range, pred);
+    cuda::std::ranges::filter_view<Range, always_true> view(range, always_true{});
     auto it = view.begin();
     assert(base(it.base()) == buff);
     assert(it == view.end());
@@ -107,19 +129,13 @@ __host__ __device__ constexpr void general_tests()
   {
     {
       Range range(buff, buff + 1);
-      auto pred = [](int i) {
-        return i == 1;
-      };
-      cuda::std::ranges::filter_view<Range, decltype(pred)> view(range, pred);
+      cuda::std::ranges::filter_view<Range, equals_to> view(range, equals_to{1});
       auto it = view.begin();
       assert(base(it.base()) == buff);
     }
     {
       Range range(buff, buff + 1);
-      auto pred = [](int) {
-        return false;
-      };
-      cuda::std::ranges::filter_view<Range, decltype(pred)> view(range, pred);
+      cuda::std::ranges::filter_view<Range, always_false> view(range, always_false{});
       auto it = view.begin();
       assert(base(it.base()) == buff + 1);
       assert(it == view.end());
@@ -130,28 +146,19 @@ __host__ __device__ constexpr void general_tests()
   {
     {
       Range range(buff, buff + 2);
-      auto pred = [](int i) {
-        return i == 1;
-      };
-      cuda::std::ranges::filter_view<Range, decltype(pred)> view(range, pred);
+      cuda::std::ranges::filter_view<Range, equals_to> view(range, equals_to{1});
       auto it = view.begin();
       assert(base(it.base()) == buff);
     }
     {
       Range range(buff, buff + 2);
-      auto pred = [](int i) {
-        return i == 2;
-      };
-      cuda::std::ranges::filter_view<Range, decltype(pred)> view(range, pred);
+      cuda::std::ranges::filter_view<Range, equals_to> view(range, equals_to{2});
       auto it = view.begin();
       assert(base(it.base()) == buff + 1);
     }
     {
       Range range(buff, buff + 2);
-      auto pred = [](int) {
-        return false;
-      };
-      cuda::std::ranges::filter_view<Range, decltype(pred)> view(range, pred);
+      cuda::std::ranges::filter_view<Range, always_false> view(range, always_false{});
       auto it = view.begin();
       assert(base(it.base()) == buff + 2);
       assert(it == view.end());
@@ -163,19 +170,13 @@ __host__ __device__ constexpr void general_tests()
     for (int k = 1; k != 8; ++k)
     {
       Range range(buff, buff + 8);
-      auto pred = [=](int i) {
-        return i == k;
-      };
-      cuda::std::ranges::filter_view<Range, decltype(pred)> view(range, pred);
+      cuda::std::ranges::filter_view<Range, equals_to> view(range, equals_to{k});
       auto it = view.begin();
       assert(base(it.base()) == buff + (k - 1));
     }
     {
       Range range(buff, buff + 8);
-      auto pred = [](int) {
-        return false;
-      };
-      cuda::std::ranges::filter_view<Range, decltype(pred)> view(range, pred);
+      cuda::std::ranges::filter_view<Range, always_false> view(range, always_false{});
       auto it = view.begin();
       assert(base(it.base()) == buff + 8);
       assert(it == view.end());

@@ -44,7 +44,7 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/in_place.h>
 
-#if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
 // MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
 _CCCL_DIAG_PUSH
@@ -52,6 +52,11 @@ _CCCL_DIAG_SUPPRESS_MSVC(4848)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
+
+#  if _CCCL_COMPILER(MSVC) // MSVC's old parser breaks due to ambiguities with iter_swap and iter_move
+namespace __msvc_ambiguous_war
+{
+#  endif // _CCCL_COMPILER(MSVC)
 
 #  if _CCCL_STD_VER >= 2020
 template <class>
@@ -240,9 +245,9 @@ public:
 
     _CCCL_HIDE_FROM_ABI __iterator() = default;
 
-    _CCCL_TEMPLATE(bool _OtherConst = _Const)
-    _CCCL_REQUIRES(_OtherConst _CCCL_AND convertible_to<iterator_t<_View>, _Outer> _CCCL_AND
-                     convertible_to<iterator_t<_InnerRange>, _Inner>)
+    _CCCL_TEMPLATE(bool _OtherConst = _Const, class _Inner2 = _Inner, class _Outer2 = _Outer)
+    _CCCL_REQUIRES(_OtherConst _CCCL_AND convertible_to<iterator_t<_View>, _Outer2> _CCCL_AND
+                     convertible_to<iterator_t<_InnerRange>, _Inner2>)
     _LIBCUDACXX_HIDE_FROM_ABI constexpr __iterator(__iterator<!_OtherConst> __i)
         : __outer_(_CUDA_VSTD::move(__i.__outer_))
         , __inner_(_CUDA_VSTD::move(__i.__inner_))
@@ -296,29 +301,33 @@ public:
       }
     }
 
-    _CCCL_TEMPLATE(bool __ref_is_glvalue2 = __ref_is_glvalue)
-    _CCCL_REQUIRES(__ref_is_glvalue2 _CCCL_AND bidirectional_range<_Base> _CCCL_AND
-                     bidirectional_range<range_reference_t<_Base>> _CCCL_AND common_range<range_reference_t<_Base>>)
+    _CCCL_TEMPLATE(class _Base2 = _Base)
+    _CCCL_REQUIRES(is_reference_v<range_reference_t<_Base2>> _CCCL_AND bidirectional_range<_Base2> _CCCL_AND
+                     bidirectional_range<range_reference_t<_Base2>> _CCCL_AND common_range<range_reference_t<_Base2>>)
     _LIBCUDACXX_HIDE_FROM_ABI constexpr __iterator& operator--()
     {
       if (__outer_ == _CUDA_VRANGES::end(__parent_->__base_))
       {
-        __inner_ = _CUDA_VRANGES::end(_CUDA_VSTD::__as_lvalue(*--__outer_));
+        // MSVC2019 miscompiles when passing --__outer_ directly
+        auto __outer = --__outer_;
+        __inner_     = _CUDA_VRANGES::end(*__outer);
       }
 
       // Skip empty inner ranges when going backwards.
       while (*__inner_ == _CUDA_VRANGES::begin(_CUDA_VSTD::__as_lvalue(*__outer_)))
       {
-        __inner_ = _CUDA_VRANGES::end(_CUDA_VSTD::__as_lvalue(*--__outer_));
+        // MSVC2019 miscompiles when passing --__outer_ directly
+        auto __outer = --__outer_;
+        __inner_     = _CUDA_VRANGES::end(*__outer);
       }
 
       --*__inner_;
       return *this;
     }
 
-    _CCCL_TEMPLATE(bool __ref_is_glvalue2 = __ref_is_glvalue)
-    _CCCL_REQUIRES(__ref_is_glvalue2 _CCCL_AND bidirectional_range<_Base> _CCCL_AND
-                     bidirectional_range<range_reference_t<_Base>> _CCCL_AND common_range<range_reference_t<_Base>>)
+    _CCCL_TEMPLATE(class _Base2 = _Base)
+    _CCCL_REQUIRES(is_reference_v<range_reference_t<_Base2>> _CCCL_AND bidirectional_range<_Base2> _CCCL_AND
+                     bidirectional_range<range_reference_t<_Base2>> _CCCL_AND common_range<range_reference_t<_Base2>>)
     _LIBCUDACXX_HIDE_FROM_ABI constexpr __iterator operator--(int)
     {
       auto __tmp = *this;
@@ -371,6 +380,9 @@ public:
     using _Base              = __maybe_const<_Const, _View>;
     sentinel_t<_Base> __end_ = sentinel_t<_Base>();
 
+    template <bool _OtherConst>
+    using _Base2 = __maybe_const<_OtherConst, _View>;
+
   public:
     _CCCL_HIDE_FROM_ABI __sentinel() = default;
 
@@ -379,7 +391,7 @@ public:
     {}
 
     _CCCL_TEMPLATE(bool _OtherConst = _Const)
-    _CCCL_REQUIRES(_OtherConst _CCCL_AND convertible_to<sentinel_t<_View>, sentinel_t<_Base>>)
+    _CCCL_REQUIRES(_OtherConst _CCCL_AND convertible_to<sentinel_t<_View>, sentinel_t<_Base2<_OtherConst>>>)
     _LIBCUDACXX_HIDE_FROM_ABI constexpr __sentinel(__sentinel<!_OtherConst> __s)
         : __end_(_CUDA_VSTD::move(__s.__end_))
     {}
@@ -498,6 +510,11 @@ public:
 
 template <class _Range>
 _CCCL_HOST_DEVICE explicit join_view(_Range&&) -> join_view<_CUDA_VIEWS::all_t<_Range>>;
+
+#  if _CCCL_COMPILER(MSVC)
+} // namespace __msvc_ambiguous_war
+using __msvc_ambiguous_war::join_view;
+#  endif // _CCCL_COMPILER(MSVC)
 
 _LIBCUDACXX_END_NAMESPACE_RANGES_ABI
 _LIBCUDACXX_END_NAMESPACE_RANGES

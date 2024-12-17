@@ -1907,7 +1907,7 @@ struct ProxyIterator : ProxyIteratorBase<Base>
   // If operator* returns Proxy<Foo&>, iter_move will return Proxy<Foo&&>
   // Note cuda::std::move(*it) returns Proxy<Foo&>&&, which is not what we want as
   // it will likely result in a copy rather than a move
-  // MSVC falls over its feets without the template indirection
+  // MSVC falls over its feet without the template indirection
   template <class B2 = Base>
   __host__ __device__ friend constexpr auto iter_move(const ProxyIterator<B2>& p) noexcept
   {

@@ -51,7 +51,7 @@
 
 _CCCL_PUSH_MACROS
 
-#if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
 // MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
 _CCCL_DIAG_PUSH
@@ -399,15 +399,10 @@ struct __zv_functors
   }
 
   template <class _Tuple1, class _Tuple2, size_t... _Indices>
-  static constexpr bool __all_noexcept_swappable =
-    (__noexcept_swappable<tuple_element<_Indices, _Tuple1>, tuple_element<_Indices, _Tuple2>> && ...);
-
-  template <class _Tuple1, class _Tuple2, size_t... _Indices>
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr void
-  __iter_swap(_Tuple1&& __tuple1, _Tuple2&& __tuple2, index_sequence<_Indices...>)
-#  if !defined(_CCCL_COMPILER_GCC)
-    noexcept(__all_noexcept_swappable<_Tuple1, _Tuple2, _Indices...>)
-#  endif // !_CCCL_COMPILER_GCC
+  __iter_swap(_Tuple1&& __tuple1, _Tuple2&& __tuple2, index_sequence<_Indices...>) noexcept(
+    __all<noexcept(_CUDA_VRANGES::iter_swap(_CUDA_VSTD::get<_Indices>(_CUDA_VSTD::declval<_Tuple1>()),
+                                            _CUDA_VSTD::get<_Indices>(_CUDA_VSTD::declval<_Tuple2>())))...>::value)
   {
     (_CUDA_VRANGES::iter_swap(_CUDA_VSTD::get<_Indices>(_CUDA_VSTD::forward<_Tuple1>(__tuple1)),
                               _CUDA_VSTD::get<_Indices>(_CUDA_VSTD::forward<_Tuple2>(__tuple2))),
@@ -488,6 +483,11 @@ struct __packed_views
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
 
+#  if _CCCL_COMPILER(MSVC) // MSVC's old parser breaks due to ambiguities with iter_swap and iter_move
+namespace __msvc_ambiguous_war
+{
+#  endif // _CCCL_COMPILER(MSVC)
+
 template <bool, class...>
 class __zip_iterator;
 
@@ -547,7 +547,9 @@ public:
     }
     else if constexpr (__zip_all_random_access<false, _Views...>)
     {
-      return begin() + iter_difference_t<__iterator<false>>(size());
+      // MSVC cannot deal with iter_difference_t here
+      using difference_type = common_type_t<range_difference_t<_Views>...>;
+      return begin() + static_cast<difference_type>(size());
     }
     else
     {
@@ -566,7 +568,9 @@ public:
     }
     else if constexpr (__zip_all_random_access<true, _Views...>)
     {
-      return begin() + iter_difference_t<__iterator<true>>(size());
+      // MSVC cannot deal with iter_difference_t here
+      using difference_type = common_type_t<range_difference_t<const _Views>...>;
+      return begin() + static_cast<difference_type>(size());
     }
     else
     {
@@ -940,6 +944,11 @@ public:
   }
 };
 
+#  if _CCCL_COMPILER(MSVC)
+} // namespace __msvc_ambiguous_war
+using __msvc_ambiguous_war::zip_view;
+#  endif // _CCCL_COMPILER(MSVC)
+
 _LIBCUDACXX_END_NAMESPACE_RANGES_ABI
 
 template <class... _Views>
@@ -976,20 +985,24 @@ _CCCL_GLOBAL_CONSTANT auto zip = __zip::__fn{};
 } // namespace __cpo
 _LIBCUDACXX_END_NAMESPACE_VIEWS
 
-// GCC has issues determining _IsFancyPointer in C++17 because it fails to instantiate pointer_traits
-#  if defined(_CCCL_COMPILER_GCC) && _CCCL_STD_VER <= 2017
-
+// GCC and MSVC2019 have issues determining _IsFancyPointer in C++17 because they fails to instantiate pointer_traits
+#  if _CCCL_COMPILER(GCC) && _CCCL_STD_VER <= 2017
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <bool _Const, class... _Views>
 struct _IsFancyPointer<_CUDA_VRANGES::__zip_iterator<_Const, _Views...>> : false_type
 {};
 _LIBCUDACXX_END_NAMESPACE_STD
-
-#  endif // defined(_CCCL_COMPILER_GCC) && _CCCL_STD_VER <= 2017
+#  elif _CCCL_COMPILER(MSVC2019)
+_LIBCUDACXX_BEGIN_NAMESPACE_STD
+template <bool _Const, class... _Views>
+struct _IsFancyPointer<_CUDA_VRANGES::__msvc_ambiguous_war::__zip_iterator<_Const, _Views...>> : false_type
+{};
+_LIBCUDACXX_END_NAMESPACE_STD
+#  endif // _CCCL_COMPILER(GCC) && _CCCL_STD_VER <= 2017
 
 _CCCL_DIAG_POP
 
-#endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
 _CCCL_POP_MACROS
 

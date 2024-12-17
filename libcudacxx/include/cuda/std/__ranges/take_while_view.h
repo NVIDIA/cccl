@@ -42,7 +42,7 @@
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
 
-#if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
 // MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
 _CCCL_DIAG_PUSH
@@ -86,6 +86,8 @@ public:
   class __sentinel
   {
     using _Base = __maybe_const<_Const, _View>;
+    template <bool _OtherConst>
+    using _Base2 = __maybe_const<_OtherConst, _View>;
 
     sentinel_t<_Base> __end_ = sentinel_t<_Base>();
     const _Pred* __pred_     = nullptr;
@@ -101,7 +103,7 @@ public:
     {}
 
     _CCCL_TEMPLATE(bool _OtherConst = _Const)
-    _CCCL_REQUIRES(_OtherConst _CCCL_AND convertible_to<sentinel_t<_View>, sentinel_t<_Base>>)
+    _CCCL_REQUIRES(_OtherConst _CCCL_AND convertible_to<sentinel_t<_View>, sentinel_t<_Base2<_OtherConst>>>)
     _LIBCUDACXX_HIDE_FROM_ABI constexpr __sentinel(__sentinel<!_OtherConst> __s)
         : __end_(_CUDA_VSTD::move(__s.__end_))
         , __pred_(__s.__pred_)
@@ -133,30 +135,30 @@ public:
 
     template <bool _OtherConst = !_Const>
     _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
-    operator==(const iterator_t<__maybe_const<_OtherConst, _View>>& __x, const __sentinel& __y)
-      _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<__maybe_const<_OtherConst, _View>>>)
+    operator==(const iterator_t<_Base2<_OtherConst>>& __x, const __sentinel& __y)
+      _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<_Base2<_OtherConst>>>)
     {
       return __x == __y.__end_ || !_CUDA_VSTD::invoke(*__y.__pred_, *__x);
     }
 #  if _CCCL_STD_VER <= 2017
     template <bool _OtherConst = !_Const>
     _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
-    operator==(const __sentinel& __x, const iterator_t<__maybe_const<_OtherConst, _View>>& __y)
-      _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<__maybe_const<_OtherConst, _View>>>)
+    operator==(const __sentinel& __x, const iterator_t<_Base2<_OtherConst>>& __y)
+      _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<_Base2<_OtherConst>>>)
     {
       return __y == __x.__end_ || !_CUDA_VSTD::invoke(*__x.__pred_, *__y);
     }
     template <bool _OtherConst = !_Const>
     _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
-    operator!=(const iterator_t<__maybe_const<_OtherConst, _View>>& __x, const __sentinel& __y)
-      _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<__maybe_const<_OtherConst, _View>>>)
+    operator!=(const iterator_t<_Base2<_OtherConst>>& __x, const __sentinel& __y)
+      _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<_Base2<_OtherConst>>>)
     {
       return __x != __y.__end_ && _CUDA_VSTD::invoke(*__y.__pred_, *__x);
     }
     template <bool _OtherConst = !_Const>
     _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
-    operator!=(const __sentinel& __x, const iterator_t<__maybe_const<_OtherConst, _View>>& __y)
-      _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<__maybe_const<_OtherConst, _View>>>)
+    operator!=(const __sentinel& __x, const iterator_t<_Base2<_OtherConst>>& __y)
+      _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<_Base2<_OtherConst>>>)
     {
       return __y != __x.__end_ && _CUDA_VSTD::invoke(*__x.__pred_, *__y);
     }
@@ -168,10 +170,10 @@ public:
     requires default_initializable<_View> && default_initializable<_Pred>
   = default;
 #  else // ^^^ C++20 ^^^ / vvv C++20 vvv
-  _CCCL_TEMPLATE(class _View2 = _View)
-  _CCCL_REQUIRES(default_initializable<_View2> _CCCL_AND default_initializable<_Pred>)
+  _CCCL_TEMPLATE(class _View2 = _View, class _Pred2 = _Pred)
+  _CCCL_REQUIRES(default_initializable<_View2> _CCCL_AND default_initializable<_Pred2>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr take_while_view() noexcept(
-    is_nothrow_default_constructible_v<_View2> && is_nothrow_default_constructible_v<_Pred>)
+    is_nothrow_default_constructible_v<_View2> && is_nothrow_default_constructible_v<_Pred2>)
   {}
 #  endif // _CCCL_STD_VER <= 2017
 

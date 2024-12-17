@@ -42,7 +42,7 @@
 #include <cuda/std/__utility/piecewise_construct.h>
 #include <cuda/std/detail/libcxx/include/tuple>
 
-#if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
 // MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
 _CCCL_DIAG_PUSH
@@ -234,7 +234,7 @@ public:
   = default;
 #  else // ^^^ C++20 ^^^ / vvv C++20 vvv
   _CCCL_TEMPLATE(class _Tp2 = _Tp)
-  _CCCL_REQUIRES(default_initializable<_Tp>)
+  _CCCL_REQUIRES(default_initializable<_Tp2>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr repeat_view() noexcept(is_nothrow_default_constructible_v<_Tp2>) {}
 #  endif // _CCCL_STD_VER <= 2017
 

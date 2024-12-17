@@ -30,14 +30,14 @@ __host__ __device__ constexpr void test_access_5_1()
 
   Common common(iter);
   decltype(auto) result = common.operator->();
-#if !defined(TEST_COMPILER_MSVC) // MSVC determines the right types but the static assert failes
+#if !defined(TEST_COMPILER_MSVC) // MSVC determines the right types but the static assert fails
   static_assert(cuda::std::same_as<decltype(result), Iterator>);
 #endif // !TEST_COMPILER_MSVC
   assert(base(result) == buffer);
 
   Common const ccommon(iter);
   decltype(auto) cresult = ccommon.operator->();
-#if !defined(TEST_COMPILER_MSVC) // MSVC determines the right types but the static assert failes
+#if !defined(TEST_COMPILER_MSVC) // MSVC determines the right types but the static assert fails
   static_assert(cuda::std::same_as<decltype(cresult), Iterator>);
 #endif // !TEST_COMPILER_MSVC
   assert(base(cresult) == buffer);

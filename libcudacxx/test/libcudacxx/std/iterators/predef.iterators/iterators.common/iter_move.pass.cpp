@@ -79,7 +79,7 @@ __host__ __device__ constexpr bool test()
     assert(iter_move(it) == 2);
   }
 #if defined(TEST_COMPILER_MSVC)
-  if (!cuda::std::__cccl_is_constant_evaluated())
+  if (!cuda::std::is_constant_evaluated())
 #endif // TEST_COMPILER_MSVC
   {
     using It       = IterMovingIt;

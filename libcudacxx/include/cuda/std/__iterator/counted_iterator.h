@@ -54,7 +54,7 @@ _CCCL_DIAG_SUPPRESS_MSVC(4848)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
 template <class, class = void>
 struct __counted_iterator_concept
@@ -422,15 +422,6 @@ public:
     return __lhs.__count_ >= __rhs.__count_;
   }
 
-  template <class _I2 = _Iter>
-  _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto
-  iter_move(const counted_iterator<_I2>& __i) noexcept(noexcept(_CUDA_VRANGES::iter_move(__i.__current_)))
-    _CCCL_TRAILING_REQUIRES(iter_rvalue_reference_t<_I2>)(same_as<_I2, _Iter>&& input_iterator<_I2>)
-  {
-    _CCCL_ASSERT(__i.__count_ > 0, "Iterator must not be past end of range.");
-    return _CUDA_VRANGES::iter_move(__i.__current_);
-  }
-
   template <class _I2>
   _LIBCUDACXX_HIDE_FROM_ABI friend constexpr auto iter_swap(
     const counted_iterator& __x,
@@ -442,6 +433,16 @@ public:
   }
 };
 _LIBCUDACXX_CTAD_SUPPORTED_FOR_TYPE(counted_iterator);
+
+// Not a hidden friend because of MSVC
+_CCCL_TEMPLATE(class _Iter)
+_CCCL_REQUIRES(input_iterator<_Iter>)
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr iter_rvalue_reference_t<_Iter> iter_move(
+  const counted_iterator<_Iter>& __i) noexcept(noexcept(_CUDA_VRANGES::iter_move(_CUDA_VSTD::declval<const _Iter&>())))
+{
+  _CCCL_ASSERT(__i.count() > 0, "Iterator must not be past end of range.");
+  return _CUDA_VRANGES::iter_move(__i.base());
+}
 
 #  if _CCCL_STD_VER >= 2020
 template <input_iterator _Iter>

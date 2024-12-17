@@ -49,7 +49,7 @@
 #include <cuda/std/__utility/in_place.h>
 #include <cuda/std/__utility/move.h>
 
-#if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
 // MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
 _CCCL_DIAG_PUSH
@@ -57,6 +57,11 @@ _CCCL_DIAG_SUPPRESS_MSVC(4848)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
+
+#  if _CCCL_COMPILER(MSVC) // MSVC's old parser breaks due to ambiguities with iter_swap and iter_move
+namespace __msvc_ambiguous_war
+{
+#  endif // _CCCL_COMPILER(MSVC)
 
 template <class _View, class = void>
 struct __filter_iterator_category
@@ -329,6 +334,11 @@ public:
 template <class _Range, class _Pred>
 _CCCL_HOST_DEVICE filter_view(_Range&&, _Pred) -> filter_view<_CUDA_VIEWS::all_t<_Range>, _Pred>;
 
+#  if _CCCL_COMPILER(MSVC)
+} // namespace __msvc_ambiguous_war
+using __msvc_ambiguous_war::filter_view;
+#  endif // _CCCL_COMPILER(MSVC)
+
 _LIBCUDACXX_END_NAMESPACE_RANGES_ABI
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
@@ -364,6 +374,6 @@ _LIBCUDACXX_END_NAMESPACE_VIEWS
 
 _CCCL_DIAG_POP
 
-#endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
 #endif // _LIBCUDACXX___RANGES_FILTER_VIEW_H

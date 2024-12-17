@@ -278,7 +278,11 @@ struct ValueView : cuda::std::ranges::view_base
 template <class Iter, class Sent = Iter, class NonConstIter = Iter, class NonConstSent = Sent>
 struct BufferView : cuda::std::ranges::view_base
 {
+#if defined(TEST_COMPILER_MSVC) // MSVC cannot handle iter_value_t here
+  using T = cuda::std::indirectly_readable_traits<Iter>::value_type;
+#else // ^^^ TEST_COMPILER_MSVC ^^^ / vvv !TEST_COMPILER_MSVC vvv
   using T = cuda::std::iter_value_t<Iter>;
+#endif // !TEST_COMPILER_MSVC
   T* data_;
   cuda::std::size_t size_;
 

@@ -166,9 +166,14 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 
   // !is_reference_v<range_reference_t<const V>>
   {
-    auto innerRValueRange = cuda::std::views::iota(0, 5) | cuda::std::views::transform([](int) {
-                              return ChildView{};
-                            });
+    struct pred
+    {
+      __host__ __device__ constexpr ChildView operator()(int) const noexcept
+      {
+        return ChildView{};
+      }
+    };
+    auto innerRValueRange = cuda::std::views::iota(0, 5) | cuda::std::views::transform(pred{});
     static_assert(!cuda::std::is_reference_v<cuda::std::ranges::range_reference_t<const decltype(innerRValueRange)>>);
     cuda::std::ranges::join_view jv{innerRValueRange};
     static_assert(!HasConstBegin<decltype(jv)>);

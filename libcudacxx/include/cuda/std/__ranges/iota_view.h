@@ -52,7 +52,7 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
-#if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES_ABI
@@ -391,7 +391,7 @@ public:
         return static_cast<difference_type>(
           static_cast<difference_type>(__x.__value_) - static_cast<difference_type>(__y.__value_));
       }
-#  if !defined(_CCCL_COMPILER_NVHPC) // nvhpc cannot compile with this else
+#  if !_CCCL_COMPILER(NVHPC) // nvhpc cannot compile with this else
       else
 #  endif // !_CCCL_COMPILER_NVHPC
       {

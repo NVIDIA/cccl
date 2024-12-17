@@ -46,7 +46,7 @@ struct BorrowedRange
 template <>
 inline constexpr bool cuda::std::ranges::enable_borrowed_range<BorrowedRange> = true;
 
-// gcc falls over it feets trying to evaluate this otherwise
+// gcc falls over it feet trying to evaluate this otherwise
 using result_rvlaue_range = cuda::std::ranges::transform_view<cuda::std::ranges::owning_view<Range>, PlusOne>;
 using result_rvlaue_borrowed_range =
   cuda::std::ranges::transform_view<cuda::std::ranges::owning_view<BorrowedRange>, PlusOne>;

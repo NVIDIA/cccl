@@ -50,14 +50,14 @@ _CCCL_DIAG_SUPPRESS_MSVC(4848)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
 template <class _Tp>
 _CCCL_CONCEPT __is_trivially_swappable_v =
   is_trivially_destructible_v<_Tp> && is_trivially_move_constructible_v<_Tp> && is_trivially_move_assignable_v<_Tp>
   && !_CUDA_VRANGES::__swap::__unqualified_swappable_with<_Tp, _Tp>;
 
-// __variant_like is a simplified varaint with just two alternatives that does not need all the complexity of variant
+// __variant_like is a simplified variant with just two alternatives that does not need all the complexity of variant
 
 enum class __variant_like_state : unsigned char
 {

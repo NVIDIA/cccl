@@ -116,7 +116,9 @@ __host__ __device__ constexpr bool test()
 int main(int, char**)
 {
   test();
+#if !defined(TEST_COMPILER_MSVC) // conversion from "int *" to "const int *" is invalid in constant-expression
   static_assert(test(), "");
+#endif // TEST_COMPILER_MSVC
 
   return 0;
 }

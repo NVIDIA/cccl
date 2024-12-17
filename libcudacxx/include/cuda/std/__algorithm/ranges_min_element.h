@@ -31,7 +31,7 @@
 #include <cuda/std/__ranges/dangling.h>
 #include <cuda/std/__utility/forward.h>
 
-#if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 

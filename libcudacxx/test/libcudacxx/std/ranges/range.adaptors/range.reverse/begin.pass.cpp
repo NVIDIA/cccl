@@ -197,7 +197,7 @@ __host__ __device__ constexpr bool test()
     ASSERT_SAME_TYPE(decltype(cuda::std::move(rev).begin()), cuda::std::reverse_iterator<bidirectional_iterator<int*>>);
   }
   // Non-common random access range.
-  // Note: const overload invalid for non-common ranges, though it would not be imposible
+  // Note: const overload invalid for non-common ranges, though it would not be impossible
   // to implement for random access ranges.
   {
     auto rev = cuda::std::ranges::reverse_view(RASentRange{buffer, buffer + 8});

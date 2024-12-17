@@ -84,7 +84,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     assert(commonIter1 == commonSent1);
   }
 
-  // Case 2: where this is not referencable or move constructible
+  // Case 2: where this is not referenceable or move constructible
   {
     int buffer[8]    = {1, 2, 3, 4, 5, 6, 7, 8};
     auto iter1       = value_type_not_move_constructible_iterator<int*>(buffer);

@@ -52,7 +52,7 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
-#if _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
 // MSVC complains about [[msvc::no_unique_address]] prior to C++20 as a vendor extension
 _CCCL_DIAG_PUSH
@@ -255,7 +255,7 @@ class __elements_view_iterator : public __elements_view_iterator_category_base<_
     else
     {
       using _Element = remove_cv_t<tuple_element_t<_Np, range_reference_t<_Base>>>;
-#  if defined(_CCCL_COMPILER_MSVC) // MSVC does not copy with the static_cast
+#  if _CCCL_COMPILER(MSVC) // MSVC does not copy with the static_cast
       return _Element(_CUDA_VSTD::get<_Np>(*__i));
 #  else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
       return static_cast<_Element>(_CUDA_VSTD::get<_Np>(*__i));
@@ -308,7 +308,7 @@ public:
   {}
 
   _CCCL_TEMPLATE(bool _Const2 = _Const)
-  _CCCL_REQUIRES(_Const2 _CCCL_AND convertible_to<iterator_t<_View>, iterator_t<_Base>>)
+  _CCCL_REQUIRES(_Const2 _CCCL_AND convertible_to<iterator_t<_View>, iterator_t<_Base2<_Const2>>>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __elements_view_iterator(__elements_view_iterator<_View, _Np, !_Const2> __i)
       : __current_(_CUDA_VSTD::move(__i.__current_))
   {}
@@ -485,6 +485,9 @@ private:
   using _Base                                      = __maybe_const<_Const, _View>;
   _CCCL_NO_UNIQUE_ADDRESS sentinel_t<_Base> __end_ = sentinel_t<_Base>();
 
+  template <bool _OtherConst>
+  using _Base2 = __maybe_const<_OtherConst, _View>;
+
   template <class, size_t, bool>
   friend class __elements_view_sentinel;
 
@@ -503,7 +506,7 @@ public:
   {}
 
   _CCCL_TEMPLATE(bool _Const2 = _Const)
-  _CCCL_REQUIRES(_Const2 _CCCL_AND convertible_to<sentinel_t<_View>, sentinel_t<_Base>>)
+  _CCCL_REQUIRES(_Const2 _CCCL_AND convertible_to<sentinel_t<_View>, sentinel_t<_Base2<_Const2>>>)
   _LIBCUDACXX_HIDE_FROM_ABI constexpr __elements_view_sentinel(__elements_view_sentinel<_View, _Np, !_Const2> __other)
       : __end_(_CUDA_VSTD::move(__other.__end_))
   {}
@@ -514,44 +517,43 @@ public:
   }
 
   template <bool _OtherConst>
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
   operator==(const __elements_view_iterator<_View, _Np, _OtherConst>& __x, const __elements_view_sentinel& __y)
-    _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<__maybe_const<_OtherConst, _View>>>)
+    _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<_Base2<_OtherConst>>>)
   {
     return __get_current(__x) == __y.__end_;
   }
 #  if _CCCL_STD_VER <= 2017
   template <bool _OtherConst>
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
   operator==(const __elements_view_sentinel& __y, const __elements_view_iterator<_View, _Np, _OtherConst>& __x)
-    _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<__maybe_const<_OtherConst, _View>>>)
+    _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<_Base2<_OtherConst>>>)
   {
     return __get_current(__x) == __y.__end_;
   }
   template <bool _OtherConst>
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
   operator!=(const __elements_view_iterator<_View, _Np, _OtherConst>& __x, const __elements_view_sentinel& __y)
-    _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<__maybe_const<_OtherConst, _View>>>)
+    _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<_Base2<_OtherConst>>>)
   {
     return __get_current(__x) != __y.__end_;
   }
   template <bool _OtherConst>
-  friend _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+  _CCCL_NODISCARD_FRIEND _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
   operator!=(const __elements_view_sentinel& __y, const __elements_view_iterator<_View, _Np, _OtherConst>& __x)
-    _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<__maybe_const<_OtherConst, _View>>>)
+    _CCCL_TRAILING_REQUIRES(bool)(sentinel_for<sentinel_t<_Base>, iterator_t<_Base2<_OtherConst>>>)
   {
     return __get_current(__x) != __y.__end_;
   }
 #  endif // _CCCL_STD_VER <= 2017
 
   template <bool _OtherConst>
-  static constexpr bool __sized_sentinel =
-    sized_sentinel_for<sentinel_t<_Base>, iterator_t<__maybe_const<_OtherConst, _View>>>;
+  static constexpr bool __sized_sentinel = sized_sentinel_for<sentinel_t<_Base>, iterator_t<_Base2<_OtherConst>>>;
 
   template <bool _OtherConst>
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
   operator-(const __elements_view_iterator<_View, _Np, _OtherConst>& __x, const __elements_view_sentinel& __y)
-    _CCCL_TRAILING_REQUIRES(range_difference_t<__maybe_const<_OtherConst, _View>>)(__sized_sentinel<_OtherConst>)
+    _CCCL_TRAILING_REQUIRES(range_difference_t<_Base2<_OtherConst>>)(__sized_sentinel<_OtherConst>)
   {
     return __get_current(__x) - __y.__end_;
   }
@@ -559,7 +561,7 @@ public:
   template <bool _OtherConst>
   friend _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
   operator-(const __elements_view_sentinel& __x, const __elements_view_iterator<_View, _Np, _OtherConst>& __y)
-    _CCCL_TRAILING_REQUIRES(range_difference_t<__maybe_const<_OtherConst, _View>>)(__sized_sentinel<_OtherConst>)
+    _CCCL_TRAILING_REQUIRES(range_difference_t<_Base2<_OtherConst>>)(__sized_sentinel<_OtherConst>)
   {
     return __x.__end_ - __get_current(__y);
   }
@@ -595,7 +597,7 @@ _LIBCUDACXX_END_NAMESPACE_CPO
 
 inline namespace __cpo
 {
-#  if defined(_CCCL_COMPILER_MSVC)
+#  if _CCCL_COMPILER(MSVC)
 template <size_t _Np>
 _CCCL_INLINE_VAR constexpr auto elements = __elements::__fn<_Np>{};
 #  else // ^^^ _CCCL_COMPILER_MSVC ^^^ / vvv !_CCCL_COMPILER_MSVC vvv
@@ -610,6 +612,6 @@ _LIBCUDACXX_END_NAMESPACE_VIEWS
 
 _CCCL_DIAG_POP
 
-#endif // _CCCL_STD_VER >= 2017 && !defined(_CCCL_COMPILER_MSVC_2017)
+#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
 
 #endif // _LIBCUDACXX___RANGES_ELEMENTS_VIEW_H
