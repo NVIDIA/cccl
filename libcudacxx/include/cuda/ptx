@@ -92,6 +92,7 @@
 #include <cuda/__ptx/instructions/tcgen05_cp.h>
 #include <cuda/__ptx/instructions/tcgen05_fence.h>
 #include <cuda/__ptx/instructions/tcgen05_ld.h>
+#include <cuda/__ptx/instructions/tcgen05_mma.h>
 #include <cuda/__ptx/instructions/tensormap_cp_fenceproxy.h>
 #include <cuda/__ptx/instructions/tensormap_replace.h>
 
