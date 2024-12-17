@@ -23,7 +23,6 @@
 #include <cuda/experimental/stream.cuh>
 
 #include "testing.cuh"
-#include <catch2/catch.hpp>
 
 struct do_not_construct
 {
@@ -59,6 +58,19 @@ constexpr int get_property(
 constexpr int get_property(const cudax::device_memory_resource&, my_property)
 {
   return 42;
+}
+
+__global__ void kernel(_CUDA_VSTD::span<int> data)
+{
+  // Touch the memory to be sure it's accessible
+  CUDAX_CHECK(data.size() == 1024);
+  data[0] = 42;
+}
+
+__global__ void const_kernel(_CUDA_VSTD::span<const int> data)
+{
+  // Touch the memory to be sure it's accessible
+  CUDAX_CHECK(data.size() == 1024);
 }
 
 TEMPLATE_TEST_CASE(
@@ -202,19 +214,6 @@ TEMPLATE_TEST_CASE(
       CUDAX_CHECK(old_buf.size() == old_size);
     }
   }
-}
-
-__global__ void kernel(_CUDA_VSTD::span<int> data)
-{
-  // Touch the memory to be sure it's accessible
-  CUDAX_CHECK(data.size() == 1024);
-  data[0] = 42;
-}
-
-__global__ void const_kernel(_CUDA_VSTD::span<const int> data)
-{
-  // Touch the memory to be sure it's accessible
-  CUDAX_CHECK(data.size() == 1024);
 }
 
 TEST_CASE("uninitialized_buffer is usable with cudax::launch", "[container]")
