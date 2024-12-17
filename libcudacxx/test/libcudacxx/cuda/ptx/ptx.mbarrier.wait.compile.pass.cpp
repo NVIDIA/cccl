@@ -14,10 +14,10 @@
 #include <cuda/ptx>
 #include <cuda/std/utility>
 
+#include "generated/mbarrier_test_wait.h"
+#include "generated/mbarrier_test_wait_parity.h"
 #include "generated/mbarrier_try_wait.h"
 #include "generated/mbarrier_try_wait_parity.h"
-#include "generated/mbarrier_wait.h"
-#include "generated/mbarrier_wait_parity.h"
 
 int main(int, char**)
 {
