@@ -95,6 +95,7 @@
 #include <cuda/__ptx/instructions/tcgen05_mma.h>
 #include <cuda/__ptx/instructions/tcgen05_mma_ws.h>
 #include <cuda/__ptx/instructions/tcgen05_shift.h>
+#include <cuda/__ptx/instructions/tcgen05_st.h>
 #include <cuda/__ptx/instructions/tensormap_cp_fenceproxy.h>
 #include <cuda/__ptx/instructions/tensormap_replace.h>
 
