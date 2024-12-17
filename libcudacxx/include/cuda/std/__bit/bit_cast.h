@@ -22,8 +22,6 @@
 #endif // no system header
 
 #include <cuda/std/__fwd/array.h>
-#include <cuda/std/__fwd/pair.h>
-#include <cuda/std/__fwd/tuple.h>
 #include <cuda/std/__tuple_dir/sfinae_helpers.h>
 #include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_extended_floating_point.h>
@@ -53,57 +51,15 @@ struct __is_bit_castable
     _CCCL_TRAIT(is_trivially_copyable, _Tp) || _CCCL_TRAIT(__is_extended_floating_point, _Tp);
 };
 
-template <class _Tp, size_t _Np>
-struct __is_bit_castable<_Tp[_Np]>
-{
-  static constexpr bool value = __is_bit_castable<remove_extent_t<_Tp>>::value;
-};
-
-template <class _Tp, size_t _Np>
-struct __is_bit_castable<array<_Tp, _Np>>
-{
-  static constexpr bool value = __is_bit_castable<_Tp>::value;
-};
-
-template <class _Tp, class _Up>
-struct __is_bit_castable<pair<_Tp, _Up>>
-{
-  static constexpr bool value = __is_bit_castable<_Tp>::value && __is_bit_castable<_Up>::value;
-};
-
-template <class... _Tp>
-struct __is_bit_castable<tuple<_Tp...>>
-{
-  static constexpr bool value = __all<__is_bit_castable<_Tp>::value...>::value;
-};
-
-#if !defined(_CCCL_NO_INLINE_VARIABLES)
+#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_bit_castable_v =
+_CCCL_INLINE_VAR constexpr bool __is_bit_castable_v =
   _CCCL_TRAIT(is_trivially_copyable, _Tp) || _CCCL_TRAIT(__is_extended_floating_point, _Tp);
+#endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
-template <class _Tp, size_t _Np>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_bit_castable_v<_Tp[_Np]> = __is_bit_castable_v<remove_extent_t<_Tp>>;
-
-template <class _Tp, size_t _Np>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_bit_castable_v<array<_Tp, _Np>> = __is_bit_castable_v<_Tp>;
-
-template <class _Tp, class _Up>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_bit_castable_v<pair<_Tp, _Up>> =
-  __is_bit_castable_v<_Tp> && __is_bit_castable_v<_Up>;
-
-template <class... _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_bit_castable_v<tuple<_Tp...>> = __all<__is_bit_castable_v<_Tp>...>::value;
-#elif !defined(_CCCL_NO_VARIABLE_TEMPLATES)
-template <class _Tp>
-_LIBCUDACXX_INLINE_VAR constexpr bool __is_bit_castable_v = __is_bit_castable<_Tp>::value;
-#endif // _CCCL_STD_VER >= 2014
-
-template <class _To,
-          class _From,
-          enable_if_t<(sizeof(_To) == sizeof(_From)), int>        = 0,
-          enable_if_t<_CCCL_TRAIT(__is_bit_castable, _To), int>   = 0,
-          enable_if_t<_CCCL_TRAIT(__is_bit_castable, _From), int> = 0>
+_CCCL_TEMPLATE(class _To, class _From)
+_CCCL_REQUIRES((sizeof(_To) == sizeof(_From)) //
+               _CCCL_AND _CCCL_TRAIT(__is_bit_castable, _To) _CCCL_AND _CCCL_TRAIT(__is_bit_castable, _From))
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_CONSTEXPR_BIT_CAST _To bit_cast(const _From& __from) noexcept
 {
 #if defined(_CCCL_BUILTIN_BIT_CAST)
