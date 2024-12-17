@@ -135,7 +135,9 @@ __host__ __device__ constexpr bool test()
       struct NotAView
       {};
       static_assert(!cuda::std::is_invocable_v<decltype(cuda::std::views::take)>);
+#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) // ICE
       static_assert(!cuda::std::is_invocable_v<decltype(cuda::std::views::take), NotAView, int>);
+#endif // !TEST_COMPILER_CUDACC_BELOW_11_3
       static_assert(CanBePiped<SomeView&, decltype(cuda::std::views::take(3))>);
       static_assert(CanBePiped<int(&)[10], decltype(cuda::std::views::take(3))>);
       // template instantiation resulted in unexpected function type

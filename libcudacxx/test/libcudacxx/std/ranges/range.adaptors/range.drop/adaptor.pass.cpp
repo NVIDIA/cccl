@@ -132,7 +132,6 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
       assert(base(base(result.end())) == buf + N);
       assert(result.size() == 5);
     }
-
     // template instantiation resulted in unexpected function type
 #if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_ICC)
     // Test `adaptor | views::drop`
@@ -171,7 +170,9 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
       struct NotAView
       {};
       static_assert(!cuda::std::is_invocable_v<decltype(cuda::std::views::drop)>);
+#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) // ICE
       static_assert(!cuda::std::is_invocable_v<decltype(cuda::std::views::drop), NotAView, int>);
+#endif // !TEST_COMPILER_CUDACC_BELOW_11_3
       static_assert(CanBePiped<SomeView&, decltype(cuda::std::views::drop(3))>);
       static_assert(CanBePiped<int(&)[10], decltype(cuda::std::views::drop(3))>);
       // template instantiation resulted in unexpected function type

@@ -247,40 +247,37 @@ __host__ __device__ constexpr bool test()
       assert(&result.base() == &range);
     }
 
+#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) // segfault
     // Test `adaptor | views::all`
     {
       Range range(0);
-      auto f = [](int i) {
-        return i;
-      };
-      auto const partial    = cuda::std::views::transform(f) | cuda::std::views::all;
-      using Result          = cuda::std::ranges::transform_view<cuda::std::ranges::ref_view<Range>, decltype(f)>;
+      auto const partial = cuda::std::views::transform(cuda::std::identity{}) | cuda::std::views::all;
+      using Result       = cuda::std::ranges::transform_view<cuda::std::ranges::ref_view<Range>, cuda::std::identity>;
       decltype(auto) result = partial(range);
       static_assert(cuda::std::same_as<decltype(result), Result>);
       assert(&result.base().base() == &range);
     }
+#endif // !TEST_COMPILER_CUDACC_BELOW_11_3
 
 // template instantiation resulted in unexpected function type
 #if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_ICC)
     // Test `views::all | adaptor`
     {
       Range range(0);
-      auto f = [](int i) {
-        return i;
-      };
-      auto const partial    = cuda::std::views::all | cuda::std::views::transform(f);
-      using Result          = cuda::std::ranges::transform_view<cuda::std::ranges::ref_view<Range>, decltype(f)>;
+      auto const partial = cuda::std::views::all | cuda::std::views::transform(cuda::std::identity{});
+      using Result       = cuda::std::ranges::transform_view<cuda::std::ranges::ref_view<Range>, cuda::std::identity>;
       decltype(auto) result = partial(range);
       static_assert(cuda::std::same_as<decltype(result), Result>);
       assert(&result.base().base() == &range);
     }
 #endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_ICC
-
     {
+#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) // ICE
       struct NotAView
       {};
-      static_assert(CanBePiped<Range&, decltype(cuda::std::views::all)>);
       static_assert(!CanBePiped<NotAView, decltype(cuda::std::views::all)>);
+#endif // !TEST_COMPILER_CUDACC_BELOW_11_3
+      static_assert(CanBePiped<Range&, decltype(cuda::std::views::all)>);
     }
   }
 

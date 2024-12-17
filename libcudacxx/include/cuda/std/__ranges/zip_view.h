@@ -992,13 +992,13 @@ template <bool _Const, class... _Views>
 struct _IsFancyPointer<_CUDA_VRANGES::__zip_iterator<_Const, _Views...>> : false_type
 {};
 _LIBCUDACXX_END_NAMESPACE_STD
-#  elif _CCCL_COMPILER(MSVC2019)
+#  elif _CCCL_COMPILER(MSVC) && _CCCL_STD_VER <= 2017
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 template <bool _Const, class... _Views>
 struct _IsFancyPointer<_CUDA_VRANGES::__msvc_ambiguous_war::__zip_iterator<_Const, _Views...>> : false_type
 {};
 _LIBCUDACXX_END_NAMESPACE_STD
-#  endif // _CCCL_COMPILER(GCC) && _CCCL_STD_VER <= 2017
+#  endif // _CCCL_COMPILER(MSVC) && _CCCL_STD_VER <= 2017
 
 _CCCL_DIAG_POP
 

@@ -93,7 +93,7 @@ __host__ __device__ constexpr bool test()
 #endif // !TEST_COMPILER_NVRTC
   }
 
-#if !defined(TEST_COMPILER_MSVC_2019) // MSVC cannot parse this
+#if !defined(TEST_COMPILER_MSVC) // MSVC cannot parse this
   {
     // LWG3474 Nesting `join_views` is broken because of CTAD
     // views::join(join_view) should join the view instead of calling copy constructor
@@ -105,7 +105,7 @@ __host__ __device__ constexpr bool test()
 
     assert(&(*jv2.begin()) == &nested[0][0][0]);
   }
-#endif // !TEST_COMPILER_MSVC_2019
+#endif // !TEST_COMPILER_MSVC
 
   {
     // Test `v | views::join`
