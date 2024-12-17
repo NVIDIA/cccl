@@ -298,7 +298,6 @@ void run()
   int result = ctx.wait(lresult);
   _CCCL_ASSERT(result == ref_prod, "Incorrect result");
 
-#if 0
   auto lscan_result =
     ctx.transform_exclusive_scan(lX.shape(), 0, lX, lY)
       ->*
@@ -315,7 +314,6 @@ void run()
       fprintf(stderr, "scan_result[%zu] = %d\n", i, scan_result(i));
     }
   };
-#endif
 
   ctx.finalize();
 }

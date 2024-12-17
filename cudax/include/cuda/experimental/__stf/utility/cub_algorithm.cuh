@@ -78,6 +78,7 @@ struct LambdaOpWrapper
   BinaryOp op;
 };
 
+#if 0
 // A helper trait to detect if the expression in the operator->* body is valid
 template <typename F1, typename F2, typename = void>
 struct is_arrow_star_valid : ::std::false_type
@@ -188,6 +189,7 @@ auto stf_transform_reduce(Ctx& ctx, shape_t s, OutT init_val, const logical_data
       };
   };
 }
+#endif
 
 template <typename Ctx, typename shape_t, typename OutT, typename... Args>
 class stf_transform_reduce_scope
@@ -197,7 +199,7 @@ public:
       : ctx(mv(ctx))
       , s(mv(s))
       , init_val(mv(init_val))
-      , args_tuple(::std::forward_as_tuple(args)...)
+      , args_tuple(args...)
   {}
 
   stf_transform_reduce_scope(const stf_transform_reduce_scope&)            = delete;
@@ -296,25 +298,39 @@ private:
   Ctx ctx;
   shape_t s;
   OutT init_val;
-  ::std::tuple<::std::decay_t<Args>...> args_tuple;
+  ::std::tuple<logical_data<::std::decay_t<Args>>...> args_tuple;
 };
 
 template <typename Ctx, typename shape_t, typename OutT, typename... Args>
-auto stf_transform_exclusive_scan(Ctx& ctx, shape_t s, OutT init_val, const logical_data<Args>&... args)
+class stf_transform_exclusive_scan_scope
 {
-  auto args_tuple = ::std::forward_as_tuple(args...);
+public:
+  stf_transform_exclusive_scan_scope(Ctx& ctx, shape_t s, OutT init_val, const logical_data<Args>&... args)
+      : ctx(mv(ctx))
+      , s(mv(s))
+      , init_val(mv(init_val))
+      , args_tuple(args...)
+  {}
 
-  // We are going to enumerate the entries in the shape, and create an counting
-  // iterator that will be combined with a functor that converts the
-  // corresponding 1D index in the shape to the result of the transform
-  // operation.
-  // The lambda we return here takes the transform lambda and applies it.
-  return [&ctx, args_tuple = mv(args_tuple), s = mv(s), init_val = mv(init_val)](auto&& transform_op) mutable {
-    // This lambda takes the reduction operator and finalizes the operation.
-    // We can capture most parameters by reference here because the parent object will
-    // be alive during the call.
-    return [&ctx, args_tuple = mv(args_tuple), s = mv(s), init_val = mv(init_val), transform_op = mv(transform_op)](
-             auto&& binary_op) mutable {
+  stf_transform_exclusive_scan_scope(const stf_transform_exclusive_scan_scope&)            = delete;
+  stf_transform_exclusive_scan_scope(stf_transform_exclusive_scan_scope&&)                 = default;
+  stf_transform_exclusive_scan_scope& operator=(const stf_transform_exclusive_scan_scope&) = delete;
+
+  template <typename TransformOp>
+  class reduce_scope
+  {
+  public:
+    reduce_scope(stf_transform_exclusive_scan_scope& parent_scope, TransformOp&& transform_op)
+        : transform_op(mv(transform_op))
+    {}
+
+    reduce_scope(const reduce_scope&)            = delete;
+    reduce_scope(reduce_scope&&)                 = default;
+    reduce_scope& operator=(const reduce_scope&) = delete;
+
+    template <typename BinaryOp>
+    auto operator->*(BinaryOp&& binary_op)
+    {
       // This will be the ultimate result of the transform followed by scan
       auto result = ctx.logical_data(shape_of<slice<OutT>>(s.size()));
 
@@ -327,8 +343,6 @@ auto stf_transform_exclusive_scan(Ctx& ctx, shape_t s, OutT init_val, const logi
       t->*
         [transform_op = mv(transform_op), binary_op = mv(binary_op), s = mv(s), init_val = mv(init_val)](
           cudaStream_t stream, slice<OutT> res, auto... deps) {
-          using TransformOp = ::std::remove_reference_t<decltype(transform_op)>;
-
           auto deps_tuple = ::std::forward_as_tuple(deps...);
 
           // This is a functor that transforms a 1D index in the shape into the result
@@ -340,13 +354,14 @@ auto stf_transform_exclusive_scan(Ctx& ctx, shape_t s, OutT init_val, const logi
 
           auto count_it = cub::CountingInputIterator<size_t>(0);
 
+          //          using BinaryOp = ::std::remove_reference_t<decltype(binary_op)>;
+
           // This is an iterator that combines the counting iterator with the functor
           // to apply the transformation, it thus outputs the different values produced
           // by the transformation over the shape
           cub::TransformInputIterator<OutT, ConversionOp_t, decltype(count_it)> transform_output_it(
             count_it, ConversionOp_t(transform_op, s, deps_tuple));
 
-          using BinaryOp = ::std::remove_reference_t<decltype(binary_op)>;
           // Determine temporary device storage requirements
           void* d_temp_storage      = nullptr;
           size_t temp_storage_bytes = 0;
@@ -378,8 +393,23 @@ auto stf_transform_exclusive_scan(Ctx& ctx, shape_t s, OutT init_val, const logi
         };
 
       return mv(result);
-    };
+    }
+
+  private:
+    TransformOp transform_op;
   };
-}
+
+  template <typename TransformOp>
+  auto operator->*(TransformOp&& transform_op)
+  {
+    return reduce_scope(*this, mv(transform_op));
+  }
+
+private:
+  Ctx ctx;
+  shape_t s;
+  OutT init_val;
+  ::std::tuple<logical_data<::std::decay_t<Args>>...> args_tuple;
+};
 
 } // end namespace cuda::experimental::stf::reserved
