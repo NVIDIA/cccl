@@ -79,7 +79,8 @@ struct __archetype<true, true> : __archetype<true, false>
 };
 
 template <class _Interface>
-using __archetype_t = __archetype<extension_of<_Interface, imovable<>>, extension_of<_Interface, icopyable<>>>;
+using __archetype_t _CCCL_NODEBUG_ALIAS =
+  __archetype<extension_of<_Interface, imovable<>>, extension_of<_Interface, icopyable<>>>;
 
 // Strip top-level cv- and ref-qualifiers from pointer types:
 template <class _Ty>
@@ -90,7 +91,7 @@ auto __normalize(_Ty*) -> _Ty*
 {}
 
 template <class _Ty>
-using __normalize_t = decltype(__cudax::__normalize(declval<_Ty>()));
+using __normalize_t _CCCL_NODEBUG_ALIAS = decltype(__cudax::__normalize(declval<_Ty>()));
 
 // Used to map a basic_any specialization to a normalized interface type:
 template <class _Ty>
