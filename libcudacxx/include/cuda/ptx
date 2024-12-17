@@ -80,6 +80,7 @@
 #include <cuda/__ptx/instructions/get_sreg.h>
 #include <cuda/__ptx/instructions/getctarank.h>
 #include <cuda/__ptx/instructions/mbarrier_arrive.h>
+#include <cuda/__ptx/instructions/mbarrier_expect_tx.h>
 #include <cuda/__ptx/instructions/mbarrier_init.h>
 #include <cuda/__ptx/instructions/mbarrier_wait.h>
 #include <cuda/__ptx/instructions/red_async.h>
