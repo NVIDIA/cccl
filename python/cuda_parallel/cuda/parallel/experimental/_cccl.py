@@ -90,21 +90,23 @@ class Value(ctypes.Structure):
     _fields_ = [("type", TypeInfo), ("state", ctypes.c_void_p)]
 
 
+_TYPE_TO_ENUM = {
+    types.int8: TypeEnum.INT8,
+    types.int16: TypeEnum.INT16,
+    types.int32: TypeEnum.INT32,
+    types.int64: TypeEnum.INT64,
+    types.uint8: TypeEnum.UINT8,
+    types.uint16: TypeEnum.UINT16,
+    types.uint32: TypeEnum.UINT32,
+    types.uint64: TypeEnum.UINT64,
+    types.float32: TypeEnum.FLOAT32,
+    types.float64: TypeEnum.FLOAT64,
+}
+
+
 def _type_to_enum(numba_type):
-    mapping = {
-        types.int8: TypeEnum.INT8,
-        types.int16: TypeEnum.INT16,
-        types.int32: TypeEnum.INT32,
-        types.int64: TypeEnum.INT64,
-        types.uint8: TypeEnum.UINT8,
-        types.uint16: TypeEnum.UINT16,
-        types.uint32: TypeEnum.UINT32,
-        types.uint64: TypeEnum.UINT64,
-        types.float32: TypeEnum.FLOAT32,
-        types.float64: TypeEnum.FLOAT64,
-    }
-    if numba_type in mapping:
-        return mapping[numba_type]
+    if numba_type in _TYPE_TO_ENUM:
+        return _TYPE_TO_ENUM[numba_type]
     return TypeEnum.STORAGE
 
 
@@ -126,10 +128,7 @@ def _numpy_type_to_info(numpy_type):
 
 
 def _device_array_to_cccl_iter(array):
-    dtype = array.dtype
-    info = _numpy_type_to_info(dtype)
-    # Note: this is slightly slower, but supports all ndarray-like objects as long as they support CAI
-    # TODO: switch to use gpumemoryview once it's ready
+    info = _numpy_type_to_info(array.dtype)
     return Iterator(
         info.size,
         info.alignment,
@@ -137,6 +136,9 @@ def _device_array_to_cccl_iter(array):
         Op(),
         Op(),
         info,
+        # Note: this is slightly slower, but supports all ndarray-like objects
+        # as long as they support CAI
+        # TODO: switch to use gpumemoryview once it's ready
         array.__cuda_array_interface__["data"][0],
     )
 
@@ -204,6 +206,5 @@ def to_cccl_iter(array_or_iterator):
 
 
 def host_array_to_value(array):
-    dtype = array.dtype
-    info = _numpy_type_to_info(dtype)
+    info = _numpy_type_to_info(array.dtype)
     return Value(info, array.ctypes.data)
