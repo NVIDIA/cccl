@@ -10,16 +10,26 @@
 
 /**
  * @file
- * @brief Example of reduction implementing using CUB
+ * @brief Implementation of CUB algorithm with STF facilities
  */
+
+#pragma once
+
+#include <cuda/__cccl_config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
 
 #include <cub/cub.cuh>
 
-#include <cuda/experimental/stf.cuh>
+namespace cuda::experimental::stf::reserved
+{
 
-using namespace cuda::experimental::stf;
-
-#if 0
 /**
  * This functor transforms a 1D index into the result of the transformation
  */
@@ -261,65 +271,6 @@ auto stf_transform_exclusive_scan(Ctx& ctx, shape_t s, OutT init_val, const logi
     };
   };
 }
-#endif
 
-template <typename Ctx>
-void run()
-{
-  Ctx ctx;
 
-  const size_t N = 16;
-
-  int ref_prod = 0;
-
-  int* X = new int[N];
-  int* Y = new int[N];
-
-  for (size_t ind = 0; ind < N; ind++)
-  {
-    X[ind] = 2 + ind; // rand() % N;
-    Y[ind] = 3 + ind; // rand() % N;
-    ref_prod += X[ind] * Y[ind];
-  }
-
-  auto lX = ctx.logical_data(X, {N});
-  auto lY = ctx.logical_data(Y, {N});
-
-  auto lresult =
-    ctx.transform_reduce(lX.shape(), 0, lX, lY)
-      ->*
-    [] __device__(size_t i, auto x, auto y) {
-      return x(i) * y(i);
-    }->*
-    [] __device__(const int& a, const int& b) {
-      return a + b;
-    };
-
-  int result = ctx.wait(lresult);
-  _CCCL_ASSERT(result == ref_prod, "Incorrect result");
-
-  auto lscan_result =
-    ctx.transform_exclusive_scan(lX.shape(), 0, lX, lY)
-      ->*
-    [] __device__(size_t i, auto x, auto y) {
-      return x(i) * y(i);
-    }->*
-    [] __device__(const int& a, const int& b) {
-      return a + b;
-    };
-
-  ctx.host_launch(lscan_result.read())->*[N](auto scan_result) {
-    for (size_t i = 0; i < N; i++)
-    {
-      fprintf(stderr, "scan_result[%zu] = %d\n", i, scan_result(i));
-    }
-  };
-
-  ctx.finalize();
-}
-
-int main()
-{
-  run<stream_ctx>();
-  /// run<graph_ctx>();
-}
+} // end namespace cuda::experimental::stf::reserved

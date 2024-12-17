@@ -35,6 +35,7 @@
 #include <cuda/experimental/__stf/places/blocked_partition.cuh> // for unit test!
 #include <cuda/experimental/__stf/stream/interfaces/slice.cuh> // For implicit logical_data_untyped constructors
 #include <cuda/experimental/__stf/stream/stream_task.cuh>
+#include <cuda/experimental/__stf/utility/cub_algorithm.cuh>
 
 namespace cuda::experimental::stf
 {
@@ -658,6 +659,18 @@ public:
     };
 
     return out;
+  }
+
+  template <typename shape_t, typename OutT, typename... Args>
+  auto transform_reduce(shape_t s, OutT init_val, const cuda::experimental::stf::logical_data<Args>&... args)
+  {
+    return reserved::stf_transform_reduce(*this, mv(s), mv(init_val), args...);
+  }
+
+  template <typename shape_t, typename OutT, typename... Args>
+  auto transform_exclusive_scan(shape_t s, OutT init_val, const cuda::experimental::stf::logical_data<Args>&... args)
+  {
+    return reserved::stf_transform_exclusive_scan(*this, mv(s), mv(init_val), args...);
   }
 
 private:
