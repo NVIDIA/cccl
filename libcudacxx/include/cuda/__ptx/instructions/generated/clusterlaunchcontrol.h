@@ -106,7 +106,7 @@ _CCCL_DEVICE static inline _B32 clusterlaunchcontrol_query_cancel_get_first_ctai
   static_assert(sizeof(_B32) == 4, "");
   static_assert(sizeof(_B128) == 16, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 1000
-  _uint32_t __ret_dim;
+  _CUDA_VSTD::uint32_t __ret_dim;
   asm("{\n\t .reg .b128 B128_try_cancel_response; \n\t"
       "mov.b128 B128_try_cancel_response, {%1, %2}; \n"
       "clusterlaunchcontrol.query_cancel.get_first_ctaid::x.b32.b128 %0, B128_try_cancel_response;\n\t"
@@ -119,7 +119,7 @@ _CCCL_DEVICE static inline _B32 clusterlaunchcontrol_query_cancel_get_first_ctai
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_clusterlaunchcontrol_query_cancel_get_first_ctaid_x_is_not_supported_before_SM_100__();
-  _uint32_t __err_out_var = 0;
+  _CUDA_VSTD::uint32_t __err_out_var = 0;
   return *reinterpret_cast<_B32*>(&__err_out_var);
 #  endif
 }
@@ -144,7 +144,7 @@ _CCCL_DEVICE static inline _B32 clusterlaunchcontrol_query_cancel_get_first_ctai
   static_assert(sizeof(_B32) == 4, "");
   static_assert(sizeof(_B128) == 16, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 1000
-  _uint32_t __ret_dim;
+  _CUDA_VSTD::uint32_t __ret_dim;
   asm("{\n\t .reg .b128 B128_try_cancel_response; \n\t"
       "mov.b128 B128_try_cancel_response, {%1, %2}; \n"
       "clusterlaunchcontrol.query_cancel.get_first_ctaid::y.b32.b128 %0, B128_try_cancel_response;\n\t"
@@ -157,7 +157,7 @@ _CCCL_DEVICE static inline _B32 clusterlaunchcontrol_query_cancel_get_first_ctai
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_clusterlaunchcontrol_query_cancel_get_first_ctaid_y_is_not_supported_before_SM_100__();
-  _uint32_t __err_out_var = 0;
+  _CUDA_VSTD::uint32_t __err_out_var = 0;
   return *reinterpret_cast<_B32*>(&__err_out_var);
 #  endif
 }
@@ -182,7 +182,7 @@ _CCCL_DEVICE static inline _B32 clusterlaunchcontrol_query_cancel_get_first_ctai
   static_assert(sizeof(_B32) == 4, "");
   static_assert(sizeof(_B128) == 16, "");
 #  if _CCCL_CUDA_COMPILER(NVHPC) || __CUDA_ARCH__ >= 1000
-  _uint32_t __ret_dim;
+  _CUDA_VSTD::uint32_t __ret_dim;
   asm("{\n\t .reg .b128 B128_try_cancel_response; \n\t"
       "mov.b128 B128_try_cancel_response, {%1, %2}; \n"
       "clusterlaunchcontrol.query_cancel.get_first_ctaid::z.b32.b128 %0, B128_try_cancel_response;\n\t"
@@ -195,7 +195,7 @@ _CCCL_DEVICE static inline _B32 clusterlaunchcontrol_query_cancel_get_first_ctai
 #  else
   // Unsupported architectures will have a linker error with a semi-decent error message
   __cuda_ptx_clusterlaunchcontrol_query_cancel_get_first_ctaid_z_is_not_supported_before_SM_100__();
-  _uint32_t __err_out_var = 0;
+  _CUDA_VSTD::uint32_t __err_out_var = 0;
   return *reinterpret_cast<_B32*>(&__err_out_var);
 #  endif
 }
