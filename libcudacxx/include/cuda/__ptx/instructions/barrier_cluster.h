@@ -25,6 +25,7 @@
 #include <cuda/__ptx/ptx_dot_variants.h>
 #include <cuda/__ptx/ptx_helper_functions.h>
 #include <cuda/std/cstdint>
+#include <cuda/std/__type_traits/enable_if.h>
 
 #include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends
 
