@@ -123,7 +123,9 @@ public:
   //! It is the caller's responsibility to properly synchronize all relevant streams before calling `deallocate_async`.
   void deallocate_async(void* __ptr, const size_t __bytes, const size_t __alignment, const ::cuda::stream_ref __stream)
   {
-    deallocate(__ptr, __bytes);
+    _CUDA_VSTD::__throw_runtime_error("Asynchronous deallocation is not available for managed memory.");
+    (void) __ptr;
+    (void) __bytes;
     (void) __alignment;
     (void) __stream;
   }
@@ -138,7 +140,9 @@ public:
   //! It is the caller's responsibility to properly synchronize all relevant streams before calling `deallocate_async`.
   void deallocate_async(void* __ptr, size_t __bytes, const ::cuda::stream_ref __stream)
   {
-    deallocate(__ptr, __bytes);
+    _CUDA_VSTD::__throw_runtime_error("Asynchronous deallocation is not available for managed memory.");
+    (void) __ptr;
+    (void) __bytes;
     (void) __stream;
   }
 
