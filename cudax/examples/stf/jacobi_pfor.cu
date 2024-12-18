@@ -50,7 +50,7 @@ int main(int argc, char** argv)
   auto lAnew = ctx.logical_data(lA.shape());
 
   ctx.parallel_for(lA.shape(), lA.write(), lAnew.write()).set_symbol("init")->*
-    [=] __device__ (size_t i, size_t j, auto A, auto Anew) {
+    [=] __device__(size_t i, size_t j, auto A, auto Anew) {
       A(i, j) = (i == j) ? 10.0 : -1.0;
     };
 
@@ -64,17 +64,19 @@ int main(int argc, char** argv)
   auto lresidual = ctx.logical_data(shape_of<scalar_view<double>>());
 
   size_t iter = 0;
-  do {
-      ctx.parallel_for(inner<1>(lA.shape()), lA.read(), lAnew.write(), lresidual.reduce(reducer::maxval<double>{}))->*[iter_max, tol, n, m] __device__ (size_t i, size_t j, auto A, auto Anew, auto residual) {
-            Anew(i, j) = 0.25 * (A(i - 1, j) + A(i + 1, j) + A(i, j - 1) + A(i, j + 1));
-            residual = ::std::max(residual, fabs(A(i, j) - Anew(i, j)));
-      };
+  do
+  {
+    ctx.parallel_for(inner<1>(lA.shape()), lA.read(), lAnew.write(), lresidual.reduce(reducer::maxval<double>{}))
+        ->*[iter_max, tol, n, m] __device__(size_t i, size_t j, auto A, auto Anew, auto residual) {
+              Anew(i, j) = 0.25 * (A(i - 1, j) + A(i + 1, j) + A(i, j - 1) + A(i, j + 1));
+              residual   = ::std::max(residual, fabs(A(i, j) - Anew(i, j)));
+            };
 
-      ctx.parallel_for(inner<1>(lA.shape()), lA.rw(), lAnew.read())->*[] __device__ (size_t i, size_t j, auto A, auto Anew) {
-            A(i, j) = Anew(i, j);
-      };
+    ctx.parallel_for(inner<1>(lA.shape()), lA.rw(), lAnew.read())->*[] __device__(size_t i, size_t j, auto A, auto Anew) {
+      A(i, j) = Anew(i, j);
+    };
 
-      iter++;
+    iter++;
 
   } while (ctx.wait(lresidual) > tol && iter < iter_max);
 
