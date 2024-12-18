@@ -127,7 +127,7 @@
 #    define _CCCL_NV_DIAG_SUPPRESS(_WARNING) _CCCL_PRAGMA(diagnostic push) _CCCL_PRAGMA(diag_suppress _WARNING)
 #    define _CCCL_NV_DIAG_DEFAULT(_WARNING)  _CCCL_PRAGMA(diagnostic pop)
 #  else // ^^^ __NVCC_DIAG_PRAGMA_SUPPORT__ ^^^ / vvv !__NVCC_DIAG_PRAGMA_SUPPORT__ vvv
-#    if _CCCL_COMPILER(MSVC2017) // MSVC 2017 has issues with restoring the warning
+#    if _CCCL_COMPILER(MSVC2017) || _CCCL_COMPILER(GCC) // these compilers have issues with restoring the warning
 #      define _CCCL_NV_DIAG_SUPPRESS(_WARNING) _CCCL_PRAGMA(diag_suppress _WARNING)
 #      define _CCCL_NV_DIAG_DEFAULT(_WARNING)
 #    else // ^^^ _CCCL_COMPILER(MSVC2017) ^^^ / vvv !_CCCL_COMPILER(MSVC2017) vvv

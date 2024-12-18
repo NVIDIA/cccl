@@ -129,9 +129,3 @@ C2H_TEST("Device reduce arg{min,max} works with inf items", "[reduce][device]")
     REQUIRE(result.value == -inf);
   }
 }
-
-// Pre-nv_diag support, suppression of the warning for the deprecated ArgMin and ArgMax interfaces wouldn't work when
-// defaulting
-#if defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
-_CCCL_NV_DIAG_DEFAULT(1444)
-#endif
