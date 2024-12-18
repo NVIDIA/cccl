@@ -378,7 +378,7 @@ struct _Resource_ref_base
 {};
 
 template <class _Vtable, _WrapperType _Wrapper_type>
-struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES _Alloc_base : _Resource_ref_base
+struct _CCCL_DECLSPEC_EMPTY_BASES _Alloc_base : _Resource_ref_base
 {
   static_assert(_CUDA_VSTD::is_base_of_v<_Alloc_vtable, _Vtable>, "");
 
