@@ -212,7 +212,7 @@ _CCCL_DIAG_POP
 // This interface provides the any_[async_]resource types with a conversion
 // to the old cuda::mr::basic_resource_ref types.
 template <class... _Super>
-struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __iresource_ref_conversions
+struct _CCCL_DECLSPEC_EMPTY_BASES __iresource_ref_conversions
     : interface<__iresource_ref_conversions>
     , _CUDA_VMR::_Resource_ref_base
 {
@@ -288,10 +288,10 @@ struct __with_try_get_property
 };
 
 template <class... _Properties>
-struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES any_async_resource;
+struct _CCCL_DECLSPEC_EMPTY_BASES any_async_resource;
 
 template <class... _Properties>
-struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES async_resource_ref;
+struct _CCCL_DECLSPEC_EMPTY_BASES async_resource_ref;
 
 // `any_resource` wraps any given resource that satisfies the required
 // properties. It owns the contained resource, taking care of construction /
@@ -299,7 +299,7 @@ struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES async_resource_ref;
 // that need to ensure that the lifetime of the container exceeds the lifetime
 // of the memory resource used to allocate the storage
 template <class... _Properties>
-struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES any_resource
+struct _CCCL_DECLSPEC_EMPTY_BASES any_resource
     : basic_any<__iresource<_Properties...>>
     , __with_try_get_property<any_resource<_Properties...>>
 {
@@ -328,7 +328,7 @@ public:
 // container types that need to ensure that the lifetime of the container
 // exceeds the lifetime of the memory resource used to allocate the storage
 template <class... _Properties>
-struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES any_async_resource
+struct _CCCL_DECLSPEC_EMPTY_BASES any_async_resource
     : basic_any<__iasync_resource<_Properties...>>
     , __with_try_get_property<any_async_resource<_Properties...>>
 {
@@ -356,7 +356,7 @@ public:
 //! @brief Type erased wrapper around a `resource` that satisfies \tparam _Properties
 //! @tparam _Properties The properties that any resource wrapped within the `resource_ref` needs to satisfy
 template <class... _Properties>
-struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES resource_ref
+struct _CCCL_DECLSPEC_EMPTY_BASES resource_ref
     : basic_any<__iresource<_Properties...>&>
     , __with_try_get_property<resource_ref<_Properties...>>
 {
@@ -389,7 +389,7 @@ public:
 //! @brief Type erased wrapper around a `async_resource` that satisfies \tparam _Properties
 //! @tparam _Properties The properties that any async resource wrapped within the `async_resource_ref` needs to satisfy
 template <class... _Properties>
-struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES async_resource_ref
+struct _CCCL_DECLSPEC_EMPTY_BASES async_resource_ref
     : basic_any<__iasync_resource<_Properties...>&>
     , __with_try_get_property<async_resource_ref<_Properties...>>
 {
