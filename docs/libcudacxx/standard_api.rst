@@ -112,8 +112,6 @@ Feature availability:
 
 -  C++26 ``std::dims`` is available in C++14.
 
--  C++23 ``forward_like``, ``to_underlying`` and ``unreachable`` from ``<utility>`` are available in C++11.
-
 -  C++26 ``std::linalg`` accessors, transposed layout, and related functions are available in C++17.
 
    - ``scaled()`` and ``scaled_accessor``
