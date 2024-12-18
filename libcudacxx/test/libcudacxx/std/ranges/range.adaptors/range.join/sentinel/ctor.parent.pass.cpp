@@ -42,12 +42,14 @@ int main(int, char**)
   static_assert(test(), "");
 #endif // TEST_STD_VER >= 2020 && defined(_LIBCUDACXX_ADDRESSOF)
 
+#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) || !defined(TEST_COMPILER_GCC)
   {
     // Test explicitness.
     using Parent = cuda::std::ranges::join_view<ParentView<ChildView>>;
     static_assert(cuda::std::is_constructible_v<cuda::std::ranges::sentinel_t<Parent>, Parent&>);
     static_assert(!cuda::std::is_convertible_v<cuda::std::ranges::sentinel_t<Parent>, Parent&>);
   }
+#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 || !TEST_COMPILER_GCC
 
   return 0;
 }

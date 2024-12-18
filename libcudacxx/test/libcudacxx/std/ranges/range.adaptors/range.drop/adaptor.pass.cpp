@@ -132,6 +132,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
       assert(base(base(result.end())) == buf + N);
       assert(result.size() == 5);
     }
+
     // template instantiation resulted in unexpected function type
 #if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_ICC)
     // Test `adaptor | views::drop`
