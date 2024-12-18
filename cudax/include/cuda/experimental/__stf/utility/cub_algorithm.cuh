@@ -67,7 +67,7 @@ template <typename BinaryOp>
 struct LambdaOpWrapper
 {
   LambdaOpWrapper(BinaryOp _op)
-      : op(mv(_op)) {};
+      : op(mv(_op)) {}
 
   template <typename T>
   __device__ __forceinline__ T operator()(const T& a, const T& b) const
@@ -199,7 +199,7 @@ public:
       : ctx(mv(ctx))
       , s(mv(s))
       , init_val(mv(init_val))
-      , args_tuple(args...)
+      , args_tuple(mv(args)...)
   {}
 
   stf_transform_reduce_scope(const stf_transform_reduce_scope&)            = delete;
@@ -211,7 +211,7 @@ public:
   {
   public:
     reduce_scope(stf_transform_reduce_scope& parent_scope, TransformOp&& transform_op)
-        : transform_op(mv(transform_op))
+        : parent(&parent_scope), transform_op(mv(transform_op))
     {}
 
     reduce_scope(const reduce_scope&)            = delete;
@@ -222,13 +222,13 @@ public:
     auto operator->*(ReduceOp&& reduce_op)
     {
       // This will be the ultimate result of the transform followed by reduce
-      auto result = ctx.logical_data(shape_of<scalar_view<OutT>>());
+      auto result = parent->ctx.logical_data(shape_of<scalar_view<OutT>>());
 
       auto t = ::std::apply(
         [&](auto&&... a) {
-          return ctx.task(result.write(), a.read()...);
+          return parent->ctx.task(result.write(), a.read()...);
         },
-        args_tuple);
+        parent->args_tuple);
 
       t->*[&](cudaStream_t stream, scalar_view<OutT> res, auto... deps) {
         // using TransformOp = ::std::remove_reference_t<decltype(transform_op)>;
@@ -248,7 +248,7 @@ public:
         // to apply the transformation, it thus outputs the different values produced
         // by the transformation over the shape
         cub::TransformInputIterator<OutT, ConversionOp_t, decltype(count_it)> transform_output_it(
-          count_it, ConversionOp_t(transform_op, s, deps_tuple));
+          count_it, ConversionOp_t(transform_op, parent->s, deps_tuple));
 
         using BinaryOp = ::std::remove_reference_t<decltype(reduce_op)>;
         // Determine temporary device storage requirements
@@ -261,9 +261,9 @@ public:
           temp_storage_bytes,
           transform_output_it,
           (OutT*) res.addr, // output into a scalar_view<OutT>
-          s.size(),
+          parent->s.size(),
           wrapped_reducer,
-          init_val,
+          parent->init_val,
           stream);
 
         cuda_safe_call(cudaMallocAsync(&d_temp_storage, temp_storage_bytes, stream));
@@ -273,25 +273,26 @@ public:
           temp_storage_bytes,
           transform_output_it,
           (OutT*) res.addr, // output into a scalar_view<OutT>
-          s.size(),
+          parent->s.size(),
           mv(wrapped_reducer),
-          init_val,
+          parent->init_val,
           stream);
 
         cuda_safe_call(cudaFreeAsync(d_temp_storage, stream));
       };
 
-      return mv(result);
+      return result;
     }
 
   private:
+    stf_transform_reduce_scope* parent = nullptr;
     TransformOp transform_op;
   };
 
   template <typename TransformOp>
   auto operator->*(TransformOp&& transform_op)
   {
-    return reduce_scope(*this, mv(transform_op));
+    return reduce_scope<::std::remove_reference_t<TransformOp>>(*this, mv(transform_op));
   }
 
 private:
@@ -321,7 +322,7 @@ public:
   {
   public:
     reduce_scope(stf_transform_exclusive_scan_scope& parent_scope, TransformOp&& transform_op)
-        : transform_op(mv(transform_op))
+        : parent(&parent_scope), transform_op(mv(transform_op))
     {}
 
     reduce_scope(const reduce_scope&)            = delete;
@@ -332,16 +333,16 @@ public:
     auto operator->*(BinaryOp&& binary_op)
     {
       // This will be the ultimate result of the transform followed by scan
-      auto result = ctx.logical_data(shape_of<slice<OutT>>(s.size()));
+      auto result = parent->ctx.logical_data(shape_of<slice<OutT>>(parent->s.size()));
 
       auto t = ::std::apply(
         [&](auto&&... a) {
-          return ctx.task(result.write(), a.read()...);
+          return parent->ctx.task(result.write(), a.read()...);
         },
-        args_tuple);
+        parent->args_tuple);
 
       t->*
-        [transform_op = mv(transform_op), binary_op = mv(binary_op), s = mv(s), init_val = mv(init_val)](
+        [transform_op = mv(transform_op), binary_op = mv(binary_op), s = mv(parent->s), init_val = mv(parent->init_val)](
           cudaStream_t stream, slice<OutT> res, auto... deps) {
           auto deps_tuple = ::std::forward_as_tuple(deps...);
 
@@ -396,13 +397,14 @@ public:
     }
 
   private:
+    stf_transform_exclusive_scan_scope* parent = nullptr;
     TransformOp transform_op;
   };
 
   template <typename TransformOp>
   auto operator->*(TransformOp&& transform_op)
   {
-    return reduce_scope(*this, mv(transform_op));
+    return reduce_scope<::std::remove_reference_t<TransformOp>>(*this, mv(transform_op));
   }
 
 private:
