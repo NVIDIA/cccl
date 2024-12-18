@@ -24,10 +24,13 @@ Consider this example:
     const int n = 10;
     thrust::device_vector<int> a(n, 1);
     thrust::device_vector<int> b(n);
-    thrust::transform(thrust::device, a.begin(), a.end(), a.begin(), [a,b](const int& e) {
-        const auto i = &e – thrust::raw_pointer_cast(a.data()); // &e expected to point into global memory
-        return e + b[i];
-    });
+    int* a_ptr = thrust::raw_pointer_cast(a.data());
+    int* b_ptr = thrust::raw_pointer_cast(b.data());
+    thrust::transform(thrust::device, a.begin(), a.end(), a.begin(),
+        [a_ptr, b_ptr](const int& e) {
+            const auto i = &e - a_ptr; // &e expected to point into global memory
+            return e + b_ptr[i];
+        });
 
 Here, :code:`thrust::transform` is invoked on the range of elements in :code:`a`.
 The lambda function computes the index :code:`i` based on the start of the buffer held by :code:`a`
@@ -49,8 +52,8 @@ a function object can be marked using :code:`proclaim_copyable_arguments`:
 
     thrust::transform(thrust::device, a.begin(), a.end(), a.begin(),
         cuda::std::proclaim_copyable_arguments([](const int& a, const int& b) {
-        return a + b;
-    }));
+            return a + b;
+        }));
 
 Wrapping a function object in :code:`proclaim_copyable_arguments` will attach a marker that the implementation can detect,
 and use for optimization.
