@@ -57,8 +57,18 @@ public:
 
   _CCCL_TEMPLATE(class _OtherScalingFactor, class _OtherNestedAccessor)
   _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _NestedAccessor, const _OtherNestedAccessor&)
-                   _CCCL_AND _CCCL_TRAIT(is_constructible, _ScalingFactor, _OtherScalingFactor))
-  __MDSPAN_CONDITIONAL_EXPLICIT(_CCCL_TRAIT(is_convertible, _OtherNestedAccessor, _NestedAccessor))
+                   _CCCL_AND _CCCL_TRAIT(is_constructible, _ScalingFactor, _OtherScalingFactor)
+                     _CCCL_AND(!_CCCL_TRAIT(is_convertible, _OtherNestedAccessor, _NestedAccessor)))
+  _LIBCUDACXX_HIDE_FROM_ABI explicit constexpr scaled_accessor(
+    const scaled_accessor<_OtherScalingFactor, _OtherNestedAccessor>& __other)
+      : __scaling_factor_(__other.scaling_factor())
+      , __nested_accessor_(__other.nested_accessor())
+  {}
+
+  _CCCL_TEMPLATE(class _OtherScalingFactor, class _OtherNestedAccessor)
+  _CCCL_REQUIRES(_CCCL_TRAIT(is_constructible, _NestedAccessor, const _OtherNestedAccessor&)
+                   _CCCL_AND _CCCL_TRAIT(is_constructible, _ScalingFactor, _OtherScalingFactor)
+                     _CCCL_AND _CCCL_TRAIT(is_convertible, _OtherNestedAccessor, _NestedAccessor))
   _LIBCUDACXX_HIDE_FROM_ABI constexpr scaled_accessor(
     const scaled_accessor<_OtherScalingFactor, _OtherNestedAccessor>& __other)
       : __scaling_factor_(__other.scaling_factor())

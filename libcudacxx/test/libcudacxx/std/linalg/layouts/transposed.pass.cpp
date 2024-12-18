@@ -79,11 +79,13 @@ int main(int, char**)
   {
     using transposed_extents_t = cuda::std::extents<size_t, 3, 2>;
     cuda::std::layout_right::mapping<transposed_extents_t> map_right{};
-    cuda::std::linalg::layout_transpose<cuda::std::layout_right>::mapping<E> map_right_transposed{map_right};
+    [[maybe_unused]] cuda::std::linalg::layout_transpose<cuda::std::layout_right>::mapping<E> map_right_transposed{
+      map_right};
     static_cast<void>(map_right_transposed);
 
     cuda::std::layout_left::mapping<transposed_extents_t> map_left{};
-    cuda::std::linalg::layout_transpose<cuda::std::layout_left>::mapping<E> map_left_transposed{map_left};
+    [[maybe_unused]] cuda::std::linalg::layout_transpose<cuda::std::layout_left>::mapping<E> map_left_transposed{
+      map_left};
     static_cast<void>(map_left_transposed);
   }
   // operator==, operator!=
