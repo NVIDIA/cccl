@@ -99,7 +99,8 @@ public:
     return allocate(__bytes);
   }
 
-  //! @brief Deallocate memory pointed to by \p __ptr.
+  //! @brief (Currently not implemented) Deallocate memory pointed to by \p __ptr.
+  //! @warning This function is not implemented yet.
   //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate`.
   //! @param __bytes The number of bytes that was passed to the `allocate` call that returned \p __ptr.
   //! @param __alignment The alignment that was passed to the `allocate` call that returned \p __ptr.
@@ -112,7 +113,8 @@ public:
     (void) __alignment;
   }
 
-  //! @brief Deallocate memory pointed to by \p __ptr.
+  //! @brief (Currently not implemented) Deallocate memory pointed to by \p __ptr.
+  //! @warning This function is not implemented yet.
   //! @param __ptr Pointer to be deallocated. Must have been allocated through a call to `allocate_async`.
   //! @param __bytes The number of bytes that was passed to the `allocate_async` call that returned \p __ptr.
   //! @param __alignment The alignment that was passed to the `allocate_async` call that returned \p __ptr.
