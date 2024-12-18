@@ -336,7 +336,7 @@ try
     make_index_to_expected_partition_op(expected_selected_it, expected_rejected_it, cut_off_index);
   auto expected_result_it =
     thrust::make_transform_iterator(thrust::make_counting_iterator(offset_t{0}), expected_result_op);
-    
+
   // Prepare helper to check results
   auto check_result_helper = detail::large_problem_test_helper(num_items);
   auto check_result_it     = check_result_helper.get_flagging_output_iterator(expected_result_it);
