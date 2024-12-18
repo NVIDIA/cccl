@@ -102,7 +102,7 @@ __host__ __device__ constexpr bool test()
     }
 
     // template instantiation resulted in unexpected function type
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_ICC)
+#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) || !defined(TEST_COMPILER_ICC)
     // Test `adaptor | views::take`
     {
       SomeView view(buf, buf + N);
@@ -128,7 +128,7 @@ __host__ __device__ constexpr bool test()
       assert(result.base().base().end_ == buf + N);
       assert(result.size() == 3);
     }
-#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_ICC
+#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 || !TEST_COMPILER_ICC
 
     // Check SFINAE friendliness
     {
@@ -141,10 +141,10 @@ __host__ __device__ constexpr bool test()
       static_assert(CanBePiped<SomeView&, decltype(cuda::std::views::take(3))>);
       static_assert(CanBePiped<int(&)[10], decltype(cuda::std::views::take(3))>);
       // template instantiation resulted in unexpected function type
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_ICC)
+#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) || !defined(TEST_COMPILER_ICC)
       static_assert(!CanBePiped<int(&&)[10], decltype(cuda::std::views::take(3))>);
       static_assert(!CanBePiped<NotAView, decltype(cuda::std::views::take(3))>);
-#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_ICC
+#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 || !TEST_COMPILER_ICC
 
 #if !defined(TEST_COMPILER_NVCC) && !defined(TEST_COMPILER_NVRTC) // ICE
       static_assert(!CanBePiped<SomeView&, decltype(cuda::std::views::take(/*n=*/NotAView{}))>);

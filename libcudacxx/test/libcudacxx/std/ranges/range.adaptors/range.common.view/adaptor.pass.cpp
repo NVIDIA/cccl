@@ -96,7 +96,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     }
 
 // template instantiation resulted in unexpected function type
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_ICC)
+#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) || !defined(TEST_COMPILER_ICC)
     // Test `views::common | adaptor`
     {
       SomeView view(buf, buf + 3);
@@ -110,7 +110,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
       assert(result.base().base().begin_ == buf);
       assert(result.base().base().end_ == buf + 3);
     }
-#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_ICC
+#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 || !TEST_COMPILER_ICC
 
     // Check SFINAE friendliness
     {

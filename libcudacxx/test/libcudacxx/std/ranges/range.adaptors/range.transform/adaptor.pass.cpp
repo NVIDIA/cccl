@@ -132,7 +132,7 @@ __host__ __device__ constexpr bool test()
       assert(result[2] == 6);
     }
     // template instantiation resulted in unexpected function type
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_ICC)
+#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) || !defined(TEST_COMPILER_ICC)
     {
       auto const partial = cuda::std::views::transform(PlusOne{}) | cuda::std::views::transform(TimesTwo{});
       using Result =
@@ -144,7 +144,7 @@ __host__ __device__ constexpr bool test()
       assert(result[1] == 4);
       assert(result[2] == 6);
     }
-#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_ICC
+#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 || !TEST_COMPILER_ICC
   }
 
   // Test SFINAE friendliness
@@ -157,10 +157,10 @@ __host__ __device__ constexpr bool test()
     static_assert(!CanBePiped<MoveOnlyView, decltype(cuda::std::views::transform)>);
     static_assert(CanBePiped<MoveOnlyView, decltype(cuda::std::views::transform(PlusOne{}))>);
     // template instantiation resulted in unexpected function type
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_ICC)
+#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) || !defined(TEST_COMPILER_ICC)
     static_assert(!CanBePiped<NotAView, decltype(cuda::std::views::transform(PlusOne{}))>);
     static_assert(!CanBePiped<MoveOnlyView, decltype(cuda::std::views::transform(NotInvocable{}))>);
-#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_ICC
+#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 || !TEST_COMPILER_ICC
 
     static_assert(!cuda::std::is_invocable_v<decltype(cuda::std::views::transform)>);
     static_assert(!cuda::std::is_invocable_v<decltype(cuda::std::views::transform), PlusOne, MoveOnlyView>);

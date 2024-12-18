@@ -206,9 +206,9 @@ __host__ __device__ constexpr bool test()
     assert(cuda::std::ranges::begin(cref) == globalBuff + 2);
     assert(cuda::std::ranges::end(cref) == globalBuff + 8);
 
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_GCC)
+#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) || !defined(TEST_COMPILER_GCC)
     static_assert(!cuda::std::is_invocable_v<decltype(cuda::std::views::all), const Range&&>);
-#endif // !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_GCC)
+#endif // !defined(TEST_COMPILER_CUDACC_BELOW_11_3) || !defined(TEST_COMPILER_GCC)
   }
 
   {
@@ -226,7 +226,7 @@ __host__ __device__ constexpr bool test()
   }
 
   // Check SFINAE friendliness of the call operator
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_GCC)
+#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) || !defined(TEST_COMPILER_GCC)
   {
     static_assert(!cuda::std::is_invocable_v<decltype(cuda::std::views::all)>);
     static_assert(!cuda::std::is_invocable_v<decltype(cuda::std::views::all), RandomAccessRange, RandomAccessRange>);
@@ -236,7 +236,7 @@ __host__ __device__ constexpr bool test()
     // expression should be ill-formed because `v` is not copyable
     static_assert(!cuda::std::is_invocable_v<decltype(cuda::std::views::all), MoveOnlyView&>);
   }
-#endif // !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_GCC)
+#endif // !defined(TEST_COMPILER_CUDACC_BELOW_11_3) || !defined(TEST_COMPILER_GCC)
 
   // Test that cuda::std::views::all is a range adaptor
   { // Test `v | views::all`
@@ -260,7 +260,7 @@ __host__ __device__ constexpr bool test()
 #endif // !TEST_COMPILER_CUDACC_BELOW_11_3
 
 // template instantiation resulted in unexpected function type
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_ICC)
+#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) || !defined(TEST_COMPILER_ICC)
     // Test `views::all | adaptor`
     {
       Range range(0);
@@ -270,7 +270,7 @@ __host__ __device__ constexpr bool test()
       static_assert(cuda::std::same_as<decltype(result), Result>);
       assert(&result.base().base() == &range);
     }
-#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_ICC
+#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 || !TEST_COMPILER_ICC
     {
 #if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) // ICE
       struct NotAView

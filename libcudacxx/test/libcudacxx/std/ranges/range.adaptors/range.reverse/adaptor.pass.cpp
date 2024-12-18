@@ -177,7 +177,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     }
 
 // template instantiation resulted in unexpected function type
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_ICC)
+#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) || !defined(TEST_COMPILER_ICC)
     // Test `views::reverse | adaptor`
     {
       BidirRange view(buf, buf + 3);
@@ -188,7 +188,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
       assert(base(result.begin().base().base()) == buf + 3);
       assert(base(result.end().base().base()) == buf);
     }
-#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_ICC
+#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 || !TEST_COMPILER_ICC
 
     // Check SFINAE friendliness
     {

@@ -167,7 +167,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 // Older gcc cannot handle the piping sequence
 // template instantiation resulted in unexpected function type
 #if !defined(TEST_COMPILER_MSVC_2019) && (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 11) \
-  && !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_ICC)
+    && !defined(TEST_COMPILER_CUDACC_BELOW_11_3)                                         \
+  || !defined(TEST_COMPILER_ICC)
   // Test `adaptor | views::filter(pred)`
   {
     Range const range(buff, buff + 8);
@@ -198,10 +199,10 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     static_assert(!CanBePiped<Range, decltype(cuda::std::views::filter)>);
     static_assert(CanBePiped<Range, decltype(cuda::std::views::filter(Pred1{}))>);
 // template instantiation resulted in unexpected function type
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_ICC)
+#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) || !defined(TEST_COMPILER_ICC)
     static_assert(!CanBePiped<NotAView, decltype(cuda::std::views::filter(Pred1{}))>);
     static_assert(!CanBePiped<Range, decltype(cuda::std::views::filter(NotInvocable{}))>);
-#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_ICC
+#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 || !TEST_COMPILER_ICC
 
     static_assert(!cuda::std::is_invocable_v<decltype(cuda::std::views::filter)>);
     static_assert(!cuda::std::is_invocable_v<decltype(cuda::std::views::filter), Pred1, Range>);

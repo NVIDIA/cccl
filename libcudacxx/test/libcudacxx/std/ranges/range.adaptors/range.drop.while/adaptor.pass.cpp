@@ -100,10 +100,10 @@ static_assert(!CanBePiped<MoveOnlyView, decltype(cuda::std::views::drop_while)>)
 static_assert(CanBePiped<MoveOnlyView, decltype(cuda::std::views::drop_while(Pred{}))>);
 static_assert(CanBePiped<int (&)[2], decltype(cuda::std::views::drop_while(Pred{}))>);
 // template instantiation resulted in unexpected function type
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_ICC)
+#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) || !defined(TEST_COMPILER_ICC)
 static_assert(!CanBePiped<int, decltype(cuda::std::views::drop_while(Pred{}))>);
 static_assert(!CanBePiped<Foo (&)[2], decltype(cuda::std::views::drop_while(Pred{}))>);
-#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_ICC
+#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 || !TEST_COMPILER_ICC
 
 template <class Range, class Expected>
 __host__ __device__ constexpr bool equal(Range&& range, Expected&& expected)
@@ -168,7 +168,7 @@ __host__ __device__ constexpr bool test()
   }
 
 // template instantiation resulted in unexpected function type
-#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) && !defined(TEST_COMPILER_ICC)
+#if !defined(TEST_COMPILER_CUDACC_BELOW_11_3) || !defined(TEST_COMPILER_ICC)
   // Test adaptor | adaptor
   {
     struct Pred2
@@ -185,7 +185,7 @@ __host__ __device__ constexpr bool test()
     auto expected = {4, 3, 2, 1};
     assert(equal(result, expected));
   }
-#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 && !TEST_COMPILER_ICC
+#endif // !TEST_COMPILER_CUDACC_BELOW_11_3 || !TEST_COMPILER_ICC
   return true;
 }
 
