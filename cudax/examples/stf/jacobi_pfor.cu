@@ -67,7 +67,7 @@ int main(int argc, char** argv)
   do
   {
     ctx.parallel_for(inner<1>(lA.shape()), lA.read(), lAnew.write(), lresidual.reduce(reducer::maxval<double>{}))
-        ->*[iter_max, tol, n, m] __device__(size_t i, size_t j, auto A, auto Anew, auto residual) {
+        ->*[] __device__(size_t i, size_t j, auto A, auto Anew, auto residual) {
               Anew(i, j) = 0.25 * (A(i - 1, j) + A(i + 1, j) + A(i, j - 1) + A(i, j + 1));
               residual   = ::std::max(residual, fabs(A(i, j) - Anew(i, j)));
             };
