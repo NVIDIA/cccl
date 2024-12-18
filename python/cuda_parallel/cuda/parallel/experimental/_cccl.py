@@ -8,10 +8,8 @@ import functools
 import ctypes
 import numpy as np
 from numba import types, cuda
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from .iterators._iterators import IteratorBase
+from .iterators._iterators import IteratorBase
 
 
 # MUST match `cccl_type_enum` in c/include/cccl/c/types.h
@@ -127,7 +125,7 @@ def _numba_type_to_info(numba_type: types.Type) -> TypeInfo:
 
 
 @functools.lru_cache(maxsize=None)
-def _numpy_type_to_info(numpy_type: "np.dtype") -> TypeInfo:
+def _numpy_type_to_info(numpy_type: np.dtype) -> TypeInfo:
     numba_type = numba.from_dtype(numpy_type)
     return _numba_type_to_info(numba_type)
 
@@ -148,7 +146,7 @@ def _device_array_to_cccl_iter(array) -> Iterator:
     )
 
 
-def _iterator_to_cccl_iter(it: "IteratorBase") -> Iterator:
+def _iterator_to_cccl_iter(it: IteratorBase) -> Iterator:
     context = cuda.descriptor.cuda_target.target_context
     numba_type = it.numba_type
     size = context.get_value_type(numba_type).get_abi_size(context.target_data)
@@ -202,8 +200,6 @@ def type_enum_as_name(enum_value: int) -> str:
 
 
 def to_cccl_iter(array_or_iterator) -> Iterator:
-    from cuda.parallel.experimental.iterators._iterators import IteratorBase
-
     if isinstance(array_or_iterator, IteratorBase):
         return _iterator_to_cccl_iter(array_or_iterator)
     return _device_array_to_cccl_iter(array_or_iterator)

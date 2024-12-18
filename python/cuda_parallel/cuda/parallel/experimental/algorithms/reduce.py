@@ -15,7 +15,7 @@ from .._bindings import get_paths, get_bindings
 
 
 class _Op:
-    def __init__(self, dtype: "np.dtype", op: Callable):
+    def __init__(self, dtype: np.dtype, op: Callable):
         value_type = numba.from_dtype(dtype)
         self.ltoir, _ = cuda.compile(
             op, sig=value_type(value_type, value_type), output="ltoir"
