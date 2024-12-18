@@ -32,7 +32,6 @@
 
 #if defined(__cccl_lib_mdspan) && _CCCL_STD_VER >= 2017
 
-#  include <cuda/std/__cccl/assert.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__type_traits/is_convertible.h>
 #  include <cuda/std/__type_traits/is_same.h>
@@ -59,7 +58,7 @@ using __transpose_extents_t = typename __transpose_extents_t_impl<_Extents>::__t
 
 _CCCL_TEMPLATE(class _Extents)
 _CCCL_REQUIRES((_Extents::rank() == 2))
-_LIBCUDACXX_HIDE_FROM_ABI __transpose_extents_t<_Extents> __transpose_extents(const _Extents& __e)
+_LIBCUDACXX_HIDE_FROM_ABI constexpr __transpose_extents_t<_Extents> __transpose_extents(const _Extents& __e)
 {
   static_assert(is_same_v<typename __transpose_extents_t<_Extents>::index_type, typename _Extents::index_type>,
                 "Please fix __transpose_extents_t to account  for P2553, which adds __a template parameter SizeType to "
@@ -133,12 +132,12 @@ public:
     _CCCL_TEMPLATE(class _IndexType0, class _IndexType1)
     _CCCL_REQUIRES(_CCCL_TRAIT(is_convertible, _IndexType0, index_type)
                      _CCCL_AND _CCCL_TRAIT(is_convertible, _IndexType1, index_type))
-    _LIBCUDACXX_HIDE_FROM_ABI index_type operator()(_IndexType0 __i, _IndexType1 __j) const
+    _LIBCUDACXX_HIDE_FROM_ABI constexpr index_type operator()(_IndexType0 __i, _IndexType1 __j) const
     {
       return __nested_mapping_(__j, __i);
     }
 
-    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI const __nested_mapping_type& nested_mapping() const noexcept
+    _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr const __nested_mapping_type& nested_mapping() const noexcept
     {
       return __nested_mapping_;
     }
@@ -218,7 +217,7 @@ struct __transposed_element_accessor
   using __element_type  = _ElementType;
   using __accessor_type = _Accessor;
 
-  _LIBCUDACXX_HIDE_FROM_ABI static __accessor_type __accessor(const _Accessor& __a)
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr __accessor_type __accessor(const _Accessor& __a)
   {
     return __accessor_type(__a);
   }
@@ -230,7 +229,7 @@ struct __transposed_element_accessor<_ElementType, default_accessor<_ElementType
   using __element_type  = _ElementType;
   using __accessor_type = default_accessor<__element_type>;
 
-  _LIBCUDACXX_HIDE_FROM_ABI static __accessor_type __accessor(const default_accessor<_ElementType>& __a)
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr __accessor_type __accessor(const default_accessor<_ElementType>& __a)
   {
     return __accessor_type(__a);
   }
@@ -242,7 +241,7 @@ struct __transposed_layout
   using __layout_type = layout_transpose<_Layout>;
 
   template <class __OriginalMapping>
-  _LIBCUDACXX_HIDE_FROM_ABI static auto __mapping(const __OriginalMapping& __orig_map)
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto __mapping(const __OriginalMapping& __orig_map)
   {
     using __extents_type        = __transpose_extents_t<typename __OriginalMapping::__extents_type>;
     using __return_mapping_type = typename __layout_type::template __mapping<__extents_type>;
@@ -256,7 +255,7 @@ struct __transposed_layout<layout_left>
   using __layout_type = layout_right;
 
   template <class _OriginalExtents>
-  _LIBCUDACXX_HIDE_FROM_ABI static auto
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto
   __mapping(const typename layout_left::template mapping<_OriginalExtents>& __orig_map)
   {
     using __original_mapping_type = typename layout_left::template mapping<_OriginalExtents>;
@@ -272,7 +271,7 @@ struct __transposed_layout<layout_right>
   using __layout_type = layout_left;
 
   template <class _OriginalExtents>
-  _LIBCUDACXX_HIDE_FROM_ABI static auto
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto
   __mapping(const typename layout_right::template mapping<_OriginalExtents>& __orig_map)
   {
     using __original_mapping_type = typename layout_right::template mapping<_OriginalExtents>;
@@ -288,7 +287,7 @@ struct __transposed_layout<layout_stride>
   using __layout_type = layout_stride;
 
   template <class _OriginalExtents>
-  _LIBCUDACXX_HIDE_FROM_ABI static auto
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr auto
   __mapping(const typename layout_stride::template mapping<_OriginalExtents>& __orig_map)
   {
     using __original_mapping_type = typename layout_stride::template mapping<_OriginalExtents>;
@@ -304,52 +303,6 @@ struct __transposed_layout<layout_stride>
 
 // TODO add support for padded layouts
 
-#  if 0
-
-template <class _StorageOrder>
-using __opposite_storage_t =
-  conditional_t<is_same_v<_StorageOrder, column_major_t>, row_major_t, column_major_t>;
-
-template <class _StorageOrder>
-struct __transposed_layout<layout_blas_general<_StorageOrder>>
-{
-  using __layout_type = layout_blas_general<__opposite_storage_t<_StorageOrder>>;
-
-  template <class _OriginalExtents>
-  _LIBCUDACXX_HIDE_FROM_ABI static auto
-  __mapping(const typename layout_blas_general<_StorageOrder>::template __mapping<_OriginalExtents>& __orig_map)
-  {
-    using __original_mapping_type = typename layout_blas_general<_StorageOrder>::template __mapping<_OriginalExtents>;
-    using __extents_type          = __transpose_extents_t<typename __original_mapping_type::__extents_type>;
-    using __return_mapping_type   = typename __layout_type::template __mapping<__extents_type>;
-    const auto whichStride =
-      is_same_v<_StorageOrder, column_major_t> ? __orig_map.stride(1) : __orig_map.stride(0);
-    return __return_mapping_type{__transpose_extents(__orig_map.extents()), whichStride};
-  }
-};
-
-template <class Triangle>
-using opposite_triangle_t =
-  conditional_t<is_same_v<Triangle, upper_triangle_t>, lower_triangle_t, upper_triangle_t>;
-
-template <class Triangle, class _StorageOrder>
-struct __transposed_layout<layout_blas_packed<Triangle, _StorageOrder>>
-{
-  using __layout_type = layout_blas_packed<opposite_triangle_t<Triangle>, __opposite_storage_t<_StorageOrder>>;
-
-  template <class _OriginalExtents>
-  _LIBCUDACXX_HIDE_FROM_ABI static auto
-  __mapping(const typename layout_blas_packed<Triangle, _StorageOrder>::template __mapping<_OriginalExtents>& __orig_map)
-  {
-    using __original_mapping_type =
-      typename layout_blas_packed<Triangle, _StorageOrder>::template __mapping<_OriginalExtents>;
-    using __extents_type        = __transpose_extents_t<typename __original_mapping_type::__extents_type>;
-    using __return_mapping_type = typename __layout_type::template __mapping<__extents_type>;
-    return __return_mapping_type{__transpose_extents(__orig_map.extents())};
-  }
-};
-#  endif
-
 template <class _NestedLayout>
 struct __transposed_layout<layout_transpose<_NestedLayout>>
 {
@@ -359,7 +312,8 @@ struct __transposed_layout<layout_transpose<_NestedLayout>>
 } // namespace __detail
 
 template <class _ElementType, class _Extents, class _Layout, class _Accessor>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI auto transposed(mdspan<_ElementType, _Extents, _Layout, _Accessor> __a)
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto
+transposed(mdspan<_ElementType, _Extents, _Layout, _Accessor> __a)
 {
   using __element_type  = typename __detail::__transposed_element_accessor<_ElementType, _Accessor>::__element_type;
   using __layout_type   = typename __detail::__transposed_layout<_Layout>::__layout_type;
