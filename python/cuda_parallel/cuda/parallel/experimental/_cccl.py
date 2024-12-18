@@ -209,6 +209,6 @@ def to_cccl_iter(array_or_iterator) -> Iterator:
     return _device_array_to_cccl_iter(array_or_iterator)
 
 
-def host_array_to_value(array: "np.ndarray") -> Value:
+def host_array_to_value(array: np.ndarray) -> Value:
     info = _numpy_type_to_info(array.dtype)
     return Value(info, array.ctypes.data)
