@@ -613,7 +613,7 @@ template <class _Tp>
 struct __is_std_optional<optional<_Tp>> : true_type
 {};
 
-// Constraits
+// Constraints
 template <class _Tp, class _Up, class _Opt = optional<_Up>>
 using __opt_check_constructible_from_opt =
   _Or<is_constructible<_Tp, _Opt&>,
@@ -1082,10 +1082,10 @@ public:
   using __base::reset;
 };
 
-#  if _CCCL_STD_VER > 2014 && !defined(_LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES)
+#  if !defined(_CCCL_NO_DEDUCTION_GUIDES)
 template <class _Tp>
 _CCCL_HOST_DEVICE optional(_Tp) -> optional<_Tp>;
-#  endif
+#  endif // _CCCL_NO_DEDUCTION_GUIDES
 
 // Comparisons between optionals
 template <class _Tp, class _Up>

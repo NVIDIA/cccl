@@ -378,13 +378,9 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 int __choose_index_type(unsigned
 
 template <size_t _NumAlts>
 using __variant_index_t =
-#  ifndef _LIBCUDACXX_ABI_VARIANT_INDEX_TYPE_OPTIMIZATION
-  unsigned int;
-#  else
   conditional_t<__choose_index_type(_NumAlts) == 0,
                 unsigned char,
                 conditional_t<__choose_index_type(_NumAlts) == 1, unsigned short, unsigned int>>;
-#  endif
 
 template <class _IndexType>
 constexpr _IndexType __variant_npos = static_cast<_IndexType>(-1);

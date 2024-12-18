@@ -29,27 +29,30 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if _CCCL_STD_VER > 2014
 
-_CCCL_TEMPLATE(class _It, class _Proj)
-_CCCL_REQUIRES(indirectly_readable<_It> _CCCL_AND indirectly_regular_unary_invocable<_Proj, _It>)
-struct projected
+template <class _It, class _Proj, class = void>
+struct __projected_impl
 {
-  using value_type = remove_cvref_t<indirect_result_t<_Proj&, _It>>;
-  _LIBCUDACXX_HIDE_FROM_ABI indirect_result_t<_Proj&, _It> operator*() const; // not defined
+  struct __type
+  {
+    using value_type = remove_cvref_t<indirect_result_t<_Proj, _It>>;
+    _LIBCUDACXX_HIDE_FROM_ABI indirect_result_t<_Proj, _It> operator*() const; // not defined
+  };
 };
 
-#  if _CCCL_STD_VER > 2017
-template <weakly_incrementable _It, class _Proj>
-struct incrementable_traits<projected<_It, _Proj>>
-{
-  using difference_type = iter_difference_t<_It>;
-};
-#  else
 template <class _It, class _Proj>
-struct incrementable_traits<projected<_It, _Proj>, enable_if_t<weakly_incrementable<_It>>>
+struct __projected_impl<_It, _Proj, enable_if_t<weakly_incrementable<_It>>>
 {
-  using difference_type = iter_difference_t<_It>;
+  struct __type
+  {
+    using value_type      = remove_cvref_t<indirect_result_t<_Proj, _It>>;
+    using difference_type = iter_difference_t<_It>;
+    _LIBCUDACXX_HIDE_FROM_ABI indirect_result_t<_Proj, _It> operator*() const; // not defined
+  };
 };
-#  endif // _CCCL_STD_VER > 2017
+
+_CCCL_TEMPLATE(class _It, class _Proj)
+_CCCL_REQUIRES(indirectly_readable<_It> _CCCL_AND indirectly_regular_unary_invocable<_Proj, _It>)
+using projected = typename __projected_impl<_It, _Proj>::__type;
 
 #endif // _CCCL_STD_VER > 2014
 

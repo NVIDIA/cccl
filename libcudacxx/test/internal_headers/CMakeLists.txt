@@ -88,7 +88,7 @@ function(libcudacxx_add_internal_header_test header)
     endif()
   endif()
 
-  # Seach the file for a fallback definition
+  # Search the file for a fallback definition
   file(READ ${libcudacxx_SOURCE_DIR}/include/cuda/${header} header_file)
   string(REGEX MATCH "_LIBCUDACXX_[A-Z_]*_FALLBACK" fallback "${header_file}")
   if(fallback)

@@ -145,7 +145,7 @@ public:
 
     size_t tile_size = mb * nb;
 
-    // Look for the index of the begining of the tile
+    // Look for the index of the beginning of the tile
     size_t tile_start = (tile_row + mt * tile_col) * tile_size;
 
     // Offset within the tile

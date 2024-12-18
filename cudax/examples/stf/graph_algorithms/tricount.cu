@@ -78,18 +78,19 @@ int main()
   // edges in CSR format
   std::vector<int> nonzeros = {0, 0, 0, 1, 1, 1, 0, 1, 1, 1};
 
-  int num_vertices                   = offsets.size() - 1;
-  unsigned long long int total_count = 0;
+  int num_vertices = offsets.size() - 1;
 
   auto loffsets     = ctx.logical_data(&offsets[0], offsets.size());
   auto lnonzeros    = ctx.logical_data(&nonzeros[0], nonzeros.size());
-  auto ltotal_count = ctx.logical_data(&total_count, {1});
+  auto ltotal_count = ctx.logical_data(shape_of<scalar_view<unsigned long long>>());
 
-  ctx.parallel_for(box(num_vertices), loffsets.read(), lnonzeros.read(), ltotal_count.rw())
-      ->*[] __device__(size_t idx, auto loffsets, auto lnonzeros, auto ltotal_count) {
-            unsigned long long int count = triangle_count(idx, loffsets, lnonzeros);
-            atomicAdd(ltotal_count.data_handle(), count);
+  ctx.parallel_for(
+    box(num_vertices), loffsets.read(), lnonzeros.read(), ltotal_count.reduce(reducer::sum<unsigned long long>{}))
+      ->*[] __device__(size_t idx, auto loffsets, auto lnonzeros, auto& total_count) {
+            total_count += triangle_count(idx, loffsets, lnonzeros);
           };
+
+  auto total_count = ctx.wait(ltotal_count);
 
   ctx.finalize();
 

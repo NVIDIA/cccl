@@ -101,30 +101,12 @@ public:
 
     auto done_prereqs = event_list();
 
-    // We either created independant task nodes, or a child graph. We need
-    // to inject input dependencies, and make the task completion depend on
-    // task nodes or the child graph.
-    if (task_nodes.size() > 0)
+    if (done_nodes.size() > 0)
     {
-      for (auto& node : task_nodes)
+      // We added CUDA graph nodes by hand, dependencies are already set, except the output nodes which define
+      // done_prereqs
+      for (auto& node : done_nodes)
       {
-#ifndef NDEBUG
-        // Ensure the node does not have dependencies yet
-        size_t num_deps;
-        cuda_safe_call(cudaGraphNodeGetDependencies(node, nullptr, &num_deps));
-        assert(num_deps == 0);
-
-        // Ensure there are no output dependencies either (or we could not
-        // add input dependencies later)
-        size_t num_deps_out;
-        cuda_safe_call(cudaGraphNodeGetDependentNodes(node, nullptr, &num_deps_out));
-        assert(num_deps_out == 0);
-#endif
-
-        // Repeat node as many times as there are input dependencies
-        ::std::vector<cudaGraphNode_t> out_array(ready_dependencies.size(), node);
-        cuda_safe_call(
-          cudaGraphAddDependencies(ctx_graph, ready_dependencies.data(), out_array.data(), ready_dependencies.size()));
         auto gnp = reserved::graph_event(node, epoch);
         gnp->set_symbol(ctx, "done " + get_symbol());
         /* This node is now the output dependency of the task */
@@ -133,26 +115,59 @@ public:
     }
     else
     {
-      // Note that if nothing was done in the task, this will create a child
-      // graph too, which will be useful as a node to synchronize with anyway.
-      const cudaGraph_t childGraph = get_graph();
-
-      const cudaGraphNode_t* deps = ready_dependencies.data();
-
-      assert(ctx_graph);
-      /* This will duplicate the childGraph so we can destroy it after */
-      cuda_safe_call(cudaGraphAddChildGraphNode(&n, ctx_graph, deps, ready_dependencies.size(), childGraph));
-
-      // Destroy the child graph unless we should not
-      if (must_destroy_child_graph)
+      // We either created independent task nodes, or a child graph. We need
+      // to inject input dependencies, and make the task completion depend on
+      // task nodes or the child graph.
+      if (task_nodes.size() > 0)
       {
-        cuda_safe_call(cudaGraphDestroy(childGraph));
-      }
+        for (auto& node : task_nodes)
+        {
+#ifndef NDEBUG
+          // Ensure the node does not have dependencies yet
+          size_t num_deps;
+          cuda_safe_call(cudaGraphNodeGetDependencies(node, nullptr, &num_deps));
+          assert(num_deps == 0);
 
-      auto gnp = reserved::graph_event(n, epoch);
-      gnp->set_symbol(ctx, "done " + get_symbol());
-      /* This node is now the output dependency of the task */
-      done_prereqs.add(mv(gnp));
+          // Ensure there are no output dependencies either (or we could not
+          // add input dependencies later)
+          size_t num_deps_out;
+          cuda_safe_call(cudaGraphNodeGetDependentNodes(node, nullptr, &num_deps_out));
+          assert(num_deps_out == 0);
+#endif
+
+          // Repeat node as many times as there are input dependencies
+          ::std::vector<cudaGraphNode_t> out_array(ready_dependencies.size(), node);
+          cuda_safe_call(cudaGraphAddDependencies(
+            ctx_graph, ready_dependencies.data(), out_array.data(), ready_dependencies.size()));
+          auto gnp = reserved::graph_event(node, epoch);
+          gnp->set_symbol(ctx, "done " + get_symbol());
+          /* This node is now the output dependency of the task */
+          done_prereqs.add(mv(gnp));
+        }
+      }
+      else
+      {
+        // Note that if nothing was done in the task, this will create a child
+        // graph too, which will be useful as a node to synchronize with anyway.
+        const cudaGraph_t childGraph = get_graph();
+
+        const cudaGraphNode_t* deps = ready_dependencies.data();
+
+        assert(ctx_graph);
+        /* This will duplicate the childGraph so we can destroy it after */
+        cuda_safe_call(cudaGraphAddChildGraphNode(&n, ctx_graph, deps, ready_dependencies.size(), childGraph));
+
+        // Destroy the child graph unless we should not
+        if (must_destroy_child_graph)
+        {
+          cuda_safe_call(cudaGraphDestroy(childGraph));
+        }
+
+        auto gnp = reserved::graph_event(n, epoch);
+        gnp->set_symbol(ctx, "done " + get_symbol());
+        /* This node is now the output dependency of the task */
+        done_prereqs.add(mv(gnp));
+      }
     }
 
     release(ctx, done_prereqs);
@@ -334,6 +349,16 @@ public:
     return task_nodes.back();
   }
 
+  const auto& get_ready_dependencies() const
+  {
+    return ready_dependencies;
+  }
+
+  void add_done_node(cudaGraphNode_t n)
+  {
+    done_nodes.push_back(n);
+  }
+
   // Get the graph associated to the whole context (not the task)
   cudaGraph_t& get_ctx_graph()
   {
@@ -372,7 +397,7 @@ private:
   cudaGraph_t child_graph       = nullptr;
   bool must_destroy_child_graph = false;
 
-  /* If the task corresponds to independant graph nodes, we do not use a
+  /* If the task corresponds to independent graph nodes, we do not use a
    * child graph, but add nodes directly */
   ::std::vector<cudaGraphNode_t> task_nodes;
 
@@ -381,6 +406,9 @@ private:
   size_t epoch          = 0;
 
   ::std::vector<cudaGraphNode_t> ready_dependencies;
+
+  // If we are building our graph by hand, and using get_ready_dependencies()
+  ::std::vector<cudaGraphNode_t> done_nodes;
 
   backend_ctx_untyped ctx;
 };

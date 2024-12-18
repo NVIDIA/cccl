@@ -47,19 +47,7 @@ struct __not_fn_op
 template <class _Fn>
 struct __not_fn_t : __perfect_forward<__not_fn_op, _Fn>
 {
-  using __base = __perfect_forward<__not_fn_op, _Fn>;
-#  if _CCCL_COMPILER(NVRTC) // nvbug 3961621
-  _CCCL_HIDE_FROM_ABI constexpr __not_fn_t() noexcept = default;
-
-  _CCCL_TEMPLATE(class _OrigFn)
-  _CCCL_REQUIRES(_CCCL_TRAIT(is_same, _Fn, decay_t<_OrigFn>))
-  _LIBCUDACXX_HIDE_FROM_ABI constexpr __not_fn_t(_OrigFn&& __fn) noexcept(
-    noexcept(__base(_CUDA_VSTD::declval<_OrigFn>())))
-      : __base(_CUDA_VSTD::forward<_OrigFn>(__fn))
-  {}
-#  else
-  using __base::__base;
-#  endif
+  _LIBCUDACXX_DELEGATE_CONSTRUCTORS(__not_fn_t, __perfect_forward, __not_fn_op, _Fn);
 };
 
 template <class _Fn, class = enable_if_t<is_constructible_v<decay_t<_Fn>, _Fn> && is_move_constructible_v<decay_t<_Fn>>>>

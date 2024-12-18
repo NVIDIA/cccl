@@ -21,6 +21,8 @@
 #include <cuda/experimental/__stf/allocators/pooled_allocator.cuh>
 #include <cuda/experimental/__stf/allocators/uncached_allocator.cuh>
 #include <cuda/experimental/__stf/graph/graph_ctx.cuh>
+#include <cuda/experimental/__stf/internal/reducer.cuh>
+#include <cuda/experimental/__stf/internal/scalar_interface.cuh>
 #include <cuda/experimental/__stf/internal/task_dep.cuh>
 #include <cuda/experimental/__stf/internal/void_interface.cuh>
 #include <cuda/experimental/__stf/places/exec/cuda_stream.cuh>
@@ -35,7 +37,7 @@ namespace cuda::experimental::stf
 {
 
 /**
- * @brief A context is an enviroment for executing cudastf tasks.
+ * @brief A context is an environment for executing cudastf tasks.
  *
  */
 class context
@@ -362,7 +364,7 @@ public:
    * parallel_for : apply an operation over a shaped index space
    */
   template <typename S, typename... Deps>
-  auto parallel_for(exec_place e_place, S shape, task_dep<Deps>... deps)
+  auto parallel_for(exec_place e_place, S shape, Deps... deps)
   {
     EXPECT(payload.index() != ::std::variant_npos, "Context is not initialized.");
     using result_t = unified_scope<reserved::parallel_for_scope<stream_ctx, S, null_partition, Deps...>,
@@ -375,7 +377,7 @@ public:
   }
 
   template <typename partitioner_t, typename S, typename... Deps>
-  auto parallel_for(partitioner_t p, exec_place e_place, S shape, task_dep<Deps>... deps)
+  auto parallel_for(partitioner_t p, exec_place e_place, S shape, Deps... deps)
   {
     EXPECT(payload.index() != ::std::variant_npos, "Context is not initialized.");
     using result_t = unified_scope<reserved::parallel_for_scope<stream_ctx, S, partitioner_t, Deps...>,
@@ -387,8 +389,8 @@ public:
       payload);
   }
 
-  template <typename S, typename... Deps>
-  auto parallel_for(S shape, task_dep<Deps>... deps)
+  template <typename S, typename... Deps, typename... Ops, bool... flags>
+  auto parallel_for(S shape, task_dep<Deps, Ops, flags>... deps)
   {
     return parallel_for(default_exec_place(), mv(shape), mv(deps)...);
   }
@@ -596,6 +598,17 @@ public:
     return ::std::visit(
       [](auto& self) {
         return self.get_dot();
+      },
+      payload);
+  }
+
+  template <typename T>
+  auto wait(::cuda::experimental::stf::logical_data<T>& ldata)
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return ::std::visit(
+      [&ldata](auto& self) {
+        return self.wait(ldata);
       },
       payload);
   }

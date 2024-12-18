@@ -556,7 +556,7 @@ public:
     }
   }
 
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_EXPLICIT operator bool() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI explicit operator bool() const noexcept
   {
     return __f_ != nullptr;
   }
@@ -989,11 +989,7 @@ class _CCCL_TYPE_VISIBILITY_DEFAULT function<_Rp(_ArgTypes...)>
     : public __function::__maybe_derive_from_unary_function<_Rp(_ArgTypes...)>
     , public __function::__maybe_derive_from_binary_function<_Rp(_ArgTypes...)>
 {
-#  ifndef _LIBCUDACXX_ABI_OPTIMIZED_FUNCTION
-  typedef __function::__value_func<_Rp(_ArgTypes...)> __func;
-#  else
   typedef __function::__policy_func<_Rp(_ArgTypes...)> __func;
-#  endif
 
   __func __f_;
 
@@ -1060,7 +1056,7 @@ public:
 #  endif
 
   // function capacity:
-  _LIBCUDACXX_HIDE_FROM_ABI _LIBCUDACXX_EXPLICIT operator bool() const noexcept
+  _LIBCUDACXX_HIDE_FROM_ABI explicit operator bool() const noexcept
   {
     return static_cast<bool>(__f_);
   }

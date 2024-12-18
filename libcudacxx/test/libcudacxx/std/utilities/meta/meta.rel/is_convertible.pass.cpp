@@ -119,7 +119,7 @@ int main(int, char**)
   test_is_not_convertible<Function*, char&>();
   test_is_not_convertible<Function*, char*>();
 
-  // Non-referencable function type
+  // Non-referenceable function type
   static_assert((!cuda::std::is_convertible<ConstFunction, Function>::value), "");
   static_assert((!cuda::std::is_convertible<ConstFunction, Function*>::value), "");
   static_assert((!cuda::std::is_convertible<ConstFunction, Function&>::value), "");
@@ -273,7 +273,7 @@ int main(int, char**)
 #endif
 
   // Ensure that CannotInstantiate is not instantiated by is_convertible when it is not needed.
-  // For example CannotInstantiate is instatiated as a part of ADL lookup for arguments of type CannotInstantiate*.
+  // For example CannotInstantiate is instantiated as a part of ADL lookup for arguments of type CannotInstantiate*.
   static_assert((cuda::std::is_convertible<CannotInstantiate<int>*, CannotInstantiate<int>*>::value), "");
 
   return 0;

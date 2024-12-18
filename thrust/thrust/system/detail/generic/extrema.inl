@@ -55,7 +55,7 @@ namespace detail
 //
 
 // return the smaller/larger element making sure to prefer the
-// first occurance of the minimum/maximum element
+// first occurrence of the minimum/maximum element
 template <typename InputType, typename IndexType, typename BinaryPredicate>
 struct min_element_reduction
 {
@@ -123,7 +123,7 @@ struct max_element_reduction
 }; // end max_element_reduction
 
 // return the smaller & larger element making sure to prefer the
-// first occurance of the minimum/maximum element
+// first occurrence of the minimum/maximum element
 template <typename InputType, typename IndexType, typename BinaryPredicate>
 struct minmax_element_reduction
 {

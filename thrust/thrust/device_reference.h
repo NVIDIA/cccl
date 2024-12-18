@@ -42,7 +42,7 @@ THRUST_NAMESPACE_BEGIN
 
 /*! \p device_reference acts as a reference-like object to an object stored in device memory.
  *  \p device_reference is not intended to be used directly; rather, this type
- *  is the result of deferencing a \p device_ptr. Similarly, taking the address of
+ *  is the result of dereferencing a \p device_ptr. Similarly, taking the address of
  *  a \p device_reference yields a \p device_ptr.
  *
  *  \p device_reference may often be used from host code in place of operations defined on

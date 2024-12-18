@@ -263,7 +263,8 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char>
 #if _CCCL_COMPILER(GCC, <, 13)
     // absurd workaround for GCC "internal compiler error: in cxx_eval_array_reference"
     if (_CUDA_VSTD::is_constant_evaluated())
-      ;
+    {
+    }
 #endif
 #if defined(_CCCL_BUILTIN_STRLEN)
     NV_IF_ELSE_TARGET(NV_IS_DEVICE,
@@ -518,7 +519,7 @@ char_traits<wchar_t>::find(const char_type* __s, size_t __n, const char_type& __
 }
 #endif // !_LIBCUDACXX_HAS_NO_WCHAR_H
 
-#ifndef _LIBCUDACXX_NO_HAS_CHAR8_T
+#ifndef _LIBCUDACXX_HAS_NO_CHAR8_T
 
 template <>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits<char8_t>
@@ -640,7 +641,7 @@ char_traits<char8_t>::find(const char_type* __s, size_t __n, const char_type& __
   return 0;
 }
 
-#endif // #_LIBCUDACXX_NO_HAS_CHAR8_T
+#endif // #_LIBCUDACXX_HAS_NO_CHAR8_T
 
 #ifndef _LIBCUDACXX_HAS_NO_UNICODE_CHARS
 

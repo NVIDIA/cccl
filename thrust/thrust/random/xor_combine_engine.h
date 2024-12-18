@@ -136,7 +136,7 @@ public:
 
   /*! This constructor initializes a new \p xor_combine_engine with a given seed.
    *
-   *  \param s The seed used to intialize this \p xor_combine_engine's adapted base engines.
+   *  \param s The seed used to initialize this \p xor_combine_engine's adapted base engines.
    */
   _CCCL_HOST_DEVICE xor_combine_engine(result_type s);
 
@@ -148,7 +148,7 @@ public:
   /*! This method initializes the state of this \p xor_combine_engine's adapted base engines
    *  by using the given seed.
    *
-   *  \param s The seed with which to intialize this \p xor_combine_engine's adapted base engines.
+   *  \param s The seed with which to initialize this \p xor_combine_engine's adapted base engines.
    */
   _CCCL_HOST_DEVICE void seed(result_type s);
 

@@ -22,6 +22,9 @@
 #  pragma system_header
 #endif // no system header
 
+///////////////////////////////////////////////////////////////////////////////
+// Determine the C++ standard dialect
+///////////////////////////////////////////////////////////////////////////////
 #if _CCCL_COMPILER(MSVC)
 #  if _MSVC_LANG <= 201103L
 #    define _CCCL_STD_VER 2011
@@ -52,6 +55,9 @@
 #  endif
 #endif // !_CCCL_COMPILER(MSVC)
 
+///////////////////////////////////////////////////////////////////////////////
+// Conditionally enable constexpr per standard dialect
+///////////////////////////////////////////////////////////////////////////////
 #if _CCCL_STD_VER >= 2014
 #  define _CCCL_CONSTEXPR_CXX14 constexpr
 #else // ^^^ C++14 ^^^ / vvv C++11 vvv
@@ -76,54 +82,79 @@
 #  define _CCCL_CONSTEXPR_CXX23
 #endif // _CCCL_STD_VER <= 2020
 
-#if _CCCL_STD_VER >= 2017 && defined(__cpp_if_constexpr)
-#  define _CCCL_IF_CONSTEXPR if constexpr
-#else // ^^^ C++17 ^^^ / vvv C++14 vvv
+///////////////////////////////////////////////////////////////////////////////
+// Detect whether we can use some language features based on standard dialect
+///////////////////////////////////////////////////////////////////////////////
+#if _CCCL_STD_VER <= 2014 || __cpp_if_constexpr < 201606L
 #  define _CCCL_NO_IF_CONSTEXPR
-#  define _CCCL_IF_CONSTEXPR if
-#endif // _CCCL_STD_VER <= 2014
-
-// In nvcc prior to 11.3 global variables could not be marked constexpr
-#if _CCCL_CUDACC_BELOW(11, 3)
-#  define _CCCL_CONSTEXPR_GLOBAL const
-#else // ^^^ _CCCL_CUDACC_BELOW(11, 3) ^^^ / vvv _CCCL_CUDACC_AT_LEAST(11, 3) vvv
-#  define _CCCL_CONSTEXPR_GLOBAL constexpr
-#endif // _CCCL_CUDACC_AT_LEAST(11, 3)
-
-// Inline variables are only available from C++17 onwards
-#if _CCCL_STD_VER >= 2017 && defined(__cpp_inline_variables) && (__cpp_inline_variables >= 201606L)
-#  define _CCCL_INLINE_VAR inline
-#else // ^^^ C++17 ^^^ / vvv C++14 vvv
-#  define _CCCL_NO_INLINE_VARIABLES
-#  define _CCCL_INLINE_VAR
-#endif // _CCCL_STD_VER <= 2014
-
-// Variable templates are only available from C++14 onwards and require some compiler support
-#if _CCCL_STD_VER <= 2011 || !defined(__cpp_variable_templates) || (__cpp_variable_templates < 201304L)
-#  define _CCCL_NO_VARIABLE_TEMPLATES
-#endif // _CCCL_STD_VER <= 2011
-
-// Declaring a non-type template parameters with auto is only available from C++17 onwards
-#if _CCCL_STD_VER >= 2017 && defined(__cpp_nontype_template_parameter_auto) \
-  && (__cpp_nontype_template_parameter_auto >= 201606L)
-#  define _CCCL_NTTP_AUTO auto
-#else // ^^^ C++17 ^^^ / vvv C++14 vvv
-#  define _CCCL_NO_NONTYPE_TEMPLATE_PARAMETER_AUTO
-#  define _CCCL_NTTP_AUTO unsigned long long int
-#endif // _CCCL_STD_VER <= 2014
+#endif // _CCCL_STD_VER <= 2014 || !defined(__cpp_if_constexpr)
 
 // concepts are only available from C++20 onwards
-#if _CCCL_STD_VER <= 2017 || !defined(__cpp_concepts) || (__cpp_concepts < 201907L)
+#if _CCCL_STD_VER <= 2017 || __cpp_concepts < 201907L
 #  define _CCCL_NO_CONCEPTS
-#endif // _CCCL_STD_VER <= 2017 || !defined(__cpp_concepts) || (__cpp_concepts < 201907L)
+#endif // _CCCL_STD_VER <= 2017 || __cpp_concepts < 201907L
+
+// CTAD is only available from C++17 onwards
+#if _CCCL_STD_VER <= 2014 || __cpp_deduction_guides < 201611L
+#  define _CCCL_NO_DEDUCTION_GUIDES
+#endif // _CCCL_STD_VER <= 2014 || __cpp_deduction_guides < 201611L
+
+// Fold expressions are only available from C++17 onwards
+#if _CCCL_STD_VER <= 2014 || __cpp_fold_expressions < 201603L
+#  define _CCCL_NO_FOLD_EXPRESSIONS
+#endif // _CCCL_STD_VER <= 2014 || __cpp_fold_expressions < 201603L
+
+// Inline variables are only available from C++17 onwards
+#if _CCCL_STD_VER <= 2014 || __cpp_inline_variables < 201606L
+#  define _CCCL_NO_INLINE_VARIABLES
+#endif // _CCCL_STD_VER <= 2014 || __cpp_inline_variables < 201606L
 
 // noexcept function types are only available from C++17 onwards
-#if _CCCL_STD_VER >= 2017 && defined(__cpp_noexcept_function_type) && (__cpp_noexcept_function_type >= 201510L)
-#  define _CCCL_FUNCTION_TYPE_NOEXCEPT noexcept
-#else // ^^^ C++17 ^^^ / vvv C++14 vvv
+#if _CCCL_STD_VER <= 2014 || __cpp_noexcept_function_type < 201510L
 #  define _CCCL_NO_NOEXCEPT_FUNCTION_TYPE
+#endif // _CCCL_STD_VER <= 2014 || __cpp_noexcept_function_type < 201510L
+
+// Declaring a non-type template parameters with auto is only available from C++17 onwards
+#if _CCCL_STD_VER <= 2014 || __cpp_nontype_template_parameter_auto < 201606L
+#  define _CCCL_NO_NONTYPE_TEMPLATE_PARAMETER_AUTO
+#endif // _CCCL_STD_VER <= 2014 || __cpp_nontype_template_parameter_auto < 201606L
+
+// Three way comparison is only available from C++20 onwards
+#if _CCCL_STD_VER <= 2017 || __cpp_impl_three_way_comparison < 201907L
+#  define _CCCL_NO_THREE_WAY_COMPARISON
+#endif // _CCCL_STD_VER <= 2017 || __cpp_impl_three_way_comparison < 201907L
+
+// Variable templates are only available from C++14 onwards and require some compiler support
+#if _CCCL_STD_VER <= 2011 || __cpp_variable_templates < 201304L
+#  define _CCCL_NO_VARIABLE_TEMPLATES
+#endif // _CCCL_STD_VER <= 2011 || __cpp_variable_templates < 201304L
+
+///////////////////////////////////////////////////////////////////////////////
+// Conditionally use certain language features depending on availability
+///////////////////////////////////////////////////////////////////////////////
+#if defined(_CCCL_NO_IF_CONSTEXPR)
+#  define _CCCL_IF_CONSTEXPR if
+#else // ^^^ _CCCL_NO_IF_CONSTEXPR ^^^ / vvv !_CCCL_NO_IF_CONSTEXPR vvv
+#  define _CCCL_IF_CONSTEXPR if constexpr
+#endif // !_CCCL_NO_IF_CONSTEXPR
+
+#if defined(_CCCL_NO_INLINE_VARIABLES)
+#  define _CCCL_INLINE_VAR
+#else // ^^^ _CCCL_NO_INLINE_VARIABLES ^^^ / vvv !_CCCL_NO_INLINE_VARIABLES vvv
+#  define _CCCL_INLINE_VAR inline
+#endif // !_CCCL_NO_INLINE_VARIABLES
+
+#if defined(_CCCL_NO_NOEXCEPT_FUNCTION_TYPE)
 #  define _CCCL_FUNCTION_TYPE_NOEXCEPT
-#endif // _CCCL_STD_VER <= 2014
+#else // ^^^ _CCCL_NO_NOEXCEPT_FUNCTION_TYPE ^^^ / vvv !_CCCL_NO_NOEXCEPT_FUNCTION_TYPE vvv
+#  define _CCCL_FUNCTION_TYPE_NOEXCEPT noexcept
+#endif // !_CCCL_NO_NOEXCEPT_FUNCTION_TYPE
+
+#if defined(_CCCL_NO_NONTYPE_TEMPLATE_PARAMETER_AUTO)
+#  define _CCCL_NTTP_AUTO unsigned long long int
+#else // ^^^ _CCCL_NO_NONTYPE_TEMPLATE_PARAMETER_AUTO ^^^ / vvv !_CCCL_NO_NONTYPE_TEMPLATE_PARAMETER_AUTO vvv
+#  define _CCCL_NTTP_AUTO auto
+#endif // !_CCCL_NO_NONTYPE_TEMPLATE_PARAMETER_AUTO
 
 // Variable templates are more efficient most of the time, so we want to use them rather than structs when possible
 #if defined(_CCCL_NO_VARIABLE_TEMPLATES)
@@ -132,11 +163,33 @@
 #  define _CCCL_TRAIT(__TRAIT, ...) __TRAIT##_v<__VA_ARGS__>
 #endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
+// In nvcc prior to 11.3 global variables could not be marked constexpr
+#if _CCCL_CUDACC_BELOW(11, 3)
+#  define _CCCL_CONSTEXPR_GLOBAL const
+#else // ^^^ _CCCL_CUDACC_BELOW(11, 3) ^^^ / vvv _CCCL_CUDACC_AT_LEAST(11, 3) vvv
+#  define _CCCL_CONSTEXPR_GLOBAL constexpr
+#endif // _CCCL_CUDACC_AT_LEAST(11, 3)
+
 // We need to treat host and device separately
 #if defined(__CUDA_ARCH__)
 #  define _CCCL_GLOBAL_CONSTANT _CCCL_DEVICE _CCCL_CONSTEXPR_GLOBAL
 #else // ^^^ __CUDA_ARCH__ ^^^ / vvv !__CUDA_ARCH__ vvv
 #  define _CCCL_GLOBAL_CONSTANT _CCCL_INLINE_VAR constexpr
 #endif // __CUDA_ARCH__
+
+// Check for deprecation opt outs
+#if defined(LIBCUDACXX_IGNORE_DEPRECATED_CPP_DIALECT) || defined(THRUST_IGNORE_DEPRECATED_CPP_DIALECT) \
+  || defined(CUB_IGNORE_DEPRECATED_CPP_DIALECT)
+#  define _CCCL_IGNORE_DEPRECATED_CPP_DIALECT
+#endif // ignore all dialect suppression
+#if defined(LIBCUDACXX_IGNORE_DEPRECATED_CPP_14) || defined(THRUST_IGNORE_DEPRECATED_CPP_14) \
+  || defined(CUB_IGNORE_DEPRECATED_CPP_14) || defined(_CCCL_IGNORE_DEPRECATED_CPP_DIALECT)
+#  define _CCCL_IGNORE_DEPRECATED_CPP_14
+#endif // ignore all c++14 suppressions
+#if defined(LIBCUDACXX_IGNORE_DEPRECATED_CPP_11) || defined(THRUST_IGNORE_DEPRECATED_CPP_11) \
+  || defined(CUB_IGNORE_DEPRECATED_CPP_11) || defined(_CCCL_IGNORE_DEPRECATED_CPP_DIALECT)   \
+  || defined(_CCCL_IGNORE_DEPRECATED_CPP_14)
+#  define _CCCL_IGNORE_DEPRECATED_CPP_11
+#endif // ignore all c++11 suppressions
 
 #endif // __CCCL_DIALECT_H

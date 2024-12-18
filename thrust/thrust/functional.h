@@ -856,7 +856,7 @@ struct identity
     return x;
   }
 
-  // we cannot add an overload for `const T&&` because then calling e.g. `thrust::identity<int>{}(3.14);` is ambigious
+  // we cannot add an overload for `const T&&` because then calling e.g. `thrust::identity<int>{}(3.14);` is ambiguous
   // on MSVC
 
   _CCCL_EXEC_CHECK_DISABLE

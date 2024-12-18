@@ -256,7 +256,7 @@ private:
         []() {}(); // no-op lambda
       }
 
-      // Validate all output values for the current key by determining the input key indicies and computing the matching
+      // Validate all output values for the current key by determining the input key indices and computing the matching
       // input values.
       const int num_dup_keys     = key_out_dup_end - key_out_dup_begin;
       const int key_in_dup_begin = segment_size - key_out_dup_end;
@@ -1456,7 +1456,7 @@ c2h::device_vector<int> generate_edge_case_offsets()
 {
   C2H_TIME_SCOPE("generate_edge_case_offsets");
 
-  using MaxPolicyT = typename cub::DeviceSegmentedSortPolicy<KeyT, ValueT>::MaxPolicy;
+  using MaxPolicyT = typename cub::detail::segmented_sort::policy_hub<KeyT, ValueT>::MaxPolicy;
 
   int ptx_version = 0;
   REQUIRE(cudaSuccess == CubDebug(cub::PtxVersion(ptx_version)));

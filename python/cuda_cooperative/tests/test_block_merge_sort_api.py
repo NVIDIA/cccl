@@ -2,14 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from pynvjitlink import patch
+import cuda.cooperative.experimental as cudax
 import numpy as np
 import numba
 from numba import cuda
+
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 # example-begin imports
-import cuda.cooperative.experimental as cudax
-from pynvjitlink import patch
 patch.patch_numba_linker(lto=True)
 # example-end imports
 
@@ -23,15 +24,13 @@ def test_block_merge_sort():
     # Specialize merge sort for a 1D block of 128 threads owning 4 integer items each
     items_per_thread = 4
     threads_per_block = 128
-    block_merge_sort = cudax.block.merge_sort_keys(numba.int32, threads_per_block, items_per_thread, compare_op)
-    temp_storage_bytes = block_merge_sort.temp_storage_bytes
+    block_merge_sort = cudax.block.merge_sort_keys(
+        numba.int32, threads_per_block, items_per_thread, compare_op
+    )
 
     # Link the merge sort to a CUDA kernel
     @cuda.jit(link=block_merge_sort.files)
     def kernel(keys):
-        # Allocate shared memory for merge sort
-        temp_storage = cuda.shared.array(temp_storage_bytes, numba.uint8)
-
         # Obtain a segment of consecutive items that are blocked across threads
         thread_keys = cuda.local.array(shape=items_per_thread, dtype=numba.int32)
 
@@ -39,11 +38,12 @@ def test_block_merge_sort():
             thread_keys[i] = keys[cuda.threadIdx.x * items_per_thread + i]
 
         # Collectively sort the keys
-        block_merge_sort(temp_storage, thread_keys)
+        block_merge_sort(thread_keys)
 
         # Copy the sorted keys back to the output
         for i in range(items_per_thread):
             keys[cuda.threadIdx.x * items_per_thread + i] = thread_keys[i]
+
     # example-end merge-sort
 
     tile_size = threads_per_block * items_per_thread

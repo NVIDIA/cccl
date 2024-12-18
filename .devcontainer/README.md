@@ -40,7 +40,7 @@ VSCode offers the most convenient experience with Dev Containers due to its tigh
 
    - Alternatively, use `ctrl+shift+p` to open the Command Palette and type "Remote-Containers: Reopen in Container" and select it.
 
-     ![Shows "Reopen in Container" in command pallete.](./img/open_in_container_manual.png)
+     ![Shows "Reopen in Container" in command palette.](./img/open_in_container_manual.png)
 
 4. Select an environment with the desired CTK and host compiler from the list:
 
@@ -104,7 +104,7 @@ Refer to [Microsoft's documentation](https://learn.microsoft.com/en-us/windows/w
 ```
 3. Restart your computer
 4. If this is your first time installing WSL, upon restarting, it will prompt you to create a username/password to use inside WSL.
-5. Verify `wsl` was succesfully installed by opening Powershell again and run
+5. Verify `wsl` was successfully installed by opening Powershell again and run
 ```bash
 > wsl -l -v
   NAME      STATE           VERSION

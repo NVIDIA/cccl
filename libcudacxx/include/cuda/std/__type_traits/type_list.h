@@ -632,8 +632,7 @@ _LIBCUDACXX_HIDE_FROM_ABI auto __type_switch_fn(__type_default<_Value>*, long) -
 
 //! \see __type_switch
 template <class _Type, class... _Cases>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DECLSPEC_EMPTY_BASES __type_switch_fn
-    : _Cases::template __rebind<_Type>...
+struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_DECLSPEC_EMPTY_BASES __type_switch_fn : _Cases::template __rebind<_Type>...
 {
   template <class _Label>
   using __call _CCCL_NODEBUG_ALIAS =
@@ -821,7 +820,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_same_as
 template <class _List, class _Fn>
 using __type_find_if = __type_call1<_List, __detail::__type_find_if_fn<_Fn>>;
 
-//! \brief Given a type list and type, find the first occurrance of the type in
+//! \brief Given a type list and type, find the first occurrence of the type in
 //! the list. It returns a type list containing the type and all the types after
 //! it.
 //!
@@ -944,7 +943,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_remove_fn
 };
 } // namespace __detail
 
-//! \brief Remove all occurances of a type from a type list
+//! \brief Remove all occurrences of a type from a type list
 template <class _List, class _Ty>
 using __type_remove = __type_flatten<__type_transform<_List, __detail::__type_remove_fn<_Ty>>>;
 

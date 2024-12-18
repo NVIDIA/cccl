@@ -263,6 +263,12 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
       op_src, // 6
       policy.vector_load_length); // 7
 
+#if false // CCCL_DEBUGGING_SWITCH
+    fflush(stderr);
+    printf("\nCODE4NVRTC BEGIN\n%sCODE4NVRTC END\n", src.c_str());
+    fflush(stdout);
+#endif
+
     std::string single_tile_kernel_name        = get_single_tile_kernel_name(input_it, output_it, op, init, false);
     std::string single_tile_second_kernel_name = get_single_tile_kernel_name(input_it, output_it, op, init, true);
     std::string reduction_kernel_name          = get_device_reduce_kernel_name(op, input_it, init);
@@ -323,8 +329,11 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_build(
     build->cubin_size       = result.size;
     build->accumulator_size = accum_t.size;
   }
-  catch (...)
+  catch (const std::exception& exc)
   {
+    fflush(stderr);
+    printf("\nEXCEPTION in cccl_device_reduce_build(): %s\n", exc.what());
+    fflush(stdout);
     error = CUDA_ERROR_UNKNOWN;
   }
 
@@ -411,8 +420,11 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce(
         cub::CudaDriverLauncherFactory{cu_device, build.cc},
         {get_accumulator_type(op, d_in, init)});
   }
-  catch (...)
+  catch (const std::exception& exc)
   {
+    fflush(stderr);
+    printf("\nEXCEPTION in cccl_device_reduce(): %s\n", exc.what());
+    fflush(stdout);
     error = CUDA_ERROR_UNKNOWN;
   }
 
@@ -437,8 +449,11 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce_cleanup(cccl_device_reduce_bui
     std::unique_ptr<char[]> cubin(reinterpret_cast<char*>(bld_ptr->cubin));
     check(cuLibraryUnload(bld_ptr->library));
   }
-  catch (...)
+  catch (const std::exception& exc)
   {
+    fflush(stderr);
+    printf("\nEXCEPTION in cccl_device_reduce_cleanup(): %s\n", exc.what());
+    fflush(stdout);
     return CUDA_ERROR_UNKNOWN;
   }
 

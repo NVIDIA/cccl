@@ -278,7 +278,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t Debug(cudaError_t error, const c
 #  else // Clang:
 
 // XXX shameless hack for clang around variadic printf...
-//     Compilies w/o supplying -std=c++11 but shows warning,
+//     Compiles w/o supplying -std=c++11 but shows warning,
 //     so we silence them :)
 #    pragma clang diagnostic ignored "-Wc++11-extensions"
 #    pragma clang diagnostic ignored "-Wunnamed-type-template-args"

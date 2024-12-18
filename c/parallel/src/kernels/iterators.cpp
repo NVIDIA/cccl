@@ -51,9 +51,9 @@ struct __align__(OP_ALIGNMENT) input_iterator_state_t {
   using difference_type = DIFF_T;
   using pointer = VALUE_T*;
   using reference = VALUE_T&;
-  __device__ inline value_type operator*() const { return DEREF(this); }
+  __device__ inline value_type operator*() const { return DEREF(data); }
   __device__ inline input_iterator_state_t& operator+=(difference_type diff) {
-      ADVANCE(this, diff);
+      ADVANCE(data, diff);
       return *this;
   }
   __device__ inline value_type operator[](difference_type diff) const {

@@ -37,7 +37,7 @@ class transform_output_iterator;
 namespace detail
 {
 
-// Proxy reference that uses Unary Function to transform the rhs of assigment
+// Proxy reference that uses Unary Function to transform the rhs of assignment
 // operator before writing the result to OutputIterator
 template <typename UnaryFunction, typename OutputIterator>
 class transform_output_iterator_proxy

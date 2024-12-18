@@ -28,6 +28,7 @@
 #  include <cuda/std/__concepts/convertible_to.h>
 #  include <cuda/std/__concepts/equality_comparable.h>
 #  include <cuda/std/__concepts/same_as.h>
+#  include <cuda/std/__tuple_dir/sfinae_helpers.h>
 #  include <cuda/std/__type_traits/decay.h>
 #  include <cuda/std/__type_traits/fold.h>
 #  include <cuda/stream_ref>
@@ -41,8 +42,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 //! @rst
 //! We require that a resource supports the following interface
 //!
-//!   - ``allocate(size_t bytes, size_t alginment)``
-//!   - ``deallocate(void* ptr, size_t bytes, size_t alginment)``
+//!   - ``allocate(size_t bytes, size_t alignment)``
+//!   - ``deallocate(void* ptr, size_t bytes, size_t alignment)``
 //!   - ``T() == T()``
 //!   - ``T() != T()``
 //!
@@ -51,9 +52,9 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 template <class _Resource>
 _CCCL_CONCEPT resource =
   _CCCL_REQUIRES_EXPR((_Resource), _Resource& __res, void* __ptr, size_t __bytes, size_t __alignment)(
-    requires(_CUDA_VSTD::equality_comparable<_Resource>),
     _Same_as(void*) __res.allocate(__bytes, __alignment), //
-    _Same_as(void) __res.deallocate(__ptr, __bytes, __alignment));
+    _Same_as(void) __res.deallocate(__ptr, __bytes, __alignment),
+    requires(_CUDA_VSTD::equality_comparable<_Resource>));
 
 //! @brief The \c async_resource concept verifies that a type Resource satisfies the basic requirements of a
 //! memory resource and additionally supports stream ordered allocations
@@ -73,33 +74,27 @@ _CCCL_CONCEPT resource =
 template <class _Resource>
 _CCCL_CONCEPT async_resource = _CCCL_REQUIRES_EXPR(
   (_Resource), _Resource& __res, void* __ptr, size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)(
-  requires(resource<_Resource>),
   _Same_as(void*) __res.allocate_async(__bytes, __alignment, __stream),
-  _Same_as(void) __res.deallocate_async(__ptr, __bytes, __alignment, __stream));
+  _Same_as(void) __res.deallocate_async(__ptr, __bytes, __alignment, __stream),
+  requires(resource<_Resource>));
 
 //! @brief The \c resource_with concept verifies that a type Resource satisfies the `resource` concept and
 //! also satisfies all the provided Properties
 //! @tparam _Resource
 //! @tparam _Properties
+// We cannot use fold expressions here due to a nvcc bug
 template <class _Resource, class... _Properties>
-_CCCL_CONCEPT resource_with =
-#    if _CCCL_COMPILER(NVHPC)
-  resource<_Resource> && _CUDA_VSTD::__fold_and_v<__has_property_impl<_Resource, _Properties>::value...>;
-#    else // ^^^ _CCCL_COMPILER(NVHPC) ^^^ / vvv !_CCCL_COMPILER(NVHPC) vvv
-  resource<_Resource> && _CUDA_VSTD::__fold_and_v<has_property<_Resource, _Properties>...>;
-#    endif // !_CCCL_COMPILER(NVHPC)
+_CCCL_CONCEPT resource_with = _CCCL_REQUIRES_EXPR((_Resource, variadic _Properties))(
+  requires(resource<_Resource>), requires(_CUDA_VSTD::__all<has_property<_Resource, _Properties>...>::value));
 
 //! @brief The \c async_resource_with concept verifies that a type Resource satisfies the `async_resource`
 //! concept and also satisfies all the provided Properties
 //! @tparam _Resource
 //! @tparam _Properties
+// We cannot use fold expressions here due to a nvcc bug
 template <class _Resource, class... _Properties>
-_CCCL_CONCEPT async_resource_with =
-#    if _CCCL_COMPILER(NVHPC)
-  async_resource<_Resource> && _CUDA_VSTD::__fold_and_v<__has_property_impl<_Resource, _Properties>::value...>;
-#    else // ^^^ _CCCL_COMPILER(NVHPC) ^^^ / vvv !_CCCL_COMPILER(NVHPC) vvv
-  async_resource<_Resource> && _CUDA_VSTD::__fold_and_v<has_property<_Resource, _Properties>...>;
-#    endif // !_CCCL_COMPILER(NVHPC)
+_CCCL_CONCEPT async_resource_with = _CCCL_REQUIRES_EXPR((_Resource, variadic _Properties))(
+  requires(async_resource<_Resource>), requires(_CUDA_VSTD::__all<has_property<_Resource, _Properties>...>::value));
 
 template <bool _Convertible>
 struct __different_resource__

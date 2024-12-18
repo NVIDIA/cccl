@@ -207,7 +207,7 @@ get_levels_range_end(const LDims& l, [[maybe_unused]] const Levels&... levels) n
   }
 }
 
-// Find the LTop in Levels... and discard the preceeding ones
+// Find the LTop in Levels... and discard the preceding ones
 template <typename LTop, typename LUnit, typename LTopDims, typename... Levels>
 _CCCL_NODISCARD _CUDAX_API constexpr auto get_levels_range_start(const LTopDims& ltop, const Levels&... levels) noexcept
 {
@@ -221,7 +221,7 @@ _CCCL_NODISCARD _CUDAX_API constexpr auto get_levels_range_start(const LTopDims&
   }
 }
 
-// Creates a new hierachy from Levels... cutting out levels between LTop and LUnit
+// Creates a new hierarchy from Levels... cutting out levels between LTop and LUnit
 template <typename LTop, typename LUnit, typename... Levels>
 _CCCL_NODISCARD _CUDAX_API constexpr auto get_levels_range(const Levels&... levels) noexcept
 {
@@ -339,6 +339,18 @@ struct rank_helper
 };
 } // namespace detail
 
+// Artificial empty hierarchy to make it possible for the config type to be empty,
+// seems easier than checking everywhere in hierarchy APIs if its not empty.
+// Any usage of an empty hierarchy other than combine should lead to an error anyway
+struct __empty_hierarchy
+{
+  template <typename _Other>
+  _CCCL_NODISCARD _Other combine(const _Other& __other) const
+  {
+    return __other;
+  }
+};
+
 /**
  * @brief Type representing a hierarchy of CUDA threads
  *
@@ -390,9 +402,10 @@ struct hierarchy_dimensions_fragment
       : levels(ls)
   {}
 
-#  if defined(__cpp_three_way_comparison) && __cpp_three_way_comparison >= 201907
-  _CCCL_NODISCARD _CUDAX_API constexpr bool operator==(const hierarchy_dimensions_fragment&) const noexcept = default;
-#  else
+#  if !defined(_CCCL_NO_THREE_WAY_COMPARISON) && !_CCCL_COMPILER(MSVC, <, 19, 39) && !_CCCL_COMPILER(GCC, <, 12)
+  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr bool
+  operator==(const hierarchy_dimensions_fragment&) const noexcept = default;
+#  else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv _CCCL_NO_THREE_WAY_COMPARISON vvv
   _CCCL_NODISCARD_FRIEND _CUDAX_API constexpr bool
   operator==(const hierarchy_dimensions_fragment& left, const hierarchy_dimensions_fragment& right) noexcept
   {
@@ -404,7 +417,7 @@ struct hierarchy_dimensions_fragment
   {
     return left.levels != right.levels;
   }
-#  endif
+#  endif // _CCCL_NO_THREE_WAY_COMPARISON
 
 private:
   // This being static is a bit of a hack to make extents_type working without incomplete class member access
@@ -451,7 +464,7 @@ public:
    * It returns a hierarchy_dimensions_fragment that includes levels starting with the
    * level specified in Level and ending with a level before Unit. Toegether with
    * hierarchy_add_level function it can be used to create a new hierarchy that is a modification
-   * of an exsiting hierarchy.
+   * of an existing hierarchy.
    * @par Snippet
    * @code
    * #include <cudax/hierarchy_dimensions.cuh>
@@ -730,7 +743,7 @@ public:
   //!
   //! @return Hierarchy holding the combined levels from both hierarchies
   template <typename OtherUnit, typename... OtherLevels>
-  constexpr auto combine(const hierarchy_dimensions_fragment<OtherUnit, OtherLevels...>& other)
+  constexpr auto combine(const hierarchy_dimensions_fragment<OtherUnit, OtherLevels...>& other) const
   {
     using this_top_level     = __level_type_of<::cuda::std::__type_index_c<0, Levels...>>;
     using this_bottom_level  = __level_type_of<::cuda::std::__type_index_c<sizeof...(Levels) - 1, Levels...>>;
@@ -775,6 +788,13 @@ public:
       }
     }
   }
+
+#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+  constexpr hierarchy_dimensions_fragment combine([[maybe_unused]] __empty_hierarchy __empty) const
+  {
+    return *this;
+  }
+#  endif // _CCCL_DOXYGEN_INVOKED
 };
 
 /**
@@ -825,7 +845,7 @@ constexpr auto _CCCL_HOST get_launch_dimensions(const hierarchy_dimensions<Level
 
 /* TODO consider having LUnit optional argument for template argument deduction
  This could have been a single function with make_hierarchy and first template
- argument defauled, but then the above TODO would be impossible and the current
+ argument defaulted, but then the above TODO would be impossible and the current
  name makes more sense */
 template <typename LUnit = void, typename L1, typename... Levels>
 constexpr auto make_hierarchy_fragment(L1 l1, Levels... ls) noexcept

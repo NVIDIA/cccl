@@ -83,7 +83,7 @@ public:
    *
    * This constructor provides implicit conversion from `cudaStream_t`.
    *
-   * \note: It is the callers responsibilty to ensure the `stream_ref` does not
+   * \note: It is the callers responsibility to ensure the `stream_ref` does not
    * outlive the stream identified by the `cudaStream_t` handle.
    *
    */

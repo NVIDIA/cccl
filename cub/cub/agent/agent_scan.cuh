@@ -171,7 +171,7 @@ struct AgentScan
   {
     // Inclusive scan if no init_value type is provided
     HAS_INIT     = !std::is_same<InitValueT, NullType>::value,
-    IS_INCLUSIVE = ForceInclusive || !HAS_INIT, // We are relying on either initial value not beeing `NullType`
+    IS_INCLUSIVE = ForceInclusive || !HAS_INIT, // We are relying on either initial value not being `NullType`
                                                 // or the ForceInclusive tag to be true for inclusive scan
                                                 // to get picked up.
     BLOCK_THREADS    = AgentScanPolicyT::BLOCK_THREADS,
