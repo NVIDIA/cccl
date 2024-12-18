@@ -248,7 +248,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
   // `views::drop(subrange, n)` returns a `subrange` when `subrange::StoreSize == false`.
   {
     cuda::std::ranges::subrange<int*> subrange(buf, buf + N);
-    LIBCPP_STATIC_ASSERT(!decltype(subrange)::_StoreSize);
+    static_assert(!decltype(subrange)::_StoreSize);
 
     decltype(auto) result = subrange | cuda::std::views::drop(3);
     static_assert(cuda::std::same_as<decltype(result), decltype(subrange)>);
@@ -263,7 +263,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
     using Subrange =
       cuda::std::ranges::subrange<View::iterator, View::sentinel, cuda::std::ranges::subrange_kind::sized>;
     auto subrange = Subrange(view.begin(), view.end(), cuda::std::ranges::distance(view.begin(), view.end()));
-    LIBCPP_STATIC_ASSERT(decltype(subrange)::_StoreSize);
+    static_assert(decltype(subrange)::_StoreSize);
 
     decltype(auto) result = subrange | cuda::std::views::drop(3);
     static_assert(cuda::std::same_as<decltype(result), Subrange>);

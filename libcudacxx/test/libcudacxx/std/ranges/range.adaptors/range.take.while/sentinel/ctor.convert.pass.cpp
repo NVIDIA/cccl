@@ -78,9 +78,18 @@ struct ConstSent
 
 struct Range : cuda::std::ranges::view_base
 {
-  __host__ __device__ int* begin() const;
-  __host__ __device__ Sent end();
-  __host__ __device__ ConstSent end() const;
+  __host__ __device__ int* begin() const
+  {
+    return nullptr;
+  }
+  __host__ __device__ Sent end()
+  {
+    return Sent{};
+  }
+  __host__ __device__ ConstSent end() const
+  {
+    return ConstSent{};
+  }
 };
 
 struct Pred
@@ -117,9 +126,18 @@ struct NonConvertConstSent
 
 struct NonConvertConstSentRange : cuda::std::ranges::view_base
 {
-  __host__ __device__ int* begin() const;
-  __host__ __device__ Sent end();
-  __host__ __device__ NonConvertConstSent end() const;
+  __host__ __device__ int* begin() const
+  {
+    return nullptr;
+  };
+  __host__ __device__ Sent end()
+  {
+    return Sent{};
+  }
+  __host__ __device__ NonConvertConstSent end() const
+  {
+    return NonConvertConstSent{};
+  }
 };
 
 // Test Constraint
@@ -168,9 +186,18 @@ struct MoveOnlyConvert
 
 struct Rng : cuda::std::ranges::view_base
 {
-  __host__ __device__ int* begin() const;
-  __host__ __device__ Sent end();
-  __host__ __device__ MoveOnlyConvert end() const;
+  __host__ __device__ int* begin() const
+  {
+    return nullptr;
+  };
+  __host__ __device__ Sent end()
+  {
+    return Sent{};
+  }
+  __host__ __device__ MoveOnlyConvert end() const
+  {
+    return MoveOnlyConvert{};
+  }
 };
 
 __host__ __device__ constexpr bool test()

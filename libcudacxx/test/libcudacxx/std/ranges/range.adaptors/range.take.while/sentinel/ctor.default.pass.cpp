@@ -42,8 +42,14 @@ struct Sent
 
 struct Range : cuda::std::ranges::view_base
 {
-  __host__ __device__ int* begin() const;
-  __host__ __device__ Sent end();
+  __host__ __device__ int* begin() const
+  {
+    return nullptr;
+  }
+  __host__ __device__ Sent end()
+  {
+    return Sent{};
+  }
 };
 
 __host__ __device__ constexpr bool test()

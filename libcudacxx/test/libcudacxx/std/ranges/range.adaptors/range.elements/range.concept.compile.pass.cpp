@@ -62,7 +62,7 @@ static_assert(!cuda::std::ranges::input_range<Range<cpp20_output_iterator<cuda::
 static_assert(!HasElementsView<Range<cpp20_output_iterator<cuda::std::tuple<int>*>>, 0>);
 
 // !tuple-like
-LIBCPP_STATIC_ASSERT(!cuda::std::__tuple_like<int>::value);
+static_assert(!cuda::std::__tuple_like<int>::value);
 static_assert(!HasElementsView<Range<int*>, 1>);
 
 // !(N < tuple_size_v<T>)

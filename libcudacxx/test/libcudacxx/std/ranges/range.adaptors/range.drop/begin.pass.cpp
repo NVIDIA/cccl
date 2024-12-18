@@ -143,7 +143,7 @@ __host__ __device__ constexpr bool test()
   {
     static_assert(cuda::std::ranges::random_access_range<const SimpleView>);
     static_assert(cuda::std::ranges::sized_range<const SimpleView>);
-    LIBCPP_STATIC_ASSERT(cuda::std::ranges::__simple_view<SimpleView>);
+    static_assert(cuda::std::ranges::__simple_view<SimpleView>);
     int non_const_calls = 0;
     int const_calls     = 0;
     cuda::std::ranges::drop_view dropView(SimpleView{{}, &non_const_calls, &const_calls}, 4);
@@ -158,7 +158,7 @@ __host__ __device__ constexpr bool test()
   {
     static_assert(cuda::std::ranges::random_access_range<const NonSimpleView>);
     static_assert(cuda::std::ranges::sized_range<const NonSimpleView>);
-    LIBCPP_STATIC_ASSERT(!cuda::std::ranges::__simple_view<NonSimpleView>);
+    static_assert(!cuda::std::ranges::__simple_view<NonSimpleView>);
     int non_const_calls = 0;
     int const_calls     = 0;
     cuda::std::ranges::drop_view dropView(NonSimpleView{{}, &non_const_calls, &const_calls}, 4);

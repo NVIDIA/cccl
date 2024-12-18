@@ -119,6 +119,6 @@ struct NonSimple : IntBufferViewBase
   }
 };
 static_assert(cuda::std::ranges::view<NonSimple>);
-LIBCPP_STATIC_ASSERT(!cuda::std::ranges::__simple_view<NonSimple>);
+static_assert(!cuda::std::ranges::__simple_view<NonSimple>);
 
 #endif // TEST_STD_RANGES_RANGE_ADAPTORS_RANGE_TAKE_WHILE_TYPES_H

@@ -126,7 +126,7 @@ __host__ __device__ void test()
     static_assert(cuda::std::same_as<Iter::value_type, char>);
     static_assert(sizeof(Iter::difference_type) > sizeof(char));
     static_assert(cuda::std::is_signed_v<Iter::difference_type>);
-    LIBCPP_STATIC_ASSERT(cuda::std::same_as<Iter::difference_type, int>);
+    static_assert(cuda::std::same_as<Iter::difference_type, int>);
     unused(io);
   }
   {
@@ -137,7 +137,7 @@ __host__ __device__ void test()
     static_assert(cuda::std::same_as<Iter::value_type, short>);
     static_assert(sizeof(Iter::difference_type) > sizeof(short));
     static_assert(cuda::std::is_signed_v<Iter::difference_type>);
-    LIBCPP_STATIC_ASSERT(cuda::std::same_as<Iter::difference_type, int>);
+    static_assert(cuda::std::same_as<Iter::difference_type, int>);
     unused(io);
   }
   {
@@ -151,9 +151,9 @@ __host__ __device__ void test()
     // If we're compiling for 32 bit or windows, int and long are the same size, so long long is the correct difference
     // type.
 #if INTPTR_MAX == INT32_MAX || defined(_WIN32)
-    LIBCPP_STATIC_ASSERT(cuda::std::same_as<Iter::difference_type, long long>);
+    static_assert(cuda::std::same_as<Iter::difference_type, long long>);
 #else
-    LIBCPP_STATIC_ASSERT(cuda::std::same_as<Iter::difference_type, long>);
+    static_assert(cuda::std::same_as<Iter::difference_type, long>);
 #endif
     unused(io);
   }
@@ -166,7 +166,7 @@ __host__ __device__ void test()
     // Same as below, if there is no type larger than long, we can just use that.
     static_assert(sizeof(Iter::difference_type) >= sizeof(long));
     static_assert(cuda::std::is_signed_v<Iter::difference_type>);
-    LIBCPP_STATIC_ASSERT(cuda::std::same_as<Iter::difference_type, long long>);
+    static_assert(cuda::std::same_as<Iter::difference_type, long long>);
     unused(io);
   }
   {
@@ -179,7 +179,7 @@ __host__ __device__ void test()
     // https://eel.is/c++draft/range.iota.view#1.3
     static_assert(sizeof(Iter::difference_type) >= sizeof(long long));
     static_assert(cuda::std::is_signed_v<Iter::difference_type>);
-    LIBCPP_STATIC_ASSERT(cuda::std::same_as<Iter::difference_type, long long>);
+    static_assert(cuda::std::same_as<Iter::difference_type, long long>);
     unused(io);
   }
   {

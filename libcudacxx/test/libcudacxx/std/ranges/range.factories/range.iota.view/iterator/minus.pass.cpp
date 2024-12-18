@@ -98,7 +98,7 @@ __host__ __device__ constexpr bool test()
       auto iter2 = cuda::std::next(io.begin(), 5);
       assert(iter1 - iter2 == 5);
 
-      LIBCPP_STATIC_ASSERT(cuda::std::same_as<decltype(iter1 - iter2), IntDiffT>);
+      static_assert(cuda::std::same_as<decltype(iter1 - iter2), IntDiffT>);
     }
     {
       cuda::std::ranges::iota_view<int> io(0);
@@ -106,7 +106,7 @@ __host__ __device__ constexpr bool test()
       auto iter2 = cuda::std::next(io.begin(), 10);
       assert(iter1 - iter2 == 0);
 
-      LIBCPP_STATIC_ASSERT(cuda::std::same_as<decltype(iter1 - iter2), IntDiffT>);
+      static_assert(cuda::std::same_as<decltype(iter1 - iter2), IntDiffT>);
     }
     {
       cuda::std::ranges::iota_view<int> io(0);
@@ -114,7 +114,7 @@ __host__ __device__ constexpr bool test()
       auto iter2 = cuda::std::next(io.begin(), 10);
       assert(iter1 - iter2 == -5);
 
-      LIBCPP_STATIC_ASSERT(cuda::std::same_as<decltype(iter1 - iter2), IntDiffT>);
+      static_assert(cuda::std::same_as<decltype(iter1 - iter2), IntDiffT>);
     }
 
     // When "_Start" is unsigned integer like and y > x.
@@ -124,7 +124,7 @@ __host__ __device__ constexpr bool test()
       auto iter2 = cuda::std::next(io.begin(), 10);
       assert(iter1 - iter2 == -5);
 
-      LIBCPP_STATIC_ASSERT(cuda::std::same_as<decltype(iter1 - iter2), IntDiffT>);
+      static_assert(cuda::std::same_as<decltype(iter1 - iter2), IntDiffT>);
     }
 
     // When "_Start" is unsigned integer like and x >= y.
@@ -134,7 +134,7 @@ __host__ __device__ constexpr bool test()
       auto iter2 = cuda::std::next(io.begin(), 5);
       assert(iter1 - iter2 == 5);
 
-      LIBCPP_STATIC_ASSERT(cuda::std::same_as<decltype(iter1 - iter2), IntDiffT>);
+      static_assert(cuda::std::same_as<decltype(iter1 - iter2), IntDiffT>);
     }
     {
       cuda::std::ranges::iota_view<unsigned> io(0);
@@ -142,7 +142,7 @@ __host__ __device__ constexpr bool test()
       auto iter2 = cuda::std::next(io.begin(), 10);
       assert(iter1 - iter2 == 0);
 
-      LIBCPP_STATIC_ASSERT(cuda::std::same_as<decltype(iter1 - iter2), IntDiffT>);
+      static_assert(cuda::std::same_as<decltype(iter1 - iter2), IntDiffT>);
     }
 
     // When "_Start" is not integer like.
