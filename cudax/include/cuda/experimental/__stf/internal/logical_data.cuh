@@ -1742,7 +1742,7 @@ inline void reserved::logical_data_untyped_impl::erase()
 
   /* If there is a reference instance id, it needs to be updated with a
    * valid copy if that is not the case yet */
-  if (enable_write_back)
+  if (enable_write_back && !is_void_interface())
   {
     instance_id_t ref_id = reference_instance_id;
     assert(ref_id != instance_id_t::invalid);
@@ -2047,7 +2047,7 @@ inline void fetch_data(
 {
   event_list stf_prereq = reserved::enforce_stf_deps_before(ctx, d, instance_id, t, mode, eplace);
 
-  if (d.has_interface())
+  if (d.has_interface() && !d.is_void_interface())
   {
     // Allocate data if needed (and possibly reclaim memory to do so)
     reserved::dep_allocate(ctx, d, mode, dplace, eplace, instance_id, stf_prereq);
