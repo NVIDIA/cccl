@@ -217,11 +217,11 @@ _CCCL_REQUIRES(_IsSame<_Iter, _Ty*>::value)
 _LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Ty*, __priority_tag<3>) -> contiguous_iterator_tag;
 #endif // _CCCL_STD_VER >= 2014
 template <class _Iter>
-_LIBCUDACXX_HIDE_FROM_ABI auto
-  __iter_concept_fn(_Iter, __priority_tag<2>) -> class _ITER_TRAITS<_Iter>::iterator_concept;
+_LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Iter, __priority_tag<2>) ->
+  typename _ITER_TRAITS<_Iter>::iterator_concept;
 template <class _Iter>
-_LIBCUDACXX_HIDE_FROM_ABI auto
-  __iter_concept_fn(_Iter, __priority_tag<1>) -> class _ITER_TRAITS<_Iter>::iterator_category;
+_LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Iter, __priority_tag<1>) ->
+  typename _ITER_TRAITS<_Iter>::iterator_category;
 template <class _Iter>
 _LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Iter, __priority_tag<0>)
   -> enable_if_t<__is_primary_template<iterator_traits<_Iter>>::value, random_access_iterator_tag>;
