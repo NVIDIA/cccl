@@ -166,16 +166,18 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
 
   SECTION("argmin")
   {
-    using result_t = cub::KeyValuePair<offset_t, index_t>;
+    using result_t = cuda::std::pair<offset_t, index_t>;
 
     // Run test
     const index_t iterator_offset = 1000;
     c2h::device_vector<result_t> out_result(1);
-    const auto d_out_it = thrust::raw_pointer_cast(out_result.data());
+    auto d_result_ptr   = thrust::raw_pointer_cast(out_result.data());
+    auto d_index_out    = &d_result_ptr->first;
+    auto d_extremum_out = &d_result_ptr->second;
 
     const auto d_in_it = thrust::make_reverse_iterator(index_it + num_items + iterator_offset);
 
-    device_arg_min(d_in_it, d_out_it, num_items);
+    device_arg_min(d_in_it, d_extremum_out, d_index_out, num_items);
 
     // Verify result
     const index_t expected_value  = iterator_offset;
@@ -183,22 +185,24 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
 
     // Verify result
     const result_t gpu_result = out_result[0];
-    REQUIRE(expected_value == gpu_result.value);
-    REQUIRE(expected_index == gpu_result.key);
+    REQUIRE(expected_value == gpu_result.second);
+    REQUIRE(expected_index == gpu_result.first);
   }
 
   SECTION("argmin with int index type")
   {
-    using result_t = cub::KeyValuePair<int, index_t>;
+    using result_t = cuda::std::pair<int, index_t>;
 
     // Run test
     const index_t iterator_offset = 1000;
     c2h::device_vector<result_t> out_result(1);
-    const auto d_out_it = thrust::raw_pointer_cast(out_result.data());
+    auto d_result_ptr   = thrust::raw_pointer_cast(out_result.data());
+    auto d_index_out    = &d_result_ptr->first;
+    auto d_extremum_out = &d_result_ptr->second;
 
     const auto d_in_it = index_it + iterator_offset;
 
-    device_arg_min(d_in_it, d_out_it, num_items);
+    device_arg_min(d_in_it, d_extremum_out, d_index_out, num_items);
 
     // Verify result
     const index_t expected_value = iterator_offset;
@@ -206,22 +210,24 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
 
     // Verify result
     const result_t gpu_result = out_result[0];
-    REQUIRE(expected_value == gpu_result.value);
-    REQUIRE(expected_index == gpu_result.key);
+    REQUIRE(expected_value == gpu_result.second);
+    REQUIRE(expected_index == gpu_result.first);
   }
 
   SECTION("argmax")
   {
-    using result_t = cub::KeyValuePair<offset_t, index_t>;
+    using result_t = cuda::std::pair<offset_t, index_t>;
 
     // Run test
     const index_t iterator_offset = 1000;
     c2h::device_vector<result_t> out_result(1);
-    const auto d_out_it = thrust::raw_pointer_cast(out_result.data());
+    auto d_result_ptr   = thrust::raw_pointer_cast(out_result.data());
+    auto d_index_out    = &d_result_ptr->first;
+    auto d_extremum_out = &d_result_ptr->second;
 
     const auto d_in_it = index_it + iterator_offset;
 
-    device_arg_max(d_in_it, d_out_it, num_items);
+    device_arg_max(d_in_it, d_extremum_out, d_index_out, num_items);
 
     // Verify result
     const index_t expected_value  = iterator_offset + num_items - index_t{1};
@@ -229,22 +235,24 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
 
     // Verify result
     const result_t gpu_result = out_result[0];
-    REQUIRE(expected_value == gpu_result.value);
-    REQUIRE(expected_index == gpu_result.key);
+    REQUIRE(expected_value == gpu_result.second);
+    REQUIRE(expected_index == gpu_result.first);
   }
 
   SECTION("argmax with int index type")
   {
-    using result_t = cub::KeyValuePair<int, index_t>;
+    using result_t = cuda::std::pair<int, index_t>;
 
     // Run test
     const index_t iterator_offset = 1000;
     c2h::device_vector<result_t> out_result(1);
-    const auto d_out_it = thrust::raw_pointer_cast(out_result.data());
+    auto d_result_ptr   = thrust::raw_pointer_cast(out_result.data());
+    auto d_index_out    = &d_result_ptr->first;
+    auto d_extremum_out = &d_result_ptr->second;
 
     const auto d_in_it = thrust::make_reverse_iterator(index_it + num_items + iterator_offset);
 
-    device_arg_max(d_in_it, d_out_it, num_items);
+    device_arg_max(d_in_it, d_extremum_out, d_index_out, num_items);
 
     // Verify result
     const index_t expected_value = iterator_offset + num_items - index_t{1};
@@ -252,7 +260,7 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", o
 
     // Verify result
     const result_t gpu_result = out_result[0];
-    REQUIRE(expected_value == gpu_result.value);
-    REQUIRE(expected_index == gpu_result.key);
+    REQUIRE(expected_value == gpu_result.second);
+    REQUIRE(expected_index == gpu_result.first);
   }
 }
