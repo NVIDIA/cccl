@@ -3,24 +3,26 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-import numba
 import ctypes
+import numba
+import numpy as np
 from numba import cuda
 from numba.cuda.cudadrv import enums
+from typing import Callable
 
 from .. import _cccl as cccl
 from .._bindings import get_paths, get_bindings
 
 
 class _Op:
-    def __init__(self, dtype, op):
+    def __init__(self, dtype: np.dtype, op: Callable):
         value_type = numba.from_dtype(dtype)
         self.ltoir, _ = cuda.compile(
             op, sig=value_type(value_type, value_type), output="ltoir"
         )
         self.name = op.__name__.encode("utf-8")
 
-    def handle(self):
+    def handle(self) -> cccl.Op:
         return cccl.Op(
             cccl.OpKind.STATELESS,
             self.name,
@@ -39,7 +41,7 @@ def _dtype_validation(dt1, dt2):
 
 class _Reduce:
     # TODO: constructor shouldn't require concrete `d_in`, `d_out`:
-    def __init__(self, d_in, d_out, op, h_init):
+    def __init__(self, d_in, d_out, op: Callable, h_init: np.ndarray):
         d_in_cccl = cccl.to_cccl_iter(d_in)
         self._ctor_d_in_cccl_type_enum_name = cccl.type_enum_as_name(
             d_in_cccl.value_type.type.value
@@ -70,7 +72,7 @@ class _Reduce:
         if error != enums.CUDA_SUCCESS:
             raise ValueError("Error building reduce")
 
-    def __call__(self, temp_storage, d_in, d_out, num_items, h_init):
+    def __call__(self, temp_storage, d_in, d_out, num_items: int, h_init: np.ndarray):
         d_in_cccl = cccl.to_cccl_iter(d_in)
         if d_in_cccl.type.value == cccl.IteratorKind.ITERATOR:
             assert num_items is not None
@@ -119,7 +121,7 @@ class _Reduce:
 
 # TODO Figure out `sum` without operator and initial value
 # TODO Accept stream
-def reduce_into(d_in, d_out, op, h_init):
+def reduce_into(d_in, d_out, op: Callable, h_init: np.ndarray):
     """Computes a device-wide reduction using the specified binary ``op`` functor and initial value ``init``.
 
     Example:

@@ -58,5 +58,16 @@ repos:
             CITATION.md
           )
 
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: 'v1.13.0'
+    hooks:
+      - id: mypy
+        additional_dependencies: [types-cachetools, numpy]
+        args: ["--config-file=python/cuda_parallel/pyproject.toml",
+               "python/cuda_parallel/cuda/"]
+        pass_filenames: false
+
+
 default_language_version:
   python: python3
