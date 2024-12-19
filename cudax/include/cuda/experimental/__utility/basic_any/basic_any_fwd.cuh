@@ -49,7 +49,7 @@ template <class _Interface>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any;
 
 template <class _Interface>
-struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>>;
+struct _CCCL_DECLSPEC_EMPTY_BASES basic_any<__ireference<_Interface>>;
 
 template <class _Interface>
 struct basic_any<_Interface*>;
@@ -61,7 +61,7 @@ template <class _InterfaceOrModel, auto... _VirtualFnsOrOverrides>
 struct overrides_for;
 
 template <class _Interface, auto... _Mbrs>
-struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __basic_vtable;
+struct _CCCL_DECLSPEC_EMPTY_BASES __basic_vtable;
 
 struct __rtti_base;
 

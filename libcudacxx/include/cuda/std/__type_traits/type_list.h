@@ -632,8 +632,7 @@ _LIBCUDACXX_HIDE_FROM_ABI auto __type_switch_fn(__type_default<_Value>*, long) -
 
 //! \see __type_switch
 template <class _Type, class... _Cases>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT _LIBCUDACXX_DECLSPEC_EMPTY_BASES __type_switch_fn
-    : _Cases::template __rebind<_Type>...
+struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_DECLSPEC_EMPTY_BASES __type_switch_fn : _Cases::template __rebind<_Type>...
 {
   template <class _Label>
   using __call _CCCL_NODEBUG_ALIAS =

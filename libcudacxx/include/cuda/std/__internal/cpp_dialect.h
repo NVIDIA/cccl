@@ -7,8 +7,8 @@
 //
 //===---------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX___INTERNAL_FEATURES_H
-#define _LIBCUDACXX___INTERNAL_FEATURES_H
+#ifndef _LIBCUDACXX___INTERNAL_CPP_DIALECT_H
+#define _LIBCUDACXX___INTERNAL_CPP_DIALECT_H
 
 #include <cuda/__cccl_config>
 
@@ -41,4 +41,4 @@ LIBCUDACXX_DIALECT_DEPRECATION(C++ 17, C++ 11)
 LIBCUDACXX_DIALECT_DEPRECATION(C++ 17, C++ 14)
 #endif // _CCCL_STD_VER >= 2017
 
-#endif // _LIBCUDACXX___INTERNAL_FEATURES_H
+#endif // _LIBCUDACXX___INTERNAL_CPP_DIALECT_H

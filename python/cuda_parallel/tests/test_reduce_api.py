@@ -5,7 +5,7 @@
 # example-begin imports
 import cupy as cp
 import numpy as np
-import cuda.parallel.experimental as cudax
+import cuda.parallel.experimental.algorithms as algorithms
 # example-end imports
 
 
@@ -20,7 +20,7 @@ def test_device_reduce():
     d_output = cp.empty(1, dtype=dtype)
 
     # Instantiate reduction for the given operator and initial value
-    reduce_into = cudax.reduce_into(d_output, d_output, min_op, h_init)
+    reduce_into = algorithms.reduce_into(d_output, d_output, min_op, h_init)
 
     # Determine temporary device storage requirements
     temp_storage_size = reduce_into(None, d_input, d_output, None, h_init)

@@ -406,7 +406,7 @@ void operator delete[](void* p, cuda::std::size_t) TEST_NOEXCEPT
 #  endif // TEST_COMPILER_GCC
 
 #  ifndef TEST_HAS_NO_ALIGNED_ALLOCATION
-#    if defined(_LIBCUDACXX_MSVCRT_LIKE) || (!defined(_LIBCUDACXX_VERSION) && defined(_WIN32))
+#    if defined(_WIN32)
 #      define USE_ALIGNED_ALLOC
 #    endif
 

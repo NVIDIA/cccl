@@ -224,7 +224,7 @@ struct scoped_test_env
 
   // OS X and FreeBSD doesn't support socket files so we shouldn't even
   // allow tests to call this unguarded.
-#  if !defined(__FreeBSD__) && !defined(__APPLE__)
+#  if !defined(__APPLE__)
   std::string create_socket(std::string file)
   {
     file = sanitize_path(std::move(file));

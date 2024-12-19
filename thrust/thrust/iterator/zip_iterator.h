@@ -131,7 +131,7 @@ THRUST_NAMESPACE_BEGIN
  *  \see get
  */
 template <typename IteratorTuple>
-class _LIBCUDACXX_DECLSPEC_EMPTY_BASES zip_iterator : public detail::zip_iterator_base<IteratorTuple>::type
+class _CCCL_DECLSPEC_EMPTY_BASES zip_iterator : public detail::zip_iterator_base<IteratorTuple>::type
 {
 public:
   /*! The underlying iterator tuple type. Alias to zip_iterator's first template argument.

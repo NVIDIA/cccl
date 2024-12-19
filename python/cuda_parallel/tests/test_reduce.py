@@ -8,8 +8,9 @@ import pytest
 import random
 import numba.cuda
 import numba.types
-import cuda.parallel.experimental as cudax
-from cuda.parallel.experimental import iterators
+
+import cuda.parallel.experimental.algorithms as algorithms
+import cuda.parallel.experimental.iterators as iterators
 
 
 def random_int(shape, dtype):
@@ -39,7 +40,7 @@ def test_device_reduce(dtype):
     init_value = 42
     h_init = numpy.array([init_value], dtype=dtype)
     d_output = numba.cuda.device_array(1, dtype=dtype)
-    reduce_into = cudax.reduce_into(d_output, d_output, op, h_init)
+    reduce_into = algorithms.reduce_into(d_output, d_output, op, h_init)
 
     for num_items_pow2 in type_to_problem_sizes(dtype):
         num_items = 2**num_items_pow2
@@ -58,7 +59,7 @@ def test_complex_device_reduce():
 
     h_init = numpy.array([40.0 + 2.0j], dtype=complex)
     d_output = numba.cuda.device_array(1, dtype=complex)
-    reduce_into = cudax.reduce_into(d_output, d_output, op, h_init)
+    reduce_into = algorithms.reduce_into(d_output, d_output, op, h_init)
 
     for num_items in [42, 420000]:
         h_input = numpy.random.random(num_items) + 1j * numpy.random.random(num_items)
@@ -82,7 +83,7 @@ def test_device_reduce_dtype_mismatch():
     d_outputs = [numba.cuda.device_array(1, dt) for dt in dtypes]
     d_inputs = [numba.cuda.to_device(h_inp) for h_inp in h_inputs]
 
-    reduce_into = cudax.reduce_into(d_inputs[0], d_outputs[0], min_op, h_inits[0])
+    reduce_into = algorithms.reduce_into(d_inputs[0], d_outputs[0], min_op, h_inits[0])
 
     for ix in range(3):
         with pytest.raises(
@@ -117,7 +118,7 @@ def _test_device_sum_with_iterator(
 
     h_init = numpy.array([start_sum_with], dtype_out)
 
-    reduce_into = cudax.reduce_into(
+    reduce_into = algorithms.reduce_into(
         d_in=d_input, d_out=d_output, op=add_op, h_init=h_init
     )
 
