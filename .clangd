@@ -29,6 +29,8 @@ CompileFlags:
   Add:
     - -x
     - cuda
+    - -Wno-unknown-cuda-version
+    - --no-cuda-version-check
     # report all errors
     - "-ferror-limit=0"
     - "-ftemplate-backtrace-limit=0"
