@@ -11,7 +11,7 @@
 /**
  * @file
  *
- * @brief This implements a void data interface useful to implement STF
+ * @brief This defines a void data interface useful to implement STF
  * dependencies without actual data (e.g. to enforce task dependencies)
  */
 
@@ -36,12 +36,6 @@ namespace cuda::experimental::stf
 
 template <typename T>
 class shape_of;
-
-template <typename T>
-struct streamed_interface_of;
-
-template <typename T>
-struct graphed_interface_of;
 
 class void_interface
 {};
@@ -68,127 +62,6 @@ public:
   {
     return 0;
   }
-};
-
-/**
- * @brief Data interface to manipulate the void interface in the CUDA stream backend
- */
-class void_stream_interface : public stream_data_interface_simple<void_interface>
-{
-public:
-  using base = stream_data_interface_simple<void_interface>;
-  using base::shape_t;
-
-  void_stream_interface(void_interface m)
-      : base(::std::move(m))
-  {}
-  void_stream_interface(typename base::shape_t s)
-      : base(s)
-  {}
-
-  /// Copy the content of an instance to another instance : this is a no-op
-  void stream_data_copy(const data_place&, instance_id_t, const data_place&, instance_id_t, cudaStream_t) override {}
-
-  /// Pretend we allocate an instance on a specific data place : we do not do any allocation here
-  void stream_data_allocate(
-    backend_ctx_untyped&, const data_place&, instance_id_t, ::std::ptrdiff_t& s, void**, cudaStream_t) override
-  {
-    // By filling a non negative number, we notify that the allocation was successful
-    s = 0;
-  }
-
-  /// Pretend we deallocate an instance (no-op)
-  void stream_data_deallocate(backend_ctx_untyped&, const data_place&, instance_id_t, void*, cudaStream_t) override {}
-
-  bool pin_host_memory(instance_id_t) override
-  {
-    // no-op
-    return false;
-  }
-
-  void unpin_host_memory(instance_id_t) override {}
-};
-
-/**
- * @brief Define how the CUDA stream backend must manipulate this void interface
- *
- * Note that we specialize cuda::experimental::stf::shape_of to avoid ambiguous specialization
- *
- * @extends streamed_interface_of
- */
-template <>
-struct streamed_interface_of<void_interface>
-{
-  using type = void_stream_interface;
-};
-
-/**
- * @brief Data interface to manipulate the void interface in the CUDA graph backend
- */
-class void_graph_interface : public graph_data_interface<void_interface>
-{
-public:
-  /// @brief Alias for the base class
-  using base = graph_data_interface<void_interface>;
-  /// @brief Alias for the shape type
-  using base::shape_t;
-
-  void_graph_interface(void_interface s)
-      : base(mv(s))
-  {}
-  void_graph_interface(shape_of<void_interface> s)
-      : base(mv(s))
-  {}
-
-  void data_allocate(
-    backend_ctx_untyped&,
-    block_allocator_untyped&,
-    const data_place&,
-    instance_id_t,
-    ::std::ptrdiff_t& s,
-    void**,
-    event_list&) override
-  {
-    s = 0;
-  }
-
-  void data_deallocate(
-    backend_ctx_untyped&, block_allocator_untyped&, const data_place&, instance_id_t, void*, event_list&) final
-  {}
-
-  cudaGraphNode_t graph_data_copy(
-    cudaMemcpyKind,
-    instance_id_t,
-    instance_id_t,
-    cudaGraph_t graph,
-    const cudaGraphNode_t* input_nodes,
-    size_t input_cnt) override
-  {
-    cudaGraphNode_t dummy;
-    cuda_safe_call(cudaGraphAddEmptyNode(&dummy, graph, input_nodes, input_cnt));
-    return dummy;
-  }
-
-  bool pin_host_memory(instance_id_t) override
-  {
-    // no-op
-    return false;
-  }
-
-  void unpin_host_memory(instance_id_t) override {}
-};
-
-/**
- * @brief Define how the CUDA stream backend must manipulate this void interface
- *
- * Note that we specialize cuda::experimental::stf::shape_of to avoid ambiguous specialization
- *
- * @extends graphed_interface_of
- */
-template <>
-struct graphed_interface_of<void_interface>
-{
-  using type = void_graph_interface;
 };
 
 /**
