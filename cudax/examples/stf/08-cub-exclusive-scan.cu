@@ -34,41 +34,40 @@ struct OpWrapper
   BinaryOp op;
 };
 
-template <typename T, typename Ctx, typename BinaryOp>
-auto reduce(Ctx& ctx, logical_data<slice<T>> data, BinaryOp&& op, T init_val)
+template <typename Ctx, typename InT, typename OutT, typename BinaryOp>
+void exclusive_scan(
+  Ctx& ctx, logical_data<slice<InT>> in_data, logical_data<slice<OutT>> out_data, BinaryOp&& op, OutT init_val)
 {
-  auto result = ctx.logical_data(shape_of<scalar_view<T>>());
+  size_t nitems = in_data.shape().size();
 
   // Determine temporary device storage requirements
   void* d_temp_storage      = nullptr;
   size_t temp_storage_bytes = 0;
-  cub::DeviceReduce::Reduce(
+  cub::DeviceScan::ExclusiveScan(
     d_temp_storage,
     temp_storage_bytes,
-    (T*) nullptr,
-    (T*) nullptr,
-    data.shape().size(),
+    (InT*) nullptr,
+    (OutT*) nullptr,
     OpWrapper<BinaryOp>(op),
     init_val,
+    in_data.shape().size(),
     0);
 
   auto ltemp = ctx.logical_data(shape_of<slice<char>>(temp_storage_bytes));
 
-  ctx.task(data.read(), result.write(), ltemp.write())
-      ->*[&op, init_val, temp_storage_bytes](cudaStream_t stream, auto d_data, auto d_result, auto d_temp) {
+  ctx.task(in_data.read(), out_data.write(), ltemp.write())
+      ->*[&op, init_val, nitems, temp_storage_bytes](cudaStream_t stream, auto d_in, auto d_out, auto d_temp) {
             size_t d_temp_size = shape(d_temp).size();
-            cub::DeviceReduce::Reduce(
+            cub::DeviceScan::ExclusiveScan(
               (void*) d_temp.data_handle(),
               d_temp_size,
-              (T*) d_data.data_handle(),
-              (T*) d_result.addr,
-              shape(d_data).size(),
+              (InT*) d_in.data_handle(),
+              (OutT*) d_out.data_handle(),
               OpWrapper<BinaryOp>(op),
               init_val,
+              nitems,
               stream);
           };
-
-  return result;
 }
 
 template <typename Ctx>
@@ -78,32 +77,37 @@ void run()
 
   const size_t N = 1024 * 16;
 
-  int *X, ref_tot;
+  ::std::vector<int> X(N);
+  ::std::vector<int> out(N);
 
-  X       = new int[N];
-  ref_tot = 0;
+  ::std::vector<int> ref_out(N);
 
   for (size_t ind = 0; ind < N; ind++)
   {
     X[ind] = rand() % N;
-    ref_tot += X[ind];
+
+    // compute the exclusive sum of X
+    ref_out[ind] = (ind == 0) ? 0 : (X[ind - 1] + ref_out[ind - 1]);
   }
 
-  auto values = ctx.logical_data(X, {N});
+  auto lX   = ctx.logical_data(X.data(), {N});
+  auto lout = ctx.logical_data(out.data(), {N});
 
-  // int should be deduced from "values"...
-  auto lresult = reduce(
+  exclusive_scan(
     ctx,
-    values,
+    lX,
+    lout,
     [] __device__(const int& a, const int& b) {
       return a + b;
     },
     0);
 
-  int result = ctx.wait(lresult);
-  _CCCL_ASSERT(result == ref_tot, "Incorrect result");
-
   ctx.finalize();
+
+  for (size_t i = 0; i < N; i++)
+  {
+    _CCCL_ASSERT(ref_out[i] == out[i], "Incorrect result");
+  }
 }
 
 int main()
