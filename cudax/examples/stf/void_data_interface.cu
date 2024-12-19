@@ -30,12 +30,14 @@ int main()
 
   void_interface sync;
   auto ltask2_res = ctx.logical_data(sync);
+
+  auto ltask3_res = ctx.abstract_logical_data();
   ctx.task(ltask2_res.write(), ltask_res.read())->*[](cudaStream_t, auto, auto) {
 
   };
 
   // Do not pass useless arguments by removing void_interface arguments
-  ctx.task(ltask2_res.write(), ltask_res.read())->*[](cudaStream_t) {
+  ctx.task(ltask3_res.rw(), ltask_res.read())->*[](cudaStream_t) {
 
   };
 

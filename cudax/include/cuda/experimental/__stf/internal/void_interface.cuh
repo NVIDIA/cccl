@@ -109,7 +109,7 @@ private:
   using filtered_tuple = remove_void_interface_t<Data...>;
 
   template <typename F, typename... Args>
-  static auto test(int) -> ::std::bool_constant<::std::is_invocable_v<F, cudaStream_t, Args...>>;
+  static auto test(int) -> ::std::bool_constant<::std::is_invocable_v<F, Args...>>;
 
   template <typename F>
   static auto test(...) -> ::std::false_type;

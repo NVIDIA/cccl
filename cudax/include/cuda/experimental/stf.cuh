@@ -308,6 +308,16 @@ public:
     }
   }
 
+  auto abstract_logical_data()
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return ::std::visit(
+      [&](auto& self) {
+        return self.abstract_logical_data();
+      },
+      payload);
+  }
+
   template <typename T>
   frozen_logical_data<T> freeze(::cuda::experimental::stf::logical_data<T> d,
                                 access_mode m    = access_mode::read,
