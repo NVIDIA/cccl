@@ -46,8 +46,9 @@
 #include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
-#include <cub/iterator/arg_index_input_iterator.cuh>
+#include <cub/device/dispatch/dispatch_streaming_reduce.cuh>
 #include <cub/util_deprecated.cuh>
+#include <cub/util_type.cuh>
 
 #include <thrust/iterator/tabulate_output_iterator.h>
 
@@ -594,44 +595,43 @@ struct DeviceReduce
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMin");
 
-    // Signed integer type for global offsets
-    using OffsetT = ::cuda::std::int64_t;
-
     // The input type
     using InputValueT = cub::detail::value_t<InputIteratorT>;
 
+    // Offset type used within the kernel and to index within one partition
+    using PerPartitionOffsetT = int;
+
+    // Offset type used to index within the total input in the range [d_in, d_in + num_items)
+    using GlobalOffsetT = ::cuda::std::int64_t;
+
     // The value type used for the extremum
     using OutputExtremumT = detail::non_void_value_t<ExtremumOutIteratorT, InputValueT>;
+    using InitT           = OutputExtremumT;
 
-    // The (index, extremum)-tuple type
-    using OutputTupleT = KeyValuePair<OffsetT, OutputExtremumT>;
-
-    // Initial value type
-    using InitT = detail::reduce::empty_problem_init_t<OutputTupleT>;
-
-    // Accumulator type
-    using AccumT = OutputTupleT;
-
-    // Wrapped input iterator to produce index-value <OffsetT, InputT> tuples
-    using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OffsetT, OutputExtremumT>;
-    ArgIndexInputIteratorT d_indexed_in(d_in);
+    // Reduction operation
+    using ReduceOpT = cub::ArgMin;
 
     // Initial value
-    InitT initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::max())};
+    OutputExtremumT initial_value{::cuda::std::numeric_limits<InputValueT>::max()};
 
     // Tabulate output iterator that unzips the result and writes it to the user-provided output iterators
-    auto unzip_result_it = THRUST_NS_QUALIFIER::make_tabulate_output_iterator(
+    auto out_it = THRUST_NS_QUALIFIER::make_tabulate_output_iterator(
       detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_min_out, d_index_out});
 
-    return DispatchReduce<ArgIndexInputIteratorT, decltype(unzip_result_it), OffsetT, cub::ArgMin, InitT, AccumT>::
-      Dispatch(d_temp_storage,
-               temp_storage_bytes,
-               d_indexed_in,
-               unzip_result_it,
-               num_items,
-               cub::ArgMin{},
-               initial_value,
-               stream);
+    return detail::reduce::dispatch_streaming_arg_reduce_t<
+      InputIteratorT,
+      decltype(out_it),
+      PerPartitionOffsetT,
+      GlobalOffsetT,
+      ReduceOpT,
+      InitT>::Dispatch(d_temp_storage,
+                       temp_storage_bytes,
+                       d_in,
+                       out_it,
+                       static_cast<GlobalOffsetT>(num_items),
+                       ReduceOpT{},
+                       initial_value,
+                       stream);
   }
 
   //! @rst
@@ -762,7 +762,7 @@ struct DeviceReduce
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    int num_items,
+    ::cuda::std::int64_t num_items,
     cudaStream_t stream,
     bool debug_synchronous)
   {
@@ -995,45 +995,43 @@ struct DeviceReduce
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE_IF(d_temp_storage, "cub::DeviceReduce::ArgMax");
 
-    // Signed integer type for global offsets
-    // TODO (elstehle): Temporary solution, will be moved to int64_t in https://github.com/NVIDIA/cccl/pull/2647
-    using OffsetT = ::cuda::std::int64_t;
-
     // The input type
     using InputValueT = cub::detail::value_t<InputIteratorT>;
 
+    // Offset type used within the kernel and to index within one partition
+    using PerPartitionOffsetT = int;
+
+    // Offset type used to index within the total input in the range [d_in, d_in + num_items)
+    using GlobalOffsetT = ::cuda::std::int64_t;
+
     // The value type used for the extremum
     using OutputExtremumT = detail::non_void_value_t<ExtremumOutIteratorT, InputValueT>;
+    using InitT           = OutputExtremumT;
 
-    // The (index, extremum)-tuple type
-    using OutputTupleT = KeyValuePair<OffsetT, OutputExtremumT>;
-
-    // Initial value type
-    using InitT = detail::reduce::empty_problem_init_t<OutputTupleT>;
-
-    // Accumulator type
-    using AccumT = OutputTupleT;
-
-    // Wrapped input iterator to produce index-value <OffsetT, InputT> tuples
-    using ArgIndexInputIteratorT = ArgIndexInputIterator<InputIteratorT, OffsetT, OutputExtremumT>;
-    ArgIndexInputIteratorT d_indexed_in(d_in);
+    // Reduction operation
+    using ReduceOpT = cub::ArgMax;
 
     // Initial value
-    InitT initial_value{AccumT(1, ::cuda::std::numeric_limits<InputValueT>::lowest())};
+    OutputExtremumT initial_value{::cuda::std::numeric_limits<InputValueT>::lowest()};
 
     // Tabulate output iterator that unzips the result and writes it to the user-provided output iterators
-    auto unzip_result_it = THRUST_NS_QUALIFIER::make_tabulate_output_iterator(
+    auto out_it = THRUST_NS_QUALIFIER::make_tabulate_output_iterator(
       detail::reduce::unzip_and_write_arg_extremum_op<ExtremumOutIteratorT, IndexOutIteratorT>{d_max_out, d_index_out});
 
-    return DispatchReduce<ArgIndexInputIteratorT, decltype(unzip_result_it), OffsetT, cub::ArgMax, InitT, AccumT>::
-      Dispatch(d_temp_storage,
-               temp_storage_bytes,
-               d_indexed_in,
-               unzip_result_it,
-               num_items,
-               cub::ArgMax{},
-               initial_value,
-               stream);
+    return detail::reduce::dispatch_streaming_arg_reduce_t<
+      InputIteratorT,
+      decltype(out_it),
+      PerPartitionOffsetT,
+      GlobalOffsetT,
+      ReduceOpT,
+      InitT>::Dispatch(d_temp_storage,
+                       temp_storage_bytes,
+                       d_in,
+                       out_it,
+                       static_cast<GlobalOffsetT>(num_items),
+                       ReduceOpT{},
+                       initial_value,
+                       stream);
   }
 
   //! @rst
@@ -1168,7 +1166,7 @@ struct DeviceReduce
     size_t& temp_storage_bytes,
     InputIteratorT d_in,
     OutputIteratorT d_out,
-    int num_items,
+    ::cuda::std::int64_t num_items,
     cudaStream_t stream,
     bool debug_synchronous)
   {
