@@ -120,7 +120,7 @@ C2H_TEST("DeviceTransform::Transform BabelStream add",
   constexpr auto alg = c2h::get<2, TestType>::value;
   FILTER_UNSUPPORTED_ALGS
   const int num_items = GENERATE(0, 1, 15, 16, 17, 127, 128, 129, 4095, 4096, 4097); // edge cases around 16 and 128
-  CAPTURE(c2h::demangle(typeid(type).name()), c2h::demangle(typeid(offset_t).name()), alg, num_items);
+  CAPTURE(c2h::type_name<type>(), c2h::type_name<offset_t>(), alg, num_items);
 
   c2h::device_vector<type> a(num_items);
   c2h::device_vector<type> b(num_items);
@@ -244,7 +244,7 @@ C2H_TEST("DeviceTransform::Transform with multiple inputs works for large number
 C2H_TEST("DeviceTransform::Transform overaligned type", "[device][device_transform]", overaligned_types)
 {
   using type = c2h::get<0, TestType>;
-  CAPTURE(c2h::demangle(typeid(type).name()));
+  CAPTURE(c2h::type_name<type>());
 
   const int num_items = GENERATE(0, 1, 100, 1000);
   c2h::device_vector<int> a(num_items, 3); // put some integers at the front, so SMEM has to handle different alignments
@@ -265,7 +265,7 @@ C2H_TEST("DeviceTransform::Transform huge type", "[device][device_transform]")
 {
   using huge_t = c2h::custom_type_t<c2h::equal_comparable_t, c2h::accumulateable_t, c2h::huge_data<666>::type>;
   static_assert(alignof(huge_t) == 8, "Need a large type with alignment < 16");
-  CAPTURE(c2h::demangle(typeid(huge_t).name()));
+  CAPTURE(c2h::type_name<huge_t>());
 
   const int num_items = GENERATE(0, 1, 100, 1000);
   c2h::device_vector<huge_t> a(num_items);
@@ -341,7 +341,7 @@ C2H_TEST("DeviceTransform::Transform BabelStream nstream",
   using offset_t     = typename c2h::get<1, TestType>;
   constexpr auto alg = c2h::get<2, TestType>::value;
   FILTER_UNSUPPORTED_ALGS
-  CAPTURE(c2h::demangle(typeid(type).name()), c2h::demangle(typeid(offset_t).name()), alg);
+  CAPTURE(c2h::type_name<type>(), c2h::type_name<offset_t>(), alg);
 
   const int num_items = GENERATE(0, 1, 100, 1000, 10000);
   c2h::device_vector<type> a(num_items);
@@ -566,7 +566,7 @@ C2H_TEST("DeviceTransform::Transform buffer start alignment",
 
   constexpr int num_items = 1000;
   const int offset        = GENERATE(1, 2, 4, 8, 16, 32, 64, 128); // global memory is always at least 256 byte aligned
-  CAPTURE(c2h::demangle(typeid(type).name()), offset);
+  CAPTURE(c2h::type_name<type>(), offset);
   c2h::device_vector<type> input(num_items);
   thrust::sequence(input.begin(), input.end());
   c2h::device_vector<type> result(num_items);
