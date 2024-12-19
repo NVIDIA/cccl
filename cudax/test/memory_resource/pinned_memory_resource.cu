@@ -17,6 +17,7 @@
 
 #include <stdexcept>
 
+#include "common_tests.cuh"
 #include "cuda/__memory_resource/resource_ref.h"
 #include <testing.cuh>
 #include <utility.cuh>
@@ -273,4 +274,10 @@ TEST_CASE("pinned_memory_resource comparison", "[memory_resource]")
     CHECK(!(device_async_resource == first));
     CHECK((device_async_resource != first));
   }
+}
+
+TEST_CASE("managed_memory_resource async deallocate", "[memory_resource]")
+{
+  cudax::managed_memory_resource resource{};
+  test_deallocate_async(resource);
 }

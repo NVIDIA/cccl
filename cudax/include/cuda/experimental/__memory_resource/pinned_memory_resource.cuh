@@ -41,6 +41,10 @@
 namespace cuda::experimental
 {
 
+#if !_CCCL_COMPILER(MSVC2017) && _CCCL_CUDACC_AT_LEAST(12, 2)
+
+#else
+
 //! @brief pinned_memory_resource uses `cudaMallocHost` / `cudaFreeHost` for allocation / deallocation.
 class pinned_memory_resource
 {
@@ -48,7 +52,7 @@ private:
   unsigned int __flags_ = cudaHostAllocDefault;
 
   static constexpr unsigned int __available_flags =
-    cudaHostAllocDefault | cudaHostAllocPortable | cudaHostAllocMapped | cudaHostAllocWriteCombined;
+    cudaHostAllocDefault | cudaHostAllocPortable | cudaHostAllocWriteCombined;
 
 public:
   constexpr pinned_memory_resource(const unsigned int __flags = cudaHostAllocDefault) noexcept
@@ -150,7 +154,7 @@ public:
   {
     return __flags_ == __other.__flags_;
   }
-#if _CCCL_STD_VER <= 2017
+#  if _CCCL_STD_VER <= 2017
   //! @brief Equality comparison with another \c pinned_memory_resource.
   //! @param __other The other \c pinned_memory_resource.
   //! @return Whether both \c pinned_memory_resource were constructed with different flags.
@@ -158,9 +162,9 @@ public:
   {
     return __flags_ != __other.__flags_;
   }
-#endif // _CCCL_STD_VER <= 2017
+#  endif // _CCCL_STD_VER <= 2017
 
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   template <class _Resource>
   _CCCL_NODISCARD bool __equal_to(_Resource const& __rhs) const noexcept
   {
@@ -179,7 +183,7 @@ public:
       return false;
     }
   }
-#  if _CCCL_STD_VER >= 2020
+#    if _CCCL_STD_VER >= 2020
   //! @brief Equality comparison between a \c pinned_memory_resource and another resource
   //! @param __rhs The resource to compare to
   //! @return If the underlying types are equality comparable, returns the result of equality comparison of both
@@ -190,7 +194,7 @@ public:
   {
     return this->__equal_to(__rhs);
   }
-#  else // ^^^ C++20 ^^^ / vvv C++17
+#    else // ^^^ C++20 ^^^ / vvv C++17
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator==(pinned_memory_resource const& __lhs, _Resource const& __rhs) noexcept
     _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<pinned_memory_resource, _Resource>)
@@ -218,13 +222,13 @@ public:
   {
     return !__rhs.__equal_to(__lhs);
   }
-#  endif // _CCCL_STD_VER <= 2017
+#    endif // _CCCL_STD_VER <= 2017
 
   //! @brief Enables the \c device_accessible property
   friend constexpr void get_property(pinned_memory_resource const&, device_accessible) noexcept {}
   //! @brief Enables the \c host_accessible property
   friend constexpr void get_property(pinned_memory_resource const&, host_accessible) noexcept {}
-#endif // _CCCL_DOXYGEN_INVOKED
+#  endif // _CCCL_DOXYGEN_INVOKED
 
   //! @brief Checks whether the passed in alignment is valid
   static constexpr bool __is_valid_alignment(const size_t __alignment) noexcept
@@ -233,8 +237,11 @@ public:
         && (_CUDA_VMR::default_cuda_malloc_host_alignment % __alignment == 0);
   }
 };
+
+#endif // !_CCCL_COMPILER(MSVC2017) && _CCCL_CUDACC_AT_LEAST(12, 2)
+
 static_assert(_CUDA_VMR::async_resource_with<pinned_memory_resource, device_accessible>, "");
-static_assert(_CUDA_VMR::async_resource_with<pinned_memory_resource, device_accessible>, "");
+static_assert(_CUDA_VMR::async_resource_with<pinned_memory_resource, host_accessible>, "");
 
 } // namespace cuda::experimental
 

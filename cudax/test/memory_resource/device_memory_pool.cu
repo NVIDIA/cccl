@@ -476,10 +476,10 @@ TEST_CASE("device_memory_pool accessors", "[memory_resource]")
         cudax::device_memory_pool pool{cudax::devices[0]};
         CUDAX_CHECK(pool.is_accessible_from(cudax::devices[0]));
 
-        pool.enable_peer_access_from(peers);
+        pool.enable_access_from(peers);
         CUDAX_CHECK(pool.is_accessible_from(peers.front()));
 
-        pool.disable_peer_access_from(peers.front());
+        pool.disable_access_from(peers.front());
         CUDAX_CHECK(!pool.is_accessible_from(peers.front()));
 
         if (peers.size() > 1)
@@ -488,5 +488,12 @@ TEST_CASE("device_memory_pool accessors", "[memory_resource]")
         }
       }
     }
+  }
+
+  SECTION("pinned")
+  {
+#if _CCCL_CUDACC_AT_LEAST(12, 2)
+    cudax::pinned_memory_pool pool{};
+#endif
   }
 }
