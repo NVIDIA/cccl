@@ -32,6 +32,7 @@
 #include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/is_void.h>
 #include <cuda/std/__type_traits/nat.h>
+#include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__utility/declval.h>
 #include <cuda/std/cstddef>
 
@@ -40,7 +41,7 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 // We need to detect whether there is already a free function swap that would end up being ambiguous.
 // This can happen when a type pulls in both namespace std and namespace cuda::std via ADL.
 // In that case we are always safe to just not do anything because that type must be host only.
-// However, we must be carefull to ensure that we still create the overload if there is just a hidden friend swap
+// However, we must be careful to ensure that we still create the overload if there is just a hidden friend swap
 namespace __detect_hidden_friend_swap
 {
 // This will intentionally create an ambiguity with std::swap if that is find-able by ADL. But it will not interfere
@@ -100,8 +101,11 @@ using __swap_result_t _CCCL_NODEBUG_ALIAS =
   enable_if_t<__detect_adl_swap::__can_define_swap<_Tp>::value && _CCCL_TRAIT(is_move_constructible, _Tp)
               && _CCCL_TRAIT(is_move_assignable, _Tp)>;
 
+// we use type_identity_t<_Tp> as second parameter, to avoid ambiguity with std::swap, which will thus be preferred by
+// overload resolution (which is ok since std::swap is only considered when explicitly called, or found by ADL for types
+// from std::)
 template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __swap_result_t<_Tp> swap(_Tp& __x, _Tp& __y) noexcept(
+_LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 __swap_result_t<_Tp> swap(_Tp& __x, type_identity_t<_Tp>& __y) noexcept(
   _CCCL_TRAIT(is_nothrow_move_constructible, _Tp) && _CCCL_TRAIT(is_nothrow_move_assignable, _Tp));
 
 template <class _Tp, size_t _Np>

@@ -188,86 +188,18 @@ void jacobistepvort(
           };
 }
 
-template <typename T>
-T transfer_host(context& ctx, logical_data<slice<T>>& ldata)
+double deltasq(context& ctx, logical_data<slice<double, 2>> lnewarr, logical_data<slice<double, 2>> loldarr)
 {
-  T out;
+  auto ldsq = ctx.logical_data(shape_of<scalar_view<double>>()).set_symbol("tmp_accumulator");
 
-  bool is_graph = ctx.is_graph_ctx();
+  ctx.parallel_for(lnewarr.shape(), ldsq.reduce(reducer::sum<double>{}), lnewarr.read(), loldarr.read())
+      .set_symbol("deltasq")
+      ->*[] __device__(size_t i, size_t j, auto& dsq, auto newarr, auto oldarr) {
+            double tmp = newarr(i, j) - oldarr(i, j);
+            dsq += tmp * tmp;
+          };
 
-  if (is_graph)
-  {
-    ctx.host_launch(ldata.read()).set_symbol("transfer_host")->*[&](auto data) {
-      out = data(0);
-    };
-
-    /* This forces the completion of the host callback, so that the host
-     * thread can use the content for dynamic control flow */
-    cudaStreamSynchronize(ctx.task_fence());
-  }
-  else
-  {
-    ctx.task(exec_place::host, ldata.read()).set_symbol("transfer_host")->*[&](cudaStream_t stream, auto data) {
-      cuda_safe_call(cudaStreamSynchronize(stream));
-      out = data(0);
-    };
-  }
-
-  return out;
-}
-
-double
-deltasq(context& ctx, logical_data<slice<double, 2>> lnewarr, logical_data<slice<double, 2>> loldarr, int m, int n)
-{
-  auto ldsq = ctx.logical_data(shape_of<slice<double>>({1})).set_symbol("tmp_accumulator");
-
-  //
-  //    for (i = 1; i <= m; i++) {
-  //        for (j = 1; j <= n; j++) {
-  //            double tmp = newarr[i * (m + 2) + j] - oldarr[i * (m + 2) + j];
-  //            dsq += tmp * tmp;
-  //        }
-  //    }
-
-  auto spec = con(con<128>(hw_scope::thread));
-  ctx.launch(spec, ldsq.write(), lnewarr.read(), loldarr.read()).set_symbol("deltasq")->*
-    [m, n] __device__(auto th, auto dsq, auto newarr, auto oldarr) {
-      if (th.rank() == 0)
-      {
-        dsq(0) = 0.0;
-      }
-      th.sync();
-
-      // Each thread computes the sum of elements assigned to it
-      double local_sum = 0.0;
-      for (auto [i, j] :
-           th.apply_partition(box<2>({1, m + 1}, {1, n + 1}), std::tuple<blocked_partition, cyclic_partition>()))
-      {
-        double tmp = newarr(i, j) - oldarr(i, j);
-        local_sum += tmp * tmp;
-      }
-
-      auto ti = th.inner();
-
-      __shared__ double block_sum[th.static_width(1)];
-      block_sum[ti.rank()] = local_sum;
-
-      for (size_t s = ti.size() / 2; s > 0; s /= 2)
-      {
-        if (ti.rank() < s)
-        {
-          block_sum[ti.rank()] += block_sum[ti.rank() + s];
-        }
-        ti.sync();
-      }
-
-      if (ti.rank() == 0)
-      {
-        atomicAdd(&dsq(0), block_sum[0]);
-      }
-    };
-
-  return transfer_host(ctx, ldsq);
+  return ctx.wait(ldsq);
 }
 
 void boundarypsi(context& ctx, logical_data<slice<double, 2>> lpsi, int m, int /*n*/, int b, int h, int w)
@@ -422,44 +354,14 @@ int main(int argc, char** argv)
   boundarypsi(ctx, lpsi, m, n, b, h, w);
 
   // compute normalisation factor for error
-  auto lbnorm = ctx.logical_data(shape_of<slice<double>>({1})).set_symbol("bnorm");
+  auto lbnorm = ctx.logical_data(shape_of<scalar_view<double>>()).set_symbol("bnorm");
 
   nvtxRangePush("Compute_Normalization");
 
-  // bnorm += psi * psi
-  auto spec = con(con<32>());
-  ctx.launch(spec, lbnorm.write(), lpsi.read()).set_symbol("Compute_Normalization")
-      ->*[] __device__(auto th, auto bnorm, auto psi) {
-            if (th.rank() == 0)
-            {
-              bnorm(0) = 0.0;
-            }
-            th.sync();
-            // Each thread computes the sum of elements assigned to it
-            double local_sum = 0.0;
-            for (auto [i, j] : th.apply_partition(shape(psi)))
-            {
-              local_sum += psi(i, j) * psi(i, j);
-            }
-
-            auto ti = th.inner();
-
-            __shared__ double block_sum[th.static_width(1)];
-            block_sum[ti.rank()] = local_sum;
-
-            for (size_t s = ti.size() / 2; s > 0; s /= 2)
-            {
-              if (ti.rank() < s)
-              {
-                block_sum[ti.rank()] += block_sum[ti.rank() + s];
-              }
-              ti.sync();
-            }
-
-            if (ti.rank() == 0)
-            {
-              atomicAdd(&bnorm(0), block_sum[0]);
-            }
+  // bnorm = psi * psi
+  ctx.parallel_for(lpsi.shape(), lpsi.read(), lbnorm.reduce(reducer::sum<double>{}))
+      ->*[] __device__(size_t i, size_t j, auto psi, auto& bnorm) {
+            bnorm += psi(i, j) * psi(i, j);
           };
 
   if (!irrotational)
@@ -468,37 +370,13 @@ int main(int argc, char** argv)
     boundaryzet(ctx, lzet, lpsi, m, n);
 
     // update normalisation
-    ctx.launch(spec, lbnorm.rw(), lzet.read()).set_symbol("Compute_Normalization")
-        ->*[] __device__(auto th, auto bnorm, auto zet) {
-              // Each thread computes the sum of elements assigned to it
-              double local_sum = 0.0;
-              for (auto [i, j] : th.apply_partition(shape(zet)))
-              {
-                local_sum += zet(i, j) * zet(i, j);
-              }
-
-              auto ti = th.inner();
-
-              __shared__ double block_sum[th.static_width(1)];
-              block_sum[ti.rank()] = local_sum;
-
-              for (size_t s = ti.size() / 2; s > 0; s /= 2)
-              {
-                if (ti.rank() < s)
-                {
-                  block_sum[ti.rank()] += block_sum[ti.rank() + s];
-                }
-                ti.sync();
-              }
-
-              if (ti.rank() == 0)
-              {
-                atomicAdd(&bnorm(0), block_sum[0]);
-              }
+    ctx.parallel_for(lzet.shape(), lzet.read(), lbnorm.reduce(reducer::sum<double>{}, no_init{}))
+        ->*[] __device__(size_t i, size_t j, auto zet, auto& bnorm_zet) {
+              bnorm_zet += zet(i, j) * zet(i, j);
             };
   }
 
-  double bnorm = transfer_host(ctx, lbnorm);
+  double bnorm = ctx.wait(lbnorm);
   bnorm        = sqrt(bnorm);
 
   // begin iterative Jacobi loop
@@ -525,11 +403,11 @@ int main(int argc, char** argv)
     bool compute_error = (iter == numiter) || (checkerr && (iter % printfreq == 0));
     if (compute_error)
     {
-      error = deltasq(ctx, lpsitmp, lpsi, m, n);
+      error = deltasq(ctx, lpsitmp, lpsi);
 
       if (!irrotational)
       {
-        error += deltasq(ctx, lzettmp, lzet, m, n);
+        error += deltasq(ctx, lzettmp, lzet);
       }
 
       error = sqrt(error);

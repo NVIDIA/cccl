@@ -338,7 +338,7 @@ try
 }
 catch (std::bad_alloc& e)
 {
-  std::cerr << "Skipping segmented sort test, unsufficient GPU memory. " << e.what() << "\n";
+  std::cerr << "Skipping segmented sort test, insufficient GPU memory. " << e.what() << "\n";
 }
 
 C2H_TEST("DeviceSegmentedSort::SortPairs: very large segments", "[pairs][segmented][sort][device]", all_offset_types)
@@ -421,7 +421,7 @@ try
 }
 catch (std::bad_alloc& e)
 {
-  std::cerr << "Skipping segmented sort test, unsufficient GPU memory. " << e.what() << "\n";
+  std::cerr << "Skipping segmented sort test, insufficient GPU memory. " << e.what() << "\n";
 }
 
 #endif // defined(CCCL_TEST_ENABLE_LARGE_SEGMENTED_SORT)

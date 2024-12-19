@@ -69,7 +69,7 @@ class stream_ctx;
 namespace reserved
 {
 
-template <typename Ctx, typename shape_t, typename partitioner_t, typename... Deps>
+template <typename Ctx, typename shape_t, typename partitioner_t, typename... DepsAndOps>
 class parallel_for_scope;
 
 template <typename Ctx, typename thread_hierarchy_spec_t, typename... Deps>
@@ -120,6 +120,9 @@ public:
   template <typename Fun>
   void operator->*(Fun&& f)
   {
+    auto& dot        = *ctx.get_dot();
+    auto& statistics = reserved::task_statistics::instance();
+
     auto t = ctx.task(exec_place::host);
     t.add_deps(deps);
     if (!symbol.empty())
@@ -127,13 +130,48 @@ public:
       t.set_symbol(symbol);
     }
 
+    cudaEvent_t start_event, end_event;
+    const bool record_time = t.schedule_task() || statistics.is_calibrating_to_file();
+
     t.start();
+
+    if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+    {
+      if (record_time)
+      {
+        cuda_safe_call(cudaEventCreate(&start_event));
+        cuda_safe_call(cudaEventCreate(&end_event));
+        cuda_safe_call(cudaEventRecord(start_event, t.get_stream()));
+      }
+    }
+
     SCOPE(exit)
     {
-      t.end();
+      t.end_uncleared();
+      if constexpr (::std::is_same_v<Ctx, stream_ctx>)
+      {
+        if (record_time)
+        {
+          cuda_safe_call(cudaEventRecord(end_event, t.get_stream()));
+          cuda_safe_call(cudaEventSynchronize(end_event));
+
+          float milliseconds = 0;
+          cuda_safe_call(cudaEventElapsedTime(&milliseconds, start_event, end_event));
+
+          if (dot.is_tracing())
+          {
+            dot.template add_vertex_timing<typename Ctx::task_type>(t, milliseconds, -1);
+          }
+
+          if (statistics.is_calibrating())
+          {
+            statistics.log_task_time(t, milliseconds);
+          }
+        }
+      }
+      t.clear();
     };
 
-    auto& dot = *ctx.get_dot();
     if (dot.is_tracing())
     {
       dot.template add_vertex<typename Ctx::task_type, logical_data_untyped>(t);
@@ -584,7 +622,7 @@ protected:
 
     /**
      * @brief Detach all allocators previously attached in this context to
-     * release ressources that might have been cached
+     * release resources that might have been cached
      */
     void detach_allocators(backend_ctx_untyped& bctx)
     {
@@ -1114,28 +1152,28 @@ public:
    * parallel_for : apply an operation over a shaped index space
    */
   template <typename S, typename... Deps>
-  auto parallel_for(exec_place e_place, S shape, task_dep<Deps>... deps)
+  auto parallel_for(exec_place e_place, S shape, Deps... deps)
   {
     return reserved::parallel_for_scope<Engine, S, null_partition, Deps...>(self(), mv(e_place), mv(shape), mv(deps)...);
   }
 
   template <typename partitioner_t, typename S, typename... Deps>
-  auto parallel_for(partitioner_t, exec_place e_place, S shape, task_dep<Deps>... deps)
+  auto parallel_for(partitioner_t, exec_place e_place, S shape, Deps... deps)
   {
     return reserved::parallel_for_scope<Engine, S, partitioner_t, Deps...>(self(), mv(e_place), mv(shape), mv(deps)...);
   }
 
   template <typename S, typename... Deps>
-  auto parallel_for(exec_place_grid e_place, S shape, task_dep<Deps>... deps) = delete;
+  auto parallel_for(exec_place_grid e_place, S shape, Deps... deps) = delete;
 
   template <typename partitioner_t, typename S, typename... Deps>
-  auto parallel_for(partitioner_t p, exec_place_grid e_place, S shape, task_dep<Deps>... deps)
+  auto parallel_for(partitioner_t p, exec_place_grid e_place, S shape, Deps... deps)
   {
     return parallel_for(mv(p), exec_place(mv(e_place)), mv(shape), mv(deps)...);
   }
 
-  template <typename S, typename... Deps>
-  auto parallel_for(S shape, task_dep<Deps>... deps)
+  template <typename S, typename... Deps, typename... Ops, bool... flags>
+  auto parallel_for(S shape, task_dep<Deps, Ops, flags>... deps)
   {
     return parallel_for(self().default_exec_place(), mv(shape), mv(deps)...);
   }

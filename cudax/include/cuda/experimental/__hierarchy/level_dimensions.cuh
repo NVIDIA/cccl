@@ -129,9 +129,9 @@ struct level_dimensions
   _CCCL_HOST_DEVICE constexpr level_dimensions()
       : dims(){};
 
-#  if defined(__cpp_three_way_comparison) && __cpp_three_way_comparison >= 201907
-  _CCCL_NODISCARD _CUDAX_API constexpr bool operator==(const level_dimensions&) const noexcept = default;
-#  else
+#  if !defined(_CCCL_NO_THREE_WAY_COMPARISON) && !_CCCL_COMPILER(MSVC, <, 19, 39) && !_CCCL_COMPILER(GCC, <, 12)
+  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr bool operator==(const level_dimensions&) const noexcept = default;
+#  else // ^^^ !_CCCL_NO_THREE_WAY_COMPARISON ^^^ / vvv _CCCL_NO_THREE_WAY_COMPARISON vvv
   _CCCL_NODISCARD_FRIEND _CUDAX_API constexpr bool
   operator==(const level_dimensions& left, const level_dimensions& right) noexcept
   {
@@ -143,7 +143,7 @@ struct level_dimensions
   {
     return left.dims != right.dims;
   }
-#  endif
+#  endif // _CCCL_NO_THREE_WAY_COMPARISON
 };
 
 /**

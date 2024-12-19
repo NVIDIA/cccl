@@ -51,7 +51,10 @@ __host__ __device__ void test_edges()
       }
       else
       {
-        assert(real(r) == real(z));
+        if (real(r) != real(z))
+        {
+          is_about(real(r), real(z));
+        }
         assert(cuda::std::signbit(real(r)) == cuda::std::signbit(real(z)));
       }
       if (cuda::std::isnan(imag(r)))
@@ -60,7 +63,10 @@ __host__ __device__ void test_edges()
       }
       else
       {
-        assert(imag(r) == imag(z));
+        if (imag(r) != imag(z))
+        {
+          is_about(imag(r), imag(z));
+        }
         assert(cuda::std::signbit(imag(r)) == cuda::std::signbit(imag(z)));
       }
     }

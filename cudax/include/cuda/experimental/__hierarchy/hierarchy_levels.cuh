@@ -115,7 +115,7 @@ struct thread_level;
 /*
   Types to represent CUDA threads hierarchy levels
   All metadata about the hierarchy level goes here including certain forward progress information
-  or what adjecent levels are valid in the hierarchy for validation.
+  or what adjacent levels are valid in the hierarchy for validation.
 */
 
 /**

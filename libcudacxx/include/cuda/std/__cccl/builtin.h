@@ -63,17 +63,17 @@
 #define _CCCL_CHECK_BUILTIN(__x) (_CCCL_HAS_BUILTIN(__##__x) || _CCCL_HAS_KEYWORD(__##__x) || _CCCL_HAS_FEATURE(__x))
 
 // NVCC has issues with function pointers
-#if _CCCL_HAS_BUILTIN(__add_lvalue_reference) && defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_HAS_BUILTIN(__add_lvalue_reference) && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_ADD_LVALUE_REFERENCE(...) __add_lvalue_reference(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__add_lvalue_reference)
 
 // NVCC has issues with function pointers
-#if _CCCL_HAS_BUILTIN(__add_pointer) && defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_HAS_BUILTIN(__add_pointer) && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_ADD_POINTER(...) __add_pointer(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__add_pointer)
 
 // NVCC has issues with function pointers
-#if _CCCL_HAS_BUILTIN(__add_rvalue_reference) && defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_HAS_BUILTIN(__add_rvalue_reference) && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_ADD_RVALUE_REFERENCE(...) __add_rvalue_reference(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__add_rvalue_reference)
 
@@ -125,6 +125,30 @@
 #if _CCCL_COMPILER(CLANG, <, 10) || _CCCL_CUDACC_BELOW(11, 7)
 #  undef _CCCL_BUILTIN_BIT_CAST
 #endif // clang < 10 || nvcc < 11.7
+
+#if _CCCL_CHECK_BUILTIN(builtin_bswap16)
+#  define _CCCL_BUILTIN_BSWAP16(...) __builtin_bswap16(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_bswap16)
+
+#if _CCCL_CHECK_BUILTIN(builtin_bswap32)
+#  define _CCCL_BUILTIN_BSWAP32(...) __builtin_bswap32(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_bswap32)
+
+#if _CCCL_CHECK_BUILTIN(builtin_bswap64)
+#  define _CCCL_BUILTIN_BSWAP64(...) __builtin_bswap64(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_bswap64)
+
+#if _CCCL_CHECK_BUILTIN(builtin_bswap128)
+#  define _CCCL_BUILTIN_BSWAP128(...) __builtin_bswap128(__VA_ARGS__)
+#endif // _CCCL_CHECK_BUILTIN(builtin_bswap128)
+
+// NVCC cannot handle builtins for bswap
+#if _CCCL_CUDA_COMPILER(NVCC)
+#  undef _CCCL_BUILTIN_BSWAP16
+#  undef _CCCL_BUILTIN_BSWAP32
+#  undef _CCCL_BUILTIN_BSWAP64
+#  undef _CCCL_BUILTIN_BSWAP128
+#endif // _CCCL_CUDA_COMPILER(NVCC)
 
 #if _CCCL_HAS_BUILTIN(__builtin_COLUMN) || _CCCL_COMPILER(MSVC, >=, 19, 27)
 #  define _CCCL_BUILTIN_COLUMN() __builtin_COLUMN()
@@ -211,9 +235,9 @@
 #endif // _CCCL_CHECK_BUILTIN(builtin_is_constant_evaluated)
 
 // NVCC and NVRTC in C++11 mode freaks out about `__builtin_is_constant_evaluated`.
-#if _CCCL_STD_VER < 2014 && (defined(_CCCL_CUDA_COMPILER_NVCC) || _CCCL_COMPILER(NVRTC) || _CCCL_COMPILER(NVHPC))
+#if _CCCL_STD_VER < 2014 && (_CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC) || _CCCL_COMPILER(NVHPC))
 #  undef _CCCL_BUILTIN_IS_CONSTANT_EVALUATED
-#endif // _CCCL_STD_VER < 2014 && _CCCL_CUDA_COMPILER_NVCC
+#endif // _CCCL_STD_VER < 2014 && _CCCL_CUDA_COMPILER(NVCC)
 
 #if _CCCL_CHECK_BUILTIN(builtin_isfinite) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(NVRTC)
 #  define _CCCL_BUILTIN_ISFINITE(...) __builtin_isfinite(__VA_ARGS__)
@@ -272,11 +296,11 @@
 
 // Below 11.7 nvcc treats the builtin as a host only function
 // clang-cuda fails with fatal error: error in backend: Undefined external symbol "logf"
-#if _CCCL_CUDACC_BELOW(11, 7) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
 #  undef _CCCL_BUILTIN_LOGF
 #  undef _CCCL_BUILTIN_LOG
 #  undef _CCCL_BUILTIN_LOGL
-#endif // _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER_CLANG
+#endif // _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
 
 #if _CCCL_CHECK_BUILTIN(builtin_log10) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_LOG10F(...) __builtin_log10f(__VA_ARGS__)
@@ -286,7 +310,7 @@
 
 // Below 11.7 nvcc treats the builtin as a host only function
 // clang-cuda fails with fatal error: error in backend: Undefined external symbol "log10f"
-#if _CCCL_CUDACC_BELOW(11, 7) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
 #  undef _CCCL_BUILTIN_LOG10F
 #  undef _CCCL_BUILTIN_LOG10
 #  undef _CCCL_BUILTIN_LOG10L
@@ -300,11 +324,11 @@
 
 // Below 11.7 nvcc treats the builtin as a host only function
 // clang-cuda fails with fatal error: error in backend: Undefined external symbol "ilogb"
-#if _CCCL_CUDACC_BELOW(11, 7) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
 #  undef _CCCL_BUILTIN_ILOGBF
 #  undef _CCCL_BUILTIN_ILOGB
 #  undef _CCCL_BUILTIN_ILOGBL
-#endif // _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER_CLANG
+#endif // _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
 
 #if _CCCL_CHECK_BUILTIN(builtin_log1p) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_LOG1PF(...) __builtin_log1pf(__VA_ARGS__)
@@ -314,11 +338,11 @@
 
 // Below 11.7 nvcc treats the builtin as a host only function
 // clang-cuda fails with fatal error: error in backend: Undefined external symbol "log1p"
-#if _CCCL_CUDACC_BELOW(11, 7) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
 #  undef _CCCL_BUILTIN_LOG1PF
 #  undef _CCCL_BUILTIN_LOG1P
 #  undef _CCCL_BUILTIN_LOG1PL
-#endif // _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER_CLANG
+#endif // _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
 
 #if _CCCL_CHECK_BUILTIN(builtin_log2) || _CCCL_COMPILER(GCC)
 #  define _CCCL_BUILTIN_LOG2F(...) __builtin_log2f(__VA_ARGS__)
@@ -328,7 +352,7 @@
 
 // Below 11.7 nvcc treats the builtin as a host only function
 // clang-cuda fails with fatal error: error in backend: Undefined external symbol "log2f"
-#if _CCCL_CUDACC_BELOW(11, 7) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
 #  undef _CCCL_BUILTIN_LOG2F
 #  undef _CCCL_BUILTIN_LOG2
 #  undef _CCCL_BUILTIN_LOG2L
@@ -342,14 +366,14 @@
 
 // Below 11.7 nvcc treats the builtin as a host only function
 // clang-cuda fails with fatal error: error in backend: Undefined external symbol "logb"
-#if _CCCL_CUDACC_BELOW(11, 7) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
 #  undef _CCCL_BUILTIN_LOGBF
 #  undef _CCCL_BUILTIN_LOGB
 #  undef _CCCL_BUILTIN_LOGBL
-#endif // _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER_CLANG
+#endif // _CCCL_CUDACC_BELOW(11, 7) || _CCCL_CUDA_COMPILER(CLANG)
 
 #if _CCCL_CHECK_BUILTIN(__builtin_operator_new) && _CCCL_CHECK_BUILTIN(__builtin_operator_delete) \
-  && defined(_CCCL_CUDA_COMPILER_CLANG)
+  && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_OPERATOR_DELETE(...) __builtin_operator_delete(__VA_ARGS__)
 #  define _CCCL_BUILTIN_OPERATOR_NEW(...)    __builtin_operator_new(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(__builtin_operator_new) && _CCCL_CHECK_BUILTIN(__builtin_operator_delete)
@@ -363,7 +387,7 @@
 #  undef _CCCL_BUILTIN_SIGNBIT
 #endif // _CCCL_CUDACC_BELOW(11, 7)
 
-#if _CCCL_HAS_BUILTIN(__decay) && defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_HAS_BUILTIN(__decay) && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_DECAY(...) __decay(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__decay) && clang-cuda
 
@@ -469,9 +493,9 @@
 #endif // _CCCL_CHECK_BUILTIN(is_function)
 
 // All current versions of NVCC give wrong results with __is_function
-#if defined(_CCCL_CUDA_COMPILER_NVCC)
+#if _CCCL_CUDA_COMPILER(NVCC)
 #  undef _CCCL_BUILTIN_IS_FUNCTION
-#endif // _CCCL_CUDA_COMPILER_NVCC
+#endif // _CCCL_CUDA_COMPILER(NVCC)
 
 #if _CCCL_CHECK_BUILTIN(is_fundamental)
 #  define _CCCL_BUILTIN_IS_FUNDAMENTAL(...) __is_fundamental(__VA_ARGS__)
@@ -560,7 +584,7 @@
 #  define _CCCL_BUILTIN_IS_RVALUE_REFERENCE(...) __is_rvalue_reference(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__is_rvalue_reference)
 
-#if _CCCL_CHECK_BUILTIN(is_same) && !defined(_CCCL_CUDA_COMPILER_NVCC)
+#if _CCCL_CHECK_BUILTIN(is_same) && !_CCCL_CUDA_COMPILER(NVCC)
 #  define _CCCL_BUILTIN_IS_SAME(...) __is_same(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(is_same)
 
@@ -640,37 +664,37 @@
 #  define _CCCL_BUILTIN_MAKE_UNSIGNED(...) __make_unsigned(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__make_unsigned)
 
-#if _CCCL_HAS_BUILTIN(__remove_all_extents) && defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_HAS_BUILTIN(__remove_all_extents) && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_REMOVE_ALL_EXTENTS(...) __remove_all_extents(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__remove_all_extents)
 
-#if _CCCL_HAS_BUILTIN(__remove_const) && defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_HAS_BUILTIN(__remove_const) && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_REMOVE_CONST(...) __remove_const(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__remove_const)
 
-#if _CCCL_HAS_BUILTIN(__remove_cv) && defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_HAS_BUILTIN(__remove_cv) && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_REMOVE_CV(...) __remove_cv(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__remove_cv)
 
-#if _CCCL_HAS_BUILTIN(__remove_cvref) && defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_HAS_BUILTIN(__remove_cvref) && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_REMOVE_CVREF(...) __remove_cvref(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__remove_cvref)
 
-#if _CCCL_HAS_BUILTIN(__remove_extent) && defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_HAS_BUILTIN(__remove_extent) && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_REMOVE_EXTENT(...) __remove_extent(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__remove_extent)
 
-#if _CCCL_HAS_BUILTIN(__remove_pointer) && defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_HAS_BUILTIN(__remove_pointer) && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_REMOVE_POINTER(...) __remove_pointer(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__remove_pointer)
 
 #if _CCCL_HAS_BUILTIN(__remove_reference)
 #  define _CCCL_BUILTIN_REMOVE_REFERENCE_T(...) __remove_reference(__VA_ARGS__)
-#elif _CCCL_HAS_BUILTIN(__remove_reference_t) && defined(_CCCL_CUDA_COMPILER_CLANG)
+#elif _CCCL_HAS_BUILTIN(__remove_reference_t) && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_REMOVE_REFERENCE_T(...) __remove_reference_t(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__remove_reference_t)
 
-#if _CCCL_HAS_BUILTIN(__remove_volatile) && defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_HAS_BUILTIN(__remove_volatile) && _CCCL_CUDA_COMPILER(CLANG)
 #  define _CCCL_BUILTIN_REMOVE_VOLATILE(...) __remove_volatile(__VA_ARGS__)
 #endif // _CCCL_HAS_BUILTIN(__remove_volatile)
 

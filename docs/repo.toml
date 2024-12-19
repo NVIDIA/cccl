@@ -122,7 +122,7 @@ doxygen_aliases = [
   "devicestorageNCP=This operation requires a relatively small allocation of temporary device storage that is ``O(N/C + P)``, where ``N`` is the length of the input, ``C`` is the number of concurrent threads that can be actively scheduled on each streaming multiprocessor (typically several thousand), and ``P`` is the number of streaming multiprocessors on the device.",
   "cdp_class{1}= - Dynamic parallelism. \\1 methods can be called within kernel code on devices in which CUDA dynamic parallelism is supported.",
   "iterator=(may be a simple pointer type)",
-  "offset_size1=(Consider using 32-bit values as offsets/lengths/etc. For example, ``int`` will typically yeild better performance than ``size_t`` in 64-bit memory mode.)",
+  "offset_size1=(Consider using 32-bit values as offsets/lengths/etc. For example, ``int`` will typically yield better performance than ``size_t`` in 64-bit memory mode.)",
   "offset_size2=Careful consideration should be given to the size of integer types used for offsets and lengths. Many (if not most) scenarios will only require 32-bit offsets (e.g., ``int``). 64-bit offset types (e.g., ``size_t`` on 64-bit memory mode) can consume a significant amount of thread storage resources, adversely affecting processor occupancy and performance.",
   "rowmajor=For multi-dimensional blocks, threads are linearly ranked in row-major order.",
   "blocked=Assumes a :ref:`blocked arrangement <flexible-data-arrangement>` of (*block-threads* * *items-per-thread*) items across the thread block, where *thread*\\ :sub:`i` owns the *i*\\ :sup:`th` range of *items-per-thread* contiguous items. For multi-dimensional thread blocks, a row-major thread ordering is assumed.",
@@ -322,8 +322,9 @@ social_media     = [
 autodoc.mock_imports = [
     "numba",
     "pynvjitlink",
-    "cuda.nvrtc",
-    "llvmlite"
+    "cuda.bindings",
+    "llvmlite",
+    "numpy",
 ]
 
 enhanced_search_enabled = true
@@ -345,8 +346,9 @@ social_media     = [
 autodoc.mock_imports = [
     "numba",
     "pynvjitlink",
-    "cuda.nvrtc",
-    "llvmlite"
+    "cuda.bindings",
+    "llvmlite",
+    "numpy",
 ]
 
 enhanced_search_enabled = true

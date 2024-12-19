@@ -529,10 +529,10 @@ struct __tuple_variadic_constructor_tag
 // __tuple_impl
 
 template <class _Indx, class... _Tp>
-struct __tuple_impl;
+struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl;
 
 template <size_t... _Indx, class... _Tp>
-struct _LIBCUDACXX_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...>
+struct _CCCL_DECLSPEC_EMPTY_BASES __tuple_impl<__tuple_indices<_Indx...>, _Tp...>
     : public __tuple_leaf<_Indx, _Tp>...
     , public __sfinae_base<true,
                            true,
@@ -826,14 +826,6 @@ public:
       : __base_(allocator_arg_t(), __a, __tuple_variadic_constructor_tag{}, __t...)
   {}
 
-#if defined(_LIBCUDACXX_NO_TUPLE_NOEXCEPT)
-  template <class... _Vp>
-  using __base_noexcept_constructible = false_type;
-#else
-  template <class... _Vp>
-  using __base_noexcept_constructible = is_nothrow_constructible<_BaseT, _Vp...>;
-#endif // defined(_LIBCUDACXX_NO_TUPLE_NOEXCEPT)
-
   template <class... _Up>
   using __variadic_constraints =
     _If<!_PackExpandsToThisTuple<_Up...>::value && sizeof...(_Up) == sizeof...(_Tp),
@@ -865,8 +857,8 @@ public:
             class _Constraints                                       = __variadic_constraints_less_rank<_Up...>,
             enable_if_t<sizeof...(_Up) < sizeof...(_Tp), int>        = 0,
             enable_if_t<_Constraints::__implicit_constructible, int> = 0>
-  _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 explicit tuple(_Up&&... __u) noexcept(
-    __base_noexcept_constructible<__tuple_variadic_constructor_tag, _Up...>::value)
+  _LIBCUDACXX_HIDE_FROM_ABI
+  _CCCL_CONSTEXPR_CXX14 explicit tuple(_Up&&... __u) noexcept(_CCCL_TRAIT(is_nothrow_constructible, _BaseT, _Up...))
       : __base_(__tuple_variadic_constructor_tag{}, _CUDA_VSTD::forward<_Up>(__u)...)
   {}
 
@@ -996,7 +988,7 @@ public:
   _LIBCUDACXX_HIDE_FROM_ABI void swap(tuple&) noexcept {}
 };
 
-#ifndef _LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES
+#ifndef _CCCL_NO_DEDUCTION_GUIDES
 template <class... _Tp>
 _CCCL_HOST_DEVICE tuple(_Tp...) -> tuple<_Tp...>;
 template <class _Tp1, class _Tp2>
@@ -1007,7 +999,7 @@ template <class _Alloc, class _Tp1, class _Tp2>
 _CCCL_HOST_DEVICE tuple(allocator_arg_t, _Alloc, pair<_Tp1, _Tp2>) -> tuple<_Tp1, _Tp2>;
 template <class _Alloc, class... _Tp>
 _CCCL_HOST_DEVICE tuple(allocator_arg_t, _Alloc, tuple<_Tp...>) -> tuple<_Tp...>;
-#endif // _LIBCUDACXX_HAS_NO_DEDUCTION_GUIDES
+#endif // !_CCCL_NO_DEDUCTION_GUIDES
 
 template <class... _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI enable_if_t<_And<__is_swappable<_Tp>...>::value, void>

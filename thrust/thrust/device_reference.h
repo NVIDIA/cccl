@@ -42,7 +42,7 @@ THRUST_NAMESPACE_BEGIN
 
 /*! \p device_reference acts as a reference-like object to an object stored in device memory.
  *  \p device_reference is not intended to be used directly; rather, this type
- *  is the result of deferencing a \p device_ptr. Similarly, taking the address of
+ *  is the result of dereferencing a \p device_ptr. Similarly, taking the address of
  *  a \p device_reference yields a \p device_ptr.
  *
  *  \p device_reference may often be used from host code in place of operations defined on
@@ -947,17 +947,16 @@ public:
      */
     device_reference &operator^=(const T &rhs);
 #endif // end doxygen-only members
-}; // end device_reference
 
-/*! swaps the value of one \p device_reference with another.
- *  \p x The first \p device_reference of interest.
- *  \p y The second \p device_reference of interest.
- */
-template <typename T>
-_CCCL_HOST_DEVICE void swap(device_reference<T>& x, device_reference<T>& y)
-{
-  x.swap(y);
-}
+  /*! swaps the value of one \p device_reference with another.
+   *  \p x The first \p device_reference of interest.
+   *  \p y The second \p device_reference of interest.
+   */
+  _CCCL_HOST_DEVICE friend void swap(device_reference& x, device_reference& y) noexcept(noexcept(x.swap(y)))
+  {
+    x.swap(y);
+  }
+}; // end device_reference
 
 // declare these methods for the purpose of Doxygenating them
 // they actually are defined for a base class

@@ -23,7 +23,6 @@
 #include <cuda/experimental/stream.cuh>
 
 #include "testing.cuh"
-#include <catch2/catch.hpp>
 
 struct do_not_construct
 {
@@ -59,6 +58,19 @@ constexpr int get_property(
 constexpr int get_property(const cudax::device_memory_resource&, my_property)
 {
   return 42;
+}
+
+__global__ void kernel(_CUDA_VSTD::span<int> data)
+{
+  // Touch the memory to be sure it's accessible
+  CUDAX_CHECK(data.size() == 1024);
+  data[0] = 42;
+}
+
+__global__ void const_kernel(_CUDA_VSTD::span<const int> data)
+{
+  // Touch the memory to be sure it's accessible
+  CUDAX_CHECK(data.size() == 1024);
 }
 
 TEMPLATE_TEST_CASE(
@@ -122,14 +134,14 @@ TEMPLATE_TEST_CASE(
       CUDAX_CHECK(buf.data() == old_input_ptr);
       CUDAX_CHECK(buf.size() == 42);
       CUDAX_CHECK(buf.size_bytes() == 42 * sizeof(TestType));
-      CUDAX_CHECK(buf.get_resource() == other_resource);
+      CUDAX_CHECK(buf.get_memory_resource() == other_resource);
 
       CUDAX_CHECK(input.data() == nullptr);
       CUDAX_CHECK(input.size() == 0);
       CUDAX_CHECK(input.size_bytes() == 0);
     }
 
-    { // Ensure self move assignment doesnt do anything
+    { // Ensure self move assignment does not do anything
       uninitialized_buffer buf{resource, 1337};
       const auto* old_ptr = buf.data();
 
@@ -148,13 +160,13 @@ TEMPLATE_TEST_CASE(
     CUDAX_CHECK(buf.size_bytes() == 42 * sizeof(TestType));
     CUDAX_CHECK(buf.begin() == buf.data());
     CUDAX_CHECK(buf.end() == buf.begin() + buf.size());
-    CUDAX_CHECK(buf.get_resource() == resource);
+    CUDAX_CHECK(buf.get_memory_resource() == resource);
 
     CUDAX_CHECK(cuda::std::as_const(buf).data() != nullptr);
     CUDAX_CHECK(cuda::std::as_const(buf).size() == 42);
     CUDAX_CHECK(cuda::std::as_const(buf).begin() == buf.data());
     CUDAX_CHECK(cuda::std::as_const(buf).end() == buf.begin() + buf.size());
-    CUDAX_CHECK(cuda::std::as_const(buf).get_resource() == resource);
+    CUDAX_CHECK(cuda::std::as_const(buf).get_memory_resource() == resource);
   }
 
   SECTION("properties")
@@ -168,7 +180,7 @@ TEMPLATE_TEST_CASE(
       "");
   }
 
-  SECTION("convertion to span")
+  SECTION("conversion to span")
   {
     uninitialized_buffer buf{resource, 42};
     const cuda::std::span<TestType> as_span{buf};
@@ -204,41 +216,28 @@ TEMPLATE_TEST_CASE(
   }
 }
 
-__global__ void kernel(_CUDA_VSTD::span<int> data)
-{
-  // Touch the memory to be sure it's accessible
-  CUDAX_CHECK(data.size() == 1024);
-  data[0] = 42;
-}
-
-__global__ void const_kernel(_CUDA_VSTD::span<const int> data)
-{
-  // Touch the memory to be sure it's accessible
-  CUDAX_CHECK(data.size() == 1024);
-}
-
 TEST_CASE("uninitialized_buffer is usable with cudax::launch", "[container]")
 {
   SECTION("non-const")
   {
     const int grid_size = 4;
     cudax::uninitialized_buffer<int, ::cuda::mr::device_accessible> buffer{cudax::device_memory_resource{}, 1024};
-    auto dimensions = cudax::make_hierarchy(cudax::grid_dims(grid_size), cudax::block_dims<256>());
+    auto configuration = cudax::make_config(cudax::grid_dims(grid_size), cudax::block_dims<256>());
 
     cudax::stream stream;
 
-    cudax::launch(stream, dimensions, kernel, buffer);
+    cudax::launch(stream, configuration, kernel, buffer);
   }
 
   SECTION("const")
   {
     const int grid_size = 4;
     const cudax::uninitialized_buffer<int, ::cuda::mr::device_accessible> buffer{cudax::device_memory_resource{}, 1024};
-    auto dimensions = cudax::make_hierarchy(cudax::grid_dims(grid_size), cudax::block_dims<256>());
+    auto configuration = cudax::make_config(cudax::grid_dims(grid_size), cudax::block_dims<256>());
 
     cudax::stream stream;
 
-    cudax::launch(stream, dimensions, const_kernel, buffer);
+    cudax::launch(stream, configuration, const_kernel, buffer);
   }
 }
 
@@ -278,7 +277,7 @@ TEST_CASE("uninitialized_buffer's memory resource does not dangle", "[container]
 
     CHECK(test_device_memory_resource::count == 1);
 
-    cudax::uninitialized_buffer<int, ::cuda::mr::device_accessible> dst_buffer{src_buffer.get_resource(), 1024};
+    cudax::uninitialized_buffer<int, ::cuda::mr::device_accessible> dst_buffer{src_buffer.get_memory_resource(), 1024};
 
     CHECK(test_device_memory_resource::count == 2);
 

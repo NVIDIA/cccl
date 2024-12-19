@@ -248,7 +248,7 @@ C2H_TEST("Device for each n works with unaligned vectors", "[for][device]", offs
   REQUIRE(num_of_once_marked_items == num_items);
 }
 
-C2H_TEST("Device for each works with couting iterator", "[for][device]")
+C2H_TEST("Device for each works with counting iterator", "[for][device]")
 {
   using offset_t               = int;
   constexpr offset_t max_items = 5000000;

@@ -186,7 +186,7 @@ struct DeviceMemcpy
     using BufferOffsetT = uint32_t;
 
     // Integer type large enough to hold any offset in [0, num_thread_blocks_launched), where a safe
-    // uppper bound on num_thread_blocks_launched can be assumed to be given by
+    // upper bound on num_thread_blocks_launched can be assumed to be given by
     // IDIV_CEIL(num_buffers, 64)
     using BlockOffsetT = uint32_t;
 
@@ -196,7 +196,7 @@ struct DeviceMemcpy
       BufferSizeIteratorT,
       BufferOffsetT,
       BlockOffsetT,
-      detail::DeviceBatchMemcpyPolicy<BufferOffsetT, BlockOffsetT>,
+      detail::batch_memcpy::policy_hub<BufferOffsetT, BlockOffsetT>,
       true>::Dispatch(d_temp_storage,
                       temp_storage_bytes,
                       input_buffer_it,

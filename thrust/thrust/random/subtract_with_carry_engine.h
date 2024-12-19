@@ -120,7 +120,7 @@ public:
   /*! This constructor, which optionally accepts a seed, initializes a new
    *  \p subtract_with_carry_engine.
    *
-   *  \param value The seed used to intialize this \p subtract_with_carry_engine's state.
+   *  \param value The seed used to initialize this \p subtract_with_carry_engine's state.
    */
   _CCCL_HOST_DEVICE explicit subtract_with_carry_engine(result_type value = default_seed);
 

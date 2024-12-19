@@ -24,14 +24,13 @@
 // cudaMallocAsync was introduced in CTK 11.2
 #if !_CCCL_COMPILER(MSVC2017) && _CCCL_CUDACC_AT_LEAST(11, 2)
 
-#  if defined(_CCCL_CUDA_COMPILER_CLANG)
+#  if _CCCL_CUDA_COMPILER(CLANG)
 #    include <cuda_runtime.h>
 #    include <cuda_runtime_api.h>
-#  endif // _CCCL_CUDA_COMPILER_CLANG
+#  endif // _CCCL_CUDA_COMPILER(CLANG)
 
 #  include <cuda/__memory_resource/get_property.h>
 #  include <cuda/__memory_resource/properties.h>
-#  include <cuda/__memory_resource/resource_ref.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__cuda/api_wrapper.h>
 #  include <cuda/std/__new_>
@@ -39,11 +38,10 @@
 #  include <cuda/stream_ref>
 
 #  include <cuda/experimental/__device/device_ref.cuh>
+#  include <cuda/experimental/__memory_resource/any_resource.cuh>
 #  include <cuda/experimental/__memory_resource/device_memory_pool.cuh>
 #  include <cuda/experimental/__memory_resource/properties.cuh>
 #  include <cuda/experimental/__stream/stream.cuh>
-
-#  if _CCCL_STD_VER >= 2014
 
 //! @file
 //! The \c device_memory_pool class provides an asynchronous memory resource that allocates device memory in stream
@@ -241,7 +239,7 @@ public:
 
   //! @brief Enable peer access to memory allocated through this memory resource by the supplied devices
   //!
-  //! Access is controlled through the underyling memory pool, so this
+  //! Access is controlled through the underlying memory pool, so this
   //! setting is shared between all memory resources created from the same pool.
   //! Device on which this resource allocates memory can be included in the vector.
   //!
@@ -254,7 +252,7 @@ public:
 
   //! @brief Enable peer access to memory allocated through this memory resource by the supplied device
   //!
-  //! Access is controlled through the underyling memory pool, so this
+  //! Access is controlled through the underlying memory pool, so this
   //! setting is shared between all memory resources created from the same pool.
   //!
   //! @param __device device_ref indicating for which device the access should be enabled
@@ -265,7 +263,7 @@ public:
 
   //! @brief Enable peer access to memory allocated through this memory resource by the supplied devices
   //!
-  //! Access is controlled through the underyling memory pool, so this
+  //! Access is controlled through the underlying memory pool, so this
   //! setting is shared between all memory resources created from the same pool.
   //! Device on which this resource allocates memory can be included in the vector.
   //!
@@ -278,7 +276,7 @@ public:
 
   //! @brief Enable peer access to memory allocated through this memory resource by the supplied device
   //!
-  //! Access is controlled through the underyling memory pool, so this
+  //! Access is controlled through the underlying memory pool, so this
   //! setting is shared between all memory resources created from the same pool.
   //!
   //! @param __device device_ref indicating for which device the access should be enabled
@@ -301,7 +299,7 @@ public:
   {
     return __pool_ == __rhs.__pool_;
   }
-#    if _CCCL_STD_VER <= 2017
+#  if _CCCL_STD_VER <= 2017
 
   //! @brief Inequality comparison with another \c device_memory_resource.
   //! @returns true if underlying \c cudaMemPool_t are inequal.
@@ -309,114 +307,81 @@ public:
   {
     return __pool_ != __rhs.__pool_;
   }
-#    endif // _CCCL_STD_VER <= 2017
+#  endif // _CCCL_STD_VER <= 2017
 
-#    if _CCCL_STD_VER >= 2020
-  //! @brief Equality comparison between a \c device_memory_resource and another resource.
-  //! @param __rhs The resource to compare to.
-  //! @returns If the underlying types are equality comparable, returns the result of equality comparison of both
-  //! resources. Otherwise, returns false.
-  _CCCL_TEMPLATE(class _Resource)
-  _CCCL_REQUIRES((_CUDA_VMR::__different_resource<device_memory_resource, _Resource>) )
-  _CCCL_NODISCARD bool operator==(_Resource const& __rhs) const noexcept
+#  ifndef _CCCL_DOXYGEN_INVOKED // Do not document
+
+private:
+  template <class _Resource>
+  _CCCL_NODISCARD bool __equal_to(_Resource const& __rhs) const noexcept
   {
     if constexpr (has_property<_Resource, device_accessible>)
     {
-      return _CUDA_VMR::resource_ref<device_accessible>{const_cast<device_memory_resource*>(this)}
-          == _CUDA_VMR::resource_ref<device_accessible>{const_cast<_Resource&>(__rhs)};
+      return resource_ref<device_accessible>{*const_cast<device_memory_resource*>(this)}
+          == __cudax::__as_resource_ref<device_accessible>(const_cast<_Resource&>(__rhs));
     }
     else
     {
       return false;
     }
   }
+
+public:
+#    if _CCCL_STD_VER >= 2020
+  //! @brief Equality comparison between a \c device_memory_resource and another resource.
+  //! @param __rhs The resource to compare to.
+  //! @returns If the underlying types are equality comparable, returns the result of equality comparison of both
+  //! resources. Otherwise, returns false.
+  template <class _Resource>
+    requires _CUDA_VMR::__different_resource<device_memory_resource, _Resource>
+  _CCCL_NODISCARD bool operator==(_Resource const& __rhs) const noexcept
+  {
+    return this->__equal_to(__rhs);
+  }
 #    else // ^^^ C++20 ^^^ / vvv C++17
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator==(device_memory_resource const& __lhs, _Resource const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(
-      _CUDA_VMR::__different_resource<device_memory_resource, _Resource>&& has_property<_Resource, device_accessible>)
+    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>)
   {
-    return _CUDA_VMR::resource_ref<device_accessible>{const_cast<device_memory_resource&>(__lhs)}
-        == _CUDA_VMR::resource_ref<device_accessible>{const_cast<_Resource&>(__rhs)};
+    return __lhs.__equal_to(__rhs);
   }
 
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator==(device_memory_resource const&, _Resource const&) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>
-                                  && !has_property<_Resource, device_accessible>)
+  _CCCL_NODISCARD_FRIEND auto operator==(_Resource const& __lhs, device_memory_resource const& __rhs) noexcept
+    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>)
   {
-    return false;
-  }
-
-  template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator==(_Resource const& __rhs, device_memory_resource const& __lhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(
-      _CUDA_VMR::__different_resource<device_memory_resource, _Resource>&& has_property<_Resource, device_accessible>)
-  {
-    return _CUDA_VMR::resource_ref<device_accessible>{const_cast<device_memory_resource&>(__lhs)}
-        == _CUDA_VMR::resource_ref<device_accessible>{const_cast<_Resource&>(__rhs)};
-  }
-
-  template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator==(_Resource const&, device_memory_resource const&) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>
-                                  && !has_property<_Resource, device_accessible>)
-  {
-    return false;
+    return __rhs.__equal_to(__lhs);
   }
 
   template <class _Resource>
   _CCCL_NODISCARD_FRIEND auto operator!=(device_memory_resource const& __lhs, _Resource const& __rhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(
-      _CUDA_VMR::__different_resource<device_memory_resource, _Resource>&& has_property<_Resource, device_accessible>)
+    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>)
   {
-    return _CUDA_VMR::resource_ref<device_accessible>{const_cast<device_memory_resource&>(__lhs)}
-        != _CUDA_VMR::resource_ref<device_accessible>{const_cast<_Resource&>(__rhs)};
+    return !__lhs.__equal_to(__rhs);
   }
 
   template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator!=(device_memory_resource const&, _Resource const&) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>
-                                  && !has_property<_Resource, device_accessible>)
+  _CCCL_NODISCARD_FRIEND auto operator!=(_Resource const& __lhs, device_memory_resource const& __rhs) noexcept
+    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>)
   {
-    return true;
-  }
-
-  template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator!=(_Resource const& __rhs, device_memory_resource const& __lhs) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(
-      _CUDA_VMR::__different_resource<device_memory_resource, _Resource>&& has_property<_Resource, device_accessible>)
-  {
-    return _CUDA_VMR::resource_ref<device_accessible>{const_cast<device_memory_resource&>(__lhs)}
-        != _CUDA_VMR::resource_ref<device_accessible>{const_cast<_Resource&>(__rhs)};
-  }
-
-  template <class _Resource>
-  _CCCL_NODISCARD_FRIEND auto operator!=(_Resource const&, device_memory_resource const&) noexcept
-    _CCCL_TRAILING_REQUIRES(bool)(_CUDA_VMR::__different_resource<device_memory_resource, _Resource>
-                                  && !has_property<_Resource, device_accessible>)
-  {
-    return true;
+    return !__rhs.__equal_to(__lhs);
   }
 #    endif // _CCCL_STD_VER <= 2017
+
+  //! @brief Enables the \c device_accessible property for \c device_memory_resource.
+  //! @relates device_memory_resource
+  friend constexpr void get_property(device_memory_resource const&, device_accessible) noexcept {}
+#  endif // _CCCL_DOXYGEN_INVOKED
 
   //! @brief Returns the underlying handle to the CUDA memory pool.
   _CCCL_NODISCARD constexpr cudaMemPool_t get() const noexcept
   {
     return __pool_;
   }
-
-#    ifndef _CCCL_DOXYGEN_INVOKED // Doxygen cannot handle the friend function
-  //! @brief Enables the \c device_accessible property for \c device_memory_resource.
-  //! @relates device_memory_resource
-  friend constexpr void get_property(device_memory_resource const&, device_accessible) noexcept {}
-#    endif // _CCCL_DOXYGEN_INVOKED
 };
 static_assert(_CUDA_VMR::resource_with<device_memory_resource, device_accessible>, "");
 
 } // namespace cuda::experimental
-
-#  endif // _CCCL_STD_VER >= 2014
 
 #endif // !_CCCL_COMPILER(MSVC2017) && _CCCL_CUDACC_AT_LEAST(11, 2)
 

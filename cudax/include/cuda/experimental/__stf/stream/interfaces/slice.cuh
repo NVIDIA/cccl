@@ -286,7 +286,7 @@ public:
     cudaPointerAttributes attributes{};
     cuda_safe_call(cudaPointerGetAttributes(&attributes, s.data_handle()));
 
-    // Implicitely converted to an optional
+    // Implicitly converted to an optional
     return attributes.type;
   };
 };

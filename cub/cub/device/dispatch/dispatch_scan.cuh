@@ -143,7 +143,7 @@ DeviceCompactInitKernel(ScanTileStateT tile_state, int num_tiles, NumSelectedIte
  *   (cub::NullType for inclusive scans)
  *
  * @tparam OffsetT
- *   Signed integer type for global offsets
+ *   Unsigned integer type for global offsets
  *
  * @paramInput d_in
  *   data
@@ -223,7 +223,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::ScanPolicyT::BLOCK_THREADS))
  *   The init_value element type for ScanOpT (cub::NullType for inclusive scans)
  *
  * @tparam OffsetT
- *   Signed integer type for global offsets
+ *   Unsigned integer type for global offsets
  *
  * @tparam ForceInclusive
  *   Boolean flag to force InclusiveScan invocation when true.
@@ -234,14 +234,14 @@ template <typename InputIteratorT,
           typename ScanOpT,
           typename InitValueT,
           typename OffsetT,
-          typename AccumT         = ::cuda::std::__accumulator_t<ScanOpT,
-                                                                 cub::detail::value_t<InputIteratorT>,
-                                                                 ::cuda::std::_If<std::is_same<InitValueT, NullType>::value,
-                                                                                  cub::detail::value_t<InputIteratorT>,
-                                                                                  typename InitValueT::value_type>>,
-          typename SelectedPolicy = DeviceScanPolicy<AccumT, ScanOpT>,
-          bool ForceInclusive     = false>
-struct DispatchScan : SelectedPolicy
+          typename AccumT     = ::cuda::std::__accumulator_t<ScanOpT,
+                                                             cub::detail::value_t<InputIteratorT>,
+                                                             ::cuda::std::_If<std::is_same<InitValueT, NullType>::value,
+                                                                              cub::detail::value_t<InputIteratorT>,
+                                                                              typename InitValueT::value_type>>,
+          typename PolicyHub  = detail::scan::policy_hub<AccumT, ScanOpT>,
+          bool ForceInclusive = false>
+struct DispatchScan
 {
   //---------------------------------------------------------------------
   // Constants and Types
@@ -508,12 +508,11 @@ struct DispatchScan : SelectedPolicy
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_HOST _CCCL_FORCEINLINE cudaError_t Invoke()
   {
-    using MaxPolicyT     = typename DispatchScan::MaxPolicy;
     using ScanTileStateT = typename cub::ScanTileState<AccumT>;
     // Ensure kernels are instantiated.
     return Invoke<ActivePolicyT>(
       DeviceScanInitKernel<ScanTileStateT>,
-      DeviceScanKernel<MaxPolicyT,
+      DeviceScanKernel<typename PolicyHub::MaxPolicy,
                        InputIteratorT,
                        OutputIteratorT,
                        ScanTileStateT,
@@ -565,8 +564,6 @@ struct DispatchScan : SelectedPolicy
     OffsetT num_items,
     cudaStream_t stream)
   {
-    using MaxPolicyT = typename DispatchScan::MaxPolicy;
-
     cudaError_t error;
     do
     {
@@ -583,7 +580,7 @@ struct DispatchScan : SelectedPolicy
         d_temp_storage, temp_storage_bytes, d_in, d_out, num_items, scan_op, init_value, stream, ptx_version);
 
       // Dispatch to chained policy
-      error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+      error = CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
       if (cudaSuccess != error)
       {
         break;

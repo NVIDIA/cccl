@@ -48,9 +48,9 @@
 // _CUDAX_TRIVIAL_API force-inlines a function, marks its visibility as hidden, and causes debuggers to skip it.
 // This is useful for trivial internal functions that do dispatching or other plumbing work. It is particularly
 // useful in the definition of customization point objects.
-#define _CUDAX_TRIVIAL_API        _CUDAX_API _CCCL_FORCEINLINE _CUDAX_ARTIFICIAL _LIBCUDACXX_NODEBUG
-#define _CUDAX_TRIVIAL_HOST_API   _CUDAX_HOST_API _CCCL_FORCEINLINE _CUDAX_ARTIFICIAL _LIBCUDACXX_NODEBUG
-#define _CUDAX_TRIVIAL_DEVICE_API _CUDAX_DEVICE_API _CCCL_FORCEINLINE _CUDAX_ARTIFICIAL _LIBCUDACXX_NODEBUG
+#define _CUDAX_TRIVIAL_API        _CUDAX_API _CCCL_FORCEINLINE _CUDAX_ARTIFICIAL _CCCL_NODEBUG
+#define _CUDAX_TRIVIAL_HOST_API   _CUDAX_HOST_API _CCCL_FORCEINLINE _CUDAX_ARTIFICIAL _CCCL_NODEBUG
+#define _CUDAX_TRIVIAL_DEVICE_API _CUDAX_DEVICE_API _CCCL_FORCEINLINE _CUDAX_ARTIFICIAL _CCCL_NODEBUG
 
 // GCC struggles with guaranteed copy elision of immovable types.
 #if _CCCL_COMPILER(GCC)
@@ -61,6 +61,7 @@
 
 namespace cuda::experimental
 {
+namespace __cudax = ::cuda::experimental; // NOLINT: misc-unused-alias-decls
 }
 
 #endif // __CUDAX__DETAIL_CONFIG_CUH

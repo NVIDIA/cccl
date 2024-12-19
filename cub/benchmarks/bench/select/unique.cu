@@ -54,8 +54,8 @@ struct policy_hub_t
 };
 #endif // !TUNE_BASE
 
-template <typename T, typename OffsetT, typename InPlaceAlgT>
-static void unique(nvbench::state& state, nvbench::type_list<T, OffsetT, InPlaceAlgT>)
+template <typename T, typename OffsetT, typename MayAlias>
+static void unique(nvbench::state& state, nvbench::type_list<T, OffsetT, MayAlias>)
 {
   using input_it_t         = const T*;
   using flag_it_t          = cub::NullType*;
@@ -64,7 +64,7 @@ static void unique(nvbench::state& state, nvbench::type_list<T, OffsetT, InPlace
   using select_op_t        = cub::NullType;
   using equality_op_t      = ::cuda::std::equal_to<>;
   using offset_t           = OffsetT;
-  constexpr bool may_alias = InPlaceAlgT::value;
+  constexpr bool may_alias = MayAlias::value;
 
 #if !TUNE_BASE
   using policy_t   = policy_hub_t<T>;
@@ -141,10 +141,20 @@ static void unique(nvbench::state& state, nvbench::type_list<T, OffsetT, InPlace
   });
 }
 
-using in_place_alg = nvbench::type_list<::cuda::std::false_type, ::cuda::std::true_type>;
+using ::cuda::std::false_type;
+using ::cuda::std::true_type;
+#ifdef TUNE_MayAlias
+using may_alias = nvbench::type_list<TUNE_MayAlias>; // expands to "false_type" or "true_type"
+#else // !defined(TUNE_MayAlias)
+using may_alias = nvbench::type_list<false_type, true_type>;
+#endif // TUNE_MayAlias
 
-NVBENCH_BENCH_TYPES(unique, NVBENCH_TYPE_AXES(fundamental_types, offset_types, in_place_alg))
+// The implementation of DeviceSelect for 64-bit offset types uses a streaming approach, where it runs multiple passes
+// using a 32-bit offset type, so we only need to test one (to save time for tuning and the benchmark CI).
+using select_offset_types = nvbench::type_list<int64_t>;
+
+NVBENCH_BENCH_TYPES(unique, NVBENCH_TYPE_AXES(fundamental_types, select_offset_types, may_alias))
   .set_name("base")
-  .set_type_axes_names({"T{ct}", "OffsetT{ct}", "IsInPlace{ct}"})
+  .set_type_axes_names({"T{ct}", "OffsetT{ct}", "MayAlias{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4))
   .add_int64_power_of_two_axis("MaxSegSize", {1, 4, 8});

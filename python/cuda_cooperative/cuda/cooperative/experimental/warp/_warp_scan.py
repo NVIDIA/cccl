@@ -3,7 +3,16 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 
-from cuda.cooperative.experimental._types import *
+import numba
+
+from cuda.cooperative.experimental._types import (
+    Algorithm,
+    Dependency,
+    DependentReference,
+    Invocable,
+    Pointer,
+    TemplateParameter,
+)
 from cuda.cooperative.experimental._common import make_binary_tempfile
 
 
@@ -40,18 +49,29 @@ def exclusive_sum(dtype, threads_in_warp=32):
     Returns:
         A callable object that can be linked to and invoked from a CUDA kernel
     """
-    template = Algorithm('WarpScan',
-                         'ExclusiveSum',
-                         'warp_scan',
-                         ['cub/warp/warp_scan.cuh'],
-                         [TemplateParameter('T'),
-                          TemplateParameter('VIRTUAL_WARP_THREADS')],
-                         [[Pointer(numba.uint8),
-                           DependentReference(Dependency('T')),
-                           DependentReference(Dependency('T'), True)]],
-                         fake_return=True)
-    specialization = template.specialize({'T': dtype,
-                                          'VIRTUAL_WARP_THREADS': threads_in_warp})
-    return Invocable(temp_files=[make_binary_tempfile(ltoir, '.ltoir') for ltoir in specialization.get_lto_ir()],
-                     temp_storage_bytes=specialization.get_temp_storage_bytes(),
-                     algorithm=specialization)
+    template = Algorithm(
+        "WarpScan",
+        "ExclusiveSum",
+        "warp_scan",
+        ["cub/warp/warp_scan.cuh"],
+        [TemplateParameter("T"), TemplateParameter("VIRTUAL_WARP_THREADS")],
+        [
+            [
+                Pointer(numba.uint8),
+                DependentReference(Dependency("T")),
+                DependentReference(Dependency("T"), True),
+            ]
+        ],
+        fake_return=True,
+    )
+    specialization = template.specialize(
+        {"T": dtype, "VIRTUAL_WARP_THREADS": threads_in_warp}
+    )
+    return Invocable(
+        temp_files=[
+            make_binary_tempfile(ltoir, ".ltoir")
+            for ltoir in specialization.get_lto_ir(threads=threads_in_warp)
+        ],
+        temp_storage_bytes=specialization.get_temp_storage_bytes(),
+        algorithm=specialization,
+    )

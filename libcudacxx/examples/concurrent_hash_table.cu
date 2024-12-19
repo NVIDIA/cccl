@@ -9,11 +9,13 @@
 // TODO: It would be great if this example could NOT depend on Thrust.
 #include <thrust/allocate_unique.h>
 #include <thrust/device_vector.h>
+#include <thrust/execution_policy.h>
 #include <thrust/functional.h>
 #include <thrust/host_vector.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/pair.h>
-#include <thrust/system/cuda/vector.h>
+#include <thrust/universal_allocator.h>
+#include <thrust/universal_vector.h>
 
 #include <cassert>
 #include <cstdio>
@@ -24,7 +26,7 @@ template <typename Key,
           typename Value,
           typename Hash           = thrust::identity<Key>,
           typename KeyEqual       = thrust::equal_to<Key>,
-          typename MemoryResource = thrust::universal_raw_memory_resource>
+          typename MemoryResource = thrust::universal_memory_resource>
 struct concurrent_hash_table
 {
   // Elements transition from state_empty -> state_reserved ->
@@ -185,8 +187,8 @@ int main()
 
     auto freq = thrust::allocate_unique<table>(thrust::universal_allocator<table>{}, 8);
 
-    thrust::cuda::universal_vector<int> input = [] {
-      thrust::cuda::universal_vector<int> v(2048);
+    thrust::universal_vector<int> input = [] {
+      thrust::universal_vector<int> v(2048);
       std::mt19937 gen(1337);
       std::uniform_int_distribution<long> dis(0, 7);
       thrust::generate(v.begin(), v.end(), [&] {
@@ -216,8 +218,8 @@ int main()
 
     auto freq = thrust::allocate_unique<table>(thrust::universal_allocator<table>{}, 8, identity_modulo<int>(4));
 
-    thrust::cuda::universal_vector<int> input = [] {
-      thrust::cuda::universal_vector<int> v(2048);
+    thrust::universal_vector<int> input = [] {
+      thrust::universal_vector<int> v(2048);
       std::mt19937 gen(1337);
       std::uniform_int_distribution<long> dis(0, 7);
       thrust::generate(v.begin(), v.end(), [&] {

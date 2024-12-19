@@ -92,7 +92,7 @@ producers and consumers. In a *partitioned pipeline*, each participating thread 
      - ``cuda::pipeline`` is not assignable.
    * - :ref:`(destructor) <libcudacxx-extended-api-synchronization-pipeline-pipeline-destructor>`
      -  Destroys the ``cuda::pipeline``.
-   * - :ref:`producer_acquire <libcudacxx-extended-api-synchronization-pipeline-pipeline-producer-aquire>`
+   * - :ref:`producer_acquire <libcudacxx-extended-api-synchronization-pipeline-pipeline-producer-acquire>`
      - Blocks the current thread until the next *pipeline stage* is available.
    * - :ref:`producer_commit <libcudacxx-extended-api-synchronization-pipeline-pipeline-producer-commit>`
      - Commits operations previously issued by the current thread to the current *pipeline stage*.

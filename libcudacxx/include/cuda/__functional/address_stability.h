@@ -64,7 +64,8 @@ struct proclaims_copyable_arguments<__callable_permitting_copied_arguments<F>> :
 
 //! Creates a new function object from an existing one, which is marked as permitting its arguments to be copies of
 //! whatever source they come from. This implies that the addresses of the arguments are irrelevant to the function
-//! object.
+//! object. Some algorithms, like thrust::transform, can benefit from this information and choose a more efficient
+//! implementation.
 //! @see proclaims_copyable_arguments
 template <typename F>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr auto

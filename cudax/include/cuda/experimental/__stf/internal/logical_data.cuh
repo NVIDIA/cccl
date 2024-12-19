@@ -27,6 +27,7 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/internal/backend_ctx.cuh> // logical_data_untyped_impl has a backend_ctx_untyped
+#include <cuda/experimental/__stf/internal/constants.cuh>
 #include <cuda/experimental/__stf/internal/data_interface.cuh>
 #include <cuda/experimental/__stf/utility/core.cuh>
 
@@ -45,7 +46,7 @@ class logical_data_untyped_impl;
  *
  * The goal of this class is to avoid storing very large containers of task
  * structure which may hold many events for a long time (and needlessly consume
- * ressources), so that we can optimize the events. This class is usefull when
+ * resources), so that we can optimize the events. This class is useful when
  * all tasks in the set are used together, for example when we enforce some
  * write-after-read dependency when the writer tasks must depend on all
  * previous readers.
@@ -108,7 +109,7 @@ namespace reserved
  * enforcing the STF coherency model.
  *
  * Implementing the STF model for example requires to introduce implicit
- * dependencies between a task making a write access, and all preceeding read
+ * dependencies between a task making a write access, and all preceding read
  * accesses. The list of previous readsers, the previous writer etc... are kept on
  * a per context basis.
  */
@@ -739,7 +740,7 @@ public:
     /* Update msir_statuses depending on the current states and the required access mode */
     switch (mode)
     {
-      case access_mode::read: {
+      case access_mode::read:
         switch (current_msir)
         {
           case reserved::msir_state_id::modified:
@@ -796,7 +797,7 @@ public:
           }
           break;
 
-          case reserved::msir_state_id::reduction: {
+          case reserved::msir_state_id::reduction:
             // This is where we should reconstruct the data ?
 
             // Invalidate all other existing copies but that one
@@ -808,7 +809,6 @@ public:
             get_data_instance(instance_id).set_msir(reserved::msir_state_id::modified);
 
             break;
-          }
 
           default:
             assert(!"Corrupt MSIR state detected.");
@@ -816,10 +816,11 @@ public:
         }
 
         break;
-      }
 
       case access_mode::rw:
-      case access_mode::write: {
+      case access_mode::write:
+      case access_mode::reduce_no_init:
+      case access_mode::reduce:
         switch (current_msir)
         {
           case reserved::msir_state_id::modified:
@@ -827,7 +828,7 @@ public:
             prereqs.merge(current_instance.get_read_prereq(), current_instance.get_write_prereq());
             break;
 
-          case reserved::msir_state_id::shared: {
+          case reserved::msir_state_id::shared:
             // There is a local copy, but we need to invalidate others
             prereqs.merge(current_instance.get_read_prereq(), current_instance.get_write_prereq());
 
@@ -846,12 +847,12 @@ public:
 
             current_instance.set_msir(reserved::msir_state_id::modified);
             break;
-          }
+
           case reserved::msir_state_id::invalid: {
             // If we need to perform a copy, this will be the source instance
             instance_id_t src_instance_id = instance_id_t::invalid;
             // Do not find a source if this is write only
-            if (mode == access_mode::rw)
+            if (mode == access_mode::rw || mode == access_mode::reduce_no_init)
             {
               // There is no local valid copy ... find one !
               instance_id_t dst_instance_id = instance_id;
@@ -873,7 +874,7 @@ public:
               // Make sure this is finished before we delete the source, for example
               // We remove previous prereqs since this data is normally only used for this copy, and invalidated
               // then
-              /* TODO CHECK THIS ... being too convervative ? */
+              /* TODO CHECK THIS ... being too conservative ? */
               // THIS INSTEAD  ?get_data_instance(src_instance_id).set_write_prereq(dst_copied_prereq);
               get_data_instance(src_instance_id).set_read_prereq(src_avail_prereq);
               get_data_instance(dst_instance_id).set_read_prereq(src_avail_prereq);
@@ -886,7 +887,7 @@ public:
             else
             {
               // Write only
-              assert(mode == access_mode::write);
+              assert(mode == access_mode::write || mode == access_mode::reduce);
             }
 
             // Clear and all copies which become invalid, keep prereqs
@@ -915,11 +916,11 @@ public:
         }
 
         break;
-      }
 
       case access_mode::relaxed:
         current_instance.set_msir(reserved::msir_state_id::reduction);
         break;
+
       default:
         assert(!"Corrupt MSIR state detected.");
         abort();
@@ -1415,7 +1416,7 @@ public:
       fprintf(stderr, "Using %d as the reference\n", ref_instance_id);
 #endif
 
-      // The target instance id is implicitely the one where to reduce last, so we don't add it
+      // The target instance id is implicitly the one where to reduce last, so we don't add it
       if (ref_instance_id != target_instance_id)
       {
         // fprintf(stderr, "...adding %d to per_node[%d]\n", ref_instance_id, ref_memory_node);
@@ -1553,7 +1554,7 @@ public:
       }
 
       // Add this instance to the list of instances on the target node
-      // If this is the reference id, we don't add it because it will be implicitely the last element where to
+      // If this is the reference id, we don't add it because it will be implicitly the last element where to
       // reduce !
       if (copy_instance_id != target_instance_id)
       {
@@ -1789,7 +1790,7 @@ inline void reserved::logical_data_untyped_impl::erase()
     {
       // Make sure copies or reduction initiated by the erase are finished
       auto inst_prereqs = wb_prereqs;
-      // Wait for preceeding tasks
+      // Wait for preceding tasks
       inst_prereqs.merge(get_pending_done_prereqs(inst_i.get_dplace()));
 
       inst_prereqs.merge(inst_i.get_read_prereq(), inst_i.get_write_prereq());
@@ -1809,7 +1810,7 @@ inline void reserved::logical_data_untyped_impl::erase()
   }
 
   // Clear the state which may contain references (eg. shared_ptr) to other
-  // ressources. This must be done here because the destructor of the logical
+  // resources. This must be done here because the destructor of the logical
   // data may be called after finalize()
   h_state.clear();
 
@@ -2047,7 +2048,7 @@ inline void fetch_data(
 
     // Gather all prereqs required to fetch this piece of data into the
     // dependencies of the task.
-    // Even temporary allocation may require to enfore dependencies
+    // Even temporary allocation may require to enforce dependencies
     // because we are reclaiming data for instance.
     result.merge(mv(stf_prereq));
   }
@@ -2136,7 +2137,7 @@ inline logical_data_untyped task_dep_untyped::get_data() const
 
 // Defined here to avoid circular dependencies
 template <class T>
-inline decltype(auto) task_dep<T>::instance(task& tp) const
+inline decltype(auto) task_dep<T, void, false>::instance(task& tp) const
 {
   auto t = get_data();
   return static_cast<logical_data<T>&>(t).instance(tp);
@@ -2196,7 +2197,7 @@ public:
   /// @brief Constructor from an untyped logical data
   ///
   /// Warning : no checks are done to ensure the type used to create the
-  /// untyped logical data matches, it is the responsability of the caller to
+  /// untyped logical data matches, it is the responsibility of the caller to
   /// ensure this is a valid conversion
   logical_data(logical_data_untyped&& u)
       : logical_data_untyped(u)
@@ -2279,26 +2280,46 @@ public:
   {
     using U = readonly_type_of<T>;
     // The constness of *this implies that access mode is read
-    return task_dep<U>(*this, /* access_mode::read, */ ::std::forward<Pack>(pack)...);
+    // Note that we do not provide an access mode, because this is how we
+    // dispatch statically between read-only and non read-only access modes in
+    // task_dep_untyped.
+    // TODO : we could make this cleaner if we had a tag type in addition to
+    // the access_mode enum class.
+    return task_dep<U, ::std::monostate, false>(*this, /* access_mode::read, */ ::std::forward<Pack>(pack)...);
   }
 
   template <typename... Pack>
-  task_dep<T> write(Pack&&... pack)
+  auto write(Pack&&... pack)
   {
-    return task_dep<T>(*this, access_mode::write, ::std::forward<Pack>(pack)...);
+    return task_dep<T, ::std::monostate, false>(*this, access_mode::write, ::std::forward<Pack>(pack)...);
   }
 
   template <typename... Pack>
-  task_dep<T> rw(Pack&&... pack)
+  auto rw(Pack&&... pack)
   {
-    return task_dep<T>(*this, access_mode::rw, ::std::forward<Pack>(pack)...);
+    return task_dep<T, ::std::monostate, false>(*this, access_mode::rw, ::std::forward<Pack>(pack)...);
   }
 
   template <typename... Pack>
-  task_dep<T> relaxed(Pack&&... pack)
+  auto relaxed(Pack&&... pack)
   {
-    return task_dep<T>(*this, access_mode::relaxed, ::std::forward<Pack>(pack)...);
+    return task_dep<T, ::std::monostate, false>(*this, access_mode::relaxed, ::std::forward<Pack>(pack)...);
   }
+
+  template <typename Op, typename... Pack>
+  auto reduce(Op, no_init, Pack&&... pack)
+  {
+    return task_dep<T, Op, false>(*this, access_mode::reduce_no_init, ::std::forward<Pack>(pack)...);
+  }
+
+  /* If we do not pass the no_init{} tag type there, this is going to
+   * initialize data, not accumulate with existing values. */
+  template <typename Op, typename... Pack>
+  auto reduce(Op, Pack&&... pack)
+  {
+    return task_dep<T, Op, true>(*this, access_mode::reduce, ::std::forward<Pack>(pack)...);
+  }
+
   ///@}
 };
 

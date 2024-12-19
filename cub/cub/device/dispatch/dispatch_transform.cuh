@@ -13,14 +13,15 @@
 #  pragma system_header
 #endif // no system header
 
-#if defined(_CCCL_CUDA_COMPILER) && _CCCL_CUDACC_BELOW(11, 5)
+#if _CCCL_CUDACC_BELOW(11, 5)
 _CCCL_NV_DIAG_SUPPRESS(186)
 #  include <cuda_pipeline_primitives.h>
 // we cannot re-enable the warning here, because it is triggered outside the translation unit
 // see also: https://godbolt.org/z/1x8b4hn3G
-#endif // defined(_CCCL_CUDA_COMPILER) && _CCCL_CUDACC_BELOW(11, 5)
+#endif // _CCCL_CUDACC_BELOW(11, 5)
 
 #include <cub/detail/uninitialized_copy.cuh>
+#include <cub/device/dispatch/tuning/tuning_transform.cuh>
 #include <cub/util_arch.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
@@ -37,7 +38,6 @@ _CCCL_NV_DIAG_SUPPRESS(186)
 #include <cuda/std/__algorithm/max.h>
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/array>
-#include <cuda/std/bit>
 #include <cuda/std/expected>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
@@ -46,59 +46,17 @@ _CCCL_NV_DIAG_SUPPRESS(186)
 #include <cassert>
 
 // cooperative groups do not support NVHPC yet
-#ifndef _CCCL_CUDA_COMPILER_NVHPC
+#if !_CCCL_CUDA_COMPILER(NVHPC)
 #  include <cooperative_groups.h>
 #  include <cooperative_groups/memcpy_async.h>
 #endif
 
 CUB_NAMESPACE_BEGIN
 
-// The ublkcp kernel needs PTX features that are only available and understood by nvcc >=12.
-// Also, cooperative groups do not support NVHPC yet.
-#if _CCCL_CUDACC_AT_LEAST(12, 0) && !defined(_CCCL_CUDA_COMPILER_NVHPC)
-#  define _CUB_HAS_TRANSFORM_UBLKCP
-#endif // _CCCL_CUDACC_AT_LEAST(12, 0) && !defined(_CCCL_CUDA_COMPILER_NVHPC)
-
 namespace detail
 {
 namespace transform
 {
-_CCCL_HOST_DEVICE constexpr int sum()
-{
-  return 0;
-}
-
-// TODO(bgruber): remove with C++17
-template <typename... Ts>
-_CCCL_HOST_DEVICE constexpr int sum(int head, Ts... tail)
-{
-  return head + sum(tail...);
-}
-
-#if _CCCL_STD_VER >= 2017
-template <typename... Its>
-_CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
-{
-  return (int{sizeof(value_t<Its>)} + ... + 0);
-}
-#else // ^^^ C++17 ^^^ / vvv C++11 vvv
-template <typename... Its>
-_CCCL_HOST_DEVICE constexpr auto loaded_bytes_per_iteration() -> int
-{
-  return sum(int{sizeof(value_t<Its>)}...);
-}
-#endif // _CCCL_STD_VER >= 2017
-
-enum class Algorithm
-{
-  // We previously had a fallback algorithm that would use cub::DeviceFor. Benchmarks showed that the prefetch algorithm
-  // is always superior to that fallback, so it was removed.
-  prefetch,
-#ifdef _CUB_HAS_TRANSFORM_UBLKCP
-  ublkcp,
-#endif // _CUB_HAS_TRANSFORM_UBLKCP
-};
-
 template <typename T>
 _CCCL_HOST_DEVICE _CCCL_FORCEINLINE const char* round_down_ptr(const T* ptr, unsigned alignment)
 {
@@ -108,16 +66,6 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE const char* round_down_ptr(const T* ptr, uns
   return reinterpret_cast<const char*>(
     reinterpret_cast<::cuda::std::uintptr_t>(ptr) & ~::cuda::std::uintptr_t{alignment - 1});
 }
-
-template <int BlockThreads>
-struct prefetch_policy_t
-{
-  static constexpr int block_threads = BlockThreads;
-  // items per tile are determined at runtime. these (inclusive) bounds allow overriding that value via a tuning policy
-  static constexpr int items_per_thread_no_input = 2; // when there are no input iterators, the kernel is just filling
-  static constexpr int min_items_per_thread      = 1;
-  static constexpr int max_items_per_thread      = 32;
-};
 
 // Prefetches (at least on Hopper) a 128 byte cache line. Prefetching out-of-bounds addresses has no side effects
 // TODO(bgruber): there is also the cp.async.bulk.prefetch instruction available on Hopper. May improve perf a tiny bit
@@ -212,15 +160,6 @@ _CCCL_DEVICE void transform_kernel_impl(
   }
 }
 
-template <int BlockThreads>
-struct async_copy_policy_t
-{
-  static constexpr int block_threads = BlockThreads;
-  // items per tile are determined at runtime. these (inclusive) bounds allow overriding that value via a tuning policy
-  static constexpr int min_items_per_thread = 1;
-  static constexpr int max_items_per_thread = 32;
-};
-
 // TODO(bgruber) cheap copy of ::cuda::std::apply, which requires C++17.
 template <class F, class Tuple, std::size_t... Is>
 _CCCL_DEVICE _CCCL_FORCEINLINE auto poor_apply_impl(F&& f, Tuple&& t, ::cuda::std::index_sequence<Is...>)
@@ -240,16 +179,6 @@ _CCCL_DEVICE _CCCL_FORCEINLINE auto poor_apply(F&& f, Tuple&& t)
     ::cuda::std::forward<F>(f),
     ::cuda::std::forward<Tuple>(t),
     ::cuda::std::make_index_sequence<::cuda::std::tuple_size<::cuda::std::remove_reference_t<Tuple>>::value>{});
-}
-
-// mult must be a power of 2
-template <typename Integral>
-_CCCL_HOST_DEVICE _CCCL_FORCEINLINE constexpr auto round_up_to_po2_multiple(Integral x, Integral mult) -> Integral
-{
-#if _CCCL_STD_VER > 2011
-  _CCCL_ASSERT(::cuda::std::has_single_bit(static_cast<::cuda::std::make_unsigned_t<Integral>>(mult)), "");
-#endif // _CCCL_STD_VER > 2011
-  return (x + mult - 1) & ~(mult - 1);
 }
 
 // Implementation notes on memcpy_async and UBLKCP kernels regarding copy alignment and padding
@@ -312,9 +241,6 @@ _CCCL_HOST_DEVICE auto make_aligned_base_ptr(const T* ptr, int alignment) -> ali
   const char* base_ptr = round_down_ptr(ptr, alignment);
   return aligned_base_ptr<T>{base_ptr, static_cast<int>(reinterpret_cast<const char*>(ptr) - base_ptr)};
 }
-
-constexpr int bulk_copy_alignment     = 128;
-constexpr int bulk_copy_size_multiple = 16;
 
 #ifdef _CUB_HAS_TRANSFORM_UBLKCP
 _CCCL_DEVICE _CCCL_FORCEINLINE static bool elect_one()
@@ -506,8 +432,8 @@ union kernel_arg
   // thrust::normal_iterator<thrust::device_pointer<T>>), so because of
   // https://eel.is/c++draft/class.union#general-note-3, kernel_args's special members are deleted. We work around it by
   // explicitly defining them.
-
-  _CCCL_HOST_DEVICE kernel_arg() {}
+  _CCCL_HOST_DEVICE kernel_arg() noexcept {}
+  _CCCL_HOST_DEVICE ~kernel_arg() noexcept {}
 
   _CCCL_HOST_DEVICE kernel_arg(const kernel_arg& other)
   {
@@ -586,79 +512,6 @@ __launch_bounds__(MaxPolicy::ActivePolicy::algo_policy::block_threads)
     ::cuda::std::move(out),
     select_kernel_arg(alg, ::cuda::std::move(ins))...);
 }
-
-constexpr int arch_to_min_bytes_in_flight(int sm_arch)
-{
-  // TODO(bgruber): use if-else in C++14 for better readability
-  return sm_arch >= 900 ? 48 * 1024 // 32 for H100, 48 for H200
-       : sm_arch >= 800 ? 16 * 1024 // A100
-                        : 12 * 1024; // V100 and below
-}
-
-template <typename... RandomAccessIteratorsIn>
-_CCCL_HOST_DEVICE constexpr auto bulk_copy_smem_for_tile_size(int tile_size) -> int
-{
-  return round_up_to_po2_multiple(int{sizeof(int64_t)}, bulk_copy_alignment) /* bar */
-       // 128 bytes of padding for each input tile (handles before + after)
-       + tile_size * loaded_bytes_per_iteration<RandomAccessIteratorsIn...>()
-       + sizeof...(RandomAccessIteratorsIn) * bulk_copy_alignment;
-}
-
-template <bool RequiresStableAddress, typename RandomAccessIteratorTupleIn>
-struct policy_hub
-{
-  static_assert(sizeof(RandomAccessIteratorTupleIn) == 0, "Second parameter must be a tuple");
-};
-
-template <bool RequiresStableAddress, typename... RandomAccessIteratorsIn>
-struct policy_hub<RequiresStableAddress, ::cuda::std::tuple<RandomAccessIteratorsIn...>>
-{
-  static constexpr bool no_input_streams = sizeof...(RandomAccessIteratorsIn) == 0;
-  static constexpr bool all_contiguous =
-    ::cuda::std::conjunction<THRUST_NS_QUALIFIER::is_contiguous_iterator<RandomAccessIteratorsIn>...>::value;
-  static constexpr bool all_values_trivially_reloc =
-    ::cuda::std::conjunction<THRUST_NS_QUALIFIER::is_trivially_relocatable<value_t<RandomAccessIteratorsIn>>...>::value;
-
-  static constexpr bool can_memcpy = all_contiguous && all_values_trivially_reloc;
-
-  // TODO(bgruber): consider a separate kernel for just filling
-
-  struct policy300 : ChainedPolicy<300, policy300, policy300>
-  {
-    static constexpr int min_bif = arch_to_min_bytes_in_flight(300);
-    // TODO(bgruber): we don't need algo, because we can just detect the type of algo_policy
-    static constexpr auto algorithm = Algorithm::prefetch;
-    using algo_policy               = prefetch_policy_t<256>;
-  };
-
-#ifdef _CUB_HAS_TRANSFORM_UBLKCP
-  // H100 and H200
-  struct policy900 : ChainedPolicy<900, policy900, policy300>
-  {
-    static constexpr int min_bif = arch_to_min_bytes_in_flight(900);
-    using async_policy           = async_copy_policy_t<256>;
-    static constexpr bool exhaust_smem =
-      bulk_copy_smem_for_tile_size<RandomAccessIteratorsIn...>(
-        async_policy::block_threads * async_policy::min_items_per_thread)
-      > int{max_smem_per_block};
-    static constexpr bool any_type_is_overalinged =
-#  if _CCCL_STD_VER >= 2017
-      ((alignof(value_t<RandomAccessIteratorsIn>) > bulk_copy_alignment) || ...);
-#  else
-      sum((alignof(value_t<RandomAccessIteratorsIn>) > bulk_copy_alignment)...) > 0;
-#  endif
-
-    static constexpr bool use_fallback =
-      RequiresStableAddress || !can_memcpy || no_input_streams || exhaust_smem || any_type_is_overalinged;
-    static constexpr auto algorithm = use_fallback ? Algorithm::prefetch : Algorithm::ublkcp;
-    using algo_policy               = ::cuda::std::_If<use_fallback, prefetch_policy_t<256>, async_policy>;
-  };
-
-  using max_policy = policy900;
-#else // _CUB_HAS_TRANSFORM_UBLKCP
-  using max_policy = policy300;
-#endif // _CUB_HAS_TRANSFORM_UBLKCP
-};
 
 // TODO(bgruber): replace by ::cuda::std::expected in C++14
 template <typename T>

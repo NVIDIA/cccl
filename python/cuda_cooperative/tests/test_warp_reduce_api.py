@@ -2,14 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from pynvjitlink import patch
+import cuda.cooperative.experimental as cudax
 import numpy as np
 import numba
 from numba import cuda
+
 numba.config.CUDA_LOW_OCCUPANCY_WARNINGS = 0
 
 # example-begin imports
-import cuda.cooperative.experimental as cudax
-from pynvjitlink import patch
 patch.patch_numba_linker(lto=True)
 # example-end imports
 
@@ -20,15 +21,14 @@ def test_warp_reduction():
 
     # example-begin reduce
     warp_reduce = cudax.warp.reduce(numba.int32, op)
-    temp_storage_bytes = warp_reduce.temp_storage_bytes
 
     @cuda.jit(link=warp_reduce.files)
     def kernel(input, output):
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype=numba.uint8)
-        warp_output = warp_reduce(temp_storage, input[cuda.threadIdx.x])
+        warp_output = warp_reduce(input[cuda.threadIdx.x])
 
         if cuda.threadIdx.x == 0:
             output[0] = warp_output
+
     # example-end reduce
 
     h_input = np.random.randint(0, 42, 32, dtype=np.int32)
@@ -44,15 +44,14 @@ def test_warp_reduction():
 def test_warp_sum():
     # example-begin sum
     warp_sum = cudax.warp.sum(numba.int32)
-    temp_storage_bytes = warp_sum.temp_storage_bytes
 
     @cuda.jit(link=warp_sum.files)
     def kernel(input, output):
-        temp_storage = cuda.shared.array(shape=temp_storage_bytes, dtype=numba.uint8)
-        warp_output = warp_sum(temp_storage, input[cuda.threadIdx.x])
+        warp_output = warp_sum(input[cuda.threadIdx.x])
 
         if cuda.threadIdx.x == 0:
             output[0] = warp_output
+
     # example-end sum
 
     h_input = np.ones(32, dtype=np.int32)

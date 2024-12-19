@@ -234,6 +234,22 @@ public:
     }
   }
 
+  /// Add a tuple of dependencies
+  template <typename... Args>
+  void add_deps(::std::tuple<Args...>& deps_tuple)
+  {
+    ::std::apply(
+      [this](const auto&... deps) {
+        // Call add_deps on each dep using a fold expression
+        //
+        // Note that we use this-> while it seems unnecessary to work-around
+        // some compiler issue which otherwise believe the "this" captured
+        // value is unused.
+        (this->add_deps(deps), ...);
+      },
+      deps_tuple);
+  }
+
   /// Get the dependencies of the task
   const task_dep_vector_untyped& get_task_deps() const
   {
@@ -429,7 +445,7 @@ void dep_allocate(
 
       if (s >= 0)
       {
-        // This allocation was succesful
+        // This allocation was successful
         inst.allocated_size = s;
         inst.set_allocated(true);
         inst.reclaimable = true;

@@ -55,7 +55,7 @@ public:
   //!
   //! @post `get() == __evnt`
   //!
-  //! @note: It is the callers responsibilty to ensure the `event_ref` does not
+  //! @note: It is the callers responsibility to ensure the `event_ref` does not
   //! outlive the event denoted by the `cudaEvent_t` handle.
   constexpr event_ref(::cudaEvent_t __evnt) noexcept
       : __event_(__evnt)

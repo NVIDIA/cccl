@@ -105,11 +105,11 @@ __host__ __device__ void test()
   // assert(global_source.column() == local.column());
 
   // Finally, the type should be copy-constructible
-  auto copyied = local;
-  assert(compare_strings(copyied.file_name(), local.file_name()));
-  assert(compare_strings(copyied.function_name(), local.function_name()));
-  assert(copyied.line() == local.line());
-  assert(copyied.column() == local.column());
+  auto copied = local;
+  assert(compare_strings(copied.file_name(), local.file_name()));
+  assert(compare_strings(copied.function_name(), local.function_name()));
+  assert(copied.line() == local.line());
+  assert(copied.column() == local.column());
 
   // and copy-assignable.
   local = global_source;

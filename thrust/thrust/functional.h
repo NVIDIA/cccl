@@ -856,7 +856,7 @@ struct identity
     return x;
   }
 
-  // we cannot add an overload for `const T&&` because then calling e.g. `thrust::identity<int>{}(3.14);` is ambigious
+  // we cannot add an overload for `const T&&` because then calling e.g. `thrust::identity<int>{}(3.14);` is ambiguous
   // on MSVC
 
   _CCCL_EXEC_CHECK_DISABLE
@@ -1354,8 +1354,8 @@ THRUST_INLINE_CONSTANT thrust::detail::functional::placeholder<9>::type _10;
 
 THRUST_NAMESPACE_END
 
+#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
-
 _LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::plus);
 _LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::minus);
 _LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::multiplies);
@@ -1375,8 +1375,8 @@ _LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::greater);
 _LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::logical_and);
 _LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::logical_not);
 _LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::logical_or);
-
 _LIBCUDACXX_END_NAMESPACE_CUDA
+#endif // _CCCL_DOXYGEN_INVOKED
 
 #include <thrust/detail/functional.inl>
 #include <thrust/detail/functional/operators.h>

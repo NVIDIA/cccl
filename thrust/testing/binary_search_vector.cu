@@ -44,7 +44,7 @@ void TestVectorLowerBoundSimple()
   IntVector ref{0, 1, 1, 2, 2, 2, 3, 3, 4, 5};
   ASSERT_EQUAL(integral_output, ref);
 
-  //    // test with interator output type
+  //    // test with iterator output type
   //    using IteratorVector = typename vector_like<Vector, typename Vector::iterator>::type;
   //    IteratorVector iterator_output(10);
   //    thrust::lower_bound(vec.begin(), vec.end(), input.begin(), input.end(), iterator_output.begin());
@@ -124,7 +124,7 @@ void TestVectorUpperBoundSimple()
   IntVector ref{1, 1, 2, 2, 2, 3, 3, 4, 5, 5};
   ASSERT_EQUAL(integral_output, ref);
 
-  //    // test with interator output type
+  //    // test with iterator output type
   //    using IteratorVector = typename vector_like<Vector, typename Vector::iterator>::type;
   //    IteratorVector iterator_output(10);
   //    thrust::lower_bound(vec.begin(), vec.end(), input.begin(), input.end(), iterator_output.begin());

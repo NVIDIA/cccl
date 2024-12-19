@@ -318,11 +318,13 @@ long double    truncl(long double x);
 #  include <cmath>
 #endif // _CCCL_COMPILER(NVHPC)
 
+#include <cuda/std/__cmath/abs.h>
 #include <cuda/std/__cmath/fpclassify.h>
 #include <cuda/std/__cmath/lerp.h>
 #include <cuda/std/__cmath/logarithms.h>
 #include <cuda/std/__cmath/min_max.h>
 #include <cuda/std/__cmath/traits.h>
+#include <cuda/std/__cstdlib/abs.h>
 #include <cuda/std/limits>
 #include <cuda/std/type_traits>
 #include <cuda/std/version>
@@ -389,17 +391,11 @@ using ::atanhf;
 using ::hypot;
 using ::hypotf;
 
-#ifndef _AIX
-using ::abs;
-#endif
-
 #if !_CCCL_COMPILER(NVRTC)
 
 using ::double_t;
 using ::float_t;
 
-using ::fabs;
-using ::fabsf;
 using ::floor;
 using ::floorf;
 
@@ -499,7 +495,6 @@ using ::ceill;
 using ::coshl;
 using ::cosl;
 using ::expl;
-using ::fabsl;
 using ::floorl;
 using ::fmodl;
 using ::frexpl;
@@ -736,7 +731,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX __promote_t<_Tp, _Up> __
 }
 #endif // !_CCCL_COMPILER(MSVC)
 
-#if _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC) || _CCCL_CUDA_COMPILER(CLANG)
 template <class _A1>
 _LIBCUDACXX_HIDE_FROM_ABI _A1 __constexpr_logb(_A1 __x)
 {
@@ -779,7 +774,7 @@ _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14_COMPLEX _Tp __constexpr_logb(_Tp
 }
 #endif // !_MSVC
 
-#if _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC) || defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(NVRTC) || _CCCL_CUDA_COMPILER(CLANG)
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI _Tp __constexpr_scalbn(_Tp __x, int __i)
 {

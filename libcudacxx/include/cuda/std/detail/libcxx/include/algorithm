@@ -1816,7 +1816,7 @@ _CCCL_HOST_DEVICE void __sort(_RandomAccessIterator __first, _RandomAccessIterat
         if (__i == --__j)
         {
           // *__first == *__m, *__m <= all other elements
-          // Parition instead into [__first, __i) == *__first and *__first < [__i, __last)
+          // Partition instead into [__first, __i) == *__first and *__first < [__i, __last)
           ++__i; // __first + 1
           __j = __last;
           if (!__comp(*__first, *--__j)) // we need a guard if *__first == *(__last-1)
@@ -1859,7 +1859,7 @@ _CCCL_HOST_DEVICE void __sort(_RandomAccessIterator __first, _RandomAccessIterat
             ++__i;
           }
           // [__first, __i) == *__first and *__first < [__i, __last)
-          // The first part is sorted, sort the secod part
+          // The first part is sorted, sort the second part
           // _CUDA_VSTD::__sort<_Compare>(__i, __last, __comp);
           __first = __i;
           goto __restart;
@@ -2183,7 +2183,7 @@ _CCCL_HOST_DEVICE void __inplace_merge(
     // swap middle two partitions
     __middle = _CUDA_VSTD::rotate(__m1, __middle, __m2);
     // __len12 and __len21 now have swapped meanings
-    // merge smaller range with recurisve call and larger with tail recursion elimination
+    // merge smaller range with recursive call and larger with tail recursion elimination
     if (__len11 + __len21 < __len12 + __len22)
     {
       __inplace_merge<_Compare>(__first, __m1, __middle, __comp, __len11, __len21, __buff, __buff_size);
@@ -2510,7 +2510,7 @@ __nth_element(_RandomAccessIterator __first, _RandomAccessIterator __nth, _Rando
         if (__i == --__j)
         {
           // *__first == *__m, *__m <= all other elements
-          // Parition instead into [__first, __i) == *__first and *__first < [__i, __last)
+          // Partition instead into [__first, __i) == *__first and *__first < [__i, __last)
           ++__i; // __first + 1
           __j = __last;
           if (!__comp(*__first, *--__j)) // we need a guard if *__first == *(__last-1)
@@ -2558,7 +2558,7 @@ __nth_element(_RandomAccessIterator __first, _RandomAccessIterator __nth, _Rando
           {
             return;
           }
-          // __nth_element the secod part
+          // __nth_element the second part
           // __nth_element<_Compare>(__i, __nth, __last, __comp);
           __first = __i;
           goto __restart;

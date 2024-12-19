@@ -339,13 +339,13 @@ public:
   }
 
 private:
-#if defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_CUDACC_BELOW(11, 7)
+#if _CCCL_CUDA_COMPILER(NVCC, <, 11, 7)
   struct __align__(sizeof(T) * 2) storage
 #elif _CCCL_COMPILER(ICC)
   struct storage
-#else // !(_CCCL_COMPILER(ICC) || (defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_CUDACC_BELOW(11, 7)))
+#else // !(_CCCL_COMPILER(ICC) || _CCCL_CUDA_COMPILER(NVCC, <, 11, 7))
   struct alignas(sizeof(T) * 2) storage
-#endif // !(_CCCL_COMPILER(ICC) || (defined(_CCCL_CUDA_COMPILER_NVCC) && _CCCL_CUDACC_BELOW(11, 7)))
+#endif // !(_CCCL_COMPILER(ICC) || _CCCL_CUDA_COMPILER(NVCC, <, 11, 7))
   {
     T x;
     T y;
