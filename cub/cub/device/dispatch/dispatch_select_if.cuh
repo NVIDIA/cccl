@@ -419,11 +419,13 @@ template <typename InputIteratorT,
           typename EqualityOpT,
           typename OffsetT,
           SelectImpl SelectionOpt,
-          typename PolicyHub = detail::select::policy_hub<cub::detail::value_t<InputIteratorT>,
-                                                          cub::detail::value_t<FlagsInputIteratorT>,
-                                                          detail::select::per_partition_offset_t,
-                                                          (SelectionOpt == SelectImpl::SelectPotentiallyInPlace),
-                                                          (SelectionOpt == SelectImpl::Partition)>>
+          typename PolicyHub =
+            detail::select::policy_hub<detail::value_t<InputIteratorT>,
+                                       detail::value_t<FlagsInputIteratorT>,
+                                       detail::select::per_partition_offset_t,
+                                       detail::select::is_partition_distinct_output_t<SelectedOutputIteratorT>::value,
+                                       (SelectionOpt == SelectImpl::SelectPotentiallyInPlace),
+                                       (SelectionOpt == SelectImpl::Partition)>>
 struct DispatchSelectIf
 {
   /******************************************************************************
