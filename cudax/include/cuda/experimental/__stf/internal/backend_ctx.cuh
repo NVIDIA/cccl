@@ -39,6 +39,7 @@
 #include <cuda/experimental/__stf/internal/slice.cuh> // backend_ctx<T> uses shape_of
 #include <cuda/experimental/__stf/internal/task_state.cuh> // backend_ctx_untyped::impl has-a ctx_stack
 #include <cuda/experimental/__stf/internal/thread_hierarchy.cuh>
+#include <cuda/experimental/__stf/internal/void_interface.cuh>
 #include <cuda/experimental/__stf/localization/composite_slice.cuh>
 
 // XXX there is currently a dependency on this header for places.h
@@ -1065,6 +1066,15 @@ public:
   {
     EXPECT(dplace != data_place::invalid);
     return logical_data(make_slice(p, n), mv(dplace));
+  }
+
+  auto abstract_logical_data()
+  {
+    // We do not use a shape because we want the first rw() access to succeed without an initial write()
+    auto result = logical_data(void_interface{});
+    result.set_write_back(false);
+
+    return mv(result);
   }
 
   template <typename T>
