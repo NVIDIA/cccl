@@ -1650,8 +1650,8 @@ interpreted_execution_policy<spec...>::interpreted_execution_policy(
     }
 
     // Enforce the resource limits in the number of threads per block
-    assert(int(l2_size) <= block_size_limit);
-    assert(int(l0_size) <= ndevs);
+    assert(static_cast<int>(l2_size) <= block_size_limit);
+    assert(l0_size <= ndevs);
 
     /* Merge blocks and devices */
     this->add_level({::std::make_pair(hw_scope::device, l0_size)});

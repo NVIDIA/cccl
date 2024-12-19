@@ -127,25 +127,25 @@ public:
 
   void set_level_mem(int level, size_t size)
   {
-    assert(level < depth);
+    assert(static_cast<size_t>(level) < depth);
     levels[level].set_mem(size);
   }
 
   size_t get_level_mem(int level) const
   {
-    assert(level < depth);
+    assert(static_cast<size_t>(level) < depth);
     return levels[level].get_mem();
   }
 
   void set_level_sync(int level, bool sync)
   {
-    assert(level < depth);
+    assert(static_cast<size_t>(level) < depth);
     levels[level].set_sync(sync);
   }
 
   bool get_level_sync(size_t level) const
   {
-    assert(level < depth);
+    assert(static_cast<size_t>(level) < depth);
     return levels[level].get_sync();
   }
 
