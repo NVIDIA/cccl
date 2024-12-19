@@ -117,7 +117,7 @@ struct __pointer_traits_rebind<_Sp<_Tp, _Args...>, _Up, false>
   typedef _Sp<_Up, _Args...> type;
 };
 
-template <class _Ptr>
+template <class _Ptr, class = void>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT pointer_traits
 {
   typedef _Ptr pointer;
