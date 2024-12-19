@@ -151,35 +151,6 @@ _CCCL_HOST_DEVICE offset_iterator<Iterator, OffsetItT> make_offset_iterator(Iter
   return offset_iterator<Iterator, OffsetItT>{it, offset_it};
 }
 
-/**
- * Helper transform operation that writes to the (index, extremum)-key-value-pair to the user-provided output iterator.
- * This helper allows "implicit conversion" between KeyValuePair types that have a different key type, which may happen
- * if the user uses a different index type than the global offset type used by the algorithm.
- */
-template <typename KeyValuePairOutItT>
-struct write_to_user_out_it
-{
-  KeyValuePairOutItT out_it;
-
-  template <typename IndexT, typename OffsetT, typename ResultT>
-  _CCCL_DEVICE _CCCL_FORCEINLINE void operator()(IndexT, KeyValuePair<OffsetT, ResultT> reduced_result)
-  {
-    using kv_pair_t = ::cuda::std::_If<
-      ::cuda::std::is_assignable<decltype(*out_it), KeyValuePair<::cuda::std::uint64_t, ResultT>>::value,
-      KeyValuePair<::cuda::std::uint64_t, ResultT>,
-      ::cuda::std::_If<
-        ::cuda::std::is_assignable<decltype(*out_it), KeyValuePair<::cuda::std::int64_t, ResultT>>::value,
-        KeyValuePair<::cuda::std::int64_t, ResultT>,
-        ::cuda::std::_If<::cuda::std::is_assignable<decltype(*out_it), KeyValuePair<::cuda::std::uint32_t, ResultT>>::value,
-                         KeyValuePair<::cuda::std::uint32_t, ResultT>,
-                         KeyValuePair<::cuda::std::int32_t, ResultT>>>>;
-
-    _CCCL_ASSERT(static_cast<OffsetT>(static_cast<index_t>(reduced_result.key)) == reduced_result.key,
-                 "the given output iterator will lead to truncation of the index");
-    *out_it = kv_pair_t{static_cast<index_t>(reduced_result.key), reduced_result.value};
-  }
-};
-
 /******************************************************************************
  * Single-problem streaming reduction dispatch
  *****************************************************************************/
