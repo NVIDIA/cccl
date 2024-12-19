@@ -29,6 +29,7 @@
 
 #include <cuda/experimental/__stf/internal/frozen_logical_data.cuh>
 #include <cuda/experimental/__stf/internal/logical_data.cuh>
+#include <cuda/experimental/__stf/internal/void_interface.cuh>
 #include <cuda/experimental/__stf/stream/internal/event_types.cuh>
 
 #include <deque>
@@ -591,6 +592,12 @@ public:
     {
       // Invoke passing this task's stream as the first argument, followed by the slices
       auto t = tuple_prepend(get_stream(), typed_deps());
+      return ::std::apply(::std::forward<Fun>(fun), t);
+    }
+    else if constexpr (reserved::is_invocable_with_filtered<Fun, Data...>::value)
+    {
+      // Use the filtered tuple
+      auto t = tuple_prepend(get_stream(), reserved::remove_void_interface_types(typed_deps()));
       return ::std::apply(::std::forward<Fun>(fun), t);
     }
     else

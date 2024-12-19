@@ -27,6 +27,7 @@
 #endif // no system header
 
 #include <cuda/experimental/__stf/graph/graph_data_interface.cuh>
+#include <cuda/experimental/__stf/internal/void_interface.cuh>
 
 namespace cuda::experimental::stf
 {

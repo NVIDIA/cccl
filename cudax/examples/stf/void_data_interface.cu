@@ -34,5 +34,10 @@ int main()
 
   };
 
+  // Do not pass useless arguments by removing void_interface arguments
+  ctx.task(ltask2_res.write(), ltask_res.read())->*[](cudaStream_t) {
+
+  };
+
   ctx.finalize();
 }
