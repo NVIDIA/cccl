@@ -89,6 +89,13 @@ public:
   }
 
   void unpin_host_memory(instance_id_t) override {}
+
+  /* This helps detecting when we are manipulating a void data interface, so
+   * that we can optimize useless stages such as allocations or copies */
+  bool is_void_interface() const override final
+  {
+    return true;
+  }
 };
 
 /**

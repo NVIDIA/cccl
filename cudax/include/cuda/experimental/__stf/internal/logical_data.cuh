@@ -467,6 +467,12 @@ public:
     return dinterface != nullptr;
   }
 
+  bool is_void_interface() const
+  {
+    _CCCL_ASSERT(has_interface(), "uninitialized logical data");
+    return dinterface->is_void_interface();
+  }
+
   bool has_ref() const
   {
     assert(refcnt.load() >= 0);
@@ -1253,6 +1259,15 @@ public:
   {
     assert(pimpl);
     return pimpl->dinterface != nullptr;
+  }
+
+  /**
+   * @brief Returns true if the data is a void data interface
+   */
+  bool is_void_interface() const
+  {
+    assert(pimpl);
+    return pimpl->is_void_interface();
   }
 
   // This function applies the reduction operator over 2 instances, the one
