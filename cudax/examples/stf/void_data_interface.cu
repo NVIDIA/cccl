@@ -37,6 +37,8 @@ int main()
   };
 
   // Do not pass useless arguments by removing void_interface arguments
+  // Note that the rw() access is possible even if there was no prior write()
+  // or actual underlying data.
   ctx.task(ltask3_res.rw(), ltask_res.read())->*[](cudaStream_t) {
 
   };

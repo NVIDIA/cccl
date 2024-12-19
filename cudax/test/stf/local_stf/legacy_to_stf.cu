@@ -145,7 +145,8 @@ void lib_call_generic(async_resources_handle& handle, cudaStream_t stream, doubl
 }
 
 template <typename Ctx_t>
-void lib_call_abstract_data(async_resources_handle& handle, cudaStream_t stream, double* d_ptrA, double* d_ptrB, size_t N)
+void lib_call_abstract_data(
+  async_resources_handle& handle, cudaStream_t stream, double* d_ptrA, double* d_ptrB, size_t N)
 {
   Ctx_t ctx(stream, handle);
   auto lA = ctx.abstract_logical_data();
@@ -168,8 +169,6 @@ void lib_call_abstract_data(async_resources_handle& handle, cudaStream_t stream,
 
   ctx.submit();
 }
-
-
 
 int main()
 {
@@ -244,8 +243,6 @@ int main()
     lib_call_abstract_data<context>(handle, stream, d_ptrA, d_ptrB, N);
   }
   cuda_safe_call(cudaStreamSynchronize(stream));
-
-
 
   nvtxRangePop();
 }
