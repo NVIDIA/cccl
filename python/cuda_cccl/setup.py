@@ -25,15 +25,15 @@ with open("README.md") as f:
 
 def copy_cccl_headers_to_cuda_include():
     inc_path = os.path.join(project_path, "cuda", "_include")
-    init_py_path = os.path.join(inc_path, "__init__.py")
-    with open(init_py_path, "w") as f:
-        print("# Intentionally empty.", file=f)
     for proj_dir, header_dir in cccl_headers:
         src_path = os.path.abspath(os.path.join(cccl_path, proj_dir, header_dir))
         dst_path = os.path.join(inc_path, proj_dir)
         if os.path.exists(dst_path):
             shutil.rmtree(dst_path)
         shutil.copytree(src_path, dst_path)
+    init_py_path = os.path.join(inc_path, "__init__.py")
+    with open(init_py_path, "w") as f:
+        print("# Intentionally empty.", file=f)
 
 
 copy_cccl_headers_to_cuda_include()
