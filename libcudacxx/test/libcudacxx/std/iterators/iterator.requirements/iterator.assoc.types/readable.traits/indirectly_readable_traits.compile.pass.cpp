@@ -147,11 +147,17 @@ static_assert(has_no_value_type<TwoTypes<int&, int>>, "");
 
 struct S2
 {};
+namespace cuda
+{
+namespace std
+{
 template <>
-struct cuda::std::indirectly_readable_traits<S2>
+struct indirectly_readable_traits<S2>
 {
   using value_type = int;
 };
+} // namespace std
+} // namespace cuda
 static_assert(value_type_matches<S2, int>, "");
 static_assert(value_type_matches<const S2, int>, "");
 static_assert(has_no_value_type<volatile S2>, "");

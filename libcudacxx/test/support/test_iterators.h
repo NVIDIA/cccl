@@ -1761,17 +1761,23 @@ struct Proxy
 #  endif // TEST_HAS_NO_SPACESHIP_OPERATOR
 };
 
+namespace cuda
+{
+namespace std
+{
 // This is to make ProxyIterator model `cuda::std::indirectly_readable`
 template <class T, class U, template <class> class TQual, template <class> class UQual>
-struct cuda::std::basic_common_reference<Proxy<T>, Proxy<U>, TQual, UQual>
-    : public cuda::std::enable_if<cuda::std::__has_common_reference<TQual<T>, UQual<U>>,
-                                  Proxy<cuda::std::common_reference_t<TQual<T>, UQual<U>>>>
+struct basic_common_reference<Proxy<T>, Proxy<U>, TQual, UQual>
+    : public enable_if<cuda::std::__has_common_reference<TQual<T>, UQual<U>>,
+                       Proxy<cuda::std::common_reference_t<TQual<T>, UQual<U>>>>
 {};
 
 template <class T, class U>
-struct cuda::std::common_type<Proxy<T>, Proxy<U>>
-    : public cuda::std::enable_if<cuda::std::__has_common_type<T, U>, Proxy<cuda::std::common_type_t<T, U>>>
+struct common_type<Proxy<T>, Proxy<U>>
+    : public enable_if<cuda::std::__has_common_type<T, U>, Proxy<cuda::std::common_type_t<T, U>>>
 {};
+} // namespace std
+} // namespace cuda
 
 // ProxyIterator
 // ======================================================================

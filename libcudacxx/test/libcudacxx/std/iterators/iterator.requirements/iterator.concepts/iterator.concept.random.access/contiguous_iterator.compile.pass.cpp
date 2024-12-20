@@ -282,12 +282,18 @@ struct to_address_wrong_return_type
   __host__ __device__ reference operator[](difference_type n) const;
 };
 
+namespace cuda
+{
+namespace std
+{
 template <>
-struct cuda::std::pointer_traits<to_address_wrong_return_type>
+struct pointer_traits<to_address_wrong_return_type>
 {
   typedef void element_type;
   __host__ __device__ static void* to_address(to_address_wrong_return_type const&);
 };
+} // namespace std
+} // namespace cuda
 
 static_assert(cuda::std::random_access_iterator<to_address_wrong_return_type>, "");
 static_assert(!cuda::std::contiguous_iterator<to_address_wrong_return_type>, "");
@@ -426,11 +432,17 @@ struct no_operator_arrow
   __host__ __device__ reference operator[](difference_type n) const;
 };
 
+namespace cuda
+{
+namespace std
+{
 template <>
-struct cuda::std::pointer_traits<no_operator_arrow</*DisableArrow=*/true, /*DisableToAddress=*/false>>
+struct pointer_traits<no_operator_arrow</*DisableArrow=*/true, /*DisableToAddress=*/false>>
 {
   __host__ __device__ static constexpr int* to_address(const no_operator_arrow<true, false>&);
 };
+} // namespace std
+} // namespace cuda
 
 static_assert(cuda::std::contiguous_iterator<no_operator_arrow</*DisableArrow=*/false, /*DisableToAddress=*/true>>, "");
 static_assert(!cuda::std::contiguous_iterator<no_operator_arrow</*DisableArrow=*/true, /*DisableToAddress=*/true>>, "");

@@ -127,11 +127,17 @@ static_assert(check_incrementable_traits<unsigned_int_subtraction_with_cv const 
 
 struct specialised_incrementable_traits
 {};
+namespace cuda
+{
+namespace std
+{
 template <>
-struct cuda::std::incrementable_traits<specialised_incrementable_traits>
+struct incrementable_traits<specialised_incrementable_traits>
 {
   using difference_type = int;
 };
+} // namespace std
+} // namespace cuda
 static_assert(check_incrementable_traits<specialised_incrementable_traits, int>(), "");
 
 static_assert(!check_has_difference_type<void>, "");
