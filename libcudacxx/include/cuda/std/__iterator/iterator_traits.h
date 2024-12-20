@@ -34,6 +34,7 @@
 #include <cuda/std/__type_traits/add_const.h>
 #include <cuda/std/__type_traits/integral_constant.h>
 #include <cuda/std/__type_traits/is_convertible.h>
+#include <cuda/std/__type_traits/is_pointer.h>
 #include <cuda/std/__type_traits/is_primary_template.h>
 #include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/__type_traits/void_t.h>
@@ -182,36 +183,16 @@ _CCCL_TEMPLATE(class _Iter, class _Ty, class _Range)
 _CCCL_REQUIRES(_IsSame<_Iter, ::__gnu_cxx::__normal_iterator<_Ty*, _Range>>::value)
 _LIBCUDACXX_HIDE_FROM_ABI auto
   __iter_concept_fn(::__gnu_cxx::__normal_iterator<_Ty*, _Range>, __priority_tag<3>) -> contiguous_iterator_tag;
-#  elif defined(_LIBCPP_VERSION)
+#  endif // __GLIBCXX__
+#  if defined(_LIBCPP_VERSION)
 _CCCL_TEMPLATE(class _Iter, class _Ty)
 _CCCL_REQUIRES(_IsSame<_Iter, ::std::__wrap_iter<_Ty*>>::value)
 _LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(::std::__wrap_iter<_Ty*>, __priority_tag<3>) -> contiguous_iterator_tag;
 #  elif defined(_MSVC_STL_VERSION) || defined(_IS_WRS)
 _CCCL_TEMPLATE(class _Iter)
-_CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_Array_iterator>::value)
+_CCCL_REQUIRES((_CCCL_TRAIT(is_pointer, ::std::_Unwrapped_t<_Iter>)))
 _LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
-_CCCL_TEMPLATE(class _Iter)
-_CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_Array_const_iterator>::value)
-_LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
-_CCCL_TEMPLATE(class _Iter)
-_CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_Vector_iterator>::value)
-_LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
-_CCCL_TEMPLATE(class _Iter)
-_CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_Vector_const_iterator>::value)
-_LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
-_CCCL_TEMPLATE(class _Iter)
-_CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_String_iterator>::value)
-_LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
-_CCCL_TEMPLATE(class _Iter)
-_CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_String_const_iterator>::value)
-_LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
-_CCCL_TEMPLATE(class _Iter)
-_CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_String_view_iterator>::value)
-_LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
-_CCCL_TEMPLATE(class _Iter)
-_CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_Span_iterator>::value)
-_LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Iter, __priority_tag<3>) -> contiguous_iterator_tag;
-#  endif
+#  endif // _MSVC_STL_VERSION
 _CCCL_TEMPLATE(class _Iter, class _Ty)
 _CCCL_REQUIRES(_IsSame<_Iter, _Ty*>::value)
 _LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(_Ty*, __priority_tag<3>) -> contiguous_iterator_tag;
