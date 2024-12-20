@@ -57,7 +57,8 @@ def get_paths() -> List[bytes]:
     thrust_include_path = cub_include_path
     libcudacxx_include_path = str(os.path.join(cub_include_path, "libcudacxx"))
     cuda_include_path = None
-    if cuda_path := _get_cuda_path():
+    cuda_path = _get_cuda_path()
+    if cuda_path:
         cuda_include_path = str(os.path.join(cuda_path, "include"))
     paths = [
         f"-I{path}".encode()
