@@ -114,11 +114,11 @@ private:
   template <typename F>
   static auto test(...) -> ::std::false_type;
 
-  template <::std::size_t... I>
-  static auto check(::std::index_sequence<I...>)
+  template <::std::size_t... Idx>
+  static auto check(::std::index_sequence<Idx...>)
   {
     using filtered = remove_void_interface_t<Data...>;
-    return test<Fun, ::std::tuple_element_t<I, filtered>...>(0);
+    return test<Fun, ::std::tuple_element_t<Idx, filtered>...>(0);
   }
 
 public:
