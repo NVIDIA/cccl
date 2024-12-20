@@ -5,9 +5,7 @@
 import os
 import shutil
 
-from setuptools import Command, setup, find_namespace_packages
-from setuptools.command.build_py import build_py
-from wheel.bdist_wheel import bdist_wheel
+from setuptools import setup, find_namespace_packages
 
 
 project_path = os.path.abspath(os.path.dirname(__file__))
@@ -20,36 +18,16 @@ with open("README.md") as f:
     long_description = f.read()
 
 
-class CustomBuildCommand(build_py):
-    def run(self):
-        self.run_command("package_cccl")
-        build_py.run(self)
+def copy_cccl_headers_to_cuda_include():
+    for proj_dir, header_dir in cccl_headers:
+        src_path = os.path.abspath(os.path.join(cccl_path, proj_dir, header_dir))
+        dst_path = os.path.join(project_path, "cuda", "_include", proj_dir)
+        if os.path.exists(dst_path):
+            shutil.rmtree(dst_path)
+        shutil.copytree(src_path, dst_path)
 
 
-class CustomWheelBuild(bdist_wheel):
-    def run(self):
-        self.run_command("package_cccl")
-        super().run()
-
-
-class PackageCCCLCommand(Command):
-    description = "Generate additional files"
-    user_options = []
-
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        for proj_dir, header_dir in cccl_headers:
-            src_path = os.path.abspath(os.path.join(cccl_path, proj_dir, header_dir))
-            dst_path = os.path.join(project_path, "cuda", "_include", proj_dir)
-            if os.path.exists(dst_path):
-                shutil.rmtree(dst_path)
-            shutil.copytree(src_path, dst_path)
-
+copy_cccl_headers_to_cuda_include()
 
 setup(
     name="cuda-cccl",
@@ -64,11 +42,6 @@ setup(
     ],
     packages=find_namespace_packages(include=["cuda.*"]),
     python_requires=">=3.9",
-    cmdclass={
-        "package_cccl": PackageCCCLCommand,
-        "build_py": CustomBuildCommand,
-        "bdist_wheel": CustomWheelBuild,
-    },
     include_package_data=True,
     license="Apache-2.0 with LLVM exception",
     license_files=("../../LICENSE",),
