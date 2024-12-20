@@ -635,7 +635,8 @@ CUB_RUNTIME_FUNCTION PolicyWrapper<PolicyT> MakePolicyWrapper(PolicyT policy)
   return PolicyWrapper<PolicyT>{policy};
 }
 
-namespace detail {
+namespace detail
+{
 struct TripleChevronFactory;
 }
 

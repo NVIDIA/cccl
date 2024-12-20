@@ -9,9 +9,9 @@
 //===----------------------------------------------------------------------===//
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/launcher/cuda_driver.cuh>
 #include <cub/device/device_reduce.cuh>
 #include <cub/grid/grid_even_share.cuh>
-#include <cub/detail/launcher/cuda_driver.cuh>
 #include <cub/util_device.cuh>
 
 #include <cuda/std/cstdint>
