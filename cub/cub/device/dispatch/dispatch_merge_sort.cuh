@@ -512,7 +512,7 @@ struct DispatchMergeSort
 
       // Invoke DeviceMergeSortBlockSortKernel
       THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron(
-        static_cast<int>(num_tiles), merge_sort_helper_t::policy_t::BLOCK_THREADS, 0, stream)
+        static_cast<int>(num_tiles), merge_sort_helper_t::policy_t::BLOCK_THREADS, 0, stream, true)
         .doit(
           DeviceMergeSortBlockSortKernel<
             typename PolicyHub::MaxPolicy,
