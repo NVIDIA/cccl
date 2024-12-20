@@ -191,7 +191,7 @@ _LIBCUDACXX_HIDE_FROM_ABI auto
 __iter_concept_fn(__undefined<::std::__wrap_iter<_Ty*>>*, __priority_tag<3>) -> contiguous_iterator_tag;
 #  elif defined(_MSVC_STL_VERSION) || defined(_IS_WRS)
 _CCCL_TEMPLATE(class _Iter)
-_CCCL_REQUIRES((_CCCL_TRAIT(is_pointer, ::std::_Unwrapped_t<_Iter>)))
+_CCCL_REQUIRES(_CCCL_TRAIT(is_pointer, ::std::_Unwrapped_t<_Iter>))
 _LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(__undefined<_Iter>*, __priority_tag<3>) -> contiguous_iterator_tag;
 #  endif // _MSVC_STL_VERSION
 _CCCL_TEMPLATE(class _Iter, class _Ty)
