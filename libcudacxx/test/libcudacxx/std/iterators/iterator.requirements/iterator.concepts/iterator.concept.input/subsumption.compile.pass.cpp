@@ -30,7 +30,7 @@ __host__ __device__ constexpr bool check_subsumption() {
 }
 // clang-format on
 
-static_assert(check_subsumption<int*>());
+static_assert(check_subsumption<int*>(), "");
 
 int main(int, char**)
 {

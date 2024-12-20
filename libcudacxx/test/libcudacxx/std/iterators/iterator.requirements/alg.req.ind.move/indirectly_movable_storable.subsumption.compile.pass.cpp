@@ -28,7 +28,7 @@ __host__ __device__ constexpr bool indirectly_movable_storable_subsumption()
   return true;
 }
 
-static_assert(indirectly_movable_storable_subsumption<int*, int*>());
+static_assert(indirectly_movable_storable_subsumption<int*, int*>(), "");
 
 int main(int, char**)
 {

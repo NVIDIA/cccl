@@ -23,7 +23,7 @@ struct T1
   using value_type = X;
   __host__ __device__ X operator*() const;
 };
-static_assert(cuda::std::same_as<cuda::std::iter_common_reference_t<T1>, X>);
+static_assert(cuda::std::same_as<cuda::std::iter_common_reference_t<T1>, X>, "");
 
 // value_type and dereferencing are the same (modulo qualifiers)
 struct T2
@@ -31,7 +31,7 @@ struct T2
   using value_type = X;
   __host__ __device__ X& operator*() const;
 };
-static_assert(cuda::std::same_as<cuda::std::iter_common_reference_t<T2>, X&>);
+static_assert(cuda::std::same_as<cuda::std::iter_common_reference_t<T2>, X&>, "");
 
 // There's a custom common reference between value_type and the type of dereferencing
 struct A
@@ -57,7 +57,7 @@ struct T3
   using value_type = A;
   __host__ __device__ B&& operator*() const;
 };
-static_assert(cuda::std::same_as<cuda::std::iter_common_reference_t<T3>, Common>);
+static_assert(cuda::std::same_as<cuda::std::iter_common_reference_t<T3>, Common>, "");
 
 // Make sure we're SFINAE-friendly
 #if TEST_STD_VER > 2017
@@ -72,7 +72,7 @@ _CCCL_CONCEPT has_common_reference = _CCCL_FRAGMENT(has_common_reference_, T);
 #endif
 struct NotIndirectlyReadable
 {};
-static_assert(!has_common_reference<NotIndirectlyReadable>);
+static_assert(!has_common_reference<NotIndirectlyReadable>, "");
 
 int main(int, char**)
 {

@@ -29,7 +29,7 @@ __host__ __device__ constexpr bool indirectly_swappable_subsumption()
   return true;
 }
 
-static_assert(indirectly_swappable_subsumption<int*, int*>());
+static_assert(indirectly_swappable_subsumption<int*, int*>(), "");
 
 int main(int, char**)
 {

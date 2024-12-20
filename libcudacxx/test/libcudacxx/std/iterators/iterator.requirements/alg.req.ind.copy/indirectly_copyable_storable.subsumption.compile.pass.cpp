@@ -29,7 +29,7 @@ __host__ __device__ constexpr bool indirectly_copyable_storable_subsumption()
 }
 
 #ifndef __NVCOMPILER // nvbug 3885350
-static_assert(indirectly_copyable_storable_subsumption<int*, int*>());
+static_assert(indirectly_copyable_storable_subsumption<int*, int*>(), "");
 #endif
 
 int main(int, char**)
