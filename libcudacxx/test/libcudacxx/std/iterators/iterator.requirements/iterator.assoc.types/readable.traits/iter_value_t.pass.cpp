@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11
 
 // template<class T>
 // using iter_value_t;
@@ -47,10 +47,10 @@ static_assert(check_iter_value_t<both_members, double>());
 
 // clang-format off
 template <class T, class = void>
-inline constexpr bool check_no_iter_value_t = true;
+_CCCL_INLINE_VAR constexpr bool check_no_iter_value_t = true;
 
 template <class T>
-inline constexpr bool check_no_iter_value_t<T, cuda::std::void_t<cuda::std::iter_value_t<T>>> = false;
+_CCCL_INLINE_VAR constexpr bool check_no_iter_value_t<T, cuda::std::void_t<cuda::std::iter_value_t<T>>> = false;
 
 static_assert(check_no_iter_value_t<void>);
 static_assert(check_no_iter_value_t<double>);

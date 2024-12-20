@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11
 
 // template<class T>
 // using iter_difference_t;
@@ -21,10 +21,10 @@ inline constexpr bool has_no_iter_difference_t = !requires { typename cuda::std:
 
 #else
 template <class T, class = void>
-inline constexpr bool has_no_iter_difference_t = true;
+_CCCL_INLINE_VAR constexpr bool has_no_iter_difference_t = true;
 
 template <class T>
-inline constexpr bool has_no_iter_difference_t<T, cuda::std::void_t<cuda::std::iter_difference_t<T>>> = false;
+_CCCL_INLINE_VAR constexpr bool has_no_iter_difference_t<T, cuda::std::void_t<cuda::std::iter_difference_t<T>>> = false;
 #endif
 
 #ifndef TEST_COMPILER_MSVC_2017 // MSVC 2017 cannot make this a constexpr function

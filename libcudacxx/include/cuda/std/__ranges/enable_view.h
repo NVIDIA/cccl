@@ -30,7 +30,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-#if _CCCL_STD_VER >= 2017
+#if _CCCL_STD_VER >= 2014
 
 struct view_base
 {};
@@ -74,7 +74,7 @@ _CCCL_INLINE_VAR constexpr bool
     true;
 #  endif // _CCCL_NO_CONCEPTS
 
-#endif // _CCCL_STD_VER >= 2017
+#endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11
 
 // template<class T>
 // struct incrementable_traits;
@@ -27,10 +27,10 @@ concept check_difference_type_matches =
   && cuda::std::same_as<typename cuda::std::incrementable_traits<T>::difference_type, Expected>;
 #else
 template <class T, class = void>
-inline constexpr bool check_has_difference_type = false;
+_CCCL_INLINE_VAR constexpr bool check_has_difference_type = false;
 
 template <class T>
-inline constexpr bool
+_CCCL_INLINE_VAR constexpr bool
   check_has_difference_type<T, cuda::std::void_t<typename cuda::std::incrementable_traits<T>::difference_type>> = true;
 
 template <class T, class Expected>

@@ -33,7 +33,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-#if _CCCL_STD_VER > 2014 && !_CCCL_COMPILER(MSVC2017)
+#if _CCCL_STD_VER >= 2014 && !_CCCL_COMPILER(MSVC2017)
 
 template <class _Tp>
 _CCCL_CONCEPT __can_borrow = is_lvalue_reference_v<_Tp> || enable_borrowed_range<remove_cvref_t<_Tp>>;

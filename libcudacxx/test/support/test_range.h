@@ -14,7 +14,7 @@
 
 #include "test_iterators.h"
 
-#if TEST_STD_VER < 2017
+#if TEST_STD_VER < 2014
 #  error "test/support/test_range.h" can only be included in builds supporting ranges
 #endif
 
@@ -90,7 +90,7 @@ struct BorrowedRange
   __host__ __device__ BorrowedRange(BorrowedRange&&) = delete;
 };
 template <>
-inline constexpr bool cuda::std::ranges::enable_borrowed_range<BorrowedRange> = true;
+_CCCL_INLINE_VAR constexpr bool cuda::std::ranges::enable_borrowed_range<BorrowedRange> = true;
 
 static_assert(!cuda::std::ranges::view<BorrowedRange>, "");
 static_assert(cuda::std::ranges::borrowed_range<BorrowedRange>, "");

@@ -33,7 +33,7 @@
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wvoid-ptr-dereference")
 
-#if _CCCL_STD_VER > 2014
+#if _CCCL_STD_VER >= 2014
 
 // [iterator.cust.move]
 

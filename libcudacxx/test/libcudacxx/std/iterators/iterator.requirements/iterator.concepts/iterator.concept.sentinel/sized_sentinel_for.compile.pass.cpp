@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11
 
 // [iterator.concept.sizedsentinel], concept sized_sentinel_for
 //
@@ -102,7 +102,7 @@ struct double_sized_sentinel
   __host__ __device__ friend int operator-(double*, double_sized_sentinel);
 };
 template <>
-inline constexpr bool cuda::std::disable_sized_sentinel_for<double_sized_sentinel, double*> = true;
+_CCCL_INLINE_VAR constexpr bool cuda::std::disable_sized_sentinel_for<double_sized_sentinel, double*> = true;
 
 static_assert(!cuda::std::sized_sentinel_for<double_sized_sentinel, double*>);
 

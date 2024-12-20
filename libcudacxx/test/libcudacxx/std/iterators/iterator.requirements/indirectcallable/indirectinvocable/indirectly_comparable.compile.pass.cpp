@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: msvc-19.16
 
 // template<class I1, class I2, class R, class P1, class P2>
