@@ -9,7 +9,6 @@ Please visit the documentation here: https://nvidia.github.io/cccl/python.html.
 First-time installation:
 
 ```bash
-pip3 install ./cuda_cccl
 pip3 install ./cuda_parallel[test]
 pytest -v ./cuda_parallel/tests/
 ```
