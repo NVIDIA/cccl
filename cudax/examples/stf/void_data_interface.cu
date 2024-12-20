@@ -30,7 +30,16 @@ int main()
 
   void_interface sync;
   auto ltask2_res = ctx.logical_data(sync);
+
+  auto ltask3_res = ctx.logical_token();
   ctx.task(ltask2_res.write(), ltask_res.read())->*[](cudaStream_t, auto, auto) {
+
+  };
+
+  // Do not pass useless arguments by removing void_interface arguments
+  // Note that the rw() access is possible even if there was no prior write()
+  // or actual underlying data.
+  ctx.task(ltask3_res.rw(), ltask_res.read())->*[](cudaStream_t) {
 
   };
 

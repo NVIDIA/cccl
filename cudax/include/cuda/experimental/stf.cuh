@@ -308,6 +308,16 @@ public:
     }
   }
 
+  auto logical_token()
+  {
+    _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
+    return ::std::visit(
+      [&](auto& self) {
+        return self.logical_token();
+      },
+      payload);
+  }
+
   template <typename T>
   frozen_logical_data<T> freeze(::cuda::experimental::stf::logical_data<T> d,
                                 access_mode m    = access_mode::read,

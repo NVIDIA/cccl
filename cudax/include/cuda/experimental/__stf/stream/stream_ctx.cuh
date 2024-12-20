@@ -34,6 +34,7 @@
 #include <cuda/experimental/__stf/internal/reorderer.cuh>
 #include <cuda/experimental/__stf/places/blocked_partition.cuh> // for unit test!
 #include <cuda/experimental/__stf/stream/interfaces/slice.cuh> // For implicit logical_data_untyped constructors
+#include <cuda/experimental/__stf/stream/interfaces/void_interface.cuh>
 #include <cuda/experimental/__stf/stream/stream_task.cuh>
 
 namespace cuda::experimental::stf
