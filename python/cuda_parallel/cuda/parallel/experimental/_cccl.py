@@ -6,7 +6,10 @@
 import numba
 import functools
 import ctypes
+import numpy as np
 from numba import types, cuda
+
+from .iterators._iterators import IteratorBase
 
 
 # MUST match `cccl_type_enum` in c/include/cccl/c/types.h
@@ -91,29 +94,29 @@ class Value(ctypes.Structure):
 
 
 _TYPE_TO_ENUM = {
-    types.int8: TypeEnum.INT8,
-    types.int16: TypeEnum.INT16,
-    types.int32: TypeEnum.INT32,
-    types.int64: TypeEnum.INT64,
-    types.uint8: TypeEnum.UINT8,
-    types.uint16: TypeEnum.UINT16,
-    types.uint32: TypeEnum.UINT32,
-    types.uint64: TypeEnum.UINT64,
-    types.float32: TypeEnum.FLOAT32,
-    types.float64: TypeEnum.FLOAT64,
+    types.int8: TypeEnum(TypeEnum.INT8),
+    types.int16: TypeEnum(TypeEnum.INT16),
+    types.int32: TypeEnum(TypeEnum.INT32),
+    types.int64: TypeEnum(TypeEnum.INT64),
+    types.uint8: TypeEnum(TypeEnum.UINT8),
+    types.uint16: TypeEnum(TypeEnum.UINT16),
+    types.uint32: TypeEnum(TypeEnum.UINT32),
+    types.uint64: TypeEnum(TypeEnum.UINT64),
+    types.float32: TypeEnum(TypeEnum.FLOAT32),
+    types.float64: TypeEnum(TypeEnum.FLOAT64),
 }
 
 
-def _type_to_enum(numba_type):
+def _type_to_enum(numba_type: types.Type) -> TypeEnum:
     if numba_type in _TYPE_TO_ENUM:
         return _TYPE_TO_ENUM[numba_type]
-    return TypeEnum.STORAGE
+    return TypeEnum(TypeEnum.STORAGE)
 
 
 # TODO: replace with functools.cache once our docs build environment
 # is upgraded to at least Python 3.9
 @functools.lru_cache(maxsize=None)
-def _numba_type_to_info(numba_type):
+def _numba_type_to_info(numba_type: types.Type) -> TypeInfo:
     context = cuda.descriptor.cuda_target.target_context
     value_type = context.get_value_type(numba_type)
     size = value_type.get_abi_size(context.target_data)
@@ -122,12 +125,12 @@ def _numba_type_to_info(numba_type):
 
 
 @functools.lru_cache(maxsize=None)
-def _numpy_type_to_info(numpy_type):
+def _numpy_type_to_info(numpy_type: np.dtype) -> TypeInfo:
     numba_type = numba.from_dtype(numpy_type)
     return _numba_type_to_info(numba_type)
 
 
-def _device_array_to_cccl_iter(array):
+def _device_array_to_cccl_iter(array) -> Iterator:
     info = _numpy_type_to_info(array.dtype)
     return Iterator(
         info.size,
@@ -143,7 +146,7 @@ def _device_array_to_cccl_iter(array):
     )
 
 
-def _iterator_to_cccl_iter(it):
+def _iterator_to_cccl_iter(it: IteratorBase) -> Iterator:
     context = cuda.descriptor.cuda_target.target_context
     numba_type = it.numba_type
     size = context.get_value_type(numba_type).get_abi_size(context.target_data)
@@ -180,8 +183,7 @@ def _iterator_to_cccl_iter(it):
     )
 
 
-def type_enum_as_name(enum_value):
-    assert isinstance(enum_value, int)
+def type_enum_as_name(enum_value: int) -> str:
     return (
         "int8",
         "int16",
@@ -197,14 +199,12 @@ def type_enum_as_name(enum_value):
     )[enum_value]
 
 
-def to_cccl_iter(array_or_iterator):
-    from cuda.parallel.experimental.iterators._iterators import IteratorBase
-
+def to_cccl_iter(array_or_iterator) -> Iterator:
     if isinstance(array_or_iterator, IteratorBase):
         return _iterator_to_cccl_iter(array_or_iterator)
     return _device_array_to_cccl_iter(array_or_iterator)
 
 
-def host_array_to_value(array):
+def host_array_to_value(array: np.ndarray) -> Value:
     info = _numpy_type_to_info(array.dtype)
     return Value(info, array.ctypes.data)

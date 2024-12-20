@@ -289,7 +289,3 @@ C2H_TEST("Device reduce works with all device interfaces", "[reduce][device]", f
   }
 #endif
 }
-
-#if defined(__NVCC_DIAG_PRAGMA_SUPPORT__)
-_CCCL_NV_DIAG_DEFAULT(1444)
-#endif
