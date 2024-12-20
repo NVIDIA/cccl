@@ -29,7 +29,7 @@ struct CudaDriverLauncher
   CUstream stream;
 
   template <typename... Args>
-  cudaError_t doit(CUkernel kernel, Args const&... args) const
+  _CCCL_HIDE_FROM_ABI cudaError_t doit(CUkernel kernel, Args const&... args) const
   {
     void* kernel_args[] = {const_cast<void*>(static_cast<void const*>(&args))...};
 
@@ -58,12 +58,13 @@ struct CudaDriverLauncherFactory
     return cudaSuccess;
   }
 
-  cudaError_t MultiProcessorCount(int& sm_count) const
+  _CCCL_HIDE_FROM_ABI cudaError_t MultiProcessorCount(int& sm_count) const
   {
     return static_cast<cudaError_t>(cuDeviceGetAttribute(&sm_count, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, device));
   }
 
-  cudaError_t MaxSmOccupancy(int& sm_occupancy, CUkernel kernel, int block_size, int dynamic_smem_bytes = 0) const
+  _CCCL_HIDE_FROM_ABI cudaError_t
+  MaxSmOccupancy(int& sm_occupancy, CUkernel kernel, int block_size, int dynamic_smem_bytes = 0) const
   {
     // Older drivers have issues handling CUkernel in the occupancy queries, get the CUfunction instead.
     CUfunction kernel_fn;
