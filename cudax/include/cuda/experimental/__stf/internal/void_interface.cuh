@@ -109,13 +109,15 @@ private:
   using filtered_tuple = remove_void_interface_t<Data...>;
 
   template <typename F, typename... Args>
-  static auto test(int) -> ::std::bool_constant<::std::is_invocable_v<F, Args...>> {
-     return {};
+  static auto test(int) -> ::std::bool_constant<::std::is_invocable_v<F, Args...>>
+  {
+    return {};
   }
 
   template <typename F>
-  static auto test(...) -> ::std::false_type {
-     return {};
+  static auto test(...) -> ::std::false_type
+  {
+    return {};
   }
 
   template <::std::size_t... Idx>

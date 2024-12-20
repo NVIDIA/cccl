@@ -308,12 +308,12 @@ public:
     }
   }
 
-  auto abstract_logical_data()
+  auto logical_token()
   {
     _CCCL_ASSERT(payload.index() != ::std::variant_npos, "Context is not initialized");
     return ::std::visit(
       [&](auto& self) {
-        return self.abstract_logical_data();
+        return self.logical_token();
       },
       payload);
   }

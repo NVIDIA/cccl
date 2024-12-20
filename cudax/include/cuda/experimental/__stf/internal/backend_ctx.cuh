@@ -1068,7 +1068,7 @@ public:
     return logical_data(make_slice(p, n), mv(dplace));
   }
 
-  auto abstract_logical_data()
+  auto logical_token()
   {
     // We do not use a shape because we want the first rw() access to succeed without an initial write()
     auto result = logical_data(void_interface{});

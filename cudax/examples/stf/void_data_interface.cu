@@ -31,7 +31,7 @@ int main()
   void_interface sync;
   auto ltask2_res = ctx.logical_data(sync);
 
-  auto ltask3_res = ctx.abstract_logical_data();
+  auto ltask3_res = ctx.logical_token();
   ctx.task(ltask2_res.write(), ltask_res.read())->*[](cudaStream_t, auto, auto) {
 
   };

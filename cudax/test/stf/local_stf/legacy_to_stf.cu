@@ -149,8 +149,8 @@ void lib_call_abstract_data(
   async_resources_handle& handle, cudaStream_t stream, double* d_ptrA, double* d_ptrB, size_t N)
 {
   Ctx_t ctx(stream, handle);
-  auto lA = ctx.abstract_logical_data();
-  auto lB = ctx.abstract_logical_data();
+  auto lA = ctx.logical_token();
+  auto lB = ctx.logical_token();
   ctx.task(lA.write())->*[=](cudaStream_t s) {
     initA<<<128, 32, 0, s>>>(d_ptrA, N);
   };
