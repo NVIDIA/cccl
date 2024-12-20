@@ -78,7 +78,7 @@ setup(
     packages=find_namespace_packages(include=["cuda.*"]),
     python_requires=">=3.9",
     install_requires=[
-        "cuda-cccl",
+        f"cuda-cccl @ file://{cccl_path}/python/cuda_cccl",
         "numba>=0.60.0",
         "cuda-python",
         "jinja2",
