@@ -1,11 +1,3 @@
-# `cuda.cccl`: Experimental CUDA Core Compute Library Python module with CCCL headers
+## Note
 
-## Documentation
-
-Please visit the documentation here: https://nvidia.github.io/cccl/python.html.
-
-## Local development
-
-```bash
-pip3 install .
-```
+This package is currently FOR INTERNAL USE ONLY and not meant to be used/installed explicitly.
