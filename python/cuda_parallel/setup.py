@@ -6,9 +6,7 @@ import os
 import subprocess
 
 from setuptools import Extension, setup, find_namespace_packages
-from setuptools.command.build_py import build_py
 from setuptools.command.build_ext import build_ext
-from wheel.bdist_wheel import bdist_wheel
 
 
 project_path = os.path.abspath(os.path.dirname(__file__))
@@ -24,16 +22,6 @@ del __version__
 
 with open("README.md") as f:
     long_description = f.read()
-
-
-class CustomBuildCommand(build_py):
-    def run(self):
-        build_py.run(self)
-
-
-class CustomWheelBuild(bdist_wheel):
-    def run(self):
-        super().run()
 
 
 class CMakeExtension(Extension):
@@ -91,8 +79,6 @@ setup(
         ]
     },
     cmdclass={
-        "build_py": CustomBuildCommand,
-        "bdist_wheel": CustomWheelBuild,
         "build_ext": BuildCMakeExtension,
     },
     ext_modules=[CMakeExtension("cuda.parallel.experimental.cccl.c")],
