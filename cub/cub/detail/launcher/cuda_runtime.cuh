@@ -16,6 +16,9 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail
+{
+
 struct TripleChevronFactory
 {
   CUB_RUNTIME_FUNCTION THRUST_NS_QUALIFIER::cuda_cub::launcher::triple_chevron
@@ -49,5 +52,7 @@ struct TripleChevronFactory
     return cudaOccupancyMaxActiveBlocksPerMultiprocessor(&sm_occupancy, kernel_ptr, block_size, dynamic_smem_bytes);
   }
 };
+
+} // namespace detail
 
 CUB_NAMESPACE_END

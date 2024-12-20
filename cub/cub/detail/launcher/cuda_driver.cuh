@@ -18,6 +18,9 @@
 
 CUB_NAMESPACE_BEGIN
 
+namespace detail
+{
+
 struct CudaDriverLauncher
 {
   dim3 grid;
@@ -77,6 +80,8 @@ struct CudaDriverLauncherFactory
   CUdevice device;
   int cc;
 };
+
+} // namespace detail
 
 CUB_NAMESPACE_END
 
