@@ -44,7 +44,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
+#if _CCCL_STD_VER >= 2014
 
 #  if !defined(_CCCL_NO_CONCEPTS)
 
@@ -302,7 +302,7 @@ template <class _Range, class _Tp>
 _CCCL_CONCEPT __container_compatible_range = _CCCL_FRAGMENT(__container_compatible_range_, _Range, _Tp);
 #  endif // _CCCL_NO_CONCEPTS
 
-#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
+#endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

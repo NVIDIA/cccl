@@ -44,8 +44,8 @@ template <class F>
   requires cuda::std::indirectly_comparable<int*, char*, F>
 __host__ __device__ void is_subsumed(F);
 
-static_assert(subsumes(cuda::std::less<int>()));
-static_assert(is_subsumed(cuda::std::less<int>()));
+static_assert(subsumes(cuda::std::less<int>()), "");
+static_assert(is_subsumed(cuda::std::less<int>()), "");
 
 int main(int, char**)
 {
