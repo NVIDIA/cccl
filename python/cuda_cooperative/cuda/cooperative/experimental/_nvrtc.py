@@ -47,10 +47,6 @@ def compile_impl(cpp, cc, rdc, code, nvrtc_path, nvrtc_version):
     check_in("code", code, ["lto", "ptx"])
 
     with pkg_resources.path("cuda", "_include") as include_path:
-        # Using `.parent` for compatibility with pip install --editable:
-        include_path = pkg_resources.files("cuda.cooperative").parent.joinpath(
-            "_include"
-        )
         cub_path = include_path
         thrust_path = include_path
         libcudacxx_path = os.path.join(include_path, "libcudacxx")
