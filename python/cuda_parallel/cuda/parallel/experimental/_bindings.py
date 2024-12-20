@@ -5,7 +5,6 @@
 
 import os
 import shutil
-from importlib.resources import files, as_file
 import ctypes
 from functools import lru_cache
 from typing import List, Optional
@@ -31,6 +30,10 @@ def _get_cuda_path() -> Optional[str]:
 
 @lru_cache()
 def get_bindings() -> ctypes.CDLL:
+    # TODO: once docs env supports Python >= 3.9, we
+    # can move this to a module-level import.
+    from importlib.resources import as_file, files
+
     with as_file(files("cuda.parallel.experimental")) as f:
         cccl_c_path = str(f / "cccl" / "libcccl.c.parallel.so")
     _bindings = ctypes.CDLL(cccl_c_path)
@@ -52,13 +55,17 @@ def get_bindings() -> ctypes.CDLL:
 
 @lru_cache()
 def get_paths() -> List[bytes]:
+    # TODO: once docs env supports Python >= 3.9, we
+    # can move this to a module-level import.
+    from importlib.resources import as_file, files
+
     with as_file(files("cuda._include")) as f:
         cub_include_path = str(f)
     thrust_include_path = cub_include_path
     libcudacxx_include_path = str(os.path.join(cub_include_path, "libcudacxx"))
     cuda_include_path = None
     cuda_path = _get_cuda_path()
-    if cuda_path:
+    if cuda_path is not None:
         cuda_include_path = str(os.path.join(cuda_path, "include"))
     paths = [
         f"-I{path}".encode()
