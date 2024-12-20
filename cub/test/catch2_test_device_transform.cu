@@ -192,7 +192,7 @@ using overaligned_types =
 C2H_TEST("DeviceTransform::Transform works for large number of items", "[device][device_transform]", offset_types)
 {
   using offset_t = c2h::get<0, TestType>;
-  CAPTURE(c2h::demangle(typeid(offset_t).name()));
+  CAPTURE(c2h::type_name<offset_t>());
 
   // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
   const auto num_items_max_ull = ::cuda::std::clamp(
@@ -218,7 +218,7 @@ C2H_TEST("DeviceTransform::Transform with multiple inputs works for large number
          offset_types)
 {
   using offset_t = c2h::get<0, TestType>;
-  CAPTURE(c2h::demangle(typeid(offset_t).name()));
+  CAPTURE(c2h::type_name<offset_t>());
 
   // Clamp 64-bit offset type problem sizes to just slightly larger than 2^32 items
   const auto num_items_max_ull = ::cuda::std::clamp(

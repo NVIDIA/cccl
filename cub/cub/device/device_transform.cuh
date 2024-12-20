@@ -52,7 +52,7 @@ struct DeviceTransform
   //! types must be convertible to the parameters of the function object's call operator. The return type of the call
   //! operator must be assignable to the dereferenced output iterator.
   //! @param stream **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  template <typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut, typename TransformOp, typename NumItemsT>
+  template <typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut, typename NumItemsT, typename TransformOp>
   CUB_RUNTIME_FUNCTION static cudaError_t Transform(
     ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
     RandomAccessIteratorOut output,
@@ -62,18 +62,18 @@ struct DeviceTransform
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceTransform::Transform");
 
-    using ChooseOffsetT = detail::choose_signed_offset<NumItemsT>;
-    using OffsetT       = typename ChooseOffsetT::type;
+    using choose_offset_t = detail::choose_signed_offset<NumItemsT>;
+    using offset_t        = typename choose_offset_t::type;
 
     // Check if the number of items exceeds the range covered by the selected signed offset type
-    cudaError_t error = ChooseOffsetT::is_exceeding_offset_type(num_items);
+    cudaError_t error = choose_offset_t::is_exceeding_offset_type(num_items);
     if (error)
     {
       return error;
     }
 
     return detail::transform::
-      dispatch_t<false, OffsetT, ::cuda::std::tuple<RandomAccessIteratorsIn...>, RandomAccessIteratorOut, TransformOp>::
+      dispatch_t<false, offset_t, ::cuda::std::tuple<RandomAccessIteratorsIn...>, RandomAccessIteratorOut, TransformOp>::
         dispatch(
           ::cuda::std::move(inputs), ::cuda::std::move(output), num_items, ::cuda::std::move(transform_op), stream);
   }
@@ -81,7 +81,7 @@ struct DeviceTransform
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   // This overload has additional parameters to specify temporary storage. Provided for compatibility with other CUB
   // APIs.
-  template <typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut, typename TransformOp, typename NumItemsT>
+  template <typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut, typename NumItemsT, typename TransformOp>
   CUB_RUNTIME_FUNCTION static cudaError_t Transform(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -116,7 +116,7 @@ struct DeviceTransform
   //! types must be convertible to the parameters of the function object's call operator. The return type of the call
   //! operator must be assignable to the dereferenced output iterator.
   //! @param stream **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  template <typename RandomAccessIteratorIn, typename RandomAccessIteratorOut, typename TransformOp, typename NumItemsT>
+  template <typename RandomAccessIteratorIn, typename RandomAccessIteratorOut, typename NumItemsT, typename TransformOp>
   CUB_RUNTIME_FUNCTION static cudaError_t Transform(
     RandomAccessIteratorIn input,
     RandomAccessIteratorOut output,
@@ -135,7 +135,7 @@ struct DeviceTransform
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
   // This overload has additional parameters to specify temporary storage. Provided for compatibility with other CUB
   // APIs.
-  template <typename RandomAccessIteratorIn, typename RandomAccessIteratorOut, typename TransformOp, typename NumItemsT>
+  template <typename RandomAccessIteratorIn, typename RandomAccessIteratorOut, typename NumItemsT, typename TransformOp>
   CUB_RUNTIME_FUNCTION static cudaError_t Transform(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -186,7 +186,7 @@ struct DeviceTransform
   //! types must be convertible to the parameters of the function object's call operator. The return type of the call
   //! operator must be assignable to the dereferenced output iterator.
   //! @param stream **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  template <typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut, typename TransformOp, typename NumItemsT>
+  template <typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut, typename NumItemsT, typename TransformOp>
   CUB_RUNTIME_FUNCTION static cudaError_t TransformStableArgumentAddresses(
     ::cuda::std::tuple<RandomAccessIteratorsIn...> inputs,
     RandomAccessIteratorOut output,
@@ -196,24 +196,24 @@ struct DeviceTransform
   {
     CUB_DETAIL_NVTX_RANGE_SCOPE("cub::DeviceTransform::TransformStableArgumentAddresses");
 
-    using ChooseOffsetT = detail::choose_signed_offset<NumItemsT>;
-    using OffsetT       = typename ChooseOffsetT::type;
+    using choose_offset_t = detail::choose_signed_offset<NumItemsT>;
+    using offset_t        = typename choose_offset_t::type;
 
     // Check if the number of items exceeds the range covered by the selected signed offset type
-    cudaError_t error = ChooseOffsetT::is_exceeding_offset_type(num_items);
+    cudaError_t error = choose_offset_t::is_exceeding_offset_type(num_items);
     if (error)
     {
       return error;
     }
 
     return detail::transform::
-      dispatch_t<true, OffsetT, ::cuda::std::tuple<RandomAccessIteratorsIn...>, RandomAccessIteratorOut, TransformOp>::
+      dispatch_t<true, offset_t, ::cuda::std::tuple<RandomAccessIteratorsIn...>, RandomAccessIteratorOut, TransformOp>::
         dispatch(
           ::cuda::std::move(inputs), ::cuda::std::move(output), num_items, ::cuda::std::move(transform_op), stream);
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut, typename TransformOp, typename NumItemsT>
+  template <typename... RandomAccessIteratorsIn, typename RandomAccessIteratorOut, typename NumItemsT, typename TransformOp>
   CUB_RUNTIME_FUNCTION static cudaError_t TransformStableArgumentAddresses(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
@@ -248,7 +248,7 @@ struct DeviceTransform
   //! types must be convertible to the parameters of the function object's call operator. The return type of the call
   //! operator must be assignable to the dereferenced output iterator.
   //! @param stream **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
-  template <typename RandomAccessIteratorIn, typename RandomAccessIteratorOut, typename TransformOp, typename NumItemsT>
+  template <typename RandomAccessIteratorIn, typename RandomAccessIteratorOut, typename NumItemsT, typename TransformOp>
   CUB_RUNTIME_FUNCTION static cudaError_t TransformStableArgumentAddresses(
     RandomAccessIteratorIn input,
     RandomAccessIteratorOut output,
@@ -265,7 +265,7 @@ struct DeviceTransform
   }
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-  template <typename RandomAccessIteratorIn, typename RandomAccessIteratorOut, typename TransformOp, typename NumItemsT>
+  template <typename RandomAccessIteratorIn, typename RandomAccessIteratorOut, typename NumItemsT, typename TransformOp>
   CUB_RUNTIME_FUNCTION static cudaError_t TransformStableArgumentAddresses(
     void* d_temp_storage,
     size_t& temp_storage_bytes,
