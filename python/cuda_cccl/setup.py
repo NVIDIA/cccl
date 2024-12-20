@@ -11,7 +11,12 @@ from setuptools import setup, find_namespace_packages
 project_path = os.path.abspath(os.path.dirname(__file__))
 cccl_path = os.path.abspath(os.path.join(project_path, "..", ".."))
 cccl_headers = [["cub", "cub"], ["libcudacxx", "include"], ["thrust", "thrust"]]
-ver = "0.1.2.8.0"
+__version__ = None
+with open(os.path.join(project_path, "cuda", "cccl", "_version.py")) as f:
+    exec(f.read())
+assert __version__ is not None
+ver = __version__
+del __version__
 
 
 with open("README.md") as f:
