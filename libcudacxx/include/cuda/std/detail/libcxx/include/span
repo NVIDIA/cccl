@@ -218,8 +218,7 @@ _CCCL_CONCEPT_FRAGMENT(
     requires(_CUDA_VRANGES::sized_range<_Range>),
     requires((_CUDA_VRANGES::borrowed_range<_Range> || _CCCL_TRAIT(is_const, _ElementType))),
     requires((!_CCCL_TRAIT(is_array, remove_cvref_t<_Range>))),
-    requires((!__is_std_span<remove_cvref_t<_Range>> && !__is_std_array<remove_cvref_t<_Range>>
-              && !__is_std_initializer_list<remove_cvref_t<_Range>>) ),
+    requires((!__is_std_span<remove_cvref_t<_Range>> && !__is_std_array<remove_cvref_t<_Range>>) ),
     requires(_CCCL_TRAIT(
       is_convertible, remove_reference_t<_CUDA_VRANGES::range_reference_t<_Range>> (*)[], _ElementType (*)[]))));
 
@@ -228,29 +227,30 @@ _CCCL_CONCEPT __span_compatible_range = _CCCL_FRAGMENT(__span_compatible_range_,
 
 #  else // // ^^^ !_CCCL_COMPILER(MSVC2017) ^^^ / vvv _CCCL_COMPILER(MSVC2017) vvv
 
-template <class _Container, class _ElementType, class = void>
-_CCCL_INLINE_VAR constexpr bool __is_span_compatible_container = false;
+template <class _Range, class _ElementType, class = void>
+_CCCL_INLINE_VAR constexpr bool __span_compatible_range = false;
 
-template <class _Container, class _ElementType>
-_CCCL_INLINE_VAR constexpr bool __is_span_compatible_container<
-  _Container,
+template <class _Range, class _ElementType>
+_CCCL_INLINE_VAR constexpr bool __span_compatible_range<
+  _Range,
   _ElementType,
   void_t<
+    // is a contiguous range
+    enable_if_t<_CUDA_VRANGES::contiguous_range<_Range>, nullptr_t>,
+    // is a sized range
+    enable_if_t<_CUDA_VRANGES::sized_range<_Range>, nullptr_t>,
+    // is a borrowed range or ElementType is const
+    enable_if_t<(_CUDA_VRANGES::borrowed_range<_Range> || _CCCL_TRAIT(is_const, _ElementType)), nullptr_t>,
+    // is not a C-style array
+    enable_if_t<!_CCCL_TRAIT(is_array, remove_cvref_t<_Range>), nullptr_t>,
     // is not a specialization of span
-    enable_if_t<!__is_std_span<remove_cvref_t<_Container>>, nullptr_t>,
+    enable_if_t<!__is_std_span<remove_cvref_t<_Range>>, nullptr_t>,
     // is not a specialization of array
-    enable_if_t<!__is_std_array<remove_cvref_t<_Container>>, nullptr_t>,
-    // is not a specialization of array
-    enable_if_t<!__is_std_initializer_list<remove_cvref_t<_Container>>, nullptr_t>,
-    // is_array_v<Container> is false,
-    enable_if_t<!_CCCL_TRAIT(is_array, remove_cvref_t<_Container>), nullptr_t>,
-    // data(cont) and size(cont) are well formed
-    decltype(_CUDA_VSTD::data(_CUDA_VSTD::declval<_Container&>())),
-    decltype(_CUDA_VSTD::size(_CUDA_VSTD::declval<_Container&>())),
+    enable_if_t<!__is_std_array<remove_cvref_t<_Range>>, nullptr_t>,
     // remove_pointer_t<decltype(data(cont))>(*)[] is convertible to ElementType(*)[]
-    enable_if_t<is_convertible<remove_pointer_t<decltype(_CUDA_VSTD::data(declval<_Container&>()))> (*)[],
-                               _ElementType (*)[]>::value,
-                nullptr_t>>> = true;
+    enable_if_t<
+      _CCCL_TRAIT(is_convertible, remove_reference_t<_CUDA_VRANGES::range_reference_t<_Range>> (*)[], _ElementType (*)[]),
+      nullptr_t>>> = true;
 #  endif // _CCCL_COMPILER(MSVC2017)
 
 #  if _CCCL_STD_VER >= 2020
