@@ -307,7 +307,7 @@ private:
   static_assert(_CUDA_VMR::__contains_execution_space_property<_Properties...>,
                 "The properties of cuda::experimental::any_resource must contain at least one execution space "
                 "property!");
-  using __base_t = __cudax::basic_any<__iresource<_Properties...>>;
+  using __base_t = __cudax::basic_any<__cudax::__iresource<_Properties...>>;
   using __base_t::interface;
 
 public:
@@ -340,7 +340,7 @@ private:
   template <class...>
   friend struct any_resource;
 
-  using __base_t = __cudax::basic_any<__iasync_resource<_Properties...>>;
+  using __base_t = __cudax::basic_any<__cudax::__iasync_resource<_Properties...>>;
   using __base_t::interface;
 
   __base_t& __base() noexcept
@@ -364,7 +364,7 @@ private:
   static_assert(_CUDA_VMR::__contains_execution_space_property<_Properties...>,
                 "The properties of cuda::experimental::resource_ref must contain at least one execution space "
                 "property!");
-  using __base_t = __cudax::basic_any<__iresource<_Properties...>&>;
+  using __base_t = __cudax::basic_any<__cudax::__iresource<_Properties...>&>;
   using __base_t::interface;
 
 public:
@@ -401,7 +401,7 @@ private:
   template <class...>
   friend struct resource_ref;
 
-  using __base_t = __cudax::basic_any<__iasync_resource<_Properties...>&>;
+  using __base_t = __cudax::basic_any<__cudax::__iasync_resource<_Properties...>&>;
   using __base_t::interface;
 
   __base_t& __base() noexcept
