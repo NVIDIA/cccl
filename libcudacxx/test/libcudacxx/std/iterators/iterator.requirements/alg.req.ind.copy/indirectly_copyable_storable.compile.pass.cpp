@@ -319,7 +319,8 @@ struct basic_common_reference<NotConstructibleFromRefIn::ReferenceType, NotConst
 } // namespace cuda
 
 static_assert(
-  cuda::std::common_reference_with<NotConstructibleFromRefIn::ValueType&, NotConstructibleFromRefIn::ReferenceType&>);
+  cuda::std::common_reference_with<NotConstructibleFromRefIn::ValueType&, NotConstructibleFromRefIn::ReferenceType&>,
+  "");
 
 struct AssignableFromAnything
 {
