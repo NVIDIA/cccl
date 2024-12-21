@@ -1,3 +1,7 @@
+# Copyright (c) 2024, NVIDIA CORPORATION & AFFILIATES. ALL RIGHTS RESERVED.
+#
+# SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+
 from dataclasses import dataclass
 from functools import lru_cache
 import os
