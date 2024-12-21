@@ -298,8 +298,9 @@ struct layout_stride
     // nvcc cannot deduce this constructor when using _CCCL_REQUIRES
     template <
       class _IntegralTypes,
-      enable_if_t<_CCCL_TRAIT(is_convertible, const remove_const_t<_IntegralTypes>&, index_type), int>           = 0,
-      enable_if_t<_CCCL_TRAIT(is_nothrow_constructible, index_type, const remove_const_t<_IntegralTypes>&), int> = 0>
+      typename enable_if<_CCCL_TRAIT(is_convertible, const remove_const_t<_IntegralTypes>&, index_type), int>::type = 0,
+      typename enable_if<_CCCL_TRAIT(is_nothrow_constructible, index_type, const remove_const_t<_IntegralTypes>&),
+                         int>::type                                                                                 = 0>
     _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping(
       extents_type const& __e, _CUDA_VSTD::array<_IntegralTypes, extents_type::rank()> const& __s) noexcept
 #  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
@@ -327,8 +328,9 @@ struct layout_stride
     // nvcc cannot deduce this constructor when using _CCCL_REQUIRES
     template <
       class _IntegralTypes,
-      enable_if_t<_CCCL_TRAIT(is_convertible, const remove_const_t<_IntegralTypes>&, index_type), int>           = 0,
-      enable_if_t<_CCCL_TRAIT(is_nothrow_constructible, index_type, const remove_const_t<_IntegralTypes>&), int> = 0>
+      typename enable_if<_CCCL_TRAIT(is_convertible, const remove_const_t<_IntegralTypes>&, index_type), int>::type = 0,
+      typename enable_if<_CCCL_TRAIT(is_nothrow_constructible, index_type, const remove_const_t<_IntegralTypes>&),
+                         int>::type                                                                                 = 0>
     _LIBCUDACXX_HIDE_FROM_ABI constexpr mapping(
       extents_type const& __e, _CUDA_VSTD::span<_IntegralTypes, extents_type::rank()> const& __s) noexcept
 #  ifndef _CCCL_HAS_NO_ATTRIBUTE_NO_UNIQUE_ADDRESS
