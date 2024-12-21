@@ -2,9 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-import os
-import shutil
 from cuda.bindings import nvrtc
+from cuda.cccl.include_paths import get_include_paths  # type: ignore[import-not-found]
 from cuda.cooperative.experimental._caching import disk_cache
 from cuda.cooperative.experimental._common import check_in, version
 import functools
@@ -18,22 +17,6 @@ def CHECK_NVRTC(err, prog):
         raise RuntimeError(f"NVRTC error: {log.decode('ascii')}")
 
 
-def get_cuda_path():
-    cuda_path = os.environ.get("CUDA_PATH", "")
-    if os.path.exists(cuda_path):
-        return cuda_path
-
-    nvcc_path = shutil.which("nvcc")
-    if nvcc_path is not None:
-        return os.path.dirname(os.path.dirname(nvcc_path))
-
-    default_path = "/usr/local/cuda"
-    if os.path.exists(default_path):
-        return default_path
-
-    return None
-
-
 # cpp is the C++ source code
 # cc = 800 for Ampere, 900 Hopper, etc
 # rdc is true or false
@@ -45,13 +28,11 @@ def compile_impl(cpp, cc, rdc, code, nvrtc_path, nvrtc_version):
     check_in("rdc", rdc, [True, False])
     check_in("code", code, ["lto", "ptx"])
 
-    cuda_include_path = os.path.join(get_cuda_path(), "include")
-
-    opts = [
-        b"--std=c++17",
-        bytes(f"--include-path={cuda_include_path}", encoding="ascii"),
-        bytes(f"--gpu-architecture=compute_{cc}", encoding="ascii"),
-    ]
+    opts = [b"--std=c++17"]
+    for path in get_include_paths().as_tuple():
+        if path:
+            opts += [f"--include-path={path}".encode("ascii")]
+    opts += [f"--gpu-architecture=compute_{cc}".encode("ascii")]
     if rdc:
         opts += [b"--relocatable-device-code=true"]
 
