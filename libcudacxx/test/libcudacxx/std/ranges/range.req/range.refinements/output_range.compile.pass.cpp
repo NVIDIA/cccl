@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: msvc-19.16
 
 // template<class R, class T>
@@ -28,18 +28,18 @@ struct GoodRange
   __host__ __device__ cpp17_output_iterator<T*> begin();
   __host__ __device__ sentinel end();
 };
-static_assert(cuda::std::ranges::range<GoodRange>);
-static_assert(cuda::std::output_iterator<cuda::std::ranges::iterator_t<GoodRange>, T>);
-static_assert(cuda::std::ranges::output_range<GoodRange, T>);
+static_assert(cuda::std::ranges::range<GoodRange>, "");
+static_assert(cuda::std::output_iterator<cuda::std::ranges::iterator_t<GoodRange>, T>, "");
+static_assert(cuda::std::ranges::output_range<GoodRange, T>, "");
 
 // Not satisfied when it's not a range
 struct NotRange
 {
   __host__ __device__ cpp17_output_iterator<T*> begin();
 };
-static_assert(!cuda::std::ranges::range<NotRange>);
-static_assert(cuda::std::output_iterator<cuda::std::ranges::iterator_t<NotRange>, T>);
-static_assert(!cuda::std::ranges::output_range<NotRange, T>);
+static_assert(!cuda::std::ranges::range<NotRange>, "");
+static_assert(cuda::std::output_iterator<cuda::std::ranges::iterator_t<NotRange>, T>, "");
+static_assert(!cuda::std::ranges::output_range<NotRange, T>, "");
 
 // Not satisfied when the iterator is not an output_iterator
 struct RangeWithBadIterator
@@ -47,9 +47,9 @@ struct RangeWithBadIterator
   __host__ __device__ cpp17_input_iterator<T const*> begin();
   __host__ __device__ sentinel end();
 };
-static_assert(cuda::std::ranges::range<RangeWithBadIterator>);
-static_assert(!cuda::std::output_iterator<cuda::std::ranges::iterator_t<RangeWithBadIterator>, T>);
-static_assert(!cuda::std::ranges::output_range<RangeWithBadIterator, T>);
+static_assert(cuda::std::ranges::range<RangeWithBadIterator>, "");
+static_assert(!cuda::std::output_iterator<cuda::std::ranges::iterator_t<RangeWithBadIterator>, T>, "");
+static_assert(!cuda::std::ranges::output_range<RangeWithBadIterator, T>, "");
 
 #if TEST_STD_VER > 2017
 // Test ADL-proofing.
@@ -60,19 +60,19 @@ struct Holder
   T t;
 };
 
-static_assert(!cuda::std::ranges::output_range<Holder<Incomplete>*, Holder<Incomplete>*>);
-static_assert(!cuda::std::ranges::output_range<Holder<Incomplete>*&, Holder<Incomplete>*>);
-static_assert(!cuda::std::ranges::output_range<Holder<Incomplete>*&&, Holder<Incomplete>*>);
-static_assert(!cuda::std::ranges::output_range<Holder<Incomplete>* const, Holder<Incomplete>*>);
-static_assert(!cuda::std::ranges::output_range<Holder<Incomplete>* const&, Holder<Incomplete>*>);
-static_assert(!cuda::std::ranges::output_range<Holder<Incomplete>* const&&, Holder<Incomplete>*>);
+static_assert(!cuda::std::ranges::output_range<Holder<Incomplete>*, Holder<Incomplete>*>, "");
+static_assert(!cuda::std::ranges::output_range<Holder<Incomplete>*&, Holder<Incomplete>*>, "");
+static_assert(!cuda::std::ranges::output_range<Holder<Incomplete>*&&, Holder<Incomplete>*>, "");
+static_assert(!cuda::std::ranges::output_range<Holder<Incomplete>* const, Holder<Incomplete>*>, "");
+static_assert(!cuda::std::ranges::output_range<Holder<Incomplete>* const&, Holder<Incomplete>*>, "");
+static_assert(!cuda::std::ranges::output_range<Holder<Incomplete>* const&&, Holder<Incomplete>*>, "");
 
-static_assert(cuda::std::ranges::output_range<Holder<Incomplete>* [10], Holder<Incomplete>*>);
-static_assert(cuda::std::ranges::output_range<Holder<Incomplete>* (&) [10], Holder<Incomplete>*>);
-static_assert(cuda::std::ranges::output_range<Holder<Incomplete>* (&&) [10], Holder<Incomplete>*>);
-static_assert(!cuda::std::ranges::output_range<Holder<Incomplete>* const[10], Holder<Incomplete>*>);
-static_assert(!cuda::std::ranges::output_range<Holder<Incomplete>* const (&)[10], Holder<Incomplete>*>);
-static_assert(!cuda::std::ranges::output_range<Holder<Incomplete>* const (&&)[10], Holder<Incomplete>*>);
+static_assert(cuda::std::ranges::output_range<Holder<Incomplete>* [10], Holder<Incomplete>*>, "");
+static_assert(cuda::std::ranges::output_range<Holder<Incomplete>* (&) [10], Holder<Incomplete>*>, "");
+static_assert(cuda::std::ranges::output_range<Holder<Incomplete>* (&&) [10], Holder<Incomplete>*>, "");
+static_assert(!cuda::std::ranges::output_range<Holder<Incomplete>* const[10], Holder<Incomplete>*>, "");
+static_assert(!cuda::std::ranges::output_range<Holder<Incomplete>* const (&)[10], Holder<Incomplete>*>, "");
+static_assert(!cuda::std::ranges::output_range<Holder<Incomplete>* const (&&)[10], Holder<Incomplete>*>, "");
 #endif
 
 int main(int, char**)

@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11
 
 // template<class T>
 // struct iterator_traits;
@@ -26,10 +26,11 @@
 #include "test_macros.h"
 
 template <class Traits, class = void>
-inline constexpr bool has_iterator_concept_v = false;
+_CCCL_INLINE_VAR constexpr bool has_iterator_concept_v = false;
 
 template <class Traits>
-inline constexpr bool has_iterator_concept_v<Traits, cuda::std::void_t<typename Traits::iterator_concept>> = true;
+_CCCL_INLINE_VAR constexpr bool has_iterator_concept_v<Traits, cuda::std::void_t<typename Traits::iterator_concept>> =
+  true;
 
 template <class It, class Traits, cuda::std::enable_if_t<cuda::std::is_pointer_v<It>, int> = 0>
 __host__ __device__ constexpr void test_iter_concept()

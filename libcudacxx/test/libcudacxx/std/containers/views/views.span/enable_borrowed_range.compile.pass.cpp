@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: msvc-19.16
 
 // <cuda/std/span>
@@ -22,11 +22,11 @@
 
 int main(int, char**)
 {
-  static_assert(cuda::std::ranges::enable_borrowed_range<cuda::std::span<int, 0>>);
-  static_assert(cuda::std::ranges::enable_borrowed_range<cuda::std::span<int, 42>>);
-  static_assert(cuda::std::ranges::enable_borrowed_range<cuda::std::span<int, cuda::std::dynamic_extent>>);
-  static_assert(!cuda::std::ranges::enable_borrowed_range<cuda::std::span<int, 42>&>);
-  static_assert(!cuda::std::ranges::enable_borrowed_range<cuda::std::span<int, 42> const>);
+  static_assert(cuda::std::ranges::enable_borrowed_range<cuda::std::span<int, 0>>, "");
+  static_assert(cuda::std::ranges::enable_borrowed_range<cuda::std::span<int, 42>>, "");
+  static_assert(cuda::std::ranges::enable_borrowed_range<cuda::std::span<int, cuda::std::dynamic_extent>>, "");
+  static_assert(!cuda::std::ranges::enable_borrowed_range<cuda::std::span<int, 42>&>, "");
+  static_assert(!cuda::std::ranges::enable_borrowed_range<cuda::std::span<int, 42> const>, "");
 
   return 0;
 }

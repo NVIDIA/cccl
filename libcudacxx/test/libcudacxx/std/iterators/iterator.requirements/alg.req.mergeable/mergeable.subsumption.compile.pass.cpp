@@ -40,7 +40,7 @@ __host__ __device__ constexpr bool test_subsumption()
   return true;
 }
 
-static_assert(test_subsumption<int*, int*, int*>());
+static_assert(test_subsumption<int*, int*, int*>(), "");
 
 int main(int, char**)
 {

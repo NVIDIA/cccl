@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: msvc-19.16
 
 // template<range _Rp>
@@ -19,15 +19,18 @@
 #include "test_iterators.h"
 #include "test_range.h"
 
-static_assert(cuda::std::same_as<cuda::std::ranges::sentinel_t<test_range<cpp20_input_iterator>>, sentinel>);
-static_assert(cuda::std::same_as<cuda::std::ranges::sentinel_t<test_range<cpp20_input_iterator> const>, sentinel>);
-static_assert(cuda::std::same_as<cuda::std::ranges::sentinel_t<test_non_const_range<cpp20_input_iterator>>, sentinel>);
+static_assert(cuda::std::same_as<cuda::std::ranges::sentinel_t<test_range<cpp20_input_iterator>>, sentinel>, "");
+static_assert(cuda::std::same_as<cuda::std::ranges::sentinel_t<test_range<cpp20_input_iterator> const>, sentinel>, "");
+static_assert(cuda::std::same_as<cuda::std::ranges::sentinel_t<test_non_const_range<cpp20_input_iterator>>, sentinel>,
+              "");
 static_assert(
-  cuda::std::same_as<cuda::std::ranges::sentinel_t<test_common_range<forward_iterator>>, forward_iterator<int*>>);
+  cuda::std::same_as<cuda::std::ranges::sentinel_t<test_common_range<forward_iterator>>, forward_iterator<int*>>, "");
 static_assert(cuda::std::same_as<cuda::std::ranges::sentinel_t<test_common_range<forward_iterator> const>,
-                                 forward_iterator<int const*>>);
+                                 forward_iterator<int const*>>,
+              "");
 static_assert(cuda::std::same_as<cuda::std::ranges::sentinel_t<test_non_const_common_range<forward_iterator>>,
-                                 forward_iterator<int*>>);
+                                 forward_iterator<int*>>,
+              "");
 
 int main(int, char**)
 {

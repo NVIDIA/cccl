@@ -28,8 +28,8 @@ using cuda::std::is_constructible;
 // Constructor constrains
 static_assert(is_constructible<cuda::std::span<const int>, cuda::std::initializer_list<int>>::value, "");
 static_assert(is_constructible<cuda::std::span<const int, 42>, cuda::std::initializer_list<int>>::value, "");
-static_assert(!is_constructible<cuda::std::span<const int>, cuda::std::initializer_list<const int>>::value, "");
-static_assert(!is_constructible<cuda::std::span<const int, 42>, cuda::std::initializer_list<const int>>::value, "");
+static_assert(is_constructible<cuda::std::span<const int>, cuda::std::initializer_list<const int>>::value, "");
+static_assert(is_constructible<cuda::std::span<const int, 42>, cuda::std::initializer_list<const int>>::value, "");
 
 static_assert(!is_constructible<cuda::std::span<int>, cuda::std::initializer_list<int>>::value, "");
 static_assert(!is_constructible<cuda::std::span<int, 42>, cuda::std::initializer_list<int>>::value, "");

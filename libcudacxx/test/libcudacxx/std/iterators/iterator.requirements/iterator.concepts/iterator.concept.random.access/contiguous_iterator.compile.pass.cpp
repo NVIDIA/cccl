@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11
 
 // template<class T>
 // concept contiguous_iterator;
@@ -17,18 +17,18 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-static_assert(!cuda::std::contiguous_iterator<cpp17_input_iterator<int*>>);
-static_assert(!cuda::std::contiguous_iterator<cpp20_input_iterator<int*>>);
-static_assert(!cuda::std::contiguous_iterator<forward_iterator<int*>>);
-static_assert(!cuda::std::contiguous_iterator<bidirectional_iterator<int*>>);
-static_assert(!cuda::std::contiguous_iterator<random_access_iterator<int*>>);
-static_assert(cuda::std::contiguous_iterator<contiguous_iterator<int*>>);
+static_assert(!cuda::std::contiguous_iterator<cpp17_input_iterator<int*>>, "");
+static_assert(!cuda::std::contiguous_iterator<cpp20_input_iterator<int*>>, "");
+static_assert(!cuda::std::contiguous_iterator<forward_iterator<int*>>, "");
+static_assert(!cuda::std::contiguous_iterator<bidirectional_iterator<int*>>, "");
+static_assert(!cuda::std::contiguous_iterator<random_access_iterator<int*>>, "");
+static_assert(cuda::std::contiguous_iterator<contiguous_iterator<int*>>, "");
 
 #ifndef TEST_COMPILER_MSVC_2017
-static_assert(cuda::std::contiguous_iterator<int*>);
-static_assert(cuda::std::contiguous_iterator<int const*>);
-static_assert(cuda::std::contiguous_iterator<int volatile*>);
-static_assert(cuda::std::contiguous_iterator<int const volatile*>);
+static_assert(cuda::std::contiguous_iterator<int*>, "");
+static_assert(cuda::std::contiguous_iterator<int const*>, "");
+static_assert(cuda::std::contiguous_iterator<int volatile*>, "");
+static_assert(cuda::std::contiguous_iterator<int const volatile*>, "");
 #endif // TEST_COMPILER_MSVC_2017
 
 struct simple_contiguous_iterator
@@ -91,8 +91,8 @@ struct simple_contiguous_iterator
   __host__ __device__ reference operator[](difference_type n) const;
 };
 
-static_assert(cuda::std::random_access_iterator<simple_contiguous_iterator>);
-static_assert(cuda::std::contiguous_iterator<simple_contiguous_iterator>);
+static_assert(cuda::std::random_access_iterator<simple_contiguous_iterator>, "");
+static_assert(cuda::std::contiguous_iterator<simple_contiguous_iterator>, "");
 
 struct mismatch_value_iter_ref_t
 {
@@ -156,8 +156,8 @@ struct mismatch_value_iter_ref_t
   __host__ __device__ reference operator[](difference_type n) const;
 };
 
-static_assert(cuda::std::random_access_iterator<mismatch_value_iter_ref_t>);
-static_assert(!cuda::std::contiguous_iterator<mismatch_value_iter_ref_t>);
+static_assert(cuda::std::random_access_iterator<mismatch_value_iter_ref_t>, "");
+static_assert(!cuda::std::contiguous_iterator<mismatch_value_iter_ref_t>, "");
 
 struct wrong_iter_reference_t
 {
@@ -219,8 +219,8 @@ struct wrong_iter_reference_t
   __host__ __device__ reference operator[](difference_type n) const;
 };
 
-static_assert(cuda::std::random_access_iterator<wrong_iter_reference_t>);
-static_assert(!cuda::std::contiguous_iterator<wrong_iter_reference_t>);
+static_assert(cuda::std::random_access_iterator<wrong_iter_reference_t>, "");
+static_assert(!cuda::std::contiguous_iterator<wrong_iter_reference_t>, "");
 
 struct to_address_wrong_return_type
 {
@@ -282,15 +282,21 @@ struct to_address_wrong_return_type
   __host__ __device__ reference operator[](difference_type n) const;
 };
 
+namespace cuda
+{
+namespace std
+{
 template <>
-struct cuda::std::pointer_traits<to_address_wrong_return_type>
+struct pointer_traits<to_address_wrong_return_type>
 {
   typedef void element_type;
   __host__ __device__ static void* to_address(to_address_wrong_return_type const&);
 };
+} // namespace std
+} // namespace cuda
 
-static_assert(cuda::std::random_access_iterator<to_address_wrong_return_type>);
-static_assert(!cuda::std::contiguous_iterator<to_address_wrong_return_type>);
+static_assert(cuda::std::random_access_iterator<to_address_wrong_return_type>, "");
+static_assert(!cuda::std::contiguous_iterator<to_address_wrong_return_type>, "");
 
 template <class>
 struct template_and_no_element_type
@@ -356,8 +362,8 @@ struct template_and_no_element_type
 };
 
 // Template param is used instead of element_type.
-static_assert(cuda::std::random_access_iterator<template_and_no_element_type<int>>);
-static_assert(cuda::std::contiguous_iterator<template_and_no_element_type<int>>);
+static_assert(cuda::std::random_access_iterator<template_and_no_element_type<int>>, "");
+static_assert(cuda::std::contiguous_iterator<template_and_no_element_type<int>>, "");
 
 template <bool DisableArrow, bool DisableToAddress>
 struct no_operator_arrow
@@ -426,15 +432,21 @@ struct no_operator_arrow
   __host__ __device__ reference operator[](difference_type n) const;
 };
 
+namespace cuda
+{
+namespace std
+{
 template <>
-struct cuda::std::pointer_traits<no_operator_arrow</*DisableArrow=*/true, /*DisableToAddress=*/false>>
+struct pointer_traits<no_operator_arrow</*DisableArrow=*/true, /*DisableToAddress=*/false>>
 {
   __host__ __device__ static constexpr int* to_address(const no_operator_arrow<true, false>&);
 };
+} // namespace std
+} // namespace cuda
 
-static_assert(cuda::std::contiguous_iterator<no_operator_arrow</*DisableArrow=*/false, /*DisableToAddress=*/true>>);
-static_assert(!cuda::std::contiguous_iterator<no_operator_arrow</*DisableArrow=*/true, /*DisableToAddress=*/true>>);
-static_assert(cuda::std::contiguous_iterator<no_operator_arrow</*DisableArrow=*/true, /*DisableToAddress=*/false>>);
+static_assert(cuda::std::contiguous_iterator<no_operator_arrow</*DisableArrow=*/false, /*DisableToAddress=*/true>>, "");
+static_assert(!cuda::std::contiguous_iterator<no_operator_arrow</*DisableArrow=*/true, /*DisableToAddress=*/true>>, "");
+static_assert(cuda::std::contiguous_iterator<no_operator_arrow</*DisableArrow=*/true, /*DisableToAddress=*/false>>, "");
 
 int main(int, char**)
 {

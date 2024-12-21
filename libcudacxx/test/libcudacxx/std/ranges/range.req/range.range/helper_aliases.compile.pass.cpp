@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: msvc-19.16
 
 // template<range R>
@@ -29,15 +29,20 @@
 #include "test_range.h"
 
 static_assert(cuda::std::same_as<cuda::std::ranges::range_difference_t<test_range<cpp20_input_iterator>>,
-                                 cuda::std::iter_difference_t<int*>>);
+                                 cuda::std::iter_difference_t<int*>>,
+              "");
 static_assert(
-  cuda::std::same_as<cuda::std::ranges::range_value_t<test_range<cpp20_input_iterator>>, cuda::std::iter_value_t<int*>>);
+  cuda::std::same_as<cuda::std::ranges::range_value_t<test_range<cpp20_input_iterator>>, cuda::std::iter_value_t<int*>>,
+  "");
 static_assert(cuda::std::same_as<cuda::std::ranges::range_reference_t<test_range<cpp20_input_iterator>>,
-                                 cuda::std::iter_reference_t<int*>>);
+                                 cuda::std::iter_reference_t<int*>>,
+              "");
 static_assert(cuda::std::same_as<cuda::std::ranges::range_rvalue_reference_t<test_range<cpp20_input_iterator>>,
-                                 cuda::std::iter_rvalue_reference_t<int*>>);
+                                 cuda::std::iter_rvalue_reference_t<int*>>,
+              "");
 static_assert(cuda::std::same_as<cuda::std::ranges::range_common_reference_t<test_range<cpp20_input_iterator>>,
-                                 cuda::std::iter_common_reference_t<int*>>);
+                                 cuda::std::iter_common_reference_t<int*>>,
+              "");
 
 int main(int, char**)
 {

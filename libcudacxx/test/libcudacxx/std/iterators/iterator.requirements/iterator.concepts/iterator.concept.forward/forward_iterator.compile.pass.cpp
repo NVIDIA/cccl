@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11
 
 // cuda::std::forward_iterator;
 
@@ -16,17 +16,17 @@
 
 #include "test_iterators.h"
 
-static_assert(!cuda::std::forward_iterator<cpp17_input_iterator<int*>>);
-static_assert(!cuda::std::forward_iterator<cpp20_input_iterator<int*>>);
-static_assert(cuda::std::forward_iterator<forward_iterator<int*>>);
-static_assert(cuda::std::forward_iterator<bidirectional_iterator<int*>>);
-static_assert(cuda::std::forward_iterator<random_access_iterator<int*>>);
-static_assert(cuda::std::forward_iterator<contiguous_iterator<int*>>);
+static_assert(!cuda::std::forward_iterator<cpp17_input_iterator<int*>>, "");
+static_assert(!cuda::std::forward_iterator<cpp20_input_iterator<int*>>, "");
+static_assert(cuda::std::forward_iterator<forward_iterator<int*>>, "");
+static_assert(cuda::std::forward_iterator<bidirectional_iterator<int*>>, "");
+static_assert(cuda::std::forward_iterator<random_access_iterator<int*>>, "");
+static_assert(cuda::std::forward_iterator<contiguous_iterator<int*>>, "");
 
-static_assert(cuda::std::forward_iterator<int*>);
-static_assert(cuda::std::forward_iterator<int const*>);
-static_assert(cuda::std::forward_iterator<int volatile*>);
-static_assert(cuda::std::forward_iterator<int const volatile*>);
+static_assert(cuda::std::forward_iterator<int*>, "");
+static_assert(cuda::std::forward_iterator<int const*>, "");
+static_assert(cuda::std::forward_iterator<int volatile*>, "");
+static_assert(cuda::std::forward_iterator<int const volatile*>, "");
 
 struct not_input_iterator
 {
@@ -52,9 +52,9 @@ struct not_input_iterator
   };
 #endif
 };
-static_assert(cuda::std::input_or_output_iterator<not_input_iterator>);
-static_assert(!cuda::std::input_iterator<not_input_iterator>);
-static_assert(!cuda::std::forward_iterator<not_input_iterator>);
+static_assert(cuda::std::input_or_output_iterator<not_input_iterator>, "");
+static_assert(!cuda::std::input_iterator<not_input_iterator>, "");
+static_assert(!cuda::std::forward_iterator<not_input_iterator>, "");
 
 struct bad_iterator_tag
 {
@@ -80,7 +80,7 @@ struct bad_iterator_tag
   };
 #endif
 };
-static_assert(!cuda::std::forward_iterator<bad_iterator_tag>);
+static_assert(!cuda::std::forward_iterator<bad_iterator_tag>, "");
 
 struct not_incrementable
 {
@@ -106,7 +106,7 @@ struct not_incrementable
   };
 #endif
 };
-static_assert(!cuda::std::forward_iterator<not_incrementable>);
+static_assert(!cuda::std::forward_iterator<not_incrementable>, "");
 
 struct not_equality_comparable
 {
@@ -121,7 +121,7 @@ struct not_equality_comparable
 
   __host__ __device__ bool operator==(not_equality_comparable const&) const = delete;
 };
-static_assert(!cuda::std::forward_iterator<not_equality_comparable>);
+static_assert(!cuda::std::forward_iterator<not_equality_comparable>, "");
 
 int main(int, char**)
 {

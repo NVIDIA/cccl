@@ -11,12 +11,14 @@
 #define SUPPORT_TEST_ITERATORS_H
 
 #include <cuda/std/iterator>
+
 #if defined(_LIBCUDACXX_HAS_STDEXCEPT)
 #  include <cuda/std/stdexcept>
 #endif
 #include <cuda/std/cassert>
 #include <cuda/std/concepts>
 #include <cuda/std/cstddef>
+#include <cuda/std/utility>
 
 #include "test_macros.h"
 #include "type_algorithms.h"
@@ -77,7 +79,7 @@ public:
   template <class T>
   void operator,(T const&) = delete;
 };
-#if TEST_STD_VER > 2014
+#if TEST_STD_VER >= 2014
 static_assert(cuda::std::output_iterator<cpp17_output_iterator<int*>, int>, "");
 #endif
 
@@ -147,7 +149,7 @@ public:
   template <class T>
   void operator,(T const&) = delete;
 };
-#if TEST_STD_VER > 2014
+#if TEST_STD_VER >= 2014
 static_assert(cuda::std::input_or_output_iterator<cpp17_input_iterator<int*>>, "");
 static_assert(cuda::std::indirectly_readable<cpp17_input_iterator<int*>>, "");
 static_assert(cuda::std::input_iterator<cpp17_input_iterator<int*>>, "");
@@ -219,7 +221,7 @@ public:
   template <class T>
   void operator,(T const&) = delete;
 };
-#if TEST_STD_VER > 2014
+#if TEST_STD_VER >= 2014
 static_assert(cuda::std::forward_iterator<forward_iterator<int*>>, "");
 #endif
 
@@ -300,7 +302,7 @@ public:
   template <class T>
   void operator,(T const&) = delete;
 };
-#if TEST_STD_VER > 2014
+#if TEST_STD_VER >= 2014
 static_assert(cuda::std::bidirectional_iterator<bidirectional_iterator<int*>>, "");
 #endif
 
@@ -438,7 +440,7 @@ public:
   template <class T>
   void operator,(T const&) = delete;
 };
-#if TEST_STD_VER > 2014
+#if TEST_STD_VER >= 2014
 static_assert(cuda::std::random_access_iterator<random_access_iterator<int*>>, "");
 
 template <class It>
@@ -1078,7 +1080,7 @@ private:
   const T* current_;
 };
 
-#if TEST_STD_VER > 2014
+#if TEST_STD_VER >= 2014
 
 template <class It>
 class cpp20_input_iterator
@@ -1759,17 +1761,23 @@ struct Proxy
 #  endif // TEST_HAS_NO_SPACESHIP_OPERATOR
 };
 
+namespace cuda
+{
+namespace std
+{
 // This is to make ProxyIterator model `cuda::std::indirectly_readable`
 template <class T, class U, template <class> class TQual, template <class> class UQual>
-struct cuda::std::basic_common_reference<Proxy<T>, Proxy<U>, TQual, UQual>
-    : public cuda::std::enable_if<cuda::std::__has_common_reference<TQual<T>, UQual<U>>,
-                                  Proxy<cuda::std::common_reference_t<TQual<T>, UQual<U>>>>
+struct basic_common_reference<Proxy<T>, Proxy<U>, TQual, UQual>
+    : public enable_if<cuda::std::__has_common_reference<TQual<T>, UQual<U>>,
+                       Proxy<cuda::std::common_reference_t<TQual<T>, UQual<U>>>>
 {};
 
 template <class T, class U>
-struct cuda::std::common_type<Proxy<T>, Proxy<U>>
-    : public cuda::std::enable_if<cuda::std::__has_common_type<T, U>, Proxy<cuda::std::common_type_t<T, U>>>
+struct common_type<Proxy<T>, Proxy<U>>
+    : public enable_if<cuda::std::__has_common_type<T, U>, Proxy<cuda::std::common_type_t<T, U>>>
 {};
+} // namespace std
+} // namespace cuda
 
 // ProxyIterator
 // ======================================================================
@@ -1794,26 +1802,23 @@ struct ProxyIteratorBase<
   using iterator_category = cuda::std::input_iterator_tag;
 };
 
+template <class Base>
+__host__ __device__ auto get_iter_concept_impl(cuda::std::__priority_tag<3>)
+  -> cuda::std::enable_if_t<cuda::std::random_access_iterator<Base>, cuda::std::random_access_iterator_tag>;
+template <class Base>
+__host__ __device__ auto get_iter_concept_impl(cuda::std::__priority_tag<2>)
+  -> cuda::std::enable_if_t<cuda::std::bidirectional_iterator<Base>, cuda::std::bidirectional_iterator_tag>;
+template <class Base>
+__host__ __device__ auto get_iter_concept_impl(cuda::std::__priority_tag<1>)
+  -> cuda::std::enable_if_t<cuda::std::forward_iterator<Base>, cuda::std::forward_iterator_tag>;
+template <class Base>
+__host__ __device__ auto get_iter_concept_impl(cuda::std::__priority_tag<0>) -> cuda::std::input_iterator_tag;
+
 template <class Base, cuda::std::enable_if_t<cuda::std::input_iterator<Base>, int> = 0>
 __host__ __device__ constexpr auto get_iterator_concept()
 {
-  if constexpr (cuda::std::random_access_iterator<Base>)
-  {
-    return cuda::std::random_access_iterator_tag{};
-  }
-  else if constexpr (cuda::std::bidirectional_iterator<Base>)
-  {
-    return cuda::std::bidirectional_iterator_tag{};
-  }
-  else if constexpr (cuda::std::forward_iterator<Base>)
-  {
-    return cuda::std::forward_iterator_tag{};
-  }
-  else
-  {
-    return cuda::std::input_iterator_tag{};
-  }
-  _CCCL_UNREACHABLE();
+  using Tag = decltype(get_iter_concept_impl<Base>(cuda::std::__priority_tag<3>{}));
+  return Tag{};
 }
 
 template <class Base, cuda::std::enable_if_t<cuda::std::input_iterator<Base>, int> = 0>

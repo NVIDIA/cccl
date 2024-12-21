@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11
 
 // template<class T>
 // concept random_access_iterator;
@@ -17,18 +17,18 @@
 #include "test_iterators.h"
 #include "test_macros.h"
 
-static_assert(!cuda::std::random_access_iterator<cpp17_input_iterator<int*>>);
-static_assert(!cuda::std::random_access_iterator<cpp20_input_iterator<int*>>);
-static_assert(!cuda::std::random_access_iterator<forward_iterator<int*>>);
-static_assert(!cuda::std::random_access_iterator<bidirectional_iterator<int*>>);
-static_assert(cuda::std::random_access_iterator<random_access_iterator<int*>>);
-static_assert(cuda::std::random_access_iterator<contiguous_iterator<int*>>);
+static_assert(!cuda::std::random_access_iterator<cpp17_input_iterator<int*>>, "");
+static_assert(!cuda::std::random_access_iterator<cpp20_input_iterator<int*>>, "");
+static_assert(!cuda::std::random_access_iterator<forward_iterator<int*>>, "");
+static_assert(!cuda::std::random_access_iterator<bidirectional_iterator<int*>>, "");
+static_assert(cuda::std::random_access_iterator<random_access_iterator<int*>>, "");
+static_assert(cuda::std::random_access_iterator<contiguous_iterator<int*>>, "");
 
 #ifndef TEST_COMPILER_MSVC_2017
-static_assert(cuda::std::random_access_iterator<int*>);
-static_assert(cuda::std::random_access_iterator<int const*>);
-static_assert(cuda::std::random_access_iterator<int volatile*>);
-static_assert(cuda::std::random_access_iterator<int const volatile*>);
+static_assert(cuda::std::random_access_iterator<int*>, "");
+static_assert(cuda::std::random_access_iterator<int const*>, "");
+static_assert(cuda::std::random_access_iterator<int volatile*>, "");
+static_assert(cuda::std::random_access_iterator<int const volatile*>, "");
 #endif // TEST_COMPILER_MSVC_2017
 
 struct wrong_iterator_category
@@ -87,8 +87,8 @@ struct wrong_iterator_category
 
   __host__ __device__ reference operator[](difference_type n) const;
 };
-static_assert(cuda::std::bidirectional_iterator<wrong_iterator_category>);
-static_assert(!cuda::std::random_access_iterator<wrong_iterator_category>);
+static_assert(cuda::std::bidirectional_iterator<wrong_iterator_category>, "");
+static_assert(!cuda::std::random_access_iterator<wrong_iterator_category>, "");
 
 template <class Child>
 struct common_base
@@ -174,8 +174,8 @@ struct simple_random_access_iterator : common_base<simple_random_access_iterator
   };
 #endif
 };
-static_assert(cuda::std::bidirectional_iterator<simple_random_access_iterator>);
-static_assert(cuda::std::random_access_iterator<simple_random_access_iterator>);
+static_assert(cuda::std::bidirectional_iterator<simple_random_access_iterator>, "");
+static_assert(cuda::std::random_access_iterator<simple_random_access_iterator>, "");
 
 struct no_plus_equals : common_base<no_plus_equals>
 {
@@ -215,8 +215,8 @@ struct no_plus_equals : common_base<no_plus_equals>
   };
 #endif
 };
-static_assert(cuda::std::bidirectional_iterator<no_plus_equals>);
-static_assert(!cuda::std::random_access_iterator<no_plus_equals>);
+static_assert(cuda::std::bidirectional_iterator<no_plus_equals>, "");
+static_assert(!cuda::std::random_access_iterator<no_plus_equals>, "");
 
 struct no_plus_difference_type : common_base<no_plus_difference_type>
 {
@@ -256,8 +256,8 @@ struct no_plus_difference_type : common_base<no_plus_difference_type>
   };
 #endif
 };
-static_assert(cuda::std::bidirectional_iterator<no_plus_difference_type>);
-static_assert(!cuda::std::random_access_iterator<no_plus_difference_type>);
+static_assert(cuda::std::bidirectional_iterator<no_plus_difference_type>, "");
+static_assert(!cuda::std::random_access_iterator<no_plus_difference_type>, "");
 
 struct difference_type_no_plus : common_base<difference_type_no_plus>
 {
@@ -297,8 +297,8 @@ struct difference_type_no_plus : common_base<difference_type_no_plus>
   };
 #endif
 };
-static_assert(cuda::std::bidirectional_iterator<difference_type_no_plus>);
-static_assert(!cuda::std::random_access_iterator<difference_type_no_plus>);
+static_assert(cuda::std::bidirectional_iterator<difference_type_no_plus>, "");
+static_assert(!cuda::std::random_access_iterator<difference_type_no_plus>, "");
 
 struct no_minus_equals : common_base<no_minus_equals>
 {
@@ -338,8 +338,8 @@ struct no_minus_equals : common_base<no_minus_equals>
   };
 #endif
 };
-static_assert(cuda::std::bidirectional_iterator<no_minus_equals>);
-static_assert(!cuda::std::random_access_iterator<no_minus_equals>);
+static_assert(cuda::std::bidirectional_iterator<no_minus_equals>, "");
+static_assert(!cuda::std::random_access_iterator<no_minus_equals>, "");
 
 struct no_minus : common_base<no_minus>
 {
@@ -379,8 +379,8 @@ struct no_minus : common_base<no_minus>
   };
 #endif
 };
-static_assert(cuda::std::bidirectional_iterator<no_minus>);
-static_assert(!cuda::std::random_access_iterator<no_minus>);
+static_assert(cuda::std::bidirectional_iterator<no_minus>, "");
+static_assert(!cuda::std::random_access_iterator<no_minus>, "");
 
 struct not_sized_sentinel : common_base<not_sized_sentinel>
 {
@@ -420,8 +420,8 @@ struct not_sized_sentinel : common_base<not_sized_sentinel>
   };
 #endif
 };
-static_assert(cuda::std::bidirectional_iterator<not_sized_sentinel>);
-static_assert(!cuda::std::random_access_iterator<not_sized_sentinel>);
+static_assert(cuda::std::bidirectional_iterator<not_sized_sentinel>, "");
+static_assert(!cuda::std::random_access_iterator<not_sized_sentinel>, "");
 
 struct no_subscript : common_base<no_subscript>
 {
@@ -461,8 +461,8 @@ struct no_subscript : common_base<no_subscript>
   };
 #endif
 };
-static_assert(cuda::std::bidirectional_iterator<no_subscript>);
-static_assert(!cuda::std::random_access_iterator<no_subscript>);
+static_assert(cuda::std::bidirectional_iterator<no_subscript>, "");
+static_assert(!cuda::std::random_access_iterator<no_subscript>, "");
 
 int main(int, char**)
 {

@@ -41,7 +41,7 @@ concept mergeable =
   && indirectly_copyable<_Input1, _Output> && indirectly_copyable<_Input2, _Output>
   && indirect_strict_weak_order<_Comp, projected<_Input1, _Proj1>, projected<_Input2, _Proj2>>;
 
-#elif _CCCL_STD_VER > 2014
+#elif _CCCL_STD_VER >= 2014
 
 template <class _Input1, class _Input2, class _Output, class _Comp, class _Proj1, class _Proj2>
 _CCCL_CONCEPT_FRAGMENT(

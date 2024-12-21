@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: msvc-19.16
 
 // <ranges>
@@ -29,16 +29,16 @@ struct S
 __host__ __device__ void test()
 {
   using cuda::std::ranges::enable_borrowed_range;
-  static_assert(!enable_borrowed_range<char>);
-  static_assert(!enable_borrowed_range<int>);
-  static_assert(!enable_borrowed_range<double>);
-  static_assert(!enable_borrowed_range<S>);
+  static_assert(!enable_borrowed_range<char>, "");
+  static_assert(!enable_borrowed_range<int>, "");
+  static_assert(!enable_borrowed_range<double>, "");
+  static_assert(!enable_borrowed_range<S>, "");
 
   // Sequence containers
-  static_assert(!enable_borrowed_range<cuda::std::array<int, 0>>);
-  static_assert(!enable_borrowed_range<cuda::std::array<int, 42>>);
+  static_assert(!enable_borrowed_range<cuda::std::array<int, 0>>, "");
+  static_assert(!enable_borrowed_range<cuda::std::array<int, 42>>, "");
 #if defined(_LIBCUDACXX_HAS_VECTOR)
-  static_assert(!enable_borrowed_range<cuda::std::vector<int>>);
+  static_assert(!enable_borrowed_range<cuda::std::vector<int>>, "");
 #endif
 
   // Both cuda::std::span and cuda::std::string_view have their own test.
