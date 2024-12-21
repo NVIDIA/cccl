@@ -16,9 +16,9 @@ def copy_license():
     shutil.copy(src, dst)
 
 
-def copy_cccl_headers_to_cuda_include():
+def copy_cccl_headers_to_cuda_cccl_include():
     cccl_headers = [["cub", "cub"], ["libcudacxx", "include"], ["thrust", "thrust"]]
-    inc_path = os.path.join(PROJECT_PATH, "cuda", "_include")
+    inc_path = os.path.join(PROJECT_PATH, "cuda", "cccl", "include")
     os.makedirs(inc_path, exist_ok=True)
     for proj_dir, header_dir in cccl_headers:
         src_path = os.path.abspath(os.path.join(CCCL_PATH, proj_dir, header_dir))
@@ -32,7 +32,7 @@ def copy_cccl_headers_to_cuda_include():
 
 
 copy_license()
-copy_cccl_headers_to_cuda_include()
+copy_cccl_headers_to_cuda_cccl_include()
 
 setup(
     packages=find_namespace_packages(include=["cuda.*"]),

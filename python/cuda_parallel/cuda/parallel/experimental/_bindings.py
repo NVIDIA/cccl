@@ -59,7 +59,7 @@ def get_paths() -> List[bytes]:
     # can move this to a module-level import.
     from importlib.resources import as_file, files
 
-    with as_file(files("cuda._include")) as f:
+    with as_file(files("cuda.cccl.include")) as f:
         cub_include_path = str(f)
     thrust_include_path = cub_include_path
     libcudacxx_include_path = str(os.path.join(cub_include_path, "libcudacxx"))
