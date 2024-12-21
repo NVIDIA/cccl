@@ -102,7 +102,7 @@ private:
   }
 
   //! @brief Determines the properly aligned start of the buffer given the alignment and size of `T`
-  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI constexpr _Tp* __get_data() const noexcept
+  _CCCL_NODISCARD _CCCL_HIDE_FROM_ABI _Tp* __get_data() const noexcept
   {
     constexpr size_t __alignment = alignof(_Tp);
     size_t __space               = __get_allocation_size(__count_);
@@ -195,7 +195,7 @@ public:
     {
       __mr_.deallocate_async(__buf_, __get_allocation_size(__count_), __stream_);
     }
-    __mr_     = __other.__mr_;
+    __mr_     = _CUDA_VSTD::move(__other.__mr_);
     __stream_ = _CUDA_VSTD::exchange(__other.__stream_, {});
     __count_  = _CUDA_VSTD::exchange(__other.__count_, 0);
     __buf_    = _CUDA_VSTD::exchange(__other.__buf_, nullptr);
@@ -269,6 +269,15 @@ public:
     {
       __stream_.wait();
     }
+    __stream_ = __new_stream;
+  }
+
+  //! @brief Replaces the stored stream
+  //! @param __new_stream the new stream
+  //! @warning This does not synchronize between \p __new_stream and the current stream. It is the user's responsibility
+  //! to ensure proper stream order going forward
+  _CCCL_HIDE_FROM_ABI constexpr void change_stream_unsynchronized(::cuda::stream_ref __new_stream) noexcept
+  {
     __stream_ = __new_stream;
   }
 
