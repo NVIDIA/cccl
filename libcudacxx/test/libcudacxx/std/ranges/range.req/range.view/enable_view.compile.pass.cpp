@@ -42,8 +42,18 @@ static_assert(!cuda::std::ranges::enable_view<const PrivateViewBase&&>, "");
 // Derives from view_base, but specializes enable_view to false
 struct EnableViewFalse : cuda::std::ranges::view_base
 {};
+
+namespace cuda
+{
+namespace std
+{
+namespace ranges
+{
 template <>
-constexpr bool cuda::std::ranges::enable_view<EnableViewFalse> = false;
+constexpr bool enable_view<EnableViewFalse> = false;
+} // namespace ranges
+} // namespace std
+} // namespace cuda
 
 static_assert(!cuda::std::ranges::enable_view<EnableViewFalse>, "");
 static_assert(!cuda::std::ranges::enable_view<EnableViewFalse&>, "");
@@ -65,8 +75,18 @@ static_assert(!cuda::std::ranges::enable_view<const PublicViewBase&&>, "");
 // Does not derive from view_base, but specializes enable_view to true
 struct EnableViewTrue
 {};
+
+namespace cuda
+{
+namespace std
+{
+namespace ranges
+{
 template <>
-constexpr bool cuda::std::ranges::enable_view<EnableViewTrue> = true;
+constexpr bool enable_view<EnableViewTrue> = true;
+}
+} // namespace std
+} // namespace cuda
 
 static_assert(cuda::std::ranges::enable_view<EnableViewTrue>, "");
 static_assert(!cuda::std::ranges::enable_view<EnableViewTrue&>, "");
