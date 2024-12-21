@@ -193,7 +193,7 @@ inline namespace __cpo
 _CCCL_GLOBAL_CONSTANT auto ssize = __ssize::__fn{};
 } // namespace __cpo
 
-#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
+#endif // _CCCL_STD_VER >= 2014 && !_CCCL_COMPILER(MSVC2017)
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

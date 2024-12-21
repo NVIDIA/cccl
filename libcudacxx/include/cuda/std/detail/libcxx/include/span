@@ -203,12 +203,6 @@ _CCCL_INLINE_VAR constexpr bool __is_std_span<span<_Tp, _Extent>> = true;
 template <class _From, class _To>
 _CCCL_CONCEPT __span_array_convertible = _CCCL_TRAIT(is_convertible, _From (*)[], _To (*)[]);
 
-template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool __is_std_initializer_list = false;
-
-template <class _Tp>
-_CCCL_INLINE_VAR constexpr bool __is_std_initializer_list<initializer_list<_Tp>> = true;
-
 #  if !_CCCL_COMPILER(MSVC2017)
 template <class _Range, class _ElementType>
 _CCCL_CONCEPT_FRAGMENT(
@@ -235,12 +229,12 @@ _CCCL_INLINE_VAR constexpr bool __span_compatible_range<
   _Range,
   _ElementType,
   void_t<
-    // is a contiguous range
-    enable_if_t<_CUDA_VRANGES::contiguous_range<_Range>, nullptr_t>,
-    // is a sized range
-    enable_if_t<_CUDA_VRANGES::sized_range<_Range>, nullptr_t>,
-    // is a borrowed range or ElementType is const
-    enable_if_t<(_CUDA_VRANGES::borrowed_range<_Range> || _CCCL_TRAIT(is_const, _ElementType)), nullptr_t>,
+    // // is a contiguous range
+    // enable_if_t<_CUDA_VRANGES::contiguous_range<_Range>, nullptr_t>,
+    // // is a sized range
+    // enable_if_t<_CUDA_VRANGES::sized_range<_Range>, nullptr_t>,
+    // // is a borrowed range or ElementType is const
+    // enable_if_t<(_CUDA_VRANGES::borrowed_range<_Range> || _CCCL_TRAIT(is_const, _ElementType)), nullptr_t>,
     // is not a C-style array
     enable_if_t<!_CCCL_TRAIT(is_array, remove_cvref_t<_Range>), nullptr_t>,
     // is not a specialization of span
@@ -248,9 +242,10 @@ _CCCL_INLINE_VAR constexpr bool __span_compatible_range<
     // is not a specialization of array
     enable_if_t<!__is_std_array<remove_cvref_t<_Range>>, nullptr_t>,
     // remove_pointer_t<decltype(data(cont))>(*)[] is convertible to ElementType(*)[]
-    enable_if_t<
-      _CCCL_TRAIT(is_convertible, remove_reference_t<_CUDA_VRANGES::range_reference_t<_Range>> (*)[], _ElementType (*)[]),
-      nullptr_t>>> = true;
+    enable_if_t<_CCCL_TRAIT(is_convertible,
+                            remove_pointer_t<decltype(_CUDA_VSTD::data(declval<_Container&>()))> (*)[],
+                            _ElementType (*)[]),
+                nullptr_t>>> = true;
 #  endif // _CCCL_COMPILER(MSVC2017)
 
 #  if _CCCL_STD_VER >= 2020

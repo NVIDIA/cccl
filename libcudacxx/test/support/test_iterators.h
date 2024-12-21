@@ -1803,16 +1803,16 @@ struct ProxyIteratorBase<
 };
 
 template <class Base>
-auto get_iter_concept_impl(cuda::std::__priority_tag<3>)
+__host__ __device__ auto get_iter_concept_impl(cuda::std::__priority_tag<3>)
   -> cuda::std::enable_if_t<cuda::std::random_access_iterator<Base>, cuda::std::random_access_iterator_tag>;
 template <class Base>
-auto get_iter_concept_impl(cuda::std::__priority_tag<2>)
+__host__ __device__ auto get_iter_concept_impl(cuda::std::__priority_tag<2>)
   -> cuda::std::enable_if_t<cuda::std::bidirectional_iterator<Base>, cuda::std::bidirectional_iterator_tag>;
 template <class Base>
-auto get_iter_concept_impl(cuda::std::__priority_tag<1>)
+__host__ __device__ auto get_iter_concept_impl(cuda::std::__priority_tag<1>)
   -> cuda::std::enable_if_t<cuda::std::forward_iterator<Base>, cuda::std::forward_iterator_tag>;
 template <class Base>
-auto get_iter_concept_impl(cuda::std::__priority_tag<0>) -> cuda::std::input_iterator_tag;
+__host__ __device__ auto get_iter_concept_impl(cuda::std::__priority_tag<0>) -> cuda::std::input_iterator_tag;
 
 template <class Base, cuda::std::enable_if_t<cuda::std::input_iterator<Base>, int> = 0>
 __host__ __device__ constexpr auto get_iterator_concept()
