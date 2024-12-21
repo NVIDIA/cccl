@@ -12,6 +12,7 @@ from typing import Callable
 
 from .. import _cccl as cccl
 from .._bindings import get_paths, get_bindings
+from .._caching import cache_with_key
 
 
 class _Op:
@@ -119,8 +120,17 @@ class _Reduce:
         bindings.cccl_device_reduce_cleanup(ctypes.byref(self.build_result))
 
 
+def make_cache_key(d_in, d_out, op, h_init):
+    d_in_key = d_in.dtype if hasattr(d_in, "__cuda_array_interface__") else d_in
+    d_out_key = d_out.dtype if hasattr(d_out, "__cuda_array_interface__") else d_out
+    op_key = (op.__code__.co_code, op.__code__.co_consts, op.__closure__)
+    h_init_key = h_init.dtype
+    return (d_in_key, d_out_key, op_key, h_init_key)
+
+
 # TODO Figure out `sum` without operator and initial value
 # TODO Accept stream
+@cache_with_key(make_cache_key)
 def reduce_into(d_in, d_out, op: Callable, h_init: np.ndarray):
     """Computes a device-wide reduction using the specified binary ``op`` functor and initial value ``init``.
 
