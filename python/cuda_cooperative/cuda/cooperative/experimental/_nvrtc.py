@@ -3,7 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 from cuda.bindings import nvrtc
-from cuda.cccl.include_paths import get_include_paths  # type: ignore[import-not-found]
 from cuda.cooperative.experimental._caching import disk_cache
 from cuda.cooperative.experimental._common import check_in, version
 import functools
@@ -29,6 +28,9 @@ def compile_impl(cpp, cc, rdc, code, nvrtc_path, nvrtc_version):
     check_in("code", code, ["lto", "ptx"])
 
     opts = [b"--std=c++17"]
+
+    from cuda.cccl.include_paths import get_include_paths
+
     for path in get_include_paths().as_tuple():
         if path:
             opts += [f"--include-path={path}".encode("ascii")]
