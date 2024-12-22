@@ -29,6 +29,7 @@ def compile_impl(cpp, cc, rdc, code, nvrtc_path, nvrtc_version):
 
     opts = [b"--std=c++17"]
 
+    # TODO: move this to a module-level import (after docs env modernization).
     from cuda.cccl.include_paths import get_include_paths
 
     for path in get_include_paths().as_tuple():
