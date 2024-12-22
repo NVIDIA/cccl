@@ -13,6 +13,9 @@ from typing import Callable
 from .. import _cccl as cccl
 from .._bindings import get_paths, get_bindings
 from .._caching import cache_with_key
+from ..typing import DeviceArrayLike
+from ..iterators._iterators import IteratorBase
+from .._utils import cai as cai
 
 
 class _Op:
@@ -42,12 +45,18 @@ def _dtype_validation(dt1, dt2):
 
 class _Reduce:
     # TODO: constructor shouldn't require concrete `d_in`, `d_out`:
-    def __init__(self, d_in, d_out, op: Callable, h_init: np.ndarray):
+    def __init__(
+        self,
+        d_in: DeviceArrayLike | IteratorBase,
+        d_out: DeviceArrayLike,
+        op: Callable,
+        h_init: np.ndarray,
+    ):
         d_in_cccl = cccl.to_cccl_iter(d_in)
         self._ctor_d_in_cccl_type_enum_name = cccl.type_enum_as_name(
             d_in_cccl.value_type.type.value
         )
-        self._ctor_d_out_dtype = d_out.dtype
+        self._ctor_d_out_dtype = cai.get_dtype(d_out)
         self._ctor_init_dtype = h_init.dtype
         cc_major, cc_minor = cuda.get_current_device().compute_capability
         cub_path, thrust_path, libcudacxx_path, cuda_include_path = get_paths()
@@ -120,9 +129,14 @@ class _Reduce:
         bindings.cccl_device_reduce_cleanup(ctypes.byref(self.build_result))
 
 
-def make_cache_key(d_in, d_out, op, h_init):
-    d_in_key = d_in.dtype if hasattr(d_in, "__cuda_array_interface__") else d_in
-    d_out_key = d_out.dtype if hasattr(d_out, "__cuda_array_interface__") else d_out
+def make_cache_key(
+    d_in: DeviceArrayLike | IteratorBase,
+    d_out: DeviceArrayLike,
+    op: Callable,
+    h_init: np.ndarray,
+):
+    d_in_key = d_in if isinstance(d_in, IteratorBase) else cai.get_dtype(d_in)
+    d_out_key = d_out if isinstance(d_out, IteratorBase) else cai.get_dtype(d_out)
     op_key = (op.__code__.co_code, op.__code__.co_consts, op.__closure__)
     h_init_key = h_init.dtype
     return (d_in_key, d_out_key, op_key, h_init_key)
@@ -131,7 +145,12 @@ def make_cache_key(d_in, d_out, op, h_init):
 # TODO Figure out `sum` without operator and initial value
 # TODO Accept stream
 @cache_with_key(make_cache_key)
-def reduce_into(d_in, d_out, op: Callable, h_init: np.ndarray):
+def reduce_into(
+    d_in: DeviceArrayLike | IteratorBase,
+    d_out: DeviceArrayLike,
+    op: Callable,
+    h_init: np.ndarray,
+):
     """Computes a device-wide reduction using the specified binary ``op`` functor and initial value ``init``.
 
     Example:
