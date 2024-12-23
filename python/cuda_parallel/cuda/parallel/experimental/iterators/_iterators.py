@@ -160,8 +160,7 @@ def pointer_add(ptr, offset):
 
 
 class RawPointer(IteratorBase):
-    def __init__(self, ptr: int, ntype: types.Type):
-        value_type = ntype
+    def __init__(self, ptr: int, value_type: types.Type):
         cvalue = ctypes.c_void_p(ptr)
         numba_type = types.CPointer(types.CPointer(value_type))
         abi_name = f"{self.__class__.__name__}_{str(value_type)}"
@@ -181,8 +180,8 @@ class RawPointer(IteratorBase):
         return state[0][0]
 
 
-def pointer(container, ntype: types.Type) -> RawPointer:
-    return RawPointer(container.__cuda_array_interface__["data"][0], ntype)
+def pointer(container, value_type: types.Type) -> RawPointer:
+    return RawPointer(container.__cuda_array_interface__["data"][0], value_type)
 
 
 @intrinsic
