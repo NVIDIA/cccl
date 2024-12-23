@@ -86,11 +86,10 @@ _CCCL_INLINE_VAR constexpr int __cccl_requires = 0;
 #  endif // !_CCCL_COMPILER(MSVC)
 
 template <class _Tp, class... _Args>
-_LIBCUDACXX_HIDE_FROM_ABI auto __cccl_make_dependent(_Tp*, __cccl_tag<_Args...>*) -> _Tp;
+extern _Tp __cccl_make_dependent;
 
 template <class _Impl, class... _Args>
-using __cccl_requires_expr_impl =
-  decltype(__cccl_make_dependent(static_cast<_Impl*>(nullptr), static_cast<__cccl_tag<void, _Args...>*>(nullptr)));
+using __cccl_requires_expr_impl = decltype(__cccl_make_dependent<_Impl, _Args...>);
 
 // So that we can refer to the ::cuda::std namespace below
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
