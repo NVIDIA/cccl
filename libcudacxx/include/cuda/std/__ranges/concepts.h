@@ -147,8 +147,8 @@ template <class _Tp>
 _CCCL_CONCEPT range =
   _CCCL_REQUIRES_EXPR((_Tp), _Tp& __t)
   (
-    (_CUDA_VRANGES::begin(__t)),
-    (_CUDA_VRANGES::end(__t))
+    void(_CUDA_VRANGES::begin(__t)),
+    void(_CUDA_VRANGES::end(__t))
   );
 
 template <class _Tp>
