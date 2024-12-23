@@ -51,8 +51,8 @@ _CCCL_CONCEPT _Common_type_exists = _CCCL_FRAGMENT(__common_type_exists_, _Tp, _
 template <class _Tp, class _Up>
 _CCCL_CONCEPT_FRAGMENT(__common_type_constructible_,
                        requires()(requires(_Common_type_exists<_Tp, _Up>),
-                                  static_cast<common_type_t<_Tp, _Up>>(_CUDA_VSTD::declval<_Tp>()),
-                                  static_cast<common_type_t<_Tp, _Up>>(_CUDA_VSTD::declval<_Up>())));
+                                  (static_cast<common_type_t<_Tp, _Up>>(_CUDA_VSTD::declval<_Tp>())),
+                                  (static_cast<common_type_t<_Tp, _Up>>(_CUDA_VSTD::declval<_Up>()))));
 
 template <class _Tp, class _Up>
 _CCCL_CONCEPT _Common_type_constructible = _CCCL_FRAGMENT(__common_type_constructible_, _Tp, _Up);
