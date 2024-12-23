@@ -1,4 +1,6 @@
-from typing import Protocol
+from typing_extensions import (
+    Protocol,
+)  # TODO: typing_extensions required for Python 3.7 docs env
 
 
 class DeviceArrayLike(Protocol):

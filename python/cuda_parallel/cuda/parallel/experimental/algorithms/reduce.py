@@ -3,6 +3,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+from __future__ import annotations  # TODO: required for Python 3.7 docs env
+
 import ctypes
 import numba
 import numpy as np
