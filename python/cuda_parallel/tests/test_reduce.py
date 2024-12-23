@@ -435,4 +435,69 @@ def test_reducer_caching():
         sum_op,
         np.zeros([0], dtype="int64"),
     )
+
+    # inputs are CountingIterators of same kind
+    # but different state:
+    reducer_1 = algorithms.reduce_into(
+        iterators.CountingIterator(np.int32(0)),
+        cp.zeros(1, dtype="int64"),
+        sum_op,
+        np.zeros([0], dtype="int64"),
+    )
+    reducer_2 = algorithms.reduce_into(
+        iterators.CountingIterator(np.int32(1)),
+        cp.zeros(1, dtype="int64"),
+        sum_op,
+        np.zeros([0], dtype="int64"),
+    )
+
     assert reducer_1 is reducer_2
+
+    # inputs are TransformIterators of same kind
+    # but different state:
+    ary1 = cp.asarray([0, 1, 2], dtype="int64")
+    ary2 = cp.asarray([0, 1], dtype="int64")
+    reducer_1 = algorithms.reduce_into(
+        iterators.TransformIterator(ary1, op1),
+        cp.zeros(1, dtype="int64"),
+        sum_op,
+        np.zeros([0], dtype="int64"),
+    )
+    reducer_2 = algorithms.reduce_into(
+        iterators.TransformIterator(ary2, op1),
+        cp.zeros(1, dtype="int64"),
+        sum_op,
+        np.zeros([0], dtype="int64"),
+    )
+    assert reducer_1 is reducer_2
+
+    # inputs are TransformIterators of same kind
+    # but different state:
+    reducer_1 = algorithms.reduce_into(
+        iterators.TransformIterator(iterators.CountingIterator(np.int32(0)), op1),
+        cp.zeros(1, dtype="int64"),
+        sum_op,
+        np.zeros([0], dtype="int64"),
+    )
+    reducer_2 = algorithms.reduce_into(
+        iterators.TransformIterator(iterators.CountingIterator(np.int32(1)), op1),
+        cp.zeros(1, dtype="int64"),
+        sum_op,
+        np.zeros([0], dtype="int64"),
+    )
+    assert reducer_1 is reducer_2
+
+    # inputs are TransformIterators with different kind:
+    reducer_1 = algorithms.reduce_into(
+        iterators.TransformIterator(iterators.CountingIterator(np.int32(0)), op1),
+        cp.zeros(1, dtype="int64"),
+        sum_op,
+        np.zeros([0], dtype="int64"),
+    )
+    reducer_2 = algorithms.reduce_into(
+        iterators.TransformIterator(iterators.CountingIterator(np.int64(0)), op1),
+        cp.zeros(1, dtype="int64"),
+        sum_op,
+        np.zeros([0], dtype="int64"),
+    )
+    assert reducer_1 is not reducer_2

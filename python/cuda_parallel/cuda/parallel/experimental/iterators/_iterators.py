@@ -11,27 +11,30 @@ from numba import cuda, types
 import numba
 import numpy as np
 
+from .._caching import CachableFunction
+
 
 _DEVICE_POINTER_SIZE = 8
 _DEVICE_POINTER_BITWIDTH = _DEVICE_POINTER_SIZE * 8
 
 
-def _compare_funcs(func1, func2):
-    # return True if the functions compare equal for
-    # caching purposes, False otherwise
-    code1 = func1.__code__
-    code2 = func2.__code__
-
-    return (
-        code1.co_code == code2.co_code
-        and code1.co_consts == code2.co_consts
-        and func1.__closure__ == func2.__closure__
-    )
-
-
 @lru_cache(maxsize=256)  # TODO: what's a reasonable value?
 def cached_compile(func, sig, abi_name=None, **kwargs):
     return cuda.compile(func, sig, abi_info={"abi_name": abi_name}, **kwargs)
+
+
+class IteratorKind:
+    def __init__(self, value_type):
+        self.value_type = value_type
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}[{str(self.value_type)}]"
+
+    def __eq__(self, other):
+        return type(self) is type(other) and self.value_type == other.value_type
+
+    def __hash__(self):
+        return hash(self.value_type)
 
 
 class IteratorBase:
@@ -49,6 +52,8 @@ class IteratorBase:
 
     The `advance` and `dereference` must be compilable to device code by numba.
     """
+
+    iterator_kind_type: type  # must be a subclass of IteratorKind
 
     def __init__(
         self,
@@ -75,6 +80,10 @@ class IteratorBase:
         self.numba_type = numba_type
         self.value_type = value_type
         self.abi_name = abi_name
+
+    @property
+    def kind(self):
+        return self.__class__.iterator_kind_type(self.value_type)
 
     # TODO: should we cache this? Current docs environment doesn't allow
     # using Python > 3.7. We could use a hand-rolled cached_property if
@@ -159,7 +168,13 @@ def pointer_add(ptr, offset):
     return impl
 
 
+class RawPointerType(IteratorKind):
+    pass
+
+
 class RawPointer(IteratorBase):
+    iterator_kind_type = RawPointerType
+
     def __init__(self, ptr: int, value_type: types.Type):
         cvalue = ctypes.c_void_p(ptr)
         numba_type = types.CPointer(types.CPointer(value_type))
@@ -205,7 +220,13 @@ def load_cs(typingctx, base):
     return base.dtype(base), codegen
 
 
+class CacheModifiedPointerType(IteratorKind):
+    pass
+
+
 class CacheModifiedPointer(IteratorBase):
+    iterator_kind_type = CacheModifiedPointerType
+
     def __init__(self, ptr: int, ntype: types.Type):
         cvalue = ctypes.c_void_p(ptr)
         value_type = ntype
@@ -227,7 +248,13 @@ class CacheModifiedPointer(IteratorBase):
         return load_cs(state[0])
 
 
+class ConstantIteratorKind(IteratorKind):
+    pass
+
+
 class ConstantIterator(IteratorBase):
+    iterator_kind_type = ConstantIteratorKind
+
     def __init__(self, value: np.number):
         value_type = numba.from_dtype(value.dtype)
         cvalue = to_ctypes(value_type)(value)
@@ -249,7 +276,13 @@ class ConstantIterator(IteratorBase):
         return state[0]
 
 
+class CountingIteratorKind(IteratorKind):
+    pass
+
+
 class CountingIterator(IteratorBase):
+    iterator_kind_type = CountingIteratorKind
+
     def __init__(self, value: np.number):
         value_type = numba.from_dtype(value.dtype)
         cvalue = to_ctypes(value_type)(value)
@@ -271,6 +304,14 @@ class CountingIterator(IteratorBase):
         return state[0]
 
 
+class TransformIteratorKind(IteratorKind):
+    def __eq__(self, other):
+        return type(self) is type(other) and self.value_type == other.value_type
+
+    def __hash__(self):
+        return hash(self.value_type)
+
+
 def make_transform_iterator(it, op: Callable):
     if hasattr(it, "__cuda_array_interface__"):
         it = pointer(it, numba.from_dtype(it.dtype))
@@ -280,9 +321,11 @@ def make_transform_iterator(it, op: Callable):
     op = cuda.jit(op, device=True)
 
     class TransformIterator(IteratorBase):
+        iterator_kind_type = TransformIteratorKind
+
         def __init__(self, it: IteratorBase, op: CUDADispatcher):
             self._it = it
-            self._op = op
+            self._op = CachableFunction(op.py_func)
             numba_type = it.numba_type
             # TODO: the abi name below isn't unique enough when we have e.g.,
             # two identically named `op` functions with different
@@ -307,6 +350,10 @@ def make_transform_iterator(it, op: Callable):
                 abi_name=abi_name,
             )
 
+        @property
+        def kind(self):
+            return self.__class__.iterator_kind_type((self._it.kind, self._op))
+
         @staticmethod
         def advance(state, distance):
             return it_advance(state, distance)
@@ -319,16 +366,14 @@ def make_transform_iterator(it, op: Callable):
             return hash(
                 (
                     self._it,
-                    self._op.py_func.__code__.co_code,
-                    self._op.py_func.__closure__,
+                    self._op._func.py_func.__code__.co_code,
+                    self._op._func.py_func.__closure__,
                 )
             )
 
         def __eq__(self, other):
             if not isinstance(other, IteratorBase):
                 return NotImplemented
-            return self._it == other._it and _compare_funcs(
-                self._op.py_func, other._op.py_func
-            )
+            return self._it == other._it and self._op == other._op
 
     return TransformIterator(it, op)

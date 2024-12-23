@@ -14,7 +14,7 @@ from typing import Callable
 
 from .. import _cccl as cccl
 from .._bindings import get_paths, get_bindings
-from .._caching import cache_with_key
+from .._caching import CachableFunction, cache_with_key
 from ..typing import DeviceArrayLike
 from ..iterators._iterators import IteratorBase
 from .._utils import cai
@@ -137,9 +137,9 @@ def make_cache_key(
     op: Callable,
     h_init: np.ndarray,
 ):
-    d_in_key = d_in if isinstance(d_in, IteratorBase) else cai.get_dtype(d_in)
+    d_in_key = d_in.kind if isinstance(d_in, IteratorBase) else cai.get_dtype(d_in)
     d_out_key = cai.get_dtype(d_out)
-    op_key = (op.__code__.co_code, op.__code__.co_consts, op.__closure__)
+    op_key = CachableFunction(op)
     h_init_key = h_init.dtype
     return (d_in_key, d_out_key, op_key, h_init_key)
 

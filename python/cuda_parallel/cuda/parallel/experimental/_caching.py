@@ -34,3 +34,43 @@ def cache_with_key(key):
         return inner
 
     return deco
+
+
+class CachableFunction:
+    """
+    A type that wraps a function and provides custom comparison
+    (__eq__) and hash (__hash__) implementations.
+
+    The purpose of this class is to enable caching and comparison of
+    functions based on their bytecode, constants, and closures, while
+    ignoring other attributes such as their names or docstrings.
+    """
+
+    def __init__(self, func):
+        self._func = func
+
+    def __eq__(self, other):
+        func1, func2 = self._func, other._func
+
+        # return True if the functions compare equal for
+        # caching purposes, False otherwise
+        code1 = func1.__code__
+        code2 = func2.__code__
+
+        return (
+            code1.co_code == code2.co_code
+            and code1.co_consts == code2.co_consts
+            and func1.__closure__ == func2.__closure__
+        )
+
+    def __hash__(self):
+        return hash(
+            (
+                self._func.__code__.co_code,
+                self._func.__code__.co_consts,
+                self._func.__closure__,
+            )
+        )
+
+    def __repr__(self):
+        return str(self._func)
