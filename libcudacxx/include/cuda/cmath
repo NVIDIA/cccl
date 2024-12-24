@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <cuda/__cmath/ceil_div.h>
-#include <cuda/__cmath/shuffle_safety.h>
 #include <cuda/std/cmath>
 
 #endif // _CUDA_CMATH
