@@ -29,6 +29,11 @@
 
 #  include <intrin.h>
 
+// MSVC exposed __iso_volatile intrinsics beginning on 1924 for x86
+#  if _CCCL_COMPILER(MSVC, <, 19, 24)
+#    define _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
+#  endif // _CCCL_COMPILER(MSVC, <, 19, 24)
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #  define _LIBCUDACXX_COMPILER_BARRIER() _ReadWriteBarrier()
@@ -637,6 +642,8 @@ _Type __atomic_fetch_min(_Type volatile* __ptr, _Delta __val, int __memorder)
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
+
+#  undef _LIBCUDACXX_MSVC_HAS_NO_ISO_INTRIN
 
 #endif // _CCCL_COMPILER(MSVC)
 

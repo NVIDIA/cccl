@@ -62,7 +62,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
     while (true)
     {
       if (++__m2 == __last2)
-      { // Pattern exhaused, record answer and search for another one
+      { // Pattern exhausted, record answer and search for another one
         __r = __first1;
         ++__first1;
         break;
@@ -100,7 +100,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _BidirectionalIt
   --__l2;
   while (true)
   {
-    // Find last element in sequence 1 that matchs *(__last2-1), with a mininum of loop checks
+    // Find last element in sequence 1 that matches *(__last2-1), with a minimum of loop checks
     while (true)
     {
       if (__first1 == __l1) // return __last1 if no element matches *__first2
@@ -121,7 +121,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _BidirectionalIt
       {
         return __m1;
       }
-      if (__m1 == __first1) // Otherwise if source exhaused, pattern not found
+      if (__m1 == __first1) // Otherwise if source exhausted, pattern not found
       {
         return __last1;
       }

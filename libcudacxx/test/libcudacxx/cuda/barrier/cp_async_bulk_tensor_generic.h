@@ -14,8 +14,11 @@
 #define TEST_CP_ASYNC_BULK_TENSOR_GENERIC_H_
 
 #include <cuda/barrier>
+#include <cuda/ptx>
 #include <cuda/std/array>
 #include <cuda/std/utility> // cuda::std::move
+
+namespace ptx = cuda::ptx;
 
 #include "test_macros.h" // TEST_NV_DIAG_SUPPRESS
 
@@ -173,7 +176,11 @@ test(cuda::std::array<uint32_t, num_dims> smem_coord,
   }
   // Ensure that writes to global memory are visible to others, including
   // those in the async proxy.
+  // ahendriksen: Issuing threadfence and fence.proxy.async.global. The
+  // fence.proxy.async.global should suffice, but I am keeping the threadfence
+  // out of an abundance of caution.
   __threadfence();
+  ptx::fence_proxy_async(ptx::space_global);
   __syncthreads();
 
   // TEST: Add i to buffer[i]
@@ -223,7 +230,11 @@ test(cuda::std::array<uint32_t, num_dims> smem_coord,
     cde::cp_async_bulk_commit_group();
     cde::cp_async_bulk_wait_group_read<0>();
   }
+  // ahendriksen: Issuing threadfence and fence.proxy.async.global. The
+  // fence.proxy.async.global should suffice, but I am keeping the threadfence
+  // out of an abundance of caution.
   __threadfence();
+  ptx::fence_proxy_async(ptx::space_global);
   __syncthreads();
 
   // // TEAR-DOWN: check that global memory is correct
@@ -258,7 +269,7 @@ CUtensorMap map_encode(T* tensor_ptr,
 
   // The stride is the number of bytes to traverse from the first element of one row to the next.
   // It must be a multiple of 16.
-  // cuTensorMapEncodeTiled requies that the stride array is a valid pointer, so we add one superfluous element
+  // cuTensorMapEncodeTiled requires that the stride array is a valid pointer, so we add one superfluous element
   // This is necessary for num_dims == 1
   cuda::std::array<uint64_t, num_dims> stride;
   uint64_t base_stride = sizeof(T);

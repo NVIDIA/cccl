@@ -1,13 +1,14 @@
 import ctypes
 import operator
 from functools import lru_cache
+from typing import Dict, Callable
 
 from llvmlite import ir
 from numba.core.extending import intrinsic, overload
 from numba.core.typing.ctypes_utils import to_ctypes
+from numba import cuda, types
 import numba
-import numba.cuda
-import numba.types
+import numpy as np
 
 
 _DEVICE_POINTER_SIZE = 8
@@ -16,7 +17,7 @@ _DEVICE_POINTER_BITWIDTH = _DEVICE_POINTER_SIZE * 8
 
 @lru_cache(maxsize=256)  # TODO: what's a reasonable value?
 def cached_compile(func, sig, abi_name=None, **kwargs):
-    return numba.cuda.compile(func, sig, abi_info={"abi_name": abi_name}, **kwargs)
+    return cuda.compile(func, sig, abi_info={"abi_name": abi_name}, **kwargs)
 
 
 class IteratorBase:
@@ -37,7 +38,7 @@ class IteratorBase:
     The `advance` and `dereference` must be compilable to device code by numba.
     """
 
-    def __init__(self, numba_type, value_type, abi_name):
+    def __init__(self, numba_type: types.Type, value_type: types.Type, abi_name: str):
         """
         Parameters
         ----------
@@ -57,14 +58,14 @@ class IteratorBase:
     # using Python > 3.7. We could use a hand-rolled cached_property if
     # needed.
     @property
-    def ltoirs(self):
+    def ltoirs(self) -> Dict[str, bytes]:
         advance_abi_name = self.abi_name + "_advance"
         deref_abi_name = self.abi_name + "_dereference"
         advance_ltoir, _ = cached_compile(
             self.__class__.advance,
             (
                 self.numba_type,
-                numba.types.uint64,  # distance type
+                types.uint64,  # distance type
             ),
             output="ltoir",
             abi_name=advance_abi_name,
@@ -79,7 +80,7 @@ class IteratorBase:
         return {advance_abi_name: advance_ltoir, deref_abi_name: deref_ltoir}
 
     @property
-    def state(self):
+    def state(self) -> ctypes.c_void_p:
         raise NotImplementedError("Subclasses must override advance staticmethod")
 
     @staticmethod
@@ -87,7 +88,7 @@ class IteratorBase:
         raise NotImplementedError("Subclasses must override advance staticmethod")
 
     @staticmethod
-    def dereference(it):
+    def dereference(state):
         raise NotImplementedError("Subclasses must override dereference staticmethod")
 
 
@@ -122,10 +123,10 @@ def pointer_add(ptr, offset):
 
 
 class RawPointer(IteratorBase):
-    def __init__(self, ptr, ntype):
+    def __init__(self, ptr: int, ntype: types.Type):
         value_type = ntype
         self._cvalue = ctypes.c_void_p(ptr)
-        numba_type = numba.types.CPointer(numba.types.CPointer(value_type))
+        numba_type = types.CPointer(types.CPointer(value_type))
         abi_name = f"{self.__class__.__name__}_{str(value_type)}"
         super().__init__(
             numba_type=numba_type,
@@ -142,11 +143,11 @@ class RawPointer(IteratorBase):
         return state[0][0]
 
     @property
-    def state(self):
+    def state(self) -> ctypes.c_void_p:
         return ctypes.cast(ctypes.pointer(self._cvalue), ctypes.c_void_p)
 
 
-def pointer(container, ntype):
+def pointer(container, ntype: types.Type) -> RawPointer:
     return RawPointer(container.__cuda_array_interface__["data"][0], ntype)
 
 
@@ -172,10 +173,10 @@ def load_cs(typingctx, base):
 
 
 class CacheModifiedPointer(IteratorBase):
-    def __init__(self, ptr, ntype):
+    def __init__(self, ptr: int, ntype: types.Type):
         self._cvalue = ctypes.c_void_p(ptr)
         value_type = ntype
-        numba_type = numba.types.CPointer(numba.types.CPointer(value_type))
+        numba_type = types.CPointer(types.CPointer(value_type))
         abi_name = f"{self.__class__.__name__}_{str(value_type)}"
         super().__init__(
             numba_type=numba_type,
@@ -192,15 +193,15 @@ class CacheModifiedPointer(IteratorBase):
         return load_cs(state[0])
 
     @property
-    def state(self):
+    def state(self) -> ctypes.c_void_p:
         return ctypes.cast(ctypes.pointer(self._cvalue), ctypes.c_void_p)
 
 
 class ConstantIterator(IteratorBase):
-    def __init__(self, value):
+    def __init__(self, value: np.number):
         value_type = numba.from_dtype(value.dtype)
         self._cvalue = to_ctypes(value_type)(value)
-        numba_type = numba.types.CPointer(value_type)
+        numba_type = types.CPointer(value_type)
         abi_name = f"{self.__class__.__name__}_{str(value_type)}"
         super().__init__(
             numba_type=numba_type,
@@ -217,15 +218,15 @@ class ConstantIterator(IteratorBase):
         return state[0]
 
     @property
-    def state(self):
+    def state(self) -> ctypes.c_void_p:
         return ctypes.cast(ctypes.pointer(self._cvalue), ctypes.c_void_p)
 
 
 class CountingIterator(IteratorBase):
-    def __init__(self, value):
+    def __init__(self, value: np.number):
         value_type = numba.from_dtype(value.dtype)
         self._cvalue = to_ctypes(value_type)(value)
-        numba_type = numba.types.CPointer(value_type)
+        numba_type = types.CPointer(value_type)
         abi_name = f"{self.__class__.__name__}_{str(value_type)}"
         super().__init__(
             numba_type=numba_type,
@@ -242,24 +243,24 @@ class CountingIterator(IteratorBase):
         return state[0]
 
     @property
-    def state(self):
+    def state(self) -> ctypes.c_void_p:
         return ctypes.cast(ctypes.pointer(self._cvalue), ctypes.c_void_p)
 
 
-def make_transform_iterator(it, op):
+def make_transform_iterator(it, op: Callable):
     if hasattr(it, "__cuda_array_interface__"):
         it = pointer(it, numba.from_dtype(it.dtype))
 
-    it_advance = numba.cuda.jit(type(it).advance, device=True)
-    it_dereference = numba.cuda.jit(type(it).dereference, device=True)
-    op = numba.cuda.jit(op, device=True)
+    it_advance = cuda.jit(type(it).advance, device=True)
+    it_dereference = cuda.jit(type(it).dereference, device=True)
+    op = cuda.jit(op, device=True)
 
     class TransformIterator(IteratorBase):
-        def __init__(self, it, op):
+        def __init__(self, it: IteratorBase, op):
             self._it = it
             numba_type = it.numba_type
             # TODO: the abi name below isn't unique enough when we have e.g.,
-            # two indentically named `op` functions with different
+            # two identically named `op` functions with different
             # signatures, bytecodes, and/or closure variables.
             op_abi_name = f"{self.__class__.__name__}_{op.py_func.__name__}"
 
@@ -289,7 +290,7 @@ def make_transform_iterator(it, op):
             return op(it_dereference(state))
 
         @property
-        def state(self):
+        def state(self) -> ctypes.c_void_p:
             return it.state
 
     return TransformIterator(it, op)

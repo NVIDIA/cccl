@@ -54,10 +54,10 @@ struct __is_safe_integral_cmp
                                          char,
                                          char16_t,
                                          char32_t
-#ifndef _LIBCUDACXX_NO_HAS_CHAR8_T
+#ifndef _LIBCUDACXX_HAS_NO_CHAR8_T
                                          ,
                                          char8_t
-#endif // _LIBCUDACXX_NO_HAS_CHAR8_T
+#endif // _LIBCUDACXX_HAS_NO_CHAR8_T
 #ifndef _LIBCUDACXX_HAS_NO_WIDE_CHARACTERS
                                          ,
                                          wchar_t

@@ -3,7 +3,7 @@ import numba
 
 
 def CacheModifiedInputIterator(device_array, modifier):
-    """Python facade for Random Access Cache Modified Iterator that wraps a native device pointer.
+    """Random Access Cache Modified Iterator that wraps a native device pointer.
 
     Similar to https://nvidia.github.io/cccl/cub/api/classcub_1_1CacheModifiedInputIterator.html
 
@@ -18,15 +18,15 @@ def CacheModifiedInputIterator(device_array, modifier):
 
 
 def ConstantIterator(value):
-    """Python facade (similar to itertools.repeat) for C++ Random Access ConstantIterator."""
+    """Returns an Iterator representing a sequence of constant values."""
     return _iterators.ConstantIterator(value)
 
 
 def CountingIterator(offset):
-    """Python facade (similar to itertools.count) for C++ Random Access CountingIterator."""
+    """Returns an Iterator representing a sequence of incrementing values."""
     return _iterators.CountingIterator(offset)
 
 
-def TransformIterator(op, it):
-    """Python facade (similar to built-in map) mimicking a C++ Random Access TransformIterator."""
+def TransformIterator(it, op):
+    """Returns an Iterator representing a transformed sequence of values."""
     return _iterators.make_transform_iterator(it, op)

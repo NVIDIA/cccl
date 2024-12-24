@@ -154,7 +154,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT::BLO
       return;
     }
 
-    // Tiny remainders are copied without vectorizing laods
+    // Tiny remainders are copied without vectorizing loads
     if (buffer_sizes[buffer_id] - tile_offset_within_buffer <= 32)
     {
       BufferSizeT thread_offset = tile_offset_within_buffer + threadIdx.x;
@@ -304,7 +304,7 @@ struct DispatchBatchMemcpy
   using BufferSizeT = cub::detail::value_t<BufferSizeIteratorT>;
 
   //------------------------------------------------------------------------------
-  // Member Veriables
+  // Member Variables
   //------------------------------------------------------------------------------
   void* d_temp_storage;
   size_t& temp_storage_bytes;

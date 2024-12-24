@@ -177,7 +177,7 @@ namespace __cccl_unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-
       _LIBCUDACXX_HIDE_FROM_ABI char _NAME##_CCCL_CONCEPT_FRAGMENT_(                                                   \
         ::__cccl_tag<_As...>*, decltype(&_NAME##_CCCL_CONCEPT_FRAGMENT_impl_<_As...>));                                \
       _LIBCUDACXX_HIDE_FROM_ABI char(&_NAME##_CCCL_CONCEPT_FRAGMENT_(...))[2]
-#    if defined(_MSC_VER) && !defined(__clang__)
+#    if _CCCL_COMPILER(MSVC)
 #      define _CCCL_CONCEPT_FRAGMENT_TRUE(...) \
         ::__cccl_is_true<decltype(_CCCL_PP_FOR_EACH(_CCCL_CONCEPT_FRAGMENT_REQS_M, __VA_ARGS__) void())>()
 #    else

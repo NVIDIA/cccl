@@ -186,7 +186,7 @@ struct DeviceMemcpy
     using BufferOffsetT = uint32_t;
 
     // Integer type large enough to hold any offset in [0, num_thread_blocks_launched), where a safe
-    // uppper bound on num_thread_blocks_launched can be assumed to be given by
+    // upper bound on num_thread_blocks_launched can be assumed to be given by
     // IDIV_CEIL(num_buffers, 64)
     using BlockOffsetT = uint32_t;
 

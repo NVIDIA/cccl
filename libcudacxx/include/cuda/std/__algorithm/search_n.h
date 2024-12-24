@@ -42,7 +42,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
   }
   while (true)
   {
-    // Find first element in sequence that matchs __value_, with a mininum of loop checks
+    // Find first element in sequence that matches __value_, with a minimum of loop checks
     while (true)
     {
       if (__first == __last) // return __last if no element matches __value_
@@ -64,7 +64,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _ForwardIterator
       {
         return __first;
       }
-      if (++__m == __last) // Otherwise if source exhaused, pattern not found
+      if (++__m == __last) // Otherwise if source exhausted, pattern not found
       {
         return __last;
       }
@@ -99,7 +99,7 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _RandomAccessIte
   const _RandomAccessIterator __s = __last - (__count - 1); // Start of pattern match can't go beyond here
   while (true)
   {
-    // Find first element in sequence that matchs __value_, with a mininum of loop checks
+    // Find first element in sequence that matches __value_, with a minimum of loop checks
     while (true)
     {
       if (__first >= __s) // return __last if no element matches __value_

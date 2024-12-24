@@ -31,7 +31,6 @@
 
 #  include <cuda/__memory_resource/get_property.h>
 #  include <cuda/__memory_resource/properties.h>
-#  include <cuda/__memory_resource/resource_ref.h>
 #  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__cuda/api_wrapper.h>
 #  include <cuda/std/__new_>
@@ -39,6 +38,7 @@
 #  include <cuda/stream_ref>
 
 #  include <cuda/experimental/__device/device_ref.cuh>
+#  include <cuda/experimental/__memory_resource/any_resource.cuh>
 #  include <cuda/experimental/__memory_resource/device_memory_pool.cuh>
 #  include <cuda/experimental/__memory_resource/properties.cuh>
 #  include <cuda/experimental/__stream/stream.cuh>
@@ -239,7 +239,7 @@ public:
 
   //! @brief Enable peer access to memory allocated through this memory resource by the supplied devices
   //!
-  //! Access is controlled through the underyling memory pool, so this
+  //! Access is controlled through the underlying memory pool, so this
   //! setting is shared between all memory resources created from the same pool.
   //! Device on which this resource allocates memory can be included in the vector.
   //!
@@ -252,7 +252,7 @@ public:
 
   //! @brief Enable peer access to memory allocated through this memory resource by the supplied device
   //!
-  //! Access is controlled through the underyling memory pool, so this
+  //! Access is controlled through the underlying memory pool, so this
   //! setting is shared between all memory resources created from the same pool.
   //!
   //! @param __device device_ref indicating for which device the access should be enabled
@@ -263,7 +263,7 @@ public:
 
   //! @brief Enable peer access to memory allocated through this memory resource by the supplied devices
   //!
-  //! Access is controlled through the underyling memory pool, so this
+  //! Access is controlled through the underlying memory pool, so this
   //! setting is shared between all memory resources created from the same pool.
   //! Device on which this resource allocates memory can be included in the vector.
   //!
@@ -276,7 +276,7 @@ public:
 
   //! @brief Enable peer access to memory allocated through this memory resource by the supplied device
   //!
-  //! Access is controlled through the underyling memory pool, so this
+  //! Access is controlled through the underlying memory pool, so this
   //! setting is shared between all memory resources created from the same pool.
   //!
   //! @param __device device_ref indicating for which device the access should be enabled
@@ -317,8 +317,8 @@ private:
   {
     if constexpr (has_property<_Resource, device_accessible>)
     {
-      return _CUDA_VMR::resource_ref<device_accessible>{const_cast<device_memory_resource*>(this)}
-          == _CUDA_VMR::resource_ref<device_accessible>{const_cast<_Resource&>(__rhs)};
+      return resource_ref<device_accessible>{*const_cast<device_memory_resource*>(this)}
+          == __cudax::__as_resource_ref<device_accessible>(const_cast<_Resource&>(__rhs));
     }
     else
     {

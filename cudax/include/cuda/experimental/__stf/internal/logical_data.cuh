@@ -46,7 +46,7 @@ class logical_data_untyped_impl;
  *
  * The goal of this class is to avoid storing very large containers of task
  * structure which may hold many events for a long time (and needlessly consume
- * ressources), so that we can optimize the events. This class is usefull when
+ * resources), so that we can optimize the events. This class is useful when
  * all tasks in the set are used together, for example when we enforce some
  * write-after-read dependency when the writer tasks must depend on all
  * previous readers.
@@ -109,7 +109,7 @@ namespace reserved
  * enforcing the STF coherency model.
  *
  * Implementing the STF model for example requires to introduce implicit
- * dependencies between a task making a write access, and all preceeding read
+ * dependencies between a task making a write access, and all preceding read
  * accesses. The list of previous readsers, the previous writer etc... are kept on
  * a per context basis.
  */
@@ -874,7 +874,7 @@ public:
               // Make sure this is finished before we delete the source, for example
               // We remove previous prereqs since this data is normally only used for this copy, and invalidated
               // then
-              /* TODO CHECK THIS ... being too convervative ? */
+              /* TODO CHECK THIS ... being too conservative ? */
               // THIS INSTEAD  ?get_data_instance(src_instance_id).set_write_prereq(dst_copied_prereq);
               get_data_instance(src_instance_id).set_read_prereq(src_avail_prereq);
               get_data_instance(dst_instance_id).set_read_prereq(src_avail_prereq);
@@ -1416,7 +1416,7 @@ public:
       fprintf(stderr, "Using %d as the reference\n", ref_instance_id);
 #endif
 
-      // The target instance id is implicitely the one where to reduce last, so we don't add it
+      // The target instance id is implicitly the one where to reduce last, so we don't add it
       if (ref_instance_id != target_instance_id)
       {
         // fprintf(stderr, "...adding %d to per_node[%d]\n", ref_instance_id, ref_memory_node);
@@ -1554,7 +1554,7 @@ public:
       }
 
       // Add this instance to the list of instances on the target node
-      // If this is the reference id, we don't add it because it will be implicitely the last element where to
+      // If this is the reference id, we don't add it because it will be implicitly the last element where to
       // reduce !
       if (copy_instance_id != target_instance_id)
       {
@@ -1790,7 +1790,7 @@ inline void reserved::logical_data_untyped_impl::erase()
     {
       // Make sure copies or reduction initiated by the erase are finished
       auto inst_prereqs = wb_prereqs;
-      // Wait for preceeding tasks
+      // Wait for preceding tasks
       inst_prereqs.merge(get_pending_done_prereqs(inst_i.get_dplace()));
 
       inst_prereqs.merge(inst_i.get_read_prereq(), inst_i.get_write_prereq());
@@ -1810,7 +1810,7 @@ inline void reserved::logical_data_untyped_impl::erase()
   }
 
   // Clear the state which may contain references (eg. shared_ptr) to other
-  // ressources. This must be done here because the destructor of the logical
+  // resources. This must be done here because the destructor of the logical
   // data may be called after finalize()
   h_state.clear();
 
@@ -2048,7 +2048,7 @@ inline void fetch_data(
 
     // Gather all prereqs required to fetch this piece of data into the
     // dependencies of the task.
-    // Even temporary allocation may require to enfore dependencies
+    // Even temporary allocation may require to enforce dependencies
     // because we are reclaiming data for instance.
     result.merge(mv(stf_prereq));
   }
@@ -2197,7 +2197,7 @@ public:
   /// @brief Constructor from an untyped logical data
   ///
   /// Warning : no checks are done to ensure the type used to create the
-  /// untyped logical data matches, it is the responsability of the caller to
+  /// untyped logical data matches, it is the responsibility of the caller to
   /// ensure this is a valid conversion
   logical_data(logical_data_untyped&& u)
       : logical_data_untyped(u)

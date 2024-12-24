@@ -12,7 +12,7 @@
  * @file
  * @brief Strassen matrix multiplication algorithm
  *
- * This demonstrates how CUDASTF helps combining many interdependant tasks and
+ * This demonstrates how CUDASTF helps combining many interdependent tasks and
  * deal with temporary data.
  */
 

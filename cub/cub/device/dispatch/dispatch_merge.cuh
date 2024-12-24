@@ -210,7 +210,7 @@ struct dispatch_t
 
     auto merge_partitions = static_cast<Offset*>(allocations[0]);
 
-    // parition the merge path
+    // partition the merge path
     {
       const Offset num_partitions               = num_tiles + 1;
       constexpr int threads_per_partition_block = 256; // TODO(bgruber): no policy?

@@ -241,7 +241,7 @@ int main(int, char**)
   CheckNotConvertibleTo<Function*, char&>();
   CheckNotConvertibleTo<Function*, char*>();
 
-  // Non-referencable function type
+  // Non-referenceable function type
   static_assert(!convertible_to<ConstFunction, Function>, "");
   static_assert(!convertible_to<ConstFunction, Function*>, "");
   static_assert(!convertible_to<ConstFunction, Function&>, "");

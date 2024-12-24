@@ -34,7 +34,7 @@ __device__ inline void cudax_require_impl(
 {
   if (!condition)
   {
-    // TODO do warp aggregate prints for easier readibility?
+    // TODO do warp aggregate prints for easier readability?
     printf("%s:%u: %s: block: [%d,%d,%d], thread: [%d,%d,%d] Condition `%s` failed.\n",
            filename,
            linenum,

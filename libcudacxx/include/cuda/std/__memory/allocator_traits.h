@@ -568,29 +568,6 @@ struct __rebind_alloc_helper
   typedef _CCCL_NODEBUG_ALIAS typename _Traits::template rebind_alloc<_Tp> type;
 };
 
-// ASan choices
-#ifndef _LIBCUDACXX_HAS_NO_ASAN
-#  define _LIBCUDACXX_HAS_ASAN_CONTAINER_ANNOTATIONS_FOR_ALL_ALLOCATORS 1
-#endif
-
-#ifdef _LIBCUDACXX_HAS_ASAN_CONTAINER_ANNOTATIONS_FOR_ALL_ALLOCATORS
-template <class _Alloc>
-struct __asan_annotate_container_with_allocator
-#  if defined(_LIBCUDACXX_CLANG_VER) && _LIBCUDACXX_CLANG_VER >= 1600
-    : true_type
-{};
-#  else
-    // TODO LLVM18: Remove the special-casing
-    : false_type
-{
-};
-#  endif
-
-template <class _Tp>
-struct __asan_annotate_container_with_allocator<allocator<_Tp>> : true_type
-{};
-#endif
-
 #undef _LIBCUDACXX_ALLOCATOR_TRAITS_HAS_XXX
 
 _LIBCUDACXX_END_NAMESPACE_STD

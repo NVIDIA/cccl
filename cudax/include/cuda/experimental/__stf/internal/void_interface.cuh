@@ -93,7 +93,7 @@ public:
   void stream_data_allocate(
     backend_ctx_untyped&, const data_place&, instance_id_t, ::std::ptrdiff_t& s, void**, cudaStream_t) override
   {
-    // By filling a non negative number, we notify that the allocation was succesful
+    // By filling a non negative number, we notify that the allocation was successful
     s = 0;
   }
 

@@ -38,6 +38,13 @@
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min);
 DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max);
 
+// Suppress deprecation warning for the deprecated ArgMin and ArgMax interfaces
+_CCCL_NV_DIAG_SUPPRESS(1444)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMin, device_arg_min_old);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceReduce::ArgMax, device_arg_max_old);
+_CCCL_SUPPRESS_DEPRECATED_POP
+
 // %PARAM% TEST_LAUNCH lid 0:1
 
 C2H_TEST("Device reduce arg{min,max} works with inf items", "[reduce][device]")
@@ -50,7 +57,9 @@ C2H_TEST("Device reduce arg{min,max} works with inf items", "[reduce][device]")
   constexpr float inf = ::cuda::std::numeric_limits<float>::infinity();
 
   c2h::device_vector<out_t> out(1);
-  out_t* d_out = thrust::raw_pointer_cast(out.data());
+  out_t* d_out          = thrust::raw_pointer_cast(out.data());
+  offset_t* d_out_index = &d_out->key;
+  in_t* d_out_extremum  = &d_out->value;
 
   /**
    * ArgMin should return max value for empty input. This interferes with
@@ -62,7 +71,7 @@ C2H_TEST("Device reduce arg{min,max} works with inf items", "[reduce][device]")
     c2h::device_vector<in_t> in(n, inf);
     const in_t* d_in = thrust::raw_pointer_cast(in.data());
 
-    device_arg_min(d_in, d_out, n);
+    device_arg_min(d_in, d_out_extremum, d_out_index, n);
 
     const out_t result = out[0];
     REQUIRE(result.key == 0);
@@ -79,7 +88,41 @@ C2H_TEST("Device reduce arg{min,max} works with inf items", "[reduce][device]")
     c2h::device_vector<in_t> in(n, -inf);
     const in_t* d_in = thrust::raw_pointer_cast(in.data());
 
-    device_arg_max(d_in, d_out, n);
+    device_arg_max(d_in, d_out_extremum, d_out_index, n);
+
+    const out_t result = out[0];
+    REQUIRE(result.key == 0);
+    REQUIRE(result.value == -inf);
+  }
+
+  /**
+   * ArgMin should return max value for empty input. This interferes with
+   * input data containing infinity values. This test checks that ArgMin
+   * works correctly with infinity values.
+   */
+  SECTION("InfInArgMin deprecated interface")
+  {
+    c2h::device_vector<in_t> in(n, inf);
+    const in_t* d_in = thrust::raw_pointer_cast(in.data());
+
+    device_arg_min_old(d_in, d_out, n);
+
+    const out_t result = out[0];
+    REQUIRE(result.key == 0);
+    REQUIRE(result.value == inf);
+  }
+
+  /**
+   * ArgMax should return lowest value for empty input. This interferes with
+   * input data containing infinity values. This test checks that ArgMax
+   * works correctly with infinity values.
+   */
+  SECTION("InfInArgMax deprecated interface")
+  {
+    c2h::device_vector<in_t> in(n, -inf);
+    const in_t* d_in = thrust::raw_pointer_cast(in.data());
+
+    device_arg_max_old(d_in, d_out, n);
 
     const out_t result = out[0];
     REQUIRE(result.key == 0);

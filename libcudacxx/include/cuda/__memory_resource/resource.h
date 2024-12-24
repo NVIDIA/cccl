@@ -42,8 +42,8 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 //! @rst
 //! We require that a resource supports the following interface
 //!
-//!   - ``allocate(size_t bytes, size_t alginment)``
-//!   - ``deallocate(void* ptr, size_t bytes, size_t alginment)``
+//!   - ``allocate(size_t bytes, size_t alignment)``
+//!   - ``deallocate(void* ptr, size_t bytes, size_t alignment)``
 //!   - ``T() == T()``
 //!   - ``T() != T()``
 //!
@@ -52,9 +52,9 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_MR
 template <class _Resource>
 _CCCL_CONCEPT resource =
   _CCCL_REQUIRES_EXPR((_Resource), _Resource& __res, void* __ptr, size_t __bytes, size_t __alignment)(
-    requires(_CUDA_VSTD::equality_comparable<_Resource>),
     _Same_as(void*) __res.allocate(__bytes, __alignment), //
-    _Same_as(void) __res.deallocate(__ptr, __bytes, __alignment));
+    _Same_as(void) __res.deallocate(__ptr, __bytes, __alignment),
+    requires(_CUDA_VSTD::equality_comparable<_Resource>));
 
 //! @brief The \c async_resource concept verifies that a type Resource satisfies the basic requirements of a
 //! memory resource and additionally supports stream ordered allocations
@@ -74,9 +74,9 @@ _CCCL_CONCEPT resource =
 template <class _Resource>
 _CCCL_CONCEPT async_resource = _CCCL_REQUIRES_EXPR(
   (_Resource), _Resource& __res, void* __ptr, size_t __bytes, size_t __alignment, ::cuda::stream_ref __stream)(
-  requires(resource<_Resource>),
   _Same_as(void*) __res.allocate_async(__bytes, __alignment, __stream),
-  _Same_as(void) __res.deallocate_async(__ptr, __bytes, __alignment, __stream));
+  _Same_as(void) __res.deallocate_async(__ptr, __bytes, __alignment, __stream),
+  requires(resource<_Resource>));
 
 //! @brief The \c resource_with concept verifies that a type Resource satisfies the `resource` concept and
 //! also satisfies all the provided Properties

@@ -22,7 +22,7 @@
  *
  *         It is also the only header that does not cause THRUST_HOST_SYSTEM
  *         and THRUST_DEVICE_SYSTEM to be defined. This way, a user may include
- *         this header and inspect THRUST_VERSION before programatically defining
+ *         this header and inspect THRUST_VERSION before programmatically defining
  *         either of these macros herself.
  */
 

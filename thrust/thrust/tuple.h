@@ -43,7 +43,7 @@
 
 THRUST_NAMESPACE_BEGIN
 
-// define null_type for backwards compatability
+// define null_type for backwards compatibility
 struct null_type
 {};
 
