@@ -852,7 +852,7 @@ UNITTEST("logical_data_untyped moveable")
 
   for (int bid = 0; bid < 2; bid++)
   {
-    // This variable is likely to have the same address accross loop
+    // This variable is likely to have the same address across loop
     // iterations, which can stress the logical data management
     scalar res(ctx);
     auto t = ctx.task();
@@ -970,7 +970,7 @@ UNITTEST("non contiguous slice")
 
   int X[32 * 32];
 
-  // Pinning non contiguous memory is extremelly expensive, so we do it now
+  // Pinning non contiguous memory is extremely expensive, so we do it now
   cuda_safe_call(cudaHostRegister(&X[0], 32 * 32 * sizeof(int), cudaHostRegisterPortable));
 
   for (size_t i = 0; i < 32 * 32; i++)

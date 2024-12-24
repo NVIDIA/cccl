@@ -259,7 +259,7 @@ public:
   template <typename T>
   using data_interface = typename graphed_interface_of<T>::type;
 
-  /// @brief This type is copyable, assignable, and movable. Howeever, copies have reference semantics.
+  /// @brief This type is copyable, assignable, and movable. However, copies have reference semantics.
   ///@{
   graph_ctx(async_resources_handle handle = async_resources_handle(nullptr))
       : backend_ctx<graph_ctx>(::std::make_shared<impl>(mv(handle)))
@@ -1022,7 +1022,7 @@ UNITTEST("basic launch test (graph_ctx)")
 
 inline void unit_test_launch_many_graph_ctx()
 {
-  // Stress the allocators and all ressources !
+  // Stress the allocators and all resources !
   for (size_t i = 0; i < 256; i++)
   {
     graph_ctx ctx;

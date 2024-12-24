@@ -156,7 +156,7 @@ typename thrust::iterator_traits<InputIterator>::value_type reduce(InputIterator
  * is convertible to \p T. \tparam T is convertible to \p InputIterator's \c value_type.
  *
  *  The following code snippet demonstrates how to use \p reduce to compute
- *  the sum of a sequence of integers including an intialization value using the \p thrust::host
+ *  the sum of a sequence of integers including an initialization value using the \p thrust::host
  *  execution policy for parallelization:
  *
  *  \code
@@ -200,7 +200,7 @@ _CCCL_HOST_DEVICE T reduce(
  * is convertible to \p T. \tparam T is convertible to \p InputIterator's \c value_type.
  *
  *  The following code snippet demonstrates how to use \p reduce to compute
- *  the sum of a sequence of integers including an intialization value.
+ *  the sum of a sequence of integers including an initialization value.
  *
  *  \code
  *  #include <thrust/reduce.h>

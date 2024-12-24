@@ -37,7 +37,7 @@ namespace cuda::experimental::stf
 {
 
 /**
- * @brief A context is an enviroment for executing cudastf tasks.
+ * @brief A context is an environment for executing cudastf tasks.
  *
  */
 class context

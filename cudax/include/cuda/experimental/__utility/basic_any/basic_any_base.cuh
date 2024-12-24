@@ -43,12 +43,23 @@ _CUDAX_HOST_API auto __is_basic_any_test(basic_any<_Interface>&) -> basic_any<_I
 template <class _Interface>
 _CUDAX_HOST_API auto __is_basic_any_test(basic_any<_Interface> const&) -> basic_any<_Interface> const&;
 
+#if _CCCL_COMPILER(CLANG, <, 12) || _CCCL_COMPILER(GCC, <, 11)
+// Older versions of clang and gcc need help disambiguating between
+// basic_any<__ireference<I>> and basic_any<I&>.
+template <class _Interface>
+_CUDAX_HOST_API auto __is_basic_any_test(basic_any<_Interface&>&&) -> basic_any<_Interface&>&&;
+template <class _Interface>
+_CUDAX_HOST_API auto __is_basic_any_test(basic_any<_Interface&>&) -> basic_any<_Interface&>&;
+template <class _Interface>
+_CUDAX_HOST_API auto __is_basic_any_test(basic_any<_Interface&> const&) -> basic_any<_Interface&> const&;
+#endif
+
 // clang-format off
 template <class _Tp>
 _CCCL_CONCEPT __is_basic_any =
   _CCCL_REQUIRES_EXPR((_Tp), _Tp& __value)
   (
-    __is_basic_any_test(__value)
+    __cudax::__is_basic_any_test(__value)
   );
 // clang-format on
 

@@ -113,4 +113,11 @@
 #  define _CCCL_PRAGMA(_ARG) _Pragma(_CCCL_TO_STRING(_ARG))
 #endif // _CCCL_COMPILER(MSVC)
 
+// Define the proper object format for NVHPC and NVRTC
+#if (_CCCL_COMPILER(NVHPC) && defined(__linux__)) || _CCCL_COMPILER(NVRTC)
+#  ifndef __ELF__
+#    define __ELF__
+#  endif // !__ELF__
+#endif // _CCCL_COMPILER(NVHPC) || _CCCL_COMPILER(NVRTC)
+
 #endif // __CCCL_COMPILER_H

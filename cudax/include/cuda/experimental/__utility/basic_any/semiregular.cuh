@@ -22,9 +22,13 @@
 #endif // no system header
 
 #include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__concepts/convertible_to.h>
 #include <cuda/std/__concepts/copyable.h>
 #include <cuda/std/__concepts/equality_comparable.h>
 #include <cuda/std/__concepts/movable.h>
+#include <cuda/std/__memory/addressof.h>
+#include <cuda/std/__type_traits/decay.h>
+#include <cuda/std/__type_traits/is_same.h>
 #include <cuda/std/__type_traits/type_identity.h>
 #include <cuda/std/__utility/typeid.h>
 #include <cuda/std/__utility/unreachable.h>
@@ -114,6 +118,13 @@ __equal_fn(_Tp const& __self, _CUDA_VSTD::__type_info_ref __type, void const* __
   return false;
 }
 
+_CCCL_TEMPLATE(class _From, class _To)
+_CCCL_REQUIRES(_CUDA_VSTD::convertible_to<_From, _To>)
+_CCCL_NODISCARD _CUDAX_PUBLIC_API _To __conversion_fn(_CUDA_VSTD::type_identity_t<_From> __self)
+{
+  return static_cast<_To>(static_cast<_From&&>(__self));
+}
+
 //!
 //! semi-regular interfaces
 //!
@@ -201,7 +212,7 @@ struct iequality_comparable_base : interface<iequality_comparable>
   //
   // A: If there is a user-defined conversion from the basic_any type to _Object
   // such that we can use _Object's symmetric equality comparison operator, that
-  // should be prefered. _Object may be another kind of wrapper object, in which
+  // should be preferred. _Object may be another kind of wrapper object, in which
   // case using the address of the **wrapper** object for the comparison (as
   // opposed to the address of the wrapped object) is probably wrong.
   _CCCL_TEMPLATE(class _Interface, class _Object, class _Self = basic_any_from_t<iequality_comparable<_Interface>>)
@@ -251,6 +262,76 @@ template <class... _Super>
 struct iequality_comparable : iequality_comparable_base
 {};
 
+struct self; // a nice placeholder type
+
+template <class _CvSelf, class _To>
+struct __iconvertible_to
+{
+  static_assert(_CUDA_VSTD::is_same_v<_CUDA_VSTD::decay_t<_CvSelf>, self>,
+                "The first template parameter to iconvertible_to must be the placeholder type "
+                "cuda::experimental::self, possibly with cv- and/or ref-qualifiers");
+};
+
+template <class _To>
+struct __iconvertible_to<self&&, _To>
+{
+  template <class>
+  struct __always_false : _CUDA_VSTD::false_type
+  {};
+
+  static_assert(__always_false<_To>::value, "rvalue-qualified conversion operations are not yet supported");
+};
+
+template <class _To>
+struct __iconvertible_to<self, _To>
+{
+  template <class...>
+  struct __interface_ : interface<__interface_>
+  {
+    _CCCL_NODISCARD _CUDAX_HOST_API operator _To()
+    {
+      return __cudax::virtcall<__conversion_fn<__interface_, _To>>(this);
+    }
+
+    template <class _From>
+    using overrides = overrides_for<_From, _CUDAX_FNPTR_CONSTANT_WAR(&__conversion_fn<_From, _To>)>;
+  };
+};
+
+template <class _To>
+struct __iconvertible_to<self&, _To>
+{
+  template <class...>
+  struct __interface_ : interface<__interface_>
+  {
+    _CCCL_NODISCARD _CUDAX_HOST_API operator _To() &
+    {
+      return __cudax::virtcall<&__conversion_fn<__interface_&, _To>>(this);
+    }
+
+    template <class _From>
+    using overrides = overrides_for<_From, _CUDAX_FNPTR_CONSTANT_WAR(&__conversion_fn<_From&, _To>)>;
+  };
+};
+
+template <class _To>
+struct __iconvertible_to<self const&, _To>
+{
+  template <class...>
+  struct __interface_ : interface<__interface_>
+  {
+    _CCCL_NODISCARD _CUDAX_HOST_API operator _To() const&
+    {
+      return __cudax::virtcall<&__conversion_fn<__interface_ const&, _To>>(this);
+    }
+
+    template <class _From>
+    using overrides = overrides_for<_From, _CUDAX_FNPTR_CONSTANT_WAR(&__conversion_fn<_From const&, _To>)>;
+  };
+};
+
+template <class _From, class _To>
+using iconvertible_to _CCCL_NODEBUG_ALIAS = typename __iconvertible_to<_From, _To>::template __interface_<>;
 } // namespace cuda::experimental
 
 _CCCL_POP_MACROS

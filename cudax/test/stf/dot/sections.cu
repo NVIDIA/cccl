@@ -51,7 +51,7 @@ int main()
   }
   ctx.finalize();
 
-  // Call this explicitely for the purpose of the test
+  // Call this explicitly for the purpose of the test
   reserved::dot::instance().finish();
 
   // Make sure the file exists, and erase it

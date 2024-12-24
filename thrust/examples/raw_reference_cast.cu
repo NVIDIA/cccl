@@ -12,7 +12,7 @@
 //
 // Using iterators in the manner described here is generally discouraged.
 // Users should only resort to this technique if there is no viable
-// implemention of a given operation in terms of Thrust algorithms.
+// implementation of a given operation in terms of Thrust algorithms.
 // For example this particular example is better solved with thrust::copy,
 // which is safer and potentially faster.  Only use this approach after all
 // safer alternatives have been exhausted.

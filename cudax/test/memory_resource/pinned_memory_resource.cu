@@ -17,6 +17,7 @@
 
 #include <stdexcept>
 
+#include "cuda/__memory_resource/resource_ref.h"
 #include <catch2/catch.hpp>
 #include <utility.cuh>
 
@@ -170,7 +171,7 @@ enum class AccessibilityType
   Host,
 };
 
-template <AccessibilityType Accessibilty>
+template <AccessibilityType Accessibility>
 struct resource
 {
   void* allocate(size_t, size_t)
@@ -191,8 +192,8 @@ struct resource
 static_assert(cuda::mr::resource<resource<AccessibilityType::Host>>, "");
 static_assert(cuda::mr::resource<resource<AccessibilityType::Device>>, "");
 
-template <AccessibilityType Accessibilty>
-struct async_resource : public resource<Accessibilty>
+template <AccessibilityType Accessibility>
+struct async_resource : public resource<Accessibility>
 {
   void* allocate_async(size_t, size_t, cuda::stream_ref)
   {
@@ -215,32 +216,33 @@ TEST_CASE("pinned_memory_resource comparison", "[memory_resource]")
   pinned_resource first{};
   { // comparison against a plain pinned_memory_resource
     pinned_resource second{};
-    CHECK(first == second);
+    CHECK((first == second));
     CHECK(!(first != second));
   }
 
   { // comparison against a plain pinned_memory_resource with a different pool
     pinned_resource second{cudaMemAttachHost};
-    CHECK(first != second);
+    CHECK((first != second));
     CHECK(!(first == second));
   }
 
   { // comparison against a pinned_memory_resource wrapped inside a resource_ref<device_accessible>
     pinned_resource second{};
-    cuda::mr::resource_ref<cuda::mr::device_accessible> second_ref{second};
-    CHECK(first == second_ref);
+    cuda::mr::resource_ref<cudax::device_accessible> const second_ref{second};
+    CHECK((first == second_ref));
     CHECK(!(first != second_ref));
-    CHECK(second_ref == first);
+    CHECK((second_ref == first));
     CHECK(!(second_ref != first));
   }
 
   { // comparison against a pinned_memory_resource wrapped inside a async_resource_ref
     pinned_resource second{};
-    cuda::mr::async_resource_ref<cuda::mr::device_accessible> second_ref{second};
+    // cuda::mr::async_resource_ref<cudax::device_accessible> second_ref{second};
+    cudax::async_resource_ref<cudax::device_accessible> second_ref{second};
 
-    CHECK(first == second_ref);
+    CHECK((first == second_ref));
     CHECK(!(first != second_ref));
-    CHECK(second_ref == first);
+    CHECK((second_ref == first));
     CHECK(!(second_ref != first));
   }
 
@@ -248,27 +250,27 @@ TEST_CASE("pinned_memory_resource comparison", "[memory_resource]")
     resource<AccessibilityType::Host> host_resource{};
     resource<AccessibilityType::Device> device_resource{};
     CHECK(!(first == host_resource));
-    CHECK(first != host_resource);
+    CHECK((first != host_resource));
     CHECK(!(first == device_resource));
-    CHECK(first != device_resource);
+    CHECK((first != device_resource));
 
     CHECK(!(host_resource == first));
-    CHECK(host_resource != first);
+    CHECK((host_resource != first));
     CHECK(!(device_resource == first));
-    CHECK(device_resource != first);
+    CHECK((device_resource != first));
   }
 
   { // comparison against a different pinned_resource through resource_ref
     resource<AccessibilityType::Host> host_async_resource{};
     resource<AccessibilityType::Device> device_async_resource{};
     CHECK(!(first == host_async_resource));
-    CHECK(first != host_async_resource);
+    CHECK((first != host_async_resource));
     CHECK(!(first == device_async_resource));
-    CHECK(first != device_async_resource);
+    CHECK((first != device_async_resource));
 
     CHECK(!(host_async_resource == first));
-    CHECK(host_async_resource != first);
+    CHECK((host_async_resource != first));
     CHECK(!(device_async_resource == first));
-    CHECK(device_async_resource != first);
+    CHECK((device_async_resource != first));
   }
 }

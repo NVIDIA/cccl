@@ -95,7 +95,7 @@ __global__ void with_staging(int* global_out, int const* global_in, size_t size,
     // Collectively commit (advance) the pipeline's head stage
     pipeline.producer_commit();
 
-    // Collectively wait for the operations commited to the
+    // Collectively wait for the operations committed to the
     // previous `compute` stage to complete:
     pipeline.consumer_wait();
 

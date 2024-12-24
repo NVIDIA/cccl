@@ -69,7 +69,7 @@ class data_place
 
 public:
   /**
-   * @brief Default constructor. The object is intialized as invalid.
+   * @brief Default constructor. The object is initialized as invalid.
    */
   data_place() = default;
 
@@ -199,7 +199,7 @@ public:
   friend inline size_t to_index(const data_place& p)
   {
     EXPECT(p.devid >= -2, "Data place with device id ", p.devid, " does not refer to a device.");
-    // This is not stricly a problem in this function, but it's not legit either. So let's assert.
+    // This is not strictly a problem in this function, but it's not legit either. So let's assert.
     assert(p.devid < cuda_try<cudaGetDeviceCount>());
     return p.devid + 2;
   }
@@ -500,7 +500,7 @@ public:
   }
 
   /**
-   * @brief Undoes the effect of `activate`. Call with the previous `exec_place` object retured by `activate`.
+   * @brief Undoes the effect of `activate`. Call with the previous `exec_place` object returned by `activate`.
    *
    * @warning Undefined behavior if you don't pass the result of `activate`.
    */
@@ -985,7 +985,7 @@ public:
 
   /* Note that we compare against the exact same implementation : we could
    * have equivalent grids with the same execution places, but to avoid a
-   * costly comparision we here only look for actually identical grids.
+   * costly comparison we here only look for actually identical grids.
    */
   bool operator==(const exec_place_grid& rhs) const
   {

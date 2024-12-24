@@ -374,7 +374,7 @@ enum __estate_t : int
   __stopped
 };
 
-/// @brief The data stored in the operation state and refered to
+/// @brief The data stored in the operation state and referred to
 /// by the receiver.
 /// @tparam _Rcvr The receiver connected to the when_all sender.
 /// @tparam _CvFn A metafunction to apply cv- and ref-qualifiers to the senders

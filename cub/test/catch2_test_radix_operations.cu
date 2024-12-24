@@ -489,7 +489,7 @@ using fundamental_signed_types = c2h::type_list<std::int8_t, std::int16_t, std::
 
 /**
  * This tests checks that radix operations can convert a value to a binary-comparable
- * represetation. For example, `42.0f` is larger than `-42.0f`, but if we look at the
+ * representation. For example, `42.0f` is larger than `-42.0f`, but if we look at the
  * binary representation, it's not the case because of the sign bit:
  *
  *         s< exp. ><----- mantissa ------>

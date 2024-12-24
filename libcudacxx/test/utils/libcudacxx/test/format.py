@@ -228,7 +228,7 @@ class LibcxxTestFormat(object):
             assert False  # Unreachable
         finally:
             # Note that cleanup of exec_file happens in `_clean()`. If you
-            # override this, cleanup is your reponsibility.
+            # override this, cleanup is your responsibility.
             libcudacxx.util.cleanFile(object_path)
             self._clean(exec_path)
 

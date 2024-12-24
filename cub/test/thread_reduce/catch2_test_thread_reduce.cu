@@ -460,7 +460,7 @@ C2H_TEST("ThreadReduce Narrow PrecisionType Tests",
 
 #if defined(CCCL_CHECK_SASS)
 
-C2H_TEST("ThreadReduce Containter Tests", "[reduce][thread]")
+C2H_TEST("ThreadReduce Container Tests", "[reduce][thread]")
 {
   c2h::device_vector<int> d_in(max_size);
   c2h::device_vector<int> d_out(1);

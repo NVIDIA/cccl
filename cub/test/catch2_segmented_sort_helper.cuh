@@ -256,7 +256,7 @@ private:
         []() {}(); // no-op lambda
       }
 
-      // Validate all output values for the current key by determining the input key indicies and computing the matching
+      // Validate all output values for the current key by determining the input key indices and computing the matching
       // input values.
       const int num_dup_keys     = key_out_dup_end - key_out_dup_begin;
       const int key_in_dup_begin = segment_size - key_out_dup_end;

@@ -101,7 +101,7 @@ launch_impl(::cuda::stream_ref stream, Config conf, const Kernel& kernel_fn, con
  *
  * void launch_kernel(cuda::stream_ref stream) {
  *     auto dims    = cudax::make_hierarchy(cudax::block_dims<128>(), cudax::grid_dims(4));
- *     auto confing = cudax::make_config(dims, cudax::launch_cooperative());
+ *     auto config = cudax::make_config(dims, cudax::launch_cooperative());
  *
  *     cudax::launch(stream, config, kernel(), 42);
  * }
@@ -167,7 +167,7 @@ void launch(
  * #include <cstdio>
  * #include <cuda/experimental/launch.cuh>
  *
- * template <typename Congifuration>
+ * template <typename Configuration>
  * __global__ void kernel(Configuration conf, unsigned int thread_to_print) {
  *     if (conf.dims.rank(cudax::thread, cudax::grid) == thread_to_print) {
  *         printf("Hello from the GPU\n");
@@ -176,7 +176,7 @@ void launch(
  *
  * void launch_kernel(cuda::stream_ref stream) {
  *     auto dims    = cudax::make_hierarchy(cudax::block_dims<128>(), cudax::grid_dims(4));
- *     auto confing = cudax::make_config(dims, cudax::launch_cooperative());
+ *     auto config = cudax::make_config(dims, cudax::launch_cooperative());
  *
  *     cudax::launch(stream, config, kernel<decltype(config)>, 42);
  * }
@@ -226,7 +226,7 @@ void launch(::cuda::stream_ref stream,
  * #include <cstdio>
  * #include <cuda/experimental/launch.cuh>
  *
- * template <typename Congifuration>
+ * template <typename Configuration>
  * __global__ void kernel(Configuration conf, unsigned int thread_to_print) {
  *     if (conf.dims.rank(cudax::thread, cudax::grid) == thread_to_print) {
  *         printf("Hello from the GPU\n");
@@ -235,7 +235,7 @@ void launch(::cuda::stream_ref stream,
  *
  * void launch_kernel(cuda::stream_ref stream) {
  *     auto dims    = cudax::make_hierarchy(cudax::block_dims<128>(), cudax::grid_dims(4));
- *     auto confing = cudax::make_config(dims, cudax::launch_cooperative());
+ *     auto config = cudax::make_config(dims, cudax::launch_cooperative());
  *
  *     cudax::launch(stream, config, kernel<decltype(config)>, 42);
  * }

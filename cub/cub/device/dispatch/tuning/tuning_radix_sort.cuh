@@ -813,6 +813,43 @@ struct policy_hub
   public:
     using OnesweepPolicy = ::cuda::std::_If<sizeof(KeyT) < 4, OnesweepSmallKeyPolicy, OnesweepLargeKeyPolicy>;
 
+    // The Scan, Downsweep and Upsweep policies are never run on SM90, but we have to include them to prevent a
+    // compilation error: When we compile e.g. for SM70 **and** SM90, the host compiler will reach calls to those
+    // kernels, and instantiate them for MaxPolicy (which is Policy900) on the host, which will reach into the policies
+    // below to set the launch bounds. The device compiler pass will also compile all kernels for SM70 **and** SM90,
+    // even though only the Onesweep kernel is used on SM90.
+    using ScanPolicy =
+      AgentScanPolicy<512,
+                      23,
+                      OffsetT,
+                      BLOCK_LOAD_WARP_TRANSPOSE,
+                      LOAD_DEFAULT,
+                      BLOCK_STORE_WARP_TRANSPOSE,
+                      BLOCK_SCAN_RAKING_MEMOIZE>;
+
+    using DownsweepPolicy = AgentRadixSortDownsweepPolicy<
+      512,
+      23,
+      DominantT,
+      BLOCK_LOAD_TRANSPOSE,
+      LOAD_DEFAULT,
+      RADIX_RANK_MATCH,
+      BLOCK_SCAN_WARP_SCANS,
+      PRIMARY_RADIX_BITS>;
+
+    using AltDownsweepPolicy = AgentRadixSortDownsweepPolicy<
+      (sizeof(KeyT) > 1) ? 256 : 128,
+      47,
+      DominantT,
+      BLOCK_LOAD_TRANSPOSE,
+      LOAD_DEFAULT,
+      RADIX_RANK_MEMOIZE,
+      BLOCK_SCAN_WARP_SCANS,
+      PRIMARY_RADIX_BITS - 1>;
+
+    using UpsweepPolicy    = AgentRadixSortUpsweepPolicy<256, 23, DominantT, LOAD_DEFAULT, PRIMARY_RADIX_BITS>;
+    using AltUpsweepPolicy = AgentRadixSortUpsweepPolicy<256, 47, DominantT, LOAD_DEFAULT, PRIMARY_RADIX_BITS - 1>;
+
     using SingleTilePolicy = AgentRadixSortDownsweepPolicy<
       256,
       19,

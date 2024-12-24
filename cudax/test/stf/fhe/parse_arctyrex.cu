@@ -322,7 +322,7 @@ void run(const char* inputfile)
         std::string symbol_in = gate_args.substr(0, pos);
         gate_args.erase(0, pos + 2);
 
-        // harcoded ...
+        // hardcoded ...
         size_t sz = 1;
 
         auto data_in                       = logical_slices[symbol_in];
@@ -350,7 +350,7 @@ void run(const char* inputfile)
         std::string symbol_in_2 = symbol_indices.substr(pos_beg + 1, pos_end - pos_beg - 1);
         // std::cout << "ARRAY INDEX ... INDEX = " << symbol_in_2 << std::endl;
 
-        // harcoded ...
+        // hardcoded ...
         size_t sz = 1;
 
         auto data_in                       = logical_slices[symbol_in];

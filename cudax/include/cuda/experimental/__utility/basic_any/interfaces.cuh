@@ -164,7 +164,7 @@ template <class _Tp>
 _CCCL_CONCEPT __is_interface =
   _CCCL_REQUIRES_EXPR((_Tp), _Tp& __value)
   (
-    __is_interface_test(__value)
+    __cudax::__is_interface_test(__value)
   );
 // clang-format on
 

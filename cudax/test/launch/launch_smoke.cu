@@ -132,7 +132,7 @@ struct launch_transform_to_int_convertible
   }
 };
 
-// Needs a separe function for Windows extended lambda
+// Needs a separate function for Windows extended lambda
 void launch_smoke_test()
 {
   // Use raw stream to make sure it can be implicitly converted on call to launch

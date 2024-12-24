@@ -45,7 +45,7 @@
 // Enable the functionality of this header if:
 // * The NVTX3 C API is available in CTK
 // * NVTX is not explicitly disabled (via CCCL_DISABLE_NVTX or NVTX_DISABLE)
-// * C++14 is availabl for cuda::std::optional
+// * C++14 is available for cuda::std::optional
 // * NVTX3 uses module as an identifier, which trips up NVHPC
 #if _CCCL_HAS_INCLUDE(<nvtx3/nvToolsExt.h>) && !defined(CCCL_DISABLE_NVTX) && !defined(NVTX_DISABLE) \
                       && _CCCL_STD_VER >= 2014                                                       \

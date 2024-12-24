@@ -18,7 +18,7 @@ libcu++
 developers easier.
 
 Specifically, ``libcu++`` provides:
-   - C++ Standard Library features useable in both host and device code
+   - C++ Standard Library features usable in both host and device code
    - Extensions to C++ Standard Library features
    - Fundamental, CUDA-specific programming model abstractions
 
@@ -60,7 +60,7 @@ All you have to do is add ``cuda/std/`` to the start of your includes and ``cuda
 C++ Standard Library Extensions
 -------------------------------
 
-libcu++ provides CUDA C++ developers with familiar Standard Library utilties to improve productivity and flatten the
+libcu++ provides CUDA C++ developers with familiar Standard Library utilities to improve productivity and flatten the
 learning curve of learning CUDA. However, there are many aspects of writing high-performance CUDA C++ code that cannot
 be expressed through purely Standard conforming APIs. For these cases, libcu++ also provides *extensions* of Standard
 Library utilities.
