@@ -48,29 +48,17 @@ class CachableFunction:
 
     def __init__(self, func):
         self._func = func
+        self._identity = (
+            self._func.__code__.co_code,
+            self._func.__code__.co_consts,
+            self._func.__closure__,
+        )
 
     def __eq__(self, other):
-        func1, func2 = self._func, other._func
-
-        # return True if the functions compare equal for
-        # caching purposes, False otherwise
-        code1 = func1.__code__
-        code2 = func2.__code__
-
-        return (
-            code1.co_code == code2.co_code
-            and code1.co_consts == code2.co_consts
-            and func1.__closure__ == func2.__closure__
-        )
+        return self._identity == other._identity
 
     def __hash__(self):
-        return hash(
-            (
-                self._func.__code__.co_code,
-                self._func.__code__.co_consts,
-                self._func.__closure__,
-            )
-        )
+        return hash(self._identity)
 
     def __repr__(self):
         return str(self._func)

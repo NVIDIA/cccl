@@ -48,6 +48,7 @@ def test_cache_modified_input_iterator_equality():
 
     assert it1 == it2
     assert it1 != it3
+
     assert it1.kind == it2.kind == it3.kind
     assert it1.kind != it4.kind
 
@@ -71,6 +72,7 @@ def test_equality_transform_iterator():
     assert it1 == it2
     assert it1 != it3
     assert it1 == it4
+
     assert it1.kind == it2.kind == it4.kind
 
     ary1 = cp.asarray([0, 1, 2])
