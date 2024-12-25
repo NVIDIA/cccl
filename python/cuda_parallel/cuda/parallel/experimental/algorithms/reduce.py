@@ -12,14 +12,17 @@ from typing import Callable
 
 from .. import _cccl as cccl
 from .._bindings import get_paths, get_bindings
+from .._structwrapper import wrap_struct
 
 
 class _Op:
     def __init__(self, dtype: np.dtype, op: Callable):
-        value_type = numba.from_dtype(dtype)
-        self.ltoir, _ = cuda.compile(
-            op, sig=value_type(value_type, value_type), output="ltoir"
-        )
+        # if h_init is a struct, wrap it in a Record type:
+        if dtype.names is not None:
+            value_type = wrap_struct(dtype)
+        else:
+            value_type = numba.from_dtype(dtype)
+        self.ltoir, _ = cuda.compile(op, sig=(value_type, value_type), output="ltoir")
         self.name = op.__name__.encode("utf-8")
 
     def handle(self) -> cccl.Op:
