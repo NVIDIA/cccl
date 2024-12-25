@@ -22,53 +22,52 @@ def wrap_struct(dtype: np.dtype) -> numba.types.Type:
     """
     Wrap the given numpy structure dtype in a numba type.
     """
-    Wrapper = dataclasses.make_dataclass(
-        "wrapper",
+    StructWrapper = dataclasses.make_dataclass(
+        "StructWrapper",
         [(name, dt) for name, (dt, _) in dtype.fields.items()],  # type: ignore
     )
 
-    class WrapperType(types.Type):
+    class StructWrapperType(types.Type):
         def __init__(self):
             super().__init__(name="StructWrapper")
 
-    this_type = WrapperType()
+    struct_wrapper_type = StructWrapperType()
 
-    @typeof_impl.register(Wrapper)
-    def typeof_wrapper(val, c):
-        return WrapperType()
+    @typeof_impl.register(StructWrapper)
+    def typeof_struct_wrapper(val, c):
+        return StructWrapperType()
 
-    class WrapperAttrsTemplate(AttributeTemplate):
+    class StructWrapperAttrsTemplate(AttributeTemplate):
         pass
 
-    fields = dataclasses.fields(Wrapper)
+    fields = dataclasses.fields(StructWrapper)
     for f in fields:
         name = f.name
         typ = f.type
 
-        def resolver(self, this):
+        def resolver(self, wrapper):
             return numba.from_dtype(typ)
 
-        setattr(WrapperAttrsTemplate, f"resolve_{name}", resolver)
+        setattr(StructWrapperAttrsTemplate, f"resolve_{name}", resolver)
 
-    # Register the typing for Pixel attributes with Numba.
     @cuda_registry.register_attr
-    class WrapperAttrs(WrapperAttrsTemplate):
-        key = this_type
+    class StructWrapperAttrs(StructWrapperAttrsTemplate):
+        key = struct_wrapper_type
 
-    @register_model(WrapperType)
-    class WrapperModel(models.StructModel):
+    @register_model(StructWrapperType)
+    class StructWrapperModel(models.StructModel):
         def __init__(self, dmm, fe_type):
             members = [(f.name, numba.from_dtype(f.type)) for f in fields]
             super().__init__(dmm, fe_type, members)
 
     for f in fields:
-        make_attribute_wrapper(WrapperType, f.name, f.name)
+        make_attribute_wrapper(StructWrapperType, f.name, f.name)
 
     @cuda_registry.register_global(operator.getitem)
-    class WrapperGetitem(CallableTemplate):
+    class StructWrapperGetitem(CallableTemplate):
         def generic(self):
             def typer(obj, index):
-                if not isinstance(obj, WrapperType):
+                if not isinstance(obj, StructWrapperType):
                     return None
                 if not isinstance(index, types.StringLiteral):
                     return None
@@ -77,10 +76,12 @@ def wrap_struct(dtype: np.dtype) -> numba.types.Type:
 
             return typer
 
-    @cuda_lower(operator.getitem, this_type, types.StringLiteral)
-    def wrapper_getitem(context, builder, sig, args):
+    @cuda_lower(operator.getitem, struct_wrapper_type, types.StringLiteral)
+    def struct_wrapper_getitem(context, builder, sig, args):
         obj_arg, index_arg = args
-        obj = cgutils.create_struct_proxy(this_type)(context, builder, value=obj_arg)
+        obj = cgutils.create_struct_proxy(struct_wrapper_type)(
+            context, builder, value=obj_arg
+        )
         return getattr(obj, sig.args[1].literal_value)
 
-    return this_type
+    return struct_wrapper_type
