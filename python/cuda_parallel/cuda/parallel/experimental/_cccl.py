@@ -119,6 +119,10 @@ def _type_to_enum(numba_type: types.Type) -> TypeEnum:
 def _numba_type_to_info(numba_type: types.Type) -> TypeInfo:
     context = cuda.descriptor.cuda_target.target_context
     value_type = context.get_value_type(numba_type)
+    if isinstance(numba_type, types.Record):
+        # then `value_type` is a pointer and we need the
+        # alignment of the pointee.
+        value_type = value_type.pointee
     size = value_type.get_abi_size(context.target_data)
     alignment = value_type.get_abi_alignment(context.target_data)
     return TypeInfo(size, alignment, _type_to_enum(numba_type))
