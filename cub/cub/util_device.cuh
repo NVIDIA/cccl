@@ -635,7 +635,10 @@ CUB_RUNTIME_FUNCTION PolicyWrapper<PolicyT> MakePolicyWrapper(PolicyT policy)
   return PolicyWrapper<PolicyT>{policy};
 }
 
+namespace detail
+{
 struct TripleChevronFactory;
+}
 
 /**
  * Kernel dispatch configuration
@@ -654,7 +657,7 @@ struct KernelConfig
       , sm_occupancy(0)
   {}
 
-  template <typename AgentPolicyT, typename KernelPtrT, typename LauncherFactory = TripleChevronFactory>
+  template <typename AgentPolicyT, typename KernelPtrT, typename LauncherFactory = detail::TripleChevronFactory>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   Init(KernelPtrT kernel_ptr, AgentPolicyT agent_policy = {}, LauncherFactory launcher_factory = {})
   {
@@ -784,4 +787,4 @@ private:
 
 CUB_NAMESPACE_END
 
-#include <cub/launcher/cuda_runtime.cuh> // to complete the definition of TripleChevronFactory
+#include <cub/detail/launcher/cuda_runtime.cuh> // to complete the definition of TripleChevronFactory

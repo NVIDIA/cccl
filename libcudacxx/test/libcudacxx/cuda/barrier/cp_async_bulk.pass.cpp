@@ -26,7 +26,7 @@ using barrier = cuda::barrier<cuda::thread_scope_block>;
 namespace cde = cuda::device::experimental;
 
 static constexpr int buf_len = 1024;
-__device__ int gmem_buffer[buf_len];
+__device__ alignas(128) int gmem_buffer[buf_len];
 
 __device__ void test()
 {

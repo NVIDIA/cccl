@@ -9,9 +9,9 @@
 //===----------------------------------------------------------------------===//
 
 #include <cub/detail/choose_offset.cuh>
+#include <cub/detail/launcher/cuda_driver.cuh>
 #include <cub/device/device_reduce.cuh>
 #include <cub/grid/grid_even_share.cuh>
-#include <cub/launcher/cuda_driver.cuh>
 #include <cub/util_device.cuh>
 
 #include <cuda/std/cstdint>
@@ -405,7 +405,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce(
                         dynamic_reduce_policy_t<&get_policy>,
                         ::cuda::std::__identity,
                         reduce_kernel_source,
-                        cub::CudaDriverLauncherFactory>::
+                        cub::detail::CudaDriverLauncherFactory>::
       Dispatch(
         d_temp_storage,
         *temp_storage_bytes,
@@ -417,7 +417,7 @@ extern "C" CCCL_C_API CUresult cccl_device_reduce(
         stream,
         {},
         {build},
-        cub::CudaDriverLauncherFactory{cu_device, build.cc},
+        cub::detail::CudaDriverLauncherFactory{cu_device, build.cc},
         {get_accumulator_type(op, d_in, init)});
   }
   catch (const std::exception& exc)
