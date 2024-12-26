@@ -1781,7 +1781,7 @@ one may however already manage coherency or enforce dependencies.
 
 - The "logical data freezing" mechanism ensures data availability while letting
   the application take care of synchronization.
-- Logical token makes it possible to enfore concurrent execution while
+- Logical token makes it possible to enforce concurrent execution while
   letting the application manage data allocations and data transfers.
 
 Freezing logical data
