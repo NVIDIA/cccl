@@ -3,13 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 [build-system]
-requires = [
-    "setuptools>=61.0.0",
-    "wheel",
-    "packaging",
-    "numpy",
-]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "cuda-cooperative"
@@ -19,13 +14,14 @@ dynamic = ["version", "readme"]
 authors = [
     { name = "NVIDIA Corporation" }
 ]
-license = { file = "LICENSE" }
+license = { file = "../../LICENSE" }
 classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Environment :: GPU :: NVIDIA CUDA",
 ]
 dependencies = [
-    # "cuda-cccl @ file:///home/coder/cccl/python/cuda_cccl",
+    "cuda-cccl @ {root:uri}/../cuda_cccl",
+    "numpy",
     "numba>=0.60.0",
     "pynvjitlink-cu12>=0.2.4",
     "cuda-python",
@@ -41,6 +37,13 @@ test = [
 [project.urls]
 Homepage = "https://developer.nvidia.com/"
 
-[tool.setuptools.dynamic]
-version = { attr = "cuda.cooperative._version.__version__" }
-readme = { file = ["README.md"], content-type = "text/markdown" }
+[tool.hatch.build.targets.wheel]
+packages = ["cuda"]
+
+[tool.hatch.version]
+path = "cuda/cooperative/_version.py"
+attr = "__version__"
+
+[tool.hatch.metadata]
+readme = "README.md"
+allow-direct-references = true
