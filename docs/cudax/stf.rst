@@ -1821,6 +1821,7 @@ corresponding argument may be omitted in the lambda function passed as the
 task’s implementation. Thus, the above task is equivalent to this code:
 
 .. code:: cpp
+
     ctx.task(token.rw(), A.read(), B.rw())->*[](cudaStream_t stream, void_interface dummy, auto a, auto b)
 
 To avoid ambiguities, you must either consistently ignore every
