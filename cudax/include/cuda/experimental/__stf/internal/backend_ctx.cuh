@@ -1070,11 +1070,12 @@ public:
 
   auto logical_token()
   {
-    // We do not use a shape because we want the first rw() access to succeed without an initial write()
-    auto result = logical_data(void_interface{});
-    result.set_write_back(false);
-
-    return mv(result);
+    // We do not use a shape because we want the first rw() access to succeed
+    // without an initial write()
+    //
+    // Note that we do not disable write back as the write-back mechanism is
+    // handling void_interface specifically to ignore it anyway.
+    return logical_data(void_interface{});
   }
 
   template <typename T>
