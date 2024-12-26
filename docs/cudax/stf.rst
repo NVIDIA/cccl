@@ -1772,6 +1772,65 @@ all the benefits of statically available types):
 
    stream_task<> t = ctx.task(lX.read());
 
+Modular use of CUDASTF
+----------------------
+
+CUDASTF maintains data consistency throughout the system, and infers
+concurrency opportunities based on data accesses. Depending on the use cases,
+one may however already manage coherency or enforce dependencies.
+
+- The "logical data freezing" mechanism ensures data availability while letting
+  the application take care of synchronization.
+- Logical token makes it possible to enfore concurrent execution while
+  letting the application manage data allocations and data transfers.
+
+Freezing logical data
+^^^^^^^^^^^^^^^^^^^^^
+TODO
+
+Logical token
+^^^^^^^^^^^^^
+
+A logical token is a specific type of logical data whose only purpose is to
+automate synchronization, while letting the application manage the actual data.
+This can, for example, be useful with user-provided buffers on a single device,
+where no allocations or transfers are required, but where concurrent accesses
+may occur.
+
+A logical token internally relies on the ``void_interface`` data interface,
+which is specifically optimized to skip unnecessary stages in the cache
+coherency protocol (e.g., data allocations or copying data). When appropriate,
+using a logical token rather than a logical data with a full-fledged data
+interface therefore minimizes runtime overhead.
+
+.. code:: cpp
+
+    auto token = ctx.logical_token();
+
+    // A and B are assumed to be two other valid logical data
+    ctx.task(token.rw(), A.read(), B.rw())->*[](cudaStream_t stream, auto a, auto b)
+    {
+        ...
+    };
+
+The example above shows how to create a logical token and how to use it in a
+task.
+
+Since the logical token is only used for synchronization purposes, the
+corresponding argument may be omitted in the lambda function passed as the
+task’s implementation. Thus, the above task is equivalent to this code:
+
+.. code:: cpp
+    ctx.task(token.rw(), A.read(), B.rw())->*[](cudaStream_t stream, void_interface dummy, auto a, auto b)
+
+To avoid ambiguities, you must either consistently ignore every
+``void_interface`` data instance or include them all, even if they remain
+unused.
+
+Note that the token created by the ``logical_token`` method of the context
+object is already valid, which means the first access can be either a ``read()``
+or an ``rw()`` access. There is no need to set any content in the token
+(unlike a logical data object created from a shape).
 
 Tools
 -----
