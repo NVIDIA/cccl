@@ -7,7 +7,6 @@ requires = [
     "setuptools>=61.0.0",
     "wheel",
     "packaging",
-    "numpy",
 ]
 build-backend = "setuptools.build_meta"
 
@@ -26,6 +25,7 @@ classifiers = [
 ]
 dependencies = [
     # "cuda-cccl @ file:///home/coder/cccl/python/cuda_cccl",
+    "numpy",
     "numba>=0.60.0",
     "pynvjitlink-cu12>=0.2.4",
     "cuda-python",
