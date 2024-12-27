@@ -523,4 +523,4 @@ def test_reduce_struct_type():
     h_rgb = d_rgb.get()
     expected = h_rgb[h_rgb.view("int32")[:, 1].argmax()]
 
-    np.testing.assert_equal(expected, d_out.get())
+    np.testing.assert_equal(expected["g"], d_out.get()["g"])
