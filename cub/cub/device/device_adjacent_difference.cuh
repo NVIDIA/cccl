@@ -41,7 +41,6 @@
 #include <cub/detail/nvtx.cuh>
 #include <cub/detail/type_traits.cuh>
 #include <cub/device/dispatch/dispatch_adjacent_difference.cuh>
-#include <cub/util_deprecated.cuh>
 #include <cub/util_namespace.cuh>
 
 #include <thrust/detail/integer_traits.h>

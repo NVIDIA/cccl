@@ -44,11 +44,11 @@ THRUST_NAMESPACE_BEGIN
 
 //! deprecated [Since 2.6]
 template <typename Operation>
-struct THRUST_DEPRECATED unary_traits;
+struct CCCL_DEPRECATED unary_traits;
 
 //! deprecated [Since 2.6]
 template <typename Operation>
-struct THRUST_DEPRECATED binary_traits;
+struct CCCL_DEPRECATED binary_traits;
 
 /*! \addtogroup function_object_adaptors Function Object Adaptors
  *  \ingroup function_objects
@@ -83,7 +83,7 @@ struct THRUST_DEPRECATED binary_traits;
  *  \see binary_function
  */
 template <typename Argument, typename Result>
-struct THRUST_DEPRECATED unary_function
+struct CCCL_DEPRECATED unary_function
 {
   /*! \typedef argument_type
    *  \brief The type of the function object's argument.
@@ -124,7 +124,7 @@ struct THRUST_DEPRECATED unary_function
  *  \see unary_function
  */
 template <typename Argument1, typename Argument2, typename Result>
-struct THRUST_DEPRECATED binary_function
+struct CCCL_DEPRECATED binary_function
 {
   /*! \typedef first_argument_type
    *  \brief The type of the function object's first argument.
@@ -949,19 +949,19 @@ struct minimum : ::cuda::minimum<T>
    *  \brief The type of the function object's first argument.
    *  deprecated [Since 2.6]
    */
-  using first_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T;
+  using first_argument_type _CCCL_ALIAS_ATTRIBUTE(CCCL_DEPRECATED) = T;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    *  deprecated [Since 2.6]
    */
-  using second_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T;
+  using second_argument_type _CCCL_ALIAS_ATTRIBUTE(CCCL_DEPRECATED) = T;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    *  deprecated [Since 2.6]
    */
-  using result_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T;
+  using result_type _CCCL_ALIAS_ATTRIBUTE(CCCL_DEPRECATED) = T;
 }; // end minimum
 
 /*! \p project1st is a function object that takes two arguments and returns
@@ -989,19 +989,19 @@ struct project1st
    *  \brief The type of the function object's first argument.
    *  deprecated [Since 2.6]
    */
-  using first_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T1;
+  using first_argument_type _CCCL_ALIAS_ATTRIBUTE(CCCL_DEPRECATED) = T1;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    *  deprecated [Since 2.6]
    */
-  using second_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T2;
+  using second_argument_type _CCCL_ALIAS_ATTRIBUTE(CCCL_DEPRECATED) = T2;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    *  deprecated [Since 2.6]
    */
-  using result_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T1;
+  using result_type _CCCL_ALIAS_ATTRIBUTE(CCCL_DEPRECATED) = T1;
 
   /*! Function call operator. The return value is <tt>lhs</tt>.
    */
@@ -1049,19 +1049,19 @@ struct project2nd
    *  \brief The type of the function object's first argument.
    *  deprecated [Since 2.6]
    */
-  using first_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T1;
+  using first_argument_type _CCCL_ALIAS_ATTRIBUTE(CCCL_DEPRECATED) = T1;
 
   /*! \typedef second_argument_type
    *  \brief The type of the function object's second argument.
    *  deprecated [Since 2.6]
    */
-  using second_argument_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T2;
+  using second_argument_type _CCCL_ALIAS_ATTRIBUTE(CCCL_DEPRECATED) = T2;
 
   /*! \typedef result_type
    *  \brief The type of the function object's result;
    *  deprecated [Since 2.6]
    */
-  using result_type _CCCL_ALIAS_ATTRIBUTE(THRUST_DEPRECATED) = T2;
+  using result_type _CCCL_ALIAS_ATTRIBUTE(CCCL_DEPRECATED) = T2;
 
   /*! Function call operator. The return value is <tt>rhs</tt>.
    */
@@ -1107,7 +1107,7 @@ struct project2nd<void, void>
  *  \see not1
  */
 template <typename Predicate>
-struct THRUST_DEPRECATED unary_negate
+struct CCCL_DEPRECATED unary_negate
 {
   using argument_type = typename Predicate::argument_type;
   using result_type   = bool;
@@ -1154,7 +1154,7 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
  */
 template <typename Predicate>
 _CCCL_HOST_DEVICE
-THRUST_DEPRECATED_BECAUSE("Use thrust::not_fn instead") unary_negate<Predicate> not1(const Predicate& pred);
+CCCL_DEPRECATED_BECAUSE("Use thrust::not_fn instead") unary_negate<Predicate> not1(const Predicate& pred);
 _CCCL_SUPPRESS_DEPRECATED_POP
 
 /*! \p binary_negate is a function object adaptor: it is an Adaptable Binary
@@ -1170,7 +1170,7 @@ _CCCL_SUPPRESS_DEPRECATED_POP
  *  \see https://en.cppreference.com/w/cpp/utility/functional/binary_negate
  */
 template <typename Predicate>
-struct THRUST_DEPRECATED binary_negate
+struct CCCL_DEPRECATED binary_negate
 {
   using first_argument_type  = typename Predicate::first_argument_type;
   using second_argument_type = typename Predicate::second_argument_type;
@@ -1216,8 +1216,8 @@ _CCCL_SUPPRESS_DEPRECATED_PUSH
  *  \see not1
  */
 template <typename BinaryPredicate>
-_CCCL_HOST_DEVICE THRUST_DEPRECATED_BECAUSE("Use thrust::not_fn instead")
-  binary_negate<BinaryPredicate> not2(const BinaryPredicate& pred);
+_CCCL_HOST_DEVICE
+CCCL_DEPRECATED_BECAUSE("Use thrust::not_fn instead") binary_negate<BinaryPredicate> not2(const BinaryPredicate& pred);
 _CCCL_SUPPRESS_DEPRECATED_POP
 
 namespace detail

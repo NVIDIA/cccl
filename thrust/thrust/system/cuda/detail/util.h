@@ -473,7 +473,7 @@ struct transform_pair_of_input_iterators_t
 }; // struct transform_pair_of_input_iterators_t
 
 // deprecated [Since 2.8]
-struct THRUST_DEPRECATED_BECAUSE("Use cuda::std::identity") identity
+struct CCCL_DEPRECATED_BECAUSE("Use cuda::std::identity") identity
 {
   template <class T>
   _CCCL_HOST_DEVICE T const& operator()(T const& t) const

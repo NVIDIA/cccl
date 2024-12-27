@@ -44,7 +44,6 @@
 
 #include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_radix_sort.cuh>
-#include <cub/util_deprecated.cuh>
 
 #include <iterator>
 

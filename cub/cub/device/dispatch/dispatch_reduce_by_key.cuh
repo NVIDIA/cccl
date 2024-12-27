@@ -48,7 +48,6 @@
 #include <cub/device/dispatch/tuning/tuning_reduce_by_key.cuh>
 #include <cub/grid/grid_queue.cuh>
 #include <cub/thread/thread_operators.cuh>
-#include <cub/util_deprecated.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 
