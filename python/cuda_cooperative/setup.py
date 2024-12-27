@@ -4,19 +4,13 @@
 
 import os
 from setuptools import setup
-import shutil
 
 PROJECT_PATH = os.path.abspath(os.path.dirname(__file__))
 CCCL_PATH = os.path.abspath(os.path.join(PROJECT_PATH, "..", ".."))
 
 
-def copy_license():
-    src = os.path.abspath(os.path.join(CCCL_PATH, "LICENSE"))
-    dst = os.path.join(PROJECT_PATH, "LICENSE")
-    shutil.copy(src, dst)
-
-
 setup(
+    license_files=["../../LICENSE"],
     install_requires=[
         f"cuda-cccl @ file://{CCCL_PATH}/python/cuda_cccl",
         "numpy",

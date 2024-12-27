@@ -18,7 +18,6 @@ dynamic = ["version", "readme", "dependencies"]
 authors = [
     { name = "NVIDIA Corporation" }
 ]
-license = { file = "LICENSE" }
 classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Environment :: GPU :: NVIDIA CUDA",
