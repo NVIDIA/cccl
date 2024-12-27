@@ -16,4 +16,13 @@ def copy_license():
     shutil.copy(src, dst)
 
 
-setup()
+setup(
+    install_requires=[
+        f"cuda-cccl @ file://{CCCL_PATH}/python/cuda_cccl",
+        "numpy",
+        "numba>=0.60.0",
+        "pynvjitlink-cu12>=0.2.4",
+        "cuda-python",
+        "jinja2",
+    ],
+)
