@@ -47,6 +47,7 @@ repos:
     - id: ruff-format
       exclude: "^docs/tools/"
 
+  # TOML lint & format
   - repo: https://github.com/nikaro/taplo-pre-commit
     rev: main
     hooks:
