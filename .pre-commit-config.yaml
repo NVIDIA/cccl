@@ -46,6 +46,15 @@ repos:
       exclude: "^docs/tools/"
     - id: ruff-format
       exclude: "^docs/tools/"
+
+  - repo: https://github.com/nikaro/taplo-pre-commit
+    rev: main
+    hooks:
+      - id: taplo-lint
+        exclude: "^docs/"
+      - id: taplo-format
+        exclude: "^docs/"
+
   - repo: https://github.com/codespell-project/codespell
     rev: v2.3.0
     hooks:
