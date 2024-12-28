@@ -3,25 +3,14 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import os
+from pathlib import Path
 import subprocess
 
-from setuptools import Extension, setup, find_namespace_packages
+from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
 
-
-project_path = os.path.abspath(os.path.dirname(__file__))
-cccl_path = os.path.abspath(os.path.join(project_path, "..", ".."))
-cccl_headers = [["cub", "cub"], ["libcudacxx", "include"], ["thrust", "thrust"]]
-__version__ = None
-with open(os.path.join(project_path, "cuda", "parallel", "_version.py")) as f:
-    exec(f.read())
-assert __version__ is not None
-ver = __version__
-del __version__
-
-
-with open("README.md") as f:
-    long_description = f.read()
+CCCL_PYTHON_PATH = Path(__file__).resolve().parents[1]
+CCCL_PATH = CCCL_PYTHON_PATH.parent
 
 
 class CMakeExtension(Extension):
@@ -45,7 +34,9 @@ class BuildCMakeExtension(build_ext):
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
 
-        subprocess.check_call(["cmake", cccl_path] + cmake_args, cwd=self.build_temp)
+        subprocess.check_call(
+            ["cmake", str(CCCL_PATH)] + cmake_args, cwd=self.build_temp
+        )
         subprocess.check_call(
             ["cmake", "--build", ".", "--target", "cccl.c.parallel"],
             cwd=self.build_temp,
@@ -53,36 +44,15 @@ class BuildCMakeExtension(build_ext):
 
 
 setup(
-    name="cuda-parallel",
-    version=ver,
-    description="Experimental Core Library for CUDA Python",
-    long_description=long_description,
-    long_description_content_type="text/markdown",
-    author="NVIDIA Corporation",
-    classifiers=[
-        "Programming Language :: Python :: 3 :: Only",
-        "Environment :: GPU :: NVIDIA CUDA",
-    ],
-    packages=find_namespace_packages(include=["cuda.*"]),
-    python_requires=">=3.9",
+    license_files=["../../LICENSE"],
     install_requires=[
-        f"cuda-cccl @ file://{cccl_path}/python/cuda_cccl",
+        f"cuda-cccl @ file://{CCCL_PYTHON_PATH}/cuda_cccl",
         "numba>=0.60.0",
         "cuda-python",
         "jinja2",
     ],
-    extras_require={
-        "test": [
-            "pytest",
-            "pytest-xdist",
-            "cupy-cuda12x",
-        ]
-    },
     cmdclass={
         "build_ext": BuildCMakeExtension,
     },
     ext_modules=[CMakeExtension("cuda.parallel.experimental.cccl.c")],
-    include_package_data=True,
-    license="Apache-2.0 with LLVM exception",
-    license_files=("../../LICENSE",),
 )
