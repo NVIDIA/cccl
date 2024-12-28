@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 from pathlib import Path
-from setuptools import setup, find_namespace_packages
+from setuptools import setup
 import shutil
 
 PROJECT_PATH = Path(__file__).resolve().parent
@@ -35,6 +35,4 @@ copy_cccl_headers_to_cuda_cccl_include()
 
 setup(
     license_files=["../../LICENSE"],
-    packages=find_namespace_packages(include=["cuda.*"]),
-    include_package_data=True,
 )
