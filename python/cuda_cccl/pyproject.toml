@@ -24,3 +24,6 @@ Homepage = "https://github.com/NVIDIA/cccl"
 [tool.setuptools.dynamic]
 version = { attr = "cuda.cccl._version.__version__" }
 readme = { file = ["README.md"], content-type = "text/markdown" }
+
+[tool.setuptools.package-data]
+cuda = ["cccl/include/**/*"]
