@@ -3,25 +3,22 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 [build-system]
-requires = [
-    "setuptools>=61.0.0",
-    "wheel",
-    "packaging",
-]
+requires = ["setuptools>=61.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "cuda-cooperative"
 description = "Experimental Core Library for CUDA Python"
-requires-python = ">=3.9"
-dynamic = ["version", "readme", "dependencies"]
 authors = [
-    { name = "NVIDIA Corporation" }
+    { name = "NVIDIA Corporation" },
 ]
 classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Environment :: GPU :: NVIDIA CUDA",
+    "License :: OSI Approved :: Apache Software License",
 ]
+requires-python = ">=3.9"
+dynamic = ["version", "readme", "dependencies"]
 
 [project.optional-dependencies]
 test = [
