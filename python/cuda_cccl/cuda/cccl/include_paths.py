@@ -5,21 +5,24 @@
 from dataclasses import dataclass
 from functools import lru_cache
 import os
+from pathlib import Path
 import shutil
 from typing import Optional
 
 
-def _get_cuda_path() -> Optional[str]:
+def _get_cuda_path() -> Optional[Path]:
     cuda_path = os.environ.get("CUDA_PATH")
-    if cuda_path and os.path.exists(cuda_path):
-        return cuda_path
+    if cuda_path:
+        cuda_path = Path(cuda_path)
+        if cuda_path.exists():
+            return cuda_path
 
     nvcc_path = shutil.which("nvcc")
-    if nvcc_path is not None:
-        return os.path.dirname(os.path.dirname(nvcc_path))
+    if nvcc_path:
+        return Path(nvcc_path).parent.parent
 
-    default_path = "/usr/local/cuda"
-    if os.path.exists(default_path):
+    default_path = Path("/usr/local/cuda")
+    if default_path.exists():
         return default_path
 
     return None
@@ -27,10 +30,10 @@ def _get_cuda_path() -> Optional[str]:
 
 @dataclass
 class IncludePaths:
-    cuda: Optional[str]
-    libcudacxx: Optional[str]
-    cub: Optional[str]
-    thrust: Optional[str]
+    cuda: Optional[Path]
+    libcudacxx: Optional[Path]
+    cub: Optional[Path]
+    thrust: Optional[Path]
 
     def as_tuple(self):
         # Note: higher-level ... lower-level order:
@@ -46,15 +49,15 @@ def get_include_paths() -> IncludePaths:
     cuda_incl = None
     cuda_path = _get_cuda_path()
     if cuda_path is not None:
-        cuda_incl = os.path.join(cuda_path, "include")
+        cuda_incl = cuda_path / "include"
 
     with as_file(files("cuda.cccl.include")) as f:
-        cccl_incl = str(f)
-    assert os.path.exists(cccl_incl)
+        cccl_incl = Path(f)
+    assert cccl_incl.exists()
 
     return IncludePaths(
         cuda=cuda_incl,
-        libcudacxx=os.path.join(cccl_incl, "libcudacxx"),
+        libcudacxx=cccl_incl / "libcudacxx",
         cub=cccl_incl,
         thrust=cccl_incl,
     )
