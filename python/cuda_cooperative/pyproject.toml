@@ -9,22 +9,17 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "cuda-cooperative"
 description = "Experimental Core Library for CUDA Python"
-authors = [
-    { name = "NVIDIA Corporation" },
-]
+authors = [{ name = "NVIDIA Corporation" }]
 classifiers = [
-    "Programming Language :: Python :: 3 :: Only",
-    "Environment :: GPU :: NVIDIA CUDA",
-    "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3 :: Only",
+  "Environment :: GPU :: NVIDIA CUDA",
+  "License :: OSI Approved :: Apache Software License",
 ]
 requires-python = ">=3.9"
 dynamic = ["version", "readme", "dependencies"]
 
 [project.optional-dependencies]
-test = [
-    "pytest",
-    "pytest-xdist",
-]
+test = ["pytest", "pytest-xdist"]
 
 [project.urls]
 Homepage = "https://developer.nvidia.com/"
