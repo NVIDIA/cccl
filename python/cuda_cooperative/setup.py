@@ -2,12 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-import os
+from pathlib import Path
 from setuptools import setup
 
-PROJECT_PATH = os.path.abspath(os.path.dirname(__file__))
-CCCL_PATH = os.path.abspath(os.path.join(PROJECT_PATH, "..", ".."))
-
+CCCL_PATH = Path(__file__).resolve().parents[2]
 
 setup(
     license_files=["../../LICENSE"],
