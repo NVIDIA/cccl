@@ -339,8 +339,8 @@ long double    truncl(long double x);
 
 #if _CCCL_COMPILER(NVRTC)
 #  include <cuda/std/climits>
-#  define INFINITY __builtin_huge_val()
-#  define NAN      __builtin_nan()
+#  define INFINITY (1.0f / 0.0f)
+#  define NAN      (INFINITY - INFINITY)
 #endif // _CCCL_COMPILER(NVRTC)
 
 _CCCL_PUSH_MACROS
