@@ -93,13 +93,6 @@ static _CCCL_DEVICE _CCCL_FORCEINLINE _To __cowchild_cast(_From __from)
   __c.__from = __from;
   return __c.__to;
 }
-
-#  define __builtin_huge_valf()    __cowchild_cast<float>(0x7f800000)
-#  define __builtin_nanf(__dummy)  __cowchild_cast<float>(0x7fc00000)
-#  define __builtin_nansf(__dummy) __cowchild_cast<float>(0x7fa00000)
-#  define __builtin_huge_val()     __cowchild_cast<double>(0x7ff0000000000000)
-#  define __builtin_nan(__dummy)   __cowchild_cast<double>(0x7ff8000000000000)
-#  define __builtin_nans(__dummy)  __cowchild_cast<double>(0x7ff4000000000000)
 #endif // _CCCL_COMPILER(NVRTC)
 
 #endif // _LIBCUDACXX___CUDA_CLIMITS_PRELUDE_H
