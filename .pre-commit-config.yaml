@@ -39,7 +39,7 @@ repos:
   # TODO/REMINDER: add the Ruff vscode extension to the devcontainers
   # Ruff, the Python auto-correcting linter/formatter written in Rust
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.3
+    rev: v0.8.4
     hooks:
     - id: ruff
       args: ["--fix", "--show-fixes"]
@@ -49,7 +49,7 @@ repos:
 
   # TOML lint & format
   - repo: https://github.com/nikaro/taplo-pre-commit
-    rev: main
+    rev: 0.1.1
     hooks:
       - id: taplo-lint
         exclude: "^docs/"
@@ -70,7 +70,7 @@ repos:
 
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 'v1.13.0'
+    rev: 'v1.14.0'
     hooks:
       - id: mypy
         additional_dependencies: [types-cachetools, numpy]
