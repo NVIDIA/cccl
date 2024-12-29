@@ -19,8 +19,6 @@
 
 #include <float.h> // limit constants
 #include <limits.h> // CHAR_BIT
-#include <math.h> // HUGE_VAL
-#include <ymath.h> // internal MSVC header providing the needed functionality
 
 #define __CHAR_BIT__ CHAR_BIT
 
