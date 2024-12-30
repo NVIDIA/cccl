@@ -40,9 +40,8 @@ class IteratorKind:
 
 @lru_cache(maxsize=None)
 def _get_abi_suffix(kind: IteratorKind):
-    # given an IteratorKind, return a UUID. The value
-    # is cached so that the same UUID is always returned
-    # for a given IteratorKind.
+    # given an IteratorKind, return a UUID. The value is cached so
+    # that the same UUID is always returned for a given IteratorKind.
     return uuid.uuid4().hex
 
 
