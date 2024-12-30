@@ -19,14 +19,6 @@ _DEVICE_POINTER_SIZE = 8
 _DEVICE_POINTER_BITWIDTH = _DEVICE_POINTER_SIZE * 8
 
 
-@lru_cache(maxsize=None)
-def _get_abi_suffix(kind: "IteratorKind"):
-    # given an IteratorKind, return a UUID. The value
-    # is cached so that the same UUID is always returned
-    # for a given IteratorKind.
-    return uuid.uuid4().hex
-
-
 @lru_cache(maxsize=256)  # TODO: what's a reasonable value?
 def cached_compile(func, sig, abi_name=None, **kwargs):
     return cuda.compile(func, sig, abi_info={"abi_name": abi_name}, **kwargs)
@@ -44,6 +36,14 @@ class IteratorKind:
 
     def __hash__(self):
         return hash(self.value_type)
+
+
+@lru_cache(maxsize=None)
+def _get_abi_suffix(kind: IteratorKind):
+    # given an IteratorKind, return a UUID. The value
+    # is cached so that the same UUID is always returned
+    # for a given IteratorKind.
+    return uuid.uuid4().hex
 
 
 class IteratorBase:
