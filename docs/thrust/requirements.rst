@@ -45,7 +45,7 @@ with NVCC:
 -  MSVC 2019+ (19.20/16.0/14.20)
 
 Unsupported versions may emit deprecation warnings, which can be
-silenced by defining ``THRUST_IGNORE_DEPRECATED_COMPILER`` during
+silenced by defining ``CCCL_IGNORE_DEPRECATED_COMPILER`` during
 compilation.
 
 Device Architectures
