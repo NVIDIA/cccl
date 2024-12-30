@@ -126,19 +126,6 @@ class IteratorBase:
     def dereference(state):
         raise NotImplementedError("Subclasses must override dereference staticmethod")
 
-    def __hash__(self):
-        return hash((self.kind, self.cvalue.value, self.numba_type, self.value_type))
-
-    def __eq__(self, other):
-        if not isinstance(other, self.__class__):
-            return NotImplemented
-        return (
-            self.kind == other.kind
-            and self.cvalue.value == other.cvalue.value
-            and self.numba_type == other.numba_type
-            and self.value_type == other.value_type
-        )
-
 
 def sizeof_pointee(context, ptr):
     size = context.get_abi_sizeof(ptr.type.pointee)
