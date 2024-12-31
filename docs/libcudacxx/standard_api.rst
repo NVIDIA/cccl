@@ -97,21 +97,23 @@ Feature availability:
 
 -  C++20 integer comparison functions in ``<utility>`` are available in C++11.
 
+-  C++23 ``byteswap`` in ``<bit>`` is available in C++11.
+
 -  C++23 ``<expected>`` is available in C++14.
 
    -  all features are available in C++14
 
 -  C++23 ``invoke_r`` in ``<functional>`` is available in C++14.
 
--  C++23 ``<mdspan>`` is available in C++17.
+-  C++23 ``<mdspan>`` is available in C++14.
 
-   -  ``mdspan`` is feature complete in C++17 onwards.
+   -  ``mdspan`` is feature complete in C++14 onwards.
    -  ``mdspan`` on msvc is only supported in C++20 and onwards.
+
+-  C++26 ``std::dims`` is available in C++14.
 
 -  C++23 ``forward_like``, ``to_underlying`` and ``unreachable`` from ``<utility>`` are available in C++11.
 
 -  C++23 ``is_scoped_enum`` in ``<type_traits>`` is available in C++11.
-
--  C++26 ``std::dims`` is available in C++17.
 
 -  C++26 tuple protocol to ``complex`` is available in C++11.

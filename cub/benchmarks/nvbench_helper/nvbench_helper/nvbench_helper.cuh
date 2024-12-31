@@ -31,6 +31,8 @@ using complex = cuda::std::complex<float>;
 NVBENCH_DECLARE_TYPE_STRINGS(complex, "C64", "complex");
 NVBENCH_DECLARE_TYPE_STRINGS(::cuda::std::false_type, "false", "false_type");
 NVBENCH_DECLARE_TYPE_STRINGS(::cuda::std::true_type, "true", "true_type");
+NVBENCH_DECLARE_TYPE_STRINGS(cub::ArgMin, "ArgMin", "cub::ArgMin");
+NVBENCH_DECLARE_TYPE_STRINGS(cub::ArgMax, "ArgMax", "cub::ArgMax");
 
 template <typename T, T I>
 struct nvbench::type_strings<::cuda::std::integral_constant<T, I>>

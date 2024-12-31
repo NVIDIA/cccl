@@ -47,7 +47,6 @@
 #include <cub/device/dispatch/dispatch_scan.cuh>
 #include <cub/device/dispatch/dispatch_scan_by_key.cuh>
 #include <cub/thread/thread_operators.cuh>
-#include <cub/util_deprecated.cuh>
 
 #include <cuda/std/__functional/invoke.h>
 
@@ -1322,7 +1321,7 @@ struct DeviceScan
       detail::InputValue<InitValueT>,
       OffsetT,
       AccumT,
-      DeviceScanPolicy<AccumT, ScanOpT>,
+      detail::scan::policy_hub<AccumT, ScanOpT>,
       ForceInclusive>::Dispatch(d_temp_storage,
                                 temp_storage_bytes,
                                 d_in,

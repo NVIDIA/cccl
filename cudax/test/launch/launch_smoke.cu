@@ -10,7 +10,9 @@
 #include <cuda/atomic>
 
 #include <cuda/experimental/launch.cuh>
+#include <cuda/experimental/stream.cuh>
 
+#include <cooperative_groups.h>
 #include <testing.cuh>
 
 __managed__ bool kernel_run_proof = false;
@@ -130,7 +132,7 @@ struct launch_transform_to_int_convertible
   }
 };
 
-// Needs a separe function for Windows extended lambda
+// Needs a separate function for Windows extended lambda
 void launch_smoke_test()
 {
   // Use raw stream to make sure it can be implicitly converted on call to launch
@@ -246,4 +248,65 @@ void launch_smoke_test()
 TEST_CASE("Smoke", "[launch]")
 {
   launch_smoke_test();
+}
+
+template <typename DefaultConfig>
+struct kernel_with_default_config
+{
+  DefaultConfig config;
+
+  kernel_with_default_config(DefaultConfig c)
+      : config(c)
+  {}
+
+  DefaultConfig default_config() const
+  {
+    return config;
+  }
+
+  template <typename Config, typename ConfigCheckFn>
+  __device__ void operator()(Config config, ConfigCheckFn check_fn)
+  {
+    check_fn(config);
+  }
+};
+
+void test_default_config()
+{
+  cudax::stream stream;
+  auto grid  = cudax::grid_dims(4);
+  auto block = cudax::block_dims<256>;
+
+  auto verify_lambda = [] __device__(auto config) {
+    static_assert(config.dims.count(cudax::thread, cudax::block) == 256);
+    CUDAX_REQUIRE(config.dims.count(cudax::block) == 4);
+    cooperative_groups::this_grid().sync();
+  };
+
+  SECTION("Combine with empty")
+  {
+    kernel_with_default_config kernel{cudax::make_config(block, grid, cudax::cooperative_launch())};
+    static_assert(cudax::__is_kernel_config<decltype(kernel.default_config())>);
+    static_assert(cudax::__kernel_has_default_config<decltype(kernel)>);
+
+    cudax::launch(stream, cudax::make_config(), kernel, verify_lambda);
+    stream.wait();
+  }
+  SECTION("Combine with no overlap")
+  {
+    kernel_with_default_config kernel{cudax::make_config(block)};
+    cudax::launch(stream, cudax::make_config(grid, cudax::cooperative_launch()), kernel, verify_lambda);
+    stream.wait();
+  }
+  SECTION("Combine with overlap")
+  {
+    kernel_with_default_config kernel{cudax::make_config(cudax::block_dims<1>, cudax::cooperative_launch())};
+    cudax::launch(stream, cudax::make_config(block, grid, cudax::cooperative_launch()), kernel, verify_lambda);
+    stream.wait();
+  }
+}
+
+TEST_CASE("Launch with default config")
+{
+  test_default_config();
 }

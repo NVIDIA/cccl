@@ -71,7 +71,7 @@ struct functor
   {
     value_type& out = raw_reference_cast(items[idx]);
 
-#  if defined(__CUDA__) && defined(__clang__)
+#  if _CCCL_CUDA_COMPILER(CLANG)
     // XXX unsafe. cuda-clang is seemingly unable to call ::new in device code
     out = value;
 #  else

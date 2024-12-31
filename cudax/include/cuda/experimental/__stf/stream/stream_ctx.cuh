@@ -237,9 +237,9 @@ public:
 
     auto dump_hooks = reserved::get_dump_hooks(this, deps...);
 
-    auto res = stream_task<Deps...>(*this, mv(e_place), mv(deps)...);
-    res.add_post_submission_hook(dump_hooks);
-    return res;
+    auto result = stream_task<Deps...>(*this, mv(e_place), mv(deps)...);
+    result.add_post_submission_hook(dump_hooks);
+    return result;
   }
 
   template <typename... Deps>
@@ -647,6 +647,19 @@ public:
     return deferred_parallel_for(exec_place::current_device(), mv(shape), mv(deps)...);
   }
 
+  template <typename T>
+  auto wait(cuda::experimental::stf::logical_data<T>& ldata)
+  {
+    typename owning_container_of<T>::type out;
+
+    task(exec_place::host, ldata.read()).set_symbol("wait")->*[&](cudaStream_t stream, auto data) {
+      cuda_safe_call(cudaStreamSynchronize(stream));
+      out = owning_container_of<T>::get_value(data);
+    };
+
+    return out;
+  }
+
 private:
   /* This class contains all the state associated to a stream_ctx, and all states associated to every contexts (in
    * `impl`) */
@@ -839,7 +852,7 @@ UNITTEST("logical_data_untyped moveable")
 
   for (int bid = 0; bid < 2; bid++)
   {
-    // This variable is likely to have the same address accross loop
+    // This variable is likely to have the same address across loop
     // iterations, which can stress the logical data management
     scalar res(ctx);
     auto t = ctx.task();
@@ -957,7 +970,7 @@ UNITTEST("non contiguous slice")
 
   int X[32 * 32];
 
-  // Pinning non contiguous memory is extremelly expensive, so we do it now
+  // Pinning non contiguous memory is extremely expensive, so we do it now
   cuda_safe_call(cudaHostRegister(&X[0], 32 * 32 * sizeof(int), cudaHostRegisterPortable));
 
   for (size_t i = 0; i < 32 * 32; i++)

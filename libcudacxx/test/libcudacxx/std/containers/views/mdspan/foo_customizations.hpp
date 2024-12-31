@@ -231,7 +231,7 @@ public:
   }
 #endif
 
-  // Not really public, but currently needed to implement fully constexpr useable submdspan:
+  // Not really public, but currently needed to implement fully constexpr usable submdspan:
   template <size_t N, class SizeType, size_t... E, size_t... Idx>
   _CCCL_HOST_DEVICE constexpr index_type
   __get_stride(cuda::std::extents<SizeType, E...>, cuda::std::integer_sequence<size_t, Idx...>) const

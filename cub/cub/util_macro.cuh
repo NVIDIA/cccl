@@ -121,10 +121,10 @@ _CCCL_DIAG_SUPPRESS_NVHPC(attribute_requires_external_linkage)
 #endif // !CUB_DISABLE_KERNEL_VISIBILITY_WARNING_SUPPRESSION
 
 #ifndef CUB_DEFINE_KERNEL_GETTER
-#  define CUB_DEFINE_KERNEL_GETTER(name, ...)                           \
-    CUB_RUNTIME_FUNCTION static constexpr decltype(&__VA_ARGS__) name() \
-    {                                                                   \
-      return &__VA_ARGS__;                                              \
+#  define CUB_DEFINE_KERNEL_GETTER(name, ...)                                               \
+    _CCCL_HIDE_FROM_ABI CUB_RUNTIME_FUNCTION static constexpr decltype(&__VA_ARGS__) name() \
+    {                                                                                       \
+      return &__VA_ARGS__;                                                                  \
     }
 #endif
 

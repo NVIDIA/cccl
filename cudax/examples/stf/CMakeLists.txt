@@ -16,30 +16,34 @@ set(stf_example_sources
 
 # Examples which rely on code generation (parallel_for or launch)
 set(stf_example_codegen_sources
-  01-axpy-parallel_for.cu
   01-axpy-launch.cu
+  01-axpy-parallel_for.cu
   binary_fhe.cu
+  09-dot-reduce.cu
   cfd.cu
   custom_data_interface.cu
+  fdtd_mgpu.cu
   frozen_data_init.cu
   graph_algorithms/degree_centrality.cu
+  graph_algorithms/jaccard.cu
   graph_algorithms/pagerank.cu
   graph_algorithms/tricount.cu
-  graph_algorithms/jaccard.cu
-  fdtd_mgpu.cu
   heat.cu
   heat_mgpu.cu
   jacobi.cu
+  jacobi_pfor.cu
   launch_histogram.cu
   launch_scan.cu
   launch_sum.cu
   launch_sum_cub.cu
   logical_gates_composition.cu
-  parallel_for_2D.cu
-  scan.cu
   mandelbrot.cu
+  parallel_for_2D.cu
+  pi.cu
+  scan.cu
   standalone-launches.cu
   word_count.cu
+  word_count_reduce.cu
 )
 
 # Examples using CUBLAS, CUSOLVER...

@@ -128,7 +128,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
                  (__is_const_ptr || !_CUDA_VSTD::is_const_v<_Tp>))
   _CUDAX_HOST_API auto operator=(_Tp* __obj) noexcept -> basic_any&
   {
-    __vptr_for<interface_type> __vptr = &__vtable_for_v<interface_type, _Up>;
+    __vptr_for<interface_type> __vptr = __cudax::__get_vtable_ptr_for<interface_type, _Up>();
     __ref_.__set_ref(__obj ? __vptr : nullptr, __obj);
     return *this;
   }
@@ -172,7 +172,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
   _CUDAX_HOST_API auto
   emplace(_CUDA_VSTD::type_identity_t<_Up>* __obj) noexcept -> _CUDA_VSTD::__maybe_const<__is_const_ptr, _Vp>*&
   {
-    __vptr_for<interface_type> __vptr = &__vtable_for_v<interface_type, _Vp>;
+    __vptr_for<interface_type> __vptr = __cudax::__get_vtable_ptr_for<interface_type, _Vp>();
     __ref_.__set_ref(__obj ? __vptr : nullptr, __obj);
     return *static_cast<_CUDA_VSTD::__maybe_const<__is_const_ptr, _Vp>**>(static_cast<void*>(&__ref_.__optr_));
   }
@@ -247,7 +247,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any<_Interface*>
 #endif // _CCCL_DOXYGEN_INVOKED
 
 private:
-  template <class, class>
+  template <class>
   friend struct basic_any;
   friend struct __basic_any_access;
 

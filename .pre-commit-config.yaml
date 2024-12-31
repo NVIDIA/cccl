@@ -11,7 +11,7 @@ ci:
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v5.0.0
     hooks:
       - id: end-of-file-fixer
       - id: mixed-line-ending
@@ -35,6 +35,39 @@ repos:
             ^libcudacxx/include/.*/[^.]*$
           )
         args: ["-fallback-style=none", "-style=file", "-i"]
+
+  # TODO/REMINDER: add the Ruff vscode extension to the devcontainers
+  # Ruff, the Python auto-correcting linter/formatter written in Rust
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.3
+    hooks:
+    - id: ruff
+      args: ["--fix", "--show-fixes"]
+      exclude: "^docs/tools/"
+    - id: ruff-format
+      exclude: "^docs/tools/"
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.3.0
+    hooks:
+      - id: codespell
+        additional_dependencies: [tomli]
+        args: ["--toml", "pyproject.toml"]
+        exclude: |
+          (?x)^(
+            build|
+            CITATION.md
+          )
+
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: 'v1.13.0'
+    hooks:
+      - id: mypy
+        additional_dependencies: [types-cachetools, numpy]
+        args: ["--config-file=python/cuda_parallel/pyproject.toml",
+               "python/cuda_parallel/cuda/"]
+        pass_filenames: false
+
 
 default_language_version:
   python: python3

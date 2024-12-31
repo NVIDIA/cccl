@@ -122,7 +122,8 @@ THRUST_NAMESPACE_BEGIN
  *  \see make_permutation_iterator
  */
 template <typename ElementIterator, typename IndexIterator>
-class permutation_iterator : public thrust::detail::permutation_iterator_base<ElementIterator, IndexIterator>::type
+class _CCCL_DECLSPEC_EMPTY_BASES permutation_iterator
+    : public thrust::detail::permutation_iterator_base<ElementIterator, IndexIterator>::type
 {
   /*! \cond
    */

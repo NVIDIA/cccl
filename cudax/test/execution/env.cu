@@ -253,7 +253,7 @@ struct bad_env_t
     return policy_;
   }
 };
-TEST_CASE("env_t is not constructible from a env missing querries", "[execution, env]")
+TEST_CASE("env_t is not constructible from a env missing queries", "[execution, env]")
 {
   STATIC_REQUIRE(cuda::std::is_constructible_v<env_t, bad_env_t<true, true, true>>);
   STATIC_REQUIRE(!cuda::std::is_constructible_v<env_t, bad_env_t<false, true, true>>);

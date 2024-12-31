@@ -132,7 +132,7 @@ struct policy_hub_t
       block_delay_constructor_t>;
 
     using AgentLargeBufferPolicyT =
-      cub::detail::AgentBatchMemcpyLargeBuffersPolicy<TUNE_LARGE_THREADS, TUNE_LARGE_BUFFER_BYTES_PER_THREAD>;
+      cub::detail::batch_memcpy::agent_large_buffer_policy<TUNE_LARGE_THREADS, TUNE_LARGE_BUFFER_BYTES_PER_THREAD>;
   };
 
   using MaxPolicy = policy_t;
@@ -189,7 +189,7 @@ void copy(nvbench::state& state,
 #if !TUNE_BASE
   using policy_t = policy_hub_t;
 #else
-  using policy_t = cub::detail::DeviceBatchMemcpyPolicy<buffer_offset_t, block_offset_t>;
+  using policy_t = cub::detail::batch_memcpy::policy_hub<buffer_offset_t, block_offset_t>;
 #endif
 
   using dispatch_t = cub::detail::DispatchBatchMemcpy<
@@ -288,13 +288,7 @@ void large(nvbench::state& state, nvbench::type_list<T, OffsetT> tl)
 
 using types = nvbench::type_list<nvbench::uint8_t, nvbench::uint32_t>;
 
-#ifdef TUNE_OffsetT
-using u_offset_types = nvbench::type_list<TUNE_OffsetT>;
-#else
-using u_offset_types = nvbench::type_list<uint32_t, uint64_t>;
-#endif
-
-NVBENCH_BENCH_TYPES(uniform, NVBENCH_TYPE_AXES(types, u_offset_types))
+NVBENCH_BENCH_TYPES(uniform, NVBENCH_TYPE_AXES(types, offset_types))
   .set_name("uniform")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(25, 29, 2))
@@ -302,7 +296,7 @@ NVBENCH_BENCH_TYPES(uniform, NVBENCH_TYPE_AXES(types, u_offset_types))
   .add_int64_axis("MaxBufferSize", {8, 64, 256, 1024, 64 * 1024})
   .add_int64_axis("Randomize", {0, 1});
 
-NVBENCH_BENCH_TYPES(large, NVBENCH_TYPE_AXES(types, u_offset_types))
+NVBENCH_BENCH_TYPES(large, NVBENCH_TYPE_AXES(types, offset_types))
   .set_name("large")
   .set_type_axes_names({"T{ct}", "OffsetT{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", {28, 29});

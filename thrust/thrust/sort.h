@@ -1028,7 +1028,7 @@ template <typename ForwardIterator>
 bool is_sorted(ForwardIterator first, ForwardIterator last);
 
 /*! \p is_sorted returns \c true if the range <tt>[first, last)</tt> is sorted in ascending
- *  order accoring to a user-defined comparison operation, and \c false otherwise.
+ *  order according to a user-defined comparison operation, and \c false otherwise.
  *
  *  Specifically, this version of \p is_sorted returns \c false if for some iterator \c i in
  *  the range <tt>[first, last - 1)</tt> the expression <tt>comp(*(i + 1), *i)</tt> is \c true.
@@ -1089,7 +1089,7 @@ is_sorted(const thrust::detail::execution_policy_base<DerivedPolicy>& exec,
           Compare comp);
 
 /*! \p is_sorted returns \c true if the range <tt>[first, last)</tt> is sorted in ascending
- *  order accoring to a user-defined comparison operation, and \c false otherwise.
+ *  order according to a user-defined comparison operation, and \c false otherwise.
  *
  *  Specifically, this version of \p is_sorted returns \c false if for some iterator \c i in
  *  the range <tt>[first, last - 1)</tt> the expression <tt>comp(*(i + 1), *i)</tt> is \c true.

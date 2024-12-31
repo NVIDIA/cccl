@@ -10,7 +10,7 @@
 #ifndef _LIBCUDACXX_SUPPORT_WIN32_LIMITS_MSVC_WIN32_H
 #define _LIBCUDACXX_SUPPORT_WIN32_LIMITS_MSVC_WIN32_H
 
-#if !defined(_LIBCUDACXX_MSVCRT)
+#if defined(__MINGW32__)
 #  error "This header complements the Microsoft C Runtime library, and should not be included otherwise."
 #endif
 #if defined(__clang__)

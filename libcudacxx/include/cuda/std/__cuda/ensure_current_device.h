@@ -36,7 +36,7 @@ struct __ensure_current_device
   int __target_device_   = 0;
   int __original_device_ = 0;
 
-  //! @brief Querries the current device and if that is different than \p __target_device sets the current device to
+  //! @brief Queries the current device and if that is different than \p __target_device sets the current device to
   //! \p __target_device
   __ensure_current_device(const int __target_device)
       : __target_device_(__target_device)

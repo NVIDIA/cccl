@@ -111,7 +111,7 @@
  * \code{.cpp}
  * #include "nvtx3.hpp"
  * void some_function() {
- *    // Begins a NVTX range with the messsage "some_function"
+ *    // Begins a NVTX range with the message "some_function"
  *    // The range ends when some_function() returns and `r` is destroyed
  *    nvtx3::scoped_range r{"some_function"};
  *
@@ -1627,7 +1627,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
    * nvtx3::scoped_range range1{attr1};
    *
    * // `range2` contains message "message 2"
-   * nvtx3::scoped_range range2{nvtx3::Mesage{"message 2"}};
+   * nvtx3::scoped_range range2{nvtx3::Message{"message 2"}};
    *
    * // `std::string` and string literals are implicitly assumed to be
    * // the contents of an `nvtx3::message`
@@ -1937,7 +1937,7 @@ NVTX3_INLINE_IF_REQUESTED namespace NVTX3_VERSION_NAMESPACE
    * nvtx3::scoped_range r{attr};
    *
    * // For convenience, `event_attributes` constructor arguments may be passed
-   * // to the `scoped_range_in` contructor -- they are forwarded to the
+   * // to the `scoped_range_in` constructor -- they are forwarded to the
    * // `event_attributes` constructor
    * nvtx3::scoped_range r{nvtx3::payload{42}, nvtx3::category{1}, "message"};
    *

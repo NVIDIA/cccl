@@ -47,7 +47,7 @@ THRUST_NAMESPACE_BEGIN
 namespace cuda_cub
 {
 
-// XXX forward declare to circumvent circular depedency
+// XXX forward declare to circumvent circular dependency
 template <class Derived, class InputIt, class Predicate>
 InputIt _CCCL_HOST_DEVICE find_if(execution_policy<Derived>& policy, InputIt first, InputIt last, Predicate predicate);
 

@@ -429,7 +429,7 @@ public:
   }
 
   /*! \p operator-= decrements this \p iterator_facade to refer to an element a given distance before its current
-   * postition. \param n The quantity to decrement. \return <tt>*this</tt>
+   * position. \param n The quantity to decrement. \return <tt>*this</tt>
    */
   _CCCL_HOST_DEVICE Derived& operator-=(difference_type n)
   {

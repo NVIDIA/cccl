@@ -44,17 +44,17 @@ struct device_accessible
 struct host_accessible
 {};
 
-//! @brief determines wether a set of properties signals host accessible memory.
+//! @brief determines whether a set of properties signals host accessible memory.
 template <class... _Properties>
 _CCCL_INLINE_VAR constexpr bool __is_host_accessible =
   _CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__make_type_set<_Properties...>, host_accessible>;
 
-//! @brief determines wether a set of properties signals device accessible memory.
+//! @brief determines whether a set of properties signals device accessible memory.
 template <class... _Properties>
 _CCCL_INLINE_VAR constexpr bool __is_device_accessible =
   _CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__make_type_set<_Properties...>, device_accessible>;
 
-//! @brief determines wether a set of properties signals host device accessible memory.
+//! @brief determines whether a set of properties signals host device accessible memory.
 template <class... _Properties>
 _CCCL_INLINE_VAR constexpr bool __is_host_device_accessible =
   _CUDA_VSTD::__type_set_contains_v<_CUDA_VSTD::__make_type_set<_Properties...>, host_accessible, device_accessible>;

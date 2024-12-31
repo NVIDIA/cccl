@@ -14,6 +14,7 @@
 #endif // no system header
 
 #include <cub/agent/agent_merge.cuh>
+#include <cub/device/dispatch/tuning/tuning_merge.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_type.cuh>
 #include <cub/util_vsmem.cuh>
@@ -155,56 +156,6 @@ __launch_bounds__(
   vsmem_helper_t::discard_temp_storage(temp_storage);
 }
 
-template <typename KeyT, typename ValueT>
-struct device_merge_policy_hub
-{
-  static constexpr bool has_values = !::cuda::std::is_same<ValueT, NullType>::value;
-
-  using tune_type = char[has_values ? sizeof(KeyT) + sizeof(ValueT) : sizeof(KeyT)];
-
-  struct policy300 : ChainedPolicy<300, policy300, policy300>
-  {
-    using merge_policy =
-      agent_policy_t<128,
-                     Nominal4BItemsToItems<tune_type>(7),
-                     BLOCK_LOAD_WARP_TRANSPOSE,
-                     LOAD_DEFAULT,
-                     BLOCK_STORE_WARP_TRANSPOSE>;
-  };
-
-  struct policy350 : ChainedPolicy<350, policy350, policy300>
-  {
-    using merge_policy =
-      agent_policy_t<256,
-                     Nominal4BItemsToItems<tune_type>(11),
-                     BLOCK_LOAD_WARP_TRANSPOSE,
-                     LOAD_LDG,
-                     BLOCK_STORE_WARP_TRANSPOSE>;
-  };
-
-  struct policy520 : ChainedPolicy<520, policy520, policy350>
-  {
-    using merge_policy =
-      agent_policy_t<512,
-                     Nominal4BItemsToItems<tune_type>(13),
-                     BLOCK_LOAD_WARP_TRANSPOSE,
-                     LOAD_LDG,
-                     BLOCK_STORE_WARP_TRANSPOSE>;
-  };
-
-  struct policy600 : ChainedPolicy<600, policy600, policy520>
-  {
-    using merge_policy =
-      agent_policy_t<512,
-                     Nominal4BItemsToItems<tune_type>(15),
-                     BLOCK_LOAD_WARP_TRANSPOSE,
-                     LOAD_DEFAULT,
-                     BLOCK_STORE_WARP_TRANSPOSE>;
-  };
-
-  using max_policy = policy600;
-};
-
 template <typename KeyIt1,
           typename ValueIt1,
           typename KeyIt2,
@@ -213,7 +164,7 @@ template <typename KeyIt1,
           typename ValueIt3,
           typename Offset,
           typename CompareOp,
-          typename PolicyHub = device_merge_policy_hub<value_t<KeyIt1>, value_t<ValueIt1>>>
+          typename PolicyHub = detail::merge::policy_hub<value_t<KeyIt1>, value_t<ValueIt1>>>
 struct dispatch_t
 {
   void* d_temp_storage;
@@ -259,7 +210,7 @@ struct dispatch_t
 
     auto merge_partitions = static_cast<Offset*>(allocations[0]);
 
-    // parition the merge path
+    // partition the merge path
     {
       const Offset num_partitions               = num_tiles + 1;
       constexpr int threads_per_partition_block = 256; // TODO(bgruber): no policy?

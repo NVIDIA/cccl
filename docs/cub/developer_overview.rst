@@ -501,8 +501,8 @@ and passes it to the ``ChainedPolicy::Invoke`` function:
 .. code-block:: c++
 
     template <..., // algorithm specific compile-time parameters
-              typename SelectedPolicy> // also called: PolicyHub
-    struct DispatchAlgorithm : SelectedPolicy { // TODO(bgruber): I see no need for inheritance, can we remove it?
+              typename PolicyHub>
+    struct DispatchAlgorithm {
       CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static
       cudaError_t Dispatch(void *d_temp_storage, size_t &temp_storage_bytes, ..., cudaStream stream) {
         if (/* no items to process */) {
@@ -518,9 +518,8 @@ and passes it to the ``ChainedPolicy::Invoke`` function:
         {
           return error;
         }
-        using MaxPolicy = typename SelectedPolicy::MaxPolicy;
         DispatchAlgorithm dispatch(..., stream);
-        return CubDebug(MaxPolicy::Invoke(ptx_version, dispatch));
+        return CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
       }
     };
 
@@ -555,7 +554,7 @@ The dispatch object's ``Invoke`` function is then called with the best policy fo
 
 .. code-block:: c++
 
-    template <..., typename SelectedPolicy = DefaultTuning>
+    template <..., typename PolicyHub = detail::algorithm::policy_hub>
     struct DispatchAlgorithm {
       template <typename ActivePolicy>
       CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE
@@ -618,13 +617,12 @@ An agent policy could look like this:
 It's typically a collection of configuration values for the kernel launch configuration,
 work distribution setting, load and store algorithms to use, as well as load instruction cache modifiers.
 
-Finally, the tuning looks like:
+Finally, the tuning policy hub looks like:
 
 .. code-block:: c++
 
     template <typename... TuningRelevantParams /* ... */>
-    struct DeviceAlgorithmPolicy // also called tuning hub
-    {
+    struct policy_hub {
       // TuningRelevantParams... could be used for decision making, like element types used, iterator category, etc.
 
       // for SM35

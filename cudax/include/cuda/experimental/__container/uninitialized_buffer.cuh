@@ -22,7 +22,6 @@
 #endif // no system header
 
 #include <cuda/__memory_resource/properties.h>
-#include <cuda/__memory_resource/resource_ref.h>
 #include <cuda/std/__memory/align.h>
 #include <cuda/std/__new/launder.h>
 #include <cuda/std/__type_traits/type_set.h>
@@ -77,7 +76,7 @@ private:
   template <class, class...>
   friend class uninitialized_buffer;
 
-  //! @brief Helper to check whether a different buffer still statisfies all properties of this one
+  //! @brief Helper to check whether a different buffer still satisfies all properties of this one
   template <class... _OtherProperties>
   static constexpr bool __properties_match =
     !_CCCL_TRAIT(_CUDA_VSTD::is_same,
@@ -108,7 +107,7 @@ private:
   _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI auto
   __cudax_launch_transform(::cuda::stream_ref, uninitialized_buffer& __self) noexcept
     _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<_Tp>)(
-      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<mr::device_accessible, _Properties...>)
+      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<device_accessible, _Properties...>)
   {
     return {__self.__get_data(), __self.size()};
   }
@@ -119,7 +118,7 @@ private:
   _CCCL_NODISCARD_FRIEND _CCCL_HIDE_FROM_ABI auto
   __cudax_launch_transform(::cuda::stream_ref, const uninitialized_buffer& __self) noexcept
     _CCCL_TRAILING_REQUIRES(_CUDA_VSTD::span<const _Tp>)(
-      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<mr::device_accessible, _Properties...>)
+      _CUDA_VSTD::same_as<_Tp, _Tp2>&& _CUDA_VSTD::__is_included_in_v<device_accessible, _Properties...>)
   {
     return {__self.__get_data(), __self.size()};
   }
@@ -166,7 +165,7 @@ public:
       , __buf_(_CUDA_VSTD::exchange(__other.__buf_, nullptr))
   {}
 
-  //! @brief Move-assings a \c uninitialized_buffer from \p __other
+  //! @brief Move-assigns a \c uninitialized_buffer from \p __other
   //! @param __other Another \c uninitialized_buffer
   //! Deallocates the current allocation and then takes ownership of the allocation in \p __other and resets it
   _CCCL_HIDE_FROM_ABI uninitialized_buffer& operator=(uninitialized_buffer&& __other) noexcept
@@ -252,7 +251,7 @@ public:
   _CCCL_HIDE_FROM_ABI uninitialized_buffer __replace_allocation(const size_t __count)
   {
     // Create a new buffer with a reference to the stored memory resource and swap allocation information
-    uninitialized_buffer __ret{_CUDA_VMR::resource_ref<_Properties...>{__mr_}, __count};
+    uninitialized_buffer __ret{resource_ref<_Properties...>{__mr_}, __count};
     _CUDA_VSTD::swap(__count_, __ret.__count_);
     _CUDA_VSTD::swap(__buf_, __ret.__buf_);
     return __ret;
@@ -260,7 +259,7 @@ public:
 };
 
 template <class _Tp>
-using uninitialized_device_buffer = uninitialized_buffer<_Tp, mr::device_accessible>;
+using uninitialized_device_buffer = uninitialized_buffer<_Tp, device_accessible>;
 
 } // namespace cuda::experimental
 

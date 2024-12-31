@@ -73,7 +73,7 @@ struct functor
     InputType const& in = raw_reference_cast(input[idx]);
     OutputType& out     = raw_reference_cast(output[idx]);
 
-#  if defined(__CUDA__) && defined(__clang__)
+#  if _CCCL_CUDA_COMPILER(CLANG)
     // XXX unsafe, but clang is seemngly unable to call in-place new
     out = in;
 #  else

@@ -95,73 +95,51 @@ void *aligned_alloc(size_t alignment, size_t size);                       // C11
 #  include <cstdlib>
 #endif // !_CCCL_COMPILER(NVRTC)
 
+#include <cuda/std/__cstdlib/abs.h>
+#include <cuda/std/__cstdlib/div.h>
+
 _CCCL_PUSH_MACROS
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #if !_CCCL_COMPILER(NVRTC)
-using ::div_t;
-using ::ldiv_t;
-using ::size_t;
-#  ifndef _LIBCUDACXX_HAS_NO_LONG_LONG
-using ::lldiv_t;
-#  endif // _LIBCUDACXX_HAS_NO_LONG_LONG
-using ::atof;
-using ::atoi;
-using ::atol;
-#  ifndef _LIBCUDACXX_HAS_NO_LONG_LONG
-using ::atoll;
-#  endif // _LIBCUDACXX_HAS_NO_LONG_LONG
-using ::strtod;
-using ::strtof;
-using ::strtol;
-using ::strtold;
-#  ifndef _LIBCUDACXX_HAS_NO_LONG_LONG
-using ::strtoll;
-#  endif // _LIBCUDACXX_HAS_NO_LONG_LONG
-using ::strtoul;
-#  ifndef _LIBCUDACXX_HAS_NO_LONG_LONG
-using ::strtoull;
-#  endif // _LIBCUDACXX_HAS_NO_LONG_LONG
 using ::_Exit;
 using ::abort;
 using ::atexit;
+using ::atof;
+using ::atoi;
+using ::atol;
+using ::atoll;
 using ::calloc;
 using ::exit;
 using ::free;
 using ::malloc;
 using ::rand;
 using ::realloc;
+using ::size_t;
 using ::srand;
+using ::strtod;
+using ::strtof;
+using ::strtol;
+using ::strtold;
+using ::strtoll;
+using ::strtoul;
+using ::strtoull;
 #  ifndef _LIBCUDACXX_WINDOWS_STORE_APP
 using ::getenv;
 using ::system;
-#  endif
-using ::abs;
+#  endif // _LIBCUDACXX_WINDOWS_STORE_APP
 using ::bsearch;
-using ::labs;
-using ::qsort;
-#  ifndef _LIBCUDACXX_HAS_NO_LONG_LONG
-using ::llabs;
-#  endif // _LIBCUDACXX_HAS_NO_LONG_LONG
-using ::div;
-using ::ldiv;
-#  ifndef _LIBCUDACXX_HAS_NO_LONG_LONG
-using ::lldiv;
-#  endif // _LIBCUDACXX_HAS_NO_LONG_LONG
 using ::mblen;
 using ::mbstowcs;
 using ::mbtowc;
+using ::qsort;
 using ::wcstombs;
 using ::wctomb;
-#  if defined(_LIBCUDACXX_HAS_QUICK_EXIT)
-using ::at_quick_exit;
-using ::quick_exit;
-#  endif
-#  if _CCCL_STD_VER > 2014 && defined(_LIBCUDACXX_HAS_C11_FEATURES)
+#  if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC)
 using ::aligned_alloc;
-#  endif
-#endif // !_CCCL_COMPILER(NVRTC)
+#  endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC)
+#endif // !defined(_CCCL_COMPILER_NVRTC)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

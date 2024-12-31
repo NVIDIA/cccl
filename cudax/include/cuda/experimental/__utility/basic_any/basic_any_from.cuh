@@ -21,6 +21,9 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__type_traits/decay.h>
+
+#include <cuda/experimental/__detail/utility.cuh>
 #include <cuda/experimental/__utility/basic_any/basic_any_fwd.cuh>
 
 _CCCL_PUSH_MACROS
@@ -82,6 +85,12 @@ _CCCL_NODISCARD _CUDAX_HOST_API auto basic_any_from(_Interface<> const*) noexcep
   // unspecialized interfaces.
   _CCCL_UNREACHABLE();
 }
+
+template <class _CvInterface>
+using cvref_basic_any_from_t = decltype(__cudax::basic_any_from(declval<_CvInterface>()));
+
+template <class _CvInterface>
+using basic_any_from_t = _CUDA_VSTD::decay_t<cvref_basic_any_from_t<_CvInterface>>;
 } // namespace cuda::experimental
 
 _CCCL_POP_MACROS

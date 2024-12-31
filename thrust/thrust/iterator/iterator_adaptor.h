@@ -126,7 +126,7 @@ template <typename Derived,
           typename Traversal  = use_default,
           typename Reference  = use_default,
           typename Difference = use_default>
-class _LIBCUDACXX_DECLSPEC_EMPTY_BASES iterator_adaptor
+class _CCCL_DECLSPEC_EMPTY_BASES iterator_adaptor
     : public detail::iterator_adaptor_base<Derived, Base, Value, System, Traversal, Reference, Difference>::type
 {
   /*! \cond

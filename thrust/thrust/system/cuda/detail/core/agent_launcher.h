@@ -284,7 +284,7 @@ struct AgentLauncher : Agent
 
   // If there is a risk of not having enough shared memory
   // we compile generic kernel instead.
-  // This kernel is likely to be somewhat slower, but it can accomodate
+  // This kernel is likely to be somewhat slower, but it can accommodate
   // both shared and virtualized shared memories.
   // Alternative option is to compile two kernels, one using shared and one
   // using virtualized shared memory. While this can be slightly faster if we

@@ -24,6 +24,7 @@
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__concepts/same_as.h>
 #include <cuda/std/__new/launder.h>
+#include <cuda/std/__type_traits/decay.h>
 #include <cuda/std/__type_traits/is_class.h>
 #include <cuda/std/__type_traits/is_nothrow_constructible.h>
 #include <cuda/std/__type_traits/is_same.h>
@@ -60,7 +61,7 @@ _CCCL_CONCEPT __list_initializable_from =
 //!
 //! basic_any
 //!
-template <class _Interface, class>
+template <class _Interface>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT basic_any : __basic_any_base<_Interface>
 {
 private:
@@ -85,11 +86,11 @@ public:
   //! \pre `__value` must be move constructible. `_Tp` must satisfy the
   //! requirements of `_Interface`.
   //! \post `has_value() == true`
-  _CCCL_TEMPLATE(class _Tp)
-  _CCCL_REQUIRES((!__is_basic_any<_Tp>) _CCCL_AND __satisfies<_Tp, _Interface>)
-  _CUDAX_HOST_API basic_any(_Tp __value) noexcept(__is_small<_Tp>(__size_, __align_))
+  _CCCL_TEMPLATE(class _Tp, class _Up = _CUDA_VSTD::decay_t<_Tp>)
+  _CCCL_REQUIRES((!__is_basic_any<_Up>) _CCCL_AND __satisfies<_Up, _Interface>)
+  _CUDAX_HOST_API basic_any(_Tp&& __value) noexcept(__is_small<_Up>(__size_, __align_))
   {
-    __emplace<_Tp>(_CUDA_VSTD::move(__value));
+    __emplace<_Up>(static_cast<_Tp&&>(__value));
   }
 
   //! \brief Constructs a `basic_any` object that contains a new object of type
@@ -176,6 +177,24 @@ public:
     __convert_from(__other);
   }
 
+#if _CCCL_COMPILER(CLANG, <, 12) || _CCCL_COMPILER(GCC, <, 11)
+  // Older versions of clang and gcc need help disambiguating between
+  // basic_any<__ireference<I>> and basic_any<I&>.
+  _CCCL_TEMPLATE(class _OtherInterface)
+  _CCCL_REQUIRES(__any_convertible_to<basic_any<_OtherInterface&>, basic_any>)
+  _CUDAX_HOST_API basic_any(basic_any<_OtherInterface&>&& __other)
+  {
+    __convert_from(__other);
+  }
+
+  _CCCL_TEMPLATE(class _OtherInterface)
+  _CCCL_REQUIRES(__any_convertible_to<basic_any<_OtherInterface&>, basic_any>)
+  _CUDAX_HOST_API basic_any(basic_any<_OtherInterface&> const& __other)
+  {
+    __convert_from(__other);
+  }
+#endif // _CCCL_COMPILER(CLANG, <, 12) || _CCCL_COMPILER(GCC, <, 11)
+
   //! \brief Destroys the contained value, if any.
   _CUDAX_HOST_API ~basic_any()
   {
@@ -242,6 +261,17 @@ public:
   {
     return __assign_from(__other);
   }
+
+#if _CCCL_COMPILER(CLANG, <, 12) || _CCCL_COMPILER(GCC, <, 11)
+  // Older versions of clang and gcc need help disambiguating between
+  // basic_any<__ireference<I>> and basic_any<I&>.
+  _CCCL_TEMPLATE(class _OtherInterface)
+  _CCCL_REQUIRES(__any_convertible_to<basic_any<_OtherInterface&>, basic_any>)
+  _CUDAX_HOST_API auto operator=(basic_any<_OtherInterface&> __other) -> basic_any&
+  {
+    return __assign_from(__other);
+  }
+#endif // _CCCL_COMPILER(CLANG, <, 12) || _CCCL_COMPILER(GCC, <, 11)
 
   //! \brief Implicitly convert to a `basic_any` non-const reference type:
   _CCCL_NODISCARD _CUDAX_HOST_API operator basic_any<__ireference<_Interface>>() & noexcept
@@ -362,7 +392,7 @@ public:
 #endif // _CCCL_DOXYGEN_INVOKED
 
 private:
-  template <class, class>
+  template <class>
   friend struct basic_any;
   friend struct __basic_any_access;
   template <class, int>
@@ -387,7 +417,7 @@ private:
       ::new (__buffer_) __identity_t<_Tp*>{new _Tp{static_cast<_Args&&>(__args)...}};
     }
 
-    __vptr_for<_Interface> __vptr = &__vtable_for_v<_Interface, _Tp>;
+    __vptr_for<_Interface> __vptr = __cudax::__get_vtable_ptr_for<_Interface, _Tp>();
     __vptr_.__set(__vptr, __is_small<_Tp>(__size_, __align_));
     return *_CUDA_VSTD::launder(static_cast<_Tp*>(__get_optr()));
   }

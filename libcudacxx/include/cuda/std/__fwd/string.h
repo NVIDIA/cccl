@@ -29,7 +29,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT char_traits;
 template <>
 struct char_traits<char>;
 
-#ifndef _LIBCUDACXX_NO_HAS_CHAR8_T
+#ifndef _LIBCUDACXX_HAS_NO_CHAR8_T
 template <>
 struct char_traits<char8_t>;
 #endif
@@ -56,7 +56,7 @@ using string = basic_string<char>;
 using wstring = basic_string<wchar_t>;
 #endif
 
-#ifndef _LIBCUDACXX_NO_HAS_CHAR8_T
+#ifndef _LIBCUDACXX_HAS_NO_CHAR8_T
 using u8string = basic_string<char8_t>;
 #endif
 
@@ -76,7 +76,7 @@ using string = basic_string<char>;
 using wstring = basic_string<wchar_t>;
 #  endif
 
-#  ifndef _LIBCUDACXX_NO_HAS_CHAR8_T
+#  ifndef _LIBCUDACXX_HAS_NO_CHAR8_T
 using u8string = basic_string<char8_t>;
 #  endif
 
@@ -93,7 +93,7 @@ class _LIBCUDACXX_PREFERRED_NAME(string)
 #ifndef _LIBCUDACXX_HAS_NO_WIDE_CHARACTERS
       _LIBCUDACXX_PREFERRED_NAME(wstring)
 #endif
-#ifndef _LIBCUDACXX_NO_HAS_CHAR8_T
+#ifndef _LIBCUDACXX_HAS_NO_CHAR8_T
       _LIBCUDACXX_PREFERRED_NAME(u8string)
 #endif
       _LIBCUDACXX_PREFERRED_NAME(u16string)
@@ -103,7 +103,7 @@ class _LIBCUDACXX_PREFERRED_NAME(string)
 #  ifndef _LIBCUDACXX_HAS_NO_WIDE_CHARACTERS
       _LIBCUDACXX_PREFERRED_NAME(pmr::wstring)
 #  endif
-#  ifndef _LIBCUDACXX_NO_HAS_CHAR8_T
+#  ifndef _LIBCUDACXX_HAS_NO_CHAR8_T
       _LIBCUDACXX_PREFERRED_NAME(pmr::u8string)
 #  endif
       _LIBCUDACXX_PREFERRED_NAME(pmr::u16string)
