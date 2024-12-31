@@ -25,7 +25,7 @@ def cache_with_key(key):
         @functools.wraps(func)
         def inner(*args, **kwargs):
             cc = cuda.get_current_device().compute_capability
-            cache_key = (key(*args, **kwargs), *cc)
+            cache_key = (key(*args, **kwargs), cc)
             if cache_key not in cache:
                 result = func(*args, **kwargs)
                 cache[cache_key] = result
