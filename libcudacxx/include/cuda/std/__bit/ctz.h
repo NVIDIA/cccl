@@ -35,8 +35,6 @@ namespace __detail
 
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_ctz(uint32_t __x) noexcept
 {
-#if defined(__CUDA_ARCH__) || _CCCL_COMPILER(MSVC)
-  // no device constexpr builtins
   for (int __i = 0; __i < 32; ++__i)
   {
     if (__x & (uint32_t{1} << __i))
@@ -45,15 +43,10 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_ctz(uint32_t __x) noexcept
     }
   }
   return 32;
-#else
-  return ::__builtin_ctz(__x);
-#endif
 }
 
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_ctz(uint64_t __x) noexcept
 {
-#if defined(__CUDA_ARCH__) || _CCCL_COMPILER(MSVC)
-  // no device constexpr builtins
   for (int __i = 0; __i < 64; ++__i)
   {
     if (__x & (uint64_t{1} << __i))
@@ -62,9 +55,6 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_ctz(uint64_t __x) noexcept
     }
   }
   return 64;
-#else
-  return ::__builtin_ctzll(__x);
-#endif
 }
 
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_ctz(uint32_t __x)
