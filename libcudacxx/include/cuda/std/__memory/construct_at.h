@@ -38,9 +38,9 @@
 #include <cuda/std/__utility/forward.h>
 #include <cuda/std/__utility/move.h>
 
-#ifdef _CCCL_CUDA_COMPILER_CLANG
+#if _CCCL_CUDA_COMPILER(CLANG)
 #  include <new>
-#endif // _CCCL_CUDA_COMPILER_CLANG
+#endif // _CCCL_CUDA_COMPILER(CLANG)
 
 #if _CCCL_STD_VER >= 2020 // need to backfill ::std::construct_at
 #  if !_CCCL_COMPILER(NVRTC)
@@ -69,7 +69,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp* construct_at(_Tp* __location, _Args&&..
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 // There is a performance issue with placement new, where EDG based compiler insert a nullptr check that is superfluous
-// Because this is a noticable performance regression, we specialize it for certain types
+// Because this is a noticeable performance regression, we specialize it for certain types
 // This is possible because we are calling ::new ignoring any user defined overloads of operator placement new
 namespace __detail
 {

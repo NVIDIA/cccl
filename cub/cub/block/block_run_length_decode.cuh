@@ -313,7 +313,7 @@ private:
       thread_dst_offset++;
     }
 
-    // Ensure run offsets and run values have been writen to shared memory
+    // Ensure run offsets and run values have been written to shared memory
     CTA_SYNC();
   }
 

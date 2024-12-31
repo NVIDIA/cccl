@@ -28,6 +28,12 @@
 #  define _CCCL_HAS_INCLUDE(_X) 0
 #endif
 
+#ifdef __COUNTER__
+#  define _CCCL_COUNTER() __COUNTER__
+#else
+#  define _CCCL_COUNTER() __LINE__
+#endif
+
 #define _CCCL_PP_EXPAND(...) __VA_ARGS__
 #define _CCCL_PP_EAT(...)
 

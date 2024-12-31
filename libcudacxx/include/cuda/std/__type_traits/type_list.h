@@ -40,6 +40,14 @@
 //! For the purpose of this file, a "trait type" is a class type with a nested
 //! type alias named \c type.
 
+#if !defined(_CCCL_META_UNROLL_LIMIT)
+#  if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVHPC)
+#    define _CCCL_META_UNROLL_LIMIT 10
+#  else
+#    define _CCCL_META_UNROLL_LIMIT 16
+#  endif
+#endif
+
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
@@ -422,7 +430,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_try_catch
 };
 
 // Implementation for indexing into a list of types:
-#  if defined(__cpp_pack_indexing) && !defined(_CCCL_CUDA_COMPILER_NVCC)
+#  if defined(__cpp_pack_indexing) && !_CCCL_CUDA_COMPILER(NVCC)
 
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_CLANG("-Wc++26-extensions")
@@ -502,7 +510,7 @@ struct __type_index_small_size_fn;
         using __call _CCCL_NODEBUG_ALIAS = _Ty;                 \
       };
 
-_CCCL_PP_REPEAT_REVERSE(16, _M1)
+_CCCL_PP_REPEAT_REVERSE(_CCCL_META_UNROLL_LIMIT, _M1)
 
 #    undef _M0
 #    undef _M1
@@ -524,7 +532,7 @@ struct __type_index_select_fn<true> // Fast implementation for smaller indices
 } // namespace __detail
 
 template <class _Ip, class... _Ts>
-using __type_index = __type_call<__detail::__type_index_select_fn<(_Ip::value < 16)>, _Ip, _Ts...>;
+using __type_index = __type_call<__detail::__type_index_select_fn<(_Ip::value < _CCCL_META_UNROLL_LIMIT)>, _Ip, _Ts...>;
 
 template <size_t _Ip, class... _Ts>
 using __type_index_c = __type_index<integral_constant<size_t, _Ip>, _Ts...>;
@@ -556,6 +564,99 @@ using __type_front = __type_at_c<0, _List>;
 //! \brief Given a type list return the type at the back of the list.
 template <class _List>
 using __type_back = __type_at_c<_List::__size - 1, _List>;
+
+//! \brief A pair of types
+template <class _First, class _Second>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_pair
+{
+  using __first _CCCL_NODEBUG_ALIAS  = _First;
+  using __second _CCCL_NODEBUG_ALIAS = _Second;
+};
+
+//! \brief Retrieve the first of a pair of types
+//! \pre \c _Pair is a specialization of \c __type_pair
+template <class _Pair>
+using __type_pair_first _CCCL_NODEBUG_ALIAS = typename _Pair::__first;
+
+//! \brief Retrieve the second of a pair of types
+//! \pre \c _Pair is a specialization of \c __type_pair
+template <class _Pair>
+using __type_pair_second _CCCL_NODEBUG_ALIAS = typename _Pair::__second;
+
+//! \see __type_switch
+template <class _Value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_default
+{
+  template <class>
+  using __rebind _CCCL_NODEBUG_ALIAS = __type_default;
+
+  using type _CCCL_NODEBUG_ALIAS = _Value;
+};
+
+#  if _CCCL_CUDACC_AT_LEAST(12) || defined(_CCCL_DOXYGEN_INVOKED)
+
+//! \see __type_switch
+template <_CCCL_NTTP_AUTO _Label, class _Value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_case
+{
+  template <class _OtherInt>
+  using __rebind _CCCL_NODEBUG_ALIAS = __type_case<static_cast<_OtherInt>(_Label), _Value>;
+
+  using type = _Value;
+};
+
+#  else // ^^^ CUDACC >= 12.0 || DOXYGEN ^^^ / vvv CUDACC < 12.0 && !DOXYGEN vvv
+
+template <class _Label, class _Value>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_case_
+{
+  template <class _OtherInt>
+  using __rebind _CCCL_NODEBUG_ALIAS = __type_case_<integral_constant<_OtherInt, _Label::value>, _Value>;
+
+  using type = _Value;
+};
+
+template <_CCCL_NTTP_AUTO _Label, class _Value>
+using __type_case _CCCL_NODEBUG_ALIAS = __type_case_<integral_constant<decltype(_Label), _Label>, _Value>;
+
+#  endif // CUDACC < 12.0 && !DOXYGEN
+
+namespace __detail
+{
+template <_CCCL_NTTP_AUTO _Label, class _Value>
+_LIBCUDACXX_HIDE_FROM_ABI auto __type_switch_fn(__type_case<_Label, _Value>*, int) -> __type_case<_Label, _Value>;
+
+template <_CCCL_NTTP_AUTO _Label, class _Value>
+_LIBCUDACXX_HIDE_FROM_ABI auto __type_switch_fn(__type_default<_Value>*, long) -> __type_default<_Value>;
+} // namespace __detail
+
+//! \see __type_switch
+template <class _Type, class... _Cases>
+struct _CCCL_TYPE_VISIBILITY_DEFAULT _CCCL_DECLSPEC_EMPTY_BASES __type_switch_fn : _Cases::template __rebind<_Type>...
+{
+  template <class _Label>
+  using __call _CCCL_NODEBUG_ALIAS =
+    __type<decltype(__detail::__type_switch_fn<_Label::value>(static_cast<__type_switch_fn*>(nullptr), 0))>;
+};
+
+//! \brief Given an integral constant \c _Label and a pack of "cases"
+//! consisting of one or more specializations of \c __type_case and zero or
+//! one specializations of \c __type_default, `__type_switch<_Label, _Cases...>`
+//! returns the value associated with the first case whose label matches the
+//! given label. If no such case exists, the value associated with the default
+//! case is returned. If no default case exists, the type is ill-formed.
+//!
+//! \p Example:
+//! \code
+//! using result = __type_switch<2,
+//!                              __type_case<1, char>,
+//!                              __type_case<2, double>,
+//!                              __type_default<float>>;
+//! static_assert(is_same_v<result, double>);
+//! \endcode
+template <_CCCL_NTTP_AUTO _Label, class... _Cases>
+using __type_switch _CCCL_NODEBUG_ALIAS =
+  __type_call<__type_switch_fn<decltype(_Label), _Cases...>, integral_constant<decltype(_Label), _Label>>;
 
 namespace __detail
 {
@@ -719,7 +820,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_same_as
 template <class _List, class _Fn>
 using __type_find_if = __type_call1<_List, __detail::__type_find_if_fn<_Fn>>;
 
-//! \brief Given a type list and type, find the first occurrance of the type in
+//! \brief Given a type list and type, find the first occurrence of the type in
 //! the list. It returns a type list containing the type and all the types after
 //! it.
 //!
@@ -764,17 +865,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_fold_left_fn;
       using __call _CCCL_NODEBUG_ALIAS = _CCCL_PP_REPEAT(_N, _M1) _State _CCCL_PP_REPEAT(_N, _M3); \
     };
 
-_CCCL_PP_REPEAT_REVERSE(17, _LIBCUDACXX_TYPE_LIST_FOLD_RIGHT)
+_CCCL_PP_REPEAT_REVERSE(_CCCL_PP_INC(_CCCL_META_UNROLL_LIMIT), _LIBCUDACXX_TYPE_LIST_FOLD_RIGHT)
 
 template <size_t _Np>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_fold_right_fn
 {
-  template <class _Fn, class _State _CCCL_PP_REPEAT(16, _M0), class... _Rest>
-  using __call _CCCL_NODEBUG_ALIAS =
-    __type_call_indirect<__type_fold_right_fn<_Np - 16>,
-                         _Fn,
-                         __type_call<__type_fold_right_fn<16>, _Fn, _State _CCCL_PP_REPEAT(16, _M2)>,
-                         _Rest...>;
+  template <class _Fn, class _State _CCCL_PP_REPEAT(_CCCL_META_UNROLL_LIMIT, _M0), class... _Rest>
+  using __call _CCCL_NODEBUG_ALIAS = __type_call_indirect<
+    __type_fold_right_fn<_Np - _CCCL_META_UNROLL_LIMIT>,
+    _Fn,
+    __type_call<__type_fold_right_fn<_CCCL_META_UNROLL_LIMIT>, _Fn, _State _CCCL_PP_REPEAT(_CCCL_META_UNROLL_LIMIT, _M2)>,
+    _Rest...>;
 };
 
 template <class _Init, class _Fn>
@@ -792,17 +893,17 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_fold_right_select_fn
       using __call _CCCL_NODEBUG_ALIAS = _CCCL_PP_REPEAT(_N, _M1) _State _CCCL_PP_REPEAT(_N, _M4, _N, _CCCL_PP_DEC); \
     };
 
-_CCCL_PP_REPEAT_REVERSE(17, _LIBCUDACXX_TYPE_FOLD_LEFT)
+_CCCL_PP_REPEAT_REVERSE(_CCCL_PP_INC(_CCCL_META_UNROLL_LIMIT), _LIBCUDACXX_TYPE_FOLD_LEFT)
 
 template <size_t _Np>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_fold_left_fn
 {
-  template <class _Fn, class _State _CCCL_PP_REPEAT(16, _M0), class... _Rest>
+  template <class _Fn, class _State _CCCL_PP_REPEAT(_CCCL_META_UNROLL_LIMIT, _M0), class... _Rest>
   using __call _CCCL_NODEBUG_ALIAS =
-    __type_call<__type_fold_left_fn<16>,
+    __type_call<__type_fold_left_fn<_CCCL_META_UNROLL_LIMIT>,
                 _Fn,
-                __type_call_indirect<__type_fold_left_fn<_Np - 16>, _Fn, _State, _Rest...> //
-                  _CCCL_PP_REPEAT(16, _M2, 0, _CCCL_PP_INC)>;
+                __type_call_indirect<__type_fold_left_fn<_Np - _CCCL_META_UNROLL_LIMIT>, _Fn, _State, _Rest...> //
+                  _CCCL_PP_REPEAT(_CCCL_META_UNROLL_LIMIT, _M2, 0, _CCCL_PP_INC)>;
 };
 
 template <class _Init, class _Fn>
@@ -842,7 +943,7 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_remove_fn
 };
 } // namespace __detail
 
-//! \brief Remove all occurances of a type from a type list
+//! \brief Remove all occurrences of a type from a type list
 template <class _List, class _Ty>
 using __type_remove = __type_flatten<__type_transform<_List, __detail::__type_remove_fn<_Ty>>>;
 
@@ -906,24 +1007,6 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_sizeof
   template <class _Ty>
   using __call _CCCL_NODEBUG_ALIAS = integral_constant<size_t, sizeof(_Ty)>;
 };
-
-//! \brief A pair of types
-template <class _First, class _Second>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT __type_pair
-{
-  using __first _CCCL_NODEBUG_ALIAS  = _First;
-  using __second _CCCL_NODEBUG_ALIAS = _Second;
-};
-
-//! \brief Retreive the first of a pair of types
-//! \pre \c _Pair is a specialization of \c __type_pair
-template <class _Pair>
-using __type_pair_first = typename _Pair::__first;
-
-//! \brief Retreive the second of a pair of types
-//! \pre \c _Pair is a specialization of \c __type_pair
-template <class _Pair>
-using __type_pair_second = typename _Pair::__second;
 
 //! \brief A list of compile-time values, and a meta-callable that accepts a
 //! meta-callable and evaluates it with the values, each value wrapped in an

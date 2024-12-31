@@ -16,8 +16,7 @@
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/pair.h>
 
-#if _CCCL_COMPILER(ICC) || defined(_CCCL_CUDA_COMPILER_NVCC) || _CCCL_COMPILER(NVRTC) \
-  || defined(_CCCL_CUDA_COMPILER_CLANG)
+#if _CCCL_COMPILER(ICC) || _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC) || _CCCL_CUDA_COMPILER(CLANG)
 // These compilers have trouble making substitution failures during
 // alias template instantiation non-fatal.
 #  define SKIP_SFINAE_TESTS
@@ -493,6 +492,26 @@ static_assert(
   !::cuda::std::__type_callable<::cuda::std::__type_quote1<::cuda::std::__type_back>, ::cuda::std::__type_list<>>::value,
   "");
 #endif
+
+// __type_switch
+static_assert(::cuda::std::is_same<::cuda::std::__type_switch<0,
+                                                              ::cuda::std::__type_case<0, char>,
+                                                              ::cuda::std::__type_case<1, double>,
+                                                              ::cuda::std::__type_default<float>>,
+                                   char>::value,
+              "");
+static_assert(::cuda::std::is_same<::cuda::std::__type_switch<1,
+                                                              ::cuda::std::__type_case<0, char>,
+                                                              ::cuda::std::__type_case<1, double>,
+                                                              ::cuda::std::__type_default<float>>,
+                                   double>::value,
+              "");
+static_assert(::cuda::std::is_same<::cuda::std::__type_switch<2,
+                                                              ::cuda::std::__type_case<0, char>,
+                                                              ::cuda::std::__type_case<1, double>,
+                                                              ::cuda::std::__type_default<float>>,
+                                   float>::value,
+              "");
 
 // __type_concat
 static_assert(::cuda::std::is_same<::cuda::std::__type_concat<>, ::cuda::std::__type_list<>>::value, "");

@@ -144,7 +144,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
       assert(ic[i] == 6);
     }
   }
-  { // Ensure that we are properly perserving back elements when the ranges are overlapping
+  { // Ensure that we are properly preserving back elements when the ranges are overlapping
     constexpr int N      = 5;
     value_type ia[N + 2] = {1, 2, 3, 4, 5, 6, 7};
     int expected[N + 2]  = {1, 2, 1, 2, 3, 4, 5};

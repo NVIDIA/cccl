@@ -44,7 +44,6 @@
 #endif // no system header
 
 #include <cub/detail/uninitialized_copy.cuh>
-#include <cub/util_deprecated.cuh>
 
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
@@ -695,7 +694,7 @@ struct KeyValuePair
  * deprecated [Since 2.5.0] The `cub::ArrayWrapper` is deprecated. Use `cuda::std::array` instead.
  */
 template <typename T, int COUNT>
-struct CUB_DEPRECATED_BECAUSE("Use cuda::std::array instead.") ArrayWrapper
+struct CCCL_DEPRECATED_BECAUSE("Use cuda::std::array instead.") ArrayWrapper
 {
   /// Statically-sized array of type \p T
   T array[COUNT];
@@ -757,12 +756,12 @@ struct DoubleBuffer
     template <typename T, typename = void>                                                              \
     struct detector_name : ::cuda::std::false_type                                                      \
     {                                                                                                   \
-      CUB_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool VALUE = false;                \
+      CCCL_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool VALUE = false;               \
     };                                                                                                  \
     template <typename T>                                                                               \
     struct detector_name<T, ::cuda::std::void_t<typename T::nested_type_name>> : ::cuda::std::true_type \
     {                                                                                                   \
-      CUB_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool VALUE = true;                 \
+      CCCL_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool VALUE = true;                \
     };
 
 /******************************************************************************
@@ -776,7 +775,7 @@ struct DoubleBuffer
 template <typename T, typename BinaryOp, typename = void>
 struct BinaryOpHasIdxParam : ::cuda::std::false_type
 {
-  CUB_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool HAS_PARAM = false;
+  CCCL_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool HAS_PARAM = false;
 };
 
 template <typename T, typename BinaryOp>
@@ -785,7 +784,7 @@ struct BinaryOpHasIdxParam<T,
                            ::cuda::std::void_t<decltype(::cuda::std::declval<BinaryOp>()(
                              ::cuda::std::declval<T>(), ::cuda::std::declval<T>(), int{}))>> : ::cuda::std::true_type
 {
-  CUB_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool HAS_PARAM = true;
+  CCCL_DEPRECATED_BECAUSE("Use ::value instead") static constexpr bool HAS_PARAM = true;
 };
 
 /******************************************************************************

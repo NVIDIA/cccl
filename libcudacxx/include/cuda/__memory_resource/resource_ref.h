@@ -147,7 +147,7 @@ struct _Resource_vtable_builder
   using __wrapper_type = _CUDA_VSTD::integral_constant<_WrapperType, _Wrapper_type>;
 
   template <class _Resource, class _Property>
-  static __property_value_t<_Property> _Get_property(void* __res) noexcept
+  static __property_value_t<_Property> _Get_property(const void* __res) noexcept
   {
     return get_property(*static_cast<const _Resource*>(__res), _Property{});
   }
@@ -292,7 +292,7 @@ struct _Resource_vtable_builder
 };
 
 template <class _Property>
-using __property_fn_t = __property_value_t<_Property> (*)(void*);
+using __property_fn_t = __property_value_t<_Property> (*)(const void*);
 
 template <class _Property>
 struct _Property_vtable
@@ -374,8 +374,11 @@ using _Filtered_vtable = typename _Filtered<_Properties...>::_Filtered_vtable::_
 template <_WrapperType _Wrapper_type>
 using __alloc_object_storage_t = _CUDA_VSTD::_If<_Wrapper_type == _WrapperType::_Reference, void*, _AnyResourceStorage>;
 
+struct _Resource_ref_base
+{};
+
 template <class _Vtable, _WrapperType _Wrapper_type>
-struct _Alloc_base
+struct _CCCL_DECLSPEC_EMPTY_BASES _Alloc_base : _Resource_ref_base
 {
   static_assert(_CUDA_VSTD::is_base_of_v<_Alloc_vtable, _Vtable>, "");
 
@@ -445,19 +448,8 @@ struct _Async_alloc_base : public _Alloc_base<_Vtable, _Wrapper_type>
   }
 };
 
-template <class _VTable, _WrapperType _Wrapper_type>
-constexpr bool _Is_resource_base_fn(const _Alloc_base<_VTable, _Wrapper_type>*) noexcept
-{
-  return true;
-}
-
-constexpr bool _Is_resource_base_fn(...) noexcept
-{
-  return false;
-}
-
 template <class _Resource>
-_CCCL_CONCEPT _Is_resource_base = _Is_resource_base_fn(static_cast<_Resource*>(nullptr));
+_CCCL_CONCEPT _Is_resource_ref = _CUDA_VSTD::convertible_to<_Resource&, _Resource_ref_base>;
 
 template <_AllocType _Alloc_type, _WrapperType _Wrapper_type>
 using _Resource_base =
@@ -522,7 +514,7 @@ public:
   //! as well as all properties
   //! @param __res The resource to be wrapped within the \c basic_resource_ref
   _CCCL_TEMPLATE(class _Resource, _AllocType _Alloc_type2 = _Alloc_type)
-  _CCCL_REQUIRES((!_Is_resource_base<_Resource>) _CCCL_AND(_Alloc_type2 == _AllocType::_Default)
+  _CCCL_REQUIRES((!_Is_resource_ref<_Resource>) _CCCL_AND(_Alloc_type2 == _AllocType::_Default)
                    _CCCL_AND resource_with<_Resource, _Properties...>)
   basic_resource_ref(_Resource& __res) noexcept
       : _Resource_base<_Alloc_type, _WrapperType::_Reference>(
@@ -534,7 +526,7 @@ public:
   //! properties. This ignores the async interface of the passed in resource
   //! @param __res The resource to be wrapped within the \c resource_ref
   _CCCL_TEMPLATE(class _Resource, _AllocType _Alloc_type2 = _Alloc_type)
-  _CCCL_REQUIRES((!_Is_resource_base<_Resource>) _CCCL_AND(_Alloc_type2 == _AllocType::_Async)
+  _CCCL_REQUIRES((!_Is_resource_ref<_Resource>) _CCCL_AND(_Alloc_type2 == _AllocType::_Async)
                    _CCCL_AND async_resource_with<_Resource, _Properties...>)
   basic_resource_ref(_Resource& __res) noexcept
       : _Resource_base<_Alloc_type, _WrapperType::_Reference>(
@@ -546,7 +538,7 @@ public:
   //! as well as all properties
   //! @param __res Pointer to a resource to be wrapped within the \c basic_resource_ref
   _CCCL_TEMPLATE(class _Resource, _AllocType _Alloc_type2 = _Alloc_type)
-  _CCCL_REQUIRES((!_Is_resource_base<_Resource>) _CCCL_AND(_Alloc_type2 == _AllocType::_Default)
+  _CCCL_REQUIRES((!_Is_resource_ref<_Resource>) _CCCL_AND(_Alloc_type2 == _AllocType::_Default)
                    _CCCL_AND resource_with<_Resource, _Properties...>)
   basic_resource_ref(_Resource* __res) noexcept
       : _Resource_base<_Alloc_type, _WrapperType::_Reference>(
@@ -558,7 +550,7 @@ public:
   //! properties. This ignores the async interface of the passed in resource
   //! @param __res Pointer to a resource to be wrapped within the \c resource_ref
   _CCCL_TEMPLATE(class _Resource, _AllocType _Alloc_type2 = _Alloc_type)
-  _CCCL_REQUIRES((!_Is_resource_base<_Resource>) _CCCL_AND(_Alloc_type2 == _AllocType::_Async)
+  _CCCL_REQUIRES((!_Is_resource_ref<_Resource>) _CCCL_AND(_Alloc_type2 == _AllocType::_Async)
                    _CCCL_AND async_resource_with<_Resource, _Properties...>)
   basic_resource_ref(_Resource* __res) noexcept
       : _Resource_base<_Alloc_type, _WrapperType::_Reference>(
@@ -587,9 +579,18 @@ public:
   {}
 
   //! @brief Equality comparison between two \c basic_resource_ref
-  //! @param __rhs The other \c basic_resource_ref
+  //! @param __lhs The first \c basic_resource_ref
+  //! @param __rhs The second \c basic_resource_ref
   //! @return Checks whether both resources have the same equality function stored in their vtable and if so returns
   //! the result of that equality comparison. Otherwise returns false.
+  _CCCL_NODISCARD_FRIEND bool operator==(const basic_resource_ref& __lhs, const basic_resource_ref& __rhs)
+  {
+    // BUGBUG: comparing function pointers like this can lead to false negatives:
+    return (__lhs.__static_vtable->__equal_fn == __rhs.__static_vtable->__equal_fn)
+        && __lhs.__static_vtable->__equal_fn(__lhs.__object, __rhs.__object);
+  }
+
+  //! @overload
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES((sizeof...(_Properties) == sizeof...(_OtherProperties))
                    _CCCL_AND __properties_match<_OtherProperties...>)
@@ -601,9 +602,16 @@ public:
   }
 
   //! @brief Inequality comparison between two \c basic_resource_ref
-  //! @param __rhs The other \c basic_resource_ref
+  //! @param __lhs The first \c basic_resource_ref
+  //! @param __rhs The second \c basic_resource_ref
   //! @return Checks whether both resources have the same equality function stored in their vtable and if so returns
   //! the inverse result of that equality comparison. Otherwise returns true.
+  _CCCL_NODISCARD_FRIEND bool operator!=(const basic_resource_ref& __lhs, const basic_resource_ref& __rhs)
+  {
+    return !(__lhs == __rhs);
+  }
+
+  //! @overload
   _CCCL_TEMPLATE(class... _OtherProperties)
   _CCCL_REQUIRES((sizeof...(_Properties) == sizeof...(_OtherProperties))
                    _CCCL_AND __properties_match<_OtherProperties...>)

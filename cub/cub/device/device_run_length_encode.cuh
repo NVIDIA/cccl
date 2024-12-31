@@ -48,7 +48,6 @@
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/device/dispatch/dispatch_rle.cuh>
 #include <cub/device/dispatch/tuning/tuning_run_length_encode.cuh>
-#include <cub/util_deprecated.cuh>
 
 #include <iterator>
 
@@ -206,7 +205,7 @@ struct DeviceRunLengthEncode
 
     using key_t = cub::detail::non_void_value_t<UniqueOutputIteratorT, cub::detail::value_t<InputIteratorT>>;
 
-    using policy_t = detail::device_run_length_encode_policy_hub<accum_t, key_t>;
+    using policy_t = detail::rle::encode::policy_hub<accum_t, key_t>;
 
     return DispatchReduceByKey<
       InputIteratorT,

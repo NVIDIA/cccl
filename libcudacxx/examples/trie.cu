@@ -22,7 +22,7 @@ THE SOFTWARE.
 
 */
 
-#include <cuda/std/atomic>
+#include <cuda/atomic>
 #include <cuda/std/cstddef>
 #include <cuda/std/cstdint>
 

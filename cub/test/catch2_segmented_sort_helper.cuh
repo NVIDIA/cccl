@@ -42,6 +42,7 @@
 #include <cuda/std/limits>
 #include <cuda/std/tuple>
 #include <cuda/std/type_traits>
+#include <cuda/std/utility>
 
 #include <cstdio>
 
@@ -255,7 +256,7 @@ private:
         []() {}(); // no-op lambda
       }
 
-      // Validate all output values for the current key by determining the input key indicies and computing the matching
+      // Validate all output values for the current key by determining the input key indices and computing the matching
       // input values.
       const int num_dup_keys     = key_out_dup_end - key_out_dup_begin;
       const int key_in_dup_begin = segment_size - key_out_dup_end;
@@ -290,7 +291,7 @@ private:
           {
             if (current_value == d_values[probe_unchecked_idx])
             {
-              using thrust::swap;
+              using ::cuda::std::swap;
               swap(d_values[probe_unchecked_idx], d_values[unchecked_values_for_current_dup_key_begin]);
               unchecked_values_for_current_dup_key_begin++;
               break;
@@ -520,7 +521,7 @@ struct unstable_segmented_value_checker
           if (current_value == test_values[probe_unchecked_idx])
           {
             // Swap the found value out of the unchecked region to reduce the search space in future iterations:
-            using thrust::swap;
+            using ::cuda::std::swap;
             swap(test_values[probe_unchecked_idx], test_values[unchecked_values_for_current_dup_key_begin]);
             unchecked_values_for_current_dup_key_begin++;
             break;
@@ -1455,7 +1456,7 @@ c2h::device_vector<int> generate_edge_case_offsets()
 {
   C2H_TIME_SCOPE("generate_edge_case_offsets");
 
-  using MaxPolicyT = typename cub::DeviceSegmentedSortPolicy<KeyT, ValueT>::MaxPolicy;
+  using MaxPolicyT = typename cub::detail::segmented_sort::policy_hub<KeyT, ValueT>::MaxPolicy;
 
   int ptx_version = 0;
   REQUIRE(cudaSuccess == CubDebug(cub::PtxVersion(ptx_version)));

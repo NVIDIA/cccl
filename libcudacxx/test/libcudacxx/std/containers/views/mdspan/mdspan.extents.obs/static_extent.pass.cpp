@@ -35,7 +35,7 @@ struct TestExtentsStaticExtent<TEST_TYPE> : public TestExtents<TEST_TYPE>
       result[r]      = dyn_val > 1e9 ? dyn_val : _exts.static_extent(r);
     }
 
-    for (size_t r = 0; r < extents_type::rank(); r++)
+    for (size_t r = 0; r != extents_type::rank(); r++)
     {
       assert(result[r] == base::static_sizes[r]);
     }

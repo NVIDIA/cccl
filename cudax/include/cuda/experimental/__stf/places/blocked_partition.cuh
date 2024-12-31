@@ -94,7 +94,7 @@ public:
 
     ::std::ptrdiff_t dim_end = in.extent(target_dim);
 
-    // The last dimension is split accross the different places
+    // The last dimension is split across the different places
     size_t nplaces            = grid_dims.x;
     size_t part_size          = (in.extent(target_dim) + nplaces - 1) / nplaces;
     bounds[target_dim].first  = ::std::min((::std::ptrdiff_t) part_size * place_position.x, dim_end);

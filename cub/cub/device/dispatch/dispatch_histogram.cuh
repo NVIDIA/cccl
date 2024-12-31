@@ -50,7 +50,6 @@
 #include <cub/grid/grid_queue.cuh>
 #include <cub/thread/thread_search.cuh>
 #include <cub/util_debug.cuh>
-#include <cub/util_deprecated.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_temporary_storage.cuh>
@@ -545,7 +544,7 @@ struct dispatch_histogram
  * @tparam OffsetT
  *   Signed integer type for global offsets
  *
- * @tparam SelectedPolicy
+ * @tparam PolicyHub
  *   Implementation detail, do not specify directly, requirements on the
  *   content of this type are subject to breaking change.
  */
@@ -555,13 +554,9 @@ template <int NUM_CHANNELS,
           typename CounterT,
           typename LevelT,
           typename OffsetT,
-          typename SelectedPolicy = //
-          detail::device_histogram_policy_hub< //
-            cub::detail::value_t<SampleIteratorT>,
-            CounterT,
-            NUM_CHANNELS,
-            NUM_ACTIVE_CHANNELS>>
-struct DispatchHistogram : SelectedPolicy
+          typename PolicyHub =
+            detail::histogram::policy_hub<detail::value_t<SampleIteratorT>, CounterT, NUM_CHANNELS, NUM_ACTIVE_CHANNELS>>
+struct DispatchHistogram
 {
   static_assert(NUM_CHANNELS <= 4, "Histograms only support up to 4 channels");
   static_assert(NUM_ACTIVE_CHANNELS <= NUM_CHANNELS,
@@ -925,7 +920,7 @@ public:
     cudaStream_t stream,
     Int2Type<false> /*is_byte_sample*/)
   {
-    using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
+    using MaxPolicyT = typename PolicyHub::MaxPolicy;
     cudaError error  = cudaSuccess;
 
     do
@@ -1129,7 +1124,7 @@ public:
     cudaStream_t stream,
     Int2Type<true> /*is_byte_sample*/)
   {
-    using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
+    using MaxPolicyT = typename PolicyHub::MaxPolicy;
     cudaError error  = cudaSuccess;
 
     do
@@ -1297,7 +1292,7 @@ public:
     cudaStream_t stream,
     Int2Type<false> /*is_byte_sample*/)
   {
-    using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
+    using MaxPolicyT = typename PolicyHub::MaxPolicy;
     cudaError error  = cudaSuccess;
 
     do
@@ -1518,7 +1513,7 @@ public:
     cudaStream_t stream,
     Int2Type<true> /*is_byte_sample*/)
   {
-    using MaxPolicyT = typename SelectedPolicy::MaxPolicy;
+    using MaxPolicyT = typename PolicyHub::MaxPolicy;
     cudaError error  = cudaSuccess;
 
     do

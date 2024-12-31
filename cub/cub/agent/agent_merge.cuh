@@ -208,7 +208,7 @@ struct agent_t
 
   _CCCL_DEVICE _CCCL_FORCEINLINE void operator()()
   {
-    // XXX with 8.5 chaging type to Offset (or long long) results in error!
+    // XXX with 8.5 changing type to Offset (or long long) results in error!
     // TODO(bgruber): is the above still true?
     const int tile_idx     = static_cast<int>(blockIdx.x);
     const Offset tile_base = tile_idx * items_per_tile;

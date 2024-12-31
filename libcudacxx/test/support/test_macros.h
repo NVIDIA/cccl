@@ -84,12 +84,12 @@
 #  define TEST_COMPILER_EDG
 #endif
 
-#if defined(_CCCL_CUDA_COMPILER_NVCC)
+#if _CCCL_CUDA_COMPILER(NVCC)
 #  define TEST_COMPILER_NVCC
 #  define TEST_COMPILER_EDG
-#elif defined(_CCCL_CUDA_COMPILER_NVHPC)
+#elif _CCCL_CUDA_COMPILER(NVHPC)
 #  define TEST_COMPILER_NVHPC_CUDA
-#elif defined(_CCCL_CUDA_COMPILER_CLANG)
+#elif _CCCL_CUDA_COMPILER(CLANG)
 #  define TEST_COMPILER_CLANG_CUDA
 #endif // no cuda compiler
 
@@ -201,14 +201,7 @@
 // Sniff out to see if the underling C library has C11 features
 // Note that at this time (July 2018), MacOS X and iOS do NOT.
 // This is cribbed from __config; but lives here as well because we can't assume libc++
-#if defined(__FreeBSD__)
-//  Specifically, FreeBSD does NOT have timespec_get, even though they have all
-//  the rest of C11 - this is PR#38495
-#  define TEST_HAS_C11_FEATURES
-#elif defined(__Fuchsia__) || defined(__wasi__)
-#  define TEST_HAS_C11_FEATURES
-#  define TEST_HAS_TIMESPEC_GET
-#elif defined(__linux__)
+#if defined(__linux__)
 // This block preserves the old behavior used by include/__config:
 // _LIBCUDACXX_GLIBC_PREREQ would be defined to 0 if __GLIBC_PREREQ was not
 // available. The configuration here may be too vague though, as Bionic, uClibc,
@@ -358,7 +351,7 @@ struct is_same<T, T>
 #  define TEST_HAS_NO_LOCALIZATION
 #endif
 
-#if defined(_LIBCUDACXX_NO_HAS_CHAR8_T)
+#if defined(_LIBCUDACXX_HAS_NO_CHAR8_T)
 #  define TEST_HAS_NO_CHAR8_T
 #endif
 
@@ -453,14 +446,12 @@ __host__ __device__ constexpr bool unused(T&&...)
 #define TEST_CONSTEXPR_GLOBAL _CCCL_CONSTEXPR_GLOBAL
 
 // Some convenience macros for checking nvcc versions
-#if defined(_CCCL_CUDACC)
-#  if _CCCL_CUDACC_BELOW(11, 3)
-#    define TEST_COMPILER_CUDACC_BELOW_11_3
-#  endif // _CCCL_CUDACC_BELOW(11, 3)
-#  if _CCCL_CUDACC_BELOW(12, 3)
-#    define TEST_COMPILER_CUDACC_BELOW_12_3
-#  endif // _CCCL_CUDACC_BELOW(12, 3)
-#endif // _CCCL_CUDACC
+#if _CCCL_CUDACC_BELOW(11, 3)
+#  define TEST_COMPILER_CUDACC_BELOW_11_3
+#endif // _CCCL_CUDACC_BELOW(11, 3)
+#if _CCCL_CUDACC_BELOW(12, 3)
+#  define TEST_COMPILER_CUDACC_BELOW_12_3
+#endif // _CCCL_CUDACC_BELOW(12, 3)
 
 #if defined(TEST_COMPILER_MSVC)
 #  if _MSC_VER < 1920

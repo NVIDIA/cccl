@@ -47,7 +47,6 @@
 #include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/iterator/arg_index_input_iterator.cuh>
-#include <cub/util_deprecated.cuh>
 #include <cub/util_type.cuh>
 
 #include <cuda/std/type_traits>

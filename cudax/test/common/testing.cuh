@@ -11,7 +11,7 @@
 #ifndef __COMMON_TESTING_H__
 #define __COMMON_TESTING_H__
 
-#include <cuda/experimental/hierarchy.cuh>
+#include <cuda/experimental/launch.cuh>
 
 #include <exception> // IWYU pragma: keep
 #include <iostream>
@@ -34,7 +34,7 @@ __device__ inline void cudax_require_impl(
 {
   if (!condition)
   {
-    // TODO do warp aggregate prints for easier readibility?
+    // TODO do warp aggregate prints for easier readability?
     printf("%s:%u: %s: block: [%d,%d,%d], thread: [%d,%d,%d] Condition `%s` failed.\n",
            filename,
            linenum,

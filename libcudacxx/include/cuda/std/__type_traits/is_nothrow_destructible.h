@@ -38,7 +38,7 @@ template <class _Tp>
 struct is_nothrow_destructible : public integral_constant<bool, _CCCL_BUILTIN_IS_NOTHROW_DESTRUCTIBLE(_Tp)>
 {};
 
-#elif !defined(_LIBCUDACXX_HAS_NO_NOEXCEPT)
+#else // ^^^ _CCCL_BUILTIN_IS_NOTHROW_DESTRUCTIBLE ^^^ / vvv !_CCCL_BUILTIN_IS_NOTHROW_DESTRUCTIBLE vvv
 
 template <class _Tp, bool = is_destructible<_Tp>::value>
 struct __cccl_is_nothrow_destructible : false_type
@@ -65,22 +65,7 @@ template <class _Tp>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_destructible<_Tp&&> : public true_type
 {};
 
-#else
-
-template <class _Tp>
-struct __cccl_nothrow_destructor : public integral_constant<bool, is_scalar<_Tp>::value || is_reference<_Tp>::value>
-{};
-
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_destructible
-    : public __cccl_nothrow_destructor<remove_all_extents_t<_Tp>>
-{};
-
-template <class _Tp>
-struct _CCCL_TYPE_VISIBILITY_DEFAULT is_nothrow_destructible<_Tp[]> : public false_type
-{};
-
-#endif // defined(_CCCL_BUILTIN_IS_NOTHROW_DESTRUCTIBLE) && !defined(_LIBCUDACXX_USE_IS_NOTHROW_DESTRUCTIBLE_FALLBACK)
+#endif // !_CCCL_BUILTIN_IS_NOTHROW_DESTRUCTIBLE
 
 #if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp>

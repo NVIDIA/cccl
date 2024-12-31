@@ -34,7 +34,7 @@ struct TestExtentsExtent<TEST_TYPE> : public TestExtents<TEST_TYPE>
     }
 
     int dyn_count = 0;
-    for (size_t r = 0; r < extents_type::rank(); r++)
+    for (size_t r = 0; r != extents_type::rank(); r++)
     {
       bool is_dynamic = base::static_sizes[r] == cuda::std::dynamic_extent;
       auto expected   = is_dynamic ? base::dyn_sizes[dyn_count++] : base::static_sizes[r];

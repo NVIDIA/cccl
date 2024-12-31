@@ -135,7 +135,8 @@ template <typename Incrementable,
           typename System     = use_default,
           typename Traversal  = use_default,
           typename Difference = use_default>
-class counting_iterator : public detail::counting_iterator_base<Incrementable, System, Traversal, Difference>::type
+class _CCCL_DECLSPEC_EMPTY_BASES counting_iterator
+    : public detail::counting_iterator_base<Incrementable, System, Traversal, Difference>::type
 {
   /*! \cond
    */

@@ -24,7 +24,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  ******************************************************************************/
-// NOTE: this benchmark is intented to cover DPX instructions on Hopper+ architectures.
+// NOTE: this benchmark is intended to cover DPX instructions on Hopper+ architectures.
 //       It specifically uses cuda::minimum<> instead of a user-defined operator.
 #define TUNE_T int16_t
 #include <nvbench_helper.cuh>

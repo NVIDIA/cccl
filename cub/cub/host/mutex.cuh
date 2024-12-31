@@ -43,8 +43,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_deprecated.cuh>
-
 #include <mutex>
 
 CUB_NAMESPACE_BEGIN
@@ -54,7 +52,7 @@ CUB_NAMESPACE_BEGIN
  *  deprecated [Since CUB 2.1.0] The `cub::Mutex` is deprecated and will be removed
  *             in a future release. Use `std::mutex` instead.
  */
-struct CUB_DEPRECATED Mutex
+struct CCCL_DEPRECATED Mutex
 {
   std::mutex mtx;
 

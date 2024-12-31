@@ -278,7 +278,7 @@ _CCCL_HOST_DEVICE _CCCL_FORCEINLINE cudaError_t Debug(cudaError_t error, const c
 #  else // Clang:
 
 // XXX shameless hack for clang around variadic printf...
-//     Compilies w/o supplying -std=c++11 but shows warning,
+//     Compiles w/o supplying -std=c++11 but shows warning,
 //     so we silence them :)
 #    pragma clang diagnostic ignored "-Wc++11-extensions"
 #    pragma clang diagnostic ignored "-Wunnamed-type-template-args"
@@ -308,5 +308,19 @@ inline _CCCL_HOST_DEVICE void va_printf(char const*, Args const&...)
 #    endif
 #  endif
 #endif
+
+#define CUB_DETAIL_RUNTIME_DEBUG_SYNC_IS_NOT_SUPPORTED             \
+  CCCL_DEPRECATED_BECAUSE(                                         \
+    "CUB no longer accepts `debug_synchronous` parameter. "        \
+    "Define CUB_DEBUG_SYNC instead, or silence this message with " \
+    "CCCL_IGNORE_DEPRECATED_API.")
+
+#define CUB_DETAIL_RUNTIME_DEBUG_SYNC_USAGE_LOG                     \
+  if (debug_synchronous)                                            \
+  {                                                                 \
+    _CubLog("%s\n",                                                 \
+            "CUB no longer accepts `debug_synchronous` parameter. " \
+            "Define CUB_DEBUG_SYNC instead.");                      \
+  }
 
 CUB_NAMESPACE_END

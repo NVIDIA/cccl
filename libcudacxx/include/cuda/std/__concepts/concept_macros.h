@@ -24,8 +24,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/cstddef> // for size_t
-
 ////////////////////////////////////////////////////////////////////////////////
 // _CCCL_TEMPLATE
 // Usage:
@@ -179,7 +177,7 @@ namespace __cccl_unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-
       _LIBCUDACXX_HIDE_FROM_ABI char _NAME##_CCCL_CONCEPT_FRAGMENT_(                                                   \
         ::__cccl_tag<_As...>*, decltype(&_NAME##_CCCL_CONCEPT_FRAGMENT_impl_<_As...>));                                \
       _LIBCUDACXX_HIDE_FROM_ABI char(&_NAME##_CCCL_CONCEPT_FRAGMENT_(...))[2]
-#    if defined(_MSC_VER) && !defined(__clang__)
+#    if _CCCL_COMPILER(MSVC)
 #      define _CCCL_CONCEPT_FRAGMENT_TRUE(...) \
         ::__cccl_is_true<decltype(_CCCL_PP_FOR_EACH(_CCCL_CONCEPT_FRAGMENT_REQS_M, __VA_ARGS__) void())>()
 #    else
@@ -244,14 +242,15 @@ namespace __cccl_unqualified_cuda_std = _CUDA_VSTD; // NOLINT(misc-unused-alias-
 
 #    define _CCCL_REQUIRES_EXPR_EXPAND_TPARAMS(...) _CCCL_PP_FOR_EACH(_CCCL_REQUIRES_EXPR_EXPAND_TPARAM, __VA_ARGS__)
 
-#    define _CCCL_REQUIRES_EXPR(_TY, ...)                                                                             \
+#    define _CCCL_REQUIRES_EXPR(_TY, ...) _CCCL_REQUIRES_EXPR_IMPL(_TY, _CCCL_COUNTER(), __VA_ARGS__)
+#    define _CCCL_REQUIRES_EXPR_IMPL(_TY, _ID, ...)                                                                   \
       ::__cccl_requires_expr_impl<                                                                                    \
-        struct _CCCL_PP_CAT(__cccl_requires_expr_detail_, __LINE__) _CCCL_REQUIRES_EXPR_EXPAND_TPARAMS                \
+        struct _CCCL_PP_CAT(__cccl_requires_expr_detail_, _ID) _CCCL_REQUIRES_EXPR_EXPAND_TPARAMS                     \
           _TY>::__cccl_is_satisfied(static_cast<::__cccl_tag<void _CCCL_REQUIRES_EXPR_EXPAND_TPARAMS _TY>*>(nullptr), \
                                     static_cast<void (*)(__VA_ARGS__)>(nullptr));                                     \
-      struct _CCCL_PP_CAT(__cccl_requires_expr_detail_, __LINE__)                                                     \
+      struct _CCCL_PP_CAT(__cccl_requires_expr_detail_, _ID)                                                          \
       {                                                                                                               \
-        using __cccl_self_t = _CCCL_PP_CAT(__cccl_requires_expr_detail_, __LINE__);                                   \
+        using __cccl_self_t = _CCCL_PP_CAT(__cccl_requires_expr_detail_, _ID);                                        \
         template <class _CCCL_REQUIRES_EXPR_TPARAMS _TY>                                                              \
         _LIBCUDACXX_HIDE_FROM_ABI static auto __cccl_well_formed(__VA_ARGS__) _CCCL_REQUIRES_EXPR_2
 

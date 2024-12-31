@@ -46,6 +46,7 @@
 #include <cub/agent/agent_batch_memcpy.cuh>
 #include <cub/agent/single_pass_scan_operators.cuh>
 #include <cub/detail/temporary_storage.cuh>
+#include <cub/device/dispatch/tuning/tuning_batch_memcpy.cuh>
 #include <cub/thread/thread_search.cuh>
 #include <cub/util_debug.cuh>
 #include <cub/util_device.cuh>
@@ -61,19 +62,6 @@ CUB_NAMESPACE_BEGIN
 
 namespace detail
 {
-
-/**
- * Parameterizable tuning policy type for AgentBatchMemcpy
- */
-template <uint32_t _BLOCK_THREADS, uint32_t _BYTES_PER_THREAD>
-struct AgentBatchMemcpyLargeBuffersPolicy
-{
-  /// Threads per thread block
-  static constexpr uint32_t BLOCK_THREADS = _BLOCK_THREADS;
-  /// The number of bytes each thread copies
-  static constexpr uint32_t BYTES_PER_THREAD = _BYTES_PER_THREAD;
-};
-
 /**
  * Initialization kernel for tile status initialization (multi-block)
  */
@@ -166,7 +154,7 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT::BLO
       return;
     }
 
-    // Tiny remainders are copied without vectorizing laods
+    // Tiny remainders are copied without vectorizing loads
     if (buffer_sizes[buffer_id] - tile_offset_within_buffer <= 32)
     {
       BufferSizeT thread_offset = tile_offset_within_buffer + threadIdx.x;
@@ -195,9 +183,9 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentLargeBufferPolicyT::BLO
 
 /**
  * @brief Kernel that copies data from a batch of given source buffers to their corresponding
- * destination buffer. If a buffer's size is to large to be copied by a single thread block, that
+ * destination buffer. If a buffer's size is too large to be copied by a single thread block, that
  * buffer is put into a queue of buffers that will get picked up later on, where multiple blocks
- * collaborate on each of these buffers. All other buffers get copied straight away.
+ * collaborate on each of these buffers. All other buffers get copied straight away.o
  *
  * @param input_buffer_it [in] Iterator providing the pointers to the source memory buffers
  * @param output_buffer_it [in] Iterator providing the pointers to the destination memory buffers
@@ -281,63 +269,6 @@ __launch_bounds__(int(ChainedPolicyT::ActivePolicy::AgentSmallBufferPolicyT::BLO
     .ConsumeTile(blockIdx.x);
 }
 
-template <class BufferOffsetT, class BlockOffsetT>
-struct DeviceBatchMemcpyPolicy
-{
-  static constexpr uint32_t BLOCK_THREADS         = 128U;
-  static constexpr uint32_t BUFFERS_PER_THREAD    = 4U;
-  static constexpr uint32_t TLEV_BYTES_PER_THREAD = 8U;
-
-  static constexpr uint32_t LARGE_BUFFER_BLOCK_THREADS    = 256U;
-  static constexpr uint32_t LARGE_BUFFER_BYTES_PER_THREAD = 32U;
-
-  static constexpr uint32_t WARP_LEVEL_THRESHOLD  = 128;
-  static constexpr uint32_t BLOCK_LEVEL_THRESHOLD = 8 * 1024;
-
-  using buff_delay_constructor_t  = detail::default_delay_constructor_t<BufferOffsetT>;
-  using block_delay_constructor_t = detail::default_delay_constructor_t<BlockOffsetT>;
-
-  /// SM35
-  struct Policy350 : ChainedPolicy<350, Policy350, Policy350>
-  {
-    static constexpr bool PREFER_POW2_BITS = true;
-    using AgentSmallBufferPolicyT          = AgentBatchMemcpyPolicy<
-               BLOCK_THREADS,
-               BUFFERS_PER_THREAD,
-               TLEV_BYTES_PER_THREAD,
-               PREFER_POW2_BITS,
-               LARGE_BUFFER_BLOCK_THREADS * LARGE_BUFFER_BYTES_PER_THREAD,
-               WARP_LEVEL_THRESHOLD,
-               BLOCK_LEVEL_THRESHOLD,
-               buff_delay_constructor_t,
-               block_delay_constructor_t>;
-
-    using AgentLargeBufferPolicyT =
-      AgentBatchMemcpyLargeBuffersPolicy<LARGE_BUFFER_BLOCK_THREADS, LARGE_BUFFER_BYTES_PER_THREAD>;
-  };
-
-  /// SM70
-  struct Policy700 : ChainedPolicy<700, Policy700, Policy350>
-  {
-    static constexpr bool PREFER_POW2_BITS = false;
-    using AgentSmallBufferPolicyT          = AgentBatchMemcpyPolicy<
-               BLOCK_THREADS,
-               BUFFERS_PER_THREAD,
-               TLEV_BYTES_PER_THREAD,
-               PREFER_POW2_BITS,
-               LARGE_BUFFER_BLOCK_THREADS * LARGE_BUFFER_BYTES_PER_THREAD,
-               WARP_LEVEL_THRESHOLD,
-               BLOCK_LEVEL_THRESHOLD,
-               buff_delay_constructor_t,
-               block_delay_constructor_t>;
-
-    using AgentLargeBufferPolicyT =
-      AgentBatchMemcpyLargeBuffersPolicy<LARGE_BUFFER_BLOCK_THREADS, LARGE_BUFFER_BYTES_PER_THREAD>;
-  };
-
-  using MaxPolicy = Policy700;
-};
-
 /**
  * @tparam InputBufferIt **[inferred]** Random-access input iterator type providing the pointers
  * to the source memory buffers
@@ -354,9 +285,9 @@ template <typename InputBufferIt,
           typename BufferSizeIteratorT,
           typename BufferOffsetT,
           typename BlockOffsetT,
-          typename SelectedPolicy = DeviceBatchMemcpyPolicy<BufferOffsetT, BlockOffsetT>,
-          bool IsMemcpy           = true>
-struct DispatchBatchMemcpy : SelectedPolicy
+          typename PolicyHub = batch_memcpy::policy_hub<BufferOffsetT, BlockOffsetT>,
+          bool IsMemcpy      = true>
+struct DispatchBatchMemcpy
 {
   //------------------------------------------------------------------------------
   // TYPE ALIASES
@@ -373,7 +304,7 @@ struct DispatchBatchMemcpy : SelectedPolicy
   using BufferSizeT = cub::detail::value_t<BufferSizeIteratorT>;
 
   //------------------------------------------------------------------------------
-  // Member Veriables
+  // Member Variables
   //------------------------------------------------------------------------------
   void* d_temp_storage;
   size_t& temp_storage_bytes;
@@ -414,8 +345,6 @@ struct DispatchBatchMemcpy : SelectedPolicy
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE cudaError_t Invoke()
   {
-    using MaxPolicyT = typename DispatchBatchMemcpy::MaxPolicy;
-
     // Single-pass prefix scan tile states for the prefix-sum over the number of block-level buffers
     using BLevBufferOffsetTileState = cub::ScanTileState<BufferOffsetT>;
 
@@ -535,7 +464,7 @@ struct DispatchBatchMemcpy : SelectedPolicy
     auto init_scan_states_kernel =
       InitTileStateKernel<BLevBufferOffsetTileState, BLevBlockOffsetTileState, BlockOffsetT>;
     auto batch_memcpy_non_blev_kernel = BatchMemcpyKernel<
-      MaxPolicyT,
+      typename PolicyHub::MaxPolicy,
       InputBufferIt,
       OutputBufferIt,
       BufferSizeIteratorT,
@@ -550,7 +479,7 @@ struct DispatchBatchMemcpy : SelectedPolicy
       IsMemcpy>;
 
     auto multi_block_memcpy_kernel = MultiBlockBatchMemcpyKernel<
-      MaxPolicyT,
+      typename PolicyHub::MaxPolicy,
       BufferOffsetT,
       BlevBufferSrcsOutItT,
       BlevBufferDstsOutItT,
@@ -720,8 +649,6 @@ struct DispatchBatchMemcpy : SelectedPolicy
     BufferOffsetT num_buffers,
     cudaStream_t stream)
   {
-    using MaxPolicyT = typename DispatchBatchMemcpy::MaxPolicy;
-
     cudaError_t error = cudaSuccess;
 
     // Get PTX version
@@ -737,7 +664,7 @@ struct DispatchBatchMemcpy : SelectedPolicy
       d_temp_storage, temp_storage_bytes, input_buffer_it, output_buffer_it, buffer_sizes, num_buffers, stream);
 
     // Dispatch to chained policy
-    error = CubDebug(MaxPolicyT::Invoke(ptx_version, dispatch));
+    error = CubDebug(PolicyHub::MaxPolicy::Invoke(ptx_version, dispatch));
     if (cudaSuccess != error)
     {
       return error;

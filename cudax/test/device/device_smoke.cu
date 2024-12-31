@@ -8,9 +8,10 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cuda/std/__type_traits/is_same.h>
+
 #include <cuda/experimental/device.cuh>
 
-#include "cuda/std/__type_traits/is_same.h"
 #include <testing.cuh>
 
 namespace

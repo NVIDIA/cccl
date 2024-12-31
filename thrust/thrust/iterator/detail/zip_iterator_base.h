@@ -174,7 +174,7 @@ inline _CCCL_HOST_DEVICE Fun tuple_for_each(thrust::tuple<Ts...>& t, Fun f)
 } // namespace tuple_impl_specific
 
 // Metafunction to obtain the type of the tuple whose element types
-// are the value_types of an iterator tupel.
+// are the value_types of an iterator tuple.
 //
 template <typename IteratorTuple>
 struct tuple_of_value_types : tuple_meta_transform<IteratorTuple, iterator_value>

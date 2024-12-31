@@ -92,11 +92,23 @@ C2H_TEST("CUB correctly identifies the ptx version the kernel was compiled for",
 }
 
 #ifdef __CUDA_ARCH_LIST__
-C2H_TEST("PtxVersion returns a value from __CUDA_ARCH_LIST__", "[util][dispatch]")
+#  define CUDA_SM_LIST       __CUDA_ARCH_LIST__
+#  define CUDA_SM_LIST_SCALE 1
+#elif defined(NV_TARGET_SM_INTEGER_LIST)
+#  define CUDA_SM_LIST       NV_TARGET_SM_INTEGER_LIST
+#  define CUDA_SM_LIST_SCALE 10
+#endif
+
+#ifdef CUDA_SM_LIST
+C2H_TEST("PtxVersion returns a value from __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST", "[util][dispatch]")
 {
   int ptx_version = 0;
   REQUIRE(cub::PtxVersion(ptx_version) == cudaSuccess);
-  const auto arch_list = std::vector<int>{__CUDA_ARCH_LIST__};
+  auto arch_list = std::vector<int>{CUDA_SM_LIST};
+  for (auto& a : arch_list)
+  {
+    a *= CUDA_SM_LIST_SCALE;
+  }
   REQUIRE(std::find(arch_list.begin(), arch_list.end(), ptx_version) != arch_list.end());
 }
 #endif
@@ -107,9 +119,9 @@ C2H_TEST("PtxVersion returns a value from __CUDA_ARCH_LIST__", "[util][dispatch]
     static constexpr int value = cur;                                     \
   }
 
-#ifdef __CUDA_ARCH_LIST__
-// We list policies for all virtual architectures that __CUDA_ARCH_LIST__ can contain, so the actual architectures the
-// tests are compiled for should match to one of those
+#ifdef CUDA_SM_LIST
+// We list policies for all virtual architectures that __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST can contain, so the
+// actual architectures the tests are compiled for should match to one of those
 struct policy_hub_all
 {
   // for the list of supported architectures, see libcudacxx/include/nv/target
@@ -136,11 +148,11 @@ struct policy_hub_all
   using max_policy = policy2000;
 };
 
-// Check that selected is one of arches
+// Check that selected is one of (scaled) arches
 template <int Selected, int... ArchList>
 struct check
 {
-  static_assert(::cuda::std::_Or<::cuda::std::bool_constant<Selected == ArchList>...>::value, "");
+  static_assert(::cuda::std::_Or<::cuda::std::bool_constant<Selected == ArchList * CUDA_SM_LIST_SCALE>...>::value, "");
   using type = cudaError_t;
 };
 
@@ -148,9 +160,10 @@ struct closure_all
 {
   int ptx_version;
 
-  // We need to fail template instantiation if ActivePolicy::value is not one from the __CUDA_ARCH_LIST__
+  // We need to fail template instantiation if ActivePolicy::value is not one from the
+  // __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST
   template <typename ActivePolicy>
-  CUB_RUNTIME_FUNCTION auto Invoke() const -> typename check<ActivePolicy::value, __CUDA_ARCH_LIST__>::type
+  CUB_RUNTIME_FUNCTION auto Invoke() const -> typename check<ActivePolicy::value, CUDA_SM_LIST>::type
   {
     // policy_hub_all must list all PTX virtual architectures, so we can do an exact comparison here
 #  if TEST_LAUNCH == 0
@@ -177,7 +190,7 @@ check_chained_policy_prunes_to_arch_list(void* d_temp_storage, size_t& temp_stor
 
 DECLARE_LAUNCH_WRAPPER(check_chained_policy_prunes_to_arch_list, check_wrapper_all);
 
-C2H_TEST("ChainedPolicy prunes based on __CUDA_ARCH_LIST__", "[util][dispatch]")
+C2H_TEST("ChainedPolicy prunes based on __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST", "[util][dispatch]")
 {
   check_wrapper_all();
 }

@@ -61,6 +61,9 @@ function(libcudacxx_create_internal_header_test header_name, headertest_src, fal
   if (CCCL_SUPPRESS_ICC_DEPRECATION_WARNING)
     target_compile_definitions(headertest_${header_name} PRIVATE CCCL_SUPPRESS_ICC_DEPRECATION_WARNING)
   endif()
+  if (CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING)
+    target_compile_definitions(headertest_${header_name} PRIVATE CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING)
+  endif()
 
   add_dependencies(libcudacxx.test.internal_headers headertest_${header_name})
 endfunction()
@@ -85,7 +88,7 @@ function(libcudacxx_add_internal_header_test header)
     endif()
   endif()
 
-  # Seach the file for a fallback definition
+  # Search the file for a fallback definition
   file(READ ${libcudacxx_SOURCE_DIR}/include/cuda/${header} header_file)
   string(REGEX MATCH "_LIBCUDACXX_[A-Z_]*_FALLBACK" fallback "${header_file}")
   if(fallback)

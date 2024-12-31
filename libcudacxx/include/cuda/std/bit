@@ -22,6 +22,7 @@
 #endif // no system header
 
 #include <cuda/std/__bit/bit_cast.h>
+#include <cuda/std/__bit/byteswap.h>
 #include <cuda/std/__bit/countl.h>
 #include <cuda/std/__bit/countr.h>
 #include <cuda/std/__bit/endian.h>

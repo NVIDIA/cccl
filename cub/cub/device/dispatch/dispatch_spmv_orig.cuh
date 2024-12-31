@@ -51,7 +51,6 @@
 #include <cub/grid/grid_queue.cuh>
 #include <cub/thread/thread_search.cuh>
 #include <cub/util_debug.cuh>
-#include <cub/util_deprecated.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_math.cuh>
 #include <cub/util_type.cuh>

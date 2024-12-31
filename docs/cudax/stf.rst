@@ -141,7 +141,7 @@ A simple example
 
 The following example illustrates the use of CUDASTF to implement the
 well-known AXPY kernel, which computes ``Y = Y + alpha * X`` where ``X``
-and ``Y`` are two vectors, and ``alpha`` is a scalar value.
+and ``Y`` are two vectors, and ``alpha`` is a scalar_view value.
 
 .. code:: cpp
 
@@ -433,7 +433,7 @@ A slice is a partial specialization of C++’s
    using slice = mdspan<T, dextents<size_t, dimensions>, layout_stride>;
 
 When creating a ``logical_data`` from a C++ array, CUDASTF automatically
-describes it as a slice instantiated with the scalar element type and
+describes it as a slice instantiated with the scalar_view element type and
 the dimensionality of the array. Here is an example with an 1D array of
 ``double``.
 
@@ -444,7 +444,7 @@ the dimensionality of the array. Here is an example with an 1D array of
    auto lA = ctx.logical_data(A);
 
 Internally, all instances of ``A`` are described as ``slice<double, 1>``
-where ``double`` is the scalar element type, and ``1`` is the
+where ``double`` is the scalar_view element type, and ``1`` is the
 dimensionality of the array. The default dimension corresponds to ``1``,
 so ``slice<double>`` is equivalent with ``slice<double, 1>``.
 
@@ -559,7 +559,11 @@ access will indeed allocate ``lX`` at the appropriate location, but it
 will not try to load a valid copy of it prior to executing the task.
 
 Using other access modes such as ``read()``, ``relaxed()`` or ``rw()``
-that attempt to provide a valid instance will result in an error.
+that attempt to provide a valid instance will result in an error.  The
+``reduce()`` access mode can be used only if the reduction is not accumulating
+its result with an existing value, so we can for example use
+``reduce(reducer::sum<double>{})`` but not ``reduce(reducer::sum<double>{}, no_init{})``
+on a logical data which has valid data instance.
 
 Similarly, it is possible to define a logical data from a slice shapes
 with multiple dimensions.
@@ -577,8 +581,8 @@ an optional argument that specifies the execution location of the task.
 If none is provided, the current CUDA device will be used, which is
 equivalent to passing ``exec_place::current_device()``. Data accesses
 are specified using a list of data dependencies. Each dependency is
-described by calling the ``read()``, ``rw()``, or ``write()`` method of
-the logical data object.
+described by calling the ``read()``, ``rw()``, ``write()`` or ``reduce()``
+method of the logical data object.
 
 In the example below, ``X`` is accessed in read-only mode and ``Y``
 needs to be updated so it uses a read-write access mode.
@@ -775,6 +779,18 @@ an asynchronous fence mechanism is available :
     cudaStream_t stream = ctx.task_fence();
     cudaStreamSynchronize(stream);
 
+Another synchronization mechanism is the ``wait`` method of the
+context object. It is typically used in combination with the ``reduce()``
+access mode for dynamic control flow. ``auto val = ctx.wait(ld)`` is a
+blocking call that returns the content of the ``ld`` logical data. The type of
+the returned value is defined by the ``owning_container_of<interface>`` trait
+class where ``interface`` is the data interface of the logical data. The
+``wait`` method therefore cannot be called on a logical data with an
+interface that does not overload this trait class.
+
+This mechanism is illustrated in the dot product example of the
+:ref:`reduce_access_mode` section.
+
 Places
 ------
 
@@ -963,12 +979,12 @@ Creating grids of places
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 Grid of execution places are described with the ``exec_place_grid``
-class. This class is templated by two parameters : a scalar execution
+class. This class is templated by two parameters : a scalar_view execution
 place type which represents the type of each individual element, and a
 partitioning class which defines how data and indexes are spread across
 the different places of the grid.
 
-The scalar execution place can be for example be ``exec_place_device``
+The scalar_view execution place can be for example be ``exec_place_device``
 if all entries are devices, or it can be the base ``exec_place`` class
 if the type of the places is not homogeneous in the grid, or if the type
 is not known statically, for example.
@@ -1096,7 +1112,7 @@ There are currently two policies readily available in CUDASTF : -
 *tiled* layout. For multi-dimensional shapes, the outermost dimension is
 dispatched into contiguous tiles of size ``TILE_SIZE``. -
 ``blocked_partition`` dispatches entries of the shape using a *blocked*
-layout, where each entry of the grid of places receive approximatively
+layout, where each entry of the grid of places receive approximately
 the same contiguous portion of the shape, dispatched along the outermost
 dimension.
 
@@ -1312,6 +1328,116 @@ and member function ``index_to_coords`` as follows:
 
 The dimensionality of this ``coord_t`` tuple type determines the number
 of arguments passed to the lambda function in ``parallel_for``.
+
+.. _reduce_access_mode:
+
+Reduce access mode
+^^^^^^^^^^^^^^^^^^
+
+The `parallel_for` construct supports the ``reduce()`` access mode. This mode
+implements reductions within the compute kernel generated by the `parallel_for`
+construct.
+
+``reduce()`` accepts different arguments which define its behavior:
+- The first argument must be the reduction operator which defines how multiple values are combined, and how to initialize a value (for example a sum   reduction will add two values, and initialize values to 0).
+- An optional ``no_init{}`` value indicate that the result of the reduction should be accumulated to the existing value stored in the logical data, similarly to a ``rw()`` access mode. By default, if this value is not passed to ``reduce()``, the content of the logical data would be overwritten as with a ``write()`` access mode. Using ``no_init{}`` with a logical data which has no valid instance is an error (for example when the logical data is just defined from its shape and that no previous write access was made).
+- Other arguments are the same passed to other access modes such as the data place.
+
+We can only apply the ``reduce()`` access mode on logical data which data
+interface have defined the ``owning_container_of`` trait class. This is the
+case of the ``scalar_view<T>`` data interface, which sets ``owning_container_of`` to
+be ``T``. The argument passed to the ``parallel_for`` construct is a reference
+to object of this type. The following piece of code for example computes the
+dot product of two vectors of double elements (``slice<double>``) using a
+reduction, and a ``scalar_view<double>``. Reductions are typically used in
+combination with the ``wait`` mechanism which synchronously returns
+the content of the logical data in a variable.
+
+.. code-block:: cpp
+  :caption: dot product using a reduction operation
+
+  auto lsum = ctx.logical_data(shape_of<scalar_view<double>>());
+
+  /* Compute sum(x_i * y_i)*/
+  ctx.parallel_for(lY.shape(), lX.read(), lY.read(), lsum.reduce(reducer::sum<double>{}))
+      ->*[] __device__(size_t i, auto dX, auto dY, double& sum) {
+            sum += dX(i) * dY(i);
+          };
+
+  double res = ctx.wait(lsum);
+
+Note that if we had put a ``no_init{}`` argument after
+``reducer::sum<double>{}`` we would have an error because ``lsum`` was not
+initialized.
+
+Multiple reductions can be used with different operators in the same
+`parallel_for` construct.
+
+.. list-table:: Predefined Reduction Operators and Neutral Elements
+   :header-rows: 1
+
+   * - Operator Name
+     - Purpose
+     - Neutral Element
+   * - ``sum``
+     - Computes the summation of elements.
+     - ``0``
+   * - ``product``
+     - Computes the product of elements.
+     - ``1``
+   * - ``maxval``
+     - Finds the maximum value.
+     - Smallest representable value (e.g., ``-inf`` for floats).
+   * - ``minval``
+     - Finds the minimum value.
+     - Largest representable value (e.g., ``+inf`` for floats).
+   * - ``logical_and``
+     - Performs logical AND reduction.
+     - ``true``
+   * - ``logical_or``
+     - Performs logical OR reduction.
+     - ``false``
+   * - ``bitwise_and``
+     - Performs bitwise AND reduction.
+     - All bits set (e.g., ``~0`` or ``-1`` for integers).
+   * - ``bitwise_or``
+     - Performs bitwise OR reduction.
+     - ``0``
+   * - ``bitwise_xor``
+     - Performs bitwise XOR reduction.
+     - ``0``
+
+A set of predefined reduction operators are defined, but users may easily
+define their own operators. These operators are defined in the
+``cuda::experimental::stf::reducer`` namespace. The following piece of code
+for example illustrates how to implement the ``sum`` reduction operator.
+
+.. code-block:: cpp
+   :caption: Defining the sum reduction operator
+
+   template <typename T>
+   class sum
+   {
+   public:
+     static __host__ __device__ void init_op(T& dst)
+     {
+       dst = static_cast<T>(0);
+     }
+
+     static __host__ __device__ void apply_op(T& dst, const T& src)
+     {
+       dst += src;
+     }
+   };
+
+Every reduction operator should therefore define both the ``ìnit_op`` method
+that sets the neutral element, and the ``apply_op`` method which combines two
+elements. Appropriate ``__host__`` and/or ``__device__`` annotations are
+required depending where the operation may occur. The type of the arguments are
+references to ``owning_container_of<interface>::type`` where ``interface`` is
+the data interface type of the logical data.
+
+
 
 .. _launch_construct:
 

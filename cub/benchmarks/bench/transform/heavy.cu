@@ -4,24 +4,7 @@
 // %RANGE% TUNE_THREADS tpb 128:1024:128
 // %RANGE% TUNE_ALGORITHM alg 0:1:1
 
-// keep checks at the top so compilation of discarded variants fails really fast
-#if !TUNE_BASE
-#  if TUNE_ALGORITHM == 1 && (__CUDA_ARCH_LIST__) < 900
-#    error "Cannot compile algorithm 4 (ublkcp) below sm90"
-#  endif
-
-#  if TUNE_ALGORITHM == 1 && !defined(_CUB_HAS_TRANSFORM_UBLKCP)
-#    error "Cannot tune for ublkcp algorithm, which is not provided by CUB (old CTK?)"
-#  endif
-#endif
-
 #include "common.h"
-
-#if !TUNE_BASE
-#  if CUB_DETAIL_COUNT(__CUDA_ARCH_LIST__) != 1
-#    error "This benchmark does not support being compiled for multiple architectures"
-#  endif
-#endif
 
 // This benchmark uses a LOT of registers and is compute intensive.
 
@@ -70,10 +53,18 @@ static void heavy(nvbench::state& state, nvbench::type_list<Heaviness>)
   bench_transform(state, ::cuda::std::tuple{in.begin()}, out.begin(), n, heavy_functor<Heaviness::value>{});
 }
 
-template <int I>
-using ic = ::cuda::std::integral_constant<int, I>;
+using ::cuda::std::integral_constant;
+#ifdef TUNE_Heaviness
+using heaviness = nvbench::type_list<TUNE_Heaviness>; // expands to "integral_constant<int, ...>"
+#else
+using heaviness =
+  nvbench::type_list<integral_constant<int, 32>,
+                     integral_constant<int, 64>,
+                     integral_constant<int, 128>,
+                     integral_constant<int, 256>>;
+#endif
 
-NVBENCH_BENCH_TYPES(heavy, NVBENCH_TYPE_AXES(nvbench::type_list<ic<32>, ic<64>, ic<128>, ic<256>>))
+NVBENCH_BENCH_TYPES(heavy, NVBENCH_TYPE_AXES(heaviness))
   .set_name("heavy")
   .set_type_axes_names({"Heaviness{ct}"})
   .add_int64_power_of_two_axis("Elements{io}", nvbench::range(16, 28, 4));

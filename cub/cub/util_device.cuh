@@ -135,7 +135,7 @@ CUB_RUNTIME_FUNCTION inline int DeviceCountUncached()
  * deprecated [Since 2.6.0]
  */
 template <typename T, T (*Function)()>
-struct CUB_DEPRECATED ValueCache
+struct CCCL_DEPRECATED ValueCache
 {
   T const value;
 
@@ -635,7 +635,10 @@ CUB_RUNTIME_FUNCTION PolicyWrapper<PolicyT> MakePolicyWrapper(PolicyT policy)
   return PolicyWrapper<PolicyT>{policy};
 }
 
+namespace detail
+{
 struct TripleChevronFactory;
+}
 
 /**
  * Kernel dispatch configuration
@@ -654,7 +657,7 @@ struct KernelConfig
       , sm_occupancy(0)
   {}
 
-  template <typename AgentPolicyT, typename KernelPtrT, typename LauncherFactory = TripleChevronFactory>
+  template <typename AgentPolicyT, typename KernelPtrT, typename LauncherFactory = detail::TripleChevronFactory>
   CUB_RUNTIME_FUNCTION _CCCL_VISIBILITY_HIDDEN _CCCL_FORCEINLINE cudaError_t
   Init(KernelPtrT kernel_ptr, AgentPolicyT agent_policy = {}, LauncherFactory launcher_factory = {})
   {
@@ -678,7 +681,11 @@ struct ChainedPolicy
   {
     // __CUDA_ARCH_LIST__ is only available from CTK 11.5 onwards
 #ifdef __CUDA_ARCH_LIST__
-    return runtime_to_compiletime<__CUDA_ARCH_LIST__>(device_ptx_version, op);
+    return runtime_to_compiletime<1, __CUDA_ARCH_LIST__>(device_ptx_version, op);
+    // NV_TARGET_SM_INTEGER_LIST is defined by NVHPC. The values need to be multiplied by 10 to match
+    // __CUDA_ARCH_LIST__. E.g. arch 860 from __CUDA_ARCH_LIST__ corresponds to arch 86 from NV_TARGET_SM_INTEGER_LIST.
+#elif defined(NV_TARGET_SM_INTEGER_LIST)
+    return runtime_to_compiletime<10, NV_TARGET_SM_INTEGER_LIST>(device_ptx_version, op);
 #else
     if (device_ptx_version < PolicyPtxVersion)
     {
@@ -692,18 +699,19 @@ private:
   template <int, typename, typename>
   friend struct ChainedPolicy; // let us call invoke_static of other ChainedPolicy instantiations
 
-  template <int... CudaArches, typename FunctorT>
+  template <int ArchMult, int... CudaArches, typename FunctorT>
   CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t runtime_to_compiletime(int device_ptx_version, FunctorT& op)
   {
     // We instantiate invoke_static for each CudaArches, but only call the one matching device_ptx_version.
-    // If there's no exact match of any of the architectures in __CUDA_ARCH_LIST__ and the runtime
+    // If there's no exact match of the architectures in __CUDA_ARCH_LIST__/NV_TARGET_SM_INTEGER_LIST and the runtime
     // queried ptx version (i.e., the closest ptx version to the current device's architecture that the EmptyKernel was
     // compiled for), we return cudaErrorInvalidDeviceFunction. Such a scenario may arise if CUB_DISABLE_NAMESPACE_MAGIC
     // is set and different TUs are compiled for different sets of architecture.
     cudaError_t e             = cudaErrorInvalidDeviceFunction;
     const cudaError_t dummy[] = {
-      (device_ptx_version == CudaArches ? (e = invoke_static<CudaArches>(op, ::cuda::std::true_type{}))
-                                        : cudaSuccess)...};
+      (device_ptx_version == (CudaArches * ArchMult)
+         ? (e = invoke_static<(CudaArches * ArchMult)>(op, ::cuda::std::true_type{}))
+         : cudaSuccess)...};
     (void) dummy;
     return e;
   }
@@ -779,4 +787,4 @@ private:
 
 CUB_NAMESPACE_END
 
-#include <cub/launcher/cuda_runtime.cuh> // to complete the definition of TripleChevronFactory
+#include <cub/detail/launcher/cuda_runtime.cuh> // to complete the definition of TripleChevronFactory

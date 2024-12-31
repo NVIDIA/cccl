@@ -21,6 +21,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/add_lvalue_reference.h>
 #include <cuda/std/__type_traits/conditional.h>
 #include <cuda/std/__type_traits/copy_cvref.h>
@@ -473,7 +474,7 @@ template <class _Ret, bool = is_void<_Ret>::value>
 struct __invoke_void_return_wrapper
 {
   template <class... _Args>
-  _LIBCUDACXX_HIDE_FROM_ABI static _Ret __call(_Args&&... __args)
+  _LIBCUDACXX_HIDE_FROM_ABI static constexpr _Ret __call(_Args&&... __args)
   {
     return _CUDA_VSTD::__invoke(_CUDA_VSTD::forward<_Args>(__args)...);
   }
@@ -483,7 +484,7 @@ template <class _Ret>
 struct __invoke_void_return_wrapper<_Ret, true>
 {
   template <class... _Args>
-  _LIBCUDACXX_HIDE_FROM_ABI static void __call(_Args&&... __args)
+  _LIBCUDACXX_HIDE_FROM_ABI static _CCCL_CONSTEXPR_CXX14 void __call(_Args&&... __args)
   {
     _CUDA_VSTD::__invoke(_CUDA_VSTD::forward<_Args>(__args)...);
   }
@@ -501,11 +502,13 @@ template <class _Ret, class _Fn, class... _Args>
 struct _CCCL_TYPE_VISIBILITY_DEFAULT is_invocable_r : integral_constant<bool, __invokable_r<_Ret, _Fn, _Args...>::value>
 {};
 
+#  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Fn, class... _Args>
 _CCCL_INLINE_VAR constexpr bool is_invocable_v = is_invocable<_Fn, _Args...>::value;
 
 template <class _Ret, class _Fn, class... _Args>
 _CCCL_INLINE_VAR constexpr bool is_invocable_r_v = is_invocable_r<_Ret, _Fn, _Args...>::value;
+#  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 // is_nothrow_invocable
 
@@ -534,9 +537,18 @@ using invoke_result_t = typename invoke_result<_Fn, _Args...>::type;
 
 template <class _Fn, class... _Args>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr invoke_result_t<_Fn, _Args...>
-invoke(_Fn&& __f, _Args&&... __args) noexcept(is_nothrow_invocable_v<_Fn, _Args...>)
+invoke(_Fn&& __f, _Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_invocable, _Fn, _Args...))
 {
   return _CUDA_VSTD::__invoke(_CUDA_VSTD::forward<_Fn>(__f), _CUDA_VSTD::forward<_Args>(__args)...);
+}
+
+_CCCL_TEMPLATE(class _Ret, class _Fn, class... _Args)
+_CCCL_REQUIRES(_CCCL_TRAIT(is_invocable_r, _Ret, _Fn, _Args...))
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _Ret
+invoke_r(_Fn&& __f, _Args&&... __args) noexcept(_CCCL_TRAIT(is_nothrow_invocable_r, _Ret, _Fn, _Args...))
+{
+  return __invoke_void_return_wrapper<_Ret>::__call(
+    _CUDA_VSTD::forward<_Fn>(__f), _CUDA_VSTD::forward<_Args>(__args)...);
 }
 
 #endif // _CCCL_STD_VER > 2011

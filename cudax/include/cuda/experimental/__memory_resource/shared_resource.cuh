@@ -64,7 +64,7 @@ struct shared_resource
 {
   static_assert(_CUDA_VMR::resource<_Resource>, "");
 
-  //! @brief Constructs a \c shared_resource refering to an object of type \c _Resource
+  //! @brief Constructs a \c shared_resource referring to an object of type \c _Resource
   //! that has been constructed with arguments \c __args. The \c _Resource object is
   //! dynamically allocated with \c new.
   //! @param __args The arguments to be passed to the \c _Resource constructor.
@@ -121,7 +121,7 @@ struct shared_resource
   //! held by this \c shared_resource object is released, while the reference held by \c __other
   //! is transferred to this object.
   //! @param __other The \c shared_resource object to move from.
-  /// @post \c __other is left in a valid but unspecified state.
+  //! @post \c __other is left in a valid but unspecified state.
   shared_resource& operator=(shared_resource&& __other) noexcept
   {
     if (this != &__other)

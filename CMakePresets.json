@@ -23,6 +23,7 @@
         "CCCL_ENABLE_EXAMPLES": false,
         "CCCL_ENABLE_C": false,
         "CCCL_SUPPRESS_ICC_DEPRECATION_WARNING": true,
+        "CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING": true,
         "libcudacxx_ENABLE_INSTALL_RULES": true,
         "CUB_ENABLE_INSTALL_RULES": true,
         "Thrust_ENABLE_INSTALL_RULES": true,
@@ -64,18 +65,17 @@
         "CCCL_ENABLE_EXAMPLES": true,
         "CCCL_ENABLE_BENCHMARKS": true,
         "CCCL_ENABLE_C": true,
+        "CCCL_IGNORE_DEPRECATED_CPP_DIALECT": true,
         "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": true,
         "CUB_ENABLE_TESTING": true,
         "CUB_ENABLE_EXAMPLES": true,
         "CUB_SEPARATE_CATCH2": true,
-        "CUB_IGNORE_DEPRECATED_CPP_DIALECT": true,
         "CUB_ENABLE_DIALECT_CPP11": true,
         "CUB_ENABLE_DIALECT_CPP14": true,
         "CUB_ENABLE_DIALECT_CPP17": true,
         "CUB_ENABLE_DIALECT_CPP20": true,
         "THRUST_ENABLE_MULTICONFIG": true,
         "THRUST_MULTICONFIG_WORKLOAD": "LARGE",
-        "THRUST_IGNORE_DEPRECATED_CPP_DIALECT": true,
         "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP11": true,
         "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP14": true,
         "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP17": true,
@@ -116,6 +116,7 @@
       "inherits": "base",
       "cacheVariables": {
         "CCCL_ENABLE_LIBCUDACXX": true,
+        "CCCL_IGNORE_DEPRECATED_CPP_DIALECT": true,
         "LIBCUDACXX_ENABLE_LIBCUDACXX_TESTS": false,
         "libcudacxx_ENABLE_CODEGEN": true,
         "LIBCUDACXX_ENABLE_CUDA": false
@@ -137,7 +138,8 @@
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "11",
         "CMAKE_CUDA_STANDARD": "11",
-        "LIBCUDACXX_TEST_STANDARD_VER": "c++11"
+        "LIBCUDACXX_TEST_STANDARD_VER": "c++11",
+        "CCCL_IGNORE_DEPRECATED_CPP_11": true
       }
     },
     {
@@ -147,7 +149,8 @@
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "14",
         "CMAKE_CUDA_STANDARD": "14",
-        "LIBCUDACXX_TEST_STANDARD_VER": "c++14"
+        "LIBCUDACXX_TEST_STANDARD_VER": "c++14",
+        "CCCL_IGNORE_DEPRECATED_CPP_14": true
       }
     },
     {
@@ -186,7 +189,8 @@
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "11",
         "CMAKE_CUDA_STANDARD": "11",
-        "LIBCUDACXX_TEST_STANDARD_VER": "c++11"
+        "LIBCUDACXX_TEST_STANDARD_VER": "c++11",
+        "CCCL_IGNORE_DEPRECATED_CPP_11": true
       }
     },
     {
@@ -196,7 +200,8 @@
       "cacheVariables": {
         "CMAKE_CXX_STANDARD": "14",
         "CMAKE_CUDA_STANDARD": "14",
-        "LIBCUDACXX_TEST_STANDARD_VER": "c++14"
+        "LIBCUDACXX_TEST_STANDARD_VER": "c++14",
+        "CCCL_IGNORE_DEPRECATED_CPP_14": true
       }
     },
     {
@@ -239,7 +244,7 @@
       "displayName": "CUB: C++11",
       "inherits": "cub-base",
       "cacheVariables": {
-        "CUB_IGNORE_DEPRECATED_CPP_DIALECT": true,
+        "CCCL_IGNORE_DEPRECATED_CPP_DIALECT": true,
         "CUB_ENABLE_DIALECT_CPP11": true
       }
     },
@@ -248,7 +253,7 @@
       "displayName": "CUB: C++14",
       "inherits": "cub-base",
       "cacheVariables": {
-        "CUB_IGNORE_DEPRECATED_CPP_DIALECT": true,
+        "CCCL_IGNORE_DEPRECATED_CPP_DIALECT": true,
         "CUB_ENABLE_DIALECT_CPP14": true
       }
     },
@@ -290,7 +295,7 @@
       "displayName": "Thrust: C++11",
       "inherits": "thrust-base",
       "cacheVariables": {
-        "THRUST_IGNORE_DEPRECATED_CPP_DIALECT": true,
+        "CCCL_IGNORE_DEPRECATED_CPP_DIALECT": true,
         "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP11": true
       }
     },
@@ -299,7 +304,7 @@
       "displayName": "Thrust: C++14",
       "inherits": "thrust-base",
       "cacheVariables": {
-        "THRUST_IGNORE_DEPRECATED_CPP_DIALECT": true,
+        "CCCL_IGNORE_DEPRECATED_CPP_DIALECT": true,
         "THRUST_MULTICONFIG_ENABLE_DIALECT_CPP14": true
       }
     },

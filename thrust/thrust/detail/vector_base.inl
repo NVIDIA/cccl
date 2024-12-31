@@ -586,13 +586,6 @@ typename vector_base<T, Alloc>::iterator vector_base<T, Alloc>::erase(iterator f
 } // end vector_base::erase()
 
 template <typename T, typename Alloc>
-void vector_base<T, Alloc>::swap(vector_base& v)
-{
-  thrust::swap(m_storage, v.m_storage);
-  thrust::swap(m_size, v.m_size);
-} // end vector_base::swap()
-
-template <typename T, typename Alloc>
 void vector_base<T, Alloc>::assign(size_type n, const T& x)
 {
   fill_assign(n, x);
@@ -1006,7 +999,7 @@ void vector_base<T, Alloc>::range_assign(
   } // end if
   else if (size() >= n)
   {
-    // we can already accomodate the new range
+    // we can already accommodate the new range
     iterator new_end = thrust::copy(first, last, begin());
 
     // destroy the elements we don't need
@@ -1109,12 +1102,6 @@ void vector_base<T, Alloc>::allocate_and_copy(
     throw;
   } // end catch
 } // end vector_base::allocate_and_copy()
-
-template <typename T, typename Alloc>
-void swap(vector_base<T, Alloc>& a, vector_base<T, Alloc>& b)
-{
-  a.swap(b);
-} // end swap()
 
 // iterator tags match
 template <typename InputIterator1, typename InputIterator2>
