@@ -173,6 +173,12 @@ static constexpr op_xor_op_t op_xor_op{};
 static constexpr op_cas_t op_cas{};
 static constexpr op_exch_t op_exch{};
 
+enum class bfind_shift_amount
+{
+  disable,
+  enable
+};
+
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
 
 #endif // _CUDA_PTX_DOT_VARIANTS_H_
