@@ -30,125 +30,115 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __binary_ctz2(uint64_t __x, int __c) noexcept
+namespace __detail
 {
-  return __c + !(__x & 0x1);
-}
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __binary_ctz4(uint64_t __x, int __c) noexcept
-{
-  return __binary_ctz2(__x >> 2 * !(__x & 0x3), __c + 2 * !(__x & 0x3));
-}
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __binary_ctz8(uint64_t __x, int __c) noexcept
-{
-  return __binary_ctz4(__x >> 4 * !(__x & 0x0F), __c + 4 * !(__x & 0x0F));
-}
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __binary_ctz16(uint64_t __x, int __c) noexcept
-{
-  return __binary_ctz8(__x >> 8 * !(__x & 0x00FF), __c + 8 * !(__x & 0x00FF));
-}
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __binary_ctz32(uint64_t __x, int __c) noexcept
-{
-  return __binary_ctz16(__x >> 16 * !(__x & 0x0000FFFF), __c + 16 * !(__x & 0x0000FFFF));
-}
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __binary_ctz64(uint64_t __x) noexcept
-{
-  return __binary_ctz32(__x >> 32 * !(__x & 0x00000000FFFFFFFF), 32 * !(__x & 0x00000000FFFFFFFF));
-}
-
-#if !_CCCL_COMPILER(MSVC)
 
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_ctz(uint32_t __x) noexcept
 {
-#  if defined(__CUDA_ARCH__)
-  return __binary_ctz32(static_cast<uint64_t>(__x), 0); // no device constexpr builtins
-#  else
-  return __builtin_ctz(__x);
-#  endif
+#if defined(__CUDA_ARCH__) || _CCCL_COMPILER(MSVC)
+  // no device constexpr builtins
+  for (int __i = 0; __i < 32; ++__i)
+  {
+    if (__x & (uint32_t{1} << __i))
+    {
+      return __i;
+    }
+  }
+  return 32;
+#else
+  return ::__builtin_ctz(__x);
+#endif
 }
 
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_ctz(uint64_t __x) noexcept
 {
-#  if defined(__CUDA_ARCH__)
-  return __binary_ctz64(__x); // no device constexpr builtins
-#  else
-  return __builtin_ctzll(__x);
-#  endif
+#if defined(__CUDA_ARCH__) || _CCCL_COMPILER(MSVC)
+  // no device constexpr builtins
+  for (int __i = 0; __i < 64; ++__i)
+  {
+    if (__x & (uint64_t{1} << __i))
+    {
+      return __i;
+    }
+  }
+  return 64;
+#else
+  return ::__builtin_ctzll(__x);
+#endif
 }
+
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_ctz(uint32_t __x)
+{
+#if defined(__CUDA_ARCH__)
+  return ::__clz(__brev(__x));
+#elif _CCCL_COMPILER(MSVC) // _CCCL_COMPILER(MSVC) vvv
+  unsigned long __where = 0;
+  if (::_BitScanForward(&__where, __x))
+  {
+    return static_cast<int>(__where);
+  }
+  return 32;
+#else // _CCCL_COMPILER(MSVC) ^^^ / !_CCCL_COMPILER(MSVC) vvv
+  return ::__builtin_ctz(__x);
+#endif // _CCCL_COMPILER(MSVC)
+}
+
+#if _CCCL_COMPILER(MSVC) // _CCCL_COMPILER(MSVC) vvv
+
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_ctz_msvc(uint64_t __x)
+{
+  unsigned long __where = 0;
+#  if defined(_LIBCUDACXX_HAS_BITSCAN64) && (defined(_M_AMD64) || defined(__x86_64__))
+  if (::_BitScanForward64(&__where, __x))
+  {
+    return static_cast<int>(__where);
+  }
+#  else
+  // Win32 doesn't have _BitScanForward64 so emulate it with two 32 bit calls.
+  if (::_BitScanForward(&__where, static_cast<uint32_t>(__x)))
+  {
+    return static_cast<int>(__where);
+  }
+  if (::_BitScanForward(&__where, static_cast<uint32_t>(__x >> 32)))
+  {
+    return static_cast<int>(__where + 32);
+  }
+#  endif
+  return 64;
+}
+
+#endif // _CCCL_COMPILER(MSVC)
+
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_ctz(uint64_t __x)
+{
+#if defined(__CUDA_ARCH__)
+  return ::__clzll(__brevll(__x));
+#elif _CCCL_COMPILER(MSVC) // _CCCL_COMPILER(MSVC) vvv
+  return __runtime_ctz_msvc
+#else // _CCCL_COMPILER(MSVC) ^^^ / !_CCCL_COMPILER(MSVC) vvv
+  return ::__builtin_ctzll(__x);
+#endif // !_CCCL_COMPILER(MSVC) ^^^
+}
+
+} // namespace __detail
 
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_ctz(uint32_t __x) noexcept
 {
-#  if _CCCL_STD_VER >= 2014
   if (!__cccl_default_is_constant_evaluated())
   {
-    NV_IF_ELSE_TARGET(
-      NV_IS_DEVICE, (return (!__x) ? (sizeof(uint32_t) * 8) : (__ffs(__x) - 1);), (return __builtin_ctz(__x);))
+    return _CUDA_VSTD::__detail::__runtime_ctz(__x);
   }
-#  endif
-  return __constexpr_ctz(__x);
+  return _CUDA_VSTD::__detail::__constexpr_ctz(__x);
 }
 
 _LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_ctz(uint64_t __x) noexcept
 {
-#  if _CCCL_STD_VER >= 2014
   if (!__cccl_default_is_constant_evaluated())
   {
-    NV_IF_ELSE_TARGET(
-      NV_IS_DEVICE, (return (!__x) ? (sizeof(uint64_t) * 8) : (__ffsll(__x) - 1);), (return __builtin_ctzll(__x);))
+    return _CUDA_VSTD::__detail::__runtime_ctz(__x);
   }
-#  endif
-  return __constexpr_ctz(__x);
+  return _CUDA_VSTD::__detail::__constexpr_ctz(__x);
 }
-
-#else // _CCCL_COMPILER(MSVC)
-
-// Precondition:  __x != 0
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_ctz(uint32_t __x)
-{
-#  if !defined(__CUDA_ARCH__)
-  if (!__cccl_default_is_constant_evaluated())
-  {
-    unsigned long __where = 0;
-    if (_BitScanForward(&__where, __x))
-    {
-      return static_cast<int>(__where);
-    }
-    return 32;
-  }
-#  endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED && !defined(__CUDA_ARCH__)
-
-  return __binary_ctz32(static_cast<uint64_t>(__x), 0);
-}
-
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __cccl_ctz(uint64_t __x)
-{
-#  if !defined(__CUDA_ARCH__)
-  if (!__cccl_default_is_constant_evaluated())
-  {
-    unsigned long __where = 0;
-#    if defined(_LIBCUDACXX_HAS_BITSCAN64) && (defined(_M_AMD64) || defined(__x86_64__))
-    if (_BitScanForward64(&__where, __x))
-    {
-      return static_cast<int>(__where);
-    }
-#    else
-    // Win32 doesn't have _BitScanForward64 so emulate it with two 32 bit calls.
-    if (_BitScanForward(&__where, static_cast<uint32_t>(__x)))
-    {
-      return static_cast<int>(__where);
-    }
-    if (_BitScanForward(&__where, static_cast<uint32_t>(__x >> 32)))
-    {
-      return static_cast<int>(__where + 32);
-    }
-#    endif
-    return 64;
-  }
-#  endif // _CCCL_BUILTIN_IS_CONSTANT_EVALUATED && !defined(__CUDA_ARCH__)
-
-  return __binary_ctz64(__x);
-}
-
-#endif
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
