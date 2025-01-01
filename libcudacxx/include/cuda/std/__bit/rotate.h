@@ -29,41 +29,59 @@ _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
 namespace __detail
 {
-template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotl(_Tp __t, unsigned int __cnt) noexcept
-{
-  static_assert(__cccl_is_unsigned_integer<_Tp>::value, "__rotl requires unsigned");
-  using __nlt = numeric_limits<_Tp>;
 
-  return ((__cnt % __nlt::digits) == 0)
-         ? __t
-         : (__t << (__cnt % __nlt::digits)) | (__t >> (__nlt::digits - (__cnt % __nlt::digits)));
+template <class _Tp>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotl_impl(_Tp __t, unsigned __cnt_mod) noexcept
+{
+  return (__t << __cnt_mod) | (__t >> (numeric_limits<_Tp>::digits - __cnt_mod));
 }
 
 template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotr(_Tp __t, unsigned int __cnt) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotr_impl(_Tp __t, unsigned __cnt_mod) noexcept
+{
+  return (__t >> __cnt_mod) | (__t << (numeric_limits<_Tp>::digits - __cnt_mod));
+}
+
+template <class _Tp>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotl(_Tp __t, unsigned __cnt) noexcept
+{
+  static_assert(__cccl_is_unsigned_integer<_Tp>::value, "__rotl requires unsigned");
+  using __nlt = numeric_limits<_Tp>;
+  if (!__cccl_default_is_constant_evaluated() && sizeof(_Tp) <= sizeof(uint32_t))
+  {
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                      (return ::__funnelshift_l(__t, __t, __cnt);), //
+                      (return _CUDA_VSTD::__detail::__rotl_impl(__t, __cnt % __nlt::digits);))
+  }
+  return _CUDA_VSTD::__detail::__rotl_impl(__t, __cnt % __nlt::digits);
+}
+
+template <class _Tp>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp __rotr(_Tp __t, unsigned __cnt) noexcept
 {
   static_assert(__cccl_is_unsigned_integer<_Tp>::value, "__rotr requires unsigned");
   using __nlt = numeric_limits<_Tp>;
-
-  return ((__cnt % __nlt::digits) == 0)
-         ? __t
-         : (__t >> (__cnt % __nlt::digits)) | (__t << (__nlt::digits - (__cnt % __nlt::digits)));
+  if (!__cccl_default_is_constant_evaluated() && sizeof(_Tp) <= sizeof(uint32_t))
+  {
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                      (return ::__funnelshift_r(__t, __t, __cnt);), //
+                      (return _CUDA_VSTD::__detail::__rotr_impl(__t, __cnt % __nlt::digits);))
+  }
+  return _CUDA_VSTD::__detail::__rotr_impl(__t, __cnt % __nlt::digits);
 }
 
 } // namespace __detail
 
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer<_Tp>::value, _Tp>
-rotl(_Tp __t, unsigned int __cnt) noexcept
+rotl(_Tp __t, unsigned __cnt) noexcept
 {
   return _CUDA_VSTD::__detail::__rotl(__t, __cnt);
 }
 
-// rotr
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer<_Tp>::value, _Tp>
-rotr(_Tp __t, unsigned int __cnt) noexcept
+rotr(_Tp __t, unsigned __cnt) noexcept
 {
   return _CUDA_VSTD::__detail::__rotr(__t, __cnt);
 }
