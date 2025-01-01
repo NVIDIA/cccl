@@ -2,18 +2,17 @@ import ctypes
 import operator
 import uuid
 from functools import lru_cache
-from typing import Dict, Callable
+from typing import Callable, Dict
 
+import numba
+import numpy as np
 from llvmlite import ir
+from numba import cuda, types
 from numba.core.extending import intrinsic, overload
 from numba.core.typing.ctypes_utils import to_ctypes
 from numba.cuda.dispatcher import CUDADispatcher
-from numba import cuda, types
-import numba
-import numpy as np
 
 from .._caching import CachableFunction
-
 
 _DEVICE_POINTER_SIZE = 8
 _DEVICE_POINTER_BITWIDTH = _DEVICE_POINTER_SIZE * 8

@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 
+import argparse
+import functools
+import itertools
+import json
+import math
 import os
 import re
-import json
+
 import cccl
-import math
-import argparse
-import itertools
-import functools
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from scipy.stats import mannwhitneyu
 from scipy.stats.mstats import hdquantiles
 
@@ -330,8 +331,8 @@ def coverage(args):
 def parallel_coordinates_plot(df, title):
     # Parallel coordinates plot adaptation of https://stackoverflow.com/a/69411450
     import matplotlib.cm as cm
-    from matplotlib.path import Path
     import matplotlib.patches as patches
+    from matplotlib.path import Path
 
     # Variables (the first variable must be categoric):
     my_vars = df.columns.tolist()

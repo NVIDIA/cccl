@@ -4,6 +4,7 @@
 
 import numba
 
+from cuda.cooperative.experimental._common import make_binary_tempfile
 from cuda.cooperative.experimental._types import (
     Algorithm,
     Constant,
@@ -15,7 +16,6 @@ from cuda.cooperative.experimental._types import (
     TemplateParameter,
     numba_type_to_wrapper,
 )
-from cuda.cooperative.experimental._common import make_binary_tempfile
 
 
 def merge_sort_keys(

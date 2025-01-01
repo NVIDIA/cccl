@@ -4,6 +4,7 @@
 
 import numba
 
+from cuda.cooperative.experimental._common import make_binary_tempfile
 from cuda.cooperative.experimental._types import (
     Algorithm,
     Dependency,
@@ -13,7 +14,6 @@ from cuda.cooperative.experimental._types import (
     TemplateParameter,
     Value,
 )
-from cuda.cooperative.experimental._common import make_binary_tempfile
 
 
 def radix_sort_keys(dtype, threads_in_block, items_per_thread):
