@@ -11,6 +11,7 @@
 #ifndef _CUDA___CMATH_CEIL_DIV_H
 #define _CUDA___CMATH_CEIL_DIV_H
 
+d
 #include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -21,8 +22,9 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/std/__type_traits/common_type.h>
+#include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_enum.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_signed.h>
@@ -30,23 +32,14 @@
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/underlying_type.h>
 
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+  _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-//! @brief Divides two numbers \p __a and \p __b, rounding up if there is a remainder
-//! @param __a The dividend
-//! @param __b The divisor
-//! @pre \p __a must be non-negative
-//! @pre \p __b must be positive
-template <class _Tp,
-          class _Up,
-          _CUDA_VSTD::enable_if_t<_CCCL_TRAIT(_CUDA_VSTD::is_unsigned, _Tp), int> = 0,
-          _CUDA_VSTD::enable_if_t<_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Up), int> = 0>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp ceil_div(const _Tp __a, const _Up __b) noexcept
+  template <class _UCommon>
+  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _UCommon
+  __constexpr_unsigned_ceil_div(const _UCommon __a, const _UCommon __b) noexcept
 {
-  _CCCL_ASSERT(__b > _Up(0), "cuda::ceil_div: b must be positive");
-  using _UCommon   = _CUDA_VSTD::make_unsigned_t<_CUDA_VSTD::common_type_t<_Tp, _Up>>;
-  const auto __res = static_cast<_UCommon>(__a) / static_cast<_UCommon>(__b);
-  return static_cast<_Tp>(__res + (__res * static_cast<_UCommon>(__b) != static_cast<_UCommon>(__a)));
+  const auto __res = __a / __b;
+  return __res + (__res * __b != __a);
 }
 
 //! @brief Divides two numbers \p __a and \p __b, rounding up if there is a remainder
@@ -56,15 +49,37 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp ceil_div(con
 //! @pre \p __b must be positive
 template <class _Tp,
           class _Up,
-          _CUDA_VSTD::enable_if_t<_CCCL_TRAIT(_CUDA_VSTD::is_signed, _Tp), int>   = 0,
+          _CUDA_VSTD::enable_if_t<_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Tp), int> = 0,
           _CUDA_VSTD::enable_if_t<_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Up), int> = 0>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp ceil_div(const _Tp __a, const _Up __b) noexcept
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 decltype(_Tp{} / _Up{})
+ceil_div(const _Tp __a, const _Up __b) noexcept
 {
-  _CCCL_ASSERT(__a >= _Tp(0), "cuda::ceil_div: a must be non negative");
-  _CCCL_ASSERT(__b > _Up(0), "cuda::ceil_div: b must be positive");
-  using _UCommon = _CUDA_VSTD::make_unsigned_t<_CUDA_VSTD::common_type_t<_Tp, _Up>>;
-  // Due to the precondition `__a >= 0` we can safely cast to unsigned without danger of overflowing
-  return static_cast<_Tp>((static_cast<_UCommon>(__a) + static_cast<_UCommon>(__b) - 1) / static_cast<_UCommon>(__b));
+  _CCCL_ASSERT(__b > _Up{0}, "cuda::ceil_div: b must be positive");
+  using _Common  = decltype(_Tp{} / _Up{});
+  using _UCommon = _CUDA_VSTD::make_unsigned_t<_Common>;
+  if constexpr (std::is_signed_v<_Tp>)
+  {
+    _CCCL_ASSERT(__a >= _Tp{0}, "cuda::ceil_div: a must be non negative");
+  }
+  auto __a1 = static_cast<_UCommon>(__a);
+  auto __b1 = static_cast<_UCommon>(__b);
+  if constexpr (std::is_signed_v<_Common>)
+  {
+    return static_cast<_Common>((__a1 + __b1 - 1) / __b1);
+  }
+  else
+  {
+    if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
+    {
+      NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                        (return static_cast<_Common>(_CUDA_VSTD::min(__a1, 1 + ((__a1 - 1) / __b1)));),
+                        (return __constexpr_unsigned_ceil_div(__a1, __b1);))
+    }
+    else
+    {
+      return __constexpr_unsigned_ceil_div(__a1, __b1);
+    }
+  }
 }
 
 //! @brief Divides two numbers \p __a and \p __b, rounding up if there is a remainder, \p __b is an enum
