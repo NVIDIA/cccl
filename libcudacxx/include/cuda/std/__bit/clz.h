@@ -57,7 +57,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_clz(uint64_t __x) noexcept
   return 64;
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_clz(uint32_t __x)
+_LIBCUDACXX_HIDE_FROM_ABI int __runtime_clz(uint32_t __x)
 {
 #if defined(__CUDA_ARCH__)
   return ::__clz(__x);
@@ -75,7 +75,7 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_clz(uint32_t __x)
 
 #if _CCCL_COMPILER(MSVC) // _CCCL_COMPILER(MSVC) vvv
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_clz_msvc(uint64_t __x)
+_LIBCUDACXX_HIDE_FROM_ABI int __runtime_clz_msvc(uint64_t __x)
 {
   unsigned long __where = 0;
 #  if defined(_LIBCUDACXX_HAS_BITSCAN64)

@@ -62,27 +62,27 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr int __constexpr_popc(uint64_t __x) noexcept
 #endif
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_popc(uint32_t __x)
+_LIBCUDACXX_HIDE_FROM_ABI int __runtime_popc(uint32_t __x)
 {
 #if defined(__CUDA_ARCH__)
   return ::__popc(__x);
 #elif _CCCL_COMPILER(MSVC) && !defined(_M_ARM64) // _CCCL_COMPILER(MSVC) + X86 vvv
-  return static_cast<int>(::__popcnt(x));
+  return static_cast<int>(::__popcnt(__x));
 #elif _CCCL_COMPILER(MSVC) && defined(_M_ARM64) // _CCCL_COMPILER(MSVC) + X86 vvv
-  return static_cast<int>(::_CountOneBits(x));
+  return static_cast<int>(::_CountOneBits(__x));
 #else // _CCCL_COMPILER(MSVC) ^^^ / !_CCCL_COMPILER(MSVC) vvv
   return ::__builtin_popcount(__x);
 #endif // !_CCCL_COMPILER(MSVC) ^^^
 }
 
-_LIBCUDACXX_HIDE_FROM_ABI constexpr int __runtime_popc(uint64_t __x)
+_LIBCUDACXX_HIDE_FROM_ABI int __runtime_popc(uint64_t __x)
 {
 #if defined(__CUDA_ARCH__)
   return ::__popcll(__x);
 #elif _CCCL_COMPILER(MSVC) && !defined(_M_ARM64) // _CCCL_COMPILER(MSVC) + X86 vvv
-  return static_cast<int>(::__popcnt64(x));
+  return static_cast<int>(::__popcnt64(__x));
 #elif _CCCL_COMPILER(MSVC) && defined(_M_ARM64) // _CCCL_COMPILER(MSVC) + X86 vvv
-  return static_cast<int>(::_CountOneBits64(x));
+  return static_cast<int>(::_CountOneBits64(__x));
 #else // _CCCL_COMPILER(MSVC) ^^^ / !_CCCL_COMPILER(MSVC) vvv
   return ::__builtin_popcountll(__x);
 #endif // !_CCCL_COMPILER(MSVC) ^^^
