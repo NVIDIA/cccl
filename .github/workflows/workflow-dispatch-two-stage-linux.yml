@@ -37,12 +37,13 @@ jobs:
       - name: Run job
         uses: ./.github/actions/workflow-run-job-linux
         with:
-          id:      ${{ fromJSON(inputs.producers)[0].id }}
-          command: ${{ fromJSON(inputs.producers)[0].command }}
-          image:   ${{ fromJSON(inputs.producers)[0].image }}
-          runner:  ${{ fromJSON(inputs.producers)[0].runner }}
-          cuda:    ${{ fromJSON(inputs.producers)[0].cuda }}
-          host:    ${{ fromJSON(inputs.producers)[0].host }}
+          id:         "${{ fromJSON(inputs.producers)[0].id }}"
+          command:    "${{ fromJSON(inputs.producers)[0].command }}"
+          image:      "${{ fromJSON(inputs.producers)[0].image }}"
+          runner:     "${{ fromJSON(inputs.producers)[0].runner }}"
+          cuda:       "${{ fromJSON(inputs.producers)[0].cuda }}"
+          host:       "${{ fromJSON(inputs.producers)[0].host }}"
+          dist-token: "${{ secrets.SCCACHE_DIST_TOKEN }}"
 
   consumers:
     name: "${{ matrix.name }}"
@@ -67,9 +68,10 @@ jobs:
       - name: Run job
         uses: ./.github/actions/workflow-run-job-linux
         with:
-          id:      ${{ matrix.id }}
-          command: ${{ matrix.command }}
-          image:   ${{ matrix.image }}
-          runner:  ${{ matrix.runner }}
-          cuda:    ${{ matrix.cuda }}
-          host:    ${{ matrix.host }}
+          id:         "${{ matrix.id }}"
+          command:    "${{ matrix.command }}"
+          image:      "${{ matrix.image }}"
+          runner:     "${{ matrix.runner }}"
+          cuda:       "${{ matrix.cuda }}"
+          host:       "${{ matrix.host }}"
+          dist-token: "${{ secrets.SCCACHE_DIST_TOKEN }}"
