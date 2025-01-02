@@ -1,14 +1,16 @@
 // -*- C++ -*-
-//===------------------ support/win32/limits_msvc_win32.h -----------------===//
+//===----------------------------------------------------------------------===//
 //
-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
-#ifndef _LIBCUDACXX_SUPPORT_WIN32_LIMITS_MSVC_WIN32_H
-#define _LIBCUDACXX_SUPPORT_WIN32_LIMITS_MSVC_WIN32_H
+#ifndef _LIBCUDACXX___LIMITS_MSVC_WIN32_H
+#define _LIBCUDACXX___LIMITS_MSVC_WIN32_H
 
 #if defined(__MINGW32__)
 #  error "This header complements the Microsoft C Runtime library, and should not be included otherwise."
@@ -61,4 +63,4 @@
 // predefined by MinGW GCC
 #define __LDBL_DENORM_MIN__ 3.64519953188247460253e-4951L
 
-#endif // _LIBCUDACXX_SUPPORT_WIN32_LIMITS_MSVC_WIN32_H
+#endif // _LIBCUDACXX___LIMITS_MSVC_WIN32_H
