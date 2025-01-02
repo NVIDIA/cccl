@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: msvc-19.16
 
 // template<class T>
@@ -19,20 +19,25 @@
 #include "test_range.h"
 
 static_assert(
-  cuda::std::same_as<cuda::std::ranges::iterator_t<test_range<cpp17_input_iterator>>, cpp17_input_iterator<int*>>);
+  cuda::std::same_as<cuda::std::ranges::iterator_t<test_range<cpp17_input_iterator>>, cpp17_input_iterator<int*>>, "");
 static_assert(cuda::std::same_as<cuda::std::ranges::iterator_t<test_range<cpp17_input_iterator> const>,
-                                 cpp17_input_iterator<int const*>>);
+                                 cpp17_input_iterator<int const*>>,
+              "");
 
 static_assert(cuda::std::same_as<cuda::std::ranges::iterator_t<test_non_const_range<cpp17_input_iterator>>,
-                                 cpp17_input_iterator<int*>>);
+                                 cpp17_input_iterator<int*>>,
+              "");
 
-static_assert(cuda::std::same_as<cuda::std::ranges::iterator_t<test_common_range<cpp17_input_iterator>>,
-                                 cpp17_input_iterator<int*>>);
+static_assert(
+  cuda::std::same_as<cuda::std::ranges::iterator_t<test_common_range<cpp17_input_iterator>>, cpp17_input_iterator<int*>>,
+  "");
 static_assert(cuda::std::same_as<cuda::std::ranges::iterator_t<test_common_range<cpp17_input_iterator> const>,
-                                 cpp17_input_iterator<int const*>>);
+                                 cpp17_input_iterator<int const*>>,
+              "");
 
 static_assert(cuda::std::same_as<cuda::std::ranges::iterator_t<test_non_const_common_range<cpp17_input_iterator>>,
-                                 cpp17_input_iterator<int*>>);
+                                 cpp17_input_iterator<int*>>,
+              "");
 
 int main(int, char**)
 {
