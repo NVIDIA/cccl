@@ -1,12 +1,12 @@
 import os
-import time
 import signal
 import subprocess
+import time
 
 from .build import Build
 from .config import Config
-from .storage import Storage
 from .logger import Logger
+from .storage import Storage
 
 
 def create_builds_table(conn):

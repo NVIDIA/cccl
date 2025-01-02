@@ -2,12 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-import cupy as cp
-import numpy as np
-import pytest
 import random
+
+import cupy as cp
 import numba.cuda
 import numba.types
+import numpy as np
+import pytest
 
 import cuda.parallel.experimental.algorithms as algorithms
 import cuda.parallel.experimental.iterators as iterators

@@ -6,7 +6,6 @@
 #
 # ===----------------------------------------------------------------------===##
 
-from contextlib import contextmanager
 import errno
 import os
 import platform
@@ -15,6 +14,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+from contextlib import contextmanager
 
 
 # FIXME: Most of these functions are cribbed from LIT

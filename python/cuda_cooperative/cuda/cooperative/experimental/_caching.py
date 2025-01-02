@@ -2,10 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import hashlib
+import json
 import os
 import pickle
-import json
-import hashlib
 
 _ENABLE_CACHE = "CCCL_ENABLE_CACHE" in os.environ
 if _ENABLE_CACHE:

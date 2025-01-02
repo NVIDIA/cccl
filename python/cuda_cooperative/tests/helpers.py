@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from numba import types
 import numpy as np
+from numba import types
 
 NUMBA_TYPES_TO_NP = {
     types.int8: np.int8,

@@ -5,7 +5,9 @@
 # example-begin imports
 import cupy as cp
 import numpy as np
+
 import cuda.parallel.experimental.algorithms as algorithms
+
 # example-end imports
 
 

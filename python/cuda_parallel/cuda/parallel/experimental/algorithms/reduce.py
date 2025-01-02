@@ -6,18 +6,19 @@
 from __future__ import annotations  # TODO: required for Python 3.7 docs env
 
 import ctypes
+from typing import Callable
+
 import numba
 import numpy as np
 from numba import cuda
 from numba.cuda.cudadrv import enums
-from typing import Callable
 
 from .. import _cccl as cccl
-from .._bindings import get_paths, get_bindings
+from .._bindings import get_bindings, get_paths
 from .._caching import CachableFunction, cache_with_key
-from ..typing import DeviceArrayLike
-from ..iterators._iterators import IteratorBase
 from .._utils import cai
+from ..iterators._iterators import IteratorBase
+from ..typing import DeviceArrayLike
 
 
 class _Op:
