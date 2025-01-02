@@ -15,7 +15,7 @@
 __global__ void test_bfind(void** fn_ptr)
 {
 #if __cccl_ptx_isa >= 200
-  auto to_void = [](auto type, auto x) {
+  auto to_void = [] __device__(auto type, auto x) {
     using T = decltype(type);
     return reinterpret_cast<void*>(static_cast<uint32_t (*)(T, cuda::ptx::bfind_shift_amount)>(x));
   };
