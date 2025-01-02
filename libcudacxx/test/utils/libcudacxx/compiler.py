@@ -6,8 +6,9 @@
 #
 # ===----------------------------------------------------------------------===##
 
-import platform
 import os
+import platform
+
 import libcudacxx.util
 
 

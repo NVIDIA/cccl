@@ -27,7 +27,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
+#if _CCCL_STD_VER >= 2014
 
 struct dangling
 {
@@ -47,7 +47,7 @@ using borrowed_iterator_t = enable_if_t<range<_Rp>, _If<borrowed_range<_Rp>, ite
 
 // borrowed_subrange_t defined in <__ranges/subrange.h>
 
-#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
+#endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: msvc-19.16
 
 // template<class R>
@@ -21,22 +21,22 @@ template <template <class...> class I>
 __host__ __device__ constexpr bool check_bidirectional_range()
 {
   constexpr bool result = cuda::std::ranges::bidirectional_range<test_range<I>>;
-  static_assert(cuda::std::ranges::bidirectional_range<test_range<I> const> == result);
-  static_assert(cuda::std::ranges::bidirectional_range<test_non_const_common_range<I>> == result);
-  static_assert(cuda::std::ranges::bidirectional_range<test_non_const_range<I>> == result);
-  static_assert(cuda::std::ranges::bidirectional_range<test_common_range<I>> == result);
-  static_assert(cuda::std::ranges::bidirectional_range<test_common_range<I> const> == result);
-  static_assert(!cuda::std::ranges::bidirectional_range<test_non_const_common_range<I> const>);
-  static_assert(!cuda::std::ranges::bidirectional_range<test_non_const_range<I> const>);
+  static_assert(cuda::std::ranges::bidirectional_range<test_range<I> const> == result, "");
+  static_assert(cuda::std::ranges::bidirectional_range<test_non_const_common_range<I>> == result, "");
+  static_assert(cuda::std::ranges::bidirectional_range<test_non_const_range<I>> == result, "");
+  static_assert(cuda::std::ranges::bidirectional_range<test_common_range<I>> == result, "");
+  static_assert(cuda::std::ranges::bidirectional_range<test_common_range<I> const> == result, "");
+  static_assert(!cuda::std::ranges::bidirectional_range<test_non_const_common_range<I> const>, "");
+  static_assert(!cuda::std::ranges::bidirectional_range<test_non_const_range<I> const>, "");
   return result;
 }
 
-static_assert(!check_bidirectional_range<cpp17_input_iterator>());
-static_assert(!check_bidirectional_range<cpp20_input_iterator>());
-static_assert(!check_bidirectional_range<forward_iterator>());
-static_assert(check_bidirectional_range<bidirectional_iterator>());
-static_assert(check_bidirectional_range<random_access_iterator>());
-static_assert(check_bidirectional_range<contiguous_iterator>());
+static_assert(!check_bidirectional_range<cpp17_input_iterator>(), "");
+static_assert(!check_bidirectional_range<cpp20_input_iterator>(), "");
+static_assert(!check_bidirectional_range<forward_iterator>(), "");
+static_assert(check_bidirectional_range<bidirectional_iterator>(), "");
+static_assert(check_bidirectional_range<random_access_iterator>(), "");
+static_assert(check_bidirectional_range<contiguous_iterator>(), "");
 
 #if TEST_STD_VER > 2017
 // Test ADL-proofing.
@@ -47,19 +47,19 @@ struct Holder
   T t;
 };
 
-static_assert(!cuda::std::ranges::bidirectional_range<Holder<Incomplete>*>);
-static_assert(!cuda::std::ranges::bidirectional_range<Holder<Incomplete>*&>);
-static_assert(!cuda::std::ranges::bidirectional_range<Holder<Incomplete>*&&>);
-static_assert(!cuda::std::ranges::bidirectional_range<Holder<Incomplete>* const>);
-static_assert(!cuda::std::ranges::bidirectional_range<Holder<Incomplete>* const&>);
-static_assert(!cuda::std::ranges::bidirectional_range<Holder<Incomplete>* const&&>);
+static_assert(!cuda::std::ranges::bidirectional_range<Holder<Incomplete>*>, "");
+static_assert(!cuda::std::ranges::bidirectional_range<Holder<Incomplete>*&>, "");
+static_assert(!cuda::std::ranges::bidirectional_range<Holder<Incomplete>*&&>, "");
+static_assert(!cuda::std::ranges::bidirectional_range<Holder<Incomplete>* const>, "");
+static_assert(!cuda::std::ranges::bidirectional_range<Holder<Incomplete>* const&>, "");
+static_assert(!cuda::std::ranges::bidirectional_range<Holder<Incomplete>* const&&>, "");
 
-static_assert(cuda::std::ranges::bidirectional_range<Holder<Incomplete>* [10]>);
-static_assert(cuda::std::ranges::bidirectional_range<Holder<Incomplete>* (&) [10]>);
-static_assert(cuda::std::ranges::bidirectional_range<Holder<Incomplete>* (&&) [10]>);
-static_assert(cuda::std::ranges::bidirectional_range<Holder<Incomplete>* const[10]>);
-static_assert(cuda::std::ranges::bidirectional_range<Holder<Incomplete>* const (&)[10]>);
-static_assert(cuda::std::ranges::bidirectional_range<Holder<Incomplete>* const (&&)[10]>);
+static_assert(cuda::std::ranges::bidirectional_range<Holder<Incomplete>* [10]>, "");
+static_assert(cuda::std::ranges::bidirectional_range<Holder<Incomplete>* (&) [10]>, "");
+static_assert(cuda::std::ranges::bidirectional_range<Holder<Incomplete>* (&&) [10]>, "");
+static_assert(cuda::std::ranges::bidirectional_range<Holder<Incomplete>* const[10]>, "");
+static_assert(cuda::std::ranges::bidirectional_range<Holder<Incomplete>* const (&)[10]>, "");
+static_assert(cuda::std::ranges::bidirectional_range<Holder<Incomplete>* const (&&)[10]>, "");
 #endif
 
 int main(int, char**)
