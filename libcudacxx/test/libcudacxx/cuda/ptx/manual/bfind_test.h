@@ -12,14 +12,20 @@
 
 // <cuda/ptx>
 
+template <typename T, typename F>
+__device__ auto to_void(T, F x)
+{
+  return reinterpret_cast<void*>(static_cast<uint32_t (*)(T, cuda::ptx::bfind_shift_amount)>(x));
+}
+
 __global__ void test_bfind(void** fn_ptr)
 {
 #if __cccl_ptx_isa >= 200
-  auto to_void = [] __device__(auto type, auto x) {
-    using T = decltype(type);
-    return reinterpret_cast<void*>(static_cast<uint32_t (*)(T, cuda::ptx::bfind_shift_amount)>(x));
-  };
-  // mov.u32 sreg_value, %%tid.x;
+  // auto to_void = [] __device__(auto type, auto x) {
+  //   using T = decltype(type);
+  //   return reinterpret_cast<void*>(static_cast<uint32_t (*)(T, cuda::ptx::bfind_shift_amount)>(x));
+  // };
+  //  mov.u32 sreg_value, %%tid.x;
   *fn_ptr++ = to_void(uint32_t{}, cuda::ptx::bfind<uint32_t>);
   *fn_ptr++ = to_void(uint64_t{}, cuda::ptx::bfind<uint64_t>);
   *fn_ptr++ = to_void(int32_t{}, cuda::ptx::bfind<int32_t>);
