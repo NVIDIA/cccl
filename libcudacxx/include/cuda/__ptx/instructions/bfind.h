@@ -21,15 +21,17 @@
 #    pragma system_header
 #  endif // no system header
 
-#  include <cuda/__ptx/ptx_dot_variants.h>
-#  include <cuda/std/__type_traits/is_same.h>
-#  include <cuda/std/cstdint>
+#  if _CCCL_STD_VER >= 17
 
-#  include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends
+#    include <cuda/__ptx/ptx_dot_variants.h>
+#    include <cuda/std/__type_traits/is_same.h>
+#    include <cuda/std/cstdint>
+
+#    include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA_PTX
 
-#  if __cccl_ptx_isa >= 200
+#    if __cccl_ptx_isa >= 200
 
 template <typename _Tp>
 _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t
@@ -87,8 +89,9 @@ bfind(_Tp __x, bfind_shift_amount shift_amt = bfind_shift_amount::disable)
   return __ret;
 }
 
-#  endif // __cccl_ptx_isa >= 200
+#    endif // __cccl_ptx_isa >= 200
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
 
+#  endif // _CCCL_STD_VER >= 17
 #endif // _CUDA_PTX_BFIND_H
