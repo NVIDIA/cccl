@@ -504,6 +504,34 @@ def test_reducer_caching():
     assert reducer_1 is not reducer_2
 
 
+@pytest.fixture(params=[True, False])
+def array_2d(request):
+    f_contiguous = request.param
+    arr = cp.random.rand(5, 10)
+    if f_contiguous:
+        return cp.asfortranarray(arr)
+    else:
+        return arr
+
+
+def test_reduce_2d_array(array_2d):
+    def binary_op(x, y):
+        return x + y
+
+    d_out = cp.empty(1, dtype=array_2d.dtype)
+    h_init = np.asarray([0], dtype=array_2d.dtype)
+    d_in = array_2d
+    reduce_into = algorithms.reduce_into(
+        d_in=d_in, d_out=d_out, op=binary_op, h_init=h_init
+    )
+    temp_storage_size = reduce_into(
+        None, d_in=d_in, d_out=d_out, num_items=d_in.size, h_init=h_init
+    )
+    d_temp_storage = cp.empty(temp_storage_size, dtype=np.uint8)
+    reduce_into(d_temp_storage, d_in, d_out, d_in.size, h_init)
+    np.testing.assert_allclose(d_in.sum().get(), d_out.get())
+
+
 def test_reduce_non_contiguous():
     def binary_op(x, y):
         return x + y
@@ -511,7 +539,11 @@ def test_reduce_non_contiguous():
     size = 10
     d_out = cp.empty(1, dtype="int64")
     h_init = np.asarray([0], dtype="int64")
-    d_in = cp.zeros((size, 2))[:, 0]
 
+    d_in = cp.zeros((size, 2))[:, 0]
+    with pytest.raises(ValueError, match="Non-contiguous arrays are not supported."):
+        _ = algorithms.reduce_into(d_in, d_out, binary_op, h_init)
+
+    d_in = cp.zeros(size)[::2]
     with pytest.raises(ValueError, match="Non-contiguous arrays are not supported."):
         _ = algorithms.reduce_into(d_in, d_out, binary_op, h_init)
