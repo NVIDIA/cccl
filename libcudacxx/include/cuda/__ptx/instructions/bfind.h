@@ -24,7 +24,8 @@
 #  if _CCCL_STD_VER >= 17
 
 #    include <cuda/__ptx/ptx_dot_variants.h>
-#    include <cuda/std/__type_traits/is_same.h>
+#    include <cuda/std/__type_traits/is_integral.h>
+#    include <cuda/std/__type_traits/is_signed.h>
 #    include <cuda/std/cstdint>
 
 #    include <nv/target> // __CUDA_MINIMUM_ARCH__ and friends
@@ -37,30 +38,10 @@ template <typename _Tp>
 _CCCL_DEVICE static inline _CUDA_VSTD::uint32_t
 bfind(_Tp __x, bfind_shift_amount shift_amt = bfind_shift_amount::disable)
 {
+  static_assert(_CUDA_VSTD::is_integral_v<_Tp> && (sizeof(_Tp) == 4 || sizeof(_Tp) == 8),
+                "Only 32- and 64-bit integral types are supported");
   _CUDA_VSTD::uint32_t __ret;
-  if constexpr (_CUDA_VSTD::is_same_v<_Tp, _CUDA_VSTD::uint32_t>)
-  {
-    if (shift_amt == bfind_shift_amount::disable)
-    {
-      asm("bfind.u32 %0, %1;" : "=r"(__ret) : "r"(__x));
-    }
-    else
-    {
-      asm("bfind.shiftamt.u32 %0, %1;" : "=r"(__ret) : "r"(__x));
-    }
-  }
-  else if constexpr (_CUDA_VSTD::is_same_v<_Tp, _CUDA_VSTD::uint64_t>)
-  {
-    if (shift_amt == bfind_shift_amount::disable)
-    {
-      asm("bfind.u64 %0, %1;" : "=r"(__ret) : "l"(__x));
-    }
-    else
-    {
-      asm("bfind.shiftamt.u64 %0, %1;" : "=r"(__ret) : "l"(__x));
-    }
-  }
-  else if constexpr (_CUDA_VSTD::is_same_v<_Tp, _CUDA_VSTD::int32_t>)
+  if constexpr (sizeof(_Tp) == 4 && _CUDA_VSTD::is_signed_v<_Tp>)
   {
     if (shift_amt == bfind_shift_amount::disable)
     {
@@ -71,7 +52,18 @@ bfind(_Tp __x, bfind_shift_amount shift_amt = bfind_shift_amount::disable)
       asm("bfind.shiftamt.s32 %0, %1;" : "=r"(__ret) : "r"(__x));
     }
   }
-  else if constexpr (_CUDA_VSTD::is_same_v<_Tp, _CUDA_VSTD::int64_t>)
+  else if constexpr (sizeof(_Tp) == 4)
+  {
+    if (shift_amt == bfind_shift_amount::disable)
+    {
+      asm("bfind.u32 %0, %1;" : "=r"(__ret) : "r"(__x));
+    }
+    else
+    {
+      asm("bfind.shiftamt.u32 %0, %1;" : "=r"(__ret) : "r"(__x));
+    }
+  }
+  else if constexpr (sizeof(_Tp) == 8 && _CUDA_VSTD::is_signed_v<_Tp>)
   {
     if (shift_amt == bfind_shift_amount::disable)
     {
@@ -84,7 +76,14 @@ bfind(_Tp __x, bfind_shift_amount shift_amt = bfind_shift_amount::disable)
   }
   else
   {
-    static_assert(sizeof(_Tp) != sizeof(_Tp), "Unsupported type");
+    if (shift_amt == bfind_shift_amount::disable)
+    {
+      asm("bfind.u64 %0, %1;" : "=r"(__ret) : "l"(__x));
+    }
+    else
+    {
+      asm("bfind.shiftamt.u64 %0, %1;" : "=r"(__ret) : "l"(__x));
+    }
   }
   return __ret;
 }
