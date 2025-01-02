@@ -23,7 +23,6 @@
 
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__type_traits/is_arithmetic.h>
-#include <cuda/std/__type_traits/remove_cv.h>
 #include <cuda/std/climits>
 #include <cuda/std/version>
 
@@ -548,7 +547,20 @@ public:
 };
 
 template <class _Tp>
-using numeric_limits = __numeric_limits_impl<remove_cv_t<_Tp>>;
+class numeric_limits : public __numeric_limits_impl<_Tp>
+{};
+
+template <class _Tp>
+class numeric_limits<const _Tp> : public numeric_limits<_Tp>
+{};
+
+template <class _Tp>
+class numeric_limits<volatile _Tp> : public numeric_limits<_Tp>
+{};
+
+template <class _Tp>
+class numeric_limits<const volatile _Tp> : public numeric_limits<_Tp>
+{};
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
