@@ -29,9 +29,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-namespace __detail
-{
-
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr uint32_t __bit_log2(_Tp __t) noexcept
 {
@@ -53,27 +50,25 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<sizeof(_Tp) < sizeof(uint32_t), 
                 >> (numeric_limits<unsigned>::digits - numeric_limits<_Tp>::digits));
 }
 
-} // namespace __detail
-
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer<_Tp>::value, _Tp>
 bit_floor(_Tp __t) noexcept
 {
-  return __t == 0 ? 0 : static_cast<_Tp>(_Tp{1} << _CUDA_VSTD::__detail::__bit_log2(__t));
+  return __t == 0 ? 0 : static_cast<_Tp>(_Tp{1} << _CUDA_VSTD::__bit_log2(__t));
 }
 
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer<_Tp>::value, _Tp>
 bit_ceil(_Tp __t) noexcept
 {
-  return (__t < 2) ? 1 : static_cast<_Tp>(_CUDA_VSTD::__detail::__ceil2(__t));
+  return (__t < 2) ? 1 : static_cast<_Tp>(_CUDA_VSTD::__ceil2(__t));
 }
 
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer<_Tp>::value, int>
 bit_width(_Tp __t) noexcept
 {
-  return __t == 0 ? 0 : static_cast<int>(_CUDA_VSTD::__detail::__bit_log2(__t) + 1);
+  return __t == 0 ? 0 : static_cast<int>(_CUDA_VSTD::__bit_log2(__t) + 1);
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD

@@ -29,9 +29,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-namespace __detail
-{
-
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<sizeof(_Tp) <= sizeof(uint64_t), int> __popcount(_Tp __t) noexcept
 {
@@ -52,13 +49,11 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<(sizeof(_Tp) > sizeof(uint64_t))
   return __count;
 }
 
-} // namespace __detail
-
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer<_Tp>::value, int>
 popcount(_Tp __t) noexcept
 {
-  return _CUDA_VSTD::__detail::__popcount(__t);
+  return _CUDA_VSTD::__popcount(__t);
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD

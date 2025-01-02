@@ -32,9 +32,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-namespace __detail
-{
-
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<sizeof(_Tp) <= sizeof(uint64_t), int> __countr_zero(_Tp __t) noexcept
 {
@@ -60,26 +57,24 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<(sizeof(_Tp) > sizeof(uint64_t))
   {
     if (__a.__array[__i])
     {
-      return _CUDA_VSTD::__detail::__countr_zero(__a.__array[__i]) + __i * numeric_limits<uint64_t>::digits;
+      return _CUDA_VSTD::__countr_zero(__a.__array[__i]) + __i * numeric_limits<uint64_t>::digits;
     }
   }
   return numeric_limits<_Tp>::digits;
 }
 
-} // namespace __detail
-
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer<_Tp>::value, int>
 countr_zero(_Tp __t) noexcept
 {
-  return _CUDA_VSTD::__detail::__countr_zero(__t);
+  return _CUDA_VSTD::__countr_zero(__t);
 }
 
 template <class _Tp>
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer<_Tp>::value, int>
 countr_one(_Tp __t) noexcept
 {
-  return _CUDA_VSTD::__detail::__countr_zero(static_cast<_Tp>(~__t));
+  return _CUDA_VSTD::__countr_zero(static_cast<_Tp>(~__t));
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
