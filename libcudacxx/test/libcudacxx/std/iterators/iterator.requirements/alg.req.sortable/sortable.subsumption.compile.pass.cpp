@@ -30,7 +30,7 @@ __host__ __device__ constexpr bool test_subsumption()
   return true;
 }
 
-static_assert(test_subsumption<int*, cuda::std::ranges::less, cuda::std::identity>());
+static_assert(test_subsumption<int*, cuda::std::ranges::less, cuda::std::identity>(), "");
 
 int main(int, char**)
 {

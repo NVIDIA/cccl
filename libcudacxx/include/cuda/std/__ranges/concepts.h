@@ -44,7 +44,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
+#if _CCCL_STD_VER >= 2014
 
 #  if !defined(_CCCL_NO_CONCEPTS)
 
@@ -142,19 +142,23 @@ concept viewable_range =
 #  else // ^^^ !_CCCL_NO_CONCEPTS ^^^ / vvv _CCCL_NO_CONCEPTS vvv
 // [range.range]
 
+// clang-format off
 template <class _Tp>
-_CCCL_CONCEPT_FRAGMENT(
-  __range_,
-  requires(_Tp& __t)(typename(decltype(_CUDA_VRANGES::begin(__t))), typename(decltype(_CUDA_VRANGES::end(__t)))));
+_CCCL_CONCEPT range =
+  _CCCL_REQUIRES_EXPR((_Tp), _Tp& __t)
+  (
+    void(_CUDA_VRANGES::begin(__t)),
+    void(_CUDA_VRANGES::end(__t))
+  );
 
 template <class _Tp>
-_CCCL_CONCEPT range = _CCCL_FRAGMENT(__range_, _Tp);
-
-template <class _Tp>
-_CCCL_CONCEPT_FRAGMENT(__input_range_, requires()(requires(range<_Tp>), requires(input_iterator<iterator_t<_Tp>>)));
-
-template <class _Tp>
-_CCCL_CONCEPT input_range = _CCCL_FRAGMENT(__input_range_, _Tp);
+_CCCL_CONCEPT input_range =
+  _CCCL_REQUIRES_EXPR((_Tp))
+  (
+    requires(range<_Tp>),
+    requires(input_iterator<iterator_t<_Tp>>)
+  );
+// clang-format on
 
 template <class _Range>
 _CCCL_CONCEPT_FRAGMENT(
@@ -302,7 +306,7 @@ template <class _Range, class _Tp>
 _CCCL_CONCEPT __container_compatible_range = _CCCL_FRAGMENT(__container_compatible_range_, _Range, _Tp);
 #  endif // _CCCL_NO_CONCEPTS
 
-#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
+#endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 
