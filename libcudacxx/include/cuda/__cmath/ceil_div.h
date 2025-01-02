@@ -24,11 +24,9 @@ d
 
 #include <cuda/std/__algorithm/min.h>
 #include <cuda/std/__type_traits/enable_if.h>
-#include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_enum.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_signed.h>
-#include <cuda/std/__type_traits/is_unsigned.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/underlying_type.h>
 
@@ -36,7 +34,7 @@ d
 
   template <class _UCommon>
   _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _UCommon
-  __constexpr_unsigned_ceil_div(const _UCommon __a, const _UCommon __b) noexcept
+  __unsigned_ceil_div(const _UCommon __a, const _UCommon __b) noexcept
 {
   const auto __res = __a / __b;
   return __res + (__res * __b != __a);
@@ -57,28 +55,23 @@ ceil_div(const _Tp __a, const _Up __b) noexcept
   _CCCL_ASSERT(__b > _Up{0}, "cuda::ceil_div: b must be positive");
   using _Common  = decltype(_Tp{} / _Up{});
   using _UCommon = _CUDA_VSTD::make_unsigned_t<_Common>;
-  if constexpr (std::is_signed_v<_Tp>)
+  if constexpr (_CUDA_VSTD::is_signed_v<_Tp>)
   {
     _CCCL_ASSERT(__a >= _Tp{0}, "cuda::ceil_div: a must be non negative");
   }
   auto __a1 = static_cast<_UCommon>(__a);
   auto __b1 = static_cast<_UCommon>(__b);
-  if constexpr (std::is_signed_v<_Common>)
+  if constexpr (_CUDA_VSTD::is_signed_v<_Common>)
   {
     return static_cast<_Common>((__a1 + __b1 - 1) / __b1);
   }
   else
   {
-    if (!_CUDA_VSTD::__cccl_default_is_constant_evaluated())
-    {
-      NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                        (return static_cast<_Common>(_CUDA_VSTD::min(__a1, 1 + ((__a1 - 1) / __b1)));),
-                        (return __constexpr_unsigned_ceil_div(__a1, __b1);))
-    }
-    else
-    {
-      return __constexpr_unsigned_ceil_div(__a1, __b1);
-    }
+    // the ::min method is faster even if __b is a compile-time constant
+    NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                      (return static_cast<_Common>(_CUDA_VSTD::min(__a1, 1 + ((__a1 - 1) / __b1)));),
+                      (const auto __res = __a1 / __b1; //
+                       return static_cast<_Common>(__res + (__res * __b1 != __a1));))
   }
 }
 
