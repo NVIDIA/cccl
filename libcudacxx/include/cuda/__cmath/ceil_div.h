@@ -43,12 +43,12 @@ template <class _Tp,
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 decltype(_Tp{} / _Up{})
 ceil_div(const _Tp __a, const _Up __b) noexcept
 {
-  _CCCL_ASSERT(__b > _Up{0}, "cuda::ceil_div: b must be positive");
+  _CCCL_ASSERT(__b > _Up{0}, "cuda::ceil_div: 'b' must be positive");
   using _Common  = decltype(_Tp{} / _Up{});
   using _UCommon = _CUDA_VSTD::make_unsigned_t<_Common>;
   if constexpr (_CUDA_VSTD::is_signed_v<_Tp>)
   {
-    _CCCL_ASSERT(__a >= _Tp{0}, "cuda::ceil_div: a must be non negative");
+    _CCCL_ASSERT(__a >= _Tp{0}, "cuda::ceil_div: 'a' must be non negative");
   }
   auto __a1 = static_cast<_UCommon>(__a);
   auto __b1 = static_cast<_UCommon>(__b);
