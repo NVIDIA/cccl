@@ -501,3 +501,26 @@ def test_reducer_caching():
         np.zeros([0], dtype="int64"),
     )
     assert reducer_1 is not reducer_2
+
+
+def test_reduce_struct_type():
+    def max_g_value(x, y):
+        return x if x["g"] > y["g"] else y
+
+    dtype = np.dtype([("r", "int32"), ("g", "int32"), ("b", "int32")])
+    d_rgb = cp.random.randint(0, 256, (10, 3), dtype=cp.int32).view(dtype)
+
+    d_out = cp.zeros(1, dtype)
+
+    h_init = np.asarray([(0, 0, 0)], dtype=dtype)
+
+    reduce_into = algorithms.reduce_into(d_rgb, d_out, max_g_value, h_init)
+    temp_storage_bytes = reduce_into(None, d_rgb, d_out, len(d_rgb), h_init)
+
+    d_temp_storage = cp.zeros(temp_storage_bytes, dtype=np.uint8)
+    _ = reduce_into(d_temp_storage, d_rgb, d_out, len(d_rgb), h_init)
+
+    h_rgb = d_rgb.get()
+    expected = h_rgb[h_rgb.view("int32")[:, 1].argmax()]
+
+    np.testing.assert_equal(expected["g"], d_out.get()["g"])
