@@ -1,0 +1,76 @@
+//===----------------------------------------------------------------------===//
+//
+// Part of libcu++, the C++ Standard Library for your entire system,
+// under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef _CUDA___CMATH_ROUND_DOWN_H
+#define _CUDA___CMATH_ROUND_DOWN_H
+
+#include <cuda/std/detail/__config>
+
+#if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
+#  pragma GCC system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
+#  pragma clang system_header
+#elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_MSVC)
+#  pragma system_header
+#endif // no system header
+
+#if _CCCL_STD_VER >= 2017
+
+#  include <cuda/std/__type_traits/enable_if.h>
+#  include <cuda/std/__type_traits/is_enum.h>
+#  include <cuda/std/__type_traits/is_integral.h>
+#  include <cuda/std/__type_traits/is_signed.h>
+#  include <cuda/std/__type_traits/make_unsigned.h>
+#  include <cuda/std/__type_traits/underlying_type.h>
+#  include <cuda/std/limits>
+
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+
+//! @brief Round the number \p __a to the previous multiple of \p __b
+//! @param __a The input number
+//! @param __b The multiplicand
+//! @pre \p __a must be non-negative
+//! @pre \p __b must be positive
+template <class _Tp,
+          class _Up,
+          _CUDA_VSTD::enable_if_t<_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Tp), int> = 0,
+          _CUDA_VSTD::enable_if_t<_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Up), int> = 0>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(_Tp{} / _Up{})
+round_down(const _Tp __a, const _Up __b) noexcept
+{
+  _CCCL_ASSERT(__b > _Up{0}, "cuda::round_down: 'b' must be positive");
+  if constexpr (_CUDA_VSTD::is_signed_v<_Tp>)
+  {
+    _CCCL_ASSERT(__a >= _Tp{0}, "cuda::round_down: 'a' must be non negative");
+  }
+  using _Common  = decltype(_Tp{} / _Up{});
+  using _UCommon = _CUDA_VSTD::make_unsigned_t<_Common>;
+  auto __c1      = static_cast<_UCommon>(__a) / static_cast<_UCommon>(__b);
+  return static_cast<_Common>(__c1 * static_cast<_UCommon>(__b));
+}
+
+//! @brief Round the number \p __a to the previous multiple of \p __b
+//! @param __a The input number
+//! @param __b The multiplicand
+//! @pre \p __a must be non-negative
+//! @pre \p __b must be positive
+template <class _Tp,
+          class _Up,
+          _CUDA_VSTD::enable_if_t<_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Tp), int> = 0,
+          _CUDA_VSTD::enable_if_t<_CCCL_TRAIT(_CUDA_VSTD::is_enum, _Up), int>     = 0>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp round_down(const _Tp __a, const _Up __b) noexcept
+{
+  return ::cuda::round_down(__a, static_cast<_CUDA_VSTD::underlying_type_t<_Up>>(__b));
+}
+
+_LIBCUDACXX_END_NAMESPACE_CUDA
+
+#endif // _CCCL_STD_VER >= 2017
+#endif // _CUDA___CMATH_ROUND_DOWN_H
