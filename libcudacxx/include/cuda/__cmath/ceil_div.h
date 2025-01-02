@@ -31,14 +31,6 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-template <class _UCommon>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _UCommon
-__unsigned_ceil_div(const _UCommon __a, const _UCommon __b) noexcept
-{
-  const auto __res = __a / __b;
-  return __res + (__res * __b != __a);
-}
-
 //! @brief Divides two numbers \p __a and \p __b, rounding up if there is a remainder
 //! @param __a The dividend
 //! @param __b The divisor
