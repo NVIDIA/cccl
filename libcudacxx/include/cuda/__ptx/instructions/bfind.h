@@ -21,7 +21,7 @@
 #    pragma system_header
 #  endif // no system header
 
-#  if _CCCL_STD_VER >= 17
+#  if _CCCL_STD_VER >= 2017
 
 #    include <cuda/__ptx/ptx_dot_variants.h>
 #    include <cuda/std/__type_traits/is_integral.h>
@@ -92,5 +92,5 @@ bfind(_Tp __x, bfind_shift_amount shift_amt = bfind_shift_amount::disable)
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
 
-#  endif // _CCCL_STD_VER >= 17
+#  endif // _CCCL_STD_VER >= 2017
 #endif // _CUDA_PTX_BFIND_H
