@@ -9,6 +9,7 @@ import ctypes
 import numpy as np
 from numba import types, cuda
 
+from ._utils.cai import DeviceArrayLike, get_stride, get_dtype
 from .iterators._iterators import IteratorBase
 
 
@@ -130,8 +131,10 @@ def _numpy_type_to_info(numpy_type: np.dtype) -> TypeInfo:
     return _numba_type_to_info(numba_type)
 
 
-def _device_array_to_cccl_iter(array) -> Iterator:
-    info = _numpy_type_to_info(array.dtype)
+def _device_array_to_cccl_iter(array: DeviceArrayLike) -> Iterator:
+    if get_stride(array) is not None:
+        raise ValueError("Non-contiguous arrays are not supported.")
+    info = _numpy_type_to_info(get_dtype(array))
     return Iterator(
         info.size,
         info.alignment,
