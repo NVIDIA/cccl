@@ -11,7 +11,6 @@
 #ifndef _CUDA___CMATH_CEIL_DIV_H
 #define _CUDA___CMATH_CEIL_DIV_H
 
-d
 #include <cuda/std/detail/__config>
 
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
@@ -30,11 +29,11 @@ d
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/__type_traits/underlying_type.h>
 
-  _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
+_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
-  template <class _UCommon>
-  _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _UCommon
-  __unsigned_ceil_div(const _UCommon __a, const _UCommon __b) noexcept
+template <class _UCommon>
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _UCommon
+__unsigned_ceil_div(const _UCommon __a, const _UCommon __b) noexcept
 {
   const auto __res = __a / __b;
   return __res + (__res * __b != __a);
