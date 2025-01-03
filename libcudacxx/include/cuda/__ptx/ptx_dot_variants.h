@@ -111,6 +111,13 @@ enum class dot_op
   exch
 };
 
+enum class dot_mul_mode
+{
+  lo,
+  hi,
+  wide,
+};
+
 template <dot_sem __sem>
 using sem_t         = _CUDA_VSTD::integral_constant<dot_sem, __sem>;
 using sem_acq_rel_t = sem_t<dot_sem::acq_rel>;
@@ -172,6 +179,16 @@ static constexpr op_or_op_t op_or_op{};
 static constexpr op_xor_op_t op_xor_op{};
 static constexpr op_cas_t op_cas{};
 static constexpr op_exch_t op_exch{};
+
+template <dot_mul_mode __mode>
+using mul_mode_t      = _CUDA_VSTD::integral_constant<dot_mul_mode, __mode>;
+using mul_mode_lo_t   = mul_mode_t<dot_mul_mode::lo>;
+using mul_mode_hi_t   = mul_mode_t<dot_mul_mode::hi>;
+using mul_mode_wide_t = mul_mode_t<dot_mul_mode::wide>;
+
+static constexpr mul_mode_lo_t mul_mode_lo{};
+static constexpr mul_mode_hi_t mul_mode_hi{};
+static constexpr mul_mode_wide_t mul_mode_wide{};
 
 _LIBCUDACXX_END_NAMESPACE_CUDA_PTX
 
