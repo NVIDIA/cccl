@@ -22,7 +22,7 @@ The ``_CCCL_COMPILER`` function-like macro can also be used to check the version
    _CCCL_COMPILER(MSVC, <, 19, 24)
    _CCCL_COMPILER(GCC, >=, 9)
 
-*Pitfalls*: ``_CCCL_COMPILER(GCC, >, 9)`` matches GCC 9.x.
+*Pitfalls*: ``_CCCL_COMPILER(GCC, >, 9)`` internally expands ``_CCCL_COMPILER(GCC, >, 9, 0)`` to matches any GCC 9.x. Avoid using `>` and rather use `>=`
 
 **CUDA compiler macros**:
 
