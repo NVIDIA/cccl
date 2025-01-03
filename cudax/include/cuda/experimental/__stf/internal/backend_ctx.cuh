@@ -197,9 +197,9 @@ public:
         delete w;
       };
 
-      constexpr bool fun_invocable_task_deps = ::std::is_invocable_v<Fun, decltype(payload)>;
+      constexpr bool fun_invocable_task_deps = reserved::is_tuple_invocable_v<Fun, decltype(payload)>;
       constexpr bool fun_invocable_task_non_void_deps =
-        reserved::is_invocable_with_filtered<Fun, decltype(payload)>::value;
+        reserved::is_tuple_invocable_with_filtered<Fun, decltype(payload)>::value;
 
       static_assert(fun_invocable_task_deps || fun_invocable_task_non_void_deps,
                     "Incorrect lambda function signature in host_launch.");

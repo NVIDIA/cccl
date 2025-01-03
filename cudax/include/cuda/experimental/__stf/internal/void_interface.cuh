@@ -102,6 +102,25 @@ public:
 template <typename... Ts>
 using remove_void_interface_t = typename remove_void_interface<Ts...>::type;
 
+template <typename T>
+struct remove_void_interface_from_tuple
+{
+  // By default, if T is not a std::tuple, do nothing special
+  using type = T;
+};
+
+template <typename... Ts>
+struct remove_void_interface_from_tuple<::std::tuple<Ts...>>
+{
+  using type = remove_void_interface_t<Ts...>;
+};
+
+template <typename T>
+using remove_void_interface_from_tuple_t = typename remove_void_interface_from_tuple<T>::type;
+
+/**
+ * @brief Check if a function can be invoked while eliding arguments with a void_interface type.
+ */
 template <typename Fun, typename... Data>
 struct is_invocable_with_filtered
 {
@@ -130,6 +149,41 @@ public:
     decltype(check(::std::make_index_sequence<::std::tuple_size_v<remove_void_interface_t<Data...>>>{}))::value;
 };
 
+/**
+ * @brief Check if a function can be invoked using std::apply while eliding tuple arguments with a void_interface type.
+ */
+template <typename Fun, typename Tuple>
+struct is_tuple_invocable_with_filtered
+{
+private:
+  using filtered_tuple_t = remove_void_interface_from_tuple_t<Tuple>;
+
+  template <typename F, typename T>
+  static auto test(int) -> ::std::bool_constant<reserved::is_tuple_invocable_v<F, T>>
+  {
+    return {};
+  }
+
+  template <typename F>
+  static auto test(...) -> ::std::false_type
+  {
+    return {};
+  }
+
+  template <::std::size_t... Idx>
+  static auto check(::std::index_sequence<Idx...>)
+  {
+    return test<Fun, ::std::tuple_element_t<Idx, filtered_tuple_t>...>(0);
+  }
+
+public:
+  static constexpr bool value =
+    decltype(check(::std::make_index_sequence<::std::tuple_size_v<filtered_tuple_t>>{}))::value;
+};
+
+/**
+ * @brief Strip tuple entries with a "void_interface" type
+ */
 template <typename... Ts>
 auto remove_void_interface_types(const ::std::tuple<Ts...>& tpl)
 {
