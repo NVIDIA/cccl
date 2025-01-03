@@ -31,7 +31,7 @@ def is_contiguous(arr: DeviceArrayLike) -> bool:
     if strides is None:
         return True
 
-    if sum(shape) == 0:
+    if any(dim == 0 for dim in shape):
         # array has no elements
         return True
 
