@@ -1397,6 +1397,32 @@ UNITTEST("cuda stream place multi-gpu")
   ctx.finalize();
 };
 
+// Ensure we can skip logical tokens
+UNITTEST("logical token elision")
+{
+  context ctx;
+
+  int buf[1024];
+
+  auto lA = ctx.logical_token();
+  auto lB = ctx.logical_token();
+  auto lC = ctx.logical_data(buf);
+
+  // with all arguments
+  ctx.task(lA.read(), lB.read(), lC.write())->*[](cudaStream_t, void_interface, void_interface, slice<int>) {};
+
+  // with argument elision
+  ctx.task(lA.read(), lB.read(), lC.write())->*[](cudaStream_t, slice<int>) {};
+
+  // with all arguments
+  ctx.host_launch(lA.read(), lB.read(), lC.write())->*[](cudaStream_t, void_interface, void_interface, slice<int>) {};
+
+  // with argument elision
+  ctx.host_launch(lA.read(), lB.read(), lC.write())->*[](cudaStream_t, slice<int>) {};
+
+  ctx.finalize();
+};
+
 #endif // UNITTESTED_FILE
 
 /**
