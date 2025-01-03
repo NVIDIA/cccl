@@ -15,7 +15,7 @@ Compiler Macros
 - ``_CCCL_COMPILER(GCC)``:   GCC
 - ``_CCCL_COMPILER(NVHPC)``: Nvidia HPC compiler
 
-``_CCCL_COMPILER`` function-like macro can also be used to check the version of a compiler.
+The ``_CCCL_COMPILER`` function-like macro can also be used to check the version of a compiler.
 
 .. code:: cpp
 
