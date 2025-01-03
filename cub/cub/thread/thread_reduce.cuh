@@ -627,7 +627,8 @@ _CCCL_NODISCARD _CCCL_DEVICE _CCCL_FORCEINLINE AccumT ThreadReduce(const Input& 
                         ::cuda::minimum<>,
                         ::cuda::minimum<ValueT>,
                         cub::internal::SimdMin<ValueT>,
-                        cub::internal::SimdMax<ValueT>>())
+                        cub::internal::SimdMax<ValueT>>()
+                      || sizeof(ValueT) >= 8)
   {
     return cub::internal::ThreadReduceSequential<AccumT>(input, reduction_op);
   }

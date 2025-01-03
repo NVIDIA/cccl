@@ -3,11 +3,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-import numba
-import functools
 import ctypes
+import functools
+
+import numba
 import numpy as np
-from numba import types, cuda
+from numba import cuda, types
 
 from .iterators._iterators import IteratorBase
 

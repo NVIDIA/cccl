@@ -2,13 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import functools
+import importlib.resources as pkg_resources
 import os
 import shutil
+
 from cuda.bindings import nvrtc
 from cuda.cooperative.experimental._caching import disk_cache
 from cuda.cooperative.experimental._common import check_in, version
-import importlib.resources as pkg_resources
-import functools
 
 
 def CHECK_NVRTC(err, prog):

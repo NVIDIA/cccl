@@ -28,16 +28,18 @@
 #  define LIBCUDACXX_COMP_DEPR_IMPL(msg) _CCCL_PRAGMA(GCC warning #msg)
 #endif // !_CCCL_COMPILER(MSVC)
 
-#define LIBCUDACXX_DIALECT_DEPRECATION(REQ, CUR)                                                                \
-  LIBCUDACXX_COMP_DEPR_IMPL(                                                                                    \
-    libcu++ requires at least REQ.CUR is deprecated but still supported.CUR support will be removed in a future \
-      release.Define LIBCUDACXX_IGNORE_DEPRECATED_CPP_DIALECT to suppress this message.)
+// clang-format off
+#define LIBCUDACXX_DIALECT_DEPRECATION(REQ, CUR)                                                           \
+  LIBCUDACXX_COMP_DEPR_IMPL(                                                                               \
+    libcu++ requires at least REQ. CUR is deprecated but still supported. CUR support will be removed in a \
+      future release. Define CCCL_IGNORE_DEPRECATED_CPP_DIALECT to suppress this message.)
+// clang-format on
 
 #if _CCCL_STD_VER < 2011
 #  error libcu++ requires C++11 or later.
-#elif _CCCL_STD_VER == 2011 && !defined(_CCCL_IGNORE_DEPRECATED_CPP_11)
+#elif _CCCL_STD_VER == 2011 && !defined(CCCL_IGNORE_DEPRECATED_CPP_11)
 LIBCUDACXX_DIALECT_DEPRECATION(C++ 17, C++ 11)
-#elif _CCCL_STD_VER == 2014 && !defined(_CCCL_IGNORE_DEPRECATED_CPP_14)
+#elif _CCCL_STD_VER == 2014 && !defined(CCCL_IGNORE_DEPRECATED_CPP_14)
 LIBCUDACXX_DIALECT_DEPRECATION(C++ 17, C++ 14)
 #endif // _CCCL_STD_VER >= 2017
 

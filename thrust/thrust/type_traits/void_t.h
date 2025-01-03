@@ -41,13 +41,13 @@ THRUST_NAMESPACE_BEGIN
  */
 
 template <typename...>
-struct THRUST_DEPRECATED_BECAUSE("Use ::cuda::std::void_t") voider
+struct CCCL_DEPRECATED_BECAUSE("Use ::cuda::std::void_t") voider
 {
   using type = void;
 };
 
 template <typename... Ts>
-using void_t THRUST_DEPRECATED_BECAUSE("Use ::cuda::std::void_t") = void;
+using void_t CCCL_DEPRECATED_BECAUSE("Use ::cuda::std::void_t") = void;
 
 /*! \} // type traits
  */

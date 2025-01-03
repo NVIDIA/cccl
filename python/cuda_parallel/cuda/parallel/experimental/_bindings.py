@@ -3,9 +3,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import ctypes
 import os
 import shutil
-import ctypes
 from functools import lru_cache
 from typing import List, Optional
 

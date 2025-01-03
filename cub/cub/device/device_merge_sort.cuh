@@ -40,7 +40,6 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_merge_sort.cuh>
-#include <cub/util_deprecated.cuh>
 #include <cub/util_namespace.cuh>
 
 CUB_NAMESPACE_BEGIN

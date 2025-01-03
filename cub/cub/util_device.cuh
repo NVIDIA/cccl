@@ -135,7 +135,7 @@ CUB_RUNTIME_FUNCTION inline int DeviceCountUncached()
  * deprecated [Since 2.6.0]
  */
 template <typename T, T (*Function)()>
-struct CUB_DEPRECATED ValueCache
+struct CCCL_DEPRECATED ValueCache
 {
   T const value;
 

@@ -1,9 +1,9 @@
 import os
-import fpzip
 import sqlite3
+
+import fpzip
 import numpy as np
 import pandas as pd
-
 
 db_name = "cccl_meta_bench.db"
 

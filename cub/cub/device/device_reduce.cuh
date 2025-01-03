@@ -47,7 +47,6 @@
 #include <cub/device/dispatch/dispatch_reduce.cuh>
 #include <cub/device/dispatch/dispatch_reduce_by_key.cuh>
 #include <cub/device/dispatch/dispatch_streaming_reduce.cuh>
-#include <cub/util_deprecated.cuh>
 #include <cub/util_type.cuh>
 
 #include <thrust/iterator/tabulate_output_iterator.h>
@@ -713,9 +712,9 @@ struct DeviceReduce
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
   template <typename InputIteratorT, typename OutputIteratorT>
-  CUB_DEPRECATED_BECAUSE("CUB has superseded this interface in favor of the ArgMin interface that takes two separate "
-                         "iterators: one iterator to which the extremum is written and another iterator to which the "
-                         "index of the found extremum is written. ")
+  CCCL_DEPRECATED_BECAUSE("CUB has superseded this interface in favor of the ArgMin interface that takes two separate "
+                          "iterators: one iterator to which the extremum is written and another iterator to which the "
+                          "index of the found extremum is written. ")
   CUB_RUNTIME_FUNCTION static cudaError_t
     ArgMin(void* d_temp_storage,
            size_t& temp_storage_bytes,
@@ -1117,9 +1116,9 @@ struct DeviceReduce
   //!   **[optional]** CUDA stream to launch kernels within. Default is stream\ :sub:`0`.
   //!   @endrst
   template <typename InputIteratorT, typename OutputIteratorT>
-  CUB_DEPRECATED_BECAUSE("CUB has superseded this interface in favor of the ArgMax interface that takes two separate "
-                         "iterators: one iterator to which the extremum is written and another iterator to which the "
-                         "index of the found extremum is written. ")
+  CCCL_DEPRECATED_BECAUSE("CUB has superseded this interface in favor of the ArgMax interface that takes two separate "
+                          "iterators: one iterator to which the extremum is written and another iterator to which the "
+                          "index of the found extremum is written. ")
   CUB_RUNTIME_FUNCTION static cudaError_t
     ArgMax(void* d_temp_storage,
            size_t& temp_storage_bytes,
