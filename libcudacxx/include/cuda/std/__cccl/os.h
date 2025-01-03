@@ -19,17 +19,10 @@
 // _CCCL_OS(QNX)
 
 // Determine the host compiler and its version
-#if defined(_WIN32)
-#  define _CCCL_OS_WINDOWS_() 1
-#elif defined(__linux__)
-#  define _CCCL_OS_LINUX_() 1
-#endif
-
-#if defined(__ANDROID__)
-#  define _CCCL_OS_ANDROID_() 1
-#elif defined(__QNX__) || defined(__QNXNTO__)
-#  define _CCCL_OS_QNX_() 1
-#endif
+#define _CCCL_OS_WINDOWS_() defined(_WIN32)
+#define _CCCL_OS_LINUX_()   defined(__linux__)
+#define _CCCL_OS_ANDROID_() defined(__ANDROID__)
+#define _CCCL_OS_QNX_()     (defined(__QNX__) || defined(__QNXNTO__))
 
 #define _CCCL_OS(...) _CCCL_OS_##__VA_ARGS__##_()
 

@@ -21,23 +21,12 @@
 // _CCCL_ARCH(32BIT)     Any 32 bit OS (supported by CUDA)
 
 // Determine the host compiler and its version
-#if defined(__aarch64__) || defined(_M_ARM64) || defined(_M_ARM64EC) /* Windows Emulation Compatible */
-#  define _CCCL_ARCH_ARM64_() 1
-#elif defined(_M_X64) || defined(_M_IX86) || defined(__amd64__) || defined(__x86_64__)
-#  define _CCCL_ARCH_X86_() 1
-#  if defined(_M_X64) || defined(__amd64__) || defined(__x86_64__)
-#    define _CCCL_ARCH_X86_64_() 1
-#  else
-#    define _CCCL_ARCH_X86_32_() 1
-#  endif
-#endif
-
-#if defined(__aarch64__) || defined(_M_ARM64) || defined(_M_ARM64EC) || defined(__amd64__) || defined(__x86_64__) \
-  || defined(_M_X64)
-#  define _CCCL_ARCH_64BIT_() 1
-#elif defined(_M_IX86)
-#  define _CCCL_ARCH_32BIT_() 1
-#endif
+#define _CCCL_ARCH_ARM64_()  (defined(__aarch64__) || defined(_M_ARM64) || defined(_M_ARM64EC) /*emulation*/)
+#define _CCCL_ARCH_X86_64_() defined(_M_X64) || defined(__amd64__) || defined(__x86_64__)
+#define _CCCL_ARCH_X86_32_() defined(_M_IX86)
+#define _CCCL_ARCH_X86_()    (_CCCL_ARCH_X86_64_() || _CCCL_ARCH_X86_32_())
+#define _CCCL_ARCH_64BIT_()  (_CCCL_ARCH_ARM64_() || _CCCL_ARCH_X86_64_())
+#define _CCCL_ARCH_32BIT_()  defined(_M_IX86)
 
 #define _CCCL_ARCH(...) _CCCL_ARCH_##__VA_ARGS__##_()
 
