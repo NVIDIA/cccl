@@ -196,7 +196,22 @@ public:
       {
         delete w;
       };
-      ::std::apply(::std::forward<Fun>(w->first), mv(w->second));
+
+      constexpr bool fun_invocable_task_deps = ::std::is_invocable_v<Fun, decltype(payload)>;
+      constexpr bool fun_invocable_task_non_void_deps =
+        reserved::is_invocable_with_filtered<Fun, decltype(payload)>::value;
+
+      static_assert(fun_invocable_task_deps || fun_invocable_task_non_void_deps,
+                    "Incorrect lambda function signature in host_launch.");
+
+      if constexpr (fun_invocable_task_deps)
+      {
+        ::std::apply(::std::forward<Fun>(w->first), mv(w->second));
+      }
+      else if constexpr (fun_invocable_task_non_void_deps)
+      {
+        ::std::apply(::std::forward<Fun>(w->first), reserved::remove_void_interface_types(mv(w->second)));
+      }
     };
 
     if constexpr (::std::is_same_v<Ctx, graph_ctx>)
