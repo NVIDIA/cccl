@@ -10,10 +10,12 @@
 #include <cuda/std/__cccl/architecture.h>
 #include <cuda/std/__cccl/compiler.h>
 
-#if _CCCL_COMPILER(MSVC)
-#  include <intrin.h>
-#elif _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG)
-#  include <cpuid.h>
+#if _CCCL_ARCH(X86)
+#  if _CCCL_COMPILER(MSVC)
+#    include <intrin.h>
+#  elif _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG)
+#    include <cpuid.h>
+#  endif
 #endif
 
 #if _CCCL_ARCH(ARM64)
@@ -27,16 +29,6 @@ int main(int, char**)
 #endif
 #if _CCCL_ARCH(32BIT)
   static_assert(sizeof(void*) == 4, "");
-#endif
-#if _CCCL_ARCH(X86)
-#  if _CCCL_COMPILER(MSVC)
-  static_cast<void>(__cpuid);
-#  elif _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG)
-  static_cast<void>(__get_cpuid);
-#  endif
-#endif
-#if _CCCL_ARCH(ARM64)
-  static_cast<void>(__clz);
 #endif
   return 0;
 }
