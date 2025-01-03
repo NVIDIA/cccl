@@ -1,52 +1,28 @@
 .. _libcudacxx-extended-api-math:
 
 Math
-=====
+====
 
-.. code:: cuda
+.. toctree::
+   :hidden:
+   :maxdepth: 1
 
-   template <typename T>
-   [[nodiscard]] __host__ __device__ constexpr T ceil_div(T a, T b) noexcept;
+   cuda::ceil_div <math/ceil_div>
+   cuda::round_up <math/round_up>
+   cuda::round_down <math/round_down>
 
-ceil_div
----------
+.. list-table::
+   :widths: 25 45 30
+   :header-rows: 0
 
-- _Requires_: `is_integral_v<T>` is true.
-- _Preconditions_: `a >= 0` is true and `b > 0` is true.
-- _Returns_: divides `a` by `b`. If `a` is not a multiple of `b` rounds the result up to the next integer value.
+   * - :ref:`ceil_div <libcudacxx-extended-api-math-ceil-div>`
+     - Ceiling division
+     - CCCL 2.6.0 / CUDA 12.6
 
-.. note::
+   * - :ref:`round_up <libcudacxx-extended-api-math-round-up>`
+     - Round to the next multiple
+     - CCCL 2.9.0 / CUDA 12.9
 
-   The function is only constexpr from C++14 onwards
-
-**Example**: This API is very useful for determining the *number of thread blocks* required to process a fixed amount of work, given a fixed number of threads per block:
-
-.. code:: cuda
-
-   #include <vector>
-   #include <cuda/cmath>
-
-   __global__ void vscale(int n, float s, float *x) {
-     int i = blockIdx.x * blockDim.x + threadIdx.x;
-     if (i < n) x[i] *= s;
-   }
-
-   int main() {
-     const int n = 100000;
-     const float s = 2.f;
-     std::vector<float> x(n, 1.f);
-
-     // Given a fixed number of threads per block...
-     constexpr int threads_per_block = 256;
-
-     // ...dividing some "n" by "threads_per_block" may lead to a remainder,
-     // requiring the kernel to be launched with an extra thread block to handle it.
-     const int thread_blocks = cuda::ceil_div(n, threads_per_block);
-
-     vscale<<<thread_blocks, threads_per_block>>>(n, s, x.data());
-     cudaDeviceSynchronize();
-
-     return 0;
-   }
-
-`See it on Godbolt TODO`
+   * - :ref:`round_down <libcudacxx-extended-api-math-round-down>`
+     - Round to the previous multiple
+     - CCCL 2.9.0 / CUDA 12.9
