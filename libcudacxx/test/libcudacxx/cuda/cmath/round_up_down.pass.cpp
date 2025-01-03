@@ -14,6 +14,9 @@
 #include <cuda/std/limits>
 #include <cuda/std/utility>
 
+#include "cuda/std/__type_traits/conditional.h"
+#include "cuda/std/__type_traits/is_enum.h"
+#include "cuda/std/__type_traits/underlying_type.h"
 #include "test_macros.h"
 
 #if !defined(TEST_COMPILER_NVRTC)
@@ -44,6 +47,52 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
   assert(cuda::round_down(maxv, maxv) == maxv);
 }
 
+template <class T, class = void>
+struct relaxed_underlying_type
+{
+  using type = T;
+};
+
+template <class T>
+struct relaxed_underlying_type<T, cuda::std::void_t<cuda::std::underlying_type_t<T>>>
+{
+  using type = cuda::std::underlying_type_t<T>;
+};
+
+template <class T1, class U1>
+__host__ __device__ TEST_CONSTEXPR_CXX14 void test_enum()
+{
+  using T          = typename relaxed_underlying_type<T1>::type;
+  using U          = typename relaxed_underlying_type<U1>::type;
+  using CommonType = decltype(T{} / U{});
+  // ensure that we return the right type
+  static_assert(cuda::std::is_same<decltype(cuda::round_up(T(0), U(1))), CommonType>::value, "");
+  static_assert(cuda::std::is_same<decltype(cuda::round_down(T(0), U(1))), CommonType>::value, "");
+
+  assert(cuda::round_up(T(0), U(1)) == CommonType(0));
+  assert(cuda::round_up(T(1), U(1)) == CommonType(1));
+  assert(cuda::round_up(T(78), U(64)) == CommonType(128));
+
+  assert(cuda::round_down(T(0), U(1)) == CommonType(0));
+  assert(cuda::round_down(T(1), U(1)) == CommonType(1));
+  assert(cuda::round_down(T(78), U(64)) == CommonType(64));
+}
+
+enum Enum1 : short
+{
+  E1,
+  E2,
+  E3 = 64,
+  E4 = 78
+};
+enum class Enum2 : long
+{
+  C1,
+  C2,
+  C3 = 64,
+  C4 = 78
+};
+
 template <class T>
 __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
 {
@@ -63,6 +112,11 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
 
   test<T, long long>();
   test<T, unsigned long long>();
+
+  test_enum<T, Enum1>();
+  test_enum<T, Enum2>();
+  test_enum<Enum1, T>();
+  test_enum<Enum2, T>();
 
 #if !defined(TEST_COMPILER_NVRTC)
   // cstdint types:
