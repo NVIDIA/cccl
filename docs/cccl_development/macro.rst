@@ -1,4 +1,4 @@
-.. _cccl-macro:
+.. _cccl-development-module-macros:
 
 CCCL Internal Macros
 ====================
