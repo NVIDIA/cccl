@@ -1,11 +1,12 @@
-import re
 import argparse
+import re
+
 import numpy as np
 
-from .bench import Bench, BaseBench
+from .bench import BaseBench, Bench
+from .cmake import CMake
 from .config import Config
 from .storage import Storage
-from .cmake import CMake
 
 
 def list_benches(algnames):

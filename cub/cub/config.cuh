@@ -46,6 +46,5 @@
 #include <cub/util_arch.cuh> // IWYU pragma: export
 #include <cub/util_compiler.cuh> // IWYU pragma: export
 #include <cub/util_cpp_dialect.cuh> // IWYU pragma: export
-#include <cub/util_deprecated.cuh> // IWYU pragma: export
 #include <cub/util_macro.cuh> // IWYU pragma: export
 #include <cub/util_namespace.cuh> // IWYU pragma: export

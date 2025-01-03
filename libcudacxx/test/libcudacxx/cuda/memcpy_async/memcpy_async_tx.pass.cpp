@@ -15,7 +15,10 @@
 // <cuda/barrier>
 
 #include <cuda/barrier>
+#include <cuda/ptx>
 #include <cuda/std/utility> // cuda::std::move
+
+namespace ptx = cuda::ptx;
 
 #include "cuda_space_selector.h" // shared_memory_selector
 #include "test_macros.h" // TEST_NV_DIAG_SUPPRESS
@@ -47,6 +50,9 @@ int main(int, char**)
       // Initialize gmem_x
       for (int i = threadIdx.x; i < 2048; i += blockDim.x) { gmem_x[i] = i; } __syncthreads();
 
+      // The writes to global memory by threads in block have to be made visible to the async proxy.
+      ptx::fence_proxy_async(ptx::space_global);
+
       barrier_t::arrival_token token;
       if (threadIdx.x == 0) {
         auto fulfillment = cuda::device::memcpy_async_tx(smem_x, gmem_x, cuda::aligned_size_t<16>(sizeof(smem_x)), *b);
@@ -55,6 +61,8 @@ int main(int, char**)
       } else { token = b->arrive(1); } b->wait(cuda::std::move(token));
 
       // assert that smem_x contains the contents of gmem_x[0], ..., gmem_x[1023]
-      for (int i = threadIdx.x; i < 1024; i += blockDim.x) { assert(smem_x[i] == i); }));
+      for (int i = threadIdx.x; i < 1024; i += blockDim.x) { assert(smem_x[i] == i); }
+      // syncthreads() here, otherwise barrier may be destroyed before all threads have finished waiting.
+      __syncthreads();));
   return 0;
 }

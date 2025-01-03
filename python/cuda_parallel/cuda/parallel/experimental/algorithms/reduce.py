@@ -3,24 +3,33 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-import numba
+from __future__ import annotations  # TODO: required for Python 3.7 docs env
+
 import ctypes
+from typing import Callable
+
+import numba
+import numpy as np
 from numba import cuda
 from numba.cuda.cudadrv import enums
 
 from .. import _cccl as cccl
-from .._bindings import get_paths, get_bindings
+from .._bindings import get_bindings, get_paths
+from .._caching import CachableFunction, cache_with_key
+from .._utils import cai
+from ..iterators._iterators import IteratorBase
+from ..typing import DeviceArrayLike
 
 
 class _Op:
-    def __init__(self, dtype, op):
+    def __init__(self, dtype: np.dtype, op: Callable):
         value_type = numba.from_dtype(dtype)
         self.ltoir, _ = cuda.compile(
             op, sig=value_type(value_type, value_type), output="ltoir"
         )
         self.name = op.__name__.encode("utf-8")
 
-    def handle(self):
+    def handle(self) -> cccl.Op:
         return cccl.Op(
             cccl.OpKind.STATELESS,
             self.name,
@@ -39,12 +48,18 @@ def _dtype_validation(dt1, dt2):
 
 class _Reduce:
     # TODO: constructor shouldn't require concrete `d_in`, `d_out`:
-    def __init__(self, d_in, d_out, op, h_init):
+    def __init__(
+        self,
+        d_in: DeviceArrayLike | IteratorBase,
+        d_out: DeviceArrayLike,
+        op: Callable,
+        h_init: np.ndarray,
+    ):
         d_in_cccl = cccl.to_cccl_iter(d_in)
         self._ctor_d_in_cccl_type_enum_name = cccl.type_enum_as_name(
             d_in_cccl.value_type.type.value
         )
-        self._ctor_d_out_dtype = d_out.dtype
+        self._ctor_d_out_dtype = cai.get_dtype(d_out)
         self._ctor_init_dtype = h_init.dtype
         cc_major, cc_minor = cuda.get_current_device().compute_capability
         cub_path, thrust_path, libcudacxx_path, cuda_include_path = get_paths()
@@ -70,7 +85,7 @@ class _Reduce:
         if error != enums.CUDA_SUCCESS:
             raise ValueError("Error building reduce")
 
-    def __call__(self, temp_storage, d_in, d_out, num_items, h_init):
+    def __call__(self, temp_storage, d_in, d_out, num_items: int, h_init: np.ndarray):
         d_in_cccl = cccl.to_cccl_iter(d_in)
         if d_in_cccl.type.value == cccl.IteratorKind.ITERATOR:
             assert num_items is not None
@@ -117,9 +132,28 @@ class _Reduce:
         bindings.cccl_device_reduce_cleanup(ctypes.byref(self.build_result))
 
 
+def make_cache_key(
+    d_in: DeviceArrayLike | IteratorBase,
+    d_out: DeviceArrayLike,
+    op: Callable,
+    h_init: np.ndarray,
+):
+    d_in_key = d_in.kind if isinstance(d_in, IteratorBase) else cai.get_dtype(d_in)
+    d_out_key = cai.get_dtype(d_out)
+    op_key = CachableFunction(op)
+    h_init_key = h_init.dtype
+    return (d_in_key, d_out_key, op_key, h_init_key)
+
+
 # TODO Figure out `sum` without operator and initial value
 # TODO Accept stream
-def reduce_into(d_in, d_out, op, h_init):
+@cache_with_key(make_cache_key)
+def reduce_into(
+    d_in: DeviceArrayLike | IteratorBase,
+    d_out: DeviceArrayLike,
+    op: Callable,
+    h_init: np.ndarray,
+):
     """Computes a device-wide reduction using the specified binary ``op`` functor and initial value ``init``.
 
     Example:

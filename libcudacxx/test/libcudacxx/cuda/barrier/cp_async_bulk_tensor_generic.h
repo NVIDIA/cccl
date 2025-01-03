@@ -14,8 +14,11 @@
 #define TEST_CP_ASYNC_BULK_TENSOR_GENERIC_H_
 
 #include <cuda/barrier>
+#include <cuda/ptx>
 #include <cuda/std/array>
 #include <cuda/std/utility> // cuda::std::move
+
+namespace ptx = cuda::ptx;
 
 #include "test_macros.h" // TEST_NV_DIAG_SUPPRESS
 
@@ -173,7 +176,11 @@ test(cuda::std::array<uint32_t, num_dims> smem_coord,
   }
   // Ensure that writes to global memory are visible to others, including
   // those in the async proxy.
+  // ahendriksen: Issuing threadfence and fence.proxy.async.global. The
+  // fence.proxy.async.global should suffice, but I am keeping the threadfence
+  // out of an abundance of caution.
   __threadfence();
+  ptx::fence_proxy_async(ptx::space_global);
   __syncthreads();
 
   // TEST: Add i to buffer[i]
@@ -223,7 +230,11 @@ test(cuda::std::array<uint32_t, num_dims> smem_coord,
     cde::cp_async_bulk_commit_group();
     cde::cp_async_bulk_wait_group_read<0>();
   }
+  // ahendriksen: Issuing threadfence and fence.proxy.async.global. The
+  // fence.proxy.async.global should suffice, but I am keeping the threadfence
+  // out of an abundance of caution.
   __threadfence();
+  ptx::fence_proxy_async(ptx::space_global);
   __syncthreads();
 
   // // TEAR-DOWN: check that global memory is correct

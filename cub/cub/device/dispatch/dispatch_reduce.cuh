@@ -45,15 +45,14 @@
 #endif // no system header
 
 #include <cub/agent/agent_reduce.cuh>
+#include <cub/detail/launcher/cuda_runtime.cuh>
 #include <cub/device/dispatch/kernels/reduce.cuh>
 #include <cub/device/dispatch/tuning/tuning_reduce.cuh>
 #include <cub/grid/grid_even_share.cuh>
 #include <cub/iterator/arg_index_input_iterator.cuh>
-#include <cub/launcher/cuda_runtime.cuh>
 #include <cub/thread/thread_operators.cuh>
 #include <cub/thread/thread_store.cuh>
 #include <cub/util_debug.cuh>
-#include <cub/util_deprecated.cuh>
 #include <cub/util_device.cuh>
 #include <cub/util_temporary_storage.cuh>
 
@@ -273,7 +272,7 @@ template <typename InputIteratorT,
             InitT,
             AccumT,
             TransformOpT>,
-          typename KernelLauncherFactory = TripleChevronFactory>
+          typename KernelLauncherFactory = detail::TripleChevronFactory>
 struct DispatchReduce
 {
   //---------------------------------------------------------------------------
@@ -754,7 +753,7 @@ template <
     InitT,
     AccumT,
     TransformOpT>,
-  typename KernelLauncherFactory = TripleChevronFactory>
+  typename KernelLauncherFactory = detail::TripleChevronFactory>
 using DispatchTransformReduce =
   DispatchReduce<InputIteratorT,
                  OutputIteratorT,

@@ -36,7 +36,7 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 
-#if _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
+#if _CCCL_STD_VER >= 2014
 
 template <class>
 _CCCL_INLINE_VAR constexpr bool disable_sized_range = false;
@@ -182,15 +182,8 @@ struct __fn
     noexcept(noexcept(_CUDA_VRANGES::size(__t)))
   {
     using _Signed = make_signed_t<decltype(_CUDA_VRANGES::size(__t))>;
-    if constexpr (sizeof(ptrdiff_t) > sizeof(_Signed))
-    {
-      return static_cast<ptrdiff_t>(_CUDA_VRANGES::size(__t));
-    }
-    else
-    {
-      return static_cast<_Signed>(_CUDA_VRANGES::size(__t));
-    }
-    _CCCL_UNREACHABLE();
+    using _Result = conditional_t<(sizeof(ptrdiff_t) > sizeof(_Signed)), ptrdiff_t, _Signed>;
+    return static_cast<_Result>(_CUDA_VRANGES::size(__t));
   }
 };
 _LIBCUDACXX_END_NAMESPACE_CPO
@@ -200,7 +193,7 @@ inline namespace __cpo
 _CCCL_GLOBAL_CONSTANT auto ssize = __ssize::__fn{};
 } // namespace __cpo
 
-#endif // _CCCL_STD_VER >= 2017 && !_CCCL_COMPILER(MSVC2017)
+#endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_RANGES
 

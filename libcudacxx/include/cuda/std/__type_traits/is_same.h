@@ -59,7 +59,9 @@ struct _CCCL_TYPE_VISIBILITY_DEFAULT is_same<_Tp, _Tp> : public true_type
 
 #  if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 template <class _Tp, class _Up>
-_CCCL_INLINE_VAR constexpr bool is_same_v = is_same<_Tp, _Up>::value;
+_CCCL_INLINE_VAR constexpr bool is_same_v = false;
+template <class _Tp>
+_CCCL_INLINE_VAR constexpr bool is_same_v<_Tp, _Tp> = true;
 #  endif // !_CCCL_NO_VARIABLE_TEMPLATES
 
 // _IsSame<T,U> has the same effect as is_same<T,U> but instantiates fewer types:
@@ -70,10 +72,10 @@ _CCCL_INLINE_VAR constexpr bool is_same_v = is_same<_Tp, _Up>::value;
 // (such as in a dependent return type).
 
 template <class _Tp, class _Up>
-using _IsSame = bool_constant<is_same<_Tp, _Up>::value>;
+using _IsSame = bool_constant<_CCCL_TRAIT(is_same, _Tp, _Up)>;
 
 template <class _Tp, class _Up>
-using _IsNotSame = bool_constant<!is_same<_Tp, _Up>::value>;
+using _IsNotSame = bool_constant<!_CCCL_TRAIT(is_same, _Tp, _Up)>;
 
 #endif // defined(_CCCL_BUILTIN_IS_SAME) && !defined(_LIBCUDACXX_USE_IS_SAME_FALLBACK)
 
