@@ -118,6 +118,7 @@ public:
   static constexpr float_round_style round_style = round_toward_zero;
 };
 
+// MSVC warns about overflowing left shift
 _CCCL_DIAG_PUSH
 _CCCL_DIAG_SUPPRESS_MSVC(4309)
 template <class _Tp, int __digits, bool _IsSigned>
