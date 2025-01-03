@@ -19,13 +19,13 @@
 // _CCCL_OS(QNX)
 
 // Determine the host compiler and its version
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(_WIN64) /* _WIN64 for NVRTC */
 #  define _CCCL_OS_WINDOWS_() 1
 #else
 #  define _CCCL_OS_WINDOWS_() 0
 #endif
 
-#if defined(__linux__)
+#if defined(__linux__) || defined(__LP64__) /* __LP64__ for NVRTC */
 #  define _CCCL_OS_LINUX_() 1
 #else
 #  define _CCCL_OS_LINUX_() 0

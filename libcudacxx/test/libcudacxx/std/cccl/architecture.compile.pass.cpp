@@ -18,7 +18,7 @@
 #  endif
 #endif
 
-#if _CCCL_ARCH(ARM64)
+#if _CCCL_ARCH(ARM64) && defined(__ARM_ACLE)
 #  include <arm_acle.h>
 #endif
 
