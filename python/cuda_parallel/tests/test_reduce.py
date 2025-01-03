@@ -509,7 +509,10 @@ def array_2d(request):
     f_contiguous = request.param
     arr = cp.random.rand(5, 10)
     if f_contiguous:
-        return cp.asfortranarray(arr)
+        try:
+            return cp.asfortranarray(arr)
+        except ImportError:  # cublas unavailable
+            return arr
     else:
         return arr
 
