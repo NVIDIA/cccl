@@ -15,6 +15,7 @@
 // #include <cuda/std/cstring>
 #include <cuda/std/cassert>
 #include <cuda/std/cstdint>
+#include <cuda/std/type_traits>
 
 #include "test_macros.h"
 

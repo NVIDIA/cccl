@@ -26,6 +26,11 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC" AND NOT "${CMAKE_CXX_STANDARD}" M
   list(FILTER internal_headers EXCLUDE REGEX "mdspan")
 endif()
 
+# Exclude __limits/msvc_win32.h on non-MSVC compilers
+if (NOT "${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
+  list(FILTER internal_headers EXCLUDE REGEX "__limits/msvc_win32.h")
+endif()
+
 # generated cuda::ptx headers are not standalone
 list(FILTER internal_headers EXCLUDE REGEX "__ptx/instructions/generated")
 

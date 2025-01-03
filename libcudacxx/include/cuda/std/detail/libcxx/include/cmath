@@ -338,9 +338,8 @@ long double    truncl(long double x);
 #endif // _LIBCUDACXX_HAS_NVBF16
 
 #if _CCCL_COMPILER(NVRTC)
-#  include <cuda/std/climits>
-#  define INFINITY __builtin_huge_val()
-#  define NAN      __builtin_nan()
+#  define INFINITY _CUDA_VSTD::numeric_limits<float>::infinity()
+#  define NAN      _CUDA_VSTD::numeric_limits<float>::quiet_NaN()
 #endif // _CCCL_COMPILER(NVRTC)
 
 _CCCL_PUSH_MACROS

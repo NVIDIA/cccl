@@ -16,6 +16,7 @@
 // pair(pair&&) = default;
 
 #include <cuda/std/cassert>
+#include <cuda/std/type_traits>
 #include <cuda/std/utility>
 
 #include "test_macros.h"
