@@ -363,6 +363,7 @@ template <typename T, typename... P>
 class shape_of<mdspan<T, P...>>
 {
 public:
+  using element_type   = T;
   using described_type = mdspan<T, P...>;
   using coords_t       = array_tuple<size_t, described_type::rank()>;
 
@@ -623,10 +624,68 @@ public:
       coordinates);
   }
 
+  static constexpr _CCCL_HOST_DEVICE bool use_raw_ptr_iterator()
+  {
+    return (rank() == 1);
+  }
+
 private:
   typename described_type::extents_type extents{};
   ::cuda::std::array<typename described_type::index_type, described_type::rank()> strides{};
 };
+
+namespace reserved
+{
+
+// Primary template
+template <typename Container>
+class raw_ptr_iterator
+{
+public:
+  raw_ptr_iterator(Container c)
+      : c_(std::move(c))
+  {}
+
+  // ... generic version of data(), size(), etc.
+  auto* data() const
+  {
+    return c_.data();
+  }
+  size_t size() const
+  {
+    return c_.size();
+  }
+
+private:
+  Container c_;
+};
+
+// Partial specialization for mdspan<T, P...>
+template <typename T, typename... P>
+class raw_ptr_iterator<mdspan<T, P...>>
+{
+public:
+  raw_ptr_iterator(mdspan<T, P...> _m)
+      : m(mv(_m))
+  {
+    static_assert(mdspan<T, P...>::rank() == 1);
+  }
+
+  T* data() const
+  {
+    return m.data_handle();
+  }
+
+  size_t size() const
+  {
+    return m.size();
+  }
+
+private:
+  mdspan<T, P...> m;
+};
+
+} // end namespace reserved
 
 #ifdef UNITTESTED_FILE
 #  ifdef STF_HAS_UNITTEST_WITH_ARGS
