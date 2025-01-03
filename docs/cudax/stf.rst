@@ -1786,7 +1786,72 @@ one may however already manage coherency or enforce dependencies.
 
 Freezing logical data
 ^^^^^^^^^^^^^^^^^^^^^
-TODO
+
+When a piece of data is used very often, it can be beneficial to avoid enforcing
+data dependencies every time it is accessed. A common example would be data that
+is written once and then read many times.
+
+CUDASTF provides a mechanism called logical data freeze that allows a
+logical data to be accessed outside of tasks—or within tasks—without
+enforcing data dependencies for every access, which reduces overhead to a minimum.
+
+
+By default, calling the ``freeze`` method returns a frozen logical data object
+that can be accessed in read-only mode without additional synchronization. The
+``get`` method of the frozen logical data returns a view of the underlying data
+on the specified data place. This view can be used asynchronously with respect
+to the stream passed to ``get`` until calling the non-blocking unfreeze
+method on the frozen logical data. It is possible to call ``get`` multiple times.
+Modifying these frozen read-only views results in undefined behavior.
+If necessary, implicit data transfers or allocations are performed asynchronously
+when calling ``get``.
+
+.. code:: cpp
+
+    auto frozen_ld = ctx.freeze(ld);
+    auto dX = frozen_ld.get(data_place::current_device(), stream);
+    kernel<<<..., stream>>>(dX);
+
+    // Get a read-only copy of the frozen data on other data places
+    auto dX1 = frozen_ld.get(data_place::device(1), stream);
+    auto hX = frozen_ld.get(data_place::host, stream);
+
+    fx.unfreeze(stream);
+
+While data are frozen, it is still possible to launch tasks which access
+them. CUDASTF will allow tasks with a read access modes to run
+concurrently before ``unfreeze`` is called, but it will defer write accesses
+until data is made is made modifiable again, after ``unfreeze``.
+
+.. code:: cpp
+
+    auto frozen_ld = ctx.freeze(ld, access_mode::rw, data_place::current_device());
+    auto dX = frozen_ld.get(data_place::current_device(), stream);
+    // kernel can modify dX
+    kernel<<<..., stream>>>(dX);
+    fx.unfreeze(stream);
+
+As shown above, it is also possible to create a modifiable frozen logical data,
+allowing an application to temporarily transfer ownership of the logical data
+to code that does not use tasks.  Because no further synchronization is
+performed to ensure the consistency of this logical data once it is frozen,
+users need to specify where the view of the data is needed.  Any tasks that
+access this modifiable frozen logical data will be deferred until ``unfreeze``
+is called.
+
+It is not possible to freeze the same logical data concurrently. Therefore, we
+need to call ``unfreeze`` before calling ``freeze`` again, and it is the
+programmer's responsibility to ensure that the stream passed to ``freeze``
+depends on the completions of all operations in the stream previously passed to
+``unfreeze``.
+
+It is possible to use different streams in the ``freeze``, ``get`` and
+``unfreeze`` methods. However it is also programmer's responsibility to ensure
+that the stream passed to ``get`` depends on the completion of the work in the
+stream passed to ``freeze`` (for example, by using a blocking call such as
+``cudaStreamSynchronize``). Similarly, the stream passed to ``unfreeze`` must
+depend on the completion of the work in the streams used for any preceding
+``freeze`` and ``get`` calls.
 
 Logical token
 ^^^^^^^^^^^^^
