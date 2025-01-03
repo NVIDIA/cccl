@@ -3,7 +3,7 @@
 CCCL Internal Macros
 ====================
 
-The document describes the main *internal* macros used by CCCL. They are not intended to be used by end users.
+The document describes the main *internal* macros used by CCCL. They are not intended to be used by end users, but for development of CCCL features only.
 
 Compiler Macros
 ---------------
