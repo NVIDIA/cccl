@@ -50,11 +50,14 @@
 #  define _CCCL_ARCH_X86_() 0
 #endif
 
-// 64-bit / 32-bit
+// 64-bit
 #if _CCCL_ARCH_X86_64_() || _CCCL_ARCH_ARM64_() || defined(__CUDACC_RTC__)
 #  define _CCCL_ARCH_64BIT_() 1
 #  define _CCCL_ARCH_32BIT_() 0
-#else
+#endif
+
+// 32-bit
+#if _CCCL_ARCH_X86_32_()
 #  define _CCCL_ARCH_64BIT_() 0
 #  define _CCCL_ARCH_32BIT_() 1
 #endif
