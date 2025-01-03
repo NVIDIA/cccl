@@ -332,37 +332,39 @@ public:
   static constexpr float_denorm_style has_denorm = denorm_present;
   static constexpr bool has_denorm_loss          = false;
 
+#if defined(_CCCL_BUILTIN_HUGE_VALF)
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type infinity() noexcept
   {
-#if defined(_CCCL_BUILTIN_HUGE_VALF)
     return _CCCL_BUILTIN_HUGE_VALF();
-#elif _CCCL_COMPILER(NVRTC)
-    return 1.0f / 0.0f;
-#else
-    // May be not constexpr if the compiler doesn't have __builtin_bit_cast
-    return _CUDA_VSTD::bit_cast<type>(0x7f800000);
-#endif
   }
+#else // ^^^ _CCCL_BUILTIN_HUGE_VALF ^^^ // vvv !_CCCL_BUILTIN_HUGE_VALF vvv
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_BIT_CAST type infinity() noexcept
+  {
+    return _CUDA_VSTD::bit_cast<type>(0x7f800000);
+  }
+#endif // !_CCCL_BUILTIN_HUGE_VALF
+#if defined(_CCCL_BUILTIN_NANF)
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type quiet_NaN() noexcept
   {
-#if defined(_CCCL_BUILTIN_NANF)
     return _CCCL_BUILTIN_NANF("");
-#elif _CCCL_COMPILER(NVRTC)
-    return infinity() - infinity();
-#else
-    // May be not constexpr if the compiler doesn't have __builtin_bit_cast
-    return _CUDA_VSTD::bit_cast<type>(0x7fc00000);
-#endif
   }
+#else // ^^^ _CCCL_BUILTIN_NANF ^^^ // vvv !_CCCL_BUILTIN_NANF vvv
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_BIT_CAST type quiet_NaN() noexcept
+  {
+    return _CUDA_VSTD::bit_cast<type>(0x7fc00000);
+  }
+#endif // !_CCCL_BUILTIN_NANF
+#if defined(_CCCL_BUILTIN_NANSF)
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type signaling_NaN() noexcept
   {
-#if defined(_CCCL_BUILTIN_NANSF)
     return _CCCL_BUILTIN_NANSF("");
-#else // ^^^ _CCCL_BUILTIN_NANSF ^^^ // vvv !_CCCL_BUILTIN_NANSF vvv
-    // May be not constexpr if the compiler doesn't have __builtin_bit_cast
-    return _CUDA_VSTD::bit_cast<type>(0x7fa00000);
-#endif // !_CCCL_BUILTIN_NANSF
   }
+#else // ^^^ _CCCL_BUILTIN_NANSF ^^^ // vvv !_CCCL_BUILTIN_NANSF vvv
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_BIT_CAST type signaling_NaN() noexcept
+  {
+    return _CUDA_VSTD::bit_cast<type>(0x7fa00000);
+  }
+#endif // !_CCCL_BUILTIN_NANSF
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type denorm_min() noexcept
   {
     return __FLT_DENORM_MIN__;
@@ -425,37 +427,39 @@ public:
   static constexpr float_denorm_style has_denorm = denorm_present;
   static constexpr bool has_denorm_loss          = false;
 
+#if defined(_CCCL_BUILTIN_HUGE_VAL)
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type infinity() noexcept
   {
-#if defined(_CCCL_BUILTIN_HUGE_VAL)
     return _CCCL_BUILTIN_HUGE_VAL();
-#elif _CCCL_COMPILER(NVRTC)
-    return 1.0 / 0.0;
-#else
-    // May be not constexpr if the compiler doesn't have __builtin_bit_cast
-    return _CUDA_VSTD::bit_cast<type>(0x7ff0000000000000);
-#endif
   }
+#else // ^^^ _CCCL_BUILTIN_HUGE_VAL ^^^ // vvv !_CCCL_BUILTIN_HUGE_VAL vvv
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_BIT_CAST type infinity() noexcept
+  {
+    return _CUDA_VSTD::bit_cast<type>(0x7ff0000000000000);
+  }
+#endif // !_CCCL_BUILTIN_HUGE_VAL
+#if defined(_CCCL_BUILTIN_NAN)
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type quiet_NaN() noexcept
   {
-#if defined(_CCCL_BUILTIN_NAN)
     return _CCCL_BUILTIN_NAN("");
-#elif _CCCL_COMPILER(NVRTC)
-    return infinity() - infinity();
-#else
-    // May be not constexpr if the compiler doesn't have __builtin_bit_cast
-    return std::bit_cast<type>(0x7ff8000000000000);
-#endif
   }
+#else // ^^^ _CCCL_BUILTIN_NAN ^^^ // vvv !_CCCL_BUILTIN_NAN vvv
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_BIT_CAST type quiet_NaN() noexcept
+  {
+    return std::bit_cast<type>(0x7ff8000000000000);
+  }
+#endif // !_CCCL_BUILTIN_NAN
+#if defined(_CCCL_BUILTIN_NANS)
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type signaling_NaN() noexcept
   {
-#if defined(_CCCL_BUILTIN_NANS)
     return _CCCL_BUILTIN_NANS("");
-#else // ^^^ _CCCL_BUILTIN_NANS ^^^ // vvv !_CCCL_BUILTIN_NANS vvv
-    // May be not constexpr if the compiler doesn't have __builtin_bit_cast
-    return _CUDA_VSTD::bit_cast<type>(0x7ff4000000000000);
-#endif // !_CCCL_BUILTIN_NANS
   }
+#else // ^^^ _CCCL_BUILTIN_NANS ^^^ // vvv !_CCCL_BUILTIN_NANS vvv
+  _LIBCUDACXX_HIDE_FROM_ABI static _LIBCUDACXX_CONSTEXPR_BIT_CAST type signaling_NaN() noexcept
+  {
+    return _CUDA_VSTD::bit_cast<type>(0x7ff4000000000000);
+  }
+#endif // !_CCCL_BUILTIN_NANS
   _LIBCUDACXX_HIDE_FROM_ABI static constexpr type denorm_min() noexcept
   {
     return __DBL_DENORM_MIN__;
