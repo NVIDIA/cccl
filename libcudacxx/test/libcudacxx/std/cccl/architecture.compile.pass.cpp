@@ -28,8 +28,12 @@ int main(int, char**)
 #if _CCCL_ARCH(32BIT)
   static_assert(sizeof(void*) == 4, "");
 #endif
-#if _CCCL_ARCH(X86) && (_CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG))
-  static_cast<void>(__cpuidex);
+#if _CCCL_ARCH(X86)
+#  if _CCCL_COMPILER(MSVC)
+  static_cast<void>(__cpuid);
+#  elif _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG)
+  static_cast<void>(__get_cpuid);
+#  endif
 #endif
 #if _CCCL_ARCH(ARM64)
   static_cast<void>(__clz);
