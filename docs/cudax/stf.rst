@@ -1826,7 +1826,8 @@ task’s implementation. Thus, the above task is equivalent to this code:
 
 To avoid ambiguities, you must either consistently ignore every
 ``void_interface`` data instance or include them all, even if they remain
-unused.
+unused. Eliding these token arguments is possible in the ``ctx.task`` and
+``ctx.host_launch`` constructs.
 
 Note that the token created by the ``logical_token`` method of the context
 object is already valid, which means the first access can be either a ``read()``
