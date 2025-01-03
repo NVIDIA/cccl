@@ -30,7 +30,7 @@
 #if defined(_M_X64) || defined(__amd64__) || defined(__x86_64__)
 #  define _CCCL_ARCH_X86_64_() 1
 #else
-#  define _CCCL_ARCH_X86_() 0
+#  define _CCCL_ARCH_X86_64_() 0
 #endif
 
 #if defined(_M_IX86)
