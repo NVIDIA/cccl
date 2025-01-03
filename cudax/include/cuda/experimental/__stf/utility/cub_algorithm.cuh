@@ -67,7 +67,8 @@ template <typename BinaryOp>
 struct LambdaOpWrapper
 {
   LambdaOpWrapper(BinaryOp _op)
-      : op(mv(_op)) {}
+      : op(mv(_op))
+  {}
 
   template <typename T>
   __device__ __forceinline__ T operator()(const T& a, const T& b) const
@@ -211,7 +212,8 @@ public:
   {
   public:
     reduce_scope(stf_transform_reduce_scope& parent_scope, TransformOp&& transform_op)
-        : parent(&parent_scope), transform_op(mv(transform_op))
+        : parent(&parent_scope)
+        , transform_op(mv(transform_op))
     {}
 
     reduce_scope(const reduce_scope&)            = delete;
@@ -322,7 +324,8 @@ public:
   {
   public:
     reduce_scope(stf_transform_exclusive_scan_scope& parent_scope, TransformOp&& transform_op)
-        : parent(&parent_scope), transform_op(mv(transform_op))
+        : parent(&parent_scope)
+        , transform_op(mv(transform_op))
     {}
 
     reduce_scope(const reduce_scope&)            = delete;
@@ -342,8 +345,10 @@ public:
         parent->args_tuple);
 
       t->*
-        [transform_op = mv(transform_op), binary_op = mv(binary_op), s = mv(parent->s), init_val = mv(parent->init_val)](
-          cudaStream_t stream, slice<OutT> res, auto... deps) {
+        [transform_op = mv(transform_op),
+         binary_op    = mv(binary_op),
+         s            = mv(parent->s),
+         init_val     = mv(parent->init_val)](cudaStream_t stream, slice<OutT> res, auto... deps) {
           auto deps_tuple = ::std::forward_as_tuple(deps...);
 
           // This is a functor that transforms a 1D index in the shape into the result
