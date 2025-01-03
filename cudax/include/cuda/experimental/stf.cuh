@@ -1415,10 +1415,10 @@ UNITTEST("logical token elision")
   ctx.task(lA.read(), lB.read(), lC.write())->*[](cudaStream_t, slice<int>) {};
 
   // with all arguments
-  ctx.host_launch(lA.read(), lB.read(), lC.write())->*[](cudaStream_t, void_interface, void_interface, slice<int>) {};
+  ctx.host_launch(lA.read(), lB.read(), lC.write())->*[](void_interface, void_interface, slice<int>) {};
 
   // with argument elision
-  ctx.host_launch(lA.read(), lB.read(), lC.write())->*[](cudaStream_t, slice<int>) {};
+  ctx.host_launch(lA.read(), lB.read(), lC.write())->*[](slice<int>) {};
 
   ctx.finalize();
 };
