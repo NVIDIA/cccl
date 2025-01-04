@@ -10,7 +10,7 @@ import numba
 import numpy as np
 from numba import cuda, types
 
-from ._utils.cai import DeviceArrayLike, is_contiguous, get_dtype
+from ._utils.cai import DeviceArrayLike, get_dtype, is_contiguous
 from .iterators._iterators import IteratorBase
 
 

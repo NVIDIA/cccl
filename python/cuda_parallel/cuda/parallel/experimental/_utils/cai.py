@@ -8,6 +8,7 @@ Utilities for extracting information from `__cuda_array_interface__`.
 """
 
 from typing import Optional, Tuple
+
 import numpy as np
 
 from ..typing import DeviceArrayLike
