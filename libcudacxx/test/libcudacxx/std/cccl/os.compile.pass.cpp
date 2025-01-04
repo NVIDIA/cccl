@@ -9,20 +9,22 @@
 
 #include <cuda/std/__cccl/os.h>
 
-#if _CCCL_OS(WINDOWS)
-#  include <windows.h>
-#endif
+#if !defined(__CUDACC_RTC__)
+#  if _CCCL_OS(WINDOWS)
+#    include <windows.h>
+#  endif
 
-#if _CCCL_OS(LINUX)
-#  include <unistd.h>
-#endif
+#  if _CCCL_OS(LINUX)
+#    include <unistd.h>
+#  endif
 
-#if _CCCL_OS(ANDROID)
-#  include <android/api-level.h>
-#endif
+#  if _CCCL_OS(ANDROID)
+#    include <android/api-level.h>
+#  endif
 
-#if _CCCL_OS(QNX)
-#  include <qnx.h>
+#  if _CCCL_OS(QNX)
+#    include <qnx.h>
+#  endif
 #endif
 
 int main(int, char**)

@@ -10,16 +10,18 @@
 #include <cuda/std/__cccl/architecture.h>
 #include <cuda/std/__cccl/compiler.h>
 
-#if _CCCL_ARCH(X86)
-#  if _CCCL_COMPILER(MSVC)
-#    include <intrin.h>
-#  elif _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG)
-#    include <cpuid.h>
+#if !defined(__CUDACC_RTC__)
+#  if _CCCL_ARCH(X86)
+#    if _CCCL_COMPILER(MSVC)
+#      include <intrin.h>
+#    elif _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG)
+#      include <cpuid.h>
+#    endif
 #  endif
-#endif
 
-#if _CCCL_ARCH(ARM64) && defined(__ARM_ACLE)
-#  include <arm_acle.h>
+#  if _CCCL_ARCH(ARM64) && defined(__ARM_ACLE)
+#    include <arm_acle.h>
+#  endif
 #endif
 
 int main(int, char**)
