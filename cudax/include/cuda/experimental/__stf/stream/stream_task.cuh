@@ -29,6 +29,7 @@
 
 #include <cuda/experimental/__stf/internal/frozen_logical_data.cuh>
 #include <cuda/experimental/__stf/internal/logical_data.cuh>
+#include <cuda/experimental/__stf/internal/void_interface.cuh>
 #include <cuda/experimental/__stf/stream/internal/event_types.cuh>
 
 #include <deque>
@@ -593,12 +594,31 @@ public:
       auto t = tuple_prepend(get_stream(), typed_deps());
       return ::std::apply(::std::forward<Fun>(fun), t);
     }
+    else if constexpr (reserved::is_invocable_with_filtered<Fun, cudaStream_t, Data...>::value)
+    {
+      // Use the filtered tuple
+      auto t = tuple_prepend(get_stream(), reserved::remove_void_interface_types(typed_deps()));
+      return ::std::apply(::std::forward<Fun>(fun), t);
+    }
     else
     {
+      constexpr bool fun_invocable_task_deps = ::std::is_invocable_v<Fun, decltype(*this), Data...>;
+      constexpr bool fun_invocable_task_non_void_deps =
+        reserved::is_invocable_with_filtered<Fun, decltype(*this), Data...>::value;
+
       // Invoke passing `*this` as the first argument, followed by the slices
-      static_assert(::std::is_invocable_v<Fun, decltype(*this), Data...>, "Incorrect lambda function signature.");
-      auto t = tuple_prepend(*this, typed_deps());
-      return ::std::apply(::std::forward<Fun>(fun), t);
+      static_assert(fun_invocable_task_deps || fun_invocable_task_non_void_deps,
+                    "Incorrect lambda function signature.");
+
+      if constexpr (fun_invocable_task_deps)
+      {
+        return ::std::apply(::std::forward<Fun>(fun), tuple_prepend(*this, typed_deps()));
+      }
+      else if constexpr (fun_invocable_task_non_void_deps)
+      {
+        return ::std::apply(::std::forward<Fun>(fun),
+                            tuple_prepend(*this, reserved::remove_void_interface_types(typed_deps())));
+      }
     }
   }
 
