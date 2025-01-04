@@ -7,6 +7,7 @@ PTX Instructions
    :maxdepth: 1
 
    instructions/barrier_cluster
+   instructions/bfind
    instructions/cp_async_bulk
    instructions/cp_async_bulk_commit_group
    instructions/cp_async_bulk_wait_group
@@ -56,7 +57,7 @@ Instructions by section
    * - `clz <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-clz>`__
      - No
    * - `bfind <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-bfind>`__
-     - No
+     - CCCL 2.8.0 / CUDA 12.9
    * - `fns <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-fns>`__
      - No
    * - `brev <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#integer-arithmetic-instructions-brev>`__
