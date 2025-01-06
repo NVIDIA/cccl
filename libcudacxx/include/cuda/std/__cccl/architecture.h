@@ -14,11 +14,7 @@
 // The header provides the following macros to determine the host architecture:
 //
 // _CCCL_ARCH(ARM64)     ARM64
-// _CCCL_ARCH(X86)       X86 both 32 and 64 bit
 // _CCCL_ARCH(X86_64)    X86 64 bit
-// _CCCL_ARCH(X86_32)    X86 64 bit
-// _CCCL_ARCH(64BIT)     Any 64 bit OS (supported by CUDA)
-// _CCCL_ARCH(32BIT)     Any 32 bit OS (supported by CUDA)
 
 // Determine the host compiler and its version
 
@@ -34,34 +30,6 @@
 #  define _CCCL_ARCH_X86_64_() 1
 #else
 #  define _CCCL_ARCH_X86_64_() 0
-#endif
-
-// X86 32-bit
-#if defined(_M_IX86)
-#  define _CCCL_ARCH_X86_32_() 1
-#else
-#  define _CCCL_ARCH_X86_32_() 0
-#endif
-
-// X86
-#if _CCCL_ARCH_X86_64_() || _CCCL_ARCH_X86_32_()
-#  define _CCCL_ARCH_X86_() 1
-#else
-#  define _CCCL_ARCH_X86_() 0
-#endif
-
-// 64-bit
-#if _CCCL_ARCH_X86_64_() || _CCCL_ARCH_ARM64_() || defined(__CUDACC_RTC__)
-#  define _CCCL_ARCH_64BIT_() 1
-#else
-#  define _CCCL_ARCH_64BIT_() 0
-#endif
-
-// 32-bit
-#if _CCCL_ARCH_X86_32_()
-#  define _CCCL_ARCH_32BIT_() 1
-#else
-#  define _CCCL_ARCH_32BIT_() 0
 #endif
 
 #define _CCCL_ARCH(...) _CCCL_ARCH_##__VA_ARGS__##_()

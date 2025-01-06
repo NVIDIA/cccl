@@ -11,7 +11,7 @@
 #include <cuda/std/__cccl/compiler.h>
 
 #if !defined(__CUDACC_RTC__)
-#  if _CCCL_ARCH(X86)
+#  if _CCCL_ARCH(X86_64)
 #    if _CCCL_COMPILER(MSVC)
 #      include <intrin.h>
 #    elif _CCCL_COMPILER(GCC) || _CCCL_COMPILER(CLANG)
@@ -26,11 +26,6 @@
 
 int main(int, char**)
 {
-#if _CCCL_ARCH(64BIT)
   static_assert(sizeof(void*) == 8, "");
-#endif
-#if _CCCL_ARCH(32BIT)
-  static_assert(sizeof(void*) == 4, "");
-#endif
   return 0;
 }
