@@ -2059,6 +2059,9 @@ inline void fetch_data(
     // This will initiate a copy if the data was not valid
     d.enforce_msi_protocol(instance_id, mode, stf_prereq);
 
+    // TODO this is where we would insert an init operation if needed.
+    // use virtual methods in context to insert
+
     stf_prereq.optimize();
 
     // Gather all prereqs required to fetch this piece of data into the

@@ -624,11 +624,6 @@ public:
       coordinates);
   }
 
-  static constexpr _CCCL_HOST_DEVICE bool use_raw_ptr_iterator()
-  {
-    return (rank() == 1);
-  }
-
 private:
   typename described_type::extents_type extents{};
   ::cuda::std::array<typename described_type::index_type, described_type::rank()> strides{};
@@ -639,50 +634,113 @@ namespace reserved
 
 // Primary template
 template <typename Container>
-class raw_ptr_iterator
-{
-public:
-  raw_ptr_iterator(Container c)
-      : c_(std::move(c))
-  {}
-
-  // ... generic version of data(), size(), etc.
-  auto* data() const
-  {
-    return c_.data();
-  }
-  size_t size() const
-  {
-    return c_.size();
-  }
-
-private:
-  Container c_;
-};
+class view_of;
 
 // Partial specialization for mdspan<T, P...>
 template <typename T, typename... P>
-class raw_ptr_iterator<mdspan<T, P...>>
+class view_of<mdspan<T, P...>>
 {
 public:
-  raw_ptr_iterator(mdspan<T, P...> _m)
-      : m(mv(_m))
+  // To use a raw pointer instead of an iterator, we need a contiguous layout.
+  static constexpr size_t rank = shape_of<mdspan<T, P...>>::rank();
+  // TODO check that mdspan of rank 1 are always contiguous (not just our slice<T>)
+  static constexpr bool can_provide_raw_data = (rank == 1);
+
+  class iterator
   {
-    static_assert(mdspan<T, P...>::rank() == 1);
+  public:
+    // Required iterator type aliases
+    using difference_type   = ::std::ptrdiff_t;
+    using value_type        = T;
+    using pointer           = value_type*;
+    using reference         = mdspan<T, P...>&;
+    using iterator_category = ::std::random_access_iterator_tag;
+
+    _CCCL_HOST_DEVICE iterator(mdspan<T, P...> _m, bool at_end = false)
+        : m(mv(_m))
+        , coord_it(at_end ? shape(m).end() : shape(m).begin())
+    {}
+
+    _CCCL_HOST_DEVICE auto& operator*() const
+    {
+      const auto& coords = *coord_it;
+      // ::std::array<::std::ptrdiff_t, dimensions>
+      const auto& strides = m.mapping().strides();
+
+      size_t offset = 0;
+      for (int d = 0; d < rank; d++)
+      {
+        offset += coords[d] * strides[d];
+      }
+
+      return m.data_handle()[offset];
+    }
+
+    _CCCL_HOST_DEVICE iterator& operator++()
+    {
+      coord_it++;
+      return *this;
+    }
+
+    iterator operator+(difference_type n) const
+    {
+      iterator tmp(*this);
+      tmp.coord_it += n; // or do stride logic
+      return tmp;
+    }
+
+    _CCCL_HOST_DEVICE iterator& operator+=(::std::ptrdiff_t n)
+    {
+      coord_it += n;
+      return *this;
+    }
+
+  private:
+    mdspan<T, P...> m;
+    typename box<rank>::iterator coord_it;
+  };
+
+  static auto begin(const mdspan<T, P...>& m)
+  {
+    return iterator(m);
   }
 
-  T* data() const
+  static auto end(const mdspan<T, P...>& m)
   {
+    return iterator(m, true);
+  }
+
+  // Dynamic check to see if we can use a raw pointer (the static tests might
+  // be a little more conservative because an mdspan can have a contiguous
+  // layout based on extents available at runtime)
+  static bool has_raw_data(const mdspan<T, P...>& m)
+  {
+    return (contiguous_dims(m) == rank);
+  }
+
+  static T* data(const mdspan<T, P...>& m)
+  {
+    static_assert(can_provide_raw_data);
     return m.data_handle();
   }
 
-  size_t size() const
+  static size_t size(const mdspan<T, P...>& m)
   {
+    // This is the proper number of elements even with a non contiguous layout
     return m.size();
   }
 
-private:
-  mdspan<T, P...> m;
+  //  static T *begin(const mdspan<T, P...> &m)
+  //  {
+  //    _CCCL_ASSERT(has_raw_data(m), "unimplemented for non contiguous layouts");
+  //    return m.data_handle();
+  //  }
+  //
+  //  static T *end(const mdspan<T, P...> &m)
+  //  {
+  //    _CCCL_ASSERT(has_raw_data(m), "unimplemented for non contiguous layouts");
+  //    return m.data_handle() + m.size();
+  //  }
 };
 
 } // end namespace reserved
