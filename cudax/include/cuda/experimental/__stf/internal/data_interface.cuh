@@ -296,6 +296,15 @@ public:
     return tp.find_data_instance_id(d);
   }
 
+  /**
+   * @brief Indicates whether this is a void data interface, which permits to
+   * skip some operations to allocate or move data for example
+   */
+  virtual bool is_void_interface() const
+  {
+    return false;
+  }
+
 private:
   /**
    * @brief Get the common implementation of the data interface.

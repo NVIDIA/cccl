@@ -33,7 +33,7 @@ template <class _Iter1, class _Iter2, class _BinaryPred, class _Proj1 = identity
 concept indirectly_comparable =
   indirect_binary_predicate<_BinaryPred, projected<_Iter1, _Proj1>, projected<_Iter2, _Proj2>>;
 
-#elif _CCCL_STD_VER > 2014
+#elif _CCCL_STD_VER >= 2014
 
 // clang-format off
 
@@ -50,7 +50,7 @@ _CCCL_CONCEPT indirectly_comparable =
 
 // clang-format on
 
-#endif // _CCCL_STD_VER > 2014
+#endif // _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -106,7 +106,7 @@ using iter_value_t =
                          indirectly_readable_traits<remove_cvref_t<_Ip>>,
                          iterator_traits<remove_cvref_t<_Ip>>>::value_type;
 
-#elif _CCCL_STD_VER > 2014 // ^^^ !_CCCL_NO_CONCEPTS ^^^
+#elif _CCCL_STD_VER >= 2014 // ^^^ !_CCCL_NO_CONCEPTS ^^^
 
 // [readable.traits]
 template <class, class = void>

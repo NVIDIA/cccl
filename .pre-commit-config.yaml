@@ -41,11 +41,8 @@ repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.8.4
     hooks:
-    - id: ruff
-      args: ["--fix", "--show-fixes"]
-      exclude: "^docs/tools/"
-    - id: ruff-format
-      exclude: "^docs/tools/"
+    - id: ruff  # linter
+    - id: ruff-format  # formatter
 
   # TOML lint & format
   - repo: https://github.com/nikaro/taplo-pre-commit

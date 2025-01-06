@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11
 
 // template<class T>
 // concept bidirectional_iterator;
@@ -17,17 +17,17 @@
 
 #include "test_iterators.h"
 
-static_assert(!cuda::std::bidirectional_iterator<cpp17_input_iterator<int*>>);
-static_assert(!cuda::std::bidirectional_iterator<cpp20_input_iterator<int*>>);
-static_assert(!cuda::std::bidirectional_iterator<forward_iterator<int*>>);
-static_assert(cuda::std::bidirectional_iterator<bidirectional_iterator<int*>>);
-static_assert(cuda::std::bidirectional_iterator<random_access_iterator<int*>>);
-static_assert(cuda::std::bidirectional_iterator<contiguous_iterator<int*>>);
+static_assert(!cuda::std::bidirectional_iterator<cpp17_input_iterator<int*>>, "");
+static_assert(!cuda::std::bidirectional_iterator<cpp20_input_iterator<int*>>, "");
+static_assert(!cuda::std::bidirectional_iterator<forward_iterator<int*>>, "");
+static_assert(cuda::std::bidirectional_iterator<bidirectional_iterator<int*>>, "");
+static_assert(cuda::std::bidirectional_iterator<random_access_iterator<int*>>, "");
+static_assert(cuda::std::bidirectional_iterator<contiguous_iterator<int*>>, "");
 
-static_assert(cuda::std::bidirectional_iterator<int*>);
-static_assert(cuda::std::bidirectional_iterator<int const*>);
-static_assert(cuda::std::bidirectional_iterator<int volatile*>);
-static_assert(cuda::std::bidirectional_iterator<int const volatile*>);
+static_assert(cuda::std::bidirectional_iterator<int*>, "");
+static_assert(cuda::std::bidirectional_iterator<int const*>, "");
+static_assert(cuda::std::bidirectional_iterator<int volatile*>, "");
+static_assert(cuda::std::bidirectional_iterator<int const volatile*>, "");
 
 struct not_forward_iterator
 {
@@ -44,7 +44,8 @@ struct not_forward_iterator
   __host__ __device__ not_forward_iterator& operator--(int);
 };
 static_assert(cuda::std::input_iterator<not_forward_iterator> && !cuda::std::forward_iterator<not_forward_iterator>
-              && !cuda::std::bidirectional_iterator<not_forward_iterator>);
+                && !cuda::std::bidirectional_iterator<not_forward_iterator>,
+              "");
 
 struct wrong_iterator_category
 {
@@ -72,7 +73,7 @@ struct wrong_iterator_category
   };
 #endif
 };
-static_assert(!cuda::std::bidirectional_iterator<wrong_iterator_category>);
+static_assert(!cuda::std::bidirectional_iterator<wrong_iterator_category>, "");
 
 struct wrong_iterator_concept
 {
@@ -101,7 +102,7 @@ struct wrong_iterator_concept
   };
 #endif
 };
-static_assert(!cuda::std::bidirectional_iterator<wrong_iterator_concept>);
+static_assert(!cuda::std::bidirectional_iterator<wrong_iterator_concept>, "");
 
 struct no_predecrement
 {
@@ -129,7 +130,7 @@ struct no_predecrement
   };
 #endif
 };
-static_assert(!cuda::std::bidirectional_iterator<no_predecrement>);
+static_assert(!cuda::std::bidirectional_iterator<no_predecrement>, "");
 
 struct bad_predecrement
 {
@@ -158,7 +159,7 @@ struct bad_predecrement
   };
 #endif
 };
-static_assert(!cuda::std::bidirectional_iterator<bad_predecrement>);
+static_assert(!cuda::std::bidirectional_iterator<bad_predecrement>, "");
 
 struct no_postdecrement
 {
@@ -189,7 +190,7 @@ struct no_postdecrement
   };
 #endif
 };
-static_assert(!cuda::std::bidirectional_iterator<no_postdecrement>);
+static_assert(!cuda::std::bidirectional_iterator<no_postdecrement>, "");
 
 struct bad_postdecrement
 {
@@ -218,7 +219,7 @@ struct bad_postdecrement
   };
 #endif
 };
-static_assert(!cuda::std::bidirectional_iterator<bad_postdecrement>);
+static_assert(!cuda::std::bidirectional_iterator<bad_postdecrement>, "");
 
 int main(int, char**)
 {

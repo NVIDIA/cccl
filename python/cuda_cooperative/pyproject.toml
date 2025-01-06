@@ -27,3 +27,9 @@ Homepage = "https://developer.nvidia.com/"
 [tool.setuptools.dynamic]
 version = { attr = "cuda.cooperative._version.__version__" }
 readme = { file = ["README.md"], content-type = "text/markdown" }
+
+[tool.ruff]
+extend = "../../pyproject.toml"
+
+[tool.ruff.lint.isort]
+known-first-party = ["cuda.cooperative"]

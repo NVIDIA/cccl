@@ -62,8 +62,8 @@ import os
 import re
 import struct
 import sys
-import yaml
 
+import yaml
 
 matrix_yaml = None
 
