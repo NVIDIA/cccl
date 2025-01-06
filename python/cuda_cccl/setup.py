@@ -2,9 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
-from pathlib import Path
-from setuptools import setup
 import shutil
+from pathlib import Path
+
+from setuptools import setup
 
 PROJECT_PATH = Path(__file__).resolve().parent
 CCCL_PATH = PROJECT_PATH.parents[1]

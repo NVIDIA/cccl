@@ -19,7 +19,7 @@ requires-python = ">=3.9"
 dynamic = ["version", "readme", "dependencies"]
 
 [project.optional-dependencies]
-test = ["pytest", "pytest-xdist", "cupy-cuda12x"]
+test = ["pytest", "pytest-xdist", "cupy-cuda12x", "typing_extensions"]
 
 [project.urls]
 Homepage = "https://developer.nvidia.com/"

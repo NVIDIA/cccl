@@ -2,11 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+import os
+import shutil
 from dataclasses import dataclass
 from functools import lru_cache
-import os
 from pathlib import Path
-import shutil
 from typing import Optional
 
 
