@@ -174,7 +174,7 @@ The following macros are required only if the target C++ version does not suppor
 +------------------------+--------------------------------------------------+
 | ``_CCCL_TRAIT(X)``     | Template parameter constrain                     |
 +------------------------+--------------------------------------------------+
-| ``_CCCL_AND``          | Traits conjunction                               |
+| ``_CCCL_AND``          | Traits conjunction only used with ``_CCCL_REQUIRES`` |
 +------------------------+--------------------------------------------------+
 
 Usage example:
