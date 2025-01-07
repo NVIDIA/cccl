@@ -48,7 +48,7 @@
 // may be combined.
 // - CCCL_IGNORE_DEPRECATED_COMPILER
 //   Ignore deprecation warnings when using deprecated compilers. Compiling
-//   deprecated C++ dialects will still issue warnings.
+//   with deprecated C++ dialects will still issue warnings.
 
 #  define CUB_CPP_DIALECT _CCCL_STD_VER
 
@@ -66,7 +66,7 @@
 #  define CUB_COMPILER_DEPRECATION_SOFT(REQ, CUR)                                                        \
     CUB_COMP_DEPR_IMPL(                                                                                  \
       CUB requires at least REQ. CUR is deprecated but still supported. CUR support will be removed in a \
-        future release. Define CCCL_IGNORE_DEPRECATED_CPP_DIALECT to suppress this message.)
+        future release. Define CCCL_IGNORE_DEPRECATED_COMPILER to suppress this message.)
 // clang-format on
 
 #  ifndef CCCL_IGNORE_DEPRECATED_COMPILER
