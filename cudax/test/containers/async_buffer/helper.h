@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -29,19 +29,19 @@ namespace cudax = cuda::experimental;
 __device__ constexpr int device_data[] = {1, 42, 1337, 0, 12, -1};
 constexpr int host_data[]              = {1, 42, 1337, 0, 12, -1};
 
-template <class Vector>
-constexpr bool equal_range(const Vector& vec)
+template <class Buffer>
+constexpr bool equal_range(const Buffer& buf)
 {
-  _CCCL_IF_CONSTEXPR (Vector::__is_host_only)
+  _CCCL_IF_CONSTEXPR (Buffer::__is_host_only)
   {
-    return cuda::std::equal(vec.begin(), vec.end(), cuda::std::begin(host_data), cuda::std::end(host_data));
+    return cuda::std::equal(buf.begin(), buf.end(), cuda::std::begin(host_data), cuda::std::end(host_data));
   }
   else
   {
-    return vec.size() == cuda::std::size(device_data)
-        && thrust::equal(thrust::cuda::par.on(vec.get_stream().get()),
-                         vec.begin(),
-                         vec.end(),
+    return buf.size() == cuda::std::size(device_data)
+        && thrust::equal(thrust::cuda::par.on(buf.get_stream().get()),
+                         buf.begin(),
+                         buf.end(),
                          cuda::get_device_address(device_data[0]));
   }
 }
@@ -100,20 +100,20 @@ struct equal_to_value
   }
 };
 
-template <class Vector>
-constexpr bool equal_size_value(const Vector& vec, const size_t size, const int value)
+template <class Buffer>
+constexpr bool equal_size_value(const Buffer& buf, const size_t size, const int value)
 {
-  _CCCL_IF_CONSTEXPR (Vector::__is_host_only)
+  _CCCL_IF_CONSTEXPR (Buffer::__is_host_only)
   {
-    return vec.size() == size
-        && cuda::std::equal(vec.begin(), vec.end(), cuda::std::begin(host_data), equal_to_value{value});
+    return buf.size() == size
+        && cuda::std::equal(buf.begin(), buf.end(), cuda::std::begin(host_data), equal_to_value{value});
   }
   else
   {
-    return vec.size() == size
-        && thrust::equal(thrust::cuda::par.on(vec.get_stream().get()),
-                         vec.begin(),
-                         vec.end(),
+    return buf.size() == size
+        && thrust::equal(thrust::cuda::par.on(buf.get_stream().get()),
+                         buf.begin(),
+                         buf.end(),
                          cuda::std::begin(device_data),
                          equal_to_value{value});
   }
@@ -142,7 +142,7 @@ template <class... Properties>
 struct extract_properties<cuda::std::tuple<Properties...>>
 {
   using env          = cudax::env_t<other_property, Properties...>;
-  using async_vector = cudax::async_vector<int, Properties...>;
+  using async_buffer = cudax::async_buffer<int, Properties...>;
   using resource =
     caching_resource<cuda::std::conditional_t<cuda::mr::__is_host_device_accessible<Properties...>,
                                               cudax::pinned_memory_resource,
@@ -152,7 +152,7 @@ struct extract_properties<cuda::std::tuple<Properties...>>
   using iterator       = cudax::heterogeneous_iterator<int, false, Properties...>;
   using const_iterator = cudax::heterogeneous_iterator<int, true, Properties...>;
 
-  using matching_vector   = cudax::async_vector<int, other_property, Properties...>;
+  using matching_vector   = cudax::async_buffer<int, other_property, Properties...>;
   using matching_resource = memory_resource_wrapper<other_property, Properties...>;
 };
 

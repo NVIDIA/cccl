@@ -20,6 +20,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cuda/experimental/__container/async_vector.cuh>
+#include <cuda/experimental/__container/async_buffer.cuh>
 
 #endif //__CUDAX_CONTAINER__
