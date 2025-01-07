@@ -47,7 +47,9 @@ using namespace cub;
 /**
  * Kernel that iterates through the specified number of software global barriers
  */
-__global__ void Kernel(GridBarrier global_barrier, int iterations)
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+__global__ void Kernel(GridBarrier global_barrier, int iterations) //
+  _CCCL_SUPPRESS_DEPRECATED_POP
 {
   for (int i = 0; i < iterations; i++)
   {
@@ -126,7 +128,9 @@ int main(int argc, char** argv)
   fflush(stdout);
 
   // Init global barrier
+  _CCCL_SUPPRESS_DEPRECATED_PUSH
   GridBarrierLifetime global_barrier;
+  _CCCL_SUPPRESS_DEPRECATED_POP
   global_barrier.Setup(grid_size);
 
   // Time kernel
