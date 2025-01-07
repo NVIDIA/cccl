@@ -699,6 +699,7 @@ template <bool IS_DESCENDING,
           typename OffsetT,
           typename BeginOffsetIteratorT,
           typename EndOffsetIteratorT,
+          typename SegmentOffsetT,
           typename PolicyHub = detail::segmented_sort::policy_hub<KeyT, ValueT>>
 struct DispatchSegmentedSort
 {
