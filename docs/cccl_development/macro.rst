@@ -21,11 +21,11 @@ Compiler Macros
 +-----------------------------+-------------------------------+
 | ``_CCCL_COMPILER(MSVC)``    | Microsoft Visual Studio       |
 +-----------------------------+-------------------------------+
-| ``_CCCL_COMPILER_MSVC2017`` | Microsoft Visual Studio 2017  |
+| ``_CCCL_COMPILER(MSVC2017)`` | Microsoft Visual Studio 2017  |
 +-----------------------------+-------------------------------+
-| ``_CCCL_COMPILER_MSVC2019`` | Microsoft Visual Studio 2019  |
+| ``_CCCL_COMPILER(MSVC2019)`` | Microsoft Visual Studio 2019  |
 +-----------------------------+-------------------------------+
-| ``_CCCL_COMPILER_MSVC2022`` | Microsoft Visual Studio 2022  |
+| ``_CCCL_COMPILER(MSVC2022)`` | Microsoft Visual Studio 2022  |
 +-----------------------------+-------------------------------+
 
 The ``_CCCL_COMPILER`` function-like macro can also be used to check the version of a compiler.
