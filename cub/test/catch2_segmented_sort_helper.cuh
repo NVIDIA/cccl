@@ -134,7 +134,7 @@ public:
 
   void verify_sorted(const c2h::device_vector<key_t>& out_keys) const
   {
-    // Verfiy keys are sorted next to each other
+    // Verify keys are sorted next to each other
     auto count = thrust::unique_count(c2h::device_policy, out_keys.cbegin(), out_keys.cend(), thrust::equal_to<int>());
     REQUIRE(count <= max_histo_size);
 
@@ -215,7 +215,7 @@ public:
     // The segments' end-offsets are provided by the segments' begin-offset iterator
     auto offsets_plus_1 = offsets + 1;
 
-    // Verfiy keys are sorted next to each other
+    // Verify keys are sorted next to each other
     const auto count = static_cast<std::size_t>(
       thrust::unique_count(c2h::device_policy, out_keys.cbegin(), out_keys.cend(), thrust::equal_to<int>()));
     REQUIRE(count <= sequence_length * num_segments);
