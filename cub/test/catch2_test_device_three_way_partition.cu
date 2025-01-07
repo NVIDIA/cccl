@@ -102,9 +102,9 @@ struct mod_equal_to
 {
   T mod;
   T val;
-  __host__ __device__ bool operator()(T x)
+  __host__ __device__ bool operator()(T x) const
   {
-    return (x % mod == val) ? true : false;
+    return x % mod == val;
   }
 };
 
@@ -114,7 +114,7 @@ struct multiply_and_add
   T mul;
   T add;
 
-  __host__ __device__ T operator()(T x)
+  __host__ __device__ T operator()(T x) const
   {
     return x * mul + add;
   }
@@ -130,7 +130,7 @@ C2H_TEST("Device three-way partition can handle empty problems", "[partition][de
   type* d_first_part_out{};
   type* d_second_part_out{};
   type* d_unselected_out{};
-  c2h::device_vector<type> num_selected_out(2, 42);
+  c2h::device_vector<type> num_selected_out{42, 42};
   type* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   less_than_t<type> le(type{0});
@@ -486,9 +486,7 @@ try
   offset_t expected_second = num_items / offset_t{3} + (num_items % offset_t{3} >= 2);
   offset_t expected_third  = num_items / offset_t{3};
 
-  // Prepare tabulate output iterator to verify results in a memory-efficient way:
-  // We use a tabulate iterator that checks whenever the partition algorithm writes an output whether that item
-  // corresponds to the expected value at that index and, if correct, sets a boolean flag at that index.
+  // Prepare tabulate output iterator to verify results in a memory-efficient way
   auto expected_first_it  = thrust::make_transform_iterator(in, multiply_and_add<offset_t>{3, 0});
   auto expected_second_it = thrust::make_transform_iterator(in, multiply_and_add<offset_t>{3, 1});
   auto expected_third_it  = thrust::make_transform_iterator(in, multiply_and_add<offset_t>{3, 2});
@@ -501,7 +499,7 @@ try
   auto check_third_it                = check_third_partition_helper.get_flagging_output_iterator(expected_third_it);
 
   // Needs to be device accessible
-  c2h::device_vector<offset_t> num_selected_out(2, 0);
+  c2h::device_vector<offset_t> num_selected_out{0, 0};
   offset_t* d_num_selected_out = thrust::raw_pointer_cast(num_selected_out.data());
 
   // Run test
