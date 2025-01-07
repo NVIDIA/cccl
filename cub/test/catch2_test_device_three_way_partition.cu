@@ -486,11 +486,11 @@ try
   offset_t expected_second = num_items / offset_t{3} + (num_items % offset_t{3} >= 2);
   offset_t expected_third  = num_items / offset_t{3};
 
-  // Prepare tabulate output iterator to verify results in a memory-efficient way
   auto expected_first_it  = thrust::make_transform_iterator(in, multiply_and_add<offset_t>{3, 0});
   auto expected_second_it = thrust::make_transform_iterator(in, multiply_and_add<offset_t>{3, 1});
   auto expected_third_it  = thrust::make_transform_iterator(in, multiply_and_add<offset_t>{3, 2});
 
+  // Prepare tabulate output iterators to verify results in a memory-efficient way
   auto check_first_partition_helper  = detail::large_problem_test_helper(expected_first);
   auto check_first_it                = check_first_partition_helper.get_flagging_output_iterator(expected_first_it);
   auto check_second_partition_helper = detail::large_problem_test_helper(expected_second);
