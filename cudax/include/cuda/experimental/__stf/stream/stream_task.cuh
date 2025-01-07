@@ -622,7 +622,7 @@ public:
     }
   }
 
-  // private:
+private:
   auto typed_deps()
   {
     return make_tuple_indexwise<sizeof...(Data)>([&](auto i) {
