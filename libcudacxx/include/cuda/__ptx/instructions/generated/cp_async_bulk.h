@@ -30,15 +30,16 @@ _CCCL_DEVICE static inline void cp_async_bulk(
 {
   // __space == space_cluster (due to parameter type constraint)
   // __space == space_global (due to parameter type constraint)
-  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
-                    (asm("cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes [%0], [%1], %2, [%3]; // "
-                         "1a. unicast" : : "r"(__as_ptr_smem(__dstMem)),
-                         "l"(__as_ptr_gmem(__srcMem)),
-                         "r"(__size),
-                         "r"(__as_ptr_smem(__smem_bar)) : "memory");),
-                    (
-                      // Unsupported architectures will have a linker error with a semi-decent error message
-                      __cuda_ptx_cp_async_bulk_is_not_supported_before_SM_90__();));
+  NV_IF_ELSE_TARGET(
+    NV_PROVIDES_SM_90,
+    (asm("cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes [%0], [%1], %2, [%3]; // "
+         "1a. unicast" : : "r"(__as_ptr_smem(__dstMem)),
+         "l"(__as_ptr_gmem(__srcMem)),
+         "r"(__size),
+         "r"(__as_ptr_smem(__smem_bar)) : "memory");),
+    (
+      // Unsupported architectures will have a linker error with a semi-decent error message
+      __cuda_ptx_cp_async_bulk_is_not_supported_before_SM_90__();));
 }
 #endif // __cccl_ptx_isa >= 800
 
