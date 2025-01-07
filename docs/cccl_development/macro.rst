@@ -172,7 +172,7 @@ The following macros are required only if the target C++ version does not suppor
 +------------------------+--------------------------------------------------+
 | ``_CCCL_REQUIRES(X)``  | ``requires`` clause                              |
 +------------------------+--------------------------------------------------+
-| ``_CCCL_TRAIT(X)``     | Template parameter constrain                     |
+| ``_CCCL_TRAIT(X)``     | Selects variable template ``is_meow_v<T>`` instead of ``is_meow<T>::value`` when available |
 +------------------------+--------------------------------------------------+
 | ``_CCCL_AND``          | Traits conjunction only used with ``_CCCL_REQUIRES`` |
 +------------------------+--------------------------------------------------+
