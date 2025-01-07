@@ -288,11 +288,11 @@
 #  define _CCCL_BUILTIN_LINE() __LINE__
 #endif // _CCCL_CUDACC_BELOW(11, 3)
 
-#if _CCCL_CHECK_BUILTIN(builtin_huge_valf) || _CCCL_COMPILER(MSVC)
+#if _CCCL_CHECK_BUILTIN(builtin_huge_valf) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
 #  define _CCCL_BUILTIN_HUGE_VALF() __builtin_huge_valf()
 #endif // _CCCL_CHECK_BUILTIN(builtin_huge_valf)
 
-#if _CCCL_CHECK_BUILTIN(builtin_huge_val) || _CCCL_COMPILER(MSVC)
+#if _CCCL_CHECK_BUILTIN(builtin_huge_val) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
 #  define _CCCL_BUILTIN_HUGE_VAL() __builtin_huge_val()
 #endif // _CCCL_CHECK_BUILTIN(builtin_huge_val)
 
@@ -302,11 +302,11 @@
 #  define _CCCL_BUILTIN_HUGE_VALL() static_cast<long double>(__builtin_huge_val())
 #endif // _CCCL_CHECK_BUILTIN(builtin_huge_vall)
 
-#if _CCCL_CHECK_BUILTIN(builtin_nanf) || _CCCL_COMPILER(MSVC)
+#if _CCCL_CHECK_BUILTIN(builtin_nanf) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
 #  define _CCCL_BUILTIN_NANF(...) __builtin_nanf(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_nanf)
 
-#if _CCCL_CHECK_BUILTIN(builtin_nan) || _CCCL_COMPILER(MSVC)
+#if _CCCL_CHECK_BUILTIN(builtin_nan) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
 #  define _CCCL_BUILTIN_NAN(...) __builtin_nan(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_nan)
 
@@ -316,11 +316,11 @@
 #  define _CCCL_BUILTIN_NANL(...) static_cast<long double>(__builtin_nan(__VA_ARGS__))
 #endif // _CCCL_CHECK_BUILTIN(builtin_nanl)
 
-#if _CCCL_CHECK_BUILTIN(builtin_nansf) || _CCCL_COMPILER(MSVC)
+#if _CCCL_CHECK_BUILTIN(builtin_nansf) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
 #  define _CCCL_BUILTIN_NANSF(...) __builtin_nansf(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_nansf)
 
-#if _CCCL_CHECK_BUILTIN(builtin_nans) || _CCCL_COMPILER(MSVC)
+#if _CCCL_CHECK_BUILTIN(builtin_nans) || _CCCL_COMPILER(MSVC) || _CCCL_COMPILER(GCC, <, 10)
 #  define _CCCL_BUILTIN_NANS(...) __builtin_nans(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_nans)
 
