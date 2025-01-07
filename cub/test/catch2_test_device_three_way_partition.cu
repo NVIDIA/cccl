@@ -42,6 +42,7 @@
 
 #include <cuda/std/utility>
 
+#include "catch2_large_problem_helper.cuh"
 #include "catch2_test_device_select_common.cuh"
 #include "catch2_test_launch_helper.h"
 #include "cub/util_type.cuh"
@@ -488,22 +489,16 @@ try
   // Prepare tabulate output iterator to verify results in a memory-efficient way:
   // We use a tabulate iterator that checks whenever the partition algorithm writes an output whether that item
   // corresponds to the expected value at that index and, if correct, sets a boolean flag at that index.
-  static constexpr auto bits_per_element = 8 * sizeof(std::uint32_t);
-  c2h::device_vector<std::uint32_t> correctness_flags_first(::cuda::ceil_div(expected_first, bits_per_element));
-  c2h::device_vector<std::uint32_t> correctness_flags_second(::cuda::ceil_div(expected_second, bits_per_element));
-  c2h::device_vector<std::uint32_t> correctness_flags_third(::cuda::ceil_div(expected_third, bits_per_element));
   auto expected_first_it  = thrust::make_transform_iterator(in, multiply_and_add<offset_t>{3, 0});
   auto expected_second_it = thrust::make_transform_iterator(in, multiply_and_add<offset_t>{3, 1});
   auto expected_third_it  = thrust::make_transform_iterator(in, multiply_and_add<offset_t>{3, 2});
-  auto check_first_op =
-    make_checking_write_op(expected_first_it, thrust::raw_pointer_cast(correctness_flags_first.data()));
-  auto check_second_op =
-    make_checking_write_op(expected_second_it, thrust::raw_pointer_cast(correctness_flags_second.data()));
-  auto check_third_op =
-    make_checking_write_op(expected_third_it, thrust::raw_pointer_cast(correctness_flags_third.data()));
-  auto check_first_it  = thrust::make_tabulate_output_iterator(check_first_op);
-  auto check_second_it = thrust::make_tabulate_output_iterator(check_second_op);
-  auto check_third_it  = thrust::make_tabulate_output_iterator(check_third_op);
+
+  auto check_first_partition_helper  = detail::large_problem_test_helper(num_items);
+  auto check_first_it                = check_first_partition_helper.get_flagging_output_iterator(expected_first_it);
+  auto check_second_partition_helper = detail::large_problem_test_helper(num_items);
+  auto check_second_it               = check_first_partition_helper.get_flagging_output_iterator(expected_second_it);
+  auto check_third_partition_helper  = detail::large_problem_test_helper(num_items);
+  auto check_third_it                = check_first_partition_helper.get_flagging_output_iterator(expected_third_it);
 
   // Needs to be device accessible
   c2h::device_vector<offset_t> num_selected_out(2, 0);
@@ -516,12 +511,9 @@ try
   // Ensure that we created the correct output
   REQUIRE(num_selected_out[0] == expected_first);
   REQUIRE(num_selected_out[1] == expected_second);
-  bool first_correct = are_all_flags_set(correctness_flags_first, expected_first);
-  REQUIRE(first_correct == true);
-  bool second_correct = are_all_flags_set(correctness_flags_second, expected_second);
-  REQUIRE(second_correct == true);
-  bool third_correct = are_all_flags_set(correctness_flags_third, expected_third);
-  REQUIRE(third_correct == true);
+  check_first_partition_helper.check_all_results_correct();
+  check_second_partition_helper.check_all_results_correct();
+  check_third_partition_helper.check_all_results_correct();
 }
 catch (std::bad_alloc&)
 {
