@@ -9,23 +9,24 @@ PTX Instructions
    instructions/barrier_cluster
    instructions/cp_async_bulk
    instructions/cp_async_bulk_commit_group
-   instructions/cp_async_bulk_wait_group
    instructions/cp_async_bulk_tensor
+   instructions/cp_async_bulk_wait_group
    instructions/cp_reduce_async_bulk
    instructions/cp_reduce_async_bulk_tensor
    instructions/fence
    instructions/getctarank
    instructions/mapa
-   instructions/mbarrier_init
    instructions/mbarrier_arrive
    instructions/mbarrier_expect_tx
+   instructions/mbarrier_init
    instructions/mbarrier_test_wait
    instructions/mbarrier_try_wait
    instructions/red_async
-   instructions/st_async
-   instructions/tensormap_replace
-   instructions/tensormap_cp_fenceproxy
+   instructions/shfl_sync
    instructions/special_registers
+   instructions/st_async
+   instructions/tensormap_cp_fenceproxy
+   instructions/tensormap_replace
 
 
 Instructions by section
@@ -232,8 +233,8 @@ Instructions by section
      - No
    * - `shfl <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-shfl-deprecated>`__
      - No
-   * - `shfl.s <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-shfl-sync>`__
-     - No
+   * - `shfl.sync <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-shfl-sync>`__
+     - Yes, CCCL 2.9.0 / CUDA 12.9
    * - `prmt <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-prmt>`__
      - No
    * - `ld <https://docs.nvidia.com/cuda/parallel-thread-execution/index.html#data-movement-and-conversion-instructions-ld>`__
