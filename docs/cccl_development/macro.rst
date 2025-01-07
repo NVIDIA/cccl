@@ -187,7 +187,7 @@ Usage example:
 .. code-block:: c++
 
     _CCCL_TEMPLATE(typename T)
-    _CCCL_REQUIRES(_CCCL_TRAIT(is_arithmetic, T) _CCCL_AND !_CCCL_TRAIT(is_integral, T))
+    _CCCL_REQUIRES(_CCCL_TRAIT(is_arithmetic, T) _CCCL_AND (!_CCCL_TRAIT(is_integral, T)))
 
 
 **Portable feature testing**:
