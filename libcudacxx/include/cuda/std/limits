@@ -548,7 +548,7 @@ public:
   static constexpr bool traps                    = false;
   static constexpr bool tinyness_before          = false;
   static constexpr float_round_style round_style = round_to_nearest;
-#endif
+#endif // !_LIBCUDACXX_HAS_NO_LONG_DOUBLE
 };
 
 template <class _Tp>

@@ -296,7 +296,7 @@
 #  define _CCCL_BUILTIN_HUGE_VAL() __builtin_huge_val()
 #endif // _CCCL_CHECK_BUILTIN(builtin_huge_val)
 
-#if _CCCL_CHECK_BUILTIN(builtin_huge_vall)
+#if _CCCL_CHECK_BUILTIN(builtin_huge_vall) || _CCCL_COMPILER(GCC, <, 10)
 #  define _CCCL_BUILTIN_HUGE_VALL() __builtin_huge_vall()
 #elif _CCCL_COMPILER(MSVC)
 #  define _CCCL_BUILTIN_HUGE_VALL() static_cast<long double>(__builtin_huge_val())
@@ -310,7 +310,7 @@
 #  define _CCCL_BUILTIN_NAN(...) __builtin_nan(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_nan)
 
-#if _CCCL_CHECK_BUILTIN(builtin_nanl)
+#if _CCCL_CHECK_BUILTIN(builtin_nanl) || _CCCL_COMPILER(GCC, <, 10)
 #  define _CCCL_BUILTIN_NANL(...) __builtin_nanl(__VA_ARGS__)
 #elif _CCCL_COMPILER(MSVC)
 #  define _CCCL_BUILTIN_NANL(...) static_cast<long double>(__builtin_nan(__VA_ARGS__))
@@ -324,7 +324,7 @@
 #  define _CCCL_BUILTIN_NANS(...) __builtin_nans(__VA_ARGS__)
 #endif // _CCCL_CHECK_BUILTIN(builtin_nans)
 
-#if _CCCL_CHECK_BUILTIN(builtin_nansl)
+#if _CCCL_CHECK_BUILTIN(builtin_nansl) || _CCCL_COMPILER(GCC, <, 10)
 #  define _CCCL_BUILTIN_NANSL(...) __builtin_nansl(__VA_ARGS__)
 #elif _CCCL_COMPILER(MSVC)
 #  define _CCCL_BUILTIN_NANSL(...) static_cast<long double>(__builtin_nans(__VA_ARGS__))
