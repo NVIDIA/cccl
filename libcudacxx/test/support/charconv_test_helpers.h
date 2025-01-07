@@ -128,8 +128,8 @@ private:
     return r;
   }
 
-  static auto
-  fromchars(char const* p, char const* ep, int base = 10) -> decltype(fromchars(p, ep, base, std::is_signed<X>()))
+  static auto fromchars(char const* p, char const* ep, int base = 10)
+    -> decltype(fromchars(p, ep, base, std::is_signed<X>()))
   {
     return fromchars(p, ep, base, std::is_signed<X>());
   }

@@ -84,8 +84,7 @@ struct rebind_pointer<Ptr<OldT, Tail...>, T>
 template <template <typename, typename, typename, typename...> class Ptr,
           typename OldT,
           typename Tag,
-          template <typename...>
-          class Ref,
+          template <typename...> class Ref,
           typename... RefTail,
           typename... PtrTail,
           typename T>
@@ -100,11 +99,9 @@ struct rebind_pointer<Ptr<OldT, Tag, Ref<OldT, RefTail...>, PtrTail...>, T>
 template <template <typename, typename, typename, typename...> class Ptr,
           typename OldT,
           typename Tag,
-          template <typename...>
-          class Ref,
+          template <typename...> class Ref,
           typename... RefTail,
-          template <typename...>
-          class DerivedPtr,
+          template <typename...> class DerivedPtr,
           typename... DerivedPtrTail,
           typename T>
 struct rebind_pointer<Ptr<OldT, Tag, Ref<OldT, RefTail...>, DerivedPtr<OldT, DerivedPtrTail...>>, T>
@@ -130,8 +127,7 @@ struct rebind_pointer<Ptr<OldT, Tag, typename std::add_lvalue_reference<OldT>::t
 template <template <typename, typename, typename, typename...> class Ptr,
           typename OldT,
           typename Tag,
-          template <typename...>
-          class DerivedPtr,
+          template <typename...> class DerivedPtr,
           typename... DerivedPtrTail,
           typename T>
 struct rebind_pointer<Ptr<OldT, Tag, typename std::add_lvalue_reference<OldT>::type, DerivedPtr<OldT, DerivedPtrTail...>>,

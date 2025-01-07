@@ -16,11 +16,8 @@ _CCCL_DEVICE static inline _CUDA_VSTD::uint64_t mbarrier_arrive(_CUDA_VSTD::uint
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_80,
-    (_CUDA_VSTD::uint64_t __state;
-     asm("mbarrier.arrive.shared.b64                                  %0,  [%1];           // 1. "
-         : "=l"(__state)
-         : "r"(__as_ptr_smem(__addr))
-         : "memory");
+    (_CUDA_VSTD::uint64_t __state; asm("mbarrier.arrive.shared.b64                                  %0,  [%1];         "
+                                       "  // 1. " : "=l"(__state) : "r"(__as_ptr_smem(__addr)) : "memory");
      return __state;),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
@@ -43,11 +40,9 @@ mbarrier_arrive(_CUDA_VSTD::uint64_t* __addr, const _CUDA_VSTD::uint32_t& __coun
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (_CUDA_VSTD::uint64_t __state;
-     asm("mbarrier.arrive.shared::cta.b64                             %0,  [%1], %2;    // 2. "
-         : "=l"(__state)
-         : "r"(__as_ptr_smem(__addr)), "r"(__count)
-         : "memory");
+    (_CUDA_VSTD::uint64_t __state; asm("mbarrier.arrive.shared::cta.b64                             %0,  [%1], %2;    "
+                                       "// 2. " : "=l"(__state) : "r"(__as_ptr_smem(__addr)),
+                                       "r"(__count) : "memory");
      return __state;),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
@@ -163,15 +158,12 @@ mbarrier_arrive(sem_release_t, scope_cluster_t, space_cluster_t, _CUDA_VSTD::uin
   // __sem == sem_release (due to parameter type constraint)
   // __scope == scope_cluster (due to parameter type constraint)
   // __space == space_cluster (due to parameter type constraint)
-  NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_90,
-    (asm("mbarrier.arrive.release.cluster.shared::cluster.b64                   _, [%0];                // 4a. "
-         :
-         : "r"(__as_ptr_remote_dsmem(__addr))
-         : "memory");),
-    (
-      // Unsupported architectures will have a linker error with a semi-decent error message
-      __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();));
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
+                    (asm("mbarrier.arrive.release.cluster.shared::cluster.b64                   _, [%0];               "
+                         " // 4a. " : : "r"(__as_ptr_remote_dsmem(__addr)) : "memory");),
+                    (
+                      // Unsupported architectures will have a linker error with a semi-decent error message
+                      __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();));
 }
 #endif // __cccl_ptx_isa >= 800
 
@@ -197,15 +189,13 @@ _CCCL_DEVICE static inline void mbarrier_arrive(
   // __sem == sem_release (due to parameter type constraint)
   // __scope == scope_cluster (due to parameter type constraint)
   // __space == space_cluster (due to parameter type constraint)
-  NV_IF_ELSE_TARGET(
-    NV_PROVIDES_SM_90,
-    (asm("mbarrier.arrive.release.cluster.shared::cluster.b64                   _, [%0], %1;         // 4b. "
-         :
-         : "r"(__as_ptr_remote_dsmem(__addr)), "r"(__count)
-         : "memory");),
-    (
-      // Unsupported architectures will have a linker error with a semi-decent error message
-      __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();));
+  NV_IF_ELSE_TARGET(NV_PROVIDES_SM_90,
+                    (asm("mbarrier.arrive.release.cluster.shared::cluster.b64                   _, [%0], %1;         "
+                         "// 4b. " : : "r"(__as_ptr_remote_dsmem(__addr)),
+                         "r"(__count) : "memory");),
+                    (
+                      // Unsupported architectures will have a linker error with a semi-decent error message
+                      __cuda_ptx_mbarrier_arrive_is_not_supported_before_SM_90__();));
 }
 #endif // __cccl_ptx_isa >= 800
 

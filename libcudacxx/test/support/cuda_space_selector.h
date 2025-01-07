@@ -129,8 +129,7 @@ struct default_initializer
 };
 
 template <typename T,
-          template <typename, cuda::std::size_t>
-          class Provider,
+          template <typename, cuda::std::size_t> class Provider,
           typename Initializer           = constructor_initializer,
           cuda::std::size_t SharedOffset = 0>
 class memory_selector

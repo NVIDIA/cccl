@@ -35,8 +35,7 @@ _LIBCUDACXX_HIDE_FROM_ABI void __cccl_thread_sleep_for(_CUDA_VSTD::chrono::nanos
 {
   NV_IF_TARGET(NV_IS_DEVICE,
                (auto const __step = __ns.count(); assert(__step < numeric_limits<unsigned>::max());
-                asm volatile("nanosleep.u32 %0;" ::"r"((unsigned) __step)
-                             :);))
+                asm volatile("nanosleep.u32 %0;" ::"r"((unsigned) __step) :);))
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD

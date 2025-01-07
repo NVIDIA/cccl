@@ -256,11 +256,11 @@
         return __MDSPAN_PP_REMOVE_PARENS(BODY);                                    \
       }
 #  else
-#    define __MDSPAN_DEDUCE_RETURN_TYPE_SINGLE_LINE(SIGNATURE, BODY)                          \
-      auto __MDSPAN_PP_REMOVE_PARENS(                                                         \
-        SIGNATURE) -> _CUDA_VSTD::remove_cv_t<_CUDA_VSTD::remove_reference_t<decltype(BODY)>> \
-      {                                                                                       \
-        return __MDSPAN_PP_REMOVE_PARENS(BODY);                                               \
+#    define __MDSPAN_DEDUCE_RETURN_TYPE_SINGLE_LINE(SIGNATURE, BODY)               \
+      auto __MDSPAN_PP_REMOVE_PARENS(SIGNATURE)                                    \
+        -> _CUDA_VSTD::remove_cv_t<_CUDA_VSTD::remove_reference_t<decltype(BODY)>> \
+      {                                                                            \
+        return __MDSPAN_PP_REMOVE_PARENS(BODY);                                    \
       }
 #    define __MDSPAN_DEDUCE_DECLTYPE_AUTO_RETURN_TYPE_SINGLE_LINE(SIGNATURE, BODY) \
       auto __MDSPAN_PP_REMOVE_PARENS(SIGNATURE) -> decltype(BODY)                  \
