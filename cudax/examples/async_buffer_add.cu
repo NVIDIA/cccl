@@ -57,9 +57,9 @@ int main()
   cudax::env_t<cuda::mr::device_accessible> env{cudax::device_memory_resource{}, stream};
 
   // Allocate the two inputs and output, but do not zero initialize via `cudax::uninit`
-  cudax::async_device_vector<float> A{env, numElements, cudax::uninit};
-  cudax::async_device_vector<float> B{env, numElements, cudax::uninit};
-  cudax::async_device_vector<float> C{env, numElements, cudax::uninit};
+  cudax::async_device_buffer<float> A{env, numElements, cudax::uninit};
+  cudax::async_device_buffer<float> B{env, numElements, cudax::uninit};
+  cudax::async_device_buffer<float> C{env, numElements, cudax::uninit};
 
   // Fill both vectors on stream using a random number generator
   thrust::generate(policy, A.begin(), A.end(), generator{42});
@@ -70,16 +70,19 @@ int main()
 
   // Verify that the result vector is correct, by copying it to host
   cudax::env_t<cuda::mr::host_accessible> host_env{cudax::pinned_memory_resource{}, stream};
-  cudax::async_host_vector<float> h_A{host_env, A};
-  cudax::async_host_vector<float> h_B{host_env, B};
-  cudax::async_host_vector<float> h_C{host_env, C};
+  cudax::async_host_buffer<float> h_A{host_env, A};
+  cudax::async_host_buffer<float> h_B{host_env, B};
+  cudax::async_host_buffer<float> h_C{host_env, C};
 
   // Do not forget to sync afterwards
   stream.wait();
 
+  float* ptr_A = h_A.data();
+  float* ptr_B = h_B.data();
+  float* ptr_C = h_C.data();
   for (int i = 0; i < numElements; ++i)
   {
-    if (cuda::std::abs(h_A[i] + h_B[i] - h_C[i]) > 1e-5)
+    if (cuda::std::abs(ptr_A[i] + ptr_B[i] - ptr_C[i]) > 1e-5)
     {
       std::cerr << "Result verification failed at element " << i << "\n";
       exit(EXIT_FAILURE);

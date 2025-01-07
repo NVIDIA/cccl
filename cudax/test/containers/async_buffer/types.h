@@ -4,7 +4,7 @@
 // under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
 // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
-// SPDX-FileCopyrightText: Copyright (c) 2024 NVIDIA CORPORATION & AFFILIATES.
+// SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES.
 //
 //===----------------------------------------------------------------------===//
 
@@ -17,77 +17,6 @@
 #include <cuda/std/array>
 #include <cuda/std/iterator>
 #include <cuda/std/type_traits>
-
-// This iterator meets C++20's Cpp17InputIterator requirements, as described
-// in Table 89 ([input.iterators]).
-template <class It, class ItTraits = It>
-class cpp17_input_iterator
-{
-  typedef cuda::std::iterator_traits<ItTraits> Traits;
-  It it_;
-
-  template <class U, class T>
-  friend class cpp17_input_iterator;
-
-public:
-  typedef cuda::std::input_iterator_tag iterator_category;
-  typedef typename Traits::value_type value_type;
-  typedef typename Traits::difference_type difference_type;
-  typedef It pointer;
-  typedef typename Traits::reference reference;
-
-  __host__ __device__ constexpr explicit cpp17_input_iterator(It it)
-      : it_(it)
-  {}
-
-  template <class U, class T>
-  __host__ __device__ constexpr cpp17_input_iterator(const cpp17_input_iterator<U, T>& u)
-      : it_(u.it_)
-  {}
-
-  template <class U, class T, class = typename cuda::std::enable_if<cuda::std::is_default_constructible<U>::value>::type>
-  __host__ __device__ constexpr cpp17_input_iterator(cpp17_input_iterator<U, T>&& u)
-      : it_(u.it_)
-  {
-    u.it_ = U();
-  }
-
-  __host__ __device__ constexpr reference operator*() const
-  {
-    return *it_;
-  }
-
-  __host__ __device__ constexpr cpp17_input_iterator& operator++()
-  {
-    ++it_;
-    return *this;
-  }
-  __host__ __device__ constexpr cpp17_input_iterator operator++(int)
-  {
-    return cpp17_input_iterator(it_++);
-  }
-
-  __host__ __device__ friend constexpr bool operator==(const cpp17_input_iterator& x, const cpp17_input_iterator& y)
-  {
-    return x.it_ == y.it_;
-  }
-  __host__ __device__ friend constexpr bool operator!=(const cpp17_input_iterator& x, const cpp17_input_iterator& y)
-  {
-    return x.it_ != y.it_;
-  }
-
-  __host__ __device__ friend constexpr It base(const cpp17_input_iterator& i)
-  {
-    return i.it_;
-  }
-
-  template <class T>
-  void operator,(T const&) = delete;
-};
-static_assert(cuda::std::input_or_output_iterator<cpp17_input_iterator<int*>>, "");
-static_assert(cuda::std::indirectly_readable<cpp17_input_iterator<int*>>, "");
-static_assert(cuda::std::input_iterator<cpp17_input_iterator<int*>>, "");
-static_assert(!thrust::is_indirectly_trivially_relocatable_to<cpp17_input_iterator<int*>, int*>::value, "");
 
 template <class It>
 class forward_iterator
@@ -156,7 +85,7 @@ public:
   void operator,(T const&) = delete;
 };
 static_assert(cuda::std::forward_iterator<forward_iterator<int*>>, "");
-static_assert(!thrust::is_indirectly_trivially_relocatable_to<cpp17_input_iterator<int*>, int*>::value, "");
+static_assert(!thrust::is_indirectly_trivially_relocatable_to<forward_iterator<int*>, int*>::value, "");
 
 template <class It>
 class sentinel_wrapper
@@ -235,27 +164,6 @@ public:
 private:
   decltype(base(cuda::std::declval<It>())) base_;
 };
-
-template <class T, size_t Capacity>
-struct input_range
-{
-  cuda::std::array<T, Capacity> data;
-  cpp17_input_iterator<T*> end_{data.data() + Capacity};
-
-  __host__ __device__ constexpr cpp17_input_iterator<T*> begin() noexcept
-  {
-    return cpp17_input_iterator<T*>{data.begin()};
-  }
-
-  __host__ __device__ constexpr sentinel_wrapper<cpp17_input_iterator<T*>> end() noexcept
-  {
-    return sentinel_wrapper<cpp17_input_iterator<T*>>{end_};
-  }
-};
-static_assert(cuda::std::ranges::input_range<input_range<int, 4>>);
-static_assert(!cuda::std::ranges::forward_range<input_range<int, 4>>);
-static_assert(!cuda::std::ranges::common_range<input_range<int, 4>>);
-static_assert(!cuda::std::ranges::sized_range<input_range<int, 4>>);
 
 template <class T, size_t Capacity>
 struct uncommon_range

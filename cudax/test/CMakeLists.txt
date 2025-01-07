@@ -96,19 +96,16 @@ foreach(cn_target IN LISTS cudax_TARGETS)
   cudax_add_catch2_test(test_target containers ${cn_target}
     containers/uninitialized_buffer.cu
     containers/uninitialized_async_buffer.cu
-    containers/async_vector/access.cu
-    containers/async_vector/assign.cu
-    containers/async_vector/assignment.cu
-    containers/async_vector/capacity.cu
-    containers/async_vector/comparison.cu
-    containers/async_vector/constructor.cu
-    containers/async_vector/conversion.cu
-    containers/async_vector/emplace.cu
-    containers/async_vector/insert.cu
-    containers/async_vector/iterators.cu
-    containers/async_vector/properties.cu
-    containers/async_vector/resize.cu
-    containers/async_vector/swap.cu
+    containers/async_buffer/access.cu
+    containers/async_buffer/assign.cu
+    containers/async_buffer/assignment.cu
+    containers/async_buffer/capacity.cu
+    containers/async_buffer/comparison.cu
+    containers/async_buffer/constructor.cu
+    containers/async_buffer/conversion.cu
+    containers/async_buffer/iterators.cu
+    containers/async_buffer/properties.cu
+    containers/async_buffer/swap.cu
   )
 
   cudax_add_catch2_test(test_target memory_resource ${cn_target}
