@@ -39,17 +39,6 @@
 
 THRUST_NAMESPACE_BEGIN
 
-/*! \addtogroup function_objects Function Objects
- */
-
-//! deprecated [Since 2.6]
-template <typename Operation>
-struct CCCL_DEPRECATED unary_traits;
-
-//! deprecated [Since 2.6]
-template <typename Operation>
-struct CCCL_DEPRECATED binary_traits;
-
 /*! \addtogroup function_object_adaptors Function Object Adaptors
  *  \ingroup function_objects
  *  \{
