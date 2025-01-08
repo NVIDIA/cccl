@@ -35,6 +35,7 @@ function(libcudacxx_add_std_header_test header)
   if (CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING)
     target_compile_definitions(headertest_std_${header_name} PRIVATE CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING)
   endif()
+  target_compile_definitions(headertest_std_${header_name} PRIVATE CCCL_IGNORE_DEPRECATED_CPP_DIALECT)
 
   add_dependencies(libcudacxx.test.public_headers_host_only headertest_std_${header_name})
 endfunction()
