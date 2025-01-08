@@ -94,13 +94,7 @@ THRUST_NAMESPACE_BEGIN
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/plus
  */
-template <typename T = void>
-struct plus : public ::cuda::std::plus<T>
-{
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
-}; // end plus
+using ::cuda::std::plus;
 
 /*! \p minus is a function object. Specifically, it is an Adaptable Binary Function.
  *  If \c f is an object of class <tt>minus<T></tt>, and \c x and \c y are objects
@@ -135,13 +129,7 @@ struct plus : public ::cuda::std::plus<T>
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/minus
  */
-template <typename T = void>
-struct minus : public ::cuda::std::minus<T>
-{
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
-}; // end minus
+using ::cuda::std::minus;
 
 /*! \p multiplies is a function object. Specifically, it is an Adaptable Binary Function.
  *  If \c f is an object of class <tt>multiplies<T></tt>, and \c x and \c y are objects
@@ -176,13 +164,7 @@ struct minus : public ::cuda::std::minus<T>
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/multiplies
  */
-template <typename T = void>
-struct multiplies : public ::cuda::std::multiplies<T>
-{
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
-}; // end multiplies
+using ::cuda::std::multiplies;
 
 /*! \p divides is a function object. Specifically, it is an Adaptable Binary Function.
  *  If \c f is an object of class <tt>divides<T></tt>, and \c x and \c y are objects
@@ -217,13 +199,7 @@ struct multiplies : public ::cuda::std::multiplies<T>
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/divides
  */
-template <typename T = void>
-struct divides : public ::cuda::std::divides<T>
-{
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
-}; // end divides
+using ::cuda::std::divides;
 
 /*! \p modulus is a function object. Specifically, it is an Adaptable Binary Function.
  *  If \c f is an object of class <tt>modulus<T></tt>, and \c x and \c y are objects
@@ -258,13 +234,7 @@ struct divides : public ::cuda::std::divides<T>
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/modulus
  */
-template <typename T = void>
-struct modulus : public ::cuda::std::modulus<T>
-{
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
-}; // end modulus
+using ::cuda::std::modulus;
 
 /*! \p negate is a function object. Specifically, it is an Adaptable Unary Function.
  *  If \c f is an object of class <tt>negate<T></tt>, and \c x is an object
@@ -296,12 +266,7 @@ struct modulus : public ::cuda::std::modulus<T>
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/negate
  */
-template <typename T = void>
-struct negate : ::cuda::std::negate<T>
-{
-  using argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11   = T;
-}; // end negate
+using ::cuda::std::negate;
 
 /*! \p square is a function object. Specifically, it is an Adaptable Unary Function.
  *  If \c f is an object of class <tt>square<T></tt>, and \c x is an object
@@ -334,15 +299,12 @@ struct negate : ::cuda::std::negate<T>
 template <typename T = void>
 struct square
 {
-  using argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11   = T;
-
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE constexpr T operator()(const T& x) const
   {
     return x * x;
   }
-}; // end square
+};
 
 template <>
 struct square<void>
@@ -376,13 +338,7 @@ struct square<void>
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/equal_to
  */
-template <typename T = void>
-struct equal_to : public ::cuda::std::equal_to<T>
-{
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
-}; // end equal_to
+using ::cuda::std::equal_to;
 
 /*! \p not_equal_to is a function object. Specifically, it is an Adaptable Binary
  *  Predicate, which means it is a function object that tests the truth or falsehood
@@ -395,13 +351,7 @@ struct equal_to : public ::cuda::std::equal_to<T>
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/not_equal_to
  */
-template <typename T = void>
-struct not_equal_to : public ::cuda::std::not_equal_to<T>
-{
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
-}; // end not_equal_to
+using ::cuda::std::not_equal_to;
 
 /*! \p greater is a function object. Specifically, it is an Adaptable Binary
  *  Predicate, which means it is a function object that tests the truth or falsehood
@@ -414,13 +364,7 @@ struct not_equal_to : public ::cuda::std::not_equal_to<T>
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/greater
  */
-template <typename T = void>
-struct greater : public ::cuda::std::greater<T>
-{
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
-}; // end greater
+using ::cuda::std::greater;
 
 /*! \p less is a function object. Specifically, it is an Adaptable Binary
  *  Predicate, which means it is a function object that tests the truth or falsehood
@@ -433,13 +377,7 @@ struct greater : public ::cuda::std::greater<T>
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/less
  */
-template <typename T = void>
-struct less : public ::cuda::std::less<T>
-{
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
-}; // end less
+using ::cuda::std::less;
 
 /*! \p greater_equal is a function object. Specifically, it is an Adaptable Binary
  *  Predicate, which means it is a function object that tests the truth or falsehood
@@ -452,13 +390,7 @@ struct less : public ::cuda::std::less<T>
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/greater_equal
  */
-template <typename T = void>
-struct greater_equal : public ::cuda::std::greater_equal<T>
-{
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
-}; // end greater_equal
+using ::cuda::std::greater_equal;
 
 /*! \p less_equal is a function object. Specifically, it is an Adaptable Binary
  *  Predicate, which means it is a function object that tests the truth or falsehood
@@ -471,13 +403,7 @@ struct greater_equal : public ::cuda::std::greater_equal<T>
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/less_equal
  */
-template <typename T = void>
-struct less_equal : public ::cuda::std::less_equal<T>
-{
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
-}; // end less_equal
+using ::cuda::std::less_equal;
 
 /*! \}
  */
@@ -497,13 +423,7 @@ struct less_equal : public ::cuda::std::less_equal<T>
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/logical_and
  */
-template <typename T = void>
-struct logical_and : public ::cuda::std::logical_and<T>
-{
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
-}; // end logical_and
+using ::cuda::std::logical_and;
 
 /*! \p logical_or is a function object. Specifically, it is an Adaptable Binary Predicate,
  *  which means it is a function object that tests the truth or falsehood of some condition.
@@ -515,13 +435,7 @@ struct logical_and : public ::cuda::std::logical_and<T>
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/logical_or
  */
-template <typename T = void>
-struct logical_or : public ::cuda::std::logical_or<T>
-{
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
-}; // end logical_or
+using ::cuda::std::logical_or;
 
 /*! \p logical_not is a function object. Specifically, it is an Adaptable Predicate,
  *  which means it is a function object that tests the truth or falsehood of some condition.
@@ -547,13 +461,7 @@ struct logical_or : public ::cuda::std::logical_or<T>
  *
  *  \see https://en.cppreference.com/w/cpp/utility/functional/logical_not
  */
-template <typename T = void>
-struct logical_not : public ::cuda::std::logical_not<T>
-{
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
-}; // end logical_not
+using ::cuda::std::logical_not;
 
 /*! \}
  */
@@ -594,13 +502,7 @@ struct logical_not : public ::cuda::std::logical_not<T>
  *  // V3 is now {1&13, 2&13, 3&13, ..., 1000%13}
  *  \endcode
  */
-template <typename T = void>
-struct bit_and : public ::cuda::std::bit_and<T>
-{
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
-}; // end bit_and
+using ::cuda::std::bit_and;
 
 /*! \p bit_or is a function object. Specifically, it is an Adaptable Binary Function.
  *  If \c f is an object of class <tt>bit_and<T></tt>, and \c x and \c y are objects
@@ -633,13 +535,7 @@ struct bit_and : public ::cuda::std::bit_and<T>
  *  // V3 is now {1|13, 2|13, 3|13, ..., 1000|13}
  *  \endcode
  */
-template <typename T = void>
-struct bit_or : public ::cuda::std::bit_or<T>
-{
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
-}; // end bit_or
+using ::cuda::std::bit_or;
 
 /*! \p bit_xor is a function object. Specifically, it is an Adaptable Binary Function.
  *  If \c f is an object of class <tt>bit_and<T></tt>, and \c x and \c y are objects
@@ -672,13 +568,7 @@ struct bit_or : public ::cuda::std::bit_or<T>
  *  // V3 is now {1^13, 2^13, 3^13, ..., 1000^13}
  *  \endcode
  */
-template <typename T = void>
-struct bit_xor : public ::cuda::std::bit_xor<T>
-{
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11  = T;
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11          = T;
-}; // end bit_xor
+using ::cuda::std::bit_xor;
 
 /*! \}
  */
@@ -711,9 +601,6 @@ struct bit_xor : public ::cuda::std::bit_xor<T>
 template <typename T = void>
 struct identity
 {
-  using argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11   = T;
-
   _CCCL_EXEC_CHECK_DISABLE
   _CCCL_HOST_DEVICE constexpr const T& operator()(const T& x) const
   {
@@ -764,27 +651,7 @@ struct identity<void> : ::cuda::std::__identity
  *  \see minimum
  *  \see min
  */
-template <typename T = void>
-struct maximum : ::cuda::maximum<T>
-{
-  /*! \typedef first_argument_type
-   *  \brief The type of the function object's first argument.
-   *  deprecated [Since 2.6]
-   */
-  using first_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-
-  /*! \typedef second_argument_type
-   *  \brief The type of the function object's second argument.
-   *  deprecated [Since 2.6]
-   */
-  using second_argument_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-
-  /*! \typedef result_type
-   *  \brief The type of the function object's result;
-   *  deprecated [Since 2.6]
-   */
-  using result_type _LIBCUDACXX_DEPRECATED_IN_CXX11 = T;
-}; // end maximum
+using ::cuda::maximum;
 
 /*! \p minimum is a function object that takes two arguments and returns the lesser
  *  of the two. Specifically, it is an Adaptable Binary Function. If \c f is an
@@ -810,27 +677,7 @@ struct maximum : ::cuda::maximum<T>
  *  \see maximum
  *  \see max
  */
-template <typename T = void>
-struct minimum : ::cuda::minimum<T>
-{
-  /*! \typedef first_argument_type
-   *  \brief The type of the function object's first argument.
-   *  deprecated [Since 2.6]
-   */
-  using first_argument_type _CCCL_ALIAS_ATTRIBUTE(CCCL_DEPRECATED) = T;
-
-  /*! \typedef second_argument_type
-   *  \brief The type of the function object's second argument.
-   *  deprecated [Since 2.6]
-   */
-  using second_argument_type _CCCL_ALIAS_ATTRIBUTE(CCCL_DEPRECATED) = T;
-
-  /*! \typedef result_type
-   *  \brief The type of the function object's result;
-   *  deprecated [Since 2.6]
-   */
-  using result_type _CCCL_ALIAS_ATTRIBUTE(CCCL_DEPRECATED) = T;
-}; // end minimum
+using ::cuda::minimum;
 
 /*! \p project1st is a function object that takes two arguments and returns
  *  its first argument; the second argument is unused. It is essentially a
@@ -852,31 +699,13 @@ struct minimum : ::cuda::minimum<T>
 template <typename T1 = void, typename T2 = void>
 struct project1st
 {
-  /*! \typedef first_argument_type
-   *  \brief The type of the function object's first argument.
-   *  deprecated [Since 2.6]
-   */
-  using first_argument_type _CCCL_ALIAS_ATTRIBUTE(CCCL_DEPRECATED) = T1;
-
-  /*! \typedef second_argument_type
-   *  \brief The type of the function object's second argument.
-   *  deprecated [Since 2.6]
-   */
-  using second_argument_type _CCCL_ALIAS_ATTRIBUTE(CCCL_DEPRECATED) = T2;
-
-  /*! \typedef result_type
-   *  \brief The type of the function object's result;
-   *  deprecated [Since 2.6]
-   */
-  using result_type _CCCL_ALIAS_ATTRIBUTE(CCCL_DEPRECATED) = T1;
-
   /*! Function call operator. The return value is <tt>lhs</tt>.
    */
   _CCCL_HOST_DEVICE constexpr const T1& operator()(const T1& lhs, const T2& /*rhs*/) const
   {
     return lhs;
   }
-}; // end project1st
+};
 
 template <>
 struct project1st<void, void>
@@ -911,24 +740,6 @@ struct project1st<void, void>
 template <typename T1 = void, typename T2 = void>
 struct project2nd
 {
-  /*! \typedef first_argument_type
-   *  \brief The type of the function object's first argument.
-   *  deprecated [Since 2.6]
-   */
-  using first_argument_type _CCCL_ALIAS_ATTRIBUTE(CCCL_DEPRECATED) = T1;
-
-  /*! \typedef second_argument_type
-   *  \brief The type of the function object's second argument.
-   *  deprecated [Since 2.6]
-   */
-  using second_argument_type _CCCL_ALIAS_ATTRIBUTE(CCCL_DEPRECATED) = T2;
-
-  /*! \typedef result_type
-   *  \brief The type of the function object's result;
-   *  deprecated [Since 2.6]
-   */
-  using result_type _CCCL_ALIAS_ATTRIBUTE(CCCL_DEPRECATED) = T2;
-
   /*! Function call operator. The return value is <tt>rhs</tt>.
    */
   _CCCL_HOST_DEVICE constexpr const T2& operator()(const T1& /*lhs*/, const T2& rhs) const
@@ -959,37 +770,7 @@ struct project2nd<void, void>
  *  \{
  */
 
-namespace detail
-{
-template <typename F>
-struct not_fun_t
-{
-  F f;
-
-  template <typename... Ts>
-  _CCCL_HOST_DEVICE auto operator()(Ts&&... args) noexcept(noexcept(!f(std::forward<Ts>(args)...)))
-    -> decltype(!f(std::forward<Ts>(args)...))
-  {
-    return !f(std::forward<Ts>(args)...);
-  }
-
-  template <typename... Ts>
-  _CCCL_HOST_DEVICE auto operator()(Ts&&... args) const noexcept(noexcept(!f(std::forward<Ts>(args)...)))
-    -> decltype(!f(std::forward<Ts>(args)...))
-  {
-    return !f(std::forward<Ts>(args)...);
-  }
-};
-} // namespace detail
-
-//! Takes a predicate (a callable returning bool) and returns a new predicate that returns the negated result.
-//! \see https://en.cppreference.com/w/cpp/utility/functional/not_fn
-// TODO(bgruber): alias to ::cuda::std::not_fn in C++17
-template <class F>
-_CCCL_HOST_DEVICE auto not_fn(F&& f) -> detail::not_fun_t<::cuda::std::decay_t<F>>
-{
-  return detail::not_fun_t<::cuda::std::decay_t<F>>{std::forward<F>(f)};
-}
+using ::cuda::std::not_fn;
 
 /*! \}
  */
@@ -1092,30 +873,6 @@ _CCCL_GLOBAL_CONSTANT thrust::detail::functional::placeholder<9>::type _10;
 #undef THRUST_BINARY_FUNCTOR_VOID_SPECIALIZATION
 
 THRUST_NAMESPACE_END
-
-#ifndef _CCCL_DOXYGEN_INVOKED // Do not document
-_LIBCUDACXX_BEGIN_NAMESPACE_CUDA
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::plus);
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::minus);
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::multiplies);
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::divides);
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::modulus);
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::negate);
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::bit_and);
-//_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::bit_not); // does not exist?
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::bit_or);
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::bit_xor);
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::equal_to);
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::not_equal_to);
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::less);
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::less_equal);
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::greater_equal);
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::greater);
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::logical_and);
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::logical_not);
-_LIBCUDACXX_MARK_CAN_COPY_ARGUMENTS(THRUST_NS_QUALIFIER::logical_or);
-_LIBCUDACXX_END_NAMESPACE_CUDA
-#endif // _CCCL_DOXYGEN_INVOKED
 
 #include <thrust/detail/functional/operators.h>
 #include <thrust/detail/type_traits/is_commutative.h>
