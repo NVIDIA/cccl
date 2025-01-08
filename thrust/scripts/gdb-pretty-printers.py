@@ -1,5 +1,6 @@
-import gdb
 import sys
+
+import gdb
 
 if sys.version_info[0] > 2:
     Iterator = object

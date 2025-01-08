@@ -563,6 +563,22 @@ namespace reserved
 {
 
 /**
+ * @brief Trait class to check if a function can be invoked with std::apply using a tuple type
+ */
+template <typename F, typename Tuple>
+struct is_tuple_invocable : ::std::false_type
+{};
+
+// Partial specialization that unpacks the tuple
+template <typename F, typename... Args>
+struct is_tuple_invocable<F, ::std::tuple<Args...>> : ::std::is_invocable<F, Args...>
+{};
+
+// Convenient alias template
+template <typename F, typename Tuple>
+inline constexpr bool is_tuple_invocable_v = is_tuple_invocable<F, Tuple>::value;
+
+/**
  * @brief A compile-time boolean that checks if a type supports streaming with std::ostream <<.
  *
  * This trait is true if the type T can be streamed using std::ostream <<, and false otherwise.

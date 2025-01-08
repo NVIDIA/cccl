@@ -1,11 +1,12 @@
+import cupy as cp
+import numpy as np
+
 from cuda.parallel.experimental.iterators import (
     CacheModifiedInputIterator,
     ConstantIterator,
     CountingIterator,
     TransformIterator,
 )
-import cupy as cp
-import numpy as np
 
 
 def test_constant_iterator_equality():
