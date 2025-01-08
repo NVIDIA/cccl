@@ -1232,22 +1232,22 @@ public:
   ///@{
   task_dep_untyped read(data_place dp = data_place::affine)
   {
-    return task_dep_untyped(*this, access_mode::read, mv(dp));
+    return task_dep_untyped(*this, access_mode_tag::read{}, mv(dp));
   }
 
   task_dep_untyped write(data_place dp = data_place::affine)
   {
-    return task_dep_untyped(*this, access_mode::write, mv(dp));
+    return task_dep_untyped(*this, access_mode_tag::write{}, mv(dp));
   }
 
   task_dep_untyped rw(data_place dp = data_place::affine)
   {
-    return task_dep_untyped(*this, access_mode::rw, mv(dp));
+    return task_dep_untyped(*this, access_mode_tag::rw{}, mv(dp));
   }
 
   task_dep_untyped relaxed(::std::shared_ptr<reduction_operator_base> op, data_place dp = data_place::affine)
   {
-    return task_dep_untyped(*this, access_mode::relaxed, mv(dp), op);
+    return task_dep_untyped(*this, access_mode_tag::relaxed{}, mv(dp), op);
   }
 
   ///@}
@@ -1679,9 +1679,18 @@ public:
     return pimpl == other.pimpl;
   }
 
-  friend inline ::std::shared_ptr<void> pack_state(const logical_data_untyped& d)
+  template <typename access_mode_t>
+  friend inline ::std::shared_ptr<void> pack_state(access_mode_t, const logical_data_untyped& d)
   {
-    return d.pimpl;
+    static_assert(is_access_mode_tag_v<access_mode_t>);
+    if constexpr (::std::is_same_v<access_mode_t, access_mode_tag::read>)
+    {
+      return const_cast<logical_data_untyped&>(d).pimpl;
+    }
+    else
+    {
+      return d.pimpl;
+    }
   }
 
   friend inline logical_data_untyped unpack_state(const ::std::shared_ptr<void>& p)
@@ -2294,37 +2303,31 @@ public:
   auto read(Pack&&... pack) const
   {
     using U = readonly_type_of<T>;
-    // The constness of *this implies that access mode is read
-    // Note that we do not provide an access mode, because this is how we
-    // dispatch statically between read-only and non read-only access modes in
-    // task_dep_untyped.
-    // TODO : we could make this cleaner if we had a tag type in addition to
-    // the access_mode enum class.
-    return task_dep<U, ::std::monostate, false>(*this, /* access_mode::read, */ ::std::forward<Pack>(pack)...);
+    return task_dep<U, ::std::monostate, false>(*this, access_mode_tag::read{}, ::std::forward<Pack>(pack)...);
   }
 
   template <typename... Pack>
   auto write(Pack&&... pack)
   {
-    return task_dep<T, ::std::monostate, false>(*this, access_mode::write, ::std::forward<Pack>(pack)...);
+    return task_dep<T, ::std::monostate, false>(*this, access_mode_tag::write{}, ::std::forward<Pack>(pack)...);
   }
 
   template <typename... Pack>
   auto rw(Pack&&... pack)
   {
-    return task_dep<T, ::std::monostate, false>(*this, access_mode::rw, ::std::forward<Pack>(pack)...);
+    return task_dep<T, ::std::monostate, false>(*this, access_mode_tag::rw{}, ::std::forward<Pack>(pack)...);
   }
 
   template <typename... Pack>
   auto relaxed(Pack&&... pack)
   {
-    return task_dep<T, ::std::monostate, false>(*this, access_mode::relaxed, ::std::forward<Pack>(pack)...);
+    return task_dep<T, ::std::monostate, false>(*this, access_mode_tag::relaxed{}, ::std::forward<Pack>(pack)...);
   }
 
   template <typename Op, typename... Pack>
   auto reduce(Op, no_init, Pack&&... pack)
   {
-    return task_dep<T, Op, false>(*this, access_mode::reduce_no_init, ::std::forward<Pack>(pack)...);
+    return task_dep<T, Op, false>(*this, access_mode_tag::reduce_no_init{}, ::std::forward<Pack>(pack)...);
   }
 
   /* If we do not pass the no_init{} tag type there, this is going to
@@ -2332,7 +2335,7 @@ public:
   template <typename Op, typename... Pack>
   auto reduce(Op, Pack&&... pack)
   {
-    return task_dep<T, Op, true>(*this, access_mode::reduce, ::std::forward<Pack>(pack)...);
+    return task_dep<T, Op, true>(*this, access_mode_tag::reduce{}, ::std::forward<Pack>(pack)...);
   }
 
   ///@}
