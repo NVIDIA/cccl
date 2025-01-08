@@ -16,7 +16,15 @@ classifiers = [
   "License :: OSI Approved :: Apache Software License",
 ]
 requires-python = ">=3.9"
-dynamic = ["version", "readme", "dependencies"]
+dependencies = [
+  "cuda-cccl",
+  "numpy",
+  "numba>=0.60.0",
+  "pynvjitlink-cu12>=0.2.4",
+  "cuda-python",
+  "jinja2",
+]
+dynamic = ["version", "readme"]
 
 [project.optional-dependencies]
 test = ["pytest", "pytest-xdist"]
