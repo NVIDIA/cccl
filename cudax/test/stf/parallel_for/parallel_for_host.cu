@@ -14,17 +14,14 @@ using namespace cuda::experimental::stf;
 
 int main()
 {
-    context ctx;
+  context ctx;
 
-    int nqpoints = 3;
-    auto ltoken = ctx.logical_token();
+  int nqpoints = 3;
+  auto ltoken  = ctx.logical_token();
 
-    ctx.parallel_for(exec_place::host, box(40), ltoken.read())
-                    ->*
-            [nqpoints] __host__ __device__ (
-                    size_t i, void_interface) {
-                assert(nqpoints == 3);
-            };
+  ctx.parallel_for(exec_place::host, box(40), ltoken.read())->*[nqpoints] __host__ __device__(size_t i, void_interface) {
+    assert(nqpoints == 3);
+  };
 
-    ctx.finalize();
+  ctx.finalize();
 }
