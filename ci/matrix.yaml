@@ -16,7 +16,7 @@ workflows:
     - {jobs: ['build'], std: [11, 14], cxx: ['gcc7', 'clang9']}
     - {jobs: ['build'], std: 'max', cxx: ['gcc8', 'gcc9', 'gcc10', 'gcc11', 'gcc12']}
     - {jobs: ['build'], std: 'max', cxx: ['clang10', 'clang11', 'clang12', 'clang13', 'clang14', 'clang15', 'clang16', 'clang17']}
-    - {jobs: ['build'], std: 'max', cxx: ['intel', 'msvc2019']}
+    - {jobs: ['build'], std: 'max', cxx: ['msvc2019']}
     - {jobs: ['build'], std: [17, 20], cxx: ['gcc', 'clang', 'msvc']}
     # Current CTK testing:
     - {jobs: ['test'],  project: ['libcudacxx', 'thrust'], std: 'max', cxx: ['gcc']}
@@ -70,7 +70,7 @@ workflows:
     # Current CTK build-only
     - {jobs: ['build'], std: 'all', cxx: ['gcc7', 'gcc8', 'gcc9', 'gcc10', 'gcc11', 'gcc12']}
     - {jobs: ['build'], std: 'all', cxx: ['clang9', 'clang10', 'clang11', 'clang12', 'clang13', 'clang14', 'clang15', 'clang16', 'clang17']}
-    - {jobs: ['build'], std: 'all', cxx: ['intel', 'msvc2019']}
+    - {jobs: ['build'], std: 'all', cxx: ['msvc2019']}
     # Test current CTK
     - {jobs: ['test'],  std: 'all', cxx: ['gcc13', 'clang18', 'msvc2022']}
     # Modded builds:
@@ -182,12 +182,6 @@ host_compilers:
       14.29: { stds: [    14, 17,   ], aka: '2019' }
       14.36: { stds: [    14, 17, 20]              }
       14.39: { stds: [    14, 17, 20], aka: '2022' }
-  intel:
-    name: 'Intel'
-    container_tag: 'oneapi'
-    exe: icpc
-    versions:
-      2023.2.0: { stds: [11, 14, 17,   ] }
   nvhpc:
     name: 'NVHPC'
     container_tag: 'nvhpc'
