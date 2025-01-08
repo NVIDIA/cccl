@@ -769,7 +769,6 @@ public:
 
   _CCCL_HOST_DEVICE static T* data(const mdspan<T, P...>& m)
   {
-    static_assert(can_provide_raw_data);
     return m.data_handle();
   }
 
