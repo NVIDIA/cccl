@@ -24,7 +24,7 @@
 #if _CCCL_STD_VER >= 2017
 
 #  include <cuda/__cmath/ceil_div.h>
-#  include <cuda/std/__type_traits/enable_if.h>
+#  include <cuda/std/__concepts/concept_macros.h>
 #  include <cuda/std/__type_traits/is_enum.h>
 #  include <cuda/std/__type_traits/is_integral.h>
 #  include <cuda/std/__type_traits/is_signed.h>
@@ -51,10 +51,10 @@ round_up(const _Tp __a, const _Up __b) noexcept
   }
   using _Common  = decltype(_Tp{} / _Up{});
   using _UCommon = _CUDA_VSTD::make_unsigned_t<_Common>;
-  auto __c1      = static_cast<_Common>(::cuda::ceil_div(__a, __b));
-  _CCCL_ASSERT(__c1 <= _CUDA_VSTD::numeric_limits<_Common>::max() / static_cast<_Common>(__b),
+  auto __c       = ::cuda::ceil_div(__a, __b);
+  _CCCL_ASSERT(__c <= _CUDA_VSTD::numeric_limits<_Common>::max() / static_cast<_Common>(__b),
                "cuda::round_up: result overflow");
-  return static_cast<_Common>(static_cast<_UCommon>(__c1) * static_cast<_UCommon>(__b));
+  return static_cast<_Common>(static_cast<_UCommon>(__c) * static_cast<_UCommon>(__b));
 }
 
 //! @brief Round the number \p __a to the next multiple of \p __b
