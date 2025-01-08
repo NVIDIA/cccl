@@ -20,7 +20,7 @@ int main()
   auto ltoken  = ctx.logical_token();
 
   ctx.parallel_for(exec_place::host, box(40), ltoken.read())->*[nqpoints] __host__ __device__(size_t i, void_interface) {
-    assert(nqpoints == 3);
+    _CCCL_ASSERT(nqpoints == 3, "invalid value");
   };
 
   ctx.finalize();
