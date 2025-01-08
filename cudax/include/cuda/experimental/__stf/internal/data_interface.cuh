@@ -196,6 +196,14 @@ public:
     event_list& prereqs)
   {}
 
+  virtual void data_fill(
+    backend_ctx_untyped& ctx,
+    const data_place& memory_node,
+    instance_id_t instance_id,
+    const ::std::any &init_val, /* const T& */
+    event_list& prereqs)
+  {}
+
   /**
    * @brief Pin host memory.
    *
