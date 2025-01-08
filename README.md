@@ -260,6 +260,8 @@ Unless otherwise specified, CCCL supports the same host compilers as the latest 
 - [Linux](https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html#host-compiler-support-policy)
 - [Windows](https://docs.nvidia.com/cuda/cuda-installation-guide-microsoft-windows/index.html#system-requirements)
 
+For GCC on Linux, at least 7.x is required.
+
 When using older CUDA Toolkits, we also only support the host compilers of the latest CUDA Toolkit,
 but at least the most recent host compiler of any supported older CUDA Toolkit.
 
