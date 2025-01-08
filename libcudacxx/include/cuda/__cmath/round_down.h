@@ -13,6 +13,8 @@
 
 #include <cuda/std/detail/__config>
 
+#include "cuda/std/__utility/to_underlying.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -29,6 +31,7 @@
 #  include <cuda/std/__type_traits/is_signed.h>
 #  include <cuda/std/__type_traits/make_unsigned.h>
 #  include <cuda/std/__type_traits/underlying_type.h>
+#  include <cuda/std/__utility/to_underlying.h>
 #  include <cuda/std/limits>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
@@ -60,11 +63,11 @@ round_down(const _Tp __a, const _Up __b) noexcept
 //! @pre \p __a must be non-negative
 //! @pre \p __b must be positive
 _CCCL_TEMPLATE(class _Tp, class _Up)
-_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_enum, _Tp) _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::is_integral, _Up))
+_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Tp) _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::is_enum, _Up))
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(_Tp{} / _CUDA_VSTD::underlying_type_t<_Up>{})
 round_down(const _Tp __a, const _Up __b) noexcept
 {
-  return ::cuda::round_down(__a, static_cast<_CUDA_VSTD::underlying_type_t<_Up>>(__b));
+  return ::cuda::round_down(__a, _CUDA_VSTD::to_underlying(__b));
 }
 
 //! @brief Round the number \p __a to the previous multiple of \p __b
@@ -73,11 +76,11 @@ round_down(const _Tp __a, const _Up __b) noexcept
 //! @pre \p __a must be non-negative
 //! @pre \p __b must be positive
 _CCCL_TEMPLATE(class _Tp, class _Up)
-_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Tp) _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::is_enum, _Up))
+_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_enum, _Tp) _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::is_integral, _Up))
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(_Tp{} / _CUDA_VSTD::underlying_type_t<_Up>{})
 round_down(const _Tp __a, const _Up __b) noexcept
 {
-  return ::cuda::round_down(static_cast<_CUDA_VSTD::underlying_type_t<_Tp>>(__a), __b);
+  return ::cuda::round_down(_CUDA_VSTD::to_underlying(__a), __b);
 }
 
 //! @brief Round the number \p __a to the previous multiple of \p __b
@@ -91,8 +94,7 @@ _CCCL_NODISCARD
 _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(_CUDA_VSTD::underlying_type_t<_Tp>{} / _CUDA_VSTD::underlying_type_t<_Up>{})
 round_down(const _Tp __a, const _Up __b) noexcept
 {
-  return ::cuda::round_down(static_cast<_CUDA_VSTD::underlying_type_t<_Tp>>(__a),
-                            static_cast<_CUDA_VSTD::underlying_type_t<_Up>>(__b));
+  return ::cuda::round_down(_CUDA_VSTD::to_underlying(__a), _CUDA_VSTD::to_underlying(__b));
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
