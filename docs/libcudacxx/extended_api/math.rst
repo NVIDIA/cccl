@@ -5,15 +5,15 @@ Math
 
 .. code:: cuda
 
-   template <typename T>
-   [[nodiscard]] __host__ __device__ constexpr T ceil_div(T a, T b) noexcept;
+   template <typename T, typename U>
+   [[nodiscard]] __host__ __device__ constexpr decltype(T{} / U{}) ceil_div(T a, U b) noexcept;
 
 ceil_div
 ---------
 
-- _Requires_: `is_integral_v<T>` is true.
-- _Preconditions_: `a >= 0` is true and `b > 0` is true.
-- _Returns_: divides `a` by `b`. If `a` is not a multiple of `b` rounds the result up to the next integer value.
+- *Requires*: ``T`` is an integral type or enumerator.
+- *Preconditions*: ``a >= 0`` is true and ``b > 0`` is true.
+- *Returns*: divides ``a`` by ``b``. If ``a`` is not a multiple of ``b`` rounds the result up to the next integer value.
 
 .. note::
 
