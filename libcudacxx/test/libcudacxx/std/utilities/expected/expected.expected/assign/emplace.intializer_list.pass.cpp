@@ -48,16 +48,12 @@ struct CtorFromInitalizerList
 
 static_assert(CanEmplace<cuda::std::expected<CtorFromInitalizerList<true>, int>, cuda::std::initializer_list<int>&>,
               "");
-#ifndef TEST_COMPILER_ICC
 static_assert(!CanEmplace<cuda::std::expected<CtorFromInitalizerList<false>, int>, cuda::std::initializer_list<int>&>,
               "");
-#endif // TEST_COMPILER_ICC
 static_assert(
   CanEmplace<cuda::std::expected<CtorFromInitalizerList<true>, int>, cuda::std::initializer_list<int>&, int>, "");
-#ifndef TEST_COMPILER_ICC
 static_assert(
   !CanEmplace<cuda::std::expected<CtorFromInitalizerList<false>, int>, cuda::std::initializer_list<int>&, int>, "");
-#endif // TEST_COMPILER_ICC
 
 struct Data
 {

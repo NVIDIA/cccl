@@ -62,9 +62,6 @@
 #  define THRUST_MSVC_VERSION _MSC_VER
 //! deprecated [Since 2.7]
 #  define THRUST_MSVC_VERSION_FULL _MSC_FULL_VER
-#elif _CCCL_COMPILER(ICC)
-//! deprecated [Since 2.7]
-#  define THRUST_HOST_COMPILER THRUST_HOST_COMPILER_INTEL
 #elif _CCCL_COMPILER(CLANG)
 //! deprecated [Since 2.7]
 #  define THRUST_HOST_COMPILER THRUST_HOST_COMPILER_CLANG

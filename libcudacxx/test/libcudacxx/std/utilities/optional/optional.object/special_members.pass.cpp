@@ -29,7 +29,6 @@ struct SpecialMemberTest
 {
   using O = cuda::std::optional<T>;
 
-#ifndef TEST_COMPILER_ICC
   static_assert(cuda::std::is_default_constructible_v<O>, "optional is always default constructible.");
 
   static_assert(cuda::std::is_copy_constructible_v<O> == cuda::std::is_copy_constructible_v<T>,
@@ -38,7 +37,6 @@ struct SpecialMemberTest
   static_assert(cuda::std::is_move_constructible_v<O>
                   == (cuda::std::is_copy_constructible_v<T> || cuda::std::is_move_constructible_v<T>),
                 "optional<T> is move constructible if and only if T is copy or move constructible.");
-#endif // TEST_COMPILER_ICC
 
   static_assert(cuda::std::is_copy_assignable_v<O>
                   == (cuda::std::is_copy_constructible_v<T> && cuda::std::is_copy_assignable_v<T>),

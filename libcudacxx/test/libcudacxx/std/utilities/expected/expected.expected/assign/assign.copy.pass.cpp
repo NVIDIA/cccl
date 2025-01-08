@@ -85,12 +85,10 @@ static_assert(cuda::std::is_copy_assignable_v<cuda::std::expected<MoveMayThrow, 
 // is_nothrow_move_constructible_v<T> && !is_nothrow_move_constructible_v<E>
 static_assert(cuda::std::is_copy_assignable_v<cuda::std::expected<int, MoveMayThrow>>, "");
 
-#ifndef TEST_COMPILER_ICC
 // !is_nothrow_move_constructible_v<T> && !is_nothrow_move_constructible_v<E>
 static_assert(
   cuda::std::__expected_can_copy_assign<MoveMayThrow, MoveMayThrow> == cuda::std::__smf_availability::__deleted, "");
 static_assert(!cuda::std::is_copy_assignable_v<cuda::std::expected<MoveMayThrow, MoveMayThrow>>, "");
-#endif // TEST_COMPILER_ICC
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {

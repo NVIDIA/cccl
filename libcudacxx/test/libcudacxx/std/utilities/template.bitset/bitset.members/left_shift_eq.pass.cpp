@@ -32,11 +32,8 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 bool test_left_shift()
       cuda::std::bitset<N> v1(cases[c]);
       cuda::std::bitset<N> v2 = v1;
       v1 <<= s;
-      _CCCL_DIAG_PUSH
-      _CCCL_DIAG_SUPPRESS_ICC(186)
       for (cuda::std::size_t i = 0; i < v1.size(); ++i)
       {
-        _CCCL_DIAG_POP
         {
           if (i < s)
           {
