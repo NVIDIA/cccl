@@ -46,6 +46,27 @@ enum class access_mode : unsigned int
 };
 
 /**
+ * @brief Tag types when we want to do a static dispatch based on access modes
+ */
+struct access_mode_tags
+{
+  struct none
+  {};
+  struct read
+  {};
+  struct write
+  {};
+  struct rw
+  {};
+  struct relaxed
+  {};
+  struct reduce
+  {};
+  struct reduce_no_init
+  {};
+};
+
+/**
  * @brief Combines two access mode into a compatible access mode for both
  *         accesses (eg. read+write = rw, read+read = read)
  */
