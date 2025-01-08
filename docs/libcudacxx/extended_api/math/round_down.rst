@@ -8,7 +8,7 @@
    template <typename T, typename = U>
    [[nodiscard]] __host__ __device__ constexpr decltype(T{} / U{}) round_down(T a, U b) noexcept;
 
-- *Requires*: ``is_integral_v<T>`` is true and ``is_integral_v<U>`` is true.
+- *Requires*: ``T`` and ``U`` are integral types or enumerators.
 - *Preconditions*: ``a >= 0`` is true and ``b > 0`` is true.
 - *Returns*: ``a`` rounded to the previous multiple of ``b``. If ``a`` is already a multiple of ``b``, return ``a``.
 
