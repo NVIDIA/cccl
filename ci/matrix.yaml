@@ -10,8 +10,8 @@ workflows:
   override:
 
   pull_request:
-    # Old CTK
-    - {jobs: ['build'], std: 'minmax', ctk: '12.0', cxx: ['gcc7', 'gcc9', 'clang9']}
+    # Old CTK/compiler
+    - {jobs: ['build'], std: 'minmax', ctk: '12.0', cxx: ['gcc7', 'gcc9', 'clang9', 'msvc2019']}
     # Current CTK build-only
     - {jobs: ['build'], std: [11, 14], cxx: ['gcc7', 'clang9']}
     - {jobs: ['build'], std: 'max', cxx: ['gcc8', 'gcc9', 'gcc10', 'gcc11', 'gcc12']}
@@ -62,8 +62,8 @@ workflows:
     - {jobs: ['limited'], project: 'cub', std: 17}
     - {jobs: ['test_gpu'],  project: 'thrust', cmake_options: '-DTHRUST_DISPATCH_TYPE=Force32bit'}
     - {jobs: ['test_gpu'],  project: 'thrust', cmake_options: '-DTHRUST_DISPATCH_TYPE=Force64bit'}
-    # Old CTK
-    - {jobs: ['build'], std: 'all', ctk: '12.0', cxx: ['gcc7', 'gcc8', 'gcc9', 'clang9']}
+    # Old CTK/compiler
+    - {jobs: ['build'], std: 'all', ctk: '12.0', cxx: ['gcc7', 'gcc8', 'gcc9', 'clang9', 'msvc2019']}
     - {jobs: ['build'], std: 'all', ctk: '12.0', cxx: ['gcc11'], sm: '60;70;80;90'}
     # Current CTK build-only
     - {jobs: ['build'], std: 'all', cxx: ['gcc7', 'gcc8', 'gcc9', 'gcc10', 'gcc11', 'gcc12']}
