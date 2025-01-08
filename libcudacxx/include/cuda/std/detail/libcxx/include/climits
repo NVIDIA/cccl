@@ -55,9 +55,9 @@ _CCCL_PUSH_MACROS
 #  include <cuda/std/detail/libcxx/include/support/win32/limits_msvc_win32.h>
 #endif // _CCCL_COMPILER(MSVC)
 
-#ifndef __CHAR_BIT__ 
+#ifndef __CHAR_BIT__
 #  define __CHAR_BIT__ 8
-#endif // !__CHAR_BIT__ 
+#endif // !__CHAR_BIT__
 
 _CCCL_POP_MACROS
 
