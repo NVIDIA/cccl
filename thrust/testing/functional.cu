@@ -212,7 +212,7 @@ THRUST_DISABLE_BROKEN_GCC_VECTORIZER void TestIdentityFunctional()
   // value categories when casting to different type
   static_assert(::cuda::std::is_same<decltype(thrust::identity<int>{}(3.14)), int&&>::value, "");
   // unfortunately, old versions of MSVC pick the `const int&` overload instead of `int&&`
-#if _CCCL_COMPILER(MSVC, >=, 19, 29)
+#if !_CCCL_COMPILER(MSVC) || _CCCL_COMPILER(MSVC, >=, 19, 29)
   static_assert(::cuda::std::is_same<decltype(thrust::identity<int>{}(d)), int&&>::value, "");
   static_assert(::cuda::std::is_same<decltype(thrust::identity<int>{}(as_const(d))), int&&>::value, "");
 #endif
