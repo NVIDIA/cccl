@@ -27,7 +27,7 @@
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
-#include <cuda/std/__type_traits/underlying_type.h>
+#include <cuda/std/__utility/to_underlying.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 
@@ -36,11 +36,9 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 //! @param __b The divisor
 //! @pre \p __a must be non-negative
 //! @pre \p __b must be positive
-template <class _Tp,
-          class _Up,
-          _CUDA_VSTD::enable_if_t<_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Tp), int> = 0,
-          _CUDA_VSTD::enable_if_t<_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Up), int> = 0>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 decltype(_Tp{} / _Up{})
+_CCCL_TEMPLATE(class _Tp, class _Up)
+_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Tp) _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::is_integral, _Up))
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(_Tp{} / _Up{})
 ceil_div(const _Tp __a, const _Up __b) noexcept
 {
   _CCCL_ASSERT(__b > _Up{0}, "cuda::ceil_div: 'b' must be positive");
@@ -71,13 +69,35 @@ ceil_div(const _Tp __a, const _Up __b) noexcept
 //! @param __b The divisor
 //! @pre \p __a must be non-negative
 //! @pre \p __b must be positive
-template <class _Tp,
-          class _Up,
-          _CUDA_VSTD::enable_if_t<_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Tp), int> = 0,
-          _CUDA_VSTD::enable_if_t<_CCCL_TRAIT(_CUDA_VSTD::is_enum, _Up), int>     = 0>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI _CCCL_CONSTEXPR_CXX14 _Tp ceil_div(const _Tp __a, const _Up __b) noexcept
+_CCCL_TEMPLATE(class _Tp, class _Up)
+_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Tp) _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::is_enum, _Up))
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp ceil_div(const _Tp __a, const _Up __b) noexcept
 {
-  return ::cuda::ceil_div(__a, static_cast<_CUDA_VSTD::underlying_type_t<_Up>>(__b));
+  return ::cuda::ceil_div(__a, _CUDA_VSTD::to_underlying(__b));
+}
+
+//! @brief Divides two numbers \p __a and \p __b, rounding up if there is a remainder, \p __b is an enum
+//! @param __a The dividend
+//! @param __b The divisor
+//! @pre \p __a must be non-negative
+//! @pre \p __b must be positive
+_CCCL_TEMPLATE(class _Tp, class _Up)
+_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_enum, _Tp) _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::is_integral, _Up))
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp ceil_div(const _Tp __a, const _Up __b) noexcept
+{
+  return ::cuda::ceil_div(_CUDA_VSTD::to_underlying(__a), __b);
+}
+
+//! @brief Divides two numbers \p __a and \p __b, rounding up if there is a remainder, \p __b is an enum
+//! @param __a The dividend
+//! @param __b The divisor
+//! @pre \p __a must be non-negative
+//! @pre \p __b must be positive
+_CCCL_TEMPLATE(class _Tp, class _Up)
+_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_enum, _Tp) _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::is_enum, _Up))
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp ceil_div(const _Tp __a, const _Up __b) noexcept
+{
+  return ::cuda::ceil_div(_CUDA_VSTD::to_underlying(__a), _CUDA_VSTD::to_underlying(__b));
 }
 
 _LIBCUDACXX_END_NAMESPACE_CUDA
