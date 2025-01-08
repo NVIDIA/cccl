@@ -46,7 +46,6 @@
 #include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_select_if.cuh>
 #include <cub/device/dispatch/dispatch_three_way_partition.cuh>
-#include <cub/util_deprecated.cuh>
 
 #include <iterator>
 

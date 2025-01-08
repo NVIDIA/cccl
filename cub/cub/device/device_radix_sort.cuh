@@ -45,7 +45,6 @@
 #include <cub/detail/choose_offset.cuh>
 #include <cub/detail/nvtx.cuh>
 #include <cub/device/dispatch/dispatch_radix_sort.cuh>
-#include <cub/util_deprecated.cuh>
 
 #include <cuda/std/type_traits>
 

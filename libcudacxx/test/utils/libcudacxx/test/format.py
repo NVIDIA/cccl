@@ -13,11 +13,12 @@ import time
 
 import lit.Test  # pylint: disable=import-error
 import lit.TestRunner  # pylint: disable=import-error
-from lit.TestRunner import ParserKind, IntegratedTestKeywordParser
-# pylint: disable=import-error
+from lit.TestRunner import IntegratedTestKeywordParser, ParserKind
 
-from libcudacxx.test.executor import LocalExecutor as LocalExecutor
 import libcudacxx.util
+
+# pylint: disable=import-error
+from libcudacxx.test.executor import LocalExecutor as LocalExecutor
 
 
 class LibcxxTestFormat(object):

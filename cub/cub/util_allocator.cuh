@@ -44,7 +44,6 @@
 #endif // no system header
 
 #include <cub/util_debug.cuh>
-#include <cub/util_deprecated.cuh>
 #include <cub/util_namespace.cuh>
 
 #include <map>
@@ -367,9 +366,9 @@ struct CachingDeviceAllocator
    * @param debug
    *   Whether or not to print (de)allocation events to stdout (default is no stderr output)
    */
-  CUB_DEPRECATED_BECAUSE("CUB no longer accepts `debug` parameter. "
-                         "Define CUB_DEBUG_LOG instead, or silence this message with "
-                         "CUB_IGNORE_DEPRECATED_API.")
+  CCCL_DEPRECATED_BECAUSE("CUB no longer accepts `debug` parameter. "
+                          "Define CUB_DEBUG_LOG instead, or silence this message with "
+                          "CCCL_IGNORE_DEPRECATED_API.")
   CachingDeviceAllocator(
     unsigned int bin_growth,
     unsigned int min_bin,

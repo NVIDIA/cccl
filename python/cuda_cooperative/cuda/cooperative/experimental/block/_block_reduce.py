@@ -4,6 +4,7 @@
 
 import numba
 
+from cuda.cooperative.experimental._common import make_binary_tempfile
 from cuda.cooperative.experimental._types import (
     Algorithm,
     Dependency,
@@ -15,7 +16,6 @@ from cuda.cooperative.experimental._types import (
     Value,
     numba_type_to_wrapper,
 )
-from cuda.cooperative.experimental._common import make_binary_tempfile
 
 
 def reduce(dtype, threads_in_block, binary_op, methods=None):

@@ -3,16 +3,17 @@
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
 import re
+
+import jinja2
 import numba
+from llvmlite import ir
 from numba import cuda, types
 from numba.core import cgutils
-from llvmlite import ir
-from numba.core.typing import signature
 from numba.core.extending import intrinsic, overload
-from cuda.cooperative.experimental._nvrtc import compile
-from cuda.cooperative.experimental._common import find_unsigned
-import jinja2
+from numba.core.typing import signature
 
+from cuda.cooperative.experimental._common import find_unsigned
+from cuda.cooperative.experimental._nvrtc import compile
 
 NUMBA_TYPES_TO_CPP = {
     types.boolean: "bool",
