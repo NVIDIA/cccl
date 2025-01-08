@@ -6,34 +6,46 @@ import shutil
 from pathlib import Path
 
 from setuptools import setup
+from setuptools.command.build_py import build_py
 
 PROJECT_PATH = Path(__file__).resolve().parent
 CCCL_PATH = PROJECT_PATH.parents[1]
 
 
-def copy_cccl_headers_to_cuda_cccl_include():
-    cccl_headers = [
-        ("cub", "cub"),
-        ("libcudacxx", "include"),
-        ("thrust", "thrust"),
-    ]
+class CustomBuildPy(build_py):
+    """Copy CCCL headers BEFORE super().run()
 
-    inc_path = PROJECT_PATH / "cuda" / "cccl" / "include"
-    inc_path.mkdir(parents=True, exist_ok=True)
+    Note that the CCCL headers cannot be referenced directly:
+    setuptools (and pyproject.toml) does not support relative paths that
+    reference files outside the package directory (like ../../).
+    This is a restriction designed to avoid inadvertently packaging files
+    that are outside the source tree.
+    """
 
-    for proj_dir, header_dir in cccl_headers:
-        src_path = CCCL_PATH / proj_dir / header_dir
-        dst_path = inc_path / proj_dir
-        if dst_path.exists():
-            shutil.rmtree(dst_path)
-        shutil.copytree(src_path, dst_path)
+    def run(self):
+        cccl_headers = [
+            ("cub", "cub"),
+            ("libcudacxx", "include"),
+            ("thrust", "thrust"),
+        ]
 
-    init_py_path = inc_path / "__init__.py"
-    init_py_path.write_text("# Intentionally empty.\n")
+        inc_path = PROJECT_PATH / "cuda" / "cccl" / "include"
+        inc_path.mkdir(parents=True, exist_ok=True)
 
+        for proj_dir, header_dir in cccl_headers:
+            src_path = CCCL_PATH / proj_dir / header_dir
+            dst_path = inc_path / proj_dir
+            if dst_path.exists():
+                shutil.rmtree(dst_path)
+            shutil.copytree(src_path, dst_path)
 
-copy_cccl_headers_to_cuda_cccl_include()
+        init_py_path = inc_path / "__init__.py"
+        init_py_path.write_text("# Intentionally empty.\n")
+
+        super().run()
+
 
 setup(
     license_files=["../../LICENSE"],
+    cmdclass={"build_py": CustomBuildPy},
 )
