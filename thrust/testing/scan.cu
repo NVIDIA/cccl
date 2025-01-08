@@ -25,18 +25,6 @@ template <class Vector>
 void TestScanSimple()
 {
   using T = typename Vector::value_type;
-
-  // icc miscompiles the intermediate sum updates for custom_numeric.
-  // The issue doesn't happen with opts disabled, or on other compilers.
-  // Printing the intermediate sum each iteration "fixes" the issue,
-  // so likely a bad optimization.
-#if _CCCL_COMPILER(ICC)
-  if (std::is_same<T, custom_numeric>::value)
-  {
-    return;
-  }
-#endif
-
   typename Vector::iterator iter;
 
   Vector input(5);

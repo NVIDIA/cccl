@@ -62,12 +62,10 @@ __host__ __device__ void test_T_ctor_noexcept()
     using V = cuda::std::variant<Dummy, NoThrowT>;
     static_assert(cuda::std::is_nothrow_constructible<V, int>::value, "");
   }
-#if !defined(TEST_COMPILER_ICC)
   {
     using V = cuda::std::variant<Dummy, ThrowsT>;
     static_assert(!cuda::std::is_nothrow_constructible<V, int>::value, "");
   }
-#endif // !TEST_COMPILER_ICC
 }
 
 __host__ __device__ void test_T_ctor_sfinae()

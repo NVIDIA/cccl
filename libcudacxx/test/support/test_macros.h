@@ -65,9 +65,7 @@
 #  define TEST_HAS_BUILTIN_IDENTIFIER(X) 0
 #endif
 
-#if defined(__INTEL_COMPILER)
-#  define TEST_COMPILER_ICC
-#elif defined(__NVCOMPILER)
+#if defined(__NVCOMPILER)
 #  define TEST_COMPILER_NVHPC
 #elif defined(__clang__)
 #  define TEST_COMPILER_CLANG
@@ -463,9 +461,9 @@ __host__ __device__ constexpr bool unused(T&&...)
 #  endif
 #endif // defined(TEST_COMPILER_MSVC)
 
-#if defined(TEST_COMPILER_NVHPC) || defined(TEST_COMPILER_ICC)
+#if defined(TEST_COMPILER_NVHPC)
 #  define TEST_COMPILER_BROKEN_SMF_NOEXCEPT
-#endif // TEST_COMPILER_NVHPC || TEST_COMPILER_ICC
+#endif // TEST_COMPILER_NVHPC
 
 #if (defined(TEST_WINDOWS_DLL) && !defined(_MSC_VER)) || defined(__MVS__)
 // Normally, a replaced e.g. 'operator new' ends up used if the user code

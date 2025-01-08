@@ -286,7 +286,6 @@ void makeEmpty(Variant& v)
 
 __host__ __device__ void test_copy_assignment_not_noexcept()
 {
-#if !defined(TEST_COMPILER_ICC)
   {
     using V = cuda::std::variant<CopyMaybeThrows>;
     static_assert(!cuda::std::is_nothrow_copy_assignable<V>::value, "");
@@ -295,7 +294,6 @@ __host__ __device__ void test_copy_assignment_not_noexcept()
     using V = cuda::std::variant<int, CopyDoesThrow>;
     static_assert(!cuda::std::is_nothrow_copy_assignable<V>::value, "");
   }
-#endif // !TEST_COMPILER_ICC
 }
 
 __host__ __device__ void test_copy_assignment_sfinae()
@@ -575,7 +573,7 @@ __host__ __device__ void test_copy_assignment_different_index()
     assert(&vref == &v1);
     assert(v1.index() == 1);
     assert(cuda::std::get<1>(v1).value == 42);
-#if !defined(TEST_COMPILER_MSVC) && !defined(TEST_COMPILER_ICC)
+#if !defined(TEST_COMPILER_MSVC)
     assert(CopyAssign::alive() == 2);
     assert(CopyAssign::copy_construct() == 1);
     assert(CopyAssign::move_construct() == 1);
@@ -585,7 +583,7 @@ __host__ __device__ void test_copy_assignment_different_index()
     // interactions of many weird things these tests are doing.
     asm volatile("" ::: "memory");
     assert(CopyAssign::copy_assign() == 0);
-#endif // !TEST_COMPILER_MSVC && !TEST_COMPILER_ICC
+#endif // !TEST_COMPILER_MSVC
   }
 #ifndef TEST_HAS_NO_EXCEPTIONS
 #  if defined(_LIBCUDACXX_HAS_STRING)
