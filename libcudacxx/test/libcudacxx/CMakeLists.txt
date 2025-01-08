@@ -54,7 +54,9 @@ if (MSVC)
   set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
 
   # We want to use cudaLaunchKernelEx which is guarded by __cplusplus
-  string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -Xcompiler=/Zc:__cplusplus")
+  if ("${CMAKE_CUDA_COMPILER_VERSION}" LESS "12.3.0")
+    string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -Xcompiler=/Zc:__cplusplus")
+  endif()
 endif()
 
 if (CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING)
