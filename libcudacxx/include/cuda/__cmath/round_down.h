@@ -77,7 +77,7 @@ round_down(const _Tp __a, const _Up __b) noexcept
 //! @pre \p __b must be positive
 _CCCL_TEMPLATE(class _Tp, class _Up)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_enum, _Tp) _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::is_integral, _Up))
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(_Tp{} / _CUDA_VSTD::underlying_type_t<_Up>{})
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(_CUDA_VSTD::underlying_type_t<_Tp>{} / _Up{})
 round_down(const _Tp __a, const _Up __b) noexcept
 {
   return ::cuda::round_down(_CUDA_VSTD::to_underlying(__a), __b);
