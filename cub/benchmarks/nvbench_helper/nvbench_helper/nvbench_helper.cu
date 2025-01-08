@@ -752,7 +752,9 @@ void do_not_optimize(const void* ptr)
     seed_t, cuda::std::span<TYPE>, std::size_t, std::size_t)
 
 INSTANTIATE(int32_t);
+INSTANTIATE(uint32_t);
 INSTANTIATE(int64_t);
+INSTANTIATE(uint64_t);
 
 #undef INSTANTIATE
 
