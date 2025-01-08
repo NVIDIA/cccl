@@ -54,11 +54,6 @@ if (MSVC)
   set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
 endif()
 
-# Intel OneAPI compiler has fast math enabled by default which breaks almost all floating point tests
-if (${CMAKE_CXX_COMPILER_ID} STREQUAL "IntelLLVM")
-  string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " --compiler-options=-fno-fast-math")
-endif()
-
 if (CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING)
   string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -DCCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING")
 endif()
