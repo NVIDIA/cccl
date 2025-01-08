@@ -12,6 +12,7 @@ import pytest
 
 import cuda.parallel.experimental.algorithms as algorithms
 import cuda.parallel.experimental.iterators as iterators
+from cuda.parallel.experimental.struct import gpu_struct
 
 
 def random_int(shape, dtype):
@@ -550,3 +551,30 @@ def test_reduce_non_contiguous():
     d_in = cp.zeros(size)[::2]
     with pytest.raises(ValueError, match="Non-contiguous arrays are not supported."):
         _ = algorithms.reduce_into(d_in, d_out, binary_op, h_init)
+
+
+def test_reduce_struct_type():
+    @gpu_struct
+    class Pixel:
+        r: np.int32
+        g: np.int32
+        b: np.int32
+
+    def max_g_value(x, y):
+        return x if x.g > y.g else y
+
+    d_rgb = cp.random.randint(0, 256, (10, 3), dtype=np.int32).view(Pixel.dtype)
+    d_out = cp.zeros(1, Pixel.dtype)
+
+    h_init = Pixel(0, 0, 0)
+
+    reduce_into = algorithms.reduce_into(d_rgb, d_out, max_g_value, h_init)
+    temp_storage_bytes = reduce_into(None, d_rgb, d_out, len(d_rgb), h_init)
+
+    d_temp_storage = cp.zeros(temp_storage_bytes, dtype=np.uint8)
+    _ = reduce_into(d_temp_storage, d_rgb, d_out, len(d_rgb), h_init)
+
+    h_rgb = d_rgb.get()
+    expected = h_rgb[h_rgb.view("int32")[:, 1].argmax()]
+
+    np.testing.assert_equal(expected["g"], d_out.get()["g"])
