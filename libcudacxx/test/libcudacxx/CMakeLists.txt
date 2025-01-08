@@ -49,9 +49,12 @@ if (NOT MSVC AND NOT ${CMAKE_CUDA_COMPILER_ID} STREQUAL "Clang")
   set(LIBCUDACXX_WARNING_LEVEL "--compiler-options=-Wall --compiler-options=-Wextra")
 endif()
 
-# sccache cannot handle the -Fd option generationg pdb files
 if (MSVC)
+  # sccache cannot handle the -Fd option generationg pdb files
   set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
+
+  # We want to use cudaLaunchKernelEx which is guarded by __cplusplus
+  string(APPEND LIBCUDACXX_TEST_COMPILER_FLAGS " -Xcompiler=/Zc:__cplusplus")
 endif()
 
 if (CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING)
