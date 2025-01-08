@@ -940,7 +940,7 @@ public:
 
       auto& data               = ::std::get<0>(*p);
       const size_t n           = ::std::get<1>(*p);
-      Fun& f                  = ::std::get<2>(*p);
+      Fun& f                   = ::std::get<2>(*p);
       const sub_shape_t& shape = ::std::get<3>(*p);
 
       // deps_ops_t are pairs of data instance type, and a reduction operator,
