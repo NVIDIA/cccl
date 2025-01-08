@@ -1,3 +1,5 @@
+from typing import Any
+
 from typing_extensions import (
     Protocol,
 )  # TODO: typing_extensions required for Python 3.7 docs env
@@ -10,3 +12,9 @@ class DeviceArrayLike(Protocol):
     """
 
     __cuda_array_interface__: dict
+
+
+GpuStruct = Any
+GpuStruct.__doc__ = """\
+    Type of instances of classes decorated with @gpu_struct.
+"""
