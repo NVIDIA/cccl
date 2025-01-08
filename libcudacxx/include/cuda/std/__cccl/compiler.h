@@ -42,7 +42,10 @@
 
 // Determine the host compiler and its version
 #if defined(__INTEL_COMPILER)
-#  error "The Intel C++ Compiler Classic (icc/icpc) is not supported by CCCL"
+#  ifndef CCCL_IGNORE_DEPRECATED_COMPILER
+#    warning \
+      "The Intel C++ Compiler Classic (icc/icpc) is not supported by CCCL. Define CCCL_IGNORE_DEPRECATED_COMPILER to suppress this message."
+#  endif // !CCCL_IGNORE_DEPRECATED_COMPILER
 #elif defined(__NVCOMPILER)
 #  define _CCCL_COMPILER_NVHPC _CCCL_COMPILER_MAKE_VERSION(__NVCOMPILER_MAJOR__, __NVCOMPILER_MINOR__)
 #elif defined(__clang__)
