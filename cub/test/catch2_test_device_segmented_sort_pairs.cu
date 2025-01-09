@@ -32,61 +32,9 @@
 
 // FIXME: Graph launch disabled, algorithm syncs internally. WAR exists for device-launch, figure out how to enable for
 // graph launch.
-
-// TODO replace with DeviceSegmentedSort::SortPairs interface once https://github.com/NVIDIA/cccl/issues/50 is addressed
-// Temporary wrapper that allows specializing the DeviceSegmentedSort algorithm for different offset types
-template <bool IS_DESCENDING,
-          typename KeyT,
-          typename ValueT,
-          typename BeginOffsetIteratorT,
-          typename EndOffsetIteratorT,
-          typename NumItemsT>
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_sort_pairs_wrapper(
-  void* d_temp_storage,
-  size_t& temp_storage_bytes,
-  const KeyT* d_keys_in,
-  KeyT* d_keys_out,
-  const ValueT* d_values_in,
-  ValueT* d_values_out,
-  NumItemsT num_items,
-  NumItemsT num_segments,
-  BeginOffsetIteratorT d_begin_offsets,
-  EndOffsetIteratorT d_end_offsets,
-  bool* selector,
-  bool is_overwrite   = false,
-  cudaStream_t stream = 0)
-{
-  cub::DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-  cub::DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
-
-  auto status = cub::
-    DispatchSegmentedSort<IS_DESCENDING, KeyT, ValueT, NumItemsT, BeginOffsetIteratorT, EndOffsetIteratorT>::Dispatch(
-      d_temp_storage,
-      temp_storage_bytes,
-      d_keys,
-      d_values,
-      num_items,
-      num_segments,
-      d_begin_offsets,
-      d_end_offsets,
-      is_overwrite,
-      stream);
-  if (status != cudaSuccess)
-  {
-    return status;
-  }
-  if (is_overwrite)
-  {
-    // Only write to selector in the DoubleBuffer invocation
-    *selector = d_keys.Current() != d_keys_out;
-  }
-  return cudaSuccess;
-}
-
 // %PARAM% TEST_LAUNCH lid 0:1
 
-DECLARE_LAUNCH_WRAPPER(dispatch_segmented_sort_pairs_wrapper<true>, dispatch_segmented_sort_pairs_descending);
-DECLARE_LAUNCH_WRAPPER(dispatch_segmented_sort_pairs_wrapper<false>, dispatch_segmented_sort_pairs);
+DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::StableSortPairs, stable_sort_pairs);
 
 using pair_types =
   c2h::type_list<c2h::type_list<bool, std::uint8_t>,
@@ -260,18 +208,16 @@ try
 {
   using key_t                        = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
   using value_t                      = cuda::std::uint8_t;
-  using segment_offset_t             = int;
+  using segment_offset_t             = std::int64_t;
   using offset_t                     = c2h::get<0, TestType>;
   using segment_iterator_t           = segment_index_to_offset_op<offset_t, segment_offset_t>;
   constexpr std::size_t segment_size = 1000000;
   constexpr std::size_t uint32_max   = ::cuda::std::numeric_limits<std::uint32_t>::max();
-  constexpr bool is_descending       = false;
-  constexpr bool is_overwrite        = false;
   constexpr std::size_t num_items =
     (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : ::cuda::std::numeric_limits<offset_t>::max();
-  constexpr std::size_t num_empty_segments = 1000;
-  const std::size_t num_segments           = num_empty_segments + ::cuda::ceil_div(num_items, segment_size);
-  CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments, is_descending, is_overwrite);
+  constexpr segment_offset_t num_empty_segments = uint32_max;
+  const segment_offset_t num_segments           = num_empty_segments + ::cuda::ceil_div(num_items, segment_size);
+  CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments);
 
   // Generate input
   c2h::device_vector<key_t> in_keys(num_items);
@@ -293,17 +239,15 @@ try
   auto out_keys_ptr   = thrust::raw_pointer_cast(out_keys.data());
   auto out_values_ptr = thrust::raw_pointer_cast(out_values.data());
 
-  dispatch_segmented_sort_pairs(
+  stable_sort_pairs(
     thrust::raw_pointer_cast(in_keys.data()),
-    out_keys_ptr,
+    thrust::raw_pointer_cast(out_keys.data()),
     thrust::raw_pointer_cast(in_values.data()),
-    out_values_ptr,
+    thrust::raw_pointer_cast(out_values.data()),
     static_cast<offset_t>(num_items),
-    static_cast<offset_t>(num_segments),
+    static_cast<segment_offset_t>(num_segments),
     offsets,
-    offsets_plus_1,
-    nullptr,
-    is_overwrite);
+    offsets_plus_1);
 
   // Verify the keys are sorted correctly
   verification_helper.verify_sorted(out_keys, offsets + num_empty_segments, num_segments - num_empty_segments);
@@ -321,15 +265,14 @@ try
 {
   using key_t                      = cuda::std::uint8_t; // minimize memory footprint to support a wider range of GPUs
   using value_t                    = cuda::std::uint8_t;
+  using segment_offset_t           = std::int32_t;
   using offset_t                   = c2h::get<0, TestType>;
   constexpr std::size_t uint32_max = ::cuda::std::numeric_limits<std::uint32_t>::max();
   constexpr int num_key_seeds      = 1;
-  constexpr bool is_descending     = false;
-  constexpr bool is_overwrite      = true;
   constexpr std::size_t num_items =
     (sizeof(offset_t) == 8) ? uint32_max + (1 << 20) : ::cuda::std::numeric_limits<offset_t>::max();
-  constexpr std::size_t num_segments = 2;
-  CAPTURE(c2h::type_name<offset_t>(), num_items, is_descending, is_overwrite);
+  constexpr segment_offset_t num_segments = 2;
+  CAPTURE(c2h::type_name<offset_t>(), num_items, num_segments);
 
   c2h::device_vector<key_t> in_keys(num_items);
   c2h::device_vector<value_t> in_values(num_items);
@@ -346,30 +289,15 @@ try
   short_key_verification_helper<key_t> verification_helper{};
   verification_helper.prepare_verification_data(in_keys);
 
-  // Handle double-buffer interface: allocate host/device-accessible memory to communicate the selected output buffer
-  bool* selector_ptr = nullptr;
-  REQUIRE(cudaSuccess == cudaMallocHost(&selector_ptr, sizeof(*selector_ptr)));
-
-  auto out_keys_ptr   = thrust::raw_pointer_cast(out_keys.data());
-  auto out_values_ptr = thrust::raw_pointer_cast(out_values.data());
-  dispatch_segmented_sort_pairs(
+  stable_sort_pairs(
     thrust::raw_pointer_cast(in_keys.data()),
-    out_keys_ptr,
+    thrust::raw_pointer_cast(out_keys.data()),
     thrust::raw_pointer_cast(in_values.data()),
-    out_values_ptr,
+    thrust::raw_pointer_cast(out_values.data()),
     static_cast<offset_t>(num_items),
-    static_cast<offset_t>(num_segments),
+    static_cast<segment_offset_t>(num_segments),
     thrust::raw_pointer_cast(offsets.data()),
-    offsets.cbegin() + 1,
-    selector_ptr,
-    is_overwrite);
-
-  if (*selector_ptr)
-  {
-    std::swap(out_keys, in_keys);
-    std::swap(out_values, in_values);
-  }
-  REQUIRE(cudaFreeHost(selector_ptr) == cudaSuccess);
+    offsets.cbegin() + 1);
 
   // Verify the keys are sorted correctly
   verification_helper.verify_sorted(out_keys);
