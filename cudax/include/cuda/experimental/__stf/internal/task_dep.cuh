@@ -20,12 +20,44 @@
 #  pragma system_header
 #endif // no system header
 
+#include <any>
 #include <cuda/experimental/__stf/internal/reduction_base.cuh>
 
 namespace cuda::experimental::stf
 {
 
-::std::shared_ptr<void> pack_state(const logical_data_untyped&);
+template <typename access_mode_t>
+::std::shared_ptr<void> pack_state(access_mode_t, const logical_data_untyped& d);
+
+/**
+ * @brief A type-erased container for any value
+ *
+ * We do not have a default constructor so that we can for example store this
+ * in a std::optional to check whether there is a value
+ */
+class init_val {
+public:
+    // Template constructor to store any type of value
+    template <typename T>
+    init_val(const T& val) : stored_value(val) {}
+
+    // Get the stored value with type safety
+    template <typename T>
+    const T& get() const {
+        _CCCL_ASSERT(stored_value.has_value(), "No value stored in init_val.");
+
+        try {
+            return ::std::any_cast<const T&>(stored_value);
+        } catch (const ::std::bad_any_cast&) {
+            throw ::std::runtime_error(
+                ::std::string("Stored value type does not match requested type: ") +
+                typeid(T).name());
+        }
+    }
+
+private:
+    ::std::any stored_value;
+};
 
 class task;
 
@@ -54,34 +86,23 @@ public:
   task_dep_untyped& operator=(task_dep_untyped&& other) noexcept = default;
 
   // dependency with an explicit data_place
+  template <access_mode mode>
   task_dep_untyped(const logical_data_untyped& d,
-                   access_mode m,
+                   ::std::integral_constant<access_mode, mode>, // to get a compile-time value for mode
                    data_place dplace,
                    ::std::shared_ptr<reduction_operator_base> redux_op = nullptr)
-      : data(pack_state(d))
-      , m(m)
+      : data(pack_state<mode>(d))
+      , m(mode) // get the runtime value access_mode based on type
       , dplace(mv(dplace))
       , redux_op(mv(redux_op))
   {}
 
   // dependency without an explicit data_place : using data_place::affine
-  task_dep_untyped(
-    const logical_data_untyped& d, access_mode m, ::std::shared_ptr<reduction_operator_base> redux_op = nullptr)
-      : task_dep_untyped(d, m, data_place::affine, mv(redux_op))
-  {}
-
-  // These constructors take no access_mode, which is a way to identify that
-  // they are using read-only access mode.
-  // TODO : That was the only way to dispatch at compile time which constructor
-  // is used. We might use a tag_type or a std::true_type to do this static
-  // dispatch in a better way.
-  task_dep_untyped(
-    const logical_data_untyped& d, data_place dplace, ::std::shared_ptr<reduction_operator_base> redux_op = nullptr)
-      : task_dep_untyped(const_cast<logical_data_untyped&>(d), access_mode::read, mv(dplace), mv(redux_op))
-  {}
-
-  task_dep_untyped(const logical_data_untyped& d, ::std::shared_ptr<reduction_operator_base> redux_op = nullptr)
-      : task_dep_untyped(const_cast<logical_data_untyped&>(d), access_mode::read, mv(redux_op))
+  template <access_mode mode>
+  task_dep_untyped(const logical_data_untyped& d,
+                   ::std::integral_constant<access_mode, mode>,
+                   ::std::shared_ptr<reduction_operator_base> redux_op = nullptr)
+      : task_dep_untyped(d, ::std::integral_constant<access_mode, mode>{}, data_place::affine, mv(redux_op))
   {}
 
   logical_data_untyped get_data() const;
@@ -186,6 +207,8 @@ private:
 
   mutable data_place dplace;
   ::std::shared_ptr<reduction_operator_base> redux_op;
+
+  ::std::optional<init_val> value;
 };
 
 template <typename T>

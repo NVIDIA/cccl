@@ -31,6 +31,8 @@
 #include <cuda/experimental/__stf/localization/composite_slice.cuh>
 #include <cuda/experimental/__stf/stream/stream_data_interface.cuh>
 
+#include <any>
+
 namespace cuda::experimental::stf
 {
 
@@ -266,6 +268,45 @@ public:
     }
 
     prereqs = op.end(bctx);
+  }
+
+  void data_apply(backend_ctx_untyped& ctx,
+                  const data_place& memory_node,
+                  instance_id_t instance_id,
+                  ::std::any func, /* std::function<void<T &>> */
+                  event_list& prereqs) override
+  {
+    // Func is actually supposed to be a ::std::function<void(T&)>
+    try
+    {
+      // Attempt to cast std::any to std::function<void(T&)>
+      [[maybe_unused]] auto typed_func = ::std::any_cast<::std::function<void(T&)>>(func);
+
+      // TODO launch a kernel / host method that applies this to every element
+    }
+    catch (const ::std::bad_any_cast& e)
+    {
+      ::std::cerr << "Invalid function type for T: " << typeid(T).name() << "\n";
+    }
+  }
+
+  void data_fill(backend_ctx_untyped& ctx,
+                  const data_place& memory_node,
+                  instance_id_t instance_id,
+                  const ::std::any& init_val, /* const T& */
+                  event_list& prereqs) override
+  {
+    // init_val is actually a const T&
+    try
+    {
+      const T& typed_init_val = ::std::any_cast<const T&>(init_val);
+
+      // TODO launch a kernel / host method that sets this value for every element
+    }
+    catch (const ::std::bad_any_cast& e)
+    {
+      ::std::cerr << "Invalid type for T: " << typeid(T).name() << "\n";
+    }
   }
 
   bool pin_host_memory(instance_id_t instance_id) override

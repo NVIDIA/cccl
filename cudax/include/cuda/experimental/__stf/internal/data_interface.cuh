@@ -32,6 +32,7 @@
 #include <cuda/experimental/__stf/internal/task.cuh>
 #include <cuda/experimental/__stf/utility/hash.cuh>
 
+#include <any>
 #include <deque>
 #include <optional>
 
@@ -186,6 +187,22 @@ public:
     const data_place& src_memory_node,
     instance_id_t src_instance_id,
     event_list& prereqs) = 0;
+
+  virtual void data_apply(
+    backend_ctx_untyped& ctx,
+    const data_place& memory_node,
+    instance_id_t instance_id,
+    ::std::any func, /* std::function<void<T &>> */
+    event_list& prereqs)
+  {}
+
+  virtual void data_fill(
+    backend_ctx_untyped& ctx,
+    const data_place& memory_node,
+    instance_id_t instance_id,
+    const ::std::any &init_val, /* const T& */
+    event_list& prereqs)
+  {}
 
   /**
    * @brief Pin host memory.
