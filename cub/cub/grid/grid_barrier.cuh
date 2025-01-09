@@ -50,8 +50,10 @@ CUB_NAMESPACE_BEGIN
 
 /**
  * \brief GridBarrier implements a software global barrier among thread blocks within a CUDA grid
+ *
+ * deprecated [Since 2.9.0]
  */
-class GridBarrier
+class CCCL_DEPRECATED_BECAUSE("Use the APIs from cooperative groups instead") GridBarrier
 {
 protected:
   using SyncFlag = unsigned int;
@@ -131,8 +133,11 @@ public:
  *
  * Uses RAII for lifetime, i.e., device resources are reclaimed when
  * the destructor is called.
+ *
+ * deprecated [Since 2.9.0]
  */
-class GridBarrierLifetime : public GridBarrier
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+class CCCL_DEPRECATED_BECAUSE("Use the APIs from cooperative groups instead") GridBarrierLifetime : public GridBarrier
 {
 protected:
   // Number of bytes backed by d_sync
@@ -211,5 +216,6 @@ public:
     return retval;
   }
 };
+_CCCL_SUPPRESS_DEPRECATED_POP
 
 CUB_NAMESPACE_END

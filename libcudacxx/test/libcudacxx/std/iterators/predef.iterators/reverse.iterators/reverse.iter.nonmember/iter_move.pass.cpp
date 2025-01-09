@@ -83,12 +83,10 @@ __host__ __device__ constexpr bool test()
       };
       static_assert(cuda::std::bidirectional_iterator<ThrowingCopyNoexceptDecrement>);
 
-#  ifndef TEST_COMPILER_ICC
       static_assert(!cuda::std::is_nothrow_copy_constructible_v<ThrowingCopyNoexceptDecrement>);
       ASSERT_NOEXCEPT(cuda::std::ranges::iter_move(--cuda::std::declval<ThrowingCopyNoexceptDecrement&>()));
       using RI = cuda::std::reverse_iterator<ThrowingCopyNoexceptDecrement>;
       ASSERT_NOT_NOEXCEPT(iter_move(cuda::std::declval<RI>()));
-#  endif // TEST_COMPILER_ICC
     }
 
     {
@@ -121,11 +119,9 @@ __host__ __device__ constexpr bool test()
       static_assert(cuda::std::bidirectional_iterator<NoexceptCopyThrowingDecrement>);
 
       static_assert(cuda::std::is_nothrow_copy_constructible_v<NoexceptCopyThrowingDecrement>);
-#  ifndef TEST_COMPILER_ICC
       ASSERT_NOT_NOEXCEPT(cuda::std::ranges::iter_move(--cuda::std::declval<NoexceptCopyThrowingDecrement&>()));
       using RI = cuda::std::reverse_iterator<NoexceptCopyThrowingDecrement>;
       ASSERT_NOT_NOEXCEPT(iter_move(cuda::std::declval<RI>()));
-#  endif // TEST_COMPILER_ICC
     }
 
     {

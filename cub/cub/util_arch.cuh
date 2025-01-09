@@ -54,9 +54,6 @@ CUB_NAMESPACE_BEGIN
 
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
-// \deprecated [Since 2.1.0]
-#  define CUB_USE_COOPERATIVE_GROUPS
-
 /// In device code, CUB_PTX_ARCH expands to the PTX version for which we are
 /// compiling. In host code, CUB_PTX_ARCH's value is implementation defined.
 #  ifndef CUB_PTX_ARCH
@@ -71,33 +68,6 @@ CUB_NAMESPACE_BEGIN
 #      define CUB_PTX_ARCH __CUDA_ARCH__
 #    endif
 #  endif
-
-// These definitions were intended for internal use only and are now obsolete.
-// If you relied on them, consider porting your code to use the functionality
-// in libcu++'s <nv/target> header.
-// For a temporary workaround, define CUB_PROVIDE_LEGACY_ARCH_MACROS to make
-// them available again. These should be considered deprecated and will be
-// fully removed in a future version.
-#  ifdef CUB_PROVIDE_LEGACY_ARCH_MACROS
-#    ifndef CUB_IS_DEVICE_CODE
-#      if defined(_NVHPC_CUDA)
-#        define CUB_IS_DEVICE_CODE      __builtin_is_device_code()
-#        define CUB_IS_HOST_CODE        (!__builtin_is_device_code())
-#        define CUB_INCLUDE_DEVICE_CODE 1
-#        define CUB_INCLUDE_HOST_CODE   1
-#      elif CUB_PTX_ARCH > 0
-#        define CUB_IS_DEVICE_CODE      1
-#        define CUB_IS_HOST_CODE        0
-#        define CUB_INCLUDE_DEVICE_CODE 1
-#        define CUB_INCLUDE_HOST_CODE   0
-#      else
-#        define CUB_IS_DEVICE_CODE      0
-#        define CUB_IS_HOST_CODE        1
-#        define CUB_INCLUDE_DEVICE_CODE 0
-#        define CUB_INCLUDE_HOST_CODE   1
-#      endif
-#    endif
-#  endif // CUB_PROVIDE_LEGACY_ARCH_MACROS
 
 /// Maximum number of devices supported.
 #  ifndef CUB_MAX_DEVICES

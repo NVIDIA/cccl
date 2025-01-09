@@ -76,13 +76,11 @@ struct MoveAssignMayThrow
 // Test noexcept
 static_assert(cuda::std::is_nothrow_move_assignable_v<cuda::std::expected<void, int>>, "");
 
-#ifndef TEST_COMPILER_ICC
 // !is_nothrow_move_assignable_v<E>
 static_assert(!cuda::std::is_nothrow_move_assignable_v<cuda::std::expected<void, MoveAssignMayThrow>>, "");
 
 // !is_nothrow_move_constructible_v<E>
 static_assert(!cuda::std::is_nothrow_move_assignable_v<cuda::std::expected<void, MoveCtorMayThrow>>, "");
-#endif // TEST_COMPILER_ICC
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {

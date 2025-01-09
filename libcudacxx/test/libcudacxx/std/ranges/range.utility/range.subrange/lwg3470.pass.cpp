@@ -9,7 +9,6 @@
 
 // UNSUPPORTED: c++03, c++11, c++14
 // UNSUPPORTED: msvc-19.16
-// UNSUPPORTED: icc
 
 // gcc is unable to get the construction of b right
 // UNSUPPORTED: gcc-7, gcc-8, gcc-9

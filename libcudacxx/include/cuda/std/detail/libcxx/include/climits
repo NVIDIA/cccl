@@ -55,13 +55,9 @@ _CCCL_PUSH_MACROS
 #  include <cuda/std/detail/libcxx/include/support/win32/limits_msvc_win32.h>
 #endif // _CCCL_COMPILER(MSVC)
 
-// ICC defines __CHAR_BIT__ by default
-// accept that, but assert it is what we expect
-#ifdef __CHAR_BIT__
-static_assert(__CHAR_BIT__ == 8, "");
-#else
+#ifndef __CHAR_BIT__
 #  define __CHAR_BIT__ 8
-#endif
+#endif // !__CHAR_BIT__
 
 _CCCL_POP_MACROS
 
