@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
 
+
 def test_device_reduce():
     # example-begin reduce-min
     import cupy as cp
@@ -133,7 +134,9 @@ def test_counting_iterator():
     # Run reduction
     reduce_into(d_temp_storage, first_it, d_output, num_items, h_init)
 
-    expected_output = functools.reduce(lambda a, b: a + b, range(first_item, first_item + num_items))
+    expected_output = functools.reduce(
+        lambda a, b: a + b, range(first_item, first_item + num_items)
+    )
     assert (d_output == expected_output).all()
     # example-end counting-iterator
 
@@ -152,7 +155,7 @@ def test_transform_iterator():
         return a + b
 
     def square_op(a):
-        return a ** 2
+        return a**2
 
     first_item = 10
     num_items = 3
@@ -173,7 +176,7 @@ def test_transform_iterator():
     reduce_into(d_temp_storage, transform_it, d_output, num_items, h_init)
 
     expected_output = functools.reduce(
-        lambda a, b: a + b, [a ** 2 for a in range(first_item, first_item + num_items)]
+        lambda a, b: a + b, [a**2 for a in range(first_item, first_item + num_items)]
     )
     assert (d_output == expected_output).all()
     # example-end transform-iterator

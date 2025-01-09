@@ -24,7 +24,7 @@ def CacheModifiedInputIterator(device_array, modifier):
         modifier: The PTX cache load modifier
 
     Returns:
-        A ``CacheModifiedInputIterator`` object intialized with ``device_array``
+        A ``CacheModifiedInputIterator`` object initialized with ``device_array``
     """
     if modifier != "stream":
         raise NotImplementedError("Only stream modifier is supported")
