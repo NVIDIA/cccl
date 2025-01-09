@@ -13,6 +13,7 @@
 #include <cuda/std/cassert>
 #include <cuda/std/cfloat>
 #include <cuda/std/climits>
+#include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
 #include "test_macros.h"
