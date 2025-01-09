@@ -49,10 +49,8 @@ struct CtorFromInt
 
 static_assert(CanEmplace<cuda::std::expected<CtorFromInt<true>, int>, int>, "");
 static_assert(CanEmplace<cuda::std::expected<CtorFromInt<true>, int>, int, int>, "");
-#ifndef TEST_COMPILER_ICC
 static_assert(!CanEmplace<cuda::std::expected<CtorFromInt<false>, int>, int>, "");
 static_assert(!CanEmplace<cuda::std::expected<CtorFromInt<false>, int>, int, int>, "");
-#endif // TEST_COMPILER_ICC
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {

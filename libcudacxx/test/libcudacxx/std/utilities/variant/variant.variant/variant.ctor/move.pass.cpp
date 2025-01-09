@@ -160,7 +160,6 @@ __host__ __device__ void test_move_noexcept()
     using V = cuda::std::variant<int, MoveOnly>;
     static_assert(cuda::std::is_nothrow_move_constructible<V>::value, "");
   }
-#if !defined(TEST_COMPILER_ICC)
   {
     using V = cuda::std::variant<int, MoveOnlyNT>;
     static_assert(!cuda::std::is_nothrow_move_constructible<V>::value, "");
@@ -169,7 +168,6 @@ __host__ __device__ void test_move_noexcept()
     using V = cuda::std::variant<int, ThrowsMove>;
     static_assert(!cuda::std::is_nothrow_move_constructible<V>::value, "");
   }
-#endif // !TEST_COMPILER_ICC
 }
 
 __host__ __device__ void test_move_ctor_sfinae()

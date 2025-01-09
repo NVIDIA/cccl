@@ -65,7 +65,6 @@ int main(int, char**)
     static_assert(!cuda::std::is_nothrow_swappable<M>::value, "");
     static_assert(!cuda::std::is_nothrow_swappable<M&&>::value, "");
   }
-#ifndef TEST_COMPILER_ICC
   {
     // Test that it correctly deduces the noexcept of swap.
     static_assert(cuda::std::is_nothrow_swappable<A>::value, "");
@@ -73,7 +72,6 @@ int main(int, char**)
     static_assert(!cuda::std::is_nothrow_swappable<ThrowingMove>::value && cuda::std::is_swappable<ThrowingMove>::value,
                   "");
   }
-#endif // TEST_COMPILER_ICC
   {
     // Test that it doesn't drop the qualifiers
     static_assert(!cuda::std::is_nothrow_swappable<const A>::value, "");

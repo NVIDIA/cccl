@@ -109,8 +109,6 @@ multiply_extract_higher_bits(T value, R multiplier)
 {
   static_assert(supported_integral<T>::value, "unsupported type");
   static_assert(supported_integral<R>::value, "unsupported type");
-  _CCCL_DIAG_PUSH
-  _CCCL_DIAG_SUPPRESS_ICC(186) // pointless comparison of unsigned integer with zero
   _CCCL_IF_CONSTEXPR (_CCCL_TRAIT(::cuda::std::is_signed, T))
   {
     _CCCL_ASSERT(value >= 0, "value must be non-negative");
@@ -119,7 +117,6 @@ multiply_extract_higher_bits(T value, R multiplier)
   {
     _CCCL_ASSERT(multiplier >= 0, "multiplier must be non-negative");
   }
-  _CCCL_DIAG_POP
   static constexpr int NumBits = sizeof(DivisorType) * CHAR_BIT;
   using unsigned_t             = unsigned_implicit_prom_t<DivisorType>;
   using larger_t               = larger_unsigned_type_t<DivisorType>;
