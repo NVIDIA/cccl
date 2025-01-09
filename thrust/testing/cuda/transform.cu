@@ -347,8 +347,8 @@ DECLARE_UNITTEST(TestTransformBinaryCudaStreams);
 
 struct sum_five
 {
-  _CCCL_HOST_DEVICE auto
-  operator()(std::int8_t a, std::int16_t b, std::int32_t c, std::int64_t d, float e) const -> double
+  _CCCL_HOST_DEVICE auto operator()(std::int8_t a, std::int16_t b, std::int32_t c, std::int64_t d, float e) const
+    -> double
   {
     return a + b + c + d + e;
   }
@@ -373,8 +373,8 @@ public:
   }
 
   template <typename Tuple>
-  _CCCL_HOST_DEVICE auto
-  operator()(Tuple&& t) const -> decltype(detail::zip_detail::apply(std::declval<sum_five>(), THRUST_FWD(t)))
+  _CCCL_HOST_DEVICE auto operator()(Tuple&& t) const
+    -> decltype(detail::zip_detail::apply(std::declval<sum_five>(), THRUST_FWD(t)))
   {
     // not calling func, so we would get a wrong result if we were called
     return {};

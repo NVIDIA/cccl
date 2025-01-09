@@ -343,7 +343,8 @@ namespace NonThrowingTypes
 namespace NonTrivialTypes
 {
 #define DEFINE_CTOR \
-  {}
+  {                 \
+  }
 #define DEFINE_CTOR_ANNOTATIONS __host__ __device__
 #define DEFINE_ASSIGN \
   {                   \

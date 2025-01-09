@@ -39,13 +39,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
     (asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.and.b32 [%0], [%1], %2, [%3]; "
-         "// 1."
-         :
-         : "r"(__as_ptr_remote_dsmem(__dstMem)),
-           "r"(__as_ptr_smem(__srcMem)),
-           "r"(__size),
-           "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
-         : "memory");),
+         "// 1." : : "r"(__as_ptr_remote_dsmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size),
+         "r"(__as_ptr_remote_dsmem(__rdsmem_bar)) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
@@ -88,13 +85,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
     (asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.or.b32 [%0], [%1], %2, [%3]; "
-         "// 1."
-         :
-         : "r"(__as_ptr_remote_dsmem(__dstMem)),
-           "r"(__as_ptr_smem(__srcMem)),
-           "r"(__size),
-           "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
-         : "memory");),
+         "// 1." : : "r"(__as_ptr_remote_dsmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size),
+         "r"(__as_ptr_remote_dsmem(__rdsmem_bar)) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
@@ -137,13 +131,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
     (asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.xor.b32 [%0], [%1], %2, [%3]; "
-         "// 1."
-         :
-         : "r"(__as_ptr_remote_dsmem(__dstMem)),
-           "r"(__as_ptr_smem(__srcMem)),
-           "r"(__size),
-           "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
-         : "memory");),
+         "// 1." : : "r"(__as_ptr_remote_dsmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size),
+         "r"(__as_ptr_remote_dsmem(__rdsmem_bar)) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
@@ -186,13 +177,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
     (asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.min.u32 [%0], [%1], %2, [%3]; "
-         "// 1."
-         :
-         : "r"(__as_ptr_remote_dsmem(__dstMem)),
-           "r"(__as_ptr_smem(__srcMem)),
-           "r"(__size),
-           "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
-         : "memory");),
+         "// 1." : : "r"(__as_ptr_remote_dsmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size),
+         "r"(__as_ptr_remote_dsmem(__rdsmem_bar)) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
@@ -235,13 +223,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
     (asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.max.u32 [%0], [%1], %2, [%3]; "
-         "// 1."
-         :
-         : "r"(__as_ptr_remote_dsmem(__dstMem)),
-           "r"(__as_ptr_smem(__srcMem)),
-           "r"(__size),
-           "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
-         : "memory");),
+         "// 1." : : "r"(__as_ptr_remote_dsmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size),
+         "r"(__as_ptr_remote_dsmem(__rdsmem_bar)) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
@@ -284,13 +269,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
     (asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.add.u32 [%0], [%1], %2, [%3]; "
-         "// 1."
-         :
-         : "r"(__as_ptr_remote_dsmem(__dstMem)),
-           "r"(__as_ptr_smem(__srcMem)),
-           "r"(__size),
-           "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
-         : "memory");),
+         "// 1." : : "r"(__as_ptr_remote_dsmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size),
+         "r"(__as_ptr_remote_dsmem(__rdsmem_bar)) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
@@ -333,13 +315,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
     (asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.inc.u32 [%0], [%1], %2, [%3]; "
-         "// 1."
-         :
-         : "r"(__as_ptr_remote_dsmem(__dstMem)),
-           "r"(__as_ptr_smem(__srcMem)),
-           "r"(__size),
-           "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
-         : "memory");),
+         "// 1." : : "r"(__as_ptr_remote_dsmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size),
+         "r"(__as_ptr_remote_dsmem(__rdsmem_bar)) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
@@ -382,13 +361,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
     (asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.dec.u32 [%0], [%1], %2, [%3]; "
-         "// 1."
-         :
-         : "r"(__as_ptr_remote_dsmem(__dstMem)),
-           "r"(__as_ptr_smem(__srcMem)),
-           "r"(__size),
-           "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
-         : "memory");),
+         "// 1." : : "r"(__as_ptr_remote_dsmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size),
+         "r"(__as_ptr_remote_dsmem(__rdsmem_bar)) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
@@ -431,13 +407,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
     (asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.min.s32 [%0], [%1], %2, [%3]; "
-         "// 1."
-         :
-         : "r"(__as_ptr_remote_dsmem(__dstMem)),
-           "r"(__as_ptr_smem(__srcMem)),
-           "r"(__size),
-           "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
-         : "memory");),
+         "// 1." : : "r"(__as_ptr_remote_dsmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size),
+         "r"(__as_ptr_remote_dsmem(__rdsmem_bar)) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
@@ -480,13 +453,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
     (asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.max.s32 [%0], [%1], %2, [%3]; "
-         "// 1."
-         :
-         : "r"(__as_ptr_remote_dsmem(__dstMem)),
-           "r"(__as_ptr_smem(__srcMem)),
-           "r"(__size),
-           "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
-         : "memory");),
+         "// 1." : : "r"(__as_ptr_remote_dsmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size),
+         "r"(__as_ptr_remote_dsmem(__rdsmem_bar)) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
@@ -529,13 +499,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
     (asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.add.s32 [%0], [%1], %2, [%3]; "
-         "// 1."
-         :
-         : "r"(__as_ptr_remote_dsmem(__dstMem)),
-           "r"(__as_ptr_smem(__srcMem)),
-           "r"(__size),
-           "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
-         : "memory");),
+         "// 1." : : "r"(__as_ptr_remote_dsmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size),
+         "r"(__as_ptr_remote_dsmem(__rdsmem_bar)) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
@@ -578,13 +545,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
     (asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.add.u64 [%0], [%1], %2, [%3]; "
-         "// 1."
-         :
-         : "r"(__as_ptr_remote_dsmem(__dstMem)),
-           "r"(__as_ptr_smem(__srcMem)),
-           "r"(__size),
-           "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
-         : "memory");),
+         "// 1." : : "r"(__as_ptr_remote_dsmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size),
+         "r"(__as_ptr_remote_dsmem(__rdsmem_bar)) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
@@ -627,13 +591,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
     (asm("cp.reduce.async.bulk.shared::cluster.shared::cta.mbarrier::complete_tx::bytes.add.u64 [%0], [%1], %2, [%3]; "
-         "// 2."
-         :
-         : "r"(__as_ptr_remote_dsmem(__dstMem)),
-           "r"(__as_ptr_smem(__srcMem)),
-           "r"(__size),
-           "r"(__as_ptr_remote_dsmem(__rdsmem_bar))
-         : "memory");),
+         "// 2." : : "r"(__as_ptr_remote_dsmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size),
+         "r"(__as_ptr_remote_dsmem(__rdsmem_bar)) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
@@ -807,10 +768,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   // __op == op_min (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.min.u32  [%0], [%1], %2; // 4."
-         :
-         : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
-         : "memory");),
+    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.min.u32  [%0], [%1], %2; // 4." : : "l"(
+           __as_ptr_gmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
@@ -849,10 +810,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   // __op == op_max (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.max.u32  [%0], [%1], %2; // 4."
-         :
-         : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
-         : "memory");),
+    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.max.u32  [%0], [%1], %2; // 4." : : "l"(
+           __as_ptr_gmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
@@ -891,10 +852,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   // __op == op_add (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.add.u32  [%0], [%1], %2; // 4."
-         :
-         : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
-         : "memory");),
+    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.add.u32  [%0], [%1], %2; // 4." : : "l"(
+           __as_ptr_gmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
@@ -933,10 +894,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   // __op == op_inc (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.inc.u32  [%0], [%1], %2; // 4."
-         :
-         : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
-         : "memory");),
+    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.inc.u32  [%0], [%1], %2; // 4." : : "l"(
+           __as_ptr_gmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
@@ -975,10 +936,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   // __op == op_dec (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.dec.u32  [%0], [%1], %2; // 4."
-         :
-         : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
-         : "memory");),
+    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.dec.u32  [%0], [%1], %2; // 4." : : "l"(
+           __as_ptr_gmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
@@ -1017,10 +978,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   // __op == op_min (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.min.s32  [%0], [%1], %2; // 4."
-         :
-         : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
-         : "memory");),
+    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.min.s32  [%0], [%1], %2; // 4." : : "l"(
+           __as_ptr_gmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
@@ -1059,10 +1020,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   // __op == op_max (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.max.s32  [%0], [%1], %2; // 4."
-         :
-         : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
-         : "memory");),
+    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.max.s32  [%0], [%1], %2; // 4." : : "l"(
+           __as_ptr_gmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
@@ -1101,10 +1062,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   // __op == op_add (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.add.s32  [%0], [%1], %2; // 4."
-         :
-         : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
-         : "memory");),
+    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.add.s32  [%0], [%1], %2; // 4." : : "l"(
+           __as_ptr_gmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
@@ -1143,10 +1104,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   // __op == op_min (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.min.u64  [%0], [%1], %2; // 4."
-         :
-         : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
-         : "memory");),
+    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.min.u64  [%0], [%1], %2; // 4." : : "l"(
+           __as_ptr_gmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
@@ -1185,10 +1146,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   // __op == op_max (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.max.u64  [%0], [%1], %2; // 4."
-         :
-         : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
-         : "memory");),
+    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.max.u64  [%0], [%1], %2; // 4." : : "l"(
+           __as_ptr_gmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
@@ -1227,10 +1188,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   // __op == op_add (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.add.u64  [%0], [%1], %2; // 4."
-         :
-         : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
-         : "memory");),
+    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.add.u64  [%0], [%1], %2; // 4." : : "l"(
+           __as_ptr_gmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
@@ -1269,10 +1230,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   // __op == op_min (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.min.s64  [%0], [%1], %2; // 4."
-         :
-         : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
-         : "memory");),
+    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.min.s64  [%0], [%1], %2; // 4." : : "l"(
+           __as_ptr_gmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
@@ -1311,10 +1272,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   // __op == op_max (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.max.s64  [%0], [%1], %2; // 4."
-         :
-         : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
-         : "memory");),
+    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.max.s64  [%0], [%1], %2; // 4." : : "l"(
+           __as_ptr_gmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
@@ -1348,10 +1309,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   // __op == op_add (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.add.f32  [%0], [%1], %2; // 4."
-         :
-         : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
-         : "memory");),
+    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.add.f32  [%0], [%1], %2; // 4." : : "l"(
+           __as_ptr_gmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
@@ -1385,10 +1346,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   // __op == op_add (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.add.f64  [%0], [%1], %2; // 4."
-         :
-         : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
-         : "memory");),
+    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.add.f64  [%0], [%1], %2; // 4." : : "l"(
+           __as_ptr_gmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));
@@ -1427,10 +1388,10 @@ _CCCL_DEVICE static inline void cp_reduce_async_bulk(
   // __op == op_add (due to parameter type constraint)
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.add.u64  [%0], [%1], %2; // 6."
-         :
-         : "l"(__as_ptr_gmem(__dstMem)), "r"(__as_ptr_smem(__srcMem)), "r"(__size)
-         : "memory");),
+    (asm("cp.reduce.async.bulk.global.shared::cta.bulk_group.add.u64  [%0], [%1], %2; // 6." : : "l"(
+           __as_ptr_gmem(__dstMem)),
+         "r"(__as_ptr_smem(__srcMem)),
+         "r"(__size) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_reduce_async_bulk_is_not_supported_before_SM_90__();));

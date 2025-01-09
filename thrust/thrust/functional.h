@@ -884,8 +884,8 @@ struct project1st<void, void>
   using is_transparent = void;
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&&) const
-    noexcept(noexcept(THRUST_FWD(t1))) -> decltype(THRUST_FWD(t1))
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&& t1, T2&&) const noexcept(noexcept(THRUST_FWD(t1)))
+    -> decltype(THRUST_FWD(t1))
   {
     return THRUST_FWD(t1);
   }
@@ -943,8 +943,8 @@ struct project2nd<void, void>
   using is_transparent = void;
   _CCCL_EXEC_CHECK_DISABLE
   template <typename T1, typename T2>
-  _CCCL_HOST_DEVICE constexpr auto operator()(T1&&, T2&& t2) const
-    noexcept(noexcept(THRUST_FWD(t2))) -> decltype(THRUST_FWD(t2))
+  _CCCL_HOST_DEVICE constexpr auto operator()(T1&&, T2&& t2) const noexcept(noexcept(THRUST_FWD(t2)))
+    -> decltype(THRUST_FWD(t2))
   {
     return THRUST_FWD(t2);
   }
@@ -967,15 +967,15 @@ struct not_fun_t
   F f;
 
   template <typename... Ts>
-  _CCCL_HOST_DEVICE auto
-  operator()(Ts&&... args) noexcept(noexcept(!f(std::forward<Ts>(args)...))) -> decltype(!f(std::forward<Ts>(args)...))
+  _CCCL_HOST_DEVICE auto operator()(Ts&&... args) noexcept(noexcept(!f(std::forward<Ts>(args)...)))
+    -> decltype(!f(std::forward<Ts>(args)...))
   {
     return !f(std::forward<Ts>(args)...);
   }
 
   template <typename... Ts>
-  _CCCL_HOST_DEVICE auto operator()(Ts&&... args) const
-    noexcept(noexcept(!f(std::forward<Ts>(args)...))) -> decltype(!f(std::forward<Ts>(args)...))
+  _CCCL_HOST_DEVICE auto operator()(Ts&&... args) const noexcept(noexcept(!f(std::forward<Ts>(args)...)))
+    -> decltype(!f(std::forward<Ts>(args)...))
   {
     return !f(std::forward<Ts>(args)...);
   }

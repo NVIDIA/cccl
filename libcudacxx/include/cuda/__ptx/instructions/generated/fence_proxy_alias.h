@@ -15,10 +15,7 @@ _CCCL_DEVICE static inline void fence_proxy_alias()
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_70,
-    (asm volatile("fence.proxy.alias; // 4."
-                  :
-                  :
-                  : "memory");),
+    (asm volatile("fence.proxy.alias; // 4." : : : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_fence_proxy_alias_is_not_supported_before_SM_70__();));

@@ -76,48 +76,36 @@ template <class _Sig, template <class...> class _Vy, template <class...> class _
 using __transform_sig_t = decltype(__transform_sig<_Sig, _Vy, _Ey, _Sy>());
 
 template <class _Sigs,
-          template <class...>
-          class _Vy,
-          template <class...>
-          class _Ey,
+          template <class...> class _Vy,
+          template <class...> class _Ey,
           class _Sy,
-          template <class...>
-          class _Variant,
+          template <class...> class _Variant,
           class... _More>
 extern _DIAGNOSTIC<_Sigs> __transform_completion_signatures_v;
 
 template <class... _What,
-          template <class...>
-          class _Vy,
-          template <class...>
-          class _Ey,
+          template <class...> class _Vy,
+          template <class...> class _Ey,
           class _Sy,
-          template <class...>
-          class _Variant,
+          template <class...> class _Variant,
           class... _More>
 extern __fn_t<_ERROR<_What...>>*
   __transform_completion_signatures_v<_ERROR<_What...>, _Vy, _Ey, _Sy, _Variant, _More...>;
 
 template <class... _Sigs,
-          template <class...>
-          class _Vy,
-          template <class...>
-          class _Ey,
+          template <class...> class _Vy,
+          template <class...> class _Ey,
           class _Sy,
-          template <class...>
-          class _Variant,
+          template <class...> class _Variant,
           class... _More>
 extern __fn_t<_Variant<__transform_sig_t<_Sigs, _Vy, _Ey, _Sy>..., _More...>>*
   __transform_completion_signatures_v<completion_signatures<_Sigs...>, _Vy, _Ey, _Sy, _Variant, _More...>;
 
 template <class _Sigs,
-          template <class...>
-          class _Vy,
-          template <class...>
-          class _Ey,
+          template <class...> class _Vy,
+          template <class...> class _Ey,
           class _Sy,
-          template <class...>
-          class _Variant,
+          template <class...> class _Variant,
           class... _More>
 using __transform_completion_signatures =
   decltype(__transform_completion_signatures_v<_Sigs, _Vy, _Ey, _Sy, _Variant, _More...>());
@@ -129,12 +117,9 @@ template <>
 struct __gather_sigs_fn<set_value_t>
 {
   template <class _Sigs,
-            template <class...>
-            class _Then,
-            template <class...>
-            class _Else,
-            template <class...>
-            class _Variant,
+            template <class...> class _Then,
+            template <class...> class _Else,
+            template <class...> class _Variant,
             class... _More>
   using __call = __transform_completion_signatures<
     _Sigs,
@@ -149,12 +134,9 @@ template <>
 struct __gather_sigs_fn<set_error_t>
 {
   template <class _Sigs,
-            template <class...>
-            class _Then,
-            template <class...>
-            class _Else,
-            template <class...>
-            class _Variant,
+            template <class...> class _Then,
+            template <class...> class _Else,
+            template <class...> class _Variant,
             class... _More>
   using __call = __transform_completion_signatures<
     _Sigs,
@@ -169,12 +151,9 @@ template <>
 struct __gather_sigs_fn<set_stopped_t>
 {
   template <class _Sigs,
-            template <class...>
-            class _Then,
-            template <class...>
-            class _Else,
-            template <class...>
-            class _Variant,
+            template <class...> class _Then,
+            template <class...> class _Else,
+            template <class...> class _Variant,
             class... _More>
   using __call = __transform_completion_signatures<
     _Sigs,
@@ -187,12 +166,9 @@ struct __gather_sigs_fn<set_stopped_t>
 
 template <class _Sigs,
           class _WantedTag,
-          template <class...>
-          class _Then,
-          template <class...>
-          class _Else,
-          template <class...>
-          class _Variant,
+          template <class...> class _Then,
+          template <class...> class _Else,
+          template <class...> class _Variant,
           class... _More>
 using __gather_completion_signatures =
   typename __gather_sigs_fn<_WantedTag>::template __call<_Sigs, _Then, _Else, _Variant, _More...>;
@@ -404,13 +380,12 @@ template <class _Tag, class... _Args>
 auto completion(_Tag, _Args&&...) -> __csig::__sigs<_Tag(_Args...)>&;
 
 template <class _Sndr, class _Rcvr = receiver_archetype>
-auto completions_of(_Sndr&&,
-                    _Rcvr = {}) -> decltype(__csig::__to_sigs(__declval<completion_signatures_of_t<_Sndr, _Rcvr>&>()));
+auto completions_of(_Sndr&&, _Rcvr = {})
+  -> decltype(__csig::__to_sigs(__declval<completion_signatures_of_t<_Sndr, _Rcvr>&>()));
 
 template <bool _PotentiallyThrowing>
-auto eptr_completion_if()
-  -> _CUDA_VSTD::
-    conditional_t<_PotentiallyThrowing, __csig::__sigs<set_error_t(::std::exception_ptr)>, __csig::__sigs<>>&;
+auto eptr_completion_if() -> _CUDA_VSTD::
+  conditional_t<_PotentiallyThrowing, __csig::__sigs<set_error_t(::std::exception_ptr)>, __csig::__sigs<>>&;
 } // namespace meta
 } // namespace cuda::experimental::__async
 

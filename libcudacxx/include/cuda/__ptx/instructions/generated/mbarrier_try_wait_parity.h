@@ -22,10 +22,8 @@ mbarrier_try_wait_parity(_CUDA_VSTD::uint64_t* __addr, const _CUDA_VSTD::uint32_
      asm("{\n\t .reg .pred P_OUT; \n\t"
          "mbarrier.try_wait.parity.shared::cta.b64  P_OUT, [%1], %2;                                // 7a. \n\t"
          "selp.b32 %0, 1, 0, P_OUT; \n"
-         "}"
-         : "=r"(__waitComplete)
-         : "r"(__as_ptr_smem(__addr)), "r"(__phaseParity)
-         : "memory");
+         "}" : "=r"(__waitComplete) : "r"(__as_ptr_smem(__addr)),
+         "r"(__phaseParity) : "memory");
      return static_cast<bool>(__waitComplete);),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
@@ -53,10 +51,9 @@ _CCCL_DEVICE static inline bool mbarrier_try_wait_parity(
      asm("{\n\t .reg .pred P_OUT; \n\t"
          "mbarrier.try_wait.parity.shared::cta.b64  P_OUT, [%1], %2, %3;               // 7b. \n\t"
          "selp.b32 %0, 1, 0, P_OUT; \n"
-         "}"
-         : "=r"(__waitComplete)
-         : "r"(__as_ptr_smem(__addr)), "r"(__phaseParity), "r"(__suspendTimeHint)
-         : "memory");
+         "}" : "=r"(__waitComplete) : "r"(__as_ptr_smem(__addr)),
+         "r"(__phaseParity),
+         "r"(__suspendTimeHint) : "memory");
      return static_cast<bool>(__waitComplete);),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
