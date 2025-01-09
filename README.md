@@ -269,8 +269,8 @@ But we will not invest significant time in triaging or fixing issues for older c
 In the spirit of "You only support what you test", see our [CI Overview](https://github.com/NVIDIA/cccl/blob/main/ci-overview.md) for more information on exactly what we test.
 
 ### C++ Dialects
-- C++11 (Deprecated in Thrust/CUB, to be removed in next major version)
-- C++14 (Deprecated in Thrust/CUB, to be removed in next major version)
+- C++11 (only libcu++)
+- C++14 (only libcu++)
 - C++17
 - C++20
 
