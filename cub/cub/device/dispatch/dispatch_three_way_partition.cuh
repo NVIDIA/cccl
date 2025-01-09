@@ -328,14 +328,6 @@ struct DispatchThreeWayPartitionIf
     // The maximum number of tiles for which we will ever invoke the kernel
     auto const max_num_tiles_per_invocation = static_cast<OffsetT>(::cuda::ceil_div(max_partition_size, tile_size));
 
-    // Get device ordinal
-    int device_ordinal;
-    error = CubDebug(cudaGetDevice(&device_ordinal));
-    if (cudaSuccess != error)
-    {
-      return error;
-    }
-
     // For streaming invocations, we need two sets (for double-buffering) of three counters each
     constexpr ::cuda::std::size_t num_counters_per_pass  = 3;
     constexpr ::cuda::std::size_t num_streaming_counters = 2 * num_counters_per_pass;
@@ -365,7 +357,7 @@ struct DispatchThreeWayPartitionIf
     {
       // Return if the caller is simply requesting the size of the storage
       // allocation
-      return error;
+      return cudaSuccess;
     }
 
     // Initialize the streaming context with the temporary storage for double-buffering the previously selected items
