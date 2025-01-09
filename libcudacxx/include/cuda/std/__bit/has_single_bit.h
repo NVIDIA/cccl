@@ -22,14 +22,14 @@
 #endif // no system header
 
 #include <cuda/std/__bit/popcount.h>
-#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer<_Tp>::value, bool>
-has_single_bit(_Tp __t) noexcept
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr bool has_single_bit(_Tp __t) noexcept
 {
   return _CUDA_VSTD::popcount(__t) == 1;
 }

@@ -22,22 +22,24 @@
 #endif // no system header
 
 #include <cuda/std/__bit/popc.h>
-#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<sizeof(_Tp) <= sizeof(uint64_t), int> __popcount(_Tp __t) noexcept
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp) _CCCL_AND(sizeof(_Tp) <= sizeof(uint64_t)))
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __popcount(_Tp __t) noexcept
 {
   using _Sp = _If<sizeof(_Tp) <= sizeof(uint32_t), uint32_t, uint64_t>;
   return _CUDA_VSTD::__cccl_popc(static_cast<_Sp>(__t));
 }
 
-template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<(sizeof(_Tp) > sizeof(uint64_t)), int> __popcount(_Tp __t) noexcept
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp) _CCCL_AND(sizeof(_Tp) > sizeof(uint64_t)))
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __popcount(_Tp __t) noexcept
 {
   constexpr int _Ratio = sizeof(_Tp) / sizeof(uint64_t);
   int __count          = 0;
@@ -49,11 +51,13 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<(sizeof(_Tp) > sizeof(uint64_t))
   return __count;
 }
 
-template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer<_Tp>::value, int>
-popcount(_Tp __t) noexcept
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int popcount(_Tp __t) noexcept
 {
-  return _CUDA_VSTD::__popcount(__t);
+  auto __ret = _CUDA_VSTD::__popcount(__t);
+  _CCCL_BUILTIN_ASSUME(__ret >= 0 && __ret <= numeric_limits<_Tp>::digits);
+  return __ret;
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD

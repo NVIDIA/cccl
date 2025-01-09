@@ -23,8 +23,8 @@
 
 #include <cuda/std/__bit/bit_cast.h>
 #include <cuda/std/__bit/clz.h>
+#include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/conditional.h>
-#include <cuda/std/__type_traits/enable_if.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
 #include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/cstdint>
@@ -32,28 +32,34 @@
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-template <class _Tp>
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp)
+                 _CCCL_AND(sizeof(_Tp) >= sizeof(uint32_t) _CCCL_AND(sizeof(_Tp) <= sizeof(uint64_t))))
 _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<sizeof(_Tp) == sizeof(uint32_t) || sizeof(_Tp) == sizeof(uint64_t), int>
 __countl_zero(_Tp __t) noexcept
 {
+  if (_CUDA_VSTD::is_constant_evaluated() && __t == 0)
+  {
+    return numeric_limits<_Tp>::digits;
+  }
   using _Sp         = _If<sizeof(_Tp) == sizeof(uint32_t), uint32_t, uint64_t>;
   auto __clz_result = _CUDA_VSTD::__cccl_clz(static_cast<_Sp>(__t));
-  if (!__cccl_default_is_constant_evaluated())
-  {
-    NV_IF_ELSE_TARGET(NV_IS_DEVICE, (return __clz_result;), (return __t ? __clz_result : numeric_limits<_Sp>::digits;))
-  }
-  return __t ? __clz_result : numeric_limits<_Sp>::digits;
+  NV_IF_ELSE_TARGET(NV_IS_DEVICE,
+                    (return __clz_result;), //
+                    (return __t ? __clz_result : numeric_limits<_Tp>::digits;))
 }
 
-template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<sizeof(_Tp) < sizeof(uint32_t), int> __countl_zero(_Tp __t) noexcept
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp) _CCCL_AND(sizeof(_Tp) < sizeof(uint32_t)))
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __countl_zero(_Tp __t) noexcept
 {
   return _CUDA_VSTD::__countl_zero(static_cast<uint32_t>(__t))
        - (numeric_limits<uint32_t>::digits - numeric_limits<_Tp>::digits);
 }
 
-template <class _Tp>
-_LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<(sizeof(_Tp) > sizeof(uint64_t)), int> __countl_zero(_Tp __t) noexcept
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp) _CCCL_AND(sizeof(_Tp) > sizeof(uint64_t)))
+_LIBCUDACXX_HIDE_FROM_ABI constexpr int __countl_zero(_Tp __t) noexcept
 {
   constexpr int _Ratio = sizeof(_Tp) / sizeof(uint64_t);
   struct _Array
@@ -71,18 +77,22 @@ _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<(sizeof(_Tp) > sizeof(uint64_t))
   return numeric_limits<_Tp>::digits;
 }
 
-template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer<_Tp>::value, int>
-countl_zero(_Tp __t) noexcept
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int countl_zero(_Tp __t) noexcept
 {
-  return _CUDA_VSTD::__countl_zero(__t);
+  auto __ret = _CUDA_VSTD::__countl_zero(static_cast<_Tp>(__t));
+  _CCCL_BUILTIN_ASSUME(__ret >= 0 && __ret <= numeric_limits<_Tp>::digits);
+  return __ret;
 }
 
-template <class _Tp>
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr enable_if_t<__cccl_is_unsigned_integer<_Tp>::value, int>
-countl_one(_Tp __t) noexcept
+_CCCL_TEMPLATE(class _Tp)
+_CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int countl_one(_Tp __t) noexcept
 {
-  return _CUDA_VSTD::__countl_zero(static_cast<_Tp>(~__t));
+  auto __ret = _CUDA_VSTD::__countl_zero(static_cast<_Tp>(~__t));
+  _CCCL_BUILTIN_ASSUME(__ret >= 0 && __ret <= numeric_limits<_Tp>::digits);
+  return __ret;
 }
 
 _LIBCUDACXX_END_NAMESPACE_STD
