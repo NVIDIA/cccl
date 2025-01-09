@@ -998,7 +998,9 @@ template <typename... Dependencies, std::size_t I0, std::size_t... Is>
 _CCCL_HOST acquired_stream
 acquire_stream_impl(int device_id, std::tuple<Dependencies...>& deps, index_sequence<I0, Is...>) noexcept
 {
-  auto tr = try_acquire_stream(device_id, std::get<I0>(deps));
+  _CCCL_SUPPRESS_DEPRECATED_PUSH // for thrust::optional (MSVC warnings here)
+    auto tr = try_acquire_stream(device_id, std::get<I0>(deps));
+  _CCCL_SUPPRESS_DEPRECATED_POP
 
   if (tr)
   {
