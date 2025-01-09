@@ -157,16 +157,7 @@ def reduce_into(
     """Computes a device-wide reduction using the specified binary ``op`` functor and initial value ``init``.
 
     Example:
-        The code snippet below illustrates a user-defined min-reduction of a
-        device vector of ``int`` data elements.
-
-        .. literalinclude:: ../../python/cuda_parallel/tests/test_reduce_api.py
-            :language: python
-            :dedent:
-            :start-after: example-begin imports
-            :end-before: example-end imports
-
-        Below is the code snippet that demonstrates the usage of the ``reduce_into`` API:
+        The code snippet below demonstrates the usage of the ``reduce_into`` API:
 
         .. literalinclude:: ../../python/cuda_parallel/tests/test_reduce_api.py
             :language: python
