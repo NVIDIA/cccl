@@ -15,10 +15,7 @@ _CCCL_DEVICE static inline void cp_async_bulk_commit_group()
 {
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_90,
-    (asm volatile("cp.async.bulk.commit_group;"
-                  :
-                  :
-                  :);),
+    (asm volatile("cp.async.bulk.commit_group;" : : :);),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_async_bulk_commit_group_is_not_supported_before_SM_90__();));

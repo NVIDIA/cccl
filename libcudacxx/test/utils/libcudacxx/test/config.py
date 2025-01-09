@@ -6,24 +6,23 @@
 #
 # ===----------------------------------------------------------------------===##
 
+import ctypes
 import os
-import platform
 import pipes
+import platform
 import re
 import shlex
 import shutil
 import sys
-import ctypes
 
+import libcudacxx.util
 from libcudacxx.compiler import CXXCompiler
-from libcudacxx.test.target_info import make_target_info
 
 # The wildcard import is to support `eval(exec_str)` in
 # `Configuration.configure_executor()` below.
 from libcudacxx.test.executor import *  # noqa: F403
 from libcudacxx.test.executor import LocalExecutor, NoopExecutor
-
-import libcudacxx.util
+from libcudacxx.test.target_info import make_target_info
 
 
 def loadSiteConfig(lit_config, config, param_name, env_name):
@@ -423,10 +422,6 @@ class Configuration(object):
                         self.host_cxx.default_dialect
                     )
                 )
-
-            if "icc" in self.config.available_features:
-                self.cxx.link_flags += ["-lirc"]
-                self.cxx.compile_flags += ["-Xcompiler=-diag-disable=10441"]
 
     def _configure_clang_cl(self, clang_path):
         def _split_env_var(var):

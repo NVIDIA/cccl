@@ -25,7 +25,7 @@
 #  pragma system_header
 #endif // no system header
 
-#if _CCCL_STD_VER > 2014
+#if _CCCL_STD_VER >= 2014
 
 _LIBCUDACXX_BEGIN_NAMESPACE_RANGES
 

@@ -47,12 +47,10 @@ inline __device__ void __cp_async_shared_global(char* __dest, const char* __src)
 
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_80,
-    (asm volatile("cp.async.ca.shared.global [%0], [%1], %2, %2;"
-                  :
-                  : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__dest))),
-                    "l"(static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__src))),
-                    "n"(_Copy_size)
-                  : "memory");),
+    (asm volatile("cp.async.ca.shared.global [%0], [%1], %2, %2;" : : "r"(
+                    static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__dest))),
+                  "l"(static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__src))),
+                  "n"(_Copy_size) : "memory");),
     (__cuda_ptx_cp_async_shared_global_is_not_supported_before_SM_80__();));
 }
 
@@ -63,12 +61,10 @@ inline __device__ void __cp_async_shared_global<16>(char* __dest, const char* __
   // When copying 16 bytes, it is possible to skip L1 cache (.cg).
   NV_IF_ELSE_TARGET(
     NV_PROVIDES_SM_80,
-    (asm volatile("cp.async.cg.shared.global [%0], [%1], %2, %2;"
-                  :
-                  : "r"(static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__dest))),
-                    "l"(static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__src))),
-                    "n"(16)
-                  : "memory");),
+    (asm volatile("cp.async.cg.shared.global [%0], [%1], %2, %2;" : : "r"(
+                    static_cast<_CUDA_VSTD::uint32_t>(__cvta_generic_to_shared(__dest))),
+                  "l"(static_cast<_CUDA_VSTD::uint64_t>(__cvta_generic_to_global(__src))),
+                  "n"(16) : "memory");),
     (__cuda_ptx_cp_async_shared_global_is_not_supported_before_SM_80__();));
 }
 

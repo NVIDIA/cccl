@@ -55,7 +55,7 @@ static auto fill_linear_impl(c2h::host_vector<T>& vector, const ExtentType&, siz
   _CCCL_TRAILING_REQUIRES(void)((Rank == ExtentType::rank()))
 {
   vector[pos++] = {indices...};
-  return void(); // Intel and nvc++ require a return statement
+  return void(); // nvc++ requires a return statement
 }
 
 template <int Rank = 0, typename T, typename ExtentType, typename... IndicesType>
@@ -67,7 +67,7 @@ static auto fill_linear_impl(c2h::host_vector<T>& vector, const ExtentType& ext,
   {
     fill_linear_impl<Rank + 1>(vector, ext, pos, indices..., i);
   }
-  return void(); // Intel and nvc++ require a return statement
+  return void(); // nvc++ requires a return statement
 }
 
 template <typename T, typename IndexType, size_t... Extents>
@@ -135,8 +135,8 @@ using dimensions =
                  cuda::std::index_sequence<3, 2, 5, 4>>;
 
 template <typename IndexType, size_t... Dimensions>
-auto build_static_extents(IndexType,
-                          cuda::std::index_sequence<Dimensions...>) -> cuda::std::extents<IndexType, Dimensions...>
+auto build_static_extents(IndexType, cuda::std::index_sequence<Dimensions...>)
+  -> cuda::std::extents<IndexType, Dimensions...>
 {
   return {};
 }

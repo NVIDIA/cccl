@@ -391,8 +391,8 @@ struct CCCL_DEPRECATED BinaryFlip
   {}
 
   template <typename T, typename U>
-  _CCCL_DEVICE auto
-  operator()(T&& t, U&& u) -> decltype(binary_op(::cuda::std::forward<U>(u), ::cuda::std::forward<T>(t)))
+  _CCCL_DEVICE auto operator()(T&& t, U&& u)
+    -> decltype(binary_op(::cuda::std::forward<U>(u), ::cuda::std::forward<T>(t)))
   {
     return binary_op(::cuda::std::forward<U>(u), ::cuda::std::forward<T>(t));
   }

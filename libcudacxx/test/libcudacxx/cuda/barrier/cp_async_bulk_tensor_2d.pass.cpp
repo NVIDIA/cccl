@@ -57,7 +57,8 @@ int main(int, char**)
       // Required by concurrent_agents_launch to know how many we're launching
       cuda_thread_count = 512; init_tensor_map(gmem_tensor, GMEM_DIMS, SMEM_DIMS);),
     NV_IS_DEVICE,
-    (for (auto smem_coord
-          : TEST_SMEM_COORDS) { test<smem_len>(smem_coord, SMEM_DIMS_DEV, GMEM_DIMS_DEV, gmem_tensor, gmem_len); }));
+    (for (auto smem_coord : TEST_SMEM_COORDS) {
+      test<smem_len>(smem_coord, SMEM_DIMS_DEV, GMEM_DIMS_DEV, gmem_tensor, gmem_len);
+    }));
   return 0;
 }

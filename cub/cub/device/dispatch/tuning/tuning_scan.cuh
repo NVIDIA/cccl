@@ -108,14 +108,6 @@ constexpr accum_size classify_accum_size()
          : accum_size::unknown;
 }
 
-template <int Threads, int Items, int L2B, int L2W>
-struct tuning
-{
-  static constexpr int threads = Threads;
-  static constexpr int items   = Items;
-  using delay_constructor      = fixed_delay_constructor_t<L2B, L2W>;
-};
-
 template <class AccumT,
           primitive_op PrimitiveOp,
           primitive_accum PrimitiveAccumulator = is_primitive_accum<AccumT>(),
@@ -205,17 +197,31 @@ template <class AccumT,
           accum_size AccumSize                 = classify_accum_size<AccumT>()>
 struct sm90_tuning;
 
-// clang-format off
-template <class T> struct sm90_tuning<T, primitive_op::yes, primitive_accum::yes, accum_size::_1> : tuning<192, 22, 168, 1140> {};
-template <class T> struct sm90_tuning<T, primitive_op::yes, primitive_accum::yes, accum_size::_2> : tuning<512, 12, 376, 1125> {};
-template <class T> struct sm90_tuning<T, primitive_op::yes, primitive_accum::yes, accum_size::_4> : tuning<128, 24, 648, 1245> {};
-template <class T> struct sm90_tuning<T, primitive_op::yes, primitive_accum::yes, accum_size::_8> : tuning<224, 24, 632, 1290> {};
+template <class AccumT, int Threads, int Items, int L2B, int L2W>
+struct sm90_tuning_vals
+{
+  static constexpr int threads = Threads;
+  static constexpr int items   = Items;
+  using delay_constructor      = fixed_delay_constructor_t<L2B, L2W>;
+  // same logic as default policy:
+  static constexpr bool large_values = sizeof(AccumT) > 128;
+  static constexpr BlockLoadAlgorithm load_algorithm =
+    large_values ? BLOCK_LOAD_WARP_TRANSPOSE_TIMESLICED : BLOCK_LOAD_WARP_TRANSPOSE;
+  static constexpr BlockStoreAlgorithm store_algorithm =
+    large_values ? BLOCK_STORE_WARP_TRANSPOSE_TIMESLICED : BLOCK_STORE_WARP_TRANSPOSE;
+};
 
-template <> struct sm90_tuning<float,  primitive_op::yes, primitive_accum::yes, accum_size::_4> : tuning<128, 24, 688, 1140> {};
-template <> struct sm90_tuning<double, primitive_op::yes, primitive_accum::yes, accum_size::_8> : tuning<224, 24, 576, 1215> {};
+// clang-format off
+template <class T> struct sm90_tuning<T, primitive_op::yes, primitive_accum::yes, accum_size::_1> : sm90_tuning_vals<T, 192, 22, 168, 1140> {};
+template <class T> struct sm90_tuning<T, primitive_op::yes, primitive_accum::yes, accum_size::_2> : sm90_tuning_vals<T, 512, 12, 376, 1125> {};
+template <class T> struct sm90_tuning<T, primitive_op::yes, primitive_accum::yes, accum_size::_4> : sm90_tuning_vals<T, 128, 24, 648, 1245> {};
+template <class T> struct sm90_tuning<T, primitive_op::yes, primitive_accum::yes, accum_size::_8> : sm90_tuning_vals<T, 224, 24, 632, 1290> {};
+
+template <> struct sm90_tuning<float,  primitive_op::yes, primitive_accum::yes, accum_size::_4> : sm90_tuning_vals<float,  128, 24, 688, 1140> {};
+template <> struct sm90_tuning<double, primitive_op::yes, primitive_accum::yes, accum_size::_8> : sm90_tuning_vals<double, 224, 24, 576, 1215> {};
 
 #if CUB_IS_INT128_ENABLED
-template <> struct sm90_tuning<__int128_t, primitive_op::yes, primitive_accum::no, accum_size::_16> : tuning<576, 21, 860, 630> {};
+template <> struct sm90_tuning<__int128_t, primitive_op::yes, primitive_accum::no, accum_size::_16> : sm90_tuning_vals<__int128_t, 576, 21, 860, 630> {};
 template <>
 struct sm90_tuning<__uint128_t, primitive_op::yes, primitive_accum::no, accum_size::_16>
     : sm90_tuning<__int128_t, primitive_op::yes, primitive_accum::no, accum_size::_16>

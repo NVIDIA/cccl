@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11
 
 // template<class I>
 // unspecified iter_move;
@@ -80,9 +80,7 @@ __host__ __device__ constexpr void unqualified_lookup_move(It first_, It last_, 
   auto result_first = ::check_unqualified_lookup::unqualified_lookup_wrapper<It>{cuda::std::move(result_first_)};
   auto result_last  = ::check_unqualified_lookup::unqualified_lookup_wrapper<It>{cuda::std::move(result_last_)};
 
-#ifndef TEST_COMPILER_ICC
   static_assert(!noexcept(cuda::std::ranges::iter_move(first)), "unqualified-lookup case not being chosen");
-#endif // TEST_COMPILER_ICC
 
   for (; first != last && result_first != result_last; (void) ++first, ++result_first)
   {
@@ -98,11 +96,9 @@ __host__ __device__ constexpr void lvalue_move(It first_, It last_, Out result_f
   auto result_first = iterator_wrapper<It>{cuda::std::move(result_first_)};
   auto result_last  = iterator_wrapper<It>{cuda::std::move(result_last_)};
 
-#ifndef TEST_COMPILER_ICC
   static_assert(!noexcept(cuda::std::ranges::iter_move(first)),
                 "`operator*() const&` is not noexcept, and there's no hidden "
                 "friend iter_move.");
-#endif // TEST_COMPILER_ICC
 
   for (; first != last && result_first != result_last; (void) ++first, ++result_first)
   {
@@ -226,9 +222,7 @@ __host__ __device__ constexpr bool test()
 
   auto unscoped = check_unqualified_lookup::unscoped_enum::a;
   assert(cuda::std::ranges::iter_move(unscoped) == check_unqualified_lookup::unscoped_enum::a);
-#ifndef TEST_COMPILER_ICC
   assert(!noexcept(cuda::std::ranges::iter_move(unscoped)));
-#endif // TEST_COMPILER_ICC
 
   auto scoped = check_unqualified_lookup::scoped_enum::a;
   assert(cuda::std::ranges::iter_move(scoped) == nullptr);
@@ -236,25 +230,23 @@ __host__ __device__ constexpr bool test()
 
   auto some_union = check_unqualified_lookup::some_union{0};
   assert(cuda::std::ranges::iter_move(some_union) == 0);
-#ifndef TEST_COMPILER_ICC
   assert(!noexcept(cuda::std::ranges::iter_move(some_union)));
 
   // Check noexcept-correctness
-  static_assert(noexcept(cuda::std::ranges::iter_move(cuda::std::declval<WithADL<true>>())));
-  static_assert(noexcept(cuda::std::ranges::iter_move(cuda::std::declval<WithoutADL<true>>())));
+  static_assert(noexcept(cuda::std::ranges::iter_move(cuda::std::declval<WithADL<true>>())), "");
+  static_assert(noexcept(cuda::std::ranges::iter_move(cuda::std::declval<WithoutADL<true>>())), "");
 // old GCC seems to fall over the chaining of the noexcept clauses here
-#  if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 9)
-  static_assert(!noexcept(cuda::std::ranges::iter_move(cuda::std::declval<WithADL<false>>())));
-  static_assert(!noexcept(cuda::std::ranges::iter_move(cuda::std::declval<WithoutADL<false>>())));
-#  endif
-#endif // TEST_COMPILER_ICC
+#if (!defined(TEST_COMPILER_GCC) || __GNUC__ >= 9)
+  static_assert(!noexcept(cuda::std::ranges::iter_move(cuda::std::declval<WithADL<false>>())), "");
+  static_assert(!noexcept(cuda::std::ranges::iter_move(cuda::std::declval<WithoutADL<false>>())), "");
+#endif
 
   return true;
 }
 
 #if _CCCL_CUDACC_AT_LEAST(11, 3) // nvcc segfaults here
-static_assert(!cuda::std::is_invocable_v<IterMoveT, int*, int*>); // too many arguments
-static_assert(!cuda::std::is_invocable_v<IterMoveT, int>);
+static_assert(!cuda::std::is_invocable_v<IterMoveT, int*, int*>, ""); // too many arguments
+static_assert(!cuda::std::is_invocable_v<IterMoveT, int>, "");
 #endif // _CCCL_CUDACC_AT_LEAST(11, 3)
 
 #if TEST_STD_VER > 2017
@@ -265,14 +257,14 @@ struct Holder
 {
   T t;
 };
-static_assert(cuda::std::is_invocable_v<IterMoveT, Holder<Incomplete>**>);
-static_assert(cuda::std::is_invocable_v<IterMoveT, Holder<Incomplete>**&>);
+static_assert(cuda::std::is_invocable_v<IterMoveT, Holder<Incomplete>**>, "");
+static_assert(cuda::std::is_invocable_v<IterMoveT, Holder<Incomplete>**&>, "");
 #endif
 
 int main(int, char**)
 {
   test();
-  static_assert(test());
+  static_assert(test(), "");
 
   return 0;
 }

@@ -7,7 +7,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-// UNSUPPORTED: c++03, c++11, c++14
+// UNSUPPORTED: c++03, c++11
 // UNSUPPORTED: msvc-19.16
 
 // template<class T>
@@ -17,35 +17,35 @@
 
 #include "test_range.h"
 
-static_assert(cuda::std::ranges::range<test_range<cpp20_input_iterator>>);
+static_assert(cuda::std::ranges::range<test_range<cpp20_input_iterator>>, "");
 
 struct incompatible_iterators
 {
   __host__ __device__ int* begin();
   __host__ __device__ long* end();
 };
-static_assert(!cuda::std::ranges::range<incompatible_iterators>);
+static_assert(!cuda::std::ranges::range<incompatible_iterators>, "");
 
 struct int_begin_int_end
 {
   __host__ __device__ int begin();
   __host__ __device__ int end();
 };
-static_assert(!cuda::std::ranges::range<int_begin_int_end>);
+static_assert(!cuda::std::ranges::range<int_begin_int_end>, "");
 
 struct iterator_begin_int_end
 {
   __host__ __device__ int* begin();
   __host__ __device__ int end();
 };
-static_assert(!cuda::std::ranges::range<iterator_begin_int_end>);
+static_assert(!cuda::std::ranges::range<iterator_begin_int_end>, "");
 
 struct int_begin_iterator_end
 {
   __host__ __device__ int begin();
   __host__ __device__ int* end();
 };
-static_assert(!cuda::std::ranges::range<int_begin_iterator_end>);
+static_assert(!cuda::std::ranges::range<int_begin_iterator_end>, "");
 
 #if TEST_STD_VER > 2017
 // Test ADL-proofing.
@@ -55,7 +55,7 @@ struct Holder
 {
   T t;
 };
-static_assert(!cuda::std::ranges::range<Holder<Incomplete>*>);
+static_assert(!cuda::std::ranges::range<Holder<Incomplete>*>, "");
 #endif
 
 int main(int, char**)

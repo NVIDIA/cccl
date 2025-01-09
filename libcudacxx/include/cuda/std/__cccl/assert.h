@@ -79,15 +79,9 @@ _CCCL_HOST_DEVICE
   __attribute__((__noreturn__));
 }
 #  endif // NDEBUG
-// ICC cannot deal with `__builtin_expect` in the constexpr evaluator, so just drop it
-#  if _CCCL_COMPILER(ICC)
-#    define _CCCL_ASSERT_IMPL_HOST(expression, message) \
-      static_cast<bool>(expression) ? (void) 0 : __assert_fail(message, __FILE__, __LINE__, __func__);
-#  else // ^^^ _CCCL_COMPILER(ICC) ^^^ / vvv !_CCCL_COMPILER(ICC) vvv
-#    define _CCCL_ASSERT_IMPL_HOST(expression, message)      \
-      _CCCL_BUILTIN_EXPECT(static_cast<bool>(expression), 1) \
-      ? (void) 0 : __assert_fail(message, __FILE__, __LINE__, __func__)
-#  endif // !_CCCL_COMPILER(ICC)
+#  define _CCCL_ASSERT_IMPL_HOST(expression, message)      \
+    _CCCL_BUILTIN_EXPECT(static_cast<bool>(expression), 1) \
+    ? (void) 0 : __assert_fail(message, __FILE__, __LINE__, __func__)
 #endif // !MSVC STL
 
 //! Use custom implementations with nvcc on device and the host ones with clang-cuda and nvhpc

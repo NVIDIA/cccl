@@ -267,8 +267,8 @@ struct continue_on_t::__sndr_t
 };
 
 template <class _Sndr, class _Sch>
-_CUDAX_API auto
-continue_on_t::operator()(_Sndr __sndr, _Sch __sch) const noexcept -> continue_on_t::__sndr_t<_Sndr, _Sch>
+_CUDAX_API auto continue_on_t::operator()(_Sndr __sndr, _Sch __sch) const noexcept
+  -> continue_on_t::__sndr_t<_Sndr, _Sch>
 {
   return __sndr_t<_Sndr, _Sch>{{}, __sch, static_cast<_Sndr&&>(__sndr)};
 }

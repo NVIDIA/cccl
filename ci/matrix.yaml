@@ -5,18 +5,19 @@ workflows:
   #
   # Example:
   # override:
-  #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'llvm16']}
+  #   - {jobs: ['test'], project: 'thrust', std: 17, ctk: 'curr', cxx: ['gcc12', 'clang16']}
   #
   override:
 
   pull_request:
-    # Old CTK
-    - {jobs: ['build'], std: 'minmax', ctk: '11.1', cxx: ['gcc6', 'gcc9', 'clang9', 'msvc2017']}
+    # Old CTK/compiler
+    - {jobs: ['build'], std: 'minmax', ctk: '12.0', cxx: ['gcc7', 'gcc9', 'clang14', 'msvc2019']}
     # Current CTK build-only
-    - {jobs: ['build'], std: [11, 14], cxx: ['gcc7', 'clang9']}
+    - {jobs: ['build'], std: [11, 14], cxx: ['gcc7', 'clang14'], project: 'libcudacxx'}
+    - {jobs: ['build'], std: [17], cxx: ['gcc7', 'clang14']}
     - {jobs: ['build'], std: 'max', cxx: ['gcc8', 'gcc9', 'gcc10', 'gcc11', 'gcc12']}
-    - {jobs: ['build'], std: 'max', cxx: ['clang10', 'clang11', 'clang12', 'clang13', 'clang14', 'clang15', 'clang16', 'clang17']}
-    - {jobs: ['build'], std: 'max', cxx: ['intel', 'msvc2019']}
+    - {jobs: ['build'], std: 'max', cxx: ['clang14', 'clang15', 'clang16', 'clang17']}
+    - {jobs: ['build'], std: 'max', cxx: ['msvc2019']}
     - {jobs: ['build'], std: [17, 20], cxx: ['gcc', 'clang', 'msvc']}
     # Current CTK testing:
     - {jobs: ['test'],  project: ['libcudacxx', 'thrust'], std: 'max', cxx: ['gcc']}
@@ -41,10 +42,8 @@ workflows:
     # verify-codegen:
     - {jobs: ['verify_codegen'], project: 'libcudacxx'}
     # cudax has different CTK reqs:
-    - {jobs: ['build'], project: 'cudax', ctk: ['12.0'], std: 17,       cxx: ['gcc9', 'clang9']}
     - {jobs: ['build'], project: 'cudax', ctk: ['12.0'], std: 20,       cxx: ['msvc14.36']}
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,       cxx: ['gcc10', 'gcc11', 'gcc12']}
-    - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,       cxx: ['clang10', 'clang11', 'clang12', 'clang13']}
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,       cxx: ['clang14', 'clang15', 'clang16', 'clang17']}
     - {jobs: ['build'], project: 'cudax', ctk: ['12.5'], std: [17, 20], cxx: ['nvhpc']}
     - {jobs: ['build'], project: 'cudax', ctk: ['curr'], std: 20,       cxx: ['msvc2022']}
@@ -55,7 +54,6 @@ workflows:
     # Python and c/parallel jobs:
     - {jobs: ['test'], project: ['cccl_c_parallel', 'python'], ctk: '12.6'}
     # cccl-infra:
-    - {jobs: ['infra'], project: 'cccl', ctk: '11.1', cxx: ['gcc6',  'clang9']}
     - {jobs: ['infra'], project: 'cccl', ctk: '12.0', cxx: ['gcc12', 'clang14']}
     - {jobs: ['infra'], project: 'cccl', ctk: 'curr', cxx: ['gcc',   'clang']}
 
@@ -64,13 +62,13 @@ workflows:
     - {jobs: ['limited'], project: 'cub', std: 17}
     - {jobs: ['test_gpu'],  project: 'thrust', cmake_options: '-DTHRUST_DISPATCH_TYPE=Force32bit'}
     - {jobs: ['test_gpu'],  project: 'thrust', cmake_options: '-DTHRUST_DISPATCH_TYPE=Force64bit'}
-    # Old CTK
-    - {jobs: ['build'], std: 'all', ctk: '11.1', cxx: ['gcc6', 'gcc7', 'gcc8', 'gcc9', 'clang9', 'msvc2017']}
-    - {jobs: ['build'], std: 'all', ctk: '11.8', cxx: ['gcc11'], sm: '60;70;80;90'}
+    # Old CTK/compiler
+    - {jobs: ['build'], std: 'all', ctk: '12.0', cxx: ['gcc7', 'gcc8', 'gcc9', 'clang14', 'msvc2019']}
+    - {jobs: ['build'], std: 'all', ctk: '12.0', cxx: ['gcc11'], sm: '60;70;80;90'}
     # Current CTK build-only
     - {jobs: ['build'], std: 'all', cxx: ['gcc7', 'gcc8', 'gcc9', 'gcc10', 'gcc11', 'gcc12']}
-    - {jobs: ['build'], std: 'all', cxx: ['clang9', 'clang10', 'clang11', 'clang12', 'clang13', 'clang14', 'clang15', 'clang16', 'clang17']}
-    - {jobs: ['build'], std: 'all', cxx: ['intel', 'msvc2019']}
+    - {jobs: ['build'], std: 'all', cxx: ['clang14', 'clang15', 'clang16', 'clang17']}
+    - {jobs: ['build'], std: 'all', cxx: ['msvc2019']}
     # Test current CTK
     - {jobs: ['test'],  std: 'all', cxx: ['gcc13', 'clang18', 'msvc2022']}
     # Modded builds:
@@ -83,7 +81,6 @@ workflows:
     - {jobs: ['build'], project: 'libcudacxx', std: 'all', cudacxx: 'clang', cxx: 'clang', sm: '90a'}
     # cudax
     - {jobs: ['build'], project: 'cudax', ctk: ['12.0', 'curr'], std: 'all', cxx: ['gcc9', 'gcc10', 'gcc11']}
-    - {jobs: ['build'], project: 'cudax', ctk: ['12.0', 'curr'], std: 'all', cxx: ['clang9', 'clang10', 'clang11', 'clang12', 'clang13']}
     - {jobs: ['build'], project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['clang14', 'clang15', 'clang16', 'clang17']}
     - {jobs: ['build'], project: 'cudax', ctk: [        '12.5'], std: 'all', cxx: ['nvhpc']}
     - {jobs: ['build'], project: 'cudax', ctk: ['12.0',       ], std: 'all', cxx: ['msvc14.36']}
@@ -96,12 +93,12 @@ workflows:
     - {jobs: ['test'],  project: 'cudax', ctk: [        'curr'], std: 'all', cxx: ['clang18']}
 
 #  # These are waiting on the NVKS nodes:
-#    - {jobs: ['test'],  ctk: '11.1', gpu: 'v100',     sm: 'gpu', cxx: 'gcc6',    std: [11]}
-#    - {jobs: ['test'],  ctk: '11.1', gpu: 't4',       sm: 'gpu', cxx: 'clang9',  std: [17]}
+#    - {jobs: ['test'],  ctk: '11.1', gpu: 'v100',     sm: 'gpu', cxx: 'gcc7',    std: [11]}
+#    - {jobs: ['test'],  ctk: '11.1', gpu: 't4',       sm: 'gpu', cxx: 'clang14',  std: [17]}
 #    - {jobs: ['test'],  ctk: '11.8', gpu: 'rtx2080',  sm: 'gpu', cxx: 'gcc11',   std: [17]}
 #    - {jobs: ['test'],  ctk: 'curr', gpu: 'rtxa6000', sm: 'gpu', cxx: 'gcc7',    std: [14]}
 #    - {jobs: ['test'],  ctk: 'curr', gpu: 'l4',       sm: 'gpu', cxx: 'gcc13',   std: 'all'}
-#    - {jobs: ['test'],  ctk: 'curr', gpu: 'rtx4090',  sm: 'gpu', cxx: 'clang9',  std: [11]}
+#    - {jobs: ['test'],  ctk: 'curr', gpu: 'rtx4090',  sm: 'gpu', cxx: 'clang14',  std: [11]}
 #    # H100 runners are currently flakey, only build since those use CPU-only runners:
 #    - {jobs: ['build'], ctk: 'curr', gpu: 'h100',     sm: 'gpu', cxx: 'gcc12',   std: [11, 20]}
 #    - {jobs: ['build'], ctk: 'curr', gpu: 'h100',     sm: 'gpu', cxx: 'clang18', std: [17]}
@@ -115,10 +112,7 @@ workflows:
   # Any generated jobs that match the entries in `exclude` will be removed from the final matrix for all workflows.
   exclude:
     # GPU runners are not available on Windows.
-    - {jobs: ['test', 'test_gpu', 'test_nolid', 'test_lid0', 'test_lid1', 'test_lid2'], cxx: ['msvc2017', 'msvc2019', 'msvc14.36', 'msvc2022']}
-    # Ubuntu 18.04 is EOL and we only use it to get access to CTK 11.1 containers for CUDA testing.
-    # Disable non-CUDA tests on this platform.
-    - {jobs: ['test_cpu'], ctk: '11.1'}
+    - {jobs: ['test', 'test_gpu', 'test_nolid', 'test_lid0', 'test_lid1', 'test_lid2'], cxx: ['msvc2019', 'msvc14.36', 'msvc2022']}
 
 
 #############################################################################################
@@ -131,8 +125,6 @@ devcontainer_version: '25.02'
 all_stds: [11, 14, 17, 20]
 
 ctk_versions:
-  11.1: { stds: [11, 14, 17,   ] }
-  11.8: { stds: [11, 14, 17,   ] }
   12.0: { stds: [11, 14, 17, 20] }
   12.5: { stds: [11, 14, 17, 20] }
   12.6: { stds: [11, 14, 17, 20], aka: 'curr' }
@@ -151,7 +143,6 @@ host_compilers:
     container_tag: 'gcc'
     exe: 'g++'
     versions:
-      6:  { stds: [11, 14,       ] }
       7:  { stds: [11, 14, 17,   ] }
       8:  { stds: [11, 14, 17,   ] }
       9:  { stds: [11, 14, 17,   ] }
@@ -164,11 +155,6 @@ host_compilers:
     container_tag: 'llvm'
     exe: 'clang++'
     versions:
-      9:  { stds: [11, 14, 17,   ] }
-      10: { stds: [11, 14, 17,   ] }
-      11: { stds: [11, 14, 17, 20] }
-      12: { stds: [11, 14, 17, 20] }
-      13: { stds: [11, 14, 17, 20] }
       14: { stds: [11, 14, 17, 20] }
       15: { stds: [11, 14, 17, 20] }
       16: { stds: [11, 14, 17, 20] }
@@ -179,16 +165,9 @@ host_compilers:
     container_tag: 'cl'
     exe: cl
     versions:
-      14.16: { stds: [    14,       ], aka: '2017' }
       14.29: { stds: [    14, 17,   ], aka: '2019' }
       14.36: { stds: [    14, 17, 20]              }
       14.39: { stds: [    14, 17, 20], aka: '2022' }
-  intel:
-    name: 'Intel'
-    container_tag: 'oneapi'
-    exe: icpc
-    versions:
-      2023.2.0: { stds: [11, 14, 17,   ] }
   nvhpc:
     name: 'NVHPC'
     container_tag: 'nvhpc'
@@ -261,11 +240,11 @@ projects:
     stds: [11, 14, 17, 20]
   cub:
     name: 'CUB'
-    stds: [11, 14, 17, 20]
+    stds: [17, 20]
     job_map: { test: ['test_nolid', 'test_lid0', 'test_lid1', 'test_lid2'] }
   thrust:
     name: 'Thrust'
-    stds: [11, 14, 17, 20]
+    stds: [17, 20]
     job_map: { test: ['test_cpu', 'test_gpu'] }
   cudax:
     stds: [17, 20]

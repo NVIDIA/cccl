@@ -571,10 +571,8 @@ public:
 
 template <template <typename> class TestName,
           typename TypeList,
-          template <typename, typename>
-          class Vector,
-          template <typename>
-          class Alloc>
+          template <typename, typename> class Vector,
+          template <typename> class Alloc>
 struct VectorUnitTest : public UnitTest
 {
   VectorUnitTest()

@@ -43,14 +43,10 @@ int main(int, char**)
     typedef cuda::std::move_iterator<const char*> MI;
     constexpr MI it1 = cuda::std::make_move_iterator(p);
     constexpr MI it2 = cuda::std::make_move_iterator(p + 5);
-#  ifndef TEST_COMPILER_ICC
     constexpr MI it3 = cuda::std::make_move_iterator(p) += 5;
-#  endif // TEST_COMPILER_ICC
     static_assert(it1 != it2, "");
-#  ifndef TEST_COMPILER_ICC
     static_assert(it1 != it3, "");
     static_assert(it2 == it3, "");
-#  endif // TEST_COMPILER_ICC
   }
 #endif
 

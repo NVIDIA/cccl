@@ -1388,11 +1388,11 @@ struct generate_edge_case_offsets_dispatch
   static constexpr int a_bunch_of = 42;
   static constexpr int a_lot_of   = 420;
 
-  int small_segment_max_segment_size;
-  int items_per_small_segment;
-  int medium_segment_max_segment_size;
-  int single_thread_segment_size;
-  int large_cached_segment_max_segment_size;
+  int small_segment_max_segment_size{};
+  int items_per_small_segment{};
+  int medium_segment_max_segment_size{};
+  int single_thread_segment_size{};
+  int large_cached_segment_max_segment_size{};
 
   template <typename ActivePolicyT>
   CUB_RUNTIME_FUNCTION cudaError_t Invoke()
