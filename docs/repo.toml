@@ -15,6 +15,8 @@ social_media     = [
     [ "discord", "https://discord.com/channels/1019361803752456192/1161051667945508884" ],
 ]
 
+sphinx_version = "4.5.0.2-py3.10-${platform}"
+
 enhanced_search_enabled = true
 api_output_directory = "api"
 use_fast_doxygen_conversion = true
