@@ -40,8 +40,6 @@
 #  pragma system_header
 #endif // no system header
 
-#include <cub/util_compiler.cuh> // IWYU pragma: export
-
 #ifndef _CCCL_DOXYGEN_INVOKED // Do not document
 
 // Deprecation warnings may be silenced by defining the following macros. These
