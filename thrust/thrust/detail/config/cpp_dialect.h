@@ -47,6 +47,7 @@
 #  define THRUST_COMP_DEPR_IMPL(msg) _CCCL_PRAGMA(GCC warning #msg)
 #endif
 
+// Compiler checks:
 // clang-format off
 #define THRUST_COMPILER_DEPRECATION(REQ) \
   THRUST_COMP_DEPR_IMPL(Thrust requires at least REQ. Define CCCL_IGNORE_DEPRECATED_COMPILER to suppress this message.)
@@ -58,8 +59,6 @@
 // clang-format on
 
 #ifndef CCCL_IGNORE_DEPRECATED_COMPILER
-
-// Compiler checks:
 #  if _CCCL_COMPILER(GCC, <, 7)
 THRUST_COMPILER_DEPRECATION(GCC 7.0);
 #  elif _CCCL_COMPILER(CLANG, <, 7)
@@ -71,13 +70,17 @@ THRUST_COMPILER_DEPRECATION(MSVC 2019(19.20 / 16.0 / 14.20));
 // >=2017, <2019. Soft deprecation message:
 THRUST_COMPILER_DEPRECATION_SOFT(MSVC 2019(19.20 / 16.0 / 14.20), MSVC 2017);
 #  endif
-
 #endif // CCCL_IGNORE_DEPRECATED_COMPILER
-
-#if _CCCL_STD_VER < 2017
-THRUST_COMP_DEPR_IMPL(Thrust requires at least C++ 17);
-#endif // _CCCL_STD_VER >= 2017
 
 #undef THRUST_COMPILER_DEPRECATION_SOFT
 #undef THRUST_COMPILER_DEPRECATION
+
+// C++17 dialect check:
+#ifndef CCCL_IGNORE_DEPRECATED_CPP_DIALECT
+#  if _CCCL_STD_VER < 2017
+THRUST_COMP_DEPR_IMPL(
+  Thrust requires at least C++ 17. Define CCCL_IGNORE_DEPRECATED_CPP_DIALECT to suppress this message.)
+#  endif // _CCCL_STD_VER >= 2017
+#endif
+
 #undef THRUST_COMP_DEPR_IMPL
