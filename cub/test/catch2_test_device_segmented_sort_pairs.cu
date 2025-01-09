@@ -32,59 +32,6 @@
 
 // FIXME: Graph launch disabled, algorithm syncs internally. WAR exists for device-launch, figure out how to enable for
 // graph launch.
-
-// TODO replace with DeviceSegmentedSort::SortPairs interface once https://github.com/NVIDIA/cccl/issues/50 is addressed
-// Temporary wrapper that allows specializing the DeviceSegmentedSort algorithm for different offset types
-template <bool IS_DESCENDING,
-          typename KeyT,
-          typename ValueT,
-          typename BeginOffsetIteratorT,
-          typename EndOffsetIteratorT,
-          typename NumItemsT,
-          typename NumSegmentsT>
-CUB_RUNTIME_FUNCTION _CCCL_FORCEINLINE static cudaError_t dispatch_segmented_sort_pairs_wrapper(
-  void* d_temp_storage,
-  size_t& temp_storage_bytes,
-  const KeyT* d_keys_in,
-  KeyT* d_keys_out,
-  const ValueT* d_values_in,
-  ValueT* d_values_out,
-  NumItemsT num_items,
-  NumSegmentsT num_segments,
-  BeginOffsetIteratorT d_begin_offsets,
-  EndOffsetIteratorT d_end_offsets,
-  bool* selector,
-  bool is_overwrite   = false,
-  cudaStream_t stream = 0)
-{
-  cub::DoubleBuffer<KeyT> d_keys(const_cast<KeyT*>(d_keys_in), d_keys_out);
-  cub::DoubleBuffer<ValueT> d_values(const_cast<ValueT*>(d_values_in), d_values_out);
-
-  auto status = cub::
-    DispatchSegmentedSort<IS_DESCENDING, KeyT, ValueT, NumItemsT, BeginOffsetIteratorT, EndOffsetIteratorT, NumSegmentsT>::
-      Dispatch(
-        d_temp_storage,
-        temp_storage_bytes,
-        d_keys,
-        d_values,
-        num_items,
-        num_segments,
-        d_begin_offsets,
-        d_end_offsets,
-        is_overwrite,
-        stream);
-  if (status != cudaSuccess)
-  {
-    return status;
-  }
-  if (is_overwrite)
-  {
-    // Only write to selector in the DoubleBuffer invocation
-    *selector = d_keys.Current() != d_keys_out;
-  }
-  return cudaSuccess;
-}
-
 // %PARAM% TEST_LAUNCH lid 0:1
 
 DECLARE_LAUNCH_WRAPPER(cub::DeviceSegmentedSort::StableSortPairs, stable_sort_pairs);
