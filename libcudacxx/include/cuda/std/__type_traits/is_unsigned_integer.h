@@ -12,6 +12,8 @@
 
 #include <cuda/std/detail/__config>
 
+#include "cuda/std/__cccl/dialect.h"
+
 #if defined(_CCCL_IMPLICIT_SYSTEM_HEADER_GCC)
 #  pragma GCC system_header
 #elif defined(_CCCL_IMPLICIT_SYSTEM_HEADER_CLANG)
@@ -47,6 +49,9 @@ template <>
 struct __cccl_is_unsigned_integer<__uint128_t> : public true_type
 {};
 #endif
+
+template <typename _Tp>
+_CCCL_INLINE_VAR constexpr auto __cccl_is_unsigned_integer_v = __cccl_is_unsigned_integer<_Tp>::value;
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
