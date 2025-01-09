@@ -382,8 +382,8 @@ struct AgentReduce
     even_share.template BlockInit<TILE_ITEMS>(block_offset, block_end);
 
     return (IsAligned(d_in + block_offset, Int2Type<ATTEMPT_VECTORIZATION>()))
-           ? ConsumeRange(even_share, Int2Type < true && ATTEMPT_VECTORIZATION > ())
-           : ConsumeRange(even_share, Int2Type < false && ATTEMPT_VECTORIZATION > ());
+           ? ConsumeRange(even_share, Int2Type<true && ATTEMPT_VECTORIZATION>())
+           : ConsumeRange(even_share, Int2Type<false && ATTEMPT_VECTORIZATION>());
   }
 
   /**
@@ -396,8 +396,8 @@ struct AgentReduce
     even_share.template BlockInit<TILE_ITEMS, GRID_MAPPING_STRIP_MINE>();
 
     return (IsAligned(d_in, Int2Type<ATTEMPT_VECTORIZATION>()))
-           ? ConsumeRange(even_share, Int2Type < true && ATTEMPT_VECTORIZATION > ())
-           : ConsumeRange(even_share, Int2Type < false && ATTEMPT_VECTORIZATION > ());
+           ? ConsumeRange(even_share, Int2Type<true && ATTEMPT_VECTORIZATION>())
+           : ConsumeRange(even_share, Int2Type<false && ATTEMPT_VECTORIZATION>());
   }
 
 private:

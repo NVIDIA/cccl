@@ -23,7 +23,6 @@ set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)
 option(CCCL_ENABLE_EXCEPTIONS "Enable exceptions within CCCL libraries." ON)
 option(CCCL_ENABLE_RTTI "Enable RTTI within CCCL libraries." ON)
 option(CCCL_ENABLE_WERROR "Treat warnings as errors for CCCL targets." ON)
-option(CCCL_SUPPRESS_ICC_DEPRECATION_WARNING "Suppress Intel Compiler deprecation warnings" OFF)
 option(CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING "Suppress Visual Studio 2017 deprecation warnings" OFF)
 
 function(cccl_build_compiler_interface interface_target cuda_compile_options cxx_compile_options compile_defs)
@@ -67,10 +66,6 @@ function(cccl_build_compiler_targets)
 
   if (NOT CCCL_ENABLE_RTTI)
     list(APPEND cxx_compile_definitions "CCCL_DISABLE_RTTI")
-  endif()
-
-  if (CCCL_SUPPRESS_ICC_DEPRECATION_WARNING)
-    list(APPEND cxx_compile_definitions "CCCL_SUPPRESS_ICC_DEPRECATION_WARNING")
   endif()
 
   if (CCCL_SUPPRESS_MSVC2017_DEPRECATION_WARNING)
@@ -158,16 +153,6 @@ function(cccl_build_compiler_targets)
       # becoming part of the type system; we don't care.
       append_option_if_available("-Wno-noexcept-type" cxx_compile_options)
     endif()
-  endif()
-
-  if ("Intel" STREQUAL "${CMAKE_CXX_COMPILER_ID}")
-    # Do not flush denormal floats to zero
-    append_option_if_available("-no-ftz" cxx_compile_options)
-    # Disable warning that inlining is inhibited by compiler thresholds.
-    append_option_if_available("-diag-disable=11074" cxx_compile_options)
-    append_option_if_available("-diag-disable=11076" cxx_compile_options)
-    # Disable warning about deprecated classic compiler
-    append_option_if_available("-diag-disable=10441" cxx_compile_options)
   endif()
 
   cccl_build_compiler_interface(cccl.compiler_interface

@@ -24,8 +24,8 @@ template <class Tp>
 __host__ __device__ void eat_type(Tp);
 
 template <class Tp, class... Args>
-__host__ __device__ constexpr auto
-test_convertible_imp(int) -> decltype(eat_type<Tp>({cuda::std::declval<Args>()...}), true)
+__host__ __device__ constexpr auto test_convertible_imp(int)
+  -> decltype(eat_type<Tp>({cuda::std::declval<Args>()...}), true)
 {
   return true;
 }

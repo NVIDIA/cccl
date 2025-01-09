@@ -71,12 +71,9 @@ static_assert(std::is_trivially_copy_constructible<storage<uint64_t>>::value, ""
 #endif
 
 template <class T,
-          template <typename, typename>
-          class SourceSelector,
-          template <typename, typename>
-          class DestSelector,
-          template <typename, typename>
-          class BarrierSelector,
+          template <typename, typename> class SourceSelector,
+          template <typename, typename> class DestSelector,
+          template <typename, typename> class BarrierSelector,
           cuda::thread_scope BarrierScope,
           typename... CompletionF>
 __device__ __noinline__ void test_fully_specialized()
@@ -123,12 +120,9 @@ struct completion
 };
 
 template <class T,
-          template <typename, typename>
-          class SourceSelector,
-          template <typename, typename>
-          class DestSelector,
-          template <typename, typename>
-          class BarrierSelector>
+          template <typename, typename> class SourceSelector,
+          template <typename, typename> class DestSelector,
+          template <typename, typename> class BarrierSelector>
 __host__ __device__ __noinline__ void test_select_scope()
 {
   test_fully_specialized<T, SourceSelector, DestSelector, BarrierSelector, cuda::thread_scope_system>();

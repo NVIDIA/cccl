@@ -35,14 +35,11 @@ _CCCL_DEVICE static inline void cp_async_bulk(
   NV_IF_ELSE_TARGET(
     NV_HAS_FEATURE_SM_90a,
     (asm("cp.async.bulk.shared::cluster.global.mbarrier::complete_tx::bytes.multicast::cluster [%0], [%1], %2, [%3], "
-         "%4; // 1. "
-         :
-         : "r"(__as_ptr_smem(__dstMem)),
-           "l"(__as_ptr_gmem(__srcMem)),
-           "r"(__size),
-           "r"(__as_ptr_smem(__smem_bar)),
-           "h"(__ctaMask)
-         : "memory");),
+         "%4; // 1. " : : "r"(__as_ptr_smem(__dstMem)),
+         "l"(__as_ptr_gmem(__srcMem)),
+         "r"(__size),
+         "r"(__as_ptr_smem(__smem_bar)),
+         "h"(__ctaMask) : "memory");),
     (
       // Unsupported architectures will have a linker error with a semi-decent error message
       __cuda_ptx_cp_async_bulk_is_not_supported_before_SM_90a__();));

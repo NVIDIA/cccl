@@ -291,8 +291,8 @@ _LIBCUDACXX_HIDE_FROM_ABI typename pointer_traits<_Pointer>::element_type* __to_
 }
 #else // ^^^ C++17 ^^^ / vvv C++20 vvv
 template <class _Pointer>
-_LIBCUDACXX_HIDE_FROM_ABI auto
-__to_raw_pointer(const _Pointer& __p) noexcept -> decltype(pointer_traits<_Pointer>::to_address(__p))
+_LIBCUDACXX_HIDE_FROM_ABI auto __to_raw_pointer(const _Pointer& __p) noexcept
+  -> decltype(pointer_traits<_Pointer>::to_address(__p))
 {
   return pointer_traits<_Pointer>::to_address(__p);
 }

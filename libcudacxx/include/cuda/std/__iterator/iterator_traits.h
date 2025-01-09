@@ -174,19 +174,20 @@ using _ITER_TRAITS = typename __iter_traits_cache<_Iter>::type;
 #  if defined(_GLIBCXX_DEBUG)
 _CCCL_TEMPLATE(class _Iter, class _Ty, class _Range)
 _CCCL_REQUIRES(_IsSame<_Iter, ::__gnu_debug::_Safe_iterator<_Ty*, _Range>>::value)
-_LIBCUDACXX_HIDE_FROM_ABI auto
-  __iter_concept_fn(::__gnu_debug::_Safe_iterator<_Ty*, _Range>, __priority_tag<3>) -> contiguous_iterator_tag;
+_LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(::__gnu_debug::_Safe_iterator<_Ty*, _Range>, __priority_tag<3>)
+  -> contiguous_iterator_tag;
 #  endif
 #  if defined(__GLIBCXX__)
 _CCCL_TEMPLATE(class _Iter, class _Ty, class _Range)
 _CCCL_REQUIRES(_IsSame<_Iter, ::__gnu_cxx::__normal_iterator<_Ty*, _Range>>::value)
-_LIBCUDACXX_HIDE_FROM_ABI auto
-  __iter_concept_fn(::__gnu_cxx::__normal_iterator<_Ty*, _Range>, __priority_tag<3>) -> contiguous_iterator_tag;
+_LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(::__gnu_cxx::__normal_iterator<_Ty*, _Range>, __priority_tag<3>)
+  -> contiguous_iterator_tag;
 #  endif // __GLIBCXX__
 #  if defined(_LIBCPP_VERSION)
 _CCCL_TEMPLATE(class _Iter, class _Ty)
 _CCCL_REQUIRES(_IsSame<_Iter, ::std::__wrap_iter<_Ty*>>::value)
-_LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(::std::__wrap_iter<_Ty*>, __priority_tag<3>) -> contiguous_iterator_tag;
+_LIBCUDACXX_HIDE_FROM_ABI auto __iter_concept_fn(::std::__wrap_iter<_Ty*>, __priority_tag<3>)
+  -> contiguous_iterator_tag;
 #  elif defined(_MSVC_STL_VERSION) || defined(_IS_WRS)
 _CCCL_TEMPLATE(class _Iter)
 _CCCL_REQUIRES(_IsSame<_Iter, class _Iter::_Array_iterator>::value)
