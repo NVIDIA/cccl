@@ -66,24 +66,6 @@
 #  define THRUST_RDC_ENABLED
 #endif
 
-/**
- * \def __THRUST_HAS_CUDART__
- *
- * Whether or not the active compiler pass is allowed to invoke device kernels
- * or methods from the CUDA runtime API.
- *
- * This macro should not be used in Thrust, as it depends on `__CUDA_ARCH__`
- * and is not compatible with `NV_IF_TARGET`. It is provided for legacy
- * purposes only.
- *
- * Replace any usages with `THRUST_RDC_ENABLED` and `NV_IF_TARGET`.
- */
-#ifdef CUB_RUNTIME_ENABLED
-#  define __THRUST_HAS_CUDART__ 1
-#else
-#  define __THRUST_HAS_CUDART__ 0
-#endif
-
 #ifdef THRUST_AGENT_ENTRY_NOINLINE
 #  define THRUST_AGENT_ENTRY_INLINE_ATTR __noinline__
 #else
