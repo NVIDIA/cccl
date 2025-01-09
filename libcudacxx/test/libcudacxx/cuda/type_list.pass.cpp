@@ -16,7 +16,7 @@
 #include <cuda/std/__utility/integer_sequence.h>
 #include <cuda/std/__utility/pair.h>
 
-#if _CCCL_COMPILER(ICC) || _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC) || _CCCL_CUDA_COMPILER(CLANG)
+#if _CCCL_CUDA_COMPILER(NVCC) || _CCCL_COMPILER(NVRTC) || _CCCL_CUDA_COMPILER(CLANG)
 // These compilers have trouble making substitution failures during
 // alias template instantiation non-fatal.
 #  define SKIP_SFINAE_TESTS

@@ -83,10 +83,8 @@ static_assert(cuda::std::is_move_assignable_v<cuda::std::expected<MoveCtorMayThr
 // is_nothrow_move_constructible_v<T> && !is_nothrow_move_constructible_v<E>
 static_assert(cuda::std::is_move_assignable_v<cuda::std::expected<int, MoveCtorMayThrow>>, "");
 
-#ifndef TEST_COMPILER_ICC
 // !is_nothrow_move_constructible_v<T> && !is_nothrow_move_constructible_v<E>
 static_assert(!cuda::std::is_move_assignable_v<cuda::std::expected<MoveCtorMayThrow, MoveCtorMayThrow>>, "");
-#endif // TEST_COMPILER_ICC
 
 struct MoveAssignMayThrow
 {
@@ -100,7 +98,6 @@ struct MoveAssignMayThrow
 // Test noexcept
 static_assert(cuda::std::is_nothrow_move_assignable_v<cuda::std::expected<int, int>>, "");
 
-#ifndef TEST_COMPILER_ICC
 // !is_nothrow_move_assignable_v<T>
 static_assert(!cuda::std::is_nothrow_move_assignable_v<cuda::std::expected<MoveAssignMayThrow, int>>, "");
 
@@ -112,7 +109,6 @@ static_assert(!cuda::std::is_nothrow_move_assignable_v<cuda::std::expected<int, 
 
 // !is_nothrow_move_constructible_v<E>
 static_assert(!cuda::std::is_nothrow_move_assignable_v<cuda::std::expected<int, MoveCtorMayThrow>>, "");
-#endif // TEST_COMPILER_ICC
 
 __host__ __device__ TEST_CONSTEXPR_CXX20 bool test()
 {
