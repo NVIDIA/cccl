@@ -37,6 +37,8 @@
 #include <type_traits>
 #include <utility>
 
+_CCCL_SUPPRESS_DEPRECATED_PUSH
+
 #if _CCCL_COMPILER(MSVC, ==, 19, 00)
 #  define THRUST_OPTIONAL_MSVC2015
 #endif
@@ -59,11 +61,10 @@ THRUST_NAMESPACE_BEGIN
 #ifndef THRUST_MONOSTATE_INPLACE_MUTEX
 #  define THRUST_MONOSTATE_INPLACE_MUTEX
 /// \brief Used to represent an optional with no data; essentially a bool
-class monostate
-{};
+class CCCL_DEPRECATED monostate{};
 
 /// \brief A tag type to tell optional to construct its value in-place
-struct in_place_t
+struct CCCL_DEPRECATED in_place_t
 {
   explicit in_place_t() = default;
 };
@@ -72,7 +73,7 @@ static constexpr in_place_t in_place{};
 #endif
 
 template <class T>
-class optional;
+class CCCL_DEPRECATED_BECAUSE("Use cuda::std::optional") optional;
 
 /// \exclude
 namespace detail
@@ -722,7 +723,7 @@ struct optional_delete_assign_base<T, false, false>
 } // namespace detail
 
 /// \brief A tag type to represent an empty optional
-struct nullopt_t
+struct CCCL_DEPRECATED nullopt_t
 {
   struct do_not_use
   {};
@@ -744,7 +745,7 @@ static constexpr
 #endif // __CUDA_ARCH__
   nullopt_t nullopt{nullopt_t::do_not_use{}, nullopt_t::do_not_use{}};
 
-class bad_optional_access : public std::exception
+class CCCL_DEPRECATED bad_optional_access : public std::exception
 {
 public:
   bad_optional_access() = default;
@@ -1954,6 +1955,7 @@ _CCCL_EXEC_CHECK_DISABLE
 template <class T = detail::i_am_secret,
           class U,
           class Ret = detail::conditional_t<std::is_same<T, detail::i_am_secret>::value, detail::decay_t<U>, T>>
+CCCL_DEPRECATED_BECAUSE("Use cuda::std::make_optional")
 _CCCL_HOST_DEVICE inline constexpr optional<Ret> make_optional(U&& v)
 {
   return optional<Ret>(std::forward<U>(v));
@@ -1961,12 +1963,14 @@ _CCCL_HOST_DEVICE inline constexpr optional<Ret> make_optional(U&& v)
 
 _CCCL_EXEC_CHECK_DISABLE
 template <class T, class... Args>
+CCCL_DEPRECATED_BECAUSE("Use cuda::std::make_optional")
 _CCCL_HOST_DEVICE inline constexpr optional<T> make_optional(Args&&... args)
 {
   return optional<T>(in_place, std::forward<Args>(args)...);
 }
 _CCCL_EXEC_CHECK_DISABLE
 template <class T, class U, class... Args>
+CCCL_DEPRECATED_BECAUSE("Use cuda::std::make_optional")
 _CCCL_HOST_DEVICE inline constexpr optional<T> make_optional(std::initializer_list<U> il, Args&&... args)
 {
   return optional<T>(in_place, il, std::forward<Args>(args)...);
@@ -2822,3 +2826,5 @@ struct hash<THRUST_NS_QUALIFIER::optional<T>>
   }
 };
 } // namespace std
+
+_CCCL_SUPPRESS_DEPRECATED_POP
