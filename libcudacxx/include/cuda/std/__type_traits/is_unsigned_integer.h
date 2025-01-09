@@ -48,8 +48,12 @@ struct __cccl_is_unsigned_integer<__uint128_t> : public true_type
 {};
 #endif
 
+#if !defined(_CCCL_NO_VARIABLE_TEMPLATES)
+
 template <typename _Tp>
 _CCCL_INLINE_VAR constexpr auto __cccl_is_unsigned_integer_v = __cccl_is_unsigned_integer<_Tp>::value;
+
+#endif // !defined(_CCCL_NO_VARIABLE_TEMPLATES)
 
 _LIBCUDACXX_END_NAMESPACE_STD
 

@@ -26,10 +26,12 @@
 #include <cuda/std/__bit/countl.h>
 #include <cuda/std/__concepts/concept_macros.h>
 #include <cuda/std/__type_traits/is_constant_evaluated.h>
-#include <cuda/std/__type_traits/is_unsigned.h>
+#include <cuda/std/__type_traits/is_unsigned_integer.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
 #include <cuda/std/cstdint>
 #include <cuda/std/limits>
+
+#include "cuda/std/__type_traits/conditional.h"
 
 // the following section will be removed when the ptx bfind is added
 namespace cuda::ptx
@@ -80,12 +82,6 @@ _LIBCUDACXX_HIDE_FROM_ABI uint32_t bfind(__uint128_t a)
 
 _LIBCUDACXX_BEGIN_NAMESPACE_STD
 
-#define _CCCL_CUDA_BUILTIN_ASSUME(...)                           \
-  if (!_CUDA_VSTD::is_constant_evaluated())                      \
-  {                                                              \
-    NV_IF_TARGET(NV_IS_DEVICE, (__builtin_assume(__VA_ARGS__);)) \
-  }
-
 template <class _Tp>
 _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::uint32_t __bit_log2(_Tp __t) noexcept
 {
@@ -106,9 +102,9 @@ _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr int bit_width(_Tp __t) noexcept
 {
   // __bit_log2 returns 0xFFFFFFFF if __t == 0. Since unsigned overflow is well-defined, the result is -1 + 1 = 0
-  using _Up  = _CUDA_VSTD::make_unsigned_t<decltype(+_Tp{})>;
+  using _Up  = conditional_t<sizeof(_Tp) <= 4, uint32_t, _Tp>;
   auto __ret = _CUDA_VSTD::__bit_log2(static_cast<_Up>(__t)) + 1; // type of__ret is int
-  _CCCL_CUDA_BUILTIN_ASSUME((is_unsigned_v<_Tp> ? true : __ret >= 0) && __ret <= numeric_limits<_Tp>::digits);
+  _CCCL_BUILTIN_ASSUME((is_unsigned_v<_Tp> ? true : __ret >= 0) && __ret <= numeric_limits<_Tp>::digits);
   return __ret;
 }
 
@@ -124,12 +120,12 @@ _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp bit_ceil(_Tp __t) noexce
   // if __t == 0, bit_width() applies to 0xFFFFFFFF and returns 32
   // In CUDA, unsigned{1} << 32 --> 0
   // The result is computed as max(1, bit_width(__t - 1)) because max() requires less instructions than ternary operator
-  using _Up    = _CUDA_VSTD::make_unsigned_t<decltype(+_Tp{})>;
+  using _Up    = conditional_t<sizeof(_Tp) <= 4, uint32_t, _Tp>;
   auto __width = _CUDA_VSTD::bit_width(static_cast<_Up>(__t - 1)); // type of __ret is _Up
   // clang-format off
   NV_IF_ELSE_TARGET(NV_IS_DEVICE,
                    (auto __ret = static_cast<_Tp>(_CUDA_VSTD::max(_Up{1}, _Up{1} << __width));
-                    _CCCL_BUILTIN_ASSUME(__ret >= __t)
+                    _CCCL_BUILTIN_ASSUME(__ret >= __t);
                     return __ret;),
                    (return static_cast<_Tp>(__t <= 1 ? 1 : _Up{1} << __width);))
   // clang-format on
@@ -139,21 +135,25 @@ _CCCL_TEMPLATE(class _Tp)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::__cccl_is_unsigned_integer, _Tp))
 _CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _Tp bit_floor(_Tp __t) noexcept
 {
-  // __bit_log2 returns 0xFFFFFFFF if __t == 0
-  // (CUDA) shift returns 0 if the right operand is larger than the number of bits of the type
-  // -> the result is 0 is __t == 0
   if (_CUDA_VSTD::is_constant_evaluated() && __t == 0)
   {
     return 0;
   }
-  using _Up   = _CUDA_VSTD::make_unsigned_t<decltype(+_Tp{})>;
+  using _Up   = conditional_t<sizeof(_Tp) <= 4, uint32_t, _Tp>;
   auto __log2 = _CUDA_VSTD::__bit_log2(static_cast<_Up>(__t));
+  // __bit_log2 returns 0xFFFFFFFF if __t == 0
+  // (CUDA) shift returns 0 if the right operand is larger than the number of bits of the type
+  // -> the result is 0 is __t == 0
+  // clang-format off
   NV_IF_ELSE_TARGET(NV_IS_DEVICE,
-                    (return _Tp{1} << __log2;), //
+                    (auto __ret = _Tp{1} << __log2;
+                     _CCCL_BUILTIN_ASSUME(__ret <= __t);
+                     return __ret;),
                     (return __t == 0 ? 0 : _Tp{1} << __log2;))
+  // clang-format on
 }
 
-#undef _CCCL_CUDA_BUILTIN_ASSUME
+#undef _CCCL_BUILTIN_ASSUME
 
 _LIBCUDACXX_END_NAMESPACE_STD
 
