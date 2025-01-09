@@ -20,6 +20,7 @@
 #  pragma system_header
 #endif // no system header
 
+#include <any>
 #include <cuda/experimental/__stf/internal/reduction_base.cuh>
 
 namespace cuda::experimental::stf
@@ -27,6 +28,36 @@ namespace cuda::experimental::stf
 
 template <typename access_mode_t>
 ::std::shared_ptr<void> pack_state(access_mode_t, const logical_data_untyped& d);
+
+/**
+ * @brief A type-erased container for any value
+ *
+ * We do not have a default constructor so that we can for example store this
+ * in a std::optional to check whether there is a value
+ */
+class init_val {
+public:
+    // Template constructor to store any type of value
+    template <typename T>
+    init_val(const T& val) : stored_value(val) {}
+
+    // Get the stored value with type safety
+    template <typename T>
+    const T& get() const {
+        _CCCL_ASSERT(stored_value.has_value(), "No value stored in init_val.");
+
+        try {
+            return ::std::any_cast<const T&>(stored_value);
+        } catch (const ::std::bad_any_cast&) {
+            throw ::std::runtime_error(
+                ::std::string("Stored value type does not match requested type: ") +
+                typeid(T).name());
+        }
+    }
+
+private:
+    ::std::any stored_value;
+};
 
 class task;
 
@@ -176,6 +207,8 @@ private:
 
   mutable data_place dplace;
   ::std::shared_ptr<reduction_operator_base> redux_op;
+
+  ::std::optional<init_val> value;
 };
 
 template <typename T>
