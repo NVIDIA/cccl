@@ -25,7 +25,7 @@ __host__ __device__ TEST_CONSTEXPR_CXX14 void test()
   constexpr T maxv = cuda::std::numeric_limits<T>::max();
 
   // ensure that we return the right type
-  using Common = decltype(T(0) / U(1));
+  using Common = _CUDA_VSTD::common_type_t<T, U>;
   static_assert(cuda::std::is_same<decltype(cuda::ceil_div(T(0), U(1))), Common>::value);
   assert(cuda::ceil_div(T(0), U(1)) == Common(0));
   assert(cuda::ceil_div(T(1), U(1)) == Common(1));

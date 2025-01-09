@@ -22,11 +22,13 @@
 #endif // no system header
 
 #include <cuda/std/__algorithm/min.h>
-#include <cuda/std/__type_traits/enable_if.h>
+#include <cuda/std/__concepts/concept_macros.h>
+#include <cuda/std/__type_traits/common_type.h>
 #include <cuda/std/__type_traits/is_enum.h>
 #include <cuda/std/__type_traits/is_integral.h>
 #include <cuda/std/__type_traits/is_signed.h>
 #include <cuda/std/__type_traits/make_unsigned.h>
+#include <cuda/std/__type_traits/underlying_type.h>
 #include <cuda/std/__utility/to_underlying.h>
 
 _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
@@ -38,19 +40,21 @@ _LIBCUDACXX_BEGIN_NAMESPACE_CUDA
 //! @pre \p __b must be positive
 _CCCL_TEMPLATE(class _Tp, class _Up)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Tp) _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::is_integral, _Up))
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(_Tp{} / _Up{})
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::common_type_t<_Tp, _Up>
 ceil_div(const _Tp __a, const _Up __b) noexcept
 {
   _CCCL_ASSERT(__b > _Up{0}, "cuda::ceil_div: 'b' must be positive");
-  using _Common  = decltype(_Tp{} / _Up{});
-  using _UCommon = _CUDA_VSTD::make_unsigned_t<_Common>;
+
   if constexpr (_CUDA_VSTD::is_signed_v<_Tp>)
   {
     _CCCL_ASSERT(__a >= _Tp{0}, "cuda::ceil_div: 'a' must be non negative");
   }
-  auto __a1 = static_cast<_UCommon>(__a);
-  auto __b1 = static_cast<_UCommon>(__b);
-  if constexpr (_CUDA_VSTD::is_signed_v<_Common>)
+  using _Common = _CUDA_VSTD::common_type_t<_Tp, _Up>;
+  using _Prom   = decltype(_Tp{} / _Up{});
+  using _UProm  = _CUDA_VSTD::make_unsigned_t<_Prom>;
+  auto __a1     = static_cast<_UProm>(__a);
+  auto __b1     = static_cast<_UProm>(__b);
+  if constexpr (_CUDA_VSTD::is_signed_v<_Prom>)
   {
     return static_cast<_Common>((__a1 + __b1 - 1) / __b1);
   }
@@ -71,7 +75,7 @@ ceil_div(const _Tp __a, const _Up __b) noexcept
 //! @pre \p __b must be positive
 _CCCL_TEMPLATE(class _Tp, class _Up)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_integral, _Tp) _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::is_enum, _Up))
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(_Tp{} / _CUDA_VSTD::underlying_type_t<_Up>{})
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::common_type_t<_Tp, _CUDA_VSTD::underlying_type_t<_Up>>
 ceil_div(const _Tp __a, const _Up __b) noexcept
 {
   return ::cuda::ceil_div(__a, _CUDA_VSTD::to_underlying(__b));
@@ -84,7 +88,7 @@ ceil_div(const _Tp __a, const _Up __b) noexcept
 //! @pre \p __b must be positive
 _CCCL_TEMPLATE(class _Tp, class _Up)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_enum, _Tp) _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::is_integral, _Up))
-_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(_CUDA_VSTD::underlying_type_t<_Tp>{} / _Up{})
+_CCCL_NODISCARD _LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::common_type_t<_CUDA_VSTD::underlying_type_t<_Tp>, _Up>
 ceil_div(const _Tp __a, const _Up __b) noexcept
 {
   return ::cuda::ceil_div(_CUDA_VSTD::to_underlying(__a), __b);
@@ -98,7 +102,8 @@ ceil_div(const _Tp __a, const _Up __b) noexcept
 _CCCL_TEMPLATE(class _Tp, class _Up)
 _CCCL_REQUIRES(_CCCL_TRAIT(_CUDA_VSTD::is_enum, _Tp) _CCCL_AND _CCCL_TRAIT(_CUDA_VSTD::is_enum, _Up))
 _CCCL_NODISCARD
-_LIBCUDACXX_HIDE_FROM_ABI constexpr decltype(_CUDA_VSTD::underlying_type_t<_Tp>{} / _CUDA_VSTD::underlying_type_t<_Up>{})
+_LIBCUDACXX_HIDE_FROM_ABI constexpr _CUDA_VSTD::common_type_t<_CUDA_VSTD::underlying_type_t<_Tp>,
+                                                              _CUDA_VSTD::underlying_type_t<_Up>>
 ceil_div(const _Tp __a, const _Up __b) noexcept
 {
   return ::cuda::ceil_div(_CUDA_VSTD::to_underlying(__a), _CUDA_VSTD::to_underlying(__b));
