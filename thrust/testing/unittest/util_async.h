@@ -2,8 +2,6 @@
 
 #include <thrust/detail/config.h>
 
-#include <thrust/detail/cpp14_required.h>
-
 #if _CCCL_STD_VER >= 2014
 
 #  include <thrust/future.h>

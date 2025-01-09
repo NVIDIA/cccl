@@ -123,8 +123,6 @@ function(thrust_add_header_test thrust_target label definitions)
   target_link_libraries(${headertest_target} PUBLIC ${thrust_target})
   target_compile_definitions(${headertest_target} PRIVATE
     ${header_definitions}
-    "THRUST_CPP11_REQUIRED_NO_ERROR"
-    "THRUST_CPP14_REQUIRED_NO_ERROR"
     "THRUST_MODERN_GCC_REQUIRED_NO_ERROR"
   )
   thrust_clone_target_properties(${headertest_target} ${thrust_target})
