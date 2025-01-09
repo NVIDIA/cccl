@@ -53,7 +53,7 @@ round_up(const _Tp __a, const _Up __b) noexcept
   using _Prom   = decltype(_Tp{} / _Up{});
   using _UProm  = _CUDA_VSTD::make_unsigned_t<_Prom>;
   auto __c      = ::cuda::ceil_div(static_cast<_Prom>(__a), static_cast<_Prom>(__b));
-  _CCCL_ASSERT(static_cast<_Common>(__c) < _CUDA_VSTD::numeric_limits<_Common>::max() / static_cast<_Common>(__b),
+  _CCCL_ASSERT(static_cast<_Common>(__c) <= _CUDA_VSTD::numeric_limits<_Common>::max() / static_cast<_Common>(__b),
                "cuda::round_up: result overflow");
   return static_cast<_Common>(static_cast<_UProm>(__c) * static_cast<_UProm>(__b));
 }
