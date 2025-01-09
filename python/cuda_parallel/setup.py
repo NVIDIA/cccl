@@ -42,12 +42,6 @@ class BuildCMakeExtension(build_ext):
 
 setup(
     license_files=["../../LICENSE"],
-    install_requires=[
-        f"cuda-cccl @ file://{CCCL_PYTHON_PATH}/cuda_cccl",
-        "numba>=0.60.0",
-        "cuda-python",
-        "jinja2",
-    ],
     cmdclass={
         "build_ext": BuildCMakeExtension,
     },
